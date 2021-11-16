@@ -1,0 +1,41 @@
+# Host: hoffman2 at UCLA
+
+COMPILER ?= intel
+#COMPILER ?= pgi
+ifdef HOFF_FFTW2_DIR
+	USE_FFT = fftw
+else
+	override USE_FFT = fftw
+endif
+ifdef HOFF_NETCDF_DIR
+	USE_NETCDF = new
+else
+	override USE_NETCDF = new
+endif
+ifdef HOFF_HDF5_DIR
+	USE_HDF5 = 
+else
+	override USE_HDF5 = 
+endif
+ifdef PGPLOT_DIR
+	PGPLOT_LIB = -lpgplot -L$$PGPLOT_DIR
+endif
+
+include Makefile.$(COMPILER)
+
+ifeq ($(USE_FFT),fftw)
+#	FFT_LIB = -L/u/local/apps/fftw2/2.1.5-DO-NOT-USE-THIS-JUNK/lib -lrfftw -lfftw
+	FFT_LIB = -L/u/local/apps/fftw2/2.1.5/lib -lrfftw -lfftw
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/u/local/apps/netcdf/current/include
+	NETCDF_LIB = -L/u/local/apps/netcdf/current/lib -lnetcdf
+endif
+ifdef USE_HDF5
+#	H5FC_par = mpif90
+#	H5CC_par = mpicc
+#	HDF5_INC = -I$$TACC_HDF5_INC
+#	HDF5_INC = -I$$TACC_HDF5_LIB
+#	HDF5_LIB = -Wl,-rpath,$$TACC_HDF5_LIB -L$$TACC_HDF5_LIB -lhdf5_fortran -lhdf5 -lz
+endif

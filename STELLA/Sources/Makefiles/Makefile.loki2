@@ -1,0 +1,15 @@
+COMPILER=pathscale
+include Makefile.$(COMPILER)
+
+FC = mpif90 -fPIC 
+
+USE_LOCAL_SPFUNC=on
+
+ifeq ($(USE_FFT),fftw)
+	FFT_LIB = -L/usr/local/lib -lsrfftw -lsfftw
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/usr/local/include/ 
+	NETCDF_LIB = -L/usr/local/lib -lnetcdf -lhdf5_hl -lhdf5 -lz -lcurl
+endif

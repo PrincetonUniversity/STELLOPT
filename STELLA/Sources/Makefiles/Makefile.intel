@@ -1,0 +1,113 @@
+# Compiler: Intel ifort/icc
+
+ifdef CRAY_SYSTEM
+FC=ftn
+CC=cc
+CXX=CC
+else
+FC = ifort
+CC = icc
+CXX=icpc
+endif
+F90FLAGS +=
+CPPFLAGS += -DFCOMPILER=_INTEL_
+
+ifndef DBLESIZEOPT
+cmd=$(shell basename $(shell which $(FC)))
+ifneq ($(cmd),$(FC))
+$(error $(FC) not found)
+endif
+v1:=$(shell $(FC) -v 2>&1 | grep -i version | awk '{print $$NF}')
+INTELMAJORVERSION=$(shell echo $(v1) | awk -F. '{print $$1}')
+INTELMINORVERSION=$(shell echo $(v1) | awk -F. '{print $$2}')
+
+DBLESIZEOPT=$(shell if [ $(INTELMAJORVERSION) -lt 10 ]; then echo "-double_size 128"; else echo "-double-size 128"; fi)
+endif
+
+ifdef DBLE
+	DBLEFLAGS = -r8 $(DBLESIZEOPT)
+	F90FLAGS += $(DBLEFLAGS)
+endif
+
+ifdef STATIC
+	LDFLAGS += -static
+endif
+
+ifdef DEBUG
+#	-check bounds option causes problem on mrf
+#	       probably problem of Intel's mpi
+#	-CB do the same
+#	F90FLAGS += -g -implicitnone -warn all -check bounds -traceback
+#nogen-interfaces prevents compiler generated interfaces being dumped to file.
+	F90FLAGS += -g -implicitnone -warn all -nogen-interfaces -CB -traceback
+	F90OPTFLAGS = -O0
+	CFLAGS += -g -w2 #-warn all -check bounds -traceback
+	COPTFLAGS =
+else
+	ifdef OPT
+		ifeq ($(OPT),aggressive)
+# -fast = -O3 -ipo -static
+			F90OPTFLAGS += -O3 -ipo
+			COPTFLAGS += -O3 -ipo
+		else
+			F90OPTFLAGS += -O2
+			COPTFLAGS += -O2
+		endif
+	endif
+
+	ifdef OPT
+		ifeq ($(CHIP),knl)
+			F90OPTFLAGS += -xMIC-AVX512
+			COPTFLAGS += -xMIC-AVX512
+		endif
+		ifeq ($(CHIP),haswell)
+			F90OPTFLAGS += -xCORE-AVX2
+			COPTFLAGS += -xCORE-AVX2
+		endif
+		ifeq ($(CHIP),ivy-bridge)
+			F90OPTFLAGS += -xCORE-AVX-I
+			COPTFLAGS += -xCORE-AVX-I
+		endif
+		ifeq ($(CHIP),sandy-bridge)
+			F90OPTFLAGS += -xAVX
+			COPTFLAGS += -xAVX
+		endif
+		ifeq ($(CHIP),xeon)
+			F90OPTFLAGS += -xW
+			COPTFLAGS += -xW
+		endif
+		ifeq ($(CHIP),pentium4)
+			F90OPTFLAGS += -xN
+			COPTFLAGS += -xN
+		endif
+		ifeq ($(CHIP),core2)
+			F90OPTFLAGS += -xT
+			COPTFLAGS += -xT
+		endif
+		ifeq ($(CHIP),skylake)
+		        F90OPTFLAGS += -xCORE-AVX512 -mtune=skylake
+			COPTFLAGS += -xCORE-AVX512 -mtune=skylake
+		endif
+	endif
+
+	ifeq ($(findstring gprof,$(PROF)),gprof)
+		F90FLAGS += -pg
+		CFLAGS += -pg
+	endif
+endif
+
+ifdef USE_OPENMP
+	ifeq ($(shell if [ $(INTELMAJORVERSION) -lt 15 ]; then echo "old_version"; fi),old_version)
+	### deprecated option
+		F90FLAGS += -openmp
+		CFLAGS += -openmp
+	else
+		F90FLAGS += -qopenmp
+		CFLAGS += -qopenmp
+	endif
+endif
+
+ifdef USE_MIC
+	F90FLAGS += -mmic
+	CFLAGS += -mmic
+endif

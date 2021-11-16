@@ -1,0 +1,91 @@
+\chapter{Inputs}\label{CHAP_INPUT}
+
+
+\section{Geometry input: the \texttt{wout*.nc} file}
+
+\section{The physics case input: the \texttt{*.in} file}
+
+\stella~uses for its execution a single input file. In this section, 
+we describe how this is structured in different 
+namelists and which input variables can be included in each of these. The input file, 
+which should include the suffix \texttt{.in} at the end of its name, is structured
+if the following namelists:
+
+\begin{itemize}
+\item \ttt{zgrid\_parameters}
+\item \ttt{geo\_knobs}
+\item ...
+\end{itemize}
+
+In the following sections the description of the different input variables that 
+each namelist has is provided. The purpose, description, variable type, etc
+of each variable is displayed in tabular format, where the header shows the name of the 
+variable in  teletype font family with the correponding mathematial mode symbol 
+used in other parts of the documents, if any.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{The {\ttfamily zgrid\_parameters} namelist}\label{sec:NL_ZGRID}
+
+
+\myvar{\ttt{nzed} $(N_{\zeta})$}
+{Variable for the grid of the spatial grid domain along $\zeta$.
+It sets the number of divisions of the magnetic field line 
+for the chosen flux tube along the coordinate $\zeta$.}
+{integer}{}
+
+\myvar{\ttt{nfield\_periods}}
+{It defines the flux tube length along $\zeta$. 
+  Being $\Nfp$ the number of field periods per $2\pi$ toroidal 
+  segment of a given equilibrum (e.g. $\Nfp=5$ for W7-X), 
+  \ttt{nfield\_periods} is the 
+  number of toroidal field periods the flux tube extents along 
+  the $\zeta$ direction. Considering the safety factor $q$ at 
+  a given flux surface, set through the variable \ttt{torflux}, 
+  if the flux tube is wanted to extent along $N_{\theta}$ poloidal 
+  turns, i.e. covering the range $\left(-N_{\theta}\pi, N_{\theta}\pi\right)$ 
+  in $\theta$, the following rule can be written to set accordingly 
+  \ttt{nfield\_periods}number of divisions of the magnetic field line 
+  for the chosen flux tube along the coordinate $\zeta$.
+  \begin{equation}
+    \ttt{nfield\_periods}=q\Nfp N_{\theta}
+  \end{equation}}
+{float}{}
+
+\subsection{The \ttt{zgrid\_parameters} namelist}\label{sec:NL_ZGRID}
+\subsection{The \ttt{geo\_knobs} namelist}
+\subsection{The \ttt{vmec\_parameters} namelist}
+\subsection{The \ttt{parameters} namelist}
+\subsection{The \ttt{vpamu\_grids\_parameters} namelist}
+\subsection{The \ttt{dist\_fn\_knobs} namelist}
+
+\myvarv{adiabatic\_option}
+{Form of the adiabatic response (if a species is being modeled as adiabatic). 
+  Ignored if there are electrons in the species list.}
+{\begin{itemize}
+  \item \ttt{no-field-line-average-term}: adiabatic species has $n=\varphi$. 
+    Appropriate for single-species ETG simulations.
+  \item \ttt{field-line-average-term}: adiabatic species has $n=\varphi-\langle\varphi\rangle$. 
+    Appropriate for single-species ITG simulations.
+  \item \ttt{iphi00=0}: same as \ttt{no-field-line-average-term}.
+  \item \ttt{iphi00=1}: same as \ttt{no-field-line-average-term}.
+  \item \ttt{iphi00=2}: same as \ttt{field-line-average-term}.
+  \item \ttt{iphi00=3}: adiabatic species has $n=\varphi-\langle\tilde{\varphi}\rangle_y$.
+    Incorrect implementation of \ttt{field-line-average-term}
+  \end{itemize}
+}
+{string}{\ttt{no-field-line-average-term}}
+
+\subsection{The \ttt{time\_advance\_knobs}  namelist}
+\subsection{The \ttt{kt\_grids\_knobs}  namelist}
+\subsection{The \ttt{kt\_grids\_range\_parameters}  namelist}
+\subsection{The \ttt{init\_g\_knobs}  namelist}
+\subsection{The \ttt{knobs}  namelist}
+\subsection{The \ttt{species\_knobs} namelist}
+\subsection{The \ttt{species\_parameters\_\#} namelist}
+\subsection{The \ttt{stella\_diagnostics\_knobs} namelist}
+\subsection{The \ttt{reinit\_knobs} namelist}
+\subsection{The \ttt{layouts\_knobs} namelist}
+\subsection{The \ttt{neoclassical\_input} namelist}
+\subsection{The \ttt{sfincs\_input} namelist}

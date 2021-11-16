@@ -1,0 +1,143 @@
+! JET shot 92174
+
+&zgrid_parameters
+ nzed = 32
+ nperiod = 1
+ boundary_option="linked"
+/
+
+&geo_knobs
+ geo_option = 'miller'
+/
+
+&millergeo_parameters
+ nzed_local = 128
+ rhoc = 9.7427e-01 ! r/a
+ shat = 3.3594e+00
+ qinp = 5.0848e+00
+ rmaj = 3.1340e+00
+ rgeo = 3.1191e+00
+ shift = -3.4508e-01
+ kappa = 1.5504e+00
+ kapprim = 9.4963e-01
+ tri = 2.6253e-01
+ triprim = 7.3680e-01
+ betaprim = 0.58e-01
+
+ d2qdr2 = 0.0
+ d2psidr2 = 0.0
+ betadbprim = 0.0
+/
+
+&physics_flags
+ full_flux_surface = .false.
+ nonlinear = .true.
+/
+
+&parameters
+ zeff = 1.0
+ beta = 0.01
+ vnew_ref = 0.01
+ rhostar = 0.01
+/
+
+&vpamu_grids_parameters
+ nvgrid = 3 ! 64
+ nmu = 2 !32
+ vpa_max = 3.0
+/
+
+&time_advance_knobs
+ explicit_option="rk2"
+/
+
+&kt_grids_knobs
+ grid_option='box'
+/
+
+&kt_grids_box_parameters
+ ny = 2
+ nx = 2
+ y0 = 20.0
+ jtwist = 5
+/
+
+&init_g_knobs
+ chop_side = F
+ phiinit=   1.0e-2
+ restart_file = "nc/example.nc"
+ ginit_option= "noise"
+ width0 = 1.0
+/
+
+&knobs
+ fphi =   1.0
+ fapar =  0.0
+ fbpar = 0.0
+ zed_upwind = 0.02
+ time_upwind = 0.02
+ vpa_upwind = 0.02
+ delt = 0.02
+ nstep = 500
+ mat_gen = .false.
+/
+
+&species_knobs
+ nspec= 2
+ species_option = 'stella'
+/
+
+&species_parameters_1
+ z=   1.0
+ mass=   2.0
+ dens=   1.0
+ temp=   1.0
+ tprim = 11.150280766906535 ! by minor radius, multiply by 3.2 to get R/L_T
+ fprim = 10.076043143968478
+ type='ion'
+/
+
+&species_parameters_2
+ z=   -1.0
+ mass=   0.00054
+ dens=   1.0
+ temp=   0.5570183368724737
+ tprim=  42.296287675811435
+ fprim=  10.076043143968478
+ type='electron'
+/
+
+&stella_diagnostics_knobs
+ nwrite = 50
+ nsave = 1000
+ save_for_restart = .false.
+ write_omega = .false.
+ write_phi_vs_time = .true.
+ write_gvmus = .false.
+ write_gzvs = .false.
+/
+
+&reinit_knobs
+ delt_adj = 2.0
+ delt_minimum = 1.e-4
+/
+
+&layouts_knobs
+ xyzs_layout = 'yxzs'
+ vms_layout = 'vms'
+/
+
+&neoclassical_input
+ include_neoclassical_terms = .false.
+ neo_option = 'sfincs'
+/
+
+&sfincs_input
+ nproc_sfincs = 2
+ nxi = 16
+ nx = 5
+/
+
+&dissipation
+ hyper_dissipation = .true.
+/

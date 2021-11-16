@@ -1,0 +1,8 @@
+# -*- mode: makefile -*-
+
+OBJ_FILES = fzero.o test_vmec_to_stella_geometry_interface.o vmec_to_stella_geometry_interface.o
+
+# Dependencies:
+fzero.o:
+test_vmec_to_stella_geometry_interface.o: vmec_to_stella_geometry_interface.o 
+vmec_to_stella_geometry_interface.o: $(LIBSTELL_FOR_STELLA)

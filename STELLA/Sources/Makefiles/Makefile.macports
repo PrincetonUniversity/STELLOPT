@@ -1,0 +1,66 @@
+# Makefile for Max OS X using Macports
+# Maintainer: dernst@psfc.mit.edu
+# Created Nov. 6, 2012
+# Modified for build_gs2 March 10, 2015  DRE
+
+helplocal:
+		# GK_SYSTEM = macports
+		# You are using  Makefile.macports to build gs2 executables on OSX using macports.
+		#
+		#Before building install these packages using Macports:
+		#  gcc
+		#  openmpi
+		#  fftw-single +gcc45 (+mpi installs mpich2, which conflicts with openmpi)
+		#  fftw +gcc45 (may have to play around with variants until you get all f77 symbols resolved)
+		#  netcdf
+		#  netcdf-fortran
+
+define STANDARD_SYSTEM_CONFIGURATION
+export MAKEFLAGS=\"-j -I Makefiles\";\
+export TESTEXEC=\"openmpirun -n 8\";\
+export GK_SYSTEM=macports;\
+export USE_FFT=fftw3;\
+export USE_NETCDF=on
+endef
+
+COMPILER=gnu-gfortran
+include Makefile.$(COMPILER)
+
+F90FLAGS += -m64 -Wall
+CFLAGS += -m64
+
+ifdef FRONT_END
+      override USE_MPI = 
+endif
+
+USE_LOCAL_SPFUNC=on
+
+MPIFC=openmpif90
+
+USE_LOCAL_SPFUNC=on
+
+ifeq ($(USE_FFT),fftw)
+        ifdef DBLE
+                FFT_LIB = -L/opt/local/lib -ldfftw -ldrfftw
+        else
+                FFT_LIB = -L/opt/local/lib -lsfftw -lsrfftw
+        endif
+endif
+
+ifeq ($(USE_FFT),fftw3)
+	CPPFLAGS   += -I/opt/local/include
+        FFT_LIB = -L/opt/local/lib -lfftw3 -lfftw3f
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/opt/local/include 
+	NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
+endif
+
+FC=gfortran
+CC=gcc
+ifdef USE_MPI
+	MPIFC=openmpif90
+	MPICC=openmpicc
+endif
+

@@ -1,0 +1,46 @@
+# Compiler: Cray Fortran
+# currently not supported
+
+FC = ftn
+CC = cc
+
+#F90FLAGS =  -M1110
+F90FLAGS = 
+CPPFLAGS += -DFCOMPILER=_CRAY_
+
+# Cray Fortran does not have intrinsic Bessel and error functions
+ifndef USE_LOCAL_SPFUNC
+ifneq ($(findstring spfunc,$(USE_NAGLIB)),spfunc)
+        USE_LOCAL_SPFUNC=on
+endif
+endif
+
+ifdef DBLE
+# Cray always uses double precision real
+# My experience on Archer suggests this may not be true
+# so add the following
+  DBLEFLAGS = -s real64 
+	F90FLAGS += $(DBLEFLAGS)
+#We could use -s default64, but I think this also promotes integers  
+endif
+
+ifdef STATIC
+endif
+
+ifdef DEBUG
+#	F90FLAGS += -g -R abcs -e i
+	F90FLAGS += -g -Rb
+#	F90FLAGS += -e D
+else
+	ifdef OPT
+		F90OPTFLAGS += -O 3,vector3
+		COPTFLAGS += -O 3,vector3
+	endif
+endif
+
+#The Cray compiler enables OpenMP by default so it needs to be turned off if not compiling with OpenMP
+ifndef USE_OPENMP
+	F90FLAGS += -h noomp
+	CFLAGS += -h noomp
+endif
+

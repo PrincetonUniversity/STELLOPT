@@ -149,7 +149,8 @@
 #######################################################################
 #            STELLA Options
 #######################################################################
-
+  LSTELLA = T
+  STELLA_LIB = 
 #######################################################################
 #            GENE Options
 #######################################################################
@@ -312,6 +313,7 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     STELLA_DIR = ../../STELLA
     LIB_STELLA = libstella.a
     MOD_PATH += -I$(STELLA_DIR)/$(LOCTYPE)
+    CPPFLAGS = -DFCOMPILER=_INTEL_ -DISO_C_BINDING -DMPI -DFFT=_FFTW3_ -DNETCDF -DLAPACK -DMPIINC
     PRECOMP += -DSTELLA_OPT
     LIB_LINK += $(STELLA_DIR)/$(LOCTYPE)/$(LIB_STELLA)
   else

@@ -1,0 +1,161 @@
+#!/bin/bash
+
+# Fail immediately if anything goes wrong
+set -e
+
+# Error codes
+error_cmake_not_available=1
+error_wrong_version_numer=2
+error_bad_arguments=3
+
+# Some default arguments
+
+# Should pFUnit use MPI
+pfunit_use_mpi="YES"
+
+# Which major version of pfunit are we using
+# Version 4+ needs very recent compilers
+# Defaults to version 4 is PFUNIT_VERSION_MAJOR is not set.
+pfunit_version_major=${PFUNIT_VERSION_MAJOR:-4}
+
+# Number of make jobs to use (i.e. argument to `make -j N`)
+make_jobs=1
+
+# Locations of various things
+stella_directory=$(pwd)
+externals_directory="${stella_directory}/externals"
+pfunit_directory="${externals_directory}/pFUnit"
+pfunit_version_directory="${externals_directory}/pFUnit-${pfunit_version}"
+pfunit_build_directory="${externals_directory}/pFUnit_build"
+pfunit_install_directory="${externals_directory}/pFUnit_build/install"
+
+function usage {
+    echo "usage: ${0##*/} [-m] [-v ARG] [-b ARG] [-i ARG] [-j ARG] [-r] [-h|--help]"
+    echo "A helper script for building pFUnit for STELLA"
+    echo ""
+    echo "Arguments:"
+    echo "  -m              Disable MPI"
+    echo "  -v 3|4          Set which major version of pFUnit to use"
+    echo "  -b BUILD_DIR    Directory to build pFUnit in"
+    echo "  -i INSTALL_DIR  Directory to install pFUnit in"
+    echo "  -j N            Number of make jobs to use (default: 1)"
+    echo "  -r              Remove the pFUnit installation directory"
+    echo "  -h, --help      Print this help and exit"
+}
+
+# These arguments need to be first
+if [[ "$1" == "--help" ]]; then
+    usage
+    exit 0
+fi
+
+while getopts ":mv:b:i:hrj:" OPT; do
+    case $OPT in
+        m )
+            echo "Disabling MPI"
+            echo "WARNING: currently some pFUnit tests require MPI and this might not work"
+            pfunit_use_mpi="NO"
+            ;;
+        v )
+            if [[ ! "$OPTARG" -eq 3 && ! "$OPTARG" -eq 4 ]]; then
+                echo "pFUnit major version number must be either '3' or '4'" 1>&2
+                exit $error_wrong_version_numer
+            fi
+            echo "Using pFUnit major version $OPTARG"
+            pfunit_version_major="$OPTARG"
+            ;;
+        b )
+            echo "Building pFUnit in $OPTARG"
+            pfunit_build_directory="$OPTARG"
+            ;;
+        i )
+            echo "Installing pFUnit in $OPTARG"
+            pfunit_install_directory="$OPTARG"
+            ;;
+        r )
+            remove_installation_directory=true
+            ;;
+        j )
+            make_jobs="$OPTARG"
+            ;;
+        h )
+            usage
+            exit 0
+            ;;
+        \* )
+           usage
+           exit $error_bad_arguments
+           ;;
+    esac
+done
+shift $(( OPTIND - 1 ))
+OPTIND=1
+
+if [[ -n $remove_installation_directory ]]; then
+    echo "Removing pFUnit installation directory $pfunit_install_directory"
+    rm -rf "$pfunit_install_directory"
+    exit 0
+fi
+
+if [[ ${pfunit_version_major} == 3 ]]; then
+    pfunit_url="https://github.com/Goddard-Fortran-Ecosystem/pFUnit/archive/3.3.3.tar.gz"
+    pfunit_version="3.3.3"
+    pfunit_openmp_flag="-DOPENMP=NO"
+else
+    pfunit_url="https://github.com/Goddard-Fortran-Ecosystem/pFUnit/releases/download/v4.2.1/pFUnit-4.2.1.tar.gz"
+    pfunit_version="4.2.1"
+    pfunit_openmp_flag="-DSKIP_OPENMP=YES"
+fi
+
+# What to rename the tarball to
+pfunit_downloaded_file="pFUnit-${pfunit_version}.tar.gz"
+
+# If pFUnit is already installed, we don't need to go any further and can exit cleanly
+if [[ -d ${pfunit_install_directory} ]]; then
+    echo "pFUnit installation directory \"${pfunit_install_directory}\" already exists, nothing to do"
+    exit 0
+fi
+
+# Check that CMake is available
+if [[ ! $(command -v cmake) ]]; then
+    echo "CMake is required to compile and install pfUnit"
+    echo "Please install CMake either from your system package manager, or by running:"
+    echo ""
+    echo "    pip install --user cmake"
+    echo ""
+    echo "This will install CMake into '~/.local/bin' -- you may need to add this to"
+    echo "your PATH environment variable"
+    exit ${error_cmake_not_available}
+fi
+
+# Check if we're in a git repo and, if so, that the pFUnit submodule is up-to-date
+if [[ ! $(git rev-parse --git-dir >/dev/null 2>&1 || [[ -d ${stella_directory}/.git ]]) ]]; then
+    echo "Making sure pFUnit submodule is up-to-date"
+    git submodule update --init --recursive externals/pFUnit
+fi
+
+# If we're not in a git repo and the pFUnit submodule isn't there, best download it
+if [[ ! -d ${pfunit_directory} ]]; then
+    echo "pFUnit submodule not availabe downloading pFUnit tarball"
+    cd ${externals_directory}
+    wget ${pfunit_url} -O ${pfunit_downloaded_file}
+    tar xf ${pfunit_downloaded_file}
+
+    # We want to build from the versioned directory
+    pfunit_directory=${pfunit_version_directory}
+fi
+
+mkdir -p ${pfunit_build_directory}
+
+cd ${pfunit_build_directory}
+echo "Building pFUnit version ${pfunit_version_major} from ${pfunit_directory}"
+cmake ${pfunit_directory} -DMPI=${pfunit_use_mpi} ${pfunit_openmp_flag} \
+      -DCMAKE_INSTALL_PREFIX=${pfunit_install_directory} \
+      -DMPIEXEC_EXECUTABLE=$(which mpiexec)
+make -j "$make_jobs"
+echo "Install pFUnit to ${pfunit_install_directory}"
+make install
+
+echo "Please use build stella with the following variables:"
+echo "    PFUNIT_VERSION_MAJOR=${pfunit_version_major}"
+echo "    PFUNIT_DIR=${pfunit_install_directory}"

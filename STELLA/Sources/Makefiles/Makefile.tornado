@@ -1,0 +1,25 @@
+# Host: tornado
+
+NETCDF_DIR = /usr/local/netcdf-4.0.1-intel/
+FFT_DIR = /usr/local/fftw-2.1.5/
+
+FFT_INC = -I$(FFT_DIR)/include
+
+COMPILER=intel
+
+include Makefile.$(COMPILER)
+
+FC=ifort
+MPIFC=mpif90
+CC=gcc
+$(FC=$FC)
+ifeq ($(USE_FFT),fftw)
+	ifdef DBLE
+		FFT_LIB = -L$(FFT_DIR)/lib -lrfftw -lfftw
+	else
+		FFT_LIB = -lsrfftw -lsfftw
+	endif
+endif
+
+NETCDF_INC = -I$(NETCDF_DIR)/include
+NETCDF_LIB = -L$(NETCDF_DIR)/lib -lnetcdf

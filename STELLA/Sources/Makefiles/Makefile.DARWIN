@@ -1,0 +1,7 @@
+# OS: Mac OS X
+
+ifdef STATIC
+# Mac OS X does not support static linking
+$(warning STATIC is not supported on DARWIN)
+	override STATIC =
+endif

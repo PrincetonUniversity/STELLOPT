@@ -1,0 +1,20 @@
+# Host: IST Cluster in IST, Portugal
+# Compiler: XL
+
+COMPILER=xl
+
+include Makefile.$(COMPILER)
+
+ifdef USE_MPI
+	MPIFC = mpxlf90
+	MPICC = mpcc
+endif
+
+FFT_INC = -I${HOME}/local/include
+FFT_LIB = -L${HOME}/local/lib -lrfftw -lfftw
+
+#NetCDF Libraries
+#NETCDF_INC = -I/usr/local/include
+#NETCDF_LIB = -L/usr/local/lib -lnetcdf
+
+MAKE=gmake

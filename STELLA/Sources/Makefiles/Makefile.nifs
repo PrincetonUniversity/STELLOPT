@@ -1,0 +1,35 @@
+# Host: Plasma Simulator at NIFS (Fujitsu PRIMEHPC FX100)
+# modules:
+# fftw (version 2.1.5)
+# netcdf-fortran-fx
+# phdf5-fx
+#
+
+COMPILER=fuj
+
+include Makefile.$(COMPILER)
+
+#ifdef USE_NETCDF
+#	NETCDF_INC = -I$$NETCDF_DIR/include
+#	NETCDF_LIB = -L$$NETCDF_DIR/lib -lnetcdf -lnetcdff 
+	NETCDF_LIB = -lnetcdf -lnetcdff -lhdf5_hl -lhdf5
+#endif
+ifeq ($(USE_FFT), fftw)
+	FFTW2_DIR = /usr/local/fftw_eval-fx/2.1.5
+	FFT_INC = -I$(FFTW2_DIR)/include
+	FFT_LIB = -L$(FFTW2_DIR)/lib -lrfftw -lfftw
+endif
+ifeq ($(USE_FFT), fftw3)
+	FFT_INC = -I$$FFTW_DIR/include
+	FFT_LIB = -L$$FFTW_DIR/lib -lfftw3 -lfftw3_mpi
+endif
+
+ifdef USE_HDF5
+      H5FC_par := $(MPIFC)
+      H5CC_par := $(MPICC)
+      H5FC := $(FC)
+      H5CC := $(FC)
+#      HDF5_INC = -I/usr/local/phdf5-fx/1.8.14/include
+      HDF5_INC = -I/usr/local/hdf5-fx/1.8.15/include
+      LIBS += -lhdf5_fortran -lhdf5hl_fortran -lhdf5 -lhdf5_hl
+endif

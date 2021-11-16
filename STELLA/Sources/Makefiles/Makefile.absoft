@@ -1,0 +1,24 @@
+# Compiler: Absoft Fortran
+# currently not supported
+
+FC =
+F90FLAGS = -Rp -N113
+
+ifndef USE_NR_RAN
+$(warning USE_NR_RAN cannot be off for Absoft Compiler)
+	override USE_NR_RAN = on
+endif
+
+ifdef STATIC
+endif
+
+ifdef DEBUG
+	F90FLAGS += -g -Rbcs
+	F90OPTFLAGS =
+else
+	F90OPTFLAGS += -O 
+endif
+
+F90FLAGS_SFX0 = -YEXT_SFX= 
+F90FLAGS_SFX1 = -YEXT_SFX=_
+F90FLAGS_SFX2 = -YEXT_SFX=__

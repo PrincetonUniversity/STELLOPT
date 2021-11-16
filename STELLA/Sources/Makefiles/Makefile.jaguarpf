@@ -1,0 +1,80 @@
+# Host: jaguarpf at ORNL (Cray XT5)
+#
+# modules:
+# fftw (version 2)
+# netcdf-hdf5parallel (come with hdf5-parallel) (Cray version)
+# (other choices of netcdf/hdf5 may work)
+#
+# In .login file:
+#    module load netcdf/3.6.2 fftw/2.1.5 hdf5/1.6.7_par totalview gnuplot 
+#    (RN recommends: module load netcdf-hdf5parallel fftw/2.1.5)
+#    setenv GK_SYSTEM jaguarpf
+#    setenv MAKEFLAGS -IMakefiles
+#    setenv MPICH_MSGS_PER_PROC 1000000
+#    setenv MPICH_PTL_UNEX_EVENTS 1000000
+
+COMPILER=pgi
+ifdef FFTW_DIR
+	USE_FFT = fftw
+else
+	override USE_FFT =
+endif
+ifdef NETCDF_DIR
+	USE_NETCDF = on
+else
+	ifdef CRAY_NETCDF_DIR
+		CRAY_NETCDF = on
+		USE_NETCDF = on
+	else
+		override USE_NETCDF =
+	endif
+endif
+ifdef HDF5_DIR
+	USE_HDF5 = on
+	ifdef CRAY_HDF5_DIR
+		CRAY_HDF5 = on
+	endif
+else
+	ifdef CRAY_HDF5_DIR
+		CRAY_HDF5 = on
+		USE_HDF5 = on
+	else
+		override USE_HDF5 =
+	endif
+endif
+ifdef PGPLOT_DIR
+	PGPLOT_LIB = -lpgplot -L$$PGPLOT_DIR
+endif
+
+include Makefile.XT5
+
+include Makefile.$(COMPILER)
+
+FC=ftn
+CC=cc
+ifdef USE_MPI
+	MPIFC = ftn
+	MPICC = cc
+endif
+ifdef CRAY_HDF5
+	H5FC = ftn
+	H5FC_par = ftn
+	H5CC = cc
+	H5CC_par = cc
+endif
+
+ifeq ($(USE_FFT),fftw)
+	FFT_INC = $$FFTW_INCLUDE_OPTS
+	ifdef DBLE
+		FFT_LIB = $$FFTW_POST_LINK_OPTS -ldrfftw -ldfftw
+	else
+		FFT_LIB = $$FFTW_POST_LINK_OPTS -lsrfftw -lsfftw
+	endif
+endif
+
+ifdef USE_NETCDF
+	ifndef CRAY_NETCDF
+		NETCDF_INC = -I$$NETCDF_DIR/include
+		NETCDF_LIB = -L$$NETCDF_DIR/lib -lnetcdf
+	endif
+endif

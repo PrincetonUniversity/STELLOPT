@@ -1,0 +1,43 @@
+# Makefile for Ubuntu 14.04 LTS
+# Maintainer: ferdinand.vanwyk@physics.ox.ac.uk
+
+# Before building install these packages
+#
+# gcc openmpi-bin gfortran openmpi-bin libopenmpi-dev libfftw3-3 
+# libfftw3-mpi-dev libfftw3-dev libfftw3-bin libnetcdf-dev netcdf-bin
+
+define STANDARD_SYSTEM_CONFIGURATION
+echo Before building install these packages\n\
+echo gcc\n\
+echo gfortran\n\
+echo openmpi-bin\n\
+echo libopenmpi-dev\n\
+echo libfftw3-3\n\
+echo libfftw3-mpi-dev\n\
+echo libfftw3-dev\n\
+echo libfftw3-bin\n\
+echo libnetcdf-dev\n\
+echo netcdf-bin\n\
+echo \n\
+echo No module configuration required\n\
+export MAKEFLAGS='-j 6 -I Makefiles'\n
+endef
+
+
+COMPILER=gnu-gfortran
+USE_HDF5=
+include Makefile.$(COMPILER)
+
+USE_LOCAL_SPFUNC=on
+
+ifeq ($(USE_FFT),fftw3)
+	FFT_LIB = -L/usr/lib -L/usr/lib/x86_64-linux-gnu/ -lfftw3 -lfftw3f
+endif
+ifeq ($(USE_FFT),fftw)
+	FFT_LIB = -L/usr/lib -lrfftw -lfftw
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/usr/include
+	NETCDF_LIB = -L/usr/lib -lnetcdf -lnetcdff
+endif

@@ -1,0 +1,34 @@
+# simple local makefile by CMR, DD for 64bit fedora linux boxes 
+# assumes installations of:
+#        gfortran 
+#        fftw3
+#        netcdf, openmpi
+
+COMPILER=gnu-gfortran
+include Makefile.$(COMPILER)
+
+USE_LOCAL_SPFUNC=on
+USE_FFT=fftw3
+LIB_DIR=/usr/lib64
+
+# CMR: fftw locations evolve with Fedora => might need to change FFT_LIB
+#      Following works for Fedora 16
+ifeq ($(USE_FFT),fftw)
+     ifdef DBLE
+                #FFT_LIB = ${LIB_DIR} -ldfftw -ldrfftw # DOESN'T WORK!!
+                FFT_LIB = -L${LIB_DIR} -lfftw
+     else
+                FFT_LIB = -L${LIB_DIR} -lfftwf
+     endif
+else 
+     ifdef DBLE
+                FFT_LIB = -L${LIB_DIR} -lfftw3
+     else
+                FFT_LIB = -L${LIB_DIR} -lfftw3f
+     endif
+endif
+
+ifdef USE_NETCDF
+        NETCDF_INC = -I/usr/lib64/gfortran/modules/ #Needed if not compiling with mpi
+        NETCDF_LIB = -L${LIB_DIR} -lnetcdff -lnetcdf
+endif

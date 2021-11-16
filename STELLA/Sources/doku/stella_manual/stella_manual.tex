@@ -1,0 +1,174 @@
+
+\documentclass[11pt,twoside,singlespace]{report}
+
+\setlength{\topmargin}{0pt}
+\setlength{\textheight}{619pt}				
+\setlength{\oddsidemargin}{18pt}	
+\setlength{\evensidemargin}{18pt}	
+\setlength{\textwidth}{432pt}	
+
+\usepackage{amssymb,amsmath} 
+\usepackage{graphicx}
+\usepackage{tabularx}  
+\usepackage{longtable}
+\usepackage{verbatim}  
+\usepackage[usenames]{color}
+\usepackage[square]{natbib}
+\usepackage{fancyhdr}
+\usepackage{url}
+\usepackage[colorlinks=true,allcolors=blue,linkcolor=blue]{hyperref}
+\usepackage{bm}
+\usepackage{float}
+\usepackage{tcolorbox}
+\usepackage{hhtensor}
+\usepackage{xstring}
+
+\graphicspath{{figures/}}
+
+\DeclareRobustCommand*\matr[1]{\ushortd{#1}}
+\DeclareRobustCommand*\vec[1]{\ushort{#1}}
+
+\newcommand{\notf}{{\ttfamily .NOT.}}
+\newcommand{\true}{{\ttfamily .TRUE.}}
+\newcommand{\false}{{\ttfamily .FALSE.}}
+\newcommand{\stella}{{\ttfamily stella}}
+\newcommand{\DKES}{{\ttfamily DKES}}
+\newcommand{\JMP}{{\ttfamily JMP}}
+\newcommand{\VMEC}{{\ttfamily VMEC}}
+\newcommand{\SFINCS}{{\ttfamily SFINCS}}
+\newcommand{\EUTERPE}{{\ttfamily EUTERPE}}
+\newcommand{\FORTEC}{{\ttfamily FORTEC-3D}}
+\newcommand{\BOOZERXFORM}{{\ttfamily BOOZER\_XFORM}}
+\newcommand{\NEO}{{\ttfamily NEO}}
+\newcommand{\MPI}{{\ttfamily MPI}}
+\newcommand{\FFTW}{{\ttfamily FFTW}}
+\newcommand{\PETSC}{{\ttfamily PETSc}}
+
+\newcommand{\todo}[1]{\textcolor{red}{#1}}
+\newcommand{\tocheck}[1]{\textcolor{blue}{#1}}
+\newcommand{\ttt}[1]{\texttt{#1}}
+
+\newcommand{\Nfp}{N_{\text{fp}}}
+\newcommand{\bb}{\mathbf{b}}
+\newcommand{\bB}{\mathbf{B}}
+\newcommand{\bF}{\mathbf{F}}
+\newcommand{\bj}{\mathbf{j}}
+\newcommand{\bk}{\boldsymbol{\kappa}}
+\newcommand{\bPi}{\boldsymbol{\pi}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bE}{\mathbf{E}}
+\newcommand{\es}{\mathbf{e}_\psi}
+\newcommand{\epol}{\mathbf{e}_\theta}
+\newcommand{\etor}{\mathbf{e}_\zeta}
+\newcommand{\epolt}{\mathbf{e}_{\tilde{\theta}}}
+\newcommand{\fsa}[1]{\left\langle{#1}\right\rangle}
+\newcommand{\cL}{{\cal L}}
+\newcommand{\vpar}{{v_{||}}}
+\newcommand{\bun}{\hat{\mathbf{b}}}
+\newcommand{\bv}{{\mathbf{v}}}
+\newcommand{\bR}{{\mathbf{R}}}
+\newcommand{\dd}{{\rm d}}
+\newcommand{\bnabla}{\mathbf{\nabla}}
+
+\newcommand{\makesub}[1]{
+  \saveexpandmode\noexpandarg
+  \StrSubstitute{#1}{\_}{_}[\temp]
+  \restoreexpandmode
+}
+\newcommand{\mytarget}[1]{
+  \makesub{#1}
+  \hypertarget{\temp}{#1}
+}
+\newcommand{\mylink}[1]{
+  \makesub{#1}
+  \hyperlink{\temp}{#1}
+}
+
+\newcommand{\vlink}[1]{{\ttfamily \mylink{#1}}}
+
+
+\newcommand{\ivar}[7]{
+\vskip-0.1cm\setlength{\parindent}{0cm} \hrulefill\vskip-0.1cm
+\begin{table}[H]
+\begin{tabularx}{\textwidth}{lX}
+{\ttfamily \bfseries \mytarget{#1}} &\\
+{\it Purpose:} & #2  \\ [-0.2cm] 
+{\it Type:} & #3  \\ [-0.2cm] 
+{\it Effect:} & #4  \\ [-0.2cm] 
+{\it Default value:} & #5  \\ [-0.2cm] 
+{\it Misc.:} & #6 \\ [-0.2cm] 
+{\it Ref.:} & #7
+\end{tabularx}\end{table}}
+
+\newcommand{\myvar}[4]{
+  \setlength{\parindent}{0cm}
+  \begin{table}[H]
+    \begin{tabularx}{\textwidth}{lX}
+      \multicolumn{2}{l}{#1} \\
+      \hline
+      {\it Description} & #2 \\
+      {\it Type} & #3  \\
+      {\it Default} & #4 \\
+      \hline
+    \end{tabularx}\end{table}
+}
+
+
+\newcommand{\myvarv}[5]{
+  \setlength{\parindent}{0cm}
+  \begin{table}[H]
+    \begin{tabularx}{\textwidth}{lX}
+      \multicolumn{2}{l}{#1} \\
+      \hline
+      {\it Description} & #2 \\
+      {\it Values} & #3 \\
+      {\it Type} & #4  \\
+      {\it Default} & #5 \\
+      \hline
+    \end{tabularx}\end{table}
+}
+
+
+
+
+
+
+
+
+\begin{document} 
+
+%Cover page and table of contents
+\include{cover}
+\fancyhf{}
+\cfoot{\thepage}
+\include{preface}
+\tableofcontents 
+\clearpage  
+\pagestyle{fancy}
+\fancyhf{}
+\lhead[\thepage]{\leftmark}
+\rhead[\leftmark]{\thepage}
+\renewcommand{\chaptermark}[1]{\markboth{\sc{\chaptername\ \thechapter.\ #1}}{}}
+\setlength{\headsep}{6pt}
+\setlength{\parskip}{0pt plus 0pt minus 0pt}
+
+%\UseRawInputEncoding
+
+%Contents
+\include{introduction}
+%%%%%
+\include{installation_and_run}
+\include{input}
+%%%%%
+\include{output}
+\include{diagnostics}
+% Appendices
+\appendix
+
+ 
+\bibliographystyle{plainnat}
+\bibliography{./bibliography}
+
+\end{document}
+
+

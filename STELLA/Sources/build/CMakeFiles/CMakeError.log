@@ -1,0 +1,2612 @@
+The MPI test test_mpi for Fortran in mode F77_HEADER failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_bf401/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_bf401.dir/build.make CMakeFiles/cmTC_bf401.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_bf401.dir/test_mpi.f90.o
+/usr/bin/f95    -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_bf401.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3: Error: Can't open included file 'mpif.h'
+gmake[1]: *** [CMakeFiles/cmTC_bf401.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_bf401/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F90_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_d5738/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_d5738.dir/build.make CMakeFiles/cmTC_d5738.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_d5738.dir/test_mpi.f90.o
+/usr/bin/f95    -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_d5738.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi
+          1
+Error Fatal: No se puede abrir el fichero de módulo 'mpi.mod' para lectura en (1): No existe el fichero o el directorio
+gmake[1]: *** [CMakeFiles/cmTC_d5738.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_d5738/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F08_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_0432b/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_0432b.dir/build.make CMakeFiles/cmTC_0432b.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_0432b.dir/test_mpi.f90.o
+/usr/bin/f95    -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_0432b.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi_f08
+          1
+Error Fatal: No se puede abrir el fichero de módulo 'mpi_f08.mod' para lectura en (1): No existe el fichero o el directorio
+gmake[1]: *** [CMakeFiles/cmTC_0432b.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_0432b/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER_NOKIND failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_5135a/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_5135a.dir/build.make CMakeFiles/cmTC_5135a.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_5135a.dir/test_mpi.f90.o
+/usr/bin/f95    -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_5135a.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3: Error: Can't open included file 'mpif.h'
+gmake[1]: *** [CMakeFiles/cmTC_5135a.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_5135a/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_46355/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_46355.dir/build.make CMakeFiles/cmTC_46355.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_46355.dir/test_mpi.f90.o
+/usr/bin/f95    -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_46355.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3: Error: Can't open included file 'mpif.h'
+gmake[1]: *** [CMakeFiles/cmTC_46355.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_46355/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F90_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_bf79e/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_bf79e.dir/build.make CMakeFiles/cmTC_bf79e.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_bf79e.dir/test_mpi.f90.o
+/usr/bin/f95    -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_bf79e.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi
+          1
+Error Fatal: No se puede abrir el fichero de módulo 'mpi.mod' para lectura en (1): No existe el fichero o el directorio
+gmake[1]: *** [CMakeFiles/cmTC_bf79e.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_bf79e/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F08_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_7ecd2/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_7ecd2.dir/build.make CMakeFiles/cmTC_7ecd2.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_7ecd2.dir/test_mpi.f90.o
+/usr/bin/f95    -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_7ecd2.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi_f08
+          1
+Error Fatal: No se puede abrir el fichero de módulo 'mpi_f08.mod' para lectura en (1): No existe el fichero o el directorio
+gmake[1]: *** [CMakeFiles/cmTC_7ecd2.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_7ecd2/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER_NOKIND failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_89af5/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_89af5.dir/build.make CMakeFiles/cmTC_89af5.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_89af5.dir/test_mpi.f90.o
+/usr/bin/f95    -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_89af5.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3: Error: Can't open included file 'mpif.h'
+gmake[1]: *** [CMakeFiles/cmTC_89af5.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_89af5/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_0eead/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_0eead.dir/build.make CMakeFiles/cmTC_0eead.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_0eead.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_0eead.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_0eead.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_0eead/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F90_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_fa84b/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_fa84b.dir/build.make CMakeFiles/cmTC_fa84b.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_fa84b.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_fa84b.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi
+          1
+Error Fatal: File 'mpi.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_fa84b.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_fa84b/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F08_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_29822/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_29822.dir/build.make CMakeFiles/cmTC_29822.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_29822.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_29822.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi_f08
+          1
+Error Fatal: File 'mpi_f08.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_29822.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_29822/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER_NOKIND failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_f57b3/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_f57b3.dir/build.make CMakeFiles/cmTC_f57b3.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_f57b3.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_f57b3.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_f57b3.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_f57b3/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_0922d/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_0922d.dir/build.make CMakeFiles/cmTC_0922d.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_0922d.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_0922d.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_0922d.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_0922d/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F90_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_3074a/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_3074a.dir/build.make CMakeFiles/cmTC_3074a.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_3074a.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_3074a.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi
+          1
+Error Fatal: File 'mpi.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_3074a.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_3074a/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F08_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_75656/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_75656.dir/build.make CMakeFiles/cmTC_75656.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_75656.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_75656.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi_f08
+          1
+Error Fatal: File 'mpi_f08.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_75656.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_75656/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER_NOKIND failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_23d6b/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_23d6b.dir/build.make CMakeFiles/cmTC_23d6b.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_23d6b.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_23d6b.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_23d6b.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_23d6b/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_bbe51/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_bbe51.dir/build.make CMakeFiles/cmTC_bbe51.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_bbe51.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_bbe51.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_bbe51.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_bbe51/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F90_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_a459b/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_a459b.dir/build.make CMakeFiles/cmTC_a459b.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_a459b.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_a459b.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi
+          1
+Error Fatal: File 'mpi.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_a459b.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_a459b/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F08_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_1669e/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_1669e.dir/build.make CMakeFiles/cmTC_1669e.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_1669e.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_1669e.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi_f08
+          1
+Error Fatal: File 'mpi_f08.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_1669e.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_1669e/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER_NOKIND failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_c1acf/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_c1acf.dir/build.make CMakeFiles/cmTC_c1acf.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_c1acf.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_c1acf.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_c1acf.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_c1acf/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_bcf69/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_bcf69.dir/build.make CMakeFiles/cmTC_bcf69.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_bcf69.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_bcf69.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_bcf69.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_bcf69/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F90_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_d2102/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_d2102.dir/build.make CMakeFiles/cmTC_d2102.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_d2102.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_d2102.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi
+          1
+Error Fatal: File 'mpi.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_d2102.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_d2102/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F08_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_cdfc3/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_cdfc3.dir/build.make CMakeFiles/cmTC_cdfc3.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_cdfc3.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_cdfc3.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi_f08
+          1
+Error Fatal: File 'mpi_f08.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_cdfc3.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_cdfc3/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER_NOKIND failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_3a4e1/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_3a4e1.dir/build.make CMakeFiles/cmTC_3a4e1.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_3a4e1.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_3a4e1.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_3a4e1.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_3a4e1/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_8d39d/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_8d39d.dir/build.make CMakeFiles/cmTC_8d39d.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_8d39d.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_8d39d.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_8d39d.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_8d39d/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F90_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_dbbff/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_dbbff.dir/build.make CMakeFiles/cmTC_dbbff.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_dbbff.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_dbbff.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi
+          1
+Error Fatal: File 'mpi.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_dbbff.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_dbbff/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F08_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_fb423/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_fb423.dir/build.make CMakeFiles/cmTC_fb423.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_fb423.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_fb423.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi_f08
+          1
+Error Fatal: File 'mpi_f08.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_fb423.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_fb423/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER_NOKIND failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_afffd/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_afffd.dir/build.make CMakeFiles/cmTC_afffd.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_afffd.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_afffd.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_afffd.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_afffd/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_822b6/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_822b6.dir/build.make CMakeFiles/cmTC_822b6.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_822b6.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_822b6.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_822b6.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_822b6/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F90_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_b96bf/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_b96bf.dir/build.make CMakeFiles/cmTC_b96bf.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_b96bf.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_b96bf.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi
+          1
+Error Fatal: File 'mpi.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_b96bf.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_b96bf/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F08_MODULE failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_f2ab9/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_f2ab9.dir/build.make CMakeFiles/cmTC_f2ab9.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_f2ab9.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_f2ab9.dir/test_mpi.f90.o
+/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:2.10:
+
+      use mpi_f08
+          1
+Error Fatal: File 'mpi_f08.mod' opened at (1) is not a GNU Fortran module file
+gmake[1]: *** [CMakeFiles/cmTC_f2ab9.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_f2ab9/fast] Error 2
+
+
+
+The MPI test test_mpi for Fortran in mode F77_HEADER_NOKIND failed to compile with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_d7ee9/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_d7ee9.dir/build.make CMakeFiles/cmTC_d7ee9.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_d7ee9.dir/test_mpi.f90.o
+/usr/bin/f95  -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/include -I/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-4.0.3-pknvyjqy5moogwfifjfnmducss4tk6fr/lib -fexceptions -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90 -o CMakeFiles/cmTC_d7ee9.dir/test_mpi.f90.o
+mpif-sizeof.h:66.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:72.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:78.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:84.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:90.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:96.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:102.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:108.41:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      CHARACTER, DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                         1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:171.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:178.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:185.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:192.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:199.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:206.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:213.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:220.48:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL128), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                                1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:283.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:290.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:297.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:304.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:311.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:318.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:325.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:332.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL32), DIMENSION(1,1,1,1,1,1,1,1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+mpif-sizeof.h:395.47:
+    Incluído en mpif.h:63:
+    Incluído en /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/FindMPI/test_mpi.f90:3:
+
+      COMPLEX(REAL64), DIMENSION(1,1,1,1,1,1,1,*)::x
+                                               1
+Error: La especificación de matriz en (1) tiene más de 7 dimensiones
+Error Fatal: Error al alcanzar el límite de cuenta de 25.
+gmake[1]: *** [CMakeFiles/cmTC_d7ee9.dir/test_mpi.f90.o] Error 1
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+gmake: *** [cmTC_d7ee9/fast] Error 2
+
+
+

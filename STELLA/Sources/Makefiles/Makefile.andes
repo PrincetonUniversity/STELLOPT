@@ -1,0 +1,19 @@
+# Host: andes? (discovery at Dartmouth)
+
+COMPILER=pgi
+#COMPILER=intel
+
+include Makefile.$(COMPILER)
+
+F90FLAGS += -i-static -static-libcxa -w -r8
+
+ifeq ($(USE_FFT),fftw)
+	FFT_LIB = libfftw.a librfftw.a
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/usr/local/include/netcdf
+endif
+
+LIBS += -L/usr/local/toolworks/totalview.8.1.0-0/linux-x86-64/lib -ltvheep_64 \
+	-WI,-rpath,/usr/local/toolworks/totalview.8.1.0-0/lib

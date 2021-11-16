@@ -1,0 +1,254 @@
+The system is: Linux - 3.10.0-957.12.2.el7.x86_64 - x86_64
+Compiling the Fortran compiler identification source file "CMakeFortranCompilerId.F" succeeded.
+Compiler: /usr/bin/f95 
+Build flags: 
+Id flags: -v 
+
+The output was:
+0
+Conduciendo: /usr/bin/f95 -v CMakeFortranCompilerId.F -l gfortran -l m -shared-libgcc
+Usando especificaciones internas.
+COLLECT_GCC=/usr/bin/f95
+COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/lto-wrapper
+Objetivo: x86_64-redhat-linux
+Configurado con: ../configure --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-linker-hash-style=gnu --enable-languages=c,c++,objc,obj-c++,java,fortran,ada,go,lto --enable-plugin --enable-initfini-array --disable-libgcj --with-isl=/builddir/build/BUILD/gcc-4.8.5-20150702/obj-x86_64-redhat-linux/isl-install --with-cloog=/builddir/build/BUILD/gcc-4.8.5-20150702/obj-x86_64-redhat-linux/cloog-install --enable-gnu-indirect-function --with-tune=generic --with-arch_32=x86-64 --build=x86_64-redhat-linux
+Modelo de hilos: posix
+gcc versión 4.8.5 20150623 (Red Hat 4.8.5-36) (GCC) 
+COLLECT_GCC_OPTIONS='-v' '-shared-libgcc' '-mtune=generic' '-march=x86-64'
+ /usr/libexec/gcc/x86_64-redhat-linux/4.8.5/f951 CMakeFortranCompilerId.F -ffixed-form -cpp=/tmp/cc9iZDUf.f90 -quiet -v CMakeFortranCompilerId.F -quiet -dumpbase CMakeFortranCompilerId.F -mtune=generic -march=x86-64 -auxbase CMakeFortranCompilerId -version -fintrinsic-modules-path /usr/lib/gcc/x86_64-redhat-linux/4.8.5/finclude -o /tmp/ccbtU1zw.s
+GNU Fortran (GCC) versión 4.8.5 20150623 (Red Hat 4.8.5-36) (x86_64-redhat-linux)
+	compilado por GNU C versión 4.8.5 20150623 (Red Hat 4.8.5-36), GMP versión 6.0.0, MPFR versión 3.1.1, MPC versión 1.0.1
+aviso: el encabezado GMP versión 6.0.0 difiere de la versión de la biblioteca 6.1.2.
+GGC heurísticas: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+se descarta el directorio inexistente "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include-fixed"
+se descarta el directorio inexistente "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../x86_64-redhat-linux/include"
+la búsqueda de #include "..." inicia aquí:
+la búsqueda de #include <...> inicia aquí:
+ /usr/lib/gcc/x86_64-redhat-linux/4.8.5/finclude
+ /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/freetype-2.9.1-3cmv5kwusp6ze4bweuopbyhdybogjka2/include/freetype2
+ /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/libxml2-2.9.8-bqpperpne5khnokjv4jgy4c27xmefqpp/include/libxml2
+ /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include
+ /usr/local/include
+ /usr/include
+Fin de la lista de búsqueda.
+GNU Fortran (GCC) versión 4.8.5 20150623 (Red Hat 4.8.5-36) (x86_64-redhat-linux)
+	compilado por GNU C versión 4.8.5 20150623 (Red Hat 4.8.5-36), GMP versión 6.0.0, MPFR versión 3.1.1, MPC versión 1.0.1
+aviso: el encabezado GMP versión 6.0.0 difiere de la versión de la biblioteca 6.1.2.
+GGC heurísticas: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+COLLECT_GCC_OPTIONS='-v' '-shared-libgcc' '-mtune=generic' '-march=x86-64'
+ as -v --64 -o /tmp/cclEEinN.o /tmp/ccbtU1zw.s
+GNU ensamblador versión 2.27 (x86_64-redhat-linux) utilizando BFD versión version 2.27-34.base.el7
+Leyendo especificaciones de /usr/lib/gcc/x86_64-redhat-linux/4.8.5/libgfortran.spec
+renombrando la especificación lib a liborig
+COLLECT_GCC_OPTIONS='-v' '-shared-libgcc' '-mtune=generic' '-march=x86-64'
+COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/:/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/
+LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS='-v' '-shared-libgcc' '-mtune=generic' '-march=x86-64'
+ /usr/libexec/gcc/x86_64-redhat-linux/4.8.5/collect2 --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtbegin.o -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5 -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../.. /tmp/cclEEinN.o -lgfortran -lm -lgcc_s -lgcc -lquadmath -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtend.o /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crtn.o
+
+
+Compilation of the Fortran compiler identification source "CMakeFortranCompilerId.F" produced "a.out"
+
+The Fortran compiler identification is GNU, found in "/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/3.20.2/CompilerIdFortran/a.out"
+
+Detecting Fortran compiler ABI info compiled with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_42c8c/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_42c8c.dir/build.make CMakeFiles/cmTC_42c8c.dir/build
+gmake[1]: Entering directory `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o
+/usr/bin/f95   -v -c /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/cmake-3.20.2-pllpk5kr4z52pew2x34u5gfmsofj5c62/share/cmake-3.20/Modules/CMakeFortranCompilerABI.F -o CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o
+Using built-in specs.
+COLLECT_GCC=/usr/bin/f95
+Target: x86_64-redhat-linux
+Configured with: ../configure --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-linker-hash-style=gnu --enable-languages=c,c++,objc,obj-c++,java,fortran,ada,go,lto --enable-plugin --enable-initfini-array --disable-libgcj --with-isl=/builddir/build/BUILD/gcc-4.8.5-20150702/obj-x86_64-redhat-linux/isl-install --with-cloog=/builddir/build/BUILD/gcc-4.8.5-20150702/obj-x86_64-redhat-linux/cloog-install --enable-gnu-indirect-function --with-tune=generic --with-arch_32=x86-64 --build=x86_64-redhat-linux
+Thread model: posix
+gcc version 4.8.5 20150623 (Red Hat 4.8.5-36) (GCC) 
+COLLECT_GCC_OPTIONS='-v' '-c' '-o' 'CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o' '-mtune=generic' '-march=x86-64'
+ /usr/libexec/gcc/x86_64-redhat-linux/4.8.5/f951 /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/cmake-3.20.2-pllpk5kr4z52pew2x34u5gfmsofj5c62/share/cmake-3.20/Modules/CMakeFortranCompilerABI.F -ffixed-form -cpp=/tmp/cc86U5zM.f90 -quiet -v /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/cmake-3.20.2-pllpk5kr4z52pew2x34u5gfmsofj5c62/share/cmake-3.20/Modules/CMakeFortranCompilerABI.F -quiet -dumpbase CMakeFortranCompilerABI.F -mtune=generic -march=x86-64 -auxbase-strip CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o -version -fintrinsic-modules-path /usr/lib/gcc/x86_64-redhat-linux/4.8.5/finclude -o /tmp/cciciRA4.s
+GNU Fortran (GCC) version 4.8.5 20150623 (Red Hat 4.8.5-36) (x86_64-redhat-linux)
+	compiled by GNU C version 4.8.5 20150623 (Red Hat 4.8.5-36), GMP version 6.0.0, MPFR version 3.1.1, MPC version 1.0.1
+warning: GMP header version 6.0.0 differs from library version 6.1.2.
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include-fixed"
+ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../x86_64-redhat-linux/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ /usr/lib/gcc/x86_64-redhat-linux/4.8.5/finclude
+ /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/freetype-2.9.1-3cmv5kwusp6ze4bweuopbyhdybogjka2/include/freetype2
+ /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/libxml2-2.9.8-bqpperpne5khnokjv4jgy4c27xmefqpp/include/libxml2
+ /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include
+ /usr/local/include
+ /usr/include
+End of search list.
+GNU Fortran (GCC) version 4.8.5 20150623 (Red Hat 4.8.5-36) (x86_64-redhat-linux)
+	compiled by GNU C version 4.8.5 20150623 (Red Hat 4.8.5-36), GMP version 6.0.0, MPFR version 3.1.1, MPC version 1.0.1
+warning: GMP header version 6.0.0 differs from library version 6.1.2.
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+COLLECT_GCC_OPTIONS='-v' '-c' '-o' 'CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o' '-mtune=generic' '-march=x86-64'
+ as -v --64 -o CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o /tmp/cciciRA4.s
+GNU assembler version 2.27 (x86_64-redhat-linux) using BFD version version 2.27-34.base.el7
+COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/:/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/
+LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS='-v' '-c' '-o' 'CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o' '-mtune=generic' '-march=x86-64'
+Linking Fortran executable cmTC_42c8c
+/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/cmake-3.20.2-pllpk5kr4z52pew2x34u5gfmsofj5c62/bin/cmake -E cmake_link_script CMakeFiles/cmTC_42c8c.dir/link.txt --verbose=1
+/usr/bin/f95  -v CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o -o cmTC_42c8c 
+Driving: /usr/bin/f95 -v CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o -o cmTC_42c8c -l gfortran -l m -shared-libgcc
+Using built-in specs.
+COLLECT_GCC=/usr/bin/f95
+COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/lto-wrapper
+Target: x86_64-redhat-linux
+Configured with: ../configure --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-linker-hash-style=gnu --enable-languages=c,c++,objc,obj-c++,java,fortran,ada,go,lto --enable-plugin --enable-initfini-array --disable-libgcj --with-isl=/builddir/build/BUILD/gcc-4.8.5-20150702/obj-x86_64-redhat-linux/isl-install --with-cloog=/builddir/build/BUILD/gcc-4.8.5-20150702/obj-x86_64-redhat-linux/cloog-install --enable-gnu-indirect-function --with-tune=generic --with-arch_32=x86-64 --build=x86_64-redhat-linux
+Thread model: posix
+gcc version 4.8.5 20150623 (Red Hat 4.8.5-36) (GCC) 
+Reading specs from /usr/lib/gcc/x86_64-redhat-linux/4.8.5/libgfortran.spec
+rename spec lib to liborig
+COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_42c8c' '-shared-libgcc' '-mtune=generic' '-march=x86-64'
+COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/:/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/
+LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_42c8c' '-shared-libgcc' '-mtune=generic' '-march=x86-64'
+ /usr/libexec/gcc/x86_64-redhat-linux/4.8.5/collect2 --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_42c8c /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtbegin.o -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5 -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../.. CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o -lgfortran -lm -lgcc_s -lgcc -lquadmath -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtend.o /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crtn.o
+gmake[1]: Leaving directory `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+
+
+
+Parsed Fortran implicit include dir info from above output: rv=done
+  found start of include info
+  found start of implicit include info
+    add: [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/finclude]
+    add: [/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/freetype-2.9.1-3cmv5kwusp6ze4bweuopbyhdybogjka2/include/freetype2]
+    add: [/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/libxml2-2.9.8-bqpperpne5khnokjv4jgy4c27xmefqpp/include/libxml2]
+    add: [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include]
+    add: [/usr/local/include]
+    add: [/usr/include]
+  end of search list found
+  collapse include dir [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/finclude] ==> [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/finclude]
+  collapse include dir [/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/freetype-2.9.1-3cmv5kwusp6ze4bweuopbyhdybogjka2/include/freetype2] ==> [/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/freetype-2.9.1-3cmv5kwusp6ze4bweuopbyhdybogjka2/include/freetype2]
+  collapse include dir [/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/libxml2-2.9.8-bqpperpne5khnokjv4jgy4c27xmefqpp/include/libxml2] ==> [/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/libxml2-2.9.8-bqpperpne5khnokjv4jgy4c27xmefqpp/include/libxml2]
+  collapse include dir [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include] ==> [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include]
+  collapse include dir [/usr/local/include] ==> [/usr/local/include]
+  collapse include dir [/usr/include] ==> [/usr/include]
+  implicit include dirs: [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/finclude;/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/freetype-2.9.1-3cmv5kwusp6ze4bweuopbyhdybogjka2/include/freetype2;/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/libxml2-2.9.8-bqpperpne5khnokjv4jgy4c27xmefqpp/include/libxml2;/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include;/usr/local/include;/usr/include]
+
+
+Parsed Fortran implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_42c8c/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_42c8c.dir/build.make CMakeFiles/cmTC_42c8c.dir/build]
+  ignore line: [gmake[1]: Entering directory `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp']
+  ignore line: [Building Fortran object CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o]
+  ignore line: [/usr/bin/f95   -v -c /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/cmake-3.20.2-pllpk5kr4z52pew2x34u5gfmsofj5c62/share/cmake-3.20/Modules/CMakeFortranCompilerABI.F -o CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/usr/bin/f95]
+  ignore line: [Target: x86_64-redhat-linux]
+  ignore line: [Configured with: ../configure --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-linker-hash-style=gnu --enable-languages=c c++ objc obj-c++ java fortran ada go lto --enable-plugin --enable-initfini-array --disable-libgcj --with-isl=/builddir/build/BUILD/gcc-4.8.5-20150702/obj-x86_64-redhat-linux/isl-install --with-cloog=/builddir/build/BUILD/gcc-4.8.5-20150702/obj-x86_64-redhat-linux/cloog-install --enable-gnu-indirect-function --with-tune=generic --with-arch_32=x86-64 --build=x86_64-redhat-linux]
+  ignore line: [Thread model: posix]
+  ignore line: [gcc version 4.8.5 20150623 (Red Hat 4.8.5-36) (GCC) ]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-c' '-o' 'CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o' '-mtune=generic' '-march=x86-64']
+  ignore line: [ /usr/libexec/gcc/x86_64-redhat-linux/4.8.5/f951 /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/cmake-3.20.2-pllpk5kr4z52pew2x34u5gfmsofj5c62/share/cmake-3.20/Modules/CMakeFortranCompilerABI.F -ffixed-form -cpp=/tmp/cc86U5zM.f90 -quiet -v /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/cmake-3.20.2-pllpk5kr4z52pew2x34u5gfmsofj5c62/share/cmake-3.20/Modules/CMakeFortranCompilerABI.F -quiet -dumpbase CMakeFortranCompilerABI.F -mtune=generic -march=x86-64 -auxbase-strip CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o -version -fintrinsic-modules-path /usr/lib/gcc/x86_64-redhat-linux/4.8.5/finclude -o /tmp/cciciRA4.s]
+  ignore line: [GNU Fortran (GCC) version 4.8.5 20150623 (Red Hat 4.8.5-36) (x86_64-redhat-linux)]
+  ignore line: [	compiled by GNU C version 4.8.5 20150623 (Red Hat 4.8.5-36)  GMP version 6.0.0  MPFR version 3.1.1  MPC version 1.0.1]
+  ignore line: [warning: GMP header version 6.0.0 differs from library version 6.1.2.]
+  ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+  ignore line: [ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include-fixed"]
+  ignore line: [ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../x86_64-redhat-linux/include"]
+  ignore line: [#include "..." search starts here:]
+  ignore line: [#include <...> search starts here:]
+  ignore line: [ /usr/lib/gcc/x86_64-redhat-linux/4.8.5/finclude]
+  ignore line: [ /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/freetype-2.9.1-3cmv5kwusp6ze4bweuopbyhdybogjka2/include/freetype2]
+  ignore line: [ /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/libxml2-2.9.8-bqpperpne5khnokjv4jgy4c27xmefqpp/include/libxml2]
+  ignore line: [ /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include]
+  ignore line: [ /usr/local/include]
+  ignore line: [ /usr/include]
+  ignore line: [End of search list.]
+  ignore line: [GNU Fortran (GCC) version 4.8.5 20150623 (Red Hat 4.8.5-36) (x86_64-redhat-linux)]
+  ignore line: [	compiled by GNU C version 4.8.5 20150623 (Red Hat 4.8.5-36)  GMP version 6.0.0  MPFR version 3.1.1  MPC version 1.0.1]
+  ignore line: [warning: GMP header version 6.0.0 differs from library version 6.1.2.]
+  ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-c' '-o' 'CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o' '-mtune=generic' '-march=x86-64']
+  ignore line: [ as -v --64 -o CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o /tmp/cciciRA4.s]
+  ignore line: [GNU assembler version 2.27 (x86_64-redhat-linux) using BFD version version 2.27-34.base.el7]
+  ignore line: [COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/:/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/]
+  ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../:/lib/:/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-c' '-o' 'CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o' '-mtune=generic' '-march=x86-64']
+  ignore line: [Linking Fortran executable cmTC_42c8c]
+  ignore line: [/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/cmake-3.20.2-pllpk5kr4z52pew2x34u5gfmsofj5c62/bin/cmake -E cmake_link_script CMakeFiles/cmTC_42c8c.dir/link.txt --verbose=1]
+  ignore line: [/usr/bin/f95  -v CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o -o cmTC_42c8c ]
+  ignore line: [Driving: /usr/bin/f95 -v CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o -o cmTC_42c8c -l gfortran -l m -shared-libgcc]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/usr/bin/f95]
+  ignore line: [COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/lto-wrapper]
+  ignore line: [Target: x86_64-redhat-linux]
+  ignore line: [Configured with: ../configure --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-linker-hash-style=gnu --enable-languages=c c++ objc obj-c++ java fortran ada go lto --enable-plugin --enable-initfini-array --disable-libgcj --with-isl=/builddir/build/BUILD/gcc-4.8.5-20150702/obj-x86_64-redhat-linux/isl-install --with-cloog=/builddir/build/BUILD/gcc-4.8.5-20150702/obj-x86_64-redhat-linux/cloog-install --enable-gnu-indirect-function --with-tune=generic --with-arch_32=x86-64 --build=x86_64-redhat-linux]
+  ignore line: [Thread model: posix]
+  ignore line: [gcc version 4.8.5 20150623 (Red Hat 4.8.5-36) (GCC) ]
+  ignore line: [Reading specs from /usr/lib/gcc/x86_64-redhat-linux/4.8.5/libgfortran.spec]
+  ignore line: [rename spec lib to liborig]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_42c8c' '-shared-libgcc' '-mtune=generic' '-march=x86-64']
+  ignore line: [COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/:/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/]
+  ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../:/lib/:/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_42c8c' '-shared-libgcc' '-mtune=generic' '-march=x86-64']
+  link line: [ /usr/libexec/gcc/x86_64-redhat-linux/4.8.5/collect2 --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_42c8c /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtbegin.o -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5 -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../.. CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o -lgfortran -lm -lgcc_s -lgcc -lquadmath -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtend.o /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crtn.o]
+    arg [/usr/libexec/gcc/x86_64-redhat-linux/4.8.5/collect2] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--no-add-needed] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_x86_64] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_42c8c] ==> ignore
+    arg [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crt1.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crt1.o]
+    arg [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crti.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crti.o]
+    arg [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtbegin.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtbegin.o]
+    arg [-L/usr/lib/gcc/x86_64-redhat-linux/4.8.5] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/4.8.5]
+    arg [-L/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64]
+    arg [-L/lib/../lib64] ==> dir [/lib/../lib64]
+    arg [-L/usr/lib/../lib64] ==> dir [/usr/lib/../lib64]
+    arg [-L/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../..] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../..]
+    arg [CMakeFiles/cmTC_42c8c.dir/CMakeFortranCompilerABI.F.o] ==> ignore
+    arg [-lgfortran] ==> lib [gfortran]
+    arg [-lm] ==> lib [m]
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-lquadmath] ==> lib [quadmath]
+    arg [-lm] ==> lib [m]
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-lc] ==> lib [c]
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [-lgcc] ==> lib [gcc]
+    arg [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtend.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtend.o]
+    arg [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crtn.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crtn.o]
+  collapse obj [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crt1.o] ==> [/usr/lib64/crt1.o]
+  collapse obj [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crti.o] ==> [/usr/lib64/crti.o]
+  collapse obj [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crtn.o] ==> [/usr/lib64/crtn.o]
+  collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/4.8.5] ==> [/usr/lib/gcc/x86_64-redhat-linux/4.8.5]
+  collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64] ==> [/usr/lib64]
+  collapse library dir [/lib/../lib64] ==> [/lib64]
+  collapse library dir [/usr/lib/../lib64] ==> [/usr/lib64]
+  collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../..] ==> [/usr/lib]
+  implicit libs: [gfortran;m;gcc_s;gcc;quadmath;m;gcc_s;gcc;c;gcc_s;gcc]
+  implicit objs: [/usr/lib64/crt1.o;/usr/lib64/crti.o;/usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtbegin.o;/usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtend.o;/usr/lib64/crtn.o]
+  implicit dirs: [/usr/lib/gcc/x86_64-redhat-linux/4.8.5;/usr/lib64;/lib64;/usr/lib]
+  implicit fwks: []
+
+
+Determining if the Fortran compiler supports Fortran 90 passed with the following output:
+Change Dir: /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_67172/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_67172.dir/build.make CMakeFiles/cmTC_67172.dir/build
+gmake[1]: se ingresa al directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+Building Fortran object CMakeFiles/cmTC_67172.dir/testFortranCompilerF90.f90.o
+/usr/bin/f95    -c /mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp/testFortranCompilerF90.f90 -o CMakeFiles/cmTC_67172.dir/testFortranCompilerF90.f90.o
+Linking Fortran executable cmTC_67172
+/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/cmake-3.20.2-pllpk5kr4z52pew2x34u5gfmsofj5c62/bin/cmake -E cmake_link_script CMakeFiles/cmTC_67172.dir/link.txt --verbose=1
+/usr/bin/f95 CMakeFiles/cmTC_67172.dir/testFortranCompilerF90.f90.o -o cmTC_67172 
+gmake[1]: se sale del directorio `/mnt/lustre/home/u5200/stella_versions/stella_last/build/CMakeFiles/CMakeTmp'
+
+
+

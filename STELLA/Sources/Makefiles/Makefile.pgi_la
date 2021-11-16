@@ -1,0 +1,67 @@
+# Compiler: Portrand Group Fortran PGI pgf90/pgcc
+
+FC=pgf90
+CC=pgcc
+F90FLAGS += -Mbackslash
+CPPFLAGS += -DFCOMPILER=_PGI_
+
+cmd=$(shell basename $(shell which $(FC)))
+ifneq ($(cmd),$(FC))
+$(error $(FC) not found)
+endif
+v1:=$(shell $(FC) -V | grep $(FC) | awk '{print $$2}')
+v2:=$(shell echo $(v1) | awk -F. '{print $$2}')
+PGIMAJORVERSION=$(shell echo $(v1) | awk -F. '{print $$1}')
+PGIMINORVERSION=$(shell echo $(v2) | awk -F- '{print $$1}')
+PGIMINORSUBVERSION=$(shell echo $(v2) | awk -F- '{print $$2}')
+
+# unable to compile agk_mem due to PGI bug, which is fixed in v8
+UNABLE=$(shell [ $(PGIMAJORVERSION) -lt 8 ] && echo on)
+ifeq ($(UNABLE), on)
+$(error agk_mem cannot be compiled with PGI version less than 8)
+endif
+
+# sizeof is implemented from ver. 7.1
+NOSIZEOF=$(shell [ $(PGIMAJORVERSION) -le 6 -o \( $(PGIMAJORVERSION) -eq 7 -a $(PGIMINORVERSION) -lt 1 \) ] && echo on)
+ifeq ($(NOSIZEOF),on) # this cannot be replaced by ifdef
+	CPPFLAGS += -DNO_SIZEOF
+endif
+
+ifdef DBLE
+	DBLEFLAGS = -r8
+	F90FLAGS += $(DBLEFLAGS)
+endif
+
+ifdef STATIC
+	LDFLAGS += -Bstatic
+endif
+
+ifdef DEBUG
+# -v: displays compiler, assembler, and linker invocations (too noisy) 
+	F90FLAGS += -g -Mbounds -v
+	F90OPTFLAGS =
+	CFLAGS += -g -Mbounds -v
+	COPTFLAGS =
+else
+# -fastsse = -O2 -Munroll=c:1 -Mnoframe -Mlre
+	ifdef OPT
+		F90OPTFLAGS += -fastsse -O3  -Mlarge_arrays
+		COPTFLAGS += -fastsse -O3  -Mlarge_arrays
+	endif
+
+	ifeq ($(findstring gprof,$(PROF)),gprof)
+		F90FLAGS += -pg
+		CFLAGS += -pg
+	endif
+endif	
+
+#
+# this is a solution for pgi/10.5 (and later) probelm
+# see Bug Tracker Ticket 3070415
+#
+# 10/10/22:commented out because this causes corrupted netcdf data problem
+# see Bug Tracker Ticket 3083135. thus, problem 3070415 is not resolved.
+#
+#ifdef CRAY_SYSTEM
+#	F90FLAGS += -Mlarge_arrays
+#endif

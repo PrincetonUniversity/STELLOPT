@@ -1,0 +1,42 @@
+# Host: pleaides at NAS (NASA Advanced Supercomputing)  (SGI Altix ICE)
+#
+# modules:
+# comp-intel/11.1.046 (includes Intel MKL (Math Kernel Library) which has FFTs)
+# netcdf/3.6.0
+# hdf5/1.8.0/parallel
+#
+# .login file
+#    module load  comp-intel/11.1.046 netcdf/3.6.0/intel hdf5/1.6.5.p mpi/mpt.1.25 gnuplot/4.2.5 
+#    echo Loaded modules: 
+#    setenv GK_SYSTEM pleaides
+#    setenv MAKEFLAGS -IMakefiles
+#    setenv MPIINC on
+
+
+COMPILER=intel
+
+ifdef MKLPATH
+	USE_FFT = mkl_fftw
+else
+	override USE_FFT =
+endif
+USE_NETCDF = on
+USE_HDF5 = 
+MPIINC = on
+include Makefile.$(COMPILER)
+
+ifdef USE_MPI
+	MPIFC := $(FC)
+	MPICC := $(CC)
+	LIBS	+= -lmpi
+	F90FLAGS += -I/nasa/sgi/mpt/1.25/include
+endif
+
+ifeq ($(USE_FFT),mkl_fftw)
+	FFT_LIB = -L/nasa/intel/Compiler/11.1/046 -lfftw2xf_intel  -lmkl_core -lmkl_intel_lp64 -lmkl_sequential
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/nasa/netcdf/3.6.0/intel/include
+	NETCDF_LIB = -L/nasa/netcdf/3.6.0/intel/lib -lnetcdf
+endif

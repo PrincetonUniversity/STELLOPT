@@ -1,0 +1,13 @@
+# Compiler: DEC/Compaq F90
+# currently not supported
+
+FC = f95
+F90FLAGS = -r8
+
+ifdef DEBUG
+	F90FLAGS += -g -assume dummy_aliases -check bounds -check overflow \
+		-warn argument_checking -warn truncated_source \
+		-align dcommons -check output_conversion 
+else
+	F90OPTFLAGS += -O -fast -w
+endif

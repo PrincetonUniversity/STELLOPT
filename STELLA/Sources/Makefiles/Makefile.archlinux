@@ -1,0 +1,42 @@
+# Makefile for arch linux
+# Maintainer: gwilkie@umd.edu
+
+#Before building install these packages
+#gcc
+#gfortran
+#openmpi-bin
+#fftw2
+#fftw-dev
+#libnetcdf6
+#netcdf-bin
+#libnetcdf-dev
+
+
+COMPILER=gnu-gfortran
+USE_HDF5=
+
+include Makefile.$(COMPILER)
+
+USE_LOCAL_SPFUNC=on
+
+ifeq ($(USE_FFT),sfftw)
+	FFT_LIB = -L/usr/local/lib -lsrfftw -lsfftw
+endif
+
+ifeq ($(USE_FFT),fftw)
+	FFT_LIB = -L/usr/local/lib -lrfftw -lfftw
+endif
+
+ifeq ($(USE_FFT),fftw3)
+	FFT_LIB = -L/usr/lib -lfftw3 -lfftw3f
+
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/usr/include
+	NETCDF_LIB = -L/usr/lib -lnetcdf -lnetcdff
+endif
+
+ifdef USE_LAPACK
+	LAPACK_LIB = -L/usr/lib -llapack
+endif

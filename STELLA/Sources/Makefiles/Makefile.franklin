@@ -1,0 +1,82 @@
+# Host: franklin at NERSC (Cray XT4)
+#
+# modules:
+# fftw (version 2)
+# netcdf-hdf5parallel (come with hdf5-parallel) (Cray version)
+# (other choices of netcdf/hdf5 may work)
+#
+
+COMPILER ?= pgi # module PrgEnv-pgi
+#COMPILER ?= pathscale # module PrgEnv-pathscale
+#COMPILER ?= gnu-gfortran # module PrgEnv-gnu
+#COMPILER ?= cray # module PrgEnv-cray (does not work)
+
+ifdef FFTW_DIR
+	USE_FFT = fftw
+else
+	override USE_FFT =
+endif
+ifdef NETCDF_DIR
+	USE_NETCDF = on
+else
+	ifdef CRAY_NETCDF_DIR
+		CRAY_NETCDF = on
+		USE_NETCDF = on
+	else
+		override USE_NETCDF =
+	endif
+endif
+ifdef HDF5_DIR
+	USE_HDF5 = on
+else
+	ifdef CRAY_HDF5_DIR
+		CRAY_HDF5 = on
+		USE_HDF5 = on
+	else
+		override USE_HDF5 =
+	endif
+endif
+ifdef PGPLOT_DIR
+	PGPLOT_LIB = -lpgplot -L$$PGPLOT_DIR
+endif
+ifeq ($(findstring ipm,$(PROF)),ipm)
+	STATIC=on
+	ifdef IPM
+		IPM_LIB = $(IPM)
+	else
+$(warning IPM module is not loaded)
+	endif
+endif
+
+include Makefile.XT4
+
+include Makefile.$(COMPILER)
+
+FC=ftn
+CC=cc
+ifdef USE_MPI
+	MPIFC = ftn
+	MPICC = cc
+endif
+ifdef CRAY_HDF5
+	H5FC = ftn
+	H5FC_par = ftn
+	H5CC = cc
+	H5CC_par = cc
+endif
+
+ifeq ($(USE_FFT),fftw)
+	FFT_INC = $$FFTW_INCLUDE_OPTS
+	ifdef DBLE
+		FFT_LIB = $$FFTW_POST_LINK_OPTS -ldfftw -ldrfftw
+	else
+		FFT_LIB = $$FFTW_POST_LINK_OPTS -lsfftw -lsrfftw
+	endif
+endif
+
+ifdef USE_NETCDF
+	ifndef CRAY_NETCDF
+		NETCDF_INC = -I$$NETCDF_DIR/include
+		NETCDF_LIB = -L$$NETCDF_DIR/lib -lnetcdf
+	endif
+endif

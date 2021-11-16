@@ -1,0 +1,110 @@
+module test_utils_convert
+  use funit
+  use convert
+  implicit none
+contains
+
+  @test
+  subroutine test_c2r_1D
+    complex, dimension(2), parameter :: input = [(1, 2), (3, 4)]
+    real, dimension(2, 2), parameter :: expected = reshape([1, 2, 3, 4], shape=shape(expected))
+    real, dimension(2, 2) :: output
+
+    call c2r(input, output)
+    @assertEqual(expected, output)
+  end subroutine test_c2r_1D
+
+  @test
+  subroutine test_r2c_1D
+    real, dimension(2, 2), parameter :: input = reshape([2, 1, 4, 3], shape=shape(input))
+    complex, dimension(2), parameter :: expected = [(2, 1), (4, 3)]
+    complex, dimension(2) :: output
+
+    call r2c(output, input)
+    @assertEqual(expected, output)
+  end subroutine test_r2c_1D
+
+  @test
+  subroutine test_c2r_2D
+    complex, dimension(1, 1), parameter :: input = (1, 2)
+    real, dimension(2, 1, 1), parameter :: expected = reshape([1, 2], shape=shape(expected))
+    real, dimension(2, 1, 1) :: output
+
+    call c2r(input, output)
+    @assertEqual(expected, output)
+  end subroutine test_c2r_2D
+
+  @test
+  subroutine test_r2c_2D
+    real, dimension(2, 1, 1), parameter :: input = reshape([2, 1], shape=shape(input))
+    complex, dimension(1, 1), parameter :: expected = (2, 1)
+    complex, dimension(1, 1) :: output
+
+    call r2c(output, input)
+    @assertEqual(expected, output)
+  end subroutine test_r2c_2D
+
+  @test
+  subroutine test_c2r_3D
+    complex, dimension(1, 1, 1), parameter :: input = (1, 2)
+    real, dimension(2, 1, 1, 1), parameter :: expected = reshape([1, 2], shape=shape(expected))
+    real, dimension(2, 1, 1, 1) :: output
+
+    call c2r(input, output)
+    @assertEqual(expected, output)
+  end subroutine test_c2r_3D
+
+  @test
+  subroutine test_r2c_3D
+    real, dimension(2, 1, 1, 1), parameter :: input = reshape([2, 1], shape=shape(input))
+    complex, dimension(1, 1, 1), parameter :: expected = (2, 1)
+    complex, dimension(1, 1, 1) :: output
+
+    call r2c(output, input)
+    @assertEqual(expected, output)
+  end subroutine test_r2c_3D
+
+  @test
+  subroutine test_c2r_4D
+    complex, dimension(1, 1, 1, 1), parameter :: input = (1, 2)
+    real, dimension(2, 1, 1, 1, 1), parameter :: expected = reshape([1, 2], shape=shape(expected))
+    real, dimension(2, 1, 1, 1, 1) :: output
+
+    call c2r(input, output)
+    @assertEqual(expected, output)
+  end subroutine test_c2r_4D
+
+  @test
+  subroutine test_r2c_4D
+    real, dimension(2, 1, 1, 1, 1), parameter :: input = reshape([2, 1], shape=shape(input))
+    complex, dimension(1, 1, 1, 1), parameter :: expected = (2, 1)
+    complex, dimension(1, 1, 1, 1) :: output
+
+    call r2c(output, input)
+    @assertEqual(expected, output)
+  end subroutine test_r2c_4D
+
+  @test
+  subroutine test_c2r_5D
+    complex, dimension(1, 1, 1, 1, 1), parameter :: input = (1, 2)
+    real, dimension(2, 1, 1, 1, 1, 1), parameter :: expected = reshape([1, 2], shape=shape(expected))
+    real, dimension(2, 1, 1, 1, 1, 1) :: output
+
+    call c2r(input, output)
+    ! Note pFUnit by default only supports up to 5D arrays
+    ! so we have to split this check into two.
+    @assertEqual(expected(1,:,:,:,:,:), output(1,:,:,:,:,:))
+    @assertEqual(expected(2,:,:,:,:,:), output(2,:,:,:,:,:))
+  end subroutine test_c2r_5D
+
+  @test
+  subroutine test_r2c_5D
+    real, dimension(2, 1, 1, 1, 1, 1), parameter :: input = reshape([2, 1], shape=shape(input))
+    complex, dimension(1, 1, 1, 1, 1), parameter :: expected = (2, 1)
+    complex, dimension(1, 1, 1, 1, 1) :: output
+
+    call r2c(output, input)
+    @assertEqual(expected, output)
+  end subroutine test_r2c_5D
+
+end module test_utils_convert

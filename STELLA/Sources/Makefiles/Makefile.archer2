@@ -1,0 +1,96 @@
+# Host: ARCHER2 service UK (Cray XC30)
+# Requires the fftw, hdf5, netcdf, scilib modules to be loaded
+
+
+helplocal:
+		# GK_SYSTEM = archer
+		# You are using  Makefile.archer to build gs2 executables on ARCHER.
+		#
+		#   ARCHER defaults : cray compiler, FFTW3, netcdf, MPI
+		#   ARCHER single restart: cray compiler
+		# make FRONT_END=on : serial build (no MPI) to run gs2, ingen on ARCHER Front End.
+
+define STANDARD_SYSTEM_CONFIGURATION
+module load cray-fftw ;\
+module load cray-hdf5 ;\
+module load cray-libsci ;\
+module load cray-netcdf ;\
+echo Module configuration complete;\
+export MAKEFLAGS='-j -I Makefiles';\
+export TESTEXEC='aprun -N 24 -n 24';
+endef
+
+PRGENV_CRAY=$(shell if module is-loaded cpe-cray; then echo true; else echo false; fi;)
+ifeq ($(PRGENV_CRAY),true)
+      COMPILER=cray
+else
+      COMPILER=gnu-gfortran
+endif
+
+CHIP=ivy-bridge
+CRAY_SYSTEM=true
+
+ifdef FRONT_END
+      STATIC = on
+      override USE_MPI = 
+      override USE_HDF5 =
+endif
+
+# switch on netcdf
+ifdef NETCDF_DIR
+	USE_NETCDF = on
+else
+	ifdef CRAY_NETCDF_DIR
+		CRAY_NETCDF = on
+		USE_NETCDF = on
+	else
+		override USE_NETCDF =
+	endif
+endif
+
+ifdef PGPLOT_DIR
+	PGPLOT_LIB = -lpgplot -L$$PGPLOT_DIR
+endif
+
+# This line disables the automated checking
+# of the intel version which is slow and 
+# doesn't work in interactive mode
+DBLESIZEOPT = -double-size 128
+
+include Makefile.$(COMPILER)
+
+FC=ftn
+CC=cc
+ifdef USE_MPI
+	MPIFC=ftn
+	MPICC=cc
+endif
+
+# For CRAY machines, this convention is always followed. Do not change without 
+# good reason!
+H5CC_par = cc
+H5FC_par = ftn
+HFCC = cc
+H5FC = ftn
+
+ifeq ($(USE_FFT),fftw)
+	FFT_INC = 
+	ifdef DBLE
+		FFT_LIB = -ldfftw -ldrfftw
+	else
+		FFT_LIB = -lsfftw -lsrfftw
+	endif
+endif
+ifeq ($(USE_FFT),fftw3)	
+        CPPFLAGS   += -I $$FFTW_INC
+endif	
+ifdef USE_LAPACK
+#archer libraries have LAPACK built in, so do nothing
+	LAPACK_LIB =  
+endif
+ifdef USE_NETCDF
+  ifdef OWN_NETCDF
+	NETCDF_INC = -I $(NETCDF_DIR)/include/
+	NETCDF_LIB = -L $(NETCDF_DIR)/lib -lnetcdf
+  endif
+endif

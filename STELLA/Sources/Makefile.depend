@@ -1,0 +1,606 @@
+#
+# Auto-generated file by fortdep. Do not edit!
+#
+stella_mod = \
+	 command_line.o \
+	 common_types.o \
+	 constants.o \
+	 convert.o \
+	 dissipation.o \
+	 dist_fn.o \
+	 dist_fn_arrays.o \
+	 dist_redistribute.o \
+	 euterpe_interface.o \
+	 extended_zgrid.o \
+	 fft_work.o \
+	 fields.o \
+	 fields_arrays.o \
+	 file_utils.o \
+	 finite_differences.o \
+	 flow_shear.o \
+	 fzero.o \
+	 g_tofrom_h.o \
+	 gauss_quad.o \
+	 gyro_averages.o \
+	 init_g.o \
+	 inputprofiles_interface.o \
+	 job_manage.o \
+	 kt_grids.o \
+	 linear_solve.o \
+	 millerlocal.o \
+	 mirror_terms.o \
+	 mp.o \
+	 mp_lu_decomposition.o \
+	 mt19937.o \
+	 multibox.o \
+	 neoclassical_terms.o \
+	 netcdf_utils.o \
+	 parallel_streaming.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 ran.o \
+	 redistribute.o \
+	 response_matrix.o \
+	 run_parameters.o \
+	 sfincs_interface.o \
+	 sources.o \
+	 species.o \
+	 spfunc.o \
+	 spl.o \
+	 stella.o \
+	 stella_diagnostics.o \
+	 stella_geometry.o \
+	 stella_io.o \
+	 stella_layouts.o \
+	 stella_save.o \
+	 stella_stellopt.o \
+	 stella_time.o \
+	 stella_transforms.o \
+	 system_fortran.o \
+	 text_options.o \
+	 time_advance.o \
+	 vmec_geo.o \
+	 vmec_to_stella_geometry_interface.o \
+	 volume_averages.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+
+test_vmec_to_stella_geometry_interface_mod = \
+	 fzero.o \
+	 test_vmec_to_stella_geometry_interface.o \
+	 vmec_to_stella_geometry_interface.o 
+
+command_line.o: 
+common_types.o: 
+constants.o: 
+convert.o: 
+dissipation.o: \
+	 common_types.o \
+	 constants.o \
+	 dist_fn.o \
+	 dist_fn_arrays.o \
+	 dist_redistribute.o \
+	 fields.o \
+	 fields_arrays.o \
+	 file_utils.o \
+	 finite_differences.o \
+	 g_tofrom_h.o \
+	 gyro_averages.o \
+	 job_manage.o \
+	 kt_grids.o \
+	 linear_solve.o \
+	 mp.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 redistribute.o \
+	 run_parameters.o \
+	 species.o \
+	 spfunc.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_time.o \
+	 stella_transforms.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+dist_fn.o: \
+	 dist_fn_arrays.o \
+	 dist_redistribute.o \
+	 extended_zgrid.o \
+	 file_utils.o \
+	 gyro_averages.o \
+	 kt_grids.o \
+	 mp.o \
+	 physics_flags.o \
+	 redistribute.o \
+	 species.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_transforms.o \
+	 text_options.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+dist_fn_arrays.o: 
+dist_redistribute.o: \
+	 mp.o \
+	 physics_flags.o \
+	 redistribute.o \
+	 stella_layouts.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+euterpe_interface.o: \
+	 common_types.o \
+	 file_utils.o \
+	 finite_differences.o \
+	 mp.o \
+	 physics_parameters.o \
+	 spl.o \
+	 stella_geometry.o 
+extended_zgrid.o: \
+	 constants.o \
+	 kt_grids.o \
+	 zgrid.o 
+fft_work.o: \
+	 constants.o \
+	 mp.o 
+fields.o: \
+	 common_types.o \
+	 constants.o \
+	 dist_fn.o \
+	 dist_fn_arrays.o \
+	 dist_redistribute.o \
+	 fields_arrays.o \
+	 file_utils.o \
+	 gyro_averages.o \
+	 job_manage.o \
+	 kt_grids.o \
+	 linear_solve.o \
+	 mp.o \
+	 mp_lu_decomposition.o \
+	 multibox.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 redistribute.o \
+	 run_parameters.o \
+	 sources.o \
+	 species.o \
+	 spfunc.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_transforms.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+fields_arrays.o: \
+	 common_types.o 
+file_utils.o: \
+	 command_line.o 
+finite_differences.o: 
+flow_shear.o: \
+	 constants.o \
+	 fields.o \
+	 fields_arrays.o \
+	 file_utils.o \
+	 job_manage.o \
+	 kt_grids.o \
+	 mp.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 species.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_time.o \
+	 stella_transforms.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+fzero.o: 
+g_tofrom_h.o: \
+	 dist_fn_arrays.o \
+	 gyro_averages.o \
+	 kt_grids.o \
+	 physics_flags.o \
+	 species.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_transforms.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+gauss_quad.o: \
+	 constants.o \
+	 file_utils.o \
+	 mp.o 
+gyro_averages.o: \
+	 common_types.o \
+	 dist_fn_arrays.o \
+	 kt_grids.o \
+	 mp.o \
+	 physics_flags.o \
+	 species.o \
+	 spfunc.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_transforms.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+init_g.o: \
+	 constants.o \
+	 dist_fn_arrays.o \
+	 extended_zgrid.o \
+	 file_utils.o \
+	 kt_grids.o \
+	 mp.o \
+	 ran.o \
+	 species.o \
+	 stella_layouts.o \
+	 stella_save.o \
+	 system_fortran.o \
+	 text_options.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+inputprofiles_interface.o: \
+	 common_types.o \
+	 constants.o \
+	 finite_differences.o \
+	 millerlocal.o \
+	 mp.o \
+	 physics_parameters.o \
+	 spl.o 
+job_manage.o: \
+	 file_utils.o \
+	 mp.o 
+kt_grids.o: \
+	 common_types.o \
+	 constants.o \
+	 file_utils.o \
+	 job_manage.o \
+	 mp.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 ran.o \
+	 stella_geometry.o \
+	 stella_transforms.o \
+	 text_options.o \
+	 zgrid.o 
+linear_solve.o: 
+millerlocal.o: \
+	 common_types.o \
+	 constants.o \
+	 file_utils.o \
+	 job_manage.o \
+	 mp.o \
+	 spl.o 
+mirror_terms.o: \
+	 constants.o \
+	 dist_fn_arrays.o \
+	 dist_redistribute.o \
+	 finite_differences.o \
+	 job_manage.o \
+	 kt_grids.o \
+	 mp.o \
+	 neoclassical_terms.o \
+	 physics_flags.o \
+	 redistribute.o \
+	 run_parameters.o \
+	 species.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_time.o \
+	 stella_transforms.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+mp.o: \
+	 constants.o \
+	 file_utils.o 
+mp_lu_decomposition.o: \
+	 linear_solve.o 
+mt19937.o: 
+multibox.o: \
+	 constants.o \
+	 fft_work.o \
+	 fields_arrays.o \
+	 file_utils.o \
+	 job_manage.o \
+	 kt_grids.o \
+	 linear_solve.o \
+	 mp.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 run_parameters.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_time.o \
+	 text_options.o \
+	 zgrid.o 
+neoclassical_terms.o: \
+	 file_utils.o \
+	 finite_differences.o \
+	 kt_grids.o \
+	 mp.o \
+	 sfincs_interface.o \
+	 species.o \
+	 stella_layouts.o \
+	 text_options.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+netcdf_utils.o: \
+	 constants.o \
+	 file_utils.o \
+	 mp.o 
+parallel_streaming.o: \
+	 dist_fn_arrays.o \
+	 extended_zgrid.o \
+	 fields.o \
+	 fields_arrays.o \
+	 finite_differences.o \
+	 gyro_averages.o \
+	 job_manage.o \
+	 kt_grids.o \
+	 linear_solve.o \
+	 mp.o \
+	 neoclassical_terms.o \
+	 physics_flags.o \
+	 run_parameters.o \
+	 species.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_time.o \
+	 stella_transforms.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+physics_flags.o: \
+	 file_utils.o \
+	 mp.o 
+physics_parameters.o: \
+	 file_utils.o \
+	 mp.o 
+ran.o: \
+	 mt19937.o 
+redistribute.o: \
+	 job_manage.o \
+	 mp.o 
+response_matrix.o: \
+	 common_types.o \
+	 dist_fn.o \
+	 extended_zgrid.o \
+	 fields.o \
+	 fields_arrays.o \
+	 gyro_averages.o \
+	 job_manage.o \
+	 kt_grids.o \
+	 linear_solve.o \
+	 mp.o \
+	 mp_lu_decomposition.o \
+	 parallel_streaming.o \
+	 run_parameters.o \
+	 species.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_time.o \
+	 system_fortran.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+run_parameters.o: \
+	 file_utils.o \
+	 mp.o \
+	 physics_flags.o \
+	 text_options.o 
+sfincs_interface.o: \
+	 mp.o \
+	 zgrid.o 
+sources.o: \
+	 constants.o \
+	 dist_fn.o \
+	 dist_fn_arrays.o \
+	 fields_arrays.o \
+	 file_utils.o \
+	 kt_grids.o \
+	 linear_solve.o \
+	 mp.o \
+	 mp_lu_decomposition.o \
+	 multibox.o \
+	 physics_flags.o \
+	 run_parameters.o \
+	 species.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_time.o \
+	 stella_transforms.o \
+	 zgrid.o 
+species.o: \
+	 common_types.o \
+	 euterpe_interface.o \
+	 file_utils.o \
+	 inputprofiles_interface.o \
+	 job_manage.o \
+	 mp.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 stella_geometry.o \
+	 text_options.o 
+spfunc.o: \
+	 constants.o 
+spl.o: \
+	 constants.o 
+stella.o: \
+	 dissipation.o \
+	 dist_fn.o \
+	 dist_fn_arrays.o \
+	 dist_redistribute.o \
+	 extended_zgrid.o \
+	 fields.o \
+	 fields_arrays.o \
+	 file_utils.o \
+	 init_g.o \
+	 job_manage.o \
+	 kt_grids.o \
+	 mirror_terms.o \
+	 mp.o \
+	 multibox.o \
+	 parallel_streaming.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 ran.o \
+	 redistribute.o \
+	 response_matrix.o \
+	 run_parameters.o \
+	 sources.o \
+	 species.o \
+	 stella_diagnostics.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_save.o \
+	 stella_stellopt.o \
+	 stella_time.o \
+	 stella_transforms.o \
+	 time_advance.o \
+	 volume_averages.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+stella_diagnostics.o: \
+	 constants.o \
+	 dist_fn.o \
+	 dist_fn_arrays.o \
+	 dist_redistribute.o \
+	 fields.o \
+	 fields_arrays.o \
+	 file_utils.o \
+	 g_tofrom_h.o \
+	 gyro_averages.o \
+	 init_g.o \
+	 kt_grids.o \
+	 mp.o \
+	 multibox.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 redistribute.o \
+	 run_parameters.o \
+	 species.o \
+	 stella_geometry.o \
+	 stella_io.o \
+	 stella_layouts.o \
+	 stella_save.o \
+	 stella_time.o \
+	 stella_transforms.o \
+	 volume_averages.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+stella_geometry.o: \
+	 common_types.o \
+	 constants.o \
+	 file_utils.o \
+	 inputprofiles_interface.o \
+	 millerlocal.o \
+	 mp.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 text_options.o \
+	 vmec_geo.o \
+	 zgrid.o 
+stella_io.o: \
+	 constants.o \
+	 convert.o \
+	 dist_fn_arrays.o \
+	 file_utils.o \
+	 kt_grids.o \
+	 mp.o \
+	 netcdf_utils.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 run_parameters.o \
+	 species.o \
+	 stella_geometry.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+stella_layouts.o: \
+	 common_types.o \
+	 file_utils.o \
+	 mp.o 
+stella_save.o: \
+	 common_types.o \
+	 dist_fn_arrays.o \
+	 fields_arrays.o \
+	 file_utils.o \
+	 kt_grids.o \
+	 mp.o \
+	 netcdf_utils.o \
+	 physics_flags.o \
+	 sources.o \
+	 stella_layouts.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+stella_stellopt.o: 
+stella_time.o: 
+stella_transforms.o: \
+	 fft_work.o \
+	 physics_flags.o \
+	 stella_layouts.o 
+system_fortran.o: 
+test_vmec_to_stella_geometry_interface.o: \
+	 vmec_to_stella_geometry_interface.o 
+text_options.o: \
+	 mp.o 
+time_advance.o: \
+	 constants.o \
+	 dissipation.o \
+	 dist_fn.o \
+	 dist_fn_arrays.o \
+	 dist_redistribute.o \
+	 extended_zgrid.o \
+	 fields.o \
+	 fields_arrays.o \
+	 file_utils.o \
+	 finite_differences.o \
+	 flow_shear.o \
+	 gyro_averages.o \
+	 job_manage.o \
+	 kt_grids.o \
+	 mirror_terms.o \
+	 mp.o \
+	 multibox.o \
+	 neoclassical_terms.o \
+	 parallel_streaming.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 redistribute.o \
+	 response_matrix.o \
+	 run_parameters.o \
+	 sources.o \
+	 species.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 stella_time.o \
+	 stella_transforms.o \
+	 text_options.o \
+	 vpamu_grids.o \
+	 zgrid.o 
+vmec_geo.o: \
+	 common_types.o \
+	 constants.o \
+	 file_utils.o \
+	 mp.o \
+	 physics_flags.o \
+	 spl.o \
+	 stella_transforms.o \
+	 vmec_to_stella_geometry_interface.o \
+	 zgrid.o 
+vmec_to_stella_geometry_interface.o: \
+	 fzero.o 
+volume_averages.o: \
+	 kt_grids.o \
+	 physics_flags.o \
+	 stella_geometry.o \
+	 zgrid.o 
+vpamu_grids.o: \
+	 constants.o \
+	 file_utils.o \
+	 gauss_quad.o \
+	 kt_grids.o \
+	 mp.o \
+	 species.o \
+	 stella_geometry.o \
+	 stella_layouts.o \
+	 zgrid.o 
+zgrid.o: \
+	 constants.o \
+	 file_utils.o \
+	 mp.o \
+	 physics_flags.o \
+	 text_options.o 

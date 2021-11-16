@@ -1,0 +1,30 @@
+# Host: snake/sausage/sawtooth york plasma machines
+##To setup the modules correctly you will want something like the following
+##in your shell profile (e.g. ~/.bashrc)
+#source /hwdisks/data/modules/bin/use_modules.sh
+#module load gcc
+#module load fftw/3.2.1-gnu
+##module load netcdf/4.0.1 -- Doesn't work with fortran -- Use files in dd502 data dir
+##module load mpich2/1.4.1-gnu -- mpi.mod not compatible for GS2
+#module load openmpi/1.4.5-gcc4.8.0
+##If you want to use the eigensolver then also include the following
+#export PETSC_DIR=/hwdisks/data/dd502/LOCAL/Src/petsc-3.4.4
+#export SLEPC_DIR=/hwdisks/data/dd502/LOCAL/Src/slepc-3.4.4
+#export PETSC_ARCH_GS2=snake-finter
+#export PETSC_ARCH=${PETSC_ARCH_GS2}
+#export SLEPC_ARCH=${PETSC_ARCH}
+#export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PETSC_DIR}/${PETSC_ARCH}/lib:${SLEPC_DIR}/${SLEPC_ARCH}/lib
+
+define STANDARD_SYSTEM_CONFIGURATION
+source /hwdisks/data/modules/bin/use_modules.sh ;\
+module purge ;\
+module load gcc/4.8.0 ;\
+module load fftw/3.2.1-gnu ;\
+module load mpich/3.1.3-gnu4.8 ;
+endef
+
+COMPILER=gnu-gfortran
+include Makefile.$(COMPILER)
+NETCDF_INC = -I/hwdisks/data/dd502/LOCAL/include
+NETCDF_LIB = -L/hwdisks/data/dd502/LOCAL/lib -lnetcdff -lnetcdf
+FFT_LIB = -lfftw3	

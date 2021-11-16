@@ -3,6 +3,7 @@ include ../../make.inc
 FFILE   = '$*''.f'
 CFILE   = '$*''.c'
 F90FILE = '$*''.f90'
+FPPFILE = '$*''.fpp'
 SPATH   = ../Sources
 #Contains list of source files (.o) and dependencies
 DEPLIST = ../STELLA.dep
@@ -13,10 +14,10 @@ include $(DEPLIST)
 
 include $(OBJLIST)
 
-VPATH = $(SPATH)
+VPATH = $(SPATH)/utils:$(SPATH)/geo:$(SPATH)/geo/vmec_interface:$(SPATH)/geo/vmec_interface/mini_libstell:$(SPATH)
 
 .SUFFIXES :
-.SUFFIXES : .f .f90 .o
+.SUFFIXES : .fpp .f .f90 .o
 xstella:  $(LIB) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 #Compile object files defined in OBJLIST.
@@ -50,6 +51,23 @@ xstella:  $(LIB) $(ObjectFiles)
          cp $< $(CFILE); \
          echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
          rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+        $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
+      else \
+         echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). -c $<'; \
+         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
+      fi
+.fpp.f90 :
+	@if grep -q '^#if' $<; \
+      then \
+         cp $< $(FPPFILE); \
+	 echo '$(PRECOMP) $(CPPFLAGS) $< $(F90FILE)'; $(PRECOMP) $(CPPFLAGS) $< $(F90FILE); \
+         rm -f $(FPPFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE)'; \
+        $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
+      elif grep -q '^# if' $<; \
+      then \
+         cp $< $(FPPFILE); \
+         echo '$(PRECOMP) $(CPPFLAGS) $< $(F90FILE)'; $(PRECOMP) $(CPPFLAGS) $< $(F90FILE); \
+         rm -f $(FPPFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE)'; \
         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
       else \
          echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). -c $<'; \

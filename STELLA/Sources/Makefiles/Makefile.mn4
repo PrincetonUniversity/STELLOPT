@@ -1,0 +1,65 @@
+# Host: mn4
+
+$(warning Processing Makefile.mn4)
+helplocal:
+		# GK_SYSTEM = mn4
+		# You are using  Makefile.mn4 to build gs2 executables on bsc.
+
+define STANDARD_SYSTEM_CONFIGURATION
+module load intel 
+module load impi
+module load petsc/3.7.6-real
+module load netcdf/4.4.1.1 
+module load fftw/3.3.6 
+module load fabric/1.4.2
+
+export MAKEFLAGS='-j -IMakefiles';\
+export TESTEXEC='mpirun -N 48 -n 48';
+endef
+
+COMPILER=intel
+
+USE_MPI=on
+USE_FFT = fftw3
+USE_NETCDF = on
+
+# This line disables the automated checking
+# of the intel version which is slow
+DBLESIZEOPT = -double-size 128
+
+include Makefile.$(COMPILER)
+
+FC=mpiifort
+CC=icc
+ifdef USE_MPI
+	MPIFC=mpiifort
+	MPICC=mpiicc
+endif
+
+ifeq ($(USE_FFT),fftw3)	
+	FFT_INC =
+	FFT_DIR = $(FFTW_HOME)
+	FFT_LIB = -lfftw3 $(FFTW_LDFLAGS) #-lfftw3_mpi
+        CPPFLAGS   += -I $(FFTW_INCL) 
+endif	
+
+USE_HDF5=
+
+PETSC_INC=$(PETSC_DIR)/include
+
+#Note the module system sets some env vars for us
+#unfortunately some clash with values we use
+ifdef USE_NETCDF
+  NETCDF_DIR=$(NETCDF)
+  NETCDF_INC= -I $(NETCDF_DIR)/include/ -I$(NETCDF_INCLUDE)
+  NETCDF_LIB= -L $(NETCDF_DIR)/lib/ -lnetcdff -L$(NETCDF_HOME)/lib/ -lnetcdf
+endif
+
+ifdef USE_MPI
+  #MPI_INC=-I$(MPI_ROOT)/intel64/include/
+  MPI_INC=-I$(MPI_ROOT)/include64/
+  MPI_LIB=-lmpi
+endif
+
+$(warning USE_MPI=$(USE_MPI))
+$(warning USE_NETCDF=$(USE_NETCDF))

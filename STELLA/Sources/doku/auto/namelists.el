@@ -1,0 +1,41 @@
+(TeX-add-style-hook "namelists"
+ (lambda ()
+    (TeX-add-symbols
+     '("ttt" 1)
+     "Nfp")
+    (TeX-run-style-hooks
+     "caption"
+     "small"
+     "sc"
+     "multirow"
+     "soul"
+     "color"
+     "acronym"
+     "babel"
+     "english"
+     "sidecap"
+     "epsfig"
+     "wrapfig"
+     "subfigure"
+     "graphicx"
+     "verbatim"
+     "natbib"
+     "square"
+     "numbers"
+     "comma"
+     "sort&compress"
+     "longtable"
+     "setspace"
+     "xspace"
+     "amsthm"
+     "amscd"
+     "amssymb"
+     "amsfonts"
+     "amsmath"
+     "fancyhdr"
+     "latex2e"
+     "art12"
+     "article"
+     "12pt"
+     "a4")))
+

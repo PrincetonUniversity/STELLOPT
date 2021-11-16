@@ -1,0 +1,25 @@
+#Compiler: IBM XL Suite
+
+MPIFC=mpixlf90_r
+MPICC=mpixlc_r
+CFLAGS += -DNO_UNDERSCORE
+CPPFLAGS += -DFCOMPILER=_XL_ -DMPIINC
+F90FLAGS = -g -qsuffix=f=f90 -qfree=f90
+F90OPTFLAGS = -O3 -qinitauto -qarch=450d -qtune=450
+ifdef DBLE
+	DBLEFLAGS = -qrealsize=8
+	F90FLAGS += $(DBLEFLAGS)
+endif
+
+# XL fortran does not have intrinsic Bessel and error functions
+ifndef USE_LOCAL_SPFUNC
+ifneq ($(findstring spfunc,$(USE_NAGLIB)),spfunc)
+	USE_LOCAL_SPFUNC=on
+endif
+endif
+
+ifdef USE_OPENMP
+	F90FLAGS += -qsmp=omp
+	CFLAGS += -qsmp=omp
+endif
+

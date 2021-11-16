@@ -1,0 +1,34 @@
+\BOOKMARK [0][-]{chapter.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.1.1}{Motivation}{chapter.1}% 2
+\BOOKMARK [1][-]{section.1.2}{Equations}{chapter.1}% 3
+\BOOKMARK [0][-]{chapter.2}{Downloading, installing and running stella}{}% 4
+\BOOKMARK [1][-]{section.2.1}{Downloading from the public repository}{chapter.2}% 5
+\BOOKMARK [1][-]{section.2.2}{Setting up stella on a new system}{chapter.2}% 6
+\BOOKMARK [2][-]{subsection.2.2.1}{System requirements}{section.2.2}% 7
+\BOOKMARK [0][-]{chapter.3}{Inputs}{}% 8
+\BOOKMARK [1][-]{section.3.1}{Geometry input: the wout*.nc file}{chapter.3}% 9
+\BOOKMARK [1][-]{section.3.2}{The physics case input: the *.in file}{chapter.3}% 10
+\BOOKMARK [2][-]{subsection.3.2.1}{The zgrid\137parameters namelist}{section.3.2}% 11
+\BOOKMARK [2][-]{subsection.3.2.2}{The zgrid\137parameters namelist}{section.3.2}% 12
+\BOOKMARK [2][-]{subsection.3.2.3}{The geo\137knobs namelist}{section.3.2}% 13
+\BOOKMARK [2][-]{subsection.3.2.4}{The vmec\137parameters namelist}{section.3.2}% 14
+\BOOKMARK [2][-]{subsection.3.2.5}{The parameters namelist}{section.3.2}% 15
+\BOOKMARK [2][-]{subsection.3.2.6}{The vpamu\137grids\137parameters namelist}{section.3.2}% 16
+\BOOKMARK [2][-]{subsection.3.2.7}{The dist\137fn\137knobs namelist}{section.3.2}% 17
+\BOOKMARK [2][-]{subsection.3.2.8}{The time\137advance\137knobs namelist}{section.3.2}% 18
+\BOOKMARK [2][-]{subsection.3.2.9}{The kt\137grids\137knobs namelist}{section.3.2}% 19
+\BOOKMARK [2][-]{subsection.3.2.10}{The kt\137grids\137range\137parameters namelist}{section.3.2}% 20
+\BOOKMARK [2][-]{subsection.3.2.11}{The init\137g\137knobs namelist}{section.3.2}% 21
+\BOOKMARK [2][-]{subsection.3.2.12}{The knobs namelist}{section.3.2}% 22
+\BOOKMARK [2][-]{subsection.3.2.13}{The species\137knobs namelist}{section.3.2}% 23
+\BOOKMARK [2][-]{subsection.3.2.14}{The species\137parameters\137\043 namelist}{section.3.2}% 24
+\BOOKMARK [2][-]{subsection.3.2.15}{The stella\137diagnostics\137knobs namelist}{section.3.2}% 25
+\BOOKMARK [2][-]{subsection.3.2.16}{The reinit\137knobs namelist}{section.3.2}% 26
+\BOOKMARK [2][-]{subsection.3.2.17}{The layouts\137knobs namelist}{section.3.2}% 27
+\BOOKMARK [2][-]{subsection.3.2.18}{The neoclassical\137input namelist}{section.3.2}% 28
+\BOOKMARK [2][-]{subsection.3.2.19}{The sfincs\137input namelist}{section.3.2}% 29
+\BOOKMARK [0][-]{chapter.4}{Output}{}% 30
+\BOOKMARK [0][-]{chapter.5}{Diagnostics}{}% 31
+\BOOKMARK [1][-]{section.5.1}{The output files}{chapter.5}% 32
+\BOOKMARK [1][-]{section.5.2}{Diagnosing at the python prompt}{chapter.5}% 33
+\BOOKMARK [1][-]{section.5.3}{The stella GUI}{chapter.5}% 34

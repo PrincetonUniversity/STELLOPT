@@ -1,0 +1,47 @@
+# System: IBM Blue Gene/Q
+
+system_help:
+		# 
+		# This is a Makefile for the BlueGene/Q computer at STFC 
+		# Daresbury, though doubtless it will work on similar 
+		# machines.
+		#
+		#
+		# Before building set up the system as follows:
+		#   module load ibmmpi
+		#   module load netcdf/3.6.2
+		#   module load fftw/2.1.5
+
+
+CHIP=bluegene_q
+
+
+ifdef USE_FFT
+  ifeq ($(USE_FFT), fftw3)
+	FFT_INC = -I$(FFTW3F_INCLUDE_DIR)
+	FFT_LIB = -L$(FFTW3F_LIBRARIES) -lfftw3f -lfftw3_mpi -lfftw3 
+	# The Blue Joule module system appears to be made of cheese...
+	# we specify the folders manually for now
+	FFT_LIB = -L/gpfs/packages/ibm/fftw/3.3.2/lib -lfftw3f -lfftw3_mpi -lfftw3 
+  else
+	FFT_INC=-I/gpfs/packages/ibm/fftw/2.1.5/include/
+	FFT_LIB=-L/gpfs/packages/ibm/fftw/2.1.5/lib -lrfftw -lfftw -ldfftw
+  endif
+endif
+ifdef USE_NETCDF
+	NETCDF_INC=-I/gpfs/packages/ibm/netcdf/3.6.2/include
+	NETCDF_LIB=-L/gpfs/packages/ibm/netcdf/3.6.2/lib -lnetcdf 
+	# We now use netcdf 4
+	NETCDF_INC=-I/gpfs/packages/ibm/netcdf/4.2.1.1/include
+	NETCDF_LIB=-L/gpfs/packages/ibm/netcdf/4.2.1.1/lib -lnetcdff -lnetcdf  -L/gpfs/packages/ibm/hdf5/1.8.10-patch1/lib -lhdf5_hl -lhdf5  
+endif
+
+USE_LOCAL_SPFUNC=on
+
+###################
+include Makefile.xl
+###################
+
+SIMPLEDATAIO_CONF_ARCHIVEONLY=true
+SIMPLEDATAIO_CONF_SYSTEM=CPPFLAGS= CFLAGS= F90FLAGS= 
+SIMPLEDATAIO_CONF_SYSTEM=CPPFLAGS= CFLAGS= F90FLAGS=  LDFLAGS=

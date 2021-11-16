@@ -1,0 +1,34 @@
+\contentsline {chapter}{\numberline {1}Introduction}{5}{chapter.1}
+\contentsline {section}{\numberline {1.1}Motivation}{5}{section.1.1}
+\contentsline {section}{\numberline {1.2}Equations}{5}{section.1.2}
+\contentsline {chapter}{\numberline {2}Downloading, installing and running {\ttfamily stella}}{6}{chapter.2}
+\contentsline {section}{\numberline {2.1}Downloading from the public repository}{6}{section.2.1}
+\contentsline {section}{\numberline {2.2}Setting up {\ttfamily stella}\nobreakspace {}on a new system}{6}{section.2.2}
+\contentsline {subsection}{\numberline {2.2.1}System requirements}{6}{subsection.2.2.1}
+\contentsline {chapter}{\numberline {3}Inputs}{7}{chapter.3}
+\contentsline {section}{\numberline {3.1}Geometry input: the \texttt {wout*.nc} file}{7}{section.3.1}
+\contentsline {section}{\numberline {3.2}The physics case input: the \texttt {*.in} file}{7}{section.3.2}
+\contentsline {subsection}{\numberline {3.2.1}The {\ttfamily zgrid\_parameters} namelist}{7}{subsection.3.2.1}
+\contentsline {subsection}{\numberline {3.2.2}The \texttt {zgrid\_parameters} namelist}{8}{subsection.3.2.2}
+\contentsline {subsection}{\numberline {3.2.3}The \texttt {geo\_knobs} namelist}{8}{subsection.3.2.3}
+\contentsline {subsection}{\numberline {3.2.4}The \texttt {vmec\_parameters} namelist}{8}{subsection.3.2.4}
+\contentsline {subsection}{\numberline {3.2.5}The \texttt {parameters} namelist}{8}{subsection.3.2.5}
+\contentsline {subsection}{\numberline {3.2.6}The \texttt {vpamu\_grids\_parameters} namelist}{8}{subsection.3.2.6}
+\contentsline {subsection}{\numberline {3.2.7}The \texttt {dist\_fn\_knobs} namelist}{8}{subsection.3.2.7}
+\contentsline {subsection}{\numberline {3.2.8}The \texttt {time\_advance\_knobs} namelist}{9}{subsection.3.2.8}
+\contentsline {subsection}{\numberline {3.2.9}The \texttt {kt\_grids\_knobs} namelist}{9}{subsection.3.2.9}
+\contentsline {subsection}{\numberline {3.2.10}The \texttt {kt\_grids\_range\_parameters} namelist}{9}{subsection.3.2.10}
+\contentsline {subsection}{\numberline {3.2.11}The \texttt {init\_g\_knobs} namelist}{9}{subsection.3.2.11}
+\contentsline {subsection}{\numberline {3.2.12}The \texttt {knobs} namelist}{9}{subsection.3.2.12}
+\contentsline {subsection}{\numberline {3.2.13}The \texttt {species\_knobs} namelist}{9}{subsection.3.2.13}
+\contentsline {subsection}{\numberline {3.2.14}The \texttt {species\_parameters\_\#} namelist}{9}{subsection.3.2.14}
+\contentsline {subsection}{\numberline {3.2.15}The \texttt {stella\_diagnostics\_knobs} namelist}{9}{subsection.3.2.15}
+\contentsline {subsection}{\numberline {3.2.16}The \texttt {reinit\_knobs} namelist}{9}{subsection.3.2.16}
+\contentsline {subsection}{\numberline {3.2.17}The \texttt {layouts\_knobs} namelist}{9}{subsection.3.2.17}
+\contentsline {subsection}{\numberline {3.2.18}The \texttt {neoclassical\_input} namelist}{9}{subsection.3.2.18}
+\contentsline {subsection}{\numberline {3.2.19}The \texttt {sfincs\_input} namelist}{9}{subsection.3.2.19}
+\contentsline {chapter}{\numberline {4}Output}{10}{chapter.4}
+\contentsline {chapter}{\numberline {5}Diagnostics}{11}{chapter.5}
+\contentsline {section}{\numberline {5.1}The output files}{11}{section.5.1}
+\contentsline {section}{\numberline {5.2}Diagnosing at the \texttt {python} prompt}{11}{section.5.2}
+\contentsline {section}{\numberline {5.3}The {\ttfamily stella}\nobreakspace {}GUI}{11}{section.5.3}

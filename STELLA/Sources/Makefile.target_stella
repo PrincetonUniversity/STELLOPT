@@ -1,0 +1,40 @@
+stella_all: modules stella
+
+stella: $(stella_mod)
+	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+stella.x: $(stella_mod)
+	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+.PHONY: modules utils_all geo_all vmec
+
+modules: utils_all geo_all
+
+### UTILS
+utils_all: utils.a
+
+UTIL_OBJ = spl.o constants.o file_utils.o netcdf_utils.o command_line.o
+utils.a: $(UTIL_OBJ)
+	$(ARCH) $(ARCHFLAGS) $@ $^
+	$(RANLIB) $@
+
+### VMEC interface
+vmec:
+	$(MAKE) -C $(VMEC)
+
+mini_libstell.a:
+	$(MAKE) -C $(VMEC)/mini_libstell
+
+### GEO
+geo_all: vmec geo.a
+
+GEO_OBJ = stella_geometry.o inputprofiles_interface.o millerlocal.o vmec_geo.o
+
+geo.a:  $(GEO_OBJ)
+	$(ARCH) $(ARCHFLAGS) $@ $^
+	$(RANLIB) $@
+
+distclean:
+	-rm -f stella stella.x
+
+vmec_to_stella_geometry_interface.o: | vmec

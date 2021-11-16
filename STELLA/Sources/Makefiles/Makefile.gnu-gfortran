@@ -1,0 +1,65 @@
+# Compiler: GNU gfortran/gcc
+
+FC = gfortran
+CC = gcc
+F90FLAGS += -ffree-line-length-none -fno-backslash
+CPPFLAGS += -DFCOMPILER=_GFORTRAN_
+
+cmd=$(shell basename $(shell which $(FC)))
+ver:=$(shell $(FC) --version | sed -n 's/GNU Fortran.*[^0-9]\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
+GFORTRANMAJORVERSION=$(shell echo $(ver) | awk -F. '{print $$1}')
+GFORTRANMINORVERSION=$(shell echo $(ver) | awk -F. '{print $$2}')
+GFORTRANMINORSUBVERSION=$(shell echo $(ver) | awk -F. '{print $$3}')
+
+# sizeof is implemented from ver 4.3
+NOSIZEOF=$(shell [ $(GFORTRANMAJORVERSION) -le 4 -o \( $(GFORTRANMAJORVERSION) -eq 4 -a $(GFORTRANMINORVERSION) -lt 3 \) ] && echo on)
+ifeq ($(NOSIZEOF),on) # this cannot be replaced by ifdef
+	CPPFLAGS += -DNO_SIZEOF
+endif
+	
+# For gfortran > 4.8.0, we don't want it including include/stdc-predef.h
+# so we use -ffreestanding to avoid this.
+# Added by Ian Abel 18/7/2013
+FREESTANDING_NEEDED = $(shell [ $(GFORTRANMAJORVERSION) -gt 4 -o \( $(GFORTRANMAJORVERSION) -ge 4 -a $(GFORTRANMINORVERSION) -ge 8 \) ] && echo needed)
+ifeq ($(FREESTANDING_NEEDED),needed)
+	CPPFLAGS += -ffreestanding
+endif
+
+# For gfortran > 10, we need to add -fallow-argument-mismatch for mini_libstell
+ALLOW_MISMATCH_NEEDED = $(shell [ $(GFORTRANMAJORVERSION) -ge 10 ] && echo needed)
+ifeq ($(ALLOW_MISMATCH_NEEDED),needed)
+	F90FLAGS += -fallow-argument-mismatch
+endif
+
+
+ifdef DBLE
+	DBLEFLAGS = -fdefault-real-8 -fdefault-double-8
+	F90FLAGS += $(DBLEFLAGS)
+endif
+
+ifdef STATIC
+	LDFLAGS += -static
+endif
+
+ifdef DEBUG
+	F90FLAGS += -g -Wall -fimplicit-none -fbounds-check #-ffpe-trap=invalid,zero,overflow
+	F90OPTFLAGS =
+	CFLAGS += -g -Wall -fbounds-check
+	COPTFLAGS =
+else
+	ifdef OPT
+		F90OPTFLAGS += -O3
+		COPTFLAGS += -O3
+	endif
+
+	ifeq ($(findstring gprof,$(PROF)),gprof)
+		F90FLAGS += -pg
+		CFLAGS += -pg
+	endif
+endif
+
+ifdef USE_OPENMP
+	F90FLAGS += -fopenmp
+	CFLAGS += -fopenmp
+endif
+

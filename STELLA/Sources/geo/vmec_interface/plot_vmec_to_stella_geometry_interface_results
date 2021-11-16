@@ -1,0 +1,243 @@
+#!/usr/bin/env python
+
+verbose = False
+
+import numpy as np
+
+f = open('geometry.dat','r')
+lines = f.readlines()
+f.close()
+
+splitline = lines[1].split()
+nalpha = int(splitline[0])
+nzgrid = int(splitline[1])
+print "nalpha:",nalpha
+print "nzgrid:",nzgrid
+
+splitline = lines[3].split()
+alpha = np.array([float(item) for item in splitline])
+if verbose: print "alpha:",alpha
+if nalpha != len(alpha):
+    print "Unexpected number of entries for alpha"
+    exit(1)
+
+splitline = lines[5].split()
+zeta = np.array([float(item) for item in splitline])
+if verbose: print "zeta:",zeta
+if nzgrid*2+1 != len(zeta):
+    print "Unexpected number of entries for zeta"
+    exit(1)
+
+next_index = 7
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+bmag = np.array(data)
+if verbose: print "bmag:",bmag
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gradpar = np.array(data)
+if verbose: print "gradpar:",gradpar
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gds2 = np.array(data)
+if verbose: print "gds2:",gds2
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gds21 = np.array(data)
+if verbose: print "gds21:",gds21
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gds22 = np.array(data)
+if verbose: print "gds22:",gds22
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gbdrift = np.array(data)
+if verbose: print "gbdrift:",gbdrift
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gbdrift0 = np.array(data)
+if verbose: print "gbdrift0:",gbdrift0
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+cvdrift = np.array(data)
+if verbose: print "cvdrift:",cvdrift
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+cvdrift0 = np.array(data)
+if verbose: print "cvdrift0:",cvdrift0
+
+
+
+
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(14,7))
+numRows = 3
+numCols = 3
+ialpha = 0
+
+plt.subplot(numRows,numCols,1)
+plt.plot(zeta,bmag[ialpha,:],'.-')
+plt.title('bmag')
+plt.xlabel('zeta')
+
+plt.subplot(numRows,numCols,2)
+plt.plot(zeta,gradpar[ialpha,:],'.-')
+plt.title('gradpar')
+plt.xlabel('zeta')
+
+plt.subplot(numRows,numCols,3)
+plt.plot(zeta,gds2[ialpha,:],'.-')
+plt.title('gds2')
+plt.xlabel('zeta')
+
+plt.subplot(numRows,numCols,4)
+plt.plot(zeta,gds21[ialpha,:],'.-')
+plt.title('gds21')
+plt.xlabel('zeta')
+
+plt.subplot(numRows,numCols,5)
+plt.plot(zeta,gds22[ialpha,:],'.-')
+plt.title('gds22')
+plt.xlabel('zeta')
+
+plt.subplot(numRows,numCols,6)
+plt.plot(zeta,gbdrift[ialpha,:],'.-')
+plt.title('gbdrift')
+plt.xlabel('zeta')
+
+plt.subplot(numRows,numCols,7)
+plt.plot(zeta,gbdrift0[ialpha,:],'.-')
+plt.title('gbdrift0')
+plt.xlabel('zeta')
+
+plt.subplot(numRows,numCols,8)
+plt.plot(zeta,cvdrift[ialpha,:],'.-')
+plt.title('cvdrift')
+plt.xlabel('zeta')
+
+plt.subplot(numRows,numCols,9)
+plt.plot(zeta,cvdrift0[ialpha,:],'.-')
+plt.title('cvdrift0')
+plt.xlabel('zeta')
+
+
+plt.figtext(0.5,1,'Results for the alpha=0 field line',horizontalalignment='center',verticalalignment='top')
+plt.tight_layout()
+
+#####################################
+
+plt.figure(figsize=(14,7))
+numRows = 3
+numCols = 3
+numContours=25
+
+plt.subplot(numRows,numCols,1)
+plt.contourf(zeta,alpha,bmag,numContours)
+plt.title('bmag')
+plt.xlabel('zeta')
+plt.ylabel('alpha')
+plt.colorbar()
+
+plt.subplot(numRows,numCols,2)
+plt.contourf(zeta,alpha,gradpar,numContours)
+plt.title('gradpar')
+plt.xlabel('zeta')
+plt.ylabel('alpha')
+plt.colorbar()
+
+plt.subplot(numRows,numCols,3)
+plt.contourf(zeta,alpha,gds2,numContours)
+plt.title('gds2')
+plt.xlabel('zeta')
+plt.ylabel('alpha')
+plt.colorbar()
+
+plt.subplot(numRows,numCols,4)
+plt.contourf(zeta,alpha,gds21,numContours)
+plt.title('gds21')
+plt.xlabel('zeta')
+plt.ylabel('alpha')
+plt.colorbar()
+
+plt.subplot(numRows,numCols,5)
+plt.contourf(zeta,alpha,gds22,numContours)
+plt.title('gds22')
+plt.xlabel('zeta')
+plt.ylabel('alpha')
+plt.colorbar()
+
+plt.subplot(numRows,numCols,6)
+plt.contourf(zeta,alpha,gbdrift,numContours)
+plt.title('gbdrift')
+plt.xlabel('zeta')
+plt.ylabel('alpha')
+plt.colorbar()
+
+plt.subplot(numRows,numCols,7)
+plt.contourf(zeta,alpha,gbdrift0,numContours)
+plt.title('gbdrift0')
+plt.xlabel('zeta')
+plt.ylabel('alpha')
+plt.colorbar()
+
+plt.subplot(numRows,numCols,8)
+plt.contourf(zeta,alpha,cvdrift,numContours)
+plt.title('cvdrift')
+plt.xlabel('zeta')
+plt.ylabel('alpha')
+plt.colorbar()
+
+plt.subplot(numRows,numCols,9)
+plt.contourf(zeta,alpha,cvdrift0,numContours)
+plt.title('cvdrift0')
+plt.xlabel('zeta')
+plt.ylabel('alpha')
+plt.colorbar()
+
+plt.tight_layout()
+
+plt.show()

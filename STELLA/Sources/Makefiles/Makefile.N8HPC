@@ -1,0 +1,72 @@
+# Host: N8HPC
+# Author: Peter Buxton
+
+NETCDF_DIR = $(NETCDF_HOME)
+#/apps/developers/libraries/netcdf/4.2.1.1/1/bit-64-intel-12.1.5.339-intelmpi-4.1.0.024
+FFT_DIR = $(FFTW_HOME)
+#/apps/developers/libraries/fftw/2.1.5/1/bit-64-intel-12.1.5.339-intelmpi-4.1.0.024
+
+FFT_INC = -I$(FFT_DIR)/include
+
+COMPILER=intel
+
+include Makefile.$(COMPILER)
+
+FC=ifort
+MPIFC=mpif90
+CC=icc
+$(FC=$FC)
+ifeq ($(USE_FFT),fftw)
+	ifdef DBLE
+		FFT_LIB = -L$(FFT_DIR)/lib -ldrfftw -ldfftw -lm
+	else
+		FFT_LIB = -lsfftw -lsrfftw
+	endif
+else ifeq($(USE_FFT),fftw3)
+	ifdef DBLE
+		FFT_LIB = -L$(FFT_DIR)/lib -lfftw3
+	else
+		FFT_LIB = -lfftw3
+	endif
+endif
+
+NETCDF_INC = -I$(NETCDF_DIR)/include
+NETCDF_LIB = -L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf
+
+define STANDARD_SYSTEM_CONFIGURATION
+module purge
+module load licenses sge bit/64 york user
+module load intel/15.03;\
+module load intelmpi/5.1.0.038 ;\
+module load fftw ;\
+module load netcdf/4.3.0;\
+echo Module configuration complete;\
+export MAKEFLAGS='-j -I Makefiles USE_PARALLEL_NETCDF=on USE_FFT=fftw3';\
+export TESTEXEC='aprun -N 16 -n 16';
+endef
+
+####################### How to install and run on N8HPC #######################
+# INSTALLING:                                                                 #
+# ~/trunk>module load bit/64 york intel fftw/2.1.5 netcdf                     #
+# ~/trunk>module switch openmpi intelmpi                                      #
+# ~/trunk>export GK_SYSTEM=N8HPC                                              #
+# ~/trunk>make -I Makefiles                                                   #
+#                                                                             #
+# ALTERNATIVE #DD
+# module load fftw   #Defaults to v3.x.x
+# module load netcdf/4.3.0  #Default version not built for all compiler combos
+# module switch intel intel/15.0.3
+# module switch openmpi intelmpi/5.1.0.038 #Default openmpi doesn't support non-blocking gathers
+#
+# To run create a gs2_submission_script.sh                                    #
+# #$ -cwd -V                                                                  #
+# #$ -l h_rt=01:00:00                                                         #
+# #$ -l np=16                                                                 #
+# module load bit/64 york intel fftw/2.1.5 netcdf                             #
+# module switch openmpi intelmpi                                              #
+# EXECUTABLE=~/trunk/gs2                                                      #
+# INFILE=gs2input.in                                                          #
+# mpirun ${EXECUTABLE} ${INFILE} > OUTPUT                                     #
+#                                                                             #
+# qsub gs2_submission_script.sh                                               #
+###############################################################################

@@ -1,0 +1,18 @@
+# Host: newhydra -- Oxford local intel machine
+
+COMPILER=intel
+
+include Makefile.$(COMPILER)
+
+ifeq ($(USE_FFT),fftw)
+	FFT_LIB = -L/usr/local/shared/lib -lrfftw -lfftw
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/usr/local/shared/netcdf-4.0intel/include/ 
+	NETCDF_LIB = -L/usr/local/shared/netcdf-4.0intel/lib -lnetcdf
+endif
+
+ifeq ($(findstring ipm,$(PROF)),ipm)
+	IPM_LIB =
+endif

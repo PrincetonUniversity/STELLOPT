@@ -1,0 +1,82 @@
+# This file is a citation metadata file in the Citation File Format
+# (http://citation-file-format.github.io/).
+#
+# It provides citation metadata for this version of stella
+
+cff-version: 1.1.0
+message: If you use stella in your work, please cite it using the following metadata.
+title: stella
+authors:
+  - family-names: Barnes
+    given-names: Michael
+    affiliation: University of Oxford
+    orcid: https://orcid.org/0000-0002-0177-1689
+
+  - family-names: St-Onge
+    given-names: Denis
+    affiliation: University of Oxford
+    orcid: https://orcid.org/0000-0003-3112-9221
+
+  - family-names: von Boetticher
+    given-names: Alexander
+    affiliation: University of Oxford
+
+  - family-names: Davies
+    given-names: Robert
+    affiliation: University of York
+
+  - family-names: García Regaña
+    given-names: José Manuel
+    affiliation: CIEMAT
+    orcid: https://orcid.org/0000-0001-7632-3357
+
+  - family-names: Dickinson
+    given-names: David
+    orcid: https://orcid.org/0000-0002-0868-211X
+    affiliation: University of York
+
+  - family-names: Dorland
+    given-names: William
+    orcid: https://orcid.org/0000-0003-2915-724X
+    affiliation: University of Maryland
+
+  - family-names: Hill
+    given-names: Peter Alec
+    orcid: https://orcid.org/0000-0003-3092-1858
+    affiliation: University of York
+
+  - family-names: Parker
+    given-names: Joseph Thomas
+    orcid: https://orcid.org/0000-0002-5573-6475
+    affiliation: United Kingdom Atomic Energy Authority
+
+  - family-names: Roach
+    given-names: Colin Malcolm
+    affiliation: Culham Centre for Fusion Energy
+
+  - family-names: Landreman
+    given-names: Matt
+    orcid: https://orcid.org/0000-0002-7233-577X
+
+  - family-names: Thienpondt
+    given-names: Hanne
+
+  - family-names: Numata
+    given-names: Ryusuke
+
+  - family-names: Parisi
+    given-names: Jason
+    affiliation: University of Oxford
+    orcid: https://orcid.org/0000-0003-1328-7154
+
+  - family-names: Hardman
+    given-names: Michael
+
+  - family-names: Kotschenreuther
+    given-names: Michael T.
+    affiliation: Institute for Fusion Studies, University of Texas
+
+  - family-names: Tatsuno
+    given-names: Tomo
+
+repository-code: https://github.com/stellaGK/stella

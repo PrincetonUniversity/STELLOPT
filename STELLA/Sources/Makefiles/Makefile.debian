@@ -1,0 +1,41 @@
+# Makefile for Debian (tested on squeeze) 
+# Maintainer: edmund.highcock@physics.ox.ac.uk
+
+define STANDARD_SYSTEM_CONFIGURATION
+echo Before building install these packages\n\
+echo gcc\n\
+echo gfortran\n\
+echo openmpi-bin\n\
+echo libfftw3-mpi-dev\n\
+echo libnetcdf6\n\
+echo netcdf-bin\n\
+echo libnetcdf-dev\n\
+echo \n\
+echo No module configuration required\n\
+export MAKEFLAGS='-j 6 -I Makefiles'\n
+endef
+
+
+COMPILER=gnu-gfortran
+USE_HDF5=
+include Makefile.$(COMPILER)
+
+USE_LOCAL_SPFUNC=on
+HAS_ISO_C_BINDING=true
+
+ifeq ($(USE_FFT),fftw3)
+	FFT_LIB = -L/usr/lib -L/usr/lib/x86_64-linux-gnu/ -lfftw3 -lfftw3f -lfftw3_mpi -lfftw3f_mpi
+endif
+ifeq ($(USE_FFT),fftw)
+	FFT_LIB = -L/usr/lib64 -lrfftw -lfftw
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/usr/include
+	NETCDF_LIB = -L/usr/lib64 -lnetcdf -lnetcdff
+	NETCDF_INC = -I/usr/local/include
+	NETCDF_LIB = -L/usr/local/lib -lnetcdff -lnetcdf
+#ifdef USE_PARALLEL_NETCDF
+	NETCDF_LIB = -L/usr/local/lib -lnetcdff -lnetcdf -lhdf5  -lhdf5_hl -lhdf5 -lz
+#endif
+endif

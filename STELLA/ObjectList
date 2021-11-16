@@ -1,4 +1,62 @@
-ObjectFiles = \
-stella.o \
-stella_stellopt.o
-
+ObjectFiles = command_line.o \
+	 common_types.o \
+	 constants.o \
+	 convert.o \
+	 dissipation.o \
+	 dist_fn.o \
+	 dist_fn_arrays.o \
+	 dist_redistribute.o \
+	 euterpe_interface.o \
+	 extended_zgrid.o \
+	 fft_work.o \
+	 fields.o \
+	 fields_arrays.o \
+	 file_utils.o \
+	 finite_differences.o \
+	 flow_shear.o \
+	 fzero.o \
+	 g_tofrom_h.o \
+	 gauss_quad.o \
+	 gyro_averages.o \
+	 init_g.o \
+	 inputprofiles_interface.o \
+	 job_manage.o \
+	 kt_grids.o \
+	 linear_solve.o \
+	 millerlocal.o \
+	 mirror_terms.o \
+	 mp.o \
+	 mp_lu_decomposition.o \
+	 mt19937.o \
+	 multibox.o \
+	 neoclassical_terms.o \
+	 netcdf_utils.o \
+	 parallel_streaming.o \
+	 physics_flags.o \
+	 physics_parameters.o \
+	 ran.o \
+	 redistribute.o \
+	 response_matrix.o \
+	 run_parameters.o \
+	 sfincs_interface.o \
+	 sources.o \
+	 species.o \
+	 spfunc.o \
+	 spl.o \
+	 stella.o \
+	 stella_diagnostics.o \
+	 stella_geometry.o \
+	 stella_io.o \
+	 stella_layouts.o \
+	 stella_save.o \
+	 stella_time.o \
+	 stella_transforms.o \
+	 system_fortran.o \
+	 text_options.o \
+	 time_advance.o \
+	 vmec_geo.o \
+	 vmec_to_stella_geometry_interface.o \
+	 volume_averages.o \
+	 vpamu_grids.o \
+	 zgrid.o \
+	 stella_stellopt.o

@@ -1,0 +1,53 @@
+# Host: hebbe at Chalmers C3SE (SNIC)
+#// Specifically target the backend processors (gains ~10% decrease in execution time)
+# modules:
+# intel-mpi
+# fftw (only fftw3)
+# netCDF-Fortran 
+#
+# These module must be loaded at RUN TIME as well 
+#
+COMPILER=intel
+
+define STANDARD_SYSTEM_CONFIGURATION
+module load intel-mpi;\
+module load netCDF-Fortran;\ 
+module load FFTW;\
+echo Module configuration complete;\
+export MAKEFLAGS='-j -I Makefiles USE_PARALLEL_NETCDF=on';\
+export TESTEXEC='srun -n 16';
+endef
+
+# This line disables the automated checking
+# of the intel version which is slow and 
+# doesn't work in interactive mode
+DBLESIZEOPT = -double-size 128
+
+# hebbe only has fftw3 libraries
+USE_FFT = fftw3
+
+ifdef NETCDF_DIR
+	USE_NETCDF = on
+endif
+ifdef HDF5
+	USE_HDF5 = on
+endif
+ifdef PGPLOT_DIR
+	PGPLOT_LIB = -lpgplot -L$$PGPLOT_DIR /usr/lib64/libpng.so.3
+endif
+
+include Makefile.$(COMPILER)
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I$$EBROOTNETCDF/include
+	NETCDF_LIB = -L$$EBROOTNETCDF/lib64 -lnetcdf -lnetcdff 
+endif
+# ifeq ($(USE_FFT), fftw)
+#	FFT_INC = -I$(FFTW_DIR)/include
+#	FFT_LIB = -L$(FFTW_DIR)/lib -lrfftw -lfftw
+# endif
+ifeq ($(USE_FFT), fftw3)
+	FFT_INC = -I$$FFTW_DIR/include
+	FFT_LIB = -L$$FFTW_DIR/lib -lfftw3 -lfftw3_mpi
+endif
+SIMPLEDATAIO_CONF_ARCHIVEONLY=true
