@@ -25,7 +25,7 @@
       REAL(rprec), INTENT(in)    ::  sigma(nsd)
       INTEGER,     INTENT(in)    ::  niter,jtarget_stella
       INTEGER,     INTENT(inout) ::  iflag
-      
+
 !-----------------------------------------------------------------------
 !     Local Variables
 !
@@ -41,10 +41,10 @@
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
             mtargets = mtargets + 1
-            targets(mtargets) = target(ik) 
+            targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
-!            targets(mtargets) = target_stella(ik) 
-!            sigmas(mtargets)  = sigma_stella(ik)  
+!            targets(mtargets) = target_stella(ik)
+!            sigmas(mtargets)  = sigma_stella(ik)
 !DEC$ IF DEFINED (STELLA_OPT)
             IF(jtarget_stella.EQ.jtarget_stella_q1) THEN
                vals(mtargets)    = STELLA_q1(ik)
@@ -74,6 +74,19 @@
                IF (niter == -2) target_dex(mtargets)=jtarget_stella
             END IF
          END DO
+!!DEC$ IF DEFINED (STELLA_OPT)
+!         CALL read_stellein_input(TRIM(id_string),iflag)
+!         IF (iflag < 0 .and. niter == -2 .and. myid == master) THEN
+!            WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+!            WRITE(6,*) '  STELLA_IN Namelist not found     '
+!            WRITE(6,*) ' '
+!            k=0
+!            CALL write_stellain_namelist(6,k)
+!            WRITE(6,*) ' '
+!            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+!         END IF
+!         IF (iflag /=0) RETURN
+!!DEC$ ENDIF
       END IF
       RETURN
 !----------------------------------------------------------------------
