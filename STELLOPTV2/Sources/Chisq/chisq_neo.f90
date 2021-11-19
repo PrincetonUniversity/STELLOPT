@@ -12,7 +12,7 @@
       USE stellopt_runtime
       USE stellopt_targets
       USE stellopt_vars, ONLY: equil_type
-      USE equil_vals, ONLY: eff_ripple
+      USE equil_vals, ONLY: eps_eff32
 !DEC$ IF DEFINED (NEO_OPT)
       USE neo_input_mod, ONLY: read_neoin_input, write_neoin_namelist
 !DEC$ ENDIF
@@ -39,14 +39,14 @@
       IF (iflag < 0) RETURN
       ik   = COUNT(sigma < bigno)
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'NEO ',ik,4
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  EFF_RIPPLE  #'
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  EPS_EFF^(3/2)  #'
       IF (niter >= 0) THEN
          DO ik = 1, nsd
             IF (sigma(ik) < bigno) THEN
                mtargets = mtargets + 1
                targets(mtargets) = target(ik)
                sigmas(mtargets)  = sigma(ik)
-               vals(mtargets)    = eff_ripple(ik)
+               vals(mtargets)    = eps_eff32(ik)
                IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2X,I3.3)') target(ik),sigma(ik),vals(mtargets),ik
                IF (iflag == 1) CALL FLUSH(iunit_out)
             END IF
