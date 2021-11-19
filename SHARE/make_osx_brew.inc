@@ -35,7 +35,7 @@
 #            Define Compiler Flags
 #######################################################################
   # temp add some checking flags to avoid BEAMS3d issues
-  FLAGS_R = -O2 -fbacktrace -fcheck=all -fallow-argument-mismatch # only used for GCC-10
+  FLAGS_R = -O2 -fbacktrace -fallow-argument-mismatch # only used for GCC-10
   FLAGS_D = -O0 -g -fcheck=all -fbacktrace -Wextra -fallow-argument-mismatch \
             -Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan
   LIBS    = -L${SCALAPACK_HOME}/lib -lscalapack
