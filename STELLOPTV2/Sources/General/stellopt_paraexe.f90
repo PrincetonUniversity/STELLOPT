@@ -36,7 +36,7 @@
                              misc_error_flag, successful_term_flag, &
                              restart_flag, readin_flag, timestep_flag, &
                              output_flag, cleanup_flag, reset_jacdt_flag
-      USE vmec_input, ONLY:  ns_array, lfreeb, write_indata_namelist
+      USE vmec_input, ONLY:  ns_array, lfreeb, write_indata_namelist, lnyquist
 !DEC$ IF DEFINED (GENE)
       USE gene_subroutine, ONLY: rungene
       USE par_in, ONLY: diagdir,file_extension, beta_gene => beta
@@ -114,7 +114,7 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      IF (ier_paraexe /= 0) RETURN
+      IF (TRIM(in_parameter_1) /= 'exit' .and. ier_paraexe /= 0) RETURN
       code_str = TRIM(in_parameter_1)
       file_str = TRIM(in_parameter_2)
       ierr_mpi = 0
@@ -405,6 +405,7 @@
             CASE('terpsichore')
                proc_string = file_str
                ier = 0
+               IF (lnyquist) STOP "To use TERPSICHORE, you have to use lnyquist=.f. in VMEC!"
                CALL stellopt_kink(lscreen,ier)
             CASE('booz_xform')
                proc_string = file_str
