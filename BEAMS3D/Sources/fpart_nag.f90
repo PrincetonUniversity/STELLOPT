@@ -104,13 +104,13 @@
          VxB(1) = q(5)*bz_temp   - q(6)*bphi_temp
          VxB(2) = q(6)*br_temp   - q(4)*bz_temp
          VxB(3) = q(4)*bphi_temp - q(5)*br_temp
-         ! Equations
+         ! Equations a=F/m
          qdot(1:3) = q(4:6)
          qdot(4:6) = mycharge*(Efield(1:3)+VxB)/mymass
 
-         ! dA_phi/dt = F_phi/R
+         ! Correct for dphi/dt = Vphi/R
+         !   qdot(5) needs no correction
          qdot(2) = qdot(2)*rinv
-         qdot(5) = qdot(5)*rinv
       ELSE
          qdot(1:6) = 0
       END IF
