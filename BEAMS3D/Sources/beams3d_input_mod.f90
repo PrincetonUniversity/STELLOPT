@@ -86,7 +86,7 @@
                                partvmax, lendt_m, te_col_min, &
                                B_kick_min, B_kick_max, freq_kick, E_kick,&
                                vr_start_in, vphi_start_in, vz_start_in, &
-                               rho_fullorbit
+                               rho_fullorbit, duplicate_factor
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -177,6 +177,7 @@
 
       ! Full Oribt model
       rho_fullorbit = 1.0E10 ! Default to off
+      duplicate_factor = 1 ! No particle duplication
 
       ! Distribution Function Defaults
       nrho_dist = 64

@@ -38,6 +38,8 @@
 !     v3.00 07/14/21 - Radial distribution now in proper units m^-3
 !                    - HINT interface
 !                    - Use of accelerated wall model
+!     v4.00 12/XX/21 - Full Orbit model implemented
+!                    - Particle duplication implemented
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -125,7 +127,8 @@ MODULE beams3d_runtime
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
                lascot, lascot4, lbbnbi, lvessel_beam, lascotfl, lrandomize, &
                lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim
-    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, ndt, ndt_max
+    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
+               ndt, ndt_max, duplicate_factor
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &

@@ -1,4 +1,5 @@
 ObjectFiles = \
+beams3d_duplicate_part.o \
 outpart_beams3d_nag.o \
 beams3d_follow.o \
 beams3d_follow_fo.o \
