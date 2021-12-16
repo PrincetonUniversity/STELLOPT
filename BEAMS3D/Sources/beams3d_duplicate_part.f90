@@ -10,7 +10,6 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
-!      USE beams3d_grid
       USE beams3d_lines
       USE beams3d_physics_mod, ONLY: beams3d_gc2fo
       USE mpi_params
@@ -28,7 +27,6 @@
       DOUBLE PRECISION :: time0
       DOUBLE PRECISION, DIMENSION(6) :: q
       DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: rtemp
-      INTEGER, PARAMETER :: duplicate_factor=16
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------

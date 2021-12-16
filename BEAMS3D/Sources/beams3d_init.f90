@@ -606,6 +606,10 @@
          charge_beams(1) = charge_in(1)
          mass_beams(1)   = mass_in(1)
       END IF
+      
+      ! Duplicate particles if requested
+      IF (duplicate_factor > 1) CALL beams3d_duplicate_part
+
       ! In all cases create an end_state array
       ALLOCATE(end_state(nparticles))
       end_state=0
