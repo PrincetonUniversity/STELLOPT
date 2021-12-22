@@ -23,6 +23,9 @@ module chisq_gamma_c_v2
 !      USE read_boozer_mod
 !      USE read_wout_mod, ONLY: ns
       USE equil_utils 
+      !VMECTOOLS
+      USE vmec2pest_interfaces
+
       USE safe_open_mod, ONLY: safe_open
       IMPLICIT NONE
 
@@ -52,7 +55,7 @@ contains
 !-----------------------------------------------------------------------
       LOGICAL :: lsym
       INTEGER :: dex, ik, i, j, k, ier, jmin, igc2, igc3, igc4, igc5, igc6, igc7, ierrgc2
-      INTEGER :: igc8, igc9, igc10, igc11, igc12, igc13, igc14, igc15
+      INTEGER :: igc8, igc9, igc10, igc11, igc12, igc13, igc14, igc15, igcv2p1
       REAL(rprec) :: phi_N, rovera, theta, zeta_p, delzeta_p, u, v, coszeta_p, sinzeta_p
       REAL(rprec) :: coszeta_fp, sinzeta_fp, psi_p
 
@@ -106,11 +109,15 @@ contains
 
       integer, dimension(:), allocatable :: well_start, well_stop
       integer :: in_well, cur_well, nwells
-
+      integer :: num_surfs
       REAL(rprec) :: deltabp, den
       REAL(rprec) :: x_well_start, fx_well_start, zeta_well_start, theta_well_start
       REAL(rprec) :: x_well_stop, fx_well_stop, zeta_well_stop, theta_well_stop
       REAL(rprec), DIMENSION(:), allocatable :: bp
+      REAL(rprec), DIMENSION(:), allocatable :: v2p_curv2, v2p_surfs, v2p_bmag, v2p_jac
+      REAL(rprec), DIMENSION(:), allocatable :: v2p_curv_geod, v2p_curv_norm 
+      REAL(rprec), DIMENSION(:), allocatable :: v2p_curv1, v2p_x3, v2p_R, v2p_Z
+
 
       real(rprec) :: grad_psi_min, e_theta_min, cur_Bmin
 
@@ -119,12 +126,44 @@ contains
 !      LOGICAL, PARAMETER :: LGCXFILES = .false. 
 !      LOGICAL, PARAMETER :: LGCXFILES = .true. 
 !----------------------------------------------------------------------
+!     Local variables
+!
+!----------------------------------------------------------------------
+!      INTEGER :: maxPnt, nalpha0_, i, iunit, ier, ncnt, periods 
+!      INTEGER :: j, k, global_npol, nzgrid, nalpha, vmec_option
+!      REAL(rprec) :: dpdx, maxTheta, pval, pprime
+!      REAL(rprec) :: zeta_center, s_used
+!      REAL(rprec) :: periodszeta
+!      REAL(rprec), DIMENSION(:), ALLOCATABLE :: th
+!      character(len=128) :: temp_str, gist_filename, num_str, vmec2sfl_geom_file
+!      LOGICAL :: uflag, res!, verbose
+! 
+!      REAL(rprec), PARAMETER :: zero   = 0.0_rprec
+!      REAL(rprec), PARAMETER :: one    = 1.0_rprec
+!      REAL(rprec), PARAMETER :: two    = 2.0_rprec
+
+!----------------------------------------------------------------------
+!     Replicate the GIST geometry calculations done in stellopt_txport
+!     Do this for each (kx,ky) pair focusing only on a range defined
+!     by theta_k and local_npol
+!----------------------------------------------------------------------
+      !real(rprec), parameter :: pi = 3.1415926535897932846264338327950d+0 
+      !real(rprec), dimension(:), allocatable :: surfaces, data_arr
+      !integer :: nx2, nx3, i, j, k
+      !character(len=128) :: x3_coord, norm_type, grid_type
+      !real(rprec) :: nfpi, x3_center, max_z
+      !real(rprec) :: ptsm3d_target!, target_12f, target_qst, k_norm, 
+      real(rprec), dimension(1) :: s0_data, vmec_data
+      character(len=16), dimension(9) :: vm2p_geom_strings
+      character(len=64) :: wout_filename
+ !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       dex   = COUNT(sigma < bigno)
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'GAMMA_C ',dex,4
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  GAMMA_C  K'
+
       IF (niter >= 0) THEN
 !       Allocated space for variables
         nsteps = gammac_ntransits*gammac_delzetadiv
@@ -135,7 +174,7 @@ contains
         allocate ( kappa_g2(nsteps) )
         allocate ( kappa_g3(nsteps) )
         allocate ( kappa_g4(nsteps) )
-        allocate ( kappa_g3_diag(nsteps, 75) )
+        !allocate ( kappa_g3_diag(nsteps, 75) )
         allocate ( grad_psi_norm(nsteps) )
         allocate ( grad_psi_i(nsteps) )
         allocate ( e_theta_norm(nsteps) )
@@ -152,8 +191,26 @@ contains
         allocate ( well_start(maxwells) )
         allocate ( well_stop(maxwells) )
         allocate ( bp(gammac_bpstep) )
+        allocate ( v2p_bmag(2*nsteps) )
+        allocate ( v2p_jac(2*nsteps) )
+        !allocate ( v2p_curv1(2*nsteps) )
+        !allocate ( v2p_curv2(2*nsteps) )
+        allocate ( v2p_curv_norm(2*nsteps) )
+        allocate ( v2p_curv_geod(2*nsteps) )
+        allocate ( v2p_x3(2*nsteps) )
+        !allocate ( v2p_bmag((-nsteps/2+1):(nsteps/2-1)) )
+        !allocate ( v2p_jac((-nsteps/2+1):(nsteps/2-1)) )
+        !allocate ( v2p_curv1((-nsteps/2+1):(nsteps/2-1)) )
+        !allocate ( v2p_curv2((-nsteps/2+1):(nsteps/2-1)) )
+        !allocate ( v2p_x3((-nsteps/2+1):(nsteps/2-1)) )
+        !allocate ( v2p_bmag((-nsteps/2):(nsteps/2)) )
+        !allocate ( v2p_jac((-nsteps/2):(nsteps/2)) )
+        !allocate ( v2p_curv1((-nsteps/2):(nsteps/2)) )
+        !allocate ( v2p_curv2((-nsteps/2):(nsteps/2)) )
+        !allocate ( v2p_x3((-nsteps/2):(nsteps/2)) )
 
-        pi2 = 2.0_rprec*3.14159265358979_rprec
+        pi = 4.0_rprec*atan(1.0_rprec)
+        pi2 = 2.0_rprec*pi !3.14159265358979_rprec
 !        delzeta_p is the stepsize in the toroidal direction of the
 !        pest coordinate
         delzeta_p = one/gammac_delzetadiv !step size
@@ -167,9 +224,28 @@ contains
 !      From stellopt_load_equil:
 !       FORALL(u=1:ns_vmec) shat(u) = REAL(u-1)/REAL(ns_vmec-1)
 !       (normalized toroidal flux)
+        num_surfs = 0
+       ! print *,"<---nsd=",nsd
+        DO ik = 1,(nsd-1) !go through each half surface
+          IF (sigma(ik) >= bigno) CYCLE
+          num_surfs = num_surfs + 1
+        END DO
+        !allocate(v2p_surfs(num_surfs))
+        !num_surfs = 0
+        allocate(v2p_surfs(1))
+        num_surfs = 1
+
+        !DO ik = 1,(nsd-1) !go through each half surface
+        !  IF (sigma(ik) >= bigno) CYCLE
+        !  num_surfs = num_surfs + 1
+        !  v2p_surfs(num_surfs) = shat(ik)
+        !  print *,"<---ik=",ik," shat(ik)=",shat(ik)
+        !END DO
 
         DO ik = 1,nsd !go through each surface
           IF (sigma(ik) >= bigno) CYCLE
+          
+          v2p_surfs(1) = shat(ik)
 
           dloverb = 0.0_rprec
           mtargets = mtargets + 1
@@ -186,12 +262,12 @@ contains
 
 !         if LGCXFILES are geing generated, print some info to the main screen
           IF (LGCXFILES .eqv. .true.) then
-            write (iunit_out,*) 'phi_N', phi_N
-            write (iunit_out,*) 'nfp', nfp
-            write (iunit_out,*) 'iota', iota
-            write (iunit_out,*) 'iotap', iotap
-            write (iunit_out,*) 'psi_a', psi_a
-            write (iunit_out,*) 'psi_p', psi_p
+            print *, 'phi_N', phi_N
+            print *, 'nfp', nfp
+            print *, 'iota', iota
+            print *, 'iotap', iotap
+            print *, 'psi_a', psi_a
+            print *, 'psi_p', psi_p
           END IF
 
 !          Initialize starting point
@@ -251,6 +327,67 @@ contains
 
 !          first time through calculate fields and some basic parameters
 
+
+      !IF (lscreen) WRITE(6,'(a)') &
+      !WRITE(6,'(a)') &
+      !&  ' -------------------------  BEGIN PTSM3D CALCULATION &
+      !& ------------------------ '
+
+      ! These strings designate what geometric quantities to pull from vmec2pest
+      vm2p_geom_strings(1) = 'g11'
+      vm2p_geom_strings(2) = 'g12'
+      vm2p_geom_strings(3) = 'g22'
+      vm2p_geom_strings(4) = 'bmag'
+      vm2p_geom_strings(5) = 'jac'
+      vm2p_geom_strings(6) = 'curv_drift_x2'
+      vm2p_geom_strings(7) = 'curv_drift_x1'
+      vm2p_geom_strings(8) = 'd_B_d_x3'
+      vm2p_geom_strings(9) = 'x3'
+
+      ! Call vmec2pest on 1 point on one surface to obtain radial quantities, such as s-hat 
+      ! These functions are documented in the VMECTools library
+      wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
+      !call vmec2pest_stellopt_interface(s0_data ,1,1,0d+0,0d+0,"zeta",40d+0,8,"minor_r","gene")
+    !  print *,"<----vmec2peset_interface call"
+      !call vmec2pest_interface(wout_filename, v2p_surfs, num_surfs, 2*(nsteps)-1, 0d+0, 0d+0,"zeta", (1d0+0)*gammac_ntransits, 8, "minor_r","gene")
+      !call vmec2pest_interface(wout_filename, v2p_surfs, num_surfs, 2*(nsteps)-1, 0d+0, 0d+0, (1d0+0)*gammac_ntransits, 8, "minor_r","gene")
+      !call vmec2pest_interface(wout_filename, v2p_surfs, 1, 2*(nsteps)-1, 0d+0, 0d+0, (1d0+0)*gammac_ntransits, 8, "minor_r","gene")
+      !call vmec2pest_stellopt_interface(v2p_surfs, 1, 2*(nsteps)-1, 0d+0, 0d+0, (1d0+0)*gammac_ntransits, 8, "minor_r","gene")
+      !call vmec2pest_stellopt_interface(v2p_surfs, 1, 2*(nsteps)-1, 0d+0, 0d+0, (pi)*nfp*gammac_ntransits, 0, "minor_r","gene")
+      !call vmec2pest_stellopt_interface(v2p_surfs, 1, 2*(nsteps)-1, 0d+0, 0d+0, (1.0d+0)*nfp*gammac_ntransits, 0, "minor_r","gene")
+      call vmec2pest_stellopt_interface(v2p_surfs, 1, 2*(nsteps)-1, 0d+0, 0d+0, (1.0d+0)*nfp*gammac_ntransits/pi, 0, "minor_r","gene")
+      !call vmec2pest_interface(wout_filename,v2p_surfs,1,nsteps-1,0d+0,0d+0,"zeta",40d+0,8,"minor_r","gs2")
+
+      !call get_pest_data_interface(0,0,"shat",0,1,s0_data)
+    !  print *,"<----get_pest_data_interface_call call"
+      !call get_pest_data_interface(0,0,"R",1,2*nsteps,v2p_R)
+      call get_pest_data_interface(0,0,"bmag",1,2*nsteps,v2p_bmag)
+      !call get_pest_data_interface(0,0,"jac",1,2*nsteps,v2p_jac)
+      call get_pest_data_interface(0,0,"jacobian",1,2*nsteps,v2p_jac)
+      call get_pest_data_interface(0,0,"x3",1,2*nsteps,v2p_x3)
+      !call get_pest_data_interface(0,0,"curv_drift_x1",1,2*nsteps,v2p_curv1)
+      !call get_pest_data_interface(0,0,"curv_drift_x2",1,2*nsteps,v2p_curv2)
+      call get_pest_data_interface(0,0,"normal_curv",1,2*nsteps,v2p_curv_norm)
+      call get_pest_data_interface(0,0,"geodesic_curv",1,2*nsteps,v2p_curv_geod)
+      !call get_pest_data_interface(0,0,"R",1,2*nsteps,v2p_R)
+      !call get_pest_data_interface(0,0,"Z",1,2*nsteps,v2p_Z)
+    
+      IF (LGCXFILES .eqv. .true.) then
+         CALL safe_open(igcv2p1, ierrgc2, 'gcv2p1.'//trim(proc_string),  &
+                          'replace','formatted')
+
+         !DO j = -(nsteps/2+1),(nsteps/2-1) !1,nsteps
+         DO j = nsteps,1,-1
+           !write(igcv2p1,'(1X,I8,7(2X,E16.8E4))') j, v2p_bmag(j), &
+           !         v2p_jac(j), v2p_x3(j), v2p_curv1(j), v2p_curv2(j), &
+           !         v2p_curv_norm(j), v2p_curv_geod(j)
+           write(igcv2p1,'(1X,I8,5(2X,E16.8E4))') j, v2p_bmag(j), &
+                    v2p_jac(j), v2p_x3(j), v2p_curv_norm(j), v2p_curv_geod(j)
+         END DO
+
+         close(igcv2p1)
+      END IF
+
 !         Loop over each point along the line
           DO j = 1,nsteps
 !           coming into the do-loop, sflCrd(1:3) contains the
@@ -304,9 +441,9 @@ contains
 !           derivatives are w.r.t rho=sqrt(s),u,v
 
             ! step three: kappa_g on single-FP
-            call get_equil_kappa(phi_N, u_initB, v_initB, kappa_g(j), ier)
-            call get_equil_kappa2(phi_N, u_initB, v_initB, phiedge, zeta_p, kappa_g3(j), kappa_g4(j), ier, this_kappa_g3_diag)
-            kappa_g3_diag(j,:) = this_kappa_g3_diag(1,:)
+            !call get_equil_kappa(phi_N, u_initB, v_initB, kappa_g(j), ier)
+            !call get_equil_kappa2(phi_N, u_initB, v_initB, phiedge, zeta_p, kappa_g3(j), kappa_g4(j), ier, this_kappa_g3_diag)
+            !kappa_g3_diag(j,:) = this_kappa_g3_diag(1,:)
 !!!!!!WARNING
 !        Where the code takes V as an input it is asking for a value
 !        running from 0 to 2*pi over a field period.  However,
@@ -648,7 +785,7 @@ contains
  
 !  -- dot product of bdotgradb and binormal
             !geodesic curvature
-            kappa_g2(j) = 0.0_rprec
+            !kappa_g2(j) = 0.0_rprec
 
 !new
 ! Use central differences to calculated bdotgradb - 
@@ -684,11 +821,11 @@ contains
 
 
               ! set the value of kappa_g for the 1st index
-              kappa_g2(j-1) = dot_product(bdotgradb, binormal(j-1,:))
+              !kappa_g2(j-1) = dot_product(bdotgradb, binormal(j-1,:))
               if (LGCXFILES .eqv. .true.) then
-                write(igc7,'(1X,I8,4(2X,E16.8E4))') 1,&
-                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(1)
-                write(igc13,'(4(2X,E16.8E4))') kappa_g2(1), kappa_g(1), kappa_g3(1), kappa_g4(1)
+               ! write(igc7,'(1X,I8,4(2X,E16.8E4))') 1,&
+               !        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(1)
+               ! write(igc13,'(4(2X,E16.8E4))') kappa_g2(1), kappa_g(1), kappa_g3(1), kappa_g4(1)
               END IF
             END IF 
 
@@ -733,9 +870,9 @@ contains
               ! set the value of kappa_g for the 2nd thru 2nd-to-last index
               kappa_g2(j-1) = dot_product(bdotgradb, binormal(j-1, :))
               if (LGCXFILES .eqv. .true.) then
-                write(igc7,'(1X,I8,4(2X,E16.8E4))') (j-1),&
-                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j-1)
-                write(igc13,'(4(2X,E16.8E4))') kappa_g2(j-1), kappa_g(j-1), kappa_g3(j-1), kappa_g4(j-1)
+               ! write(igc7,'(1X,I8,4(2X,E16.8E4))') (j-1),&
+               !        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j-1)
+               !  write(igc13,'(4(2X,E16.8E4))') kappa_g2(j-1), kappa_g(j-1), kappa_g3(j-1), kappa_g4(j-1)
               END IF
 
               IF (j == nsteps) THEN ! handle the last point
@@ -763,9 +900,9 @@ contains
 
                 kappa_g2(j) = dot_product(bdotgradb, binormal(j,:))
                 if (LGCXFILES .eqv. .true.) then
-                  write(igc7,'(1X,I8,4(2X,E16.8E4))') j, &
-                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j)
-                  write(igc13,'(4(2X,E16.8E4))') kappa_g2(j), kappa_g(j), kappa_g3(j), kappa_g4(j)
+             !     write(igc7,'(1X,I8,4(2X,E16.8E4))') j, &
+             !          bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j)
+             !     write(igc13,'(4(2X,E16.8E4))') kappa_g2(j), kappa_g(j), kappa_g3(j), kappa_g4(j)
                 END IF
               END IF   
             END IF
@@ -868,19 +1005,19 @@ contains
 ! for easy plotting.  Also has gradS, gradU and gradV in (x,y,z) values
 !  Also has d(b-unit vector)/dl = (b dot grad)B
 !   which is kappa = curvature vectors in (x,y,z) coordintes
-             write(igc6,'(1X,I8,41(2X,E16.8E4))') j,X,Y,Z,bnxyz(1), bnxyz(2), bnxyz(3), &
-                                                 Bx, By, Bz, modB(j), &
-                                                 dxyzds(1),dxyzds(2),dxyzds(3), &
-                                                 dxyzdu(1),dxyzdu(2),dxyzdu(3), &
-                                                 dxyzdv(1),dxyzdv(2),dxyzdv(3), &
-                                                 grads_xyz(1), grads_xyz(2), grads_xyz(3), &
-                                                 gradu_xyz(1), gradu_xyz(2), gradu_xyz(3), &
-                                                 gradv_xyz(1)/NFP, gradv_xyz(2)/NFP, gradv_xyz(3)/NFP, &
-                                                 e_theta_norm(j), binormal(j,1), binormal(j,2), &
-                                                 binormal(j,3), &
-                                                 grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
-                                                 dVdb_t1(j), dBsupphidpsi(j), dBdpsi(j), &
-                                                 sqrtg, ds(j), jac_suvxyz
+             write(igc6,'(1X,I8,41(2X,E16.8E4))') j,X,Y,Z,bnxyz(1), bnxyz(2), bnxyz(3), &   !1-7
+                                                 Bx, By, Bz, modB(j), &                     !8-11
+                                                 dxyzds(1),dxyzds(2),dxyzds(3), &           !12-14
+                                                 dxyzdu(1),dxyzdu(2),dxyzdu(3), &           !15-17
+                                                 dxyzdv(1),dxyzdv(2),dxyzdv(3), &           !18-20
+                                                 grads_xyz(1), grads_xyz(2), grads_xyz(3), & !21-23
+                                                 gradu_xyz(1), gradu_xyz(2), gradu_xyz(3), & !24-26
+                                                 gradv_xyz(1)/NFP, gradv_xyz(2)/NFP, gradv_xyz(3)/NFP, & !27-29
+                                                 e_theta_norm(j), binormal(j,1), binormal(j,2), &      !30-32
+                                                 binormal(j,3), &                                       !33
+                                                 grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), & !34-36
+                                                 dVdb_t1(j), dBsupphidpsi(j), dBdpsi(j), &            !37-39
+                                                 sqrtg, ds(j), jac_suvxyz                            !40-42
              write(igc11,'(1X,I8,2(2X,E16.8E4))') j,ds(j),dVdb_t1(j)
 
              write(igc8,'(1X,I8,14(2X,E16.8E4))') j, psi_p, u_initA, &
@@ -914,7 +1051,7 @@ contains
                grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
                norm_grad_psi_xyz,  &
                es(1), es(2), es(3), eu(1), eu(2), eu(3), grad_psi_norm(j)
-             write(igc15, '(75(E16.10, 2X))') kappa_g3_diag(j,:)
+             !write(igc15, '(75(E16.10, 2X))') kappa_g3_diag(j,:)
 !
            END IF
 
@@ -1231,24 +1368,30 @@ contains
                 sqrt_bbb = sqrt(1 - modB(j)/B_refl)
 
                 !dIdb
-                temp = ds(j)/2.0_rprec/minB/bp(i)/bp(i) / sqrt_bbb
+                !temp = ds(j)/2.0_rprec/minB/bp(i)/bp(i) / sqrt_bbb
+                temp = delzeta_p*modB(j)/2.0_rprec/minB/bp(i)/bp(i) / sqrt_bbb /Bsupv(j)
                 dIdb = dIdb + temp
                 
                 !dgdb
-                temp = ds(j) * grad_psi_norm(j) * kappa_g2(j) 
-                temp = temp/bp(i)/bp(i)/2.0_rprec/modB(j)
+                !temp = ds(j) * grad_psi_norm(j) * kappa_g2(j) 
+                !  temp = ds(j) * grad_psi_norm(j) * v2p_curv_geod(nsteps+1-j) 
+                !  temp = temp/bp(i)/bp(i)/2.0_rprec/modB(j)
+                temp = delzeta_p * grad_psi_norm(j) * v2p_curv_geod(nsteps+1-j) 
+                temp = temp/bp(i)/bp(i)/2.0_rprec/Bsupv(j)
                 temp = temp*(sqrt_bbb + 1.0_rprec/sqrt_bbb)
                 dgdb = dgdb + temp
 
                 !dbigGdb 
-                temp = dBdpsi(j) *ds(j) /B_refl / bp(i) / modB(j) / 2.0_rprec
+                !  temp = dBdpsi(j) *ds(j) /B_refl / bp(i) / modB(j) / 2.0_rprec
+                temp = dBdpsi(j) * delzeta_p /B_refl / bp(i) / Bsupv(j) / 2.0_rprec
                 temp = temp*(sqrt_bbb + 1.0_rprec/sqrt_bbb)
                 dbigGdb = dbigGdb + temp
 
                 !dVdb
                 !temp = dVdb_t1(j) - (2.0_rprec * dBdpsi(j) - modB(j)/Bsupv(j)*dBsupvdpsi(j)) 
                 temp = dVdb_t1(j) - (2.0_rprec * dBdpsi(j) - modB(j)/Bsupv(j)*dBsupphidpsi(j)) 
-                temp = temp * 1.5_rprec * ds(j) / modB(j) / B_refl * sqrt_bbb
+                !  temp = temp * 1.5_rprec * ds(j) / modB(j) / B_refl * sqrt_bbb
+                temp = temp * 1.5_rprec * delzeta_p * sqrt_bbb / Bsupv(j) / B_refl 
                 dVdb = dVdb + temp
               
 
@@ -1267,7 +1410,8 @@ contains
               IF (well_start(k) < well_stop(k)) THEN
 
                 temp = dgdb/grad_psi_i(well_start(k))/dIdb / minB / e_theta_i(well_start(k))
-                temp = temp / (dbigGdb/dIdb + 0.666666_rprec * dVdb/dIdb)
+                !temp = temp / (dbigGdb/dIdb + 0.666666_rprec * dVdb/dIdb)
+                temp = temp / (dbigGdb/dIdb + (2.0_rprec / 3.0_rprec) * dVdb/dIdb)
                 vrovervt = temp
               ELSE
                 vrovervt = 0.0
@@ -1317,7 +1461,7 @@ contains
         deallocate ( kappa_g2 )
         deallocate ( kappa_g3 )
         deallocate ( kappa_g4 )
-        deallocate ( kappa_g3_diag )
+       ! deallocate ( kappa_g3_diag )
         deallocate ( grad_psi_norm )
         deallocate ( grad_psi_i )
         deallocate ( e_theta_norm )
@@ -1334,6 +1478,14 @@ contains
         deallocate ( well_start )
         deallocate ( well_stop )
         deallocate ( bp )
+        deallocate ( v2p_surfs )
+        deallocate ( v2p_bmag )
+        deallocate ( v2p_jac )
+     !   deallocate ( v2p_curv1 )
+     !   deallocate ( v2p_curv2 )
+        deallocate ( v2p_curv_geod )
+        deallocate ( v2p_curv_norm )
+        deallocate ( v2p_x3 )
 
 
 

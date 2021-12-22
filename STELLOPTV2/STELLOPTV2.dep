@@ -50,7 +50,8 @@ chisq_gamma_c_v2_mod.o : \
       equil_utils.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_tools.o \
       equil_vals.o \
-      stellopt_input_mod.o 
+      stellopt_input_mod.o  \
+      $(VMECTOOLS_LIB)
 
 
 chisq_kappa.o : \
