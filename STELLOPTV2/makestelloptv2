@@ -18,7 +18,7 @@ VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) \
 	$(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_FIELDLINES) \
 	$(LIB_JINV) $(LIB_MGRID) $(LIB_NEO)  $(LIB_COILOPTPP) $(LIB_GENE) \
-	$(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
+	$(LIB_REGCOIL) $(LIB_TERPSICHORE) $(LIB_VMECTOOLS) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR 
 	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC) 
@@ -175,3 +175,8 @@ $(LIB_REGCOIL) :
 #Construct TERPSICHORE library. 
 $(LIB_TERPSICHORE) :
 	@cd $(TERPSICHORE_DIR);make; ar -cruv $(LIB_TERPSICHORE) *.o *.mod
+
+#Construct VMECTOOLS library
+$(LIB_VMECTOOLS) :
+	@cd $(VMECTOOLS_DIR); make lib 
+   

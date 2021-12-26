@@ -39,7 +39,7 @@
 !     Subroutines
 !         get_equil_s:     Returns s given R, PHI(degrees), Z
 !         profile_norm:    Returns norm of a profile function
-!         get_equil_iota:  Returns iota (and u) given R, PHI(degrees), Z
+!         get_equil_iota:  Returns iota (and diota/d?) given R, PHI(degrees), Z
 !         get_equil_jdotb: Returns <j*B> given radial coordiante
 !         get_equil_p:     Returns p (and u) given R, PHI(degrees), Z
 !         get_equil_phi:   Returns phi (and u) given R, PHI(degrees), Z (electrostatic potential)
@@ -102,16 +102,18 @@
       RETURN
       END SUBROUTINE eval_prof_spline
       
-      SUBROUTINE get_equil_iota(s_val,val,ier)
+      SUBROUTINE get_equil_iota(s_val,val,ier,pval)
       IMPLICIT NONE
       REAL(rprec), INTENT(inout) ::  s_val
       REAL(rprec), INTENT(out)   ::  val
       INTEGER, INTENT(inout)     ::  ier
+      REAL(rprec), INTENT(out), OPTIONAL :: pval ! iota'=diota/ds
       IF (ier < 0) RETURN
       IF (EZspline_allocated(iota_spl)) THEN
          CALL EZspline_isInDomain(iota_spl,s_val,ier)
          IF (ier .ne. 0) RETURN
          CALL EZspline_interp(iota_spl,s_val,val,ier)
+         IF (PRESENT(pval)) CALL EZspline_derivative(iota_spl,1,s_val,pval,ier)
       ELSE
          ier = -1
       END IF

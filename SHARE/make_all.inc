@@ -164,6 +164,17 @@ else
   SFINCS_DIR =
   LIB_SFINCS =
 endif
+
+ifeq ($(LVMECTOOLS),T)
+  MOD1_PATH += $(VMECTOOLS_INC)
+  PRECOMP += -DVMECTOOLS
+  MOD_PATH += -I$(VMECTOOLS_DIR)/objs
+else
+  VMECTOOLS_LIB =
+  VMECTOOLS_DIR =
+  LIB_VMECTOOLS =
+endif
+
 ifeq ($(LMANGO),T)
   # This next line will define the variables MANGO_C_COMPILE_FLAGS, MANGO_F_COMPILE_FLAGS, MANGO_C_LINK_FLAGS, and MANGO_F_LINK_FLAGS
   include $(MANGO_DIR)/lib/mangoMakeVariables
@@ -196,7 +207,7 @@ else
 endif
 
 # Handle other codes
-LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
+LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(VMECTOOLS_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

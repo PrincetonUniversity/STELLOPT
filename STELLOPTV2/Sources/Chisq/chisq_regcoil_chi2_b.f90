@@ -9,7 +9,7 @@
 !                    and error flag.
 !
 !                    IFLAG:
-!                    On entry, If iflag is less than 1, the code returns
+!                    On entry, If iflag is less than 0, the code returns
 !                    with no further actions.
 !                    On entry, if iflag is set to zero, the code should
 !                    operate with no screen output.
@@ -60,7 +60,7 @@
 !     Local Variables
 !
 !-----------------------------------------------------------------------
-      INTEGER :: iunit, counter, ii
+      INTEGER :: iunit=5150, counter, ii
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE

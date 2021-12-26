@@ -16,7 +16,7 @@
       USE mpi_inc
       USE vmec_input
       USE fdjac_mod, ONLY: flag_singletask, flag_cleanup, &
-                           JAC_CLEANUP => flag_cleanup_jac,&
+                           JAC_CLEANUP => flag_cleanup_jac, &
                            LEV_CLEANUP => flag_cleanup_lev
       USE gade_mod, ONLY: GADE_CLEANUP, PSO_CLEANUP
       
@@ -128,7 +128,7 @@
           IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
           WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
           CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
-          WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
+          WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1 
           WRITE(iunit_out,'(A)') 'TARGETS'
           WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
           WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
@@ -172,6 +172,8 @@
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
                OPEN(iunit,FILE=TRIM('answers.'//TRIM(proc_string)),STATUS='unknown',IOSTAT=ier)
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
+               OPEN(iunit,FILE=TRIM('bnorm.'//TRIM(proc_string)),STATUS='unknown',IOSTAT=ier)
+               IF (ier == 0) CLOSE(iunit,STATUS='delete')
                OPEN(iunit,FILE=TRIM('boozmn_'//TRIM(proc_string)//'.nc'),STATUS='unknown',IOSTAT=ier)
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
                OPEN(iunit,FILE=TRIM('diagno_bth.'//TRIM(proc_string)),STATUS='unknown',IOSTAT=ier)
@@ -180,9 +182,11 @@
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
                OPEN(iunit,FILE=TRIM('jBbs.'//TRIM(proc_string)),STATUS='unknown',IOSTAT=ier)
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
+               OPEN(iunit,FILE=TRIM('jxbout_'//TRIM(proc_string)//'.nc'),STATUS='unknown',IOSTAT=ier)
+               IF (ier == 0) CLOSE(iunit,STATUS='delete')
                OPEN(iunit,FILE=TRIM('mercier.'//TRIM(proc_string)),STATUS='unknown',IOSTAT=ier)
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
-               OPEN(iunit,FILE=TRIM('jxbout_'//TRIM(proc_string)//'.nc'),STATUS='unknown',IOSTAT=ier)
+               OPEN(iunit,FILE=TRIM('regcoil_nescout.'//TRIM(proc_string)),STATUS='unknown',IOSTAT=ier)
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
                OPEN(iunit,FILE=TRIM('wout_'//TRIM(proc_string)//'.nc'),STATUS='unknown',IOSTAT=ier)
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
