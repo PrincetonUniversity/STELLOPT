@@ -679,10 +679,11 @@
       sigma_regcoil_c2p_dist_min  = bigno
       !target_regcoil_current_density = 8.0e6
       !sigma_regcoil_current_density  = bigno
-      
+     
+      ! Default settings for Gamma_C metric 
       gammac_transits = 400
       gammac_zetadiv = 400
-      gammac_bpsteps = 80
+      gammac_bpsteps = 200
       gammac_maxwells = 5000
       gammac_lgcx_files = .false.
 
