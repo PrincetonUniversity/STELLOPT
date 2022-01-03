@@ -250,11 +250,6 @@ contains
           !         first time through calculate fields and some basic parameters
 
 
-          IF (niter .eq. 0) then
-            WRITE(6,'(a)') &
-               ' -------------------------  BEGIN PTSM3D CALCULATION ------------------------ '
-          end if
-
           ! These functions are documented in the VMECTools library
           ! wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
           !print *,'<----v2p interface setup for: ', wout_filename
@@ -1023,6 +1018,8 @@ contains
         deallocate ( v2p_curv_geod )
         deallocate ( v2p_curv_norm )
         deallocate ( v2p_x3 )
+
+
       ELSE !This is the initialization loop that just counts targets
         DO ik = 1, nsd
           IF (sigma(ik) < bigno) THEN
