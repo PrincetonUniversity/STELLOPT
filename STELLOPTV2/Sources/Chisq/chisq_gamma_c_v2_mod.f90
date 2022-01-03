@@ -250,11 +250,10 @@ contains
           !         first time through calculate fields and some basic parameters
 
 
-          IF (lscreen) WRITE(6,'(a)') &
-          WRITE(6,'(a)') &
-          &  ' -------------------------  BEGIN PTSM3D CALCULATION &
-          & ------------------------ '
-
+          IF (niter .eq. 0) then
+            WRITE(6,'(a)') &
+               ' -------------------------  BEGIN PTSM3D CALCULATION ------------------------ '
+          end if
 
           ! These functions are documented in the VMECTools library
           ! wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
