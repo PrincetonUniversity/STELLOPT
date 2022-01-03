@@ -1,9 +1,9 @@
 module chisq_gamma_c_v2
 
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_gamma_c
+!     Subroutine:    chisq_gamma_c, version 2
 !     Authors:       Aaron Bader, John Schmitt
-!     Date:          04/23/2019, 2021
+!     Date:          2021-2022, v0.1a
 !     Description:   Calculate gamma_c metric for energetic particle 
 !                    transport
 !                    
@@ -20,8 +20,6 @@ module chisq_gamma_c_v2
       USE equil_vals
       USE stel_tools
       USE stellopt_input_mod
-!      USE read_boozer_mod
-!      USE read_wout_mod, ONLY: ns
       USE equil_utils 
       !VMECTOOLS
       USE vmec2pest_interfaces
@@ -80,13 +78,8 @@ contains
       REAL(rprec), DIMENSION(3) :: grads_xyz, gradu_xyz, gradv_xyz
       REAL(rprec), DIMENSION(3) :: grad_zeta_p, grad_psi_x_b, grad_psi_xyz
       REAL(rprec), DIMENSION(3) :: bdotgradb, grad_psi_x_b_xyz, grad_zeta_p_xyz,bdotgradb_sp
-!      INTEGER :: gammac_ntransits = 400
-      !INTEGER :: gammac_delzetadiv = 400
-!      INTEGER :: gammac_delzetadiv = 4000
       INTEGER :: nsteps ! = gammac_ntransits*gammac_delzetadiv
-!      INTEGER :: gammac_bpstep = 80 !division in b'
 
-      
       real(rprec), DIMENSION(3) :: gradR, gradZ, gradB, gradB_xyz
       real(rprec), DIMENSION(3) :: gradR_init, gradZ_init, gradB_init
       real(rprec), DIMENSION(3) :: grad_psi
@@ -94,18 +87,13 @@ contains
       REAL(rprec), DIMENSION(3) :: es, eu, ev, es_init, eu_init, ev_init
       real(rprec), DIMENSION(3) :: dxyzdu, dxyzdv, dxyzds
       real(rprec), DIMENSION(5) :: modbzeros_extraargs
-      REAL(rprec), DIMENSION(:), allocatable :: ds, modB, dBdpsi, kappa_g, kappa_g2
-      REAL(rprec), DIMENSION(:), allocatable :: kappa_g3, kappa_g4
-      double precision :: this_kappa_g3_diag(1,75)
+      REAL(rprec), DIMENSION(:), allocatable :: ds, modB, dBdpsi
       REAL(rprec), DIMENSION(:), allocatable :: grad_psi_norm, grad_psi_i
       REAL(rprec), DIMENSION(:), allocatable :: e_theta_norm, e_theta_i
       REAL(rprec), DIMENSION(:), allocatable :: dBsupvdpsi, dVdb_t1, dBsupphidpsi
       REAL(rprec), DIMENSION(:), allocatable :: dBsupv
       REAL(rprec), DIMENSION(:), allocatable :: Bsups, Bsupu, Bsupv
       REAL(rprec), DIMENSION(:,:), allocatable :: binormal, myCoords
-      REAL(rprec), DIMENSION(:,:), allocatable :: kappa_g3_diag
-
-!      integer :: maxwells = 5000
 
       integer, dimension(:), allocatable :: well_start, well_stop
       integer :: in_well, cur_well, nwells
@@ -129,32 +117,7 @@ contains
 !     Local variables
 !
 !----------------------------------------------------------------------
-!      INTEGER :: maxPnt, nalpha0_, i, iunit, ier, ncnt, periods 
-!      INTEGER :: j, k, global_npol, nzgrid, nalpha, vmec_option
-!      REAL(rprec) :: dpdx, maxTheta, pval, pprime
-!      REAL(rprec) :: zeta_center, s_used
-!      REAL(rprec) :: periodszeta
-!      REAL(rprec), DIMENSION(:), ALLOCATABLE :: th
-!      character(len=128) :: temp_str, gist_filename, num_str, vmec2sfl_geom_file
-!      LOGICAL :: uflag, res!, verbose
-! 
-!      REAL(rprec), PARAMETER :: zero   = 0.0_rprec
-!      REAL(rprec), PARAMETER :: one    = 1.0_rprec
-!      REAL(rprec), PARAMETER :: two    = 2.0_rprec
-
-!----------------------------------------------------------------------
-!     Replicate the GIST geometry calculations done in stellopt_txport
-!     Do this for each (kx,ky) pair focusing only on a range defined
-!     by theta_k and local_npol
-!----------------------------------------------------------------------
-      !real(rprec), parameter :: pi = 3.1415926535897932846264338327950d+0 
-      !real(rprec), dimension(:), allocatable :: surfaces, data_arr
-      !integer :: nx2, nx3, i, j, k
-      !character(len=128) :: x3_coord, norm_type, grid_type
-      !real(rprec) :: nfpi, x3_center, max_z
-      !real(rprec) :: ptsm3d_target!, target_12f, target_qst, k_norm, 
       real(rprec), dimension(1) :: s0_data, vmec_data
-      character(len=16), dimension(9) :: vm2p_geom_strings
       character(len=64) :: wout_filename
  !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -165,15 +128,11 @@ contains
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  GAMMA_C  K'
 
       IF (niter >= 0) THEN
-!       Allocated space for variables
+        !       Allocate space for variables
         nsteps = gammac_ntransits*gammac_delzetadiv
         allocate ( ds(nsteps) )
         allocate ( modB(nsteps) )
         allocate ( dBdpsi(nsteps) )
-        allocate ( kappa_g(nsteps) )
-        allocate ( kappa_g2(nsteps) )
-        allocate ( kappa_g3(nsteps) )
-        allocate ( kappa_g4(nsteps) )
         allocate ( grad_psi_norm(nsteps) )
         allocate ( grad_psi_i(nsteps) )
         allocate ( e_theta_norm(nsteps) )
@@ -198,36 +157,21 @@ contains
 
         pi = 4.0_rprec*atan(1.0_rprec)
         pi2 = 2.0_rprec*pi !3.14159265358979_rprec
-!        delzeta_p is the stepsize in the toroidal direction of the
-!        pest coordinate
+        !        delzeta_p is the stepsize in the toroidal direction of the
+        !        pest coordinate
         delzeta_p = one/gammac_delzetadiv !step size
         psi_a = phiedge !Toroidal flux at the edge
         gradu_xyz = 0
 
-!--------------------------------- DO ik = 1,nsd over each surface
-!      This metric is designed to accecpt a particular surface index,
-!      which can vary from 1 to NS, corresponding to a linear map in
-!      's'.  s is the normalized toroidal flux.
-!      From stellopt_load_equil:
-!       FORALL(u=1:ns_vmec) shat(u) = REAL(u-1)/REAL(ns_vmec-1)
-!       (normalized toroidal flux)
-        num_surfs = 0
-       ! print *,"<---nsd=",nsd
-        DO ik = 1,(nsd-1) !go through each half surface
-          IF (sigma(ik) >= bigno) CYCLE
-          num_surfs = num_surfs + 1
-        END DO
-        !allocate(v2p_surfs(num_surfs))
-        !num_surfs = 0
+        !--------------------------------- DO ik = 1,nsd over each surface
+        !      This metric is designed to accecpt a particular surface index,
+        !      which can vary from 1 to NS, corresponding to a linear map in
+        !      's'.  s is the normalized toroidal flux.
+        !      From stellopt_load_equil:
+        !       FORALL(u=1:ns_vmec) shat(u) = REAL(u-1)/REAL(ns_vmec-1)
+        !       (normalized toroidal flux)
+        
         allocate(v2p_surfs(1))
-        num_surfs = 1
-
-        !DO ik = 1,(nsd-1) !go through each half surface
-        !  IF (sigma(ik) >= bigno) CYCLE
-        !  num_surfs = num_surfs + 1
-        !  v2p_surfs(num_surfs) = shat(ik)
-        !  print *,"<---ik=",ik," shat(ik)=",shat(ik)
-        !END DO
 
         DO ik = 1,nsd !go through each surface
           IF (sigma(ik) >= bigno) CYCLE
@@ -237,17 +181,17 @@ contains
           dloverb = 0.0_rprec
           mtargets = mtargets + 1
 
-!         get normalized toroidal flux
+          !         get normalized toroidal flux
           phi_N = shat(ik)
           rovera = sqrt(phi_N) !rho = r/a   
           
-!         the Pest radial coordinate 's_p'- includes a facgtor of 2*pi
+          !         the Pest radial coordinate 's_p'- includes a facgtor of 2*pi
           psi_p = phi_N * psi_a / pi2
 
           CALL get_equil_iota(phi_N,iota,ier)  ! get iota at phi_N
           CALL get_equil_iota(phi_N,iota,ier,iotap) ! get d(iota)/dphi_N at phi_N
 
-!         if LGCXFILES are geing generated, print some info to the main screen
+          !         if LGCXFILES are geing generated, print some info to the main screen
           IF (LGCXFILES .eqv. .true.) then
             print *, 'phi_N', phi_N
             print *, 'nfp', nfp
@@ -257,20 +201,19 @@ contains
             print *, 'psi_p', psi_p
           END IF
 
-!          Initialize starting point
+          !          Initialize starting point
           theta = zero; zeta_p = zero
-!          phi_N = phi_N
           sflCrd(2) = zero
           sflCrd(3) = zero
 
-!           Initailziations
+          !           Initailziations
           gradR = zero; gradZ = zero; modB = zero
           R = zero; Z = zero
           Bxp = zero; Byp = zero; Bzp = zero;
           Bx2p = zero; By2p = zero; Bz2p = zero;
 
 
-!           If LGCX files are generated, then open them now and write an opening line
+          !           If LGCX files are generated, then open them now and write an opening line
           if (LGCXFILES .eqv. .true.) then
             write (iunit_out,*) '--------------------------------------------'
             CALL safe_open(igc2, ierrgc2, 'gc2.'//trim(proc_string),  &
@@ -302,165 +245,112 @@ contains
             CALL safe_open(igc15, ierrgc2, 'gc15.'//trim(proc_string),  &
                           'replace','formatted')
 
-!            write(igc2,*) 'j rho suv_pest suv_vmec uv_mod_vmec_fix R Z X Y'
-!            write(igc3,*) 'j modB Br Bphi Bz Bx By Bsups(j) Bsupu(j) Bsupv(j)'
-!            write(igc4,*) 'j gradR_init3 gradZ_init3 gradB_init3 gradR3 gradZ3 gradB3'
-!            write(igc5,*) 'j esubu3 esubv3 es_init3 eu_init3 ev_init3 gradS3 grad_psi_norm(j) dBdpsi(j) sqrtg '
-!            write(igc6,*) 'j X Y Z bnxyz(1:3) Bxyz(1:3) modB dxyzds(1:3) dxyzdu(1:3) dxyzdv(1:3) grads_xyz(1:3) gradu_xyz(1:3) gradv_xyz(1:3) e_theta_norm binormal(1:3) grad_psi_xyz(1:3) dVdb_t1 dBsupphidpsi dBdpsi sqrtg ds jac_suvxyz'
-!            write(igc7,*) 'j bdotgradb(1:3) kappa_g'
-!            write(igc8,*) 'j PEST(Rad,Pol,Tor) X Y Z Bx By Bz gradPsi_x gradPsi_y gradPsi_z e_theta_norm dBsupphidpsi'
-!            write(igc11,*) 'j ds(j) dVdb_t1'
           END IF
 
-!          first time through calculate fields and some basic parameters
+          !         first time through calculate fields and some basic parameters
 
 
-      !IF (lscreen) WRITE(6,'(a)') &
-      !WRITE(6,'(a)') &
-      !&  ' -------------------------  BEGIN PTSM3D CALCULATION &
-      !& ------------------------ '
+          IF (lscreen) WRITE(6,'(a)') &
+          WRITE(6,'(a)') &
+          &  ' -------------------------  BEGIN PTSM3D CALCULATION &
+          & ------------------------ '
 
-      ! These strings designate what geometric quantities to pull from vmec2pest
-      vm2p_geom_strings(1) = 'g11'
-      vm2p_geom_strings(2) = 'g12'
-      vm2p_geom_strings(3) = 'g22'
-      vm2p_geom_strings(4) = 'bmag'
-      vm2p_geom_strings(5) = 'jac'
-      vm2p_geom_strings(6) = 'curv_drift_x2'
-      vm2p_geom_strings(7) = 'curv_drift_x1'
-      vm2p_geom_strings(8) = 'd_B_d_x3'
-      vm2p_geom_strings(9) = 'x3'
 
-      ! Call vmec2pest on 1 point on one surface to obtain radial quantities, such as s-hat 
-      ! These functions are documented in the VMECTools library
-      wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
-      !call vmec2pest_stellopt_interface(s0_data ,1,1,0d+0,0d+0,"zeta",40d+0,8,"minor_r","gene")
-    !  print *,"<----vmec2peset_interface call"
-      !call vmec2pest_interface(wout_filename, v2p_surfs, num_surfs, 2*(nsteps)-1, 0d+0, 0d+0,"zeta", (1d0+0)*gammac_ntransits, 8, "minor_r","gene")
-      !call vmec2pest_interface(wout_filename, v2p_surfs, num_surfs, 2*(nsteps)-1, 0d+0, 0d+0, (1d0+0)*gammac_ntransits, 8, "minor_r","gene")
-      !call vmec2pest_interface(wout_filename, v2p_surfs, 1, 2*(nsteps)-1, 0d+0, 0d+0, (1d0+0)*gammac_ntransits, 8, "minor_r","gene")
-      !call vmec2pest_stellopt_interface(v2p_surfs, 1, 2*(nsteps)-1, 0d+0, 0d+0, (1d0+0)*gammac_ntransits, 8, "minor_r","gene")
-      !call vmec2pest_stellopt_interface(v2p_surfs, 1, 2*(nsteps)-1, 0d+0, 0d+0, (pi)*nfp*gammac_ntransits, 0, "minor_r","gene")
-      !call vmec2pest_stellopt_interface(v2p_surfs, 1, 2*(nsteps)-1, 0d+0, 0d+0, (1.0d+0)*nfp*gammac_ntransits, 0, "minor_r","gene")
-     !print *,'<----v2p interface setup for: ', wout_filename
-      call vmec2pest_stellopt_interface(v2p_surfs, 1, 2*(nsteps)-1, 0d+0, 0d+0, (1.0d+0)*nfp*gammac_ntransits/pi, 0, "minor_r","gene")
-      !call vmec2pest_interface(wout_filename,v2p_surfs,1,nsteps-1,0d+0,0d+0,"zeta",40d+0,8,"minor_r","gs2")
+          ! These functions are documented in the VMECTools library
+          ! wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
+          !print *,'<----v2p interface setup for: ', wout_filename
+          call vmec2pest_stellopt_interface(v2p_surfs, 1, 2*(nsteps)-1, 0d+0, 0d+0, (1.0d+0)*nfp*gammac_ntransits/pi, 0, "minor_r","gene")
 
-      !call get_pest_data_interface(0,0,"shat",0,1,s0_data)
-    !  print *,"<----get_pest_data_interface_call call"
-      !call get_pest_data_interface(0,0,"R",1,2*nsteps,v2p_R)
-      call get_pest_data_interface(0,0,"bmag",1,2*nsteps,v2p_bmag)
-      !call get_pest_data_interface(0,0,"jac",1,2*nsteps,v2p_jac)
-      call get_pest_data_interface(0,0,"jacobian",1,2*nsteps,v2p_jac)
-      call get_pest_data_interface(0,0,"x3",1,2*nsteps,v2p_x3)
-      !call get_pest_data_interface(0,0,"curv_drift_x1",1,2*nsteps,v2p_curv1)
-      !call get_pest_data_interface(0,0,"curv_drift_x2",1,2*nsteps,v2p_curv2)
-      call get_pest_data_interface(0,0,"normal_curv",1,2*nsteps,v2p_curv_norm)
-      call get_pest_data_interface(0,0,"geodesic_curv",1,2*nsteps,v2p_curv_geod)
-      !call get_pest_data_interface(0,0,"R",1,2*nsteps,v2p_R)
-      !call get_pest_data_interface(0,0,"Z",1,2*nsteps,v2p_Z)
+          call get_pest_data_interface(0,0,"bmag",1,2*nsteps,v2p_bmag)
+          call get_pest_data_interface(0,0,"jacobian",1,2*nsteps,v2p_jac)
+          call get_pest_data_interface(0,0,"x3",1,2*nsteps,v2p_x3)
+          call get_pest_data_interface(0,0,"normal_curv",1,2*nsteps,v2p_curv_norm)
+          call get_pest_data_interface(0,0,"geodesic_curv",1,2*nsteps,v2p_curv_geod)
     
-      IF (LGCXFILES .eqv. .true.) then
-         CALL safe_open(igcv2p1, ierrgc2, 'gcv2p1.'//trim(proc_string),  &
+          IF (LGCXFILES .eqv. .true.) then
+            CALL safe_open(igcv2p1, ierrgc2, 'gcv2p1.'//trim(proc_string),  &
                           'replace','formatted')
 
-         !DO j = -(nsteps/2+1),(nsteps/2-1) !1,nsteps
-         DO j = nsteps,1,-1
-           !write(igcv2p1,'(1X,I8,7(2X,E16.8E4))') j, v2p_bmag(j), &
-           !         v2p_jac(j), v2p_x3(j), v2p_curv1(j), v2p_curv2(j), &
-           !         v2p_curv_norm(j), v2p_curv_geod(j)
-           write(igcv2p1,'(1X,I8,5(2X,E16.8E4))') j, v2p_bmag(j), &
+            DO j = nsteps,1,-1
+              write(igcv2p1,'(1X,I8,5(2X,E16.8E4))') j, v2p_bmag(j), &
                     v2p_jac(j), v2p_x3(j), v2p_curv_norm(j), v2p_curv_geod(j)
-         END DO
+            END DO
 
-         close(igcv2p1)
-      END IF
+            close(igcv2p1)
+          END IF
 
-!         Loop over each point along the line
+            !         Loop over each point along the line
           DO j = 1,nsteps
-!           coming into the do-loop, sflCrd(1:3) contains the
-!           (normalized toroidal flux, theta(pest), zetax (pest))
-!           PEST coordinate to be considered
-!           The theta(pest) and zeta(pest) values for the pest coorinate are advanced at the 
-!           end of this do loop. 
-!           phi_N = phi_N  ! phi_N = s
+            !           coming into the do-loop, sflCrd(1:3) contains the
+            !           (normalized toroidal flux, theta(pest), zetax (pest))
+            !           PEST coordinate to be considered
+            !           The theta(pest) and zeta(pest) values for the pest coorinate are advanced at the 
+            !           end of this do loop. 
+            !           phi_N = phi_N  ! phi_N = s
             u_initA = sflCrd(2)  ! sflCrd(2) = theta (pest)
-            !u_initA = theta  ! sflCrd(2) = theta (pest)
             v_initA = sflCrd(3)  ! sflCrd(3) = zeta (pest) (see above and at end of this do-loop)
+           
+            !           pest2vmec in: s, theta, phi ('laboratory' 0->2pi, full torus)
+            !           on input, phi is converted to 'vmec' phi which goes
+            !           from 0->2pi over a field period.
+            !                   out: s, theta, phi('vmec'
             
-!           pest2vmec in: s, theta, phi ('laboratory' 0->2pi, full torus)
-!            on input, phi is converted to 'vmec' phi which goes
-!            from 0->2pi over a field period.
-!                     out: s, theta, phi('vmec'
-
-!           For compatibility with stell_tools/pest2vmec
-!           Changing def to match Julia and trying to maintain compatibility with stell_tools/pest2vmec
+            !           For compatibility with stell_tools/pest2vmec
+            !           Changing def to match Julia and trying to maintain compatibility with stell_tools/pest2vmec
             sflCrd(1) = phi_N
-            sflCrd(2) = -sflCrd(2) ! inverting both (or one? test one and none) prior to pest2vmec
+            sflCrd(2) = -sflCrd(2) ! inverting both prior to pest2vmec
             sflCrd(3) = -sflCrd(3)
-            !phi = MOD(phi,pi2/nfp)*nfp
-            !sflCrd(3) = -sflCrd(3) / nfp
-            !sflCrd(3) = -MOD(sflCrd(3),pi2/nfp)*nfp
 
             CALL pest2vmec(sflCrd) !convert to VMEC coordinates
 
-!           Changing def to match Julia and trying to maintain compatibility with stell_tools/pest2vmec
+            !           Changing def to match Julia and trying to maintain compatibility with stell_tools/pest2vmec
             phi_N = phi_N  ! sflCrd now has VMEC coordinates!!!  s=normalized flux
             u_initB = sflCrd(2)  ! u (vmec) <- changes to VMEC coords
             v_initB = sflCrd(3)  ! v (vmec) <- goes from 0-> 2pi over a field period 
             u = modulo(u_initB,pi2) ! does nothing in this position (jcs)
             v = modulo(v_initB,pi2) ! does nothing in this position (jcs)
-!           Be careful mixing the two sets of ccordinates! 
-!           the variables 'phi_N, theta and zeta' contain the original pest coordinate, as
-!           do phi_N, u_initA, and v_initA
+            !           Be careful mixing the two sets of ccordinates! 
+            !           the variables 'phi_N, theta and zeta' contain the original pest coordinate, as
+            !           do phi_N, u_initA, and v_initA
 
-!           write (*,*) 'jsuv',j,s,u,v
-!           First get all the values you need
+            !           First get all the values you need
             ier = 0
-!           the following function is expecting (s,u,v)_vmec, where
-!            v_vmec goes from 0->2pi over a single field period. 
-!            The equivalent 'Laboratory' Phi = v_vmec/NFP, but field
-!            period offset information is trickier.
+            !           the following function is expecting (s,u,v)_vmec, where
+            !           v_vmec goes from 0->2pi over a single field period. 
+            !           The equivalent 'Laboratory' Phi = v_vmec/NFP, but field
+            !           period offset information is trickier.
             CALL get_equil_RZ(phi_N, u, v, R, Z, ier, gradR_init, gradZ_init)
-!           at this point, gradR, gradZ are calculated for a single field period
-!           derivatives are w.r.t  (U,V, RHO)!!!!
+            !           at this point, gradR, gradZ are calculated for a single field period
+            !           derivatives are w.r.t  (U,V, RHO)!!!!
             CALL get_equil_Bflx(phi_N, u, v, Bsups(j), Bsupu(j), Bsupv(j), ier, B_GRAD = gradB_init)
-!           at this point, Bsups, Bsupu, Bsupv, gradB are calculated for a single field period
-!           derivatives are w.r.t rho=sqrt(s),u,v
+            !           at this point, Bsups, Bsupu, Bsupv, gradB are calculated for a single field period
+            !           derivatives are w.r.t rho=sqrt(s),u,v
 
-            ! step three: kappa_g on single-FP
-            !call get_equil_kappa(phi_N, u_initB, v_initB, kappa_g(j), ier)
-            !call get_equil_kappa2(phi_N, u_initB, v_initB, phiedge, zeta_p, kappa_g3(j), kappa_g4(j), ier, this_kappa_g3_diag)
-            !kappa_g3_diag(j,:) = this_kappa_g3_diag(1,:)
-!!!!!!WARNING
-!        Where the code takes V as an input it is asking for a value
-!        running from 0 to 2*pi over a field period.  However,
-!        where the code takes PHI as an input it is asking for
-!        the real toroidal angle, 0 to 2*pi over the device.  So
-!        PHI = V/NFP.
-!-----------------------------------------------------------------------
+            !!!!!!WARNING
+            !           Where the code takes V as an input it is asking for a value
+            !           running from 0 to 2*pi over a field period.  However,
+            !           where the code takes PHI as an input it is asking for
+            !           the real toroidal angle, 0 to 2*pi over the device.  So
+            !           PHI = V/NFP.
+            !-----------------------------------------------------------------------
 
-!          Get B field
+            !           Get B field
             CALL get_equil_Bcylsuv(phi_N, u, v, Br, Bphi, Bz, ier, modB(j))
             CALL get_equil_Bcylsuv2(phi_N, u, v, ier, dBsupv)
-!           at this point, Br, Bphi, Bz, modB, are calculated for a single field period
-!           Warning - Br and Bphi come from phi_N,u,v conversion.
+            !           at this point, Br, Bphi, Bz, modB, are calculated for a single field period
+            !           Warning - Br and Bphi come from phi_N,u,v conversion.
 
-!           Now Calc Geometric values
-!           zeta was the same as zeta (pest). Now it is being mixed with R
-!           to make X, Y.
-!           X, Y are full torus, X_fp, Y_fp are single field period
+            !           Now Calc Geometric values
+            !           zeta was the same as zeta (pest). Now it is being mixed with R
+            !           to make X, Y.
+            !           X, Y are full torus, X_fp, Y_fp are single field period
             X=R*cos(-zeta_p) ! zeta_p is -1 * laboratory toroidal angle
             Y=R*sin(-zeta_p)  
 
-            !X_fp=R*cos(v)
-            !Y_fp=R*sin(v)
-
-
-!           Convert radial gradients from d/drho to d/ds
-!           phi_Ns = rho^2; ds/drho = 2*rho; drho/ds = 1/(2*rho) = 0.5/rovera
-!           - use rovera from above
-!           gradX(1) = dX/du, gradX(2) = dX/dv, gradX(3) = dX/dsqrt(s)
+            !           Convert radial gradients from d/drho to d/ds
+            !           phi_Ns = rho^2; ds/drho = 2*rho; drho/ds = 1/(2*rho) = 0.5/rovera
+            !           - use rovera from above
+            !           gradX(1) = dX/du, gradX(2) = dX/dv, gradX(3) = dX/dsqrt(s)
             gradB(1) = gradB_init(1)
             gradR(1) = gradR_init(1)
             gradZ(1) = gradZ_init(1)
@@ -471,12 +361,11 @@ contains
             gradR(3) = gradR_init(3) / (two * rovera)
             gradZ(3) = gradZ_init(3) / (two * rovera)
            
-!           dBsupphidpsi calculation begins here
-!           B^phi = Toroidal component of B vevtor   psi=toroidal flux / 2pi
-!           see VMEC notes.  Also, note the (-) sign
+            !  dBsupphidpsi calculation begins here
+            !  B^phi = Toroidal component of B vevtor   psi=toroidal flux / 2pi
+            !  see VMEC notes.  Also, note the (-) sign
             dBsupphidpsi(j) = -dBsupv(3)*(pi2/psi_a) / (two * rovera)
-!           Following AB's description (Eqs 39-45)
-!
+            !  Following AB's description (Eqs 39-45)
  
             ! Calc grad(s)
             ! grad(s) = ( (d (X,Y,Z) / du) x (d (X,Y,Z) / dv) ) /  
@@ -493,7 +382,7 @@ contains
             ! Note: dPhi/dv = 1/NFP 
             ! jacobian = e_u . e_v x e_s
 
-           ! derivatives are w.r.t s,u,v
+            ! derivatives are w.r.t s,u,v
 
             ! Calc grad(s) (copied from txport)
             esubs(1) = gradR(3)    ! dR/ds
@@ -505,16 +394,9 @@ contains
             esubu(3) = gradZ(1)    ! dZ/du
 
             esubv(1) = gradR(2)    ! dR/dv
-            !esubv(2) = one
-            !esubv(2) = one/nfp         ! dPhi/dv:  v= nfp *mod(phi,2*pi/nfp) -> dv ~ nfp * dphi
             esubv(2) = R/nfp         ! dPhi/dv:  v= nfp *mod(phi,2*pi/nfp) -> dv ~ nfp * dphi
             esubv(3) = gradZ(2)    ! dZ/dv
 
-            !esubv(1) = esubv(1)*nfp
-            !esubv(3) = esubv(3)*nfp
-            !esubs(2) = esubs(2)*R
-            !esubu(2) = esubu(2)*R
-            !esubv(2) = esubv(2)*R
             !  esubv x esubs = (R) esubv(2) * esubs(3) - esubv(3) * esubs(2) +
             !                 (Phi) esubv(3) * esubs(1) - esubv(1) * esubs(3) +
             !                  (Z) esubv(1) * esubs(2) - esubv(2) * esubs(1)
@@ -523,15 +405,14 @@ contains
                                    esubv(1) * esubs(3)) +  &
                        esubu(3) * (-esubv(2) * esubs(1))
 
-            !sqrtg = R*(gradR(1)*gradZ(3)-gradR(3)*gradZ(1))
             sqrtg = jacobian
 
             CALL cross_product(esubu,esubv,es_init)
             CALL cross_product(esubv,esubs,eu_init)
             CALL cross_product(esubs,esubu,ev_init)
 
-!           es, eu, ev = e^s,e^u, e^v =  grad(s), grad(u), and grad(v) in cylindrical coordinates
-!           (R, phi, Z) for the points on the single field period.
+            !    es, eu, ev = e^s,e^u, e^v =  grad(s), grad(u), and grad(v) in cylindrical coordinates
+            !    (R, phi, Z) for the points on the single field period.
             es = es_init/sqrtg
             eu = eu_init/sqrtg
             ev = ev_init/sqrtg
@@ -555,8 +436,8 @@ contains
             IF (j > 1) THEN
               ! X, and Xp are alright to use in this context (JCS) X_fp, and Y_fp would be wrong 
               ds(j) = sqrt((X-Xp)*(X-Xp) + (Y-Yp)*(Y-Yp) + (Z-Zp)*(Z-Zp))
+              ! IF (j == 2) ds(1) = zero
               IF (j == 2) ds(1) = ds(j)
-!              IF (j == 2) ds(1) = zero
             END IF
             ! update Xp, Yp, Zp for next iteration
             Xp = X
@@ -567,95 +448,66 @@ contains
             myCoords(j,1) = X
             myCoords(j,2) = Y
             myCoords(j,3) = Z
-!      dB/ds, dB/dpsi, dB/dr, dB/phi, dB/dz, gradB=dB/d(x,y,z)
-! I have gradB = dB/d(s,u,v)
-! Later , will want dB/dx, dB/dy, and dB/dz for B dot grad(|B|) = d (bx (x) + by(y) + bz(z)) / d(l)
 
+            !now form dX/du, dX/dv, dX/ds where X=(x,y,z) 
+            !we note that in the PEST coordinates zeta = cylindrical angle phi
+            !we'll use this relation a lot
+            ! Also note, that the terms above (inc. derivatives)
+            ! were evaluated on the VMEC grid for a single field period
+            ! and may need to be projected/rotataed to account for
+            ! full-torus coordinates
 
-! JCS The following block is probably needed ? and possibly out-of-date
-!           !now form dX/du, dX/dv, dX/ds where X=(x,y,z) 
-!           !we note that in the PEST coordinates zeta = cylindrical angle phi
-!           !we'll use this relation a lot
-!           ! Also note, that the terms above (inc. derivatives)
-!           ! were evaluated on the VMEC grid for a single field period
-!           ! and may need to be projected/rotataed to account for
-!           ! full-torus coordinates
+            ! note the '-' sign
+            coszeta_p = cos(-zeta_p) ! dX/dR
+            sinzeta_p = sin(-zeta_p) ! dY/dR 
+            !  go from dR/(rho,u,v) and dZ(rho,u,v) and dPhi(rho,u,v) to
+            !  dx/d(rho,u,v), dy/d(rho,u,v),  dz/d(rho,u,v),
+            ! on the full torus
+            ! (x) - component of d(xyz)/d(sqrt(s))
+            dxyzds(1) = gradR(3)*coszeta_p ! dR/dsqrt(s) * dX/dR=dX/dsqrt(s)
+            ! (y) - component of d(xyz)/d(sqrt(s))
+            dxyzds(2) = gradR(3)*sinzeta_p  ! dR/dsqrt(s) * dy/dR = dy/dsqrt(s)
+            ! (z) - component of d(xyz)/d(sqrt(s))
+            dxyzds(3) = gradZ(3)
 
-!          coszeta, sinzeta are the cos and sin values of the vmec coordinate
-!          v, which goes from 0->2pi on a field period
+            ! (x) - components of d(xyz)/d(u)
+            dxyzdu(1) = gradR(1)*coszeta_p ! dR/du * dX/dR = dX/du
+            ! (y) - components of d(xyz)/d(u)
+            dxyzdu(2) = gradR(1)*sinzeta_p  ! dR/du * dY/dR = dY/du
+            ! (z) - components of d(xyz)/d(u)
+            dxyzdu(3) = gradZ(1) 
 
-           ! the above comment is out of date
+            ! (x) - components of d(xyz)/d(v)
+            ! dX/dv = dR/dv * dX/dR + dX/dPhi * dPhi/dv
+            dxyzdv(1) = gradR(2)*coszeta_p - R*sinzeta_p/nfp
+            ! (y) - components of d(xyz)/d(v)
+            ! dY/dv = dR/dv * dY/dR + dY/dPhi * dPhi/dv
+            dxyzdv(2) = gradR(2)*sinzeta_p + R*coszeta_p /nfp
+            ! (z) - components of d(xyz)/d(v)
+            dxyzdv(3) = gradZ(2)
+            ! Now have d(xyz)/dsqrt(s), d(xyz)/du, and d(xyz)/dv projected in cartestian coordinates (x,y,z)
+            ! for points on the full torus (as a consequence of using sinzeta, coszeta)
 
-           ! note the '-' sign
-           coszeta_p = cos(-zeta_p) ! dX/dR
-           sinzeta_p = sin(-zeta_p) ! dY/dR 
-!  go from dR/(rho,u,v) and dZ(rho,u,v) and dPhi(rho,u,v) to
-!  dx/d(rho,u,v), dy/d(rho,u,v),  dz/d(rho,u,v),
-! on the full torus
-! (x) - component of d(xyz)/d(sqrt(s))
-           dxyzds(1) = gradR(3)*coszeta_p ! dR/dsqrt(s) * dX/dR=dX/dsqrt(s)
-! (y) - component of d(xyz)/d(sqrt(s))
-           dxyzds(2) = gradR(3)*sinzeta_p  ! dR/dsqrt(s) * dy/dR = dy/dsqrt(s)
-! (z) - component of d(xyz)/d(sqrt(s))
-           dxyzds(3) = gradZ(3)
-
-! (x) - components of d(xyz)/d(u)
-           dxyzdu(1) = gradR(1)*coszeta_p ! dR/du * dX/dR = dX/du
-! (y) - components of d(xyz)/d(u)
-           dxyzdu(2) = gradR(1)*sinzeta_p  ! dR/du * dY/dR = dY/du
-! (z) - components of d(xyz)/d(u)
-           dxyzdu(3) = gradZ(1) 
-
-! (x) - components of d(xyz)/d(v)
-! dX/dv = dR/dv * dX/dR + dX/dPhi * dPhi/dv
-           dxyzdv(1) = gradR(2)*coszeta_p - R*sinzeta_p/nfp
-! (y) - components of d(xyz)/d(v)
-! dY/dv = dR/dv * dY/dR + dY/dPhi * dPhi/dv
-           dxyzdv(2) = gradR(2)*sinzeta_p + R*coszeta_p /nfp
-! (z) - components of d(xyz)/d(v)
-           dxyzdv(3) = gradZ(2)
-! Now have d(xyz)/dsqrt(s), d(xyz)/du, and d(xyz)/dv projected in cartestian coordinates (x,y,z)
-! for points on the full torus (as a consequence of using sinzeta, coszeta)
-
-! from d(x,y,z)/d(sqrt(s),u,v), generate d(sqrt(s),u,v) / d(x,y,z), aka grad(s), grad(u) and grad(v) in (x,y,z) coords
-! JCS the following may not be true anymore. Code has changed
-! . No checking has been performed
-!           ! These derivatives have been checked and agree with ROSE
-!           ! however, the factor of 2*pi needs to be included because ROSE
-!           ! parametrizes u and v differently 
-!           !write(*,*) 'dxyzdu',dxyzdu(j,1)*pi2,dxyzdu(j,2)*pi2,dxyzdu(j,3)*pi2
-!           !write(*,*) 'dxyzdv',dxyzdv(j,1)*pi2,dxyzdv(j,2)*pi2,dxyzdv(j,3)*pi2
-!           !write(*,*) 'dxyzds',dxyzds(j,1),dxyzds(j,2),dxyzds(j,3)
-!
-! need jacobian in _xyz
-           ! cross den is first part of denominator
-           CALL cross_product(dxyzdv, dxyzds, crossden)
-!           !write(*,*) 'crossden', crossden
-           jac_suvxyz = -1.0_rprec * dot_product(crossden, dxyzdu) 
-
-           !Now form gradpsi: crossnum is numerator part
-           CALL cross_product(dxyzdu, dxyzdv, crossnum)
-           !write(*,*) 'crossnum', crossnum
-           ! and grad(sqrt(s)) - including
-           grads_xyz = crossnum/jac_suvxyz
-!           !write(*,*) 'denom',dot_product(crossden, dxyzdu(j,:))
-           grad_psi_xyz = grads_xyz * psi_a / pi2  ! JCS added pi2 
-           norm_grad_psi_xyz = sqrt(grad_psi_xyz(1)**2 + grad_psi_xyz(2)**2 &
+            ! from d(x,y,z)/d(sqrt(s),u,v), generate d(sqrt(s),u,v) / d(x,y,z), aka grad(s), grad(u) and grad(v) in (x,y,z) coords
+            !
+            ! need jacobian in _xyz
+            ! cross den is first part of denominator
+            CALL cross_product(dxyzdv, dxyzds, crossden)
+            jac_suvxyz = -1.0_rprec * dot_product(crossden, dxyzdu) 
+            !Now form gradpsi: crossnum is numerator part
+            CALL cross_product(dxyzdu, dxyzdv, crossnum)
+            grads_xyz = crossnum/jac_suvxyz
+            grad_psi_xyz = grads_xyz * psi_a / pi2  ! JCS added pi2 
+            norm_grad_psi_xyz = sqrt(grad_psi_xyz(1)**2 + grad_psi_xyz(2)**2 &
                                     + grad_psi_xyz(3)**2)
-!           !write(*,*) 'grads',grads(1),grads(2),grads(3)
-!           !grad s agrees with ROSE, no normalizations needed
-!           !grad_psi_norm(j) = sqrt(grad_psi(1)*grad_psi(1) + grad_psi(2)*grad_psi(2) & 
-!           !                      & + grad_psi(3)*grad_psi(3))/pi2
-!
-           !Now form gradu: crossnum is numerator part
-           CALL cross_product(dxyzdv, dxyzds, crossnum)
-           !gradu_xyz = crossnum/jac_suvxyz
+
+            !Now form gradu: crossnum is numerator part
+            CALL cross_product(dxyzdv, dxyzds, crossnum)
+            !gradu_xyz = crossnum/jac_suvxyz
            
-           !Now form gradv: crossnum is numerator part
-           CALL cross_product(dxyzds, dxyzdu, crossnum)
-           gradv_xyz = crossnum/jac_suvxyz
-      
-           
+            !Now form gradv: crossnum is numerator part
+            CALL cross_product(dxyzds, dxyzdu, crossnum)
+            gradv_xyz = crossnum/jac_suvxyz
 
             ! Note - Br and Bphi are calculated based on their 
             ! s,u,v conversion., AFTER converted from pest coords, so this is ok
@@ -668,271 +520,46 @@ contains
             Bx = sign(one,sqrtg) * ( Br*cos(-zeta_p) - Bphi*sin(-zeta_p) )
             By = sign(one,sqrtg) * ( Br*sin(-zeta_p) + Bphi*cos(-zeta_p) )
             Bz = Bz *sign(one,sqrtg)
-            !Bx_fp = Br*cos(v) - Bphi*sin(v)
-            !By_fp = Br*sin(v) + Bphi*cos(v)
-            !Bxyz(1) = Bx
-            !Bxyz(2) = By
-            !Bxyz(3) = Bz
             bnxyz(1) = Bx / modB(j)
             bnxyz(2) = By / modB(j)
             bnxyz(3) = Bz / modB(j)
-            !Bxyz_fp(1) = Bx_fp
-            !Bxyz_fp(2) = By_fp
-            !Bxyz_fp(3) = Bz
-            !write(*,*) 'Bxyz',Bxyz(1),Bxyz(2),Bxyz(3),modB(j), ier
-           
             
-            
-! JCS the 'old' gradB was w.r.t (x,y,z) coordinates
-! need a grad_psi.  check for normalization grad_psi ~ grad_s * psi_lcfs
-            !Calculate |e_theta|  (cylindrical ?? JCS)
-! e_r, e_phi and e_z are expressed in the (x,y,z)-components 
+            !Calculate |e_theta|  
+            ! e_r, e_phi and e_z are expressed in the (x,y,z)-components 
             ! This is the unit vector pointing from the origin to the point on the
             ! surface.  Note: the original version used the full torus coords,
             ! the new version uses the signle-fp coords
             !e_r
-!old - is only used for the dot product with grad_psi_xyz
             e_r(1) = X/R
             e_r(2) = Y/R
             e_r(3) = 0.0_rprec
-! new
-!            e_r(1) = X_fp/R
-!            e_r(2) = Y_fp/R
-!            e_r(3) = 0.0_rprec
-
-            !e_phi
-! old - e_phi is not used
-       !     e_phi(1) = -Y/R
-       !    e_phi(2) = X/R
-       !     e_phi(3) = 0.0_rprec
-!new
-!            e_phi(1) = -Y_fp/R
-!            e_phi(2) = X_fp/R
-!            e_phi(3) = 0.0_rprec
-! e_z is only used for the dot products with grad_psi_xyz
-            !e_z (can move this outside the loop if desired for speed)
             e_z(1) = 0.0
             e_z(2) = 0.0
             e_z(3) = 1.0
-            !write(*,*) 'e_r', e_r
-            !write(*,*) 'e_z', e_z
-            !write(*,*) 'e_phi', e_phi
-! new: this is the dot product between vectors and gradients on the 
-! field period (not full torus)
-! update JCS - grad_psi is in cyl coords, e_r is in (x,y,z)? 
-!            dpsidr = dot_product(grad_psi, e_r)
-!            dpsidz = dot_product(grad_psi, e_z)
-! update JCS - grad_psi_xyz is in (x,y,z) coords, e_r is in (x,y,z)? 
             dpsidr = dot_product(grad_psi_xyz, e_r)
             dpsidz = dot_product(grad_psi_xyz, e_z)
-            !B_zeta = dot_product(Bxyz, e_phi)
-!JCS I should check dpsidr and dpsidz here
-
-            !Note that e_theta_norm is negative iff Bphi is negative
-            !this is the case in QH. However, all this does is multiply the
-            !entire expression by -1 of gamma_c, and since the integrated 
-            !quantity in Gamma_c is squared, this doesn't matter
-            !the division by 2pi is needed to match with rose convention
-!old            e_theta_norm(j) = sqrt(dpsidr*dpsidr + dpsidz*dpsidz)/Bphi/pi2
-!new  JCS added Abs part. Eqn 41 of nemov has || operator
             e_theta_norm(j) = abs(sqrt(dpsidr*dpsidr + dpsidz*dpsidz)/Bphi)
-            !write(*,*) j,'e_theta_norm, B_zeta, Bphi',e_theta_norm(j),Bphi
 
-
-! JCS e_theta_norm - I did not check the 2pi normalization (or any NFP mod),
-!   but I did take out the 2pi
-
-! JCS - I think this can be simplified if the ezspline stuff returned a tensor grad(b) object
-! for b dot grad b, but maybe that would require extra over head - but, it could be built 
-! into the stel_tools library, as a benchmark.
-
-! At the end, I need binormal(j,:), bdotgradb (intermediate) and kappa_g(j)
-            !geodesic curvature
-            !calculate bdotgradb = partial b/ partial s
-!            bdotgradb = 0.0_rprec
-!            kappa_g(j) = 0.0_rprec
-!            binormal(j,:) = 0.0_rprec
-! step one: binormal vectr on full torux
-!  -construct from B vector (normed, in (x,y,z)-coordinates) 
-! and grad psi (normed, also in (x,y,z)-coordinates)
-! the old method used x,y,z coordinates. for grad_psi and Bxyz
+            ! step one: binormal vectr on full torux
+            !  -construct from B vector (normed, in (x,y,z)-coordinates) 
+            ! and grad psi (normed, also in (x,y,z)-coordinates)
+            ! the old method used x,y,z coordinates. for grad_psi and Bxyz
             binormal(j,:) = 0.0_rprec
-!old            !CALL cross_product(grad_psi/grad_psi_norm(j)/pi2, Bxyz/modB(j), binormal(j,:))
-! new
             CALL cross_product(grad_psi_xyz/norm_grad_psi_xyz, bnxyz, binormal(j,:))
 
-
-! step two: bdotgradb on full torus
-! I have gradB = d|B|/d(sqrt(s),u,v) and Br, BPhi, Bz
-! The loop uses x,y,z coordinates - will convert to x,y,z?
-! bdotgradb = d(b-vector)/dl - will calculate using central differences for most points
-! except for the first and last which will use forward- or backward- differences
+            ! step two: bdotgradb on full torus
+            ! I have gradB = d|B|/d(sqrt(s),u,v) and Br, BPhi, Bz
+            ! The loop uses x,y,z coordinates - will convert to x,y,z?
+            ! bdotgradb = d(b-vector)/dl - will calculate using central differences for most points
+            ! except for the first and last which will use forward- or backward- differences
 
             bdotgradb = 0.0_rprec
-! step three: kappa_g on full torus
- 
-!  -- dot product of bdotgradb and binormal
-            !geodesic curvature
-            !kappa_g2(j) = 0.0_rprec
-
-!new
-! Use central differences to calculated bdotgradb - 
-! Since this is done in a loop, three (3) values need to be calculated.
-! The first and last points will use forward/backward differences
-           bxn = bnxyz(1)
-           byn = bnxyz(2)
-           bzn = bnxyz(3)
-
-            IF (j == 2) THEN !handle the first index
-              !bdotgradb(1) = (bxn - bxnp)/ds(j)
-              !bdotgradb(2) = (byn - bynp)/ds(j)
-              !bdotgradb(3) = (bzn - bznp)/ds(j)
-              !bdotgradb(1) = (bxn - bxnp)/ds(j)
-              !bdotgradb(2) = (byn - bynp)/ds(j)
-              !bdotgradb(3) = (bzn - bznp)/ds(j)
-              bdotgradb(1) =  bynp * (bxn - bxnp) / (myCoords(j,2) - myCoords(j-1,2)) + &
-                             -bynp * (byn - bynp) / (myCoords(j,1) - myCoords(j-1,1)) + &
-                              bznp * (bxn - bxnp) / (myCoords(j,3) - myCoords(j-1,3)) + &
-                             -bznp * (bzn - bznp) / (myCoords(j,1) - myCoords(j-1,1)) 
-              bdotgradb(2) =  bznp * (byn - bynp) / (myCoords(j,3) - myCoords(j-1,3)) + &
-                             -bznp * (bzn - bznp) / (myCoords(j,2) - myCoords(j-1,2)) + &
-                              bxnp * (byn - bynp) / (myCoords(j,1) - myCoords(j-1,1)) + &
-                             -bxnp * (bxn - bxnp) / (myCoords(j,2) - myCoords(j-1,2)) 
-              bdotgradb(3) =  bxnp * (bzn - bznp) / (myCoords(j,1) - myCoords(j-1,1)) + &
-                             -bxnp * (bxn - bxnp) / (myCoords(j,3) - myCoords(j-1,3)) + &
-                              bynp * (bzn - bznp) / (myCoords(j,2) - myCoords(j-1,2)) + &
-                             -bynp * (byn - bynp) / (myCoords(j,3) - myCoords(j-1,3))  
-
-
-
-
-
-
-              ! set the value of kappa_g for the 1st index
-              !kappa_g2(j-1) = dot_product(bdotgradb, binormal(j-1,:))
-              if (LGCXFILES .eqv. .true.) then
-               ! write(igc7,'(1X,I8,4(2X,E16.8E4))') 1,&
-               !        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(1)
-               ! write(igc13,'(4(2X,E16.8E4))') kappa_g2(1), kappa_g(1), kappa_g3(1), kappa_g4(1)
-              END IF
-            END IF 
-
-            IF (j >= 3) THEN ! handles the j-1 index
-              !bdotgradb(1) = (bxn - bxn2p)/(ds(j-1)+ds(j))
-              !bdotgradb(2) = (byn - byn2p)/(ds(j-1)+ds(j))
-              !bdotgradb(3) = (bzn - bzn2p)/(ds(j-1)+ds(j))
-              bdotgradb(1) =  bynp * (bxn - bxn2p) / (myCoords(j,2) - myCoords(j-2,2)) + &
-                             -bynp * (byn - byn2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
-                              bznp * (bxn - bxn2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
-                             -bznp * (bzn - bzn2p) / (myCoords(j,1) - myCoords(j-2,1)) 
-              bdotgradb(2) =  bznp * (byn - byn2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
-                             -bznp * (bzn - bzn2p) / (myCoords(j,2) - myCoords(j-2,2)) + &
-                              bxnp * (byn - byn2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
-                             -bxnp * (bxn - bxn2p) / (myCoords(j,2) - myCoords(j-2,2)) 
-              bdotgradb(3) =  bxnp * (bzn - bzn2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
-                             -bxnp * (bxn - bxn2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
-                              bynp * (bzn - bzn2p) / (myCoords(j,2) - myCoords(j-2,2)) + &
-                             -bynp * (byn - byn2p) / (myCoords(j,3) - myCoords(j-2,3))  
-
-!              bdotgradb(1) =  Byp * (Bx - Bx2p) / (myCoords(j,2) - myCoords(j-2,2)) + &
-!                             -Byp * (By - By2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
-!                              Bzp * (Bx - Bx2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
-!                             -Bzp * (Bz - Bz2p) / (myCoords(j,1) - myCoords(j-2,1)) 
-!              bdotgradb(2) =  Bzp * (By - By2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
-!                             -Bzp * (Bz - Bz2p) / (myCoords(j,2) - myCoords(j-2,2)) + &
-!                              Bxp * (By - By2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
-!                             -Bxp * (Bx - Bx2p) / (myCoords(j,2) - myCoords(j-2,2)) 
-!              bdotgradb(3) =  Bxp * (Bz - Bz2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
-!                             -Bxp * (Bx - Bx2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
-!                              Byp * (Bz - Bz2p) / (myCoords(j,2) - myCoords(j-2,2)) + &
-!                             -Byp * (By - By2p) / (myCoords(j,3) - myCoords(j-2,3))  
-
-              !bdotgradb(1) = (bxn - bxn2p)/(ds(j-1)+ds(j))
-              !bdotgradb(2) = (byn - byn2p)/(ds(j-1)+ds(j))
-              !bdotgradb(3) = (bzn - bzn2p)/(ds(j-1)+ds(j))
-
-
-
-
-
-              ! set the value of kappa_g for the 2nd thru 2nd-to-last index
-              kappa_g2(j-1) = dot_product(bdotgradb, binormal(j-1, :))
-              if (LGCXFILES .eqv. .true.) then
-               ! write(igc7,'(1X,I8,4(2X,E16.8E4))') (j-1),&
-               !        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j-1)
-               !  write(igc13,'(4(2X,E16.8E4))') kappa_g2(j-1), kappa_g(j-1), kappa_g3(j-1), kappa_g4(j-1)
-              END IF
-
-              IF (j == nsteps) THEN ! handle the last point
-                !bdotgradb(1) = (bxn - bxnp)/(ds(j))
-                !bdotgradb(2) = (byn - bynp)/(ds(j))
-                !bdotgradb(3) = (bzn - bznp)/(ds(j))
-                !bdotgradb(1) = (bxn - bxnp)/(ds(j))
-                !bdotgradb(2) = (byn - bynp)/(ds(j))
-                !bdotgradb(3) = (bzn - bznp)/(ds(j))
-              bdotgradb(1) =  byn * (bxn - bxnp) / (myCoords(j,2) - myCoords(j-1,2)) + &
-                             -byn * (byn - bynp) / (myCoords(j,1) - myCoords(j-1,1)) + &
-                              bzn * (bxn - bxnp) / (myCoords(j,3) - myCoords(j-1,3)) + &
-                             -bzn * (bzn - bznp) / (myCoords(j,1) - myCoords(j-1,1)) 
-              bdotgradb(2) =  bzn * (byn - bynp) / (myCoords(j,3) - myCoords(j-1,3)) + &
-                             -bzn * (bzn - bznp) / (myCoords(j,2) - myCoords(j-1,2)) + &
-                              bxn * (byn - bynp) / (myCoords(j,1) - myCoords(j-1,1)) + &
-                             -bxn * (bxn - bxnp) / (myCoords(j,2) - myCoords(j-1,2)) 
-              bdotgradb(3) = -bxn * (bzn - bznp) / (myCoords(j,1) - myCoords(j-1,1)) + &
-                             +bxn * (bxn - bxnp) / (myCoords(j,3) - myCoords(j-1,3)) + &
-                             -byn * (bzn - bznp) / (myCoords(j,2) - myCoords(j-1,2)) + &
-                             +byn * (byn - bynp) / (myCoords(j,3) - myCoords(j-1,3))  
-
-
-              ! set the value of kappa_g for the last index
-
-                kappa_g2(j) = dot_product(bdotgradb, binormal(j,:))
-                if (LGCXFILES .eqv. .true.) then
-             !     write(igc7,'(1X,I8,4(2X,E16.8E4))') j, &
-             !          bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j)
-             !     write(igc13,'(4(2X,E16.8E4))') kappa_g2(j), kappa_g(j), kappa_g3(j), kappa_g4(j)
-                END IF
-              END IF   
-            END IF
-
-            !calculate bdotgradb = partial b-vector / partial l
-!            !write (*,*) 'tangential', Bxyz/modB(j)
-!            !write (*,*) 'normal',grad_psi(j,:)/grad_psi_norm(j)
-!            !write (*,*) 'nxb',binormal(j,:)
-!            !write (*,*) 'bdotgradb',bdotgradb
-!            !write (*,*) 'kappa_g', kappa_g(j)
-
-
-            !kappa_g(j) = dot_product(Bxyz, gradB)/modB(j)/modB(j)
-            !write (*,*) 'gradB', gradB
-            !write (*,*) 'kappa_g', kappa_g(j)
-
-
-            !The terms that go into gV
-!old
-!            grad_zeta(1) = -Y/R/R
-!            grad_zeta(2) = X/R/R
-!new - JCS does grad_zeta = grad_phi? I don't think so
-!            grad_zeta_p_xyz(1) = -Y_fp
-!            grad_zeta_p_xyz(2) = X_fp
-!            grad_zeta_p_xyz(3) = 0.0_rprec
-            !grad_zeta_p_xyz(1) = -Y/R
-            !grad_zeta_p_xyz(2) = X/R
-            !grad_zeta_p_xyz(3) = 0.0_rprec
+            bxn = bnxyz(1)
+            byn = bnxyz(2)
+            bzn = bnxyz(3)
             grad_zeta_p_xyz(1) = gradv_xyz(1)
             grad_zeta_p_xyz(2) = gradv_xyz(2)
             grad_zeta_p_xyz(3) = gradv_xyz(3)/NFP
-
-
-! old
-!            !dvdB_t1 is the first term in the brackets of dVdb
-!            ! = iota' ( grad_psi cross b_hat) dot grad_zeta
-!            CALL cross_product(grad_psi, Bxyz, grad_psi_x_b)
-!             write(igc7,'(1X,I8,4(2X,E16.8))') j, &
-!                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(j)
-!              END IF  
-!               
-!            END IF
 
             ! Keep track off the previous 2 sets of Bx, By, Bz  (B?p, and B?2p)
             Bx2p = Bxp
@@ -949,29 +576,12 @@ contains
             bynp = byn
             bznp = bzn
 
-
-            !kappa_g(j) = dot_product(Bxyz, gradB)/modB(j)/modB(j)
-            !write (*,*) 'gradB', gradB
-            !write (*,*) 'kappa_g', kappa_g(j)
-            !dvdB_t1 is the first term in the brackets of dVdb
-            ! = iota' ( grad_psi cross b_hat) dot grad_zeta
-            !CALL cross_product(grad_psi_xyz/norm_grad_psi_xyz, bnxyz, grad_psi_x_b_xyz)
-            !dVdb_t1(j) = iotap*dot_product(grad_psi_x_b_xyz, grad_zeta_p_xyz) / norm_grad_psi_xyz
-            !dVdb_t1(j) = iota*dot_product(grad_psi_x_b_xyz, grad_zeta_p_xyz) / norm_grad_psi_xyz
-            !dVdb_t1(j) = iota*dot_product(grad_psi_x_b_xyz, grad_zeta_p_xyz)
             dVdb_t1(j) = sign(one,sqrtg)* iotap*dot_product(binormal(j,:), grad_zeta_p_xyz)/ NFP
-!  need grad_psi normalization?
 
-!NOTE TO SELF; I am here
-
-
-
-!  JCS  - check this.  dBsubvdpsi - check which index is appropriate and
-! the normalization
             if (LGCXFILES .eqv. .true.) then
-!             R, Z is from get_equil_RZ, which was calculated on a single
-!             field period. The X and Y values were calculated by using
-!             those R,Z values and the Pest toroidal angle, zeta_p
+              !             R, Z is from get_equil_RZ, which was calculated on a single
+              !             field period. The X and Y values were calculated by using
+              !             those R,Z values and the Pest toroidal angle, zeta_p
               write(igc2,'(1X,I8,13(2X,E16.8E4))') j,rovera,psi_p, u_initA, v_initA, phi_N, u_initB, v_initB, u, v,R,Z,X,Y
               write(igc3,'(1X,I8,9(2X,E16.8E4))') j,modB(j),Br,Bphi,Bz,Bx,By,Bsups(j),Bsupu(j),Bsupv(j)
               write(igc4,'(1X,I8,18(2X,E16.8E4))') j,gradR_init(1),gradR_init(2),gradR_init(3), & 
@@ -980,7 +590,7 @@ contains
                                                  gradR(1),gradR(2),gradR(3), & 
                                                  gradZ(1),gradZ(2),gradZ(3), &
                                                  gradB(1),gradB(2),gradB(3)
-!
+
               write(igc5,'(1X,I8,25(2X,E16.8E4))') j,esubu(1), esubu(2), esubu(3), &
                                                  esubv(1), esubv(2), esubv(3), &
                                                  es_init(1), es_init(2), es_init(3), &
@@ -989,11 +599,11 @@ contains
                                                  gradS(1), gradS(2), gradS(3), &
                                                  grad_psi_norm(j), dBdpsi(j), &
                                                  sqrtg, esubs(1), esubs(2), esubs(3)
-! igc6: has full torus X,Y,Z coords, Bvector in (x,y,z) coords). d(xyz)/ds, d(xyz)/du and d(xyz)/dv in (x,y,z) values
-! for easy plotting.  Also has gradS, gradU and gradV in (x,y,z) values
-!  Also has d(b-unit vector)/dl = (b dot grad)B
-!   which is kappa = curvature vectors in (x,y,z) coordintes
-             write(igc6,'(1X,I8,41(2X,E16.8E4))') j,X,Y,Z,bnxyz(1), bnxyz(2), bnxyz(3), &   !1-7
+              ! igc6: has full torus X,Y,Z coords, Bvector in (x,y,z) coords). d(xyz)/ds, d(xyz)/du and d(xyz)/dv in (x,y,z) values
+              ! for easy plotting.  Also has gradS, gradU and gradV in (x,y,z) values
+              !  Also has d(b-unit vector)/dl = (b dot grad)B
+              !   which is kappa = curvature vectors in (x,y,z) coordintes
+              write(igc6,'(1X,I8,41(2X,E16.8E4))') j,X,Y,Z,bnxyz(1), bnxyz(2), bnxyz(3), &   !1-7
                                                  Bx, By, Bz, modB(j), &                     !8-11
                                                  dxyzds(1),dxyzds(2),dxyzds(3), &           !12-14
                                                  dxyzdu(1),dxyzdu(2),dxyzdu(3), &           !15-17
@@ -1006,177 +616,156 @@ contains
                                                  grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), & !34-36
                                                  dVdb_t1(j), dBsupphidpsi(j), dBdpsi(j), &            !37-39
                                                  sqrtg, ds(j), jac_suvxyz                            !40-42
-             write(igc11,'(1X,I8,2(2X,E16.8E4))') j,ds(j),dVdb_t1(j)
+              write(igc11,'(1X,I8,2(2X,E16.8E4))') j,ds(j),dVdb_t1(j)
 
-             write(igc8,'(1X,I8,14(2X,E16.8E4))') j, psi_p, u_initA, &
+              write(igc8,'(1X,I8,14(2X,E16.8E4))') j, psi_p, u_initA, &
                        v_initA, X, Y, Z, Bx, By, Bz, grad_psi_xyz(1), &
                        grad_psi_xyz(2), grad_psi_xyz(3), &
                        e_theta_norm(j), dBsupphidpsi(j)
-             IF (j .gt. 2) THEN
-               write(igc12,'(12(E16.10,2X))') v_initA, Bsupv(j), &
+              IF (j .gt. 2) THEN
+                write(igc12,'(12(E16.10,2X))') v_initA, Bsupv(j), &
                           grad_psi_norm(j), dBdpsi(j), &
                           Bx, By, Bz, e_theta_norm(j), dBsupphidpsi(j), &
                           ds(j), dVdb_t1(j)
-             ELSE IF (j .eq. 2) THEN
-               write(igc12,'(12(E16.10,2X))') v_initA1, Bsupv(1), &
+              ELSE IF (j .eq. 2) THEN
+                write(igc12,'(12(E16.10,2X))') v_initA1, Bsupv(1), &
                           grad_psi_norm(1), dBdpsi(1), &
                           Bx1, By1, Bz1, e_theta_norm(1), dBsupphidpsi(1), &
                           ds(1), dVdb_t1(1)
-               write(igc12,'(12(E16.10,2X))') v_initA, Bsupv(2), &
+                write(igc12,'(12(E16.10,2X))') v_initA, Bsupv(2), &
                           grad_psi_norm(2), dBdpsi(2), &
                           Bx, By, Bz, e_theta_norm(2), dBsupphidpsi(2), &
                           ds(2), dVdb_t1(2)
-             ELSE
-               v_initA1 = v_initA
-               Bx1 = Bx
-               By1 = By
-               Bz1 = Bz
-             END IF
+              ELSE
+                v_initA1 = v_initA
+                Bx1 = Bx
+                By1 = By
+                Bz1 = Bz
+              END IF
 
-             write(igc14,'(17(E16.10, 2X))')  &
-               grads_xyz(1), grads_xyz(2), grads_xyz(3), &
-               gradu_xyz(1), gradu_xyz(2), gradu_xyz(3), &
-               grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
-               norm_grad_psi_xyz,  &
-               es(1), es(2), es(3), eu(1), eu(2), eu(3), grad_psi_norm(j)
-             !write(igc15, '(75(E16.10, 2X))') kappa_g3_diag(j,:)
-!
-           END IF
+              write(igc14,'(17(E16.10, 2X))')  &
+                grads_xyz(1), grads_xyz(2), grads_xyz(3), &
+                gradu_xyz(1), gradu_xyz(2), gradu_xyz(3), &
+                grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
+                norm_grad_psi_xyz,  &
+                es(1), es(2), es(3), eu(1), eu(2), eu(3), grad_psi_norm(j)
 
-             !advance the step- note, this zeta and theta are the PEST coordinates
+            END IF
+
+            !advance the step- note, this zeta and theta are the PEST coordinates
             zeta_p = zeta_p + delzeta_p
-            !print *,'<-old theta =',theta
             theta = theta + (iota * delzeta_p)
-            !zeta = modulo(zeta, pi2)
-            !theta = modulo(theta, pi2)
             ! reset sflCrd to contain the next PEST coordinate
             phi_N = phi_N !phi_N should be constant
             sflCrd(1) = phi_N ! jcs added to try to fix theta addition bug
             sflCrd(2) = theta
             sflCrd(3) = zeta_p
-            !print *,'<-new sflCrd(2)=',sflCrd(2)
-            ! on exit, the sflCrd variable now contains the PEST coordinate of the next point
-           END DO
-          !------------------------------END DO j = 1,nsteps over each step along line
-          ! Print things out to a file for post-analysis
-          !CALL safe_open(igc2, ierrgc2, 'gc2.'//trim(proc_string), 'replace','formatted')
-              if (LGCXFILES .eqv. .true.) then
-          close(igc2)
-          close(igc3)
-          close(igc4)
-          close(igc5)
-          close(igc6)
-          close(igc7)
-          close(igc8)
-          close(igc11)
-          close(igc12)
-          close(igc13)
-          close(igc14)
-          close(igc15)
-          !write(igc2,*), "u,v,R,Z,X,Y,Br,Bphi,Bz,Bsups,Bsupu,Bsupv"
-          !do j = 1,nsteps
-            !  WRITE(6,'(2X,I3,8(2X,E11.4))')
-          !end do
-           END IF
-
-          bigGamma_c = 0.0_rprec
-          minB = MINVAL(modB)
-          maxB = MAXVAL(modB)
-
-          !Make the bp array
-          DO i=1,gammac_bpstep
-            bp(i) = 1.0_rprec + (maxB-minB)/minB * (i-0.5_rprec) / gammac_bpstep 
+            ! on exit/cycle, the sflCrd variable now contains the PEST coordinate of the next point
           END DO
-          deltabp = (maxB - minB)/minB/gammac_bpstep 
+          !------------------------------END DO j = 1,nsteps over each step along line
           if (LGCXFILES .eqv. .true.) then
-            write(igc9,*) 'minB',minB
-            write(igc9,*) 'maxB',maxB
-            write(igc9,*) 'gammac_bpstep',gammac_bpstep
-            write(igc9,*) 'list of bp'
-            DO i=1,gammac_bpstep
-              write(igc9,*) bp(i)
-            END DO
-
+            close(igc2)
+            close(igc3)
+            close(igc4)
+            close(igc5)
+            close(igc6)
+            close(igc7)
+            close(igc8)
+            close(igc11)
+            close(igc12)
+            close(igc13)
+            close(igc14)
+            close(igc15)
           END IF
 
-          !Go through each value of bp
-!          write (*,*) '<---Starting loop i=1,bpstep'
-!--------------------------------- DO i = 1,bpstep over each bp step
+        bigGamma_c = 0.0_rprec
+        minB = MINVAL(modB)
+        maxB = MAXVAL(modB)
+
+        !Make the bp array
+        DO i=1,gammac_bpstep
+          bp(i) = 1.0_rprec + (maxB-minB)/minB * (i-0.5_rprec) / gammac_bpstep 
+        END DO
+        deltabp = (maxB - minB)/minB/gammac_bpstep 
+        if (LGCXFILES .eqv. .true.) then
+          write(igc9,*) 'minB',minB
+          write(igc9,*) 'maxB',maxB
+          write(igc9,*) 'gammac_bpstep',gammac_bpstep
+          write(igc9,*) 'list of bp'
           DO i=1,gammac_bpstep
-            grad_psi_i = 1.0E10_rprec !This term appears in the denominator
-            e_theta_i = 0
+            write(igc9,*) bp(i)
+          END DO
 
-            !calculate the reflecting field
-            B_refl = minB*bp(i)
-            !we follow along the line marking the well beginning and the well ends
-            !when we have a well, we calculate the minimum of grad_psi (precomputed above)
-            !then we set all values of grad_psi_i for that well range to the minimum
-            !we also set all the well_mask indices to 1.
-            in_well = 0
+        END IF
 
-            IF (LGCXFILES .eqv. .true.) THEN
-              write (igc9,*) 'beginning bp',i
-              write (igc9,*) 'Bmin, Bmax, B_refl', minB, maxB, B_refl
-              write (igc10, *) 'B_refl ', B_refl
-            END IF
+        !Go through each value of bp
+!--------------------------------- DO i = 1,bpstep over each bp step
+        DO i=1,gammac_bpstep
+          grad_psi_i = 1.0E10_rprec !This term appears in the denominator
+          e_theta_i = 0
 
-            well_start = 0 !this is the array of all the indices where wells begin
-            well_stop = 0 !this is the array of all the indices where wells end
-            cur_well = 1 !this is the index of the current well
+          !calculate the reflecting field
+          B_refl = minB*bp(i)
+          !we follow along the line marking the well beginning and the well ends
+          !when we have a well, we calculate the minimum of grad_psi (precomputed above)
+          !then we set all values of grad_psi_i for that well range to the minimum
+          !we also set all the well_mask indices to 1.
+          in_well = 0
 
-            !these values are calculated at the well minima
-            grad_psi_min = 1.0E10_rprec
-            e_theta_min = 0
-            cur_Bmin = B_refl !this should be the maximum value in any well
+          IF (LGCXFILES .eqv. .true.) THEN
+            write (igc9,*) 'beginning bp',i
+            write (igc9,*) 'Bmin, Bmax, B_refl', minB, maxB, B_refl
+            write (igc10, *) 'B_refl ', B_refl
+          END IF
 
-!            write (*,*) '<---Starting loop j=1,nsteps'
+          well_start = 0 !this is the array of all the indices where wells begin
+          well_stop = 0 !this is the array of all the indices where wells end
+          cur_well = 1 !this is the index of the current well
+
+          !these values are calculated at the well minima
+          grad_psi_min = 1.0E10_rprec
+          e_theta_min = 0
+          cur_Bmin = B_refl !this should be the maximum value in any well
+
 !--------------------------------- DO j = 1,nsteps 
-            DO j=1,nsteps
-              ! Not in a well and shouldn't be 
-              IF ((in_well == 0) .and. (modB(j) > B_refl)) CYCLE
+          DO j=1,nsteps
+            ! Not in a well and shouldn't be 
+            IF ((in_well == 0) .and. (modB(j) > B_refl)) CYCLE
 
-              ! We are in a well, but we just passed a boundary value
-              IF ((in_well == 1) .and. (modB(j) > B_refl)) THEN
+            ! We are in a well, but we just passed a boundary value
+            IF ((in_well == 1) .and. (modB(j) > B_refl)) THEN
       
-                ! reset the well status
-                in_well = 0
+              ! reset the well status
+              in_well = 0
             
-                ! In this case we have exited a well that hasn't been started properly
-                ! so we ignore it
-                IF (well_start(cur_well) == 0) THEN
-                  cur_Bmin = B_refl
-                  grad_psi_min = 1.0E10_rprec
-                  e_theta_min = 0
-                  CYCLE
-                END IF
-
-                !mark the well end index
-                !well_stop(cur_well) = j-2
-                ! teting - jcs
-                well_stop(cur_well) = j-1
-
-                !set gradpsi and etheta for all values
-                grad_psi_i(well_start(cur_well):well_stop(cur_well)) = grad_psi_min
-                e_theta_i(well_start(cur_well):well_stop(cur_well)) = e_theta_min
-
-                !test output
-!                write(*,*) 'exiting well',cur_well
-!                write(*,*) 'well start,stop',well_start(cur_well), well_stop(cur_well)
-!                write(*,*) 'minima',grad_psi_min, e_theta_min
-                !print out the Bmin
-!                write (*,*) "Bmin, zeta for well ",cur_well, cur_Bmin, zeta_p*4.0_rprec/pi2
-         
-
-                !reset minimum of modB, psi and e
+              ! In this case we have exited a well that hasn't been started properly
+              ! so we ignore it
+              IF (well_start(cur_well) == 0) THEN
                 cur_Bmin = B_refl
-                e_theta_min = 0
                 grad_psi_min = 1.0E10_rprec
-
-                cur_well = cur_well + 1
-                
-                !exit if we have gone through too many wells
-                IF (cur_well >= maxwells) EXIT
+                e_theta_min = 0
                 CYCLE
+              END IF
+
+              !mark the well end index
+              !well_stop(cur_well) = j-2
+              ! teting - jcs
+              well_stop(cur_well) = j-1
+
+              !set gradpsi and etheta for all values
+              grad_psi_i(well_start(cur_well):well_stop(cur_well)) = grad_psi_min
+              e_theta_i(well_start(cur_well):well_stop(cur_well)) = e_theta_min
+
+              !reset minimum of modB, psi and e
+              cur_Bmin = B_refl
+              e_theta_min = 0
+              grad_psi_min = 1.0E10_rprec
+
+              cur_well = cur_well + 1
+                
+              !exit if we have gone through too many wells
+              IF (cur_well >= maxwells) EXIT
+              CYCLE
 
               END IF   
               ! We are not in a well, but are entering one
@@ -1185,8 +774,6 @@ contains
 
                 !add the beginning value, but only if we're not at the start
                 IF (j > 1) THEN
-                  !well_start(cur_well) = j+1
-                  ! testing - jcs
                   well_start(cur_well) = j
                 END IF 
                 !mark that we're in a well
@@ -1239,7 +826,6 @@ contains
             END IF
 !           Loop over the well
             DO k = 1,nwells
-
               dIdb = 0.0_rprec
               dgdb = 0.0_rprec
               dbigGdb = 0.0_rprec
@@ -1252,101 +838,97 @@ contains
               END IF
               ! finding a better start and stop for the well - needed for improved quadrature method
 
-             if (0 .gt. 1) then              
-               ! secant mathod
-               modbzeros_extraargs(1) = phi_N
-               modbzeros_extraargs(2) = delzeta_p * well_start(k)
-               modbzeros_extraargs(3) = -(iota * delzeta_p * well_start(k))
-               modbzeros_extraargs(4) = B_refl
-               modbzeros_extraargs(5) = iota
-               if (LGCXFILES .eqv. .true.) then
-                 write(igc10, '(A,I8,A,5(2x,E16.8E4))') '<---Well #', k, ' modbzeros_args:', modbzeros_extraargs
-               END IF
-  
-      IF (LGCXFILES .eqv. .true.) then
-               print *, '<---Calling 1st secant for well #', k
-          END IF
-               call secant_gc2(modB_bp_zero, zero, one_eminus_16, 100, zero, one, x_well_start, fx_well_start, 5, modbzeros_extraargs)
-               zeta_well_start = modbzeros_extraargs(2) + x_well_start
-               theta_well_start = -iota * zeta_well_start
-               if (LGCXFILES .eqv. .true.) then
-                 write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---Orig start(zeta, theta): (', modbzeros_extraargs(2), ', ', modbzeros_extraargs(3), ')'
-                 write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---New start(zeta, theta): (', zeta_well_start, ', ', theta_well_start, ')'
-                 write(igc10, *) 'zeta_orig, theta_orig, x_new, zeta_new theta_new'
-                 write(igc10,'(1X, 5(2x,E16.8E4))')  modbzeros_extraargs(2),  modbzeros_extraargs(3), x_well_start, zeta_well_start, theta_well_start
-               END IF
-  
-               modbzeros_extraargs(1) = phi_N
-               modbzeros_extraargs(2) = delzeta_p * well_stop(k)
-               modbzeros_extraargs(3) = -(iota * delzeta_p * well_stop(k))
-               modbzeros_extraargs(4) = B_refl
-               modbzeros_extraargs(5) = iota
-  
-      IF (LGCXFILES .eqv. .true.) then
-               print *, '<---Calling 2nd secant for well #', k
-          END IF
-               call secant_gc2(modB_bp_zero, zero, one_eminus_16, 100, zero, one, x_well_stop, fx_well_stop, 5, modbzeros_extraargs)
-  
-  
-               zeta_well_stop = modbzeros_extraargs(2) + x_well_stop
-               theta_well_stop = -iota * zeta_well_stop
+              if (0 .gt. 1) then              
+                ! secant mathod
+                modbzeros_extraargs(1) = phi_N
+                modbzeros_extraargs(2) = delzeta_p * well_start(k)
+                modbzeros_extraargs(3) = -(iota * delzeta_p * well_start(k))
+                modbzeros_extraargs(4) = B_refl
+                modbzeros_extraargs(5) = iota
                 if (LGCXFILES .eqv. .true.) then
-                 write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---Orig stop(zeta, theta): (', modbzeros_extraargs(2), ', ', modbzeros_extraargs(3), ')'
-                 write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---New stop(zeta, theta): (', zeta_well_stop, ', ', theta_well_stop, ')'
-               write(igc10, *) 'zeta_orig, theta_orig, x_new, zeta_new theta_new'
-               write(igc10, '(1X, 5(2X,E16.8E4))')  modbzeros_extraargs(2),  modbzeros_extraargs(3), x_well_stop, zeta_well_stop, theta_well_stop
-              end if
-           end if
-
-           ! JCS - changed for benchmarking
-           if (0 .gt. 2) then
-               ! sliding false position mathod
-               modbzeros_extraargs(1) = phi_N
-               modbzeros_extraargs(2) = delzeta_p * (well_start(k) - 1)
-               modbzeros_extraargs(3) = -(iota * delzeta_p * (well_start(k) - 1))
-               modbzeros_extraargs(4) = B_refl
-               modbzeros_extraargs(5) = iota
-               if (LGCXFILES .eqv. .true.) then
-                 write(igc10, '(A,I8,A,5(2x,E16.8E4))') '<---Well #', k, ' modbzeros_args:', modbzeros_extraargs
-               END IF
+                  write(igc10, '(A,I8,A,5(2x,E16.8E4))') '<---Well #', k, ' modbzeros_args:', modbzeros_extraargs
+                END IF
   
-      IF (LGCXFILES .eqv. .true.) then
-               print *, '<---Calling right false position for well #', k
-               print *, '<---delzeta_p=',delzeta_p,' well_start(k) =', well_start(k)
-          END IF
-               call falsp_R_gc2(modB_bp_zero, -delzeta_p, delzeta_p, one_eminus_16, 100, x_well_start, fx_well_start, 5, modbzeros_extraargs)
-               zeta_well_start = modbzeros_extraargs(2) + x_well_start
-               theta_well_start = -iota * zeta_well_start
-               if (LGCXFILES .eqv. .true.) then
-                 write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---Orig start(zeta, theta): (', modbzeros_extraargs(2), ', ', modbzeros_extraargs(3), ')'
-                 write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---New start(zeta, theta): (', zeta_well_start, ', ', theta_well_start, ')'
-                 write(igc10, *) 'zeta_orig, theta_orig, x_new, zeta_new theta_new'
-                 write(igc10,'(1X, 5(2x,E16.8E4))')  modbzeros_extraargs(2),  modbzeros_extraargs(3), x_well_start, zeta_well_start, theta_well_start
-               END IF
-  
-               modbzeros_extraargs(1) = phi_N
-               modbzeros_extraargs(2) = delzeta_p * (well_stop(k) - 1)
-               modbzeros_extraargs(3) = -(iota * delzeta_p * (well_stop(k) - 1))
-               modbzeros_extraargs(4) = B_refl
-               modbzeros_extraargs(5) = iota
-  
-      IF (LGCXFILES .eqv. .true.) then
-               print *, '<---Calling left false position for well #', k
-               print *, '<---delzeta_p=',delzeta_p,' well_stop(k) =', well_stop(k)
-          END IF
-               call falsp_L_gc2(modB_bp_zero, -delzeta_p, delzeta_p, one_eminus_16, 100, x_well_stop, fx_well_stop, 5, modbzeros_extraargs)
-  
-  
-               zeta_well_stop = modbzeros_extraargs(2) + x_well_stop
-               theta_well_stop = -iota * zeta_well_stop
+                IF (LGCXFILES .eqv. .true.) then
+                         print *, '<---Calling 1st secant for well #', k
+                END IF
+                call secant_gc2(modB_bp_zero, zero, one_eminus_16, 100, zero, one, x_well_start, fx_well_start, 5, modbzeros_extraargs)
+                zeta_well_start = modbzeros_extraargs(2) + x_well_start
+                theta_well_start = -iota * zeta_well_start
                 if (LGCXFILES .eqv. .true.) then
-                 write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---Orig stop(zeta, theta): (', modbzeros_extraargs(2), ', ', modbzeros_extraargs(3), ')'
-                 write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---New stop(zeta, theta): (', zeta_well_stop, ', ', theta_well_stop, ')'
-               write(igc10, *) 'zeta_orig, theta_orig, x_new, zeta_new theta_new'
-               write(igc10, '(1X, 5(2X,E16.8E4))')  modbzeros_extraargs(2),  modbzeros_extraargs(3), x_well_stop, zeta_well_stop, theta_well_stop
+                  write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---Orig start(zeta, theta): (', modbzeros_extraargs(2), ', ', modbzeros_extraargs(3), ')'
+                  write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---New start(zeta, theta): (', zeta_well_start, ', ', theta_well_start, ')'
+                  write(igc10, *) 'zeta_orig, theta_orig, x_new, zeta_new theta_new'
+                  write(igc10,'(1X, 5(2x,E16.8E4))')  modbzeros_extraargs(2),  modbzeros_extraargs(3), x_well_start, zeta_well_start, theta_well_start
+                END IF
+  
+                modbzeros_extraargs(1) = phi_N
+                modbzeros_extraargs(2) = delzeta_p * well_stop(k)
+                modbzeros_extraargs(3) = -(iota * delzeta_p * well_stop(k))
+                modbzeros_extraargs(4) = B_refl
+                modbzeros_extraargs(5) = iota
+  
+                IF (LGCXFILES .eqv. .true.) then
+                  print *, '<---Calling 2nd secant for well #', k
+                END IF
+                call secant_gc2(modB_bp_zero, zero, one_eminus_16, 100, zero, one, x_well_stop, fx_well_stop, 5, modbzeros_extraargs)
+  
+                zeta_well_stop = modbzeros_extraargs(2) + x_well_stop
+                theta_well_stop = -iota * zeta_well_stop
+                if (LGCXFILES .eqv. .true.) then
+                  write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---Orig stop(zeta, theta): (', modbzeros_extraargs(2), ', ', modbzeros_extraargs(3), ')'
+                  write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---New stop(zeta, theta): (', zeta_well_stop, ', ', theta_well_stop, ')'
+                  write(igc10, *) 'zeta_orig, theta_orig, x_new, zeta_new theta_new'
+                  write(igc10, '(1X, 5(2X,E16.8E4))')  modbzeros_extraargs(2),  modbzeros_extraargs(3), x_well_stop, zeta_well_stop, theta_well_stop
+                end if
               end if
-           end if
 
+              if (0 .gt. 1) then
+                ! sliding false position mathod
+                modbzeros_extraargs(1) = phi_N
+                modbzeros_extraargs(2) = delzeta_p * (well_start(k) - 1)
+                modbzeros_extraargs(3) = -(iota * delzeta_p * (well_start(k) - 1))
+                modbzeros_extraargs(4) = B_refl
+                modbzeros_extraargs(5) = iota
+                if (LGCXFILES .eqv. .true.) then
+                  write(igc10, '(A,I8,A,5(2x,E16.8E4))') '<---Well #', k, ' modbzeros_args:', modbzeros_extraargs
+                END IF
+  
+                IF (LGCXFILES .eqv. .true.) then
+                  print *, '<---Calling right false position for well #', k
+                  print *, '<---delzeta_p=',delzeta_p,' well_start(k) =', well_start(k)
+                END IF
+                call falsp_R_gc2(modB_bp_zero, -delzeta_p, delzeta_p, one_eminus_16, 100, x_well_start, fx_well_start, 5, modbzeros_extraargs)
+                zeta_well_start = modbzeros_extraargs(2) + x_well_start
+                theta_well_start = -iota * zeta_well_start
+                if (LGCXFILES .eqv. .true.) then
+                  write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---Orig start(zeta, theta): (', modbzeros_extraargs(2), ', ', modbzeros_extraargs(3), ')'
+                  write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---New start(zeta, theta): (', zeta_well_start, ', ', theta_well_start, ')'
+                  write(igc10, *) 'zeta_orig, theta_orig, x_new, zeta_new theta_new'
+                  write(igc10,'(1X, 5(2x,E16.8E4))')  modbzeros_extraargs(2),  modbzeros_extraargs(3), x_well_start, zeta_well_start, theta_well_start
+                END IF
+  
+                modbzeros_extraargs(1) = phi_N
+                modbzeros_extraargs(2) = delzeta_p * (well_stop(k) - 1)
+                modbzeros_extraargs(3) = -(iota * delzeta_p * (well_stop(k) - 1))
+                modbzeros_extraargs(4) = B_refl
+                modbzeros_extraargs(5) = iota
+  
+                IF (LGCXFILES .eqv. .true.) then
+                  print *, '<---Calling left false position for well #', k
+                  print *, '<---delzeta_p=',delzeta_p,' well_stop(k) =', well_stop(k)
+                END IF
+                call falsp_L_gc2(modB_bp_zero, -delzeta_p, delzeta_p, one_eminus_16, 100, x_well_stop, fx_well_stop, 5, modbzeros_extraargs)
+  
+                zeta_well_stop = modbzeros_extraargs(2) + x_well_stop
+                theta_well_stop = -iota * zeta_well_stop
+                if (LGCXFILES .eqv. .true.) then
+                  write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---Orig stop(zeta, theta): (', modbzeros_extraargs(2), ', ', modbzeros_extraargs(3), ')'
+                  write(igc10, '(A,E16.8E4,A, E16.8E4,1A)') '<---New stop(zeta, theta): (', zeta_well_stop, ', ', theta_well_stop, ')'
+                  write(igc10, *) 'zeta_orig, theta_orig, x_new, zeta_new theta_new'
+                  write(igc10, '(1X, 5(2X,E16.8E4))')  modbzeros_extraargs(2),  modbzeros_extraargs(3), x_well_stop, zeta_well_stop, theta_well_stop
+                end if
+              end if
 
               DO j = well_start(k),well_stop(k)
                 !double check that we're in a valid well
@@ -1356,55 +938,35 @@ contains
                 sqrt_bbb = sqrt(1 - modB(j)/B_refl)
 
                 !dIdb
-                !temp = ds(j)/2.0_rprec/minB/bp(i)/bp(i) / sqrt_bbb
                 temp = delzeta_p*modB(j)/2.0_rprec/minB/bp(i)/bp(i) / sqrt_bbb /Bsupv(j)
                 dIdb = dIdb + temp
                 
                 !dgdb
-                !temp = ds(j) * grad_psi_norm(j) * kappa_g2(j) 
-                !  temp = ds(j) * grad_psi_norm(j) * v2p_curv_geod(nsteps+1-j) 
-                !  temp = temp/bp(i)/bp(i)/2.0_rprec/modB(j)
                 temp = delzeta_p * grad_psi_norm(j) * v2p_curv_geod(nsteps+1-j) 
                 temp = temp/bp(i)/bp(i)/2.0_rprec/Bsupv(j)
                 temp = temp*(sqrt_bbb + 1.0_rprec/sqrt_bbb)
                 dgdb = dgdb + temp
 
                 !dbigGdb 
-                !  temp = dBdpsi(j) *ds(j) /B_refl / bp(i) / modB(j) / 2.0_rprec
                 temp = dBdpsi(j) * delzeta_p /B_refl / bp(i) / Bsupv(j) / 2.0_rprec
                 temp = temp*(sqrt_bbb + 1.0_rprec/sqrt_bbb)
                 dbigGdb = dbigGdb + temp
 
                 !dVdb
-                !temp = dVdb_t1(j) - (2.0_rprec * dBdpsi(j) - modB(j)/Bsupv(j)*dBsupvdpsi(j)) 
                 temp = dVdb_t1(j) - (2.0_rprec * dBdpsi(j) - modB(j)/Bsupv(j)*dBsupphidpsi(j)) 
-                !  temp = temp * 1.5_rprec * ds(j) / modB(j) / B_refl * sqrt_bbb
                 temp = temp * 1.5_rprec * delzeta_p * sqrt_bbb / Bsupv(j) / B_refl 
                 dVdb = dVdb + temp
-              
 
               END DO !end integration over a single well
 !-------------------------END DO j = well_start(k),well_stop(k)
 
-              !vrovervt ratio of radial to poloidal drifts
-!              write (*,*) '---------------------------------------'
-!              write (*,*) 'well k,b ', k, B_refl,well_start(k),well_stop(k)
-!              write (*,*) 'dIdb ', dIdb
-!              write (*,*) 'dgdb ' , dgdb
-!              write (*,*) 'dbigGdb', dbigGdb
-!              write (*,*) 'dVdb ', dVdb
-!              write (*,*) 'etheta0 ', e_theta_i(j-1)
-!              write (*,*) 'grad_psi ', grad_psi_i(j-1)
               IF (well_start(k) < well_stop(k)) THEN
-
                 temp = dgdb/grad_psi_i(well_start(k))/dIdb / minB / e_theta_i(well_start(k))
-                !temp = temp / (dbigGdb/dIdb + 0.666666_rprec * dVdb/dIdb)
                 temp = temp / (dbigGdb/dIdb + (2.0_rprec / 3.0_rprec) * dVdb/dIdb)
                 vrovervt = temp
               ELSE
                 vrovervt = 0.0
               END IF
-!              write (*,*) 'vrovervt ', vrovervt
 
               IF (LGCXFILES .eqv. .true.) THEN
                 write(igc10,*) 'dIdb  dgdb dbigGdb dVdb vrovervt'
@@ -1413,15 +975,11 @@ contains
 
               gamma_c = 4.0_rprec/pi2 * atan(vrovervt)
               wellGamma_c = wellGamma_c + (gamma_c * gamma_c * dIdb)
-!              write (*,*) 'wellGamma_c ', wellGamma_c
-!              write (*,*) 'gamma_c, wellGamma_c', gamma_c, wellGamma_c
             END DO !end sum over all wells           
 !--------------------------END DO k = 1,nwells
-!            write (*,*) '<---finished loop k=1,nwells'
             bigGamma_c = bigGamma_c + wellGamma_c * pi2/4.0_rprec/sqrt(2.0_rprec)*deltabp
           END DO !end integration over bp
 !------------------------------END DO i = 1,bpstep over each bp step
-!          write (*,*) '<---Finished loop i=1,bpstep'
           bigGamma_c = bigGamma_c/dloverb
           if (LGCXFILES .eqv. .true.) then
             write(*,*) 'dloverb',dloverb
@@ -1434,7 +992,6 @@ contains
           sigmas(mtargets) = ABS(sigma(ik))
           targets(mtargets) = target(ik)
           IF (iflag ==1) THEN
-            !WRITE(iunit_out,'(3ES22.12E3,3(1X,I5))') targets(mtargets),sigmas(mtargets),vals(mtargets),ik
             WRITE(iunit_out,'(3ES22.12E3,3(1X,I5))') targets(mtargets),sigmas(mtargets),vals(mtargets),ik
           END IF
 
@@ -1445,10 +1002,6 @@ contains
         deallocate ( ds )
         deallocate ( modB )
         deallocate ( dBdpsi )
-        deallocate ( kappa_g )
-        deallocate ( kappa_g2 )
-        deallocate ( kappa_g3 )
-        deallocate ( kappa_g4 )
         deallocate ( grad_psi_norm )
         deallocate ( grad_psi_i )
         deallocate ( e_theta_norm )
@@ -1471,9 +1024,6 @@ contains
         deallocate ( v2p_curv_geod )
         deallocate ( v2p_curv_norm )
         deallocate ( v2p_x3 )
-
-
-
       ELSE !This is the initialization loop that just counts targets
         DO ik = 1, nsd
           IF (sigma(ik) < bigno) THEN
