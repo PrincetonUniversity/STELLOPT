@@ -138,6 +138,7 @@
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
          IF (lw7x) WRITE(6,'(A)') '   W7-X BEAM Model!'
          IF (lascot) WRITE(6,'(A)') '   ASCOT5 OUTPUT ON!'
+         IF (lfidasim) WRITE(6,'(A)') '   FIDASIM OUTPUT ON!'
          IF (lascotfl) WRITE(6,'(A)') '   ASCOT5 FIELDLINE OUTPUT ON!'
          IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
          IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
@@ -324,6 +325,9 @@
       END IF
       IF (lascot) THEN
          CALL beams3d_write_ascoth5('INIT')
+      END IF
+      IF (lfidasim) THEN
+         CALL beams3d_write_fidasim('INIT')
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

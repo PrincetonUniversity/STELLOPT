@@ -99,6 +99,7 @@ PROGRAM BEAMS3D
         lcollision = .false.
         lw7x = .false.
         lascot = .false.
+        lfidasim = .false.
         lascot4 = .false.
         lbbnbi = .false.
         lascotfl = .false.
@@ -133,6 +134,8 @@ PROGRAM BEAMS3D
                 lascotfl = .true.
             case ("-ascot4")
                 lascot4 = .true.
+            case ("-fidasim")
+                lfidasim = .true.
             case ("-vmec")
                 i = i + 1
                 lvmec = .true.
@@ -341,6 +344,7 @@ PROGRAM BEAMS3D
         END IF
     END IF
     IF (lascot4) CALL beams3d_write_ascoth4('MARKER')
+    IF (lfidasim) CALL beams3d_write_fidasim('DISTRIBUTION')
 
     ! Write diagnostics stuff
     CALL beams3d_diagnostics

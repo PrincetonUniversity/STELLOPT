@@ -274,7 +274,21 @@ beams3d_write_ascoth5.o: \
       beams3d_lines.o \
       beams3d_write_parhdf5.o \
       beams3d_grid.o
-      
+
+
+
+beams3d_write_fidasim.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/ez_hdf5.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_write_parhdf5.o \
+      beams3d_grid.o
+            
 
 beams3d_write_parhdf5.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
