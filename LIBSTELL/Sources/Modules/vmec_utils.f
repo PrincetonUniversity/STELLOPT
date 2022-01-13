@@ -56,8 +56,9 @@ C-----------------------------------------------
       REAL(rprec), PARAMETER :: fmin_acceptable = 1.E-12_dp
       INTEGER     :: nfe, info_loc
       REAL(rprec) :: r_cyl(3), c_flx(3), fmin
-      REAL(rprec) :: Ru1, Zu1, Rv1, Zv1
+      REAL(rprec) :: Ru1, Zu1, Rv1, Zv1, Rs1, Zs1, g1
       REAL(rprec) :: bsupu1, bsupv1
+      REAL(rprec), PARAMETER :: pi2=8*ATAN(one)
 C-----------------------------------------------
       IF (.not.lwout_opened) THEN
          WRITE(6, '(2a,/,a)')
@@ -88,7 +89,7 @@ C-----------------------------------------------
       IF (PRESENT(uflx)) c_flx(2) = uflx
       CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w, 
      1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin, 
-     2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1)
+     2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1, RS=Rs1, ZS=Zs1)
       Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
 
       IF (info_loc.eq.-1 .and. (fmin .le. fmin_acceptable)) info_loc = 0
@@ -105,11 +106,24 @@ C-----------------------------------------------
       ELSE IF (c_flx(1) .gt. one) THEN
          c_flx(1) = one
       END IF
+
 !
-!     2. Evaluate Bsupu, Bsupv at this point
+!     2. Evaluate Jacobian
+!        sqrt(g)=R(dR/du*dZ/ds-dR/ds*dZ/du)
 !
-      CALL tosuvspace (c_flx(1), c_flx(2), c_flx(3), 
-     1                 BSUPU=bsupu1, BSUPV=bsupv1)
+
+      g1 = R1*(Ru1*Zs1-Rs1*Zu1)
+
+!
+!     3. Evaluate Bsupu*sqrt(g), Bsupv*sqrt(g) at this point
+!        The factor of pi2 comes from normalization on
+!        dchi/ds and dphi/ds
+!
+      CALL tosuvspaceBsup (c_flx(1), c_flx(2), c_flx(3), 
+     1                 GBSUPU=bsupu1, GBSUPV=bsupv1)
+
+      bsupu1 = bsupu1/(ABS(g1)*pi2) ! Pi2 comes from chip and phip
+      bsupv1 = bsupv1/(ABS(g1)*pi2)
 !
 !     3. Form Br, Bphi, Bz
 !
@@ -177,7 +191,7 @@ C-----------------------------------------------
       IF (PRESENT(uflx)) c_flx(2) = uflx
       CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w, 
      1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin, 
-     2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1)
+     2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1, RS=Rs1, ZS=Zs1)
       Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
 
       IF (info_loc.eq.-1 .and. (fmin .le. fmin_acceptable)) info_loc = 0
@@ -197,12 +211,9 @@ C-----------------------------------------------
 !        Note that arrays are indexed from 1:ns
 !
       js_lo = FLOOR(c_flx(1)*(ns_w-1))
+      IF (js_lo .ge. ns_w) js_lo=ns_w-1
       js_hi = js_lo+1
-      IF (js_hi > ns_w) THEN
-        js_lo = ns_w -1
-        js_hi = ns_w
-      ENDIF
-      wegt  = c_flx(1)*ns_w - js_lo
+      wegt  = c_flx(1)*(ns_w-1) - js_lo+1
       phi_flux =   (1.0-wegt)*phi_wout(js_lo)
      1            + wegt*phi_wout(js_hi)
       chi_flux =   (1.0-wegt)*chi_wout(js_lo)
@@ -213,16 +224,7 @@ C-----------------------------------------------
 !
 !     3. Get lambda and radial derivatives
 !
-      CALL tosuvspace(c_flx(1),c_flx(2),c_flx(3),LAM=lam1)
-      ds = 0.25/ns_w
-      c_flx2 = c_flx
-      c_flx2(1) = c_flx2(1) + ds
-      CALL flx2cyl(rzl_local,c_flx2,r_cyl2,ns_w,ntor_w, mpol_w,
-     1             ntmax_w, lthreed_w, lasym_w, info_loc)
-      Rs1 = (r_cyl2(1)-r_cyl(1))/ds
-      Zs1 = (r_cyl2(3)-r_cyl(3))/ds
-!      Rs1 = Rs1/phip_flux
-!      Zs1 = Zs1/phip_flux
+      CALL tosuvspaceLambda(c_flx(1),c_flx(2),c_flx(3),LAM=lam1)
 
 !
 !     2. Evaluate Metric Elements
@@ -627,7 +629,7 @@ C-----------------------------------------------
 
       SUBROUTINE flx2cyl(rzl_array, c_flux, r_cyl, ns, ntor, 
      1                   mpol, ntmax, lthreed, lasym, iflag,
-     2                   mscale, nscale, Ru, Rv, Zu, Zv)
+     2                   mscale, nscale, Ru, Rv, Zu, Zv, Rs, Zs)
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
@@ -641,7 +643,7 @@ C-----------------------------------------------
       REAL(rprec), INTENT(out) :: r_cyl(3)
       REAL(rprec), INTENT(in), OPTIONAL :: 
      1                            mscale(0:mpol-1), nscale(0:ntor)
-      REAL(rprec), INTENT(out), OPTIONAL :: Ru, Rv, Zu, Zv
+      REAL(rprec), INTENT(out), OPTIONAL :: Ru, Rv, Zu, Zv, Rs, Zs
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
@@ -653,17 +655,23 @@ C-----------------------------------------------
       INTEGER :: istat, jslo, jshi, mpol1, m, n
       REAL(rprec), DIMENSION(0:ntor,0:mpol-1) ::
      1           rmncc, rmnss, zmncs, zmnsc,
-     2           rmncs, rmnsc, zmncc, zmnss
+     2           rmncs, rmnsc, zmncc, zmnss,
+     1           drmncc, drmnss, dzmncs, dzmnsc,
+     2           drmncs, drmnsc, dzmncc, dzmnss
       REAL(rprec) :: wlo, whi, wlo_odd, whi_odd, hs1, 
      1               si, ui, vi, r11, z11
+      REAL(rprec) :: slo, shi, rho, rholo, rhohi, dwlo, dwhi, dwlo_odd,
+     1               dwhi_odd
       REAL(rprec) :: wmins(0:ntor,0:mpol-1),
-     1               wplus(0:ntor,0:mpol-1)
+     1               wplus(0:ntor,0:mpol-1),
+     2               dwmins(0:ntor,0:mpol-1),
+     3               dwplus(0:ntor,0:mpol-1)
       REAL(rprec) :: cosu, sinu, cosv, sinv,
      1               cosmu(0:mpol-1), sinmu(0:mpol-1),
      2               cosnv(0:ntor),  sinnv(0:ntor), 
      3               cosnvn(0:ntor), sinnvn(0:ntor)
-      REAL(rprec) :: work1(0:mpol-1,12)
-      LOGICAL :: lru, lrv, lzu, lzv
+      REAL(rprec) :: work1(0:mpol-1,16)
+      LOGICAL :: lrs, lzs, lru, lrv, lzu, lzv
 C-----------------------------------------------
 !
 !     COMPUTES THE CYLINDRICAL COORDINATES R11 and Z11
@@ -681,8 +689,8 @@ C-----------------------------------------------
 !     r_cyl    :       R = r_cyl(1);  N*PHI = r_cyl(2);   Z = r_cyl(3)
 !
 !     OPTIONAL OUTPUT
-!                      Ru = dR/du;    Rv = dR/dv = dR/dphi / N
-!                      Zu = dZ/du;    Zv = dZ/dv = dZ/dphi / N
+!                      Rs = dR/ds; Ru = dR/du;    Rv = dR/dv = dR/dphi / N
+!                      Zs = dR/ds; Zu = dZ/du;    Zv = dZ/dv = dZ/dphi / N
 !
 !     NOTE:            User is responsible for multiplying Rv, Zv by N to get phi derivatives
 !
@@ -696,8 +704,8 @@ C-----------------------------------------------
          RETURN
       END IF
 
-      lru = PRESENT(ru); lrv = PRESENT(rv)
-      lzu = PRESENT(zu); lzv = PRESENT(zv)
+      lrs = PRESENT(rs); lru = PRESENT(ru); lrv = PRESENT(rv)
+      lzs = PRESENT(zs); lzu = PRESENT(zu); lzv = PRESENT(zv)
       IF (lrv .and. .not. lthreed) rv = 0
       IF (lzv .and. .not. lthreed) zv = 0
 
@@ -707,35 +715,35 @@ C-----------------------------------------------
 !     FOR si <= 1, POINT IS INSIDE PLASMA;
 !     FOR si > 1, TRY EXTRAPOLATION (WITH CONTINUOUS s, u DERIVATIVES INTO "vacuum" REGION
 !
-      hs1 = one/(ns-1)
-      IF (si .le. one) THEN
- 
-         jslo = 1 + si/hs1
-         jshi = jslo+1
-         wlo = (hs1*(jshi-1) - si)/hs1
-         whi = 1 - wlo
-         IF (jslo .eq. ns) jshi = jslo
+      rho  = SQRT(si)
+      hs1  = one/(ns-1)
+      jslo = 1 + ABS(si)/hs1
+      jslo = MIN(jslo,ns-1)
+      jshi = jslo + 1
+      slo  = hs1*(jslo-1)
+      shi  = hs1*jslo
+      rholo = SQRT(slo)
+      rhohi = SQRT(shi)
+      whi  = (si - slo)/hs1 ! x
+      wlo  = one - whi ! (1-x)
 
-!
-!     USE Rmn, Zmn ~ SQRT(s) FOR ODD-m MODES, SO INTERPOLATE Xmn/SQRT(s)
-! 
-         whi_odd = whi*SQRT(si/(hs1*(jshi-1)))
-         IF (jslo .ne. 1) THEN
-            wlo_odd = wlo*SQRT(si/(hs1*(jslo-1)))
-         ELSE
-            wlo_odd = 0
-            whi_odd = SQRT(si/(hs1*(jshi-1)))
-         END IF
+      ! Odd modes we include a factor of sqrt(s)=rho
+      wlo_odd = wlo*rho/rholo
+      whi_odd = whi*rho/rhohi
 
-      ELSE
+      ! Derivative values
+      dwlo = -DBLE(ns-1)
+      dwhi =  DBLE(ns-1)
+      dwlo_odd = -(3*rho-shi/rho)/(2*hs1*rholo)
+      dwhi_odd =  (3*rho-slo/rho)/(2*hs1*rhohi)
 
-         jshi = ns
-         jslo = ns-1
-         wlo  = -(si - 1)/hs1;    wlo_odd = wlo
-         whi  = 1 - wlo;          whi_odd = whi
-
-      ENDIF
-
+      ! Adjust near axis
+      IF (jslo .eq. 1) THEN
+         wlo_odd = 0
+         whi_odd = rho/rhohi
+         dwlo_odd = 0
+         dwhi_odd = 0.5/(rho*rhohi)
+      END IF
 
       mpol1 = mpol-1
 
@@ -744,7 +752,10 @@ C-----------------------------------------------
       wmins(:,1:mpol1:2) = wlo_odd
       wplus(:,1:mpol1:2) = whi_odd
 
-
+      dwmins(:,0:mpol1:2) = dwlo
+      dwplus(:,0:mpol1:2) = dwhi
+      dwmins(:,1:mpol1:2) = dwlo_odd
+      dwplus(:,1:mpol1:2) = dwhi_odd
 
       IF (.not.lasym) THEN
          IF (lthreed) THEN
@@ -776,6 +787,18 @@ C-----------------------------------------------
      1         + wplus*rzl_array(jshi,:,:,rss)     !!SIN(mu) SIN(nv)
          zmncs = wmins*rzl_array(jslo,:,:,zcs)
      1         + wplus*rzl_array(jshi,:,:,zcs)     !!COS(mu) SIN(nv)
+      END IF
+
+      drmncc = dwmins*rzl_array(jslo,:,:,rcc) 
+     1       + dwplus*rzl_array(jshi,:,:,rcc)        !!COS(mu) COS(nv)
+      dzmnsc = dwmins*rzl_array(jslo,:,:,zsc) 
+     1       + dwplus*rzl_array(jshi,:,:,zsc)        !!SIN(mu) COS(nv)
+
+      IF (lthreed) THEN
+         drmnss = dwmins*rzl_array(jslo,:,:,rss) 
+     1          + dwplus*rzl_array(jshi,:,:,rss)     !!SIN(mu) SIN(nv)
+         dzmncs = dwmins*rzl_array(jslo,:,:,zcs)
+     1          + dwplus*rzl_array(jshi,:,:,zcs)     !!COS(mu) SIN(nv)
       END IF
 
 !
@@ -824,6 +847,8 @@ C-----------------------------------------------
          work1(m,2) = SUM(zmnsc(:,m)*cosnv(:))
          IF (lru) work1(m,3) =-m*work1(m,1)
          IF (lzu) work1(m,4) = m*work1(m,2)
+         IF (lrs) work1(m,13)= SUM(drmncc(:,m)*cosnv(:))
+         IF (lzs) work1(m,14)= SUM(dzmnsc(:,m)*cosnv(:))
          IF (lthreed) THEN
             IF (lrv) work1(m,5) = SUM(rmncc(:,m)*sinnvn(:))
             IF (lzv) work1(m,6) = SUM(zmnsc(:,m)*sinnvn(:))
@@ -833,6 +858,8 @@ C-----------------------------------------------
             IF (lzu) work1(m,10) =-m*work1(m,8)
             IF (lrv) work1(m,11) = SUM(rmnss(:,m)*cosnvn(:))
             IF (lzv) work1(m,12) = SUM(zmncs(:,m)*cosnvn(:))
+            IF (lrs) work1(m,15)= SUM(drmnss(:,m)*sinnv(:))
+            IF (lzs) work1(m,16)= SUM(dzmncs(:,m)*sinnv(:))
          END IF
 
       END DO
@@ -847,11 +874,15 @@ C-----------------------------------------------
          IF (lzu) zu = SUM(work1(:,4)*cosmu(:) + work1(:,10)*sinmu(:))
          IF (lrv) rv = SUM(work1(:,5)*cosmu(:) + work1(:,11)*sinmu(:))
          IF (lzv) zv = SUM(work1(:,6)*sinmu(:) + work1(:,12)*cosmu(:))
+         IF (lrs) rs = SUM(work1(:,13)*cosmu(:) + work1(:,15)*sinmu(:))
+         IF (lzs) zs = SUM(work1(:,14)*sinmu(:) + work1(:,16)*cosmu(:))
       ELSE          
          r11 = SUM(work1(:,1)*cosmu(:))
          z11 = SUM(work1(:,2)*sinmu(:))
          IF (lru) ru = SUM(work1(:,3)*sinmu(:))
          IF (lzu) zu = SUM(work1(:,4)*cosmu(:))
+         IF (lrs) rs = SUM(work1(:,13)*cosmu(:))
+         IF (lzs) zs = SUM(work1(:,14)*sinmu(:))
       END IF
 
 
@@ -869,6 +900,18 @@ C-----------------------------------------------
      1         + wplus*rzl_array(jshi,:,:,zss)     !!SIN(mu) SIN(nv)
       END IF
 
+      drmnsc = dwmins*rzl_array(jslo,:,:,rsc) 
+     1       + dwplus*rzl_array(jshi,:,:,rsc)        !!SIN(mu) COS(nv)
+      dzmncc = dwmins*rzl_array(jslo,:,:,zcc) 
+     1       + dwplus*rzl_array(jshi,:,:,zcc)        !!COS(mu) COS(nv)
+
+      IF (lthreed) THEN
+         drmncs = dwmins*rzl_array(jslo,:,:,rcs) 
+     1          + dwplus*rzl_array(jshi,:,:,rcs)     !!COS(mu) SIN(nv)
+         dzmnss = dwmins*rzl_array(jslo,:,:,zss)
+     1          + dwplus*rzl_array(jshi,:,:,zss)     !!SIN(mu) SIN(nv)
+      END IF
+
 !
 !     COMPUTE R11, Z11 IN REAL SPACE
 !
@@ -880,6 +923,8 @@ C-----------------------------------------------
          work1(m,2) = SUM(zmncc(:,m)*cosnv(:))
          IF (lru) work1(m,3) = m*work1(m,1)
          IF (lzu) work1(m,4) =-m*work1(m,2)
+         IF (lrs) work1(m,13)= SUM(drmnsc(:,m)*cosnv(:))
+         IF (lzs) work1(m,14)= SUM(dzmncc(:,m)*cosnv(:))
 
          IF (lthreed) THEN
             IF (lrv) work1(m,5) = SUM(rmnsc(:,m)*sinnvn(:))
@@ -890,6 +935,8 @@ C-----------------------------------------------
             IF (lzu) work1(m,10) = m*work1(m,8)
             IF (lrv) work1(m,11) = SUM(rmncs(:,m)*cosnvn(:))
             IF (lzv) work1(m,12) = SUM(zmnss(:,m)*cosnvn(:))
+            IF (lrs) work1(m,15)= SUM(drmncs(:,m)*sinnv(:))
+            IF (lzs) work1(m,16)= SUM(dzmnss(:,m)*sinnv(:))
          END IF
 
       END DO
@@ -908,11 +955,17 @@ C-----------------------------------------------
      1                 SUM(work1(:,5)*sinmu(:) + work1(:,11)*cosmu(:))
          IF (lzv) zv = zv +
      1                 SUM(work1(:,6)*cosmu(:) + work1(:,12)*sinmu(:))
+         IF (lrs) rs = rs + 
+     1                 SUM(work1(:,13)*sinmu(:) + work1(:,15)*cosmu(:))
+         IF (lzs) zs = zs + 
+     1                 SUM(work1(:,14)*cosmu(:) + work1(:,16)*sinmu(:))
       ELSE          
          r11 = r11 + SUM(work1(:,1)*sinmu(:))
          z11 = z11 + SUM(work1(:,2)*cosmu(:))
          IF (lru) ru = ru + SUM(work1(:,3)*cosmu(:))
          IF (lzu) zu = zu + SUM(work1(:,4)*sinmu(:))
+         IF (lrs) rs = rs + SUM(work1(:,13)*sinmu(:))
+         IF (lzs) zs = zs + SUM(work1(:,14)*cosmu(:))
       END IF
 
  1000 CONTINUE
@@ -923,7 +976,7 @@ C-----------------------------------------------
 
       SUBROUTINE cyl2flx(rzl_in, r_cyl, c_flx, ns_in, ntor_in, mpol_in, 
      1      ntmax_in, lthreed_in, lasym_in, info, nfe, fmin, 
-     1      mscale, nscale, ru, zu, rv, zv)
+     1      mscale, nscale, ru, zu, rv, zv, rs, zs)
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
@@ -936,7 +989,7 @@ C-----------------------------------------------
      1                 rzl_in(ns_in,0:ntor_in,0:mpol_in-1,2*ntmax_in)
       REAL(rprec), TARGET, OPTIONAL :: 
      1                 mscale(0:mpol_in-1), nscale(0:ntor_in)
-      REAL(rprec), INTENT(out), OPTIONAL :: ru, zu, rv, zv
+      REAL(rprec), INTENT(out), OPTIONAL :: ru, zu, rv, zv, rs, zs
       REAL(rprec), INTENT(out)   :: fmin
       LOGICAL, INTENT(in) :: lthreed_in, lasym_in
 C-----------------------------------------------
@@ -1041,17 +1094,18 @@ C-----------------------------------------------
 !     COMPUTE Ru, Zu, Rv, Zv IF REQUIRED
 !
       IF ((PRESENT(ru) .or. PRESENT(zu) .or. 
-     1     PRESENT(rv) .or. PRESENT(zv)) .and. info.eq.0) THEN
+     1     PRESENT(rv) .or. PRESENT(zv) .or.
+     2     PRESENT(rs) .or. PRESENT(zs)) .and. info.eq.0) THEN
          IF (lscale) THEN
             CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc, 
      1         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, 
      2         iflag, MSCALE=mscale_loc, NSCALE=nscale_loc, 
-     3         RU=ru, ZU=zu, RV=rv, ZV=zv)
+     3         RU=ru, ZU=zu, RV=rv, ZV=zv, RS=rs, ZS=zs)
          ELSE
             CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc, 
      1         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, 
      2         iflag, 
-     3         RU=ru, ZU=zu, RV=rv, ZV=zv)
+     3         RU=ru, ZU=zu, RV=rv, ZV=zv, RS=rs, ZS=zs)
          END IF
       END IF
 
@@ -1077,7 +1131,7 @@ C-----------------------------------------------
       REAL(rprec) :: c_flx(3), r_cyl_out(3), fvec(nvar), sflux, 
      1               uflux, eps0, eps, epu, xc_min(2), factor
       REAL(rprec) :: x0(3), xs(3), xu(3), dels, delu, tau, fmin0,
-     1               ru1, zu1, edge_value, snew
+     1               ru1, zu1, edge_value, snew, rs1, zs1
 C-----------------------------------------------
 !
 !     INPUT/OUTPUT:
@@ -1124,24 +1178,25 @@ C-----------------------------------------------
          c_flx(1) = sflux;  c_flx(2) = uflux
 
 !        COMPUTE R,Z, Ru, Zu
-         CALL get_flxcoord(x0, c_flx, ru=ru1, zu=zu1)
+         CALL get_flxcoord(x0, c_flx, rs=rs1, zs=zs1, ru=ru1, zu=zu1)
          xu(1) = ru1; xu(3) = zu1
+         xs(1) = rs1; xs(3) = zs1
 
 !        MAKE SURE sflux IS LARGE ENOUGH
 !        TO COMPUTE d(sqrt(s))/ds ACCURATELY NEAR ORIGIN
-         IF (sflux .ge. 1000*eps0) THEN
-            eps = eps0
-         ELSE
-            eps = eps0*sflux
-         END IF
+!         IF (sflux .ge. 1000*eps0) THEN
+!            eps = eps0
+!         ELSE
+!            eps = eps0*sflux
+!         END IF
 
 !        COMPUTE Rs, Zs NUMERICALLY
-         eps = ABS(eps)
-         IF (sflux .ge. 1-eps) eps = -eps
-         c_flx(1) = sflux + eps
-         CALL get_flxcoord(r_cyl_out, c_flx)
-         xs = (r_cyl_out - x0)/eps
-         c_flx(1) = sflux
+!         eps = ABS(eps)
+!         IF (sflux .ge. 1-eps) eps = -eps
+!         c_flx(1) = sflux + eps
+!         CALL get_flxcoord(r_cyl_out, c_flx)
+!         xs = (r_cyl_out - x0)/eps
+!         c_flx(1) = sflux
 
          x0(1) = x0(1) - r_target
          x0(3) = x0(3) - z_target
@@ -1216,13 +1271,13 @@ C-----------------------------------------------
 
       END SUBROUTINE newt2d
 
-      SUBROUTINE get_flxcoord(x1, c_flx, ru, zu)
+      SUBROUTINE get_flxcoord(x1, c_flx, rs, zs, ru, zu)
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       REAL(rprec), INTENT(out) :: x1(3)
       REAL(rprec), INTENT(in)  :: c_flx(3)
-      REAL(rprec), INTENT(out), OPTIONAL :: ru, zu
+      REAL(rprec), INTENT(out), OPTIONAL :: ru, zu, rs, zs
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -1231,11 +1286,12 @@ C-----------------------------------------------
       IF (lscale) THEN
          CALL flx2cyl(rzl_array, c_flx, x1, ns_loc, ntor_loc, mpol_loc, 
      1              ntmax_loc, lthreed_loc, lasym_loc, iflag, 
-     2              MSCALE=mscale_loc, NSCALE=nscale_loc, RU=ru, ZU=zu)
+     2              MSCALE=mscale_loc, NSCALE=nscale_loc, RU=ru, ZU=zu,
+     3              RS = rs, ZS = zs)
       ELSE
          CALL flx2cyl(rzl_array, c_flx, x1, ns_loc, ntor_loc, mpol_loc, 
      1              ntmax_loc, lthreed_loc, lasym_loc, iflag, 
-     2              RU=ru, ZU=zu)
+     2              RU=ru, ZU=zu, Rs=rs, Zs=zs)
       END IF
 
       END SUBROUTINE get_flxcoord
