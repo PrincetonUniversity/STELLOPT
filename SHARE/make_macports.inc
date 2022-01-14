@@ -29,8 +29,8 @@
   FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all -fbounds-check -fallow-argument-mismatch
   LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
 ###GCC10
-  FLAGS_R = $(FLAGS_R) -fallow-argument-mismatch
-  FLAGS_D = $(FLAGS_D) -fallow-argument-mismatch
+  FLAGS_R+= -fallow-argument-mismatch
+  FLAGS_D+= -fallow-argument-mismatch
   
 #######################################################################
 #            MPI Options
