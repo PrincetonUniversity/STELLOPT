@@ -347,9 +347,9 @@ used for determining the wall strike.
 
 **Distribution Functions** These arrays hold information from slowing 
 down distribution information. These arrays are defined on a rho grid
-where $`\rho=s^{-1/2}`$. The `ns_profX` variable indicate the number of
-bins.  The extents are $`\rho=\[0,1\]`$, $`u=\[0,2\pi\]`$, $`\phi=\[0,2\pi\]`$,
-$`v_{para}=\[-partvmax,partvmax\]`$, and $`v_{perp}=\[0,partvmax\]`$. Also
+where $$\rho=\sqrt{s}$$. The `ns_profX` variable indicate the number of
+bins.  The extents are $$\rho=\[0,1\]$$, $$u=\[0,2\pi\]$$, $$\phi=\[0,2\pi\]$$,
+$$v_{para}=\[-partvmax,partvmax\]$$, and $$v_{perp}=\[0,partvmax\]$$. Also
 note that the 5D distribution fucntion is not normalized by volume,
 the user should do this before attempting to interpolate to another
 grid.
