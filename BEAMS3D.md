@@ -256,7 +256,7 @@ located at the root level.  The following table helps to define the
 variables (all values in mks units, angles in radians)
 
 | Name | Type | Size | Description |
-| :--: | :--: | :--: | :---------: |
+| :--- | :--- | :---: | :--- |
 | nr | INTEGER | 1 | Number of radial background gridpoints |
 | nphi | INTEGER | 1 | Number of toroidal background gridpoints |
 | nz | INTEGER | 1 | Number of vertical background gridpoints |
