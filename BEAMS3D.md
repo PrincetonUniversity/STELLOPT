@@ -251,12 +251,76 @@ comparrision scripts require Python.
 
 ### Output Data Format
 
-The data from the run is output in two fashions. The first is a text
-file which contains counts of the number of particles lost from the
-simulation domain (hit a structure or the simulation domain). The second
-is and HDF5 file containing the simulation domain (magnetic fields on a
-grid) and the particle trajectories as a set of points. Each particle
-has it\'s trajectory saved NPOINC times.
+The data from each run is output into a HDF5 file where all datasets
+located at the root level.  The following table helps to define the
+variables (all values in mks units, angles in radians)
+| Name | Type | Size | Description |
+| :--: | :--: | :--: | :---------: |
+| nr | INTEGER | 1 | Number of radial background gridpoints |
+| nphi | INTEGER | 1 | Number of toroidal background gridpoints |
+| nz | INTEGER | 1 | Number of vertical background gridpoints |
+| nion | INTEGER | 1 | Number of background ion species |
+| plasma_mass | DOUBLE | 1 | Average plasma background mass |
+| plasma_zavg | DOUBLE | 1 | Average plasma \<Z\> |
+| plasma_zavg | DOUBLE | 1 | Average plasma \[Z\] |
+| raxis | DOUBLE | nr | R values of background grid |
+| phiaxis | DOUBLE | nphi | Phi values of background grid |
+| zaxis | DOUBLE | nz | Z values of background grid |
+| BR_ARR | DOUBLE | nr,nphi,nz | Magnetic field (B_R) |
+| BPHI_ARR | DOUBLE | nr,nphi,nz | Magnetic field (B_PHI) |
+| BZ_ARR | DOUBLE | nr,nphi,nz | Magnetic field (B_Z) |
+| S_ARR | DOUBLE | nr,nphi,nz | Normalized Toroidal Flux (s) |
+| U_ARR | DOUBLE | nr,nphi,nz | Poloidal-like angle (u) |
+| POT_ARR | DOUBLE | nr,nphi,nz | Electrostatic scalar potential |
+| NE | DOUBLE | nr,nphi,nz | Electron number density |
+| TE | DOUBLE | nr,nphi,nz | Electron Temperature eV |
+| NI | DOUBLE | nion,nr,nphi,nz | Ion number density |
+| TI | DOUBLE | nr,nphi,nz | Ion Temperature eV |
+| ZEFF_ARR | DOUBLE | nr,nphi,nz | Zeff |
+| npoinc | INTEGER | 1 | Number of Timesteps Saved |
+| nparticles | INTEGER | 1 | Number of markers Evolved |
+| mass | DOUBLE | nparticles | Fast Ion Masses |
+| charge | DOUBLE | nparticles | Fast Ion Charge |
+| weight | DOUBLE | nparticles | Fast Weight (1/s) |
+| Beam | INTEGER | nparticles | Population index |
+| Zatom | INTEGER | nparticles | Particle Charge Number |
+| end_state | INTEGER | nparticles | Particle End State (0: Orbiting; 1: Thermalized; 2: Wall Strike; 3: Shine-through; 4: Port-Load) |
+| t_end | DOUBLE | nparticles | Particle Time of flight |
+| R_lines | DOUBLE | npoinc+1,nparticles | R trajectory of markers. |
+| PHI_lines | DOUBLE | npoinc+1,nparticles | Phi trajectory of markers. |
+| Z_lines | DOUBLE | npoinc+1,nparticles | Z trajectory of markers. |
+| vll_lines | DOUBLE | npoinc+1,nparticles | Parallel velocity trajectory of markers. |
+| moment_lines | DOUBLE | npoinc+1,nparticles | Magnetic Moment trajectory of markers. |
+| neut_lines | BOOLEAN | npoinc+1,nparticles | If true markers is a neutral at that point. |
+| S_lines | DOUBLE | npoinc+1,nparticles | Normalized toroidal flux rajectory of markers. |
+| U_lines | DOUBLE | npoinc+1,nparticles | Poloidal angle trajectory of markers. |
+| B_lines | DOUBLE | npoinc+1,nparticles | |B| trajectory of markers. |
+| R_lines | DOUBLE | npoinc+1,nparticles | R Trajectory of markers. |
+| nbeams | INTEGER | 1 | Number of fast ion populations |
+| ns_prof1 | INTEGER | 1 | Number of radial distribution gridpoints |
+| ns_prof2 | INTEGER | 1 | Number of poloidal distribution gridpoints |
+| ns_prof3 | INTEGER | 1 | Number of toroidal distribution gridpoints |
+| ns_prof4 | INTEGER | 1 | Number of parallel velocity distribution gridpoints |
+| ns_prof5 | INTEGER | 1 | Number of perpendicular velocity distribution gridpoints |
+| partvmax | DOUBLE | 1 | Maximum velocity of distribution function. |
+| dist_prof | DOUBLE | nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5 | Distribution function. (part*m^-3*s^-3, no physical volume) |
+| ndot_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Source (m^-3/s) |
+| epower_prof | DOUBLE | nbeams,ns_prof1 | Electron Heating W/m^3 |
+| ipower_prof | DOUBLE | nbeams,ns_prof1 | Ion Heating W/m^3 |
+| j_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Current A/m^2 |
+| dense_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Density m^-3 |
+| Energy | DOUBLE | nbeams | Fast Ion Population Initial Energy |
+| V_neut | DOUBLE | 3,nparticles | Initial neutral velocity (Vx,Vy,Vz) |
+| Shinethrough | DOUBLE | nbeams | Beam Shinethrough % |
+| Shineport | DOUBLE | nbeams | Beam loss to port % |
+| nvertex | INTEGER | 1 | Number of vertices in wall model |
+| nface | INTEGER | 1 | Number of faces in wall model |
+| wall_vertex | DOUBLE | nvertex,3 | Vertex locations (x,y,z) |
+| wall_faces | INTEGER | nface,3 | Face Vertex Indicies (v1,v2,v3) |
+| wall_strikes | INTEGER | nface | Number of marker strikes on a given wall model face. |
+| wall_load | DOUBLE | nface | Heat flux to a given wall model face W/m^2 |
+| wall_shine | DOUBLE | nface | Shinethrough heat flux to a given wall model face W/m^2 |
+
 
 ------------------------------------------------------------------------
 
