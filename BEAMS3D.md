@@ -295,7 +295,7 @@ variables (all values in mks units, angles in radians)
 | neut_lines | BOOLEAN | npoinc+1,nparticles | If true markers is a neutral at that point. |
 | S_lines | DOUBLE | npoinc+1,nparticles | Normalized toroidal flux rajectory of markers. |
 | U_lines | DOUBLE | npoinc+1,nparticles | Poloidal angle trajectory of markers. |
-| B_lines | DOUBLE | npoinc+1,nparticles | |B| trajectory of markers. |
+| B_lines | DOUBLE | npoinc+1,nparticles | mod(B) trajectory of markers. |
 | R_lines | DOUBLE | npoinc+1,nparticles | R Trajectory of markers. |
 | nbeams | INTEGER | 1 | Number of fast ion populations |
 | ns_prof1 | INTEGER | 1 | Number of radial distribution gridpoints |
