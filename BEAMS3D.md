@@ -313,6 +313,7 @@ variables (all values in mks units, angles in radians)
 | ipower_prof | DOUBLE | nbeams,ns_prof1 | Ion Heating W/m^3 |
 | j_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Current A/m^2 |
 | dense_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Density m^-3 |
+| Gfactor | DOUBLE | ns_prof1 | Correction factor (1-L31)/Zeff to obtain NBCD. |
 | **NBI** |
 | Energy | DOUBLE | nbeams | Fast Ion Population Initial Energy |
 | V_neut | DOUBLE | 3,nparticles | Initial neutral velocity (Vx,Vy,Vz) |
@@ -327,6 +328,35 @@ variables (all values in mks units, angles in radians)
 | wall_load | DOUBLE | nface | Heat flux to a given wall model face W/m^2 |
 | wall_shine | DOUBLE | nface | Shinethrough heat flux to a given wall model face W/m^2 |
 
+**Background Grids** These are the background quantities the code uses
+for pushing the markers.  The `raxis`, `phiaxis`, and `zaxis` arrays
+hold the locations of the gridpoints.
+
+**Marker Trajectories** These arrays hold the state of every marker for
+each timestep.  The timesteps are defined as the maximum time 
+(`t_end` from the input) divided by `npoinc`.  For neutral beam
+simulations the first time index is the initial position of the neutral,
+the second index is either a collision with the wall or the point at
+which the neutral ionizes, and the thrid index is the initial condition
+for the gyrocenter.  For a slowing down run check the `end_state` array
+if `t_end` was set long enough there should be no orbiting markers.
+When a marker hits a wall structure we save two states.  The last index
+is the position of the strike on the wall element.  The preceeding index
+is the previous sub-timestep.  This allows us to reconstruct the ray
+used for determining the wall strike.
+
+**Distribution Functions** These arrays hold information from slowing 
+down distribution information. These arrays are defined on a rho grid
+where $\rho=s^{-1/2}$. The `ns_profX` variable indicate the number of
+bins.  The extents are $\rho=\[0,1\]$, $u=\[0,2\pi\]$, $\phi=\[0,2\pi\],
+$v_{para}=\[-partvmax,partvmax\]$, and $v_{perp}=\[0,partvmax\]$. Also
+note that the 5D distribution fucntion is not normalized by volume,
+the user should do this before attempting to interpolate to another
+grid.
+
+**Wall Model** The wall model is stored for each run.  The `wall_faces`
+array contains the three indices into the `wall_vertex` array which
+define each triangular face.
 
 ------------------------------------------------------------------------
 
