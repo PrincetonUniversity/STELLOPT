@@ -304,7 +304,7 @@ variables (all values in mks units, angles in radians)
 | ns_prof4 | INTEGER | 1 | Number of parallel velocity distribution gridpoints |
 | ns_prof5 | INTEGER | 1 | Number of perpendicular velocity distribution gridpoints |
 | partvmax | DOUBLE | 1 | Maximum velocity of distribution function. |
-| dist_prof | DOUBLE | nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5 | Distribution function. (part*m^-3*s^-3, no physical volume) |
+| dist_prof | DOUBLE | nbeams,ns_prof1..5 | Distribution function. (part*m^-3*s^-3, no physical volume) |
 | ndot_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Source (m^-3/s) |
 | epower_prof | DOUBLE | nbeams,ns_prof1 | Electron Heating W/m^3 |
 | ipower_prof | DOUBLE | nbeams,ns_prof1 | Ion Heating W/m^3 |
