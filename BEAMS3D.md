@@ -257,6 +257,7 @@ variables (all values in mks units, angles in radians)
 
 | Name | Type | Size | Description |
 | :--- | :--- | :---: | :--- |
+| **Background Grid** |
 | nr | INTEGER | 1 | Number of radial background gridpoints |
 | nphi | INTEGER | 1 | Number of toroidal background gridpoints |
 | nz | INTEGER | 1 | Number of vertical background gridpoints |
@@ -278,6 +279,7 @@ variables (all values in mks units, angles in radians)
 | NI | DOUBLE | nion,nr,nphi,nz | Ion number density |
 | TI | DOUBLE | nr,nphi,nz | Ion Temperature eV |
 | ZEFF_ARR | DOUBLE | nr,nphi,nz | Zeff |
+| **Marker Trajectory** |
 | npoinc | INTEGER | 1 | Number of Timesteps Saved |
 | nparticles | INTEGER | 1 | Number of markers Evolved |
 | mass | DOUBLE | nparticles | Fast Ion Masses |
@@ -297,6 +299,7 @@ variables (all values in mks units, angles in radians)
 | U_lines | DOUBLE | npoinc+1,nparticles | Poloidal angle trajectory of markers. |
 | B_lines | DOUBLE | npoinc+1,nparticles | mod(B) trajectory of markers. |
 | R_lines | DOUBLE | npoinc+1,nparticles | R Trajectory of markers. |
+| **Distribution Function** |
 | nbeams | INTEGER | 1 | Number of fast ion populations |
 | ns_prof1 | INTEGER | 1 | Number of radial distribution gridpoints |
 | ns_prof2 | INTEGER | 1 | Number of poloidal distribution gridpoints |
@@ -310,10 +313,12 @@ variables (all values in mks units, angles in radians)
 | ipower_prof | DOUBLE | nbeams,ns_prof1 | Ion Heating W/m^3 |
 | j_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Current A/m^2 |
 | dense_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Density m^-3 |
+| **NBI** |
 | Energy | DOUBLE | nbeams | Fast Ion Population Initial Energy |
 | V_neut | DOUBLE | 3,nparticles | Initial neutral velocity (Vx,Vy,Vz) |
 | Shinethrough | DOUBLE | nbeams | Beam Shinethrough % |
 | Shineport | DOUBLE | nbeams | Beam loss to port % |
+| **Wall Model** |
 | nvertex | INTEGER | 1 | Number of vertices in wall model |
 | nface | INTEGER | 1 | Number of faces in wall model |
 | wall_vertex | DOUBLE | nvertex,3 | Vertex locations (x,y,z) |
