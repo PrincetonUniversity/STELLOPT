@@ -58,7 +58,6 @@ C-----------------------------------------------
       REAL(rprec) :: r_cyl(3), c_flx(3), fmin
       REAL(rprec) :: Ru1, Zu1, Rv1, Zv1, Rs1, Zs1, g1
       REAL(rprec) :: bsupu1, bsupv1
-      REAL(rprec), PARAMETER :: pi2=8*ATAN(one)
 C-----------------------------------------------
       IF (.not.lwout_opened) THEN
          WRITE(6, '(2a,/,a)')
@@ -100,12 +99,12 @@ C-----------------------------------------------
       IF (PRESENT(sflx)) sflx = c_flx(1)  
       IF (PRESENT(uflx)) uflx = c_flx(2)
 
-      IF (c_flx(1) .gt. 2) THEN
-         Br = 0;  Bphi = 0;  Bz = 0
-         RETURN
-      ELSE IF (c_flx(1) .gt. one) THEN
-         c_flx(1) = one
-      END IF
+      !IF (c_flx(1) .gt. 2) THEN
+      !   Br = 0;  Bphi = 0;  Bz = 0
+      !   RETURN
+      !ELSE IF (c_flx(1) .gt. one) THEN
+      !   c_flx(1) = one
+      !END IF
 
 !
 !     2. Evaluate Jacobian
@@ -116,14 +115,12 @@ C-----------------------------------------------
 
 !
 !     3. Evaluate Bsupu*sqrt(g), Bsupv*sqrt(g) at this point
-!        The factor of pi2 comes from normalization on
-!        dchi/ds and dphi/ds
 !
       CALL tosuvspaceBsup (c_flx(1), c_flx(2), c_flx(3), 
      1                 GBSUPU=bsupu1, GBSUPV=bsupv1)
 
-      bsupu1 = bsupu1/(ABS(g1)*pi2) ! Pi2 comes from chip and phip
-      bsupv1 = bsupv1/(ABS(g1)*pi2)
+      bsupu1 = bsupu1/g1 
+      bsupv1 = bsupv1/g1
 !
 !     3. Form Br, Bphi, Bz
 !
@@ -718,7 +715,7 @@ C-----------------------------------------------
       rho  = SQRT(si)
       hs1  = one/(ns-1)
       jslo = 1 + ABS(si)/hs1
-      jslo = MIN(jslo,ns-1)
+      jslo = MAX(MIN(jslo,ns-1),2) ! Extrapolate
       jshi = jslo + 1
       slo  = hs1*(jslo-1)
       shi  = hs1*jslo
@@ -732,10 +729,12 @@ C-----------------------------------------------
       whi_odd = whi*rho/rhohi
 
       ! Derivative values
-      dwlo = -DBLE(ns-1)
-      dwhi =  DBLE(ns-1)
-      dwlo_odd = -(3*rho-shi/rho)/(2*hs1*rholo)
-      dwhi_odd =  (3*rho-slo/rho)/(2*hs1*rhohi)
+      dwlo = -DBLE(ns-1) ! -1/ds
+      dwhi =  DBLE(ns-1) !  1/ds
+      dwlo_odd = (hs1-hs1*whi-2*si)/(2*rho*hs1*rholo)
+      dwhi_odd = (hs1*whi+2*si)/(2*rho*hs1*rhohi)
+      !dwlo_odd = -(3*rho-shi/rho)/(2*hs1*rholo)
+      !dwhi_odd =  (3*rho-slo/rho)/(2*hs1*rhohi)
 
       ! Adjust near axis
       IF (jslo .eq. 1) THEN
