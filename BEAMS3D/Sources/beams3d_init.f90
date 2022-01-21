@@ -326,9 +326,8 @@
       IF (lascot) THEN
          CALL beams3d_write_ascoth5('INIT')
       END IF
-      IF (lfidasim) THEN
-         CALL beams3d_write_fidasim('INIT')
-      END IF
+      !WRITE_FIDASIM comes after spline setup as it needs 3D Grids
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Setup Splines
@@ -394,6 +393,7 @@
       IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
 
 
+
       ! Construct Splines on shared memory master nodes
       IF (myid_sharmem == master) THEN
          bcs1=(/ 0, 0/)
@@ -455,6 +455,7 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:U_spl',ier)
          CALL EZspline_setup(POT_spl,POT_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:POT_spl',ier)
+
       END IF
       ! Allocate Shared memory space
       CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
@@ -499,6 +500,11 @@
 
       IF (myid_sharmem==master) CALL beams3d_volume !requires S_ARR
 
+               ! WRITE_FIDASIM INIT
+      IF (lfidasim) THEN
+         CALL beams3d_write_fidasim('INIT')
+      END IF
+
       ! Output Grid
       CALL beams3d_write('GRID_INIT')
       CALL mpidealloc(B_R,win_B_R)
@@ -523,6 +529,7 @@
          IF (npot > 0) CALL EZspline_free(POT_spl_s,ier)
          IF (nzeff > 0) CALL EZspline_free(ZEFF_spl_s,ier)
       END IF
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Particles
