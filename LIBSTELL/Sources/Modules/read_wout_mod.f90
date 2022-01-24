@@ -2595,6 +2595,9 @@
          wlo = 1+whi; whi = -whi
       ELSE IF (jslo .eq. 1) THEN
          jslo = 2
+         jshi = 3
+         wlo = (hs1*(jshi-c1p5) - s_in)/hs1
+         whi = 1 - wlo
       END IF
 
 !
@@ -2784,8 +2787,7 @@
 !------------------------------------------------
       REAL(rprec), PARAMETER :: c1p5 = 1.5_dp
       INTEGER :: m, n, n1, mn, jslo, jshi
-      REAL(rprec) :: hs1, wlo, whi, wlo_odd, whi_odd, dchids, dphids,    &
-                     lamu, lamv, slo, shi, lamscale
+      REAL(rprec) :: hs1, wlo, whi,iota, dphids, lamu, lamv, slo
       REAL(rprec), DIMENSION(mnmax) :: wmins, wplus, lammns1, lammnc1
       REAL(rprec) :: cosu, sinu, cosv, sinv, tcosmn, tsinmn, sgn
       REAL(rprec) :: cosmu(0:mpol-1), sinmu(0:mpol-1),                   &
@@ -2800,7 +2802,7 @@
       CALL tosuvspaceLambda(s_in,u_in,v_in,LU=lamu,LV=lamv)
 
 !
-!     Get dPhi/ds and dChi/ds : Half Grid
+!     Get dPhi/ds and iota : From Half Grid Quantities
 !
       hs1 = one/(ns-1)
       jslo = 1+FLOOR(s_in/hs1+0.5)
@@ -2809,18 +2811,15 @@
       slo  = hs1*(jslo-c1p5) ! Can be negative
       whi  = (s_in - slo)/hs1 ! x
       wlo  = one-whi ! (1-x) half
-      lamscale = SQRT(hs1*SUM(phip(2:ns)**2))
-      dchids = wlo*iotas(jslo)+whi*iotas(jshi) ! Really iota
+      iota   = wlo*iotas(jslo)+whi*iotas(jshi)
       dphids = wlo*phip(jslo)+whi*phip(jshi)
-      ! Calculate dchi/ds from dphi/ds and iota
-      dchids = dchids*dphids !dchids=iota*dphids
 
 !
 !     Output sqrt(g)*B^u and sqrt(g)B^v
 !
 
-      gbsupu = dchids - dphids * lamv*nfp
-      gbsupv = dphids + lamu * dphids
+      gbsupu = dphids * ( iota - lamv*nfp)
+      gbsupv = dphids * ( one  + lamu    )
 
       END SUBROUTINE tosuvspaceBsup
 
@@ -2838,7 +2837,7 @@
 !------------------------------------------------
       REAL(rprec), PARAMETER :: c1p5 = 1.5_dp
       INTEGER :: m, n, n1, mn, jslo, jshi
-      REAL(rprec) :: hs1, wlo, whi, wlo_odd, whi_odd, dchids, dphids,    &
+      REAL(rprec) :: hs1, wlo, whi, wlo_odd, whi_odd,                    &
                      slo, shi, lamt,lamut, lamvt
       REAL(rprec), DIMENSION(mnmax) :: wmins, wplus, lammns1, lammnc1
       REAL(rprec) :: cosu, sinu, cosv, sinv, tcosmn, tsinmn, sgn
@@ -2897,7 +2896,7 @@
 !
       hs1 = one/(ns-1)
       jslo = 1+FLOOR(s_in/hs1+0.5)
-      jslo = MAX(MIN(jslo,ns-1),2)
+      jslo = MAX(MIN(jslo,ns-1),2) ! Now pure extrapolation to axis
       jshi = jslo+1
       slo  = hs1*(jslo-c1p5) ! Can be negative
       shi  = hs1*(jshi-c1p5)
@@ -2909,19 +2908,20 @@
 ! 
       wlo_odd = wlo*SQRT(s_in/slo)
       whi_odd = whi*SQRT(s_in/shi)
-      !wlo_odd = wlo*SIGN(SQRT(s_in/ABS(slo)),slo) ! slo can be negative
 
 !
 !     Fix axis behavior here
 !       LMNS(1)=LMNS(2) EVEN
 !       LMNS(1)=-LMNS(2) ODD
-      IF (jslo .eq. 1) THEN
-            ! For even modes
-            jslo = 2
-            ! For odd modes
-            wlo_odd = zero
-            !whi_odd = SQRT(s_in/shi)
-      END IF
+!      IF (jslo .eq. 1) THEN
+!            ! For even modes
+!            !jslo = 2
+!            wlo = zero
+!            whi = 2*s_in/hs1
+!            ! For odd modes
+!            wlo_odd = zero
+!            whi_odd = SQRT(s_in/shi)
+!      END IF
 
       WHERE (MOD(NINT(xm(:)),2) .eq. 0)
          wmins = wlo
