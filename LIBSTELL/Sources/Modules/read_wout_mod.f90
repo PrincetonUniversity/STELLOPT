@@ -2549,8 +2549,12 @@
 !     dbsubuds, dbsubvds, dbsubsdu, dbsubsdv
 !
 !------------------------------------------------
-      IF (s_in.lt.zero .or. s_in.gt.one) THEN
-         WRITE(6, *) ' In tosuvspace, s(flux) must be between 0 and 1'
+!      IF (s_in.lt.zero .or. s_in.gt.one) THEN
+!         WRITE(6, *) ' In tosuvspace, s(flux) must be between 0 and 1'
+!         RETURN
+!      END IF
+      IF (s_in.lt.zero) THEN
+         WRITE(6, *) ' In tosuvspace, s(flux) must be greater than 0'
          RETURN
       END IF
 
@@ -2585,14 +2589,15 @@
 !
       hs1 = one/(ns-1)
       jslo = INT(c1p5 + s_in/hs1)
+      jslo = MIN(jslo,ns-1)
       jshi = jslo+1
       wlo = (hs1*(jshi-c1p5) - s_in)/hs1
       whi = 1 - wlo
       IF (jslo .eq. ns) THEN
 !        USE Xhalf(ns+1) = 2*Xhalf(ns) - Xhalf(ns-1) FOR "GHOST" POINT VALUE 1/2hs OUTSIDE EDGE
 !        THEN, X = wlo*Xhalf(ns) + whi*Xhalf(ns+1) == Xhalf(ns) + whi*(Xhalf(ns) - Xhalf(ns-1)) 
-         jshi = jslo-1
-         wlo = 1+whi; whi = -whi
+!         jshi = jslo-1
+!         wlo = 1+whi; whi = -whi
       ELSE IF (jslo .eq. 1) THEN
          jslo = 2
          jshi = 3
