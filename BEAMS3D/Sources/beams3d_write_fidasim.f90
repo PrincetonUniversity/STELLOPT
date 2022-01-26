@@ -439,6 +439,11 @@
             IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'ascot5_'//TRIM(id_string)//'_equilibrium.h5',ier)
             END IF
 
+      CASE('DISTRIBUTION_GC_F')
+            
+      CASE('DISTRIBUTION_GC_MC')
+      CASE('DISTRIBUTION_FO')
+
       END SELECT
 
       RETURN

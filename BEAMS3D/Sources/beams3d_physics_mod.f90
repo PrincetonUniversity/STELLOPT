@@ -1322,7 +1322,7 @@ MODULE beams3d_physics_mod
          !        residual   Residual Error
          !--------------------------------------------------------------
          INTEGER          :: n
-         DOUBLE PRECISION :: s0, u0, residual, tau, delR, delZ, fnorm, &
+         DOUBLE PRECISION :: s0, u0, s_term, u_term, residual, detJ, delR, delZ, fnorm, &
                              factor
 
          ! For splines
@@ -1336,7 +1336,11 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          residual = 1.0
          factor = 1.0
-         IF (r_out<0) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75
+         !Ensure initial point on cylindrical grid is within the grid
+         IF (r_out<raxis(1)) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75 
+         IF (r_out>raxis(nr)) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75 
+         IF (z_out<zaxis(1)) r_out = zaxis(1)+(zaxis(nr)-zaxis(1))*.5 
+         IF (z_out>zaxis(nr)) r_out = zaxis(1)+(zaxis(nr)-zaxis(1))*.5 
 !         r_out = (raxis(1)+raxis(nr))*0.5
 !         z_out = (zaxis(1)+zaxis(nz))*0.5
          
@@ -1369,25 +1373,25 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             U4D(1,1,1,1),nr,nphi,nz)
             IF (fvals(1,1) > 1.05) THEN
-              r_out = raxis(MOD(n,nr-1)+1)
+              r_out = raxis(MOD(n,nr-1)+1) !if evaluation was outside plasma, go through indices of r and z simultaneously to find better match?
               z_out = zaxis(MOD(n,nz-1)+1)
             END IF
             fvals(1,2:4) = 0.5*fvals(1,2:4)/sqrt(fvals(1,1))
-            s0   = sqrt(fvals(1,1))-s
-            u0   = fvalu(1,1)-u
-            residual = (s0*s0+u0*u0)*fnorm
-            tau = fvals(1,2)*fvalu(1,4)-fvals(1,4)*fvalu(1,2)
-            !tau = MAX(tau,0.0001)
-            !delR = -(  s0*fvalu(1,4) + u0*fvals(1,4))/tau
-            !delZ = -(  s0*fvalu(1,2) + u0*fvals(1,2))/tau
+            s_term   = s-fvals(1,1)!sqrt(fvals(1,1))-s !why sqrt?
+            u_term   = u - fvalu(1,1)
+            residual = (s_term*s_term+u_term*u_term)*fnorm
+            detJ = fvals(1,2)*fvalu(1,4)-fvals(1,4)*fvalu(1,2)
+            detJ = MAX(detJ,0.0001) !Upper bound for step size as detJ enters in denominator
+            delR = -(-s_term*fvalu(1,4) + u_term*fvals(1,4))/detJ
+            delZ = -( s_term*fvalu(1,2) - u_term*fvals(1,2))/detJ
             !Newtwon
-            delR =-(s0*fvals(1,2) + u0*fvalu(1,2))/(fvals(1,2)**2 + fvalu(1,2)**2)
-            delZ =-(s0*fvalu(1,4) + u0*fvalu(1,4))/(fvals(1,4)**2 + fvalu(1,4)**2)
-            !delR = ( s0*fvalu(1,4) - u0*fvals(1,4))/tau !( (s0-s)du/dR - (u0-u)*ds/dR)/tau
-            !delZ = (-s0*fvalu(1,2) + u0*fvals(1,2))/tau !(-(s0-s)du/dZ)+ (u0-u)*ds/dZ)/tau
-            delR = MIN(MAX(delR,-hr(1)),hr(1))
-            delZ = MIN(MAX(delZ,-hz(1)),hz(1))
-            !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual,tau,delR,delZ
+            !delR =-(s_term*fvals(1,2) + u_term*fvalu(1,2))/(fvals(1,2)**2 + fvalu(1,2)**2)
+            !delZ =-(s_term*fvalu(1,4) + u_term*fvalu(1,4))/(fvals(1,4)**2 + fvalu(1,4)**2)
+            !delR = ( s_term*fvalu(1,4) - u_term*fvals(1,4))/detJ !( (s_term-s)du/dR - (u_term-u)*ds/dR)/detJ
+            !delZ = (-s_term*fvalu(1,2) + u_term*fvals(1,2))/detJ !(-(s_term-s)du/dZ)+ (u_term-u)*ds/dZ)/detJ
+            !delR = MIN(MAX(delR,-hr(1)),hr(1))
+            !delZ = MIN(MAX(delZ,-hz(1)),hz(1))
+            !WRITE(6,*) '----- ',s,u,s_term,u_term,r_out,z_out,residual,detJ,delR,delZ
 
             IF (residual < 0.01) THEN
                delR = delR*0.5
