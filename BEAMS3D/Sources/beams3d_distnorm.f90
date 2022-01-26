@@ -47,7 +47,7 @@
 
       ! Do physical volume elements
       nvol = (ns_prof1)*(ns_prof2)*(ns_prof3)
-      ds   = 1.0/REAL(ns_prof1)
+      ds   = 1.0/REAL(ns_prof1) !distribution defined on centers (half grid)
       du   = pi2/REAL(ns_prof2)
       dp   = pi2/REAL(ns_prof3)
       ALLOCATE(targ(nr,nz))
@@ -67,7 +67,9 @@
          p1 = MOD((k-1)*dp*0.5,phiaxis(nphi))
          ! Find helper value of grids
          m = MIN(MAX(COUNT(phiaxis < p1),1),nphi-1)
-         rt = 0; zt = 0; pt = 0;
+         rt = 5.25+COS((u1+u2)/2)*.5 !dirty estimation of R
+         zt = SIN((u1+u2)/2.)*.6 
+         pt = 0; !Initial conditions for successful lookup?
          ! Assume a parallel piped
          ! s1 u1
          targ = (0.5*sqrt(RHO3D(:,m,:) + RHO3D(:,m+1,:))-s1)**2 &

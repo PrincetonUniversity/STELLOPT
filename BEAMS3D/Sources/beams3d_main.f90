@@ -344,10 +344,18 @@ PROGRAM BEAMS3D
         END IF
     END IF
     IF (lascot4) CALL beams3d_write_ascoth4('MARKER')
-    IF (lfidasim) CALL beams3d_write_fidasim('DISTRIBUTION')
 
     ! Write diagnostics stuff
     CALL beams3d_diagnostics
+
+    !Write Fidasim Distribution function (calculated in beams3d_diagnostics)
+    IF (lfidasim) THEN
+        IF (ldepo) THEN
+            CALL beams3d_write_fidasim('DISTRIBUTION_GC_MC')
+        ELSE
+            CALL beams3d_write_fidasim('DISTRIBUTION_GC_F')
+        END IF
+    END IF
 
     ! Clean up
     CALL beams3d_free(MPI_COMM_SHARMEM)

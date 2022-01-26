@@ -147,7 +147,7 @@
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
          IF (lrestart_particles) WRITE(6,'(A)') '   Restarting particles!'
          IF (lrandomize .and. lbeam) WRITE(6,'(A)') '   Randomizing particle processor!'
-         IF (npot > 0) WRITE(6,'(A)') '   RAIDAL ELECTRIC FIELD PRESENT!'
+         IF (npot > 0) WRITE(6,'(A)') '   RADIAL ELECTRIC FIELD PRESENT!'
          CALL FLUSH(6)
       END IF
 
