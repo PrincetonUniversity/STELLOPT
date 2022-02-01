@@ -1299,7 +1299,7 @@ MODULE beams3d_physics_mod
       !     Date:          03/07/2021
       !     Description:   Returns R and Z given s,u,v coordinate
       !-----------------------------------------------------------------
-      SUBROUTINE beams3d_suv2rzp(s,u,v,r_out,z_out,phi_out)
+      SUBROUTINE beams3d_suv2rzp(X4D, Y4D, s,u,v,r_out,z_out,phi_out)
          !--------------------------------------------------------------
          !     Input Parameters
          !          s            Normalized Toroidal Flux
@@ -1316,6 +1316,7 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION, INTENT(inout) :: r_out
          DOUBLE PRECISION, INTENT(inout) :: z_out
          DOUBLE PRECISION, INTENT(out) :: phi_out
+         REAL(rprec), POINTER, DIMENSION(:,:,:,:), INTENT(inout) :: X4D, Y4D
 
          !--------------------------------------------------------------
          !     Local Variables
@@ -1326,14 +1327,21 @@ MODULE beams3d_physics_mod
                              factor, x, y, x0, y0, x_term, y_term, dxdR, dxdZ, dydR, dydZ
 
          ! For splines
-         INTEGER :: i,j,k
+         INTEGER :: i,j,k, ier
          REAL*8 :: xparam, yparam, zparam
          INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
-         REAL*8 :: fvals(1,4),fvalu(1,4) !(f,df/fR,df/dphi,dfdZ)
+         REAL*8 :: fvalx(1,4),fvaly(1,4) !(f,df/fR,df/dphi,dfdZ)
+
 
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
+
+
+
+
+
+         !Begin Newton Method
          residual = 1.0
          factor = 1.0
          IF (r_out<0) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75
@@ -1365,34 +1373,27 @@ MODULE beams3d_physics_mod
             xparam = (r_out - raxis(i)) * hri(i)
             zparam = (z_out - zaxis(k)) * hzi(k)
             ! Evaluate the Splines
-            CALL R8HERM3FCN(ict,1,1,fvals,i,j,k,xparam,yparam,zparam,&
+            CALL R8HERM3FCN(ict,1,1,fvalx,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            S4D(1,1,1,1),nr,nphi,nz)
-            CALL R8HERM3FCN(ict,1,1,fvalu,i,j,k,xparam,yparam,zparam,&
+                            X4D(1,1,1,1),nr,nphi,nz)
+            CALL R8HERM3FCN(ict,1,1,fvaly,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            U4D(1,1,1,1),nr,nphi,nz)
-            IF (fvals(1,1) > 1.05) THEN
-             r_out = raxis(MOD(n,nr-1)+1)
-              z_out = zaxis(MOD(n,nz-1)+1)
-            END IF
+                            Y4D(1,1,1,1),nr,nphi,nz)
+            !IF (fvalx(1,1) > 1.05) THEN
+            ! r_out = raxis(MOD(n,nr-1)+1)
+            !  z_out = zaxis(MOD(n,nz-1)+1)
+            !END IF
 
-            !fvals(1,1) = MAX(fvals(1,1),0.000001) !Okay??
+            !fvalx(1,1) = MAX(fvalx(1,1),0.000001) !Okay??
             
-            !fvals(1,2:4) = 0.5*fvals(1,2:4)/sqrt(fvals(1,1)) !?
-            x = fvals(1,1) * COS(fvalu(1,1))
-            y = fvals(1,1) * SIN(fvalu(1,1))
-            dxdR = fvals(1,2) * COS(fvalu(1,1)) - y * fvalu(1,2)
-            dydR = fvals(1,2) * SIN(fvalu(1,1)) + x * fvalu(1,2)
-            dxdZ = fvals(1,4) * COS(fvalu(1,1)) - y * fvalu(1,4)
-            dydZ = fvals(1,4) * SIN(fvalu(1,1)) + x * fvalu(1,4)
-
-            x_term   = x0 - x
-            y_term   = y0 - y
+            !fvalx(1,2:4) = 0.5*fvalx(1,2:4)/sqrt(fvalx(1,1)) !?
+            x_term   = x0 - fvalx(1,1)
+            y_term   = y0 - fvaly(1,1)
             
-            detJ = dxdR * dydZ - dydR * dxdZ
+            detJ = fvalx(1,2) * fvaly(1,4) - fvaly(1,2) * fvalx(1,4)
             detJ = MAX(detJ,0.0001) !Upper bound for step size as detJ enters in denominator
-            delR = -(-x_term*dydZ + y_term*dxdZ)/detJ
-            delZ = -( x_term*dydR - y_term*dxdR)/detJ
+            delR = -(-x_term*fvaly(1,4) + y_term*fvalx(1,4))/detJ
+            delZ = -( x_term*fvaly(1,2)  - y_term*fvalx(1,2))/detJ
 
             delR = MIN(MAX(delR,-hr(1)),hr(1))
             delZ = MIN(MAX(delZ,-hz(1)),hz(1))
