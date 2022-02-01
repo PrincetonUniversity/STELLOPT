@@ -45,8 +45,8 @@
       CALL mpialloc(Y4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y4D)
       IF (myid_sharmem == 0) THEN
          ALLOCATE(X_ARR(nr,nphi,nz),Y_ARR(nr,nphi,nz))
-         X_ARR = COS(U4D(1,:,:,:))
-         Y_ARR = SIN(U4D(1,:,:,:))
+         X_ARR =  COS(U4D(1,:,:,:))
+         Y_ARR =  SIN(U4D(1,:,:,:))
          bcs1=(/ 0, 0/)
          bcs2=(/-1,-1/)
          bcs3=(/ 0, 0/)
