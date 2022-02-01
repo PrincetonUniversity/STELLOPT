@@ -35,7 +35,7 @@
                                     div_beams, mass_beams, Zatom_beams, dex_beams, &
                                     qid_str_saved, lascotfl, R_beams, PHI_beams, Z_beams
       USE safe_open_mod, ONLY: safe_open
-      USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free, machine_string
+      !USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free, machine_string
       USE beams3d_write_par
       USE mpi_params
       USE mpi_inc
@@ -440,7 +440,12 @@
             END IF
 
       CASE('DISTRIBUTION_GC_F')
-            
+            CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.) 
+            IF (ASSOCIATED(dist5d_prof)) THEN
+                  CALL write_var_hdf5(fid,'dist_prof',nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist5d_prof,&
+                                      ATT='Distribution Function [part/(m^3/s^3)] no physical volume (nbeam,nrho,npol,ntor,nvll,nvperp)',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_prof',ier)
+            END IF
       CASE('DISTRIBUTION_GC_MC')
       CASE('DISTRIBUTION_FO')
 

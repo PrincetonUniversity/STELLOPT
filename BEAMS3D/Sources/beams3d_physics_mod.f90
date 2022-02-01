@@ -1322,8 +1322,8 @@ MODULE beams3d_physics_mod
          !        residual   Residual Error
          !--------------------------------------------------------------
          INTEGER          :: n
-         DOUBLE PRECISION :: s0, u0, s_term, u_term, residual, detJ, delR, delZ, fnorm, &
-                             factor
+         DOUBLE PRECISION :: s0, u0, residual, detJ, delR, delZ, fnorm, &
+                             factor, x, y, x0, y0, x_term, y_term, dxdR, dxdZ, dydR, dydZ
 
          ! For splines
          INTEGER :: i,j,k
@@ -1336,11 +1336,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          residual = 1.0
          factor = 1.0
-         !Ensure initial point on cylindrical grid is within the grid
-         IF (r_out<raxis(1)) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75 
-         IF (r_out>raxis(nr)) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75 
-         IF (z_out<zaxis(1)) r_out = zaxis(1)+(zaxis(nr)-zaxis(1))*.5 
-         IF (z_out>zaxis(nr)) r_out = zaxis(1)+(zaxis(nr)-zaxis(1))*.5 
+         IF (r_out<0) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75
 !         r_out = (raxis(1)+raxis(nr))*0.5
 !         z_out = (zaxis(1)+zaxis(nz))*0.5
          
@@ -1352,7 +1348,10 @@ MODULE beams3d_physics_mod
          ! Adjust u
          u = MOD(u,pi2)
 
-         fnorm = s*s+u*u
+         x0 = s * COS(u)
+         y0 = s * SIN(U)
+
+         fnorm = x0*x0+y0*y0
          fnorm = MIN(1./fnorm,1E5)
          n = 1
 
@@ -1373,27 +1372,35 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             U4D(1,1,1,1),nr,nphi,nz)
             IF (fvals(1,1) > 1.05) THEN
-              r_out = raxis(MOD(n,nr-1)+1) !if evaluation was outside plasma, go through indices of r and z simultaneously to find better match?
+             r_out = raxis(MOD(n,nr-1)+1)
               z_out = zaxis(MOD(n,nz-1)+1)
             END IF
-            fvals(1,2:4) = 0.5*fvals(1,2:4)/sqrt(fvals(1,1))
-            s_term   = s-fvals(1,1)!sqrt(fvals(1,1))-s !why sqrt?
-            u_term   = u - fvalu(1,1)
-            residual = (s_term*s_term+u_term*u_term)*fnorm
-            detJ = fvals(1,2)*fvalu(1,4)-fvals(1,4)*fvalu(1,2)
-            detJ = MAX(detJ,0.0001) !Upper bound for step size as detJ enters in denominator
-            delR = -(-s_term*fvalu(1,4) + u_term*fvals(1,4))/detJ
-            delZ = -( s_term*fvalu(1,2) - u_term*fvals(1,2))/detJ
-            !Newtwon
-            !delR =-(s_term*fvals(1,2) + u_term*fvalu(1,2))/(fvals(1,2)**2 + fvalu(1,2)**2)
-            !delZ =-(s_term*fvalu(1,4) + u_term*fvalu(1,4))/(fvals(1,4)**2 + fvalu(1,4)**2)
-            !delR = ( s_term*fvalu(1,4) - u_term*fvals(1,4))/detJ !( (s_term-s)du/dR - (u_term-u)*ds/dR)/detJ
-            !delZ = (-s_term*fvalu(1,2) + u_term*fvals(1,2))/detJ !(-(s_term-s)du/dZ)+ (u_term-u)*ds/dZ)/detJ
-            !delR = MIN(MAX(delR,-hr(1)),hr(1))
-            !delZ = MIN(MAX(delZ,-hz(1)),hz(1))
-            !WRITE(6,*) '----- ',s,u,s_term,u_term,r_out,z_out,residual,detJ,delR,delZ
 
-            IF (residual < 0.01) THEN
+            !fvals(1,1) = MAX(fvals(1,1),0.000001) !Okay??
+            
+            !fvals(1,2:4) = 0.5*fvals(1,2:4)/sqrt(fvals(1,1)) !?
+            x = fvals(1,1) * COS(fvalu(1,1))
+            y = fvals(1,1) * SIN(fvalu(1,1))
+            dxdR = fvals(1,2) * COS(fvalu(1,1)) - y * fvalu(1,2)
+            dydR = fvals(1,2) * SIN(fvalu(1,1)) + x * fvalu(1,2)
+            dxdZ = fvals(1,4) * COS(fvalu(1,1)) - y * fvalu(1,4)
+            dydZ = fvals(1,4) * SIN(fvalu(1,1)) + x * fvalu(1,4)
+
+            x_term   = x0 - x
+            y_term   = y0 - y
+            
+            detJ = dxdR * dydZ - dydR * dxdZ
+            detJ = MAX(detJ,0.0001) !Upper bound for step size as detJ enters in denominator
+            delR = -(-x_term*dydZ + y_term*dxdZ)/detJ
+            delZ = -( x_term*dydR - y_term*dxdR)/detJ
+
+            delR = MIN(MAX(delR,-hr(1)),hr(1))
+            delZ = MIN(MAX(delZ,-hz(1)),hz(1))
+
+            residual = (x_term*x_term+y_term*y_term)*fnorm
+            !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual,tau,delR,delZ
+
+            IF (residual < 0.01) THEN !"Damping" of oscillation
                delR = delR*0.5
                delZ = delZ*0.5
             END IF
