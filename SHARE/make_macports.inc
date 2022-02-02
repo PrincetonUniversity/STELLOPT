@@ -76,7 +76,7 @@
 #######################################################################
 #             PGPLOT Options
 #######################################################################
-  LPGPLOT = T
+  LPGPLOT = F
   PGPLOT_INC = -I/opt/local/include
   PGPLOT_LIB = -L/opt/local/lib -lpgplot -lX11
 
@@ -119,7 +119,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -159,4 +159,4 @@
 #            LIBSTELL Shared Options
 #######################################################################
 
-LIB_SHARE = -L/opt/local/lib/gcc9 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread $(LIBS)
+LIB_SHARE = -L/opt/local/lib/gcc10 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread $(LIBS)
