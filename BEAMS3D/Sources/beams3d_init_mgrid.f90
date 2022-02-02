@@ -95,9 +95,11 @@
       END IF 
       
       ! Reset the phi grid limit to match mgrid
-      phimin = 0.0
-      phimax = pi2 / nfp_in
-      IF (mylocalid == mylocalmaster) FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
+      IF (.not. lboxsim) THEN
+         phimin = 0.0
+         phimax = pi2 / nfp_in
+         IF (mylocalid == mylocalmaster) FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
+      END IF
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL, ierr_mpi)
 #endif

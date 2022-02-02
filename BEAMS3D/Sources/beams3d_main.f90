@@ -106,6 +106,7 @@ PROGRAM BEAMS3D
         lsuzuki = .false.
         lfusion = .false.
         lfusion_alpha = .false.
+        lboxsim = .false.
         id_string = ''
         coil_string = ''
         mgrid_string = ''
@@ -200,6 +201,8 @@ PROGRAM BEAMS3D
             case ("-fusion_alpha")
                 lfusion = .true.
                 lfusion_alpha = .true.
+            case ("-boxsim")
+                lboxsim = .true.
             case ("-help", "-h") ! Output Help message
                 write(6, *) ' Beam MC Code'
                 write(6, *) ' Usage: xbeams3d <options>'
@@ -227,6 +230,7 @@ PROGRAM BEAMS3D
                 write(6, *) '     -suzuki:       Force Suzuki NBI model'
                 write(6, *) '     -fusion:       Fusion Reaction Rates for birth'
                 write(6, *) '     -fusion_alpha: Fusion Reaction Rates for birth (alphas only)'
+                write(6, *) '     -boxsim:       Inject charged particles for box modeling'
                 write(6, *) '     -noverb:       Supress all screen output'
                 write(6, *) '     -help:         Output help message'
 #if defined(MPI_OPT)
@@ -322,6 +326,8 @@ PROGRAM BEAMS3D
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
     CALL MPI_BCAST(lfusion_alpha,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+    CALL MPI_BCAST(lboxsim,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
 #endif
 
 
@@ -347,7 +353,7 @@ PROGRAM BEAMS3D
 
     ! Clean up
     CALL beams3d_free(MPI_COMM_SHARMEM)
-    CALL wall_free(ier,MPI_COMM_BEAMS)
+    IF (lvessel) CALL wall_free(ier,MPI_COMM_BEAMS)
 #if defined(MPI_OPT)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_main', ierr_mpi)

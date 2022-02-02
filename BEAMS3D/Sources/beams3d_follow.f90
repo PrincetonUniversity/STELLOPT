@@ -105,7 +105,11 @@ SUBROUTINE beams3d_follow
     ALLOCATE(t_last(mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 't_last', ier)
 
+    ! Set lbeam to false if doing a box simulation
+    lbeam = (lbeam .and. (.not.lboxsim))
+
     ! Initializations
+    lbeam = (lbeam .and. (.not.lboxsim))
     R_lines = 0.0; Z_lines = 0.0; PHI_lines = -1.0
     vll_lines = 0.0; moment_lines = 0.0
     S_lines = 1.5; U_lines = 0.0; B_lines = -1.0

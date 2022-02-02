@@ -40,6 +40,7 @@
 !                    - Use of accelerated wall model
 !     v4.00 12/XX/21 - Full Orbit model implemented
 !                    - Particle duplication implemented
+!                    - Box Modeling implemented
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -126,7 +127,8 @@ MODULE beams3d_runtime
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
                lascot, lascot4, lbbnbi, lvessel_beam, lascotfl, lrandomize, &
-               lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim
+               lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim, &
+               lboxsim
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
                ndt, ndt_max, duplicate_factor
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
