@@ -225,7 +225,7 @@ SUBROUTINE beams3d_follow_fo
                         q(4) = vr_lines(mytdex-1,l)
                         q(5) = vphi_lines(mytdex-1,l)
                         q(6) = vz_lines(mytdex-1,l)
-                    ELSEIF (mytdex == 1) THEN
+                    ELSEIF (mytdex == 1 .or. lboxsim) THEN
                         mytdex = 1
                         ! Initial condition
                         q(1) = R_lines(mytdex-1,l)

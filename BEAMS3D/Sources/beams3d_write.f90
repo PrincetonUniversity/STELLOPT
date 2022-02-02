@@ -24,7 +24,7 @@
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
-                                    charge, Zatom, mass, ldepo, lcollision, lfusion, &
+                                    charge, Zatom, mass, ldepo, lcollision, lfusion, lboxsim, &
                                     leqdsk, eqdsk_string, lhint, lhitonly, lkick, NION
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
@@ -84,6 +84,8 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lascot',ier)
                CALL write_scalar_hdf5(fid,'lfusion',ier,BOOVAR=lfusion,ATT='Fusion Birth Model Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lfusion',ier)
+               CALL write_scalar_hdf5(fid,'lboxsim',ier,BOOVAR=lboxsim,ATT='Neutral Beam Box Simulation Flag',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lboxsim',ier)
                CALL write_scalar_hdf5(fid,'lhitonly',ier,BOOVAR=lhitonly,ATT='Flag for only saving wall hits',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lhitonly',ier)
                CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')

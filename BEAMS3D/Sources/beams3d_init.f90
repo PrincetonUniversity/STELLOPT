@@ -102,11 +102,15 @@
          CALL get_hint_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
       END IF
 
+      ! Handle particle restarting
       IF (lrestart_particles) THEN
         ldepo = .false.
         lbbnbi = .false.
         lbeam = .false.
       END IF
+
+      ! If we set vacuum then override lcollision
+      IF (lvac) lcollision=.FALSE.
 
       ! Handle existence of ADAS for NBI
       IF (lbeam .and. .not.lsuzuki .and. myid_sharmem==master) THEN
@@ -145,6 +149,7 @@
          IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
          IF (lsuzuki) WRITE(6,'(A)') '   SUZUKI DEPOSITION MODEL!'
          IF (lfusion) WRITE(6,'(A)') '   NUCLEAR FUSION BIRTH MODEL!'
+         IF (lboxsim) WRITE(6,'(A)') '   CHARGED PARTICLE INJECTION!'
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
          IF (lrestart_particles) WRITE(6,'(A)') '   Restarting particles!'
          IF (lrandomize .and. lbeam) WRITE(6,'(A)') '   Randomizing particle processor!'
@@ -314,6 +319,8 @@
          CALL beams3d_init_eqdsk
       END IF
 
+      ! Adjust magnetic field for magnetic material
+
       ! Adjust the torodial distribution function grid
       ns_prof3 = MAX(ns_prof3,8*NINT(pi2/phimax)) ! Min 8 per field period
 
@@ -323,7 +330,7 @@
       
       ! Load vessel if not done already vessel
       IF (lvessel .and. (.not. lwall_loaded)) THEN
-         CALL wall_load_txt(TRIM(vessel_string),ier,lverb,MPI_COMM_BEAMS)
+         CALL wall_load_txt(TRIM(vessel_string),ier,.false.,MPI_COMM_BEAMS)
          IF (lverb) THEN
             IF (ier /=0 ) WRITE(6,'(A)') 'ERROR: Loading VESSEL : ' // TRIM(vessel_string)
             IF (ier ==-327 ) WRITE(6,'(A)') '   ZERO Area Triagle detected!!!!'
