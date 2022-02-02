@@ -69,7 +69,7 @@
             coil_string_beams => coil_string, mgrid_string_beams => mgrid_string,&
             vessel_string_beams => vessel_string, restart_string_beams => restart_string, &
             lraw_beams => lraw, nbeams_beams => nbeams, &
-            lvac_beams => lvac, lhitonly, ,lboxsim_beams => lboxsim, nparticles_start, &
+            lvac_beams => lvac, lhitonly, lboxsim_beams => lboxsim, nparticles_start, &
             vll_start_in, R_start_in, Z_start_in, PHI_start_in, mu_start_in, &
             mu_start_in, charge_in, mass_in, t_end_in, Zatom_in, &
             TE_AUX_S_BEAMS => TE_AUX_S, TE_AUX_F_BEAMS => TE_AUX_F, &
