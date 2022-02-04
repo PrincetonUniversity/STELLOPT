@@ -1,7 +1,7 @@
 !-----------------------------------------------------------------------
 !     Function:      fpart_lsode
-!     Authors:       M. McMillan (matthew.mcmillan@my.wheaton.edu)
-!     Date:          06/20/2012
+!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+!     Date:          10/19/2021
 !     Description:   Just a wrapper to fpart_nag
 !
 !-----------------------------------------------------------------------
@@ -17,7 +17,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER          :: neq
-      DOUBLE PRECISION :: t, q(4), qdot(4)
+      DOUBLE PRECISION :: t, q(6), qdot(6)
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !------------------------------------------------
