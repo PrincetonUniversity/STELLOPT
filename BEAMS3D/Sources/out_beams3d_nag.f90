@@ -131,7 +131,7 @@ SUBROUTINE out_beams3d_nag(t, q)
              wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*q(4)*q(4)/get_wall_area(l)
           ELSE
              end_state(myline) = 2
-             CALL fpart_nag(t,q2,qdot)
+             CALL fgc_nag(t,q2,qdot)
              qdot(4)=0
              wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*(SUM(qdot*qdot)+vperp*vperp)/get_wall_area(l)
           END IF

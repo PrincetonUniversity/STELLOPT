@@ -24,7 +24,7 @@
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
-                                 phiedge_eq, reff_eq
+                                 phiedge_eq, reff_eq, NI_spl_s, NI
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE wall_mod, ONLY: wall_load_mn
       USE mpi_params
@@ -95,24 +95,28 @@
       CALL MPI_BCAST(lwout_opened,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(Aminor,1,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (myworkid /= master) THEN
-         ALLOCATE(vp(ns),phi(ns))
+         ALLOCATE(vp(ns),phi(ns),iotaf(ns),phipf(ns))
          ALLOCATE(xm(mnmax),xn(mnmax),xm_nyq(mnmax_nyq),xn_nyq(mnmax_nyq))
-         ALLOCATE(rmnc(mnmax,ns),zmns(mnmax,ns),bsupumnc(mnmax_nyq,ns),bsupvmnc(mnmax_nyq,ns))
-         IF (lasym) ALLOCATE(rmns(mnmax,ns),zmnc(mnmax,ns),bsupumns(mnmax_nyq,ns),bsupvmns(mnmax_nyq,ns))
+         ALLOCATE(rmnc(mnmax,ns),zmns(mnmax,ns),lmns(mnmax,ns),bsupumnc(mnmax_nyq,ns),bsupvmnc(mnmax_nyq,ns))
+         IF (lasym) ALLOCATE(rmns(mnmax,ns),zmnc(mnmax,ns),lmnc(mnmax,ns),bsupumns(mnmax_nyq,ns),bsupvmns(mnmax_nyq,ns))
       END IF
       CALL MPI_BCAST(vp,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(phi,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(phipf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(iotaf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(xm,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(xn,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(xm_nyq,mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(xn_nyq,mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(rmnc,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(zmns,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(lmns,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(bsupumnc,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(bsupvmnc,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (lasym) THEN
          CALL MPI_BCAST(rmns,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
          CALL MPI_BCAST(zmnc,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BCAST(lmnc,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
          CALL MPI_BCAST(bsupumns,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
          CALL MPI_BCAST(bsupvmns,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       END IF
@@ -185,7 +189,13 @@
          j = 180
          lverb_wall=.false.
          IF (lverb) WRITE(6,'(A)')        '   CREATING WALL FROM HARMONICS'
-         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,i,j,lverb_wall,MPI_COMM_LOCAL)
+         IF (lasym) THEN
+            CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)), &
+               DBLE(xm),-DBLE(xn),mnmax,i,j,lverb_wall,MPI_COMM_LOCAL, &
+               DBLE(rmns(1:mnmax,k)),DBLE(zmnc(1:mnmax,k)))
+         ELSE
+            CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,i,j,lverb_wall,MPI_COMM_LOCAL)
+         ENDIF
       END IF
 
       ! Initialize Virtual Casing
@@ -327,7 +337,12 @@
                IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
                IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
                IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
-               IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,ZEFF_ARR(i,j,k),ier)
+               IF (nzeff > 0) THEN 
+                  CALL EZspline_interp(ZEFF_spl_s,sflx,ZEFF_ARR(i,j,k),ier)
+                  DO u=1, NION
+                     CALL EZspline_interp(NI_spl_s(u),sflx,NI(u,i,j,k),ier)
+                  END DO
+               END IF
             END IF
          ELSE IF (.not. luse_vc) THEN
             B_R(i,j,k)   = 0
@@ -425,8 +440,8 @@
             sflx = REAL(s)/REAL(ns)
             uflx = SQRT(REAL(s)/REAL(ns*scaleup))
             WHERE (MOD(NINT(xm),2)==1)
-               rmns_temp(:,s) = rmns_temp(:,ns)*sflx*uflx
-               zmnc_temp(:,s) = zmnc_temp(:,ns)*sflx*uflx
+               rmns_temp(:,s) = rmns_temp(:,ns)*sflx**1.5
+               zmnc_temp(:,s) = zmnc_temp(:,ns)*sflx**1.5
             ELSEWHERE
                rmns_temp(:,s) = rmns_temp(:,ns)*sflx
                zmnc_temp(:,s) = zmnc_temp(:,ns)*sflx
@@ -437,17 +452,20 @@
             zmnc_temp(1:nv,s) = zmnc_temp(1:nv,s) + zmnc(1:nv,1)
          END DO
       END IF
-      DEALLOCATE(rmnc,zmns,bsupumnc,bsupvmnc)
+      DEALLOCATE(iotaf,phipf,rmnc,zmns,lmns,bsupumnc,bsupvmnc)
       ns = ns*scaleup
+      ALLOCATE(iotaf(1:ns),phipf(1:ns))
       ALLOCATE(rmnc(1:mnmax,1:ns),zmns(1:mnmax,1:ns), &
+         lmns(1:mnmax,1:ns), &
          bsupumnc(1:mnmax_nyq,1:ns),bsupvmnc(1:mnmax_nyq,1:ns))
-      rmnc=rmnc_temp; zmns=zmns_temp; bsupumnc=0; bsupvmnc=0
+      rmnc=rmnc_temp; zmns=zmns_temp; bsupumnc=0; bsupvmnc=0; lmns=0
       DEALLOCATE(rmnc_temp,zmns_temp,rzl_local)
       IF (lasym) THEN
-         DEALLOCATE(rmns,zmnc,bsupumns,bsupvmns)
+         DEALLOCATE(rmns,zmnc,lmnc,bsupumns,bsupvmns)
          ALLOCATE(rmns(1:mnmax,1:ns),zmnc(1:mnmax,1:ns), &
+            lmnc(1:mnmax,1:ns), &
             bsupumns(1:mnmax_nyq,1:ns),bsupvmns(1:mnmax_nyq,1:ns))
-         rmns=rmnc_temp; zmnc=zmns_temp; bsupumns=0; bsupvmns=0
+         rmns=rmns_temp; zmnc=zmnc_temp; bsupumns=0; bsupvmns=0; lmnc=0
          DEALLOCATE(rmns_temp,zmnc_temp)
       END IF
       DO s = mystart, myend ! Now fill in grid
@@ -488,10 +506,10 @@
          CALL read_wout_deallocate
       ELSE
          lwout_opened = .FALSE.
-         DEALLOCATE(vp,phi)
+         DEALLOCATE(vp,phi,phipf,iotaf)
          DEALLOCATE(xm,xn,xm_nyq,xn_nyq)
-         DEALLOCATE(rmnc,zmns,bsupumnc,bsupvmnc)
-         IF (lasym) DEALLOCATE(rmns,zmnc,bsupumns,bsupvmns)
+         DEALLOCATE(rmnc,zmns,lmns,bsupumnc,bsupvmnc)
+         IF (lasym) DEALLOCATE(rmns,zmnc,lmnc,bsupumns,bsupvmns)
          DEALLOCATE(rzl_local)
       END IF
       DEALLOCATE(lsmooth)
