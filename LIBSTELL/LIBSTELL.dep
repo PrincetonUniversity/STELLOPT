@@ -1269,6 +1269,10 @@ vessel_mod.o : \
 
 wall_mod.o : \
       safe_open_mod.o 
+
+
+mumaterial_mod.o : \
+      safe_open_mod.o 
       
 
 virtual_casing_mod.o : \
