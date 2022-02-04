@@ -166,8 +166,10 @@
          jm = MIN(MAX(jm,1),nr-1); jp = MIN(MAX(jp,2),nr);
          dj = rho-jm/nr
          IF (rho<=1) bp = (sf(jm) + (sf(jp)-sf(jm))*nr*dj)*rinv
-         dpdr = (psixz(ip,km)-psixz(im,km))/dr
-         dpdz = (psixz(im,kp)-psixz(im,km))/dz
+         !dpdr = (psixz(ip,km)-psixz(im,km))/dr
+         !dpdz = (psixz(im,kp)-psixz(im,km))/dz
+         dpdr = (psixz(ip,km)-psixz(im,km))/dr+dk*(psixz(ip,kp)-psixz(im,kp)-psixz(ip,km)+psixz(im,km))/dr
+         dpdz = (psixz(im,kp)-psixz(im,km))/dz+di*(psixz(ip,kp)-psixz(ip,km)-psixz(im,kp)+psixz(im,km))/dz
          br = -dpdz*rinv
          bz = dpdr*rinv
          RETURN
