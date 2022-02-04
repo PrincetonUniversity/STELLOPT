@@ -183,7 +183,7 @@
       DEALLOCATE(partmask,real_mask)
 
       ! These diagnostics need Vp to be defined
-      IF (lvmec .and. .not.lvac .and. .not.ldepo .and. myworkid == master) THEN
+      IF (.not.ldepo .and. myworkid == master) THEN
          ! Allocate the parallel and perpendicular velcoity axis
          nhalf = ns_prof4/2
          ALLOCATE(dense_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1))

@@ -18,7 +18,7 @@
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
-                                 phiedge_eq, reff_eq
+                                 phiedge_eq, reff_eq, NI_spl_s, NI
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE read_hint_mod, ONLY: get_hint_grid, get_hint_B, get_hint_press, &
                                get_hint_maxp, read_hint_deallocate, &
@@ -38,7 +38,7 @@
       INTEGER :: MPI_COMM_LOCAL
 #endif
       LOGICAL :: lcreate_wall
-      INTEGER :: ier, s, i, j, k
+      INTEGER :: ier, s, i, j, k, u
       REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
                      tetemp,netemp,titemp,zetemp,pottemp
       INTEGER :: nrh,nzh,nph
@@ -124,9 +124,14 @@
             IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,netemp,ier)
             IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,titemp,ier)
             IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
-            IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
+            IF (nzeff > 0) THEN 
+               CALL EZspline_interp(ZEFF_spl_s,sflx,ZEFF_ARR(i,j,k),ier)
+               DO u=1, NION
+                  CALL EZspline_interp(NI_spl_s(u),sflx,NI(u,i,j,k),ier)
+               END DO
+            END IF
             NE(i,j,k) = netemp; TE(i,j,k) = tetemp; TI(i,j,k) = titemp
-            POT_ARR(i,j,k) = pottemp; ZEFF_ARR(i,j,k) = zetemp
+            POT_ARR(i,j,k) = pottemp
          END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN

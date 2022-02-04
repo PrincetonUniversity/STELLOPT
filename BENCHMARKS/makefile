@@ -94,6 +94,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_depo
 	$(MAKE) test_beams3d_eqdsk
 	$(MAKE) test_beams3d_fusion
+	$(MAKE) test_beams3d_multiion
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
 
@@ -152,6 +153,13 @@ test_beams3d_eqdsk:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_eqdsk.py
+	@echo ""
+
+test_beams3d_multiion:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_multiion -plasma -depo -suzuki
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_multiion -plasma -depo -suzuki
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_multiion.py
 	@echo ""
 
 test_stellopt:
