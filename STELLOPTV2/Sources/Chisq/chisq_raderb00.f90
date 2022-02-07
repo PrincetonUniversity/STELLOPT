@@ -88,6 +88,8 @@
               WRITE(diagUnit,'(2ES22.12E3)') rho(ik), raderb00(ik)
           END IF
         END DO
+        CALL EZspline_free(b00prof_spl,ier)
+
         CALL FLUSH(6)
         CALL FLUSH(diagUnit)
         CLOSE(diagUnit)

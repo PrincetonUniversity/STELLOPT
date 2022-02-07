@@ -5,7 +5,7 @@
 
 
 SUBROUTINE READ_BFIELD(s0)
-  
+
 !-------------------------------------------------------------------------------------------------
 !Read and process the quantities at surface s=s0 (and s0+/-ds) of the magnetic configuration
 !-------------------------------------------------------------------------------------------------
@@ -42,13 +42,13 @@ SUBROUTINE READ_BFIELD(s0)
   INTEGER ierr
   INCLUDE "mpif.h"
 #endif
-  
+
   CALL CPU_TIME(tstart)
 
   boozmndata_read=.FALSE.
   booztxt_read=.FALSE.
   STELL_ANTISYMMETRIC=.FALSE.
-  
+
   CALL READ_BOOZMNDATA(s0,boozmndata_read)
 
   IF(.NOT.boozmndata_read) CALL READ_BOOZMNNC(s0,boozmndata_read)
@@ -83,7 +83,7 @@ SUBROUTINE READ_BFIELD(s0)
         END DO
      END IF
   END DO
-  
+
   CALL RESCALE()
 
   IF(bvco_b(jsn).LT.0) WRITE(iout,*) 'Configuration with dB/dl<0'
@@ -102,7 +102,7 @@ SUBROUTINE READ_BFIELD(s0)
   IF(NEOTRANSP) THEN
      torflux=torflux*rad_a*sqrt(s0)/psip
      psip=rad_a*sqrt(s0)
-  END IF  
+  END IF
   dpsidr=psip
 
   !Keep the largest TRUNCATE_B values of Bmn (if positive)
@@ -160,7 +160,7 @@ SUBROUTINE READ_BFIELD(s0)
   mpolb=MIN(hel_Mmax,mpolb)
   !Set, according to the required precision, steps along the Boozer angles, etc
   dzstep=TWOPI/(nzperiod*hel_NMAX*100)
-  
+
   !Copy some information to arrays (Bmn, etc) with only one index
   CALL FILL_NM()
 
@@ -170,14 +170,14 @@ SUBROUTINE READ_BFIELD(s0)
      OPEN(unit=1,file='ddkes3.data',form='formatted',action='write',iostat=iostat)
      WRITE(1,nml=datain)
      CLOSE(1)
-  END IF  
+  END IF
 
   IF(FAST_IONS) THEN
      IF(ALLOCATED(Bmax_b)) DEALLOCATE(Bmax_b,Bmin_b)
      ALLOCATE(Bmax_b(ns_b),Bmin_b(ns_b))
      Bmax_b=0
      Bmin_b=0
-#ifdef MPIandPETSc     
+#ifdef MPIandPETSc
      DO is=1,ns_b
         IF(MOD(is-1,numprocs).EQ.myrank) THEN
            CALL INTERPOLATE_FIELD(s_b(is),.TRUE.)
@@ -191,22 +191,22 @@ SUBROUTINE READ_BFIELD(s0)
         CALL INTERPOLATE_FIELD(s_b(is),.TRUE.)
         CALL FIND_BMIN_BMAX(is,MAL,MAL,.TRUE.)
      END DO
-#endif   
+#endif
   END IF
 
   CALL INTERPOLATE_FIELD(s0,boozmndata_read.OR.booztxt_read)
-  
+
   !Calculate quantities on the flux surface, such as <B^2>, <B> or the location of the maximum of B
   CALL FILL_BGRID(MAL,MAL,s0,.FALSE.)
   IF(addkes_read.OR.USE_B0) CALL FILL_BGRID(MAL,MAL,s0,.FALSE.)
   CALL FILL_BGRID(MAL,MAL,s0,.TRUE.)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-  IF(ONLY_B0) THEN 
+  IF(ONLY_B0) THEN
      serr="B0 calculated"
      CALL END_ALL(serr,.FALSE.)
   END IF
-  
+
 END SUBROUTINE READ_BFIELD
 
 
@@ -231,11 +231,11 @@ SUBROUTINE READ_BOOZMNDATA(s0,boozmndata_read)
   CHARACTER*38 version
   INTEGER iostat,nsval,jsize,js,is0,imn
   REAL*8 aspect_b,rmax_b,rmin_b,betaxis_b
-  
+
   OPEN(unit=1,file='boozmn.data',form='unformatted',iostat=iostat,action='read')
   IF(iostat.NE.0) OPEN(unit=1,file='../boozmn.data',form='unformatted',iostat=iostat,action='read')
   IF(iostat.NE.0) RETURN
-  
+
   boozmndata_read=.TRUE.
   WRITE(iout,*) 'File "boozmn.data" found'
   !Read scalar values
@@ -269,7 +269,7 @@ SUBROUTINE READ_BOOZMNDATA(s0,boozmndata_read)
   zmns_b=0
   pmns_b=0
   bmnc_b=0
-  gmnc_b=0     
+  gmnc_b=0
   READ(1) ixn_b(1:mnboz_b),ixm_b(1:mnboz_b)
   s_b(1)=0
   is0=0
@@ -315,7 +315,7 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
 !-------------------------------------------------------------------------------------------
 !Read output from BOOZER_XFORM, netcdf file, by Satake
 !-------------------------------------------------------------------------------------------
-  
+
   USE GLOBAL
   USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
@@ -349,51 +349,51 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   END IF
   IF(status_nc.NE.nf_noerr) RETURN
   boozmndata_read=.TRUE.
-  WRITE(iout,*) 'File "boozmn.nc" found'   
+  WRITE(iout,*) 'File "boozmn.nc" found'
   !Read scalar values
   varname='nfp_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_int(ncid,rhid,nfp_b)
   varname='ns_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_int(ncid,rhid,ns_b)
   varname='aspect_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid,rhid,aspect_b)
   varname='rmax_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
-  status_nc=nf_get_var_double(ncid,rhid,rmax_b)        
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
+  status_nc=nf_get_var_double(ncid,rhid,rmax_b)
   varname='rmin_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid,rhid,rmin_b)
   varname='betaxis_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid,rhid,betaxis_b)
   varname='mboz_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_int(ncid,rhid,mboz_b)
   varname='nboz_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_int(ncid,rhid,nboz_b)
   varname='mnboz_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_int(ncid,rhid,mnboz_b)
   varname='version'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_text(ncid,rhid,version)
   varname='pack_rad'
   status_nc=nf_inq_dimid(ncid,varname,idimid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_inq_dim(ncid,idimid,varname,jsize)
   IF(ALLOCATED(s_b)) DEALLOCATE(s_b,js_b,iota_b,pres_b,beta_b,psip_b,psi_b,bvco_b,buco_b,&
        & bmnc_b,rmnc_b,zmns_b,pmns_b,rmns_b,zmnc_b,pmnc_b,bmns_b,gmnc_b,ixn_b,ixm_b)
@@ -420,47 +420,47 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   zmns_b=0
   pmns_b=0
   bmnc_b=0
-  gmnc_b=0 
+  gmnc_b=0
   !Read profiles
   varname='iota_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid,rhid,iota_b)
   varname='pres_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid,rhid,pres_b)
   varname='beta_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid,rhid,beta_b)
   varname='phip_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
-  status_nc=nf_get_var_double(ncid,rhid,psip_b)  !name difference 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
+  status_nc=nf_get_var_double(ncid,rhid,psip_b)  !name difference
   varname='phi_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
-  status_nc=nf_get_var_double(ncid,rhid,psi_b)   !name difference 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
+  status_nc=nf_get_var_double(ncid,rhid,psi_b)   !name difference
   varname='bvco_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid,rhid,bvco_b)
   varname='buco_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid,rhid,buco_b)
   varname='ixm_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_int(ncid,rhid,ixm_b)
   varname='ixn_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_int(ncid,rhid,ixn_b)
   varname='jlist'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_int(ncid,rhid,jlist)
   idx_b=0
   DO ilist=1,jsize
@@ -471,7 +471,7 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   varname='bmnc_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
   IF(status_nc.NE.nf_noerr) THEN
-     varname='bmn_b'  !some versions has different name 
+     varname='bmn_b'  !some versions has different name
      status_nc=nf_inq_varid(ncid,varname,rhid)
      IF(status_nc.NE.nf_noerr) THEN
         filename ='bmnc_b or bmn_b'
@@ -481,19 +481,19 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   status_nc=nf_get_var_double(ncid, rhid, packed2d(:,:,1))
   varname='rmnc_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid, rhid, packed2d(:,:,2))
   varname='zmns_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid, rhid, packed2d(:,:,3))
   varname='pmns_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid, rhid, packed2d(:,:,4))
   varname='gmn_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
-  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
+  IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc)
   status_nc=nf_get_var_double(ncid, rhid, packed2d(:,:,5))
   is0=0
   DO nsval=2,ns_b
@@ -508,7 +508,7 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
         is0=is0+1
         js_b(is0)=nsval
         ! half / full-mesh problem in s_b and psi_b is not resolved here
-        ! This should be : s_b(nsval)=(nsval-1.5)/(ns_b-1) 
+        ! This should be : s_b(nsval)=(nsval-1.5)/(ns_b-1)
      END IF
   END DO
   jsn=is0
@@ -526,7 +526,7 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   END DO
   DEALLOCATE(jlist,packed2d,idx_b)
   !Close cdf File
-  status_nc=nf_close(ncid)   
+  status_nc=nf_close(ncid)
 
   pmns_b=-pmns_b
   ixn_b=ixn_b/nfp_b
@@ -541,7 +541,7 @@ END SUBROUTINE READ_BOOZMNNC
 
 
 SUBROUTINE READ_BOOZTXT(s0,booztxt_read)
-!------------------------------------------------------------------------------------------- 
+!-------------------------------------------------------------------------------------------
 !Reads output from Boozer txt file
 !-------------------------------------------------------------------------------------------
   USE GLOBAL
@@ -623,10 +623,10 @@ SUBROUTINE READ_BOOZTXT(s0,booztxt_read)
         END IF
         IF(iostat.NE.0) EXIT
      END DO
-     IF(Strumberger.GT.0) ixn_b=-ixn_b           
+     IF(Strumberger.GT.0) ixn_b=-ixn_b
   END DO
   CLOSE(1)
-  WRITE(iout,*) 'File "boozer.txt" read'        
+  WRITE(iout,*) 'File "boozer.txt" read'
 
   spol_b=spol_b/int_iota
   buco_b=buco_b*nfp_b*mu0_o_2pi
@@ -634,7 +634,7 @@ SUBROUTINE READ_BOOZTXT(s0,booztxt_read)
   pmns_b=pmns_b*TWOPI/nfp_b
   torflux=torflux/TWOPI
   psip=2*torflux*sqrt(s0)/rad_a
-                
+
 END SUBROUTINE READ_BOOZTXT
 
 
@@ -643,10 +643,10 @@ END SUBROUTINE READ_BOOZTXT
 
 
 SUBROUTINE READ_DDKESDATA(s0)
-!------------------------------------------------------------------------------------------- 
+!-------------------------------------------------------------------------------------------
 !Read output from DKES_INPUT_PREPARE
 !This is necesary if there is no equilibrium file and/or also for comparison with DKES
-!------------------------------------------------------------------------------------------- 
+!-------------------------------------------------------------------------------------------
   USE GLOBAL
   USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
@@ -664,7 +664,7 @@ SUBROUTINE READ_DDKESDATA(s0)
   IF(iostat.NE.0) OPEN(unit=1,file='../ddkes2.data',form='formatted',action='read',iostat=iostat)
   IF(iostat.EQ.0) THEN
      borbic=0
-     WRITE(iout,*) 'File "ddkes2.data" found'     
+     WRITE(iout,*) 'File "ddkes2.data" found'
      READ(1,nml=datain,iostat=iostat)
      CLOSE(1)
      borbic=borbi
@@ -679,7 +679,7 @@ SUBROUTINE READ_DDKESDATA(s0)
      IF(iostat.EQ.0) THEN
         WRITE(iout,*) 'File "input.radius" found'
         READ(1,nml=radius)
-        CLOSE(1)  
+        CLOSE(1)
         IF(s0.LT.0) s0=psip*psip/borbic(0,0)/borbic(0,0)/rad_a/rad_a
      END IF
   END IF
@@ -707,7 +707,7 @@ SUBROUTINE READ_DDKESDATA(s0)
      END DO
   END DO
   bmns_b=0
-  
+
 END SUBROUTINE READ_DDKESDATA
 
 
@@ -716,9 +716,9 @@ END SUBROUTINE READ_DDKESDATA
 
 
 SUBROUTINE READ_ADDDDKESDATA(addkes_read)
-!------------------------------------------------------------------------------------------- 
+!-------------------------------------------------------------------------------------------
 !Add an extra magnetic field B_1 to previously read B_0
-!------------------------------------------------------------------------------------------- 
+!-------------------------------------------------------------------------------------------
   USE GLOBAL
   !Output
   LOGICAL addkes_read
@@ -749,7 +749,7 @@ SUBROUTINE READ_ADDDDKESDATA(addkes_read)
         END DO
      END DO
   END IF
-  
+
 END SUBROUTINE READ_ADDDDKESDATA
 
 
@@ -765,7 +765,7 @@ SUBROUTINE RESCALE()
   IMPLICIT NONE
   !Others
   INTEGER imn
-  
+
   DO imn=1,mnboz_b
      IF(ixn_b(imn).EQ.0.AND.ixm_b(imn).EQ.0) THEN
         bmnc_b(imn,:)=bmnc_b(imn,:)/FE
@@ -783,17 +783,17 @@ SUBROUTINE RESCALE()
 
 
 END SUBROUTINE RESCALE
-    
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)  
+SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
 !-------------------------------------------------------------------------------------------
 !Interpolate
 !-------------------------------------------------------------------------------------------
-  
+
   USE GLOBAL
   IMPLICIT NONE
   !Input
@@ -853,7 +853,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
      spol  =spol_b(is0)*fs0+spol_b(is1)*fs1
      dspolds=(spol_b(is1)-spol_b(is0))/(s_b(is1)-s_b(is0))
   END IF
-     
+
   !Calculate some radial derivatives
   !The radial coordinate is the toroidal flux over 2pi
   atorflux =ABS(torflux)
@@ -867,7 +867,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
   diotadpsi=FS*(iota_b(is1)-iota_b(is0))/dpsi
   dBzdpsi =    (bvco_b(is1)-bvco_b(is0))/dpsi
   dBtdpsi =    (buco_b(is1)-buco_b(is0))/dpsi
-  
+
   !Calculate several other flux-surface quantities
   aiota=ABS(iota)
   siota=iota/aiota
@@ -881,7 +881,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
   borbic=0
   porbis=0
   rorbic=0
-  zorbis=0 
+  zorbis=0
   borbis=0
   porbic=0
   rorbis=0
@@ -925,7 +925,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
         END IF
      END IF
   END DO
-     
+
   borbic0=borbic
   borbis0=borbis
 
@@ -939,7 +939,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
   ELSE
      CALL FIND_BMIN_BMAX(-1,MAL,MAL,.TRUE.)
   END IF
-                          
+
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE INTERPOLATE_FIELD
@@ -954,7 +954,7 @@ SUBROUTINE JACOBIAN_AND_3DGRID(s0)
 !-------------------------------------------------------------------------------------------
 !Interpolate
 !-------------------------------------------------------------------------------------------
-  
+
   USE GLOBAL
   USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
@@ -987,11 +987,11 @@ SUBROUTINE JACOBIAN_AND_3DGRID(s0)
   borbic=0
   porbis=0
   rorbic=0
-  zorbis=0  
+  zorbis=0
   borbis=0
   porbic=0
   rorbis=0
-  zorbic=0 
+  zorbic=0
   DO imn=1,mnboz_b
      borbic(ixn_b(imn),ixm_b(imn))=bmnc_b(imn,is0)
      porbis(ixn_b(imn),ixm_b(imn))=pmns_b(imn,is0)
@@ -1008,11 +1008,11 @@ SUBROUTINE JACOBIAN_AND_3DGRID(s0)
   borbic=0
   porbis=0
   rorbic=0
-  zorbis=0  
+  zorbis=0
   borbis=0
   porbic=0
   rorbis=0
-  zorbic=0  
+  zorbic=0
   DO imn=1,mnboz_b
      borbic(ixn_b(imn),ixm_b(imn))=bmnc_b(imn,is1)
      porbis(ixn_b(imn),ixm_b(imn))=pmns_b(imn,is1)
@@ -1029,7 +1029,7 @@ SUBROUTINE JACOBIAN_AND_3DGRID(s0)
   borbic=0
   porbis=0
   rorbic=0
-  zorbis=0 
+  zorbis=0
   borbis=0
   porbic=0
   rorbis=0
@@ -1056,9 +1056,9 @@ SUBROUTINE JACOBIAN_AND_3DGRID(s0)
      posz(:,it)=x3(2,:,jt)
   END DO
   !Check if the coordinate system is left-handed, as expected
-  CALL CHECK_JACSIGN(MAL,MAL,x1,x2,x3,Bzt(2,:,:),LeftHanded) 
+  CALL CHECK_JACSIGN(MAL,MAL,x1,x2,x3,Bzt(2,:,:),LeftHanded)
   IF(LeftHanded.AND..NOT.(SATAKE.OR.KNOSOS_STELLOPT.OR.dpsi/ABS(torflux).GT.0.05)) THEN !JL
-     serr="The magnetic field is now in left-handed coordinates" 
+     serr="The magnetic field is now in left-handed coordinates"
      CALL END_ALL(serr,.FALSE.)
   END IF
   IF(.NOT.KNOSOS_STELLOPT) THEN
@@ -1109,12 +1109,12 @@ SUBROUTINE FILL_NM()
 !             & .AND.(ABS(phorbicc(n,m)).LT.PREC_B).AND.(ABS(phorbics(n,m)).LT.PREC_B)) CYCLE
         IF(NEQ2.AND.n.NE.1.AND.n.NE.0) CYCLE
         nm=nm+1
-        bnmc(nm)     =borbic(n,m)     
+        bnmc(nm)     =borbic(n,m)
         bnmc0(nm)    =borbic0(n,m)
         dbnmcdpsi(nm)=dborbicdpsi(n,m)
         IF(STELL_ANTISYMMETRIC) THEN
-           bnms(nm)     =borbis(n,m)     
-           bnms0(nm)    =borbis0(n,m)     
+           bnms(nm)     =borbis(n,m)
+           bnms0(nm)    =borbis0(n,m)
            dbnmsdpsi(nm)=dborbisdpsi(n,m)
         END IF
 !        phnmc(nm)=phorbicc(n,m)
@@ -1122,14 +1122,14 @@ SUBROUTINE FILL_NM()
 !        pnm(nm)=porbis(n,m)
 !        IF(NTV) THEN
 !           np(nm)=m
-!           mp(nm)=sgnhel*n*nzperiod           
+!           mp(nm)=sgnhel*n*nzperiod
 !        ELSE
            np(nm)=n
            mp(nm)=m
 !        END IF
      END DO
   END DO
-  
+
   Nnm=nm                          !Nnm is the total number of modes
   bnmc1(1:Nnm)=bnmc(1:Nnm)-bnmc0(1:Nnm) !B1=B-B0, remember that B1<<B0
   bnms1(1:Nnm)=bnms(1:Nnm)-bnms0(1:Nnm)
@@ -1211,7 +1211,7 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
 !!$        IF(flagB1) THEN
 !!$           dBdz_1=dBdz_1-bnmc1(nm)*sinex*nzperiod*np(nm)
 !!$           dBdt_1=dBdt_1-bnmc1(nm)*sinex*mp(nm)
-!!$        END IF       
+!!$        END IF
 !!$        IF(flag.EQ.4) vde(nm)=-sinex*(Btheta*np(nm)*nzperiod-Bzeta*mp(nm))/aiBtpBz
 !!$     END DO
 !!$  END IF
@@ -1262,7 +1262,7 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
               d2Bdt2=d2Bdt2-bnmc0(nm)*cosinex*mp(nm)*mp(nm)-bnms0(nm)*sinex*mp(nm)*mp(nm)
            END IF
            IF(flag.EQ.4.AND..NOT.ONLY_PHI1) &
-                & vde(nm+Nnm)=cosinex*(Btheta*np(nm)*nzperiod-Bzeta*mp(nm))/aiBtpBz           
+                & vde(nm+Nnm)=cosinex*(Btheta*np(nm)*nzperiod-Bzeta*mp(nm))/aiBtpBz
         END IF
 
      ELSE
@@ -1290,7 +1290,7 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
               d2Bdt2=d2Bdt2-bnmc0(nm)*cosinex*mp(nm)*mp(nm)
            END IF
            IF(flag.EQ.4.AND..NOT.ONLY_PHI1) &
-                & vde(nm+Nnm)=cosinex*(Btheta*np(nm)*nzperiod-Bzeta*mp(nm))/aiBtpBz           
+                & vde(nm+Nnm)=cosinex*(Btheta*np(nm)*nzperiod-Bzeta*mp(nm))/aiBtpBz
         END IF
 
      END IF
@@ -1312,7 +1312,7 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
            END IF
         END IF
      END IF
-     
+
   END DO
 
   IF(flag.EQ.3) hBpp=d2Bdz2/2.
@@ -1344,7 +1344,7 @@ SUBROUTINE CHECK_JACSIGN(nz,nt,x1,x2,x3,Bzt,LeftHanded)
 
   k =0
   k2=0
-    
+
   etet=0
   !Calculate derivatives
   DO iz=1,nz
@@ -1392,7 +1392,7 @@ SUBROUTINE CHECK_JACSIGN(nz,nt,x1,x2,x3,Bzt,LeftHanded)
         k =k +sqrtg*Bzt(iz,it)*Bzt(iz,it)
         k2=k2+sqrtg*sqrtg*Bzt(iz,it)*Bzt(iz,it)*Bzt(iz,it)*Bzt(iz,it)
         LeftHanded=(sqrtg.LT.0)
-!        IF(DEBUG) 
+!        IF(DEBUG)
         absnablar(iz,it)=-SQRT((dx2dt*dx3dz-dx3dt*dx2dz)*(dx2dt*dx3dz-dx3dt*dx2dz)+&
              &                (dx1dt*dx3dz-dx3dt*dx1dz)*(dx1dt*dx3dz-dx3dt*dx1dz)+&
              &                (dx1dt*dx2dz-dx2dt*dx1dz)*(dx1dt*dx2dz-dx2dt*dx1dz))/ABS(psip)/sqrtg
@@ -1406,14 +1406,14 @@ SUBROUTINE CHECK_JACSIGN(nz,nt,x1,x2,x3,Bzt,LeftHanded)
   END DO
   !Check if there is too much deviation from sqrt(g)*B^2=constant
   k=k/(nz*nt)
-  k2=SQRT((k2-k*k*(nz*nt))/(nz*nt-1.0))  
-!  IF(k2.GT.0.5*ABS(k)) LeftHanded=.FALSE. 
-  IF(k2.LT.0) LeftHanded=.FALSE. 
+  k2=SQRT((k2-k*k*(nz*nt))/(nz*nt-1.0))
+!  IF(k2.GT.0.5*ABS(k)) LeftHanded=.FALSE.
+  IF(k2.LT.0) LeftHanded=.FALSE.
   IF(DEBUG) WRITE(1400+myrank,'(5(1pe13.5),L)') k,k2
   etet=etet/denom
 
 END SUBROUTINE CHECK_JACSIGN
- 
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1441,7 +1441,7 @@ SUBROUTINE CALC_XYZ(s,z,t,x1,x2,x3,Bzt,flag_plot)
   p =z
   Bzt=0
   DO m=0,mpolb
-     DO n=-ntorb,ntorb 
+     DO n=-ntorb,ntorb
         arg=m*t-n*nzperiod*z
         cosine=COS(arg)
         sine  =SIN(arg)
@@ -1459,7 +1459,7 @@ SUBROUTINE CALC_XYZ(s,z,t,x1,x2,x3,Bzt,flag_plot)
   END DO
   x1=R*COS(p)
   x2=R*SIN(p)
-  
+
   IF(DEBUG.AND.flag_plot) WRITE(1600+myrank,'(9(1pe13.5))') x1,x2,x3,R,p,Bzt,s,z,t
 
 END SUBROUTINE CALC_XYZ
@@ -1480,12 +1480,12 @@ REAL*8 FUNCTION MODANG(ang_in,max)
 
   REAL*8 ang_in
   REAL*8 max
-  
+
   modang=MOD(ang_in-ALMOST_ZERO,max)
   IF(modang.LT.0) modang=modang+max
   modang=modang+ALMOST_ZERO
 
-  RETURN 
+  RETURN
 
 END FUNCTION MODANG
 
@@ -1505,11 +1505,11 @@ REAL*8 FUNCTION MODANG2(ang_in,max)
 
   REAL*8 ang_in
   REAL*8 max
-  
+
   modang2=MOD(ang_in,max)
   IF(modang2.LT.0) modang2=modang2+max
 
-  RETURN 
+  RETURN
 
 END FUNCTION MODANG2
 
@@ -1522,7 +1522,7 @@ REAL*8 FUNCTION MODANGHEL(z_in,offset,max)
 !-------------------------------------------------------------------------------------------------
 !xxxxx TO BE REMOVED
 !-------------------------------------------------------------------------------------------------
-  
+
   USE GLOBAL
   IMPLICIT NONE
   !Input
@@ -1554,7 +1554,7 @@ END FUNCTION MODANGHEL
 
 
 SUBROUTINE FILL_3DGRID(nz,nt,s,x1,x2,x3,Bzt,flag)
-  
+
 !-------------------------------------------------------------------------------------------------
 !For nz x nt points uniformly distributed in the Boozer angles at flux-surface s, calculate points
 !(x1,x2,x3) and plot if flag
@@ -1606,7 +1606,7 @@ END SUBROUTINE FILL_3DGRID
 
 
 SUBROUTINE FIND_3DPOINTS(nz,nt,s,x1,x2,x3)
-  
+
 !-------------------------------------------------------------------------------------------------
 !For nz x nt points uniformly distributed in the Boozer angles at flux-surface s, find points
 !in 3D
@@ -1663,9 +1663,9 @@ SUBROUTINE FIND_3DPOINTS(nz,nt,s,x1,x2,x3)
      OPEN(unit=1,file=filename,iostat=iostat,action='read')
      IF(iostat.EQ.0) THEN
         DR_READ=.TRUE.
-        DO iparray=1,nparray 
+        DO iparray=1,nparray
            READ(1,*,iostat=iostat) dummy,&
-                & x10(iarray,iparray),x20(iarray,iparray),x30(iarray,iparray),rho0,dummy           
+                & x10(iarray,iparray),x20(iarray,iparray),x30(iarray,iparray),rho0,dummy
            IF(iostat.NE.0) EXIT
            s0(iarray,iparray)=rho0*rho0
            x10(iarray,iparray)=x10(iarray,iparray)/1e2
@@ -1690,7 +1690,7 @@ SUBROUTINE FIND_3DPOINTS(nz,nt,s,x1,x2,x3)
         CLOSE(1)
         IF(iz0.NE.0) THEN
            WRITE(1500+myrank,'(9(1pe13.5),4I4)') s0(jarray,jparray),&
-                & x10(jarray,jparray),x20(jarray,jparray),x30(jarray,jparray),& 
+                & x10(jarray,jparray),x20(jarray,jparray),x30(jarray,jparray),&
                 & s,x1(iz0,it0),x2(iz0,it0),x3(iz0,it0),dist,jarray,jparray,iz0,it0
            !        array(iz0,it0)=jarray
            zetaDR(jarray,jparray)=zeta(iz0)
@@ -1708,13 +1708,13 @@ SUBROUTINE FIND_3DPOINTS(nz,nt,s,x1,x2,x3)
           & -dvarphi_0/dr[V/m]  -dvarphi_0/dr*|absnablar| [V/m] -d(varphi_0+varphi_1)/dr*|absnablar| [V/m]")')
 
      CALL CALC_ABSNABLAPSI(MAL,zeta,TWOPI-theta,absnablapsioB2)
-     IF(.NOT.ALLOCATED(zoomdr)) ALLOCATE(zoomdr(MAL,MAL))     
+     IF(.NOT.ALLOCATED(zoomdr)) ALLOCATE(zoomdr(MAL,MAL))
      zoomdr=SQRT(absnablapsioB2*Bzt*Bzt)/psip
   END IF
 
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-     
+
 END SUBROUTINE FIND_3DPOINTS
 
 
@@ -1753,8 +1753,8 @@ END SUBROUTINE FIND_3DPOINTS
 !!$     theta(it)=(it-1.)*dt
 !!$  END DO
 !!$
-!!$  x10=5.243070999999999771e-01 
-!!$  x20=1.319277999999999906e+00 
+!!$  x10=5.243070999999999771e-01
+!!$  x20=1.319277999999999906e+00
 !!$  x30=2.785726000000000013e-01
 !!$  s0=5.964831933927392527e-01*5.964831933927392527e-01
 !!$  dist=1e10
@@ -1770,7 +1770,7 @@ END SUBROUTINE FIND_3DPOINTS
 !!$     END DO
 !!$  END DO
 !!$  IF(flag_plot) WRITE(1500+myrank,'(9(1pe13.5))') s0,x10,x20,x30,s,x1(iz0,it0),x2(iz0,it0),x3(iz0,it0),dist
-!!$  
+!!$
 !!$END SUBROUTINE FILL_3DGRID_OLD
 
 
@@ -1798,13 +1798,13 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
   INTEGER iz,it,ifile
   REAL*8 dz,dt,zeta(nz),theta(nt),Bzt(nz,nt),Jac(nz,nt),vds_Bzt(Nnmp,nz,nt)
   REAL*8 FSA
-  
+
   Bmax=0
   IF(KN_STELLOPT(9)) THEN
      ifile=iout
   ELSE IF(flagB1) THEN
      ifile=1200+myrank
-  ELSE 
+  ELSE
      ifile=1300+myrank
   END IF
 
@@ -1838,10 +1838,10 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
         END DO
      END DO
   END IF
-  
+
   CALL CALC_ABSNABLAPSI(MAL,zeta,theta,absnablar)
   absnablar=SQRT(absnablar*Bzt*Bzt)/psip
-  
+
 END SUBROUTINE FILL_BGRID
 
 
@@ -1885,7 +1885,7 @@ SUBROUTINE FILL_BNODE(zeta,theta,Jac,Bzt,vds_Bzt,flagB1)
   END IF
   Bzt2=Bzt*Bzt
   Jac=aiBtpBz/Bzt2
-  vds_Bzt(1)=(Btheta*dBdz-Bzeta*dBdt)/(aiBtpBz*Bzt)     
+  vds_Bzt(1)=(Btheta*dBdz-Bzeta*dBdt)/(aiBtpBz*Bzt)
 
 END SUBROUTINE FILL_BNODE
 
@@ -1895,12 +1895,12 @@ END SUBROUTINE FILL_BNODE
 
 
 REAL*8 FUNCTION FSA(nz,nt,func,Jac,fdegr)
-  
-!----------------------------------------------------------------------------------------------- 
-!Calculate the flux-surface average of func defined in a grid of size (nz/fdegr) x (nt/fdegr) 
+
+!-----------------------------------------------------------------------------------------------
+!Calculate the flux-surface average of func defined in a grid of size (nz/fdegr) x (nt/fdegr)
 !in the Boozer angles (zeta,theta) using the jacobian Jac
 !-----------------------------------------------------------------------------------------------
-  
+
   USE GLOBAL
   IMPLICIT NONE
   !Input
@@ -1920,7 +1920,7 @@ REAL*8 FUNCTION FSA(nz,nt,func,Jac,fdegr)
   END DO
   fsa=fsa/denom
 
-  RETURN 
+  RETURN
 
 END FUNCTION FSA
 
@@ -1930,12 +1930,12 @@ END FUNCTION FSA
 
 
 REAL*8 FUNCTION FSA2(na,nz,thetap,func,Jac,fdegr)
-  
-!----------------------------------------------------------------------------------------------- 
-!Calculate the flux-surface average of func defined in a grid of size (nz/fdegr) x (nt/fdegr) 
+
+!-----------------------------------------------------------------------------------------------
+!Calculate the flux-surface average of func defined in a grid of size (nz/fdegr) x (nt/fdegr)
 !in the Boozer angles (zeta,theta) using the jacobian Jac
 !-----------------------------------------------------------------------------------------------
-  
+
   USE GLOBAL
   IMPLICIT NONE
   !Input
@@ -1961,7 +1961,7 @@ REAL*8 FUNCTION FSA2(na,nz,thetap,func,Jac,fdegr)
      END DO
   END DO
   fsa2=fsa2/denom
-  RETURN 
+  RETURN
 
 END FUNCTION FSA2
 
@@ -1983,7 +1983,7 @@ SUBROUTINE FIND_BMIN_BMAX(is,nz,nt,flagb1)
   REAL*8 dz,dt,zeta,theta,B,dBdz,dBdt,dummy,vdummy(Nnmp)
   REAL*8 dzeta,dtheta,dBdz_old,dBdt_old,zmin,tmin
 
-  
+
   Bmax=borbic(0,0)
   Bmin=borbic(0,0)
   dz=TWOPI/nz/nzperiod
@@ -2013,7 +2013,7 @@ SUBROUTINE FIND_BMIN_BMAX(is,nz,nt,flagb1)
         theta=tmin
      END IF
      CALL CALCB(zeta,theta,2,flagb1,B,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
-     dzeta =dz/2  
+     dzeta =dz/2
      dtheta=dzeta*dBdt/dBdz
      dBdz_old=dBdz
      dBdt_old=dBdt
@@ -2039,20 +2039,20 @@ SUBROUTINE FIND_BMIN_BMAX(is,nz,nt,flagb1)
         END IF
      END DO
   END DO
-  
+
   Bmax=Bmax/(1.0+(Bmax/Bmin-1.0)/(2*MLAMBDA))   !move the trapped/passing boundary
 
   IF(is.GT.0) THEN
      Bmax_b(is)=Bmax
      Bmin_b(is)=Bmin
   END IF
-     
+
 END SUBROUTINE FIND_BMIN_BMAX
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
 
 SUBROUTINE INTERPOLATE_2DMAP(npt,zeta_i,theta_i,func_i,func_o)
 
@@ -2097,7 +2097,7 @@ SUBROUTINE INTERPOLATE_2DMAP(npt,zeta_i,theta_i,func_i,func_o)
         one_nptpit=npt+it
         two_nptpit=2*npt+it
         thr_npt=3*npt
-        
+
          zeta_e((one_nptpiz-1)*thr_npt+one_nptpit)= zeta_i(iz,it)
         theta_e((one_nptpiz-1)*thr_npt+one_nptpit)=theta_i(iz,it)
          func_e((one_nptpiz-1)*thr_npt+one_nptpit)= func_i(iz,it)
@@ -2105,7 +2105,7 @@ SUBROUTINE INTERPOLATE_2DMAP(npt,zeta_i,theta_i,func_i,func_o)
          zeta_e((zer_nptpiz-1)*thr_npt+zer_nptpit)= zeta_i(iz,it)-TWOPI/nzperiod
         theta_e((zer_nptpiz-1)*thr_npt+zer_nptpit)=theta_i(iz,it)-TWOPI
          func_e((zer_nptpiz-1)*thr_npt+zer_nptpit)= func_i(iz,it)
-        
+
          zeta_e((zer_nptpiz-1)*thr_npt+one_nptpit)= zeta_i(iz,it)-TWOPI/nzperiod
         theta_e((zer_nptpiz-1)*thr_npt+one_nptpit)=theta_i(iz,it)
          func_e((zer_nptpiz-1)*thr_npt+one_nptpit)= func_i(iz,it)
@@ -2114,7 +2114,7 @@ SUBROUTINE INTERPOLATE_2DMAP(npt,zeta_i,theta_i,func_i,func_o)
         theta_e((zer_nptpiz-1)*thr_npt+two_nptpit)=theta_i(iz,it)+TWOPI
          func_e((zer_nptpiz-1)*thr_npt+two_nptpit)= func_i(iz,it)
 
-         zeta_e((one_nptpiz-1)*thr_npt+zer_nptpit)= zeta_i(iz,it)         
+         zeta_e((one_nptpiz-1)*thr_npt+zer_nptpit)= zeta_i(iz,it)
         theta_e((one_nptpiz-1)*thr_npt+zer_nptpit)=theta_i(iz,it)-TWOPI
          func_e((one_nptpiz-1)*thr_npt+zer_nptpit)= func_i(iz,it)
 
@@ -2130,7 +2130,7 @@ SUBROUTINE INTERPOLATE_2DMAP(npt,zeta_i,theta_i,func_i,func_o)
         theta_e((two_nptpiz-1)*thr_npt+one_nptpit)=theta_i(iz,it)
          func_e((two_nptpiz-1)*thr_npt+one_nptpit)= func_i(iz,it)
 
-         zeta_e((two_nptpiz-1)*thr_npt+two_nptpit)= zeta_i(iz,it)+TWOPI/nzperiod         
+         zeta_e((two_nptpiz-1)*thr_npt+two_nptpit)= zeta_i(iz,it)+TWOPI/nzperiod
         theta_e((two_nptpiz-1)*thr_npt+two_nptpit)=theta_i(iz,it)+TWOPI
         func_e((two_nptpiz-1)*thr_npt+two_nptpit)= func_i(iz,it)
 
@@ -2183,7 +2183,7 @@ SUBROUTINE INTERPOLATE_2DMAP(npt,zeta_i,theta_i,func_i,func_o)
               END IF
            END DO
         END DO
-        
+
 !!$        ztr= zeta_e((npt+iz+1)*thr_npt+npt+it+1) -zeta(iz)
 !!$        ttr=theta_e((npt+iz+1)*thr_npt+npt+it+1)-theta(it)
 !!$        ftr= func_e((npt+iz+1)*thr_npt+npt+it+1)
@@ -2258,13 +2258,13 @@ SUBROUTINE INTERPOLATE_2DMAP(npt,zeta_i,theta_i,func_i,func_o)
         CALL DGESV(10,1,mat,10,ipivot,rhs,10,info)
         func_o(iz,it)=rhs(6)
         !        IF(DEBUG.OR.myrank.EQ.0)
-!        CALL IDBVIP(2,4,9*npt*npt,zeta_e,theta_e,func_e,1,zeta(iz),theta(it),func_o(iz,it),iwk,wk)        
+!        CALL IDBVIP(2,4,9*npt*npt,zeta_e,theta_e,func_e,1,zeta(iz),theta(it),func_o(iz,it),iwk,wk)
         WRITE(iout,'(I2,7(1pe13.5),I3)') iz-iz-1,zeta(iz),theta(it),func_o(iz,it),ftl,ftr,fbl,fbr
      END DO
   END DO
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-  
+
 END SUBROUTINE INTERPOLATE_2DMAP
 
 
@@ -2294,7 +2294,7 @@ SUBROUTINE FFTF_KN(nalphab,q,qnm)
   INTEGER, PARAMETER :: FFTW_ESTIMATE =64
   INTEGER, PARAMETER :: FFTW_FORWARD=-1
   COMPLEX*16 qc(nalphab,nalphab)
-#endif  
+#endif
 
   qnm=0
 
@@ -2347,7 +2347,7 @@ SUBROUTINE FFTB_KN(nalphab,qnm,q)
   INTEGER, PARAMETER :: FFTW_ESTIMATE =64
   INTEGER, PARAMETER :: FFTW_BACKWARD=+1
   COMPLEX*16 qc(nalphab,nalphab)
-#endif  
+#endif
 
 #ifdef NAG
 
@@ -2386,13 +2386,13 @@ SUBROUTINE QUIT_READ(filename,varname,status_nc)  !2020/06 Satake for NETCDF
   !Others
   CHARACTER*100 serr
 
-  IF(myrank==0) THEN 
+  IF(myrank==0) THEN
      WRITE(iout,*) "error read NETCDF file!"
      WRITE(iout,*) filename,varname,status_nc
   END IF
   serr="netcdf"
   CALL END_ALL(serr,.FALSE.)
-  
+
 END SUBROUTINE QUIT_READ
 
 
@@ -2403,9 +2403,9 @@ END SUBROUTINE QUIT_READ
 
 
 !!$  !The following lines correspond to specific physics studies:
-!!$  !------------------------------------------------------------------------------------------- 
+!!$  !-------------------------------------------------------------------------------------------
 !!$  !For [Calvo 2018 JPP], uses B0 from [Landreman 2011 PoP] and scan in aspect ratio
-!!$  !------------------------------------------------------------------------------------------- 
+!!$  !-------------------------------------------------------------------------------------------
 !!$  IF(JPP) THEN
 !!$     !Undo change of coordinates (it was already right-handed)...
 !!$     Btheta   =-Btheta
@@ -2465,19 +2465,19 @@ END SUBROUTINE QUIT_READ
 !!$     dborbicdpsi(0,0)=0
 !!$     dborbicdpsi(0,2)=0
 !!$
-!!$  !------------------------------------------------------------------------------------------- 
+!!$  !-------------------------------------------------------------------------------------------
 !!$  !For benchmarking with FORTEC-3D, tokamak perturbed with a gaussian profile
-!!$  !------------------------------------------------------------------------------------------- 
-!!$  ELSE IF(SATAKE) THEN  
+!!$  !-------------------------------------------------------------------------------------------
+!!$  ELSE IF(SATAKE) THEN
 !!$     ntorb=MAX(ntorb,3)
 !!$     mpolb=MAX(ABS(mpolb),6)
 !!$     borbic(3,6) =1.90*0.002*EXP(-(SQRT(s0)-0.5)*(SQRT(s0)-0.5)/0.01)
 !!$     borbic0=borbic
 !!$  END IF
 
-  !------------------------------------------------------------------------------------------- 
+  !-------------------------------------------------------------------------------------------
   !End of specific physics studies
-  !------------------------------------------------------------------------------------------- 
+  !-------------------------------------------------------------------------------------------
 
 
 !Change the coordinates if the main helicity is N=0 (tokamak or quasi-axissymmetric stellarator, QAS)

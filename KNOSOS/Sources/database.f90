@@ -5,18 +5,18 @@
 
 SUBROUTINE CALC_DATABASE(s,is,ns)
 
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 !Solve the monoenergetic drift kinetic equation at s(is) for several values of cmul and efield,
 !either hard-coded or read from namelist 'parameters'
 !Generate a database of transport coefficients that can be:
 !-compared with DKES;
 !-used in a transport simulation.
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
   USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
-  !Input 
+  !Input
   INTEGER is,ns
   REAL*8 s(ns)
   !Others
@@ -52,7 +52,7 @@ SUBROUTINE CALC_DATABASE(s,is,ns)
   AB=+1.
   nb=1E+0
   Tb=5E+3
-  cmul_1NU=1E+20  
+  cmul_1NU=1E+20
   cmul_PS= 1E+20
   CALL DKE_CONSTANTS(1,1,ZB,AB,IDUMMY,nb,dummy,Tb,dummy,dummy(1),.FALSE.)
   phi1c=0
@@ -68,9 +68,9 @@ SUBROUTINE CALC_DATABASE(s,is,ns)
      CALL CALC_FAST_ION_CONFINEMENT(S,IS,NS,MAL,MLAMBDA)
      IF(.NOT.KN_STELLOPT(1)) RETURN
   END IF
-  
+
   IF(.NOT.JPP.AND..NOT.NO_PLATEAU) THEN
-     cmul_PS =-1.0   !this may be necessary if there is 
+     cmul_PS =-1.0   !this may be necessary if there is
      cmul_1NU=-1.0   !some connection imposed between regimes
      CALL CALC_PS(1,ALMOST_ZERO,D11(1,1))
      D11onu=D11(1,1)/cmul0
@@ -93,7 +93,7 @@ SUBROUTINE CALC_DATABASE(s,is,ns)
      D11tab(1,1,1)=D11(1,1)
      CALCULATED_INT=.FALSE.
      D11nu=D11tab(1,1,1)*cmul0
-     cmul_1NU=ABS(D11nu/D11pla)  !CMUL such that plateau and 1/nu transport are equal 
+     cmul_1NU=ABS(D11nu/D11pla)  !CMUL such that plateau and 1/nu transport are equal
 !     cmul_1NU=ABS(aiota/rad_R*eps32)!Use formula, because between plateau and 1/nu there
      D11pla=D11pla*fdkes(1)           !might exist banana regime
 
@@ -135,24 +135,24 @@ SUBROUTINE CALC_DATABASE(s,is,ns)
 !           WRITE(6000+myrank,'(1(1pe13.5))') eps_eff
 !           CLOSE(6000+myrank)
         !        END IF
-        
+
   END IF
-     
+
   IF (NEOTRANSP) THEN
      eps_eff=(5.0*g11_ft*rad_R*rad_R*borbic(0,0)*borbic(0,0))**0.66666
      IF(numprocs.EQ.1) filename="knosos.dk"
      IF(numprocs.GT.1) WRITE(filename,'("knosos.dk.",I2.2)') myrank
      OPEN(unit=6000+myrank,file=filename,form='formatted',action='write',iostat=iostat)
      IF(is.EQ.1) THEN
-        WRITE(6000+myrank,'("cc")')  
-        WRITE(6000+myrank,'("cc")')  
-        WRITE(6000+myrank,'("cc")')  
-        WRITE(6000+myrank,'("cc")')  
-        WRITE(6000+myrank,'("cc")')  
+        WRITE(6000+myrank,'("cc")')
+        WRITE(6000+myrank,'("cc")')
+        WRITE(6000+myrank,'("cc")')
+        WRITE(6000+myrank,'("cc")')
+        WRITE(6000+myrank,'("cc")')
      END IF
      WRITE(6000+myrank,'(5(1pe13.5),"  NaN",1pe13.5,"  r,R,B,io,xkn,ft,<b^2>")') &
           & SQRT(s(is))*rad_a,rad_R,borbic(0,0),ABS(iota),ABS(borbic(0,1))/eps,avb2
-     IF(is.EQ.1) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')  
+     IF(is.EQ.1) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')
      WRITE(6000+myrank,'("cfit ",2(1pe13.5),"      NaN        NaN      NaN")') eps_eff,g11_ft
 
 !  ELSE IF(PENTA) THEN
@@ -160,15 +160,15 @@ SUBROUTINE CALC_DATABASE(s,is,ns)
 !!     IF(numprocs.GT.1) WRITE(filename,'("knosos.penta.",I2.2)') myrank
 !     OPEN(unit=6000+myrank,file=filename,form='formatted',action='write',iostat=iostat)
 !     IF(is.EQ.1) THEN
-!!        WRITE(6000+myrank,'("cc")')  
-!!        WRITE(6000+myrank,'("cc")')  
-!!        WRITE(6000+myrank,'("cc")')  
-!!        WRITE(6000+myrank,'("cc")')  
-!!        WRITE(6000+myrank,'("cc")')  
+!!        WRITE(6000+myrank,'("cc")')
+!!        WRITE(6000+myrank,'("cc")')
+!!        WRITE(6000+myrank,'("cc")')
+!!        WRITE(6000+myrank,'("cc")')
+!!        WRITE(6000+myrank,'("cc")')
 !     END IF
 !!     WRITE(6000+myrank,'(5(1pe13.5),"  NaN",1pe13.5,"  r,R,B,io,xkn,ft,<b^2>")') &
 !!          & SQRT(s0)*rad_a,rad_R,borbic(0,0),ABS(iota),ABS(borbic(0,1))/eps,avb2
-!!     IF(is.EQ.1) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')  
+!!     IF(is.EQ.1) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')
 !!     WRITE(6000+myrank,'("cfit          NaN        NaN           NaN       NaN      NaN")')
 !  ELSE IF(KNOSOS_STELLOPT) THEN
 !     IF(numprocs.EQ.1) filename="mono.opt"
@@ -207,7 +207,7 @@ SUBROUTINE CALC_DATABASE(s,is,ns)
      WRITE(200+myrank,'("cmul efield weov wtov L11m L11p L31m L31p L33m L33p scal11&
           & scal13 scal33 max\_residual chip psip btheta bzeta vp vmag")')
   END IF
-  
+
   DO iturn=1,2
      DO iefield=1,nefieldt
 !        IF((PENTA.OR.KN_STELLOPT(1)).AND.iturn.GT.1)    EXIT
@@ -225,12 +225,12 @@ SUBROUTINE CALC_DATABASE(s,is,ns)
                  WRITE(iout,'(" VMAG  ",1pe13.5)') vmagt(ivmag)
                  WRITE(iout,'(" RHOSTAR    ",1pe13.5)') rhostar
                  IF(cmult(icmul).GT.cmul_1NU.AND.ivmag.GT.1) THEN
-                    D11tab(icmul,iefield,ivmag)=D11tab(icmul,iefield,1) 
+                    D11tab(icmul,iefield,ivmag)=D11tab(icmul,iefield,1)
                     CYCLE
                  END IF
                  !Use different subroutines in different regimes
                  IF(cmult(icmul).GT.cmul_PS) THEN
-                    CALL CALC_PS(iv0,Epsi,D11tab(icmul,iefield,ivmag))   
+                    CALL CALC_PS(iv0,Epsi,D11tab(icmul,iefield,ivmag))
                  ELSE IF(cmult(icmul).GT.cmul_1NU) THEN
 !                    CALL CALC_PLATEAU_OLD(iv0,Epsi,D11tab(icmul,iefield,ivmag))
                     CALL CALC_PLATEAU(iv0,Epsi,D11tab(icmul,iefield,ivmag),dn1nm)
@@ -294,9 +294,9 @@ END SUBROUTINE CALC_DATABASE
 
 SUBROUTINE READ_DKES_TABLE(is)
 
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 !Read monoenergetic transport coefficients from DKES for surface s(is)
-!-----------------------------------------------------------------------------------------------   
+!-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
   IMPLICIT NONE
@@ -321,7 +321,7 @@ SUBROUTINE READ_DKES_TABLE(is)
   dir_efield(7) ="omega_3e-3/"   !these lines may produce warnings depending on the compiler
   dir_efield(8) ="omega_1e-2/"
   dir_efield(9) ="omega_3e-2/"
-!  dir_efield(10)="omega_1e-1/"  
+!  dir_efield(10)="omega_1e-1/"
   !Subfolders of omega_?e-? for different values of CMUL
   dir_cmul(1) ="cl_3e+2/"
   dir_cmul(2) ="cl_1e+2/"
@@ -343,16 +343,16 @@ SUBROUTINE READ_DKES_TABLE(is)
   dir_cmul(18)="cl_1e-6/"
 
   file=TRIM(DIRDB)//TRIM(DIRS(is))
-  WRITE(iout,*) 'Reading DKES output in folder ',TRIM(file) 
+  WRITE(iout,*) 'Reading DKES output in folder ',TRIM(file)
   !Read data
-  nefield=0  
+  nefield=0
   ncmul=0
   D11pla=1e10
   DO iefield=1,nefieldd
      DO icmul=1,ncmuld
         file=TRIM(DIRDB)//TRIM(DIRS(is))//TRIM(dir_efield(iefield))//TRIM(dir_cmul(icmul))//"results.data"
-        OPEN(unit=1,file=TRIM(file),action='read',iostat=iostat) 
-        IF (iostat.EQ.0) THEN 
+        OPEN(unit=1,file=TRIM(file),action='read',iostat=iostat)
+        IF (iostat.EQ.0) THEN
            WRITE(iout,*) 'Reading file ',file
            IF(icmul.EQ.1) nefield=nefield+1
            IF(iefield.EQ.1) ncmul=ncmul+1
@@ -389,7 +389,7 @@ END SUBROUTINE READ_DKES_TABLE
 
 SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,D31,knososdb)
 
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 !Calculate monoenergetic transport coefficient D11 from database, interpolating
 !at cmul=nu(jv)/v(jv) and efield=Epsi*psip/v(jv). The database comes from KNOSOS if
 !knososdb.EQ..TRUE. and from DKES otherwise
@@ -420,7 +420,7 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,D31,knososdb)
   IF(knososDB) THEN
      WRITE(iout,*) 'Interpolating KNOSOS coefficients'
      vmag=vmconst(jv)/v(jv)
-     IF(Epsi.LT.0) vmag=-vmag        
+     IF(Epsi.LT.0) vmag=-vmag
      nvmagtt=(nvmagt-1)/2
      IF(vmag.LT.0) THEN
         lvmagtt=LOG(ABS(vmagt(1:nvmagtt)))
@@ -428,7 +428,7 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,D31,knososdb)
      ELSE
         lvmagtt=LOG(ABS(vmagt(nvmagt-nvmagtt+1:nvmagt)))
         lD11tabt=lD11tab(1:ncmult,1:nefieldt,nvmagt-nvmagtt+1:nvmagt)
-     END IF     
+     END IF
   ELSE
      WRITE(iout,*) 'Interpolating DKES coefficients'
   END IF
@@ -452,7 +452,7 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,D31,knososdb)
         END IF
      ELSE
       IF(efield.GT.0.1*efieldt(2)) THEN!  IF(efield.GT.1E-10) THEN
-         
+
            CALL TRILAGRANGE(lcmult(1:ncmult),lefieldt(2:nefieldt),lvmagtt(1:nvmagtt),lD11tabt(1:ncmult,2:nefieldt,1:nvmagtt),&
                 & ncmult,nefieldt-1,nvmagtt,LOG(cmul),LOG(efield),LOG(ABS(vmag)),lD11,1)
         ELSE
@@ -471,9 +471,9 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,D31,knososdb)
         CALL LAGRANGE(lcmult(1:ncmult),lD11dkes(1:ncmult,1),&
              & ncmult,LOG(cmul),lD11,1)
         CALL LAGRANGE(lcmult(1:ncmult),D31dkes(1:ncmult,1),&
-             & ncmult,LOG(cmul),D31,1)     
+             & ncmult,LOG(cmul),D31,1)
      END IF
-    
+
   END IF
 
   !After logarithmic interpolation, take exponential
@@ -490,7 +490,7 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,D31,knososdb)
   D31=D31/fdkes2(jv)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-  
+
 END SUBROUTINE INTERP_DATABASE
 
 

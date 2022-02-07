@@ -38,7 +38,7 @@ MODULE GLOBAL
   REAL*8, PARAMETER :: m_e =1.04396844E-08 !ratio between unitary mass and charge
   REAL*8, PARAMETER ::   e =1.60217662e-19 !electron charge
   REAL*8, PARAMETER :: tsl=1E-3
-  
+
   !MPI constants
   INTEGER iout,myrank,numprocs
 
@@ -92,7 +92,7 @@ MODULE GLOBAL
   REAL(rprec) borbic(-ntorbd:ntorbd,0:mpolbd)  ,borbis(-ntorbd:ntorbd,0:mpolbd)
   REAL(rprec) borbic0(-ntorbd:ntorbd,0:mpolbd),borbis0(-ntorbd:ntorbd,0:mpolbd)
   REAL(rprec) dborbicdpsi(-ntorbd:ntorbd,0:mpolbd),dborbisdpsi(-ntorbd:ntorbd,0:mpolbd)
-  REAL(rprec) dborbic0dpsi(-ntorbd:ntorbd,0:mpolbd),dborbis0dpsi(-ntorbd:ntorbd,0:mpolbd)   
+  REAL(rprec) dborbic0dpsi(-ntorbd:ntorbd,0:mpolbd),dborbis0dpsi(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 rorbic(-ntorbd:ntorbd,0:mpolbd),rorbis(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 zorbic(-ntorbd:ntorbd,0:mpolbd),zorbis(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 porbic(-ntorbd:ntorbd,0:mpolbd),porbis(-ntorbd:ntorbd,0:mpolbd)
@@ -109,7 +109,7 @@ MODULE GLOBAL
   REAL*8,  ALLOCATABLE :: s_b(:),spol_b(:),iota_b(:),pres_b(:),beta_b(:),psip_b(:),psi_b(:),bvco_b(:),buco_b(:)
   REAL*8,  ALLOCATABLE :: bmnc_b(:,:),rmnc_b(:,:),pmns_b(:,:),zmns_b(:,:),gmnc_b(:,:)
   REAL*8,  ALLOCATABLE :: bmns_b(:,:),rmns_b(:,:),pmnc_b(:,:),zmnc_b(:,:)
-  
+
 
   !Grid, resolution and experimetal points
   REAL*8 zmax,tmax,dzstep
@@ -128,7 +128,7 @@ MODULE GLOBAL
 
   !Velocity integral
   INTEGER, PARAMETER :: nv=28
-  INTEGER, PARAMETER :: iv0=6   !Representative velocity (v~=v_th) 
+  INTEGER, PARAMETER :: iv0=6   !Representative velocity (v~=v_th)
   REAL*8 v(nv),weight(nv),Sdke(nv),vdconst(nv),vmconst(nv),fdkes(nv),fdkes2(nv),nu(nv),mu(nv),ftrace1nu(nv),mmuoT(nv)
   REAL*8 nuth(nbx),vth(nbx),nuzi(nbx)
 
@@ -141,7 +141,7 @@ MODULE GLOBAL
   REAL*8, ALLOCATABLE ::  cmult(:), efieldt(:), vmagt(:)
   REAL*8, ALLOCATABLE :: lcmult(:),lefieldt(:),lvmagt(:)
   REAL*8, ALLOCATABLE :: lD11dkes1(:,:),lD11dkes2(:,:),lD11tab(:,:,:),D31dkes(:,:)
-  
+
   INTEGER, ALLOCATABLE :: seed(:)
 
 END MODULE GLOBAL

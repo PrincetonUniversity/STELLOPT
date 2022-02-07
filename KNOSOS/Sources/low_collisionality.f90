@@ -8,15 +8,15 @@
 SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
      & nalphab,zeta,theta,dn1dv,dn1nm)
 
-!--------------------------------------------------------------------------------------------- 
-!Calculate monoenergetic transport coefficient D11 and contribution quasineutrality dn1dv and 
-!dn1nm at nalphabxnalphab grid in (zeta,theta)  for collisionality cmul=nu(jv)/v(jv) and 
+!---------------------------------------------------------------------------------------------
+!Calculate monoenergetic transport coefficient D11 and contribution quasineutrality dn1dv and
+!dn1nm at nalphabxnalphab grid in (zeta,theta)  for collisionality cmul=nu(jv)/v(jv) and
 !normalized radial electric field Epsi/v(jv), and in the presence of phi1c
 !-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
   USE KNOSOS_STELLOPT_MOD
-  IMPLICIT NONE  
+  IMPLICIT NONE
 !  Input
   INTEGER jv
   REAL*8 Epsi,phi1c(Nnmp),Mbbnm(Nnmp),trMnm(Nnmp)
@@ -40,7 +40,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
      END IF
      !Write monoenergetic transport coefficients using DKES normalization
      nalphab=-1
-     DO WHILE(nalphab.LT.0) 
+     DO WHILE(nalphab.LT.0)
         CALL CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
              & D11,nalphab,zeta,theta,dn1dv,dn1nm)
      END DO
@@ -63,7 +63,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
               EXIT
            END IF
            ila=ila+1
-           nlambda=nlambda*2  
+           nlambda=nlambda*2
         END DO
         D11r(ial,ila+1:100)=D11r(ial,ila)
         IF(ial.GT.1.AND.nlambda.LE.nlambdax.AND.&
@@ -76,7 +76,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
         ial=ial+1
         nal=nal*2
      END DO
-     
+
      IF(nal.GT.nax.OR.nlambda.GT.nlambdax) THEN
         IF(nal.GE.nax) THEN
            WRITE(1100+myrank,*) 'Increase nax'
@@ -105,9 +105,9 @@ END SUBROUTINE CALC_LOW_COLLISIONALITY
 SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
      & D11,nalphab,zeta,theta,dn1dv,dn1nm)
 
-!--------------------------------------------------------------------------------------------- 
-!Calculate monoenergetic transport coefficient D11 and contribution quasineutrality dn1dv and 
-!dn1nm at nalphabxnalphab grid in (zeta,theta), for collisionality cmul=nu(jv)/v(jv) and normalized 
+!---------------------------------------------------------------------------------------------
+!Calculate monoenergetic transport coefficient D11 and contribution quasineutrality dn1dv and
+!dn1nm at nalphabxnalphab grid in (zeta,theta), for collisionality cmul=nu(jv)/v(jv) and normalized
 !radial electric field Epsi/v(jv)m and in the presence of phi1c
 !The DKE is solved in a nalxnlambda grid in (alpha,lambda)
 !-----------------------------------------------------------------------------------------------
@@ -132,7 +132,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   INTEGER, SAVE :: nalpha,nalphab_save,npoint
   INTEGER, SAVE, ALLOCATABLE :: nbif(:),i_p_ap1(:),i_p_am1(:),i_p_ap2(:),i_p_am2(:)
   INTEGER, SAVE, ALLOCATABLE :: i_p_ap1I(:),i_p_ap1II(:),i_p_am1I(:),  i_p_am1II(:)
-  INTEGER, SAVE, ALLOCATABLE :: i_p_ap2I(:),i_p_ap2II(:),i_p_ap2III(:),i_p_ap2IV(:)  
+  INTEGER, SAVE, ALLOCATABLE :: i_p_ap2I(:),i_p_ap2II(:),i_p_ap2III(:),i_p_ap2IV(:)
   INTEGER, SAVE, ALLOCATABLE :: i_p_am2I(:),i_p_am2II(:),i_p_am2III(:),i_p_am2IV(:)
   REAL*8, SAVE, ALLOCATABLE :: wp1I(:),wp1II(:),wp2I(:),wp2II(:),wp2III(:),wp2IV(:)
   REAL*8, SAVE, ALLOCATABLE :: wm1I(:),wm1II(:),wm2I(:),wm2II(:),wm2III(:),wm2IV(:)
@@ -143,8 +143,8 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   LOGICAL, ALLOCATABLE :: connected(:,:),bottom(:),ltemp(:),ltemp2(:,:)
   INTEGER nw,na
   REAL*8, ALLOCATABLE :: z1(:),t1(:),B1(:),hBpp1(:),vd1(:,:)
-  REAL*8, ALLOCATABLE :: zb(:),tb(:),Bb(:),hBppb(:),vdb(:,:) 
-  REAL*8, ALLOCATABLE :: z2(:),t2(:),B2(:),hBpp2(:),vd2(:,:) 
+  REAL*8, ALLOCATABLE :: zb(:),tb(:),Bb(:),hBppb(:),vdb(:,:)
+  REAL*8, ALLOCATABLE :: z2(:),t2(:),B2(:),hBpp2(:),vd2(:,:)
   REAL*8, ALLOCATABLE :: alphap_w(:),Bt(:),Btt(:),temp(:),temp2(:,:)
   !Angular and lambda grid
   INTEGER, ALLOCATABLE :: i_w(:),itemp(:)
@@ -220,13 +220,13 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 
 !  CALL CPU_TIME(tstart2)
 
-  IF(PHI1_READ) bnmc0=bnmc0+2*borbic(0,0)*phi1c/vdconst(jv) 
+  IF(PHI1_READ) bnmc0=bnmc0+2*borbic(0,0)*phi1c/vdconst(jv)
 
   !Find and characterize wells
   ALLOCATE(connected(nwx,nwx),bottom(nwx),&
        & z1(nwx),t1(nwx),B1(nwx),hBpp1(nwx),vd1(nqv,nwx),&
        & zb(nwx),tb(nwx),Bb(nwx),hBppb(nwx),vdb(nqv,nwx),&
-       & z2(nwx),t2(nwx),B2(nwx),hBpp2(nwx),vd2(nqv,nwx),& 
+       & z2(nwx),t2(nwx),B2(nwx),hBpp2(nwx),vd2(nqv,nwx),&
        & alphap_w(nwx),Bt(nwx),Btt(nwx),&
        & lambdab_w(nwx),lambdac_w(nwx))
   CALL CHARACTERIZE_WELLS(nal,na,nalpha,nw,z1,t1,B1,hBpp1,vd1, &
@@ -257,7 +257,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   temp2=vd1(1:nqv,1:nw);DEALLOCATE(vd1);ALLOCATE(vd1(nqv,nw));vd1=temp2
   temp2=vdb(1:nqv,1:nw);DEALLOCATE(vdb);ALLOCATE(vdb(nqv,nw));vdb=temp2
   temp2=vd2(1:nqv,1:nw);DEALLOCATE(vd2);ALLOCATE(vd2(nqv,nw));vd2=temp2
-  DEALLOCATE(temp,temp2,ltemp)  
+  DEALLOCATE(temp,temp2,ltemp)
   ALLOCATE(ltemp2(nw,nw))
   ltemp2=connected(1:nw,1:nw);DEALLOCATE(connected);ALLOCATE(connected(nw,nw));connected=ltemp2
   DEALLOCATE(ltemp2)
@@ -276,7 +276,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   CALL CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,&
        & zetap,thetap,zetax,thetax,B_al,vds_al,j_al)
   zeta(1:nalphab) =zetap  !square grid
-  theta(1:nalphab)=zetap*nzperiod 
+  theta(1:nalphab)=zetap*nzperiod
   theta_save=theta
 
   CALL EXCLUDE_WELLS(na,nalpha,nalphab,nw,bottom,connected,&
@@ -300,7 +300,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
      END DO
      lambda(jla)=LJMAP
   END IF
-  
+
   !For each point in the (zeta,theta) grid, determine well and absolute point
   !For each absolute point, determine alpha, lambda and well number
   IF(ALLOCATED(i_l)) DEALLOCATE(i_l)
@@ -316,7 +316,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   IF(ALLOCATED(BI1)) THEN
      DEALLOCATE(nbif,i_p_ap1,i_p_am1,i_p_ap2,i_p_am2,i_p_lp1,i_p_lm1,&
           & dalpha_am1,dalpha_ap1,dalpha_am2,dalpha_ap2,dlambda_lm1,dlambda_lp1,&
-          & BI1,BI2,BI3,BI3f,BI3b,BI4,BI5,BI6,BI7,BI8,factnu,zlw,zrw,nnz,&          
+          & BI1,BI2,BI3,BI3f,BI3b,BI4,BI5,BI6,BI7,BI8,factnu,zlw,zrw,nnz,&
           & i_p_ap1I,i_p_ap1II,i_p_ap2I,i_p_ap2II,i_p_ap2III,i_p_ap2IV,&
           & i_p_am1I,i_p_am1II,i_p_am2I,i_p_am2II,i_p_am2III,i_p_am2IV,&
           & wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV)
@@ -340,7 +340,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   ALLOCATE(dlambda_lm1(npoint),dlambda_lp1(npoint))
   ALLOCATE(BI1(npoint),BI2(npoint),BI3(npoint),BI3b(npoint),BI3f(npoint),factnu(npoint))
   ALLOCATE(BI4(npoint),BI5(npoint),BI6(npoint),BI7(npoint),BI8(npoint,Nnmp))
-  ALLOCATE(zlw(npoint),zrw(npoint),tlw(npoint),trw(npoint)) 
+  ALLOCATE(zlw(npoint),zrw(npoint),tlw(npoint),trw(npoint))
   ALLOCATE(nnz(npoint))
   ALLOCATE(i_p_ap1I(npoint),i_p_ap1II(npoint),i_p_am1I(npoint),i_p_am1II(npoint))
   ALLOCATE(i_p_ap2I(npoint),i_p_ap2II(npoint),i_p_ap2III(npoint),i_p_ap2IV(npoint))
@@ -381,17 +381,17 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 !!$     END DO
 !!$  END DO
 !!$  stop
-  
+
   !Find neighbours in lambda
   CALL FIND_LAMBDA_NEIGHBOURS(npoint,nalpha,nalphab,nlambda,nw,nbifx,i_p,&
        & bottom,i_w,i_p_lm1,nbif,i_p_lp1)
  !Correct delta lambda at the bottom
-  dlambda_lm1=dlambdap 
+  dlambda_lm1=dlambdap
   dlambda_lp1=dlambdap
   DO ipoint=2,npoint
      IF(i_p_lp1(1,ipoint).EQ.0) THEN
         dlambda_lp1(ipoint)=lambdab_w(i_w(ipoint))-lambda(i_l(ipoint))
-     ELSE IF(i_p_lm1(ipoint).EQ.1) THEN                        
+     ELSE IF(i_p_lm1(ipoint).EQ.1) THEN
         dlambda_lm1(ipoint)=lambda(i_l(ipoint))-lambdac
      END IF
   END DO
@@ -401,7 +401,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
                  &  z1,t1,B1,hBpp1,vd1,&
                  &  zb,tb,Bb,hBppb,vdb,&
                  &  z2,t2,B2,hBpp2,vd2,&
-                 &  nlambda,lambda,zlw,tlw,zrw,trw,& 
+                 &  nlambda,lambda,zlw,tlw,zrw,trw,&
                  &  BI1,BI2,BI3,BI4,BI5,BI6,BI7,Nnmp,BI8)
 
   !Put longest well first
@@ -432,9 +432,9 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
        & i_p_ap1I,i_p_ap1II,i_p_ap2I,i_p_ap2II,i_p_ap2III,i_p_ap2IV,&
        & wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV,lambda,&
        & BI7,BI3,BI3b,BI3f,dlambda_lm1,dlambda_lp1)
-  
+
   DEALLOCATE(connected,bottom,z1,t1,B1,hBpp1,vd1,zb,tb,Bb,hBppb,vdb,&
-       &    z2,t2,B2,hBpp2,vd2,alphap_w,Bt,Btt,lambdab_w,lambdac_w) 
+       &    z2,t2,B2,hBpp2,vd2,alphap_w,Bt,Btt,lambdab_w,lambdac_w)
 
   !Find non-zero elements of the DKE matrix and initialize
   IF(ALLOCATED(gint)) DEALLOCATE(gint)
@@ -494,8 +494,8 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
              & rowCOL,rowVEAf,rowVEAb,rowVMAf,rowVMAb,nnz(ipoint),.FALSE.,&
              & rowDIFf,rowDIFb)
      END IF
-#ifdef MPIandPETSc 
-     ipointm1=ipoint-1    
+#ifdef MPIandPETSc
+     ipointm1=ipoint-1
      DO jpoint=1,npoint
         IF((ABS(rowCOL(jpoint)).GT.ZERO).OR.&
              & (ABS(rowVEAf(jpoint)).GT.ZERO).OR. &
@@ -544,8 +544,8 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   END DO
   IF(DEBUG) CALL FLUSH(3200+myrank)
 
-#ifdef MPIandPETSc 
-  
+#ifdef MPIandPETSc
+
   CALL MatAssemblyBegin(matCOL,MAT_FINAL_ASSEMBLY,ierr)
   CALL MatAssemblyEnd(  matCOL,MAT_FINAL_ASSEMBLY,ierr)
   CALL MatAssemblyBegin(matVEAf,MAT_FINAL_ASSEMBLY,ierr)
@@ -564,7 +564,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
      CALL MatAssemblyBegin(matVMAb,MAT_FINAL_ASSEMBLY,ierr)
      CALL MatAssemblyEnd(  matVMAb,MAT_FINAL_ASSEMBLY,ierr)
   END IF
-  
+
 #endif
 
   IF(DEBUG) THEN
@@ -586,7 +586,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
      END IF
   END DO
 
-123 nalphab=nalphab_save 
+123 nalphab=nalphab_save
   theta=theta_save
 
   !Set source to zero for passing particles
@@ -601,7 +601,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   END IF
   !Use linear combinations of precalculated matrices to fill actual matrix for given values
   !the collisionality, radial electric field, etc
-#ifdef MPIandPETSc 
+#ifdef MPIandPETSc
   CALL FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
 
   IF(CALC_DG) THEN
@@ -649,7 +649,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   IF(CALC_DG) STOP
   CALL INVERT_MATRIX(nalphab,jv,npoint,BI3,BI8,phi1c,mat,gint)
   DEALLOCATE(mat)
-#endif  
+#endif
 
   IF(DEBUG.AND..NOT.KNOSOS_STELLOPT) THEN
      DO ila=1,nlambda
@@ -675,7 +675,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
         END DO
      END DO
   END IF
-!!$  
+!!$
 
   IF(PHI1_READ.AND.IMP1NU) THEN
      gint(:,2)=gint(:,1)*ftrace1nu(jv)*EXP(-mmuoT(jv)/lambda(i_l(:)))*mmuoT(jv)/lambda(i_l(:))
@@ -685,14 +685,14 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 
   !Calculate dn_1dv and D_{11} integrating it the velocity space and taking the flux-surface-average
 
-  IF(INT_G_NEW) THEN        
+  IF(INT_G_NEW) THEN
      CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gint(:,1),.FALSE., &
           & thetap,B_al,vds_al(1,:,:),D11(1,1))
   ELSE
      CALL INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,gint,.FALSE., &
           & zetap,thetap,theta(1:nalphab),B_al,vds_al,D11,dn1dv(1:nalphab,1:nalphab),dn1nm)
   END IF
-     
+
   IF(.NOT.PHI1_READ.OR..NOT.IMP1NU) THEN
      D11(1,:)=D11(1,:)*vdconst(jv)
      IF(PHI1_READ) D11     =D11     *weight(jv)
@@ -702,12 +702,12 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 !     gint=gint*weight(jv)
 !  END IF
   omega=ABS(Epsi)*psip/v(jv)
-  cmul=nu(jv)/v(jv)/2.  
+  cmul=nu(jv)/v(jv)/2.
 
   !Connection with plateau regime
   IF(FACT_CON.GT.0.AND.cmul_1NU.GT.0.&
        & .AND.cmul.GT.cmul_1NU/FACT_CON.AND.omega.LT.1E-2) D11=D11+D11pla/fdkes(jv)
-  
+
   !Write monoenergetic transport coefficients using DKES normalization
   IF(DEBUG) THEN!.OR.(ONLY_DB.AND..NOT.KNOSOS_STELLOPT)) THEN
      CALL FLUSH(10000+myrank)
@@ -724,10 +724,45 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
      END IF
      CALL FLUSH(10000+myrank)
   END IF
-  
+
   IF(PHI1_READ) bnmc0=bnmc0-2*borbic(0,0)*phi1c/vdconst(jv)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+
+
+  IF ( ALLOCATED(connected) )  DEALLOCATE(connected)
+  IF ( ALLOCATED(bottom) ) DEALLOCATE(bottom)
+  IF ( ALLOCATED(ltemp) ) DEALLOCATE(ltemp)
+  IF ( ALLOCATED(ltemp2) ) DEALLOCATE(ltemp2)
+  IF ( ALLOCATED(z1) ) DEALLOCATE(z1)
+  IF ( ALLOCATED(t1) ) DEALLOCATE(t1)
+  IF ( ALLOCATED(B1) ) DEALLOCATE(B1)
+  IF ( ALLOCATED(hBpp1) ) DEALLOCATE(hBpp1)
+  IF ( ALLOCATED(hBpp1) ) DEALLOCATE(hBpp1)
+  IF ( ALLOCATED(vd1) ) DEALLOCATE(vd1)
+  IF ( ALLOCATED(zb) ) DEALLOCATE(zb)
+  IF ( ALLOCATED(tb) ) DEALLOCATE(tb)
+  IF ( ALLOCATED(Bb) ) DEALLOCATE(Bb)
+  IF ( ALLOCATED(hBppb) ) DEALLOCATE(hBppb)
+  IF ( ALLOCATED(vdb) ) DEALLOCATE(vdb)
+  IF ( ALLOCATED(z2) ) DEALLOCATE(z2)
+  IF ( ALLOCATED(t2) ) DEALLOCATE(t2)
+  IF ( ALLOCATED(B2) ) DEALLOCATE(B2)
+  IF ( ALLOCATED(hBpp2) ) DEALLOCATE(hBpp2)
+  IF ( ALLOCATED(vd2) ) DEALLOCATE(vd2)
+  IF ( ALLOCATED(alphap_w) ) DEALLOCATE(alphap_w)
+  IF ( ALLOCATED(Bt) ) DEALLOCATE(Bt)
+  IF ( ALLOCATED(Btt) ) DEALLOCATE(Btt)
+  IF ( ALLOCATED(temp) ) DEALLOCATE(temp)
+  IF ( ALLOCATED(temp2) ) DEALLOCATE(temp2)
+  IF ( ALLOCATED(i_w) ) DEALLOCATE(i_w)
+  IF ( ALLOCATED(itemp) ) DEALLOCATE(itemp)
+  IF ( ALLOCATED(one_o_lambda) ) DEALLOCATE(one_o_lambda)
+  IF ( ALLOCATED(alphap) ) DEALLOCATE(alphap)
+  IF ( ALLOCATED(lambdab_w) ) DEALLOCATE(lambdab_w)
+  IF ( ALLOCATED(lambdac_w) ) DEALLOCATE(lambdac_w)
+  IF ( ALLOCATED(tlw) ) DEALLOCATE(tlw)
+  IF ( ALLOCATED(trw) ) DEALLOCATE(trw)
 
 END SUBROUTINE CALC_LOW_COLLISIONALITY_NANL
 
@@ -750,9 +785,9 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
 !to two definitions Bt and Btt, whether they are the the bottom.
 !Determine a map of connections, connected, and offset TODO
 !It exits when nalpha.GT.nal
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 
-  USE GLOBAL  
+  USE GLOBAL
   IMPLICIT NONE
   !Input
   INTEGER nal
@@ -760,8 +795,8 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
   LOGICAL matched(nwx),connected(nwx,nwx),bottom(nwx)
   INTEGER na,nalpha,nw
   REAL*8 z1(nwx),t1(nwx),B1(nwx),hBpp1(nwx),vd1(nqv,nwx)
-  REAL*8 zb(nwx),tb(nwx),Bb(nwx),hBppb(nwx),vdb(nqv,nwx) 
-  REAL*8 z2(nwx),t2(nwx),B2(nwx),hBpp2(nwx),vd2(nqv,nwx) 
+  REAL*8 zb(nwx),tb(nwx),Bb(nwx),hBppb(nwx),vdb(nqv,nwx)
+  REAL*8 z2(nwx),t2(nwx),B2(nwx),hBpp2(nwx),vd2(nqv,nwx)
   REAL*8 Bt(nwx),Btt(nwx),alphap_w(nwx),dalphap,offset
   !Others
   CHARACTER*100 serr
@@ -776,7 +811,7 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
   REAL*8 tstart
 
   CALL CPU_TIME(tstart)
-  
+
   IF(ONE_ALPHA) THEN
      namax=INT(nal*1.5)
      DO na=1,namax
@@ -790,7 +825,7 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
      da=1E3
      namin=1
      IF(namax.GT.nal) namin=nal
-     DO na=namin,namax        
+     DO na=namin,namax
         dat=MOD(TWOPI*na*aiota/nzperiod,TWOPI)
         IF(dat.GT.PI) dat=TWOPI-dat
         IF(dat.LT.da) THEN
@@ -822,13 +857,13 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
   nwmax=0
   nfoundt=0
   fath=0
-  alphap_w=-1000.0 
+  alphap_w=-1000.0
   !Maximum possible number of wells determined by size of arrays
   !  DO WHILE((nalpha/NTURN.LT.nal.AND.(nwmax.LE.nwx.OR.(NTV.AND.nwmax.LE.nwx))).OR.iturn.NE.0)
   DO WHILE((nalpha/NTURN.LT.nal.AND.nwmax.LE.nwx).OR.iturn.NE.0)
      iturn=iturn+1
      !Find wells along the field lines
-     IF(iturn.EQ.1) THEN        
+     IF(iturn.EQ.1) THEN
         nw0=nw2+1
         !Characterize wells with extreme values
         IF(na.GT.1) THEN
@@ -856,18 +891,18 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
         nfoundt=nfoundt+nfound !to nfoundt local mimima, by matching
         nwmax=4*nfoundt        !we may obtain up to 2*nfoundt regions
                                !exit loop if nwmax.GT.NWX
-     !Match wells  
+     !Match wells
      ELSE
         kw=nw2+1
-        nw1=kw 
+        nw1=kw
         !Try to match well iw...
-        DO iw=nw0,nw2 
+        DO iw=nw0,nw2
 !           IF(NTV) CYCLE
-           IF(matched(iw)) CYCLE 
+           IF(matched(iw)) CYCLE
            !...with well jw
            DO jw=nw0,nw2
-              IF(jw.EQ.iw.OR.matched(jw)) CYCLE 
-              CALL MATCH_WELLS(kw, & 
+              IF(jw.EQ.iw.OR.matched(jw)) CYCLE
+              CALL MATCH_WELLS(kw, &
                    & z1(iw),t1(iw),B1(iw),hBpp1(iw),vd1(:,iw), &
                    & zb(iw),tb(iw),Bb(iw),hBppb(iw),vdb(:,iw), &
                    & z2(iw),t2(iw),B2(iw),hBpp2(iw),vd2(:,iw), &
@@ -879,30 +914,30 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
                    & z2(kw),t2(kw),B2(kw),hBpp2(kw),vd2(:,kw), &
                    & 1,flag)
               !If they match, set limits, matrix of relations....
-              IF(flag.EQ.1) THEN 
+              IF(flag.EQ.1) THEN
                  Bt(kw) =MIN(B1(kw),B2(kw))
                  Btt(kw)=MAX(B1(kw),B2(kw))
                  nwperiods=INT(ABS(z2(kw)-z1(kw))*nzperiod/TWOPI/1.5)+1
                  IF(DEBUG) WRITE(2900+myrank,'("    Region ",I6," (from ",I6," and" ,I6,   &
                       & "contained in",I6," periods")') kw,iw,jw,nwperiods
-                 matched(iw)=.TRUE. 
-                 matched(jw)=.TRUE. 
+                 matched(iw)=.TRUE.
+                 matched(jw)=.TRUE.
                  fath(iw)=kw
                  fath(jw)=kw
                  alphap_w(kw)=alphap_w(iw)
                  connected(kw,iw)=.TRUE. !needed for determing that well iw
                  connected(kw,jw)=.TRUE. !cover alphas that jw and kw covered
-                 DO lw=1,nw            
+                 DO lw=1,nw
                     IF(connected(iw,lw).OR.connected(jw,lw)) connected(kw,lw)=.TRUE.
                  END DO
                  kw=kw+1
               END IF
            END DO
         END DO
-        nw2=kw-1 
+        nw2=kw-1
      END IF
      nw=nw2
-     
+
      !If there were matches, continue matching for the same alphas
 !     IF(.NOT.NTV.AND.nw2.GE.nw1) THEN
      IF(nw2.GE.nw1) THEN
@@ -912,7 +947,7 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
            DO iw=1,nw
               IF(.NOT.matched(iw).AND.Bt(iw).GT.maxBt) maxBt=Bt(iw)
            END DO
-           WRITE(2900+myrank,'(" Labelled regions ",I6," to ",I6," out of a maximum of ", &           
+           WRITE(2900+myrank,'(" Labelled regions ",I6," to ",I6," out of a maximum of ", &
                 & I6,":",1pe13.5," < 1/lambda <",1pe13.5)')                     &
                 & nw1,nw2,nwmax,MINVAL(Bb),maxBt
         END IF
@@ -935,7 +970,7 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
            CALL END_ALL(serr,.FALSE.)
         END IF
         !Double the number of alphas and start over
-        iturn=0  
+        iturn=0
 !        IF(NTV) THEN
 !           dalphap=siota*TWOPI/na
 !           nalpha=na
@@ -967,12 +1002,12 @@ SUBROUTINE CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,&
 
 !-----------------------------------------------------------------------------------------------
 !From na independent field lines, create:
-!- a nalphaxnalpha (zetap,thetap) grid aligned with the magnetic field lines 
+!- a nalphaxnalpha (zetap,thetap) grid aligned with the magnetic field lines
 ! and labelled with alphap (dalphap is the spacing);
 !- a nax(nalphaxnalpha/na) grid (zetax,thetap) extended over several field periods.
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 
-  USE GLOBAL  
+  USE GLOBAL
   IMPLICIT NONE
   !Input
   INTEGER na,nalpha,nalphab
@@ -1032,7 +1067,7 @@ SUBROUTINE CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,&
 !!$!     IF(NTV) zetap(il)=zetap(il)+PI/nzperiod
 !!$     DO ia=1,nalpha !note that dalphap can be negative, if iota is, but...
 !!$        thetap(ia,il)=offset+ia*dalphap+(il-1)*iota*dzeta
-!!$!        IF(NTV) thetap(ia,il)=thetap(ia,il)+PI 
+!!$!        IF(NTV) thetap(ia,il)=thetap(ia,il)+PI
 !!$        zetax(ia,il) =zetap(il)+INT((ia-1)/na)*TWOPI/nzperiod
 !!$        IF(NTV) thetap(ia,il)=thetap(ia,il)+iota*PI/nzperiod
 !!$        CALL FILL_BNODE(zetap(il),thetap(ia,il),dummy,B_al(ia,il),vds_al(:,ia,il),.FALSE.)
@@ -1087,9 +1122,9 @@ SUBROUTINE EXCLUDE_WELLS(na,nalpha,nalphab,nw,bottom,connected,&
 
 !-----------------------------------------------------------------------------------------------
 
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 
-  USE GLOBAL  
+  USE GLOBAL
   IMPLICIT NONE
   !Input
   LOGICAL bottom(nw),connected(nw,nw)
@@ -1130,7 +1165,7 @@ SUBROUTINE EXCLUDE_WELLS(na,nalpha,nalphab,nw,bottom,connected,&
         right(ja)=.TRUE.
      END IF
   END DO
-     
+
   !Ignore wells that are outside region of interest
   DO iw=1,nw
      IF(.NOT.bottom(iw)) CYCLE
@@ -1141,7 +1176,7 @@ SUBROUTINE EXCLUDE_WELLS(na,nalpha,nalphab,nw,bottom,connected,&
          & (z2(iw).LT.zetax(ia,1).OR.(zb(iw).LT.zetax(ia,1).AND.z2(iw)-z1(iw).GT.PI/nzperiod))) THEN
            Bb(iw)=1E10
            Bt(iw)=1E-9
-           DO jw=iw+1,nw 
+           DO jw=iw+1,nw
               IF(connected(jw,iw)) THEN
                  Bb(jw)=1E10
                  Bt(jw)=1E-9
@@ -1158,7 +1193,7 @@ SUBROUTINE EXCLUDE_WELLS(na,nalpha,nalphab,nw,bottom,connected,&
              & (zb(iw).GT.zetax(ia,nalphab).AND.z2(iw)-z1(iw).GT.PI/nzperiod))) THEN
            Bb(iw)=1E10
            Bt(iw)=1E-9
-           DO jw=iw+1,nw 
+           DO jw=iw+1,nw
               IF(connected(jw,iw)) THEN
                  Bb(jw)=1E10
                  Bt(jw)=1E-9
@@ -1169,7 +1204,7 @@ SUBROUTINE EXCLUDE_WELLS(na,nalpha,nalphab,nw,bottom,connected,&
   END DO
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-  
+
 END SUBROUTINE EXCLUDE_WELLS
 
 
@@ -1183,9 +1218,9 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
 !Create a lambda and one_lambda grids with nlambda elements and dlambdap spacing
 !from the values of the bottoms Bb and tops Bt of nw wells
 !(the extremes in lambda, lambdac_w and lambdab_w for each well are calculated)
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 
-  USE GLOBAL  
+  USE GLOBAL
   IMPLICIT NONE
   !Input
   INTEGER nlambda,nw
@@ -1210,9 +1245,9 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
   INTEGER ierr
 !  REAL*8 la(2,1)
 #endif
-  
+
   CALL CPU_TIME(tstart)
-  
+
   !Create uniform grid
   lambdab_w=1./Bb
   lambdab=MAXVAL(lambdab_w)
@@ -1231,7 +1266,7 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
 !!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MAXLOC,MPI_COMM_WORLD,ierr)
 !!$     glambdab=la(1,1)
      CALL MPI_BCAST(glambdac,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)
-     CALL MPI_BCAST(glambdab,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)     
+     CALL MPI_BCAST(glambdab,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)
 #endif
      dlambdap=(glambdab-glambdac)/nlambda
      lambda(1)=glambdac+INT((lambdac-glambdac)/dlambdap)*dlambdap
@@ -1247,7 +1282,7 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
 
   !Change to grid that is thinner closer to lambda
   IF(ILAGRID.AND..NOT.GLOBALFI) THEN
-     lambda(1) =lambdac  
+     lambda(1) =lambdac
      dlambda(1)=PREC_B*lambdac*lambdac
      DO ila=2,nlambda
         lambda(ila)=lambda(ila-1)+dlambda(ila-1)
@@ -1277,9 +1312,9 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
 
   WRITE(iout,'(" Velocity grid has size ",I4," in lambda")') nlambda
   WRITE(iout,'(" (lambda_c=",1pe23.16,", lambda_b=",1pe13.6,") ")') lambdac,lambdab
-  
+
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-  
+
 END SUBROUTINE CREATE_LAMBDA_GRID
 
 
@@ -1291,13 +1326,13 @@ SUBROUTINE LABEL_GRIDPOINTS(nalpha,nalphab,nlambda,nw,bottom,connected,&
      & alphap_w,z1,z2,Bb,Bt,lambda,zetap,zetax,thetax,B_al,npoint,i_l,i_w,i_p)
 
 !-----------------------------------------------------------------------------------------------
-!For a nalpha x nlambda grid, and nw wells characterized by the matrix of connections 
+!For a nalpha x nlambda grid, and nw wells characterized by the matrix of connections
 !connected, alphap_w, z1, z2, Bt Bb, determine number of points npoint, alpha, lambda and well
 !of each of them, i_l and i_w, and determine point number. i_p for each point of the extended
 !grid for each value of lambda
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 
-  USE GLOBAL  
+  USE GLOBAL
   IMPLICIT NONE
   !Input
   LOGICAL bottom(nw),connected(nw,nw)
@@ -1322,7 +1357,7 @@ SUBROUTINE LABEL_GRIDPOINTS(nalpha,nalphab,nlambda,nw,bottom,connected,&
   CALL CPU_TIME(tstart)
 
   !For each point in the (zeta,theta) extended grid, determine point
-  
+
   !Start by determine well label for each point
   one_o_lambda=1/lambda
   iwell=0
@@ -1393,23 +1428,23 @@ SUBROUTINE LABEL_GRIDPOINTS(nalpha,nalphab,nlambda,nw,bottom,connected,&
         END DO
      END DO
   END DO
-  
+
   IF(npoint.GT.npointx) THEN
      serr="npoint>npointx"
      CALL END_ALL(serr,.FALSE.)
   END IF
 
   !Contour conditions: for the points ignored in the first loop of the routine,
-  !use periodicity to find equivalent points that have been labelled 
+  !use periodicity to find equivalent points that have been labelled
   DO ia=1,nalpha
      DO il=1,nalphab
         alpp=(thetax(ia,il)-iota*zetax(ia,il))
-        !alpha=~0,=~0 
+        !alpha=~0,=~0
         DO iw=1,nw
            IF(bottom(iw).AND.ABS(alphap_w(iw)-alpp).LT.PREC_EXTR.AND.&
                 & ((zetax(ia,il).GT.z1(iw)))) EXIT
         END DO
-        IF(iw.EQ.nw+1) THEN           
+        IF(iw.EQ.nw+1) THEN
            dist=1E5
            DO ja=1,nalpha
               DO jl=1,nalphab
@@ -1422,19 +1457,19 @@ SUBROUTINE LABEL_GRIDPOINTS(nalpha,nalphab,nlambda,nw,bottom,connected,&
                        IF(one_o_lambda(ila).GT.B_al(ia,il)) THEN
                           dist=distt
                           i_p(  ila,ia,il)=i_p(  ila,ja,jl)
-                          iwell(ia,il,ila)=iwell(ja,jl,ila)                          
+                          iwell(ia,il,ila)=iwell(ja,jl,ila)
                        END IF
                     END DO
                  END IF
               END DO
            END DO
         END IF
-        !alpha=~2pi,zeta=~2pi/nzperiod  
+        !alpha=~2pi,zeta=~2pi/nzperiod
         DO iw=1,nw
            IF(bottom(iw).AND.ABS(alphap_w(iw)-alpp).LT.PREC_EXTR.AND.&
                 & ((zetax(ia,il).LT.z2(iw)))) EXIT
         END DO
-        IF(iw.EQ.nw+1) THEN           
+        IF(iw.EQ.nw+1) THEN
            dist=1E5
            DO ja=1,nalpha
               DO jl=1,nalphab
@@ -1454,10 +1489,10 @@ SUBROUTINE LABEL_GRIDPOINTS(nalpha,nalphab,nlambda,nw,bottom,connected,&
               END DO
            END DO
         END IF
-        
+
      END DO
   END DO
-  
+
   WRITE(iout,'(" Global grid ",I6," points")') npoint
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
@@ -1471,7 +1506,7 @@ END SUBROUTINE LABEL_GRIDPOINTS
 
 SUBROUTINE SORT_ALPHA(nalpha,nalphab,alphap,zetax,thetax,thetap,B_al,vds_al,j_al,nlambda,i_p)
 
-  USE GLOBAL  
+  USE GLOBAL
   IMPLICIT NONE
   !Input
   INTEGER nalpha,nalphab,nlambda
@@ -1482,7 +1517,7 @@ SUBROUTINE SORT_ALPHA(nalpha,nalphab,alphap,zetax,thetax,thetap,B_al,vds_al,j_al
   !Others
   INTEGER inm,isave,ialpha,ila,itemp(nalphab)
   REAL*8 temp(nalphab)
-  
+
   DO ialpha=1,nalpha
      IF(siota.GT.0) THEN
         isave=MINLOC(alphap(ialpha:nalpha),1)+ialpha-1
@@ -1528,13 +1563,13 @@ END SUBROUTINE SORT_ALPHA
  SUBROUTINE FIND_LAMBDA_NEIGHBOURS(npoint,nalpha,nalphab,nlambda,nw,nbifx,i_p,bottom,i_w,&
         & i_p_lm1,nbif,i_p_lp1)
 
-!----------------------------------------------------------------------------------------------- 
-!For each point i_p of npoint, find in nalpha x nlambda grid (with nbifx as maximum number of 
+!-----------------------------------------------------------------------------------------------
+!For each point i_p of npoint, find in nalpha x nlambda grid (with nbifx as maximum number of
 !inmediate neighbours at larger lambda), the neighbours in lambda i_p_lm1, nbif, i_p_lp1 are found
 !using that there are nw wells characterized by i_w and bottom
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 
-  USE GLOBAL  
+  USE GLOBAL
   IMPLICIT NONE
   !Input
   LOGICAL bottom(nw)
@@ -1554,7 +1589,7 @@ END SUBROUTINE SORT_ALPHA
   CALL CPU_TIME(tstart)
 
   !Default values are always npoint
-  i_p_lm1(1)=0    
+  i_p_lm1(1)=0
   i_p_lm1(2:npoint)=1
   !Decreasing lambda: one neighbour, since no bifurcations
   DO ia=1,nalpha
@@ -1562,10 +1597,10 @@ END SUBROUTINE SORT_ALPHA
         DO ila=2,nlambda
            ipoint=i_p(ila,ia,il)
            IF(ipoint.GT.1) i_p_lm1(ipoint)=MAX(i_p(ila-1,ia,il),i_p_lm1(ipoint))
-        END DO 
+        END DO
      END DO
   END DO
-  
+
   !Increasing lambda: several neighours are possible in a bifurcation
   nbif=0
   i_p_lp1=0
@@ -1603,14 +1638,14 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
      & i_p_ap1I,i_p_ap1II,i_p_ap2I,i_p_ap2II,i_p_ap2III,i_p_ap2IV,&
      & wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV,lambda,&
      & BI7,BI3,BI3b,BI3f,dlambda_lm1,dlambda_lp1)
-  
-!----------------------------------------------------------------------------------------------- 
+
+!-----------------------------------------------------------------------------------------------
 !For each point of npoint, located in nalpha x nlambda (alphap,one_o_lambda) grid,
 !i_p_am1, i_p_am2, i_p_ap1, i_p_ap2 are found
 !using that there are nw wells characterized by i_w, i_l, zlw, zrw, connected
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 
-  USE GLOBAL  
+  USE GLOBAL
   IMPLICIT NONE
   !Input
   INTEGER i_p(nlambda,nalpha,nalphab),i_w(npoint),i_l(npoint),i_p_lm1(npoint),i_p_lp1(nbifx,npoint)
@@ -1676,7 +1711,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
 !!$        END DO
 !!$     END DO
 !!$  END DO
-  
+
   !For each point in the (zeta,theta) grid, determine two neighbours in alpha
   i_p_ap1=0
   i_p_am1=0
@@ -1740,7 +1775,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
   END DO
 
   !When trajectories do not close in alpha, there may be problems, because no neighbour exist
-  !at same value of lambda. Here, two different models are implemented  
+  !at same value of lambda. Here, two different models are implemented
   IF(.NOT.CLOSEST_LAMBDA) THEN !Find largest lambda with closed trajectories in alpha
      jla=0
      DO ila=1,nlambda
@@ -1753,10 +1788,10 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
         END DO
         IF(nvec.EQ.ntot.AND.ila.GT.jla) jla=ila
      END DO
-  END IF  
+  END IF
   DO ipoint=2,npoint
      IF(i_p_ap1(ipoint).EQ.0) THEN
-        jpoint=ipoint        
+        jpoint=ipoint
         DO jla=i_l(ipoint),1,-1
            jpoint=i_p_lm1(jpoint)
            IF(jpoint.EQ.1) EXIT
@@ -1767,7 +1802,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
               EXIT
            END IF
         END DO
-     END IF          
+     END IF
      IF(i_p_am1(ipoint).EQ.0) THEN
         jpoint=ipoint
         DO jla=i_l(ipoint),1,-1
@@ -1820,7 +1855,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
 
   !Find neighbours at constant J
   DO ipoint=2,npoint
-     !id=-1, alpha_{i-1}; id=1, alpha_{i+1}     
+     !id=-1, alpha_{i-1}; id=1, alpha_{i+1}
      DO id=-1,1,2
         nwp=0
         wp=0
@@ -1852,7 +1887,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
            END IF
         END DO
         !Sum over W in old alpha, lambda+1, if needed
-        DO iwp=1,nwp(1) 
+        DO iwp=1,nwp(1)
            kpoint=wp(iwp,1)
            DO opoint=2,npoint
               IF((i_w(kpoint).EQ.i_w(opoint).OR.connected(i_w(kpoint),i_w(opoint)))&
@@ -1867,7 +1902,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
               END IF
            END DO
         END DO
-        !Sum over W in new alpha, if needed        
+        !Sum over W in new alpha, if needed
         DO kpoint=2,npoint
            IF(id.LT.0) THEN
               lpoint=i_p_ap1(kpoint)
@@ -1885,7 +1920,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
               wp(1,3)=i_p_am1(ipoint)
            ELSE
               wp(1,3)=i_p_ap1(ipoint)
-           END IF           
+           END IF
         END IF
 
         !Scan in lambda towards lambda_c at new alpha
@@ -1924,7 +1959,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
            DO iwp=1,nwp(3)
               Jnew=Jnew+BI6(wp(iwp,3))
            END DO
-           IF(Jnew.GT.Jlambda) EXIT           
+           IF(Jnew.GT.Jlambda) EXIT
         END DO
         !Calculate J in new alpha
         Jnew=0
@@ -1980,7 +2015,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
                    (Jold.LT.Jlambda.AND.ila.EQ.1))) THEN
                  DO iwp=1,nwp(1)
                     jpoint=wp(iwp,1)
-                    IF(Jnew.GT.Jlambda.AND.i_p_lp1(1,imax(4)).EQ.0& 
+                    IF(Jnew.GT.Jlambda.AND.i_p_lp1(1,imax(4)).EQ.0&
                          & .AND.wm1I(jpoint).LT.1) CYCLE
                     IF(Jold.LT.Jlambda.AND.ila.EQ.1 &
                          & .AND.wm1I(jpoint).LT.1) CYCLE
@@ -2019,7 +2054,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
                    (Jold.LT.Jlambda.AND.ila.EQ.1))) THEN
                  DO iwp=1,nwp(1)
                     jpoint=wp(iwp,1)
-                    IF(Jnew.GT.Jlambda.AND.i_p_lp1(1,imax(4)).EQ.0& 
+                    IF(Jnew.GT.Jlambda.AND.i_p_lp1(1,imax(4)).EQ.0&
                          & .AND.wp1I(jpoint).LT.1) CYCLE
                     IF(Jold.LT.Jlambda.AND.ila.EQ.1 &
                          & .AND.wp1I(jpoint).LT.1) CYCLE
@@ -2066,7 +2101,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
      !id=-1
      Jnew=0
      Jmax=0
-     imax=0     
+     imax=0
      DO jpoint=2,npoint
         IF(i_p_ap1(jpoint).EQ.ipoint) THEN
            Jnew=Jnew+BI6(jpoint)
@@ -2114,13 +2149,13 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
 !     IF(i_p_am1I(ipoint).EQ.1) wm1I(ipoint)=0.0
 !     IF(i_p_ap1I(ipoint).EQ.1) wp1I(ipoint)=0.0
 !  END DO
-  
+
   !Check JL
   DO ipoint=1,npoint
      IF(i_p_am1II(ipoint).EQ.0) i_p_am1II(ipoint)=1
      IF(i_p_ap1II(ipoint).EQ.0) i_p_ap1II(ipoint)=1
   END DO
-  
+
   !Look for value of dalpha at other values of lambda
 123 DO ipoint=2,npoint
      IF(dalpha_am1(ipoint).LT.PREC_EXTR) THEN
@@ -2167,7 +2202,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
      END IF
   END DO
 
-  
+
 
   IF(NEW_DALPHA) THEN
      DO ipoint=2,npoint
@@ -2181,7 +2216,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
                  i_p_am1II(ipoint)=jpoint
                  mdlBI1opsitb(ipoint)=-BI6(jpoint)
                  mdlBI1opsitb(ipoint)=mdlBI1opsitb(ipoint)+BI6(ipoint)
-!                 DO ibif=1,nbif(jpoint)                    
+!                 DO ibif=1,nbif(jpoint)
 !                    mdlBI1opsitb(ipoint)=mdlBI1opsitb(ipoint)+BI6(i_p_lp1(ibif,jpoint))
 !                 END DO
                  mdlBI1opsitb(ipoint)=mdlBI1opsitb(ipoint)/dlambda_lm1(ipoint)/(-sgnb)
@@ -2190,7 +2225,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
                  jpoint=i_p_lp1(1,ipoint)
                  i_p_am1II(ipoint)=jpoint
                  mdlBI1opsitb(ipoint)=-BI6(ipoint)
-                 DO ibif=1,1!nbif(ipoint)                    
+                 DO ibif=1,1!nbif(ipoint)
                     mdlBI1opsitb(ipoint)=mdlBI1opsitb(ipoint)+BI6(i_p_lp1(ibif,ipoint))
                  END DO
                  mdlBI1opsitb(ipoint)=mdlBI1opsitb(ipoint)/dlambda_lp1(ipoint)/(-sgnb)
@@ -2206,7 +2241,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
                  i_p_ap1II(ipoint)=jpoint
                  mdlBI1opsitf(ipoint)=-BI6(jpoint)
                  mdlBI1opsitf(ipoint)=mdlBI1opsitf(ipoint)+BI6(ipoint)
-!                 DO ibif=1,nbif(jpoint)                    
+!                 DO ibif=1,nbif(jpoint)
 !                    mdlBI1opsitf(ipoint)=mdlBI1opsitf(ipoint)+BI6(i_p_lp1(ibif,jpoint))
 !                 END DO
                  mdlBI1opsitf(ipoint)=mdlBI1opsitf(ipoint)/dlambda_lm1(ipoint)/(-sgnb)
@@ -2215,7 +2250,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
                  jpoint=i_p_lp1(1,ipoint)
                  i_p_ap1II(ipoint)=jpoint
                  mdlBI1opsitf(ipoint)=-BI6(ipoint)
-                 DO ibif=1,1!nbif(ipoint)                    
+                 DO ibif=1,1!nbif(ipoint)
                     mdlBI1opsitf(ipoint)=mdlBI1opsitf(ipoint)+BI6(i_p_lp1(ibif,ipoint))
                  END DO
                  mdlBI1opsitf(ipoint)=mdlBI1opsitf(ipoint)/dlambda_lp1(ipoint)/(-sgnb)
@@ -2285,7 +2320,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
                        & *BI7(ipoint)/dalpha_ap1(ipoint)
 !     IF(i_p_ap1I(ipoint).NE.0.AND.i_p_ap1I(ipoint).NE.0.AND.wp1I(ipoint).LT.-100) &
 !   & BI3f(ipoint)=BI3(ipoint)/(mdlBI1opsitf(ipoint)/BI7(ipoint))
-        
+
      IF(i_p_am1I(ipoint).NE.0.AND.i_p_am1I(ipoint).NE.0.AND.wm1I(ipoint).GT.-100) &
           &  BI3b(ipoint)=(     lambda(i_l((ipoint)))&
           &       -wm1I(ipoint)*lambda(i_l((i_p_am1I(ipoint))))&
@@ -2293,7 +2328,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
           &  *BI7(ipoint)/dalpha_am1(ipoint)
 !     IF(i_p_am1I(ipoint).NE.0.AND.i_p_am1I(ipoint).NE.0.AND.wm1I(ipoint).LT.-100) &
 !          &  BI3b(ipoint)=BI3(ipoint)/(mdlBI1opsitb(ipoint)/BI7(ipoint))
-  END DO 
+  END DO
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
@@ -2308,20 +2343,20 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
                          & zb,tb,Bb,hBppb,vdb,z2,t2,B2,hBpp2,vd2,&
                          & nlambda,lambda,zlw,tlw,zrw,trw, &
                          & BI1,BI2,BI3,BI4,BI5,BI6,BI7,nmodes,BI8)
-!----------------------------------------------------------------------------------------------- 
-!For npoints characterized by i_w,i_l, with bounce points zlw, tlw, zrw and trw, located in nw 
+!-----------------------------------------------------------------------------------------------
+!For npoints characterized by i_w,i_l, with bounce points zlw, tlw, zrw and trw, located in nw
 !wells characterized by z,t,B,hBpp and vd at extremes 1, 2 and b, and in a lambda grid of size
 !nlambda, calculate bounce integrals BI1, BI2, BI3, BI4, BI5, BI6, BI7 and BI8, the latter with
 !size nmodes
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 
-  USE GLOBAL  
+  USE GLOBAL
   IMPLICIT NONE
   !Input
   INTEGER npoint,i_w(npoint),i_l(npoint),nw,nlambda,nmodes
   REAL*8 z1(nw),t1(nw),B1(nw),hBpp1(nw),vd1(nqv,nw)
-  REAL*8 zb(nw),tb(nw),Bb(nw),hBppb(nw),vdb(nqv,nw) 
-  REAL*8 z2(nw),t2(nw),B2(nw),hBpp2(nw),vd2(nqv,nw) 
+  REAL*8 zb(nw),tb(nw),Bb(nw),hBppb(nw),vdb(nqv,nw)
+  REAL*8 z2(nw),t2(nw),B2(nw),hBpp2(nw),vd2(nqv,nw)
   REAL*8 lambda(nlambda),zlw(npoint),tlw(npoint),zrw(npoint),trw(npoint)
   !Output
   REAL*8 BI1(npoint),BI2(npoint),BI3(npoint),BI4(npoint),BI5(npoint),BI6(npoint),BI7(npoint)
@@ -2357,7 +2392,7 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
      BI2(ipoint)=Q(2)
      BI3(ipoint)=Q(3)
      BI4(ipoint)=Q(4)
-     BI5(ipoint)=Q(5)  
+     BI5(ipoint)=Q(5)
      BI6(ipoint)=Q(6)
      BI7(ipoint)=Q(7)
      IF(SOLVE_QN) BI8(ipoint,1:nmodes)=Q(8:nq)
@@ -2377,8 +2412,11 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
 !!$          &  BI4(ipoint),BI5(ipoint),BI6(ipoint),BI7(ipoint),BI8(ipoint,1),&
 !!$          & npoint,zlw(ipoint),tlw(ipoint),zrw(ipoint),trw(ipoint)
 !!$  END DO
-  
+
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+
+
+  IF ( ALLOCATED(Q) ) DEALLOCATE(Q)
 
 END SUBROUTINE COEFFICIENTS_DKE
 
@@ -2389,13 +2427,13 @@ END SUBROUTINE COEFFICIENTS_DKE
 #ifdef MPIandPETSc
 
 SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb,matDIFf,matDIFb)
- 
-!----------------------------------------------------------------------------------------------- 
+
+!-----------------------------------------------------------------------------------------------
 !Initialize linear problem of size npoint and nnz with PETSc: ksp and matrices matCOL, matVEAf
 !matVEAb, matVMAf, matVMAb
-!-----------------------------------------------------------------------------------------------    
-                    
-  USE GLOBAL  
+!-----------------------------------------------------------------------------------------------
+
+  USE GLOBAL
   USE petscsys
   USE petscksp
   IMPLICIT NONE
@@ -2442,7 +2480,7 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
         CALL MatDestroy(matVMAb,ierr)
      END IF
   END IF
-  
+
   !Number of non-zero elements per row
   DO iz=1,npoint
      innz(iz-1)=nnz(iz)
@@ -2504,7 +2542,7 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
      CALL MatSeqAIJSetPreallocation(matDIFb,npalpha,PETSC_NULL_INTEGER,ierr)
      CALL MatSetup(matDIFb,ierr)
   END IF
-  
+
 !!$  CALL KSPCreate(PETSC_COMM_WORLD,ksp,ierr)
 !!$  CALL KSPSetTolerances(ksp,TOL,ATOL,PETSC_DEFAULT_REAL,MAXITS,ierr)
 !!$!  CALL KSPSetType(ksp,KSPPREONLY,ierr)
@@ -2527,7 +2565,7 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
 !!$!#endif
 !!$  ELSE
 !!$     CALL KSPSetType(ksp,KSPGMRES,ierr)
-!!$     CALL KSPGetPC(ksp,pc,ierr)     
+!!$     CALL KSPGetPC(ksp,pc,ierr)
 !!$!     CALL PCSetType(pc,PCJACOBI,ierr)
 !!$     CALL PCSetType(pc,PCILU,ierr)
 !!$     CALL PCFactorSetLevels(pc,2,ierr)
@@ -2549,7 +2587,7 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
 !  CALL PCFactorSetMatSolverType(pc,MATSOLVERMUMPS,ierr)
 !  CALL PCFactorSetUpMatSolverType(pc,ierr)
 !  CALL PCFactorSetFill(pc,factor,ierr)
-  
+
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE INIT_LINEAR_PROBLEM
@@ -2570,15 +2608,15 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
      & lambda,dlambda_lm1,dlambda_lp1,i_p_lm1,nbif,nbifx,i_p_lp1,&
      & BI1,BI2,BI4,BI5,BI3oBI7,matCOL,matVEAf,matVEAb,matVMAf,matVMAb,nnz,flag_nnz,matDIFf,matDIFb)
 
-!----------------------------------------------------------------------------------------------- 
-!Fill row ipoint of npoint of several matrixes (matCOL, matVEAf, matVEAb, matVMAf, matVMAb), 
+!-----------------------------------------------------------------------------------------------
+!Fill row ipoint of npoint of several matrixes (matCOL, matVEAf, matVEAb, matVMAf, matVMAb),
 !with nnz non-zero elements, using spacing dlambda_lm1, dlambda_lp1, dalpha, factors
 !factDKErhs, lambda, Epsi/vdconst, neighbours i_p_am1, i_p_ap1, i_p_lm1, nbif neighbours
 !i_p_lp1(:) and coefficients BI[1-5]
 !If flag_nnz, use this routine to calculate nnz only
-!-----------------------------------------------------------------------------------------------  
-                      
-  USE GLOBAL  
+!-----------------------------------------------------------------------------------------------
+
+  USE GLOBAL
   IMPLICIT NONE
   !Input
   LOGICAL flag_nnz
@@ -2606,7 +2644,7 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
 !  REAL*8 tstart
 
 !  CALL CPU_TIME(tstart)
-  
+
   j_p_lm1=i_p_lm1(ipoint)
   IF(j_p_lm1.EQ.1.AND.i_p_lp1(1,ipoint).EQ.0) THEN
      WRITE(serr,"(A7,I5,A9)") "Orbit ",ipoint, " isolated"
@@ -2624,13 +2662,13 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
         DO jbif=1,nbif(jpoint)
            j_p_lp1=i_p_lp1(jbif,jpoint)
            j_p_lp2=i_p_lp1(1  ,j_p_lp1)
-           IF(j_p_lp2.EQ.0) CYCLE 
+           IF(j_p_lp2.EQ.0) CYCLE
            nnz=nnz+1
            IF(jpoint.NE.ipoint) nnz=nnz+1
         END DO
      END DO
   END IF
-  
+
   IF(nnz.NE.1) THEN
      IF(CENTERED_ALPHA) THEN
         nnz=nnz+4
@@ -2651,7 +2689,7 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
      b=BI2(ipoint)
   ELSE
      a=0.5*(3*BI2(ipoint)/lambda-BI1*lambda*SQRT(lambda))
-     b=BI2(ipoint)        
+     b=BI2(ipoint)
   END IF
 
 !  IF(KROOK_OP) THEN
@@ -2691,7 +2729,7 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
 !!$           IF(j_p_lm1.EQ.1) THEN
 !!$              fourdlambda2=dlambda_lp1(jpoint)*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1))
 !!$           ELSE
-!!$              fourdlambda2=twodlambda*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1)) 
+!!$              fourdlambda2=twodlambda*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1))
 !!$           END IF
 !!$           matCOL(j_p_lp2)=matCOL(j_p_lp2)+bp/fourdlambda2
 !!$           matCOL(jpoint) =matCOL(jpoint) -bp/fourdlambda2
@@ -2720,8 +2758,8 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
      ELSE
         j_p_lm2=i_p_lm1(j_p_lm1)
         bm=BI2(j_p_lm1)
-        fourdlambda2=(dlambda_lp1(j_p_lm1)+dlambda_lm1(j_p_lm1))*twodlambda 
-        matCOL(j_p_lm2)=bm/fourdlambda2  
+        fourdlambda2=(dlambda_lp1(j_p_lm1)+dlambda_lm1(j_p_lm1))*twodlambda
+        matCOL(j_p_lm2)=bm/fourdlambda2
         matCOL(ipoint)=-bm/fourdlambda2
      END IF
      DO ibif=1,nbif(j_p_lm1)
@@ -2735,7 +2773,7 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
            IF(PREC_TOP.AND.j_p_lm1.EQ.1) THEN
               fourdlambda2=dlambda_lp1(jpoint)*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1))
            ELSE
-              fourdlambda2=twodlambda*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1)) 
+              fourdlambda2=twodlambda*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1))
            END IF
            matCOL(j_p_lp2)=bp/fourdlambda2
            matCOL(jpoint)=matCOL(jpoint)-bp/fourdlambda2
@@ -2755,7 +2793,7 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
 !!$           matVEAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*&
 !!$                & (dalpha_ap1+dalpha_ap2)/denom)
 !!$           matVEAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*&
-!!$                & (dalpha_ap1+dalpha_ap2)/denom)                      
+!!$                & (dalpha_ap1+dalpha_ap2)/denom)
 !!$           matVEAf(ipoint )=+d*&
 !!$                & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))&
 !!$                & /denom
@@ -2813,9 +2851,9 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
         matVEAb(i_p_am1II)=matVEAb(i_p_am1II)+wm1II*(-d/dalpha_am1)
         matVEAb(ipoint )         =+d/dalpha_am1
      END IF
-     
+
      IF(TANG_VM) THEN
-        d=-BI4 
+        d=-BI4
         IF(d.LT.0) THEN
 !!$              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
 !!$                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
@@ -2848,7 +2886,7 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
                  END IF
 
 !!$              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
-!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2) 
+!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
 !!$                 matVMAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
 !!$                 matVMAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
 !!$                 matVMAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
@@ -2972,8 +3010,8 @@ SUBROUTINE FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
 
 !-----------------------------------------------------------------------------------------------
 !Use precalculated matrices matCOL, matVEAf, matVEAb, matVMAf, matVMAb and factors Epsi, nu(jv)
-!and vdconst(jv) to create linear system ksp  
-!-----------------------------------------------------------------------------------------------  
+!and vdconst(jv) to create linear system ksp
+!-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
   USE petscsys
@@ -2997,7 +3035,7 @@ SUBROUTINE FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
   PetscReal, PARAMETER :: damping=1E-10
   Mat matA!,matA2
   PC pc
-  INTEGER, PARAMETER :: MAXITS= 1000000 
+  INTEGER, PARAMETER :: MAXITS= 1000000
   REAL*8, PARAMETER :: ATOL=1E-17
   REAL*8, PARAMETER :: RTOL =1E-12
   !Time
@@ -3015,7 +3053,7 @@ SUBROUTINE FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
 !  CALL MatSetup(matA,ierr)
 
   CALL MatDuplicate(matCOL,MAT_COPY_VALUES,matA,ierr)
-!  CALL MatDuplicate(matCOL,MAT_DO_NOT_COPY_VALUES,matA,ierr) 
+!  CALL MatDuplicate(matCOL,MAT_DO_NOT_COPY_VALUES,matA,ierr)
 !  factor=nu(jv)
 !  CALL MatAXPY(matA,factor,matCOL,SUBSET_NONZERO_PATTERN,IERR)
   factor=sgnB*Epsi/nu(jv)
@@ -3073,7 +3111,7 @@ END SUBROUTINE FILL_MATRIX_PETSC
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#else 
+#else
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -3082,7 +3120,7 @@ SUBROUTINE FILL_MATRIX(npoint,COL,jv,Epsi,VEAf,VEAb,VMAf,VMAb,mat)
 !-----------------------------------------------------------------------------------------------
 !Use precalculated matrices COL, VEAf, VEAb, VMAf, VMAb and factors Epsi, nu(jv) and vmconst(jv)
 !to create matrix mat
-!-----------------------------------------------------------------------------------------------  
+!-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
   IMPLICIT NONE
@@ -3100,7 +3138,7 @@ SUBROUTINE FILL_MATRIX(npoint,COL,jv,Epsi,VEAf,VEAb,VMAf,VMAb,mat)
   REAL*8 tstart
 
   CALL CPU_TIME(tstart)
-  
+
   mat=COL
   IF(sgnB*Epsi.LT.0) THEN
      mat=mat+VEAb*sgnB*Epsi/nu(jv)
@@ -3131,7 +3169,7 @@ SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,mata,BI3,BI8,factnu,phi1c,ksp,g
 !-----------------------------------------------------------------------------------------------
 !Fill rhs with some linear combination (depending on phi1c,jv...) of arrays BI3 and BI8 of size
 !npoint and invert linear system ksp to obtain g. Use nalphab to skip some helicities in phi1c
-!-----------------------------------------------------------------------------------------------  
+!-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
   use petscsys
@@ -3182,7 +3220,7 @@ SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,mata,BI3,BI8,factnu,phi1c,ksp,g
   CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,npoint_ps,vecb2,ierr)
   CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,npoint_ps,vecb,ierr)
   CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,npoint_ps,vecx,ierr)
-  
+
   !Scan in possible rhs of the DKE·
   !(corresponding to different contributions the the radial ExB from varphi1)
   DO irhs=1,Nnmp  !Skip helicities too large for the alpha precision
@@ -3202,7 +3240,7 @@ SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,mata,BI3,BI8,factnu,phi1c,ksp,g
      ELSE !radial ExB drift
         c=BI8(:,irhs)/vdconst(jv)
      END IF
-     CALL VecSetValues(vecb,npoint_ps,indx,c,INSERT_VALUES,ierr)      
+     CALL VecSetValues(vecb,npoint_ps,indx,c,INSERT_VALUES,ierr)
      CALL VecAssemblyBegin(vecb,ierr)
      CALL VecAssemblyEnd(vecb,ierr)
      !Solve
@@ -3225,31 +3263,31 @@ SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,mata,BI3,BI8,factnu,phi1c,ksp,g
            g=g2
         END IF
      END IF
-     
+
 !     CALL KSPView(ksp,PETSC_VIEWER_STDOUT_WORLD,ierr)
 !     CALL PetscMemoryGetCurrentUsage(ierr)
 !     CALL PetscViewerASCIIOpen(MPI_COMM_WORLD,'filename.xml',viewer,ierr)
 !     CALL PetscViewerPushFormat(viewer,PETSC_VIEWER_DEFAULT,ierr)
 !     CALL PetscLogView(viewer,ierr)
      !Distribution function at each point
-     gint(:,irhs)=factnu*g*vdconst(jv)/nu(jv)     
+     gint(:,irhs)=factnu*g*vdconst(jv)/nu(jv)
 !     gint(:,irhs+1)=gint(:,irhs+1)+g*Sdke(jv)*weight(jv)
      IF(ierr.NE.0) THEN
         serr="Error when inverting the DKE"
         CALL END_ALL(serr,.FALSE.)
      END IF
-     
+
      IF(.NOT.SOLVE_QN) EXIT
   END DO
   IF(ESCOTO.OR.ABS(BI3(npoint)).GT.0) CALL KSPDestroy(ksp,ierr)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-  
+
 END SUBROUTINE INVERT_MATRIX_PETSC
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#else 
+#else
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -3259,7 +3297,7 @@ SUBROUTINE INVERT_MATRIX(nalphab,jv,npoint,BI3,BI8,phi1c,mat,gint)
 !Fill rhs with some linear combination (depending on phi1c,jv...) of arrays BI3 and BI8 of size
 !npoint and invert linear system with matrix mat to obtain g.
 !Use nalphab to skip some helicities in phi1c
-!-----------------------------------------------------------------------------------------------  
+!-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
   IMPLICIT NONE
@@ -3283,7 +3321,7 @@ SUBROUTINE INVERT_MATRIX(nalphab,jv,npoint,BI3,BI8,phi1c,mat,gint)
   CALL CPU_TIME(tstart)
 
   phi1c=phi1c !To be removed
-    
+
   DO irhs=1,Nnmp  !Skip helicities too large for the alpha precision
      IF(irhs.GT.1.AND.(ABS(ext_np(irhs)).GT.nalphab/nsamp.OR.ABS(ext_mp(irhs)).GT.nalphab/nsamp))&
           & CYCLE
@@ -3298,11 +3336,11 @@ SUBROUTINE INVERT_MATRIX(nalphab,jv,npoint,BI3,BI8,phi1c,mat,gint)
         rhs=BI8(:,irhs)/vdconst(jv)
      END IF
      !Solve
-     CALL DGETRF(npoint,npoint,mat,npoint,ipivot,ierr) 
+     CALL DGETRF(npoint,npoint,mat,npoint,ipivot,ierr)
      CALL DGETRS('No transpose',npoint,1,mat,npoint,ipivot,rhs,npoint,ierr)
      g=rhs
      !Distribution function at each point
-     gint(:,irhs)=g*vdconst(jv)/nu(jv)     
+     gint(:,irhs)=g*vdconst(jv)/nu(jv)
 !     gint(:,irhs+1)=gint(:,irhs+1)+g*Sdke(jv)*weight(jv)
      IF(ierr) THEN
         serr="Error when inverting the DKE"
@@ -3328,12 +3366,12 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
 !Calculate contribution D11, dn1 and dn1nm to the flux and to quasineutrality,
 ! by integrating in lambda grid of nlambda size the distribution function g known at npoints, i_p.
 ! The integral is calculated in (zetap,thetap) grid of size nalphabxnalpha using precalculated values
-! of B_al and vds_al, and then interpolated to a (zetap,thetap) square grid, where flux-surface 
+! of B_al and vds_al, and then interpolated to a (zetap,thetap) square grid, where flux-surface
 !average is done for the flux
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
-  USE KNOSOS_STELLOPT_MOD  
+  USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
   !Input
   LOGICAL notg
@@ -3368,13 +3406,13 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
 #endif
 
   CALL CPU_TIME(tstart)
-     
+
   PRE_INTV=(SOLVE_AMB.OR.(SOLVE_QN.AND..NOT.PHI1_READ.AND..NOT.ZERO_PHI1).OR.NERR.GT.1).AND.CONVERGED
   D11=0
   dn1=0
   dn1nm=0
   IF(DEBUG) THEN
-     DO ipoint=1,npoint  
+     DO ipoint=1,npoint
         WRITE(3500+myrank,'(I6,1(1pe13.5),2I6)') ipoint,g(ipoint,1),nalpha,nlambda
      END DO
   END IF
@@ -3424,7 +3462,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
         thetape(2*nalpha+1: tnalpha,il)=thetap(1:nalpha,il)
      END IF
   END DO
-  
+
   !Precalculate quantities
   lambda1=lambda(1)
   dlambda=lambda(2)-lambda1
@@ -3441,15 +3479,15 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
      D11_alp=0
      IF(QN) dn1_alp=0
      !Scan in the flux surface
-     DO ia=1,nalpha 
+     DO ia=1,nalpha
         IF(.NOT.PRE_INTV.AND.ipoint.GT.1) EXIT
         !Scan in the flux surface
-        DO il=1,nalphab 
+        DO il=1,nalphab
            ial=(il-1)*nalpha+ia
            kla=-1
            modB=B_al(ia,il)
            one_o_modB=1./modB
-           jla=INT((one_o_modB-lambda1)/dlambda)        
+           jla=INT((one_o_modB-lambda1)/dlambda)
            IF(jla.LE.1) jla=2
            IF(jla.NE.0) fdlambda=(one_o_modB-lambda(jla))/dlambda
            kpoint=1
@@ -3457,7 +3495,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
            DO ila=jla,2,-1
               jpoint=i_p(ila,ia,il)
               fint=1
-              IF(jpoint.LE.1) THEN 
+              IF(jpoint.LE.1) THEN
                  jpoint=kpoint
                  IF(jpoint.LE.1) CYCLE
                  fint=(ila-1.)/(kla-1.)
@@ -3467,7 +3505,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
               END IF
               IF(PRE_INTV.AND.jpoint.NE.ipoint) CYCLE
 !              IF(DEBUG.AND.ipoint.EQ.1) WRITE(3453+myrank,'(5(1pe13.5),10I6)') &
-!                   & zetap(il),thetap(ia,il),lambda(1),g(1,1)-g(1,1)              
+!                   & zetap(il),thetap(ia,il),lambda(1),g(1,1)-g(1,1)
               fhdlambda2=0.5*fdlambda*fdlambda
               IF(ila.EQ.jla) THEN
                  fint=fint*(F5o12+fdlambda+fhdlambda2)
@@ -3498,7 +3536,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
                        D11_alp(ial)=D11_alp(ial)+g(jpoint,1)*&
                             & modB/(lambda(ila)*lambda(ila)*lambda(ila)*sqrt1mlb)*vds_al(1,ia,il)
                     END IF
-                    IF(QN) dn1_alp(ial)=dn1_alp(ial)+g(jpoint,1)*d3vdlambdadK        
+                    IF(QN) dn1_alp(ial)=dn1_alp(ial)+g(jpoint,1)*d3vdlambdadK
                  END IF
               END IF
            END DO
@@ -3509,17 +3547,17 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
  !                & zetap(il),thetap(ia,il),dn1_alp(ial),D11_alp(ial),vds_al(1,ia,il)
         END DO
      END DO
-     
+
      IF(DEBUG) THEN
         DO ia=1,nalpha
            DO il=1,nalphab
               ial=(il-1)*nalpha+ia
               WRITE(3700+myrank,'(3(1pe13.5),2I6)') &
-                  & zetap(il),thetap(ia,il),D11_alp(ial),il,ia           
+                  & zetap(il),thetap(ia,il),D11_alp(ial),il,ia
            END DO
         END DO
      ENDIF
-     
+
      !Copy values to extended grid and interpolate to square grid
      dn1_zt=0
      DO il=1,nalphab
@@ -3541,7 +3579,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
               dn1_ale(2*nalpha+1: tnalpha)=dn1_alp(ial+1:ial+nalpha)
            END IF
         END IF
-        
+
         !Interpolation to square grid
         DO ia=1,nalphab
            D11_zt(ia,il)=0
@@ -3560,12 +3598,12 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
      D11p(1,ipoint)=FSA(nalphab,nalphab,D11_zt,Jac,1)
      IF(QN) THEN
         DO nm=2,Nnmp
-           IF(ONLY_PHI1) EXIT 
+           IF(ONLY_PHI1) EXIT
            D11p(nm,ipoint)=FSA(nalphab,nalphab,dn1_zt*2*vds_zt(nm,:,:),Jac,1)
         END DO
         DO ia=1,nalphab
            DO il=1,nalphab
-              dn1c_zt(il,ia)=dn1_zt(ia,il)              
+              dn1c_zt(il,ia)=dn1_zt(ia,il)
            END DO
         END DO
         CALL FFTF_KN(nalphab,dn1c_zt,dn1c_nm)
@@ -3590,7 +3628,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
 !     CALL DGEMM('n','n',Nnmp,Nnmp,npoint-1,ONE,&
 !          & D11p(:,1:npoint-1)  ,Nnmp,g(1:npoint-1,:),npoint-1,ZERO,D11,Nnmp)
 !     IF(QN) CALL DGEMM('n','n',Nnmp,Nnmp,npoint-1,ONE,&
-!          & dn1nmp(:,1:npoint-1),Nnmp,g(1:npoint-1,:),npoint-1,ZERO,dn1nm,Nnmp) 
+!          & dn1nmp(:,1:npoint-1),Nnmp,g(1:npoint-1,:),npoint-1,ZERO,dn1nm,Nnmp)
   ELSE
      D11(1,1)=D11p(1,1)
      IF(QN) THEN
@@ -3602,6 +3640,11 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
  CALCULATED_INT=.TRUE.
 
  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+
+
+ IF ( ALLOCATED(thetape)) DEALLOCATE(thetape)
+ IF ( ALLOCATED(vds_zt)) DEALLOCATE(vds_zt)
+
 
 END SUBROUTINE INTEGRATE_G
 
@@ -3617,12 +3660,12 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
 !Calculate contribution D11 to the flux
 ! by integrating in lambda grid of nlambda size the distribution function g known at npoints, i_p.
 ! The integral is calculated in (zetap,thetap) grid of size nalphabxnalpha using precalculated values
-! of B_al and vds_al, and then interpolated to a (zetap,thetap) square grid, where flux-surface 
+! of B_al and vds_al, and then interpolated to a (zetap,thetap) square grid, where flux-surface
 !average is done for the flux
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
-  USE KNOSOS_STELLOPT_MOD  
+  USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
   !Input
   LOGICAL notg
@@ -3651,22 +3694,22 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
 #endif
 
   CALL CPU_TIME(tstart)
-     
+
   D11=0
   IF(DEBUG) THEN
-     DO ipoint=1,npoint  
+     DO ipoint=1,npoint
         WRITE(3500+myrank,'(I6,1(1pe13.5),2I6)') ipoint,g(ipoint),nalpha,nlambda
      END DO
   END IF
-  
+
   !Precalculate quantities
   lambda1=lambda(1)
   dlambda=lambda(2)-lambda1
-  
+
   D11_alp=0
   !Scan in the flux surface
-  DO ia=1,nalpha 
-     DO il=1,nalphab 
+  DO ia=1,nalpha
+     DO il=1,nalphab
         modB=B_al(ia,il)
         one_o_modB=1./modB
         DO ila=1,nlambda
@@ -3709,7 +3752,7 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
            D11_alp(ia,il)=D11_alp(ia,il)+dD11-doffset
         END DO
         D11_alp(ia,il)=D11_alp(ia,il)*dlambda+offset
-        
+
         IF(DEBUG) WRITE(3451+myrank,'(2I6,6(1pe13.5),10I6)') &
              & il,ia,D11_alp(ia,il),vds_al(ia,il)
      END DO
@@ -3744,15 +3787,15 @@ SUBROUTINE FILL_ORBI(numz,numt,qnmc_in,num,qnm_out)
   INTEGER n,m,nm,ind1,ind2,ind3,ind4
   REAL*8 qorbic(-ntorb:ntorb,0:mpolb),qorbis(-ntorb:ntorb,0:mpolb)
   REAL*8 qorbic_temp(-ntorb:ntorb,-mpolb:mpolb),qorbis_temp(-ntorb:ntorb,-mpolb:mpolb)
-  
+
   qorbic_temp=0
   qorbis_temp=0
   qorbic    =0
   qorbis    =0
-  
+
   DO m=-mpolb,mpolb
      DO n=-ntorb,ntorb
-        IF(n.EQ.0.OR.m.EQ.0) THEN 
+        IF(n.EQ.0.OR.m.EQ.0) THEN
            IF(m.EQ.0.AND.n.EQ.0) THEN
               qorbic_temp(0,0)=REAL(qnmc_in(1,1))
               qorbis_temp(0,0)=AIMAG(qnmc_in(1,1))
@@ -3892,7 +3935,7 @@ END SUBROUTINE FILL_ORBI
 !!$           IF(j_p_lm1.EQ.1) THEN
 !!$              fourdlambda2=dlambda_lp1(jpoint)*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1))
 !!$           ELSE
-!!$              fourdlambda2=twodlambda*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1)) 
+!!$              fourdlambda2=twodlambda*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1))
 !!$           END IF
 !!$           matCOL(j_p_lp2)=matCOL(j_p_lp2)+bp/fourdlambda2
 !!$           matCOL(jpoint) =matCOL(jpoint) -bp/fourdlambda2
@@ -3945,7 +3988,7 @@ END SUBROUTINE FILL_ORBI
 !!$           matVEAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*&
 !!$                & (dalpha_ap1+dalpha_ap2)/denom)
 !!$           matVEAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*&
-!!$                & (dalpha_ap1+dalpha_ap2)/denom)                      
+!!$                & (dalpha_ap1+dalpha_ap2)/denom)
 !!$           matVEAf(ipoint )=+d*&
 !!$                & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))&
 !!$                & /denom
@@ -3991,9 +4034,9 @@ END SUBROUTINE FILL_ORBI
 !!$           matVMAb(i_p_am1I)  =wm1I  *(-8*d/denom)
 !!$           matVMAb(i_p_am1II) =wm1II *(-8*d/denom)
 !!$           matVMAb(i_p_am2I)  =wm2I  *(  +d/denom)
-!!$           matVMAb(i_p_am2II) =wm2II *(  +d/denom)  
+!!$           matVMAb(i_p_am2II) =wm2II *(  +d/denom)
 !!$           matVMAb(i_p_am2III)=wm2III*(  +d/denom)
-!!$           matVMAb(i_p_am2IV) =wm2IV *(  +d/denom)  
+!!$           matVMAb(i_p_am2IV) =wm2IV *(  +d/denom)
 !!$              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
 !!$                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
 !!$                 matVMAf(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
@@ -4005,7 +4048,7 @@ END SUBROUTINE FILL_ORBI
 !!$                 matVMAf(ipoint )=+d*&
 !!$                      & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom
 !!$              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
-!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2) 
+!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
 !!$                 matVMAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
 !!$                 matVMAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
 !!$                 matVMAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
@@ -4023,7 +4066,7 @@ END SUBROUTINE FILL_ORBI
 !!$                 matVMAf(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
 !!$                 matVMAf(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
 !!$                 matVMAf(ipoint )=-d*&
-!!$                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom                    
+!!$                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom
 !!$              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
 !!$                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
 !!$                 matVMAb(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)

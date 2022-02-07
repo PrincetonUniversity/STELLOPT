@@ -6,11 +6,11 @@
 
 SUBROUTINE CALC_BANANA(jv,Epsi,D11)
 
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 !Calculate monoenergetic transport coefficient in the banana regime for collisionality
 !cmul=nu(jv)/v(jv) and normalized radial electric field efied=Epsi/v(jv)
 !-----------------------------------------------------------------------------------------------
-  
+
   USE GLOBAL
   USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
@@ -32,7 +32,7 @@ SUBROUTINE CALC_BANANA(jv,Epsi,D11)
   REAL*8 dt,theta(nal),t1,tb,t2,t_ini,t_l,t_fin,dt_l
   REAL*8 Sov(nal,nal,nla)
   REAL*8 vds(Nnmp),vd(nqv),dummy,vdummy(Nnmp)
-  
+
   IF(.NOT.USE_B0) THEN
      bnmc0(1:Nnm)=bnmc(1:Nnm)
      bnms0(1:Nnm)=bnms(1:Nnm)
@@ -81,7 +81,7 @@ SUBROUTINE CALC_BANANA(jv,Epsi,D11)
         z_ini=zeta(iz)
         t_ini=theta(it)
 !        IF(B1.GT.B2) THEN
-!           CALL BOUNCE_POINT(zeta(iz),theta(it),Bzt(iz,it),z1,t1,z_ini,t_ini,dummy,dummy,vds,-1)          
+!           CALL BOUNCE_POINT(zeta(iz),theta(it),Bzt(iz,it),z1,t1,z_ini,t_ini,dummy,dummy,vds,-1)
 !        ELSE
 !           CALL BOUNCE_POINT(zeta(iz),theta(it),Bzt(iz,it),z2,t2,z_ini,t_ini,dummy,dummy,vds,+1)
 !        END IF
@@ -127,8 +127,8 @@ SUBROUTINE CALC_BANANA(jv,Epsi,D11)
   !Sov=Sov*Ab(ib)*m_e/Zb(ib)
   !Sov=Sov*sigma
 
- 
-  
+
+
 
 999 cmul=nu(jv)/v(jv)/2.
   !Connect with Pfirsch-Schlueter or 1/nu
@@ -167,7 +167,7 @@ END SUBROUTINE CALC_BANANA
 
 SUBROUTINE CALC_B0
 
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 !Calculate B_0
 !-----------------------------------------------------------------------------------------------
 
@@ -184,6 +184,7 @@ SUBROUTINE CALC_B0
   REAL*8 epsilon,iotat,dist,distb
   REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt),Bg(npt)!,Btemp
   REAL*8 Bmax_var,Bmin_var
+  REAL*8 Bmax_av2! used for new VBT edi.sanchez@ciemat.es
   REAL*8 val_eta(nsurf),zeta(npt),theta(npt),temp(npt),zetat(npt,npt),zetal(nsurf,npt),zeta0(npt,npt)
   !Matrix
   INTEGER ierr,lwork,rank
@@ -193,7 +194,7 @@ SUBROUTINE CALC_B0
   COMPLEX*16 B0mn(npt,npt)
   REAL(rprec) , SAVE :: save_borbic0(-ntorbd:ntorbd,0:mpolbd)
   LOGICAL, SAVE :: FIRST_TIME=.TRUE.
-  
+
   WRITE(iout,*) 'Calculating B0'
   borbic0=0!borbic
   borbis0=0!borbis
@@ -222,7 +223,7 @@ SUBROUTINE CALC_B0
   !Look for a QS omnigenous
   IF(QS_B0.OR.helN.EQ.0) THEN
      borbic0(0,0)=borbic(0,0)
-     dborbic0dpsi(0,0)=dborbicdpsi(0,0)                
+     dborbic0dpsi(0,0)=dborbicdpsi(0,0)
      IF(.NOT.QS_B0_1HEL) borbis0(0,0)=borbis(0,0)
      DO fint=1,MIN(ntorbd,mpolbd)
 !        IF(QS_B0_1HEL.AND.fint.GT.1) EXIT
@@ -249,11 +250,12 @@ SUBROUTINE CALC_B0
      dborbisdpsi=dborbis0dpsi
      RETURN
   END IF
-  
+
   !Rewrite B in other coordinates
   Bmax=0
   Bmax_th=0
   Bmax_av=0
+  Bmax_av2=0!edi.sanchez@ciemat.es
   Bmax_var=0
   Bmin_th=1E3
   Bmin_av=0
@@ -274,7 +276,7 @@ SUBROUTINE CALC_B0
      DO iz=1,npt
         zetat(iz,it)=temp(iz)
         CALL SUM_BORBI(zeta(iz),theta(it),Bzt(iz,it))
-        
+
      END DO
   END DO
 
@@ -302,15 +304,18 @@ SUBROUTINE CALC_B0
      END DO
      IF(Bmax_th(it).GT.Bmax) Bmax=Bmax_th(it)
 !     Bmax_av=Bmax_av+Bmax_th(it)
+      Bmax_av2=Bmax_av2+Bmax_th(it) ! used for new VBT edi.sanchez@ciemat.es
      Bmax_av=Bmax_av+Bzt(1,it)
      Bmin_av=Bmin_av+Bmin_th(it)
-     Bmax_var=Bmax_var+Bzt(1,it)*Bzt(1,it)
+     !Bmax_var=Bmax_var+Bzt(1,it)*Bzt(1,it)! the value of B at zeta=0 is used (because for a omnigenous maxima are aligned at zeta=0) edi.sanchez@ciemat.es
+     Bmax_var=Bmax_var+Bmax_th(it)*Bmax_th(it)! the maximum value at a given theta is used instead of value at zeta=0 edi.sanchez@ciemat.es
      Bmin_var=Bmin_var+Bmin_th(it)*Bmin_th(it)
   END DO
   Bmax_av=Bmax_av/npt
+  Bmax_av2=Bmax_av2/npt! used for new VBT edi.sanchez@ciemat.es
   Bmin_av=Bmin_av/npt
   IF(KN_STELLOPT(8)) KN_WBW=KN_WBW/(borbic(0,0)*TWOPI*TWOPI*npt*npt/2)
-  IF(KN_STELLOPT(6)) KN_VBT=(Bmax_var/npt-Bmax_av*Bmax_av)/borbic(0,0)/borbic(0,0)
+  IF(KN_STELLOPT(6)) KN_VBT=(Bmax_var/npt-Bmax_av2*Bmax_av2)/borbic(0,0)/borbic(0,0)
   IF(KN_STELLOPT(7)) KN_VBB=(Bmin_var/npt-Bmin_av*Bmin_av)/borbic(0,0)/borbic(0,0)
   borbic0=borbic
   borbis0=borbis
@@ -329,7 +334,7 @@ SUBROUTINE CALC_B0
   DO iz=1,npt
      DO it=1,npt
         Bg(iz)=Bg(iz)+Bzt(iz,it)
-     END DO     
+     END DO
   END DO
   Bg=Bg/npt
 
@@ -351,7 +356,7 @@ SUBROUTINE CALC_B0
      END IF
   END DO
   parB=rhs(1:npar)
-  
+
   !Find target contour lines
   DO ieta=1,nsurf
      val_eta(ieta)=ieta*PI/nsurf
@@ -468,7 +473,7 @@ SUBROUTINE CALC_B0
         Bzt(iz,it)=Bzt(iz0,it)
         Bzt(iz0,it)=temp(1)
      END DO
-  END DO  
+  END DO
 !  OPEN(unit=1,file="Bomni2.dat",form='formatted',action='write')
   DO iz=1,npt
      DO it=1,npt
@@ -518,7 +523,7 @@ SUBROUTINE CALC_B0
   dist=0
   distB=0
   DO n=-ntorbd,ntorbd
-     DO m=0,mpolbd 
+     DO m=0,mpolbd
         IF(ABS(borbic0(n,m)).LT.3E-5) CYCLE
         dist=dist+(borbic(n,m)-borbic0(n,m))*(borbic(n,m)-borbic0(n,m))
         IF(ABS(borbic(n,m)-borbic0(n,m)).GT.distB) THEN
@@ -536,7 +541,9 @@ SUBROUTINE CALC_B0
   borbis0=borbis
   dborbic0dpsi=dborbicdpsi
   dborbis0dpsi=dborbisdpsi
-    
+
+  IF ( ALLOCATED(rwork) ) DEALLOCATE(rwork,iwork,work)
+
 END SUBROUTINE CALC_B0
 
 
@@ -546,10 +553,10 @@ END SUBROUTINE CALC_B0
 
 SUBROUTINE SUM_BORBI(zeta,theta,B)
 
-!----------------------------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------------------------
 !Calculate magnetic field B at (zeta,theta) using borbic and borbis
 !-----------------------------------------------------------------------------------------------
-  
+
   USE GLOBAL
   IMPLICIT NONE
   !Input
@@ -559,7 +566,7 @@ SUBROUTINE SUM_BORBI(zeta,theta,B)
   !Others
   INTEGER n,m
   REAL*8 arg
-  
+
   B=0
   DO n=-ntorbd,ntorbd
      DO m=0,mpolbd
@@ -568,9 +575,9 @@ SUBROUTINE SUM_BORBI(zeta,theta,B)
         B=B+borbis(n,m)*SIN(arg)
      END DO
   END DO
-  
+
 END SUBROUTINE SUM_BORBI
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+
