@@ -48,7 +48,8 @@ characterization of some optimization choices please see the page
       FACTOR       = 100.0                      ! Initial step scaling
       MODE         = 0                          ! Mode Parameter
       CR_STRATEGY  = 0
-      NPOPULATION  = 8                          ! Number of optimizer threads
+      NPOPULATION  = 8                          ! Number of members in population
+      NOPTIMIZERS  = 8                          ! Number of parallel function evaluations
       LKEEP_MINS   = T                          ! Logical to keep minimum states
       LREFIT       = F                          ! Logical for profile refitting (reconstruction only)
 
@@ -64,9 +65,9 @@ unless they're running parallel codes.
 | EPSFCN | Jacobian forward differencing step size (1% \~ 0.0001) |
 | FACTOR | Determines initial step step bound (100.0 suggested) |
 | MODE | Determines variable scaling (1: auto, 2: Use DVAR scaling values) |
-| NPOPULATION | Number of optimizer threads (for parallel codes: GENE, COILOPT++, BEAMS3D, default: NPROCS) |
+| NOPTIMIZERS | Number of parallel function evaluations being evaluated.|
 
-A bounded LMDIF routine is also accessible by setting the OPT_TYPE='LMDIF_BOUNDED'.
+A bounded LMDIF routine is also accessible by setting the OPT_TYPE='LMDIF_BOUNDED'.  When using parallel codes the NOPTIMIZERS variable defines how many parallel function evaluations being performed durring the run.  For example if you have 64 MPI threads and NOPTIMIZERS is set to 4, then 4 simultaneous function evaluations are performed each with 16 MPI threads for running the parallel codes (BEAMS3D, GENE, COILOPT++, etc).  Traditionally, NOPTIMZIERS was always equal to the number of processors.  
 
 ### GADE
 
@@ -84,6 +85,8 @@ CR_STRATEGY = 0.
 | EPSFCN | Crossover factor. | 
 | MODE | The strategy of the mutation operations used. 
 | CR_STRATEGY | Cross-over strategy (0: exponential, 1: binomial) |
+| NPOPULATION | Total number of members in the population.|
+| NOPTIMIZERS | Number of parallel function evaluations being evaluated.|
 
 The algorithm begin by
 evaluating NPOPULATION equilibria, where the first member of the
@@ -167,6 +170,8 @@ Particle Swarm evolution.
 | XTOL | Desired relative error in approximate solution. | 
 | EPSFCN | Ratio of global attractor to local (local = 1.0) |
 | FACTOR | Scaling factor for maximum velocity|
+| NPOPULATION | Total number of members in the population.|
+| NOPTIMIZERS | Number of parallel function evaluations being evaluated.|
 
 ### MANGO algorithms
 
