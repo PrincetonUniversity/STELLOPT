@@ -121,7 +121,7 @@
       ! Loop over magnetic surfaces
       IF (ALLOCATED(eff_ripple)) DEALLOCATE(eff_ripple) ; ALLOCATE(eff_ripple(nsd)) ; eff_ripple=0
       IF (ALLOCATED(s_kn))       DEALLOCATE(s_kn);        ALLOCATE(s_kn(nsd))
-      IF(myworkid == master) s_kn=rho ; CALL MPI_BCAST(s_kn,nsd,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
+      IF(myworkid == master) s_kn=rho*rho ; CALL MPI_BCAST(s_kn,nsd,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
 
       jk=0
       DO ik=2,nsd
