@@ -348,7 +348,7 @@ PROGRAM BEAMS3D
     ! Write diagnostics stuff
     CALL beams3d_diagnostics
 
-    !Write Fidasim Distribution function (calculated in beams3d_diagnostics)
+    !Write Fidasim Distribution function
     IF (lfidasim) THEN
         IF (ldepo) THEN
             CALL beams3d_write_fidasim('DISTRIBUTION_GC_MC')

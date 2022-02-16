@@ -88,7 +88,7 @@
       ds   = 1.0/REAL(ns_prof1) !distribution defined on centers (half grid)
       du   = pi2/REAL(ns_prof2)
       dp   = pi2/REAL(ns_prof3)
-      ALLOCATE(targ(nr,nz))
+      !ALLOCATE(targ(nr,nz))
       ALLOCATE(RHO3D(nr,nphi,nz))
       RHO3D = S4D(1,:,:,:)
       WHERE (RHO3D>1) RHO3D = 2;
@@ -108,56 +108,15 @@
          rt = 5.25+COS((u1+u2)/2)*.5 !dirty estimation of R
          zt = SIN((u1+u2)/2.)*.6 
          pt = 0; !Initial conditions for successful lookup?
-         ! Assume a parallel piped
-         ! s1 u1
-         targ = (0.5*sqrt(RHO3D(:,m,:) + RHO3D(:,m+1,:))-s1)**2 &
-              + (0.5*(U4D(1,:,m,:) + U4D(1,:,m+1,:))-u1)**2
-         minln = MINLOC(targ)
-         l = MIN(MAX(minln(1),2),nr-1); n = MIN(MAX(minln(2),2),nz-1)
-         ! Linear interpolation
-         f1 = sqrt(targ(l,n)); f2 = sqrt(targ(l+1,n)); f3 = sqrt(targ(l,n+1))
-         b = f1; a = f2-f1 
-         c = f1; d = f3-f1
-         a = -b/a
-         b = -d/c
-         !PRINT *,l,n,a,b
-         !PRINT *,l,n,targ(l,n),targ(l+1,n),targ(l,n+1),targ(l+1,n+1)
-         !rt(1) = raxis(l)*(1-a)+raxis(l+1)*a; zt(1) = zaxis(n)*(1-b)+zaxis(n+1)*b
-         ! s1 u2
-         !targ = (0.5*sqrt(RHO3D(:,m,:) + RHO3D(:,m+1,:))-s1)**2 &
-         !     + (0.5*(U4D(1,:,m,:) + U4D(1,:,m+1,:))-u2)**2
-         !minln = MINLOC(targ)
-         !l = MIN(MAX(minln(1),1),nr-1); n = MIN(MAX(minln(2),1),nz-1)
-         !a = sqrt(targ(l,n)); b = sqrt(targ(l,n+1))
-         !rt(2) = raxis(l)*(1-a)+raxis(l+1)*a; zt(2) = zaxis(n)*(1-b)+zaxis(n+1)*b
-         ! s2 u1
-         !targ = (0.5*sqrt(RHO3D(:,m,:) + RHO3D(:,m+1,:))-s2)**2 &
-         !     + (0.5*(U4D(1,:,m,:) + U4D(1,:,m+1,:))-u1)**2
-         !minln = MINLOC(targ)
-         !l = MIN(MAX(minln(1),1),nr-1); n = MIN(MAX(minln(2),1),nz-1)
-         !a = sqrt(targ(l,n)); b = sqrt(targ(l,n+1))
-         !rt(3) = raxis(l)*(1-a)+raxis(l+1)*a; zt(3) = zaxis(n)*(1-b)+zaxis(n+1)*b
-         ! s2 u2
-         !targ = (0.5*sqrt(RHO3D(:,m,:) + RHO3D(:,m+1,:))-s2)**2 &
-         !     + (0.5*(U4D(1,:,m,:) + U4D(1,:,m+1,:))-u2)**2pos = [2 4 2 2]; 
-         !minln = MINLOC(targ)
-         !l = MIN(MAX(minln(1),1),nr-1); n = MIN(MAX(minln(2),1),nz-1)
-         !a = sqrt(targ(l,n)); b = sqrt(targ(l,n+1))
-         !rt(4) = raxis(l)*(1-a)+raxis(l+1)*a; zt(4) = zaxis(n)*(1-b)+zaxis(n+1)*b
+
          ! Assume parallel piped
          CALL beams3d_suv2rzp(X4D, Y4D, s1,u1,p1,rt(1),zt(1),pt(1))
          CALL beams3d_suv2rzp(X4D, Y4D, s1,u2,p1,rt(2),zt(2),pt(2))
          CALL beams3d_suv2rzp(X4D, Y4D, s2,u1,p1,rt(3),zt(3),pt(3))
          CALL beams3d_suv2rzp(X4D, Y4D, s2,u2,p1,rt(4),zt(4),pt(4))
-         !area = 0.5*abs(rt(1)*zt(2)-zt(1)*rt(2) + &
-          !            rt(2)*zt(3)-zt(2)*rt(3) + &
-           !           rt(3)*zt(4)-zt(3)*zt(4) + &
-            !          rt(4)*zt(1)-zt(4)*rt(1))
             area = 0.5 * abs( (rt(2) - rt(1)) *(zt(3) - zt(1)) - (rt(3) - rt(1)) *(zt(2) - zt(1))) + &
                   0.5 * abs( (rt(3) - rt(2)) *(zt(4) - zt(2)) - (rt(4) - rt(2)) *(zt(3) - zt(2)))
 
-            
-         !area = 0.5*(s1+s2)*du*ds ! Missing aminor
          WRITE(327,*) m,s1,s2,u1,u2,rt,zt,area
          CALL FLUSH(327)
          dvol = area*sum(rt)*dp/4
@@ -166,19 +125,20 @@
          CALL FLUSH(328)
       END DO
 
-      ! Do phase space volume elements
-      ds = 2*partvmax/ns_prof4
-      du = partvmax/ns_prof5
-      dvol = pi2*ds*du
-      nvol = ns_prof4*ns_prof5
-      DO j = 1, ns_prof5
-         u1 = (j-0.5)*du
-         dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
-         WRITE(329,*) j,dvol*u1
-         CALL FLUSH(329)
-      END DO
+      ! Do phase space volume elements -- correct?
+      !ds = 2*partvmax/ns_prof4
+      !du = partvmax/ns_prof5
+      !dvol = pi2*ds*du
+      !nvol = ns_prof4*ns_prof5
+      !DO j = 1, ns_prof5
+      !   u1 = (j-0.5)*du
+      !   dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
+      !   WRITE(329,*) j,dvol*u1
+      !   CALL FLUSH(329)
+      !END DO
 
-      DEALLOCATE(targ)
+      
+      !DEALLOCATE(targ)
       DEALLOCATE(RHO3D)
 
 
