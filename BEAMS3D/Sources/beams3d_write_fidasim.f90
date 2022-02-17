@@ -27,7 +27,7 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                  X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
                                  NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET, &
                                  POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
-                                 hr, hp, hz, hri, hpi, hzi, S4D, U4D, &
+                                 hr, hp, hz, hri, hpi, hzi, S4D, U4D, X4D, Y4D, &
                                  rmin, rmax, zmin, zmax, phimin, phimax, raxis, zaxis, phiaxis, &
                                  rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
                                  raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida
@@ -67,7 +67,7 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
       !REAL*8, POINTER :: hri_fida(:), hpi_fida(:), hzi_fida(:)
       REAL(rprec), DIMENSION(4) :: rt,zt,pt
       REAL*8 :: xparam, yparam, zparam !, hx, hy, hz, hxi, hyi, hzi
-      REAL*8 :: fval(1)
+      REAL*8 :: fval(1), fval2(1)
       INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
       DOUBLE PRECISION         :: x0,y0,z0
       REAL(rprec) :: jac, v_parr, v_perp, pitch
@@ -516,27 +516,30 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                         xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
                         yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
                         zparam = (zaxis_fida(k) - zaxis(k3)) * hzi(k3)
-                        CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&
+                        CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&!maybe switch to x/y interpolation?
                                     hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
                                     S4D(1,1,1,1),nr,nphi,nz)
                         y0 = fval(1)
-                        CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&
+                        CALL R8HERM3FCN(ict,1,1,fval2,i3,j3,k3,xparam,yparam,zparam,&
                                     hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
                                     U4D(1,1,1,1),nr,nphi,nz)
-                        z0 = fval(1)
-                              
+                        z0 = fval2(1)
+                        !y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
+                        !z0 = ATAN2(fval2(1),fval(1))
+
                                     ! Calc dist func bins
                         x0    = phiaxis_fida(j)
-                        IF (x0 < 0) x0 = x0 + pi2
                         !vperp = SQRT(2*moment*fval(1)/mymass)
                         l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
                         m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                         n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
                         !d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
                         !d5 = MAX(MIN(CEILING(vperp*h5_prof         ), ns_prof5), 1) ! Vperp
-                        
-                        dist5d_fida(b,i,k,j,:,:) = dist5d_prof(b,l,m,n,:,:) !output in r-z-phi
-                        
+                        IF (y0 .GT. 1) THEN
+                              dist5d_fida(b,i,k,j,:,:) = 0 !distribution is 0 outside plasma
+                        ELSE
+                              dist5d_fida(b,i,k,j,:,:) = dist5d_prof(b,l,m,n,:,:) !output in r-z-phi
+                        END IF
   
                         END DO
                   END DO

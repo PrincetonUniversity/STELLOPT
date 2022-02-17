@@ -1,5 +1,4 @@
 ObjectFiles = \
-beams3d_fix_poloidal.o \
 beams3d_distnorm.o \
 beams3d_init_hint.o \
 beams3d_init_eqdsk.o \

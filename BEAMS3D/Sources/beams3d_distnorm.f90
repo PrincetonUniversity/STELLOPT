@@ -12,7 +12,7 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime, ONLY: nbeams, pi2, &
                               EZSPLINE_ERR
-      USE beams3d_grid, ONLY: raxis, phiaxis, zaxis, S4D, U4D, &
+      USE beams3d_grid, ONLY: raxis, phiaxis, zaxis, X4D, Y4D, S4D, &
                               nr, nphi, nz
       USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof4, ns_prof5, dist5d_prof, &
@@ -45,43 +45,44 @@
       REAL(rprec), ALLOCATABLE, DIMENSION(:,:,:) :: RHO3D
 
       INTEGER :: bcs1(2), bcs2(2), bcs3(2)
-      TYPE(EZspline3_r8) :: X_spl, Y_spl
-      REAL(rprec), POINTER, DIMENSION(:,:,:) :: X_ARR, Y_ARR
-      REAL(rprec), POINTER, DIMENSION(:,:,:,:) :: X4D, Y4D
+      !TYPE(EZspline3_r8) :: X_spl, Y_spl
+      !REAL(rprec), POINTER, DIMENSION(:,:,:) :: X_ARR, Y_ARR
+      !REAL(rprec), POINTER, DIMENSION(:,:,:,:) :: X4D, Y4D
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
 
          !Set up Splines on the X/Y grid to fix singular interpolation and gradients
-      ALLOCATE(X4D(8, nr, nphi, nz), Y4D(8, nr, nphi, nz))
-      ALLOCATE(X_ARR(nr,nphi,nz),Y_ARR(nr,nphi,nz))
-      X_ARR = S4D(1,:,:,:) * COS(U4D(1,:,:,:))
-      Y_ARR = S4D(1,:,:,:) * SIN(U4D(1,:,:,:))
-      bcs1=(/ 0, 0/)
-      bcs2=(/-1,-1/)
-      bcs3=(/ 0, 0/)
-      ier = 0
-      CALL EZspline_init(X_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_fix_poloidal:X_spl',ier)
-      CALL EZspline_init(Y_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_fix_poloidal:Y_spl',ier)
-      X_spl%isHermite   = 1
-      X_spl%x1   = raxis
-      X_spl%x2   = phiaxis
-      X_spl%x3   = zaxis
-      Y_spl%isHermite   = 1
-      Y_spl%x1   = raxis
-      Y_spl%x2   = phiaxis
-      Y_spl%x3   = zaxis
-      CALL EZspline_setup(X_spl,X_ARR,ier,EXACT_DIM=.true.)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_fix_poloidal:X_spl',ier)
-      CALL EZspline_setup(Y_spl,Y_ARR,ier,EXACT_DIM=.true.)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_fix_poloidal:Y_spl',ier)
-      X4D = X_spl%fspl
-      Y4D = Y_spl%fspl
-      CALL EZspline_free(X_spl,ier)
-      CALL EZspline_free(Y_spl,ier)
-      DEALLOCATE(X_ARR,Y_ARR)
+
+      ! ALLOCATE(X4D(8, nr, nphi, nz), Y4D(8, nr, nphi, nz))
+      ! ALLOCATE(X_ARR(nr,nphi,nz),Y_ARR(nr,nphi,nz))
+      ! X_ARR = S4D(1,:,:,:) * COS(U4D(1,:,:,:))
+      ! Y_ARR = S4D(1,:,:,:) * SIN(U4D(1,:,:,:))
+      ! bcs1=(/ 0, 0/)
+      ! bcs2=(/-1,-1/)
+      ! bcs3=(/ 0, 0/)
+      ! ier = 0
+      ! CALL EZspline_init(X_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+      ! IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_fix_poloidal:X_spl',ier)
+      ! CALL EZspline_init(Y_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+      ! IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_fix_poloidal:Y_spl',ier)
+      ! X_spl%isHermite   = 1
+      ! X_spl%x1   = raxis
+      ! X_spl%x2   = phiaxis
+      ! X_spl%x3   = zaxis
+      ! Y_spl%isHermite   = 1
+      ! Y_spl%x1   = raxis
+      ! Y_spl%x2   = phiaxis
+      ! Y_spl%x3   = zaxis
+      ! CALL EZspline_setup(X_spl,X_ARR,ier,EXACT_DIM=.true.)
+      ! IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_fix_poloidal:X_spl',ier)
+      ! CALL EZspline_setup(Y_spl,Y_ARR,ier,EXACT_DIM=.true.)
+      ! IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_fix_poloidal:Y_spl',ier)
+      ! X4D = X_spl%fspl
+      ! Y4D = Y_spl%fspl
+      ! CALL EZspline_free(X_spl,ier)
+      ! CALL EZspline_free(Y_spl,ier)
+      ! DEALLOCATE(X_ARR,Y_ARR)
 
       ! Do physical volume elements
       nvol = (ns_prof1)*(ns_prof2)*(ns_prof3)
@@ -110,10 +111,10 @@
          pt = 0; !Initial conditions for successful lookup?
 
          ! Assume parallel piped
-         CALL beams3d_suv2rzp(X4D, Y4D, s1,u1,p1,rt(1),zt(1),pt(1))
-         CALL beams3d_suv2rzp(X4D, Y4D, s1,u2,p1,rt(2),zt(2),pt(2))
-         CALL beams3d_suv2rzp(X4D, Y4D, s2,u1,p1,rt(3),zt(3),pt(3))
-         CALL beams3d_suv2rzp(X4D, Y4D, s2,u2,p1,rt(4),zt(4),pt(4))
+         CALL beams3d_suv2rzp(s1,u1,p1,rt(1),zt(1),pt(1))
+         CALL beams3d_suv2rzp(s1,u2,p1,rt(2),zt(2),pt(2))
+         CALL beams3d_suv2rzp(s2,u1,p1,rt(3),zt(3),pt(3))
+         CALL beams3d_suv2rzp(s2,u2,p1,rt(4),zt(4),pt(4))
             area = 0.5 * abs( (rt(2) - rt(1)) *(zt(3) - zt(1)) - (rt(3) - rt(1)) *(zt(2) - zt(1))) + &
                   0.5 * abs( (rt(3) - rt(2)) *(zt(4) - zt(2)) - (rt(4) - rt(2)) *(zt(3) - zt(2)))
 
