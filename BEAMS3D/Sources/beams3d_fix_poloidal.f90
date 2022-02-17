@@ -26,11 +26,12 @@
 !-----------------------------------------------------------------------
 !     Local Variables
 !-----------------------------------------------------------------------
-      INTEGER :: mystart, mystep, win_X4D, win_Y4D, ier
+      INTEGER :: mystart, mystep,  ier !win_X4D, win_Y4D,
       INTEGER :: bcs1(2), bcs2(2), bcs3(2)
-      TYPE(EZspline3_r8) :: X_spl, Y_spl
-      REAL(rprec), POINTER, DIMENSION(:,:,:) :: X_ARR, Y_ARR
-      REAL(rprec), POINTER, DIMENSION(:,:,:,:) :: X4D, Y4D
+      !TYPE(EZspline3_r8) :: X_spl, Y_spl
+      !REAL(rprec), POINTER, DIMENSION(:,:,:) :: X_ARR, Y_ARR
+      !REAL(rprec), POINTER, DIMENSION(:,:,:,:) :: X4D, Y4D
+      
       ! For splines
       INTEGER :: i,j,k,l
       REAL*8 :: xparam, yparam, zparam !, hx, hy, hz, hxi, hyi, hzi

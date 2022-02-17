@@ -27,7 +27,7 @@ MODULE beams3d_physics_mod
                                ns_prof5, my_end
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
                               MODB_spl, MODB4D, &
-                              phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
+                              phimax, S4D, X4D, Y4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
                               zaxis, U4D, &
@@ -1299,7 +1299,7 @@ MODULE beams3d_physics_mod
       !     Date:          03/07/2021
       !     Description:   Returns R and Z given s,u,v coordinate
       !-----------------------------------------------------------------
-      SUBROUTINE beams3d_suv2rzp(X4D, Y4D, s,u,v,r_out,z_out,phi_out)
+      SUBROUTINE beams3d_suv2rzp(s,u,v,r_out,z_out,phi_out)
          !--------------------------------------------------------------
          !     Input Parameters
          !          s            Normalized Toroidal Flux
@@ -1316,7 +1316,7 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION, INTENT(inout) :: r_out
          DOUBLE PRECISION, INTENT(inout) :: z_out
          DOUBLE PRECISION, INTENT(out) :: phi_out
-         REAL(rprec), POINTER, DIMENSION(:,:,:,:), INTENT(inout) :: X4D, Y4D
+         !REAL(rprec), POINTER, DIMENSION(:,:,:,:), INTENT(inout) :: X4D, Y4D
 
          !--------------------------------------------------------------
          !     Local Variables
@@ -1337,16 +1337,10 @@ MODULE beams3d_physics_mod
          !     Begin Subroutine
          !--------------------------------------------------------------
 
-
-
-
-
          !Begin Newton Method
          residual = 1.0
          factor = 1.0
          IF (r_out<0) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75
-!         r_out = (raxis(1)+raxis(nr))*0.5
-!         z_out = (zaxis(1)+zaxis(nz))*0.5
          
          ! PHI does not change
          phi_out = MOD(v,MAXVAL(phiaxis))
@@ -1379,14 +1373,7 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fvaly,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             Y4D(1,1,1,1),nr,nphi,nz)
-            !IF (fvalx(1,1) > 1.05) THEN
-            ! r_out = raxis(MOD(n,nr-1)+1)
-            !  z_out = zaxis(MOD(n,nz-1)+1)
-            !END IF
 
-            !fvalx(1,1) = MAX(fvalx(1,1),0.000001) !Okay??
-            
-            !fvalx(1,2:4) = 0.5*fvalx(1,2:4)/sqrt(fvalx(1,1)) !?
             x_term   = x0 - fvalx(1,1)
             y_term   = y0 - fvaly(1,1)
             

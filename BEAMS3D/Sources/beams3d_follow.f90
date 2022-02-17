@@ -434,7 +434,7 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
 
     ! Fix U_lines
-    CALL beams3d_fix_poloidal
+    !CALL beams3d_fix_poloidal
 
     ! First reduce the cumulative arrays over shared memory groups then allreduce between shared memeory groups
 #if defined(MPI_OPT)
