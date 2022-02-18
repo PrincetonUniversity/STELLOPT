@@ -48,7 +48,7 @@
                      win_S4D, win_U4D,  win_X4D, win_Y4D, win_POT4D, win_req_axis, win_zeq_axis, &
                      win_wall_load, win_wall_shine, win_hr, win_hp, win_hz, &
                      win_hri, win_hpi, win_hzi, &
-                     nr_fida, nphi_fida, nz_fida
+                     nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, tmin, tmax, delta_t, &
                      vc_adapt_tol, psiedge_eq, phiedge_eq, plasma_Zmean, plasma_mass, &
                      reff_eq, plasma_Zavg, therm_factor, B_kick_min, B_kick_max, &
@@ -56,7 +56,7 @@
       REAL(rprec), POINTER :: raxis(:), zaxis(:), phiaxis(:)
       REAL(rprec), POINTER :: req_axis(:), zeq_axis(:)
       REAL :: rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida
-      REAL(rprec), POINTER :: raxis_fida(:), zaxis_fida(:), phiaxis_fida(:)
+      REAL(rprec), POINTER :: raxis_fida(:), zaxis_fida(:), phiaxis_fida(:), energy_fida(:), pitch_fida(:)
       REAL(rprec), POINTER :: wall_load(:,:), wall_shine(:,:)
       REAL(rprec), POINTER :: B_R(:,:,:),B_PHI(:,:,:), B_Z(:,:,:), MODB(:,:,:),&
                                   TE(:,:,:), NE(:,:,:), TI(:,:,:), ZEFF_ARR(:,:,:), &
