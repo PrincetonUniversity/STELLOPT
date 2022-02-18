@@ -10,7 +10,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE beams3d_runtime, ONLY: nbeams, pi2, &
+      USE beams3d_runtime, ONLY: lfidasim, nbeams, pi2, &
                               EZSPLINE_ERR
       USE beams3d_grid, ONLY: raxis, phiaxis, zaxis, X4D, Y4D, S4D, &
                               nr, nphi, nz
@@ -126,17 +126,21 @@
          CALL FLUSH(328)
       END DO
 
+      IF (lfidasim) THEN
+            CALL beams3d_write_fidasim('DENF') !write density before velocity space normalization
+      END IF
+
       ! Do phase space volume elements -- correct?
-      !ds = 2*partvmax/ns_prof4
-      !du = partvmax/ns_prof5
-      !dvol = pi2*ds*du
-      !nvol = ns_prof4*ns_prof5
-      !DO j = 1, ns_prof5
-      !   u1 = (j-0.5)*du
-      !   dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
-      !   WRITE(329,*) j,dvol*u1
-      !   CALL FLUSH(329)
-      !END DO
+      ds = 2*partvmax/ns_prof4
+      du = partvmax/ns_prof5
+      dvol = pi2*ds*du
+      nvol = ns_prof4*ns_prof5
+      DO j = 1, ns_prof5
+        u1 = (j-0.5)*du
+        dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
+        WRITE(329,*) j,dvol*u1
+        CALL FLUSH(329)
+      END DO
 
       
       !DEALLOCATE(targ)

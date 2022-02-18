@@ -30,7 +30,8 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                  hr, hp, hz, hri, hpi, hzi, S4D, U4D, X4D, Y4D, &
                                  rmin, rmax, zmin, zmax, phimin, phimax, raxis, zaxis, phiaxis, &
                                  rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
-                                 raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida
+                                 raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
+                                 nenergy_fida, npitch_fida, energy_fida, pitch_fida
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lplasma_only, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -72,7 +73,7 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
       DOUBLE PRECISION         :: x0,y0,z0
       REAL(rprec) :: jac, v_parr, v_perp, pitch
       DOUBLE PRECISION :: rho_temp, s_temp, dbl_temp, gammarel, v_total!, hx, hy, hz, hxi, hyi, hzi, xparam, yparam, zparam
-      DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:), r2dtemp(:,:), Efield4D(:,:,:,:)
+      DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r3dtemp2(:,:,:),  r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
       INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask
       CHARACTER(LEN=8) :: temp_str8, inj_str8
 
@@ -93,11 +94,12 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
             phimin_fida = phimin
             rmax_fida = rmax
             zmax_fida = zmax
-            phimax_fida = phimax/5.
+            phimax_fida = phimax
             nr_fida = nr
             nphi_fida = nphi
             nz_fida = nz
-
+            nenergy_fida = ns_prof4
+            npitch_fida = ns_prof5
 
             ALLOCATE(raxis_fida(nr_fida))
             ALLOCATE(zaxis_fida(nz_fida))
@@ -128,8 +130,17 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
             CALL h5dclose_f(temp_gid,ier)
             
 
-
             ! FIDASIM GRID
+            CALL write_var_hdf5(qid_gid,'nenergy',ier,INTVAR=nenergy_fida)
+            CALL h5dopen_f(fid, 'nenergy', temp_gid, ier)
+            CALL write_att_hdf5(temp_gid,'units','-',ier)
+            CALL write_att_hdf5(temp_gid,'description','Number of energy values',ier)
+            CALL h5dclose_f(temp_gid,ier)
+            CALL write_var_hdf5(qid_gid,'npitch',ier,INTVAR=npitch_fida)
+            CALL h5dopen_f(fid, 'npitch', temp_gid, ier)
+            CALL write_att_hdf5(temp_gid,'units','-',ier)
+            CALL write_att_hdf5(temp_gid,'description','Number of pitch values',ier)
+            CALL h5dclose_f(temp_gid,ier) 
             CALL write_var_hdf5(qid_gid,'nr',ier,INTVAR=nr_fida)
             CALL h5dopen_f(fid, 'nr', temp_gid, ier)
             CALL write_att_hdf5(temp_gid,'units','-',ier)
@@ -160,7 +171,7 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
             CALL h5dopen_f(fid, 'phi', temp_gid, ier)
             CALL write_att_hdf5(temp_gid,'units','rad',ier)
             CALL write_att_hdf5(temp_gid,'description','Toroidal angle',ier)
-            CALL h5dclose_f(temp_gid,ier)
+            CALL h5dclose_f(temp_gid,ier)          
             CALL write_var_hdf5(qid_gid,'z',nz, ier,DBLVAR=DBLE(zaxis_fida*100)) !convert from m to cm
             CALL h5dopen_f(fid, 'z', temp_gid, ier)
             CALL write_att_hdf5(temp_gid,'units','cm',ier)
@@ -309,7 +320,7 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                   CALL write_var_hdf5(qid_gid,'ez',nr,nz,nphi, ier,DBLVAR=rtemp)
                   DEALLOCATE(rtemp)
             ELSE
-                  ALLOCATE(Efield4D(nr,nphi,nz,3))
+                  ALLOCATE(r4dtemp(nr,nphi,nz,3))
                   ALLOCATE(r1dtemp(3))
                   r1dtemp = 1
                   DO i = 1, nr-1 !correct?
@@ -325,28 +336,28 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                                     POT4D(1,1,1,1),nr,nphi,nz)
                                     r1dtemp(1:3) =-fvalE(1,1:3)
-                                    Efield4D(i,j,k,1:3) = r1dtemp
+                                    r4dtemp(i,j,k,1:3) = r1dtemp
                                     !ider=1
                                     !CALL EZspline_gradient3_r8(POT_spl, ider, raxis(i), phiaxis(j), zaxis(k),r1dtemp, ier)
-                                    Efield4D(i,j,k,1:3) = -r1dtemp(1:3)
+                                    r4dtemp(i,j,k,1:3) = -r1dtemp(1:3)
                               END DO
                         END DO
                   END DO
-                  !CALL EZspline_gradient3_r8(POT_spl, ider, nr, nphi, nz, raxis, phiaxis, zaxis,Efield4D(1:nr,1:nphi,1:nz,1:3), ier)
+                  !CALL EZspline_gradient3_r8(POT_spl, ider, nr, nphi, nz, raxis, phiaxis, zaxis,r4dtemp(1:nr,1:nphi,1:nz,1:3), ier)
                   ALLOCATE(rtemp(nr,nz,nphi))
-                  rtemp = reshape(Efield4D(1:nr,1:nphi,1:nz,1), shape(rtemp), order=(/1, 3, 2/)) 
+                  rtemp = reshape(r4dtemp(1:nr,1:nphi,1:nz,1), shape(rtemp), order=(/1, 3, 2/)) 
                   CALL write_var_hdf5(qid_gid,'er',nr,nz,nphi, ier,DBLVAR=rtemp)
                   CALL h5dopen_f(qid_gid, 'er', temp_gid, ier)
                   CALL write_att_hdf5(temp_gid,'units','V/m',ier)
                   CALL write_att_hdf5(temp_gid,'description','Electric field in the r-direction: Er(r,z,phi)',ier)
                   CALL h5dclose_f(temp_gid,ier)
-                  rtemp = reshape(Efield4D(1:nr,1:nphi,1:nz,2), shape(rtemp), order=(/1, 3, 2/)) 
+                  rtemp = reshape(r4dtemp(1:nr,1:nphi,1:nz,2), shape(rtemp), order=(/1, 3, 2/)) 
                   CALL write_var_hdf5(qid_gid,'et',nr,nz,nphi, ier,DBLVAR=rtemp)
                   CALL h5dopen_f(qid_gid, 'et', temp_gid, ier)
                   CALL write_att_hdf5(temp_gid,'units','V/m',ier)
                   CALL write_att_hdf5(temp_gid,'description','Electric field in the toroidal phi-direction: Et(r,z,phi)',ier)
                   CALL h5dclose_f(temp_gid,ier)
-                  rtemp = reshape(Efield4D(1:nr,1:nphi,1:nz,3), shape(rtemp), order=(/1, 3, 2/)) 
+                  rtemp = reshape(r4dtemp(1:nr,1:nphi,1:nz,3), shape(rtemp), order=(/1, 3, 2/)) 
                   CALL write_var_hdf5(qid_gid,'ez',nr,nz,nphi, ier,DBLVAR=rtemp)
                   CALL h5dopen_f(qid_gid, 'ez', temp_gid, ier)
                   CALL write_att_hdf5(temp_gid,'units','V/m',ier)
@@ -354,7 +365,7 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                   CALL h5dclose_f(temp_gid,ier)
                   DEALLOCATE(r1dtemp)
                   DEALLOCATE(rtemp)
-                  DEALLOCATE(Efield4D)
+                  DEALLOCATE(r4dtemp)
             END IF
                
             CALL h5gclose_f(qid_gid, ier)
@@ -480,27 +491,71 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                         ! Close file
             CALL close_hdf5(fid,ier)
             IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'ascot5_'//TRIM(id_string)//'_equilibrium.h5',ier)
-            
+       
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   
+
+      CASE('DENF')      
+      ! Distribution needs to be in density [part/m^3] here - called from distnorm
+      !ALLOCATE(r4dtemp(nbeams,nr_fida,nphi_fida,nz_fida))
+      ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
+      ALLOCATE(r3dtemp2(nr_fida,nphi_fida,nz_fida))
+
+      r3dtemp2 = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=1)
+      rtemp = r3dtemp2!reshape(r3dtemp2(1:nr_fida,1:nphi_fida,1:nz_fida), shape(rtemp), order=(/1, 3, 2/)) 
+      CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.) 
+            CALL write_var_hdf5(fid,'denf',nr_fida,nz_fida,nphi_fida,ier,DBLVAR=rtemp/1000000) !in cm^3
+            CALL h5dopen_f(fid, '/denf', temp_gid, ier)
+            CALL write_att_hdf5(temp_gid,'description','Fast-ion density (nr_fida,nz_fida,nphi_fida)',ier)
+            CALL write_att_hdf5(temp_gid,'units','part/(cm^3)',ier)
+            CALL h5dclose_f(temp_gid,ier)
+      DEALLOCATE(r3dtemp2)
+      DEALLOCATE(rtemp)  
+      CALL close_hdf5(fid,ier)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       CASE('DISTRIBUTION_GC_F')
-      ! Do volume normalization
-        CALL beams3d_distnorm !TODO: check if this has already been done
-        !Apply jacobian for transformation from v_parr/v_perp to E,p+
+            ALLOCATE(pitch_fida(npitch_fida))
+            ALLOCATE(energy_fida(nenergy_fida))
+            ! Do volume normalization
+            !CALL beams3d_distnorm !TODO: check if this has already been done
+            !Apply jacobian for transformation from v_parr/v_perp to E,p
           DO b = 1, nbeams
-              DO i = 1, ns_prof4
-                    DO j = 1, ns_prof5
-                          v_parr = REAL(i) / ns_prof4 * partvmax ! full grid or half grid, which alignment?
-                          v_perp = REAL(j) / ns_prof5 * partvmax
+              DO i = 1, nenergy_fida
+                    DO j = 1, npitch_fida
+                          v_parr = REAL(i) / nenergy_fida * partvmax ! full grid or half grid, which alignment?
+                          v_perp = REAL(j) / npitch_fida * partvmax
                           pitch = MAX(MIN(v_parr / SQRT(v_parr * v_parr + v_perp * v_perp),1.),0.)
                           jac = 1 / (mass_beams(b) * SQRT(1-pitch * pitch))
-                          jac = jac * 2 / 1000000 * e_charge !convert to TRANSP convention? and 1/cm^3/eV
+                          jac = jac * 2 / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention? and 1/cm^3/keV
                           dist5d_prof(b,:,:,:,i,j) = dist5d_prof(b,:,:,:,i,j) * jac !probably should inicate somewhere that this has been done, or put it in another variable
-                    END DO
+                        IF (b .eq. 1 .and. i .eq. 1) THEN
+                              pitch_fida(j) = pitch
+                        END IF
+                        END DO
+                  IF (b .eq. 1) THEN
+                        energy_fida(i) = 0.5 * mass_beams(b) * (v_parr * v_parr + v_perp * v_perp) * e_charge / 1000 ! in keV according to https://d3denergetic.github.io/FIDASIM/page/03_technical/01_prefida_inputs.html#fields-structure
+                  END IF
               END DO
+
         END DO
   
 
-        ALLOCATE(dist5d_fida(nbeams,nr_fida,nz_fida,nphi_fida,ns_prof4,ns_prof5))
+        CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.) 
+        CALL write_var_hdf5(fid,'energy',nenergy_fida,ier,DBLVAR=energy_fida) !in cm^3
+        CALL h5dopen_f(fid, '/energy', temp_gid, ier)
+        CALL write_att_hdf5(temp_gid,'description','Energy array',ier)
+        CALL write_att_hdf5(temp_gid,'units','keV',ier)
+        CALL h5dclose_f(temp_gid,ier) 
+        CALL write_var_hdf5(fid,'pitch',npitch_fida,ier,DBLVAR=pitch_fida) !in cm^3
+        CALL h5dopen_f(fid, '/pitch', temp_gid, ier)
+        CALL write_att_hdf5(temp_gid,'description','Pitch array',ier)
+        CALL write_att_hdf5(temp_gid,'units','-',ier)
+        CALL h5dclose_f(temp_gid,ier) 
+
+        DEALLOCATE(pitch_fida)
+        DEALLOCATE(energy_fida)
+
+        ALLOCATE(dist5d_fida(nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
       DO b=1,nbeams
             DO i=1,nr_fida
                   DO k = 1, nz_fida
@@ -536,9 +591,9 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                         !d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
                         !d5 = MAX(MIN(CEILING(vperp*h5_prof         ), ns_prof5), 1) ! Vperp
                         IF (y0 .GT. 1) THEN
-                              dist5d_fida(b,i,k,j,:,:) = 0 !distribution is 0 outside plasma
+                              dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
                         ELSE
-                              dist5d_fida(b,i,k,j,:,:) = dist5d_prof(b,l,m,n,:,:) !output in r-z-phi
+                              dist5d_fida(b,:,:,i,k,j) = dist5d_prof(b,l,m,n,:,:) !output in r-z-phi
                         END IF
   
                         END DO
@@ -547,12 +602,15 @@ USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
       END DO
             !dist5d_fida = reshape(dist5d_fida, [nbeams,nr_fida,nz_fida,nphi_fida,ns_prof4,ns_prof5], order=(/1, 2, 4, 3, 5, 6/)) 
             CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.) 
-            IF (ASSOCIATED(dist5d_prof)) THEN
-                  CALL write_var_hdf5(fid,'f',nbeams,nr_fida,nz_fida,nphi_fida,ns_prof4,ns_prof5,ier,DBLVAR=dist5d_fida,&
-                                      ATT='Distribution Function [part/(cm^3 eV)] (nr_fida,nz_fida,nphi_fida,ns_prof4,ns_prof5)',ATT_NAME='description')
+            IF (ASSOCIATED(dist5d_fida)) THEN
+                  CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=SUM(dist5d_fida, DIM=1))
+                  CALL h5dopen_f(fid, '/f', temp_gid, ier)
+                  CALL write_att_hdf5(temp_gid,'description','Distribution Function (nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida)',ier)
+                  CALL write_att_hdf5(temp_gid,'units','part/(cm^3 eV)',ier)
+                  CALL h5dclose_f(temp_gid,ier)
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_fida',ier)
             END IF
-
+            CALL close_hdf5(fid,ier)
       CASE('DISTRIBUTION_GC_MC')
       CASE('DISTRIBUTION_FO')
 
