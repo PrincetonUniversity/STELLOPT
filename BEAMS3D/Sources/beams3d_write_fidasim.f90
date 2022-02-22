@@ -529,34 +529,38 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          DO b = 1, nbeams
             DO i = 1, nenergy_fida
                DO j = 1, npitch_fida
-                  ! v = SQRT(2 * energy_fida(i) *1000.0 * e_charge / mass_beams(b))
-                  ! IF (v .gt. partvmax) THEN
-                  !    dist5d_prof(b,:,:,:,i,j) = 0
-                  ! ELSE
-                  !    v_parr = pitch_fida(j) * v
-                  !    v_perp = SQRT(1- pitch_fida(j) * pitch_fida(j)) * v
-                  !    !determine beams3d-grid indices (velocity space)
-                  !    i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
-                  !    j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
-                  !    !xparam = dist5d_prof(b,:,:,:,i3,j3)
-                  !    !yparam = xparam * pi2 * v /  mass_beams(b)
-                  !    dist5d_prof(b,:,:,:,i,j) = dist5d_prof(b,:,:,:,i3,j3) * pi2 * v /  mass_beams(b)
-                  ! END IF
-                  !Apply jacobian for transformation from v_parr/v_perp to E,p
-                  v_parr = REAL(i) / nenergy_fida * partvmax ! full grid or half grid, which alignment?
-                  v_perp = REAL(j) / npitch_fida * partvmax
-                  pitch = MAX(MIN(v_parr / SQRT(v_parr * v_parr + v_perp * v_perp),1.),0.)
-                  jac = 1 / (mass_beams(b) * SQRT(1-pitch * pitch))
-                  jac = jac / pi2 / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention? and 1/cm^3/keV
-                  dist5d_prof(b,:,:,:,i,j) = dist5d_prof(b,:,:,:,i,j) * jac !probably should inicate somewhere that this has been done, or put it in another variable
-                  IF (b .eq. 1 .and. i .eq. 1) THEN
-                     pitch_fida(j) = pitch
+                  v = SQRT(2 * energy_fida(i) *1000.0 * e_charge / mass_beams(b))
+                  IF (v .gt. partvmax) THEN
+                     dist5d_prof(b,:,:,:,i,j) = 0
+                  ELSE
+                     pitch = pitch_fida(j)
+                     v_parr = pitch * v
+                     v_perp = SQRT(1- pitch * pitch) * v
+                     !determine beams3d-grid indices (velocity space)
+                     i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
+                     j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
+                     !xparam = dist5d_prof(b,:,:,:,i3,j3)
+                     !yparam = xparam * pi2 * v /  mass_beams(b)
+                     jac = 1 / (mass_beams(b) * SQRT(1-pitch * pitch))
+                     !jac = MIN(MAX(jac, 0.0),1.0E)
+                     jac = jac / pi2 / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention? and 1/cm^3/keV
+                     dist5d_prof(b,:,:,:,i,j) = dist5d_prof(b,:,:,:,i3,j3) * jac !* pi2 * v /  mass_beams(b) !problematic, circular reference
                   END IF
+                  !       !Apply jacobian for transformation from v_parr/v_perp to E,p
+                  !       v_parr = REAL(i) / nenergy_fida * partvmax ! full grid or half grid, which alignment?
+                  !       v_perp = REAL(j) / npitch_fida * partvmax
+                  !       pitch = MAX(MIN(v_parr / SQRT(v_parr * v_parr + v_perp * v_perp),1.),0.)
+                  !       jac = 1 / (mass_beams(b) * SQRT(1-pitch * pitch))
+                  !       jac = jac / pi2 / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention? and 1/cm^3/keV
+                  !       dist5d_prof(b,:,:,:,i,j) = dist5d_prof(b,:,:,:,i,j) * jac !probably should inicate somewhere that this has been done, or put it in another variable
+                  !       IF (b .eq. 1 .and. i .eq. 1) THEN
+                  !          pitch_fida(j) = pitch
+                  !       END IF
+                  !    END DO
+                  !    IF (b .eq. 1) THEN
+                  !       energy_fida(i) = 0.5 * mass_beams(b) * (v_parr * v_parr + v_perp * v_perp) / e_charge / 1000 ! in keV according to https://d3denergetic.github.io/FIDASIM/page/03_technical/01_prefida_inputs.html#fields-structure
+                  !    END IF
                END DO
-               IF (b .eq. 1) THEN
-                  energy_fida(i) = 0.5 * mass_beams(b) * (v_parr * v_parr + v_perp * v_perp) / e_charge / 1000 ! in keV according to https://d3denergetic.github.io/FIDASIM/page/03_technical/01_prefida_inputs.html#fields-structure
-               END IF
-               !END DO
             END DO
          END DO
 
