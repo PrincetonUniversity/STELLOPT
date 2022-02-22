@@ -1,0 +1,36 @@
+---
+actor_description:
+    actor_name: VMEC
+    actor_type: python
+    data_type: legacy
+code_description:
+    arguments:
+    -   intent: OUT
+        name: IDS_EQ_OUT
+        type: equilibrium
+    documentation: Actor for the VMEC code.
+    implementation:
+        code_parameters:
+            parameters: 'indata.xml'
+            schema: 'indata.xsd'
+        code_path: VMEC2000/Release/libvmec.a
+        data_type: legacy
+        include_path: VMEC2000/Release/vmec_imas_module.mod
+        programming_language: fortran
+        root_dir: /pfs/home/g2slazer/src/STELLOPT/
+        subroutines:
+            finalize: ''
+            init: ''
+            main: VMEC_IMAS
+    settings:
+        compiler_cmd: ifort
+        extra_libraries:
+            path_defined:
+            - /gss_efgw_work/home/g2slazer/src/STELLOPT/LIBSTELL/Release/libstell.a
+            pkg_config_defined:
+            - netcdf-fortran-amd64_intel_17
+            - hdf5-amd64_intel_17
+            - mkl-2017.1-amd64_intel_17
+        mpi_compiler_cmd: mpiifort
+        open_mp_switch: ''
+...
