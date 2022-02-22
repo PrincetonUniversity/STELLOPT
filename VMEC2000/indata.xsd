@@ -116,21 +116,21 @@
   </xs:element>
 
   <!-- AM -->
-  <xs:element name="AM" type="xs:float_list">
+  <xs:element name="AM" type="float_list">
     <xs:annotation>
       <xs:documentation>Coefficients for mass profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AI -->
-  <xs:element name="AI" type="xs:float_list">
+  <xs:element name="AI" type="float_list">
     <xs:annotation>
       <xs:documentation>Coefficients for iota profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AC -->
-  <xs:element name="AC" type="xs:float_list">
+  <xs:element name="AC" type="float_list">
     <xs:annotation>
       <xs:documentation>Coefficients for toroidal current density profile.</xs:documentation>
     </xs:annotation>
@@ -158,42 +158,42 @@
   </xs:element>
 
   <!-- AM_AUX_S -->
-  <xs:element name="AM_AUX_S" type="xs:float_list">
+  <xs:element name="AM_AUX_S" type="float_list">
     <xs:annotation>
       <xs:documentation>Knot locations in normalized toroidal flux (s) for mass profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AM_AUX_F -->
-  <xs:element name="AM_AUX_F" type="xs:float_list">
+  <xs:element name="AM_AUX_F" type="float_list">
     <xs:annotation>
       <xs:documentation>Knot values in normalized toroidal flux (s) for mass profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AI_AUX_S -->
-  <xs:element name="AI_AUX_S" type="xs:float_list">
+  <xs:element name="AI_AUX_S" type="float_list">
     <xs:annotation>
       <xs:documentation>Knot locations in normalized toroidal flux (s) for iota (1/q) profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AI_AUX_F -->
-  <xs:element name="AI_AUX_F" type="xs:float_list">
+  <xs:element name="AI_AUX_F" type="float_list">
     <xs:annotation>
       <xs:documentation>Knot values in normalized toroidal flux (s) for iota (1/q) profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AC_AUX_S -->
-  <xs:element name="AC_AUX_S" type="xs:float_list">
+  <xs:element name="AC_AUX_S" type="float_list">
     <xs:annotation>
       <xs:documentation>Knot locations in normalized toroidal flux (s) for toroidal current density profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AC_AUX_F -->
-  <xs:element name="AC_AUX_F" type="xs:float_list">
+  <xs:element name="AC_AUX_F" type="float_list">
     <xs:annotation>
       <xs:documentation>Knot values in normalized toroidal flux (s) for toroidal current density profile.</xs:documentation>
     </xs:annotation>
@@ -214,28 +214,28 @@
   </xs:element>
 
   <!-- RAXIS_CC -->
-  <xs:element name="RAXIS_CC" type="xs:float_list">
+  <xs:element name="RAXIS_CC" type="float_list">
     <xs:annotation>
       <xs:documentation>Even toroidal (n) harmonics of the R location of the magnetic axis.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- RAXIS_CS -->
-  <xs:element name="RAXIS_CS" type="xs:float_list">
+  <xs:element name="RAXIS_CS" type="float_list">
     <xs:annotation>
       <xs:documentation>Odd toroidal (n) harmonics of the R location of the magnetic axis.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ZAXIS_CC -->
-  <xs:element name="ZAXIS_CC" type="xs:float_list">
+  <xs:element name="ZAXIS_CC" type="float_list">
     <xs:annotation>
       <xs:documentation>Even toroidal (n) harmonics of the Z location of the magnetic axis.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ZAXIS_CS -->
-  <xs:element name="ZAXIS_CS" type="xs:float_list">
+  <xs:element name="ZAXIS_CS" type="float_list">
     <xs:annotation>
       <xs:documentation>Odd toroidal (n) harmonics of the Z location of the magnetic axis.</xs:documentation>
     </xs:annotation>
@@ -270,21 +270,21 @@
   </xs:element>
 
   <!-- NITER_ARRAY -->
-  <xs:element name="NITER_ARRAY" type="xs:integer_list">
+  <xs:element name="NITER_ARRAY" type="integer_list">
     <xs:annotation>
       <xs:documentation>Maximum interations in multi-grid scheme.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NS_ARRAY -->
-  <xs:element name="NS_ARRAY" type="xs:integer_list">
+  <xs:element name="NS_ARRAY" type="integer_list">
     <xs:annotation>
       <xs:documentation>Radial gridpoints in multi-grid scheme.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- FTOL_ARRAY -->
-  <xs:element name="FTOL_ARRAY" type="xs:float_list">
+  <xs:element name="FTOL_ARRAY" type="float_list">
     <xs:annotation>
       <xs:documentation>Force tolerance in multi-grid scheme.</xs:documentation>
     </xs:annotation>
@@ -319,7 +319,7 @@
   </xs:element>
 
   <!-- EXTCUR -->
-  <xs:element name="EXTCUR" type="xs:float_list">
+  <xs:element name="EXTCUR" type="float_list">
     <xs:annotation>
       <xs:documentation>External current factors for free boundary runs.</xs:documentation>
     </xs:annotation>
