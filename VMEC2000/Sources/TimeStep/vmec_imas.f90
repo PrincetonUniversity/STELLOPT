@@ -80,6 +80,9 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_OUT, INDATA_XML, status_code, status_message)
                reset_string)
   ivmec_flag = ictrl(2)
 
+  !----  Write out EQUILIBRIUM
+
+
   !----  No need to call finalize
 
   !---------------------------------------------------------------------
@@ -101,6 +104,7 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   !     Libraries
   !---------------------------------------------------------------------
   USE ids_schemas
+  USE xml2eg_mdl, only: xml2eg_parse_memory, xml2eg_get, type_xml2eg_document, xml2eg_free_doc, set_verbose
   USE vmec_input
 
   !---------------------------------------------------------------------
@@ -122,15 +126,67 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   INTEGER :: ictrl(5)
   CHARACTER(len = 128)    :: reset_string
 
+  TYPE(type_xml2eg_document) :: doc
+
   !---------------------------------------------------------------------
   !     BEGIN EXECUTION
   !---------------------------------------------------------------------
 
-  !----  Intitailizations (This is a hack)
+  !----  Intitailizations (This is a hack to set defaults)
   iunit = -1
   CALL read_indata_namelist(iunit,status_code)
   
   !----  Now setup the run based on the xml
+  CALL xml2eg_parse_memory(INDATA_XML%parameters_value,doc)
+  CALL SET_VERBOSE(.TRUE.) ! Only needed if you want to see what's going on in the parsing
+  CALL xml2eg_get(doc,'MGRID_FILE',mgrid_file)
+  CALL xml2eg_get(doc,'NFP',nfp)
+  CALL xml2eg_get(doc,'NCURR',ncurr)
+  CALL xml2eg_get(doc,'NSTEP',nstep)
+  CALL xml2eg_get(doc,'NVACSKIP',nvacskip)
+  CALL xml2eg_get(doc,'DELT',delt)
+  CALL xml2eg_get(doc,'GAMMA',gamma)
+  CALL xml2eg_get(doc,'AM',am)
+  CALL xml2eg_get(doc,'AI',ai)
+  CALL xml2eg_get(doc,'AC',ac)
+  CALL xml2eg_get(doc,'PCURR_TYPE',pcurr_type)
+  CALL xml2eg_get(doc,'PMASS_TYPE',pmass_type)
+  CALL xml2eg_get(doc,'PIOTA_TYPE',piota_type)
+  CALL xml2eg_get(doc,'AM_AUX_S',am_aux_s)
+  CALL xml2eg_get(doc,'AM_AUX_F',am_aux_f)
+  CALL xml2eg_get(doc,'AI_AUX_S',ai_aux_s)
+  CALL xml2eg_get(doc,'AI_AUX_F',ai_aux_f)
+  CALL xml2eg_get(doc,'AC_AUX_S',ac_aux_s)
+  CALL xml2eg_get(doc,'AC_AUX_F',ac_aux_f)
+  !CALL xml2eg_get(doc,'RBC',rbc)
+  !CALL xml2eg_get(doc,'ZBS',zbs)
+  !CALL xml2eg_get(doc,'RBS',rbs)
+  !CALL xml2eg_get(doc,'ZBC',zbc)
+  CALL xml2eg_get(doc,'SPRES_PED',spres_ped)
+  CALL xml2eg_get(doc,'PRES_SCALE',pres_scale)
+  CALL xml2eg_get(doc,'RAXIS_CC',raxis_cc)
+  CALL xml2eg_get(doc,'ZAXIS_CS',zaxis_cs)
+  CALL xml2eg_get(doc,'RAXIS_CS',raxis_cs)
+  CALL xml2eg_get(doc,'ZAXIS_CC',zaxis_cc)
+  CALL xml2eg_get(doc,'MPOL',mpol)
+  CALL xml2eg_get(doc,'NTOR',ntor)
+  CALL xml2eg_get(doc,'NTHETA',ntheta)
+  CALL xml2eg_get(doc,'NZETA',nzeta)
+  CALL xml2eg_get(doc,'NITER_ARRAY',niter_array)
+  CALL xml2eg_get(doc,'NS_ARRAY',ns_array)
+  CALL xml2eg_get(doc,'FTOL_ARRAY',ftol_array)
+  CALL xml2eg_get(doc,'TCON0',tcon0)
+  CALL xml2eg_get(doc,'CURTOR',curtor)
+  CALL xml2eg_get(doc,'EXTCUR',extcur)
+  CALL xml2eg_get(doc,'PHIEDGE',phiedge)
+  CALL xml2eg_get(doc,'BLOAT',bloat)
+  CALL xml2eg_get(doc,'LFREEB',lfreeb)
+  CALL xml2eg_get(doc,'LASYM',lasym)
+
+  ! Make sure to clean up after you!!
+  ! When calling "xml2eg_parse_memory" memory was allocated in the "doc" object.
+  ! This memory is freed by "xml2eg_free_doc(doc)"
+  CALL xml2eg_free_doc(doc)
 
 END SUBROUTINE VMEC_INDATA_IMAS
 
