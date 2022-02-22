@@ -1,7 +1,7 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
   elementFormDefault="qualified">
   <xs:annotation>
-    <xs:documentation>Code parameters for VMEC</xs:documentation>
+    <xs:documentation>Code parameters for VMEC (INDATA namelist)</xs:documentation>
   </xs:annotation>
 
   <!-- Special Definitions and Rules -->
@@ -13,7 +13,7 @@
   </xs:simpleType>
 
   <!-- INDATA Namelist -->
-  <xs:element name="parameters">
+  <xs:element name="INDATA">
     <xs:complexType>
       <xs:all>
         <xs:element ref="MGRID_FILE" minOccurs="0"/>
@@ -67,315 +67,315 @@
 
   <!-- Variable definitions -->
   <!-- MGRID_FILE -->
-  <xs:element name="MGRID_FILE" type="xs:string">
+  <xs:element name="MGRID_FILE" type="xs:string" default="none">
     <xs:annotation>
       <xs:documentation>Path to vacuum grid file as produced by MAKEGRID</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NFP -->
-  <xs:element name="NFP" type="xs:integer">
+  <xs:element name="NFP" type="xs:integer" default="1">
     <xs:annotation>
       <xs:documentation>Number of toroidal field periods</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NCURR -->
-  <xs:element name="NCURR" type="xs:integer">
+  <xs:element name="NCURR" type="xs:integer" default="0">
     <xs:annotation>
       <xs:documentation>0: Iota (AI) specified (1/q); 1: Toroidal current profile (AC) specified</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NSTEP -->
-  <xs:element name="NSTEP" type="xs:integer">
+  <xs:element name="NSTEP" type="xs:integer" default="200">
     <xs:annotation>
       <xs:documentation>Interations between screen output.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NVACSKIP -->
-  <xs:element name="NVACSKIP" type="xs:integer">
+  <xs:element name="NVACSKIP" type="xs:integer" default="6">
     <xs:annotation>
       <xs:documentation>Initial iterations between vacuum field samples</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- DELT -->
-  <xs:element name="DELT" type="xs:float">
+  <xs:element name="DELT" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Interative smoothing factor</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- GAMMA -->
-  <xs:element name="GAMMA" type="xs:float">
+  <xs:element name="GAMMA" type="xs:float" default="0.0">
     <xs:annotation>
       <xs:documentation>Adiabatic index.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AM -->
-  <xs:element name="AM" type="float_list">
+  <xs:element name="AM" type="float_list" default="0.0 0.0 0.0">
     <xs:annotation>
       <xs:documentation>Coefficients for mass profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AI -->
-  <xs:element name="AI" type="float_list">
+  <xs:element name="AI" type="float_list" default="0.0 0.0 0.0">
     <xs:annotation>
       <xs:documentation>Coefficients for iota profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AC -->
-  <xs:element name="AC" type="float_list">
+  <xs:element name="AC" type="float_list" default="0.0 0.0 0.0">
     <xs:annotation>
       <xs:documentation>Coefficients for toroidal current density profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PMASS_TYPE -->
-  <xs:element name="PMASS_TYPE" type="xs:string">
+  <xs:element name="PMASS_TYPE" type="xs:string" default="power_series">
     <xs:annotation>
       <xs:documentation>Functional form of mass profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PIOTA_TYPE -->
-  <xs:element name="PIOTA_TYPE" type="xs:string">
+  <xs:element name="PIOTA_TYPE" type="xs:string" default="power_series">
     <xs:annotation>
       <xs:documentation>Functional form of iota (1/q) profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PCURR_TYPE -->
-  <xs:element name="PCURR_TYPE" type="xs:string">
+  <xs:element name="PCURR_TYPE" type="xs:string" default="power_series">
     <xs:annotation>
       <xs:documentation>Functional form of toroidal current profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AM_AUX_S -->
-  <xs:element name="AM_AUX_S" type="float_list">
+  <xs:element name="AM_AUX_S" type="float_list" default="0.0 0.25 0.5 0.75 1.0">
     <xs:annotation>
       <xs:documentation>Knot locations in normalized toroidal flux (s) for mass profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AM_AUX_F -->
-  <xs:element name="AM_AUX_F" type="float_list">
+  <xs:element name="AM_AUX_F" type="float_list" default="1.0 0.72 0.5 0.25 0.0">
     <xs:annotation>
       <xs:documentation>Knot values in normalized toroidal flux (s) for mass profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AI_AUX_S -->
-  <xs:element name="AI_AUX_S" type="float_list">
+  <xs:element name="AI_AUX_S" type="float_list" default="0.0 0.25 0.5 0.75 1.0">
     <xs:annotation>
       <xs:documentation>Knot locations in normalized toroidal flux (s) for iota (1/q) profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AI_AUX_F -->
-  <xs:element name="AI_AUX_F" type="float_list">
+  <xs:element name="AI_AUX_F" type="float_list" default="1.0 0.8 0.5 0.25 0.2">
     <xs:annotation>
       <xs:documentation>Knot values in normalized toroidal flux (s) for iota (1/q) profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AC_AUX_S -->
-  <xs:element name="AC_AUX_S" type="float_list">
+  <xs:element name="AC_AUX_S" type="float_list" default="0.0 0.25 0.5 0.75 1.0">
     <xs:annotation>
       <xs:documentation>Knot locations in normalized toroidal flux (s) for toroidal current density profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- AC_AUX_F -->
-  <xs:element name="AC_AUX_F" type="float_list">
+  <xs:element name="AC_AUX_F" type="float_list" default="0.0 0.5 1.0 0.5 0.0">
     <xs:annotation>
       <xs:documentation>Knot values in normalized toroidal flux (s) for toroidal current density profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- SPRES_PED -->
-  <xs:element name="SPRES_PED" type="xs:float">
+  <xs:element name="SPRES_PED" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Location of pressure pedestal in normalized toroidal flux (s).</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PRES_SCALE -->
-  <xs:element name="PRES_SCALE" type="xs:float">
+  <xs:element name="PRES_SCALE" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Pressure scaling factor.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- RAXIS_CC -->
-  <xs:element name="RAXIS_CC" type="float_list">
+  <xs:element name="RAXIS_CC" type="float_list" default="0.0 0.0 0.0 0.0">
     <xs:annotation>
       <xs:documentation>Even toroidal (n) harmonics of the R location of the magnetic axis.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- RAXIS_CS -->
-  <xs:element name="RAXIS_CS" type="float_list">
+  <xs:element name="RAXIS_CS" type="float_list" default="0.0 0.0 0.0 0.0">
     <xs:annotation>
       <xs:documentation>Odd toroidal (n) harmonics of the R location of the magnetic axis.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ZAXIS_CC -->
-  <xs:element name="ZAXIS_CC" type="float_list">
+  <xs:element name="ZAXIS_CC" type="float_list" default="0.0 0.0 0.0 0.0">
     <xs:annotation>
       <xs:documentation>Even toroidal (n) harmonics of the Z location of the magnetic axis.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ZAXIS_CS -->
-  <xs:element name="ZAXIS_CS" type="float_list">
+  <xs:element name="ZAXIS_CS" type="float_list" default="0.0 0.0 0.0 0.0">
     <xs:annotation>
       <xs:documentation>Odd toroidal (n) harmonics of the Z location of the magnetic axis.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- MPOL -->
-  <xs:element name="MPOL" type="xs:integer">
+  <xs:element name="MPOL" type="xs:integer" default="5">
     <xs:annotation>
       <xs:documentation>Number of poloidal modes (0:MPOL-1).</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NTOR -->
-  <xs:element name="NTOR" type="xs:integer">
+  <xs:element name="NTOR" type="xs:integer" default="0">
     <xs:annotation>
       <xs:documentation>Total extent of toridal modes (-NTOR:NTOR).</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NTHETA -->
-  <xs:element name="NTHETA" type="xs:integer">
+  <xs:element name="NTHETA" type="xs:integer" default="0">
     <xs:annotation>
       <xs:documentation>Real space poloidal gridpoints.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NZETA -->
-  <xs:element name="NZETA" type="xs:integer">
+  <xs:element name="NZETA" type="xs:integer" default="0">
     <xs:annotation>
       <xs:documentation>Real space toroidal gridpoints, must match MGRID_FILE in free boundary.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NITER_ARRAY -->
-  <xs:element name="NITER_ARRAY" type="integer_list">
+  <xs:element name="NITER_ARRAY" type="integer_list" default="1000">
     <xs:annotation>
       <xs:documentation>Maximum interations in multi-grid scheme.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NS_ARRAY -->
-  <xs:element name="NS_ARRAY" type="integer_list">
+  <xs:element name="NS_ARRAY" type="integer_list" default="9">
     <xs:annotation>
       <xs:documentation>Radial gridpoints in multi-grid scheme.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- FTOL_ARRAY -->
-  <xs:element name="FTOL_ARRAY" type="float_list">
+  <xs:element name="FTOL_ARRAY" type="float_list" default="1.0E-8">
     <xs:annotation>
       <xs:documentation>Force tolerance in multi-grid scheme.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- TCON0 -->
-  <xs:element name="TCON0" type="xs:float">
+  <xs:element name="TCON0" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Weight factor for contrained forces.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PRECON_TYPE -->
-  <xs:element name="PRECON_TYPE" type="xs:string">
+  <xs:element name="PRECON_TYPE" type="xs:string" default='NONE'>
     <xs:annotation>
       <xs:documentation>Preconditioner type for preconditioned descent.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PREC2D_THRESHOLD -->
-  <xs:element name="PREC2D_THRESHOLD" type="xs:float">
+  <xs:element name="PREC2D_THRESHOLD" type="xs:float" default="1.0E-30">
     <xs:annotation>
       <xs:documentation>Force threshold to being preconditioned descent.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- CURTOR -->
-  <xs:element name="CURTOR" type="xs:float">
+  <xs:element name="CURTOR" type="xs:float" default="0.0">
     <xs:annotation>
       <xs:documentation>Total toroidal current [A] (used when NCURR=1).</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- EXTCUR -->
-  <xs:element name="EXTCUR" type="float_list">
+  <xs:element name="EXTCUR" type="float_list" default="0.0 0.0 0.0 0.0">
     <xs:annotation>
       <xs:documentation>External current factors for free boundary runs.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PHIEDGE -->
-  <xs:element name="PHIEDGE" type="xs:float">
+  <xs:element name="PHIEDGE" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Total enclosed toroidal flux [Wb].</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- BLOAT -->
-  <xs:element name="BLOAT" type="xs:float">
+  <xs:element name="BLOAT" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Profile scaleing factor.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- LFORBAL -->
-  <xs:element name="LFORBAL" type="xs:boolean">
+  <xs:element name="LFORBAL" type="xs:boolean" default="0">
     <xs:annotation>
       <xs:documentation>Flag to control use of non-variational forces.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- LFREEB -->
-  <xs:element name="LFREEB" type="xs:boolean">
+  <xs:element name="LFREEB" type="xs:boolean" default="0">
     <xs:annotation>
       <xs:documentation>Flag to control free boundary calculation.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- LASYM -->
-  <xs:element name="LASYM" type="xs:boolean">
+  <xs:element name="LASYM" type="xs:boolean" default="0">
     <xs:annotation>
       <xs:documentation>Flag to control use of non-stellarator symmetric terms.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- LRFP -->
-  <xs:element name="LRFP" type="xs:boolean">
+  <xs:element name="LRFP" type="xs:boolean" default="0">
     <xs:annotation>
       <xs:documentation>Flag to control RFP calculation (AI defines q not iota).</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- LBSUBS -->
-  <xs:element name="LBSUBS" type="xs:boolean">
+  <xs:element name="LBSUBS" type="xs:boolean" default="0">
     <xs:annotation>
       <xs:documentation>Flag to control recalcualtion of B_s from force balance.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- LNYQUIST -->
-  <xs:element name="LNYQUIST" type="xs:boolean">
+  <xs:element name="LNYQUIST" type="xs:boolean" default="1">
     <xs:annotation>
       <xs:documentation>Flag to control use of larger Fourier space for Jacobian.</xs:documentation>
     </xs:annotation>
