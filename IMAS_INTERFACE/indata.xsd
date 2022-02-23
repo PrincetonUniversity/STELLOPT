@@ -61,6 +61,8 @@
         <xs:element ref="LRFP" minOccurs="0"/>
         <xs:element ref="LBSUBS" minOccurs="0"/>
         <xs:element ref="LNYQUIST" minOccurs="0"/>
+        <xs:element ref="RBC_np0" minOccurs="0"/>
+        <xs:element ref="ZBS_np0" minOccurs="0"/>
       </xs:all>
     </xs:complexType>
   </xs:element>
@@ -378,6 +380,20 @@
   <xs:element name="LNYQUIST" type="xs:boolean" default="1">
     <xs:annotation>
       <xs:documentation>Flag to control use of larger Fourier space for Jacobian.</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+  <!-- RBC n=0 -->
+  <xs:element name="RBC_np0" type="float_list" default="0">
+    <xs:annotation>
+      <xs:documentation>R (even) boundary poloidal Fourier Harmonics for n=0.</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+  <!-- ZBS n=0 -->
+  <xs:element name="ZBS_np0" type="float_list" default="0">
+    <xs:annotation>
+      <xs:documentation>Z (odd) boundary poloidal Fourier Harmonics for n=0.</xs:documentation>
     </xs:annotation>
   </xs:element>
 

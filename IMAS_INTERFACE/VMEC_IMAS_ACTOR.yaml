@@ -11,8 +11,8 @@ code_description:
     documentation: Actor for the VMEC code.
     implementation:
         code_parameters:
-            parameters: VMEC2000/indata.xml
-            schema: VMEC2000/indata.xsd
+            parameters: IMAS_INTERFACE/indata.xml
+            schema: IMAS_INTERFACE/indata.xsd
         code_path: VMEC2000/Release/libvmec.a
         data_type: legacy
         include_path: VMEC2000/Release/vmec_imas_module.mod

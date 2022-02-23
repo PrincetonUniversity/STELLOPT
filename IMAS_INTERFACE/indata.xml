@@ -34,6 +34,8 @@
 	<AC_AUX_F>0.0 0.50 1.0 0.50 0.0</AC_AUX_F>
 	<RAXIS_CC> 3.6 2.0E-1</RAXIS_CC>
 	<ZAXIS_CS> 0.0 </ZAXIS_CS>
+	<RBC_np0>10.0  1.0 0.0</RBC_np0>
+	<ZBS_np0> 0.0 -1.0 0.0</ZBS_np0>
 
 
 </INDATA>
