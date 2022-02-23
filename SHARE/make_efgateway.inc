@@ -48,8 +48,10 @@
 #            IMAS Options
 #######################################################################
   LIMAS = T
-  IMAS_INC = $(shell pkg-config imas-ifort --cflags)
-  IMAS_LIB = $(shell pkg-config imas-ifort --libs)
+  IMAS_INC = $(shell pkg-config imas-ifort --cflags) \
+             $(shell pkg-config xmllib --cflags)
+  IMAS_LIB = $(shell pkg-config imas-ifort --libs) \
+             $(shell pkg-config xmllib --libs)
 
 #######################################################################
 #            NAG Options

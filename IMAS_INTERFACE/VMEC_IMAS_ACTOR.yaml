@@ -36,6 +36,7 @@ code_description:
             - netcdf-fortran-amd64_intel_17
             - mkl-2017.1-amd64_intel_17
             - hdf5
+            - xmllib-ifort
         mpi_compiler_cmd: mpiifort
         open_mp_switch: ''
 ...
