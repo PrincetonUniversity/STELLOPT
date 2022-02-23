@@ -188,6 +188,8 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   CALL xml2eg_get(doc,'LRFP',lrfp)
   CALL xml2eg_get(doc,'LBSUBS',lbsubs)
   CALL xml2eg_get(doc,'LNYQUIST',lnyquist)
+  CALL xml2eg_get(doc,'RBC_np0',rbc(0,0:))
+  CALL xml2eg_get(doc,'ZBS_np0',zbs(0,0:))
 
   ! Make sure to clean up after you!!
   ! When calling "xml2eg_parse_memory" memory was allocated in the "doc" object.
