@@ -34,18 +34,18 @@ class ExampleWorkflowManager:
         self.output_entry = imas.DBEntry(imas.imasdef.MDSPLUS_BACKEND,output_database,shot,run_out,output_user_or_path)
         self.output_entry.create()
 
-        runtime_settings = None
         # # # # # # # # Initialization of ALL actors  # # # # # # # #
-
-        runtime_settings.debug_mode = DebugMode.STANDALONE
-        runtime_settings.sandbox.life_time  = SandboxLifeTime.PERSISTENT
 
         code_parameters = self.VMEC.get_code_parameters()
         code_parameters.parameters_path='./indata.xml'
+        
+        runtime_settings = self.VMEC.get_runtime_settings()
+        runtime_settings.run_mod = RunMode.STANDALONE
+        runtime_settings.mpi.mpi_nodes = 1
+
         #value = code_parameters.get_parametr_value('parameters/multiplication_factor')
         #code_parameters.set_parametr_value( 'parameters/multiplication_factor', 0.5 )
-        #self.VMEC.initialize(runtime_settings=runtime_settings, code_parameters=code_parameters)
-        self.VMEC.initialize(code_parameters=code_parameters)
+        self.VMEC.initialize(runtime_settings=runtime_settings, code_parameters=code_parameters)
 
     def execute_workflow(self):
         # READ INPUT IDSS FROM LOCAL DATABASE
