@@ -14,7 +14,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    USE hdf5
    USE ez_hdf5
 #endif
-   USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
+   USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, &
       ns_prof4, ns_prof5, dist5d_prof, &
       partvmax, dist5D_fida, &
       h2_prof, h3_prof, h4_prof, h5_prof, &
@@ -99,7 +99,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          nr_fida = nr
          nphi_fida = nphi
          nz_fida = nz
-         nenergy_fida = ns_prof4
+         nenergy_fida = ns_prof4 !should stay this way!
          npitch_fida = ns_prof5
 
          ALLOCATE(raxis_fida(nr_fida))
@@ -522,48 +522,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ! Do volume normalization
          !CALL beams3d_distnorm !TODO: check if this has already been done
 
-
-         FORALL(i = 1:nenergy_fida) energy_fida(i) = (i-1) / REAL(nenergy_fida-1) * 0.5 * mass_beams(1) * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
-         FORALL(i = 1:npitch_fida) pitch_fida(i) = (i-1) / REAL(npitch_fida-1) * 2.0 - 1.0
-
-         DO b = 1, nbeams
-            DO i = 1, nenergy_fida
-               DO j = 1, npitch_fida
-                  v = SQRT(2 * energy_fida(i) *1000.0 * e_charge / mass_beams(b))
-                  IF (v .gt. partvmax) THEN
-                     dist5d_prof(b,:,:,:,i,j) = 0
-                  ELSE
-                     pitch = pitch_fida(j)
-                     v_parr = pitch * v
-                     v_perp = SQRT(1- pitch * pitch) * v
-                     !determine beams3d-grid indices (velocity space)
-                     i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
-                     j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
-                     !xparam = dist5d_prof(b,:,:,:,i3,j3)
-                     !yparam = xparam * pi2 * v /  mass_beams(b)
-                     jac = 1 / (mass_beams(b) * SQRT(1-pitch * pitch))
-                     !jac = MIN(MAX(jac, 0.0),1.0E)
-                     jac = jac / pi2 / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention? and 1/cm^3/keV
-                     dist5d_prof(b,:,:,:,i,j) = dist5d_prof(b,:,:,:,i3,j3) * jac !* pi2 * v /  mass_beams(b) !problematic, circular reference
-                  END IF
-                  !       !Apply jacobian for transformation from v_parr/v_perp to E,p
-                  !       v_parr = REAL(i) / nenergy_fida * partvmax ! full grid or half grid, which alignment?
-                  !       v_perp = REAL(j) / npitch_fida * partvmax
-                  !       pitch = MAX(MIN(v_parr / SQRT(v_parr * v_parr + v_perp * v_perp),1.),0.)
-                  !       jac = 1 / (mass_beams(b) * SQRT(1-pitch * pitch))
-                  !       jac = jac / pi2 / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention? and 1/cm^3/keV
-                  !       dist5d_prof(b,:,:,:,i,j) = dist5d_prof(b,:,:,:,i,j) * jac !probably should inicate somewhere that this has been done, or put it in another variable
-                  !       IF (b .eq. 1 .and. i .eq. 1) THEN
-                  !          pitch_fida(j) = pitch
-                  !       END IF
-                  !    END DO
-                  !    IF (b .eq. 1) THEN
-                  !       energy_fida(i) = 0.5 * mass_beams(b) * (v_parr * v_parr + v_perp * v_perp) / e_charge / 1000 ! in keV according to https://d3denergetic.github.io/FIDASIM/page/03_technical/01_prefida_inputs.html#fields-structure
-                  !    END IF
-               END DO
-            END DO
-         END DO
-
+         FORALL(i = 1:nenergy_fida) energy_fida(i) = (i) / REAL(nenergy_fida+1) * 0.5 * mass_beams(1) * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
+         FORALL(i = 1:npitch_fida) pitch_fida(i) = (i) / REAL(npitch_fida+1) * 2.0 - 1.0
 
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          CALL write_var_hdf5(fid,'energy',nenergy_fida,ier,DBLVAR=energy_fida) ! in keV
@@ -577,17 +537,41 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL h5dclose_f(temp_gid,ier)
 
-         DEALLOCATE(pitch_fida)
-         DEALLOCATE(energy_fida)
+         !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
+         ALLOCATE(dist5d_fida(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
+         DO b=1,nbeams
+            DO d1 = 1, nenergy_fida
+               DO d2 = 1, npitch_fida
+                  v = SQRT(2 * energy_fida(d1) *1000.0 * e_charge / mass_beams(b))
+                  IF (v .gt. partvmax) THEN !) .or. (v .eq. 0.0))
+                     dist5d_fida(b,:,:,:,d1,d2) = 0
+                  ELSE
+                     pitch = pitch_fida(d2)
+                     v_parr = pitch * v
+                     v_perp = SQRT(1- pitch * pitch) * v
+                     !determine beams3d-grid indices (velocity space)
+                     i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
+                     j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
+                     jac = 1 / (mass_beams(b) * SQRT(1-pitch * pitch))
+                     !jac = MIN(MAX(jac, 0.0),1.0E)
+                     jac = jac / pi2 / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention? and 1/cm^3/keV
+                     dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac !* pi2 * v /  mass_beams(b) !problematic, circular reference
+                  END IF
+               END DO
+            END DO
+         END DO
+         !DEALLOCATE(dist5d_prof)
+         !ALLOCATE(dist5d_prof(nbeams,nr, nphi, nz, nenergy_fida, npitch_fida))
+         dist5d_prof = dist5d_fida
+         DEALLOCATE(dist5d_fida)
 
+         !Now allocate with correct dimensions
          ALLOCATE(dist5d_fida(nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
          DO b=1,nbeams
             DO i=1,nr_fida
                DO k = 1, nz_fida
                   DO j=1,nphi_fida
-
                      !convert i,j,k to distribution function indices l,m,n
-
                      !determine beams3d-grid indices
                      i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
                      j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
@@ -604,18 +588,15 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                         hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
                         U4D(1,1,1,1),nr,nphi,nz)
                      z0 = fval2(1)
-                     !y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
-                     !z0 = ATAN2(fval2(1),fval(1))
+
                      IF (z0 < 0) z0 = z0 + pi2
                      IF (x0 < 0) x0 = x0 + pi2
+                     IF (y0 < 0) y0 = -y0
                      ! Calc dist func bins
                      x0    = phiaxis_fida(j)
-                     !vperp = SQRT(2*moment*fval(1)/mymass)
                      l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
                      m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                      n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                     !d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
-                     !d5 = MAX(MIN(CEILING(vperp*h5_prof         ), ns_prof5), 1) ! Vperp
                      IF (y0 .GT. 1.0) THEN
                         dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
                      ELSE
@@ -626,6 +607,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                END DO
             END DO
          END DO
+
+
          !dist5d_fida = reshape(dist5d_fida, [nbeams,nr_fida,nz_fida,nphi_fida,ns_prof4,ns_prof5], order=(/1, 2, 4, 3, 5, 6/))
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          IF (ASSOCIATED(dist5d_fida)) THEN
@@ -637,6 +620,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_fida',ier)
          END IF
          CALL close_hdf5(fid,ier)
+         DEALLOCATE(dist5d_fida)
+         DEALLOCATE(pitch_fida)
+         DEALLOCATE(energy_fida)
        CASE('DISTRIBUTION_GC_MC')
        CASE('DISTRIBUTION_FO')
 
