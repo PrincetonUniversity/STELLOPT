@@ -11,8 +11,8 @@ code_description:
     documentation: Actor for the VMEC code.
     implementation:
         code_parameters:
-            parameters: 'indata.xml'
-            schema: 'indata.xsd'
+            parameters: VMEC2000/indata.xml
+            schema: VMEC2000/indata.xsd
         code_path: VMEC2000/Release/libvmec.a
         data_type: legacy
         include_path: VMEC2000/Release/vmec_imas_module.mod
@@ -27,10 +27,15 @@ code_description:
         extra_libraries:
             path_defined:
             - /gss_efgw_work/home/g2slazer/src/STELLOPT/LIBSTELL/Release/libstell.a
+            - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_scalapack_ilp64.a
+            - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_intel_ilp64.a
+            - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_sequential.a
+            - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_core.a
+            - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_blacs_intelmpi_ilp64.a
             pkg_config_defined:
             - netcdf-fortran-amd64_intel_17
-            - hdf5-amd64_intel_17
             - mkl-2017.1-amd64_intel_17
+            - hdf5
         mpi_compiler_cmd: mpiifort
         open_mp_switch: ''
 ...
