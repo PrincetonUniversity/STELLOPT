@@ -41,9 +41,11 @@ class ExampleWorkflowManager:
         runtime_settings.sandbox.life_time  = SandboxLifeTime.PERSISTENT
 
         code_parameters = self.VMEC.get_code_parameters()
+        code_parameters.parameters_path='./indata.xml'
         #value = code_parameters.get_parametr_value('parameters/multiplication_factor')
         #code_parameters.set_parametr_value( 'parameters/multiplication_factor', 0.5 )
-        self.VMEC.initialize(runtime_settings=runtime_settings, code_parameters=code_parameters)
+        #self.VMEC.initialize(runtime_settings=runtime_settings, code_parameters=code_parameters)
+        self.VMEC.initialize(code_parameters=code_parameters)
 
     def execute_workflow(self):
         # READ INPUT IDSS FROM LOCAL DATABASE
