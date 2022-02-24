@@ -67,7 +67,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_OUT, INDATA_XML, status_code, status_message)
   CALL VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
 
   !----  Run VMEC
-  ictrl(1) = restart_flag + readimas_flag + timestep_flag + output_flag &
+  ictrl(1) = restart_flag + imasrun_flag + timestep_flag + output_flag &
                           + cleanup_flag
   ictrl(2) = 0 ! ier_flag
   ictrl(3) = 0 ! numsteps
@@ -133,7 +133,7 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   !---------------------------------------------------------------------
 
   !----  Intitailizations (This is a hack to set defaults)
-  iunit = -1
+  iunit = -327
   CALL read_indata_namelist(iunit,status_code)
   
   !----  Now setup the run based on the xml
@@ -158,10 +158,6 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   CALL xml2eg_get(doc,'AI_AUX_F',ai_aux_f)
   CALL xml2eg_get(doc,'AC_AUX_S',ac_aux_s)
   CALL xml2eg_get(doc,'AC_AUX_F',ac_aux_f)
-  !CALL xml2eg_get(doc,'RBC',rbc)
-  !CALL xml2eg_get(doc,'ZBS',zbs)
-  !CALL xml2eg_get(doc,'RBS',rbs)
-  !CALL xml2eg_get(doc,'ZBC',zbc)
   CALL xml2eg_get(doc,'SPRES_PED',spres_ped)
   CALL xml2eg_get(doc,'PRES_SCALE',pres_scale)
   CALL xml2eg_get(doc,'RAXIS_CC',raxis_cc)

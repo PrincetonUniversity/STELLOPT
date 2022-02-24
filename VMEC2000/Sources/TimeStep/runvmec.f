@@ -5,7 +5,7 @@
      &                       norm_term_flag, successful_term_flag,
      &                       restart_flag, readin_flag,
      &                       timestep_flag, ns_error_flag,
-     &                       reset_jacdt_flag, lamscale, readimas_flag,
+     &                       reset_jacdt_flag, lamscale, imasrun_flag,
      &                       imas_read_flag
       USE realspace
       USE vmec_params, ONLY: ntmax
@@ -43,7 +43,7 @@ C-----------------------------------------------
       INTEGER, SAVE                  :: igrid0
       INTEGER                        :: max_grid_size, flag
       CHARACTER(LEN=120)             :: input_file
-      LOGICAL                        :: lreset
+      LOGICAL                        :: lreset, limas
       REAL(dp)                       :: rvton, rvtoff, tiniton, tinitoff
       REAL(dp)                       :: gridton, gridtoff
       REAL(dp)                       :: bcastton, bcasttoff
@@ -167,19 +167,28 @@ C-----------------------------------------------
       ns_index = ictrl_array(4)
       iseq_count = ictrl_array(5)
       CALL second0(timeon)
+!
+!     Check if we're running from IMAS
+!
+      limas  = (IAND(ictrl_flag, imasrun_flag) .ne. 0)
 
 !
 !     PARSE input_file into path/input.ext
 !
-      index_dat = INDEX(input_file0, 'input.')
-      index_end = LEN_TRIM(input_file0)
-      IF (index_dat .gt. 0) THEN
-         input_file = TRIM(input_file0)
-         input_extension  = input_file0(index_dat+6:index_end)
+      IF (limas) THEN
+        input_extension = ''
+        input_file = ''
       ELSE
-         input_extension = input_file0(1:index_end)
-         input_file = 'input.'//TRIM(input_extension)
-      END IF
+        index_dat = INDEX(input_file0, 'input.')
+        index_end = LEN_TRIM(input_file0)
+        IF (index_dat .gt. 0) THEN
+          input_file = TRIM(input_file0)
+          input_extension  = input_file0(index_dat+6:index_end)
+        ELSE
+          input_extension = input_file0(1:index_end)
+          input_file = 'input.'//TRIM(input_extension)
+        END IF
+      ENDIF
 
 !
 !     INITIALIZE PARAMETERS
@@ -212,7 +221,7 @@ C-----------------------------------------------
          CALL fixaray
       END IF
 
-      IF (IAND(ictrl_flag, readimas_flag) .NE. 0) THEN
+      IF (limas) THEN
 !
 !        IMAS PROVIDES DATA
 !
