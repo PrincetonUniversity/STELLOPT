@@ -275,25 +275,27 @@ C-----------------------------------------------
 
 !
 !     READ IN COMMENTS DEMARKED BY "!"
-!  
-      REWIND (iunit, iostat=iexit)
-      IF (lWrite) THEN
-         DO WHILE(iexit .EQ. 0)
+!     
+      IF(ier_flag_init .NE. imas_read_flag) THEN
+        REWIND (iunit, iostat=iexit)
+        IF (lWrite) THEN
+          DO WHILE(iexit .EQ. 0)
             READ (iunit, '(a)', iostat=iexit) line
             IF (iexit .NE. 0) EXIT
             iexit = INDEX(line,'INDATA')
             iexit = iexit + INDEX(line,'indata')
             ipoint = INDEX(line,'!')
             IF (ipoint .EQ. 1) WRITE (nthreed, *) TRIM(line)
-         ENDDO
-      END IF
-      CLOSE (iunit)
+          ENDDO
+        END IF
+        CLOSE (iunit)
+      ENDIF
 
 !
 !     READ IN AND STORE (FOR SEQUENTIAL RUNNING) MAGNETIC FIELD DATA
 !     FROM MGRID_FILE
 !
-      IF (lfreeb) THEN
+      IF (lfreeb .AND. (ier_flag_init .NE. imas_read_flag)) THEN
          CALL second0(trc)
          CALL read_mgrid (mgrid_file, extcur, nzeta, nfp, 
      &                    lscreen, ier_flag, comm = RUNVMEC_COMM_WORLD)

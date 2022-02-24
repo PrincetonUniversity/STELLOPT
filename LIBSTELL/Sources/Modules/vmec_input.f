@@ -183,6 +183,8 @@
 !     BACKWARDS COMPATIBILITY
 !
       raxis = 0;  zaxis = 0
+
+      IF (iunit.eq.-327) RETURN
       
       READ (iunit, nml=indata, iostat=istat)
 
