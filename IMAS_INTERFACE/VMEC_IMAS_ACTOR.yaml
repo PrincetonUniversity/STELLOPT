@@ -1,6 +1,6 @@
 ---
 actor_description:
-    actor_name: VMEC
+    actor_name: vmec
     actor_type: python
     data_type: legacy
 code_description:
