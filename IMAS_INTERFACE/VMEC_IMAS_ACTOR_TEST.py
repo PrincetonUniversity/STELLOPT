@@ -1,8 +1,8 @@
 import sys
 import imas,os
 
-from VMEC.actor import VMEC
-from VMEC.common.runtime_settings import RunMode, DebugMode
+from vmec.actor import vmec
+from vmec.common.runtime_settings import RunMode, DebugMode
 
 
 
@@ -10,7 +10,7 @@ class ExampleWorkflowManager:
 
     def __init__(self):
 
-        self.VMEC = VMEC()
+        self.vmec = vmec()
         self.input_entry = None
         self.output_entry = None
 
@@ -36,16 +36,14 @@ class ExampleWorkflowManager:
 
         # # # # # # # # Initialization of ALL actors  # # # # # # # #
 
-        code_parameters = self.VMEC.get_code_parameters()
+        code_parameters = self.vmec.get_code_parameters()
         code_parameters.parameters_path='./indata.xml'
         
-        runtime_settings = self.VMEC.get_runtime_settings()
+        runtime_settings = self.vmec.get_runtime_settings()
         runtime_settings.run_mod = RunMode.STANDALONE
         runtime_settings.mpi.mpi_nodes = 1
 
-        #value = code_parameters.get_parametr_value('parameters/multiplication_factor')
-        #code_parameters.set_parametr_value( 'parameters/multiplication_factor', 0.5 )
-        self.VMEC.initialize(runtime_settings=runtime_settings, code_parameters=code_parameters)
+        self.vmec.initialize(runtime_settings=runtime_settings, code_parameters=code_parameters)
 
     def execute_workflow(self):
         # READ INPUT IDSS FROM LOCAL DATABASE
@@ -55,7 +53,7 @@ class ExampleWorkflowManager:
 
         # EXECUTE PHYSICS CODE
         print('=> Execute physics code')
-        output_equilibrium = self.VMEC(input_equilibrium)
+        output_equilibrium = self.vmec()
 
         # SAVE IDSS INTO OUTPUT FILE
         print('=> Export output IDSs to local database')
@@ -65,7 +63,7 @@ class ExampleWorkflowManager:
     def end_workflow(self):
 
         # Finalize ALL actors
-        self.VMEC.finalize()
+        self.vmec.finalize()
 
         #other finalization actions
         self.input_entry.close()
