@@ -57,3 +57,11 @@ lib_release:
 	@echo "To free up space, delete all *.o files from Release"
 	@echo ""
 
+lib_debug:
+	@echo "Beginning debug compilation and linking of libvmec.a"
+	@cd $(DBG); rm -f *.f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) libvmec.a FLAGS="-fPIC $(FLAGS_D) $(MOD1_PATH)" TYPE="debug" LOCTYPE="Debug"
+	@rm -f $(DBG)\*.f; rm -f $(DBG)\*.f90
+	@echo "Debug version - libvmec.a - is now updated"
+	@echo "To free up space, delete all *.o files from Release"
+	@echo ""
+
