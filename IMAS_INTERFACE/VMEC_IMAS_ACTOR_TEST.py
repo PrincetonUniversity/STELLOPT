@@ -36,7 +36,6 @@ class ExampleWorkflowManager:
 
         # # # # # # # # Initialization of ALL actors  # # # # # # # #
         code_parameters = self.vmec.get_code_parameters()
-        #print(code_parameters)
         code_parameters.parameters_path='./indata.xml'
         
         runtime_settings = self.vmec.get_runtime_settings()
@@ -53,7 +52,6 @@ class ExampleWorkflowManager:
 
         # EXECUTE PHYSICS CODE
         print('=> Execute physics code')
-
         output_equilibrium = self.vmec()
 
         # SAVE IDSS INTO OUTPUT FILE
@@ -64,7 +62,7 @@ class ExampleWorkflowManager:
     def end_workflow(self):
 
         # Finalize ALL actors
-        self.VMEC.finalize()
+        self.vmec.finalize()
 
         #other finalization actions
         self.input_entry.close()
