@@ -1,6 +1,6 @@
 ---
 actor_description:
-    actor_name: VMEC
+    actor_name: vmec
     actor_type: python
     data_type: legacy
 code_description:
@@ -20,8 +20,8 @@ code_description:
         root_dir: /pfs/home/g2slazer/src/STELLOPT/
         subroutines:
             finalize: ''
-            init: ''
-            main: VMEC_IMAS
+            init: vmec_imas_init
+            main: vmec_imas
     settings:
         compiler_cmd: ifort
         extra_libraries:

@@ -1,8 +1,8 @@
 import sys
 import imas,os
 
-from VMEC.actor import VMEC
-from VMEC.common.runtime_settings import RunMode, DebugMode
+from vmec.actor import vmec
+from vmec.common.runtime_settings import RunMode, DebugMode
 
 
 
@@ -10,8 +10,8 @@ class ExampleWorkflowManager:
 
     def __init__(self):
 
-        self.VMEC = VMEC()
-        self.input_entry = None
+        self.vmec = vmec()
+        #self.input_entry = None
         self.output_entry = None
 
     def init_workflow(self):
@@ -25,9 +25,9 @@ class ExampleWorkflowManager:
         output_database     = input_database
 
         # OPEN INPUT DATAFILE TO GET DATA FROM IMAS SCENARIO DATABASE
-        print('=> Open input datafile')
-        self.input_entry = imas.DBEntry(imas.imasdef.MDSPLUS_BACKEND,input_database,shot,run_in,input_user_or_path)
-        self.input_entry.open()
+        #print('=> Open input datafile')
+        #self.input_entry = imas.DBEntry(imas.imasdef.MDSPLUS_BACKEND,input_database,shot,run_in,input_user_or_path)
+        #self.input_entry.open()
 
         # CREATE OUTPUT DATAFILE
         print('=> Create output datafile')
@@ -35,27 +35,26 @@ class ExampleWorkflowManager:
         self.output_entry.create()
 
         # # # # # # # # Initialization of ALL actors  # # # # # # # #
-
-        code_parameters = self.VMEC.get_code_parameters()
+        code_parameters = self.vmec.get_code_parameters()
+        #print(code_parameters)
         code_parameters.parameters_path='./indata.xml'
         
-        runtime_settings = self.VMEC.get_runtime_settings()
+        runtime_settings = self.vmec.get_runtime_settings()
         runtime_settings.run_mod = RunMode.STANDALONE
         runtime_settings.mpi.mpi_nodes = 1
 
-        #value = code_parameters.get_parametr_value('parameters/multiplication_factor')
-        #code_parameters.set_parametr_value( 'parameters/multiplication_factor', 0.5 )
-        self.VMEC.initialize(runtime_settings=runtime_settings, code_parameters=code_parameters)
+        self.vmec.initialize(runtime_settings=runtime_settings, code_parameters=code_parameters)
 
     def execute_workflow(self):
         # READ INPUT IDSS FROM LOCAL DATABASE
-        time_slice          = 200.
-        print('=> Read input IDSs')
-        input_equilibrium = self.input_entry.get_slice('equilibrium', time_slice, 1)
+        #time_slice          = 200.
+        #print('=> Read input IDSs')
+        #input_equilibrium = self.input_entry.get_slice('equilibrium', time_slice, 1)
 
         # EXECUTE PHYSICS CODE
         print('=> Execute physics code')
-        output_equilibrium = self.VMEC(input_equilibrium)
+
+        output_equilibrium = self.vmec()
 
         # SAVE IDSS INTO OUTPUT FILE
         print('=> Export output IDSs to local database')
