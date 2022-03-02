@@ -45,7 +45,7 @@ END SUBROUTINE VMEC_IMAS_INIT
 !     PURPOSE:           RUNS VMEC ASSUMING XML DEFINES RUN LIKE THE
 !                        NAMELIST
 !-----------------------------------------------------------------------
-SUBROUTINE VMEC_IMAS(IDS_EQ_OUT, INDATA_XML, status_code, status_message)
+SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_message)
   !---------------------------------------------------------------------
   !     Libraries
   !---------------------------------------------------------------------
@@ -62,6 +62,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_OUT, INDATA_XML, status_code, status_message)
   !        STATUS_MESSAGE : Text Message
   !---------------------------------------------------------------------
   IMPLICIT NONE
+  TYPE(ids_equilibrium), INTENT(IN) :: IDS_EQ_IN
   TYPE(ids_equilibrium), INTENT(OUT) :: IDS_EQ_OUT
   TYPE(ids_parameters_input), INTENT(IN) :: INDATA_XML
   INTEGER, INTENT(OUT) :: status_code
