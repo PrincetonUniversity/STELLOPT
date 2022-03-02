@@ -36,7 +36,7 @@ SUBROUTINE VMEC_IMAS_INIT(INDATA_XML, status_code, status_message)
   !---------------------------------------------------------------------
 
   status_code = 0
-  status_message = 'OK'
+  !status_message = 'OK'
 
 END SUBROUTINE VMEC_IMAS_INIT
 
@@ -82,7 +82,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
 
   !---- Default outputs
   status_code = 0
-  status_message = 'OK'
+  !status_message = 'OK'
 
   !----  MPI initialisation ----
   CALL MPI_initialized(lmpi_flag, impi_flag)
