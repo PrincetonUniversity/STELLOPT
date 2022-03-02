@@ -183,8 +183,7 @@ SUBROUTINE CALC_B0
   INTEGER izmin(npt),hel_N,hel_M
   REAL*8 epsilon,iotat,dist,distb
   REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt),Bg(npt)!,Btemp
-  REAL*8 Bmax_var,Bmin_var
-  REAL*8 Bmax_av2! used for new VBT edi.sanchez@ciemat.es
+  REAL*8 B0_av,B0_var,Bmax_var,Bmin_var
   REAL*8 val_eta(nsurf),zeta(npt),theta(npt),temp(npt),zetat(npt,npt),zetal(nsurf,npt),zeta0(npt,npt)
   !Matrix
   INTEGER ierr,lwork,rank
@@ -254,10 +253,11 @@ SUBROUTINE CALC_B0
   !Rewrite B in other coordinates
   Bmax=0
   Bmax_th=0
-  Bmax_av=0
-  Bmax_av2=0!edi.sanchez@ciemat.es
-  Bmax_var=0
   Bmin_th=1E3
+  B0_av=0
+  B0_var=0
+  Bmax_av=0!edi.sanchez@ciemat.es
+  Bmax_var=0
   Bmin_av=0
   Bmin_var=0
    DO iz=1,npt
@@ -303,19 +303,19 @@ SUBROUTINE CALC_B0
         END IF
      END DO
      IF(Bmax_th(it).GT.Bmax) Bmax=Bmax_th(it)
-!     Bmax_av=Bmax_av+Bmax_th(it)
-      Bmax_av2=Bmax_av2+Bmax_th(it) ! used for new VBT edi.sanchez@ciemat.es
-     Bmax_av=Bmax_av+Bzt(1,it)
+     B0_av  =B0_av  +Bzt(1,it)
+     Bmax_av=Bmax_av+Bmax_th(it) ! used for new VBM edi.sanchez@ciemat.es
      Bmin_av=Bmin_av+Bmin_th(it)
-     !Bmax_var=Bmax_var+Bzt(1,it)*Bzt(1,it)! the value of B at zeta=0 is used (because for a omnigenous maxima are aligned at zeta=0) edi.sanchez@ciemat.es
+     B0_var  =B0_var  +Bzt(1,it)  *Bzt(1,it)! the value of B at zeta=0 is used (because for a omnigenous maxima are aligned at zeta=0) edi.sanchez@ciemat.es
      Bmax_var=Bmax_var+Bmax_th(it)*Bmax_th(it)! the maximum value at a given theta is used instead of value at zeta=0 edi.sanchez@ciemat.es
      Bmin_var=Bmin_var+Bmin_th(it)*Bmin_th(it)
   END DO
-  Bmax_av=Bmax_av/npt
-  Bmax_av2=Bmax_av2/npt! used for new VBT edi.sanchez@ciemat.es
+  B0_av=B0_av/npt
+  Bmax_av=Bmax_av/npt! used for new VBM edi.sanchez@ciemat.es
   Bmin_av=Bmin_av/npt
   IF(KN_STELLOPT(8)) KN_WBW=KN_WBW/(borbic(0,0)*TWOPI*TWOPI*npt*npt/2)
-  IF(KN_STELLOPT(6)) KN_VBT=(Bmax_var/npt-Bmax_av2*Bmax_av2)/borbic(0,0)/borbic(0,0)
+  IF(KN_STELLOPT(6)) KN_VBM=(Bmax_var/npt-Bmax_av*Bmax_av)/borbic(0,0)/borbic(0,0)
+  IF(KN_STELLOPT(10)) KN_VB0=(B0_var/npt-B0_av*B0_av)/borbic(0,0)/borbic(0,0)
   IF(KN_STELLOPT(7)) KN_VBB=(Bmin_var/npt-Bmin_av*Bmin_av)/borbic(0,0)/borbic(0,0)
   borbic0=borbic
   borbis0=borbis

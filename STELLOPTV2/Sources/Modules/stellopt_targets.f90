@@ -172,7 +172,8 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_gmc,sigma_knosos_gmc !this corresponds to gamma_c defined through KNOSOS (EdiSan)
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_gma,sigma_knosos_gma
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_qer,sigma_knosos_qer
-      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_vbt,sigma_knosos_vbt
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_vbm,sigma_knosos_vbm
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_vb0,sigma_knosos_vb0
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_vbb,sigma_knosos_vbb
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_wbw,sigma_knosos_wbw
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_dbo,sigma_knosos_dbo
@@ -286,7 +287,7 @@
 !      INTEGER, PARAMETER :: jtarget_knosos_gmc = 6084
 !      INTEGER, PARAMETER :: jtarget_knosos_gma = 6090
 !      INTEGER, PARAMETER :: jtarget_knosos_qer = 6085
-!      INTEGER, PARAMETER :: jtarget_knosos_vbt = 6086
+!      INTEGER, PARAMETER :: jtarget_knosos_vbm = 6086
 !      INTEGER, PARAMETER :: jtarget_knosos_vbb = 6087
 !      INTEGER, PARAMETER :: jtarget_knosos_wbw = 6088
 !      INTEGER, PARAMETER :: jtarget_knosos_dbo = 6089
@@ -315,7 +316,8 @@
       INTEGER, PARAMETER :: jtarget_knosos_gmc = 913
       INTEGER, PARAMETER :: jtarget_knosos_gma = 914
       INTEGER, PARAMETER :: jtarget_knosos_qer = 915
-      INTEGER, PARAMETER :: jtarget_knosos_vbt = 916
+      INTEGER, PARAMETER :: jtarget_knosos_vbm = 916
+      INTEGER, PARAMETER :: jtarget_knosos_vb0 = 920
       INTEGER, PARAMETER :: jtarget_knosos_vbb = 917
       INTEGER, PARAMETER :: jtarget_knosos_wbw = 918
       INTEGER, PARAMETER :: jtarget_knosos_dbo = 919
@@ -458,8 +460,10 @@
             WRITE(iunit, out_format) 'KNOSOS gamma_c, fast ion confinement'
          CASE(jtarget_knosos_gma)
             WRITE(iunit, out_format) 'KNOSOS gamma_alpha, fast ion confinement'
-         CASE(jtarget_knosos_vbt)
+         CASE(jtarget_knosos_vbm)
             WRITE(iunit, out_format) 'KNOSOS variance of B maxima'
+         CASE(jtarget_knosos_vb0)
+            WRITE(iunit, out_format) 'KNOSOS variance of B at zeta=0'
          CASE(jtarget_knosos_vbb)
             WRITE(iunit, out_format) 'KNOSOS variance of B minima'
          CASE(jtarget_knosos_wbw)

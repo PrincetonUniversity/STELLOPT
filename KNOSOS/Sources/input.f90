@@ -742,7 +742,7 @@ SUBROUTINE INIT_FILES()
       IF(numprocs.EQ.1) filename="stellopt.knosos"
       IF(numprocs.GT.1) WRITE(filename,'("stellopt.knosos.",I2.2)') myrank
       OPEN(unit=600+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-      WRITE(600+myrank,'("s 1NU SNU SBP GMC GMA QER VBT VBB WBW DBO ")')
+      WRITE(600+myrank,'("s 1NU SNU SBP GMC GMA QER VB0 VBB WBW DBO VBM")')
    ELSE
       IF(numprocs.EQ.1) filename="flux.knosos"
       IF(numprocs.GT.1) WRITE(filename,'("flux.knosos.",I2.2)') myrank
