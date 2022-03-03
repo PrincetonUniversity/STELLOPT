@@ -467,6 +467,12 @@
                RETURN
             END IF
 !DEC$ ENDIF
+            IF ((myend .lt. irup).and.(lscreen_bootsj)) THEN
+               DO irho=myend+1,irup
+                  IF (idx(irho) .eq. 0) CYCLE
+                  WRITE(6,'(2X,I3,8(2X,E11.4))') irho,rhoar(irho),tempe1(irho),tempi1(irho),dense(irho),densi(irho),betar(irho),ajBbs(irho),bsnorm(irho)
+               END DO
+            END IF
             ! Recompute AIBS
             IF (l_boot_all) THEN
                aibs(1) = dibs(1)*d_rho(1)

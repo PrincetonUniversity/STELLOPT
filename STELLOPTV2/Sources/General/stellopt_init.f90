@@ -64,7 +64,8 @@
       ! Handle MPI and shared memory
       CALL stellopt_init_mpi
 
-      ! Send workers to the worker pool subroutine
+      ! Send workers to the worker pool subroutine stellopt_paraexe
+      ! The 'master' will continue on
       IF (myworkid .ne. master) THEN
          ltst  = .false.
          tstr1 = ''
@@ -98,6 +99,9 @@
                  STOP
               END IF
               CLOSE(iunit)
+              ! SFINCS namelist is parsed and updated from the original input file
+              !     on each iteration (variable 'id_tag' holds this string)
+              !     See stellopt_vboot.f90 and stellopt_sfincs.f90 
               CALL stellopt_paraexe(tstr1,tstr2,ltst)
          CASE('test')
               id_string = id_string(7:LEN(id_string))
@@ -1674,7 +1678,12 @@
          CLOSE(iunit)
       END IF
       
-      
+      ! Save the initial axis shape, in case axis_init_option="input"
+      raxis_cc_initial = raxis_cc
+      zaxis_cc_initial = zaxis_cc
+      raxis_cs_initial = raxis_cs
+      zaxis_cs_initial = zaxis_cs
+
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)

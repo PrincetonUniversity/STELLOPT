@@ -11,7 +11,7 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime
       USE stellopt_targets
-      USE equil_utils, ONLY: get_equil_jcurv, rho
+      USE equil_utils, ONLY: get_equil_jcurv, shat
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -28,7 +28,7 @@
 !
 !-----------------------------------------------------------------------
       INTEGER     :: ik,ier
-      REAL(rprec) :: local_jcurv, s
+      REAL(rprec) :: local_jcurv
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -41,12 +41,11 @@
             IF (sigma(ik) >= bigno) CYCLE
             mtargets = mtargets + 1
             ier = 0
-            s = rho(ik)
-            CALL get_equil_jcurv(s,local_jcurv,ier)
+            CALL get_equil_jcurv(shat(ik),local_jcurv,ier)
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
             vals(mtargets)    = local_jcurv
-            IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ik),sigma(ik),local_jcurv,rho(ik)
+            IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ik),sigma(ik),local_jcurv,shat(ik)
          END DO
       ELSE
          DO ik = 1, nsd

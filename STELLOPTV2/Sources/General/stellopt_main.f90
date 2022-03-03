@@ -73,6 +73,7 @@
          id_string=TRIM(id_string)
          id_string=ADJUSTL(id_string)
          id_string=TRIM(id_string)
+         id_tag=id_string
          ! Cycle through Arguments
          i=2
          DO WHILE (i <= numargs)
@@ -105,8 +106,9 @@
                   call GETCARG(i,args(i),numargs)
                   xvec_file = args(i)
                case ("-help","-h") ! Output Help message
-                  write(6,*)' STELLOPT Optimizer'
-                  write(6,*)' Usage: xstellopt input_file <options>'
+                  write(6,*)' STELLOPT Optimizer '
+                  WRITE(6,'(a,f5.2)') '  Version: ',STELLOPT_VERSION
+                  write(6,*)' Usage: xstelloptv2 input_file <options>'
                   write(6,*)'    <options>'
                   write(6,*)'     -restart          Restart a run from reset file'
                   write(6,*)'     -renorm           Renormalize sigmas'
@@ -117,8 +119,7 @@
                   write(6,*)'     -xvec_file file   X_VEC filename (OPT_TYPE: EVAL_XVEC)'
                   write(6,*)'     -help:            Output help message'
 !DEC$ IF DEFINED (MPI_OPT)
-                  CALL MPI_FINALIZE(ierr_mpi)   
-                  IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'stellot_main',ierr_mpi)
+                  call MPI_ABORT( MPI_COMM_STEL, master, ierr_mpi )
 !DEC$ ENDIF
             end select
             i = i + 1
@@ -142,12 +143,15 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
       CALL MPI_BCAST(id_string,256,MPI_CHARACTER, master, MPI_COMM_STEL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      CALL MPI_BCAST(id_tag,256,MPI_CHARACTER, master, MPI_COMM_STEL,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
       ! Initialize the Calculation
       CALL stellopt_init
 
+      ! The following commands will only be completed by master
       IF (myworkid == master .and. lrenorm) THEN
          ! Now do one run with renorm
          tstr1 = opt_type
@@ -185,6 +189,7 @@
          CALL stellopt_paraexe(tstr1,tstr2,ltst)
       END IF
 
+      ! All procs (master and workers) will do this part
       ! Clean up
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)

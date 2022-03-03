@@ -13,9 +13,9 @@ j_inv_calc.o: \
       ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o
    
   
-j_invariant.o: \
+J_invariant.o: \
       B_and_J_Library.o \
-      ../../LIBSTELL/$(LOCTYPE)/data_and_computer.o \
+      ../../LIBSTELL/$(LOCTYPE)/date_and_computer.o \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o
       
@@ -29,6 +29,7 @@ rhs.o: \
       
 
 sfmin.o: \
+      B_and_J_Library.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
       
       

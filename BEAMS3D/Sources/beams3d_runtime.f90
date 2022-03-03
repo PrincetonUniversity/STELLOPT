@@ -27,6 +27,17 @@
 !     v2.50 01/31/20 - Added Heating, Deposition, and Dist FUNCTION
 !                    - Tested ASCOT4 and ASCOT5 interfaces
 !                    - Now output wall and shinethrough heat flux
+!     v2.70 06/09/20 - Converged on format of dV/drho factor
+!                    - ASCOT5 interface updated
+!                    - DIST5D implemented
+!     v2.80 09/24/20 - DIST5D Normalized to phase space volume
+!                    - J and dense now calculated in diagnostics
+!     v2.90 12/07/20 - Thermal fusion birth model
+!                    - T_END now outputs last timestep time.
+!     v2.95 02/16/21 - Added interface to eqdsk files.
+!     v3.00 07/14/21 - Radial distribution now in proper units m^-3
+!                    - HINT interface
+!                    - Use of accelerated wall model
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -105,15 +116,20 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: MAXBEAMS = 32
     INTEGER, PARAMETER :: MAXPROFLEN = 512
 
+    DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
+
     LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
                lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
-               ldepo, lbeam_simple, ldebug, lcollision, lw7x, &
-               lascot, lascot4, lbbnbi, lvessel_beam, lascotfl, lrandomize
-    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams
+               ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
+               lascot, lascot4, lbbnbi, lvessel_beam, lascotfl, lrandomize, &
+               lfusion, lfusion_alpha, leqdsk, lhint, lkick
+    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, ndt, ndt_max
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
-    REAL(rprec) :: dt, follow_tol, pi, pi2, mu0, to3, dt_save, ne_scale, te_scale, ti_scale, zeff_scale
+    REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &
+                   ne_scale, te_scale, ti_scale, zeff_scale, fusion_scale, &
+                   lendt_m, te_col_min
     REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
                                         charge_beams, Zatom_beams, P_beams
     REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
@@ -126,9 +142,9 @@ MODULE beams3d_runtime
     REAL(rprec), ALLOCATABLE :: extcur(:)
     CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
-    vessel_string, int_type, restart_string, bbnbi_string
+    vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.50
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 3.00
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination

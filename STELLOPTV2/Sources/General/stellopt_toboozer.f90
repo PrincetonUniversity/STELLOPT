@@ -159,6 +159,7 @@
             END DO
             irun_setup_booz = 0
             CALL boozer_coords(ik,irun_setup_booz)
+            IF (myend<=ik) mystart = myend + 1 ! we did it
             IF (myworkid /= master) THEN
                rmncb = 0
                zmnsb = 0
@@ -177,9 +178,9 @@
                mystart = ik+1
             END IF
 !DEC$ ENDIF
-            !DO ik = 0,numprocs_local-1
-            !   IF (myworkid == ik) PRINT *,myworkid,mystart,chunk,myend,irun_setup_booz
-            !END DO
+!            DO ik = 0,numprocs_local-1
+!               IF (myworkid == ik) PRINT *,myworkid,mystart,chunk,myend,irun_setup_booz
+!            END DO
             ! Calculate Boozer Coordinates
             DO ik = mystart, myend
                IF (lbooz(ik)) CALL boozer_coords(ik,irun_setup_booz)

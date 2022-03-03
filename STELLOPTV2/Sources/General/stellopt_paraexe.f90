@@ -19,6 +19,7 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE equil_vals, ONLY: kx_gene
+      USE equil_utils, ONLY: move_txtfile
       USE wall_mod, ONLY: wall_free
       USE mpi_params
       USE mpi_inc
@@ -35,7 +36,7 @@
                              misc_error_flag, successful_term_flag, &
                              restart_flag, readin_flag, timestep_flag, &
                              output_flag, cleanup_flag, reset_jacdt_flag
-      USE vmec_input, ONLY:  ns_array, lfreeb, write_indata_namelist
+      USE vmec_input, ONLY:  ns_array, lfreeb, write_indata_namelist, lnyquist
 !DEC$ IF DEFINED (GENE)
       USE gene_subroutine, ONLY: rungene
       USE par_in, ONLY: diagdir,file_extension, beta_gene => beta
@@ -56,8 +57,10 @@
             lread_input_beams => lread_input, lvmec_beams => lvmec, &
             lverb_beams => lverb, lbeam_beams => lbeam, &
             lpies_beams => lpies, lspec_beams => lspec, &
+            leqdsk_beams => leqdsk, eqdsk_string_beams => eqdsk_string, &
             lmgrid_beams => lmgrid, lascot_beams => lascot, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
+            lsuzuki_beams => lsuzuki, lrandomize_beams => lrandomize, &
             lrestart_grid_beams => lrestart_grid, lrestart_particles_beams => lrestart_particles, &
             lbeam_simple_beams => lbeam_simple, &
             lplasma_only_beams => lplasma_only, lascot4_beams => lascot4, &
@@ -111,7 +114,7 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      IF (ier_paraexe /= 0) RETURN
+      IF (TRIM(in_parameter_1) /= 'exit' .and. ier_paraexe /= 0) RETURN
       code_str = TRIM(in_parameter_1)
       file_str = TRIM(in_parameter_2)
       ierr_mpi = 0
@@ -301,6 +304,7 @@
                lvmec_beams        = .TRUE.  ! Use VMEC Equilibria
                lpies_beams        = .FALSE.
                lspec_beams        = .FALSE.
+               leqdsk_beams       = .FALSE.
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
                lascot_beams       = .FALSE.
@@ -320,11 +324,14 @@
                lread_input_beams  = .FALSE.
                lcollision_beams   = .FALSE.
                lw7x_beams   = .FALSE.
+               lrandomize_beams = .FALSE.
+               lsuzuki_beams = .FALSE.
                id_string_beams    = TRIM(file_str)
                coil_string_beams  = ''
                mgrid_string_beams = ''
                vessel_string_beams = ''
                restart_string_beams = ''
+               eqdsk_string_beams = ''
                IF (myworkid .eq. master) lverb_beams = lscreen
 
 
@@ -402,6 +409,7 @@
             CASE('terpsichore')
                proc_string = file_str
                ier = 0
+               IF (lnyquist) STOP "To use TERPSICHORE, you have to use lnyquist=.f. in VMEC!"
                CALL stellopt_kink(lscreen,ier)
             CASE('booz_xform')
                proc_string = file_str
@@ -435,8 +443,11 @@
                ier_paraexe = ier
             CASE('write_mgrid')
                CALL stellopt_write_mgrid(MPI_COMM_MYWORLD,file_str,lscreen)
+            CASE('mango_init')
+               CALL stellopt_mango_init
+            CASE('mango_finalize')
+               CALL stellopt_mango_finalize
             CASE('exit')  ! we send this when we want to terminate the code (everyone leaves)
-               !PRINT *,'myid: ',myid,' exiting stellopt_paraexe'
                CALL MPI_COMM_FREE(MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: FREE',ierr_mpi)
                RETURN

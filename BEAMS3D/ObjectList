@@ -1,4 +1,10 @@
 ObjectFiles = \
+beams3d_fix_poloidal.o \
+beams3d_distnorm.o \
+beams3d_init_hint.o \
+beams3d_init_eqdsk.o \
+beams3d_init_fusion.o \
+beams3d_volume.o \
 beams3d_randomize_particles.o \
 beams3d_init_beams_bbnbi.o \
 beams3d_write_ascoth4.o \

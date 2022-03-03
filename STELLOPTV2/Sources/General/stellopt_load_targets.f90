@@ -143,6 +143,9 @@
       ! FARADAY ROTATION
       IF (ANY(sigma_faraday < bigno_ne)) &
          CALL chisq_faraday(target_faraday, sigma_faraday, ncnt,iflag)
+      ! VISUAL BREMSSTRAHLUNG
+      IF (ANY(sigma_visbrem_line < bigno)) &
+         CALL chisq_line_visbrem(target_visbrem_line, sigma_visbrem_line, ncnt,iflag)
          
       !------------- OTHER TARGETS -------------------
       !  ECE Reflectometry
@@ -153,6 +156,9 @@
       ! PRESSURE PROFILE
       IF (ANY(sigma_press < bigno)) &
          CALL chisq_press(target_press, sigma_press, ncnt,iflag)
+      ! PRESSURE GRADIENT PROFILE (dp/ds)
+      IF (ANY(sigma_pressprime < bigno)) &
+         CALL chisq_pressprime(target_pressprime, sigma_pressprime, ncnt,iflag)
       ! ELECTRON DENSITY
       IF (ANY(sigma_ne < bigno_ne)) &
          CALL chisq_ne(target_ne, sigma_ne, ncnt,iflag)
@@ -275,6 +281,9 @@
       END IF
       IF (sigma_curvature_p2 < bigno) &
          CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
+      ! GAMMA_C
+      IF (ANY(sigma_gamma_c < bigno)) &
+         CALL chisq_gamma_c(target_gamma_c, sigma_gamma_c, ncnt,iflag)
 
       ! Kink
       IF (ANY(sigma_kink < bigno)) &
@@ -287,7 +296,6 @@
       IF (mtargets .ne. m) THEN; iflag=-2; RETURN; END IF
       
       ! Calculate fvec
-      !PRINT *,m,mtargets,fvec
       fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
       RETURN
 !----------------------------------------------------------------------

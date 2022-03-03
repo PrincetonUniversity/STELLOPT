@@ -63,7 +63,7 @@
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
 !DEC$ ENDIF
-      IF (lfreeb) CALL write_mgrid_namelist(iunit_out,ier)
+      IF (lcoil_geom) CALL write_mgrid_namelist(iunit_out,ier)
       WRITE(iunit_out,'(A)') '&END'
       CLOSE(iunit_out)
 

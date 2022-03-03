@@ -17,7 +17,6 @@
   FLAGS_R = -O2 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
   LIBS    = -L/usr/lib -lblas -llapack -lscalapack-openmpi \
-            -lblacs-openmpi -lblacsCinit-openmpi -lblacsF77init-openmpi
 
 #######################################################################
 #            MPI Options
@@ -44,8 +43,8 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I/usr/include
-  NETCDF_LIB = -L/usr/lib -lnetcdf -lnetcdff
+  NETCDF_INC = $(shell nc-config --fflags)
+  NETCDF_LIB = $(shell nc-config --flibs)
 
 #######################################################################
 #            NTCC Options

@@ -33,14 +33,16 @@
 !----------------------------------------------------------------------
       IMPLICIT NONE
       
-      INTEGER                  :: k, nu, nv, nuv, nuvp, nv_vmec, ik_sav
-      REAL(rprec), ALLOCATABLE :: xu(:), xv(:)
-      REAL(rprec), ALLOCATABLE :: rreal(:,:,:), zreal(:,:,:)
-      REAL(rprec), ALLOCATABLE :: bsreal(:,:,:), bureal(:,:,:)
-      REAL(rprec), ALLOCATABLE :: bvreal(:,:,:)
-      REAL(rprec), ALLOCATABLE :: brreal(:,:,:), bphireal(:,:,:)
-      REAL(rprec), ALLOCATABLE :: bzreal(:,:,:)
-      REAL(rprec), ALLOCATABLE :: breal(:,:,:)
+      INTEGER                  :: nrho, nu, nv, nuv, nuvp, nv_vmec, ik_sav
+      INTEGER                  :: win_xu, win_xv, win_rreal, win_zreal, &
+                                  win_bsreal, win_bureal, win_bvreal, &
+                                  win_breal, win_brreal, win_bphireal, &
+                                  win_bzreal
+      REAL(rprec), POINTER :: xu(:), xv(:)
+      REAL(rprec), POINTER :: rreal(:,:,:), zreal(:,:,:)
+      REAL(rprec), POINTER :: bsreal(:,:,:), bureal(:,:,:), bvreal(:,:,:)
+      REAL(rprec), POINTER :: breal(:,:,:)
+      REAL(rprec), POINTER :: brreal(:,:,:), bphireal(:,:,:), bzreal(:,:,:)
       REAL(rprec), ALLOCATABLE :: rs(:,:,:),zs(:,:,:)
       REAL(rprec), ALLOCATABLE :: ru(:,:,:),rv(:,:,:)
       REAL(rprec), ALLOCATABLE :: zu(:,:,:),zv(:,:,:)

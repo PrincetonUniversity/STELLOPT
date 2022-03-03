@@ -9,38 +9,40 @@ wish to use.  For example to use `SHARE/make_bobdole.inc` you would set
 important to set `STELLOPT_PATH` to the path to your current directory
 where you've pulled the repository.
 
-Once a working copy is developed for your computer, you are welcome 
-to push it back to the main repository for other users.
-Before beginning, it is recommened to create an install branch. To do 
-this issue the following commands from main directory:
+Once you configure the environment variables, you can begin to compile the code by
 
-     git checkout -b install
+     ./build_all 
 
-The -b option tells us to create a new branch (you could also issue
-two commands).  Now you'll be on your install branch feel free to
-edit files as necessary for your installation.  To build the code 
-use the build_all script which will systematically build and compile 
-all the files.
+By default, it will compile all the codes in the folder with the option `clean_release`.
+You can customize the script by providing additional commandline arguments, like `./build_all -o release -j 4 STELLOPTV2`. To check the options, type `./build_all -h`.
+
+There is also a Docker image available for use at https://hub.docker.com/r/zhucaoxiang/stellopt.
 
 For more information, please view [STELLOPT compilation](https://princetonuniversity.github.io/STELLOPT/STELLOPT%20Compilation).
 
-
 # EDITING CODE
-To edit the code please first checkout a new branch with the feature
-you'd like.  Then when you want your changes merged into master,
-please push your branch to the remote:
-
-     git push origin <branchname>
-
+Once a working copy is developed for your computer, you are welcome 
+to push it back to the main repository for other users.
+You can ask for a write permission and push your changes into a remote branch.
 Then submit a pull request through 
 [GitHub](https://github.com/PrincetonUniversity/STELLOPT/pulls).
 
+Or you can share your changes via [git fork](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo), which doesn't require you have the write permission.
 
-# PYTHON INTERFACE
+GitHub actions will be triggered by each push and pull-request. The code will be compiled with debug option and you can check the full log at [GitHub actions](https://github.com/PrincetonUniversity/STELLOPT/actions).
+
+# UTILITIES
 A Python interface using CTYPES is also included but it requires a
 static shared build of LIBSTELL.  This is still a highly experimental
-option.
+option. You can find the python scripts at `./pySTEL`.
 
+There are also some other plotting packages developed by group members.
+Here are some examples.
+
+  - [matlabVMEC](https://github.com/lazersos/matlabVMEC): MATLAB packages for various codes.
+  - [coilpy](https://github.com/zhucaoxiang/CoilPy): Python package for toroidal Fourier surface, coils, FOCUS and STELLOPT.
+
+If you are willing to share your code, please add your contributions here.
 
 # REPORT BUGS
 If you find any bugs or have any suggestions, please submit an issue 
@@ -54,4 +56,4 @@ You can find some wiki pages at
 [GitHub pages](https://princetonuniversity.github.io/STELLOPT/).
 This is automatically generated from the `markdown` source files 
 in the [gh-pages](https://github.com/PrincetonUniversity/STELLOPT/tree/gh-pages) branch. 
-Everyone is welcome to contribute to the wiki pages.
+You are welcome to report/fix/update the wiki pages.

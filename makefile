@@ -25,14 +25,30 @@ pre_build:
   endif
   ifeq ($(wildcard $(MYHOME)),)
 	@echo 'Creating STELLOPT output directory.'
-	mkdir $(MYHOME)
+	mkdir -p $(MYHOME)
   endif
 
 
 
 test_make:
-	@echo FC_LINKER_FLAGS is $(FC_LINKER_FLAGS)
-	@echo FFLAGS is $(FFLAGS)
-	@echo FLINKER is $(FLINKER)
-	@echo PETSC_LIB is $(PETSC_LIB)
-	@echo SFINCS_LIB is $(SFINCS_LIB)
+	@echo MACHINE is $(MACHINE)
+	@echo STELLOPT_HOME is $(STELLOPT_HOME)
+	@echo STELLOPT_PATH is $(STELLOPT_PATH)
+#	@echo VMEC_DIR is $(VMEC_DIR)
+#	@echo BEAMS3D_DIR is $(BEAMS3D_DIR)
+#	@echo BOOTSJ_DIR is $(BOOTSJ_DIR)
+#	@echo BNORM_DIR is $(BNORM_DIR)
+#	@echo BOOZ_DIR is $(BOOZ_DIR)
+#	@echo COBRA_DIR is $(COBRA_DIR)
+#	@echo DIANGO_DIR is $(DIANGO_DIR)
+#	@echo FIELDLINES_DIR is $(FIELDLINES_DIR)
+#	@echo JINV_DIR is $(JINV_DIR)
+#	@echo MGRID_DIR is $(MGRID_DIR)
+#	@echo DKES_DIR is $(DKES_DIR)
+#	@echo NEO_DIR is $(NEO_DIR)
+#	@echo GENE_DIR is $(GENE_DIR)
+#	@echo REGCOIL_DIR is $(REGCOIL_DIR)
+#	@echo SFINCS_DIR is $(SFINCS_DIR)
+#	@echo MANGO_DIR is $(MANGO_DIR)
+	@echo Compiler flags are $(LIBS)
+	@echo LIB_LINK is $(LIB_LINK)

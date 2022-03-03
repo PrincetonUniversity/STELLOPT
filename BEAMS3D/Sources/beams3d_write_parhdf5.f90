@@ -215,7 +215,7 @@
 !-----------------------------------------------------------------------
       END SUBROUTINE beams3d_write_parhdf5
 
-      SUBROUTINE beams3d_write1d_parhdf5(m1,m2,mystart,myend,var_name,INTVAR,FLTVAR,DBLVAR)
+      SUBROUTINE beams3d_write1d_parhdf5(m1,m2,mystart,myend,var_name,INTVAR,FLTVAR,DBLVAR,FILENAME)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -241,6 +241,7 @@
       INTEGER, INTENT(in),  OPTIONAL         :: INTVAR(mystart:myend)
       REAL, INTENT(in),  OPTIONAL            :: FLTVAR(mystart:myend)
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: DBLVAR(mystart:myend)
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: FILENAME
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -290,7 +291,11 @@
       CALL h5pset_fapl_mpio_f(fapl_id, MPI_COMM_BEAMS, info, ier)
       CALL h5pget_driver_f(fapl_id, driver_id, ier)
       ! Open file
-      CALL h5fopen_f('ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
+      IF (PRESENT(FILENAME)) THEN
+         CALL h5fopen_f(TRIM(FILENAME)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
+      ELSE
+         CALL h5fopen_f('ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
+      END IF
 !!!!!!! Begin writing
 
 !      WRITE(6,*) myworkid,dimsf,chunk_dims,counts,offset; CALL FLUSH(6)
@@ -354,7 +359,11 @@
             !PRINT *,'h5pcreate_f ',ier
 
             ! Open file
-            CALL h5fopen_f('ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
+            IF (PRESENT(FILENAME)) THEN
+               CALL h5fopen_f(TRIM(FILENAME)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
+            ELSE
+               CALL h5fopen_f('ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
+            END IF
             !PRINT *,'h5fopen_f ',ier
 
             ! Open or create the dataset and get/create dataspace identifer

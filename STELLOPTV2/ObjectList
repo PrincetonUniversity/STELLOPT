@@ -1,4 +1,7 @@
 ObjectFiles = \
+chisq_line_visbrem.o \
+chisq_gamma_c.o \
+chisq_pressprime.o \
 stellopt_write_auxfiles.o \
 stellopt_write_eqfile.o \
 stellopt_write_inputfile.o \
@@ -121,4 +124,5 @@ equil_utils.o \
 stellopt_input_mod.o \
 equil_vals.o \
 stellopt_runtime.o \
-stellopt_targets.o 
+stellopt_targets.o \
+stellopt_mango.o

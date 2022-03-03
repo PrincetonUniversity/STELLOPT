@@ -21,16 +21,17 @@ if not data:
 
 # Calc values
 
-print('BEAMS3D VERSION: ' + str(data['VERSION']))
+print('BEAMS3D VERSION: ' + str(round(data['VERSION'],2)))
 print('==== Vectors ====')
 varlist={}
-varlist['Shinethrough']=np.array([1.86157227, 0.15258789, 0.01220703, 0.28076172, 0.,         0.        ])
+varlist['Shinethrough']=np.array([34, 18, 10, 1, 1, 1])
+#print(data['Shinethrough'])
 for temp in varlist:
     act = varlist[temp]
     cal = data[temp]
     cal = np.where(act==0,0,cal)
     div = np.where(act==0,1,act)
-    perct = 100*sum(abs(act-cal)/div)
+    perct = max(abs(act-cal))
     print('  '+temp+': '+str(cal[0])+'   '+str(act[0])+'   '+str(int(perct))+'%')
     if perct > failtol:
         lfail = 1

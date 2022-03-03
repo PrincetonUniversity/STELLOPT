@@ -160,6 +160,8 @@
       CHARACTER(256)  ::  sfincs_Er_option
       REAL(rprec)                       ::  vboot_tolerance
       INTEGER                           ::  vboot_max_iterations
+      LOGICAL :: mango_bound_constraints = .true. ! If a mango optimization algorithm is used, this variable determines whether or not mango will impose bound (a.k.a. box) constraints.
+
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_f, te_aux_f, &
                                             ti_aux_f, th_aux_f,&
                                             zeff_aux_f, &
@@ -221,7 +223,8 @@
                           regcoil_nescin_filename, bootcalc_type, phi_type
       CHARACTER(256), DIMENSION(maxwindsurf) :: windsurfname
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
-      
+      REAL(rprec), DIMENSION(0:ntord) :: raxis_cc_initial, raxis_cs_initial, zaxis_cc_initial, zaxis_cs_initial
+
       ! Variables associated with the Rosenbrock test function
       INTEGER, PARAMETER :: ROSENBROCK_DIM = 20
       LOGICAL, DIMENSION(1:rosenbrock_dim)      ::  lRosenbrock_X_opt

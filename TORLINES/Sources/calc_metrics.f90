@@ -45,28 +45,29 @@
 !-----------------------------------------------------------------------
       bcs1=(/0,0/)
       bcs2=(/-1,-1/)
-      !mnmax = SIZE(rmnc_sav,1)
+      mnmax = SIZE(rmnc_sav,1)
       ! Calculate deriviatives
-      !ALLOCATE(fmn_temp(1:mnmax,1:k),STAT=ier)
+      ! Note harmonics are in (mu+nv) form
+      !ALLOCATE(fmn_temp(1:mnmax,1:nrho),STAT=ier)
       !IF (ier /= 0) CALL handle_err(ALLOC_ERR,'FMN_TEMP (calc_metrics)',ier)
       rs = 0; zs = 0; ru=0; zu=0; rv=0; zv=0; 
-      !FORALL(mn = 1:mnmax) fmn_temp(mn,1:k) = -rmnc_sav(mn,1:k)*xm(mn)
-      !CALL mntouv(1,k,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,ru,1,1)
-      !FORALL(mn = 1:mnmax) fmn_temp(mn,1:k) = -rmnc_sav(mn,1:k)*xn(mn)*nfp
-      !CALL mntouv(1,k,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,rv,1,0)  
-      !FORALL(mn = 1:mnmax) fmn_temp(mn,1:k) = zmns_sav(mn,1:k)*xm(mn)
-      !CALL mntouv(1,k,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zu,0,0)  
-      !FORALL(mn = 1:mnmax) fmn_temp(mn,1:k) = zmns_sav(mn,1:k)*xn(mn)*nfp
-      !CALL mntouv(1,k,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zv,0,0) 
+      !FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc_sav(mn,:)*xm(mn)
+      !CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,ru,1,1)
+      !FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc_sav(mn,:)*xn(mn)*nfp
+      !CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,rv,1,0)  
+      !FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns_sav(mn,:)*xm(mn)
+      !CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zu,0,0)  
+      !FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns_sav(mn,:)*xn(mn)*nfp
+      !CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zv,0,0) 
       !IF (lasym) THEN
-      !   FORALL(mn = 1:mnmax) fmn_temp(mn,1:k) = rmns_sav(mn,1:k)*xm(mn)
-      !   CALL mntouv(1,k,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,ru,0,0)
-      !   FORALL(mn = 1:mnmax) fmn_temp(mn,1:k) = rmns_sav(mn,1:k)*xn(mn)*nfp
-      !   CALL mntouv(1,k,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,rv,0,0)  
-      !   FORALL(mn = 1:mnmax) fmn_temp(mn,1:k) = -zmnc_sav(mn,1:k)*xm(mn)
-      !   CALL mntouv(1,k,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zu,1,0)  
-      !   FORALL(mn = 1:mnmax) fmn_temp(mn,1:k) = -zmnc_sav(mn,1:k)*xn(mn)*nfp
-      !   CALL mntouv(1,k,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zv,1,0)
+      !   FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns_sav(mn,:)*xm(mn)
+      !   CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,ru,0,0)
+      !   FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns_sav(mn,:)*xn(mn)*nfp
+      !   CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,rv,0,0)  
+      !   FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc_sav(mn,:)*xm(mn)
+      !   CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zu,1,0)  
+      !   FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc_sav(mn,:)*xn(mn)*nfp
+      !   CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zv,1,0)
       !END IF
       !DEALLOCATE(fmn_temp)
          
@@ -76,22 +77,23 @@
       ! removing 2*pi dependancy is horrible
       ! full grid (nu-1 -> nu and nv-1 -> nv, better)
       ! Do full grid (no filling)
-      CALL EZspline_init(r1_spl,k,nu,nv,bcs1,bcs2,bcs2,ier)
-      CALL EZspline_init(z1_spl,k,nu,nv,bcs1,bcs2,bcs2,ier)
+      CALL EZspline_init(r1_spl,nrho,nu,nv,bcs1,bcs2,bcs2,ier)
+      CALL EZspline_init(z1_spl,nrho,nu,nv,bcs1,bcs2,bcs2,ier)
       r1_spl%x1 = rho
       z1_spl%x1 = rho
-      r1_spl%x2(1:nu-1) = xu(1:nu)*pi2
-      z1_spl%x2(1:nu-1) = xu(1:nu)*pi2
-      r1_spl%x3(1:nv-1) = xv(1:nv)*pi2
-      z1_spl%x3(1:nv-1) = xv(1:nv)*pi2
+      r1_spl%x2(1:nu) = xu(1:nu)*pi2
+      z1_spl%x2(1:nu) = xu(1:nu)*pi2
+      r1_spl%x3(1:nv) = xv(1:nv)*pi2
+      z1_spl%x3(1:nv) = xv(1:nv)*pi2
       r1_spl%isHermite    = 1
       z1_spl%isHermite    = 1
-      CALL EZspline_setup(r1_spl,rreal(1:k,1:nu,1:nv),ier,exact_dim=.true.)
-      CALL EZspline_setup(z1_spl,zreal(1:k,1:nu,1:nv),ier,exact_dim=.true.)
+      CALL EZspline_setup(r1_spl,rreal,ier,exact_dim=.true.)
+      CALL EZspline_setup(z1_spl,zreal,ier,exact_dim=.true.)
       
       DO v = 1, nv
          DO u = 1, nu
-            DO s = 1, k
+            DO s = 1, nrho
+               !PRINT *,rho(s)
                CALL EZspline_gradient(r1_spl,rho(s),xu(u)*pi2,xv(v)*pi2,R_grad,ier)
                CALL EZspline_gradient(z1_spl,rho(s),xu(u)*pi2,xv(v)*pi2,Z_grad,ier)
                !IF (lverb) WRITE(327,'(3I5,6ES20.10)') s,u,v,rs(s,u,v),ru(s,u,v),rv(s,u,v),R_grad
@@ -107,14 +109,6 @@
       
       CALL EZspline_free(r1_spl,ier)
       CALL EZspline_free(z1_spl,ier)
-      
-      ! Fill out array
-      !rs(:,nu,1:nv) = rs(:,1,1:nv); rs(:,1:nu,nv) = rs(:,1:nu,1); rs(:,nu,nv) = rs(:,1,1)
-      !ru(:,nu,1:nv) = ru(:,1,1:nv); ru(:,1:nu,nv) = ru(:,1:nu,1); ru(:,nu,nv) = ru(:,1,1)
-      !rv(:,nu,1:nv) = rv(:,1,1:nv); rv(:,1:nu,nv) = rv(:,1:nu,1); rv(:,nu,nv) = rv(:,1,1)
-      !zs(:,nu,1:nv) = zs(:,1,1:nv); zs(:,1:nu,nv) = zs(:,1:nu,1); zs(:,nu,nv) = zs(:,1,1)
-      !zu(:,nu,1:nv) = zu(:,1,1:nv); zu(:,1:nu,nv) = zu(:,1:nu,1); zu(:,nu,nv) = zu(:,1,1)
-      !zv(:,nu,1:nv) = zv(:,1,1:nv); zv(:,1:nu,nv) = zv(:,1:nu,1); zv(:,nu,nv) = zv(:,1,1)
       
       ! Calculate metric elements
       g11 = rs*rs+zs*zs

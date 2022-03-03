@@ -71,6 +71,8 @@
       CHARACTER(len=120) :: arg1
       CHARACTER(len=100) :: input_extension
 
+      LOGICAL :: lnyquist = .TRUE.    !=false, suppress nyquist stuff; CZHU 2021.03.31
+
       NAMELIST /indata/ mgrid_file, time_slice, nfp, ncurr, nsin,
      1   niter, nstep, nvacskip, delt, ftol, gamma, am, ai, ac, aphi,
      1   pcurr_type, pmass_type, piota_type,
@@ -95,7 +97,8 @@
      E   loldout, lwouttxt, ldiagno, lfull3d1out, max_main_iterations,     ! J Geiger 2010-05-04
      D   lgiveup,fgiveup,                                                  ! M.Drevlak 2012-05-10
      E   lbsubs,                                                           ! 2014-01-12 See jxbforce
-     F   trip3d_file                                                       ! SAL - TRIP3D
+     F   trip3d_file,                                                      ! SAL - TRIP3D
+     G   lnyquist
 
       NAMELIST /mseprofile/ mseprof
 
@@ -259,7 +262,7 @@
          WRITE(iunit,'(A)') '!----- RFP Parameters -----'
          WRITE(iunit,outboo) 'LRFP',lrfp
          WRITE (iunit,'(a,(1p,4ES22.12E3))') '  APHI = ',
-     1                                   (aphi(n-1), n=1,SIZE(aphi))
+     1                                   (aphi(n), n=1,SIZE(aphi))
       END IF
       WRITE(iunit,'(A)') '!----- Free Boundary Parameters -----'
       WRITE(iunit,outboo) 'LFREEB',lfreeb

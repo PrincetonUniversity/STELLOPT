@@ -13,7 +13,7 @@
       USE stellopt_targets
       USE equil_vals
 !DEC$ IF DEFINED (BEAMS3D_OPT)
-      USE beams3d_input_mod, ONLY: read_beams3d_input
+      USE beams3d_input_mod, ONLY: read_beams3d_input, lbeam, lbbnbi
 !DEC$ ENDIF
       
       
@@ -53,7 +53,7 @@
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
             vals(mtargets)    = val
-            IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ik),sigma(ik),vals(mtargets),rho(ik)
+            IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ik),sigma(ik),vals(mtargets),shat(ik)
          END DO
       ELSE
          DO ik = 1, nsd
@@ -63,6 +63,8 @@
          END DO
          iflag=0
 !DEC$ IF DEFINED (BEAMS3D_OPT)
+         lbeam = .false.
+         lbbnbi = .false.
          CALL read_beams3d_input('input.'//TRIM(id_string), iflag)
 !DEC$ ENDIF
       END IF

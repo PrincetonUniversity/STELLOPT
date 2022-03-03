@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use("Qt4Agg")
 import matplotlib.pyplot as _plt
 import numpy as np                    #For Arrays
+import numpy.matlib
 from math import pi
 #QT4
 from PyQt4 import uic, QtGui
@@ -15,7 +16,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 #from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy
 #from PyQt5.QtGui import QIcon
 #from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from libstell.fieldlines import read_fieldlines, calc_iota
+from libstell.fieldlines import read_fieldlines, calc_iota, calc_reff
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
 
@@ -38,7 +39,8 @@ class MyApp(QMainWindow):
 		self.statusBar().showMessage('Ready')
 		self.ui.plot_list = ['Summary', '-----1D-----', 'Iota', 'q',\
 		'-----3D------', 'B_R', 'B_PHI', 'B_Z',\
-		'---Special---', 'Poincaré', 'Poincaré |B|']
+		'---Special---', 'Poincaré', 'Poincaré |B|', 'Poincaré a',\
+		'Poincaré Length']
 		files = sorted(os.listdir('.'))
 		for name in files:
 			if(name[0:10]=='fieldlines'):
@@ -192,6 +194,7 @@ class MyApp(QMainWindow):
 			#self.ax.errorbar(temp['rho'],temp['iota'],yerr=temp['iota_err'])
 			self.ax.plot(temp['rho'],temp['iota'],'.k')
 			self.ax.set_ylim(min(temp['iota']),max(temp['iota']))
+			self.ax.set_xlim(0.0,1.25)
 			self.ax.set_xlabel('Normalized Flux')
 			self.ax.set_ylabel('iota')
 			self.ax.set_title('Rotational Transform')
@@ -222,7 +225,7 @@ class MyApp(QMainWindow):
 			cmax = np.amax(self.fieldlines_data['B_lines'][k:self.npoinc,0])
 			#cmin = cmin - 0.5*np.abs(cmin)
 			#cmax = cmax + 0.5*np.abs(cmin)
-			print(cmin,cmax)
+			print(self.fieldlines_data['B_lines'][0,:])
 			cax  = self.ax.scatter(self.fieldlines_data['R_lines'][k:self.nsteps-1:self.npoinc,:],\
 				self.fieldlines_data['Z_lines'][k:self.nsteps-1:self.npoinc,:],\
 				c=self.fieldlines_data['B_lines'][k:self.nsteps-1:self.npoinc,:], marker='.',s=0.3, \
@@ -230,6 +233,46 @@ class MyApp(QMainWindow):
 			self.ax.set_xlabel('R [m]')
 			self.ax.set_ylabel('Z [m]')
 			self.ax.set_title('Poincaré Plot')
+			self.ax.set_aspect('equal')
+			self.ax.set_xlim(rmin,rmax)
+			self.fig.colorbar(cax)
+			#cax.set_clim(cmin,cmax)
+		elif (plot_name == 'Poincaré Length'):
+			rho = self.fieldlines_data['L_lines']
+			k = self.u
+			rmin = np.amin(self.fieldlines_data['raxis'])
+			rmax = np.amax(self.fieldlines_data['raxis'])
+			cmin = np.amin(rho)
+			cmax = np.amax(rho)
+			n = np.rint((self.nsteps-1-k)/self.npoinc)
+			rho2d = np.matlib.repmat(rho,int(n),1)
+			cax  = self.ax.scatter(self.fieldlines_data['R_lines'][k:self.nsteps-1:self.npoinc,:],\
+				self.fieldlines_data['Z_lines'][k:self.nsteps-1:self.npoinc,:],\
+				c=rho2d, marker='.',s=0.3, \
+				cmap='jet')
+			self.ax.set_xlabel('R [m]')
+			self.ax.set_ylabel('Z [m]')
+			self.ax.set_title('Poincaré Plot ($L_{line}$)')
+			self.ax.set_aspect('equal')
+			self.ax.set_xlim(rmin,rmax)
+			self.fig.colorbar(cax)
+			cax.set_clim(cmin,cmax)
+		elif (plot_name == 'Poincaré a'):
+			rho = calc_reff(self.fieldlines_data)
+			k = self.u
+			rmin = np.amin(self.fieldlines_data['raxis'])
+			rmax = np.amax(self.fieldlines_data['raxis'])
+			cmin = np.amin(rho)
+			cmax = np.amax(rho)
+			n = np.rint((self.nsteps-1-k)/self.npoinc)
+			rho2d = np.matlib.repmat(rho,int(n),1)
+			cax  = self.ax.scatter(self.fieldlines_data['R_lines'][k:self.nsteps-1:self.npoinc,:],\
+				self.fieldlines_data['Z_lines'][k:self.nsteps-1:self.npoinc,:],\
+				c=rho2d, marker='.',s=0.3, \
+				cmap='jet')
+			self.ax.set_xlabel('R [m]')
+			self.ax.set_ylabel('Z [m]')
+			self.ax.set_title('Poincaré Plot ($a_{minor}$)')
 			self.ax.set_aspect('equal')
 			self.ax.set_xlim(rmin,rmax)
 			self.fig.colorbar(cax)

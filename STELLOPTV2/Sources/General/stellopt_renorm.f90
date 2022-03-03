@@ -88,8 +88,16 @@
                sigma_wp = sigma_wp/temp
             CASE(jtarget_volume)
                sigma_volume = sigma_volume/temp
+            CASE(jtarget_r0)
+               sigma_r0 = sigma_r0/temp
+            CASE(jtarget_b0)
+               sigma_b0 = sigma_b0/temp
             CASE(jtarget_separatrix)
                WHERE(sigma_separatrix<bigno) sigma_separatrix = sigma_separatrix/temp
+            CASE(jtarget_press)
+               WHERE(sigma_press<bigno) sigma_press = sigma_press/temp
+            CASE(jtarget_pressprime)
+               WHERE(sigma_pressprime<bigno) sigma_pressprime = sigma_pressprime/temp
             CASE(jtarget_ne)
                WHERE(sigma_ne<bigno_ne) sigma_ne = sigma_ne/temp
             CASE(jtarget_te)
@@ -126,10 +134,14 @@
                WHERE(sigma_fluxloop<bigno) sigma_fluxloop = sigma_fluxloop/temp
             CASE(jtarget_segrog)
                WHERE(sigma_segrog<bigno) sigma_segrog = sigma_segrog/temp
-         CASE(jtarget_iota)
+            CASE(jtarget_iota)
                WHERE(sigma_iota<bigno) sigma_iota = sigma_iota/temp
-         CASE(jtarget_vaciota)
+            CASE(jtarget_vaciota)
                WHERE(sigma_vaciota<bigno) sigma_vaciota = sigma_vaciota/temp
+            CASE(jtarget_magwell)
+               WHERE(sigma_magwell<bigno) sigma_magwell = sigma_magwell/temp
+            CASE(jtarget_helicity)
+               WHERE(ABS(sigma_helicity)<bigno) sigma_helicity = sigma_helicity/temp
             CASE DEFAULT
                WRITE(6,'(A,I3.3,A)') '!!! JTARGET=',iddex(i),' not supported'
                CALL write_targets(6,iddex(i))

@@ -10,8 +10,9 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE torlines_realspace, ONLY: brreal,bphireal,bzreal,bsreal,bureal,&
-                                    bvreal,rs,ru,rv,zs,zu,zv,rreal,k,nu,nv
+      USE torlines_realspace, ONLY: brreal, bphireal, bzreal, bsreal, &
+                                    bureal, bvreal, rs, ru, rv, zs, zu, &
+                                    zv, rreal, nrho, nu, nv
       USE torlines_runtime, ONLY: vsurf
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -52,7 +53,7 @@
       !DEALLOCATE(bsreal2,bureal2,bvreal2)
       ! Test metric elements (convert to flux and back) (init_external)
       k1 = vsurf+1
-      k2 = k
+      k2 = nrho
       ALLOCATE(brreal2(k1:k2,1:nu,1:nv),bphireal2(k1:k2,1:nu,1:nv),bzreal2(k1:k2,1:nu,1:nv))
       ALLOCATE(bsreal2(k1:k2,1:nu,1:nv),bureal2(k1:k2,1:nu,1:nv),bvreal2(k1:k2,1:nu,1:nv))
       z = 1.0

@@ -718,6 +718,12 @@
      &                         currumns, currvmns)
       END IF
 
+!     Handle issue of xm_nyq being 0 for older text files
+      IF (version_ .le. (8.0+eps_w)) THEN
+            xm_nyq=xm
+            xn_nyq=xn
+      END IF
+      
       mnyq = INT(MAXVAL(xm_nyq));  nnyq = INT(MAXVAL(ABS(xn_nyq)))/nfp
 
 !
@@ -2639,9 +2645,30 @@
       IF (ipresent .eq. 0) GOTO 1000
 
 !
+!     COMPUTE LAM, ... IN REAL SPACE 
+!     tcosmn = cos(mu - nv);  tsinmn = sin(mu - nv)
+!     Half Grid but only mnmax sized
+      IF (llam) THEN
+         DO mn = 1, mnmax
+            m = NINT(xm(mn));  n = NINT(xn(mn))/nfp
+            n1 = ABS(n);   sgn = SIGN(1,n)   
+            tsinmn = sinmu(m)*cosnv(n1) - sgn*cosmu(m)*sinnv(n1)
+            lam   = lam   + lammns1(mn)*tsinmn
+         END DO
+         IF (lasym) THEN
+            DO mn = 1, mnmax
+               m = NINT(xm(mn));  n = NINT(xn(mn))/nfp
+               n1 = ABS(n);   sgn = SIGN(1,n)
+               tcosmn = cosmu(m)*cosnv(n1) + sgn*sinmu(m)*sinnv(n1) 
+               lam   = lam   + lammnc1(mn)*tcosmn
+            END DO
+         END IF
+      END IF
+!
 !     COMPUTE GSQRT, ... IN REAL SPACE
 !     tcosmn = cos(mu - nv);  tsinmn = sin(mu - nv)
 !
+
       DO mn = 1, mnmax_nyq
          m = NINT(xm_nyq(mn));  n = NINT(xn_nyq(mn))/nfp
          n1 = ABS(n);   sgn = SIGN(1,n)
@@ -2650,7 +2677,7 @@
          IF (lgsqrt) gsqrt = gsqrt + gmnc1(mn)*tcosmn
          IF (lbsupu) bsupu = bsupu + bsupumnc1(mn)*tcosmn
          IF (lbsupv) bsupv = bsupv + bsupvmnc1(mn)*tcosmn
-         IF (llam)   lam   = lam   + lammns1(mn)*tsinmn
+         !IF (llam)   lam   = lam   + lammns1(mn)*tsinmn
       END DO
 
       IF (.not.lasym) GOTO 1000
@@ -2663,7 +2690,7 @@
          IF (lgsqrt) gsqrt = gsqrt + gmns1(mn)*tsinmn
          IF (lbsupu) bsupu = bsupu + bsupumns1(mn)*tsinmn
          IF (lbsupv) bsupv = bsupv + bsupvmns1(mn)*tsinmn
-         IF (llam)   lam   = lam   + lammnc1(mn)*tcosmn
+         !IF (llam)   lam   = lam   + lammnc1(mn)*tcosmn
       END DO
 
  1000 CONTINUE

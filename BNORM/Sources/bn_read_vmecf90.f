@@ -59,6 +59,21 @@ c-----------------------------------------------
          print *, 'mpol1, ntor = ', mpol1, ntor, ' ; mf, nf = ', mf, nf
          stop
       endif
+
+      if(md.lt.MAXVAL(xm_nyq) .or. nd.lt.MAXVAL(xn_nyq)/nfp) then
+         print *, 'increase number of poloidal and/or toroidal modes:',
+     1            ' md,nd'
+         print *, 'xm_nyq, xn_nyq = ', MAXVAL(xm_nyq),  
+     1            MAXVAL(xn_nyq)/nfp, ' ; md, nd = ', md, nd
+         stop
+      endif
+
+      if(md.lt.mf .or. nd.lt.nf) then
+         print *, 'increase number of poloidal and/or toroidal modes:',
+     1            ' md,nd'
+         print *, 'mf, nf= ', mf, nf, ' ; md, nd = ', md, nd
+         stop
+      endif
 c---------------------------------------------------------------------
       IF (ALLOCATED(ixm)) DEALLOCATE(ixm)
       IF (ALLOCATED(ixn)) DEALLOCATE(ixn)
@@ -71,8 +86,8 @@ c---------------------------------------------------------------------
       IF (ALLOCATED(crs)) DEALLOCATE(crs)
       IF (ALLOCATED(czc)) DEALLOCATE(czc)
       IF (ALLOCATED(clc)) DEALLOCATE(clc)
-      allocate (ixm(mnmax), ixn(mnmax), raxis_in(0:ntor),
-     1          zaxis_in(0:ntor))
+      allocate (ixm(mnmax), ixn(mnmax), 
+     1          raxis_in(0:ntor), zaxis_in(0:ntor))
       allocate (raxis_s(0:ntor),zaxis_c(0:ntor))
       allocate (bsubus(0:md,-nd:nd), bsubvs(0:md,-nd:nd),
      1      crs(0:md,-nd:nd), czc(0:md,-nd:nd),clc(0:md,-nd:nd),
@@ -90,11 +105,16 @@ c---------------------------------------------------------------------
          ixn(mn) =-nint(xn(mn))/nfp   !!Flip sign: NESCOIL convention
          m = ixm(mn)
          n = ixn(mn)
-         bsubu(m,n) = 1.5_dp*bsubumnc(mn,ns) - 0.5_dp*bsubumnc(mn,ns-1)
-         bsubv(m,n) = 1.5_dp*bsubvmnc(mn,ns) - 0.5_dp*bsubvmnc(mn,ns-1)
          cl(m,n) = 1.5_dp*lmns(mn,ns) - 0.5_dp*lmns(mn,ns-1)
          cr(m,n) = rmnc(mn,ns)
          cz(m,n) = zmns(mn,ns)
+      end do
+
+      do mn = 1, mnmax_nyq
+         m = nint(xm_nyq(mn))
+         n = -nint(xn_nyq(mn))/nfp   !!Flip sign: NESCOIL convention
+         bsubu(m,n) = 1.5_dp*bsubumnc(mn,ns) - 0.5_dp*bsubumnc(mn,ns-1)
+         bsubv(m,n) = 1.5_dp*bsubvmnc(mn,ns) - 0.5_dp*bsubvmnc(mn,ns-1)
       end do
       
       if (lasym_bn) then
@@ -103,12 +123,16 @@ c---------------------------------------------------------------------
          do mn = 1, mnmax
             m = ixm(mn)
             n = ixn(mn)
-            bsubu(m,n) = 1.5_dp*bsubumns(mn,ns)-0.5_dp*bsubumns(mn,ns-1)
-            bsubv(m,n) = 1.5_dp*bsubvmns(mn,ns)-0.5_dp*bsubvmns(mn,ns-1)
             clc(m,n) = 1.5_dp*lmnc(mn,ns) - 0.5_dp*lmnc(mn,ns-1)
             crs(m,n) = rmns(mn,ns)
             czc(m,n) = zmnc(mn,ns)
          end do
+         do mn = 1, mnmax_nyq
+            m = nint(xm_nyq(mn))
+            n = -nint(xn_nyq(mn))/nfp   !!Flip sign: NESCOIL convention
+            bsubu(m,n) = 1.5_dp*bsubumns(mn,ns)-0.5_dp*bsubumns(mn,ns-1)
+            bsubv(m,n) = 1.5_dp*bsubvmns(mn,ns)-0.5_dp*bsubvmns(mn,ns-1)
+         end do 
       end if
 
       iota_edge = 1.5_dp*iotas(ns) - 0.5_dp*iotas(ns-1)
