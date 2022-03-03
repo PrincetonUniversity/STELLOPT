@@ -109,11 +109,11 @@
                      END IF
                      WRITE(iunit_eq,850) xm_nyq_vmec(mn), xn_nyq_vmec(mn), rmnc_temp(mn,ik), zmns_temp(mn,ik), gmnc_vmec(mn,ik)
                      WRITE(iunit_eq,850) sigc ,tauc, pbpc, pppc
-                  END DO
-               END DO
+                  END DO !mn
+               END DO !ik
                WRITE(iunit_eq,850)(iota_vmec(ik),mass_vmec(ik),pres_vmec(ik)*rmu0,-phip_vmec(ik),vp_vmec(ik),ik=1,nrad)
                CLOSE(iunit_eq)
-            END IF
+            END IF !MPI root
 
             ! This section divides up the work for parallel execution
             mystart = 1; myend = nsys; mypace = 1
@@ -238,7 +238,7 @@
       END SELECT
       IF (lscreen) WRITE(6,'(a)') ' -------------------------  KINK STABILITY DONE  ----------------------'
       RETURN
- 840  FORMAT(1x,1pe22.12,1x,1p3e12.5,8i4,i1)
+ 840  FORMAT(1x,1pe22.12,1x,1p3e15.5,8i6,i3)
  850  FORMAT(1x,1p5e22.14)
 !----------------------------------------------------------------------
 !     END SUBROUTINE
