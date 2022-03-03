@@ -239,6 +239,7 @@
 !-----------------------------------------------------------------------
       NAMELIST /optimum/ nfunc_max, equil_type, opt_type,&
                          ftol, xtol, gtol, epsfcn, factor, refit_param, &
+                         lcentered_differences, axis_init_option, &
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
@@ -274,6 +275,7 @@
                          beamj_type, bootj_type, zeff_type, phi_type, &
                          bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, &
                          vboot_tolerance, vboot_max_iterations, &
+                         mango_bound_constraints, &
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
                          bootj_f_min, zeff_min, zeff_f_min, phi_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
@@ -316,6 +318,7 @@
                          target_kappa_avg, sigma_kappa_avg, &
                          target_magwell, sigma_magwell, &
                          target_press, sigma_press, r_press, z_press, phi_press, s_press,&
+                         target_pressprime, sigma_pressprime, r_pressprime, z_pressprime, phi_pressprime, s_pressprime,&
                          target_te, sigma_te, r_te, z_te, phi_te, s_te,&
                          target_ne, sigma_ne, r_ne, z_ne, phi_ne, s_ne,&
                          target_ne_line, sigma_ne_line, r0_ne_line, phi0_ne_line, z0_ne_line,&
@@ -326,6 +329,9 @@
                          r1_ti_line, phi1_ti_line, z1_ti_line, &
                          target_zeff_line, sigma_zeff_line, r0_zeff_line, phi0_zeff_line, z0_zeff_line,&
                          r1_zeff_line, phi1_zeff_line, z1_zeff_line, &
+                         target_visbrem_line, sigma_visbrem_line, lambda_visbrem_line, calib_visbrem_line, &
+                         r0_visbrem_line, phi0_visbrem_line, z0_visbrem_line,&
+                         r1_visbrem_line, phi1_visbrem_line, z1_visbrem_line, &
                          target_ti, sigma_ti, r_ti, z_ti, phi_ti, s_ti,&
                          target_xics, sigma_xics, r0_xics, phi0_xics, z0_xics,&
                          r1_xics, phi1_xics, z1_xics, target_xics_bright, sigma_xics_bright, &
@@ -409,6 +415,7 @@
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
                          target_curvature_P2, sigma_curvature_P2, &
+                         target_gamma_c, sigma_gamma_c, &
                          lRosenbrock_X_opt, dRosenbrock_X_opt, &
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
                          target_Rosenbrock_F, sigma_Rosenbrock_F
@@ -445,6 +452,8 @@
       noptimizers     = -1
       refit_param     = 0.75
       rho_exp         = 4
+      lcentered_differences = .FALSE.
+      axis_init_option = "previous"
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
       lkeep_mins      = .FALSE.
@@ -754,13 +763,18 @@
       sigma_te(:)     = bigno
       target_extcur   = 0.0
       sigma_extcur    = bigno
-      norm_press      = 1.0
       r_press(:)         = 0.0
       z_press(:)         = 0.0
       phi_press(:)       = 0.0
       s_press(:)         = -1.0
       target_press(:)    = 0.0
       sigma_press(:)     = bigno
+      r_pressprime(:)      = 0.0
+      z_pressprime(:)      = 0.0
+      phi_pressprime(:)    = 0.0
+      s_pressprime(:)      = -1.0
+      target_pressprime(:) = 0.0
+      sigma_pressprime(:)  = bigno
       r_te(:)         = 0.0
       z_te(:)         = 0.0
       phi_te(:)       = 0.0
@@ -804,6 +818,16 @@
       r1_zeff_line(:)   = 0.0
       phi1_zeff_line(:) = 0.0
       z1_zeff_line(:)   = 0.0
+      target_visbrem_line(:) = 0.0
+      sigma_visbrem_line(:) = bigno
+      lambda_visbrem_line(:) = 0.632E-6 !632 nm
+      calib_visbrem_line(:) = 1.0
+      r0_visbrem_line(:)   = 0.0
+      phi0_visbrem_line(:) = 0.0
+      z0_visbrem_line(:)   = 0.0
+      r1_visbrem_line(:)   = 0.0
+      phi1_visbrem_line(:) = 0.0
+      z1_visbrem_line(:)   = 0.0
       target_xics(:)        = 0.0
       sigma_xics(:)         = bigno
       target_xics_bright(:) = 0.0
@@ -992,6 +1016,8 @@
       npts_cpoly        = 360
       target_curvature_P2    = 0.0
       sigma_curvature_P2     = bigno
+      target_gamma_c    = 0.0
+      sigma_gamma_c     = bigno
 
       ! Read name list
       lexist            = .false.
@@ -1218,7 +1244,7 @@
          WRITE(6,"(2X,A)") "=========    (D. V. ANDERSON, W. A. COOPER, R. GRUBER AND U. SCHWENN)   ========="
          WRITE(6,"(2X,A)") "=========                   wilfred.cooper@epfl.ch                      ========="
          WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
+         WRITE(6,*)        "    "         
       END IF
 !DEC$ ELSE
       IF (ANY(sigma_kink < bigno)) THEN
@@ -1464,6 +1490,8 @@
          WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
          WRITE(iunit,outint) 'VBOOT_MAX_ITERATIONS',vboot_max_iterations
       END IF
+      WRITE(iunit,outstr) 'AXIS_INIT_OPTION',TRIM(axis_init_option)
+      WRITE(iunit,outboo) 'LCENTERED_DIFFERENCES',lcentered_differences
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Optimized Quantities'
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -2126,6 +2154,20 @@
                           'TARGET_MAGWELL(',ik,') = ',target_magwell(ik), &
                           'SIGMA_MAGWELL(',ik,') = ',sigma_magwell(ik)
          END DO
+      END IF 
+      IF (ANY(sigma_gamma_c < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Gamma_c Energetic Particle Metric'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_gamma_c,DIM=1)
+            IF(sigma_gamma_c(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+           IF (sigma_gamma_c(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_GAMMA_C(',ik,') = ',target_gamma_c(ik), &
+                          'SIGMA_GAMMA_C(',ik,') = ',sigma_gamma_c(ik)
+         END DO
       END IF
       IF (ANY(sigma_jcurv < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -2379,7 +2421,6 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Plasma Pressure OPTIMIZATION'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,outflt) 'NORM_PRESS',norm_press
          DO ik = 1, UBOUND(sigma_press,DIM=1)
             IF (sigma_press(ik) < bigno .and. s_press(ik) < 0) THEN
                WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
@@ -2393,6 +2434,26 @@
                   'S_PRESS(',ik,')',s_press(ik),&
                   'TARGET_PRESS(',ik,')',target_press(ik),& 
                   'SIGMA_PRESS(',ik,')',sigma_press(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_pressprime < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Plasma Pressure Gradient (dp/ds) OPTIMIZATION'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_pressprime,DIM=1)
+            IF (sigma_pressprime(ik) < bigno .and. s_pressprime(ik) < 0) THEN
+               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
+                  'R_PRESSPRIME(',ik,')',r_pressprime(ik),&
+                  'PHI_PRESSPRIME(',ik,')',phi_pressprime(ik),& 
+                  'Z_PRESSPRIME(',ik,')',z_pressprime(ik),&
+                  'TARGET_PRESSPRIME(',ik,')',target_pressprime(ik),& 
+                  'SIGMA_PRESSPRIME(',ik,')',sigma_pressprime(ik)
+            ELSE IF (sigma_pressprime(ik) < bigno .and. s_pressprime(ik) >= 0) THEN
+               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
+                  'S_PRESSPRIME(',ik,')',s_pressprime(ik),&
+                  'TARGET_PRESSPRIME(',ik,')',target_pressprime(ik),& 
+                  'SIGMA_PRESSPRIME(',ik,')',sigma_pressprime(ik)
             END IF
          END DO
       END IF
@@ -2486,6 +2547,26 @@
                   'Z1_ZEFF_LINE(',ik,')',z1_zeff_line(ik),&
                   'TARGET_ZEFF_LINE(',ik,')',target_zeff_line(ik),&
                   'SIGMA_ZEFF_LINE(',ik,')',sigma_zeff_line(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_visbrem_line < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          LINE INTEGRATED VISUAL BREMSSTRAHLUNG'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_visbrem_line,DIM=1)
+            IF (sigma_visbrem_line(ik) < bigno) THEN
+               WRITE(iunit,"(10(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
+                  'R0_VISBREM_LINE(',ik,')',r0_visbrem_line(ik),&
+                  'PHI0_VISBREM_LINE(',ik,')',phi0_visbrem_line(ik),&
+                  'Z0_VISBREM_LINE(',ik,')',z0_visbrem_line(ik),&
+                  'R1_VISBREM_LINE(',ik,')',r1_visbrem_line(ik),&
+                  'PHI1_VISBREM_LINE(',ik,')',phi1_visbrem_line(ik),&
+                  'Z1_VISBREM_LINE(',ik,')',z1_visbrem_line(ik),&
+                  'TARGET_VISBREM_LINE(',ik,')',target_visbrem_line(ik),&
+                  'SIGMA_VISBREM_LINE(',ik,')',sigma_visbrem_line(ik),&
+                  'LAMBDA_VISBREM_LINE(',ik,')',lambda_visbrem_line(ik),&
+                  'CALIB_VISBREM_LINE(',ik,')',calib_visbrem_line(ik)
             END IF
          END DO
       END IF

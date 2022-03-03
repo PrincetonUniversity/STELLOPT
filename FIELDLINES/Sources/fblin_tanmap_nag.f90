@@ -40,6 +40,7 @@
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval(1,3) ! So weird behavior but this must match the sum of ict
       INTEGER, parameter :: ict(8)=(/1,1,0,1,0,0,0,0/)
+      !INTEGER, parameter :: ict(10)=(/1,1,0,1,0,0,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
       
 !-----------------------------------------------------------------------
@@ -71,10 +72,16 @@
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BR4D(1,1,1,1),nr,nphi,nz)
+         !CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         !                hx,hxi,hy,hyi,hz,hzi,&
+         !                BR4D(1,1,1,1),nr,nphi,nz)
          br_temp = fval(1,1); drdr = fval(1,2); drdz = fval(1,3)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BZ4D(1,1,1,1),nr,nphi,nz)
+         !CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         !                hx,hxi,hy,hyi,hz,hzi,&
+         !                BZ4D(1,1,1,1),nr,nphi,nz)
          bz_temp = fval(1,1); dzdr = fval(1,2); dzdz = fval(1,3)
       ELSE
          br_temp = 0.0

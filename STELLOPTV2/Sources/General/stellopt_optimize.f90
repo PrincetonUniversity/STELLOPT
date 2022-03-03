@@ -24,7 +24,7 @@
 !----------------------------------------------------------------------
       IMPLICIT NONE
       !LOGICAL ::  lrestart
-      LOGICAL ::  lfile_exists
+      LOGICAL ::  lfile_exists, lskip_min
       INTEGER ::  ier, iunit,nvar_in, nprint, info, ldfjac,nfev,&
                   iunit_restart, nfev_save, npop, ndiv, i
       INTEGER, ALLOCATABLE :: ipvt(:)
@@ -32,7 +32,7 @@
       REAL(rprec), ALLOCATABLE ::  qtf(:), wa1(:), wa2(:), wa3(:), &
                                    wa4(:), fvec(:)
       REAL(rprec), ALLOCATABLE ::  fjac(:,:)
-      
+      LOGICAL :: used_mango_algorithm
       REAL(rprec), EXTERNAL :: enorm
       EXTERNAL stellopt_fcn
       
@@ -133,12 +133,16 @@
                WRITE(6,'(A,2X,1ES12.4)') '        Vscale: ',factor
                WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npop
          CASE DEFAULT
-            WRITE(6,*) '!!!!!  UNKNOWN OPTIMIZATION TYPE  !!!!!'
-            WRITE(6,*) '       OPT_TYPE: ',TRIM(opt_type)
-            WRITE(6,*)
+            ! This 'case default' section is entered if either a MANGO algorithm is selected, 
+            ! or if an invalid opt_type is selected. In the latter case
+            ! there is no need to print a warning here, since the next select case block
+            ! will catch it.
          END SELECT
          IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
       END IF
+
+      ! DEFAULT
+      lskip_min = .false.
 
       ! Do runs
       SELECT CASE(TRIM(opt_type))
@@ -175,8 +179,10 @@
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fjac)
          CASE('eval_xvec')
+            lskip_min = .true.
             CALL xvec_eval(stellopt_fcn,nvars,mtargets,xvec_file)
          CASE('one_iter','single','eval','single_iter')
+            lskip_min = .true.
             ALLOCATE(fvec(mtargets))
             fvec     = 0.0
             info     = FLAG_SINGLETASK
@@ -235,6 +241,7 @@
             CLOSE(iunit)
             CLOSE(iunit_restart)
          CASE('map')
+            lskip_min = .true.
             nprint = 6
             npop   = npopulation
             ndiv   = mode
@@ -246,6 +253,7 @@
                 WRITE(6,*) '       See map.dat for data               '
             END IF
          CASE('map_linear')
+            lskip_min = .true.
             nprint = 6
             npop   = npopulation
             ndiv   = mode
@@ -257,6 +265,7 @@
                 WRITE(6,*) '       See map.dat for data               '
             END IF
          CASE('map_plane')
+            lskip_min = .true.
             nprint = 6
             npop   = npopulation
             ndiv   = mode
@@ -268,6 +277,7 @@
                 WRITE(6,*) '       See map.dat for data               '
             END IF
          CASE('map_hypers')
+            lskip_min = .true.
             ALLOCATE(wa1(nvars),fvec(mtargets))
             wa1 = vars
             nprint = 6
@@ -303,10 +313,17 @@
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
             DEALLOCATE(wa1)
          CASE DEFAULT
-            RETURN
+            CALL stellopt_optimize_mango(used_mango_algorithm,nfev)
+            IF (.not. used_mango_algorithm) THEN
+               WRITE(6,*) '!!!!!  UNKNOWN OPTIMIZATION TYPE  !!!!!'
+               WRITE(6,*) '       OPT_TYPE: ',TRIM(opt_type)
+               WRITE(6,*)
+               RETURN
+            END IF
       END SELECT
       ! Now output the minimum files
-      IF (myid == master .and. info /= 5) THEN
+      IF (myid == master .and. info /= 5 .and. .not.lskip_min) THEN
+         IF (.NOT.ALLOCATED(fvec)) ALLOCATE(fvec(mtargets))
          IF (lrenorm) CALL stellopt_renorm(mtargets,fvec)
          nfev_save = nfev
          ier=0

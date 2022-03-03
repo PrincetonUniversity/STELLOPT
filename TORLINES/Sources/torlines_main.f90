@@ -10,7 +10,12 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE torlines_runtime
+      USE mpi_sharmem
       USE mpi_params
+      USE mpi_inc
+#if defined(LHDF5)
+    USE hdf5
+#endif
 !-----------------------------------------------------------------------
 !     Local Variables
 !          numargs      Number of input arguments
@@ -20,31 +25,48 @@
 !          args         Input arguments
 !-----------------------------------------------------------------------  
       implicit none
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'
-!DEC$ ENDIF  
-      integer                                      :: numargs,i
+      integer                                      :: numargs,i,ier, vmajor, vminor, liblen, nshar
+      integer                                      :: h5major, h5minor, h5rel, h5par
       integer, parameter                           :: arg_len =256
+      character(LEN=MPI_MAX_LIBRARY_VERSION_STRING) :: mpi_lib_name
       character*(arg_len)                          :: arg1
       character*(arg_len),allocatable,dimension(:) :: args
 !-----------------------------------------------------------------------
 !     Begin Program
 !-----------------------------------------------------------------------
-      myid = master
-      numprocs = 1
-!DEC$ IF DEFINED (MPI_OPT)
+      myworkid = master
       ierr_mpi = MPI_SUCCESS
-      CALL MPI_INIT( ierr_mpi )                                         ! MPI
-      CALL MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr_mpi )              ! MPI
-      CALL MPI_COMM_SPLIT( MPI_COMM_WORLD,0,myid,MPI_COMM_FIELDLINES,ierr_mpi)
-      CALL MPI_COMM_RANK( MPI_COMM_FIELDLINES, myid, ierr_mpi )              ! MPI
-      CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, numprocs, ierr_mpi )          ! MPI
+#if defined(MPI_OPT)
+      CALL MPI_INIT(ierr_mpi) ! MPI
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_INIT_ERR, 'fieldlines_main', ierr_mpi)
+      CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_FIELDLINES, myworkid, ierr_mpi )              ! MPI
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
+      CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, nprocs_torlines, ierr_mpi )          ! MPI
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_SIZE_ERR, 'fieldlines_main', ierr_mpi)
+      CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_FIELDLINES, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
+      CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
+      CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nshar, ierr_mpi) ! MPI
+      CALL MPI_GET_VERSION(vmajor,vminor,ier)
+      CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ier)
       CALL MPI_ERRHANDLER_SET(MPI_COMM_WORLD,MPI_ERRORS_RETURN,ierr_mpi)
-!DEC$ ENDIF
+#endif
+
+#if defined(LHDF5)
+    CALL H5GET_LIBVERSION_F(h5major, h5minor, h5rel, ier)
+    h5par = 0
+#endif
+
+#if defined(HDF5_PAR)
+    h5par = 1
+#endif
+
       !OPEN(6,CARRIAGECONTROL='fortran')
       pi2 = 8 * ATAN(1.0)
+      lverb = .false.
 
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
          numargs=0
          i=0
          arg1=''
@@ -119,12 +141,23 @@
          enddo
          DEALLOCATE(args)
          WRITE(6,'(a,f4.2)') 'TORLINES Version ',TORLINES_VERSION
-      ELSE IF (myid /= master) THEN
-         lverb=.false.   ! Shutup the slaves
+#if defined(LHDF5)
+         IF (h5par > 0) THEN
+            WRITE(6,'(A)')      '-----  HDF5 (Parallel) Parameters  -----'
+         ELSE
+            WRITE(6,'(A)')      '-----  HDF5 Parameters  -----'
+         ENDIF
+         WRITE(6,'(A,I2,2(A,I2.2))')  '   HDF5_version:  ', h5major,'.',h5minor,' release: ',h5rel
+#endif
+         WRITE(6,'(A)')      '-----  MPI Parameters  -----'
+         WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
+         WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
+         WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_torlines
+         WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
       END IF
       ! Broadcast variables
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'torlines_main',ierr_mpi)
       CALL MPI_BCAST(id_string,256,MPI_CHARACTER, master, MPI_COMM_FIELDLINES,ierr_mpi)
@@ -155,7 +188,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'torlines_main',ierr_mpi)
       CALL MPI_BCAST(lauto,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'torlines_main',ierr_mpi)
-!DEC$ ENDIF
+#endif
       ! Initialize the Calculation
       CALL torlines_init
       IF (lverb) WRITE(6,*) ''
@@ -171,10 +204,12 @@
       
       IF (lverb) WRITE(6,*) ''
       IF (lverb) WRITE(6,'(a)')'---------- TORLINES DONE ----------'
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
+      CALL MPI_COMM_FREE(MPI_COMM_SHARMEM,ierr_mpi)
+      CALL MPI_COMM_FREE(MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_FINALIZE(ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'torlines_main',ierr_mpi)
-!DEC$ ENDIF
+#endif
 !-----------------------------------------------------------------------
 !     End Program
 !-----------------------------------------------------------------------

@@ -17,7 +17,7 @@
       INTEGER, DIMENSION(9), PARAMETER :: Z_IMP   = (/2, 6, 6, 4, 8, 7, 3, 5, 26/)
       REAL, DIMENSION(9), PARAMETER :: ZEFFMIN_IMP   = (/1.0, 1.0, 5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 /)
       REAL, DIMENSION(9), PARAMETER :: ZEFFMAX_IMP   = (/2.1, 5.0, 6.0, 4.0, 5.0, 5.0, 3.0, 5.0, 5.0/)
-      REAL, PARAMETER :: inv_amu       = 6.02214076208E+26 ! 1./AMU [1/kg]
+      REAL, PARAMETER :: inv_amu       = 6.02214076208E+26 ! Dalton [amu/kg]
 
       ! Separate ions into hydrogen species and impurities
       n_H=1; n_Z=1; dense_H=0; dense_Z=0; Zeff_sum1=0; Zeff_sum2=0
@@ -94,7 +94,7 @@
       DO i = 1, n_Z-1
          l = ind_Z(i)
          k = 0
-         DO j = 1, 10
+         DO j = 1, 9
             IF (Z_IMP(j) == Z_in(l) .and. Zeff > ZEFFMIN_IMP(j) .and. Zeff < ZEFFMAX_IMP(j)) THEN
                k = j
                CONTINUE

@@ -46,10 +46,12 @@
                      win_S_ARR, win_U_ARR, win_POT_ARR, win_BR4D, win_BPHI4D, &
                      win_BZ4D, win_MODB4D, win_TE4D, win_NE4D, win_TI4D, win_ZEFF4D, &
                      win_S4D, win_U4D, win_POT4D, win_req_axis, win_zeq_axis, &
-                     win_wall_load, win_wall_shine
+                     win_wall_load, win_wall_shine, win_hr, win_hp, win_hz, &
+                     win_hri, win_hpi, win_hzi
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, tmin, tmax, delta_t, &
                      vc_adapt_tol, psiedge_eq, phiedge_eq, plasma_Zmean, plasma_mass, &
-                     reff_eq, plasma_Zavg, therm_factor
+                     reff_eq, plasma_Zavg, therm_factor, B_kick_min, B_kick_max, &
+                     E_kick, freq_kick
       REAL(rprec), POINTER :: raxis(:), zaxis(:), phiaxis(:)
       REAL(rprec), POINTER :: req_axis(:), zeq_axis(:)
       REAL(rprec), POINTER :: wall_load(:,:), wall_shine(:,:)
@@ -63,6 +65,8 @@
                                   S4D, U4D, POT4D
       REAL*8 ::      eps1, eps2, eps3
       REAL*8, parameter :: small = 1.e-10_ezspline_r8
+      REAL*8, POINTER :: hr(:), hp(:), hz(:)
+      REAL*8, POINTER :: hri(:), hpi(:), hzi(:)
       TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl, MODB_spl, TE_spl, NE_spl, &
                             TI_spl, ZEFF_spl, S_spl, U_spl, POT_spl
       TYPE(EZspline1_r8) :: TE_spl_s, NE_spl_s, TI_spl_S, ZEFF_spl_s, Vp_spl_s, POT_spl_s

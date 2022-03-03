@@ -87,11 +87,12 @@
       REAL(rprec), DIMENSION(rosenbrock_dim) ::  target_Rosenbrock_F, &
                                                  sigma_Rosenbrock_F
       REAL(rprec), PARAMETER ::  bigno_ne = 1.0E27
-      REAL(rprec) ::  norm_press
       REAL(rprec) ::  qm_ratio
       REAL(rprec) ::  cutoff_te_line
       REAL(rprec), DIMENSION(nprof) ::  target_press, sigma_press, &
                                         r_press, z_press, phi_press, s_press  
+      REAL(rprec), DIMENSION(nprof) ::  target_pressprime, sigma_pressprime, &
+                                        r_pressprime, z_pressprime, phi_pressprime, s_pressprime  
       REAL(rprec), DIMENSION(nprof) ::  target_te, sigma_te, &
                                         r_te, z_te, phi_te, s_te  
       REAL(rprec), DIMENSION(nprof) ::  target_ne, sigma_ne, &
@@ -108,6 +109,10 @@
       REAL(rprec), DIMENSION(nprof) ::  target_zeff_line,sigma_zeff_line, &
                                         r0_zeff_line, phi0_zeff_line, z0_zeff_line, &
                                         r1_zeff_line, phi1_zeff_line, z1_zeff_line
+      REAL(rprec), DIMENSION(nprof) ::  target_visbrem_line,sigma_visbrem_line, lambda_visbrem_line, &
+                                        r0_visbrem_line, phi0_visbrem_line, z0_visbrem_line, &
+                                        r1_visbrem_line, phi1_visbrem_line, z1_visbrem_line, &
+                                        calib_visbrem_line
       REAL(rprec), DIMENSION(nprof) ::  target_xics,sigma_xics, &
                                         target_xics_bright,sigma_xics_bright, &
                                         target_xics_w3,sigma_xics_w3, &
@@ -162,6 +167,7 @@
                                         s_txport
       CHARACTER(256)                ::  txport_proxy
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES, nu_DKES
+      REAL(rprec), DIMENSION(nsd)        :: target_gamma_c, sigma_gamma_c
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_limiter, sigma_limiter, &
@@ -233,11 +239,13 @@
       INTEGER, PARAMETER :: jtarget_ti         = 202
       INTEGER, PARAMETER :: jtarget_line_ti    = 2021
       INTEGER, PARAMETER :: jtarget_line_zeff  = 2031
+      INTEGER, PARAMETER :: jtarget_visbrem_line = 2032
       INTEGER, PARAMETER :: jtarget_xics       = 2042
       INTEGER, PARAMETER :: jtarget_xics_bright= 2043
       INTEGER, PARAMETER :: jtarget_xics_w3    = 2044
       INTEGER, PARAMETER :: jtarget_xics_v     = 2045
       INTEGER, PARAMETER :: jtarget_press      = 203
+      INTEGER, PARAMETER :: jtarget_pressprime = 2033
       INTEGER, PARAMETER :: jtarget_vphi       = 204
       INTEGER, PARAMETER :: jtarget_iota       = 300  
       INTEGER, PARAMETER :: jtarget_iprime     = 301
@@ -252,6 +260,7 @@
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b          = 504
       INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5041
       INTEGER, PARAMETER :: jtarget_curvature_P2            = 505
+      INTEGER, PARAMETER :: jtarget_gamma_c    = 506
       INTEGER, PARAMETER :: jtarget_balloon    = 601
       INTEGER, PARAMETER :: jtarget_kink       = 6011
       INTEGER, PARAMETER :: jtarget_bootstrap  = 602
@@ -340,6 +349,8 @@
             WRITE(iunit, out_format) 'External currents'
          CASE(jtarget_press)
             WRITE(iunit, out_format) 'Plasma Pressure'
+         CASE(jtarget_pressprime)
+            WRITE(iunit, out_format) 'Plasma Pressure Gradient (dp/ds)'
          CASE(jtarget_ne)
             WRITE(iunit, out_format) 'Electron Density'
          CASE(jtarget_line_ne)
@@ -350,6 +361,8 @@
             WRITE(iunit, out_format) 'Line Integrated Ion Temperature'
          CASE(jtarget_line_zeff)
             WRITE(iunit, out_format) 'Line Integrated Z-Effective'
+         CASE(jtarget_visbrem_line)
+            WRITE(iunit, out_format) 'Line Integrated Visual Bremsstrahlung'
          CASE(jtarget_xics)
             WRITE(iunit, out_format) 'XICS Signal'
          CASE(jtarget_xics_bright)
@@ -440,6 +453,8 @@
             WRITE(iunit, out_format) 'Coil Intrusions into Polygonal Keepout Regions'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
+         CASE(jtarget_gamma_c)
+            WRITE(iunit, out_format) 'Gamma_c'
       END SELECT
       END SUBROUTINE write_targets
       

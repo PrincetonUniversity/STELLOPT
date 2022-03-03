@@ -1,8 +1,5 @@
 # LIBSTELL Module
-
-s1 = ""
-s2 = "mp"
-s3 = "__"
+from . import s1, s2, s3
 
 def read_vmec(file):
     import os, sys
@@ -117,6 +114,73 @@ def read_vmec(file):
             vmec_data[key][ns-1,:] = 2.0 * vmec_data[key][ns-2,:] - vmec_data[key][ns-3,:]
     # Return the data dictionary
     return vmec_data
+
+def read_boozer(file):
+    import os, sys
+    import ctypes as ct
+    import numpy.ctypeslib as npct
+    import numpy as np
+    # Load Libraries
+    try:
+        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        qtCreatorPath=os.environ["STELLOPT_PATH"]
+    except KeyError:
+        print("Please set environment variable STELLOPT_PATH")
+        sys.exit(1)
+    # Read File
+    read_boozer = getattr(libstell,s1+'read_boozer_mod_'+s2+'_read_boozer_file'+s3)
+    read_boozer.argtypes=[ct.c_char_p, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.c_long]
+    read_boozer.restype=None
+    ierr = ct.c_int(0)
+    iopen = ct.c_int(0)
+    read_boozer(file.encode('UTF-8'), ct.byref(ierr), ct.byref(iopen), len(file))
+    # Setup Arrays
+    boozer_data={}
+    # Check
+    if not (ierr.value == 0):
+        return boozer_data
+    # Logical
+    varlist=['lasym_b']
+    for temp in varlist:
+        boozer_data[temp]=ct.c_bool.in_dll(libstell,s1+'read_boozer_mod_'+s2+'_'+temp+s3).value
+    # Integers
+    varlist=['ns_b','nfp_b','mboz_b','nboz_b','mnboz_b']
+    for temp in varlist:
+        boozer_data[temp]=ct.c_int.in_dll(libstell,s1+'read_boozer_mod_'+s2+'_'+temp+s3).value
+    # Doubles
+    varlist=['aspect_b','rmax_b','rmin_b','betaxis_b']
+    for temp in varlist:
+        boozer_data[temp]=ct.c_double.in_dll(libstell,s1+'read_boozer_mod_'+s2+'_'+temp+s3).value
+    # INTEGER Arrays (mnboz_b)
+    varlist = ['ixm_b','ixn_b']
+    arr_size = boozer_data['mnboz_b']
+    ftemp = ct.POINTER(ct.c_int)
+    for temp in varlist:
+        boozer_data[temp]=npct.as_array(ftemp.in_dll(libstell,s1+'read_boozer_mod_'+s2+'_'+temp+s3),(arr_size,1))
+    # REAL Arrays (ns)
+    varlist = ['iota_b','pres_b','phip_b','phi_b','beta_b','buco_b','bvco_b']
+    arr_size = boozer_data['ns_b']
+    ftemp = ct.POINTER(ct.c_double)
+    for temp in varlist:
+        boozer_data[temp]=npct.as_array(ftemp.in_dll(libstell,s1+'read_boozer_mod_'+s2+'_'+temp+s3),(arr_size,1))
+    ## Array values 1D
+    ftemp=ct.POINTER(ct.c_double)
+    ns = boozer_data['ns_b']
+    mnmax = boozer_data['mnboz_b']
+    ns_size = (ns,1)
+    mn_size = (mnmax,1)
+    ## 2D Arrays
+    varlist = ['rmnc_b','zmns_b','bmnc_b','pmns_b','gmnc_b']
+    mn2d_size = (ns, mnmax)
+    fmn=ct.POINTER(ct.c_double)
+    for temp in varlist:
+        boozer_data[temp]=npct.as_array(fmn.in_dll(libstell,s1+'read_boozer_mod_'+s2+'_'+temp+s3),mn2d_size) #ns,mnmax format
+    if boozer_data['lasym_b']:
+        varlist = ['rmns_b','zmnc_b','bmns_b','pmnc_b','gmns_b']
+        for temp in varlist:
+            boozer_data[temp]=npct.as_array(fmn.in_dll(libstell,s1+'read_boozer_mod_'+s2+'_'+temp+s3),mn2d_size) #ns,mnmax format
+    # Return the data dictionary
+    return boozer_data
 
 def h2f(var,ns):
     import numpy as np

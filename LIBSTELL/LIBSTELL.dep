@@ -1,10 +1,29 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
       
+fzero.o : \
+      stel_kinds.o
+      
+gaunt_freefree.o : \
+      stel_kinds.o
+      
+read_hint_mod.o :  \
+      stel_kinds.o 
+      
+read_eqdsk_mod.o :  \
+      stel_kinds.o \
+      read_wout_mod.o
+      
+vmec_ohkawa.o :  \
+      stel_kinds.o \
+      read_wout_mod.o
+      
 adas_mod_parallel.o :  \
       mpi_inc.o \
       mpi_sharmem.o
       
 mpi_sharmem.o :  
+      
+common_factor.o :  
 
 str_length.o :  
 
@@ -539,6 +558,7 @@ eval_x_queued.o : \
 
 
 MAP_HYPERS.o : \
+      mpi_inc.o \
       safe_open_mod.o \
       stel_kinds.o
       
@@ -928,7 +948,8 @@ extcurz_T.o : \
 ipch_T.o : \
       stel_constants.o \
       stel_kinds.o \
-      safe_open_mod.o 
+      safe_open_mod.o \
+      integration_path.o 
       
 
 fftpack.o : \
@@ -1010,6 +1031,7 @@ mddc_T.o : \
       
 
 mgrid_mod.o : \
+      mpi_sharmem.o \
       mpi_inc.o \
       v3_utilities.o \
       ezcdf.o \
@@ -1249,10 +1271,6 @@ wall_mod.o : \
       safe_open_mod.o 
       
 
-wall_mod_new.o : \
-      safe_open_mod.o 
-      
-
 virtual_casing_mod.o : \
       ezspline_obj.o \
       ezspline.o
@@ -1321,10 +1339,40 @@ coordinate_utilities.o : \
 
 suzuki_sigma.o : 
 
+stel_tools.o : \
+      ezspline.o \
+      ezspline_obj.o
 
+mir_tools.o : \
+      read_wout_mod.o \
+      ezspline_obj.o      
 
-      
+getcarg.o : \
+      mpi_inc.o
 
+vmec_chdir.o : \
+      mpi_inc.o
 
+thscte_T.o : \
+      stel_constants.o
 
+spline_cubic.o : \
+      mpi_inc.o
 
+second0.o : \
+      mpi_inc.o
+
+ezspline_cdfget3.o : \
+      ezcdf.o
+
+ezspline_cdfput3.o : \
+      ezcdf.o
+
+ezspline_cinterp.o : \
+      ezspline_obj.o
+
+gmres.o : \
+      mpi_inc.o
+
+compression.o : \
+      ezcdf.o

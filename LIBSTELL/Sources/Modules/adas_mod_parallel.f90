@@ -87,6 +87,58 @@ module adas_mod_parallel
 !-----------------------------------------------------------------------
        CONTAINS
 
+       LOGICAL FUNCTION adas_tables_avail()
+       IMPLICIT NONE
+       CHARACTER(LEN=256) :: adasdir, file_str
+       adas_tables_avail = .FALSE.
+       CALL getenv('ADASDIR', adasdir)
+!      Can't INQUIRE about a directory
+!       INQUIRE(FILE=TRIM(adasdir),EXIST=adas_tables_avail)
+!       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(adasdir)// 'not FOUND!'
+!            RETURN
+!       END IF
+       file_str=TRIM(adasdir) // '/tables/ei/ei_1_coldTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+       file_str=TRIM(adasdir) // '/tables/ei/ei_2_coldTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+       file_str=TRIM(adasdir) // '/tables/cx/cx_1_1_warmTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+       file_str=TRIM(adasdir) // '/tables/cx/cx_2_1_warmTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+       file_str=TRIM(adasdir) // '/tables/cx/cx_2_2_warmTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+       file_str=TRIM(adasdir) // '/tables/ii/ii_1_1_warmTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+
+       RETURN
+
+       END FUNCTION adas_tables_avail
+
 !       SUBROUTINE adas_load_tables
        SUBROUTINE adas_load_tables(myid,comm)
        IMPLICIT NONE
