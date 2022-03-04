@@ -2770,6 +2770,313 @@
 
       END SUBROUTINE tosuvspace
 
+      SUBROUTINE tosuvspaceBsup (s_in, u_in, v_in,                         &
+                             gbsupu,gbsupv)
+      USE stel_constants, ONLY: zero, one
+      IMPLICIT NONE
+!------------------------------------------------
+!   D u m m y   A r g u m e n t s
+!------------------------------------------------
+      REAL(rprec), INTENT(in) :: s_in, u_in, v_in
+      REAL(rprec), INTENT(out) :: gbsupu, gbsupv
+!------------------------------------------------
+!   L o c a l   V a r i a b l e s
+!------------------------------------------------
+      REAL(rprec), PARAMETER :: c1p5 = 1.5_dp
+      INTEGER :: m, n, n1, mn, jslo, jshi
+      REAL(rprec) :: hs1, wlo, whi, wlo_odd, whi_odd, dchids, dphids,    &
+                     lamu, lamv, slo, shi
+      REAL(rprec), DIMENSION(mnmax) :: wmins, wplus, lammns1, lammnc1
+      REAL(rprec) :: cosu, sinu, cosv, sinv, tcosmn, tsinmn, sgn
+      REAL(rprec) :: cosmu(0:mpol-1), sinmu(0:mpol-1),                   &
+                     cosnv(0:ntor), sinnv(0:ntor)
+!------------------------------------------------
+!
+!     COMPUTE VARIOUS HALF/FULL-RADIAL GRID QUANTITIES AT THE INPUT POINT
+!     (S, U, V) , WHERE 
+!        S = normalized toroidal flux (0 - 1),
+!        U = poloidal angle 
+!        V = N*phi = toroidal angle * no. field periods
+!
+!     HALF-RADIAL GRID QUANTITIES
+!     Lambda
+!   
+!     FULL-RADIAL GRID QUANTITIES
+!     dbsubuds, dbsubvds, dbsubsdu, dbsubsdv
+!
+!------------------------------------------------
+      IF (s_in.lt.zero .or. s_in.gt.one) THEN
+         WRITE(6, *) ' In tosuvspace, s(flux) must be between 0 and 1'
+         RETURN
+      END IF
+
+      IF (.not.lwout_opened) THEN
+         WRITE(6, *)' tosuvspace can only be called AFTER opening wout file!'
+         RETURN
+      END IF
+
+!
+!     SETUP TRIG ARRAYS
+!
+      cosu = COS(u_in);   sinu = SIN(u_in)
+      cosv = COS(v_in);   sinv = SIN(v_in)
+
+      cosmu(0) = 1;    sinmu(0) = 0
+      cosnv(0) = 1;    sinnv(0) = 0
+      DO m = 1, mpol-1
+         cosmu(m) = cosmu(m-1)*cosu - sinmu(m-1)*sinu
+         sinmu(m) = sinmu(m-1)*cosu + cosmu(m-1)*sinu
+      END DO
+
+      DO n = 1, ntor
+         cosnv(n) = cosnv(n-1)*cosv - sinnv(n-1)*sinv
+         sinnv(n) = sinnv(n-1)*cosv + cosnv(n-1)*sinv
+      END DO
+
+!
+!     FIND INTERPOLATED s VALUE AND COMPUTE INTERPOLATION WEIGHTS wlo, whi
+!     RECALL THAT THESE QUANTITIES ARE ON THE HALF-RADIAL GRID...
+!     s-half(j) = (j-1.5)*hs, for j = 2,...ns
+!
+      hs1 = one/(ns-1)
+      jslo = 1+FLOOR(s_in/hs1+0.5)
+      jslo = MIN(jslo,ns-1)
+      jshi = jslo+1
+      slo  = hs1*(jslo-c1p5) ! Can be negative
+      shi  = hs1*(jshi-c1p5)
+      whi  = (s_in - slo)/hs1 ! x
+      wlo  = one-whi ! (1-x) half
+
+!
+!     FOR ODD-m MODES X ~ SQRT(s), SO INTERPOLATE Xmn/SQRT(s)
+! 
+      whi_odd = whi*SQRT(s_in/shi)
+      wlo_odd = wlo*SIGN(SQRT(s_in/ABS(slo)),slo) ! slo can be negative
+
+!
+!     Fix axis behavior here
+!       LMNS(1)=LMNS(2) EVEN
+!       LMNS(1)=-LMNS(2) ODD
+!
+      IF (jslo .eq. 1) THEN
+            jslo = 2
+            wlo_odd = zero
+            whi_odd = SQRT(s_in/shi)
+      END IF
+
+      WHERE (MOD(NINT(xm(:)),2) .eq. 0)
+         wmins = wlo
+         wplus = whi
+      ELSEWHERE
+         wmins = wlo_odd
+         wplus = whi_odd
+      END WHERE
+
+
+!
+!     FIRST WE CALCULATE LAMBDA
+!
+
+      lamu = zero 
+      lamv = zero
+      lammns1 = wmins*lmns(:,jslo) + wplus*lmns(:,jshi)
+      IF (lasym) lammnc1 = wmins*lmnc(:,jslo) + wplus*lmnc(:,jshi)
+
+!
+!     COMPUTE LAMU, LAMV ... IN REAL SPACE 
+!     tcosmn = cos(mu - nv);  tsinmn = sin(mu - nv)
+!     Half Grid but only mnmax sized
+!
+      DO mn = 1, mnmax
+         m = NINT(xm(mn));  n = NINT(xn(mn))/nfp
+         n1 = ABS(n);   sgn = SIGN(1,n)   
+         tcosmn = cosmu(m)*cosnv(n1) + sgn*sinmu(m)*sinnv(n1) 
+         lamu  = lamu  + m*lammns1(mn)*tcosmn
+         lamv  = lamv  - n*lammns1(mn)*tcosmn
+      END DO
+      IF (lasym) THEN
+         DO mn = 1, mnmax
+            m = NINT(xm(mn));  n = NINT(xn(mn))/nfp
+            n1 = ABS(n);   sgn = SIGN(1,n)
+            tsinmn = sinmu(m)*cosnv(n1) - sgn*cosmu(m)*sinnv(n1)
+            lamu  = lamu  - m*lammnc1(mn)*tsinmn
+            lamv  = lamv  + n*lammnc1(mn)*tsinmn
+         END DO
+      END IF
+
+!
+!     Get dPhi/ds and dChi/ds : Full Grid
+!
+      hs1 = one/(ns-1)
+      jslo = 1 + s_in/hs1
+      jslo = MIN(jslo,ns-1)
+      jshi = jslo+1
+      whi  = (s_in - (jslo-1)*hs1)/hs1 ! x
+      wlo = one - whi !(1-x)
+
+      dchids = wlo*iotaf(jslo)+whi*iotaf(jshi) ! Really iota
+      dphids = wlo*phipf(jslo)+whi*phipf(jshi)
+
+      dchids = dchids*dphids
+
+!
+!     Output 2*pi*sqrt(g)*B^u and 2*pi*sqrt(g)B^v
+!
+
+      gbsupu = dchids - dphids * lamv*nfp
+      gbsupv = (one + lamu) * dphids
+
+      END SUBROUTINE tosuvspaceBsup
+
+      SUBROUTINE tosuvspaceLambda (s_in, u_in, v_in,                         &
+                             lam,lu,lv)
+      USE stel_constants, ONLY: zero, one
+      IMPLICIT NONE
+!------------------------------------------------
+!   D u m m y   A r g u m e n t s
+!------------------------------------------------
+      REAL(rprec), INTENT(in) :: s_in, u_in, v_in
+      REAL(rprec), INTENT(out), OPTIONAL :: lam, lu, lv
+!------------------------------------------------
+!   L o c a l   V a r i a b l e s
+!------------------------------------------------
+      REAL(rprec), PARAMETER :: c1p5 = 1.5_dp
+      INTEGER :: m, n, n1, mn, jslo, jshi
+      REAL(rprec) :: hs1, wlo, whi, wlo_odd, whi_odd, dchids, dphids,    &
+                     slo, shi, lamt,lamut, lamvt
+      REAL(rprec), DIMENSION(mnmax) :: wmins, wplus, lammns1, lammnc1
+      REAL(rprec) :: cosu, sinu, cosv, sinv, tcosmn, tsinmn, sgn
+      REAL(rprec) :: cosmu(0:mpol-1), sinmu(0:mpol-1),                   &
+                     cosnv(0:ntor), sinnv(0:ntor)
+!------------------------------------------------
+!
+!     COMPUTE VARIOUS HALF/FULL-RADIAL GRID QUANTITIES AT THE INPUT POINT
+!     (S, U, V) , WHERE 
+!        S = normalized toroidal flux (0 - 1),
+!        U = poloidal angle 
+!        V = N*phi = toroidal angle * no. field periods
+!
+!     HALF-RADIAL GRID QUANTITIES
+!     Lambda
+!   
+!     FULL-RADIAL GRID QUANTITIES
+!     dbsubuds, dbsubvds, dbsubsdu, dbsubsdv
+!
+!------------------------------------------------
+      lam = zero; lu = zero; lv = zero
+
+      IF (s_in.lt.zero .or. s_in.gt.one) THEN
+         WRITE(6, *) ' In tosuvspace, s(flux) must be between 0 and 1'
+         RETURN
+      END IF
+
+      IF (.not.lwout_opened) THEN
+         WRITE(6, *)' tosuvspace can only be called AFTER opening wout file!'
+         RETURN
+      END IF
+
+!
+!     SETUP TRIG ARRAYS
+!
+      cosu = COS(u_in);   sinu = SIN(u_in)
+      cosv = COS(v_in);   sinv = SIN(v_in)
+
+      cosmu(0) = 1;    sinmu(0) = 0
+      cosnv(0) = 1;    sinnv(0) = 0
+      DO m = 1, mpol-1
+         cosmu(m) = cosmu(m-1)*cosu - sinmu(m-1)*sinu
+         sinmu(m) = sinmu(m-1)*cosu + cosmu(m-1)*sinu
+      END DO
+
+      DO n = 1, ntor
+         cosnv(n) = cosnv(n-1)*cosv - sinnv(n-1)*sinv
+         sinnv(n) = sinnv(n-1)*cosv + cosnv(n-1)*sinv
+      END DO
+
+!
+!     FIND INTERPOLATED s VALUE AND COMPUTE INTERPOLATION WEIGHTS wlo, whi
+!     RECALL THAT THESE QUANTITIES ARE ON THE HALF-RADIAL GRID...
+!     s-half(j) = (j-1.5)*hs, for j = 2,...ns
+!
+      hs1 = one/(ns-1)
+      jslo = 1+FLOOR(s_in/hs1+0.5)
+      jslo = MIN(jslo,ns-1)
+      jshi = jslo+1
+      slo  = hs1*(jslo-c1p5) ! Can be negative
+      shi  = hs1*(jshi-c1p5)
+      whi  = (s_in - slo)/hs1 ! x
+      wlo  = one-whi ! (1-x) half
+
+!
+!     FOR ODD-m MODES X ~ SQRT(s), SO INTERPOLATE Xmn/SQRT(s)
+! 
+      whi_odd = whi*SQRT(s_in/shi)
+      wlo_odd = wlo*SIGN(SQRT(s_in/ABS(slo)),slo) ! slo can be negative
+
+!
+!     Fix axis behavior here
+!       LMNS(1)=LMNS(2) EVEN
+!       LMNS(1)=-LMNS(2) ODD
+!
+      IF (jslo .eq. 1) THEN
+            jslo = 2
+            wlo_odd = zero
+            whi_odd = SQRT(s_in/shi)
+      END IF
+
+      WHERE (MOD(NINT(xm(:)),2) .eq. 0)
+         wmins = wlo
+         wplus = whi
+      ELSEWHERE
+         wmins = wlo_odd
+         wplus = whi_odd
+      END WHERE
+
+
+!
+!     FIRST WE CALCULATE LAMBDA
+!
+
+      lammns1 = wmins*lmns(:,jslo) + wplus*lmns(:,jshi)
+      IF (lasym) lammnc1 = wmins*lmnc(:,jslo) + wplus*lmnc(:,jshi)
+
+!
+!     COMPUTE LAMU, LAMV ... IN REAL SPACE 
+!     tcosmn = cos(mu - nv);  tsinmn = sin(mu - nv)
+!     Half Grid but only mnmax sized
+!
+      lamt = zero; lamut = zero; lamvt = zero
+      DO mn = 1, mnmax
+         m = NINT(xm(mn));  n = NINT(xn(mn))/nfp
+         n1 = ABS(n);   sgn = SIGN(1,n)   
+         tcosmn = cosmu(m)*cosnv(n1) + sgn*sinmu(m)*sinnv(n1) 
+         tsinmn = sinmu(m)*cosnv(n1) - sgn*cosmu(m)*sinnv(n1)
+         lamt   = lamt   +   lammns1(mn)*tsinmn
+         lamut  = lamut  + m*lammns1(mn)*tcosmn
+         lamvt  = lamvt  - n*lammns1(mn)*tcosmn
+      END DO
+      IF (lasym) THEN
+         DO mn = 1, mnmax
+            m = NINT(xm(mn));  n = NINT(xn(mn))/nfp
+            n1 = ABS(n);   sgn = SIGN(1,n)
+            tcosmn = cosmu(m)*cosnv(n1) + sgn*sinmu(m)*sinnv(n1) 
+            tsinmn = sinmu(m)*cosnv(n1) - sgn*cosmu(m)*sinnv(n1)
+            lamt   = lamt   +   lammnc1(mn)*tcosmn
+            lamut  = lamut  - m*lammnc1(mn)*tsinmn
+            lamvt  = lamvt  + n*lammnc1(mn)*tsinmn
+         END DO
+      END IF
+!
+!     RETURN Values
+!
+      IF (PRESENT(lam)) lam = lamt
+      IF (PRESENT(lu)) lu = lamut
+      IF (PRESENT(lv)) lv = lamvt
+
+      RETURN
+
+      END SUBROUTINE tosuvspaceLambda
+
       SUBROUTINE LoadRZL
       IMPLICIT NONE
 !------------------------------------------------

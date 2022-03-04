@@ -51,64 +51,60 @@
         !     Begin Subroutine
         !-----------------------------------------------------------------------
             ! Do volume normalization
-        CALL beams3d_distnorm !TODO: check if this has already been done
+            CALL beams3d_distnorm !TODO: check if this has already been done
 
-      !Apply jacobian for transformation from v_parr/v_perp to E,p
-        DO b = 1, nbeams
-            DO i = 1, ns_prof4
+            !Apply jacobian for transformation from v_parr/v_perp to E,p
+            i3 = ns_prof4/2
+            DO b = 1, nbeams
+               DO i = 1, ns_prof4
                   DO j = 1, ns_prof5
-                        v_parr = i / ns_prof4 *  partvmax ! full grid or half grid, which alignment?
-                        v_perp = j / ns_prof5 * partvmax;
-                        pitch = v_parr / SQRT(v_parr * v_parr + v_perp * v_perp)
-                        jac = 1 / (mass_beams(k) * SQRT(1-pitch * pitch))
-                        dist5d_prof(b,:,:,:,i,j) = dist5d_prof(b,:,:,:,i,j) * jac !probably should inicate somewhere that this has been done, or put it in another variable
+                     ! Half grid
+                      v_parr = partvmax * REAL(i - i3 -0.5) / i3
+                      v_perp = partvmax * (j - 0.5) / ns_prof5 
+                      pitch = v_parr / SQRT(v_parr * v_parr + v_perp * v_perp)
+                      jac = 1 / (mass_beams(k) * SQRT(1-pitch * pitch))
+                      dist5d_prof(b,:,:,:,i,j) = dist5d_prof(b,:,:,:,i,j) * jac !probably should inicate somewhere that this has been done, or put it in another variable
                   END DO
+               END DO
             END DO
-      END DO
 
-      !Todo (nearest neighbor) interpolation to background grid
-      ALLOCATE(dist5d_fida(nbeams,nr,nz,nphi,ns_prof4,ns_prof5))
-      DO b=1,nbeams
-            DO i=1,nr
-                  DO j=1,nz
-                        DO k = 1, nphi
-                              !convert i,j,k to distribution function indices l,m,n
+           !Todo (nearest neighbor) interpolation to background grid
+           ALLOCATE(dist5d_fida(nbeams,nr,nz,nphi,ns_prof4,ns_prof5))
+           DO b=1,nbeams
+              DO i=1,nr
+                 DO j=1,nz
+                    DO k = 1, nphi
+                    !convert i,j,k to distribution function indices l,m,n
 
-                              !determine beams3d-grid indices
-                              i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1) 
-                              k3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(k)),1),nphi-1)
-                              j3 = MIN(MAX(COUNT(zaxis < zaxis_fida(j)),1),nz-1)
-                              !setup interpolation
-                             xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
-                             yparam = (phiaxis_fida(k) - phiaxis(j3)) * hpi(j3)
-                             zparam = (zaxis_fida(j) - zaxis(k3)) * hzi(k3)
-                             CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&
+                    !determine beams3d-grid indices
+                    i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1) 
+                    k3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(k)),1),nphi-1)
+                    j3 = MIN(MAX(COUNT(zaxis < zaxis_fida(j)),1),nz-1)
+                    !setup interpolation
+                    xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
+                    yparam = (phiaxis_fida(k) - phiaxis(j3)) * hpi(j3)
+                    zparam = (zaxis_fida(j) - zaxis(k3)) * hzi(k3)
+                    CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&
                                              hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
                                              S4D(1,1,1,1),nr,nphi,nz)
-                             y0 = fval(1)
-                             CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&
+                    y0 = fval(1)
+                    CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&
                                              hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
                                              U4D(1,1,1,1),nr,nphi,nz)
-                             z0 = fval(1)
-                              
-                                   ! Calc dist func bins
-                            x0    = phiaxis_fida(k)
-                            IF (x0 < 0) x0 = x0 + pi2
-                            !vperp = SQRT(2*moment*fval(1)/mymass)
-                            k = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
-                            l = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
-                            m = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                            !d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
-                            !d5 = MAX(MIN(CEILING(vperp*h5_prof         ), ns_prof5), 1) ! Vperp
-                            
-                            dist5d_fida(b,i,j,k,:,:) = dist5d_prof(b,k,l,m,:,:)
-
-                        END DO
-                  END DO
-            END DO
-      END DO
+                    z0 = fval(1)
+                    ! Calc dist func bins
+                    x0    = phiaxis_fida(k)
+                    IF (x0 < 0) x0 = x0 + pi2
+                    k = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+                    l = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
+                    m = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
+                    dist5d_fida(b,i,j,k,:,:) = dist5d_prof(b,k,l,m,:,:)
+                 END DO
+              END DO 
+           END DO
+        END DO        
         
-        
+        PRINT *,'GOT HERE'
         RETURN
         !-----------------------------------------------------------------------
         !     END SUBROUTINE

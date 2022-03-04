@@ -332,7 +332,7 @@ PROGRAM BEAMS3D
     CALL beams3d_init
 
     ! Follow Fieldlines
-    CALL beams3d_follow
+    CALL beams3d_follow_gc
 
     ! Write Ouput
     CALL beams3d_write('TRAJECTORY_PARTIAL')
