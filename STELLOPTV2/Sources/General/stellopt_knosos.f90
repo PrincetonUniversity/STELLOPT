@@ -185,11 +185,11 @@
                sigma_knosos_gmc(ik) >= bigno .and. sigma_knosos_gma(ik) >= bigno .and. sigma_knosos_qer(ik) >= bigno .and. sigma_knosos_vbm(ik) >= bigno .and. &
                sigma_knosos_vbb(ik) >= bigno .and. sigma_knosos_wbw(ik) >= bigno .and. sigma_knosos_dbo(ik) >= bigno) CYCLE
             WRITE(w_u3,'(1(1x,i8),20(1x,e17.10))') ik,KNOSOS_1NU(ik),&
-                 & KNOSOS_SNU(ik),KNOSOS_SBP(ik),KNOSOS_GMC(ik),KNOSOS_GMA(ik),KNOSOS_QER(ik),KNOSOS_VBM(ik),KNOSOS_VBB(ik),KNOSOS_WBW(ik),KNOSOS_DBO(ik),KNOSOS_VB0(ik)
+                 & KNOSOS_SNU(ik),KNOSOS_SBP(ik),KNOSOS_GMC(ik),KNOSOS_GMA(ik),KNOSOS_QER(ik),KNOSOS_VB0(ik),KNOSOS_VBB(ik),KNOSOS_WBW(ik),KNOSOS_DBO(ik),KNOSOS_VBM(ik)
             eff_ripple(ik)=KNOSOS_1NU(ik)
          END DO
          IF (lscreen) WRITE(6,'(2X,I8,1(2X,E17.10))') ik,KNOSOS_1NU(ik),&
-              KNOSOS_SNU(ik),KNOSOS_SBP(ik),KNOSOS_GMC(ik),KNOSOS_GMA(ik),KNOSOS_QER(ik),KNOSOS_VBM(ik),KNOSOS_VBB(ik),KNOSOS_WBW(ik),KNOSOS_DBO(ik),KNOSOS_VB0(ik)
+              KNOSOS_SNU(ik),KNOSOS_SBP(ik),KNOSOS_GMC(ik),KNOSOS_GMA(ik),KNOSOS_QER(ik),KNOSOS_VB0(ik),KNOSOS_VBB(ik),KNOSOS_WBW(ik),KNOSOS_DBO(ik),KNOSOS_VBM(ik)
          CALL FLUSH(6)
          CLOSE(w_u3)
       END IF
