@@ -115,6 +115,7 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: MAXPARTICLES = 2**18
     INTEGER, PARAMETER :: MAXBEAMS = 32
     INTEGER, PARAMETER :: MAXPROFLEN = 512
+    INTEGER, PARAMETER :: NION = 4
 
     DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
 
@@ -135,6 +136,10 @@ MODULE beams3d_runtime
     REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
     REAL(rprec), DIMENSION(MAXPROFLEN) :: TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
                                             POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F
+    REAL(rprec), DIMENSION(MAXPROFLEN) :: NI_AUX_S
+    REAL(rprec), DIMENSION(NION,MAXPROFLEN) :: NI_AUX_F
+    INTEGER, DIMENSION(NION) :: NI_AUX_Z
+    REAL(rprec), DIMENSION(NION) :: NI_AUX_M
     REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
                                             & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in
     REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), v_neut(:,:), mu_start(:), &
@@ -144,7 +149,7 @@ MODULE beams3d_runtime
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 3.00
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 3.50 ! this is the multi-ion version
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination

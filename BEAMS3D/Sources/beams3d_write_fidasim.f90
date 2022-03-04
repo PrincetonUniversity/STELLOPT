@@ -333,7 +333,11 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      !hxi    = one / hx
                      !hyi    = one / hy
                      !hzi    = one / hz
-                     CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,1,1,1,& !evaluate at grid points
+                     ! X/Y/Zparam are 1 since grids are the same.
+                     xparam = 1.0
+                     yparam = 1.0
+                     zparam = 1.0
+                     CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,& !evaluate at grid points
                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                         POT4D(1,1,1,1),nr,nphi,nz)
                      r1dtemp(1:3) =-fvalE(1,1:3)

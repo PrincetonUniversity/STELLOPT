@@ -75,6 +75,7 @@
                                r_beams, z_beams, phi_beams, TE_AUX_S, &
                                TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
                                TI_AUX_F, POT_AUX_S, POT_AUX_F, &
+                               NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
                                ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
                                ldebug, ne_scale, te_scale, ti_scale, &
                                zeff_scale, plasma_mass, plasma_Zavg, &
@@ -141,6 +142,10 @@
       ZEFF_AUX_F = -1
       POT_AUX_S = -1
       POT_AUX_F = -1
+      NI_AUX_S = -1
+      NI_AUX_F = 0
+      NI_AUX_Z = 0
+      NI_AUX_M = 0
       npoinc = 1
       follow_tol   = 1.0D-7
       vc_adapt_tol = 1.0D-5
@@ -244,10 +249,53 @@
             npot = npot + 1
          END DO
 
-         IF (nzeff < 2) THEN
+         ! Handle multiple ion species
+         IF (ANY(NI_AUX_S >0)) THEN
+            nzeff = 0
+            DO WHILE ((NI_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
+               nzeff = nzeff + 1
+            END DO
+            ! Now calc Zeff(1)
+            DO i1 = 1, nzeff
+               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+            END DO
+            plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
+            plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff
+            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)*plasma_mass)
+         ELSEIF (lfusion) THEN ! Assume 50/50 D T
+            nzeff=nne
+            NI_AUX_S = NE_AUX_S
+            NI_AUX_F(1,:) = 0.5*NE_AUX_F
+            NI_AUX_F(2,:) = 0.5*NE_AUX_F
+            NI_AUX_M(1) = 3.3435837724E-27;   NI_AUX_Z(1) = 1
+            NI_AUX_M(2) = 5.008267217094E-27; NI_AUX_Z(2) = 1 
+            ! Now calc Zeff(1)
+            DO i1 = 1, nzeff
+               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+            END DO
+            plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
+            plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff
+            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)*plasma_mass)
+         ELSEIF (nne > 0) THEN ! Ni=Ne, Z=Zeff
+            nzeff = nne
+            NI_AUX_S = NE_AUX_S
+            NI_AUX_F(1,:) = NE_AUX_F ! NI=NE
+            NI_AUX_Z(1) = NINT(plasma_Zavg)
+            NI_AUX_M(1) = plasma_mass
+            DO i1 = 1, nzeff
+               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+            END DO
+         ELSE
+            nzeff = 6
             ZEFF_AUX_S(1:6) = (/0.0,0.2,0.4,0.6,0.8,1.0/)
             ZEFF_AUX_F(1:6) = (/1.0,1.0,1.0,1.0,1.0,1.0/)
-            nzeff = 6
+            NI_AUX_S(1:6)   = (/0.0,0.2,0.4,0.6,0.8,1.0/)
+            NI_AUX_F(:,1:6) = 0
+            NI_AUX_Z(1) = NINT(plasma_Zavg)
+            NI_AUX_M(1) = plasma_mass
          END IF
 
          nparticles = 0

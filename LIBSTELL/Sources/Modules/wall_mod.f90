@@ -482,19 +482,21 @@
       RETURN
       END SUBROUTINE wall_load_txt
 
-      SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv,verb,comm)
+      SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv,verb,comm,Rmn2,Zmn2)
       !-----------------------------------------------------------------------
       ! wall_load_mn: Creates wall from harmonics
       !-----------------------------------------------------------------------
-      ! param[in]: Rmn. Harmonics in R direction
-      ! param[in]: Zmn. Harmonics in Z direction
-      ! param[in]: xm. 
-      ! param[in]: xn. 
-      ! param[in]: mn. 
-      ! param[in]: nu. 
-      ! param[in]: nv. 
+      ! param[in]: Rmn. Harmonics in R direction (cos)
+      ! param[in]: Zmn. Harmonics in Z direction (sin)
+      ! param[in]: xm. Poloidal Harmonic Array
+      ! param[in]: xn. Toroidal Harmonic Array
+      ! param[in]: mn. Total number of modes
+      ! param[in]: nu. Total poloidal gridpoints
+      ! param[in]: nv. Total toroidal gridpoints
       ! param[in]: verb: Verbosity. True or false
       ! param[in, out]: comm. MPI communicator, handles shared memory
+      ! param[in]: Rmn2. Harmonics in R direction (sin)
+      ! param[in]: Zmn2. Harmonics in Z direction (cos)
       !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
@@ -504,6 +506,7 @@
       INTEGER, INTENT(in) :: mn, nu, nv
       LOGICAL, INTENT(in), OPTIONAL :: verb
       INTEGER, INTENT(inout), OPTIONAL :: comm
+      DOUBLE PRECISION, INTENT(in), OPTIONAL :: Rmn2(mn), Zmn2(mn)
       INTEGER :: u, v, i, j, istat, dex1, dex2, dex3, ik, nv2
       INTEGER :: shar_comm
       LOGICAL :: shared
@@ -543,6 +546,18 @@
                END DO
             END DO
          END DO
+         IF (PRESENT(Rmn2)) THEN
+            DO u = 1, nu
+               DO v = 1, nv
+                  DO i = 1, mn
+                     th = pi2*DBLE(u-1)/DBLE(nu)
+                     zt = pi2*DBLE(v-1)/DBLE(nv)
+                     r_temp(u,v) = r_temp(u,v) + Rmn2(i)*DSIN(xm(i)*th+xn(i)*zt)
+                     z_temp(u,v) = z_temp(u,v) + Zmn2(i)*DCOS(xm(i)*th+xn(i)*zt)
+                  END DO
+               END DO
+            END DO
+         END IF
          DO v = 1, nv
             zt = pi2*DBLE(v-1)/DBLE(nv)
             x_temp(:,v) = r_temp(:,v) * DCOS(zt)
@@ -1371,20 +1386,28 @@
          ! Find size of mesh
          rmin = MINVAL(vertex, DIM=1)
          wall_size = MAXVAL(vertex, DIM=1) - rmin
+
          ! For each dimension, find bounds of blocks in a very ugly way
-         DO i=1,3
-            nblocks(i) = INT(wall_size(i) / size) + 1
-            buffer = nblocks(i) * size - wall_size(i)
-            IF (i .eq. 1) ALLOCATE(xs(nblocks(i)),STAT=istat)
-            IF (i .eq. 2) ALLOCATE(ys(nblocks(i)),STAT=istat)
-            if (i .eq. 3) ALLOCATE(zs(nblocks(i)),STAT=istat)
-   
-            DO j=1,nblocks(i)
-               tmp = rmin(i) - buffer / 2 + (j - 1) * size
-               IF (i .eq. 1) xs(j) = tmp
-               IF (i .eq. 2) ys(j) = tmp
-               if (i .eq. 3) zs(j) = tmp
-            END DO
+         nblocks(1) = INT(wall_size(1)/size) + 1
+         nblocks(2) = INT(wall_size(2)/size) + 1
+         nblocks(3) = INT(wall_size(3)/size) + 1
+         ALLOCATE(xs(nblocks(1)),STAT=istat)
+         ALLOCATE(ys(nblocks(2)),STAT=istat)
+         ALLOCATE(zs(nblocks(3)),STAT=istat)
+         ! XS
+         buffer = nblocks(1) * size - wall_size(1)
+         DO j = 1, nblocks(1)
+            xs(j) = rmin(1) - buffer / 2 + (j - 1) * size
+         END DO
+         ! YS
+         buffer = nblocks(2) * size - wall_size(2)
+         DO j = 1, nblocks(2)
+            ys(j) = rmin(2) - buffer / 2 + (j - 1) * size
+         END DO
+         ! ZS
+         buffer = nblocks(3) * size - wall_size(3)
+         DO j = 1, nblocks(3)
+            zs(j) = rmin(3) - buffer / 2 + (j - 1) * size
          END DO
 
          ! Set info about wall
@@ -1405,24 +1428,24 @@
    
          ! Set bound of each block
          ALLOCATE(wall%blocks(wall%nblocks),STAT=istat)
-   
-         i = 1
-         DO xi=1, nblocks(1)
-            DO yi=1, nblocks(2)
-               DO zi=1, nblocks(3)
-                  wall%blocks(i)%rmin(1) = xs(xi)
-                  wall%blocks(i)%rmin(2) = ys(yi)
-                  wall%blocks(i)%rmin(3) = zs(zi)
+
+         DO i = 1, wall%nblocks
+            zi = MOD(i-1,nblocks(3))+1
+            yi = MOD(i-1,nblocks(2)*nblocks(3))
+            yi = FLOOR(REAL(yi) / REAL(nblocks(3)))+1
+            xi = CEILING(REAL(i) / REAL(nblocks(2)*nblocks(3)))
+            wall%blocks(i)%rmin(1) = xs(xi)
+            wall%blocks(i)%rmin(2) = ys(yi)
+            wall%blocks(i)%rmin(3) = zs(zi)
                   
-                  wall%blocks(i)%rmax(1) = xs(xi) + size
-                  wall%blocks(i)%rmax(2) = ys(yi) + size
-                  wall%blocks(i)%rmax(3) = zs(zi) + size
+            wall%blocks(i)%rmax(1) = xs(xi) + size
+            wall%blocks(i)%rmax(2) = ys(yi) + size
+            wall%blocks(i)%rmax(3) = zs(zi) + size
                   
-                  wall%blocks(i)%nfaces = 0
-                  i = i + 1
-               END DO
-            END DO
+            wall%blocks(i)%nfaces = 0
+
          END DO
+
          DEALLOCATE(xs)
          DEALLOCATE(ys)
          DEALLOCATE(zs)

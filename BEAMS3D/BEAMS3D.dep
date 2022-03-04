@@ -1,12 +1,23 @@
 # Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
 
 
+beams3d_fix_poloidal.o: \
+      ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
+      ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
+      beams3d_grid.o \
+      beams3d_runtime.o \
+      beams3d_lines.o 
+
+
 beams3d_distnorm.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       beams3d_physics_mod.o \
       beams3d_grid.o \
       beams3d_runtime.o \
       beams3d_lines.o 
+
 
 beams3d_init_fusion.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
@@ -34,7 +45,7 @@ beams3d_diagnostics.o: \
 
 
 
-beams3d_follow.o: \
+beams3d_follow_gc.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
@@ -295,12 +306,23 @@ beams3d_write_parhdf5.o: \
       
 
 drkhvg.o:  
-
-
-fpart_lsode.o: 
       
 
 fpart_nag.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      beams3d_grid.o \
+      beams3d_lines.o
+
+fpart_lsode.o: 
+
+fpart_rkh68.o: 
+
+
+fgc_lsode.o: 
+      
+
+fgc_nag.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       beams3d_grid.o \
@@ -308,7 +330,7 @@ fpart_nag.o: \
       beams3d_runtime.o
 
 
-fpart_rkh68.o: 
+fgc_rkh68.o: 
 
 
 gauss_rand.o: \

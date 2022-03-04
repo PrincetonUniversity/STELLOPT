@@ -154,7 +154,7 @@
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
       IF ((lvmec .or. leqdsk .or. lhint) .and. .not.lvac) THEN
-         IF (lverb) WRITE(6,'(A)') '----- Profile Parameters -----'
+         IF (lverb) WRITE(6,'(A)') '----- Plasma Parameters -----'
          ! TE
          IF (nte>0) THEN
             CALL EZspline_init(TE_spl_s,nte,bcs1_s,ier)
@@ -193,6 +193,18 @@
             IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A)') '   Ne   = [', &
                         MINVAL(NE_AUX_F(1:nne))*1E-20,',',MAXVAL(NE_AUX_F(1:nne))*1E-20,'] E20 m^-3;  NNE:   ',nne
          END IF
+         ! NION
+         DO i = 1, NION
+            CALL EZspline_init(NI_spl_s(i),nzeff,bcs1_s,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init9b',ier)
+            NI_spl_s(i)%x1          = NI_AUX_S(1:nzeff)
+            NI_spl_s(i)%isHermite   = 0
+            CALL EZspline_setup(NI_spl_s(i),NI_AUX_F(i,1:nzeff),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init10b',ier)
+            IF (lverb .and. ANY(NI_AUX_F(i,:)>0)) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A,I3,A,I2)') '   Ni(',i,')= [', &
+                        MINVAL(NI_AUX_F(i,1:nzeff))*1E-20,',',MAXVAL(NI_AUX_F(i,1:nzeff))*1E-20,'] E20 m^-3;  M: ',&
+                        NINT(NI_AUX_M(i)/1.66053906660E-27),' amu;  Z: ',NI_AUX_Z(i)
+         END DO
          ! ZEFF
          IF (nzeff>0) THEN
             CALL EZspline_init(ZEFF_spl_s,nzeff,bcs1_s,ier)
@@ -254,6 +266,7 @@
          CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
          CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
          CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
+         CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
          IF (myid_sharmem == 0) THEN
             FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
             FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
@@ -262,6 +275,7 @@
             X_ARR = 1.5
             Y_ARR = 1.5
             POT_ARR = 0
+            NI = 0
             ! Setup grid helpers
             ! Note: All helpers are defined in terms of differences on half grid
             !       so values are indexed from 1 to n-1.  Which we store at n
@@ -390,6 +404,22 @@
             CALL EZspline_free(TI_spl,ier)
             CALL EZspline_free(ZEFF_spl,ier)
          END IF
+         ! Handle the NI array separately (Use NE_spl since it should be free now)
+         CALL mpialloc(NI5D, 8, nr, nphi, nz, NION, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI5D)
+         IF (myid_sharmem == 0) THEN
+            DO i = 1, NION
+               CALL EZspline_init(NE_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+               IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: NI',ier)
+               NE_spl%isHermite   = 1
+               NE_spl%x1   = raxis
+               NE_spl%x2   = phiaxis
+               NE_spl%x3   = zaxis
+               CALL EZspline_setup(NE_spl,NI(i,:,:,:),ier,EXACT_DIM=.true.)
+               IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: NI',ier)
+               NI5D(:,:,:,:,i) = NE_SPL%fspl
+               CALL EZspline_free(NE_spl,ier)
+            END DO
+         END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
       END IF
          
@@ -494,14 +524,12 @@
          U4D = U_SPL%fspl
          POT4D = POT_SPL%fspl
 
-         ALLOCATE(X_ARR(nr,nphi,nz),Y_ARR(nr,nphi,nz)) !Make cartesian s/u grid to circumvent discontinuity in u
          X_ARR = S4D(1,:,:,:) * COS(U4D(1,:,:,:))
          Y_ARR = S4D(1,:,:,:) * SIN(U4D(1,:,:,:))
          CALL EZspline_setup(X_spl,X_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:X_spl',ier)
          CALL EZspline_setup(Y_spl,Y_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:Y_spl',ier)
-         DEALLOCATE(X_ARR,Y_ARR)
          X4D = X_SPL%fspl
          Y4D = Y_SPL%fspl
 
@@ -552,17 +580,23 @@
       IF (.not. lvac) THEN
          CALL mpidealloc(TE,win_TE)
          CALL mpidealloc(NE,win_NE)
+         CALL mpidealloc(NI,win_NI)
          CALL mpidealloc(TI,win_TI)
          CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
       END IF
 
       ! DEALLOCATE Variables
-      IF (lvmec .and. .not.lvac) THEN
+      IF (.not.lvac) THEN
          IF (nte > 0) CALL EZspline_free(TE_spl_s,ier)
          IF (nne > 0) CALL EZspline_free(NE_spl_s,ier)
          IF (nti > 0) CALL EZspline_free(TI_spl_s,ier)
          IF (npot > 0) CALL EZspline_free(POT_spl_s,ier)
-         IF (nzeff > 0) CALL EZspline_free(ZEFF_spl_s,ier)
+         IF (nzeff > 0) THEN
+            CALL EZspline_free(ZEFF_spl_s,ier)
+            DO i = 1, NION
+               CALL EZspline_free(NI_spl_s(i),ier)
+            END DO
+         END IF
       END IF
 
 
