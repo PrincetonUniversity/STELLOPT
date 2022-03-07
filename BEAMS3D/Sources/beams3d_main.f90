@@ -350,11 +350,11 @@ PROGRAM BEAMS3D
 
     !Write Fidasim Distribution function
     IF (lfidasim) THEN
-        IF (ldepo) THEN
-            CALL beams3d_write_fidasim('DISTRIBUTION_GC_MC')
-        ELSE
+        ! IF (ldepo) THEN
+        !     CALL beams3d_write_fidasim('DISTRIBUTION_GC_MC') !not implemented yet
+        ! ELSE
             CALL beams3d_write_fidasim('DISTRIBUTION_GC_F')
-        END IF
+        ! END IF
     END IF
 
     ! Clean up

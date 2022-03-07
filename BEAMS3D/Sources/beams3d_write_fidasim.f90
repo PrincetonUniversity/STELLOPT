@@ -74,7 +74,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    DOUBLE PRECISION         :: x0,y0,z0
    REAL(rprec) :: jac, v_parr, v_perp, pitch, v
    DOUBLE PRECISION :: rho_temp, s_temp, dbl_temp, gammarel, v_total!, hx, hy, hz, hxi, hyi, hzi, xparam, yparam, zparam
-   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r3dtemp2(:,:,:),  r1dtemp(:), r1dtemp2(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
+   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:), r1dtemp2(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
    INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask
    CHARACTER(LEN=8) :: temp_str8, inj_str8
 
@@ -503,19 +503,53 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ! Distribution needs to be in density [part/m^3] here - called from distnorm (before velocity space normalization)
          !ALLOCATE(r4dtemp(nbeams,nr_fida,nphi_fida,nz_fida))
          ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
-         ALLOCATE(r3dtemp2(nr_fida,nphi_fida,nz_fida))
+         rtemp = 0.0
+         !convert to r z phi
+         DO i=1,nr_fida
+            DO k = 1, nz_fida
+               DO j=1,nphi_fida
+                  !convert i,j,k to distribution function indices l,m,n
+                  !determine beams3d-grid indices
+                  i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr_fida-1)
+                  j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi_fida-1)
+                  k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz_fida-1)
+                  !setup interpolation
+                  xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
+                  yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
+                  zparam = (zaxis_fida(k) - zaxis(k3)) * hzi(k3)
+                  CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&!maybe switch to x/y interpolation?
+                     hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
+                     S4D(1,1,1,1),nr,nphi,nz)
+                  y0 = fval(1)
+                  CALL R8HERM3FCN(ict,1,1,fval2,i3,j3,k3,xparam,yparam,zparam,&
+                     hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
+                     U4D(1,1,1,1),nr,nphi,nz)
+                  z0 = fval2(1)
 
-         r3dtemp2 = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=1)
-         rtemp = r3dtemp2!reshape(r3dtemp2(1:nr_fida,1:nphi_fida,1:nz_fida), shape(rtemp), order=(/1, 3, 2/))
+                  IF (z0 < 0) z0 = z0 + pi2
+                  x0    = phiaxis_fida(j)
+                  IF (x0 < 0) x0 = x0 + pi2
+                  ! Calc dist func bins
+                  l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+                  m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
+                  n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
+                  ! IF (y0 .GT. 1.0) THEN
+                  !    rtemp(i,k,j) = 0 !distribution is 0 outside plasma
+                  ! ELSE
+                     rtemp(i,k,j) = SUM(dist5d_prof(:,l,m,n,:,:))!output in r-z-phi
+                  ! END IF
+
+               END DO
+            END DO
+         END DO
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          CALL h5gopen_f(fid,'/', qid_gid, ier)
-         CALL write_var_hdf5(qid_gid,'denf',nr_fida,nz_fida,nphi_fida,ier,DBLVAR=rtemp/1000000) !in cm^3
+         CALL write_var_hdf5(qid_gid,'denf',nr_fida,nz_fida,nphi_fida,ier,DBLVAR=DBLE(rtemp/1000000.0)) !in cm^3
          CALL h5dopen_f(qid_gid, 'denf', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'description','Fast-ion density (nr_fida,nz_fida,nphi_fida)',ier)
          CALL write_att_hdf5(temp_gid,'units','part/(cm^3)',ier)
          CALL h5dclose_f(temp_gid,ier)
          CALL h5gclose_f(qid_gid, ier)
-         DEALLOCATE(r3dtemp2)
          DEALLOCATE(rtemp)
          CALL close_hdf5(fid,ier)
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -577,9 +611,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   DO j=1,nphi_fida
                      !convert i,j,k to distribution function indices l,m,n
                      !determine beams3d-grid indices
-                     i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
-                     j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
-                     k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
+                     i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr_fida-1)
+                     j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi_fida-1)
+                     k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz_fida-1)
                      !setup interpolation
                      xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
                      yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
@@ -601,7 +635,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
                      m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                      n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                     IF (y0 .GT. 1.0) THEN
+                     IF (y0 .GT. 1.0) THEN !might introduce a small deviation here
                         dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
                      ELSE
                         dist5d_fida(b,:,:,i,k,j) = dist5d_prof(b,l,m,n,:,:) !output in r-z-phi
