@@ -12,11 +12,14 @@ beams3d_fix_poloidal.o: \
 
 
 beams3d_distnorm.o: \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       beams3d_physics_mod.o \
       beams3d_grid.o \
       beams3d_runtime.o \
       beams3d_lines.o 
+      
 
 
 beams3d_init_fusion.o: \

@@ -3,7 +3,7 @@
 !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
 !     Date:          03/07/2021
 !     Description:   This subroutine applies the volume normalization
-!                    to the distribution fucntion.
+!                    to the distribution function.
 !-----------------------------------------------------------------------
       SUBROUTINE beams3d_distnorm
 !-----------------------------------------------------------------------
@@ -20,6 +20,8 @@
       USE beams3d_physics_mod, ONLY: beams3d_suv2rzp
       USE EZspline_obj
       USE EZspline
+      USE mpi_params !Used for call to write_fidasim
+      USE mpi_inc
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
