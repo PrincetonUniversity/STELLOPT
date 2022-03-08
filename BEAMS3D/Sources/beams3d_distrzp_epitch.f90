@@ -4,6 +4,7 @@
 !     Date:          24/01/2022
 !     Description:   This subroutine converts the distribution function
 !                    to cylindrical and Energy/pitch coordinates for FIDASIM
+!                    !! (dummy)It is presently not called from the code !!
 !-----------------------------------------------------------------------
       SUBROUTINE beams3d_distrzp_epitch
         !-----------------------------------------------------------------------
@@ -51,60 +52,80 @@
         !     Begin Subroutine
         !-----------------------------------------------------------------------
             ! Do volume normalization
-            CALL beams3d_distnorm !TODO: check if this has already been done
+            CALL beams3d_distnorm !TODO: check if this has already been done   
 
-            !Apply jacobian for transformation from v_parr/v_perp to E,p
-            i3 = ns_prof4/2
-            DO b = 1, nbeams
-               DO i = 1, ns_prof4
-                  DO j = 1, ns_prof5
-                     ! Half grid
-                      v_parr = partvmax * REAL(i - i3 -0.5) / i3
-                      v_perp = partvmax * (j - 0.5) / ns_prof5 
-                      pitch = v_parr / SQRT(v_parr * v_parr + v_perp * v_perp)
-                      jac = 1 / (mass_beams(k) * SQRT(1-pitch * pitch))
-                      dist5d_prof(b,:,:,:,i,j) = dist5d_prof(b,:,:,:,i,j) * jac !probably should inicate somewhere that this has been done, or put it in another variable
-                  END DO
-               END DO
-            END DO
+         !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
+        ALLOCATE(dist5d_fida(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
+        DO b=1,nbeams
+           DO d1 = 1, nenergy_fida
+              DO d2 = 1, npitch_fida
+                 v = SQRT(2 * energy_fida(d1) *1000.0 * e_charge / mass_beams(b))
+                 IF (v .gt. partvmax) THEN !) .or. (v .eq. 0.0))
+                    dist5d_fida(b,:,:,:,d1,d2) = 0
+                 ELSE
+                    pitch = pitch_fida(d2)
+                    v_parr = pitch * v
+                    v_perp = SQRT(1- pitch * pitch) * v
+                    !determine beams3d-grid indices (velocity space)
+                    i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
+                    j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
+                    jac = 1 / (mass_beams(b) * SQRT(1-pitch * pitch))
+                    !jac = MIN(MAX(jac, 0.0),1.0E)
+                    jac = jac / pi2 / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention? and 1/cm^3/keV
+                    dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac !* pi2 * v /  mass_beams(b) !problematic, circular reference
+                 END IF
+              END DO
+           END DO
+        END DO
+        !DEALLOCATE(dist5d_prof)
+        !ALLOCATE(dist5d_prof(nbeams,nr, nphi, nz, nenergy_fida, npitch_fida))
+        dist5d_prof = dist5d_fida
+        DEALLOCATE(dist5d_fida)
 
-           !Todo (nearest neighbor) interpolation to background grid
-           ALLOCATE(dist5d_fida(nbeams,nr,nz,nphi,ns_prof4,ns_prof5))
-           DO b=1,nbeams
-              DO i=1,nr
-                 DO j=1,nz
-                    DO k = 1, nphi
+        !Now allocate with correct dimensions
+        ALLOCATE(dist5d_fida(nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
+        DO b=1,nbeams
+           DO i=1,nr_fida
+              DO k = 1, nz_fida
+                 DO j=1,nphi_fida
                     !convert i,j,k to distribution function indices l,m,n
-
                     !determine beams3d-grid indices
-                    i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1) 
-                    k3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(k)),1),nphi-1)
-                    j3 = MIN(MAX(COUNT(zaxis < zaxis_fida(j)),1),nz-1)
+                    i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr_fida-1)
+                    j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi_fida-1)
+                    k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz_fida-1)
                     !setup interpolation
                     xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
-                    yparam = (phiaxis_fida(k) - phiaxis(j3)) * hpi(j3)
-                    zparam = (zaxis_fida(j) - zaxis(k3)) * hzi(k3)
-                    CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&
-                                             hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                                             S4D(1,1,1,1),nr,nphi,nz)
+                    yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
+                    zparam = (zaxis_fida(k) - zaxis(k3)) * hzi(k3)
+                    CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&!maybe switch to x/y interpolation?
+                       hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
+                       S4D(1,1,1,1),nr,nphi,nz)
                     y0 = fval(1)
-                    CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&
-                                             hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                                             U4D(1,1,1,1),nr,nphi,nz)
-                    z0 = fval(1)
-                    ! Calc dist func bins
-                    x0    = phiaxis_fida(k)
+                    CALL R8HERM3FCN(ict,1,1,fval2,i3,j3,k3,xparam,yparam,zparam,&
+                       hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
+                       U4D(1,1,1,1),nr,nphi,nz)
+                    z0 = fval2(1)
+
+                    IF (z0 < 0) z0 = z0 + pi2
                     IF (x0 < 0) x0 = x0 + pi2
-                    k = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
-                    l = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
-                    m = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                    dist5d_fida(b,i,j,k,:,:) = dist5d_prof(b,k,l,m,:,:)
+                    IF (y0 < 0) y0 = -y0
+                    ! Calc dist func bins
+                    x0    = phiaxis_fida(j)
+                    l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+                    m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
+                    n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
+                    IF (y0 .GT. 1.0) THEN !might introduce a small deviation here
+                       dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
+                    ELSE
+                       dist5d_fida(b,:,:,i,k,j) = dist5d_prof(b,l,m,n,:,:) !output in r-z-phi
+                    END IF
+
                  END DO
-              END DO 
+              END DO
            END DO
-        END DO        
-        
-        PRINT *,'GOT HERE'
+        END DO
+
+        !Still would have to update dist5d_prof if that is wanted
         RETURN
         !-----------------------------------------------------------------------
         !     END SUBROUTINE
