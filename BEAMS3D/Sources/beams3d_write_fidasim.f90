@@ -646,8 +646,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             END DO
          END DO
 
-
-         !dist5d_fida = reshape(dist5d_fida, [nbeams,nr_fida,nz_fida,nphi_fida,ns_prof4,ns_prof5], order=(/1, 2, 4, 3, 5, 6/))
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          IF (ASSOCIATED(dist5d_fida)) THEN
             CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=SUM(dist5d_fida, DIM=1))
