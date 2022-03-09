@@ -225,7 +225,7 @@ C-----------------------------------------------
 !
 !        IMAS PROVIDES DATA
 !
-         CALL vsetup (iseq_count)
+!         CALL vsetup (iseq_count)
          
          ier_flag = imas_read_flag
          CALL readin (input_file, iseq_count, ier_flag, lscreen)

@@ -8,7 +8,7 @@
 	<LASYM>0</LASYM>
 	<NFP>1</NFP>
 	<MPOL>8</MPOL>
-	<NTOR>6</NTOR>
+	<NTOR>0</NTOR>
 	<PHIEDGE>-2.891</PHIEDGE>
 	<LFREEB>0</LFREEB>
 	<MGRID_FILE>none</MGRID_FILE>
@@ -32,8 +32,8 @@
 	<AC>0.0 -2.0 2.0</AC>
 	<AC_AUX_S>0.0 0.25 0.5 0.75 1.0</AC_AUX_S>
 	<AC_AUX_F>0.0 0.50 1.0 0.50 0.0</AC_AUX_F>
-	<RAXIS_CC> 3.6 2.0E-1</RAXIS_CC>
-	<ZAXIS_CS> 0.0 </ZAXIS_CS>
+	<RAXIS_CC> 10.0 0.0</RAXIS_CC>
+	<ZAXIS_CS> 0.0 0.0</ZAXIS_CS>
 	<RBC_np0>10.0  1.0 0.0</RBC_np0>
-	<ZBS_np0> 0.0 -1.0 0.0</ZBS_np0>
+	<ZBS_np0> 0.0  1.0 0.0</ZBS_np0>
 </parameters>

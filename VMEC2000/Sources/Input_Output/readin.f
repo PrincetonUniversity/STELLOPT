@@ -605,6 +605,7 @@ C-----------------------------------------------
       ioff = LBOUND(rbcc,1)
       joff = LBOUND(rbcc,2)
 
+
       DO m=0, mpol1
          mj = m + joff
          IF (lfreeb .and. 
