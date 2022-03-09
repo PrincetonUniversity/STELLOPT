@@ -36,6 +36,8 @@ C-----------------------------------------------
          ENDIF
 
          CALL read_namelist (iunit, iosnml, 'mseprofile')
+      ELSE
+         ier_flag = norm_term_flag
       END IF
 
       IF (lrecon .and. itse.le.0 .and. imse.le.0) lrecon = .false.
