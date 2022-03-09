@@ -1,4 +1,4 @@
-<INDATA>
+<parameters>
 	<DELT>1.0</DELT>
 	<NSTEP>200</NSTEP>
 	<TCON0>1.0</TCON0>
@@ -36,6 +36,4 @@
 	<ZAXIS_CS> 0.0 </ZAXIS_CS>
 	<RBC_np0>10.0  1.0 0.0</RBC_np0>
 	<ZBS_np0> 0.0 -1.0 0.0</ZBS_np0>
-
-
-</INDATA>
+</parameters>

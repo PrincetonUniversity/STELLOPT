@@ -227,6 +227,8 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   ! This memory is freed by "xml2eg_free_doc(doc)"
   CALL xml2eg_free_doc(doc)
 
+  PRINT *,ns_array
+
 END SUBROUTINE VMEC_INDATA_IMAS
 
 #endif
