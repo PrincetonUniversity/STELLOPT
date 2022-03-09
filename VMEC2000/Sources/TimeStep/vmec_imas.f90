@@ -73,7 +73,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
   !---------------------------------------------------------------------
   LOGICAL :: lmpi_flag, lscreen
   INTEGER :: impi_flag, ivmec_flag, RVC_COMM
-  INTEGER :: ictrl(5)
+  INTEGER :: ictrl(5), myseq
   CHARACTER(len = 128)    :: reset_string, filename
 
   !---------------------------------------------------------------------
@@ -101,16 +101,21 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
   !----  Mimic Read_Indata
   CALL VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
 
-  !----  Run VMEC
+  !---- Setup VMEC Run
+  myseq=0
   ictrl(1) = restart_flag + imasrun_flag + timestep_flag + output_flag &
                           + cleanup_flag
   ictrl(2) = 0 ! ier_flag
-  ictrl(3) = 0 ! numsteps
-  ictrl(4) = 0 ! ns_index
+  ictrl(3) = -1 ! numsteps
+  ictrl(4) = -1 ! ns_index
   ictrl(5) = 0 ! Sequence ID
   reset_string = ''
   filename=''
   RVCCALLNUM = 1
+  lscreen = .True.
+  NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
+
+  !----  Run VMEC
   CALL runvmec(ictrl, filename, lscreen, RVC_COMM, &
                reset_string)
   ivmec_flag = ictrl(2)
@@ -119,6 +124,8 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
 
 
   !----  No need to call finalize
+  CALL FinalizeSurfaceComm(NS_COMM)
+  CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
 
   !---------------------------------------------------------------------
   !     END EXECUTION - Don't touch below here
@@ -160,6 +167,7 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   INTEGER :: impi_flag, ivmec_flag, iunit
   INTEGER :: ictrl(5)
   CHARACTER(len = 128)    :: reset_string
+  REAL(rprec) :: Xmn(0:mpol1d)
 
   TYPE(type_xml2eg_document) :: doc
 
@@ -168,6 +176,7 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   !---------------------------------------------------------------------
 
   !----  Intitailizations (This is a hack to set defaults)
+  CALL vsetup(0)
   iunit = -327
   CALL read_indata_namelist(iunit,status_code)
   
@@ -178,7 +187,7 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   CALL xml2eg_get(doc,'NFP',nfp)
   CALL xml2eg_get(doc,'NCURR',ncurr)
   CALL xml2eg_get(doc,'NSTEP',nstep)
-  CALL xml2eg_get(doc,'NVACSKIP',nvacskip)
+  !CALL xml2eg_get(doc,'NVACSKIP',nvacskip)
   CALL xml2eg_get(doc,'DELT',delt)
   CALL xml2eg_get(doc,'GAMMA',gamma)
   CALL xml2eg_get(doc,'AM',am)
@@ -197,37 +206,37 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   CALL xml2eg_get(doc,'PRES_SCALE',pres_scale)
   CALL xml2eg_get(doc,'RAXIS_CC',raxis_cc)
   CALL xml2eg_get(doc,'ZAXIS_CS',zaxis_cs)
-  CALL xml2eg_get(doc,'RAXIS_CS',raxis_cs)
-  CALL xml2eg_get(doc,'ZAXIS_CC',zaxis_cc)
+  !CALL xml2eg_get(doc,'RAXIS_CS',raxis_cs)
+  !CALL xml2eg_get(doc,'ZAXIS_CC',zaxis_cc)
   CALL xml2eg_get(doc,'MPOL',mpol)
   CALL xml2eg_get(doc,'NTOR',ntor)
-  CALL xml2eg_get(doc,'NTHETA',ntheta)
+  !CALL xml2eg_get(doc,'NTHETA',ntheta)
   CALL xml2eg_get(doc,'NZETA',nzeta)
   CALL xml2eg_get(doc,'NITER_ARRAY',niter_array)
   CALL xml2eg_get(doc,'NS_ARRAY',ns_array)
   CALL xml2eg_get(doc,'FTOL_ARRAY',ftol_array)
   CALL xml2eg_get(doc,'TCON0',tcon0)
-  CALL xml2eg_get(doc,'PRECON_TYPE',precon_type)
-  CALL xml2eg_get(doc,'PREC2D_THRESHOLD',prec2d_threshold)
+  !CALL xml2eg_get(doc,'PRECON_TYPE',precon_type)
+  !CALL xml2eg_get(doc,'PREC2D_THRESHOLD',prec2d_threshold)
   CALL xml2eg_get(doc,'CURTOR',curtor)
   CALL xml2eg_get(doc,'EXTCUR',extcur)
   CALL xml2eg_get(doc,'PHIEDGE',phiedge)
   CALL xml2eg_get(doc,'BLOAT',bloat)
-  CALL xml2eg_get(doc,'LFORBAL',lforbal)
+  !CALL xml2eg_get(doc,'LFORBAL',lforbal)
   CALL xml2eg_get(doc,'LFREEB',lfreeb)
   CALL xml2eg_get(doc,'LASYM',lasym)
-  CALL xml2eg_get(doc,'LRFP',lrfp)
-  CALL xml2eg_get(doc,'LBSUBS',lbsubs)
-  CALL xml2eg_get(doc,'LNYQUIST',lnyquist)
-  CALL xml2eg_get(doc,'RBC_np0',rbc(0,0:))
-  CALL xml2eg_get(doc,'ZBS_np0',zbs(0,0:))
+  !CALL xml2eg_get(doc,'LRFP',lrfp)
+  !CALL xml2eg_get(doc,'LBSUBS',lbsubs)
+  !CALL xml2eg_get(doc,'LNYQUIST',lnyquist)
+  CALL xml2eg_get(doc,'RBC_np0',Xmn)
+  rbc(0,:) = Xmn
+  CALL xml2eg_get(doc,'ZBS_np0',Xmn)
+  zbs(0,:) = Xmn
 
   ! Make sure to clean up after you!!
   ! When calling "xml2eg_parse_memory" memory was allocated in the "doc" object.
   ! This memory is freed by "xml2eg_free_doc(doc)"
   CALL xml2eg_free_doc(doc)
-
-  PRINT *,ns_array
 
 END SUBROUTINE VMEC_INDATA_IMAS
 
