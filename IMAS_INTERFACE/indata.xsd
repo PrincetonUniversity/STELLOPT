@@ -13,7 +13,7 @@
   </xs:simpleType>
 
   <!-- INDATA Namelist -->
-  <xs:element name="INDATA">
+  <xs:element name="parameters">
     <xs:complexType>
       <xs:all>
         <xs:element ref="MGRID_FILE" minOccurs="0"/>

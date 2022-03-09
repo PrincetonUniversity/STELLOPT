@@ -5,6 +5,9 @@ actor_description:
     data_type: legacy
 code_description:
     arguments:
+    -   intent: IN
+        name: IDS_EQ_IN
+        type: equilibrium
     -   intent: OUT
         name: IDS_EQ_OUT
         type: equilibrium
@@ -13,9 +16,9 @@ code_description:
         code_parameters:
             parameters: IMAS_INTERFACE/indata.xml
             schema: IMAS_INTERFACE/indata.xsd
-        code_path: VMEC2000/Release/libvmec.a
+        code_path: VMEC2000/Debug/libvmec.a
         data_type: legacy
-        include_path: VMEC2000/Release/vmec_imas_module.mod
+        include_path: VMEC2000/Debug/vmec_imas_module.mod
         programming_language: fortran
         root_dir: /pfs/home/g2slazer/src/STELLOPT/
         subroutines:
@@ -26,7 +29,7 @@ code_description:
         compiler_cmd: ifort
         extra_libraries:
             path_defined:
-            - /gss_efgw_work/home/g2slazer/src/STELLOPT/LIBSTELL/Release/libstell.a
+            - /gss_efgw_work/home/g2slazer/src/STELLOPT/LIBSTELL/Debug/libstell.a
             - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_scalapack_ilp64.a
             - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_intel_ilp64.a
             - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_sequential.a

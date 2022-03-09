@@ -25,9 +25,9 @@ class ExampleWorkflowManager:
         output_database     = input_database
 
         # OPEN INPUT DATAFILE TO GET DATA FROM IMAS SCENARIO DATABASE
-        #print('=> Open input datafile')
-        #self.input_entry = imas.DBEntry(imas.imasdef.MDSPLUS_BACKEND,input_database,shot,run_in,input_user_or_path)
-        #self.input_entry.open()
+        print('=> Open input datafile')
+        self.input_entry = imas.DBEntry(imas.imasdef.MDSPLUS_BACKEND,input_database,shot,run_in,input_user_or_path)
+        self.input_entry.open()
 
         # CREATE OUTPUT DATAFILE
         print('=> Create output datafile')
@@ -46,13 +46,14 @@ class ExampleWorkflowManager:
 
     def execute_workflow(self):
         # READ INPUT IDSS FROM LOCAL DATABASE
-        #time_slice          = 200.
-        #print('=> Read input IDSs')
-        #input_equilibrium = self.input_entry.get_slice('equilibrium', time_slice, 1)
+        time_slice          = 200.
+        print('=> Read input IDSs')
+        input_equilibrium = self.input_entry.get_slice('equilibrium', time_slice, 1)
+        input_equilibrium = imas.equilibrium()
 
         # EXECUTE PHYSICS CODE
         print('=> Execute physics code')
-        output_equilibrium = self.vmec()
+        output_equilibrium = self.vmec(input_equilibrium)
 
         # SAVE IDSS INTO OUTPUT FILE
         print('=> Export output IDSs to local database')
