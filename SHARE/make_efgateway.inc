@@ -14,7 +14,7 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  DIAG_DISABLE = -diag-disable=15009
+  DIAG_DISABLE = -diag-disable=15009 -check noarg_temp_created
   FLAGS_R = -O2 -fp-model strict -ip -assume noold_unit_star \
 		-axMIC-AVX512 $(DIAG_DISABLE) \
 		$(shell pkg-config mkl-ifort --cflags)
