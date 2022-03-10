@@ -1,7 +1,7 @@
 
 
 vmeclib :
-	@cd ../VMEC2000; rm -f Debug/*.o Debug/*.mod Debug/*.a; $(MAKE) lib_debug
+	@cd ../VMEC2000; rm -f Release/*.o Release/*.mod Release/*.a; $(MAKE) lib_release
 
 iwrap : 
 	iwrap -f VMEC_IMAS_ACTOR.yaml

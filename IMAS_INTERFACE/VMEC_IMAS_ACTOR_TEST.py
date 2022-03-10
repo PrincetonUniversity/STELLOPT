@@ -11,7 +11,7 @@ class ExampleWorkflowManager:
     def __init__(self):
 
         self.vmec = vmec()
-        #self.input_entry = None
+        self.input_entry = None
         self.output_entry = None
 
     def init_workflow(self):
@@ -40,7 +40,7 @@ class ExampleWorkflowManager:
         
         runtime_settings = self.vmec.get_runtime_settings()
         runtime_settings.run_mod = RunMode.STANDALONE
-        runtime_settings.mpi.mpi_nodes = 1
+        runtime_settings.mpi.mpi_nodes = 24
 
         self.vmec.initialize(runtime_settings=runtime_settings, code_parameters=code_parameters)
 
