@@ -89,7 +89,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
   if (.not. lmpi_flag)   call MPI_INIT(impi_flag)
 
   !----  MIMIC CALL MyEnvVariables
-  PARVMEC = .TRUE.
+  CALL MyEnvVariables
 
   !----  MIMIC CALL InitializeParallel
   CALL MPI_Comm_rank(MPI_COMM_WORLD,grank,impi_flag)
