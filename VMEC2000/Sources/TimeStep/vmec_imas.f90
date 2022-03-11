@@ -103,7 +103,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
 
   !---- Setup VMEC Run
   myseq=0
-  ictrl(1) = restart_flag + imasrun_flag + timestep_flag + output_flag &
+  ictrl(1) = restart_flag + imasrun_flag + timestep_flag +  &
                           + cleanup_flag
   ictrl(2) = 0 ! ier_flag
   ictrl(3) = -1 ! numsteps
