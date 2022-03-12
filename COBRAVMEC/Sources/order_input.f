@@ -80,7 +80,6 @@
           DO i = 1, mnmax
              IF ((xm(i) .eq. xm_nyq(j)) .and.
      1           (xn(i) .eq. xn_nyq(j))) THEN
-                PRINT *,xm(i),xm_nyq(j),xn(i),xn_nyq(j)
                 rmnc_nyq(j,:) = rmnc(i,:)
                 zmns_nyq(j,:) = zmns(i,:)
                 lmns_nyq(j,:) = lmns(i,:)
