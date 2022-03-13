@@ -222,6 +222,7 @@
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
                                          COMM=MPI_COMM_FIELDLINES)
          END IF
+         DEALLOCATE(mfact)
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
 
