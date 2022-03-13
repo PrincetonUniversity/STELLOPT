@@ -9,6 +9,7 @@
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
       INTEGER :: istat
+      DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
 !-----------------------------------------------
       CALL read_wout_file(extension, istat)
       IF (istat .ne. 0) THEN
@@ -34,6 +35,16 @@
       IF (myid.EQ.master .AND. istat.NE.0)
      1  STOP 'allocation error in read_wout'
 
+!     For interpolation of Lambda (half to full grid)     
+      ALLOCATE(mfact(mnmax,2))
+      WHERE (MOD(NINT(xm_w(:)),2) .eq. 0)
+         mfact(:,1)= 1.5
+         mfact(:,2)=-0.5
+      ELSEWHERE
+         mfact(:,1)= 1.5*SQRT((ns-1.0)/(ns-1.5))
+         mfact(:,2)=-0.5*SQRT((ns-1.0)/(ns-2.5))
+      ENDWHERE
+
 !     ONLY SAVE BOUNDARY COEFFICIENTS
 
       xm_b = zero
@@ -50,9 +61,11 @@
       zmns_b(:) = zmns(:,ns)
       rmnc_a(:) = rmnc(:,1)
       zmns_a(:) = zmns(:,1)
-      lmns_b(:) = 1.5_dp*lmns(:,ns) - 0.5_dp*lmns(:,ns-1)
+      lmns_b(:) = mfact(:,1)*lmns(:,ns) + mfact(:,2)*lmns(:,ns-1)
       iota_b = 1.5_dp*iotas(ns) - 0.5_dp*iotas(ns-1)
       phip_b = 1.5_dp*phip(ns) - 0.5_dp*phip(ns-1)
+
+      DEALLOCATE(mfact)
 
       IF (myid .EQ. master) THEN
         WRITE(6,'(A)')   '----- Equilibrium Information -----'
