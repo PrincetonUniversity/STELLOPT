@@ -285,6 +285,7 @@
                ! 1DS acts screwy in the vacuum region
                !CALL h5gcreate_f(plasma_gid,'plasma_1DS_'//qid_str, qid_gid, ier)
                CALL h5gcreate_f(plasma_gid,'plasma_1D_'//qid_str, qid_gid, ier)
+               
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                nion_local = COUNT(NI_AUX_Z>0)
