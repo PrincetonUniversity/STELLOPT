@@ -25,8 +25,8 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fallow-argument-mismatch
-  FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all -fbounds-check -fallow-argument-mismatch
+  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
+  FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check
   LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
 ###GCC10
   FLAGS_R += -fallow-argument-mismatch
