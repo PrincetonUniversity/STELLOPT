@@ -28,7 +28,7 @@ MODULE beams3d_physics_mod
                                ns_prof5, my_end
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
                               MODB_spl, MODB4D, &
-                              phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
+                              phimax, S4D, X4D, Y4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
                               zaxis, U4D, &
@@ -1319,29 +1319,31 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION, INTENT(inout) :: r_out
          DOUBLE PRECISION, INTENT(inout) :: z_out
          DOUBLE PRECISION, INTENT(out) :: phi_out
+         !REAL(rprec), POINTER, DIMENSION(:,:,:,:), INTENT(inout) :: X4D, Y4D
 
          !--------------------------------------------------------------
          !     Local Variables
          !        residual   Residual Error
          !--------------------------------------------------------------
          INTEGER          :: n
-         DOUBLE PRECISION :: s0, u0, residual, tau, delR, delZ, fnorm, &
-                             factor
+         DOUBLE PRECISION :: s0, u0, residual, detJ, delR, delZ, fnorm, &
+                             factor, x, y, x0, y0, x_term, y_term, dxdR, dxdZ, dydR, dydZ
 
          ! For splines
-         INTEGER :: i,j,k
+         INTEGER :: i,j,k, ier
          REAL*8 :: xparam, yparam, zparam
          INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
-         REAL*8 :: fvals(1,4),fvalu(1,4) !(f,df/fR,df/dphi,dfdZ)
+         REAL*8 :: fvalx(1,4),fvaly(1,4) !(f,df/fR,df/dphi,dfdZ)
+
 
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
+
+         !Begin Newton Method
          residual = 1.0
          factor = 1.0
          IF (r_out<0) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75
-!         r_out = (raxis(1)+raxis(nr))*0.5
-!         z_out = (zaxis(1)+zaxis(nz))*0.5
          
          ! PHI does not change
          phi_out = MOD(v,MAXVAL(phiaxis))
@@ -1351,7 +1353,10 @@ MODULE beams3d_physics_mod
          ! Adjust u
          u = MOD(u,pi2)
 
-         fnorm = s*s+u*u
+         x0 = s * COS(u)
+         y0 = s * SIN(U)
+
+         fnorm = x0*x0+y0*y0
          fnorm = MIN(1./fnorm,1E5)
          n = 1
 
@@ -1365,34 +1370,28 @@ MODULE beams3d_physics_mod
             xparam = (r_out - raxis(i)) * hri(i)
             zparam = (z_out - zaxis(k)) * hzi(k)
             ! Evaluate the Splines
-            CALL R8HERM3FCN(ict,1,1,fvals,i,j,k,xparam,yparam,zparam,&
+            CALL R8HERM3FCN(ict,1,1,fvalx,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            S4D(1,1,1,1),nr,nphi,nz)
-            CALL R8HERM3FCN(ict,1,1,fvalu,i,j,k,xparam,yparam,zparam,&
+                            X4D(1,1,1,1),nr,nphi,nz)
+            CALL R8HERM3FCN(ict,1,1,fvaly,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            U4D(1,1,1,1),nr,nphi,nz)
-            IF (fvals(1,1) > 1.05) THEN
-              r_out = raxis(MOD(n,nr-1)+1)
-              z_out = zaxis(MOD(n,nz-1)+1)
-            END IF
-            fvals(1,2:4) = 0.5*fvals(1,2:4)/sqrt(fvals(1,1))
-            s0   = sqrt(fvals(1,1))-s
-            u0   = fvalu(1,1)-u
-            residual = (s0*s0+u0*u0)*fnorm
-            tau = fvals(1,2)*fvalu(1,4)-fvals(1,4)*fvalu(1,2)
-            !tau = MAX(tau,0.0001)
-            !delR = -(  s0*fvalu(1,4) + u0*fvals(1,4))/tau
-            !delZ = -(  s0*fvalu(1,2) + u0*fvals(1,2))/tau
-            !Newtwon
-            delR =-(s0*fvals(1,2) + u0*fvalu(1,2))/(fvals(1,2)**2 + fvalu(1,2)**2)
-            delZ =-(s0*fvalu(1,4) + u0*fvalu(1,4))/(fvals(1,4)**2 + fvalu(1,4)**2)
-            !delR = ( s0*fvalu(1,4) - u0*fvals(1,4))/tau !( (s0-s)du/dR - (u0-u)*ds/dR)/tau
-            !delZ = (-s0*fvalu(1,2) + u0*fvals(1,2))/tau !(-(s0-s)du/dZ)+ (u0-u)*ds/dZ)/tau
+                            Y4D(1,1,1,1),nr,nphi,nz)
+
+            x_term   = x0 - fvalx(1,1)
+            y_term   = y0 - fvaly(1,1)
+            
+            detJ = fvalx(1,2) * fvaly(1,4) - fvaly(1,2) * fvalx(1,4)
+            detJ = MAX(detJ,0.0001) !Upper bound for step size as detJ enters in denominator
+            delR = -(-x_term*fvaly(1,4) + y_term*fvalx(1,4))/detJ
+            delZ = -( x_term*fvaly(1,2)  - y_term*fvalx(1,2))/detJ
+
             delR = MIN(MAX(delR,-hr(1)),hr(1))
             delZ = MIN(MAX(delZ,-hz(1)),hz(1))
+
+            residual = (x_term*x_term+y_term*y_term)*fnorm
             !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual,tau,delR,delZ
 
-            IF (residual < 0.01) THEN
+            IF (residual < 0.01) THEN !"Damping" of oscillation
                delR = delR*0.5
                delZ = delZ*0.5
             END IF

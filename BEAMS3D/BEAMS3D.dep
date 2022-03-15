@@ -1,12 +1,26 @@
 # Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
 
 
+beams3d_fix_poloidal.o: \
+      ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
+      ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
+      beams3d_grid.o \
+      beams3d_runtime.o \
+      beams3d_lines.o 
+
+
 beams3d_distnorm.o: \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       beams3d_physics_mod.o \
       beams3d_grid.o \
       beams3d_runtime.o \
       beams3d_lines.o 
+      
+
 
 beams3d_init_fusion.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
@@ -32,14 +46,6 @@ beams3d_diagnostics.o: \
       beams3d_lines.o \
       beams3d_grid.o
 
-
-beams3d_fix_poloidal.o: \
-      ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
-      beams3d_runtime.o \
-      beams3d_lines.o \
-      beams3d_grid.o
 
 
 beams3d_follow_gc.o: \
@@ -274,7 +280,21 @@ beams3d_write_ascoth5.o: \
       beams3d_lines.o \
       beams3d_write_parhdf5.o \
       beams3d_grid.o
-      
+
+
+
+beams3d_write_fidasim.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/ez_hdf5.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_write_parhdf5.o \
+      beams3d_grid.o
+            
 
 beams3d_write_parhdf5.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
