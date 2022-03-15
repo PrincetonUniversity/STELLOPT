@@ -12,8 +12,8 @@
       USE stel_kinds, ONLY: rprec
       USE read_eqdsk_mod, ONLY: totcur, psimx, psilim, &
                                 raxis_eqdsk => raxis, &
-                                zaxis_eqdsk => zaxis, get_eqdsk_B, &
-                                get_eqdsk_flux, read_eqdsk_deallocate, &
+                                zaxis_eqdsk => zaxis, get_eqdsk_Bspl, &
+                                get_eqdsk_fluxspl, read_eqdsk_deallocate, &
                                 nlim, xlim, zlim, ntitle, btor, &
                                 rcenter, sp, nbndry, xbndry, zbndry
       USE beams3d_runtime
@@ -138,13 +138,13 @@
          sflx = 0.0
 
          ! Bfield
-         CALL get_eqdsk_B(raxis_g(i),zaxis_g(k),brtemp,bptemp,bztemp)
+         CALL get_eqdsk_Bspl(raxis_g(i),zaxis_g(k),brtemp,bptemp,bztemp)
          B_R(i,:,k) = brtemp
          B_PHI(i,:,k) = bptemp
          B_Z(i,:,k) = bztemp
 
          ! Flux
-         CALL get_eqdsk_flux(raxis_g(i),zaxis_g(k),rhoflx,uflx)
+         CALL get_eqdsk_fluxspl(raxis_g(i),zaxis_g(k),rhoflx,uflx)
          sflx = rhoflx*rhoflx
          IF (zaxis_g(k)>zsmax .or. zaxis_g(k)<zsmin .or. &
              raxis_g(i)>rsmax .or. raxis_g(i)<rsmin) THEN
