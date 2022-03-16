@@ -271,6 +271,7 @@ SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
   !---------------------------------------------------------------------
   INTEGER :: cocos_index, npts_imas
   REAL*8  :: B0
+  REAL*8, ALLOCATABLE, DIMENSION(:) :: R_BND, Z_BND, radius, theta
 
   !---------------------------------------------------------------------
   !     BEGIN EXECUTION
@@ -316,6 +317,37 @@ SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
   npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%j_parallel)
   AC_AUX_F(1:npts_imas)  = IDS_EQ_IN%time_slice(itime)%profiles_1d%j_parallel
   PCURR_TYPE = 'akima_spline_ip'
+
+  !----  Get Magnetic Axis position
+  RAXIS_CC = 0; RAXIS_CS = 0; ZAXIS_CC = 0; ZAXIS_CS = 0
+  RAXIS_CC(0) = IDS_EQ_IN%time_slice(itime)%magnetic_axis%r
+  ZAXIS_CC(0) = IDS_EQ_IN%time_slice(itime)%magnetic_axis%z
+
+  !----  Get Boundary Shape
+  npts_imas = SIZE(IDS_EQ_IN%time_slice(itime)%boundary%outline%R)
+  ALLOCATE(R_BND(npts_imas), Z_BND(npts_imas), radius(npts_imas), theta(npts_imas))
+  R_BND = IDS_EQ_IN%time_slice(itime)%boundary%outline%R
+  Z_BND = IDS_EQ_IN%time_slice(itime)%boundary%outline%Z
+  theta = ATAN2(Z_BND-ZAXIS_CC(0),R_BND-RAXIS_CC(0))
+  DO u = 1, npts_imas
+     DO mn = 0, MPOL
+       RBC(0,mn) = RBC(0,mn) + R_BND(u)*COS(mn*theta(u)) 
+       ZBC(0,mn) = ZBC(0,mn) + Z_BND(u)*COS(mn*theta(u))
+       RBS(0,mn) = RBS(0,mn) + R_BND(u)*SIN(mn*theta(u))
+       ZBS(0,mn) = ZBS(0,mn) + Z_BND(u)*SIN(mn*theta(u))
+     END DO
+  END DO
+  RBC(0,0) = RBC(0,0)/npts_imas
+  ZBC(0,0) = ZBC(0,0)/npts_imas
+  RBS(0,0) = RBS(0,0)/npts_imas
+  ZBS(0,0) = ZBS(0,0)/npts_imas
+  RBC(0,1:MPOL) = 2*RBC(0,1:MPOL)/npts_imas
+  ZBC(0,1:MPOL) = 2*ZBC(0,1:MPOL)/npts_imas
+  RBS(0,1:MPOL) = 2*RBS(0,1:MPOL)/npts_imas
+  ZBS(0,1:MPOL) = 2*ZBS(0,1:MPOL)/npts_imas
+  LASYM = .TRUE.
+
+  DEALLOCATE(R_BND, Z_BND, radius, theta)
 
   RETURN
   
