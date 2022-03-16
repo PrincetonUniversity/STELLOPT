@@ -101,6 +101,9 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
   !----  Mimic Read_Indata
   CALL VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
 
+  !----  Interface with Equilibirum IDS
+  !CALL VMEC_EQIN_IMAS(IDS_EQ_IN,status_code,status_message)
+
   !---- Setup VMEC Run
   myseq=0
   ictrl(1) = restart_flag + imasrun_flag + timestep_flag +  &
@@ -238,7 +241,86 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   ! This memory is freed by "xml2eg_free_doc(doc)"
   CALL xml2eg_free_doc(doc)
 
+  RETURN
 END SUBROUTINE VMEC_INDATA_IMAS
+
+!-----------------------------------------------------------------------
+!     SUBROUTINE:        VMEC_INDATA_IMAS
+!     PURPOSE:           Handles setting up the indata variables
+!-----------------------------------------------------------------------
+SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
+  !---------------------------------------------------------------------
+  !     Libraries
+  !---------------------------------------------------------------------
+  USE ids_schemas
+  USE vmec_input
+
+  !---------------------------------------------------------------------
+  !     INPUT/OUTPUT VARIABLES
+  !        INDATA_XML : VMEC INDATA namelist AS XML
+  !        STATUS_CODE : STATUS Flag
+  !        STATUS_MESSAGE : Text Message
+  !---------------------------------------------------------------------
+  IMPLICIT NONE
+  TYPE(ids_equilibrium), INTENT(IN) :: IDS_EQ_IN
+  INTEGER, INTENT(OUT) :: status_code
+  CHARACTER(LEN=:), POINTER, INTENT(OUT) :: status_message
+
+  !---------------------------------------------------------------------
+  !     SUBROUTINE VARIABLES
+  !---------------------------------------------------------------------
+  INTEGER :: cocos_index, npts_imas
+  REAL*8  :: B0
+
+  !---------------------------------------------------------------------
+  !     BEGIN EXECUTION
+  !---------------------------------------------------------------------
+  staus_code = 0
+
+  !----  Check the IDS for timeslices
+  IF (.not. ASSOCIATED(IDS_EQ_IN%time_slice)) THEN
+     WRITE(*,*) 'No time slices in this equilibrium'
+     STOP
+  END IF
+
+  !----  Check Cocos Index
+  cocos_index = IDS_EQ_IN%time_slice(itime)%profiles_2d(1)%grid_type%index
+  WRITE(*,*) ' IDS COCOS Convention: ',cocos_index
+
+  !----  Print Grid Type
+  IF (ASSOCIATED(IDS_EQ_IN%time_slice(itime)%profiles_2d(1)%grid_type%name)) &
+     WRITE(*,*) 'IDS Grid Type: ',IDS_EQ_IN%time_slice(itime)%profiles_2d(1)%grid_type%name
+
+  !----  Get Global quantities
+  curtor = IDS_EQ_IN%time_slice(itime)%global_quantities%ip ! Total Toroidal Current
+
+  !----  Get 1D Profiles
+  !      Toroidal Flux
+  npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%phi)
+  AM_AUX_S(1:npts_imas)  = IDS_EQ_IN%time_slice(itime)%profiles_1d%phi
+  AM_AUX_S(1:npts_imas)  = AM_AUX_S(1:npts_imas)-AM_AUX_S(1)
+  AM_AUX_S(1:npts_imas)  = AM_AUX_S(1:npts_imas)/AM_AUX_S(npts_imas)
+  PHIEDGE = IDS_EQ_IN%time_slice(itime)%profiles_1d%phi(npts_imas)
+  !     Pressure
+  npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%pressure)
+  AM_AUX_F(1:npts_imas)  = IDS_EQ_IN%time_slice(itime)%profiles_1d%pressure
+  PRES_SCALE = 1.0
+  PMASS_TYPE = 'akima_spline'
+  !     Rotational Transform
+  AI_AUX_S  = AM_AUX_S
+  npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%q)
+  AI_AUX_F(1:npts_imas)  = 1.0/IDS_EQ_IN%time_slice(itime)%profiles_1d%q
+  PIOTA_TYPE = 'akima_spline'
+  !     Current Density
+  AC_AUX_S  = AM_AUX_S
+  npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%j_parallel)
+  AC_AUX_F(1:npts_imas)  = IDS_EQ_IN%time_slice(itime)%profiles_1d%j_parallel
+  PCURR_TYPE = 'akima_spline_ip'
+
+  RETURN
+  
+
+END SUBROUTINE VMEC_EQIN_IMAS
 
 #endif
 END MODULE VMEC_IMAS_MODULE
