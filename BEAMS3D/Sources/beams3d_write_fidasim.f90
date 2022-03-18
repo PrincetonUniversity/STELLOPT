@@ -77,6 +77,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:), r1dtemp2(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
    INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask
    CHARACTER(LEN=8) :: temp_str8, inj_str8
+   REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_temp
 
    INTEGER, parameter :: ictE(8)=(/0,1,1,1,0,0,0,0/)
    REAL*8, PARAMETER :: one = 1
@@ -559,8 +560,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ALLOCATE(energy_fida(nenergy_fida))
          ! Do volume normalization
          !CALL beams3d_distnorm !TODO: check if this has already been done
-
-         FORALL(i = 1:nenergy_fida) energy_fida(i) = (i) / REAL(nenergy_fida+1) * 0.5 * mass_beams(1) * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
+         jac = MAXVAL(mass_beams);
+         FORALL(i = 1:nenergy_fida) energy_fida(i) = (i) / REAL(nenergy_fida+1) * 0.5 * jac * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
          FORALL(i = 1:npitch_fida) pitch_fida(i) = (i) / REAL(npitch_fida+1) * 2.0 - 1.0
 
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
@@ -598,9 +599,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                END DO
             END DO
          END DO
-         !DEALLOCATE(dist5d_prof)
-         !ALLOCATE(dist5d_prof(nbeams,nr, nphi, nz, nenergy_fida, npitch_fida))
-         dist5d_prof = dist5d_fida
+         ALLOCATE(dist5d_temp(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
+         dist5d_temp = dist5d_fida
          DEALLOCATE(dist5d_fida)
 
          !Now allocate with correct dimensions
@@ -635,11 +635,11 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
                      m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                      n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                     IF (y0 .GT. 1.0) THEN !might introduce a small deviation here
-                        dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
-                     ELSE
-                        dist5d_fida(b,:,:,i,k,j) = dist5d_prof(b,l,m,n,:,:) !output in r-z-phi
-                     END IF
+                     !IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
+                     !   dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
+                     !ELSE
+                        dist5d_fida(b,:,:,i,k,j) = dist5d_temp(b,l,m,n,:,:) !output in r-z-phi
+                     !END IF
 
                   END DO
                END DO
