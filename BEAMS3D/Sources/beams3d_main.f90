@@ -353,7 +353,7 @@ PROGRAM BEAMS3D
         ! IF (ldepo) THEN
         !     CALL beams3d_write_fidasim('DISTRIBUTION_GC_MC') !not implemented yet
         ! ELSE
-            CALL beams3d_write_fidasim('DISTRIBUTION_GC_F')
+            CALL beams3d_write_fidasim('DISTRIBUTION_GC_F') !Should stay here as it alters dist5d_prof
         ! END IF
     END IF
 
