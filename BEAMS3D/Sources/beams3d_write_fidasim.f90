@@ -534,11 +534,11 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
                   m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                   n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                  ! IF (y0 .GT. 1.0) THEN
-                  !    rtemp(i,k,j) = 0 !distribution is 0 outside plasma
-                  ! ELSE
+                   IF (y0 .GT. 1.05) THEN
+                      rtemp(i,k,j) = 0 !distribution is 0 outside plasma
+                   ELSE
                      rtemp(i,k,j) = SUM(dist5d_prof(:,l,m,n,:,:))!output in r-z-phi
-                  ! END IF
+                   END IF
 
                END DO
             END DO
@@ -635,11 +635,11 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
                      m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                      n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                     !IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
-                     !   dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
-                     !ELSE
+                     IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
+                        dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
+                     ELSE
                         dist5d_fida(b,:,:,i,k,j) = dist5d_temp(b,l,m,n,:,:) !output in r-z-phi
-                     !END IF
+                     END IF
 
                   END DO
                END DO
