@@ -409,9 +409,9 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Follow particle track out of plasma
          !--------------------------------------------------------------
-         DO l = 1, 3
+         OUTER: DO l = 1, 3
             dt_local = stepsize(l)/q(4)
-            DO
+            INNER: DO
                qf = qf + myv_neut*dt_local
                q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
@@ -432,15 +432,16 @@ MODULE beams3d_physics_mod
                                   hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                                   S4D(1,1,1,1),nr,nphi,nz)
                   s_temp = fval(1)
-                  IF (s_temp > one) EXIT
+                  IF (s_temp > one) EXIT INNER
                ELSE
-                  EXIT
+                  EXIT INNER
                END IF
-            END DO
+            END DO INNER
             ! Take a step back
             qf = qf - myv_neut*dt_local
-         END DO
+         END DO OUTER
          qe=qf + myv_neut*dt_local
+
 
          !--------------------------------------------------------------
          !     Setup deposition arrays
@@ -596,6 +597,7 @@ MODULE beams3d_physics_mod
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
+               t = my_end+dt_local
                CALL uncount_wall_hit
                RETURN
             END IF
