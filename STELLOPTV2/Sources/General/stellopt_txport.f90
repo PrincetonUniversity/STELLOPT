@@ -533,13 +533,16 @@
                         CALL EZspline_free(Bhat_spl,ier)
                         CALL EZspline_free(L2_spl,ier)
                      END DO
-                  CASE('AvailEnergy')
+                  CASE('availenergy')
 !DEC$ IF DEFINED (AEOPT)
-                      CALL compute_AE(maxPnt, g11(ialpha,:), g12(ialpha,:), g22(ialpha,:), Bhat(ialpha,:), &
+                     DO ialpha = 1, nalpha0_
+                        PRINT *,maxPNT,SIZE(g11)
+                        CALL compute_AE(maxPnt, g11(ialpha,:), g12(ialpha,:), g22(ialpha,:), Bhat(ialpha,:), &
                                              abs_jac(ialpha,:), L1(ialpha,:), L2(ialpha,:), dBdt(ialpha,:), &
                                       1, dpdx, q, shat, 1.0D0, 0.0D0, &
                                       1D-4, 4.0D+1, 10000, 10000, result)
-                      vqqprox(ialpha,:) = result/maxPnt
+                        vqqprox(ialpha,:) = result/maxPnt
+                     END DO
 !DEC$ ENDIF
                   CASE('all')
                      ! prox1
