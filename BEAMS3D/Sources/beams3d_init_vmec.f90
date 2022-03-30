@@ -297,7 +297,7 @@
       END IF
       
       IF (lverb) THEN
-         IF (.not.lplasma_only) CALL virtual_casing_info(6)
+         IF (luse_vc) CALL virtual_casing_info(6)
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field Calculation [',0,']%'
          CALL FLUSH(6)
       END IF
