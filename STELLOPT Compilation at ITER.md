@@ -15,7 +15,7 @@ ITER Cluster
     module load FFTW/3.3.8-iimpi-2020b
     module load XMLlib/3.3.1-intel-2020b
 
-Building iWrap IMAS Actors
+Building IMAS Actors (iWrap)
 -------------
 
 To build the IMAS Actors first make sure everything compiles using the ./build_all script.
