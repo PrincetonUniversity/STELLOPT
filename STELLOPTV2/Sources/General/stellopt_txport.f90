@@ -536,7 +536,6 @@
                   CASE('availenergy')
 !DEC$ IF DEFINED (AEOPT)
                      DO ialpha = 1, nalpha0_
-                        PRINT *,maxPNT,SIZE(g11)
                         CALL compute_AE(maxPnt, g11(ialpha,:), g12(ialpha,:), g22(ialpha,:), Bhat(ialpha,:), &
                                              abs_jac(ialpha,:), L1(ialpha,:), L2(ialpha,:), dBdt(ialpha,:), &
                                       1, dpdx, q, shat, 1.0D0, 0.0D0, &
