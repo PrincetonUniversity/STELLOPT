@@ -49,7 +49,7 @@ class ExampleWorkflowManager:
         time_slice          = 200.
         print('=> Read input IDSs')
         input_equilibrium = self.input_entry.get_slice('equilibrium', time_slice, 1)
-        input_equilibrium = imas.equilibrium()
+        #input_equilibrium = imas.equilibrium()
 
         # EXECUTE PHYSICS CODE
         print('=> Execute physics code')
