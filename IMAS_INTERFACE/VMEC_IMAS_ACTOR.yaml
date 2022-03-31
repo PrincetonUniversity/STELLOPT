@@ -20,7 +20,7 @@ code_description:
         data_type: legacy
         include_path: VMEC2000/Release/vmec_imas_module.mod
         programming_language: fortran
-        root_dir: /pfs/home/g2slazer/src/STELLOPT/
+        root_dir: /home/ITER/lazerss/src/STELLOPT/
         subroutines:
             finalize: ''
             init: vmec_imas_init
@@ -29,17 +29,17 @@ code_description:
         compiler_cmd: ifort
         extra_libraries:
             path_defined:
-            - /gss_efgw_work/home/g2slazer/src/STELLOPT/LIBSTELL/Release/libstell.a
-            - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_scalapack_ilp64.a
-            - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_intel_ilp64.a
-            - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_sequential.a
-            - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_core.a
-            - /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl/lib/intel64/libmkl_blacs_intelmpi_ilp64.a
+            - /home/ITER/lazerss/src/STELLOPT/LIBSTELL/Release/libstell.a
+            - $MKLROOT/lib/intel64/libmkl_scalapack_ilp64.a
+            - $MKLROOT/lib/intel64/libmkl_intel_ilp64.a
+            - $MKLROOT/lib/intel64/libmkl_sequential.a
+            - $MKLROOT/lib/intel64/libmkl_core.a
+            - $MKLROOT/lib/intel64/libmkl_blacs_intelmpi_ilp64.a
             pkg_config_defined:
-            - netcdf-fortran-amd64_intel_17
-            - mkl-2017.1-amd64_intel_17
             - hdf5
-            - xmllib-ifort
+            - mkl-dynamic-ilp64-seq
+            - netcdf-fortran
+            - xmllib
         mpi_compiler_cmd: mpiifort
         open_mp_switch: ''
 ...

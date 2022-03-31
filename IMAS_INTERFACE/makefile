@@ -4,7 +4,7 @@ vmeclib :
 	@cd ../VMEC2000; rm -f Release/*.o Release/*.mod Release/*.a; $(MAKE) lib_release
 
 actor_vmec : 
-	iwrap -f VMEC_IMAS_ACTOR.yaml
+	iwrap -f VMEC_IMAS_ACTOR.yaml -i $(ACTOR_FOLDER)
 
 xml_vmec : 
 	@xmllint --noout indata.xsd indata.xml

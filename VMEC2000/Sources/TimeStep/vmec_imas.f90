@@ -269,19 +269,19 @@ SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
   !---------------------------------------------------------------------
   !     SUBROUTINE VARIABLES
   !---------------------------------------------------------------------
-  INTEGER :: cocos_index, npts_imas
+  INTEGER :: cocos_index, npts_imas, itime, u, mn
   REAL*8  :: B0
   REAL*8, ALLOCATABLE, DIMENSION(:) :: R_BND, Z_BND, radius, theta
 
   !---------------------------------------------------------------------
   !     BEGIN EXECUTION
   !---------------------------------------------------------------------
-  staus_code = 0
+  status_code = 0
 
   !----  Check the IDS for timeslices
   IF (.not. ASSOCIATED(IDS_EQ_IN%time_slice)) THEN
      WRITE(*,*) 'No time slices in this equilibrium'
-     STOP
+     !STOP
   END IF
 
   !----  Check Cocos Index
@@ -320,8 +320,8 @@ SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
 
   !----  Get Magnetic Axis position
   RAXIS_CC = 0; RAXIS_CS = 0; ZAXIS_CC = 0; ZAXIS_CS = 0
-  RAXIS_CC(0) = IDS_EQ_IN%time_slice(itime)%magnetic_axis%r
-  ZAXIS_CC(0) = IDS_EQ_IN%time_slice(itime)%magnetic_axis%z
+  !RAXIS_CC(0) = IDS_EQ_IN%time_slice(itime)%magnetic_axis%r
+  !ZAXIS_CC(0) = IDS_EQ_IN%time_slice(itime)%magnetic_axis%z
 
   !----  Get Boundary Shape
   npts_imas = SIZE(IDS_EQ_IN%time_slice(itime)%boundary%outline%R)
