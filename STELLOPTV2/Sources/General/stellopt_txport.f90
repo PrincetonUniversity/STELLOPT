@@ -540,7 +540,7 @@
                         CALL compute_AE(maxPnt, g11(ialpha,:), g12(ialpha,:), g22(ialpha,:), Bhat(ialpha,:), &
                                              abs_jac(ialpha,:), L1(ialpha,:), L2(ialpha,:), dBdt(ialpha,:), &
                                       1, dpdx, q, shat, 1.0D0, 0.0D0, &
-                                      1D-4, 4.0D+1, 10000, 10000, result)
+                                      1D-4, 4.0D+1, 10000, 10000, 1D-10, result)
                         vqqprox(ialpha,:) = result/maxPnt
                      END DO
 !DEC$ ENDIF
