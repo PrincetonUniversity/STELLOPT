@@ -107,23 +107,29 @@ C-----------------------------------------------
          c_flx(1) = one
       END IF
 
+!     OLD WAY
+!     2. Evaluate Bsupu, Bsupv at this point
+!
+      CALL tosuvspace (c_flx(1), c_flx(2), c_flx(3), 
+     1                 BSUPU=bsupu1, BSUPV=bsupv1)
+
 !
 !     2. Evaluate Jacobian
 !        sqrt(g)=R(dR/du*dZ/ds-dR/ds*dZ/du)
 !
-
-      g1 = R1*(Ru1*Zs1-Rs1*Zu1)
-
+!
+!      g1 = R1*(Ru1*Zs1-Rs1*Zu1)
+!
 !
 !     3. Evaluate Bsupu*sqrt(g), Bsupv*sqrt(g) at this point
 !        The factor of pi2 comes from normalization on
 !        dchi/ds and dphi/ds
 !
-      CALL tosuvspaceBsup (c_flx(1), c_flx(2), c_flx(3), 
-     1                 GBSUPU=bsupu1, GBSUPV=bsupv1)
-
-      bsupu1 = bsupu1/(ABS(g1)*pi2) ! Pi2 comes from chip and phip
-      bsupv1 = bsupv1/(ABS(g1)*pi2)
+!      CALL tosuvspaceBsup (c_flx(1), c_flx(2), c_flx(3), 
+!     1                 GBSUPU=bsupu1, GBSUPV=bsupv1)
+!
+!      bsupu1 = bsupu1/(ABS(g1)*pi2) ! Pi2 comes from chip and phip
+!      bsupv1 = bsupv1/(ABS(g1)*pi2)
 !
 !     3. Form Br, Bphi, Bz
 !
@@ -1178,25 +1184,28 @@ C-----------------------------------------------
          c_flx(1) = sflux;  c_flx(2) = uflux
 
 !        COMPUTE R,Z, Ru, Zu
-         CALL get_flxcoord(x0, c_flx, rs=rs1, zs=zs1, ru=ru1, zu=zu1)
+!         CALL get_flxcoord(x0, c_flx, rs=rs1, zs=zs1, ru=ru1, zu=zu1)
+!         xu(1) = ru1; xu(3) = zu1
+!         xs(1) = rs1; xs(3) = zs1
+!        COMPUTE R,Z, Ru, Zu
+         CALL get_flxcoord(x0, c_flx, ru=ru1, zu=zu1)
          xu(1) = ru1; xu(3) = zu1
-         xs(1) = rs1; xs(3) = zs1
 
 !        MAKE SURE sflux IS LARGE ENOUGH
 !        TO COMPUTE d(sqrt(s))/ds ACCURATELY NEAR ORIGIN
-!         IF (sflux .ge. 1000*eps0) THEN
-!            eps = eps0
-!         ELSE
-!            eps = eps0*sflux
-!         END IF
+         IF (sflux .ge. 1000*eps0) THEN
+            eps = eps0
+         ELSE
+            eps = eps0*sflux
+         END IF
 
 !        COMPUTE Rs, Zs NUMERICALLY
-!         eps = ABS(eps)
-!         IF (sflux .ge. 1-eps) eps = -eps
-!         c_flx(1) = sflux + eps
-!         CALL get_flxcoord(r_cyl_out, c_flx)
-!         xs = (r_cyl_out - x0)/eps
-!         c_flx(1) = sflux
+         eps = ABS(eps)
+         IF (sflux .ge. 1-eps) eps = -eps
+         c_flx(1) = sflux + eps
+         CALL get_flxcoord(r_cyl_out, c_flx)
+         xs = (r_cyl_out - x0)/eps
+         c_flx(1) = sflux
 
          x0(1) = x0(1) - r_target
          x0(3) = x0(3) - z_target
@@ -1237,8 +1246,8 @@ C-----------------------------------------------
          snew = xc_opt(1) + dels*factor
          IF (snew .lt. zero) THEN
             xc_opt(1) = -snew/2               !Prevents oscillations around origin s=0
-            !xc_opt(2) = xc_opt(2) + twopi/2 
-            !delu = -delu
+            xc_opt(2) = xc_opt(2) + twopi/2 
+            delu = -delu
 !             factor = (-snew/2-xc_opt(1))/dels
 !             xc_opt(1) = -snew/2
          ELSE
