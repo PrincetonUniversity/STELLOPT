@@ -14,13 +14,13 @@ code_description:
     documentation: Actor for the VMEC code.
     implementation:
         code_parameters:
-            parameters: IMAS_INTERFACE/indata.xml
-            schema: IMAS_INTERFACE/indata.xsd
-        code_path: VMEC2000/Release/libvmec.a
+            parameters: ./indata.xml
+            schema: ./indata.xsd
+        code_path: ../VMEC2000/Release/libvmec.a
         data_type: legacy
-        include_path: VMEC2000/Release/vmec_imas_module.mod
+        include_path: ../VMEC2000/Release/vmec_imas_module.mod
         programming_language: fortran
-        root_dir: /home/ITER/lazerss/src/STELLOPT/
+        root_dir: ''
         subroutines:
             finalize: ''
             init: vmec_imas_init
