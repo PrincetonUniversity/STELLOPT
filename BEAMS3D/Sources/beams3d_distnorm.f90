@@ -133,8 +133,8 @@
       END IF
 
       ! Do phase space volume elements -- correct?
-      ds = 2*partvmax/ns_prof4
-      du = partvmax/ns_prof5
+      ds = 2*partvmax/ns_prof4 !vll
+      du = partvmax/ns_prof5 !v_perp
       dvol = pi2*ds*du
       nvol = ns_prof4*ns_prof5
       DO j = 1, ns_prof5
