@@ -10,7 +10,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE read_eqdsk_mod, ONLY: totcur, psimx, psilim, &
+      USE read_eqdsk_mod, ONLY: totcur, psisep, &
                                 raxis_eqdsk => raxis, &
                                 zaxis_eqdsk => zaxis, get_eqdsk_Bspl, &
                                 get_eqdsk_fluxspl, read_eqdsk_deallocate, &
@@ -80,7 +80,7 @@
             WRITE(6,'(A,F7.2,A)') '   I  = ',totcur,' [A]'
          END IF
          WRITE(6,'(A,F7.2,A)')        '   P_MAX = ',MAXVAL(sp)*1E-3,' [kPa]'
-         WRITE(6,'(A,F7.2,A)')        '   PHIEDGE = ',psimx(1),' [Wb]'
+         WRITE(6,'(A,F7.2,A)')        '   PSIEDGE = ',psisep,' [Wb]'
          IF (lcreate_wall) THEN
             IF (lplasma_only) THEN
                WRITE(6,'(A)')         '   Using EQDSK Separatrix as wall'
