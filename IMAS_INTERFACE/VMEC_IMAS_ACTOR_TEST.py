@@ -16,11 +16,11 @@ class ExampleWorkflowManager:
 
     def init_workflow(self):
         # INPUT/OUTPUT CONFIGURATION
-        shot                = 131024
-        run_in              = 1
+        shot                = 134173
+        run_in              = 106
         input_user_or_path  = 'public'
         input_database      = 'iter'
-        run_out             = 10
+        run_out             = 1
         output_user_or_path = os.getenv('USER')
         output_database     = input_database
 
@@ -49,15 +49,15 @@ class ExampleWorkflowManager:
         time_slice          = 200.
         print('=> Read input IDSs')
         input_equilibrium = self.input_entry.get_slice('equilibrium', time_slice, 1)
-        #input_equilibrium = imas.equilibrium()
 
         # EXECUTE PHYSICS CODE
         print('=> Execute physics code')
         output_equilibrium = self.vmec(input_equilibrium)
+        breakpoint()
 
         # SAVE IDSS INTO OUTPUT FILE
         print('=> Export output IDSs to local database')
-        self.output_entry.put(output_equilibrium)
+        #self.output_entry.put(output_equilibrium)
         print('Done exporting.')
 
     def end_workflow(self):
