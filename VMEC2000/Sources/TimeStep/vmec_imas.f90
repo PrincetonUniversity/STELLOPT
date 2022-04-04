@@ -102,7 +102,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
   CALL VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
 
   !----  Interface with Equilibirum IDS
-  !CALL VMEC_EQIN_IMAS(IDS_EQ_IN,status_code,status_message)
+  CALL VMEC_EQIN_IMAS(IDS_EQ_IN,status_code,status_message)
 
   !---- Setup VMEC Run
   myseq=0
@@ -121,7 +121,8 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
   !----  Run VMEC
   CALL runvmec(ictrl, filename, lscreen, RVC_COMM, &
                reset_string)
-  ivmec_flag = ictrl(2)
+  status_code = ictrl(2)
+  STOP
 
   !----  Write out EQUILIBRIUM
 
@@ -270,18 +271,19 @@ SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
   !     SUBROUTINE VARIABLES
   !---------------------------------------------------------------------
   INTEGER :: cocos_index, npts_imas, itime, u, mn
-  REAL*8  :: B0
+  REAL*8  :: B0, pi2
   REAL*8, ALLOCATABLE, DIMENSION(:) :: R_BND, Z_BND, radius, theta
 
   !---------------------------------------------------------------------
   !     BEGIN EXECUTION
   !---------------------------------------------------------------------
   status_code = 0
+  itime = 1
+  pi2 = 8.0*ATAN(1.0)
 
   !----  Check the IDS for timeslices
   IF (.not. ASSOCIATED(IDS_EQ_IN%time_slice)) THEN
      WRITE(*,*) 'No time slices in this equilibrium'
-     !STOP
   END IF
 
   !----  Check Cocos Index
@@ -292,59 +294,85 @@ SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
   IF (ASSOCIATED(IDS_EQ_IN%time_slice(itime)%profiles_2d(1)%grid_type%name)) &
      WRITE(*,*) 'IDS Grid Type: ',IDS_EQ_IN%time_slice(itime)%profiles_2d(1)%grid_type%name
 
+  !----  Pass Shot Information
+  time_slice = IDS_EQ_IN%time(itime)
+
+
   !----  Get Global quantities
   curtor = IDS_EQ_IN%time_slice(itime)%global_quantities%ip ! Total Toroidal Current
+  !PRINT *,'======'
+  !PRINT *,curtor
 
   !----  Get 1D Profiles
   !      Toroidal Flux
+  AI_AUX_S(:) = -1
+  AM_AUX_S(:) = -1
+  AC_AUX_S(:) = -1
   npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%phi)
   AM_AUX_S(1:npts_imas)  = IDS_EQ_IN%time_slice(itime)%profiles_1d%phi
   AM_AUX_S(1:npts_imas)  = AM_AUX_S(1:npts_imas)-AM_AUX_S(1)
   AM_AUX_S(1:npts_imas)  = AM_AUX_S(1:npts_imas)/AM_AUX_S(npts_imas)
   PHIEDGE = IDS_EQ_IN%time_slice(itime)%profiles_1d%phi(npts_imas)
+  !PRINT *,'======'
+  !PRINT *,PHIEDGE
   !     Pressure
   npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%pressure)
   AM_AUX_F(1:npts_imas)  = IDS_EQ_IN%time_slice(itime)%profiles_1d%pressure
   PRES_SCALE = 1.0
-  PMASS_TYPE = 'akima_spline'
+  PMASS_TYPE = 'Akima_spline'
+  !PRINT *,'======'
+  !PRINT *,AM_AUX_F(1:npts_imas)
   !     Rotational Transform
   AI_AUX_S  = AM_AUX_S
   npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%q)
   AI_AUX_F(1:npts_imas)  = 1.0/IDS_EQ_IN%time_slice(itime)%profiles_1d%q
-  PIOTA_TYPE = 'akima_spline'
+  PIOTA_TYPE = 'Akima_spline'
+  !PRINT *,'======'
+  !PRINT *,AI_AUX_F(1:npts_imas)
   !     Current Density
   AC_AUX_S  = AM_AUX_S
   npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%j_parallel)
   AC_AUX_F(1:npts_imas)  = IDS_EQ_IN%time_slice(itime)%profiles_1d%j_parallel
-  PCURR_TYPE = 'akima_spline_ip'
+  PCURR_TYPE = 'Akima_spline_ip'
+  !PRINT *,'======'
+  !PRINT *,AC_AUX_F(1:npts_imas)
+  NCURR = 0
 
   !----  Get Magnetic Axis position
   RAXIS_CC = 0; RAXIS_CS = 0; ZAXIS_CC = 0; ZAXIS_CS = 0
-  !RAXIS_CC(0) = IDS_EQ_IN%time_slice(itime)%magnetic_axis%r
-  !ZAXIS_CC(0) = IDS_EQ_IN%time_slice(itime)%magnetic_axis%z
+  RAXIS_CC(0) = IDS_EQ_IN%time_slice(itime)%global_quantities%magnetic_axis%r
+  ZAXIS_CC(0) = IDS_EQ_IN%time_slice(itime)%global_quantities%magnetic_axis%z
 
   !----  Get Boundary Shape
+  MPOL = 24
   npts_imas = SIZE(IDS_EQ_IN%time_slice(itime)%boundary%outline%R)
   ALLOCATE(R_BND(npts_imas), Z_BND(npts_imas), radius(npts_imas), theta(npts_imas))
   R_BND = IDS_EQ_IN%time_slice(itime)%boundary%outline%R
   Z_BND = IDS_EQ_IN%time_slice(itime)%boundary%outline%Z
-  theta = ATAN2(Z_BND-ZAXIS_CC(0),R_BND-RAXIS_CC(0))
-  DO u = 1, npts_imas
-     DO mn = 0, MPOL
+
+
+  
+  !theta = ATAN2(Z_BND-ZAXIS_CS(0),R_BND-RAXIS_CC(0))
+  DO u = 1, npts_imas-2
+     theta(u) = pi2*DBLE(u-1)/DBLE(npts_imas-2)
+  END DO
+  RBC(:,:) = 0.0; RBS(:,:) = 0.0; ZBC(:,:) = 0.0; ZBS(:,:) = 0.0;
+  DO u = 1, npts_imas-2
+     DO mn = 0, MPOL-1
        RBC(0,mn) = RBC(0,mn) + R_BND(u)*COS(mn*theta(u)) 
        ZBC(0,mn) = ZBC(0,mn) + Z_BND(u)*COS(mn*theta(u))
        RBS(0,mn) = RBS(0,mn) + R_BND(u)*SIN(mn*theta(u))
        ZBS(0,mn) = ZBS(0,mn) + Z_BND(u)*SIN(mn*theta(u))
      END DO
   END DO
-  RBC(0,0) = RBC(0,0)/npts_imas
-  ZBC(0,0) = ZBC(0,0)/npts_imas
-  RBS(0,0) = RBS(0,0)/npts_imas
-  ZBS(0,0) = ZBS(0,0)/npts_imas
-  RBC(0,1:MPOL) = 2*RBC(0,1:MPOL)/npts_imas
-  ZBC(0,1:MPOL) = 2*ZBC(0,1:MPOL)/npts_imas
-  RBS(0,1:MPOL) = 2*RBS(0,1:MPOL)/npts_imas
-  ZBS(0,1:MPOL) = 2*ZBS(0,1:MPOL)/npts_imas
+  RBC(0,0) = RBC(0,0)/(npts_imas-2)
+  ZBC(0,0) = ZBC(0,0)/(npts_imas-2)
+  RBS(0,0) = RBS(0,0)/(npts_imas-2)
+  ZBS(0,0) = ZBS(0,0)/(npts_imas-2)
+  RBC(0,1:MPOL-1) = 2*RBC(0,1:MPOL-1)/(npts_imas-2)
+  ZBC(0,1:MPOL-1) = 2*ZBC(0,1:MPOL-1)/(npts_imas-2)
+  RBS(0,1:MPOL-1) = 2*RBS(0,1:MPOL-1)/(npts_imas-2)
+  ZBS(0,1:MPOL-1) = 2*ZBS(0,1:MPOL-1)/(npts_imas-2)
   LASYM = .TRUE.
 
   DEALLOCATE(R_BND, Z_BND, radius, theta)
