@@ -593,8 +593,12 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
                      jac = 1 / (mass_beams(b) * SQRT(1-pitch * pitch))
                      !jac = MIN(MAX(jac, 0.0),1.0E)
-                     jac = jac / pi2 / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention? and 1/cm^3/keV
-                     dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac !* pi2 * v /  mass_beams(b) !problematic, circular reference
+                     !jac = jac / pi / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention and 1/cm^3/keV
+                     jac = v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
+                     dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac
+
+
+
                   END IF
                END DO
             END DO
@@ -651,7 +655,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=SUM(dist5d_fida, DIM=1))
             CALL h5dopen_f(fid, '/f', temp_gid, ier)
             CALL write_att_hdf5(temp_gid,'description','Distribution Function (nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida)',ier)
-            CALL write_att_hdf5(temp_gid,'units','part/(cm^3 eV)',ier)
+            CALL write_att_hdf5(temp_gid,'units','part/(cm^3 keV)',ier)
             CALL h5dclose_f(temp_gid,ier)
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_fida',ier)
          END IF
