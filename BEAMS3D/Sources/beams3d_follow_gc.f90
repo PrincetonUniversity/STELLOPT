@@ -59,7 +59,7 @@ SUBROUTINE beams3d_follow_gc
     REAL(rprec) :: tf_max, vel_max, dt_out
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:), t_last(:)
     DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, t1_nag, &
-                        tol_nag, rtol
+                        tol_nag, rtol, weight_save
     DOUBLE PRECISION :: atol(4), rwork(84)
     DOUBLE PRECISION :: rkh_work(4, 2)
     DOUBLE PRECISION :: qdot1(4)
@@ -215,7 +215,10 @@ SUBROUTINE beams3d_follow_gc
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1; ndt =1
                        tf_nag = t_nag
+                       weight_save = weight(myline)
+                       weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
+                       weight(myline) = weight_save
                        IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
@@ -275,7 +278,10 @@ SUBROUTINE beams3d_follow_gc
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1; ndt =1
                        tf_nag = t_nag
+                       weight_save = weight(myline)
+                       weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
+                       weight(myline) = weight_save
                        IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
@@ -363,7 +369,10 @@ SUBROUTINE beams3d_follow_gc
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1
                        tf_nag = t_nag
+                       weight_save = weight(myline)
+                       weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
+                       weight(myline) = weight_save
                        IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
