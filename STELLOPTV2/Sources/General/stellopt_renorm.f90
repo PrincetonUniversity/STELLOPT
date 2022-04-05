@@ -142,6 +142,8 @@
                WHERE(sigma_magwell<bigno) sigma_magwell = sigma_magwell/temp
             CASE(jtarget_helicity)
                WHERE(ABS(sigma_helicity)<bigno) sigma_helicity = sigma_helicity/temp
+            CASE(jtarget_txport)
+               WHERE(ABS(sigma_txport)<bigno) sigma_txport = sigma_txport/temp
             CASE DEFAULT
                WRITE(6,'(A,I3.3,A)') '!!! JTARGET=',iddex(i),' not supported'
                CALL write_targets(6,iddex(i))
