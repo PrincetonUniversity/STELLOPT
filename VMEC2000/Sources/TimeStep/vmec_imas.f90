@@ -103,11 +103,12 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
 
   !----  Interface with Equilibirum IDS
   CALL VMEC_EQIN_IMAS(IDS_EQ_IN,status_code,status_message)
+  IF (status_code .ne. 0) RETURN
 
   !---- Setup VMEC Run
   myseq=0
   ictrl(1) = restart_flag + imasrun_flag + timestep_flag +  &
-                          + cleanup_flag
+                          + cleanup_flag + output_flag
   ictrl(2) = 0 ! ier_flag
   ictrl(3) = -1 ! numsteps
   ictrl(4) = -1 ! ns_index
@@ -122,7 +123,6 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
   CALL runvmec(ictrl, filename, lscreen, RVC_COMM, &
                reset_string)
   status_code = ictrl(2)
-  STOP
 
   !----  Write out EQUILIBRIUM
 
@@ -271,8 +271,9 @@ SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
   !     SUBROUTINE VARIABLES
   !---------------------------------------------------------------------
   INTEGER :: cocos_index, npts_imas, itime, u, mn
-  REAL*8  :: B0, pi2
-  REAL*8, ALLOCATABLE, DIMENSION(:) :: R_BND, Z_BND, radius, theta
+  REAL*8  :: B0, pi2, s_temp, x
+  REAL*8, ALLOCATABLE, DIMENSION(:) :: R_BND, Z_BND, radius, theta, &
+                                       s_in, f_in, f2_in, f3_in
 
   !---------------------------------------------------------------------
   !     BEGIN EXECUTION
@@ -293,50 +294,92 @@ SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
   !----  Print Grid Type
   IF (ASSOCIATED(IDS_EQ_IN%time_slice(itime)%profiles_2d(1)%grid_type%name)) &
      WRITE(*,*) 'IDS Grid Type: ',IDS_EQ_IN%time_slice(itime)%profiles_2d(1)%grid_type%name
-
   !----  Pass Shot Information
   time_slice = IDS_EQ_IN%time(itime)
 
 
-  !----  Get Global quantities
-  curtor = IDS_EQ_IN%time_slice(itime)%global_quantities%ip ! Total Toroidal Current
-  !PRINT *,'======'
-  !PRINT *,curtor
+  !----  Get Toroidal Current
+  IF (ids_is_valid(IDS_EQ_IN%time_slice(itime)%global_quantities%ip)) THEN
+     curtor = IDS_EQ_IN%time_slice(itime)%global_quantities%ip ! Total Toroidal Current
+  ELSE
+     status_code = -1
+     ALLOCATE(CHARACTER(len=256) :: status_message)
+     status_message = 'Toroidal Current (IDS_EQ_IN%time_slice(itime)%global_quantities%ip) not present in Input IDS'
+     RETURN
+  END IF
+
+  !----  Get Toroidal Flux
+  IF (ids_is_valid(IDS_EQ_IN%time_slice(itime)%profiles_1d%phi)) THEN
+     npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%phi)
+     phiedge = IDS_EQ_IN%time_slice(itime)%profiles_1d%phi(npts_imas) ! Total Toroidal Current
+  ELSE
+     status_code = -1
+     ALLOCATE(CHARACTER(len=256) :: status_message)
+     status_message = 'Toroidal Flux (IDS_EQ_IN%time_slice(itime)%profiles_1d%phi) not present in Input IDS'
+     RETURN
+  END IF
 
   !----  Get 1D Profiles
-  !      Toroidal Flux
+  !      Note that IMAS stores everything on a grid which may
+  !      extend beyond s=[0,1]
+  IF (ids_is_valid(IDS_EQ_IN%time_slice(itime)%profiles_1d%rho_tor_norm)) THEN
+     npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%rho_tor_norm)
+     ALLOCATE(s_in(npts_imas), f_in(npts_imas), f2_in(npts_imas), f3_in(npts_imas))
+     s_in = IDS_EQ_IN%time_slice(itime)%profiles_1d%rho_tor_norm
+  ELSE
+     status_code = -1
+     ALLOCATE(CHARACTER(len=256) :: status_message)
+     status_message = 'Normalzied Toroidal Flux (IDS_EQ_IN%time_slice(itime)%profiles_1d%rho_tor_norm) not present in Input IDS'
+     RETURN
+  END IF
+  ! Pressure
+  IF (ids_is_valid(IDS_EQ_IN%time_slice(itime)%profiles_1d%pressure)) THEN
+     f_in = IDS_EQ_IN%time_slice(itime)%profiles_1d%pressure
+  ELSE
+     status_code = -1
+     ALLOCATE(CHARACTER(len=256) :: status_message)
+     status_message = 'Pressure (IDS_EQ_IN%time_slice(itime)%profiles_1d%pressure) not present in Input IDS'
+     RETURN
+  END IF
+  ! q
+  IF (ids_is_valid(IDS_EQ_IN%time_slice(itime)%profiles_1d%q)) THEN
+     f2_in = 1.0/IDS_EQ_IN%time_slice(itime)%profiles_1d%q
+  ELSE
+     status_code = -1
+     ALLOCATE(CHARACTER(len=256) :: status_message)
+     status_message = 'Safety Factor (IDS_EQ_IN%time_slice(itime)%profiles_1d%q) not present in Input IDS'
+     RETURN
+  END IF
+  ! J_tor
+  IF (ids_is_valid(IDS_EQ_IN%time_slice(itime)%profiles_1d%j_tor)) THEN
+     f3_in = IDS_EQ_IN%time_slice(itime)%profiles_1d%j_tor
+  ELSE
+     status_code = -1
+     ALLOCATE(CHARACTER(len=256) :: status_message)
+     status_message = 'Toroidal Current Density (IDS_EQ_IN%time_slice(itime)%profiles_1d%pressure) not present in Input IDS'
+     RETURN
+  END IF
+  ! Now Interpolate
   AI_AUX_S(:) = -1
   AM_AUX_S(:) = -1
   AC_AUX_S(:) = -1
-  npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%phi)
-  AM_AUX_S(1:npts_imas)  = IDS_EQ_IN%time_slice(itime)%profiles_1d%phi
-  AM_AUX_S(1:npts_imas)  = AM_AUX_S(1:npts_imas)-AM_AUX_S(1)
-  AM_AUX_S(1:npts_imas)  = AM_AUX_S(1:npts_imas)/AM_AUX_S(npts_imas)
-  PHIEDGE = IDS_EQ_IN%time_slice(itime)%profiles_1d%phi(npts_imas)
-  !PRINT *,'======'
-  !PRINT *,PHIEDGE
-  !     Pressure
-  npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%pressure)
-  AM_AUX_F(1:npts_imas)  = IDS_EQ_IN%time_slice(itime)%profiles_1d%pressure
+  DO u = 1, ndatafmax-1
+     s_temp = DBLE(u-1)/DBLE(ndatafmax-2)
+     AM_AUX_S(u) = s_temp
+     AI_AUX_S(u) = s_temp
+     AC_AUX_S(u) = s_temp
+     mn = MIN(MAX(COUNT(s_in<s_temp),1),npts_imas-1)
+     x  = (s_temp - s_in(mn))/(s_in(mn+1)-s_in(mn))
+     AM_AUX_F(u) = f_in(mn)*(1.0-x)+f_in(mn+1)*x
+     AI_AUX_F(u) = f2_in(mn)*(1.0-x)+f2_in(mn+1)*x
+     AC_AUX_F(u) = f3_in(mn)*(1.0-x)+f3_in(mn+1)*x
+  END DO
+  DEALLOCATE(s_in, f_in, f2_in, f3_in)
   PRES_SCALE = 1.0
+  NCURR = 1
   PMASS_TYPE = 'Akima_spline'
-  !PRINT *,'======'
-  !PRINT *,AM_AUX_F(1:npts_imas)
-  !     Rotational Transform
-  AI_AUX_S  = AM_AUX_S
-  npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%q)
-  AI_AUX_F(1:npts_imas)  = 1.0/IDS_EQ_IN%time_slice(itime)%profiles_1d%q
   PIOTA_TYPE = 'Akima_spline'
-  !PRINT *,'======'
-  !PRINT *,AI_AUX_F(1:npts_imas)
-  !     Current Density
-  AC_AUX_S  = AM_AUX_S
-  npts_imas = size(IDS_EQ_IN%time_slice(itime)%profiles_1d%j_parallel)
-  AC_AUX_F(1:npts_imas)  = IDS_EQ_IN%time_slice(itime)%profiles_1d%j_parallel
   PCURR_TYPE = 'Akima_spline_ip'
-  !PRINT *,'======'
-  !PRINT *,AC_AUX_F(1:npts_imas)
-  NCURR = 0
 
   !----  Get Magnetic Axis position
   RAXIS_CC = 0; RAXIS_CS = 0; ZAXIS_CC = 0; ZAXIS_CS = 0
@@ -349,10 +392,6 @@ SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
   ALLOCATE(R_BND(npts_imas), Z_BND(npts_imas), radius(npts_imas), theta(npts_imas))
   R_BND = IDS_EQ_IN%time_slice(itime)%boundary%outline%R
   Z_BND = IDS_EQ_IN%time_slice(itime)%boundary%outline%Z
-
-
-  
-  !theta = ATAN2(Z_BND-ZAXIS_CS(0),R_BND-RAXIS_CC(0))
   DO u = 1, npts_imas-2
      theta(u) = pi2*DBLE(u-1)/DBLE(npts_imas-2)
   END DO
