@@ -1117,6 +1117,17 @@
          WRITE(6,'(2X,A,E20.10)') 'PHI_END = 2*',1000*pi2/nfp
          WRITE(6,'(A)') '/'
       END IF
+      IF (ltxport_ae) THEN
+         WRITE(6,'(A)') '&AVAIL_ENERGY_OPTIONS'
+         WRITE(6,'(2X,A)') 'OMN = 3.0         ! Density Gradient Length Scale (-dlnn/dx)'
+         WRITE(6,'(2X,A)') 'OMT = 0.0         ! Temperature Gradient Length Scale (-dlnn/dx)'
+         WRITE(6,'(2X,A)') 'Z_MIN = 1.0D-4    ! Min. Norm. Energy'
+         WRITE(6,'(2X,A)') 'Z_MAX = 4.0D+1    ! Max. Norm. Energy'
+         WRITE(6,'(2X,A)') 'Z_RES = 10000     ! Integration Gridpoints'
+         WRITE(6,'(2X,A)') 'LAM_RES = 10000   ! Pitch Angle Gridpoints'
+         WRITE(6,'(2X,A)') 'DELTA_T = 1.0D-10 ! Padding for periodic boundary condition'
+         WRITE(6,'(A)') '/'
+      END IF
       CALL FLUSH(6)
 !-----------------------------------------------------------------------
 !     End Program
