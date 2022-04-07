@@ -158,7 +158,7 @@
 #######################################################################
 #            Available Energy Options
 #######################################################################
-  LAEOPT= F
+  LAEOPT= T
   AEOPT_DIR = $(AEOPT_PATH)
   AEOPT_INC = -I$(AEOPT_DIR) 
   LIB_AEOPT = libtrapAE.a
