@@ -429,6 +429,13 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   !---------------------------------------------------------------------
   USE ids_schemas
   USE vmec_input
+  USE vmec_params, ONLY: version_
+  USE git_verison
+  USE vmec_main, ONLY: ctor, wp
+  USE vmec_io, ONLY: betapol, betator, Aminor_p, b0, volume_p, &
+                     cross_area_p, surf_area_p, circum_p
+  USE vparams, ONLY: mu0
+  USE vmec_dim, ONLY: ns
 
   !---------------------------------------------------------------------
   !     INPUT/OUTPUT VARIABLES
@@ -444,7 +451,7 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   !---------------------------------------------------------------------
   !     SUBROUTINE VARIABLES
   !---------------------------------------------------------------------
-  INTEGER :: cocos_index, npts_imas, itime, u, mn
+  INTEGER :: itime, i
   REAL*8  :: B0, pi2, s_temp, x
   REAL*8, ALLOCATABLE, DIMENSION(:) :: R_BND, Z_BND, radius, theta, &
                                        s_in, f_in, f2_in, f3_in
@@ -462,13 +469,19 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
      ALLOCATE(IDS_EQ_OUT%ids_properties%creation_date(1))
   END IF
 
-  !---- Code information
-  IDS_EQ_OUT%ids_properties%provider='VMEC2000'
-  IDS_EQ_OUT%code%name='VMEC2000'
+  !---- IDS PROPERTIES
+  IDS_EQ_OUT%ids_properties%provider='USER'
   CALL DATE_AND_TIME(DATE=date,TIME=times)
   IDS_EQ_OUT%ids_properties%creation_date=date
   IF(IDS_EQ_OUT%ids_properties%homogeneous_time .lt. 0) &
      IDS_EQ_OUT%ids_properties%homogeneous_time=1
+
+
+  !---- CODE FIELDS
+  IDS_EQ_OUT%code%name='VMEC2000'
+  IDS_EQ_OUT%code%commit=git_hash
+  IDS_EQ_OUT%code%version=version_
+  IDS_EQ_OUT%code%repository='https://github.com/PrincetonUniversity/STELLOPT'
 
   !---- Vacuum Field Information
   !IDS_EQ_OUT%vacuum_toroidal_field%r0= Rvac
@@ -477,22 +490,24 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   !IDS_EQ_OUT%vacuum_toroidal_field%b0(itime)=Bvac*Bvac_sign
 
   !---- Global quantities
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%area          = area     * (eps*Rvac)**2
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%volume        = volume   * (eps*Rvac)**2 * Rvac
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_axis      = 0.d0
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_boundary  =2.0d0*pi* (eps*Rvac)**2 * Bvac / alfa
-!  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_boundary  = (eps*Rvac)**2 * Bvac / alfa
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_pol      = betapl
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%Ip            = current  * (eps*Rvac) * Bvac / mu_zero*xip_sign
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%li_3          = xli_3
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_tor      = beta
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%W_mhd         = 0.d0
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_normal   = 0.4*PI * beta / current
-
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%r      = Rvac*( 1.d0 + eps * xaxis)
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%z      = Rvac*         eps * yaxis + Zgeo
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%b_tor  = B_mag
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%b_field_tor = B_mag*Bvac_sign
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_pol      = betapol
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_tor      = betator
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_normal   = 100*betator*Aminor_p*b0/(ctor/mu0)
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%Ip            = ctor/mu0
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%volume        = volume_p
+  !IDS_EQ_OUT%time_slice(itime)%global_quantities%li_3          = xli_3
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%area          = cross_area_p
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%surface       = surf_area_p
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%length_pol    = circum_p
+  !IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_axis      = 0.d0
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_boundary  = phiedge
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%q_axis        = 1/iotaf(1)
+  i = FLOOR(0.9025*ns)
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%q_95          = 1/iotaf(i)
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%energy_mhd    = wp
+  !IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_external_average    = ??
+  !IDS_EQ_OUT%time_slice(itime)%global_quantities%plasma_inductance    = ??
+  !IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%r = 
 
   RETURN
 END SUBROUTINE VMEC_EQOUT_IMAS
