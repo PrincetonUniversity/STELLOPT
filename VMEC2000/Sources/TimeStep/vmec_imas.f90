@@ -246,8 +246,8 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
 END SUBROUTINE VMEC_INDATA_IMAS
 
 !-----------------------------------------------------------------------
-!     SUBROUTINE:        VMEC_INDATA_IMAS
-!     PURPOSE:           Handles setting up the indata variables
+!     SUBROUTINE:        VMEC_EQIN_IMAS
+!     PURPOSE:           Handles the equilibrium IDS.
 !-----------------------------------------------------------------------
 SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
   !---------------------------------------------------------------------
@@ -417,9 +417,85 @@ SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
   DEALLOCATE(R_BND, Z_BND, radius, theta)
 
   RETURN
-  
-
 END SUBROUTINE VMEC_EQIN_IMAS
+
+!-----------------------------------------------------------------------
+!     SUBROUTINE:        VMEC_EQOUT_IMAS
+!     PURPOSE:           Handles setting up the indata variables
+!-----------------------------------------------------------------------
+SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
+  !---------------------------------------------------------------------
+  !     Libraries
+  !---------------------------------------------------------------------
+  USE ids_schemas
+  USE vmec_input
+
+  !---------------------------------------------------------------------
+  !     INPUT/OUTPUT VARIABLES
+  !        INDATA_XML : VMEC INDATA namelist AS XML
+  !        STATUS_CODE : STATUS Flag
+  !        STATUS_MESSAGE : Text Message
+  !---------------------------------------------------------------------
+  IMPLICIT NONE
+  TYPE(ids_equilibrium), INTENT(IN) :: IDS_EQ_OUT
+  INTEGER, INTENT(OUT) :: status_code
+  CHARACTER(LEN=:), POINTER, INTENT(OUT) :: status_message
+
+  !---------------------------------------------------------------------
+  !     SUBROUTINE VARIABLES
+  !---------------------------------------------------------------------
+  INTEGER :: cocos_index, npts_imas, itime, u, mn
+  REAL*8  :: B0, pi2, s_temp, x
+  REAL*8, ALLOCATABLE, DIMENSION(:) :: R_BND, Z_BND, radius, theta, &
+                                       s_in, f_in, f2_in, f3_in
+  CHARACTER(8) ::date
+  CHARACTER(10) ::times
+
+  !---- Defaults
+  itime = 1
+
+  !---- Check Validity
+  IF (.NOT. ASSOCIATED(IDS_EQ_OUT%time_slice)) THEN
+     ALLOCATE(IDS_EQ_OUT%time_slice(itime))
+  END IF
+  IF (.NOT. ASSOCIATED(IDS_EQ_OUT%ids_properties%creation_date)) THEN
+     ALLOCATE(IDS_EQ_OUT%ids_properties%creation_date(1))
+  END IF
+
+  !---- Code information
+  IDS_EQ_OUT%ids_properties%provider='VMEC2000'
+  IDS_EQ_OUT%code%name='VMEC2000'
+  CALL DATE_AND_TIME(DATE=date,TIME=times)
+  IDS_EQ_OUT%ids_properties%creation_date=date
+  IF(IDS_EQ_OUT%ids_properties%homogeneous_time .lt. 0) &
+     IDS_EQ_OUT%ids_properties%homogeneous_time=1
+
+  !---- Vacuum Field Information
+  !IDS_EQ_OUT%vacuum_toroidal_field%r0= Rvac
+  IF (.NOT. ASSOCIATED(IDS_EQ_OUT%vacuum_toroidal_field%b0) ) &
+     ALLOCATE(IDS_EQ_OUT%vacuum_toroidal_field%b0(size(IDS_EQ_OUT%time)))
+  !IDS_EQ_OUT%vacuum_toroidal_field%b0(itime)=Bvac*Bvac_sign
+
+  !---- Global quantities
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%area          = area     * (eps*Rvac)**2
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%volume        = volume   * (eps*Rvac)**2 * Rvac
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_axis      = 0.d0
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_boundary  =2.0d0*pi* (eps*Rvac)**2 * Bvac / alfa
+!  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_boundary  = (eps*Rvac)**2 * Bvac / alfa
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_pol      = betapl
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%Ip            = current  * (eps*Rvac) * Bvac / mu_zero*xip_sign
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%li_3          = xli_3
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_tor      = beta
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%W_mhd         = 0.d0
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_normal   = 0.4*PI * beta / current
+
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%r      = Rvac*( 1.d0 + eps * xaxis)
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%z      = Rvac*         eps * yaxis + Zgeo
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%b_tor  = B_mag
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%b_field_tor = B_mag*Bvac_sign
+
+  RETURN
+END SUBROUTINE VMEC_EQOUT_IMAS
 
 #endif
 END MODULE VMEC_IMAS_MODULE
