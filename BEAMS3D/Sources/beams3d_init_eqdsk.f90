@@ -72,8 +72,8 @@
          s = 0
          DO i = 0, 359, 1
             INNERLOOP: DO j = 1, k
-               brtemp = raxis_eqdsk + 0.001*j*COSD(REAL(i))
-               bztemp = zaxis_eqdsk + 0.001*j*SIND(REAL(i))
+               brtemp = raxis_eqdsk + 0.001*j*COS(i*pi2/360.0)
+               bztemp = zaxis_eqdsk + 0.001*j*SIN(i*pi2/360.0)
                CALL get_eqdsk_fluxspl(brtemp,bztemp,rhoflx,uflx)
                IF (rhoflx .ge. 1) THEN
                   reff_eq = reff_eq + 0.001*(j-0.5) ! halfway between last gridpoint and here.
