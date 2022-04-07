@@ -14,14 +14,29 @@ VPATH = $(SPATH):$(SPATH)/Coils:$(SPATH)/Ezcdf:$(SPATH)/FFTpack:$(SPATH)/GMRes:$
 include $(DEPLIST)
 include $(OBJLIST)
 
+# FOR GIT
+GIT_VERSION = $(shell git describe --abbrev=4 --always --tags)
+GIT_HASH    = $(shell git show -s --format=%H)
+TIME        = $(shell date +"%d.%m.%Y %H:%M:%S")
+
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
+.PHONY : git_version
 
-libstell.a : $(ObjectFiles) 
+git_version :
+	@echo "MODULE GIT_VERSION_MOD" > $(SPATH)/Modules/git_version.f90
+	@echo "   IMPLICIT NONE" >> $(SPATH)/Modules/git_version.f90
+	@echo "   ! Compiled at $(TIME)" >> $(SPATH)/Modules/git_version.f90
+	@echo "   CHARACTER(15), PARAMETER :: git_version = '$(GIT_VERSION)'" >> $(SPATH)/Modules/git_version.f90
+	@echo "   CHARACTER(40), PARAMETER :: git_hash = '$(GIT_HASH)'" >> $(SPATH)/Modules/git_version.f90
+	@echo "END MODULE GIT_VERSION_MOD" >> $(SPATH)/Modules/git_version.f90
+
+
+libstell.a : $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles)
 	$(CLEAN_ARCH)
 	
-libstell.so : $(ObjectFiles) 
+libstell.so : $(ObjectFiles)
 	$(LINK_C) -o $@ $(ObjectFiles) $(LIB_LINK)
 	$(CLEAN_ARCH)
 
@@ -62,4 +77,4 @@ libstell.so : $(ObjectFiles)
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $< ; \
       fi
 clean:
-	- rm -f *.o *.mod *.a *.so
+	- rm -f *.o *.mod *.a *.so $(SPATH)/Modules/git_version.f90
