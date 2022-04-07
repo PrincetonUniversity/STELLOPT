@@ -1405,6 +1405,32 @@
          END IF
       END IF
 !DEC$ ENDIF
+!DEC$ IF DEFINED (LAEOPT)
+      CALL tolower(txport_proxy)
+      IF (myid == master .and. ANY(sigma_txport < bigno) .and. (TRIM(txport_proxy(1:11)) == 'availenergy') ) THEN
+         WRITE(6,*)        " Turbulent Transport calculation provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========            Trapped Particle Available Energy Code             ========="
+         WRITE(6,"(2X,A)") "=========            (R. Mackenbach, S. Lazerson, J. Proll)             ========="
+         WRITE(6,"(2X,A)") "=========         https://github.com/RalfMackenbach/STELLOPT_AE         ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
+!DEC$ ELSE
+      CALL tolower(txport_proxy)
+      IF (ANY(sigma_txport < bigno) .and. (TRIM(txport_proxy(1:11)) == 'availenergy')) THEN
+         txport_proxy = 'prox1d'
+         IF (myid == master) THEN
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+            WRITE(6,*) '  STELLOPT has not been linked to the Available Energy code.      '
+            WRITE(6,*) '  Optimization with Available Energy for turblent'
+            WRITE(6,*) '  transport not possible.  Defaulting to proxy function'
+            WRITE(6,*) '        txport_proxy = prox1d'
+            WRITE(6,*) '  Code Available at:'
+            WRITE(6,*) '        https://github.com/RalfMackenbach/STELLOPT_AE'
+         END IF
+      END IF
+!DEC$ ENDIF
 !DEC$ IF DEFINED (GENE)
       CALL tolower(txport_proxy)
       IF (myid == master .and. ANY(sigma_txport < bigno) .and. (TRIM(txport_proxy(1:4)) == 'gene') ) THEN
