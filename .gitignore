@@ -18,7 +18,6 @@ CMakeLists.txt
 */Debug/*.f
 BENCHMARKS/STELLOPT_TEST/*/*
 BENCHMARKS/BEAMS3D_TEST/*
-LIBSTELL/Sources/Modules/git_version.f90
 core*
 update*
 COILGEOM
