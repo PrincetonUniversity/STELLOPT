@@ -36,13 +36,11 @@ debug:
 clean_release: 
 	@echo "CLEAN REMAKE IN PROGRESS"
 	@cd $(REL); make -f $(MAKE) clean
-	@cd $(REL); make -f $(MAKE) git_version
 	@make release
 
 clean_debug: 
 	@echo "CLEAN REMAKE IN PROGRESS"
 	@cd $(DBG); make -f $(MAKE) clean
-	@cd $(DBG); make -f $(MAKE) git_version
 	@make debug
 
 static_release:      
