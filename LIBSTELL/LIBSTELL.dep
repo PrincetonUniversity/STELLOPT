@@ -23,7 +23,7 @@ adas_mod_parallel.o :  \
       
 mpi_sharmem.o :  
       
-git_version.o :  
+git_version_mod.o :  
       
 common_factor.o :  
 

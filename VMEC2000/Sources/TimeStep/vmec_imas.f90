@@ -430,7 +430,7 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   USE ids_schemas
   USE vmec_input
   USE vmec_params, ONLY: version_
-  USE git_verison
+  USE git_verison_mod
   USE vmec_main, ONLY: ctor, wp, r00, z00, phi, chi, presf, jcurv, &
                        iotaf, jdotb, chipf
   USE vmec_io, ONLY: betapol, betator, Aminor_p, b0, volume_p, &
