@@ -107,8 +107,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
 
   !---- Setup VMEC Run
   myseq=0
-  ictrl(1) = restart_flag + imasrun_flag + timestep_flag +  &
-                          + cleanup_flag + output_flag
+  ictrl(1) = restart_flag + imasrun_flag + timestep_flag
   ictrl(2) = 0 ! ier_flag
   ictrl(3) = -1 ! numsteps
   ictrl(4) = -1 ! ns_index
@@ -125,6 +124,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
   status_code = ictrl(2)
 
   !----  Write out EQUILIBRIUM
+  CALL VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
 
 
   !----  No need to call finalize
@@ -430,9 +430,9 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   USE ids_schemas
   USE vmec_input
   USE vmec_params, ONLY: version_
-  USE git_verison_mod
+  USE git_version_mod
   USE vmec_main, ONLY: ctor, wp, r00, z00, phi, chi, presf, jcurv, &
-                       iotaf, jdotb, chipf
+                       iotaf, jdotb, chipf, vp
   USE vmec_io, ONLY: betapol, betator, Aminor_p, b0, volume_p, &
                      cross_area_p, surf_area_p, circum_p
   USE vparams, ONLY: mu0
@@ -445,7 +445,7 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   !        STATUS_MESSAGE : Text Message
   !---------------------------------------------------------------------
   IMPLICIT NONE
-  TYPE(ids_equilibrium), INTENT(IN) :: IDS_EQ_OUT
+  TYPE(ids_equilibrium), INTENT(OUT) :: IDS_EQ_OUT
   INTEGER, INTENT(OUT) :: status_code
   CHARACTER(LEN=:), POINTER, INTENT(OUT) :: status_message
 
@@ -453,13 +453,11 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   !     SUBROUTINE VARIABLES
   !---------------------------------------------------------------------
   INTEGER :: itime, i
-  REAL*8  :: B0, pi2, s_temp, x
-  REAL*8, ALLOCATABLE, DIMENSION(:) :: R_BND, Z_BND, radius, theta, &
-                                       s_in, f_in, f2_in, f3_in
   CHARACTER(8) ::date
   CHARACTER(10) ::times
 
   !---- Defaults
+  status_code = 0
   itime = 1
 
   !---- Check Validity
@@ -522,8 +520,8 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   IDS_EQ_OUT%time_slice(itime)%profiles_1d%phi      = phi
   ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%pressure(ns))
   IDS_EQ_OUT%time_slice(itime)%profiles_1d%pressure = presf
-  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%jtor(ns))
-  IDS_EQ_OUT%time_slice(itime)%profiles_1d%jtor = jcurv
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%j_tor(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%j_tor = jcurv
   ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%j_parallel(ns))
   IDS_EQ_OUT%time_slice(itime)%profiles_1d%j_parallel = jdotb
   ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%q(ns))
