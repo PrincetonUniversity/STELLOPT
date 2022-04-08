@@ -73,7 +73,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
   !---------------------------------------------------------------------
   LOGICAL :: lmpi_flag, lscreen
   INTEGER :: impi_flag, ivmec_flag, RVC_COMM
-  INTEGER :: ictrl(5), myseq
+  INTEGER :: ictrl(5), myseq, npts_imas
   CHARACTER(len = 128)    :: reset_string, filename
 
   !---------------------------------------------------------------------
@@ -125,6 +125,11 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
 
   !----  Write out EQUILIBRIUM
   CALL VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
+
+  !----  Copy stuff from the input to the output
+  npts_imas = SIZE(IDS_EQ_IN%time)
+  ALlOCATE(IDS_EQ_OUT%time(npts_imas))
+  IDS_EQ_OUT%time = IDS_EQ_IN%time
 
 
   !----  No need to call finalize

@@ -53,11 +53,12 @@ class ExampleWorkflowManager:
         # EXECUTE PHYSICS CODE
         print('=> Execute physics code')
         output_equilibrium = self.vmec(input_equilibrium)
-        breakpoint()
+        #breakpoint()
+        #output_equilibrium.time=input_equilibrium.time
 
         # SAVE IDSS INTO OUTPUT FILE
         print('=> Export output IDSs to local database')
-        #self.output_entry.put(output_equilibrium)
+        self.output_entry.put(output_equilibrium)
         print('Done exporting.')
 
     def end_workflow(self):
