@@ -431,7 +431,7 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   USE vmec_input
   USE vmec_params, ONLY: version_
   USE git_verison
-  USE vmec_main, ONLY: ctor, wp
+  USE vmec_main, ONLY: ctor, wp, r00, z00
   USE vmec_io, ONLY: betapol, betator, Aminor_p, b0, volume_p, &
                      cross_area_p, surf_area_p, circum_p
   USE vparams, ONLY: mu0
@@ -507,7 +507,17 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   IDS_EQ_OUT%time_slice(itime)%global_quantities%energy_mhd    = wp
   !IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_external_average    = ??
   !IDS_EQ_OUT%time_slice(itime)%global_quantities%plasma_inductance    = ??
-  !IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%r = 
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%r = r00
+  IF (lasym) THEN
+     IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%z = z00
+  ELSE
+     IDS_EQ_OUT%time_slice(itime)%global_quantities%magnetic_axis%z = 0.0
+  END IF
+
+  !---- PROFILES 1D
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%psi      = chipf
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%phi      = phipf
+
 
   RETURN
 END SUBROUTINE VMEC_EQOUT_IMAS
