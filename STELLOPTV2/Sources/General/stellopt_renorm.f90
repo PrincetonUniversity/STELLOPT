@@ -72,6 +72,8 @@
                sigma_aspect = sigma_aspect/temp
             CASE(jtarget_beta)
                sigma_beta = sigma_beta/temp
+            CASE(jtarget_balloon)
+               sigma_balloon = sigma_balloon/temp
             CASE(jtarget_betapol)
                sigma_betapol = sigma_betapol/temp
             CASE(jtarget_betator)
@@ -100,6 +102,8 @@
                WHERE(sigma_pressprime<bigno) sigma_pressprime = sigma_pressprime/temp
             CASE(jtarget_ne)
                WHERE(sigma_ne<bigno_ne) sigma_ne = sigma_ne/temp
+            CASE(jtarget_neo)
+               WHERE(sigma_neo<bigno) sigma_neo = sigma_neo/temp
             CASE(jtarget_te)
                WHERE(sigma_te<bigno) sigma_te = sigma_te/temp
             CASE(jtarget_ti)
