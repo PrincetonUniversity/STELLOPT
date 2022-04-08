@@ -23,6 +23,9 @@
       USE par_other, ONLY: print_ini_msg
 !      USE check_parameters, ONLY: check_for_diagdir ! causes crash
 !DEC$ ENDIF
+!DEC$ IF DEFINED (AEOPT)
+      USE trapped_avail_energy_mod, ONLY: read_avail_energy_nml
+!DEC$ ENDIF
       
       
 !-----------------------------------------------------------------------
@@ -94,12 +97,14 @@
                IF (niter == -2) target_dex(mtargets)=jtarget_txport
             END DO
          END DO
-         !iunit=12
-         !CALL safe_open(iunit,iflag,'input.'//TRIM(id_string),'old','formatted')
-         !IF (iflag < 0) RETURN
-         !CALL read_gist_namelist (iunit, iflag)
-         !IF (iflag < 0) RETURN
-         !CLOSE(iunit)
+!DEC$ IF DEFINED (AEOPT)
+         iunit=12
+         CALL safe_open(iunit,iflag,'input.'//TRIM(id_string),'old','formatted')
+         IF (iflag < 0) RETURN
+         CALL read_avail_energy_nml(iunit, iflag)
+         iflag = 0 ! Do this so because defaults set.
+         CLOSE(iunit)
+!DEC$ ENDIF
 !DEC$ IF DEFINED (GENE)
          IF (TRIM(txport_proxy(1:4)) == 'gene')  THEN
             ! We do this so parameters sets our defaults
