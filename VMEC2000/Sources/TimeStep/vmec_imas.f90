@@ -431,7 +431,8 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   USE vmec_input
   USE vmec_params, ONLY: version_
   USE git_verison
-  USE vmec_main, ONLY: ctor, wp, r00, z00
+  USE vmec_main, ONLY: ctor, wp, r00, z00, phi, chi, presf, jcurv, &
+                       iotaf, jdotb, chipf
   USE vmec_io, ONLY: betapol, betator, Aminor_p, b0, volume_p, &
                      cross_area_p, surf_area_p, circum_p
   USE vparams, ONLY: mu0
@@ -515,8 +516,96 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   END IF
 
   !---- PROFILES 1D
-  IDS_EQ_OUT%time_slice(itime)%profiles_1d%psi      = chipf
-  IDS_EQ_OUT%time_slice(itime)%profiles_1d%phi      = phipf
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%psi(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%psi      = chi
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%phi(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%phi      = phi
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%pressure(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%pressure = presf
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%jtor(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%jtor = jcurv
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%j_parallel(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%j_parallel = jdotb
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%q(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%q = 1.0/iotaf
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%rho_tor(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%rho_tor = Aminor_p*(phi-phi(1))/(phi(ns)-phi(1))
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%rho_tor_norm(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%rho_tor_norm = (phi-phi(1))/(phi(ns)-phi(1))
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%dpsi_drho_tor(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%dpsi_drho_tor = chipf
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%volume(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%volume(1) = 0
+  DO i = 2, ns
+     IDS_EQ_OUT%time_slice(itime)%profiles_1d%volume(i) = &
+        IDS_EQ_OUT%time_slice(itime)%profiles_1d%volume(i-1)+vp(i)
+  END DO
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%rho_volume_norm(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%rho_volume_norm = &
+     SQRT(IDS_EQ_OUT%time_slice(itime)%profiles_1d%volume/volume_p)
+  ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%dvolume_drho_tor(ns))
+  IDS_EQ_OUT%time_slice(itime)%profiles_1d%dvolume_drho_tor = vp/Aminor_p
+  
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%f(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%f = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%dpressure_dpsi(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%dpressure_dpsi = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%f_df_dpsi(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%f_df_dpsi = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%magnetic_shear(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%magnetic_shear = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%r_inboard(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%r_inboard = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%r_outboard(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%r_outboard = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%geometric_axis%r(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%geometric_axis%r = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%geometric_axis%z(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%geometric_axis%z = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%elongation(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%elongation = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%triangularity_upper(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%triangularity_upper = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%triangularity_lower(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%triangularity_lower = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%squareness_upper_inner(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%squareness_upper_inner = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%squareness_upper_outer(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%squareness_upper_outer = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%squareness_lower_inner(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%squareness_lower_inner = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%squareness_lower_outer(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%squareness_lower_outer = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%dvolume_dpsi(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%dvolume_dpsi = vp/chip
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%area(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%area = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%darea_dpsi(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%darea_dpsi = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%darea_drho_tor(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%darea_drho_tor = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%surface(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%surface = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%trapped_fraction(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%trapped_fraction = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm1(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm1 = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm2(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm2 = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm3(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm3 = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm4(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm4 = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm5(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm5 = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm6(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm6 = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm7(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm7 = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm8(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm8 = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm9(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm9 = ?
 
 
   RETURN
