@@ -606,6 +606,24 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   !IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm8 = ?
   !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm9(ns))
   !IDS_EQ_OUT%time_slice(itime)%profiles_1d%gm9 = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%b_field_average(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%b_field_average = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%b_field_min(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%b_field_min = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%b_field_max(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%b_field_max = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%beta_pol(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%beta_pol = ?
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%mass_density(ns))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_1d%mass_density = ?
+
+  !---- PROFILES 2D (1: R/Z, 2: Inverse)
+  !allocate(IDS_EQ_OUT%time_slice(itime)%profiles_2d(2))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%index=1 ! rectangular
+  !IDS_EQ_OUT%time_slice(itime)%profiles_2d(2)%grid_type%index=56 ! inverse_rhotor_polar_fourier
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_2d(2)%grid%dim1(ns))
+  !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_2d(2)%grid%dim2(mpol+1))
+  !IDS_EQ_OUT%time_slice(itime)%profiles_2d(2)%grid%dim1 ! inverse_rhotor_polar_fourier
 
 
   RETURN
