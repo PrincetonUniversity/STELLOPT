@@ -4,15 +4,17 @@ MODULE windingsurface
   USE stel_kinds, ONLY : rprec
   IMPLICIT NONE
 
+  INTEGER, PARAMETER :: maxwindsurf=32
+
   TYPE vsurf
      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: rctab, zstab
      INTEGER                                  :: mmax, nmax, nfp
   END TYPE vsurf
 
-  TYPE(vsurf)                                 :: windsurf
+  TYPE(vsurf), DIMENSION(maxwindsurf)         :: windsurf
 
 CONTAINS
-  SUBROUTINE read_winding_surface(filename, ierr)
+  SUBROUTINE read_winding_surface(filename, isurf, ierr)
     !USE stellopt_vars
     USE mpi_params
     USE mpi_inc
@@ -21,6 +23,7 @@ CONTAINS
 
     ! Arguments
     CHARACTER(256), INTENT(IN) :: filename
+    INTEGER, INTENT(IN)        :: isurf
     INTEGER, INTENT(OUT)       :: ierr
 
     ! Local variables
@@ -29,10 +32,15 @@ CONTAINS
     INTEGER  :: iunit, istat, count, mode
     LOGICAL  :: lexist
 
+    IF ((isurf.LT.1).OR.(isurf.GT.maxwindsurf)) THEN
+       ierr = 2
+       RETURN
+    ENDIF
+
     ! Reset winding surface
-    IF (ALLOCATED(windsurf%rctab)) DEALLOCATE(windsurf%rctab)
-    IF (ALLOCATED(windsurf%zstab)) DEALLOCATE(windsurf%zstab)
-    windsurf%mmax = -1;  windsurf%nmax = -1
+    IF (ALLOCATED(windsurf(isurf)%rctab)) DEALLOCATE(windsurf(isurf)%rctab)
+    IF (ALLOCATED(windsurf(isurf)%zstab)) DEALLOCATE(windsurf(isurf)%zstab)
+    windsurf(isurf)%mmax = -1;  windsurf(isurf)%nmax = -1
 
     IF (myid.eq.master) THEN   ! Master process does I/O
        ! Open coil winding surface file
@@ -65,21 +73,21 @@ CONTAINS
                 IF (ALL(mnum.ge.0)) THEN  ! Avoid error condition
 
                    ! Find max poloidal & toroidal mode numbers
-                   windsurf%mmax = MAXVAL(mnum)
-                   windsurf%nmax = MAXVAL(ABS(nnum))
+                   windsurf(isurf)%mmax = MAXVAL(mnum)
+                   windsurf(isurf)%nmax = MAXVAL(ABS(nnum))
 110                FORMAT(I6,A,I5)
-                   WRITE(6,110) -windsurf%nmax,' <= n <=',windsurf%nmax
-                   WRITE(6,110) 0,' <= m <=',windsurf%mmax
+                   WRITE(6,110) -windsurf(isurf)%nmax,' <= n <=',windsurf(isurf)%nmax
+                   WRITE(6,110) 0,' <= m <=',windsurf(isurf)%mmax
 
                    ! Initialize the (dense) data structure
-                   ALLOCATE(windsurf%rctab(-windsurf%nmax:windsurf%nmax, 0:windsurf%mmax))
-                   ALLOCATE(windsurf%zstab(-windsurf%nmax:windsurf%nmax, 0:windsurf%mmax))
-                   windsurf%rctab = 0d0;  windsurf%zstab = 0d0
+                   ALLOCATE(windsurf(isurf)%rctab(-windsurf(isurf)%nmax:windsurf(isurf)%nmax, 0:windsurf(isurf)%mmax))
+                   ALLOCATE(windsurf(isurf)%zstab(-windsurf(isurf)%nmax:windsurf(isurf)%nmax, 0:windsurf(isurf)%mmax))
+                   windsurf(isurf)%rctab = 0d0;  windsurf(isurf)%zstab = 0d0
 
                    !Load temporary data into permanent structure
                    DO mode=1,count
-                      windsurf%rctab(nnum(mode),mnum(mode)) = rmnc(mode)
-                      windsurf%zstab(nnum(mode),mnum(mode)) = zmns(mode)
+                      windsurf(isurf)%rctab(nnum(mode),mnum(mode)) = rmnc(mode)
+                      windsurf(isurf)%zstab(nnum(mode),mnum(mode)) = zmns(mode)
                    ENDDO !mode
                 ENDIF ! No negative m values
 
@@ -94,27 +102,27 @@ CONTAINS
 
 !DEC$ IF DEFINED (MPI_OPT)
     ! Broadcast mode counts to all processors
-    CALL MPI_BCAST(windsurf%nmax, 1, MPI_INTEGER, master, MPI_COMM_STEL, ierr)
+    CALL MPI_BCAST(windsurf(isurf)%nmax, 1, MPI_INTEGER, master, MPI_COMM_STEL, ierr)
     IF (ierr /= MPI_SUCCESS) RETURN
 !DEC$ ELSE
     ierr = 0
 !DEC$ ENDIF
-    IF (windsurf%nmax.lt.0) THEN
+    IF (windsurf(isurf)%nmax.lt.0) THEN
        ierr = 1;  RETURN
     ENDIF
 !DEC$ IF DEFINED (MPI_OPT)
-    CALL MPI_BCAST(windsurf%mmax, 1, MPI_INTEGER, master, MPI_COMM_STEL, ierr)
+    CALL MPI_BCAST(windsurf(isurf)%mmax, 1, MPI_INTEGER, master, MPI_COMM_STEL, ierr)
     IF (ierr /= MPI_SUCCESS) RETURN
 
     ! Broadcast data to all processors
     IF (myid.ne.master) THEN
-       ALLOCATE(windsurf%rctab(-windsurf%nmax:windsurf%nmax, 0:windsurf%mmax))
-       ALLOCATE(windsurf%zstab(-windsurf%nmax:windsurf%nmax, 0:windsurf%mmax))
+       ALLOCATE(windsurf(isurf)%rctab(-windsurf(isurf)%nmax:windsurf(isurf)%nmax, 0:windsurf(isurf)%mmax))
+       ALLOCATE(windsurf(isurf)%zstab(-windsurf(isurf)%nmax:windsurf(isurf)%nmax, 0:windsurf(isurf)%mmax))
     ENDIF
-    count = (2*windsurf%nmax + 1)*(windsurf%mmax + 1)
-    CALL MPI_BCAST(windsurf%rctab, count, MPI_REAL8, master, MPI_COMM_STEL, ierr)
+    count = (2*windsurf(isurf)%nmax + 1)*(windsurf(isurf)%mmax + 1)
+    CALL MPI_BCAST(windsurf(isurf)%rctab, count, MPI_REAL8, master, MPI_COMM_STEL, ierr)
     IF (ierr /= MPI_SUCCESS) RETURN
-    CALL MPI_BCAST(windsurf%zstab, count, MPI_REAL8, master, MPI_COMM_STEL, ierr)
+    CALL MPI_BCAST(windsurf(isurf)%zstab, count, MPI_REAL8, master, MPI_COMM_STEL, ierr)
     IF (ierr == MPI_SUCCESS) ierr = 0
 !DEC$ ENDIF
   END SUBROUTINE read_winding_surface
@@ -128,16 +136,18 @@ CONTAINS
 !     Inputs:
 !                    Poloidal coordinate 0 < u < 1.
 !                    Toroidal coordinate 0 < v < nfp.
+!                    Winding surface index 0 < js <= maxwindsurf
 !     Outputs:
 !                    Cartesian values (x, y, z).
 !-----------------------------------------------------------------------
-  SUBROUTINE stellopt_uv_to_xyz(u, v, x, y, z)
+  SUBROUTINE stellopt_uv_to_xyz(u, v, x, y, z, js)
     IMPLICIT NONE
     INTRINSIC COS, SIN
 
     ! Arguments
     REAL(rprec), INTENT(IN)  :: u, v
     REAL(rprec), INTENT(OUT) :: x, y, z
+    INTEGER, INTENT(IN)      :: js  ! Surface index
 
     ! Constants
     REAL(rprec), PARAMETER :: twopi = 6.283185307179586476925286766559D0
@@ -161,23 +171,23 @@ CONTAINS
 
     ! Outer loop over poloidal mode numbers
     R = 0.0;  z = 0.0
-    DO m=0,windsurf%mmax
+    DO m=0,windsurf(js)%mmax
        ! Initialize +/- N phi recurrence relations
        cam = cmt;  cap = cmt;  sam = smt;  sap = smt
 
        ! n=0 mode contributions
-       R = R + windsurf%rctab(0,m)*cap
-       z = z + windsurf%zstab(0,m)*sap
+       R = R + windsurf(js)%rctab(0,m)*cap
+       z = z + windsurf(js)%zstab(0,m)*sap
 
        ! Inner loop over nonzero toroidal mode numbers
-       DO n=1,windsurf%nmax
+       DO n=1,windsurf(js)%nmax
           ! Increment/decrement sin(arg), cos(arg)
           tmp = cap*Cv - sap*Sv;  sap = sap*Cv + cap*Sv;  cap = tmp
           tmp = cam*Cv + sam*Sv;  sam = sam*Cv - cam*Sv;  cam = tmp
 
           ! Add terms to series
-          R = R + windsurf%rctab(n,m)*cap + windsurf%rctab(-n,m)*cam
-          z = z + windsurf%zstab(n,m)*sap + windsurf%zstab(-n,m)*sam
+          R = R + windsurf(js)%rctab(n,m)*cap + windsurf(js)%rctab(-n,m)*cam
+          z = z + windsurf(js)%zstab(n,m)*sap + windsurf(js)%zstab(-n,m)*sam
        END DO !n
 
        ! Increment sin(m theta), cos(m theta)
@@ -185,7 +195,7 @@ CONTAINS
     END DO !m
 
     ! Convert from cylindrical to Cartesian coordinates
-    x = R*COS(Nphi/windsurf%nfp);  y = R*SIN(Nphi/windsurf%nfp)
+    x = R*COS(Nphi/windsurf(js)%nfp);  y = R*SIN(Nphi/windsurf(js)%nfp)
   END SUBROUTINE stellopt_uv_to_xyz
 
 !-------------------------------------------------------------------------------
@@ -199,6 +209,7 @@ CONTAINS
 !     Inputs:
 !                    Poloidal coordinate 0 < u < 1.
 !                    Toroidal coordinate 0 < v < nfp.
+!                    Winding surface index 0 < js <= maxwindsurf
 !
 !     Output:        xyzprime(3,5), where
 !                      xyzprime(:,1) = d(xyz)/du
@@ -207,13 +218,14 @@ CONTAINS
 !                      xyzprime(:,4) = d2(xyz)/dudv
 !                      xyzprime(:,5) = d2(xyz)/dv2
 !-------------------------------------------------------------------------------
-  SUBROUTINE stellopt_uv_to_xyz_prime(u, v, xyzprime)
+  SUBROUTINE stellopt_uv_to_xyz_prime(u, v, xyzprime, js)
     IMPLICIT NONE
     INTRINSIC COS, SIN
 
     ! Arguments
     REAL(rprec),                 INTENT(IN)  :: u, v
     REAL(rprec), DIMENSION(3,5), INTENT(OUT) :: xyzprime
+    INTEGER, INTENT(IN)                      :: js  !Surface index
 
     ! Constants
     REAL(rprec), PARAMETER :: twopi = 6.283185307179586476925286766559D0
@@ -239,36 +251,36 @@ CONTAINS
 
     ! Outer loop over poloidal mode numbers
     R = 0.0;  Rprime = 0.0;  xyzprime(3,:) = 0.0
-    DO m=0,windsurf%mmax
+    DO m=0,windsurf(js)%mmax
        ! Initialize +/- N phi recurrence relations
        cam = cmt;  cap = cmt;  sam = smt;  sap = smt
 
        ! n=0 mode contributions
-       R         = R         +     windsurf%rctab(0,m)*cap         ! R
-       Rprime(1) = Rprime(1) +   m*windsurf%rctab(0,m)*sap         ! dR/du
-       Rprime(3) = Rprime(3) + m*m*windsurf%rctab(0,m)*cap         ! d2R/du^2
-       xyzprime(3,1) = xyzprime(3,1) +   m*windsurf%zstab(0,m)*cap ! dz/du
-       xyzprime(3,3) = xyzprime(3,3) + m*m*windsurf%zstab(0,m)*sap ! d2z/du2
+       R         = R         +     windsurf(js)%rctab(0,m)*cap         ! R
+       Rprime(1) = Rprime(1) +   m*windsurf(js)%rctab(0,m)*sap         ! dR/du
+       Rprime(3) = Rprime(3) + m*m*windsurf(js)%rctab(0,m)*cap         ! d2R/du^2
+       xyzprime(3,1) = xyzprime(3,1) +   m*windsurf(js)%zstab(0,m)*cap ! dz/du
+       xyzprime(3,3) = xyzprime(3,3) + m*m*windsurf(js)%zstab(0,m)*sap ! d2z/du2
 
        ! Inner loop over nonzero toroidal mode numbers
-       DO n=1,windsurf%nmax
+       DO n=1,windsurf(js)%nmax
           ! Increment/decrement sin(arg), cos(arg)
           tmp = cap*Cv - sap*Sv;  sap = sap*Cv + cap*Sv;  cap = tmp
           tmp = cam*Cv + sam*Sv;  sam = sam*Cv - cam*Sv;  cam = tmp
 
           ! Add terms to series
-          R         = R         +      windsurf%rctab(n,m)*cap + windsurf%rctab(-n,m)*cam   ! R
-          Rprime(1) = Rprime(1) +   m*(windsurf%rctab(n,m)*sap + windsurf%rctab(-n,m)*sam)  ! dR/du
-          Rprime(2) = Rprime(2) +   n*(windsurf%rctab(n,m)*sap - windsurf%rctab(-n,m)*sam)  ! dR/dv
-          Rprime(3) = Rprime(3) + m*m*(windsurf%rctab(n,m)*cap + windsurf%rctab(-n,m)*cam)  ! d2R/du2
-          Rprime(4) = Rprime(4) + m*n*(windsurf%rctab(n,m)*cap - windsurf%rctab(-n,m)*cam)  ! d2R/dudv
-          Rprime(5) = Rprime(5) + n*n*(windsurf%rctab(n,m)*cap + windsurf%rctab(-n,m)*cam)  ! d2R/dv2
+          R         = R         +      windsurf(js)%rctab(n,m)*cap + windsurf(js)%rctab(-n,m)*cam   ! R
+          Rprime(1) = Rprime(1) +   m*(windsurf(js)%rctab(n,m)*sap + windsurf(js)%rctab(-n,m)*sam)  ! dR/du
+          Rprime(2) = Rprime(2) +   n*(windsurf(js)%rctab(n,m)*sap - windsurf(js)%rctab(-n,m)*sam)  ! dR/dv
+          Rprime(3) = Rprime(3) + m*m*(windsurf(js)%rctab(n,m)*cap + windsurf(js)%rctab(-n,m)*cam)  ! d2R/du2
+          Rprime(4) = Rprime(4) + m*n*(windsurf(js)%rctab(n,m)*cap - windsurf(js)%rctab(-n,m)*cam)  ! d2R/dudv
+          Rprime(5) = Rprime(5) + n*n*(windsurf(js)%rctab(n,m)*cap + windsurf(js)%rctab(-n,m)*cam)  ! d2R/dv2
 
-          xyzprime(3,1) = xyzprime(3,1) +   m*(windsurf%zstab(n,m)*cap + windsurf%zstab(-n,m)*cam) ! dz/du
-          xyzprime(3,2) = xyzprime(3,2) +   n*(windsurf%zstab(n,m)*cap - windsurf%zstab(-n,m)*cam) ! dz/dv
-          xyzprime(3,3) = xyzprime(3,3) + m*m*(windsurf%zstab(n,m)*sap + windsurf%zstab(-n,m)*sam) ! d2z/du2
-          xyzprime(3,4) = xyzprime(3,4) + m*n*(windsurf%zstab(n,m)*sap - windsurf%zstab(-n,m)*sam) ! d2z/dudv
-          xyzprime(3,5) = xyzprime(3,5) + n*n*(windsurf%zstab(n,m)*sap + windsurf%zstab(-n,m)*sam) ! d2z/dv2
+          xyzprime(3,1) = xyzprime(3,1) +   m*(windsurf(js)%zstab(n,m)*cap + windsurf(js)%zstab(-n,m)*cam) ! dz/du
+          xyzprime(3,2) = xyzprime(3,2) +   n*(windsurf(js)%zstab(n,m)*cap - windsurf(js)%zstab(-n,m)*cam) ! dz/dv
+          xyzprime(3,3) = xyzprime(3,3) + m*m*(windsurf(js)%zstab(n,m)*sap + windsurf(js)%zstab(-n,m)*sam) ! d2z/du2
+          xyzprime(3,4) = xyzprime(3,4) + m*n*(windsurf(js)%zstab(n,m)*sap - windsurf(js)%zstab(-n,m)*sam) ! d2z/dudv
+          xyzprime(3,5) = xyzprime(3,5) + n*n*(windsurf(js)%zstab(n,m)*sap + windsurf(js)%zstab(-n,m)*sam) ! d2z/dv2
        END DO !n
 
        ! Increment sin(m theta), cos(m theta)
@@ -289,7 +301,7 @@ CONTAINS
     xyzprime(3,5) = -(twopi**2) * xyzprime(3,5)
 
     ! Now convert from cylindrical R to Cartesian (x,y)
-    dphidv = twopi/REAL(windsurf%nfp)
+    dphidv = twopi/REAL(windsurf(js)%nfp)
     Cv = COS(dphidv*v);  Sv = SIN(dphidv*v)
 
     xyzprime(1,1) = Rprime(1)*Cv                                            !dx/du

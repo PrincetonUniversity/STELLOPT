@@ -95,8 +95,8 @@
 !            lah_f_opt          Logical array to control AH_AUX_F variation
 !            lat_f_opt          Logical array to control AT_AUX_F variation
 !            lcoil_spline       Logical array to control coil spline control point variation
-!            lwindsurf          Logical to embed splined coils in a winding surface
-!            windsurfname       Character string naming file containing winding surface
+!            lwindsurf          Logical array to embed splined coils in winding surfaces
+!            windsurfname       Character string array naming files containing winding surfaces
 !            fixedcoilname      Character string naming optional file containing fixed-geometry coils
 !            lbound_opt         Logical array to control Boundary variation
 !            lrho_opt           Logical array to control HB Boundary variation
@@ -289,7 +289,7 @@
                          rbc_min, rbc_max, zbs_min, zbs_max, &
                          rbs_min, rbs_max, zbc_min, zbc_max, &
                          mboz, nboz, rho_exp, &
-                         coil_type, &
+                         coil_type, coil_surf, &
                          coil_splinesx,coil_splinesy,coil_splinesz,&
                          coil_splinefx,coil_splinefy,coil_splinefz,&
                          coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
@@ -386,8 +386,9 @@
                          target_coilsep, sigma_coilsep, npts_csep, &
                          target_coilcrv, sigma_coilcrv, npts_curv, &
                          target_coilself, sigma_coilself, npts_cself, &
-                         target_coilrect, sigma_coilrect, coilrectpfw, npts_crect, &
+                         target_coilrect, sigma_coilrect, coilrectpfw, npts_crect, npts_cpoly, &
                          coilrectvmin, coilrectvmax, coilrectduu, coilrectdul, &
+                         target_coilpoly, sigma_coilpoly, kopolyu, kopolyv, &
                          target_ece,sigma_ece,freq_ece, mix_ece, vessel_ece, mirror_ece, &
                          antennaposition_ece, targetposition_ece, rbeam_ece, rfocus_ece, &
                          targettype_ece, antennatype_ece, nra_ece, nphi_ece, &
@@ -430,7 +431,7 @@
       INTEGER, INTENT(out) :: istat
       INTEGER, INTENT(in) :: ithread
       LOGICAL :: lexist
-      INTEGER :: i, ierr, iunit, local_master
+      INTEGER :: i, ierr, iunit, local_master, isurf
       CHARACTER(LEN=1000) :: line
 
       ! Variables used in regcoil section to parse nescin spectrum
@@ -499,7 +500,7 @@
       lmode_opt(:,:)      = .FALSE.
       laxis_opt(:)        = .FALSE.
       lcoil_spline(:,:)   = .FALSE.
-      lwindsurf           = .FALSE.
+      lwindsurf(:)        = .FALSE.
       dphiedge_opt    = -1.0
       dcurtor_opt     = -1.0
       dpscale_opt     = -1.0
@@ -686,9 +687,10 @@
       coil_splinefz(:,:) = 0
       coil_nctrl(:)  = 0
       coil_type(:)    = 'U'    ! Default to "unknown"
-      windsurfname    = ''
-      windsurf%mmax   = -1
-      windsurf%nmax   = -1
+      coil_surf(:)    = 1      ! Default to 1st winding surface for back-compat
+      windsurfname(:) = ''
+      windsurf(:)%mmax   = -1
+      windsurf(:)%nmax   = -1
       fixedcoilname   = ''
       mboz            = 64
       nboz            = 64
@@ -1007,6 +1009,11 @@
       coilrectduu       = 0.125
       coilrectdul       = 0.125
       npts_crect        = 360
+      target_coilpoly   = 0.0
+      sigma_coilpoly    = bigno
+      kopolyu(:,:)      = -1.0
+      kopolyv(:,:)      = -1.0
+      npts_cpoly        = 360
       target_curvature_P2    = 0.0
       sigma_curvature_P2     = bigno
       target_gamma_c    = 0.0
@@ -1051,11 +1058,14 @@
       IF (ANY(ANY(lcoil_spline,2),1)) THEN
          lcoil_geom = .true.
 
-         IF (LEN_TRIM(windsurfname).gt.0) THEN
-            CALL read_winding_surface(windsurfname, ierr)
-            IF (ierr.ne.0) CALL handle_err(CWS_READ_ERR, windsurfname, ierr)
-            lwindsurf = .TRUE.
-         ENDIF
+         DO isurf=1,maxwindsurf
+            IF (LEN_TRIM(windsurfname(isurf)).gt.0) THEN
+               CALL read_winding_surface(windsurfname(isurf), isurf, ierr)
+               IF (ierr.ne.0) CALL handle_err(CWS_READ_ERR, &
+                    windsurfname(isurf), ierr)
+               lwindsurf(isurf) = .TRUE.
+            ENDIF
+         ENDDO !isurf
 
          ! Count knots, error check
          DO i=1,nigroup
@@ -1065,7 +1075,7 @@
                  CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', n)
             IF (COUNT(coil_splinesy(i,:) >= 0.0) - 4 .NE. coil_nctrl(i)) &
                  CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
-            IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0.0) - 4 .NE. coil_nctrl(i))) &
+            IF ((.NOT.lwindsurf(coil_surf(i))) .AND. (COUNT(coil_splinesz(i,:) >= 0.0) - 4 .NE. coil_nctrl(i))) &
                  CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
             IF (ANY(lcoil_spline(i,MAX(coil_nctrl(i)+1,1):maxcoilctrl))) &
                  CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
@@ -1395,6 +1405,32 @@
          END IF
       END IF
 !DEC$ ENDIF
+!DEC$ IF DEFINED (LAEOPT)
+      CALL tolower(txport_proxy)
+      IF (myid == master .and. ANY(sigma_txport < bigno) .and. (TRIM(txport_proxy(1:11)) == 'availenergy') ) THEN
+         WRITE(6,*)        " Turbulent Transport calculation provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========            Trapped Particle Available Energy Code             ========="
+         WRITE(6,"(2X,A)") "=========            (R. Mackenbach, S. Lazerson, J. Proll)             ========="
+         WRITE(6,"(2X,A)") "=========         https://github.com/RalfMackenbach/STELLOPT_AE         ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
+!DEC$ ELSE
+      CALL tolower(txport_proxy)
+      IF (ANY(sigma_txport < bigno) .and. (TRIM(txport_proxy(1:11)) == 'availenergy')) THEN
+         txport_proxy = 'prox1d'
+         IF (myid == master) THEN
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+            WRITE(6,*) '  STELLOPT has not been linked to the Available Energy code.      '
+            WRITE(6,*) '  Optimization with Available Energy for turblent'
+            WRITE(6,*) '  transport not possible.  Defaulting to proxy function'
+            WRITE(6,*) '        txport_proxy = prox1d'
+            WRITE(6,*) '  Code Available at:'
+            WRITE(6,*) '        https://github.com/RalfMackenbach/STELLOPT_AE'
+         END IF
+      END IF
+!DEC$ ENDIF
 !DEC$ IF DEFINED (GENE)
       CALL tolower(txport_proxy)
       IF (myid == master .and. ANY(sigma_txport < bigno) .and. (TRIM(txport_proxy(1:4)) == 'gene') ) THEN
@@ -1668,8 +1704,12 @@
       END IF
 
       IF (ANY(lcoil_spline)) THEN
-         IF (lwindsurf) THEN
-            WRITE(iunit,'(A,A,A)') "  WINDSURFNAME = '",TRIM(windsurfname),"'"
+         IF (ANY(lwindsurf)) THEN
+            !WRITE(iunit,'(A,A,A)') "  WINDSURFNAME = '",(/ TRIM(windsurfname(j)), j=1,maxwindsurf /),"'"
+            WRITE(iunit,'(A)') "  WINDSURFNAME = '"//TRIM(windsurfname(1))//"'"
+            DO m=2,COUNT(lwindsurf)
+               WRITE(iunit,'(A)') "    '"//TRIM(windsurfname(m))//"'"
+            END DO
          ENDIF
          IF (LEN_TRIM(fixedcoilname).GT.0) &
               WRITE(iunit,'(A,A,A)') "  FIXEDCOILNAME = '",TRIM(fixedcoilname),"'"
@@ -1682,9 +1722,11 @@
                WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
                WRITE(iunit,'(A,I4.3)') '!       Coil Number ',n
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',"'"//COIL_TYPE(n)//"'"
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,I4)") 'COIL_SURF(',n,')',COIL_SURF(n)
                ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik-4)
+               IF (ANY(DCOIL_SPLINE(n,1:ik-4).NE.-1.0D0)) &
+                    WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINESX(',n,',:)',(coil_splinesx(n,m), m = 1, ik)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINESY(',n,',:)',(coil_splinesy(n,m), m = 1, ik)
@@ -1903,7 +1945,7 @@
       IF ((ANY(sigma_coillen < bigno)).OR.(ANY(sigma_coilsegvar < bigno)).OR.&
            (ANY(sigma_coilcrv < bigno)).OR.(sigma_coilsep < bigno).OR.&
            (ANY(sigma_coilself < bigno)).OR.(ANY(sigma_coiltorvar < bigno)).OR.&
-           (ANY(sigma_coilrect < bigno))) THEN
+           (ANY(sigma_coilrect < bigno)).OR.(ANY(sigma_coilpoly < bigno))) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          COIL TARGETS'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1961,6 +2003,24 @@
             WRITE(iunit,"(2X,A,ES22.12E3)") 'COILRECTPFW = ',coilrectpfw
             WRITE(iunit,"(2X,A,I6.5)") 'NPTS_CRECT = ',npts_crect
          END IF
+         DO n = LBOUND(sigma_coilpoly,DIM=1), UBOUND(sigma_coilpoly,DIM=1)
+            IF (sigma_coilpoly(n) < bigno) THEN
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILPOLY(',n,') = ',target_coilpoly(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILPOLY(',n,') = ',sigma_coilpoly(n)
+            ENDIF
+         ENDDO !n
+         IF (ANY(sigma_coilpoly < bigno)) THEN
+            DO n = LBOUND(kopolyu,DIM=2), UBOUND(kopolyu,DIM=2)
+               IF (ANY(kopolyu(:,n) .GE. 0.0)) THEN
+                  WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+                  WRITE(iunit,'(A,I4.3)') '!       Keepout Polygon ',n
+                  ik = MINLOC(kopolyu(:,n),DIM=1) - 1
+                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'KOPOLYU(:,',n,')',(kopolyu(m,n), m = 1, ik)
+                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'KOPOLYV(:,',n,')',(kopolyv(m,n), m = 1, ik)
+               ENDIF
+            ENDDO !n
+            WRITE(iunit,"(2X,A,I6.5)") 'NPTS_CPOLY = ',npts_cpoly
+         ENDIF
       END IF
       IF (ANY(lbooz)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

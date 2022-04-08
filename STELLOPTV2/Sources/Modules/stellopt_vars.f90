@@ -14,6 +14,7 @@
 !-----------------------------------------------------------------------
       USE vparams, ONLY: ndatafmax, mpol1d, ntord 
       USE vsvd0
+      USE windingsurface, ONLY : maxwindsurf
 !-----------------------------------------------------------------------
 !     Module Variables
 !            nfunc_max          Maximum number of function evaluations
@@ -88,8 +89,8 @@
       LOGICAL, DIMENSION(-ntord:ntord,-mpol1d:mpol1d) :: ldeltamn_opt
       INTEGER, PARAMETER :: maxcoilctrl=40
       LOGICAL, DIMENSION(nigroup,maxcoilctrl)        ::  lcoil_spline
-      INTEGER, DIMENSION(nigroup)                     ::  coil_nctrl
-      LOGICAL  ::  lwindsurf
+      INTEGER, DIMENSION(nigroup)                    ::  coil_nctrl
+      LOGICAL, DIMENSION(maxwindsurf)                ::  lwindsurf
       INTEGER  ::  nfunc_max
       REAL(rprec)     ::  dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                           dpscale_opt, dmix_ece_opt, dxval_opt, dyval_opt, &
@@ -218,8 +219,9 @@
 
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
                           beamj_type, bootj_type, zeff_type, emis_xics_type, &
-                          windsurfname, fixedcoilname, &
+                          fixedcoilname, &
                           regcoil_nescin_filename, bootcalc_type, phi_type
+      CHARACTER(256), DIMENSION(maxwindsurf) :: windsurfname
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
       REAL(rprec), DIMENSION(0:ntord) :: raxis_cc_initial, raxis_cs_initial, zaxis_cc_initial, zaxis_cs_initial
 
@@ -235,7 +237,8 @@
       ! yet
       REAL(rprec), DIMENSION(ndatafmax) :: nustar_s, nustar_f
       
-      CHARACTER, DIMENSION(nigroup) :: coil_type
+      CHARACTER, DIMENSION(nigroup) :: coil_type  ! Specifies coil topology
+      INTEGER, DIMENSION(nigroup)   :: coil_surf  ! Assoc. winding surf index
 
       REAL(rprec) :: phiedge_old  ! For keeping track of phiedge
       
@@ -513,11 +516,11 @@
          CASE(imodemn)
             WRITE(iunit,out_format_2DB) 'MODE(',var_dex1,',',var_dex2,'):  Boundary Specifiction (Lazerson)'
          CASE(icoil_splinefx)
-            WRITE(iunit,out_format_2DB) 'COIL_SPLINEX(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (X)'
+            WRITE(iunit,out_format_2DB) 'COIL_SPLINEFX(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (X)'
          CASE(icoil_splinefy)
-            WRITE(iunit,out_format_2DB) 'COIL_SPLINEY(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (Y)'
+            WRITE(iunit,out_format_2DB) 'COIL_SPLINEFY(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (Y)'
          CASE(icoil_splinefz)
-            WRITE(iunit,out_format_2DB) 'COIL_SPLINEZ(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (Z)'
+            WRITE(iunit,out_format_2DB) 'COIL_SPLINEFZ(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (Z)'
 
          ! REGCOIL cases
          CASE(iregcoil_winding_surface_separation)
