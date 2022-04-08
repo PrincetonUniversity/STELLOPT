@@ -262,6 +262,11 @@ test_stellopt_gene:
 	@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.GENE; rm -f *_opt*
 	@echo ""
 
+test_stellopt_availenergy:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.AVAILENERGYOPT;
+	@cd $(STELLOPT_TEST_DIR)/AVAILENERGYOPT; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.AVAILENERGYOPT; rm -f *_opt*
+	@echo ""
+
 test_stellopt_sfincs:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;
 	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs; rm -f *_opt*
@@ -320,6 +325,7 @@ clean_test:
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TOK_R0_RHO stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TRAVIS stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs stellopt_cleanup_dir
+	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/AVAILENERGYOPT stellopt_cleanup_dir
 
 stellopt_cleanup_dir:
 	@cd $(SUBDIR); rm -f answers* auto* beams3d* b_norm_eq_* b_norm_init_* b_norm_final_* bnorm.* boot_fit.* boozmn* checkpoint_* \
@@ -340,6 +346,7 @@ help:
 	@echo "      MPI_RUN_OPTS_MD: " $(MPI_RUN_OPTS_MD)
 	@echo "      MPI_RUN_OPTS_LG: " $(MPI_RUN_OPTS_LG)
 	@echo ""
+	@echo "      LAEOPT:          " $(LAEOPT)
 	@echo "      LCOILOPT:        " $(LCOILOPT)
 	@echo "      LGENE:           " $(LGENE)
 	@echo "      LREGCOIL:        " $(LREGCOIL)
