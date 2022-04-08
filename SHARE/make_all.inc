@@ -278,7 +278,8 @@ ifeq ($(MAKECMDGOALS),libstell.so)
 endif
 
 # Pass Git information to code
-GIT_BRANCH  = $(shell git branch --show-current)
+#GIT_BRANCH  = $(shell git branch --show-current) #Only works on version >2.2
+GIT_BRANCH  = $(shell git rev-parse --abbrev-ref HEAD)
 GIT_VERSION = $(shell git describe --abbrev=4 --dirty --always --tags)
 GIT_HASH    = $(shell git show -s --format=%H)
 TIME        = $(shell date +"%d.%m.%Y %H:%M:%S")
