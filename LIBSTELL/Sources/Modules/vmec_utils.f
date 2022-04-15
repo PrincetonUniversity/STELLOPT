@@ -1179,33 +1179,32 @@ C-----------------------------------------------
          nfe = nfe + 1
 
          sflux = MAX(xc_opt(1), zero)
-!        sflux = MIN(MAX(xc_opt(1), zero), one)
          uflux = xc_opt(2)
          c_flx(1) = sflux;  c_flx(2) = uflux
 
 !        COMPUTE R,Z, Ru, Zu
-!         CALL get_flxcoord(x0, c_flx, rs=rs1, zs=zs1, ru=ru1, zu=zu1)
-!         xu(1) = ru1; xu(3) = zu1
-!         xs(1) = rs1; xs(3) = zs1
-!        COMPUTE R,Z, Ru, Zu
-         CALL get_flxcoord(x0, c_flx, ru=ru1, zu=zu1)
+         CALL get_flxcoord(x0, c_flx, rs=rs1, zs=zs1, ru=ru1, zu=zu1)
          xu(1) = ru1; xu(3) = zu1
-
+         xs(1) = rs1; xs(3) = zs1
+!        COMPUTE R,Z, Ru, Zu
+!         CALL get_flxcoord(x0, c_flx, ru=ru1, zu=zu1)
+!         xu(1) = ru1; xu(3) = zu1
+!
 !        MAKE SURE sflux IS LARGE ENOUGH
 !        TO COMPUTE d(sqrt(s))/ds ACCURATELY NEAR ORIGIN
-         IF (sflux .ge. 1000*eps0) THEN
-            eps = eps0
-         ELSE
-            eps = eps0*sflux
-         END IF
-
+!         IF (sflux .ge. 1000*eps0) THEN
+!            eps = eps0
+!         ELSE
+!            eps = eps0*sflux
+!         END IF
+!
 !        COMPUTE Rs, Zs NUMERICALLY
-         eps = ABS(eps)
-         IF (sflux .ge. 1-eps) eps = -eps
-         c_flx(1) = sflux + eps
-         CALL get_flxcoord(r_cyl_out, c_flx)
-         xs = (r_cyl_out - x0)/eps
-         c_flx(1) = sflux
+!         eps = ABS(eps)
+!         IF (sflux .ge. 1-eps) eps = -eps
+!         c_flx(1) = sflux + eps
+!         CALL get_flxcoord(r_cyl_out, c_flx)
+!         xs = (r_cyl_out - x0)/eps
+!         c_flx(1) = sflux
 
          x0(1) = x0(1) - r_target
          x0(3) = x0(3) - z_target
@@ -1241,23 +1240,20 @@ C-----------------------------------------------
          IF (fmin .le. ftol) EXIT
 
          IF (ABS(dels) .gt. one)   dels = SIGN(one, dels)
-!         IF (ABS(delu) .gt. twopi/2) delu = SIGN(twopi/2, delu)
+         IF (ABS(delu) .gt. twopi/8) delu = SIGN(twopi/8, delu)
 
          snew = xc_opt(1) + dels*factor
          IF (snew .lt. zero) THEN
             xc_opt(1) = -snew/2               !Prevents oscillations around origin s=0
             xc_opt(2) = xc_opt(2) + twopi/2 
-            delu = -delu
-!             factor = (-snew/2-xc_opt(1))/dels
-!             xc_opt(1) = -snew/2
          ELSE
             xc_opt(1) = snew
+            xc_opt(2) = xc_opt(2) + delu*factor
          END IF
-         xc_opt(2) = xc_opt(2) + delu*factor
 
          IF (xc_opt(1) .gt. edge_value) THEN
             isgt1 = isgt1+1
-            IF (xc_opt(1) .gt. 2._dp) isgt1 = isgt1+1
+            !IF (xc_opt(1) .gt. 2._dp) isgt1 = isgt1+1
             IF (isgt1 .gt. 5) EXIT
          END IF
 
