@@ -163,9 +163,9 @@
 
          ! Bfield
          CALL get_eqdsk_Bspl(raxis_g(i),zaxis_g(k),brtemp,bptemp,bztemp)
-         B_R(i,:,k) = brtemp
-         B_PHI(i,:,k) = bptemp
-         B_Z(i,:,k) = bztemp
+         B_R(i,:,k) = B_R(i,:,k) + brtemp
+         B_PHI(i,:,k) = B_PHI(i,:,k) + bptemp
+         B_Z(i,:,k) = B_Z(i,:,k) + bztemp
 
          ! Flux
          CALL get_eqdsk_fluxspl(raxis_g(i),zaxis_g(k),rhoflx,uflx)
