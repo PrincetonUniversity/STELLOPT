@@ -64,6 +64,27 @@
 #endif
       mylocalmaster = master
 
+      ! Calculate the minor radius
+      IF (myworkid == master) THEN
+         brtemp = 0.5*SQRT((raxis_g(nr)-raxis_g(1))**2 + (zaxis_g(nr)-zaxis_g(1))**2)
+         k = FLOOR(brtemp/0.001)
+         reff_eq = 0
+         s = 0
+         DO i = 0, 359, 1
+            INNERLOOP: DO j = 1, k
+               brtemp = raxis_eqdsk + 0.001*j*COS(i*pi2/360.0)
+               bztemp = zaxis_eqdsk + 0.001*j*SIN(i*pi2/360.0)
+               CALL get_eqdsk_fluxspl(brtemp,bztemp,rhoflx,uflx)
+               IF (rhoflx .ge. 1) THEN
+                  reff_eq = reff_eq + 0.001*(j-0.5) ! halfway between last gridpoint and here.
+                  s = s + 1
+                  EXIT INNERLOOP
+               END IF
+            END DO INNERLOOP
+         END DO
+         reff_eq = reff_eq / s
+      end IF
+
       ! Write info to screen
       IF (lverb) THEN
          betatot = 0
@@ -79,6 +100,7 @@
          ELSE
             WRITE(6,'(A,F7.2,A)') '   I  = ',totcur,' [A]'
          END IF
+         WRITE(6,'(A,F7.2,A)')        '   AMINOR  = ',reff_eq,' [m]'
          WRITE(6,'(A,F7.2,A)')        '   P_MAX = ',MAXVAL(sp)*1E-3,' [kPa]'
          WRITE(6,'(A,F7.2,A)')        '   PSIEDGE = ',psisep,' [Wb]'
          IF (lcreate_wall) THEN
@@ -90,10 +112,12 @@
          END IF
       END IF
 
-
       ! Calculate the axis values
       req_axis(:) = raxis_eqdsk
       zeq_axis(:) = zaxis_eqdsk
+
+      ! Helpers
+      phiedge_eq = 1.0 ! normalized value
 
       ! Use the vessel as a mask for rho
       zsmax = MAXVAL(zbndry)
