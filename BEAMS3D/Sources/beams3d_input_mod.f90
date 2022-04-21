@@ -30,7 +30,7 @@
       IMPLICIT NONE
       ! These are helpers to give the ns1_prof variables user friendly names
       INTEGER :: nrho_dist, ntheta_dist, nzeta_dist, nvpara_dist, nvperp_dist
-
+      REAL(rprec) :: temp
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         &beams3d_input
@@ -258,7 +258,12 @@
             ! Now calc Zeff(1)
             DO i1 = 1, nzeff
                ZEFF_AUX_S(i1) = NI_AUX_S(i1)
-               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+               temp = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+               IF (temp > 0) THEN
+                  ZEFF_AUX_F(i1) = MAX(SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
+               ELSE
+                  ZEFF_AUX_F(i1) = 1
+               END IF
             END DO
             plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
             plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff
@@ -273,7 +278,12 @@
             ! Now calc Zeff(1)
             DO i1 = 1, nzeff
                ZEFF_AUX_S(i1) = NI_AUX_S(i1)
-               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+               temp = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+               IF (temp > 0) THEN
+                  ZEFF_AUX_F(i1) = MAX(SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
+               ELSE
+                  ZEFF_AUX_F(i1) = 1
+               END IF
             END DO
             plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
             plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff

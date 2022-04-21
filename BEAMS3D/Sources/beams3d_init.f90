@@ -288,6 +288,11 @@
             hri = one / hr
             hpi = one / hp
             hzi = one / hz
+            ! Do this here so EQDSK vac RMP works.
+            B_R = 0
+            B_PHI = 0
+            B_Z = 0
+            MODB = 0
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
          ! Put the vacuum field on the background grid
