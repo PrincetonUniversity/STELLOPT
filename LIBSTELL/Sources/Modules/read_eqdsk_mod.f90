@@ -153,7 +153,6 @@
             COCOS_ID = COCOS_ID - 10
          END IF
          cocos_BP_factor = SIGN(1.0_rprec,btor)*SIGN(1.0_rprec,sf(1))
-         bfact = bfact*cocos_BP_factor
          ! EZSpline STUFF
          CALL EZspline_init(PSI_spl,nr,nz,(/0,0/),(/0,0/),ier)
          CALL EZspline_init(SF_spl,nr,(/0,0/),ier)
