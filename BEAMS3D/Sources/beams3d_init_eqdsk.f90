@@ -15,7 +15,7 @@
                                 zaxis_eqdsk => zaxis, get_eqdsk_Bspl, &
                                 get_eqdsk_fluxspl, read_eqdsk_deallocate, &
                                 nlim, xlim, zlim, ntitle, btor, &
-                                rcenter, sp, nbndry, xbndry, zbndry
+                                rcenter, sp, nbndry, xbndry, zbndry, COCOS_ID
       USE beams3d_runtime
       USE beams3d_grid, ONLY: raxis_g => raxis, phiaxis, &
                                  zaxis_g => zaxis, nr, nphi, nz, &
@@ -89,7 +89,8 @@
       IF (lverb) THEN
          betatot = 0
          WRITE(6,'(A)')               '----- EQDSK Information -----'
-         WRITE(6,'(A)') '  HEADER: '//ntitle(1)//ntitle(2)//ntitle(3)//ntitle(4)//ntitle(5)
+         WRITE(6,'(A,I2)') '  COCOS_ID : ',COCOS_ID
+         WRITE(6,'(A)')    '  HEADER: '//ntitle(1)//ntitle(2)//ntitle(3)//ntitle(4)//ntitle(5)
          WRITE(6,'(A,F7.2,A,F7.2,A)') '   B  = ',Btor,' [T] @ R = ',rcenter,' [m]'
          IF (ABS(totcur) > 1E8) THEN
             WRITE(6,'(A,F7.2,A)') '   I  = ',totcur*1E-9,' [GA]'
