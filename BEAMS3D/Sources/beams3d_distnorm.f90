@@ -36,12 +36,12 @@
 !        s1,s2       Radial Helper
 !        u1,u2       Poloidal Helper
 !        p1,p2       Toroidal Helper
-!        ds,du,dp    Delta coordiantes
+!        drho,du,dp    Delta coordiantes
 !        xt,yt,zt    Helper for xyz coordiantes of voxel
 !-----------------------------------------------------------------------
       INTEGER ::  s, i, j, k, nvol, l, m, n, ier
       INTEGER, DIMENSION(2) :: minln
-      REAL(rprec) :: s1, s2, u1, u2, p1, ds, du, dp, area, dvol, a, b, c, d, f1, f2, f3
+      REAL(rprec) :: s1, s2, u1, u2, p1, drho, du, dp, area, dvol, a, b, c, d, f1, f2, f3
       REAL(rprec), DIMENSION(4) :: rt,zt,pt
       REAL(rprec), ALLOCATABLE, DIMENSION(:,:) :: targ
       REAL(rprec), ALLOCATABLE, DIMENSION(:,:,:) :: RHO3D
@@ -88,28 +88,28 @@
 
       ! Do physical volume elements
       nvol = (ns_prof1)*(ns_prof2)*(ns_prof3)
-      ds   = 1.0/REAL(ns_prof1) !distribution defined on centers (half grid)
+      drho   = 1.0/REAL(ns_prof1) !distribution defined on centers (half grid)
       du   = pi2/REAL(ns_prof2)
       dp   = pi2/REAL(ns_prof3)
       !ALLOCATE(targ(nr,nz))
-      ALLOCATE(RHO3D(nr,nphi,nz))
-      RHO3D = S4D(1,:,:,:)
-      WHERE (RHO3D>1) RHO3D = 2;
-      RHO3D = sqrt(RHO3D) ! in RHO
+      ! ALLOCATE(RHO3D(nr,nphi,nz))
+      ! RHO3D = S4D(1,:,:,:)
+      ! WHERE (RHO3D>1) RHO3D = 2;
+      ! RHO3D = sqrt(RHO3D) ! in RHO
       DO s = 1, nvol
          i = MOD(s-1,(ns_prof1))+1
          j = MOD(s-1,(ns_prof1)*(ns_prof2))
          j = FLOOR(REAL(j) / REAL(ns_prof1))+1
          k = CEILING(REAL(s) / REAL(ns_prof1*ns_prof2))
-         s1 = (i-1)*ds
-         s2 = s1+ds
+         s1 = ((i-1)*drho)**2 !Distribution function has radial rho coordinate
+         s2 = ((i-1)*drho+drho)**2
          u1 = (j-1)*du
          u2 = u1+du
          p1 = MOD((k-1)*dp*0.5,phiaxis(nphi))
          ! Find helper value of grids
          m = MIN(MAX(COUNT(phiaxis < p1),1),nphi-1)
-         rt = 5.25+COS((u1+u2)/2)*.5 !dirty estimation of R
-         zt = SIN((u1+u2)/2.)*.6 
+         rt = 0!5.25+COS((u1+u2)/2)*.5 !dirty estimation of R
+         zt = 0!SIN((u1+u2)/2.)*.6 
          pt = 0; !Initial conditions for successful lookup?
 
          ! Assume parallel piped
@@ -120,11 +120,11 @@
             area = 0.5 * abs( (rt(2) - rt(1)) *(zt(3) - zt(1)) - (rt(3) - rt(1)) *(zt(2) - zt(1))) + &
                   0.5 * abs( (rt(3) - rt(2)) *(zt(4) - zt(2)) - (rt(4) - rt(2)) *(zt(3) - zt(2)))
 
-!         WRITE(327,*) m,s1,s2,u1,u2,rt,zt,area
+         WRITE(327,*) m,s1,s2,u1,u2,rt,zt,area
 !         CALL FLUSH(327)
          dvol = area*sum(rt)*dp/4
          dist5d_prof(:,i,j,k,:,:) = dist5d_prof(:,i,j,k,:,:)/dvol
-!         WRITE(328,*) i,j,k,dvol,rt,zt
+         WRITE(328,*) i,j,k,dvol,rt,zt
 !         CALL FLUSH(328)
       END DO
 
@@ -133,9 +133,9 @@
       END IF
 
       ! Do phase space volume elements -- correct?
-      ds = 2*partvmax/ns_prof4 !vll
+      drho = 2*partvmax/ns_prof4 !vll
       du = partvmax/ns_prof5 !v_perp
-      dvol = pi2*ds*du
+      dvol = pi2*drho*du
       nvol = ns_prof4*ns_prof5
       DO j = 1, ns_prof5
         u1 = (j-0.5)*du
@@ -146,7 +146,7 @@
 
       
       !DEALLOCATE(targ)
-      DEALLOCATE(RHO3D)
+      !DEALLOCATE(RHO3D)
 
 
       RETURN
