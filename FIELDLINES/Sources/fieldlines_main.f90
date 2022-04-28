@@ -166,6 +166,8 @@
                case ("-full")
                    nruntype = runtype_full
                    lauto = .true.
+               case ("-backflow")
+                   nruntype = runtype_backflow
                case ("-field_start")
                    lfield_start = .true.
                    i = i + 1
@@ -194,6 +196,7 @@
                   write(6,*)'     -vac           Only vacuum field'
                   write(6,*)'     -plasma        Only Plasma field (in equilibrium)'
                   write(6,*)'     -reverse       Follow field backwards'
+                  write(6,*)'     -backflow      Follow wall hits in reverse'
                   write(6,*)'     -auto          Auto calculate starting points'
                   write(6,*)'     -edge          Auto calculate starting points (from VMEC edge)'
                   write(6,*)'     -field         Output B-Field on Grid (no fieldlines)'
@@ -333,6 +336,9 @@
             CALL fieldlines_follow  ! This call on subgrid grid
             !CALL fieldlines_periodic_orbits  ! This call on subgrid grid
             !IF (lverb) CALL fieldlines_calc_surface_fit(25)
+         CASE(runtype_backflow)
+            CALL fieldlines_follow
+            CALL fieldlines_init_backflow
          CASE(runtype_norun)
       END SELECT
       ! Output Date
