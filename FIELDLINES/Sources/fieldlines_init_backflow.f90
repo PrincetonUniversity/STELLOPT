@@ -67,15 +67,15 @@
          R_local(mystart:myend)    =  R_lines(mystart:myend,0)
          Z_local(mystart:myend)    =  Z_lines(mystart:myend,0)
          phis_local(mystart:myend) =  PHI_lines(mystart:myend,0)
-         phie_local(mystart:myend) =  PHI_lines(mystart:myend,2)
+         phie_local(mystart:myend) =  phi_end(mystart:myend)
          ! Now load the back trace
          ! We use the zero point to avoid hitting the wall
          mynewstart = mystart + nlines
          mynewend   = myend   + nlines
          R_local(mynewstart:mynewend)      =  R_lines(mystart:myend,0)
-         Z_local(mynewstart:mynewend)      =  R_lines(mystart:myend,0)
+         Z_local(mynewstart:mynewend)      =  Z_lines(mystart:myend,0)
          phis_local(mynewstart:mynewend)   =  PHI_lines(mystart:myend,0)
-         phie_local(mynewstart:mynewend)   =  PHI_lines(mystart:myend,0)-PHI_end(mystart:myend)
+         phie_local(mynewstart:mynewend)   =  PHI_lines(mystart:myend,0)-phi_end(mystart:myend)
       ELSE
          PRINT *,'lhitonly must be active'
       END IF
