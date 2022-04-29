@@ -17,6 +17,7 @@
       USE stel_kinds, ONLY: rprec
       USE fieldlines_runtime
       USE fieldlines_lines
+      USE wall_mod, ONLY: ihit_array, nface
       USE mpi_sharmem
       USE mpi_params
       USE mpi_inc
@@ -98,8 +99,10 @@
       lmu = .FALSE. ! Turns off diffusion
       nlines = nlines*2 ! Twice the number of lines
       ldex_default = 1
+      IF (myid_sharmem == master) ihit_array = 0 ! reset it to zero
 
       ! Now run the reverse trace
+      IF (lverb) WRITE(6,'(A)') '===========BackFlow of Wall Hits=========='
       CALL fieldlines_follow
 
       ! Reset a thing or two
