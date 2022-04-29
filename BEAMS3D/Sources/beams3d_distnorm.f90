@@ -97,7 +97,7 @@
             area = 0.5 * abs( (rt(2) - rt(1)) *(zt(3) - zt(1)) - (rt(3) - rt(1)) *(zt(2) - zt(1))) + &
                   0.5 * abs( (rt(3) - rt(2)) *(zt(4) - zt(2)) - (rt(4) - rt(2)) *(zt(3) - zt(2)))
 
-         m = MIN(MAX(COUNT(phiaxis < p1),1),nphi-1)
+!         m = MIN(MAX(COUNT(phiaxis < p1),1),nphi-1)
 !         WRITE(327,*) m,s1,s2,u1,u2,rt,zt,area
 !         CALL FLUSH(327)
          dvol = area*sum(rt)*dp*0.25
