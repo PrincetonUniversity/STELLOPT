@@ -50,6 +50,7 @@
       vessel_string = ''
       restart_string = ''
       line_select = 96
+      ldex_default = 0
       
       RETURN
 !-----------------------------------------------------------------------
