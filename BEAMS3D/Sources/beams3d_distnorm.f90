@@ -51,7 +51,7 @@
 
       ! Do physical volume elements
       nvol = (ns_prof1)*(ns_prof2)*(ns_prof3)
-      drho   = 1.0/REAL(ns_prof1) !distribution defined on centers (half grid)
+      ds   = 1.0/REAL(ns_prof1) !distribution defined on centers (half grid)
       du   = pi2/REAL(ns_prof2)
       dp   = pi2/REAL(ns_prof3)
 
