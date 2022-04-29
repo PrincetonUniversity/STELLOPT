@@ -124,7 +124,7 @@
 !         CALL FLUSH(327)
          dvol = area*sum(rt)*dp/4
          dist5d_prof(:,i,j,k,:,:) = dist5d_prof(:,i,j,k,:,:)/dvol
-         WRITE(328,*) i,j,k,dvol,rt,zt
+!        WRITE(328,*) i,j,k,dvol,rt,zt
 !         CALL FLUSH(328)
       END DO
 

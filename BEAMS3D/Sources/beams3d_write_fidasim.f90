@@ -91,36 +91,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    IF (myworkid == master) THEN
       SELECT CASE (TRIM(write_type))
        CASE('INIT')
-         rmin_fida = rmin
-         zmin_fida = zmin
-         phimin_fida = phimin
-         rmax_fida = rmax
-         zmax_fida = zmax
-         phimax_fida = phimax
-         nr_fida = nr
-         nphi_fida = nphi
-         nz_fida = nz
-         nenergy_fida = ns_prof4 !should stay this way!
-         npitch_fida = ns_prof5
-
-         ALLOCATE(raxis_fida(nr_fida))
-         ALLOCATE(zaxis_fida(nz_fida))
-         ALLOCATE(phiaxis_fida(nphi_fida))
-         FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida-1) + rmin_fida
-         FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida-1) + zmin_fida
-         FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida-1) + phimin_fida
-         ! Setup grid helpers
-         ! Note: All helpers are defined in terms of differences on half grid
-         !       so values are indexed from 1 to n-1.  Which we store at n
-         !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         !        hr(i) = raxis(i+1) - raxis(i)
-         !        hri    = one / hr
-         !FORALL(i = 1:nr_fida-1) hr_fida(i) = raxis_fida(i+1) - raxis_fida(i)
-         !FORALL(i = 1:nz_fida-1) hz_fida(i) = zaxis_fida(i+1) - zaxis_fida(i)
-         !FORALL(i = 1:nphi_fida-1) hp_fida(i) = phiaxis_fida(i+1) - phiaxis_fida(i)
-         !hri_fida = one / hr_fida
-         !hpi_fida = one / hp_fida
-         !hzi_fida = one / hz_fida
+!           WRITE(327,*) rmin_fida, rmin, zmin_fida, zmin, nr_fida, nz_fida
 
          nphi1 = nphi-1 ! confirmed with Poincare plot
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.true.)
@@ -164,17 +135,17 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL write_att_hdf5(temp_gid,'description','Distribution time',ier)
          CALL h5dclose_f(temp_gid,ier)
 
-         CALL write_var_hdf5(qid_gid,'r',nr, ier,DBLVAR=DBLE(raxis_fida*100)) !convert from m to cm
+         CALL write_var_hdf5(qid_gid,'r',nr_fida, ier,DBLVAR=DBLE(raxis_fida*100)) !convert from m to cm
          CALL h5dopen_f(fid, 'r', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Radius',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'phi',nphi, ier,DBLVAR=DBLE(phiaxis_fida)) !Hard-coded toroidal slice for now
+         CALL write_var_hdf5(qid_gid,'phi',nphi_fida, ier,DBLVAR=DBLE(phiaxis_fida)) !Hard-coded toroidal slice for now
          CALL h5dopen_f(fid, 'phi', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','rad',ier)
          CALL write_att_hdf5(temp_gid,'description','Toroidal angle',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'z',nz, ier,DBLVAR=DBLE(zaxis_fida*100)) !convert from m to cm
+         CALL write_var_hdf5(qid_gid,'z',nz_fida, ier,DBLVAR=DBLE(zaxis_fida*100)) !convert from m to cm
          CALL h5dopen_f(fid, 'z', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Z',ier)
@@ -511,9 +482,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                DO j=1,nphi_fida
                   !convert i,j,k to distribution function indices l,m,n
                   !determine beams3d-grid indices
-                  i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr_fida-1)
-                  j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi_fida-1)
-                  k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz_fida-1)
+                  i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
+                  j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
+                  k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
                   !setup interpolation
                   xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
                   yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
@@ -576,8 +547,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL h5dclose_f(temp_gid,ier)
 
+         ! Do phase space change of coordinates
          !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
-         ALLOCATE(dist5d_fida(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
+         ALLOCATE(dist5d_fida(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida)) !nenergy and npitch are always aligned to distribution
          DO b=1,nbeams
             DO d1 = 1, nenergy_fida
                DO d2 = 1, npitch_fida
@@ -597,8 +569,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      jac = v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
                      dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac
 
-
-
                   END IF
                END DO
             END DO
@@ -607,6 +577,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          dist5d_temp(:,:,:,:,:,:) = dist5d_fida(:,:,:,:,:,:)
          DEALLOCATE(dist5d_fida)
 
+         !Interpolate rho u v to r phi z distribution function (nearest neighbor at the moment)
          !Now allocate with correct dimensions
          ALLOCATE(dist5d_fida(nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
          DO b=1,nbeams
@@ -615,9 +586,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   DO j=1,nphi_fida
                      !convert i,j,k to distribution function indices l,m,n
                      !determine beams3d-grid indices
-                     i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr_fida-1)
-                     j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi_fida-1)
-                     k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz_fida-1)
+                     i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
+                     j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
+                     k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
                      !setup interpolation
                      xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
                      yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
