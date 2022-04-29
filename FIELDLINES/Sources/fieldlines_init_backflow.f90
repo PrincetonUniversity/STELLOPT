@@ -65,7 +65,7 @@
          R_local(mynewstart:mynewend)      =  R_lines(mystart:myend,0)
          Z_local(mynewstart:mynewend)      =  R_lines(mystart:myend,0)
          phis_local(mynewstart:mynewend)   =  PHI_lines(mystart:myend,0)
-         phie_local(mynewstart:mynewend)   = -PHI_end(mystart:myend)
+         phie_local(mynewstart:mynewend)   =  PHI_lines(mystart:myend,0)-PHI_end(mystart:myend)
       ELSE
          PRINT *,'lhitonly must be active'
       END IF
