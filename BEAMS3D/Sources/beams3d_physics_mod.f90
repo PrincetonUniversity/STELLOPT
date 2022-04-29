@@ -1404,6 +1404,8 @@ MODULE beams3d_physics_mod
             n=n+1
          END DO
 
+ !        IF (n>=500) PRINT *,s,u,fnorm,residual
+
 
          RETURN
 
