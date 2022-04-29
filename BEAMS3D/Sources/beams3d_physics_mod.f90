@@ -1366,7 +1366,7 @@ MODULE beams3d_physics_mod
          !  F(R,Z) = (s0-s(R,Z))*(u0-u(R,Z))
          !  dF/dR  = -ds/dR*(u0-u(R,Z))-du/dR*(s0-s(R,Z))
          !  dF/dZ  = -ds/dZ*(u0-u(R,Z))-du/dZ*(s0-s(R,Z))
-         DO WHILE (residual > 1.0E-3 .and. n<500)
+         DO WHILE (residual > 1.0E-6 .and. n<500)
             i = MIN(MAX(COUNT(raxis < r_out),1),nr-1)
             k = MIN(MAX(COUNT(zaxis < z_out),1),nz-1)
             xparam = (r_out - raxis(i)) * hri(i)
@@ -1403,6 +1403,8 @@ MODULE beams3d_physics_mod
             !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual
             n=n+1
          END DO
+
+ !        IF (n>=500) PRINT *,s,u,fnorm,residual
 
 
          RETURN
