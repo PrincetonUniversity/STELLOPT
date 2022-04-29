@@ -279,14 +279,16 @@ endif
 
 # Pass Git information to code
 #GIT_BRANCH  = $(shell git branch --show-current) #Only works on version >2.2
+GIT_REPO    = $(shell git ls-remote --get-url)
 GIT_BRANCH  = $(shell git rev-parse --abbrev-ref HEAD)
 GIT_VERSION = $(shell git describe --abbrev=4 --dirty --always --tags)
 GIT_HASH    = $(shell git show -s --format=%H)
 TIME        = $(shell date +"%d.%m.%Y %H:%M:%S")
-PRECOMP += -DGIT_VERSION_EXT="$(GIT_VERSION)"
-PRECOMP += -DGIT_HASH_EXT="$(GIT_HASH)"
-PRECOMP += -DGIT_BRANCH_EXT="$(GIT_BRANCH)"
-PRECOMP += -DBUILT_ON_EXT="$(TIME)"
+PRECOMP += -DGIT_VERSION_EXT="'$(GIT_VERSION)'"
+PRECOMP += -DGIT_HASH_EXT="'$(GIT_HASH)'"
+PRECOMP += -DGIT_BRANCH_EXT="'$(GIT_BRANCH)'"
+PRECOMP += -DGIT_REPO_EXT="'$(GIT_REPO)'"
+PRECOMP += -DBUILT_ON_EXT="'$(TIME)'"
 
 #This must come here
 MOD_PATH+= -I
