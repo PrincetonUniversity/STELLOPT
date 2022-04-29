@@ -68,7 +68,6 @@
          CALL wall_dump('test',ier)
       END IF
 
-
       ! Limit what the user can do
       IF (laxis_i .and. .not.lvac) lvac = .true.
       
