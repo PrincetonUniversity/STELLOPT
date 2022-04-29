@@ -29,10 +29,11 @@
       IMPLICIT NONE
       INTEGER :: MPI_COMM_LOCAL
       INTEGER :: mystart, mynewstart, mynewend, i, &
-                 win_R_local, win_Z_local, win_phis_local, win_phie_local
+                 win_R_local, win_Z_local, win_phis_local, &
+                 win_phie_local, win_L_local
 
       REAL(rprec), POINTER :: R_local(:), Z_local(:), phis_local(:), &
-                              phie_local(:)
+                              phie_local(:), L_local(:)
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -43,15 +44,24 @@
       END IF
 
       ! Divide up the work
-      CALL MPI_CALC_MYRANGE(MPI_COMM_FIELDLINES,1, nlines, mystart, myend)
+      !CALL MPI_CALC_MYRANGE(MPI_COMM_FIELDLINES,1, nlines, mystart, myend)
+      mystart = LBOUND(R_lines,1)
+      myend   = UBOUND(R_lines,1)
 
       ! Allocate the local variables
       CALL mpialloc(R_local, nlines*2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_R_local)
       CALL mpialloc(Z_local, nlines*2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Z_local)
       CALL mpialloc(phis_local, nlines*2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phis_local)
       CALL mpialloc(phie_local, nlines*2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phie_local)
+      CALL mpialloc(L_local, nlines, myid_sharmem, 0, MPI_COMM_SHARMEM, win_L_local)
+
+      ! Default to zero
+      IF (myid_sharmem==master) THEN
+         R_local = 0; Z_local=0; phis_local = 0; phie_local=0; L_local = 0
+      END IF
 
       ! Overwrite and start a new run (note _lines will be deallocated)
+      L_local(mystart:myend) = L_lines(mystart:myend)
       IF (lhitonly) THEN
          ! These are the reruns of the hit
          R_local(mystart:myend)    =  R_lines(mystart:myend,0)
@@ -79,6 +89,7 @@
          CALL MPI_ALLREDUCE(MPI_IN_PLACE,Z_local,nlines*2,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_ALLREDUCE(MPI_IN_PLACE,phis_local,nlines*2,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_ALLREDUCE(MPI_IN_PLACE,phie_local,nlines*2,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE,L_local,nlines,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       END IF
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES, ierr_mpi)
@@ -107,6 +118,14 @@
 
       ! Reset a thing or two
       lmu = .TRUE.
+
+      ! Fix L_lines
+      mystart = LBOUND(R_lines,1)
+      myend   = UBOUND(R_lines,1)
+      i = nlines/2
+      IF (myend > i) myend = i
+      IF (mystart <= i) L_lines(mystart:myend) = L_local(mystart:myend)
+      IF (ASSOCIATED(L_local)) CALL mpidealloc(L_local, win_L_local)
 
 
 !-----------------------------------------------------------------------
