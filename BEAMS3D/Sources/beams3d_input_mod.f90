@@ -339,10 +339,10 @@
             IF (nr_fida .eq. 0) nr_fida = nr
             IF (nphi_fida .eq. 0) nphi_fida = nphi
             IF (nz_fida .eq. 0) nz_fida = nz
-            nenergy_fida = ns_prof4 !should stay this way!
-            npitch_fida = ns_prof5
-            !IF (nenergy_fida .eq. 0) nenergy_fida = ns_prof4
-            !IF (npitch_fida .eq. 0) npitch_fida = ns_prof5
+            !nenergy_fida = ns_prof4 !should stay this way!
+            !npitch_fida = ns_prof5
+            IF (nenergy_fida .eq. 0) nenergy_fida = ns_prof4
+            IF (npitch_fida .eq. 0) npitch_fida = ns_prof5
          END IF
 
          nparticles = 0
