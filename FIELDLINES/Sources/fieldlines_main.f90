@@ -337,6 +337,7 @@
             !CALL fieldlines_periodic_orbits  ! This call on subgrid grid
             !IF (lverb) CALL fieldlines_calc_surface_fit(25)
          CASE(runtype_backflow)
+            IF (lverb) WRITE(6,'(A)') '===========Wall Hits=========='
             CALL fieldlines_follow
             CALL fieldlines_init_backflow
          CASE(runtype_norun)

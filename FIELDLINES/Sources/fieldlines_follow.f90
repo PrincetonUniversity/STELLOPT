@@ -19,9 +19,8 @@
       USE vessel_mod
       USE fieldlines_runtime
       USE fieldlines_lines
-      USE fieldlines_grid, ONLY: phimin, phimax, delta_phi,&
-                                 BR_spl, BZ_spl, MU_spl, MODB_spl
-      USE wall_mod, ONLY: ihit_array, nface, wall_free
+      USE fieldlines_grid, ONLY: phimin, phimax, delta_phi
+      USE wall_mod, ONLY: ihit_array, nface
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
