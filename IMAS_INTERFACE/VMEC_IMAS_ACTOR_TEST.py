@@ -40,7 +40,7 @@ class ExampleWorkflowManager:
         
         runtime_settings = self.vmec.get_runtime_settings()
         runtime_settings.run_mode = RunMode.STANDALONE
-        runtime_settings.mpi.mpi_nodes = 1
+        runtime_settings.mpi.mpi_nodes = 8
 
         self.vmec.initialize(runtime_settings=runtime_settings, code_parameters=code_parameters)
 
@@ -53,7 +53,7 @@ class ExampleWorkflowManager:
         # EXECUTE PHYSICS CODE
         print('=> Execute physics code')
         output_equilibrium = self.vmec(input_equilibrium)
-        #breakpoint()
+        breakpoint()
         #output_equilibrium.time=input_equilibrium.time
 
         # SAVE IDSS INTO OUTPUT FILE

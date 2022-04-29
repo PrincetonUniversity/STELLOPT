@@ -107,7 +107,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
 
   !---- Setup VMEC Run
   myseq=0
-  ictrl(1) = restart_flag + imasrun_flag + timestep_flag
+  ictrl(1) = restart_flag + imasrun_flag + timestep_flag + output_flag
   ictrl(2) = 0 ! ier_flag
   ictrl(3) = -1 ! numsteps
   ictrl(4) = -1 ! ns_index
@@ -124,7 +124,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
   status_code = ictrl(2)
 
   !----  Write out EQUILIBRIUM
-  CALL VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
+  IF (grank == 0) CALL VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
 
   !----  Copy stuff from the input to the output
   npts_imas = SIZE(IDS_EQ_IN%time)
@@ -465,15 +465,19 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   status_code = 0
   itime = 1
 
+  PRINT *,'GOT HERE'
   !---- Check Validity
   IF (.NOT. ASSOCIATED(IDS_EQ_OUT%time_slice)) THEN
      ALLOCATE(IDS_EQ_OUT%time_slice(itime))
   END IF
+  PRINT *,'GOT HERE2'
   IF (.NOT. ASSOCIATED(IDS_EQ_OUT%ids_properties%creation_date)) THEN
      ALLOCATE(IDS_EQ_OUT%ids_properties%creation_date(1))
   END IF
+  PRINT *,'GOT HERE3'
 
   !---- IDS PROPERTIES
+  PRINT *,'GOT HERE4'
   IDS_EQ_OUT%ids_properties%provider='USER'
   CALL DATE_AND_TIME(DATE=date,TIME=times)
   IDS_EQ_OUT%ids_properties%creation_date=date
@@ -482,18 +486,28 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
 
 
   !---- CODE FIELDS
+  PRINT *,'GOT HERE5'
   IDS_EQ_OUT%code%name='VMEC2000'
+  IF (.NOT.ASSOCIATED(IDS_EQ_OUT%code%commit))&
+     ALLOCATE(IDS_EQ_OUT%code%commit(1))
   IDS_EQ_OUT%code%commit=git_hash
+  IF (.NOT.ASSOCIATED(IDS_EQ_OUT%code%version))&
+     ALLOCATE(IDS_EQ_OUT%code%version(1))
+  PRINT *,version_
   IDS_EQ_OUT%code%version=version_
-  IDS_EQ_OUT%code%repository='https://github.com/PrincetonUniversity/STELLOPT'
+  IF (.NOT.ASSOCIATED(IDS_EQ_OUT%code%repository))&
+     ALLOCATE(IDS_EQ_OUT%code%repository(1))
+  IDS_EQ_OUT%code%repository=git_repository
 
   !---- Vacuum Field Information
   !IDS_EQ_OUT%vacuum_toroidal_field%r0= Rvac
+  PRINT *,'GOT HERE6'
   IF (.NOT. ASSOCIATED(IDS_EQ_OUT%vacuum_toroidal_field%b0) ) &
      ALLOCATE(IDS_EQ_OUT%vacuum_toroidal_field%b0(size(IDS_EQ_OUT%time)))
   !IDS_EQ_OUT%vacuum_toroidal_field%b0(itime)=Bvac*Bvac_sign
 
   !---- Global quantities
+  PRINT *,'GOT HERE7'
   IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_pol      = betapol
   IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_tor      = betator
   IDS_EQ_OUT%time_slice(itime)%global_quantities%beta_normal   = 100*betator*Aminor_p*b0/(ctor/mu0)
@@ -503,8 +517,8 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   IDS_EQ_OUT%time_slice(itime)%global_quantities%area          = cross_area_p
   IDS_EQ_OUT%time_slice(itime)%global_quantities%surface       = surf_area_p
   IDS_EQ_OUT%time_slice(itime)%global_quantities%length_pol    = circum_p
-  !IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_axis      = 0.d0
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_boundary  = phiedge
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_axis      = chip(1)
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_boundary  = chip(ns)
   IDS_EQ_OUT%time_slice(itime)%global_quantities%q_axis        = 1/iotaf(1)
   i = FLOOR(0.9025*ns)
   IDS_EQ_OUT%time_slice(itime)%global_quantities%q_95          = 1/iotaf(i)
@@ -519,6 +533,7 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   END IF
 
   !---- PROFILES 1D
+  PRINT *,'GOT HERE8'
   ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%psi(ns))
   IDS_EQ_OUT%time_slice(itime)%profiles_1d%psi      = chi
   ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%phi(ns))
@@ -548,6 +563,7 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
      SQRT(IDS_EQ_OUT%time_slice(itime)%profiles_1d%volume/volume_p)
   ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%dvolume_drho_tor(ns))
   IDS_EQ_OUT%time_slice(itime)%profiles_1d%dvolume_drho_tor = vp/Aminor_p
+  PRINT *,'GOT HERE9'
   
   !ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_1d%f(ns))
   !IDS_EQ_OUT%time_slice(itime)%profiles_1d%f = ?
