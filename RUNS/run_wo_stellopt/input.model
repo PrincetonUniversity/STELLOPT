@@ -1,0 +1,7 @@
+&model 
+ FS=0
+ INC_EXB=.TRUE.
+ TANG_VM=.TRUE.
+ SOLVE_QN=.FALSE.
+ SOLVE_AMB=.TRUE.
+/
