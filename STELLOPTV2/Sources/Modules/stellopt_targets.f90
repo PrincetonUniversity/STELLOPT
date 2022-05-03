@@ -180,6 +180,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q1,sigma_stella_q1
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q2,sigma_stella_q2
       REAL(rprec), DIMENSION(nsd)   ::  target_raderb00,sigma_raderb00
+      REAL(rprec), DIMENSION(nsd)   ::  target_mbm,sigma_mbm
       REAL(rprec), DIMENSION(nsd)   ::  target_gamma_c, sigma_gamma_c ! this is ganmma_c implennted in STELLOPT (?) (EdiSan)
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
@@ -310,6 +311,7 @@
       INTEGER, PARAMETER :: jtarget_y          = 901
       INTEGER, PARAMETER :: jtarget_Rosenbrock_F   = 902
       INTEGER, PARAMETER :: jtarget_raderb00   = 903
+      INTEGER, PARAMETER :: jtarget_mbm        = 904
       INTEGER, PARAMETER :: jtarget_knosos_1nu = 910
       INTEGER, PARAMETER :: jtarget_knosos_snu = 911
       INTEGER, PARAMETER :: jtarget_knosos_sbp = 912
@@ -514,6 +516,8 @@
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
          CASE(jtarget_raderb00)
             WRITE(iunit, out_format) 'Radial derivative of B_00'
+         CASE(jtarget_mbm)
+            WRITE(iunit, out_format) 'B_max-B_min(s=1)'
          CASE(jtarget_gamma_c)
             WRITE(iunit, out_format) 'Gamma_c'
       END SELECT

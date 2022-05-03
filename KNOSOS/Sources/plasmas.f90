@@ -6,7 +6,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
+SUBROUTINE READ_PLASMAS(nbb,fracb,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
 
 !-------------------------------------------------------------------------------------------------
 !For nbb species of charge ZB(nbb), read density, temperature profiles:
@@ -17,7 +17,7 @@ SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
   IMPLICIT NONE
   !Input
   INTEGER nbb
-  REAL*8 ZEFF,s0,ZB(nbb),AB(nbb)
+  REAL*8 fracb(nbb),s0,ZB(nbb),AB(nbb)
   !Output
   REAL*8 nb(nbb),dnbdpsi(nbb),Tb(nbb),dTbdpsi(nbb),Epsi
   !Others
@@ -35,8 +35,10 @@ SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
   IF(nbb.GE.3) THEN
      DO ib=3,nbb   !Incorrect if nbb>3, especially if not trace
         IF(ib.EQ.3) THEN
-           nb(ib)     =     ne*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
-           dnbdpsi(ib)=dnedpsi*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
+           nb(ib)=ne*fracb(ib)
+           dnbdpsi(ib)=dnedpsi*fracb(ib)
+!           nb(ib)     =     ne*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
+!           dnbdpsi(ib)=dnedpsi*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
         ELSE
            nb(ib)=ne/1000.
            dnbdpsi(ib)=dnedpsi/1000.
@@ -54,18 +56,18 @@ SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
   dnbdpsi(2)=dnbdpsi(2)/ZB(2)
 
   !Check if impurities are trace or not
-  DO ib=3,nbb
-     IF(SQRT(Ab(ib)/Ab(2))*(nb(ib)*ZB(ib)*ZB(ib))/(nb(2)*ZB(2)*ZB(2)).GT.5E-2) THEN
-        WRITE(iout,'(" ZEFF=",F6.3," (n_z/n_i)(Z_z/Z_i)^2(m_z/m_i)^{1/2}=",F6.3)') &
-             ZEFF,SQRT(Ab(ib)/Ab(2))*(nb(ib)*ZB(ib)*ZB(ib))/(nb(2)*ZB(2)*ZB(2))
-        serr="Not trace impurity"
+!  DO ib=3,nbb
+!     IF(SQRT(Ab(ib)/Ab(2))*(nb(ib)*ZB(ib)*ZB(ib))/(nb(2)*ZB(2)*ZB(2)).GT.5E-2) THEN
+!        WRITE(iout,'(" ZEFF=",F6.3," (n_z/n_i)(Z_z/Z_i)^2(m_z/m_i)^{1/2}=",F6.3)') &
+!             ZEFF,SQRT(Ab(ib)/Ab(2))*(nb(ib)*ZB(ib)*ZB(ib))/(nb(2)*ZB(2)*ZB(2))
+!       serr="Not trace impurity"
 !        IF(REGB(2).GT.0) THEN
 !           CALL END_ALL(serr,.FALSE.)
 !        ELSE
-           WRITE(iout,*) serr
+!           WRITE(iout,*) serr
 !        END IF
-     END IF
-  END DO
+!     END IF
+!  END DO
 !  IF(ne.LT.0) THEN
 !     IF(ONLY_DB) THEN
 !        ne=-ne

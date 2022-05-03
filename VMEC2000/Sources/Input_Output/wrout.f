@@ -131,7 +131,7 @@
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
-      INTEGER :: j, js, jlk, mn, lk, iasym,
+      INTEGER :: j, js, jlk, mn, lk, iasym, ios, js0, mn0,
      1           m, n, k, iwout0, n1, nwout, istat, i, indx1(1),
      2           mnmax_nyq0, mnyq0, nnyq0, nwout2   ! nwout2 by J.Geiger
      3          ,isgn, js2, nfort      !for diagno 1.5
@@ -790,6 +790,32 @@
          END IF
 
       END DO RADIUS1
+     
+      js0=-1
+      OPEN(unit=1,file='input.js',action='read',iostat=ios)
+!      OPEN(unit=1,file='input.js',form='formatted',action='read',iostat=ios)
+      IF(ios.EQ.0) THEN
+         READ(1,*) js0
+         WRITE(6,*) 'Reading input.js',js0
+         CALL convert(rmnc1,zmns1,lmns1,rmns1,zmnc1,lmnc1,xfinal,js0) !JL
+         CLOSE(1)
+         WRITE (nthreed, 801)
+         DO mn = 1, mnmax
+            DO mn0 = 1, mnpd
+               IF ( (NINT(xnpot(mn0)).eq.NINT(xn(mn))) .and.
+     1              (NINT(xmpot(mn0)).eq.NINT(xm(mn))) ) THEN
+                  EXIT
+               END IF
+            END DO
+            WRITE (nthreed, 810) NINT(xn(mn)/nfp), NINT(xm(mn)),
+     1      rmnc1(mn), zmns1(mn)
+         END DO
+      END IF
+
+
+  801 FORMAT(//,3x,'nb',2x,'mb',6x,'rbc',9x,'zbs',6x,'vacpot_s',
+     1          2x, '|B|_c(s=.5)',1x,'|B|_c(s=1.)'/)
+  810 FORMAT(i5,i4,1p,7e12.4)
 
       DEALLOCATE (xfinal)
 
@@ -839,7 +865,7 @@
 !... INTERPOLATE (EXTRAPOLATE) TO HALF INTEGER MESH
       pdh = c1p5 * pd(2) - p5 * pd(3)
       pmh = c1p5 * pmap(2) - p5 * pmap(3)
-      pde = c1p5 * pd(ns-1) - p5 * pd(ns-2)
+      pde= c1p5 * pd(ns-1) - p5 * pd(ns-2)
       pme = c1p5 * pmap(ns-1) - p5 * pmap(ns-2)
       DO js=ns-2,2,-1
          pd(js+1) = p5*(pd(js+1) + pd(js)) / (pres(js+1)*phot(js+1)+eps)
@@ -1656,7 +1682,7 @@
 !-----------------------------------------------
 !     FREE BOUNDARY DATA
 !-----------------------------------------------
-      IF (lwrite )
+      IF (lwrite)
      1   CALL freeb_data(rmnc1, zmns1, rmns1, zmnc1, bmodmn, bmodmn1)
  1000 CONTINUE
 

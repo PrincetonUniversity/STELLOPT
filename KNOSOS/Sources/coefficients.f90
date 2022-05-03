@@ -817,7 +817,8 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
   REAL*8 dtl,ddtl,tdtl,tdtlo3,t_l
   REAL*8 cosnm(Nnm),cosnm_ini(Nnm),cosnm_del(Nnm),cosnm_del2(Nnm),cosnm_del4(Nnm)
   REAL*8 sinnm(Nnm),sinnm_ini(Nnm),sinnm_del(Nnm),sinnm_del2(Nnm),sinnm_del4(Nnm)
-  REAL*8 Qold(nq),Qsum(nq),Qint(nq),Qana(nq0)
+  REAL*8 Qold(nq),Qsum(nq),Qint(nq),Qana(nq0),deltas,maxdeltas,mindeltas
+  REAL*8, ALLOCATABLE :: ds(:)
   !Time
 !  CHARACTER*30, PARAMETER :: routine="BOUNCE_INTEGRAL"
 !  INTEGER, SAVE :: ntotal=0
@@ -841,7 +842,8 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
   t_l=0.5*(t_ini+t_fin)
   CALL FILL_PHASE(z_l,t_l,cosnm,sinnm)
   !Calculate integrand
-  CALL BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)  
+  CALL BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
+
   !First calculation removing the divergence
   IF(REMOVE_DIV) THEN 
      CALL BOUNCE_INTEGRAND_MINF(iw,z_l,z_ini,lambd,ZERO  ,Bp_ini,hBpp_ini,vd_ini,nq0,Qint(1:nq0)) 
@@ -876,6 +878,8 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
      z_l=z_ini+0.5*dzl
      t_l=t_ini+0.5*dtl
      Qsum=0
+     ALLOCATE(ds(nfrac))
+     ds=0
      DO ifrac=1,nfrac
         CALL BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
         CALL DELTA_PHASE(cosnm,sinnm,cosnm_del4,sinnm_del4)
@@ -888,6 +892,7 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
         t_l=t_l+ddtl
         Qsum=Qsum+qint
         CALL BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
+        ds(ifrac)=Qint(3)
         CALL DELTA_PHASE(cosnm,sinnm,cosnm_del2,sinnm_del2)
         IF(REMOVE_DIV) THEN
            CALL BOUNCE_INTEGRAND_MINF(iw,z_l,z_ini,lambd,MONE  ,Bp_ini,hBpp_ini,vd_ini,nq0,Qint(1:nq0)) 
@@ -903,22 +908,35 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
         WRITE(2400+myrank,'(I6,7(1pe13.5))') iw,dzl,lambd,(Q(iq),iq=1,nq0)
         WRITE(2500+myrank,'(I6,7(1pe13.5))') iw,dzl,lambd,(Q(iq)+Qana(iq),iq=1,nq0)
      END IF
-
+     
+     deltas=0
+     maxdeltas=0
+     mindeltas=0
+     DO ifrac=1,nfrac
+        deltas=deltas+ds(ifrac)*tdzl/nfrac
+        IF(deltas.GT.maxdeltas) maxdeltas=deltas
+        IF(deltas.LT.mindeltas) mindeltas=deltas
+     END DO
+     DO ifrac=nfrac,1,-1
+        deltas=deltas+ds(ifrac)*tdzl/nfrac
+        IF(deltas.GT.maxdeltas) maxdeltas=deltas
+        IF(deltas.LT.mindeltas) mindeltas=deltas
+     END DO
+     DEALLOCATE(ds)
+ 
      !Convergence is checked looking at the total integral (Q+Qana)
 !     IF(FAST_IONS) THEN
 !        IF(nint.GE.nmin.AND.(dzl.LT.PREC_EXTR.OR.&
 !             & (ABS(1-(Q(6)+Qana(6))/(Qold(6)+Qana(6))).LT.PREC_BINT))) EXIT
-!     ELSE
-        IF(nint.GE.nmin.AND.(dzl.LT.PREC_EXTR.OR.&
-             & (ABS(1-(Q(1)+Qana(1))/(Qold(1)+Qana(1))).LT.PREC_BINT.AND.&
-             & (ABS(1-(Q(2)+Qana(2))/(Qold(2)+Qana(2))).LT.PREC_BINT)))) EXIT
-!     END IF
-          
+     IF(nint.GE.nmin.AND.(dzl.LT.PREC_EXTR.OR.&
+           & (ABS(1-(Q(1)+Qana(1))/(Qold(1)+Qana(1))).LT.PREC_BINT.AND.&
+           & (ABS(1-(Q(2)+Qana(2))/(Qold(2)+Qana(2))).LT.PREC_BINT)))) EXIT
      Qold=Q
      nfrac=nfrac*3
-     
+!!     
   END DO
-  
+  IF(FAST_IONS) Q(2)=maxdeltas-mindeltas
+
   !Warnings
   IF(dzl.LT.PREC_EXTR) WRITE(1100+myrank,*) 'Bounce integral not converged, try reducing DTMIN'
   IF(nint.GE.nmax) WRITE(1100+myrank,*) 'Bounce integral not converged, try increasing NMAX!!'
@@ -930,7 +948,6 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
 
   !Sum contributions
   Q=Q+Qana
-
 !  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE BOUNCE_INTEGRAL
@@ -1027,7 +1044,7 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
      Qint(4)=0.0
   END IF
 
-  Qint(1:nq)=Qint(1:nq)*aiBtpBz/B_0   !dl=dz*(dz/dl)
+  Qint(1:nq)=Qint(1:nq)*aiBtpBz/B_0   !dl=dz*(dz/dl) 
   IF(DEBUG.AND.(iw.EQ.L0.OR.L0.EQ.0)) & 
        & WRITE(2200+myrank,'(I6,7(1pe13.5))') iw,z_l,(Qint(iq),iq=1,nq0),lambd
 

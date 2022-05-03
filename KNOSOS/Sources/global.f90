@@ -38,7 +38,7 @@ MODULE GLOBAL
   REAL*8, PARAMETER :: m_e =1.04396844E-08 !ratio between unitary mass and charge
   REAL*8, PARAMETER ::   e =1.60217662e-19 !electron charge
   REAL*8, PARAMETER :: tsl=1E-3
-
+  
   !MPI constants
   INTEGER iout,myrank,numprocs
 
@@ -48,18 +48,20 @@ MODULE GLOBAL
   LOGICAL USE_B1,USE_B0pB1,QS_B0,QS_B0_1HEL,REMOVE_DIV,DELTA,FAST_AMB,ILAGRID,RSEED
   INTEGER I0,L0,TRUNCATE_B,NER,NERR,MLAMBDA,MAL,NTURN
   REAL*8 PREC_B,PREC_EXTR,PREC_BINT,PREC_DQDV,PREC_INTV,IPERR,ERMIN,ERMAX,ERACC
-  !Namelist /model/
+  !Namelist /surfaces/
   CHARACTER*100 DIRDB
   CHARACTER*7 DIRS(nsx)
+  REAL*8 SDKES(nsx)
+  !Namelist /model/
   LOGICAL ONLY_B0,CALC_DB,NO_PLATEAU,ONLY_DB,INC_EXB,TANG_VM,CLASSICAL,FRICTION,ANISOTROPY
   LOGICAL SCAN_ER,SOLVE_AMB,TRIVIAL_AMB,SOLVE_QN,TRIVIAL_QN,ZERO_PHI1,ONLY_PHI1,COMPARE_MODELS
-  LOGICAL NEOTRANSP,TASK3D,TASK3Dlike,PENTA,NTV,SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2
+  LOGICAL TANGO,NEOTRANSP,TASK3D,TASK3Dlike,PENTA,NTV,SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2
   INTEGER D_AND_V,ER_ROOT,NBULK
   REAL*8 FN,FI,FS,FP,FE,FR,FB,FACT_CON,FNE,FTE,FTI,FDLNE,FDLTE,FDLTI,FER
   !Namelist /fastions/
   LOGICAL JMAP,LINEART,GLOBALFI,MODELFI,RANDOMSL,JCORRECTION,JTRANS,FITRANS
   INTEGER JORBIT,FDMAX
-  REAL*8 GTH,TENDFI,DTFI,EFI,TWOEFI,LJMAP,FIDELTA,PREC_J,PREC_S,PREC_TRANS
+  REAL*8 GTH,TENDFI,DTFI,EFI,AFI,ZFI,TWOEFI,TWOEFIoZ,VDoV,LJMAP,FIDELTA,PREC_J,PREC_S,PREC_TRANS
   !Namelist /species/
   LOGICAL SS_IMP
   !Global
@@ -83,7 +85,7 @@ MODULE GLOBAL
 
   !Flux-surface constants
   REAL*8 eps,eps32,avB,avB2,etet
-  REAL*8 psip,chip,iota,siota,aiota,iota2,diotadpsi,Bzeta,Btheta
+  REAL*8 psip,chip,iota,siota,aiota,iota2,diotadpsi,Bzeta,Btheta,phi0
   REAL*8 iBtpBz,aiBtpBz,dBzdpsi,dBtdpsi,dB0dpsi
   REAL*8 Bmax,Bmax_av,Bmin,Bmin_av
   REAL*8 spol,dspolds
@@ -92,7 +94,7 @@ MODULE GLOBAL
   REAL(rprec) borbic(-ntorbd:ntorbd,0:mpolbd)  ,borbis(-ntorbd:ntorbd,0:mpolbd)
   REAL(rprec) borbic0(-ntorbd:ntorbd,0:mpolbd),borbis0(-ntorbd:ntorbd,0:mpolbd)
   REAL(rprec) dborbicdpsi(-ntorbd:ntorbd,0:mpolbd),dborbisdpsi(-ntorbd:ntorbd,0:mpolbd)
-  REAL(rprec) dborbic0dpsi(-ntorbd:ntorbd,0:mpolbd),dborbis0dpsi(-ntorbd:ntorbd,0:mpolbd)
+  REAL(rprec) dborbic0dpsi(-ntorbd:ntorbd,0:mpolbd),dborbis0dpsi(-ntorbd:ntorbd,0:mpolbd)   
   REAL*8 rorbic(-ntorbd:ntorbd,0:mpolbd),rorbis(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 zorbic(-ntorbd:ntorbd,0:mpolbd),zorbis(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 porbic(-ntorbd:ntorbd,0:mpolbd),porbis(-ntorbd:ntorbd,0:mpolbd)
@@ -109,7 +111,7 @@ MODULE GLOBAL
   REAL*8,  ALLOCATABLE :: s_b(:),spol_b(:),iota_b(:),pres_b(:),beta_b(:),psip_b(:),psi_b(:),bvco_b(:),buco_b(:)
   REAL*8,  ALLOCATABLE :: bmnc_b(:,:),rmnc_b(:,:),pmns_b(:,:),zmns_b(:,:),gmnc_b(:,:)
   REAL*8,  ALLOCATABLE :: bmns_b(:,:),rmns_b(:,:),pmnc_b(:,:),zmnc_b(:,:)
-
+  REAL*8,  ALLOCATABLE :: phi_b(:),phip_b(:)
 
   !Grid, resolution and experimetal points
   REAL*8 zmax,tmax,dzstep
@@ -128,7 +130,7 @@ MODULE GLOBAL
 
   !Velocity integral
   INTEGER, PARAMETER :: nv=28
-  INTEGER, PARAMETER :: iv0=6   !Representative velocity (v~=v_th)
+  INTEGER, PARAMETER :: iv0=6   !Representative velocity (v~=v_th) 
   REAL*8 v(nv),weight(nv),Sdke(nv),vdconst(nv),vmconst(nv),fdkes(nv),fdkes2(nv),nu(nv),mu(nv),ftrace1nu(nv),mmuoT(nv)
   REAL*8 nuth(nbx),vth(nbx),nuzi(nbx)
 
@@ -141,7 +143,7 @@ MODULE GLOBAL
   REAL*8, ALLOCATABLE ::  cmult(:), efieldt(:), vmagt(:)
   REAL*8, ALLOCATABLE :: lcmult(:),lefieldt(:),lvmagt(:)
   REAL*8, ALLOCATABLE :: lD11dkes1(:,:),lD11dkes2(:,:),lD11tab(:,:,:),D31dkes(:,:)
-
+  
   INTEGER, ALLOCATABLE :: seed(:)
 
 END MODULE GLOBAL

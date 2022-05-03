@@ -1,7 +1,7 @@
 
 !Solve transport
 
-SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,regb,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
+SUBROUTINE TRANSPORT(dt,nbb,ns,s,Zb,Ab,regb,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
 
 !----------------------------------------------------------------------------------------------- 
 !For densities and temperatures and electrostatic potential given by nb, dnbdpsi, Tb, dTbdpsi,
@@ -25,8 +25,8 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,regb,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Ep
   REAL*8, PARAMETER :: cgb=10
   REAL*8, PARAMETER :: fgb=0.000288993908
   INTEGER ib,is!,iostat
-  REAL*8 dsdV(ns),dVdpsi(ns),dsdr(ns),psi(ns)
-  REAL*8 ds,Dgb(ns),Dnc(ns),dlnnbds(ns),expo(ns),nI(ns),deltab
+  REAL*8 deltab,dsdV(ns),dVdpsi(ns),dsdr(ns),psi(ns)
+  REAL*8 ds,Dgb(ns),Dnc(ns),dlnnbds(ns),expo(ns),nI(ns)
 !!  REAL*8 extnb(nbb,ns+1),extTb(nbb,ns+1)
 !  REAL*8 dGbdpsi(nbb,ns),dQbdpsi(nbb,ns),dEpsids(ns),dErdr(ns)
 !  REAL*8 Pin(ns),ohm(nbb,ns),coulomb(nbb,ns),nue(ns),loglambda(ns)
@@ -52,13 +52,19 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,regb,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Ep
   dt=dt
   dnbdpsi=dnbdpsi
   
-  IF(.NOT.SS_IMP) RETURN
-  
   dsdV=1./(TWOPI*PI*rad_R*rad_a*rad_a)
   dVdpsi=1./(dsdV*atorflux)
   dsdr=2*SQRT(s)/rad_a
   psi=atorflux*s
 
+  DO ib=1,nbulk
+     DO is=2,ns
+        IF(Qb(ib,is+1).LT.Qb(ib,is)) THEN
+           Qb(ib,is+1:ns)=Qb(ib,is)
+           EXIT
+        END IF
+     END DO
+  END DO
 
   DO ib=nbulk+1,nbb
      IF(regb(ib).EQ.2) THEN
@@ -75,10 +81,11 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,regb,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Ep
      DO is=2,ns
         ds=s(is)-s(is-1)
         expo(is)=expo(is)+0.5*(dlnnbds(is)+dlnnbds(is-1))*ds
+        WRITE(iout,*) 'here',is,s(is),dlnnbds(is)!gb(3,is),Dgb(is),Dnc(is)
      END DO
      nI(:)=EXP(expo(:))/EXP(expo(ns))
      DO is=1,ns
-        WRITE(7000+myrank,'(1000(1pe13.5))') s,Epsi*psip,Tb(ib,is),dlnnbds(is),nI(is)
+        WRITE(7000+myrank,'(1000(1pe13.5))') 'OJO A EPSI',s(is),Epsi(is)*psip,Tb(ib,is),dlnnbds(is),nI(is)
      END DO
   END DO
  
@@ -157,8 +164,10 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,regb,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Ep
 END SUBROUTINE TRANSPORT
 
 
-!!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
 !!$
 !!$
 !!$SUBROUTINE DERIVE(s,p,ns,order,dpdpsi)

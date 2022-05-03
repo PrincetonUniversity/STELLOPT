@@ -4,11 +4,11 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
+SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
 
 !-------------------------------------------------------------------------------------------------
 !Read simulation input. This includes the number ns of surfaces s, the number of species nnb and
-!their charge number Zb, mass number Ab and NC regime regb, and the effective charge Zeff.
+!their charge number Zb, mass number Ab and NC regime regb, and the ratio of ion species
 !The rest are global variables.
 !All of them are described in the user manual.  
 !-------------------------------------------------------------------------------------------------
@@ -16,6 +16,10 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   USE GLOBAL
   USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
+
+  !Namelist 'transport' contains parameters of the
+  !solution of theenergy transport equation
+  NAMELIST /transport/ dt
   !Namelist 'parameters' contains simulation parameters, including
   !decisions on how to solve some equations and what to plot
   NAMELIST /parameters/  GEN_FLAG,DEBUG,TIME,I0,L0,PLOTG,&
@@ -28,24 +32,24 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
        & CENTERED_ALPHA,SECOND_ORDER_ALPHA
   !Namelist 'model' contains physics parameters
   NAMELIST /model/ ONLY_B0,CALC_DB,NO_PLATEAU,ONLY_DB,INC_EXB,TANG_VM,CLASSICAL,ANISOTROPY,FRICTION,&
-       & SCAN_ER,SOLVE_AMB,TRIVIAL_AMB,FAST_AMB,SOLVE_QN,TRIVIAL_QN,ZERO_PHI1,ONLY_PHI1,&
+       & SCAN_ER,SOLVE_AMB,ER_ROOT,TRIVIAL_AMB,FAST_AMB,SOLVE_QN,TRIVIAL_QN,ZERO_PHI1,ONLY_PHI1,&
        & FACT_CON,D_AND_V,COMPARE_MODELS,&
        & FN,FI,FS,FP,FE,FR,FB,FNE,FTI,FTE,FER,&
-       & NEOTRANSP,PENTA,TASK3D,TASK3Dlike,NTV,SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2,KN_STELLOPT
+       & TANGO,NEOTRANSP,PENTA,TASK3D,TASK3Dlike,NTV,SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2,KN_STELLOPT
   !Namelist 'surfaces' contains the list of flux-surfaces calculated
-  NAMELIST /surfaces/ NS,S,SMIN,SMAX,DIRDB,DIRS
+  NAMELIST /surfaces/ NS,S,SMIN,SMAX,DIRDB,SDKES,DIRS
   !Namelist 'species' contains the list of species calculated
-  NAMELIST /species/ NBB,ZB,AB,REGB,ZEFF,NBULK,SS_IMP
+  NAMELIST /species/ NBB,ZB,AB,REGB,FRACB,NBULK,SS_IMP
   !Namelist 'fastions' contains parameters of the fast ions
-  NAMELIST /fastions/ GTH,TENDFI,DTFI,EFI,LINEART,JMAP,LJMAP,GLOBALFI,&
+  NAMELIST /fastions/ GTH,TENDFI,DTFI,EFI,ZFI,LINEART,JMAP,LJMAP,GLOBALFI,&
        & MODELFI,RANDOMSL,FIDELTA,FITRANS,JCORRECTION,JTRANS,PREC_J,PREC_TRANS,PREC_S,JORBIT,FDMAX
   !Namelist 'others' contains other variables
-  NAMELIST /others/ QN,TRACE_IMP,PLATEAU_OR_PS,USE_B0,&
+  NAMELIST /others/ FAST_IONS,QN,TRACE_IMP,PLATEAU_OR_PS,USE_B0,&
        & IMP1NU,CLOSEST_LAMBDA,MODEL_ALPHAD,ONE_ALPHA,EXTRA_ALPHA,RE_SOURCE,&
-       & CALC_RHS,CALC_DA,CALC_DIFf,CALC_COL,CALC_DG,FLUX_NU,PREC_TOP,NEW_DALPHA!,KROOK_OP
+       & CALC_RHS,CALC_DA,CALC_DIFf,CALC_COL,CALC_DG,FLUX_NU,PREC_TOP,NEW_DALPHA,INT_G_NEW!,KROOK_OP
   !Output
   INTEGER NS,ib,NBB,REGB(nbx)
-  REAL*8 S(nsx),ZB(nbx),AB(nbx),ZEFF
+  REAL*8 dt,S(nsx),ZB(nbx),AB(nbx),FRACB(nbx)
   !Other
   CHARACTER*100 serr,line,filename
   INTEGER iline,ioutt,iostat,nefield,ncmul,nvmag,iz,ia,is
@@ -153,8 +157,9 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   FRICTION=  .TRUE. 
   FACT_CON=  -3      
   !Equations to be solved
-  DIRDB  ="./"          
+  DIRDB  ="./dummy/"          
   DIRS="./"
+  SDKES=-1
   CALC_DB=.FALSE.
   NO_PLATEAU=.FALSE.
   ONLY_DB=.FALSE.   
@@ -174,6 +179,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   FDLTI=1.0
   FER=1.0
   !Particular problems
+  TANGO    = .FALSE.
   NEOTRANSP= .FALSE.
   TASK3D=    .FALSE. 
   TASK3Dlike=.FALSE. 
@@ -189,7 +195,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   OPEN(unit=1,file="input.model",form='formatted',action='read',iostat=iostat) 
   IF(iostat.NE.0) OPEN(unit=1,file="../input.model",form='formatted',action='read',iostat=iostat) 
   IF (iostat.EQ.0) THEN
-     IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.model" found'
+!     IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.model" found'
      READ (1,nml=model)
      CLOSE(1)
   END IF
@@ -197,13 +203,73 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   KNOSOS_STELLOPT=KN_STELLOPT(1).OR.KN_STELLOPT(2).OR.KN_STELLOPT(3).OR.KN_STELLOPT(4).OR.KN_STELLOPT(5).OR.&
                 & KN_STELLOPT(6).OR.KN_STELLOPT(7).OR.KN_STELLOPT(8).OR.KN_STELLOPT(9).OR.KN_STELLOPT(10)
   ioutt=iout
+
   IF(KNOSOS_STELLOPT.AND.LEN(TRIM(KN_EXT)).NE.0) THEN
      filename=TRIM(KN_EXT)
-     OPEN(unit=ioutt,file=filename,form='formatted',action='write',iostat=iostat)
+     OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat,&
+          access='append')
   ELSE
-     OPEN(unit=ioutt,file="STDOUT",form='formatted',action='write',iostat=iostat)
+     IF(numprocs.EQ.1) THEN
+        filename="STDOUT"
+        OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat,&
+             access='append',status='old')
+        filename="STDERR"
+        OPEN(unit=1100+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+     ELSE
+        WRITE(filename,'("STDOUT.",I2.2)') myrank
+        OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat)
+        WRITE(filename,'("STDERR.",I2.2)') myrank
+        OPEN(unit=1100+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+     END IF
   END IF
+!!$  IF(KNOSOS_STELLOPT.AND.LEN(TRIM(KN_EXT)).NE.0) THEN
+!!$     filename=TRIM(KN_EXT)
+!!$     OPEN(unit=ioutt,file=filename,form='formatted',action='write',iostat=iostat)
+!!$  ELSE
+!!$     OPEN(unit=ioutt,file="STDOUT",form='formatted',action='write',iostat=iostat)
+!!$  END IF
 
+  !-------------------------------------------------------------------------------------------
+  !Set values for namelist 'fastions'
+  !-------------------------------------------------------------------------------------------
+  FAST_IONS=.FALSE.
+  JMAP=.FALSE.
+  GTH=0.2
+  EFI=5.0E4 !(eV)
+  ZFI=1.0
+  AFI=1.0
+  TENDFI=1.0E-1 !(s)
+  DTFI=  1.0E-5 !(s)
+  LINEART=.FALSE.
+  MODELFI=.FALSE.
+  GLOBALFI=.FALSE.
+  RANDOMSL=.TRUE.
+  JCORRECTION=.TRUE.
+  JTRANS=.TRUE.
+  FITRANS=.TRUE.
+  PREC_J=2E-4
+  IF(KNOSOS_STELLOPT) PREC_J=1E-4
+  PREC_TRANS=1E-1
+  PREC_S=1E-4
+  FIDELTA=0.5
+  IF(KNOSOS_STELLOPT) FIDELTA=1.0
+  FDMAX=8
+  JORBIT=-1
+  LJMAP=-0.38   
+  !Read namelist 'fastions'
+  OPEN(unit=1,file="input.fastions",form='formatted',action='read',iostat=iostat) 
+  IF(iostat.NE.0) OPEN(unit=1,file="../input.fastions",form='formatted',action='read',iostat=iostat) 
+  IF (iostat.EQ.0) THEN
+     FAST_IONS=.TRUE.
+!     IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.fastions" found'
+     READ (1,nml=fastions)
+     CLOSE(1)
+  END IF
+  TWOEFI=2*EFI
+  TWOEFIoZ=2*EFI/ZFI
+  VDoV=1.389165e4*SQRT(EFI)*AFI*m_e/ZFI
+  IF(.NOT.FAST_IONS.AND.(KN_STELLOPT(4).OR.KN_STELLOPT(5))) MODELFI=.TRUE.
+  
   !-------------------------------------------------------------------------------------------
   !Set values for namelist 'parameters'
   !-------------------------------------------------------------------------------------------
@@ -239,16 +305,19 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   NTURN=1
   ILAGRID=.FALSE.
   IF(JMAP) THEN
-  MLAMBDA= 32
-  MAL    = 128
+     MLAMBDA= 32
+     MAL    = 128
+  ELSE IF(TANGO) THEN
+     MLAMBDA=128
+     MAL    =128
   ELSE
      MLAMBDA= 64
      MAL    = 64
   END IF
-  LJMAP=-0.38
   TRUNCATE_B= -200     
   PREC_B=     1E-5     
-  PREC_EXTR=  1E-7   
+  PREC_EXTR=  1E-6   
+  IF(KNOSOS_STELLOPT) PREC_EXTR=  1E-7
   PREC_BINT=  1E-2     
   PREC_DQDV=  5E-2     
   PREC_INTV=  1E-2     
@@ -270,13 +339,13 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   !Estimate error bars
   NERR =1       
   IPERR=-1.0   
-  RSEED=.TRUE.
+  RSEED=.FALSE.!TRUE.
   
   !Read namelist 'parameters'
   OPEN(unit=1,file="input.parameters",form='formatted',action='read',iostat=iostat) 
   IF(iostat.NE.0) OPEN(unit=1,file="../input.parameters",form='formatted',action='read',iostat=iostat) 
   IF(iostat.EQ.0) THEN
-     IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.parameters" found'
+!     IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.parameters" found'
      READ (1,nml=parameters)
      CLOSE(1)
   END IF
@@ -287,6 +356,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   ns=1
   s(1)=1
   s(2:nsx)=0
+  DIRS=' '
   SMIN=0
   SMAX=1
   !Default values: low collisionality hydrogen + adiabatic electrons, no impurities
@@ -294,13 +364,14 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   nbulk  = 2
   Zb(1)  =-1.            
   Ab(1)  = 5.4858E-4
-  regb(1)=-2           
+  regb(1)=+3           
   Zb(2)  =+1.            
   Ab(2)  = 1.0073
   regb(2)=+3
   Zb(3:nbx)=0
   Ab(3:nbx)=0
-  ZEFF=1
+  fracb(1:2)=1
+  fracb(3:nbx)=0
   SS_IMP=.FALSE.
 
   IF(TASK3D) THEN
@@ -316,7 +387,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      OPEN(unit=1,file="input-prof.txt",action='read',iostat=iostat)
      IF(iostat.NE.0) OPEN(unit=1,file="../input-prof.txt",action='read',iostat=iostat)     
      IF(iostat.EQ.0) THEN
-        IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input-prof.txt" found'
+!        IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input-prof.txt" found'
         DO iline=1,7
            READ(1,*) line
         END DO
@@ -329,6 +400,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
         CALL END_ALL(serr,.FALSE.)
      END IF
      NBB=6
+     NBULK=NBB
      Zb(3)  =+3.         
      Ab(3)  =6.941
      Zb(4)  =+19.         
@@ -338,7 +410,8 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      Zb(6)  =+23.            
      Ab(6)  =55.847
      regb(3:nbb)=10
-     ZEFF   =1.0000000001
+     fracb(1:2)=1
+     fracb(3:nbb)=0.0001
      D_AND_V=5
   ELSE IF(NEOTRANSP) THEN
      ns=7
@@ -352,6 +425,10 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
  !       s(is)=(is-0.5)*(is-0.5)/REAL(ns*ns)
  !    END DO
      INT_G_NEW=.TRUE.
+  ELSE IF(TANGO) THEN
+     REGB(1)=-1
+     REGB(2)=-1
+     INT_G_NEW=.TRUE.
   END IF
 
   !-------------------------------------------------------------------------------------------
@@ -362,7 +439,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   OPEN(unit=1,file="input.surfaces",form='formatted',action='read',iostat=iostat) 
   IF(iostat.NE.0) OPEN(unit=1,file="../input.surfaces",form='formatted',action='read',iostat=iostat) 
   IF (iostat.EQ.0) THEN
-     IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.surfaces" found'
+!     IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.surfaces" found'
      READ (1,nml=surfaces)
      CLOSE(1)
   END IF
@@ -372,7 +449,6 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
         s(is)=SMIN+(SMAX-SMIN)*(is-0.5)/REAL(ns)
      END DO
   END IF
-  DIRS(ns+1:nsx)=' '
 
   !-------------------------------------------------------------------------------------------
   !Set values for namelist 'species'
@@ -382,48 +458,24 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   OPEN(unit=1,file="input.species",form='formatted',action='read',iostat=iostat) 
   IF(iostat.NE.0) OPEN(unit=1,file="../input.species",form='formatted',action='read',iostat=iostat) 
   IF (iostat.EQ.0) THEN
-     IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.species" found'
+!     IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.species" found'
      READ (1,nml=species)
      CLOSE(1)
   END IF
-  
+
+
   !-------------------------------------------------------------------------------------------
-  !Set values for namelist 'fastions'
+  !Set values for namelist 'transport'
   !-------------------------------------------------------------------------------------------
-  FAST_IONS=.FALSE.
-  JMAP=.FALSE.
-  GTH=0.2
-  EFI=5.0E4 !(eV)
-  TENDFI=1.0E-1 !(s)
-  DTFI=  1.0E-5 !(s)
-  LINEART=.FALSE.
-  MODELFI=.FALSE.
-  GLOBALFI=.FALSE.
-  RANDOMSL=.TRUE.
-  JCORRECTION=.TRUE.
-  JTRANS=.TRUE.
-  FITRANS=.TRUE.
-  PREC_J=PREC_BINT
-  PREC_TRANS=PREC_BINT*10
-  PREC_S=1E-4
-  FIDELTA=1.0
-  FDMAX=8
-  JORBIT=-1
-  !Read namelist 'fastions'
-  OPEN(unit=1,file="input.fastions",form='formatted',action='read',iostat=iostat) 
-  IF(iostat.NE.0) OPEN(unit=1,file="../input.fastions",form='formatted',action='read',iostat=iostat) 
+
+  dt=-1.0
+  !Read namelist 'transport'
+  OPEN(unit=1,file="input.transport",form='formatted',action='read',iostat=iostat) 
+  IF(iostat.NE.0) OPEN(unit=1,file="../input.transport",form='formatted',action='read',iostat=iostat) 
   IF (iostat.EQ.0) THEN
-     FAST_IONS=.TRUE.
-     IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.fastions" found'
-     READ (1,nml=fastions)
+     READ (1,nml=transport)
      CLOSE(1)
   END IF
-  TWOEFI=2*EFI
-  IF(JMAP) THEN
-     MLAMBDA= 32
-     MAL    = 128
-  END IF
-  IF(KN_STELLOPT(4).OR.KN_STELLOPT(5)) MODELFI=.TRUE.
 
   !-------------------------------------------------------------------------------------------
 
@@ -458,6 +510,10 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      !Could be overwritten by 'input.model'
      SOLVE_QN  =.FALSE.
      TRIVIAL_QN=.TRUE.
+  ELSE IF(TANGO) THEN
+     SOLVE_QN=.FALSE.
+     TANG_VM=.TRUE.
+     NER=41
   ELSE IF(NEOTRANSP.OR.PENTA.OR.KNOSOS_STELLOPT) THEN
      CALC_DB=.TRUE.
      IF(NEOTRANSP.OR.PENTA) TANG_VM=.FALSE.
@@ -520,7 +576,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      RE_SOURCE=.FALSE.
   END IF
   IF(GEN_FLAG(4)) INT_G_NEW=.TRUE.
-  
+!  IF(TANGO) RE_SOURCE=.FALSE.
 
   IF(.NOT.MODEL_ALPHAD) CLOSEST_LAMBDA=.TRUE.
   CALC_DG=CALC_RHS.OR.CALC_DA.OR.CALC_COL.OR.CALC_DIFF.OR.FLUX_NU
@@ -683,10 +739,15 @@ SUBROUTINE INIT_FILES()
      IF(TASK3D) THEN
         IF(numprocs.EQ.1) filename="knososTASK3D.flux"
         IF(numprocs.GT.1) WRITE(filename,'("knososTASK3D.flux.",I2.2)') myrank
-        OPEN(unit=5300+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-        WRITE(5300+myrank,'("rho   E_r[kV/m]   Gamma_e[m^-2s^-1]   Gamma_i1[m^-2s^-1]  &
+        OPEN(unit=5600+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+        WRITE(5600+myrank,'("rho   E_r[kV/m]   Gamma_e[m^-2s^-1]   Gamma_i1[m^-2s^-1]  &
              & Gamma_i2[m^-2s^-1]   Gamma_i[m^-2s^-1]  &
-             & Q_e[W/m^2]   Q_i1[W/m^2]   Q_i2[W/m^2]   Q_i[W/m^2]")')  
+             & Q_e[W/m^2]   Q_i1[W/m^2]   Q_i2[W/m^2]   Q_i[W/m^2]")')
+     ELSE IF(TANGO) THEN
+        WRITE(filename,'("knosos_for_tango.txt.",I2.2)') myrank
+        OPEN(unit=5600+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+        WRITE(5600+myrank,'("x/a=sqrt(s)   E_r[V/m]   &
+             & <Q_i\dot\nabla x>[W/m^2] <Q_e\dot\nabla x>[W/m^2]")')
      END IF
 
      IF(COMPARE_MODELS) THEN
@@ -742,7 +803,7 @@ SUBROUTINE INIT_FILES()
       IF(numprocs.EQ.1) filename="stellopt.knosos"
       IF(numprocs.GT.1) WRITE(filename,'("stellopt.knosos.",I2.2)') myrank
       OPEN(unit=600+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-      WRITE(600+myrank,'("s 1NU SNU SBP GMC GMA QER VB0 VBB WBW DBO VBM")')
+      WRITE(600+myrank,'("s 1NU SNU SBP GMC GMA QER VB0 VBB WBW DBO VBM FTR")')
    ELSE
       IF(numprocs.EQ.1) filename="flux.knosos"
       IF(numprocs.GT.1) WRITE(filename,'("flux.knosos.",I2.2)') myrank
@@ -754,8 +815,8 @@ SUBROUTINE INIT_FILES()
    IF(TASK3D) THEN
       IF(numprocs.EQ.1) filename="knososTASK3D.ambEr"
       IF(numprocs.GT.1) WRITE(filename,'("knososTASK3D.ambEr.",I2.2)') myrank
-      OPEN(unit=5600+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-      WRITE(5600+myrank,'("rho   n_e[m^-3]   n_i1[m^-3   n_i2[m^-3]   T_e[eV]   T_i1[eV]   T_i2[eV]  &
+      OPEN(unit=5300+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+      WRITE(5300+myrank,'("rho   n_e[m^-3]   n_i1[m^-3   n_i2[m^-3]   T_e[eV]   T_i1[eV]   T_i2[eV]  &
            & E_r[kV/m]   Gamma[m^-2s^-1]   Q_e[W/m^2]   Q_i[W/m^2]   Chi_e[m^2/s]   Chi_i[m^2/s]")')
    END IF
    

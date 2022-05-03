@@ -1,4 +1,4 @@
-##################################################################################
+#################################################################################
 ############################# KNOSOS Makefile ####################################
 ##################################################################################
 
@@ -7,7 +7,11 @@
 
 HOSTNAME := $(shell uname -n|cut -f1 -d.)
 NODENAME := $(shell uname -n|rev|cut -f2 -dl|rev)
+SHOSTNAME := $(shell uname -n|cut -f1 -du)
 
+ifeq ($(SHOSTNAME), r000)
+CASE=marconi
+endif
 ifeq ($(HOSTNAME), xula01)
 CASE=xula
 endif
@@ -57,6 +61,21 @@ ifeq ($(HOSTNAME), draco02)
 CASE=draco
 endif
 
+
+###### if running at marconi #####################################
+
+ifeq ($(CASE), marconi)
+COMPILER =mpiifort
+#MPI_DIR  =
+#PETSC_DIR=
+#FFT_DIR  =
+#MKL_DIR  =
+#COMP_LIB =
+NETCDF_DIR=${NETCDFF_HOME}
+FFLAGS   =-fpp -DIPPorNIFS -DMPIandPETSc -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0
+IFLAGS   =-I${NETCDF_DIR}/include/ -I${NETCDF_INCLUDE} -I$(PETSC_HOME)/include -I${LAPACK_HOME}/include -I${MKL_HOME}/include -I${PETSC_DIR}/lib/petsc/conf/variables -I${PETSC_DIR}/lib/petsc/conf/rules -I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc -qopenmp -I${PETSC_DIR}/include
+LFLAGS   = -L${NETCDF_DIR}/lib/ -lnetcdff -L${NETCDF_HOME}/lib/ -lnetcdf -L$(PETSC_HOME)/lib -lpetsc -L${LAPACK_HOME}/lib -llapack -L${MKL_HOME}/lib/intel64 -lmkl_intel_lp64 
+endif
 
 ###### if running at draco #####################################
 

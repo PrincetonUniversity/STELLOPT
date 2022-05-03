@@ -227,6 +227,7 @@
 !            target_stella_q1  Array of target values for turbulence optimization (q1)
 !            target_stella_q2  Array of target values for turbulence optimization (q2)
 !            target_raderb00     Target for radial derivative of B00
+!            target_mbm         Targer for B_max minus B_min at s=1
 !            target_limter      Target array minimum distance between plasma and limiter surface
 !            r_limiter          Array of (ntheta,nzeta) radial limiter values [m]
 !            z_limiter          Array of (ntheta,nzeta) vertical limiter values [m] 
@@ -403,6 +404,7 @@
                          target_stella_q1, sigma_stella_q1, &
                          target_stella_q2, sigma_stella_q2, &
                          target_raderb00, sigma_raderb00, &
+                         target_mbm, sigma_mbm, &
                          target_jdotb,sigma_jdotb,target_bmin,sigma_bmin,&
                          target_bmax,sigma_bmax,target_jcurv,sigma_jcurv,&
                          target_orbit,sigma_orbit,nu_orbit,nv_orbit,&
@@ -1019,8 +1021,10 @@
       sigma_stella_q1   = bigno
       target_stella_q2  = 0.0
       sigma_stella_q2   = bigno
-      target_raderb00    = 0
-      sigma_raderb00     = bigno
+      target_raderb00   = 0
+      sigma_raderb00    = bigno
+      target_mbm        = 0
+      sigma_mbm         = bigno
       target_jdotb      = 0.0
       sigma_jdotb       = bigno
       target_jcurv      = 0.0
@@ -2389,22 +2393,38 @@
                     'SIGMA_STELLA_Q2(',ik,') = ',sigma_stella_q2(ik)
             END DO
          END IF
-      END IF      
-        IF(ANY(sigma_raderb00 < bigno)) THEN
-             WRITE(iunit,'(A)')'!----------------------------------------------------------------------'
-             WRITE(iunit,'(A)') '!          Radial Derivative of B00 (dB_00ds)'
-             WRITE(iunit,'(A)')'!----------------------------------------------------------------------'
-            n=0
-            DO ik = 1,UBOUND(sigma_raderb00,DIM=1)
-               IF(sigma_raderb00(ik) < bigno) n=ik
-            END DO
-            DO ik = 1, n
-               IF (sigma_raderb00(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
-                    'TARGET_RADERB00(',ik,') = ',target_raderb00(ik), &
-                    'SIGMA_RADERB00(',ik,') = ',sigma_raderb00(ik)
-            END DO
-        END IF
-
+      END IF
+      
+      IF(ANY(sigma_raderb00 < bigno)) THEN
+         WRITE(iunit,'(A)')'!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Radial Derivative of B00 (dB_00ds)'
+         WRITE(iunit,'(A)')'!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_raderb00,DIM=1)
+            IF(sigma_raderb00(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_raderb00(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                 'TARGET_RADERB00(',ik,') = ',target_raderb00(ik), &
+                 'SIGMA_RADERB00(',ik,') = ',sigma_raderb00(ik)
+         END DO
+      END IF
+      
+      IF(ANY(sigma_mbm < bigno)) THEN
+         WRITE(iunit,'(A)')'!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Maximum value of B (minus minimum value at s=1)            '
+         WRITE(iunit,'(A)')'!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_mbm,DIM=1)
+            IF(sigma_mbm(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_mbm(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                 'TARGET_MBM(',ik,') = ',target_mbm(ik), &
+                 'SIGMA_MBM(',ik,') = ',sigma_mbm(ik)
+         END DO
+      END IF
+      
       IF (ANY(sigma_jdotb < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Parllel Current (<J.B>)'  

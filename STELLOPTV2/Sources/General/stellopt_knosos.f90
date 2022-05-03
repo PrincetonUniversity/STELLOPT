@@ -34,7 +34,7 @@
       INTEGER, PARAMETER :: nbx=11
       INTEGER, PARAMETER :: nsx=1000
       INTEGER nbb,ns,REGB(nbx)
-      REAL*8 Ab(nbx),Zb(nbx),s(nsx),Zeff
+      REAL*8 dt,Ab(nbx),Zb(nbx),s(nsx),fracb(nbx)
 
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -46,7 +46,7 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-
+      WRITE(6,*) 'KNOSOS, sources2b'
       IF (lscreen) WRITE(6,*) 'KNOSOS',myworkid,iflag
       IF (iflag < 0) RETURN
 !DEC$ IF DEFINED (KNOSOS_OPT)
@@ -95,7 +95,7 @@
       IF(ANY(sigma_knosos_vb0 < bigno)) KN_STELLOPT(10)=.TRUE.
       IF(ANY(sigma_knosos_vbb < bigno)) KN_STELLOPT(8)=.TRUE.
       IF(ANY(sigma_knosos_wbw < bigno)) KN_STELLOPT(9)=.TRUE.
-      CALL READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
+      CALL READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
 !!$      !Allocate some transport-related quantities
 !!$      ALLOCATE(nb(nbb,ns,nerr),dnbdpsi(nbb,ns,nerr),Tb(nbb,ns,nerr),dTbdpsi(nbb,ns,nerr),&
 !!$           & Epsi(ns,nerr),Gb(nbb,ns,nerr),Qb(nbb,ns,nerr),Sb(nbb,ns,nerr),Pb(nbb,ns,nerr),rank(ns,nerr))

@@ -198,7 +198,9 @@
       ! Radial derivative of B00
       IF (ANY(sigma_raderb00 < bigno)) &
          CALL chisq_raderb00(target_raderb00, sigma_raderb00, ncnt,iflag)
-
+      ! Maximum value of B (minus minimum value at s=1)
+      IF (ANY(sigma_mbm < bigno)) &
+         CALL chisq_mbm(target_mbm, sigma_mbm, ncnt,iflag)
          
       !------------- COIL GEOMETRY TARGETS ---------------------
       ! Coil lengths

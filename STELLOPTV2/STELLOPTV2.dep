@@ -385,6 +385,12 @@ chisq_raderb00.o : \
       equil_utils.o 
       
 
+chisq_mbm.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+
+
 chisq_dkes.o : \
       stellopt_runtime.o \
       stellopt_targets.o \

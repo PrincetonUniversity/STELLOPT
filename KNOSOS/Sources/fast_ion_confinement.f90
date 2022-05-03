@@ -1,3 +1,4 @@
+
 !Calculate neoclassical transport of fast ions
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -5,8 +6,8 @@
 
 
 SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
-
-!---------------------------------------------------------------------------------------------
+  
+!--------------------------------------------------------------------------------------------- 
 !Calculate neoclassical transport of fast ions
 !The DKE is solved in a nalxnlambda grid in (alpha,lambda)
 !-----------------------------------------------------------------------------------------------
@@ -29,8 +30,8 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
   LOGICAL, ALLOCATABLE :: connected(:,:),bottom(:),ltemp(:),ltemp2(:,:)
   INTEGER nw,na
   REAL*8, ALLOCATABLE :: z1(:),t1(:),B1(:),hBpp1(:),vd1(:,:)
-  REAL*8, ALLOCATABLE :: zb(:),tb(:),Bb(:),hBppb(:),vdb(:,:)
-  REAL*8, ALLOCATABLE :: z2(:),t2(:),B2(:),hBpp2(:),vd2(:,:)
+  REAL*8, ALLOCATABLE :: zb(:),tb(:),Bb(:),hBppb(:),vdb(:,:) 
+  REAL*8, ALLOCATABLE :: z2(:),t2(:),B2(:),hBpp2(:),vd2(:,:) 
   REAL*8, ALLOCATABLE :: alphap_w(:),Bt(:),Btt(:),temp(:),temp2(:,:)
   !Angular and lambda grid
   INTEGER, ALLOCATABLE :: i_w(:),itemp(:)
@@ -59,11 +60,13 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
   s=s
   WRITE(iout,*) 'Calculating fast ion confinement'
 
+!  xxx xxx 
+
  !Find and characterize wells
   ALLOCATE(connected(nwx,nwx),bottom(nwx),&
        & z1(nwx),t1(nwx),B1(nwx),hBpp1(nwx),vd1(nqv,nwx),&
        & zb(nwx),tb(nwx),Bb(nwx),hBppb(nwx),vdb(nqv,nwx),&
-       & z2(nwx),t2(nwx),B2(nwx),hBpp2(nwx),vd2(nqv,nwx),&
+       & z2(nwx),t2(nwx),B2(nwx),hBpp2(nwx),vd2(nqv,nwx),& 
        & alphap_w(nwx),Bt(nwx),Btt(nwx),&
        & lambdab_w(nwx),lambdac_w(nwx))
   CALL CHARACTERIZE_WELLS(nal,na,nalpha,nw,z1,t1,B1,hBpp1,vd1, &
@@ -94,7 +97,7 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
   temp2=vd1(1:nqv,1:nw);DEALLOCATE(vd1);ALLOCATE(vd1(nqv,nw));vd1=temp2
   temp2=vdb(1:nqv,1:nw);DEALLOCATE(vdb);ALLOCATE(vdb(nqv,nw));vdb=temp2
   temp2=vd2(1:nqv,1:nw);DEALLOCATE(vd2);ALLOCATE(vd2(nqv,nw));vd2=temp2
-  DEALLOCATE(temp,temp2,ltemp)
+  DEALLOCATE(temp,temp2,ltemp)  
   ALLOCATE(ltemp2(nw,nw))
   ltemp2=connected(1:nw,1:nw);DEALLOCATE(connected);ALLOCATE(connected(nw,nw));connected=ltemp2
   DEALLOCATE(ltemp2)
@@ -114,7 +117,7 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
   CALL CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,&
        & zetap,thetap,zetax,thetax,B_al,vds_al,j_al)
   zeta(1:nalphab) =zetap  !square grid
-  theta(1:nalphab)=zetap*nzperiod
+  theta(1:nalphab)=zetap*nzperiod 
   theta_save=theta
 
   CALL EXCLUDE_WELLS(na,nalpha,nalphab,nw,bottom,connected,&
@@ -155,9 +158,9 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
   END IF
   ALLOCATE(BI1(npoint),BI2(npoint),BI3(npoint))
   ALLOCATE(BI4(npoint),BI5(npoint),BI6(npoint),BI7(npoint),BI8(npoint,Nnmp))
-  ALLOCATE(zlw(npoint),zrw(npoint),tlw(npoint),trw(npoint))
+  ALLOCATE(zlw(npoint),zrw(npoint),tlw(npoint),trw(npoint)) 
   ALLOCATE(ia_out(npoint),tau(npoint))
-
+  
   !Order alphas in interval [0,2*pi]
   CALL SORT_ALPHA(nalpha,nalphab,alphap,zetax,thetax,thetap,B_al,vds_al,j_al,nlambda,i_p)
   DO WHILE(MAXVAL(thetap(:,1))-MINVAL(thetap(:,1)).GT.TWOPI)
@@ -184,7 +187,7 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
                  &  z1,t1,B1,hBpp1,vd1,&
                  &  zb,tb,Bb,hBppb,vdb,&
                  &  z2,t2,B2,hBpp2,vd2,&
-                 &  nlambda,lambda,zlw,tlw,zrw,trw,&
+                 &  nlambda,lambda,zlw,tlw,zrw,trw,& 
                  &  BI1,BI2,BI3,BI4,BI5,BI6,BI7,Nnmp,BI8)
 
   IF(MODELFI) THEN
@@ -200,14 +203,8 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
   END IF
   IF(myrank.EQ.0) CALL CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
        & thetap,B_al,vds_al,tau,ia_out)
-
+  
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-
-     DEALLOCATE(trw, ia_out)
-
-  DEALLOCATE(z1,zb, z2, t1, tb, t2, B1, Bb, B2, hBpp1, hBppb, hBpp2)
-  DEALLOCATE(alphap_w, lambdab_w, lambdac_w, Bt, Btt, bottom)
-  DEALLOCATE(vd1, vdb, vd2, i_w)
 
 END SUBROUTINE CALC_FAST_ION_CONFINEMENT
 
@@ -220,10 +217,10 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      BI1,BI3,BI4,BI6,zlw,zrw,thetap,theta,B_al,vds_al,tau,ia_out)
 
 !-----------------------------------------------------------------------------------------------
-!-----------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------------------------------- 
 
   USE GLOBAL
-  USE KNOSOS_STELLOPT_MOD
+  USE KNOSOS_STELLOPT_MOD  
   IMPLICIT NONE
   !Input
   INTEGER is,ns,nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
@@ -246,7 +243,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   INTEGER norb,iaorb(nalpha),iorb,itrans
   INTEGER, SAVE :: tnalpha
   REAL*8, ALLOCATABLE :: thetape(:,:)
-  REAL*8 Gamma_c,Gamma_cc,Gamma_delta,Gamma_alpha,Gamma_sl
+  REAL*8 f_t,Gamma_c,Gamma_cc,Gamma_delta,Gamma_alpha,Gamma_sl
   !Time
   CHARACTER*30, PARAMETER :: routine="FAST_ION_MODELS"
   INTEGER, SAVE :: ntotal=0
@@ -263,27 +260,35 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 
   s0=vs(is)
 
+  !Model -1: f_trapped
+  g=0.5
+  CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
+          & g,.TRUE.,thetap,B_al,vds_al,f_t)   !Calculate f_{trapped}
+  KN_FTR=f_t
 !  gth=(2./PI)*ATAN((1.-s0)/(2.0*PI))
-
+ 
   !Model 0: Nemov's Gamma_c
   g=2.0*ATAN(BI3/ABS(BI4*atorflux))/PI
   CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g*g,.TRUE.,&
        & thetap,B_al,vds_al,Gamma_c)
-  IF(KN_STELLOPT(4)) KN_GMC=gamma_c
-  IF(.NOT.KN_STELLOPT(5)) RETURN
+  IF(KN_STELLOPT(4)) THEN
+     KN_GMC=gamma_c
+     IF(.NOT.KN_STELLOPT(5)) RETURN
+  END IF
+!  gamma_c=gamma_c*2.*SQ2/PI
   !Model 0b: Corrected Gamma_c
   g=2.0*ATAN(BI3/ABS(BI4*atorflux))/PI
   CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,ABS(g),.TRUE.,&
        & thetap,B_al,vds_al,Gamma_cc)
-
+  
   !Create table of gamma_c^* and other quantities (ignoring small ripples)
   !and find maximum gamma_c^*
   maxg=-1
   BI=SQRT(-1.)
   il0=0
   DO ila=nlambda,2,-1
-     DO ial=1,nalpha
-        DO il=1,nalphab
+     DO ial=1,nalpha 
+        DO il=1,nalphab 
            jpoint=i_p(ila,ial,il)
            IF(jpoint.LE.1) CYCLE
            IF(il0(ial).EQ.0) il0(ial)=il
@@ -296,10 +301,9 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
               BI(6,ila,ial)=2*BI6(jpoint)/rad_R
            END IF
         END DO
-        IF(il0(ial).EQ.0) CYCLE
         ipoint=i_p(ila,ial,il0(ial))
         IF(ipoint.LE.1) CYCLE
-        DO il=1,nalphab
+        DO il=1,nalphab 
            jpoint=i_p(ila,ial,il)
            DO jal=1,nalpha
               IF(jpoint.EQ.i_p(ila,jal,il0(jal))) jpoint=1
@@ -319,7 +323,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 !     WRITE(6200+myrank,'(3(1pe13.5),I4)') lambda(ila),maxg(ila),eps,ila-ila
      IF(maxg(ila).LT.gth) CYCLE
      DO ial=1,nalpha
-        DO il=1,nalphab
+        DO il=1,nalphab 
            jpoint=i_p(ila,ial,il)
            IF(jpoint.LE.1) CYCLE
            g(jpoint)=0.5
@@ -347,24 +351,24 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   !Check prompt losses
   DO jla=1,nlambda
      DO jal=1,nalpha
-        tau_t=10*TENDFI*TWOEFI
-        tau_s=10*TENDFI*TWOEFI
-        tau_a=10*TENDFI*TWOEFI
+        tau_t=10*TENDFI*TWOEFIoZ
+        tau_s=10*TENDFI*TWOEFIoZ
+        tau_a=10*TENDFI*TWOEFIoZ
         DO sign=-1,1,+2
-           IF(tau_t.LT.TENDFI*TWOEFI) EXIT
+           IF(tau_t.LT.TENDFI*TWOEFIoZ) EXIT
            s=s0
            tau_a=0
            vda=0
            ialp1=jal
            ilap1=jla
-           IF(sign.EQ.-1) WRITE(6200+myrank,'(5(1pe13.5),2I8)') tau_a/TWOEFI,thetap(ialp1,1),lambda(ilap1),s,BI(6,ilap1,ialp1),jla,jal
+           IF(sign.EQ.-1) WRITE(6200+myrank,'(5(1pe13.5),2I8)') tau_a/TWOEFIoZ,thetap(ialp1,1),lambda(ilap1),s,BI(6,ilap1,ialp1),jla,jal
            DO kal=1,nalpha
               ial=ialp1
               ila=ilap1
 !              ipoint=i_p(ila,ial,il0(ial))
 !              IF(ipoint.LE.1) EXIT
               IF((vda*siota*sign.LT.0.AND.ial.NE.jal).OR.BI(2,ila,ial).LT.-gth) THEN
-                 tau_t=10*TENDFI*TWOEFI !out of alpha-cone
+                 tau_t=10*TENDFI*TWOEFIoZ !out of alpha-cone
                  EXIT
               END IF
               ialp1=ial+sign
@@ -385,7 +389,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
               s=s+dalpha*(BI(3,ila,ial)+BI(3,ilap1,ialp1))/(BI(4,ila,ial)+BI(4,ilap1,ialp1)) !flux surface
 !              tau_a=tau_a+dalpha/ABS(BI(4,ilap1,ialp1)) !time that it takes to reach alpha_out
 !              s=s+dalpha*(BI(3,ilap1,ialp1))/(BI(4,ilap1,ialp1)) !flux surface
-              IF(vda*siota*sign.GT.0) WRITE(6200+myrank,'(5(1pe13.5),2I8)') tau_a/TWOEFI,thetap(ialp1,1),lambda(ilap1),s,BI(6,ilap1,ialp1),jla,jal
+              IF(vda*siota*sign.GT.0) WRITE(6200+myrank,'(5(1pe13.5),2I8)') tau_a/TWOEFIoZ,thetap(ialp1,1),lambda(ilap1),s,BI(6,ilap1,ialp1),jla,jal
               IF(s.GT.1.OR.(BI(2,ila,ial).GT.gth.AND.BI(2,ilap1,ialp1).LT.BI(2,ila,ial))) THEN !superbanana found
                  IF(s.LT.1) THEN
                     tau_s=(1-s)*atorflux/(BI(3,ila,ial)/BI(1,ila,ial))  !select small ripple? JL
@@ -399,9 +403,9 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            END DO
            IF(kal.GE.nalpha) EXIT
         END DO
-        tau_s=tau_s/TWOEFI
-        tau_a=tau_a/TWOEFI
-        tau_t=tau_t/TWOEFI
+        tau_s=tau_s/TWOEFIoZ
+        tau_a=tau_a/TWOEFIoZ
+        tau_t=tau_t/TWOEFIoZ
         IF(tau_t.LT.2E4) BI(7,jla,jal)=tau_t
 !        ipoint=i_p(jla,jal,il0(jal))
         IF(tau_t.LT.TENDFI) THEN
@@ -418,8 +422,9 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
              & tau_t,tau_s,tau_a
      END DO
   END DO
-
+  
   !Check stochastic losses
+  IF(.FALSE.) THEN
   gsl=0
   bif=.FALSE.
   DO jla=2,nlambda
@@ -438,7 +443,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      s=s0
      ds=0
      tau_a=0
-     tau_t=100*TENDFI*TWOEFI
+     tau_t=100*TENDFI*TWOEFIoZ
      DO jal=1,nalphaturn*nalpha
         ialp1=ial+sign
         IF(ialp1.GT.nalpha) ialp1=1
@@ -464,7 +469,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            END IF
         END DO
         itrans=itrans+1
-!        IF(itrans.GT.1) iaorb=ial!no random
+!        IF(itrans.GT.1) iaorb=ial!no random        
         norb=iorb
         IF(norb.GT.1) THEN
            bif(jla)=.TRUE.
@@ -473,7 +478,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            DO iorb=1,norb
               IF(iorb-1.LT.ran.AND.ran.LT.iorb) THEN
                  ial=iaorb(iorb)
-                 EXIT
+                 EXIT                 
               END IF
            END DO
            ialp1=ial+sign
@@ -493,20 +498,20 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            ELSE
               EXIT
            END IF
-!           IF(WRITE(6200+myrank,'(5(1pe13.5),2I8,3(1pe13.5))') tau_a/TWOEFI,thetap(ialp1,1),lambda(jla),s,BI(6,ilap1,ialp1),&
-!                & -ilap1,-jal,D/(2*tau_a/TWOEFI),ds/(jal/nalpha),tau_a/TWOEFI/(jal/nalpha)
+!           IF(WRITE(6200+myrank,'(5(1pe13.5),2I8,3(1pe13.5))') tau_a/TWOEFIoZ,thetap(ialp1,1),lambda(jla),s,BI(6,ilap1,ialp1),&
+!                & -ilap1,-jal,D/(2*tau_a/TWOEFIoZ),ds/(jal/nalpha),tau_a/TWOEFIoZ/(jal/nalpha)
         END IF
 !        IF(jal.LT.10*nalpha) THEN
         IF(talpha.LT.TWOPI) THEN
            ipoint=i_p(jla,ialp1,il0(ialp1))
            WRITE(6200+myrank,'(5(1pe13.5),3I8,5(1pe13.5))') &
-             & tau_a/TWOEFI,thetap(ialp1,1),lambda(jla),s,BI(6,ilap1,ialp1),-ilap1,-jal,&
+             & tau_a/TWOEFIoZ,thetap(ialp1,1),lambda(jla),s,BI(6,ilap1,ialp1),-ilap1,-jal,&
              & itrans,talpha,zlw(ipoint),zrw(ipoint)
         END IF
      END DO
-     D(jla)=D(jla)/(2*tau_a/TWOEFI)
+     D(jla)=D(jla)/(2*tau_a/TWOEFIoZ)
      s0=vs(is)
-     tau_d(jla)=tau_a/TWOEFI
+     tau_d(jla)=tau_a/TWOEFIoZ
   END DO
 
   DO jla=2,nlambda
@@ -534,7 +539,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
               tau_t=0
               s=s0
               DO WHILE(s.LT.1)
-                 CALL RANDOM_NUMBER(ran)
+                 CALL RANDOM_NUMBER(ran)                 
                  IF(ran.GT.0.5) THEN
                     s=s+ds
                  ELSE
@@ -558,12 +563,13 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         END DO
      END IF
   END DO
-
+  END IF
+  
   !Model II: Gamma_alpha
   CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gpl,.TRUE.,&
        & thetap,B_al,vds_al,Gamma_alpha)
   KN_GMA=gamma_alpha
-
+  
   CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gsl,.TRUE.,&
        & thetap,B_al,vds_al,Gamma_sl)
 
@@ -592,12 +598,12 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 
   DO ila=1,nlambda
      IF(aiota/nzperiod.LT.1) THEN
-        DO ig=3,nmaps
+        DO ig=1,nmaps
            BIe(ig,        1: nalpha)=BI(ig,ila,:)
            BIe(ig, nalpha+1:tnalpha)=BI(ig,ila,:)
         END DO
      ELSE
-        DO ig=3,nmaps
+        DO ig=1,nmaps
            BIe(ig,         1:  nalpha)=BI(ig,ila,:)
            BIe(ig,  nalpha+1:2*nalpha)=BI(ig,ila,:)
            BIe(ig,2*nalpha+1: tnalpha)=BI(ig,ila,:)
@@ -610,7 +616,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      END IF
      DO ial=1,na
         alph=theta(1)+(ial-1)*TWOPI/na
-        DO ig=3,nmaps
+        DO ig=1,nmaps
            CALL LAGRANGE(thetape(1:tnalpha,1),BIe(ig,1:tnalpha),tnalpha,&
                 & alph,BIi(ig),1)
         END DO
@@ -621,15 +627,13 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         END IF
          WRITE(ifile,'(20(1pe13.5))') &
              & s0,alph,lambda(ila),&
-             & 2.0*ATAN(BIi(3)/ABS(BIi(4)*atorflux))/PI,BIi(3),BIi(4),BIi(6),BIi(5),BIi(7),BIi(8)
+             & 2.0*ATAN(BIi(3)/ABS(BIi(4)*atorflux))/PI,BIi(3),BIi(4),BIi(6),BIi(5),BIi(7),BIi(8),1/(TWOEFIoZ*BIi(3)/BIi(1)/atorflux)
       END DO
    END DO
 
-   WRITE(6700+myrank,'(8(1pe13.5))') Gamma_c,Gamma_cc,Gamma_delta,Gamma_alpha,Gamma_sl,Gamma_alpha+Gamma_sl
-
+   WRITE(6700+myrank,'(8(1pe13.5))') Gamma_c,Gamma_cc,Gamma_delta,Gamma_alpha,f_t
+   
    CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-
-    DEALLOCATE(thetape)
 
 END SUBROUTINE FAST_ION_MODELS
 
@@ -638,16 +642,16 @@ END SUBROUTINE FAST_ION_MODELS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifdef MPIandPETSc
+#ifdef MPIandPETSc     
 
 SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      & BI1,BI3,BI4,BI6,zlw,zrw,thetap,theta,tau)
 
 !-----------------------------------------------------------------------------------------------
-!-----------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------------------------------- 
 
   USE GLOBAL
-  USE KNOSOS_STELLOPT_MOD
+  USE KNOSOS_STELLOPT_MOD  
   IMPLICIT NONE
   !Input
   INTEGER is,ns,nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
@@ -692,7 +696,7 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   zrw=zrw
   zlw=zlw
   TENDFI=1E-3
-
+  
   CALL CPU_TIME(tstart)
 
   !Create table of gamma_c^* and other quantities (ignoring small ripples)
@@ -729,7 +733,7 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   DO ila=nla,2,-1
      DO ial=1,nalpha
         IF(j_p(ila,ial,nalphab/2).GT.1)  il0(ial)=nalphab/2
-        DO il=1,nalphab
+        DO il=1,nalphab 
            jpoint=j_p(ila,ial,il)
            IF(jpoint.LE.1) CYCLE
            IF(il0(ial).EQ.0) il0(ial)=il
@@ -743,7 +747,7 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         END DO
         ipoint=j_p(ila,ial,il0(ial))
         IF(ipoint.LE.1) CYCLE
-        DO il=1,nalphab
+        DO il=1,nalphab 
            jpoint=j_p(ila,ial,il)
            DO jal=1,nalpha
               IF(jpoint.EQ.j_p(ila,jal,il0(jal))) jpoint=1
@@ -754,7 +758,7 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 !           IF(g(ipoint).GT.gth.AND.g(ipoint).LT.g(jpoint)) WRITE(iout,*) 'WARNING: ripple largest sb',g(ipoint),g(jpoint)
         END DO
      END DO
-
+        
   END DO
 
   !Figures
@@ -780,12 +784,12 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         thetape(2*nalpha+1: tnalpha,il)=thetap(1:nalpha,il)
      END IF
   END DO
-  IF(JMAP) THEN
+  IF(JMAP) THEN        
      na=INT(2*nalphab*SQRT(s0))
   ELSE
      na=nalphab!INT(nalpha*1.5)
   END IF
-
+      
   ia_out=0
   tau=10*TENDFI
   gpl=0
@@ -806,7 +810,7 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            BIe(ig,2*nalpha+1: tnalpha)=BI(ig,jla,:)
         END DO
      END IF
-
+     
      DO ial=1,na
         va(ial)=theta(1)+(ial-1)*TWOPI/na
         DO ig=3,6
@@ -826,7 +830,7 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         END IF
         WRITE(ifile,'(20(1pe13.5))') &
              & s0,va(ial),lambdac+(jla-1)*dlambda,&
-             & 2.0*ATAN(BIi(3)/ABS(BIi(4)))/PI,BIi(3),BIi(4),BIi(6),BIi(5),BIi(7),BIi(8)
+             & 2.0*ATAN(BIi(3)/ABS(BIi(4)))/PI,BIi(3),BIi(4),BIi(6),BIi(5),BIi(7),BIi(8),BIi(3)/BIi(1)/atorflux
         CALL FLUSH(ifile)
      END DO
 
@@ -836,14 +840,14 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      da=TWOPI/na
 
 !     IF(jla.NE.nlambda/2.OR.myrank.NE.12) CYCLE
-
+     
      DO jal=1,nalpha
 
         IF(myrank.NE.12) CYCLE
 !        IF(j_p(jla,jal,il0(jal)).LE.1) CYCLE
 !        IF(jla.NE.16) CYCLE
 !        IF(jal.NE.13) CYCLE
-
+        
         talpha=0
         tau_t=0
         s=s0
@@ -851,8 +855,8 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         sgrid=.TRUE.
 
 
-        DO WHILE(s.LT.1.AND.tau_t.LT.TENDFI*TWOEFI)
-
+        DO WHILE(s.LT.1.AND.tau_t.LT.TENDFI*TWOEFIoZ)
+           
            IF(s.LT.0) s=-s
            CALL FLUSH(iout)
            ia0=INT(1+alpha/da)
@@ -867,7 +871,7 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
               dadt=fa0*BIg(is0,ia0,4)+fa1*BIg(is0,ia1,4)
               Jsa =fa0*BIg(is0,ia0,6)+fa1*BIg(is0,ia1,6)
               IF(ISNAN(Jsa)) WRITE(iout,*) 'fa',is0,ia0,ia1,fa0,fa1,BIg(is0,ia0,6),BIg(is0,ia1,6)
-
+                 
            ELSE
               IF(is1.GT.ns) THEN
                  fs1=(vs(ns)-s)/ds
@@ -888,15 +892,15 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            dsda=dsdt/dadt
 
            WRITE(6200+myrank,'(7(1pe13.5),2I8,10(1pe13.5))') &
-                & tau_t/TWOEFI,alpha,lambdac+(jla-1)*dlambda,s,Jsa,dsda,dadt,jla,jal
+                & tau_t/TWOEFIoZ,alpha,lambdac+(jla-1)*dlambda,s,Jsa,dsda,dadt,jla,jal
            CALL FLUSH(6200+myrank)
-
+                      
            IF(DEBUG) WRITE(6200+myrank,'(7(1pe13.5),2I8,10(1pe13.5))') &
-                & tau_t/TWOEFI,alpha,lambdac+(jla-1)*dlambda,s,Jsa,dsda,dadt,jla,jal
+                & tau_t/TWOEFIoZ,alpha,lambdac+(jla-1)*dlambda,s,Jsa,dsda,dadt,jla,jal
            IF(DEBUG) CALL FLUSH(6200+myrank)
-
+           
            dts=ds/ABS(dsdt)
-           dta=da/ABS(dadt)
+           dta=da/ABS(dadt)           
            signa=dadt/ABS(dadt)
            signs=dsdt/ABS(dsdt)
            IF(tau_t.GT.ALMOST_ZERO) THEN
@@ -928,7 +932,7 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 !              stop
 !           END IF
 
-
+           
            IF(dts.LT.dta) THEN
               IF(sgrid) THEN
                  s=s+signs*ds
@@ -961,10 +965,10 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
               tau_t=tau_t+dta
 
            END IF
-
+           
         END DO
 
-        tau_t=tau_t/TWOEFI
+        tau_t=tau_t/TWOEFIoZ
 !        ipoint=j_p(jla,jal,il0(jal))
         IF(tau_t.LT.TENDFI) THEN
            BI(7,jla,jal)=tau_t
@@ -977,17 +981,15 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            END DO
         END IF
         WRITE(6300+myrank,'(3(1pe13.5),2(I4))') thetap(jal,1),lambdac+(jla-1)*dlambda,tau_t,jal,jla
-
+           
      END DO
-
+        
 
   END DO
 
   CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-
-  DEALLOCATE(j_p, BI, thetape)
 
 END SUBROUTINE FAST_ION_JMAP
 
@@ -1000,10 +1002,10 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      & BI1,BI3,BI4,BI6,zlw,tlw,zrw,trw,tau)
 
 !-----------------------------------------------------------------------------------------------
-!-----------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------------------------------- 
 
   USE GLOBAL
-  USE KNOSOS_STELLOPT_MOD
+  USE KNOSOS_STELLOPT_MOD  
   IMPLICIT NONE
   !Input
   INTEGER is,ns,nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
@@ -1020,12 +1022,12 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   REAL*8 da,ds,dat,dst,smin,smax,fd,dt,dalpha,dalpha_max
   REAL*8 t,s0,alpha0,mu_o_E,E_o_mu,J0!,alpha_sep
   REAL*8 s,alpha,theta,zeta,zl,tl,zr,tr,dla,J
-  REAL*8 dJds,dJda,dsdt,dadt,dsda,ptran
+  REAL*8 dJds,dJda,dsdt,dadt,dsda,ptran,dban
   REAL*8 s_new,alpha_new,theta_new,zeta_new,zl_new,tl_new,zr_new,tr_new,dB_new,J_new
-  REAL*8 dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new
+  REAL*8 dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new
   REAL*8 s_test,alpha_test,theta_test,zeta_test,zl_test,tl_test,zr_test,tr_test,dB_test,J_test
-  REAL*8 dJds_test,dJda_test,dJdla_test,dsdt_test,dadt_test,dsda_test,ptran_test,ran,J_trans,dsdt_old
-  REAL*8 zeta_split,J_split,dJds_split,dJda_split
+  REAL*8 dJds_test,dJda_test,dJdla_test,dsdt_test,dadt_test,dsda_test,ptran_test,dban_test
+  REAL*8 ran,J_trans,dsdt_old,zeta_split,J_split,dJds_split,dJda_split
   !Time
   CHARACTER*30, PARAMETER :: routine="FAST_ION_ORBITS"
   INTEGER, SAVE :: ntotal=0
@@ -1037,15 +1039,15 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   INTEGER ierr
   INCLUDE "mpif.h"
 !#endif
-
+  
   CALL CPU_TIME(tstart)
-
+  
   s0=vs(is)
 
   da=(TWOPI/nalpha)*FIDELTA
   ds=0.05*FIDELTA
   tau=-TENDFI
-
+  
   iorbit=0
   norbit=0
   computed=.FALSE.
@@ -1067,11 +1069,12 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   WRITE(iout,'(" Process ",I8," calculates ",I8," orbits (",F6.4,")")') myrank,norbit,ran
 
   DO ila=1,nlambda
-
+     
      mu_o_E=lambda(ila)
      E_o_mu=1./mu_o_E
-     CALL CALC_SMIN_SMAX(E_o_mu,s0,smin,smax)
 
+     CALL CALC_SMIN_SMAX(E_o_mu,s0,smin,smax)
+     
      DO ial=1,nalpha
 
         DO il=1,nalphab
@@ -1083,7 +1086,7 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            iorbit=iorbit+1
            WRITE(iout,'(" Calculating orbit ",I8," out of ",I8)') iorbit,norbit
            WRITE(iout,'(" s_min= ",F6.4," s_max=",F6.4)') smin,smax
-
+           
            IF(.NOT.RSEED) CALL INIT_RANDOMSEED(myrank+ipoint)
            computed(ipoint)=.TRUE.
            stochastic=.FALSE.
@@ -1091,19 +1094,20 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            fd=1.0
            end_orbit=.FALSE.
 
-
+           
            CALL SET_INITIAL_CONDITION(s0,zlw(ipoint),tlw(ipoint),zrw(ipoint),trw(ipoint),&
-                & BI1(ipoint),BI3(ipoint),BI4(ipoint),BI6(ipoint),&
+                & E_o_mu,BI1(ipoint),BI3(ipoint),BI4(ipoint),BI6(ipoint),&
                 & t,s,alpha,theta,zeta,zl,tl,zr,tr,J,dJds,dJda,dsdt,dadt,dsda)
 
-           WRITE(6200+myrank,'(14(1pe13.5),3L,F8.4,4(I6))') t,s,alpha,theta,zeta,&
-                mu_o_E,zl,tl,zr,tr,J,dsdt,dadt,fd,step_a,transition,stochastic,ran,ila,ial,il,ipoint
+           IF(DEBUG) WRITE(6200+myrank,'(17(1pe13.5),3L,F8.4,4(I6))') t,s,alpha,theta,zeta,&
+                mu_o_E,zl,tl,zr,tr,J,J0,dJda,dJds,dsdt,dadt,fd,step_a,&
+                & transition,stochastic,ran,ila,ial,il,ipoint
 
            naturn=0
            alpha0=alpha
            dalpha_max=0
            J0    =J
-
+           
            DO WHILE(.NOT.end_orbit)
 
               it=it+1
@@ -1115,27 +1119,30 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
               dsdt_old=0.0
 
               DO WHILE(.NOT.conv_step)
-
                  ptran=ptran_new
                  CALL FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dla,J,dJds,dJda,dsdt,dadt,dsda,&
                       & ds,da,dst,dat,step_a,smin,smax,fd,&
                       & s_new,alpha_new,theta_new,zeta_new,zl_new,tl_new,zr_new,tr_new,dB_new,J_new,&
-                      & transition,J0,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new)
-
+                      & transition,J0,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
                  IF((transition.OR.ISNAN(dsdt_new)).AND.fd.LT.1000) THEN
                     IF(transition) stochastic=.TRUE.
                     IF(.NOT.ISNAN(dsdt_new).AND.&
-                         &(fd.GT.FDMAX.OR.&
+                         &(fd.GT.REAL(FDMAX).OR.&
                          & ISNAN(dsdt_old).OR.&
                          & (fd.GT.1.AND.CONVERGED_Q(ptran_new,ptran,PREC_TRANS).AND.&
                          & CONVERGED_Q(J_new,J_trans,PREC_BINT)))) THEN
 !                       EXIT
                        fd=1.0
                        conv_step=.TRUE.
+!                       WRITE(6200,*) dsdt_new
+!                       WRITE(6200,*) fd,FDMAX
+!                       WRITE(6200,*) dsdt_old
+!                       WRITE(6200,*) CONVERGED_Q(ptran_new,ptran,PREC_TRANS),ptran_new,ptran                      
+!                       WRITE(6200,*) CONVERGED_Q(J_new,J_trans,PREC_BINT),J_new,J_trans                       
                     ELSE
                        fd=fd*2.0
                        J_trans=J_new
-                       CALL INTERPOLATE_FIELD(s,.TRUE.)
+                       CALL INTERPOLATE_FIELD(s,.TRUE.,E_o_mu)
                     END IF
                  ELSE
 !                    EXIT
@@ -1154,24 +1161,26 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
                     zeta_test =0.5*(zr+zr_new)
                  ELSE
                     zeta_test =0.5*(zl+zl_new)
-                 END IF
+                 END IF                 
                  IF(J_new.GT.J) THEN
                     split=.FALSE.
-                    s_test=s
-                    CALL INTERPOLATE_FIELD(s,.TRUE.)
-                    theta_test=theta+iota*(zeta_test-zeta)
+                    IF(JTRANS) THEN !
+                       s_test=s
+                       CALL INTERPOLATE_FIELD(s,.TRUE.,E_o_mu)
+                       theta_test=theta+iota*(zeta_test-zeta)
+                    END IF !
                  ELSE
                     split=.TRUE.
                     s_test=s_new
                     theta_test=theta_new+iota*(zeta_test-zeta_new)
                     IF(JTRANS) zeta_split=zeta_test
                  END IF
-                 CALL CALC_DSDA(it,theta_test,zeta_test,E_o_mu,zl_test,tl_test,zr_test,tr_test,dB_test,&
-                      &  J_test,dJds_test,dJda_test,dJdla_test,dsdt_test,dadt_test,dsda_test,ptran_test)
+                 IF(split.OR.JTRANS) CALL CALC_DSDA(it,theta_test,zeta_test,E_o_mu,zl_test,tl_test,zr_test,tr_test,dB_test,&
+                      &  J_test,dJds_test,dJda_test,dJdla_test,dsdt_test,dadt_test,dsda_test,ptran_test,dban_test)
                  IF(split) THEN
                     IF(.NOT.FITRANS) THEN
-                       ptran_test=J_test
-                       ptran_new =J_new
+                       ptran_test=0!J_test
+                       ptran_new =1!J_new
                     END IF
                     CALL RANDOM_NUMBER(ran)
                     IF(ran.LT.ptran_test/(ptran_new+ptran_test)) THEN
@@ -1182,18 +1191,18 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
                           dJda_split=dJda_new
                        END IF
                        CALL COPY_FI(s_test,alpha_test,theta_test,zeta_test,zl_test,tl_test,zr_test,tr_test,&
-                            & dB_test,J_test,dJds_test,dJda_test,dsdt_test,dadt_test,dsda_test,ptran_test,&
+                            & dB_test,J_test,dJds_test,dJda_test,dsdt_test,dadt_test,dsda_test,ptran_test,dban_test,&
                             & s_new,alpha_new,theta_new,zeta_new,zl_new,tl_new,zr_new,tr_new,&
-                            & dB_new,J_new,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new)
+                            & dB_new,J_new,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
                     ELSE IF(JTRANS) THEN
-                       J_split=J_new
-                       dJds_split=dJds_new
-                       dJda_split=dJda_new
+                       J_split=J_test 
+                       dJds_split=dJds_test
+                       dJda_split=dJda_test
                     END IF
                  ELSE
 
                     IF(JTRANS) J0=J0+J_test
-                    CALL INTERPOLATE_FIELD(s_new,.TRUE.)
+                    IF(split.OR.JTRANS) CALL INTERPOLATE_FIELD(s_new,.TRUE.,E_o_mu)
 
                  END IF
 
@@ -1208,27 +1217,38 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
                          & J_new,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,&
                          & J0,ds,da,dst,dat,step_a,smin,smax,fd,&
                          & zeta_split,J_split,dJds_split,dJda_split)
-
+!                    IF(J_new.LT.0) THEN
+!                       J_new=-J_new
+!                       CALL CORRECTION_STEP(split,it,s_new,alpha_new,theta_new,zeta_new,E_o_mu,&
+!                            & zl_new,tl_new,zr_new,tr_new,dB_new,&
+!                            & J_new,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,&
+!                            & J,ds,da,dst,dat,step_a,smin,smax,fd,&
+!                            & zeta_split,J_split,dJds_split,dJda_split)
+!                       IF(J_new.LT.0) J_new=-J_new
+!                    END IF
+                       
                  ELSE
 
                     J0=J_new
-
+                    
                  END IF
-
+                    
               END IF
 
               IF(step_a) THEN
-                 dt=(alpha_new-alpha)/(dadt*TWOEFI)
+                 dt=(alpha_new-alpha)/(dadt*TWOEFIoZ)
               ELSE
-                 dt=(s_new-s)/(dsdt*TWOEFI)
+                 dt=(s_new-s)/(dsdt*TWOEFIoZ)
               END IF
+              IF(dt.LT.0) WRITE(6200+myrank,*) 'dt',dt
               t =t+dt
-              CALL COPY_FI(s_new,alpha_new,theta_new,zeta_new,zl_new,tl_new,zr_new,tr_new,&
-                   & dB_new,J_new,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new,&
-                   & s,alpha,theta,zeta,zl,tl,zr,tr,dla,J,dJds,dJda,dsdt,dadt,dsda,ptran)
 
-              WRITE(6200+myrank,'(14(1pe13.5),3L,F8.4,4(I6))') t,s,alpha,theta,zeta,&
-                   mu_o_E,zl,tl,zr,tr,J,dsdt,dadt,fd,step_a,transition,stochastic,ptran,ila,ial,il,ipoint
+              CALL COPY_FI(s_new,alpha_new,theta_new,zeta_new,zl_new,tl_new,zr_new,tr_new,&
+                   & dB_new,J_new,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new,&
+                   & s,alpha,theta,zeta,zl,tl,zr,tr,dla,J,dJds,dJda,dsdt,dadt,dsda,ptran,dban)
+              
+              IF(DEBUG) WRITE(6200+myrank,'(17(1pe13.5),3L,F8.4,4(I6))') t,s,alpha,theta,zeta,&
+                   mu_o_E,zl,tl,zr,tr,J,J0,dJda,dJds,dsdt,dadt,fd,step_a,transition,stochastic,ptran,ila,ial,il,ipoint
               dalpha=ABS(alpha-alpha0)
 
               IF(dalpha.GT.dalpha_max) dalpha_max=dalpha
@@ -1237,9 +1257,9 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 !!$                 sa0=s_new
 !!$                 naturn=naturn+1
 !!$              END IF
-
+              
               time_off=t.GT.TENDFI
-              lost=s.GT.1.0
+              lost=s.GT.1.0-dban
               prompt_loss=lost.AND..NOT.stochastic
               stochastic_loss=lost.AND.stochastic
               periodic=.NOT.stochastic.AND.dalpha.GT.2*TWOPI
@@ -1247,7 +1267,7 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
               error_J=(J.LE.ALMOST_ZERO).OR.fd.GT.1000
               end_orbit=time_off.OR.lost.OR.periodic.OR.confined_sb.OR.error_J
               IF(end_orbit) THEN
-                 WRITE(6300+myrank,'(I6,1pe13.5,8L)') ipoint,t,time_off,lost,&
+                 WRITE(6300+myrank,'(I6,2(1pe13.5),8L)') ipoint,t,s,time_off,lost,&
                       & prompt_loss,stochastic_loss,periodic,confined_sb,error_J
                  EXIT
               END IF
@@ -1266,21 +1286,19 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      IF(tau(ipoint).LT.DTFI) tau(ipoint)=10*TENDFI
   END DO
 
-  CALL INTERPOLATE_FIELD(s0,.TRUE.)
-
+  CALL INTERPOLATE_FIELD(s0,.TRUE.,ZERO)
+  
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE FAST_ION_ORBITS
 
 #endif
-
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 SUBROUTINE CALC_SMIN_SMAX(E_o_mu,s0,smin,smax)
-
+  
   USE GLOBAL
   IMPLICIT NONE
   !Input
@@ -1288,7 +1306,7 @@ SUBROUTINE CALC_SMIN_SMAX(E_o_mu,s0,smin,smax)
   !Output
   REAL*8 smin,smax
   !Others
-  INTEGER is
+  INTEGER is,js
   REAL*8 Bold,stest,ds,Bmax_axis,Bmin_axis
   !Time
   CHARACTER*30, PARAMETER :: routine="CALC_SMIN_SMAX"
@@ -1296,34 +1314,47 @@ SUBROUTINE CALC_SMIN_SMAX(E_o_mu,s0,smin,smax)
   REAL*8,  SAVE :: ttotal=0
   REAL*8,  SAVE :: t0=0
   REAL*8 tstart
-
+  
   CALL CPU_TIME(tstart)
 
+!!$
+  IF(ALLOCATED(Bmax_b)) DEALLOCATE(Bmax_b,Bmin_b)
+  ALLOCATE(Bmax_b(ns_b),Bmin_b(ns_b))
+  Bmax_b=0
+  Bmin_b=0
+  DO is=1,ns_b
+     IF(js_b(is).EQ.0) CYCLE
+     CALL INTERPOLATE_FIELD(s_b(js_b(is)),.TRUE.,E_o_mu)
+!     CALL FIND_BMIN_BMAX(js_b(is),MAL,MAL,.TRUE.)
+  END DO
+!!$
+  
   smin=1E-4
-  CALL INTERPOLATE_FIELD(smin,.TRUE.)
+  smax=1.1  
+  CALL INTERPOLATE_FIELD(smin,.TRUE.,E_o_mu)
   Bmin_axis=Bmin
   Bmax_axis=Bmax
-  smax=1.1
-
+  stest=smin
   !Look for B_max(s)=E_o_mu
-  IF((Bmax_b(1)-E_o_mu)*(Bmax_axis-E_o_mu).LT.0) THEN
+  IF((Bmax_b(js_b(1))-E_o_mu)*(Bmax_axis-E_o_mu).LT.0) THEN
      is=1
      stest=smin
      Bold=Bmax_axis
   ELSE
      DO is=2,ns_b
-        IF((Bmax_b(is)-E_o_mu)*(Bmax_b(is-1)-E_o_mu).LT.0) EXIT
+        js=js_b(is)
+        IF((Bmax_b(js)-E_o_mu)*(Bmax_b(js-1)-E_o_mu).LT.0) EXIT
      END DO
      IF(is.LT.ns_b+1) THEN
-        stest=s_b(js_b(is-1))
-        Bold=Bmax_b(is-1)
+        stest=s_b(js-1)
+        Bold=Bmax_b(js-1)
      END IF
   END IF
-  ds=(s_b(js_b(is))-stest)/2
   IF(is.LT.ns_b+1) THEN
+     ds=(s_b(js)-stest)/2
      DO WHILE(ds.GT.SMALL)
         stest=stest+ds
-        CALL INTERPOLATE_FIELD(stest,.TRUE.)
+        CALL INTERPOLATE_FIELD(stest,.TRUE.,E_o_mu)
         IF((Bold-E_o_mu)*(Bmax-E_o_mu).LT.0) THEN
            stest=stest-ds
         ELSE
@@ -1338,25 +1369,27 @@ SUBROUTINE CALC_SMIN_SMAX(E_o_mu,s0,smin,smax)
      END IF
   END IF
 
+  stest=smin
   !Look for B_min(s)=E_o_mu
-  IF((Bmin_b(1)-E_o_mu)*(Bmin_axis-E_o_mu).LT.0) THEN
+  IF((Bmin_b(js_b(1))-E_o_mu)*(Bmin_axis-E_o_mu).LT.0) THEN
      is=1
      stest=smin
      Bold=Bmin_axis
   ELSE
      DO is=2,ns_b
-        IF((Bmin_b(is)-E_o_mu)*(Bmin_b(is-1)-E_o_mu).LT.0) EXIT
+        js=js_b(is)
+        IF((Bmin_b(js)-E_o_mu)*(Bmin_b(js-1)-E_o_mu).LT.0) EXIT
      END DO
      IF(is.LT.ns_b+1) THEN
-        stest=s_b(js_b(is-1))
-        Bold=Bmin_b(is-1)
+        stest=s_b(js-1)
+        Bold=Bmin_b(js-1)
      END IF
   END IF
-  ds=(s_b(js_b(is))-stest)/2
   IF(is.LT.ns_b+1) THEN
+     ds=(s_b(js)-stest)/2
      DO WHILE(ds.GT.SMALL)
         stest=stest+ds
-        CALL INTERPOLATE_FIELD(stest,.TRUE.)
+        CALL INTERPOLATE_FIELD(stest,.TRUE.,E_o_mu)
         IF((Bold-E_o_mu)*(Bmin-E_o_mu).LT.0) THEN
            stest=stest-ds
         ELSE
@@ -1369,10 +1402,10 @@ SUBROUTINE CALC_SMIN_SMAX(E_o_mu,s0,smin,smax)
      ELSE IF(stest.GT.s0.AND.stest.LT.smax) THEN
         smax=stest
      END IF
-  END IF
+  END IF  
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-
+  
 END SUBROUTINE CALC_SMIN_SMAX
 
 
@@ -1380,21 +1413,21 @@ END SUBROUTINE CALC_SMIN_SMAX
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE SET_INITIAL_CONDITION(s0,zlw,tlw,zrw,trw,BI1,BI3,BI4,BI6,&
+SUBROUTINE SET_INITIAL_CONDITION(s0,zlw,tlw,zrw,trw,E_o_mu,BI1,BI3,BI4,BI6,&
                 & t,s,alpha,theta,zeta,zl,tl,zr,tr,J,dJds,dJda,dsdt,dadt,dsda)
 
   USE GLOBAL
   IMPLICIT NONE
   !Input
-  REAL*8 s0,zlw,tlw,zrw,trw,BI1,BI3,BI4,BI6
+  REAL*8 s0,zlw,tlw,zrw,trw,E_o_mu,BI1,BI3,BI4,BI6
   !Output
   REAL*8 t,s,alpha,theta,zeta,zl,tl,zr,tr,J,dJds,dJda,dsdt,dadt,dsda
   !Others
   REAL*8 taub,MODANG2
-
+  
   t=0
   s=s0
-  CALL INTERPOLATE_FIELD(s,.TRUE.)
+  CALL INTERPOLATE_FIELD(s,.TRUE.,E_o_mu)
   theta =MODANG2(0.5*(tlw+trw),TWOPI)
   zeta  =MODANG2(0.5*(zlw+zrw),TWOPI/nzperiod)
   alpha=MODANG2(theta-iota*zeta,TWOPI)
@@ -1402,14 +1435,14 @@ SUBROUTINE SET_INITIAL_CONDITION(s0,zlw,tlw,zrw,trw,BI1,BI3,BI4,BI6,&
   tl=tlw+theta-0.5*(tlw+trw)
   zr=zrw+ zeta-0.5*(zlw+zrw)
   tr=trw+theta-0.5*(tlw+trw)
-  taub= BI1
-  J   =BI6    !J/v=2*BI6(jpoint)/rad_R
-  dJds=-BI4*atorflux
-  dJda= BI3
-  dsdt= BI3/(taub*atorflux)
-  dadt= BI4/ taub
-  dsda=dsdt/dadt
 
+  taub= BI1
+  dJda=  BI3*sgnB
+  dJds= -BI4*torflux
+  J   = BI6    !J/v=2*BI6(jpoint)/rad_R
+  dsdt= dJda/(taub*torflux)
+  dadt=-dJds/(taub*torflux)
+  dsda=dsdt/dadt
 
 END SUBROUTINE SET_INITIAL_CONDITION
 
@@ -1421,8 +1454,8 @@ END SUBROUTINE SET_INITIAL_CONDITION
 SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,dsdt,dadt,dsda,&
                     & ds,da,dst,dat,step_a,smin,smax,fd,&
                     & s_new,alpha_new,theta_new,zeta_new,zl_new,tl_new,zr_new,tr_new,dB_new,&
-                    & J_new,transition,J0,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new)
-
+                    & J_new,transition,J0,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
+  
   USE GLOBAL
   IMPLICIT NONE
   !Input
@@ -1437,7 +1470,7 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
   REAL*8 zl_new,tl_new,zr_new,tr_new,dB_new
   REAL*8 J_new,J0,dJds_new,dJda_new
   REAL*8 dsdt_new,dadt_new,dsda_new
-  REAL*8 ptran_new
+  REAL*8 ptran_new,dban_new
   !Others
   REAL*8 J_ext,one_o_lambda,dlambda,dJdla_new,dadla,dad1la!,dsdla,dsd1la
   REAL*8, SAVE :: damax,dsmax
@@ -1448,9 +1481,13 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
   REAL*8,  SAVE :: ttotal=0
   REAL*8,  SAVE :: t0=0
   REAL*8 tstart
-
+  
+  IF(J.LT.1.63637E-04) & 
+       & WRITE(iout,*) 'a',it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,&
+       & dB,J,dJds,dJda,dsdt,dadt,dsda,ds,da,dst,dat,step_a,smin,smax,fd
+       
   CALL CPU_TIME(tstart)
-
+  
   IF(it.GT.0) THEN
      IF(ABS(dsda).LT.ds/da) THEN
         step_a=.TRUE.
@@ -1459,7 +1496,7 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
      END IF
   END IF
 
-
+  
   IF(it.GT.0) THEN
      IF(step_a) THEN
         dat=da*dadt/(fd*ABS(dadt))
@@ -1472,7 +1509,7 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
      damax=ABS(dat)
   ELSE
      IF(step_a) THEN
-        dst=(J0-J)/dJds
+        dst=(J0-J)/dJds !JL
         dsmax=ds!/fd
 !           dsmax=ABS(dsda*da/fd)/2
         IF(ABS(dst).GT.dsmax) dst=dsmax*dst/ABS(dst)
@@ -1488,7 +1525,7 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
 
   s_new    =s    +dst
 
-  IF(s_new.GT.1) THEN
+  IF(s_new.GT.1) THEN!s_b(ns_b)) THEN !LCFS
      RETURN
   ELSE IF(s_new.LT.smin.OR.s_new.GT.smax) THEN
      IF(it.GT.0) THEN
@@ -1496,7 +1533,7 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
            dst=(smin-s)
            s_new=smin
         END IF
-!        step_a=.TRUE.
+!        step_a=.TRUE.        
 !        dat=2*dat
 !        dst=0
 !        s_new=s
@@ -1513,16 +1550,20 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
   theta_new=theta+dat
   IF(ABS(dst).GT.ALMOST_ZERO) THEN
      theta_new=theta_new-iota*zeta
-     CALL INTERPOLATE_FIELD(s_new,.TRUE.)
+     CALL INTERPOLATE_FIELD(s_new,.TRUE.,E_o_mu)
      theta_new=theta_new+iota*zeta
   END IF
-
+  IF(J.LT.1.63637E-04) &
+       &  WRITE(iout,*) 'b'
 !  zl_new=zl
 !  tl_new=tl+dat
 !  zr_new=zr
-!  tr_new=tr+dat
-  CALL CALC_DSDA(it,theta_new,zeta,E_o_mu,zl_new,tl_new,zr_new,tr_new,&
-       & dB_new,J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new)
+  !  tr_new=tr+dat
+  WRITE(6200+myrank,*) 'here0',s_new,smax
+  CALL CALC_DSDA(it,theta_new,zeta,E_o_mu,zl_new,tl_new,zr_new,tr_new,dB_new,&
+       & J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
+  IF(J.LT.1.63637E-04) &
+       &  WRITE(iout,*) 'c',it,dB_new,dst,fd
   IF(it.GT.0) THEN
      IF(dB_new.GE.0) THEN
         IF(ABS(dst).GT.ALMOST_ZERO) THEN
@@ -1533,19 +1574,31 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
      ELSE
         IF(fd.GT.4) THEN
 !           WRITE(6200+myrank,*) 'E_o_mu0',E_o_mu,s_new,theta,J0
-!           WRITE(6200+myrank,*) 'E_o_mu1',E_o_mu,s_new,theta_new,J_new
-           one_o_lambda=E_o_mu+dB-dB_new
-           CALL CALC_DSDA(it,theta_new,zeta,one_o_lambda,zl_new,tl_new,zr_new,tr_new,&
-                & dB_new,J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new)
+           !           WRITE(6200+myrank,*) 'E_o_mu1',E_o_mu,s_new,theta_new,J_new
+           IF(dB.LT.0) THEN
+              one_o_lambda=E_o_mu+dB-dB_new
+           ELSE
+              one_o_lambda=E_o_mu-1.5*dB_new
+           END IF
+           IF(J.LT.1.63637E-04) &
+                &  WRITE(iout,*) 'd'
+           CALL CALC_DSDA(it,theta_new,zeta,one_o_lambda,zl_new,tl_new,zr_new,tr_new,dB_new,&
+                & J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
            dlambda=(J0-J_new)/dJdla_new !           d(1/lambda)=-dlambda/lambda^2
 !           WRITE(6200+myrank,*) 'E_o_mu2',one_o_lambda,s_new,theta_new,J_new
            one_o_lambda=one_o_lambda*(1-dlambda*one_o_lambda)
+           IF(J.LT.1.63637E-04) &
+                &  WRITE(iout,*) 'e',one_o_lambda,Bmin,Bmax
            IF(one_o_lambda.LT.Bmin.OR.one_o_lambda.GT.Bmax) THEN
               dsdt_new=SQRT(-1.0)
               RETURN
            END IF
-           CALL CALC_DSDA(it,theta_new,zeta,one_o_lambda,zl_new,tl_new,zr_new,tr_new,&
-                & dB_new,J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new)
+           IF(J.LT.1.63637E-04) &
+                &  WRITE(iout,*) 'f'
+           CALL CALC_DSDA(it,theta_new,zeta,one_o_lambda,zl_new,tl_new,zr_new,tr_new,dB_new,&
+                & J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
+           IF(J.LT.1.63637E-04) &
+                &  WRITE(iout,*) 'g'
 !           WRITE(6200+myrank,*) 'E_o_mu3',one_o_lambda,s_new,theta_new,J_new
 !           IF(step_a) THEN
 !              dsdla=-dJdla_new/dJds_new
@@ -1556,22 +1609,27 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
 !                 RETURN
 !              END IF
 !              theta_new=theta_new-iota*zeta
-!              CALL INTERPOLATE_FIELD(s_new,.TRUE.)
+!              CALL INTERPOLATE_FIELD(s_new,.TRUE.,E_o_mu)
 !              theta_new=theta_new+iota*zeta
 !           ELSE
            dadla=-dJdla_new/dJda_new
            dad1la=-dadla/(one_o_lambda*one_o_lambda)      !d_{1/x}x=d_y(1/y)=-1/y^2=-x^2,  y=1/x
            theta_new=theta_new+(E_o_mu-one_o_lambda)*dad1la
 !           END IF
-           CALL CALC_DSDA(it,theta_new,zeta,E_o_mu,zl_new,tl_new,zr_new,tr_new,&
-                & dB_new,J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new)
+           CALL CALC_DSDA(it,theta_new,zeta,E_o_mu,zl_new,tl_new,zr_new,tr_new,dB_new,&
+                & J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
            J_ext=J0
            alpha_new=alpha+(theta_new-theta)
+           IF(J.LT.1.63637E-04) &
+                &  WRITE(iout,*) 'h'
         END IF
-     END IF
+     END IF        
   END IF
+
+  IF(J.LT.1.63637E-04) &
+         &  WRITE(iout,*) 'i'
   zeta_new =0.5*(zl_new+zr_new)
-  theta_new=0.5*(tl_new+tr_new)
+  theta_new=0.5*(tl_new+tr_new)      
   IF(it.GT.0) transition=.FALSE.
   IF(it.GT.0.AND.(zr-zl)*nzperiod/TWOPI.GT.0.05.AND. &
        &(ABS(zl_new-zl).GT.PI/nzperiod.OR.ABS(zr_new-zr).GT.PI/nzperiod.OR.&
@@ -1581,13 +1639,13 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
   tl=tl
   tr=tr
 
-  IF(JORBIT.GT.0) WRITE(6200+myrank,'(14(1pe13.5),3L,F8.4,4(I6))') REAL(it),&
+  IF(JORBIT.GT.0.AND.DEBUG) WRITE(6200+myrank,'(17(1pe13.5),3L,F8.4,4(I6))') REAL(it),&
        s_new,alpha_new,theta_new,zeta_new,1/E_o_mu,&
-       & zl_new,tl_new,zr_new,tr_new,J_new,dsdt_new,dadt_new,fd,step_a,&
+       & zl_new,tl_new,zr_new,tr_new,J_new,J0,dJda_new,dJds_new,dsdt_new,dadt_new,fd,step_a,&
        & transition,transition,ptran_new!,ila,ial,il,ipoint
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-
+  
 END SUBROUTINE FORWARD_STEP
 
 
@@ -1596,9 +1654,9 @@ END SUBROUTINE FORWARD_STEP
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE CALC_DSDA(it,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,dJdla,dsdt,dadt,dsda,ptran)
+SUBROUTINE CALC_DSDA(it,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,dJdla,dsdt,dadt,dsda,ptran,dban)
 !-----------------------------------------------------------------------------------------------
-!-----------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------------------------------- 
 
   USE GLOBAL
   IMPLICIT NONE
@@ -1608,7 +1666,7 @@ SUBROUTINE CALC_DSDA(it,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,dJdla,dsdt,
   !Input/output
   REAL*8 zl,tl,zr,tr
   !Output
-  REAL*8 dB,J,dJds,dJda,dJdla,dsdt,dadt,dsda,ptran
+  REAL*8 dB,J,dJds,dJda,dJdla,dsdt,dadt,dsda,ptran,dban
   !Others
   INTEGER flag,jt
   REAL*8 zeta_ini,theta_ini,taub,Q(nq0)!,z_l,t_l
@@ -1624,9 +1682,8 @@ SUBROUTINE CALC_DSDA(it,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,dJdla,dsdt,
   REAL*8 tstart
 
   CALL CPU_TIME(tstart)
-
 !  IF(it.GE.90) WRITE(6200+myrank,*) Bmin,E_o_mu,Bmax
-
+  
 !!$  DO iextr=1,2
 !!$     IF(iextr.EQ.1) THEN
 !!$        z_l=zl
@@ -1640,7 +1697,7 @@ SUBROUTINE CALC_DSDA(it,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,dJdla,dsdt,
 !!$        dzl_old=ABS(dzl)
 !!$        CALL CALCB(z_l,t_l,2,.FALSE.,B,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
 !!$        lambda1=1/B
-!!$        dBdzl=(dBdz+dBdt*iota)
+!!$        dBdzl=(dBdz+dBdt*iota)   
 !!$        dzl=(E_o_mu-lambda)/dBdzl
 !!$        IF(ABS(dzl).GT.dzl_old) EXIT
 !!$        z_l=z_l+dzl
@@ -1666,7 +1723,7 @@ SUBROUTINE CALC_DSDA(it,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,dJdla,dsdt,
   zr=0
   tl=0
   tr=0
-
+  
   zeta_ini=zeta
   theta_ini=theta
   B1=-1
@@ -1676,6 +1733,7 @@ SUBROUTINE CALC_DSDA(it,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,dJdla,dsdt,
   flag=1
   DO WHILE((B1.LT.E_o_mu.OR.flag.GT.0).AND.jt.LT.MAL)
      jt=jt+1
+     WRITE(6200+myrank,*) 'here',B1,E_o_mu,Bmax,flag,jt,MAL
      CALL EXTREME_POINT(zeta_ini,theta_ini,-1,z1,t1,B1,hBpp1,vd1,flag)
      zeta_ini=z1
      theta_ini=t1
@@ -1742,33 +1800,33 @@ SUBROUTINE CALC_DSDA(it,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,dJdla,dsdt,
 !  END IF
 
   dB=E_o_mu-Bb
-
+  
   IF(Bb.GT.0.AND.dB.GE.0.AND.jt.LT.MAL) &
        CALL BOUNCES(it,z1,t1,B1,hBpp1,vd1,&
        zb,tb,Bb,hBppb,vdb,&
        z2,t2,B2,hBpp2,vd2,&
        & E_o_mu,.FALSE.,nq0,Q,&
        & zl,tl,zr,tr)
-
-  J=     Q(6)
-  dJda=  Q(3)
-  dJds =-Q(4)*atorflux
-  dJdla=-ABS(Q(7))
+  
   taub=  Q(1)
-
-  dsdt= dJda/(taub*atorflux)
-  dadt=-dJds/(taub*atorflux)
+  dban=  Q(2)*VDoV/atorflux/2
+  dJda=  Q(3)*sgnB
+  dJds= -Q(4)*torflux
+  J=     Q(6)
+  dJdla=-ABS(Q(7))
+  dsdt= dJda/(taub*torflux)
+  dadt=-dJds/(taub*torflux)
   dsda=dsdt/dadt
-
+!  WRITE(iout,*) 'dban',dban
   IF(B1.LT.B2) THEN
      CALL CALCB(z1,t1,3,.FALSE.,B,dBdz,dBdt,dBdpsi,hBpp,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
   ELSE
      CALL CALCB(z2,t2,3,.FALSE.,B,dBdz,dBdt,dBdpsi,hBpp,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
   END IF
-  ptran=dBdpsi*torflux*dJda-dBdt*dJds
-
+  ptran=dBdpsi*atorflux*dJda-dBdt*dJds
+  
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-
+     
 END SUBROUTINE CALC_DSDA
 
 
@@ -1778,18 +1836,18 @@ END SUBROUTINE CALC_DSDA
 
 
 SUBROUTINE COPY_FI(s_ori,alpha_ori,theta_ori,zeta_ori,zl_ori,tl_ori,zr_ori,tr_ori,&
-     & dB_ori,J_ori,dJds_ori,dJda_ori,dsdt_ori,dadt_ori,dsda_ori,ptran_ori,&
+     & dB_ori,J_ori,dJds_ori,dJda_ori,dsdt_ori,dadt_ori,dsda_ori,ptran_ori,dban_ori,&
      & s_end,alpha_end,theta_end,zeta_end,zl_end,tl_end,zr_end,tr_end,&
-     & dB_end,J_end,dJds_end,dJda_end,dsdt_end,dadt_end,dsda_end,ptran_end)
+     & dB_end,J_end,dJds_end,dJda_end,dsdt_end,dadt_end,dsda_end,ptran_end,dban_end)
 
   USE GLOBAL
   IMPLICIT NONE
   !Input
   REAL*8 s_ori,alpha_ori,theta_ori,zeta_ori,zl_ori,tl_ori,zr_ori,tr_ori
-  REAL*8 dB_ori,J_ori,dJds_ori,dJda_ori,dsdt_ori,dadt_ori,dsda_ori,ptran_ori
+  REAL*8 dB_ori,J_ori,dJds_ori,dJda_ori,dsdt_ori,dadt_ori,dsda_ori,ptran_ori,dban_ori
   !Output
   REAL*8 s_end,alpha_end,theta_end,zeta_end,zl_end,tl_end,zr_end,tr_end
-  REAL*8 dB_end,J_end,dJds_end,dJda_end,dsdt_end,dadt_end,dsda_end,ptran_end
+  REAL*8 dB_end,J_end,dJds_end,dJda_end,dsdt_end,dadt_end,dsda_end,ptran_end,dban_end
 
   s_end    =s_ori
   alpha_end=alpha_ori
@@ -1807,6 +1865,7 @@ SUBROUTINE COPY_FI(s_ori,alpha_ori,theta_ori,zeta_ori,zl_ori,tl_ori,zr_ori,tr_or
   dadt_end =dadt_ori
   dsda_end =dsda_ori
   ptran_end=ptran_ori
+  dban_end =dban_ori
 
 END SUBROUTINE COPY_FI
 
@@ -1819,7 +1878,7 @@ SUBROUTINE CORRECTION_STEP(split,it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,&
                          & dB,J,dJds,dJda,dsdt,dadt,dsda,&
                          & J0,ds,da,dst,dat,step_a,smin,smax,fd,&
                          & zeta_split,J_split,dJds_split,dJda_split)
-
+  
   USE GLOBAL
   IMPLICIT NONE
   !Input
@@ -1828,14 +1887,14 @@ SUBROUTINE CORRECTION_STEP(split,it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,&
   REAL*8 J0,ds,da,dst,dat,smin,smax,fd,zeta_split,J_split,dJds_split,dJda_split
   !Input/output
   REAL*8 s,alpha,theta,zeta,E_o_mu
-  REAL*8 zl,tl,zr,tr,dB,J,dJds,dJda,dsdt,dadt,dsda,ptran
+  REAL*8 zl,tl,zr,tr,dB,J,dJds,dJda,dsdt,dadt,dsda,ptran,dban
   !Others
   LOGICAL transition
   REAL*8 dJ,dJ_test
   REAL*8 s_test,alpha_test,theta_test,zeta_test,zl_test,tl_test,zr_test,tr_test,dB_test,J_test
-  REAL*8 dJds_test,dJda_test,dsdt_test,dadt_test,dsda_test,ptran_test
+  REAL*8 dJds_test,dJda_test,dsdt_test,dadt_test,dsda_test,ptran_test,dban_test
   REAL*8 theta_split,zl_split,tl_split,zr_split,tr_split,dB_split
-  REAL*8 dJdla_split,dsdt_split,dadt_split,dsda_split,ptran_split
+  REAL*8 dJdla_split,dsdt_split,dadt_split,dsda_split,ptran_split,dban_split
   REAL*8 REL_DIST
   !Time
   CHARACTER*30, PARAMETER :: routine="CORRECTION_STEP"
@@ -1847,34 +1906,34 @@ SUBROUTINE CORRECTION_STEP(split,it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,&
   CALL CPU_TIME(tstart)
 
   dJ=REL_DIST(J0,J+J_split)
-  DO WHILE(dJ.GT.PREC_J.AND.s.LT.1)
-
+  DO WHILE(dJ.GT.PREC_J.AND.s.LT.1)!s_b(ns_b))!LCFS
      CALL FORWARD_STEP(-it,s,alpha,theta,zeta,E_o_mu,&
           & zl,tl,zr,tr,dB,&
           & J+J_split,dJds+dJds_split,dJda+dJda_split,dsdt,dadt,dsda,&
           & ds,da,dst,dat,step_a,smin,smax,fd,&
           & s_test,alpha_test,theta_test,zeta_test,zl_test,tl_test,zr_test,tr_test,dB_test,J_test,&
-          & transition,J0,dJds_test,dJda_test,dsdt_test,dadt_test,dsda_test,ptran_test)
+          & transition,J0,dJds_test,dJda_test,dsdt_test,dadt_test,dsda_test,ptran_test,dban_test)
 
      dJ_test=REL_DIST(J0,J_test)
      IF(split.AND.dJ_test.GT.dJ) THEN
         theta_split=theta+iota*(zeta_split-zeta)
         CALL CALC_DSDA(-it,theta_split,zeta_split,E_o_mu,zl_split,tl_split,zr_split,tr_split,&
              & dB_split,J_split,dJds_split,dJda_split,dJdla_split,&
-             & dsdt_split,dadt_split,dsda_split,ptran_split)
+             & dsdt_split,dadt_split,dsda_split,ptran_split,dban_split)
         dJ_test=REL_DIST(J0,J_test+J_split)
      END IF
      IF(dJ_test.GT.dJ.OR.fd.LT.0) THEN
+!        J=-J
         IF(fd.LT.0) fd=-fd
-        IF(step_a) CALL INTERPOLATE_FIELD(s,.TRUE.)
+        IF(step_a) CALL INTERPOLATE_FIELD(s,.TRUE.,E_o_mu)
         EXIT
      END IF
-
+     
      dJ=dJ_test
      CALL COPY_FI(s_test,alpha_test,theta_test,zeta_test,zl_test,tl_test,zr_test,tr_test,&
-          & dB_test,J_test,dJds_test,dJda_test,dsdt_test,dadt_test,dsda_test,ptran_test,&
+          & dB_test,J_test,dJds_test,dJda_test,dsdt_test,dadt_test,dsda_test,ptran_test,dban_test,&
           & s,alpha,theta,zeta,zl,tl,zr,tr,&
-          & dB,J,dJds,dJda,dsdt,dadt,dsda,ptran)
+          & dB,J,dJds,dJda,dsdt,dadt,dsda,ptran,dban)
 
   END DO
 
@@ -1893,17 +1952,19 @@ SUBROUTINE CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      & thetap,B_al,vds_al,tau,ia_out)
 
   USE GLOBAL
-  USE KNOSOS_STELLOPT_MOD
+  USE KNOSOS_STELLOPT_MOD  
   IMPLICIT NONE
   !Input
   INTEGER nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
   INTEGER ia_out(npoint)
   REAL*8 thetap(nalpha,nalphab),lambda(nlambda),B_al(nalpha,nalphab),vds_al(Nnmp,nalpha,nalphab),tau(npoint)
   !Others
-  INTEGER il,ial,ila,jla,ipoint,nt!,it
-  REAL*8 g(npoint),newg(npoint),gpl(npoint),gsl(npoint)
+  INTEGER, PARAMETER :: ntime=10
+  REAL*8 tlosses(ntime) /1E-4,2E-4,3E-4,4E-4,5E-4,6E-4,7E-4,8E-4,9E-4,1E-3/
+  INTEGER il,ial,ila,jla,ipoint,it,nt
+  REAL*8 g(npoint),newg(npoint),gpl(npoint),gsl(npoint),gt(npoint)
   REAL*8 t,f_t,f_pl,f_sl,f_loss,f_loss1ms,f_tl,f_lossl(nlambda),f_losslt(nlambda)
-  REAL*8 f_pll(nlambda),f_pllt(nlambda),f_sll(nlambda),f_sllt(nlambda)
+  REAL*8 f_pll(nlambda),f_pllt(nlambda),f_sll(nlambda),f_sllt(nlambda),f_lt(ntime,nlambda)
   REAL*8 f_ta,f_pla,f_sla,f_lossa,f_enda
   !Time
   CHARACTER*30, PARAMETER :: routine="CALCULATE_FRACTIONS"
@@ -1929,7 +1990,7 @@ SUBROUTINE CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   g=0
   f_t=-1
   t=DTFI
-  IF(LINEART) nt=TENDFI/DTFI
+  IF(LINEART) nt=TENDFI/DTFI  
   DO WHILE(t.LT.TENDFI)
      IF(f_t.LT.0) g=0.5
      gpl=0
@@ -1956,35 +2017,57 @@ SUBROUTINE CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         t=t*1.2
      END IF
   END DO
-
+  
   !Calculate f_{loss,lambda}
   DO ila=1,nlambda
      gsl=0
      gpl=0
      g=0
-     DO ial=1,nalpha
-        DO il=1,nalphab
-           ipoint=i_p(ila,ial,il)
-           IF(ipoint.GT.1) THEN
-              g(ipoint)=1
-              IF(tau(ipoint).GT.0.AND.tau(ipoint).LT.TENDFI) THEN
-                 gpl(ipoint)=1
-              ELSE IF(ABS(tau(ipoint)).LT.TENDFI) THEN
-                 gsl(ipoint)=1
+     DO it=0,ntime
+        gt=0
+        DO ial=1,nalpha
+           DO il=1,nalphab
+              ipoint=i_p(ila,ial,il)
+              IF(ipoint.GT.1) THEN
+                 IF(it.EQ.0) THEN
+                    g(ipoint)=1
+                    IF(tau(ipoint).GT.0.AND.tau(ipoint).LT.TENDFI) THEN
+                       gpl(ipoint)=1
+                    ELSE IF(ABS(tau(ipoint)).LT.TENDFI) THEN
+                       gsl(ipoint)=1
+                    END IF
+                 ELSE IF(ABS(tau(ipoint)).LT.tlosses(it)) THEN
+                    gt(ipoint)=1
+                 END IF
               END IF
-           END IF
+           END DO
         END DO
+        IF(it.EQ.0) THEN
+           IF(ila.EQ.1) DEBUG=.TRUE.
+           CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gpl,.TRUE.,&
+                & thetap,B_al,vds_al,f_pll(ila))
+           DEBUG=.FALSE.
+           WRITE(6,*) 'ila1',ila,f_pll(ila)
+           CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gsl,.TRUE.,&
+                & thetap,B_al,vds_al,f_sll(ila))
+           CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,.TRUE.,&
+                & thetap,B_al,vds_al,f_tl)
+           f_pll(ila)=f_pll(ila)/f_tl
+           WRITE(6,*) 'ila0',ila,f_tl
+           f_sll(ila)=f_sll(ila)/f_tl
+           f_lossl(ila)=f_pll(ila)+f_sll(ila)
+        ELSE
+           IF(it.EQ.ntime.AND.ila.EQ.1) DEBUG=.TRUE.
+           CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gt,.TRUE.,&
+                & thetap,B_al,vds_al,f_lt(it,ila))
+           DEBUG=.FALSE.
+           IF(it.EQ.ntime) WRITE(6,*) 'ilan',ila,f_lt(it,ila)
+           IF(it.EQ.ntime) WRITE(6,*) 'ilam',ila,f_tl
+           f_lt(it,ila)=f_lt(it,ila)/f_tl
+        END IF
      END DO
-     CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gpl,.TRUE.,&
-          & thetap,B_al,vds_al,f_pll(ila))
-     CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gsl,.TRUE.,&
-          & thetap,B_al,vds_al,f_sll(ila))
-     CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,.TRUE.,&
-          & thetap,B_al,vds_al,f_tl)
-     f_pll(ila)=f_pll(ila)/f_tl
-     f_sll(ila)=f_sll(ila)/f_tl
-     f_lossl(ila)=f_pll(ila)+f_sll(ila)
-     WRITE(6500+myrank,'(4(1pe13.5),I4)') lambda(ila),f_lossl(ila),f_pll(ila),f_sll(ila),jla-jla
+     WRITE(6500+myrank,'(4(1pe13.5),I4,10(1pe13.5))') lambda(ila),f_lossl(ila),&
+          & f_pll(ila),f_sll(ila),jla-jla,(f_lt(it,ila),it=1,ntime)
   END DO
   DO jla=1,nlambda/16 !smooth curves
      f_pllt=f_pll
@@ -1992,12 +2075,12 @@ SUBROUTINE CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      f_losslt=f_lossl
      DO ila=jla+1,nlambda-jla
         f_pll(ila)=(f_pllt(ila-1)+f_pllt(ila)+f_pllt(ila+1))/3.
-        f_sll(ila)=(f_sllt(ila-1)+f_sllt(ila)+f_sllt(ila+1))/3.
+        f_sll(ila)=(f_sllt(ila-1)+f_sllt(ila)+f_sllt(ila+1))/3.        
         f_lossl(ila)=(f_losslt(ila-1)+f_losslt(ila)+f_losslt(ila+1))/3.
         WRITE(6500+myrank,'(4(1pe13.5),I4)') lambda(ila),f_lossl(ila),f_pll(ila),f_sll(ila),jla
      END DO
   END DO
-
+  
   !Calculate f_{loss,alpha}, f_{birth,alpha} and f_{escape,alpha}
   DO ial=1,nalpha
      gpl=0
@@ -2008,7 +2091,7 @@ SUBROUTINE CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            ipoint=i_p(ila,ial,il)
            IF(ipoint.GT.1) THEN
               g(ipoint)=1
-              IF(tau(ipoint).GT.0.AND.tau(ipoint).LT.TENDFI) THEN
+              IF(tau(ipoint).GT.0.AND.tau(ipoint).LT.TENDFI) THEN                
                  gpl(ipoint)=1
               ELSE IF(ABS(tau(ipoint)).LT.TENDFI) THEN
                  gsl(ipoint)=1
@@ -2026,7 +2109,7 @@ SUBROUTINE CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
           & thetap,B_al,vds_al,f_sla)
      f_lossa=f_pla+f_sla
      CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,.TRUE.,&
-          & thetap,B_al,vds_al,f_ta)
+          & thetap,B_al,vds_al,f_ta)     
      CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,newg,.TRUE.,&
           & thetap,B_al,vds_al,f_enda)
      WRITE(6600+myrank,'(8(1pe13.5))') thetap(ial,1),f_lossa/f_ta,f_pla/f_ta,f_sla/f_ta,f_lossa/2,f_enda/2,f_ta/2
