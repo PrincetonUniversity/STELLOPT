@@ -406,7 +406,7 @@ SUBROUTINE beams3d_follow_gc
                            WRITE(6,*) '     ',myworkid, iwork(11:18)
                            WRITE(6,*) '------------------'
                            CALL FLUSH(6)
-                           CALL handle_err(LSODE_ERR, 'beams3d_follow', istate)
+                           CALL handle_err(LSODE_ERR, 'beams3d_follow_gc', istate)
                         END IF
                         iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it

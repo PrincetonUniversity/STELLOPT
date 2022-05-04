@@ -36,7 +36,7 @@
 !        s1,s2       Radial Helper
 !        u1,u2       Poloidal Helper
 !        p1,p2       Toroidal Helper
-!        ds,du,dp    Delta coordiantes
+!        drho,du,dp    Delta coordiantes
 !        xt,yt,zt    Helper for xyz coordiantes of voxel
 !-----------------------------------------------------------------------
       INTEGER ::  s, i, j, k, nvol, m
@@ -102,7 +102,7 @@
 !         CALL FLUSH(327)
          dvol = area*sum(rt)*dp*0.25
          dist5d_prof(:,i,j,k,:,:) = dist5d_prof(:,i,j,k,:,:)/dvol
-!         WRITE(328,*) i,j,k,dvol,rt,zt
+!        WRITE(328,*) i,j,k,dvol,rt,zt
 !         CALL FLUSH(328)
       END DO
 

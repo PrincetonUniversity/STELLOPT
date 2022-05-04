@@ -18,7 +18,10 @@
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
                               nzeff, npot, plasma_mass, plasma_Zavg, &
                               plasma_Zmean, therm_factor, &
-                              B_kick_min, B_kick_max, freq_kick, E_kick
+                              B_kick_min, B_kick_max, freq_kick, E_kick, &
+                              rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
+                              raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
+                              nenergy_fida, npitch_fida, energy_fida, pitch_fida
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -83,7 +86,12 @@
                                fusion_scale, nrho_dist, ntheta_dist, & 
                                nzeta_dist, nvpara_dist, nvperp_dist, &
                                partvmax, lendt_m, te_col_min, &
-                               B_kick_min, B_kick_max, freq_kick, E_kick
+                               B_kick_min, B_kick_max, freq_kick, E_kick, &
+                               rmin_fida, rmax_fida, zmin_fida, &
+                               zmax_fida,phimin_fida, phimax_fida, &
+                               raxis_fida, zaxis_fida, phiaxis_fida, &
+                               nr_fida, nphi_fida, nz_fida, nenergy_fida, &
+                               npitch_fida, energy_fida, pitch_fida
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -176,6 +184,19 @@
       nvpara_dist=32
       nvperp_dist=16
       partvmax = 0 ! Allows user to set value
+
+      !FIDASIM defaults
+      rmin_fida = 0.0
+      zmin_fida = 0.0
+      phimin_fida = 0.0
+      rmax_fida = 0.0
+      zmax_fida = 0.0
+      phimax_fida = 0.0
+      nr_fida = 0
+      nphi_fida = 0
+      nz_fida = 0
+      nenergy_fida = 0
+      npitch_fida = 0
 
 
       ! Read namelist
@@ -306,6 +327,22 @@
             NI_AUX_F(:,1:6) = 0
             NI_AUX_Z(1) = NINT(plasma_Zavg)
             NI_AUX_M(1) = plasma_mass
+         END IF
+
+         IF (lfidasim) THEN
+            IF (rmin_fida == 0.0) rmin_fida = rmin
+            IF (zmin_fida .eq. 0.0) zmin_fida = zmin
+            IF (phimin_fida .eq. 0.0) phimin_fida = phimin
+            IF (rmax_fida .eq. 0.0) rmax_fida = rmax
+            IF (zmax_fida .eq. 0.0) zmax_fida = zmax
+            IF (phimax_fida .eq. 0.0) phimax_fida = phimax
+            IF (nr_fida .eq. 0) nr_fida = nr
+            IF (nphi_fida .eq. 0) nphi_fida = nphi
+            IF (nz_fida .eq. 0) nz_fida = nz
+            !nenergy_fida = ns_prof4 !should stay this way!
+            !npitch_fida = ns_prof5
+            IF (nenergy_fida .eq. 0) nenergy_fida = ns_prof4
+            IF (npitch_fida .eq. 0) npitch_fida = ns_prof5
          END IF
 
          nparticles = 0

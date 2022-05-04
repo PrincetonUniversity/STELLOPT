@@ -77,6 +77,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:), r1dtemp2(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
    INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask
    CHARACTER(LEN=8) :: temp_str8, inj_str8
+   REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_temp
 
    INTEGER, parameter :: ictE(8)=(/0,1,1,1,0,0,0,0/)
    REAL*8, PARAMETER :: one = 1
@@ -90,36 +91,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    IF (myworkid == master) THEN
       SELECT CASE (TRIM(write_type))
        CASE('INIT')
-         rmin_fida = rmin
-         zmin_fida = zmin
-         phimin_fida = phimin
-         rmax_fida = rmax
-         zmax_fida = zmax
-         phimax_fida = phimax
-         nr_fida = nr
-         nphi_fida = nphi
-         nz_fida = nz
-         nenergy_fida = ns_prof4 !should stay this way!
-         npitch_fida = ns_prof5
-
-         ALLOCATE(raxis_fida(nr_fida))
-         ALLOCATE(zaxis_fida(nz_fida))
-         ALLOCATE(phiaxis_fida(nphi_fida))
-         FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida-1) + rmin_fida
-         FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida-1) + zmin_fida
-         FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida-1) + phimin_fida
-         ! Setup grid helpers
-         ! Note: All helpers are defined in terms of differences on half grid
-         !       so values are indexed from 1 to n-1.  Which we store at n
-         !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         !        hr(i) = raxis(i+1) - raxis(i)
-         !        hri    = one / hr
-         !FORALL(i = 1:nr_fida-1) hr_fida(i) = raxis_fida(i+1) - raxis_fida(i)
-         !FORALL(i = 1:nz_fida-1) hz_fida(i) = zaxis_fida(i+1) - zaxis_fida(i)
-         !FORALL(i = 1:nphi_fida-1) hp_fida(i) = phiaxis_fida(i+1) - phiaxis_fida(i)
-         !hri_fida = one / hr_fida
-         !hpi_fida = one / hp_fida
-         !hzi_fida = one / hz_fida
+!           WRITE(327,*) rmin_fida, rmin, zmin_fida, zmin, nr_fida, nz_fida
 
          nphi1 = nphi-1 ! confirmed with Poincare plot
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.true.)
@@ -163,17 +135,17 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL write_att_hdf5(temp_gid,'description','Distribution time',ier)
          CALL h5dclose_f(temp_gid,ier)
 
-         CALL write_var_hdf5(qid_gid,'r',nr, ier,DBLVAR=DBLE(raxis_fida*100)) !convert from m to cm
+         CALL write_var_hdf5(qid_gid,'r',nr_fida, ier,DBLVAR=DBLE(raxis_fida*100)) !convert from m to cm
          CALL h5dopen_f(fid, 'r', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Radius',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'phi',nphi, ier,DBLVAR=DBLE(phiaxis_fida)) !Hard-coded toroidal slice for now
+         CALL write_var_hdf5(qid_gid,'phi',nphi_fida, ier,DBLVAR=DBLE(phiaxis_fida)) !Hard-coded toroidal slice for now
          CALL h5dopen_f(fid, 'phi', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','rad',ier)
          CALL write_att_hdf5(temp_gid,'description','Toroidal angle',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'z',nz, ier,DBLVAR=DBLE(zaxis_fida*100)) !convert from m to cm
+         CALL write_var_hdf5(qid_gid,'z',nz_fida, ier,DBLVAR=DBLE(zaxis_fida*100)) !convert from m to cm
          CALL h5dopen_f(fid, 'z', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Z',ier)
@@ -510,9 +482,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                DO j=1,nphi_fida
                   !convert i,j,k to distribution function indices l,m,n
                   !determine beams3d-grid indices
-                  i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr_fida-1)
-                  j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi_fida-1)
-                  k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz_fida-1)
+                  i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
+                  j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
+                  k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
                   !setup interpolation
                   xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
                   yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
@@ -533,11 +505,11 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
                   m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                   n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                  ! IF (y0 .GT. 1.0) THEN
-                  !    rtemp(i,k,j) = 0 !distribution is 0 outside plasma
-                  ! ELSE
+                   IF (y0 .GT. 1.05) THEN
+                      rtemp(i,k,j) = 0 !distribution is 0 outside plasma
+                   ELSE
                      rtemp(i,k,j) = SUM(dist5d_prof(:,l,m,n,:,:))!output in r-z-phi
-                  ! END IF
+                   END IF
 
                END DO
             END DO
@@ -559,7 +531,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ALLOCATE(energy_fida(nenergy_fida))
          ! Do volume normalization
          !CALL beams3d_distnorm !TODO: check if this has already been done
-
+         !jac = MAXVAL(mass_beams);
          FORALL(i = 1:nenergy_fida) energy_fida(i) = (i) / REAL(nenergy_fida+1) * 0.5 * mass_beams(1) * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
          FORALL(i = 1:npitch_fida) pitch_fida(i) = (i) / REAL(npitch_fida+1) * 2.0 - 1.0
 
@@ -575,8 +547,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL h5dclose_f(temp_gid,ier)
 
+         ! Do phase space change of coordinates
          !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
-         ALLOCATE(dist5d_fida(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
+         ALLOCATE(dist5d_fida(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida)) !nenergy and npitch are always aligned to distribution
          DO b=1,nbeams
             DO d1 = 1, nenergy_fida
                DO d2 = 1, npitch_fida
@@ -592,17 +565,19 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
                      jac = 1 / (mass_beams(b) * SQRT(1-pitch * pitch))
                      !jac = MIN(MAX(jac, 0.0),1.0E)
-                     jac = jac / pi2 / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention? and 1/cm^3/keV
-                     dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac !* pi2 * v /  mass_beams(b) !problematic, circular reference
+                     !jac = jac / pi / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention and 1/cm^3/keV
+                     jac = v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
+                     dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac
+
                   END IF
                END DO
             END DO
          END DO
-         !DEALLOCATE(dist5d_prof)
-         !ALLOCATE(dist5d_prof(nbeams,nr, nphi, nz, nenergy_fida, npitch_fida))
-         dist5d_prof = dist5d_fida
+         ALLOCATE(dist5d_temp(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
+         dist5d_temp(:,:,:,:,:,:) = dist5d_fida(:,:,:,:,:,:)
          DEALLOCATE(dist5d_fida)
 
+         !Interpolate rho u v to r phi z distribution function (nearest neighbor at the moment)
          !Now allocate with correct dimensions
          ALLOCATE(dist5d_fida(nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
          DO b=1,nbeams
@@ -611,9 +586,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   DO j=1,nphi_fida
                      !convert i,j,k to distribution function indices l,m,n
                      !determine beams3d-grid indices
-                     i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr_fida-1)
-                     j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi_fida-1)
-                     k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz_fida-1)
+                     i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
+                     j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
+                     k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
                      !setup interpolation
                      xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
                      yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
@@ -635,10 +610,10 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
                      m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                      n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                     IF (y0 .GT. 1.0) THEN !might introduce a small deviation here
+                     IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
                         dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
                      ELSE
-                        dist5d_fida(b,:,:,i,k,j) = dist5d_prof(b,l,m,n,:,:) !output in r-z-phi
+                        dist5d_fida(b,:,:,i,k,j) = dist5d_temp(b,l,m,n,:,:) !output in r-z-phi
                      END IF
 
                   END DO
@@ -651,7 +626,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=SUM(dist5d_fida, DIM=1))
             CALL h5dopen_f(fid, '/f', temp_gid, ier)
             CALL write_att_hdf5(temp_gid,'description','Distribution Function (nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida)',ier)
-            CALL write_att_hdf5(temp_gid,'units','part/(cm^3 eV)',ier)
+            CALL write_att_hdf5(temp_gid,'units','part/(cm^3 keV)',ier)
             CALL h5dclose_f(temp_gid,ier)
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_fida',ier)
          END IF

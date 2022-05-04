@@ -635,6 +635,7 @@
                !--------------------------------------------------------------
                !           Update options
                !--------------------------------------------------------------
+               partpmax=MAX(MAXVAL(ABS(partvmax*mass)),partpmax) !Is set to electron temperature before
                CALL h5gopen_f(fid,'options', options_gid, ier)
                CALL h5gopen_f(options_gid,'opt_'//qid_str_saved, qid_gid, ier)
                CALL write_var_hdf5(qid_gid,'DIST_MIN_PR',ier,DBLVAR=DBLE(-partpmax))
@@ -739,6 +740,7 @@
                !--------------------------------------------------------------
                !           Update options
                !--------------------------------------------------------------
+               partpmax=MAX(MAXVAL(ABS(partvmax*mass)),partpmax) !Is set to electron temperature before
                CALL h5gopen_f(fid,'options', options_gid, ier)
                CALL h5gopen_f(options_gid,'opt_'//qid_str_saved, qid_gid, ier)
                CALL write_var_hdf5(qid_gid,'DIST_MIN_PR',ier,DBLVAR=DBLE(-partpmax))
