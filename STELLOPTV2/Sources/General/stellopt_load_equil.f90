@@ -76,14 +76,21 @@
 !----------------------------------------------------------------------
       INTEGER ::  ier, iunit,nvar_in
       INTEGER ::  nu, nv, u, v, mn, dex, mnmax_temp
-      INTEGER :: im,in, k
+      INTEGER :: im,in, k, ns_extrap
       INTEGER, ALLOCATABLE :: xm_temp(:), xn_temp(:)
       REAL(rprec) :: temp, s_temp, u_temp, phi_temp
       REAL(rprec), ALLOCATABLE :: xu(:), xv(:)
       REAL(rprec), ALLOCATABLE :: rmnc_temp(:,:), zmns_temp(:,:), lmns_temp(:,:)
       REAL(rprec), ALLOCATABLE :: rmns_temp(:,:), zmnc_temp(:,:), lmnc_temp(:,:)
+      REAL(rprec), ALLOCATABLE :: gmnc_temp(:,:), bmnc_temp(:,:)
+      REAL(rprec), ALLOCATABLE :: bsupumnc_temp(:,:), bsupvmnc_temp(:,:)
+      REAL(rprec), ALLOCATABLE :: gmns_temp(:,:), bmns_temp(:,:)
+      REAL(rprec), ALLOCATABLE :: bsupumns_temp(:,:), bsupvmns_temp(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: Vol(:)
       DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
+
+      DOUBLE PRECISION, PARAMETER :: sextrap=2.25
+!      DOUBLE PRECISION, PARAMETER :: sextrap=1.00
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -157,14 +164,16 @@
             nv = 4 * ntor_vmec + 5                                      ! Use at least 5 toroidal points
             nv = 2 ** CEILING(log(REAL(nv))/log(2.0_rprec)) + 1  ! Odd so we get nfp/2 plane
 
-            ! Allocate NYQUIST sized arrays
+            ! Place the non-nyquist sized arrays on nyquist sized arrays
+            ! Allocate helper arrays for 
+            ns_extrap = FLOOR(sextrap*(ns_vmec-1)+1)
             mnmax_temp = mnmax_nyq_vmec
             ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
-            ALLOCATE(rmnc_temp(mnmax_temp,ns_vmec), zmns_temp(mnmax_temp,ns_vmec), lmns_temp(mnmax_temp,ns_vmec))
-            rmnc_temp=0; zmns_temp=0; lmns_temp = 0;
+            ALLOCATE(rmnc_temp(mnmax_temp,ns_extrap), zmns_temp(mnmax_temp,ns_extrap), lmns_temp(mnmax_temp,ns_extrap))
+            rmnc_temp=0; zmns_temp=0; lmns_temp = 0
             IF (lasym_vmec) THEN
-                ALLOCATE(rmns_temp(mnmax_temp,ns_vmec), zmnc_temp(mnmax_temp,ns_vmec), lmnc_temp(mnmax_temp,ns_vmec))
-                rmns_temp=0; zmnc_temp=0; lmnc_temp = 0;
+               ALLOCATE(rmns_temp(mnmax_temp,ns_extrap), zmnc_temp(mnmax_temp,ns_extrap), lmnc_temp(mnmax_temp,ns_extrap))
+               rmns_temp=0; zmnc_temp=0; lmnc_temp = 0
             END IF
             xm_temp(1:mnmax_temp) = xm_nyq_vmec(1:mnmax_temp)
             xn_temp(1:mnmax_temp) = xn_nyq_vmec(1:mnmax_temp)
@@ -183,19 +192,44 @@
                END DO
             END DO
 
-            ! Put half grid quantities on the full grid
-            !    Even m-modes linearly interpolate on flux grid (s)
-            !    Odd m-modes linearly interpolate on rho grid (sqrt(s))
-            !        factor of rho/rho_k coefficients added
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            ! Extrapolate Full grid quantities
+            !    Photographic enlargement
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ALLOCATE(mfact(mnmax_temp,2))
+            DO k = ns_vmec+1, ns_extrap
+               mfact(:,1)= SQRT(DBLE(k-1)/DBLE(ns_vmec-1))
+               rmnc_temp(:,k) = (rmnc_temp(:,ns_vmec)-rmnc_temp(:,1))*mfact(:,1)+rmnc_temp(:,1) 
+               zmns_temp(:,k) = (zmns_temp(:,ns_vmec)-zmns_temp(:,1))*mfact(:,1)+zmns_temp(:,1)
+               IF (lasym_vmec) THEN
+                  rmns_temp(:,k) = (rmns_temp(:,ns_vmec)-rmns_temp(:,1))*mfact(:,1)+rmns_temp(:,1) 
+                  zmnc_temp(:,k) = (zmnc_temp(:,ns_vmec)-zmnc_temp(:,1))*mfact(:,1)+zmnc_temp(:,1)
+               END IF
+            END DO
 
-            !   First extrapolate to axis (not reference below)
+            ! Allocate Half grid helper quantities
+            ALLOCATE(gmnc_temp(mnmax_temp,ns_extrap), bmnc_temp(mnmax_temp,ns_extrap))
+            ALLOCATE(bsupumnc_temp(mnmax_temp,ns_extrap), bsupvmnc_temp(mnmax_temp,ns_extrap))
+            gmnc_temp = 0; bmnc_temp = 0; bsupumnc_temp = 0; bsupvmnc_temp = 0
+            IF (lasym_vmec) THEN
+               ALLOCATE(gmns_temp(mnmax_temp,ns_extrap), bmns_temp(mnmax_temp,ns_extrap))
+               ALLOCATE(bsupumns_temp(mnmax_temp,ns_extrap), bsupvmns_temp(mnmax_temp,ns_extrap))
+               gmns_temp = 0; bmns_temp = 0; bsupumns_temp = 0; bsupvmns_temp = 0
+            END IF
+
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            ! Extrapolate Half grid quantities 
+            !    x = [0,1] between bounding gridpoints
+            !    whi_even = x
+            !    wlo_even = 1-x
+            !    whi_odd  = whi_even*sqrt(s/s_hi)
+            !    wlo_odd  = wlo_even*sqrt(s/s_lo)
+            !    f = f(jlo)*wlo + f(jhi)*whi  Interpolant
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            !   Second extrapolate to axis (not reference below)
             k = 1
-            !   We could also use a form
-            !   f(1) = 3/2*f_half(2)-1/2*f_half(3)
             WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
-               !mfact(:,1)= 0.5
-               !mfact(:,2)= 0.5 
                mfact(:,1)= 1.0/2.0
                mfact(:,2)= 3.0/2.0
             ELSEWHERE
@@ -203,40 +237,42 @@
                mfact(:,2)= 0
             ENDWHERE
             lmns_temp(:,k) = mfact(:,1)*lmns_temp(:,k+1)+mfact(:,2)*lmns_temp(:,k+2)
-            gmnc_vmec(:,k) = mfact(:,1)*gmnc_vmec(:,k+1)+mfact(:,2)*gmnc_vmec(:,k+2)
-            bsupumnc_vmec(:,k) = mfact(:,1)*bsupumnc_vmec(:,k+1)+mfact(:,2)*bsupumnc_vmec(:,k+2)
-            bsupvmnc_vmec(:,k) = mfact(:,1)*bsupvmnc_vmec(:,k+1)+mfact(:,2)*bsupvmnc_vmec(:,k+2)
+            gmnc_temp(:,k) = mfact(:,1)*gmnc_vmec(:,k+1)+mfact(:,2)*gmnc_vmec(:,k+2)
+            bmnc_temp(:,k) = mfact(:,1)*bmnc_vmec(:,k+1)+mfact(:,2)*bmnc_vmec(:,k+2)
+            bsupumnc_temp(:,k) = mfact(:,1)*bsupumnc_vmec(:,k+1)+mfact(:,2)*bsupumnc_vmec(:,k+2)
+            bsupvmnc_temp(:,k) = mfact(:,1)*bsupvmnc_vmec(:,k+1)+mfact(:,2)*bsupvmnc_vmec(:,k+2)
             IF (lasym_vmec) THEN
                lmnc_temp(:,k) = mfact(:,1)*lmnc_temp(:,k+1)+mfact(:,2)*lmnc_temp(:,k+2)
-               gmns_vmec(:,k) = mfact(:,1)*gmns_vmec(:,k+1)+mfact(:,2)*gmns_vmec(:,k+2)
-               bsupumns_vmec(:,k) = mfact(:,1)*bsupumns_vmec(:,k+1)+mfact(:,2)*bsupumns_vmec(:,k+2)
-               bsupvmns_vmec(:,k) = mfact(:,1)*bsupvmns_vmec(:,k+1)+mfact(:,2)*bsupvmns_vmec(:,k+2)
+               gmns_temp(:,k) = mfact(:,1)*gmns_vmec(:,k+1)+mfact(:,2)*gmns_vmec(:,k+2)
+               bmns_temp(:,k) = mfact(:,1)*bmns_vmec(:,k+1)+mfact(:,2)*bmns_vmec(:,k+2)
+               bsupumns_temp(:,k) = mfact(:,1)*bsupumns_vmec(:,k+1)+mfact(:,2)*bsupumns_vmec(:,k+2)
+               bsupvmns_temp(:,k) = mfact(:,1)*bsupvmns_vmec(:,k+1)+mfact(:,2)*bsupvmns_vmec(:,k+2)
             END IF
 
-            !   Second interpolate from half grid to full (respect overwrite indexing)
+            !   Third interpolate from half grid to full (respect overwrite indexing)
             DO k = 2, ns_vmec-1
                WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
                   mfact(:,1)= 0.5
                   mfact(:,2)= 0.5
                ELSEWHERE
-!                  mfact(:,1)=0.5
-!                  mfact(:,2)=0.5
                   mfact(:,1)= 0.5*SQRT((k-1.0)/(k-1.5)) !rho/rholo
                   mfact(:,2)= 0.5*SQRT((k-1.0)/(k-0.5)) !rho/rhohi
                ENDWHERE
                lmns_temp(:,k) = mfact(:,1)*lmns_temp(:,k)+mfact(:,2)*lmns_temp(:,k+1)
-               gmnc_vmec(:,k) = mfact(:,1)*gmnc_vmec(:,k)+mfact(:,2)*gmnc_vmec(:,k+1)
-               bsupumnc_vmec(:,k) = mfact(:,1)*bsupumnc_vmec(:,k)+mfact(:,2)*bsupumnc_vmec(:,k+1)
-               bsupvmnc_vmec(:,k) = mfact(:,1)*bsupvmnc_vmec(:,k)+mfact(:,2)*bsupvmnc_vmec(:,k+1)
+               gmnc_temp(:,k) = mfact(:,1)*gmnc_vmec(:,k)+mfact(:,2)*gmnc_vmec(:,k+1)
+               bmnc_temp(:,k) = mfact(:,1)*bmnc_vmec(:,k)+mfact(:,2)*bmnc_vmec(:,k+1)
+               bsupumnc_temp(:,k) = mfact(:,1)*bsupumnc_vmec(:,k)+mfact(:,2)*bsupumnc_vmec(:,k+1)
+               bsupvmnc_temp(:,k) = mfact(:,1)*bsupvmnc_vmec(:,k)+mfact(:,2)*bsupvmnc_vmec(:,k+1)
                IF (lasym_vmec) THEN
                   lmnc_temp(:,k) = mfact(:,1)*lmnc_temp(:,k)+mfact(:,2)*lmnc_temp(:,k+1)
-                  gmns_vmec(:,k) = mfact(:,1)*gmns_vmec(:,k)+mfact(:,2)*gmns_vmec(:,k+1)
-                  bsupumns_vmec(:,k) = mfact(:,1)*bsupumns_vmec(:,k)+mfact(:,2)*bsupumns_vmec(:,k+1)
-                  bsupvmns_vmec(:,k) = mfact(:,1)*bsupvmns_vmec(:,k)+mfact(:,2)*bsupvmns_vmec(:,k+1)
+                  gmns_temp(:,k) = mfact(:,1)*gmns_vmec(:,k)+mfact(:,2)*gmns_vmec(:,k+1)
+                  bmns_temp(:,k) = mfact(:,1)*bmns_vmec(:,k)+mfact(:,2)*bmns_vmec(:,k+1)
+                  bsupumns_temp(:,k) = mfact(:,1)*bsupumns_vmec(:,k)+mfact(:,2)*bsupumns_vmec(:,k+1)
+                  bsupvmns_temp(:,k) = mfact(:,1)*bsupvmns_vmec(:,k)+mfact(:,2)*bsupvmns_vmec(:,k+1)
                END IF
             END DO
 
-            !   Third, extrapolate to ns
+            !   Fourth, extrapolate to ns
             !       note that ns-1 is full grid but ns is on half grid
             k = ns_vmec
             WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
@@ -247,62 +283,40 @@
                mfact(:,2)=-1.0*SQRT((ns_vmec-1)/(k-2.0))
             ENDWHERE
             lmns_temp(:,k) = mfact(:,1)*lmns_temp(:,k)+mfact(:,2)*lmns_temp(:,k-1)
-            gmnc_vmec(:,k) = mfact(:,1)*gmnc_vmec(:,k)+mfact(:,2)*gmnc_vmec(:,k-1)
-            bsupumnc_vmec(:,k) = mfact(:,1)*bsupumnc_vmec(:,k)+mfact(:,2)*bsupumnc_vmec(:,k-1)
-            bsupvmnc_vmec(:,k) = mfact(:,1)*bsupvmnc_vmec(:,k)+mfact(:,2)*bsupvmnc_vmec(:,k-1)
+            gmnc_temp(:,k) = mfact(:,1)*gmnc_vmec(:,k)+mfact(:,2)*gmnc_vmec(:,k-1)
+            bmnc_temp(:,k) = mfact(:,1)*bmnc_vmec(:,k)+mfact(:,2)*bmnc_vmec(:,k-1)
+            bsupumnc_temp(:,k) = mfact(:,1)*bsupumnc_vmec(:,k)+mfact(:,2)*bsupumnc_vmec(:,k-1)
+            bsupvmnc_temp(:,k) = mfact(:,1)*bsupvmnc_vmec(:,k)+mfact(:,2)*bsupvmnc_vmec(:,k-1)
             IF (lasym_vmec) THEN
                lmnc_temp(:,k) = mfact(:,1)*lmnc_temp(:,k)+mfact(:,2)*lmnc_temp(:,k-1)
-               gmns_vmec(:,k) = mfact(:,1)*gmns_vmec(:,k)+mfact(:,2)*gmns_vmec(:,k-1)
-               bsupumns_vmec(:,k) = mfact(:,1)*bsupumns_vmec(:,k)+mfact(:,2)*bsupumns_vmec(:,k-1)
-               bsupvmns_vmec(:,k) = mfact(:,1)*bsupvmns_vmec(:,k)+mfact(:,2)*bsupvmns_vmec(:,k-1)
+               gmns_temp(:,k) = mfact(:,1)*gmns_vmec(:,k)+mfact(:,2)*gmns_vmec(:,k-1)
+               bmns_temp(:,k) = mfact(:,1)*bmns_vmec(:,k)+mfact(:,2)*bmns_vmec(:,k-1)
+               bsupumns_temp(:,k) = mfact(:,1)*bsupumns_vmec(:,k)+mfact(:,2)*bsupumns_vmec(:,k-1)
+               bsupvmns_temp(:,k) = mfact(:,1)*bsupvmns_vmec(:,k)+mfact(:,2)*bsupvmns_vmec(:,k-1)
             END IF
             DEALLOCATE(mfact)
 
-
-            ! Half to full grid
-            !bsupumnc_vmec(:,1) = (3*bsupumnc_vmec(:,2) - bsupumnc_vmec(:,3))*0.5D+00
-            !bsupvmnc_vmec(:,1) = (3*bsupvmnc_vmec(:,2) - bsupvmnc_vmec(:,3))*0.5D+00
-            !gmnc_vmec(:,1) = (3*gmnc_vmec(:,2) - gmnc_vmec(:,3))*0.5D+00
-            !lmns_temp(:,1) = (3*lmns_temp(:,2) - lmns_temp(:,3))*0.5D+00
-            !FORALL(mn = 1:mnmax_temp) bsupumnc_vmec(mn,2:ns_vmec-1) = 0.5*(bsupumnc_vmec(mn,2:ns_vmec-1) + bsupumnc_vmec(mn,3:ns_vmec))
-            !FORALL(mn = 1:mnmax_temp) bsupvmnc_vmec(mn,2:ns_vmec-1) = 0.5*(bsupvmnc_vmec(mn,2:ns_vmec-1) + bsupvmnc_vmec(mn,3:ns_vmec))
-            !FORALL(mn = 1:mnmax_temp) gmnc_vmec(mn,2:ns_vmec-1) = 0.5*(gmnc_vmec(mn,2:ns_vmec-1) + gmnc_vmec(mn,3:ns_vmec))
-            !FORALL(mn = 1:mnmax_temp) lmns_temp(mn,2:ns_vmec-1) = 0.5*(lmns_temp(mn,2:ns_vmec-1) + lmns_temp(mn,3:ns_vmec))
-            !bsupumnc_vmec(:,ns_vmec) = 2*bsupumnc_vmec(:,ns_vmec) - bsupumnc_vmec(:,ns_vmec-1)
-            !bsupvmnc_vmec(:,ns_vmec) = 2*bsupvmnc_vmec(:,ns_vmec) - bsupvmnc_vmec(:,ns_vmec-1)
-            !gmnc_vmec(:,ns_vmec)     = 2*gmnc_vmec(:,ns_vmec) - gmnc_vmec(:,ns_vmec-1)
-            !lmns_temp(:,ns_vmec) = 2*lmns_temp(:,ns_vmec) - lmns_temp(:,ns_vmec-1)
             ! Load STEL_TOOLS
             IF (lasym_vmec) THEN
-               !bsupumns_vmec(:,1) = 1.5*bsupumns_vmec(:,2) - 0.5*bsupumns_vmec(:,3)
-               !bsupvmns_vmec(:,1) = 1.5*bsupvmns_vmec(:,2) - 0.5*bsupvmns_vmec(:,3)
-               !gmns_vmec(:,1)     = (3*gmns_vmec(:,2) - gmns_vmec(:,3))*0.5D+00
-               !lmnc_temp(:,1) = (3*lmnc_temp(:,2) - lmnc_temp(:,3))*0.5D+00
-               !FORALL(mn = 1:mnmax_temp) bsupumns_vmec(mn,2:ns_vmec-1) = 0.5*(bsupumns_vmec(mn,2:ns_vmec-1) + bsupumns_vmec(mn,3:ns_vmec))
-               !FORALL(mn = 1:mnmax_temp) bsupvmns_vmec(mn,2:ns_vmec-1) = 0.5*(bsupvmns_vmec(mn,2:ns_vmec-1) + bsupvmns_vmec(mn,3:ns_vmec))
-               !FORALL(mn = 1:mnmax_temp) gmns_vmec(mn,2:ns_vmec-1) = 0.5*(gmns_vmec(mn,2:ns_vmec-1) + gmns_vmec(mn,3:ns_vmec))
-               !FORALL(mn = 1:mnmax_temp) lmnc_vmec(mn,2:ns_vmec-1) = 0.5*(lmnc_vmec(mn,2:ns_vmec-1) + lmnc_vmec(mn,3:ns_vmec))
-               !bsupumns_vmec(:,ns_vmec) = 2*bsupumns_vmec(:,ns_vmec) - bsupumns_vmec(:,ns_vmec-1)
-               !bsupvmns_vmec(:,ns_vmec) = 2*bsupvmns_vmec(:,ns_vmec) - bsupvmns_vmec(:,ns_vmec-1)
-               !gmns_vmec(:,ns_vmec)     = 2*gmns_vmec(:,ns_vmec) - gmns_vmec(:,ns_vmec-1)
-               !lmnc_temp(:,ns_vmec) = 2*lmnc_temp(:,ns_vmec) - lmnc_temp(:,ns_vmec-1)
-               CALL load_fourier_geom(1,ns_vmec,mnmax_temp,nu,nv,INT(xm_temp),INT(-xn_temp),iflag,&
+               CALL load_fourier_geom(1,ns_extrap,mnmax_temp,nu,nv,INT(xm_temp),INT(-xn_temp),iflag,&
                            DBLE(rmnc_temp),DBLE(zmns_temp),RMNS=DBLE(rmns_temp),ZMNC=DBLE(zmnc_temp),&
-                           BUMNC=DBLE(bsupumnc_vmec),BVMNC=DBLE(bsupvmnc_vmec),&
-                           BUMNS=DBLE(bsupumns_vmec),BVMNS=DBLE(bsupvmns_vmec),&
+                           BUMNC=DBLE(bsupumnc_temp),BVMNC=DBLE(bsupvmnc_temp),&
+                           BUMNS=DBLE(bsupumns_temp),BVMNS=DBLE(bsupvmns_temp),&
                            LMNS=DBLE(lmns_temp),LMNC=DBLE(lmnc_temp),&
-                           BMNC=DBLE(bmnc_vmec),BMNS=DBLE(bmns_vmec),&
-                           GMNC=DBLE(gmnc_vmec),GMNS=DBLE(gmns_vmec))
-               DEALLOCATE(rmns_temp,zmnc_temp,lmnc_temp)
+                           BMNC=DBLE(bmnc_temp),BMNS=DBLE(bmns_temp),&
+                           GMNC=DBLE(gmnc_temp),GMNS=DBLE(gmns_temp),SMAX=sextrap)
+               DEALLOCATE(rmns_temp,zmnc_temp,lmnc_temp,&
+                  bmns_temp,gmns_temp,bsupumns_temp,bsupvmns_temp)
             ELSE
-               CALL load_fourier_geom(1,ns_vmec,mnmax_temp,nu,nv,INT(xm_temp),INT(-xn_temp),iflag,&
+               CALL load_fourier_geom(1,ns_extrap,mnmax_temp,nu,nv,INT(xm_temp),INT(-xn_temp),iflag,&
                            DBLE(rmnc_temp),DBLE(zmns_temp),&
-                           BUMNC=DBLE(bsupumnc_vmec),BVMNC=DBLE(bsupvmnc_vmec),&
+                           BUMNC=DBLE(bsupumnc_temp),BVMNC=DBLE(bsupvmnc_temp),&
                            LMNS=DBLE(lmns_temp),&
-                           BMNC=DBLE(bmnc_vmec),&
-                           GMNC=DBLE(gmnc_vmec))
+                           BMNC=DBLE(bmnc_temp),&
+                           GMNC=DBLE(gmnc_temp),SMAX=sextrap)
             END IF
-            DEALLOCATE(xm_temp,xn_temp,rmnc_temp,zmns_temp,lmns_temp)
+            DEALLOCATE(xm_temp,xn_temp,rmnc_temp,zmns_temp,lmns_temp,&
+               bmnc_temp,gmnc_temp,bsupumnc_temp,bsupvmnc_temp)
             ! Update R0,Z0
             CALL get_equil_RZ(DBLE(0),DBLE(0),DBLE(0),r0,z0,iflag)
             ! Update boundary coefficients (this only effects the input files as we use a reset anyway)

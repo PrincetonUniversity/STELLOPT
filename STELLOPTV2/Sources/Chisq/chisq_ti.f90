@@ -52,7 +52,7 @@
                ier = 0
                CALL get_equil_s(r_ti(ik),phi_ti(ik),z_ti(ik),s_ti(ik),ier)
             END IF
-            IF (s_ti(ik) <= 1.0 .and. s_ti(ik) >= 0.0) THEN
+            IF (s_ti(ik) >= 0.0) THEN
                ier = 0
                CALL get_equil_ti(s_ti(ik),TRIM(ti_type),ti_val,ier)
             ELSE
