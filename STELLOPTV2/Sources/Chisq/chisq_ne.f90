@@ -47,34 +47,34 @@
       IF (niter >= 0) THEN
          IF (ANY(s_ne > 0)) lreset_s = .false.
          ! Normalize Targets
-         IF (ANY(sigma_ne_line < bigno_ne)) THEN
-            avg_ne = 0.0
-            s_temp = 3.0
-            num_avg = 0
-            DO ik = 1, nprof
-               IF (sigma(ik) >= bigno_ne) CYCLE
-               ier = 0
-               CALL get_equil_s(r_ne(ik),phi_ne(ik),z_ne(ik),s_ne(ik),ier,u_val)
-               ! New Way
-               IF ((s_ne(ik) < 0.05) .and. (s_ne(ik) <= 1.0)) THEN
-                  avg_ne = avg_ne + target(ik)
-                  num_avg = num_avg + 1
-               END IF
-            END DO
-            IF (num_avg > 0) THEN
-               avg_ne = avg_ne / num_avg
-            ELSE
-               dex = MINLOC(s_ne,DIM=1,MASK=(s_ne > 0.0))
-               avg_ne = target(dex)
-            END IF
-            ! Normalize profile
-            ier = 0
-            s_temp = 0.0
-            CALL get_equil_ne(s_temp,TRIM(ne_type),avg_ne_val,ier)
-         ELSE
+         !IF (ANY(sigma_ne_line < bigno_ne)) THEN
+         !   avg_ne = 0.0
+         !   s_temp = 3.0
+         !   num_avg = 0
+         !   DO ik = 1, nprof
+         !      IF (sigma(ik) >= bigno_ne) CYCLE
+         !      ier = 0
+         !      CALL get_equil_s(r_ne(ik),phi_ne(ik),z_ne(ik),s_ne(ik),ier,u_val)
+         !      ! New Way
+         !      IF ((s_ne(ik) < 0.05) .and. (s_ne(ik) <= 1.0)) THEN
+         !         avg_ne = avg_ne + target(ik)
+         !         num_avg = num_avg + 1
+         !      END IF
+         !   END DO
+         !   IF (num_avg > 0) THEN
+         !      avg_ne = avg_ne / num_avg
+         !   ELSE
+         !      dex = MINLOC(s_ne,DIM=1,MASK=(s_ne > 0.0))
+         !      avg_ne = target(dex)
+         !   END IF
+         !   ! Normalize profile
+         !   ier = 0
+         !   s_temp = 0.0
+         !   CALL get_equil_ne(s_temp,TRIM(ne_type),avg_ne_val,ier)
+         !ELSE
             avg_ne = 1.0
             avg_ne_val = 1.0
-         END IF
+         !END IF
          ! Calc values
          DO ik = 1, nprof
             IF (sigma(ik) >= bigno_ne) CYCLE
