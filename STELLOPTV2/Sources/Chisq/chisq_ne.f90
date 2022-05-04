@@ -83,7 +83,8 @@
                ier = 0
                CALL get_equil_s(r_ne(ik),phi_ne(ik),z_ne(ik),s_ne(ik),ier,u_val)
             END IF
-            IF (s_ne(ik) <= 1.0 .and. s_ne(ik) >= 0.0) THEN
+            !IF (s_ne(ik) <= 1.0 .and. s_ne(ik) >= 0.0) THEN
+            IF (s_ne(ik) >= 0.0) THEN
                ier = 0
                CALL get_equil_ne(s_ne(ik),TRIM(ne_type),ne_val,ier)
             ELSE
