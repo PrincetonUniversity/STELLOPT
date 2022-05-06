@@ -608,6 +608,7 @@
       INTEGER, INTENT(inout) :: ier
       fval = 0
       CALL get_equil_zeff(s,TRIM(zeff_type),fval,ier)
+      IF (s>1.0) fval = 0 ! Hack since zeff can't be less than 1.
       fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_linezeff
