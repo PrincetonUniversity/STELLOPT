@@ -238,7 +238,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   REAL*8 BI(nmaps,nlambda,nalpha),BIe(nmaps,3*nalpha),BIi(nmaps)
   REAL*8 g(npoint),save_g(npoint),gpl(npoint),gsl(npoint)
   REAL*8 alph,dalpha,talpha,vda,s0,s,ds,tau_s,tau_a,tau_t,dtau,D(nlambda),tau_d(nlambda)
-  REAL*8 ran
+  REAL*8 ran,NAN
   LOGICAL bif(nlambda)
   INTEGER norb,iaorb(nalpha),iorb,itrans
   INTEGER, SAVE :: tnalpha
@@ -258,6 +258,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 
   CALL CPU_TIME(tstart)
 
+  NAN=SQRT(-ONE)
   s0=vs(is)
 
   !Model -1: f_trapped
@@ -284,7 +285,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   !Create table of gamma_c^* and other quantities (ignoring small ripples)
   !and find maximum gamma_c^*
   maxg=-1
-  BI=SQRT(-1.)
+  BI=NAN
   il0=0
   DO ila=nlambda,2,-1
      DO ial=1,nalpha 
@@ -728,7 +729,7 @@ END SUBROUTINE FAST_ION_MODELS
 !!$     j_p(ila+ilamin-1,:,:)=i_p(ila,:,:)
 !!$  END DO
 !!$  ALLOCATE(BI(nmaps,nla,nalpha))
-!!$  BI=SQRT(-1.)
+!!$  BI=NAN
 !!$
 !!$  DO ila=nla,2,-1
 !!$     DO ial=1,nalpha
@@ -1473,6 +1474,7 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
   REAL*8 ptran_new,dban_new
   !Others
   REAL*8 J_ext,one_o_lambda,dlambda,dJdla_new,dadla,dad1la!,dsdla,dsd1la
+  REAL*8 NAN
   REAL*8, SAVE :: damax,dsmax
   REAL*8, PARAMETER :: dJtrans=0.2
   !Time
@@ -1482,11 +1484,9 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
   REAL*8,  SAVE :: t0=0
   REAL*8 tstart
   
-  IF(J.LT.1.63637E-04) & 
-       & WRITE(iout,*) 'a',it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,&
-       & dB,J,dJds,dJda,dsdt,dadt,dsda,ds,da,dst,dat,step_a,smin,smax,fd
-       
   CALL CPU_TIME(tstart)
+
+  NAN=SQRT(-ONE)
   
   IF(it.GT.0) THEN
      IF(ABS(dsda).LT.ds/da) THEN
@@ -1553,17 +1553,14 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
      CALL INTERPOLATE_FIELD(s_new,.TRUE.,E_o_mu)
      theta_new=theta_new+iota*zeta
   END IF
-  IF(J.LT.1.63637E-04) &
-       &  WRITE(iout,*) 'b'
 !  zl_new=zl
 !  tl_new=tl+dat
 !  zr_new=zr
   !  tr_new=tr+dat
-  WRITE(6200+myrank,*) 'here0',s_new,smax
+
   CALL CALC_DSDA(it,theta_new,zeta,E_o_mu,zl_new,tl_new,zr_new,tr_new,dB_new,&
        & J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
-  IF(J.LT.1.63637E-04) &
-       &  WRITE(iout,*) 'c',it,dB_new,dst,fd
+
   IF(it.GT.0) THEN
      IF(dB_new.GE.0) THEN
         IF(ABS(dst).GT.ALMOST_ZERO) THEN
@@ -1580,32 +1577,24 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
            ELSE
               one_o_lambda=E_o_mu-1.5*dB_new
            END IF
-           IF(J.LT.1.63637E-04) &
-                &  WRITE(iout,*) 'd'
            CALL CALC_DSDA(it,theta_new,zeta,one_o_lambda,zl_new,tl_new,zr_new,tr_new,dB_new,&
                 & J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
            dlambda=(J0-J_new)/dJdla_new !           d(1/lambda)=-dlambda/lambda^2
 !           WRITE(6200+myrank,*) 'E_o_mu2',one_o_lambda,s_new,theta_new,J_new
            one_o_lambda=one_o_lambda*(1-dlambda*one_o_lambda)
-           IF(J.LT.1.63637E-04) &
-                &  WRITE(iout,*) 'e',one_o_lambda,Bmin,Bmax
            IF(one_o_lambda.LT.Bmin.OR.one_o_lambda.GT.Bmax) THEN
-              dsdt_new=SQRT(-1.0)
+              dsdt_new=NAN
               RETURN
            END IF
-           IF(J.LT.1.63637E-04) &
-                &  WRITE(iout,*) 'f'
            CALL CALC_DSDA(it,theta_new,zeta,one_o_lambda,zl_new,tl_new,zr_new,tr_new,dB_new,&
                 & J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
-           IF(J.LT.1.63637E-04) &
-                &  WRITE(iout,*) 'g'
-!           WRITE(6200+myrank,*) 'E_o_mu3',one_o_lambda,s_new,theta_new,J_new
+
 !           IF(step_a) THEN
 !              dsdla=-dJdla_new/dJds_new
 !              dsd1la=-dsdla/(one_o_lambda*one_o_lambda)      !d_{1/x}x=d_y(1/y)=-1/y^2=-x^2,  y=1/x
 !              s_new=s_new+(E_o_mu-one_o_lambda)*dsd1la
 !              IF(s_new.LT.smin.OR.s_new.GT.smax) THEN
-!                 dsdt_new=SQRT(-1.0)
+!                 dsdt_new=NAN
 !                 RETURN
 !              END IF
 !              theta_new=theta_new-iota*zeta
@@ -1620,14 +1609,10 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
                 & J_new,dJds_new,dJda_new,dJdla_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
            J_ext=J0
            alpha_new=alpha+(theta_new-theta)
-           IF(J.LT.1.63637E-04) &
-                &  WRITE(iout,*) 'h'
         END IF
      END IF        
   END IF
 
-  IF(J.LT.1.63637E-04) &
-         &  WRITE(iout,*) 'i'
   zeta_new =0.5*(zl_new+zr_new)
   theta_new=0.5*(tl_new+tr_new)      
   IF(it.GT.0) transition=.FALSE.

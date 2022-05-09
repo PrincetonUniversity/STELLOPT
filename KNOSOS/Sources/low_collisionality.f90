@@ -3713,12 +3713,13 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
         DO ila=1,nlambda
            IF(lambda(ila).GT.one_o_modB) THEN
               nla=ila-1
-              fdlambda=(one_o_modB-lambda(nla))/dlambda
+              IF(nla.NE.0) fdlambda=(one_o_modB-lambda(nla))/dlambda
               EXIT
            END IF
         END DO
         IF(nla.EQ.0) CYCLE
-        IF(nla.GT.1) THEN
+        IF(i_p(nla,ia,il).EQ.0) CYCLE
+        IF(nla.GT.1.AND.i_p(nla-1,ia,il).GT.1) THEN
            g1oB=g(i_p(nla,ia,il))*(1+fdlambda)-g(i_p(nla-1,ia,il))*fdlambda
         ELSE
            g1oB=g(i_p(nla,ia,il))
@@ -3733,6 +3734,7 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
            sqrt1mlB=SQRT(1.-lambdaB)
            d3vdlambdadK=modB/sqrt1mlB
            ipoint=i_p(ila,ia,il)
+           IF(ipoint.EQ.0) CYCLE
            IF(notg) THEN
               dD11=g(ipoint)*d3vdlambdadK
               doffset=g1oB*d3vdlambdadK

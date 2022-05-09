@@ -664,6 +664,7 @@ SUBROUTINE READ_DDKESDATA(s0)
   !Input/output
   REAL*8 s0
   !Others
+  CHARACTER*100 serr
   INTEGER iostat,imn,n,m
   INTEGER mmnn(mpold+2,ntord),nvalsb(ntorbd),mpol,ntor,lalpha,ipmb,meshtz,idisk,lfout,ifscl,nrun,ibbi
   REAL*8 cmul,efield
@@ -693,6 +694,9 @@ SUBROUTINE READ_DDKESDATA(s0)
         CLOSE(1)  
         IF(s0.LT.0) s0=psip*psip/borbic(0,0)/borbic(0,0)/rad_a/rad_a
      END IF
+  ELSE
+     serr="Configuration file not found"
+     CALL END_ALL(serr,.FALSE.)
   END IF
 
   nfp_b=nzperiod
@@ -786,6 +790,7 @@ SUBROUTINE RESCALE()
   nfp_b=INT(nfp_b*FP+0.1)
   iota_b=iota_b*FI
   bmnc_b=bmnc_b  *FB*FE
+
   bvco_b=bvco_b  *FB      *FR
   buco_b=buco_b  *FB      *FR
   psip   =psip   *FB*FE   *FR
@@ -857,6 +862,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
   mpolb=mboz_b
   ntorb=nboz_b
   nzperiod=nfp_b
+
   bzeta =bvco_b(is0)*fs0+bvco_b(is1)*fs1
   btheta=buco_b(is0)*fs0+buco_b(is1)*fs1
   iota=  iota_b(is0)*fs0+iota_b(is1)*fs1
@@ -957,9 +963,11 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
   CALL FILL_NM()
 
   IF(s0.GE.s_b(js_b(1))) THEN
-     IF(ALLOCATED(Bmax_b).AND.Bmax_b(is0).GT.ALMOST_ZERO) THEN
-        Bmax  =Bmax_b(is0)*fs0+Bmax_b(is1)*fs1
-        Bmin  =Bmin_b(is0)*fs0+Bmin_b(is1)*fs1
+     IF(ALLOCATED(Bmax_b)) THEN
+       IF(Bmax_b(is0).GT.ALMOST_ZERO) THEN
+         Bmax  =Bmax_b(is0)*fs0+Bmax_b(is1)*fs1
+         Bmin  =Bmin_b(is0)*fs0+Bmin_b(is1)*fs1
+       END IF
      END IF
   ELSE
      CALL FIND_BMIN_BMAX(-1,MAL,MAL,.TRUE.)

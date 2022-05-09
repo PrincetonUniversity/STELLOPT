@@ -211,8 +211,8 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
   ELSE
      IF(numprocs.EQ.1) THEN
         filename="STDOUT"
-        OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat,&
-             access='append',status='old')
+        OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat)!,&
+           !  access='append',status='old')
         filename="STDERR"
         OPEN(unit=1100+myrank,file=filename,form='formatted',action='write',iostat=iostat)
      ELSE

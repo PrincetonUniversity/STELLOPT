@@ -621,8 +621,7 @@ SUBROUTINE BOUNCES(iw,z1x,t1x,B1x,hBpp1x,vd1x, &
   !Others
   LOGICAL topl,topr
   REAL*8 Bp1,hBpp1,vd1(nqv)
-  REAL*8 Bp2,hBpp2,vd2(nqv)
-  REAL*8 NaN
+  REAL*8 Bp2,hBpp2,vd2(nqv),NAN
   !Time
   CHARACTER*30, PARAMETER :: routine="BOUNCES"
   INTEGER, SAVE :: ntotal=0
@@ -632,8 +631,8 @@ SUBROUTINE BOUNCES(iw,z1x,t1x,B1x,hBpp1x,vd1x, &
 
   CALL CPU_TIME(tstart)
 
-!  NaN=1/0. does not work for some compilers
-  NaN=0.
+  NAN=0.0 !avoid 1/0
+    
   !Find bounce points
   topl=top.AND.(B1x.LE.B2x)  !if one bounce point is very close to 1
   IF(topl) THEN              !BOUNCE_POINT there may be numerical problems
