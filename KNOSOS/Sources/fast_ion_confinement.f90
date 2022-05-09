@@ -304,9 +304,10 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         END DO
         ipoint=i_p(ila,ial,il0(ial))
         IF(ipoint.LE.1) CYCLE
-        DO il=1,nalphab 
+        DO il=1,nalphab !Ignore alphas covered by barely trapped orbit
            jpoint=i_p(ila,ial,il)
-           DO jal=1,nalpha
+           DO jal=1,nalpha 
+              IF(il0(jal).EQ.0) CYCLE  
               IF(jpoint.EQ.i_p(ila,jal,il0(jal))) jpoint=1
            END DO
            IF(jpoint.LE.1) CYCLE
