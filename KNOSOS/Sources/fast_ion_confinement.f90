@@ -258,7 +258,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 
   CALL CPU_TIME(tstart)
 
-  NAN=SQRT(-ONE)
+  NAN=SQRT(MONE)
   s0=vs(is)
 
   !Model -1: f_trapped
@@ -1486,7 +1486,7 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
   
   CALL CPU_TIME(tstart)
 
-  NAN=SQRT(-ONE)
+  NAN=SQRT(MONE)
   
   IF(it.GT.0) THEN
      IF(ABS(dsda).LT.ds/da) THEN

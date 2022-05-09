@@ -3719,11 +3719,18 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
         END DO
         IF(nla.EQ.0) CYCLE
         IF(i_p(nla,ia,il).EQ.0) CYCLE
-        IF(nla.GT.1.AND.i_p(nla-1,ia,il).GT.1) THEN
-           g1oB=g(i_p(nla,ia,il))*(1+fdlambda)-g(i_p(nla-1,ia,il))*fdlambda
-        ELSE
+        IF(nla.LE.1) THEN
            g1oB=g(i_p(nla,ia,il))
+        ELSE IF(i_p(nla-1,ia,il).LE.1) THEN
+           g1oB=g(i_p(nla,ia,il))
+        ELSE 
+           g1oB=g(i_p(nla,ia,il))*(1+fdlambda)-g(i_p(nla-1,ia,il))*fdlambda
         END IF
+!        IF(nla.GT.1.AND.i_p(nla-1,ia,il).GT.1) THEN
+!           g1oB=g(i_p(nla,ia,il))*(1+fdlambda)-g(i_p(nla-1,ia,il))*fdlambda
+!        ELSE
+!           g1oB=g(i_p(nla,ia,il))
+!        END IF
         IF(notg) THEN
            offset=2*g1oB*SQRT(1-lambda(1)*modB)
         ELSE
