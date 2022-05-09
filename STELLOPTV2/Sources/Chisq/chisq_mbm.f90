@@ -102,12 +102,6 @@
             ! define the radial positions at which the boozxform is run (lbooz = true))
             IF (sigma(ik) < bigno) THEN
                lbooz(ik) = .TRUE.
-               IF(ik.GT.2) THEN
-                  lbooz(ik-1) = .TRUE.
-               END IF
-               IF(ik.LT.nsd) THEN
-                  lbooz(ik+1) = .TRUE.
-               END IF
                mtargets = mtargets + 1
                IF (niter == -2) target_dex(mtargets)=jtarget_mbm
             END IF

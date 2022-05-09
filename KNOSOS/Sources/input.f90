@@ -804,6 +804,14 @@ SUBROUTINE INIT_FILES()
       IF(numprocs.GT.1) WRITE(filename,'("stellopt.knosos.",I2.2)') myrank
       OPEN(unit=600+myrank,file=filename,form='formatted',action='write',iostat=iostat)
       WRITE(600+myrank,'("s 1NU SNU SBP GMC GMA QER VB0 VBB WBW DBO VBM FTR")')
+      IF(numprocs.EQ.1) filename="gammacs.map"
+      IF(numprocs.GT.1) WRITE(filename,'("gammacs.map.",I2.2)') myrank
+      OPEN(unit=6100+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+      WRITE(6100+myrank,'("s alpha lambda[1/T] gamma_C^* vd_s[A.U.] vd_alpha[A.U.] J[A.U.] bottom_index exit_time[s]")')
+      IF(numprocs.EQ.1) filename="prompt.lambda"
+      IF(numprocs.GT.1) WRITE(filename,'("prompt.lambda",I2.2)') myrank
+      OPEN(unit=6500+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+      WRITE(6500+myrank,'("s lambda[1/T] fraction fraction promt_fraction protracted_fraction")')
    ELSE
       IF(numprocs.EQ.1) filename="flux.knosos"
       IF(numprocs.GT.1) WRITE(filename,'("flux.knosos.",I2.2)') myrank

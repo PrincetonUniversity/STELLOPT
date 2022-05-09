@@ -69,7 +69,7 @@ PROGRAM KNOSOS
               CALL READ_BFIELD(s(is))
               !Create (or read) a DKES-like database of monoenergetic transport coefficients
               CALL CALC_DATABASE(s,is,ns)
-              IF(KNOSOS_STELLOPT) WRITE(600+myrank,'(12(1pe13.5))') s(is),&
+              IF(KNOSOS_STELLOPT) WRITE(600+myrank,'(13(1pe13.5))') s(is),&
                 & KN_1NU,KN_SNU,KN_SBP,KN_GMC,KN_GMA,KN_QER,KN_VB0,KN_VBB,KN_WBW,KN_DBO,KN_VBM,KN_FTR
               IF(ONLY_DB) CYCLE
               !Read the plasma profiles 

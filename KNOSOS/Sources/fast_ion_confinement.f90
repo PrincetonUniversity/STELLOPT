@@ -201,7 +201,7 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
           &   BI1,BI3,BI4,BI6,zlw,tlw,zrw,trw,tau)!
 #endif
   END IF
-  IF(myrank.EQ.0) CALL CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
+  IF(myrank.EQ.0) CALL CALCULATE_FRACTIONS(s(is),nalpha,nalphab,nlambda,lambda,i_p,npoint,&
        & thetap,B_al,vds_al,tau,ia_out)
   
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
@@ -626,8 +626,8 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            ifile=6100+myrank
         END IF
          WRITE(ifile,'(20(1pe13.5))') &
-             & s0,alph,lambda(ila),&
-             & 2.0*ATAN(BIi(3)/ABS(BIi(4)*atorflux))/PI,BIi(3),BIi(4),BIi(6),BIi(5),BIi(7),BIi(8),1/(TWOEFIoZ*BIi(3)/BIi(1)/atorflux)
+             & vs(is),alph,lambda(ila),&
+             & 2.0*ATAN(BIi(3)/ABS(BIi(4)*atorflux))/PI,BIi(3),BIi(4),BIi(6),BIi(5),BIi(7),BIi(8)!,1/(TWOEFIoZ*BIi(3)/BIi(1)/atorflux)
       END DO
    END DO
 
@@ -643,355 +643,355 @@ END SUBROUTINE FAST_ION_MODELS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #ifdef MPIandPETSc     
-
-SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
-     & BI1,BI3,BI4,BI6,zlw,zrw,thetap,theta,tau)
-
-!-----------------------------------------------------------------------------------------------
-!----------------------------------------------------------------------------------------------- 
-
-  USE GLOBAL
-  USE KNOSOS_STELLOPT_MOD  
-  IMPLICIT NONE
-  !Input
-  INTEGER is,ns,nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
-  REAL*8 vs(ns),thetap(nalpha,nalphab),theta(nalphab)
-  REAL*8 lambda(nlambda)
-  REAL*8 BI1(npoint),BI3(npoint),BI4(npoint),BI6(npoint),zlw(npoint),zrw(npoint)
-  !Output
-  REAL*8 tau(npoint)
-  !Others
-  LOGICAL sgrid
-  INTEGER, PARAMETER :: nmaps=8
-  INTEGER, PARAMETER :: nalphaturn=1000
-  REAL*8, PARAMETER :: F5o12 =0.416666666666667
-  REAL*8, PARAMETER :: F13o12=1.083333333333333
-  INTEGER, ALLOCATABLE :: j_p(:,:,:)
-  INTEGER il,ial,jal,na,ila,ilamin,ilamax,jla,il0(nalpha),ipoint,jpoint,ifile,ig,nla
-  INTEGER ia_out(npoint),ia0,ia1,is0,is1
-  REAL*8 fa0,fa1,dta,signa,fs0,fs1,dts,signs
-  REAL*8, ALLOCATABLE :: BI(:,:,:)
-  REAL*8 BIe(nmaps,3*nalpha),BIi(nmaps),BIg(ns,nalphab,nmaps)
-  REAL*8 alpha,dsda,dadt,dsdt,Jsa,dlambda
-  REAL*8 g(npoint),gpl(npoint),gsl(npoint)
-  REAL*8 da,va(nalphab),talpha,s0,s,ds,tau_t
-!  LOGICAL bif(nlambda)
-!  INTEGER norb,iaorb(nalpha),iorb,itrans,it
-  INTEGER, SAVE :: tnalpha
-  REAL*8, ALLOCATABLE :: thetape(:,:)
-  REAL*8 MODANG2!,dummy
-  REAL*8 la(2,1),lambdac,lambdab
-  !Time
-  CHARACTER*30, PARAMETER :: routine="FAST_ION_JMAP"
-  INTEGER, SAVE :: ntotal=0
-  REAL*8,  SAVE :: ttotal=0
-  REAL*8,  SAVE :: t0=0
-  REAL*8 tstart
-!#ifdef MPIandPETSc
-  !Others
-  INTEGER ierr
-  INCLUDE "mpif.h"
-!#endif
-
-  zrw=zrw
-  zlw=zlw
-  TENDFI=1E-3
-  
-  CALL CPU_TIME(tstart)
-
-  !Create table of gamma_c^* and other quantities (ignoring small ripples)
-  !and find maximum gamma_c^*
-  s0=vs(is)
-  g=2.0*ATAN(BI3/ABS(BI4*atorflux))/PI
-  il0=0
-
-  la(2,1)=myrank
-  la(1,1)=lambda(1)
-  CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT,MPI_MINLOC,MPI_COMM_WORLD,ierr)
-  lambdac=la(1,1)
-  la(1,1)=lambda(nlambda)
-  CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT,MPI_MAXLOC,MPI_COMM_WORLD,ierr)
-  lambdab=la(1,1)
-  dlambda=lambda(2)-lambda(1)
-  nla=(lambdab-lambdac+ALMOST_ZERO)/dlambda+1
-
-  ALLOCATE(j_p(nla,nalpha,nalphab))
-  j_p=0
-  DO ila=1,nla
-     IF(ABS(lambdac+(ila-1)*dlambda-lambda(1)).LT.0.5*dlambda) THEN
-        ilamin=ila
-        EXIT
-     END IF
-  END DO
-  ilamax=nlambda+ilamin-1
-  DO ila=1,nlambda
-     j_p(ila+ilamin-1,:,:)=i_p(ila,:,:)
-  END DO
-  ALLOCATE(BI(nmaps,nla,nalpha))
-  BI=SQRT(-1.)
-
-  DO ila=nla,2,-1
-     DO ial=1,nalpha
-        IF(j_p(ila,ial,nalphab/2).GT.1)  il0(ial)=nalphab/2
-        DO il=1,nalphab 
-           jpoint=j_p(ila,ial,il)
-           IF(jpoint.LE.1) CYCLE
-           IF(il0(ial).EQ.0) il0(ial)=il
-           IF(il.EQ.il0(ial)) THEN
-              BI(1,ila,ial)=BI1(jpoint)
-              BI(2,ila,ial)=BI3(jpoint)/ABS(BI4(jpoint)*atorflux)
-              BI(3,ila,ial)=BI3(jpoint)/atorflux
-              BI(4,ila,ial)=BI4(jpoint)
-              BI(6,ila,ial)=2*BI6(jpoint)/rad_R
-           END IF
-        END DO
-        ipoint=j_p(ila,ial,il0(ial))
-        IF(ipoint.LE.1) CYCLE
-        DO il=1,nalphab 
-           jpoint=j_p(ila,ial,il)
-           DO jal=1,nalpha
-              IF(jpoint.EQ.j_p(ila,jal,il0(jal))) jpoint=1
-           END DO
-           IF(jpoint.LE.1) CYCLE
-!           WRITE(iout,*) 'Ripple at',ila,ial,il
-!           IF(g(ipoint).LT.gth.AND.g(jpoint).GT.gth) WRITE(iout,*) 'WARNING: ripple has sb',g(ipoint),g(jpoint)
-!           IF(g(ipoint).GT.gth.AND.g(ipoint).LT.g(jpoint)) WRITE(iout,*) 'WARNING: ripple largest sb',g(ipoint),g(jpoint)
-        END DO
-     END DO
-        
-  END DO
-
-  !Figures
-  tnalpha=2*nalpha
-  IF(aiota/nzperiod.GE.1) tnalpha=3*nalpha
-  ALLOCATE(thetape(tnalpha,nalphab))
-  DO il=1,nalphab
-     IF(aiota/nzperiod.LT.1) THEN
-        IF(iota.GT.0) THEN
-           thetape(     1:nalpha,il)=thetap(1:nalpha,il)-TWOPI
-        ELSE
-           thetape(     1:nalpha,il)=thetap(1:nalpha,il)+TWOPI
-        END IF
-        thetape(nalpha+1:tnalpha,il)=thetap(1:nalpha,il)
-     ELSE
-        IF(iota.GT.0) THEN
-           thetape(       1:  nalpha,il)=thetap(1:nalpha,il)-2*TWOPI
-           thetape(nalpha+1:2*nalpha,il)=thetap(1:nalpha,il)-  TWOPI
-        ELSE
-           thetape(       1:  nalpha,il)=thetap(1:nalpha,il)+2*TWOPI
-           thetape(nalpha+1:2*nalpha,il)=thetap(1:nalpha,il)+  TWOPI
-        END IF
-        thetape(2*nalpha+1: tnalpha,il)=thetap(1:nalpha,il)
-     END IF
-  END DO
-  IF(JMAP) THEN        
-     na=INT(2*nalphab*SQRT(s0))
-  ELSE
-     na=nalphab!INT(nalpha*1.5)
-  END IF
-      
-  ia_out=0
-  tau=10*TENDFI
-  gpl=0
-  gsl=0
-
-
-  DO jla=1,nla
-     BIg=0
-     IF(aiota/nzperiod.LT.1) THEN
-        DO ig=3,nmaps
-           BIe(ig,        1: nalpha)=BI(ig,jla,:)
-           BIe(ig, nalpha+1:tnalpha)=BI(ig,jla,:)
-        END DO
-     ELSE
-        DO ig=3,nmaps
-           BIe(ig,         1:  nalpha)=BI(ig,jla,:)
-           BIe(ig,  nalpha+1:2*nalpha)=BI(ig,jla,:)
-           BIe(ig,2*nalpha+1: tnalpha)=BI(ig,jla,:)
-        END DO
-     END IF
-     
-     DO ial=1,na
-        va(ial)=theta(1)+(ial-1)*TWOPI/na
-        DO ig=3,6
-           CALL LAGRANGE(thetape(1:tnalpha,1),BIe(ig,1:tnalpha),tnalpha,&
-                & va(ial),BIi(ig),0)
-!           dummy=BIi(ig)
-!           IF(ISNAN(dummy)) BIi(ig)=0
-           BIg(myrank+1,ial,ig)=BIi(ig)
-           CALL MPI_ALLREDUCE(MPI_IN_PLACE,BIg(:,ial,ig),ns,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,ierr)
-!           IF(ISNAN(dummy)) BIi(ig)=dummy
-        END DO
-
-        IF(JMAP) THEN
-           ifile=6000+myrank
-        ELSE
-           ifile=6100+myrank
-        END IF
-        WRITE(ifile,'(20(1pe13.5))') &
-             & s0,va(ial),lambdac+(jla-1)*dlambda,&
-             & 2.0*ATAN(BIi(3)/ABS(BIi(4)))/PI,BIi(3),BIi(4),BIi(6),BIi(5),BIi(7),BIi(8),BIi(3)/BIi(1)/atorflux
-        CALL FLUSH(ifile)
-     END DO
-
-     IF(jla.LT.ilamin.OR.jla.GT.ilamax) CYCLE
-
-     ds=vs(myrank+2)-vs(myrank+1)
-     da=TWOPI/na
-
-!     IF(jla.NE.nlambda/2.OR.myrank.NE.12) CYCLE
-     
-     DO jal=1,nalpha
-
-        IF(myrank.NE.12) CYCLE
-!        IF(j_p(jla,jal,il0(jal)).LE.1) CYCLE
-!        IF(jla.NE.16) CYCLE
-!        IF(jal.NE.13) CYCLE
-        
-        talpha=0
-        tau_t=0
-        s=s0
-        alpha=MODANG2(thetap(jal,1),TWOPI)
-        sgrid=.TRUE.
-
-
-        DO WHILE(s.LT.1.AND.tau_t.LT.TENDFI*TWOEFIoZ)
-           
-           IF(s.LT.0) s=-s
-           CALL FLUSH(iout)
-           ia0=INT(1+alpha/da)
-           ia1=ia0+1
-           IF(ia1.GT.na) ia1=1
-           is0=INT(ns*s+0.5)
-           is1=is0+1
-           IF(sgrid) THEN
-              fa1=(alpha-va(ia0))/da
-              fa0=1-fa1
-              dsdt=fa0*BIg(is0,ia0,3)+fa1*BIg(is0,ia1,3)
-              dadt=fa0*BIg(is0,ia0,4)+fa1*BIg(is0,ia1,4)
-              Jsa =fa0*BIg(is0,ia0,6)+fa1*BIg(is0,ia1,6)
-              IF(ISNAN(Jsa)) WRITE(iout,*) 'fa',is0,ia0,ia1,fa0,fa1,BIg(is0,ia0,6),BIg(is0,ia1,6)
-                 
-           ELSE
-              IF(is1.GT.ns) THEN
-                 fs1=(vs(ns)-s)/ds
-                 fs0=1-fs1
-                 dsdt=fs0*BIg(ns,ia0,3)+fs1*BIg(ns-1,ia0,3)
-                 dadt=fs0*BIg(ns,ia0,4)+fs1*BIg(ns-1,ia0,4)
-                 Jsa =fs0*BIg(ns,ia0,6)+fs1*BIg(ns-1,ia0,6)
-              ELSE
-                 fs1=(s-vs(is0))/ds
-                 fs0=1-fs1
-                 dsdt=fs0*BIg(is0,ia0,3)+fs1*BIg(is1,ia0,3)
-                 dadt=fs0*BIg(is0,ia0,4)+fs1*BIg(is1,ia0,4)
-                 Jsa =fs0*BIg(is0,ia0,6)+fs1*BIg(is1,ia0,6)
-              END IF
-              IF(ISNAN(Jsa)) WRITE(iout,*) 'fs',ia0,is0,is1,fs0,fs1,BIg(is0,ia0,6),BIg(is1,ia0,6)
-           END IF
-
-           dsda=dsdt/dadt
-
-           WRITE(6200+myrank,'(7(1pe13.5),2I8,10(1pe13.5))') &
-                & tau_t/TWOEFIoZ,alpha,lambdac+(jla-1)*dlambda,s,Jsa,dsda,dadt,jla,jal
-           CALL FLUSH(6200+myrank)
-                      
-           IF(DEBUG) WRITE(6200+myrank,'(7(1pe13.5),2I8,10(1pe13.5))') &
-                & tau_t/TWOEFIoZ,alpha,lambdac+(jla-1)*dlambda,s,Jsa,dsda,dadt,jla,jal
-           IF(DEBUG) CALL FLUSH(6200+myrank)
-           
-           dts=ds/ABS(dsdt)
-           dta=da/ABS(dadt)           
-           signa=dadt/ABS(dadt)
-           signs=dsdt/ABS(dsdt)
-           IF(tau_t.GT.ALMOST_ZERO) THEN
-              IF(sgrid) THEN
-                 IF(signa.GT.0) THEN
-                    IF(ia1.NE.1) THEN
-                       dta=(va(ia1)-alpha)/dadt
-                    ELSE
-                       dta=(TWOPI-alpha)/dadt
-                    END IF
-                 ELSE
-                    dta=(va(ia0)-alpha)/dadt
-                 END IF
-              ELSE
-                 IF(signs.GT.0) THEN
-                    IF(is1.GT.ns) THEN
-                       dts=(1-s)/dsdt
-                    ELSE
-                       dts=(vs(is1)-s)/dsdt
-                    END IF
-                 ELSE
-                    dts=(vs(is0)-s)/dsdt
-                 END IF
-              END IF
-           END IF
-
-!           IF(dts.LT.0) THEN
-!              WRITE(iout,*) s,is0,is1,vs(is0),vs(is1),signs,dsdt
-!              stop
-!           END IF
-
-           
-           IF(dts.LT.dta) THEN
-              IF(sgrid) THEN
-                 s=s+signs*ds
-              ELSE
-                 sgrid=.TRUE.
-                 IF(signs.GT.0) THEN
-                    IF(is1.GT.ns) THEN
-                       s=1.00001
-                    ELSE
-                       s=vs(is1)
-                    END IF
-                 ELSE
-                    s=vs(is0)
-                 END IF
-              END IF
-              alpha=MODANG2(alpha+dadt*dts,TWOPI)
-              tau_t=tau_t+dts
-           ELSE
-              IF(.NOT.sgrid) THEN
-                 alpha=MODANG2(alpha+signa*da,TWOPI)
-              ELSE
-                 sgrid=.FALSE.
-                 IF(signa.GT.0) THEN
-                    alpha=va(ia1)
-                 ELSE
-                    alpha=va(ia0)
-                 END IF
-              END IF
-              s=s+dsdt*dta
-              tau_t=tau_t+dta
-
-           END IF
-           
-        END DO
-
-        tau_t=tau_t/TWOEFIoZ
-!        ipoint=j_p(jla,jal,il0(jal))
-        IF(tau_t.LT.TENDFI) THEN
-           BI(7,jla,jal)=tau_t
-           DO il=1,nalphab
-              jpoint=j_p(jla,jal,il)
-              IF(jpoint.LE.1) CYCLE
-              tau(jpoint)=tau_t
-!              IF(jpoint.GT.1.AND.jpoint.EQ.ipoint) tau(jpoint)=tau_t
-!              ia_out(jpoint)=ial
-           END DO
-        END IF
-        WRITE(6300+myrank,'(3(1pe13.5),2(I4))') thetap(jal,1),lambdac+(jla-1)*dlambda,tau_t,jal,jla
-           
-     END DO
-        
-
-  END DO
-
-  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
-
-  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-
-END SUBROUTINE FAST_ION_JMAP
+!!$
+!!$SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
+!!$     & BI1,BI3,BI4,BI6,zlw,zrw,thetap,theta,tau)
+!!$
+!!$!-----------------------------------------------------------------------------------------------
+!!$!----------------------------------------------------------------------------------------------- 
+!!$
+!!$  USE GLOBAL
+!!$  USE KNOSOS_STELLOPT_MOD  
+!!$  IMPLICIT NONE
+!!$  !Input
+!!$  INTEGER is,ns,nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
+!!$  REAL*8 vs(ns),thetap(nalpha,nalphab),theta(nalphab)
+!!$  REAL*8 lambda(nlambda)
+!!$  REAL*8 BI1(npoint),BI3(npoint),BI4(npoint),BI6(npoint),zlw(npoint),zrw(npoint)
+!!$  !Output
+!!$  REAL*8 tau(npoint)
+!!$  !Others
+!!$  LOGICAL sgrid
+!!$  INTEGER, PARAMETER :: nmaps=8
+!!$  INTEGER, PARAMETER :: nalphaturn=1000
+!!$  REAL*8, PARAMETER :: F5o12 =0.416666666666667
+!!$  REAL*8, PARAMETER :: F13o12=1.083333333333333
+!!$  INTEGER, ALLOCATABLE :: j_p(:,:,:)
+!!$  INTEGER il,ial,jal,na,ila,ilamin,ilamax,jla,il0(nalpha),ipoint,jpoint,ifile,ig,nla
+!!$  INTEGER ia_out(npoint),ia0,ia1,is0,is1
+!!$  REAL*8 fa0,fa1,dta,signa,fs0,fs1,dts,signs
+!!$  REAL*8, ALLOCATABLE :: BI(:,:,:)
+!!$  REAL*8 BIe(nmaps,3*nalpha),BIi(nmaps),BIg(ns,nalphab,nmaps)
+!!$  REAL*8 alpha,dsda,dadt,dsdt,Jsa,dlambda
+!!$  REAL*8 g(npoint),gpl(npoint),gsl(npoint)
+!!$  REAL*8 da,va(nalphab),talpha,s0,s,ds,tau_t
+!!$!  LOGICAL bif(nlambda)
+!!$!  INTEGER norb,iaorb(nalpha),iorb,itrans,it
+!!$  INTEGER, SAVE :: tnalpha
+!!$  REAL*8, ALLOCATABLE :: thetape(:,:)
+!!$  REAL*8 MODANG2!,dummy
+!!$  REAL*8 la(2,1),lambdac,lambdab
+!!$  !Time
+!!$  CHARACTER*30, PARAMETER :: routine="FAST_ION_JMAP"
+!!$  INTEGER, SAVE :: ntotal=0
+!!$  REAL*8,  SAVE :: ttotal=0
+!!$  REAL*8,  SAVE :: t0=0
+!!$  REAL*8 tstart
+!!$!#ifdef MPIandPETSc
+!!$  !Others
+!!$  INTEGER ierr
+!!$  INCLUDE "mpif.h"
+!!$!#endif
+!!$
+!!$  zrw=zrw
+!!$  zlw=zlw
+!!$  TENDFI=1E-3
+!!$  
+!!$  CALL CPU_TIME(tstart)
+!!$
+!!$  !Create table of gamma_c^* and other quantities (ignoring small ripples)
+!!$  !and find maximum gamma_c^*
+!!$  s0=vs(is)
+!!$  g=2.0*ATAN(BI3/ABS(BI4*atorflux))/PI
+!!$  il0=0
+!!$
+!!$  la(2,1)=myrank
+!!$  la(1,1)=lambda(1)
+!!$  CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT,MPI_MINLOC,MPI_COMM_WORLD,ierr)
+!!$  lambdac=la(1,1)
+!!$  la(1,1)=lambda(nlambda)
+!!$  CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT,MPI_MAXLOC,MPI_COMM_WORLD,ierr)
+!!$  lambdab=la(1,1)
+!!$  dlambda=lambda(2)-lambda(1)
+!!$  nla=(lambdab-lambdac+ALMOST_ZERO)/dlambda+1
+!!$
+!!$  ALLOCATE(j_p(nla,nalpha,nalphab))
+!!$  j_p=0
+!!$  DO ila=1,nla
+!!$     IF(ABS(lambdac+(ila-1)*dlambda-lambda(1)).LT.0.5*dlambda) THEN
+!!$        ilamin=ila
+!!$        EXIT
+!!$     END IF
+!!$  END DO
+!!$  ilamax=nlambda+ilamin-1
+!!$  DO ila=1,nlambda
+!!$     j_p(ila+ilamin-1,:,:)=i_p(ila,:,:)
+!!$  END DO
+!!$  ALLOCATE(BI(nmaps,nla,nalpha))
+!!$  BI=SQRT(-1.)
+!!$
+!!$  DO ila=nla,2,-1
+!!$     DO ial=1,nalpha
+!!$        IF(j_p(ila,ial,nalphab/2).GT.1)  il0(ial)=nalphab/2
+!!$        DO il=1,nalphab 
+!!$           jpoint=j_p(ila,ial,il)
+!!$           IF(jpoint.LE.1) CYCLE
+!!$           IF(il0(ial).EQ.0) il0(ial)=il
+!!$           IF(il.EQ.il0(ial)) THEN
+!!$              BI(1,ila,ial)=BI1(jpoint)
+!!$              BI(2,ila,ial)=BI3(jpoint)/ABS(BI4(jpoint)*atorflux)
+!!$              BI(3,ila,ial)=BI3(jpoint)/atorflux
+!!$              BI(4,ila,ial)=BI4(jpoint)
+!!$              BI(6,ila,ial)=2*BI6(jpoint)/rad_R
+!!$           END IF
+!!$        END DO
+!!$        ipoint=j_p(ila,ial,il0(ial))
+!!$        IF(ipoint.LE.1) CYCLE
+!!$        DO il=1,nalphab 
+!!$           jpoint=j_p(ila,ial,il)
+!!$           DO jal=1,nalpha
+!!$              IF(jpoint.EQ.j_p(ila,jal,il0(jal))) jpoint=1
+!!$           END DO
+!!$           IF(jpoint.LE.1) CYCLE
+!!$!           WRITE(iout,*) 'Ripple at',ila,ial,il
+!!$!           IF(g(ipoint).LT.gth.AND.g(jpoint).GT.gth) WRITE(iout,*) 'WARNING: ripple has sb',g(ipoint),g(jpoint)
+!!$!           IF(g(ipoint).GT.gth.AND.g(ipoint).LT.g(jpoint)) WRITE(iout,*) 'WARNING: ripple largest sb',g(ipoint),g(jpoint)
+!!$        END DO
+!!$     END DO
+!!$        
+!!$  END DO
+!!$
+!!$  !Figures
+!!$  tnalpha=2*nalpha
+!!$  IF(aiota/nzperiod.GE.1) tnalpha=3*nalpha
+!!$  ALLOCATE(thetape(tnalpha,nalphab))
+!!$  DO il=1,nalphab
+!!$     IF(aiota/nzperiod.LT.1) THEN
+!!$        IF(iota.GT.0) THEN
+!!$           thetape(     1:nalpha,il)=thetap(1:nalpha,il)-TWOPI
+!!$        ELSE
+!!$           thetape(     1:nalpha,il)=thetap(1:nalpha,il)+TWOPI
+!!$        END IF
+!!$        thetape(nalpha+1:tnalpha,il)=thetap(1:nalpha,il)
+!!$     ELSE
+!!$        IF(iota.GT.0) THEN
+!!$           thetape(       1:  nalpha,il)=thetap(1:nalpha,il)-2*TWOPI
+!!$           thetape(nalpha+1:2*nalpha,il)=thetap(1:nalpha,il)-  TWOPI
+!!$        ELSE
+!!$           thetape(       1:  nalpha,il)=thetap(1:nalpha,il)+2*TWOPI
+!!$           thetape(nalpha+1:2*nalpha,il)=thetap(1:nalpha,il)+  TWOPI
+!!$        END IF
+!!$        thetape(2*nalpha+1: tnalpha,il)=thetap(1:nalpha,il)
+!!$     END IF
+!!$  END DO
+!!$  IF(JMAP) THEN        
+!!$     na=INT(2*nalphab*SQRT(s0))
+!!$  ELSE
+!!$     na=nalphab!INT(nalpha*1.5)
+!!$  END IF
+!!$      
+!!$  ia_out=0
+!!$  tau=10*TENDFI
+!!$  gpl=0
+!!$  gsl=0
+!!$
+!!$
+!!$  DO jla=1,nla
+!!$     BIg=0
+!!$     IF(aiota/nzperiod.LT.1) THEN
+!!$        DO ig=3,nmaps
+!!$           BIe(ig,        1: nalpha)=BI(ig,jla,:)
+!!$           BIe(ig, nalpha+1:tnalpha)=BI(ig,jla,:)
+!!$        END DO
+!!$     ELSE
+!!$        DO ig=3,nmaps
+!!$           BIe(ig,         1:  nalpha)=BI(ig,jla,:)
+!!$           BIe(ig,  nalpha+1:2*nalpha)=BI(ig,jla,:)
+!!$           BIe(ig,2*nalpha+1: tnalpha)=BI(ig,jla,:)
+!!$        END DO
+!!$     END IF
+!!$     
+!!$     DO ial=1,na
+!!$        va(ial)=theta(1)+(ial-1)*TWOPI/na
+!!$        DO ig=3,6
+!!$           CALL LAGRANGE(thetape(1:tnalpha,1),BIe(ig,1:tnalpha),tnalpha,&
+!!$                & va(ial),BIi(ig),0)
+!!$!           dummy=BIi(ig)
+!!$!           IF(ISNAN(dummy)) BIi(ig)=0
+!!$           BIg(myrank+1,ial,ig)=BIi(ig)
+!!$           CALL MPI_ALLREDUCE(MPI_IN_PLACE,BIg(:,ial,ig),ns,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,ierr)
+!!$!           IF(ISNAN(dummy)) BIi(ig)=dummy
+!!$        END DO
+!!$
+!!$        IF(JMAP) THEN
+!!$           ifile=6000+myrank
+!!$        ELSE
+!!$           ifile=6100+myrank
+!!$        END IF
+!!$        WRITE(ifile,'(20(1pe13.5))') &
+!!$             & vs(is),va(ial),lambdac+(jla-1)*dlambda,&
+!!$             & 2.0*ATAN(BIi(3)/ABS(BIi(4)))/PI,BIi(3),BIi(4),BIi(6),BIi(5),BIi(7),BIi(8),BIi(3)/BIi(1)/atorflux
+!!$        CALL FLUSH(ifile)
+!!$     END DO
+!!$
+!!$     IF(jla.LT.ilamin.OR.jla.GT.ilamax) CYCLE
+!!$
+!!$     ds=vs(myrank+2)-vs(myrank+1)
+!!$     da=TWOPI/na
+!!$
+!!$!     IF(jla.NE.nlambda/2.OR.myrank.NE.12) CYCLE
+!!$     
+!!$     DO jal=1,nalpha
+!!$
+!!$        IF(myrank.NE.12) CYCLE
+!!$!        IF(j_p(jla,jal,il0(jal)).LE.1) CYCLE
+!!$!        IF(jla.NE.16) CYCLE
+!!$!        IF(jal.NE.13) CYCLE
+!!$        
+!!$        talpha=0
+!!$        tau_t=0
+!!$        s=s0
+!!$        alpha=MODANG2(thetap(jal,1),TWOPI)
+!!$        sgrid=.TRUE.
+!!$
+!!$
+!!$        DO WHILE(s.LT.1.AND.tau_t.LT.TENDFI*TWOEFIoZ)
+!!$           
+!!$           IF(s.LT.0) s=-s
+!!$           CALL FLUSH(iout)
+!!$           ia0=INT(1+alpha/da)
+!!$           ia1=ia0+1
+!!$           IF(ia1.GT.na) ia1=1
+!!$           is0=INT(ns*s+0.5)
+!!$           is1=is0+1
+!!$           IF(sgrid) THEN
+!!$              fa1=(alpha-va(ia0))/da
+!!$              fa0=1-fa1
+!!$              dsdt=fa0*BIg(is0,ia0,3)+fa1*BIg(is0,ia1,3)
+!!$              dadt=fa0*BIg(is0,ia0,4)+fa1*BIg(is0,ia1,4)
+!!$              Jsa =fa0*BIg(is0,ia0,6)+fa1*BIg(is0,ia1,6)
+!!$              IF(ISNAN(Jsa)) WRITE(iout,*) 'fa',is0,ia0,ia1,fa0,fa1,BIg(is0,ia0,6),BIg(is0,ia1,6)
+!!$                 
+!!$           ELSE
+!!$              IF(is1.GT.ns) THEN
+!!$                 fs1=(vs(ns)-s)/ds
+!!$                 fs0=1-fs1
+!!$                 dsdt=fs0*BIg(ns,ia0,3)+fs1*BIg(ns-1,ia0,3)
+!!$                 dadt=fs0*BIg(ns,ia0,4)+fs1*BIg(ns-1,ia0,4)
+!!$                 Jsa =fs0*BIg(ns,ia0,6)+fs1*BIg(ns-1,ia0,6)
+!!$              ELSE
+!!$                 fs1=(s-vs(is0))/ds
+!!$                 fs0=1-fs1
+!!$                 dsdt=fs0*BIg(is0,ia0,3)+fs1*BIg(is1,ia0,3)
+!!$                 dadt=fs0*BIg(is0,ia0,4)+fs1*BIg(is1,ia0,4)
+!!$                 Jsa =fs0*BIg(is0,ia0,6)+fs1*BIg(is1,ia0,6)
+!!$              END IF
+!!$              IF(ISNAN(Jsa)) WRITE(iout,*) 'fs',ia0,is0,is1,fs0,fs1,BIg(is0,ia0,6),BIg(is1,ia0,6)
+!!$           END IF
+!!$
+!!$           dsda=dsdt/dadt
+!!$
+!!$           WRITE(6200+myrank,'(7(1pe13.5),2I8,10(1pe13.5))') &
+!!$                & tau_t/TWOEFIoZ,alpha,lambdac+(jla-1)*dlambda,s,Jsa,dsda,dadt,jla,jal
+!!$           CALL FLUSH(6200+myrank)
+!!$                      
+!!$           IF(DEBUG) WRITE(6200+myrank,'(7(1pe13.5),2I8,10(1pe13.5))') &
+!!$                & tau_t/TWOEFIoZ,alpha,lambdac+(jla-1)*dlambda,s,Jsa,dsda,dadt,jla,jal
+!!$           IF(DEBUG) CALL FLUSH(6200+myrank)
+!!$           
+!!$           dts=ds/ABS(dsdt)
+!!$           dta=da/ABS(dadt)           
+!!$           signa=dadt/ABS(dadt)
+!!$           signs=dsdt/ABS(dsdt)
+!!$           IF(tau_t.GT.ALMOST_ZERO) THEN
+!!$              IF(sgrid) THEN
+!!$                 IF(signa.GT.0) THEN
+!!$                    IF(ia1.NE.1) THEN
+!!$                       dta=(va(ia1)-alpha)/dadt
+!!$                    ELSE
+!!$                       dta=(TWOPI-alpha)/dadt
+!!$                    END IF
+!!$                 ELSE
+!!$                    dta=(va(ia0)-alpha)/dadt
+!!$                 END IF
+!!$              ELSE
+!!$                 IF(signs.GT.0) THEN
+!!$                    IF(is1.GT.ns) THEN
+!!$                       dts=(1-s)/dsdt
+!!$                    ELSE
+!!$                       dts=(vs(is1)-s)/dsdt
+!!$                    END IF
+!!$                 ELSE
+!!$                    dts=(vs(is0)-s)/dsdt
+!!$                 END IF
+!!$              END IF
+!!$           END IF
+!!$
+!!$!           IF(dts.LT.0) THEN
+!!$!              WRITE(iout,*) s,is0,is1,vs(is0),vs(is1),signs,dsdt
+!!$!              stop
+!!$!           END IF
+!!$
+!!$           
+!!$           IF(dts.LT.dta) THEN
+!!$              IF(sgrid) THEN
+!!$                 s=s+signs*ds
+!!$              ELSE
+!!$                 sgrid=.TRUE.
+!!$                 IF(signs.GT.0) THEN
+!!$                    IF(is1.GT.ns) THEN
+!!$                       s=1.00001
+!!$                    ELSE
+!!$                       s=vs(is1)
+!!$                    END IF
+!!$                 ELSE
+!!$                    s=vs(is0)
+!!$                 END IF
+!!$              END IF
+!!$              alpha=MODANG2(alpha+dadt*dts,TWOPI)
+!!$              tau_t=tau_t+dts
+!!$           ELSE
+!!$              IF(.NOT.sgrid) THEN
+!!$                 alpha=MODANG2(alpha+signa*da,TWOPI)
+!!$              ELSE
+!!$                 sgrid=.FALSE.
+!!$                 IF(signa.GT.0) THEN
+!!$                    alpha=va(ia1)
+!!$                 ELSE
+!!$                    alpha=va(ia0)
+!!$                 END IF
+!!$              END IF
+!!$              s=s+dsdt*dta
+!!$              tau_t=tau_t+dta
+!!$
+!!$           END IF
+!!$           
+!!$        END DO
+!!$
+!!$        tau_t=tau_t/TWOEFIoZ
+!!$!        ipoint=j_p(jla,jal,il0(jal))
+!!$        IF(tau_t.LT.TENDFI) THEN
+!!$           BI(7,jla,jal)=tau_t
+!!$           DO il=1,nalphab
+!!$              jpoint=j_p(jla,jal,il)
+!!$              IF(jpoint.LE.1) CYCLE
+!!$              tau(jpoint)=tau_t
+!!$!              IF(jpoint.GT.1.AND.jpoint.EQ.ipoint) tau(jpoint)=tau_t
+!!$!              ia_out(jpoint)=ial
+!!$           END DO
+!!$        END IF
+!!$        WRITE(6300+myrank,'(3(1pe13.5),2(I4))') thetap(jal,1),lambdac+(jla-1)*dlambda,tau_t,jal,jla
+!!$           
+!!$     END DO
+!!$        
+!!$
+!!$  END DO
+!!$
+!!$  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!!$
+!!$  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+!!$
+!!$END SUBROUTINE FAST_ION_JMAP
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1948,7 +1948,7 @@ END SUBROUTINE CORRECTION_STEP
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
+SUBROUTINE CALCULATE_FRACTIONS(vs,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      & thetap,B_al,vds_al,tau,ia_out)
 
   USE GLOBAL
@@ -1957,7 +1957,7 @@ SUBROUTINE CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   !Input
   INTEGER nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
   INTEGER ia_out(npoint)
-  REAL*8 thetap(nalpha,nalphab),lambda(nlambda),B_al(nalpha,nalphab),vds_al(Nnmp,nalpha,nalphab),tau(npoint)
+  REAL*8 vs,thetap(nalpha,nalphab),lambda(nlambda),B_al(nalpha,nalphab),vds_al(Nnmp,nalpha,nalphab),tau(npoint)
   !Others
   INTEGER, PARAMETER :: ntime=10
   REAL*8 tlosses(ntime) /1E-4,2E-4,3E-4,4E-4,5E-4,6E-4,7E-4,8E-4,9E-4,1E-3/
@@ -2047,13 +2047,11 @@ SUBROUTINE CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gpl,.TRUE.,&
                 & thetap,B_al,vds_al,f_pll(ila))
            DEBUG=.FALSE.
-           WRITE(6,*) 'ila1',ila,f_pll(ila)
            CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gsl,.TRUE.,&
                 & thetap,B_al,vds_al,f_sll(ila))
            CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,.TRUE.,&
                 & thetap,B_al,vds_al,f_tl)
            f_pll(ila)=f_pll(ila)/f_tl
-           WRITE(6,*) 'ila0',ila,f_tl
            f_sll(ila)=f_sll(ila)/f_tl
            f_lossl(ila)=f_pll(ila)+f_sll(ila)
         ELSE
@@ -2061,13 +2059,16 @@ SUBROUTINE CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gt,.TRUE.,&
                 & thetap,B_al,vds_al,f_lt(it,ila))
            DEBUG=.FALSE.
-           IF(it.EQ.ntime) WRITE(6,*) 'ilan',ila,f_lt(it,ila)
-           IF(it.EQ.ntime) WRITE(6,*) 'ilam',ila,f_tl
            f_lt(it,ila)=f_lt(it,ila)/f_tl
         END IF
      END DO
-     WRITE(6500+myrank,'(4(1pe13.5),I4,10(1pe13.5))') lambda(ila),f_lossl(ila),&
-          & f_pll(ila),f_sll(ila),jla-jla,(f_lt(it,ila),it=1,ntime)
+     IF(MODELFI) THEN
+        WRITE(6500+myrank,'(5(1pe13.5),I4,10(1pe13.5))') vs,lambda(ila),f_lossl(ila),&
+             & f_pll(ila),f_sll(ila),jla-jla
+     ELSE
+        WRITE(6500+myrank,'(4(1pe13.5),I4,10(1pe13.5))') vs,lambda(ila),f_lossl(ila),&
+             & f_pll(ila),f_sll(ila),jla-jla,(f_lt(it,ila),it=1,ntime)
+     END IF
   END DO
   DO jla=1,nlambda/16 !smooth curves
      f_pllt=f_pll
@@ -2077,7 +2078,7 @@ SUBROUTINE CALCULATE_FRACTIONS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         f_pll(ila)=(f_pllt(ila-1)+f_pllt(ila)+f_pllt(ila+1))/3.
         f_sll(ila)=(f_sllt(ila-1)+f_sllt(ila)+f_sllt(ila+1))/3.        
         f_lossl(ila)=(f_losslt(ila-1)+f_losslt(ila)+f_losslt(ila+1))/3.
-        WRITE(6500+myrank,'(4(1pe13.5),I4)') lambda(ila),f_lossl(ila),f_pll(ila),f_sll(ila),jla
+        WRITE(6500+myrank,'(5(1pe13.5),I4)') vs,lambda(ila),f_lossl(ila),f_pll(ila),f_sll(ila),jla
      END DO
   END DO
   
