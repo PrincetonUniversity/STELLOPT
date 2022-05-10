@@ -59,13 +59,17 @@ There is a one-to-one equivalence between *.plt files at Gamma_alpha/Scripts and
 
     - "gammacsa.plt" reads file "gammacs.map" and produces a figure comparable to Figure 5 right of http://fusionsites.ciemat.es/jlvelasco/files/papers/velasco2021prompt.pdf (it uses data from a single flux-surface, which can be changed by editing the script).
 
-    - "fraction_lambda.plt" reads file "prompt.lambda" and produces a figure similar to Figure 8 right of the same paper (the flux-surfaces read can be changed; selecting data with $6==0 gives you no smoothing, S6==1 , $6==2, ... $6=8 (gives the same data with different leves of smoothing by means of moving average)
+    - "fraction_lambda.plt" reads file "prompt.lambda" and produces a figure similar to Figure 8 right of the same paper (the flux-surfaces read can be changed; selecting data with $6==0 gives you no smoothing, S6==1 , $6==2, ... $6=8 gives the same data with different leves of smoothing by means of moving average)
 
    - "gamma_alpha.plt" reads file "stellopt.knosos" and produces a radial profile of Gamma_alpha. "stellopt.knosos" contains other quantities, such as the fraction of trapped ions (last column)
 
-- For your calculations, replace the file "boozer.txt" with your own equilibrium in boozer coordinates. Apart from the format of "boozer.txt" (employed at IPP Greifswald), the output of BOOZER_XFORM (both binary and netcdf) can be read. Bear in mind that KNOSOS looks for a magnetic equilibria in the working folder and one folder above. On file "STDOUT" you can make sure that KNOSOS has read the equilibrium that you wanted it to and not another file that you left in the folder.
+- For your calculations, replace the file "boozer.txt" with your own equilibrium in boozer coordinates. At the moment, KNOSOS recognizes the format of the file from its name, so you will need to rename your file or create a link:
+- "boozer.txt" (txt file employed basically at IPP Greifswald).
+- "boozmn.nc" (netcdf output of BOOZER_XFORM).
+- "boozmn.data" (binary output of old versions of BOOZER_XFORM).
+Bear in mind that KNOSOS looks for a magnetic equilibria in the working folder and one folder above. On file "STDOUT" you can make sure that KNOSOS has read the equilibrium that you wanted it to and not another file that you left in the folder.
 
-- The number of flux-surfaces to be computed can be modified at input.surfaces. However, I do not advice to for a very high radial resolution, as the profile may get noisy.
+- The list of flux-surfaces to be computed can be modified at input.surfaces. However, I do not advice to go for a very high radial resolution, as the profile may get noisy.
 
 
 
