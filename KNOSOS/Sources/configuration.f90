@@ -1378,7 +1378,7 @@ SUBROUTINE CHECK_JACSIGN(nz,nt,x1,x2,x3,Bzt,LeftHanded)
 
   k =0
   k2=0
-    
+  denom=0 
   etet=0
   !Calculate derivatives
   DO iz=1,nz

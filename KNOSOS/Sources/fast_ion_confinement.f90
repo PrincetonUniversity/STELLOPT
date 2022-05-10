@@ -302,6 +302,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
               BI(6,ila,ial)=2*BI6(jpoint)/rad_R
            END IF
         END DO
+        IF(il0(ial).EQ.0) CYCLE !No trapped orbits found close to 1/Bmax
         ipoint=i_p(ila,ial,il0(ial))
         IF(ipoint.LE.1) CYCLE
         DO il=1,nalphab !Ignore alphas covered by barely trapped orbit

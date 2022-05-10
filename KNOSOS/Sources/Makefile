@@ -146,6 +146,7 @@ COMPILER =mpif90
 #COMP_LIB =
 NETCDF_DIR=/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-17.0.8/netcdf-fortran-4.4.4-4me7upiib2q3vpkd2qzvtuaxpruy7ndo
 #NECDF_DIR=${NETCDF}
+#FFLAGS   =-fpp -DIPPorNIFS -DMPIandPETSc -check all -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0 --with-scalar-type=real --with-precision=double
 FFLAGS   =-fpp -DIPPorNIFS -DMPIandPETSc -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0 --with-scalar-type=real --with-precision=double
 IFLAGS   =-I${PETSC_DIR}/lib/petsc/conf/variables -I${PETSC_DIR}/lib/petsc/conf/rules -I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc -qopenmp -I$(NETCDF_DIR)/include 
 LFLAGS   =-L${PETSC_DIR}/lib -lpetsc -L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf -L/${MKL_HOME}/lib/intel64 -mkl -Wl,-rpath,${MKL_HOME}/lib/intel64,-rpath,${PETSC_DIR}/lib
