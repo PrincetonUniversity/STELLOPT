@@ -8,7 +8,7 @@
   compiladores=intel
  # MYHOME = $(PWD)/../x$(compiladores)
 	
-  MYHOME = $(HOME)/STEL_CIEMAT_tst/xintel.debug/
+  MYHOME = $(PATH_STELLOPT_EXE)
 
   PRECOMP:= /lib/cpp -P -traditional -DLINUX
   COMPILE = $(FC)
