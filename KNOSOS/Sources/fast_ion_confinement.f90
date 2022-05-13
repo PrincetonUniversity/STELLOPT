@@ -293,6 +293,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            jpoint=i_p(ila,ial,il)
            IF(jpoint.LE.1) CYCLE
            IF(il0(ial).EQ.0) il0(ial)=il
+           IF(BI1(jpoint).GT.BI(1,ila,ial)) il0(ial)=il
            IF(g(jpoint).GT.maxg(ila)) maxg(ila)=g(jpoint)
            IF(il.EQ.il0(ial)) THEN
               BI(1,ila,ial)=BI1(jpoint)
