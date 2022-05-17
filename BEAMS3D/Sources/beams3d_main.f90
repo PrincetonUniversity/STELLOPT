@@ -100,6 +100,8 @@ PROGRAM BEAMS3D
         lw7x = .false.
         lascot = .false.
         lfidasim = .false.
+        lfidasim2 = .false.
+        lsplit = .false.
         lascot4 = .false.
         lbbnbi = .false.
         lascotfl = .false.
@@ -136,6 +138,10 @@ PROGRAM BEAMS3D
                 lascot4 = .true.
             case ("-fidasim")
                 lfidasim = .true.
+            case ("-fidasim2")
+                lfidasim2 = .true.
+            case ("-split")
+                lsplit = .true.
             case ("-vmec")
                 i = i + 1
                 lvmec = .true.

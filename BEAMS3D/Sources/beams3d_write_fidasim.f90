@@ -41,7 +41,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       charge, Zatom, mass, ldepo, v_neut, &
       lcollision, pi, pi2, t_end_in, nprocs_beams, &
       div_beams, mass_beams, Zatom_beams, dex_beams, &
-      lascotfl, R_beams, PHI_beams, Z_beams
+      lascotfl, R_beams, PHI_beams, Z_beams, &
+      lsplit, lfidasim2
    USE safe_open_mod, ONLY: safe_open
    !USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free, machine_string
    USE beams3d_write_par
@@ -476,11 +477,15 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          !ALLOCATE(r4dtemp(nbeams,nr_fida,nphi_fida,nz_fida))
          ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
          rtemp = 0.0
+         IF (lfidasim2) THEN
+            rtemp = SUM(dist5d_prof(:,l,m,n,:,:))
+            rtemp = reshape(rtemp(1:nr_fida,1:nphi_fida,1:nz_fida), shape(rtemp), order=(/1, 3, 2/))
+         ELSE 
          !convert to r z phi
          DO i=1,nr_fida
             DO k = 1, nz_fida
                DO j=1,nphi_fida
-                  !convert i,j,k to distribution function indices l,m,n
+                  !convert i,j,k to distribution functionlfidasim indices l,m,n
                   !determine beams3d-grid indices
                   i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
                   j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
@@ -514,6 +519,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                END DO
             END DO
          END DO
+      END IF
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          CALL h5gopen_f(fid,'/', qid_gid, ier)
          CALL write_var_hdf5(qid_gid,'denf',nr_fida,nz_fida,nphi_fida,ier,DBLVAR=DBLE(rtemp/1000000.0)) !in cm^3
@@ -573,10 +579,11 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                END DO
             END DO
          END DO
+
+         IF (.not. lfidasim2) THEN
          ALLOCATE(dist5d_temp(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
          dist5d_temp(:,:,:,:,:,:) = dist5d_fida(:,:,:,:,:,:)
-         DEALLOCATE(dist5d_fida)
-
+         DEALLOCATE(dist5d_fida) 
          !Interpolate rho u v to r phi z distribution function (nearest neighbor at the moment)
          !Now allocate with correct dimensions
          ALLOCATE(dist5d_fida(nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
@@ -620,10 +627,15 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                END DO
             END DO
          END DO
+      END IF
 
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          IF (ASSOCIATED(dist5d_fida)) THEN
-            CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=SUM(dist5d_fida, DIM=1))
+            IF (lsplit) THEN
+               CALL write_var_hdf5(fid,'f',nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=dist5d_fida)  
+            ELSE 
+               CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=SUM(dist5d_fida, DIM=1))
+            END IF
             CALL h5dopen_f(fid, '/f', temp_gid, ier)
             CALL write_att_hdf5(temp_gid,'description','Distribution Function (nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida)',ier)
             CALL write_att_hdf5(temp_gid,'units','part/(cm^3 keV)',ier)
