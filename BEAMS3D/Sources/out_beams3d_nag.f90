@@ -12,7 +12,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
-                               weight, invpi2, ndt, ndt_max, lfidasim
+                               weight, invpi2, ndt, ndt_max, lfidasim, lfidasim2
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nsteps, nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
@@ -104,9 +104,16 @@ SUBROUTINE out_beams3d_nag(t, q)
        xw = weight(myline)*dt
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
-      !  IF (lfidasim)
-      !    dist5d_fida(mybeam,i,j,k,d4,d5) = dist5d_fida(mybeam,i,j,k,d4,d5) + xw !This shouldnt slow down the code, but perhaps increase the memory usage
-      !  END IF
+       IF (lfidasim2) THEN
+         IF ((q(1) >= rmin_fida-eps1) .and. (q(1) <= rmax_fida+eps1) .and. &
+         (x0 >= phimin_fida-eps2) .and. (x0 <= phimax_fida+eps2) .and. &
+         (q(3) >= zmin_fida-eps3) .and. (q(3) <= zmax_fida+eps3)) THEN
+               i = MIN(MAX(COUNT(raxis_fida < q(1)),1),nr_fida-1)
+               j = MIN(MAX(COUNT(phiaxis_fida < x0),1),nphi_fida-1)
+               k = MIN(MAX(COUNT(zaxis_fida < q(3)),1),nz_fida-1)
+               dist5d_fida(mybeam,i,j,k,d4,d5) = dist5d_fida(mybeam,i,j,k,d4,d5) + xw !This shouldnt slow down the code, but perhaps increase the memory usage
+         END IF
+       END IF
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
        IF (lcollision) CALL beams3d_physics(t,q)
        IF (ltherm) THEN

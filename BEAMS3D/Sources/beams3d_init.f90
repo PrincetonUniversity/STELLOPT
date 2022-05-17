@@ -139,6 +139,7 @@
          IF (lw7x) WRITE(6,'(A)') '   W7-X BEAM Model!'
          IF (lascot) WRITE(6,'(A)') '   ASCOT5 OUTPUT ON!'
          IF (lfidasim) WRITE(6,'(A)') '   FIDASIM OUTPUT ON!'
+         IF (lsplit) WRITE(6,'(A)') '   FIDASIM DISTRIBUTION SPLIT TO NBEAMS!'
          IF (lascotfl) WRITE(6,'(A)') '   ASCOT5 FIELDLINE OUTPUT ON!'
          IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
          IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
