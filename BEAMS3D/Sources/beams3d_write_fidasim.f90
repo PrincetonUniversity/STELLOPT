@@ -478,8 +478,14 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
          rtemp = 0.0
          IF (lfidasim2) THEN
-            rtemp = SUM(dist5d_prof(:,l,m,n,:,:))
-            rtemp = reshape(rtemp(1:nr_fida,1:nphi_fida,1:nz_fida), shape(rtemp), order=(/1, 3, 2/))
+            DO i=1,nr_fida
+               DO j = 1, nz_fida
+                  DO k=1,nphi_fida
+                     rtemp(i,j,k) = SUM(dist5d_fida(:,i,j,k,:,:))
+                  END DO
+               END DO
+            END DO
+            !rtemp = reshape(rtemp(1:nr_fida,1:nphi_fida,1:nz_fida), shape(rtemp), order=(/1, 3, 2/))
          ELSE 
          !convert to r z phi
          DO i=1,nr_fida
@@ -515,7 +521,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                    ELSE
                      rtemp(i,k,j) = SUM(dist5d_prof(:,l,m,n,:,:))!output in r-z-phi
                    END IF
-
                END DO
             END DO
          END DO
@@ -555,13 +560,18 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 
          ! Do phase space change of coordinates
          !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
-         ALLOCATE(dist5d_fida(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida)) !nenergy and npitch are always aligned to distribution
+         
+         IF (lfidasim2) THEN
+            ALLOCATE(dist5d_temp(nbeams, nenergy_fida, npitch_fida,nr_fida,nz_fida,nphi_fida)) !need temp as velocity bins are in vll/vperp initially
+         ELSE
+            ALLOCATE(dist5d_fida(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida)) !nenergy and npitch are always aligned to distribution
+         END IF
          DO b=1,nbeams
             DO d1 = 1, nenergy_fida
                DO d2 = 1, npitch_fida
                   v = SQRT(2 * energy_fida(d1) *1000.0 * e_charge / mass_beams(b))
                   IF (v .gt. partvmax) THEN !) .or. (v .eq. 0.0))
-                     dist5d_fida(b,:,:,:,d1,d2) = 0
+                     IF (.not. lfidasim2) dist5d_fida(b,:,:,:,d1,d2) = 0
                   ELSE
                      pitch = pitch_fida(d2)
                      v_parr = pitch * v
@@ -573,7 +583,11 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      !jac = MIN(MAX(jac, 0.0),1.0E)
                      !jac = jac / pi / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention and 1/cm^3/keV
                      jac = v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
-                     dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac
+                     IF (lfidasim2) THEN
+                        dist5d_temp(b,d1,d2,:,:,:) = dist5d_fida(b,:,:,:,i3,j3) * jac
+                     ELSE   
+                        dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac
+                     END IF
 
                   END IF
                END DO
@@ -633,7 +647,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          IF (ASSOCIATED(dist5d_fida)) THEN
             IF (lsplit) THEN
                CALL write_var_hdf5(fid,'f',nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=dist5d_fida)  
-            ELSE 
+            ELSE IF (lfidasim2) THEN
+               CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=SUM(dist5d_temp, DIM=1))
+            ELSE
                CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=SUM(dist5d_fida, DIM=1))
             END IF
             CALL h5dopen_f(fid, '/f', temp_gid, ier)
@@ -643,9 +659,10 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_fida',ier)
          END IF
          CALL close_hdf5(fid,ier)
-         DEALLOCATE(dist5d_fida)
+         IF (.not. lfidasim2) DEALLOCATE(dist5d_fida)
          DEALLOCATE(pitch_fida)
          DEALLOCATE(energy_fida)
+         !DEALLOCATE(dist5d_temp)
        CASE('DISTRIBUTION_GC_MC')
        CASE('DISTRIBUTION_FO')
 
