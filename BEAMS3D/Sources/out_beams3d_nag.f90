@@ -111,7 +111,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                i = MIN(MAX(COUNT(raxis_fida < q(1)),1),nr_fida-1)
                j = MIN(MAX(COUNT(phiaxis_fida < x0),1),nphi_fida-1)
                k = MIN(MAX(COUNT(zaxis_fida < q(3)),1),nz_fida-1)
-               dist5d_fida(mybeam,i,j,k,d4,d5) = dist5d_fida(mybeam,i,j,k,d4,d5) + xw !This shouldnt slow down the code, but perhaps increase the memory usage
+               dist5d_fida(mybeam,i,k,j,d4,d5) = dist5d_fida(mybeam,i,k,j,d4,d5) + xw !This shouldnt slow down the code, but perhaps increase the memory usage
          END IF
        END IF
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)

@@ -15,9 +15,9 @@
                                shine_through, &
                                B_lines, end_state, shine_port, Gfactor, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
-                               dense_prof, dist5d_prof, &
+                               dense_prof, dist5d_prof, dist5d_fida, &
                                win_ndot, win_epower, win_ipower, win_jprof, &
-                               win_dense, win_dist5d
+                               win_dense, win_dist5d, win_dist5d_fida
       USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -121,6 +121,7 @@
          IF (ASSOCIATED(j_prof))    DEALLOCATE(j_prof)
          IF (ASSOCIATED(dense_prof))    DEALLOCATE(dense_prof)
          IF (ASSOCIATED(dist5d_prof)) CALL mpidealloc(dist5d_prof,win_dist5d)
+         IF (ASSOCIATED(dist5d_fida)) CALL mpidealloc(dist5d_fida,win_dist5d_fida)
       ELSE
          IF (ASSOCIATED(req_axis)) DEALLOCATE(req_axis)
          IF (ASSOCIATED(zeq_axis)) DEALLOCATE(zeq_axis)
