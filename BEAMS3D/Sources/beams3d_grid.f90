@@ -48,6 +48,7 @@
                      win_S4D, win_U4D,  win_X4D, win_Y4D, win_POT4D, win_req_axis, win_zeq_axis, &
                      win_wall_load, win_wall_shine, win_hr, win_hp, win_hz, &
                      win_hri, win_hpi, win_hzi, win_NI5D, win_NI, &
+                     win_raxis_fida, win_phiaxis_fida, win_zaxis_fida, &
                      nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, tmin, tmax, delta_t, &
                      vc_adapt_tol, psiedge_eq, phiedge_eq, plasma_Zmean, plasma_mass, &
