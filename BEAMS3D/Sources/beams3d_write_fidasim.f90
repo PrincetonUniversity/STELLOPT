@@ -74,7 +74,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
    DOUBLE PRECISION         :: x0,y0,z0
    REAL(rprec) :: jac, v_parr, v_perp, pitch, v
-   DOUBLE PRECISION :: rho_temp, s_temp, dbl_temp, gammarel, v_total, hr, hp, hz, dvol
+   DOUBLE PRECISION :: rho_temp, s_temp, dbl_temp, gammarel, v_total, r_h, p_h, z_h, vol
    DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:), r1dtemp2(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
    INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask
    CHARACTER(LEN=8) :: temp_str8, inj_str8
@@ -478,13 +478,13 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
          rtemp = 0.0
          IF (lfidasim2) THEN
-            hr = (rmax_fida - rmin_fida) / (nr_fida)
-            hz = (zmax_fida - zmin_fida) / (nz_fida1)
-            hp = (phimax_fida - phimin_fida) / (nphi_fida)
+            r_h = (rmax_fida - rmin_fida) / (nr_fida)
+            z_h = (zmax_fida - zmin_fida) / (nz_fida)
+            p_h = (phimax_fida - phimin_fida) / (nphi_fida)
 
             DO i=1,nr_fida
-               dvol = hr * hz * hp * (raxis_fida(i) + hr / 2)
-               dist5d_fida(:,i,:,:,:,:) = dist5d_fida(:,i,:,:,:,:) / dvol
+               vol = r_h * z_h * p_h * (raxis_fida(i) + r_h / 2.0)
+               dist5d_fida(:,i,:,:,:,:) = dist5d_fida(:,i,:,:,:,:) / vol
                DO j = 1, nz_fida
                   DO k=1,nphi_fida
                      rtemp(i,j,k) = SUM(dist5d_fida(:,i,j,k,:,:))
