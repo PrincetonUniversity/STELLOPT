@@ -108,9 +108,9 @@ SUBROUTINE out_beams3d_nag(t, q)
          IF ((q(1) >= rmin_fida-eps1) .and. (q(1) <= rmax_fida+eps1) .and. &
          (x0 >= phimin_fida-eps2) .and. (x0 <= phimax_fida+eps2) .and. &
          (q(3) >= zmin_fida-eps3) .and. (q(3) <= zmax_fida+eps3)) THEN
-               i = MIN(MAX(COUNT(raxis_fida < q(1)),1),nr_fida-1)
-               j = MIN(MAX(COUNT(phiaxis_fida < x0),1),nphi_fida-1)
-               k = MIN(MAX(COUNT(zaxis_fida < q(3)),1),nz_fida-1)
+               i = MIN(MAX(COUNT(raxis_fida < q(1)),1),nr_fida)
+               j = MIN(MAX(COUNT(phiaxis_fida < x0),1),nphi_fida)
+               k = MIN(MAX(COUNT(zaxis_fida < q(3)),1),nz_fida)
                dist5d_fida(mybeam,i,k,j,d4,d5) = dist5d_fida(mybeam,i,k,j,d4,d5) + xw !This shouldnt slow down the code, but perhaps increase the memory usage
          END IF
        END IF

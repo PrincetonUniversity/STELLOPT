@@ -10,13 +10,13 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE beams3d_runtime, ONLY: lfidasim, nbeams, pi2, &
+      USE beams3d_runtime, ONLY: lfidasim, lfidasim2, nbeams, pi2, &
                               EZSPLINE_ERR
       USE beams3d_grid, ONLY: raxis, phiaxis, zaxis, X4D, Y4D, S4D, &
                               nr, nphi, nz
       USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof4, ns_prof5, dist5d_prof, &
-                               partvmax
+                               partvmax, dist5d_fida
       USE beams3d_physics_mod, ONLY: beams3d_suv2rzp
       USE EZspline_obj
       USE EZspline
@@ -118,6 +118,9 @@
       DO j = 1, ns_prof5
         u1 = (j-0.5)*du
         dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
+        IF (lfidasim2) THEN
+            dist5d_fida(:,:,:,:,:,j) = dist5d_fida(:,:,:,:,:,j)/(dvol*u1)
+        END IF
 !        WRITE(329,*) j,dvol*u1
 !        CALL FLUSH(329)
       END DO
