@@ -484,6 +484,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 
             DO i=1,nr_fida
                vol = r_h * z_h * p_h * (raxis_fida(i) + r_h / 2.0)
+               !WRITE(327,*) i, vol
+               !CALL FLUSH(327)
                dist5d_fida(:,i,:,:,:,:) = dist5d_fida(:,i,:,:,:,:) / vol
                DO j = 1, nz_fida
                   DO k=1,nphi_fida
@@ -491,7 +493,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   END DO
                END DO
             END DO
-            !rtemp = reshape(rtemp(1:nr_fida,1:nphi_fida,1:nz_fida), shape(rtemp), order=(/1, 3, 2/))
          ELSE 
          !convert to r z phi
          DO i=1,nr_fida
@@ -569,6 +570,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          
          IF (lfidasim2) THEN
             ALLOCATE(dist5d_temp(nbeams, nenergy_fida, npitch_fida,nr_fida,nz_fida,nphi_fida)) !need temp as velocity bins are in vll/vperp initially
+            dist5d_temp = 0
          ELSE
             ALLOCATE(dist5d_fida(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida)) !nenergy and npitch are always aligned to distribution
          END IF
@@ -592,7 +594,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      IF (lfidasim2) THEN
                         dist5d_temp(b,d1,d2,:,:,:) = dist5d_fida(b,:,:,:,i3,j3) * jac
                      ELSE   
-                        dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac
+                        dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac ! conversion to final grid comes in next steps
                      END IF
 
                   END IF
