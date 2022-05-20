@@ -18,7 +18,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       ns_prof4, ns_prof5, dist5d_prof, &
       partvmax, dist5D_fida, &
       h2_prof, h3_prof, h4_prof, h5_prof, &
-      nsh_prof4,  my_end
+      nsh_prof4,  my_end, r_h, p_h, z_h
    USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
       zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
       ZEFF_ARR, TE, TI, NE, req_axis, zeq_axis, npot, &
@@ -74,7 +74,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
    DOUBLE PRECISION         :: x0,y0,z0
    REAL(rprec) :: jac, v_parr, v_perp, pitch, v
-   DOUBLE PRECISION :: rho_temp, s_temp, dbl_temp, gammarel, v_total, r_h, p_h, z_h, vol
+   DOUBLE PRECISION :: rho_temp, s_temp, dbl_temp, gammarel, v_total, vol
    DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:), r1dtemp2(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
    INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask
    CHARACTER(LEN=8) :: temp_str8, inj_str8
@@ -478,9 +478,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
          rtemp = 0.0
          IF (lfidasim2) THEN
-            r_h = (rmax_fida - rmin_fida) / (nr_fida)
-            z_h = (zmax_fida - zmin_fida) / (nz_fida)
-            p_h = (phimax_fida - phimin_fida) / (nphi_fida)
 
             DO i=1,nr_fida
                vol = r_h * z_h * p_h * (raxis_fida(i) + r_h / 2.0)
