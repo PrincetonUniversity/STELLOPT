@@ -113,11 +113,15 @@ SUBROUTINE out_beams3d_nag(t, q)
             ! i = MIN(MAX(COUNT(raxis_fida < q(1)),1),nr_fida)
             ! j = MIN(MAX(COUNT(phiaxis_fida < x0),1),nphi_fida)
             ! k = MIN(MAX(COUNT(zaxis_fida < q(3)),1),nz_fida)
-            i = MIN(MAX(FLOOR((q(1)-rmin_fida)/r_h),1),nr_fida)
-            j = MIN(MAX(FLOOR((x0-phimin_fida)/p_h),1),nphi_fida)
-            k = MIN(MAX(FLOOR((q(3)-zmin_fida)/z_h),1),nz_fida)
-            dist5d_fida(mybeam,i,k,j,d4,d5) = dist5d_fida(mybeam,i,k,j,d4,d5) + xw !This shouldnt slow down the code, but perhaps increase the memory usage
-       END IF
+            i = MIN(MAX(FLOOR((q(1)-rmin_fida)/r_h)+1,0),nr_fida+1)
+            j = MIN(MAX(FLOOR((x0-phimin_fida)/p_h)+1,0),nphi_fida+1)
+            k = MIN(MAX(FLOOR((q(3)-zmin_fida)/z_h)+1,0),nz_fida+1)
+            IF ((i > 0) .and. (i <= nr_fida) .and. &
+            (j > 0) .and. (j <= nphi_fida) .and. &
+            (k > 0) .and. (k <= nz_fida)) THEN
+               dist5d_fida(mybeam,i,k,j,d4,d5) = dist5d_fida(mybeam,i,k,j,d4,d5) + xw !This shouldnt slow down the code, but perhaps increase the memory usage
+            END IF
+         END IF
        IF (lcollision) CALL beams3d_physics(t,q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
