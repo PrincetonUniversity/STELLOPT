@@ -241,7 +241,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Fidasim Grid Spec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      
-      IF (lfidasim) THEN
+      IF (lfidasim .and. lverb) THEN
          WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R_FIDA   = [',rmin_fida,',',rmax_fida,'];  NR:   ',nr_fida
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI_FIDA = [',phimin_fida,',',phimax_fida,'];  NPHI: ',nphi_fida
@@ -312,14 +312,14 @@
             B_PHI = 0
             B_Z = 0
             MODB = 0
-            if (lfidasim) THEN
+            IF (lfidasim) THEN
                ALLOCATE(raxis_fida(nr_fida))
                ALLOCATE(zaxis_fida(nz_fida))
                ALLOCATE(phiaxis_fida(nphi_fida))
-               FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida-1) + rmin_fida
-               FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida-1) + zmin_fida
-               FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida-1) + phimin_fida
             END IF
+            FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida-1) + rmin_fida
+            FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida-1) + zmin_fida
+            FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida-1) + phimin_fida
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
          ! Put the vacuum field on the background grid
