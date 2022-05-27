@@ -245,12 +245,20 @@ MODULE beams3d_physics_mod
            vll = zeta*speed
 
            !------------------------------------------------------------
-           !  Kick Model Scattering
+           !  Kick Model Scattering (old)
+           !------------------------------------------------------------
+           !IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
+           !   zeta_o = vll/speed   ! Record the current pitch.
+           !   zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)/(modb*modb)
+           !   vll = zeta*speed
+           !END IF
+
+           !------------------------------------------------------------
+           !  Kick Model Scattering (new Energy, vll constant)
            !------------------------------------------------------------
            IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
               zeta_o = vll/speed   ! Record the current pitch.
-              zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)/(modb*modb)
-              vll = zeta*speed
+              speed = SQRT(speed*speed + fact_kick*(1-zeta_o*zeta_o)*dt/modb)
            END IF
 
            !------------------------------------------------------------
