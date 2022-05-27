@@ -36,7 +36,7 @@
       REAL(rprec), ALLOCATABLE :: shine_through(:), shine_port(:), GFactor(:), t_last(:)
       REAL(rprec), DIMENSION(:,:), POINTER :: ndot_prof(:,:),epower_prof(:,:), &
                                   ipower_prof(:,:),j_prof(:,:), dense_prof(:,:)
-      REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_prof
+      REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_prof, dist5d_fida
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),vll_lines(:,:),moment_lines(:,:),&
                                   S_lines(:,:),U_lines(:,:),B_lines(:,:), &
                                   vr_lines(:,:),vphi_lines(:,:),vz_lines(:,:)

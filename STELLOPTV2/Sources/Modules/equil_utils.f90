@@ -468,7 +468,7 @@
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,ne_opt(0:20),ier)
       END SELECT
-      val = val * ne_norm
+      val = MAX(val * ne_norm,0.0)
       RETURN
       END SUBROUTINE get_equil_ne
       
@@ -495,6 +495,7 @@
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,te_opt(0:20),ier)
       END SELECT
+      val = MAX(val,0.0)
       RETURN
       END SUBROUTINE get_equil_te
       
@@ -517,6 +518,7 @@
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier)
       END SELECT
+      val = MAX(val,0.0)
       RETURN
       END SUBROUTINE get_equil_ti
       
@@ -527,7 +529,6 @@
       REAL(rprec), INTENT(inout)   ::  val
       INTEGER, INTENT(inout)     ::  ier
       INTEGER :: i
-      REAL(rprec), PARAMETER :: one = 1.0_rprec
       IF (ier < 0) RETURN
       CALL tolower(type)
       SELECT CASE (type)
@@ -536,6 +537,7 @@
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,20,emis_xics_f(1:20),ier)
       END SELECT
+      val = MAX(val,0.0)
       RETURN
       END SUBROUTINE get_equil_emis_xics
       
@@ -572,9 +574,8 @@
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_ne(s,TRIM(ne_type),fval,ier)
-      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_linene
 
@@ -584,9 +585,8 @@
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_te(s,TRIM(te_type),fval,ier)
-      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_linete
 
@@ -596,9 +596,8 @@
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_ti(s,TRIM(ti_type),fval,ier)
-      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_lineti
 
@@ -608,9 +607,9 @@
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_zeff(s,TRIM(zeff_type),fval,ier)
-      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      IF (s>1.0) fval = 0 ! Hack since zeff can't be less than 1.
+      fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_linezeff
 
@@ -620,9 +619,8 @@
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),fval,ier)
-      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics_bright
 
@@ -633,10 +631,9 @@
       REAL(rprec) :: f1, f2
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_ti(s,TRIM(ti_type),f1,ier)
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),f2,ier)
-      fval = MAX(f1*f2,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = f1*f2*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics
 
@@ -654,14 +651,12 @@
       REAL(rprec), PARAMETER :: c0 =  3.8707616355E+01  ! From Fitting
       REAL(rprec), PARAMETER :: temin =  100.0  ! The database ends here
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),w,ier)
-      w = MAX(w,0.0)
       CALL get_equil_te(s,TRIM(te_type),te,ier)
       te = MAX(te,temin)
       IF (te > temin) THEN
-      	te = LOG(te) ! interpolation in log of te
-      	fval = w*EXP((((c3*te)+c2)*te+c1)*te+c0)
+         te = LOG(te) ! interpolation in log of te
+         fval = w*EXP((((c3*te)+c2)*te+c1)*te+c0)
       ELSE
 !        fval = w*8.1262088954E-01*(EXP(te)).*1E-3
         fval = w*8.1262088954E-01*(te/temin)
@@ -681,7 +676,6 @@
       REAL(rprec) :: nhat(3), uperp(3),Rg(3),Zg(3)
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),bright,ier)
       CALL get_equil_phi(s,phi_type,phi_val,ier,phi_prime)
       CALL get_equil_RZ(s,u,v,Rt,Zt,ier,Rg,Zg)
@@ -714,15 +708,10 @@
       INTEGER, INTENT(inout) :: ier
       REAL(rprec) :: ne_val,te_val,zeff_val
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
       CALL get_equil_te(s,TRIM(te_type),te_val,ier)
       CALL get_equil_zeff(s,TRIM(ne_type),zeff_val,ier)
-      IF (abs(te_val) > 0) THEN
-         fval = zeff_val*ne_val*ne_val*sqrt(te_val)
-      ELSE
-         fval = 0
-      END IF
+      fval = zeff_val*ne_val*ne_val*sqrt(te_val)
       fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_sxr
@@ -734,16 +723,11 @@
       INTEGER, INTENT(inout) :: ier
       REAL(rprec) :: ne_val,br,bphi,bz,bx,by
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
       CALL get_equil_Bcylsuv(s,u,v,br,bphi,bz,ier)
       bx = br*cos(v)-bphi*sin(v)
       by = br*sin(v)+bphi*cos(v)
-      IF (abs(ne_val) > 0) THEN
-         fval = ne_val*ABS(dx*bx+dy*by+dz*bz)
-      ELSE
-         fval = 0
-      END IF
+      fval = ne_val*ABS(dx*bx+dy*by+dz*bz)
       RETURN
       END SUBROUTINE fcn_faraday
 
@@ -754,11 +738,10 @@
       INTEGER, INTENT(inout) :: ier
       REAL(rprec) :: ne_val,te_val,ze_val,gauntff,g2,utemp
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
       CALL get_equil_Te(s,TRIM(te_type),te_val,ier)
       CALL get_equil_zeff(s,TRIM(zeff_type),ze_val,ier)
-      IF (abs(te_val) > 10) THEN
+      IF (te_val > 10) THEN
          te_val = te_val*ec ! eV to J
          g2 = ze_val*ze_val*Ry/(te_val) !GAMMA^2=Z*Z*Ry/kT
          utemp  = hc/(visbrem_lambda*te_val)

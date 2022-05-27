@@ -33,7 +33,7 @@ SUBROUTINE beams3d_follow
     INTEGER, ALLOCATABLE :: mnum(:), moffsets(:)
     INTEGER, ALLOCATABLE :: itemp(:,:)
     REAL :: dist
-    REAL(rprec) :: tf_max, vel_max, dt_out
+    REAL(rprec) :: tf_max, vel_max, dt_out, weight_save
     DOUBLE PRECISION :: tf_nag, t_nag
     DOUBLE PRECISION, ALLOCATABLE :: q(:)
 
@@ -128,7 +128,8 @@ SUBROUTINE beams3d_follow
     ! Some helpers
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
     fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
-    fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick
+    !fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick !old
+    fact_kick = 2*freq_kick*E_kick
 
     ! Handle the Beam defaults
     IF (lbeam) THEN
@@ -198,7 +199,10 @@ SUBROUTINE beams3d_follow
           tf_nag = 0.0
           CALL beams3d_follow_neut(tf_nag,q)
           mytdex = 1; ndt=1
+          weight_save = weight(myline)
+          weight(myline) = 0
           CALL out_beams3d_nag(tf_nag,q)
+          weight(myline) = weight_save
           ! Detect Shinethrough
           t_last(i) = tf_nag ! This is here for later
           IF (tf_nag > t_end(i)) CYCLE

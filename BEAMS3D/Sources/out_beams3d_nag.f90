@@ -12,7 +12,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
-                               weight, invpi2, ndt, ndt_max
+                               weight, invpi2, ndt, ndt_max, lfidasim
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nsteps, nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
@@ -21,7 +21,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                              ndot_prof, partvmax, &
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
-                             dist5d_prof, win_dist5d, nsh_prof4, &
+                             dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
                              h2_prof, h3_prof, h4_prof, h5_prof, my_end
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics_gc
@@ -47,7 +47,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     ! For splines
     INTEGER :: i,j,k,l
     REAL*8 :: xparam, yparam, zparam !, hx, hy, hz, hxi, hyi, hzi
-    REAL*8 :: fval(1)
+    REAL*8 :: fval(1), fval2(1)
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
     REAL*8, PARAMETER :: one = 1
     !-----------------------------------------------------------------------
@@ -75,14 +75,16 @@ SUBROUTINE out_beams3d_nag(t, q)
        zparam = (q(3) - zaxis(k)) * hzi(k)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       S4D(1,1,1,1),nr,nphi,nz)
-       y0 = fval(1)
-       S_lines(mytdex, myline) = y0
-       rho_help = sqrt(y0)
-       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                       X4D(1,1,1,1),nr,nphi,nz)
+       
+       CALL R8HERM3FCN(ict,1,1,fval2,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       U4D(1,1,1,1),nr,nphi,nz)
-       z0 = fval(1)
+                       Y4D(1,1,1,1),nr,nphi,nz)
+
+       y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
+       !z0 = fval(1)
+       z0 = ATAN2(fval2(1),fval(1))
+       S_lines(mytdex, myline) = y0 
        U_lines(mytdex, myline) = z0
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -91,6 +93,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        ! Calc dist func bins
        x0    = MOD(q(2),pi2)
        IF (x0 < 0) x0 = x0 + pi2
+       IF (z0 < 0) z0 = z0 + pi2
        vperp = SQRT(2*moment*fval(1)/mymass)
        d1 = MAX(MIN(CEILING(rho_help*ns_prof1     ), ns_prof1), 1) ! Rho Bin
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
@@ -100,6 +103,9 @@ SUBROUTINE out_beams3d_nag(t, q)
        xw = weight(myline)*dt
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
+      !  IF (lfidasim)
+      !    dist5d_fida(mybeam,i,j,k,d4,d5) = dist5d_fida(mybeam,i,j,k,d4,d5) + xw !This shouldnt slow down the code, but perhaps increase the memory usage
+      !  END IF
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
        IF (lcollision) CALL beams3d_physics_gc(t,q)
        IF (ltherm) THEN

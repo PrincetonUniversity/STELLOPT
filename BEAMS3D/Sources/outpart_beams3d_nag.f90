@@ -49,7 +49,7 @@ SUBROUTINE outpart_beams3d_nag(t, q)
     ! For splines
     INTEGER :: i,j,k,l
     REAL*8 :: xparam, yparam, zparam !, hx, hy, hz, hxi, hyi, hzi
-    REAL*8 :: fval(1)
+    REAL*8 :: fval(1), fval2(1)
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
     REAL*8, PARAMETER :: one = 1
     !-----------------------------------------------------------------------
@@ -77,13 +77,16 @@ SUBROUTINE outpart_beams3d_nag(t, q)
        zparam = (q(3) - zaxis(k)) * hzi(k)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       S4D(1,1,1,1),nr,nphi,nz)
-       y0 = fval(1)
-       S_lines(mytdex, myline) = y0 
-       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                       X4D(1,1,1,1),nr,nphi,nz)
+       
+       CALL R8HERM3FCN(ict,1,1,fval2,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       U4D(1,1,1,1),nr,nphi,nz)
-       z0 = fval(1)
+                       Y4D(1,1,1,1),nr,nphi,nz)
+
+       y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
+       !z0 = fval(1)
+       z0 = ATAN2(fval2(1),fval(1))
+       S_lines(mytdex, myline) = y0 
        U_lines(mytdex, myline) = z0
        
        ! Now We get Br, Bphi, Bz to calc B (and vll)
