@@ -339,7 +339,7 @@
                END IF
                IF (ASSOCIATED(dist5d_prof)) THEN
                   CALL write_var_hdf5(fid,'dist_prof',nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist5d_prof,&
-                                      ATT='Distribution Function [part/(m^3/s^3)] no physical volume (nbeam,nrho,npol,ntor,nvll,nvperp)',ATT_NAME='description')
+                                      ATT='Distribution Function [part/(m^6/s^3)] (nbeam,nrho,npol,ntor,nvll,nvperp)',ATT_NAME='description') !its not volume normalized, so shouldnt the units be [part]?
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_prof',ier)
                END IF
                IF (lbeam) THEN

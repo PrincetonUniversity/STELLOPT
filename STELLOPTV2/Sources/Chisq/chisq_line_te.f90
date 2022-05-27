@@ -47,7 +47,6 @@
             x0(3)=z0_te_line(ik); x1(3)=z1_te_line(ik)
             te_val = 0.0
             CALL line_int(fcn_linete,x0,x1,te_val,LENGTH=te_length)
-            IF (te_val > cutoff_te_line) te_val = cutoff_te_line
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)

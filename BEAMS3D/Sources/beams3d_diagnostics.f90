@@ -148,16 +148,16 @@
             j_prof(:,k)      =      j_prof(:,k)/vp_temp ! [A/m^2]
          END DO
          ! Normalize to velocity space volume element
-         dvll = partvmax*2/ns_prof4 ! dVll
-         dvperp = pi2*partvmax/ns_prof5 ! dVperp
-         DO k = 1, ns_prof5 ! VPERP
-            !s2 = REAL(k-0.5)/REAL(ns_prof5) ! Vperp_frac
-            vp_temp = vperpaxis(k)*dvll*dvperp
-            dist5d_prof(:,:,:,:,:,k) = dist5d_prof(:,:,:,:,:,k)/vp_temp
-         END DO
+         ! dvll = partvmax*2/ns_prof4 ! dVll
+         ! dvperp = pi2*partvmax/ns_prof5 ! dVperp
+         ! DO k = 1, ns_prof5 ! VPERP
+         !    !s2 = REAL(k-0.5)/REAL(ns_prof5) ! Vperp_frac
+         !    vp_temp = vperpaxis(k)*dvll*dvperp
+         !    dist5d_prof(:,:,:,:,:,k) = dist5d_prof(:,:,:,:,:,k)/vp_temp
+         ! END DO
          ! DEALLOCATIONS
          DEALLOCATE(vperpaxis,vllaxis)
-
+         CALL beams3d_distnorm
       END IF
 
       CALL beams3d_write('DIAG')

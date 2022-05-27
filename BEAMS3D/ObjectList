@@ -16,6 +16,7 @@ beams3d_randomize_particles.o \
 beams3d_init_beams_bbnbi.o \
 beams3d_write_ascoth4.o \
 beams3d_write_ascoth5.o \
+beams3d_write_fidasim.o \
 beams3d_write_parhdf5.o \
 beams3d_init_beams_w7x.o \
 beams3d_lines.o \

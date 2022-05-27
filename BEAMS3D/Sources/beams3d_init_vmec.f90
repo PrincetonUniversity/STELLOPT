@@ -49,6 +49,7 @@
       REAL :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
               bx_vc, by_vc, dr_temp
       REAL(rprec) :: br, bphi, bz, sflx, uflx, xaxis, yaxis
+      DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: rmnc_temp(:,:),zmns_temp(:,:),&
                            bumnc_temp(:,:),bvmnc_temp(:,:),&
                            rmns_temp(:,:),zmnc_temp(:,:),&
@@ -258,11 +259,20 @@
                zmnc_temp(:,2) = zmnc(:,ns)
             END IF
          ENDIF
-         bumnc_temp(:,1) = (1.5*bsupumnc(:,ns) - 0.5*bsupumnc(:,ns-1))
-         bvmnc_temp(:,1) = (1.5*bsupvmnc(:,ns) - 0.5*bsupvmnc(:,ns-1))
+         ! Get B onto full grid
+         ALLOCATE(mfact(mnmax_temp,2))
+         WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
+            mfact(:,1)= 1.5
+            mfact(:,2)=-0.5
+         ELSEWHERE
+            mfact(:,1)= 1.5*SQRT((ns-1.0)/(ns-1.5))
+            mfact(:,2)=-0.5*SQRT((ns-1.0)/(ns-2.5))
+         ENDWHERE
+         bumnc_temp(:,1) = mfact(:,1)*bsupumnc(:,ns) + mfact(:,2)*bsupumnc(:,ns-1)
+         bvmnc_temp(:,1) = mfact(:,1)*bsupvmnc(:,ns) + mfact(:,2)*bsupvmnc(:,ns-1)
          IF (lasym) THEN
-            bumns_temp(:,1) = 1.5*bsupumns(:,ns) - 0.5*bsupumns(:,ns-1)
-            bvmns_temp(:,1) = 1.5*bsupvmns(:,ns) - 0.5*bsupvmns(:,ns-1)
+            bumns_temp(:,1) = mfact(:,1)*bsupumns(:,ns) + mfact(:,2)*bsupumns(:,ns-1)
+            bvmns_temp(:,1) = mfact(:,1)*bsupvmns(:,ns) + mfact(:,2)*bsupvmns(:,ns-1)
             CALL init_virtual_casing(mnmax_temp,nu,nv,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
                                          RMNS=rmns_temp, ZMNC=zmnc_temp,&
@@ -277,6 +287,7 @@
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
                                          COMM=MPI_COMM_BEAMS)
          END IF
+         DEALLOCATE(mfact)
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
          
@@ -286,7 +297,7 @@
       END IF
       
       IF (lverb) THEN
-         IF (.not.lplasma_only) CALL virtual_casing_info(6)
+         IF (luse_vc) CALL virtual_casing_info(6)
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field Calculation [',0,']%'
          CALL FLUSH(6)
       END IF

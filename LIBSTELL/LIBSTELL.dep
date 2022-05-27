@@ -10,6 +10,8 @@ read_hint_mod.o :  \
       stel_kinds.o 
       
 read_eqdsk_mod.o :  \
+      ezspline.o \
+      ezspline_obj.o \
       stel_kinds.o \
       read_wout_mod.o
       
