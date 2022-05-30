@@ -1459,7 +1459,7 @@
          ! Block bounds
          DOUBLE PRECISION :: rmin(3), rmax(3)
          ! Masks if vertex in block or face already in block
-         LOGICAL, POINTER :: mask_face(:,:)
+         LOGICAL, POINTER :: mask_face(:,:), mask(:)
          ! Loop integers and counter
          INTEGER :: i, j, k, counter
 
@@ -1493,6 +1493,7 @@
 
          counter_arr = 0
          ALLOCATE(mask_face(nface,3), STAT=istat)
+         ALLOCATE(mask(nface), STAT=istat)
 
          ! Helper for vertices per face
          IF (shar_rank == 0) THEN
@@ -1519,12 +1520,13 @@
             mask_face(:,2) = (A1(:,1) < rmax(1) .and. A1(:,1) >= rmin(1) &
                .and. A1(:,2) < rmax(2) .and. A1(:,2) >= rmin(2) &
                .and. A1(:,3) < rmax(3) .and. A1(:,3) >= rmin(3))
-            mask_face(:,3) = (A2(:,1) < rmax(1) .and. A2(:,1) .GE. rmin(1) &
+            mask_face(:,3) = (A2(:,1) < rmax(1) .and. A2(:,1) >= rmin(1) &
                .and. A2(:,2) < rmax(2) .and. A2(:,2) >= rmin(2) &
                .and. A2(:,3) < rmax(3) .and. A2(:,3) >= rmin(3))
 
             ! Count found faces
-            counter_arr(i) = COUNT(ANY(mask_face,2))
+            mask = ANY(mask_face,2)
+            counter_arr(i) = COUNT(mask)
          END DO
 
 #if defined(MPI_OPT)
@@ -1597,14 +1599,17 @@
                mask_face(:,2) = (A1(:,1) < rmax(1) .and. A1(:,1) >= rmin(1) &
                   .and. A1(:,2) < rmax(2) .and. A1(:,2) >= rmin(2) &
                   .and. A1(:,3) < rmax(3) .and. A1(:,3) >= rmin(3))
-               mask_face(:,3) = (A2(:,1) < rmax(1) .and. A2(:,1) .GE. rmin(1) &
+               mask_face(:,3) = (A2(:,1) < rmax(1) .and. A2(:,1) >= rmin(1) &
                   .and. A2(:,2) < rmax(2) .and. A2(:,2) >= rmin(2) &
                   .and. A2(:,3) < rmax(3) .and. A2(:,3) >= rmin(3))
+
+               ! Mask
+               mask = ANY(mask_face,2)
                
                ! Add faces to face list of wall block
                counter = 0
                DO j=1,nface
-                  IF (ANY(mask_face(j,:))) THEN
+                  IF (mask(j)) THEN
                      counter = counter + 1
                      wall%blocks(i)%face(counter) = j
                   END IF
@@ -1619,7 +1624,7 @@
          IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
          IF (shar_rank == 0 .and. ldebug) WRITE(6, *) 'Filling blocks: Starting cleanup fill blocks'
-         DEALLOCATE(mask_face)
+         DEALLOCATE(mask_face, mask)
          CALL free_mpi_array(win_counter_arr, counter_arr, shared)
          CALL free_mpi_array(win_A1, A1, shared)
          CALL free_mpi_array(win_A2, A2, shared)
