@@ -100,6 +100,12 @@ C-----------------------------------------------
       IF (PRESENT(sflx)) sflx = c_flx(1)  
       IF (PRESENT(uflx)) uflx = c_flx(2)
 
+      IF (c_flx(1) .gt. 2) THEN
+         Br = 0;  Bphi = 0;  Bz = 0
+         RETURN
+      ELSE IF (c_flx(1) .gt. one) THEN
+         c_flx(1) = one
+      END IF
 
 !     OLD WAY
 !     2. Evaluate Bsupu, Bsupv at this point
@@ -116,6 +122,8 @@ C-----------------------------------------------
 !
 !
 !     3. Evaluate Bsupu*sqrt(g), Bsupv*sqrt(g) at this point
+!        The factor of pi2 comes from normalization on
+!        dchi/ds and dphi/ds
 !
 !      CALL tosuvspaceBsup (c_flx(1), c_flx(2), c_flx(3), 
 !     1                 GBSUPU=bsupu1, GBSUPV=bsupv1)
@@ -713,54 +721,34 @@ C-----------------------------------------------
 !     FOR si <= 1, POINT IS INSIDE PLASMA;
 !     FOR si > 1, TRY EXTRAPOLATION (WITH CONTINUOUS s, u DERIVATIVES INTO "vacuum" REGION
 !
-
-!
-!     Calculate Grid Helpers
-!
       rho  = SQRT(si)
       hs1  = one/(ns-1)
       jslo = 1 + ABS(si)/hs1
-      jslo = MAX(MIN(jslo,ns-1),2) ! Extrapolate
+      jslo = MIN(jslo,ns-1)
       jshi = jslo + 1
       slo  = hs1*(jslo-1)
       shi  = hs1*jslo
       rholo = SQRT(slo)
       rhohi = SQRT(shi)
-!
-!     Calculate Coefficients
-!        x = (s-slo)/ds
-!        F_even(x) = f0*(1-x)+f1*x
-!        F_odd(x)  = sqrt(s/slo)*f0*(1-x)+sqrt(s/shi)*f1*x
-!
       whi  = (si - slo)/hs1 ! x
       wlo  = one - whi ! (1-x)
+
+      ! Odd modes we include a factor of sqrt(s)=rho
       wlo_odd = wlo*rho/rholo
       whi_odd = whi*rho/rhohi
 
-!
-!     Calculate Derivatives
-!        dx/ds = 1/ds
-!
-      dwlo = -DBLE(ns-1) ! -1/ds
-      dwhi =  DBLE(ns-1) !  1/ds
-      dwlo_odd = ( hs1 - 3 * si + slo ) / ( 2 * rho * hs1 * rholo )
-      dwhi_odd = (       3 * si - slo ) / ( 2 * rho * hs1 * rhohi )
+      ! Derivative values
+      dwlo = -DBLE(ns-1)
+      dwhi =  DBLE(ns-1)
+      dwlo_odd = -(3*rho-shi/rho)/(2*hs1*rholo)
+      dwhi_odd =  (3*rho-slo/rho)/(2*hs1*rhohi)
 
-
-!
-!     Adjust axis contraints
-!        R_odd(s=0) = 0 ! Default values
-!        dR/ds_even = 0
-!        dR/ds_odd  = const
+      ! Adjust near axis
       IF (jslo .eq. 1) THEN
-         ! Regular modes
-         wlo_odd = 0 ! becasue rholo=0
-         ! Derivative
-         dwlo = 0
-         dwhi = whi*DBLE(ns-1) ! Linearly go to zero
-         dwlo_odd = 0 ! because rholo=0
-         !dwhi_odd = ( 3 * rho ) / (2 * hs1 * rhohi)
-         dwhi_odd = ( 3 ) / (2 * hs1 * rhohi)
+         wlo_odd = 0
+         whi_odd = rho/rhohi
+         dwlo_odd = 0
+         dwhi_odd = 0.5/(rho*rhohi)
       END IF
 
       mpol1 = mpol-1
@@ -991,378 +979,6 @@ C-----------------------------------------------
       r_cyl(1) = r11;  r_cyl(3) = z11
 
       END SUBROUTINE flx2cyl
-
-      SUBROUTINE flx2cyl_2nd(rzl_array, c_flux, r_cyl, ns, ntor, 
-     1                   mpol, ntmax, lthreed, lasym, iflag,
-     2                   mscale, nscale, Ru, Rv, Zu, Zv, Rs, Zs)
-      IMPLICIT NONE
-C-----------------------------------------------
-C   D u m m y   A r g u m e n t s
-C-----------------------------------------------
-      INTEGER, INTENT(out) :: iflag
-      INTEGER, INTENT(in)  :: ns, ntmax, mpol, ntor
-      LOGICAL :: lthreed, lasym
-      REAL(rprec), DIMENSION(ns,0:ntor,0:mpol-1,3*ntmax),
-     1   INTENT(in) :: rzl_array
-      REAL(rprec), INTENT(in) :: c_flux(3)
-      REAL(rprec), INTENT(out) :: r_cyl(3)
-      REAL(rprec), INTENT(in), OPTIONAL :: 
-     1                            mscale(0:mpol-1), nscale(0:ntor)
-      REAL(rprec), INTENT(out), OPTIONAL :: Ru, Rv, Zu, Zv, Rs, Zs
-C-----------------------------------------------
-C   L o c a l   P a r a m e t e r s
-C-----------------------------------------------
-      INTEGER, PARAMETER :: rcc = 1
-      REAL(rprec), PARAMETER :: c1p5 = 1.5_dp
-C-----------------------------------------------
-C   L o c a l   V a r i a b l e s
-C-----------------------------------------------
-      INTEGER :: rss, rsc, rcs, zsc, zcs, zcc, zss
-      INTEGER :: istat, jslo, jsmid, jshi, mpol1, m, n
-      REAL(rprec), DIMENSION(0:ntor,0:mpol-1) ::
-     1           rmncc, rmnss, zmncs, zmnsc,
-     2           rmncs, rmnsc, zmncc, zmnss,
-     1           drmncc, drmnss, dzmncs, dzmnsc,
-     2           drmncs, drmnsc, dzmncc, dzmnss
-      REAL(rprec) :: wlo, whi, wlo_odd, whi_odd, hs1, 
-     1               si, ui, vi, r11, z11
-      REAL(rprec) :: slo, shi, rho, rholo, rhohi, dwlo, dwhi, dwlo_odd,
-     1               dwhi_odd
-      REAL(rprec) :: smid, rhomid, wmid, wmid_odd, dwmid, dwmid_odd, x
-      REAL(rprec) :: wmins(0:ntor,0:mpol-1),
-     1               wplus(0:ntor,0:mpol-1),
-     2               wcent(0:ntor,0:mpol-1),
-     3               dwmins(0:ntor,0:mpol-1),
-     4               dwcent(0:ntor,0:mpol-1),
-     5               dwplus(0:ntor,0:mpol-1)
-      REAL(rprec) :: cosu, sinu, cosv, sinv,
-     1               cosmu(0:mpol-1), sinmu(0:mpol-1),
-     2               cosnv(0:ntor),  sinnv(0:ntor), 
-     3               cosnvn(0:ntor), sinnvn(0:ntor)
-      REAL(rprec) :: work1(0:mpol-1,16)
-      LOGICAL :: lrs, lzs, lru, lrv, lzu, lzv
-C-----------------------------------------------
-!
-!     COMPUTES THE CYLINDRICAL COORDINATES R11 and Z11
-!     AT A FIXED FLUX COORDINATE POINT si, ui(theta), vi(N*phi)
-!     WHERE phi = geometric toroidal angle (0 to 2pi), N = no. field periods
-!
-!     INPUT:
-!     c_flux:          array of (si,ui,vi) values to convert to cylindrical coordinates
-!     rzl_array:       array of (r, z, lambda) Fourier coefficients for all radial, m, n values
-!     ns, mpol,ntor, ntmax:  radial, poloidal, toroidal, type (r,z,l) dimensions of rzl_array
-!     mscale, nscale:  option scale factors. Use ONLY if rzl_array comes from within VMEC.
-!                      If arising from WOUT file, mscale, nscale => 1 are not passed
-!
-!     OUTPUT:
-!     r_cyl    :       R = r_cyl(1);  N*PHI = r_cyl(2);   Z = r_cyl(3)
-!
-!     OPTIONAL OUTPUT
-!                      Rs = dR/ds; Ru = dR/du;    Rv = dR/dv = dR/dphi / N
-!                      Zs = dR/ds; Zu = dZ/du;    Zv = dZ/dv = dZ/dphi / N
-!
-!     NOTE:            User is responsible for multiplying Rv, Zv by N to get phi derivatives
-!
-      iflag = -1
-      si = c_flux(1);  ui = c_flux(2);  vi = c_flux(3)
-      r_cyl(2) = vi
-
-!      IF (si.lt.zero .or. si.gt.one) THEN
-      IF (si .lt. zero) THEN
-         WRITE(6, *)' In flx2cyl_2nd, s(flux) must be > 0'
-         RETURN
-      END IF
-
-      lrs = PRESENT(rs); lru = PRESENT(ru); lrv = PRESENT(rv)
-      lzs = PRESENT(zs); lzu = PRESENT(zu); lzv = PRESENT(zv)
-      IF (lrv .and. .not. lthreed) rv = 0
-      IF (lzv .and. .not. lthreed) zv = 0
-
-!
-!     FIND INTERPOLATED s VALUE AND COMPUTE INTERPOLATION WEIGHTS wlo, whi (for even m modes)
-!     AND wlo_odd, whi_odd (for odd m modes).
-!     FOR si <= 1, POINT IS INSIDE PLASMA;
-!     FOR si > 1, TRY EXTRAPOLATION (WITH CONTINUOUS s, u DERIVATIVES INTO "vacuum" REGION
-!
-      rho    = SQRT(si)
-      hs1    = one/(ns-1)
-      jslo   = 1 + ABS(si)/hs1
-      jslo   = MIN(jslo,ns-2)
-      jsmid  = jslo + 1
-      jshi   = jslo + 2
-      slo    = hs1*(jslo-1)
-      smid   = hs1*(jsmid-1)
-      shi    = hs1*(jshi-1)
-      rholo  = SQRT(slo)
-      rhomid = SQRT(smid)
-      rhohi  = SQRT(shi)
-      x      = (si - slo)/hs1 ! x defined on first interval
-      wlo    = one - c1p5 * x + 0.5 * x * x
-      wmid   = 2 * x - x * x
-      whi    = 0.5 * x * ( x - one )
-
-      ! Odd modes we include a factor of sqrt(s)=rho
-      wlo_odd  = wlo  * rho / rholo
-      wmid_odd = wmid * rho / rhomid
-      whi_odd  = whi  * rho / rhohi
-
-      ! Derivative values
-      ! df/ds = dx/ds*df/dx = (df/dx)/(delta-s)
-      ! d(rho*f)/ds = rho*df/ds + drho/ds*f
-      dwlo      = ( x - c1p5  ) * (ns-1)
-      dwmid     = ( 2 - 2 * x ) * (ns-1)
-      dwhi      = ( x - 0.5   ) * (ns-1)
-      dwlo_odd  = (rho * dwlo  + wlo  / (2 * rho)) / rholo
-      dwmid_odd = (rho * dwmid + wmid / (2 * rho)) / rhomid
-      dwhi_odd  = (rho * dwhi  + whi  / (2 * rho)) / rhohi
-
-      ! Adjust near axis
-      IF (jslo .eq. 1) THEN
-         ! Handle rholo = 0
-         wlo_odd  = zero
-         dwlo_odd = zero
-      END IF
-
-      mpol1 = mpol-1
-
-      wmins(:,0:mpol1:2) = wlo
-      wcent(:,0:mpol1:2) = wmid
-      wplus(:,0:mpol1:2) = whi
-      wmins(:,1:mpol1:2) = wlo_odd
-      wcent(:,1:mpol1:2) = wmid_odd
-      wplus(:,1:mpol1:2) = whi_odd
-
-      dwmins(:,0:mpol1:2) = dwlo
-      dwcent(:,0:mpol1:2) = dwmid
-      dwplus(:,0:mpol1:2) = dwhi
-      dwmins(:,1:mpol1:2) = dwlo_odd
-      dwcent(:,1:mpol1:2) = dwmid_odd
-      dwplus(:,1:mpol1:2) = dwhi_odd
-
-      IF (.not.lasym) THEN
-         IF (lthreed) THEN
-            IF (ntmax .ne. 2) STOP 'ntmax != 2 in flx2cyl_2nd!'
-            rss = 2;  zcs = 2
-         ELSE
-            IF (ntmax .ne. 1) STOP 'ntmax != 1 in flx2cyl_2nd!'
-         END IF
-      ELSE
-         IF (lthreed) THEN
-             IF (ntmax .ne. 4) STOP 'ntmax != 4 in flx2cyl_2nd!'
-             rss = 2;  rsc = 3;  rcs = 4
-             zcs = 2;  zcc = 3;  zss = 4
-         ELSE
-             IF (ntmax .ne. 2) STOP 'ntmax != 2 in flx2cyl_2nd!'
-             rsc = 2;  zcc = 2
-         END IF
-      END IF
-
-      zsc = 1+ntmax; zcs = zcs+ntmax; zcc = zcc+ntmax; zss = zss+ntmax
-
-      rmncc = wmins*rzl_array(jslo, :,:,rcc)
-     1      + wcent*rzl_array(jsmid,:,:,rcc)
-     2      + wplus*rzl_array(jshi, :,:,rcc)        !!COS(mu) COS(nv)
-      zmnsc = wmins*rzl_array(jslo, :,:,zsc) 
-     1      + wcent*rzl_array(jsmid,:,:,zsc)
-     2      + wplus*rzl_array(jshi, :,:,zsc)        !!SIN(mu) COS(nv)
-
-      IF (lthreed) THEN
-         rmnss = wmins*rzl_array(jslo, :,:,rss) 
-     1         + wcent*rzl_array(jsmid,:,:,rss)
-     2         + wplus*rzl_array(jshi, :,:,rss)     !!SIN(mu) SIN(nv)
-         zmncs = wmins*rzl_array(jslo, :,:,zcs)
-     1         + wcent*rzl_array(jsmid,:,:,zcs)
-     2         + wplus*rzl_array(jshi, :,:,zcs)     !!COS(mu) SIN(nv)
-      END IF
-
-      drmncc = dwmins*rzl_array(jslo, :,:,rcc) 
-     1       + dwcent*rzl_array(jsmid,:,:,rcc)
-     2       + dwplus*rzl_array(jshi, :,:,rcc)        !!COS(mu) COS(nv)
-      dzmnsc = dwmins*rzl_array(jslo, :,:,zsc) 
-     1       + dwcent*rzl_array(jsmid,:,:,zsc)
-     2       + dwplus*rzl_array(jshi, :,:,zsc)        !!SIN(mu) COS(nv)
-
-      IF (lthreed) THEN
-         drmnss = dwmins*rzl_array(jslo, :,:,rss) 
-     1          + dwcent*rzl_array(jsmid,:,:,rss)
-     2          + dwplus*rzl_array(jshi, :,:,rss)     !!SIN(mu) SIN(nv)
-         dzmncs = dwmins*rzl_array(jslo, :,:,zcs)
-     1          + dwcent*rzl_array(jsmid,:,:,zcs)
-     2          + dwplus*rzl_array(jshi, :,:,zcs)     !!COS(mu) SIN(nv)
-      END IF
-
-!
-!     SETUP TRIG ARRAYS
-!
-      cosu = COS(ui);   sinu = SIN(ui)
-      cosv = COS(vi);   sinv = SIN(vi)
-
-      cosmu(0) = 1;    sinmu(0) = 0
-      cosnv(0) = 1;    sinnv(0) = 0
-      DO m = 1, mpol1
-         cosmu(m) = cosmu(m-1)*cosu - sinmu(m-1)*sinu
-         sinmu(m) = sinmu(m-1)*cosu + cosmu(m-1)*sinu
-      END DO
-
-      IF (PRESENT(mscale)) THEN
-         cosmu = cosmu*mscale;  sinmu = sinmu*mscale
-      END IF
-
-      DO n = 1, ntor
-         cosnv(n) = cosnv(n-1)*cosv - sinnv(n-1)*sinv
-         sinnv(n) = sinnv(n-1)*cosv + cosnv(n-1)*sinv
-      END DO
-
-      IF (PRESENT(nscale)) THEN
-         cosnv = cosnv*nscale;  sinnv = sinnv*nscale
-      END IF
-
-      IF (lrv .or. lzv) THEN
-         DO n = 0, ntor
-            cosnvn(n) = n*cosnv(n)
-            sinnvn(n) =-n*sinnv(n)
-         END DO
-      END IF
-
-      iflag = 0
-
-!
-!     COMPUTE R11, Z11 IN REAL SPACE
-!
-!     FIRST, INVERSE TRANSFORM IN N-V SPACE, FOR FIXED M
-!
-      DO m = 0, mpol1
- 
-         work1(m,1) = SUM(rmncc(:,m)*cosnv(:))
-         work1(m,2) = SUM(zmnsc(:,m)*cosnv(:))
-         IF (lru) work1(m,3) =-m*work1(m,1)
-         IF (lzu) work1(m,4) = m*work1(m,2)
-         IF (lrs) work1(m,13)= SUM(drmncc(:,m)*cosnv(:))
-         IF (lzs) work1(m,14)= SUM(dzmnsc(:,m)*cosnv(:))
-         IF (lthreed) THEN
-            IF (lrv) work1(m,5) = SUM(rmncc(:,m)*sinnvn(:))
-            IF (lzv) work1(m,6) = SUM(zmnsc(:,m)*sinnvn(:))
-            work1(m,7) = SUM(rmnss(:,m)*sinnv(:))
-            work1(m,8) = SUM(zmncs(:,m)*sinnv(:))
-            IF (lru) work1(m,9) = m*work1(m,7)
-            IF (lzu) work1(m,10) =-m*work1(m,8)
-            IF (lrv) work1(m,11) = SUM(rmnss(:,m)*cosnvn(:))
-            IF (lzv) work1(m,12) = SUM(zmncs(:,m)*cosnvn(:))
-            IF (lrs) work1(m,15)= SUM(drmnss(:,m)*sinnv(:))
-            IF (lzs) work1(m,16)= SUM(dzmncs(:,m)*sinnv(:))
-         END IF
-
-      END DO
-
-!
-!     NEXT, INVERSE TRANSFORM IN M-U SPACE
-!
-      IF (lthreed) THEN
-         r11 = SUM(work1(:,1)*cosmu(:) + work1(:,7)*sinmu(:))
-         z11 = SUM(work1(:,2)*sinmu(:) + work1(:,8)*cosmu(:))
-         IF (lru) ru = SUM(work1(:,3)*sinmu(:) + work1(:,9)*cosmu(:))
-         IF (lzu) zu = SUM(work1(:,4)*cosmu(:) + work1(:,10)*sinmu(:))
-         IF (lrv) rv = SUM(work1(:,5)*cosmu(:) + work1(:,11)*sinmu(:))
-         IF (lzv) zv = SUM(work1(:,6)*sinmu(:) + work1(:,12)*cosmu(:))
-         IF (lrs) rs = SUM(work1(:,13)*cosmu(:) + work1(:,15)*sinmu(:))
-         IF (lzs) zs = SUM(work1(:,14)*sinmu(:) + work1(:,16)*cosmu(:))
-      ELSE          
-         r11 = SUM(work1(:,1)*cosmu(:))
-         z11 = SUM(work1(:,2)*sinmu(:))
-         IF (lru) ru = SUM(work1(:,3)*sinmu(:))
-         IF (lzu) zu = SUM(work1(:,4)*cosmu(:))
-         IF (lrs) rs = SUM(work1(:,13)*cosmu(:))
-         IF (lzs) zs = SUM(work1(:,14)*sinmu(:))
-      END IF
-
-
-      IF (.not.lasym) GOTO 1000
-
-      rmnsc = wmins*rzl_array(jslo,:,:,rsc) 
-     1      + wplus*rzl_array(jshi,:,:,rsc)        !!SIN(mu) COS(nv)
-      zmncc = wmins*rzl_array(jslo,:,:,zcc) 
-     1      + wplus*rzl_array(jshi,:,:,zcc)        !!COS(mu) COS(nv)
-
-      IF (lthreed) THEN
-         rmncs = wmins*rzl_array(jslo,:,:,rcs) 
-     1         + wplus*rzl_array(jshi,:,:,rcs)     !!COS(mu) SIN(nv)
-         zmnss = wmins*rzl_array(jslo,:,:,zss)
-     1         + wplus*rzl_array(jshi,:,:,zss)     !!SIN(mu) SIN(nv)
-      END IF
-
-      drmnsc = dwmins*rzl_array(jslo,:,:,rsc) 
-     1       + dwplus*rzl_array(jshi,:,:,rsc)        !!SIN(mu) COS(nv)
-      dzmncc = dwmins*rzl_array(jslo,:,:,zcc) 
-     1       + dwplus*rzl_array(jshi,:,:,zcc)        !!COS(mu) COS(nv)
-
-      IF (lthreed) THEN
-         drmncs = dwmins*rzl_array(jslo,:,:,rcs) 
-     1          + dwplus*rzl_array(jshi,:,:,rcs)     !!COS(mu) SIN(nv)
-         dzmnss = dwmins*rzl_array(jslo,:,:,zss)
-     1          + dwplus*rzl_array(jshi,:,:,zss)     !!SIN(mu) SIN(nv)
-      END IF
-
-!
-!     COMPUTE R11, Z11 IN REAL SPACE
-!
-!     FIRST, INVERSE TRANSFORM IN N-V SPACE, FOR FIXED M
-!
-      DO m = 0, mpol1
- 
-         work1(m,1) = SUM(rmnsc(:,m)*cosnv(:))
-         work1(m,2) = SUM(zmncc(:,m)*cosnv(:))
-         IF (lru) work1(m,3) = m*work1(m,1)
-         IF (lzu) work1(m,4) =-m*work1(m,2)
-         IF (lrs) work1(m,13)= SUM(drmnsc(:,m)*cosnv(:))
-         IF (lzs) work1(m,14)= SUM(dzmncc(:,m)*cosnv(:))
-
-         IF (lthreed) THEN
-            IF (lrv) work1(m,5) = SUM(rmnsc(:,m)*sinnvn(:))
-            IF (lzv) work1(m,6) = SUM(zmncc(:,m)*sinnvn(:))
-            work1(m,7) = SUM(rmncs(:,m)*sinnv(:))
-            work1(m,8) = SUM(zmnss(:,m)*sinnv(:))
-            IF (lru) work1(m,9) =-m*work1(m,7)
-            IF (lzu) work1(m,10) = m*work1(m,8)
-            IF (lrv) work1(m,11) = SUM(rmncs(:,m)*cosnvn(:))
-            IF (lzv) work1(m,12) = SUM(zmnss(:,m)*cosnvn(:))
-            IF (lrs) work1(m,15)= SUM(drmncs(:,m)*sinnv(:))
-            IF (lzs) work1(m,16)= SUM(dzmnss(:,m)*sinnv(:))
-         END IF
-
-      END DO
-
-!
-!     NEXT, INVERSE TRANSFORM IN M-U SPACE
-!
-      IF (lthreed) THEN
-         r11 = r11 + SUM(work1(:,1)*sinmu(:) + work1(:,7)*cosmu(:))
-         z11 = z11 + SUM(work1(:,2)*cosmu(:) + work1(:,8)*sinmu(:))
-         IF (lru) ru = ru + 
-     1                 SUM(work1(:,3)*cosmu(:) + work1(:,9)*sinmu(:))
-         IF (lzu) zu = zu + 
-     1                 SUM(work1(:,4)*sinmu(:) + work1(:,10)*cosmu(:))
-         IF (lrv) rv = rv + 
-     1                 SUM(work1(:,5)*sinmu(:) + work1(:,11)*cosmu(:))
-         IF (lzv) zv = zv +
-     1                 SUM(work1(:,6)*cosmu(:) + work1(:,12)*sinmu(:))
-         IF (lrs) rs = rs + 
-     1                 SUM(work1(:,13)*sinmu(:) + work1(:,15)*cosmu(:))
-         IF (lzs) zs = zs + 
-     1                 SUM(work1(:,14)*cosmu(:) + work1(:,16)*sinmu(:))
-      ELSE          
-         r11 = r11 + SUM(work1(:,1)*sinmu(:))
-         z11 = z11 + SUM(work1(:,2)*cosmu(:))
-         IF (lru) ru = ru + SUM(work1(:,3)*cosmu(:))
-         IF (lzu) zu = zu + SUM(work1(:,4)*sinmu(:))
-         IF (lrs) rs = rs + SUM(work1(:,13)*sinmu(:))
-         IF (lzs) zs = zs + SUM(work1(:,14)*cosmu(:))
-      END IF
-
- 1000 CONTINUE
-
-      r_cyl(1) = r11;  r_cyl(3) = z11
-
-      END SUBROUTINE flx2cyl_2nd
 
       SUBROUTINE cyl2flx(rzl_in, r_cyl, c_flx, ns_in, ntor_in, mpol_in, 
      1      ntmax_in, lthreed_in, lasym_in, info, nfe, fmin, 
@@ -1673,13 +1289,13 @@ C-----------------------------------------------
       INTEGER :: iflag
 C-----------------------------------------------
       IF (lscale) THEN
-         CALL flx2cyl(rzl_array, c_flx, x1, ns_loc, ntor_loc,  
-     1              mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, iflag, 
+         CALL flx2cyl(rzl_array, c_flx, x1, ns_loc, ntor_loc, mpol_loc, 
+     1              ntmax_loc, lthreed_loc, lasym_loc, iflag, 
      2              MSCALE=mscale_loc, NSCALE=nscale_loc, RU=ru, ZU=zu,
      3              RS = rs, ZS = zs)
       ELSE
-         CALL flx2cyl(rzl_array, c_flx, x1, ns_loc, ntor_loc, 
-     1              mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, iflag,
+         CALL flx2cyl(rzl_array, c_flx, x1, ns_loc, ntor_loc, mpol_loc, 
+     1              ntmax_loc, lthreed_loc, lasym_loc, iflag, 
      2              RU=ru, ZU=zu, Rs=rs, Zs=zs)
       END IF
 
