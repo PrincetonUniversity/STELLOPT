@@ -116,6 +116,9 @@ SUBROUTINE beams3d_follow_gc
                     q(2) = PHI_lines(mytdex-1,l)
                     q(3) = Z_lines(mytdex-1,l)
                     q(4) = vll_lines(mytdex-1,l)
+                    xlast = q(1)*cos(q(2))
+                    ylast = q(1)*sin(q(2))
+                    zlast = q(3)
                     moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
@@ -156,6 +159,9 @@ SUBROUTINE beams3d_follow_gc
                     q(2) = PHI_lines(mytdex-1,l)
                     q(3) = Z_lines(mytdex-1,l)
                     q(4) = vll_lines(mytdex-1,l)
+                    xlast = q(1)*cos(q(2))
+                    ylast = q(1)*sin(q(2))
+                    zlast = q(3)
                     moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
@@ -221,6 +227,9 @@ SUBROUTINE beams3d_follow_gc
                     q(2) = PHI_lines(mytdex-1,l)
                     q(3) = Z_lines(mytdex-1,l)
                     q(4) = vll_lines(mytdex-1,l)
+                    xlast = q(1)*cos(q(2))
+                    ylast = q(1)*sin(q(2))
+                    zlast = q(3)
                     moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)

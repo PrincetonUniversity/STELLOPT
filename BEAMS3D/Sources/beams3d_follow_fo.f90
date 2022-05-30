@@ -119,6 +119,9 @@ SUBROUTINE beams3d_follow_fo
                     q(4) = vr_lines(mytdex-1,l)
                     q(5) = vphi_lines(mytdex-1,l)
                     q(6) = vz_lines(mytdex-1,l)
+                    xlast = q(1)*cos(q(2))
+                    ylast = q(1)*sin(q(2))
+                    zlast = q(3)
                     !moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
@@ -160,6 +163,9 @@ SUBROUTINE beams3d_follow_fo
                     q(4) = vr_lines(mytdex-1,l)
                     q(5) = vphi_lines(mytdex-1,l)
                     q(6) = vz_lines(mytdex-1,l)
+                    xlast = q(1)*cos(q(2))
+                    ylast = q(1)*sin(q(2))
+                    zlast = q(3)
                     !moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
@@ -242,6 +248,9 @@ SUBROUTINE beams3d_follow_fo
                         q(5) = moment_lines(mytdex-1,l)
                         CALL beams3d_gc2fo(tf_nag,q)
                     END IF
+                    xlast = q(1)*cos(q(2))
+                    ylast = q(1)*sin(q(2))
+                    zlast = q(3)
                     ! Particle Parameters
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
