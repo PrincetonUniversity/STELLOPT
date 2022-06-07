@@ -65,6 +65,7 @@
       r0min_v = rmin_surf
       betaxis_v = betaxis
       mnmax_v = mnmax
+      mnmax_vnyq = mnmax_nyq
       lasym_v = lasym                                                         ! 111009: RS, Logical for Asymmetric input
 
 !...   IOTA, PRES, PHIP are ALL on HALF-MESH!!!
@@ -106,14 +107,23 @@
        if (k .ne. 0) stop 'Allocation error 2 in cobra order_input'
        IF (.not. ALLOCATED(xn_v)) ALLOCATE(xn_v(mnmax_v),stat=k)
        if (k .ne. 0) stop 'Allocation error 2 in cobra order_input'
+       IF (.not. ALLOCATED(xm_vnyq)) 
+     1           ALLOCATE(xm_vnyq(mnmax_vnyq),stat=k)
+       if (k .ne. 0) stop 'Allocation error 2 in cobra order_input'
+       IF (.not. ALLOCATED(xn_vnyq)) 
+     1           ALLOCATE(xn_vnyq(mnmax_vnyq),stat=k)
+       if (k .ne. 0) stop 'Allocation error 2 in cobra order_input'
        IF (.not. ALLOCATED(plist)) ALLOCATE(plist(ns_cob),stat=k)
        if (k .ne. 0) stop 'Allocation error 2 in cobra order_input'
 !       allocate (xm_v(mnmax_v), xn_v(mnmax_v), plist(ns_cob), stat=k)
 !       if (k .ne. 0) stop 'Allocation error 2 in cobra order_input'
       xm_v = xm(1:mnmax_v)
       xn_v = xn(1:mnmax_v)
+      xm_vnyq = xm_nyq(1:mnmax_vnyq)
+      xn_vnyq = xn_nyq(1:mnmax_vnyq)
 
       mndim = ns_cob*mnmax_v
+      mndim_nyq = ns_cob*mnmax_vnyq
 
 !...   RMN, ZMN are on FULL-MESH; LMNS, BSUPUMN (c), BSUPVMN (c),
 !      and BMNC are on HALF-MESH!!!
@@ -125,11 +135,13 @@
        if (k .ne. 0) stop 'Allocation error 3 in cobra order_input'
        IF (.not. ALLOCATED(lmnsh)) ALLOCATE(lmnsh(mndim),stat=k)
        if (k .ne. 0) stop 'Allocation error 3 in cobra order_input'
-       IF (.not. ALLOCATED(bmnch)) ALLOCATE(bmnch(mndim),stat=k)
+       IF (.not. ALLOCATED(bmnch)) ALLOCATE(bmnch(mndim_nyq),stat=k)
        if (k .ne. 0) stop 'Allocation error 3 in cobra order_input'
-       IF (.not. ALLOCATED(bsupumnch)) ALLOCATE(bsupumnch(mndim),stat=k)
+       IF (.not. ALLOCATED(bsupumnch)) 
+     1       ALLOCATE(bsupumnch(mndim_nyq),stat=k)
        if (k .ne. 0) stop 'Allocation error 3 in cobra order_input'
-       IF (.not. ALLOCATED(bsupvmnch)) ALLOCATE(bsupvmnch(mndim),stat=k)
+       IF (.not. ALLOCATED(bsupvmnch)) 
+     1       ALLOCATE(bsupvmnch(mndim_nyq),stat=k)
        if (k .ne. 0) stop 'Allocation error 3 in cobra order_input'
 !       allocate (rmncf(mndim), zmnsf(mndim), lmnsh(mndim),
 !     1    bmnch(mndim),  bsupumnch(mndim), bsupvmnch(mndim),
@@ -146,12 +158,12 @@
          if (k .ne. 0) stop 'Allocation error 3 in cobra order_input'
          IF (.not. ALLOCATED(lmnch)) ALLOCATE(lmnch(mndim),stat=k)
          if (k .ne. 0) stop 'Allocation error 3 in cobra order_input'
-         IF (.not. ALLOCATED(bmnsh)) ALLOCATE(bmnsh(mndim),stat=k)
+         IF (.not. ALLOCATED(bmnsh)) ALLOCATE(bmnsh(mndim_nyq),stat=k)
          if (k .ne. 0) stop 'Allocation error 3 in cobra order_input'
-         IF (.not. ALLOCATED(bsupumnsh)) ALLOCATE(bsupumnsh(mndim),
+         IF (.not. ALLOCATED(bsupumnsh)) ALLOCATE(bsupumnsh(mndim_nyq),
      1       stat=k)
          if (k .ne. 0) stop 'Allocation error 3 in cobra order_input'
-         IF (.not. ALLOCATED(bsupvmnsh)) ALLOCATE(bsupvmnsh(mndim),
+         IF (.not. ALLOCATED(bsupvmnsh)) ALLOCATE(bsupvmnsh(mndim_nyq),
      1       stat=k)
          if (k .ne. 0) stop 'Allocation error 3 in cobra order_input'
 !         ALLOCATE (rmnsf(mndim), zmncf(mndim), lmnch(mndim),
@@ -164,17 +176,24 @@
          lk = (k-1)*mnmax_v
          rmncf(lk+1:lk+mnmax_v) = rmnc(1:mnmax_v,k)
          zmnsf(lk+1:lk+mnmax_v) = zmns(1:mnmax_v,k)
-         bmnch(lk+1:lk+mnmax_v) = bmnc(1:mnmax_v,k)
          lmnsh(lk+1:lk+mnmax_v) = lmns(1:mnmax_v,k)
-         bsupvmnch(lk+1:lk+mnmax_v) = bsupvmnc(1:mnmax_v,k)
-         bsupumnch(lk+1:lk+mnmax_v) = bsupumnc(1:mnmax_v,k)
          IF (lasym_v) THEN                                                   !  110909 RS: For asymmetric input
            rmnsf(lk+1:lk+mnmax_v) = rmns(1:mnmax_v,k)
            zmncf(lk+1:lk+mnmax_v) = zmnc(1:mnmax_v,k)
-           bmnsh(lk+1:lk+mnmax_v) = bmns(1:mnmax_v,k)
            lmnch(lk+1:lk+mnmax_v) = lmnc(1:mnmax_v,k)
-           bsupvmnsh(lk+1:lk+mnmax_v) = bsupvmns(1:mnmax_v,k)
-           bsupumnsh(lk+1:lk+mnmax_v) = bsupumns(1:mnmax_v,k)
+         ENDIF
+
+      ENDDO
+
+      DO k=1, ns_cob
+         lk = (k-1)*mnmax_vnyq
+         bmnch(lk+1:lk+mnmax_vnyq) = bmnc(1:mnmax_vnyq,k)
+         bsupvmnch(lk+1:lk+mnmax_vnyq) = bsupvmnc(1:mnmax_vnyq,k)
+         bsupumnch(lk+1:lk+mnmax_vnyq) = bsupumnc(1:mnmax_vnyq,k)
+         IF (lasym_v) THEN                                                   !  110909 RS: For asymmetric input
+           bmnsh(lk+1:lk+mnmax_vnyq) = bmns(1:mnmax_vnyq,k)
+           bsupvmnsh(lk+1:lk+mnmax_vnyq) = bsupvmns(1:mnmax_vnyq,k)
+           bsupumnsh(lk+1:lk+mnmax_vnyq) = bsupumns(1:mnmax_vnyq,k)
          ENDIF
 
       ENDDO
