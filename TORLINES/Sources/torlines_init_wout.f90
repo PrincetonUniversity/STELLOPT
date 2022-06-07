@@ -58,6 +58,7 @@
       INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
       REAL(rprec) :: val1, val2, dval, scale, rhomax, dr, f0_temp, dz,&
                      alvb, b1, c1, re, ae, r1, alub
+      REAL(rprec), ALLOCATABLE :: mfact(:,:)
       REAL(rprec), ALLOCATABLE :: rreal_in(:,:,:), zreal_in(:,:,:)
       REAL(rprec), ALLOCATABLE :: bureal_in(:,:,:), bvreal_in(:,:,:)
       REAL(rprec), ALLOCATABLE :: rho_vmec(:), rho_ext(:), ftemp(:),fmn(:)
@@ -110,21 +111,63 @@
          END IF
          CALL FLUSH(6)
       END IF
+
+      ! Get B onto full grid
+      ALLOCATE(mfact(mnmax_nyq,2))
+
+      ! First get axis quatities
+      ik = 1
+      WHERE (MOD(NINT(REAL(xm_nyq(:))),2) .eq. 0)
+         mfact(:,1)= 0.5 ! ns (half grid point)
+         mfact(:,2)= 0.5 ! ns-1 (full grid point)
+      ELSEWHERE
+         mfact(:,1)= 0
+         mfact(:,2)= 0
+      ENDWHERE
+      ! jslo=jshi convention
+      bsupumnc(:,1) = mfact(:,1)*bsupumnc(:,2)+mfact(:,2)*bsupumnc(:,2)
+      bsupvmnc(:,1) = mfact(:,1)*bsupvmnc(:,2)+mfact(:,2)*bsupvmnc(:,2)
+
+      ! Now do grid
+      DO ik = 2, ns-1
+         WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
+            mfact(:,1)= 0.5
+            mfact(:,2)= 0.5
+         ELSEWHERE
+            mfact(:,1)= 0.5*SQRT((ik-1.0)/(ik-0.5))
+            mfact(:,2)= 0.5*SQRT((ik-1.0)/(ik-1.5))
+         ENDWHERE
+         bsupumnc(:,ik) = mfact(:,1)*bsupumnc(:,ik+1)+mfact(:,2)*bsupumnc(:,ik)
+         bsupvmnc(:,ik) = mfact(:,1)*bsupvmnc(:,ik+1)+mfact(:,2)*bsupvmnc(:,ik)
+      END DO
+
+      ! Now do edgek = ns_vmec
+      WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
+         mfact(:,1)= 2.0 ! ns (half grid point)
+         mfact(:,2)=-1.0 ! ns-1 (full grid point)
+      ELSEWHERE
+         mfact(:,1)= 2.0*SQRT((ns-1)/(ns-1.5))
+         mfact(:,2)=-1.0*SQRT((ns-1)/(ns-2.0))
+      ENDWHERE
+      bsupumnc(:,ns) = mfact(:,ns)*bsupumnc(:,ns)+mfact(:,2)*bsupumnc(:,ns-1)
+      bsupvmnc(:,ns) = mfact(:,ns)*bsupvmnc(:,ns)+mfact(:,2)*bsupvmnc(:,ns-1)
+      DEALLOCATE(mfact)
+
       ! Get fields on full mesh
-      bsupumnc(:,1) = 1.5*bsupumnc(:,2) - 0.5*bsupumnc(:,3)
-      bsupvmnc(:,1) = 1.5*bsupvmnc(:,2) - 0.5*bsupvmnc(:,3)
-      bsupumnc(:,2:ns-1) = 0.5*(bsupumnc(:,2:ns-1)+bsupumnc(:,3:ns))
-      bsupvmnc(:,2:ns-1) = 0.5*(bsupvmnc(:,2:ns-1)+bsupvmnc(:,3:ns))
-      bsupumnc(:,ns) = 2.0*bsupumnc(:,ns) - bsupumnc(:,ns-1) ! Note at this point ns on half grid ns-1 on full grid
-      bsupvmnc(:,ns) = 2.0*bsupvmnc(:,ns) - bsupvmnc(:,ns-1)
-      IF (lasym) THEN
-         bsupumns(:,1) = 1.5*bsupumns(:,2) - 0.5*bsupumns(:,3)
-         bsupvmns(:,1) = 1.5*bsupvmns(:,2) - 0.5*bsupvmns(:,3)
-         bsupumns(:,2:ns-1) = 0.5*(bsupumns(:,2:ns-1)+bsupumns(:,3:ns))
-         bsupvmns(:,2:ns-1) = 0.5*(bsupvmns(:,2:ns-1)+bsupvmns(:,3:ns))
-         bsupumns(:,ns) = 2.0*bsupumns(:,ns) - bsupumns(:,ns-1) ! Note at this point ns on half grid ns-1 on full grid
-         bsupvmns(:,ns) = 2.0*bsupvmns(:,ns) - bsupvmns(:,ns-1)
-      END IF
+      !bsupumnc(:,1) = 1.5*bsupumnc(:,2) - 0.5*bsupumnc(:,3)
+      !bsupvmnc(:,1) = 1.5*bsupvmnc(:,2) - 0.5*bsupvmnc(:,3)
+      !bsupumnc(:,2:ns-1) = 0.5*(bsupumnc(:,2:ns-1)+bsupumnc(:,3:ns))
+      !bsupvmnc(:,2:ns-1) = 0.5*(bsupvmnc(:,2:ns-1)+bsupvmnc(:,3:ns))
+      !bsupumnc(:,ns) = 2.0*bsupumnc(:,ns) - bsupumnc(:,ns-1) ! Note at this point ns on half grid ns-1 on full grid
+      !bsupvmnc(:,ns) = 2.0*bsupvmnc(:,ns) - bsupvmnc(:,ns-1)
+      !IF (lasym) THEN
+      !   bsupumns(:,1) = 1.5*bsupumns(:,2) - 0.5*bsupumns(:,3)
+      !   bsupvmns(:,1) = 1.5*bsupvmns(:,2) - 0.5*bsupvmns(:,3)
+      !   bsupumns(:,2:ns-1) = 0.5*(bsupumns(:,2:ns-1)+bsupumns(:,3:ns))
+      !   bsupvmns(:,2:ns-1) = 0.5*(bsupvmns(:,2:ns-1)+bsupvmns(:,3:ns))
+      !   bsupumns(:,ns) = 2.0*bsupumns(:,ns) - bsupumns(:,ns-1) ! Note at this point ns on half grid ns-1 on full grid
+      !   bsupvmns(:,ns) = 2.0*bsupvmns(:,ns) - bsupvmns(:,ns-1)
+      !END IF
       ! ----- Interpolate VMEC arrays to the temp array
       CALL EZspline_init(f_spl,ns,bcs1,ier)
       ALLOCATE(rho_vmec(ns),fmn(nrho),ftemp(1:ns))

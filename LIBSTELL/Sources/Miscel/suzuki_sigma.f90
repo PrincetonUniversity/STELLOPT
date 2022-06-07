@@ -21,13 +21,13 @@
 
       ! Separate ions into hydrogen species and impurities
       n_H=1; n_Z=1; dense_H=0; dense_Z=0; Zeff_sum1=0; Zeff_sum2=0
-      sigma = 0;
+      sigma = 0; ind_H = 0; ind_Z=0;
       DO i = 1, nion
          IF (Z_in(i) == 1) THEN
             ind_H(n_H) = i
             dense_H = dense_H + ni_in(i)
             n_H = n_H + 1
-         ELSE
+         ELSE IF (Z_in(i) > 1) THEN
             ind_Z(n_Z) = i
             dense_Z = dense_Z + ni_in(i)
             n_Z = n_Z + 1
@@ -36,6 +36,7 @@
          Zeff_sum2 = Zeff_sum2 + ni_in(i)*Z_in(i)
       END DO
       Zeff = Zeff_sum1/Zeff_sum2
+
 
       ! Select low- or high-energy coefficient tables
       IF (E_in >= 9 .and. E_in < 100) THEN
@@ -100,13 +101,13 @@
                CONTINUE
             END IF
          END DO
-         IF (k < 0) CONTINUE
+         IF (k == 0) CONTINUE
          sigma_Z = sigma_Z + ni_in(l) / ne_in * Z_in(l) &
-                             *(  B(j,1) + B(j,2)*U + B(j,3)*logN + B(j,4)*logN*U) &
-                                                   + B(j,5)*logE + B(j,6)*logE*U  &
-                                +B(j,7)*logE*logN + B(j,8) *logE*logN*U &
-                                +B(j,9)*logE*logE + B(j,10) *logE*logE*U &
-                                +B(j,11)*logE*logE*logN + B(j,12) *logE*logE*logN*U
+                             *(  B(k,1) + B(k,2)*U + B(k,3)*logN + B(k,4)*logN*U) &
+                                                   + B(k,5)*logE + B(k,6)*logE*U  &
+                                +B(k,7)*logE*logN + B(k,8) *logE*logN*U &
+                                +B(k,9)*logE*logE + B(k,10) *logE*logE*U &
+                                +B(k,11)*logE*logE*logN + B(k,12) *logE*logE*logN*U
       END DO
 
       ! Equation 24

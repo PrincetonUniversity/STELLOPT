@@ -22,7 +22,8 @@
                                  NE_spl_s, TI_spl_s, ZEFF_spl_s, nne, nte, nti, nzeff, &
                                  plasma_mass, reff_eq, therm_factor, &
                                  X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
-                                 NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET
+                                 NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET, &
+                                 NI_spl_s
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lplasma_only, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -31,7 +32,8 @@
                                     charge, Zatom, mass, ldepo, v_neut, &
                                     lcollision, pi, pi2, t_end_in, nprocs_beams, &
                                     div_beams, mass_beams, Zatom_beams, dex_beams, &
-                                    qid_str_saved, lascotfl, R_beams, PHI_beams, Z_beams
+                                    qid_str_saved, lascotfl, R_beams, PHI_beams, Z_beams, &
+                                    NI_AUX_Z, NI_AUX_M
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free, machine_string
       USE beams3d_write_par
@@ -48,7 +50,7 @@
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-      INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax ,ider, nphi1
+      INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax ,ider, nphi1, nion_local
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
                         neutral_gid, wall_gid, marker_gid, qid_gid, &
                         nbi_gid, inj_gid, boozer_gid, mhd_gid
@@ -283,20 +285,21 @@
                ! 1DS acts screwy in the vacuum region
                !CALL h5gcreate_f(plasma_gid,'plasma_1DS_'//qid_str, qid_gid, ier)
                CALL h5gcreate_f(plasma_gid,'plasma_1D_'//qid_str, qid_gid, ier)
+               
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
-               CALL write_var_hdf5(qid_gid,'nion',ier,INTVAR=1)
+               nion_local = COUNT(NI_AUX_Z>0)
+               CALL write_var_hdf5(qid_gid,'nion',ier,INTVAR=nion_local)
                CALL write_var_hdf5(qid_gid,'nrho',ier,INTVAR=nr)
-               CALL write_var_hdf5(qid_gid,'znum',ier,INTVAR=1)
-               CALL write_var_hdf5(qid_gid,'anum',ier,INTVAR=NINT(plasma_mass*inv_amu))
-               CALL write_var_hdf5(qid_gid,'charge',ier,INTVAR=1)
-               CALL write_var_hdf5(qid_gid,'mass',ier,DBLVAR=plasma_mass*inv_amu)
-               ALLOCATE(rtemp(nr,5,1))
+               CALL write_var_hdf5(qid_gid,'znum',   nion_local, ier,INTVAR=NI_AUX_Z(1:nion_local))
+               CALL write_var_hdf5(qid_gid,'anum',   nion_local, ier,INTVAR=NINT(NI_AUX_M(1:nion_local)*inv_amu))
+               CALL write_var_hdf5(qid_gid,'charge', nion_local, ier,INTVAR=NI_AUX_Z(1:nion_local))
+               CALL write_var_hdf5(qid_gid,'mass',   nion_local, ier,DBLVAR=NI_AUX_M(1:nion_local)*inv_amu)
+               ALLOCATE(rtemp(nr,4+nion_local,1))
                ! Only for 1DS
                CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(rho_max))
                rtemp = 0
-               rtemp(:,5,1) = 1
                DO i = 1, nr
                   rtemp(i,1,1)=rho_max*DBLE(i-1)/DBLE(nr-1)
                END DO
@@ -304,22 +307,21 @@
                IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,2,1), ier)
                IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,3,1), ier)
                IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,4,1), ier)
-               IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1)**2, rtemp(:,5,1), ier)
-               rtemp(d1:,2:4,1) = 0
-               rtemp(:,5,1)=rtemp(:,3,1)/rtemp(:,5,1)
-               !WHERE(rtemp(:,2,1) < 1) rtemp(:,2,1)=1
-               !WHERE(rtemp(:,4,1) < 1) rtemp(:,4,1)=1
-               !WHERE(rtemp(:,3,1) < 1.0E16) rtemp(:,3,1)=1.0E16
-               !WHERE(rtemp(:,5,1) < 1.0E16) rtemp(:,5,1)=1.0E16
+               DO i = 1,nion_local
+                  IF (nzeff > 0) CALL EZspline_interp( NI_spl_s(i), nr, rtemp(:,1,1)**2, rtemp(:,i+4,1), ier)
+               END DO
+               rtemp(d1:,2:4+nion_local,1) = 0
                WHERE(rtemp(:,2,1) < 0.03) rtemp(:,2,1)=0.03
                WHERE(rtemp(:,4,1) < 0.03) rtemp(:,4,1)=0.03
                WHERE(rtemp(:,3,1) < 1.0E10) rtemp(:,3,1)=1.0E10
-               WHERE(rtemp(:,5,1) < 1.0E10) rtemp(:,5,1)=1.0E10
+               DO i = 1, nion_local
+                  WHERE(rtemp(:,i+4,1) < 1.0E10) rtemp(:,i+4,1)=1.0E10
+               END DO
                CALL write_var_hdf5( qid_gid, 'rho',          nr, ier, DBLVAR=rtemp(1:nr,1,1))
                CALL write_var_hdf5( qid_gid, 'etemperature', nr, ier, DBLVAR=rtemp(1:nr,2,1))
                CALL write_var_hdf5( qid_gid, 'edensity',     nr, ier, DBLVAR=rtemp(1:nr,3,1))
                CALL write_var_hdf5( qid_gid, 'itemperature', nr, ier, DBLVAR=rtemp(1:nr,4,1))
-               CALL write_var_hdf5( qid_gid, 'idensity',     nr, ier, DBLVAR=rtemp(1:nr,5,1))
+               CALL write_var_hdf5( qid_gid, 'idensity',     nr, nion_local, ier, DBLVAR=rtemp(1:nr,5:4+nion_local,1))
                ! Need to add idensity
                DEALLOCATE(rtemp)
                CALL h5gclose_f(qid_gid, ier)
@@ -633,6 +635,7 @@
                !--------------------------------------------------------------
                !           Update options
                !--------------------------------------------------------------
+               partpmax=MAX(MAXVAL(ABS(partvmax*mass)),partpmax) !Is set to electron temperature before
                CALL h5gopen_f(fid,'options', options_gid, ier)
                CALL h5gopen_f(options_gid,'opt_'//qid_str_saved, qid_gid, ier)
                CALL write_var_hdf5(qid_gid,'DIST_MIN_PR',ier,DBLVAR=DBLE(-partpmax))
@@ -737,6 +740,7 @@
                !--------------------------------------------------------------
                !           Update options
                !--------------------------------------------------------------
+               partpmax=MAX(MAXVAL(ABS(partvmax*mass)),partpmax) !Is set to electron temperature before
                CALL h5gopen_f(fid,'options', options_gid, ier)
                CALL h5gopen_f(options_gid,'opt_'//qid_str_saved, qid_gid, ier)
                CALL write_var_hdf5(qid_gid,'DIST_MIN_PR',ier,DBLVAR=DBLE(-partpmax))

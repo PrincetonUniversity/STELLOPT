@@ -18,14 +18,14 @@
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
                                  ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
                                  plasma_mass, plasma_Zavg, plasma_Zmean, &
-                                 B_kick_min, B_kick_max, freq_kick, E_kick
+                                 B_kick_min, B_kick_max, freq_kick, E_kick, NI
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
                                     charge, Zatom, mass, ldepo, v_neut,lcollision, lfusion, &
-                                    leqdsk, eqdsk_string, lhint, lhitonly, lkick
+                                    leqdsk, eqdsk_string, lhint, lhitonly, lkick, NION
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE mpi_params
@@ -127,6 +127,10 @@
                IF (ASSOCIATED(NE)) THEN
                   CALL write_var_hdf5(fid,'NE',nr,nphi,nz,ier,DBLVAR=NE,ATT='Electron Density [m^-3]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'NE',ier)
+               END IF
+               IF (ASSOCIATED(NI)) THEN
+                  CALL write_var_hdf5(fid,'NI',nion,nr,nphi,nz,ier,DBLVAR=NI,ATT='Ion Densities [m^-3]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'NI',ier)
                END IF
                IF (ASSOCIATED(TI)) THEN
                   CALL write_var_hdf5(fid,'TI',nr,nphi,nz,ier,DBLVAR=TI,ATT='Ion Temperature [eV]',ATT_NAME='description')
@@ -339,7 +343,7 @@
                END IF
                IF (ASSOCIATED(dist5d_prof)) THEN
                   CALL write_var_hdf5(fid,'dist_prof',nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist5d_prof,&
-                                      ATT='Distribution Function [part/(m^3/s^3)] no physical volume (nbeam,nrho,npol,ntor,nvll,nvperp)',ATT_NAME='description')
+                                      ATT='Distribution Function [part/(m^6/s^3)] (nbeam,nrho,npol,ntor,nvll,nvperp)',ATT_NAME='description') !its not volume normalized, so shouldnt the units be [part]?
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_prof',ier)
                END IF
                IF (lbeam) THEN

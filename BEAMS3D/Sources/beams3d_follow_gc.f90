@@ -1,18 +1,18 @@
 !-----------------------------------------------------------------------
-!     Module:        beams3d_follow
+!     Module:        beams3d_follow_gc
 !     Authors:       S. Lazerson (lazerson@pppl.gov), M. McMillan (matthew.mcmillan@my.wheaton.edu)
 !     Date:          06/20/2012
 !     Description:   This subroutine follows the particles through
 !                    the grid.  The general ODE which must be solved
 !                    can be written:
 !                        dX        
-!                       ----   = fpart(t,q,qdot)
+!                       ----   = fgc(t,q,qdot)
 !                        dt        
 !                    where X=(R,phi,Z).  This allows particle trajectories
 !                    to be parametrized in terms of time.
 !                    
 !-----------------------------------------------------------------------
-SUBROUTINE beams3d_follow
+SUBROUTINE beams3d_follow_gc
     !-----------------------------------------------------------------------
     !     Libraries
     !-----------------------------------------------------------------------
@@ -59,7 +59,7 @@ SUBROUTINE beams3d_follow
     REAL(rprec) :: tf_max, vel_max, dt_out
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:), t_last(:)
     DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, t1_nag, &
-                        tol_nag, rtol
+                        tol_nag, rtol, weight_save
     DOUBLE PRECISION :: atol(4), rwork(84)
     DOUBLE PRECISION :: rkh_work(4, 2)
     DOUBLE PRECISION :: qdot1(4)
@@ -71,14 +71,14 @@ SUBROUTINE beams3d_follow
 
     !-----------------------------------------------------------------------
     !     External Functions
-    !          fpart_nag            RHS of ODE integrator (for NAG)    for BEAMS3D
+    !          fgc_nag            RHS of ODE integrator (for NAG)    for BEAMS3D
     !          D02CJF               NAG ODE Solver
     !          D02CJW               NAG Dummy function
     !          jacobian_lsode       Jacobian function (for LSODE, not currently utilized)
     !-----------------------------------------------------------------------
-    EXTERNAL D02CJF, D02CJW, fpart_nag, D02CJX, out_beams3d_nag
-    EXTERNAL fpart_lsode, jacobian_lsode
-    EXTERNAL fpart_rkh68
+    EXTERNAL D02CJF, D02CJW, fgc_nag, D02CJX, out_beams3d_nag
+    EXTERNAL fgc_lsode, jacobian_lsode
+    EXTERNAL fgc_rkh68
     !-----------------------------------------------------------------------
     !     Begin Subroutine
     !-----------------------------------------------------------------------
@@ -180,7 +180,8 @@ SUBROUTINE beams3d_follow
     ! Some helpers
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
     fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
-    fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick
+    !fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick !old
+    fact_kick = 2*freq_kick*E_kick
 
     ! Follow Trajectories
     IF (mystart <= nparticles) THEN
@@ -204,8 +205,8 @@ SUBROUTINE beams3d_follow
                     mymass = mass(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
-                    fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-                    fact_coul = myZ*plasma_Zavg*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+                    fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -215,7 +216,10 @@ SUBROUTINE beams3d_follow
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1; ndt =1
                        tf_nag = t_nag
+                       weight_save = weight(myline)
+                       weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
+                       weight(myline) = weight_save
                        IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
@@ -230,7 +234,7 @@ SUBROUTINE beams3d_follow
                     END IF
                     IF (ldepo) CYCLE
                     DO ! Must do it this way becasue lbeam changes q(4) values
-                       CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
+                       CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fgc_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
                        IF (ier < 0) CALL handle_err(D02CJF_ERR, 'beams3d_follow', ier)
                        t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
                        CALL out_beams3d_nag(tf_nag,q)
@@ -264,8 +268,8 @@ SUBROUTINE beams3d_follow
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
-                    fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-                    fact_coul = myZ*plasma_Zavg*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+                    fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -275,7 +279,10 @@ SUBROUTINE beams3d_follow
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1; ndt =1
                        tf_nag = t_nag
+                       weight_save = weight(myline)
+                       weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
+                       weight(myline) = weight_save
                        IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
@@ -290,7 +297,7 @@ SUBROUTINE beams3d_follow
                     END IF
                     IF (ldepo) CYCLE
                     DO
-                        CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fpart_rkh68, rkh_work, iopt, ier)
+                        CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fgc_rkh68, rkh_work, iopt, ier)
                         IF (ier < 0) CALL handle_err(RKH68_ERR, 'beams3d_follow', ier)
                         q(1)=rkh_work(1,2)
                         q(2)=rkh_work(2,2)
@@ -349,8 +356,8 @@ SUBROUTINE beams3d_follow
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
-                    fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-                    fact_coul = myZ*plasma_Zavg*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+                    fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     ! Setup timestep
                     !CALL beams3d_calc_dt(q,moment,mymass,dt)
@@ -363,7 +370,10 @@ SUBROUTINE beams3d_follow
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1
                        tf_nag = t_nag
+                       weight_save = weight(myline)
+                       weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
+                       weight(myline) = weight_save
                        IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
@@ -380,7 +390,7 @@ SUBROUTINE beams3d_follow
                     DO
                         IF (lcollision) istate = 1
                         CALL FLUSH(6)
-                        CALL DLSODE(fpart_lsode, neqs_nag, q, t_nag, tf_nag, itol, rtol, atol, itask, istate, &
+                        CALL DLSODE(fgc_lsode, neqs_nag, q, t_nag, tf_nag, itol, rtol, atol, itask, istate, &
                                    iopt, w, lrw, iwork, liw, jacobian_lsode, mf)
                         IF ((istate == -3) .or. (istate == -4)) THEN
                            ! BIG  DEBUG MESSAGE
@@ -397,7 +407,7 @@ SUBROUTINE beams3d_follow
                            WRITE(6,*) '     ',myworkid, iwork(11:18)
                            WRITE(6,*) '------------------'
                            CALL FLUSH(6)
-                           CALL handle_err(LSODE_ERR, 'beams3d_follow', istate)
+                           CALL handle_err(LSODE_ERR, 'beams3d_follow_gc', istate)
                         END IF
                         iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
@@ -499,4 +509,4 @@ SUBROUTINE beams3d_follow
     !-----------------------------------------------------------------------
     !     End Subroutine
     !-----------------------------------------------------------------------
-END SUBROUTINE beams3d_follow
+END SUBROUTINE beams3d_follow_gc

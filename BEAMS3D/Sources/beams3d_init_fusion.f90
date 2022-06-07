@@ -209,7 +209,7 @@
                CALL RANDOM_NUMBER(Y1_rand) ! phi
                CALL RANDOM_NUMBER(Z1_rand) ! u
                ! Calc j dex
-               j = MIN(MAX(NINT(Y1_rand*nphi1),1),nphi1)
+               j = MIN(MAX(NINT(Y1_rand*nphi),1),nphi1)
                ! Calc u = [0,2*pi]
                utemp = Z1_rand*pi2
                ! Calc sval =[0,1]

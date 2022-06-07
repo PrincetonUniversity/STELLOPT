@@ -26,11 +26,13 @@
             mu_start_in, charge_in, mass_in, t_end_in, Zatom_in, &
             TE_AUX_S_BEAMS => TE_AUX_S, TE_AUX_F_BEAMS => TE_AUX_F, &
             NE_AUX_S_BEAMS => NE_AUX_S, NE_AUX_F_BEAMS => NE_AUX_F, &
+            NI_AUX_S_BEAMS => NI_AUX_S, NI_AUX_F_BEAMS => NI_AUX_F, &
             TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, &
             ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F, &
-            BEAMS3D_VERSION, mass_beams, charge_beams
+            BEAMS3D_VERSION, mass_beams, charge_beams, &
+            NI_AUX_Z_BEAMS => NI_AUX_Z, NI_AUX_M_BEAMS => NI_AUX_M
       USE beams3d_grid, ONLY: nte, nne, nti, nzeff, rmin, rmax, zmin, zmax, &
-                              phimin, phimax
+                              phimin, phimax, plasma_zavg, plasma_mass
       USE beams3d_lines, ONLY: end_state
 !DEC$ ENDIF
       USE mpi_params
@@ -140,6 +142,11 @@
          CALL get_equil_zeff(s_val,TRIM(zeff_type),v_val,iflag)
          IF (v_val < 1) v_val = 1
          ZEFF_AUX_F_BEAMS(ik) = v_val
+         ! Temp fix for NI
+         NI_AUX_S_BEAMS(ik) = s_val
+         NI_AUX_F_BEAMS(1,ik) = NE_AUX_F_BEAMS(ik)
+         NI_AUX_Z_BEAMS(1) = NINT(plasma_Zavg)
+         NI_AUX_M_BEAMS(1) = plasma_mass
       END DO
 
       IF (lscreen) THEN

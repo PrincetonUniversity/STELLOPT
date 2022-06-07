@@ -1,30 +1,29 @@
 !-----------------------------------------------------------------------
-!     Function:      fpart_rkh68
-!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+!     Function:      fgc_lsode
+!     Authors:       M. McMillan (matthew.mcmillan@my.wheaton.edu)
 !     Date:          06/20/2012
-!     Description:   Just a wrapper to fpart_nag.
+!     Description:   Just a wrapper to fgc_nag
 !
 !-----------------------------------------------------------------------
-      SUBROUTINE fpart_rkh68(t,q,qdot,istat)
+      SUBROUTINE fgc_lsode(neq,t,q,qdot)
 !-----------------------------------------------------------------------
-!     Libraries NONE
+!     Libraries  NONE
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 !     Input Variables
 !          t          time coordinates
-!          q          q(k) = (R,phi,Z,v_r,Vphi,V_z)
+!          q          (q(1),q(2),q(3),q(4)) = (R,phi,Z,vll)
 !          qdot       dq/dt
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER          :: istat
-      DOUBLE PRECISION :: t, q(6), qdot(6)
+      INTEGER          :: neq
+      DOUBLE PRECISION :: t, q(4), qdot(4)
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !------------------------------------------------
-      CALL fpart_nag(t,q,qdot)
-      istat = 0
+      CALL fgc_nag(t,q,qdot)
       RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------
-      END SUBROUTINE fpart_rkh68
+      END SUBROUTINE fgc_lsode
