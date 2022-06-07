@@ -258,7 +258,7 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
               zeta_o = vll/speed   ! Record the current pitch.
-              speed = SQRT(speed*speed + fact_kick*(1-zeta_o*zeta_o)*dt/modb)
+              speed = speed*SQRT(one + fact_kick*modb*(1-zeta_o*zeta_o)*dt/SQRT(ne_temp))
            END IF
 
            !------------------------------------------------------------

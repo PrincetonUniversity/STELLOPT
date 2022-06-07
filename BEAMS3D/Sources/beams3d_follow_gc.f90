@@ -181,7 +181,6 @@ SUBROUTINE beams3d_follow_gc
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
     fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
     !fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick !old
-    fact_kick = 2*freq_kick*E_kick
 
     ! Follow Trajectories
     IF (mystart <= nparticles) THEN
@@ -205,6 +204,7 @@ SUBROUTINE beams3d_follow_gc
                     mymass = mass(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
+                    fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
@@ -268,6 +268,7 @@ SUBROUTINE beams3d_follow_gc
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
+                    fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
@@ -356,6 +357,7 @@ SUBROUTINE beams3d_follow_gc
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
+                    fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
