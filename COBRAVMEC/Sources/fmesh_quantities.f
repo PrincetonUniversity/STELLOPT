@@ -1,7 +1,7 @@
       MODULE fmesh_quantities
       USE stel_kinds
       USE general_dimensions
-      USE readin_data, ONLY: xn_v, xm_v
+      USE readin_data, ONLY: xn_v, xm_v, xm_vnyq, xn_vnyq
       IMPLICIT NONE
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: iotaf, phipf,
      1   presf, mercierf, iotapf, prespf, radios
