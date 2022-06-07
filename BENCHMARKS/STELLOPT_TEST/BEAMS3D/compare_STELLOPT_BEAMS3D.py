@@ -21,7 +21,7 @@ if not data:
 print('STELLOPT_VERSION: ' + str(data['VERSION']))
 print('==== Scalars ====')
 varlist={}
-varlist['ORBIT_equil']=0.765625
+varlist['ORBIT_equil']=0.80675
 lfail = 0;
 for temp in varlist:
     act = varlist[temp]

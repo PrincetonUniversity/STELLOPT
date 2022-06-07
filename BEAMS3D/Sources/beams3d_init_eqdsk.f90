@@ -10,12 +10,12 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE read_eqdsk_mod, ONLY: totcur, psimx, psilim, &
+      USE read_eqdsk_mod, ONLY: totcur, psisep, &
                                 raxis_eqdsk => raxis, &
-                                zaxis_eqdsk => zaxis, get_eqdsk_B, &
-                                get_eqdsk_flux, read_eqdsk_deallocate, &
+                                zaxis_eqdsk => zaxis, get_eqdsk_Bspl, &
+                                get_eqdsk_fluxspl, read_eqdsk_deallocate, &
                                 nlim, xlim, zlim, ntitle, btor, &
-                                rcenter, sp, nbndry, xbndry, zbndry
+                                rcenter, sp, nbndry, xbndry, zbndry, COCOS_ID
       USE beams3d_runtime
       USE beams3d_grid, ONLY: raxis_g => raxis, phiaxis, &
                                  zaxis_g => zaxis, nr, nphi, nz, &
@@ -25,7 +25,7 @@
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
-                                 phiedge_eq, reff_eq
+                                 phiedge_eq, reff_eq, NI_spl_s, NI
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE wall_mod, ONLY: wall_load_seg
       USE mpi_params
@@ -41,11 +41,11 @@
       INTEGER :: numprocs_local, mylocalid, mylocalmaster, mystart, myend
       INTEGER :: MPI_COMM_LOCAL
 #endif
-      LOGICAL :: lcreate_wall
-      INTEGER :: ier, s, i, j, k
+      LOGICAL :: lcreate_wall, lverb_wall
+      INTEGER :: ier, s, i, j, k, u
       REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
                      tetemp,netemp,titemp,zetemp,pottemp, rsmax, rsmin,&
-                     zsmax, zsmin
+                     zsmax, zsmin,rhoflx, nitemp
 
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -64,11 +64,33 @@
 #endif
       mylocalmaster = master
 
+      ! Calculate the minor radius
+      IF (myworkid == master) THEN
+         brtemp = 0.5*SQRT((raxis_g(nr)-raxis_g(1))**2 + (zaxis_g(nr)-zaxis_g(1))**2)
+         k = FLOOR(brtemp/0.001)
+         reff_eq = 0
+         s = 0
+         DO i = 0, 359, 1
+            INNERLOOP: DO j = 1, k
+               brtemp = raxis_eqdsk + 0.001*j*COS(i*pi2/360.0)
+               bztemp = zaxis_eqdsk + 0.001*j*SIN(i*pi2/360.0)
+               CALL get_eqdsk_fluxspl(brtemp,bztemp,rhoflx,uflx)
+               IF (rhoflx .ge. 1) THEN
+                  reff_eq = reff_eq + 0.001*(j-0.5) ! halfway between last gridpoint and here.
+                  s = s + 1
+                  EXIT INNERLOOP
+               END IF
+            END DO INNERLOOP
+         END DO
+         reff_eq = reff_eq / s
+      end IF
+
       ! Write info to screen
       IF (lverb) THEN
          betatot = 0
          WRITE(6,'(A)')               '----- EQDSK Information -----'
-         WRITE(6,'(A)') '  HEADER: '//ntitle(1)//ntitle(2)//ntitle(3)//ntitle(4)//ntitle(5)
+         WRITE(6,'(A,I2)') '  COCOS_ID : ',COCOS_ID
+         WRITE(6,'(A)')    '  HEADER: '//ntitle(1)//ntitle(2)//ntitle(3)//ntitle(4)//ntitle(5)
          WRITE(6,'(A,F7.2,A,F7.2,A)') '   B  = ',Btor,' [T] @ R = ',rcenter,' [m]'
          IF (ABS(totcur) > 1E8) THEN
             WRITE(6,'(A,F7.2,A)') '   I  = ',totcur*1E-9,' [GA]'
@@ -79,8 +101,9 @@
          ELSE
             WRITE(6,'(A,F7.2,A)') '   I  = ',totcur,' [A]'
          END IF
+         WRITE(6,'(A,F7.2,A)')        '   AMINOR  = ',reff_eq,' [m]'
          WRITE(6,'(A,F7.2,A)')        '   P_MAX = ',MAXVAL(sp)*1E-3,' [kPa]'
-         WRITE(6,'(A,F7.2,A)')        '   PHIEDGE = ',psimx(1),' [Wb]'
+         WRITE(6,'(A,F7.2,A)')        '   PSIEDGE = ',psisep,' [Wb]'
          IF (lcreate_wall) THEN
             IF (lplasma_only) THEN
                WRITE(6,'(A)')         '   Using EQDSK Separatrix as wall'
@@ -90,10 +113,12 @@
          END IF
       END IF
 
-
       ! Calculate the axis values
       req_axis(:) = raxis_eqdsk
       zeq_axis(:) = zaxis_eqdsk
+
+      ! Helpers
+      phiedge_eq = 1.0 ! normalized value
 
       ! Use the vessel as a mask for rho
       zsmax = MAXVAL(zbndry)
@@ -106,11 +131,12 @@
          lvessel = .TRUE.
          k = 128
          ier = 0
+         lverb_wall=.false.
          IF (lplasma_only) THEN
-            CALL wall_load_seg(nbndry,xbndry,zbndry,k,ier,VERB=lverb,COMM=MPI_COMM_LOCAL)
+            CALL wall_load_seg(nbndry,xbndry,zbndry,k,ier,VERB=lverb_wall,COMM=MPI_COMM_LOCAL)
             IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Boundary has repeated index.'
          ELSE
-            CALL wall_load_seg(nlim,xlim,zlim,k,ier,VERB=lverb,COMM=MPI_COMM_LOCAL)
+            CALL wall_load_seg(nlim,xlim,zlim,k,ier,VERB=lverb_wall,COMM=MPI_COMM_LOCAL)
             IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Limiter has repeated index.'
          END IF
          ier = 0
@@ -137,18 +163,20 @@
          sflx = 0.0
 
          ! Bfield
-         CALL get_eqdsk_B(raxis_g(i),zaxis_g(k),brtemp,bptemp,bztemp)
-         B_R(i,:,k) = brtemp
-         B_PHI(i,:,k) = bptemp
-         B_Z(i,:,k) = bztemp
+         CALL get_eqdsk_Bspl(raxis_g(i),zaxis_g(k),brtemp,bptemp,bztemp)
+         B_R(i,:,k) = B_R(i,:,k) + brtemp
+         B_PHI(i,:,k) = B_PHI(i,:,k) + bptemp
+         B_Z(i,:,k) = B_Z(i,:,k) + bztemp
 
          ! Flux
-         CALL get_eqdsk_flux(raxis_g(i),zaxis_g(k),sflx,uflx)
+         CALL get_eqdsk_fluxspl(raxis_g(i),zaxis_g(k),rhoflx,uflx)
+         sflx = rhoflx*rhoflx
          IF (zaxis_g(k)>zsmax .or. zaxis_g(k)<zsmin .or. &
              raxis_g(i)>rsmax .or. raxis_g(i)<rsmin) THEN
             IF (sflx<1) sflx = 2-sflx ! Handle flux issue
          END IF
-         S_ARR(i,:,k)=sqrt(sflx) ! Actually rho
+         S_ARR(i,:,k)=sflx
+         IF (uflx<0)  uflx = uflx+pi2
          U_ARR(i,:,k)=uflx
 
          IF (sflx <= 1) THEN
@@ -158,6 +186,13 @@
             IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,titemp,ier)
             IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
             IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
+            IF (nzeff > 0) THEN 
+               CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
+               DO u=1, NION
+                  CALL EZspline_interp(NI_spl_s(u),sflx,nitemp,ier)
+                  NI(u,i,:,k)=nitemp
+               END DO
+            END IF
             NE(i,:,k) = netemp; TE(i,:,k) = tetemp; TI(i,:,k) = titemp
             POT_ARR(i,:,k) = pottemp; ZEFF_ARR(i,:,k) = zetemp
          END IF

@@ -157,10 +157,13 @@
          INTEGER, INTENT(in) :: nface_block
          INTEGER, INTENT(inout) :: istat
          INTEGER, INTENT(inout), OPTIONAL :: comm, shar_comm
+         LOGICAL :: lshar_comm
          INTEGER :: i
 
+         lshar_comm = .FALSE.
 #if defined(MPI_OPT)
-         IF (PRESENT(comm)) THEN 
+         IF (PRESENT(comm)) THEN
+            lshar_comm = .TRUE. 
             CALL MPI_Bcast(xmin,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
             CALL MPI_Bcast(xmax,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
             CALL MPI_Bcast(ymin,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
@@ -188,24 +191,23 @@
 
          ! Only allocate if there is actually faces in this block
          IF (nface_block > 0) THEN
+            IF (lshar_comm) THEN 
 #if defined(MPI_OPT)
-            IF (PRESENT(comm)) THEN 
                CALL MPI_BARRIER(shar_comm,istat)
                IF (istat/=0) RETURN
                CALL mpialloc_1d_int(this%face, nface_block, shar_rank, 0, shar_comm, this%win_face)
                this%isshared = .TRUE.
-            ELSE
 #endif
+            ELSE
                ALLOCATE(this%face(nface_block),STAT=istat)
                this%isshared = .FALSE.
-#if defined(MPI_OPT)
             END IF
-#endif
+
             ! Copy faces into block
             this%face(:) = bface(:)
             ! Block MPI
 #if defined(MPI_OPT)
-            IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+            IF (lshar_comm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
          ELSE
             IF (ldebug) WRITE(6, *) 'Skipped due to nface_block 0', shar_rank
@@ -232,16 +234,18 @@
       DOUBLE PRECISION :: xmin, ymin, zmin, xmax, ymax, zmax
       INTEGER :: iunit, ik, i, dex1, dex2, dex3
       INTEGER :: shar_comm
-      LOGICAL :: shared, lwall_acc
+      LOGICAL :: shared, lwall_acc, lcomm
 
       IF (PRESENT(verb)) lverb = verb
       IF (lverb) WRITE(6,*) '-----  Creating wall mesh  -----'
       
       shar_rank = 0; shar_size = 1;
       lwall_loaded = .false.
+      lcomm = .false.
       ! initialize MPI
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
+         lcomm = .true.
          CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
          CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
          CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
@@ -264,22 +268,20 @@
          END IF
       END IF
       ! Broadcast info to MPI and allocate vertex and face info
+      IF (lcomm) THEN
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
          CALL MPI_Bcast(lwall_acc,1,MPI_LOGICAL,0,shar_comm,istat)
          CALL MPI_Bcast(nvertex,1,MPI_INTEGER,0,shar_comm,istat)
          CALL MPI_Bcast(nface,1,MPI_INTEGER,0,shar_comm,istat)
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
          CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
          shared = .true.
-      ELSE
 #endif
+      ELSE
          ! if no MPI, allocate everything on one node
          ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
          shared = .false.
-#if defined(MPI_OPT)
       END IF
-#endif
 
       ! read in the mesh on allocated memory
       IF (ldebug) WRITE(6, *) 'Vertex & face allocating & reading. MPI Rank: ', shar_rank
@@ -296,9 +298,10 @@
       ! allocate memory for information about the mesh
       IF (ldebug) WRITE(6, *) 'Pre-calculation allocation & reading. MPI Rank: ', shar_rank
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+      IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
       IF (istat/=0) RETURN
-      IF (PRESENT(comm)) THEN
+#endif
+      IF (lcomm) THEN
          CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
          CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
          CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
@@ -308,13 +311,11 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
-#endif
          ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
                   FN(nface,3),STAT=istat)
          mystart = 1; myend = nface
-#if defined(MPI_OPT)
       END IF
-#endif
+
       IF (istat/=0) RETURN
       ! Precalculate information about mesh
       ! Calculate the face normal
@@ -334,7 +335,7 @@
          FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
       END DO
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+      IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
       ! Check for zero area
       IF (ANY(SUM(FN*FN,DIM=2)==zero)) THEN
@@ -342,8 +343,7 @@
          RETURN
       END IF
       ! allocate memory for information about mesh triangles 
-#if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
+      IF (lcomm) THEN
          CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
          CALL mpialloc_1d_dbl(DOT01,nface,shar_rank,0,shar_comm,win_dot01)
          CALL mpialloc_1d_dbl(DOT11,nface,shar_rank,0,shar_comm,win_dot11)
@@ -355,16 +355,14 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
-#endif
          ALLOCATE(DOT00(nface), DOT01(nface),&
                   DOT11(nface), invDenom(nface),&
                   STAT=istat)
          ALLOCATE(d(nface),STAT=istat)
          ALLOCATE(ihit_array(nface),STAT=istat)
          mystart = 1; myend = nface
-#if defined(MPI_OPT)
       END IF
-#endif
+
       ! if no error, calculate information about mesh triangles
       IF (istat/=0) RETURN
       DO ik = mystart, myend
@@ -377,7 +375,7 @@
       END DO
 ! sync MPI
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm, istat)
+      IF (lcomm) CALL MPI_BARRIER(shar_comm, istat)
 #endif
       ! If accelerated, read in uniform grid
       if (lwall_acc) THEN
@@ -387,14 +385,14 @@
             READ(iunit, *) wall%stepsize, wall%br(1), wall%br(2), wall%br(3)
          END IF
          ! If MPI, broadcast this info again
+         IF (lcomm) THEN
 #if defined(MPI_OPT)
-         IF (PRESENT(comm)) THEN
             CALL MPI_Bcast(wall%nblocks,1,MPI_INTEGER,0,shar_comm,istat)
             CALL MPI_Bcast(wall%step,3,MPI_INTEGER,0,shar_comm,istat)
             CALL MPI_Bcast(wall%stepsize,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
             CALL MPI_Bcast(wall%br,3,MPI_INTEGER,0,shar_comm,istat)
-         END IF
 #endif
+         END IF
          ! Allocate room for all the blocks
          ALLOCATE(wall%blocks(wall%nblocks), STAT=istat)
          IF (istat/=0) RETURN
@@ -417,20 +415,17 @@
             END IF
 
 #if defined(MPI_OPT)
-            IF (PRESENT(comm)) CALL MPI_Bcast(nface_block,1,MPI_INTEGER,0,shar_comm,istat)
+            IF (lcomm) CALL MPI_Bcast(nface_block,1,MPI_INTEGER,0,shar_comm,istat)
 #endif
             ! Only allocate and read faces if there are faces to read for this block
             IF (nface_block > 0) THEN
-#if defined(MPI_OPT)
-               IF (PRESENT(comm)) THEN
+               IF (lcomm) THEN
                   CALL mpialloc_1d_int(bface,nface_block,shar_rank,0,shar_comm,win_bface)
                ELSE
-#endif
                   ! if no MPI, allocate everything on one node
                   ALLOCATE(bface(nface_block),STAT=istat)
-#if defined(MPI_OPT)
                END IF
-#endif
+
                ! Read all the faces
                IF (istat/=0) RETURN
                IF (shar_rank == 0) THEN
@@ -442,7 +437,7 @@
             END IF
 
 #if defined(MPI_OPT)
-            IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+            IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
 
             ! Initialize the block
@@ -455,14 +450,12 @@
          END DO
       ELSE
          ! Else create an accelerated wall manually
-#if defined(MPI_OPT)
-         IF (PRESENT(comm)) THEN
+         IF (lcomm) THEN
             CALL ACCELERATE_WALL(istat, comm, shar_comm)
          ELSE
-#endif
             CALL ACCELERATE_WALL(istat)
-#if defined(MPI_OPT)
          END IF
+#if defined(MPI_OPT)
          IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm, istat)
 #endif
          IF (istat/=0) RETURN
@@ -470,31 +463,33 @@
       ! close file
       CLOSE(iunit)
       ! sync MPI
+      IF (lcomm) THEN
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
-      END IF
 #endif
+      END IF
       IF (ldebug) WRITE(6, *) 'Done reading wall from txt: ', shar_rank
       ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_txt
 
-      SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv,verb,comm)
+      SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv,verb,comm,Rmn2,Zmn2)
       !-----------------------------------------------------------------------
       ! wall_load_mn: Creates wall from harmonics
       !-----------------------------------------------------------------------
-      ! param[in]: Rmn. Harmonics in R direction
-      ! param[in]: Zmn. Harmonics in Z direction
-      ! param[in]: xm. 
-      ! param[in]: xn. 
-      ! param[in]: mn. 
-      ! param[in]: nu. 
-      ! param[in]: nv. 
+      ! param[in]: Rmn. Harmonics in R direction (cos)
+      ! param[in]: Zmn. Harmonics in Z direction (sin)
+      ! param[in]: xm. Poloidal Harmonic Array
+      ! param[in]: xn. Toroidal Harmonic Array
+      ! param[in]: mn. Total number of modes
+      ! param[in]: nu. Total poloidal gridpoints
+      ! param[in]: nv. Total toroidal gridpoints
       ! param[in]: verb: Verbosity. True or false
       ! param[in, out]: comm. MPI communicator, handles shared memory
+      ! param[in]: Rmn2. Harmonics in R direction (sin)
+      ! param[in]: Zmn2. Harmonics in Z direction (cos)
       !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
@@ -504,12 +499,16 @@
       INTEGER, INTENT(in) :: mn, nu, nv
       LOGICAL, INTENT(in), OPTIONAL :: verb
       INTEGER, INTENT(inout), OPTIONAL :: comm
+      DOUBLE PRECISION, INTENT(in), OPTIONAL :: Rmn2(mn), Zmn2(mn)
       INTEGER :: u, v, i, j, istat, dex1, dex2, dex3, ik, nv2
       INTEGER :: shar_comm
-      LOGICAL :: shared
+      LOGICAL :: shared, lcomm
       DOUBLE PRECISION :: pi2, th, zt, pi
       DOUBLE PRECISION, ALLOCATABLE :: r_temp(:,:),z_temp(:,:),x_temp(:,:),y_temp(:,:)
 
+
+      lcomm = .FALSE.
+      IF (PRESENT(comm)) lcomm = .TRUE.
       IF (PRESENT(verb)) lverb = verb
       IF (lverb) WRITE(6,*) '-----  Creating wall mesh  -----'
 
@@ -521,13 +520,14 @@
       nv2 = nv/2
       shar_rank = 0; shar_size = 1;
       ! initialize MPI
+      IF (lcomm) THEN
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
          CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
          CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
          CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
-      END IF
 #endif
+      END IF
+
       ! If shared memory rank not changed above, create temporary locations from harmonic calculations
       IF (shar_rank==0)THEN
          ALLOCATE(r_temp(nu,nv),z_temp(nu,nv),x_temp(nu,nv),y_temp(nu,nv))
@@ -543,6 +543,18 @@
                END DO
             END DO
          END DO
+         IF (PRESENT(Rmn2)) THEN
+            DO u = 1, nu
+               DO v = 1, nv
+                  DO i = 1, mn
+                     th = pi2*DBLE(u-1)/DBLE(nu)
+                     zt = pi2*DBLE(v-1)/DBLE(nv)
+                     r_temp(u,v) = r_temp(u,v) + Rmn2(i)*DSIN(xm(i)*th+xn(i)*zt)
+                     z_temp(u,v) = z_temp(u,v) + Zmn2(i)*DCOS(xm(i)*th+xn(i)*zt)
+                  END DO
+               END DO
+            END DO
+         END IF
          DO v = 1, nv
             zt = pi2*DBLE(v-1)/DBLE(nv)
             x_temp(:,v) = r_temp(:,v) * DCOS(zt)
@@ -555,8 +567,7 @@
       istat = 0
       ! allocate shared memory with of mesh
       ! calculate which part each node has to calculate using mydelta
-#if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
+      IF (lcomm) THEN
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
          CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
          shared = .true.
@@ -565,14 +576,12 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
-#endif
          ! if no MPI, allocate everything on one node
          ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
          shared = .false.
          mystart = 1; myend=nface
-#if defined(MPI_OPT)
       END IF
-#endif
+
       i = 1  ! Tracks vertex index
       j = 1 ! Tracks face index
       ! Do further calculations to create mesh if shared memory rank is zero
@@ -639,11 +648,10 @@
       END IF
       ! if using MPI, wait here
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+      IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
       ! allocate memory for information about the mesh
-#if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
+      IF (lcomm) THEN
          CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
          CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
          CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
@@ -653,13 +661,11 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
-#endif
          ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
                   FN(nface,3),STAT=istat)
          mystart = 1; myend = nface
-#if defined(MPI_OPT)
       END IF
-#endif
+
       IF (istat/=0) RETURN
       ! Precalculate information about mesh
       ! Calculate the face normal
@@ -679,8 +685,7 @@
          FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
       END DO
       ! allocate memory for information about mesh triangles 
-#if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
+      IF (lcomm) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
          CALL mpialloc_1d_dbl(DOT01,nface,shar_rank,0,shar_comm,win_dot01)
@@ -693,16 +698,14 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
-#endif
          ALLOCATE(DOT00(nface), DOT01(nface),&
                   DOT11(nface), invDenom(nface),&
                   STAT=istat)
          ALLOCATE(d(nface),STAT=istat)
          ALLOCATE(ihit_array(nface),STAT=istat)
          mystart = 1; myend = nface
-#if defined(MPI_OPT)
       END IF
-#endif
+
       ! if no error, calculate information about mesh triangles
       IF (istat/=0) RETURN
       DO ik = mystart, myend
@@ -715,22 +718,23 @@
       END DO
       ! Set very low number of faces/block for meshes that won't be saved to .dat anyway
       CALL SET_NFACE(10)
+      IF (lcomm) THEN 
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN 
          CALL MPI_BARRIER(comm,istat)
+#endif
          ! Create an accelerated wall manually
          CALL ACCELERATE_WALL(istat, comm, shar_comm)
       ELSE
-#endif
          CALL ACCELERATE_WALL(istat)
-#if defined(MPI_OPT)
       END IF
+
       ! sync MPI
-      IF (PRESENT(comm)) THEN
+      IF (lcomm) THEN
+#if defined(MPI_OPT)
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
-      END IF
 #endif
+      END IF
       ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
@@ -759,24 +763,27 @@
       LOGICAL, INTENT(in), OPTIONAL :: verb
       INTEGER, INTENT(inout), OPTIONAL :: comm
       INTEGER :: shar_comm
-      LOGICAL :: shared
+      LOGICAL :: shared, lcomm
       INTEGER :: nseg, ij, ik, il, im
       DOUBLE PRECISION :: dphi
       INTEGER :: dex1, dex2, dex3
 
+
+      lcomm = .FALSE.
+      IF (PRESENT(comm)) lcomm = .TRUE.
       IF (PRESENT(verb)) lverb = verb
       IF (lverb) WRITE(6,*) '-----  Creating wall mesh  -----'
       
       shar_rank = 0; shar_size = 1;
       dphi = 8.0D+00 * ATAN(one)/nphi
       ! initialize MPI
+      IF (lcomm) THEN
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
          CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
          CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
          CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
-      END IF
 #endif
+      END IF
       ! create info usually read from file manually
       machine_string = '          SEGMENTS'
       date = '      TODAY'
@@ -785,8 +792,7 @@
       nface   = nseg * 2 * nphi
       ! allocate shared memory with of mesh
       ! calculate which part each node has to calculate using mydelta
-#if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
+      IF (lcomm) THEN
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
          CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
          shared = .true.
@@ -795,13 +801,11 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
-#endif
          ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
          shared = .false.
          mystart = 1; myend=nface
-#if defined(MPI_OPT)
       END IF
-#endif
+
       ! if no error, and shared rank is zero, create triangles from input info
       IF (istat/=0) RETURN
       IF (shar_rank == 0) THEN
@@ -837,9 +841,10 @@
       ! if using MPI, wait here
       ! allocate memory for information about the mesh
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+      IF (lcomm) CALL MPI_BARRIER(comm,istat)
+#endif
       IF (istat/=0) RETURN
-      IF (PRESENT(comm)) THEN
+      IF (lcomm) THEN
          CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
          CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
          CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
@@ -849,13 +854,11 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
-#endif
          ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
                   FN(nface,3),STAT=istat)
          mystart = 1; myend = nface
-#if defined(MPI_OPT)
       END IF
-#endif
+
       IF (istat/=0) RETURN
       ! Precalculate information about mesh
       ! Calculate the face normal
@@ -875,7 +878,7 @@
          FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
       END DO
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+      IF (lcomm) CALL MPI_BARRIER(comm,istat)
 #endif
       ! Check for zero area
       IF (ANY(SUM(FN*FN,DIM=2)==zero)) THEN
@@ -883,8 +886,7 @@
          RETURN
       END IF
       ! allocate memory for information about mesh triangles 
-#if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
+      IF (lcomm) THEN
          CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
          CALL mpialloc_1d_dbl(DOT01,nface,shar_rank,0,shar_comm,win_dot01)
          CALL mpialloc_1d_dbl(DOT11,nface,shar_rank,0,shar_comm,win_dot11)
@@ -896,16 +898,14 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
-#endif
          ALLOCATE(DOT00(nface), DOT01(nface),&
                   DOT11(nface), invDenom(nface),&
                   STAT=istat)
          ALLOCATE(d(nface),STAT=istat)
          ALLOCATE(ihit_array(nface),STAT=istat)
          mystart = 1; myend = nface
-#if defined(MPI_OPT)
       END IF
-#endif
+
       ! if no error, calculate information about mesh triangles
       IF (istat/=0) RETURN
       DO ik = mystart, myend
@@ -918,22 +918,23 @@
       END DO
       ! Set very low number of faces/block for meshes that won't be saved to .dat anyway
       CALL SET_NFACE(10)
+      IF (lcomm) THEN 
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN 
          CALL MPI_BARRIER(comm,istat)
+#endif
          ! Create an accelerated wall manually
          CALL ACCELERATE_WALL(istat, comm, shar_comm)
       ELSE
-#endif
          CALL ACCELERATE_WALL(istat)
-#if defined(MPI_OPT)
       END IF
+
       ! sync MPI
-      IF (PRESENT(comm)) THEN
+      IF (lcomm) THEN
+#if defined(MPI_OPT)
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
-      END IF
 #endif
+      END IF
       ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
@@ -1371,20 +1372,28 @@
          ! Find size of mesh
          rmin = MINVAL(vertex, DIM=1)
          wall_size = MAXVAL(vertex, DIM=1) - rmin
+
          ! For each dimension, find bounds of blocks in a very ugly way
-         DO i=1,3
-            nblocks(i) = INT(wall_size(i) / size) + 1
-            buffer = nblocks(i) * size - wall_size(i)
-            IF (i .eq. 1) ALLOCATE(xs(nblocks(i)),STAT=istat)
-            IF (i .eq. 2) ALLOCATE(ys(nblocks(i)),STAT=istat)
-            if (i .eq. 3) ALLOCATE(zs(nblocks(i)),STAT=istat)
-   
-            DO j=1,nblocks(i)
-               tmp = rmin(i) - buffer / 2 + (j - 1) * size
-               IF (i .eq. 1) xs(j) = tmp
-               IF (i .eq. 2) ys(j) = tmp
-               if (i .eq. 3) zs(j) = tmp
-            END DO
+         nblocks(1) = INT(wall_size(1)/size) + 1
+         nblocks(2) = INT(wall_size(2)/size) + 1
+         nblocks(3) = INT(wall_size(3)/size) + 1
+         ALLOCATE(xs(nblocks(1)),STAT=istat)
+         ALLOCATE(ys(nblocks(2)),STAT=istat)
+         ALLOCATE(zs(nblocks(3)),STAT=istat)
+         ! XS
+         buffer = nblocks(1) * size - wall_size(1)
+         DO j = 1, nblocks(1)
+            xs(j) = rmin(1) - buffer / 2 + (j - 1) * size
+         END DO
+         ! YS
+         buffer = nblocks(2) * size - wall_size(2)
+         DO j = 1, nblocks(2)
+            ys(j) = rmin(2) - buffer / 2 + (j - 1) * size
+         END DO
+         ! ZS
+         buffer = nblocks(3) * size - wall_size(3)
+         DO j = 1, nblocks(3)
+            zs(j) = rmin(3) - buffer / 2 + (j - 1) * size
          END DO
 
          ! Set info about wall
@@ -1405,24 +1414,24 @@
    
          ! Set bound of each block
          ALLOCATE(wall%blocks(wall%nblocks),STAT=istat)
-   
-         i = 1
-         DO xi=1, nblocks(1)
-            DO yi=1, nblocks(2)
-               DO zi=1, nblocks(3)
-                  wall%blocks(i)%rmin(1) = xs(xi)
-                  wall%blocks(i)%rmin(2) = ys(yi)
-                  wall%blocks(i)%rmin(3) = zs(zi)
+
+         DO i = 1, wall%nblocks
+            zi = MOD(i-1,nblocks(3))+1
+            yi = MOD(i-1,nblocks(2)*nblocks(3))
+            yi = FLOOR(REAL(yi) / REAL(nblocks(3)))+1
+            xi = CEILING(REAL(i) / REAL(nblocks(2)*nblocks(3)))
+            wall%blocks(i)%rmin(1) = xs(xi)
+            wall%blocks(i)%rmin(2) = ys(yi)
+            wall%blocks(i)%rmin(3) = zs(zi)
                   
-                  wall%blocks(i)%rmax(1) = xs(xi) + size
-                  wall%blocks(i)%rmax(2) = ys(yi) + size
-                  wall%blocks(i)%rmax(3) = zs(zi) + size
+            wall%blocks(i)%rmax(1) = xs(xi) + size
+            wall%blocks(i)%rmax(2) = ys(yi) + size
+            wall%blocks(i)%rmax(3) = zs(zi) + size
                   
-                  wall%blocks(i)%nfaces = 0
-                  i = i + 1
-               END DO
-            END DO
+            wall%blocks(i)%nfaces = 0
+
          END DO
+
          DEALLOCATE(xs)
          DEALLOCATE(ys)
          DEALLOCATE(zs)
@@ -1439,7 +1448,7 @@
          INTEGER, OPTIONAL :: istat
          INTEGER, INTENT(inout), OPTIONAL :: comm, shar_comm
          ! Whether or not shared memory is used
-         LOGICAL :: shared
+         LOGICAL :: shared, lcomm
          ! Integer for shared memory
          INTEGER :: win_counter_arr, win_mask_face
 
@@ -1450,64 +1459,78 @@
          ! Block bounds
          DOUBLE PRECISION :: rmin(3), rmax(3)
          ! Masks if vertex in block or face already in block
-         LOGICAL, POINTER :: mask_face(:)
-         LOGICAL, POINTER :: mask(:)
+         LOGICAL, POINTER :: mask_face(:,:), mask(:)
          ! Loop integers and counter
          INTEGER :: i, j, k, counter
+
+         ! By Sam
+         INTEGER :: win_A1, win_A2
+         DOUBLE PRECISION, POINTER :: A1(:,:), A2(:,:)
          
+         ! Comm logit
+         lcomm = .FALSE.
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) lcomm = .TRUE.
+#endif
+
          ! Split blocks between threads
          ! Also allocate counter_arr
-#if defined(MPI_OPT)
-         IF (PRESENT(comm)) THEN
+         IF (lcomm) THEN
             shared = .TRUE.
             mydelta = CEILING(REAL(wall%nblocks) / REAL(shar_size))
             mystart = 1 + shar_rank*mydelta
             myend   = mystart + mydelta
             IF (myend > wall%nblocks) myend=wall%nblocks
             CALL mpialloc_1d_int(counter_arr, wall%nblocks, shar_rank, 0, shar_comm, win_counter_arr)
+            CALL mpialloc_2d_dbl(A1, nface, 3, shar_rank, 0, shar_comm, win_A1)
+            CALL mpialloc_2d_dbl(A2, nface, 3, shar_rank, 0, shar_comm, win_A2)
          ELSE
-#endif
             shared = .FALSE.
             mystart = 1; myend = wall%nblocks
             ALLOCATE(counter_arr(wall%nblocks))
-#if defined(MPI_OPT)
+            ALLOCATE(A1(nface,3),A2(nface,3))
          END IF
-#endif
-         counter_arr = 0
-         ALLOCATE(mask_face(nface), STAT=istat)
 
-         ! Allocate mask
-         ALLOCATE(mask(nvertex), STAT=istat)
+         counter_arr = 0
+         ALLOCATE(mask_face(nface,3), STAT=istat)
+         ALLOCATE(mask(nface), STAT=istat)
+
+         ! Helper for vertices per face
+         IF (shar_rank == 0) THEN
+            A1 = V0+A0
+            A2 = V1+A0
+         END IF
 
 #if defined(MPI_OPT)
-         IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+         IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
 
          ! Find how many vertices in each block
          IF (shar_rank == 0 .and. ldebug) WRITE(6, *) 'Filling blocks: Finding the number of vertices in each block'
          DO i=mystart, myend
-            mask_face = .FALSE.
             ! Define bounds block
             rmin = wall%blocks(i)%rmin - epsilon
             rmax = wall%blocks(i)%rmax + epsilon
-   
-            ! Check which vertices are in block         
-            mask(:) = (vertex(:,1) < rmax(1) .and. vertex(:,1) .GE. rmin(1) &
-            .and. vertex(:,2) < rmax(2) .and. vertex(:,2) .GE. rmin(2) &
-            .and. vertex(:,3) < rmax(3) .and. vertex(:,3) .GE. rmin(3))
-   
-            ! Check faces of all vertices
-            DO j=1,nvertex
-               IF (mask(j)) THEN
-                  mask_face(:) = mask_face(:) .or. ANY(j == face, DIM=2)
-               END IF       
-            END DO
+
+            ! Check vertices in block
+            mask_face(:,:) = .FALSE.
+            mask_face(:,1) = (A0(:,1) < rmax(1) .and. A0(:,1) >= rmin(1) &
+               .and. A0(:,2) < rmax(2) .and. A0(:,2) >= rmin(2) &
+               .and. A0(:,3) < rmax(3) .and. A0(:,3) >= rmin(3))
+            mask_face(:,2) = (A1(:,1) < rmax(1) .and. A1(:,1) >= rmin(1) &
+               .and. A1(:,2) < rmax(2) .and. A1(:,2) >= rmin(2) &
+               .and. A1(:,3) < rmax(3) .and. A1(:,3) >= rmin(3))
+            mask_face(:,3) = (A2(:,1) < rmax(1) .and. A2(:,1) >= rmin(1) &
+               .and. A2(:,2) < rmax(2) .and. A2(:,2) >= rmin(2) &
+               .and. A2(:,3) < rmax(3) .and. A2(:,3) >= rmin(3))
+
             ! Count found faces
-            counter_arr(i) = COUNT(mask_face)
+            mask = ANY(mask_face,2)
+            counter_arr(i) = COUNT(mask)
          END DO
 
 #if defined(MPI_OPT)
-         IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+         IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
 
          ! Allocate face arrays for each block. Each thread executes this
@@ -1515,15 +1538,11 @@
          IF (shar_rank == 0 .and. ldebug) WRITE(6, *) 'Filling blocks: Allocating each block'
          DO i=1, wall%nblocks
             IF (counter_arr(i) > 0) THEN
-#if defined(MPI_OPT)
-               IF (PRESENT(comm)) THEN 
+               IF (lcomm) THEN 
                   CALL mpialloc_1d_int(wall%blocks(i)%face, counter_arr(i), shar_rank, 0, shar_comm, wall%blocks(i)%win_face)
                ELSE
-#endif
                   ALLOCATE(wall%blocks(i)%face(counter_arr(i)), STAT=istat)
-#if defined(MPI_OPT)
                END IF
-#endif
             END IF
             wall%blocks(i)%nfaces = counter_arr(i)
             wall%blocks(i)%isshared = shared
@@ -1531,8 +1550,7 @@
 
          ! Efficiently divide blocks over threads
          IF (shar_rank == 0 .and. ldebug) WRITE(6, *) 'Filling blocks: Dividing work'
-#if defined(MPI_OPT)
-         IF (PRESENT(comm)) THEN
+         IF (lcomm) THEN
             ALLOCATE(mysplit(shar_size + 1))
             DO j=0,100
                mydelta = CEILING(SUM(counter_arr) / REAL(shar_size) / REAL(100 + j) * 100D+0)
@@ -1556,11 +1574,10 @@
             IF (mystart > wall%nblocks .OR. myend .eq. 0) myend=mystart
             DEALLOCATE(mysplit)
          ELSE
-#endif
             mystart = 1; myend = wall%nblocks
-#if defined(MPI_OPT)
          END IF
-         IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+#if defined(MPI_OPT)
+         IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
 
          ! Actually assign faces to blocks
@@ -1576,19 +1593,23 @@
                rmax = wall%blocks(i)%rmax + epsilon
       
                ! Check which vertices are in block         
-               mask(:) = (vertex(:,1) < rmax(1) .and. vertex(:,1) .GE. rmin(1) &
-               .and. vertex(:,2) < rmax(2) .and. vertex(:,2) .GE. rmin(2) &
-               .and. vertex(:,3) < rmax(3) .and. vertex(:,3) .GE. rmin(3))
-      
-               ! Check faces of all vertices
-               DO j=1,nvertex
-                  IF (mask(j)) mask_face(:) = mask_face(:) .or. ANY(j == face, DIM=2)
-               END DO 
+               mask_face(:,1) = (A0(:,1) < rmax(1) .and. A0(:,1) >= rmin(1) &
+                  .and. A0(:,2) < rmax(2) .and. A0(:,2) >= rmin(2) &
+                  .and. A0(:,3) < rmax(3) .and. A0(:,3) >= rmin(3))
+               mask_face(:,2) = (A1(:,1) < rmax(1) .and. A1(:,1) >= rmin(1) &
+                  .and. A1(:,2) < rmax(2) .and. A1(:,2) >= rmin(2) &
+                  .and. A1(:,3) < rmax(3) .and. A1(:,3) >= rmin(3))
+               mask_face(:,3) = (A2(:,1) < rmax(1) .and. A2(:,1) >= rmin(1) &
+                  .and. A2(:,2) < rmax(2) .and. A2(:,2) >= rmin(2) &
+                  .and. A2(:,3) < rmax(3) .and. A2(:,3) >= rmin(3))
+
+               ! Mask
+               mask = ANY(mask_face,2)
                
                ! Add faces to face list of wall block
                counter = 0
                DO j=1,nface
-                  IF (mask_face(j)) THEN
+                  IF (mask(j)) THEN
                      counter = counter + 1
                      wall%blocks(i)%face(counter) = j
                   END IF
@@ -1600,12 +1621,13 @@
          
          ! Cleanup
 #if defined(MPI_OPT)
-         IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+         IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
          IF (shar_rank == 0 .and. ldebug) WRITE(6, *) 'Filling blocks: Starting cleanup fill blocks'
-         DEALLOCATE(mask)
-         DEALLOCATE(mask_face)
+         DEALLOCATE(mask_face, mask)
          CALL free_mpi_array(win_counter_arr, counter_arr, shared)
+         CALL free_mpi_array(win_A1, A1, shared)
+         CALL free_mpi_array(win_A2, A2, shared)
          END SUBROUTINE FILL_BLOCKS
    
       SUBROUTINE WRITE_WALL(filename, istat)

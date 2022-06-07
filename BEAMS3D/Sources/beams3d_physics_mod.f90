@@ -13,7 +13,8 @@ MODULE beams3d_physics_mod
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
                                  dt_save, lbbnbi, weight, ndt, &
-                                 ndt_max, npoinc, lendt_m, te_col_min
+                                 ndt_max, npoinc, lendt_m, te_col_min, &
+                                 NION, NI_AUX_M, NI_AUX_Z
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
@@ -27,13 +28,13 @@ MODULE beams3d_physics_mod
                                ns_prof5, my_end
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
                               MODB_spl, MODB4D, &
-                              phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
+                              phimax, S4D, X4D, Y4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
                               zaxis, U4D, &
                               hr, hp, hz, hri, hpi, hzi, &
                               B_kick_min, B_kick_max, E_kick, freq_kick, &
-                              plasma_mass
+                              plasma_mass, NI5D
       USE EZspline_obj
       USE EZspline
       USE adas_mod_parallel
@@ -90,7 +91,7 @@ MODULE beams3d_physics_mod
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
                           inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
-                          vc3_tauinv, vbeta
+                          vc3_tauinv, vbeta, zeff_temp
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          ! For splines
          INTEGER :: i,j,k, l
@@ -112,7 +113,8 @@ MODULE beams3d_physics_mod
          vll      = q(4)
 
          ! Initialize values
-         te_temp  = 0; ne_temp  = 0; ti_temp  = 0; speed = 0; reduction = 0
+         te_temp  = 0; ne_temp  = 0; ti_temp  = 0; zeff_temp=1;
+         speed = 0; reduction = 0
 
          tau_spit_inv = 0.0; v_crit   = 0.0; coulomb_log = 15
          tau_inv = 10.0; vcrit_cube = 0.0; vc3_tauinv = 0
@@ -149,6 +151,10 @@ MODULE beams3d_physics_mod
             ti_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            ZEFF4D(1,1,1,1),nr,nphi,nz)
+            zeff_temp = max(fval(1),one)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             S4D(1,1,1,1),nr,nphi,nz)
             s_temp = fval(1)
 
@@ -168,7 +174,7 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-               coulomb_log = 35 - log( fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
+               coulomb_log = 35 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
 !               IF (te_temp < 10*myZ*myZ) THEN
 !                  coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
 !               ELSE
@@ -227,7 +233,7 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
-           speed_cube = 2*vc3_tauinv*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
+           speed_cube = 2*vc3_tauinv*zeff_temp*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
@@ -239,12 +245,20 @@ MODULE beams3d_physics_mod
            vll = zeta*speed
 
            !------------------------------------------------------------
-           !  Kick Model Scattering
+           !  Kick Model Scattering (old)
+           !------------------------------------------------------------
+           !IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
+           !   zeta_o = vll/speed   ! Record the current pitch.
+           !   zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)/(modb*modb)
+           !   vll = zeta*speed
+           !END IF
+
+           !------------------------------------------------------------
+           !  Kick Model Scattering (new Energy, vll constant)
            !------------------------------------------------------------
            IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
               zeta_o = vll/speed   ! Record the current pitch.
-              zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)/(modb*modb)
-              vll = zeta*speed
+              speed = SQRT(speed*speed + fact_kick*(1-zeta_o*zeta_o)*dt/modb)
            END IF
 
            !------------------------------------------------------------
@@ -298,13 +312,14 @@ MODULE beams3d_physics_mod
          !     Local variables
          !--------------------------------------------------------------
          LOGICAL          :: ltest
-         INTEGER          :: ier, l
+         INTEGER          :: ier, l, m
          DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
                              s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
          DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
          DOUBLE PRECISION :: zefflocal(num_depo)
+         DOUBLE PRECISION :: nilocal(NION,num_depo)
          DOUBLE PRECISION :: tau_inv(num_depo), energy(num_depo)
          DOUBLE PRECISION :: sigvii(num_depo), sigvcx(num_depo), sigvei(num_depo)
          ! For splines
@@ -313,8 +328,8 @@ MODULE beams3d_physics_mod
          INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
          ! For Suzuki
-         INTEGER :: A_IN(1), Z_IN(1)
-         DOUBLE PRECISION :: ni_in(1)
+         INTEGER :: A_IN(NION), Z_IN(NION)
+         DOUBLE PRECISION :: ni_in(NION)
 
          !--------------------------------------------------------------
          !     Begin Subroutine
@@ -402,9 +417,9 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Follow particle track out of plasma
          !--------------------------------------------------------------
-         DO l = 1, 3
+         OUTER: DO l = 1, 3
             dt_local = stepsize(l)/q(4)
-            DO
+            INNER: DO
                qf = qf + myv_neut*dt_local
                q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
@@ -425,15 +440,16 @@ MODULE beams3d_physics_mod
                                   hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                                   S4D(1,1,1,1),nr,nphi,nz)
                   s_temp = fval(1)
-                  IF (s_temp > one) EXIT
+                  IF (s_temp > one) EXIT INNER
                ELSE
-                  EXIT
+                  EXIT INNER
                END IF
-            END DO
+            END DO INNER
             ! Take a step back
             qf = qf - myv_neut*dt_local
-         END DO
+         END DO OUTER
          qe=qf + myv_neut*dt_local
+
 
          !--------------------------------------------------------------
          !     Setup deposition arrays
@@ -471,14 +487,15 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             NE4D(1,1,1,1),nr,nphi,nz)
             nelocal(l) = MAX(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            DO m = 1, NION
+               CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            ZEFF4D(1,1,1,1),nr,nphi,nz)
-            zefflocal(l) = MAX(fval(1),zero)
+                            NI5D(1,1,1,1,m),nr,nphi,nz)
+               nilocal(m,l) = MAX(fval(1),zero)
+            END DO
          END DO
          tilocal = tilocal*1D-3
          telocal = telocal*1D-3
-         zeff_temp = SUM(zefflocal)/DBLE(num_depo)
          tau_inv = zero
          
          IF (lsuzuki) THEN
@@ -487,18 +504,19 @@ MODULE beams3d_physics_mod
             !     Note: 10^18<ne<10^21
             !           E(keV/amu)/100 < Te < E(keV/amu)/2
             !--------------------------------------------------------------
-            !Z_in(1)  = NINT(mycharge/e_charge)
-            A_in(1)  = NINT(plasma_mass*inv_dalton)
-            energy   = energy/(e_charge*A_in(1)) ! keV/amu
+            A_in = NINT(NI_AUX_M*inv_dalton)
+            Z_in = NI_AUX_Z
+            energy   = energy/(e_charge*mymass*inv_dalton) ! keV/amu
             DO l = 1, num_depo
                nelocal(l)  = MAX(MIN(nelocal(l),1E21),1E18)
                telocal(l)  = MAX(MIN(telocal(l),energy(l)*0.5),energy(l)*0.01)
-               ni_in(1) = nelocal(l)/zefflocal(l)
-               Z_in(1)  = NINT(zefflocal(l))
-               CALL suzuki_sigma(1,energy(l),nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
+               ni_in = nilocal(:,l)
+               CALL suzuki_sigma(NION,energy(l),nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
             END DO
             tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4 !cm^2 to m^2 for sigma
          ELSE
+            zefflocal = MATMUL(NI_AUX_Z*NI_AUX_Z,NILOCAL)/MATMUL(NI_AUX_Z,NILOCAL)
+            zeff_temp = SUM(zefflocal)/DBLE(num_depo)
             !--------------------------------------------------------------
             !     USE ADAS to calcualte ionization rates
             !--------------------------------------------------------------
@@ -587,6 +605,7 @@ MODULE beams3d_physics_mod
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
+               t = my_end+dt_local
                CALL uncount_wall_hit
                RETURN
             END IF
@@ -884,8 +903,9 @@ MODULE beams3d_physics_mod
          !        ict        Spline output control
          !        fval       Spline output array
          !--------------------------------------------------------------
-         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, ne_temp, &
-                             ti_temp, ze_temp, zeta, theta, eta
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, &
+                             ti_temp, zeta, theta, eta, &
+                             nd_temp, nt_temp
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -913,7 +933,7 @@ MODULE beams3d_physics_mod
          z_temp   = q(3)
 
          ! Initialize values
-         ti_temp = 0; ne_temp = 0; reactrate = 0
+         ti_temp = 0; nd_temp = 0; nt_temp = 0; reactrate = 0
 
          ! Check that we're inside the domain then proceed
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
@@ -928,16 +948,17 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NE4D(1,1,1,1),nr,nphi,nz)
-            ne_temp = max(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TI4D(1,1,1,1),nr,nphi,nz)
             ti_temp = max(fval(1),zero)
+            ! Assume 1 and 2 are D and T
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            ZEFF4D(1,1,1,1),nr,nphi,nz)
-            ze_temp = MAX(fval(1),one)
+                            NI5D(1,1,1,1,1),nr,nphi,nz)
+            nd_temp = max(fval(1),zero)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            NI5D(1,1,1,1,2),nr,nphi,nz)
+            nt_temp = max(fval(1),zero)
          ELSE
             RETURN
          END IF
@@ -950,8 +971,7 @@ MODULE beams3d_physics_mod
 
          reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
 
-         reactrate = reactrate*0.25*ne_temp*ne_temp/(ze_temp*ze_temp)
-
+         reactrate = reactrate*nd_temp*nt_temp
          RETURN
 
       END SUBROUTINE beams3d_DTRATE
@@ -986,8 +1006,9 @@ MODULE beams3d_physics_mod
          !        ict        Spline output control
          !        fval       Spline output array
          !--------------------------------------------------------------
-         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, ne_temp, &
-                             ti_temp, ze_temp, zeta, theta, eta
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, &
+                             ti_temp, zeta, theta, eta, &
+                             nd_temp
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -1015,7 +1036,7 @@ MODULE beams3d_physics_mod
          z_temp   = q(3)
 
          ! Initialize values
-         ti_temp = 0; ne_temp = 0; reactrate = 0
+         ti_temp = 0; nd_temp = 0; reactrate = 0
 
          ! Check that we're inside the domain then proceed
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
@@ -1030,16 +1051,13 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NE4D(1,1,1,1),nr,nphi,nz)
-            ne_temp = max(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TI4D(1,1,1,1),nr,nphi,nz)
             ti_temp = max(fval(1),zero)
+            ! Assume 1 and 2 are D and T
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            ZEFF4D(1,1,1,1),nr,nphi,nz)
-            ze_temp = MAX(fval(1),one)
+                            NI5D(1,1,1,1,1),nr,nphi,nz)
+            nd_temp = max(fval(1),zero)
          ELSE
             RETURN
          END IF
@@ -1052,7 +1070,7 @@ MODULE beams3d_physics_mod
 
          reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
 
-         reactrate = reactrate*0.125*ne_temp*ne_temp/(ze_temp*ze_temp)
+         reactrate = reactrate*nd_temp*nd_temp*0.5
 
          RETURN
 
@@ -1088,8 +1106,8 @@ MODULE beams3d_physics_mod
          !        ict        Spline output control
          !        fval       Spline output array
          !--------------------------------------------------------------
-         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, ne_temp, &
-                             ti_temp, ze_temp, zeta, theta, eta
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, nd_temp, &
+                             ti_temp, zeta, theta, eta
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -1117,7 +1135,7 @@ MODULE beams3d_physics_mod
          z_temp   = q(3)
 
          ! Initialize values
-         ti_temp = 0; ne_temp = 0; reactrate = 0
+         ti_temp = 0; nd_temp = 0; reactrate = 0
 
          ! Check that we're inside the domain then proceed
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
@@ -1132,16 +1150,12 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NE4D(1,1,1,1),nr,nphi,nz)
-            ne_temp = max(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TI4D(1,1,1,1),nr,nphi,nz)
             ti_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            ZEFF4D(1,1,1,1),nr,nphi,nz)
-            ze_temp = MAX(fval(1),one)
+                            NI5D(1,1,1,1,1),nr,nphi,nz)
+            nd_temp = max(fval(1),zero)
          ELSE
             RETURN
          END IF
@@ -1154,8 +1168,7 @@ MODULE beams3d_physics_mod
 
          reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
 
-         reactrate = reactrate*0.125*ne_temp*ne_temp/(ze_temp*ze_temp)
-
+         reactrate = reactrate*nd_temp*nd_temp*0.5
          RETURN
 
       END SUBROUTINE beams3d_DDHe3RATE
@@ -1316,29 +1329,31 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION, INTENT(inout) :: r_out
          DOUBLE PRECISION, INTENT(inout) :: z_out
          DOUBLE PRECISION, INTENT(out) :: phi_out
+         !REAL(rprec), POINTER, DIMENSION(:,:,:,:), INTENT(inout) :: X4D, Y4D
 
          !--------------------------------------------------------------
          !     Local Variables
          !        residual   Residual Error
          !--------------------------------------------------------------
          INTEGER          :: n
-         DOUBLE PRECISION :: s0, u0, residual, tau, delR, delZ, fnorm, &
-                             factor
+         DOUBLE PRECISION :: s0, u0, residual, detJ, delR, delZ, fnorm, &
+                             factor, x, y, x0, y0, x_term, y_term, dxdR, dxdZ, dydR, dydZ
 
          ! For splines
-         INTEGER :: i,j,k
+         INTEGER :: i,j,k, ier
          REAL*8 :: xparam, yparam, zparam
          INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
-         REAL*8 :: fvals(1,4),fvalu(1,4) !(f,df/fR,df/dphi,dfdZ)
+         REAL*8 :: fvalx(1,4),fvaly(1,4) !(f,df/fR,df/dphi,dfdZ)
+
 
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
+
+         !Begin Newton Method
          residual = 1.0
          factor = 1.0
          IF (r_out<0) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75
-!         r_out = (raxis(1)+raxis(nr))*0.5
-!         z_out = (zaxis(1)+zaxis(nz))*0.5
          
          ! PHI does not change
          phi_out = MOD(v,MAXVAL(phiaxis))
@@ -1348,7 +1363,10 @@ MODULE beams3d_physics_mod
          ! Adjust u
          u = MOD(u,pi2)
 
-         fnorm = s*s+u*u
+         x0 = s * COS(u)
+         y0 = s * SIN(U)
+
+         fnorm = x0*x0+y0*y0
          fnorm = MIN(1./fnorm,1E5)
          n = 1
 
@@ -1356,40 +1374,34 @@ MODULE beams3d_physics_mod
          !  F(R,Z) = (s0-s(R,Z))*(u0-u(R,Z))
          !  dF/dR  = -ds/dR*(u0-u(R,Z))-du/dR*(s0-s(R,Z))
          !  dF/dZ  = -ds/dZ*(u0-u(R,Z))-du/dZ*(s0-s(R,Z))
-         DO WHILE (residual > 1.0E-3 .and. n<500)
+         DO WHILE (residual > 1.0E-9 .and. n<1000)
             i = MIN(MAX(COUNT(raxis < r_out),1),nr-1)
             k = MIN(MAX(COUNT(zaxis < z_out),1),nz-1)
             xparam = (r_out - raxis(i)) * hri(i)
             zparam = (z_out - zaxis(k)) * hzi(k)
             ! Evaluate the Splines
-            CALL R8HERM3FCN(ict,1,1,fvals,i,j,k,xparam,yparam,zparam,&
+            CALL R8HERM3FCN(ict,1,1,fvalx,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            S4D(1,1,1,1),nr,nphi,nz)
-            CALL R8HERM3FCN(ict,1,1,fvalu,i,j,k,xparam,yparam,zparam,&
+                            X4D(1,1,1,1),nr,nphi,nz)
+            CALL R8HERM3FCN(ict,1,1,fvaly,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            U4D(1,1,1,1),nr,nphi,nz)
-            IF (fvals(1,1) > 1.05) THEN
-              r_out = raxis(MOD(n,nr-1)+1)
-              z_out = zaxis(MOD(n,nz-1)+1)
-            END IF
-            fvals(1,2:4) = 0.5*fvals(1,2:4)/sqrt(fvals(1,1))
-            s0   = sqrt(fvals(1,1))-s
-            u0   = fvalu(1,1)-u
-            residual = (s0*s0+u0*u0)*fnorm
-            tau = fvals(1,2)*fvalu(1,4)-fvals(1,4)*fvalu(1,2)
-            !tau = MAX(tau,0.0001)
-            !delR = -(  s0*fvalu(1,4) + u0*fvals(1,4))/tau
-            !delZ = -(  s0*fvalu(1,2) + u0*fvals(1,2))/tau
-            !Newtwon
-            delR =-(s0*fvals(1,2) + u0*fvalu(1,2))/(fvals(1,2)**2 + fvalu(1,2)**2)
-            delZ =-(s0*fvalu(1,4) + u0*fvalu(1,4))/(fvals(1,4)**2 + fvalu(1,4)**2)
-            !delR = ( s0*fvalu(1,4) - u0*fvals(1,4))/tau !( (s0-s)du/dR - (u0-u)*ds/dR)/tau
-            !delZ = (-s0*fvalu(1,2) + u0*fvals(1,2))/tau !(-(s0-s)du/dZ)+ (u0-u)*ds/dZ)/tau
+                            Y4D(1,1,1,1),nr,nphi,nz)
+
+            x_term   = x0 - fvalx(1,1)
+            y_term   = y0 - fvaly(1,1)
+            
+            detJ = fvalx(1,2) * fvaly(1,4) - fvaly(1,2) * fvalx(1,4)
+            detJ = MAX(detJ,0.0001) !Upper bound for step size as detJ enters in denominator
+            delR = -(-x_term*fvaly(1,4) + y_term*fvalx(1,4))/detJ
+            delZ = -( x_term*fvaly(1,2)  - y_term*fvalx(1,2))/detJ
+
             delR = MIN(MAX(delR,-hr(1)),hr(1))
             delZ = MIN(MAX(delZ,-hz(1)),hz(1))
+
+            residual = (x_term*x_term+y_term*y_term)*fnorm
             !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual,tau,delR,delZ
 
-            IF (residual < 0.01) THEN
+            IF (residual < 0.01) THEN !"Damping" of oscillation
                delR = delR*0.5
                delZ = delZ*0.5
             END IF
@@ -1399,6 +1411,8 @@ MODULE beams3d_physics_mod
             !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual
             n=n+1
          END DO
+
+ !        IF (n>=500) PRINT *,s,u,fnorm,residual
 
 
          RETURN

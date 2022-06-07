@@ -25,7 +25,7 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: ier
+      INTEGER :: ier,i
       INTEGER, INTENT(INOUT), OPTIONAL :: IN_COMM
 !-----------------------------------------------------------------------
 !     External Functions
@@ -52,6 +52,9 @@
       IF (EZspline_allocated(NE_spl_s))   CALL EZspline_free(NE_spl_s,ier)
       IF (EZspline_allocated(TI_spl_s))   CALL EZspline_free(TI_spl_S,ier)
       IF (EZspline_allocated(Vp_spl_s))   CALL EZspline_free(Vp_spl_S,ier)
+      DO i = 1, NION
+         IF (EZspline_allocated(NI_spl_s(i)))   CALL EZspline_free(NI_spl_s(i),ier)
+      END DO
       IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
       IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
@@ -83,9 +86,12 @@
          IF (ASSOCIATED(MODB))     CALL mpidealloc(MODB,win_MODB)
          IF (ASSOCIATED(S_ARR))    CALL mpidealloc(S_ARR,win_S_ARR)
          IF (ASSOCIATED(U_ARR))    CALL mpidealloc(U_ARR,win_U_ARR)
+         IF (ASSOCIATED(X_ARR))    CALL mpidealloc(S_ARR,win_X_ARR)
+         IF (ASSOCIATED(Y_ARR))    CALL mpidealloc(U_ARR,win_Y_ARR)
          IF (ASSOCIATED(TE))       CALL mpidealloc(TE,win_TE)
          IF (ASSOCIATED(TI))       CALL mpidealloc(TI,win_TI)
          IF (ASSOCIATED(NE))       CALL mpidealloc(NE,win_NE)
+         IF (ASSOCIATED(NI))       CALL mpidealloc(NI,win_NI)
          IF (ASSOCIATED(ZEFF_ARR)) CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
          IF (ASSOCIATED(POT_ARR))  CALL mpidealloc(POT_ARR,win_POT_ARR)
          IF (ASSOCIATED(BR4D))     CALL mpidealloc(BR4D,win_BR4D)
@@ -94,10 +100,13 @@
          IF (ASSOCIATED(MODB4D))   CALL mpidealloc(MODB4D,win_MODB4D)
          IF (ASSOCIATED(TE4D))     CALL mpidealloc(TE4D,win_TE4D)
          IF (ASSOCIATED(NE4D))     CALL mpidealloc(NE4D,win_NE4D)
+         IF (ASSOCIATED(NI5D))     CALL mpidealloc(NI5D,win_NI5D)
          IF (ASSOCIATED(TI4D))     CALL mpidealloc(TI4D,win_TI4D)
          IF (ASSOCIATED(ZEFF4D))   CALL mpidealloc(ZEFF4D,win_ZEFF4D)
          IF (ASSOCIATED(S4D))      CALL mpidealloc(S4D,win_S4D)
          IF (ASSOCIATED(U4D))      CALL mpidealloc(U4D,win_U4D)
+         IF (ASSOCIATED(X4D))      CALL mpidealloc(X4D,win_Y4D)
+         IF (ASSOCIATED(Y4D))      CALL mpidealloc(Y4D,win_X4D)
          IF (ASSOCIATED(POT4D))    CALL mpidealloc(POT4D,win_POT4D)
          IF (ASSOCIATED(wall_load))   CALL mpidealloc(wall_load,win_wall_load)
          IF (ASSOCIATED(wall_shine))  CALL mpidealloc(wall_shine,win_wall_shine)
@@ -133,6 +142,7 @@
          IF (ASSOCIATED(TE))       DEALLOCATE(TE)
          IF (ASSOCIATED(TI))       DEALLOCATE(TI)
          IF (ASSOCIATED(NE))       DEALLOCATE(NE)
+         IF (ASSOCIATED(NI))       DEALLOCATE(NI)
          IF (ASSOCIATED(ZEFF_ARR)) DEALLOCATE(ZEFF_ARR)
          IF (ASSOCIATED(POT_ARR))  DEALLOCATE(POT_ARR)
          IF (ASSOCIATED(BR4D))     DEALLOCATE(BR4D)
@@ -141,6 +151,7 @@
          IF (ASSOCIATED(MODB4D))   DEALLOCATE(MODB4D)
          IF (ASSOCIATED(TE4D))     DEALLOCATE(TE4D)
          IF (ASSOCIATED(NE4D))     DEALLOCATE(NE4D)
+         IF (ASSOCIATED(NI5D))     DEALLOCATE(NI5D)
          IF (ASSOCIATED(TI4D))     DEALLOCATE(TI4D)
          IF (ASSOCIATED(ZEFF4D))   DEALLOCATE(ZEFF4D)
          IF (ASSOCIATED(S4D))      DEALLOCATE(S4D)

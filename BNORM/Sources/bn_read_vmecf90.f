@@ -12,6 +12,7 @@ c   local variables
 c
       integer :: ierr, iopen, m, n, mn, mpol1,ia
       character*(*) :: extension
+      DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
 
 c-----------------------------------------------
       IF (ALLOCATED(bsubu)) DEALLOCATE(bsubu)
@@ -100,40 +101,77 @@ c---------------------------------------------------------------------
       mnmax_in = mnmax
       nfp_in = nfp
 
+
       do mn = 1, mnmax
          ixm(mn) = nint(xm(mn))
          ixn(mn) =-nint(xn(mn))/nfp   !!Flip sign: NESCOIL convention
          m = ixm(mn)
          n = ixn(mn)
-         cl(m,n) = 1.5_dp*lmns(mn,ns) - 0.5_dp*lmns(mn,ns-1)
          cr(m,n) = rmnc(mn,ns)
          cz(m,n) = zmns(mn,ns)
       end do
 
-      do mn = 1, mnmax_nyq
-         m = nint(xm_nyq(mn))
-         n = -nint(xn_nyq(mn))/nfp   !!Flip sign: NESCOIL convention
-         bsubu(m,n) = 1.5_dp*bsubumnc(mn,ns) - 0.5_dp*bsubumnc(mn,ns-1)
-         bsubv(m,n) = 1.5_dp*bsubvmnc(mn,ns) - 0.5_dp*bsubvmnc(mn,ns-1)
+      ALLOCATE(mfact(mnmax,2))
+      WHERE (MOD(NINT(xm(:)),2) .eq. 0)
+         mfact(:,1)= 1.5
+         mfact(:,2)=-0.5
+      ELSEWHERE
+         mfact(:,1)= 1.5*SQRT((ns-1.0)/(ns-1.5))
+         mfact(:,2)=-0.5*SQRT((ns-1.0)/(ns-2.5))
+      ENDWHERE
+      do mn = 1, mnmax
+         ixm(mn) = nint(xm(mn))
+         ixn(mn) =-nint(xn(mn))/nfp   !!Flip sign: NESCOIL convention
+         m = ixm(mn)
+         n = ixn(mn)
+         cl(m,n) = mfact(mn,1)*lmns(mn,ns) + mfact(mn,2)*lmns(mn,ns-1)
       end do
-      
       if (lasym_bn) then
          raxis_s(0:ntor)=raxis(0:ntor,2)
          zaxis_c(0:ntor)=zaxis(0:ntor,2)
          do mn = 1, mnmax
             m = ixm(mn)
             n = ixn(mn)
-            clc(m,n) = 1.5_dp*lmnc(mn,ns) - 0.5_dp*lmnc(mn,ns-1)
             crs(m,n) = rmns(mn,ns)
             czc(m,n) = zmnc(mn,ns)
          end do
+         do mn = 1, mnmax
+            m = ixm(mn)
+            n = ixn(mn)
+            clc(m,n) = mfact(mn,1)*lmnc(mn,ns) 
+     1               + mfact(mn,2)*lmnc(mn,ns-1)
+         end do
+      end if
+      DEALLOCATE(mfact)
+
+
+      ALLOCATE(mfact(mnmax_nyq,2))
+      WHERE (MOD(NINT(xm_nyq(:)),2) .eq. 0)
+         mfact(:,1)= 1.5
+         mfact(:,2)=-0.5
+      ELSEWHERE
+         mfact(:,1)= 1.5*SQRT((ns-1.0)/(ns-1.5))
+         mfact(:,2)=-0.5*SQRT((ns-1.0)/(ns-2.5))
+      ENDWHERE
+      do mn = 1, mnmax_nyq
+         m = nint(xm_nyq(mn))
+         n = -nint(xn_nyq(mn))/nfp   !!Flip sign: NESCOIL convention
+         bsubu(m,n) = mfact(mn,1)*bsubumnc(mn,ns) 
+     1              + mfact(mn,2)*bsubumnc(mn,ns-1)
+         bsubv(m,n) = mfact(mn,1)*bsubvmnc(mn,ns) 
+     1              + mfact(mn,2)*bsubvmnc(mn,ns-1)
+      end do
+      if (lasym_bn) then
          do mn = 1, mnmax_nyq
             m = nint(xm_nyq(mn))
             n = -nint(xn_nyq(mn))/nfp   !!Flip sign: NESCOIL convention
-            bsubu(m,n) = 1.5_dp*bsubumns(mn,ns)-0.5_dp*bsubumns(mn,ns-1)
-            bsubv(m,n) = 1.5_dp*bsubvmns(mn,ns)-0.5_dp*bsubvmns(mn,ns-1)
+            bsubus(m,n) = mfact(mn,1)*bsubumns(mn,ns) 
+     2                  + mfact(mn,2)*bsubumns(mn,ns-1)
+            bsubvs(m,n) = mfact(mn,1)*bsubvmns(mn,ns) 
+     2                  + mfact(mn,2)*bsubvmns(mn,ns-1)
          end do 
       end if
+      DEALLOCATE(mfact)
 
       iota_edge = 1.5_dp*iotas(ns) - 0.5_dp*iotas(ns-1)
       phip_edge = 1.5_dp*phip (ns) - 0.5_dp*phip (ns-1)

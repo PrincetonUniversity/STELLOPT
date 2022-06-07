@@ -18,7 +18,10 @@
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
                               nzeff, npot, plasma_mass, plasma_Zavg, &
                               plasma_Zmean, therm_factor, &
-                              B_kick_min, B_kick_max, freq_kick, E_kick
+                              B_kick_min, B_kick_max, freq_kick, E_kick, &
+                              rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
+                              raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
+                              nenergy_fida, npitch_fida, energy_fida, pitch_fida
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -29,8 +32,8 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       ! These are helpers to give the ns1_prof variables user friendly names
-      INTEGER :: nrho_dist, ntheta_dist, nzeta_dist, nvpara_dist, nvperp_dist
-
+      INTEGER :: nrho_dist, ntheta_dist, nzeta_dist, nvpara_dist, nvperp_dist, nphi_dist
+      REAL(rprec) :: temp
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         &beams3d_input
@@ -75,14 +78,20 @@
                                r_beams, z_beams, phi_beams, TE_AUX_S, &
                                TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
                                TI_AUX_F, POT_AUX_S, POT_AUX_F, &
+                               NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
                                ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
                                ldebug, ne_scale, te_scale, ti_scale, &
                                zeff_scale, plasma_mass, plasma_Zavg, &
                                plasma_Zmean, therm_factor, &
                                fusion_scale, nrho_dist, ntheta_dist, & 
-                               nzeta_dist, nvpara_dist, nvperp_dist, &
+                               nzeta_dist, nphi_dist, nvpara_dist, nvperp_dist, &
                                partvmax, lendt_m, te_col_min, &
-                               B_kick_min, B_kick_max, freq_kick, E_kick
+                               B_kick_min, B_kick_max, freq_kick, E_kick, &
+                               rmin_fida, rmax_fida, zmin_fida, &
+                               zmax_fida,phimin_fida, phimax_fida, &
+                               raxis_fida, zaxis_fida, phiaxis_fida, &
+                               nr_fida, nphi_fida, nz_fida, nenergy_fida, &
+                               npitch_fida, energy_fida, pitch_fida
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -141,6 +150,10 @@
       ZEFF_AUX_F = -1
       POT_AUX_S = -1
       POT_AUX_F = -1
+      NI_AUX_S = -1
+      NI_AUX_F = 0
+      NI_AUX_Z = 0
+      NI_AUX_M = 0
       npoinc = 1
       follow_tol   = 1.0D-7
       vc_adapt_tol = 1.0D-5
@@ -167,10 +180,24 @@
       ! Distribution Function Defaults
       nrho_dist = 64
       ntheta_dist=8
-      nzeta_dist=4
+      nzeta_dist = -1  ! Kept for historical reasons
+      nphi_dist  = 4
       nvpara_dist=32
       nvperp_dist=16
       partvmax = 0 ! Allows user to set value
+
+      !FIDASIM defaults
+      rmin_fida = 0.0
+      zmin_fida = 0.0
+      phimin_fida = 0.0
+      rmax_fida = 0.0
+      zmax_fida = 0.0
+      phimax_fida = 0.0
+      nr_fida = 0
+      nphi_fida = 0
+      nz_fida = 0
+      nenergy_fida = 0
+      npitch_fida = 0
 
 
       ! Read namelist
@@ -193,7 +220,7 @@
          ! Update dist function sizes
          ns_prof1=nrho_dist
          ns_prof2=ntheta_dist
-         ns_prof3=nzeta_dist
+         ns_prof3=MAX(nzeta_dist,nphi_dist)
          ns_prof4=nvpara_dist
          ns_prof5=nvperp_dist
 
@@ -244,10 +271,79 @@
             npot = npot + 1
          END DO
 
-         IF (nzeff < 2) THEN
+         ! Handle multiple ion species
+         IF (ANY(NI_AUX_S >0)) THEN
+            nzeff = 0
+            DO WHILE ((NI_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
+               nzeff = nzeff + 1
+            END DO
+            ! Now calc Zeff(1)
+            DO i1 = 1, nzeff
+               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+               temp = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+               IF (temp > 0) THEN
+                  ZEFF_AUX_F(i1) = MAX(SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
+               ELSE
+                  ZEFF_AUX_F(i1) = 1
+               END IF
+            END DO
+            plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
+            plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff
+            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)*plasma_mass)
+         ELSEIF (lfusion) THEN ! Assume 50/50 D T
+            nzeff=nne
+            NI_AUX_S = NE_AUX_S
+            NI_AUX_F(1,:) = 0.5*NE_AUX_F
+            NI_AUX_F(2,:) = 0.5*NE_AUX_F
+            NI_AUX_M(1) = 3.3435837724E-27;   NI_AUX_Z(1) = 1
+            NI_AUX_M(2) = 5.008267217094E-27; NI_AUX_Z(2) = 1 
+            ! Now calc Zeff(1)
+            DO i1 = 1, nzeff
+               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+               temp = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+               IF (temp > 0) THEN
+                  ZEFF_AUX_F(i1) = MAX(SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
+               ELSE
+                  ZEFF_AUX_F(i1) = 1
+               END IF
+            END DO
+            plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
+            plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff
+            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)*plasma_mass)
+         ELSEIF (nne > 0) THEN ! Ni=Ne, Z=Zeff
+            nzeff = nne
+            NI_AUX_S = NE_AUX_S
+            NI_AUX_F(1,:) = NE_AUX_F ! NI=NE
+            NI_AUX_Z(1) = NINT(plasma_Zavg)
+            NI_AUX_M(1) = plasma_mass
+            DO i1 = 1, nzeff
+               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+            END DO
+         ELSE
+            nzeff = 6
             ZEFF_AUX_S(1:6) = (/0.0,0.2,0.4,0.6,0.8,1.0/)
             ZEFF_AUX_F(1:6) = (/1.0,1.0,1.0,1.0,1.0,1.0/)
-            nzeff = 6
+            NI_AUX_S(1:6)   = (/0.0,0.2,0.4,0.6,0.8,1.0/)
+            NI_AUX_F(:,1:6) = 0
+            NI_AUX_Z(1) = NINT(plasma_Zavg)
+            NI_AUX_M(1) = plasma_mass
+         END IF
+
+         IF (lfidasim) THEN
+            IF (rmin_fida == 0.0) rmin_fida = rmin
+            IF (zmin_fida .eq. 0.0) zmin_fida = zmin
+            IF (phimin_fida .eq. 0.0) phimin_fida = phimin
+            IF (rmax_fida .eq. 0.0) rmax_fida = rmax
+            IF (zmax_fida .eq. 0.0) zmax_fida = zmax
+            IF (phimax_fida .eq. 0.0) phimax_fida = phimax
+            IF (nr_fida .eq. 0) nr_fida = nr
+            IF (nphi_fida .eq. 0) nphi_fida = nphi
+            IF (nz_fida .eq. 0) nz_fida = nz
+            !nenergy_fida = ns_prof4 !should stay this way!
+            !npitch_fida = ns_prof5
+            IF (nenergy_fida .eq. 0) nenergy_fida = ns_prof4
+            IF (npitch_fida .eq. 0) npitch_fida = ns_prof5
          END IF
 
          nparticles = 0
@@ -307,7 +403,7 @@
       WRITE(iunit_out,'(A)') '!---------- Distribution Parameters ------------'
       WRITE(iunit_out,outint) 'NRHO_DIST',ns_prof1
       WRITE(iunit_out,outint) 'NTHETA_DIST',ns_prof2
-      WRITE(iunit_out,outint) 'NZETA_DIST',ns_prof3
+      WRITE(iunit_out,outint) 'NPHI_DIST',ns_prof3
       WRITE(iunit_out,outint) 'NVPARA_DIST',ns_prof4
       WRITE(iunit_out,outint) 'NVPERP_DIST',ns_prof5
       WRITE(iunit_out,outflt) 'PARTVMAX',partvmax
