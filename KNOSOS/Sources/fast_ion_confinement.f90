@@ -390,7 +390,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
               vda=vda+(BI(4,ila,ial)/BI(1,ila,ial))*dalpha
 !              IF(jpoint.LE.1) EXIT
               tau_a=tau_a+2*dalpha/ABS(BI(4,ila,ial)+BI(4,ilap1,ialp1)) !time that it takes to reach alpha_out
-              s=s+dalpha*(BI(3,ila,ial)+BI(3,ilap1,ialp1))/(BI(4,ila,ial)+BI(4,ilap1,ialp1)) !flux surface
+              s=s!+dalpha*(BI(3,ila,ial)+BI(3,ilap1,ialp1))/(BI(4,ila,ial)+BI(4,ilap1,ialp1)) !flux surface
 !              tau_a=tau_a+dalpha/ABS(BI(4,ilap1,ialp1)) !time that it takes to reach alpha_out
 !              s=s+dalpha*(BI(3,ilap1,ialp1))/(BI(4,ilap1,ialp1)) !flux surface
               IF(vda*siota*sign.GT.0) WRITE(6200+myrank,'(5(1pe13.5),2I8)') tau_a/TWOEFIoZ,thetap(ialp1,1),lambda(ilap1),s,BI(6,ilap1,ialp1),jla,jal
