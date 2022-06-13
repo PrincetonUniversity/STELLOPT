@@ -1,11 +1,11 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_coilrect
+!     Subroutine:    chisq_coilpoly
 !     Authors:       J. Breslau (jbreslau@pppl.gov)
 !     Date:          6/4/2019
-!     Description:   Calculates penalty based on excursion of coil from
-!                    prescribed v bounds
+!     Description:   Imposes a penalty when coil enters prescribed
+!                    polygonal keepout regions.
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_coilrect(target,sigma,niter,iflag)
+      SUBROUTINE chisq_coilpoly(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -27,8 +27,7 @@
 !     Local Variables
 !
 !-----------------------------------------------------------------------
-      REAL(rprec) :: vmin, vmax
-      INTEGER     :: ik
+      INTEGER     :: ik, npts
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -36,30 +35,24 @@
       IF (iflag < 0) RETURN
       IF (.NOT.ANY(lwindsurf)) RETURN  !This routine only makes sense for embedded curves in 2D
       ik   = COUNT(sigma < bigno)
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'VBOUNDS ',ik,5
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VMIN  VMAX'
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'PTS_IN_POLY ',ik,4
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  NPTS'
       IF (niter >= 0) THEN
          DO ik = 1, nigroup
             IF ((sigma(ik) < bigno) .AND. ANY(lcoil_spline(ik,:))) THEN
-               CALL get_coil_vbounds(ik, coilrectduu(ik), coilrectdul(ik), vmin, vmax)
+               CALL get_coil_polypts(ik, npts)
                mtargets = mtargets + 1
                targets(mtargets) = target(ik)
                sigmas(mtargets)  = sigma(ik)
-               vals(mtargets)    = (MIN(vmin - coilrectvmin(ik), 0.0)/coilrectpfw)**2
-               mtargets = mtargets + 1
-               targets(mtargets) = target(ik)
-               sigmas(mtargets)  = sigma(ik)
-               vals(mtargets)    = (MAX(vmax - coilrectvmax(ik), 0.0)/coilrectpfw)**2
-               IF (iflag == 1) WRITE(iunit_out,'(I5,4ES22.12E3)') ik,target(ik),sigma(ik),vmin,vmax
+               vals(mtargets)    = REAL(npts, rprec)
+               IF (iflag == 1) WRITE(iunit_out,'(I5,2ES22.12E3,I5)') ik,target(ik),sigma(ik),npts
             END IF
          END DO
       ELSE
          DO ik = 1, nigroup
             IF ((sigma(ik) < bigno) .AND. ANY(lcoil_spline(ik,:))) THEN
                mtargets = mtargets + 1
-               IF (niter == -2) target_dex(mtargets)=jtarget_coilrect
-               mtargets = mtargets + 1
-               IF (niter == -2) target_dex(mtargets)=jtarget_coilrect
+               IF (niter == -2) target_dex(mtargets)=jtarget_coilpoly
             END IF
          END DO
       END IF
@@ -67,4 +60,4 @@
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_coilrect
+    END SUBROUTINE chisq_coilpoly

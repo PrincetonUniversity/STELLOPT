@@ -1,6 +1,7 @@
 !-----------------------------------------------------------------------
 !     Subroutine:    stellopt_spline_to_coil
-!     Authors:       S. Lazerson (lazerson@pppl.gov)
+!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de) and
+!                    J. Breslau (jbreslau@pppl.gov)
 !     Date:          11/14/2016
 !     Description:   This subroutine generates a coil data structure from
 !                    the stellopt splines and writes it to a file.
@@ -58,7 +59,11 @@
       ! Print out some info
       IF (lscreen) THEN
           WRITE(6,'(2X,A,A)')  'COIL NAME: ',TRIM('coils.'//TRIM(proc_string))
-          IF (lwindsurf) WRITE(6,'(2X,A,A)')  '      CWS: ',TRIM(windsurfname)
+          !IF (lwindsurf) WRITE(6,'(2X,A,A)')  '      CWS: ',TRIM(windsurfname)
+          DO i=1,maxwindsurf
+             IF (lwindsurf(i)) WRITE(6,'(2X,A,I4.3,A)') &
+                  '      CWS ',i,': '//TRIM(windsurfname(i))
+          ENDDO
           WRITE(6,'(2X,A,I2)') '      NFP: ',nfp
           WRITE(6,'(2X,A,I2)') '   GROUPS: ',n_coilgroups
           CALL FLUSH(6)
@@ -196,7 +201,7 @@
         ! Local variables
         TYPE(cbspline)     :: XC_spl, YC_spl, ZC_spl
         REAL(rprec)        :: s_val, u, v, v0
-        INTEGER            :: nknots, ncoefs, ier, j, js1, js2
+        INTEGER            :: nknots, ncoefs, ier, j, js1, js2, isurf
 
         ! Handle spline boundary conditions
         CALL enforce_spline_bcs(icoil, lmod)
@@ -212,8 +217,9 @@
         CALL cbspline_setup(YC_spl, ncoefs, &
              coil_splinesy(icoil,1:nknots), coil_splinefy(icoil,1:ncoefs), ier)
 
-        IF (lwindsurf) THEN !Interpret coil_splinefx as u, coil_splinefy as v
-           windsurf%nfp = nfp
+        isurf = coil_surf(icoil)
+        IF (lwindsurf(isurf)) THEN !Interpret coil_splinefx as u, coil_splinefy as v
+           windsurf(isurf)%nfp = nfp
 
            ! Evaluate the coil
            v0 = coil_splinefy(icoil,1)
@@ -221,17 +227,17 @@
            js2 = CEILING(1.0 + coil_splinesx(icoil,nknots)*(nseg - 1))
            DO j = 1, js1  ! Straight section above midplane
               u = REAL(j-1)/REAL(nseg-1)
-              CALL stellopt_uv_to_xyz(u, v0, xarr(j), yarr(j), zarr(j))
+              CALL stellopt_uv_to_xyz(u, v0, xarr(j), yarr(j), zarr(j), isurf)
            END DO
            DO j = js1+1, js2-1
               s_val = REAL(j-1)/REAL(nseg-1)
               CALL cbspline_eval(XC_spl, s_val, u, ier)
               CALL cbspline_eval(YC_spl, s_val, v, ier)
-              CALL stellopt_uv_to_xyz(u, v, xarr(j), yarr(j), zarr(j))
+              CALL stellopt_uv_to_xyz(u, v, xarr(j), yarr(j), zarr(j), isurf)
            END DO
            DO j = js2, nseg  ! Straight section below midplane
               u = REAL(j-1)/REAL(nseg-1)
-              CALL stellopt_uv_to_xyz(u, v0, xarr(j), yarr(j), zarr(j))
+              CALL stellopt_uv_to_xyz(u, v0, xarr(j), yarr(j), zarr(j), isurf)
            END DO
         ELSE  !Interpret coil_splinefx as x, coil_splinefy as y, coil_splinefz as z.
            CALL cbspline_init(ZC_spl, ncoefs, ier)
@@ -256,7 +262,7 @@
       SUBROUTINE enforce_spline_bcs(icoil, isper)
         USE stel_kinds, ONLY: rprec
         USE stellopt_vars, ONLY : coil_splinefx, coil_splinefy, coil_splinefz, &
-             coil_splinesx, coil_nctrl, coil_type, lwindsurf
+             coil_splinesx, coil_nctrl, coil_type, coil_surf, lwindsurf
         USE vmec_input,  ONLY : nfp
         IMPLICIT NONE
         INTRINSIC ABS, MODULO
@@ -267,13 +273,15 @@
         REAL(rprec), PARAMETER :: zero=0.0d0, one=1.0d0, abstol=2.0d-15
         REAL(rprec) krat
         INTEGER ncoefs
+        LOGICAL lws
         ncoefs = coil_nctrl(icoil)
+        lws = lwindsurf(coil_surf(icoil))
 
         SELECT CASE (coil_type(icoil))
         CASE ('M') ! Modular coil
            isper = .TRUE. ! Modular coils repeat each field period.
            coil_splinefy(icoil,ncoefs) = coil_splinefy(icoil,1)
-           IF (lwindsurf) THEN !u0=k0,uf=kf,vf=v0
+           IF (lws) THEN !u0=k0,uf=kf,vf=v0
               coil_splinefx(icoil,1)      = coil_splinesx(icoil,1)
               coil_splinefx(icoil,ncoefs) = coil_splinesx(icoil,ncoefs+4)
            ELSE  !z0=z(t=0), zf=z0,xf=x0,yf=y0
@@ -282,7 +290,7 @@
            END IF
         CASE ('A') ! Modular coil with straight section represented by spline
            isper = .TRUE. ! Modular coils repeat each field period.
-           IF (lwindsurf) THEN
+           IF (lws) THEN
               coil_splinefy(icoil,1) = coil_splinefy(icoil,4)
               coil_splinefy(icoil,2) = coil_splinefy(icoil,4)
               coil_splinefy(icoil,3) = coil_splinefy(icoil,4)
@@ -300,18 +308,18 @@
            isper = .TRUE. ! Saddle coils repeat each field period like modular coils.
            coil_splinefx(icoil,ncoefs) = coil_splinefx(icoil,1)
            coil_splinefy(icoil,ncoefs) = coil_splinefy(icoil,1)
-           IF (.NOT.lwindsurf) coil_splinefz(icoil,ncoefs) = coil_splinefz(icoil,1)
+           IF (.NOT.lws) coil_splinefz(icoil,ncoefs) = coil_splinefz(icoil,1)
         CASE ('P') ! Wavy PF coil
            isper = .FALSE. ! PF coils wrap around, do not repeat.
            coil_splinefx(icoil,ncoefs) = coil_splinefx(icoil,1)
-           IF (lwindsurf) THEN !v0=0,vf=N,uf=u0
+           IF (lws) THEN !v0=0,vf=N,uf=u0
               coil_splinefy(icoil,1) = zero;  coil_splinefy(icoil,ncoefs) = nfp
            ELSE
               coil_splinefy(icoil,ncoefs) = coil_splinefy(icoil,1)
               coil_splinefz(icoil,ncoefs) = coil_splinefz(icoil,1)
            END IF
         CASE DEFAULT
-           IF (lwindsurf) THEN
+           IF (lws) THEN
               isper = ((ABS(MODULO(coil_splinefx(icoil,1),one) - &
                    MODULO(coil_splinefx(icoil,ncoefs),one)).LE.abstol) &
                     .AND.(coil_splinefy(icoil,1) == coil_splinefy(icoil,ncoefs)) )
@@ -329,7 +337,7 @@
              krat*(coil_splinefx(icoil,2) - coil_splinefx(icoil,1))
         coil_splinefy(icoil,ncoefs-1) = coil_splinefy(icoil,ncoefs) - &
              krat*(coil_splinefy(icoil,2) - coil_splinefy(icoil,1))
-        IF (.NOT.lwindsurf) &
+        IF (.NOT.lws) &
            coil_splinefz(icoil,ncoefs-1) = coil_splinefz(icoil,ncoefs) - &
                 krat*(coil_splinefz(icoil,2) - coil_splinefz(icoil,1))
       END SUBROUTINE enforce_spline_bcs
@@ -451,8 +459,10 @@
         REAL(rprec)        :: s_val, u, duds, d2uds2, v, dvds, d2vds2
         REAL(rprec)        :: dxds, dyds, dzds, d2xds2, d2yds2, d2zds2
         REAL(rprec)        :: cx, cy, cz, norm, kappa
-        INTEGER            :: ier, ipt, nknots, ncoefs
+        INTEGER            :: ier, ipt, nknots, ncoefs, isurf
         LOGICAL            :: ldum
+
+        isurf = coil_surf(icoil)
 
         ! Handle spline boundary conditions
         CALL enforce_spline_bcs(icoil, ldum)
@@ -468,8 +478,8 @@
         CALL cbspline_setup(YC_spl, ncoefs, &
              coil_splinesy(icoil,1:nknots), coil_splinefy(icoil,1:ncoefs), ier)
 
-        IF (lwindsurf) THEN
-           windsurf%nfp = nfp
+        IF (lwindsurf(isurf)) THEN
+           windsurf(isurf)%nfp = nfp
         ELSE
            CALL cbspline_init(ZC_spl, ncoefs, ier)
            CALL cbspline_setup(ZC_spl, ncoefs, &
@@ -485,7 +495,7 @@
            s_val = REAL(ipt-1)/REAL(npts_curv)
 
            ! We need 1st and 2nd derivatives of (x,y,z) w/r/t s to compute curvature:
-           IF (lwindsurf) THEN ! Interpret splinefx as u, splinefy as v
+           IF (lwindsurf(isurf)) THEN ! Interpret splinefx as u, splinefy as v
               ! First get 1st and 2nd derivs of u,v w/r/t s...
               IF ((s_val.LT.coil_splinesx(icoil,1)) .OR. &
                   (s_val.GT.coil_splinesx(icoil,nknots))) THEN  ! Straight section
@@ -497,7 +507,7 @@
               END IF
 
               ! Next get 1st & 2nd derivs of (x,y,z) w/r/t (u,v)...
-              CALL stellopt_uv_to_xyz_prime(u, v, xprime)
+              CALL stellopt_uv_to_xyz_prime(u, v, xprime, isurf)
 
               ! Finally, apply the chain rule...
               dxds = xprime(1,1)*duds + xprime(1,2)*dvds
@@ -523,7 +533,7 @@
            norm = dxds**2 + dyds**2 + dzds**2
            kappa = SQRT((cx**2 + cy**2 + cz**2)/(norm**3))
            IF (PRESENT(uout)) THEN  ! Write curvature to optional output file
-              CALL stellopt_uv_to_xyz(u, v, xprime(1,1), xprime(2,1), xprime(3,1))
+              CALL stellopt_uv_to_xyz(u, v, xprime(1,1), xprime(2,1), xprime(3,1), isurf)
               WRITE(uout,'(7ES17.8E2)') s_val,kappa,u,v,xprime(1,1),xprime(2,1),xprime(3,1)
            END IF
            IF (kappa > maxcurv) THEN
@@ -534,7 +544,7 @@
 
         ! Clean up
         CALL cbspline_delete(XC_spl);  CALL cbspline_delete(YC_spl)
-        IF (.NOT.lwindsurf) CALL cbspline_delete(ZC_spl)
+        IF (.NOT.lwindsurf(isurf)) CALL cbspline_delete(ZC_spl)
       END SUBROUTINE get_coil_maxcurv
 
 !-----------------------------------------------------------------------
@@ -563,7 +573,7 @@
         INTEGER                                :: ier, iseg, iseg2, nknots, ncoefs, js1, js2
         LOGICAL                                :: ldum
 
-        IF (.NOT.lwindsurf) THEN
+        IF (.NOT.lwindsurf(coil_surf(icoil))) THEN
            nselfint = -1;  RETURN
         END IF
 
@@ -672,7 +682,7 @@
         REAL(rprec)                            :: s_val, u00, u0, u1, v00, v0, v1
         REAL(rprec)                            :: x00, y00, z00, x0, y0, z0, x1, y1, z1
         REAL(rprec)                            :: hsgn, len, vbar, vvar
-        INTEGER                                :: nknots, ncoefs, ier, j
+        INTEGER                                :: nknots, ncoefs, ier, j, isurf
         LOGICAL                                :: lmod
 
         IF ((coil_type(icoil).NE.'M').AND.(coil_type(icoil).NE.'A')) THEN
@@ -698,11 +708,12 @@
              coil_splinesy(icoil,1:nknots), coil_splinefy(icoil,1:ncoefs), ier)
 
         len = zero;  vbar = zero
-        IF (lwindsurf) THEN !Interpret coil_splinefx as u, coil_splinefy as v
-           windsurf%nfp = nfp
+        isurf = coil_surf(icoil)
+        IF (lwindsurf(isurf)) THEN !Interpret coil_splinefx as u, coil_splinefy as v
+           windsurf(isurf)%nfp = nfp
 
            u0 = zero;  v0 = coil_splinefy(icoil,1)
-           CALL stellopt_uv_to_xyz(u0, v0, x0, y0, z0)
+           CALL stellopt_uv_to_xyz(u0, v0, x0, y0, z0, isurf)
            u00 = u0; v00 = v0;  x00 = x0; y00 = y0; z00 = z0
            DO j = 2, npts_torx
               s_val = REAL(j-1)/REAL(npts_torx-1)
@@ -713,7 +724,7 @@
                  u1 = s_val
                  v1 = coil_splinefy(icoil,1)
               END IF
-              CALL stellopt_uv_to_xyz(u1, v1, x1, y1, z1)
+              CALL stellopt_uv_to_xyz(u1, v1, x1, y1, z1, isurf)
               dl(j) = SQRT((x1 - x0)**2 + (y1 - y0)**2 + (z1 - z0)**2)
               x0 = x1;  y0 = y1;  z0 = z1
               len = len + dl(j)
@@ -800,7 +811,7 @@ SUBROUTINE get_coil_vbounds(icoil, duu, dul, vmin, vmax)
 
   vmin = 1.0;  vmax = 0.0
 
-  IF (.NOT.lwindsurf) RETURN
+  IF (.NOT.lwindsurf(coil_surf(icoil))) RETURN
   IF ((coil_type(icoil).NE.'M').AND.(coil_type(icoil).NE.'A')) RETURN
 
   ! Handle spline boundary conditions
@@ -905,3 +916,197 @@ SUBROUTINE append_fixed_coils(ounit, inname, maxdex, lscreen)
 
   CALL safe_close(iunit) !Close the file when done
 END SUBROUTINE append_fixed_coils
+
+!-----------------------------------------------------------------------
+SUBROUTINE get_coil_polypts(icoil, ninside)
+  USE stellopt_vars
+  USE stellopt_targets, ONLY : npts_cpoly, kopolyu, kopolyv
+  USE stellopt_cbspline
+  IMPLICIT NONE
+
+  ! Arguments
+  INTEGER, INTENT(IN)  :: icoil
+  INTEGER, INTENT(OUT) :: ninside
+
+  ! Local variables
+  TYPE(cbspline)                         :: C_spl
+  REAL(rprec), DIMENSION(:), ALLOCATABLE :: uc, vc
+  REAL(rprec)                            :: s_val
+  INTEGER                                :: ier, iseg, nknots, ncoefs, js1, js2
+  INTEGER                                :: ik, jpoly, inout
+  LOGICAL                                :: ldum
+
+  ninside = 0
+
+  IF (.NOT.lwindsurf(coil_surf(icoil))) RETURN
+
+  ! Handle spline boundary conditions
+  CALL enforce_spline_bcs(icoil, ldum)
+  ncoefs = coil_nctrl(icoil)
+  nknots = ncoefs + 4
+
+  ! Get u,v coords along coil -- don't use spline_to_coil b/c we don't need x,y,z coords
+  ALLOCATE(uc(npts_cpoly), vc(npts_cpoly))
+
+  js1 =   FLOOR(1.0 + coil_splinesx(icoil,1)*(npts_cpoly - 1))
+  js2 = CEILING(1.0 + coil_splinesx(icoil,nknots)*(npts_cpoly - 1))
+
+  CALL cbspline_init(C_spl, ncoefs, ier)
+  CALL cbspline_setup(C_spl, ncoefs, &
+       coil_splinesx(icoil,1:nknots), coil_splinefx(icoil,1:ncoefs), ier)
+  DO iseg = 1, js1  ! Straight section above midplane
+     uc(iseg) = REAL(iseg-1)/REAL(npts_cpoly-1)
+  END DO
+  DO iseg = js1+1, js2-1
+     s_val = REAL(iseg-1)/REAL(npts_cpoly-1)
+     CALL cbspline_eval(C_spl, s_val, uc(iseg), ier)
+  END DO !iseg
+  DO iseg = js2, npts_cpoly  ! Straight section below midplane
+     uc(iseg) = REAL(iseg-1)/REAL(npts_cpoly-1)
+  END DO
+
+  CALL cbspline_setup(C_spl, ncoefs, &
+       coil_splinesy(icoil,1:nknots), coil_splinefy(icoil,1:ncoefs), ier)
+  DO iseg = js1+1, js2-1
+     s_val = REAL(iseg-1)/REAL(npts_cpoly-1)
+     CALL cbspline_eval(C_spl, s_val, vc(iseg), ier)
+  END DO !iseg
+  vc(1:js1) = coil_splinefy(icoil,1);  vc(js2:npts_cpoly) = coil_splinefy(icoil,1)
+  CALL cbspline_delete(C_spl)
+
+  ! Count incursions into keepout polygons
+  DO jpoly = LBOUND(kopolyu,DIM=2), UBOUND(kopolyu,DIM=2)
+     IF (ANY(kopolyu(:,jpoly).GE.0.0)) THEN
+        ik = MINLOC(kopolyu(:,jpoly),DIM=1) - 1
+        DO iseg = 1, npts_cpoly
+           CALL PNPOLY(vc(iseg), uc(iseg), &
+                kopolyv(1:ik,jpoly), kopolyu(1:ik,jpoly), ik, inout)
+           IF (inout.GE.0) ninside = ninside + 1
+        ENDDO !iseg
+     ENDIF
+  ENDDO !jpoly
+
+  DEALLOCATE(uc, vc)
+  RETURN
+CONTAINS
+!----------------------------------------------------------------------
+!     Courtesy: Jay Sandhu
+!               email: jsandhu@esri.com
+!
+!
+! Please cite David H. Douglas, COLLECTED ALGORITHMS, Cambridge MA:
+! Harvard Laboratory for Computer Graphics, 1974
+!
+! This is my reinvention buster.
+! 1974 1974 1974 1974 1974 1974 1974 1974 1974 1974 1974 1974
+!
+!     .................................................................
+!
+!        SUBROUTINE PNPOLY
+!
+!        PURPOSE
+!           TO DETERMINE WHETHER A POINT IS INSIDE A POLYGON
+!
+!        USAGE
+!           CALL PNPOLY (PX, PY, X, Y, N, INOUT )
+!
+!        DESCRIPTION OF THE PARAMETERS
+!           PX      - X-COORDINATE OF POINT IN QUESTION.
+!           PY      - Y-COORDINATE OF POINT IN QUESTION.
+!           X       - N LONG VECTOR CONTAINING X-COORDINATES OF
+!                     VERTICES OF POLYGON.
+!           Y       - N LONG VECTOR CONTAINING Y-COORDINATES OF
+!                     VERTICES OF POLYGON.
+!           N       - NUMBER OF VERTICES IN THE POLYGON.
+!           INOUT   - THE SIGNAL RETURNED:
+!                     -1 IF THE POINT IS OUTSIDE OF THE POLYGON,
+!                      0 IF THE POINT IS ON AN EDGE OR AT A VERTEX,
+!                      1 IF THE POINT IS INSIDE OF THE POLYGON.
+!
+!        REMARKS
+!           THE VERTICES MAY BE LISTED IN CLOCKWISE OR ANTICLOCKWISE
+!           ORDER.  FOR THIS SUBROUTINE A POINT IS CONSIDERED INSIDE
+!           THE POLYGON IF IT IS LOCATED IN THE ENCLOSED AREA DEFINED
+!           BY THE LINE FORMING THE POLYGON.
+!           THE INPUT POLYGON MAY BE A COMPOUND POLYGON CONSISTING
+!           OF SEVERAL SEPARATE SUBPOLYGONS. IF SO, THE FIRST VERTEX
+!           OF EACH SUBPOLYGON MUST BE REPEATED, AND WHEN CALCULATING
+!           N, THESE FIRST VERTICES MUST BE COUNTED TWICE.
+!           INOUT IS THE ONLY PARAMETER WHOSE VALUE IS CHANGED.
+!           PNPOLY CAN HANDLE ANY NUMBER OF VERTICES IN THE POLYGON.
+!           WRITTEN BY RANDOLPH FRANKLIN, UNIVERSITY OF OTTAWA, 6/72.
+!
+!        SUBROUTINES AND FUNCTION SUBPROGRAMS REQUIRED
+!           NONE
+!
+!        METHOD
+!           A VERTICAL SEMI-INFINITE LINE IS DRAWN UP FROM THE POINT
+!           IN QUESTION. IF IT CROSSES THE POLYGON AN ODD NUMBER OF
+!           TIMES, THE POINT IS INSIDE THE POLYGON.
+!
+!     .................................................................
+!
+  SUBROUTINE PNPOLY(PX,PY,X,Y,N,INOUT)
+    IMPLICIT NONE
+
+    REAL(rprec), INTENT(IN)               :: PX, PY
+    INTEGER, INTENT(IN)                   :: N
+    REAL(rprec), DIMENSION(N), INTENT(IN) :: X, Y
+    INTEGER, INTENT(OUT)                  :: INOUT
+
+    INTEGER I, J
+    REAL(rprec) :: XI, YI, XJ, YJ
+    LOGICAL IX, IY, JX, JY, EOR
+
+    !     EXCLUSIVE OR STATEMENT FUNCTION.
+    EOR(IX,IY) = (IX .OR. IY) .AND. .NOT.(IX .AND. IY)
+	
+    INOUT = -1
+
+    DO I = 1 , N
+       XI = X(I) - PX
+       YI = Y(I) - PY
+       !        CHECK WHETHER THE POINT IN QUESTION IS AT THIS VERTEX.
+       IF ( XI.EQ.0.0 .AND. YI.EQ.0.0 ) THEN
+          INOUT = 0
+          RETURN
+       ENDIF
+       !        J IS NEXT VERTEX NUMBER OF POLYGON.
+       J = 1 + MOD(I,N)
+       XJ = X(J) - PX
+       YJ = Y(J) - PY
+       !        IS THIS LINE OF 0 LENGTH ?
+       IF ( XI.EQ.XJ .AND. YI.EQ.YJ ) CYCLE
+       IX = XI.GE.0.0
+       IY = YI.GE.0.0
+       JX = XJ.GE.0.0
+       JY = YJ.GE.0.0
+       !        CHECK WHETHER (PX,PY) IS ON VERTICAL SIDE OF POLYGON.
+       IF ( XI.EQ.0.0 .AND. XJ.EQ.0.0 .AND. EOR(IY,JY) ) THEN
+          INOUT = 0
+          RETURN
+       ENDIF
+       !        CHECK WHETHER (PX,PY) IS ON HORIZONTAL SIDE OF POLYGON.
+       IF ( YI.EQ.0.0 .AND. YJ.EQ.0.0 .AND. EOR(IX,JX) ) THEN
+          INOUT = 0
+          RETURN
+       ENDIF
+       !        CHECK WHETHER BOTH ENDS OF THIS SIDE ARE COMPLETELY 1) TO RIGHT
+       !        OF, 2) TO LEFT OF, OR 3) BELOW (PX,PY).
+       IF ( .NOT.((IY .OR. JY) .AND. EOR(IX,JX)) ) CYCLE
+       !        DOES THIS SIDE OBVIOUSLY CROSS LINE RISING VERTICALLY FROM (PX,PY)
+       IF ( .NOT.(IY .AND. JY .AND. EOR(IX,JX)) ) THEN
+          IF ( (YI*XJ-XI*YJ)/(XJ-XI).LT.0.0 ) THEN
+             CYCLE
+          ELSEIF ( (YI*XJ-XI*YJ)/(XJ-XI).EQ.0.0 ) THEN
+             INOUT = 0
+             RETURN
+          ELSE
+             INOUT = -INOUT
+          ENDIF
+       ELSE
+          INOUT = -INOUT
+       ENDIF
+    ENDDO
+  END SUBROUTINE PNPOLY
+END SUBROUTINE get_coil_polypts
