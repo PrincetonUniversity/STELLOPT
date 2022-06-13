@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 import sys, os
-os.environ['ETS_TOOLKIT'] = 'qt4'
+os.environ['ETS_TOOLKIT'] = 'qt5'
 import matplotlib
-matplotlib.use("Qt4Agg")
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as _plt
 import numpy as np                    #For Arrays
 from math import pi
 #QT4
-from PyQt4 import uic, QtGui
-from PyQt4.QtGui import QMainWindow, QApplication, qApp, QVBoxLayout, QSizePolicy,QIcon
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+#from PyQt4 import uic, QtGui
+#from PyQt4.QtGui import QMainWindow, QApplication, qApp, QVBoxLayout, QSizePolicy,QIcon
+#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 #QT5
-#from PyQt5 import uic, QtGui, QtWidgets
-#from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy
-#from PyQt5.QtGui import QIcon
-#from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from PyQt5 import uic, QtGui, QtWidgets
+from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy
+from PyQt5.QtGui import QIcon
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
