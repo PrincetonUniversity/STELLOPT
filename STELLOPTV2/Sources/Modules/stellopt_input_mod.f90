@@ -1405,7 +1405,7 @@
          END IF
       END IF
 !DEC$ ENDIF
-!DEC$ IF DEFINED (LAEOPT)
+!DEC$ IF DEFINED (AEOPT)
       CALL tolower(txport_proxy)
       IF (myid == master .and. ANY(sigma_txport < bigno) .and. (TRIM(txport_proxy(1:11)) == 'availenergy') ) THEN
          WRITE(6,*)        " Turbulent Transport calculation provided by: "
