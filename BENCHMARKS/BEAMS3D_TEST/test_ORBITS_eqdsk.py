@@ -24,11 +24,12 @@ if not data:
 print('BEAMS3D VERSION: ' + str(round(data['VERSION'],2)))
 print('==== Vectors ====')
 varlist={}
-varlist['Shinethrough']=np.array([11, 3, 1, 10, 3, 1])
+varlist['Shinethrough']=np.array([18.543322,13.09413 ,11.835307,19.003081,13.060472,12.109276])
 #print(data['Shinethrough'])
 for temp in varlist:
     act = varlist[temp]
     cal = data[temp]
+    #print(np.array2string(cal,precision=6, separator=','))
     cal = np.where(act==0,0,cal)
     div = np.where(act==0,1,act)
     perct = max(abs(act-cal))

@@ -28,8 +28,8 @@
   FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
   FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check
   LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
-  FLAGS_R+= -fallow-argument-mismatch
-  FLAGS_D+= -fallow-argument-mismatch
+  FLAGS_R += -fallow-argument-mismatch
+  FLAGS_D += -fallow-argument-mismatch
   
 #######################################################################
 #            MPI Options

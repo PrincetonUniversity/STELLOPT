@@ -1,4 +1,5 @@
 ObjectFiles = \
+fieldlines_init_backflow.o \
 fieldlines_init_errorfield.o \
 fieldlines_init_hint.o \
 fieldlines_init_fline.o \
