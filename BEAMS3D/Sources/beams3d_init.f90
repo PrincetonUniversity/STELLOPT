@@ -138,6 +138,7 @@
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
          IF (lw7x) WRITE(6,'(A)') '   W7-X BEAM Model!'
          IF (lascot) WRITE(6,'(A)') '   ASCOT5 OUTPUT ON!'
+         IF (lfidasim) WRITE(6,'(A)') '   FIDASIM OUTPUT ON!'
          IF (lascotfl) WRITE(6,'(A)') '   ASCOT5 FIELDLINE OUTPUT ON!'
          IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
          IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
@@ -146,7 +147,7 @@
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
          IF (lrestart_particles) WRITE(6,'(A)') '   Restarting particles!'
          IF (lrandomize .and. lbeam) WRITE(6,'(A)') '   Randomizing particle processor!'
-         IF (npot > 0) WRITE(6,'(A)') '   RAIDAL ELECTRIC FIELD PRESENT!'
+         IF (npot > 0) WRITE(6,'(A)') '   RADIAL ELECTRIC FIELD PRESENT!'
          CALL FLUSH(6)
       END IF
 
@@ -236,6 +237,18 @@
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!              Fidasim Grid Spec
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      
+      IF (lfidasim) THEN
+         WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
+         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R_FIDA   = [',rmin_fida,',',rmax_fida,'];  NR:   ',nr_fida
+         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI_FIDA = [',phimin_fida,',',phimax_fida,'];  NPHI: ',nphi_fida
+         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z_FIDA   = [',zmin_fida,',',zmax_fida,'];  NZ:   ',nz_fida
+         WRITE(6,'(A,I4, A,I4)') '   NENERGY_FIDA   = ',nenergy_fida,';  NPITCH_FIDA:   ',npitch_fida         
+      END IF
+
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Background Grids
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -263,12 +276,16 @@
          CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
          CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
          CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
+         CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
+         CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
          CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
          IF (myid_sharmem == 0) THEN
             FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
             FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
             FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
             S_ARR = 1.5
+            X_ARR = 1.5
+            Y_ARR = 1.5
             POT_ARR = 0
             NI = 0
             ! Setup grid helpers
@@ -283,6 +300,19 @@
             hri = one / hr
             hpi = one / hp
             hzi = one / hz
+            ! Do this here so EQDSK vac RMP works.
+            B_R = 0
+            B_PHI = 0
+            B_Z = 0
+            MODB = 0
+            if (lfidasim) THEN
+               ALLOCATE(raxis_fida(nr_fida))
+               ALLOCATE(zaxis_fida(nz_fida))
+               ALLOCATE(phiaxis_fida(nphi_fida))
+               FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida-1) + rmin_fida
+               FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida-1) + zmin_fida
+               FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida-1) + phimin_fida
+            END IF
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
          ! Put the vacuum field on the background grid
@@ -339,6 +369,8 @@
       IF (lascot) THEN
          CALL beams3d_write_ascoth5('INIT')
       END IF
+      !WRITE_FIDASIM comes after spline setup as it needs 3D Grids
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Setup Splines
@@ -420,6 +452,7 @@
       IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
 
 
+
       ! Construct Splines on shared memory master nodes
       IF (myid_sharmem == master) THEN
          bcs1=(/ 0, 0/)
@@ -437,6 +470,10 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
          CALL EZspline_init(U_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:U_spl',ier)
+         CALL EZspline_init(X_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:X_spl',ier)
+         CALL EZspline_init(Y_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:Y_spl',ier)
          CALL EZspline_init(POT_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:POT_spl',ier)
          BR_spl%isHermite   = 1
@@ -463,6 +500,14 @@
          U_spl%x1 = raxis
          U_spl%x2 = phiaxis
          U_spl%x3 = zaxis
+         X_spl%isHermite = 1
+         X_spl%x1 = raxis
+         X_spl%x2 = phiaxis
+         X_spl%x3 = zaxis
+         Y_spl%isHermite = 1
+         Y_spl%x1 = raxis
+         Y_spl%x2 = phiaxis
+         Y_spl%x3 = zaxis
          POT_spl%isHermite = 1
          POT_spl%x1 = raxis
          POT_spl%x2 = phiaxis
@@ -481,6 +526,7 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:U_spl',ier)
          CALL EZspline_setup(POT_spl,POT_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:POT_spl',ier)
+
       END IF
       ! Allocate Shared memory space
       CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
@@ -490,6 +536,8 @@
       CALL mpialloc(MODB4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB4D)
       CALL mpialloc(S4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S4D)
       CALL mpialloc(U4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U4D)
+      CALL mpialloc(X4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X4D)
+      CALL mpialloc(Y4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y4D)
       CALL mpialloc(POT4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT4D)
       ! Copy Spline info to shared memory and Free
       IF (myid_sharmem == master) THEN
@@ -500,12 +548,25 @@
          S4D = S_SPL%fspl
          U4D = U_SPL%fspl
          POT4D = POT_SPL%fspl
+
+         X_ARR = S4D(1,:,:,:) * COS(U4D(1,:,:,:))
+         Y_ARR = S4D(1,:,:,:) * SIN(U4D(1,:,:,:))
+         CALL EZspline_setup(X_spl,X_ARR,ier,EXACT_DIM=.true.)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:X_spl',ier)
+         CALL EZspline_setup(Y_spl,Y_ARR,ier,EXACT_DIM=.true.)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:Y_spl',ier)
+         X4D = X_SPL%fspl
+         Y4D = Y_SPL%fspl
+
          CALL EZspline_free(BR_spl,ier)
          CALL EZspline_free(BPHI_spl,ier)
          CALL EZspline_free(BZ_spl,ier)
          CALL EZspline_free(MODB_spl,ier)
          CALL EZspline_free(S_spl,ier)
          CALL EZspline_free(U_spl,ier)
+         CALL EZspline_free(X_spl,ier)
+         CALL EZspline_free(Y_spl,ier)
+
          CALL EZspline_free(POT_spl,ier)
       END IF
       ! These are helpers for range
@@ -525,6 +586,11 @@
 
       IF (myid_sharmem==master) CALL beams3d_volume !requires S_ARR
 
+               ! WRITE_FIDASIM INIT
+      IF (lfidasim) THEN
+         CALL beams3d_write_fidasim('INIT')
+      END IF
+
       ! Output Grid
       CALL beams3d_write('GRID_INIT')
       CALL mpidealloc(B_R,win_B_R)
@@ -533,6 +599,8 @@
       CALL mpidealloc(MODB,win_MODB)
       CALL mpidealloc(S_ARR,win_S_ARR)
       CALL mpidealloc(U_ARR,win_U_ARR)
+      CALL mpidealloc(X_ARR,win_X_ARR)
+      CALL mpidealloc(Y_ARR,win_Y_ARR)
       CALL mpidealloc(POT_ARR,win_POT_ARR)
       IF (.not. lvac) THEN
          CALL mpidealloc(TE,win_TE)
@@ -555,6 +623,7 @@
             END DO
          END IF
       END IF
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Particles

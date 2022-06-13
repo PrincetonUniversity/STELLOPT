@@ -19,9 +19,8 @@
       USE vessel_mod
       USE fieldlines_runtime
       USE fieldlines_lines
-      USE fieldlines_grid, ONLY: phimin, phimax, delta_phi,&
-                                 BR_spl, BZ_spl, MU_spl, MODB_spl
-      USE wall_mod, ONLY: ihit_array, nface, wall_free
+      USE fieldlines_grid, ONLY: phimin, phimax, delta_phi
+      USE wall_mod, ONLY: ihit_array, nface
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -34,7 +33,6 @@
 !          ier          Error flag
 !          l            Dummy index
 !          neqs_nag     Number of ODE's to solve (not limited to NAG routines)
-!          l2           Index helper
 !          itol         LSODE tolerance flag
 !          itask        LSODE flag (overshoot and interpolate)  
 !          istate       LSODE restart flag
@@ -42,7 +40,7 @@
       IMPLICIT NONE
       INTEGER,ALLOCATABLE :: mnum(:)
       INTEGER :: mystart,mypace, i
-      INTEGER     :: ier, l, neqs_nag, l2, itol, itask, &
+      INTEGER     :: ier, l, neqs_nag, itol, itask, &
                      istate, iopt, lrw, liw, mf
       INTEGER, ALLOCATABLE :: iwork(:)
       INTEGER :: MPI_COMM_LOCAL
@@ -83,7 +81,7 @@
       mf=21
 
       ! Break up the Work
-      CALL MPI_CALC_MYRANGE(MPI_COMM_FIELDLINES,1, nlines, mystart, myend)
+      CALL MPI_CALC_MYRANGE(MPI_COMM_FIELDLINES, 1, nlines, mystart, myend)
 
       ! Set the helper arrays
       IF (lhitonly) nsteps=2
@@ -151,7 +149,7 @@
                   dphi = SIGN(dphi,phi_end(l)-phi_start(l))  ! This should work 
                   ier     = 1
                   myline  = l
-                  myldex  = 0
+                  myldex  = ldex_default
                   CALL D02CJF(phi_nag,phif_nag,neqs_nag,q,fblin_nag,tol_nag,relab,out_fieldlines_nag,D02CJW,w,ier)
                   IF (ier < 0) CALL handle_err(D02CJF_ERR,'fieldlines_follow',ier)
                END DO
@@ -167,8 +165,7 @@
                   phi_nag = phi_start(l)
                   ier     = 0
                   myline  = l
-                  l2 = 0
-                  myldex  = 0
+                  myldex  = ldex_default
                   dphi = SIGN(dphi,phi_end(l)-phi_start(l))  ! This should work 
                   CALL out_fieldlines_nag(phi_nag,q)
                   phi_nag = phi_start(l)             ! Because out_fieldlines_nag increments phi_nag
@@ -203,14 +200,18 @@
                   ! Setup LSODE parameters
                   w = 0; iwork = 0; itask = 1; istate = 1;
                   myline  = l
-                  myldex  = 0
+                  myldex  = ldex_default
                   ier     = 0
-                  l2 = 0
                   q(1)    = R_start(l)
                   q(2)    = Z_start(l)
                   phi_nag = phi_start(l)
                   phif_nag = phi_start(l)
                   dphi = SIGN(dphi,phi_end(l)-phi_start(l))  ! This should work 
+                  IF (ldex_default==1) THEN
+                     xlast = q(1)*cos(phi_nag)
+                     ylast = q(1)*sin(phi_nag)
+                     zlast = q(2)
+                  END IF
                   DO 
                      IF (lmu) istate = 1
                      CALL DLSODE(fblin_lsode,neqs_nag,q,phi_nag,phif_nag,itol,rtol,atol,itask,istate,&

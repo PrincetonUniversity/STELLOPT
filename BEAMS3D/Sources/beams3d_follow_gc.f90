@@ -59,7 +59,7 @@ SUBROUTINE beams3d_follow_gc
     REAL(rprec) :: tf_max, vel_max, dt_out
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:), t_last(:)
     DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, t1_nag, &
-                        tol_nag, rtol
+                        tol_nag, rtol, weight_save
     DOUBLE PRECISION :: atol(4), rwork(84)
     DOUBLE PRECISION :: rkh_work(4, 2)
     DOUBLE PRECISION :: qdot1(4)
@@ -180,7 +180,8 @@ SUBROUTINE beams3d_follow_gc
     ! Some helpers
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
     fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
-    fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick
+    !fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick !old
+    fact_kick = 2*freq_kick*E_kick
 
     ! Follow Trajectories
     IF (mystart <= nparticles) THEN
@@ -215,7 +216,10 @@ SUBROUTINE beams3d_follow_gc
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1; ndt =1
                        tf_nag = t_nag
+                       weight_save = weight(myline)
+                       weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
+                       weight(myline) = weight_save
                        IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
@@ -275,7 +279,10 @@ SUBROUTINE beams3d_follow_gc
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1; ndt =1
                        tf_nag = t_nag
+                       weight_save = weight(myline)
+                       weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
+                       weight(myline) = weight_save
                        IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
@@ -363,7 +370,10 @@ SUBROUTINE beams3d_follow_gc
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1
                        tf_nag = t_nag
+                       weight_save = weight(myline)
+                       weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
+                       weight(myline) = weight_save
                        IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
@@ -397,7 +407,7 @@ SUBROUTINE beams3d_follow_gc
                            WRITE(6,*) '     ',myworkid, iwork(11:18)
                            WRITE(6,*) '------------------'
                            CALL FLUSH(6)
-                           CALL handle_err(LSODE_ERR, 'beams3d_follow', istate)
+                           CALL handle_err(LSODE_ERR, 'beams3d_follow_gc', istate)
                         END IF
                         iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it

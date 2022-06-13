@@ -99,6 +99,7 @@ PROGRAM BEAMS3D
         lcollision = .false.
         lw7x = .false.
         lascot = .false.
+        lfidasim = .false.
         lascot4 = .false.
         lbbnbi = .false.
         lascotfl = .false.
@@ -133,6 +134,8 @@ PROGRAM BEAMS3D
                 lascotfl = .true.
             case ("-ascot4")
                 lascot4 = .true.
+            case ("-fidasim")
+                lfidasim = .true.
             case ("-vmec")
                 i = i + 1
                 lvmec = .true.
@@ -344,6 +347,15 @@ PROGRAM BEAMS3D
 
     ! Write diagnostics stuff
     CALL beams3d_diagnostics
+
+    !Write Fidasim Distribution function
+    IF (lfidasim) THEN
+        ! IF (ldepo) THEN
+        !     CALL beams3d_write_fidasim('DISTRIBUTION_GC_MC') !not implemented yet
+        ! ELSE
+            CALL beams3d_write_fidasim('DISTRIBUTION_GC_F') !Should stay here as it alters dist5d_prof
+        ! END IF
+    END IF
 
     ! Clean up
     CALL beams3d_free(MPI_COMM_SHARMEM)
