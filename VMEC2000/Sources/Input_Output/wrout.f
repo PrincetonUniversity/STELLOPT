@@ -430,7 +430,7 @@
 
       CALL cdf_define(nwout, vn_qfact, qfact(1:ns), 
      1                dimname=r1dim)
-      CALL cdf_setatt(nwout, vn_iotaf, ln_qfact)
+      CALL cdf_setatt(nwout, vn_qfact, ln_qfact)
       CALL cdf_define(nwout, vn_presf, presf, 
      1                dimname=r1dim)
       CALL cdf_setatt(nwout, vn_presf, ln_presf, units='Pa')
