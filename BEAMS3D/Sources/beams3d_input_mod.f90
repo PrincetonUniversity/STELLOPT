@@ -33,7 +33,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       ! These are helpers to give the ns1_prof variables user friendly names
-      INTEGER :: nrho_dist, ntheta_dist, nzeta_dist, nvpara_dist, nvperp_dist
+      INTEGER :: nrho_dist, ntheta_dist, nzeta_dist, nvpara_dist, nvperp_dist, nphi_dist
       REAL(rprec) :: temp
 !-----------------------------------------------------------------------
 !     Input Namelists
@@ -85,7 +85,7 @@
                                zeff_scale, plasma_mass, plasma_Zavg, &
                                plasma_Zmean, therm_factor, &
                                fusion_scale, nrho_dist, ntheta_dist, & 
-                               nzeta_dist, nvpara_dist, nvperp_dist, &
+                               nzeta_dist, nphi_dist, nvpara_dist, nvperp_dist, &
                                partvmax, lendt_m, te_col_min, &
                                B_kick_min, B_kick_max, freq_kick, E_kick,&
                                vr_start_in, vphi_start_in, vz_start_in, &
@@ -191,7 +191,8 @@
       ! Distribution Function Defaults
       nrho_dist = 64
       ntheta_dist=8
-      nzeta_dist=4
+      nzeta_dist = -1  ! Kept for historical reasons
+      nphi_dist  = 4
       nvpara_dist=32
       nvperp_dist=16
       partvmax = 0 ! Allows user to set value
@@ -230,7 +231,7 @@
          ! Update dist function sizes
          ns_prof1=nrho_dist
          ns_prof2=ntheta_dist
-         ns_prof3=nzeta_dist
+         ns_prof3=MAX(nzeta_dist,nphi_dist)
          ns_prof4=nvpara_dist
          ns_prof5=nvperp_dist
 
@@ -427,7 +428,7 @@
       WRITE(iunit_out,'(A)') '!---------- Distribution Parameters ------------'
       WRITE(iunit_out,outint) 'NRHO_DIST',ns_prof1
       WRITE(iunit_out,outint) 'NTHETA_DIST',ns_prof2
-      WRITE(iunit_out,outint) 'NZETA_DIST',ns_prof3
+      WRITE(iunit_out,outint) 'NPHI_DIST',ns_prof3
       WRITE(iunit_out,outint) 'NVPARA_DIST',ns_prof4
       WRITE(iunit_out,outint) 'NVPERP_DIST',ns_prof5
       WRITE(iunit_out,outflt) 'PARTVMAX',partvmax

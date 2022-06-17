@@ -140,7 +140,7 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= T
+  LREGCOIL= F
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
@@ -169,6 +169,15 @@ MANGO_DIR = /p/focus/share/mango
 # as defined in $(MANGO_DIR)/lib/mangoMakeVariables
 MANGO_INC=
 MANGO_LIB=
+
+#######################################################################
+#            Available Energy Options
+#######################################################################
+  LAEOPT= F
+  AEOPT_DIR = $(AEOPT_PATH)
+  AEOPT_INC = -I$(AEOPT_DIR) 
+  LIB_AEOPT = libtrapAE.a
+  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
 #            LIBSTELL Shared Options

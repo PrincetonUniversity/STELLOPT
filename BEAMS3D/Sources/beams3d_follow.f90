@@ -129,7 +129,7 @@ SUBROUTINE beams3d_follow
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
     fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
     !fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick !old
-    fact_kick = 2*freq_kick*E_kick
+    !fact_kick = 2*freq_kick*E_kick
 
     ! Handle the Beam defaults
     IF (lbeam) THEN
