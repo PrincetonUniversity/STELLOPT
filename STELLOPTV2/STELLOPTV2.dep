@@ -1,5 +1,8 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_vars.o : \
+      stellopt_winding_surface.o
+
 stellopt_write_auxfiles.o : \
       stellopt_runtime.o \
       equil_utils.o \

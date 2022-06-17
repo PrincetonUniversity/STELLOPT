@@ -92,6 +92,8 @@
                sigma_r0 = sigma_r0/temp
             CASE(jtarget_b0)
                sigma_b0 = sigma_b0/temp
+            CASE(jtarget_balloon)
+               WHERE(sigma_balloon < bigno) sigma_balloon = sigma_balloon/temp
             CASE(jtarget_separatrix)
                WHERE(sigma_separatrix<bigno) sigma_separatrix = sigma_separatrix/temp
             CASE(jtarget_press)
@@ -100,6 +102,8 @@
                WHERE(sigma_pressprime<bigno) sigma_pressprime = sigma_pressprime/temp
             CASE(jtarget_ne)
                WHERE(sigma_ne<bigno_ne) sigma_ne = sigma_ne/temp
+            CASE(jtarget_neo)
+               WHERE(sigma_neo<bigno) sigma_neo = sigma_neo/temp
             CASE(jtarget_te)
                WHERE(sigma_te<bigno) sigma_te = sigma_te/temp
             CASE(jtarget_ti)
@@ -142,6 +146,8 @@
                WHERE(sigma_magwell<bigno) sigma_magwell = sigma_magwell/temp
             CASE(jtarget_helicity)
                WHERE(ABS(sigma_helicity)<bigno) sigma_helicity = sigma_helicity/temp
+            CASE(jtarget_txport)
+               WHERE(ABS(sigma_txport)<bigno) sigma_txport = sigma_txport/temp
             CASE DEFAULT
                WRITE(6,'(A,I3.3,A)') '!!! JTARGET=',iddex(i),' not supported'
                CALL write_targets(6,iddex(i))

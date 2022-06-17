@@ -23,7 +23,7 @@ SUBROUTINE beams3d_follow_gc
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
                             TE_spl, TI_spl, wall_load, wall_shine, &
                             plasma_mass, plasma_Zavg, plasma_Zmean, therm_factor, &
-                            rho_fullorbit, rho_help
+                            rho_fullorbit, rho_help, E_kick, freq_kick
     USE mpi_params ! MPI
     USE beams3d_write_par
     USE safe_open_mod, ONLY: safe_open
@@ -130,6 +130,7 @@ SUBROUTINE beams3d_follow_gc
                     lneut  = .false.
                     lcollision = lbeam
                     ! Collision parameters
+                    fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     DO ! Must do it this way becasue lbeam changes q(4) values
@@ -173,6 +174,7 @@ SUBROUTINE beams3d_follow_gc
                     lneut  = .false.
                     lcollision = lbeam
                     ! Collision parameters
+                    fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     ! Setup DRKHVG parameters
@@ -241,6 +243,7 @@ SUBROUTINE beams3d_follow_gc
                     lneut  = .false.
                     lcollision = lbeam
                     ! Collision parameters
+                    fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     ! Setup LSODE parameters

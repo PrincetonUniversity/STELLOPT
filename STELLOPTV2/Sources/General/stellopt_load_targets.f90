@@ -217,6 +217,9 @@
       ! Coil excursion outside prescribed box
       IF (ANY(sigma_coilrect < bigno)) &
            CALL chisq_coilrect(target_coilrect, sigma_coilrect, ncnt, iflag)
+      ! Coil incursion into proscribed polygon set
+      IF (ANY(sigma_coilpoly < bigno)) &
+           CALL chisq_coilpoly(target_coilpoly, sigma_coilpoly, ncnt, iflag)
 
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries
