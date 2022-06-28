@@ -809,6 +809,20 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          DEALLOCATE(pitch_fida)
          DEALLOCATE(energy_fida)
          !DEALLOCATE(dist5d_temp)
+
+         INQUIRE(FILE=TRIM(fidasim_input_dat),EXIST=lexist)
+         IF (.not.lexist) THEN
+            istat=-1
+            WRITE(6,*) " ERROR: Could not find file: "//TRIM(fidasim_input_dat)
+            RETURN
+         END IF
+         INQUIRE(FILE=TRIM(fidasim_geometry),EXIST=lexist)
+         IF (.not.lexist) THEN
+            istat=-1
+            WRITE(6,*) " ERROR: Could not find file: "//TRIM(fidasim_geometry)
+            RETURN
+         END IF
+
        CASE('DISTRIBUTION_GC_MC')
        CASE('DISTRIBUTION_FO')
 
