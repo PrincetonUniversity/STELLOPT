@@ -11,8 +11,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 !-----------------------------------------------------------------------
    USE stel_kinds, ONLY: rprec
 #ifdef LHDF5
-   USE hdf5
-   USE ez_hdf5
+      USE hdf5
+      USE ez_hdf5
 #endif
    USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, &
       ns_prof4, ns_prof5, dist5d_prof, &
