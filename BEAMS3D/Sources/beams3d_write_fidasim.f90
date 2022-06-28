@@ -28,6 +28,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
       NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET, &
       POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
+      BR4D, BPHI4D, BZ4D, &
       hr, hp, hz, hri, hpi, hzi, S4D, U4D, X4D, Y4D, &
       rmin, rmax, zmin, zmax, phimin, phimax, raxis, zaxis, phiaxis, &
       rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
@@ -69,13 +70,13 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    !REAL*8, POINTER :: hr_fida(:), hp_fida(:), hz_fida(:)
    !REAL*8, POINTER :: hri_fida(:), hpi_fida(:), hzi_fida(:)
    REAL(rprec), DIMENSION(4) :: rt,zt,pt
-   REAL*8 :: xparam, yparam, zparam !, hx, hy, hz, hxi, hyi, hzi
+   REAL*8 :: xparam, yparam, zparam!, hx, hy, hz, hxi, hyi, hzi
    REAL*8 :: fval(1), fval2(1)
    INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
    DOUBLE PRECISION         :: x0,y0,z0
-   REAL(rprec) :: jac, v_parr, v_perp, pitch, v
+   REAL(rprec) :: jac, v_parr, v_perp, pitch, v, phi_temp, r_temp, z_temp
    DOUBLE PRECISION :: rho_temp, s_temp, dbl_temp, gammarel, v_total, vol
-   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:), r1dtemp2(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
+   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), r1dtemp(:), r1dtemp2(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
    INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask
    CHARACTER(LEN=8) :: temp_str8, inj_str8
    REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_temp
@@ -258,28 +259,78 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          !--------------------------------------------------------------
 
 
-         ALLOCATE(rtemp(nr,nz, nphi))
-         rtemp = reshape(B_R(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/)) !switch phi and z
+         ALLOCATE(rtemp(nr_fida,nz_fida, nphi_fida))
+         ALLOCATE(rtemp2(nr_fida,nz_fida, nphi_fida))
+         ALLOCATE(rtemp3(nr_fida,nz_fida, nphi_fida))
+         DO l = 1,nr_fida
+            DO m = 1,nphi_fida
+               DO n = 1,nz_fida
+                  ! Eval Spline
+                  i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
+                  j = MIN(MAX(COUNT(phiaxis < phiaxis_fida(m)),1),nphi-1)
+                  k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
+                  xparam = (raxis_fida(l) - raxis(i)) * hri(i)
+                  yparam = (phiaxis_fida(m) - phiaxis(j)) * hpi(j)
+                  zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
+                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                                 BR4D(1,1,1,1),nr,nphi,nz)
+                  rtemp(l,n,m) = fval(1)
+                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                                 BPHI4D(1,1,1,1),nr,nphi,nz)
+                  rtemp2(l,n,m) = fval(1)
+                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                                 BZ4D(1,1,1,1),nr,nphi,nz)
+                  rtemp3(l,n,m) = fval(1)
+
+               END DO
+            END DO
+         END DO
+
+
          CALL write_var_hdf5(qid_gid,'br',nr,nz,nphi,ier,DBLVAR=rtemp)
          CALL h5dopen_f(qid_gid, 'br', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','T',ier)
          CALL write_att_hdf5(temp_gid,'description','Magnetic field in the r-direction: Br(r,z,phi)',ier)
          CALL h5dclose_f(temp_gid,ier)
 
-         rtemp = reshape(B_PHI(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         CALL write_var_hdf5(qid_gid,'bt',nr,nz,nphi,ier,DBLVAR=rtemp)
+         CALL write_var_hdf5(qid_gid,'bt',nr,nz,nphi,ier,DBLVAR=rtemp2)
          CALL h5dopen_f(qid_gid, 'bt', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','T',ier)
          CALL write_att_hdf5(temp_gid,'description','Magnetic field in the theta/torodial-direction: Bt(r,z,phi)',ier)
          CALL h5dclose_f(temp_gid,ier)
 
-         rtemp = reshape(B_Z(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         CALL write_var_hdf5(qid_gid,'bz',nr,nz,nphi,ier,DBLVAR=rtemp)
+         CALL write_var_hdf5(qid_gid,'bz',nr,nz,nphi,ier,DBLVAR=rtemp3)
          CALL h5dopen_f(qid_gid, 'bz', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','T',ier)
          CALL write_att_hdf5(temp_gid,'description','Magnetic field in the z-direction: Bz(r,z,phi)',ier)
          CALL h5dclose_f(temp_gid,ier)
          DEALLOCATE(rtemp)
+
+         ! ALLOCATE(rtemp(nr,nz, nphi))
+         ! rtemp = reshape(B_R(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/)) !switch phi and z
+         ! CALL write_var_hdf5(qid_gid,'br',nr,nz,nphi,ier,DBLVAR=rtemp)
+         ! CALL h5dopen_f(qid_gid, 'br', temp_gid, ier)
+         ! CALL write_att_hdf5(temp_gid,'units','T',ier)
+         ! CALL write_att_hdf5(temp_gid,'description','Magnetic field in the r-direction: Br(r,z,phi)',ier)
+         ! CALL h5dclose_f(temp_gid,ier)
+
+         ! rtemp = reshape(B_PHI(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
+         ! CALL write_var_hdf5(qid_gid,'bt',nr,nz,nphi,ier,DBLVAR=rtemp)
+         ! CALL h5dopen_f(qid_gid, 'bt', temp_gid, ier)
+         ! CALL write_att_hdf5(temp_gid,'units','T',ier)
+         ! CALL write_att_hdf5(temp_gid,'description','Magnetic field in the theta/torodial-direction: Bt(r,z,phi)',ier)
+         ! CALL h5dclose_f(temp_gid,ier)
+
+         ! rtemp = reshape(B_Z(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
+         ! CALL write_var_hdf5(qid_gid,'bz',nr,nz,nphi,ier,DBLVAR=rtemp)
+         ! CALL h5dopen_f(qid_gid, 'bz', temp_gid, ier)
+         ! CALL write_att_hdf5(temp_gid,'units','T',ier)
+         ! CALL write_att_hdf5(temp_gid,'description','Magnetic field in the z-direction: Bz(r,z,phi)',ier)
+         ! CALL h5dclose_f(temp_gid,ier)
+         ! DEALLOCATE(rtemp)
 
          !--------------------------------------------------------------
          !           E-FIELD - NEEDS CHECKING
@@ -300,13 +351,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             DO i = 1, nr-1 !correct?
                DO j=1, nphi-1
                   DO k=1, nz-1
-                     !hx     = raxis(i+1) - raxis(i)
-                     !hy     = phiaxis(j+1) - phiaxis(j)
-                     !hz     = zaxis(k+1) - zaxis(k)
-                     !hxi    = one / hx
-                     !hyi    = one / hy
-                     !hzi    = one / hz
-                     ! X/Y/Zparam are 1 since grids are the same.
                      xparam = 1.0
                      yparam = 1.0
                      zparam = 1.0
@@ -315,13 +359,10 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                         POT4D(1,1,1,1),nr,nphi,nz)
                      r1dtemp(1:3) =-fvalE(1,1:3)
                      r4dtemp(i,j,k,1:3) = r1dtemp
-                     !ider=1
-                     !CALL EZspline_gradient3_r8(POT_spl, ider, raxis(i), phiaxis(j), zaxis(k),r1dtemp, ier)
                      r4dtemp(i,j,k,1:3) = -r1dtemp(1:3)
                   END DO
                END DO
             END DO
-            !CALL EZspline_gradient3_r8(POT_spl, ider, nr, nphi, nz, raxis, phiaxis, zaxis,r4dtemp(1:nr,1:nphi,1:nz,1:3), ier)
             ALLOCATE(rtemp(nr,nz,nphi))
             rtemp = reshape(r4dtemp(1:nr,1:nphi,1:nz,1), shape(rtemp), order=(/1, 3, 2/))
             CALL write_var_hdf5(qid_gid,'er',nr,nz,nphi, ier,DBLVAR=rtemp)
