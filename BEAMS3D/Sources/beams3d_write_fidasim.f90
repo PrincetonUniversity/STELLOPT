@@ -32,7 +32,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       rmin, rmax, zmin, zmax, phimin, phimax, raxis, zaxis, phiaxis, &
       rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
       raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-      nenergy_fida, npitch_fida, energy_fida, pitch_fida
+      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
    USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
       lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lplasma_only, &
       lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -130,7 +130,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL write_att_hdf5(temp_gid,'description','Number of Z values',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'time',ier,DBLVAR=DBLE(0)) !!!!Assumes steady state/dummy
+         CALL write_var_hdf5(qid_gid,'time',ier,DBLVAR=DBLE(t_fida))
          CALL h5dopen_f(fid, 'time', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','s',ier)
          CALL write_att_hdf5(temp_gid,'description','Distribution time',ier)
@@ -141,7 +141,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Radius',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'phi',nphi_fida, ier,DBLVAR=DBLE(phiaxis_fida)) !Hard-coded toroidal slice for now
+         CALL write_var_hdf5(qid_gid,'phi',nphi_fida, ier,DBLVAR=DBLE(phiaxis_fida))
          CALL h5dopen_f(fid, 'phi', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','rad',ier)
          CALL write_att_hdf5(temp_gid,'description','Toroidal angle',ier)
