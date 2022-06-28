@@ -21,10 +21,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       nsh_prof4,  my_end, r_h, p_h, z_h
    USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
       zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
-      ZEFF_ARR, TE, TI, NE, req_axis, zeq_axis, npot, &
-      POT_SPL, ezspline_interp, phiedge_eq, TE_spl, &
-      NE_spl, TI_spl, ZEFF_spl, nne, nte, nti, nzeff, &
-      plasma_mass, reff_eq, therm_factor, &
+      ZEFF_ARR, TE, TI, NE, npot, nte, nti, nzeff, &
       X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
       NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET, &
       POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
@@ -66,27 +63,26 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       neutral_gid, wall_gid, marker_gid, qid_gid, &
       nbi_gid, inj_gid, boozer_gid, mhd_gid, temp_gid
    INTEGER, ALLOCATABLE, DIMENSION(:) :: itemp
-   REAL*8 :: fvalE(1,3)
-   !REAL*8, POINTER :: hr_fida(:), hp_fida(:), hz_fida(:)
-   !REAL*8, POINTER :: hri_fida(:), hpi_fida(:), hzi_fida(:)
-   REAL(rprec), DIMENSION(4) :: rt,zt,pt
-   REAL*8 :: xparam, yparam, zparam!, hx, hy, hz, hxi, hyi, hzi
-   REAL*8 :: fval(1), fval2(1)
-   INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
-   DOUBLE PRECISION         :: x0,y0,z0
-   REAL(rprec) :: jac, v_parr, v_perp, pitch, v, phi_temp, r_temp, z_temp
-   DOUBLE PRECISION :: rho_temp, s_temp, dbl_temp, gammarel, v_total, vol
-   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), r1dtemp(:), r1dtemp2(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
    INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask
-   CHARACTER(LEN=8) :: temp_str8, inj_str8
-   REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_temp
 
-   INTEGER, parameter :: ictE(8)=(/0,1,1,1,0,0,0,0/)
+   REAL*8 :: fvalE(1,3), fval(1), fval2(1), xparam, yparam, zparam
+   REAL(rprec) :: jac, v_parr, v_perp, pitch, v, phi_temp, r_temp, z_temp
+   REAL(rprec), DIMENSION(4) :: rt,zt,pt
+   REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_temp
+   !REAL*8 :: xparam, yparam, zparam!, hx, hy, hz, hxi, hyi, hzi
+   !REAL*8 :: fval(1), fval2(1)
+
+   DOUBLE PRECISION         :: x0, y0, z0, rho_temp, s_temp, dbl_temp, gammarel, v_total, vol
+   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), r1dtemp(:), r1dtemp2(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
+
+   CHARACTER(LEN=8) :: temp_str8, inj_str8
+
+   INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/), ictE(8)=(/0,1,1,1,0,0,0,0/)
    REAL*8, PARAMETER :: one = 1
-   !DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
    DOUBLE PRECISION, PARAMETER :: c_speed       = 2.99792458E+08 !Speed of light [m/s]
    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
    DOUBLE PRECISION, PARAMETER :: inv_amu       = 6.02214076208E+26 ! 1./AMU [1/kg]
+   DOUBLE PRECISION, PARAMETER :: zero          = 0.0D0 ! 0.0
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -172,10 +168,10 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 
          ! Close file
          CALL close_hdf5(fid,ier)
-         IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'ascot5_'//TRIM(id_string)//'_distribution.h5',ier)
+         IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'fidasim_'//TRIM(id_string)//'_distribution.h5',ier)
 
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_equilibrium.h5',fid,ier,LCREATE=.true.)
-         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'ascot5_'//TRIM(id_string)//'_equilibrium.h5',ier)
+         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'fidasim_'//TRIM(id_string)//'_equilibrium.h5',ier)
 
 
          !--------------------------------------------------------------
@@ -187,53 +183,62 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 
 
          !           GRID
-         CALL write_var_hdf5(qid_gid,'nr',ier,INTVAR=nr)
+         CALL write_var_hdf5(qid_gid,'nr',ier,INTVAR=nr_fida)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
          CALL h5dopen_f(qid_gid, 'nr', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL write_att_hdf5(temp_gid,'description','Number of R values',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'nphi',ier,INTVAR=nphi)
+         CALL write_var_hdf5(qid_gid,'nphi',ier,INTVAR=nphi_fida)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nphi',ier)
          CALL h5dopen_f(qid_gid, 'nphi', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL write_att_hdf5(temp_gid,'description','Number of Phi values',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'nz',ier,INTVAR=nz)
+         CALL write_var_hdf5(qid_gid,'nz',ier,INTVAR=nz_fida)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nz',ier)
          CALL h5dopen_f(qid_gid, 'nz', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL write_att_hdf5(temp_gid,'description','Number of Z values',ier)
          CALL h5dclose_f(temp_gid,ier)
          CALL write_var_hdf5(qid_gid,'time',ier,DBLVAR=DBLE(0)) !!!!Assumes steady state/dummy
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'time',ier)
          CALL h5dopen_f(qid_gid, 'time', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','s',ier)
          CALL write_att_hdf5(temp_gid,'description','Distribution time',ier)
          CALL h5dclose_f(temp_gid,ier)
 
-         CALL write_var_hdf5(qid_gid,'r',nr, ier,DBLVAR=DBLE(raxis*100)) !convert from m to cm
+         CALL write_var_hdf5(qid_gid,'r',nr_fida, ier,DBLVAR=DBLE(raxis_fida*100)) !convert from m to cm
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'r',ier)
          CALL h5dopen_f(qid_gid, 'r', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Radius',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'phi',nphi, ier,DBLVAR=phiaxis)
+         CALL write_var_hdf5(qid_gid,'phi',nphi_fida, ier,DBLVAR=phiaxis_fida)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phi',ier)
          CALL h5dopen_f(qid_gid, 'phi', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','rad',ier)
          CALL write_att_hdf5(temp_gid,'description','Toroidal angle',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'z',nz, ier,DBLVAR=DBLE(zaxis*100)) !convert from m to cm
+         CALL write_var_hdf5(qid_gid,'z',nz_fida, ier,DBLVAR=DBLE(zaxis_fida*100)) !convert from m to cm
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'z',ier)
          CALL h5dopen_f(qid_gid, 'z', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Z',ier)
          CALL h5dclose_f(temp_gid,ier)
 
 
-         ALLOCATE(r2dtemp(nr,nz))
-         r2dtemp = SPREAD(raxis, 2, nz)
-         CALL write_var_hdf5(qid_gid,'r2d',nr, nz, ier,DBLVAR=DBLE(r2dtemp*100))
+         ALLOCATE(r2dtemp(nr_fida,nz_fida))
+         r2dtemp = SPREAD(raxis_fida, 2, nz_fida)
+         CALL write_var_hdf5(qid_gid,'r2d',nr_fida, nz_fida, ier,DBLVAR=DBLE(r2dtemp*100))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'r2d',ier)
          CALL h5dopen_f(qid_gid, 'r2d', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Radius grid: R(r,z)',ier)
          CALL h5dclose_f(temp_gid,ier)
-         r2dtemp = SPREAD(zaxis, 1, nr)
-         CALL write_var_hdf5(qid_gid,'z2d',nr, nz, ier,DBLVAR=DBLE(r2dtemp*100))
+         r2dtemp = SPREAD(zaxis_fida, 1, nr_fida)
+         CALL write_var_hdf5(qid_gid,'z2d',nr_fida, nz_fida, ier,DBLVAR=DBLE(r2dtemp*100))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'z2d',ier)
          CALL h5dopen_f(qid_gid, 'z2d', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Z grid: Z(r,z)',ier)
@@ -241,12 +246,13 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          DEALLOCATE(r2dtemp)
 
          !           MASK
-         ALLOCATE(mask(nr,nz))
+         ALLOCATE(mask(nr_fida,nz_fida))
          mask = 1
-         CALL write_var_hdf5(qid_gid,'mask',nr,nz,ier,INTVAR=mask) !PLACEHOLDER, should be "Boolean mask that indicates where the fields are well defined", Dim: [nr,nz]
-
+         CALL write_var_hdf5(qid_gid,'mask',nr_fida,nz_fida,ier,INTVAR=mask) !PLACEHOLDER, should be "Boolean mask that indicates where the fields are well defined", Dim: [nr,nz]
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'mask',ier)
          CALL h5dopen_f(qid_gid, 'mask', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'description','Boolean mask that indicates where the fields are well defined',ier)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'mask',ier)
          CALL h5dclose_f(temp_gid,ier)
          DEALLOCATE(mask)
 
@@ -263,8 +269,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ALLOCATE(rtemp2(nr_fida,nz_fida, nphi_fida))
          ALLOCATE(rtemp3(nr_fida,nz_fida, nphi_fida))
          DO l = 1,nr_fida
-            DO m = 1,nphi_fida
-               DO n = 1,nz_fida
+            DO n = 1,nz_fida
+               DO m = 1,nphi_fida            
                   ! Eval Spline
                   i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
                   j = MIN(MAX(COUNT(phiaxis < phiaxis_fida(m)),1),nphi-1)
@@ -288,26 +294,31 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                END DO
             END DO
          END DO
+         
 
-
-         CALL write_var_hdf5(qid_gid,'br',nr,nz,nphi,ier,DBLVAR=rtemp)
+         CALL write_var_hdf5(qid_gid,'br',nr_fida,nz_fida,nphi_fida,ier,DBLVAR=rtemp)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'br',ier)
          CALL h5dopen_f(qid_gid, 'br', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','T',ier)
          CALL write_att_hdf5(temp_gid,'description','Magnetic field in the r-direction: Br(r,z,phi)',ier)
          CALL h5dclose_f(temp_gid,ier)
 
-         CALL write_var_hdf5(qid_gid,'bt',nr,nz,nphi,ier,DBLVAR=rtemp2)
+         CALL write_var_hdf5(qid_gid,'bt',nr_fida,nz_fida,nphi_fida,ier,DBLVAR=rtemp2)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'bt',ier)
          CALL h5dopen_f(qid_gid, 'bt', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','T',ier)
          CALL write_att_hdf5(temp_gid,'description','Magnetic field in the theta/torodial-direction: Bt(r,z,phi)',ier)
          CALL h5dclose_f(temp_gid,ier)
 
-         CALL write_var_hdf5(qid_gid,'bz',nr,nz,nphi,ier,DBLVAR=rtemp3)
+         CALL write_var_hdf5(qid_gid,'bz',nr_fida,nz_fida,nphi_fida,ier,DBLVAR=rtemp3)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'bz',ier)
          CALL h5dopen_f(qid_gid, 'bz', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','T',ier)
          CALL write_att_hdf5(temp_gid,'description','Magnetic field in the z-direction: Bz(r,z,phi)',ier)
          CALL h5dclose_f(temp_gid,ier)
          DEALLOCATE(rtemp)
+         DEALLOCATE(rtemp2)
+         DEALLOCATE(rtemp3)
 
          ! ALLOCATE(rtemp(nr,nz, nphi))
          ! rtemp = reshape(B_R(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/)) !switch phi and z
@@ -338,52 +349,57 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 
          ! Values must be equidistant in rho.
          IF (npot < 1) THEN ! Because we can run with E=0
-            ALLOCATE(rtemp(nr,nz,nphi))
+            ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
             rtemp = 0.0
-            CALL write_var_hdf5(qid_gid,'er',nr,nz,nphi, ier,DBLVAR=rtemp)
-            CALL write_var_hdf5(qid_gid,'et',nr,nz,nphi, ier,DBLVAR=rtemp)
-            CALL write_var_hdf5(qid_gid,'ez',nr,nz,nphi, ier,DBLVAR=rtemp)
+            CALL write_var_hdf5(qid_gid,'er',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=rtemp)
+            CALL write_var_hdf5(qid_gid,'et',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=rtemp)
+            CALL write_var_hdf5(qid_gid,'ez',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=rtemp)
             DEALLOCATE(rtemp)
          ELSE
-            ALLOCATE(r4dtemp(nr,nphi,nz,3))
+            ALLOCATE(r4dtemp(nr_fida,nphi_fida,nz_fida,3))
             ALLOCATE(r1dtemp(3))
             r1dtemp = 1
-            DO i = 1, nr-1 !correct?
-               DO j=1, nphi-1
-                  DO k=1, nz-1
-                     xparam = 1.0
-                     yparam = 1.0
-                     zparam = 1.0
+            DO l = 1,nr_fida
+               DO n = 1,nz_fida
+                  DO m = 1,nphi_fida            
+                     ! Eval Spline
+                     ! Get the gridpoint info (this is possible since all grids are the same)
+                     i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
+                     j = MIN(MAX(COUNT(phiaxis < phiaxis_fida(m)),1),nphi-1)
+                     k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
+                     xparam = (raxis_fida(l) - raxis(i)) * hri(i)
+                     yparam = (phiaxis_fida(m) - phiaxis(j)) * hpi(j)
+                     zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
+                     ! Evaluate the Splines
                      CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,& !evaluate at grid points
                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                         POT4D(1,1,1,1),nr,nphi,nz)
                      r1dtemp(1:3) =-fvalE(1,1:3)
-                     r4dtemp(i,j,k,1:3) = r1dtemp
-                     r4dtemp(i,j,k,1:3) = -r1dtemp(1:3)
+                     r4dtemp(l,n,m,1:3) = -r1dtemp(1:3)
                   END DO
                END DO
             END DO
-            ALLOCATE(rtemp(nr,nz,nphi))
-            rtemp = reshape(r4dtemp(1:nr,1:nphi,1:nz,1), shape(rtemp), order=(/1, 3, 2/))
-            CALL write_var_hdf5(qid_gid,'er',nr,nz,nphi, ier,DBLVAR=rtemp)
+            CALL write_var_hdf5(qid_gid,'er',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=r4dtemp(:,:,:,1))
+            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'er',ier)
             CALL h5dopen_f(qid_gid, 'er', temp_gid, ier)
             CALL write_att_hdf5(temp_gid,'units','V/m',ier)
             CALL write_att_hdf5(temp_gid,'description','Electric field in the r-direction: Er(r,z,phi)',ier)
             CALL h5dclose_f(temp_gid,ier)
-            rtemp = reshape(r4dtemp(1:nr,1:nphi,1:nz,2), shape(rtemp), order=(/1, 3, 2/))
-            CALL write_var_hdf5(qid_gid,'et',nr,nz,nphi, ier,DBLVAR=rtemp)
+
+            CALL write_var_hdf5(qid_gid,'et',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=r4dtemp(:,:,:,2))
+            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'et',ier)
             CALL h5dopen_f(qid_gid, 'et', temp_gid, ier)
             CALL write_att_hdf5(temp_gid,'units','V/m',ier)
             CALL write_att_hdf5(temp_gid,'description','Electric field in the toroidal phi-direction: Et(r,z,phi)',ier)
             CALL h5dclose_f(temp_gid,ier)
-            rtemp = reshape(r4dtemp(1:nr,1:nphi,1:nz,3), shape(rtemp), order=(/1, 3, 2/))
-            CALL write_var_hdf5(qid_gid,'ez',nr,nz,nphi, ier,DBLVAR=rtemp)
+
+            CALL write_var_hdf5(qid_gid,'ez',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=r4dtemp(:,:,:,3))
+            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ez',ier)
             CALL h5dopen_f(qid_gid, 'ez', temp_gid, ier)
             CALL write_att_hdf5(temp_gid,'units','V/m',ier)
             CALL write_att_hdf5(temp_gid,'description','Electric field in the z-direction: Ez(r,z,phi)',ier)
             CALL h5dclose_f(temp_gid,ier)
             DEALLOCATE(r1dtemp)
-            DEALLOCATE(rtemp)
             DEALLOCATE(r4dtemp)
          END IF
 
@@ -398,53 +414,62 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL write_att_hdf5(qid_gid,'description','no bulk plasma rotation/flow',ier)
 
          !           GRID
-         CALL write_var_hdf5(qid_gid,'nr',ier,INTVAR=nr)
+         CALL write_var_hdf5(qid_gid,'nr',ier,INTVAR=nr_fida)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
          CALL h5dopen_f(qid_gid, 'nr', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL write_att_hdf5(temp_gid,'description','Number of R values',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'nphi',ier,INTVAR=nphi)
+         CALL write_var_hdf5(qid_gid,'nphi',ier,INTVAR=nphi_fida)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nphi',ier)
          CALL h5dopen_f(qid_gid, 'nphi', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL write_att_hdf5(temp_gid,'description','Number of Phi values',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'nz',ier,INTVAR=nz)
+         CALL write_var_hdf5(qid_gid,'nz',ier,INTVAR=nz_fida)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nz',ier)
          CALL h5dopen_f(qid_gid, 'nz', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL write_att_hdf5(temp_gid,'description','Number of Z values',ier)
          CALL h5dclose_f(temp_gid,ier)
          CALL write_var_hdf5(qid_gid,'time',ier,DBLVAR=DBLE(0)) !!!!Assumes steady state/dummy
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'time',ier)
          CALL h5dopen_f(qid_gid, 'time', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','s',ier)
          CALL write_att_hdf5(temp_gid,'description','Distribution time',ier)
          CALL h5dclose_f(temp_gid,ier)
 
-         CALL write_var_hdf5(qid_gid,'r',nr, ier,DBLVAR=DBLE(raxis*100)) !convert from m to cm
+         CALL write_var_hdf5(qid_gid,'r',nr_fida, ier,DBLVAR=DBLE(raxis_fida*100)) !convert from m to cm
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'r',ier)
          CALL h5dopen_f(qid_gid, 'r', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Radius',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'phi',nphi, ier,DBLVAR=phiaxis)
+         CALL write_var_hdf5(qid_gid,'phi',nphi_fida, ier,DBLVAR=phiaxis_fida)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phi',ier)
          CALL h5dopen_f(qid_gid, 'phi', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','rad',ier)
          CALL write_att_hdf5(temp_gid,'description','Toroidal angle',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'z',nz, ier,DBLVAR=DBLE(zaxis*100)) !convert from m to cm
+         CALL write_var_hdf5(qid_gid,'z',nz_fida, ier,DBLVAR=DBLE(zaxis_fida*100)) !convert from m to cm
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'z',ier)
          CALL h5dopen_f(qid_gid, 'z', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Z',ier)
          CALL h5dclose_f(temp_gid,ier)
 
 
-         ALLOCATE(r2dtemp(nr,nz))
-         r2dtemp = SPREAD(raxis, 2, nz)
-         CALL write_var_hdf5(qid_gid,'r2d',nr, nz, ier,DBLVAR=DBLE(r2dtemp*100))
+         ALLOCATE(r2dtemp(nr_fida,nz_fida))
+         r2dtemp = SPREAD(raxis_fida, 2, nz_fida)
+         CALL write_var_hdf5(qid_gid,'r2d',nr_fida, nz_fida, ier,DBLVAR=DBLE(r2dtemp*100))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'r2d',ier)
          CALL h5dopen_f(qid_gid, 'r2d', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Radius grid: R(r,z)',ier)
          CALL h5dclose_f(temp_gid,ier)
-         r2dtemp = SPREAD(zaxis, 1, nr)
-         CALL write_var_hdf5(qid_gid,'z2d',nr, nz, ier,DBLVAR=DBLE(r2dtemp*100))
+         r2dtemp = SPREAD(zaxis_fida, 1, nr_fida)
+         CALL write_var_hdf5(qid_gid,'z2d',nr_fida, nz_fida, ier,DBLVAR=DBLE(r2dtemp*100))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'z2d',ier)
          CALL h5dopen_f(qid_gid, 'z2d', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','cm',ier)
          CALL write_att_hdf5(temp_gid,'description','Z grid: Z(r,z)',ier)
@@ -452,64 +477,139 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          DEALLOCATE(r2dtemp)
 
          !           MASK
-         ALLOCATE(mask(nr,nz))
+         ALLOCATE(mask(nr_fida,nz_fida))
          mask = 1
-         CALL write_var_hdf5(qid_gid,'mask',nr,nz,ier,INTVAR=mask) !PLACEHOLDER, should be "Boolean mask that indicates where the fields are well defined", Dim: [nr,nz]
+         CALL write_var_hdf5(qid_gid,'mask',nr_fida,nz_fida,ier,INTVAR=mask) !PLACEHOLDER, should be "Boolean mask that indicates where the fields are well defined", Dim: [nr,nz]
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'mask',ier)
          CALL h5dopen_f(qid_gid, 'mask', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'description','Boolean mask that indicates where the fields are well defined',ier)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'mask',ier)
          CALL h5dclose_f(temp_gid,ier)
          DEALLOCATE(mask)
 
          !           PLASMA ROTATION/FLOW
-         ALLOCATE(rtemp(nr,nz,nphi))
+         ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
          rtemp = 0.0
-         CALL write_var_hdf5(qid_gid,'vr',nr,nz, nphi,ier,DBLVAR=rtemp)
+         CALL write_var_hdf5(qid_gid,'vr',nr_fida,nz_fida, nphi_fida,ier,DBLVAR=rtemp)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vr',ier)
          CALL h5dopen_f(qid_gid, 'vr', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'description','Bulk plasma flow in the r-direction: Vr(r,z,phi)',ier)
          CALL write_att_hdf5(temp_gid,'units','cm/s',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'vt',nr,nz, nphi,ier,DBLVAR=rtemp)
+         CALL write_var_hdf5(qid_gid,'vt',nr_fida,nz_fida, nphi_fida,ier,DBLVAR=rtemp)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vt',ier)
          CALL h5dopen_f(qid_gid, 'vt', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'description','Bulk plasma flow in the toroidal phi-direction: Vphi(r,z,phi)',ier)
          CALL write_att_hdf5(temp_gid,'units','cm/s',ier)
          CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'vz',nr,nz, nphi,ier,DBLVAR=rtemp)
+         CALL write_var_hdf5(qid_gid,'vz',nr_fida,nz_fida, nphi_fida,ier,DBLVAR=rtemp)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vz',ier)
          CALL h5dopen_f(qid_gid, 'vz', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'description','Bulk plasma flow in the z-direction: Vz(r,z,phi)',ier)
          CALL write_att_hdf5(temp_gid,'units','cm/s',ier)
          CALL h5dclose_f(temp_gid,ier)
+         DEALLOCATE(rtemp)
 
-         rtemp = reshape(NE(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         CALL write_var_hdf5(qid_gid,'dene',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp/1000000)) !convert from m^-3 to cm^-3
-         CALL h5dopen_f(qid_gid, 'dene', temp_gid, ier)
-         CALL write_att_hdf5(temp_gid,'units','cm^-3',ier)
-         CALL write_att_hdf5(temp_gid,'description','Electron Number Density: Dene(r,z, phi)',ier)
-         CALL h5dclose_f(temp_gid,ier)
-         rtemp = reshape(TE(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         CALL write_var_hdf5(qid_gid,'te',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp/1000))
+         ALLOCATE(rtemp(nr_fida,nz_fida, nphi_fida))
+         ALLOCATE(rtemp2(nr_fida,nz_fida, nphi_fida))
+         ALLOCATE(rtemp3(nr_fida,nz_fida, nphi_fida))
+         ALLOCATE(rtemp4(nr_fida,nz_fida, nphi_fida))
+
+         DO l = 1,nr_fida
+            DO n = 1,nz_fida
+               DO m = 1,nphi_fida            
+                  ! Eval Spline
+                  ! Get the gridpoint info (this is possible since all grids are the same)
+                  i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
+                  j = MIN(MAX(COUNT(phiaxis < phiaxis_fida(m)),1),nphi-1)
+                  k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
+                  xparam = (raxis_fida(l) - raxis(i)) * hri(i)
+                  yparam = (phiaxis_fida(m) - phiaxis(j)) * hpi(j)
+                  zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
+                  ! Evaluate the Splines
+                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                                 TE4D(1,1,1,1),nr,nphi,nz)
+                  rtemp(l,n,m) = max(fval(1),zero)
+                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                                 NE4D(1,1,1,1),nr,nphi,nz)
+                  rtemp2(l,n,m) = max(fval(1),zero)
+                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                                 TI4D(1,1,1,1),nr,nphi,nz)
+                  rtemp3(l,n,m) = max(fval(1),zero)
+                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                                 ZEFF4D(1,1,1,1),nr,nphi,nz)
+                  rtemp4(l,n,m) = max(fval(1),one)
+               END DO
+            END DO
+         END DO
+
+         CALL write_var_hdf5(qid_gid,'te',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=DBLE(rtemp/1000))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'te',ier)
          CALL h5dopen_f(qid_gid, 'te', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','kev',ier)
          CALL write_att_hdf5(temp_gid,'description','Electron Temperature: Ti(r,z,phi)',ier)
          CALL h5dclose_f(temp_gid,ier)
-         rtemp = reshape(TI(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         CALL write_var_hdf5(qid_gid,'ti',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp/1000))
+
+         CALL write_var_hdf5(qid_gid,'dene',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=DBLE(rtemp2/1000000)) !convert from m^-3 to cm^-3
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dene',ier)
+         CALL h5dopen_f(qid_gid, 'dene', temp_gid, ier)
+         CALL write_att_hdf5(temp_gid,'units','cm^-3',ier)
+         CALL write_att_hdf5(temp_gid,'description','Electron Number Density: Dene(r,z, phi)',ier)
+         CALL h5dclose_f(temp_gid,ier)
+
+         CALL write_var_hdf5(qid_gid,'ti',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=DBLE(rtemp3/1000))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ti',ier)
          CALL h5dopen_f(qid_gid, 'ti', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','keV',ier)
          CALL write_att_hdf5(temp_gid,'description','Ion Temperature: Ti(r,z,phi)',ier)
          CALL h5dclose_f(temp_gid,ier)
-         rtemp = reshape(ZEFF_ARR(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         CALL write_var_hdf5(qid_gid,'zeff',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp))
+
+         CALL write_var_hdf5(qid_gid,'zeff',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=DBLE(rtemp4))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zeff',ier)
          CALL h5dopen_f(qid_gid, 'zeff', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL write_att_hdf5(temp_gid,'description','Effective Nuclear Charge: Zeff(r,z,phi)',ier)
          CALL h5dclose_f(temp_gid,ier)
          DEALLOCATE(rtemp)
+         DEALLOCATE(rtemp2)
+         DEALLOCATE(rtemp3)
+         DEALLOCATE(rtemp4)
+
+         ! rtemp = reshape(NE(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
+         ! CALL write_var_hdf5(qid_gid,'dene',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp/1000000)) !convert from m^-3 to cm^-3
+         ! CALL h5dopen_f(qid_gid, 'dene', temp_gid, ier)
+         ! CALL write_att_hdf5(temp_gid,'units','cm^-3',ier)
+         ! CALL write_att_hdf5(temp_gid,'description','Electron Number Density: Dene(r,z, phi)',ier)
+         ! CALL h5dclose_f(temp_gid,ier)
+         ! rtemp = reshape(TE(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
+         ! CALL write_var_hdf5(qid_gid,'te',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp/1000))
+         ! CALL h5dopen_f(qid_gid, 'te', temp_gid, ier)
+         ! CALL write_att_hdf5(temp_gid,'units','kev',ier)
+         ! CALL write_att_hdf5(temp_gid,'description','Electron Temperature: Ti(r,z,phi)',ier)
+         ! CALL h5dclose_f(temp_gid,ier)
+         ! rtemp = reshape(TI(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
+         ! CALL write_var_hdf5(qid_gid,'ti',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp/1000))
+         ! CALL h5dopen_f(qid_gid, 'ti', temp_gid, ier)
+         ! CALL write_att_hdf5(temp_gid,'units','keV',ier)
+         ! CALL write_att_hdf5(temp_gid,'description','Ion Temperature: Ti(r,z,phi)',ier)
+         ! CALL h5dclose_f(temp_gid,ier)
+         ! rtemp = reshape(ZEFF_ARR(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
+         ! CALL write_var_hdf5(qid_gid,'zeff',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp))
+         ! CALL h5dopen_f(qid_gid, 'zeff', temp_gid, ier)
+         ! CALL write_att_hdf5(temp_gid,'units','-',ier)
+         ! CALL write_att_hdf5(temp_gid,'description','Effective Nuclear Charge: Zeff(r,z,phi)',ier)
+         ! CALL h5dclose_f(temp_gid,ier)
+         ! DEALLOCATE(rtemp)
 
 
          CALL h5gclose_f(qid_gid, ier)
          ! Close file
          CALL close_hdf5(fid,ier)
-         IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'ascot5_'//TRIM(id_string)//'_equilibrium.h5',ier)
+         IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'fidasim_'//TRIM(id_string)//'_equilibrium.h5',ier)
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

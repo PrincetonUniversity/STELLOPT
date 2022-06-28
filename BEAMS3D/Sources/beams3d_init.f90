@@ -242,18 +242,31 @@
       !!              Fidasim Grid Spec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   
       IF (lfidasim) THEN
-         !IF (rmin_fida .eq. 0.0) rmin_fida = rmin
-         rmin_fida = rmin
-         zmin_fida = zmin
-         phimin_fida = phimin
-         rmax_fida = rmax
-         zmax_fida = zmax
-         phimax_fida = phimax
-         nr_fida = nr
-         nphi_fida = nphi
-         nz_fida = nz
-         nenergy_fida = ns_prof4
-         npitch_fida = ns_prof5
+         ! !IF (rmin_fida .eq. 0.0) rmin_fida = rmin
+         ! rmin_fida = rmin
+         ! zmin_fida = zmin
+         ! phimin_fida = phimin
+         ! rmax_fida = rmax
+         ! zmax_fida = zmax
+         ! phimax_fida = phimax
+         ! nr_fida = nr
+         ! nphi_fida = nphi
+         ! nz_fida = nz
+         ! nenergy_fida = ns_prof4
+         ! npitch_fida = ns_prof5
+         IF (rmin_fida == 0.0) rmin_fida = rmin
+         IF (zmin_fida .eq. 0.0) zmin_fida = zmin
+         IF (phimin_fida .eq. 0.0) phimin_fida = phimin
+         IF (rmax_fida .eq. 0.0) rmax_fida = rmax
+         IF (zmax_fida .eq. 0.0) zmax_fida = zmax
+         IF (phimax_fida .eq. 0.0) phimax_fida = phimax
+         IF (nr_fida .eq. 0) nr_fida = nr
+         IF (nphi_fida .eq. 0) nphi_fida = nphi
+         IF (nz_fida .eq. 0) nz_fida = nz
+         !nenergy_fida = ns_prof4 !should stay this way!
+         !npitch_fida = ns_prof5
+         IF (nenergy_fida .eq. 0) nenergy_fida = ns_prof4
+         IF (npitch_fida .eq. 0) npitch_fida = ns_prof5
       END IF   
       IF (lfidasim .and. lverb) THEN
          WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
