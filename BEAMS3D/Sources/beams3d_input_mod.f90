@@ -21,7 +21,7 @@
                               B_kick_min, B_kick_max, freq_kick, E_kick, &
                               rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
                               raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-                              nenergy_fida, npitch_fida, energy_fida, pitch_fida
+                              nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -91,7 +91,7 @@
                                zmax_fida,phimin_fida, phimax_fida, &
                                raxis_fida, zaxis_fida, phiaxis_fida, &
                                nr_fida, nphi_fida, nz_fida, nenergy_fida, &
-                               npitch_fida, energy_fida, pitch_fida
+                               npitch_fida, energy_fida, pitch_fida, t_fida
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -197,6 +197,7 @@
       nz_fida = 0
       nenergy_fida = 0
       npitch_fida = 0
+      t_fida = 0.0
 
 
       ! Read namelist

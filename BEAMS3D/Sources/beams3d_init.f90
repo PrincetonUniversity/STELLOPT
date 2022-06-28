@@ -257,6 +257,7 @@
       END IF   
       IF (lfidasim .and. lverb) THEN
          WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
+         WRITE(6,'(A,F9.5)') '   T_FIDA   = ',t_fida
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R_FIDA   = [',rmin_fida,',',rmax_fida,'];  NR:   ',nr_fida
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI_FIDA = [',phimin_fida,',',phimax_fida,'];  NPHI: ',nphi_fida
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z_FIDA   = [',zmin_fida,',',zmax_fida,'];  NZ:   ',nz_fida
