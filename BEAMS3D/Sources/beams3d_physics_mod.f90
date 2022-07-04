@@ -391,7 +391,7 @@ MODULE beams3d_physics_mod
             v_s = fact_vsound*sqrt(ti_temp)
             speed = sqrt(SUM(q(4:6)*q(4:6)))
             vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)
-            vll = (q(4)*br_temp+q(5)*bphi_temp+q(6)*bz_temp)*binv
+            vll = (q(4)*br_temp+q(5)*bphi_temp+q(6)*bz_temp)
             ! Make q vperp from this point forward
             q(4) = q(4) - vll*br_temp
             q(5) = q(5) - vll*bphi_temp
@@ -448,7 +448,10 @@ MODULE beams3d_physics_mod
                vfrac = newspeed/speed
                vll = vfrac*vll
                moment = vfrac*vfrac*moment
-               q(4) = vll
+               q(4:6) = q(4:6)*vfrac
+               q(4)   = q(4) + vll*br_temp
+               q(5)   = q(5) + vll*bphi_temp
+               q(6)   = q(6) + vll*bz_temp
                RETURN
             END IF
             l = MAX(MIN(CEILING(SQRT(s_temp)*ns_prof1),ns_prof1),1)
@@ -488,9 +491,9 @@ MODULE beams3d_physics_mod
            ! Normalize Vperp
            vperp = SQRT(SUM(q(4:6)*q(4:6)))
            q(4:6) = q(4:6)*sqrt(speed*speed-vll*vll)/vperp
-           q(4) = q(4) + vll*zeta*br_temp
-           q(5) = q(5) + vll*zeta*bphi_temp
-           q(6) = q(6) + vll*zeta*bz_temp
+           q(4) = q(4) + vll*br_temp
+           q(5) = q(5) + vll*bphi_temp
+           q(6) = q(6) + vll*bz_temp
 
 
          END IF
