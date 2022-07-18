@@ -81,10 +81,10 @@ SUBROUTINE out_beams3d_nag(t, q)
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        Y4D(1,1,1,1),nr,nphi,nz)
 
-       y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
+       rho_help = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
        !z0 = fval(1)
        z0 = ATAN2(fval2(1),fval(1))
-       S_lines(mytdex, myline) = y0 
+       S_lines(mytdex, myline) = rho_help 
        U_lines(mytdex, myline) = z0
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
