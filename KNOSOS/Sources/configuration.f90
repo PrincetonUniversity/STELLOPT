@@ -137,10 +137,6 @@ SUBROUTINE READ_BFIELD(s0)
 
   CALL INTERPOLATE_FIELD(s0,boozmndata_read.OR.booztxt_read,ZERO)
 
-  !If USE_B0 is .TRUE. , use [Calvo 2017 PPCF], but B_0 MUST be omnigenous!
-  !If USE_B0 is .FALSE., calculation using the total B=B_0+B_1
-  IF(USE_B0.OR.KN_STELLOPT(6).OR.KN_STELLOPT(7).OR.KN_STELLOPT(8).OR.KN_STELLOPT(9)) CALL CALC_B0()
-
   !Find maximum helicity and truncate spectra accordingly
   hel_Nmax=0
   hel_Mmax=0
@@ -168,8 +164,14 @@ SUBROUTINE READ_BFIELD(s0)
   dzstep=TWOPI/(nzperiod*hel_NMAX*100)
   
   !Copy some information to arrays (Bmn, etc) with only one index
+  borbic0=borbic
+  borbis0=borbis
   CALL FILL_NM()
-
+  !If USE_B0 is .TRUE. , use [Calvo 2017 PPCF], but B_0 MUST be omnigenous!
+  !If USE_B0 is .FALSE., calculation using the total B=B_0+B_1
+  IF(USE_B0.OR.KN_STELLOPT(6).OR.KN_STELLOPT(7).OR.KN_STELLOPT(8).OR.KN_STELLOPT(9)) CALL CALC_B0()
+  CALL FILL_NM()
+  
   !If rescaled field, write in file
   IF(ABS(FI*FE*FB*FR-1).GT.ALMOST_ZERO) THEN
      borbi=borbic
@@ -184,6 +186,11 @@ SUBROUTINE READ_BFIELD(s0)
   CALL FILL_BGRID(MAL,MAL,s0,.FALSE.)
   IF(addkes_read.OR.USE_B0) CALL FILL_BGRID(MAL,MAL,s0,.FALSE.)
   CALL FILL_BGRID(MAL,MAL,s0,.TRUE.)
+  borbic0=borbic
+  borbis0=borbis
+  dborbic0dpsi=dborbicdpsi
+  dborbis0dpsi=dborbisdpsi
+  CALL FILL_NM()
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   IF(ONLY_B0) THEN 
@@ -196,6 +203,7 @@ SUBROUTINE READ_BFIELD(s0)
      ALLOCATE(phi_b(ns_b),phip_b(ns_b))
      phi_b=0
      phip_b=0
+     IF(s_b(1).LT.0) s_b(1)=-s_b(1)
      DO is=1,ns_b
         CALL INTERPOLATE_FIELD(s_b(is),boozmndata_read.OR.booztxt_read,ZERO)
         CALL READ_PROFILE(s_b(is),"ph",phi_b(is),phip_b(is),1)
@@ -355,7 +363,7 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   END IF
   IF(status_nc.NE.nf_noerr) RETURN
   boozmndata_read=.TRUE.
-  WRITE(iout,*) 'File "boozmn.nc" found'   
+  WRITE(iout,*) 'File "',TRIM(filename),'" found'   
   !Read scalar values
   varname='nfp_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
@@ -402,14 +410,14 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
   status_nc=nf_inq_dim(ncid,idimid,varname,jsize)
   IF(ALLOCATED(s_b)) DEALLOCATE(s_b,js_b,iota_b,pres_b,beta_b,psip_b,psi_b,bvco_b,buco_b,&
-       & bmnc_b,rmnc_b,zmns_b,pmns_b,rmns_b,zmnc_b,pmnc_b,bmns_b,gmnc_b,ixn_b,ixm_b)
+       & bmnc_b,rmnc_b,zmns_b,pmns_b,rmns_b,zmnc_b,pmnc_b,bmns_b,gmnc_b,ixn_b,ixm_b)!,jlist,idx_b,packed2d)
   ! note : jsize is the number of flux surfaces contained in booz_xform (/=ns_b)
   ALLOCATE(s_b(ns_b),js_b(ns_b),iota_b(ns_b),pres_b(ns_b),beta_b(ns_b),&
        &psip_b(ns_b),psi_b(ns_b),bvco_b(ns_b),buco_b(ns_b))
   ALLOCATE(ixm_b(mnboz_b),ixn_b(mnboz_b),gmnc_b(mnboz_b,ns_b))
   ALLOCATE(bmnc_b(mnboz_b,ns_b),rmnc_b(mnboz_b,ns_b),zmns_b(mnboz_b,ns_b),pmns_b(mnboz_b,ns_b))
   ALLOCATE(rmns_b(mnboz_b,ns_b),zmnc_b(mnboz_b,ns_b),pmnc_b(mnboz_b,ns_b),bmns_b(mnboz_b,ns_b))
-  ALLOCATE(jlist(jsize),idx_b(ns_b),packed2d(mnboz_b,jsize,5))
+  ALLOCATE(jlist(jsize),packed2d(mnboz_b,jsize,5),idx_b(ns_b))
   !Give values to quantities at the magnetic axis
   s_b=-EPSILON(0d0)
   iota_b(1)=0
@@ -812,6 +820,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
 !-------------------------------------------------------------------------------------------
   
   USE GLOBAL
+  USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
   !Input
   LOGICAL booz_read
@@ -955,24 +964,24 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
      dborbicdpsi(0,0)=dborbicdpsi(0,0)+E_o_mu*ZFI*(phi_b(is1)-phi_b(is0))/(EFI*dpsi)
   END IF
 
-!Bmax
-  
-  borbic0=borbic
-  borbis0=borbis
+  IF(.NOT.KN_STELLOPT(9)) THEN
+     borbic0=borbic
+     borbis0=borbis
+     CALL FILL_NM()
+  END IF
 
-  CALL FILL_NM()
-
-  IF(s0.GE.s_b(js_b(1))) THEN
-     IF(ALLOCATED(Bmax_b)) THEN
-       IF(Bmax_b(is0).GT.ALMOST_ZERO) THEN
-         Bmax  =Bmax_b(is0)*fs0+Bmax_b(is1)*fs1
-         Bmin  =Bmin_b(is0)*fs0+Bmin_b(is1)*fs1
-       END IF
+!  IF(s0.GE.s_b(js_b(1)).AND.ALLOCATED(Bmax_b)) THEN
+  IF(ALLOCATED(Bmax_b)) THEN
+     IF(Bmax_b(is1).GT.ALMOST_ZERO) THEN
+        Bmax  =Bmax_b(is0)*fs0+Bmax_b(is1)*fs1
+        Bmin  =Bmin_b(is0)*fs0+Bmin_b(is1)*fs1
+     ELSE
+        CALL FIND_BMIN_BMAX(-1,MAL,MAL,.TRUE.)
      END IF
   ELSE
      CALL FIND_BMIN_BMAX(-1,MAL,MAL,.TRUE.)
   END IF
-                          
+
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE INTERPOLATE_FIELD
@@ -1144,6 +1153,7 @@ SUBROUTINE FILL_NM()
         nm=nm+1
         bnmc(nm)     =borbic(n,m)     
         bnmc0(nm)    =borbic0(n,m)
+!        WRITE(iout,*) 'bmn1',bnmc(nm)        -bnmc0(nm)        
         dbnmcdpsi(nm)=dborbicdpsi(n,m)
         IF(STELL_ANTISYMMETRIC) THEN
            bnms(nm)     =borbis(n,m)     
@@ -1167,7 +1177,6 @@ SUBROUTINE FILL_NM()
   Nnm=nm                          !Nnm is the total number of modes
   bnmc1(1:Nnm)=bnmc(1:Nnm)-bnmc0(1:Nnm) !B1=B-B0, remember that B1<<B0
   bnms1(1:Nnm)=bnms(1:Nnm)-bnms0(1:Nnm)
-
   IF(QN.OR.TRACE_IMP) THEN
      Nnmp=2*Nnm
      DO nm=1,Nnmp
@@ -1829,18 +1838,40 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
   INTEGER nz,nt
   REAL*8 s
   !Others
-  INTEGER iz,it,ifile
+  CHARACTER*64 filename
+  INTEGER iz,it,ifile,iostat
   REAL*8 dz,dt,zeta(nz),theta(nt),Bzt(nz,nt),Jac(nz,nt),vds_Bzt(Nnmp,nz,nt)
   REAL*8 FSA,ftr
   
   Bmax=0
-  IF(KN_STELLOPT(9)) THEN
-     ifile=iout
-  ELSE IF(flagB1) THEN
+!  IF(KN_STELLOPT(9)) THEN
+!     ifile=iout
+  IF(flagB1) THEN
      ifile=1200+myrank
+     IF(KNOSOS_STELLOPT.AND.LEN(TRIM(KN_EXT)).NE.0) THEN 
+        filename='B.map.'//TRIM(KN_EXT)
+     ELSE
+        IF(numprocs.EQ.1) THEN
+           filename="B.map"
+        ELSE
+           WRITE(filename,'("B.map.",I2.2)') myrank
+        END IF
+     END IF
   ELSE 
      ifile=1300+myrank
+     IF(KNOSOS_STELLOPT.AND.LEN(TRIM(KN_EXT)).NE.0) THEN 
+        filename='B0.map.'//TRIM(KN_EXT)
+     ELSE
+        IF(numprocs.EQ.1) THEN
+           filename="B0.map"
+        ELSE
+           WRITE(filename,'("B0.map.",I2.2)') myrank
+        END IF
+     END IF
   END IF
+  OPEN(unit=ifile,file=filename,form='formatted',action='write',iostat=iostat)
+  WRITE(ifile,&
+       & '("s \zeta_{Boozer}  \theta_{Boozer}(right-handed)  B[T]  (v_B.\nabla\psi)[A.U.]")')
 
   dz=TWOPI/nz/nzperiod
   dt=TWOPI/nt
@@ -1873,7 +1904,9 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
         END DO
      END DO
 !  END IF
-  
+
+     CLOSE(ifile)
+     
   CALL CALC_ABSNABLAPSI(MAL,zeta,theta,absnablar)
   absnablar=SQRT(absnablar*Bzt*Bzt)/psip
   
@@ -2018,7 +2051,6 @@ SUBROUTINE FIND_BMIN_BMAX(is,nz,nt,flagb1)
   REAL*8 dz,dt,zeta,theta,B,dBdz,dBdt,dummy,vdummy(Nnmp)
   REAL*8 dzeta,dtheta,dBdz_old,dBdt_old,zmin,tmin
 
-  
   Bmax=borbic(0,0)
   Bmin=borbic(0,0)
   dz=TWOPI/nz/nzperiod
@@ -2052,7 +2084,7 @@ SUBROUTINE FIND_BMIN_BMAX(is,nz,nt,flagb1)
      dtheta=dzeta*dBdt/dBdz
      dBdz_old=dBdz
      dBdt_old=dBdt
-     DO iz=1,10
+     DO iz=1,20
         zeta =zeta +dzeta
         theta=theta+dtheta
         CALL CALCB(zeta,theta,2,flagb1,B,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)

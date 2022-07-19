@@ -39,6 +39,8 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
   REAL*8 tstart
 
   CALL CPU_TIME(tstart)
+
+  ephi1oTsize=0.0
   !Calculate Epsi by solving ambipolarity of the neoclassical fluxes using bisection
   IF(SOLVE_AMB.OR.SCAN_ER) THEN
 
@@ -84,7 +86,6 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
         WRITE(iout,'(" Calculating for Er=",1pe13.5,", kV/m")') Epsi*psip/1E3
         Jr_old=Jr(iEpsi-1)
         Epsi=Epsi+dEpsi
-        WRITE(iout,*) 'dEpsi',Epsi,dEpsi,psip,Epsimax,Epsimin
         CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
              & Gb,Qb,L1b,L2b,L3b,ephi1oTsize)
         Jr(iEpsi)=SUM(ZB(1:NBB)*nb(1:NBB)*Gb(1:NBB))
@@ -252,7 +253,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 !  INTEGER ierr
   INCLUDE "mpif.h"
 #endif
-  WRITE(iout,*) 'here'
+
 !!$  IF(USE_SHAING) THEN
 !!$     DO ib=1,MIN(2,nbb)
 !!$        CALL DKE_CONSTANTS(ib,NBB,ZB,AB,REGB,nb,dnbdpsi,Tb,dTbdpsi,Epsi,.TRUE.)      
@@ -266,10 +267,8 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 !!$  END IF
 
   CALL CPU_TIME(tstart)
-  WRITE(iout,*) 'there',NBB,Nnmp,Nbulk
 
   ALLOCATE(Grhs(NBB,Nnmp,Nnmp),Qrhs(NBB,Nnmp,Nnmp),L1rhs(NBB,Nnmp,Nnmp),L2rhs(NBB,Nnmp,Nnmp),L3rhs(NBB,Nnmp,Nnmp))
-  WRITE(iout,*) 'there',NBB,Nnmp,Nbulk
   Grhs=0
   Qrhs=0
   L1rhs=0
@@ -277,11 +276,8 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
   L3rhs=0
   L31=0
   L32=0
-  WRITE(iout,*) 'there',NBB,Nnmp,Nbulk
   ALLOCATE(Gphi(NBB,Nnmp),Qphi(NBB,Nnmp),L1phi(NBB,Nnmp),L2phi(NBB,Nnmp),L3phi(NBB,Nnmp))
-  WRITE(iout,*) 'there',NBB,Nnmp,Nbulk
   ALLOCATE(n1nmrhs(Nnmp,Nnmp,NBULK),Mbbnmrhs(Nnmp,Nnmp),trMnmrhs(Nnmp,Nnmp))
-  WRITE(iout,*) 'ewhere',jt
 
   Nnmpm1=Nnmp-1
   it=it
@@ -312,7 +308,6 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
   IF(     SOLVE_QN.AND.     TANG_VM.AND.(regp(1).AND.regp(2))) jt0=22 !both kinetic species in QN
   IF(    SOLVE_QN.AND..NOT.TANG_VM.AND.(regp(1) .OR.regp(2))) jt0=11 !inconsistent
   IF(    SOLVE_QN.AND..NOT.TANG_VM.AND.(regp(1).AND.regp(2))) jt0=21 !inconsistent
-  WRITE(iout,*) 'ewhere',jt
   IF(REGB(1).LT.0 .AND.REGB(2).LT.0) jt0=00 !use DKES
 
   IF(regp(1)) ib_kin=1
@@ -326,7 +321,6 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
      
   phi1c=0
   DO jt=MOD(jt0,10),jt0
-     WRITE(iout,*) 'ewhere',kb
 
 !     IF(jt.EQ.0.AND.(.NOT.DKES_READ.OR..NOT.(REGB(1).EQ.-1.AND.REGB(2).EQ.-1))) CYCLE
 !     IF(jt.GT.0.AND.SUM(regb(1:nbb)).EQ.0) CYCLE
@@ -469,7 +463,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                   ALLOCATE(trig(Nnmp,nalphab*nalphab),&
                        & dtrigdz(Nnmp,nalphab*nalphab),dtrigdt(Nnmp,nalphab*nalphab),&
                        & phi1(nalphab,nalphab),Mbb(nalphab,nalphab),trM(nalphab,nalphab))
-               END IF               
+               END IF
                !Calculate (zeta,theta) map of varphi1, Mbb and trM
                CALL PRECALC_TRIG(nalphab,zeta(1:nalphab),theta(1:nalphab),trig,dtrigdz,dtrigdt)
                CALL PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,&
@@ -1407,7 +1401,7 @@ SUBROUTINE PLOT_FLUX(jt,jt0,nbb,s,Epsi,Gb,Qb,L1b,L2b,L3b,Zb,nb,dnbdpsi,Tb,dTbdps
   REAL*8 Gphi(nbb,Nnmp),Qphi(nbb,Nnmp),L1phi(nbb,Nnmp),L2phi(nbb,Nnmp),L3phi(nbb,Nnmp)
   !Others
   INTEGER nm,ib
-  
+
   IF(SOLVE_AMB.AND.jt.EQ.jt0) WRITE(300+myrank,'(30(1pe13.5))') s,Epsi*psip,&  
        & (Gb(ib)/psip,Qb(ib)/psip,L2b(ib)/psip/psip,L3b(ib)/psip/psip, &
        & nb(ib),dnbdpsi(ib)/nb(ib)*psip,Tb(ib),dTbdpsi(ib)/Tb(ib)*psip,&

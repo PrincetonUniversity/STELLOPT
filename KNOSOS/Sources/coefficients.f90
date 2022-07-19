@@ -594,11 +594,12 @@ END SUBROUTINE MATCH_WELLS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE BOUNCES(iw,z1x,t1x,B1x,hBpp1x,vd1x, &
-                    & zbx,tbx,Bbx,hBppbx,vdbx, &
-                    & z2x,t2x,B2x,hBpp2x,vd2x, &
-                    & Bbounce,top,nq,Q, &
-                    & z1,t1,z2,t2)
+SUBROUTINE BOUNCES(iw,zx,&
+                       & z1x,t1x,B1x,hBpp1x,vd1x, &
+                       & zbx,tbx,Bbx,hBppbx,vdbx, &
+                       & z2x,t2x,B2x,hBpp2x,vd2x, &
+                       & Bbounce,top,nq,Q, &
+                       & z1,t1,z2,t2)
 
 !-----------------------------------------------------------------------------------------------
 !Calculate, for well iw defined by z,t,B,hBpp,vd at tops 1 and 2 and bottom, and for lambda=1/Bbounce
@@ -612,6 +613,7 @@ SUBROUTINE BOUNCES(iw,z1x,t1x,B1x,hBpp1x,vd1x, &
   !Input
   LOGICAL top
   INTEGER iw,nq
+  REAL*8 zx
   REAL*8 zbx,tbx,Bbx,hBppbx,vdbx(nqv)
   REAL*8 z1x,t1x,B1x,hBpp1x,vd1x(nqv)
   REAL*8 z2x,t2x,B2x,hBpp2x,vd2x(nqv)
@@ -620,6 +622,7 @@ SUBROUTINE BOUNCES(iw,z1x,t1x,B1x,hBpp1x,vd1x, &
   REAL*8 Q(nq),z1,z2,t1,t2
   !Others
   LOGICAL topl,topr
+  INTEGER it
   REAL*8 Bp1,hBpp1,vd1(nqv)
   REAL*8 Bp2,hBpp2,vd2(nqv),NAN
   !Time
@@ -660,11 +663,17 @@ SUBROUTINE BOUNCES(iw,z1x,t1x,B1x,hBpp1x,vd1x, &
        & ABS(iw),z1 ,t1 ,Bbounce,zbx,tbx,NaN, & 
        &         z2 ,t2 ,Bbounce,vd1(3),vd2(3)                             
 
+  it=1
+  DO WHILE((it.EQ.1.OR.ISNAN(Q(1))).AND.it.LE.10)
   !Calculate bounce integrals
-  CALL BOUNCE_INTEGRAL(iw,z1,t1,z2,t2,1./Bbounce, &
-       &             Bp1,hBpp1,vd1,  &
-       &             Bp2,hBpp2,vd2,  &
-       &             zbx,bbx,hBppbx,vdbx,nq,Q)
+     CALL BOUNCE_INTEGRAL(iw,zx,&
+          &     z1,t1,z2,t2,1./Bbounce, &
+          &             Bp1,hBpp1,vd1,  &
+          &             Bp2,hBpp2,vd2,  &
+          &             zbx,bbx,hBppbx,vdbx,nq,Q)
+     it=it+1
+     IF(ISNAN(Q(1))) WRITE(6200+myrank,*) 'NAN',z1,z2,Bbounce
+  END DO
   
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   
@@ -786,7 +795,7 @@ END SUBROUTINE BOUNCE_POINT
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
+SUBROUTINE BOUNCE_INTEGRAL(iw,zx,z_ini,t_ini,z_fin,t_fin,lambd, &
      &      Bp_ini,hBpp_ini,vd_ini, &
      &      Bp_fin,hBpp_fin,vd_fin, &
      & z_bot,B_bot,hBpp_bot,vd_bot,nq,Q)
@@ -804,7 +813,7 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
   REAL*8 z_ini,t_ini,Bp_ini,hBpp_ini,vd_ini(nqv)
   REAL*8 z_fin,t_fin,Bp_fin,hBpp_fin,vd_fin(nqv)
   REAL*8 z_bot,      B_bot,hBpp_bot,vd_bot(nqv)
-  REAL*8 lambd
+  REAL*8 zx,lambd
   !Output
   REAL*8 Q(nq)
   !Parameters
@@ -842,7 +851,7 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
   CALL FILL_PHASE(z_l,t_l,cosnm,sinnm)
   !Calculate integrand
   CALL BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
-
+  
   !First calculation removing the divergence
   IF(REMOVE_DIV) THEN 
      CALL BOUNCE_INTEGRAND_MINF(iw,z_l,z_ini,lambd,ZERO  ,Bp_ini,hBpp_ini,vd_ini,nq0,Qint(1:nq0)) 
@@ -881,6 +890,7 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
      ds=0
      DO ifrac=1,nfrac
         CALL BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
+        IF(ISNAN(Qint(1))) EXIT
         CALL DELTA_PHASE(cosnm,sinnm,cosnm_del4,sinnm_del4)
         IF(REMOVE_DIV) THEN
            CALL BOUNCE_INTEGRAND_MINF(iw,z_l,z_ini,lambd,MONE  ,Bp_ini,hBpp_ini,vd_ini,nq0,Qint(1:nq0)) 
@@ -891,6 +901,7 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
         t_l=t_l+ddtl
         Qsum=Qsum+qint
         CALL BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
+        IF(ISNAN(Qint(1))) EXIT
         ds(ifrac)=Qint(3)
         CALL DELTA_PHASE(cosnm,sinnm,cosnm_del2,sinnm_del2)
         IF(REMOVE_DIV) THEN
@@ -902,6 +913,7 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
         t_l=t_l+dtl
         Qsum=Qsum+qint
      END DO
+     IF(ISNAN(Qint(1))) EXIT
      Q=(Qold+tdzl*Qsum/nfrac)/3.
      IF(DEBUG.AND.(iw.EQ.I0.OR.I0.EQ.0)) THEN
         WRITE(2400+myrank,'(I6,7(1pe13.5))') iw,dzl,lambd,(Q(iq),iq=1,nq0)
@@ -934,6 +946,19 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
      nfrac=nfrac*3
 !!     
   END DO
+
+  IF(ISNAN(Qint(1))) THEN
+     IF((z_ini-z_l)*(z_l-zx).GE.0) THEN
+        z_ini=z_l
+        t_ini=t_l
+     ELSE
+        z_fin=z_l
+        t_fin=t_l
+     END IF
+     Q=Qint
+     RETURN
+  END IF
+
   IF(FAST_IONS) Q(2)=maxdeltas-mindeltas
 
   !Warnings

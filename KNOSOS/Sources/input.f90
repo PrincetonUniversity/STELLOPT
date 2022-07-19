@@ -130,7 +130,6 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
   REAL*8   vmag(MAX(  nvmagx,  nvmagn,  nvmagp, nvmagd))
   REAL*8 dummy
 
-  FAST_IONS= .FALSE.
 
   !-------------------------------------------------------------------------------------------
   !Set values for namelist 'model'
@@ -199,13 +198,21 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
      READ (1,nml=model)
      CLOSE(1)
   END IF
-  
-  KNOSOS_STELLOPT=KN_STELLOPT(1).OR.KN_STELLOPT(2).OR.KN_STELLOPT(3).OR.KN_STELLOPT(4).OR.KN_STELLOPT(5).OR.&
-                & KN_STELLOPT(6).OR.KN_STELLOPT(7).OR.KN_STELLOPT(8).OR.KN_STELLOPT(9).OR.KN_STELLOPT(10)
+
+!  MODELFI=.FALSE.
+!  IF(.NOT.KNOSOS_STELLOPT.AND.(KN_STELLOPT(4).OR.KN_STELLOPT(5))) THEN
+!     KN_STELLOPT(4)=.FALSE.
+!     KN_STELLOPT(5)=.FALSE.
+!     MODELFI=.TRUE.
+!  END IF
+     
+  KNOSOS_STELLOPT=(KN_STELLOPT(1).OR.KN_STELLOPT(2).OR.KN_STELLOPT(3).OR.KN_STELLOPT(4).OR.KN_STELLOPT(5).OR.&
+       & KN_STELLOPT(6).OR.KN_STELLOPT(7).OR.KN_STELLOPT(8).OR.KN_STELLOPT(9).OR.KN_STELLOPT(10))
+   
   ioutt=iout
 
   IF(KNOSOS_STELLOPT.AND.LEN(TRIM(KN_EXT)).NE.0) THEN
-     filename=TRIM(KN_EXT)
+     filename='kn_log.'//TRIM(KN_EXT)
      OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat,&
           access='append')
   ELSE
@@ -241,18 +248,18 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
   TENDFI=1.0E-1 !(s)
   DTFI=  1.0E-5 !(s)
   LINEART=.FALSE.
-  MODELFI=.FALSE.
+!  MODELFI=.FALSE.
   GLOBALFI=.FALSE.
   RANDOMSL=.TRUE.
   JCORRECTION=.TRUE.
   JTRANS=.TRUE.
   FITRANS=.TRUE.
   PREC_J=2E-4
-  IF(KNOSOS_STELLOPT) PREC_J=1E-4
+  IF(KNOSOS_STELLOPT.OR.MODELFI) PREC_J=1E-4
   PREC_TRANS=1E-1
   PREC_S=1E-4
   FIDELTA=0.5
-  IF(KNOSOS_STELLOPT) FIDELTA=1.0
+  IF(KNOSOS_STELLOPT.OR.MODELFI) FIDELTA=1.0
   FDMAX=8
   JORBIT=-1
   LJMAP=-0.38   
@@ -268,7 +275,7 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
   TWOEFI=2*EFI
   TWOEFIoZ=2*EFI/ZFI
   VDoV=1.389165e4*SQRT(EFI)*AFI*m_e/ZFI
-  IF(.NOT.FAST_IONS.AND.(KN_STELLOPT(4).OR.KN_STELLOPT(5))) MODELFI=.TRUE.
+  IF(.NOT.FAST_IONS.AND.(KN_STELLOPT(4).OR.KN_STELLOPT(5)).AND.KNOSOS_STELLOPT) MODELFI=.TRUE.
   
   !-------------------------------------------------------------------------------------------
   !Set values for namelist 'parameters'
@@ -317,7 +324,7 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
   TRUNCATE_B= -200     
   PREC_B=     1E-5     
   PREC_EXTR=  1E-6   
-  IF(KNOSOS_STELLOPT) PREC_EXTR=  1E-7
+  IF(KNOSOS_STELLOPT.OR.MODELFI) PREC_EXTR=  1E-7
   PREC_BINT=  1E-2     
   PREC_DQDV=  5E-2     
   PREC_INTV=  1E-2     
@@ -514,7 +521,7 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
      SOLVE_QN=.FALSE.
      TANG_VM=.TRUE.
      NER=41
-  ELSE IF(NEOTRANSP.OR.PENTA.OR.KNOSOS_STELLOPT) THEN
+  ELSE IF(NEOTRANSP.OR.PENTA.OR.KNOSOS_STELLOPT.OR.MODELFI) THEN
      CALC_DB=.TRUE.
      IF(NEOTRANSP.OR.PENTA) TANG_VM=.FALSE.
      IF(NEOTRANSP.OR.PENTA.OR.KN_STELLOPT(4)) THEN !.OR..NOT.(KN_STELLOPT(5))) THEN
@@ -581,7 +588,7 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
   IF(.NOT.MODEL_ALPHAD) CLOSEST_LAMBDA=.TRUE.
   CALC_DG=CALC_RHS.OR.CALC_DA.OR.CALC_COL.OR.CALC_DIFF.OR.FLUX_NU
   
-  IF(KNOSOS_STELLOPT) ONE_ALPHA=.TRUE.
+  IF(KNOSOS_STELLOPT.OR.MODELFI) ONE_ALPHA=.TRUE.
   USE_B0=USE_B1.OR.USE_B0pB1
   IF(QS_B0_1HEL) QS_B0=.TRUE.
   DO ib=3,nbb
@@ -690,8 +697,8 @@ SUBROUTINE INIT_FILES()
   END IF
 
   IF(KNOSOS_STELLOPT.AND.LEN(TRIM(KN_EXT)).NE.0) THEN
-     !     filename='kn_log.'//TRIM(KN_EXT)
-     filename=TRIM(KN_EXT)
+     filename='kn_log.'//TRIM(KN_EXT)
+!     filename=TRIM(KN_EXT)
      OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat,&
           access='append',status='old')
   ELSE
@@ -708,21 +715,7 @@ SUBROUTINE INIT_FILES()
         OPEN(unit=1100+myrank,file=filename,form='formatted',action='write',iostat=iostat)
      END IF
   END IF
-  IF(.NOT.(KNOSOS_STELLOPT)) THEN
-     IF(numprocs.EQ.1) filename="B.map"
-     IF(numprocs.GT.1) WRITE(filename,'("B.map.",I2.2)') myrank
-     OPEN(unit=1200+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-     WRITE(1200+myrank,&
-          & '("s \zeta_{Boozer}  \theta_{Boozer}(right-handed)  B[T]  (v_B.\nabla\psi)[A.U.]")')
-     
-     IF(numprocs.EQ.1) filename="B0.map"
-     IF(numprocs.GT.1) WRITE(filename,'("B0.map.",I2.2)') myrank
-     OPEN(unit=1300+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-     WRITE(1300+myrank,&
-          & '("s \zeta_{Boozer}  \theta_{Boozer}(right-handed)  B[T]  (v_B.\nabla\psi)[A.U.]")')
-  END IF
 
-!  IF(numprocs.EQ.1) filename="results.knosos"
 !  IF(numprocs.GT.1) WRITE(filename,'("results.knosos.",I2.2)') myrank
 !  OPEN(unit=200+myrank,file=filename,form='formatted',action='write',iostat=iostat)
 !  WRITE(200+myrank,'("cmul efield weov wtov L11m L11p L31m L31p L33m L33p scal11&
@@ -808,8 +801,12 @@ SUBROUTINE INIT_FILES()
       IF(numprocs.GT.1) WRITE(filename,'("gammacs.map.",I2.2)') myrank
       OPEN(unit=6100+myrank,file=filename,form='formatted',action='write',iostat=iostat)
       WRITE(6100+myrank,'("s alpha lambda[1/T] gamma_C^* vd_s[A.U.] vd_alpha[A.U.] J[A.U.] bottom_index exit_time[s]")')
+      IF(numprocs.EQ.1) filename="loss.fraction"
+      IF(numprocs.GT.1) WRITE(filename,'("loss.fraction.",I2.2)') myrank
+      OPEN(unit=6400+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+      WRITE(6400+myrank,'("t      loss fraction")')
       IF(numprocs.EQ.1) filename="prompt.lambda"
-      IF(numprocs.GT.1) WRITE(filename,'("prompt.lambda",I2.2)') myrank
+      IF(numprocs.GT.1) WRITE(filename,'("prompt.lambda.",I2.2)') myrank
       OPEN(unit=6500+myrank,file=filename,form='formatted',action='write',iostat=iostat)
       WRITE(6500+myrank,'("s lambda[1/T] fraction fraction promt_fraction protracted_fraction")')
    ELSE

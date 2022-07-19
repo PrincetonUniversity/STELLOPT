@@ -79,7 +79,8 @@
          ns=ns+1
          IF(myworkid == ns ) WRITE(temp_str,'(A,I3.3)') '_s',ik
       END DO
-      KN_EXT='kn_log.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str))
+!      KN_EXT='kn_log.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str))
+      KN_EXT=TRIM(proc_string)//TRIM(ADJUSTL(temp_str))
 !      IF (myworkid == ns) THEN
 !         KN_EXT=
 !      ELSE
@@ -95,6 +96,9 @@
       IF(ANY(sigma_knosos_vb0 < bigno)) KN_STELLOPT(10)=.TRUE.
       IF(ANY(sigma_knosos_vbb < bigno)) KN_STELLOPT(8)=.TRUE.
       IF(ANY(sigma_knosos_wbw < bigno)) KN_STELLOPT(9)=.TRUE.
+      KNOSOS_STELLOPT=(KN_STELLOPT(1).OR.KN_STELLOPT(2).OR.KN_STELLOPT(3).OR.KN_STELLOPT(4).OR.&
+                     & KN_STELLOPT(5).OR.KN_STELLOPT(6).OR.KN_STELLOPT(7).OR.KN_STELLOPT(8).OR.&
+                     & KN_STELLOPT(9).OR.KN_STELLOPT(10))
       CALL READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
 !!$      !Allocate some transport-related quantities
 !!$      ALLOCATE(nb(nbb,ns,nerr),dnbdpsi(nbb,ns,nerr),Tb(nbb,ns,nerr),dTbdpsi(nbb,ns,nerr),&
@@ -144,6 +148,7 @@
          IF(sigma_knosos_vbb(ik) < bigno) KN_STELLOPT(7)=.TRUE.
          IF(sigma_knosos_wbw(ik) < bigno) KN_STELLOPT(8)=.TRUE.
          KN_DKESFILE='boozmn_'//TRIM(proc_string)//'.nc'
+         KN_IFILE='input.'//TRIM(proc_string)
          CALL READ_BFIELD(s_kn(ik))
          KNOSOS_VBM(ik)=KN_VBM
          KNOSOS_VB0(ik)=KN_VB0

@@ -82,6 +82,8 @@
          CALL move_txtfile('opt_dkes.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'opt_dkes.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
          CALL move_txtfile('results.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'results.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
          CALL move_txtfile('kn_log.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'kn_log.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
+         CALL move_txtfile('B.map.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'B.map.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
+         CALL move_txtfile('B0.map.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'B0.map.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
       END DO
       IF (ANY(sigma_orbit .lt. bigno)) THEN
          lverb_beams = .FALSE.

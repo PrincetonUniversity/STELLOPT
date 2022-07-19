@@ -1493,7 +1493,7 @@ SUBROUTINE LABEL_GRIDPOINTS(nalpha,nalphab,nlambda,nw,bottom,connected,&
   END DO
   
   WRITE(iout,'(" Global grid ",I6," points")') npoint
-
+  
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE LABEL_GRIDPOINTS
@@ -2384,7 +2384,8 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
   DO ipoint=1,npoint
      iw =i_w(ipoint)
      ila=i_l(ipoint)
-     CALL BOUNCES(iw,z1(iw),t1(iw),B1(iw),hBpp1(iw),vd1(:,iw), &
+     CALL BOUNCES(iw,zb(iw),&
+          &          z1(iw),t1(iw),B1(iw),hBpp1(iw),vd1(:,iw), &
           &          zb(iw),tb(iw),Bb(iw),hBppb(iw),vdb(:,iw), &
           &          z2(iw),t2(iw),B2(iw),hBpp2(iw),vd2(:,iw), &
           & 1./lambda(ila),ipoint.EQ.1,nq,Q,&

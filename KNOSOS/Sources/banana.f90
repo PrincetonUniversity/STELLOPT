@@ -175,26 +175,33 @@ SUBROUTINE CALC_B0
   USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
   !Others
-  INTEGER, PARAMETER :: npar=1
-  INTEGER, PARAMETER :: npt=64
+  INTEGER, PARAMETER :: nparbe=3
+  INTEGER, PARAMETER :: nparse=2
+  INTEGER, PARAMETER :: nparst=1
+  INTEGER, PARAMETER :: npar=nparbe
+  INTEGER, PARAMETER :: npt=128
   INTEGER, PARAMETER :: nsurf=npt/2
   LOGICAL shift_twopi
-  INTEGER iz,iz0,it,ieta,iturn,ibranch,imat,ipar,n,m,np1,mp1,fint
-  INTEGER izmin(npt),hel_N,hel_M
+  INTEGER isurf1,isurf2,msurf,iz,iz0,it,ieta,iturn,ibranch,imat,ipar,n,m,np1,mp1,fint,nden
+  INTEGER izmin(npt),hel_N,hel_M!,flag
   REAL*8 epsilon,iotat,dist,distb
-  REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt),Bg(npt)!,Btemp
-  REAL*8 B0_av,B0_var,Bmax_var,Bmin_var
-  REAL*8 val_eta(nsurf),zeta(npt),theta(npt),temp(npt),zetat(npt,npt),zetal(nsurf,npt),zeta0(npt,npt)
+  REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt),Bg(npt),Btemp,stheta(npt),seta(nsurf)
+  REAL*8 B0_av,B0_var,Bmax_var,Bmin_var,setat,sthetat
+  REAL*8 distz(nsurf),val_eta(nsurf),zeta(npt),theta(npt),temp(npt),zetat(npt,npt),zetal(nsurf,npt),zeta0(npt,npt)!,etap(nparse)
+  REAL*8 eta1,eta2
+!  REAL*8 z_ini,t_ini,zl,tl,zr,tr,z1,t1,z2,t2,B1,B2,zb,tb,Bb,dummy1,dummy2,dummy3(nqv)
   !Matrix
   INTEGER ierr,lwork,rank
   INTEGER, ALLOCATABLE :: iwork(:)
   REAL*8, ALLOCATABLE :: rwork(:),work(:)
-  REAL*8 rcond,s_svd(npar),rhs(nsurf*npt),mat(nsurf*npt,npar),parB(npar)
+  REAL*8 s_svd(npar),mat(nsurf*npt,npar),rhs(nsurf*npt),rhst(nsurf*npt),matt(nsurf*npt,npar)
+  REAL*8 rcond,parbe(nparBe),parst(nparst),parse(nparse)
   COMPLEX*16 B0mn(npt,npt)
   REAL(rprec) , SAVE :: save_borbic0(-ntorbd:ntorbd,0:mpolbd)
   LOGICAL, SAVE :: FIRST_TIME=.TRUE.
 
   WRITE(iout,*) 'Calculating B0'
+  
   borbic0=0!borbic
   borbis0=0!borbis
   dborbic0dpsi=0
@@ -251,16 +258,7 @@ SUBROUTINE CALC_B0
   END IF
 
   !Rewrite B in other coordinates
-  Bmax=0
-  Bmax_th=0
-  Bmin_th=1E3
-  B0_av=0
-  B0_var=0
-  Bmax_av=0!edi.sanchez@ciemat.es
-  Bmax_var=0
-  Bmin_av=0
-  Bmin_var=0
-   DO iz=1,npt
+  DO iz=1,npt
      zeta(iz)=(iz-1)*TWOPI/(npt*nzperiod)
   END DO
   DO it=1,npt
@@ -279,7 +277,7 @@ SUBROUTINE CALC_B0
 
      END DO
   END DO
-
+  !Rearrange zetat if necessary
   DO it=1,npt
      DO iz=1,npt
         iz0=MINLOC(zetat(iz:npt,it),1)+iz-1
@@ -291,8 +289,18 @@ SUBROUTINE CALC_B0
         Bzt(iz0,it)=temp(1)
      END DO
   END DO
-
+  shift_twopi=.FALSE.
+  
   !Find maximum of B, minimum of B and contours of minima B
+  Bmax=0
+  Bmax_th=0
+  Bmin_th=1E3
+  B0_av=0
+  B0_var=0
+  Bmax_av=0!edi.sanchez@ciemat.es
+  Bmax_var=0
+  Bmin_av=0
+  Bmin_var=0
   DO it=1,npt
      DO iz=1,npt
         IF(KN_STELLOPT(8).AND.iz.LE.npt/2) KN_WBW=KN_WBW+Bzt(iz,it)*zeta(iz)*zeta(iz)
@@ -313,6 +321,7 @@ SUBROUTINE CALC_B0
   B0_av=B0_av/npt
   Bmax_av=Bmax_av/npt! used for new VBM edi.sanchez@ciemat.es
   Bmin_av=Bmin_av/npt
+  epsilon=((Bmax_av/Bmin_av)-1.)/2.
   IF(KN_STELLOPT(8)) KN_WBW=KN_WBW/(borbic(0,0)*TWOPI*TWOPI*npt*npt/2)
   IF(KN_STELLOPT(6)) KN_VBM=(Bmax_var/npt-Bmax_av*Bmax_av)/borbic(0,0)/borbic(0,0)
   IF(KN_STELLOPT(10)) KN_VB0=(B0_var/npt-B0_av*B0_av)/borbic(0,0)/borbic(0,0)
@@ -321,49 +330,188 @@ SUBROUTINE CALC_B0
   borbis0=borbis
   dborbic0dpsi=dborbicdpsi
   dborbis0dpsi=dborbisdpsi
+
   IF(.NOT.KN_STELLOPT(9)) RETURN
 
-  epsilon=((Bmax_av/Bmin_av)-1.)/2.
-  shift_twopi=.FALSE.
-  IF(ABS(zetat(izmin(npt/2),npt/2)-PI).GT.(0.1*PI)) THEN
-     shift_twopi=.TRUE.
-     zetat=MOD(zetat+PI,TWOPI)
-  END IF
-
-  Bg=0
+  !Find B-well
+!  Bg=0
+!  DO iz=1,npt
+!     DO it=1,npt
+!        Bg(iz)=Bg(iz)+Bzt(iz,it)
+!     END DO
+!  END DO
+!  Bg=Bg/npt
   DO iz=1,npt
-     DO it=1,npt
-        Bg(iz)=Bg(iz)+Bzt(iz,it)
-     END DO
+     CALL SUM_BORBI(zeta(iz),PI*(1-iotat/nzperiod)+iotat*zeta(iz),Bg(iz))
   END DO
-  Bg=Bg/npt
-
+  DO iz=npt/2,1,-1
+     IF(Bg(iz).LT.Bg(iz+1)) Bg(iz)=Bg(iz+1)
+  END DO
+  DO iz=npt/2,npt
+     IF(Bg(iz).LT.Bg(iz-1)) Bg(iz)=Bg(iz-1)
+  END DO
+    
   lwork=-1
   ierr=0
   rcond=-1
   ALLOCATE(rwork(1000),iwork(1000),work(1000))
   DO iturn=1,3
      DO iz=1,npt
-        IF(iturn.LE.2) rhs(iz)=Bg(iz)-borbic(0,0)
-        DO ipar=1,npar
-           mat(iz,ipar)=COS(ipar*zetat(iz,1))
+        IF(iturn.LE.2) rhs(iz)=Bg(iz)-0!borbic(0,0)
+        DO ipar=1,nparbe
+           mat(iz,ipar)=COS((ipar-1)*nzperiod*zeta(iz))
         END DO
      END DO
      IF(iturn.LE.2) THEN
         IF(iturn.EQ.2) lwork=MIN(1000,INT(work(1)))
-        CALL DGELSD(npt,npar,1,mat(1:npt,:),npt,rhs(1:npt),npt,&
+        CALL DGELSD(npt,nparbe,1,mat(1:npt,1:nparbe),npt,rhs(1:npt),npt,&
              & s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)
      END IF
   END DO
-  parB=rhs(1:npar)
-
-  !Find target contour lines
-  DO ieta=1,nsurf
-     val_eta(ieta)=ieta*PI/nsurf
-     val_B(ieta)=borbic(0,0)
-     DO ipar=1,npar
-        val_B(ieta)=val_B(ieta)+parB(ipar)*COS(ipar*val_eta(ieta))
+  parbe=rhs(1:nparbe)
+  !Plot B-well
+  DO iz=1,npt
+     Btemp=0
+     DO ipar=1,nparbe
+        Btemp=Btemp+parbe(ipar)*COS((ipar-1)*nzperiod*zeta(iz))
      END DO
+     DO it=1,npt
+        WRITE(iout,'("BA ",4(1pe13.5),I3)') zeta(iz),+Bzt(iz,it),Bg(iz),Btemp
+     END DO
+  END DO
+  WRITE(iout,*) 'parbe',parbe
+  Bmax_av=0
+  Bmin_av=0
+  DO ipar=1,nparbe
+     Bmax_av=Bmax_av+parbe(ipar)
+     Bmin_av=Bmin_av+parbe(ipar)*COS((ipar-1)*PI)
+  END DO
+  val_eta(nsurf)=PI
+  val_B(nsurf)=Bmin_av
+  distz(nsurf)=0
+  DO ieta=1,nsurf-1    
+!     val_eta(ieta)=ieta*PI/nsurf
+!     val_B(ieta)=0
+!     DO ipar=1,nparbe
+!        val_B(ieta)=val_B(ieta)+parbe(ipar)*COS((ipar-1)*val_eta(ieta))
+!     END DO     
+     val_B(ieta)=Bmax_av+(Bmin_av-Bmax_av)*ieta/nsurf
+     IF(ieta.EQ.1) THEN
+        eta1=0
+     ELSE
+        eta1=val_eta(ieta-1)
+     END IF
+     eta2=PI      
+     Btemp=0 
+     DO WHILE(ABS(Btemp-val_B(ieta)).GT.0.01*(Bmax_av-Bmin_av)/(nsurf-1))
+        val_eta(ieta)=0.5*(eta1+eta2)
+        Btemp=0
+        DO ipar=1,nparbe
+           Btemp=Btemp+parbe(ipar)*COS((ipar-1)*val_eta(ieta))
+           write(iout,*) ieta,nsurf,COS((ipar-1)*val_eta(ieta))
+        END DO
+        WRITE(iout,*) val_eta(ieta),Btemp,val_B(ieta)
+        IF(Btemp.GT.val_B(ieta)) THEN
+           eta1=val_eta(ieta)
+        ELSE
+           eta2=val_eta(ieta)
+        END IF
+     END DO
+     distz(ieta)=2*ABS(PI-val_eta(ieta))
+     WRITE(iout,*) 'd',val_eta(ieta),val_B(ieta),distz(ieta)
+  END DO
+  WRITE(iout,*) 'd',val_eta(nsurf),val_B(nsurf),distz(nsurf)  
+  !Alternative: pure cosine
+  !parbe=borbic(0,0)-Bmin_av
+  !Alternative: pure cosine that goes through theta=pi,zeta=pi/nzperiod
+  !...
+ 
+  
+!!$  DO ieta=1,nsurf
+!!$     
+!!$     DO it=1,npt
+!!$        Bb=100
+!!$        z_ini=PI/nzperiod
+!!$        t_ini=it*TWOPI/npt
+!!$        B1=-1
+!!$        flag=1
+!!$        DO WHILE((B1.LT.val_B(ieta).OR.flag.GT.0).AND.ABS(z_ini-PI/nzperiod).LT.TWOPI/nzperiod)
+!!$           CALL EXTREME_POINT(z_ini,t_ini,-1,z1,t1,B1,dummy2,dummy3,flag)
+!!$           IF(flag.GT.0.AND.B1.LT.Bb) THEN
+!!$              zb=z1
+!!$              tb=t1
+!!$              Bb=b1
+!!$           END IF           
+!!$           z_ini=z1
+!!$           t_ini=t1
+!!$        END DO
+!!$        z_ini=PI/nzperiod
+!!$        t_ini=it*TWOPI/npt
+!!$        B2=-1
+!!$        flag=1
+!!$        DO WHILE((B2.LT.val_B(ieta).OR.flag.GT.0).AND.ABS(z_ini-PI/nzperiod).LT.TWOPI/nzperiod)
+!!$           CALL EXTREME_POINT(z_ini,t_ini,3,z2,t2,B2,dummy2,dummy3,flag)
+!!$           IF(flag.GT.0.AND.B2.LT.Bb) THEN
+!!$              zb=z2
+!!$              tb=t2
+!!$              Bb=b2
+!!$           END IF           
+!!$           z_ini=z2
+!!$           t_ini=t2
+!!$        END DO
+!!$        IF(it.EQ.npt/2) WRITE(iout,*) 'h',zb,tb,bb
+!!$        IF(it.NE.npt/n2.AND.Bb.GT.val_B(ieta)) THEN
+!!$           zl=PI/nzperiod
+!!$           zr=zl
+!!$           tl=it*TWOPI/npt
+!!$           tr=tl
+!!$           WRITE(iout,*) 'zr',zr,tr,val_B(ieta),it
+!!$           WRITE(iout,*) 'zl',zl,tl,val_B(ieta),it
+!!$           CYCLE
+!!$        END IF           
+!!$        IF(ABS(z1-PI/nzperiod).GT.TWOPI/nzperiod) THEN
+!!$           zl=0
+!!$           tl=t_ini+(zl-z_ini)*(t1-t_ini)/(z1-z_ini)
+!!$        ELSE
+!!$           CALL BOUNCE_POINT(zb,tb,val_B(ieta),z1,t1,zl,tl,dummy1,dummy2,dummy3,-1)
+!!$        END IF
+!!$        IF(ABS(z2-PI/nzperiod).GT.TWOPI/nzperiod) THEN
+!!$           zr=TWOPI/nzperiod
+!!$           tr=t_ini+(zr-z_ini)*(t2-t_ini)/(z2-z_ini)
+!!$        ELSE
+!!$           z_ini=PI/nzperiod
+!!$           t_ini=it*TWOPI/npt
+!!$           CALL BOUNCE_POINT(zb,tb,val_B(ieta),z2,t2,zr,tr,dummy1,dummy2,dummy3,+1)
+!!$           z_ini=PI/nzperiod
+!!$           t_ini=it*TWOPI/npt
+!!$        END IF
+!!$        distz(ieta)=distz(ieta)+zr-zl
+!!$
+!!$!        WRITE(iout,*) 'z1',z1,t1,B1
+!!$!        WRITE(iout,*) 'z2',z2,t2,B2       
+!!$        WRITE(iout,*) 'zr',zr,tr,val_B(ieta),it
+!!$        WRITE(iout,*) 'zl',zl,tl,val_B(ieta),it
+!!$        
+!!$     END DO
+!!$     distz(ieta)=distz(ieta)/npt
+!!$     wRITE(iout,*) 'd',ieta*PI/nsurf,val_B(ieta),distz(ieta)
+!!$  END DO
+!!$  distz=distz*nzperiod
+!!$
+
+  IF(ABS(zetat(izmin(npt/2),npt/2)-PI).GT.(0.1*PI)) THEN
+     shift_twopi=.TRUE.
+     zetat=MOD(zetat+PI,TWOPI)
+  END IF
+
+  !Find target contour lines, including minimum B
+  DO ieta=1,nsurf
+!     val_eta(ieta)=ieta*PI/nsurf
+!     distz(ieta)=PI-val_eta(ieta) 
+!     val_B(ieta)=0
+!     DO ipar=1,nparbe
+!        val_B(ieta)=val_B(ieta)+parbe(ipar)*COS((ipar-1)*val_eta(ieta))
+!     END DO
      DO it=1,npt
         IF(ieta.EQ.nsurf.OR.val_B(ieta).LT.Bmin_th(it)) THEN
            zetal(ieta,it)=zetat(izmin(it),it)
@@ -381,82 +529,275 @@ SUBROUTINE CALC_B0
         END IF
      END DO
   END DO
-!  DO it=1,npt
-!     DO ieta=nsurf,1,-4
-!        WRITE(6,'(5(1pe13.5),I3)') zetal(ieta,it),theta(it),val_b(ieta)
-!     END DO
-!  END DO
 
-  !Find parameters
-!  dist=0 !new12
+  !Find s_theta(theta) in s(eta,theta)=s_eta(eta)s_theta(theta) at eta=pi
   lwork=-1
   ierr=0
   rcond=-1
   DEALLOCATE(rwork,iwork,work)
   ALLOCATE(rwork(1000),iwork(1000),work(1000))
-  DO iturn=1,3
-     DO ieta=1,nsurf
-        DO it=1,npt
-           imat=(ieta-1)*npt+it
-           IF(iturn.LE.2) rhs(imat)=zetal(ieta,it)-val_eta(ieta)
-           DO ipar=1,npar
-              mat(imat,ipar)=val_eta(ieta)*SIN(ipar*(theta(it)+iotat*(PI-val_eta(ieta))))
-           END DO
+  DO iturn=1,2
+     DO it=1,npt
+        rhs(it)=zetal(nsurf,it)-PI
+        DO ipar=1,nparst
+           mat(it,ipar)=PI*SIN(ipar*(theta(it)))
         END DO
      END DO
-     IF(iturn.LE.2) THEN
-        IF(iturn.EQ.2) lwork=MIN(1000,INT(work(1)))
-        CALL DGELSD(nsurf*npt,npar,1,mat,nsurf*npt,rhs,nsurf*npt,&
-             & s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)
-     ELSE
-        !Write B0
-!        OPEN(unit=1,file="Bomni.dat",form='formatted',action='write')
-        DO ieta=1,nsurf
-           DO ibranch=1,-1,-2
-              val_eta(ieta)=-ibranch*(PI-ieta*PI/nsurf)+PI
-              val_B(ieta)=borbic(0,0)
-              DO ipar=1,npar
-                 val_B(ieta)=val_B(ieta)+parB(ipar)*COS(ipar*val_eta(ieta))
-              END DO
-              IF(ibranch.EQ.1) THEN
-                 iz=ieta+1
-              ELSE
-                 iz=npt-ieta+1
-              END IF
-              B0(iz,:)=val_B(ieta)
-              DO it=1,npt
-                 IF(ibranch.EQ.-1.AND.ieta.EQ.nsurf) THEN
-                    iz=1
-                    zeta0(iz,it)=TWOPI
-                    B0(iz,it)=Bmax_av
-                 ELSE
-                    zeta0(iz,it)=val_eta(ieta)
-                    DO ipar=1,npar
-                       zeta0(iz,it)=zeta0(iz,it)+rhs(ipar)*&
-                            & (val_eta(ieta)+PI*(ibranch-1))*&
-                            & SIN(ibranch*ipar*(theta(it)+iotat*(PI-val_eta(ieta))))
-                    END DO
-                 END IF
-                 IF(ibranch.EQ.1) WRITE(iout,'(3(1pe13.5),I3)') MOD(zeta0(iz,it),TWOPI),zetal(ieta,it),theta(it),iz
-                 IF(shift_twopi) zeta0(iz,it)=MOD(zeta0(iz,it)+PI,TWOPI)
-                 zeta0(iz,it)=MOD((zeta0(iz,it)+helM*theta(it))/helN+TWOPI,TWOPI/nzperiod)
-                 IF(helM.NE.0.AND.Bzt(1,1).LT.Bzt(1,npt/2)) zeta0(iz,it)=MOD(zeta0(iz,it)+PI,TWOPI/nzperiod)
-                 !dist=dist+(zeta0(iz,it)-val_eta(ieta))*(zeta0(iz,it)-val_eta(ieta)) !new2
-
-!new1
-!                 CALL SUM_BORBI(zeta0(iz,it),theta(it),Btemp)
-!                 dist=dist+(Btemp-val_B(ieta))*(Btemp-val_B(ieta))
-!new1
-!                 WRITE(1,'(3(1pe13.5),I3)') zeta0(iz,it),theta(it),B0(iz,it),-iz
-              END DO
+     IF(iturn.EQ.2) lwork=MIN(1000,INT(work(1)))
+     CALL DGELSD(npt,nparst,1,mat(1:npt,1:nparst),npt,rhs(1:npt),npt,&
+          & s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)
+  END DO
+  parst=rhs(1:nparst)
+  !Plot s(pi=eta,theta)
+  DO it=1,npt
+     stheta(it)=PI
+     DO ipar=1,nparst
+        stheta(it)=stheta(it)+parst(ipar)*PI*SIN(ipar*(theta(it)))
+     END DO
+     WRITE(iout,'("stheta ",3(1pe13.5),I3)') zetal(nsurf,it),theta(it),stheta(it)
+  END DO
+  WRITE(iout,*) 'parst',parst
+  WRITE(iout,*) 'iota',iota
+  !Find s(eta!=pi,x)
+  lwork=-1
+  ierr=0
+  rcond=-1
+  DEALLOCATE(rwork,iwork,work)
+  ALLOCATE(rwork(1000),iwork(1000),work(1000))
+  DO iturn=1,2
+     DO ieta=1,nsurf
+        seta(ieta)=0     
+        nden=0
+        DO it=1,npt           
+           sthetat=0
+           DO ipar=1,nparst             
+              sthetat=sthetat+parst(ipar)*PI*SIN(ipar*(theta(it)+iotat*0.5*distz(ieta)))
            END DO
+           IF(ABS(sthetat).LT.0.1) CYCLE
+           seta(ieta)=seta(ieta)+(zetal(ieta,it)-PI+0.5*distz(ieta))/sthetat
+           nden=nden+1
+        END dO
+        seta(ieta)=seta(ieta)/nden
+        mat(ieta,1)=val_eta(ieta)*(PI-val_eta(ieta))/PI/PI
+        DO ipar=2,nparse
+           mat(ieta,ipar)=mat(ieta,ipar-1)*val_eta(ieta)/PI
         END DO
-!        CLOSE(1)
+     END DO
+     isurf1=1
+     isurf2=nsurf
+     DO ieta=nsurf,1,-1
+        IF(seta(ieta).LT.0) THEN
+           isurf1=ieta+1
+           EXIT
+        END IF
+!        IF(seta(ieta).LT.0) seta(ieta)=val_eta(ieta)*(seta(ieta+1)/val_eta(ieta+1))
+     END DO
+     DO ieta=1,nsurf
+        IF(seta(ieta).GT.1) THEN
+           isurf2=ieta-1
+           EXIT
+        END IF
+!        IF(seta(ieta).GT.1) seta(ieta)=seta(ieta-1)+(val_eta(ieta)-val_eta(ieta-1))*(1-seta(ieta-1))/(PI-val_eta(ieta-1))
+     END DO
+     DO ieta=1,nsurf
+         rhs(ieta)=seta(ieta)-val_eta(ieta)/PI
+     END DO
+     msurf=isurf2-isurf1+1
+     matt(1:msurf,1:nparse)=mat(isurf1:isurf2,1:nparse)
+     mat=matt
+     rhst(1:msurf)=rhs(isurf1:isurf2)
+     rhs=rhst
+     IF(iturn.EQ.2) lwork=MIN(1000,INT(work(1)))
+     CALL DGELSD(msurf,nparse,1,mat(1:msurf,1:nparse),msurf,rhs(1:msurf),msurf,&
+          & s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)
+     IF(iturn.EQ.2) THEN
+        DO ieta=1,nsurf
+           mat(ieta,1)=val_eta(ieta)*(PI-val_eta(ieta))/PI/PI
+           setat=val_eta(ieta)/PI+mat(ieta,1)*rhs(1)
+           DO ipar=2,nparse
+              mat(ieta,ipar)=mat(ieta,ipar-1)*val_eta(ieta)/PI
+              setat=setat+mat(ieta,ipar)*rhs(ipar)
+           END DO
+           DO it=1,npt
+              WRITE(iout,'("seta ",4(1pe13.5),I3)') val_eta(ieta),(zetal(ieta,it)-PI+0.5*distz(ieta))/sthetat,seta(ieta),setat
+           END DO
+           seta(ieta)=setat
+        END DO
      END IF
   END DO
+  parse=rhs(1:nparse)
+!  parse=0
+  WRITE(iout,*) 'parse',parse
+
+
+  
+!!$    dist=0 
+!!$  lwork=-1
+!!$  ierr=0
+!!$  rcond=-1
+!!$  DEALLOCATE(rwork,iwork,work)
+!!$  ALLOCATE(rwork(1000),iwork(1000),work(1000))
+!!$  DO iturn=1,2
+!!$     DO ieta=1,nsurf
+!!$        DO it=1,npt
+!!$           imat=(ieta-1)*npt+it
+!!$           rhs(imat)=zetal(ieta,it)-PI+0.5*distz(ieta)
+!!$           sthetat=0
+!!$           DO ipar=1,npar
+!!$              sthetat=sthetat+parst(ipar)*PI*SIN(ipar*(theta(it)+iotat*0.5*distz(ieta)))
+!!$           END DO           
+!!$           mat(imat,1)=val_eta(ieta)*sthetat
+!!$           DO ipar=2,npar
+!!$              mat(imat,ipar)=mat(imat,ipar-1)*val_eta(ieta)
+!!$           END DO
+!!$        END DO
+!!$     END DO
+!!$     IF(iturn.EQ.2) lwork=MIN(1000,INT(work(1)))
+!!$     CALL DGELSD(nsurf*npt,npar,1,mat,nsurf*npt,rhs,nsurf*npt,&
+!!$          & s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)
+!!$  END DO
+
+  !Write B0
+!  OPEN(unit=1,file="Bomni.dat",form='formatted',action='write')
+  DO ieta=1,nsurf
+     DO ibranch=1,-1,-2
+        IF(ibranch.EQ.1) THEN
+!           etap(1)=val_eta(ieta)
+           iz=ieta+1
+        ELSE
+!           etap(1)=val_eta(ieta)!TWOPI-val_eta(ieta)
+           iz=npt-ieta+1
+        END IF
+!        DO ipar=2,nparse
+!           etap(ipar)=etap(ipar-1)*etap(1)
+!        END DO
+        B0(iz,:)=val_B(ieta)
+        DO it=1,npt
+           sthetat=0
+           IF(ibranch.EQ.-1.AND.ieta.EQ.nsurf) THEN
+              iz=1
+              zeta0(iz,it)=TWOPI
+              B0(iz,it)=Bmax_av
+           ELSE 
+              DO ipar=1,nparst
+                 sthetat=sthetat+parst(ipar)*PI*SIN(ipar*ibranch*(theta(it)+iotat*0.5*distz(ieta)))
+              END DO
+              setat=seta(ieta)           
+              zeta0(iz,it)=PI-ibranch*0.5*distz(ieta)+ibranch*setat*sthetat
+           END IF
+           IF(shift_twopi) zeta0(iz,it)=MOD(zeta0(iz,it)+PI,TWOPI)
+           zeta0(iz,it)=MOD((zeta0(iz,it)+helM*theta(it))/helN+TWOPI,TWOPI/nzperiod)
+           IF(helM.NE.0.AND.Bzt(1,1).LT.Bzt(1,npt/2)) zeta0(iz,it)=MOD(zeta0(iz,it)+PI,TWOPI/nzperiod)
+           !dist=dist+(zeta0(iz,it)-val_eta(ieta))*(zeta0(iz,it)-val_eta(ieta)) !new2
+           
+!new1
+           CALL SUM_BORBI(zeta0(iz,it),theta(it),Btemp)
+           dist=dist+(Btemp-val_B(ieta))*(Btemp-val_B(ieta))
+           WRITE(iout,'("B ",4(1pe13.5),I3)') zeta0(iz,it),theta(it),B0(iz,it),Btemp,ieta
+        END DO
+     END DO
+  END DO
+  !        CLOSE(1)
+  
+  
+!  DO ieta=1,nsurf
+!     DO it=1,npt
+!        IF(it.EQ.0) THEN
+!           setat=0
+!           mat(ieta,1)=val_eta(ieta)
+!           DO ipar=1,npar
+!              mat(ieta,ipar)=mat(ieta,ipar-1)*val_eta(ieta)
+!              setat=setat+rhs(ipar)*mat(ieta,ipar)
+!           END DO
+!        END IF
+!        WRITE(iout,'("seta ",4(1pe13.5),I3)') val_eta(ieta),(zetal(ieta,it)-PI+0.5*distz(ieta))/stheta(it),seta(ieta),setat
+!     END DO
+!  END DO
+
+  
+!!$  
+!!$
+!!$  ELSE
+!!$        !Write B0
+!!$!        OPEN(unit=1,file="Bomni.dat",form='formatted',action='write')
+!!$        DO ieta=1,nsurf
+!!$           DO ibranch=1,-1,-2
+!!$              val_eta(ieta)=-ibranch*(PI-ieta*PI/nsurf)+PI
+!!$              val_B(ieta)=0
+!!$              DO ipar=1,npar
+!!$                 val_B(ieta)=val_B(ieta)+parbe(ipar)*COS((ipar-1)*val_eta(ieta))
+!!$              END DO
+!!$              IF(ibranch.EQ.1) THEN
+!!$                 iz=ieta+1
+!!$              ELSE
+!!$                 iz=npt-ieta+1
+!!$              END IF
+!!$              B0(iz,:)=val_B(ieta)
+!!$              DO it=1,npt
+!!$                 IF(ibranch.EQ.-1.AND.ieta.EQ.nsurf) THEN
+!!$                    iz=1
+!!$                    zeta0(iz,it)=TWOPI
+!!$                    B0(iz,it)=Bmax_av
+!!$                 ELSE
+!!$                    IF(ibranch.EQ.1) THEN
+!!$                       zeta0(iz,it)=PI-0.5*distz(ieta)
+!!$                    ELSE
+!!$                       zeta0(iz,it)=PI+0.5*distz(ieta)
+!!$                    END IF
+!!$                    DO ipar=1,npar
+!!$                       zeta0(iz,it)=zeta0(iz,it)+rhs(ipar)*&
+!!$                            & (val_eta(ieta)+PI*(ibranch-1))*&
+!!$                            & SIN(ibranch*ipar*(theta(it)+iotat*0.5*distz(ieta)))
+!!$                    END DO
+!!$                 END IF
+!!$!                 ELSE
+!!$!                    zeta0(iz,it)=val_eta(ieta)
+!!$!                    DO ipar=1,npar
+!!$!                       zeta0(iz,it)=zeta0(iz,it)+rhs(ipar)*&
+!!$!                            & (val_eta(ieta)+PI*(ibranch-1))*&
+!!$!                            & SIN(ibranch*ipar*(theta(it)+iotat*(PI-val_eta(ieta))))
+!!$!                    END DO
+!!$!                 END IF
+!!$                 IF(ibranch.EQ.1) WRITE(iout,'(3(1pe13.5),I3)') MOD(zeta0(iz,it),TWOPI),zetal(ieta,it),theta(it),iz
+!!$                 IF(shift_twopi) zeta0(iz,it)=MOD(zeta0(iz,it)+PI,TWOPI)
+!!$                 zeta0(iz,it)=MOD((zeta0(iz,it)+helM*theta(it))/helN+TWOPI,TWOPI/nzperiod)
+!!$                 IF(helM.NE.0.AND.Bzt(1,1).LT.Bzt(1,npt/2)) zeta0(iz,it)=MOD(zeta0(iz,it)+PI,TWOPI/nzperiod)
+!!$                 !dist=dist+(zeta0(iz,it)-val_eta(ieta))*(zeta0(iz,it)-val_eta(ieta)) !new2
+!!$
+!!$!new1
+!!$                 CALL SUM_BORBI(zeta0(iz,it),theta(it),Btemp)
+!!$                 dist=dist+(Btemp-val_B(ieta))*(Btemp-val_B(ieta))
+!!$!new1
+!!$!                 WRITE(1,'(3(1pe13.5),I3)') zeta0(iz,it),theta(it),B0(iz,it),-iz
+!!$              END DO
+!!$           END DO
+!!$        END DO
+!!$!        CLOSE(1)
+!!$     END IF
+!!$  END DO
+!!$
+!!$
+!!$
+!!$
+!!$
+!!$
+!!$
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
 !  KN_DBO=SQRT(dist/(npt*(nsurf+1)))/TWOPI !new2
-!  KN_DBO=SQRT(dist/(npt*npt))/borbic(0,0) !new1
+  IF(KN_STELLOPT(9)) KN_DBO=SQRT(dist/(npt*npt))/(Bmax_av-Bmin_av) !new1
 !  RETURN !new12
 
   !Interpolate
@@ -514,10 +855,10 @@ SUBROUTINE CALC_B0
   END DO
 
   !Reescale B_0
-  borbic0(0,0)=borbic(0,0)
-  IF(FIRST_TIME) save_borbic0=borbic0
-  FIRST_TIME=.FALSE.
-  borbic0=save_borbic0
+!   borbic0(0,0)=borbic(0,0)
+   IF(FIRST_TIME) save_borbic0=borbic0
+   FIRST_TIME=.FALSE.
+   borbic0=save_borbic0
 
   !Calculate distance between B and B_0
   dist=0
@@ -534,13 +875,8 @@ SUBROUTINE CALC_B0
      END DO
   END DO
   dist=SQRT(dist)/borbic(0,0)
-  IF(KN_STELLOPT(9)) KN_DBO=dist
-  !  dist=SQRT(dist)/ABS(borbic(helN,helM))
-
-  borbic0=borbic
-  borbis0=borbis
-  dborbic0dpsi=dborbicdpsi
-  dborbis0dpsi=dborbisdpsi
+!  IF(KN_STELLOPT(9)) KN_DBO=dist
+!  dist=SQRT(dist)/ABS(borbic(helN,helM))
 
   IF ( ALLOCATED(rwork) ) DEALLOCATE(rwork,iwork,work)
 
