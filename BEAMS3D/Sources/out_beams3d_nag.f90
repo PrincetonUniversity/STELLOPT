@@ -116,7 +116,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     ELSE
        IF (lneut) end_state(myline)=3
     END IF
-    IF (lvessel .and. mytdex > 0 .and. y0 > 0.5) THEN
+    IF (lvessel .and. mytdex > 0 .and. rho_help > 0.5) THEN
        lhit = .false.
        x0    = xlast
        y0    = ylast
