@@ -62,7 +62,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     x0 = MOD(q(2), phimax)
     IF (x0 < 0) x0 = x0 + phimax
     !CALL EZspline_isInDomain(S_spl,q(1),x0,q(3),ier)
-    y0 = 0  ! If we're out of domain then don't worry about collisions
+    rho_help = 0  ! If we're out of domain then don't worry about collisions
     !IF (ier==0) THEN
     IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
         (x0 >= phimin-eps2) .and. (x0 <= phimax+eps2) .and. &
@@ -81,10 +81,11 @@ SUBROUTINE out_beams3d_nag(t, q)
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        Y4D(1,1,1,1),nr,nphi,nz)
 
-       rho_help = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
+       y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
+       rho_help = sqrt(y0)
        !z0 = fval(1)
        z0 = ATAN2(fval2(1),fval(1))
-       S_lines(mytdex, myline) = rho_help 
+       S_lines(mytdex, myline) = y0 
        U_lines(mytdex, myline) = z0
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -95,7 +96,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        IF (x0 < 0) x0 = x0 + pi2
        IF (z0 < 0) z0 = z0 + pi2
        vperp = SQRT(2*moment*fval(1)/mymass)
-       d1 = MAX(MIN(CEILING(rho_help*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+       d1 = MAX(MIN(CEILING(sqrt(rho_help)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
        d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
        d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
