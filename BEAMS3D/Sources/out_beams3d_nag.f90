@@ -96,7 +96,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        IF (x0 < 0) x0 = x0 + pi2
        IF (z0 < 0) z0 = z0 + pi2
        vperp = SQRT(2*moment*fval(1)/mymass)
-       d1 = MAX(MIN(CEILING(sqrt(rho_help)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+       d1 = MAX(MIN(CEILING(rho_help*ns_prof1     ), ns_prof1), 1) ! Rho Bin
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
        d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
        d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
