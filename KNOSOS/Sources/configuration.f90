@@ -842,9 +842,9 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
      IF(s0.LE.s_b(js_b(1))) THEN
         is0=js_b(1)
         is1=js_b(2)
-        f_ext(1)=SQRT(s0/s_b(js_b(1)))
+        f_ext(1)=SQRT(s0/s_b(is0))
         DO imn=2,mboz_b
-           f_ext(imn)=f_ext(imn)*f_ext(imn-1)
+           f_ext(imn)=f_ext(imn-1)*f_ext(1)
         END DO
      ELSE IF(s0.GT.s_b(js_b(jsn))) THEN
         is0=jsn-1
@@ -942,7 +942,6 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
         END IF
      ELSE
         borbic(n,m)=bmnc_b(imn,is0)*f_ext(m)
-!        IF(ABS(borbic(n,m)).GT.10) WRITE(iout,*) n,m,borbic(n,m)
         IF(STELL_ANTISYMMETRIC) borbis(n,m)=bmns_b(imn,is0)*f_ext(m)
         IF(booz_read) THEN
            porbis(n,m)=pmns_b(imn,is0)*f_ext(m)
@@ -953,8 +952,8 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
               rorbis(n,m)=rmns_b(imn,is0)*f_ext(m)
               zorbic(n,m)=zmnc_b(imn,is0)*f_ext(m)
            END IF
-           dborbicdpsi(n,m)=bmnc_b(imn,is0)*f_ext(m)*(m/2.)/s0
-           dborbisdpsi(n,m)=bmns_b(imn,is0)*f_ext(m)*(m/2.)/s0
+           dborbicdpsi(n,m)=bmnc_b(imn,is0)*f_ext(m)*(m/2.)/(s0*atorflux)
+           IF(STELL_ANTISYMMETRIC) dborbisdpsi(n,m)=bmns_b(imn,is0)*f_ext(m)*(m/2.)/(s0*atorflux)
         END IF
      END IF
   END DO
