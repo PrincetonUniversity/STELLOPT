@@ -111,12 +111,12 @@
       END IF
 
       ! Do phase space volume elements 
-      ds = 2*partvmax/ns_prof4
+      ds = 2.0*partvmax/ns_prof4
       du =   partvmax/ns_prof5
       dvol = pi2*ds*du
       nvol = ns_prof4*ns_prof5
       DO j = 1, ns_prof5
-        u1 = (j-0.5)*du
+        u1 = REAL(j-0.5)*du
         dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
         IF (lfidasim2) THEN
             dist5d_fida(:,:,:,:,:,j) = dist5d_fida(:,:,:,:,:,j)/(dvol*u1)
