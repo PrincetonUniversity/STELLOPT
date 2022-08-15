@@ -108,7 +108,7 @@ SUBROUTINE outpart_beams3d_nag(t, q)
        binv = one/fval(1)
 
        ! Calc Vll
-       vll_temp = ( br_temp*q(4) +  bphi_temp*q(5) + bz_temp*q(4) ) * binv
+       vll_temp = ( br_temp*q(4) +  bphi_temp*q(5) + bz_temp*q(6) ) * binv
        vll_lines(mytdex,myline) = vll_temp
 
 
