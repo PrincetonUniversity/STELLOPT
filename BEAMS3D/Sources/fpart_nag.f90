@@ -3,7 +3,7 @@
 !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
 !     Date:          10/19/2021
 !     Description:   This subroutine calculates the RHS of the ODE for 
-!                    particle orbit following.  
+!                    particle orbit following.
 !
 !-----------------------------------------------------------------------
       SUBROUTINE fpart_nag(t,q,qdot)
@@ -12,7 +12,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_grid
-      USE beams3d_lines, ONLY: mycharge, mymass
+      USE beams3d_lines, ONLY: mycharge, mymass, myqm
       USE mpi_params, ONLY: myworkid
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -66,21 +66,12 @@
       IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
           (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
           (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-!      IF (ier == 0) THEN
-         ! Get the gridpoint info
          i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
          j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
          k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
          xparam = (r_temp - raxis(i)) * hri(i)
          yparam = (phi_temp - phiaxis(j)) * hpi(j)
          zparam = (z_temp - zaxis(k)) * hzi(k)
-         !CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
-         !                BR_spl%x1(1),BR_spl%n1,&
-         !                BR_spl%x2(1),BR_spl%n2,&
-         !                BR_spl%x3(1),BR_spl%n3,&
-         !                BR_spl%ilin1,BR_spl%ilin2,BR_spl%ilin3,&
-         !                i,j,k,xparam,yparam,zparam,&
-         !                hx,hxi,hy,hyi,hz,hzi,ier)
          ! Evaluate the Splines
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -98,7 +89,7 @@
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          POT4D(1,1,1,1),nr,nphi,nz)
          Efield(1:3) =-fvalE(1,1:3)
-         ! Fix gradients
+         ! Fix gradients for cyldrical coords
          Efield(2)   = Efield(2)*rinv
          ! VxB
          VxB(1) = q(5)*bz_temp   - q(6)*bphi_temp
@@ -106,11 +97,12 @@
          VxB(3) = q(4)*bphi_temp - q(5)*br_temp
          ! Equations a=F/m
          qdot(1:3) = q(4:6)
-         qdot(4:6) = mycharge*(Efield(1:3)+VxB)/mymass
+         qdot(4:6) = myqm*(Efield(1:3)+VxB)
 
-         ! Correct for dphi/dt = Vphi/R
-         !   qdot(5) needs no correction
+         ! Geometric corrections for cylindrical coords
          qdot(2) = qdot(2)*rinv
+         qdot(4) = qdot(4)+q(5)*q(5)*rinv
+         qdot(5) = qdot(5)-q(4)*q(5)*rinv
       ELSE
          qdot(1:6) = 0
       END IF
