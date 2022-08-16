@@ -79,7 +79,8 @@ SUBROUTINE beams3d_follow_fo
     mf = 10
     ALLOCATE(q(neqs_nag))
 
-! Screen output so we know what's happening
+
+    ! Screen output so we know what's happening
     IF (lverb) THEN
        WRITE(6, '(A)') '----- FOLLOWING PARTICLE TRAJECTORIES -----'
        WRITE(6, '(A,A)')          '       Method: ', TRIM(int_type)
@@ -258,6 +259,7 @@ SUBROUTINE beams3d_follow_fo
                     mymass = mass(l)
                     mybeam = Beam(l)
                     my_end = t_end(l)
+                    myqm  = mycharge/mymass
                     ltherm = .false.
                     lneut  = .false.
                     ! Collision parameters
