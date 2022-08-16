@@ -33,7 +33,7 @@ SUBROUTINE beams3d_follow
     INTEGER, ALLOCATABLE :: mnum(:), moffsets(:)
     INTEGER, ALLOCATABLE :: itemp(:,:)
     REAL :: dist
-    REAL(rprec) :: tf_max, vel_max, dt_out, weight_save
+    REAL(rprec) :: tf_max, vel_max, weight_save
     DOUBLE PRECISION :: tf_nag, t_nag
     DOUBLE PRECISION, ALLOCATABLE :: q(:)
 
@@ -58,7 +58,6 @@ SUBROUTINE beams3d_follow
     ! Adjust dt to match ndt_max
     nsteps = ndt_max * NPOINC
     dt = tf_max/(ndt_max*NPOINC)
-    dt_out = tf_max/NPOINC
     
     ! Break up the work
     CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
