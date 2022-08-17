@@ -14,7 +14,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                                lhitonly, npoinc, lcollision, ldepo, &
                                weight, invpi2, ndt, ndt_max, lfidasim
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
-                             nsteps, nparticles, moment_lines, myend, &
+                             nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
                              xlast, ylast, zlast, dense_prof, &
                              ltherm, S_lines, U_lines, B_lines, &

@@ -79,8 +79,6 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nparticles',ier)
       CALL read_scalar_hdf5(fid,'nbeams',ier,INTVAR=nbeams)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nbeams',ier)
-      CALL read_scalar_hdf5(fid,'nsteps',ier,INTVAR=nsteps)
-      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nsteps',ier)
       CALL read_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'npoinc',ier)
       CALL read_scalar_hdf5(fid,'nbeams',ier,INTVAR=nbeams)

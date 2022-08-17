@@ -171,8 +171,6 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nparticles',ier)
                CALL write_scalar_hdf5(fid,'nbeams',ier,INTVAR=nbeams,ATT='Number of Beams',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nbeams',ier)
-               CALL write_scalar_hdf5(fid,'nsteps',ier,INTVAR=nsteps+1,ATT='Number of Steps Along Trajectory',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nsteps',ier)
                CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of steps per trajectory period',&
                                       ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)
@@ -221,8 +219,6 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nparticles',ier)
                CALL write_scalar_hdf5(fid,'nbeams',ier,INTVAR=nbeams,ATT='Number of Beams',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nbeams',ier)
-               CALL write_scalar_hdf5(fid,'nsteps',ier,INTVAR=nsteps+1,ATT='Number of Steps Along Trajectory',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nsteps',ier)
                CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of steps per trajectory period',&
                                       ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)

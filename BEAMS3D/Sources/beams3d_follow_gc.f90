@@ -26,6 +26,7 @@ SUBROUTINE beams3d_follow_gc
                             rho_fullorbit, rho_help, E_kick, freq_kick
     USE mpi_params ! MPI
     USE beams3d_write_par
+    USE beams3d_physics_mod, ONLY: beams3d_calc_dt
     USE safe_open_mod, ONLY: safe_open
     USE mpi_inc
     !-----------------------------------------------------------------------
@@ -51,7 +52,8 @@ SUBROUTINE beams3d_follow_gc
     INTEGER, ALLOCATABLE :: iwork(:), itemp(:,:)
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
     DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, &
-                        tol_nag, rtol, s_fullorbit
+                        tol_nag, rtol, s_fullorbit, &
+                        dtmin, dtmax
     DOUBLE PRECISION :: atol(4)
     DOUBLE PRECISION :: rkh_work(4, 2)
     CHARACTER*1 :: relab
@@ -80,11 +82,19 @@ SUBROUTINE beams3d_follow_gc
 
 ! Screen output so we know what's happening
     IF (lverb) THEN
+       ! Do a calculation of nstep and delta-t
+       myline = MAXLOC(ABS(vll_start),1)
+       my_end = t_end(myline)
+       CALL beams3d_calc_dt(1,q(1),q(2),q(3),dtmin)
+       myline = MINLOC(ABS(vll_start),1)
+       my_end = t_end(myline)
+       CALL beams3d_calc_dt(1,q(1),q(2),q(3),dtmax)
+       ! Screen output
        WRITE(6, '(A)') '----- FOLLOWING GYROCENTER TRAJECTORIES -----'
        WRITE(6, '(A,A)')          '       Method: ', TRIM(int_type)
        WRITE(6, '(A,I9)')          '   Particles: ', nparticles
-       WRITE(6, '(A,I9,A,EN12.3)') '       Steps: ', nsteps, '   Delta-t: ', dt
-       WRITE(6, '(A,I9)')          '      NPOINC: ', npoinc
+       WRITE(6, '(A,I9,2(A,EN12.3))') '       Steps: ', ndt_max*NPOINC, '   dt_min: ', dtmin,'   dt_max: ', dtmax
+       WRITE(6, '(A,I9)')          '      NPOINC: ', NPOINC
        SELECT CASE(TRIM(int_type))
           CASE("NAG")
              WRITE(6, '(A,EN12.3,A,A1)') '         Tol: ', follow_tol, '  Type: ', relab
@@ -102,9 +112,9 @@ SUBROUTINE beams3d_follow_gc
                 ALLOCATE(w(neqs_nag * 21 + 28), STAT = ier)
                 IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'W', ier)
                 DO l = mystart_save, myend_save
-                    tf_nag = t_last(l)
+                    t_nag = t_last(l)
                     ! Don't do particle if stopped or beyond the full_orbit limit
-                    IF (tf_nag>t_end(l)) CYCLE
+                    IF (t_nag>t_end(l)) CYCLE
                     ! Particle indicies
                     myline = l
                     mytdex = 1; ndt = 1
@@ -120,7 +130,6 @@ SUBROUTINE beams3d_follow_gc
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     moment = moment_lines(mytdex-1,l)
-                    t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
@@ -133,6 +142,10 @@ SUBROUTINE beams3d_follow_gc
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+                    ! Now calc dt
+                    CALL beams3d_calc_dt(1,q(1),q(2),q(3),dt)
+                    tf_nag = t_nag+dt
+                    ndt = 1
                     DO ! Must do it this way becasue lbeam changes q(4) values
 #if defined(NAG)
                        CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fgc_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
@@ -177,6 +190,10 @@ SUBROUTINE beams3d_follow_gc
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+                    ! Now calc dt
+                    CALL beams3d_calc_dt(1,q(1),q(2),q(3),dt)
+                    tf_nag = t_nag+dt
+                    ndt = 1
                     ! Setup DRKHVG parameters
                     iopt = 0 
                     DO
@@ -214,16 +231,15 @@ SUBROUTINE beams3d_follow_gc
                 ALLOCATE(iwork(liw))
                 ier = 0
                 DO l = mystart_save, myend_save
-                    tf_nag = t_last(l)
+                    t_nag = t_last(l)
                     ! Don't do particle if stopped
-                    IF (tf_nag>t_end(l)) CYCLE
+                    IF (t_nag>t_end(l)) CYCLE
                     ! Particle indicies
                     myline = l
                     mytdex = 1
                     IF (lbeam) mytdex = 3
                     ! Don't do full_orbit particles
                     IF (S_lines(mytdex-1,l)>=s_fullorbit) CYCLE
-                    t_nag = tf_nag - dt
                     ! Particle Parameters
                     q(1) = R_lines(mytdex-1,l)
                     q(2) = PHI_lines(mytdex-1,l)
@@ -233,7 +249,6 @@ SUBROUTINE beams3d_follow_gc
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     moment = moment_lines(mytdex-1,l)
-                    t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
@@ -246,6 +261,10 @@ SUBROUTINE beams3d_follow_gc
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+                    ! Now calc dt
+                    CALL beams3d_calc_dt(1,q(1),q(2),q(3),dt)
+                    tf_nag = t_nag+dt
+                    ndt = 1
                     ! Setup LSODE parameters
                     iopt = 0 ! No optional output
                     w = 0; iwork = 0; itask = 1; istate = 1;

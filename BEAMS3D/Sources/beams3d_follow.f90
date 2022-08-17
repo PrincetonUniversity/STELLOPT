@@ -55,8 +55,7 @@ SUBROUTINE beams3d_follow
     ! Calculate number of integration timesteps per output timestep
     ndt_max = MAX(CEILING(tf_max/(dt*NPOINC)),1)
 
-    ! Adjust dt to match ndt_max
-    nsteps = ndt_max * NPOINC
+    ! Adjust dt to match ndt_max  (note dt doesn't really matter)
     dt = tf_max/(ndt_max*NPOINC)
     
     ! Break up the work
@@ -150,20 +149,21 @@ SUBROUTINE beams3d_follow
        ylast = q(1)*sin(q(2))
        zlast = q(3)
        tf_nag = 0.0
-       ndt    = ndt_max-1 ! we only record first point
        mycharge = charge(i)
        myZ = Zatom(i)
        mymass = mass(i)
        mybeam = Beam(i)
        moment = mu_start(i)
-       my_end = t_end(i)
-       myline = i
-       mytdex = 0
        fact_pa   = plasma_mass/(mymass*plasma_Zmean)
        fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
        ! Save the IC of the neutral
+       my_end = t_end(i)
+       myline = i
+       mytdex = 0
+       ndt_max = 1
+       ndt     = 0
        CALL out_beams3d_nag(tf_nag,q)
-       t_last(i) = tf_nag
+       t_last(i) = tf_nag-dt
     END DO
 
     ! Beam Deposition
@@ -178,7 +178,6 @@ SUBROUTINE beams3d_follow
           xlast = q(1)*cos(q(2))
           ylast = q(1)*sin(q(2))
           zlast = q(3)
-          tf_nag = t_last(i)
           mycharge = charge(i)
           myZ = Zatom(i)
           mymass = mass(i)
@@ -186,36 +185,34 @@ SUBROUTINE beams3d_follow
           moment = mu_start(i)
           my_end = t_end(i)
           myline = i
-          mytdex = 1; ndt=1
+          mytdex = 1
           fact_pa   = plasma_mass/(mymass*plasma_Zmean)
           fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
           ! Define neutral trajectory
           myv_neut(1) = vr_start(i)*cos(phi_start(i)) - vphi_start(i)*sin(phi_start(i))
           myv_neut(2) = vr_start(i)*sin(phi_start(i)) + vphi_start(i)*cos(phi_start(i))
           myv_neut(3) = vz_start(i)
-          lcollision = .FALSE.
-          ! Follow into plasma
-          tf_nag = 0.0
-          CALL beams3d_follow_neut(tf_nag,q)
-          mytdex = 1; ndt=1
-          weight_save = weight(myline)
-          weight(myline) = 0
-          CALL out_beams3d_nag(tf_nag,q)
-          weight(myline) = weight_save
-          ! Detect Shinethrough
-          t_last(i) = tf_nag ! This is here for later
-          IF (tf_nag > t_end(i)) CYCLE
-          ! Ionize
-          CALL beams3d_ionize(tf_nag,q)
-          mytdex = 2; ndt=1
           ! This is a trick which works because V_neut hasn't changed
           vr_lines(1:2,myline)   = vr_start(i)
           vphi_lines(1:2,myline) = vphi_start(i)
           vz_lines(1:2,myline)   = vz_start(i)
-          ! Output starting location
+          lcollision = .FALSE.
+          ! Inject Beam
+          tf_nag = 0.0
+          CALL beams3d_follow_neut(tf_nag,q)
+          ! Save the point to index 1 with weight set to 0
+          mytdex = 1; ndt=0; ndt_max = 1 ! Save the point
+          weight_save = weight(myline)
+          weight(myline) = 0
+          t_last(i) = tf_nag ! Save timestep after follow_neut
           CALL out_beams3d_nag(tf_nag,q)
-          tf_nag = tf_nag-dt
-          t_last(i) = tf_nag
+          weight(myline) = weight_save
+          IF (tf_nag > t_end(i)) CYCLE
+          ! Step to gyrocenter
+          CALL beams3d_ionize(q)
+          ! Save to index 2
+          mytdex = 2; ndt=0; ndt_max = 1 ! Save point
+          CALL out_beams3d_nag(tf_nag,q)
        END DO
     END IF
 
