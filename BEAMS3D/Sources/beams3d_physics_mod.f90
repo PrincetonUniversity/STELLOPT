@@ -14,10 +14,11 @@ MODULE beams3d_physics_mod
       USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
                                  dt_save, lbbnbi, weight, ndt, &
                                  ndt_max, npoinc, lendt_m, te_col_min, &
-                                 NION, NI_AUX_M, NI_AUX_Z
+                                 NION, NI_AUX_M, NI_AUX_Z, vll_start
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
+                               vr_lines, vphi_lines, vz_lines, &
                                myline, mytdex, moment, ltherm, &
-                               nsteps, nparticles, vll_lines, &
+                               nparticles, vll_lines, &
                                moment_lines, mybeam, mycharge, myZ, &
                                mymass, myv_neut, rand_prob, &
                                cum_prob, tau, &
@@ -857,16 +858,14 @@ MODULE beams3d_physics_mod
       !     Description:   Ionizes a particle relocating it to its
       !                    gyrocenter.
       !-----------------------------------------------------------------
-      SUBROUTINE beams3d_ionize(t, q)
+      SUBROUTINE beams3d_ionize(q)
          USE beams3d_grid
 
          !--------------------------------------------------------------
          !     Input Parameters
-         !          t          Location along fieldline in t
          !          q            (q(1),q(2),q(3),q(4)) = (R,phi,Z,vll)
          !--------------------------------------------------------------
          IMPLICIT NONE
-         DOUBLE PRECISION, INTENT(inout) :: t
          DOUBLE PRECISION, INTENT(inout) :: q(4)
 
          !--------------------------------------------------------------
@@ -1604,6 +1603,81 @@ MODULE beams3d_physics_mod
       END SUBROUTINE beams3d_MODB
 
       !-----------------------------------------------------------------
+      !     Function:      beams3d_BCYL
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          08/17/2022
+      !     Description:   Returns Br, Bphi, Bz
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_BCYL(r,phi,z,Br,Bphi,Bz)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !         r, phi, z     Cylindrical coordiantes
+         !     Output Parameters
+         !         Br, Bphi, Bz  Magnetic field components
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(IN) :: r, phi, z
+         DOUBLE PRECISION, INTENT(OUT) :: Br, Bphi, Bz
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        phi_temp     Helpers (r,phi,z)
+         !        i,j,k      Spline Grid indicies
+         !        xparam     Spline subgrid factor [0,1] (yparam,zparam)
+         !        ict        Spline output control
+         !        fval       Spline output array
+         !--------------------------------------------------------------
+         DOUBLE PRECISION :: phi_temp
+         ! For splines
+         INTEGER :: i,j,k
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         REAL*8 :: fval(1)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+
+         ! Setup position in a vll arrays
+         phi_temp = MODULO(phi, phimax)
+
+         ! Initialize values
+         Br = zero
+         Bphi = zero
+         Bz = zero
+
+         ! Check that we're inside the domain then proceed
+         IF ((r >= rmin-eps1) .and. (r <= rmax+eps1) .and. &
+             (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+             (z >= zmin-eps3) .and. (z <= zmax+eps3)) THEN
+            i = MIN(MAX(COUNT(raxis < r),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z),1),nz-1)
+            xparam = (r - raxis(i)) * hri(i)
+            yparam = (phi_temp - phiaxis(j)) * hpi(j)
+            zparam = (z - zaxis(k)) * hzi(k)
+            ! Evaluate the Splines
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            BR4D(1,1,1,1),nr,nphi,nz)
+            Br = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            BPHI4D(1,1,1,1),nr,nphi,nz)
+            Bphi = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            BZ4D(1,1,1,1),nr,nphi,nz)
+            Bz = fval(1)
+         ELSE
+            RETURN
+         END IF
+
+         RETURN
+
+      END SUBROUTINE beams3d_BCYL
+
+      !-----------------------------------------------------------------
       !     Function:      beams3d_SFLX
       !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
       !     Date:          09/30/2020
@@ -1863,50 +1937,57 @@ MODULE beams3d_physics_mod
       !-----------------------------------------------------------------
       !     Function:      beams3d_calc_dt
       !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
-      !     Date:          10/24/2020
-      !     Description:   Calculates the timestep using the bounce
-      !                    frequency from beasm3d_fbounce.
+      !     Date:          08/17/2022
+      !     Description:   Calculates the timestep using using the
+      !                    Gyrofreqency
       !-----------------------------------------------------------------
-      SUBROUTINE beams3d_calc_dt(q,mu,mass,dt)
+      SUBROUTINE beams3d_calc_dt(type,r,phi,z,dt_out)
          !--------------------------------------------------------------
          !     Input Parameters
-         !          q            (q(1),q(2),q(3),q(4)) = (R,phi,Z,vll)
-         !          mu           Magnetic moment (J/T)
-         !          fbounce      Reaction rate (part/(m^3*s))
+         !          dt      Timestep
          !--------------------------------------------------------------
          IMPLICIT NONE
-         DOUBLE PRECISION, INTENT(inout) :: q(4)
-         DOUBLE PRECISION, INTENT(inout) :: mu
-         DOUBLE PRECISION, INTENT(inout) :: mass
-         DOUBLE PRECISION, INTENT(out) :: dt
+         INTEGER, INTENT(IN) :: type
+         DOUBLE PRECISION, INTENT(IN) :: r, phi, z
+         DOUBLE PRECISION, INTENT(OUT) :: dt_out
 
          !--------------------------------------------------------------
          !     Local Variables
          !        freq_bounce Approx bounce frequency
          !--------------------------------------------------------------
-         DOUBLE PRECISION :: freq_bounce, tf_max
+         DOUBLE PRECISION :: vll, B, dt_temp
+         DOUBLE PRECISION :: q(3)
+
+         INTEGER, PARAMETER :: NSUB = 8 ! Substeps per Gyroperiod
 
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
 
-         ! Define max time to follow particle
-         tf_max = my_end
 
-         ! Get bounce frequncy
-         !CALL beams3d_fbounce(q(1:3),mu,mass,freq_bounce)
+         IF (TYPE==1) THEN
+            vll = ABS(vll_start(myline))
+            dt_temp = lendt_m/vll
+         ELSEIF (TYPE==2) THEN
+            ! Get B-field
+            q(1)=r; q(2) = phi; q(3)=z
+            CALL beams3d_MODB(q,B)
+            ! Calc Velocity
+            dt_temp = (pi2*mymass)/(mycharge*B*NSUB)
+         END IF
+        
+         ! Place bounds on dt
+         dt_temp = MAX(dt_temp,1D-10)
+         dt_temp = MIN(dt_temp,10D-8)
 
-         ! Timestep is a fraction of bounce frequency
-         !dt = one/(64*freq_bounce)
-         !dt = SIGN(MAX(dt,1D-9),tf_max) ! Limiter and sign
+         ! Handle negative dt
+         dt_temp = SIGN(dt_temp,my_end)
 
-         ! Use max distance
-         dt = lendt_m/q(4)
-         dt = SIGN(MAX(dt,1D-9),tf_max) ! Limiter and sign
-
-         ! Make subtimestep fit (min 2 due to logic)
-         ndt_max = MAX(CEILING(tf_max/(dt*NPOINC)),2)
-         dt = tf_max/(ndt_max*NPOINC)
+         ! Calculate number of integration timesteps per output timestep
+         ndt_max = CEILING(my_end/(dt_temp*NPOINC))
+          
+         ! Adjust dt to match ndt_max
+         dt_out = my_end/(ndt_max*NPOINC)
 
          RETURN
 

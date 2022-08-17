@@ -26,7 +26,7 @@ SUBROUTINE beams3d_follow_fo
                             rho_fullorbit
     USE mpi_params ! MPI
     USE beams3d_write_par
-    USE beams3d_physics_mod, ONLY: beams3d_gc2fo
+    USE beams3d_physics_mod, ONLY: beams3d_gc2fo, beams3d_calc_dt
     USE safe_open_mod, ONLY: safe_open
     USE mpi_inc
     !-----------------------------------------------------------------------
@@ -52,7 +52,8 @@ SUBROUTINE beams3d_follow_fo
     INTEGER, ALLOCATABLE :: iwork(:), itemp(:,:)
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
     DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, &
-                        tol_nag, rtol, s_fullorbit
+                        tol_nag, rtol, s_fullorbit, &
+                        dtmin, dtmax
     DOUBLE PRECISION :: atol(6)
     DOUBLE PRECISION :: rkh_work(6, 2)
     CHARACTER*1 :: relab
@@ -82,10 +83,25 @@ SUBROUTINE beams3d_follow_fo
 
     ! Screen output so we know what's happening
     IF (lverb) THEN
+       ! IC of every particle is recorded
+       mytdex = 0
+       IF (lbeam) mytdex = 2
+       myline = MAXLOC(B_lines(mytdex,mystart_save:myend_save),1)
+       q(1) = R_lines(mytdex,myline)
+       q(2) = PHI_lines(mytdex,myline)
+       q(3) = Z_lines(mytdex,myline)
+       my_end = t_end(myline)
+       CALL beams3d_calc_dt(2,q(1),q(2),q(3),dtmin)
+       myline = MINLOC(B_lines(mytdex,mystart_save:myend_save),1)
+       q(1) = R_lines(mytdex,myline)
+       q(2) = PHI_lines(mytdex,myline)
+       q(3) = Z_lines(mytdex,myline)
+       my_end = t_end(myline)
+       CALL beams3d_calc_dt(2,q(1),q(2),q(3),dtmax)
        WRITE(6, '(A)') '----- FOLLOWING PARTICLE TRAJECTORIES -----'
        WRITE(6, '(A,A)')          '       Method: ', TRIM(int_type)
        WRITE(6, '(A,I9)')          '   Particles: ', nparticles
-       WRITE(6, '(A,I9,A,EN12.3)') '       Steps: ', nsteps, '   Delta-t: ', dt
+       WRITE(6, '(A,I9,2(A,EN12.3))') '       Steps: ', ndt_max*NPOINC, '   dt_min: ', dtmin,'   dt_max: ', dtmax
        WRITE(6, '(A,I9)')          '      NPOINC: ', npoinc
        SELECT CASE(TRIM(int_type))
           CASE("NAG")
@@ -148,9 +164,9 @@ SUBROUTINE beams3d_follow_fo
             CASE ("RKH68")
                 ier = 0
                 DO l = mystart_save, myend_save
-                    tf_nag = t_last(l)
+                    t_nag = t_last(l)
                     ! Don't do particle if stopped
-                    IF (tf_nag>t_end(l)) CYCLE
+                    IF (t_nag>t_end(l)) CYCLE
                     ! Particle indicies
                     myline = l
                     mytdex = 1; ndt = 1
@@ -216,7 +232,7 @@ SUBROUTINE beams3d_follow_fo
                 ALLOCATE(iwork(liw))
                 ier = 0
                 DO l = mystart_save, myend_save
-                    tf_nag = t_last(l)
+                    t_nag = t_last(l)
                     ! Particle indicies
                     myline = l
                     mytdex = MAX(COUNT(R_lines(0:npoinc,l)>0,DIM=1),1)
@@ -247,13 +263,12 @@ SUBROUTINE beams3d_follow_fo
                         q(3) = Z_lines(mytdex-1,l)
                         q(4) = vll_lines(mytdex-1,l)
                         q(5) = moment_lines(mytdex-1,l)
-                        CALL beams3d_gc2fo(tf_nag,q)
+                        CALL beams3d_gc2fo(t_nag,q)
                     END IF
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     ! Particle Parameters
-                    t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
@@ -265,6 +280,10 @@ SUBROUTINE beams3d_follow_fo
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+                    ! Now calc dt
+                    CALL beams3d_calc_dt(2,q(1),q(2),q(3),dt)
+                    tf_nag = t_nag+dt
+                    ndt = 1
                     ! Setup LSODE parameters
                     iopt = 0 ! No optional output
                     w = 0; iwork = 0; itask = 1; istate = 1;
