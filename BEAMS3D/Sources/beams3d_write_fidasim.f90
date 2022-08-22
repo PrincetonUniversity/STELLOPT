@@ -688,8 +688,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ! Do volume normalization
          !CALL beams3d_distnorm !TODO: check if this has already been done
          !jac = MAXVAL(mass_beams);
-         FORALL(i = 1:nenergy_fida) energy_fida(i) = (i) / REAL(nenergy_fida+1) * 0.5 * mass_beams(1) * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
-         FORALL(i = 1:npitch_fida) pitch_fida(i) = (i) / REAL(npitch_fida+1) * 2.0 - 1.0
+         FORALL(i = 1:nenergy_fida) energy_fida(i) = (i-1) / REAL(nenergy_fida) * 0.5 * mass_beams(1) * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
+         FORALL(i = 1:npitch_fida) pitch_fida(i) = (i-1) / REAL(npitch_fida) * 2.0 - 1.0
 
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          CALL write_var_hdf5(fid,'energy',nenergy_fida,ier,DBLVAR=energy_fida) ! in keV

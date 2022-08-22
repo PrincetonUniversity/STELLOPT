@@ -344,9 +344,9 @@
                ALLOCATE(raxis_fida(nr_fida))
                ALLOCATE(zaxis_fida(nz_fida))
                ALLOCATE(phiaxis_fida(nphi_fida))
-               FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida-1) + rmin_fida
-               FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida-1) + zmin_fida
-               FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida-1) + phimin_fida
+               FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
+               FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
+               FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
             END IF
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
