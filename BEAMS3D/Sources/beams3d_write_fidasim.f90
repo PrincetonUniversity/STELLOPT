@@ -63,7 +63,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       neutral_gid, wall_gid, marker_gid, qid_gid, &
       nbi_gid, inj_gid, boozer_gid, mhd_gid, temp_gid
    INTEGER, ALLOCATABLE, DIMENSION(:) :: itemp
-   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask
+   INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask
 
    REAL*8 :: fvalE(1,3), fval(1), fval2(1), xparam, yparam, zparam
    REAL(rprec) :: jac, v_parr, v_perp, pitch, v, phi_temp, r_temp, z_temp
@@ -246,9 +246,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          DEALLOCATE(r2dtemp)
 
          !           MASK
-         ALLOCATE(mask(nr_fida,nz_fida))
+         ALLOCATE(mask(nr_fida,nz_fida,nphi_fida))
          mask = 1
-         CALL write_var_hdf5(qid_gid,'mask',nr_fida,nz_fida,ier,INTVAR=mask) !PLACEHOLDER, should be "Boolean mask that indicates where the fields are well defined", Dim: [nr,nz]
+         CALL write_var_hdf5(qid_gid,'mask',nr_fida,nz_fida,nphi_fida,ier,INTVAR=mask) !PLACEHOLDER, should be "Boolean mask that indicates where the fields are well defined", Dim: [nr,nz,nphi]
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'mask',ier)
          CALL h5dopen_f(qid_gid, 'mask', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'description','Boolean mask that indicates where the fields are well defined',ier)
@@ -319,29 +319,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          DEALLOCATE(rtemp)
          DEALLOCATE(rtemp2)
          DEALLOCATE(rtemp3)
-
-         ! ALLOCATE(rtemp(nr,nz, nphi))
-         ! rtemp = reshape(B_R(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/)) !switch phi and z
-         ! CALL write_var_hdf5(qid_gid,'br',nr,nz,nphi,ier,DBLVAR=rtemp)
-         ! CALL h5dopen_f(qid_gid, 'br', temp_gid, ier)
-         ! CALL write_att_hdf5(temp_gid,'units','T',ier)
-         ! CALL write_att_hdf5(temp_gid,'description','Magnetic field in the r-direction: Br(r,z,phi)',ier)
-         ! CALL h5dclose_f(temp_gid,ier)
-
-         ! rtemp = reshape(B_PHI(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         ! CALL write_var_hdf5(qid_gid,'bt',nr,nz,nphi,ier,DBLVAR=rtemp)
-         ! CALL h5dopen_f(qid_gid, 'bt', temp_gid, ier)
-         ! CALL write_att_hdf5(temp_gid,'units','T',ier)
-         ! CALL write_att_hdf5(temp_gid,'description','Magnetic field in the theta/torodial-direction: Bt(r,z,phi)',ier)
-         ! CALL h5dclose_f(temp_gid,ier)
-
-         ! rtemp = reshape(B_Z(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         ! CALL write_var_hdf5(qid_gid,'bz',nr,nz,nphi,ier,DBLVAR=rtemp)
-         ! CALL h5dopen_f(qid_gid, 'bz', temp_gid, ier)
-         ! CALL write_att_hdf5(temp_gid,'units','T',ier)
-         ! CALL write_att_hdf5(temp_gid,'description','Magnetic field in the z-direction: Bz(r,z,phi)',ier)
-         ! CALL h5dclose_f(temp_gid,ier)
-         ! DEALLOCATE(rtemp)
 
          !--------------------------------------------------------------
          !           E-FIELD - NEEDS CHECKING
@@ -477,9 +454,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          DEALLOCATE(r2dtemp)
 
          !           MASK
-         ALLOCATE(mask(nr_fida,nz_fida))
+         ALLOCATE(mask(nr_fida,nz_fida,nphi_fida))
          mask = 1
-         CALL write_var_hdf5(qid_gid,'mask',nr_fida,nz_fida,ier,INTVAR=mask) !PLACEHOLDER, should be "Boolean mask that indicates where the fields are well defined", Dim: [nr,nz]
+         CALL write_var_hdf5(qid_gid,'mask',nr_fida,nz_fida,nphi_fida,ier,INTVAR=mask) !PLACEHOLDER, should be "Boolean mask that indicates where the fields are well defined", Dim: [nr,nz,nphi]
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'mask',ier)
          CALL h5dopen_f(qid_gid, 'mask', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'description','Boolean mask that indicates where the fields are well defined',ier)
@@ -579,33 +556,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          DEALLOCATE(rtemp3)
          DEALLOCATE(rtemp4)
 
-         ! rtemp = reshape(NE(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         ! CALL write_var_hdf5(qid_gid,'dene',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp/1000000)) !convert from m^-3 to cm^-3
-         ! CALL h5dopen_f(qid_gid, 'dene', temp_gid, ier)
-         ! CALL write_att_hdf5(temp_gid,'units','cm^-3',ier)
-         ! CALL write_att_hdf5(temp_gid,'description','Electron Number Density: Dene(r,z, phi)',ier)
-         ! CALL h5dclose_f(temp_gid,ier)
-         ! rtemp = reshape(TE(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         ! CALL write_var_hdf5(qid_gid,'te',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp/1000))
-         ! CALL h5dopen_f(qid_gid, 'te', temp_gid, ier)
-         ! CALL write_att_hdf5(temp_gid,'units','kev',ier)
-         ! CALL write_att_hdf5(temp_gid,'description','Electron Temperature: Ti(r,z,phi)',ier)
-         ! CALL h5dclose_f(temp_gid,ier)
-         ! rtemp = reshape(TI(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         ! CALL write_var_hdf5(qid_gid,'ti',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp/1000))
-         ! CALL h5dopen_f(qid_gid, 'ti', temp_gid, ier)
-         ! CALL write_att_hdf5(temp_gid,'units','keV',ier)
-         ! CALL write_att_hdf5(temp_gid,'description','Ion Temperature: Ti(r,z,phi)',ier)
-         ! CALL h5dclose_f(temp_gid,ier)
-         ! rtemp = reshape(ZEFF_ARR(1:nr,1:nphi,1:nz), shape(rtemp), order=(/1, 3, 2/))
-         ! CALL write_var_hdf5(qid_gid,'zeff',nr,nz,nphi, ier,DBLVAR=DBLE(rtemp))
-         ! CALL h5dopen_f(qid_gid, 'zeff', temp_gid, ier)
-         ! CALL write_att_hdf5(temp_gid,'units','-',ier)
-         ! CALL write_att_hdf5(temp_gid,'description','Effective Nuclear Charge: Zeff(r,z,phi)',ier)
-         ! CALL h5dclose_f(temp_gid,ier)
-         ! DEALLOCATE(rtemp)
-
-
          CALL h5gclose_f(qid_gid, ier)
          ! Close file
          CALL close_hdf5(fid,ier)
@@ -685,11 +635,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
        CASE('DISTRIBUTION_GC_F')
          ALLOCATE(pitch_fida(npitch_fida))
          ALLOCATE(energy_fida(nenergy_fida))
-         ! Do volume normalization
-         !CALL beams3d_distnorm !TODO: check if this has already been done
-         !jac = MAXVAL(mass_beams);
-         FORALL(i = 1:nenergy_fida) energy_fida(i) = (i-1) / REAL(nenergy_fida) * 0.5 * mass_beams(1) * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
-         FORALL(i = 1:npitch_fida) pitch_fida(i) = (i-1) / REAL(npitch_fida) * 2.0 - 1.0
+         FORALL(i = 1:nenergy_fida) energy_fida(i) = (i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass_beams) * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
+         FORALL(i = 1:npitch_fida) pitch_fida(i) = (i-0.5) / REAL(npitch_fida) * 2.0 - 1.0 
 
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          CALL write_var_hdf5(fid,'energy',nenergy_fida,ier,DBLVAR=energy_fida) ! in keV
@@ -705,7 +652,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 
          ! Do phase space change of coordinates
          !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
-         
          IF (lfidasim2) THEN
             ALLOCATE(dist5d_temp(nbeams, nenergy_fida, npitch_fida,nr_fida,nz_fida,nphi_fida)) !need temp as velocity bins are in vll/vperp initially
             dist5d_temp = 0
@@ -725,10 +671,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      !determine beams3d-grid indices (velocity space)
                      i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
                      j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
-                     jac = 1 / (mass_beams(b) * SQRT(1-pitch * pitch))
-                     !jac = MIN(MAX(jac, 0.0),1.0E)
-                     !jac = jac / pi / REAL(1000000) * e_charge / 1000 !convert to TRANSP convention and 1/cm^3/keV
-                     jac = v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
+                     jac = pi2 * v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
                      IF (lfidasim2) THEN
                         dist5d_temp(b,d1,d2,:,:,:) = dist5d_fida(b,:,:,:,i3,j3) * jac
                      ELSE   
@@ -777,11 +720,11 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
                      m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                      n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                     IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
-                        dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
-                     ELSE
+                     !IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
+                     !   dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
+                     !ELSE
                         dist5d_fida(b,:,:,i,k,j) = dist5d_temp(b,l,m,n,:,:) !output in r-z-phi
-                     END IF
+                     !END IF
 
                   END DO
                END DO
