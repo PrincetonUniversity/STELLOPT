@@ -750,7 +750,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_fida',ier)
          END IF
          CALL close_hdf5(fid,ier)
-         IF (.not. lfidasim2) DEALLOCATE(dist5d_fida)
+         IF (.not. lfidasim2) THEN
+         DEALLOCATE(dist5d_fida)
+         END IF
          DEALLOCATE(pitch_fida)
          DEALLOCATE(energy_fida)
          !DEALLOCATE(dist5d_temp)
