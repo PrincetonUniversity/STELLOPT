@@ -268,14 +268,7 @@
          IF (nenergy_fida .eq. 0) nenergy_fida = ns_prof4
          IF (npitch_fida .eq. 0) npitch_fida = ns_prof5
       END IF   
-      IF (lfidasim .and. lverb) THEN
-         WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
-         WRITE(6,'(A,F9.5)') '   T_FIDA   = ',t_fida
-         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R_FIDA   = [',rmin_fida,',',rmax_fida,'];  NR:   ',nr_fida
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI_FIDA = [',phimin_fida,',',phimax_fida,'];  NPHI: ',nphi_fida
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z_FIDA   = [',zmin_fida,',',zmax_fida,'];  NZ:   ',nz_fida
-         WRITE(6,'(A,I4, A,I4)') '   NENERGY_FIDA   = ',nenergy_fida,';  NPITCH_FIDA:   ',npitch_fida         
-      END IF
+
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -340,16 +333,13 @@
             B_PHI = 0
             B_Z = 0
             MODB = 0
-            IF (lfidasim) THEN
-               ALLOCATE(raxis_fida(nr_fida))
-               ALLOCATE(zaxis_fida(nz_fida))
-               ALLOCATE(phiaxis_fida(nphi_fida))
-               FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
-               FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
-               FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
-            END IF
+
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
+
+
+
+
          ! Put the vacuum field on the background grid
          IF (lmgrid) THEN
             CALL beams3d_init_mgrid
@@ -772,6 +762,30 @@
          IF (myid_sharmem == master) wall_load = 0
          CALL mpialloc(wall_shine, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_shine)
          IF (myid_sharmem == master) wall_shine = 0
+      END IF
+
+
+      IF (lfidasim .and. myid_sharmem == 0) THEN
+         ALLOCATE(raxis_fida(nr_fida))
+         ALLOCATE(zaxis_fida(nz_fida))
+         ALLOCATE(phiaxis_fida(nphi_fida))
+         ALLOCATE(energy_fida(nenergy_fida))
+         ALLOCATE(pitch_fida(npitch_fida))
+         FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
+         FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
+         FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
+         FORALL(i = 1:nenergy_fida) energy_fida(i) = (i-0.5) / REAL(nenergy_fida) * 0.5 * mass_beams(1) * partvmax * partvmax /1.60217662E-19 / 1000.0 !Potential error when different beam species are used!
+         FORALL(i = 1:npitch_fida) pitch_fida(i) = (i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
+      END IF
+      IF (lfidasim .and. lverb) THEN
+         WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
+         WRITE(6,'(A,F9.5)') '   T_FIDA   = ',t_fida
+         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R_FIDA   = [',rmin_fida,',',rmax_fida,'];  NR:   ',nr_fida
+         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI_FIDA = [',phimin_fida,',',phimax_fida,'];  NPHI: ',nphi_fida
+         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z_FIDA   = [',zmin_fida,',',zmax_fida,'];  NZ:   ',nz_fida
+         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   ENERGY_FIDA   = [',energy_fida(1),',',energy_fida(nenergy_fida),'];  NENERGY:   ',nenergy_fida
+         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PITCH_FIDA   = [',pitch_fida(1),',',pitch_fida(npitch_fida),'];  NPITCH:   ',npitch_fida
+         !WRITE(6,'(A,I4, A,I4)') '   NENERGY_FIDA   = ',nenergy_fida,';  NPITCH_FIDA:   ',npitch_fida         
       END IF
 
       ! Some tests
