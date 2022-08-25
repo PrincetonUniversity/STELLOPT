@@ -296,7 +296,12 @@
          ! Get Rho
          CALL EZspline_interp(PSI_spl,r,z,psi,ier)
          rho = (psi-psiaxis)/psidim !PSI_NORM
-         IF (rho<=1.0) THEN
+         IF (rho>= 0.0 .and. rho<=1.0) THEN
+            CALL EZspline_interp(S_spl,rho,s,ier)
+            rho = sqrt(s)
+         ELSEIF (rho > -1.0E-4 .and. rho<=0.0) THEN
+            WRITE(6,'(A, EN12.3)') 'EQDSK: Fixing the following rho value to 0: ', rho
+            rho = 0.0
             CALL EZspline_interp(S_spl,rho,s,ier)
             rho = sqrt(s)
          END IF
