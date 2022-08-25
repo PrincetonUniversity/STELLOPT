@@ -167,6 +167,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 
 
          ! Close file
+         CALL h5gclose_f(qid_gid, ier)
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'fidasim_'//TRIM(id_string)//'_distribution.h5',ier)
 
@@ -551,6 +552,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL write_att_hdf5(temp_gid,'units','-',ier)
          CALL write_att_hdf5(temp_gid,'description','Effective Nuclear Charge: Zeff(r,z,phi)',ier)
          CALL h5dclose_f(temp_gid,ier)
+
          DEALLOCATE(rtemp)
          DEALLOCATE(rtemp2)
          DEALLOCATE(rtemp3)
