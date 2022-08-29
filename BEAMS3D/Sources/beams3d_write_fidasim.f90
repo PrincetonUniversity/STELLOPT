@@ -149,6 +149,17 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL write_att_hdf5(temp_gid,'description','Z',ier)
          CALL h5dclose_f(temp_gid,ier)
 
+         CALL write_var_hdf5(fid,'energy',nenergy_fida,ier,DBLVAR=energy_fida) ! in keV
+         CALL h5dopen_f(fid, '/energy', temp_gid, ier)
+         CALL write_att_hdf5(temp_gid,'description','Energy array',ier)
+         CALL write_att_hdf5(temp_gid,'units','keV',ier)
+         CALL h5dclose_f(temp_gid,ier)
+         CALL write_var_hdf5(fid,'pitch',npitch_fida,ier,DBLVAR=pitch_fida)
+         CALL h5dopen_f(fid, '/pitch', temp_gid, ier)
+         CALL write_att_hdf5(temp_gid,'description','Pitch array',ier)
+         CALL write_att_hdf5(temp_gid,'units','-',ier)
+         CALL h5dclose_f(temp_gid,ier)
+
 
          ALLOCATE(r2dtemp(nr_fida,nz_fida))
          r2dtemp = SPREAD(raxis_fida, 2, nz_fida)
@@ -635,22 +646,22 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
        CASE('DISTRIBUTION_GC_F')
-         ALLOCATE(pitch_fida(npitch_fida))
-         ALLOCATE(energy_fida(nenergy_fida))
+         !ALLOCATE(pitch_fida(npitch_fida))
+         !ALLOCATE(energy_fida(nenergy_fida))
          !FORALL(i = 1:nenergy_fida) energy_fida(i) = (i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass_beams) * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
          !FORALL(i = 1:npitch_fida) pitch_fida(i) = (i-0.5) / REAL(npitch_fida) * 2.0 - 1.0 
 
-         CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
-         CALL write_var_hdf5(fid,'energy',nenergy_fida,ier,DBLVAR=energy_fida) ! in keV
-         CALL h5dopen_f(fid, '/energy', temp_gid, ier)
-         CALL write_att_hdf5(temp_gid,'description','Energy array',ier)
-         CALL write_att_hdf5(temp_gid,'units','keV',ier)
-         CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(fid,'pitch',npitch_fida,ier,DBLVAR=pitch_fida)
-         CALL h5dopen_f(fid, '/pitch', temp_gid, ier)
-         CALL write_att_hdf5(temp_gid,'description','Pitch array',ier)
-         CALL write_att_hdf5(temp_gid,'units','-',ier)
-         CALL h5dclose_f(temp_gid,ier)
+         ! CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
+         ! CALL write_var_hdf5(fid,'energy',nenergy_fida,ier,DBLVAR=energy_fida) ! in keV
+         ! CALL h5dopen_f(fid, '/energy', temp_gid, ier)
+         ! CALL write_att_hdf5(temp_gid,'description','Energy array',ier)
+         ! CALL write_att_hdf5(temp_gid,'units','keV',ier)
+         ! CALL h5dclose_f(temp_gid,ier)
+         ! CALL write_var_hdf5(fid,'pitch',npitch_fida,ier,DBLVAR=pitch_fida)
+         ! CALL h5dopen_f(fid, '/pitch', temp_gid, ier)
+         ! CALL write_att_hdf5(temp_gid,'description','Pitch array',ier)
+         ! CALL write_att_hdf5(temp_gid,'units','-',ier)
+         ! CALL h5dclose_f(temp_gid,ier)
 
          ! Do phase space change of coordinates
          !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
