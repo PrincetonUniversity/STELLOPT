@@ -60,7 +60,7 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lspec',ier)
                CALL write_scalar_hdf5(fid,'leqdsk',ier,BOOVAR=leqdsk,ATT='EQDSK input',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'leqdsk',ier)
-               CALL write_scalar_hdf5(fid,'lhint',ier,BOOVAR=leqdsk,ATT='HINT input',ATT_NAME='description')
+               CALL write_scalar_hdf5(fid,'lhint',ier,BOOVAR=lhint,ATT='HINT input',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lhint',ier)
                CALL write_scalar_hdf5(fid,'lcoil',ier,BOOVAR=lcoil,ATT='Coil input',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lcoil',ier)

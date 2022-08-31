@@ -18,6 +18,7 @@
       mu0 = 16.0E-7 * ATAN(1.0)
       lverb    = .false.
       lvmec    = .false.
+      leqdsk = .false.
       lpies    = .false.
       lspec    = .false.
       lcoil    = .false.
@@ -49,6 +50,7 @@
       mgrid_string  = ''
       vessel_string = ''
       restart_string = ''
+      eqdsk_string = ''
       line_select = 96
       ldex_default = 0
       

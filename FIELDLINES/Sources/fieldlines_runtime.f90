@@ -126,7 +126,7 @@
                          ladvanced, lauto, lplasma_only, lbfield_only,&
                          lreverse, lhitonly, lafield_only, lraw, lemc3, &
                          lerror_field, lwall_trans, ledge_start, lnescoil,&
-                         lmodb, lfield_start, lhint, lpres
+                         lmodb, lfield_start, lhint, leqdsk, lpres
       INTEGER         :: nextcur, npoinc, nruntype, num_hcp, &
                          nprocs_fieldlines, line_select, ldex_default
       REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc, &
@@ -138,7 +138,7 @@
       REAL(rprec), ALLOCATABLE :: extcur(:)
       CHARACTER(256)  :: id_string, mgrid_string, coil_string, &
                          vessel_string, int_type, restart_string, &
-                         nescoil_string
+                         nescoil_string, eqdsk_string
       
       REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.80
 !-----------------------------------------------------------------------
