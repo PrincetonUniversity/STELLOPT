@@ -175,7 +175,7 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-               coulomb_log = 35 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
+               coulomb_log = 43 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
 !               IF (te_temp < 10*myZ*myZ) THEN
 !                  coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
 !               ELSE
@@ -403,7 +403,7 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-               coulomb_log = 35 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
+               coulomb_log = 43 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
 !               IF (te_temp < 10*myZ*myZ) THEN
 !                  coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
 !               ELSE
