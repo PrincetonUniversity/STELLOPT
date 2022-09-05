@@ -316,10 +316,12 @@
             NI_AUX_F(1,:) = NE_AUX_F ! NI=NE
             NI_AUX_Z(1) = NINT(plasma_Zavg)
             NI_AUX_M(1) = plasma_mass
-            DO i1 = 1, nzeff
-               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
-               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
-            END DO
+            IF (.not. ANY(ZEFF_AUX_S >0)) THEN
+               DO i1 = 1, nzeff
+                  ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+                  ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+               END DO
+            END IF
          ELSE
             nzeff = 6
             ZEFF_AUX_S(1:6) = (/0.0,0.2,0.4,0.6,0.8,1.0/)
