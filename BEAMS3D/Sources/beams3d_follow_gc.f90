@@ -471,12 +471,13 @@ SUBROUTINE beams3d_follow_gc
        ! This only works becasue of how FORTRAN orders things.
        DO l = 1, ns_prof5
           CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_prof(:,:,:,:,:,l), nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+          IF (lfidasim2) CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,l), nbeams*nr_fida*nphi_fida*nz_fida*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        END DO
-       IF (lfidasim2) THEN
-         DO l =1, nphi_fida
-            CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,l), nbeams*nr_fida*nenergy_fida*nz_fida*npitch_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-         END DO
-      END IF
+      !  IF (lfidasim2) THEN
+      !    DO l =1, npitch_fida
+      !       CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,l), nbeams*nr_fida*nenergy_fida*nphi_fida*nz_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+      !    END DO
+      ! END IF
        IF (ASSOCIATED(ihit_array)) THEN
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
        END IF
