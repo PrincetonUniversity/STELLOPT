@@ -234,7 +234,7 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
-           speed_cube = 2*vc3_tauinv*zeff_temp*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
+           speed_cube = vc3_tauinv*zeff_temp*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
