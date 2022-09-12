@@ -32,10 +32,11 @@
       LOGICAL                :: lvmec, lexist, lminmax, lrbc, lrhomn,ldeltamn, &
                                 lfix_ntor, llmdif, lgade, lswarm, lmap, lbasic, &
                                 lqas, lneed_booz, lqps, lhelical, lballoon, lneo, &
-                                ldkes, lbootsj, ltxport, lmap_plane, ljdotb0, liota, &
+                                ldkes, lbootsj, lmap_plane, ljdotb0, liota, &
                                 lkink, lvaciota, ljcurv, loutput_harm, lmode, lorbit, &
                                 lac, lam, lai, lphiedge, lpscale, lcurtor, lkappa, &
-                                lwell, lcurvature, lfieldlines
+                                lwell, lcurvature, lfieldlines, &
+                                ltxport, ltxport_tem, ltxport_ae
       INTEGER                :: m,n,ns,j
       REAL(rprec)            :: bound_min, bound_max, var, var_min, var_max, &
                                 temp, rho_exp,r1t,r2t,z1t, delta, filter_harm, pi2
@@ -92,6 +93,8 @@
       ldkes = .FALSE.
       lbootsj = .FALSE.
       ltxport = .FALSE.
+      ltxport_tem = .FALSE.
+      ltxport_ae = .FALSE.
       ljdotb0 = .FALSE.
       liota = .FALSE.
       ljcurv = .FALSE.
@@ -233,6 +236,10 @@
                lvaciota = .TRUE.
             CASE ("-txport")
                ltxport = .TRUE.
+            CASE ("-txport_tem")
+               ltxport_tem = .TRUE.
+            CASE ("-txport_ae")
+               ltxport_ae = .TRUE.
             CASE ("-iota")
                liota = .TRUE.
             CASE ("-kink")
@@ -283,7 +290,9 @@
                WRITE(6,*) '   -neo              Neoclassical (NEO) Target'
                WRITE(6,*) '   -dkes             Neoclassical (DKES) Target'
                WRITE(6,*) '   -bootstrap        Bootstrap (BOOTSJ) Target'
-               WRITE(6,*) '   -txport           Turbulent Transport Target'
+               WRITE(6,*) '   -txport           Turbulent Transport Target (prox1d)'
+               WRITE(6,*) '   -txport_tem       Turbulent Transport Target (TEM)'
+               WRITE(6,*) '   -txport_ae        Turbulent Transport Target (trapped Avail. Energy)'
                WRITE(6,*) '   -iota             Iota Profile Target'
                WRITE(6,*) '   -kink             Kink Stability (TERPSICHORE) Target'
                WRITE(6,*) '   -jdotb0           <JdotB> Target'
@@ -1001,11 +1010,17 @@
             WRITE(6,target2) 'VLL_ORBIT',i,1.0,'VPERP_ORBIT',i,1.0
          END DO
       END IF
-      IF (ltxport) THEN
+      IF (ltxport .or. ltxport_ae .or. ltxport_tem) THEN
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
          WRITE(6,'(A)')'!       TURBULENT TRANSPORT'
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
-         WRITE(6,'(2X,A)') 'TXPORT_PROXY = ''prox1d'''
+         IF (ltxport_ae) THEN
+            WRITE(6,'(2X,A)') 'TXPORT_PROXY = ''availenergy'''
+         ELSEIF (ltxport_tem) THEN
+            WRITE(6,'(2X,A)') 'TXPORT_PROXY = ''tem_bounce_tau'''
+         ELSE
+            WRITE(6,'(2X,A)') 'TXPORT_PROXY = ''prox1d'''
+         ENDIF
          WRITE(6,'(2X,A)') 'LGLOBAL_TXPORT = F'
          WRITE(6,'(2X,A)') 'NZ_TXPORT = 128'
          WRITE(6,'(2X,A)') 'NALPHA_TXPORT = 1'
@@ -1100,6 +1115,17 @@
          WRITE(6,'(2X,2(A,F6.3))') 'Z_START = ',0.0,'  ',MAXVAL(zreal(:,1))
          WRITE(6,'(2X,A)') 'PHI_START = 2*0.0'
          WRITE(6,'(2X,A,E20.10)') 'PHI_END = 2*',1000*pi2/nfp
+         WRITE(6,'(A)') '/'
+      END IF
+      IF (ltxport_ae) THEN
+         WRITE(6,'(A)') '&AVAIL_ENERGY_OPTIONS'
+         WRITE(6,'(2X,A)') 'OMN = 3.0         ! Density Gradient Length Scale (-dlnn/dx)'
+         WRITE(6,'(2X,A)') 'OMT = 0.0         ! Temperature Gradient Length Scale (-dlnn/dx)'
+         WRITE(6,'(2X,A)') 'Z_MIN = 1.0D-4    ! Min. Norm. Energy'
+         WRITE(6,'(2X,A)') 'Z_MAX = 4.0D+1    ! Max. Norm. Energy'
+         WRITE(6,'(2X,A)') 'Z_RES = 10000     ! Integration Gridpoints'
+         WRITE(6,'(2X,A)') 'LAM_RES = 10000   ! Pitch Angle Gridpoints'
+         WRITE(6,'(2X,A)') 'DELTA_T = 1.0D-10 ! Padding for periodic boundary condition'
          WRITE(6,'(A)') '/'
       END IF
       CALL FLUSH(6)

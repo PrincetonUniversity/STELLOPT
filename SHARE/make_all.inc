@@ -25,6 +25,8 @@ ifeq ($(LGENE),T)
              -L$(PETSC_HOME)/lib -lpetsc
 endif
 
+LIMAS?=F
+
 # Handle Which Code is being CALLED
 ifeq ($(MAKECMDGOALS),xstelloptv2)
   PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2
@@ -194,9 +196,18 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
+ifeq ($(LAEOPT),T)
+  MOD1_PATH += $(AEOPT_INC)
+  PRECOMP += -DAEOPT
+  MOD_PATH += -I$(AEOPT_DIR)
+else
+  AEOPT_LIB = 
+  AEOPT_DIR = 
+  LIB_AEOPT = 
+endif
 
 # Handle other codes
-LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
+LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(AEOPT_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
@@ -228,7 +239,7 @@ ifeq ($(LFFTW3),T)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
-  PRECOMP += -DLHDF5 -DH5_USE_16_API
+  PRECOMP += -DLHDF5
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
   LIB_SHARE += $(HDF5_LIB)
@@ -243,6 +254,12 @@ ifeq ($(LSILO),T)
   PRECOMP += -DSILO_AVAI
   LIB_LINK += $(SILO_LIB)
   LIB_SHARE += $(SILO_LIB)
+endif
+ifeq ($(LIMAS),T)
+  MOD1_PATH += $(IMAS_INC)
+  PRECOMP += -DIMAS
+  LIB_LINK += $(IMAS_LIB)
+  LIB_SHARE += $(IMAS_LIB)
 endif
 
 # This is hear because of MPI above resetting LINK
@@ -259,6 +276,19 @@ ifeq ($(MAKECMDGOALS),libstell.so)
   COMPILE_FREE += -fPIC
   INC_PATH = 
 endif
+
+# Pass Git information to code
+#GIT_BRANCH  = $(shell git branch --show-current) #Only works on version >2.2
+GIT_REPO    = $(shell git ls-remote --get-url)
+GIT_BRANCH  = $(shell git rev-parse --abbrev-ref HEAD)
+GIT_VERSION = $(shell git describe --abbrev=4 --dirty --always --tags)
+GIT_HASH    = $(shell git show -s --format=%H)
+TIME        = $(shell date +"%d.%m.%Y %H:%M:%S")
+PRECOMP += -DGIT_VERSION_EXT="'$(GIT_VERSION)'"
+PRECOMP += -DGIT_HASH_EXT="'$(GIT_HASH)'"
+PRECOMP += -DGIT_BRANCH_EXT="'$(GIT_BRANCH)'"
+PRECOMP += -DGIT_REPO_EXT="'$(GIT_REPO)'"
+PRECOMP += -DBUILT_ON_EXT="'$(TIME)'"
 
 #This must come here
 MOD_PATH+= -I

@@ -13,12 +13,17 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE stellopt_targets, ONLY: sigma_balloon, balloon_theta, balloon_zeta
-      USE equil_vals, ONLY: balloon_grate, nrad
+      USE equil_vals, ONLY: balloon_grate, nrad, lasym
       ! COBRA LIBRARIES
-      USE readin_data, ONLY: lscreen_cobra=>lscreen
+      USE readin_data, ONLY: lscreen_cobra=>lscreen, list, hiota, &
+                                  hpres, hphip, lmnsh, lmnch, &
+                                  bsupumnsh, bsupumnch, &
+                                  bsupvmnch, bsupvmnsh, xm_v, &
+                                  xn_v,bmnch, bmnsh
       USE ballooning_data, ONLY: init_theta, init_zeta, l_geom_input, &
                                  l_tokamak_input, k_w, kth
-      USE fmesh_quantities, ONLY: radios
+      USE fmesh_quantities, ONLY: radios, rmncf, rmnsf, zmnsf, zmncf, &
+                                  mercierf
       ! VMEC
       
 !-----------------------------------------------------------------------
@@ -82,6 +87,11 @@
                   balloon_grate(:,i,j) = grate(:)
                END DO
             END DO
+            ! Deallocate
+            DEALLOCATE (grate, bsurf, radios)     
+            DEALLOCATE (hiota, hpres, hphip, rmncf, zmnsf, list, &
+                        lmnsh, bmnch, bsupumnch, bsupvmnch, mercierf, xn_v, xm_v)
+            IF (lasym) DEALLOCATE (rmnsf, zmncf, lmnch, bmnsh, bsupumnsh, bsupvmnsh)
          CASE('spec')
       END SELECT
       IF (lscreen) WRITE(6,'(a)') ' -------------------------  BALLOONING CALCULATION DONE  ---------------------'

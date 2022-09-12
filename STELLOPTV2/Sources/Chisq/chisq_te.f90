@@ -55,7 +55,7 @@
                ier = 0
                CALL get_equil_s(r_te(ik),phi_te(ik),z_te(ik),s_te(ik),ier)
             END IF
-            IF (s_te(ik) <= 1.0 .and. s_te(ik) >= 0.0 .and. ier == 0) THEN
+            IF (s_te(ik) >= 0.0 .and. ier == 0) THEN
                ier = 0
                CALL get_equil_te(s_te(ik),TRIM(te_type),te_val,ier)
                targ_temp = target(ik)
@@ -66,8 +66,6 @@
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
-            !targets(mtargets) = targ_temp
-            !sigmas(mtargets)  = sig_temp
             vals(mtargets)    = te_val
             IF (iflag == 1) WRITE(iunit_out,'(7ES22.12E3)') r_te(ik),phi_te(ik),z_te(ik),s_te(ik),target(ik),sigma(ik),te_val
          END DO

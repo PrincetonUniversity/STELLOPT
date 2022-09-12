@@ -28,7 +28,6 @@
   FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
   FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check
   LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
-###GCC10
   FLAGS_R += -fallow-argument-mismatch
   FLAGS_D += -fallow-argument-mismatch
   
@@ -154,6 +153,15 @@
   LIB_SFINCS = libsfincs.a
   SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+
+#######################################################################
+#            Available Energy Options
+#######################################################################
+  LAEOPT= T
+  AEOPT_DIR = $(AEOPT_PATH)
+  AEOPT_INC = -I$(AEOPT_DIR) 
+  LIB_AEOPT = libtrapAE.a
+  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
 #            LIBSTELL Shared Options
