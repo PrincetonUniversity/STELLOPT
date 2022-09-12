@@ -1,0 +1,45 @@
+---
+actor_description:
+    actor_name: beams3d
+    actor_type: python
+    data_type: legacy
+code_description:
+    arguments:
+    -   intent: IN
+        name: IDS_EQ_IN
+        type: equilibrium
+    -   intent: OUT
+        name: IDS_EQ_OUT
+        type: equilibrium
+    documentation: Actor for the BEAMS3D code.
+    implementation:
+        code_parameters:
+            parameters: ./beams3d_input.xml
+            schema: ./beams3d_input.xsd
+        code_path: ../BEAMS3D/Release/libvmec.a
+        data_type: legacy
+        include_path: ../BEAMS3D/Release/beams3d_imas_module.mod
+        programming_language: fortran
+        root_dir: ''
+        subroutines:
+            finalize: ''
+            init: beams3d_imas_init
+            main: beams3d_imas
+    settings:
+        compiler_cmd: ifort
+        extra_libraries:
+            path_defined:
+            - /home/ITER/lazerss/src/STELLOPT/LIBSTELL/Release/libstell.a
+            - $MKLROOT/lib/intel64/libmkl_scalapack_ilp64.a
+            - $MKLROOT/lib/intel64/libmkl_intel_ilp64.a
+            - $MKLROOT/lib/intel64/libmkl_sequential.a
+            - $MKLROOT/lib/intel64/libmkl_core.a
+            - $MKLROOT/lib/intel64/libmkl_blacs_intelmpi_ilp64.a
+            pkg_config_defined:
+            - hdf5
+            - mkl-dynamic-ilp64-seq
+            - netcdf-fortran
+            - xmllib
+        mpi_compiler_cmd: mpiifort
+        open_mp_switch: ''
+...
