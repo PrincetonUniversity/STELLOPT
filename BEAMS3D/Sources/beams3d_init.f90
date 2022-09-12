@@ -16,7 +16,7 @@
       USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
       USE beams3d_runtime
       USE beams3d_grid
-      USE beams3d_input_mod, ONLY: read_beams3d_input
+      USE beams3d_input_mod, ONLY: read_beams3d_input, init_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
                                ndot_prof, j_prof, dense_prof, &
                                partvmax, partpmax, &
@@ -77,6 +77,10 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init0',ierr_mpi)
 #endif
 
+      ! Initialize namelist
+      CALL init_beams3d_input
+
+      ! Now read files
       IF (lvmec.and. lread_input) THEN
          CALL read_beams3d_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
@@ -237,7 +241,6 @@
 
          IF (lverb) THEN
             WRITE(6,'(A,F9.5,A)') '   PLASMA_MASS =  ',plasma_mass/1.66053906660E-27,' amu' 
-            WRITE(6,'(A,F9.5,A)') '   PLASMA_ZAVG =  ',plasma_zavg,' <Z>' 
             WRITE(6,'(A,F9.5,A)') '   PLASMA_ZMEAN =  ',plasma_zmean,' [Z]' 
          END IF
          

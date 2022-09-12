@@ -5,7 +5,8 @@
      &                       norm_term_flag, successful_term_flag,
      &                       restart_flag, readin_flag,
      &                       timestep_flag, ns_error_flag,
-     &                       reset_jacdt_flag, lamscale
+     &                       reset_jacdt_flag, lamscale, imasrun_flag,
+     &                       imas_read_flag
       USE realspace
       USE vmec_params, ONLY: ntmax
       USE vacmod, ONLY: nuv, nuv3
@@ -42,7 +43,7 @@ C-----------------------------------------------
       INTEGER, SAVE                  :: igrid0
       INTEGER                        :: max_grid_size, flag
       CHARACTER(LEN=120)             :: input_file
-      LOGICAL                        :: lreset
+      LOGICAL                        :: lreset, limas
       REAL(dp)                       :: rvton, rvtoff, tiniton, tinitoff
       REAL(dp)                       :: gridton, gridtoff
       REAL(dp)                       :: bcastton, bcasttoff
@@ -77,6 +78,7 @@ C-----------------------------------------------
 !                                             code will be skipped even if cleanup_flag is set, so that the run
 !                                             could be continued on the next call to runvmec.
 !             32       reset_jacdt_flag       Resets ijacobian flag and time step to delt0
+!             64       read_imas_flag         Data read from IMAS
 !
 !                  thus, setting ictrl_flag = 1+2+4+8+16 will perform ALL the tasks thru cleanup_flag
 !                  in addition, if ns_index = 0 and numsteps = 0 (see below), vmec will control its own run history
@@ -165,19 +167,28 @@ C-----------------------------------------------
       ns_index = ictrl_array(4)
       iseq_count = ictrl_array(5)
       CALL second0(timeon)
+!
+!     Check if we're running from IMAS
+!
+      limas  = (IAND(ictrl_flag, imasrun_flag) .ne. 0)
 
 !
 !     PARSE input_file into path/input.ext
 !
-      index_dat = INDEX(input_file0, 'input.')
-      index_end = LEN_TRIM(input_file0)
-      IF (index_dat .gt. 0) THEN
-         input_file = TRIM(input_file0)
-         input_extension  = input_file0(index_dat+6:index_end)
+      IF (limas) THEN
+        input_extension = ''
+        input_file = ''
       ELSE
-         input_extension = input_file0(1:index_end)
-         input_file = 'input.'//TRIM(input_extension)
-      END IF
+        index_dat = INDEX(input_file0, 'input.')
+        index_end = LEN_TRIM(input_file0)
+        IF (index_dat .gt. 0) THEN
+          input_file = TRIM(input_file0)
+          input_extension  = input_file0(index_dat+6:index_end)
+        ELSE
+          input_extension = input_file0(1:index_end)
+          input_file = 'input.'//TRIM(input_extension)
+        END IF
+      ENDIF
 
 !
 !     INITIALIZE PARAMETERS
@@ -200,6 +211,23 @@ C-----------------------------------------------
 !
          CALL vsetup (iseq_count)
 
+         CALL readin (input_file, iseq_count, ier_flag, lscreen)
+         max_grid_size = ns_array(multi_ns_grid)
+
+         IF (ier_flag .NE. 0) GOTO 1000
+!
+!        COMPUTE NS-INVARIANT ARRAYS
+!
+         CALL fixaray
+      END IF
+
+      IF (limas) THEN
+!
+!        IMAS PROVIDES DATA
+!
+!         CALL vsetup (iseq_count)
+         
+         ier_flag = imas_read_flag
          CALL readin (input_file, iseq_count, ier_flag, lscreen)
          max_grid_size = ns_array(multi_ns_grid)
 

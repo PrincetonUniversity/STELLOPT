@@ -16,7 +16,7 @@
                                ns_prof4, ns_prof5, partvmax
       USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
-                              nzeff, npot, plasma_mass, plasma_Zavg, &
+                              nzeff, npot, plasma_mass, &
                               plasma_Zmean, therm_factor, &
                               B_kick_min, B_kick_max, freq_kick, E_kick, &
                               rho_fullorbit, &
@@ -35,6 +35,9 @@
       ! These are helpers to give the ns1_prof variables user friendly names
       INTEGER :: nrho_dist, ntheta_dist, nzeta_dist, nvpara_dist, nvperp_dist, nphi_dist
       REAL(rprec) :: temp
+      ! These are helpers for backwards compatibility all values here
+      ! will be ignored elsewhere in the code.
+      REAL(rprec) :: plasma_zavg ! 
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         &beams3d_input
@@ -60,8 +63,8 @@
 !            int_type       Field line integration method
 !                           'NAG','LSODE','RKH68'
 !            plasma_mass    Mean plasma mass in [kg]
-!            plasma_Zavg    <Z> = sum(n_k*Z_k^2)/sum(n_k*Z_k)
-!            plasma_Zmean   [Z] = sum(n_k*Z_k^2*(m_k/plasma_mass))/sum(n_k*Z_k)
+!            Zeff           <Z> = sum(n_k*Z_k^2)/sum(n_k*Z_k)
+!            plasma_Zmean   [Z] = sum(n_k*Z_k^2*(plasma_mass/m_k))/sum(n_k*Z_k)
 !
 !            NOTE:  Some grid parameters may be overriden (such as
 !                   phimin and phimax) to properly represent a given
@@ -82,9 +85,10 @@
                                NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
                                ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
                                ldebug, ne_scale, te_scale, ti_scale, &
-                               zeff_scale, plasma_mass, plasma_Zavg, &
-                               plasma_Zmean, therm_factor, &
-                               fusion_scale, nrho_dist, ntheta_dist, & 
+                               zeff_scale, &
+                               plasma_zavg, plasma_mass, plasma_Zmean, &
+                               therm_factor, fusion_scale, &
+                               nrho_dist, ntheta_dist, & 
                                nzeta_dist, nphi_dist, nvpara_dist, nvperp_dist, &
                                partvmax, lendt_m, te_col_min, &
                                B_kick_min, B_kick_max, freq_kick, E_kick,&
@@ -102,15 +106,9 @@
 !         read_beams3d_input:   Reads beams3d_input namelist
 !-----------------------------------------------------------------------
       CONTAINS
-      
-      SUBROUTINE read_beams3d_input(filename, istat)
-      CHARACTER(*), INTENT(in) :: filename
-      INTEGER, INTENT(out) :: istat
-      LOGICAL :: lexist
-      INTEGER :: iunit, local_master, i1
-      CHARACTER(LEN=1000) :: line
-      ! Initializations
-      local_master = 0
+
+      SUBROUTINE init_beams3d_input
+      IMPLICIT NONE
       nr     = 101
       nphi   = 360
       nz     = 101
@@ -172,7 +170,6 @@
       zeff_scale = 1.0
       fusion_scale = 1.0
       plasma_Zmean = 1.0
-      plasma_Zavg  = 1.0
       plasma_mass = 1.6726219E-27 ! Assume Hydrogen
       therm_factor = 1.5 ! Factor at which to thermalize particles
       lendt_m = 0.05 ! Max distance a particle travels
@@ -209,24 +206,37 @@
       nz_fida = 0
       nenergy_fida = 0
       npitch_fida = 0
+      RETURN
+      END SUBROUTINE init_beams3d_input
+      
+      SUBROUTINE read_beams3d_input(filename, istat)
+         IMPLICIT NONE
+         CHARACTER(*), INTENT(in) :: filename
+         INTEGER, INTENT(out) :: istat
+         LOGICAL :: lexist
+         INTEGER :: iunit, local_master, i1
+         CHARACTER(LEN=1000) :: line
+      ! Initializations
+      local_master = 0
 
 
       ! Read namelist
-!      IF (ithread == local_master) THEN
-         istat=0
-         iunit=12
-         INQUIRE(FILE=TRIM(filename),EXIST=lexist)
-         IF (.not.lexist) stop 'Could not find input file'
-         CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
-         IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
-         READ(iunit,NML=beams3d_input,IOSTAT=istat)
-         IF (istat /= 0) THEN
-            backspace(iunit)
-            read(iunit,fmt='(A)') line
-            write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-            CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+         IF (filename /= 'IMAS') THEN
+            istat=0
+            iunit=12
+            INQUIRE(FILE=TRIM(filename),EXIST=lexist)
+            IF (.not.lexist) stop 'Could not find input file'
+            CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
+            IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+            READ(iunit,NML=beams3d_input,IOSTAT=istat)
+            IF (istat /= 0) THEN
+               backspace(iunit)
+               read(iunit,fmt='(A)') line
+               write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+               CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+            END IF
+            CLOSE(iunit)
          END IF
-         CLOSE(iunit)
 
          ! Update dist function sizes
          ns_prof1=nrho_dist
@@ -300,8 +310,7 @@
                END IF
             END DO
             plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
-            plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff
-            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)*plasma_mass)
+            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*plasma_mass/NI_AUX_M,DIM=1,MASK=(NI_AUX_M>1E-27))/(SUM(NI_AUX_F(:,1)*NI_AUX_Z))
          ELSEIF (lfusion) THEN ! Assume 50/50 D T
             nzeff=nne
             NI_AUX_S = NE_AUX_S
@@ -320,13 +329,12 @@
                END IF
             END DO
             plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
-            plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff
-            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)*plasma_mass)
+            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*plasma_mass/NI_AUX_M,DIM=1,MASK=(NI_AUX_M>1E-27))/(SUM(NI_AUX_F(:,1)*NI_AUX_Z))
          ELSEIF (nne > 0) THEN ! Ni=Ne, Z=Zeff
             nzeff = nne
             NI_AUX_S = NE_AUX_S
             NI_AUX_F(1,:) = NE_AUX_F ! NI=NE
-            NI_AUX_Z(1) = NINT(plasma_Zavg)
+            NI_AUX_Z(1) = 1 ! Assume Hydrogen Plasma
             NI_AUX_M(1) = plasma_mass
             DO i1 = 1, nzeff
                ZEFF_AUX_S(i1) = NI_AUX_S(i1)
@@ -338,7 +346,7 @@
             ZEFF_AUX_F(1:6) = (/1.0,1.0,1.0,1.0,1.0,1.0/)
             NI_AUX_S(1:6)   = (/0.0,0.2,0.4,0.6,0.8,1.0/)
             NI_AUX_F(:,1:6) = 0
-            NI_AUX_Z(1) = NINT(plasma_Zavg)
+            NI_AUX_Z(1) = 1
             NI_AUX_M(1) = plasma_mass
          END IF
 
@@ -422,7 +430,6 @@
       WRITE(iunit_out,outint) 'NPARTICLES_START',nparticles_start
       WRITE(iunit_out,'(A)') '!---------- Plasma Parameters ------------'
       WRITE(iunit_out,outflt) 'PLASMA_MASS',plasma_mass
-      WRITE(iunit_out,outflt) 'PLASMA_ZAVG',plasma_zavg
       WRITE(iunit_out,outflt) 'PLASMA_ZMEAN',plasma_zmean
       WRITE(iunit_out,outflt) 'THERM_FACTOR',therm_factor
       WRITE(iunit_out,'(A)') '!---------- Distribution Parameters ------------'
