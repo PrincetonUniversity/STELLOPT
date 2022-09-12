@@ -1,5 +1,6 @@
 ObjectFiles = \
 mumaterial_mod.o \
+git_version_mod.o \
 d1mach.o \
 dqag.o \
 dqage.o \
