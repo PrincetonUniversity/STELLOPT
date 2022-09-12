@@ -1,90 +1,102 @@
 #######################################################################
-#            Define User Specific Output Paths
-#######################################################################
-  # Set a default directory if one has not already been defined.
-  STELLOPT_HOME ?= $(HOME)/bin
-
-
-#######################################################################
 #            Define Basic Utilities
 #######################################################################
-  # Temporaryily copy STELLOPT_HOME to MYHOME since MYHOME is currently
-  # used in all the makefiles.
-  MYHOME = $(STELLOPT_HOME)
-  
   SHELL = /bin/sh
   PWD1 = `pwd`
-  PRECOMP:= cpp-mp-10 -traditional-cpp -E -P -C -DMACOSX
-  COMPILE = gfortran
-  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none \
-                          -ffixed-line-length-none
-  LINK    = gfortran $(FLAGS) -o
-  LINK_AR = ar -ruvs
-  LINK_C  = gcc -shared -Wl,-no_compact_unwind
+  MYHOME = /pfs/home/$(USER)/bin
+  PRECOMP:= fpp -C -P -DLINUX
+  COMPILE = ifort
+  COMPILE_FREE = ifort -free
+  LINK    = ifort -Bstatic -o
+  LINK_AR = ar -ruv
+  LINK_C  = icc -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
-  FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check
-  LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
-  FLAGS_R += -fallow-argument-mismatch
-  FLAGS_D += -fallow-argument-mismatch
-  
+  DIAG_DISABLE = -diag-disable=15009 -check noarg_temp_created
+  FLAGS_R = -O2 -fp-model strict -ip -assume noold_unit_star \
+		-axMIC-AVX512 $(DIAG_DISABLE) \
+		$(shell pkg-config mkl-ifort --cflags)
+  FLAGS_D = -g -traceback -O0 -fp-model strict -ip -check all -fp-stack-check \
+		-assume noold_unit_star -axMIC-AVX512 $(DIAG_DISABLE) \
+		$(shell pkg-config mkl-ifort --cflags)
+  # This is a workaround for broken pkg-config
+  MKLROOT ?= /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl
+  LIBS =  ${MKLROOT}/lib/intel64/libmkl_scalapack_ilp64.a \
+           -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a \
+                             ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a \
+                             ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_ilp64.a -Wl,--end-group \
+           -lpthread -lm -ldl
+
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90
-  MPI_COMPILE_FREE = mpif90 -ffree-form -ffree-line-length-none \
-                            -ffixed-line-length-none 
-  MPI_COMPILE_C = mpicc 
-  MPI_LINK = /opt/local/bin/mpif90
-  MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
-  MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 2
+  MPI_COMPILE = mpiifort
+  MPI_COMPILE_FREE = mpiifort -free
+  MPI_COMPILE_C = mpicc
+  MPI_LINK = mpiifort
+  MPI_RUN  = srun
+  MPI_RUN_OPTS = --partition=gwdbg \
+		--time=0:30:00
+  MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=24
+  MPI_RUN_OPTS_MD   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=48
+  MPI_RUN_OPTS_LG   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=48
+
+#######################################################################
+#            IMAS Options
+#######################################################################
+  LIMAS = T
+  IMAS_INC = $(shell pkg-config imas-ifort --cflags) \
+             $(shell pkg-config xmllib --cflags)
+  IMAS_LIB = $(shell pkg-config imas-ifort --libs) \
+             $(shell pkg-config xmllib --libs)
 
 #######################################################################
 #            NAG Options
 #######################################################################
   LNAG = F
-  NAG_LIB = -L$(NAG_ROOT)/lib -lnag_nag
+  NAG_LIB = $(NAGFLIB) $(NAGMKLLIB)
 
 #######################################################################
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --fflags)
-  NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
-
-#######################################################################
-#            FFTW3 Options
-#######################################################################
-  LFFTW3 = T
-  FFTW3_INC = -I/opt/local/include
-  FFTW3_LIB = -L/opt/local/lib -lfftw3
+  NETCDF_INC = $(shell pkg-config netcdf-fortran-ifort --cflags)
+  NETCDF_LIB = $(shell pkg-config netcdf-fortran-ifort --libs) 
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I/opt/local/include
-  HDF5_LIB = -L/opt/local/lib -lhdf5hl_fortran -lhdf5_hl \
-             -lhdf5_fortran -lhdf5 -lz -ldl -lm
+  PRECOMP+= -DHDF5_PAR
+#  HDF5_INC = -I$(HDF5_HOME)/include 
+#  HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
+#             -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran
+  HDF5_INC = $(shell pkg-config hdf5 --cflags)
+  HDF5_LIB = $(shell pkg-config hdf5 --libs)
+
+#######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = T
+  FFTW3_INC = $(shell pkg-config fftw3-ifort --cflags)
+  FFTW3_LIB = $(shell pkg-config fftw3-ifort --libs)
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
-  PGPLOT_INC = -I/opt/local/include
-  PGPLOT_LIB = -L/opt/local/lib -lpgplot -lX11
+  PGPLOT_INC =
+  PGPLOT_LIB = 
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
-  SILO_INC = -I/opt/local/include
-  SILO_LIB = -L/opt/local/lib -lsilo
+  SILO_INC = -I$(SILO_DIR)/include
+  SILO_LIB = -L$(SILO_DIR)/lib -lsilo
 
 #######################################################################
 #            DKES/NEO Options
@@ -96,14 +108,17 @@
 #            GENE Options
 #######################################################################
   LGENE = F
-  GENE_INC = -I$(GENE_PATH)
-  GENE_DIR = $(GENE_PATH)
+  GENE_DIR = $(GENE_PATH)/bin/obj_cobra
+  FUTILS_DIR = $(GENE_PATH)/external/cobra/futils-gene-mod/src
   LIB_GENE = libgene.a
-  GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L/u/slazerso/src/GENE17_2016/external/pppl_cluster/futils/src -lfutils \
-             -L$(FFTWHOME)/lib -lfftw3 \
-             -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
-             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+  LIB_FUTILS = libfutils.a
+  GENE_INC = -I$(GENE_DIR) \
+             -I$(FUTILS_DIR)
+  GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
+             -L$(SLEPC_HOME)/lib -lslepc \
+             -L$(PETSC_HOME)/lib -lpetsc \
+             $(GENE_DIR)/$(LIB_GENE) \
+             $(FUTILS_DIR)/$(LIB_FUTILS)
 
 #######################################################################
 #            COILOPT++ Options
@@ -112,8 +127,7 @@
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
-  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) 
 
 #######################################################################
 #            TERPSICHORE Options
@@ -128,11 +142,22 @@
 #            TRAVIS Options
 #######################################################################
   LTRAVIS= F
-  TRAVIS_DIR = $(TRAVIS_PATH)
+  TRAVIS_DIR = $(TRAVIS_PATH)/TRAVIS-src
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
                $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
+
+#######################################################################
+#            SFINCS Options
+#######################################################################
+  LSFINCS = F
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
+  LIB_SFINCS = libsfincs.a
+
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+        $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
 
 #######################################################################
 #            REGCOIL Options
@@ -144,27 +169,7 @@
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
-#            SFINCS Options
-#######################################################################
-
-  LSFINCS = F
-  SFINCS_DIR = $(SFINCS_PATH)
-  SFINCS_INC = -I$(SFINCS_DIR)
-  LIB_SFINCS = libsfincs.a
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
-
-#######################################################################
-#            Available Energy Options
-#######################################################################
-  LAEOPT= T
-  AEOPT_DIR = $(AEOPT_PATH)
-  AEOPT_INC = -I$(AEOPT_DIR) 
-  LIB_AEOPT = libtrapAE.a
-  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
-
-#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
+  LIB_SHARE = $(LIBS) 
 
-LIB_SHARE = -L/opt/local/lib/gcc10 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread $(LIBS)

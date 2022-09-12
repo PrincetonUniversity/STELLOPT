@@ -17,11 +17,11 @@ include $(OBJLIST)
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
 
-libstell.a : $(ObjectFiles) 
+libstell.a : $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles)
 	$(CLEAN_ARCH)
 	
-libstell.so : $(ObjectFiles) 
+libstell.so : $(ObjectFiles)
 	$(LINK_C) -o $@ $(ObjectFiles) $(LIB_LINK)
 	$(CLEAN_ARCH)
 
@@ -62,4 +62,4 @@ libstell.so : $(ObjectFiles)
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $< ; \
       fi
 clean:
-	- rm -f *.o *.mod *.a *.so
+	- rm -f *.o *.mod *.a *.so 

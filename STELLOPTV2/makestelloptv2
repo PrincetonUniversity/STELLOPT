@@ -21,7 +21,7 @@ xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) \
 	$(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR 
-	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC) 
+#	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC) 
 endif
 ifdef BEAMS3D_DIR
 	@rm $(BEAMS3D_DIR)/$(LOCTYPE)/$(LIB_BEAMS3D)
