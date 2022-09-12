@@ -441,7 +441,9 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   USE vmec_io, ONLY: betapol, betator, Aminor_p, b0, volume_p, &
                      cross_area_p, surf_area_p, circum_p
   USE vparams, ONLY: mu0
-  USE vmec_dim, ONLY: ns
+  USE vmec_dim, ONLY: ns, mnmax
+  USE vmec_persistent, ONLY: xm, xn
+  USE read_wout_mod, ONLY: rmnc,zmns
 
   !---------------------------------------------------------------------
   !     INPUT/OUTPUT VARIABLES
@@ -510,8 +512,8 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
   IDS_EQ_OUT%time_slice(itime)%global_quantities%area          = cross_area_p
   IDS_EQ_OUT%time_slice(itime)%global_quantities%surface       = surf_area_p
   IDS_EQ_OUT%time_slice(itime)%global_quantities%length_pol    = circum_p
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_axis      = chip(1)
-  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_boundary  = chip(ns)
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_axis      = chipf(1)
+  IDS_EQ_OUT%time_slice(itime)%global_quantities%psi_boundary  = chipf(ns)
   IDS_EQ_OUT%time_slice(itime)%global_quantities%q_axis        = 1/iotaf(1)
   i = FLOOR(0.9025*ns)
   IDS_EQ_OUT%time_slice(itime)%global_quantities%q_95          = 1/iotaf(i)
@@ -637,21 +639,21 @@ SUBROUTINE VMEC_EQOUT_IMAS(IDS_EQ_OUT, status_code, status_message)
      ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%description(1))
   IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%description='Flux surface type with radial label sqrt[Phi/pi/B0] (dim1), Phi being toroidal flux, and Fourier modes in the polar poloidal angle (dim2)' ! inverse_rhotor_polar_fourier
   IF (.NOT.ASSOCIATED(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid%dim1))&
-     ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%dim1(ns))
+     ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid%dim1(ns))
   DO i = 1, ns
-     IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%dim1(i) = DBLE(i-1)/DBLE(ns-1)
+     IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid%dim1(i) = DBLE(i-1)/DBLE(ns-1)
   END DO
   IF (.NOT.ASSOCIATED(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid%dim2))&
-     ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%dim2(mnmax))
+     ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid%dim2(mnmax))
   DO i = 1, mnmax
-     IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%dim2(i) = xm(i)
+     IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid%dim2(i) = xm(i)
   END DO
   IF (.NOT.ASSOCIATED(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%r))&
-     ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%r(ns,mnmax))
-  IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%r = TRANSPOSE(rmnc)
+     ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%r(ns,mnmax))
+  IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%r = TRANSPOSE(rmnc)
   IF (.NOT.ASSOCIATED(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%z))&
-     ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%z(ns,mnmax))
-  IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%r = TRANSPOSE(zmns)
+     ALLOCATE(IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%z(ns,mnmax))
+  IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%z = TRANSPOSE(zmns)
   !allocate(IDS_EQ_OUT%time_slice(itime)%profiles_2d(2))
   !IDS_EQ_OUT%time_slice(itime)%profiles_2d(1)%grid_type%index=1 ! rectangular
   !IDS_EQ_OUT%time_slice(itime)%profiles_2d(2)%grid_type%index=56 ! inverse_rhotor_polar_fourier
