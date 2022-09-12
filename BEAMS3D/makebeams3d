@@ -54,9 +54,9 @@ xbeams3d:  $(LIB) $(ObjectFiles)
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
       fi
       
-#Make the VMEC2000 library file
+#Make the BEAMS3D library file
 libbeams3d.a : $(ObjectFiles)
-   ar -cruv libbeams3d.a $(ObjectFiles)
+	ar -cruv libbeams3d.a $(ObjectFiles)
 
 #Check that library files are current. 
 $(LIB) :
