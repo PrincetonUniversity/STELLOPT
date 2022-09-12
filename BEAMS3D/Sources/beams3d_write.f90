@@ -17,7 +17,7 @@
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
                                  ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
-                                 plasma_mass, plasma_Zavg, plasma_Zmean, &
+                                 plasma_mass, plasma_Zmean, &
                                  B_kick_min, B_kick_max, freq_kick, E_kick, NI
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
@@ -94,8 +94,6 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nz',ier)
                CALL write_scalar_hdf5(fid,'plasma_mass',ier,DBLVAR=plasma_mass,ATT='Plasma Mass [kg]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_mass',ier)
-               CALL write_scalar_hdf5(fid,'plasma_Zavg',ier,DBLVAR=plasma_Zavg,ATT='Plasma <Z>',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_Zavg',ier)
                CALL write_scalar_hdf5(fid,'plasma_Zmean',ier,DBLVAR=plasma_Zmean,ATT='Plasma [Z]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_Zmean',ier)
                CALL write_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis,ATT='Radial Axis [m]',ATT_NAME='description')

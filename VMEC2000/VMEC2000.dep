@@ -812,6 +812,20 @@ vmec.o : \
       vmec_params.o 
       
 
+vmec_imas.o : \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
+      ../../LIBSTELL/$(LOCTYPE)/vmec_seq.o \
+      ../../LIBSTELL/$(LOCTYPE)/vparams.o \
+      ../../LIBSTELL/$(LOCTYPE)/git_version_mod.o \
+      parallel_include_module.o \
+      parallel_vmec_module.o \
+      vmec_main.o \
+      vmec_io.o \
+      vmec_dim.o \
+      vmec_params.o 
+      
+
 vmec_history.o : \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
