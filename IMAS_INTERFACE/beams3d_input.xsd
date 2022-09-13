@@ -13,7 +13,7 @@
   </xs:simpleType>
 
   <!-- BEAMS3D_INPUT Namelist -->
-  <xs:element name="BEAMS3D_INPUT">
+  <xs:element name="parameters">
     <xs:complexType>
       <xs:all>
         <xs:element ref="NR" minOccurs="0"/>
@@ -97,553 +97,525 @@
 
   <!-- Variable definitions -->
   <!-- NR -->
-  <xs:element name="NR" type="xs:integer" default="none">
+  <xs:element name="NR" type="xs:integer" default="101">
     <xs:annotation>
       <xs:documentation>Number of major radius gridpoints.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NPHI -->
-  <xs:element name="NPHI" type="xs:integer" default="none">
+  <xs:element name="NPHI" type="xs:integer" default="360">
     <xs:annotation>
       <xs:documentation>Number of toroidal gridpoints.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NZ -->
-  <xs:element name="NZ" type="xs:integer" default="none">
+  <xs:element name="NZ" type="xs:integer" default="101">
     <xs:annotation>
       <xs:documentation>Number of vertical gridpoints.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- RMIN -->
-  <xs:element name="RMIN" type="xs:float" default="none">
+  <xs:element name="RMIN" type="xs:float" default="0.0">
     <xs:annotation>
       <xs:documentation>Minimum radial extent of grid. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- RMAX -->
-  <xs:element name="RMAX" type="xs:float" default="none">
+  <xs:element name="RMAX" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Maximum radial extent of grid. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ZMIN -->
-  <xs:element name="ZMIN" type="xs:float" default="none">
+  <xs:element name="ZMIN" type="xs:float" default="-1.0">
     <xs:annotation>
       <xs:documentation>Minimum vertical extent of grid. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ZMAX -->
-  <xs:element name="ZMAX" type="xs:float" default="none">
+  <xs:element name="ZMAX" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Maximum vertical extent of grid. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PHIMIN -->
-  <xs:element name="PHIMIN" type="xs:float" default="none">
+  <xs:element name="PHIMIN" type="xs:float" default="0.0">
     <xs:annotation>
       <xs:documentation>Minimum toroidal extent of grid. [rad]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PHIMAX -->
-  <xs:element name="PHIMAX" type="xs:float" default="none">
+  <xs:element name="PHIMAX" type="xs:float" default="3.1415927410125732421875">
     <xs:annotation>
       <xs:documentation>Maximum toroidal extent of grid. [rad]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NPARTICLES_START -->
-  <xs:element name="NPARTICLES_START" type="xs:integer" default="none">
+  <xs:element name="NPARTICLES_START" type="xs:integer" default="10">
     <xs:annotation>
       <xs:documentation>Total number of particle to start for NBI/Fusion.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- R_START_IN -->
-  <xs:element name="R_START_IN" type="float_list" default="none">
+  <xs:element name="R_START_IN" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Marker initial major radius location. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PHI_START_IN -->
-  <xs:element name="PHI_START_IN" type="float_list" default="none">
+  <xs:element name="PHI_START_IN" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Marker initial toroidal location. [rad]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- Z_START_IN -->
-  <xs:element name="Z_START_IN" type="float_list" default="none">
+  <xs:element name="Z_START_IN" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Marker initial vertical location. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- MU_START_IN -->
-  <xs:element name="MU_START_IN" type="float_list" default="none">
+  <xs:element name="MU_START_IN" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Marker initial magnetic moment. [J/T]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- VLL_START_IN -->
-  <xs:element name="VLL_START_IN" type="float_list" default="none">
+  <xs:element name="VLL_START_IN" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Marker initial parallel velocity. [m/s]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- CHARGE_IN -->
-  <xs:element name="CHARGE_IN" type="float_list" default="none">
+  <xs:element name="CHARGE_IN" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Marker charge. [C]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- MASS_IN -->
-  <xs:element name="MASS_IN" type="float_list" default="none">
+  <xs:element name="MASS_IN" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Marker mass. [kg]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ZATOM_IN -->
-  <xs:element name="ZATOM_IN" type="float_list" default="none">
+  <xs:element name="ZATOM_IN" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Marker charge number.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- T_END_IN -->
-  <xs:element name="T_END_IN" type="float_list" default="none">
+  <xs:element name="T_END_IN" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Marker maximum time of flight. [s]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NPOINC -->
-  <xs:element name="NPOINC" type="xs:integer" default="none">
+  <xs:element name="NPOINC" type="xs:integer" default="1">
     <xs:annotation>
       <xs:documentation>Total number of marker timesteps output.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- FOLLOW_TOL -->
-  <xs:element name="FOLLOW_TOL" type="xs:float" default="none">
+  <xs:element name="FOLLOW_TOL" type="xs:float" default="0.0000001">
     <xs:annotation>
       <xs:documentation>ODE integration tollerance.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- VC_ADAPT_TOL -->
-  <xs:element name="VC_ADAPT_TOL" type="xs:float" default="none">
+  <xs:element name="VC_ADAPT_TOL" type="xs:float" default="0.001">
     <xs:annotation>
       <xs:documentation>Virtual casing adaptive integral tolerance.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- INT_TYPE -->
-  <xs:element name="INT_TYPE" type="xs:string" default="none">
+  <xs:element name="INT_TYPE" type="xs:string" default="LSODE">
     <xs:annotation>
       <xs:documentation>ODE integrator.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ADIST_BEAMS -->
-  <xs:element name="ADIST_BEAMS" type="float_list" default="none">
+  <xs:element name="ADIST_BEAMS" type="float_list" default="1.0">
     <xs:annotation>
       <xs:documentation>Point source beam model aperature distance. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ASIZE_BEAMS -->
-  <xs:element name="ASIZE_BEAMS" type="float_list" default="none">
+  <xs:element name="ASIZE_BEAMS" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Point source beam model aperature radius. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- DIV_BEAMS -->
-  <xs:element name="DIV_BEAMS" type="float_list" default="none">
+  <xs:element name="DIV_BEAMS" type="float_list" default="1.0">
     <xs:annotation>
       <xs:documentation>Beam model divergence. [rad]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- E_BEAMS -->
-  <xs:element name="E_BEAMS" type="float_list" default="none">
+  <xs:element name="E_BEAMS" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Beam energy. [J]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- DEX_BEAMS -->
-  <xs:element name="DEX_BEAMS" type="integer_list" default="none">
+  <xs:element name="DEX_BEAMS" type="integer_list" default="-1">
     <xs:annotation>
       <xs:documentation>Beam index</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- MASS_BEAMS -->
-  <xs:element name="MASS_BEAMS" type="float_list" default="none">
+  <xs:element name="MASS_BEAMS" type="float_list" default="1.0">
     <xs:annotation>
       <xs:documentation>Beam marker mass. [kg]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- CHARGE_BEAMS -->
-  <xs:element name="CHARGE_BEAMS" type="float_list" default="none">
+  <xs:element name="CHARGE_BEAMS" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Beam marker charge. [C]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ZATOM_BEAMS -->
-  <xs:element name="ZATOM_BEAMS" type="float_list" default="none">
+  <xs:element name="ZATOM_BEAMS" type="float_list" default="1.0">
     <xs:annotation>
       <xs:documentation>Beam marker charge number. [Z]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- R0_BEAMS -->
-  <xs:element name="R0_BEAMS" type="float_list" default="none">
+  <xs:element name="R0_BEAMS" type="float_list" default="1.0">
     <xs:annotation>
       <xs:documentation>Point source beam model origin major radius. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- R1_BEAMS -->
-  <xs:element name="R1_BEAMS" type="float_list" default="none">
+  <xs:element name="R1_BEAMS" type="float_list" default="1.0">
     <xs:annotation>
       <xs:documentation>Point source beam model endpoint major radius. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PHI0_BEAMS -->
-  <xs:element name="PHI0_BEAMS" type="float_list" default="none">
+  <xs:element name="PHI0_BEAMS" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Point source beam model origin toroidal angle. [rad]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PHI1_BEAMS -->
-  <xs:element name="PHI1_BEAMS" type="float_list" default="none">
+  <xs:element name="PHI1_BEAMS" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Point source beam model endpoint toroidal angle. [rad]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- Z0_BEAMS -->
-  <xs:element name="Z0_BEAMS" type="float_list" default="none">
+  <xs:element name="Z0_BEAMS" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Point source beam model origin vertical position. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- Z1_BEAMS -->
-  <xs:element name="Z1_BEAMS" type="float_list" default="none">
+  <xs:element name="Z1_BEAMS" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Point source beam model endpoint vertical position. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- P_BEAMS -->
-  <xs:element name="P_BEAMS" type="float_list" default="none">
+  <xs:element name="P_BEAMS" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Total power in neutral beam. [W]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- TE_AUX_S -->
-  <xs:element name="TE_AUX_S" type="float_list" default="none">
+  <xs:element name="TE_AUX_S" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Spline knot locations in normalized toroidal flux (s) for the elctron temperature.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- TE_AUX_F -->
-  <xs:element name="TE_AUX_F" type="float_list" default="none">
+  <xs:element name="TE_AUX_F" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Spline knot values for the elctron temperature. [eV]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NE_AUX_S -->
-  <xs:element name="NE_AUX_S" type="float_list" default="none">
+  <xs:element name="NE_AUX_S" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Spline knot locations in normalized toroidal flux (s) for the elctron density.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NE_AUX_F -->
-  <xs:element name="NE_AUX_F" type="float_list" default="none">
+  <xs:element name="NE_AUX_F" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Spline knot values for the elctron density. [m^-3]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- TI_AUX_S -->
-  <xs:element name="TI_AUX_S" type="float_list" default="none">
+  <xs:element name="TI_AUX_S" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Spline knot locations in normalized toroidal flux (s) for the ion temperature.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- TI_AUX_F -->
-  <xs:element name="TI_AUX_F" type="float_list" default="none">
+  <xs:element name="TI_AUX_F" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Spline knot values for the ion temperature. [eV]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ZEFF_AUX_S -->
-  <xs:element name="ZEFF_AUX_S" type="float_list" default="none">
+  <xs:element name="ZEFF_AUX_S" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Spline knot locations in normalized toroidal flux (s) for the effective ion charge number.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ZEFF_AUX_F -->
-  <xs:element name="ZEFF_AUX_F" type="float_list" default="none">
+  <xs:element name="ZEFF_AUX_F" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Spline knot values for the effective ion charge number.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- POT_AUX_S -->
-  <xs:element name="POT_AUX_S" type="float_list" default="none">
+  <xs:element name="POT_AUX_S" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Spline knot locations in normalized toroidal flux (s) for the electrostatic scalar potential.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- POT_AUX_F -->
-  <xs:element name="POT_AUX_F" type="float_list" default="none">
+  <xs:element name="POT_AUX_F" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Spline knot values for the electrostatic scalar potential. [V]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NI_AUX_M -->
-  <xs:element name="NI_AUX_M" type="float_list" default="none">
+  <xs:element name="NI_AUX_M" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Backgroud plasma ion mass. [kg]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NI_AUX_Z -->
-  <xs:element name="NI_AUX_Z" type="float_list" default="none">
+  <xs:element name="NI_AUX_Z" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Backgroud plasma ion charge number.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
-  <!-- NI01_AUX_S -->
-  <xs:element name="NI01_AUX_S" type="float_list" default="none">
+  <!-- NI_AUX_S -->
+  <xs:element name="NI_AUX_S" type="float_list" default="-1.0">
     <xs:annotation>
       <xs:documentation>Spline knot locations in normalized toroidal flux (s) for background ion species 1.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NI01_AUX_F -->
-  <xs:element name="NI01_AUX_F" type="float_list" default="none">
+  <xs:element name="NI01_AUX_F" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Spline knot values for density of background ion species 1. [m^-3]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
-  <!-- NI02_AUX_S -->
-  <xs:element name="NI02_AUX_S" type="float_list" default="none">
-    <xs:annotation>
-      <xs:documentation>Spline knot locations in normalized toroidal flux (s) for background ion species 2.</xs:documentation>
-    </xs:annotation>
-  </xs:element>
-
   <!-- NI02_AUX_F -->
-  <xs:element name="NI02_AUX_F" type="float_list" default="none">
+  <xs:element name="NI02_AUX_F" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Spline knot values for density of background ion species 2. [m^-3]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
-  <!-- NI03_AUX_S -->
-  <xs:element name="NI03_AUX_S" type="float_list" default="none">
-    <xs:annotation>
-      <xs:documentation>Spline knot locations in normalized toroidal flux (s) for background ion species 3.</xs:documentation>
-    </xs:annotation>
-  </xs:element>
-
   <!-- NI03_AUX_F -->
-  <xs:element name="NI03_AUX_F" type="float_list" default="none">
+  <xs:element name="NI03_AUX_F" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Spline knot values for density of background ion species 3. [m^-3]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
-  <!-- NI04_AUX_S -->
-  <xs:element name="NI04_AUX_S" type="float_list" default="none">
-    <xs:annotation>
-      <xs:documentation>Spline knot locations in normalized toroidal flux (s) for background ion species 4.</xs:documentation>
-    </xs:annotation>
-  </xs:element>
-
   <!-- NI04_AUX_F -->
-  <xs:element name="NI04_AUX_F" type="float_list" default="none">
+  <xs:element name="NI04_AUX_F" type="float_list" default="0.0">
     <xs:annotation>
       <xs:documentation>Spline knot values for density of background ion species 4. [m^-3]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NE_SCALE -->
-  <xs:element name="NE_SCALE" type="xs:float" default="none">
+  <xs:element name="NE_SCALE" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Scaling factor applied to electron density profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- TE_SCALE -->
-  <xs:element name="TE_SCALE" type="xs:float" default="none">
+  <xs:element name="TE_SCALE" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Scaling factor applied to electron temperature profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- TI_SCALE -->
-  <xs:element name="TI_SCALE" type="xs:float" default="none">
+  <xs:element name="TI_SCALE" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Scaling factor applied to ion temperature profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- ZEFF_SCALE -->
-  <xs:element name="ZEFF_SCALE" type="xs:float" default="none">
+  <xs:element name="ZEFF_SCALE" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Scaling factor applied to the effective ion charge profile.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PLASMA_MASS -->
-  <xs:element name="PLASMA_MASS" type="xs:float" default="none">
+  <xs:element name="PLASMA_MASS" type="xs:float" default="1.6726219E-27">
     <xs:annotation>
       <xs:documentation>Effective plasma mass. [kg]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
-  <!-- PLASMA_ZAVG -->
-  <xs:element name="PLASMA_ZAVG" type="xs:float" default="none">
-    <xs:annotation>
-      <xs:documentation>Average plasma ion charge.</xs:documentation>
-    </xs:annotation>
-  </xs:element>
-
   <!-- PLASMA_ZMEAN -->
-  <xs:element name="PLASMA_ZMEAN" type="xs:float" default="none">
+  <xs:element name="PLASMA_ZMEAN" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Mean plasma ion charge.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- THERM_FACTOR -->
-  <xs:element name="THERM_FACTOR" type="xs:float" default="none">
+  <xs:element name="THERM_FACTOR" type="xs:float" default="1.5">
     <xs:annotation>
       <xs:documentation>Scaling factor for thermalization based on local ion sound speed.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- FUSION_SCALE -->
-  <xs:element name="FUSION_SCALE" type="xs:float" default="none">
+  <xs:element name="FUSION_SCALE" type="xs:float" default="1.0">
     <xs:annotation>
       <xs:documentation>Scaling factor for alpha birth energy.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NRHO_DIST -->
-  <xs:element name="NRHO_DIST" type="xs:integer" default="none">
+  <xs:element name="NRHO_DIST" type="xs:integer" default="64">
     <xs:annotation>
       <xs:documentation>Number of distribution function radial (r/a) gridpoints.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NTHETA_DIST -->
-  <xs:element name="NTHETA_DIST" type="xs:integer" default="none">
+  <xs:element name="NTHETA_DIST" type="xs:integer" default="8">
     <xs:annotation>
       <xs:documentation>Number of distribution function poloidal (theta-like) gridpoints.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NPHI_DIST -->
-  <xs:element name="NPHI_DIST" type="xs:integer" default="none">
+  <xs:element name="NPHI_DIST" type="xs:integer" default="4">
     <xs:annotation>
       <xs:documentation>Number of distribution function toroidal (phi) gridpoints.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NVPARA_DIST -->
-  <xs:element name="NVPARA_DIST" type="xs:integer" default="none">
+  <xs:element name="NVPARA_DIST" type="xs:integer" default="32">
     <xs:annotation>
       <xs:documentation>Number of distribution function parallel velocity gridpoints.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- NVPERP_DIST -->
-  <xs:element name="NVPERP_DIST" type="xs:integer" default="none">
+  <xs:element name="NVPERP_DIST" type="xs:integer" default="16">
     <xs:annotation>
       <xs:documentation>Number of distribution function perpendicular velocity gridpoints.</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- PARTVMAX -->
-  <xs:element name="PARTVMAX" type="xs:float" default="none">
+  <xs:element name="PARTVMAX" type="xs:float" default="0.0">
     <xs:annotation>
       <xs:documentation>Maximum velocity in distribution function [m/s].</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- LENDT_M -->
-  <xs:element name="LENDT_M" type="xs:float" default="none">
+  <xs:element name="LENDT_M" type="xs:float" default="0.05">
     <xs:annotation>
       <xs:documentation>Length between collisional updates based on fastest particle. [m]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- TE_COL_MIN -->
-  <xs:element name="TE_COL_MIN" type="xs:float" default="none">
+  <xs:element name="TE_COL_MIN" type="xs:float" default="10.0">
     <xs:annotation>
       <xs:documentation>Minimum electron tempearature for collsional operator. [eV]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- B_KICK_MIN -->
-  <xs:element name="B_KICK_MIN" type="xs:float" default="none">
+  <xs:element name="B_KICK_MIN" type="xs:float" default="-1.0">
     <xs:annotation>
       <xs:documentation>Minimum magnetic field for kick model. [T]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- B_KICK_MAX -->
-  <xs:element name="B_KICK_MAX" type="xs:float" default="none">
+  <xs:element name="B_KICK_MAX" type="xs:float" default="0.0">
     <xs:annotation>
       <xs:documentation>Maximum magnetic field for kick model. [T]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- FREQ_KICK -->
-  <xs:element name="FREQ_KICK" type="xs:float" default="none">
+  <xs:element name="FREQ_KICK" type="xs:float" default="38.5E6">
     <xs:annotation>
       <xs:documentation>Frequency for kick model. [Hz]</xs:documentation>
     </xs:annotation>
   </xs:element>
 
   <!-- E_KICK -->
-  <xs:element name="E_KICK" type="xs:float" default="none">
+  <xs:element name="E_KICK" type="xs:float" default="100">
     <xs:annotation>
       <xs:documentation>Electric field for kick model. [V/m]</xs:documentation>
     </xs:annotation>

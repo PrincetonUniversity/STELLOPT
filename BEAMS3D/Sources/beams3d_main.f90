@@ -80,6 +80,7 @@ PROGRAM BEAMS3D
         numargs = 0
         i = 0
         arg1 = ''
+        limas = .false.
         lverb = .true.
         lvmec = .false.
         lpies = .false.
@@ -324,6 +325,8 @@ PROGRAM BEAMS3D
     CALL MPI_BCAST(lfusion,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
     CALL MPI_BCAST(lfusion_alpha,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+    CALL MPI_BCAST(limas,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
 #endif
 
