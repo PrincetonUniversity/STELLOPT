@@ -12,11 +12,14 @@ code_description:
         name: PROF_IN
         type: core_profiles
     -   intent: IN
-        name: DIST_IN
+        name: MARKERS_IN
         type: distribution_sources
     -   intent: IN
         name: WALL_IN
         type: wall
+    -   intent: OUT
+        name: DIST_OUT
+        type: distributions
     documentation: Actor for BEAMS3D Fokker-Planck Solver.
     implementation:
         code_parameters:
@@ -41,11 +44,13 @@ code_description:
             - $MKLROOT/lib/intel64/libmkl_sequential.a
             - $MKLROOT/lib/intel64/libmkl_core.a
             - $MKLROOT/lib/intel64/libmkl_blacs_intelmpi_ilp64.a
+            - $HDF5_DIR/lib/libhdf5hl_fortran.a
+            - $HDF5_DIR/lib/libhdf5_fortran.a
             pkg_config_defined:
-            - hdf5
             - mkl-dynamic-ilp64-seq
             - netcdf-fortran
             - xmllib
+            - hdf5
         mpi_compiler_cmd: mpiifort
         open_mp_switch: ''
 ...
