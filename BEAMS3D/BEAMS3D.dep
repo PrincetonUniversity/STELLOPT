@@ -1,4 +1,15 @@
-# Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
+# Microsoft Developer Studio Generated Dependency File, included by BEAMS3D.mak
+
+
+beams3d_interface_mod.o: \
+      beams3d_input_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o 
+
+beams3d_imas_module.o: \
+      beams3d_interface_mod.o \
+      beams3d_input_mod.o 
 
 
 beams3d_fix_poloidal.o: \
@@ -196,10 +207,7 @@ beams3d_lines.o: \
 
 
 beams3d_main.o: \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
-      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
+      beams3d_interface_mod.o \
       beams3d_runtime.o 
 
 
