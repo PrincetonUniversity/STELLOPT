@@ -104,6 +104,15 @@ SUBROUTINE BEAMS3D_IMAS(IDS_EQ_IN, PROF_IN, MARKERS_IN, WALL_IN, DIST_OUT, INDAT
   !----  BEAMS3D CONSTANTS
   CALL beams3d_init_constants
 
+  !----  Setup information for run
+  lread_input = .FALSE.
+  limas = .TRUE.
+  lverb = .FALSE.
+  IF (myworkid == master) lverb = .TRUE.
+
+  !----  Output to screen
+  CALL beams3d_output_header
+
   !---------------------------------------------------------------------
   !     END EXECUTION - Don't touch below here
   !---------------------------------------------------------------------
