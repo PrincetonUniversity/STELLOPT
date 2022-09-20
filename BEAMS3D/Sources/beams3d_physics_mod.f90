@@ -14,7 +14,7 @@ MODULE beams3d_physics_mod
       USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
                                  dt_save, lbbnbi, weight, ndt, &
                                  ndt_max, npoinc, lendt_m, te_col_min, &
-                                 NION, NI_AUX_M, NI_AUX_Z
+                                 NION, NI_AUX_M, NI_AUX_Z, charge_beams
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
@@ -34,7 +34,7 @@ MODULE beams3d_physics_mod
                               zaxis, U4D, &
                               hr, hp, hz, hri, hpi, hzi, &
                               B_kick_min, B_kick_max, E_kick, freq_kick, &
-                              plasma_mass, NI5D
+                              plasma_mass, plasma_Zmean, NI5D
       USE EZspline_obj
       USE EZspline
       USE adas_mod_parallel
@@ -54,6 +54,8 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION, PRIVATE, PARAMETER :: zero          = 0.0D0 ! 0.0
       DOUBLE PRECISION, PRIVATE, PARAMETER :: half          = 0.5D0 ! 1/2
       DOUBLE PRECISION, PRIVATE, PARAMETER :: one           = 1.0D0 ! 1.0
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: eps_0 = 8.854187817E-12;
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: hbar = 1.054571817E-34;
 
       !-----------------------------------------------------------------
       !     SUBROUTINES
@@ -91,13 +93,15 @@ MODULE beams3d_physics_mod
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
                           inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
-                          vc3_tauinv, vbeta, zeff_temp
+                          vc3_tauinv, vbeta, zeff_temp,&
+                          omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          ! For splines
          INTEGER :: i,j,k, l
          REAL*8 :: xparam, yparam, zparam
          INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
+
 
          !--------------------------------------------------------------
          !     Begin Subroutine
@@ -174,13 +178,23 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-               coulomb_log = 43 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
-!               IF (te_temp < 10*myZ*myZ) THEN
-!                  coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
-!               ELSE
-!                  coulomb_log = 24 - log( sqrt(ne_temp*1E-6)/(te_temp) )
-!               END IF
-               coulomb_log = max(coulomb_log,one)
+               omega_p2 = (ne_temp * plasma_Zmean*e_charge* plasma_Zmean*e_charge ) / (plasma_mass * eps_0);
+               Omega_p =  (plasma_Zmean*e_charge) / plasma_mass * modb;
+               bmax = sqrt((omega_p2 + Omega_p*Omega_p)/(te_temp*e_charge/plasma_mass + speed*speed));
+               mu_ip = plasma_mass * mymass / (plasma_mass + mymass);
+               u_ip2 = 3 *  (te_temp)*e_charge / plasma_mass + speed*speed;
+               bmin_c = (charge_beams(1) * (plasma_Zmean*e_charge)) / (4*pi*eps_0 * mu_ip * u_ip2);
+               bmin_q = hbar / (2*mu_ip*sqrt(u_ip2)) * exp(-.5);
+               bmin = max(bmin_q,bmin_c);
+               coulomb_log = log(bmax/bmin);
+!                coulomb_log = 43 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
+! !               IF (te_temp < 10*myZ*myZ) THEN
+! !                  coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
+! !               ELSE
+! !                  coulomb_log = 24 - log( sqrt(ne_temp*1E-6)/(te_temp) )
+! !               END IF
+!                coulomb_log = max(coulomb_log,one)
+               WRITE(6,*) '----- ',coulomb_log,fact_coul
 
                ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
                v_crit = fact_crit*SQRT(te_temp)
