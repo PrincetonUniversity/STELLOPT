@@ -46,7 +46,7 @@ C-----------------------------------------------
 !        modd    parity selection label for odd poloidal modes of R and
 !        gc      stacked array of R, Z, Lambda Spectral force coefficients (see readin for stack order)
 !        xc      stacked array of scaled R, Z, Lambda Fourier coefficients
-      lscreen = .TRUE.
+!      lscreen = .TRUE.
       CALL second0(teqsolon)
 
       liter_flag = iter2 .eq. 1
