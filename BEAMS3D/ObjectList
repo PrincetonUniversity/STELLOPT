@@ -1,4 +1,6 @@
 ObjectFiles = \
+beams3d_interface_mod.o \
+beams3d_imas_module.o \
 fpart_nag.o \
 fpart_lsode.o \
 fpart_rkh68.o \

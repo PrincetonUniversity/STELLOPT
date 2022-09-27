@@ -99,6 +99,7 @@
       
 !-----------------------------------------------------------------------
 !     Subroutines
+!         init_beams3d_input:   Initializes the namelist
 !         read_beams3d_input:   Reads beams3d_input namelist
 !-----------------------------------------------------------------------
       CONTAINS
