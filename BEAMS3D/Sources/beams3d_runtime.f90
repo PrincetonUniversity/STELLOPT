@@ -128,8 +128,8 @@ MODULE beams3d_runtime
                lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
-               lascot, lascot4, lbbnbi, lfidasim, lfidasim2, lsplit, lvessel_beam, lascotfl, lrandomize, &
-               lfusion, lfusion_alpha, leqdsk, lhint, lkick
+               lascot, lascot4, lbbnbi, lfidasim, lfidasim2, lvessel_beam, lascotfl, lrandomize, &
+               lfusion, lfusion_alpha, leqdsk, lhint, lkick, limas
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, ndt, ndt_max
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)

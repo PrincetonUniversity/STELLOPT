@@ -1,4 +1,4 @@
-      SUBROUTINE eqsolve(ier_flag, lscren)
+      SUBROUTINE eqsolve(ier_flag, lscreen)
       USE vmec_main
       USE vmec_params, ONLY: ntmax, ns4, jac75_flag, norm_term_flag,
      &                       bad_jacobian_flag, more_iter_flag,
@@ -18,7 +18,7 @@
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
       INTEGER :: ier_flag
-      LOGICAL :: lscren
+      LOGICAL :: lscreen
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
@@ -27,7 +27,7 @@
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
       REAL(dp) :: w1, r00s, w0, wdota, r0dot, teqsolon, teqsoloff
-      LOGICAL :: liter_flag, lreset_internal, lscreen
+      LOGICAL :: liter_flag, lreset_internal
 C-----------------------------------------------
 !
 !                INDEX OF LOCAL VARIABLES
@@ -46,7 +46,6 @@ C-----------------------------------------------
 !        modd    parity selection label for odd poloidal modes of R and
 !        gc      stacked array of R, Z, Lambda Spectral force coefficients (see readin for stack order)
 !        xc      stacked array of scaled R, Z, Lambda Fourier coefficients
-      lscreen = .TRUE.
       CALL second0(teqsolon)
 
       liter_flag = iter2 .eq. 1
