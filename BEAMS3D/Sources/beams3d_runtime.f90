@@ -38,6 +38,11 @@
 !     v3.00 07/14/21 - Radial distribution now in proper units m^-3
 !                    - HINT interface
 !                    - Use of accelerated wall model
+!     v3.50 08/13/21 - Support of mixed-species plasma (multi-ion)       
+!     v3.70 09/27/22 - Added FIDASIM interface
+!                    - Optional cylindrical grid for dist. func
+!                    - Fixed & Improved slowing down & p.a. scattering
+!                    - NUBEAM and LOCUST/NUBEAM coulomb log. formulations
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -149,7 +154,7 @@ MODULE beams3d_runtime
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 3.50 ! this is the multi-ion version
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 3.70 ! this is the multi-ion version
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination
