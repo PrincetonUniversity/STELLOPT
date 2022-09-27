@@ -183,10 +183,8 @@ CONTAINS
                 lascot4 = .true.
             case ("-fidasim")
                 lfidasim = .true.
-                ! i = i + 1
-                ! CALL GETCARG(i, fidasim_input_dat, numargs)
-                ! i = i + 1
-                ! CALL GETCARG(i, fidasim_geometry, numargs)
+                 i = i + 1
+                 CALL GETCARG(i, fidasim_id_string, numargs)
             case ("-fidasim2")
                 lfidasim2 = .true.
             case ("-vmec")

@@ -27,15 +27,15 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
       BR4D, BPHI4D, BZ4D, &
       hr, hp, hz, hri, hpi, hzi, S4D, U4D, X4D, Y4D, &
-      rmin, rmax, zmin, zmax, phimin, phimax, raxis, zaxis, phiaxis, &
+      rmin, rmax,  phimin, phimax, raxis, zaxis, phiaxis, &
       rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
       raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
       nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
-   USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
+   USE beams3d_runtime, ONLY: id_string, fidasim_id_string,npoinc, nbeams, beam, t_end, lverb, &
       lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lplasma_only, &
       lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
       HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
-      HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
+      HDF5_CLOSE_ERR, NAMELIST_READ_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
       charge, Zatom, mass, ldepo, v_neut, &
       lcollision, pi, pi2, t_end_in, nprocs_beams, &
       div_beams, mass_beams, Zatom_beams, dex_beams, &
@@ -57,7 +57,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-   INTEGER :: ier, iunit, i, j, d1, d2, d3, k, k1, k2, kmax ,ider, nphi1, &
+   INTEGER :: ier, iunit,istat, i, j, d1, d2, d3, k, k1, k2, kmax ,ider, &
       l, m, n, b, i3, j3, k3
    INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
       neutral_gid, wall_gid, marker_gid, qid_gid, &
@@ -83,15 +83,19 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
    DOUBLE PRECISION, PARAMETER :: inv_amu       = 6.02214076208E+26 ! 1./AMU [1/kg]
    DOUBLE PRECISION, PARAMETER :: zero          = 0.0D0 ! 0.0
-!-----------------------------------------------------------------------
+
+   
+   !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
    IF (myworkid == master) THEN
       SELECT CASE (TRIM(write_type))
        CASE('INIT')
-!           WRITE(327,*) rmin_fida, rmin, zmin_fida, zmin, nr_fida, nz_fida
 
-         nphi1 = nphi-1 ! confirmed with Poincare plot
+
+         CALL read_fidasim_namelist_and_make_input_and_geometry
+
+
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.true.)
          CALL h5gopen_f(fid,'/', qid_gid, ier)
          CALL write_att_hdf5(qid_gid,'data_source','Data initialized from BEAMS3D',ier)
@@ -793,3 +797,195 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 !     End Subroutine
 !-----------------------------------------------------------------------
 END SUBROUTINE beams3d_write_fidasim
+
+SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
+
+!-----------------------------------------------------------------------
+!     Libraries
+!-----------------------------------------------------------------------
+#ifdef LHDF5
+      USE hdf5
+      USE ez_hdf5
+#endif
+   USE beams3d_runtime, ONLY: id_string,fidasim_id_string,&
+      HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
+      HDF5_CLOSE_ERR, NAMELIST_READ_ERR
+   USE safe_open_mod, ONLY: safe_open
+   !USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free, machine_string
+   USE beams3d_write_par
+   USE mpi_params
+   USE mpi_inc
+
+   !!!! Namelist 
+   INTEGER :: ier, iunit,istat
+   INTEGER(HID_T) ::  qid_gid,temp_gid
+   LOGICAL :: lexist
+   CHARACTER(LEN=1000) :: line
+   CHARACTER(256) :: comment,nbi_data_source, spec_data_source,runid,device,name,system,&
+                     tables_file,equilibrium_file,geometry_file,distribution_file,neutrals_file,result_dir
+   CHARACTER(10), DIMENSION(1000) :: id
+   DOUBLE PRECISION, DIMENSION(3) :: origin,current_fractions,src,axis,   divy,   divz,&
+                                    lens,    sigma_pi,spot_size,radius
+   DOUBLE PRECISION  :: time, lambdamin,  lambdamax,   alpha,   beta,   gamma,      xminf,&
+                     xmax,   ymin,   ymax,   zmin,   zmax, ab,   ai,   pinj,   einj,&
+                     focy,focz,widz,widy,emax_wght,lambdamin_wght, lambdamax_wght
+   INTEGER ::  nlambda, nx, ny, nz, impurity_charge, ne_wght, np_wght, nphi_wght, nlambda_wght,&
+               calc_npa,   calc_fida,   calc_pnpa,   calc_pfida,   calc_bes,   calc_dcx,   calc_halo, &
+               calc_cold,   calc_brems,   calc_birth,   calc_fida_wght,   calc_npa_wght,   calc_neutron,&
+               shape, load_neutrals,verbose,flr
+   INTEGER(HID_T) :: shot,  n_fida,   n_nbi,   n_pfida,   n_pnpa,   n_dcx,   n_npa,   n_halo,   n_birth,&
+                     nchan, seed
+
+   NAMELIST /fidasim_inputs/ comment,tables_file, equilibrium_file,geometry_file,distribution_file,&
+      result_dir,neutrals_file,shot, time, runid, device, nlambda,seed,load_neutrals,verbose,flr,&
+      lambdamin, lambdamax, nx, ny, nz, alpha, beta, gamma, origin,&
+      xmin, xmax, ymin, ymax, zmin, zmax, ab, ai, current_fractions,&
+      pinj, einj, impurity_charge, n_fida, n_nbi, n_pfida, n_pnpa,&
+      n_dcx, n_npa, n_halo, n_birth, ne_wght, np_wght, nphi_wght,&
+      emax_wght, nlambda_wght, lambdamin_wght, lambdamax_wght,&
+      calc_npa, calc_fida, calc_pnpa, calc_pfida, calc_bes, calc_dcx,&
+      calc_halo, calc_cold, calc_brems, calc_birth, calc_fida_wght, calc_npa_wght,&
+      calc_neutron,&
+      nbi_data_source,name,shape,src,axis,divy,divz,focy,focz,widz,widy,&
+      spec_data_source,nchan,system,id,lens,axis,sigma_pi,spot_size,radius
+
+   NAMELIST /fidasim_output/ comment,tables_file, equilibrium_file,geometry_file,distribution_file,&
+   result_dir,neutrals_file,shot, time, runid, device, nlambda,seed,load_neutrals,verbose,flr,&
+   lambdamin, lambdamax, nx, ny, nz, alpha, beta, gamma, origin,&
+   xmin, xmax, ymin, ymax, zmin, zmax, ab, ai, current_fractions,&
+   pinj, einj, impurity_charge, n_fida, n_nbi, n_pfida, n_pnpa,&
+   n_dcx, n_npa, n_halo, n_birth, ne_wght, np_wght, nphi_wght,&
+   emax_wght, nlambda_wght, lambdamin_wght, lambdamax_wght,&
+   calc_npa, calc_fida, calc_pnpa, calc_pfida, calc_bes, calc_dcx,&
+   calc_halo, calc_cold, calc_brems, calc_birth, calc_fida_wght, calc_npa_wght,&
+   calc_neutron
+
+   !Default values
+   shot = 0    !! Shot Number
+   time = 0.0    !! Time [s]
+   runid = 'none'    !! runID
+   result_dir = 'none'    !! Result Directory
+   !! Input Files
+   tables_file = 'none'   !! Atomic Tables File
+   equilibrium_file = 'none'     !! File containing plasma parameters and fields
+   geometry_file = 'none'     !! File containing NBI and diagnostic geometry
+   distribution_file = 'none'     !! File containing fast-ion distribution
+   !! Simulation Switches
+   calc_bes = 0    !! Calculate NBI Spectra
+   calc_dcx = 0   !! Calculate Direct CX Spectra
+   calc_halo = 0    !! Calculate Halo Spectra
+   calc_cold = 0    !! Calculate Cold D-alpha Spectra
+   calc_brems = 0    !! Calculate Bremsstrahlung
+   calc_fida = 0    !! Calculate FIDA Spectra
+   calc_npa = 0   !! Calculate NPA
+   calc_pfida = 0    !! Calculate Passive FIDA Spectra
+   calc_pnpa = 0   !! Calculate Passive NPA
+   calc_neutron = 0   !! Calculate B-T Neutron Rate
+   calc_birth = 0    !! Calculate Birth Profile
+   calc_fida_wght = 0    !! Calculate FIDA weights
+   calc_npa_wght = 0    !! Calculate NPA weights
+   !! Debugging Switches
+   seed = -1    !! RNG Seed. If seed is negative a random seed is used
+   flr = 2    !! Turn on Finite Larmor Radius corrections
+   load_neutrals = 0    !! Load neutrals from neutrals file
+   verbose = 1    !! Verbose
+   !! Monte Carlo Settings
+   n_fida = 5000000    !! Number of FIDA mc particles
+   n_npa = 5000000    !! Number of NPA mc particles
+   n_pfida = 50000000    !! Number of Passive FIDA mc particles
+   n_pnpa = 50000000    !! Number of Passive NPA mc particles
+   n_nbi = 50000    !! Number of NBI mc particles
+   n_halo = 50000    !! Number of HALO mc particles
+   n_dcx = 500000     !! Number of DCX mc particles
+   n_birth = 10000    !! Number of BIRTH mc particles
+   !! Neutral Beam Settings
+   ab = 0.000000     !! Beam Species mass [amu]
+   pinj = 0.0     !! Beam Power [MW]
+   einj = 0.0     !! Beam Energy [keV]
+   current_fractions(1) = 0.0 !! Current Fractions (Full component)
+   current_fractions(2) = 0.0 !! Current Fractions (Half component)
+   current_fractions(3) = 0.0 !! Current Fractions (Third component)
+   !! Plasma Settings
+   ai = 0.000000     !! Ion Species mass [amu]
+   impurity_charge = 5     !! Impurity Charge
+   !! Beam Grid Settings
+   nx = 90    !! Number of cells in X direction (Into Plasma)
+   ny = 40    !! Number of cells in Y direction
+   nz = 40    !! Number of cells in Z direction
+   xmin = 0.000000     !! Minimum X value [cm]
+   xmax = 180.000000     !! Maximum X value [cm]
+   ymin = -40.000000     !! Minimum Y value [cm]
+   ymax = 40.000000     !! Maximum Y value [cm]
+   zmin = -40.000000     !! Minimum Z value [cm]
+   zmax = 40.000000     !! Maximum Z value [cm]
+   !! Tait-Bryan Angles for z-y`-x`` rotation
+   alpha = 0.0     !! Rotation about z-axis [rad]
+   beta  = 0.0     !! Rotation about y`-axis [rad]
+   gamma = 0.000000     !! Rotation about x``-axis [rad]
+   !! Beam Grid origin in machine coordinates (cartesian)
+   origin(1) = 0.0    !! U value [cm]
+   origin(2) = 0.0    !! V value [cm]
+   origin(3) = 0.0     !! W value [cm]
+   !! Wavelength Grid Settings
+   nlambda = 1024    !! Number of Wavelengths
+   lambdamin = 647.000000    !! Minimum Wavelength [nm]
+   lambdamax = 669.000000    !! Maximum Wavelength [nm]
+   !! Weight Function Settings
+   ne_wght = 10    !! Number of Energies for Weights
+   np_wght = 10    !! Number of Pitches for Weights
+   nphi_wght = 8    !! Number of Gyro-angles for Weights
+   emax_wght = 150.000000    !! Maximum Energy for Weights [keV]
+   nlambda_wght = 10    !! Number of Wavelengths for Weights 
+   lambdamin_wght = 647.000000    !! Minimum Wavelength for Weights [nm]
+   lambdamax_wght = 669.000000    !! Maximum Wavelength for Weights [nm]
+
+
+!Read namelist
+   istat=0
+   iunit=12
+   INQUIRE(FILE='fidasim.' // TRIM(fidasim_id_string),EXIST=lexist)
+   IF (.not.lexist) stop 'Could not find input file'
+   CALL safe_open(iunit,istat,TRIM(fidasim_id_string),'old','formatted')
+   IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'fidasim_input in: '//TRIM(fidasim_id_string),istat)
+   READ(iunit,NML=fidasim_inputs,IOSTAT=istat)
+   IF (istat /= 0) THEN
+      backspace(iunit)
+      read(iunit,fmt='(A)') line
+      write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+      CALL handle_err(NAMELIST_READ_ERR,'fidasim_input in: '//TRIM(fidasim_id_string),istat)
+   END IF
+   CLOSE(iunit)
+
+
+   ! Open the inputs.dat file
+   iunit = 10
+   CALL safe_open(iunit,istat,TRIM(fidasim_id_string)//'_inputs.dat','replace','formatted')
+   ! Output number of beams
+   WRITE(iunit,fidasim_output)
+   WRITE(iunit,'(A)') '!! Debugging Switches'
+   WRITE(iunit,'(A)') 'seed = -1    !! RNG Seed. If seed is negative a random seed is used'
+   WRITE(iunit,'(A)') 'flr = 2    !! Turn on Finite Larmor Radius corrections'
+   WRITE(iunit,'(A)') 'load_neutrals = 0    !! Load neutrals from neutrals file'
+   WRITE(iunit,'(A)') 'verbose = 1    !! Verbose'
+   CALL FLUSH(iunit)
+   CLOSE(iunit)
+
+
+   CALL open_hdf5('fidasim_'//TRIM(id_string)//'_geometry.h5',fid,ier,LCREATE=.true.)
+   CALL h5gopen_f(fid,'/', qid_gid, ier)
+   CALL write_att_hdf5(qid_gid,'data_source','Data initialized from BEAMS3D',ier)
+   CALL write_var_hdf5(qid_gid,'type',ier,INTVAR=1)
+   CALL h5dopen_f(fid, 'type', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'description','Distribution type: 1="Guiding Center Density Function", 2="Guiding Center Monte Carlo", 3="Full Orbit Monte Carlo"',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+
+                     ! Close file
+   CALL h5gclose_f(qid_gid, ier)
+   CALL close_hdf5(fid,ier)
+   IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'fidasim_'//TRIM(id_string)//'_geometry.h5',ier)
+
+!-----------------------------------------------------------------------
+!     End Subroutine
+!-----------------------------------------------------------------------
+END SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
