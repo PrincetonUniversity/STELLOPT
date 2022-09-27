@@ -40,7 +40,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       lcollision, pi, pi2, t_end_in, nprocs_beams, &
       div_beams, mass_beams, Zatom_beams, dex_beams, &
       lascotfl, R_beams, PHI_beams, Z_beams, &
-      lsplit, lfidasim2
+      lfidasim2, lsplit
    USE safe_open_mod, ONLY: safe_open
    !USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free, machine_string
    USE beams3d_write_par
