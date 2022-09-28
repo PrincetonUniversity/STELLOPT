@@ -35,7 +35,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lplasma_only, &
       lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
       HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
-      HDF5_CLOSE_ERR, NAMELIST_READ_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
+      HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
       charge, Zatom, mass, ldepo, v_neut, &
       lcollision, pi, pi2, t_end_in, nprocs_beams, &
       div_beams, mass_beams, Zatom_beams, dex_beams, &
@@ -185,14 +185,17 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL h5gclose_f(qid_gid, ier)
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'fidasim_'//TRIM(id_string)//'_distribution.h5',ier)
-
-         CALL open_hdf5('fidasim_'//TRIM(id_string)//'_equilibrium.h5',fid,ier,LCREATE=.true.)
-         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'fidasim_'//TRIM(id_string)//'_equilibrium.h5',ier)
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
          !--------------------------------------------------------------
          !           EQUILIBRIUM - FIELDS
          !--------------------------------------------------------------
+
+         CALL open_hdf5('fidasim_'//TRIM(id_string)//'_equilibrium.h5',fid,ier,LCREATE=.true.)
+         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'fidasim_'//TRIM(id_string)//'_equilibrium.h5',ier)
+
+
          CALL h5gcreate_f(fid,'fields', qid_gid, ier)
          !CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
          CALL write_att_hdf5(qid_gid,'data_source','Data initialized from BEAMS3D',ier)
@@ -807,9 +810,10 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
       USE hdf5
       USE ez_hdf5
 #endif
-   USE beams3d_runtime, ONLY: id_string,fidasim_id_string,&
-      HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
-      HDF5_CLOSE_ERR, NAMELIST_READ_ERR
+   USE beams3d_runtime
+   !, ONLY: id_string,fidasim_id_string,&
+   !   HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
+   !   HDF5_CLOSE_ERR, NAMELIST_READ_ERR
    USE safe_open_mod, ONLY: safe_open
    !USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free, machine_string
    USE beams3d_write_par
@@ -817,24 +821,29 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    USE mpi_inc
 
    !!!! Namelist 
+   INTEGER, parameter :: MAXCHAN = 300
    INTEGER :: ier, iunit,istat
    INTEGER(HID_T) ::  qid_gid,temp_gid
    LOGICAL :: lexist
    CHARACTER(LEN=1000) :: line
-   CHARACTER(256) :: comment,nbi_data_source, spec_data_source,runid,device,name,system,&
+   CHARACTER(64) :: comment,nbi_data_source, spec_data_source,runid,device,name,system,&
                      tables_file,equilibrium_file,geometry_file,distribution_file,neutrals_file,result_dir
-   CHARACTER(10), DIMENSION(1000) :: id
-   DOUBLE PRECISION, DIMENSION(3) :: origin,current_fractions,src,axis,   divy,   divz,&
-                                    lens,    sigma_pi,spot_size,radius
+   CHARACTER(10), DIMENSION(MAXCHAN) :: id
+   DOUBLE PRECISION, DIMENSION(3) :: origin,current_fractions,src,axis_nbi,  divy,   divz
+   DOUBLE PRECISION, DIMENSION(3,MAXCHAN) :: axis_spec,  lens
+   DOUBLE PRECISION, DIMENSION(MAXCHAN) :: sigma_pi,spot_size,radius
    DOUBLE PRECISION  :: time, lambdamin,  lambdamax,   alpha,   beta,   gamma,      xminf,&
                      xmax,   ymin,   ymax,   zmin,   zmax, ab,   ai,   pinj,   einj,&
                      focy,focz,widz,widy,emax_wght,lambdamin_wght, lambdamax_wght
    INTEGER ::  nlambda, nx, ny, nz, impurity_charge, ne_wght, np_wght, nphi_wght, nlambda_wght,&
                calc_npa,   calc_fida,   calc_pnpa,   calc_pfida,   calc_bes,   calc_dcx,   calc_halo, &
                calc_cold,   calc_brems,   calc_birth,   calc_fida_wght,   calc_npa_wght,   calc_neutron,&
-               shape, load_neutrals,verbose,flr
+               shape, load_neutrals,verbose,flr,naperture,nchan
+   INTEGER, DIMENSION(10) :: ashape
+   DOUBLE PRECISION, DIMENSION(10) :: awidy,awidz, aoffy, aoffz, adist
    INTEGER(HID_T) :: shot,  n_fida,   n_nbi,   n_pfida,   n_pnpa,   n_dcx,   n_npa,   n_halo,   n_birth,&
-                     nchan, seed
+                     seed
+   
 
    NAMELIST /fidasim_inputs/ comment,tables_file, equilibrium_file,geometry_file,distribution_file,&
       result_dir,neutrals_file,shot, time, runid, device, nlambda,seed,load_neutrals,verbose,flr,&
@@ -846,8 +855,8 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
       calc_npa, calc_fida, calc_pnpa, calc_pfida, calc_bes, calc_dcx,&
       calc_halo, calc_cold, calc_brems, calc_birth, calc_fida_wght, calc_npa_wght,&
       calc_neutron,&
-      nbi_data_source,name,shape,src,axis,divy,divz,focy,focz,widz,widy,&
-      spec_data_source,nchan,system,id,lens,axis,sigma_pi,spot_size,radius
+      nbi_data_source,name,shape,src,axis_nbi,divy,divz,focy,focz,widz,widy,naperture,ashape,awidy,awidz, aoffy, aoffz, adist,&
+      spec_data_source,nchan,system,id,lens,axis_spec,sigma_pi,spot_size,radius
 
    NAMELIST /fidasim_output/ comment,tables_file, equilibrium_file,geometry_file,distribution_file,&
    result_dir,neutrals_file,shot, time, runid, device, nlambda,seed,load_neutrals,verbose,flr,&
@@ -858,18 +867,21 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    emax_wght, nlambda_wght, lambdamin_wght, lambdamax_wght,&
    calc_npa, calc_fida, calc_pnpa, calc_pfida, calc_bes, calc_dcx,&
    calc_halo, calc_cold, calc_brems, calc_birth, calc_fida_wght, calc_npa_wght,&
-   calc_neutron
+   calc_neutron,id
 
    !Default values
    shot = 0    !! Shot Number
    time = 0.0    !! Time [s]
-   runid = 'none'    !! runID
-   result_dir = 'none'    !! Result Directory
+   runid = 'hard-coded value!'    !! runID
+   result_dir = 'hard-coded value!'   !! Result Directory
+   comment = 'hard-coded value!'
+   device =  'hard-coded value!'
    !! Input Files
-   tables_file = 'none'   !! Atomic Tables File
-   equilibrium_file = 'none'     !! File containing plasma parameters and fields
-   geometry_file = 'none'     !! File containing NBI and diagnostic geometry
-   distribution_file = 'none'     !! File containing fast-ion distribution
+   tables_file = 'hard-coded value!'  !! Atomic Tables File
+   equilibrium_file = 'hard-coded value!'    !! File containing plasma parameters and fields
+   geometry_file = 'hard-coded value!'    !! File containing NBI and diagnostic geometry
+   distribution_file = 'hard-coded value!'    !! File containing fast-ion distribution
+   neutrals_file = 'hard-coded value!'
    !! Simulation Switches
    calc_bes = 0    !! Calculate NBI Spectra
    calc_dcx = 0   !! Calculate Direct CX Spectra
@@ -939,22 +951,55 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    lambdamin_wght = 647.000000    !! Minimum Wavelength for Weights [nm]
    lambdamax_wght = 669.000000    !! Maximum Wavelength for Weights [nm]
 
+   nbi_data_source = 'none'
+   name = 'none'
+   shape = 1
+   src = (/0.0,0.0,0.0/)
+   axis_nbi = (/0.0,0.0,0.0/)
+   divy = (/0.0,0.0,0.0/)
+   divz = (/0.0,0.0,0.0/)
+   focy= -1.0
+   focz= -1.0
+   widz= -1.0
+   widy= -1.0
+   spec_data_source = 'none'
+   nchan=0
+   system ='none'
+   id = SPREAD('none',1,MAXCHAN)
+   lens=-1.0
+   axis_spec=-1.0!RESHAPE((/-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0/), (/3,MAXCHAN/))
+   sigma_pi = -1.0
+   spot_size = -1.0
+   radius = -1.0
+   naperture = -1
+   ashape = -1
+   awidy = -1.0
+   awidz = -1.0
+   aoffy = -1.0
+   aoffz = -1.0
+   adist = -1.0
+
 
 !Read namelist
    istat=0
    iunit=12
    INQUIRE(FILE='fidasim.' // TRIM(fidasim_id_string),EXIST=lexist)
    IF (.not.lexist) stop 'Could not find input file'
-   CALL safe_open(iunit,istat,TRIM(fidasim_id_string),'old','formatted')
-   IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'fidasim_input in: '//TRIM(fidasim_id_string),istat)
+   CALL safe_open(iunit,istat,'fidasim.' //TRIM(fidasim_id_string),'old','formatted')
+   IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'in: '//'fidasim.'//TRIM(fidasim_id_string),istat)
    READ(iunit,NML=fidasim_inputs,IOSTAT=istat)
-   IF (istat /= 0) THEN
+   IF (istat /= 0 .and. istat /= -1) THEN
       backspace(iunit)
       read(iunit,fmt='(A)') line
       write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-      CALL handle_err(NAMELIST_READ_ERR,'fidasim_input in: '//TRIM(fidasim_id_string),istat)
+      CALL handle_err(NAMELIST_READ_ERR,'in: '//'fidasim.'//TRIM(fidasim_id_string),istat)
    END IF
    CLOSE(iunit)
+
+
+   !Trim Channel ID list
+   !FORALL(i = 1:npitch_fida) pitch_fida(i) = (i-0.5) / REAL(npitch_fida) * 2.0 - 1.0 
+   !FORALL(i = 1:nchan) id()
 
 
    ! Open the inputs.dat file
@@ -962,25 +1007,223 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    CALL safe_open(iunit,istat,TRIM(fidasim_id_string)//'_inputs.dat','replace','formatted')
    ! Output number of beams
    WRITE(iunit,fidasim_output)
-   WRITE(iunit,'(A)') '!! Debugging Switches'
-   WRITE(iunit,'(A)') 'seed = -1    !! RNG Seed. If seed is negative a random seed is used'
-   WRITE(iunit,'(A)') 'flr = 2    !! Turn on Finite Larmor Radius corrections'
-   WRITE(iunit,'(A)') 'load_neutrals = 0    !! Load neutrals from neutrals file'
-   WRITE(iunit,'(A)') 'verbose = 1    !! Verbose'
+   !WRITE(iunit,'(A)') '!! Debugging Switches'
+   !WRITE(iunit,'(A)') 'seed = -1    !! RNG Seed. If seed is negative a random seed is used'
+   !WRITE(iunit,'(A)') 'flr = 2    !! Turn on Finite Larmor Radius corrections'
+   !WRITE(iunit,'(A)') 'load_neutrals = 0    !! Load neutrals from neutrals file'
+   !WRITE(iunit,'(A)') 'verbose = 1    !! Verbose'
    CALL FLUSH(iunit)
    CLOSE(iunit)
 
 
    CALL open_hdf5('fidasim_'//TRIM(id_string)//'_geometry.h5',fid,ier,LCREATE=.true.)
+   IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'fidasim_'//TRIM(id_string)//'_geometry.h5',ier)
    CALL h5gopen_f(fid,'/', qid_gid, ier)
-   CALL write_att_hdf5(qid_gid,'data_source','Data initialized from BEAMS3D',ier)
-   CALL write_var_hdf5(qid_gid,'type',ier,INTVAR=1)
-   CALL h5dopen_f(fid, 'type', temp_gid, ier)
-   CALL write_att_hdf5(temp_gid,'description','Distribution type: 1="Guiding Center Density Function", 2="Guiding Center Monte Carlo", 3="Full Orbit Monte Carlo"',ier)
+   CALL write_att_hdf5(qid_gid,'description','Geometric quantities for FIDASIM',ier)
+   CALL h5gclose_f(qid_gid, ier)
+
+
+
+
+         !--------------------------------------------------------------
+         !           NBI
+         !--------------------------------------------------------------
+
+
+
+   CALL h5gcreate_f(fid,'nbi', qid_gid, ier)
+   CALL write_att_hdf5(qid_gid,'coordinate_system','Right-handed cartesian',ier)
+   CALL write_att_hdf5(qid_gid,'description','Neutral Beam Geometry',ier)
+   CALL write_var_hdf5(qid_gid,'data_source',ier,STRVAR=TRIM(nbi_data_source))
+   CALL write_var_hdf5(qid_gid,'name',ier,STRVAR=TRIM(name))
+
+   CALL write_var_hdf5(qid_gid,'shape',ier,INTVAR=shape)
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'shape',ier)
+   CALL h5dopen_f(qid_gid, 'shape', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Shape of the beam source grid (1 or 2)',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'src',3,ier,DBLVAR=DBLE(src))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'src',ier)
+   CALL h5dopen_f(qid_gid, 'src', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
+   CALL write_att_hdf5(temp_gid,'description','Source of the neutral beam geometry',ier)
    CALL h5dclose_f(temp_gid,ier)
 
 
-                     ! Close file
+   CALL write_var_hdf5(qid_gid,'axis',3,ier,DBLVAR=DBLE(axis_nbi))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'axis',ier)
+   CALL h5dopen_f(qid_gid, 'axis', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Position of the source grid in machine coordinates',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'widy',ier,DBLVAR=DBLE(widy))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'widy',ier)
+   CALL h5dopen_f(qid_gid, 'widy', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
+   CALL write_att_hdf5(temp_gid,'description','Source grid half-width in the horizontal direction',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'widz',ier,DBLVAR=DBLE(widz))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'widz',ier)
+   CALL h5dopen_f(qid_gid, 'widz', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
+   CALL write_att_hdf5(temp_gid,'description','Source grid half-height in the vertical direction',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'divy',3,ier,DBLVAR=DBLE(divy))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'divy',ier)
+   CALL h5dopen_f(qid_gid, 'divy', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','rad',ier)
+   CALL write_att_hdf5(temp_gid,'description','Horizontal beam divergence',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'divz',3,ier,DBLVAR=DBLE(divz))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'divz',ier)
+   CALL h5dopen_f(qid_gid, 'divz', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','rad',ier)
+   CALL write_att_hdf5(temp_gid,'description','Vertical beam divergence',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'focy',ier,DBLVAR=DBLE(focy))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'focy',ier)
+   CALL h5dopen_f(qid_gid, 'focy', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
+   CALL write_att_hdf5(temp_gid,'description','Horizontal focal length',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'focz',ier,DBLVAR=DBLE(focz))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'focz',ier)
+   CALL h5dopen_f(qid_gid, 'focz', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
+   CALL write_att_hdf5(temp_gid,'description','Vertical focal length',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+
+   CALL write_var_hdf5(qid_gid,'naperture',ier,INTVAR=naperture)
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'naperture',ier)
+   CALL h5dopen_f(qid_gid, 'naperture', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Number of apertures',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'ashape',naperture,ier,INTVAR=ashape)
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ashape',ier)
+   CALL h5dopen_f(qid_gid, 'ashape', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Number of apertures',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+
+   CALL write_var_hdf5(qid_gid,'awidy',naperture,ier,DBLVAR=awidy)
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'awidy',ier)
+   CALL h5dopen_f(qid_gid, 'awidy', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Half-width of the aperture(s)',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'awidz',naperture,ier,DBLVAR=awidz)
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'awidz',ier)
+   CALL h5dopen_f(qid_gid, 'awidz', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Half-width of the aperture(s)',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'aoffy',naperture,ier,DBLVAR=aoffy)
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'aoffy',ier)
+   CALL h5dopen_f(qid_gid, 'aoffy', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Horizontal (y) offset of the aperture(s) relative to the +x aligned beam centerline',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'aoffz',naperture,ier,DBLVAR=aoffz)
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'aoffz',ier)
+   CALL h5dopen_f(qid_gid, 'aoffz', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Vertical (z) offset of the aperture(s) relative to the +x aligned beam centerline',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'adist',naperture,ier,DBLVAR=adist)
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'adist',ier)
+   CALL h5dopen_f(qid_gid, 'adist', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Distance from the center of the beam source grid to the aperture(s) plane',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL h5gclose_f(qid_gid, ier)
+
+   !--------------------------------------------------------------
+   !           SPEC
+   !--------------------------------------------------------------
+   CALL h5gcreate_f(fid,'spec', qid_gid, ier)
+   !CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
+   CALL write_att_hdf5(qid_gid,'coordinate_system','Right-handed cartesian',ier)
+   CALL write_att_hdf5(qid_gid,'description','FIDA/BES Chord Geometry',ier)
+
+
+   CALL write_var_hdf5(qid_gid,'data_source',ier,STRVAR=TRIM(spec_data_source))
+   CALL write_var_hdf5(qid_gid,'system',ier,STRVAR=TRIM(system))
+
+   CALL write_var_hdf5(qid_gid,'adist',naperture,ier,DBLVAR=adist)
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'adist',ier)
+   CALL h5dopen_f(qid_gid, 'adist', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Distance from the center of the beam source grid to the aperture(s) plane',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'nchan',ier,INTVAR=nchan)
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nchan',ier)
+   CALL h5dopen_f(qid_gid, 'nchan', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Number of channels',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'radius',nchan,ier,DBLVAR=radius(1:nchan))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'radius',ier)
+   CALL h5dopen_f(qid_gid, 'radius', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
+   CALL write_att_hdf5(temp_gid,'description','Line of sight radius at midplane or tangency point',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'lens',3,nchan,ier,DBLVAR=lens(:,1:nchan))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lens',ier)
+   CALL h5dopen_f(qid_gid, 'lens', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
+   CALL write_att_hdf5(temp_gid,'description','Lens location in machine coordinates',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'axis',3,nchan,ier,DBLVAR=axis_spec(:,1:nchan))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'axis',ier)
+   CALL h5dopen_f(qid_gid, 'axis', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Optical axis/direction of the lines of sight',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'spot_size',nchan,ier,DBLVAR=spot_size(1:nchan))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'spot_size',ier)
+   CALL h5dopen_f(qid_gid, 'spot_size', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
+   CALL write_att_hdf5(temp_gid,'description','Radius of the collecting volume',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'sigma_pi',nchan,ier,DBLVAR=sigma_pi(1:nchan))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'sigma_pi',ier)
+   CALL h5dopen_f(qid_gid, 'sigma_pi', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Ratio of the intensities of the sigma and pi stark lines',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+   CALL write_var_hdf5(qid_gid,'id',nchan,ier,STRVAR=id(1:nchan))
+   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'id',ier)
+   CALL h5dopen_f(qid_gid, 'id', temp_gid, ier)
+   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'description','Channel ID',ier)
+   CALL h5dclose_f(temp_gid,ier)
+
+
+   !Close file
    CALL h5gclose_f(qid_gid, ier)
    CALL close_hdf5(fid,ier)
    IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'fidasim_'//TRIM(id_string)//'_geometry.h5',ier)
