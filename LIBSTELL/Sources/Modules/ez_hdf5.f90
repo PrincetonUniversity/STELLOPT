@@ -198,7 +198,7 @@
       !-----------------------------------------------------------------
       
       !-----------------------------------------------------------------
-      SUBROUTINE write_scalar_hdf5(file_id,var,ierr,BOOVAR,INTVAR,FLTVAR,DBLVAR,ATT,ATT_NAME)
+      SUBROUTINE write_scalar_hdf5(file_id,var,ierr,BOOVAR,INTVAR,FLTVAR,DBLVAR,STRVAR,ATT,ATT_NAME)
       IMPLICIT NONE
       INTEGER(HID_T), INTENT(in)    :: file_id
       CHARACTER(LEN=*), INTENT(in)  :: var
@@ -207,6 +207,7 @@
       INTEGER, INTENT(in), OPTIONAL :: INTVAR
       REAL, INTENT(in), OPTIONAL    :: FLTVAR   
       DOUBLE PRECISION, INTENT(in), OPTIONAL    :: DBLVAR  
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: STRVAR
       CHARACTER(LEN=*), INTENT(in), OPTIONAL :: ATT
       CHARACTER(LEN=*), INTENT(in), OPTIONAL :: ATT_NAME
 !      INTEGER, INTENT(in), OPTIONAL    :: C1
@@ -215,6 +216,8 @@
       INTEGER        :: drank = 1
       INTEGER        :: arank = 1
       INTEGER(HID_T) :: dset_id
+      INTEGER(HID_T) :: type
+      INTEGER(HID_T) :: strlen
       INTEGER(HID_T) :: attr_id  
       INTEGER(HID_T) :: dspace_id
       INTEGER(HID_T) :: aspace_id
@@ -240,6 +243,16 @@
          CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_DOUBLE,dspace_id,dset_id,ierr)
 !         IF (plistid /= H5P_DEFAULT_F) CALL h5pset_dxpl_mpio_f(plistid, H5FD_MPIO_COLLECTIVE_F, ierr)
          CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, ddims, ierr, xfer_prp = plistid)
+      ELSE IF (PRESENT(STRVAR)) THEN
+         strlen=len(STRVAR)
+         CALL H5TCOPY_F(H5T_FORTRAN_S1,type, ierr)
+         CALL H5TSET_SIZE_F(type, strlen, ierr)
+         IF (ierr /= 0) THEN
+           WRITE(*,'("cannot create HDF5 datatype",/)')
+           RETURN
+         ENDIF 
+         CALL h5dcreate_f(file_id,TRIM(var),type,dspace_id,dset_id,ierr)
+         CALL h5dwrite_f(dset_id, type, STRVAR, ddims, ierr, xfer_prp = plistid)
       ELSE IF (PRESENT(BOOVAR)) THEN
          boo_temp = 0
          IF (BOOVAR) boo_temp = 1
@@ -282,7 +295,7 @@
       !-----------------------------------------------------------------
       
       !-----------------------------------------------------------------
-      SUBROUTINE write_vector_hdf5(file_id,var,n,ier,BOOVAR,INTVAR,FLTVAR,DBLVAR,ATT,ATT_NAME)
+      SUBROUTINE write_vector_hdf5(file_id,var,n,ier,BOOVAR,INTVAR,FLTVAR,DBLVAR,STRVAR,ATT,ATT_NAME)
       IMPLICIT NONE
       INTEGER(HID_T), INTENT(in)    :: file_id
       CHARACTER(LEN=*), INTENT(in)  :: var
@@ -292,6 +305,7 @@
       LOGICAL, INTENT(in), OPTIONAL :: BOOVAR(n)
       REAL, INTENT(in), OPTIONAL    :: FLTVAR(n)
       DOUBLE PRECISION, INTENT(in), OPTIONAL    :: DBLVAR(n)
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: STRVAR(n)
       CHARACTER(LEN=*), INTENT(in), OPTIONAL :: ATT
       CHARACTER(LEN=*), INTENT(in), OPTIONAL :: ATT_NAME
 !      INTEGER, INTENT(in), OPTIONAL    :: C1
@@ -299,6 +313,8 @@
       INTEGER        :: drank = 1
       INTEGER        :: arank = 1
       INTEGER        :: boo_temp(n)
+      INTEGER(HID_T) :: type
+      INTEGER(HID_T) :: strlen
       INTEGER(HID_T) :: dset_id
       INTEGER(HID_T) :: attr_id  
       INTEGER(HID_T) :: dspace_id
@@ -347,6 +363,18 @@
       ELSE IF (PRESENT(DBLVAR)) THEN
          CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_DOUBLE,dspace_id,dset_id,ier, plistid)
          CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, ddims, ier)
+      ELSE IF (PRESENT(STRVAR)) THEN
+         strlen=len(STRVAR(1))
+         CALL H5TCOPY_F(H5T_FORTRAN_S1,type, ier)
+         CALL H5TSET_SIZE_F(type, strlen, ier)
+         IF (ier /= 0) THEN
+           WRITE(*,'("cannot create HDF5 datatype",/)')
+           RETURN
+         ENDIF 
+         CALL h5dcreate_f(file_id,TRIM(var),type,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, type, STRVAR, ddims, ier, xfer_prp = plistid)
+         !CALL h5dcreate_f(file_id,TRIM(var),type,dspace_id,dset_id,ier, plistid)
+         !CALL h5dwrite_f(dset_id, type, STRVAR, ddims, ier)
       ELSE IF (PRESENT(BOOVAR)) THEN
          boo_temp = 0
          WHERE(BOOVAR) boo_temp = 1
