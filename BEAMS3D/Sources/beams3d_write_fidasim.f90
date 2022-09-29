@@ -971,7 +971,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    sigma_pi = -1.0
    spot_size = -1.0
    radius = -1.0
-   naperture = -1
+   naperture = 1
    ashape = -1
    awidy = -1.0
    awidz = -1.0
@@ -981,25 +981,38 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
 
 
 !Read namelist
+   ! istat=0
+   ! iunit=12
+   ! INQUIRE(FILE='fidasim.' // TRIM(fidasim_id_string),EXIST=lexist)
+   ! IF (.not.lexist) stop 'Could not find input file'
+   ! CALL safe_open(iunit,istat,'fidasim.' //TRIM(fidasim_id_string),'old','formatted')
+   ! IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'in: '//'fidasim.'//TRIM(fidasim_id_string),istat)
+   ! READ(iunit,NML=fidasim_inputs,IOSTAT=istat)
+   ! IF (istat /= 0 .and. istat /= -1) THEN
+   !    backspace(iunit)
+   !    read(iunit,fmt='(A)') line
+   !    write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+   !    CALL handle_err(NAMELIST_READ_ERR,'in: '//'fidasim.'//TRIM(fidasim_id_string),istat)
+   ! END IF
+   ! CLOSE(iunit)
+
+
    istat=0
    iunit=12
-   INQUIRE(FILE='fidasim.' // TRIM(fidasim_id_string),EXIST=lexist)
+   INQUIRE(FILE='input.' // TRIM(id_string),EXIST=lexist)
    IF (.not.lexist) stop 'Could not find input file'
-   CALL safe_open(iunit,istat,'fidasim.' //TRIM(fidasim_id_string),'old','formatted')
-   IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'in: '//'fidasim.'//TRIM(fidasim_id_string),istat)
+   CALL safe_open(iunit,istat,'input.' // TRIM(id_string),'old','formatted')
+   IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
    READ(iunit,NML=fidasim_inputs,IOSTAT=istat)
-   IF (istat /= 0 .and. istat /= -1) THEN
+   IF (istat /= 0) THEN
       backspace(iunit)
       read(iunit,fmt='(A)') line
       write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-      CALL handle_err(NAMELIST_READ_ERR,'in: '//'fidasim.'//TRIM(fidasim_id_string),istat)
+      write(6,'(A)') '(Is the namelist present in the input file?)'
+      write(6,'(A)') 'Continuing without FIDASIM input generation'
+      return
    END IF
    CLOSE(iunit)
-
-
-   !Trim Channel ID list
-   !FORALL(i = 1:npitch_fida) pitch_fida(i) = (i-0.5) / REAL(npitch_fida) * 2.0 - 1.0 
-   !FORALL(i = 1:nchan) id()
 
 
    ! Open the inputs.dat file
@@ -1115,7 +1128,6 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    CALL write_att_hdf5(temp_gid,'units','-',ier)
    CALL write_att_hdf5(temp_gid,'description','Number of apertures',ier)
    CALL h5dclose_f(temp_gid,ier)
-
 
    CALL write_var_hdf5(qid_gid,'awidy',naperture,ier,DBLVAR=awidy)
    IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'awidy',ier)

@@ -218,13 +218,13 @@
             INQUIRE(FILE=TRIM(filename),EXIST=lexist)
             IF (.not.lexist) stop 'Could not find input file'
             CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
-            IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+            IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: '//TRIM(filename),istat)
             READ(iunit,NML=beams3d_input,IOSTAT=istat)
             IF (istat /= 0) THEN
                backspace(iunit)
                read(iunit,fmt='(A)') line
                write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-               CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+               CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: '//TRIM(filename),istat)
             END IF
             CLOSE(iunit)
          END IF
