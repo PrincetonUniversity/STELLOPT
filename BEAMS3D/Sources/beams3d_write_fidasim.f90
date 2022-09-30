@@ -31,7 +31,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
       raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
       nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
-   USE beams3d_runtime, ONLY: id_string, fidasim_id_string,npoinc, nbeams, beam, t_end, lverb, &
+   USE beams3d_runtime, ONLY: id_string,npoinc, nbeams, beam, t_end, lverb, &
       lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lplasma_only, &
       lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
       HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
@@ -811,7 +811,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
       USE ez_hdf5
 #endif
    USE beams3d_runtime
-   !, ONLY: id_string,fidasim_id_string,&
+   !, ONLY: id_string,&
    !   HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
    !   HDF5_CLOSE_ERR, NAMELIST_READ_ERR
    USE safe_open_mod, ONLY: safe_open
@@ -838,7 +838,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    INTEGER ::  nlambda, nx, ny, nz, impurity_charge, ne_wght, np_wght, nphi_wght, nlambda_wght,&
                calc_npa,   calc_fida,   calc_pnpa,   calc_pfida,   calc_bes,   calc_dcx,   calc_halo, &
                calc_cold,   calc_brems,   calc_birth,   calc_fida_wght,   calc_npa_wght,   calc_neutron,&
-               shape, load_neutrals,verbose,flr,naperture,nchan
+               shape, load_neutrals,verbose,flr,naperture,nchan,namelist_present
    INTEGER, DIMENSION(10) :: ashape
    DOUBLE PRECISION, DIMENSION(10) :: awidy,awidz, aoffy, aoffz, adist
    INTEGER(HID_T) :: shot,  n_fida,   n_nbi,   n_pfida,   n_pnpa,   n_dcx,   n_npa,   n_halo,   n_birth,&
@@ -996,28 +996,43 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    ! END IF
    ! CLOSE(iunit)
 
-
+   namelist_present = 0
    istat=0
    iunit=12
    INQUIRE(FILE='input.' // TRIM(id_string),EXIST=lexist)
    IF (.not.lexist) stop 'Could not find input file'
    CALL safe_open(iunit,istat,'input.' // TRIM(id_string),'old','formatted')
    IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
-   READ(iunit,NML=fidasim_inputs,IOSTAT=istat)
-   IF (istat /= 0) THEN
-      backspace(iunit)
-      read(iunit,fmt='(A)') line
-      write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-      write(6,'(A)') '(Is the namelist present in the input file?)'
+   DO WHILE (istat == 0)
+      read(iunit,fmt='(A)', IOSTAT=istat) line
+      IF (TRIM(line) == '&fidasim_inputs') THEN
+         namelist_present=1
+         EXIT
+      END IF
+      IF (istat > 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)      
+   END DO
+   rewind(iunit)
+   IF (namelist_present==1) THEN
+      istat = 0
+      READ(iunit,NML=fidasim_inputs,IOSTAT=istat)
+      IF (istat /= 0) THEN
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         IF (istat > 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+      END IF
+   ELSE     
       write(6,'(A)') 'Continuing without FIDASIM input generation'
+      write(6,'(A)') 'Is the namelist present in the input file?'
       return
    END IF
    CLOSE(iunit)
+   
 
 
    ! Open the inputs.dat file
    iunit = 10
-   CALL safe_open(iunit,istat,TRIM(fidasim_id_string)//'_inputs.dat','replace','formatted')
+   CALL safe_open(iunit,istat,'fidasim_'//TRIM(id_string)//'_inputs.dat','replace','formatted')
    ! Output number of beams
    WRITE(iunit,fidasim_output)
    !WRITE(iunit,'(A)') '!! Debugging Switches'
