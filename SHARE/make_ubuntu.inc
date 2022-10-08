@@ -14,9 +14,11 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas
+  FLAGS_R = -O2 -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
-  LIBS    = -L/usr/lib -lblas -llapack -lscalapack-openmpi \
+  LIBS    = -L/usr/lib -lblas -llapack -lscalapack-openmpi
+  FLAGS_R += -fallow-argument-mismatch 
+  FLAGS_D += -fallow-argument-mismatch
 
 #######################################################################
 #            MPI Options
