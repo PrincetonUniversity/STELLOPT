@@ -54,6 +54,10 @@ xbeams3d:  $(LIB) $(ObjectFiles)
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
       fi
       
+#Make the BEAMS3D library file
+libbeams3d.a : $(ObjectFiles)
+	ar -cruv libbeams3d.a $(ObjectFiles)
+
 #Check that library files are current. 
 $(LIB) :
 	@cd $(LIB_DIR); make $(TYPE)

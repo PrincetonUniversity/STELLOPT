@@ -240,7 +240,17 @@ fieldlines_init_vmec.o: \
       fieldlines_runtime.o \
       fieldlines_lines.o \
       fieldlines_grid.o
-      
+
+fieldlines_init_eqdsk.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_eqdsk_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      fieldlines_runtime.o \
+      fieldlines_lines.o \
+      fieldlines_grid.o
+            
 
 fieldlines_init_hint.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \

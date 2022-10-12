@@ -23,7 +23,8 @@ SUBROUTINE beams3d_follow_gc
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
                             TE_spl, TI_spl, wall_load, wall_shine, &
                             plasma_mass, plasma_Zmean, therm_factor, &
-                            rho_fullorbit, rho_help, E_kick, freq_kick
+                            rho_fullorbit, rho_help, E_kick, freq_kick, &
+                            nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida
     USE mpi_params ! MPI
     USE beams3d_write_par
     USE beams3d_physics_mod, ONLY: beams3d_calc_dt
@@ -326,6 +327,7 @@ SUBROUTINE beams3d_follow_gc
     IF (ALLOCATED(q)) DEALLOCATE(q)
     IF (ALLOCATED(w)) DEALLOCATE(w)
     IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
+
 
     RETURN
     !-----------------------------------------------------------------------

@@ -176,7 +176,7 @@
                      iunit = 37; ier = 0
                      CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')
                      CALL write_indata_namelist(iunit,ier)
-                     IF (.true.) THEN
+                     IF (lcoil_geom) THEN
                         CALL write_optimum_namelist(iunit,ier)
                         IF (lfreeb) CALL write_mgrid_namelist(iunit,ier)
                      ENDIF

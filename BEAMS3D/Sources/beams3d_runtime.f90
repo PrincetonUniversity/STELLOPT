@@ -38,7 +38,12 @@
 !     v3.00 07/14/21 - Radial distribution now in proper units m^-3
 !                    - HINT interface
 !                    - Use of accelerated wall model
-!     v4.00 12/XX/21 - Full Orbit model implemented
+!     v3.50 08/13/21 - Support of mixed-species plasma (multi-ion)       
+!     v3.70 09/27/22 - Added FIDASIM interface
+!                    - Optional cylindrical grid for dist. func
+!                    - Fixed & Improved slowing down & p.a. scattering
+!                    - NUBEAM and LOCUST/NUBEAM coulomb log. formulations
+!     v4.00 10/14/22 - Full Orbit model implemented
 !                    - Particle duplication implemented
 !                    - Box Modeling implemented
 !-----------------------------------------------------------------------
@@ -126,9 +131,9 @@ MODULE beams3d_runtime
                lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
-               lascot, lascot4, lbbnbi, lfidasim, lvessel_beam, lascotfl, lrandomize, &
+               lascot, lascot4, lbbnbi, lfidasim, lfidasim2, lsplit, lvessel_beam, lascotfl, lrandomize, &
                lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim, &
-               lboxsim
+               lboxsim, limas
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
                ndt, ndt_max, duplicate_factor
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
@@ -156,6 +161,7 @@ MODULE beams3d_runtime
     vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string
 
     REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.00 ! this is the full orbit test version
+
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination
