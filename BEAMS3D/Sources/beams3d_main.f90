@@ -59,6 +59,9 @@ PROGRAM BEAMS3D
 
     !Write Fidasim Distribution function
     IF (lfidasim) THEN
+        IF (lverb) THEN
+            WRITE(6, '(A)') '----- WRITING FIDASIM DISTRIBUTION -----'
+         END IF
         ! IF (ldepo) THEN
         !     CALL beams3d_write_fidasim('DISTRIBUTION_GC_MC') !not implemented yet
         ! ELSE

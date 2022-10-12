@@ -15,9 +15,9 @@
                                shine_through, &
                                B_lines, end_state, shine_port, Gfactor, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
-                               dense_prof, dist5d_prof, &
+                               dense_prof, dist5d_prof, dist5d_fida, &
                                win_ndot, win_epower, win_ipower, win_jprof, &
-                               win_dense, win_dist5d
+                               win_dense, win_dist5d, win_dist5d_fida
       USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -68,12 +68,17 @@
       IF (ALLOCATED(beam)) DEALLOCATE(beam)
       IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
       IF (ALLOCATED(Gfactor)) DEALLOCATE(Gfactor)
+      !IF (ALLOCATED(energy_fida))  DEALLOCATE(energy_fida)
+      !IF (ALLOCATED(pitch_fida))    DEALLOCATE(pitch_fida)
       IF (PRESENT(IN_COMM)) THEN
          IF (ASSOCIATED(req_axis)) CALL mpidealloc(req_axis,win_req_axis)
          IF (ASSOCIATED(zeq_axis)) CALL mpidealloc(zeq_axis,win_zeq_axis)
          IF (ASSOCIATED(raxis))    CALL mpidealloc(raxis,win_raxis)
          IF (ASSOCIATED(phiaxis))  CALL mpidealloc(phiaxis,win_phiaxis)
          IF (ASSOCIATED(zaxis))    CALL mpidealloc(zaxis,win_zaxis)
+         IF (ASSOCIATED(raxis_fida))    CALL mpidealloc(raxis_fida,win_raxis_fida)
+         IF (ASSOCIATED(phiaxis_fida))  CALL mpidealloc(phiaxis_fida,win_phiaxis_fida)
+         IF (ASSOCIATED(zaxis_fida))    CALL mpidealloc(zaxis_fida,win_zaxis_fida)
          IF (ASSOCIATED(hr))       CALL mpidealloc(hr,win_hr)
          IF (ASSOCIATED(hp))       CALL mpidealloc(hp,win_hp)
          IF (ASSOCIATED(hz))       CALL mpidealloc(hz,win_hz)
@@ -121,6 +126,7 @@
          IF (ASSOCIATED(j_prof))    DEALLOCATE(j_prof)
          IF (ASSOCIATED(dense_prof))    DEALLOCATE(dense_prof)
          IF (ASSOCIATED(dist5d_prof)) CALL mpidealloc(dist5d_prof,win_dist5d)
+         IF (ASSOCIATED(dist5d_fida)) CALL mpidealloc(dist5d_fida,win_dist5d_fida)
       ELSE
          IF (ASSOCIATED(req_axis)) DEALLOCATE(req_axis)
          IF (ASSOCIATED(zeq_axis)) DEALLOCATE(zeq_axis)
