@@ -146,6 +146,7 @@ CONTAINS
         lw7x = .false.
         lascot = .false.
         lfidasim = .false.
+        lfidasim2 = .false.
         lascot4 = .false.
         lbbnbi = .false.
         lascotfl = .false.
@@ -182,6 +183,8 @@ CONTAINS
                 lascot4 = .true.
             case ("-fidasim")
                 lfidasim = .true.
+            case ("-fidasim2")
+                lfidasim2 = .true.
             case ("-vmec")
                 i = i + 1
                 lvmec = .true.
@@ -317,6 +320,10 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lvac, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+      CALL MPI_BCAST(lfidasim, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+      CALL MPI_BCAST(lfidasim2, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)  
       CALL MPI_BCAST(lascot, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lascotfl, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
