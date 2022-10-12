@@ -14,6 +14,7 @@
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE read_wout_mod, ONLY:  read_wout_file, rmin_surf, rmax_surf, zmax_surf
       USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
+      USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
       USE fieldlines_runtime
       USE fieldlines_grid
       USE fieldlines_input_mod, ONLY: read_fieldlines_input
@@ -88,6 +89,13 @@
       ELSE IF (lspec) THEN
          CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myworkid)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+      ELSE IF (leqdsk) THEN
+         CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myworkid)
+         IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+         CALL read_gfile(eqdsk_string,ier)
+         IF (lverb) WRITE(6,'(A)') '   G-FILE: '// TRIM(eqdsk_string)
+         CALL get_eqdsk_grid(nr,nz,rmin,rmax,zmin,zmax)
+         phimin = 0; phimax=pi2
       ELSE IF (lhint) THEN
          CALL read_fieldlines_input(TRIM(id_string)//'.input',ier,myworkid)
          IF (lverb) WRITE(6,'(A)') '   FILE:     ' // TRIM(id_string) // '.input'
@@ -215,6 +223,10 @@
          !CALL fieldlines_init_spec
       ELSE IF (lhint .and. .not.lvac) THEN
          CALL fieldlines_init_hint
+      ELSE IF (leqdsk) THEN
+         !CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         !CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+         CALL fieldlines_init_eqdsk
       END IF
 
       ! Handle error fields
@@ -298,7 +310,7 @@
       END IF
 
       ! Get setup vessel
-      IF (lvessel) THEN
+      IF (lvessel .and. (.not. lwall_loaded)) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier, lverb, MPI_COMM_FIELDLINES)
          IF (ier /= 0) CALL handle_err(WALL_ERR,'fieldlines_init',ier)
          IF (lverb) THEN

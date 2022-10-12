@@ -22,7 +22,7 @@
                               rho_fullorbit, &
                               rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
                               raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-                              nenergy_fida, npitch_fida, energy_fida, pitch_fida
+                              nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -99,10 +99,11 @@
                                zmax_fida,phimin_fida, phimax_fida, &
                                raxis_fida, zaxis_fida, phiaxis_fida, &
                                nr_fida, nphi_fida, nz_fida, nenergy_fida, &
-                               npitch_fida, energy_fida, pitch_fida
+                               npitch_fida, energy_fida, pitch_fida, t_fida
       
 !-----------------------------------------------------------------------
 !     Subroutines
+!         init_beams3d_input:   Initializes the namelist
 !         read_beams3d_input:   Reads beams3d_input namelist
 !-----------------------------------------------------------------------
       CONTAINS
@@ -206,6 +207,7 @@
       nz_fida = 0
       nenergy_fida = 0
       npitch_fida = 0
+      t_fida = 0.0
       RETURN
       END SUBROUTINE init_beams3d_input
       
@@ -227,13 +229,13 @@
             INQUIRE(FILE=TRIM(filename),EXIST=lexist)
             IF (.not.lexist) stop 'Could not find input file'
             CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
-            IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+            IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: '//TRIM(filename),istat)
             READ(iunit,NML=beams3d_input,IOSTAT=istat)
             IF (istat /= 0) THEN
                backspace(iunit)
                read(iunit,fmt='(A)') line
                write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-               CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+               CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: '//TRIM(filename),istat)
             END IF
             CLOSE(iunit)
          END IF
@@ -336,10 +338,12 @@
             NI_AUX_F(1,:) = NE_AUX_F ! NI=NE
             NI_AUX_Z(1) = 1 ! Assume Hydrogen Plasma
             NI_AUX_M(1) = plasma_mass
-            DO i1 = 1, nzeff
-               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
-               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
-            END DO
+            IF (.not. ANY(ZEFF_AUX_S >0)) THEN
+               DO i1 = 1, nzeff
+                  ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+                  ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+               END DO
+            END IF
          ELSE
             nzeff = 6
             ZEFF_AUX_S(1:6) = (/0.0,0.2,0.4,0.6,0.8,1.0/)
@@ -348,22 +352,6 @@
             NI_AUX_F(:,1:6) = 0
             NI_AUX_Z(1) = 1
             NI_AUX_M(1) = plasma_mass
-         END IF
-
-         IF (lfidasim) THEN
-            IF (rmin_fida == 0.0) rmin_fida = rmin
-            IF (zmin_fida .eq. 0.0) zmin_fida = zmin
-            IF (phimin_fida .eq. 0.0) phimin_fida = phimin
-            IF (rmax_fida .eq. 0.0) rmax_fida = rmax
-            IF (zmax_fida .eq. 0.0) zmax_fida = zmax
-            IF (phimax_fida .eq. 0.0) phimax_fida = phimax
-            IF (nr_fida .eq. 0) nr_fida = nr
-            IF (nphi_fida .eq. 0) nphi_fida = nphi
-            IF (nz_fida .eq. 0) nz_fida = nz
-            !nenergy_fida = ns_prof4 !should stay this way!
-            !npitch_fida = ns_prof5
-            IF (nenergy_fida .eq. 0) nenergy_fida = ns_prof4
-            IF (npitch_fida .eq. 0) npitch_fida = ns_prof5
          END IF
 
          nparticles = 0

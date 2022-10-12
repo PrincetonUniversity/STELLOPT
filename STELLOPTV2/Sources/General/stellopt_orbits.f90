@@ -34,7 +34,7 @@
             BEAMS3D_VERSION, mass_beams, charge_beams, &
             NI_AUX_Z_BEAMS => NI_AUX_Z, NI_AUX_M_BEAMS => NI_AUX_M
       USE beams3d_grid, ONLY: nte, nne, nti, nzeff, rmin, rmax, zmin, zmax, &
-                              phimin, phimax, plasma_zavg, plasma_mass
+                              phimin, phimax, plasma_mass
       USE beams3d_lines, ONLY: end_state
 !DEC$ ENDIF
       USE mpi_params
@@ -148,7 +148,6 @@
          ! Temp fix for NI
          NI_AUX_S_BEAMS(ik) = s_val
          NI_AUX_F_BEAMS(1,ik) = NE_AUX_F_BEAMS(ik)
-         NI_AUX_Z_BEAMS(1) = NINT(plasma_Zavg)
          NI_AUX_M_BEAMS(1) = plasma_mass
       END DO
       NI_AUX_Z_BEAMS(1) = 1.0

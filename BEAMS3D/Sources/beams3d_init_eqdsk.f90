@@ -185,7 +185,7 @@
             IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,netemp,ier)
             IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,titemp,ier)
             IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
-            IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
+            !IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
             IF (nzeff > 0) THEN 
                CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
                DO u=1, NION
