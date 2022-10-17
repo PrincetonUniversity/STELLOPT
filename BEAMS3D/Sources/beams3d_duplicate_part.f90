@@ -11,7 +11,7 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
       USE beams3d_lines
-      USE beams3d_physics_mod, ONLY: beams3d_gc2fo
+      USE beams3d_physics_mod, ONLY: beams3d_gc2fo, beams3d_ionize
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -84,7 +84,7 @@
                     vr_start(k), vphi_start(k), vz_start(k), &
                     mass(k), charge(k), &
                     mu_start(k), Zatom(k), t_end(k), vll_start(k), &
-                    beam(k), weight(k) )
+                    beam(k), weight(k), end_state(k))
 
          ! Load arrays
          R_start    = rtemp(:,1)
@@ -109,6 +109,7 @@
          nparticles = nparticles_new
 
       ELSE ! Everyone else deallocate
+
          DEALLOCATE(R_start,  PHI_start,  Z_start, &
                     VR_start, VPHI_start, VZ_start, &
                     mass, charge, mu_start, Zatom, &
@@ -118,15 +119,16 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nparticles,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(nbeams,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(partvmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      !CALL MPI_BCAST(nbeams,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      !CALL MPI_BCAST(partvmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (myworkid /= master) THEN
          ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
                     vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
                     mass(nparticles), charge(nparticles), &
                     mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
-                    beam(nparticles), weight(nparticles) )
+                    beam(nparticles), weight(nparticles), end_state(nparticles) )
       END IF
+      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mu_start,  nparticles, MPI_REAL8,   master, MPI_COMM_BEAMS, ierr_mpi)
       CALL MPI_BCAST(t_end,     nparticles, MPI_REAL8,   master, MPI_COMM_BEAMS, ierr_mpi)
       CALL MPI_BCAST(mass,      nparticles, MPI_REAL8,   master, MPI_COMM_BEAMS, ierr_mpi)
@@ -138,6 +140,12 @@
       CALL MPI_BCAST(Z_start,   nparticles, MPI_REAL8,   master, MPI_COMM_BEAMS, ierr_mpi)
       CALL MPI_BCAST(vll_start, nparticles, MPI_REAL8,   master, MPI_COMM_BEAMS, ierr_mpi)
       CALL MPI_BCAST(beam,      nparticles, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (lfullorbit_run) THEN
+         CALL MPI_BCAST(VR_start,   nparticles, MPI_REAL8,   master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_BCAST(VPHI_start, nparticles, MPI_REAL8,   master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_BCAST(VZ_start,   nparticles, MPI_REAL8,   master, MPI_COMM_BEAMS, ierr_mpi)
+      END IF
+      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
 #endif
 
       ! Now randomize the gyrophase VR/VPHI/VZ
@@ -153,20 +161,42 @@
       WHERE(ltemp) VZ_START=0
       DEALLOCATE(ltemp)
       DO i = mystart, myend
-         IF (lfullorbit_run .and. (mod(i,duplicate_factor)==1)) CYCLE
          q(1) = R_start(i)
          q(2) = PHI_start(i)
          q(3) = Z_start(i)
-         q(4) = vll_start(i)
-         q(5) = mu_start(i)
          time0=0
+         myline = i
+         IF (lfullorbit_run) THEN ! Gyro Orbit to Gyro Orbit
+            IF (mod(i,duplicate_factor)==1) CYCLE
+            myv_neut(1) = VR_start(i)*cos(q(2))-VPHI_start(i)*sin(q(2))
+            myv_neut(2) = VR_start(i)*sin(q(2))+VPHI_start(i)*cos(q(2))
+            myv_neut(3) = VZ_start(i)
+            !q(4) = SQRT(SUM(myv_neut*myv_neut)) ! Assumes this is just vtotal
+            q(4) = vll_start(i)
+            CALL beams3d_ionize(q(1:4))
+	    q(5) = moment
+         ELSE ! Gyro center to Gyro Orbit
+            q(4) = vll_start(i)
+            q(5) = mu_start(i)
+	 END IF
          CALL beams3d_gc2fo(time0,q)
+         R_start(i)  = q(1)
+         PHI_start(i) = q(2)
+         Z_start(i)  = q(3)
          VR_start(i) = q(4)
          VPHI_start(i) = q(5)
          VZ_start(i) = q(6)
       END DO
 
+      IF (myworkid == master) THEN
+         DO i = mystart,myend
+            WRITE(327,'(i,6(1X,ES20.10))') i,R_start(i),PHI_start(i),Z_start(i),VR_start(i),VPHI_start(i),VZ_start(i)
+         END DO
+         CALL FLUSH(327)
+      END IF
+
 #if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       ! Now broadcast to everyone
       IF (myworkid == master) THEN
          CALL MPI_REDUCE(MPI_IN_PLACE, VR_start,   nparticles, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -181,6 +211,8 @@
       CALL MPI_BCAST(vphi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(vz_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
 #endif
+
+      DEALLOCATE(end_state)
 
       RETURN
 
