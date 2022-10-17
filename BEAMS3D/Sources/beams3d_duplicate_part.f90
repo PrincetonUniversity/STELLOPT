@@ -166,6 +166,8 @@
          q(3) = Z_start(i)
          time0=0
          myline = i
+         mymass = mass(i)
+         mycharge = charge(i)
          IF (lfullorbit_run) THEN ! Gyro Orbit to Gyro Orbit
             IF (mod(i,duplicate_factor)==1) CYCLE
             myv_neut(1) = VR_start(i)*cos(q(2))-VPHI_start(i)*sin(q(2))
