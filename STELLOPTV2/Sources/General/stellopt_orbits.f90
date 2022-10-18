@@ -28,11 +28,9 @@
             NE_AUX_S_BEAMS => NE_AUX_S, NE_AUX_F_BEAMS => NE_AUX_F, &
             NI_AUX_S_BEAMS => NI_AUX_S, NI_AUX_F_BEAMS => NI_AUX_F, &
             TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, &
-            NI_AUX_S_BEAMS => NI_AUX_S, NI_AUX_F_BEAMS => NI_AUX_F, &
             NI_AUX_M_BEAMS => NI_AUX_M, NI_AUX_Z_BEAMS => NI_AUX_Z, &
             ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F, &
-            BEAMS3D_VERSION, mass_beams, charge_beams, &
-            NI_AUX_Z_BEAMS => NI_AUX_Z, NI_AUX_M_BEAMS => NI_AUX_M
+            BEAMS3D_VERSION, mass_beams, charge_beams
       USE beams3d_grid, ONLY: nte, nne, nti, nzeff, rmin, rmax, zmin, zmax, &
                               phimin, phimax, plasma_mass
       USE beams3d_lines, ONLY: end_state
