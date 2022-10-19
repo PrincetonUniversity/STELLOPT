@@ -921,7 +921,7 @@ MODULE beams3d_physics_mod
       !     Description:   Ionizes a particle relocating it to its
       !                    gyrocenter.
       !-----------------------------------------------------------------
-      SUBROUTINE beams3d_ionize(q)
+      SUBROUTINE beams3d_ionize(q,lnorand)
          USE beams3d_grid
 
          !--------------------------------------------------------------
@@ -930,6 +930,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION, INTENT(inout) :: q(4)
+         LOGICAL, OPTIONAL :: lnorand
 
          !--------------------------------------------------------------
          !     Local parameters
@@ -939,6 +940,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Local variables
          !--------------------------------------------------------------
+         LOGICAL          :: lrand
          INTEGER          :: ier
          DOUBLE PRECISION :: r_temp, phi_temp, z_temp, x, y, &
                              br_temp, bp_temp, bz_temp, modb_temp, &
@@ -953,9 +955,12 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
+         lrand = .true.
          lneut = .false.
          end_state(myline) = 0
-         CALL RANDOM_NUMBER(rand_prob)
+         rand_prob = 0
+         IF (PRESENT(lnorand)) lrand = .not. lnorand
+         IF (lrand) CALL RANDOM_NUMBER(rand_prob)
 
          ! Handle inputs
          ier = 0
@@ -1192,7 +1197,7 @@ MODULE beams3d_physics_mod
          INTEGER          :: ier
          DOUBLE PRECISION :: r_temp, phi_temp, z_temp, x, y, &
                              br_temp, bp_temp, bz_temp, modb_temp, &
-                             bx_temp, by_temp, binv, &
+                             bx_temp, by_temp, binv, phi2_temp,&
                              xg,yg,zg, vx, vy, theta, vll_temp, &
                              rho(3), rho2(3) , moment_temp, vperp, rg
          DOUBLE PRECISION, DIMENSION(3,3) :: rot_matrix
@@ -1207,6 +1212,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          ! Handle inputs
          ier = 0
+	 phi2_temp = q(2)
          phi_temp = MOD(q(2),phimax)
          IF (phi_temp < 0) phi_temp = phi_temp + phimax
          r_temp = q(1)
@@ -1278,7 +1284,7 @@ MODULE beams3d_physics_mod
          rg = SIGN(one,theta)/sqrt(xg*xg+yg*yg+zg*zg)
 
          ! Translate
-         q(1:3) = q(1:3) + (/r_temp*cos(phi_temp),r_temp*sin(phi_temp),z_temp/)
+         q(1:3) = q(1:3) + (/r_temp*cos(phi2_temp),r_temp*sin(phi2_temp),z_temp/)
 
          ! Get into R,phi
          r_temp = sqrt(q(1)*q(1)+q(2)*q(2))
