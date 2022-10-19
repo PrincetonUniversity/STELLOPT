@@ -116,12 +116,14 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_lines',ier)
          CALL read_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_lines',ier)
-         CALL read_var_hdf5(fid,'vr_lines',npoinc+1,nparticles,ier,DBLVAR=vr_lines)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vr_lines',ier)
-         CALL read_var_hdf5(fid,'vphi_lines',npoinc+1,nparticles,ier,DBLVAR=vphi_lines)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vphi_lines',ier)
-         CALL read_var_hdf5(fid,'vz_lines',npoinc+1,nparticles,ier,DBLVAR=vz_lines)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vz_lines',ier)
+         IF (version_old >= 4.0) THEN
+            CALL read_var_hdf5(fid,'vr_lines',npoinc+1,nparticles,ier,DBLVAR=vr_lines)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vr_lines',ier)
+            CALL read_var_hdf5(fid,'vphi_lines',npoinc+1,nparticles,ier,DBLVAR=vphi_lines)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vphi_lines',ier)
+            CALL read_var_hdf5(fid,'vz_lines',npoinc+1,nparticles,ier,DBLVAR=vz_lines)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vz_lines',ier)
+         END IF
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
 

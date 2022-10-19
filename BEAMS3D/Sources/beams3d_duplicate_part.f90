@@ -191,7 +191,7 @@
 
       IF (myworkid == master) THEN
          DO i = mystart,myend
-            WRITE(327,'(i,8(1X,ES20.10))') i,R_start(i),PHI_start(i),Z_start(i),VR_start(i),VPHI_start(i),VZ_start(i),vll_start(i),mu_start(i)
+            WRITE(327,'(i8,8(1X,ES20.10))') i,R_start(i),PHI_start(i),Z_start(i),VR_start(i),VPHI_start(i),VZ_start(i),vll_start(i),mu_start(i)
          END DO
          CALL FLUSH(327)
       END IF
