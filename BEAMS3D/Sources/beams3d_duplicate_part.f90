@@ -175,12 +175,11 @@
             myv_neut(3) = VZ_start(i)
             !q(4) = SQRT(SUM(myv_neut*myv_neut)) ! Assumes this is just vtotal
             q(4) = vll_start(i)
-            CALL beams3d_ionize(q(1:4))
-	    q(5) = moment
-         ELSE ! Gyro center to Gyro Orbit
-            q(4) = vll_start(i)
-            q(5) = mu_start(i)
+            CALL beams3d_ionize(q(1:4),lnorand=.TRUE.)
+            mu_start(i) = moment
 	 END IF
+         q(4) = vll_start(i)
+         q(5) = mu_start(i)
          CALL beams3d_gc2fo(time0,q)
          R_start(i)  = q(1)
          PHI_start(i) = q(2)
@@ -192,7 +191,7 @@
 
       IF (myworkid == master) THEN
          DO i = mystart,myend
-            WRITE(327,'(i,6(1X,ES20.10))') i,R_start(i),PHI_start(i),Z_start(i),VR_start(i),VPHI_start(i),VZ_start(i)
+            WRITE(327,'(i,8(1X,ES20.10))') i,R_start(i),PHI_start(i),Z_start(i),VR_start(i),VPHI_start(i),VZ_start(i),vll_start(i),mu_start(i)
          END DO
          CALL FLUSH(327)
       END IF
