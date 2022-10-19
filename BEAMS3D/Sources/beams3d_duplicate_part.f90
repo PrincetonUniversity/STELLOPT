@@ -177,7 +177,7 @@
             q(4) = vll_start(i)
             CALL beams3d_ionize(q(1:4),lnorand=.TRUE.)
             mu_start(i) = moment
-	 END IF
+	      END IF
          q(4) = vll_start(i)
          q(5) = mu_start(i)
          CALL beams3d_gc2fo(time0,q)
