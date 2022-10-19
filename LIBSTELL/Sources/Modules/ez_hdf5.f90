@@ -113,6 +113,21 @@
       IF (ier /=0) RETURN
       END SUBROUTINE close_hdf5
       !-----------------------------------------------------------------
+         
+      !-----------------------------------------------------------------
+      FUNCTION dataset_exists(loc_id,DSET_NAME) RESULT(lexist)
+      IMPLICIT NONE
+      INTEGER(HID_T), INTENT(inout):: loc_id
+      CHARACTER(LEN=*), INTENT(in)  :: DSET_NAME
+      LOGICAL :: lexist
+      INTEGER :: ier
+      lexist = .FALSE.
+      ier = 0
+      CALL h5lexists_f(loc_id,DSET_NAME,lexist,ier)
+      IF (ier /=0) lexist = .FALSE.
+
+      END FUNCTION dataset_exists
+      !-----------------------------------------------------------------
 
       !-----------------------------------------------------------------
       SUBROUTINE write_att_hdf5(loc_id,ATT_NAME,ATT,ierr)
