@@ -371,6 +371,7 @@ CONTAINS
       END SUBROUTINE beams3d_init_commandline
 
       SUBROUTINE beams3d_output_header
+      USE git_version_mod
       IMPLICIT NONE
       INTEGER :: nshar
 #if defined(MPI_OPT)
@@ -391,6 +392,12 @@ CONTAINS
         WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
         WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_beams
         WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
+        WRITE(6,'(A)')      '-----  GIT Repository  -----'
+        WRITE(6,'(A,A)')  '   Repository: ', TRIM(git_repository)
+        WRITE(6,'(A,A)')  '   Branch:     ', TRIM(git_branch)
+        WRITE(6,'(A,A)')  '   Version:    ', TRIM(git_version)
+        WRITE(6,'(A,A)')  '   Built-on:   ', TRIM(built_on)
+        WRITE(6,'(A,A)')  '   Hash:       ', TRIM(git_hash)
       END IF
       RETURN
       END SUBROUTINE beams3d_output_header
