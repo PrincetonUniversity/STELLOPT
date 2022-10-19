@@ -1281,7 +1281,7 @@ MODULE beams3d_physics_mod
          xg = by_temp*q(3)-bz_temp*q(2)
          yg = bz_temp*q(1)-bx_temp*q(3)
          zg = bx_temp*q(2)-by_temp*q(1)
-         rg = SIGN(one,theta)/sqrt(xg*xg+yg*yg+zg*zg)
+         rg = one/sqrt(xg*xg+yg*yg+zg*zg)
 
          ! Translate
          q(1:3) = q(1:3) + (/r_temp*cos(phi2_temp),r_temp*sin(phi2_temp),z_temp/)
