@@ -1296,10 +1296,8 @@ MODULE beams3d_physics_mod
          vx = vll_temp*bx_temp + vperp*xg*rg
          vy = vll_temp*by_temp + vperp*yg*rg
          q(6) = vll_temp*bz_temp + vperp*zg*rg
-         q(4) = vx*cos(phi2_temp) + vy*sin(phi2_temp)
-         q(5) = vy*sin(phi2_temp) - vx*sin(phi2_temp)
-         !q(4) = vx*cos(phi_temp) + vy*sin(phi_temp)
-         !q(5) = vy*sin(phi_temp) - vx*sin(phi_temp)
+         q(4) = vx*cos(phi_temp) + vy*sin(phi_temp)
+         q(5) =-vx*sin(phi_temp) + vy*cos(phi_temp)
 
 
          RETURN
