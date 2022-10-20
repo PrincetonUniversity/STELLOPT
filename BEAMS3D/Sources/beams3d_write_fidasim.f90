@@ -845,7 +845,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
                      seed
    
 
-   NAMELIST /fidasim_inputs/ comment,tables_file, equilibrium_file,geometry_file,distribution_file,&
+   NAMELIST /fidasim_inputs_b3d/ comment,tables_file, equilibrium_file,geometry_file,distribution_file,&
       result_dir,neutrals_file,shot, time, runid, device, nlambda,seed,load_neutrals,verbose,flr,&
       lambdamin, lambdamax, nx, ny, nz, alpha, beta, gamma, origin,&
       xmin, xmax, ymin, ymax, zmin, zmax, ab, ai, current_fractions,&
@@ -858,8 +858,8 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
       nbi_data_source,name,shape,src,axis_nbi,divy,divz,focy,focz,widz,widy,naperture,ashape,awidy,awidz, aoffy, aoffz, adist,&
       spec_data_source,nchan,system,id,lens,axis_spec,sigma_pi,spot_size,radius
 
-   NAMELIST /fidasim_output/ comment,tables_file, equilibrium_file,geometry_file,distribution_file,&
-   result_dir,neutrals_file,shot, time, runid, device, nlambda,seed,load_neutrals,verbose,flr,&
+   NAMELIST /fidasim_inputs/ tables_file, equilibrium_file,geometry_file,distribution_file,&
+   result_dir,neutrals_file,shot, time, runid,  nlambda,seed,load_neutrals,verbose,flr,&
    lambdamin, lambdamax, nx, ny, nz, alpha, beta, gamma, origin,&
    xmin, xmax, ymin, ymax, zmin, zmax, ab, ai, current_fractions,&
    pinj, einj, impurity_charge, n_fida, n_nbi, n_pfida, n_pnpa,&
@@ -867,7 +867,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    emax_wght, nlambda_wght, lambdamin_wght, lambdamax_wght,&
    calc_npa, calc_fida, calc_pnpa, calc_pfida, calc_bes, calc_dcx,&
    calc_halo, calc_cold, calc_brems, calc_birth, calc_fida_wght, calc_npa_wght,&
-   calc_neutron,id
+   calc_neutron!comment,device,,id
 
    !Default values
    shot = 0    !! Shot Number
@@ -1005,7 +1005,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
    DO WHILE (istat == 0)
       read(iunit,fmt='(A)', IOSTAT=istat) line
-      IF (TRIM(line) == '&fidasim_inputs') THEN
+      IF (TRIM(line) == '&fidasim_inputs_b3d') THEN
          namelist_present=1
          EXIT
       END IF
@@ -1014,7 +1014,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    rewind(iunit)
    IF (namelist_present==1) THEN
       istat = 0
-      READ(iunit,NML=fidasim_inputs,IOSTAT=istat)
+      READ(iunit,NML=fidasim_inputs_b3d,IOSTAT=istat)
       IF (istat /= 0) THEN
          backspace(iunit)
          read(iunit,fmt='(A)') line
@@ -1028,13 +1028,16 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    END IF
    CLOSE(iunit)
    
-
+   equilibrium_file = TRIM(result_dir) // TRIM(runid) //  '_equilibrium.h5'   !! File containing plasma parameters and fields
+   geometry_file = TRIM(result_dir) // TRIM(runid) //  '_geometry.h5'      !! File containing NBI and diagnostic geometry
+   distribution_file = TRIM(result_dir) // TRIM(runid) //  '_distribution.h5'      !! File containing fast-ion distribution
+   neutrals_file = TRIM(result_dir) // TRIM(runid) //  '_neutrals.h5'  
 
    ! Open the inputs.dat file
    iunit = 10
    CALL safe_open(iunit,istat,'fidasim_'//TRIM(id_string)//'_inputs.dat','replace','formatted')
    ! Output number of beams
-   WRITE(iunit,fidasim_output)
+   WRITE(iunit,fidasim_inputs)
    !WRITE(iunit,'(A)') '!! Debugging Switches'
    !WRITE(iunit,'(A)') 'seed = -1    !! RNG Seed. If seed is negative a random seed is used'
    !WRITE(iunit,'(A)') 'flr = 2    !! Turn on Finite Larmor Radius corrections'
