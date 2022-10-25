@@ -828,7 +828,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    CHARACTER(LEN=1000) :: line
    CHARACTER(64) :: comment,nbi_data_source, spec_data_source,runid,device,name,system,&
                      tables_file,equilibrium_file,geometry_file,distribution_file,neutrals_file,result_dir
-   CHARACTER(10), DIMENSION(MAXCHAN) :: id
+   CHARACTER(20), DIMENSION(MAXCHAN) :: id
    DOUBLE PRECISION, DIMENSION(3) :: origin,current_fractions,src,axis_nbi,  divy,   divz
    DOUBLE PRECISION, DIMENSION(3,MAXCHAN) :: axis_spec,  lens
    DOUBLE PRECISION, DIMENSION(MAXCHAN) :: sigma_pi,spot_size,radius
