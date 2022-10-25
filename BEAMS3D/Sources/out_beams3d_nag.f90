@@ -22,9 +22,10 @@ SUBROUTINE out_beams3d_nag(t, q)
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
                              dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
-                             h2_prof, h3_prof, h4_prof, h5_prof, my_end, r_h, p_h, z_h
+                             h2_prof, h3_prof, h4_prof, h5_prof, my_end, &
+                             r_h, p_h, z_h, e_h, pi_h
     USE beams3d_grid
-    USE beams3d_physics_mod, ONLY: beams3d_physics
+    USE beams3d_physics_mod, ONLY: beams3d_physics,e_charge
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
     USE mpi_params
     USE mpi_inc
@@ -50,6 +51,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     REAL*8 :: fval(1), fval2(1)
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
     REAL*8, PARAMETER :: one = 1
+    REAL*8, PARAMETER :: thousand = 1000
     !-----------------------------------------------------------------------
     !     Begin Function
     !-----------------------------------------------------------------------
@@ -110,12 +112,11 @@ SUBROUTINE out_beams3d_nag(t, q)
        IF (lfidasim2) THEN
             x0 = MOD(q(2), phimax)
             IF (x0 < 0) x0 = x0 + phimax
-            ! i = MIN(MAX(COUNT(raxis_fida < q(1)),1),nr_fida)
-            ! j = MIN(MAX(COUNT(phiaxis_fida < x0),1),nphi_fida)
-            ! k = MIN(MAX(COUNT(zaxis_fida < q(3)),1),nz_fida)
             i = MIN(MAX(FLOOR((q(1)-rmin_fida)/r_h)+1,0),nr_fida+1)
             j = MIN(MAX(FLOOR((x0-phimin_fida)/p_h)+1,0),nphi_fida+1)
             k = MIN(MAX(FLOOR((q(3)-zmin_fida)/z_h)+1,0),nz_fida+1)
+            d4 = MIN(MAX(CEILING(((q(4)**2+vperp**2)*mymass/thousand/e_charge/2.0-energy_fida(1))/e_h)+1,1),nenergy_fida)
+            d5 = MIN(MAX(FLOOR((q(4)/SQRT(q(4)**2+vperp**2)-pitch_fida(1))/pi_h)+1,1),npitch_fida)
             IF ((i > 0) .and. (i <= nr_fida) .and. &
             (j > 0) .and. (j <= nphi_fida) .and. &
             (k > 0) .and. (k <= nz_fida)) THEN

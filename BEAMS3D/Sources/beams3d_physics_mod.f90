@@ -45,7 +45,7 @@ MODULE beams3d_physics_mod
       !-----------------------------------------------------------------
 
       DOUBLE PRECISION, PRIVATE, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
-      DOUBLE PRECISION, PRIVATE, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_sqrt2     = 0.7071067812   !1/sqrt(2)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: mpome         = 5.44602984424355D-4 !e_c
