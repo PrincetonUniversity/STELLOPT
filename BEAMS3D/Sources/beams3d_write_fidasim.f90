@@ -18,7 +18,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       ns_prof4, ns_prof5, dist5d_prof, &
       partvmax, dist5D_fida, &
       h2_prof, h3_prof, h4_prof, h5_prof, &
-      nsh_prof4,  my_end, r_h, p_h, z_h
+      nsh_prof4,  my_end, r_h, p_h, z_h, e_h, pi_h
    USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
       zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
       ZEFF_ARR, TE, TI, NE, npot, nte, nti, nzeff, &
@@ -606,7 +606,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          DO i=1,nr_fida
             DO k = 1, nz_fida
                DO j=1,nphi_fida
-                  !convert i,j,k to distribution functionlfidasim indices l,m,n
+                  !convert i,j,k to distribution function lfidasim indices l,m,n
                   !determine beams3d-grid indices
                   i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
                   j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
@@ -682,9 +682,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             DO d1 = 1, nenergy_fida
                DO d2 = 1, npitch_fida
                   v = SQRT(2 * energy_fida(d1) *1000.0 * e_charge / mass_beams(b))
-                  IF (v .gt. partvmax) THEN !) .or. (v .eq. 0.0))
-                     IF (.not. lfidasim2) dist5d_fida(b,:,:,:,d1,d2) = 0
-                  ELSE
+                  !IF (v .gt. partvmax) THEN !) .or. (v .eq. 0.0))
+                  !   IF (.not. lfidasim2) dist5d_fida(b,:,:,:,d1,d2) = 0
+                  !ELSE
                      pitch = pitch_fida(d2)
                      v_parr = pitch * v
                      v_perp = SQRT(1- pitch * pitch) * v
@@ -693,64 +693,64 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
                      jac = pi2 * v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
                      IF (lfidasim2) THEN
-                        dist5d_temp(b,d1,d2,:,:,:) = dist5d_fida(b,:,:,:,i3,j3) * jac
+                        dist5d_temp(b,d1,d2,:,:,:) = dist5d_fida(b,:,:,:,d1,d2)/e_h/pi_h/REAL(1.0e6)!dist5d_fida(b,:,:,:,i3,j3) * jac
                      ELSE   
                         dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac ! conversion to final grid comes in next steps
                      END IF
 
-                  END IF
+                  !END IF
                END DO
             END DO
          END DO
 
          IF (.not. lfidasim2) THEN
-         ALLOCATE(dist5d_temp(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
-         dist5d_temp(:,:,:,:,:,:) = dist5d_fida(:,:,:,:,:,:)
-         DEALLOCATE(dist5d_fida) 
-         !Interpolate rho u v to r phi z distribution function (nearest neighbor at the moment)
-         !Now allocate with correct dimensions
-         ALLOCATE(dist5d_fida(nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
-         DO b=1,nbeams
-            DO i=1,nr_fida
-               DO k = 1, nz_fida
-                  DO j=1,nphi_fida
-                     !convert i,j,k to distribution function indices l,m,n
-                     !determine beams3d-grid indices
-                     i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
-                     j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
-                     k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
-                     !setup interpolation
-                     xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
-                     yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
-                     zparam = (zaxis_fida(k) - zaxis(k3)) * hzi(k3)
-                     CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&!maybe switch to x/y interpolation?
-                        hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                        S4D(1,1,1,1),nr,nphi,nz)
-                     y0 = fval(1)
-                     CALL R8HERM3FCN(ict,1,1,fval2,i3,j3,k3,xparam,yparam,zparam,&
-                        hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                        U4D(1,1,1,1),nr,nphi,nz)
-                     z0 = fval2(1)
+            ALLOCATE(dist5d_temp(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
+            dist5d_temp(:,:,:,:,:,:) = dist5d_fida(:,:,:,:,:,:)
+            DEALLOCATE(dist5d_fida) 
+            !Interpolate rho u v to r phi z distribution function (nearest neighbor at the moment)
+            !Now allocate with correct dimensions
+            ALLOCATE(dist5d_fida(nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
+            DO b=1,nbeams
+               DO i=1,nr_fida
+                  DO k = 1, nz_fida
+                     DO j=1,nphi_fida
+                        !convert i,j,k to distribution function indices l,m,n
+                        !determine beams3d-grid indices
+                        i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
+                        j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
+                        k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
+                        !setup interpolation
+                        xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
+                        yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
+                        zparam = (zaxis_fida(k) - zaxis(k3)) * hzi(k3)
+                        CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&!maybe switch to x/y interpolation?
+                           hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
+                           S4D(1,1,1,1),nr,nphi,nz)
+                        y0 = fval(1)
+                        CALL R8HERM3FCN(ict,1,1,fval2,i3,j3,k3,xparam,yparam,zparam,&
+                           hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
+                           U4D(1,1,1,1),nr,nphi,nz)
+                        z0 = fval2(1)
 
-                     IF (z0 < 0) z0 = z0 + pi2
-                     IF (x0 < 0) x0 = x0 + pi2
-                     IF (y0 < 0) y0 = -y0
-                     ! Calc dist func bins
-                     x0    = phiaxis_fida(j)
-                     l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
-                     m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
-                     n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                     !IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
-                     !   dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
-                     !ELSE
-                        dist5d_fida(b,:,:,i,k,j) = dist5d_temp(b,l,m,n,:,:) !output in r-z-phi
-                     !END IF
+                        IF (z0 < 0) z0 = z0 + pi2
+                        IF (x0 < 0) x0 = x0 + pi2
+                        IF (y0 < 0) y0 = -y0
+                        ! Calc dist func bins
+                        x0    = phiaxis_fida(j)
+                        l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+                        m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
+                        n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
+                        !IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
+                        !   dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
+                        !ELSE
+                           dist5d_fida(b,:,:,i,k,j) = dist5d_temp(b,l,m,n,:,:) !output in r-z-phi
+                        !END IF
 
+                     END DO
                   END DO
                END DO
             END DO
-         END DO
-      END IF
+         END IF
 
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          IF (ASSOCIATED(dist5d_fida)) THEN
