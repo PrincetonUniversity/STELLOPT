@@ -724,9 +724,9 @@
 
       ! Fida Distribution
       IF (lfidasim2) THEN
-         r_h = (rmax_fida - rmin_fida) / (nr_fida)
-         z_h = (zmax_fida - zmin_fida) / (nz_fida)
-         p_h = (phimax_fida - phimin_fida) / (nphi_fida)
+         r_h = (nr_fida) / (rmax_fida - rmin_fida) 
+         z_h = (nz_fida) / (zmax_fida - zmin_fida)
+         p_h = (nphi_fida) / (phimax_fida - phimin_fida) 
       END IF
 
       ! Do a reality check
@@ -777,8 +777,8 @@
          FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
          FORALL(i = 1:nenergy_fida) energy_fida(i) = REAL(i-0.5) / REAL(nenergy_fida) * 0.5 * mass_beams(1) * partvmax * partvmax /1.60217662E-19 / 1000.0 !Potential error when different beam species are used!
          FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0         
-         e_h = energy_fida(2) - energy_fida(1) !(energy_fida(nenergy_fida) - energy_fida(1)) / (nenergy_fida)
-         pi_h = pitch_fida(2) - pitch_fida(1)!(pitch_fida(npitch_fida) - pitch_fida(1)) / (npitch_fida)
+         e_h = 1/( energy_fida(2) - energy_fida(1)) !(energy_fida(nenergy_fida) - energy_fida(1)) / (nenergy_fida)
+         pi_h = 1/(pitch_fida(2) - pitch_fida(1))!(pitch_fida(npitch_fida) - pitch_fida(1)) / (npitch_fida)
          IF (myid_sharmem == master .and. myworkid == master) THEN        
          !END IF
          !IF (lfidasim .and. lverb) THEN
