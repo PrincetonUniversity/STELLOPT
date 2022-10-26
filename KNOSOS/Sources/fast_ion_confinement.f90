@@ -139,6 +139,7 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
      END DO
      lambda(jla)=LJMAP
   END IF
+  IF(ALLOCATED(lambdap)) DEALLOCATE(lambdap)
   ALLOCATE(lambdap(nlambda))!col
   DO ila=nlambda,1,-1
      lambdap(ila)=lambda(1)*(1-REAL(ila)/nlambda)
