@@ -46,7 +46,7 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      WRITE(6,*) 'KNOSOS, sources2b'
+      
       IF (lscreen) WRITE(6,*) 'KNOSOS',myworkid,iflag
       IF (iflag < 0) RETURN
 !DEC$ IF DEFINED (KNOSOS_OPT)

@@ -34,8 +34,22 @@
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       ik   = COUNT(sigma < bigno)
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS',ik,15
       IF (niter >= 0) THEN
+         IF(iflag == 1) THEN
+            IF(jtarget_knosos.EQ.jtarget_knosos_1nu) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS_1NU',ik,4
+            IF(jtarget_knosos.EQ.jtarget_knosos_snu) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS_SNU',ik,4
+            IF(jtarget_knosos.EQ.jtarget_knosos_sbp) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS_SBP',ik,4
+            IF(jtarget_knosos.EQ.jtarget_knosos_gmc) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS_GMC',ik,4
+            IF(jtarget_knosos.EQ.jtarget_knosos_gma) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS_GMA',ik,4
+            IF(jtarget_knosos.EQ.jtarget_knosos_qer) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS_QER',ik,4
+            IF(jtarget_knosos.EQ.jtarget_knosos_vb0) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS_VB0',ik,4
+            IF(jtarget_knosos.EQ.jtarget_knosos_vbm) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS_VBM',ik,4
+            IF(jtarget_knosos.EQ.jtarget_knosos_vbb) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS_VBB',ik,4
+            IF(jtarget_knosos.EQ.jtarget_knosos_wbw) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS_WBW',ik,4
+            IF(jtarget_knosos.EQ.jtarget_knosos_dbo) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KNOSOS_DBO',ik,4
+            IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  PROXY  #'
+         END IF
+
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
             mtargets = mtargets + 1
@@ -67,14 +81,12 @@
             ELSE IF(jtarget_knosos.EQ.jtarget_knosos_dbo) THEN
                vals(mtargets)    = KNOSOS_dbo(ik)
             END IF
-!            IF (iflag == 1) WRITE(iunit_out,'(15ES22.12E3)') &
-!               target(ik),sigma(ik),vals(mtargets),&
-!               rho(ik), KNOSOS(ik)
+            IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2X,I3.3)') &                           
+                 target(ik),sigma(ik),vals(mtargets),ik
 !DEC$ ELSE
             vals(mtargets) = target(ik)
-!            IF (iflag == 1) WRITE(iunit_out,'(15ES22.12E3)') &
-!               target(ik),sigma(ik),vals(mtargets),&
-!               rho(ik), target_knosos(ik)
+            IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2X,I3.3)') &
+                 target(ik),sigma(ik),vals(mtargets),ik
 !DEC$ ENDIF
          END DO
       ELSE
