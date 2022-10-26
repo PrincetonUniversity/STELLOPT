@@ -51,7 +51,6 @@ SUBROUTINE out_beams3d_nag(t, q)
     REAL*8 :: fval(1), fval2(1)
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
     REAL*8, PARAMETER :: one = 1
-    REAL*8, PARAMETER :: thousand = 1000
     !-----------------------------------------------------------------------
     !     Begin Function
     !-----------------------------------------------------------------------
@@ -112,11 +111,12 @@ SUBROUTINE out_beams3d_nag(t, q)
        IF (lfidasim2) THEN
             x0 = MOD(q(2), phimax)
             IF (x0 < 0) x0 = x0 + phimax
-            i = MIN(MAX(FLOOR((q(1)-rmin_fida)/r_h)+1,0),nr_fida+1)
-            j = MIN(MAX(FLOOR((x0-phimin_fida)/p_h)+1,0),nphi_fida+1)
-            k = MIN(MAX(FLOOR((q(3)-zmin_fida)/z_h)+1,0),nz_fida+1)
-            d4 = MIN(MAX(CEILING(((q(4)**2+vperp**2)*mymass/thousand/e_charge/2.0-energy_fida(1))/e_h)+1,1),nenergy_fida)
-            d5 = MIN(MAX(FLOOR((q(4)/SQRT(q(4)**2+vperp**2)-pitch_fida(1))/pi_h)+1,1),npitch_fida)
+            i = MIN(MAX(FLOOR((q(1)-rmin_fida)*r_h)+1,0),nr_fida+1)
+            j = MIN(MAX(FLOOR((x0-phimin_fida)*p_h)+1,0),nphi_fida+1)
+            k = MIN(MAX(FLOOR((q(3)-zmin_fida)*z_h)+1,0),nz_fida+1)
+            y0 = (q(4)**2+vperp**2)
+            d4 = MIN(MAX(CEILING((y0*mymass*0.5d-3/e_charge-energy_fida(1))*e_h+1),1),nenergy_fida)
+            d5 = MIN(MAX(FLOOR((q(4)/SQRT(y0)-pitch_fida(1))*pi_h)+1,1),npitch_fida)
             IF ((i > 0) .and. (i <= nr_fida) .and. &
             (j > 0) .and. (j <= nphi_fida) .and. &
             (k > 0) .and. (k <= nz_fida)) THEN

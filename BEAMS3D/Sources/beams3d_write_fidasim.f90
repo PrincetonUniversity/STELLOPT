@@ -591,7 +591,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          IF (lfidasim2) THEN
 
             DO i=1,nr_fida
-               vol = r_h * z_h * p_h * (raxis_fida(i) + r_h / 2.0)
+               vol =(raxis_fida(i) + 1 / 2.0 / r_h) / r_h / z_h / p_h
                !WRITE(327,*) i, vol
                !CALL FLUSH(327)
                dist5d_fida(:,i,:,:,:,:) = dist5d_fida(:,i,:,:,:,:) / vol
@@ -693,7 +693,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
                      jac = pi2 * v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
                      IF (lfidasim2) THEN
-                        dist5d_temp(b,d1,d2,:,:,:) = dist5d_fida(b,:,:,:,d1,d2)/e_h/pi_h/REAL(1.0e6)!dist5d_fida(b,:,:,:,i3,j3) * jac
+                        dist5d_temp(b,d1,d2,:,:,:) = dist5d_fida(b,:,:,:,d1,d2)*e_h*pi_h*REAL(1.0e-6)!dist5d_fida(b,:,:,:,i3,j3) * jac
                      ELSE   
                         dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac ! conversion to final grid comes in next steps
                      END IF
