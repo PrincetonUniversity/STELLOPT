@@ -19,18 +19,19 @@ c                    differently.
       INTEGER :: myid=master, numprocs, ierr_mpi, numworkers
       INTEGER :: myworkid=master, my_master=master
       ! Communicators
-      INTEGER :: MPI_COMM_WORKERS=-1, worker_id=-1                 !communicator for worker processors only
-      INTEGER :: MPI_COMM_WORKERS_OK=-1, worker_id_ok=-1           !communicator subgroup, vmec ran ok
-      INTEGER :: MPI_COMM_SHARMEM = 718, myid_sharmem=-1           !communicator for shared memory
-      INTEGER :: MPI_COMM_STEL = 327                               !communicator which is a copy of MPI_COMM_WORLD (user must set this up)
-      INTEGER :: MPI_COMM_MYWORLD = 411                            !communicator 
-      INTEGER :: MPI_COMM_FIELDLINES = 328                         !communicator for FIELDLINES code
-      INTEGER :: MPI_COMM_TORLINES = 329                         !communicator for FIELDLINES code
-      INTEGER :: MPI_COMM_BEAMS = 330                            !communicator for BEAMS3D code
-      INTEGER :: MPI_COMM_BOOZER = 331                           !communicator for BOOZ_XFORM code
-      INTEGER :: MPI_COMM_DIAGNO = 332                           !communicator for BOOZ_XFORM code
-      INTEGER :: MPI_COMM_WALLACC = 333                          !communicator for WALLACC code
-      INTEGER :: MPI_COMM_PARVMEC = 101                           !communicator for PARVMEC code
+      INTEGER :: MPI_COMM_WORKERS=-1, worker_id=-1       !communicator for worker processors only
+      INTEGER :: MPI_COMM_WORKERS_OK=-1, worker_id_ok=-1 !communicator subgroup, vmec ran ok
+      INTEGER :: MPI_COMM_SHARMEM = 718, myid_sharmem=-1 !communicator for shared memory
+      INTEGER :: MPI_COMM_STEL = 327                     !communicator which is a copy of MPI_COMM_WORLD (user must set this up)
+      INTEGER :: MPI_COMM_MYWORLD = 411                  !communicator 
+      INTEGER :: MPI_COMM_FIELDLINES = 328               !communicator for FIELDLINES code
+      INTEGER :: MPI_COMM_TORLINES = 329                 !communicator for TORLINES code
+      INTEGER :: MPI_COMM_BEAMS = 330                    !communicator for BEAMS3D code
+      INTEGER :: MPI_COMM_BOOZER = 331                   !communicator for BOOZ_XFORM code
+      INTEGER :: MPI_COMM_DIAGNO = 332                   !communicator for DIAGNO code
+      INTEGER :: MPI_COMM_WALLACC = 333                  !communicator for WALLACC code
+      INTEGER :: MPI_COMM_THRIFT = 334                   !communicator for THRIFT code
+      INTEGER :: MPI_COMM_PARVMEC = 101                  !communicator for PARVMEC code
 
       CONTAINS
       
