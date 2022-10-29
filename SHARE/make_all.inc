@@ -128,6 +128,21 @@ ifeq ($(MAKECMDGOALS),xdes_plot)
     LIB_LINK += $(PGPLOT_LIB)
   endif
 endif
+ifeq ($(MAKECMDGOALS),xthrift)
+  PRECOMP += -DSKS  -DSKS2
+  VMEC_DIR = ../../VMEC2000
+  LIB_VMEC= libvmec.a
+  MOD_PATH+= -I$(VMEC_DIR)/$(LOCTYPE)
+  BOOTSJ_DIR = ../../BOOTSJ
+  LIB_BOOTSJ = libbootsj.a
+  MOD_PATH+= -I$(BOOTSJ_DIR)/$(LOCTYPE)
+  BOOZ_DIR = ../../BOOZ_XFORM
+  LIB_BOOZ= libbooz.a
+  MOD_PATH+= -I$(BOOZ_DIR)/$(LOCTYPE)
+  LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
+  $(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
+  $(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) 
+endif
 
 # Other Codes
 ifeq ($(LCOILOPT),T)
@@ -220,7 +235,7 @@ ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
-  LINK    = $(MPI_COMPILE) $(FLAGS) -o 
+  LINK    = $(MPI_LINK) $(FLAGS) -o 
   LINK_C  = $(MPI_LINK) -shared
 endif
 ifeq ($(LNETCDF),T)
