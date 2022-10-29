@@ -74,8 +74,7 @@ CONTAINS
       INTEGER :: ier
       ! Clean up
       ier = 0
-      CALL thrift_free(MPI_COMM_SHARMEM)
-      CALL wall_free(ier,MPI_COMM_BEAMS)
+      !CALL thrift_free(MPI_COMM_SHARMEM)
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'thrift_main', ierr_mpi)

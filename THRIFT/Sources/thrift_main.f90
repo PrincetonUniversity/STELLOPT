@@ -38,7 +38,7 @@ PROGRAM THRIFT
     CALL thrift_output_header
 
     ! Initialize the Calculation
-    CALL thrift_init
+    !CALL thrift_init
 
     ! ----work here
 
