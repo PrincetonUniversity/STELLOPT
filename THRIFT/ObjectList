@@ -1,0 +1,4 @@
+ObjectFiles = \
+thrift_interface_mod.o \
+thrift_runtime.o \
+thrift_main.o 
