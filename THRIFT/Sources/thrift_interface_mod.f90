@@ -45,7 +45,7 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'thrift_main', ierr_mpi)
       CALL MPI_COMM_RANK(MPI_COMM_BEAMS, myworkid, ierr_mpi) ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'thrift_main', ierr_mpi)
-      CALL MPI_COMM_SIZE(MPI_COMM_BEAMS, nprocs_beams, ierr_mpi) ! MPI
+      CALL MPI_COMM_SIZE(MPI_COMM_BEAMS, nprocs_thrift, ierr_mpi) ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_SIZE_ERR, 'thrift_main', ierr_mpi)
       CALL thrift_init_mpi_split(MPI_COMM_BEAMS)
       CALL MPI_GET_VERSION(vmajor,vminor,ierr_mpi)
@@ -142,11 +142,16 @@ CONTAINS
                 i = i + 1
                 lvmec = .true.
                 CALL GETCARG(i, id_string, numargs)
+            case ("-prof")
+                i = i + 1
+                lvmec = .true.
+                CALL GETCARG(i, prof_string, numargs)
             case ("-help", "-h") ! Output Help message
                 write(6, *) ' Beam MC Code'
                 write(6, *) ' Usage: xthrift <options>'
                 write(6, *) '    <options>'
                 write(6, *) '     -vmec ext:     VMEC input/wout extension'
+                write(6, *) '     -prof file:    Profile file'
                 write(6, *) '     -noverb:       Supress all screen output'
                 write(6, *) '     -help:         Output help message'
             end select
@@ -157,6 +162,8 @@ CONTAINS
     ! Broadcast variables
 #if defined(MPI_OPT)
       CALL MPI_BCAST(id_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
+      CALL MPI_BCAST(prof_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
       CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
@@ -185,7 +192,7 @@ CONTAINS
         WRITE(6,'(A)')      '-----  MPI Parameters  -----'
         WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
         WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
-        WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_beams
+        WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_thrift
         WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
       END IF
       RETURN
