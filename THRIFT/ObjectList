@@ -1,4 +1,5 @@
 ObjectFiles = \
+thrift_init_mpisubgroup.o \
 thrift_paraexe.o \
 thrift_input_mod.o \
 thrift_profiles_mod.o \
