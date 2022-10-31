@@ -1,3 +1,9 @@
+thrift_init.o : \
+      thrift_runtime.o \
+      thrift_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
+
 thrift_init_mpisubgroup.o : \
       thrift_runtime.o \
       thrift_input_mod.o \
