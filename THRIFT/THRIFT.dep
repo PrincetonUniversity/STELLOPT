@@ -46,3 +46,6 @@ thrift_runtime.o : \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
+
+thrift_vars.o : \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
