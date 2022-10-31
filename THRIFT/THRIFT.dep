@@ -1,16 +1,15 @@
-thrift_main.o : \
+thrift_input_mod.o : \
       thrift_runtime.o \
-      thrift_interface_mod.o
-
-thrift_runtime.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
-      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
-      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
 
 thrift_interface_mod.o : \
       thrift_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
+
+thrift_main.o : \
+      thrift_runtime.o \
+      thrift_interface_mod.o
 
 thrift_profiles_mod.o : \
       thrift_runtime.o \
@@ -18,5 +17,10 @@ thrift_profiles_mod.o : \
       $(LIB_DIR)/$(LOCTYPE)/EZspline.o \
       $(LIB_DIR)/$(LOCTYPE)/EZspline_obj.o \
       $(LIB_DIR)/$(LOCTYPE)/EZspline_type.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
+
+thrift_runtime.o : \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
