@@ -64,35 +64,10 @@ MODULE thrift_runtime
 
     DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
 
-    LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
-               lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
-               lbeam, lhitonly, lread_input, lplasma_only, lraw,&
-               ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
-               lascot, lascot4, lbbnbi, lfidasim, lfidasim2, lsplit, lvessel_beam, lascotfl, lrandomize, &
-               lfusion, lfusion_alpha, leqdsk, lhint, lkick, limas
-    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, ndt, ndt_max
-    INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
-    INTEGER, ALLOCATABLE :: beam(:)
-    REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &
-                   ne_scale, te_scale, ti_scale, zeff_scale, fusion_scale, &
-                   lendt_m, te_col_min
-    REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
-                                        charge_beams, Zatom_beams, P_beams
-    REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
-    REAL(rprec), DIMENSION(MAXPROFLEN) :: TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
-                                            POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F
-    REAL(rprec), DIMENSION(MAXPROFLEN) :: NI_AUX_S
-    REAL(rprec), DIMENSION(NION,MAXPROFLEN) :: NI_AUX_F
-    INTEGER, DIMENSION(NION) :: NI_AUX_Z
-    REAL(rprec), DIMENSION(NION) :: NI_AUX_M
-    REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
-                                            & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in
-    REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), v_neut(:,:), mu_start(:), &
-                                & mass(:), charge(:), Zatom(:), t_end(:), weight(:)
-    REAL(rprec), ALLOCATABLE :: extcur(:)
-    CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
-    CHARACTER(256) :: id_string, mgrid_string, coil_string, &
-    vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string
+    LOGICAL :: lverb, lvmec, lread_input, limas
+    INTEGER :: nprocs_thrift, nparallel_runs, mboz, nboz
+    REAL(rprec) :: pi, pi2, invpi2, mu0, to3
+    CHARACTER(256) :: id_string, prof_string, bootstrap_type
 
     REAL(rprec), PARAMETER :: THRIFT_VERSION = 0.00 
     !-----------------------------------------------------------------------
@@ -279,14 +254,14 @@ CONTAINS
         END IF
         CALL FLUSH(6)
 #if defined(MPI_OPT)
-        CALL MPI_BARRIER(MPI_COMM_THRIFT,ierr_mpi)
-        ALLOCATE(error_array(1:nprocs_beams))
-        ierr_mpi = 0
-        CALL MPI_ALLGATHER(error_num,1,MPI_INTEGER,error_array,1,MPI_INTEGER,MPI_COMM_THRIFT,ierr_mpi)
-        ierr_mpi = 0
-        CALL MPI_BARRIER(MPI_COMM_THRIFT,ierr_mpi)
-        IF (ANY(error_array .ne. 0)) CALL MPI_FINALIZE(ierr_mpi)
-        DEALLOCATE(error_array)
+!        CALL MPI_BARRIER(MPI_COMM_THRIFT,ierr_mpi)
+!        ALLOCATE(error_array(1:nprocs_beams))
+!        ierr_mpi = 0
+!        CALL MPI_ALLGATHER(error_num,1,MPI_INTEGER,error_array,1,MPI_INTEGER,MPI_COMM_THRIFT,ierr_mpi)
+!        ierr_mpi = 0
+!        CALL MPI_BARRIER(MPI_COMM_THRIFT,ierr_mpi)
+!        IF (ANY(error_array .ne. 0)) CALL MPI_FINALIZE(ierr_mpi)
+!        DEALLOCATE(error_array)
         RETURN
 #else
         IF (error_num .eq. MPI_CHECK) RETURN
