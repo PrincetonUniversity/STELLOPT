@@ -1,4 +1,5 @@
 ObjectFiles = \
+thrift_vars.o \
 thrift_init.o \
 thrift_init_mpisubgroup.o \
 thrift_paraexe.o \
