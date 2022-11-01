@@ -11,8 +11,10 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_input_mod
+      USE thrift_vars
       USE mpi_params
       USE mpi_inc
+      USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -37,12 +39,18 @@
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
       ENDIF
 
+      ! Allocate the Current Grid
+      CALL mpialloc(THRIFT_J, nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_j)
+
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
       SELECT CASE (TRIM(bootstrap_type))
          CASE('bootsj')
          CASE('sfincs')
       END SELECT
+
+      ! Now setup the profiles
+      CALL read_thrift_profh5(TRIM(prof_string))
 
       ! Now we initilize the subgroups
       ! this must come after read_thrift_input but before we make any

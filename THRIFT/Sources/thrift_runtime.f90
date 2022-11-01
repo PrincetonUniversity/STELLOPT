@@ -65,7 +65,8 @@ MODULE thrift_runtime
     DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
 
     LOGICAL :: lverb, lvmec, lread_input, limas
-    INTEGER :: nprocs_thrift, nparallel_runs, mboz, nboz, ier_paraexe
+    INTEGER :: nprocs_thrift, nparallel_runs, mboz, nboz, ier_paraexe, &
+               mytimestep
     REAL(rprec) :: pi, pi2, invpi2, mu0, to3
     CHARACTER(256) :: id_string, prof_string, bootstrap_type, proc_string
 
