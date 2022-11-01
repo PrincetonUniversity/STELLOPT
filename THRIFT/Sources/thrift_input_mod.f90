@@ -11,6 +11,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
+      USE thrift_vars
       USE thrift_runtime
 
 !-----------------------------------------------------------------------
@@ -23,7 +24,8 @@
 !         &thrift_input
 !            nr             Number of radial gridpoints
 !-----------------------------------------------------------------------
-      NAMELIST /thrift_input/ nparallel_runs,bootstrap_type
+      NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
+                              nrho, tend, ntimesteps, jtol
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -37,6 +39,13 @@
       nparallel_runs     = 1
       mboz               = 32
       nboz               = 16
+      nrho               = 16
+      ntimesteps         = 32
+      tend               = 1.0
+      jtol               = 0.01
+      leccd              = .FALSE.
+      lnbcd              = .FALSE.
+      lohmic             = .FALSE.
       RETURN
       END SUBROUTINE init_thrift_input
       
@@ -86,6 +95,11 @@
       WRITE(iunit_out,'(A)') '!---------- GENERAL PARAMETERS ------------'
       WRITE(iunit_out,outint) 'NPARALLEL_RUNS',nparallel_runs
       WRITE(iunit_out,outstr) 'BOOTSTRAP_TYPE',bootstrap_type
+      WRITE(iunit_out,outflt) 'JTOL',jtol
+      WRITE(iunit_out,'(A)') '!---------- GRID PARAMETERS ------------'
+      WRITE(iunit_out,outint) 'NRHO',nrho
+      WRITE(iunit_out,outint) 'NTIMESTEPS',ntimesteps
+      WRITE(iunit_out,outflt) 'TEND',tend
       WRITE(iunit_out,'(A)') '!---------- BOOZER TRANSFORMATION ------------'
       WRITE(iunit_out,outint) 'MBOZ',mboz
       WRITE(iunit_out,outint) 'MBOZ',nboz
