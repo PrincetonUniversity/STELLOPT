@@ -16,10 +16,14 @@ MODULE thrift_vars
     !-------------------------------------------------------------------
     IMPLICIT NONE
 
-    INTEGER :: ntimesteps, nrho, win_thrift_j
-    REAL(rprec) :: tend
+    LOGICAL :: leccd, lnbcd, lohmic
+    INTEGER :: ntimesteps, nrho, win_thrift_j, win_thrift_jboot, &
+               win_thrift_jplasma, win_thrift_jeccd, win_thrift_jnbcd, &
+               win_thrift_johmic
+    REAL(rprec) :: tend, jtol
     REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_J, THRIFT_S11, &
-                 THRIFT_S12, THRIFT_S22, THRIFT_JBOOT
+                 THRIFT_S12, THRIFT_S22, THRIFT_JBOOT, THRIFT_JPLASMA, &
+                 THRIFT_JECCD, THRIFT_JNBCD, THRIFT_JOHMIC
 
 
 END MODULE thrift_vars

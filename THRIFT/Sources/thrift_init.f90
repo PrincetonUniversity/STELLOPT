@@ -41,6 +41,11 @@
 
       ! Allocate the Current Grid
       CALL mpialloc(THRIFT_J, nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_j)
+      CALL mpialloc(THRIFT_JBOOT, nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jboot)
+      CALL mpialloc(THRIFT_JPLASMA, nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jplasma)
+      CALL mpialloc(THRIFT_JECCD, nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jeccd)
+      CALL mpialloc(THRIFT_JNBCD, nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jnbcd)
+      CALL mpialloc(THRIFT_JOHMIC, nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_johmic)
 
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
