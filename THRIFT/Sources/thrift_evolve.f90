@@ -31,6 +31,7 @@
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
+      jold   = 1E3 ! so on loop 1 we don't divide by zero
       
       ! Loop over timesteps
       DO mytimestep = 1, ntimesteps

@@ -1,3 +1,16 @@
+thrift_equil_j.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
+      $(LIB_DIR)/$(LOCTYPE)/EZspline.o \
+      $(LIB_DIR)/$(LOCTYPE)/EZspline_obj.o 
+
+thrift_equil_p.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_profiles_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o
+
 thrift_evolve.o : \
       thrift_runtime.o \
       thrift_vars.o
