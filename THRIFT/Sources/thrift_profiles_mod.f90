@@ -305,6 +305,25 @@ MODULE thrift_profiles_mod
       RETURN
       END SUBROUTINE get_prof_ti
 
+      SUBROUTINE get_prof_p(rho_val,t_val,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(out) :: val
+      INTEGER     :: i
+      REAL(rprec) :: nk, tk
+      val = 0
+      CALL get_prof_ne(rho_val,t_val,nk)
+      CALL get_prof_te(rho_val,t_val,tk)
+      val = val + nk*tk
+      DO i = 1, nion_prof
+         CALL get_prof_ni(rho_val,t_val,i,nk)
+         CALL get_prof_ti(rho_val,t_val,i,tk)
+         val = val + nk*tk
+      END DO
+      RETURN
+      END SUBROUTINE get_prof_p
+
       SUBROUTINE free_profiles
       USE mpi_sharmem
       IMPLICIT NONE
