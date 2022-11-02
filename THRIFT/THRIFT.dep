@@ -40,7 +40,8 @@ thrift_input_mod.o : \
 thrift_interface_mod.o : \
       thrift_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
-      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/git_version_mod.o 
 
 thrift_main.o : \
       thrift_runtime.o \
