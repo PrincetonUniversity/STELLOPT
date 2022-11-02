@@ -13,6 +13,7 @@
       USE stel_kinds, ONLY: rprec
       USE thrift_vars
       USE thrift_runtime
+      USE safe_open_mod
 
 !-----------------------------------------------------------------------
 !     Module Variables

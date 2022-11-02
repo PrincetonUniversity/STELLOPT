@@ -327,6 +327,23 @@ MODULE thrift_profiles_mod
       RETURN
       END SUBROUTINE get_prof_p
 
+      SUBROUTINE get_prof_zeff(rho_val,t_val,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(out) :: val
+      INTEGER     :: i
+      REAL(rprec) :: f_top, f_bot, nk
+      val = 0; f_top = 0; f_bot = 0
+      DO i = 1, nion_prof
+         CALL get_prof_ni(rho_val,t_val,i,nk)
+         f_top = f_top + nk*nk*Zatom_prof(i)
+         f_bot = f_bot + nk*nk
+      END DO
+      IF (f_bot > 0) val = f_top/f_bot
+      RETURN
+      END SUBROUTINE get_prof_zeff
+
       SUBROUTINE free_profiles
       USE mpi_sharmem
       IMPLICIT NONE

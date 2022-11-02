@@ -19,7 +19,7 @@ MODULE thrift_vars
     LOGICAL :: leccd, lnbcd, lohmic, lscreen
     INTEGER :: ntimesteps, nrho, win_thrift_j, win_thrift_jboot, &
                win_thrift_jplasma, win_thrift_jeccd, win_thrift_jnbcd, &
-               win_thrift_johmic, win_thrift_rho, win_thrift_t
+               win_thrift_johmic, win_thrift_rho, win_thrift_t, win_lbooz
     REAL(rprec) :: tend, jtol
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_T(:)
     REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_J, THRIFT_S11, &
