@@ -9,7 +9,7 @@
 !                    rather, they sit around waiting for work from
 !                    their master.
 !-----------------------------------------------------------------------
-      SUBROUTINE thrift_paraexe(in_parameter_1,in_parameter_2,lscreen)
+      SUBROUTINE thrift_paraexe(in_parameter_1,in_parameter_2,lscreen_local)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -30,7 +30,8 @@
                              misc_error_flag, successful_term_flag, &
                              restart_flag, readin_flag, timestep_flag, &
                              output_flag, cleanup_flag, reset_jacdt_flag
-      USE vmec_input, ONLY:  ns_array, lfreeb, write_indata_namelist, lnyquist
+      USE vmec_input, ONLY:  ns_array, lfreeb, write_indata_namelist, &
+                             lnyquist, bcast_indata_namelist
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -38,11 +39,11 @@
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(inout)    :: in_parameter_1
       CHARACTER(LEN=*), INTENT(inout)    :: in_parameter_2
-      LOGICAL, INTENT(inout)        :: lscreen
+      LOGICAL, INTENT(inout)        :: lscreen_local
       
 !-----------------------------------------------------------------------
 !     Local Variables
-!        lscreen         Controls printing to the screen
+!        lscreen_local   Controls printing to the screen
 !        pass            Counts how many times this code is called.
 !        gene_dir_string GENE parameter file directory
 !        gene_str        GENE parameter file extension
@@ -112,10 +113,9 @@
                CALL MPI_BCAST(myseq,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_paraexe: BCAST2b',ierr_mpi)
                ! Now update the namelists
-               IF (myworkid == master) CALL thrift_prof_to_vmec(file_str,ier)
-               CALL thrift_bcast_vmec(master,MPI_COMM_MYWORLD,ier)
+               !CALL bcast_indata_namelist(master,MPI_COMM_MYWORLD,ier)
                IF (ier .eq. 0) THEN
-                  CALL thrift_reinit_vmec
+                  !CALL thrift_reinit_vmec
                   IF (myworkid == master) THEN
                      iunit = 37; ier = 0
                      CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')
@@ -130,7 +130,7 @@
                   reset_string =''
                   lhit = .FALSE.
                   NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
-                  CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
+                  CALL runvmec(ictrl,file_str,lscreen_local,MPI_COMM_MYWORLD,reset_string)
                   CALL FinalizeSurfaceComm(NS_COMM)
                   CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
                   ier=ictrl(2)
@@ -159,7 +159,7 @@
                ictrl(5) = myseq ! Output file sequence number
                reset_string =''
                NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
-               CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
+               CALL runvmec(ictrl,file_str,lscreen_local,MPI_COMM_MYWORLD,reset_string)
                LIFFREEB  = .FALSE. ! Already deallocated from before and we need to reset stuff
                CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD) ! We don't allocate the vacuum communicator when we write
                ier=ictrl(2)
@@ -170,22 +170,22 @@
 !DEC$ IF DEFINED (TRAVIS)
 !            CASE('travis')
 !               proc_string = file_str
-!               CALL thrift_travis(lscreen,ier)
+!               CALL thrift_travis(lscreen_local,ier)
 !DEC$ ENDIF            
             CASE('booz_xform')
                proc_string = file_str
                ier = 0
-               CALL thrift_toboozer(lscreen,ier)
+               !CALL thrift_toboozer(lscreen_local,ier)
                ier_paraexe = ier
             CASE('bootsj')
                proc_string = file_str
                ier = 0
-               CALL thrift_bootsj(lscreen,ier)
+               !CALL thrift_bootsj(lscreen_local,ier)
                ier_paraexe = ier
             CASE('sfincs')
 !               proc_string = file_str
 !               ier = 0
-!               CALL thrift_sfincs(lscreen,ier)
+!               CALL thrift_sfincs(lscreen_local,ier)
 !               ier_paraexe = ier
             CASE('exit')  ! we send this when we want to terminate the code (everyone leaves)
                CALL MPI_COMM_FREE(MPI_COMM_MYWORLD,ierr_mpi)
@@ -195,7 +195,6 @@
                PRINT *,"Error! thrift_paraexe called with unknown argument: ",TRIM(code_str)
                STOP
          END SELECT
-         !lscreen = .false.
          IF (myworkid == master) RETURN ! The master process of the Communicator can leave
       END DO
       RETURN

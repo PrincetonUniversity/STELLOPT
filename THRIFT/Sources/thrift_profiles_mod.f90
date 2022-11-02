@@ -39,6 +39,8 @@ MODULE thrift_profiles_mod
 !         get_prof_ni:        Returns the ion density [m^-3]
 !         get_prof_ti:        Returns the ion temperature [eV]
 !-----------------------------------------------------------------------
+      PUBLIC  :: read_thrift_profh5, get_prof_ne, get_prof_te, &
+                 get_prof_ni, get_prof_ti, get_prof_p, free_profiles
       PRIVATE :: setup_grids
       CONTAINS
 
@@ -167,6 +169,7 @@ MODULE thrift_profiles_mod
       SUBROUTINE setup_grids
       USE mpi_inc
       USE mpi_params
+      USE mpi_sharmem
       USE EZspline_type
       IMPLICIT NONE
       INTEGER :: i

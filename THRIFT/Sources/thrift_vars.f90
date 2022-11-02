@@ -16,7 +16,7 @@ MODULE thrift_vars
     !-------------------------------------------------------------------
     IMPLICIT NONE
 
-    LOGICAL :: leccd, lnbcd, lohmic
+    LOGICAL :: leccd, lnbcd, lohmic, lscreen
     INTEGER :: ntimesteps, nrho, win_thrift_j, win_thrift_jboot, &
                win_thrift_jplasma, win_thrift_jeccd, win_thrift_jnbcd, &
                win_thrift_johmic, win_thrift_rho, win_thrift_t

@@ -36,6 +36,7 @@
 
       SUBROUTINE init_thrift_input
       IMPLICIT NONE
+      bootstrap_type     = 'bootsj'
       nparallel_runs     = 1
       mboz               = 32
       nboz               = 16
@@ -74,6 +75,7 @@
          END IF
          CLOSE(iunit)
       END IF
+      CALL tolower(bootstrap_type)
       RETURN
       END SUBROUTINE read_thrift_input
 

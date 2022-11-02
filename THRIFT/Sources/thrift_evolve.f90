@@ -15,11 +15,14 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      INTEGER :: nsubsteps
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
+      CHARACTER(len = 16)     :: temp1_str, temp2_str
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+      lscreen = .TRUE.
 
       ! Initialize the current density
       THRIFT_J       = 0
@@ -40,28 +43,47 @@
          CALL thrift_equil_p
 
          ! Converge equilibrium currents
-         deltaj = 10*jtol
+         deltaj = 10*jtol; nsubsteps = 0
          DO WHILE (ANY(deltaj > jtol))
+
+            nsubsteps = nsubsteps + 1
+
+            ! Create filename
+            WRITE(temp1_str,'(i5)') ntimesteps
+            WRITE(temp2_str,'(i3)') nsubsteps
+            proc_string = TRIM(TRIM(id_string) // '.' //  &
+                  TRIM(ADJUSTL(temp1_str)) // '_' // &
+                  TRIM(ADJUSTL(temp2_str)))
+
             ! Update equilbrium current
             CALL thrift_equil_j
+
             ! Run equilibrium
             CALL thrift_run_equil
+
             ! Calculate Bootstrap
             CALL thrift_run_bootstrap
+
             ! Calculate Current Drive
-            IF (leccd)  CALL thrift_run_ECCD
-            IF (lnbcd)  CALL thrift_run_NBI
-            IF (lohmic) CALL thrift_run_ohmic
+            !IF (leccd)  CALL thrift_run_ECCD
+            !IF (lnbcd)  CALL thrift_run_NBI
+            !IF (lohmic) CALL thrift_run_ohmic
+
             ! Calc the inductive chagne in current
-            CALL thrift_jinductive
+            !CALL thrift_jinductive
+
             ! Update total current
             THRIFT_J(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep) &
                                    + THRIFT_JBOOT(:,mytimestep) &
                                    + THRIFT_JECCD(:,mytimestep) &
                                    + THRIFT_JNBCD(:,mytimestep) &
                                    + THRIFT_JOHMIC(:,mytimestep)
+
             ! Check the convergence
             deltaj = ABS( THRIFT_J(:,mytimestep) - jold) / ABS(jold)
+
+            ! Turn off screen output after one run
+            lscreen = .FALSE.
          END DO
          jold = THRIFT_J(:,mytimestep)
       END DO
