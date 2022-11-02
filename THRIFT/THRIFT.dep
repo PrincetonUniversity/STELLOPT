@@ -2,8 +2,8 @@ thrift_equil_j.o : \
       thrift_runtime.o \
       thrift_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
-      $(LIB_DIR)/$(LOCTYPE)/EZspline.o \
-      $(LIB_DIR)/$(LOCTYPE)/EZspline_obj.o 
+      $(LIB_DIR)/$(LOCTYPE)/ezspline.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o 
 
 thrift_equil_p.o : \
       thrift_runtime.o \
@@ -58,9 +58,9 @@ thrift_paraexe.o : \
 thrift_profiles_mod.o : \
       thrift_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
-      $(LIB_DIR)/$(LOCTYPE)/EZspline.o \
-      $(LIB_DIR)/$(LOCTYPE)/EZspline_obj.o \
-      $(LIB_DIR)/$(LOCTYPE)/EZspline_type.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_type.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_sharmem.o
