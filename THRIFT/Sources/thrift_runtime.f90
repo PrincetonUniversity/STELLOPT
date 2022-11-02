@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!     Module:        beams3d_runtime
+!     Module:        thrift_runtime
 !     Authors:       L. van Ham
 !     Date:          11/XX/2022
 !     Description:   This module contains various runtime parameters

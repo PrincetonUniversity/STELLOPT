@@ -41,13 +41,13 @@ CONTAINS
 #if defined(MPI_OPT)
       CALL MPI_INIT(ierr_mpi) ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_INIT_ERR, 'thrift_main', ierr_mpi)
-      CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'thrift_main', ierr_mpi)
-      CALL MPI_COMM_RANK(MPI_COMM_BEAMS, myworkid, ierr_mpi) ! MPI
+      CALL MPI_COMM_RANK(MPI_COMM_THRIFT, myworkid, ierr_mpi) ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'thrift_main', ierr_mpi)
-      CALL MPI_COMM_SIZE(MPI_COMM_BEAMS, nprocs_thrift, ierr_mpi) ! MPI
+      CALL MPI_COMM_SIZE(MPI_COMM_THRIFT, nprocs_thrift, ierr_mpi) ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_SIZE_ERR, 'thrift_main', ierr_mpi)
-      CALL thrift_init_mpi_split(MPI_COMM_BEAMS)
+      CALL thrift_init_mpi_split(MPI_COMM_THRIFT)
       CALL MPI_GET_VERSION(vmajor,vminor,ierr_mpi)
       CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ierr_mpi)
       ! Now we set some info
@@ -76,7 +76,7 @@ CONTAINS
       ier = 0
       !CALL thrift_free(MPI_COMM_SHARMEM)
 #if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'thrift_main', ierr_mpi)
       ierr_mpi=0
       CALL MPI_INFO_FREE(mpi_info_thrift, ierr_mpi)
@@ -161,13 +161,13 @@ CONTAINS
       END IF
     ! Broadcast variables
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(id_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_BCAST(id_string, 256, MPI_CHARACTER, master, MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
-      CALL MPI_BCAST(prof_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_BCAST(prof_string, 256, MPI_CHARACTER, master, MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
-      CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
-      CALL MPI_BCAST(limas, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_BCAST(limas, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
 #endif
       RETURN
