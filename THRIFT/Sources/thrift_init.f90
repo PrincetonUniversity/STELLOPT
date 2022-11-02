@@ -12,6 +12,7 @@
       USE thrift_runtime
       USE thrift_input_mod
       USE thrift_vars
+      USE thrift_profiles_mod
       USE mpi_params
       USE mpi_inc
       USE mpi_sharmem

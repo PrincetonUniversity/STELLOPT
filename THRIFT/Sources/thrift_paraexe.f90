@@ -17,6 +17,7 @@
       USE thrift_input_mod
       USE mpi_params
       USE mpi_inc
+      USE safe_open_mod
 !DEC$ IF DEFINED (SKS2)
       USE parallel_vmec_module, ONLY: &
             InitializeParallel, FinalizeParallel, grank, &
