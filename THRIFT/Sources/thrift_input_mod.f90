@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!     Module:        beams3d_input_mod
+!     Module:        thrift_input_mod
 !     Authors:       C. van Ham
 !     Date:          11/XX/2022
 !     Description:   This module contains the THRIFT input namelist and
