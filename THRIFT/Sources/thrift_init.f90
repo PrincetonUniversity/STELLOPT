@@ -74,7 +74,7 @@
          tstr1 = ''
          tstr2 = ''
          ier_paraexe = 0
-         CALL stellopt_paraexe(tstr1,tstr2,ltst)
+         CALL thrift_paraexe(tstr1,tstr2,ltst)
          RETURN
       END IF
       ! - From this point on only the main thread of each run executes

@@ -77,8 +77,8 @@ $(LIB_VMEC) :
 	
 #Construct bootsj library. 
 $(LIB_BOOTSJ) :
-	@cd $(BOOTSJ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOTSJ) *.o *.mod
+	@cd $(BOOTSJ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOTSJ) *.o
 	
 #Construct boozer library. 
 $(LIB_BOOZ) :
-	@cd $(BOOZ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOZ) *.o *.mod
+	@cd $(BOOZ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOZ) *.o

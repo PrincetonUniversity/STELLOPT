@@ -19,6 +19,7 @@ thrift_init.o : \
       thrift_runtime.o \
       thrift_input_mod.o \
       thrift_vars.o \
+      thrift_profiles_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  \
       $(LIB_DIR)/$(LOCTYPE)/mpi_sharmem.o
@@ -66,6 +67,14 @@ thrift_runtime.o : \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
+
+thrift_run_bootstrap.o : \
+      thrift_runtime.o \
+      thrift_vars.o
+
+thrift_run_equil.o : \
+      thrift_runtime.o \
+      thrift_vars.o
 
 thrift_vars.o : \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
