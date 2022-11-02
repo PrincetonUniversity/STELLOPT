@@ -6,84 +6,66 @@
 !                    FIDASIM code.
 !-----------------------------------------------------------------------
 SUBROUTINE beams3d_write_fidasim(write_type)
-!-----------------------------------------------------------------------
-!     Libraries
-!-----------------------------------------------------------------------
-   USE stel_kinds, ONLY: rprec
-#ifdef LHDF5
-      USE hdf5
-      USE ez_hdf5
-#endif
-   USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, &
-      ns_prof4, ns_prof5, dist5d_prof, &
-      partvmax, dist5D_fida, &
-      h2_prof, h3_prof, h4_prof, h5_prof, &
-      nsh_prof4,  my_end, r_h, p_h, z_h, e_h, pi_h
-   USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-      zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
-      ZEFF_ARR, TE, TI, NE, npot, nte, nti, nzeff, &
-      X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
-      NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET, &
-      POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
-      BR4D, BPHI4D, BZ4D, &
-      hr, hp, hz, hri, hpi, hzi, S4D, U4D, X4D, Y4D, &
-      rmin, rmax,  phimin, phimax, raxis, zaxis, phiaxis, &
-      rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
-      raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
-   USE beams3d_runtime, ONLY: id_string,npoinc, nbeams, beam, t_end, lverb, &
-      lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lplasma_only, &
-      lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
-      HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
-      HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
-      charge, Zatom, mass, ldepo, v_neut, &
-      lcollision, pi, pi2, t_end_in, nprocs_beams, &
-      div_beams, mass_beams, Zatom_beams, dex_beams, &
-      lascotfl, R_beams, PHI_beams, Z_beams, &
-      lfidasim2, lsplit
-   USE safe_open_mod, ONLY: safe_open
-   !USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free, machine_string
-   USE beams3d_write_par
-   USE mpi_params
-   USE mpi_inc
-!-----------------------------------------------------------------------
-!     Input Variables
-!          write_type  Type of write to preform
-!-----------------------------------------------------------------------
-   IMPLICIT NONE
-   CHARACTER(*), INTENT(IN):: write_type
-!-----------------------------------------------------------------------
-!     Local Variables
-!          ier          Error Flag
-!          iunit        File ID
-!-----------------------------------------------------------------------
-   INTEGER :: ier, iunit,istat, i, j, d1, d2, d3, k, k1, k2, kmax ,ider, &
-      l, m, n, b, i3, j3, k3
-   INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
-      neutral_gid, wall_gid, marker_gid, qid_gid, &
-      nbi_gid, inj_gid, boozer_gid, mhd_gid, temp_gid
-   INTEGER, ALLOCATABLE, DIMENSION(:) :: itemp
-   INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask
-
-   REAL*8 :: fvalE(1,3), fval(1), fval2(1), xparam, yparam, zparam
-   REAL(rprec) :: jac, v_parr, v_perp, pitch, v, phi_temp, r_temp, z_temp
-   REAL(rprec), DIMENSION(4) :: rt,zt,pt
-   REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_temp
-   !REAL*8 :: xparam, yparam, zparam!, hx, hy, hz, hxi, hyi, hzi
-   !REAL*8 :: fval(1), fval2(1)
-
-   DOUBLE PRECISION         :: x0, y0, z0, rho_temp, s_temp, dbl_temp, gammarel, v_total, vol
-   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), r1dtemp(:), r1dtemp2(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
-
-   CHARACTER(LEN=8) :: temp_str8, inj_str8
-
-   INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/), ictE(8)=(/0,1,1,1,0,0,0,0/)
-   REAL*8, PARAMETER :: one = 1
-   DOUBLE PRECISION, PARAMETER :: c_speed       = 2.99792458E+08 !Speed of light [m/s]
-   DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
-   DOUBLE PRECISION, PARAMETER :: inv_amu       = 6.02214076208E+26 ! 1./AMU [1/kg]
-   DOUBLE PRECISION, PARAMETER :: zero          = 0.0D0 ! 0.0
-
+   !-----------------------------------------------------------------------
+   !     Libraries
+   !-----------------------------------------------------------------------
+      USE stel_kinds, ONLY: rprec
+   #ifdef LHDF5
+         USE hdf5
+         USE ez_hdf5
+   #endif
+      USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, &
+         ns_prof4, ns_prof5, dist5d_prof, &
+         partvmax, dist5D_fida, &
+         h2_prof, h3_prof, h4_prof, h5_prof, &
+         nsh_prof4,  r_h, p_h, z_h
+      USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
+         zaxis, phiaxis, POT_ARR, &
+         TE, TI, NE, npot, nte, nti, &
+         POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
+         BR4D, BPHI4D, BZ4D, &
+         hr, hp, hz, hri, hpi, hzi, S4D, U4D, &
+         rmin, rmax,  phimin, phimax, raxis, zaxis, phiaxis, &
+         rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
+         raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
+         nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
+      USE beams3d_runtime, ONLY: id_string, nbeams, beam, lverb, handle_err, &
+         HDF5_OPEN_ERR,HDF5_WRITE_ERR,HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, &
+         charge, mass,pi, pi2, mass_beams, lfidasim2, lsplit
+      USE safe_open_mod, ONLY: safe_open
+      USE beams3d_write_par
+      USE mpi_params
+      USE mpi_inc
+   !-----------------------------------------------------------------------
+   !     Input Variables
+   !          write_type  Type of write to preform
+   !-----------------------------------------------------------------------
+      IMPLICIT NONE
+      CHARACTER(*), INTENT(IN):: write_type
+   !-----------------------------------------------------------------------
+   !     Local Variables
+   !          ier          Error Flag
+   !          iunit        File ID
+   !-----------------------------------------------------------------------
+      INTEGER :: ier, iunit,istat, i, j, d1, d2, d3, k, k1, k2, kmax ,ider, &
+         l, m, n, b, i3, j3, k3
+      INTEGER(HID_T) ::  qid_gid, temp_gid
+      INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask
+   
+      REAL*8 :: fvalE(1,3), fval(1), fval2(1), xparam, yparam, zparam
+      REAL(rprec) :: jac, v_parr, v_perp, pitch, v
+      REAL(rprec), DIMENSION(4) :: rt,zt,pt
+      REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_temp
+   
+      DOUBLE PRECISION         :: x0, y0, z0, vol
+      DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
+   
+      CHARACTER(LEN=8) :: temp_str8 
+   
+      INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/), ictE(8)=(/0,1,1,1,0,0,0,0/)
+      REAL*8, PARAMETER :: one = 1
+      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: zero          = 0.0D0 ! 0.0   
    
    !-----------------------------------------------------------------------
 !     Begin Subroutine
