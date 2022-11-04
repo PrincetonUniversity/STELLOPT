@@ -58,15 +58,15 @@ MODULE thrift_profiles_mod
       INTEGER :: i, ier
       INTEGER :: bcs0(2)
       TYPE(EZspline2_r8) :: temp_spl2d
-      TYPE(EZspline2_r8) :: temp_spl3d
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: temp2d
-      REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: temp3d
+      REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: temp_ni,temp_ti
       bcs0=(/ 0, 0/)
+      ierr_mpi = 0
       IF (lverb) THEN
          WRITE(6,'(A)')  '----- Reading Profile File -----'
          WRITE(6,'(A)')  '   FILE: '//TRIM(filename)
       END IF
-      IF (myworkid == master) THEN
+      IF (myid_sharmem == master) THEN
          CALL open_hdf5(TRIM(filename),fid,ier,LCREATE=.false.)
          IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(filename),ier)
          CALL read_scalar_hdf5(fid,'nrho',ier,INTVAR=nrho_prof)
@@ -76,12 +76,13 @@ MODULE thrift_profiles_mod
          CALL read_scalar_hdf5(fid,'nion',ier,INTVAR=nion_prof)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nion_prof',ier)
       END IF
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
       ! Broadcast the helpers
-      CALL MPI_BCAST(nrho_prof,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(nrho_prof,1,MPI_INTEGER,master,MPI_COMM_SHARMEM,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'read_thrift_profh5: nrho_prof',ierr_mpi)
-      CALL MPI_BCAST(nt_prof,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(nt_prof,1,MPI_INTEGER,master,MPI_COMM_SHARMEM,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'read_thrift_profh5: nt_prof',ierr_mpi)
-      CALL MPI_BCAST(nion_prof,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(nion_prof,1,MPI_INTEGER,master,MPI_COMM_SHARMEM,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'read_thrift_profh5: nion_prof',ierr_mpi)
       ! Allocate the shared memory objects
       CALL mpialloc(raxis_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_prof)
@@ -92,7 +93,7 @@ MODULE thrift_profiles_mod
       CALL mpialloc(TE3D, 4, nrho_prof, nt_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE3D)
       CALL mpialloc(NI4D, 4, nrho_prof, nt_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI4D)
       CALL mpialloc(TI4D, 4, nrho_prof, nt_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI4D)
-      IF (myworkid == master) THEN
+      IF (myid_sharmem == master) THEN
          ! Get the axis arrays
          CALL read_var_hdf5(fid,'raxis_prof',nrho_prof,ier,DBLVAR=raxis_prof)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'raxis_prof',ier)
@@ -102,12 +103,18 @@ MODULE thrift_profiles_mod
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Zatom_prof',ier)
          CALL read_var_hdf5(fid,'mass_prof',nt_prof,ier,DBLVAR=Matom_prof)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Matom_prof',ier)
+         IF (lverb) THEN
+            WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   RHO  = [',minval(raxis_prof),',',maxval(raxis_prof),'];  NRHO: ',nrho_prof
+            WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   T    = [',minval(taxis_prof),',',maxval(taxis_prof),'];    NT: ',nt_prof
+         END IF
          !Loop over profiles
          ALLOCATE(temp2d(nrho_prof,nt_prof))
          ! Now create the spline arrays
          ! NE
          CALL read_var_hdf5(fid,'ne_prof',nrho_prof,nt_prof,ier,DBLVAR=temp2d)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ne_prof',ier)
+         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A)') '   Ne   = [', &
+                        MINVAL(temp2d)*1E-20,',',MAXVAL(temp2d)*1E-20,'] E20 m^-3'
          CALL EZspline_init(temp_spl2d,nrho_prof,nt_prof,bcs0,bcs0,ier)
          temp_spl2d%x1          = raxis_prof
          temp_spl2d%x2          = taxis_prof
@@ -118,6 +125,8 @@ MODULE thrift_profiles_mod
          ! TE
          CALL read_var_hdf5(fid,'te_prof',nrho_prof,nt_prof,ier,DBLVAR=temp2d)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'te_prof',ier)
+         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A)') '   Te   = [', &
+                        MINVAL(temp2d)*1E-3,',',MAXVAL(temp2d)*1E-3,'] keV'
          CALL EZspline_init(temp_spl2d,nrho_prof,nt_prof,bcs0,bcs0,ier)
          temp_spl2d%x1          = raxis_prof
          temp_spl2d%x2          = taxis_prof
@@ -127,41 +136,51 @@ MODULE thrift_profiles_mod
          CALL EZspline_free(temp_spl2d,ier)
          ! Now work on Ion grid
          DEALLOCATE(temp2d)
-         ALLOCATE(temp3d(nion_prof,nrho_prof,nt_prof))
+         ALLOCATE(temp_ni(nion_prof,nrho_prof,nt_prof))
+         ALLOCATE(temp_ti(nion_prof,nrho_prof,nt_prof))
          ! NI
-         CALL read_var_hdf5(fid,'ni_prof',nion_prof,nrho_prof,nt_prof,ier,DBLVAR=temp3d)
+         CALL read_var_hdf5(fid,'ni_prof',nion_prof,nrho_prof,nt_prof,ier,DBLVAR=temp_ni)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ni_prof',ier)
          DO i = 1, nion_prof
-            CALL EZspline_init(temp_spl3d,nrho_prof,nt_prof,bcs0,bcs0,ier)
+            CALL EZspline_init(temp_spl2d,nrho_prof,nt_prof,bcs0,bcs0,ier)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: ni_prof',ier)
-            temp_spl3d%x1          = raxis_prof
-            temp_spl3d%x2          = taxis_prof
-            temp_spl3d%isHermite   = 1
-            CALL EZspline_setup(temp_spl3d,temp3d(i,:,:),ier,EXACT_DIM=.true.)
+            temp_spl2d%x1          = raxis_prof
+            temp_spl2d%x2          = taxis_prof
+            temp_spl2d%isHermite   = 1
+            CALL EZspline_setup(temp_spl2d,temp_ni(i,:,:),ier,EXACT_DIM=.true.)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: ni_prof',ier)
-            NI4D(:,:,:,i) = temp_spl3d%fspl
-            CALL EZspline_free(temp_spl3d,ier)
+            NI4D(:,:,:,i) = temp_spl2d%fspl
+            CALL EZspline_free(temp_spl2d,ier)
          END DO
          ! TI
-         CALL read_var_hdf5(fid,'ti_prof',nion_prof,nrho_prof,nt_prof,ier,DBLVAR=temp3d)
+         CALL read_var_hdf5(fid,'ti_prof',nion_prof,nrho_prof,nt_prof,ier,DBLVAR=temp_ti)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ti_prof',ier)
          DO i = 1, nion_prof
-            CALL EZspline_init(temp_spl3d,nrho_prof,nt_prof,bcs0,bcs0,ier)
+            CALL EZspline_init(temp_spl2d,nrho_prof,nt_prof,bcs0,bcs0,ier)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: ti_prof',ier)
-            temp_spl3d%x1          = raxis_prof
-            temp_spl3d%x2          = taxis_prof
-            temp_spl3d%isHermite   = 1
-            CALL EZspline_setup(temp_spl3d,temp3d(i,:,:),ier,EXACT_DIM=.true.)
+            temp_spl2d%x1          = raxis_prof
+            temp_spl2d%x2          = taxis_prof
+            temp_spl2d%isHermite   = 1
+            CALL EZspline_setup(temp_spl2d,temp_ti(i,:,:),ier,EXACT_DIM=.true.)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: ti_prof',ier)
-            TI4D(:,:,:,i) = temp_spl3d%fspl
-            CALL EZspline_free(temp_spl3d,ier)
+            TI4D(:,:,:,i) = temp_spl2d%fspl
+            CALL EZspline_free(temp_spl2d,ier)
+         END DO
+         DO i = 1, nion_prof
+            IF (lverb) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A,I3,A,I2)') '   Ni(',i,')= [', &
+                        MINVAL(temp_ni)*1E-20,',',MAXVAL(temp_ni)*1E-20,'] E20 m^-3;  M: ',&
+                        NINT(Matom_prof(i)/1.66053906660E-27),' amu;  Z: ',Zatom_prof(i)
+            IF (lverb) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A)') '   Ti(',i,')= [', &
+                        MINVAL(temp_ti)*1E-3,',',MAXVAL(temp_ti)*1E-3,'] keV'
          END DO
          ! DEALLOCATE Helpers
-         DEALLOCATE(temp3d)
+         DEALLOCATE(temp_ti)
+         DEALLOCATE(temp_ni)
          ! Close the HDF5 file
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,TRIM(filename),ier)
       END IF
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
       CALL setup_grids
       RETURN
       END SUBROUTINE read_thrift_profh5
@@ -178,9 +197,9 @@ MODULE thrift_profiles_mod
       CALL mpialloc(hri, nrho_prof-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
       CALL mpialloc(ht, nt_prof-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
       CALL mpialloc(hti, nt_prof-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
-      IF (myworkid == master) THEN
+      IF (myid_sharmem == master) THEN
         FORALL(i = 1:nrho_prof-1) hr(i) = raxis_prof(i+1) - raxis_prof(i)
-        FORALL(i = 1:nrho_prof-1) ht(i) = taxis_prof(i+1) - taxis_prof(i)
+        FORALL(i = 1:nt_prof-1)   ht(i) = taxis_prof(i+1) - taxis_prof(i)
         hri = one / hr
         hti = one / ht
       END IF
@@ -188,7 +207,7 @@ MODULE thrift_profiles_mod
       rhomax = MAXVAL(raxis_prof)
       tmin = MINVAL(taxis_prof)
       tmax = MAXVAL(taxis_prof)
-      eps1 = (tmax-tmin)*small
+      eps1 = (rhomax-rhomin)*small
       eps2 = (tmax-tmin)*small
       RETURN
       END SUBROUTINE setup_grids
@@ -324,6 +343,7 @@ MODULE thrift_profiles_mod
          CALL get_prof_ti(rho_val,t_val,i,tk)
          val = val + nk*tk
       END DO
+      val = val * e_charge
       RETURN
       END SUBROUTINE get_prof_p
 

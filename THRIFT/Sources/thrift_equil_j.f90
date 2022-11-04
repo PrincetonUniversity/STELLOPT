@@ -46,7 +46,7 @@
       DEALLOCATE(rho_temp,j_temp)
 
       IF (lvmec) THEN
-         PCURR_TYPE = 'akima_spline'
+         PCURR_TYPE = 'akima_spline_ip'
          NCURR = 1
          DO i = 1, 99
            s_val = DBLE(i-1)/DBLE(99-1)

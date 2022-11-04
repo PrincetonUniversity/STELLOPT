@@ -32,6 +32,7 @@
 !----------------------------------------------------------------------
 
       ! Read the Input Namelist for THRIFT
+      IF (lverb) WRITE(6,'(A)') '----- Input Parameters -----'
       CALL init_thrift_input
 
       ! Read the THRIFT input
@@ -39,6 +40,8 @@
          CALL read_thrift_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
       ENDIF
+
+      ! Create the worker pool
 
       ! Allocate the Current Grid
       CALL mpialloc(THRIFT_RHO, nrho,       myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rho)
@@ -51,7 +54,7 @@
       CALL mpialloc(THRIFT_JOHMIC,  nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_johmic)
 
       ! Define grids
-      IF (myworkid == master) THEN
+      IF (myid_sharmem == master) THEN
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho)
         FORALL(i = 1:ntimesteps) THRIFT_T(i) = DBLE(i-1)/DBLE(ntimesteps-1)
       END IF
@@ -66,9 +69,7 @@
       ! Now setup the profiles
       CALL read_thrift_profh5(TRIM(prof_string))
 
-      ! Now we initilize the subgroups
-      ! this must come after read_thrift_input but before we make any
-      ! calls to parallel codes (like VMEC)
+      ! Split off workers
       CALL thrift_init_mpisubgroup
       IF (myworkid .ne. master) THEN
          ltst  = .false.
@@ -84,16 +85,11 @@
       IF (lvmec) THEN
          ltst = .false.
          tstr1 = 'parvmec_init'
-         id_string = id_string(7:LEN(id_string))
          tstr2 = id_string
          CALL thrift_paraexe(tstr1,tstr2,ltst)
       END IF
 
-!DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER( MPI_COMM_THRIFT, ierr_mpi )                   ! MPI
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'thrift_init',ierr_mpi)
-!DEC$ ENDIF
-      
+      RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
