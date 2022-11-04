@@ -14,13 +14,13 @@
   
   SHELL = /bin/sh
   PWD1 = `pwd`
-  PRECOMP:= cpp-mp-10 -traditional-cpp -E -P -C -DMACOSX
+  PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none \
                           -ffixed-line-length-none
   LINK    = gfortran $(FLAGS) -o
   LINK_AR = ar -ruvs
-  LINK_C  = gcc -shared -Wl,-no_compact_unwind
+  LINK_C  = gcc -Wl,-no_compact_unwind
 
 #######################################################################
 #            Define Compiler Flags
@@ -39,8 +39,7 @@
   MPI_COMPILE_FREE = mpif90 -ffree-form -ffree-line-length-none \
                             -ffixed-line-length-none 
   MPI_COMPILE_C = mpicc 
-  MPI_LINK = /opt/local/bin/mpif90
-  MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
+  MPI_LINK = mpif90 -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = -np 2
 
@@ -157,7 +156,7 @@
 #######################################################################
 #            Available Energy Options
 #######################################################################
-  LAEOPT= T
+  LAEOPT= F
   AEOPT_DIR = $(AEOPT_PATH)
   AEOPT_INC = -I$(AEOPT_DIR) 
   LIB_AEOPT = libtrapAE.a
@@ -167,4 +166,4 @@
 #            LIBSTELL Shared Options
 #######################################################################
 
-LIB_SHARE = -L/opt/local/lib/gcc10 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread $(LIBS)
+LIB_SHARE = $(LIBS)
