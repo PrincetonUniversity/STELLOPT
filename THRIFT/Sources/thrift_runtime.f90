@@ -63,6 +63,8 @@ MODULE thrift_runtime
     INTEGER, PARAMETER :: NION = 4
 
     DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
+    DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
+    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 
     LOGICAL :: lverb, lvmec, lread_input, limas
     INTEGER :: nprocs_thrift, nparallel_runs, mboz, nboz, ier_paraexe, &

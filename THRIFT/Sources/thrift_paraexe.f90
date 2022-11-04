@@ -18,13 +18,13 @@
       USE mpi_params
       USE mpi_inc
       USE safe_open_mod
-!DEC$ IF DEFINED (SKS2)
+#if defined(SKS2)
       USE parallel_vmec_module, ONLY: &
             InitializeParallel, FinalizeParallel, grank, &
             PARVMEC, LV3FITCALL,&
             InitRunVmec,FinalizeRunVmec,RUNVMEC_COMM_WORLD,NS_RESLTN,&
             FinalizeSurfaceComm, NS_COMM, LIFFREEB
-!DEC$ ENDIF
+#endif
       USE vmec_params, ONLY: norm_term_flag, bad_jacobian_flag,&
                              more_iter_flag, jac75_flag, input_error_flag,&
                              phiedge_error_flag, ns_error_flag, &
@@ -70,15 +70,14 @@
       DO
          ! First get the name of the code blah
          ier_paraexe = 0; ierr_mpi = 0; ier = 0
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_paraexe: BARRIER1',ierr_mpi)
          CALL MPI_BCAST(code_str,256,MPI_CHARACTER,master,MPI_COMM_MYWORLD,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_paraexe: BCAST1',ierr_mpi)
          CALL MPI_BCAST(file_str,256,MPI_CHARACTER,master,MPI_COMM_MYWORLD,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_paraexe: BCAST2',ierr_mpi)
-!DEC$ ENDIF
-
+#endif
          ! Now run the proper code
          CALL tolower(code_str)
          SELECT CASE (TRIM(code_str))
@@ -90,12 +89,10 @@
                ictrl(2) = 0
                ictrl(3) = 50
                ictrl(4) = 0
-               ictrl(5) = myid
+               ictrl(5) = myseq
                PARVMEC = .TRUE.
                NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
                reset_string =''
-               !IF (TRIM(equil_type)=='animec') ictrl(1) = ictrl(1) + animec_flag
-               !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') ictrl(1) = ictrl(1) + flow_flag
                IF (myworkid==master) THEN
                   CALL safe_open(iunit,ier,'threed1.'//TRIM(file_str),'unknown','formatted')
                   CLOSE(iunit)
@@ -103,12 +100,12 @@
                CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_paraexe: BARRIER',ierr_mpi)
                CALL runvmec(ictrl,file_str,.false.,MPI_COMM_MYWORLD,reset_string)
-               CALL FinalizeSurfaceComm(NS_COMM)
-               CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
+               !CALL FinalizeSurfaceComm(NS_COMM)
+               !CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
                ier_paraexe=ictrl(2)
                in_parameter_2 = TRIM(file_str)
             CASE('paravmec_run')
-!DEC$ IF DEFINED (SKS2)
+#if defined(SKS2)
                ! Broadcast the sequence number
                myseq=myid          ! MPI
                CALL MPI_BCAST(myseq,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -117,7 +114,7 @@
                !CALL bcast_indata_namelist(master,MPI_COMM_MYWORLD,ier)
                IF (ier .eq. 0) THEN
                   !CALL thrift_reinit_vmec
-                  IF (myworkid == master) THEN
+                  IF (myid_sharmem == master) THEN
                      iunit = 37; ier = 0
                      CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')
                      CALL write_indata_namelist(iunit,ier)
@@ -139,18 +136,18 @@
                   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_paraexe: BCAST2d',ierr_mpi)
                   IF (  ier == successful_term_flag  .or. &
                         ier == norm_term_flag) THEN
-                     IF (myworkid == master) CLOSE(UNIT=iunit,STATUS='delete')
+                     IF (myid_sharmem == master) CLOSE(UNIT=iunit,STATUS='delete')
                      ier = 0
                   ELSE
-                     IF (myworkid == master) CLOSE(UNIT=iunit)
+                     IF (myid_sharmem == master) CLOSE(UNIT=iunit)
                      ier = -1
                   END IF
                END IF
                in_parameter_2 = TRIM(file_str)
                ier_paraexe = ier
-!DEC$ ENDIF
+#endif
             CASE('paravmec_write')
-!DEC$ IF DEFINED (SKS2)
+#if defined(SKS2)
                CALL MPI_BCAST(myseq,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_paraexe: BCAST2b',ierr_mpi)
                ictrl(1) = output_flag
@@ -167,12 +164,12 @@
                CALL MPI_BCAST(ier,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_paraexe: BCAST2d',ierr_mpi)
                ier_paraexe = ier
-!DEC$ ENDIF
-!DEC$ IF DEFINED (TRAVIS)
+#endif
+#if defined(TRAVIS)
 !            CASE('travis')
 !               proc_string = file_str
 !               CALL thrift_travis(lscreen_local,ier)
-!DEC$ ENDIF            
+#endif
             CASE('booz_xform')
                proc_string = file_str
                ier = 0

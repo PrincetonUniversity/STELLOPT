@@ -4,6 +4,10 @@
 !     Date:          11/XX/2022
 !     Description:   Module provides routines for handling various
 !                    initialization tasks.
+!                    MPI_COMM_WORLD
+!                        myid
+!                    MPI_COMM_THRIFT
+!                        myworkid
 !-----------------------------------------------------------------------
 MODULE THRIFT_INTERFACE_MOD
 !-----------------------------------------------------------------------
@@ -41,13 +45,13 @@ CONTAINS
 #if defined(MPI_OPT)
       CALL MPI_INIT(ierr_mpi) ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_INIT_ERR, 'thrift_main', ierr_mpi)
+      ! MPI_COMM_THRIFT
       CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_THRIFT, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'thrift_main', ierr_mpi)
       CALL MPI_COMM_RANK(MPI_COMM_THRIFT, myworkid, ierr_mpi) ! MPI
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'thrift_main', ierr_mpi)
       CALL MPI_COMM_SIZE(MPI_COMM_THRIFT, nprocs_thrift, ierr_mpi) ! MPI
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_SIZE_ERR, 'thrift_main', ierr_mpi)
+      !
       CALL thrift_init_mpi_split(MPI_COMM_THRIFT)
+      ! version info
       CALL MPI_GET_VERSION(vmajor,vminor,ierr_mpi)
       CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ierr_mpi)
       ! Now we set some info
@@ -66,6 +70,7 @@ CONTAINS
 #if defined(MPI_OPT)
       CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
       CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
+      CALL MPI_COMM_DUP(MPI_COMM_SHARMEM, MPI_COMM_MYWORLD, ierr_mpi)
 #endif
       END SUBROUTINE thrift_init_mpi_split
 
