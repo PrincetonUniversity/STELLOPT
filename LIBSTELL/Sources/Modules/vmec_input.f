@@ -370,7 +370,7 @@
       USE mpi_params
       USE mpi_inc
       IMPLICIT NONE
-      INTEGER,INTENT(INOUT) :: local_master
+      INTEGER,INTENT(IN) :: local_master
       INTEGER,INTENT(INOUT) :: local_comm
       INTEGER,INTENT(INOUT) :: iflag
 !DEC$ IF DEFINED (MPI_OPT)
