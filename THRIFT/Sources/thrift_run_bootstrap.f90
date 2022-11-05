@@ -22,8 +22,8 @@
 
       SELECT CASE(TRIM(bootstrap_type))
          CASE ('bootsj')
-            CALL thrift_paraexe('booz_xform',proc_string,lscreen)
-            CALL thrift_paraexe('bootsj',proc_string,lscreen)
+            CALL thrift_paraexe('booz_xform',proc_string,lscreen_subcodes)
+            CALL thrift_paraexe('bootsj',proc_string,lscreen_subcodes)
          CASE ('sfincs')
          CASE ('test')
       END SELECT

@@ -1,3 +1,14 @@
+thrift_boozer.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
+      $(BOOZ_DIR)/$(LOCTYPE)/booz_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(BOOZ_DIR)/$(LOCTYPE)/booz_persistent.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  
+
 thrift_equil_j.o : \
       thrift_runtime.o \
       thrift_vars.o \

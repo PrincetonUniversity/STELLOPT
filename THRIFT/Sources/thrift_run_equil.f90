@@ -20,7 +20,7 @@
 !----------------------------------------------------------------------
 
       IF (lvmec) THEN
-         CALL thrift_paraexe('paravmec_run',proc_string,lscreen)
+         CALL thrift_paraexe('paravmec_run',proc_string,lscreen_subcodes)
       END IF
 
       RETURN

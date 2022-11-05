@@ -13,7 +13,8 @@
       USE thrift_profiles_mod
       USE vmec_input, ONLY: am_aux_s, am_aux_f, ac_aux_s, ac_aux_f, &
                             ah_aux_s, ah_aux_f, at_aux_s, at_aux_f, &
-                            pmass_type, pcurr_type, ph_type, pt_type
+                            pmass_type, pcurr_type, ph_type, pt_type, &
+                            pres_scale
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -27,6 +28,7 @@
 
       IF (lvmec) THEN
          PMASS_TYPE = 'akima_spline'
+         PRES_SCALE = one
          DO i = 1, 99
            s_val = DBLE(i-1)/DBLE(99-1)
            rho_val = sqrt(s_val)
