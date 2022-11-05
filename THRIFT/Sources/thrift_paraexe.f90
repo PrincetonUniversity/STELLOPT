@@ -111,7 +111,7 @@
                CALL MPI_BCAST(myseq,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_paraexe: BCAST2b',ierr_mpi)
                ! Now update the namelists
-               !CALL bcast_indata_namelist(master,MPI_COMM_MYWORLD,ier)
+               CALL bcast_indata_namelist(master,MPI_COMM_MYWORLD,ier)
                IF (ier .eq. 0) THEN
                   !CALL thrift_reinit_vmec
                   IF (myid_sharmem == master) THEN
@@ -173,7 +173,7 @@
             CASE('booz_xform')
                proc_string = file_str
                ier = 0
-               !CALL thrift_toboozer(lscreen_local,ier)
+               CALL thrift_boozer(lscreen_local,ier)
                ier_paraexe = ier
             CASE('bootsj')
                proc_string = file_str

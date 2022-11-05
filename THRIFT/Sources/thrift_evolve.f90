@@ -22,7 +22,6 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      lscreen = .TRUE.
 
       ! Initialize the current density
       THRIFT_J       = 0
@@ -35,6 +34,7 @@
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
       jold   = 1E3 ! so on loop 1 we don't divide by zero
+      lscreen_subcodes = .TRUE.
       
       ! Loop over timesteps
       DO mytimestep = 1, ntimesteps
@@ -80,10 +80,24 @@
                                    + THRIFT_JOHMIC(:,mytimestep)
 
             ! Check the convergence
-            deltaj = ABS( THRIFT_J(:,mytimestep) - jold) / ABS(jold)
+            IF (ANY(ABS(jold)>0)) THEN
+               WHERE(ABS(jold)>0) deltaj = ABS( THRIFT_J(:,mytimestep) - jold) / ABS(jold)
+            ELSE
+               deltaj = 0.0
+            END IF
+
+            ! Print Header
+            IF (lverb .and. (nsubsteps==1) .and. (mytimestep==1)) THEN
+               WRITE(6,*)'    T     NSUB     ITOR     MAX(deltaj)'
+               WRITE(6,*)'---------------------------------------'
+            END IF
+
+            ! Print progress
+            WRITE(6,'(F5.3,1X,I5,1X,ES10.2,1X,ES10.2)') &
+                THRIFT_T(mytimestep),nsubsteps,SUM(THRIFT_J(:,mytimestep)),MAXVAL(deltaj)
 
             ! Turn off screen output after one run
-            lscreen = .FALSE.
+            lscreen_subcodes = .FALSE.
          END DO
          jold = THRIFT_J(:,mytimestep)
       END DO
