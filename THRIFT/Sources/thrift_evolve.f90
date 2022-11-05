@@ -37,7 +37,7 @@
       lscreen_subcodes = .TRUE.
       
       ! Loop over timesteps
-      DO mytimestep = 1, ntimesteps
+      DO mytimestep = 2, ntimesteps
       
          ! Setup the profiles
          CALL thrift_equil_p
@@ -49,7 +49,7 @@
             nsubsteps = nsubsteps + 1
 
             ! Create filename
-            WRITE(temp1_str,'(i5)') ntimesteps
+            WRITE(temp1_str,'(i5)') mytimestep
             WRITE(temp2_str,'(i3)') nsubsteps
             proc_string = TRIM(TRIM(id_string) // '.' //  &
                   TRIM(ADJUSTL(temp1_str)) // '_' // &
@@ -87,13 +87,13 @@
             END IF
 
             ! Print Header
-            IF (lverb .and. (nsubsteps==1) .and. (mytimestep==1)) THEN
+            IF (lverb .and. (nsubsteps==1) .and. (mytimestep==2)) THEN
                WRITE(6,*)'    T     NSUB     ITOR     MAX(deltaj)'
                WRITE(6,*)'---------------------------------------'
             END IF
 
             ! Print progress
-            WRITE(6,'(F5.3,1X,I5,1X,ES10.2,1X,ES10.2)') &
+            WRITE(6,'(2X,F5.3,1X,I5,1X,ES10.2,1X,ES10.2)') &
                 THRIFT_T(mytimestep),nsubsteps,SUM(THRIFT_J(:,mytimestep)),MAXVAL(deltaj)
 
             ! Turn off screen output after one run
