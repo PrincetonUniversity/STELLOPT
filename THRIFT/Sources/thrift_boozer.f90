@@ -60,14 +60,16 @@
 #if defined(MPI_OPT)
          CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, numprocs_local, ierr_mpi )
          CALL MPI_BCAST(mboz_xboozer,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
-         CALL MPI_BCAST(mboz_xboozer,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(nboz_xboozer,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(ns_vmec,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
 #endif
-         ! Now read the wout file
+         ! We need to setup the lsurf_boz array
          IF (ALLOCATED(lsurf_boz)) DEALLOCATE(lsurf_boz)
          ALLOCATE(lsurf_boz(ns_vmec))
-         lsurf_boz(1:ns_vmec) = .TRUE.
+         lsurf_boz = .FALSE.
+         lsurf_boz(2:ns_vmec) = .TRUE. ! We can probaly do less surfaces in the future
          num_booz = -COUNT(lsurf_boz) ! This tricks the code into not reading the wout or input file
+         ! Now read the wout file
          ier = 0
 #if defined(MPI_OPT)
          IF (myworkid == master) THEN

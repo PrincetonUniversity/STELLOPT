@@ -10,17 +10,22 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
+      USE read_wout_mod, ONLY: read_wout_deallocate, read_wout_file
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      INTEGER :: ier
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 
       IF (lvmec) THEN
          CALL thrift_paraexe('paravmec_run',proc_string,lscreen_subcodes)
+         ! Read the VMEC output
+         CALL read_wout_deallocate; ier = 0
+         CALL read_wout_file(TRIM(proc_string),ier)
       END IF
 
       RETURN
