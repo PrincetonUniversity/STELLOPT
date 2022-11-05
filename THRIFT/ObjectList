@@ -1,4 +1,5 @@
 ObjectFiles = \
+thrift_bootsj.o \
 thrift_boozer.o \
 thrift_run_bootstrap.o \
 thrift_run_equil.o \

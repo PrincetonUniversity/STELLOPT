@@ -230,7 +230,7 @@
          IF (ALLOCATED(buco_b)) DEALLOCATE(buco_b); ALLOCATE(buco_b(ns_b)); buco_b=0
          IF (ALLOCATED(bvco_b)) DEALLOCATE(bvco_b); ALLOCATE(bvco_b(ns_b)); bvco_b=0
          idx_b = 0
-         idx_b(1:ns_b) = 1
+         idx_b(2:ns_b) = 1
          iota_b = hiota
          pres_b = pres
          phip_b = phip

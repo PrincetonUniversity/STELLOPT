@@ -13,6 +13,7 @@
       USE thrift_input_mod
       USE thrift_vars
       USE thrift_profiles_mod
+      USE safe_open_mod
       USE mpi_params
       USE mpi_inc
       USE mpi_sharmem
@@ -24,7 +25,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL        :: ltst
-      INTEGER        :: ier, i
+      INTEGER        :: ier, i, iunit
       CHARACTER(256) :: tstr1,tstr2
       
 !----------------------------------------------------------------------
@@ -63,6 +64,16 @@
       CALL tolower(bootstrap_type)
       SELECT CASE (TRIM(bootstrap_type))
          CASE('bootsj')
+            ! Read BOOTSJ NAMELIST
+            CALL safe_open(iunit,ier,'input.'//TRIM(id_string),'old','formatted')
+            CALL read_namelist (iunit, ier, 'bootin')
+            IF (ier < 0 .and. myid == master) THEN
+               WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+               WRITE(6,*) '  BOOTIN Namelist not found     '
+               WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               STOP
+            END IF
+            CLOSE(iunit)
          CASE('sfincs')
       END SELECT
 
