@@ -88,7 +88,8 @@ thrift_run_bootstrap.o : \
 
 thrift_run_equil.o : \
       thrift_runtime.o \
-      thrift_vars.o
+      thrift_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o 
 
 thrift_vars.o : \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
