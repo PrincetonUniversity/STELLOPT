@@ -113,7 +113,7 @@
                ! Now update the namelists
                CALL bcast_indata_namelist(master,MPI_COMM_MYWORLD,ier)
                IF (ier .eq. 0) THEN
-                  !CALL thrift_reinit_vmec
+                  CALL thrift_reinit_vmec
                   IF (myid_sharmem == master) THEN
                      iunit = 37; ier = 0
                      CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')

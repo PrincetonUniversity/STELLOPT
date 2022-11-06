@@ -89,10 +89,10 @@ MODULE thrift_profiles_mod
       CALL mpialloc(taxis_prof, nt_prof,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_taxis_prof)
       CALL mpialloc(Zatom_prof, nion_prof,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_Zatom_prof)
       CALL mpialloc(Matom_prof, nion_prof,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_Matom_prof)
-      CALL mpialloc(NE3D, 4, nrho_prof, nt_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE3D)
-      CALL mpialloc(TE3D, 4, nrho_prof, nt_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE3D)
-      CALL mpialloc(NI4D, 4, nrho_prof, nt_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI4D)
-      CALL mpialloc(TI4D, 4, nrho_prof, nt_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI4D)
+      CALL mpialloc(NE3D, 4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE3D)
+      CALL mpialloc(TE3D, 4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE3D)
+      CALL mpialloc(NI4D, 4, nt_prof, nrho_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI4D)
+      CALL mpialloc(TI4D, 4, nt_prof, nrho_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI4D)
       IF (myid_sharmem == master) THEN
          ! Get the axis arrays
          CALL read_var_hdf5(fid,'raxis_prof',nrho_prof,ier,DBLVAR=raxis_prof)
@@ -108,60 +108,60 @@ MODULE thrift_profiles_mod
             WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   T    = [',minval(taxis_prof),',',maxval(taxis_prof),'];    NT: ',nt_prof
          END IF
          !Loop over profiles
-         ALLOCATE(temp2d(nrho_prof,nt_prof))
+         ALLOCATE(temp2d(nt_prof,nrho_prof))
          ! Now create the spline arrays
          ! NE
-         CALL read_var_hdf5(fid,'ne_prof',nrho_prof,nt_prof,ier,DBLVAR=temp2d)
+         CALL read_var_hdf5(fid,'ne_prof',nt_prof,nrho_prof,ier,DBLVAR=temp2d)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ne_prof',ier)
          IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A)') '   Ne   = [', &
                         MINVAL(temp2d)*1E-20,',',MAXVAL(temp2d)*1E-20,'] E20 m^-3'
-         CALL EZspline_init(temp_spl2d,nrho_prof,nt_prof,bcs0,bcs0,ier)
-         temp_spl2d%x1          = raxis_prof
-         temp_spl2d%x2          = taxis_prof
+         CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
+         temp_spl2d%x1          = taxis_prof
+         temp_spl2d%x2          = raxis_prof
          temp_spl2d%isHermite   = 1
          CALL EZspline_setup(temp_spl2d,temp2d,ier,EXACT_DIM=.true.)
          NE3D = temp_spl2d%fspl
          CALL EZspline_free(temp_spl2d,ier)
          ! TE
-         CALL read_var_hdf5(fid,'te_prof',nrho_prof,nt_prof,ier,DBLVAR=temp2d)
+         CALL read_var_hdf5(fid,'te_prof',nt_prof,nrho_prof,ier,DBLVAR=temp2d)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'te_prof',ier)
          IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A)') '   Te   = [', &
                         MINVAL(temp2d)*1E-3,',',MAXVAL(temp2d)*1E-3,'] keV'
-         CALL EZspline_init(temp_spl2d,nrho_prof,nt_prof,bcs0,bcs0,ier)
-         temp_spl2d%x1          = raxis_prof
-         temp_spl2d%x2          = taxis_prof
+         CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
+         temp_spl2d%x1          = taxis_prof
+         temp_spl2d%x2          = raxis_prof
          temp_spl2d%isHermite   = 1
          CALL EZspline_setup(temp_spl2d,temp2d,ier,EXACT_DIM=.true.)
          TE3D = temp_spl2d%fspl
          CALL EZspline_free(temp_spl2d,ier)
          ! Now work on Ion grid
          DEALLOCATE(temp2d)
-         ALLOCATE(temp_ni(nion_prof,nrho_prof,nt_prof))
-         ALLOCATE(temp_ti(nion_prof,nrho_prof,nt_prof))
+         ALLOCATE(temp_ni(nt_prof,nrho_prof,nion_prof))
+         ALLOCATE(temp_ti(nt_prof,nrho_prof,nion_prof))
          ! NI
          CALL read_var_hdf5(fid,'ni_prof',nion_prof,nrho_prof,nt_prof,ier,DBLVAR=temp_ni)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ni_prof',ier)
          DO i = 1, nion_prof
-            CALL EZspline_init(temp_spl2d,nrho_prof,nt_prof,bcs0,bcs0,ier)
+            CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: ni_prof',ier)
-            temp_spl2d%x1          = raxis_prof
-            temp_spl2d%x2          = taxis_prof
+            temp_spl2d%x1          = taxis_prof
+            temp_spl2d%x2          = raxis_prof
             temp_spl2d%isHermite   = 1
-            CALL EZspline_setup(temp_spl2d,temp_ni(i,:,:),ier,EXACT_DIM=.true.)
+            CALL EZspline_setup(temp_spl2d,temp_ni(:,:,i),ier,EXACT_DIM=.true.)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: ni_prof',ier)
             NI4D(:,:,:,i) = temp_spl2d%fspl
             CALL EZspline_free(temp_spl2d,ier)
          END DO
          ! TI
-         CALL read_var_hdf5(fid,'ti_prof',nion_prof,nrho_prof,nt_prof,ier,DBLVAR=temp_ti)
+         CALL read_var_hdf5(fid,'ti_prof',nt_prof,nrho_prof,nion_prof,ier,DBLVAR=temp_ti)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ti_prof',ier)
          DO i = 1, nion_prof
-            CALL EZspline_init(temp_spl2d,nrho_prof,nt_prof,bcs0,bcs0,ier)
+            CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: ti_prof',ier)
-            temp_spl2d%x1          = raxis_prof
-            temp_spl2d%x2          = taxis_prof
+            temp_spl2d%x1          = taxis_prof
+            temp_spl2d%x2          = raxis_prof
             temp_spl2d%isHermite   = 1
-            CALL EZspline_setup(temp_spl2d,temp_ti(i,:,:),ier,EXACT_DIM=.true.)
+            CALL EZspline_setup(temp_spl2d,temp_ti(:,:,i),ier,EXACT_DIM=.true.)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: ti_prof',ier)
             TI4D(:,:,:,i) = temp_spl2d%fspl
             CALL EZspline_free(temp_spl2d,ier)
@@ -225,13 +225,13 @@ MODULE thrift_profiles_mod
       val = 0
       IF ((rho_val >= rhomin-eps1) .and. (rho_val <= rhomax+eps1) .and. &
           (t_val   >= tmin-eps2)   .and. (t_val   <= tmax+eps2)) THEN
-         i = MIN(MAX(COUNT(raxis_prof < rho_val),1),nrho_prof-1)
-         j = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
-         xparam = (rho_val - raxis_prof(i)) * hri(i)
-         yparam = (t_val   - taxis_prof(j)) * hti(j)
+         i = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
+         j = MIN(MAX(COUNT(raxis_prof < rho_val),1),nrho_prof-1)
+         xparam = (t_val - taxis_prof(i)) * hti(i)
+         yparam = (rho_val   - raxis_prof(j)) * hri(j)
          CALL R8HERM2FCN(ict,1,1,fval,i,j,xparam,yparam,&
-                         hr(i),hri(i),ht(j),hti(j),&
-                         SPL(1,1,1),nrho_prof,nt_prof)
+                         ht(i),hti(i),hr(j),hri(j),&
+                         SPL(1,1,1),nt_prof,nrho_prof)
          val = fval(1)
       END IF
       RETURN
@@ -250,13 +250,13 @@ MODULE thrift_profiles_mod
       val = 0
       IF ((rho_val >= rhomin-eps1) .and. (rho_val <= rhomax+eps1) .and. &
           (t_val   >= tmin-eps2)   .and. (t_val   <= tmax+eps2)) THEN
-         i = MIN(MAX(COUNT(raxis_prof < rho_val),1),nrho_prof-1)
-         j = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
-         xparam = (rho_val - raxis_prof(i)) * hri(i)
-         yparam = (t_val   - taxis_prof(j)) * hti(j)
+         i = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
+         j = MIN(MAX(COUNT(raxis_prof < rho_val),1),nrho_prof-1)
+         xparam = (t_val - taxis_prof(i)) * hti(i)
+         yparam = (rho_val   - raxis_prof(j)) * hri(j)
          CALL R8HERM2FCN(ict,1,1,fval,i,j,xparam,yparam,&
-                         hr(i),hri(i),ht(j),hti(j),&
-                         SPL(1,1,1),nrho_prof,nt_prof)
+                         ht(i),hti(i),hr(j),hri(j),&
+                         SPL(1,1,1),nt_prof,nrho_prof)
          val = fval(1)
       END IF
       RETURN
@@ -275,13 +275,13 @@ MODULE thrift_profiles_mod
       val = 0
       IF ((rho_val >= rhomin-eps1) .and. (rho_val <= rhomax+eps1) .and. &
           (t_val   >= tmin-eps2)   .and. (t_val   <= tmax+eps2)) THEN
-         i = MIN(MAX(COUNT(raxis_prof < rho_val),1),nrho_prof-1)
-         j = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
-         xparam = (rho_val - raxis_prof(i)) * hri(i)
-         yparam = (t_val   - taxis_prof(j)) * hti(j)
+         i = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
+         j = MIN(MAX(COUNT(raxis_prof < rho_val),1),nrho_prof-1)
+         xparam = (t_val - taxis_prof(i)) * hti(i)
+         yparam = (rho_val   - raxis_prof(j)) * hri(j)
          CALL R8HERM2FCN(ict,1,1,fval,i,j,xparam,yparam,&
-                         hr(i),hri(i),ht(j),hti(j),&
-                         SPL(1,1,1),nrho_prof,nt_prof)
+                         ht(i),hti(i),hr(j),hri(j),&
+                         SPL(1,1,1),nt_prof,nrho_prof)
          val = fval(1)
       END IF
       RETURN
