@@ -10,7 +10,8 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
-      USE read_wout_mod, ONLY: read_wout_deallocate, read_wout_file
+      USE read_wout_mod, ONLY: read_wout_deallocate, read_wout_file, &
+                               Aminor
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -26,6 +27,7 @@
          ! Read the VMEC output
          CALL read_wout_deallocate; ier = 0
          CALL read_wout_file(TRIM(proc_string),ier)
+         minor_radius = Aminor
       END IF
 
       RETURN

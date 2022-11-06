@@ -10,6 +10,7 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_input_mod
+      USE thrift_vars, nrho_thrift => nrho
       USE mpi_params
       USE mpi_inc
       USE thrift_profiles_mod
@@ -248,6 +249,7 @@
                   roa = sqrt(rhoar(ir))
                   CALL get_prof_ni(roa, THRIFT_T(mytimestep), 1, densi(ir))
                END DO
+               densi  = densi/(1.0E+20)       ! [m^-3] to 10^20 [m^-3]
             END IF
 #if defined(MPI_OPT)
             CALL MPI_BCAST(zeff1,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -426,6 +428,12 @@
                RETURN
             END IF
 #endif
+            !  Now compute values for BOOTSJ
+            DO i = 1, nrho_thrift
+               i1 = MIN(MAX(COUNT(sqrt(rhoar) < THRIFT_RHO(i)),1),irup)
+               THRIFT_JBOOT(i,mytimestep) = ajBbs(i1)
+            END DO
+            !  Output to screen the total bootstrap current
             IF ((myend .lt. irup).and.(lscreen_bootsj)) THEN
                DO irho=myend+1,irup
                   IF (idx(irho) .eq. 0) CYCLE

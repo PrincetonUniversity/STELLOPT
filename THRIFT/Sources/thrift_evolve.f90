@@ -15,7 +15,9 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      LOGICAL :: lfirst_pass
       INTEGER :: nsubsteps
+      REAL(rprec) :: alpha
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
       CHARACTER(len = 16)     :: temp1_str, temp2_str
       
@@ -33,8 +35,10 @@
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
+      alpha = 0.05
       jold   = 1E3 ! so on loop 1 we don't divide by zero
       lscreen_subcodes = .TRUE.
+      lfirst_pass = .TRUE.
       
       ! Loop over timesteps
       DO mytimestep = 2, ntimesteps
@@ -46,7 +50,14 @@
          deltaj = 10*jtol; nsubsteps = 0
          DO WHILE (ANY(deltaj > jtol))
 
+            ! Update Substeps
             nsubsteps = nsubsteps + 1
+
+            ! Get out if too many substeps
+            IF (nsubsteps > 5) EXIT
+
+            ! We need minor_radius to calc Itor
+            IF (lfirst_pass) minor_radius = 1.0
 
             ! Create filename
             WRITE(temp1_str,'(i5)') mytimestep
@@ -80,14 +91,18 @@
                                    + THRIFT_JOHMIC(:,mytimestep)
 
             ! Check the convergence
-            IF (ANY(ABS(jold)>0)) THEN
-               WHERE(ABS(jold)>0) deltaj = ABS( THRIFT_J(:,mytimestep) - jold) / ABS(jold)
+            deltaj = 0
+            IF (lfirst_pass) THEN
+               WHERE(ABS(THRIFT_J(:,mytimestep))>0) deltaj = ABS(THRIFT_J(:,mytimestep))
+               jold = alpha*THRIFT_J(:,mytimestep)
             ELSE
-               deltaj = 0.0
+               WHERE(ABS(jold)>0) deltaj = ABS( THRIFT_J(:,mytimestep) - jold) / ABS(jold)
+               THRIFT_J(:,mytimestep) = jold + alpha*(THRIFT_J(:,mytimestep)-jold)
+               jold = THRIFT_J(:,mytimestep)
             END IF
 
             ! Print Header
-            IF (lverb .and. (nsubsteps==1) .and. (mytimestep==2)) THEN
+            IF (lverb .and. lfirst_pass) THEN
                WRITE(6,*)'    T     NSUB     ITOR     MAX(deltaj)'
                WRITE(6,*)'---------------------------------------'
             END IF
@@ -98,8 +113,11 @@
 
             ! Turn off screen output after one run
             lscreen_subcodes = .FALSE.
+
+            ! End of first pass
+            lfirst_pass = .FALSE.
+
          END DO
-         jold = THRIFT_J(:,mytimestep)
       END DO
 
       ! Deallocate helpers
