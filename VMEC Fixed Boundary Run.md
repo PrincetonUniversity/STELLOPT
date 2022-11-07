@@ -8,17 +8,15 @@ stellarator symmetric with a periodicity of three.
 
 ------------------------------------------------------------------------
 
-1.  \> \_\_**Edit the input namelist text file.**\_\_ \> ﻿The input
-    namelist (<file:input.ncsx_c09r00_fixed>) controls the execution of
-    the VMEC code. The suffix of the input file will be appended to each
-    of the output files as we will see after execution. The Fourier
-    coefficient in this file have been generated through an optimization
-    routine. In general, more simple initial conditions will suffice for
-    the axis position and outer most flux surface.
+## Edit the input namelist text file.
 
-<!-- -->
+The inputnamelist ([input.ncsx_c09r00_fixed](examples/input.ncsx_c09r00_fixed)) controls the execution of
+the VMEC code. The suffix of the input file will be appended to each
+of the output files as we will see after execution. The Fourier
+coefficient in this file have been generated through an optimization
+routine. In general, more simple initial conditions will suffice for
+the axis position and outer most flux surface.
 
-    #!fortran
     &INDATA
     !----- Runtime Parameters -----
       DELT =   9.00E-01
@@ -201,18 +199,17 @@ stellarator symmetric with a periodicity of three.
     /
     &END
 
-1.  \_\_**Execute the code.**\_\_ \> To simplify execution of the code,
-    the VMEC compilation scripts create a directory called \'bin\' in
-    your home () directory. Symbolic links are then placed there
-    pointing to each of the compiled codes in their respective
-    \'Vrelease\' subdirectories. In practice, the screen output from
-    VMEC should be redirected to a log file and put in the background
-    (\>& log.ncsx\_c09r00\_fixed &) but for this tutorial we will simply
-    instruct the user to run the code so they can see how VMEC executes.
-    This is done by passing the suffix of the input file to the VMEC
-    code through the command line.
-
-<!-- -->
+## Execute the code.
+To simplify execution of the code,
+the VMEC compilation scripts create a directory called 'bin' in
+your home () directory. Symbolic links are then placed there
+pointing to each of the compiled codes in their respective
+'Vrelease' subdirectories. In practice, the screen output from
+VMEC should be redirected to a log file and put in the background
+(`>& log.ncsx_c09r00_fixed &`) but for this tutorial we will simply
+instruct the user to run the code so they can see how VMEC executes.
+This is done by passing the suffix of the input file to the VMEC
+code through the command line.
 
     >~/bin/xvmec2000 ncsx_c09r00_fixed
       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -254,20 +251,21 @@ stellarator symmetric with a periodicity of three.
                  
     >                                                                   
 
-1.  \_\_**Examine the output.**\_\_ \> For this example four files were
-    created
-    (<file:jxbout_ncsx_c09r00_fixed.nc>,<file:mercier.ncsx_c09r00_fixed>,<file:threed1.ncsx_c09r00_fixed>,
-    and <file:wout_ncsx_c09r00_fixed.nc>). As was mentioned before, each
-    file had the suffix of the input file appended to it\'s name. This
-    allows multiple runs to be stored in the same directory for
-    comparison. The \'jxbout\' file contains values for various
-    quantities on a grid throughout the simulation domain. The
-    \'mercier\' file contains radial profiles (radial index in VMEC is
-    denoted by the variable \'s\') of various quantities. The
-    \'threed1\' file can be considered an expanded log file where
-    various quantities are calculated which were not output to the
-    screen. This file is fairly self explanatory. The \'wout\' file is
-    the data file for the run. It contains the Fourier Coefficients for
-    the magnetic field along with various quantities. A few packages
-    exist to visualize this data and the user is encourage to use these
-    as templates for their own visualization routines. \>
+## Examine the output.
+For this example four files were
+created
+([jxbout_ncsx_c09r00_fixed.nc](examples/jxbout_ncsx_c09r00_fixed.nc), [mercier.ncsx_c09r00_fixed](examples/mercier.ncsx_c09r00_fixed), [threed1.ncsx_c09r00_fixed](examples/threed1.ncsx_c09r00_fixed),
+and [wout_ncsx_c09r00_fixed.nc](examples/wout_ncsx_c09r00_fixed.nc)). As was mentioned before, each
+file had the suffix of the input file appended to it's name. This
+allows multiple runs to be stored in the same directory for
+comparison. The 'jxbout' file contains values for various
+quantities on a grid throughout the simulation domain. The
+'mercier' file contains radial profiles (radial index in VMEC is
+denoted by the variable 's') of various quantities. The
+'threed1' file can be considered an expanded log file where
+various quantities are calculated which were not output to the
+screen. This file is fairly self explanatory. The 'wout' file is
+the data file for the run. It contains the Fourier Coefficients for
+the magnetic field along with various quantities. A few packages
+exist to visualize this data and the user is encourage to use these
+as templates for their own visualization routines.

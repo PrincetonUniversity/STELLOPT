@@ -8,12 +8,14 @@ stellarator symmetric with a periodicity of three.
 
 ------------------------------------------------------------------------
 
-1\. \_\_**Create the \'mgrid\' file**\_\_ \> First one must use the
+## Create the 'mgrid' file 
+
+First one must use the
 [MAKEGRID](MAKEGRID) (XGRID) routine to process the coils definition
-file and produce an \'mgrid\' file. For this example we will use the
-\'coils.c09r00\' file which has been developed for the NCSX device
-([examples/coils.c09r00](examples/coils.c09r00)). We create a text file
-\'input\_xgrid.dat\' which contains:
+file and produce an 'mgrid' file. For this example we will use the
+'coils.c09r00' file which has been developed for the NCSX device
+([coils.c09r00](examples/coils.c09r00)). We create a text file
+'input_xgrid.dat' which contains:
 
     c09r00
     S
@@ -26,17 +28,26 @@ file and produce an \'mgrid\' file. For this example we will use the
     201
     201
 
-\> Note that line two should be omitted for older (pre 8.0 versions of
-the VMEC suite of codes). \> The xgrid code may then be executed with
+Note that line two should be omitted for older (pre 8.0 versions of
+the VMEC suite of codes). > The xgrid code may then be executed with
 this input file (this may take some time depending on your computing
 power).
 
     > ~/bin/xgrid < input_xgrid.dat >& log_xgrid.c09r00 &
 
-or
+or type it interactively
 
-     Enter extension of "coils" file     :  Scale (S) bfield to unit current/turn OR
-     use raw (R) currents from coils file:  Assume stellarator symmetry (Y/N)?  :  Enter rmin (min radial grid dimension)  :  Enter rmax (max radial grid dimension)  :  Enter zmin (min vertical grid dimension):  Enter zmax (max vertical grid dimension):  Enter number of toroidal planes/period  :  Enter number of r (radial) mesh points  :  Enter number of z mesh points  : 
+     Enter extension of "coils" file     :  
+     Scale (S) bfield to unit current/turn OR use raw (R) currents from coils file:  
+     Assume stellarator symmetry (Y/N)?  :  
+     Enter rmin (min radial grid dimension)  :  
+     Enter rmax (max radial grid dimension)  :  
+     Enter zmin (min vertical grid dimension):  
+     Enter zmax (max vertical grid dimension):  
+     Enter number of toroidal planes/period  :  
+     Enter number of r (radial) mesh points  :  
+     Enter number of z mesh points  : 
+The code will begin to run and part of the screen output is:
      Stellarator symmetry IS assumed
      rmin =  0.436  rmax =  2.4359999999999999
      zmin =  -1.  zmax =  1.
@@ -101,33 +112,35 @@ or
      CURRENTS CORRESPONDING TO THOSE IN THE COILS-DOT FILE
      ARE GIVEN IN THE EXTCUR ARRAY IN THE FILE extcur.c09r00                                                                                       . THEY SHOULD BE ENTERED INTO THE VMEC INPUT (INDATA) FILE.
 
-\> This choice of parameters gives us \[cm\] scale resolution and
+This choice of parameters gives us [cm] scale resolution and
 provides us with enough toroidal resolution to run with 8 toroidal modes
 per field period. At the end of the run you should have produced the
-following files: mgrid\_c09r00.nc (or mgrid.c09r00), extcur.c09r00, and
-log\_xgrid.c09r00. \> 2. \_\_**Edit the input namelist text file.**\_\_
-\> ﻿The input namelist
-([examples/input.ncsx\_c09r00\_free](examples/input.ncsx_c09r00_free))
+following files: mgrid_c09r00.nc (or mgrid.c09r00), extcur.c09r00, and
+log_xgrid.c09r00.  
+
+## Edit the input namelist text file.
+
+The input namelist
+([input.ncsx_c09r00_free](examples/input.ncsx_c09r00_free))
 controls the execution of the VMEC code. The suffix of the input file
 will be appended to each of the output files as we will see after
 execution. The Fourier coefficient in this file have been generated
 through an optimization routine. In general, more simple initial
 conditions will suffice for the axis position and outer most flux
 surface. The name of the mgrid file must now be specified, along with
-setting LFREEB to true. The NZETA variable must match the value you
-selected for mgrid creation (see 7th line in the \'input\_xgrid.dat\'
-file). You\'ll notice that for the free boundary run the user must also
+setting `LFREEB` to true. The `NZETA` variable must match the value you
+selected for mgrid creation (see 7th line in the `input_xgrid.dat`
+file). You'll notice that for the free boundary run the user must also
 specify the EXTCUR array. This array specifies the current running
 through each coil group. There should be one entry per coil group. The
-\'extcur\' file contains suggestions for these values based on the
-values it read from the \'coils\' file. These values can be copied and
-pasted directly into the VMEC \'input\' file. Note that the traditional
+`extcur` file contains suggestions for these values based on the
+values it read from the `coils` file. These values can be copied and
+pasted directly into the VMEC 'input' file. Note that the traditional
 polynomial form of the current profile (NCURR=1) and pressure profile
-are being used. Note that if you have a binary \'mgrid\' file then
-you\'ll need to modify the MGRID\_FILE variable to match the proper
+are being used. Note that if you have a binary 'mgrid' file then
+you'll need to modify the MGRID_FILE variable to match the proper
 name.
 
-    #!fortran
     &INDATA
     !----- Runtime Parameters -----
       DELT =   9.00E-01
@@ -313,12 +326,14 @@ name.
     /
     &END
 
-3\. \_\_**Execute the code.**\_\_ \> To simplify execution of the code,
-the VMEC compilation scripts create a directory called \'bin\' in your
+## Execute the code.
+
+To simplify execution of the code,
+the VMEC compilation scripts create a directory called `bin` in your
 home () directory. Symbolic links are then placed there pointing to each
-of the compiled codes in their respective \'Vrelease\' subdirectories.
+of the compiled codes in their respective 'Vrelease' subdirectories.
 In practice, the screen output from VMEC should be redirected to a log
-file and put in the background (\>& log.ncsx\_c09r00\_free &). This is
+file and put in the background (>& log.ncsx_c09r00_free &). This is
 done by passing the suffix of the input file to the VMEC code through
 the command line.
 
@@ -381,19 +396,21 @@ the command line.
         TIME IN RESIDUE                        2.29 SECONDS
         TIME (REMAINDER) IN FUNCT3D           34.30 SECONDS
 
-4\. \_\_**Examine the output.**\_\_ \> For this example four files were
-created (jxbout.ncsx\_c09r00\_free, mercier.ncsx\_c09r00\_free,
-threed1.ncsx\_c09r00\_free, and wout.ncsx\_c09r00\_free). As was
+## Examine the output.
+ 
+For this example four files were
+created (`jxbout.ncsx_c09r00_free`, `mercier.ncsx_c09r00_free`,
+`threed1.ncsx_c09r00_free`, and `wout.ncsx_c09r00_free`). As was
 mentioned before, each file had the suffix of the input file appended to
-it\'s name. This allows multiple runs to be stored in the same directory
-for comparison. The \'jxbout\' file contains values for various
-quantities on a grid throughout the simulation domain. The \'mercier\'
+it's name. This allows multiple runs to be stored in the same directory
+for comparison. The `jxbout` file contains values for various
+quantities on a grid throughout the simulation domain. The `mercier`
 file contains radial profiles (radial index in VMEC is denoted by the
-variable \'s\') of various quantities. The \'threed1\' file can be
+variable `s`) of various quantities. The `threed1` file can be
 considered an expanded log file where various quantities are calculated
 which were not output to the screen. This file is fairly self
-explanatory. The \'wout\' file is the data file for the run. It contains
+explanatory. The `wout` file is the data file for the run. It contains
 the Fourier Coefficients for the magnetic field along with various
 quantities. A few packages exist to visualize this data and the user is
 encourage to use these as templates for their own visualization
-routines. \>
+routines.
