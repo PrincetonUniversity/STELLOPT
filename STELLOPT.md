@@ -193,8 +193,14 @@ invoked durring the run.
 
 [STELLOPT Turbulent Transport](STELLOPT Turbulent Transport)
 
-[STELLOPT Coil Optimization](STELLOPT Coil Optimization)
+[STELLOPT Coil Optimization COILOPT++](STELLOPT Coil Optimization)
 
 [STELLOPT Energetic Particle Optimization](STELLOPT Energetic Particles)
 
 [STELLOPT Adding A New Code](STELLOPT Adding A New Code)
+
+[STELLCOPT Tutorial Document](docs/STELLCOPT Tutorial.pdf)
+
+[STELLCOPT B-Spline Document](docs/B-Spline Primer.pdf)
+
+[STELLCOPT CWS Generation, NESCOIL, Cutting Coils](docs/Generating a CWS, Running NESCOIL, and Cutting Coils from Current Potential.pdf)

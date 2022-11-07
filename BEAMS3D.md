@@ -251,12 +251,112 @@ comparrision scripts require Python.
 
 ### Output Data Format
 
-The data from the run is output in two fashions. The first is a text
-file which contains counts of the number of particles lost from the
-simulation domain (hit a structure or the simulation domain). The second
-is and HDF5 file containing the simulation domain (magnetic fields on a
-grid) and the particle trajectories as a set of points. Each particle
-has it\'s trajectory saved NPOINC times.
+The data from each run is output into a HDF5 file where all datasets
+located at the root level.  The following table helps to define the
+variables (all values in mks units, angles in radians)
+
+| Name | Type | Size | Description |
+| :--- | :--- | :---: | :--- |
+| **Background Grid** |
+| nr | INTEGER | 1 | Number of radial background gridpoints |
+| nphi | INTEGER | 1 | Number of toroidal background gridpoints |
+| nz | INTEGER | 1 | Number of vertical background gridpoints |
+| nion | INTEGER | 1 | Number of background ion species |
+| plasma_mass | DOUBLE | 1 | Average plasma background mass |
+| plasma_zavg | DOUBLE | 1 | Average plasma \<Z\> |
+| plasma_zavg | DOUBLE | 1 | Average plasma \[Z\] |
+| raxis | DOUBLE | nr | R values of background grid |
+| phiaxis | DOUBLE | nphi | Phi values of background grid |
+| zaxis | DOUBLE | nz | Z values of background grid |
+| BR_ARR | DOUBLE | nr,nphi,nz | Magnetic field (B_R) |
+| BPHI_ARR | DOUBLE | nr,nphi,nz | Magnetic field (B_PHI) |
+| BZ_ARR | DOUBLE | nr,nphi,nz | Magnetic field (B_Z) |
+| S_ARR | DOUBLE | nr,nphi,nz | Normalized Toroidal Flux (s) |
+| U_ARR | DOUBLE | nr,nphi,nz | Poloidal-like angle (u) |
+| POT_ARR | DOUBLE | nr,nphi,nz | Electrostatic scalar potential |
+| NE | DOUBLE | nr,nphi,nz | Electron number density |
+| TE | DOUBLE | nr,nphi,nz | Electron Temperature eV |
+| NI | DOUBLE | nion,nr,nphi,nz | Ion number density |
+| TI | DOUBLE | nr,nphi,nz | Ion Temperature eV |
+| ZEFF_ARR | DOUBLE | nr,nphi,nz | Zeff |
+| **Marker Trajectory** |
+| npoinc | INTEGER | 1 | Number of Timesteps Saved |
+| nparticles | INTEGER | 1 | Number of markers Evolved |
+| mass | DOUBLE | nparticles | Fast Ion Masses |
+| charge | DOUBLE | nparticles | Fast Ion Charge |
+| weight | DOUBLE | nparticles | Fast Weight (1/s) |
+| Beam | INTEGER | nparticles | Population index |
+| Zatom | INTEGER | nparticles | Particle Charge Number |
+| end_state | INTEGER | nparticles | Particle End State (0: Orbiting; 1: Thermalized; 2: Wall Strike; 3: Shine-through; 4: Port-Load) |
+| t_end | DOUBLE | nparticles | Particle Time of flight |
+| R_lines | DOUBLE | npoinc+1,nparticles | R trajectory of markers. |
+| PHI_lines | DOUBLE | npoinc+1,nparticles | Phi trajectory of markers. |
+| Z_lines | DOUBLE | npoinc+1,nparticles | Z trajectory of markers. |
+| vll_lines | DOUBLE | npoinc+1,nparticles | Parallel velocity trajectory of markers. |
+| moment_lines | DOUBLE | npoinc+1,nparticles | Magnetic Moment trajectory of markers. |
+| neut_lines | BOOLEAN | npoinc+1,nparticles | If true markers is a neutral at that point. |
+| S_lines | DOUBLE | npoinc+1,nparticles | Normalized toroidal flux rajectory of markers. |
+| U_lines | DOUBLE | npoinc+1,nparticles | Poloidal angle trajectory of markers. |
+| B_lines | DOUBLE | npoinc+1,nparticles | mod(B) trajectory of markers. |
+| R_lines | DOUBLE | npoinc+1,nparticles | R Trajectory of markers. |
+| **Distribution Function** |
+| nbeams | INTEGER | 1 | Number of fast ion populations |
+| ns_prof1 | INTEGER | 1 | Number of radial distribution gridpoints |
+| ns_prof2 | INTEGER | 1 | Number of poloidal distribution gridpoints |
+| ns_prof3 | INTEGER | 1 | Number of toroidal distribution gridpoints |
+| ns_prof4 | INTEGER | 1 | Number of parallel velocity distribution gridpoints |
+| ns_prof5 | INTEGER | 1 | Number of perpendicular velocity distribution gridpoints |
+| partvmax | DOUBLE | 1 | Maximum velocity of distribution function. |
+| dist_prof | DOUBLE | nbeams,ns_prof1..5 | Distribution function. (part*m^-3*s^-3, no physical volume) |
+| ndot_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Source (m^-3/s) |
+| epower_prof | DOUBLE | nbeams,ns_prof1 | Electron Heating W/m^3 |
+| ipower_prof | DOUBLE | nbeams,ns_prof1 | Ion Heating W/m^3 |
+| j_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Current A/m^2 |
+| dense_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Density m^-3 |
+| Gfactor | DOUBLE | ns_prof1 | Correction factor (1-L31)/Zeff to obtain NBCD. |
+| **NBI** |
+| Energy | DOUBLE | nbeams | Fast Ion Population Initial Energy |
+| V_neut | DOUBLE | 3,nparticles | Initial neutral velocity (Vx,Vy,Vz) |
+| Shinethrough | DOUBLE | nbeams | Beam Shinethrough % |
+| Shineport | DOUBLE | nbeams | Beam loss to port % |
+| **Wall Model** |
+| nvertex | INTEGER | 1 | Number of vertices in wall model |
+| nface | INTEGER | 1 | Number of faces in wall model |
+| wall_vertex | DOUBLE | nvertex,3 | Vertex locations (x,y,z) |
+| wall_faces | INTEGER | nface,3 | Face Vertex Indicies (v1,v2,v3) |
+| wall_strikes | INTEGER | nface | Number of marker strikes on a given wall model face. |
+| wall_load | DOUBLE | nface | Heat flux to a given wall model face W/m^2 |
+| wall_shine | DOUBLE | nface | Shinethrough heat flux to a given wall model face W/m^2 |
+
+**Background Grids** These are the background quantities the code uses
+for pushing the markers.  The `raxis`, `phiaxis`, and `zaxis` arrays
+hold the locations of the gridpoints.
+
+**Marker Trajectories** These arrays hold the state of every marker for
+each timestep.  The timesteps are defined as the maximum time 
+(`t_end` from the input) divided by `npoinc`.  For neutral beam
+simulations the first time index is the initial position of the neutral,
+the second index is either a collision with the wall or the point at
+which the neutral ionizes, and the thrid index is the initial condition
+for the gyrocenter.  For a slowing down run check the `end_state` array
+if `t_end` was set long enough there should be no orbiting markers.
+When a marker hits a wall structure we save two states.  The last index
+is the position of the strike on the wall element.  The preceeding index
+is the previous sub-timestep.  This allows us to reconstruct the ray
+used for determining the wall strike.
+
+**Distribution Functions** These arrays hold information from slowing 
+down distribution information. These arrays are defined on a rho grid
+where $$\rho=\sqrt{s}$$. The `ns_profX` variable indicate the number of
+bins.  The extents are $$\rho=\left[0,1\right]$$, $$u=\left[0,2\pi\right]$$, $$\phi=\left[0,2\pi\right]$$,
+$$v_{para}=\left[-partvmax,partvmax\right]$$, and $$v_{perp}=\left[0,partvmax\right]$$. Also
+note that the 5D distribution fucntion is not normalized by volume,
+the user should do this before attempting to interpolate to another
+grid.
+
+**Wall Model** The wall model is stored for each run.  The `wall_faces`
+array contains the three indices into the `wall_vertex` array which
+define each triangular face.
 
 ------------------------------------------------------------------------
 
@@ -275,6 +375,7 @@ bins by VLL the particles at each NPOINC time step.
 ### Tutorials
 
 [NCSX Neutral Beam Injection Example](NCSX Neutral Beam Injection Example.md)
+
 [Benchmarking and Validation](BEAMS3D Validation and Benchmarking on HPC systems.md)
 
 ------------------------------------------------------------------------
@@ -284,4 +385,6 @@ bins by VLL the particles at each NPOINC time step.
 -   [McMillan, M. and Lazerson, S.A. \"BEAMS3D: Neutral beam injection model.\" Plasma Phys. and Control. Fusion 56, 095019 (2014)](https://doi.org/10.1088/0741-3335/56/9/095019)
 -   [Lazerson, S.A. et al. \"Validation of the BEASM3D neutral beam deposition model on Wendelstein 7-X\" Nuclear Fusion 60, 706020 (2020)](https://doi.org/10.1088/1741-4326/ab8e61)
 -   [Lazerson, S.A. et al. \"Modeling and measurement of energetic particle slowing down on Wendelstein 7-X\" Nuclear Fusion 61, 096006 (2021)](https://doi.org/10.1088/1741-4326/ac0771)
+-   [Lazerson, S.A., LeViness, A. and Lyon, J. \"Simulating fusion alpha heating in a stellarator reactor\" Plasma Phys. Control. Fusion 63, 125033 (2021) ](https://doi.org/10.1088/1361-6587/ac35ee)
+-   [Kulla, D. et al. \"Placement of a fast ion loss detector array for neutral beam injected particles in Wendelstein 7-X\" Plasma Phys. Control. Fusion (accepted) (2022) ](https://doi.org/10.1088/1361-6587/ac43f1)
 

@@ -342,3 +342,13 @@ field line is defined as a set of points in R phi and Z.
 [FIELDLINES Vacuum NCSX Tutorial](FIELDLINES Vacuum NCSX Tutorial)
 
 [FIELDLINES NCSX Tutorial](FIELDLINES NCSX Tutorial)
+
+------------------------------------------------------------------------
+
+### References
+
+-   [Lazerson, S.A. et al. \"First measurements of error fields on W7-X using flux surface mapping\" Nuclear Fusion 56, 106005 (2016)](https://doi.org/10.1088/0029-5515/56/10/106005)
+-   [Lazerson, S.A. et al. \"Error field measurement, correction and heat flux balancing on Wendelstein 7-X\" Nuclear Fusion 56, 046026 (2017)](https://doi.org/10.1088/1741-4326/aa60e7)
+-   [Lazerson, S.A. et al. \"Error fields in the Wendelstein 7-X stellarator\" Plasma Phys. Control. Fusion 60, 124002 (2018)](https://doi.org/10.1088/1361-6587/aae96b)
+-   [Lazerson, S.A. et al. \"Tuning of the rotational transform in Wendelstein 7-X\" Nuclear Fusion 59, 126004 (2019)](https://doi.org/10.1088/1741-4326/ab3df0)
+-   [Engels, D. et al. \"Investigating the n=1 and n=2 error fields in W7-X using the newly accelerated FIELDLINES code\" Plasma Phys. Control. Fusion (accepted) (2022) ](https://doi.org/10.1088/1361-6587/ac43ef)
