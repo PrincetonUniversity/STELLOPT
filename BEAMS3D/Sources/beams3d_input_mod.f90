@@ -320,13 +320,13 @@
             END DO
             plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
             plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*plasma_mass/NI_AUX_M,DIM=1,MASK=(NI_AUX_M>1E-27))/(SUM(NI_AUX_F(:,1)*NI_AUX_Z))
-         ELSEIF (nne > 0) THEN ! Ni=Ne, Z=Zeff
-            nzeff = nne
+         ELSEIF (nne > 0) THEN ! Ni=Ne, Z=Zeff 
             NI_AUX_S = NE_AUX_S
             NI_AUX_F(1,:) = NE_AUX_F ! NI=NE
             NI_AUX_Z(1) = 1 ! Assume Hydrogen Plasma
             NI_AUX_M(1) = plasma_mass
             IF (.not. ANY(ZEFF_AUX_S >0)) THEN
+               nzeff = nne
                DO i1 = 1, nzeff
                   ZEFF_AUX_S(i1) = NI_AUX_S(i1)
                   ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))

@@ -48,6 +48,7 @@
          SELECT CASE (TRIM(write_type))
             CASE('GRID_INIT')
 #if defined(LHDF5)
+               !IF (lverb) WRITE(6,'(A)')  '----- GRID_INIT -----'
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
                CALL write_scalar_hdf5(fid,'VERSION',ier,DBLVAR=BEAMS3D_VERSION,ATT='Version Number',ATT_NAME='description')
@@ -161,6 +162,7 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_kick',ier)
                END IF
             CASE('TRAJECTORY_PARTIAL')
+               !IF (lverb) WRITE(6,'(A)')  '----- TRAJECTORY_PARTIAL -----'
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
                CALL write_scalar_hdf5(fid,'nparticles',ier,INTVAR=nparticles,ATT='Number of Trajectories',ATT_NAME='description')
@@ -214,6 +216,7 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_shine',ier)
                END IF
             CASE('TRAJECTORY_FULL')
+               !IF (lverb) WRITE(6,'(A)')  '----- TRAJECTORY_FULL -----'
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
                CALL write_scalar_hdf5(fid,'nparticles',ier,INTVAR=nparticles,ATT='Number of Trajectories',ATT_NAME='description')
