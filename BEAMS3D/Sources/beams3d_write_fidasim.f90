@@ -10,15 +10,15 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    !     Libraries
    !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-   #ifdef LHDF5
+#ifdef LHDF5
          USE hdf5
          USE ez_hdf5
-   #endif
+#endif
       USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, &
          ns_prof4, ns_prof5, dist5d_prof, &
          partvmax, dist5D_fida, &
          h2_prof, h3_prof, h4_prof, h5_prof, &
-         nsh_prof4,  r_h, p_h, z_h
+         nsh_prof4,  r_h, p_h, z_h, e_h, pi_h
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
          zaxis, phiaxis, POT_ARR, &
          TE, TI, NE, npot, nte, nti, &
