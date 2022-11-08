@@ -47,7 +47,9 @@ or type it interactively
      Enter number of toroidal planes/period  :  
      Enter number of r (radial) mesh points  :  
      Enter number of z mesh points  : 
+
 The code will begin to run and part of the screen output is:
+
      Stellarator symmetry IS assumed
      rmin =  0.436  rmax =  2.4359999999999999
      zmin =  -1.  zmax =  1.
@@ -110,13 +112,14 @@ The code will begin to run and part of the screen output is:
      TIME IN BFIELD =  407.148 SECONDS
      THE BFIELDS HAVE BEEN STORED IN THE MGRID FILE IN SCALED MODE. THE EXTERNAL
      CURRENTS CORRESPONDING TO THOSE IN THE COILS-DOT FILE
-     ARE GIVEN IN THE EXTCUR ARRAY IN THE FILE extcur.c09r00                                                                                       . THEY SHOULD BE ENTERED INTO THE VMEC INPUT (INDATA) FILE.
+     ARE GIVEN IN THE EXTCUR ARRAY IN THE FILE extcur.c09r00. 
+     THEY SHOULD BE ENTERED INTO THE VMEC INPUT (INDATA) FILE.
 
 This choice of parameters gives us [cm] scale resolution and
 provides us with enough toroidal resolution to run with 8 toroidal modes
 per field period. At the end of the run you should have produced the
-following files: mgrid_c09r00.nc (or mgrid.c09r00), extcur.c09r00, and
-log_xgrid.c09r00.  
+following files: `mgrid_c09r00.nc` (or `mgrid.c09r00`), `extcur.c09r00`, and
+`log_xgrid.c09r00`.  
 
 ## Edit the input namelist text file.
 
