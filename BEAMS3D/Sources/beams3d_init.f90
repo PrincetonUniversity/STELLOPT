@@ -201,14 +201,15 @@
          END IF
          ! NION
          DO i = 1, NION
-            CALL EZspline_init(NI_spl_s(i),nzeff,bcs1_s,ier)
+            k = COUNT(NI_AUX_S .ge. 0)
+            CALL EZspline_init(NI_spl_s(i),k,bcs1_s,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init9b',ier)
-            NI_spl_s(i)%x1          = NI_AUX_S(1:nzeff)
+            NI_spl_s(i)%x1          = NI_AUX_S(1:k)
             NI_spl_s(i)%isHermite   = 0
-            CALL EZspline_setup(NI_spl_s(i),NI_AUX_F(i,1:nzeff),ier,EXACT_DIM=.true.)
+            CALL EZspline_setup(NI_spl_s(i),NI_AUX_F(i,1:k),ier,EXACT_DIM=.true.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init10b',ier)
             IF (lverb .and. ANY(NI_AUX_F(i,:)>0)) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A,I3,A,I2)') '   Ni(',i,')= [', &
-                        MINVAL(NI_AUX_F(i,1:nzeff))*1E-20,',',MAXVAL(NI_AUX_F(i,1:nzeff))*1E-20,'] E20 m^-3;  M: ',&
+                        MINVAL(NI_AUX_F(i,1:k))*1E-20,',',MAXVAL(NI_AUX_F(i,1:k))*1E-20,'] E20 m^-3;  M: ',&
                         NINT(NI_AUX_M(i)/1.66053906660E-27),' amu;  Z: ',NI_AUX_Z(i)
          END DO
          ! ZEFF
