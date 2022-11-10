@@ -460,7 +460,7 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
               ia_out(jpoint)=ial
            END DO
         END IF
-        WRITE(6300+myrank,'(5(1pe13.5),2(I4))') thetap(jal,1),lambda(jla),&
+        IF(DEBUG) WRITE(6300+myrank,'(5(1pe13.5),2(I4))') thetap(jal,1),lambda(jla),&
              & tau_t,tau_s,tau_a,jla
      END DO
   END DO
@@ -662,18 +662,20 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            CALL LAGRANGE(thetape(1:tnalpha,1),BIe(ig,1:tnalpha),tnalpha,&
                 & alph,BIi(ig),1)
         END DO
-        IF(JMAP) THEN
-           ifile=6000+myrank
-        ELSE
-           ifile=6100+myrank
-        END IF
-        WRITE(ifile,'(20(1pe13.5))') &
+        IF(LEN(TRIM(KN_EXT)).EQ.0) THEN
+          IF(JMAP) THEN
+             ifile=6000+myrank
+          ELSE
+             ifile=6100+myrank
+          END IF
+          WRITE(ifile,'(20(1pe13.5))') &
              & vs(is),alph,lambda(ila),&
              & 2.0*ATAN(BIi(3)/ABS(BIi(4)*atorflux))/PI,BIi(3),BIi(4),BIi(6),BIi(5),BIi(7),BIi(8)!,1/(TWOEFIoZ*BIi(3)/BIi(1)/atorflux)
+        END IF
       END DO
    END DO
 
-   WRITE(6700+myrank,'(8(1pe13.5))') Gamma_c,Gamma_cc,Gamma_delta,Gamma_alpha,f_t
+!   WRITE(6700+myrank,'(8(1pe13.5))') Gamma_c,Gamma_cc,Gamma_delta,Gamma_alpha,f_t
    
    CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
@@ -1412,7 +1414,8 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
               end_orbit=time_off.OR.lost.OR.periodic.OR.confined_sb.OR.axis.OR.error_J
               IF(end_orbit) THEN
 !                 IF(DEBUG)
-                 WRITE(6300+myrank,'(I6,2(1pe13.5),9L)') ipoint,t,s,time_off,lost,&
+                IF(LEN(TRIM(KN_EXT)).EQ.0) &
+                &  WRITE(6300+myrank,'(I6,2(1pe13.5),9L)') ipoint,t,s,time_off,lost,&
                       & prompt_loss,stochastic_loss,periodic,confined_sb,axis,error_J
                  EXIT
               END IF
@@ -2159,7 +2162,7 @@ SUBROUTINE CALCULATE_FRACTIONS(vs,nalpha,nalphab,nlambda,lambda,lambdap,i_p,npoi
      IF((t-1e-3)*(t*1.2-1e-3).LT.0) f_loss1ms=f_loss
      IF(f_t.LT.0) CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
           & g,.TRUE.,thetap,B_al,vds_al,f_t)   !Calculate f_{trapped}
-     WRITE(6400+myrank,'(8(1pe13.5))') t,f_loss,f_pl,f_sl,f_t
+     IF(LEN(TRIM(KN_EXT)).EQ.0) WRITE(6400+myrank,'(8(1pe13.5))') t,f_loss,f_pl,f_sl,f_t
      IF(LINEART) THEN
         t=t+DTFI
      ELSE
@@ -2207,7 +2210,7 @@ SUBROUTINE CALCULATE_FRACTIONS(vs,nalpha,nalphab,nlambda,lambda,lambdap,i_p,npoi
            f_lt(it,ila)=f_lt(it,ila)/f_tl
         END IF
      END DO
-     IF(.NOT.KNOSOS_STELLOPT) THEN
+     IF(LEN(TRIM(KN_EXT)).EQ.0) THEN
         IF(MODELFI) THEN
            WRITE(6500+myrank,'(5(1pe13.5),I4,10(1pe13.5))') vs,lambda(ila),f_lossl(ila),&
                 & f_pll(ila),f_sll(ila),jla-jla
@@ -2225,7 +2228,7 @@ SUBROUTINE CALCULATE_FRACTIONS(vs,nalpha,nalphab,nlambda,lambda,lambdap,i_p,npoi
         f_pll(ila)=(f_pllt(ila-1)+f_pllt(ila)+f_pllt(ila+1))/3.
         f_sll(ila)=(f_sllt(ila-1)+f_sllt(ila)+f_sllt(ila+1))/3.        
         f_lossl(ila)=(f_losslt(ila-1)+f_losslt(ila)+f_losslt(ila+1))/3.
-        WRITE(6500+myrank,'(5(1pe13.5),I4)') vs,lambda(ila),f_lossl(ila),f_pll(ila),f_sll(ila),jla
+        IF(LEN(TRIM(KN_EXT)).EQ.0) WRITE(6500+myrank,'(5(1pe13.5),I4)') vs,lambda(ila),f_lossl(ila),f_pll(ila),f_sll(ila),jla
      END DO
   END DO
   
@@ -2263,7 +2266,7 @@ SUBROUTINE CALCULATE_FRACTIONS(vs,nalpha,nalphab,nlambda,lambda,lambdap,i_p,npoi
      IF(DEBUG) WRITE(6600+myrank,'(8(1pe13.5))') thetap(ial,1),f_lossa/f_ta,f_pla/f_ta,f_sla/f_ta,f_lossa/2,f_enda/2,f_ta/2
   END DO
 
-  IF(.NOT.MODELFI) WRITE(6700+myrank,'(8(1pe13.5))') f_pl,f_loss-f_pl,f_loss
+  IF(.NOT.MODELFI.AND.LEN(TRIM(KN_EXT)).EQ.0) WRITE(6700+myrank,'(8(1pe13.5))') f_pl,f_loss-f_pl,f_loss
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
