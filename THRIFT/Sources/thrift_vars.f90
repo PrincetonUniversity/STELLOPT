@@ -18,14 +18,16 @@ MODULE thrift_vars
 
     LOGICAL :: leccd, lnbcd, lohmic, lscreen_subcodes
     LOGICAL, DIMENSION(:), ALLOCATABLE :: lbooz
-    INTEGER :: ntimesteps, nrho, win_thrift_j, win_thrift_jboot, &
+    INTEGER :: ntimesteps, nrho, npicard, &
+               win_thrift_j, win_thrift_jboot, &
                win_thrift_jplasma, win_thrift_jeccd, win_thrift_jnbcd, &
-               win_thrift_johmic, win_thrift_rho, win_thrift_t, win_lbooz
-    REAL(rprec) :: tend, jtol, minor_radius
+               win_thrift_johmic, win_thrift_rho, win_thrift_t, &
+               win_lbooz, win_thrift_jsource
+    REAL(rprec) :: tend, jtol, eq_beta, picard_factor
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_T(:)
     REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_J, THRIFT_S11, &
                  THRIFT_S12, THRIFT_S22, THRIFT_JBOOT, THRIFT_JPLASMA, &
-                 THRIFT_JECCD, THRIFT_JNBCD, THRIFT_JOHMIC
+                 THRIFT_JECCD, THRIFT_JNBCD, THRIFT_JOHMIC, THRIFT_JSOURCE
 
 
 END MODULE thrift_vars

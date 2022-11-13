@@ -32,6 +32,7 @@
       THRIFT_JECCD   = 0
       THRIFT_JNBCD   = 0
       THRIFT_JOHMIC  = 0
+      THRIFT_JSOURCE = 0
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
@@ -41,23 +42,20 @@
       lfirst_pass = .TRUE.
       
       ! Loop over timesteps
-      DO mytimestep = 2, ntimesteps
+      DO mytimestep = 1, ntimesteps
       
          ! Setup the profiles
          CALL thrift_equil_p
 
-         ! Converge equilibrium currents
-         deltaj = 10*jtol; nsubsteps = 0
+         ! Converge Source Currents
+         deltaj = 10*jtol; nsubsteps = 0; eq_beta = 1E-9
          DO WHILE (ANY(deltaj > jtol))
 
             ! Update Substeps
             nsubsteps = nsubsteps + 1
 
             ! Get out if too many substeps
-            IF (nsubsteps > 5) EXIT
-
-            ! We need minor_radius to calc Itor
-            IF (lfirst_pass) minor_radius = 1.0
+            IF (nsubsteps > npicard .or. eq_beta==0) EXIT
 
             ! Create filename
             WRITE(temp1_str,'(i5)') mytimestep
@@ -67,7 +65,7 @@
                   TRIM(ADJUSTL(temp2_str)))
 
             ! Update equilbrium current
-            CALL thrift_equil_j
+            CALL thrift_equil_j(lfirst_pass)
 
             ! Run equilibrium
             CALL thrift_run_equil
@@ -80,19 +78,20 @@
             !IF (lnbcd)  CALL thrift_run_NBI
             !IF (lohmic) CALL thrift_run_ohmic
 
-            ! Calc the inductive chagne in current
-            !CALL thrift_jinductive
-
+            ! Update total source current (picard iteration)
+            THRIFT_JSOURCE(:,mytimestep) = (1-picard_factor) &
+                                           + picard_factor*(  THRIFT_JBOOT(:,mytimestep) &
+                                                            + THRIFT_JECCD(:,mytimestep) &
+                                                            + THRIFT_JNBCD(:,mytimestep) &
+                                                            + THRIFT_JOHMIC(:,mytimestep))
             ! Update total current
             THRIFT_J(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep) &
-                                   + THRIFT_JBOOT(:,mytimestep) &
-                                   + THRIFT_JECCD(:,mytimestep) &
-                                   + THRIFT_JNBCD(:,mytimestep) &
-                                   + THRIFT_JOHMIC(:,mytimestep)
+                                   + THRIFT_JSOURCE(:,mytimestep)
+
 
             ! Check the convergence
             deltaj = 0
-            IF (lfirst_pass) THEN
+            IF (nsubsteps==1) THEN
                WHERE(ABS(THRIFT_J(:,mytimestep))>0) deltaj = ABS(THRIFT_J(:,mytimestep))
                jold = alpha*THRIFT_J(:,mytimestep)
             ELSE
@@ -103,13 +102,15 @@
 
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN
-               WRITE(6,*)'    T     NSUB     ITOR     MAX(deltaj)'
-               WRITE(6,*)'---------------------------------------'
+               WRITE(6,*)'    T     NSUB     BETA     ITOR     MAX(deltaj)'
+               WRITE(6,*)'------------------------------------------------'
             END IF
 
+            !IF (lverb) WRITE(6,*) deltaj
+
             ! Print progress
-            WRITE(6,'(2X,F5.3,1X,I5,1X,ES10.2,1X,ES10.2)') &
-                THRIFT_T(mytimestep),nsubsteps,SUM(THRIFT_J(:,mytimestep)),MAXVAL(deltaj)
+            IF (lverb) WRITE(6,'(2X,F5.3,3X,I5,4X,F5.2,2(1X,ES10.2))') &
+                THRIFT_T(mytimestep),nsubsteps,eq_beta*100,SUM(THRIFT_J(:,mytimestep))/nrho,MAXVAL(deltaj)
 
             ! Turn off screen output after one run
             lscreen_subcodes = .FALSE.
@@ -118,6 +119,11 @@
             lfirst_pass = .FALSE.
 
          END DO
+
+         ! Calc the inductive chagne in current
+         ! This should change only J_PLASMA given J_SOURCE
+         !CALL thrift_jinductive
+
       END DO
 
       ! Deallocate helpers

@@ -11,16 +11,17 @@
       USE thrift_runtime
       USE thrift_input_mod
       USE thrift_vars, nrho_thrift => nrho
+      USE thrift_profiles_mod
       USE mpi_params
       USE mpi_inc
-      USE thrift_profiles_mod
+      USE EZspline
+      USE EZspline_obj
       ! BOOTSJ LIBRARIES
       USE bootsj_input
       use parambs, lscreen_bootsj=>lscreen
       use vmec0
       use read_boozer_mod
       use trig
-      ! VMEC
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -39,7 +40,6 @@
       INTEGER ::  dex_ion, dex_zeff
       INTEGER :: mystart,myend, chunk, numprocs_local
       INTEGER, ALLOCATABLE :: mnum(:)
-      REAL(rprec) :: t1, t2
       integer, dimension(nfax) :: ifaxu, ifaxv
       integer :: ntrigu, ntrigv, i1
       integer :: ntheta_min, nzeta_min, ir, mn, m, n
@@ -52,6 +52,10 @@
       real(rprec), dimension(:), allocatable :: work
       integer :: ihere = 0
       CHARACTER(LEN=32) :: temp_str
+      ! Helpers to get dI/ds
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, dIds_temp
+      TYPE(EZspline1_r8) :: dIds_spl
+      INTEGER :: bcs0(2)
 !-----------------------------------------------
 !   E x t e r n a l   F u n c t i o n s
 !-----------------------------------------------
@@ -214,13 +218,13 @@
                END DO
             END IF
 #if defined(MPI_OPT)
-            CALL MPI_BCAST(tempe1,irdim,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_BCAST(dense,irdim,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_BCAST(tempi1,irdim,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(tempe1,irup,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(dense,irup,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(tempi1,irup,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
 #endif
-            WHERE (tempe1 <10)   tempe1 = 10
-            WHERE (tempi1 <10)   tempi1 = 10
-            WHERE (dense  <1E17) tempi1 = 1E17
+            !WHERE (tempe1 <10)   tempe1 = 10
+            !WHERE (tempi1 <10)   tempi1 = 10
+            !WHERE (dense  <1E17) tempi1 = 1E17
             tempe1 = tempe1/1000.         ! [eV] to [keV]
             tempi1 = tempi1/1000.         ! [eV] to [keV]
             dense  = dense/(1.0E+20)       ! [m^-3] to 10^20 [m^-3]
@@ -253,7 +257,7 @@
             END IF
 #if defined(MPI_OPT)
             CALL MPI_BCAST(zeff1,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_BCAST(densi,irdim,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(densi,irup,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
 #endif
             dens0 = dense(1)                         !central electron density
             ntrigu = 3*nthetah/2 + 1
@@ -429,10 +433,28 @@
             END IF
 #endif
             !  Now compute values for BOOTSJ
-            DO i = 1, nrho_thrift
-               i1 = MIN(MAX(COUNT(sqrt(rhoar) < THRIFT_RHO(i)),1),irup)
-               THRIFT_JBOOT(i,mytimestep) = ajBbs(i1)
-            END DO
+            ! rhoar : norm toroidal flux
+            ! diBs : dI/ds - what VMEC needs
+            IF (myworkid == master) THEN
+               ALLOCATE(rho_temp(irup+2),dIds_temp(irup+2))
+               rho_temp(1)        = 0.0
+               rho_temp(2:irup+1) = rhoar
+               rho_temp(irup+2)   = 1.0
+               dIds_temp(1)          = 0.0
+               dIds_temp(2:irup+1)   = dibs*1E6 ! dibs is in MA
+               dIds_temp(irup+2)     = 0.0
+               bcs0=(/ 0, 0/)
+               CALL EZspline_init(dIds_spl,irup+2,bcs0,ier)
+               dIds_spl%x1        = sqrt(rho_temp)
+               dIds_spl%isHermite = 1
+               CALL EZspline_setup(dIds_spl,dIds_temp,ier,EXACT_DIM=.true.)
+               DEALLOCATE(rho_temp,dIds_temp)
+               DO i = 1, nrho_thrift
+                  CALL EZspline_interp(dIds_spl,THRIFT_RHO(i),THRIFT_JBOOT(i,mytimestep),ier)
+               END DO
+               CALL EZspline_free(dIds_spl,ier)
+            END IF
+
             !  Output to screen the total bootstrap current
             IF ((myend .lt. irup).and.(lscreen_bootsj)) THEN
                DO irho=myend+1,irup

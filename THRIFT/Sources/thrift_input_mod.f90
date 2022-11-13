@@ -43,8 +43,10 @@
       nboz               = 16
       nrho               = 16
       ntimesteps         = 32
+      npicard            = 5
       tend               = 1.0
       jtol               = 0.01
+      picard_factor      = 0.5
       leccd              = .FALSE.
       lnbcd              = .FALSE.
       lohmic             = .FALSE.
@@ -99,6 +101,8 @@
       WRITE(iunit_out,outint) 'NPARALLEL_RUNS',nparallel_runs
       WRITE(iunit_out,outstr) 'BOOTSTRAP_TYPE',bootstrap_type
       WRITE(iunit_out,outflt) 'JTOL',jtol
+      WRITE(iunit_out,outint) 'NPICARD',npicard
+      WRITE(iunit_out,outflt) 'PICARD_FACTOR',picard_factor
       WRITE(iunit_out,'(A)') '!---------- GRID PARAMETERS ------------'
       WRITE(iunit_out,outint) 'NRHO',nrho
       WRITE(iunit_out,outint) 'NTIMESTEPS',ntimesteps
