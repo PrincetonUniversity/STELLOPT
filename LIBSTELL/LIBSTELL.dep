@@ -1,5 +1,7 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
-      
+
+nclass_mod.o :
+
 fzero.o : \
       stel_kinds.o
       
