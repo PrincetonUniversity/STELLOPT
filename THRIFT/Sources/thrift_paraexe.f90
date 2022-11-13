@@ -136,7 +136,7 @@
                   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_paraexe: BCAST2d',ierr_mpi)
                   IF (  ier == successful_term_flag  .or. &
                         ier == norm_term_flag) THEN
-                     IF (myid_sharmem == master) CLOSE(UNIT=iunit,STATUS='delete')
+                     !IF (myid_sharmem == master) CLOSE(UNIT=iunit,STATUS='delete')
                      ier = 0
                   ELSE
                      IF (myid_sharmem == master) CLOSE(UNIT=iunit)

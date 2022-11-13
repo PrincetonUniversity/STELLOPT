@@ -37,7 +37,7 @@
   BOOTSTRAP_TYPE = 'bootsj'
   MBOZ = 32
   NBOZ = 16
-  NRHO = 16
+  NRHO = 32
   TEND = 1.0
   NTIMESTEPS = 10
   JTOL = 1.0E-2 

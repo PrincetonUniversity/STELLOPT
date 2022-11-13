@@ -11,6 +11,7 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
+      USE thrift_profiles_mod
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -19,6 +20,12 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+
+      ! Check to make sure we're not zero beta
+      IF (eq_beta == 0) THEN
+         THRIFT_JBOOT(:,mytimestep) = 0
+         RETURN
+      END IF
 
       SELECT CASE(TRIM(bootstrap_type))
          CASE ('bootsj')

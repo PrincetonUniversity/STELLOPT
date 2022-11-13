@@ -53,6 +53,7 @@
       CALL mpialloc(THRIFT_JECCD,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jeccd)
       CALL mpialloc(THRIFT_JNBCD,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jnbcd)
       CALL mpialloc(THRIFT_JOHMIC,  nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_johmic)
+      CALL mpialloc(THRIFT_JSOURCE, nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jsource)
 
       ! Define grids
       IF (myid_sharmem == master) THEN
