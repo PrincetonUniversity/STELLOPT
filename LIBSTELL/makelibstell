@@ -8,7 +8,7 @@ SPATH   = ../Sources
 #Contains list of source files (.o) and dependencies
 DEPLIST = ../LIBSTELL.dep
 OBJLIST = ../ObjectList
-VPATH = $(SPATH):$(SPATH)/Coils:$(SPATH)/Ezcdf:$(SPATH)/FFTpack:$(SPATH)/GMRes:$(SPATH)/Lsode:$(SPATH)/Miscel:$(SPATH)/Modules:$(SPATH)/NumerMeth:$(SPATH)/Optimization:$(SPATH)/Pspline
+VPATH = $(SPATH):$(SPATH)/Coils:$(SPATH)/Ezcdf:$(SPATH)/FFTpack:$(SPATH)/GMRes:$(SPATH)/Lsode:$(SPATH)/Miscel:$(SPATH)/Modules:$(SPATH)/NumerMeth:$(SPATH)/Optimization:$(SPATH)/Pspline:$(SPATH)/NCLASS
 
 #Includes source files and dependency list
 include $(DEPLIST)
