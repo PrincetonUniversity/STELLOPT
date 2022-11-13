@@ -67,6 +67,15 @@ thrift_interface_mod.o : \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
       $(LIB_DIR)/$(LOCTYPE)/git_version_mod.o 
 
+thrift_jinductive.o : \
+      thrift_runtime.o \
+      thrift_vars.o 
+
+thrift_load_vmec.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_tools.o 
+
 thrift_main.o : \
       thrift_runtime.o \
       thrift_interface_mod.o
@@ -113,5 +122,5 @@ thrift_run_equil.o : \
       $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o 
 
 thrift_vars.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
-      $(LIB_DIR)/$(LOCTYPE)/vparams.o 
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
