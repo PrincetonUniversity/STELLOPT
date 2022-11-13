@@ -28,6 +28,8 @@
          CALL read_wout_deallocate; ier = 0
          CALL read_wout_file(TRIM(proc_string),ier)
          eq_beta      = betatot
+         ! Load equil_utils for helpers later on
+         CALL thrift_load_vmec
       END IF
 
       RETURN

@@ -44,7 +44,7 @@ PROGRAM THRIFT
     CALL thrift_evolve
 
     ! Clean up
-    !CALL thrift_cleanup
+    CALL thrift_cleanup
 
     !-----------------------------------------------------------------------
     !     End Program

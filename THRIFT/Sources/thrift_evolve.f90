@@ -15,7 +15,7 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      LOGICAL :: lfirst_pass
+      LOGICAL :: lfirst_pass, lfirst_sub_pass
       INTEGER :: nsubsteps
       REAL(rprec) :: alpha
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
@@ -24,6 +24,9 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+
+      ! For when we collect the workers
+      IF (myworkid .ne. master) RETURN
 
       ! Initialize the current density
       THRIFT_J       = 0
@@ -49,6 +52,7 @@
 
          ! Converge Source Currents
          deltaj = 10*jtol; nsubsteps = 0; eq_beta = 1E-9
+         lfirst_sub_pass = .TRUE.
          DO WHILE (ANY(deltaj > jtol))
 
             ! Update Substeps
@@ -65,7 +69,7 @@
                   TRIM(ADJUSTL(temp2_str)))
 
             ! Update equilbrium current
-            CALL thrift_equil_j(lfirst_pass)
+            CALL thrift_equil_j(lfirst_sub_pass)
 
             ! Run equilibrium
             CALL thrift_run_equil
@@ -106,8 +110,6 @@
                WRITE(6,*)'------------------------------------------------'
             END IF
 
-            !IF (lverb) WRITE(6,*) deltaj
-
             ! Print progress
             IF (lverb) WRITE(6,'(2X,F5.3,3X,I5,4X,F5.2,2(1X,ES10.2))') &
                 THRIFT_T(mytimestep),nsubsteps,eq_beta*100,SUM(THRIFT_J(:,mytimestep))/nrho,MAXVAL(deltaj)
@@ -117,17 +119,21 @@
 
             ! End of first pass
             lfirst_pass = .FALSE.
+            lfirst_sub_pass = .FALSE.
 
          END DO
 
          ! Calc the inductive chagne in current
          ! This should change only J_PLASMA given J_SOURCE
-         !CALL thrift_jinductive
+         CALL thrift_jinductive
 
       END DO
 
       ! Deallocate helpers
       DEALLOCATE(deltaj,jold)
+
+      ! Get back workers
+      CALL thrift_paraexe('exit','test',lscreen_subcodes)
       
 !----------------------------------------------------------------------
 !     END SUBROUTINE

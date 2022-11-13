@@ -1,4 +1,6 @@
 ObjectFiles = \
+thrift_load_vmec.o \
+thrift_jinductive.o \
 thrift_reinit_vmec.o \
 thrift_bootsj.o \
 thrift_boozer.o \

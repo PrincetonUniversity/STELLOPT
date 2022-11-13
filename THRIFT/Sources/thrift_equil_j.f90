@@ -20,7 +20,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL, INTENT(IN) :: lfirst_pass
-      INTEGER :: i, ier
+      INTEGER :: i, ier, itime
       INTEGER :: bcs0(2)
       REAL(rprec) :: s_val, rho_val, j_val
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, j_temp
@@ -30,13 +30,20 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 
-      ! If first pass then just set everything to zero
-      IF (lfirst_pass) THEN
-         IF (lvmec) THEN
-            NCURR  = 1
-            CURTOR = 0
-         END IF
-         RETURN
+      ! If first pass and first timestep just set everything to zero
+      !IF (lfirst_pass and mytimestep==1) THEN
+      !   IF (lvmec) THEN
+      !      NCURR  = 1
+      !      CURTOR = 0
+      !   END IF
+      !   RETURN
+      !END IF
+
+      ! If first pass then just set everything to previous timestep
+      IF (lfirst_pass .AND. mytimestep>1) THEN
+         itime = mytimestep-1
+      ELSE
+         itime = mytimestep
       END IF
 
       ! Create J array
@@ -45,7 +52,7 @@
       rho_temp(2:nrho+1) = THRIFT_RHO
       rho_temp(nrho+2)   = 1.0
       j_temp(1)          = 0.0
-      j_temp(2:nrho+1)   = THRIFT_J(:,mytimestep)
+      j_temp(2:nrho+1)   = THRIFT_J(:,itime)
       j_temp(nrho+2)     = 0.0
 
       ! Create Splines

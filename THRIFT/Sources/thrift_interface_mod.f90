@@ -76,17 +76,20 @@ CONTAINS
 
       SUBROUTINE thrift_cleanup
       IMPLICIT NONE
-      INTEGER :: ier
       ! Clean up
-      ier = 0
+      ierr_mpi = 0
       !CALL thrift_free(MPI_COMM_SHARMEM)
 #if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_cleanup: MPI_COMM_MYWORLD',ierr_mpi)
+      CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_THRIFT, ierr_mpi)
-      IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'thrift_main', ierr_mpi)
-      ierr_mpi=0
-      CALL MPI_INFO_FREE(mpi_info_thrift, ierr_mpi)
+      !IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'thrift_cleanup: MPI_COMM_THRIFT', ierr_mpi)
+      !CALL MPI_COMM_FREE(MPI_COMM_THRIFT, ierr_mpi)
+      !ierr_mpi=0
+      !CALL MPI_INFO_FREE(mpi_info_thrift, ierr_mpi)
       CALL MPI_FINALIZE(ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'thrift_main', ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'thrift_cleanup', ierr_mpi)
 #endif
       IF (lverb) WRITE(6, '(A)') '----- THRIFT DONE -----'
       RETURN
