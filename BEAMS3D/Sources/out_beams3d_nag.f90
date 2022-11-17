@@ -108,21 +108,21 @@ SUBROUTINE out_beams3d_nag(t, q)
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
-       IF (lfidasim2) THEN
-            x0 = MOD(q(2), phimax)
-            IF (x0 < 0) x0 = x0 + phimax
-            i = MIN(MAX(FLOOR((q(1)-rmin_fida)*r_h)+1,0),nr_fida+1)
-            j = MIN(MAX(FLOOR((x0-phimin_fida)*p_h)+1,0),nphi_fida+1)
-            k = MIN(MAX(FLOOR((q(3)-zmin_fida)*z_h)+1,0),nz_fida+1)
-            y0 = (q(4)**2+vperp**2)
-            d4 = MIN(MAX(CEILING((y0*mymass*0.5d-3/e_charge-energy_fida(1))*e_h+1),1),nenergy_fida)
-            d5 = MIN(MAX(FLOOR((q(4)/SQRT(y0)-pitch_fida(1))*pi_h)+1,1),npitch_fida)
-            IF ((i > 0) .and. (i <= nr_fida) .and. &
-            (j > 0) .and. (j <= nphi_fida) .and. &
-            (k > 0) .and. (k <= nz_fida)) THEN
-               dist5d_fida(mybeam,i,k,j,d4,d5) = dist5d_fida(mybeam,i,k,j,d4,d5) + xw !This shouldnt slow down the code, but perhaps increase the memory usage
-            END IF
-         END IF
+      !  IF (lfidasim2) THEN
+      !       x0 = MOD(q(2), phimax)
+      !       IF (x0 < 0) x0 = x0 + phimax
+      !       i = MIN(MAX(FLOOR((q(1)-rmin_fida)*r_h)+1,0),nr_fida+1)
+      !       j = MIN(MAX(FLOOR((x0-phimin_fida)*p_h)+1,0),nphi_fida+1)
+      !       k = MIN(MAX(FLOOR((q(3)-zmin_fida)*z_h)+1,0),nz_fida+1)
+      !       y0 = (q(4)**2+vperp**2)
+      !       d4 = MIN(MAX(CEILING((y0*mymass*0.5d-3/e_charge-energy_fida(1))*e_h+1),1),nenergy_fida)
+      !       d5 = MIN(MAX(FLOOR((q(4)/SQRT(y0)-pitch_fida(1))*pi_h)+1,1),npitch_fida)
+      !       IF ((i > 0) .and. (i <= nr_fida) .and. &
+      !       (j > 0) .and. (j <= nphi_fida) .and. &
+      !       (k > 0) .and. (k <= nz_fida)) THEN
+      !          dist5d_fida(mybeam,i,k,j,d4,d5) = dist5d_fida(mybeam,i,k,j,d4,d5) + xw !This shouldnt slow down the code, but perhaps increase the memory usage
+      !       END IF
+      !    END IF
        IF (lcollision) CALL beams3d_physics(t,q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
