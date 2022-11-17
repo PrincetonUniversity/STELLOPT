@@ -58,16 +58,16 @@ PROGRAM BEAMS3D
     CALL beams3d_diagnostics
 
     !Write Fidasim Distribution function
-    IF (lfidasim) THEN
-        IF (lverb) THEN
-            WRITE(6, '(A)') '----- WRITING FIDASIM DISTRIBUTION -----'
-         END IF
-        ! IF (ldepo) THEN
-        !     CALL beams3d_write_fidasim('DISTRIBUTION_GC_MC') !not implemented yet
-        ! ELSE
-            CALL beams3d_write_fidasim('DISTRIBUTION_GC_F') !Should stay here as it alters dist5d_prof
-        ! END IF
-    END IF
+    ! IF (lfidasim) THEN
+    !     IF (lverb) THEN
+    !         WRITE(6, '(A)') '----- WRITING FIDASIM DISTRIBUTION -----'
+    !      END IF
+    !     ! IF (ldepo) THEN
+    !     !     CALL beams3d_write_fidasim('DISTRIBUTION_GC_MC') !not implemented yet
+    !     ! ELSE
+    !         CALL beams3d_write_fidasim('DISTRIBUTION_GC_F') !Should stay here as it alters dist5d_prof
+    !     ! END IF
+    ! END IF
 
     ! Clean up
     CALL beams3d_cleanup
