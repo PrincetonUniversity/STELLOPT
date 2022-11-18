@@ -477,11 +477,11 @@ SUBROUTINE beams3d_follow_gc
           !IF (lfidasim2) CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,l), nbeams*nr_fida*nphi_fida*nz_fida*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        END DO
       !  IF (lfidasim2) THEN
-      !    !CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,:), nbeams*nr_fida*nphi_fida*nz_fida*nenergy_fida*npitch_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-      !     DO l =1, npitch_fida
+         !CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,:), nbeams*nr_fida*nphi_fida*nz_fida*nenergy_fida*npitch_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+          DO l =1, npitch_fida
             
-      !        CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,l), nbeams*nr_fida*nphi_fida*nz_fida*nenergy_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-      !     END DO
+             CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,l), nbeams*nr_fida*nphi_fida*nz_fida*nenergy_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+          END DO
       !  END IF
        IF (ASSOCIATED(ihit_array)) THEN
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
