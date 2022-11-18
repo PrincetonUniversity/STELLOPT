@@ -19,7 +19,7 @@ MODULE beams3d_physics_mod
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
                                moment_lines, mybeam, mycharge, myZ, &
-                               mymass, myv_neut, rand_prob, &
+                               mymass, inv_mymass, myv_neut, rand_prob, &
                                cum_prob, tau, &
                                epower_prof, ipower_prof, &
                                end_state, fact_crit, fact_pa, &
@@ -92,7 +92,7 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
-                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
+                          speed_cube, vcrit_cube, vfrac, modb, s_temp, &
                           vc3_tauinv, vbeta, zeff_temp,&
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin
@@ -169,7 +169,6 @@ MODULE beams3d_physics_mod
             !     speed     Total particle speed
             !-----------------------------------------------------------
             te_cube = te_temp * te_temp * te_temp
-            inv_mymass = 1/mymass
             v_s = fact_vsound*sqrt(ti_temp)
             speed = sqrt( vll*vll + 2*moment*modb*inv_mymass ) !+ sign(real(80000),vll)
             vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)

@@ -20,10 +20,10 @@ SUBROUTINE out_beams3d_nag(t, q)
                              ltherm, S_lines, U_lines, B_lines, &
                              ndot_prof, partvmax, &
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
-                             ns_prof5, mymass, mycharge, mybeam, end_state, &
+                             ns_prof5, mymass, inv_mymass, mycharge, mybeam, end_state, &
                              dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
                              h2_prof, h3_prof, h4_prof, h5_prof, my_end, &
-                             r_h, p_h, z_h, e_h, pi_h
+                             r_h, p_h, z_h, e_h, pi_h, E_by_v
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics,e_charge
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
@@ -98,7 +98,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        x0    = MOD(q(2),pi2)
        IF (x0 < 0) x0 = x0 + pi2
        IF (z0 < 0) z0 = z0 + pi2
-       vperp = SQRT(2*moment*fval(1)/mymass)
+       vperp = SQRT(2*moment*fval(1)*inv_mymass)
        d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
        d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
@@ -115,8 +115,8 @@ SUBROUTINE out_beams3d_nag(t, q)
             j = MIN(MAX(FLOOR((x0-phimin_fida)*p_h)+1,0),nphi_fida+1)
             k = MIN(MAX(FLOOR((q(3)-zmin_fida)*z_h)+1,0),nz_fida+1)
             y0 = (q(4)**2+vperp**2)
-            d4 = MIN(MAX(CEILING((y0*mymass*0.5d-3/e_charge-energy_fida(1))*e_h+1),1),nenergy_fida)
-            d5 = MIN(MAX(FLOOR((q(4)/SQRT(y0)-pitch_fida(1))*pi_h)+1,1),npitch_fida)
+            d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h+1),1),nenergy_fida)
+            d5 = MIN(MAX(FLOOR((q(4)/SQRT(y0)-pimin_fida)*pi_h)+1,1),npitch_fida)
             ! IF ((i > 0) .and. (i <= nr_fida) .and. &
             ! (j > 0) .and. (j <= nphi_fida) .and. &
             ! (k > 0) .and. (k <= nz_fida)) THEN

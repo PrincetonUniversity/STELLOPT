@@ -203,6 +203,8 @@ SUBROUTINE beams3d_follow_gc
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    inv_mymass = 1/mymass
+                    E_by_v=mymass*0.5d-3/e_charge
                     moment = mu_start(l)
                     my_end = t_end(l)
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
@@ -266,6 +268,8 @@ SUBROUTINE beams3d_follow_gc
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    inv_mymass = 1/mymass
+                    E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
@@ -355,6 +359,8 @@ SUBROUTINE beams3d_follow_gc
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    inv_mymass = 1/mymass
+                    E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
@@ -474,12 +480,9 @@ SUBROUTINE beams3d_follow_gc
        ! This only works becasue of how FORTRAN orders things.
        DO l = 1, ns_prof5
           CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_prof(:,:,:,:,:,l), nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-          !IF (lfidasim2) CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,l), nbeams*nr_fida*nphi_fida*nz_fida*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        END DO
       !  IF (lfidasim2) THEN
-         !CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,:), nbeams*nr_fida*nphi_fida*nz_fida*nenergy_fida*npitch_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
           DO l =1, npitch_fida
-            
              CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,l), nbeams*nr_fida*nphi_fida*nz_fida*nenergy_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
           END DO
       !  END IF
