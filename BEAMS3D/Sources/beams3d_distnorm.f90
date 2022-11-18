@@ -106,9 +106,9 @@
 !         CALL FLUSH(328)
       END DO
 
-      ! IF (lfidasim) THEN
-      !       CALL beams3d_write_fidasim('DENF') !write density before velocity space normalization
-      ! END IF
+      IF (lfidasim) THEN
+            CALL beams3d_write_fidasim('DENF') !write density before velocity space normalization
+      END IF
 
       ! Do phase space volume elements 
       ds = 2.0*partvmax/ns_prof4
