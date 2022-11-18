@@ -118,9 +118,6 @@
       DO j = 1, ns_prof5
         u1 = REAL(j-0.5)*du
         dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
-        !IF (lfidasim2) THEN
-        !    dist5d_fida(:,:,:,:,:,j) = dist5d_fida(:,:,:,:,:,j)/(dvol*u1)
-        !END IF
 !        WRITE(329,*) j,dvol*u1
 !        CALL FLUSH(329)
       END DO

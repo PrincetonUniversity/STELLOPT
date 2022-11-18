@@ -779,6 +779,8 @@
          FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0         
          e_h = 1/( energy_fida(2) - energy_fida(1)) !(energy_fida(nenergy_fida) - energy_fida(1)) / (nenergy_fida)
          pi_h = 1/(pitch_fida(2) - pitch_fida(1))!(pitch_fida(npitch_fida) - pitch_fida(1)) / (npitch_fida)
+         emin_fida = energy_fida(1)
+         pimin_fida = pitch_fida(1)
          IF (myid_sharmem == master .and. myworkid == master) THEN        
          !END IF
          !IF (lfidasim .and. lverb) THEN
