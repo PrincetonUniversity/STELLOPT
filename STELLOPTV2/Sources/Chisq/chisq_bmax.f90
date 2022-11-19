@@ -20,8 +20,8 @@
 !
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      REAL(rprec), INTENT(in)    ::  target(nrad)
-      REAL(rprec), INTENT(in)    ::  sigma(nrad)
+      REAL(rprec), INTENT(in)    ::  target(nsd)
+      REAL(rprec), INTENT(in)    ::  sigma(nsd)
       INTEGER,     INTENT(in)    ::  niter
       INTEGER,     INTENT(inout) ::  iflag
       
@@ -67,18 +67,19 @@
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
             vals(mtargets)    = bmax_global
-            IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,I3.3)') target(ik),sigma(ik),vals(mtargets),ik
+            IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,1(1X,I5))') target(ik),sigma(ik),vals(mtargets),ik
          END DO
          ! DEALLOCATE
          DEALLOCATE(modb_booz)
          DEALLOCATE(xu_booz,xv_booz)
          DEALLOCATE(bmax)
       ELSE
-         DO ik = 1, nrad
-            IF (sigma(ik) >= bigno) CYCLE
+         DO ik = 1, nsd
+            IF (sigma(ik) < bigno) THEN
                lbooz(ik) = .true.
                mtargets = mtargets + 1
                IF (niter == -2) target_dex(mtargets)=jtarget_bmax
+            END IF
          END DO
       END IF
       RETURN

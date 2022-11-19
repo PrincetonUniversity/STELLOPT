@@ -38,6 +38,9 @@ MODULE thrift_profiles_mod
 !         get_prof_te:        Returns the electron temperature [eV]
 !         get_prof_ni:        Returns the ion density [m^-3]
 !         get_prof_ti:        Returns the ion temperature [eV]
+!         get_prof_p:         Returns the plasma pressure [Pa]
+!         get_prof_zeff:      Returns the <Zeff>=sum(n*n*Z)/sum(n*n) [-]
+!         get_prof_coulln:    Returns the Coulomb Logarithm [-]
 !-----------------------------------------------------------------------
       PUBLIC  :: read_thrift_profh5, get_prof_ne, get_prof_te, &
                  get_prof_ni, get_prof_ti, get_prof_p, free_profiles
@@ -168,10 +171,10 @@ MODULE thrift_profiles_mod
          END DO
          DO i = 1, nion_prof
             IF (lverb) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A,I3,A,I2)') '   Ni(',i,')= [', &
-                        MINVAL(temp_ni)*1E-20,',',MAXVAL(temp_ni)*1E-20,'] E20 m^-3;  M: ',&
+                        MINVAL(temp_ni(:,:,i))*1E-20,',',MAXVAL(temp_ni(:,:,i))*1E-20,'] E20 m^-3;  M: ',&
                         NINT(Matom_prof(i)/1.66053906660E-27),' amu;  Z: ',Zatom_prof(i)
             IF (lverb) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A)') '   Ti(',i,')= [', &
-                        MINVAL(temp_ti)*1E-3,',',MAXVAL(temp_ti)*1E-3,'] keV'
+                        MINVAL(temp_ti(:,:,i))*1E-3,',',MAXVAL(temp_ti(:,:,i))*1E-3,'] keV'
          END DO
          ! DEALLOCATE Helpers
          DEALLOCATE(temp_ti)
@@ -363,6 +366,53 @@ MODULE thrift_profiles_mod
       IF (f_bot > 0) val = f_top/f_bot
       RETURN
       END SUBROUTINE get_prof_zeff
+
+      SUBROUTINE get_prof_coulln(rho_val,t_val,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(out) :: val
+      INTEGER     :: i
+      REAL(rprec) :: ne, te
+      val = 0
+      ! NRL19 pg34 electron-ion
+      CALL get_prof_ne(rho_val,t_val,ne)
+      CALL get_prof_te(rho_val,t_val,te)
+      val = 24 - log( sqrt(ne*1E-6)/(te) )
+      RETURN
+      END SUBROUTINE get_prof_coulln
+
+      SUBROUTINE get_prof_etaperp(rho_val,t_val,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(out) :: val
+      INTEGER     :: i
+      REAL(rprec) :: clog, te, zeff
+      val = 0
+      ! https://en.wikipedia.org/wiki/Spitzer_resistivity
+      CALL get_prof_te(rho_val,t_val,te)
+      CALL get_prof_zeff(rho_val,t_val,zeff)
+      CALL get_prof_coulln(rho_val,t_val,clog)
+      val = 1.0313621201E-04*zeff*clog/(te**1.5)
+      RETURN
+      END SUBROUTINE get_prof_etaperp
+
+      SUBROUTINE get_prof_etapara(rho_val,t_val,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(out) :: val
+      INTEGER     :: i
+      REAL(rprec) :: zeff, f
+      val = 0
+      ! https://en.wikipedia.org/wiki/Spitzer_resistivity
+      CALL get_prof_zeff(rho_val,t_val,zeff)
+      CALL get_prof_etaperp(rho_val,t_val,val)
+      F = (1+1.198*zeff+0.222*zeff*zeff)/(1+2.966*zeff+0.752*zeff*zeff)
+      val = val * F
+      RETURN
+      END SUBROUTINE get_prof_etapara
 
       SUBROUTINE free_profiles
       USE mpi_sharmem

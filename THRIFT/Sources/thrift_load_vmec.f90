@@ -11,6 +11,7 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
+      USE thrift_equil
       USE read_wout_mod
       USE stel_tools
 !-----------------------------------------------------------------------
@@ -19,7 +20,6 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: nu, nv, mnmax_temp, k, iflag, u, v
-      INTEGER :: bcs1(2)
       INTEGER, ALLOCATABLE :: xm_temp(:), xn_temp(:)
       REAL(rprec) :: temp, s_temp, u_temp, phi_temp
       REAL(rprec), ALLOCATABLE :: xu(:), xv(:)
@@ -33,7 +33,6 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      bcs1=(/ 0, 0/)
 
       ! Get the realspace R and Z and metric elements
       nu = 8 * mpol + 1
@@ -180,13 +179,44 @@
       DEALLOCATE(xm_temp,xn_temp,rmnc_temp,zmns_temp,lmns_temp,&
          bmnc_temp,gmnc_temp,bsupumnc_temp,bsupvmnc_temp)
 
+      ! Helpers
+      b0 = RBtor0/Rmajor
+      iota0 = iotaf(1)
+
+
+      ! Convert vp from dV/ds to dV/dPhi = (dV/ds)/(dPhi/ds)
+      vp = vp/phipf
+
       ! Iota Spline
+      bcs1=(/ 0, 0/)
       IF (EZspline_allocated(iota_spl)) CALL EZspline_free(iota_spl,iflag)
       CALL EZspline_init(iota_spl,ns,bcs1,iflag)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: iota',iflag)
       iota_spl%isHermite   = 0
+      FORALL (i=1,ns) iota_spl%x1(i) = sqrt(DBLE(i-1)/DBLE(ns-1))
       CALL EZspline_setup(iota_spl,iotaf,iflag,EXACT_DIM=.true.)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: iota',iflag)
+
+      ! PHI' Spline (toroidal flux derivative)
+      bcs1=(/ 0, 0/)
+      IF (EZspline_allocated(phip_spl)) CALL EZspline_free(phip_spl,iflag)
+      CALL EZspline_init(phip_spl,ns,bcs1,iflag)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: phip',iflag)
+      phip_spl%isHermite   = 0
+      FORALL (i=1,ns) phip_spl%x1(i) = sqrt(DBLE(i-1)/DBLE(ns-1))
+      phipf = 2*phipf*phip_spl%x1
+      CALL EZspline_setup(phip_spl,phipf,iflag,EXACT_DIM=.true.)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: phip',iflag)
+
+      ! dV/dPhi Spline (Volume derivative)
+      bcs1=(/ 0, 0/)
+      IF (EZspline_allocated(vp_spl)) CALL EZspline_free(vp_spl,iflag)
+      CALL EZspline_init(vp_spl,ns,bcs1,iflag)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: vp',iflag)
+      vp_spl%isHermite   = 0
+      FORALL (i=1,ns) vp_spl%x1(i) = sqrt(DBLE(i-1)/DBLE(ns-1))
+      CALL EZspline_setup(vp_spl,vp,iflag,EXACT_DIM=.true.)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: vp',iflag)
 
 
       RETURN

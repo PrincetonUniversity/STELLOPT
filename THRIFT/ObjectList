@@ -1,4 +1,5 @@
 ObjectFiles = \
+thrift_equil.o \
 thrift_load_vmec.o \
 thrift_jinductive.o \
 thrift_reinit_vmec.o \

@@ -565,7 +565,7 @@
             grho2 = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
             grho2 = grho2 / Vp
             grho2(1) = 2*grho2(2) - grho2(3)
-            ! <|grad(rho|>|
+            ! <|grad(rho)|>|
             gs = sqrt(gs) !|grad(rho)|
             grho = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
             grho = grho / Vp
