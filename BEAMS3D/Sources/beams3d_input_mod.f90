@@ -321,16 +321,17 @@
             plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
             plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*plasma_mass/NI_AUX_M,DIM=1,MASK=(NI_AUX_M>1E-27))/(SUM(NI_AUX_F(:,1)*NI_AUX_Z))
          ELSEIF (nne > 0) THEN ! Ni=Ne, Z=Zeff
-            nzeff = nne
-            NI_AUX_S = NE_AUX_S
-            NI_AUX_F(1,:) = NE_AUX_F ! NI=NE
             NI_AUX_Z(1) = 1 ! Assume Hydrogen Plasma
             NI_AUX_M(1) = plasma_mass
+            NI_AUX_S = NE_AUX_S
+            NI_AUX_F(1,:) = NE_AUX_F
+            ! First check if user provided ZEFF
             IF (.not. ANY(ZEFF_AUX_S >0)) THEN
-               DO i1 = 1, nzeff
-                  ZEFF_AUX_S(i1) = NI_AUX_S(i1)
-                  ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
-               END DO
+               ! NI=NE
+               ! Default ZEFF_AUX_S
+               nzeff = 6
+               ZEFF_AUX_S(1:6) = (/0.0,0.2,0.4,0.6,0.8,1.0/)
+               ZEFF_AUX_F(1:6) = (/1.0,1.0,1.0,1.0,1.0,1.0/)
             END IF
          ELSE
             nzeff = 6
