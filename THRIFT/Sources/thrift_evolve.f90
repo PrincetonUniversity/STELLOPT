@@ -29,13 +29,14 @@
       IF (myworkid .ne. master) RETURN
 
       ! Initialize the current density
-      THRIFT_J       = 0
-      THRIFT_JBOOT   = 0
-      THRIFT_JPLASMA = 0
-      THRIFT_JECCD   = 0
-      THRIFT_JNBCD   = 0
-      THRIFT_JOHMIC  = 0
-      THRIFT_JSOURCE = 0
+      THRIFT_J        = 0
+      THRIFT_JBOOT    = 0
+      THRIFT_JPLASMA  = 0
+      THRIFT_JECCD    = 0
+      THRIFT_JNBCD    = 0
+      THRIFT_JOHMIC   = 0
+      THRIFT_JSOURCE  = 0
+      THRIFT_JBSOURCE = 0
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))

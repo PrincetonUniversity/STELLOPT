@@ -48,7 +48,7 @@
       real(rprec) :: time1, timecpu, unit, file, status, err,&
          time2, r, x, al31t, gradbs1, gradbs2,&
          gradbs3, gradbs4,  al31s, aibstot, a, roa, zeff_temp
-      real(rprec) :: a1, tempe0, tempi0, pres10, pres0
+      real(rprec) :: a1, tempe0, tempi0, pres10, pres0, jdotb
       real(rprec), dimension(:), allocatable :: work
       integer :: ihere = 0
       CHARACTER(LEN=32) :: temp_str

@@ -12,14 +12,16 @@
       USE thrift_runtime
       USE thrift_vars
       USE stel_tools
+      USE EZspline_obj
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i, ier
-      REAL(rprec) :: rho,s,s11,s12,s21,s22,iota
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: Sup_iota, Sdn_iota
+      REAL(rprec) :: rho,s,s11,s12,s21,s22,iota,phip, etapara
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: f1, f2, f3
+      TYPE(EZspline1_r8) :: f_spl
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -27,7 +29,8 @@
 !     THRIFT_JPLASMA.  Where THRIFT_JSOURCE is the J in <J_s.B>.
 
       ! Allocations
-      ALLOCATE(Sup_iota(nrho),Sdn_iota(nrho))
+      ALLOCATE(f1(nrho),f2(nrho),f3(nrho))
+      f1=0; f2=0; f3=0;
 
       ! First we calculate helpers
       DO i = 1, nrho
@@ -35,13 +38,42 @@
          s   = rho*rho
          ier = 0
          CALL get_equil_sus(s,s11,s12,s21,s22,ier)
-         CALL EZspline_interp(iota_spl,s,iota,ier)
-         Sdn_iota(i) = (s21*iota+s22)
-         Sup_iota(i) = (s11*iota+s12)
+         CALL EZspline_interp(iota_spl,rho,iota,ier)
+         f1(i) = (s11*iota+s12)
+         f2(i) = (s21*iota+s22)
       END DO
 
+      ! Now we need to allocate a helper Sup/Sdn and take derivaives
+      bcs1=(/ 0, 0/)
+      CALL EZspline_init(f_spl,nrho,bcs1,ier)
+      iota_spl%isHermite   = 0
+      CALL EZspline_setup(f_spl,f1/f2,ier,EXACT_DIM=.true.)
+      DO i = 1, nrho
+         CALL EZspline_derivative(f_spl,1,THRIFT_RHO(i),f3(i),ier)
+         CALL EZspline_interp(phip_spl,THRIFT_RHO(i),phip,ier)
+         f3(i)=f3(i)*phip
+         CALL get_equil_Bav(s,s1,s2,ier)
+         f1(i) = s1 ! Bsq <B>
+      END DO
+      CALL EZspline_free(f_spl,ier)
+      f3 = f3*f2*f2
+      f1 = f1*2*dmu0
+
+      ! Now we subtrac the driven current
+      !   THRIFT_JSOURCE is dI/ds  but we need <j.B>
+      !    <j.B> = a * rho * <B> * dI/ds / dV/ds [A*T/m^2]
+      DO i = 1, nrho
+         CALL thrift_prof_etapara(THRIFT_RHO(i),THRIFT_T(mytimestep),etapara)
+         CALL EZspline_interp(vp_spl,THRIFT_RHO(i),vp,ier)
+         f3(i) = (f3(i)/mu0 - f1*THRIFT_JSOURCE(:,mytimestep)*vp)*etapara
+      END DO
+
+      ! Now we take the derivative d/dPhi = 1/(dPhi/drho) dShelp/drho
+
+
+      
       ! Deallocate
-      DEALLOCATE(Sup_iota,Sdn_iota)
+      DEALLOCATE(f1,f2)
 
       RETURN
 !----------------------------------------------------------------------
