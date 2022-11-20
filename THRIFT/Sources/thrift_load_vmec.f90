@@ -193,7 +193,7 @@
       CALL EZspline_init(iota_spl,ns,bcs1,iflag)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: iota',iflag)
       iota_spl%isHermite   = 0
-      FORALL (i=1,ns) iota_spl%x1(i) = sqrt(DBLE(i-1)/DBLE(ns-1))
+      FORALL (k=1:ns) iota_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns-1))
       CALL EZspline_setup(iota_spl,iotaf,iflag,EXACT_DIM=.true.)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: iota',iflag)
 
@@ -203,7 +203,7 @@
       CALL EZspline_init(phip_spl,ns,bcs1,iflag)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: phip',iflag)
       phip_spl%isHermite   = 0
-      FORALL (i=1,ns) phip_spl%x1(i) = sqrt(DBLE(i-1)/DBLE(ns-1))
+      FORALL (k=1:ns) phip_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns-1))
       phipf = 2*phipf*phip_spl%x1
       CALL EZspline_setup(phip_spl,phipf,iflag,EXACT_DIM=.true.)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: phip',iflag)
@@ -214,7 +214,7 @@
       CALL EZspline_init(vp_spl,ns,bcs1,iflag)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: vp',iflag)
       vp_spl%isHermite   = 0
-      FORALL (i=1,ns) vp_spl%x1(i) = sqrt(DBLE(i-1)/DBLE(ns-1))
+      FORALL (k=1:ns) vp_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns-1))
       CALL EZspline_setup(vp_spl,vp,iflag,EXACT_DIM=.true.)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: vp',iflag)
 

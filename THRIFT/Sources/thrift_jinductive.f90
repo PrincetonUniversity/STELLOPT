@@ -11,6 +11,8 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
+      USE thrift_equil
+      USE thrift_profiles_mod
       USE stel_tools
       USE EZspline_obj
 !-----------------------------------------------------------------------
@@ -46,26 +48,26 @@
       ! Now we need to allocate a helper Sup/Sdn and take derivaives
       bcs1=(/ 0, 0/)
       CALL EZspline_init(f_spl,nrho,bcs1,ier)
-      iota_spl%isHermite   = 0
+      f_spl%isHermite   = 0
       CALL EZspline_setup(f_spl,f1/f2,ier,EXACT_DIM=.true.)
       DO i = 1, nrho
          CALL EZspline_derivative(f_spl,1,THRIFT_RHO(i),f3(i),ier)
          CALL EZspline_interp(phip_spl,THRIFT_RHO(i),phip,ier)
          f3(i)=f3(i)*phip
-         CALL get_equil_Bav(s,s1,s2,ier)
-         f1(i) = s1 ! Bsq <B>
+         CALL get_equil_Bav(s,s11,s22,ier)
+         f1(i) = s11 ! Bsq <B>
       END DO
       CALL EZspline_free(f_spl,ier)
       f3 = f3*f2*f2
-      f1 = f1*2*dmu0
+      f1 = f1*2*mu0
 
       ! Now we subtrac the driven current
       !   THRIFT_JSOURCE is dI/ds  but we need <j.B>
       !    <j.B> = a * rho * <B> * dI/ds / dV/ds [A*T/m^2]
       DO i = 1, nrho
-         CALL thrift_prof_etapara(THRIFT_RHO(i),THRIFT_T(mytimestep),etapara)
-         CALL EZspline_interp(vp_spl,THRIFT_RHO(i),vp,ier)
-         f3(i) = (f3(i)/mu0 - f1*THRIFT_JSOURCE(:,mytimestep)*vp)*etapara
+         CALL get_prof_etapara(THRIFT_RHO(i),THRIFT_T(mytimestep),etapara)
+         CALL EZspline_interp(vp_spl,THRIFT_RHO(i),s11,ier)
+         f3(i) = (f3(i)/mu0 - f1(i)*THRIFT_JSOURCE(i,mytimestep)*s11)*etapara
       END DO
 
       ! Now we take the derivative d/dPhi = 1/(dPhi/drho) dShelp/drho
