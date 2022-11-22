@@ -108,7 +108,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
-      !  IF (lfidasim2) THEN
+       IF (lfidasim2) THEN
             x0 = MOD(q(2), phimax)
             IF (x0 < 0) x0 = x0 + phimax
             i = MIN(MAX(FLOOR((q(1)-rmin_fida)*r_h)+1,0),nr_fida+1)
@@ -122,7 +122,7 @@ SUBROUTINE out_beams3d_nag(t, q)
             ! (k > 0) .and. (k <= nz_fida)) THEN
                dist5d_fida(mybeam,i,k,j,d4,d5) = dist5d_fida(mybeam,i,k,j,d4,d5) + xw
             ! END IF
-      !    END IF
+        END IF
        IF (lcollision) CALL beams3d_physics(t,q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
