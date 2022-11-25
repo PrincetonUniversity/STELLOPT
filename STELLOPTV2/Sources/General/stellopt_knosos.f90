@@ -39,7 +39,7 @@
 !-----------------------------------------------------------------------
 !     Local Variables
 !----------------------------------------------------------------------
-      INTEGER ik, jk, istat, w_u3, ierr
+      INTEGER ik, jk, istat, w_u3, ierr, numprocs_local
       CHARACTER(120) :: out_file
       CHARACTER :: dkes_input_file*64, temp_str*64
       REAL*8, ALLOCATABLE :: s_kn(:)
@@ -48,6 +48,9 @@
 !----------------------------------------------------------------------
       
       IF (lscreen) WRITE(6,*) 'KNOSOS',myworkid,iflag
+
+
+      CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, numprocs_local, ierr_mpi )
       IF (iflag < 0) RETURN
 !DEC$ IF DEFINED (KNOSOS_OPT)
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------    KNOSOS CALCULATION     -------------------------'
@@ -79,6 +82,12 @@
          ns=ns+1
          IF(myworkid == ns ) WRITE(temp_str,'(A,I3.3)') '_s',ik
       END DO
+      IF(numprocs_local.LT.ns+1) THEN
+         PRINT *,"Fewer processes than flux-surfaces:",numprocs_local,ns+1
+         STOP
+      END IF
+
+
 !      KN_EXT='kn_log.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str))
       KN_EXT=TRIM(proc_string)//TRIM(ADJUSTL(temp_str))
 !      IF (myworkid == ns) THEN
