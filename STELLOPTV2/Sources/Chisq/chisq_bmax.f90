@@ -67,7 +67,7 @@
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
             vals(mtargets)    = bmax_global
-            IF (iflag == 1) WRITE(iunit_out,'(3(ES22.12E3),1X,I5)') target(mtargets),sigma(mtargets),vals(mtargets),ik
+            IF (iflag == 1) WRITE(iunit_out,'(3(ES22.12E3),1X,I5)') targets(mtargets),sigmas(mtargets),vals(mtargets),ik
          END DO
          ! DEALLOCATE
          DEALLOCATE(modb_booz)
