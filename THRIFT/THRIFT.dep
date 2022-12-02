@@ -72,6 +72,7 @@ thrift_interface_mod.o : \
       $(LIB_DIR)/$(LOCTYPE)/git_version_mod.o 
 
 thrift_jinductive.o : \
+      thrift_profiles_mod.o \
       thrift_runtime.o \
       thrift_vars.o 
 
