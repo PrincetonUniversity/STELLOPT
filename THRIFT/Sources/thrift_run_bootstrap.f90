@@ -11,12 +11,15 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
+      USE thrift_equil
       USE thrift_profiles_mod
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      INTEGER :: i
+      REAL(rprec) :: pprime, rho, sflux
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -28,11 +31,18 @@
       END IF
 
       SELECT CASE(TRIM(bootstrap_type))
+         CASE ('model','simple','test')
+            DO i = 1, nrho
+               rho = THRIFT_RHO(i)
+               sflux = rho*rho
+               CALL get_prof_pprime(rho,THRIFT_T(mytimestep),pprime)
+               pprime = pprime * 0.5 / rho ! dpds = dpdrho * drho/ds = dpdrho/ (ds/ddrho) = dpdrho / (2*rho)
+               THRIFT_JBOOT(i,mytimestep) = SQRT(eq_Aminor*eq_Rmajor*rho) * pprime / eq_phiedge
+            END DO
          CASE ('bootsj')
             CALL thrift_paraexe('booz_xform',proc_string,lscreen_subcodes)
             CALL thrift_paraexe('bootsj',proc_string,lscreen_subcodes)
          CASE ('sfincs')
-         CASE ('test')
       END SELECT
 
       RETURN

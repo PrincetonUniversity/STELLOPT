@@ -9,6 +9,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE thrift_runtime
+      USE thrift_equil
       USE thrift_vars
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -78,12 +79,12 @@
             CALL thrift_run_bootstrap
 
             ! Calculate Current Drive
-            !IF (leccd)  CALL thrift_run_ECCD
+            IF (leccd)  CALL thrift_run_ECCD
             !IF (lnbcd)  CALL thrift_run_NBI
             !IF (lohmic) CALL thrift_run_ohmic
 
             ! Update total source current (picard iteration)
-            THRIFT_JSOURCE(:,mytimestep) = (1-picard_factor) &
+            THRIFT_JSOURCE(:,mytimestep) = (1-picard_factor)*THRIFT_JSOURCE(:,mytimestep) &
                                            + picard_factor*(  THRIFT_JBOOT(:,mytimestep) &
                                                             + THRIFT_JECCD(:,mytimestep) &
                                                             + THRIFT_JNBCD(:,mytimestep) &

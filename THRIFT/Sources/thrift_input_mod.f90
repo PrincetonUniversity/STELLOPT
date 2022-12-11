@@ -26,7 +26,14 @@
 !            nr             Number of radial gridpoints
 !-----------------------------------------------------------------------
       NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
-                              nrho, tend, ntimesteps, jtol
+                              nrho, tend, ntimesteps, jtol, &
+                              eccd_type, &
+                              vessel_ecrh, mirror_ecrh, wmode_ecrh, &
+                              targettype_ecrh, antennatype_ecrh, &
+                              antennaposition_ecrh, &
+                              targetposition_ecrh, rbeam_ecrh, &
+                              rfocus_ecrh, nra_ecrh, nphi_ecrh, &
+                              freq_ecrh
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -38,6 +45,7 @@
       SUBROUTINE init_thrift_input
       IMPLICIT NONE
       bootstrap_type     = 'bootsj'
+      eccd_type          = ''
       nparallel_runs     = 1
       mboz               = 32
       nboz               = 16
@@ -50,6 +58,19 @@
       leccd              = .FALSE.
       lnbcd              = .FALSE.
       lohmic             = .FALSE.
+      ! TRAVIS vars
+      vessel_ecrh     = ''
+      mirror_ecrh     = ''
+      freq_ecrh       = -1
+      wmode_ecrh      = ''
+      targettype_ecrh  = 'cyl'
+      antennatype_ecrh = 'cyl'
+      antennaposition_ecrh = 0
+      targetposition_ecrh = 0
+      rbeam_ecrh = 0
+      rfocus_ecrh = 0
+      nra_ecrh = 0
+      nphi_ecrh = 8
       RETURN
       END SUBROUTINE init_thrift_input
       
@@ -79,6 +100,8 @@
          CLOSE(iunit)
       END IF
       CALL tolower(bootstrap_type)
+      CALL tolower(eccd_type)
+      leccd = eccd_type .ne. ''
       RETURN
       END SUBROUTINE read_thrift_input
 
