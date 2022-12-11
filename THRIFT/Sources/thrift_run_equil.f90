@@ -9,9 +9,10 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE thrift_runtime
+      USE thrift_equil
       USE thrift_vars
       USE read_wout_mod, ONLY: read_wout_deallocate, read_wout_file, &
-                               betatot
+                               betatot, Aminor, Rmajor,phi
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -28,6 +29,9 @@
          CALL read_wout_deallocate; ier = 0
          CALL read_wout_file(TRIM(proc_string),ier)
          eq_beta      = betatot
+         eq_Aminor    = Aminor
+         eq_Rmajor    = Rmajor
+         eq_phiedge   = MAXVAL(phi)
          ! Load equil_utils for helpers later on
          CALL thrift_load_vmec
       END IF

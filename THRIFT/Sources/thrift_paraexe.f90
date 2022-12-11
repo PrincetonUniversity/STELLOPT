@@ -166,9 +166,9 @@
                ier_paraexe = ier
 #endif
 #if defined(TRAVIS)
-!            CASE('travis')
-!               proc_string = file_str
-!               CALL thrift_travis(lscreen_local,ier)
+            CASE('travis')
+               proc_string = file_str
+               CALL thrift_travis(lscreen_local,ier)
 #endif
             CASE('booz_xform')
                proc_string = file_str

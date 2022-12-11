@@ -70,7 +70,10 @@ MODULE thrift_runtime
     INTEGER :: nprocs_thrift, nparallel_runs, mboz, nboz, ier_paraexe, &
                mytimestep
     REAL(rprec) :: pi, pi2, invpi2, mu0, to3
-    CHARACTER(256) :: id_string, prof_string, bootstrap_type, proc_string
+    CHARACTER(256) :: id_string, prof_string, bootstrap_type, &
+                      eccd_type, &
+                      proc_string, vessel_ecrh, mirror_ecrh, &
+                      targettype_ecrh, antennatype_ecrh
 
     REAL(rprec), PARAMETER :: THRIFT_VERSION = 0.00 
     !-----------------------------------------------------------------------

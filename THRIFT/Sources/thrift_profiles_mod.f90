@@ -299,6 +299,15 @@ MODULE thrift_profiles_mod
       RETURN
       END SUBROUTINE get_prof_ne
 
+      SUBROUTINE get_prof_neprime(rho_val,t_val,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(out) :: val
+      CALL get_prof_dfdrho(rho_val,t_val,NE3D,val)
+      RETURN
+      END SUBROUTINE get_prof_neprime
+
       SUBROUTINE get_prof_te(rho_val,t_val,val)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
@@ -307,6 +316,15 @@ MODULE thrift_profiles_mod
       CALL get_prof_f(rho_val,t_val,TE3D,val)
       RETURN
       END SUBROUTINE get_prof_te
+
+      SUBROUTINE get_prof_teprime(rho_val,t_val,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(out) :: val
+      CALL get_prof_dfdrho(rho_val,t_val,TE3D,val)
+      RETURN
+      END SUBROUTINE get_prof_teprime
 
       SUBROUTINE get_prof_ni(rho_val,t_val,iion,val)
       IMPLICIT NONE
@@ -319,6 +337,17 @@ MODULE thrift_profiles_mod
       RETURN
       END SUBROUTINE get_prof_ni
 
+      SUBROUTINE get_prof_niprime(rho_val,t_val,iion,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      INTEGER,     INTENT(in) :: iion
+      REAL(rprec), INTENT(out) :: val
+      val = 0
+      IF (iion <= nion_prof) CALL get_prof_dfdrho(rho_val,t_val,NI4D(:,:,:,iion),val)
+      RETURN
+      END SUBROUTINE get_prof_niprime
+
       SUBROUTINE get_prof_ti(rho_val,t_val,iion,val)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
@@ -329,6 +358,17 @@ MODULE thrift_profiles_mod
       IF (iion <= nion_prof) CALL get_prof_f(rho_val,t_val,TI4D(:,:,:,iion),val)
       RETURN
       END SUBROUTINE get_prof_ti
+
+      SUBROUTINE get_prof_tiprime(rho_val,t_val,iion,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      INTEGER,     INTENT(in) :: iion
+      REAL(rprec), INTENT(out) :: val
+      val = 0
+      IF (iion <= nion_prof) CALL get_prof_dfdrho(rho_val,t_val,TI4D(:,:,:,iion),val)
+      RETURN
+      END SUBROUTINE get_prof_tiprime
 
       SUBROUTINE get_prof_p(rho_val,t_val,val)
       IMPLICIT NONE
@@ -349,6 +389,30 @@ MODULE thrift_profiles_mod
       val = val * e_charge
       RETURN
       END SUBROUTINE get_prof_p
+
+      SUBROUTINE get_prof_pprime(rho_val,t_val,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(out) :: val
+      INTEGER     :: i
+      REAL(rprec) :: nk, tk, dn, dt
+      val = 0
+      CALL get_prof_ne(rho_val,t_val,nk)
+      CALL get_prof_te(rho_val,t_val,tk)
+      CALL get_prof_neprime(rho_val,t_val,dn)
+      CALL get_prof_teprime(rho_val,t_val,dt)
+      val = val + dn*tk + nk*dt
+      DO i = 1, nion_prof
+         CALL get_prof_ni(rho_val,t_val,i,nk)
+         CALL get_prof_ti(rho_val,t_val,i,tk)
+         CALL get_prof_niprime(rho_val,t_val,i,dn)
+         CALL get_prof_tiprime(rho_val,t_val,i,dt)
+         val = val + dn*tk + nk*dt
+      END DO
+      val = val * e_charge
+      RETURN
+      END SUBROUTINE get_prof_pprime
 
       SUBROUTINE get_prof_zeff(rho_val,t_val,val)
       IMPLICIT NONE
