@@ -287,6 +287,18 @@
             WRITE(6,*) '  FIELDLINES ENCOUNTERED AN HDF ERROR'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
             WRITE(6,*) '  IERR:      ',ierr
+      ELSEIF (error_num .eq. MPI_BARRIER_ERR) THEN
+         WRITE(6,*) '  FIELDLINES ENCOUNTERED AN MPI BARRIER ERROR'
+         WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+         WRITE(6,*) '  IERR:      ',ierr
+      ELSEIF (error_num .eq. MPI_BARRIER_ERR) THEN
+         WRITE(6,*) '  FIELDLINES ENCOUNTERED AN MPI BARRIER (FINE) ERROR'
+         WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+         WRITE(6,*) '  IERR:      ',ierr  
+      ELSEIF (error_num .eq. MPI_BCAST_ERR) THEN
+         WRITE(6,*) '  FIELDLINES ENCOUNTERED AN MPI BROADCAST ERROR'
+         WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+         WRITE(6,*) '  IERR:      ',ierr   
       ELSE
            WRITE(6,*) '  FIELDLINES ENCOUNTERED AN UNKNOWN ERROR'
            WRITE(6,*) '  STRING: ',TRIM(string_val)
