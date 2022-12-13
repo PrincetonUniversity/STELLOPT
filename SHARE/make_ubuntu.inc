@@ -179,7 +179,7 @@ SILOHOME = /usr/lib/x86_64-linux-gnu
           $(GCC6_HOME)/libgfortran.so $(GCC6_HOME)/libstdc++.so \
           $(MPIHOME)/lib/x86_64-linux-gnu/libmpi.so $(MPIHOME)/lib/x86_64-linux-gnu/libmpi_mpifh.so \
           /usr/lib/x86_64-linux-gnu/libm.so /usr/lib/liblapack.so /usr/lib/x86_64-linux-gnu/libdl.so
-LIB_SHARE = $(BLASHOME)/libblas.so \
+#LIB_SHARE = $(BLASHOME)/libblas.so \
           $(SCALAPACK_HOME)/libscalapack-openmpi.so.1 \
           $(BLACS_HOME)/libblacs-openmpi.so.1 \
           $(BLACS_HOME)/libblacsCinit-openmpi.so.1 \
@@ -198,6 +198,6 @@ LIB_SHARE = $(BLASHOME)/libblas.so \
           /usr/lib/liblapack.so \
           /usr/lib/x86_64-linux-gnu/libdl.so
 
-#LIB_SHARE = $(BLASHOME)/libblas.so 
+LIB_SHARE = $(BLASHOME)/libblas.so 
 
 
