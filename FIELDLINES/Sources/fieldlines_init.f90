@@ -77,7 +77,7 @@
       iunit = 11
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init:namelist',ierr_mpi)
 #endif
       IF (lvmec) THEN
          CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myworkid)
@@ -238,7 +238,7 @@
       IF (ANY(B_PHI .eq. 0)) THEN
 #if defined(MPI_OPT)
          CALL MPI_FINALIZE(ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'fieldlines_init',ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'fieldlines_init:B_PHI0',ierr_mpi)
 #endif
          stop 'ERROR: B_PHI = 0 Found'
       END IF
@@ -248,7 +248,7 @@
          IF (lemc3 .and. myworkid==master) CALL fieldlines_write_emc3
 #if defined(MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init:Bfield',ierr_mpi)
 #endif
          RETURN
       END IF
@@ -312,7 +312,7 @@
       ! Get setup vessel
       IF (lvessel .and. (.not. lwall_loaded)) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier, lverb, MPI_COMM_FIELDLINES)
-         IF (ier /= 0) CALL handle_err(WALL_ERR,'fieldlines_init',ier)
+         IF (ier /= 0) CALL handle_err(WALL_ERR,'fieldlines_init:Vessel',ier)
          IF (lverb) THEN
             CALL wall_info(6)
             IF (lwall_trans) WRITE(6,'(A)')'   !!!!! Poincare Screen  !!!!!'

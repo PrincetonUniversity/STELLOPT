@@ -338,12 +338,12 @@
                      sflx = 1.0
                      CALL EZspline_interp(p_spl,sflx,PRES_G(i,j,k),ier)
                   END IF
-               ELSE
-                  ! This is an error code check
-                  PRINT *,'ERROR in GetBcyl Detected'
-                  PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
-                  print *,'br,bphi,bz,myworkid',br,bphi,bz,myworkid
-                  stop 'ERROR in GetBcyl'
+               ! ELSE
+               !    ! This is an error code check
+               !    PRINT *,'ERROR in GetBcyl Detected'
+               !    PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
+               !    print *,'br,bphi,bz,myworkid',br,bphi,bz,myworkid
+               !    stop 'ERROR in GetBcyl'
                END IF
                IF (lverb .and. (MOD(s,nr) == 0)) THEN
                   CALL backspace_out(6,6)
