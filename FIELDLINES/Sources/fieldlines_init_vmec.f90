@@ -311,9 +311,9 @@
                CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                                   br, bphi, bz, SFLX=sflx,info=ier)
                IF (ier == 0 .and. bphi /= 0 .and. sflx<=1) THEN
-                  B_R(i,j,k)   = br
-                  B_PHI(i,j,k) = bphi
-                  B_Z(i,j,k)   = bz
+                  B_R(i,j,k)   = B_R(i,j,k) + br
+                  B_PHI(i,j,k) = B_PHI(i,j,k)+ bphi
+                  B_Z(i,j,k)   = B_Z(i,j,k) + bz
                   IF (lpres) THEN 
                      CALL EZspline_interp(p_spl,sflx,PRES_G(i,j,k),ier)
                   END IF
