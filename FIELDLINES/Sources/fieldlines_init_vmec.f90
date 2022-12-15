@@ -311,9 +311,9 @@
                CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                                   br, bphi, bz, SFLX=sflx,info=ier)
                IF (ier == 0 .and. bphi /= 0 .and. sflx<=1) THEN
-                  B_R(i,j,k)   = br
-                  B_PHI(i,j,k) = bphi
-                  B_Z(i,j,k)   = bz
+                  B_R(i,j,k)   = B_R(i,j,k) + br
+                  B_PHI(i,j,k) = B_PHI(i,j,k)+ bphi
+                  B_Z(i,j,k)   = B_Z(i,j,k) + bz
                   IF (lpres) THEN 
                      CALL EZspline_interp(p_spl,sflx,PRES_G(i,j,k),ier)
                   END IF
@@ -338,12 +338,12 @@
                      sflx = 1.0
                      CALL EZspline_interp(p_spl,sflx,PRES_G(i,j,k),ier)
                   END IF
-               ELSE
-                  ! This is an error code check
-                  PRINT *,'ERROR in GetBcyl Detected'
-                  PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
-                  print *,'br,bphi,bz,myworkid',br,bphi,bz,myworkid
-                  stop 'ERROR in GetBcyl'
+               ! ELSE
+               !    ! This is an error code check
+               !    PRINT *,'ERROR in GetBcyl Detected'
+               !    PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
+               !    print *,'br,bphi,bz,myworkid',br,bphi,bz,myworkid
+               !    stop 'ERROR in GetBcyl'
                END IF
                IF (lverb .and. (MOD(s,nr) == 0)) THEN
                   CALL backspace_out(6,6)
@@ -384,7 +384,7 @@
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_vmec',ierr_mpi)
 #endif
 !-----------------------------------------------------------------------
 !     End Subroutine
