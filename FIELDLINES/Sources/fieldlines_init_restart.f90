@@ -52,7 +52,32 @@
 #endif
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (myworkid /= master) THEN
+           ! DEALLOCATE(raxis, phiaxis, zaxis, &
+           ! B_R, B_PHI, B_Z)
+            ALLOCATE(raxis(nr), phiaxis(nphi), zaxis(nz), &
+                       B_R(nr,nphi,nz), B_PHI(nr,nphi,nz), B_Z(nr,nphi,nz))
+      END IF
+         CALL MPI_BCAST(nr,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
+         CALL MPI_BCAST(nphi,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
+         CALL MPI_BCAST(nz,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
+         CALL MPI_BCAST(raxis,nr,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
+         CALL MPI_BCAST(phiaxis,nphi,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
+         CALL MPI_BCAST(zaxis,nz,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
+         CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
+         CALL MPI_BCAST(B_PHI,nr*nphi*nz,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
+         CALL MPI_BCAST(B_Z,nr*nphi*nz,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
 #endif
+
       rmin = MINVAL(raxis)
       rmax = MAXVAL(raxis)
       phimin = MINVAL(phiaxis)
