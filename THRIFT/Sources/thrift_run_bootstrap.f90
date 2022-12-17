@@ -32,10 +32,13 @@
 
       SELECT CASE(TRIM(bootstrap_type))
          CASE ('model','simple','test')
+            ! j_BS = sqrt(epsilon) Rmajor *dp/dPsi
+            ! epsilon = r/R (inverse aspect ratio)
+            ! dp/dPsi : Pa/Wb (toroidal flux derivative)
             DO i = 1, nrho
                rho = THRIFT_RHO(i)
                sflux = rho*rho
-               CALL get_prof_pprime(rho,THRIFT_T(mytimestep),pprime)
+               CALL get_prof_pprime(rho,THRIFT_T(mytimestep),pprime) ! dpdrho
                pprime = pprime * 0.5 / rho ! dpds = dpdrho * drho/ds = dpdrho/ (ds/ddrho) = dpdrho / (2*rho)
                THRIFT_JBOOT(i,mytimestep) = SQRT(eq_Aminor*eq_Rmajor*rho) * pprime / eq_phiedge
             END DO
