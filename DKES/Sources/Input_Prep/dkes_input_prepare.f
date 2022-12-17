@@ -33,14 +33,17 @@
 !            (= .true. screen output on, = .false. screen output off)
 !
 !     Optional
-!     coupling order (arg(6)) - see description below
-!     legendre_modes (arg(7))
+!     filename modifer (arg(6)) - see description below
+!     coupling order   (arg(7))
+!     legendre_modes   (arg(8))
 !
 !
 !     max_bmns = Number of Bmnc's which are retained for the
 !                  DKES spectrum (this also influences the
 !                  Fourier spectrum used for the distribution
 !                  function in DKES)
+!
+!     filename_modifer = append a modifer to the output filename
 !
 !     legendre_modes = number of Legendre polynomials used in
 !                  DKES to represent the pitch angle variation
@@ -173,6 +176,7 @@
       INTEGER :: index_dat, index_end
       REAL(rprec) time_begin, time_end
       CHARACTER*(120) :: extension
+      CHARACTER*(120) :: extension_mod
       CHARACTER*(10) :: date0, time0, zone0
       CHARACTER*(40) :: dateloc
 !     CHARACTER*30 dkes_input_file
@@ -180,6 +184,7 @@
       LOGICAL :: lscreen = .true.
 !-----------------------------------------------
       twopi = 8*ATAN(one)
+      extension_mod = ''
 
       CALL second0(time_begin)
 
@@ -190,8 +195,9 @@
       READ (arg(4),*) efield
       IF (numargs>4 .and. (arg(5)(1:1).eq.'f' .or. arg(5)(1:1).eq.'F'))
      1   lscreen = .false.
-      IF (numargs > 5) READ (arg(6), *) coupling_order
-      IF (numargs > 6) READ (arg(7), *) legendre_modes
+      IF (numargs > 5) READ (arg(6), *) extension_mod
+      IF (numargs > 6) READ (arg(7), *) coupling_order
+      IF (numargs > 7) READ (arg(8), *) legendre_modes
 
       index_dat = INDEX(arg(1),'.')
       index_end = LEN_TRIM(arg(1))
@@ -321,7 +327,8 @@
 !
 !     Write out the initial part of the DKES input file.
 !
-      dkes_input_file = 'input_dkes.' // TRIM(extension)
+      dkes_input_file = 'input_dkes.' // TRIM(extension) 
+     1                                // TRIM(extension_mod)
       iunit = 15
       CALL safe_open(iunit, istat, dkes_input_file, 'replace',
      1    'formatted')
