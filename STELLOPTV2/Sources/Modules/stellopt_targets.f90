@@ -166,7 +166,9 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_txport, sigma_txport, &
                                         s_txport
       CHARACTER(256)                ::  txport_proxy
-      REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES, nu_DKES
+      INTEGER                       ::  nruns_dkes
+      REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES
+      REAL(rprec), DIMENSION(nprof) ::  E_DKES, nu_DKES
       REAL(rprec), DIMENSION(nsd)        :: target_gamma_c, sigma_gamma_c
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
