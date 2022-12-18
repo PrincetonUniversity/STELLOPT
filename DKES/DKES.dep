@@ -65,7 +65,7 @@ rddisk.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
       
 
-residue.o : \
+residue_dkes.o : \
       dkes_input.o \
       dkes_realspace.o \
       vnamecl2.o 
