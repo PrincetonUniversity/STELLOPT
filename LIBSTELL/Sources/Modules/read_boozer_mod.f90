@@ -544,7 +544,7 @@
 
 
 
-      SUBROUTINE bcast_boozer_vars(comm,local_master,ierr)
+      SUBROUTINE bcast_boozer_vars(local_master, comm, ierr)
       USE stel_kinds, ONLY: rprec
       USE mpi_inc
 !-----------------------------------------------
@@ -571,6 +571,10 @@
       CALL MPI_BCAST(nboz_b,  1, MPI_INTEGER, local_master, comm, ierr)
       CALL MPI_BCAST(nfp_b,   1, MPI_INTEGER, local_master, comm, ierr)
       CALL MPI_BCAST(ns_b,    1, MPI_INTEGER, local_master, comm, ierr)
+      CALL MPI_BCAST(aspect_b,  1, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(rmax_b,    1, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(rmin_b,    1, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(betaxis_b, 1, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
       ! Now allocate arrays
       IF (mylocalid .ne. 0) THEN
          IF (ALLOCATED(iota_b)) DEALLOCATE(iota_b)
@@ -606,16 +610,16 @@
          END IF
       ENDIF
       CALL MPI_BARRIER(comm, ierr)
-      CALL MPI_BCAST(idx_b,  ns_b, MPI_INTEGER,          local_master, comm, ierr)
-      CALL MPI_BCAST(ixm_b,  ns_b, MPI_INTEGER,          local_master, comm, ierr)
-      CALL MPI_BCAST(ixn_b,  ns_b, MPI_INTEGER,          local_master, comm, ierr)
-      CALL MPI_BCAST(iota_b, ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
-      CALL MPI_BCAST(pres_b, ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
-      CALL MPI_BCAST(beta_b, ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
-      CALL MPI_BCAST(phip_b, ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
-      CALL MPI_BCAST(phi_b,  ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
-      CALL MPI_BCAST(bvco_b, ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
-      CALL MPI_BCAST(buco_b, ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(idx_b,  ns_b,    MPI_INTEGER,          local_master, comm, ierr)
+      CALL MPI_BCAST(ixm_b,  mnboz_b, MPI_INTEGER,          local_master, comm, ierr)
+      CALL MPI_BCAST(ixn_b,  mnboz_b, MPI_INTEGER,          local_master, comm, ierr)
+      CALL MPI_BCAST(iota_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(pres_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(beta_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(phip_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(phi_b,  ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(bvco_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(buco_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
       CALL MPI_BCAST(bmnc_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
       CALL MPI_BCAST(rmnc_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
       CALL MPI_BCAST(zmns_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
