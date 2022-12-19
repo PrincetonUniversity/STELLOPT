@@ -46,8 +46,7 @@
                 // ' L11p-  L11m-  L33p-  L33m-  L31p-  L31m-  SCAL11-  SCAL33-  SCAL31-'
       IF (niter >= 0) THEN
          ik = 0
-         ii = 1
-         DO WHILE (ii <= nsd)
+         DO ii = 1, nsd
             IF (sigma(ii) >= bigno) CYCLE
             mtargets = mtargets + 1
             targets(mtargets) = target(ii)
