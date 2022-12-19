@@ -169,6 +169,8 @@
       INTEGER                       ::  nruns_dkes
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES
       REAL(rprec), DIMENSION(nprof) ::  E_DKES, nu_DKES
+      REAL(rprec), DIMENSION(nsd)   ::  target_DKES_erdiff, sigma_DKES_erdiff
+      REAL(rprec)                   ::  nu_dkes_erdiff, Ep_dkes_erdiff, Em_dkes_erdiff
       REAL(rprec), DIMENSION(nsd)        :: target_gamma_c, sigma_gamma_c
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
@@ -272,6 +274,7 @@
       INTEGER, PARAMETER :: jtarget_resjac     = 606
       INTEGER, PARAMETER :: jtarget_txport     = 607
       INTEGER, PARAMETER :: jtarget_dkes       = 608
+      INTEGER, PARAMETER :: jtarget_dkes_erdiff       = 6081
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
       INTEGER, PARAMETER :: jtarget_jcurv      = 6091
       INTEGER, PARAMETER :: jtarget_bmin       = 610
@@ -417,6 +420,8 @@
             WRITE(iunit, out_format) 'Particle Orbits (BEAMS3D)'
          CASE(jtarget_dkes)
             WRITE(iunit, out_format) 'Drift-Kinetics (DKES)'
+         CASE(jtarget_dkes_erdiff)
+            WRITE(iunit, out_format) 'DKES Delta-Er'
          CASE(jtarget_jdotb)
             WRITE(iunit, out_format) '<J.B>'
          CASE(jtarget_jcurv)
