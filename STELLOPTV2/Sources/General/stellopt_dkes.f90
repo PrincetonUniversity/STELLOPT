@@ -11,7 +11,9 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime, ONLY:  proc_string, bigno, rprec
       USE equil_utils, ONLY: get_equil_phi, nrad, shat, phi_type
-      USE stellopt_targets, ONLY: nu_dkes, sigma_dkes, lbooz, nsd, E_dkes, nprof, nruns_dkes
+      USE stellopt_targets, ONLY: nu_dkes, sigma_dkes, lbooz, nsd, &
+                                  E_dkes, nprof, nruns_dkes, &
+                                  sigma_dkes_erdiff
       ! NEO LIBRARIES
 !DEC$ IF DEFINED (DKES_OPT)
       USE Vimatrix
@@ -87,7 +89,7 @@
       IF (myworkid == master) THEN
          ik = 0
          DO ir = 1, nsd
-            IF (sigma_dkes(ir) >= bigno) CYCLE
+            IF (sigma_dkes(ir) >= bigno .and. sigma_dkes_erdiff(ir) >= bigno) CYCLE
             DO ij = 1, nprof
                IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
                ik = ik + 1

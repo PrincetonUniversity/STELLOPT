@@ -434,9 +434,8 @@
          IF (ANY(sigma_ece < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
-         !IF (ANY(sigma_dkes < bigno)) CALL stellopt_dkes(lscreen,iflag)
          ctemp_str = 'dkes'
-         IF (ANY(sigma_dkes < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF ((ANY(sigma_dkes < bigno).or.ANY(sigma_dkes_erdiff < bigno)) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 
          ! NOTE ALL parallel secondary codes go here
