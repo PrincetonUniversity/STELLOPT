@@ -39,8 +39,14 @@
       ! Read the THRIFT input
       IF (lvmec) THEN
          CALL read_thrift_input('input.' // TRIM(id_string),ier)
-         IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
       ENDIF
+
+      ! Output to screen
+      IF (lverb) THEN 
+         WRITE(6,'(A)') '   FILE:             input.' // TRIM(id_string)
+         WRITE(6,'(A)') '   BOOTSTRAP MODEL: ' // TRIM(bootstrap_type)
+         WRITE(6,'(A)') '   ECCD MODEL:      ' // TRIM(eccd_type)
+      END IF
 
       ! Create the worker pool
 

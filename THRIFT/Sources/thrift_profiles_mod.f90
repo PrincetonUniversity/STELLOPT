@@ -21,11 +21,11 @@ MODULE thrift_profiles_mod
     REAL(rprec) :: rhomin, rhomax, tmin, tmax, eps1, eps2
     REAL(rprec), DIMENSION(:), POINTER :: raxis_prof, taxis_prof, &
                                           Matom_prof, hr, hri, ht, hti
-    REAL(rprec), DIMENSION(:,:,:), POINTER :: NE3D, TE3D
+    REAL(rprec), DIMENSION(:,:,:), POINTER :: NE3D, TE3D, P3D
     REAL(rprec), DIMENSION(:,:,:,:), POINTER :: NI4D, TI4D
     INTEGER :: win_raxis_prof, win_taxis_prof, win_NE3D, win_TE3D, &
                win_NI4D, win_TI4D, win_hr, win_ht, win_hri, win_hti, &
-               win_Matom_prof, win_Zatom_prof
+               win_Matom_prof, win_Zatom_prof, win_P3D
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         NONE
@@ -61,7 +61,7 @@ MODULE thrift_profiles_mod
       INTEGER :: i, ier
       INTEGER :: bcs0(2)
       TYPE(EZspline2_r8) :: temp_spl2d
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: temp2d
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: temp2d, pres2d
       REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: temp_ni,temp_ti
       bcs0=(/ 0, 0/)
       ierr_mpi = 0
@@ -94,6 +94,7 @@ MODULE thrift_profiles_mod
       CALL mpialloc(Matom_prof, nion_prof,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_Matom_prof)
       CALL mpialloc(NE3D, 4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE3D)
       CALL mpialloc(TE3D, 4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE3D)
+      CALL mpialloc(P3D,  4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_P3D)
       CALL mpialloc(NI4D, 4, nt_prof, nrho_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI4D)
       CALL mpialloc(TI4D, 4, nt_prof, nrho_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI4D)
       IF (myid_sharmem == master) THEN
@@ -111,7 +112,7 @@ MODULE thrift_profiles_mod
             WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   T    = [',minval(taxis_prof),',',maxval(taxis_prof),'];    NT: ',nt_prof
          END IF
          !Loop over profiles
-         ALLOCATE(temp2d(nt_prof,nrho_prof))
+         ALLOCATE(temp2d(nt_prof,nrho_prof),pres2d(nt_prof,nrho_prof))
          ! Now create the spline arrays
          ! NE
          CALL read_var_hdf5(fid,'ne_prof',nt_prof,nrho_prof,ier,DBLVAR=temp2d)
@@ -125,6 +126,7 @@ MODULE thrift_profiles_mod
          CALL EZspline_setup(temp_spl2d,temp2d,ier,EXACT_DIM=.true.)
          NE3D = temp_spl2d%fspl
          CALL EZspline_free(temp_spl2d,ier)
+         pres2d = temp2d
          ! TE
          CALL read_var_hdf5(fid,'te_prof',nt_prof,nrho_prof,ier,DBLVAR=temp2d)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'te_prof',ier)
@@ -137,6 +139,7 @@ MODULE thrift_profiles_mod
          CALL EZspline_setup(temp_spl2d,temp2d,ier,EXACT_DIM=.true.)
          TE3D = temp_spl2d%fspl
          CALL EZspline_free(temp_spl2d,ier)
+         pres2d = pres2d*temp2d ! Te*ne
          ! Now work on Ion grid
          DEALLOCATE(temp2d)
          ALLOCATE(temp_ni(nt_prof,nrho_prof,nion_prof))
@@ -176,12 +179,24 @@ MODULE thrift_profiles_mod
             IF (lverb) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A)') '   Ti(',i,')= [', &
                         MINVAL(temp_ti(:,:,i))*1E-3,',',MAXVAL(temp_ti(:,:,i))*1E-3,'] keV'
          END DO
+         pres2d = (pres2d + SUM(temp_ti*temp_ni,3))*e_charge
          ! DEALLOCATE Helpers
          DEALLOCATE(temp_ti)
          DEALLOCATE(temp_ni)
          ! Close the HDF5 file
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,TRIM(filename),ier)
+         ! PRESSURE Spline
+         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A)') '   P    = [', &
+                        MINVAL(pres2d)*1E-3,',',MAXVAL(pres2d)*1E-3,'] kPa'
+         CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
+         temp_spl2d%x1          = taxis_prof
+         temp_spl2d%x2          = raxis_prof
+         temp_spl2d%isHermite   = 1
+         CALL EZspline_setup(temp_spl2d,pres2d,ier,EXACT_DIM=.true.)
+         P3D = temp_spl2d%fspl
+         CALL EZspline_free(temp_spl2d,ier)
+         DEALLOCATE(pres2d)
       END IF
       CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
       CALL setup_grids
@@ -378,15 +393,7 @@ MODULE thrift_profiles_mod
       INTEGER     :: i
       REAL(rprec) :: nk, tk
       val = 0
-      CALL get_prof_ne(rho_val,t_val,nk)
-      CALL get_prof_te(rho_val,t_val,tk)
-      val = val + nk*tk
-      DO i = 1, nion_prof
-         CALL get_prof_ni(rho_val,t_val,i,nk)
-         CALL get_prof_ti(rho_val,t_val,i,tk)
-         val = val + nk*tk
-      END DO
-      val = val * e_charge
+      CALL get_prof_f(rho_val,t_val,P3D,val)
       RETURN
       END SUBROUTINE get_prof_p
 
@@ -398,19 +405,7 @@ MODULE thrift_profiles_mod
       INTEGER     :: i
       REAL(rprec) :: nk, tk, dn, dt
       val = 0
-      CALL get_prof_ne(rho_val,t_val,nk)
-      CALL get_prof_te(rho_val,t_val,tk)
-      CALL get_prof_neprime(rho_val,t_val,dn)
-      CALL get_prof_teprime(rho_val,t_val,dt)
-      val = val + dn*tk + nk*dt
-      DO i = 1, nion_prof
-         CALL get_prof_ni(rho_val,t_val,i,nk)
-         CALL get_prof_ti(rho_val,t_val,i,tk)
-         CALL get_prof_niprime(rho_val,t_val,i,dn)
-         CALL get_prof_tiprime(rho_val,t_val,i,dt)
-         val = val + dn*tk + nk*dt
-      END DO
-      val = val * e_charge
+      CALL get_prof_dfdrho(rho_val,t_val,P3D,val)
       RETURN
       END SUBROUTINE get_prof_pprime
 
@@ -491,6 +486,7 @@ MODULE thrift_profiles_mod
       IF (ASSOCIATED(hti))        CALL mpidealloc(hti,win_hti)
       IF (ASSOCIATED(NE3D))       CALL mpidealloc(NE3D,win_NE3D)
       IF (ASSOCIATED(TE3D))       CALL mpidealloc(TE3D,win_TE3D)
+      IF (ASSOCIATED(P3D))        CALL mpidealloc(TE3D,win_P3D)
       IF (ASSOCIATED(NI4D))       CALL mpidealloc(NI4D,win_NI4D)
       IF (ASSOCIATED(TI4D))       CALL mpidealloc(TI4D,win_TI4D)
       END SUBROUTINE free_profiles

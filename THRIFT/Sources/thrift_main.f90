@@ -43,6 +43,9 @@ PROGRAM THRIFT
     ! ----work here
     CALL thrift_evolve
 
+    ! ----Write output
+    CALL thrift_write
+
     ! Clean up
     CALL thrift_cleanup
 

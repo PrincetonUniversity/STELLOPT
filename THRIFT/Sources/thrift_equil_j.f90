@@ -48,10 +48,12 @@
 
       ! Create J array
       ALLOCATE(rho_temp(nrho+2),j_temp(nrho+2))
-      rho_temp(1)        = 0.0
+      !rho_temp(1)        = 0.0
+      rho_temp(1)        = -THRIFT_RHO(1)
       rho_temp(2:nrho+1) = THRIFT_RHO
       rho_temp(nrho+2)   = 1.0
-      j_temp(1)          = 0.0
+      !j_temp(1)          = 0.0
+      j_temp(1)          = THRIFT_J(1,itime)
       j_temp(2:nrho+1)   = THRIFT_J(:,itime)
       j_temp(nrho+2)     = 0.0
 
