@@ -33,8 +33,8 @@
            s_val = DBLE(i-1)/DBLE(99-1)
            rho_val = sqrt(s_val)
            CALL get_prof_p(rho_val,THRIFT_T(mytimestep),p_val)
-           WRITE(6,*) rho_val,THRIFT_T(mytimestep),p_val
-           CALL FLUSH(6)
+           !WRITE(6,*) rho_val,THRIFT_T(mytimestep),p_val
+           !CALL FLUSH(6)
            AM_AUX_S(i) = s_val
            AM_AUX_F(i) = p_val
          END DO
