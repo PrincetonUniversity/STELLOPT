@@ -39,7 +39,7 @@
                rho = THRIFT_RHO(i)
                sflux = rho*rho
                CALL get_prof_pprime(rho,THRIFT_T(mytimestep),pprime) ! dpdrho
-               pprime = pprime * 0.5 / rho ! dpds = dpdrho * drho/ds = dpdrho/ (ds/ddrho) = dpdrho / (2*rho)
+               pprime = pprime * 0.5 / rho ! dpds = dpdrho * drho/ds = dpdrho / (ds/drho) = dpdrho / (2*rho)
                THRIFT_JBOOT(i,mytimestep) = SQRT(eq_Aminor*eq_Rmajor*rho) * pprime / eq_phiedge
             END DO
          CASE ('bootsj')

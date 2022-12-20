@@ -80,10 +80,11 @@ CONTAINS
       ierr_mpi = 0
       !CALL thrift_free(MPI_COMM_SHARMEM)
 #if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_cleanup: MPI_COMM_MYWORLD',ierr_mpi)
-      CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr_mpi)
-      CALL MPI_BARRIER(MPI_COMM_THRIFT, ierr_mpi)
+      !CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      !CALL MPI_COMM_FREE(MPI_COMM_SHARMEM, ierr_mpi)
+      !CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr_mpi)
+      !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'thrift_cleanup: MPI_COMM_MYWORLD',ierr_mpi)
+      !CALL MPI_BARRIER(MPI_COMM_THRIFT, ierr_mpi)
       !IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'thrift_cleanup: MPI_COMM_THRIFT', ierr_mpi)
       !CALL MPI_COMM_FREE(MPI_COMM_THRIFT, ierr_mpi)
       !ierr_mpi=0

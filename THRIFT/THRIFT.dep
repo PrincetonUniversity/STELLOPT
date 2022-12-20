@@ -142,3 +142,8 @@ thrift_run_equil.o : \
 
 thrift_vars.o : \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
+
+thrift_write.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/ez_hdf5.o 

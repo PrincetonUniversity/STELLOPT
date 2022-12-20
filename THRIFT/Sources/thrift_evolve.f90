@@ -63,8 +63,8 @@
             IF (nsubsteps > npicard .or. eq_beta==0) EXIT
 
             ! Create filename
-            WRITE(temp1_str,'(i5)') mytimestep
-            WRITE(temp2_str,'(i3)') nsubsteps
+            WRITE(temp1_str,'(i3.3)') mytimestep
+            WRITE(temp2_str,'(i3.3)') nsubsteps
             proc_string = TRIM(TRIM(id_string) // '.' //  &
                   TRIM(ADJUSTL(temp1_str)) // '_' // &
                   TRIM(ADJUSTL(temp2_str)))
@@ -98,10 +98,9 @@
             deltaj = 0
             IF (nsubsteps==1) THEN
                WHERE(ABS(THRIFT_J(:,mytimestep))>0) deltaj = ABS(THRIFT_J(:,mytimestep))
-               jold = alpha*THRIFT_J(:,mytimestep)
+               jold = THRIFT_J(:,mytimestep)
             ELSE
                WHERE(ABS(jold)>0) deltaj = ABS( THRIFT_J(:,mytimestep) - jold) / ABS(jold)
-               THRIFT_J(:,mytimestep) = jold + alpha*(THRIFT_J(:,mytimestep)-jold)
                jold = THRIFT_J(:,mytimestep)
             END IF
 

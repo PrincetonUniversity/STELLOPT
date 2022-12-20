@@ -75,7 +75,7 @@ MODULE thrift_runtime
                       proc_string, vessel_ecrh, mirror_ecrh, &
                       targettype_ecrh, antennatype_ecrh
 
-    REAL(rprec), PARAMETER :: THRIFT_VERSION = 0.00 
+    REAL(rprec), PARAMETER :: THRIFT_VERSION = 0.50 
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination
