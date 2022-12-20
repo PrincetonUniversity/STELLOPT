@@ -33,14 +33,20 @@
   RBC(-1,2) = -0.025    ZBS(-1,2) = -0.00675
 /
 &THRIFT_INPUT
+  !---------- GENERAL PARAMETERS ------------
   NPARALLEL_RUNS = 1
-  BOOTSTRAP_TYPE = 'bootsj'
+  BOOTSTRAP_TYPE = 'simple'
+  JTOL = 0.01
+  NPICARD = 10
+  PICARD_FACTOR = 0.75
+  !---------- GRID PARAMETERS ------------
+  NRHO = 64
+  NTIMESTEPS = 15
+  TEND = 1.5
+  ! BOOZER TRANSFORM
+  !---------- BOOZER TRANSFORMATION ------------
   MBOZ = 32
   NBOZ = 16
-  NRHO = 32
-  TEND = 1.0
-  NTIMESTEPS = 10
-  JTOL = 1.0E-2 
 /
 &BOOTIN 
    MBUSE   =  32
