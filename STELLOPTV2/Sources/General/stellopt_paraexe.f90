@@ -448,6 +448,11 @@
                ier = 0
                CALL stellopt_neo(lscreen,ier)
                ier_paraexe = ier
+            CASE('dkes')
+               proc_string = file_str
+               ier = 0
+               CALL stellopt_dkes(lscreen,ier)
+               ier_paraexe = ier
             CASE('write_mgrid')
                CALL stellopt_write_mgrid(MPI_COMM_MYWORLD,file_str,lscreen)
             CASE('mango_init')

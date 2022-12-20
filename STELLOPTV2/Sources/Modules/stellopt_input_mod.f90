@@ -211,7 +211,8 @@
 !            target_txport      Array of target values for turbulent transport optimization
 !            s_txport           Array of normalized toroidal fluxes to calculated turbulent transport
 !            target_dkes        Array of target values for drift kinetic optimization
-!            nu_dkes            Array of nu values for DKES optimization [m] (Efield from phi array)
+!            nu_dkes            Array of nu/v values for DKES optimization [m^-1]
+!            E_dkes            Array of E/v values for DKES
 !            target_limter      Target array minimum distance between plasma and limiter surface
 !            r_limiter          Array of (ntheta,nzeta) radial limiter values [m]
 !            z_limiter          Array of (ntheta,nzeta) vertical limiter values [m] 
@@ -373,7 +374,8 @@
                          r_limiter, z_limiter, phi_limiter, &
                          lglobal_txport, nz_txport, nalpha_txport, alpha_start_txport, alpha_end_txport, &
                          target_txport, sigma_txport, s_txport, txport_proxy,&
-                         target_dkes, sigma_dkes, nu_dkes, &
+                         target_dkes, sigma_dkes, nu_dkes, E_dkes,&
+                         target_dkes_Erdiff, sigma_dkes_Erdiff, nu_dkes_Erdiff, Ep_dkes_Erdiff, Em_dkes_Erdiff, &
                          target_jdotb,sigma_jdotb,target_bmin,sigma_bmin,&
                          target_bmax,sigma_bmax,target_jcurv,sigma_jcurv,&
                          target_orbit,sigma_orbit,nu_orbit,nv_orbit,&
@@ -964,8 +966,14 @@
       vperp_orbit       = 0
       target_dkes       = 0.0
       sigma_dkes        = bigno
-      nu_dkes           = 0.01
-      target_jdotb      = 0.0
+      nu_dkes           = -bigno
+      E_dkes            = -bigno
+      target_dkes_Erdiff = 0.0
+      sigma_dkes_Erdiff  = bigno
+      nu_dkes_erdiff     = 0
+      Ep_dkes_Erdiff     = 0
+      Em_dkes_erdiff     = 0
+      target_jdotb       = 0.0
       sigma_jdotb       = bigno
       target_jcurv      = 0.0
       sigma_jcurv       = bigno
@@ -1325,7 +1333,7 @@
       END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
-      IF (myid == master .and. ANY(sigma_dkes < bigno)) THEN
+      IF (myid == master .and. (ANY(sigma_dkes < bigno) .or. ANY(sigma_dkes_Erdiff < bigno))) THEN
          WRITE(6,*)        " Drift-Kinetic Equation Solver (DKES) provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,"(2X,A)") "=========           Drift Kinetic Equation Solver, Variational          ========="
@@ -1335,7 +1343,7 @@
          WRITE(6,*)        "    "
       END IF
 !DEC$ ELSE
-      IF (ANY(sigma_dkes < bigno)) THEN
+      IF (ANY(sigma_dkes < bigno) .or. ANY(sigma_dkes_Erdiff < bigno)) THEN
          sigma_dkes(:) = bigno
          IF (myid == master) THEN
             WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -1468,6 +1476,7 @@
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
       target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
+      target_dkes_Erdiff(1) = 0.0; sigma_dkes_Erdiff(1) = bigno
 
       ! Fix profile types
 !      IF (TRIM(bootj_type) == "boot_model_sal") bootj_aux_s(21) =  1.0
@@ -2147,10 +2156,36 @@
             IF(sigma_dkes(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_dkes(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+            IF (sigma_dkes(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_DKES(',ik,') = ',target_dkes(ik), &
-                          'SIGMA_DKES(',ik,') = ',sigma_dkes(ik), &
-                          'NU_DKES(',ik,') = ',nu_dkes(ik)
+                          'SIGMA_DKES(',ik,') = ',sigma_dkes(ik)
+               DO ii = 1, nprof
+                  IF (E_dkes(ii)>-bigno .and. nu_dkes(ii)>-bigno) &
+                     WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
+                             'NU_DKES(',ii,') = ',NU_dkes(ii), &
+                             'E_DKES(',ii,') = ',E_dkes(ii)
+               END DO
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_dkes_Erdiff < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          DKES Er Difference'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'NU_DKES_ERDIFF',nu_dkes_Erdiff 
+         WRITE(iunit,outflt) 'EP_DKES_ERDIFF',Ep_dkes_Erdiff
+         WRITE(iunit,outflt) 'EM_DKES_ERDIFF',Em_dkes_Erdiff
+         n=0
+         DO ik = 1,UBOUND(sigma_dkes_Erdiff,DIM=1)
+            IF(sigma_dkes_Erdiff(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_dkes_Erdiff(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_DKES_ERDIFF(',ik,') = ',target_dkes(ik), &
+                          'SIGMA_DKES_ERDIFF(',ik,') = ',sigma_dkes(ik)
+            END IF
          END DO
       END IF
       IF (ANY(sigma_jdotb < bigno)) THEN
