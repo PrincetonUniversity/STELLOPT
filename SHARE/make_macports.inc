@@ -14,7 +14,7 @@
   
   SHELL = /bin/sh
   PWD1 = `pwd`
-  PRECOMP:= cpp-mp-10 -traditional-cpp -E -P -C -DMACOSX
+  PRECOMP:= cpp-mp-11 -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none \
                           -ffixed-line-length-none
