@@ -572,14 +572,21 @@
 !DEC$ ENDIF
 
       END DO
+
+      ! Finish up
+
       
       x_temp = x_array(ibest,1)
       x = x_temp
-      
-      
-      DEALLOCATE(fnorm_array,temp_fvec)
-      DEALLOCATE(x_array)
-      IF (myid == master) DEALLOCATE(fnorm_new)
+
+      ! Deallocations
+      IF ALLOCATED(fnorm_array) DEALLOCATE(fnorm_array)
+      IF ALLOCATED(temp_fvec) DEALLOCATE(temp_fvec)
+      IF ALLOCATED(x_temp) DEALLOCATE(x_temp)
+      IF ALLOCATED(x_array) DEALLOCATE(x_array)
+      IF ALLOCATED(fval_array) DEALLOCATE(fval_array)
+      IF ALLOCATED(x_new) DEALLOCATE(x_new)
+      IF ALLOCATED(fnorm_new) DEALLOCATE(fnorm_new)
       
       RETURN
  1327 FORMAT (/,' Beginning Differential Evolution II',/,
