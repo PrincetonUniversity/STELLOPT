@@ -76,7 +76,7 @@ CONTAINS
       ! Clean up
       ier = 0
       CALL beams3d_free(MPI_COMM_SHARMEM)
-      CALL wall_free(ier,MPI_COMM_BEAMS)
+      IF (lvessel) CALL wall_free(ier,MPI_COMM_BEAMS)
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_main', ierr_mpi)
