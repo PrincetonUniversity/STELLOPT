@@ -84,6 +84,7 @@
                AC_AUX_S(i) = s_val
                AC_AUX_F(i) = eq_phiedge*j_val*vp/(eq_Aminor*rho_val) !vp_spl = dV/dPhi  (dPhi/ds = Phiedge)
             END DO
+            AC_AUX_F(1) = 2*AC_AUX_F(2)-AC_AUX_F(3)
             CURTOR = SUM(AC_AUX_F(1:n_eq),DIM=1)/DBLE(n_eq-1)
          ELSE
             DO i = 1, n_eq
