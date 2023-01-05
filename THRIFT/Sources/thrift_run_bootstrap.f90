@@ -19,7 +19,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i
-      REAL(rprec) :: pprime, rho, sflux
+      REAL(rprec) :: pprime, rho, sflux, epsilon
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -38,9 +38,10 @@
             DO i = 1, nrho
                rho = THRIFT_RHO(i)
                sflux = rho*rho
+               epsilon = rho*eq_Aminor/eq_Rmajor ! Inverse Aspect Ratio
                CALL get_prof_pprime(rho,THRIFT_T(mytimestep),pprime) ! dpdrho
-               pprime = pprime * 0.5 / rho ! dpds = dpdrho * drho/ds = dpdrho / (ds/drho) = dpdrho / (2*rho)
-               THRIFT_JBOOT(i,mytimestep) = SQRT(eq_Aminor*eq_Rmajor*rho) * pprime / eq_phiedge
+               pprime = pprime / ( eq_phiedge * 2 * rho) ! dpdPhi = dpdrho/(dsdrho*dPhids)
+               THRIFT_JBOOT(i,mytimestep) = SQRT(epsilon) * pprime * eq_Rmajor
             END DO
          CASE ('bootsj')
             CALL thrift_paraexe('booz_xform',proc_string,lscreen_subcodes)

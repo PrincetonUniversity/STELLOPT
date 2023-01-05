@@ -3,6 +3,7 @@ thrift_bootsj.o : \
       thrift_vars.o \
       thrift_input_mod.o \
       thrift_profiles_mod.o \
+      thrift_equil.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  \
       $(LIB_DIR)/$(LOCTYPE)/bootsj_input.o \
@@ -29,6 +30,7 @@ thrift_equil.o : \
 thrift_equil_j.o : \
       thrift_runtime.o \
       thrift_vars.o \
+      thrift_equil.o \
       $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
       $(LIB_DIR)/$(LOCTYPE)/ezspline.o \
       $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o 
