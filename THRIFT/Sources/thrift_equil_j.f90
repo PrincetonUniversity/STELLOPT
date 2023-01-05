@@ -2,7 +2,7 @@
 !     Subroutine:    thrift_equil_j
 !     Authors:       L. van Ham
 !     Date:          11/XX/2022
-!     Description:   This subroutine updated the equilbirium pressure
+!     Description:   This subroutine updated the equilbirium dI/ds
 !-----------------------------------------------------------------------
       SUBROUTINE thrift_equil_j(lfirst_pass)
 !-----------------------------------------------------------------------
@@ -10,6 +10,7 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
+      USe thrift_equil
       USE EZspline
       USE EZspline_obj
       USE vmec_input, ONLY: ac_aux_s, ac_aux_f, pcurr_type, ncurr, &
@@ -22,7 +23,7 @@
       LOGICAL, INTENT(IN) :: lfirst_pass
       INTEGER :: i, ier, itime
       INTEGER :: bcs0(2)
-      REAL(rprec) :: s_val, rho_val, j_val
+      REAL(rprec) :: s_val, rho_val, j_val, vp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, j_temp
       TYPE(EZspline1_r8) :: j_spl
       INTEGER, PARAMETER :: n_eq = 99
@@ -69,16 +70,28 @@
 
       ! Update equilibrium inputs
       IF (lvmec) THEN
+         ! VMEC requires dI/ds be specified in AC_AUX_F
+         !   I = j*dV/ds/Aminor
          PCURR_TYPE = 'akima_spline_ip'
          NCURR = 1
-         DO i = 1, n_eq
-           s_val = DBLE(i-1)/DBLE(n_eq-1)
-           rho_val = sqrt(s_val)
-           CALL EZspline_interp(j_spl,rho_val,j_val,ier)
-           AC_AUX_S(i) = s_val
-           AC_AUX_F(i) = j_val
-         END DO
-         CURTOR = SUM(AC_AUX_F(1:n_eq),DIM=1)/DBLE(n_eq-1)
+         ! Check to make sure we have dV/ds and Aminor
+         IF (EZspline_allocated(vp_spl)) THEN
+            DO i = 1, n_eq
+               s_val = DBLE(i-1)/DBLE(n_eq-1)
+               rho_val = sqrt(s_val)
+               CALL EZspline_interp(j_spl,rho_val,j_val,ier)
+               CALL EZspline_interp(vp_spl,rho_val,vp,ier)
+               AC_AUX_S(i) = s_val
+               AC_AUX_F(i) = eq_phiedge*j_val*vp/(eq_Aminor*rho_val) !vp_spl = dV/dPhi  (dPhi/ds = Phiedge)
+            END DO
+            CURTOR = SUM(AC_AUX_F(1:n_eq),DIM=1)/DBLE(n_eq-1)
+         ELSE
+            DO i = 1, n_eq
+               s_val = DBLE(i-1)/DBLE(n_eq-1)
+               AC_AUX_S(i) = s_val
+            END DO
+            CURTOR = 0
+         END IF
       END IF
 
       ! Deallocate Spline

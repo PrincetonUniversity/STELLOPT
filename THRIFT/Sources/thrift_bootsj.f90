@@ -12,6 +12,7 @@
       USE thrift_input_mod
       USE thrift_vars, nrho_thrift => nrho
       USE thrift_profiles_mod
+      USE thrift_equil
       USE mpi_params
       USE mpi_inc
       USE EZspline
@@ -53,6 +54,7 @@
       integer :: ihere = 0
       CHARACTER(LEN=32) :: temp_str
       ! Helpers to get dI/ds
+      REAL(rprec) :: vp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, dIds_temp
       TYPE(EZspline1_r8) :: dIds_spl
       INTEGER :: bcs0(2)
@@ -435,6 +437,7 @@
             !  Now compute values for BOOTSJ
             ! rhoar : norm toroidal flux
             ! diBs : dI/ds - what VMEC needs
+            ! But we need j = dI/ds*Aminor/dVds
             IF (myworkid == master) THEN
                ALLOCATE(rho_temp(irup+2),dIds_temp(irup+2))
                rho_temp(1)        = 0.0
@@ -451,6 +454,8 @@
                DEALLOCATE(rho_temp,dIds_temp)
                DO i = 1, nrho_thrift
                   CALL EZspline_interp(dIds_spl,THRIFT_RHO(i),THRIFT_JBOOT(i,mytimestep),ier)
+                  CALL EZspline_interp(vp_spl,THRIFT_RHO(i),vp,ier)
+                  THRIFT_JBOOT(i,mytimestep) = THRIFT_JBOOT(i,mytimestep)*eq_Aminor*THRIFT_RHO(i)/(vp*eq_phiedge)
                END DO
                CALL EZspline_free(dIds_spl,ier)
             END IF

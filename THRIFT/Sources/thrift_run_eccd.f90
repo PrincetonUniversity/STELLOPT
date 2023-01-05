@@ -17,8 +17,8 @@
 !        Rc, w       Model profile coefficients
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: i
-      REAL(rprec) :: Rc, w, Ieccd, Inorm
+      INTEGER :: i, ier
+      REAL(rprec) :: Rc, w, Ieccd, Inorm, vp
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -42,6 +42,8 @@
             Inorm = 0.5*w*sqrt(pi)*(ERF((1-Rc)/w)+ERF(rc/w))
             DO i = 1, nrho
                THRIFT_JECCD(i,mytimestep) = Ieccd*EXP(-(THRIFT_RHO(i)-Rc)**2/w**2)/Inorm
+               CALL EZspline_interp(vp_spl,THRIFT_RHO(i),vp,ier)
+               THRIFT_JECCD(i,mytimestep) = THRIFT_JECCD(i,mytimestep)*eq_Aminor*THRIFT_RHO(i)/(vp*eq_phiedge)
             END DO
             IF (lscreen_subcodes) THEN
                WRITE(6,*) '-------------------  ANALYTIC ECCD MODEL  ---------------------'
