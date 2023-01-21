@@ -23,7 +23,7 @@
       LOGICAL, INTENT(IN) :: lfirst_pass
       INTEGER :: i, ier, itime
       INTEGER :: bcs0(2)
-      REAL(rprec) :: s_val, rho_val, j_val, vp
+      REAL(rprec) :: s_val, rho_val, j_val, vp, phip
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, j_temp
       TYPE(EZspline1_r8) :: j_spl
       INTEGER, PARAMETER :: n_eq = 99
@@ -71,7 +71,10 @@
       ! Update equilibrium inputs
       IF (lvmec) THEN
          ! VMEC requires dI/ds be specified in AC_AUX_F
-         !   I = j*dV/ds/Aminor
+         !   dA/ds = dV/ds/(2*pi*R)
+         !   dV/ds = dV/dPhi * dPhi/ds
+         !   dI/ds = j*dA/ds
+         !   
          PCURR_TYPE = 'akima_spline_ip'
          NCURR = 1
          ! Check to make sure we have dV/ds and Aminor
@@ -81,8 +84,10 @@
                rho_val = sqrt(s_val)
                CALL EZspline_interp(j_spl,rho_val,j_val,ier)
                CALL EZspline_interp(vp_spl,rho_val,vp,ier)
+               CALL EZspline_interp(phip_spl,rho_val,phip,ier)
                AC_AUX_S(i) = s_val
-               AC_AUX_F(i) = eq_phiedge*j_val*vp/(eq_Aminor*rho_val) !vp_spl = dV/dPhi  (dPhi/ds = Phiedge)
+               AC_AUX_F(i) = j_val*vp*phip/(eq_Rmajor*pi2)
+               !AC_AUX_F(i) = eq_phiedge*j_val*vp/(eq_Aminor*rho_val) !vp_spl = dV/dPhi  (dPhi/ds = Phiedge)
             END DO
             AC_AUX_F(1) = 2*AC_AUX_F(2)-AC_AUX_F(3)
             CURTOR = SUM(AC_AUX_F(1:n_eq),DIM=1)/DBLE(n_eq-1)
