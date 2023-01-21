@@ -183,8 +183,9 @@
       b0 = RBtor0/Rmajor
       iota0 = iotaf(1)
 
-
-      ! Convert vp from dV/ds to dV/dPhi = (dV/ds)/(dPhi/ds)
+      ! We want dV/dPhi = dV/ds*ds/dPhi = dV/ds / (dPhi/ds)
+      !     Note that Vp is missing a factor of 4*pi*pi
+      vp = pi2*pi2*vp
       vp = vp/phipf
 
       ! Iota Spline
