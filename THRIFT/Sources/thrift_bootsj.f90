@@ -438,6 +438,10 @@
             ! rhoar : norm toroidal flux
             ! diBs : dI/ds - what VMEC needs
             ! But we need j = dI/ds*Aminor/dVds
+            ! But we need j = dI/ds * ds/dA
+            !               = dI/ds / (dA/ds)
+            !               = dI/ds / (dV/ds / (2*pi*Rmajor)) 
+            !               = dI/ds * 2 * pi * Rmajor / dV/ds
             IF (myworkid == master) THEN
                ALLOCATE(rho_temp(irup+2),dIds_temp(irup+2))
                rho_temp(1)        = 0.0
@@ -455,7 +459,7 @@
                DO i = 1, nrho_thrift
                   CALL EZspline_interp(dIds_spl,THRIFT_RHO(i),THRIFT_JBOOT(i,mytimestep),ier)
                   CALL EZspline_interp(vp_spl,THRIFT_RHO(i),vp,ier)
-                  THRIFT_JBOOT(i,mytimestep) = THRIFT_JBOOT(i,mytimestep)*eq_Aminor*THRIFT_RHO(i)/(vp*eq_phiedge)
+                  THRIFT_JBOOT(i,mytimestep) = THRIFT_JBOOT(i,mytimestep)*pi2*eq_Rmajor/(vp*eq_phiedge)
                END DO
                CALL EZspline_free(dIds_spl,ier)
             END IF
