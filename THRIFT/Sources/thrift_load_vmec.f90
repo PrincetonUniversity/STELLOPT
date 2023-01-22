@@ -4,6 +4,9 @@
 !     Date:          11/XX/2022
 !     Description:   This subroutine handles the VMEC output for
 !                    running stel_tools
+!                    A note on VMEC definitions.  VMEC outputs a 1D
+!                    array called jcurv.  This should be <j^phi> but
+!                    is actually jcurv = (dI/ds)/(2*pi).  
 !-----------------------------------------------------------------------
       SUBROUTINE thrift_load_vmec
 !-----------------------------------------------------------------------

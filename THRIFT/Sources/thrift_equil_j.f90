@@ -73,8 +73,8 @@
          ! VMEC requires dI/ds be specified in AC_AUX_F
          !   dA/ds = dV/ds/(2*pi*R)
          !   dV/ds = dV/dPhi * dPhi/ds
-         !   dI/ds = j*dA/ds
-         !   
+         !   j     = dI/ds * ds/dA = dI/ds / (dA/ds)
+         !   dI/ds = j * dA/ds
          PCURR_TYPE = 'akima_spline_ip'
          NCURR = 1
          ! Check to make sure we have dV/ds and Aminor
