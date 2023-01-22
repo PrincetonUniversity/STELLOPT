@@ -142,10 +142,10 @@ MODULE thrift_profiles_mod
          pres2d = pres2d*temp2d ! Te*ne
          ! Now work on Ion grid
          DEALLOCATE(temp2d)
-         ALLOCATE(temp_ni(nt_prof,nrho_prof,nion_prof))
-         ALLOCATE(temp_ti(nt_prof,nrho_prof,nion_prof))
+         ALLOCATE(temp_ni(nion_prof,nt_prof,nrho_prof))
+         ALLOCATE(temp_ti(nion_prof,nt_prof,nrho_prof))
          ! NI
-         CALL read_var_hdf5(fid,'ni_prof',nion_prof,nrho_prof,nt_prof,ier,DBLVAR=temp_ni)
+         CALL read_var_hdf5(fid,'ni_prof',nion_prof,nt_prof,nrho_prof,ier,DBLVAR=temp_ni)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ni_prof',ier)
          DO i = 1, nion_prof
             CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
@@ -153,13 +153,13 @@ MODULE thrift_profiles_mod
             temp_spl2d%x1          = taxis_prof
             temp_spl2d%x2          = raxis_prof
             temp_spl2d%isHermite   = 1
-            CALL EZspline_setup(temp_spl2d,temp_ni(:,:,i),ier,EXACT_DIM=.true.)
+            CALL EZspline_setup(temp_spl2d,temp_ni(i,:,:),ier,EXACT_DIM=.true.)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: ni_prof',ier)
             NI4D(:,:,:,i) = temp_spl2d%fspl
             CALL EZspline_free(temp_spl2d,ier)
          END DO
          ! TI
-         CALL read_var_hdf5(fid,'ti_prof',nt_prof,nrho_prof,nion_prof,ier,DBLVAR=temp_ti)
+         CALL read_var_hdf5(fid,'ti_prof',nion_prof,nt_prof,nrho_prof,ier,DBLVAR=temp_ti)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ti_prof',ier)
          DO i = 1, nion_prof
             CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
@@ -167,19 +167,19 @@ MODULE thrift_profiles_mod
             temp_spl2d%x1          = taxis_prof
             temp_spl2d%x2          = raxis_prof
             temp_spl2d%isHermite   = 1
-            CALL EZspline_setup(temp_spl2d,temp_ti(:,:,i),ier,EXACT_DIM=.true.)
+            CALL EZspline_setup(temp_spl2d,temp_ti(i,:,:),ier,EXACT_DIM=.true.)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: ti_prof',ier)
             TI4D(:,:,:,i) = temp_spl2d%fspl
             CALL EZspline_free(temp_spl2d,ier)
          END DO
          DO i = 1, nion_prof
             IF (lverb) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A,I3,A,I2)') '   Ni(',i,')= [', &
-                        MINVAL(temp_ni(:,:,i))*1E-20,',',MAXVAL(temp_ni(:,:,i))*1E-20,'] E20 m^-3;  M: ',&
+                        MINVAL(temp_ni(:,:,i))*1E-20,',',MAXVAL(temp_ni(i,:,:))*1E-20,'] E20 m^-3;  M: ',&
                         NINT(Matom_prof(i)/1.66053906660E-27),' amu;  Z: ',Zatom_prof(i)
             IF (lverb) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A)') '   Ti(',i,')= [', &
-                        MINVAL(temp_ti(:,:,i))*1E-3,',',MAXVAL(temp_ti(:,:,i))*1E-3,'] keV'
+                        MINVAL(temp_ti(:,:,i))*1E-3,',',MAXVAL(temp_ti(i,:,:))*1E-3,'] keV'
          END DO
-         pres2d = (pres2d + SUM(temp_ti*temp_ni,3))*e_charge
+         pres2d = (pres2d + SUM(temp_ti*temp_ni,1))*e_charge
          ! DEALLOCATE Helpers
          DEALLOCATE(temp_ti)
          DEALLOCATE(temp_ni)
