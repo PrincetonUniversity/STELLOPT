@@ -217,7 +217,7 @@
       IF (EZspline_allocated(vp_spl)) CALL EZspline_free(vp_spl,iflag)
       CALL EZspline_init(vp_spl,ns,bcs1,iflag)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: vp',iflag)
-      vp_spl%isHermite   = 0
+      vp_spl%isHermite = 0
       FORALL (k=1:ns) vp_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns-1))
       CALL EZspline_setup(vp_spl,vp,iflag,EXACT_DIM=.true.)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: vp',iflag)

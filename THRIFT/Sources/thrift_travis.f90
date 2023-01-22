@@ -34,6 +34,10 @@
       CHARACTER(256) :: B0type,labelType,equiname,interpType
       INTEGER, parameter :: nprof_travis = 64
 
+      ! For ECCD
+      REAL(8) :: rho, dPdV,Pabs,jbb,jcdt,Icdt
+      REAL(8), ALLOCATABLE :: Itotal(:)
+
       ! Old
       integer, parameter :: nfax = 13
       INTEGER ::  i,j,n,narr,ier, iunit_rzuv
@@ -52,7 +56,7 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      IF (lscreen) WRITE(6,'(a)') ' ---------------------------  ECRH (TRAVIS) CALCULATION  -------------------------'
+      IF (lscreen) WRITE(6,'(a)') ' ---------------------------  ECCD (TRAVIS) CALCULATION  -------------------------'
       IF (lvmec) THEN
 #if defined(TRAVIS)
 
@@ -198,29 +202,45 @@
 
             END DO
 
-               ! Free the stuff we loaded.
-               CALL Free_MagConfig_f77()
+            ! Free the stuff we loaded.
+            CALL Free_MagConfig_f77()
 
-            END IF
+         END IF
+
+         ! Allocatel total current [A]
+         ALLOCATE(Itotal(nrho))
+         Itotal = 0
+
+         DO i = 1, nrho
+            rho = THRIFT_RHO(i)
+            CALL get_ECRH_deposition_f77(rho, dPdV,Pabs,jbb,jcdt,Itotal(i))
+         END DO
+
+#if defined(MPI_OPT)
+         IF (myworkid == master) THEN
+            CALL MPI_REDUCE(MPI_IN_PLACE,Itotal,nrho,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+         ELSE
+            CALL MPI_REDUCE(Itotal,Itotal,nrho,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+         END IF
+#endif
 
             ! Deallocate variables
             DEALLOCATE(rho_prof,te_prof,ne_prof,z_prof)
 
             ! Print to screen
             IF (lscreen) THEN
-               WRITE(6,'(5X,A,3X,A,3X,A,3X,A)') 'Beam','Freq [GHz]','Trad (0) [keV]','Trad (X) [keV]'
-               DO i = 1, nsys
-                  IF (ALL(sigma_ece(i,:) >= bigno)) CYCLE
-                  DO j = 1, narr
-                     IF (sigma_ece(i,j) >= bigno) CYCLE
-                     WRITE(6,'(5X,i3,3x,f8.2,2(5x,f10.3))') i,freq_ece(i,j),radto_ece(i,j),radtx_ece(i,j)
-                  END DO
-               END DO
+               WRITE(6,*) Itotal
+!               WRITE(6,'(5X,A,3X,A,3X,A)') 'Beam','Freq [GHz]','I [kA]'
+!               DO i = 1, nsys
+!                  IF (ALL(sigma_ece(i,:) >= bigno)) CYCLE
+!                  DO j = 1, narr
+!                     IF (sigma_ece(i,j) >= bigno) CYCLE
+!                     WRITE(6,'(5X,i3,3x,f8.2,1(5x,f10.3))') i,freq_ece(i,j),Itotal(i)
+!                  END DO
+!               END DO
             END IF
 #endif
-         CASE('spec')
-      END SELECT
-      IF (lscreen) WRITE(6,'(a)') ' ---------------------------  ECE (TRAVIS) CALCULATION DONE  ---------------------'
+      IF (lscreen) WRITE(6,'(a)') ' ---------------------------  ECCD (TRAVIS) CALCULATION DONE  ---------------------'
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE

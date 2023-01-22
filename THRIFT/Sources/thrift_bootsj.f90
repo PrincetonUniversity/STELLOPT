@@ -54,7 +54,7 @@
       integer :: ihere = 0
       CHARACTER(LEN=32) :: temp_str
       ! Helpers to get dI/ds
-      REAL(rprec) :: vp
+      REAL(rprec) :: vp, dPhidrho
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, dIds_temp
       TYPE(EZspline1_r8) :: dIds_spl
       INTEGER :: bcs0(2)
@@ -458,8 +458,10 @@
                DEALLOCATE(rho_temp,dIds_temp)
                DO i = 1, nrho_thrift
                   CALL EZspline_interp(dIds_spl,THRIFT_RHO(i),THRIFT_JBOOT(i,mytimestep),ier)
-                  CALL EZspline_interp(vp_spl,THRIFT_RHO(i),vp,ier)
-                  THRIFT_JBOOT(i,mytimestep) = THRIFT_JBOOT(i,mytimestep)*pi2*eq_Rmajor/(vp*eq_phiedge)
+                  CALL EZspline_interp(vp_spl,THRIFT_RHO(i),vp,ier) ! dV/dPhi
+                  CALL EZspline_interp(phip_spl,THRIFT_RHO(i),dPhidrho,ier) ! dPhi/drho
+                  vp = vp*dPhidrho*2*THRIFT_RHO(i) ! dV/ds = dV/dPhi * dPhi/drho * ds/drho
+                  THRIFT_JBOOT(i,mytimestep) = THRIFT_JBOOT(i,mytimestep)*pi2*eq_Rmajor/vp
                END DO
                CALL EZspline_free(dIds_spl,ier)
             END IF

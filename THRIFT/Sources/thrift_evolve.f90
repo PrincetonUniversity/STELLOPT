@@ -112,7 +112,7 @@
 
             ! Print progress
             IF (lverb) WRITE(6,'(2X,F5.3,3X,I5,4X,F5.2,2(1X,ES10.2))') &
-                THRIFT_T(mytimestep),nsubsteps,eq_beta*100,eq_volume*SUM(THRIFT_J(:,mytimestep))/(pi2*eq_Rmajor),MAXVAL(deltaj)
+                THRIFT_T(mytimestep),nsubsteps,eq_beta*100,eq_volume*SUM(THRIFT_J(:,mytimestep))/(pi2*eq_Rmajor*nrho),MAXVAL(deltaj)
 
             ! Turn off screen output after one run
             lscreen_subcodes = .FALSE.
