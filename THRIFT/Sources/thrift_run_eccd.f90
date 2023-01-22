@@ -18,7 +18,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i, ier
-      REAL(rprec) :: Rc, w, Ieccd, Inorm, vp
+      REAL(rprec) :: Rc, w, Ieccd, Inorm, vp, dPhidrho
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -41,9 +41,17 @@
             ! From Wolfram
             Inorm = 0.5*w*sqrt(pi)*(ERF((1-Rc)/w)+ERF(rc/w))
             DO i = 1, nrho
+               ! dI/ds
                THRIFT_JECCD(i,mytimestep) = Ieccd*EXP(-(THRIFT_RHO(i)-Rc)**2/w**2)/Inorm
+               ! But we need j = dI/ds*Aminor/dVds
+               ! But we need j = dI/ds * ds/dA
+               !               = dI/ds / (dA/ds)
+               !               = dI/ds / (dV/ds / (2*pi*Rmajor)) 
+               !               = dI/ds * 2 * pi * Rmajor / dV/ds
                CALL EZspline_interp(vp_spl,THRIFT_RHO(i),vp,ier)
-               THRIFT_JECCD(i,mytimestep) = THRIFT_JECCD(i,mytimestep)*eq_Aminor*THRIFT_RHO(i)/(vp*eq_phiedge)
+               CALL EZspline_interp(phip_spl,THRIFT_RHO(i),dPhidrho,ier) ! dPhi/drho
+               vp = vp*dPhidrho/(2*THRIFT_RHO(i)) ! dV/ds = dV/dPhi * dPhi/drho / ds/drho
+               THRIFT_JECCD(i,mytimestep) = THRIFT_JECCD(i,mytimestep)*pi2*eq_Rmajor/vp
             END DO
             IF (lscreen_subcodes) THEN
                WRITE(6,*) '-------------------  ANALYTIC ECCD MODEL  ---------------------'

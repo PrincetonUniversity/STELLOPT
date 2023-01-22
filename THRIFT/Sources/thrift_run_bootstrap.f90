@@ -18,11 +18,13 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: i
-      REAL(rprec) :: pprime, rho, sflux, epsilon
+      INTEGER :: i, ier
+      REAL(rprec) :: pprime, rho, epsilon, phip
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+
+      ier = 0
 
       ! Check to make sure we're not zero beta
       IF (eq_beta == 0) THEN
@@ -35,12 +37,14 @@
             ! j_BS = sqrt(epsilon) Rmajor *dp/dPsi
             ! epsilon = r/R (inverse aspect ratio)
             ! dp/dPsi : Pa/Wb (toroidal flux derivative)
+            ! dp/dPsi = dp/drho * drho/dPhi
+            !         = dp/drho / (dPhi/drho)
             DO i = 1, nrho
                rho = THRIFT_RHO(i)
-               sflux = rho*rho
                epsilon = rho*eq_Aminor/eq_Rmajor ! Inverse Aspect Ratio
                CALL get_prof_pprime(rho,THRIFT_T(mytimestep),pprime) ! dpdrho
-               pprime = pprime / ( eq_phiedge * 2 * rho) ! dpdPhi = dpdrho/(dsdrho*dPhids)
+               CALL EZspline_interp(phip_spl,rho,phip,ier) ! dPsi/drho
+               pprime = pprime / phip
                THRIFT_JBOOT(i,mytimestep) = SQRT(epsilon) * pprime * eq_Rmajor
             END DO
          CASE ('bootsj')
