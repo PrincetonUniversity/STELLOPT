@@ -83,7 +83,7 @@
                                TI_AUX_F, POT_AUX_S, POT_AUX_F, &
                                NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
                                ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
-                               ldebug, ne_scale, te_scale, ti_scale, &
+                               ldebug, rho_scale, ne_scale, te_scale, ti_scale, &
                                zeff_scale, &
                                plasma_zavg, plasma_mass, plasma_Zmean, &
                                therm_factor, fusion_scale, &
@@ -158,6 +158,7 @@
       vc_adapt_tol = 1.0D-5
       int_type = "LSODE"
       ldebug = .false.
+      rho_scale = 1.0
       ne_scale = 1.0
       te_scale = 1.0
       ti_scale = 1.0
@@ -414,6 +415,7 @@
       END IF
       IF (lbeam) THEN
          WRITE(iunit_out,"(A)") '!---------- Profiles ------------'
+         WRITE(iunit_out,outflt) 'RHO_SCALE',RHO_SCALE
          WRITE(iunit_out,outflt) 'NE_SCALE',NE_SCALE
          WRITE(iunit_out,outflt) 'TE_SCALE',TE_SCALE
          WRITE(iunit_out,outflt) 'TI_SCALE',TI_SCALE
@@ -510,6 +512,7 @@
       CALL MPI_BCAST(NE_AUX_F,MAXPROFLEN,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(TI_AUX_S,MAXPROFLEN,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(TI_AUX_F,MAXPROFLEN,MPI_REAL8, local_master, comm,istat)
+      CALL MPI_BCAST(rho_scale,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(te_scale,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(ne_scale,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(ti_scale,1,MPI_REAL8, local_master, comm,istat)
