@@ -41,7 +41,7 @@
       !END IF
 
       ! If first pass then just set everything to previous timestep
-      IF (lfirst_pass .AND. mytimestep>1) THEN
+      IF (mytimestep>1) THEN
          itime = mytimestep-1
       ELSE
          itime = mytimestep
