@@ -234,7 +234,7 @@ MODULE thrift_profiles_mod
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
       REAL(rprec), INTENT(in) :: t_val
-      REAL(rprec), INTENT(in) :: SPL(4,nrho_prof,nt_prof)
+      REAL(rprec), INTENT(in) :: SPL(4,nt_prof,nrho_prof)
       REAL(rprec), INTENT(out) :: val
       INTEGER :: i, j
       INTEGER, parameter :: ict(4)=(/1,0,0,0/)
@@ -259,10 +259,10 @@ MODULE thrift_profiles_mod
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
       REAL(rprec), INTENT(in) :: t_val
-      REAL(rprec), INTENT(in) :: SPL(4,nrho_prof,nt_prof)
+      REAL(rprec), INTENT(in) :: SPL(4,nt_prof,nrho_prof)
       REAL(rprec), INTENT(out) :: val
       INTEGER :: i, j
-      INTEGER, parameter :: ict(4)=(/0,1,0,0/)
+      INTEGER, parameter :: ict(4)=(/0,0,1,0/)
       REAL*8  :: xparam, yparam
       REAL*8 :: fval(1)
       val = 0
@@ -284,10 +284,10 @@ MODULE thrift_profiles_mod
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
       REAL(rprec), INTENT(in) :: t_val
-      REAL(rprec), INTENT(in) :: SPL(4,nrho_prof,nt_prof)
+      REAL(rprec), INTENT(in) :: SPL(4,nt_prof,nrho_prof)
       REAL(rprec), INTENT(out) :: val
       INTEGER :: i, j
-      INTEGER, parameter :: ict(4)=(/0,0,1,0/)
+      INTEGER, parameter :: ict(4)=(/0,1,0,0/)
       REAL*8  :: xparam, yparam
       REAL*8 :: fval(1)
       val = 0
