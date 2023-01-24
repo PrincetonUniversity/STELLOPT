@@ -565,7 +565,7 @@
          S4D = S_SPL%fspl
          U4D = U_SPL%fspl
          POT4D = POT_SPL%fspl
-
+         S4D = S4D / rho_scale !Apply scale to enable distribution outside LCFS
          X_ARR = S4D(1,:,:,:) * COS(U4D(1,:,:,:))
          Y_ARR = S4D(1,:,:,:) * SIN(U4D(1,:,:,:))
          CALL EZspline_setup(X_spl,X_ARR,ier,EXACT_DIM=.true.)
