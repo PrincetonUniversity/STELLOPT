@@ -575,7 +575,8 @@ As the STELLOPT code is a parallel
  system (mpirun, mpiexec, srun, poe, etc.). In this example we
  execute it with 64 threads (cores). In it's usual form the code is
  executed by passing the input file name on the command line.
- ` mpirun -np 16 xstelloptv2 input.ncsx_c09r00_fixed_stel`
+ 
+ `mpirun -np 16 xstelloptv2 input.ncsx_c09r00_fixed_stel`
 
 The following is a screenshot of the output using `v2.70` on PPPL cluster.
 ```
