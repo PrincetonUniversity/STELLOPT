@@ -13,6 +13,8 @@
       USE thrift_runtime
       USE thrift_input_mod
       USE thrift_vars
+      USE thrift_equil
+      USE thrift_profiles_mod
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -27,8 +29,8 @@
 !        ier         Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
-      INTEGER ::  i, nra, nphi
-      REAL(8)        :: hgrid,dphi,B_scale,B0_ref,B_dir,phi_ref,phibx
+      INTEGER ::  i, n
+      REAL(8)        :: hgrid,dphi,B_scale,B0_ref,B_dir,phi_ref,phibx,timenow
       REAL(8), ALLOCATABLE :: te_prof(:),ne_prof(:),z_prof(:),rho_prof(:)
       CHARACTER(4)   :: antennaCoordType,targetPositionType
       CHARACTER(256) :: B0type,labelType,equiname,interpType
@@ -39,17 +41,18 @@
       REAL(8), ALLOCATABLE :: Itotal(:)
 
       ! Old
-      integer, parameter :: nfax = 13
-      INTEGER ::  i,j,n,narr,ier, iunit_rzuv
+      !integer, parameter :: nfax = 13
+      !INTEGER ::  i,j,n,narr,ier, iunit_rzuv
       ! FOR TRAVIS
-      INTEGER(4)     :: nra,nphi,QOemul,wmode,ECEerror
-      INTEGER(4)     :: travisoutTEMP,travisScrOut
-      INTEGER(4)     :: maxSteps,stopray,npass,maxHarm,nrho,nu
-      INTEGER(8)     :: mconf8=0,mVessel=0,mMirror=0
+      !INTEGER(4)     :: nra,nphi,QOemul,wmode,ECEerror
+      !INTEGER(4)     :: travisoutTEMP,travisScrOut
+      INTEGER(4)     :: nra, nphi, QOemul, nbeams, wmode
+      INTEGER(4)     :: maxSteps,stopray,npass,maxHarm,nrho_travis,nu
+      !INTEGER(8)     :: mconf8=0,mVessel=0,mMirror=0
       REAL(8)        :: maxlength,minStepSize,maxStepSize,odetolerance,umax
       REAL(8)        :: antennaPosition(3),targetPosition(3),rbeam(2),rfocus(2)
       CHARACTER(256) :: hamilt,dieltensor
-      INTEGER, ALLOCATABLE :: mnum(:)
+      !INTEGER, ALLOCATABLE :: mnum(:)
       INTEGER       :: mystart,myend, chunk, numprocs_local,s
 
 !----------------------------------------------------------------------
@@ -65,8 +68,8 @@
          CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr_mpi)
          CALL MPI_BCAST(nprof_travis,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(proc_string,256,MPI_CHARACTER,master,MPI_COMM_MYWORLD,ierr_mpi)
-         CALL MPI_BCAST(Aminor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-         CALL MPI_BCAST(Baxis,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(eq_Aminor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(bt0,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
 #endif
  
          ! Setup profiles
@@ -74,11 +77,12 @@
             rho_prof(nprof_travis))
          IF (myworkid == master) THEN
             CALL FLUSH(6)
+            timenow = THRIFT_T(mytimestep)
             DO i = 1,nprof_travis
                rho_prof(i) = DBLE(i-1)/DBLE(nprof_travis-1)
-               CALL get_prof_ne(rho_prof(i),mytdex,ne_prof(i))
-               CALL get_prof_te(rho_prof(i),mytdex,te_prof(i))
-               CALL get_prof_zeff(rho_prof(i),mytdex,z_prof(i))
+               CALL get_prof_ne(rho_prof(i),timenow,ne_prof(i))
+               CALL get_prof_te(rho_prof(i),timenow,te_prof(i))
+               CALL get_prof_zeff(rho_prof(i),timenow,z_prof(i))
             END DO
             te_prof = te_prof*1.0E-3 ! Must be in keV
          ELSE
@@ -130,33 +134,50 @@
             CALL set_VesselMirrors_f77(vessel_ecrh,mirror_ecrh)
 
             ! Init Equilibrium
-            hgrid   = Aminor/30
+            hgrid   = eq_Aminor/30
             dphi    = 2
             B0type  = 'noscale'
             phi_ref = 0
             B_scale = 1
-            B0_ref  = ABS(Baxis)
+            B0_ref  = ABS(bt0)
             B_dir   = 0
             CALL initEquilibr_f77(hgrid, dphi, B0_ref, phi_ref, B_dir, B_scale, B0type)
 
             ! Set Plasma size
-            CALL set_plasmaSize_f77(rho_prof(nrad), rho_prof(nrad)-rho_prof(nrad-1))
+            !=======================================================================
+            !SUBROUTINE set_plasmaSize_f77(rho_pl,drho_bnd)
+            ! Sets plasma-size, i.e. extra-surface beyond LCMS, rho_pl >= 1,
+            ! and width of boundary layer for forced decay of plasma profiles:
+            ! if drho_bnd = 0, no changes in plasma profiles.
+            !=======================================================================
+            CALL set_plasmaSize_f77(1.0, 0)
 
             ! Load the equilibrium
             equiname = 'wout_'//TRIM(proc_string)//'.nc'
             CALL set_EquiFile_f77(equiname)
 
             ! Set Profiles
+            !=======================================================================
+            ! SUBROUTINE set_nTZ_profs_f77(ns,rho,ne,Te,Zeff,labelType,InterpolType)
+            ! Sets plasma profiles.
+            ! Inputs:
+            ! ns        - dimension of the arrays
+            ! rho (ns)  - normalized effective radii (ascending ordered, not necessary uniform)
+            ! ne  (ns)  - density, 1/m**3
+            ! Te  (ns)  - temperature, keV
+            ! Zeff(ns)  - effective charge
+            ! labelType    = 'tor_rho' or 'pol_rho' i.e. with tor. or pol. flux 
+            ! InterpolType = 'lin' or 'quad' or 'spline': kind of interpol. to be applied 
+            !=======================================================================
             labelType  = 'tor_rho'
             interpType = 'spline'
-            CALL set_nTZ_profs_f77(nrad, rho, ne_prof, te_prof, z_prof, labelType, interpType)
+            CALL set_nTZ_profs_f77(nprof_travis, rho_prof, ne_prof, te_prof, z_prof, labelType, interpType)
 
             ! Loop over ECRH systems
-            n=1
-            antennaCoordType   = antennatype_ece(1:4)
-            targetPositionType = targettype_ece(1:4)
-            nra                = nra_ece
-            nphi               = nphi_ece
+            !antennaCoordType   = antennatype_ece(1:4)
+            !targetPositionType = targettype_ece(1:4)
+            !nra                = nra_ece
+            !nphi               = nphi_ece
             DO i = mystart,myend
 
                ! Set Configuration
@@ -172,20 +193,20 @@
                maxHarm      = 0      ! upper harmonic for sum. in diel.tensor (if 0 then automatic)
                umax         = 7      ! upper velocity for integr. along the res.line in u-space
                nu           = 700    ! number of grid points in u-space
-               nrho         = 100    ! internal grid for the flux-surface label
+               nrho_travis         = 100    ! internal grid for the flux-surface label
                CALL set_TracingData_f77(maxSteps,  maxlength, &
                              maxStepSize, minStepSize, odetolerance, &
                              stopray, npass, &
-                             maxHarm, umax, nu, nrho, hamilt, dieltensor)
+                             maxHarm, umax, nu, nrho_travis, hamilt, dieltensor)
 
                ! Set Antenna Position
                antennaPosition(1:3) = antennaPosition_ecrh(i,1:3)
                targetPosition(1:3)  = targetPosition_ecrh(i,1:3)
-               rbeam(1:2)  = rbeam_ece(i,1:2)
+               rbeam(1:2)  = rbeam_ecrh(i,1:2)
                QOemul      = 0
-               IF (rbeam_ece(i,3) > 0) QOemul = 1
-               Rfocus(1:2) = rfocus_ece(i,1:2)
-               phibx       = rfocus_ece(i,3)
+               IF (rbeam_ecrh(i,3) > 0) QOemul = 1
+               Rfocus(1:2) = rfocus_ecrh(i,1:2)
+               phibx       = rfocus_ecrh(i,3)
                CALL set_Antenna_f77( rbeam, rfocus, phibx, QOemul, nra, nphi, &
                                      antennaPosition, targetPosition, &
                                      antennaCoordType,targetPositionType)
@@ -194,16 +215,15 @@
                CALL Disable_Output_f77
 
                ! Run BEAM
-               j=1
                wmode = 1 ! X-mode
-               CALL run_ECRH_Beam_f77m(n,freq_ecrh(i),wmode,power_ecrh(i))
+               CALL run_ECRH_Beam_f77m(i,freq_ecrh(i),wmode,power_ecrh(i))
                wmode = 0 ! O-mode
-               CALL run_ECRH_Beam_f77m(n,freq_ecrh(i),wmode,power_ecrh(i))
+               CALL run_ECRH_Beam_f77m(i,freq_ecrh(i),wmode,power_ecrh(i))
 
             END DO
 
             ! Free the stuff we loaded.
-            CALL Free_MagConfig_f77()
+            ! CALL Free_MagConfig_f77()
 
          END IF
 
@@ -240,6 +260,8 @@
 !               END DO
             END IF
 #endif
+      END IF
+
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  ECCD (TRAVIS) CALCULATION DONE  ---------------------'
       RETURN
 !----------------------------------------------------------------------

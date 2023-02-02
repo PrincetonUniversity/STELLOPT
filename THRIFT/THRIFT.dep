@@ -142,6 +142,15 @@ thrift_run_equil.o : \
       thrift_equil.o \
       $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o 
 
+thrift_travis.o : \
+      thrift_runtime.o \
+      thrift_input_mod.o \
+      thrift_vars.o \
+      thrift_equil.o \
+      thrift_profiles_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o
+
 thrift_vars.o : \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
 
