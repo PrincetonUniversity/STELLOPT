@@ -34,7 +34,7 @@
                               antennaposition_ecrh, &
                               targetposition_ecrh, rbeam_ecrh, &
                               rfocus_ecrh, nra_ecrh, nphi_ecrh, &
-                              freq_ecrh
+                              freq_ecrh, power_ecrh
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -63,7 +63,7 @@
       vessel_ecrh     = ''
       mirror_ecrh     = ''
       freq_ecrh       = -1
-      wmode_ecrh      = ''
+      wmode_ecrh      = -1
       targettype_ecrh  = 'cyl'
       antennatype_ecrh = 'cyl'
       antennaposition_ecrh = 0

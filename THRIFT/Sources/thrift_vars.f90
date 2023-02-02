@@ -49,9 +49,9 @@ MODULE thrift_vars
     ! For TRAVIS
     INTEGER, PARAMETER :: nsys   = 16
     INTEGER :: nra_ecrh, nphi_ecrh
+    INTEGER, DIMENSION(nsys)     :: wmode_ecrh
     REAL(rprec), DIMENSION(nsys) :: freq_ecrh, power_ecrh
     REAL(rprec), DIMENSION(nsys,3)     :: antennaposition_ecrh, &
                  targetposition_ecrh,rbeam_ecrh,rfocus_ecrh
-    CHARACTER, DIMENSION(nsys,5)     :: wmode_ecrh
 
 END MODULE thrift_vars
