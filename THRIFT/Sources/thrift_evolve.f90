@@ -106,13 +106,19 @@
 
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN
-               WRITE(6,*)'    T     NSUB     BETA     ITOR     MAX(deltaj)'
-               WRITE(6,*)'------------------------------------------------'
+               WRITE(6,*)'    T     NSUB     BETA     ITOR      IBOOT      IECCD      INBCD      IOHMIC   MAX(deltaj)'
+               WRITE(6,*)'-------------------------------------------------------------------------------------------'
             END IF
 
             ! Print progress
-            IF (lverb) WRITE(6,'(2X,F5.3,3X,I5,4X,F5.2,2(1X,ES10.2))') &
-                THRIFT_T(mytimestep),nsubsteps,eq_beta*100,eq_volume*SUM(THRIFT_J(:,mytimestep))/(pi2*eq_Rmajor*nrho),MAXVAL(deltaj)
+            IF (lverb) WRITE(6,'(2X,F5.3,3X,I5,4X,F5.2,6(1X,ES10.2))') &
+                THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
+                eq_volume*SUM(THRIFT_J(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
+                eq_volume*SUM(THRIFT_JBOOT(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
+                eq_volume*SUM(THRIFT_JECCD(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
+                eq_volume*SUM(THRIFT_JNBCD(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
+                eq_volume*SUM(THRIFT_JOHMIC(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
+                MAXVAL(deltaj)
 
             ! Turn off screen output after one run
             lscreen_subcodes = .FALSE.

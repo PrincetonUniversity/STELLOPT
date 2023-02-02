@@ -66,7 +66,7 @@
 #if defined(MPI_OPT)
          ! Broadcast some information
          CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr_mpi)
-         CALL MPI_BCAST(nprof_travis,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+         !CALL MPI_BCAST(nprof_travis,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(proc_string,256,MPI_CHARACTER,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(eq_Aminor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(bt0,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -91,6 +91,7 @@
 
 #if defined(MPI_OPT)
          ! Broadcast the profiles
+         CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(rho_prof,nprof_travis,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(ne_prof,nprof_travis,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(te_prof,nprof_travis,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -109,13 +110,6 @@
          ! Divide up work
          ! Note we should fix this in the end so we divide up over system ans well
          CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD, 1, nbeams, mystart, myend)
-
-            ! Everyone allocates to make the reduce simpler
-            !IF (ALLOCATED(radto_ece)) DEALLOCATE(radto_ece)
-            !IF (ALLOCATED(radtx_ece)) DEALLOCATE(radtx_ece)
-            !ALLOCATE(radto_ece(nsys,narr))
-            !ALLOCATE(radtx_ece(nsys,narr))
-            !radto_ece = 0.0; radtx_ece = 0.0
 
          IF (mystart <= myend) THEN
 
@@ -215,10 +209,7 @@
                CALL Disable_Output_f77
 
                ! Run BEAM
-               wmode = 1 ! X-mode
-               CALL run_ECRH_Beam_f77m(i,freq_ecrh(i),wmode,power_ecrh(i))
-               wmode = 0 ! O-mode
-               CALL run_ECRH_Beam_f77m(i,freq_ecrh(i),wmode,power_ecrh(i))
+               CALL run_ECRH_Beam_f77m(i,freq_ecrh(i)*1E-9,wmode_ecrh(i),power_ecrh(i)*1E-6)
 
             END DO
 
