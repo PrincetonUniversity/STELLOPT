@@ -64,6 +64,7 @@ thrift_init_mpisubgroup.o : \
 
 thrift_input_mod.o : \
       thrift_runtime.o \
+      thrift_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
       $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
 

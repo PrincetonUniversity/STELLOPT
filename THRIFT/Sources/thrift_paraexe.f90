@@ -167,7 +167,7 @@
 #endif
 #if defined(TRAVIS)
             CASE('travis')
-               proc_string = file_str
+               proc_string = file_str; ier = 0
                CALL thrift_travis(lscreen_local,ier)
 #endif
             CASE('booz_xform')
