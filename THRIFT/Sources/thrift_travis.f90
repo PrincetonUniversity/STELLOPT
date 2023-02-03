@@ -15,6 +15,8 @@
       USE thrift_vars
       USE thrift_equil
       USE thrift_profiles_mod
+      USE stel_tools, ONLY: get_equil_Bav
+      USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -29,31 +31,20 @@
 !        ier         Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
-      INTEGER ::  i, n
-      REAL(8)        :: hgrid,dphi,B_scale,B0_ref,B_dir,phi_ref,phibx,timenow
+      INTEGER(4) :: nra, nphi, QOemul, nbeams
+      INTEGER(4) :: maxSteps,stopray,npass,maxHarm,nrho_travis,nu
+      INTEGER  ::  i, n, iunit_out, istat
+      INTEGER  :: mystart,myend, chunk, numprocs_local
+      REAL(8)  :: rho
+      REAL(8)  :: maxlength,minStepSize,maxStepSize,odetolerance,umax
+      REAL(8)  :: antennaPosition(3),targetPosition(3),rbeam(2),rfocus(2)
+      REAL(8)  :: hgrid,dphi,B_scale,B0_ref,B_dir,phi_ref,phibx,timenow
       REAL(8), ALLOCATABLE :: te_prof(:),ne_prof(:),z_prof(:),rho_prof(:)
+      REAL(8), ALLOCATABLE :: Itotal(:), dPdV(:), Pabs(:), Jbb(:), Jcdt(:)
       CHARACTER(4)   :: antennaCoordType,targetPositionType
       CHARACTER(256) :: B0type,labelType,equiname,interpType
-      INTEGER, parameter :: nprof_travis = 64
-
-      ! For ECCD
-      REAL(8) :: rho, dPdV,Pabs,jbb,jcdt,Icdt
-      REAL(8), ALLOCATABLE :: Itotal(:)
-
-      ! Old
-      !integer, parameter :: nfax = 13
-      !INTEGER ::  i,j,n,narr,ier, iunit_rzuv
-      ! FOR TRAVIS
-      !INTEGER(4)     :: nra,nphi,QOemul,wmode,ECEerror
-      !INTEGER(4)     :: travisoutTEMP,travisScrOut
-      INTEGER(4)     :: nra, nphi, QOemul, nbeams, wmode
-      INTEGER(4)     :: maxSteps,stopray,npass,maxHarm,nrho_travis,nu
-      !INTEGER(8)     :: mconf8=0,mVessel=0,mMirror=0
-      REAL(8)        :: maxlength,minStepSize,maxStepSize,odetolerance,umax
-      REAL(8)        :: antennaPosition(3),targetPosition(3),rbeam(2),rfocus(2)
       CHARACTER(256) :: hamilt,dieltensor
-      !INTEGER, ALLOCATABLE :: mnum(:)
-      INTEGER       :: mystart,myend, chunk, numprocs_local,s
+      INTEGER, parameter :: nprof_travis = 64
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -66,7 +57,6 @@
 #if defined(MPI_OPT)
          ! Broadcast some information
          CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr_mpi)
-         !CALL MPI_BCAST(nprof_travis,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(proc_string,256,MPI_CHARACTER,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(eq_Aminor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(bt0,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -219,37 +209,55 @@
          END IF
 
          ! Allocatel total current [A]
-         ALLOCATE(Itotal(nrho))
-         Itotal = 0
+         ALLOCATE(Itotal(nrho),dPdV(nrho),Pabs(nrho),Jbb(nrho),Jcdt(nrho))
+         Itotal = 0; dPdV = 0; Pabs = 0; Jbb = 0; Jcdt = 0
 
          DO i = 1, nrho
             rho = THRIFT_RHO(i)
-            CALL get_ECRH_deposition_f77(rho, dPdV,Pabs,jbb,jcdt,Itotal(i))
+            CALL get_ECRH_deposition_f77(rho, dPdV(i),Pabs(i),jbb(i),jcdt(i),Itotal(i))
          END DO
 
 #if defined(MPI_OPT)
          IF (myworkid == master) THEN
-            CALL MPI_REDUCE(MPI_IN_PLACE,Itotal,nrho,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, dPdV,   nrho, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, Pabs,   nrho, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, Jbb,    nrho, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, Jcdt,   nrho, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, Itotal, nrho, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          ELSE
-            CALL MPI_REDUCE(Itotal,Itotal,nrho,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(dPdV,   dPdV,   nrho, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+            CALL MPI_REDUCE(Pabs,   Pabs,   nrho, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+            CALL MPI_REDUCE(Jbb,    Jbb,    nrho, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+            CALL MPI_REDUCE(Jcdt,   Jcdt,   nrho, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+            CALL MPI_REDUCE(Itotal, Itotal, nrho, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          END IF
 #endif
 
-            ! Deallocate variables
-            DEALLOCATE(rho_prof,te_prof,ne_prof,z_prof)
+         ! Do some post-processing
+         IF (myworkid == master) THEN
+            ! Create a travis output file
+            CALL safe_open(iunit_out,istat,'travis_out.'//TRIM(proc_string),'replace','formatted')
+            WRITE(iunit_out,'(A)') '        RHO (r/a)          dPdV [W/m^3]          P [W]          <j.B>/<B> [A/m^2]      j [A/m^2]     '//&
+                                   '        I [A]       '
+            DO i=1,nrho
+               WRITE(iunit_out,'(6(ES20.10))') THRIFT_RHO(i), dPdV(i), Pabs(i), Jbb(i), Jcdt(i), Itotal(i) 
+            END DO
+            CLOSE(iunit_out)
 
-            ! Print to screen
-            IF (lscreen) THEN
-               WRITE(6,*) Itotal
-!               WRITE(6,'(5X,A,3X,A,3X,A)') 'Beam','Freq [GHz]','I [kA]'
-!               DO i = 1, nsys
-!                  IF (ALL(sigma_ece(i,:) >= bigno)) CYCLE
-!                  DO j = 1, narr
-!                     IF (sigma_ece(i,j) >= bigno) CYCLE
-!                     WRITE(6,'(5X,i3,3x,f8.2,1(5x,f10.3))') i,freq_ece(i,j),Itotal(i)
-!                  END DO
-!               END DO
-            END IF
+            ! Save travis profiles
+            !CALL save_nTZ_profs_f77('travis_profs.'//TRIM(id_string))
+
+            ! Now output the ECCD Current density <j.B>
+            DO i=1,nrho
+               !s = THRIFT_RHO(i)*THRIFT_RHO(i)
+               !CALL get_equil_Bav(s,Bav,Bsqav,istat)
+               THRIFT_JECCD(i,mytimestep) = Jbb(i)
+            END DO
+         END IF
+
+         ! Deallocate variables
+         DEALLOCATE(rho_prof,te_prof,ne_prof,z_prof)
+         DEALLOCATE(dPdV, Pabs, Jbb, Jcdt, Itotal)
 #endif
       END IF
 

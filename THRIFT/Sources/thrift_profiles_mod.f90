@@ -108,8 +108,8 @@ MODULE thrift_profiles_mod
          CALL read_var_hdf5(fid,'mass_prof',nt_prof,ier,DBLVAR=Matom_prof)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Matom_prof',ier)
          IF (lverb) THEN
-            WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   RHO  = [',minval(raxis_prof),',',maxval(raxis_prof),'];  NRHO: ',nrho_prof
-            WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   T    = [',minval(taxis_prof),',',maxval(taxis_prof),'];    NT: ',nt_prof
+            WRITE(6,'(A,F9.3,A,F9.3,A,I4)') '   RHO  = [',minval(raxis_prof),',',maxval(raxis_prof),'];  NRHO: ',nrho_prof
+            WRITE(6,'(A,F9.3,A,F9.2,A,I4)') '   T    = [',minval(taxis_prof),',',maxval(taxis_prof),'];    NT: ',nt_prof
          END IF
          !Loop over profiles
          ALLOCATE(temp2d(nt_prof,nrho_prof),pres2d(nt_prof,nrho_prof))
@@ -117,7 +117,7 @@ MODULE thrift_profiles_mod
          ! NE
          CALL read_var_hdf5(fid,'ne_prof',nt_prof,nrho_prof,ier,DBLVAR=temp2d)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ne_prof',ier)
-         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A)') '   Ne   = [', &
+         IF (lverb) WRITE(6,'(A,F9.3,A,F9.3,A)') '   Ne   = [', &
                         MINVAL(temp2d)*1E-20,',',MAXVAL(temp2d)*1E-20,'] E20 m^-3'
          CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
          temp_spl2d%x1          = taxis_prof
@@ -130,7 +130,7 @@ MODULE thrift_profiles_mod
          ! TE
          CALL read_var_hdf5(fid,'te_prof',nt_prof,nrho_prof,ier,DBLVAR=temp2d)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'te_prof',ier)
-         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A)') '   Te   = [', &
+         IF (lverb) WRITE(6,'(A,F9.3,A,F9.3,A)') '   Te   = [', &
                         MINVAL(temp2d)*1E-3,',',MAXVAL(temp2d)*1E-3,'] keV'
          CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
          temp_spl2d%x1          = taxis_prof
@@ -173,10 +173,10 @@ MODULE thrift_profiles_mod
             CALL EZspline_free(temp_spl2d,ier)
          END DO
          DO i = 1, nion_prof
-            IF (lverb) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A,I3,A,I2)') '   Ni(',i,')= [', &
+            IF (lverb) WRITE(6,'(A,I1,A,F9.3,A,F9.3,A,I3,A,I2)') '   Ni(',i,')= [', &
                         MINVAL(temp_ni(:,:,i))*1E-20,',',MAXVAL(temp_ni(i,:,:))*1E-20,'] E20 m^-3;  M: ',&
                         NINT(Matom_prof(i)/1.66053906660E-27),' amu;  Z: ',Zatom_prof(i)
-            IF (lverb) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A)') '   Ti(',i,')= [', &
+            IF (lverb) WRITE(6,'(A,I1,A,F9.3,A,F9.3,A)') '   Ti(',i,')= [', &
                         MINVAL(temp_ti(:,:,i))*1E-3,',',MAXVAL(temp_ti(i,:,:))*1E-3,'] keV'
          END DO
          pres2d = (pres2d + SUM(temp_ti*temp_ni,1))*e_charge
@@ -187,7 +187,7 @@ MODULE thrift_profiles_mod
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,TRIM(filename),ier)
          ! PRESSURE Spline
-         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A)') '   P    = [', &
+         IF (lverb) WRITE(6,'(A,F9.3,A,F9.3,A)') '   P    = [', &
                         MINVAL(pres2d)*1E-3,',',MAXVAL(pres2d)*1E-3,'] kPa'
          CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
          temp_spl2d%x1          = taxis_prof

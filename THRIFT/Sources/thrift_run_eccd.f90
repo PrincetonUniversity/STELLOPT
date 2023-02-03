@@ -62,7 +62,6 @@
                WRITE(6,*) '-------------------  ANALYTIC ECCD MODEL  ---------------------'
             END IF
          CASE ('travis')
-            lscreen_subcodes=.TRUE.
             CALL thrift_paraexe('travis',proc_string,lscreen_subcodes)
       END SELECT
 
