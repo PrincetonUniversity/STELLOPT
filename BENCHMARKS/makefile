@@ -324,8 +324,8 @@ test_thrift_atf:
 	@echo ""
 
 test_thrift_w7x:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec W7X20181016016 -prof profiles_W7X20181016.016.h5
-	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec W7X20181016016 -prof profiles_W7X20181016.016.h5
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec W7X20181016016 -prof profiles_W7X20181016016.h5
+	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec W7X20181016016 -prof profiles_W7X20181016016.h5
 	@echo ""
 
 FIELDLINES_TEST/fieldlines_NCSX_s1.h5: 
