@@ -4,12 +4,9 @@
   NITER = 20000
   NSTEP = 200
   TCON0 =  1.00000000000000E+00
-!  NS_ARRAY    =       16        32        64       128 
-!  NITER_ARRAY =     1000      2000      4000     20000 
-!  FTOL_ARRAY  = 1.00E-30  1.00E-30  1.00E-30  1.00E-12 
-  NS_ARRAY    =       16        32 
-  NITER_ARRAY =     1000      4000  
-  FTOL_ARRAY  = 1.00E-30  1.00E-12 
+  NS_ARRAY    =       16        32        64       128 
+  NITER_ARRAY =     1000      2000      4000     20000 
+  FTOL_ARRAY  = 1.00E-30  1.00E-30  1.00E-30  1.00E-12 
 !----- Grid Parameters -----
   LASYM = F
   NFP = 5
@@ -226,60 +223,5 @@
   RBC(  6,  8) =  1.0737255200e-03  ZBS(  6,  8) = -2.7523621000e-04
   RBC(  7,  8) =  1.7931623100e-04  ZBS(  7,  8) =  7.1804867000e-05
   RBC(  8,  8) =  7.9190832200e-05  ZBS(  8,  8) = -4.8820061700e-05
-!----- Created by write_vmec 20-Jan-2023 13:53:08 -----
+!----- Created by write_vmec 03-Feb-2023 10:28:15 -----
 /
-&THRIFT_INPUT
-  !---------- GENERAL PARAMETERS ------------
-  NPARALLEL_RUNS = 1
-  BOOTSTRAP_TYPE = 'simple'
-  ECCD_TYPE = 'TRAVIS'
-  JTOL = 0.01
-  NPICARD = 10
-  PICARD_FACTOR = 0.75
-  !---------- GRID PARAMETERS ------------
-  NRHO = 64
-  NTIMESTEPS = 15
-  TEND = 1.5
-  ! BOOZER TRANSFORM
-  !---------- BOOZER TRANSFORMATION ------------
-  MBOZ = 32
-  NBOZ = 16
-  !---------- TRAVIS Parameters (ECCD) ---------
-  VESSEL_ECRH = 'wall.travis'
-  MIRROR_ECRH = 'mirror_travis.xml'
-  ! Note on ANTENNATYPE
-  ! cart = (X,Y,Z) [m,m,m]
-  ! cyl  = (R,phi,Z) [m,deg,m]
-  ANTENNATYPE_ECRH            = 'cyl' ! R,phi(deg),Z
-  ! Note on TARGETTYPE_ECRH
-  ! cart = (X,Y,Z) [m,m,m]
-  ! cyl  = (R,phi,Z) [m,deg,m]
-  ! W7X  = (alpha,beta,~) [deg,deg,~] -cos(a)*cos(b),cos(a)*sin(b),sin(b)
-  ! ITER = (alpha,beta,~) [deg,deg,~] -cos(a)*cos(b),sin(b),sin(a)*cos(b)
-  TARGETTYPE_ECRH             = 'W7X' ! Alpha(deg),beta(deg)
-  NRA_ECRH                    = 5
-  NPHI_ECRH                   = 8
-  ! A1 Gyrotron
-  ANTENNAPOSITION_ECRH(1,1:3) = 6.558 -6.567 -0.1
-  TARGETPOSITION_ECRH(1,1:3)  = 4.6 20.4 0
-  RFOCUS_ECRH(1,1:3)          =  1 1 1
-  RBEAM_ECRH(1,1:3)           =  0.0163 0.0163 0
-  FREQ_ECRH(1)                =  140E9
-  WMODE_ECRH(1)               =  1 ! Xmode
-  POWER_ECRH(1)               =  1E6
-  ! A5 Gyrotron
-  ANTENNAPOSITION_ECRH(2,1:3) = 6.541 -65.4665 0.1002
-  TARGETPOSITION_ECRH(2,1:3)  = 4.6 20.4 0
-  RFOCUS_ECRH(2,1:3)          =  1 1 1
-  RBEAM_ECRH(2,1:3)           =  0.0163 0.0163 0
-  FREQ_ECRH(2)                =  140E9
-  WMODE_ECRH(2)               =  1 ! Xmode
-  POWER_ECRH(2)               =  1E6
-/
-&BOOTIN 
-   MBUSE   =  32
-   NBUSE   =  16
-   DAMP_BS = 0.1
-   ISYMM0  =  0
-/
-&END
