@@ -149,6 +149,8 @@ thrift_travis.o : \
       thrift_vars.o \
       thrift_equil.o \
       thrift_profiles_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_tools.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o
 
