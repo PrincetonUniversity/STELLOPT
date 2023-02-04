@@ -12,7 +12,8 @@
 !                               j [A/m^2]
 !                               p [W/m^3]
 !-----------------------------------------------------------------------
-      SUBROUTINE nbcd_okano(ne,Te,Ti,mass,Zeff,InvAspect,G,Abeam,Vbeam,Zbeam,alpha,theta,jopb)
+      SUBROUTINE nbcd_okano(ne,Te,Ti,mass,Zeff,InvAspect,G,Abeam,Vbeam,&
+                            Zbeam,alpha,theta,jopb)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -34,7 +35,9 @@
 !          jopb         j/pb Current density over beam Power [A*m/W]
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(in) :: ne, Te, Ti, mass, Zeff, InvAspect, G, Abeam, Vbeam, Zbeam, alpha, theta
+      DOUBLE PRECISION, INTENT(in) :: ne, Te, Ti, mass, Zeff, &
+                                      InvAspect, G, Abeam, Vbeam, &
+                                      Zbeam, alpha, theta
       DOUBLE PRECISION, INTENT(out) :: jopb
 !-----------------------------------------------------------------------
 !     PARAMETERS
