@@ -30,7 +30,6 @@
 !     The general idea here is to use equation (22) in form to update
 !     THRIFT_JPLASMA.  Where THRIFT_JSOURCE is the J in <J_s.B>.
 
-      lverbose = .true.
       ! Allocations
       ALLOCATE(f1(nrho),f2(nrho),f3(nrho),f4(nrho))
       f1=0; f2=0; f3=0; f4=0;
