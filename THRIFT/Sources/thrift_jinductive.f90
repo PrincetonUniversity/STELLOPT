@@ -43,7 +43,7 @@
          CALL get_equil_sus(s,s11,s12,Bav,Bsqav,ier) 
          CALL EZspline_interp(iota_spl,rho,iota,ier)   
          CALL EZspline_interp(phip_spl,rho,phip,ier)
-         f1(i) = invmu0*phip*(s11*iota+s12) ! I(rho)
+         f1(i) = phip*(s11*iota+s12)/mu0 ! I(rho)
          f2(i) = f1(i)/phip ! I/Phi'     
       END DO
 
