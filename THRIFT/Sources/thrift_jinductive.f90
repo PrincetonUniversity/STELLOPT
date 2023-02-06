@@ -36,6 +36,7 @@
       ALLOCATE(f1(nrho),f2(nrho),f3(nrho),f4(nrho))
       f1=0; f2=0; f3=0; f4=0;
 
+      IF (ISNAN(1.0)) WRITE(6,'A33') "ISNAN ERROR"
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          s   = rho*rho
@@ -44,7 +45,9 @@
          CALL EZspline_interp(iota_spl,rho,iota,ier)   
          CALL EZspline_interp(phip_spl,rho,phip,ier)
          f1(i) = phip*(s11*iota+s12)/mu0 ! I(rho)
-         f2(i) = f1(i)/phip ! I/Phi'     
+         f2(i) = f1(i)/phip ! I/Phi'    
+         IF (ISNAN(f2(i))) WRITE(6,'(A33,I5)') "NaN found in beginning: i=",i
+        
       END DO
 
       bcs1=(/ 0, 0/)
