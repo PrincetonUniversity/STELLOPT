@@ -106,12 +106,12 @@
 
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN
-               WRITE(6,*)'    T     NSUB     BETA     ITOR      IBOOT      IECCD      INBCD      IOHMIC   MAX(deltaj)'
+               WRITE(6,*)'    T  NSUB     BETA    ITOR     IBOOT     IECCD     INBCD     IOHMIC  MAX(deltaj)'
                WRITE(6,*)'-------------------------------------------------------------------------------------------'
             END IF
 
             ! Print progress
-            IF (lverb) WRITE(6,'(2X,F5.3,3X,I5,4X,F5.2,6(1X,ES10.2))') &
+            IF (lverb) WRITE(6,'(2X,F5.3,3X,I2,4X,F5.2,6(1X,ES9.2))') &
                 THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
                 eq_volume*SUM(THRIFT_J(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
                 eq_volume*SUM(THRIFT_JBOOT(:,mytimestep))/(pi2*eq_Rmajor*nrho),&

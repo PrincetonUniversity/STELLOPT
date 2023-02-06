@@ -94,7 +94,7 @@
          rho = THRIFT_RHO(i)
          CALL EZspline_derivative(f_spl,1,rho,f1(i),ier)
          CALL Ezspline_interp(vp_spl,rho,phip,ier)
-         THRIFT_JPLASMA(i,mytimestep) = 2*pi*eq_Rmajor*f1(i)/phip
+         THRIFT_JPLASMA(i,mytimestep+1) = 2*pi*eq_Rmajor*f1(i)/phip
       END DO     
       CALL EZspline_free(f_spl,ier)
 
