@@ -52,6 +52,7 @@
       f_spl%isHermite   = 0
       CALL EZspline_setup(f_spl,f2,ier,EXACT_DIM=.true.)
      
+      ! Calculate big bracket
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          s   = rho*rho
@@ -63,7 +64,8 @@
          CALL get_prof_etapara(rho,THRIFT_T(mytimestep),etapara) !eta = eta
          CALL EZspline_interp(vp_spl,rho,phip,ier) ! phip = V'
          f4(i)= etapara*phip*( mu0*s12*f2(i) + 0.5*Bsqav/rho*f3(i) &
-               - THRIFT_JSOURCE(i,mytimestep)*Bav)      
+               - THRIFT_JSOURCE(i,mytimestep)*Bav) 
+            IF (ISNAN(f4(i))) WRITE(6,'(A33,I5)') "NaN found in calc big bracket: i=",i
       END DO
 
       CALL EZspline_free(f_spl,ier)
@@ -72,8 +74,8 @@
       CALL EZspline_init(f_spl,nrho,bcs1,ier)
       f_spl%isHermite   = 0
       CALL EZspline_setup(f_spl,f4,ier,EXACT_DIM=.true.)
-      !f4 = THRIFT_T(mytimestep+1)-THRIFT_T(mytimestep)
 
+      ! Calculate I next timestep
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          s   = rho*rho
@@ -83,6 +85,7 @@
          CALL EZspline_derivative(f_spl,1,rho,f3(i),ier)
          CALL Ezspline_interp(phip_spl,rho,phip,ier)
          f2(i) = f1(i) + 0.5*s12*phip*s11*f3(i)/(rho*eq_phiedge**2*mu0) !I next
+         IF (ISNAN(f2(i))) WRITE(6,'(A33,I5)') "NaN found in I_next: i=",i
       END DO
 
       CALL EZspline_free(f_spl,ier)
@@ -95,6 +98,8 @@
          CALL EZspline_derivative(f_spl,1,rho,f1(i),ier)
          CALL Ezspline_interp(vp_spl,rho,phip,ier)
          THRIFT_JPLASMA(i,mytimestep+1) = 2*pi*eq_Rmajor*f1(i)/phip
+         IF (ISNAN(THRIFT_JPLASMA(i,mytimestep+1))) WRITE(6,'(A33,I5)') "NaN found in I_next: i=",i
+
       END DO     
       CALL EZspline_free(f_spl,ier)
 

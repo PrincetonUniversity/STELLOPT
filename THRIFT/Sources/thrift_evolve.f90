@@ -106,12 +106,12 @@
 
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN
-               WRITE(6,*)'    T  NSUB     BETA    ITOR     IBOOT     IECCD     INBCD     IOHMIC  MAX(deltaj)'
+               WRITE(6,*)'    T  NSUB   BETA   ITOR    IBOOT    IECCD    INBCD    IOHMIC MAX(deltaj)'
                WRITE(6,*)'-------------------------------------------------------------------------------------------'
             END IF
 
             ! Print progress
-            IF (lverb) WRITE(6,'(2X,F5.3,3X,I2,4X,F5.2,6(1X,ES9.2))') &
+            IF (lverb) WRITE(6,'(2X,F5.3,3X,I2,2X,F5.2,6(1X,ES8.1))') &
                 THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
                 eq_volume*SUM(THRIFT_J(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
                 eq_volume*SUM(THRIFT_JBOOT(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
@@ -132,7 +132,8 @@
          ! Calc the inductive chagne in current
          ! This should change only J_PLASMA given J_SOURCE
          CALL thrift_jinductive
-
+         IF (lverb) WRITE(6,'(A13,ES10.2)') "IPLASMA:  ", &
+            eq_volume*SUM(THRIFT_JPLASMA(:,mytimestep+1))/(pi2*eq_Rmajor*nrho)
       END DO
 
       ! Deallocate helpers
