@@ -107,7 +107,8 @@
             IF (mystart <= myend) THEN
 
                ! Handle Output
-               CALL Disable_Output_f77
+               CALL set_work_dir_f77('TRAVIS_'//TRIM(proc_string))
+               !CALL Disable_Output_f77
                CALL Disable_printout_f77
 
                ! Obligatory setup
@@ -131,7 +132,13 @@
                CALL initEquilibr_f77(hgrid, dphi, B0_ref, phi_ref, B_dir, B_scale, B0type)
 
                ! Set Plasma size
-               CALL set_plasmaSize_f77(rho(nrad), rho(nrad)-rho(nrad-1))
+               !=======================================================================
+               !SUBROUTINE set_plasmaSize_f77(rho_pl,drho_bnd)
+               ! Sets plasma-size, i.e. extra-surface beyond LCMS, rho_pl >= 1,
+               ! and width of boundary layer for forced decay of plasma profiles:
+               ! if drho_bnd = 0, no changes in plasma profiles.
+               !=======================================================================
+               CALL set_plasmaSize_f77(1.0, 0)
 
                ! Load the equilibrium
                equiname = 'wout_'//TRIM(proc_string)//'.nc'
@@ -185,21 +192,24 @@
                                         antennaCoordType,targetPositionType)
                   
                   ! Need this here
-                  CALL Disable_Output_f77
+                  !CALL Disable_Output_f77
 
                   ! Cycle over frequencies
+                  n = mystart
                   DO j = mystart,myend
                      IF (sigma_ece(i,j) >= bigno) CYCLE
                      wmode = 0 ! O-mode
                      CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radto_ece(i,j),ECEerror)
+                     n=n+1
                      wmode = 1 ! X-mode
                      CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radtx_ece(i,j),ECEerror)
+                     n=n+1
                   END DO
 
                END DO
 
                ! Free the stuff we loaded.
-               CALL Free_MagConfig_f77()
+               !CALL Free_MagConfig_f77()
 
             END IF
 

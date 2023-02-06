@@ -1,5 +1,7 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
 
+nbcd_okano.o :
+
 nclass_mod.o :
 
 fzero.o : \
