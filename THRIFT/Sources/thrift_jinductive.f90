@@ -31,7 +31,7 @@
 !     THRIFT_JPLASMA.  Where THRIFT_JSOURCE is the J in <J_s.B>.
 
 
-      IF (eq_beta == 0) THEN RETURN
+      IF (eq_beta == 0) RETURN
 
       ! Allocations
       ALLOCATE(f1(nrho),f2(nrho),f3(nrho))
