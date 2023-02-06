@@ -143,6 +143,12 @@ thrift_run_equil.o : \
       thrift_equil.o \
       $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o 
 
+thrift_run_nbcd.o : \
+      thrift_profiles_mod.o \
+      thrift_runtime.o \
+      thrift_equil.o \
+      thrift_vars.o
+
 thrift_travis.o : \
       thrift_runtime.o \
       thrift_input_mod.o \

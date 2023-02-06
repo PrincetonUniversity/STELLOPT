@@ -84,14 +84,24 @@
             !IF (lohmic) CALL thrift_run_ohmic
 
             ! Update total source current (picard iteration)
-            THRIFT_JSOURCE(:,mytimestep) = (1-picard_factor)*THRIFT_JSOURCE(:,mytimestep) &
-                                           + picard_factor*(  THRIFT_JBOOT(:,mytimestep) &
-                                                            + THRIFT_JECCD(:,mytimestep) &
-                                                            + THRIFT_JNBCD(:,mytimestep) &
-                                                            + THRIFT_JOHMIC(:,mytimestep))
+            !THRIFT_JSOURCE(:,mytimestep) = (1-picard_factor)*THRIFT_JSOURCE(:,mytimestep) &
+            !                               + picard_factor*(  THRIFT_JBOOT(:,mytimestep) &
+            !                                                + THRIFT_JECCD(:,mytimestep) &
+            !                                                + THRIFT_JNBCD(:,mytimestep) &
+            !                                                + THRIFT_JOHMIC(:,mytimestep))
+            THRIFT_JSOURCE(:,mytimestep) =   THRIFT_JBOOT(:,mytimestep) &
+                                           + THRIFT_JECCD(:,mytimestep) &
+                                           + THRIFT_JNBCD(:,mytimestep) &
+                                           + THRIFT_JOHMIC(:,mytimestep)
+
+            ! Calc the inductive chagne in current
+            ! This should change only J_PLASMA given J_SOURCE
+            CALL thrift_jinductive
+
             ! Update total current
-            THRIFT_J(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep) &
-                                   + THRIFT_JSOURCE(:,mytimestep)
+            THRIFT_J(:,mytimestep) = (1-picard_factor)*THRIFT_J(:,mytimestep) &
+                                   +  picard_factor*(   THRIFT_JPLASMA(:,mytimestep) &
+                                                      + THRIFT_JSOURCE(:,mytimestep))
 
 
             ! Check the convergence
@@ -129,11 +139,6 @@
 
          END DO
 
-         ! Calc the inductive chagne in current
-         ! This should change only J_PLASMA given J_SOURCE
-         CALL thrift_jinductive
-         IF (lverb) WRITE(6,'(A13,ES10.2)') "IPLASMA:  ", &
-            eq_volume*SUM(THRIFT_JPLASMA(:,mytimestep+1))/(pi2*eq_Rmajor*nrho)
       END DO
 
       ! Deallocate helpers

@@ -1,4 +1,5 @@
 ObjectFiles = \
+thrift_run_nbcd.o \
 thrift_travis.o \
 thrift_write.o \
 thrift_run_eccd.o \
