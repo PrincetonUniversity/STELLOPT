@@ -36,7 +36,7 @@
       ALLOCATE(f1(nrho),f2(nrho),f3(nrho),f4(nrho))
       f1=0; f2=0; f3=0; f4=0;
 
-      IF (ISNAN(1.0)) WRITE(6,'A33') "ISNAN ERROR"
+      IF (ISNAN(1.0)) WRITE(6,'(A33)') "ISNAN ERROR"
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          s   = rho*rho
