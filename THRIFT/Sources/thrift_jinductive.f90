@@ -36,7 +36,9 @@
       ALLOCATE(f1(nrho),f2(nrho),f3(nrho),f4(nrho))
       f1=0; f2=0; f3=0; f4=0;
 
-      IF (ISNAN(1.0)) WRITE(6,'(A33)') "ISNAN ERROR"
+
+      WRITE(6,*)'    i  PHIP   S11   S12    IOTA    MU0    F1    F2'
+      WRITE(6,*)'-------------------------------------------------------------------------------------------'
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          s   = rho*rho
@@ -46,8 +48,8 @@
          CALL EZspline_interp(phip_spl,rho,phip,ier)
          f1(i) = phip*(s11*iota+s12)/mu0 ! I(rho)
          f2(i) = f1(i)/phip ! I/Phi'    
-         IF (ISNAN(f2(i))) WRITE(6,'(A33,I5)') "NaN found in beginning: i=",i
-        
+!         IF (ISNAN(f2(i))) WRITE(6,'(A33,I5)') "NaN found in beginning: i=",i
+         WRITE(6,'(2X,I2,7(2X,ES8.1))') i,phip,s11,s12,iota,mu0,f1(i),f2(i)
       END DO
 
       bcs1=(/ 0, 0/)
@@ -101,7 +103,7 @@
          CALL EZspline_derivative(f_spl,1,rho,f1(i),ier)
          CALL Ezspline_interp(vp_spl,rho,phip,ier)
          THRIFT_JPLASMA(i,mytimestep+1) = 2*pi*eq_Rmajor*f1(i)/phip
-         IF (ISNAN(THRIFT_JPLASMA(i,mytimestep+1))) WRITE(6,'(A33,I5)') "NaN found in I_next: i=",i
+         IF (ISNAN(THRIFT_JPLASMA(i,mytimestep+1))) WRITE(6,'(A33,I5)') "NaN found in J_plasma: i=",i
 
       END DO     
       CALL EZspline_free(f_spl,ier)
