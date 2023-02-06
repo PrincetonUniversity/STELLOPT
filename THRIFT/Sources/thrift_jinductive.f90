@@ -82,7 +82,7 @@
          s12 = THRIFT_T(mytimestep+1)-THRIFT_T(mytimestep) !timestep
          CALL EZspline_derivative(f_spl,1,rho,f3(i),ier)
          CALL Ezspline_interp(phip_spl,rho,phip,ier)
-         f2(i) = f1(i) + 0.5*invmu0*s12*phip*s11*f3(i)/(rho*eq_phiedge**2) !I next
+         f2(i) = f1(i) + 0.5*s12*phip*s11*f3(i)/(rho*eq_phiedge**2*mu0) !I next
       END DO
 
       CALL EZspline_free(f_spl,ier)
