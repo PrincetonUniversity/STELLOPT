@@ -61,15 +61,6 @@
       CALL mpialloc(THRIFT_JOHMIC,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_johmic)
       CALL mpialloc(THRIFT_JSOURCE,  nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jsource)
 
-      ! Define grids
-      dt = (tmax-tmin)/(ntimesteps-1)
-      WRITE(6,*) " tmax   tmin   ntimesteps    dt" 
-      WRITE(6,'(2X,F5.3,2X,F5.3,2X,F5.3,2X,F5.3)') tmax, tmin, ntimesteps, dt
-      IF (myid_sharmem == master) THEN
-        FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho)
-        FORALL(i = 1:ntimesteps) THRIFT_T(i) = tmin + (i-1)*dt
-      END IF
-
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
       SELECT CASE (TRIM(bootstrap_type))
@@ -90,6 +81,13 @@
       ! Now setup the profiles
       CALL read_thrift_profh5(TRIM(prof_string))
 
+      ! Define grids
+      dt = (tmax-tmin)/(ntimesteps-1)
+      IF (myid_sharmem == master) THEN
+        FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho)
+        FORALL(i = 1:ntimesteps) THRIFT_T(i) = tmin + (i-1)*dt
+      END IF
+      
       ! Split off workers
       CALL thrift_init_mpisubgroup
       IF (myworkid .ne. master) THEN
