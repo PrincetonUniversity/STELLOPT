@@ -27,7 +27,7 @@
       LOGICAL        :: ltst
       INTEGER        :: ier, i, iunit
       CHARACTER(256) :: tstr1,tstr2
-      
+      REAL(rprec)    :: dt
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -62,9 +62,10 @@
       CALL mpialloc(THRIFT_JSOURCE,  nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jsource)
 
       ! Define grids
+      dt = (tmax-tmin)/(ntimesteps-1)
       IF (myid_sharmem == master) THEN
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho)
-        FORALL(i = 1:ntimesteps) THRIFT_T(i) = DBLE(i-1)/DBLE(ntimesteps-1)
+        FORALL(i = 1:ntimesteps) THRIFT_T(i) = tmin + (i-1)*dt
       END IF
 
       ! Read the Bootstrap input
