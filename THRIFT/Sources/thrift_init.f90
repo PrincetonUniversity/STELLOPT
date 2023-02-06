@@ -64,7 +64,7 @@
       ! Define grids
       dt = (tmax-tmin)/(ntimesteps-1)
       WRITE(6,*) " tmax   tmin   ntimesteps    dt" 
-      WRITE(6,'(4(5F.3,2X))') tmax, tmin, ntimesteps, dt
+      WRITE(6,'(2X,F5.3,2X,F5.3,2X,F5.3,2X,F5.3)') tmax, tmin, ntimesteps, dt
       IF (myid_sharmem == master) THEN
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho)
         FORALL(i = 1:ntimesteps) THRIFT_T(i) = tmin + (i-1)*dt
