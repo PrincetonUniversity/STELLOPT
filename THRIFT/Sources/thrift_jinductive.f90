@@ -54,7 +54,7 @@
       CALL EZspline_init(f_spl,nrho,bcs1,ier)
       f_spl%isHermite   = 0
       CALL EZspline_setup(f_spl,f2,ier,EXACT_DIM=.true.)
-
+      
       WRITE(6,*)'    i  RHO  ETAPARA   BAV    BSQAV      Pp        F3       F4'
       WRITE(6,*)'--------------------------------------------------------------'
       ! Calculate big bracket
