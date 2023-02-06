@@ -20,7 +20,6 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      LOGICAL :: lverbose
       INTEGER :: i, ier
       REAL(rprec) :: rho,s,s11,s12,Bav,Bsqav,iota,phip,etapara
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: f1, f2, f3, f4
@@ -55,8 +54,8 @@
       f_spl%isHermite   = 0
       CALL EZspline_setup(f_spl,f2,ier,EXACT_DIM=.true.)
       
-      WRITE(6,*)'    i  RHO  ETAPARA   BAV    BSQAV      Pp        F3       F4'
-      WRITE(6,*)'--------------------------------------------------------------'
+      WRITE(6,*)'    i  RHO   ETAPARA       BAV    BSQAV         Pp        F3       F4'
+      WRITE(6,*)'--------------------------------------------------------------------'
       ! Calculate big bracket
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
@@ -80,7 +79,7 @@
       CALL EZspline_init(f_spl,nrho,bcs1,ier)
       f_spl%isHermite   = 0
       CALL EZspline_setup(f_spl,f4,ier,EXACT_DIM=.true.)
-      WRITE(6,*)'    i  RHO  DT   PHI_EDGE    F2'
+      WRITE(6,*)'  i    RHO  ITOR(NEXT)'
       WRITE(6,*)'-----------------------------------------------------------'
       ! Calculate I next timestep
       DO i = 1, nrho
@@ -92,7 +91,7 @@
          CALL EZspline_derivative(f_spl,1,rho,f3(i),ier)
          CALL Ezspline_interp(phip_spl,rho,phip,ier)
          f2(i) = f1(i) + 0.5*s12*phip*s11*f3(i)/(rho*eq_phiedge**2*mu0) !I next
-         WRITE(6,'(2X,I2,2X,F5.3,2X,F5.3,(2X,ES8.1))') i,rho,s12,eq_phiedge,f2(i)
+         WRITE(6,'(2X,I2,2X,F5.3,2X,ES8.1)') i,rho,f2(i)
       END DO
 
       CALL EZspline_free(f_spl,ier)

@@ -105,9 +105,6 @@
             END IF
 
             ! Print Header
-            DO i=1,ntimesteps
-                  WRITE(6,*) THRIFT_T(i)
-            END DO
             IF (lverb .and. lfirst_pass) THEN
                WRITE(6,*)'    T  NSUB   BETA   ITOR    IBOOT    IECCD    INBCD    IOHMIC MAX(deltaj)'
                WRITE(6,*)'-------------------------------------------------------------------------------------------'
