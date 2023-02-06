@@ -43,8 +43,8 @@
          CALL get_equil_sus(s,s11,s12,Bav,Bsqav,ier) 
          CALL EZspline_interp(iota_spl,rho,iota,ier)   
          CALL EZspline_interp(phip_spl,rho,phip,ier)
-         f1(i) = phip*(s11*iota+s12)/mu0 ! I(rho)
-         f2(i) = f1(i)/phip ! I/Phi'    
+         f1(i) = phip/(2*rho)*(s11*iota+s12)/mu0 ! I(rho)
+         f2(i) = 2*rho*f1(i)/phip ! I/Phi'    
          WRITE(6,'(2X,I2,7(2X,ES8.1))') i,phip,s11,s12,iota,mu0,f1(i),f2(i)
       END DO
 
@@ -61,7 +61,7 @@
          s   = rho*rho
          ier = 0
 
-         CALL EZspline_derivative(f_spl,1,rho,f3(i),ier)
+         CALL EZspline_derivative(f_spl,1,rho,f3(i),ier) 
          CALL get_equil_Bav(s,Bav,Bsqav,ier) ! Bav =<B>;Bsqav=<B^2>
          CALL get_prof_pprime(rho,THRIFT_T(mytimestep),s12) !s12 = p'
          CALL get_prof_etapara(rho,THRIFT_T(mytimestep),etapara) !eta = eta
@@ -103,8 +103,6 @@
          CALL EZspline_derivative(f_spl,1,rho,f1(i),ier)
          CALL Ezspline_interp(vp_spl,rho,phip,ier)
          THRIFT_JPLASMA(i,mytimestep+1) = 2*pi*eq_Rmajor*f1(i)/phip
-         IF (ISNAN(THRIFT_JPLASMA(i,mytimestep+1))) WRITE(6,'(A33,I5)') "NaN found in J_plasma: i=",i
-
       END DO     
       CALL EZspline_free(f_spl,ier)
 
