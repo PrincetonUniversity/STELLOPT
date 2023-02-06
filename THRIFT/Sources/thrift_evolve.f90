@@ -44,7 +44,7 @@
       jold   = 1E3 ! so on loop 1 we don't divide by zero
       lscreen_subcodes = .TRUE.
       lfirst_pass = .TRUE.
-      
+      WRITE(6,*) THRIFT_T
       ! Loop over timesteps
       DO mytimestep = 1, ntimesteps
       
