@@ -111,7 +111,7 @@
 
          ! I on nrho+4 grid, f on nrho+2, so I_temp is shifted by +1
          f2(i) = etapara*phip*(s12*I_temp(i+1)  &   ! eta*V'(p'u  
-                        + Bsqav*mu0*f2(i)       &   !     + <B^2>/mu0*du/dx 
+                        + Bsqav/mu0*f2(i)       &   !     + <B^2>/mu0*du/dx 
                         - j_temp(i)*Bav)            !         - <J.B>)
          WRITE(6,'(F5.3,3X,E8.1,A)') rho, f2(i),';'
 
