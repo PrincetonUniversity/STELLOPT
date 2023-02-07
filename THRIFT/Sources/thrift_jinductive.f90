@@ -39,7 +39,7 @@
 !
       ! Check to make sure we're not zero beta
       IF (eq_beta == 0) THEN
-         IF (mytimestep) == 1 THEN 
+         IF (mytimestep == 1) THEN 
             THRIFT_JPLASMA(:,mytimestep) = 0
          ELSE 
             THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep-1)
@@ -95,7 +95,7 @@
          CALL get_equil_Bav(s,Bav,Bsqav,ier) ! Bav =<B>;Bsqav=<B^2>
          ! I on nrho+4 grid, f on nrho+2, so I_temp is shifted by +1
          f2(i) = etapara*phip*(s12*I_temp(i+1)     &      ! eta*V'(p'u  
-                        + Bavsq/mu0*f2(i)  &          !     + <B^2>/mu0*du/dx 
+                        + Bsqav/mu0*f2(i)  &          !     + <B^2>/mu0*du/dx 
                         j_temp(i)*Bav)                !         - <J.B>)
       END DO
 
@@ -145,7 +145,7 @@
       END IF
 
       ! Deallocate
-      DEALLOCATE(f1,f2,f3,f4)
+      DEALLOCATE(rho_temp,j_temp,I_temp,f2)
 
       RETURN
 !----------------------------------------------------------------------
