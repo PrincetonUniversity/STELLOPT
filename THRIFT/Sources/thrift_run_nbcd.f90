@@ -31,7 +31,7 @@
          RETURN
       END IF
 
-      SELECT CASE(TRIM(eccd_type))
+      SELECT CASE(TRIM(nbcd_type))
          CASE ('model','okano')
             timenow = THRIFT_T(mytimestep)
             ! Use the Okano model for NBCD

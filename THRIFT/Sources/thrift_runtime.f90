@@ -71,9 +71,10 @@ MODULE thrift_runtime
                mytimestep
     REAL(rprec) :: pi, pi2, invpi2, mu0, to3
     CHARACTER(256) :: id_string, prof_string, bootstrap_type, &
-                      eccd_type, &
+                      eccd_type, nbcd_type, &
                       proc_string, vessel_ecrh, mirror_ecrh, &
-                      targettype_ecrh, antennatype_ecrh
+                      targettype_ecrh, antennatype_ecrh, &
+                      magdiag_coil
 
     REAL(rprec), PARAMETER :: THRIFT_VERSION = 0.50 
     !-----------------------------------------------------------------------

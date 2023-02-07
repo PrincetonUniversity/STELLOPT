@@ -34,7 +34,7 @@ MODULE thrift_vars
     !-------------------------------------------------------------------
     IMPLICIT NONE
 
-    LOGICAL :: leccd, lnbcd, lohmic, lscreen_subcodes
+    LOGICAL :: leccd, lnbcd, lohmic, ldiagno, lscreen_subcodes
     LOGICAL, DIMENSION(:), ALLOCATABLE :: lbooz
     INTEGER :: ntimesteps, nrho, npicard, &
                win_thrift_j, win_thrift_jboot, &

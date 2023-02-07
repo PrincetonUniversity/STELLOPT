@@ -1,4 +1,6 @@
 ObjectFiles = \
+thrift_diagno.o \
+thrift_run_diagnostics.o \
 thrift_run_nbcd.o \
 thrift_travis.o \
 thrift_write.o \
