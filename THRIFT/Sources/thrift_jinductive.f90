@@ -22,7 +22,7 @@
       IMPLICIT NONE
       INTEGER :: i, ier
       REAL(rprec) :: rho,s,s11,s12,Bav,Bsqav,iota,phip,etapara
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: f1, f2, f3, f4
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: f1, f2, rho_temp, j_temp, f5, f6
       TYPE(EZspline1_r8) :: f_spl
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -30,12 +30,87 @@
 !     The general idea here is to use equation (22) in form to update
 !     THRIFT_JPLASMA.  Where THRIFT_JSOURCE is the J in <J_s.B>.
 
-
+!         0   |---|---|---|---|---|---|---|---|   1       rho grid
+!         |---|---|---|---|---|---|---|---|---|---|       grid for f
+!     |---|---|---|---|---|---|---|---|---|---|---|---|   grid for I
+!     dI                                        mu0 I
+!     -- = 0                                    ----- = S11 iota + S12
+!     ds                                        phip
+!
       IF (eq_beta == 0) RETURN
 
       ! Allocations
-      ALLOCATE(f1(nrho),f2(nrho),f3(nrho),f4(nrho))
-      f1=0; f2=0; f3=0; f4=0;
+      ALLOCATE(f1(nrho+4),f2(nrho+2),rho_temp(nrho+2),j_temp(nrho+2),f5(nrho+2),f6(nrho))
+      f1=0; f2=0; rho_temp=0; j_temp=0; f5=0; f6=0;
+   
+      ! Temporary rho grid with boundaries (nrho+2)
+      rho_temp2(1) = 0
+      rho_temp2(2:nrho+1) = THRIFT_RHO
+      rho_temp2(nrho+2) = 1
+
+      ! Temp rho grid extended beyond boundaries (nrho+4)
+      rho_temp4(1) = rho_temp2(2)
+      rho_temp4(2:nrho+3) = rho_temp2
+      rho_temp4(nrho+4) = 2*rho_temp(nrho+2)-rho_temp(nrho+1)
+
+      ! Temporary Jsource grid with boundaries (nrho+2)
+      j_temp(1)          = THRIFT_JSOURCE(1,mytimestep)
+      j_temp(2:nrho+1)   = THRIFT_JSOURCE(:,mytimestep)
+      j_temp(nrho+2)     = 0.0
+
+      ! Setup grid with I (nrho+4)
+      f1(1) = 0 ! rho = -rho(1)
+      f1(2) = 0 ! rho = 0
+      DO i = 1, nrho+1
+            rho = THRIFT_RHO(i)
+            s   = rho*rho
+            ier = 0
+            CALL get_equil_sus(s,s11,s12,Bav,Bsqav,ier) 
+            CALL EZspline_interp(iota_spl,rho,iota,ier)   
+            CALL EZspline_interp(phip_spl,rho,phip,ier)
+            f1(i+2) = (s11*iota+s12) ! mu0 I/phip|(rho)
+      END DO
+      f1(nrho+4)=f1(nrho+3)
+
+      ! Setup grid with I derivative (nrho+2)
+      f2(1) = 0 ! rho = -rho(1)
+      DO i = 2, nrho+2
+         f2(i) = (f1(i+2)-f1(i))/(rho_temp4(i+2)-rho_temp4(i))/2 
+      END DO
+
+      ! Construct f (nrho+2)
+      DO i = 1, nrho+2
+         rho = rho_temp2(i)
+         s   = rho*rho
+         ier = 0
+         CALL get_prof_etapara(rho,THRIFT_T(mytimestep),etapara) !eta = eta
+         CALL EZspline_interp(vp_spl,rho,phip,ier) ! phip = V'
+         CALL get_prof_pprime(rho,THRIFT_T(mytimestep),s12) !s12 = p'
+         CALL get_equil_Bav(s,Bav,Bsqav,ier) ! Bav =<B>;Bsqav=<B^2>
+         ! I on nrho+4 grid, f on nrho+2, so f1 is shifted by +1
+         !! Can probably replace f5 -> f2
+         f5(i) = etapara*phip*(s12*f1(i+1)     &      ! eta*V'(p'u  
+                        + Bavsq/mu0*f2(i)  &          !     + <B^2>/mu0*du/dx 
+                        j_temp(i)*Bav)                !         - <J.B>)
+      END DO
+
+      ! Construct du/dt (nrho)
+      iota = THRIFT_T(mytimestep+1)-THRIFT_T(mytimestep) ! delta t
+      DO i = 1, nrho
+         rho = THRIFT_RHO(i)
+         s   = rho*rho
+         ier = 0
+         CALL get_equil_sus(s,s11,s12,Bav,Bsqav,ier) 
+         f6(i) = s11/(eq_phiedge**2) * &
+            (f5(i+2)-f5(i))/(rho_temp2(i+2)-rho_temp2(i))/2 ! s11/phi_a^2*df/dx 
+         f6(i) = f6(i)*iota !  delta u ~ delta t * 1/c df/dx
+         CALL EZspline_interp(phip_spl,rho,phip,ier)
+         f6(i) = phip/mu0*f6(i) ! delta I (total)
+
+
+      END DO
+
+
 
       WRITE(6,*)'    i  PHIP    S11    S12     IOTA      MU0       F1       F2'
       WRITE(6,*)'--------------------------------------------------------------'
