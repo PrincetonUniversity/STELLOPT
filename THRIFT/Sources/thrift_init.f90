@@ -13,6 +13,7 @@
       USE thrift_input_mod
       USE thrift_vars
       USE thrift_profiles_mod
+      USE diagno_input_mod, ONLY: read_diagno_input
       USE safe_open_mod
       USE mpi_params
       USE mpi_inc
@@ -39,13 +40,19 @@
       ! Read the THRIFT input
       IF (lvmec) THEN
          CALL read_thrift_input('input.' // TRIM(id_string),ier)
-      ENDIF
+      END IF
+
+      ! Read diagno file
+      IF (ldiagno) THEN
+         CALL read_diagno_input('input.' // TRIM(id_string),ier)
+      END IF
 
       ! Output to screen
       IF (lverb) THEN 
          WRITE(6,'(A)') '   FILE:             input.' // TRIM(id_string)
          WRITE(6,'(A)') '   BOOTSTRAP MODEL: ' // TRIM(bootstrap_type)
          WRITE(6,'(A)') '   ECCD MODEL:      ' // TRIM(eccd_type)
+         WRITE(6,'(A)') '   NBCD MODEL:      ' // TRIM(nbcd_type)
       END IF
 
       ! Create the worker pool
