@@ -61,12 +61,12 @@
       rho_temp(nrho+4) = 2*rho_temp(nrho+3) - rho_temp(nrho+2)
 
       ! MU0 I / PHIP   (nrho+4)
-      WRITE(6,*) "  rho    mu0 I/phip"
-      WRITE(6,*) "---------------------"
+      WRITE(6,*) "  rho    s11    s12     iota     mu0 I/phip"
+      WRITE(6,*) "------------------------------------------"
 
       I_temp(1) = 0 ! rho = -rho(1), will be overwritten
       I_temp(2) = 0 ! rho = 0
-      WRITE(6,'(2X,F5.3,3X,E8.1,A)') rho_temp(2),I_temp(2),';'
+      !WRITE(6,'(2X,F5.3,4(3X,E9.2,A)') rho_temp(2),I_temp(2),';'
       DO i = 1, nrho+1
             rho = rho_temp(i+2)
             s   = rho*rho
@@ -74,12 +74,12 @@
             CALL get_equil_sus(s,s11,s12,Bav,Bsqav,ier) 
             CALL EZspline_interp(iota_spl,rho,iota,ier)   
             I_temp(i+2) = 2*rho*(s11*iota+s12) ! mu0 I/phip|(rho)
-            WRITE(6,'(2X,F5.3,3X,E8.1,A)') rho_temp(i+2),I_temp(i+2),';'
+            WRITE(6,'(2X,F5.3,4(3X,E9.2),A)') rho_temp(i+2),s11,s12,iota,I_temp(i+2),';'
       END DO
       I_temp(nrho+4)=I_temp(nrho+3) ! no current outside rho=1
       I_temp(1) = I_temp(3) ! rho = -rho(1)
-      WRITE(6,'(2X,F5.3,3X,E8.1,A)') rho_temp(nrho+4),I_temp(nrho+4),';'
-      WRITE(6,'(2X,F5.3,3X,E8.1,A)') rho_temp(1),I_temp(1),';'
+      !WRITE(6,'(2X,F5.3,3X,E8.1,A)') rho_temp(nrho+4),I_temp(nrho+4),';'
+      !WRITE(6,'(2X,F5.3,3X,E8.1,A)') rho_temp(1),I_temp(1),';'
 
       ! D/DS(U)   (nrho+2)
       WRITE(6,*) ""
