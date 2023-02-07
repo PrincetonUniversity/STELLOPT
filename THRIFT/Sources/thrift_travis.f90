@@ -104,7 +104,8 @@
          IF (mystart <= myend) THEN
 
             ! Handle Output
-            CALL Disable_Output_f77
+            CALL set_work_dir_f77('TRAVIS_'//TRIM(proc_string))
+            !CALL Disable_Output_f77
             CALL Disable_printout_f77
 
             ! Obligatory setup
@@ -196,7 +197,7 @@
                                      antennaCoordType,targetPositionType)
                   
                ! Need this here
-               CALL Disable_Output_f77
+               !CALL Disable_Output_f77
 
                ! Run BEAM
                CALL run_ECRH_Beam_f77m(i,freq_ecrh(i)*1E-9,wmode_ecrh(i),power_ecrh(i)*1E-6)
