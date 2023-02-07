@@ -49,7 +49,7 @@
 
       ! Allocations
       ALLOCATE(rho_temp(nrho+4),I_temp(nrho+4),f2(nrho+2),j_temp(nrho+2))
-      rho_temp=0; I_temp=0, j_temp=0; f2=0;
+      rho_temp=0; I_temp=0; j_temp=0; f2=0;
    
       ! Temp rho grid extended beyond boundaries (nrho+4)
       ! To get on nrho+2 grid, shift index by +1
@@ -90,13 +90,14 @@
          s   = rho*rho
          ier = 0
          CALL get_prof_etapara(rho,THRIFT_T(mytimestep),etapara) !eta = eta
-         CALL EZspline_interp(vp_spl,rho,phip,ier) ! phip = V'
+         CALL EZspline_interp(vp_spl,rho,phip,ier)          !phip = V'
          CALL get_prof_pprime(rho,THRIFT_T(mytimestep),s12) !s12 = p'
-         CALL get_equil_Bav(s,Bav,Bsqav,ier) ! Bav =<B>;Bsqav=<B^2>
+         CALL get_equil_Bav(s,Bav,Bsqav,ier)                !Bav =<B>;Bsqav=<B^2>
+         
          ! I on nrho+4 grid, f on nrho+2, so I_temp is shifted by +1
-         f2(i) = etapara*phip*(s12*I_temp(i+1)     &      ! eta*V'(p'u  
-                        + Bsqav/mu0*f2(i)  &          !     + <B^2>/mu0*du/dx 
-                        j_temp(i)*Bav)                !         - <J.B>)
+         f2(i) = etapara*phip*(s12*I_temp(i+1)  &   ! eta*V'(p'u  
+                        + Bsqav/mu0*f2(i)       &   !     + <B^2>/mu0*du/dx 
+                        - j_temp(i)*Bav)            !         - <J.B>)
       END DO
 
       ! I_temp (nrho+4), j_temp(nrho+2) freed up
