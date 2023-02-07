@@ -183,7 +183,7 @@
             CASE('diagno')
                proc_string = file_str
                ier = 0
-               !CALL thrift_diagno(lscreen,ier)
+               CALL thrift_diagno(lscreen_local,ier)
                ier_paraexe = ier
             CASE('sfincs')
 !               proc_string = file_str
