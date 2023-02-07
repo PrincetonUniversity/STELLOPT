@@ -128,7 +128,7 @@
                 eq_volume*SUM(THRIFT_JECCD(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
                 eq_volume*SUM(THRIFT_JNBCD(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
                 eq_volume*SUM(THRIFT_JOHMIC(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
-                eq_volume*SUM(THRIFT_JPLASMA(:,mytimestep))/(pi2*eq_RMajor*nrho,&)
+                eq_volume*SUM(THRIFT_JPLASMA(:,mytimestep))/(pi2*eq_RMajor*nrho),&
                 MAXVAL(deltaj)
 
             ! Turn off screen output after one run
