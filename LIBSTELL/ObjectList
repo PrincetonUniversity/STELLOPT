@@ -1,4 +1,5 @@
 ObjectFiles = \
+nbcd_okano.o \
 nclass_mod.o \
 git_version_mod.o \
 d1mach.o \
