@@ -1512,6 +1512,10 @@
             rmin = wall%blocks(i)%rmin - epsilon
             rmax = wall%blocks(i)%rmax + epsilon
 
+            ! Extend the domain to include the neighbors (SAL)
+            rmin = rmin - rmax + rmin
+            rmax = rmax + rmax - rmin
+
             ! Check vertices in block
             mask_face(:,:) = .FALSE.
             mask_face(:,1) = (A0(:,1) < rmax(1) .and. A0(:,1) >= rmin(1) &
@@ -1591,6 +1595,10 @@
                ! Define bounds block
                rmin = wall%blocks(i)%rmin - epsilon
                rmax = wall%blocks(i)%rmax + epsilon
+
+               ! Extend the domain to include the neighbors (SAL)
+               rmin = rmin - rmax + rmin
+               rmax = rmax + rmax - rmin
       
                ! Check which vertices are in block         
                mask_face(:,1) = (A0(:,1) < rmax(1) .and. A0(:,1) >= rmin(1) &
