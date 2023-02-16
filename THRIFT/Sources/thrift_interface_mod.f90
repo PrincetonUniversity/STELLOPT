@@ -14,6 +14,7 @@ MODULE THRIFT_INTERFACE_MOD
 !     Libraries
 !-----------------------------------------------------------------------
       USE thrift_runtime
+      USE thrift_vars, ONLY: ldiagno
       USE mpi_params
       USE mpi_inc
 #if defined(LHDF5)
@@ -155,12 +156,15 @@ CONTAINS
                 i = i + 1
                 lvmec = .true.
                 CALL GETCARG(i, prof_string, numargs)
+            case ("-diagno")
+                ldiagno = .true.
             case ("-help", "-h") ! Output Help message
                 write(6, *) ' Beam MC Code'
                 write(6, *) ' Usage: xthrift <options>'
                 write(6, *) '    <options>'
                 write(6, *) '     -vmec ext:     VMEC input/wout extension'
                 write(6, *) '     -prof file:    Profile file'
+                write(6, *) '     -diagno:       Compute Magnetic Diagnostic Response'
                 write(6, *) '     -noverb:       Supress all screen output'
                 write(6, *) '     -help:         Output help message'
             end select
