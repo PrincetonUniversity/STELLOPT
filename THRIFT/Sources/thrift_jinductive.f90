@@ -43,7 +43,9 @@
          RETURN
       END IF
 
-      IF (mytimestep == ntimesteps) THEN ! Don't break at the last iteration please
+      ! At last iteration there is nothing to evolve to
+      ! Might have to replace with a RETURN instead
+      IF (mytimestep == ntimesteps) THEN 
          itime = mytimestep
       ELSE
          itime = mytimestep+1
@@ -74,22 +76,8 @@
       rho_temp(2:nrho+1) = THRIFT_RHO
       rho_temp(nrho+2) = 1
 
-      ! Populate A, B, C
-      ! s space ( this may not be correct. )
-      rho = 0
-      s = rho*rho
-      ier = 0
-      CALL get_prof_etapara(rho, THRIFT_T(itime),etapara)
-      CALL EZspline_interp(vp_spl,rho,vp,ier)
-      CALL get_prof_pprime(rho,THRIFT_T(itime),k)
-      CALL get_equil_Bav(s,Bav,Bsqav,ier)
-      h = etapara*vp
-      A_temp(1) = h*k
-      B_temp(1) = h*THRIFT_JSOURCE(1,mytimestep)*Bav
-      C_temp(1) = h*Bsqav/mu0
-
-      ! rho space
-      DO i = 2, nrho+2
+      ! Populate A,B,C
+      DO i = 1, nrho+2
          rho = rho_temp(i) 
          s = rho*rho
          ier = 0
@@ -98,9 +86,12 @@
          CALL get_prof_pprime(rho,THRIFT_T(itime),k)
          CALL get_equil_Bav(s,Bav,Bsqav,ier)
          CALL EZspline_interp(phip_spl,rho,phip,ier)
-         ! vp = dV/dPhi. V'=dV/ds in JS thesis so V'= phip*vp = 1/2rho phip*vp
-         h = etapara*phip*vp/(2*rho)   ! h <- eta V' (V'=dV/drho)
-         A_temp(i) = h*k/(2*rho)  ! eta V' p'/2 rho
+         h = etapara*phip*vp  ! h <- eta V'
+         IF (i==1) THEN 
+            A_temp(i) = 0 ! assume dp/drho = 0 at magnetic axis
+         ELSE
+            A_temp(i) = h*k/(2*rho)  ! eta V' p'/2 rho
+         END IF
          B_temp(i) = h*THRIFT_JSOURCE(i,mytimestep)*Bav ! eta V' <J_s.B>
          C_temp(i) = h*Bsqav/mu0  ! eta V' <B>/mu0
       END DO
@@ -110,7 +101,7 @@
       ELSE
          k = THRIFT_T(mytimestep+1)-THRIFT_T(mytimestep) 
       END IF
-      h = THRIFT_RHO(i+1)-THRIFT_RHO(i) ! h <- drho
+      h = THRIFT_RHO(2)-THRIFT_RHO(1) ! h <- drho
 
       ! Visualisation of different grids
       !j=1 2    3    4    5    6    7
@@ -118,24 +109,7 @@
       !    |    |    |    |    |    |     a0,1,2,3,4 works with i
       !   i=1   2    3    4    5    6     j = i+1 
 
-      ! Calculate a4 on the boundaries (no derivatives)
-      ! First, near the magnetic axis
-      rho = THRIFT_RHO(1)
-      s = rho*rho
-      ier = 0
-      CALL get_equil_sus(s,s11,vp,vp,vp,ier)
-      s11 = 0.5*s11/(eq_phiedge**2*rho)   !  s11 <- 1/(2 rho c)=S11/(phi_a^2*rho)
-      a4(1) = 0.5*s11*C_temp(2)/rho 
-      ! Next to the plasma edge
-      rho = THRIFT_RHO(nrho)
-      s = rho*rho
-      ier = 0
-      CALL get_equil_sus(s,s11,vp,vp,vp,ier)
-      s11 = 0.5*s11/(eq_phiedge**2*rho)                  
-      a4(nrho) = 0.5*s11*C_temp(nrho+1)/rho
-      
       ! Calculate a1,2,3,4 on the gridpoints in [2,nrho-1]
-      ! (Derivatives are standard)
       DO i = 2, nrho-1
          rho = THRIFT_RHO(i)
          s = rho*rho
@@ -149,7 +123,7 @@
          a4(i) = 0.5*s11*C_temp(i+1)/rho                    ! a4 = C/(4 rho^2 c)
       END DO
 
-      ! Calculate a1,2,3 for i=1 
+      ! Calculate a1,2,3,4 for i=1 
       ! dY/drho = (Y_2 + 3*Y_1 - 4*Y_0)/3h
       rho = THRIFT_RHO(1)
       s = rho*rho
@@ -160,8 +134,9 @@
       a2(1) = s11*(A_temp(3)+3*A_temp(2)-4*A_temp(0))/(3*h)
       a3(1) = s11*(A_temp(2)-0.5*C_temp(2)/(rho**2) &
          +0.5/rho*(C_temp(3)+3*C_temp(2)-4*C_temp(0))/(3*h))
+      a4(1) = 0.5*s11*C_temp(2)/rho 
 
-      ! Calculate a1,2,3 for i=nrho
+      ! Calculate a1,2,3,4 for i=nrho
       ! dY/drho = (4*Y_nrho+1 - 3*Y_nrho - Y_nrho-1)/3h
       rho = THRIFT_RHO(nrho)
       s = rho*rho
@@ -172,13 +147,14 @@
       a2(nrho) = s11*(4*A_temp(nrho+2)-3*A_temp(nrho+1)-*A_temp(nrho))/(3*h)
       a3(nrho) = s11*(A_temp(nrho+1)-0.5*C_temp(nrho+1)/(rho**2) &
          +0.5/rho*(4*C_temp(nrho+2)-3*C_temp(nrho+1)-C_temp(nrho))/(3*h))
+      a4(nrho) = 0.5*s11*C_temp(nrho+1)/rho
 
-      ! Populate diagonals; do most of the work in one loop and fix the 
-      ! mistakes afterwards
+      ! Populate diagonals; DU and DL of size nrho-1, D of size nrho
+      ! Do most of the work in one loop and fix mistakes afterwards
       DO i = 1, nrho-1
          DU(i) = a3(i)/(2*h) +a4(i)/(h**2)   ! Upper diagonal (Correct)
          DL(i) = -a3(i)/(2*h)+a4(i)/(h**2)   ! Lower diagonal (DL(nrho-1) wrong)
-          D(i) = a2(i)-2*a4(i)/(h**2)-1/k    ! Middle diagonal (D(1&nrho) wrong)
+          D(i) = a2(i)-2*a4(i)/(h**2)-1/k    ! Middle diagonal (D(1,nrho) wrong)
           B(i) = -ucur(i)/k-a1(i)            ! Right-hand side (B(nrho) wrong)
       END DO
       
@@ -186,42 +162,33 @@
         D(1)    = a2(1)-a3(1)/(2*h)-a4(1)/(h**2)-1/k  ! Middle diagonal half fixed
         D(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
 
-      ! Calculate a5:
-        ! L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)
-        ! Take F_shaping = 0.25, R_eff = ?, r_eff = ?
-        ! It's possible eq_Rmajor from vmec is already the effective major
-        ! radius (and similar for eq_Aminor). Will use these for now but
-        ! have to ask Sam whether this is true
-       
-      
-      rho = 1
-      s11 = mu0*eq_Rmajor*(log(8*eq_Rmajor/(rho*eq_Aminor)) - 2 + 0.25) ! L_ext
-
+      ! L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)       
       ! tau_LR = L_ext*r_eff^2/(2*eta*R_eff)
+      rho = 1
+      s = rho*rho
+      ier = 0
+      s11 = mu0*eq_Rmajor*(log(8*eq_Rmajor/(rho*eq_Aminor)) - 2 + 0.25) ! s11 <- L_ext
       CALL get_prof_etapara(rho,THRIFT_T(itime),vp)   ! vp <- eta
       s11 = 0.5*s11*rho*eq_Aminor**2/(vp*eq_Rmajor)       ! s11 <-tau_LR
-      
-      ier = 0
-      s = rho*rho
       CALL EZspline_interp(phip_spl,rho,phip,ier)  
       CALL EZspline_interp(vp_spl,rho,vp, ier)
       CALL get_equil_Bav(s,Bav,Bsqav,ier)
       CALL get_prof_pprime(rho,THRIFT_T(itime),Bsqav) ! Bsqav <- pprime
 
-      ! a5 = 2*rho/p'*(<J.B> - 2*phi'/v' R_eff/r_eff^2 * I_inf * exp(-t/tau_LR))
-      s11 = 2*rho/Bsqav*( THRIFT_JSOURCE(nrho,mytimestep)*Bav &   ! 2*rho/p' * (<J.B> 
-       - 2*phip/vp*eq_Rmajor/((rho*eq_Aminor)**2) &               ! - 2*phi'/v' * R_eff/r_eff^2
-       * eq_volume*SUM(THRIFT_JSOURCE(:,mytimestep))/(pi2*eq_RMajor*nrho) & ! *I_inf?
-       * exp(-THRIFT_T(itime)/s11))                               ! *exp(-t/tau_LR))
+      ! Y = 2*rho/p'*(<J.B> - 2*phi'/v' R_eff/r_eff^2 * I_inf * exp(-t/tau_LR))
+      s11 = 2*rho/Bsqav*( THRIFT_JSOURCE(nrho,mytimestep)*Bav &   ! 2*rho/p' * ( <J.B> 
+       - 2/vp*eq_Rmajor/((rho*eq_Aminor)**2) &                    ! - 2*phi'/v' * R_eff/r_eff^2
+       * eq_volume*SUM(THRIFT_JSOURCE(:,mytimestep))/(pi2*eq_RMajor*nrho) & ! *I_inf (?)
+       * exp(-THRIFT_T(itime)/s11))                               ! *exp(-t/tau_LR) )
 
       B(nrho) = ucur(nrho)/k-a1(nrho) - s11*(4*a3(nrho)/(3*h)+16*a3(nrho)/(5*h**2)) ! Fix B(nrho)
       s11 = -a4(nrho)/(5*h**2) ! Annoying non-zero element at (nrho,nrho-2)
 
       ! Eliminate that extra non-zero element to get a TDM
-      s11 = s11/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-k*[NRHO-1]
-      DL(nrho) = DL(nrho) - s11* D(nrho-1) 
-       D(nrho) =  D(nrho) - s11*DU(nrho-1)
-       B(nrho) =  B(nrho) - s11* B(nrho-1)
+      s11 = s11/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-s11*[NRHO-1]
+      DL(nrho-1) = DL(nrho-1) - s11* D(nrho-1) 
+      D(nrho)    = D(nrho)    - s11*DU(nrho-1)
+      B(nrho)    = B(nrho)    - s11* B(nrho-1)
       
       ! LAPACK general tridiagonal matrix solver using GE with partial pivoting
       ! See also
