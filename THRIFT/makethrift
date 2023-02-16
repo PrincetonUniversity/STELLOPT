@@ -15,7 +15,7 @@ VPATH = $(SPATH)
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xthrift: $(LIB) $(LIB_VMEC) $(LIB_BOOTSJ) $(LIB_BOOZ) $(ObjectFiles)
+xthrift: $(LIB) $(LIB_VMEC) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_DIAGNO) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR 
 #	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC) 
@@ -25,6 +25,9 @@ ifdef BOOTSJ_DIR
 endif
 ifdef BOOZ_DIR
 	@rm $(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ)
+endif
+ifdef DIAGNO_DIR
+	@rm $(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO)
 endif
 
 #Compile object files defined in OBJLIST.
@@ -82,3 +85,7 @@ $(LIB_BOOTSJ) :
 #Construct boozer library. 
 $(LIB_BOOZ) :
 	@cd $(BOOZ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOZ) *.o
+   
+#Construct diagno library. 
+$(LIB_DIAGNO) :
+	@cd $(DIAGNO_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_DIAGNO) *.o
