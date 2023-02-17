@@ -419,8 +419,10 @@ MODULE thrift_profiles_mod
       val = 0; f_top = 0; f_bot = 0
       DO i = 1, nion_prof
          CALL get_prof_ni(rho_val,t_val,i,nk)
-         f_top = f_top + nk*nk*Zatom_prof(i)
-         f_bot = f_bot + nk*nk
+!         f_top = f_top + nk*nk*Zatom_prof(i)
+!         f_bot = f_bot + nk*nk
+         f_top = f_top + nk*(Zatom_prof(i)**2)
+         f_bot = f_bot + nk*Zatom_prof(i)
       END DO
       IF (f_bot > 0) val = f_top/f_bot
       RETURN
@@ -485,7 +487,7 @@ MODULE thrift_profiles_mod
       ! https://en.wikipedia.org/wiki/Spitzer_resistivity
       CALL get_prof_zeff(rho_val,t_val,zeff)
       CALL get_prof_etaperp(rho_val,t_val,val)
-      F = (1+1.198*zeff+0.222*zeff*zeff)/(1+2.966*zeff+0.752*zeff*zeff)
+      F = (1+1.198*zeff+0.222*zeff*zeff)/(1+2.966*zeff+0.753*zeff*zeff)
       val = val * F
       RETURN
       END SUBROUTINE get_prof_etapara
