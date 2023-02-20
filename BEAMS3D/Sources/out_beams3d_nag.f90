@@ -12,7 +12,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
-                               weight, invpi2, ndt, ndt_max, lfidasim, lfidasim2
+                               weight, invpi2, ndt, ndt_max, lfidasim, lfidasim2, rho_scale
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nsteps, nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
@@ -99,7 +99,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        IF (x0 < 0) x0 = x0 + pi2
        IF (z0 < 0) z0 = z0 + pi2
        vperp = SQRT(2*moment*fval(1)*inv_mymass)
-       d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+       d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1/ rho_scale    ), ns_prof1), 1) ! Rho Bin, Apply scale to enable distribution outside LCFS
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
        d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
        d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
@@ -111,12 +111,12 @@ SUBROUTINE out_beams3d_nag(t, q)
        IF (lfidasim2) THEN
             x0 = MOD(q(2), phimax)
             IF (x0 < 0) x0 = x0 + phimax
-            i = MIN(MAX(FLOOR((q(1)-rmin_fida)*r_h)+1,0),nr_fida+1)
-            j = MIN(MAX(FLOOR((x0-phimin_fida)*p_h)+1,0),nphi_fida+1)
-            k = MIN(MAX(FLOOR((q(3)-zmin_fida)*z_h)+1,0),nz_fida+1)
+            i = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
+            j = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
+            k = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
             y0 = (q(4)**2+vperp**2)
             d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h+1),1),nenergy_fida)
-            d5 = MIN(MAX(FLOOR((q(4)/SQRT(y0)-pimin_fida)*pi_h)+1,1),npitch_fida)
+            d5 = MIN(MAX(CEILING((q(4)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
             ! IF ((i > 0) .and. (i <= nr_fida) .and. &
             ! (j > 0) .and. (j <= nphi_fida) .and. &
             ! (k > 0) .and. (k <= nz_fida)) THEN

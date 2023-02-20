@@ -257,7 +257,7 @@
                nbeams = nbeams + 1
             END DO
             IF (nbeams == 0)  CALL handle_err(BAD_BEAMDEX_ERR,'beams3d_input in: input.'//TRIM(id_string),nbeams)
-         ELSEIF (ANY(Dex_beams>0) .and. ALL(r_start_in .eq. -1.0)) THEN ! .and. (r_start_in .eq. -1.0)
+         ELSEIF (ANY(Dex_beams>0) .and. ALL(r_start_in .eq. -1.0) .and. .not. lrestart_particles) THEN ! .and. (r_start_in .eq. -1.0)
             CALL handle_err(BAD_BBNBI_ERR,'beams3d_input in: input.'//TRIM(id_string),nbeams)
          END IF
          IF (lfusion) THEN
