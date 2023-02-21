@@ -323,6 +323,11 @@ test_thrift_atf:
 	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec ATF -prof profiles_ATF_test.h5
 	@echo ""
 
+test_thrift_steady:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec ATF -prof profiles_ATF_steady.h5
+	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec ATF -prof profiles_ATF_steady.h5
+	@echo ""
+
 test_thrift_w7x:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec W7X20181016016 -prof profiles_W7X20181016016.h5
 	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec W7X20181016016 -prof profiles_W7X20181016016.h5
