@@ -21,9 +21,9 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i,itime, ier
-      REAL(rprec) :: rho,s,h,k,s11,Bav,Bsqav,vp,phip,etapara
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, ucur,         &
-                                                A_temp, B_temp, C_temp, &
+      REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,temp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: ucur,         &
+                                                A_temp, B_temp, C_temp, D_temp &
                                                 a1, a2, a3, a4,         &
                                                 DU, D, DL, B
       TYPE(EZspline1_r8) :: f_spl
@@ -43,22 +43,14 @@
          RETURN
       END IF
 
-      ! At last iteration there is nothing to evolve to
-      ! Might have to replace with a RETURN instead
-      IF (mytimestep == ntimesteps) THEN 
-         itime = mytimestep
-      ELSE
-         itime = mytimestep+1
-      END IF
-
       ! Allocations
-      ALLOCATE(rho_temp(nrho+2), ucur(nrho), &
-               A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), &
+      ALLOCATE(ucur(nrho), &
+               A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
                a1(nrho), a2(nhro), a3(nrho), a4(nrho), &
                DU(nrho-1), D(nrho), DL(nrho-1), B(nrho))
 
       ucur = 0;
-      A_temp = 0; B_temp = 0; C_temp = 0;
+      A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
       a1 = 0; a2 = 0; a3 = 0; a4 = 0;
       DU = 0; D = 0; DL = 0; B = 0;
 
@@ -67,87 +59,87 @@
          rho = THRIFT_RHO(i) 
          s = rho*rho
          ier = 0        
-         CALL get_equil_sus(s,s11,k,h,h,ier) ! s11<-s11, k<-s12
-         CALL EZspline_interp(iota_spl,rho,h)! h <- iota
-         ucur(i) = s11*h + k ! S11 iota + S12
+         CALL get_equil_sus(s,s11,s12,h,h,ier) 
+         CALL EZspline_interp(iota_spl,rho,iota)
+         ucur(i) = s11*iota+s12
       END DO
 
-      rho_temp(1) = 0
-      rho_temp(2:nrho+1) = THRIFT_RHO
-      rho_temp(nrho+2) = 1
+      t = THRIFT_T(mytimestep)
 
-      ! Populate A,B,C
+      ! Populate A,B,C,D
       DO i = 1, nrho+2
-         rho = rho_temp(i) 
+         IF (i==1) THEN 
+            rho = 0
+         ELSE IF (i==nrho+2) THEN
+            rho = 1
+         ELSE
+            rho = THRIFT_RHO(i)
+         END IF
          s = rho*rho
          ier = 0
-         CALL get_prof_etapara(rho, THRIFT_T(itime),etapara)
+         CALL get_prof_etapara(rho, t,etapara)
          CALL EZspline_interp(vp_spl,rho,vp,ier)
-         CALL get_prof_pprime(rho,THRIFT_T(itime),k)
+         CALL get_prof_pprime(rho,t,pprime)
          CALL get_equil_Bav(s,Bav,Bsqav,ier)
-         CALL EZspline_interp(phip_spl,rho,phip,ier)
-         h = etapara*phip*vp  ! h <- eta V'
+         CALL get_equil_sus(s,s11,h,h,h,ier)
          IF (i==1) THEN 
-            A_temp(i) = 0 ! assume dp/drho = 0 at magnetic axis
+            A_temp(i) = 0 ! A not necessary at axis (no derivative required)
          ELSE
-            A_temp(i) = h*k/(2*rho)  ! eta V' p'/2 rho
+            A_temp(i) = s11/(4*rho*eq_phiedge)
          END IF
-         B_temp(i) = h*THRIFT_JSOURCE(i,mytimestep)*Bav ! eta V' <J_s.B>
-         C_temp(i) = h*Bsqav/mu0  ! eta V' <B>/mu0
+         temp = 2*etapara*vp ! temp <- 2 eta dV/dPhi 
+         B_temp(i) = temp*Bav/mu0 ! 2 eta dV/dPhi <B^2>/mu_0
+         C_temp(i) = temp*pprime  ! 2 eta dV/dPhi dp/drho
+         D_temp(i) = -temp*THRIFT_JSOURCE(i,mytimestep)*Bav ! 2 eta dV/dPhi <J.B>
       END DO
 
-      IF (mytimestep == ntimesteps) THEN! k <- dt
-         k = THRIFT_T(mytimestep)-THRIFT_T(mytimestep-1) 
-      ELSE
-         k = THRIFT_T(mytimestep+1)-THRIFT_T(mytimestep) 
-      END IF
-      h = THRIFT_RHO(2)-THRIFT_RHO(1) ! h <- drho
+      ! Timesteps and grid spacing 
+      k = THRIFT_T(2)-THRIFT_T(1)      ! k <- dt
+      h = THRIFT_RHO(2)-THRIFT_RHO(1)  ! h <- drho
+      ! NB: If grids are changed to be non-uniform, adjust this accordingly
 
       ! Visualisation of different grids
       !j=1 2    3    4    5    6    7
-      ! |  |    |    |    |    |    |     ABC_temp works with j
-      !    |    |    |    |    |    |     a0,1,2,3,4 works with i
+      ! |  |    |    |    |    |    |     ABCD_temp on j
+      !    |    |    |    |    |    |     a1,2,3,4  on i
       !   i=1   2    3    4    5    6     j = i+1 
 
+      ! a1 = A dD/drho
+      ! a2 = A (1/rho dB/drho - B/rho^2 + dC/drho)
+      ! a3 = A (dB/drho + B/rho + C)
+      ! a4 = A B
+
       ! Calculate a1,2,3,4 on the gridpoints in [2,nrho-1]
+      ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h = [Y(i+2)-Y(i)]/2h
       DO i = 2, nrho-1
          rho = THRIFT_RHO(i)
-         s = rho*rho
-         ier = 0
-         CALL get_equil_sus(s,s11,vp,vp,vp,ier)
-         s11 = 0.5*s11/(eq_phiedge**2*rho)                  !  1/(2 rho c)=S11/(phi_a**2*rho)
-         a1(i) = -0.5*s11*(B_temp(i+2)-B_temp(i))/h         ! a1 = 1/(2 rho c)*-dB/drho
-         a2(i) =  0.5*s11*(A_temp(i+2)-A_temp(i))/h         ! a2 = 1/(2 rho c)*dA/drho
-         a3(i) = s11*(A_temp(i+1)-0.5*C_temp(i+1)/(rho**2) &! a3 = 1/(2 rho c)*
-                  +0.5/rho*(C_temp(i+2)-C_temp(i))/h)       !     (A -C/(2 rho^2)+ 1/(2 rho) dC/drho)
-         a4(i) = 0.5*s11*C_temp(i+1)/rho                    ! a4 = C/(4 rho^2 c)
+         a1(i) = A_temp(i+1)*(      (D_temp(i+2)-D_temp(i))/(2*h))   
+         a2(i) = A_temp(i+1)*(1/rho*(B_temp(i+2)-B_temp(i))/(2*h)&   
+               - B_temp(i+1)/rho**2+(C_temp(i+2)-C_temp(i))/(2*h))    
+         a3(i) = A_temp(i+1)*(      (B_temp(i+2)-B_temp(i))/(2*h)&   
+               + B_temp(i+1)/rho  +  C_temp(i+1))                   
+         a4(i) = A_temp(i+1)*B_temp(i+1)                             
       END DO
 
       ! Calculate a1,2,3,4 for i=1 
-      ! dY/drho = (Y_2 + 3*Y_1 - 4*Y_0)/3h
-      rho = THRIFT_RHO(1)
-      s = rho*rho
-      ier = 0
-      CALL get_equil_sus(s,s11,vp,vp,vp,ier)
-      s11 = 0.5*s11/(eq_phiedge**2*rho) 
-      a1(1) = -s11*(B_temp(3)+3*B_temp(2)-4*B_temp(0))/(3*h)
-      a2(1) = s11*(A_temp(3)+3*A_temp(2)-4*A_temp(0))/(3*h)
-      a3(1) = s11*(A_temp(2)-0.5*C_temp(2)/(rho**2) &
-         +0.5/rho*(C_temp(3)+3*C_temp(2)-4*C_temp(0))/(3*h))
-      a4(1) = 0.5*s11*C_temp(2)/rho 
+      ! dY/drho(i=1) = [Y(i=3) + 3*Y(i=2) - 4*Y(i=1)]/3h
+      rho = THRIFT_RHO(1) 
+      a1(1) = A_temp(2)*(      (D_temp(3)+3*D_temp(2)-4*D_temp(1))/(3*h))
+      a2(1) = A_temp(2)*(1/rho*(B_temp(3)+3*B_temp(2)-4*B_temp(1))/(3*h)&
+            - B_temp(2)/rho**2+(C_temp(3)+3*C_temp(2)-4*C_temp(1))/(3*h))
+      a3(1) = A_temp(2)*(      (B_temp(3)+3*B_temp(2)-4*B_temp(1))/(3*h)&
+            + B_temp(2)/rho   + C_temp(2))
+      a4(1) = A_temp(2)*B_temp(2)
 
       ! Calculate a1,2,3,4 for i=nrho
-      ! dY/drho = (4*Y_nrho+1 - 3*Y_nrho - Y_nrho-1)/3h
+      ! dY/drho(i=nrho) = [4*Y(i=nrho+2) - 3*Y(i=nrho+1) - Y(i=nrho)]/3h
       rho = THRIFT_RHO(nrho)
-      s = rho*rho
-      ier = 0
-      CALL get_equil_sus(s,s11,vp,vp,vp,ier)
-      s11 = 0.5*s11/(eq_phiedge**2*rho) 
-      a1(nrho) = -s11*(4*B_temp(nrho+2)-3*B_temp(nrho+1)-*B_temp(nrho))/(3*h)
-      a2(nrho) = s11*(4*A_temp(nrho+2)-3*A_temp(nrho+1)-*A_temp(nrho))/(3*h)
-      a3(nrho) = s11*(A_temp(nrho+1)-0.5*C_temp(nrho+1)/(rho**2) &
-         +0.5/rho*(4*C_temp(nrho+2)-3*C_temp(nrho+1)-C_temp(nrho))/(3*h))
-      a4(nrho) = 0.5*s11*C_temp(nrho+1)/rho
+      a1(nrho) = A_temp(nrho+1)*(      (4*D_temp(nrho+2)-3*D_temp(nrho+1)-D_temp(nrho))/(3*h))
+      a2(nrho) = A_temp(nrho+1)*(1/rho*(4*B_temp(nrho+2)-3*B_temp(nrho+1)-B_temp(nrho))/(3*h)&
+               - B_temp(nrho+1)/rho**2+(4*C_temp(nrho+2)-3*C_temp(nrho+1)-C_temp(nrho))/(3*h))
+      a3(nrho) = A_temp(nrho+1)*(      (4*B_temp(nrho+2)-3*B_temp(nrho+1)-B_temp(nrho))/(3*h)&
+            + B_temp(nrho+1)/rho   + C_temp(nrho+1))
+      a4(nrho) = A_temp(nrho+1)*B_temp(nrho+1)
 
       ! Populate diagonals; DU and DL of size nrho-1, D of size nrho
       ! Do most of the work in one loop and fix mistakes afterwards
@@ -162,30 +154,24 @@
         D(1)    = a2(1)-a3(1)/(2*h)-a4(1)/(h**2)-1/k  ! Middle diagonal half fixed
         D(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
 
-      ! L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)       
-      ! tau_LR = L_ext*r_eff^2/(2*eta*R_eff)
+      ! L_ext = mu0*R_eff( ln( 8 R_eff/r_eff ) -2 + F_shaping)      
       rho = 1
       s = rho*rho
       ier = 0
-      s11 = mu0*eq_Rmajor*(log(8*eq_Rmajor/(rho*eq_Aminor)) - 2 + 0.25) ! s11 <- L_ext
-      CALL get_prof_etapara(rho,THRIFT_T(itime),vp)   ! vp <- eta
-      s11 = 0.5*s11*rho*eq_Aminor**2/(vp*eq_Rmajor)       ! s11 <-tau_LR
-      CALL EZspline_interp(phip_spl,rho,phip,ier)  
-      CALL EZspline_interp(vp_spl,rho,vp, ier)
+      CALL get_prof_etapara(rho,t,etapara)   
+      temp = mu0*eq_Rmajor*(log(8*eq_Rmajor/(rho*eq_Aminor)) - 2 + 0.25) ! temp <- L_ext
+      CALL EZspline_interp(vp_spl,rho,vp,ier)
       CALL get_equil_Bav(s,Bav,Bsqav,ier)
-      CALL get_prof_pprime(rho,THRIFT_T(itime),Bsqav) ! Bsqav <- pprime
+      CALL get_prof_pprime(rho,t,pprime) 
 
-      ! Y = 2*rho/p'*(<J.B> - 2*phi'/v' R_eff/r_eff^2 * I_inf * exp(-t/tau_LR))
-      s11 = 2*rho/Bsqav*( THRIFT_JSOURCE(nrho,mytimestep)*Bav &   ! 2*rho/p' * ( <J.B> 
-       - 2/vp*eq_Rmajor/((rho*eq_Aminor)**2) &                    ! - 2*phi'/v' * R_eff/r_eff^2
-       * eq_volume*SUM(THRIFT_JSOURCE(:,mytimestep))/(pi2*eq_RMajor*nrho) & ! *I_inf (?)
-       * exp(-THRIFT_T(itime)/s11))                               ! *exp(-t/tau_LR) )
+      edge_u(2) = edge_u(1)+k*(-mu0/(2*eq_phiedge)*etapara/temp*vp*((pprime+Bsqav/mu0)*edge_u(1))&
+            - THRIFT_JSOURCE(nrho,mytimestep)*Bav)
 
-      B(nrho) = ucur(nrho)/k-a1(nrho) - s11*(4*a3(nrho)/(3*h)+16*a3(nrho)/(5*h**2)) ! Fix B(nrho)
-      s11 = -a4(nrho)/(5*h**2) ! Annoying non-zero element at (nrho,nrho-2)
+      B(nrho) = ucur(nrho)/k-a1(nrho) - edge_u(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
+      temp = -a4(nrho)/(5*h**2) ! Annoying non-zero element at (nrho,nrho-2)
 
       ! Eliminate that extra non-zero element to get a TDM
-      s11 = s11/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-s11*[NRHO-1]
+      temp = temp/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-s11*[NRHO-1]
       DL(nrho-1) = DL(nrho-1) - s11* D(nrho-1) 
       D(nrho)    = D(nrho)    - s11*DU(nrho-1)
       B(nrho)    = B(nrho)    - s11* B(nrho-1)
@@ -195,13 +181,8 @@
       !  https://netlib.org/lapack/explore-html/d4/d62/group__double_g_tsolve.html
       CALL DGTSV(nrho,1,DL,D,DU,B,nrho)
       ! B is the solution matrix = mu0 I / phip of the next iteration
- 
-      DO i = 1,nrho
-         rho = THRIFT_RHO(i)
-         ier = 0
-         CALL EZspline_interp(phip_spl,rho,phip,ier)
-         B(i) = 2*rho*phip/mu0*B(i)
-      END DO
+      ! phip = 2 rho phi_a
+      B = 2*eq_phiedge/mu0*(THRIFT_RHO*B)
      
       ! I is total enclosed current, I_plasma = I - I_source
       DO i = 1, nrho
@@ -221,11 +202,11 @@
          rho = THRIFT_RHO(i)
          ier = 0
          CALL EZspline_interp(vp_spl,rho,vp,ier)
-         THRIFT_JPLASMA(i,mytimestep+1) = pi*eq_Rmajor/(rho*vp)*s11
+         THRIFT_JPLASMA(i,mytimestep) = pi*eq_Rmajor/(rho*vp)*s11
       END DO
 
-      DEALLOCATE(rho_temp, ucur, &
-               A_temp, B_temp, C_temp, &
+      DEALLOCATE(ucur, &
+               A_temp, B_temp, C_temp, D_temp &
                a1, a2, a3, a4, &
                DU, D, DL, B)
       RETURN

@@ -94,6 +94,8 @@
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho)
         FORALL(i = 1:ntimesteps) THRIFT_T(i) = tmin + (i-1)*dt
       END IF
+      ! NB: If grids are changed to be non-uniform, change definition of 
+      ! time/space steps in thrift_jinductive.f90 or things will break
       
       ! Split off workers
       CALL thrift_init_mpisubgroup

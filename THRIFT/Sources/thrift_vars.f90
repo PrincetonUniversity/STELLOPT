@@ -22,20 +22,22 @@ MODULE thrift_vars
     !          npicard          Max number of Picard Iterations
     !          win_XX           Shared memory windows
     !          tend             T-end
-    !          jtol             Picard iteration tollerance
+    !          jtol             Picard iteration tolerance
     !          picard_factor    Picard iteration factor
     !          THRIFT_RHO       Radial Grid sqrt(s)
     !          THRIFT_T         Temporal Grid
-    !          THRIFT_J         Total current gradient (dI/ds)
+    !          THRIFT_J         Total current gradient
     !          THRIFT_SXX       Susceptance matrix
     !          THRIFT_JXX       Current density sources
     !          THRIFT_JPLASMA   Inductive Plasma respsonse    
-    !          THRIFT_JSOURCE   Total source current density (dI/ds)
+    !          THRIFT_JSOURCE   Total source current density
+    !          edge_u           Edge enclosed current
     !-------------------------------------------------------------------
     IMPLICIT NONE
 
     LOGICAL :: leccd, lnbcd, lohmic, ldiagno, lscreen_subcodes
     LOGICAL, DIMENSION(:), ALLOCATABLE :: lbooz
+    REAL(rprec), DIMENSION(:), ALLOCATABLE :: edge_u
     INTEGER :: ntimesteps, nrho, npicard, &
                win_thrift_j, win_thrift_jboot, &
                win_thrift_jplasma, win_thrift_jeccd, win_thrift_jnbcd, &
