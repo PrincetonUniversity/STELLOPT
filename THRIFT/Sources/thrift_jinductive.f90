@@ -169,9 +169,10 @@
             - THRIFT_JSOURCE(nrho,mytimestep)*Bav)
 
       
-      WRITE(6,*)'EDGE_U1   K  PHIA   ETAPARA   LEXT   VP   PPRIME  BSQAV  JSOURCE  EDGE_U2'
+      WRITE(6,*)'EDGE_U1   K  PHIA   ETAPARA   LEXT   VP   PPRIME  BSQAV  BAV  JSOURCE  EDGE_U2'
       WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,'(ES8.1,1X,F5.3,8(1X,ES8.1E1))') &
+      WRITE(6,'(ES8.1,1X,F5.3,9(1X,ES8.1E1))') edge_u(1),k,eq_phiedge,etapara,temp,vp,pprime,Bsqav,Bav,&
+      THRIFT_JSOURCE(nrho,mytimestep),edge_u(2)
       ! Crashes in next line
       B(nrho) = ucur(nrho)/k-a1(nrho) - edge_u(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
       temp = -a4(nrho)/(5*h**2) ! Annoying non-zero element at (nrho,nrho-2)
