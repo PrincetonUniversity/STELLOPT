@@ -37,6 +37,7 @@
       THRIFT_JNBCD    = 0
       THRIFT_JOHMIC   = 0
       THRIFT_JSOURCE  = 0
+      edge_u          = 0
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
@@ -94,8 +95,7 @@
                                            + THRIFT_JNBCD(:,mytimestep) &
                                            + THRIFT_JOHMIC(:,mytimestep)
 
-            ! Calc the inductive chagne in current
-            ! This should change only J_PLASMA given J_SOURCE
+            ! Calc the plasma inductive response  
             CALL thrift_jinductive
 
             ! Update total current
@@ -140,6 +140,8 @@
             lfirst_sub_pass = .FALSE.
 
          END DO
+         ! Once converged, update the proper edge_u
+         edge_u(1) = edge_u(2)
 
       END DO
 
