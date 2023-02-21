@@ -46,7 +46,7 @@
       ! Allocations
       ALLOCATE(ucur(nrho), &
                A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
-               a1(nrho), a2(nhro), a3(nrho), a4(nrho), &
+               a1(nrho), a2(nrho), a3(nrho), a4(nrho), &
                DU(nrho-1), D(nrho), DL(nrho-1), B(nrho))
 
       ucur = 0;
