@@ -77,7 +77,12 @@
          END IF
          s = rho*rho
          ier = 0
-         CALL get_prof_etapara(rho, t,etapara)
+         
+         IF (i==nrho+1) THEN ! etapara breaks at rho = 1. this is a bandaid solution for now
+            CALL get_prof_etapara(THRIFT_RHO(nrho-1), t,etapara)
+         ELSE 
+            CALL get_prof_etapara(rho, t,etapara)
+         END IF
          CALL EZspline_interp(vp_spl,rho,vp,ier)
          CALL get_prof_pprime(rho,t,pprime)
          CALL get_equil_Bav(s,Bav,Bsqav,ier)
@@ -155,10 +160,12 @@
         D(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
 
       ! L_ext = mu0*R_eff( ln( 8 R_eff/r_eff ) -2 + F_shaping)      
-      rho = 1
+      
+      rho = THRIFT_RHO(nrho-1)
+      CALL get_prof_etapara(rho,t,etapara)  
+      rho = 1 
       s = rho*rho
       ier = 0
-      CALL get_prof_etapara(rho,t,etapara)   
       CALL get_equil_Rmajor(s,Rmajor,Bav,Aminor,ier)
       temp = mu0*Rmajor*(log(8*Rmajor/Aminor) - 2 + 0.25) ! temp <- L_ext
       CALL EZspline_interp(vp_spl,rho,vp,ier)
