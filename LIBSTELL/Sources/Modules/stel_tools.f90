@@ -811,7 +811,8 @@
       DOUBLE PRECISION, ALLOCATABLE :: rs(:,:,:), zs(:,:,:), ru12(:,:,:), zu12(:,:,:)
       DOUBLE PRECISION, ALLOCATABLE :: gsr(:,:,:),gsp(:,:,:),gsz(:,:,:),gs(:,:,:)
       TYPE(EZspline1_r8) :: Vp_spl, grho_spl, grho2_spl, Bav_spl, Bsq_spl
-      TYPE(EZspline1_r8) :: S11_spl, S12_spl, S21_spl, S22_spl
+      TYPE(EZspline1_r8) :: S11_spl, S12_spl, S21_spl, S22_spl, I_spl, PHI_spl, &
+                            RMAJ_spl, VOL_spl
       TYPE(EZspline3_r8) :: R_spl, Z_spl, G_spl
       TYPE(EZspline3_r8) :: Ru_spl, Zu_spl
       TYPE(EZspline3_r8) :: Rv_spl, Zv_spl
@@ -897,6 +898,10 @@
          IF (ASSOCIATED(S122D))   CALL mpidealloc(S122D,   win_S122D)
          IF (ASSOCIATED(S212D))   CALL mpidealloc(S212D,   win_S212D)
          IF (ASSOCIATED(S222D))   CALL mpidealloc(S222D,   win_S222D)
+         IF (ASSOCIATED(I2D))     CALL mpidealloc(I2D,     win_I2D)
+         IF (ASSOCIATED(PHI2D))   CALL mpidealloc(PHI2D,   win_PHI2D)
+         IF (ASSOCIATED(RMAJ2D))  CALL mpidealloc(RMAJ2D,  win_RMAJ2D)
+         IF (ASSOCIATED(VOL2D))   CALL mpidealloc(VOL2D,   win_VOL2D)
          CALL mpialloc(VP2D,    2, ns_t, shar_rank, 0, shar_comm, win_VP2D)
          CALL mpialloc(GRHO2D,  2, ns_t, shar_rank, 0, shar_comm, win_GRHO2D)
          CALL mpialloc(GRHO22D, 2, ns_t, shar_rank, 0, shar_comm, win_GRHO22D)
@@ -906,6 +911,10 @@
          CALL mpialloc(S122D,   2, ns_t, shar_rank, 0, shar_comm, win_S122D)
          CALL mpialloc(S212D,   2, ns_t, shar_rank, 0, shar_comm, win_S212D)
          CALL mpialloc(S222D,   2, ns_t, shar_rank, 0, shar_comm, win_S222D)
+         CALL mpialloc(I2D,     2, ns_t, shar_rank, 0, shar_comm, win_I2D)
+         CALL mpialloc(PHI2D,   2, ns_t, shar_rank, 0, shar_comm, win_PHI2D)
+         CALL mpialloc(RMAJ2D,  2, ns_t, shar_rank, 0, shar_comm, win_RMAJ2D)
+         CALL mpialloc(VOL2D,   2, ns_t, shar_rank, 0, shar_comm, win_VOL2D)
       ELSE
 #endif
          shar_rank = 0; shar_size = 1
@@ -952,6 +961,10 @@
          IF (ASSOCIATED(S122D))   DEALLOCATE(S122D)
          IF (ASSOCIATED(S212D))   DEALLOCATE(S212D)
          IF (ASSOCIATED(S222D))   DEALLOCATE(S222D)
+         IF (ASSOCIATED(I2D))     DEALLOCATE(I2D)
+         IF (ASSOCIATED(PHI2D))   DEALLOCATE(PHI2D)
+         IF (ASSOCIATED(RMAJ2D))  DEALLOCATE(RMAJ2D)
+         IF (ASSOCIATED(VOL2D))  DEALLOCATE(VOL2D)
          ALLOCATE(VP2D(2,ns_t))
          ALLOCATE(GRHO2D(2,ns_t))
          ALLOCATE(GRHO22D(2,ns_t))
@@ -961,6 +974,10 @@
          ALLOCATE(S122D(2,ns_t))
          ALLOCATE(S212D(2,ns_t))
          ALLOCATE(S222D(2,ns_t))
+         ALLOCATE(I2D(2,ns_t))
+         ALLOCATE(PHI2D(2,ns_t))
+         ALLOCATE(RMAJ2D(2,ns_t))
+         ALLOCATE(VOL2D(2,ns_t))
 #if defined(MPI_OPT)
       END IF
 #endif
@@ -1254,6 +1271,10 @@
          IF (EZspline_allocated(S22_spl)) CALL EZspline_free(S22_spl,iflag)
          IF (EZspline_allocated(Bav_spl)) CALL EZspline_free(Bav_spl,iflag)
          IF (EZspline_allocated(Bsq_spl)) CALL EZspline_free(Bsq_spl,iflag)
+         IF (EZspline_allocated(I_spl))     CALL EZspline_free(I_spl,iflag)
+         IF (EZspline_allocated(PHI_spl))   CALL EZspline_free(PHI_spl,iflag)
+         IF (EZspline_allocated(RMAJ_spl))  CALL EZspline_free(RMAJ_spl,iflag)
+         IF (EZspline_allocated(VOL_spl))   CALL EZspline_free(VOL_spl,iflag)
 
          ! Initialize Splines
          CALL EZspline_init(Vp_spl,ns_t,bcs0,iflag)
@@ -1265,6 +1286,10 @@
          CALL EZspline_init(S22_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(Bav_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(Bsq_spl,ns_t,bcs0,iflag)
+         CALL EZspline_init(I_spl,ns_t,bcs0,iflag)
+         CALL EZspline_init(PHI_spl,ns_t,bcs0,iflag)
+         CALL EZspline_init(RMAJ_spl,ns_t,bcs0,iflag)
+         CALL EZspline_init(VOL_spl,ns_t,bcs0,iflag)
          Vp_spl%x1 = rho; grho_spl%x1 = rho; grho2_spl%x1 = rho
          S11_spl%x1 = rho; S12_spl%x1 = rho; S21_spl%x1 = rho; S22_spl%x1=rho
          Bav_spl%x1 = rho; Bsq_spl%x1 = rho
@@ -1341,6 +1366,27 @@
          grho2 = grho / Vp
          grho2(1) = 2*grho2(2) - grho2(3)
          CALL EZspline_setup(Bsq_spl,grho2,iflag); f_temp = 0; grho = 0
+         ! PHI
+         f_temp = BV4D(1,:,:,:)*G4D(1,:,:,:)
+         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
+         CALL EZspline_setup(PHI_spl,grho2,iflag); f_temp = 0; grho = 0
+         ! I = 2pi.*B_u(0,0)/mu0; B_u = B^u*guu + B^v*guv
+         f_temp =  (   RU4D(1,:,:,:)*RU4D(1,:,:,:) &
+                     + ZU4D(1,:,:,:)*ZU4D(1,:,:,:)) * BU4D(1,:,:,:) &
+                +  (   RU4D(1,:,:,:)*RV4D(1,:,:,:) &
+                     + ZU4D(1,:,:,:)*ZV4D(1,:,:,:)) * BV4D(1,:,:,:)*nfp
+         grho   = pi2*SUM(f_temp(:,1,:),DIM=1)/(nu1*pi2*2E-7) ! B_u
+         CALL EZspline_setup(I_SPL,grho,iflag); f_temp = 0; grho = 0
+         ! Rmajor
+         f_temp = R4D(1,:,:,:)*G4D(1,:,:,:)
+         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
+         grho2 = grho / Vp
+         grho2(1) = 2*grho2(2) - grho2(3)
+         CALL EZspline_setup(RMAJ_spl,grho2,iflag); f_temp = 0; grho = 0
+         ! Volume
+         grho = [(sum(Vp(1:u)),u=1,size(Vp))]
+         grho(1) = 0
+         CALL EZspline_setup(VOL_spl,ABS(grho*pi2*pi2/(nu*nv*(k2-k1+1))),iflag); f_temp = 0; grho = 0
          
          ! Deallocate arrays
          DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
@@ -1354,6 +1400,10 @@
          S122D   = S12_SPL%fspl
          S212D   = S21_SPL%fspl
          S222D   = S22_SPL%fspl
+         I2D     = I_SPL%fspl
+         PHI2D   = PHI_SPL%fspl
+         RMAJ2D  = RMAJ_SPL%fspl
+         VOL2D   = VOL_SPL%fspl
          CALL EZspline_free(VP_spl,iflag)
          CALL EZspline_free(GRHO_spl,iflag)
          CALL EZspline_free(GRHO2_spl,iflag)
@@ -1363,6 +1413,10 @@
          CALL EZspline_free(S12_spl,iflag)
          CALL EZspline_free(S21_spl,iflag)
          CALL EZspline_free(S22_spl,iflag)
+         CALL EZspline_free(I_spl,iflag)
+         CALL EZspline_free(PHI_spl,iflag)
+         CALL EZspline_free(RMAJ_spl,iflag)
+         CALL EZspline_free(VOL_spl,iflag)
          
          ! DEALLOCATIONS
          DEALLOCATE(xu,xv,rho,rhoinv)
