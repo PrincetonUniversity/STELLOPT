@@ -21,7 +21,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i,itime, ier
-      REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,temp
+      REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,temp,Aminor,Rmajor
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: ucur,         &
                                                 A_temp, B_temp, C_temp, D_temp &
                                                 a1, a2, a3, a4,         &
@@ -159,7 +159,8 @@
       s = rho*rho
       ier = 0
       CALL get_prof_etapara(rho,t,etapara)   
-      temp = mu0*eq_Rmajor*(log(8*eq_Rmajor/(rho*eq_Aminor)) - 2 + 0.25) ! temp <- L_ext
+      CALL get_equil_Rmajor(s,Rmajor,Bav,Aminor,ier)
+      temp = mu0*Rmajor*(log(8*Rmajor/Aminor) - 2 + 0.25) ! temp <- L_ext
       CALL EZspline_interp(vp_spl,rho,vp,ier)
       CALL get_equil_Bav(s,Bav,Bsqav,ier)
       CALL get_prof_pprime(rho,t,pprime) 
@@ -184,25 +185,46 @@
       ! phip = 2 rho phi_a
       B = 2*eq_phiedge/mu0*(THRIFT_RHO*B)
      
-      ! I is total enclosed current, I_plasma = I - I_source
-      DO i = 1, nrho
-         s11 = V(rho_j)-V(rho_j-1)! dV
-         B(i) = B(i) - 1/(pi2*eq_Rmajor)*SUM(THRIFT_JSOURCE(1:i,mytimestep))*s11
+      a1 = 0 ! store I_source in a1, calculate for i = 1
+      rho = THRIFT_RHO(1)
+      s = rho*rho
+      ier = 0
+      CALL get_equil_Rmajor(s,h,h,Aminor,ier)
+      a1(1) = THRIFT_JSOURCE(1,mytimestep)*pi*Aminor**2 
+
+      DO i = 2, nrho
+         rho = THRIFT_RHO(i)
+         s = rho * rho
+         ier = 0
+         CALL get_equil_Rmajor(s,h,h,Aminor,ier)  ! aminor_i
+         
+         temp = THRIFT_RHO(i-1)
+         s = temp*temp
+         CALL get_equil_Rmajor(s,h,h,temp,ier) ! temp = aminor_i-1
+
+         a1(i) = a1(i-1) + THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp**2)
       END DO
 
-      ! J_plasma = dI/dA=dI/ds ds/dA=1/2rho dI/drho 2pi R/V' = pi R/(rho v') dI/drho
+      B = B - a1 ! I_plasma = I_total - I_source
+
+      ! J_plasma = dI/dA = dI/ds ds/dA =1/2rho dI/drho 2pi R/V' 
+      !          = pi R/(rho v') dI/drho = pi R / (rho phi_a dV/dphi) dI/drho
       DO i = 1, nrho
+         ! Calculate derivative, store in temp
          IF (i == 1) THEN ! Symmetry BC
-            s11 = (B(2)-B(1))/(2*h)
-         ELSE IF (i == nrho) THEN ! No enclosed current at edge (for now)
-            s11 = (B(nrho)-B(nrho-1))/(3*h) 
+            temp = (B(2)-B(1))/(2*h)
+         ELSE IF (i == nrho) THEN ! Current at edge from edge_u
+            temp = 2*eq_phiedge/mu0*edge_u(2)
+            temp = (4*temp-3*B(nrho)-3*B(nrho-1))/(3*h) 
          ELSE
-            s11 = (B(i+1)-B(i-1))/(2*h)
+            temp = (B(i+1)-B(i-1))/(2*h)
          END IF
          rho = THRIFT_RHO(i)
+         s = rho*rho
          ier = 0
          CALL EZspline_interp(vp_spl,rho,vp,ier)
-         THRIFT_JPLASMA(i,mytimestep) = pi*eq_Rmajor/(rho*vp)*s11
+         CALL get_equil_Rmajor(s,Rmajor,s11,Aminor,ier)
+         THRIFT_JPLASMA(i,mytimestep) = pi*Rmajor/(eq_phiedge*rho*vp)*temp
       END DO
 
       DEALLOCATE(ucur, &
