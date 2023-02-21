@@ -55,7 +55,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       REAL*8 :: fvalE(1,3), fval(1), fval2(1), xparam, yparam, zparam
       REAL(rprec) :: jac, v_parr, v_perp, pitch, v
       REAL(rprec), DIMENSION(4) :: rt,zt,pt
-      REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_temp
+      REAL(rprec), DIMENSION(:,:,:,:,:), POINTER :: dist5d_temp
    
       DOUBLE PRECISION         :: x0, y0, z0, vol
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
@@ -576,10 +576,10 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                vol =(raxis_fida(i) + 1 / 2.0 / r_h) / r_h / z_h / p_h
                !WRITE(327,*) i, vol
                !CALL FLUSH(327)
-               dist5d_fida(:,i,:,:,:,:) = dist5d_fida(:,i,:,:,:,:) / vol
+               dist5d_fida(i,:,:,:,:) = dist5d_fida(i,:,:,:,:) / vol
                DO j = 1, nz_fida
                   DO k=1,nphi_fida
-                     rtemp(i,j,k) = SUM(dist5d_fida(:,i,j,k,:,:))
+                     rtemp(i,j,k) = SUM(dist5d_fida(i,j,k,:,:))
                   END DO
                END DO
             END DO
@@ -655,12 +655,13 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ! Do phase space change of coordinates
          !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
          IF (lfidasim2) THEN
-            ALLOCATE(dist5d_temp(nbeams, nenergy_fida, npitch_fida,nr_fida,nz_fida,nphi_fida)) !need temp as velocity bins are in vll/vperp initially
+            ALLOCATE(dist5d_temp(nenergy_fida, npitch_fida,nr_fida,nz_fida,nphi_fida)) !need temp as velocity bins are in vll/vperp initially
             dist5d_temp = 0
          ELSE
-            ALLOCATE(dist5d_fida(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida)) !nenergy and npitch are always aligned to distribution
+            ALLOCATE(dist5d_fida(ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida)) !nenergy and npitch are always aligned to distribution
+            dist5d_fida = 0
          END IF
-         DO b=1,nbeams
+         DO b = 1,nbeams
             DO d1 = 1, nenergy_fida
                DO d2 = 1, npitch_fida
                   v = SQRT(2 * energy_fida(d1) *1000.0 * e_charge / mass_beams(b))
@@ -675,9 +676,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
                      jac = pi2 * v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
                      IF (lfidasim2) THEN
-                        dist5d_temp(b,d1,d2,:,:,:) = dist5d_fida(b,:,:,:,d1,d2)*e_h*pi_h*REAL(1.0e-6)!dist5d_fida(b,:,:,:,i3,j3) * jac
+                        dist5d_temp(d1,d2,:,:,:) = dist5d_fida(:,:,:,d1,d2)*e_h*pi_h*REAL(1.0e-6)!dist5d_fida(b,:,:,:,i3,j3) * jac
                      ELSE   
-                        dist5d_fida(b,:,:,:,d1,d2) = dist5d_prof(b,:,:,:,i3,j3) * jac ! conversion to final grid comes in next steps
+                        dist5d_fida(:,:,:,d1,d2) = dist5d_fida(:,:,:,d1,d2) + dist5d_prof(b,:,:,:,i3,j3) * jac ! conversion to final grid comes in next steps
                      END IF
 
                   !END IF
@@ -686,13 +687,12 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          END DO
 
          IF (.not. lfidasim2) THEN
-            ALLOCATE(dist5d_temp(nbeams,ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
-            dist5d_temp(:,:,:,:,:,:) = dist5d_fida(:,:,:,:,:,:)
+            ALLOCATE(dist5d_temp(ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
+            dist5d_temp(:,:,:,:,:) = dist5d_fida(:,:,:,:,:)
             DEALLOCATE(dist5d_fida) 
             !Interpolate rho u v to r phi z distribution function (nearest neighbor at the moment)
             !Now allocate with correct dimensions
-            ALLOCATE(dist5d_fida(nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
-            DO b=1,nbeams
+            ALLOCATE(dist5d_fida(nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
                DO i=1,nr_fida
                   DO k = 1, nz_fida
                      DO j=1,nphi_fida
@@ -725,23 +725,20 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                         !IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
                         !   dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
                         !ELSE
-                           dist5d_fida(b,:,:,i,k,j) = dist5d_temp(b,l,m,n,:,:) !output in r-z-phi
+                           dist5d_fida(:,:,i,k,j) = dist5d_temp(l,m,n,:,:) !output in r-z-phi
                         !END IF
 
                      END DO
                   END DO
                END DO
-            END DO
          END IF
 
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          IF (ASSOCIATED(dist5d_fida)) THEN
-            IF (lsplit) THEN
-               CALL write_var_hdf5(fid,'f',nbeams,nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=dist5d_fida)  
-            ELSE IF (lfidasim2) THEN
-               CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=SUM(dist5d_temp, DIM=1))
+            IF (lfidasim2) THEN
+               CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=dist5d_temp)
             ELSE
-               CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=SUM(dist5d_fida, DIM=1))
+               CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=dist5d_fida)
             END IF
             CALL h5dopen_f(fid, '/f', temp_gid, ier)
             CALL write_att_hdf5(temp_gid,'description','Distribution Function (nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida)',ier)

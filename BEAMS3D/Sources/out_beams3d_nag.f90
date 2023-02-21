@@ -120,7 +120,7 @@ SUBROUTINE out_beams3d_nag(t, q)
             ! IF ((i > 0) .and. (i <= nr_fida) .and. &
             ! (j > 0) .and. (j <= nphi_fida) .and. &
             ! (k > 0) .and. (k <= nz_fida)) THEN
-               dist5d_fida(mybeam,i,k,j,d4,d5) = dist5d_fida(mybeam,i,k,j,d4,d5) + xw
+               dist5d_fida(i,k,j,d4,d5) = dist5d_fida(i,k,j,d4,d5) + xw
             ! END IF
         END IF
        IF (lcollision) CALL beams3d_physics(t,q)
