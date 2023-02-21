@@ -97,6 +97,22 @@
          C_temp(i) = temp*pprime  ! 2 eta dV/dPhi dp/drho
          D_temp(i) = -temp*THRIFT_JSOURCE(i,mytimestep)*Bav ! 2 eta dV/dPhi <J.B>
       END DO
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'A_TEMP'
+      WRITE(6,*) A_temp
+      WRITE(6,*)''
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'B_TEMP'
+      WRITE(6,*) B_temp
+      WRITE(6,*)''
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'C_TEMP'
+      WRITE(6,*) C_temp
+      WRITE(6,*)''
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'D_TEMP'
+      WRITE(6,*) D_temp
+      WRITE(6,*)''
 
       ! Timesteps and grid spacing 
       k = THRIFT_T(2)-THRIFT_T(1)      ! k <- dt
@@ -146,6 +162,22 @@
             + B_temp(nrho+1)/rho   + C_temp(nrho+1))
       a4(nrho) = A_temp(nrho+1)*B_temp(nrho+1)
 
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'ALPHA_1'
+      WRITE(6,*) a1
+      WRITE(6,*)''
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'ALPHA_2'
+      WRITE(6,*) a2
+      WRITE(6,*)''
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'ALPHA_3'
+      WRITE(6,*) a3
+      WRITE(6,*)''
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'ALPHA_4'
+      WRITE(6,*) a4
+      WRITE(6,*)''
       ! Populate diagonals; DU and DL of size nrho-1, D of size nrho
       ! Do most of the work in one loop and fix mistakes afterwards
       DO i = 1, nrho-1
@@ -176,10 +208,10 @@
             - THRIFT_JSOURCE(nrho,mytimestep)*Bav)
 
       
-      WRITE(6,*)'EDGE_U1   K  PHIA   ETAPARA   LEXT   VP   PPRIME  BSQAV  BAV  JSOURCE  EDGE_U2'
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,'(ES8.1,1X,F5.3,9(1X,ES8.1E1))') edge_u(1),k,eq_phiedge,etapara,temp,vp,pprime,Bsqav,Bav,&
-      THRIFT_JSOURCE(nrho,mytimestep),edge_u(2)
+      !WRITE(6,*)'EDGE_U1   K  PHIA   ETAPARA   LEXT   VP   PPRIME  BSQAV  BAV  JSOURCE  EDGE_U2'
+      !WRITE(6,*)'-------------------------------------------------------------------------------'
+      !WRITE(6,'(ES8.1,1X,F5.3,9(1X,ES8.1E1))') edge_u(1),k,eq_phiedge,etapara,temp,vp,pprime,Bsqav,Bav,&
+      !THRIFT_JSOURCE(nrho,mytimestep),edge_u(2)
 
       B(nrho) = ucur(nrho)/k-a1(nrho) - edge_u(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
       temp = -a4(nrho)/(5*h**2) ! Annoying non-zero element at (nrho,nrho-2)
@@ -196,20 +228,21 @@
       ! LAPACK general tridiagonal matrix solver using GE with partial pivoting
       ! See also
       !  https://netlib.org/lapack/explore-html/d4/d62/group__double_g_tsolve.html
-      WRITE(6,*)'NRHO'
-      WRITE(6,*) nrho
-      WRITE(6,*) ''
-      WRITE(6,*)'DL'
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'DL (POST ROW OPERATION)'
       WRITE(6,*) DL
       WRITE(6,*) ''  
-      WRITE(6,*)'D'
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'D  (POST ROW OPERATION)'
       WRITE(6,*) D
       WRITE(6,*) ''   
-      WRITE(6,*)'NU'
-      WRITE(6,*) nrho
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'DU (POST ROW OPERATION)'
+      WRITE(6,*) DU
       WRITE(6,*) ''
-      WRITE(6,*)'B'
-      WRITE(6,*) nrho
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'B  (POST ROW OPERATION)'
+      WRITE(6,*) B
       WRITE(6,*) ''
       WRITE(6,*)'-------------------------------------------------------------------------------'
 
