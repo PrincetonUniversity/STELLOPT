@@ -183,17 +183,19 @@
 
       B(nrho) = ucur(nrho)/k-a1(nrho) - edge_u(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
       temp = -a4(nrho)/(5*h**2) ! Annoying non-zero element at (nrho,nrho-2)
-
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'TEMP'
+      WRITE(6,*) temp
+      WRITE(6,*)''
       ! Eliminate that extra non-zero element to get a TDM
       temp = temp/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-s11*[NRHO-1]
-      DL(nrho-1) = DL(nrho-1) - s11* D(nrho-1) 
-      D(nrho)    = D(nrho)    - s11*DU(nrho-1)
-      B(nrho)    = B(nrho)    - s11* B(nrho-1)
+      DL(nrho-1) = DL(nrho-1) - temp* D(nrho-1) 
+      D(nrho)    = D(nrho)    - temp*DU(nrho-1)
+      B(nrho)    = B(nrho)    - temp* B(nrho-1)
       
       ! LAPACK general tridiagonal matrix solver using GE with partial pivoting
       ! See also
       !  https://netlib.org/lapack/explore-html/d4/d62/group__double_g_tsolve.html
-      WRITE(6,*)'-------------------------------------------------------------------------------'
       WRITE(6,*)'NRHO'
       WRITE(6,*) nrho
       WRITE(6,*) ''
@@ -201,7 +203,7 @@
       WRITE(6,*) DL
       WRITE(6,*) ''  
       WRITE(6,*)'D'
-      WRITE(6,*) nrho
+      WRITE(6,*) D
       WRITE(6,*) ''   
       WRITE(6,*)'NU'
       WRITE(6,*) nrho
