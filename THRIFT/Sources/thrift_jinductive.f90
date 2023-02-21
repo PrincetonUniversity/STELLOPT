@@ -22,8 +22,8 @@
       IMPLICIT NONE
       INTEGER :: i,itime, ier
       REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,temp,Aminor,Rmajor
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: ucur,         &
-                                                A_temp, B_temp, C_temp, D_temp &
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: ucur, &
+                                                A_temp, B_temp, C_temp, D_temp, &
                                                 a1, a2, a3, a4,         &
                                                 DU, D, DL, B
       TYPE(EZspline1_r8) :: f_spl
@@ -60,7 +60,7 @@
          s = rho*rho
          ier = 0        
          CALL get_equil_sus(s,s11,s12,h,h,ier) 
-         CALL EZspline_interp(iota_spl,rho,iota)
+         CALL EZspline_interp(iota_spl,rho,iota,ier)
          ucur(i) = s11*iota+s12
       END DO
 
@@ -228,7 +228,7 @@
       END DO
 
       DEALLOCATE(ucur, &
-               A_temp, B_temp, C_temp, D_temp &
+               A_temp, B_temp, C_temp, D_temp, &
                a1, a2, a3, a4, &
                DU, D, DL, B)
       RETURN
