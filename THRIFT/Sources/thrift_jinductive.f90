@@ -193,6 +193,24 @@
       ! LAPACK general tridiagonal matrix solver using GE with partial pivoting
       ! See also
       !  https://netlib.org/lapack/explore-html/d4/d62/group__double_g_tsolve.html
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'NRHO'
+      WRITE(6,*) nrho
+      WRITE(6,*) ''
+      WRITE(6,*)'DL'
+      WRITE(6,*) DL
+      WRITE(6,*) ''  
+      WRITE(6,*)'D'
+      WRITE(6,*) nrho
+      WRITE(6,*) ''   
+      WRITE(6,*)'NU'
+      WRITE(6,*) nrho
+      WRITE(6,*) ''
+      WRITE(6,*)'B'
+      WRITE(6,*) nrho
+      WRITE(6,*) ''
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+
       CALL DGTSV(nrho,1,DL,D,DU,B,nrho)
       ! B is the solution matrix = mu0 I / phip of the next iteration
       ! phip = 2 rho phi_a
