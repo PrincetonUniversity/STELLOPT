@@ -55,7 +55,7 @@
       npicard            = 5
       tend               = 1.0
       jtol               = 0.01
-      picard_factor      = 0.9
+      picard_factor      = 0.999
       leccd              = .FALSE.
       lnbcd              = .FALSE.
       lohmic             = .FALSE.
