@@ -78,8 +78,8 @@
          s = rho*rho
          ier = 0
          
-         IF (i==nrho+2) THEN ! etapara breaks at rho = 1. this is a bandaid solution for now
-            CALL get_prof_etapara(THRIFT_RHO(nrho-1), t,etapara)
+         IF (i==nrho+2) THEN ! etapara breaks at rho = 1
+            CALL get_prof_etapara(THRIFT_RHO(nrho), t,etapara)
          ELSE 
             CALL get_prof_etapara(rho, t,etapara)
          END IF
@@ -100,7 +100,7 @@
          ELSE IF (i==nrho+2) THEN
             s11 = THRIFT_JSOURCE(nrho,mytimestep)
          ELSE
-            s11 = THRIFT_JSOURCE(nrho-1,mytimestep)
+            s11 = THRIFT_JSOURCE(i-1,mytimestep)
          END IF
          D_temp(i) = -temp*s11*Bav ! 2 eta dV/dPhi <J.B>
       END DO
@@ -186,6 +186,7 @@
       WRITE(6,*)'ALPHA_4'
       WRITE(6,*) a4
       WRITE(6,*)''
+
       ! Populate diagonals; DU and DL of size nrho-1, D of size nrho
       ! Do most of the work in one loop and fix mistakes afterwards
       DO i = 1, nrho-1
