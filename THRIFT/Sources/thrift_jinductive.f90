@@ -67,6 +67,8 @@
       t = THRIFT_T(mytimestep)
 
       ! Populate A,B,C,D
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*) 'RHO     ETAPARA      DV/DPHI      DP/DRHO     BAV      BSQAV       S11'
       DO i = 1, nrho+2
          IF (i==1) THEN 
             rho = 0
@@ -93,7 +95,7 @@
             A_temp(i) = s11/(4*rho*eq_phiedge)
          END IF
          temp = 2*etapara*vp ! temp <- 2 eta dV/dPhi 
-         B_temp(i) = temp*Bav/mu0 ! 2 eta dV/dPhi <B^2>/mu_0
+         B_temp(i) = temp*Bsqav/mu0 ! 2 eta dV/dPhi <B^2>/mu_0
          C_temp(i) = temp*pprime  ! 2 eta dV/dPhi dp/drho
          IF (i==1) THEN ! set jsource(1)=jsource(2), jsource(nrho+1)=jsource(nrho)
             s11 = THRIFT_JSOURCE(1,mytimestep)
@@ -103,6 +105,7 @@
             s11 = THRIFT_JSOURCE(i-1,mytimestep)
          END IF
          D_temp(i) = -temp*s11*Bav ! 2 eta dV/dPhi <J.B>
+         WRITE(6,'(F5.3,6(1X,ES10.2))') rho, etapara, vp, pprime, bav, bsqav, s11
       END DO
 
       WRITE(6,*)'-------------------------------------------------------------------------------'
