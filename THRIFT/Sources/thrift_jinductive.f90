@@ -242,6 +242,7 @@
       WRITE(6,*)'-------------------------------------------------------------------------------'
       WRITE(6,*)'TEMP'
       WRITE(6,*) temp
+      WRITE(6,*)
       WRITE(6,*)''
       ! Eliminate that extra non-zero element to get a TDM
       temp = temp/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-s11*[NRHO-1]
@@ -270,14 +271,27 @@
       WRITE(6,*) ''
       WRITE(6,*)'-------------------------------------------------------------------------------'
       
-      DL = DBLE(DL)
-      D = DBLE(D)
-      DU = DBLE(DU)
-      B = DBLE(B)
+      !DL = DBLE(DL)
+      !D = DBLE(D)
+      !DU = DBLE(DU)
+      !B = DBLE(B)
 
-      CALL DGTSV(nrho,1,DL,D,DU,B,nrho)
+      !CALL DGTSV(nrho,1,DL,D,DU,B,nrho)
 
-      B = REAL(B,rprec)
+      !B = REAL(B,rprec)
+      a1 = 0; a2 = 0;
+      a1(1) = DU(1)/D(1)
+      a2(1) = B(1)/D(1)
+      DO i = 2, nrho-1
+         a1(i) = DU(i)/(D(i)-DL(i)*a1(i-1))
+         a2(i) = (B(i)-DL(i)*a2(i-1))/(D(i)-DL(i)*a1(i-1))
+      END DO
+      a2(nrho) = (B(nrho)-DL(nrho)*a2(nrho-1))/(D(nrho)-DL(nrho)*a1(nrho-1))
+
+      B(nrho) = a2(nrho)
+      DO i = nrho-1, 1, -1
+         B(i) = a2(i)-a1(i)*B(i+1)
+      END DO
       
       ! B is the solution matrix = mu0 I / phip of the next iteration
       ! phip = 2 rho phi_a
