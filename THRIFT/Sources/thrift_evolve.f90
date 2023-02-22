@@ -123,7 +123,7 @@
             END IF
 
             ! Print progress
-            IF (lverb) WRITE(6,'(1X,F5.2,1X,I2,1X,F5.2,5(1X,ES8.2),1X,ES8.2)') &
+            IF (lverb) WRITE(6,'(1X,F5.2,1X,I2,1X,F5.2,5(1X,ES10.2),1X,ES10.2)') &
                 THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
                 eq_volume*SUM(THRIFT_J(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
                 eq_volume*SUM(THRIFT_JPLASMA(:,mytimestep))/(pi2*eq_RMajor*nrho),&
