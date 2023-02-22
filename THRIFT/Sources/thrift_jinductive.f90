@@ -319,7 +319,12 @@
       END DO
 
       ! I_plasma = I_total - I_source
-      B = B - a1 
+      ! If first timestep, require that I_total = 0
+      IF (mytimestep==1) THEN 
+         B = -a1
+      ELSE
+         B = B - a1 
+      END IF
 
       ! J_plasma = dI_plasma/dA = dI/ds ds/dA =1/2rho dI/drho 2pi R/V' 
       !          = pi R/(rho v') dI/drho = pi R / (rho phi_a dV/dphi) dI_plasma/drho
