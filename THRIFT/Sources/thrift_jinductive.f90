@@ -202,30 +202,26 @@
           D(i) = a2(i)-2*a4(i)/(h**2)-1/k    ! Middle diagonal (D(1,nrho) wrong)
           B(i) = -ucur(i)/k-a1(i)            ! Right-hand side (B(nrho) wrong)
       END DO
-      
       DL(nrho-1)= -a3(nrho)/(3*h)+2*a4(nrho)/(h**2)         ! Lower diagonal fixed
         D(1)    = a2(1)-a3(1)/(2*h)-a4(1)/(h**2)-1/k  ! Middle diagonal half fixed
         D(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
-
       B(nrho) = ucur(nrho)/k-a1(nrho) - edge_u(1)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
 
-      ! L_ext = mu0*R_eff( ln( 8 R_eff/r_eff ) -2 + F_shaping)      
-      
-      rho = THRIFT_RHO(nrho-1)
-      CALL get_prof_etapara(rho,t,etapara)  
+      ! Calculate edge_u for next timestep this picard iteration
+      ! First calculate L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)      
+      CALL get_prof_etapara(THRIFT_RHO(nrho-1),t,etapara)  
       rho = 1 
       s = rho*rho
       ier = 0
       CALL get_equil_Rmajor(s,Rmajor,Bav,Aminor,ier)
       temp = mu0*Rmajor*(log(8*Rmajor/Aminor) - 2 + 0.25) ! temp <- L_ext
+      ! Now update edge_u
       CALL EZspline_interp(vp_spl,rho,vp,ier)
       CALL get_equil_Bav(s,Bav,Bsqav,ier)
       CALL get_prof_pprime(rho,t,pprime) 
-
-      ! Calculate edge enclosed current for next timestep
-      edge_u(2) = edge_u(1) -k*mu0/(2*eq_phiedge)*etapara/temp*vp * &   ! u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi *
-            (((pprime + Bsqav/mu0)*edge_u(1)) + &                       ! ((p' + <B^2>/mu0)*u +
-            Bsqav/mu0*(-8*edge_u(1)+9*ucur(nrho)-ucur(nrho-1))/(3*h) &  ! <B^2>/mu0 * du/drho - 
+      edge_u(2) = edge_u(1) - k*mu0/(2*eq_phiedge)*etapara/temp*vp * &  ! u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi *
+            (((pprime + Bsqav/mu0)*edge_u(1)) &                         ! ((p' + <B^2>/mu0)*u +
+            + Bsqav/mu0*(-8*edge_u(1)+9*ucur(nrho)-ucur(nrho-1))/(3*h) &! <B^2>/mu0 * du/drho - 
             - THRIFT_JSOURCE(nrho,mytimestep)*Bav)                      ! <J.B>)
 
       IF (lverbj) THEN
@@ -233,11 +229,6 @@
          WRITE(6,*)'EDGE U'
          WRITE(6,*) edge_u
          WRITE(6,*)''
-      END IF
-
-      temp = -a4(nrho)/(5*h**2) ! Annoying non-zero element at (nrho,nrho-2)
-
-      IF (lverbj) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*) 'D(NRHO) (PRE ROW OPERATION)'
          WRITE(6,*) D(nrho)
@@ -256,16 +247,15 @@
          WRITE(6,*)
          WRITE(6,*)''
       END IF
-
-      ! Eliminate that extra non-zero element to get a TDM
-      temp = temp/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-s11*[NRHO-1]
+      
+      ! Matrix is not fully tridiagonal; it has following element in (nrho,nrho-2)
+      temp = -a4(nrho)/(5*h**2) 
+      ! Eliminate that extra non-zero element to get a TDM by performing following row operations
+      temp = temp/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-temp*[NRHO-1] (DL is of size nrho-1)
       DL(nrho-1) = DL(nrho-1) - temp* D(nrho-1) 
       D(nrho)    = D(nrho)    - temp*DU(nrho-1)
       B(nrho)    = B(nrho)    - temp* B(nrho-1)
-      
-      ! LAPACK general tridiagonal matrix solver using GE with partial pivoting
-      ! See also
-      !  https://netlib.org/lapack/explore-html/d4/d62/group__double_g_tsolve.html
+
       IF (lverbj) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'DL (POST ROW OPERATION)'
@@ -284,55 +274,52 @@
          WRITE(6,*) B
          WRITE(6,*) ''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-      END IF
+      END IF     
 
-      !DL = DBLE(DL)
-      !D = DBLE(D)
-      !DU = DBLE(DU)
-      !B = DBLE(B)
-
+      ! LAPACK general tridiagonal matrix solver using GE with partial pivoting
+      ! See also
+      !  https://netlib.org/lapack/explore-html/d4/d62/group__double_g_tsolve.html
       !CALL DGTSV(nrho,1,DL,D,DU,B,nrho)
 
-      !B = REAL(B,rprec)
+      ! Thomas algorithm
+      ! https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
+      ! a_i = DL, b_i = D, c_i = DU, d_i = B
       a1 = 0; a2 = 0;
-      a1(1) = DU(1)/D(1)
-      a2(1) = B(1)/D(1)
+      a1(1) = DU(1)/D(1) !c_1' = c_1/b_1
+      a2(1) = B(1)/D(1)  !d_1' = d_1/b_1
       DO i = 2, nrho-1
-         a1(i) = DU(i)/(D(i)-DL(i)*a1(i-1))
-         a2(i) = (B(i)-DL(i)*a2(i-1))/(D(i)-DL(i)*a1(i-1))
+         a1(i) = DU(i)/(D(i)-DL(i)*a1(i-1))                 ! c_i' =              c_i/(b_i - a_i*c_i-1')
+         a2(i) = (B(i)-DL(i)*a2(i-1))/(D(i)-DL(i)*a1(i-1))  ! d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1')
       END DO
       a2(nrho) = (B(nrho)-DL(nrho)*a2(nrho-1))/(D(nrho)-DL(nrho)*a1(nrho-1))
-
       B(nrho) = a2(nrho)
       DO i = nrho-1, 1, -1
          B(i) = a2(i)-a1(i)*B(i+1)
       END DO
       
-      ! B is the solution matrix = mu0 I / phip of the next iteration
-      ! phip = 2 rho phi_a
+      ! B = mu0 I / phip => I = phip*B/mu0 = 2*phi_a*B/mu0
       B = 2*eq_phiedge/mu0*(THRIFT_RHO*B)
      
-      a1 = 0 ! store I_source in a1, calculate for i = 1
+      ! Calculate I_source (a1)
+      a1 = 0
       rho = THRIFT_RHO(1)
       s = rho*rho
       ier = 0
       CALL get_equil_Rmajor(s,h,h,Aminor,ier)
       a1(1) = THRIFT_JSOURCE(1,mytimestep)*pi*Aminor**2 
-
       DO i = 2, nrho
          rho = THRIFT_RHO(i)
          s = rho * rho
          ier = 0
          CALL get_equil_Rmajor(s,h,h,Aminor,ier)  ! aminor_i
-         
          temp = THRIFT_RHO(i-1)
          s = temp*temp
          CALL get_equil_Rmajor(s,h,h,temp,ier) ! temp = aminor_i-1
-
          a1(i) = a1(i-1) + THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp**2)
       END DO
 
-      B = B - a1 ! I_plasma = I_total - I_source
+      ! I_plasma = I_total - I_source
+      B = B - a1 
 
       ! J_plasma = dI/dA = dI/ds ds/dA =1/2rho dI/drho 2pi R/V' 
       !          = pi R/(rho v') dI/drho = pi R / (rho phi_a dV/dphi) dI/drho
@@ -341,8 +328,8 @@
          IF (i == 1) THEN ! Symmetry BC
             temp = (B(2)-B(1))/(2*h)
          ELSE IF (i == nrho) THEN ! Current at edge from edge_u
-            temp = 2*eq_phiedge/mu0*edge_u(2)
-            temp = (4*temp-3*B(nrho)-3*B(nrho-1))/(3*h) 
+            temp = 2*eq_phiedge/mu0*edge_u(1)
+            temp = (4*temp-3*B(nrho)-B(nrho-1))/(3*h) 
          ELSE
             temp = (B(i+1)-B(i-1))/(2*h)
          END IF

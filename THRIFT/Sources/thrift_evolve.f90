@@ -101,7 +101,7 @@
             ! Update total current
             THRIFT_J(:,mytimestep) = (1-picard_factor)*THRIFT_J(:,mytimestep) &
                                    +  picard_factor*(   THRIFT_JPLASMA(:,mytimestep) &
-                                                      - THRIFT_JSOURCE(:,mytimestep))
+                                                      + THRIFT_JSOURCE(:,mytimestep))
 
 
             ! Check the convergence
@@ -118,7 +118,7 @@
             IF (lverb .and. lfirst_pass) THEN
             
                WRITE(6,*)''
-               WRITE(6,*)' T  NSUB  BETA       ITOR    IPLASMA      IBOOT      IECCD      INBCD   Mdeltaj'
+               WRITE(6,*)' T  NSUB  BETA       ITOR    IPLASMA      IBOOT      IECCD      INBCD   IOHMIC'
                WRITE(6,*)'-------------------------------------------------------------------------------'
             END IF
 
@@ -130,8 +130,8 @@
                 eq_volume*SUM(THRIFT_JBOOT(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
                 eq_volume*SUM(THRIFT_JECCD(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
                 eq_volume*SUM(THRIFT_JNBCD(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
-                !eq_volume*SUM(THRIFT_JOHMIC(:,mytimestep))/(pi2*eq_Rmajor*nrho),
-                MAXVAL(deltaj)
+                eq_volume*SUM(THRIFT_JOHMIC(:,mytimestep))/(pi2*eq_Rmajor*nrho)!,&
+                !MAXVAL(deltaj)
 
             ! Turn off screen output after one run
             lscreen_subcodes = .FALSE.
