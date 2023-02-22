@@ -118,7 +118,7 @@
             IF (lverb .and. lfirst_pass) THEN
             
                WRITE(6,*)''
-               WRITE(6,*)' T  NSUB  BETA     ITOR     IPLA    IBOOT    IECCD    INBCD MAX_deltaj'
+               WRITE(6,*)' T  NSUB  BETA       ITOR       IPLA      IBOOT      IECCD      INBCD Mdeltaj'
                WRITE(6,*)'-------------------------------------------------------------------------------'
             END IF
 
