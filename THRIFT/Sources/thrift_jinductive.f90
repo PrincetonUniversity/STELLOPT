@@ -24,6 +24,7 @@
       REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,temp,Aminor,Rmajor
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: ucur, &
                                                 A_temp, B_temp, C_temp, D_temp, &
+                                                B_der, C_der, D_der, &
                                                 a1, a2, a3, a4,         &
                                                 DU, D, DL, B
       TYPE(EZspline1_r8) :: f_spl
@@ -46,11 +47,13 @@
       ! Allocations
       ALLOCATE(ucur(nrho), &
                A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
+               B_der(nrho), C_der(nrho), D_der(nrho), &
                a1(nrho), a2(nrho), a3(nrho), a4(nrho), &
                DU(nrho-1), D(nrho), DL(nrho-1), B(nrho))
 
       ucur = 0;
       A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
+      B_der = 0; C_der = 0; D_der = 0;
       a1 = 0; a2 = 0; a3 = 0; a4 = 0;
       DU = 0; D = 0; DL = 0; B = 0;
 
@@ -68,7 +71,7 @@
 
       ! Populate A,B,C,D
       WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*) 'RHO     ETAPARA      DV/DPHI      DP/DRHO     BAV      BSQAV       S11'
+      WRITE(6,*) 'RHO      ETAPARA     DV/DPHI     DP/DRHO     BAV      BSQAV        S11'
       DO i = 1, nrho+2
          IF (i==1) THEN 
             rho = 0
@@ -98,14 +101,14 @@
          B_temp(i) = temp*Bsqav/mu0 ! 2 eta dV/dPhi <B^2>/mu_0
          C_temp(i) = temp*pprime  ! 2 eta dV/dPhi dp/drho
          IF (i==1) THEN ! set jsource(1)=jsource(2), jsource(nrho+1)=jsource(nrho)
-            s11 = THRIFT_JSOURCE(1,mytimestep)
+            h = THRIFT_JSOURCE(1,mytimestep)
          ELSE IF (i==nrho+2) THEN
-            s11 = THRIFT_JSOURCE(nrho,mytimestep)
+            h = THRIFT_JSOURCE(nrho,mytimestep)
          ELSE
-            s11 = THRIFT_JSOURCE(i-1,mytimestep)
+            h = THRIFT_JSOURCE(i-1,mytimestep)
          END IF
          D_temp(i) = -temp*s11*Bav ! 2 eta dV/dPhi <J.B>
-         WRITE(6,'(F5.3,6(1X,ES10.2))') rho, etapara, vp, pprime, bav, bsqav, s11
+         WRITE(6,'(F5.3,6(1X,ES10.3))') rho, etapara, vp, pprime, bav, bsqav, s11
       END DO
 
       WRITE(6,*)'-------------------------------------------------------------------------------'
@@ -136,42 +139,35 @@
       !    |    |    |    |    |    |     a1,2,3,4  on i
       !   i=1   2    3    4    5    6     j = i+1 
 
+      ! Calculate derivatives of ABCD
+      ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h = [Y(i+2)-Y(i)]/2h
+      DO i = 2, nrho-1
+         B_der(i) = (B_temp(i+2)-B_temp(i))/(2*h)
+         C_der(i) = (C_temp(i+2)-C_temp(i))/(2*h)
+         D_der(i) = (D_temp(i+2)-D_temp(i))/(2*h)
+      END DO
+      ! Near magnetic axis
+      ! dY/drho(i=1) = [Y(i=3) + 3*Y(i=2) - 4*Y(i=1)]/3h
+      B_der(1) = (B_temp(3)+3*B_temp(2)-4*B_temp(1))/(3*h)
+      C_der(1) = (C_temp(3)+3*C_temp(2)-4*C_temp(1))/(3*h)
+      D_der(1) = (D_temp(3)+3*D_temp(2)-4*D_temp(1))/(3*h)
+      ! Near plasma edge
+      ! dY/drho(i=nrho) = [4*Y(i=nrho+2) - 3*Y(i=nrho+1) - Y(i=nrho)]/3h
+      B_der(nrho) = (4*B_temp(nrho+2)-3*B_temp(nrho+1)-B_temp(nrho))/(3*h)
+      C_der(nrho) = (4*C_temp(nrho+2)-3*C_temp(nrho+1)-C_temp(nrho))/(3*h)
+      D_der(nrho) = (4*D_temp(nrho+2)-3*D_temp(nrho+1)-D_temp(nrho))
+
       ! a1 = A dD/drho
       ! a2 = A (1/rho dB/drho - B/rho^2 + dC/drho)
       ! a3 = A (dB/drho + B/rho + C)
       ! a4 = A B
-
-      ! Calculate a1,2,3,4 on the gridpoints in [2,nrho-1]
-      ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h = [Y(i+2)-Y(i)]/2h
-      DO i = 2, nrho-1
+      DO i = 1, nrho
          rho = THRIFT_RHO(i)
-         a1(i) = A_temp(i+1)*(      (D_temp(i+2)-D_temp(i))/(2*h))   
-         a2(i) = A_temp(i+1)*(1/rho*(B_temp(i+2)-B_temp(i))/(2*h)&   
-               - B_temp(i+1)/rho**2+(C_temp(i+2)-C_temp(i))/(2*h))    
-         a3(i) = A_temp(i+1)*(      (B_temp(i+2)-B_temp(i))/(2*h)&   
-               + B_temp(i+1)/rho  +  C_temp(i+1))                   
+         a1(i) = A_temp(i+1)*D_der(i)
+         a2(i) = A_temp(i+1)*(1/rho*B_der(i) - B_temp(i+1)/rho**2 + C_der(i))    
+         a3(i) = A_temp(i+1)*(B_der(i) + B_temp(i+1)/rho + C_temp(i+1))                   
          a4(i) = A_temp(i+1)*B_temp(i+1)                             
       END DO
-
-      ! Calculate a1,2,3,4 for i=1 
-      ! dY/drho(i=1) = [Y(i=3) + 3*Y(i=2) - 4*Y(i=1)]/3h
-      rho = THRIFT_RHO(1) 
-      a1(1) = A_temp(2)*(      (D_temp(3)+3*D_temp(2)-4*D_temp(1))/(3*h))
-      a2(1) = A_temp(2)*(1/rho*(B_temp(3)+3*B_temp(2)-4*B_temp(1))/(3*h)&
-            - B_temp(2)/rho**2+(C_temp(3)+3*C_temp(2)-4*C_temp(1))/(3*h))
-      a3(1) = A_temp(2)*(      (B_temp(3)+3*B_temp(2)-4*B_temp(1))/(3*h)&
-            + B_temp(2)/rho   + C_temp(2))
-      a4(1) = A_temp(2)*B_temp(2)
-
-      ! Calculate a1,2,3,4 for i=nrho
-      ! dY/drho(i=nrho) = [4*Y(i=nrho+2) - 3*Y(i=nrho+1) - Y(i=nrho)]/3h
-      rho = THRIFT_RHO(nrho)
-      a1(nrho) = A_temp(nrho+1)*(      (4*D_temp(nrho+2)-3*D_temp(nrho+1)-D_temp(nrho))/(3*h))
-      a2(nrho) = A_temp(nrho+1)*(1/rho*(4*B_temp(nrho+2)-3*B_temp(nrho+1)-B_temp(nrho))/(3*h)&
-               - B_temp(nrho+1)/rho**2+(4*C_temp(nrho+2)-3*C_temp(nrho+1)-C_temp(nrho))/(3*h))
-      a3(nrho) = A_temp(nrho+1)*(      (4*B_temp(nrho+2)-3*B_temp(nrho+1)-B_temp(nrho))/(3*h)&
-            + B_temp(nrho+1)/rho   + C_temp(nrho+1))
-      a4(nrho) = A_temp(nrho+1)*B_temp(nrho+1)
 
       WRITE(6,*)'-------------------------------------------------------------------------------'
       WRITE(6,*)'ALPHA_1'
@@ -307,6 +303,7 @@
 
       DEALLOCATE(ucur, &
                A_temp, B_temp, C_temp, D_temp, &
+               B_der, C_der, D_der, &
                a1, a2, a3, a4, &
                DU, D, DL, B)
       RETURN
