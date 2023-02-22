@@ -21,6 +21,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i,itime, ier
+      LOGICAL :: lverbj
       REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,temp,Aminor,Rmajor
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: ucur, &
                                                 A_temp, B_temp, C_temp, D_temp, &
@@ -33,6 +34,8 @@
 !----------------------------------------------------------------------
 !     The general idea here is to use equation (22) in form to update
 !     THRIFT_JPLASMA.  Where THRIFT_JSOURCE is the J in <J_s.B>.
+
+      lverbj = .false. 
 
       ! Check to make sure we're not zero beta
       IF (eq_beta == 0) THEN
@@ -70,8 +73,10 @@
       t = THRIFT_T(mytimestep)
 
       ! Populate A,B,C,D
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*) 'RHO      ETAPARA     DV/DPHI     DP/DRHO     BAV      BSQAV        S11'
+      IF (lverbj) THEN
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*) 'RHO      ETAPARA     DV/DPHI     DP/DRHO     BAV      BSQAV        S11'
+      END IF
       DO i = 1, nrho+2
          IF (i==1) THEN 
             rho = 0
@@ -110,23 +115,24 @@
          D_temp(i) = -temp*h*Bav ! 2 eta dV/dPhi <J.B>
          WRITE(6,'(F5.3,6(1X,ES10.3))') rho, etapara, vp, pprime, bav, bsqav, s11
       END DO
-
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'A_TEMP'
-      WRITE(6,*) A_temp
-      WRITE(6,*)''
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'B_TEMP'
-      WRITE(6,*) B_temp
-      WRITE(6,*)''
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'C_TEMP'
-      WRITE(6,*) C_temp
-      WRITE(6,*)''
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'D_TEMP'
-      WRITE(6,*) D_temp
-      WRITE(6,*)''
+      IF (lverbj) THEN
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'A_TEMP'
+         WRITE(6,*) A_temp
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'B_TEMP'
+         WRITE(6,*) B_temp
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'C_TEMP'
+         WRITE(6,*) C_temp
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'D_TEMP'
+         WRITE(6,*) D_temp
+         WRITE(6,*)''
+      END IF
 
       ! Timesteps and grid spacing 
       k = THRIFT_T(2)-THRIFT_T(1)      ! k <- dt
@@ -169,22 +175,24 @@
          a4(i) = A_temp(i+1)*B_temp(i+1)                             
       END DO
 
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'ALPHA_1'
-      WRITE(6,*) a1
-      WRITE(6,*)''
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'ALPHA_2'
-      WRITE(6,*) a2
-      WRITE(6,*)''
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'ALPHA_3'
-      WRITE(6,*) a3
-      WRITE(6,*)''
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'ALPHA_4'
-      WRITE(6,*) a4
-      WRITE(6,*)''
+      IF (lverbj) THEN
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'ALPHA_1'
+         WRITE(6,*) a1
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'ALPHA_2'
+         WRITE(6,*) a2
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'ALPHA_3'
+         WRITE(6,*) a3
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'ALPHA_4'
+         WRITE(6,*) a4
+         WRITE(6,*)''
+      END IF
 
       ! Populate diagonals; DU and DL of size nrho-1, D of size nrho
       ! Do most of the work in one loop and fix mistakes afterwards
@@ -214,36 +222,36 @@
 
       edge_u(2) = edge_u(1)+k*(-mu0/(2*eq_phiedge)*etapara/temp*vp*((pprime+Bsqav/mu0)*edge_u(1))&
             - THRIFT_JSOURCE(nrho,mytimestep)*Bav)
-
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'EDGE U'
-      WRITE(6,*) edge_u
-      WRITE(6,*)''
-      !WRITE(6,*)'EDGE_U1   K  PHIA   ETAPARA   LEXT   VP   PPRIME  BSQAV  BAV  JSOURCE  EDGE_U2'
-      !WRITE(6,*)'-------------------------------------------------------------------------------'
-      !WRITE(6,'(ES8.1,1X,F5.3,9(1X,ES8.1E1))') edge_u(1),k,eq_phiedge,etapara,temp,vp,pprime,Bsqav,Bav,&
-      !THRIFT_JSOURCE(nrho,mytimestep),edge_u(2)
+      IF (lverbj) THEN
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'EDGE U'
+         WRITE(6,*) edge_u
+         WRITE(6,*)''
+      END IF
 
       B(nrho) = ucur(nrho)/k-a1(nrho) - edge_u(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*) 'D(NRHO) (PRE ROW OPERATION)'
-      WRITE(6,*) D(nrho)
-      WRITE(6,*) '' 
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*) 'DL(NRHO-1) (PRE ROW OPERATION)'
-      WRITE(6,*) DL(nrho-1)
-      WRITE(6,*) '' 
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*) 'B(NRHO) (PRE ROW OPERATION)'
-      WRITE(6,*) B(nrho)
-      WRITE(6,*) '' 
-
       temp = -a4(nrho)/(5*h**2) ! Annoying non-zero element at (nrho,nrho-2)
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'TEMP'
-      WRITE(6,*) temp
-      WRITE(6,*)
-      WRITE(6,*)''
+
+      IF (lverbj) THEN
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*) 'D(NRHO) (PRE ROW OPERATION)'
+         WRITE(6,*) D(nrho)
+         WRITE(6,*) '' 
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*) 'DL(NRHO-1) (PRE ROW OPERATION)'
+         WRITE(6,*) DL(nrho-1)
+         WRITE(6,*) '' 
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*) 'B(NRHO) (PRE ROW OPERATION)'
+         WRITE(6,*) B(nrho)
+         WRITE(6,*) '' 
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'TEMP'
+         WRITE(6,*) temp
+         WRITE(6,*)
+         WRITE(6,*)''
+      END IF
+
       ! Eliminate that extra non-zero element to get a TDM
       temp = temp/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-s11*[NRHO-1]
       DL(nrho-1) = DL(nrho-1) - temp* D(nrho-1) 
@@ -253,23 +261,25 @@
       ! LAPACK general tridiagonal matrix solver using GE with partial pivoting
       ! See also
       !  https://netlib.org/lapack/explore-html/d4/d62/group__double_g_tsolve.html
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'DL (POST ROW OPERATION)'
-      WRITE(6,*) DL
-      WRITE(6,*) ''  
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'D  (POST ROW OPERATION)'
-      WRITE(6,*) D
-      WRITE(6,*) ''   
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'DU (POST ROW OPERATION)'
-      WRITE(6,*) DU
-      WRITE(6,*) ''
-      WRITE(6,*)'-------------------------------------------------------------------------------'
-      WRITE(6,*)'B  (POST ROW OPERATION)'
-      WRITE(6,*) B
-      WRITE(6,*) ''
-      WRITE(6,*)'-------------------------------------------------------------------------------'
+      IF (lverbj) THEN
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'DL (POST ROW OPERATION)'
+         WRITE(6,*) DL
+         WRITE(6,*) ''  
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'D  (POST ROW OPERATION)'
+         WRITE(6,*) D
+         WRITE(6,*) ''   
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'DU (POST ROW OPERATION)'
+         WRITE(6,*) DU
+         WRITE(6,*) ''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'B  (POST ROW OPERATION)'
+         WRITE(6,*) B
+         WRITE(6,*) ''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+      END IF
       
       !DL = DBLE(DL)
       !D = DBLE(D)
