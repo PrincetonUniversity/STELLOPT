@@ -321,14 +321,14 @@
       ! I_plasma = I_total - I_source
       B = B - a1 
 
-      ! J_plasma = dI/dA = dI/ds ds/dA =1/2rho dI/drho 2pi R/V' 
-      !          = pi R/(rho v') dI/drho = pi R / (rho phi_a dV/dphi) dI/drho
+      ! J_plasma = dI_plasma/dA = dI/ds ds/dA =1/2rho dI/drho 2pi R/V' 
+      !          = pi R/(rho v') dI/drho = pi R / (rho phi_a dV/dphi) dI_plasma/drho
       DO i = 1, nrho
          ! Calculate derivative, store in temp
          IF (i == 1) THEN ! Symmetry BC
             temp = (B(2)-B(1))/(2*h)
-         ELSE IF (i == nrho) THEN ! Current at edge from edge_u
-            temp = 2*eq_phiedge/mu0*edge_u(1)
+         ELSE IF (i == nrho) THEN ! 
+            temp = B(nrho) ! Set current at nrho = nrho-1 for now
             temp = (4*temp-3*B(nrho)-B(nrho-1))/(3*h) 
          ELSE
             temp = (B(i+1)-B(i-1))/(2*h)
