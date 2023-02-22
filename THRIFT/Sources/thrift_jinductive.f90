@@ -207,6 +207,8 @@
         D(1)    = a2(1)-a3(1)/(2*h)-a4(1)/(h**2)-1/k  ! Middle diagonal half fixed
         D(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
 
+      B(nrho) = ucur(nrho)/k-a1(nrho) - edge_u(1)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
+
       ! L_ext = mu0*R_eff( ln( 8 R_eff/r_eff ) -2 + F_shaping)      
       
       rho = THRIFT_RHO(nrho-1)
@@ -220,8 +222,10 @@
       CALL get_equil_Bav(s,Bav,Bsqav,ier)
       CALL get_prof_pprime(rho,t,pprime) 
 
-      edge_u(2) = edge_u(1)+k*(-mu0/(2*eq_phiedge)*etapara/temp*vp*((pprime+Bsqav/mu0)*edge_u(1))&
-            - THRIFT_JSOURCE(nrho,mytimestep)*Bav)
+      ! Calculate edge enclosed current for next timestep
+      edge_u(2) = edge_u(1) -k*mu0/(2*eq_phiedge)*etapara/temp*vp * &
+            (((pprime + Bsqav/mu0)*edge_u(1))- THRIFT_JSOURCE(nrho,mytimestep)*Bav)
+
       IF (lverbj) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'EDGE U'
@@ -229,7 +233,6 @@
          WRITE(6,*)''
       END IF
 
-      B(nrho) = ucur(nrho)/k-a1(nrho) - edge_u(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
       temp = -a4(nrho)/(5*h**2) ! Annoying non-zero element at (nrho,nrho-2)
 
       IF (lverbj) THEN

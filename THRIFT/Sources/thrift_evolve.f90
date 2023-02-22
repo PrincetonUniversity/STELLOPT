@@ -95,7 +95,7 @@
                                            + THRIFT_JNBCD(:,mytimestep) &
                                            + THRIFT_JOHMIC(:,mytimestep)
 
-            ! Calc the plasma inductive response  
+            ! Update the plasma current  
             CALL thrift_jinductive
 
             ! Update total current
@@ -117,13 +117,13 @@
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN
             
-               WRITE(6,*) ''
-               WRITE(6,*)'T   NSUB  BETA     ITOR     IPLA    IBOOT    IECCD    INBCD   MAX_deltaj'
+               WRITE(6,*)''
+               WRITE(6,*)' T  NSUB  BETA     ITOR     IPLA    IBOOT    IECCD    INBCD MAX_deltaj'
                WRITE(6,*)'-------------------------------------------------------------------------------'
             END IF
 
             ! Print progress
-            IF (lverb) WRITE(6,'(1X,F5.2,1X,I1,1X,F5.2,5(1X,ES8.2E1),1X,ES8.2E1)') &
+            IF (lverb) WRITE(6,'(1X,F5.2,1X,I2,1X,F5.2,5(1X,ES8.2),1X,ES8.2)') &
                 THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
                 eq_volume*SUM(THRIFT_J(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
                 eq_volume*SUM(THRIFT_JPLASMA(:,mytimestep))/(pi2*eq_RMajor*nrho),&
@@ -133,7 +133,7 @@
                 !eq_volume*SUM(THRIFT_JOHMIC(:,mytimestep))/(pi2*eq_Rmajor*nrho),
                 MAXVAL(deltaj)
 
-            ! Turn off screen output after one runj
+            ! Turn off screen output after one run
             lscreen_subcodes = .FALSE.
 
             ! End of first pass
@@ -141,7 +141,8 @@
             lfirst_sub_pass = .FALSE.
 
          END DO
-         ! Once converged, update the proper edge_u
+         ! Once converged, store the edge enclosed current for the next timestep
+         ! from the latest picard iteration into the first index
          edge_u(1) = edge_u(2)
 
       END DO
