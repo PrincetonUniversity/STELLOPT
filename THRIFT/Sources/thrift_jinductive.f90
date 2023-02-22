@@ -113,7 +113,7 @@
             h = THRIFT_JSOURCE(i-1,mytimestep)
          END IF
          D_temp(i) = -temp*h*Bav ! 2 eta dV/dPhi <J.B>
-         WRITE(6,'(F5.3,6(1X,ES10.3))') rho, etapara, vp, pprime, bav, bsqav, s11
+         IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') rho, etapara, vp, pprime, bav, bsqav, s11
       END DO
       IF (lverbj) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
@@ -280,7 +280,7 @@
          WRITE(6,*) ''
          WRITE(6,*)'-------------------------------------------------------------------------------'
       END IF
-      
+
       !DL = DBLE(DL)
       !D = DBLE(D)
       !DU = DBLE(DU)
