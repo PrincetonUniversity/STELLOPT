@@ -73,7 +73,7 @@
          ELSE IF (i==nrho+2) THEN
             rho = 1
          ELSE
-            rho = THRIFT_RHO(i)
+            rho = THRIFT_RHO(i-1)
          END IF
          s = rho*rho
          ier = 0
@@ -97,6 +97,7 @@
          C_temp(i) = temp*pprime  ! 2 eta dV/dPhi dp/drho
          D_temp(i) = -temp*THRIFT_JSOURCE(i,mytimestep)*Bav ! 2 eta dV/dPhi <J.B>
       END DO
+
       WRITE(6,*)'-------------------------------------------------------------------------------'
       WRITE(6,*)'A_TEMP'
       WRITE(6,*) A_temp
