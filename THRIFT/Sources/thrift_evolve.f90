@@ -118,19 +118,19 @@
             IF (lverb .and. lfirst_pass) THEN
             
                WRITE(6,*) ''
-               WRITE(6,*)'T   NSUB  BETA     ITOR     IPLA    IBOOT    IECCD    INBCD   IOHMIC MAX_deltaj'
+               WRITE(6,*)'T   NSUB  BETA     ITOR     IPLA    IBOOT    IECCD    INBCD   MAX_deltaj'
                WRITE(6,*)'-------------------------------------------------------------------------------'
             END IF
 
             ! Print progress
-            IF (lverb) WRITE(6,'(F4.2,1X,I1,1X,F5.2,5(1X,ES8.2E1),1X,ES8.2E1)') &
+            IF (lverb) WRITE(6,'(1X,5F.2,1X,I1,1X,F5.2,5(1X,ES8.2E1),1X,ES8.2E1)') &
                 THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
                 eq_volume*SUM(THRIFT_J(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
                 eq_volume*SUM(THRIFT_JPLASMA(:,mytimestep))/(pi2*eq_RMajor*nrho),&
                 eq_volume*SUM(THRIFT_JBOOT(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
                 eq_volume*SUM(THRIFT_JECCD(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
                 eq_volume*SUM(THRIFT_JNBCD(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
-                eq_volume*SUM(THRIFT_JOHMIC(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
+                !eq_volume*SUM(THRIFT_JOHMIC(:,mytimestep))/(pi2*eq_Rmajor*nrho),
                 MAXVAL(deltaj)
 
             ! Turn off screen output after one runj
