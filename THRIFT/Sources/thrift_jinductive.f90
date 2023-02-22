@@ -107,7 +107,7 @@
          ELSE
             h = THRIFT_JSOURCE(i-1,mytimestep)
          END IF
-         D_temp(i) = -temp*s11*Bav ! 2 eta dV/dPhi <J.B>
+         D_temp(i) = -temp*h*Bav ! 2 eta dV/dPhi <J.B>
          WRITE(6,'(F5.3,6(1X,ES10.3))') rho, etapara, vp, pprime, bav, bsqav, s11
       END DO
 
@@ -215,13 +215,29 @@
       edge_u(2) = edge_u(1)+k*(-mu0/(2*eq_phiedge)*etapara/temp*vp*((pprime+Bsqav/mu0)*edge_u(1))&
             - THRIFT_JSOURCE(nrho,mytimestep)*Bav)
 
-      
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*)'EDGE U'
+      WRITE(6,*) edge_u
+      WRITE(6,*)''
       !WRITE(6,*)'EDGE_U1   K  PHIA   ETAPARA   LEXT   VP   PPRIME  BSQAV  BAV  JSOURCE  EDGE_U2'
       !WRITE(6,*)'-------------------------------------------------------------------------------'
       !WRITE(6,'(ES8.1,1X,F5.3,9(1X,ES8.1E1))') edge_u(1),k,eq_phiedge,etapara,temp,vp,pprime,Bsqav,Bav,&
       !THRIFT_JSOURCE(nrho,mytimestep),edge_u(2)
 
       B(nrho) = ucur(nrho)/k-a1(nrho) - edge_u(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*) 'D(NRHO) (PRE ROW OPERATION)'
+      WRITE(6,*) D(nrho)
+      WRITE(6,*) '' 
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*) 'DL(NRHO-1) (PRE ROW OPERATION)'
+      WRITE(6,*) DL(nrho-1)
+      WRITE(6,*) '' 
+      WRITE(6,*)'-------------------------------------------------------------------------------'
+      WRITE(6,*) 'B(NRHO) (PRE ROW OPERATION)'
+      WRITE(6,*) B(nrho)
+      WRITE(6,*) '' 
+      
       temp = -a4(nrho)/(5*h**2) ! Annoying non-zero element at (nrho,nrho-2)
       WRITE(6,*)'-------------------------------------------------------------------------------'
       WRITE(6,*)'TEMP'
