@@ -95,7 +95,14 @@
          temp = 2*etapara*vp ! temp <- 2 eta dV/dPhi 
          B_temp(i) = temp*Bav/mu0 ! 2 eta dV/dPhi <B^2>/mu_0
          C_temp(i) = temp*pprime  ! 2 eta dV/dPhi dp/drho
-         D_temp(i) = -temp*THRIFT_JSOURCE(i,mytimestep)*Bav ! 2 eta dV/dPhi <J.B>
+         IF (i==1) THEN ! set jsource(1)=jsource(2), jsource(nrho+1)=jsource(nrho)
+            s11 = THRIFT_JSOURCE(1,mytimestep)
+         ELSE IF (i==nrho+2) THEN
+            s11 = THRIFT_JSOURCE(nrho,mytimestep)
+         ELSE
+            s11 = THRIFT_JSOURCE(nrho-1,mytimestep)
+         END IF
+         D_temp(i) = -temp*s11*Bav ! 2 eta dV/dPhi <J.B>
       END DO
 
       WRITE(6,*)'-------------------------------------------------------------------------------'
