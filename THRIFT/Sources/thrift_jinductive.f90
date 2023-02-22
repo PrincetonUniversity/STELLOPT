@@ -223,8 +223,10 @@
       CALL get_prof_pprime(rho,t,pprime) 
 
       ! Calculate edge enclosed current for next timestep
-      edge_u(2) = edge_u(1) -k*mu0/(2*eq_phiedge)*etapara/temp*vp * &
-            (((pprime + Bsqav/mu0)*edge_u(1))- THRIFT_JSOURCE(nrho,mytimestep)*Bav)
+      edge_u(2) = edge_u(1) -k*mu0/(2*eq_phiedge)*etapara/temp*vp * &   ! u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi *
+            (((pprime + Bsqav/mu0)*edge_u(1)) + &                       ! ((p' + <B^2>/mu0)*u +
+            Bsqav/mu0*(-8*edge_u(1)+9*ucur(nrho)-ucur(nrho-1))/(3*h) &  ! <B^2>/mu0 * du/drho - 
+            - THRIFT_JSOURCE(nrho,mytimestep)*Bav)                      ! <J.B>)
 
       IF (lverbj) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
