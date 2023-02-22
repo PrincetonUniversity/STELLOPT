@@ -472,7 +472,7 @@ MODULE thrift_profiles_mod
       CALL get_prof_te(rho_val,t_val,te)
       CALL get_prof_zeff(rho_val,t_val,zeff)
       CALL get_prof_coulln(rho_val,t_val,clog)
-      te = MAXVAL( (/100,te/) ) ! clamp te to 100 keV at edge
+      te = MAXVAL( (/REAL(100),te/) ) ! clamp te to 100 keV at edge
       val = 1.0313621201E-04*zeff*clog/(te**1.5)
       RETURN
       END SUBROUTINE get_prof_etaperp
