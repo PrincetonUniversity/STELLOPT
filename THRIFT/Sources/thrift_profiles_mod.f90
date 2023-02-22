@@ -466,13 +466,14 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(out) :: val
       INTEGER     :: i
-      REAL(rprec) :: clog, te, zeff
+      REAL(rprec) :: clog, te, zeff, clamp
       val = 0
+      clamp = 100 ! clamp te to 100 keV at edge
       ! https://en.wikipedia.org/wiki/Spitzer_resistivity
       CALL get_prof_te(rho_val,t_val,te)
       CALL get_prof_zeff(rho_val,t_val,zeff)
       CALL get_prof_coulln(rho_val,t_val,clog)
-      te = MAXVAL( (/REAL(100),te/) ) ! clamp te to 100 keV at edge
+      te = MAXVAL( (/clamp,te/) ) 
       val = 1.0313621201E-04*zeff*clog/(te**1.5)
       RETURN
       END SUBROUTINE get_prof_etaperp
