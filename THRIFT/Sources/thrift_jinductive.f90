@@ -78,7 +78,7 @@
          s = rho*rho
          ier = 0
          
-         IF (i==nrho+1) THEN ! etapara breaks at rho = 1. this is a bandaid solution for now
+         IF (i==nrho+2) THEN ! etapara breaks at rho = 1. this is a bandaid solution for now
             CALL get_prof_etapara(THRIFT_RHO(nrho-1), t,etapara)
          ELSE 
             CALL get_prof_etapara(rho, t,etapara)
