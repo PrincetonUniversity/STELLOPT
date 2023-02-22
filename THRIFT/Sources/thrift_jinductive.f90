@@ -237,7 +237,7 @@
       WRITE(6,*) 'B(NRHO) (PRE ROW OPERATION)'
       WRITE(6,*) B(nrho)
       WRITE(6,*) '' 
-      
+
       temp = -a4(nrho)/(5*h**2) ! Annoying non-zero element at (nrho,nrho-2)
       WRITE(6,*)'-------------------------------------------------------------------------------'
       WRITE(6,*)'TEMP'
@@ -269,8 +269,16 @@
       WRITE(6,*) B
       WRITE(6,*) ''
       WRITE(6,*)'-------------------------------------------------------------------------------'
+      
+      DL = DBLE(DL)
+      D = DBLE(D)
+      DU = DBLE(DU)
+      B = DBLE(B)
 
       CALL DGTSV(nrho,1,DL,D,DU,B,nrho)
+
+      B = REAL(B,rprec)
+      
       ! B is the solution matrix = mu0 I / phip of the next iteration
       ! phip = 2 rho phi_a
       B = 2*eq_phiedge/mu0*(THRIFT_RHO*B)
