@@ -22,7 +22,7 @@
       IMPLICIT NONE
       INTEGER :: i,itime, ier
       LOGICAL :: lverbj
-      REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,temp,Aminor,Rmajor
+      REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,temp1,temp2,Aminor,Rmajor
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: A_temp, B_temp, C_temp, D_temp, &
                                                 B_der, C_der, D_der, &
                                                 a1, a2, a3, a4,         &
@@ -86,9 +86,9 @@
          CALL get_equil_Bav(s,Bav,Bsqav,ier)
          CALL get_equil_sus(s,s11,h,h,h,ier)
          IF (i /= 1)  A_temp(i) = s11/(4*rho*eq_phiedge) ! A not necessary at axis (no derivative required)
-         temp = 2*etapara*vp ! temp <- 2 eta dV/dPhi 
-         B_temp(i) = temp*Bsqav/mu0 ! 2 eta dV/dPhi <B^2>/mu_0
-         C_temp(i) = temp*pprime  ! 2 eta dV/dPhi dp/drho
+         temp1 = 2*etapara*vp ! temp1 <- 2 eta dV/dPhi 
+         B_temp(i) = temp1*Bsqav/mu0 ! 2 eta dV/dPhi <B^2>/mu_0
+         C_temp(i) = temp1*pprime  ! 2 eta dV/dPhi dp/drho
          IF (i==1) THEN ! set jsource(1)=jsource(2), jsource(nrho+1)=jsource(nrho)
             h = THRIFT_JSOURCE(1,mytimestep)
          ELSE IF (i==nrho+2) THEN
@@ -96,7 +96,7 @@
          ELSE
             h = THRIFT_JSOURCE(i-1,mytimestep)
          END IF
-         D_temp(i) = -temp*h*Bav ! -2 eta dV/dPhi <J.B>
+         D_temp(i) = -temp1*h*Bav ! -2 eta dV/dPhi <J.B>
          IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') rho, etapara, vp, pprime, bav, bsqav, s11
       END DO
       IF (lverbj) THEN
@@ -228,14 +228,14 @@
       s = rho*rho
       ier = 0
       CALL get_equil_Rmajor(s,Rmajor,Bav,Aminor,ier)
-      temp = mu0*Rmajor*(log(8*Rmajor/Aminor) - 2 + 0.25) ! temp <- L_ext
+      temp1 = mu0*Rmajor*(log(8*Rmajor/Aminor) - 2 + 0.25) ! temp1 <- L_ext
       ! Now update THRIFT_UEDGE
       CALL get_prof_etapara(THRIFT_RHO(nrho-1),t,etapara)  
       CALL EZspline_interp(vp_spl,rho,vp,ier)
       CALL get_equil_Bav(s,Bav,Bsqav,ier)
       CALL get_prof_pprime(rho,t,pprime) 
       s11 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*h) ! du/drho at edge
-      THRIFT_UEDGE(2) = THRIFT_UEDGE(1) - k*mu0/(2*eq_phiedge)*etapara/temp*vp * &  ! u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi *
+      THRIFT_UEDGE(2) = THRIFT_UEDGE(1) - k*mu0/(2*eq_phiedge)*etapara/temp1*vp * &  ! u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi *
             (((pprime + Bsqav/mu0)*THRIFT_UEDGE(1)) + Bsqav/mu0*s11 &               ! ((p' + <B^2>/mu0)*u+<B^2>/mu0 * du/drho
             - THRIFT_JSOURCE(nrho,1)*Bav)                                  ! - <J.B>)
 
@@ -244,7 +244,7 @@
          WRITE(6,*)'CALCULATING U'
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'LEXT'
-         WRITE(6,*) temp
+         WRITE(6,*) temp1
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'THRIFT_UGRID AT CURRENT TIMESTEP'
@@ -270,17 +270,17 @@
       END IF
       
       ! Matrix is not fully tridiagonal; it has following element in (nrho,nrho-2)
-      temp = -a4(nrho)/(5*h**2) 
+      temp1 = -a4(nrho)/(5*h**2) 
       ! Eliminate that extra non-zero element to get a TDM by performing following row operations
-      temp = temp/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-temp*[NRHO-1] (DL is of size nrho-1)
-      DL(nrho-1) = DL(nrho-1) - temp* D(nrho-1) 
-      D(nrho)    = D(nrho)    - temp*DU(nrho-1)
-      B(nrho)    = B(nrho)    - temp* B(nrho-1)
+      temp1 = temp1/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-temp1*[NRHO-1] (DL is of size nrho-1)
+      DL(nrho-1) = DL(nrho-1) - temp1* D(nrho-1) 
+      D(nrho)    = D(nrho)    - temp1*DU(nrho-1)
+      B(nrho)    = B(nrho)    - temp1* B(nrho-1)
 
       IF (lverbj) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'MATRIX ELEMENT AT (nrho,nrho-2)'
-         WRITE(6,*) temp
+         WRITE(6,*) temp1
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'MATRIX LOWER DIAGONAL (POST ROW OPERATION)'
@@ -340,7 +340,7 @@
       END IF    
 
       ! Calculate I_source (a1)
-      a1 = 0; temp = 0
+      a1 = 0; temp1 = 0
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          s = rho * rho
@@ -348,8 +348,8 @@
          CALL get_equil_Rmajor(s,h,h,Aminor,ier)  ! aminor_i
          rho = THRIFT_RHO(i-1)
          s = rho*rho
-         IF (i /= 1) CALL get_equil_Rmajor(s,h,h,temp,ier) ! temp = aminor_i-1
-         a1(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp**2)
+         IF (i /= 1) CALL get_equil_Rmajor(s,h,h,temp1,ier) ! temp1 = aminor_i-1
+         a1(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp1**2)
          IF (i /= 1) a1(i) = a1(i) + a1(i-1)
       END DO
 
@@ -368,23 +368,48 @@
 
       ! J_plasma = dI_plasma/dA = dI/ds ds/dA =1/2rho dI/drho 2pi R/V' 
       !          = pi R/(rho v') dI/drho = pi R / (rho phi_a dV/dphi) dI_plasma/drho
+      !DO i = 1, nrho
+      !   ! Calculate derivative, store in temp1
+      !   IF (i == 1) THEN ! Symmetry BC
+      !      temp1 = (B(2)-B(1))/(2*h)
+      !   ELSE IF (i == nrho) THEN ! 
+      !      temp1 = B(nrho) ! Set current at nrho = nrho-1 for now
+      !      temp1 = (4*temp1-3*B(nrho)-B(nrho-1))/(3*h) 
+      !   ELSE
+      !      temp1 = (B(i+1)-B(i-1))/(2*h)
+      !   END IF
+      !   rho = THRIFT_RHO(i)
+      !   s = rho*rho
+      !   ier = 0
+      !   CALL EZspline_interp(vp_spl,rho,vp,ier)
+      !   CALL get_equil_Rmajor(s,Rmajor,s11,Aminor,ier)
+      !   THRIFT_JPLASMA(i,mytimestep) = pi*Rmajor/(eq_phiedge*rho*vp)*temp1
+      !END DO
+
+      ! J_plasma = dI_plasma/dA = dI_plasma/drho / dA/drho
       DO i = 1, nrho
-         ! Calculate derivative, store in temp
+         ! Calculate derivatives
          IF (i == 1) THEN ! Symmetry BC
-            temp = (B(2)-B(1))/(2*h)
+            temp1 = (B(2)-B(1))/(2*h) ! dI/drho
+            CALL get_equil_Rmajor(THRIFT_RHO(1)*THRIFT_RHO(1),h,h,Aminor,ier)
+            CALL get_equil_Rmajor(THRIFT_RHO(2)*THRIFT_RHO(2),h,h,temp2,ier)
+            temp2 = (temp2 - Aminor)/(2*h) ! dA/drho
          ELSE IF (i == nrho) THEN ! 
-            temp = B(nrho) ! Set current at nrho = nrho-1 for now
-            temp = (4*temp-3*B(nrho)-B(nrho-1))/(3*h) 
+            temp1 = B(nrho) ! Set current at nrho = nrho-1 for now
+            temp1 = (4*temp1-3*B(nrho)-B(nrho-1))/(3*h) 
+            CALL get_equil_Rmajor(1*1,h,h,Aminor,ier)
+            CALL get_equil_Rmajor(THRIFT_RHO(nrho)*THRIFT_RHO(nrho),h,h,temp2,ier)
+            CALL get_equil_Rmajor(THRIFT_RHO(nrho-1)*THRIFT_RHO(nrho-1),h,h,s11,ier)
+            temp2 = (4*Aminor-3*temp2-s11)/(3*h) ! dA/drho = (4*A(nrho+1)-3*A(nrho)-A(nrho-1))/3h
          ELSE
-            temp = (B(i+1)-B(i-1))/(2*h)
+            temp1 = (B(i+1)-B(i-1))/(2*h)
+            CALL get_equil_Rmajor(THRIFT_RHO(i-1)*THRIFT_RHO(i-1),h,h,Aminor,ier)
+            CALL get_equil_Rmajor(THRIFT_RHO(i+1)*THRIFT_RHO(i+1),h,h,temp2,ier)
+            temp2 = (temp2 - Aminor)/(2*h) ! dA/drho
          END IF
-         rho = THRIFT_RHO(i)
-         s = rho*rho
-         ier = 0
-         CALL EZspline_interp(vp_spl,rho,vp,ier)
-         CALL get_equil_Rmajor(s,Rmajor,s11,Aminor,ier)
-         THRIFT_JPLASMA(i,mytimestep) = pi*Rmajor/(eq_phiedge*rho*vp)*temp
+         THRIFT_JPLASMA(i,mytimestep) = temp1/temp2 ! dI/drho / dA/drho
       END DO
+      
       IF (lverbj) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'J_PLASMA AT CURRENT TIMESTEP'
@@ -400,7 +425,7 @@
       END IF    
 
       ! Calculate enclosed currents for progress
-      temp = 0
+      temp1 = 0
       THRIFT_I        = 0; THRIFT_IBOOT    = 0; THRIFT_IPLASMA  = 0
       THRIFT_IECCD    = 0; THRIFT_INBCD    = 0; THRIFT_IOHMIC   = 0
       DO i = 1, nrho
@@ -410,12 +435,12 @@
          CALL get_equil_Rmajor(s,h,h,Aminor,ier)  ! aminor_i
          rho = THRIFT_RHO(i-1)
          s = rho*rho
-         IF (i /= 1) CALL get_equil_Rmajor(s,h,h,temp,ier) ! aminor_i-1
-         THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(Aminor**2-temp**2)
-         THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(Aminor**2-temp**2)
-         THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(Aminor**2-temp**2)
-         THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(Aminor**2-temp**2)
-         THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(Aminor**2-temp**2)
+         IF (i /= 1) CALL get_equil_Rmajor(s,h,h,temp1,ier) ! aminor_i-1
+         THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(Aminor**2-temp1**2)
+         THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(Aminor**2-temp1**2)
+         THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(Aminor**2-temp1**2)
+         THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(Aminor**2-temp1**2)
+         THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(Aminor**2-temp1**2)
       END DO
       THRIFT_I = THRIFT_IPLASMA + THRIFT_IBOOT + THRIFT_IECCD + THRIFT_INBCD + THRIFT_IOHMIC
 
@@ -434,7 +459,7 @@
 !---------------------------------------------
 !     OLD NON-FUNCTIONING CODE
 !---------------------------------------------------------
-      ! Temp rho grid extended beyond boundaries (nrho+4)
+      ! temp1 rho grid extended beyond boundaries (nrho+4)
       ! To get on nrho+2 grid, shift index by +1
       ! To get on nrho grid, shift index by +2
       !rho_temp(1) = -THRIFT_RHO(1)
