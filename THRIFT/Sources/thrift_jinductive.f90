@@ -23,8 +23,7 @@
       INTEGER :: i,itime, ier
       LOGICAL :: lverbj
       REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,temp,Aminor,Rmajor
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: ucur, &
-                                                A_temp, B_temp, C_temp, D_temp, &
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: A_temp, B_temp, C_temp, D_temp, &
                                                 B_der, C_der, D_der, &
                                                 a1, a2, a3, a4,         &
                                                 DU, D, DL, B
@@ -35,7 +34,7 @@
 !     The general idea here is to use equation (22) in form to update
 !     THRIFT_JPLASMA.  Where THRIFT_JSOURCE is the J in <J_s.B>.
 
-      lverbj = .false. 
+      lverbj = .true. 
 
       ! Check to make sure we're not zero beta
       IF (eq_beta == 0) THEN
@@ -48,32 +47,21 @@
       END IF
 
       ! Allocations
-      ALLOCATE(ucur(nrho), &
-               A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
+      ALLOCATE(A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
                B_der(nrho), C_der(nrho), D_der(nrho), &
                a1(nrho), a2(nrho), a3(nrho), a4(nrho), &
                DU(nrho-1), D(nrho), DL(nrho-1), B(nrho))
 
-      ucur = 0;
       A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
       B_der = 0; C_der = 0; D_der = 0;
       a1 = 0; a2 = 0; a3 = 0; a4 = 0;
       DU = 0; D = 0; DL = 0; B = 0;
 
-      ! Calculate u=S11 iota + S12 this iteration
-      DO i = 1, nrho
-         rho = THRIFT_RHO(i) 
-         s = rho*rho
-         ier = 0        
-         CALL get_equil_sus(s,s11,s12,h,h,ier) 
-         CALL EZspline_interp(iota_spl,rho,iota,ier)
-         ucur(i) = s11*iota+s12
-      END DO
-
       t = THRIFT_T(mytimestep)
-
       ! Populate A,B,C,D
       IF (lverbj) THEN
+         WRITE(6,*)'==============================================================================='
+         WRITE(6,*)'CALCULATING COEFFICIENTS A,B,C,D'
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*) 'RHO      ETAPARA     DV/DPHI     DP/DRHO     BAV      BSQAV        S11'
       END IF
@@ -97,11 +85,7 @@
          CALL get_prof_pprime(rho,t,pprime)
          CALL get_equil_Bav(s,Bav,Bsqav,ier)
          CALL get_equil_sus(s,s11,h,h,h,ier)
-         IF (i==1) THEN 
-            A_temp(i) = 0 ! A not necessary at axis (no derivative required)
-         ELSE
-            A_temp(i) = s11/(4*rho*eq_phiedge)
-         END IF
+         IF (i /= 1)  A_temp(i) = s11/(4*rho*eq_phiedge) ! A not necessary at axis (no derivative required)
          temp = 2*etapara*vp ! temp <- 2 eta dV/dPhi 
          B_temp(i) = temp*Bsqav/mu0 ! 2 eta dV/dPhi <B^2>/mu_0
          C_temp(i) = temp*pprime  ! 2 eta dV/dPhi dp/drho
@@ -112,7 +96,7 @@
          ELSE
             h = THRIFT_JSOURCE(i-1,mytimestep)
          END IF
-         D_temp(i) = -temp*h*Bav ! 2 eta dV/dPhi <J.B>
+         D_temp(i) = -temp*h*Bav ! -2 eta dV/dPhi <J.B>
          IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') rho, etapara, vp, pprime, bav, bsqav, s11
       END DO
       IF (lverbj) THEN
@@ -162,6 +146,21 @@
       B_der(nrho) = (4*B_temp(nrho+2)-3*B_temp(nrho+1)-B_temp(nrho))/(3*h)
       C_der(nrho) = (4*C_temp(nrho+2)-3*C_temp(nrho+1)-C_temp(nrho))/(3*h)
       D_der(nrho) = (4*D_temp(nrho+2)-3*D_temp(nrho+1)-D_temp(nrho))
+      
+      IF (lverbj) THEN
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'DERIV B'
+         WRITE(6,*) B_der
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'DERIV C'
+         WRITE(6,*) C_der
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'DERIV D'
+         WRITE(6,*) D_der
+         WRITE(6,*)''
+      END IF
 
       ! a1 = A dD/drho
       ! a2 = A (1/rho dB/drho - B/rho^2 + dC/drho)
@@ -176,6 +175,8 @@
       END DO
 
       IF (lverbj) THEN
+         WRITE(6,*)'==============================================================================='
+         WRITE(6,*)'CALCULATING COEFFICIENTS ALPHA 1,2,3,4'
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'ALPHA_1'
          WRITE(6,*) a1
@@ -194,42 +195,67 @@
          WRITE(6,*)''
       END IF
 
-      ! Populate diagonals; DU and DL of size nrho-1, D of size nrho
-      ! Do most of the work in one loop and fix mistakes afterwards
+      ! Populate diagonals and RHS; DU and DL of size nrho-1, D of size nrho
+      ! (Do most of the work in one loop and fix mistakes afterwards)
+      ! If on the first time iteration, we say there's no enclosed current (i.e. B=0)
       DO i = 1, nrho-1
          DU(i) = a3(i)/(2*h) +a4(i)/(h**2)   ! Upper diagonal (Correct)
          DL(i) = -a3(i)/(2*h)+a4(i)/(h**2)   ! Lower diagonal (DL(nrho-1) wrong)
           D(i) = a2(i)-2*a4(i)/(h**2)-1/k    ! Middle diagonal (D(1,nrho) wrong)
-          B(i) = -ucur(i)/k-a1(i)            ! Right-hand side (B(nrho) wrong)
+          IF (mytimestep /= 1) B(i) = -THRIFT_UGRID(i,mytimestep-1)/k-a1(i) ! Right-hand side (B(nrho) wrong)
       END DO
       DL(nrho-1)= -a3(nrho)/(3*h)+2*a4(nrho)/(h**2)         ! Lower diagonal fixed
         D(1)    = a2(1)-a3(1)/(2*h)-a4(1)/(h**2)-1/k  ! Middle diagonal half fixed
         D(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
-      B(nrho) = ucur(nrho)/k-a1(nrho) - edge_u(1)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
+      IF (mytimestep /= 1) B(nrho) = THRIFT_UGRID(nrho,mytimestep-1)/k-a1(nrho) &
+      - THRIFT_UEDGE(1)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
 
-      ! Calculate edge_u for next timestep this picard iteration
+      ! Calculate u = S11 iota + S12 for this timestep, this picard iteration
+      ! On the grid
+      IF (mytimestep /= ntimesteps) THEN
+         DO i = 1, nrho
+            rho = THRIFT_RHO(i) 
+            s = rho*rho
+            ier = 0        
+            CALL get_equil_sus(s,s11,s12,h,h,ier) 
+            CALL EZspline_interp(iota_spl,rho,iota,ier)
+            THRIFT_UGRID(i,mytimestep) = s11*iota+s12
+         END DO
+      END IF
+      ! On the edge
       ! First calculate L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)      
-      CALL get_prof_etapara(THRIFT_RHO(nrho-1),t,etapara)  
       rho = 1 
       s = rho*rho
       ier = 0
       CALL get_equil_Rmajor(s,Rmajor,Bav,Aminor,ier)
       temp = mu0*Rmajor*(log(8*Rmajor/Aminor) - 2 + 0.25) ! temp <- L_ext
-      ! Now update edge_u
+      ! Now update THRIFT_UEDGE
+      CALL get_prof_etapara(THRIFT_RHO(nrho-1),t,etapara)  
       CALL EZspline_interp(vp_spl,rho,vp,ier)
       CALL get_equil_Bav(s,Bav,Bsqav,ier)
       CALL get_prof_pprime(rho,t,pprime) 
-      edge_u(2) = edge_u(1) - k*mu0/(2*eq_phiedge)*etapara/temp*vp * &  ! u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi *
-            (((pprime + Bsqav/mu0)*edge_u(1)) &                         ! ((p' + <B^2>/mu0)*u +
-            + Bsqav/mu0*(-8*edge_u(1)+9*ucur(nrho)-ucur(nrho-1))/(3*h) &! <B^2>/mu0 * du/drho - 
-            - THRIFT_JSOURCE(nrho,mytimestep)*Bav)                      ! <J.B>)
+      s11 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,mytimestep)-THRIFT_UGRID(nrho-1,mytimestep))/(3*h) ! du/drho at edge
+      THRIFT_UEDGE(2) = THRIFT_UEDGE(1) - k*mu0/(2*eq_phiedge)*etapara/temp*vp * &  ! u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi *
+            (((pprime + Bsqav/mu0)*THRIFT_UEDGE(1)) + Bsqav/mu0*s11 &               ! ((p' + <B^2>/mu0)*u+<B^2>/mu0 * du/drho
+            - THRIFT_JSOURCE(nrho,mytimestep)*Bav)                                  ! - <J.B>)
 
       IF (lverbj) THEN
+         WRITE(6,*)'==============================================================================='
+         WRITE(6,*)'CALCULATING U'
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'EDGE U'
-         WRITE(6,*) edge_u
+         WRITE(6,*)'LEXT'
+         WRITE(6,*) temp
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'THRIFT_UGRID AT CURRENT TIMESTEP'
+         WRITE(6,*) THRIFT_UGRID(:,mytimestep)
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'THRIFT_UEDGE AT CURRENT TIMESTEP'
+         WRITE(6,*) THRIFT_UEDGE
+         WRITE(6,*)''
+         WRITE(6,*)'==============================================================================='
+         WRITE(6,*)'CALCULATING MATRIX'
          WRITE(6,*) 'D(NRHO) (PRE ROW OPERATION)'
          WRITE(6,*) D(nrho)
          WRITE(6,*) '' 
@@ -241,11 +267,6 @@
          WRITE(6,*) 'B(NRHO) (PRE ROW OPERATION)'
          WRITE(6,*) B(nrho)
          WRITE(6,*) '' 
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'TEMP'
-         WRITE(6,*) temp
-         WRITE(6,*)
-         WRITE(6,*)''
       END IF
       
       ! Matrix is not fully tridiagonal; it has following element in (nrho,nrho-2)
@@ -258,19 +279,23 @@
 
       IF (lverbj) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'DL (POST ROW OPERATION)'
+         WRITE(6,*)'MATRIX ELEMENT AT (nrho,nrho-2)'
+         WRITE(6,*) temp
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'MATRIX LOWER DIAGONAL (POST ROW OPERATION)'
          WRITE(6,*) DL
          WRITE(6,*) ''  
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'D  (POST ROW OPERATION)'
+         WRITE(6,*)'MATRIX MAIN DIAGONAL  (POST ROW OPERATION)'
          WRITE(6,*) D
          WRITE(6,*) ''   
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'DU (POST ROW OPERATION)'
+         WRITE(6,*)'MATRIX UPPER DIAGONAL (POST ROW OPERATION)'
          WRITE(6,*) DU
          WRITE(6,*) ''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'B  (POST ROW OPERATION)'
+         WRITE(6,*)'RIGHT HAND SIDE       (POST ROW OPERATION)'
          WRITE(6,*) B
          WRITE(6,*) ''
          WRITE(6,*)'-------------------------------------------------------------------------------'
@@ -296,10 +321,24 @@
       DO i = nrho-1, 1, -1
          B(i) = a2(i)-a1(i)*B(i+1)
       END DO
-      
-      ! B = mu0 I / phip => I = phip*B/mu0 = 2*phi_a*B/mu0
+      IF (lverbj) THEN
+         WRITE(6,*)'==============================================================================='
+         WRITE(6,*)'POST SOLVING EQUATIONS'
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'U ARRAY AT CURRENT TIMESTEP'
+         WRITE(6,*) B
+         WRITE(6,*)''
+      END IF
+      ! B = mu0 I / phip => I = phip*B/mu0 = 2*phi_a*rho*B/mu0
       B = 2*eq_phiedge/mu0*(THRIFT_RHO*B)
-     
+
+      IF (lverbj) THEN
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'I_TOTAL AT CURRENT TIMESTEP'
+         WRITE(6,*) B
+         WRITE(6,*)''
+      END IF    
+
       ! Calculate I_source (a1)
       a1 = 0
       rho = THRIFT_RHO(1)
@@ -319,12 +358,17 @@
       END DO
 
       ! I_plasma = I_total - I_source
-      ! If first timestep, require that I_total = 0
-      IF (mytimestep==1) THEN 
-         B = -a1
-      ELSE
-         B = B - a1 
-      END IF
+      B = B - a1 
+      IF (lverbj) THEN
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'I_SOURCE AT CURRENT TIMESTEP'
+         WRITE(6,*) a1
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'I_PLASMA AT CURRENT TIMESTEP'
+         WRITE(6,*) B
+         WRITE(6,*)''
+      END IF    
 
       ! J_plasma = dI_plasma/dA = dI/ds ds/dA =1/2rho dI/drho 2pi R/V' 
       !          = pi R/(rho v') dI/drho = pi R / (rho phi_a dV/dphi) dI_plasma/drho
@@ -345,9 +389,16 @@
          CALL get_equil_Rmajor(s,Rmajor,s11,Aminor,ier)
          THRIFT_JPLASMA(i,mytimestep) = pi*Rmajor/(eq_phiedge*rho*vp)*temp
       END DO
-
-      DEALLOCATE(ucur, &
-               A_temp, B_temp, C_temp, D_temp, &
+      IF (lverbj) THEN
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'J_PLASMA AT CURRENT TIMESTEP'
+         WRITE(6,*) THRIFT_JPLASMA(:,mytimestep)
+         WRITE(6,*)''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)'JINDUCTIVE DONE'
+         WRITE(6,*)'==============================================================================='
+      END IF    
+      DEALLOCATE(A_temp, B_temp, C_temp, D_temp, &
                B_der, C_der, D_der, &
                a1, a2, a3, a4, &
                DU, D, DL, B)

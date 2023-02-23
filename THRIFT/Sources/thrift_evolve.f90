@@ -37,7 +37,8 @@
       THRIFT_JNBCD    = 0
       THRIFT_JOHMIC   = 0
       THRIFT_JSOURCE  = 0
-      edge_u          = 0
+      THRIFT_UGRID    = 0
+      THRIFT_UEDGE    = 0
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
@@ -143,7 +144,7 @@
          END DO
          ! Once converged, store the edge enclosed current for the next timestep
          ! from the latest picard iteration into the first index
-         edge_u(1) = edge_u(2)
+         THRIFT_UEDGE(1) = THRIFT_UEDGE(2)
 
       END DO
 
