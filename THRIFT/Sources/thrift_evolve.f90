@@ -142,9 +142,9 @@
             lfirst_sub_pass = .FALSE.
 
          END DO
-         ! Once converged, store the edge enclosed current for the next timestep
-         ! from the latest picard iteration into the first index
-         THRIFT_UEDGE(1) = THRIFT_UEDGE(2)
+         ! Once converged, store U from latest picard iteration in first index
+         THRIFT_UGRID(:,1) = THRIFT_UGRID(:,2)
+         THRIFT_UEDGE(1)   = THRIFT_UEDGE(2)
 
       END DO
 
