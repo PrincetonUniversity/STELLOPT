@@ -42,6 +42,7 @@
   !---------- GRID PARAMETERS ------------
   NRHO = 64
   NTIMESTEPS = 15
+  TSTART = 0
   TEND = 1.5
   ! BOOZER TRANSFORM
   !---------- BOOZER TRANSFORMATION ------------

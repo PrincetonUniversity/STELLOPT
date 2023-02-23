@@ -37,9 +37,9 @@
       ! Choose which items to make verbose
       lverblatin  = .false.
       lverbalpha  = .false.
-      lverbu      = .false.
+      lverbu      = .true.
       lverbmat    = .false.
-      lverbpost   = .false.
+      lverbpost   = .true.
 
 
       ! Check to make sure we're not zero beta
@@ -107,20 +107,32 @@
       END DO
       IF (lverblatin) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'A_TEMP'
-         WRITE(6,*) A_temp
+         WRITE(6,*)'A'
+         WRITE(6,*) '' 
+         WRITE(6,*) A_temp(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) A_temp(nrho-6:nrho+2)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'B_TEMP'
-         WRITE(6,*) B_temp
+         WRITE(6,*)'B'
+         WRITE(6,*) '' 
+         WRITE(6,*) B_temp(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) B_temp(nrho-6:nrho+2)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'C_TEMP'
-         WRITE(6,*) C_temp
+         WRITE(6,*)'C'
+         WRITE(6,*) '' 
+         WRITE(6,*) C_temp(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) C_temp(nrho-6:nrho+2)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'D_TEMP'
-         WRITE(6,*) D_temp
+         WRITE(6,*)'D'
+         WRITE(6,*) '' 
+         WRITE(6,*) D_temp(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) D_temp(nrho-6:nrho+2)
          WRITE(6,*)''
       END IF
 
@@ -156,15 +168,24 @@
       IF (lverblatin) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'DERIV B'
-         WRITE(6,*) B_der
+         WRITE(6,*) '' 
+         WRITE(6,*) B_der(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) B_der(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'DERIV C'
-         WRITE(6,*) C_der
+         WRITE(6,*) '' 
+         WRITE(6,*) C_der(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) C_der(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'DERIV D'
-         WRITE(6,*) D_der
+         WRITE(6,*) '' 
+         WRITE(6,*) D_der(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) D_der(nrho-8:nrho)
          WRITE(6,*)''
       END IF
 
@@ -185,19 +206,31 @@
          WRITE(6,*)'CALCULATING COEFFICIENTS ALPHA 1,2,3,4'
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'ALPHA_1'
-         WRITE(6,*) a1
+         WRITE(6,*) '' 
+         WRITE(6,*) a1(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) a1(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'ALPHA_2'
-         WRITE(6,*) a2
+         WRITE(6,*) '' 
+         WRITE(6,*) a2(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) a2(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'ALPHA_3'
-         WRITE(6,*) a3
+         WRITE(6,*) '' 
+         WRITE(6,*) a3(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) a3(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'ALPHA_4'
-         WRITE(6,*) a4
+         WRITE(6,*) '' 
+         WRITE(6,*) a4(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) a4(nrho-8:nrho)
          WRITE(6,*)''
       END IF
 
@@ -254,11 +287,14 @@
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'THRIFT_UGRID AT CURRENT TIMESTEP'
-         WRITE(6,*) THRIFT_UGRID(:,1)
+         WRITE(6,*) '' 
+         WRITE(6,*) THRIFT_UGRID(1:9,1)
+         WRITE(6,*) '...'
+         WRITE(6,*) THRIFT_UGRID(nrho-8:nrho,1)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'THRIFT_UEDGE AT CURRENT TIMESTEP'
-         WRITE(6,*) THRIFT_UEDGE
+         WRITE(6,*) THRIFT_UEDGE(1)
          WRITE(6,*)''
       END IF
       IF (lverbmat) THEN
@@ -292,20 +328,32 @@
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'MATRIX LOWER DIAGONAL (POST ROW OPERATION)'
-         WRITE(6,*) DL
-         WRITE(6,*) ''  
+         WRITE(6,*) ''
+         WRITE(6,*) DL(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) DL(nrho-9:nrho-1)
+         WRITE(6,*) ''    
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'MATRIX MAIN DIAGONAL  (POST ROW OPERATION)'
-         WRITE(6,*) D
+         WRITE(6,*) ''
+         WRITE(6,*) D(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) D(nrho-8:nrho)
          WRITE(6,*) ''   
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'MATRIX UPPER DIAGONAL (POST ROW OPERATION)'
-         WRITE(6,*) DU
          WRITE(6,*) ''
+         WRITE(6,*) DU(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) DU(nrho-9:nrho-1)
+         WRITE(6,*) ''   
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'RIGHT HAND SIDE       (POST ROW OPERATION)'
-         WRITE(6,*) B
-         WRITE(6,*) ''
+         WRITE(6,*) '' 
+         WRITE(6,*) B(1:9)
+         WRITE(6,*) '...'
+         WRITE(6,*) B(nrho-8:nrho)
+         WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
       END IF     
 
