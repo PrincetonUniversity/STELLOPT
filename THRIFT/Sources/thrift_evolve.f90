@@ -133,7 +133,7 @@
             IF (lverb) THEN
  
 
-             WRITE(6,'(1X,F5.2,1X,I2,1X,F5.2,5(1X,ES10.2),1X,ES10.2)') &
+             WRITE(6,'(1X,F5.2,1X,I2,1X,F5.2,5(1X,ES11.3E1),1X,ES10.2)') &
                 THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
                 THRIFT_I, THRIFT_IPLASMA, THRIFT_IBOOT, THRIFT_IECCD, THRIFT_INBCD,&
                 !THRIFT_IOHMIC,&

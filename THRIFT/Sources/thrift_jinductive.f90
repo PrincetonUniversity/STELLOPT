@@ -38,7 +38,7 @@
       lverblatin  = .false.
       lverbalpha  = .false.
       lverbmat    = .false.
-      lverbpost   = .false.
+      lverbpost   = .true.
 
 
       ! Check to make sure we're not zero beta
