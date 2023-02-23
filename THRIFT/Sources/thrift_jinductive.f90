@@ -39,7 +39,7 @@
       lverbalpha  = .false.
       lverbu      = .false.
       lverbmat    = .false.
-      lverbpost   = .true.
+      lverbpost   = .false.
 
 
       ! Check to make sure we're not zero beta
