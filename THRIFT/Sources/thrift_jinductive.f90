@@ -362,6 +362,7 @@
          CALL get_equil_Rmajor(s,h,h,Aminor,ier)  ! aminor_i
          rho = THRIFT_RHO(i-1)
          s = rho*rho
+         ier = 0
          IF (i /= 1) CALL get_equil_Rmajor(s,h,h,temp1,ier) ! temp1 = aminor_i-1
          a1(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp1**2)
          IF (i /= 1) a1(i) = a1(i) + a1(i-1)
@@ -407,48 +408,65 @@
       !END DO
 
       ! J_plasma = dI_plasma/dA = dI_plasma/drho / dA/drho
+      IF (.false.) THEN
+         DO i = 1, nrho
+            ! Calculate derivatives
+            IF (i == 1) THEN ! Symmetry BC
+               temp1 = (B(2)-B(1))/(2*h) ! dI/drho
+               rho = THRIFT_RHO(1)
+               s = rho*rho
+               ier = 0
+               CALL get_equil_Rmajor(s,h,h,Aminor,ier) 
+               rho = THRIFT_RHO(2)
+               s = rho*rho
+               ier = 0
+               CALL get_equil_Rmajor(s,h,h,temp2,ier)
+               temp2 = (temp2 - Aminor)/(2*h) ! dA/drho
+            ELSE IF (i == nrho) THEN ! 
+               temp1 = B(nrho) ! Set current at nrho = nrho-1 for now
+               temp1 = (4*temp1-3*B(nrho)-B(nrho-1))/(3*h) 
+               rho = 1
+               s = rho*rho
+               ier = 0
+               CALL get_equil_Rmajor(s,h,h,Aminor,ier)
+               rho = THRIFT_RHO(nrho)
+               s = rho*rho
+               ier = 0
+               CALL get_equil_Rmajor(s,h,h,temp2,ier)
+               rho = THRIFT_RHO(nrho-1)
+               s = rho*rho
+               ier = 0
+               CALL get_equil_Rmajor(s,h,h,s11,ier)
+               temp2 = (4*Aminor-3*temp2-s11)/(3*h) ! dA/drho = (4*A(nrho+1)-3*A(nrho)-A(nrho-1))/3h
+            ELSE
+               temp1 = (B(i+1)-B(i-1))/(2*h)
+               rho = THRIFT_RHO(i-1)
+               s = rho*rho
+               ier = 0
+               CALL get_equil_Rmajor(s,h,h,Aminor,ier)
+               rho = THRIFT_RHO(i+1)
+               s = rho*rho
+               ier = 0
+               CALL get_equil_Rmajor(s,h,h,temp2,ier)
+               temp2 = (temp2 - Aminor)/(2*h) ! dA/drho
+            END IF
+            THRIFT_JPLASMA(i,mytimestep) = temp1/temp2 ! dI/drho / dA/drho
+         END DO
+      END IF
+
+      ! JPLASMA(i) = (IPLASMA(i)-IPLASMA(i-1))/(pi*(a(i)**2-a(i-1)**2))
+      temp = 0; s11 = 0;
       DO i = 1, nrho
-         ! Calculate derivatives
-         IF (i == 1) THEN ! Symmetry BC
-            temp1 = (B(2)-B(1))/(2*h) ! dI/drho
-            rho = THRIFT_RHO(1)
-            s = rho*rho
-            ier = 0
-            CALL get_equil_Rmajor(s,h,h,Aminor,ier)
-            rho = THRIFT_RHO(2)
-            s = rho*rho
-            ier = 0
-            CALL get_equil_Rmajor(s,h,h,temp2,ier)
-            temp2 = (temp2 - Aminor)/(2*h) ! dA/drho
-         ELSE IF (i == nrho) THEN ! 
-            temp1 = B(nrho) ! Set current at nrho = nrho-1 for now
-            temp1 = (4*temp1-3*B(nrho)-B(nrho-1))/(3*h) 
-            rho = 1
-            s = rho*rho
-            ier = 0
-            CALL get_equil_Rmajor(s,h,h,Aminor,ier)
-            rho = THRIFT_RHO(nrho)
-            s = rho*rho
-            ier = 0
-            CALL get_equil_Rmajor(s,h,h,temp2,ier)
-            rho = THRIFT_RHO(nrho-1)
-            s = rho*rho
-            ier = 0
-            CALL get_equil_Rmajor(s,h,h,s11,ier)
-            temp2 = (4*Aminor-3*temp2-s11)/(3*h) ! dA/drho = (4*A(nrho+1)-3*A(nrho)-A(nrho-1))/3h
-         ELSE
-            temp1 = (B(i+1)-B(i-1))/(2*h)
-            rho = THRIFT_RHO(i-1)
-            s = rho*rho
-            ier = 0
-            CALL get_equil_Rmajor(s,h,h,Aminor,ier)
-            rho = THRIFT_RHO(i+1)
-            s = rho*rho
-            ier = 0
-            CALL get_equil_Rmajor(s,h,h,temp2,ier)
-            temp2 = (temp2 - Aminor)/(2*h) ! dA/drho
-         END IF
-         THRIFT_JPLASMA(i,mytimestep) = temp1/temp2 ! dI/drho / dA/drho
+         rho = THRIFT_RHO(i)
+         s = rho*rho
+         ier = 0
+         CALL get_equil_Rmajor(s,h,h,Aminor,ier)
+         rho = THRIFT_RHO(i-1)
+         s = rho*rho
+         ier = 0
+         IF (i /= 1) CALL get_equil_Rmajor(s,h,h,temp,ier)
+         IF (i /= 1) s11 = B(i-1) ! I_plasma(i)
+         THRIFT_JPLASMA(i,mytimestep) = (B(i)-s11)/(pi*(Aminor**2-temp**2))
       END DO
 
       IF (lverbpost) THEN
