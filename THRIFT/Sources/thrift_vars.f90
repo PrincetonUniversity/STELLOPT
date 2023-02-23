@@ -31,23 +31,25 @@ MODULE thrift_vars
     !          THRIFT_JXX       Current density sources
     !          THRIFT_JPLASMA   Inductive Plasma respsonse    
     !          THRIFT_JSOURCE   Total source current density
-    !          edge_u           Edge enclosed current
+    !          THRIFT_UGRID     u = S11*iota+S12
+    !          THRIFT_UEDGE     u at rho = 1
     !-------------------------------------------------------------------
     IMPLICIT NONE
 
     LOGICAL :: leccd, lnbcd, lohmic, ldiagno, lscreen_subcodes
     LOGICAL, DIMENSION(:), ALLOCATABLE :: lbooz
-    REAL(rprec), DIMENSION(2) :: edge_u
+    REAL(rprec), DIMENSION(2) :: THRIFT_UEDGE
     INTEGER :: ntimesteps, nrho, npicard, &
                win_thrift_j, win_thrift_jboot, &
                win_thrift_jplasma, win_thrift_jeccd, win_thrift_jnbcd, &
                win_thrift_johmic, win_thrift_rho, win_thrift_t, &
-               win_lbooz, win_thrift_jsource
+               win_lbooz, win_thrift_jsource, win_thrift_uedge
     REAL(rprec) :: tend, jtol, picard_factor
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_T(:)
     REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_J, THRIFT_S11, &
                  THRIFT_S12, THRIFT_S22, THRIFT_JBOOT, THRIFT_JPLASMA, &
-                 THRIFT_JECCD, THRIFT_JNBCD, THRIFT_JOHMIC, THRIFT_JSOURCE
+                 THRIFT_JECCD, THRIFT_JNBCD, THRIFT_JOHMIC, THRIFT_JSOURCE, &
+                 THRIFT_UGRID
     ! For TRAVIS
     INTEGER, PARAMETER :: nsys   = 16
     INTEGER :: nra_ecrh, nphi_ecrh
