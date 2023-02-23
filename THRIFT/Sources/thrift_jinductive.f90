@@ -343,7 +343,7 @@
       ! B = mu0 I / phip => I = phip*B/mu0 = 2*phi_a*rho*B/mu0
       B = 2*eq_phiedge/mu0*(THRIFT_RHO*B)
 
-      IF (lverbj) THEN
+      IF (lverbpost) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'I_TOTAL AT CURRENT TIMESTEP'
          WRITE(6,*) ''
