@@ -401,6 +401,8 @@
 
       ! Calculate enclosed currents for progress
       temp = 0
+      THRIFT_I        = 0; THRIFT_IBOOT    = 0; THRIFT_IPLASMA  = 0
+      THRIFT_IECCD    = 0; THRIFT_INBCD    = 0; THRIFT_IOHMIC   = 0
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          s = rho * rho
