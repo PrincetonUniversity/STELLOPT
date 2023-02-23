@@ -447,7 +447,6 @@
                B_der, C_der, D_der, &
                a1, a2, a3, a4, &
                DU, D, DL, B)
-      RETURN
 
 1000  CONTINUE
       ! Calculate enclosed currents for progress
@@ -467,6 +466,7 @@
          THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(Aminor**2-temp1**2)
       END DO
       THRIFT_I = THRIFT_IPLASMA + THRIFT_IBOOT + THRIFT_IECCD + THRIFT_INBCD + THRIFT_IOHMIC
+      RETURN
 
 
 !----------------------------------------------------------------------
