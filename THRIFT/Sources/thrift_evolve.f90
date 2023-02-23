@@ -17,8 +17,10 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL :: lfirst_pass, lfirst_sub_pass
-      INTEGER :: nsubsteps, i
-      REAL(rprec) :: alpha
+      INTEGER :: nsubsteps, i, ier
+      REAL(rprec) :: alpha, print_I, print_IPLASMA, print_IBOOT, &
+                  print_IECCD, print_INBCD, print_IOHMIC, &
+                  rho, s,aminor1, aminor2, temp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
       CHARACTER(len = 16)     :: temp1_str, temp2_str
       
@@ -124,16 +126,31 @@
             END IF
 
             ! Print progress
-            IF (lverb) WRITE(6,'(1X,F5.2,1X,I2,1X,F5.2,5(1X,ES10.2),1X,ES10.2)') &
-                THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
-                eq_volume*SUM(THRIFT_J(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
-                eq_volume*SUM(THRIFT_JPLASMA(:,mytimestep))/(pi2*eq_RMajor*nrho),&
-                eq_volume*SUM(THRIFT_JBOOT(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
-                eq_volume*SUM(THRIFT_JECCD(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
-                eq_volume*SUM(THRIFT_JNBCD(:,mytimestep))/(pi2*eq_Rmajor*nrho),&
-                !eq_volume*SUM(THRIFT_JOHMIC(:,mytimestep))/(pi2*eq_Rmajor*nrho),
-                MAXVAL(deltaj)
+            IF (lverb) THEN
+            print_I = 0; print_IPLASMA = 0; print_IBOOT = 0; print_IECCD = 0;
+            print_INBCD = 0; print_IOHMIC = 0; aminor2 = 0
+            DO i = 1, nrho
+               rho = THRIFT_RHO(i)
+               s = rho * rho
+               ier = 0
+               CALL get_equil_Rmajor(s,temp,temp,aminor1,ier)  ! aminor_i
+               rho = THRIFT_RHO(i-1)
+               s = rho*rho
+               IF (i /= 1) CALL get_equil_Rmajor(s,temp,temp,aminor2,ier) ! aminor_i-1
+               print_I      = print_I       + THRIFT_J(i,mytimestep)*pi*(aminor1**2-aminor2**2)
+               print_IPLASMA= print_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(aminor1**2-aminor2**2)
+               print_IBOOT  = print_IBOOT   + THRIFT_JBOOT(i,mytimestep)*pi*(aminor1**2-aminor2**2)
+               print_IECCD  = print_IECCD   + THRIFT_JECCD(i,mytimestep)*pi*(aminor1**2-aminor2**2)
+               print_INBCD  = print_INBCD   + THRIFT_JNBCD(i,mytimestep)*pi*(aminor1**2-aminor2**2)
+               print_IOHMIC = print_IOHMIC  + THRIFT_JOHMIC(i,mytimestep)*pi*(aminor1**2-aminor2**2)
+            END DO
 
+             WRITE(6,'(1X,F5.2,1X,I2,1X,F5.2,5(1X,ES10.2),1X,ES10.2)') &
+                THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
+                print_I, print_IPLASMA, print_IBOOT, print_IECCD, print_INBCD,&
+                !print_IOHMIC,&
+                MAXVAL(deltaj)
+            END IF
             ! Turn off screen output after one run
             lscreen_subcodes = .FALSE.
 

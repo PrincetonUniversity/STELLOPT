@@ -340,21 +340,17 @@
       END IF    
 
       ! Calculate I_source (a1)
-      a1 = 0
-      rho = THRIFT_RHO(1)
-      s = rho*rho
-      ier = 0
-      CALL get_equil_Rmajor(s,h,h,Aminor,ier)
-      a1(1) = THRIFT_JSOURCE(1,mytimestep)*pi*Aminor**2 
-      DO i = 2, nrho
+      a1 = 0; temp = 0
+      DO i = 1, nrho
          rho = THRIFT_RHO(i)
          s = rho * rho
          ier = 0
          CALL get_equil_Rmajor(s,h,h,Aminor,ier)  ! aminor_i
-         temp = THRIFT_RHO(i-1)
-         s = temp*temp
-         CALL get_equil_Rmajor(s,h,h,temp,ier) ! temp = aminor_i-1
-         a1(i) = a1(i-1) + THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp**2)
+         rho = THRIFT_RHO(i-1)
+         s = rho*rho
+         IF (i /= 1) CALL get_equil_Rmajor(s,h,h,temp,ier) ! temp = aminor_i-1
+         a1(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp**2)
+         IF (i /= 1) a1(i) = a1(i) + a1(i-1)
       END DO
 
       ! I_plasma = I_total - I_source
