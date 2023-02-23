@@ -39,12 +39,6 @@
       THRIFT_JSOURCE  = 0
       THRIFT_UGRID    = 0
       THRIFT_UEDGE    = 0
-      THRIFT_I        = 0
-      THRIFT_IBOOT    = 0
-      THRIFT_IPLASMA  = 0
-      THRIFT_IECCD    = 0
-      THRIFT_INBCD    = 0
-      THRIFT_IOHMIC   = 0
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))

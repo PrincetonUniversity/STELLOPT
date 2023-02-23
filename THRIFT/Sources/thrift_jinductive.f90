@@ -22,7 +22,8 @@
       IMPLICIT NONE
       INTEGER :: i,itime, ier
       LOGICAL :: lverblatin, lverbalpha, lverbmat,lverbpost
-      REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,temp1,temp2,Aminor,Rmajor
+      REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,&
+                     temp1,temp2,source_0,source_edge,Aminor,Rmajor
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: A_temp, B_temp, C_temp, D_temp, &
                                                 B_der, C_der, D_der, &
                                                 a1, a2, a3, a4,         &
@@ -66,6 +67,7 @@
       DU = 0; D = 0; DL = 0; B = 0;
 
       t = THRIFT_T(mytimestep)
+
       ! Populate A,B,C,D
       IF (lverblatin) THEN
          WRITE(6,*)'==============================================================================='
@@ -73,6 +75,7 @@
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*) 'RHO      ETAPARA     DV/DPHI     DP/DRHO     BAV      BSQAV        S11'
       END IF
+
       DO i = 1, nrho+2
          IF (i==1) THEN 
             rho = 0
@@ -83,30 +86,34 @@
          END IF
          s = rho*rho
          ier = 0
-         
+
+         ! Interpolate source current density at magnetic axis and edge
+         source_0 = (3*THRIFT_JSOURCE(1,mytimestep)-THRIFT_JSOURCE(2,mytimestep))/2
+         source_edge = (-THRIFT_JSOURCE(nrho-1,mytimestep)+3*THRIFT_JSOURCE(nrho,mytimestep))/2
+
          IF (i==nrho+2) THEN ! etapara breaks at rho = 1
             CALL get_prof_etapara(THRIFT_RHO(nrho), t,etapara)
+            h = source_edge
          ELSE 
             CALL get_prof_etapara(rho, t,etapara)
+            IF (i==1) THEN 
+               h = source_0
+            ELSE
+               h = THRIFT_JSOURCE(i-1,mytimestep)
+            END IF
          END IF
          CALL EZspline_interp(vp_spl,rho,vp,ier)
          CALL get_prof_pprime(rho,t,pprime)
          CALL get_equil_Bav(s,Bav,Bsqav,ier)
          CALL get_equil_sus(s,s11,h,h,h,ier)
-         IF (i /= 1)  A_temp(i) = s11/(4*rho*eq_phiedge) ! A not necessary at axis (no derivative required)
          temp1 = 2*etapara*vp ! temp1 <- 2 eta dV/dPhi 
-         B_temp(i) = temp1*Bsqav/mu0 ! 2 eta dV/dPhi <B^2>/mu_0
-         C_temp(i) = temp1*pprime  ! 2 eta dV/dPhi dp/drho
-         IF (i==1) THEN ! set jsource(1)=jsource(2), jsource(nrho+1)=jsource(nrho)
-            h = THRIFT_JSOURCE(1,mytimestep)
-         ELSE IF (i==nrho+2) THEN
-            h = THRIFT_JSOURCE(nrho,mytimestep)
-         ELSE
-            h = THRIFT_JSOURCE(i-1,mytimestep)
-         END IF
-         D_temp(i) = -temp1*h*Bav ! -2 eta dV/dPhi <J.B>
+         IF (i /= 1)  A_temp(i) = s11/(4*rho*eq_phiedge) ! A not necessary at axis (no derivative required)
+         B_temp(i) = temp1*Bsqav/mu0! 2 eta dV/dPhi <B^2>/mu_0
+         C_temp(i) = temp1*pprime   ! 2 eta dV/dPhi dp/drho
+         D_temp(i) = -temp1*h*Bav   ! -2 eta dV/dPhi <J.B>
          IF (lverblatin) WRITE(6,'(F5.3,6(1X,ES10.3))') rho, etapara, vp, pprime, bav, bsqav, s11
       END DO
+
       IF (lverblatin) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' A'
@@ -168,7 +175,7 @@
       ! dY/drho(i=nrho) = [4*Y(i=nrho+2) - 3*Y(i=nrho+1) - Y(i=nrho)]/3h
       B_der(nrho) = (4*B_temp(nrho+2)-3*B_temp(nrho+1)-B_temp(nrho))/(3*h)
       C_der(nrho) = (4*C_temp(nrho+2)-3*C_temp(nrho+1)-C_temp(nrho))/(3*h)
-      D_der(nrho) = (4*D_temp(nrho+2)-3*D_temp(nrho+1)-D_temp(nrho))
+      D_der(nrho) = (4*D_temp(nrho+2)-3*D_temp(nrho+1)-D_temp(nrho))/(3*h)
       
       IF (lverblatin) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
@@ -201,7 +208,7 @@
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          a1(i) = A_temp(i+1)*D_der(i)
-         a2(i) = A_temp(i+1)*(1/rho*B_der(i) - B_temp(i+1)/rho**2 + C_der(i))    
+         a2(i) = A_temp(i+1)*(1/rho*B_der(i) - B_temp(i+1)/(rho**2) + C_der(i))    
          a3(i) = A_temp(i+1)*(B_der(i) + B_temp(i+1)/rho + C_temp(i+1))                   
          a4(i) = A_temp(i+1)*B_temp(i+1)                             
       END DO
@@ -252,9 +259,11 @@
       CALL get_equil_Bav(s,Bav,Bsqav,ier)
       CALL get_prof_pprime(rho,t,pprime) 
       temp2 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*h) ! du/drho at edge
-      THRIFT_UEDGE(2) = THRIFT_UEDGE(1) - k*mu0/(2*eq_phiedge)*etapara/temp1*vp * &  ! u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi *
-            (((pprime + Bsqav/mu0)*THRIFT_UEDGE(1)) + Bsqav/mu0*temp2 &               ! ((p' + <B^2>/mu0)*u+<B^2>/mu0 * du/drho
-            - THRIFT_JSOURCE(nrho,1)*Bav)                                  ! - <J.B>)
+      ! u_edge^mytimestep =  u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi*((p' + <B^2>/mu0)*u+<B^2>/mu0 * du/drho- <J.B>)
+      ! RHS : u evaluated at previous timestep
+      THRIFT_UEDGE(2) = THRIFT_UEDGE(1) - k*mu0/(2*eq_phiedge)*etapara/temp1*vp * &  
+            (((pprime + Bsqav/mu0)*THRIFT_UEDGE(1)) + Bsqav/mu0*temp2 &               
+            - source_edge*Bav)                                   
 
       ! Populate diagonals and RHS; DU and DL of size nrho-1, D of size nrho
       ! (Do most of the work in one loop and fix mistakes afterwards)
@@ -338,17 +347,18 @@
       a1 = 0; a2 = 0;
       a1(1) = DU(1)/D(1) !c_1' = c_1/b_1
       a2(1) = B(1)/D(1)  !d_1' = d_1/b_1
-      DO i = 2, nrho-1
-         a1(i) = DU(i)/(D(i)-DL(i)*a1(i-1))                 ! c_i' =              c_i/(b_i - a_i*c_i-1')
+      DO i = 2, nrho
+         IF (i /= nrho) a1(i) = DU(i)/(D(i)-DL(i)*a1(i-1))  ! c_i' =              c_i/(b_i - a_i*c_i-1')
          a2(i) = (B(i)-DL(i)*a2(i-1))/(D(i)-DL(i)*a1(i-1))  ! d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1')
       END DO
-      a2(nrho) = (B(nrho)-DL(nrho)*a2(nrho-1))/(D(nrho)-DL(nrho)*a1(nrho-1))
       B(nrho) = a2(nrho)
       DO i = nrho-1, 1, -1
          B(i) = a2(i)-a1(i)*B(i+1)
       END DO
-
+      
+      ! Store u in variable
       THRIFT_UGRID(:,2) = B
+      
       IF (lverbpost) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)'POST SOLVING EQUATIONS'
