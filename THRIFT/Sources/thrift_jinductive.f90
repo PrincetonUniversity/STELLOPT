@@ -398,6 +398,25 @@
          WRITE(6,*)'JINDUCTIVE DONE'
          WRITE(6,*)'==============================================================================='
       END IF    
+
+      ! Calculate enclosed currents for progress
+      temp = 0
+      DO i = 1, nrho
+         rho = THRIFT_RHO(i)
+         s = rho * rho
+         ier = 0
+         CALL get_equil_Rmajor(s,h,h,Aminor,ier)  ! aminor_i
+         rho = THRIFT_RHO(i-1)
+         s = rho*rho
+         IF (i /= 1) CALL get_equil_Rmajor(s,h,h,temp,ier) ! aminor_i-1
+         THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(aminor1**2-aminor2**2)
+         THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(aminor1**2-aminor2**2)
+         THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(aminor1**2-aminor2**2)
+         THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(aminor1**2-aminor2**2)
+         THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(aminor1**2-aminor2**2)
+      END DO
+      THRIFT_I = THRIFT_IPLASMA + THRIFT_IBOOT + THRIFT_IECCD + THRIFT_INBCD + THRIFT_IOHMIC
+
       DEALLOCATE(A_temp, B_temp, C_temp, D_temp, &
                B_der, C_der, D_der, &
                a1, a2, a3, a4, &
