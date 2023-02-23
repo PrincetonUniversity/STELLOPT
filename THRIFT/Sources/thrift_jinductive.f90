@@ -202,12 +202,12 @@
          DU(i) = a3(i)/(2*h) +a4(i)/(h**2)   ! Upper diagonal (Correct)
          DL(i) = -a3(i)/(2*h)+a4(i)/(h**2)   ! Lower diagonal (DL(nrho-1) wrong)
           D(i) = a2(i)-2*a4(i)/(h**2)-1/k    ! Middle diagonal (D(1,nrho) wrong)
-          IF (mytimestep /= 1) B(i) = -THRIFT_UGRID(i,mytimestep-1)/k-a1(i) ! Right-hand side (B(nrho) wrong)
+          IF (mytimestep /= 1) B(i) = -THRIFT_UGRID(i,1)/k-a1(i) ! Right-hand side (B(nrho) wrong)
       END DO
       DL(nrho-1)= -a3(nrho)/(3*h)+2*a4(nrho)/(h**2)         ! Lower diagonal fixed
         D(1)    = a2(1)-a3(1)/(2*h)-a4(1)/(h**2)-1/k  ! Middle diagonal half fixed
         D(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
-      IF (mytimestep /= 1) B(nrho) = THRIFT_UGRID(nrho,mytimestep-1)/k-a1(nrho) &
+      IF (mytimestep /= 1) B(nrho) = THRIFT_UGRID(nrho,1)/k-a1(nrho) &
       - THRIFT_UEDGE(1)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
 
       ! Calculate u = S11 iota + S12 for this timestep, this picard iteration
@@ -219,7 +219,7 @@
             ier = 0        
             CALL get_equil_sus(s,s11,s12,h,h,ier) 
             CALL EZspline_interp(iota_spl,rho,iota,ier)
-            THRIFT_UGRID(i,mytimestep) = s11*iota+s12
+            THRIFT_UGRID(i,2) = s11*iota+s12
          END DO
       END IF
       ! On the edge
@@ -234,10 +234,10 @@
       CALL EZspline_interp(vp_spl,rho,vp,ier)
       CALL get_equil_Bav(s,Bav,Bsqav,ier)
       CALL get_prof_pprime(rho,t,pprime) 
-      s11 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,mytimestep)-THRIFT_UGRID(nrho-1,mytimestep))/(3*h) ! du/drho at edge
+      s11 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*h) ! du/drho at edge
       THRIFT_UEDGE(2) = THRIFT_UEDGE(1) - k*mu0/(2*eq_phiedge)*etapara/temp*vp * &  ! u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi *
             (((pprime + Bsqav/mu0)*THRIFT_UEDGE(1)) + Bsqav/mu0*s11 &               ! ((p' + <B^2>/mu0)*u+<B^2>/mu0 * du/drho
-            - THRIFT_JSOURCE(nrho,mytimestep)*Bav)                                  ! - <J.B>)
+            - THRIFT_JSOURCE(nrho,1)*Bav)                                  ! - <J.B>)
 
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
@@ -248,7 +248,7 @@
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'THRIFT_UGRID AT CURRENT TIMESTEP'
-         WRITE(6,*) THRIFT_UGRID(:,mytimestep)
+         WRITE(6,*) THRIFT_UGRID(:,1)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'THRIFT_UEDGE AT CURRENT TIMESTEP'

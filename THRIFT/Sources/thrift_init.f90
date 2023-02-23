@@ -67,7 +67,7 @@
       CALL mpialloc(THRIFT_JNBCD,    nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jnbcd)
       CALL mpialloc(THRIFT_JOHMIC,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_johmic)
       CALL mpialloc(THRIFT_JSOURCE,  nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jsource)
-      CALL mpialloc(THRIFT_UGRID,    nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_uedge)     
+      CALL mpialloc(THRIFT_UGRID,    nrho,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_uedge)     
 
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
