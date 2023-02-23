@@ -391,25 +391,46 @@
          ! Calculate derivatives
          IF (i == 1) THEN ! Symmetry BC
             temp1 = (B(2)-B(1))/(2*h) ! dI/drho
-            CALL get_equil_Rmajor(THRIFT_RHO(1)*THRIFT_RHO(1),h,h,Aminor,ier)
-            CALL get_equil_Rmajor(THRIFT_RHO(2)*THRIFT_RHO(2),h,h,temp2,ier)
+            rho = THRIFT_RHO(1)
+            s = rho*rho
+            ier = 0
+            CALL get_equil_Rmajor(s,h,h,Aminor,ier)
+            rho = THRIFT_RHO(2)
+            s = rho*rho
+            ier = 0
+            CALL get_equil_Rmajor(s,h,h,temp2,ier)
             temp2 = (temp2 - Aminor)/(2*h) ! dA/drho
          ELSE IF (i == nrho) THEN ! 
             temp1 = B(nrho) ! Set current at nrho = nrho-1 for now
             temp1 = (4*temp1-3*B(nrho)-B(nrho-1))/(3*h) 
-            CALL get_equil_Rmajor(1*1,h,h,Aminor,ier)
-            CALL get_equil_Rmajor(THRIFT_RHO(nrho)*THRIFT_RHO(nrho),h,h,temp2,ier)
-            CALL get_equil_Rmajor(THRIFT_RHO(nrho-1)*THRIFT_RHO(nrho-1),h,h,s11,ier)
+            rho = 1
+            s = rho*rho
+            ier = 0
+            CALL get_equil_Rmajor(s,h,h,Aminor,ier)
+            rho = THRIFT_RHO(nrho)
+            s = rho*rho
+            ier = 0
+            CALL get_equil_Rmajor(s,h,h,temp2,ier)
+            rho = THRIFT_RHO(nrho-1)
+            s = rho*rho
+            ier = 0
+            CALL get_equil_Rmajor(s,h,h,s11,ier)
             temp2 = (4*Aminor-3*temp2-s11)/(3*h) ! dA/drho = (4*A(nrho+1)-3*A(nrho)-A(nrho-1))/3h
          ELSE
             temp1 = (B(i+1)-B(i-1))/(2*h)
-            CALL get_equil_Rmajor(THRIFT_RHO(i-1)*THRIFT_RHO(i-1),h,h,Aminor,ier)
-            CALL get_equil_Rmajor(THRIFT_RHO(i+1)*THRIFT_RHO(i+1),h,h,temp2,ier)
+            rho = THRIFT_RHO(i-1)
+            s = rho*rho
+            ier = 0
+            CALL get_equil_Rmajor(s,h,h,Aminor,ier)
+            rho = THRIFT_RHO(i+1)
+            s = rho*rho
+            ier = 0
+            CALL get_equil_Rmajor(s,h,h,temp2,ier)
             temp2 = (temp2 - Aminor)/(2*h) ! dA/drho
          END IF
          THRIFT_JPLASMA(i,mytimestep) = temp1/temp2 ! dI/drho / dA/drho
       END DO
-      
+
       IF (lverbj) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'J_PLASMA AT CURRENT TIMESTEP'
