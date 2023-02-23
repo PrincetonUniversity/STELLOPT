@@ -21,7 +21,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i,itime, ier
-      LOGICAL :: lverblatin, lverbalpha, lverbu, lverbmat,lverbpost
+      LOGICAL :: lverblatin, lverbalpha, lverbmat,lverbpost
       REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,temp1,temp2,Aminor,Rmajor
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: A_temp, B_temp, C_temp, D_temp, &
                                                 B_der, C_der, D_der, &
@@ -37,9 +37,8 @@
       ! Choose which items to make verbose
       lverblatin  = .false.
       lverbalpha  = .false.
-      lverbu      = .true.
       lverbmat    = .false.
-      lverbpost   = .true.
+      lverbpost   = .false.
 
 
       ! Check to make sure we're not zero beta
@@ -107,28 +106,28 @@
       END DO
       IF (lverblatin) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'A'
+         WRITE(6,*)' A'
          WRITE(6,*) '' 
          WRITE(6,*) A_temp(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) A_temp(nrho-6:nrho+2)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'B'
+         WRITE(6,*)' B'
          WRITE(6,*) '' 
          WRITE(6,*) B_temp(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) B_temp(nrho-6:nrho+2)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'C'
+         WRITE(6,*)' C'
          WRITE(6,*) '' 
          WRITE(6,*) C_temp(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) C_temp(nrho-6:nrho+2)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'D'
+         WRITE(6,*)' D'
          WRITE(6,*) '' 
          WRITE(6,*) D_temp(1:9)
          WRITE(6,*) '...'
@@ -167,21 +166,21 @@
       
       IF (lverblatin) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'DERIV B'
+         WRITE(6,*)' DERIV B'
          WRITE(6,*) '' 
          WRITE(6,*) B_der(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) B_der(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'DERIV C'
+         WRITE(6,*)' DERIV C'
          WRITE(6,*) '' 
          WRITE(6,*) C_der(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) C_der(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'DERIV D'
+         WRITE(6,*)' DERIV D'
          WRITE(6,*) '' 
          WRITE(6,*) D_der(1:9)
          WRITE(6,*) '...'
@@ -205,28 +204,28 @@
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)'CALCULATING COEFFICIENTS ALPHA 1,2,3,4'
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'ALPHA_1'
+         WRITE(6,*)' ALPHA_1'
          WRITE(6,*) '' 
          WRITE(6,*) a1(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) a1(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'ALPHA_2'
+         WRITE(6,*)' ALPHA_2'
          WRITE(6,*) '' 
          WRITE(6,*) a2(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) a2(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'ALPHA_3'
+         WRITE(6,*)' ALPHA_3'
          WRITE(6,*) '' 
          WRITE(6,*) a3(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) a3(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'ALPHA_4'
+         WRITE(6,*)' ALPHA_4'
          WRITE(6,*) '' 
          WRITE(6,*) a4(1:9)
          WRITE(6,*) '...'
@@ -234,41 +233,14 @@
          WRITE(6,*)''
       END IF
 
-      ! Populate diagonals and RHS; DU and DL of size nrho-1, D of size nrho
-      ! (Do most of the work in one loop and fix mistakes afterwards)
-      ! If on the first time iteration, we say there's no enclosed current (i.e. B=0)
-      DO i = 1, nrho-1
-         DU(i) = a3(i)/(2*h) +a4(i)/(h**2)   ! Upper diagonal (Correct)
-         DL(i) = -a3(i)/(2*h)+a4(i)/(h**2)   ! Lower diagonal (DL(nrho-1) wrong)
-          D(i) = a2(i)-2*a4(i)/(h**2)-1/k    ! Middle diagonal (D(1,nrho) wrong)
-          IF (mytimestep /= 1) B(i) = -THRIFT_UGRID(i,1)/k-a1(i) ! Right-hand side (B(nrho) wrong)
-      END DO
-      DL(nrho-1)= -a3(nrho)/(3*h)+2*a4(nrho)/(h**2)         ! Lower diagonal fixed
-        D(1)    = a2(1)-a3(1)/(2*h)-a4(1)/(h**2)-1/k  ! Middle diagonal half fixed
-        D(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
-      IF (mytimestep /= 1) B(nrho) = THRIFT_UGRID(nrho,1)/k-a1(nrho) &
-      - THRIFT_UEDGE(1)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
-
-      ! Calculate u = S11 iota + S12 for this timestep, this picard iteration
-      ! On the grid
-      IF (mytimestep /= ntimesteps) THEN
-         DO i = 1, nrho
-            rho = THRIFT_RHO(i) 
-            s = rho*rho
-            ier = 0        
-            CALL get_equil_sus(s,s11,s12,h,h,ier) 
-            CALL EZspline_interp(iota_spl,rho,iota,ier)
-            THRIFT_UGRID(i,2) = s11*iota+s12
-         END DO
-      END IF
-      ! On the edge
+      ! Calculate u_edge^mytimestep from u_edge^mytimestep-1, u_grid^mytimestep-1
       ! First calculate L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)      
       rho = 1 
       s = rho*rho
       ier = 0
       CALL get_equil_Rmajor(s,Rmajor,Bav,Aminor,ier)
       temp1 = mu0*Rmajor*(log(8*Rmajor/Aminor) - 2 + 0.25) ! temp1 <- L_ext
-      ! Now update THRIFT_UEDGE
+      ! Calculate u_edge^mytimestep 
       CALL get_prof_etapara(THRIFT_RHO(nrho-1),t,etapara)  
       CALL EZspline_interp(vp_spl,rho,vp,ier)
       CALL get_equil_Bav(s,Bav,Bsqav,ier)
@@ -278,37 +250,34 @@
             (((pprime + Bsqav/mu0)*THRIFT_UEDGE(1)) + Bsqav/mu0*temp2 &               ! ((p' + <B^2>/mu0)*u+<B^2>/mu0 * du/drho
             - THRIFT_JSOURCE(nrho,1)*Bav)                                  ! - <J.B>)
 
-      IF (lverbu) THEN
-         WRITE(6,*)'==============================================================================='
-         WRITE(6,*)'CALCULATING U'
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'LEXT'
-         WRITE(6,*) temp1
-         WRITE(6,*)''
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'THRIFT_UGRID AT CURRENT TIMESTEP'
-         WRITE(6,*) '' 
-         WRITE(6,*) THRIFT_UGRID(1:9,1)
-         WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_UGRID(nrho-8:nrho,1)
-         WRITE(6,*)''
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'THRIFT_UEDGE AT CURRENT TIMESTEP'
-         WRITE(6,*) THRIFT_UEDGE(1)
-         WRITE(6,*)''
-      END IF
+      ! Populate diagonals and RHS; DU and DL of size nrho-1, D of size nrho
+      ! (Do most of the work in one loop and fix mistakes afterwards)
+      ! If on the first time iteration, we say there's no enclosed current (i.e. B=0)
+      DO i = 1, nrho-1
+         DU(i) = a3(i)/(2*h) +a4(i)/(h**2)   ! Upper diagonal (Correct)
+         DL(i) = -a3(i)/(2*h)+a4(i)/(h**2)   ! Lower diagonal (DL(nrho-1) wrong)
+          D(i) = a2(i)-2*a4(i)/(h**2)-1/k    ! Middle diagonal (D(1,nrho) wrong)
+          B(i) = -THRIFT_UGRID(i,1)/k-a1(i)  ! Right-hand side (B(nrho) wrong)
+      END DO
+      DL(nrho-1)= -a3(nrho)/(3*h)+2*a4(nrho)/(h**2)         ! Lower diagonal fixed
+        D(1)    = a2(1)-a3(1)/(2*h)-a4(1)/(h**2)-1/k  ! Middle diagonal half fixed
+        D(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
+        B(nrho) = -THRIFT_UGRID(nrho,1)/k-a1(nrho) &
+      - THRIFT_UEDGE(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
+
       IF (lverbmat) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)'CALCULATING MATRIX'
-         WRITE(6,*) 'D(NRHO) (PRE ROW OPERATION)'
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*) ' D(NRHO) (PRE ROW OPERATION)'
          WRITE(6,*) D(nrho)
          WRITE(6,*) '' 
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*) 'DL(NRHO-1) (PRE ROW OPERATION)'
+         WRITE(6,*) ' DL(NRHO-1) (PRE ROW OPERATION)'
          WRITE(6,*) DL(nrho-1)
          WRITE(6,*) '' 
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*) 'B(NRHO) (PRE ROW OPERATION)'
+         WRITE(6,*) ' B(NRHO) (PRE ROW OPERATION)'
          WRITE(6,*) B(nrho)
          WRITE(6,*) '' 
       END IF
@@ -323,37 +292,32 @@
 
       IF (lverbmat) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'MATRIX ELEMENT AT (nrho,nrho-2)'
+         WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
          WRITE(6,*) temp1
-         WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'MATRIX LOWER DIAGONAL (POST ROW OPERATION)'
+         WRITE(6,*)' MATRIX LOWER DIAGONAL (POST ROW OPERATION)'
          WRITE(6,*) ''
          WRITE(6,*) DL(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) DL(nrho-9:nrho-1)
-         WRITE(6,*) ''    
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'MATRIX MAIN DIAGONAL  (POST ROW OPERATION)'
+         WRITE(6,*)' MATRIX MAIN DIAGONAL  (POST ROW OPERATION)'
          WRITE(6,*) ''
          WRITE(6,*) D(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) D(nrho-8:nrho)
-         WRITE(6,*) ''   
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'MATRIX UPPER DIAGONAL (POST ROW OPERATION)'
+         WRITE(6,*)' MATRIX UPPER DIAGONAL (POST ROW OPERATION)'
          WRITE(6,*) ''
          WRITE(6,*) DU(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) DU(nrho-9:nrho-1)
-         WRITE(6,*) ''   
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'RIGHT HAND SIDE       (POST ROW OPERATION)'
+         WRITE(6,*)' RIGHT HAND SIDE       (POST ROW OPERATION)'
          WRITE(6,*) '' 
          WRITE(6,*) B(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) B(nrho-8:nrho)
-         WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
       END IF     
 
@@ -377,15 +341,19 @@
       DO i = nrho-1, 1, -1
          B(i) = a2(i)-a1(i)*B(i+1)
       END DO
+
+      THRIFT_UGRID(:,2) = B
       IF (lverbpost) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)'POST SOLVING EQUATIONS'
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'U ARRAY AT CURRENT TIMESTEP'
+         WRITE(6,*)' U^mytimestep'
          WRITE(6,*) '' 
-         WRITE(6,*) B(1:9)
+         WRITE(6,*) THRIFT_UGRID(1:9,2)
          WRITE(6,*) '...'
-         WRITE(6,*) B(nrho-8:nrho)
+         WRITE(6,*) THRIFT_UGRID(nrho-8:nrho,2)
+         WRITE(6,*) ''
+         WRITE(6,*) THRIFT_UEDGE(2)
          WRITE(6,*)''
       END IF
       ! B = mu0 I / phip => I = phip*B/mu0 = 2*phi_a*rho*B/mu0
@@ -393,7 +361,7 @@
 
       IF (lverbpost) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'I_TOTAL AT CURRENT TIMESTEP'
+         WRITE(6,*)' I_TOTAL AT CURRENT TIMESTEP'
          WRITE(6,*) ''
          WRITE(6,*) B(1:9)
          WRITE(6,*) '...'
@@ -420,14 +388,14 @@
       B = B - a1 
       IF (lverbpost) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'I_SOURCE AT CURRENT TIMESTEP'
+         WRITE(6,*)' I_SOURCE AT CURRENT TIMESTEP'
          WRITE(6,*)''
          WRITE(6,*) a1(1:9)
          WRITE(6,*) '...'
          WRITE(6,*) a1(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'I_PLASMA AT CURRENT TIMESTEP'
+         WRITE(6,*)' I_PLASMA AT CURRENT TIMESTEP'
          WRITE(6,*)''
          WRITE(6,*) B(1:9)
          WRITE(6,*) '...'
@@ -519,21 +487,21 @@
 
       IF (lverbpost) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'J_PLASMA AT CURRENT TIMESTEP'
+         WRITE(6,*)' J_PLASMA AT CURRENT TIMESTEP'
          WRITE(6,*)''
          WRITE(6,*) THRIFT_JPLASMA(1:9,mytimestep)
          WRITE(6,*) '...'
          WRITE(6,*) THRIFT_JPLASMA(nrho-8:nrho,mytimestep)
          WRITE(6,*)''         
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'J_SOURCE AT CURRENT TIMESTEP'
+         WRITE(6,*)' J_SOURCE AT CURRENT TIMESTEP'
          WRITE(6,*)''
          WRITE(6,*) THRIFT_JSOURCE(1:9,mytimestep)
          WRITE(6,*) '...'
          WRITE(6,*) THRIFT_JSOURCE(nrho-8:nrho,mytimestep)
          WRITE(6,*)'' 
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'JINDUCTIVE DONE'
+         WRITE(6,*)' JINDUCTIVE DONE'
          WRITE(6,*)'==============================================================================='
       END IF    
 
