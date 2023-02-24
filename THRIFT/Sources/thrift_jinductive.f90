@@ -22,10 +22,11 @@
       IMPLICIT NONE
       INTEGER :: i,itime, ier
       LOGICAL :: lverblatin, lverbalpha, lverbmat,lverbpost
-      REAL(rprec) :: rho,s,h,k,t,s11,s12,iota,Bav,Bsqav,vp,etapara,pprime,&
+      REAL(rprec) :: rho,s,h,k,t,s11,s12,etapara,pprime,&
                      temp1,temp2,source_0,source_edge,Aminor,Rmajor
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: A_temp, B_temp, C_temp, D_temp, &
                                                 B_der, C_der, D_der, &
+                                                a1, a2, a3, a4, &
                                                 AI, BI, CI, DI
       TYPE(EZspline1_r8) :: f_spl
 !----------------------------------------------------------------------
@@ -48,9 +49,28 @@
          IF (mytimestep /= 1) THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep-1)
          GOTO 1000
       END IF
+
+      ! Store magnetic variables
+      THRIFT_PHIEDGE(2) = eq_phiedge
+      DO i = 1, nrho+2
+         IF (i==1) THEN
+            rho = 0
+         ELSE IF (i==nrho+2) THEN
+            rho = 1
+         ELSE
+            rho = THRIFT_RHO(i-1)
+         END IF
+         s = rho*rho
+         ier = 0
+         CALL EZspline_interp(vp_spl,rho,THRIFT_VP(i,2),ier)
+         CALL get_equil_Bav(s,THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), ier)
+         CALL get_equil_sus(s,THRIFT_S11(i,2), temp,temp,temp, ier)
+         CALL get_equil_Rmajor(s,THRIFT_RMAJOR(i,2), temp, THRIFT_AMINOR(i,2),ier)
+      END DO
+
       ! Check to make sure delta t != 0
       IF (tstart==0 .and. mytimestep==1) THEN
-         THRIFT_JPLASMA(:,mytimestep)=-THRIFT_JSOURCE(:,mytimestep)
+         THRIFT_JPLASMA(:,mytimestep)=-THRIFT_JSOURCE(:,mytimestep) 
          GOTO 1000
       END IF
 
@@ -61,6 +81,7 @@
 
       A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
       B_der = 0; C_der = 0; D_der = 0;
+      a1 = 0, a2 = 0, a3 = 0, a4 = 0;
       AI = 0; BI = 0; CI = 0; DI = 0;
 
       IF (mytimestep==1) THEN
@@ -80,6 +101,7 @@
          WRITE(6,*) 'RHO      ETAPARA     DV/DPHI     DP/DRHO     BAV      BSQAV        S11'
       END IF
 
+      
       ! Interpolate source current density at magnetic axis and edge
       source_0 = (3*THRIFT_JSOURCE(1,itime)-THRIFT_JSOURCE(2,itime))/2
       source_edge = (-THRIFT_JSOURCE(nrho-1,itime)+3*THRIFT_JSOURCE(nrho,itime))/2
@@ -99,18 +121,14 @@
             CALL get_prof_etapara(rho,t,etapara)
             h = THRIFT_JSOURCE(i-1,itime)
          END IF
-         s = rho*rho
-         ier = 0
-         CALL EZspline_interp(vp_spl,rho,vp,ier)
          CALL get_prof_pprime(rho,t,pprime)
-         CALL get_equil_Bav(s,Bav,Bsqav,ier)
-         CALL get_equil_sus(s,s11,temp1,temp1,temp1,ier)
-         temp1 = 2*etapara*vp ! temp1 <- 2 eta dV/dPhi 
-         IF (i /= 1)  A_temp(i) = s11/(4*rho*eq_phiedge**2) ! S11/(4 rho phi_a^2)
-         B_temp(i) = temp1*Bsqav/mu0! 2 eta dV/dPhi <B^2>/mu_0
-         C_temp(i) = temp1*pprime   ! 2 eta dV/dPhi dp/drho
-         D_temp(i) = -temp1*h*Bav   ! -2 eta dV/dPhi <J.B>
-         IF (lverblatin) WRITE(6,'(F5.3,6(1X,ES10.3))') rho, etapara, vp, pprime, bav, bsqav, s11
+         temp1 = 2*etapara*THRIFT_VP(i,1) ! temp1 <- 2 eta dV/dPhi 
+         IF (i /= 1) A_temp(i) = THRIFT_S11(i,1)/(4*rho*THRIFT_PHIEDGE(1)**2) ! S11/(4 rho phi_a^2)
+         B_temp(i) = temp1*THRIFT_BSQAV(i,1)/mu0! 2 eta dV/dPhi <B^2>/mu_0
+         C_temp(i) = temp1*pprime               ! 2 eta dV/dPhi dp/drho
+         D_temp(i) = -temp1*h*THRIFT_BAV(i,1)   ! -2 eta dV/dPhi <J.B>
+         IF (lverblatin) WRITE(6,'(F5.3,6(1X,ES10.3))') &
+         rho, etapara, THRIFT_VP(i,1), pprime, THRIFT_BAV(i,1), THRIFT_BSQAV(i,1), THRIFT_S11(i,1)
       END DO
 
       IF (lverblatin) THEN
@@ -199,12 +217,13 @@
       ! a2 = A (1/rho dB/drho - B/rho^2 + dC/drho)
       ! a3 = A (dB/drho + B/rho + C)
       ! a4 = A B
+
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
-         THRIFT_ALPHA1(i,2) = A_temp(i+1)*D_der(i)
-         THRIFT_ALPHA2(i,2) = A_temp(i+1)*(1/rho*B_der(i) - B_temp(i+1)/(rho**2) + C_der(i))    
-         THRIFT_ALPHA3(i,2) = A_temp(i+1)*(B_der(i) + B_temp(i+1)/rho + C_temp(i+1))                   
-         THRIFT_ALPHA4(i,2) = A_temp(i+1)*B_temp(i+1)                             
+         a1(i) = A_temp(i+1)*D_der(i)
+         a2(i) = A_temp(i+1)*(1/rho*B_der(i) - B_temp(i+1)/(rho**2) + C_der(i))    
+         a3(i) = A_temp(i+1)*(B_der(i) + B_temp(i+1)/rho + C_temp(i+1))                   
+         a4(i) = A_temp(i+1)*B_temp(i+1)                             
       END DO
 
       IF (lverbalpha) THEN
@@ -213,71 +232,64 @@
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_1'
          WRITE(6,*) '' 
-         WRITE(6,*) THRIFT_ALPHA1(1:9,1)
+         WRITE(6,*) a1(1:9,1)
          WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_ALPHA1(nrho-8:nrho,1)
+         WRITE(6,*) a1(nrho-8:nrho,1)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_2'
          WRITE(6,*) '' 
-         WRITE(6,*) THRIFT_ALPHA2(1:9,1)
+         WRITE(6,*) a2(1:9,1)
          WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_ALPHA2(nrho-8:nrho,1)
+         WRITE(6,*) a2(nrho-8:nrho,1)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_3'
          WRITE(6,*) '' 
-         WRITE(6,*) THRIFT_ALPHA3(1:9,1)
+         WRITE(6,*) a3(1:9,1)
          WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_ALPHA3(nrho-8:nrho,1)
+         WRITE(6,*) a3(nrho-8:nrho,1)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_4'
          WRITE(6,*) '' 
-         WRITE(6,*) THRIFT_ALPHA4(1:9,1)
+         WRITE(6,*) a4(1:9,1)
          WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_ALPHA4(nrho-8:nrho,1)
+         WRITE(6,*) a4(nrho-8:nrho,1)
          WRITE(6,*)''
       END IF
       !
 
       ! Calculate u_edge^mytimestep from u_edge^mytimestep-1, u_grid^mytimestep-1
       ! First calculate L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)      
-      rho = 1 
-      s = rho*rho
-      ier = 0
-      CALL get_equil_Rmajor(s,Rmajor,Bav,Aminor,ier)
-      temp1 = mu0*Rmajor*(log(8*Rmajor/Aminor) - 2 + 0.25) ! temp1 <- L_ext
+      temp1 = mu0*THRIFT_RMAJOR(nrho+2,1)*&
+         (log(8*THRIFT_RMAJOR(nrho+2,1)/THRIFT_AMINOR(nrho+2,1)) - 2 + 0.25) ! temp1 <- L_ext
       ! Calculate u_edge^mytimestep 
       CALL get_prof_etapara(THRIFT_RHO(nrho-1),t,etapara)  
-      CALL EZspline_interp(vp_spl,rho,vp,ier)
-      CALL get_equil_Bav(s,Bav,Bsqav,ier)
-      CALL get_prof_pprime(rho,t,pprime) 
+      CALL get_prof_pprime(1,t,pprime) 
       temp2 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*h) ! du/drho at edge
       ! u_edge^mytimestep =  u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi*((p' + <B^2>/mu0)*u+<B^2>/mu0 * du/drho- <J.B>)
-      ! RHS : u evaluated at previous timestep
-      THRIFT_UEDGE(2) = THRIFT_UEDGE(1) - k*mu0/(2*eq_phiedge)*etapara/temp1*vp * &  
-            (((pprime + Bsqav/mu0)*THRIFT_UEDGE(1)) + Bsqav/mu0*temp2 &               
-            - source_edge*Bav)                                   
+      THRIFT_UEDGE(2) = THRIFT_UEDGE(1) - k*mu0/(2*THRIFT_PHIEDGE(1))*etapara/temp1*THRIFT_VP(nrho+2,1) * &  
+            (((pprime + THRIFT_BSQAV(nrho+2,1)/mu0)*THRIFT_UEDGE(1)) + THRIFT_BSQAV(nrho+2,1)/mu0*temp2 &               
+            - source_edge*THRIFT_BAV(nrho+2,1))                                   
 
       ! Populate diagonals and RHS; AI,CI of size nrho-1, BI, DI of size nrho
       ! (Do most of the work in one loop and fix mistakes afterwards)
-      ! If on the first time iteration, we say there's no enclosed current (i.e. B=0)
       DO i = 1, nrho-1
-         CI(i) = THRIFT_ALPHA3(i,1)/(2*h) +THRIFT_ALPHA4(i,1)/(h**2)   ! Upper diagonal (Correct)
-         AI(i) = -THRIFT_ALPHA3(i,1)/(2*h)+THRIFT_ALPHA4(i,1)/(h**2)   ! Lower diagonal ((nrho-1) wrong)
-         BI(i) = THRIFT_ALPHA2(i,1)-2*THRIFT_ALPHA4(i,1)/(h**2)-1/k    ! Middle diagonal ((1,nrho) wrong)
-         DI(i) = -THRIFT_UGRID(i,1)/k-THRIFT_ALPHA1(i,1)  ! Right-hand side (B(nrho) wrong)
+         CI(i) = a3(i)/(2*h) +a4(i)/(h**2)   ! Upper diagonal (Correct)
+         AI(i) = -a3(i)/(2*h)+a4(i)/(h**2)   ! Lower diagonal ((nrho-1) wrong)
+         BI(i) = a2(i)-2*a4(i)/(h**2)-1/k    ! Middle diagonal ((1,nrho) wrong)
+         DI(i) = -THRIFT_UGRID(i,1)/k-a1(i)  ! Right-hand side (B(nrho) wrong)
       END DO
-      AI(nrho-1)= -THRIFT_ALPHA3(nrho,1)/(3*h)+2*THRIFT_ALPHA4(nrho,1)/(h**2)         ! Lower diagonal fixed
-        BI(1)    = THRIFT_ALPHA2(1,1)-THRIFT_ALPHA3(1,1)/(2*h)-THRIFT_ALPHA4(1,1)/(h**2)-1/k  ! Middle diagonal half fixed
-        BI(nrho) = THRIFT_ALPHA2(nrho,1)-THRIFT_ALPHA3(nrho,1)/h+5*THRIFT_ALPHA4(nrho,1)/(h**2)-1/k! Middle diagonal fixed
-        DI(nrho) = -THRIFT_UGRID(nrho,1)/k-THRIFT_ALPHA1(nrho,1) &
-      - THRIFT_UEDGE(2)*(4*THRIFT_ALPHA3(nrho,1)/(3*h)+16*THRIFT_ALPHA4(nrho,1)/(5*h**2)) ! Fix B(nrho)
+      AI(nrho-1)= -a3(nrho)/(3*h)+2*a4(nrho)/(h**2)         ! Lower diagonal fixed
+        BI(1)    = a2(1)-a3(1)/(2*h)-a4(1)/(h**2)-1/k  ! Middle diagonal half fixed
+        BI(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
+        DI(nrho) = -THRIFT_UGRID(nrho,1)/k-a1(nrho) &
+      - THRIFT_UEDGE(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
 
       s11 = BI(nrho); s12 = AI(nrho-1); temp2 = DI(nrho)
       
-      temp1 = -THRIFT_ALPHA4(nrho,1)/(5*h**2) ! Element at (nrho,nrho-2)
+      temp1 = -a4(nrho,1)/(5*h**2) ! Element at (nrho,nrho-2)
       temp1 = temp1/AI(nrho-2) ! Row operation: [NRHO] -> [NRHO]-temp1*[NRHO-1] 
       AI(nrho-1) = AI(nrho-1) - temp1*BI(nrho-1) ! (AI is of size nrho-1)
       BI(nrho)   = BI(nrho)   - temp1*CI(nrho-1)
@@ -406,6 +418,7 @@
       END IF    
       DEALLOCATE(A_temp, B_temp, C_temp, D_temp, &
                B_der, C_der, D_der, &
+               a1, a2, a3, a4, &
                AI, BI, CI, DI)
 
 1000  CONTINUE

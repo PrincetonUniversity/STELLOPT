@@ -30,8 +30,8 @@
       IF (myworkid .ne. master) RETURN
 
       ! Initialize the current density
-      THRIFT_J        = 0
-      THRIFT_JBOOT    = 0
+      THRIFT_J        = 0 
+      THRIFT_JBOOT    = 0 
       THRIFT_JPLASMA  = 0
       THRIFT_JECCD    = 0
       THRIFT_JNBCD    = 0
@@ -39,10 +39,13 @@
       THRIFT_JSOURCE  = 0
       THRIFT_UGRID    = 0
       THRIFT_UEDGE    = 0
-      THRIFT_ALPHA1   = 0
-      THRIFT_ALPHA2   = 0
-      THRIFT_ALPHA3   = 0
-      THRIFT_ALPHA4   = 0
+      THRIFT_VP       = 0
+      THRIFT_BAV      = 0
+      THRIFT_BSQAV    = 0
+      THRIFT_S11      = 0
+      THRIFT_AMINOR   = 0
+      THRIFT_RMAJOR   = 0
+      THRIFT_PHIEDGE  = 0
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
@@ -148,11 +151,13 @@
          ! Once converged, update values
          THRIFT_UGRID(:,1)  = THRIFT_UGRID(:,2)
          THRIFT_UEDGE(1)    = THRIFT_UEDGE(2)
-         THRIFT_ALPHA1(:,1) = THRIFT_ALPHA1(:,2)
-         THRIFT_ALPHA2(:,1) = THRIFT_ALPHA2(:,2)
-         THRIFT_ALPHA3(:,1) = THRIFT_ALPHA3(:,2)
-         THRIFT_ALPHA4(:,1) = THRIFT_ALPHA4(:,2)
-
+         THRIFT_VP(:,1)     = THRIFT_VP(:,2) 
+         THRIFT_BAV(:,1)    = THRIFT_BAV(:,2)
+         THRIFT_BSQAV(:,1)  = THRIFT_BSQAV(:,2) 
+         THRIFT_S11(:,1)    = THRIFT_S11(:,2)
+         THRIFT_AMINOR(:,1) = THRIFT_AMINOR(:,2)
+         THRIFT_RMAJOR(:,1) = THRIFT_RMAJOR(:,2)
+         THRIFT_PHIEDGE(1)  = THRIFT_PHIEDGE(2)
       END DO
 
       ! Deallocate helpers
