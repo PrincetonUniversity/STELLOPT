@@ -2,7 +2,7 @@
 !     Subroutine:    thrift_equil_j
 !     Authors:       L. van Ham
 !     Date:          11/XX/2022
-!     Description:   This subroutine updated the equilbirium dI/ds
+!     Description:   This subroutine updates the equilibrium dI/ds
 !-----------------------------------------------------------------------
       SUBROUTINE thrift_equil_j(lfirst_pass)
 !-----------------------------------------------------------------------
@@ -13,6 +13,7 @@
       USe thrift_equil
       USE EZspline
       USE EZspline_obj
+      USE stel_tools
       USE vmec_input, ONLY: ac_aux_s, ac_aux_f, pcurr_type, ncurr, &
                             curtor
 !-----------------------------------------------------------------------
@@ -23,7 +24,7 @@
       LOGICAL, INTENT(IN) :: lfirst_pass
       INTEGER :: i, ier, itime
       INTEGER :: bcs0(2)
-      REAL(rprec) :: s_val, rho_val, j_val, vp, phip
+      REAL(rprec) :: s_val, rho_val, j_val, vp, Rmajor, temp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, j_temp
       TYPE(EZspline1_r8) :: j_spl
       INTEGER, PARAMETER :: n_eq = 99
@@ -78,7 +79,8 @@
          !   dI/ds = j * dA/ds
          !         = j * dV/ds / (2*pi*R)
          !         = j * dV/dPhi * dPhi/ds / (2*pi*R)
-         !         = j * dV/drho * dPhi/drho / (4*pi*rho*R)
+         !         = j * dV/dPhi * dPhi/drho / (4*pi*rho*R)
+         !         = j * dV/dPhi * Phi_edge / (2*pi*R)
          PCURR_TYPE = 'akima_spline_ip'
          NCURR = 1
          ! Check to make sure we have dV/ds and Aminor
@@ -88,11 +90,13 @@
                rho_val = sqrt(s_val)
                CALL EZspline_interp(j_spl,rho_val,j_val,ier)
                CALL EZspline_interp(vp_spl,rho_val,vp,ier) ! dV/dPhi
-               CALL EZspline_interp(phip_spl,rho_val,phip,ier) ! dPhi/drho
+               !CALL EZspline_interp(phip_spl,rho_val,phip,ier) ! dPhi/drho
                AC_AUX_S(i) = s_val
-               AC_AUX_F(i) = j_val*vp*phip/(2*pi2*rho_val*eq_Rmajor)
+               !AC_AUX_F(i) = j_val*vp*phip/(2*pi2*rho_val*eq_Rmajor)
+               CALL get_equil_Rmajor(s_val, Rmajor, temp, temp, ier)
+               AC_AUX_F(i) = j*val*vp*eq_phiedge/(2*pi*Rmajor)
             END DO
-            AC_AUX_F(1) = 2*AC_AUX_F(2)-AC_AUX_F(3)
+            !AC_AUX_F(1) = 2*AC_AUX_F(2)-AC_AUX_F(3)
             CURTOR = SUM(AC_AUX_F(1:n_eq),DIM=1)/DBLE(n_eq-1)
          ELSE
             DO i = 1, n_eq
