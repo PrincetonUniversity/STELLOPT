@@ -260,13 +260,13 @@
             (((pprime + Bsqav/mu0)*THRIFT_UEDGE(1)) + Bsqav/mu0*temp2 &               
             - source_edge*Bav)                                   
 
-      ! Populate diagonals and RHS; DU and DL of size nrho-1, D of size nrho
+      ! Populate diagonals and RHS; AI,CI of size nrho-1, BI, DI of size nrho
       ! (Do most of the work in one loop and fix mistakes afterwards)
       ! If on the first time iteration, we say there's no enclosed current (i.e. B=0)
       DO i = 1, nrho-1
          CI(i) = THRIFT_ALPHA3(1,i)/(2*h) +THRIFT_ALPHA4(1,i)/(h**2)   ! Upper diagonal (Correct)
-         AI(i) = -THRIFT_ALPHA3(1,i)/(2*h)+THRIFT_ALPHA4(1,i)/(h**2)   ! Lower diagonal (DL(nrho-1) wrong)
-         BI(i) = THRIFT_ALPHA2(1,i)-2*THRIFT_ALPHA4(1,i)/(h**2)-1/k    ! Middle diagonal (D(1,nrho) wrong)
+         AI(i) = -THRIFT_ALPHA3(1,i)/(2*h)+THRIFT_ALPHA4(1,i)/(h**2)   ! Lower diagonal ((nrho-1) wrong)
+         BI(i) = THRIFT_ALPHA2(1,i)-2*THRIFT_ALPHA4(1,i)/(h**2)-1/k    ! Middle diagonal ((1,nrho) wrong)
          DI(i) = -THRIFT_UGRID(i,1)/k-THRIFT_ALPHA1(1,i)  ! Right-hand side (B(nrho) wrong)
       END DO
       AI(nrho-1)= -THRIFT_ALPHA3(1,nrho)/(3*h)+2*THRIFT_ALPHA4(1,nrho)/(h**2)         ! Lower diagonal fixed
@@ -278,7 +278,7 @@
       s11 = BI(nrho); s12 = AI(nrho-1); temp2 = DI(nrho)
       
       temp1 = -THRIFT_ALPHA4(1,nrho)/(5*h**2) ! Element at (nrho,nrho-2)
-      temp1 = temp1/DL(nrho-2) ! Row operation: [NRHO] -> [NRHO]-temp1*[NRHO-1] 
+      temp1 = temp1/AI(nrho-2) ! Row operation: [NRHO] -> [NRHO]-temp1*[NRHO-1] 
       AI(nrho-1) = AI(nrho-1) - temp1*BI(nrho-1) ! (AI is of size nrho-1)
       BI(nrho)   = BI(nrho)   - temp1*CI(nrho-1)
       DI(nrho)   = DI(nrho)   - temp1*DI(nrho-1)
