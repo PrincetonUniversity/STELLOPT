@@ -278,18 +278,6 @@
       B_der = 0
       B_der = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
 
-   !   IF (lverbpost) THEN
-   !      WRITE(6,*)'==============================================================================='
-   !      WRITE(6,*)'POST SOLVING EQUATIONS'
-   !      WRITE(6,*)'-------------------------------------------------------------------------------'
-   !      WRITE(6,*)' I_TOTAL AT CURRENT TIMESTEP'
-   !      WRITE(6,*) ''
-   !      WRITE(6,*) B_der(1:9)
-   !      WRITE(6,*) '...'
-   !      WRITE(6,*) B_der(nrho-8:nrho)
-   !      WRITE(6,*)''
-   !   END IF    
-
       ! Calculate I_source (a1)
       C_der = 0; temp1 = 0
       DO i = 1, nrho
@@ -299,51 +287,27 @@
       END DO
 
       ! I_plasma = I_total - I_source
-      B_der = B_der - C_der
-!      IF (lverbpost) THEN
-!         WRITE(6,*)'-------------------------------------------------------------------------------'
-!         WRITE(6,*)' I_SOURCE AT CURRENT TIMESTEP'
-!         WRITE(6,*)''
-!         WRITE(6,*) C_der(1:9)
-!         WRITE(6,*) '...'
-!         WRITE(6,*) C_der(nrho-8:nrho)
-!         WRITE(6,*)''
-!         WRITE(6,*)'-------------------------------------------------------------------------------'
-!         WRITE(6,*)' I_PLASMA AT CURRENT TIMESTEP'
-!         WRITE(6,*)''
-!         WRITE(6,*) B_der(1:9)
-!         WRITE(6,*) '...'
-!         WRITE(6,*) B_der(nrho-8:nrho)
-!         WRITE(6,*)''
-!      END IF    
-
+      D_der = 0
+      D_der = B_der - C_der
       ! JPLASMA(i) = (IPLASMA(i)-IPLASMA(i-1))/(pi*(a(i)**2-a(i-1)**2))
       temp1 = 0; temp2 = 0;
       DO i = 1, nrho
          IF (i /= 1) temp1 = THRIFT_AMINOR(i-1,2)
-         IF (i /= 1) temp2 = B_der(i-1) ! I_plasma(i-1)
-         THRIFT_JPLASMA(i,mytimestep) = (B_der(i)-temp2)/(pi*(THRIFT_AMINOR(i,2)**2-temp1**2))
+         IF (i /= 1) temp2 = D_der(i-1) ! I_plasma(i-1)
+         THRIFT_JPLASMA(i,mytimestep) = (D_der(i)-temp2)/(pi*(THRIFT_AMINOR(i,2)**2-temp1**2))
       END DO
 
-!      IF (lverbpost) THEN
-!         WRITE(6,*)'-------------------------------------------------------------------------------'
-!         WRITE(6,*)' J_PLASMA AT CURRENT TIMESTEP'
-!         WRITE(6,*)''
-!         WRITE(6,*) THRIFT_JPLASMA(1:9,mytimestep)
-!         WRITE(6,*) '...'
-!         WRITE(6,*) THRIFT_JPLASMA(nrho-8:nrho,mytimestep)
-!         WRITE(6,*)''         
-!         WRITE(6,*)'-------------------------------------------------------------------------------'
-!         WRITE(6,*)' J_SOURCE AT CURRENT TIMESTEP'
-!         WRITE(6,*)''
-!         WRITE(6,*) THRIFT_JSOURCE(1:9,mytimestep)
-!         WRITE(6,*) '...'
-!         WRITE(6,*) THRIFT_JSOURCE(nrho-8:nrho,mytimestep)
-!         WRITE(6,*)'' 
-!         WRITE(6,*)'-------------------------------------------------------------------------------'
-!         WRITE(6,*)' JINDUCTIVE DONE'
-!         WRITE(6,*)'==============================================================================='
-!      END IF    
+      IF (lverbpost) THEN
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)' POST MATRIX ALGORITHM'
+         WRITE(6,*)'  i         ITOTAL        ISOURCE        IPLASMA        JPLASMA        JSOURCE'
+         WRITE(6,*)''
+         DO i = 1, nrho
+            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') &
+            i, B_der(i), D_der(i), THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
+         END DO
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+      END IF     
       DEALLOCATE(A_temp, B_temp, C_temp, D_temp, &
                B_der, C_der, D_der, &
                a1, a2, a3, a4, &
