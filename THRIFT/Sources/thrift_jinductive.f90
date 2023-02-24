@@ -332,7 +332,7 @@
 
       ! Calculate Itotal: u = mu0 I / phip => I = phip*u/mu0 = 2*phi_a*rho*u/mu0
       B_temp = 0
-      B_temp = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
+      B_temp = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(2:nrho+1,2))
 
       IF (lverbpost) THEN
          WRITE(6,*)'==============================================================================='
