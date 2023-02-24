@@ -77,6 +77,7 @@
       ! Allocations
       ALLOCATE(A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
                B_der(nrho), C_der(nrho), D_der(nrho), &
+               a1(nrho), a2(nrho), a3(nrho), a4(nrho), &
                AI(nrho-1), BI(nrho), CI(nrho-1), DI(nrho))
 
       A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
