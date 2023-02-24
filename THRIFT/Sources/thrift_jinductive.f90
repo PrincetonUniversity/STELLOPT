@@ -316,14 +316,14 @@
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
          WRITE(6,*)''
-         WRITE(6,'(I4, 1X,A13,5(2X,ES13.5))') 1, '-------------', D(1), DU(1), B(1), THRIFT_UGRID(1,2)
+         WRITE(6,'(I4, 1X,A13,5(2X,ES13.5))') 1, '------------', D(1), DU(1), B(1), THRIFT_UGRID(1,2)
          DO i = 2, nrho-1
             WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, DL(i-1), D(i), DU(i), B(i), THRIFT_UGRID(i,2)
          END DO
-         WRITE(6,'(I4, 1X, 2(ES13.5,2X),A13,2(2X,ES13.5))') nrho, DL(nrho-1),D(nrho), '-------------',&
+         WRITE(6,'(I4, 1X, 2(ES13.5,2X),A13,2(2X,ES13.5))') nrho, DL(nrho-1),D(nrho), '------------',&
                                                              B(nrho), THRIFT_UGRID(nrho,2)
          WRITE(6,'(A5,60X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
-         WRITE(6,'(A5, 1X, 2(ES13.5,2X),A13,2X,ES13.5)') 'TEMP', s12, s11,'-------------', temp2
+         WRITE(6,'(A4, 1X, 2(ES13.5,2X),A13,2X,ES13.5)') 'TEMP', s12, s11,'------------', temp2
          WRITE(6,*)'-------------------------------------------------------------------------------'
       END IF
       ! B = mu0 I / phip => I = phip*B/mu0 = 2*phi_a*rho*B/mu0
