@@ -335,9 +335,9 @@
          WRITE(6,*)''
          WRITE(6,'(I3, 1X, 5(ES13.5,2X))') 1, 0.0, D(1), DU(1), B(1), THRIFT_UGRID(1,2)
          DO i = 2, nrho-1
-            WRITE(6,'(I3, 1X, 4(ES13.5,2X))') i, DL(i-1), D(i), DU(i), B(i), THRIFT_UGRID(i,2)
+            WRITE(6,'(I3, 1X, 5(ES13.5,2X))') i, DL(i-1), D(i), DU(i), B(i), THRIFT_UGRID(i,2)
          END DO
-         WRITE(6,'(I3, 1X, 4(ES13.5,2X))') nrho, DL(nrho-1),D(nrho), 0.0, B(nrho), THRIFT_UGRID(nrho,2)
+         WRITE(6,'(I3, 1X, 5(ES13.5,2X))') nrho, DL(nrho-1),D(nrho), 0.0, B(nrho), THRIFT_UGRID(nrho,2)
          WRITE(6,'(A4,45X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
          WRITE(6,*) ''
          WRITE(6,*)'-------------------------------------------------------------------------------'
