@@ -347,7 +347,7 @@
       END IF    
 
       ! Calculate I_source (a1)
-      A_der = 0; temp1 = 0
+      C_der = 0; temp1 = 0
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          s = rho * rho
@@ -359,19 +359,19 @@
             ier = 0
             CALL get_equil_Rmajor(s,h,h,temp1,ier) ! temp1 = aminor_i-1
          END IF
-         A_der(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp1**2)
-         IF (i /= 1) A_der(i) = A_der(i) + A_der(i-1)
+         C_der(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp1**2)
+         IF (i /= 1) C_der(i) = C_der(i) + C_der(i-1)
       END DO
 
       ! I_plasma = I_total - I_source
-      B_der = B_der - A_der
+      B_der = B_der - C_der
       IF (lverbpost) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' I_SOURCE AT CURRENT TIMESTEP'
          WRITE(6,*)''
-         WRITE(6,*) A_der(1:9)
+         WRITE(6,*) C_der(1:9)
          WRITE(6,*) '...'
-         WRITE(6,*) A_der(nrho-8:nrho)
+         WRITE(6,*) C_der(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' I_PLASMA AT CURRENT TIMESTEP'
