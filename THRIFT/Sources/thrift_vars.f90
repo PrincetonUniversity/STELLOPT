@@ -55,7 +55,8 @@ MODULE thrift_vars
     REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_J, THRIFT_S11, &
                  THRIFT_S12, THRIFT_S22, THRIFT_JBOOT, THRIFT_JPLASMA, &
                  THRIFT_JECCD, THRIFT_JNBCD, THRIFT_JOHMIC, THRIFT_JSOURCE, &
-                 THRIFT_UGRID
+                 THRIFT_UGRID, &
+                 THRIFT_ALPHA1, THRIFT_ALPHA2, THRIFT_ALPHA3, THRIFT_ALPHA4
     ! For TRAVIS
     INTEGER, PARAMETER :: nsys   = 16
     INTEGER :: nra_ecrh, nphi_ecrh
