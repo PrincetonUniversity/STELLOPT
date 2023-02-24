@@ -331,8 +331,8 @@
       END IF
 
       ! Calculate Itotal: u = mu0 I / phip => I = phip*u/mu0 = 2*phi_a*rho*u/mu0
-      B_temp = 0
-      B_temp = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(2:nrho+1,2))
+      B_der = 0
+      B_der = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
 
       IF (lverbpost) THEN
          WRITE(6,*)'==============================================================================='
@@ -340,14 +340,14 @@
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' I_TOTAL AT CURRENT TIMESTEP'
          WRITE(6,*) ''
-         WRITE(6,*) B_temp(1:9)
+         WRITE(6,*) B_der(1:9)
          WRITE(6,*) '...'
-         WRITE(6,*) B_temp(nrho-8:nrho)
+         WRITE(6,*) B_der(nrho-8:nrho)
          WRITE(6,*)''
       END IF    
 
       ! Calculate I_source (a1)
-      A_temp = 0; temp1 = 0
+      A_der = 0; temp1 = 0
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          s = rho * rho
@@ -359,26 +359,26 @@
             ier = 0
             CALL get_equil_Rmajor(s,h,h,temp1,ier) ! temp1 = aminor_i-1
          END IF
-         A_temp(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp1**2)
-         IF (i /= 1) A_temp(i) = A_temp(i) + A_temp(i-1)
+         A_der(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp1**2)
+         IF (i /= 1) A_der(i) = A_der(i) + A_der(i-1)
       END DO
 
       ! I_plasma = I_total - I_source
-      B_temp = B_temp - A_temp 
+      B_der = B_der - A_der
       IF (lverbpost) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' I_SOURCE AT CURRENT TIMESTEP'
          WRITE(6,*)''
-         WRITE(6,*) A_temp(1:9)
+         WRITE(6,*) A_der(1:9)
          WRITE(6,*) '...'
-         WRITE(6,*) A_temp(nrho-8:nrho)
+         WRITE(6,*) A_der(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' I_PLASMA AT CURRENT TIMESTEP'
          WRITE(6,*)''
-         WRITE(6,*) B_temp(1:9)
+         WRITE(6,*) B_der(1:9)
          WRITE(6,*) '...'
-         WRITE(6,*) B_temp(nrho-8:nrho)
+         WRITE(6,*) B_der(nrho-8:nrho)
          WRITE(6,*)''
       END IF    
 
@@ -395,8 +395,8 @@
             ier = 0
             CALL get_equil_Rmajor(s,h,h,temp1,ier)
          END IF
-         IF (i /= 1) temp2 = B_temp(i-1) ! I_plasma(i-1)
-         THRIFT_JPLASMA(i,mytimestep) = (B_temp(i)-temp2)/(pi*(Aminor**2-temp1**2))
+         IF (i /= 1) temp2 = B_der(i-1) ! I_plasma(i-1)
+         THRIFT_JPLASMA(i,mytimestep) = (B_der(i)-temp2)/(pi*(Aminor**2-temp1**2))
       END DO
 
       IF (lverbpost) THEN
