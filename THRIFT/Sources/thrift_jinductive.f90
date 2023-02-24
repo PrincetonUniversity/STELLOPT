@@ -82,7 +82,7 @@
 
       A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
       B_der = 0; C_der = 0; D_der = 0;
-      a1 = 0, a2 = 0, a3 = 0, a4 = 0;
+      a1 = 0; a2 = 0; a3 = 0; a4 = 0;
       AI = 0; BI = 0; CI = 0; DI = 0;
 
       IF (mytimestep==1) THEN
@@ -267,7 +267,8 @@
          (log(8*THRIFT_RMAJOR(nrho+2,1)/THRIFT_AMINOR(nrho+2,1)) - 2 + 0.25) ! temp1 <- L_ext
       ! Calculate u_edge^mytimestep 
       CALL get_prof_etapara(THRIFT_RHO(nrho-1),t,etapara)  
-      CALL get_prof_pprime(1.0,t,pprime) 
+      rho = 1
+      CALL get_prof_pprime(rho,t,pprime) 
       temp2 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*h) ! du/drho at edge
       ! u_edge^mytimestep =  u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi*((p' + <B^2>/mu0)*u+<B^2>/mu0 * du/drho- <J.B>)
       THRIFT_UEDGE(2) = THRIFT_UEDGE(1) - k*mu0/(2*THRIFT_PHIEDGE(1))*etapara/temp1*THRIFT_VP(nrho+2,1) * &  
