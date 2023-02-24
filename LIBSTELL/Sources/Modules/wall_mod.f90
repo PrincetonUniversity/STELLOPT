@@ -125,6 +125,7 @@
                           free_mpi_array2d_int, free_mpi_array2d_dbl
       END INTERFACE
 
+      PRIVATE :: LINE_BOX_INTERSECTION
       PRIVATE :: mpialloc_1d_int,mpialloc_1d_dbl,mpialloc_2d_int,mpialloc_2d_dbl
       PRIVATE :: free_mpi_array1d_int, free_mpi_array1d_dbl, free_mpi_array2d_int, free_mpi_array2d_dbl
       CONTAINS
@@ -1681,6 +1682,71 @@
    
          CLOSE(10)        
       END SUBROUTINE WRITE_WALL
+
+
+
+      SUBROUTINE LINE_BOX_INTERSECTION(x1, y1, z1, x2, y2, z2, xmin, ymin, zmin, xmax, ymax, zmax, intersects)
+      !-----------------------------------------------------------------------
+      ! LINE_BOX_INTERSECTION: Determines if line intersects a 3D box
+      !-----------------------------------------------------------------------
+      ! param[in]: x1,y1,z1,x2,y2,z2 Line Endpoints
+      ! param[in]: xmin,ymin,zmin,xmax,ymax,zmax Box bounds
+      ! param[out]: intersects Does Line Intersect
+      !----------------------------------------------------------------------- 
+      IMPLICIT NONE
+      LOGICAL, INTENT(out) :: intersects
+      DOUBLE PRECISION, INTENT(IN) :: x1, y1, z1, x2, y2, z2, &
+                                      xmin, ymin, zmin, xmax, ymax, zmax
+      DOUBLE PRECISION :: tmin, tmax, t
+
+      intersects = .false.
+
+      ! Calculate the minimum and maximum values of t for each axis
+      IF (x1 < x2) THEN
+         tmin = (xmin - x1) / (x2 - x1)
+         tmax = (xmax - x1) / (x2 - x1)
+      ELSE
+         tmin = (xmax - x1) / (x2 - x1)
+         tmax = (xmin - x1) / (x2 - x1)
+      END IF
+
+      IF (y1 < y2) THEN
+         t = (ymin - y1) / (y2 - y1)
+         !if (t > tmin) tmin = t
+         tmin = MAX(t,tmin)
+         t = (ymax - y1) / (y2 - y1)
+         !if (t < tmax) tmax = t
+         tmax = MIN(t,tmax)
+      ELSE
+         t = (ymax - y1) / (y2 - y1)
+         !if (t > tmin) tmin = t
+         tmin = MAX(t,tmin)
+         t = (ymin - y1) / (y2 - y1)
+         !if (t < tmax) tmax = t
+         tmax = MIN(t,tmax)
+      END IF
+
+      IF (z1 < z2) THEN
+         t = (zmin - z1) / (z2 - z1)
+         !if (t > tmin) tmin = t
+         tmin = MAX(t,tmin)
+         t = (zmax - z1) / (z2 - z1)
+         !if (t < tmax) tmax = t
+         tmax = MIN(t,tmax)
+      ELSE
+         t = (zmax - z1) / (z2 - z1)
+         !if (t > tmin) tmin = t
+         tmin = MAX(t,tmin)
+         t = (zmin - z1) / (z2 - z1)
+         !if (t < tmax) tmax = t
+         tmax = MIN(t,tmax)
+       END IF
+
+      ! Check if there is an intersection
+      if (tmin <= tmax .and. tmax >= 0) intersects = .true.
+
+      END SUBROUTINE LINE_BOX_INTERSECTION
+
    
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
