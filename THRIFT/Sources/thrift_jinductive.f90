@@ -122,7 +122,7 @@
          rho, etapara, THRIFT_VP(i,1), pprime, THRIFT_BAV(i,1), THRIFT_BSQAV(i,1), THRIFT_S11(i,1)
       END DO
 
-      IF (lverblatin) THEN
+      IF (.false.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' COEFFICIENTS ABCD'
          WRITE(6,*)'  i             A              B              C              D'
@@ -243,7 +243,7 @@
          THRIFT_UGRID(i,2) = D_temp(i)-C_temp(i)*THRIFT_UGRID(i+1,2) ! x_i = d_i' - c_i'*x_i+1
       END DO
       
-      IF (lverbmat) THEN
+      IF (.false.) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
          WRITE(6,*) temp1
