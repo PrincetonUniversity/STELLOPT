@@ -39,6 +39,10 @@
       THRIFT_JSOURCE  = 0
       THRIFT_UGRID    = 0
       THRIFT_UEDGE    = 0
+      THRIFT_ALPHA1   = 0
+      THRIFT_ALPHA2   = 0
+      THRIFT_ALPHA3   = 0
+      THRIFT_ALPHA4   = 0
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
@@ -141,9 +145,13 @@
             lfirst_sub_pass = .FALSE.
 
          END DO
-         ! Once converged, store U from latest picard iteration in first index
-         THRIFT_UGRID(:,1) = THRIFT_UGRID(:,2)
-         THRIFT_UEDGE(1)   = THRIFT_UEDGE(2)
+         ! Once converged, update values
+         THRIFT_UGRID(:,1)  = THRIFT_UGRID(:,2)
+         THRIFT_UEDGE(1)    = THRIFT_UEDGE(2)
+         THRIFT_ALPHA1(:,1) = THRIFT_ALPHA1(:,2)
+         THRIFT_ALPHA2(:,1) = THRIFT_ALPHA2(:,2)
+         THRIFT_ALPHA3(:,1) = THRIFT_ALPHA3(:,2)
+         THRIFT_ALPHA4(:,1) = THRIFT_ALPHA4(:,2)
 
       END DO
 

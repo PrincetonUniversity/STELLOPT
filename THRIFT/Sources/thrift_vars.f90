@@ -46,7 +46,9 @@ MODULE thrift_vars
                win_thrift_j, win_thrift_jboot, &
                win_thrift_jplasma, win_thrift_jeccd, win_thrift_jnbcd, &
                win_thrift_johmic, win_thrift_rho, win_thrift_t, &
-               win_lbooz, win_thrift_jsource, win_thrift_uedge
+               win_lbooz, win_thrift_jsource, win_thrift_uedge, &
+               win_thrift_alpha1, win_thrift_alpha2, &
+               win_thrift_alpha3, win_thrift_alpha4
     REAL(rprec) :: tstart, tend, jtol, picard_factor, THRIFT_I, THRIFT_IPLASMA,&
                  THRIFT_IBOOT, THRIFT_IECCD, THRIFT_INBCD, THRIFT_IOHMIC
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_T(:)
