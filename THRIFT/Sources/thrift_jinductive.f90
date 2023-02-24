@@ -64,8 +64,8 @@
          ier = 0
          CALL EZspline_interp(vp_spl,rho,THRIFT_VP(i,2),ier)
          CALL get_equil_Bav(s,THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), ier)
-         CALL get_equil_sus(s,THRIFT_S11(i,2), temp,temp,temp, ier)
-         CALL get_equil_Rmajor(s,THRIFT_RMAJOR(i,2), temp, THRIFT_AMINOR(i,2),ier)
+         CALL get_equil_sus(s,THRIFT_S11(i,2), temp1,temp1,temp1, ier)
+         CALL get_equil_Rmajor(s,THRIFT_RMAJOR(i,2), temp1, THRIFT_AMINOR(i,2),ier)
       END DO
 
       ! Check to make sure delta t != 0
@@ -232,30 +232,30 @@
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_1'
          WRITE(6,*) '' 
-         WRITE(6,*) a1(1:9,1)
+         WRITE(6,*) a1(1:9)
          WRITE(6,*) '...'
-         WRITE(6,*) a1(nrho-8:nrho,1)
+         WRITE(6,*) a1(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_2'
          WRITE(6,*) '' 
-         WRITE(6,*) a2(1:9,1)
+         WRITE(6,*) a2(1:9)
          WRITE(6,*) '...'
-         WRITE(6,*) a2(nrho-8:nrho,1)
+         WRITE(6,*) a2(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_3'
          WRITE(6,*) '' 
-         WRITE(6,*) a3(1:9,1)
+         WRITE(6,*) a3(1:9)
          WRITE(6,*) '...'
-         WRITE(6,*) a3(nrho-8:nrho,1)
+         WRITE(6,*) a3(nrho-8:nrho)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_4'
          WRITE(6,*) '' 
-         WRITE(6,*) a4(1:9,1)
+         WRITE(6,*) a4(1:9)
          WRITE(6,*) '...'
-         WRITE(6,*) a4(nrho-8:nrho,1)
+         WRITE(6,*) a4(nrho-8:nrho)
          WRITE(6,*)''
       END IF
       !
@@ -266,7 +266,7 @@
          (log(8*THRIFT_RMAJOR(nrho+2,1)/THRIFT_AMINOR(nrho+2,1)) - 2 + 0.25) ! temp1 <- L_ext
       ! Calculate u_edge^mytimestep 
       CALL get_prof_etapara(THRIFT_RHO(nrho-1),t,etapara)  
-      CALL get_prof_pprime(1,t,pprime) 
+      CALL get_prof_pprime(1.0,t,pprime) 
       temp2 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*h) ! du/drho at edge
       ! u_edge^mytimestep =  u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi*((p' + <B^2>/mu0)*u+<B^2>/mu0 * du/drho- <J.B>)
       THRIFT_UEDGE(2) = THRIFT_UEDGE(1) - k*mu0/(2*THRIFT_PHIEDGE(1))*etapara/temp1*THRIFT_VP(nrho+2,1) * &  
@@ -289,7 +289,7 @@
 
       s11 = BI(nrho); s12 = AI(nrho-1); temp2 = DI(nrho)
       
-      temp1 = -a4(nrho,1)/(5*h**2) ! Element at (nrho,nrho-2)
+      temp1 = -a4(nrho)/(5*h**2) ! Element at (nrho,nrho-2)
       temp1 = temp1/AI(nrho-2) ! Row operation: [NRHO] -> [NRHO]-temp1*[NRHO-1] 
       AI(nrho-1) = AI(nrho-1) - temp1*BI(nrho-1) ! (AI is of size nrho-1)
       BI(nrho)   = BI(nrho)   - temp1*CI(nrho-1)
