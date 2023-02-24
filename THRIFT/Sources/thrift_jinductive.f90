@@ -37,7 +37,7 @@
 
       ! Choose which items to make verbose
       lverblatin  = .false.
-      lverbalpha  = .false.
+      lverbalpha  = .true.
       lverbmat    = .true.
       lverbpost   = .false.
 
@@ -97,8 +97,7 @@
       ! Populate A,B,C,D
       IF (lverblatin) THEN
          WRITE(6,*)'==============================================================================='
-         WRITE(6,*)'CALCULATING COEFFICIENTS A,B,C,D'
-         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
          WRITE(6,*) 'RHO      ETAPARA     DV/DPHI     DP/DRHO     BAV      BSQAV        S11'
       END IF
 
@@ -123,44 +122,24 @@
             h = THRIFT_JSOURCE(i-1,itime)
          END IF
          CALL get_prof_pprime(rho,t,pprime)
-         temp1 = 2*etapara*THRIFT_VP(i,1) ! temp1 <- 2 eta dV/dPhi 
-         IF (i /= 1) A_temp(i) = THRIFT_S11(i,1)/(4*rho*THRIFT_PHIEDGE(1)**2) ! S11/(4 rho phi_a^2)
-         B_temp(i) = temp1*THRIFT_BSQAV(i,1)/mu0! 2 eta dV/dPhi <B^2>/mu_0
+         temp1 = 2*etapara*THRIFT_VP(i,2) ! temp1 <- 2 eta dV/dPhi 
+         IF (i /= 1) A_temp(i) = THRIFT_S11(i,2)/(4*rho*THRIFT_PHIEDGE(2)**2) ! S11/(4 rho phi_a^2)
+         B_temp(i) = temp1*THRIFT_BSQAV(i,2)/mu0! 2 eta dV/dPhi <B^2>/mu_0
          C_temp(i) = temp1*pprime               ! 2 eta dV/dPhi dp/drho
-         D_temp(i) = -temp1*h*THRIFT_BAV(i,1)   ! -2 eta dV/dPhi <J.B>
+         D_temp(i) = -temp1*h*THRIFT_BAV(i,2)   ! -2 eta dV/dPhi <J.B>
          IF (lverblatin) WRITE(6,'(F5.3,6(1X,ES10.3))') &
          rho, etapara, THRIFT_VP(i,1), pprime, THRIFT_BAV(i,1), THRIFT_BSQAV(i,1), THRIFT_S11(i,1)
       END DO
 
       IF (lverblatin) THEN
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' A'
-         WRITE(6,*) '' 
-         WRITE(6,*) A_temp(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) A_temp(nrho-6:nrho+2)
+         WRITE(6,*)'==============================================================================='
+         WRITE(6,*)' COEFFICIENTS ABCD AT PREVIOUS TIMESTEP'
+         WRITE(6,*)'  i             A              B              C              D'
          WRITE(6,*)''
+         DO i = 1, nrho
+            WRITE(6,'(I4, 1X, 4(ES13.5,2X))') i, A_temp(i), B_temp(i), C_temp(i), D_temp(i)
+         END DO
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' B'
-         WRITE(6,*) '' 
-         WRITE(6,*) B_temp(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) B_temp(nrho-6:nrho+2)
-         WRITE(6,*)''
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' C'
-         WRITE(6,*) '' 
-         WRITE(6,*) C_temp(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) C_temp(nrho-6:nrho+2)
-         WRITE(6,*)''
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' D'
-         WRITE(6,*) '' 
-         WRITE(6,*) D_temp(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) D_temp(nrho-6:nrho+2)
-         WRITE(6,*)''
       END IF
 
       ! Grid spacing 
@@ -191,27 +170,14 @@
       D_der(nrho) = (4*D_temp(nrho+2)-3*D_temp(nrho+1)-D_temp(nrho))/(3*h)
       
       IF (lverblatin) THEN
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' DERIV B'
-         WRITE(6,*) '' 
-         WRITE(6,*) B_der(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) B_der(nrho-8:nrho)
+         WRITE(6,*)'==============================================================================='
+         WRITE(6,*)' DERIVATIVES AT PREVIOUS TIMESTEP'
+         WRITE(6,*)'  i       DERIV B        DERIV C        DERIV D'
          WRITE(6,*)''
+         DO i = 1, nrho
+            WRITE(6,'(I4, 1X, 3(ES13.5,2X))') i, B_der(i), C_der(i), D_der(i)
+         END DO
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' DERIV C'
-         WRITE(6,*) '' 
-         WRITE(6,*) C_der(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) C_der(nrho-8:nrho)
-         WRITE(6,*)''
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' DERIV D'
-         WRITE(6,*) '' 
-         WRITE(6,*) D_der(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) D_der(nrho-8:nrho)
-         WRITE(6,*)''
       END IF
 
       ! a1 = A dD/drho
@@ -229,35 +195,13 @@
 
       IF (lverbalpha) THEN
          WRITE(6,*)'==============================================================================='
-         WRITE(6,*)'COEFFICIENTS ALPHA 1,2,3,4 PREVIOUS TIMESTEP'
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' ALPHA_1'
-         WRITE(6,*) '' 
-         WRITE(6,*) a1(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) a1(nrho-8:nrho)
+         WRITE(6,*)' ALPHAS AT PREVIOUS TIMESTEP'
+         WRITE(6,*)'  i       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
          WRITE(6,*)''
+         DO i = 1, nrho
+            WRITE(6,'(I4, 1X, 4(ES13.5,2X))') i, a1(i), a2(i), a3(i), a4(i)
+         END DO
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' ALPHA_2'
-         WRITE(6,*) '' 
-         WRITE(6,*) a2(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) a2(nrho-8:nrho)
-         WRITE(6,*)''
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' ALPHA_3'
-         WRITE(6,*) '' 
-         WRITE(6,*) a3(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) a3(nrho-8:nrho)
-         WRITE(6,*)''
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' ALPHA_4'
-         WRITE(6,*) '' 
-         WRITE(6,*) a4(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) a4(nrho-8:nrho)
-         WRITE(6,*)''
       END IF
       !
 
@@ -334,17 +278,17 @@
       B_der = 0
       B_der = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
 
-      IF (lverbpost) THEN
-         WRITE(6,*)'==============================================================================='
-         WRITE(6,*)'POST SOLVING EQUATIONS'
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' I_TOTAL AT CURRENT TIMESTEP'
-         WRITE(6,*) ''
-         WRITE(6,*) B_der(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) B_der(nrho-8:nrho)
-         WRITE(6,*)''
-      END IF    
+   !   IF (lverbpost) THEN
+   !      WRITE(6,*)'==============================================================================='
+   !      WRITE(6,*)'POST SOLVING EQUATIONS'
+   !      WRITE(6,*)'-------------------------------------------------------------------------------'
+   !      WRITE(6,*)' I_TOTAL AT CURRENT TIMESTEP'
+   !      WRITE(6,*) ''
+   !      WRITE(6,*) B_der(1:9)
+   !      WRITE(6,*) '...'
+   !      WRITE(6,*) B_der(nrho-8:nrho)
+   !      WRITE(6,*)''
+   !   END IF    
 
       ! Calculate I_source (a1)
       C_der = 0; temp1 = 0
@@ -365,22 +309,22 @@
 
       ! I_plasma = I_total - I_source
       B_der = B_der - C_der
-      IF (lverbpost) THEN
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' I_SOURCE AT CURRENT TIMESTEP'
-         WRITE(6,*)''
-         WRITE(6,*) C_der(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) C_der(nrho-8:nrho)
-         WRITE(6,*)''
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' I_PLASMA AT CURRENT TIMESTEP'
-         WRITE(6,*)''
-         WRITE(6,*) B_der(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) B_der(nrho-8:nrho)
-         WRITE(6,*)''
-      END IF    
+!      IF (lverbpost) THEN
+!         WRITE(6,*)'-------------------------------------------------------------------------------'
+!         WRITE(6,*)' I_SOURCE AT CURRENT TIMESTEP'
+!         WRITE(6,*)''
+!         WRITE(6,*) C_der(1:9)
+!         WRITE(6,*) '...'
+!         WRITE(6,*) C_der(nrho-8:nrho)
+!         WRITE(6,*)''
+!         WRITE(6,*)'-------------------------------------------------------------------------------'
+!         WRITE(6,*)' I_PLASMA AT CURRENT TIMESTEP'
+!         WRITE(6,*)''
+!         WRITE(6,*) B_der(1:9)
+!         WRITE(6,*) '...'
+!         WRITE(6,*) B_der(nrho-8:nrho)
+!         WRITE(6,*)''
+!      END IF    
 
       ! JPLASMA(i) = (IPLASMA(i)-IPLASMA(i-1))/(pi*(a(i)**2-a(i-1)**2))
       temp1 = 0; temp2 = 0;
@@ -399,25 +343,25 @@
          THRIFT_JPLASMA(i,mytimestep) = (B_der(i)-temp2)/(pi*(Aminor**2-temp1**2))
       END DO
 
-      IF (lverbpost) THEN
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' J_PLASMA AT CURRENT TIMESTEP'
-         WRITE(6,*)''
-         WRITE(6,*) THRIFT_JPLASMA(1:9,mytimestep)
-         WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_JPLASMA(nrho-8:nrho,mytimestep)
-         WRITE(6,*)''         
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' J_SOURCE AT CURRENT TIMESTEP'
-         WRITE(6,*)''
-         WRITE(6,*) THRIFT_JSOURCE(1:9,mytimestep)
-         WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_JSOURCE(nrho-8:nrho,mytimestep)
-         WRITE(6,*)'' 
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' JINDUCTIVE DONE'
-         WRITE(6,*)'==============================================================================='
-      END IF    
+!      IF (lverbpost) THEN
+!         WRITE(6,*)'-------------------------------------------------------------------------------'
+!         WRITE(6,*)' J_PLASMA AT CURRENT TIMESTEP'
+!         WRITE(6,*)''
+!         WRITE(6,*) THRIFT_JPLASMA(1:9,mytimestep)
+!         WRITE(6,*) '...'
+!         WRITE(6,*) THRIFT_JPLASMA(nrho-8:nrho,mytimestep)
+!         WRITE(6,*)''         
+!         WRITE(6,*)'-------------------------------------------------------------------------------'
+!         WRITE(6,*)' J_SOURCE AT CURRENT TIMESTEP'
+!         WRITE(6,*)''
+!         WRITE(6,*) THRIFT_JSOURCE(1:9,mytimestep)
+!         WRITE(6,*) '...'
+!         WRITE(6,*) THRIFT_JSOURCE(nrho-8:nrho,mytimestep)
+!         WRITE(6,*)'' 
+!         WRITE(6,*)'-------------------------------------------------------------------------------'
+!         WRITE(6,*)' JINDUCTIVE DONE'
+!         WRITE(6,*)'==============================================================================='
+!      END IF    
       DEALLOCATE(A_temp, B_temp, C_temp, D_temp, &
                B_der, C_der, D_der, &
                a1, a2, a3, a4, &
