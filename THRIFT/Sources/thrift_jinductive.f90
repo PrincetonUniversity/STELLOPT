@@ -281,7 +281,7 @@
         B(nrho) = -THRIFT_UGRID(nrho,1)/k-a1(nrho) &
       - THRIFT_UEDGE(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
 
-      IF (lverbmat .and. (nsubsteps==1)) THEN
+      IF (lverbmat) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)'CALCULATING MATRIX'
          WRITE(6,*)'-------------------------------------------------------------------------------'
@@ -326,7 +326,7 @@
       
       ! Store u in variable
       THRIFT_UGRID(:,2) = B
-      IF (lverbmat .and. (nsubsteps==1)) THEN
+      IF (lverbmat) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
          WRITE(6,*) temp1
