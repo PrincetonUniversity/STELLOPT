@@ -313,11 +313,11 @@
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' i LOWER DIAGONAL  MAIN DIAGONAL UPPER DIAGONAL RIGHTHAND SIDE'
          WRITE(6,*)''
-         WRITE(6,'(I2, 1X, 4(ES10.2,5X))') 0, D(1), DU(1), B(1)
+         WRITE(6,'(I3, 1X, 4(ES13.5,2X))') 1, 0.0, D(1), DU(1), B(1)
          DO i = 2, nrho-1
-            WRITE(6,'(I2, 1X, 4(ES10.2,5X))') i, DL(i-1), D(i), DU(i), B(i)
+            WRITE(6,'(I3, 1X, 4(ES13.5,2X))') i, DL(i-1), D(i), DU(i), B(i)
          END DO
-         WRITE(6,'(I2, 1X, 4(ES10.2,5X))') nrho, DL(nrho-1),D(nrho), 0, B(nrho)
+         WRITE(6,'(I3, 1X, 4(ES13.5,2X))') nrho, DL(nrho-1),D(nrho), 0.0, B(nrho)
          WRITE(6,*) ''
       END IF
 
