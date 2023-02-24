@@ -94,7 +94,7 @@
                AC_AUX_S(i) = s_val
                !AC_AUX_F(i) = j_val*vp*phip/(2*pi2*rho_val*eq_Rmajor)
                CALL get_equil_Rmajor(s_val, Rmajor, temp, temp, ier)
-               AC_AUX_F(i) = j*val*vp*eq_phiedge/(2*pi*Rmajor)
+               AC_AUX_F(i) = j_val*vp*eq_phiedge/(2*pi*Rmajor)
             END DO
             !AC_AUX_F(1) = 2*AC_AUX_F(2)-AC_AUX_F(3)
             CURTOR = SUM(AC_AUX_F(1:n_eq),DIM=1)/DBLE(n_eq-1)
