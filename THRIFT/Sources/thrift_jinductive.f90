@@ -39,7 +39,7 @@
       lverblatin  = .true.
       lverbalpha  = .true.
       lverbmat    = .true.
-      lverbpost   = .false.
+      lverbpost   = .true.
 
       THRIFT_I        = 0; THRIFT_IBOOT    = 0; THRIFT_IPLASMA  = 0
       THRIFT_IECCD    = 0; THRIFT_INBCD    = 0; THRIFT_IOHMIC   = 0
