@@ -429,10 +429,12 @@
          s = rho*rho
          ier = 0
          CALL get_equil_Rmajor(s,h,h,Aminor,ier)
-         rho = THRIFT_RHO(i-1)
-         s = rho*rho
-         ier = 0
-         IF (i /= 1) CALL get_equil_Rmajor(s,h,h,temp1,ier)
+         IF (i /= 1) THEN
+            rho = THRIFT_RHO(i-1)
+            s = rho*rho
+            ier = 0
+            CALL get_equil_Rmajor(s,h,h,temp1,ier)
+         END IF
          IF (i /= 1) temp2 = B(i-1) ! I_plasma(i)
          THRIFT_JPLASMA(i,mytimestep) = (B(i)-temp2)/(pi*(Aminor**2-temp1**2))
       END DO
