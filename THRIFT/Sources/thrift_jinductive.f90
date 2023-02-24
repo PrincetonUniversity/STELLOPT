@@ -244,7 +244,8 @@
          WRITE(6,*) '...'
          WRITE(6,*) a4(nrho-8:nrho)
          WRITE(6,*)''
-      END IF
+      END 
+      !
 
       ! Calculate u_edge^mytimestep from u_edge^mytimestep-1, u_grid^mytimestep-1
       ! First calculate L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)      
