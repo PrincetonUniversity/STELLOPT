@@ -213,30 +213,30 @@
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_1'
          WRITE(6,*) '' 
-         WRITE(6,*) THRIFT_ALPHA1(1,1:9)
+         WRITE(6,*) THRIFT_ALPHA1(1:9,1)
          WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_ALPHA1(1,nrho-8:nrho)
+         WRITE(6,*) THRIFT_ALPHA1(nrho-8:nrho,1)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_2'
          WRITE(6,*) '' 
-         WRITE(6,*) THRIFT_ALPHA2(1,1:9)
+         WRITE(6,*) THRIFT_ALPHA2(1:9,1)
          WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_ALPHA2(1,nrho-8:nrho)
+         WRITE(6,*) THRIFT_ALPHA2(nrho-8:nrho,1)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_3'
          WRITE(6,*) '' 
-         WRITE(6,*) THRIFT_ALPHA3(1,1:9)
+         WRITE(6,*) THRIFT_ALPHA3(1:9,1)
          WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_ALPHA3(1,nrho-8:nrho)
+         WRITE(6,*) THRIFT_ALPHA3(nrho-8:nrho,1)
          WRITE(6,*)''
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' ALPHA_4'
          WRITE(6,*) '' 
-         WRITE(6,*) THRIFT_ALPHA4(1,1:9)
+         WRITE(6,*) THRIFT_ALPHA4(1:9,1)
          WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_ALPHA4(1,nrho-8:nrho)
+         WRITE(6,*) THRIFT_ALPHA4(nrho-8:nrho,1)
          WRITE(6,*)''
       END IF
       !
@@ -264,20 +264,20 @@
       ! (Do most of the work in one loop and fix mistakes afterwards)
       ! If on the first time iteration, we say there's no enclosed current (i.e. B=0)
       DO i = 1, nrho-1
-         CI(i) = THRIFT_ALPHA3(1,i)/(2*h) +THRIFT_ALPHA4(1,i)/(h**2)   ! Upper diagonal (Correct)
-         AI(i) = -THRIFT_ALPHA3(1,i)/(2*h)+THRIFT_ALPHA4(1,i)/(h**2)   ! Lower diagonal ((nrho-1) wrong)
-         BI(i) = THRIFT_ALPHA2(1,i)-2*THRIFT_ALPHA4(1,i)/(h**2)-1/k    ! Middle diagonal ((1,nrho) wrong)
-         DI(i) = -THRIFT_UGRID(i,1)/k-THRIFT_ALPHA1(1,i)  ! Right-hand side (B(nrho) wrong)
+         CI(i) = THRIFT_ALPHA3(i,1)/(2*h) +THRIFT_ALPHA4(i,1)/(h**2)   ! Upper diagonal (Correct)
+         AI(i) = -THRIFT_ALPHA3(i,1)/(2*h)+THRIFT_ALPHA4(i,1)/(h**2)   ! Lower diagonal ((nrho-1) wrong)
+         BI(i) = THRIFT_ALPHA2(i,1)-2*THRIFT_ALPHA4(i,1)/(h**2)-1/k    ! Middle diagonal ((1,nrho) wrong)
+         DI(i) = -THRIFT_UGRID(i,1)/k-THRIFT_ALPHA1(i,1)  ! Right-hand side (B(nrho) wrong)
       END DO
-      AI(nrho-1)= -THRIFT_ALPHA3(1,nrho)/(3*h)+2*THRIFT_ALPHA4(1,nrho)/(h**2)         ! Lower diagonal fixed
+      AI(nrho-1)= -THRIFT_ALPHA3(nrho,1)/(3*h)+2*THRIFT_ALPHA4(nrho,1)/(h**2)         ! Lower diagonal fixed
         BI(1)    = THRIFT_ALPHA2(1,1)-THRIFT_ALPHA3(1,1)/(2*h)-THRIFT_ALPHA4(1,1)/(h**2)-1/k  ! Middle diagonal half fixed
-        BI(nrho) = THRIFT_ALPHA2(1,nrho)-THRIFT_ALPHA3(1,nrho)/h+5*THRIFT_ALPHA4(1,nrho)/(h**2)-1/k! Middle diagonal fixed
-        DI(nrho) = -THRIFT_UGRID(nrho,1)/k-THRIFT_ALPHA1(1,nrho) &
-      - THRIFT_UEDGE(2)*(4*THRIFT_ALPHA3(1,nrho)/(3*h)+16*THRIFT_ALPHA4(1,nrho)/(5*h**2)) ! Fix B(nrho)
+        BI(nrho) = THRIFT_ALPHA2(nrho,1)-THRIFT_ALPHA3(nrho,1)/h+5*THRIFT_ALPHA4(nrho,1)/(h**2)-1/k! Middle diagonal fixed
+        DI(nrho) = -THRIFT_UGRID(nrho,1)/k-THRIFT_ALPHA1(nrho,1) &
+      - THRIFT_UEDGE(2)*(4*THRIFT_ALPHA3(nrho,1)/(3*h)+16*THRIFT_ALPHA4(nrho,1)/(5*h**2)) ! Fix B(nrho)
 
       s11 = BI(nrho); s12 = AI(nrho-1); temp2 = DI(nrho)
       
-      temp1 = -THRIFT_ALPHA4(1,nrho)/(5*h**2) ! Element at (nrho,nrho-2)
+      temp1 = -THRIFT_ALPHA4(nrho,1)/(5*h**2) ! Element at (nrho,nrho-2)
       temp1 = temp1/AI(nrho-2) ! Row operation: [NRHO] -> [NRHO]-temp1*[NRHO-1] 
       AI(nrho-1) = AI(nrho-1) - temp1*BI(nrho-1) ! (AI is of size nrho-1)
       BI(nrho)   = BI(nrho)   - temp1*CI(nrho-1)
