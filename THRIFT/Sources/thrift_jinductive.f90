@@ -280,23 +280,9 @@
         D(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
         B(nrho) = -THRIFT_UGRID(nrho,1)/k-a1(nrho) &
       - THRIFT_UEDGE(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
-
-      IF (.false.) THEN
-         WRITE(6,*)'==============================================================================='
-         WRITE(6,*)'CALCULATING MATRIX'
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*) ' D(NRHO) (PRE ROW OPERATION)'
-         WRITE(6,*) D(nrho)
-         WRITE(6,*) '' 
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*) ' DL(NRHO-1) (PRE ROW OPERATION)'
-         WRITE(6,*) DL(nrho-1)
-         WRITE(6,*) '' 
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*) ' B(NRHO) (PRE ROW OPERATION)'
-         WRITE(6,*) B(nrho)
-         WRITE(6,*) '' 
-      END IF
+      s11 = D(nrho)
+      s12 = DL(nrho-1)
+      temp2 = B(nrho)
       
       ! Matrix is not fully tridiagonal; it has following element in (nrho,nrho-2)
       temp1 = -a4(nrho)/(5*h**2) 
@@ -305,8 +291,6 @@
       DL(nrho-1) = DL(nrho-1) - temp1* D(nrho-1) 
       D(nrho)    = D(nrho)    - temp1*DU(nrho-1)
       B(nrho)    = B(nrho)    - temp1* B(nrho-1)
-
-
 
       ! Thomas algorithm
       ! https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
@@ -330,14 +314,16 @@
          WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
          WRITE(6,*) temp1
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'  i         LOWER          MAIN         UPPER           RHS      SOLUTION'
+         WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
          WRITE(6,*)''
-         WRITE(6,'(I4, 1X, 5(ES13.5,2X))') 1, 0.0, D(1), DU(1), B(1), THRIFT_UGRID(1,2)
+         WRITE(6,'(I4, 1X,A13,5(2X,ES13.5))') 1, '-------------', D(1), DU(1), B(1), THRIFT_UGRID(1,2)
          DO i = 2, nrho-1
             WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, DL(i-1), D(i), DU(i), B(i), THRIFT_UGRID(i,2)
          END DO
-         WRITE(6,'(I4, 1X, 5(ES13.5,2X))') nrho, DL(nrho-1),D(nrho), 0.0, B(nrho), THRIFT_UGRID(nrho,2)
+         WRITE(6,'(I4, 1X, 2(ES13.5,2X),A13,2(2X,ES13.5))') nrho, DL(nrho-1),D(nrho), '-------------',&
+                                                             B(nrho), THRIFT_UGRID(nrho,2)
          WRITE(6,'(A5,60X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
+         WRITE(6,'(A5, 1X, 2(ES13.5,2X),A13,2X,ES13.5)') 'TEMP', s12, s11,'-------------', temp2
          WRITE(6,*)'-------------------------------------------------------------------------------'
       END IF
       ! B = mu0 I / phip => I = phip*B/mu0 = 2*phi_a*rho*B/mu0
