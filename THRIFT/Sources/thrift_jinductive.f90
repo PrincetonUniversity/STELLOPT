@@ -393,10 +393,12 @@
          s = rho * rho
          ier = 0
          CALL get_equil_Rmajor(s,h,h,Aminor,ier)  ! aminor_i
-         rho = THRIFT_RHO(i-1)
-         s = rho*rho
-         ier = 0
-         IF (i /= 1) CALL get_equil_Rmajor(s,h,h,temp1,ier) ! temp1 = aminor_i-1
+         IF (i /= 1) THEN
+            rho = THRIFT_RHO(i-1)
+            s = rho*rho
+            ier = 0
+            CALL get_equil_Rmajor(s,h,h,temp1,ier) ! temp1 = aminor_i-1
+         END IF
          a1(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp1**2)
          IF (i /= 1) a1(i) = a1(i) + a1(i-1)
       END DO
