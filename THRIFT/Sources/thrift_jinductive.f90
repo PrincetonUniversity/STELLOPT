@@ -281,7 +281,7 @@
         B(nrho) = -THRIFT_UGRID(nrho,1)/k-a1(nrho) &
       - THRIFT_UEDGE(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
 
-      IF (lverbmat) THEN
+      IF (.false.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)'CALCULATING MATRIX'
          WRITE(6,*)'-------------------------------------------------------------------------------'
@@ -319,27 +319,25 @@
          IF (i /= nrho) a1(i) = DU(i)/(D(i)-DL(i-1)*a1(i-1))  ! c_i' =              c_i/(b_i - a_i*c_i-1')
          a2(i) = (B(i)-DL(i-1)*a2(i-1))/(D(i)-DL(i-1)*a1(i-1))! d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1')
       END DO
-      B(nrho) = a2(nrho) ! x_n = d_n'
+      THRIFT_UGRID(nrho,2) = a2(nrho) ! x_n = d_n'
       DO i = nrho-1, 1, -1
-         B(i) = a2(i)-a1(i)*B(i+1) ! x_i = d_i' - c_i'*x_i+1
+         THRIFT_UGRID(i,2) = a2(i)-a1(i)*THRIFT_UGRID(i+1,2) ! x_i = d_i' - c_i'*x_i+1
       END DO
       
       ! Store u in variable
-      THRIFT_UGRID(:,2) = B
       IF (lverbmat) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
          WRITE(6,*) temp1
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' i LOWER DIAGONAL  MAIN DIAGONAL UPPER DIAGONAL RIGHTHAND SIDE U^MYTIMESTEP'
+         WRITE(6,*)'  i         LOWER          MAIN         UPPER           RHS      SOLUTION'
          WRITE(6,*)''
-         WRITE(6,'(I3, 1X, 5(ES13.5,2X))') 1, 0.0, D(1), DU(1), B(1), THRIFT_UGRID(1,2)
+         WRITE(6,'(I4, 1X, 5(ES13.5,2X))') 1, 0.0, D(1), DU(1), B(1), THRIFT_UGRID(1,2)
          DO i = 2, nrho-1
-            WRITE(6,'(I3, 1X, 5(ES13.5,2X))') i, DL(i-1), D(i), DU(i), B(i), THRIFT_UGRID(i,2)
+            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, DL(i-1), D(i), DU(i), B(i), THRIFT_UGRID(i,2)
          END DO
-         WRITE(6,'(I3, 1X, 5(ES13.5,2X))') nrho, DL(nrho-1),D(nrho), 0.0, B(nrho), THRIFT_UGRID(nrho,2)
-         WRITE(6,'(A4,45X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
-         WRITE(6,*) ''
+         WRITE(6,'(I4, 1X, 5(ES13.5,2X))') nrho, DL(nrho-1),D(nrho), 0.0, B(nrho), THRIFT_UGRID(nrho,2)
+         WRITE(6,'(A5,60X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
          WRITE(6,*)'-------------------------------------------------------------------------------'
       END IF
       ! B = mu0 I / phip => I = phip*B/mu0 = 2*phi_a*rho*B/mu0
