@@ -67,12 +67,14 @@
       CALL mpialloc(THRIFT_JNBCD,    nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jnbcd)
       CALL mpialloc(THRIFT_JOHMIC,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_johmic)
       CALL mpialloc(THRIFT_JSOURCE,  nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jsource)
-      CALL mpialloc(THRIFT_UGRID,    nrho,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_uedge)     
-      CALL mpialloc(THRIFT_ALPHA1,   nrho,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha1)     
-      CALL mpialloc(THRIFT_ALPHA2,   nrho,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha2)     
-      CALL mpialloc(THRIFT_ALPHA3,   nrho,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha3)     
-      CALL mpialloc(THRIFT_ALPHA4,   nrho,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha4)     
-
+      CALL mpialloc(THRIFT_UGRID,    nrho,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_ugrid)           
+      CALL mpialloc(THRIFT_VP,     nrho+2,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_vp)     
+      CALL mpialloc(THRIFT_BAV,    nrho+2,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_bav)     
+      CALL mpialloc(THRIFT_BSQAV,  nrho+2,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_bsqav)     
+      CALL mpialloc(THRIFT_S11,    nrho+2,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_s11)     
+      CALL mpialloc(THRIFT_AMINOR, nrho+2,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_aminor)     
+      CALL mpialloc(THRIFT_RMAJOR, nrho+2,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rmajor)     
+      
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
       SELECT CASE (TRIM(bootstrap_type))
