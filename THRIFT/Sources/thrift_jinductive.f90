@@ -281,7 +281,7 @@
         B(nrho) = -THRIFT_UGRID(nrho,1)/k-a1(nrho) &
       - THRIFT_UEDGE(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
 
-      IF (lverbmat) THEN
+      IF (lverbmat .and. (nsubsteps==1)) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)'CALCULATING MATRIX'
          WRITE(6,*)'-------------------------------------------------------------------------------'
@@ -306,20 +306,7 @@
       D(nrho)    = D(nrho)    - temp1*DU(nrho-1)
       B(nrho)    = B(nrho)    - temp1* B(nrho-1)
 
-      IF (lverbmat) THEN
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
-         WRITE(6,*) temp1
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' i LOWER DIAGONAL  MAIN DIAGONAL UPPER DIAGONAL RIGHTHAND SIDE'
-         WRITE(6,*)''
-         WRITE(6,'(I3, 1X, 4(ES13.5,2X))') 1, 0.0, D(1), DU(1), B(1)
-         DO i = 2, nrho-1
-            WRITE(6,'(I3, 1X, 4(ES13.5,2X))') i, DL(i-1), D(i), DU(i), B(i)
-         END DO
-         WRITE(6,'(I3, 1X, 4(ES13.5,2X))') nrho, DL(nrho-1),D(nrho), 0.0, B(nrho)
-         WRITE(6,*) ''
-      END IF
+
 
       ! Thomas algorithm
       ! https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
@@ -339,16 +326,21 @@
       
       ! Store u in variable
       THRIFT_UGRID(:,2) = B
-      
-      IF (lverbmat) THEN
+      IF (lverbmat .and. (nsubsteps==1)) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)'    i U^mytimestep'
-         WRITE(6,*) ''
-         DO i = 1, nrho
-            WRITE(6,'(I4,1X,ES10.2)') i, THRIFT_UGRID(i,2)
-         END DO
-         WRITE(6,'(A4,1X,ES10.2)') 'EDGE',THRIFT_UEDGE(2)
+         WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
+         WRITE(6,*) temp1
+         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*)' i LOWER DIAGONAL  MAIN DIAGONAL UPPER DIAGONAL RIGHTHAND SIDE U^MYTIMESTEP'
          WRITE(6,*)''
+         WRITE(6,'(I3, 1X, 5(ES13.5,2X))') 1, 0.0, D(1), DU(1), B(1), THRIFT_UGRID(1,2)
+         DO i = 2, nrho-1
+            WRITE(6,'(I3, 1X, 4(ES13.5,2X))') i, DL(i-1), D(i), DU(i), B(i), THRIFT_UGRID(i,2)
+         END DO
+         WRITE(6,'(I3, 1X, 4(ES13.5,2X))') nrho, DL(nrho-1),D(nrho), 0.0, B(nrho), THRIFT_UGRID(nrho,2)
+         WRITE(6,'(A4,45X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
+         WRITE(6,*) ''
+         WRITE(6,*)'-------------------------------------------------------------------------------'
       END IF
       ! B = mu0 I / phip => I = phip*B/mu0 = 2*phi_a*rho*B/mu0
       B = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
