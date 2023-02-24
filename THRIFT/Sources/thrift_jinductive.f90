@@ -38,8 +38,8 @@
       ! Choose which items to make verbose
       lverblatin  = .false.
       lverbalpha  = .false.
-      lverbmat    = .false.
-      lverbpost   = .true.
+      lverbmat    = .true.
+      lverbpost   = .false.
 
       THRIFT_I        = 0; THRIFT_IBOOT    = 0; THRIFT_IPLASMA  = 0
       THRIFT_IECCD    = 0; THRIFT_INBCD    = 0; THRIFT_IOHMIC   = 0
@@ -310,36 +310,15 @@
          WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
          WRITE(6,*) temp1
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' MATRIX LOWER DIAGONAL (POST ROW OPERATION)'
+         WRITE(6,*)' i LOWER DIAGONAL  MAIN DIAGONAL UPPER DIAGONAL RIGHTHAND SIDE'
+         WRITE(6,*)''
+         WRITE(6,'(I2, 1X, 4(ES10.2,5X))') 0, D(1), DU(1), B(1)
+         DO i = 2, nrho-1
+            WRITE(6,'(I2, 1X, 4(ES10.2,5X))') i, DL(i-1), D(i), DU(i), B(i)
+         END DO
+         WRITE(6,'(I2, 1X, 4(ES10.2,5X))') nrho, DL(nrho-1),D(nrho), 0, B(nrho)
          WRITE(6,*) ''
-         WRITE(6,*) DL(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) DL(nrho-9:nrho-1)
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' MATRIX MAIN DIAGONAL  (POST ROW OPERATION)'
-         WRITE(6,*) ''
-         WRITE(6,*) D(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) D(nrho-8:nrho)
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' MATRIX UPPER DIAGONAL (POST ROW OPERATION)'
-         WRITE(6,*) ''
-         WRITE(6,*) DU(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) DU(nrho-9:nrho-1)
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' RIGHT HAND SIDE       (POST ROW OPERATION)'
-         WRITE(6,*) '' 
-         WRITE(6,*) B(1:9)
-         WRITE(6,*) '...'
-         WRITE(6,*) B(nrho-8:nrho)
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-      END IF     
-
-      ! LAPACK general tridiagonal matrix solver using GE with partial pivoting
-      ! See also
-      !  https://netlib.org/lapack/explore-html/d4/d62/group__double_g_tsolve.html
-      !CALL DGTSV(nrho,1,DL,D,DU,B,nrho)
+      END IF
 
       ! Thomas algorithm
       ! https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
@@ -352,31 +331,30 @@
          IF (i /= nrho) a1(i) = DU(i)/(D(i)-DL(i-1)*a1(i-1))  ! c_i' =              c_i/(b_i - a_i*c_i-1')
          a2(i) = (B(i)-DL(i-1)*a2(i-1))/(D(i)-DL(i-1)*a1(i-1))! d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1')
       END DO
-      B(nrho) = a2(nrho)
+      B(nrho) = a2(nrho) ! x_n = d_n'
       DO i = nrho-1, 1, -1
-         B(i) = a2(i)-a1(i)*B(i+1)
+         B(i) = a2(i)-a1(i)*B(i+1) ! x_i = d_i' - c_i'*x_i+1
       END DO
       
       ! Store u in variable
       THRIFT_UGRID(:,2) = B
       
-      IF (lverbpost) THEN
-         WRITE(6,*)'==============================================================================='
-         WRITE(6,*)'POST SOLVING EQUATIONS'
+      IF (lverbmat) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' U^mytimestep'
-         WRITE(6,*) '' 
-         WRITE(6,*) THRIFT_UGRID(1:9,2)
-         WRITE(6,*) '...'
-         WRITE(6,*) THRIFT_UGRID(nrho-8:nrho,2)
+         WRITE(6,*)'    i U^mytimestep'
          WRITE(6,*) ''
-         WRITE(6,*) THRIFT_UEDGE(2)
+         DO i = 1, nrho
+            WRITE(6,'(I4,1X,ES10.2)') i, THRIFT_UGRID(i,2)
+         END DO
+         WRITE(6,'(A4,1X,ES10.2)') 'EDGE',THRIFT_UEDGE(2)
          WRITE(6,*)''
       END IF
       ! B = mu0 I / phip => I = phip*B/mu0 = 2*phi_a*rho*B/mu0
-      B = 2*eq_phiedge/mu0*(THRIFT_RHO*B)
+      B = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
 
       IF (lverbpost) THEN
+         WRITE(6,*)'==============================================================================='
+         WRITE(6,*)'POST SOLVING EQUATIONS'
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' I_TOTAL AT CURRENT TIMESTEP'
          WRITE(6,*) ''
