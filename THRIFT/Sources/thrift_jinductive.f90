@@ -466,9 +466,11 @@
          s = rho * rho
          ier = 0
          CALL get_equil_Rmajor(s,h,h,Aminor,ier)  ! aminor_i
-         rho = THRIFT_RHO(i-1)
-         s = rho*rho
-         IF (i /= 1) CALL get_equil_Rmajor(s,h,h,temp1,ier) ! aminor_i-1
+         IF (i /= 1) THEN
+            rho = THRIFT_RHO(i-1)
+            s = rho*rho
+            CALL get_equil_Rmajor(s,h,h,temp1,ier) ! aminor_i-1
+         END IF
          THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(Aminor**2-temp1**2)
          THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(Aminor**2-temp1**2)
          THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(Aminor**2-temp1**2)
