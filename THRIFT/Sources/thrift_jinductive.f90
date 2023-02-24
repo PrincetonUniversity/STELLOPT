@@ -279,10 +279,9 @@
       B_der = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
 
       ! Calculate I_source (a1)
-      C_der = 0; temp1 = 0
+      C_der = 0;
       DO i = 1, nrho
-         IF (i /= 1) temp1 = THRIFT_AMINOR(i-1,2)
-         C_der(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(THRIFT_AMINOR(i,2)**2-temp1**2)
+         C_der(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i)**2)
          IF (i /= 1) C_der(i) = C_der(i) + C_der(i-1)
       END DO
 
@@ -290,21 +289,20 @@
       D_der = 0
       D_der = B_der - C_der
       ! JPLASMA(i) = (IPLASMA(i)-IPLASMA(i-1))/(pi*(a(i)**2-a(i-1)**2))
-      temp1 = 0; temp2 = 0;
+      temp2 = 0;
       DO i = 1, nrho
-         IF (i /= 1) temp1 = THRIFT_AMINOR(i-1,2)
          IF (i /= 1) temp2 = D_der(i-1) ! I_plasma(i-1)
-         THRIFT_JPLASMA(i,mytimestep) = (D_der(i)-temp2)/(pi*(THRIFT_AMINOR(i,2)**2-temp1**2))
+         THRIFT_JPLASMA(i,mytimestep) = (D_der(i)-temp2)/(pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2))
       END DO
 
       IF (lverbpost) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' POST MATRIX ALGORITHM'
-         WRITE(6,*)'  i         ITOTAL        ISOURCE        IPLASMA        JPLASMA        JSOURCE'
+         WRITE(6,*)'  i        ITOTAL        ISOURCE        IPLASMA        JPLASMA        JSOURCE'
          WRITE(6,*)''
          DO i = 1, nrho
             WRITE(6,'(I4, 1X, 5(ES13.5,2X))') &
-            i, B_der(i), D_der(i), THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
+            i, B_der(i), C_der(i), D_der(i), THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
          END DO
          WRITE(6,*)'-------------------------------------------------------------------------------'
       END IF     
@@ -315,14 +313,12 @@
 
 1000  CONTINUE
       ! Calculate enclosed currents for progress
-      temp1 = 0
       DO i = 1, nrho
-         IF (i /= 1) temp1 = THRIFT_AMINOR(i-1,2)
-         THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(THRIFT_AMINOR(i,1)**2-temp1**2)
-         THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(THRIFT_AMINOR(i,1)**2-temp1**2)
-         THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i,1)**2-temp1**2)
-         THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i,1)**2-temp1**2)
-         THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(THRIFT_AMINOR(i,1)**2-temp1**2)
+         THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(THRIFT_AMINOR(i+1,1)**2-THRIFT_AMINOR(i,1)**2)
+         THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,1)**2-THRIFT_AMINOR(i,1)**2)
+         THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,1)**2-THRIFT_AMINOR(i,1)**2)
+         THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,1)**2-THRIFT_AMINOR(i,1)**2)
+         THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(THRIFT_AMINOR(i+1,1)**2-THRIFT_AMINOR(i,1)**2)
       END DO
       THRIFT_I = THRIFT_IPLASMA + THRIFT_IBOOT + THRIFT_IECCD + THRIFT_INBCD + THRIFT_IOHMIC
       RETURN
