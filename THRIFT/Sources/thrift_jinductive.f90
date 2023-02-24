@@ -36,7 +36,7 @@
 !     THRIFT_JPLASMA.  Where THRIFT_JSOURCE is the J in <J_s.B>.
 
       ! Choose which items to make verbose
-      lverblatin  = .false.
+      lverblatin  = .true.
       lverbalpha  = .true.
       lverbmat    = .true.
       lverbpost   = .false.
@@ -71,7 +71,6 @@
       ! Check to make sure delta t != 0
       IF (tstart==0 .and. mytimestep==1) THEN
          THRIFT_JPLASMA(:,mytimestep)=-THRIFT_JSOURCE(:,mytimestep) 
-
          GOTO 1000
       END IF
 
@@ -217,7 +216,7 @@
       temp2 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*h) ! du/drho at edge
       ! u_edge^mytimestep =  u - dt* mu0/(2Phi_a)*eta/Lext*dV/dphi*((p' + <B^2>/mu0)*u+<B^2>/mu0 * du/drho- <J.B>)
       THRIFT_UEDGE(2) = THRIFT_UEDGE(1) - k*mu0/(2*THRIFT_PHIEDGE(1))*etapara/temp1*THRIFT_VP(nrho+2,1) * &  
-            (((pprime + 0*THRIFT_BSQAV(nrho+2,1)/mu0)*THRIFT_UEDGE(1)) + THRIFT_BSQAV(nrho+2,1)/mu0*temp2 &               
+            (((pprime + THRIFT_BSQAV(nrho+2,1)/mu0)*THRIFT_UEDGE(1)) + THRIFT_BSQAV(nrho+2,1)/mu0*temp2 &               
             - source_edge*THRIFT_BAV(nrho+2,1))                                   
 
       ! Populate diagonals and RHS; AI,CI of size nrho-1, BI, DI of size nrho
@@ -294,17 +293,8 @@
       ! Calculate I_source (a1)
       C_der = 0; temp1 = 0
       DO i = 1, nrho
-         rho = THRIFT_RHO(i)
-         s = rho * rho
-         ier = 0
-         CALL get_equil_Rmajor(s,h,h,Aminor,ier)  ! aminor_i
-         IF (i /= 1) THEN
-            rho = THRIFT_RHO(i-1)
-            s = rho*rho
-            ier = 0
-            CALL get_equil_Rmajor(s,h,h,temp1,ier) ! temp1 = aminor_i-1
-         END IF
-         C_der(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(Aminor**2-temp1**2)
+         IF (i /= 1) temp1 = THRIFT_AMINOR(i-1,2)
+         C_der(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(THRIFT_AMINOR(i,2)**2-temp1**2)
          IF (i /= 1) C_der(i) = C_der(i) + C_der(i-1)
       END DO
 
@@ -330,18 +320,9 @@
       ! JPLASMA(i) = (IPLASMA(i)-IPLASMA(i-1))/(pi*(a(i)**2-a(i-1)**2))
       temp1 = 0; temp2 = 0;
       DO i = 1, nrho
-         rho = THRIFT_RHO(i)
-         s = rho*rho
-         ier = 0
-         CALL get_equil_Rmajor(s,h,h,Aminor,ier)
-         IF (i /= 1) THEN
-            rho = THRIFT_RHO(i-1)
-            s = rho*rho
-            ier = 0
-            CALL get_equil_Rmajor(s,h,h,temp1,ier)
-         END IF
+         IF (i /= 1) temp1 = THRIFT_AMINOR(i-1,2)
          IF (i /= 1) temp2 = B_der(i-1) ! I_plasma(i-1)
-         THRIFT_JPLASMA(i,mytimestep) = (B_der(i)-temp2)/(pi*(Aminor**2-temp1**2))
+         THRIFT_JPLASMA(i,mytimestep) = (B_der(i)-temp2)/(pi*(THRIFT_AMINOR(i,2)**2-temp1**2))
       END DO
 
 !      IF (lverbpost) THEN
@@ -372,20 +353,12 @@
       ! Calculate enclosed currents for progress
       temp1 = 0
       DO i = 1, nrho
-         rho = THRIFT_RHO(i)
-         s = rho * rho
-         ier = 0
-         CALL get_equil_Rmajor(s,h,h,Aminor,ier)  ! aminor_i
-         IF (i /= 1) THEN
-            rho = THRIFT_RHO(i-1)
-            s = rho*rho
-            CALL get_equil_Rmajor(s,h,h,temp1,ier) ! aminor_i-1
-         END IF
-         THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(Aminor**2-temp1**2)
-         THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(Aminor**2-temp1**2)
-         THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(Aminor**2-temp1**2)
-         THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(Aminor**2-temp1**2)
-         THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(Aminor**2-temp1**2)
+         IF (i /= 1) temp1 = THRIFT_AMINOR(i-1,2)
+         THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(THRIFT_AMINOR(i,1)**2-temp1**2)
+         THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(THRIFT_AMINOR(i,1)**2-temp1**2)
+         THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i,1)**2-temp1**2)
+         THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i,1)**2-temp1**2)
+         THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(THRIFT_AMINOR(i,1)**2-temp1**2)
       END DO
       THRIFT_I = THRIFT_IPLASMA + THRIFT_IBOOT + THRIFT_IECCD + THRIFT_INBCD + THRIFT_IOHMIC
       RETURN
