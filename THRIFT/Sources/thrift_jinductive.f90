@@ -344,12 +344,13 @@
       ! Thomas algorithm
       ! https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
       ! a_i = DL, b_i = D, c_i = DU, d_i = B
+      ! note that on wiki, indices from a are in [2,nrho] whereas ours are in [1,nrho-1]
       a1 = 0; a2 = 0;
       a1(1) = DU(1)/D(1) !c_1' = c_1/b_1
       a2(1) = B(1)/D(1)  !d_1' = d_1/b_1
       DO i = 2, nrho
-         IF (i /= nrho) a1(i) = DU(i)/(D(i)-DL(i)*a1(i-1))  ! c_i' =              c_i/(b_i - a_i*c_i-1')
-         a2(i) = (B(i)-DL(i)*a2(i-1))/(D(i)-DL(i)*a1(i-1))  ! d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1')
+         IF (i /= nrho) a1(i) = DU(i)/(D(i)-DL(i-1)*a1(i-1))  ! c_i' =              c_i/(b_i - a_i*c_i-1')
+         a2(i) = (B(i)-DL(i-1)*a2(i-1))/(D(i)-DL(i-1)*a1(i-1))! d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1')
       END DO
       B(nrho) = a2(nrho)
       DO i = nrho-1, 1, -1
