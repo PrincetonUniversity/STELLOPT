@@ -244,7 +244,7 @@
          WRITE(6,*) '...'
          WRITE(6,*) a4(nrho-8:nrho)
          WRITE(6,*)''
-      END 
+      END IF
       !
 
       ! Calculate u_edge^mytimestep from u_edge^mytimestep-1, u_grid^mytimestep-1
