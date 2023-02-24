@@ -281,7 +281,7 @@
       ! Calculate I_source (a1)
       C_der = 0;
       DO i = 1, nrho
-         C_der(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i)**2)
+         C_der(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
          IF (i /= 1) C_der(i) = C_der(i) + C_der(i-1)
       END DO
 
@@ -314,11 +314,11 @@
 1000  CONTINUE
       ! Calculate enclosed currents for progress
       DO i = 1, nrho
-         THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(THRIFT_AMINOR(i+1,1)**2-THRIFT_AMINOR(i,1)**2)
-         THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,1)**2-THRIFT_AMINOR(i,1)**2)
-         THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,1)**2-THRIFT_AMINOR(i,1)**2)
-         THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,1)**2-THRIFT_AMINOR(i,1)**2)
-         THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(THRIFT_AMINOR(i+1,1)**2-THRIFT_AMINOR(i,1)**2)
+         THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
+         THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
+         THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
+         THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
+         THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
       END DO
       THRIFT_I = THRIFT_IPLASMA + THRIFT_IBOOT + THRIFT_IECCD + THRIFT_INBCD + THRIFT_IOHMIC
       RETURN
