@@ -92,7 +92,7 @@
       DO i = 1,nrho+2
          IF (i==1) THEN
             rho = 0
-         ELSE IF (i==nrho+2) 
+         ELSE IF (i==nrho+2) THEN
             rho = 1
          ELSE
             rho = THRIFT_RHO(i-1)
