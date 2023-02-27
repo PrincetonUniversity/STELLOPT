@@ -86,7 +86,7 @@
       t = THRIFT_T(mytimestep) ! t = current sim time
       
       ! Populate A,B,C,D
-      IF (.false.) THEN
+      IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
          WRITE(6,*) 'RHO      ETAPARA     DV/DPHI     DP/DRHO     BAV      BSQAV        S11'
@@ -122,14 +122,16 @@
          rho, etapara, THRIFT_VP(i,1), pprime, THRIFT_BAV(i,1), THRIFT_BSQAV(i,1), THRIFT_S11(i,1)
       END DO
 
-      IF (.false.) THEN
+      IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' COEFFICIENTS ABCD'
          WRITE(6,*)'  i             A              B              C              D'
          WRITE(6,*)''
-         DO i = 1, nrho+2
-            WRITE(6,'(I4, 1X, 4(ES13.5,2X))') i, A_temp(i), B_temp(i), C_temp(i), D_temp(i)
+         WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') 0, A_temp(1), B_temp(1), C_temp(1), D_temp(1)
+         DO i = 2, nrho+1
+            WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') THRIFT_RHO(i-1), A_temp(i), B_temp(i), C_temp(i), D_temp(i)
          END DO
+         WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') 1, A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2)
       END IF
 
       ! Visualisation of different grids
@@ -157,13 +159,13 @@
       C_der(nrho) = (4*C_temp(nrho+2)-3*C_temp(nrho+1)-C_temp(nrho))/(3*h)
       D_der(nrho) = (4*D_temp(nrho+2)-3*D_temp(nrho+1)-D_temp(nrho))/(3*h)
       
-      IF (.false.) THEN
+      IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' DERIVATIVES OF BCD'
          WRITE(6,*)'  i       DERIV B        DERIV C        DERIV D'
          WRITE(6,*)''
          DO i = 1, nrho
-            WRITE(6,'(I4, 1X, 3(ES13.5,2X))') i, B_der(i), C_der(i), D_der(i)
+            WRITE(6,'(F5.3, 1X, 3(ES13.5,2X))') THRIFT_RHO(i), B_der(i), C_der(i), D_der(i)
          END DO
       END IF
 
@@ -186,7 +188,7 @@
          WRITE(6,*)'  i       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
          WRITE(6,*)''
          DO i = 1, nrho
-            WRITE(6,'(I4, 1X, 4(ES13.5,2X))') i, a1(i), a2(i), a3(i), a4(i)
+            WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') i, a1(i), a2(i), a3(i), a4(i)
          END DO
       END IF
       !
@@ -250,11 +252,11 @@
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
          WRITE(6,*)''
-         WRITE(6,'(I4, 1X,A13,5(2X,ES13.5))') 1, '------------', BI(1), CI(1), DI(1), THRIFT_UGRID(1,2)
+         WRITE(6,'(I4, 1X,A13,5(2X,ES13.5))') THRIFT_RHO(1), '------------', BI(1), CI(1), DI(1), THRIFT_UGRID(1,2)
          DO i = 2, nrho-1
-            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, AI(i-1), BI(i), CI(i), DI(i), THRIFT_UGRID(i,2)
+            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') THRIFT_RHO(i), AI(i-1), BI(i), CI(i), DI(i), THRIFT_UGRID(i,2)
          END DO
-         WRITE(6,'(I4, 1X, 2(ES13.5,2X),A13,2(2X,ES13.5))') nrho, AI(nrho-1),BI(nrho), '------------',&
+         WRITE(6,'(I4, 1X, 2(ES13.5,2X),A13,2(2X,ES13.5))') THRIFT_RHO(nrho), AI(nrho-1),BI(nrho), '------------',&
                                                              DI(nrho), THRIFT_UGRID(nrho,2)
          WRITE(6,'(A5,60X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
          WRITE(6,'(A4, 1X, 2(ES13.5,2X),A13,2X,ES13.5)') 'TEMP', s12, s11,'------------', temp2
