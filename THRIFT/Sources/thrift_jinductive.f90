@@ -127,11 +127,11 @@
          WRITE(6,*)' COEFFICIENTS ABCD'
          WRITE(6,*)'  i             A              B              C              D'
          WRITE(6,*)''
-         WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') 0, A_temp(1), B_temp(1), C_temp(1), D_temp(1)
+         WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') 0.0, A_temp(1), B_temp(1), C_temp(1), D_temp(1)
          DO i = 2, nrho+1
             WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') THRIFT_RHO(i-1), A_temp(i), B_temp(i), C_temp(i), D_temp(i)
          END DO
-         WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') 1, A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2)
+         WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') 1.0, A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2)
       END IF
 
       ! Visualisation of different grids
