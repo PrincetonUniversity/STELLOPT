@@ -180,7 +180,7 @@
          a4(i) = A_temp(i+1)*B_temp(i+1)                             
       END DO
 
-      IF (.false.) THEN
+      IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' ALPHAS'
          WRITE(6,*)'  i       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
