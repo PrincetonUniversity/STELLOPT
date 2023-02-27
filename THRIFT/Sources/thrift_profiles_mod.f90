@@ -468,7 +468,7 @@ MODULE thrift_profiles_mod
       INTEGER     :: i
       REAL(rprec) :: clog, te, zeff, clamp
       val = 0
-      clamp = 0 ! clamp te to 14 keV at edge
+      clamp = 200 ! clamp te to 14 keV at edge
       ! https://en.wikipedia.org/wiki/Spitzer_resistivity
       CALL get_prof_te(rho_val,t_val,te)
       CALL get_prof_zeff(rho_val,t_val,zeff)
