@@ -87,7 +87,7 @@
       IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING RESISTIVITY'
-         WRITE(6,*) '  RHO         TE         NE       ZEFF     COULLN    ETAPERP    ETAPARA'
+         WRITE(6,*) ' RHO         TE         NE       ZEFF     COULLN    ETAPERP    ETAPARA'
       END IF     
       DO i = 1,nrho+2
          IF (i==1) THEN
@@ -111,7 +111,7 @@
       IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
-         WRITE(6,*) ' RHO  ETAPARA      DV/DPHI     DP/DRHO     <J.B>      BSQAV        S11'
+         WRITE(6,*) ' RHO  ETAPARA     DV/DPHI      DP/DRHO     <J.B>      BSQAV        S11'
       END IF
       
       ! A,B,C,D should be evaluated at the current timestep
@@ -134,6 +134,7 @@
             CALL get_prof_etapara(rho,t,etapara)
             temp2 = THRIFT_JSOURCE(i-1,itime)
          END IF
+         etapara = MINVAL((/etapara,5E-6/)) ! clamp etapara
          CALL get_prof_pprime(rho,t,pprime)
          temp1 = 2*etapara*THRIFT_VP(i,2) ! temp1 <- 2 eta dV/dPhi 
          IF (i /= 1) A_temp(i) = THRIFT_S11(i,2)/(4*rho*THRIFT_PHIEDGE(2)**2) ! S11/(4 rho phi_a^2)
