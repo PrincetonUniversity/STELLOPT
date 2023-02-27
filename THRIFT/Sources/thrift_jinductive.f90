@@ -84,12 +84,34 @@
          k = THRIFT_T(mytimestep)-THRIFT_T(itime)
       END IF
       t = THRIFT_T(mytimestep) ! t = current sim time
-      
+      IF (.true.) THEN
+         WRITE(6,*)'==============================================================================='
+         WRITE(6,*)' CALCULATING RESISTIVITY'
+         WRITE(6,*) '  RHO         TE         NE       ZEFF     COULLN    ETAPERP    ETAPARA'
+      END IF     
+      DO i = 1,nrho+2
+         IF (i==1) THEN
+            rho = 0
+         ELSE IF (i==nrho+2) 
+            rho = 1
+         ELSE
+            rho = THRIFT_RHO(i-1)
+         ENDIF
+         CALL get_prof_te(rho, t, temp1)
+         CALL get_prof_ne(rho, t, temp2)
+         CALL get_prof_coulln(rho, t, s11)
+         CALL get_prof_zeff(rho, t, s12)
+         CALL get_prof_etapara(rho,t, etapara)
+         CALL get_prof_etaperp(rho,t, pprime)
+         WRITE(6,'(F5.3,6(1X,ES10.3))') rho, temp1, temp2, s12, s11, pprime, etapara
+      END DO
+
+
       ! Populate A,B,C,D
       IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
-         WRITE(6,*) 'RHO      ETAPARA     DV/DPHI     DP/DRHO     <J.B>      BSQAV        S11'
+         WRITE(6,*) ' RHO  ETAPARA      DV/DPHI     DP/DRHO     <J.B>      BSQAV        S11'
       END IF
       
       ! A,B,C,D should be evaluated at the current timestep
@@ -125,7 +147,7 @@
       IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' COEFFICIENTS ABCD'
-         WRITE(6,*)'  i             A              B              C              D'
+         WRITE(6,*)'RHO             A              B              C              D'
          WRITE(6,*)''
          WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') 0.0, A_temp(1), B_temp(1), C_temp(1), D_temp(1)
          DO i = 2, nrho+1
@@ -162,7 +184,7 @@
       IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' DERIVATIVES OF BCD'
-         WRITE(6,*)'  i       DERIV B        DERIV C        DERIV D'
+         WRITE(6,*)'RHO       DERIV B        DERIV C        DERIV D'
          WRITE(6,*)''
          DO i = 1, nrho
             WRITE(6,'(F5.3, 1X, 3(ES13.5,2X))') THRIFT_RHO(i), B_der(i), C_der(i), D_der(i)
@@ -185,7 +207,7 @@
       IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' ALPHAS'
-         WRITE(6,*)'  i       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
+         WRITE(6,*)'RHO       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
          WRITE(6,*)''
          DO i = 1, nrho
             WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') THRIFT_RHO(i), a1(i), a2(i), a3(i), a4(i)
