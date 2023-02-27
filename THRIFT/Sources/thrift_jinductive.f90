@@ -89,7 +89,7 @@
       IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
-         WRITE(6,*) 'RHO      ETAPARA     DV/DPHI     DP/DRHO     BAV      BSQAV        S11'
+         WRITE(6,*) 'RHO      ETAPARA     DV/DPHI     DP/DRHO     <J.B>      BSQAV        S11'
       END IF
       
       ! A,B,C,D should be evaluated at the current timestep
@@ -118,8 +118,8 @@
          B_temp(i) = temp1*THRIFT_BSQAV(i,2)/mu0! 2 eta dV/dPhi <B^2>/mu_0
          C_temp(i) = temp1*pprime               ! 2 eta dV/dPhi dp/drho
          D_temp(i) = -temp1*temp2*THRIFT_BAV(i,2)   ! -2 eta dV/dPhi <J.B>
-         IF (.false.) WRITE(6,'(F5.3,6(1X,ES10.3))') &
-         rho, etapara, THRIFT_VP(i,1), pprime, THRIFT_BAV(i,1), THRIFT_BSQAV(i,1), THRIFT_S11(i,1)
+         IF (.true.) WRITE(6,'(F5.3,6(1X,ES10.3))') &
+         rho, etapara, THRIFT_VP(i,2), pprime, temp2*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
       END DO
 
       IF (.true.) THEN
