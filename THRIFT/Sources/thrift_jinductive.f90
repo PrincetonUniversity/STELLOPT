@@ -134,7 +134,8 @@
             CALL get_prof_etapara(rho,t,etapara)
             temp2 = THRIFT_JSOURCE(i-1,itime)
          END IF
-         etapara = MINVAL((/etapara,5E-6/)) ! clamp etapara
+         pprime = 5E-6;
+         etapara = MINVAL((/etapara,pprime/)) ! clamp etapara
          CALL get_prof_pprime(rho,t,pprime)
          temp1 = 2*etapara*THRIFT_VP(i,2) ! temp1 <- 2 eta dV/dPhi 
          IF (i /= 1) A_temp(i) = THRIFT_S11(i,2)/(4*rho*THRIFT_PHIEDGE(2)**2) ! S11/(4 rho phi_a^2)
