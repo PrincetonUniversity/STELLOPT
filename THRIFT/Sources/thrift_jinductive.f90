@@ -134,8 +134,7 @@
             CALL get_prof_etapara(rho,t,etapara)
             temp2 = THRIFT_JSOURCE(i-1,itime)
          END IF
-         pprime = 5E-6;
-         etapara = MINVAL((/etapara,pprime/)) ! clamp etapara
+         CALL get_prof_etapara(THRIFT_RHO(INT(nrho/2)),t,etapara) ! clamp etapara
          CALL get_prof_pprime(rho,t,pprime)
          temp1 = 2*etapara*THRIFT_VP(i,2) ! temp1 <- 2 eta dV/dPhi 
          IF (i /= 1) A_temp(i) = THRIFT_S11(i,2)/(4*rho*THRIFT_PHIEDGE(2)**2) ! S11/(4 rho phi_a^2)
@@ -276,11 +275,11 @@
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
          WRITE(6,*)''
-         WRITE(6,'(F5.3, 1X,A13,5(2X,ES13.5))') 0.0, '------------', BI(1), CI(1), DI(1), THRIFT_UGRID(1,2)
+         WRITE(6,'(I4, 1X,A13,5(2X,ES13.5))') 1, '------------', BI(1), CI(1), DI(1), THRIFT_UGRID(1,2)
          DO i = 2, nrho-1
-            WRITE(6,'(F5.3, 1X, 5(ES13.5,2X))') THRIFT_RHO(i-1), AI(i-1), BI(i), CI(i), DI(i), THRIFT_UGRID(i,2)
+            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, AI(i-1), BI(i), CI(i), DI(i), THRIFT_UGRID(i,2)
          END DO
-         WRITE(6,'(F5.3, 1X, 2(ES13.5,2X),A13,2(2X,ES13.5))') 1.0, AI(nrho-1),BI(nrho), '------------',&
+         WRITE(6,'(I4, 1X, 2(ES13.5,2X),A13,2(2X,ES13.5))') nrho, AI(nrho-1),BI(nrho), '------------',&
                                                              DI(nrho), THRIFT_UGRID(nrho,2)
          WRITE(6,'(A5,60X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
          WRITE(6,'(A4, 1X, 2(ES13.5,2X),A13,2X,ES13.5)') 'TEMP', s12, s11,'------------', temp2
