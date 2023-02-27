@@ -278,9 +278,9 @@
          WRITE(6,*)''
          WRITE(6,'(F5.3, 1X,A13,5(2X,ES13.5))') 0.0, '------------', BI(1), CI(1), DI(1), THRIFT_UGRID(1,2)
          DO i = 2, nrho-1
-            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') THRIFT_RHO(i-1), AI(i-1), BI(i), CI(i), DI(i), THRIFT_UGRID(i,2)
+            WRITE(6,'(F5.3, 1X, 5(ES13.5,2X))') THRIFT_RHO(i-1), AI(i-1), BI(i), CI(i), DI(i), THRIFT_UGRID(i,2)
          END DO
-         WRITE(6,'(I4, 1X, 2(ES13.5,2X),A13,2(2X,ES13.5))') 1.0, AI(nrho-1),BI(nrho), '------------',&
+         WRITE(6,'(F5.3, 1X, 2(ES13.5,2X),A13,2(2X,ES13.5))') 1.0, AI(nrho-1),BI(nrho), '------------',&
                                                              DI(nrho), THRIFT_UGRID(nrho,2)
          WRITE(6,'(A5,60X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
          WRITE(6,'(A4, 1X, 2(ES13.5,2X),A13,2X,ES13.5)') 'TEMP', s12, s11,'------------', temp2
