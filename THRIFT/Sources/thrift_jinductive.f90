@@ -269,7 +269,7 @@
          THRIFT_UGRID(i,2) = D_temp(i)-C_temp(i)*THRIFT_UGRID(i+1,2) ! x_i = d_i' - c_i'*x_i+1
       END DO
       
-      IF (.false.) THEN
+      IF (.true.) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
          WRITE(6,*) temp1
@@ -308,7 +308,7 @@
          THRIFT_JPLASMA(i,mytimestep) = (D_der(i)-temp2)/(pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2))
       END DO
 
-      IF (.false.) THEN
+      IF (.true.) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' POST MATRIX ALGORITHM'
          WRITE(6,*)'  i        ITOTAL        ISOURCE        IPLASMA        JPLASMA        JSOURCE'
