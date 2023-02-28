@@ -228,30 +228,6 @@
             (((pprime + THRIFT_BSQAV(nrho+2,1)/mu0)*THRIFT_UEDGE(1)) + THRIFT_BSQAV(nrho+2,1)/mu0*temp2 &               
             - THRIFT_JSOURCE(nrho,itime)*THRIFT_BAV(nrho+2,1))   
 
-      IF (lverbj) THEN
-         WRITE(6,*) '==============================================================================='
-         WRITE(6,*) 'CALCULATING UEDGE'
-         WRITE(6,'(A10,2X,ES13.5)') 'RMAJOR', THRIFT_RMAJOR(nrho+2,1)
-         WRITE(6,'(A10,2X,ES13.5)') 'AMINOR',THRIFT_AMINOR(nrho+2,1)
-         WRITE(6,'(A10,2X,ES13.5)') 'LEXT',temp1
-         WRITE(6,'(A10,2X,ES13.5)') 'PHIEDGE',THRIFT_PHIEDGE(1)
-         WRITE(6,'(A10,2X,ES13.5)') 'ETAPARA',etapara
-         WRITE(6,'(A10,2X,ES13.5)') 'PPRIME',pprime
-         WRITE(6,'(A10,2X,ES13.5)') 'DU/DRHO',temp2
-         WRITE(6,'(A10,2X,ES13.5)') 'VP',THRIFT_VP(nrho+2,1)
-         WRITE(6,'(A10,2X,ES13.5)') 'BSQAV',THRIFT_BSQAV(nrho+2,1)
-         WRITE(6,'(A10,2X,ES13.5)') '<J.B>',THRIFT_JSOURCE(nrho,itime)*THRIFT_BAV(nrho+2,1)
-         WRITE(6,'(A10,2X,ES13.5)') 'prev.UEDGE',THRIFT_UEDGE(1)
-         WRITE(6,'(A10,2X,ES13.5)') 'this.UEDGE',THRIFT_UEDGE(2)
-         WRITE(6,*) '==============================================================================='
-         WRITE(6,*) 'UGRID (NEXT ITERATION)'
-         WRITE(6,*) 'RHO      U'
-         DO i = 1, nrho
-            WRITE(6,'(F5.3, 1X, ES13.5)') THRIFT_RHO(i), THRIFT_UGRID(i,2)
-         END DO
-         WRITE(6, '(A5,1X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
-      END IF
-
       ! Populate of tridiagonal matrix and RHS; AI,CI of size nrho-1, BI,DI of size nrho
       ! (Do most of the work in one loop and fix mistakes afterwards)
       DO i = 1, nrho-1
@@ -290,6 +266,30 @@
       DO i = nrho-1, 1, -1
          THRIFT_UGRID(i,2) = D_temp(i)-C_temp(i)*THRIFT_UGRID(i+1,2) ! x_i = d_i' - c_i'*x_i+1
       END DO
+
+      IF (lverbj) THEN
+         WRITE(6,*) '==============================================================================='
+         WRITE(6,*) 'CALCULATING UEDGE'
+         WRITE(6,'(A10,2X,ES13.5)') 'RMAJOR', THRIFT_RMAJOR(nrho+2,1)
+         WRITE(6,'(A10,2X,ES13.5)') 'AMINOR',THRIFT_AMINOR(nrho+2,1)
+         WRITE(6,'(A10,2X,ES13.5)') 'LEXT',temp1
+         WRITE(6,'(A10,2X,ES13.5)') 'PHIEDGE',THRIFT_PHIEDGE(1)
+         WRITE(6,'(A10,2X,ES13.5)') 'ETAPARA',etapara
+         WRITE(6,'(A10,2X,ES13.5)') 'PPRIME',pprime
+         WRITE(6,'(A10,2X,ES13.5)') 'DU/DRHO',temp2
+         WRITE(6,'(A10,2X,ES13.5)') 'VP',THRIFT_VP(nrho+2,1)
+         WRITE(6,'(A10,2X,ES13.5)') 'BSQAV',THRIFT_BSQAV(nrho+2,1)
+         WRITE(6,'(A10,2X,ES13.5)') '<J.B>',THRIFT_JSOURCE(nrho,itime)*THRIFT_BAV(nrho+2,1)
+         WRITE(6,'(A10,2X,ES13.5)') 'prev.UEDGE',THRIFT_UEDGE(1)
+         WRITE(6,'(A10,2X,ES13.5)') 'this.UEDGE',THRIFT_UEDGE(2)
+         WRITE(6,*) '==============================================================================='
+         WRITE(6,*) 'UGRID (NEXT ITERATION)'
+         WRITE(6,*) 'RHO      U'
+         DO i = 1, nrho
+            WRITE(6,'(F5.3, 1X, ES13.5)') THRIFT_RHO(i), THRIFT_UGRID(i,2)
+         END DO
+         WRITE(6, '(A5,1X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
+      END IF     
       
       IF (lverbj) THEN
       !   WRITE(6,*) '==============================================================================='
