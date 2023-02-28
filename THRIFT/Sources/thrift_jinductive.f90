@@ -242,6 +242,13 @@
          WRITE(6,'(A10,2X,ES13.5)') '<J.B>',THRIFT_JSOURCE(nrho,itime)*THRIFT_BAV(nrho+2,1)
          WRITE(6,'(A10,2X,ES13.5)') 'prev.UEDGE',THRIFT_UEDGE(1)
          WRITE(6,'(A10,2X,ES13.5)') 'this.UEDGE',THRIFT_UEDGE(2)
+         WRITE(6,*) '==============================================================================='
+         WRITE(6,*) 'UGRID (THIS ITERATION)'
+         WRITE(6,*) 'RHO      U'
+         DO i = 1, nrho
+            WRITE(6,'(F5.3, 1X, ES13.5)') THRIFT_RHO(i), THRIFT_UGRID(i,1)
+         END DO
+         WRITE(6, '(A5,1X,ES13.5)') 'EDGE',THRIFT_UEDGE(1)
       END IF
 
       ! Populate of tridiagonal matrix and RHS; AI,CI of size nrho-1, BI,DI of size nrho
@@ -258,13 +265,15 @@
         DI(nrho) = -THRIFT_UGRID(nrho,1)/k-a1(nrho) &
       - THRIFT_UEDGE(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
 
-      s11 = BI(nrho); s12 = AI(nrho-1); temp2 = DI(nrho) ! For writing to screen
-      
-      temp1 = -a4(nrho)/(5*h**2) ! Element at (nrho,nrho-2)
-      temp1 = temp1/AI(nrho-2) ! Row operation: [NRHO] -> [NRHO]-temp1*[NRHO-1] 
-      AI(nrho-1) = AI(nrho-1) - temp1*BI(nrho-1) ! (AI is of size nrho-1)
-      BI(nrho)   = BI(nrho)   - temp1*CI(nrho-1)
-      DI(nrho)   = DI(nrho)   - temp1*DI(nrho-1)
+      !s11 = BI(nrho); s12 = AI(nrho-1); temp2 = DI(nrho) ! For writing to screen
+      !temp1 = -a4(nrho)/(5*h**2) ! Element at (nrho,nrho-2)
+      !temp1 = temp1/AI(nrho-2) ! Row operation: [NRHO] -> [NRHO]-temp1*[NRHO-1] 
+      !AI(nrho-1) = AI(nrho-1) - temp1*BI(nrho-1) ! (AI is of size nrho-1)
+      !BI(nrho)   = BI(nrho)   - temp1*CI(nrho-1)
+      !DI(nrho)   = DI(nrho)   - temp1*DI(nrho-1)
+
+      ! Set u_nrho^n+1 = u_nrho+1^n+1, should be fine for good enough grid resolution
+      BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = THRIFT_UEDGE(2);
 
       ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
       ! Forward sweep
@@ -293,8 +302,7 @@
             WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, AI(i-1), BI(i), CI(i), DI(i),THRIFT_UGRID(i,2)
          END DO
          WRITE(6,'(I4, 1X, 5(ES13.5,2X))') nrho, AI(nrho-1),BI(nrho), 0.0,DI(nrho), THRIFT_UGRID(nrho,2)
-         WRITE(6,'(A5,60X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
-         WRITE(6,'(A4, 1X, 5(ES13.5,2X))') 'TEMP', s12, s11,0.0, temp2, 0.0
+         !WRITE(6,'(A5,60X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
          WRITE(6,*)'-------------------------------------------------------------------------------'
       END IF
 
