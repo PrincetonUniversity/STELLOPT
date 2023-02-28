@@ -39,6 +39,7 @@
   JTOL = 0.01
   NPICARD = 10
   PICARD_FACTOR = 0.75
+  LVERBJ = F
   !---------- GRID PARAMETERS ------------
   NRHO = 64
   NTIMESTEPS = 15
