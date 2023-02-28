@@ -138,7 +138,7 @@
             temp2 = THRIFT_JSOURCE(i-1,itime)
             CALL get_prof_pprime(rho,t,pprime)
          END IF
-         CALL get_prof_etapara(THRIFT_RHO(INT(nrho/2)),t,etapara) ! clamp etapara
+         !CALL get_prof_etapara(THRIFT_RHO(INT(nrho/2)),t,etapara) ! clamp etapara
          !CALL get_prof_pprime(rho,t,pprime)
          temp1 = 2*etapara*THRIFT_VP(i,2) ! temp1 <- 2 eta dV/dPhi 
          IF (i /= 1) A_temp(i) = THRIFT_S11(i,2)/(4*rho*THRIFT_PHIEDGE(2)**2) ! S11/(4 rho phi_a^2)
@@ -218,7 +218,8 @@
          (log(8*THRIFT_RMAJOR(nrho+2,1)/THRIFT_AMINOR(nrho+2,1)) - 2 + 0.25) ! temp1 <- L_ext
       ! Calculate uedge for this timestep
       t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
-      CALL get_prof_etapara(THRIFT_RHO(INT(nrho/2)),t,etapara)
+      !CALL get_prof_etapara(THRIFT_RHO(INT(nrho/2)),t,etapara)
+      CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara)
       CALL get_prof_pprime(THRIFT_RHO(nrho),t,pprime) 
       temp2 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*h) ! du/drho at edge
       ! uedge [ current timestep ] =  u - dt*mu0/(2*Phi_a)*eta/Lext*dV/dphi* ...
