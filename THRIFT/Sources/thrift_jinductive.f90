@@ -84,7 +84,7 @@
          k = THRIFT_T(mytimestep)-THRIFT_T(itime)
       END IF
       t = THRIFT_T(mytimestep) ! t = current sim time
-      IF (.true.) THEN
+      IF (.false.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING RESISTIVITY'
          WRITE(6,*) ' RHO         TE         NE       ZEFF     COULLN    ETAPERP    ETAPARA'
@@ -103,12 +103,12 @@
          CALL get_prof_zeff(rho, t, s12)
          CALL get_prof_etapara(rho,t, etapara)
          CALL get_prof_etaperp(rho,t, pprime)
-         WRITE(6,'(F5.3,6(1X,ES10.3))') rho, temp1, temp2, s12, s11, pprime, etapara
+         IF (.false.) WRITE(6,'(F5.3,6(1X,ES10.3))') rho, temp1, temp2, s12, s11, pprime, etapara
       END DO
 
 
       ! Populate A,B,C,D
-      IF (.true.) THEN
+      IF (.false.) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
          WRITE(6,*) ' RHO  ETAPARA     DV/DPHI      DP/DRHO     <J.B>      BSQAV        S11'
@@ -117,7 +117,8 @@
       ! A,B,C,D should be evaluated at the current timestep
       ! Extrapolate source current density to magnetic axis and edge
       source_axis = (3*THRIFT_JSOURCE(1,itime)-THRIFT_JSOURCE(2,itime))/2
-      source_edge = (-THRIFT_JSOURCE(nrho-1,itime)+3*THRIFT_JSOURCE(nrho,itime))/2
+      !source_edge = (-THRIFT_JSOURCE(nrho-1,itime)+3*THRIFT_JSOURCE(nrho,itime))/2
+      source_edge = THRIFT_JSOURCE(nrho,itime)
 
       DO i = 1, nrho+2
          ! calculate rho, etapara, current
@@ -129,8 +130,7 @@
          ELSE IF (i==nrho+2) THEN ! etapara breaks when rho=1
             rho = 1
             CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara)
-            !temp2 = source_edge
-            temp2 = THRIFT_JSOURCE(nrho,itime)
+            temp2 = source_edge
             CALL get_prof_pprime(THRIFT_RHO(nrho),t,pprime)
          ELSE
             rho = THRIFT_RHO(i-1)
@@ -148,18 +148,6 @@
          IF (.true.) WRITE(6,'(F5.3,6(1X,ES10.3))') &
          rho, etapara, THRIFT_VP(i,2), pprime, temp2*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
       END DO
-
-      IF (.true.) THEN
-         WRITE(6,*)'==============================================================================='
-         WRITE(6,*)' COEFFICIENTS ABCD'
-         WRITE(6,*)'RHO             A              B              C              D'
-         WRITE(6,*)''
-         WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') 0.0, A_temp(1), B_temp(1), C_temp(1), D_temp(1)
-         DO i = 2, nrho+1
-            WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') THRIFT_RHO(i-1), A_temp(i), B_temp(i), C_temp(i), D_temp(i)
-         END DO
-         WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') 1.0, A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2)
-      END IF
 
       ! Visualisation of different grids
       ! j=1 2    3    4    5    6    7
@@ -188,12 +176,17 @@
       
       IF (.true.) THEN
          WRITE(6,*)'==============================================================================='
-         WRITE(6,*)' DERIVATIVES OF BCD'
-         WRITE(6,*)'RHO       DERIV B        DERIV C        DERIV D'
+         WRITE(6,*)' COEFFICIENTS ABCD'
+         WRITE(6,*)' RHO         A         B          C          D       BDER       CDER       DDER'
          WRITE(6,*)''
-         DO i = 1, nrho
-            WRITE(6,'(F5.3, 1X, 3(ES13.5,2X))') THRIFT_RHO(i), B_der(i), C_der(i), D_der(i)
+         WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') 0.0, A_temp(1), B_temp(1), C_temp(1), D_temp(1), &
+             0.0, 0.0, 0.0
+         DO i = 2, nrho+1
+            WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') THRIFT_RHO(i-1), A_temp(i), B_temp(i), C_temp(i), D_temp(i),&
+             B_der(i-1), C_der(i-1), D_der(i-1)
          END DO
+         WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') 1.0, A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2),&
+             0.0, 0.0, 0.0
       END IF
 
       ! a1 = A dD/drho
@@ -218,22 +211,38 @@
             WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') THRIFT_RHO(i), a1(i), a2(i), a3(i), a4(i)
          END DO
       END IF
-      !
+      
 
       ! Calculate L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)      
       temp1 = mu0*THRIFT_RMAJOR(nrho+2,1)*&
          (log(8*THRIFT_RMAJOR(nrho+2,1)/THRIFT_AMINOR(nrho+2,1)) - 2 + 0.25) ! temp1 <- L_ext
       ! Calculate uedge for this timestep
       t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
-      CALL get_prof_etapara(THRIFT_RHO(nrho-1),t,etapara)  
-      rho = 1
-      CALL get_prof_pprime(rho,t,pprime) 
+      CALL get_prof_etapara(THRIFT_RHO(INT(nrho/2)),t,etapara)
+      CALL get_prof_pprime(THRIFT_RHO(nrho),t,pprime) 
       temp2 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*h) ! du/drho at edge
       ! uedge [ current timestep ] =  u - dt*mu0/(2*Phi_a)*eta/Lext*dV/dphi* ...
       ! [(p' + <B^2>/mu0)*u + <B^2>/mu0*du/drho - <J.B>]  [ edge, preceding timestep ]
       THRIFT_UEDGE(2) = THRIFT_UEDGE(1)-k*mu0/(2*THRIFT_PHIEDGE(1))*etapara/temp1*THRIFT_VP(nrho+2,1) * &  
             (((pprime + THRIFT_BSQAV(nrho+2,1)/mu0)*THRIFT_UEDGE(1)) + THRIFT_BSQAV(nrho+2,1)/mu0*temp2 &               
-            - source_edge*THRIFT_BAV(nrho+2,1))                                   
+            - THRIFT_JSOURCE(nrho,itime)*THRIFT_BAV(nrho+2,1))   
+
+      IF (.true.) THEN
+         WRITE(6,*) '==============================================================================='
+         WRITE(6,*) 'CALCULATING UEDGE'
+         WRITE(6,'(A10,2X,ES13.5)') 'RMAJOR', THRIFT_RMAJOR(nrho+2,1)
+         WRITE(6,'(A10,2X,ES13.5)') 'AMINOR',THRIFT_AMINOR(nrho+2),1
+         WRITE(6,'(A10,2X,ES13.5)') 'LEXT',temp1
+         WRITE(6,'(A10,2X,ES13.5)') 'PHIEDGE',THRIFT_PHIEDGE(1)
+         WRITE(6,'(A10,2X,ES13.5)') 'ETAPARA',etapara
+         WRITE(6,'(A10,2X,ES13.5)') 'PPRIME',pprime
+         WRITE(6,'(A10,2X,ES13.5)') 'DU/DRHO',temp2
+         WRITE(6,'(A10,2X,ES13.5)') 'VP',THRIFT_VP(nrho+2,1)
+         WRITE(6,'(A10,2X,ES13.5)') 'BSQAV',THRIFT_BSQAV(nrho+2,1)
+         WRITE(6,'(A10,2X,ES13.5)') '<J.B>',THRIFT_JSOURCE(nrho,itime)*THRIFT_BAV(nrho+2,1)
+         WRITE(6,'(A10,2X,ES13.5)') 'prev.UEDGE',THRIFT_UEDGE(1)
+         WRITE(6,'(A10,2X,ES13.5)') 'this.UEDGE',THRIFT_UEDGE(2)
+      END IF
 
       ! Populate of tridiagonal matrix and RHS; AI,CI of size nrho-1, BI,DI of size nrho
       ! (Do most of the work in one loop and fix mistakes afterwards)
@@ -279,14 +288,13 @@
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
          WRITE(6,*)''
-         WRITE(6,'(I4, 1X,A13,5(2X,ES13.5))') 1, '------------', BI(1), CI(1), DI(1), THRIFT_UGRID(1,2)
+         WRITE(6,'(I4, 1X,5(2X,ES13.5))') 1, 0.0, BI(1), CI(1), DI(1),THRIFT_UGRID(1,2)
          DO i = 2, nrho-1
-            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, AI(i-1), BI(i), CI(i), DI(i), THRIFT_UGRID(i,2)
+            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, AI(i-1), BI(i), CI(i), DI(i),THRIFT_UGRID(i,2)
          END DO
-         WRITE(6,'(I4, 1X, 2(ES13.5,2X),A13,2(2X,ES13.5))') nrho, AI(nrho-1),BI(nrho), '------------',&
-                                                             DI(nrho), THRIFT_UGRID(nrho,2)
+         WRITE(6,'(I4, 1X, 5(ES13.5,2X))') nrho, AI(nrho-1),BI(nrho), 0.0,DI(nrho), THRIFT_UGRID(nrho,2)
          WRITE(6,'(A5,60X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
-         WRITE(6,'(A4, 1X, 2(ES13.5,2X),A13,2X,ES13.5)') 'TEMP', s12, s11,'------------', temp2
+         WRITE(6,'(A4, 1X, 5(ES13.5,2X))') 'TEMP', s12, s11,0.0, temp2, 0.0
          WRITE(6,*)'-------------------------------------------------------------------------------'
       END IF
 
