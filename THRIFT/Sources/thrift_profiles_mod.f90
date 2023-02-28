@@ -233,7 +233,7 @@ MODULE thrift_profiles_mod
       SUBROUTINE get_prof_f(rho_val,t_val,SPL,val)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
-      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(inout) :: t_val
       REAL(rprec), INTENT(in) :: SPL(4,nt_prof,nrho_prof)
       REAL(rprec), INTENT(out) :: val
       INTEGER :: i, j
@@ -259,7 +259,7 @@ MODULE thrift_profiles_mod
       SUBROUTINE get_prof_dfdrho(rho_val,t_val,SPL,val)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
-      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(inout) :: t_val
       REAL(rprec), INTENT(in) :: SPL(4,nt_prof,nrho_prof)
       REAL(rprec), INTENT(out) :: val
       INTEGER :: i, j
@@ -285,7 +285,7 @@ MODULE thrift_profiles_mod
       SUBROUTINE get_prof_dfdt(rho_val,t_val,SPL,val)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
-      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(inout) :: t_val
       REAL(rprec), INTENT(in) :: SPL(4,nt_prof,nrho_prof)
       REAL(rprec), INTENT(out) :: val
       INTEGER :: i, j
