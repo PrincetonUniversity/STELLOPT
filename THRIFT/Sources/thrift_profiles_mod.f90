@@ -487,7 +487,8 @@ MODULE thrift_profiles_mod
       INTEGER     :: i
       REAL(rprec) :: zeff, f
       val = 0
-      rho = 0.5
+      rho = rho_val
+      if (rho_val>0.5) rho = 0.5
       ! https://en.wikipedia.org/wiki/Spitzer_resistivity
       CALL get_prof_zeff(rho,t_val,zeff)
       CALL get_prof_etaperp(rho,t_val,val)
