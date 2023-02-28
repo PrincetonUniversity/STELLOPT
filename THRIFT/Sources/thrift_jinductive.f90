@@ -84,7 +84,7 @@
          k = THRIFT_T(mytimestep)-THRIFT_T(itime)
       END IF
       t = THRIFT_T(mytimestep) ! t = current sim time
-      IF (t>tmax.and.THRIFT_T(mytimestep-1)<tmax) WRITE(6,*) &
+      IF (t>tmax.and.THRIFT_T(mytimestep-1)<=tmax) WRITE(6,*) &
          '! THRIFT has exceeded end time of profiles file. Proceeding with profiles at t=tmax !' 
 
       IF (lverbj) THEN
