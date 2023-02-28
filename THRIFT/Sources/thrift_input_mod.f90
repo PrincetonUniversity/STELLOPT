@@ -27,7 +27,7 @@
 !-----------------------------------------------------------------------
       NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
                               nrho, tstart, tend, ntimesteps, jtol, &
-                              picard_factor, npicard, &
+                              picard_factor, npicard, lverbj, &
                               eccd_type, &
                               vessel_ecrh, mirror_ecrh, wmode_ecrh, &
                               targettype_ecrh, antennatype_ecrh, &
@@ -60,6 +60,7 @@
       leccd              = .FALSE.
       lnbcd              = .FALSE.
       lohmic             = .FALSE.
+      lverbj             = .FALSE.
       ! TRAVIS vars
       vessel_ecrh     = ''
       mirror_ecrh     = ''

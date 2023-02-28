@@ -84,7 +84,7 @@
          k = THRIFT_T(mytimestep)-THRIFT_T(itime)
       END IF
       t = THRIFT_T(mytimestep) ! t = current sim time
-      IF (.false.) THEN
+      IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING RESISTIVITY'
          WRITE(6,*) ' RHO         TE         NE       ZEFF     COULLN    ETAPERP    ETAPARA'
@@ -103,12 +103,12 @@
          CALL get_prof_zeff(rho, t, s12)
          CALL get_prof_etapara(rho,t, etapara)
          CALL get_prof_etaperp(rho,t, pprime)
-         IF (.false.) WRITE(6,'(F5.3,6(1X,ES10.3))') rho, temp1, temp2, s12, s11, pprime, etapara
+         IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') rho, temp1, temp2, s12, s11, pprime, etapara
       END DO
 
 
       ! Populate A,B,C,D
-      IF (.false.) THEN
+      IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
          WRITE(6,*) ' RHO  ETAPARA     DV/DPHI      DP/DRHO     <J.B>      BSQAV        S11'
@@ -145,7 +145,7 @@
          B_temp(i) = temp1*THRIFT_BSQAV(i,2)/mu0! 2 eta dV/dPhi <B^2>/mu_0
          C_temp(i) = temp1*pprime               ! 2 eta dV/dPhi dp/drho
          D_temp(i) = -temp1*temp2*THRIFT_BAV(i,2)   ! -2 eta dV/dPhi <J.B>
-         IF (.true.) WRITE(6,'(F5.3,6(1X,ES10.3))') &
+         IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') &
          rho, etapara, THRIFT_VP(i,2), pprime, temp2*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
       END DO
 
@@ -174,7 +174,7 @@
       C_der(nrho) = (4*C_temp(nrho+2)-3*C_temp(nrho+1)-C_temp(nrho))/(3*h)
       D_der(nrho) = (4*D_temp(nrho+2)-3*D_temp(nrho+1)-D_temp(nrho))/(3*h)
       
-      IF (.true.) THEN
+      IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' COEFFICIENTS ABCD'
          WRITE(6,*)' RHO         A         B          C          D       BDER       CDER       DDER'
@@ -202,7 +202,7 @@
          a4(i) = A_temp(i+1)*B_temp(i+1)                             
       END DO
 
-      IF (.true.) THEN
+      IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' ALPHAS'
          WRITE(6,*)'RHO       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
@@ -228,7 +228,7 @@
             (((pprime + THRIFT_BSQAV(nrho+2,1)/mu0)*THRIFT_UEDGE(1)) + THRIFT_BSQAV(nrho+2,1)/mu0*temp2 &               
             - THRIFT_JSOURCE(nrho,itime)*THRIFT_BAV(nrho+2,1))   
 
-      IF (.true.) THEN
+      IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
          WRITE(6,*) 'CALCULATING UEDGE'
          WRITE(6,'(A10,2X,ES13.5)') 'RMAJOR', THRIFT_RMAJOR(nrho+2,1)
@@ -291,7 +291,7 @@
          THRIFT_UGRID(i,2) = D_temp(i)-C_temp(i)*THRIFT_UGRID(i+1,2) ! x_i = d_i' - c_i'*x_i+1
       END DO
       
-      IF (.true.) THEN
+      IF (lverbj) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
          WRITE(6,*) temp1
@@ -328,7 +328,7 @@
          THRIFT_JPLASMA(i,mytimestep) = (D_der(i)-temp2)/(pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2))
       END DO
 
-      IF (.true.) THEN
+      IF (lverbj) THEN
          WRITE(6,*)'-------------------------------------------------------------------------------'
          WRITE(6,*)' POST MATRIX ALGORITHM'
          WRITE(6,*)'  i        ITOTAL        ISOURCE        IPLASMA        JPLASMA        JSOURCE'
