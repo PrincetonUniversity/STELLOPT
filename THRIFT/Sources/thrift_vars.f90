@@ -39,7 +39,7 @@ MODULE thrift_vars
     !-------------------------------------------------------------------
     IMPLICIT NONE
 
-    LOGICAL :: leccd, lnbcd, lohmic, ldiagno, lscreen_subcodes
+    LOGICAL :: leccd, lnbcd, lohmic, ldiagno, lscreen_subcodes, lverbj
     LOGICAL, DIMENSION(:), ALLOCATABLE :: lbooz
     REAL(rprec), DIMENSION(2) :: THRIFT_UEDGE, THRIFT_PHIEDGE
     INTEGER :: ntimesteps, nrho, npicard, &
