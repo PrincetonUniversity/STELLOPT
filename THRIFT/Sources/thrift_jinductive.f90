@@ -125,17 +125,21 @@
             rho = 0
             CALL get_prof_etapara(rho,t,etapara)
             temp2 = source_axis
+            CALL get_prof_pprime(rho,t,pprime)
          ELSE IF (i==nrho+2) THEN ! etapara breaks when rho=1
             rho = 1
             CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara)
-            temp2 = source_edge
+            !temp2 = source_edge
+            temp2 = THRIFT_JSOURCE(nrho,itime)
+            CALL get_prof_pprime(THRIFT_RHO(nrho),t,pprime)
          ELSE
             rho = THRIFT_RHO(i-1)
             CALL get_prof_etapara(rho,t,etapara)
             temp2 = THRIFT_JSOURCE(i-1,itime)
+            CALL get_prof_pprime(rho,t,pprime)
          END IF
          CALL get_prof_etapara(THRIFT_RHO(INT(nrho/2)),t,etapara) ! clamp etapara
-         CALL get_prof_pprime(rho,t,pprime)
+         !CALL get_prof_pprime(rho,t,pprime)
          temp1 = 2*etapara*THRIFT_VP(i,2) ! temp1 <- 2 eta dV/dPhi 
          IF (i /= 1) A_temp(i) = THRIFT_S11(i,2)/(4*rho*THRIFT_PHIEDGE(2)**2) ! S11/(4 rho phi_a^2)
          B_temp(i) = temp1*THRIFT_BSQAV(i,2)/mu0! 2 eta dV/dPhi <B^2>/mu_0
