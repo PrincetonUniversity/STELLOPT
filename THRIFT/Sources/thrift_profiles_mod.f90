@@ -233,20 +233,21 @@ MODULE thrift_profiles_mod
       SUBROUTINE get_prof_f(rho_val,t_val,SPL,val)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
-      REAL(rprec), INTENT(inout) :: t_val
+      REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(in) :: SPL(4,nt_prof,nrho_prof)
       REAL(rprec), INTENT(out) :: val
       INTEGER :: i, j
       INTEGER, parameter :: ict(4)=(/1,0,0,0/)
       REAL*8  :: xparam, yparam
       REAL*8 :: fval(1)
+      REAL(rprec) :: t
       val = 0
-      t_val = MIN(t_val,tmax)
+      t = MIN(t_val,tmax)
       IF ((rho_val >= rhomin-eps1) .and. (rho_val <= rhomax+eps1) .and. &
-          (t_val   >= tmin-eps2)   .and. (t_val   <= tmax+eps2)) THEN
-         i = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
+          (t   >= tmin-eps2)   .and. (t   <= tmax+eps2)) THEN
+         i = MIN(MAX(COUNT(taxis_prof < t),1),nt_prof-1)
          j = MIN(MAX(COUNT(raxis_prof < rho_val),1),nrho_prof-1)
-         xparam = (t_val - taxis_prof(i)) * hti(i)
+         xparam = (t - taxis_prof(i)) * hti(i)
          yparam = (rho_val   - raxis_prof(j)) * hri(j)
          CALL R8HERM2FCN(ict,1,1,fval,i,j,xparam,yparam,&
                          ht(i),hti(i),hr(j),hri(j),&
@@ -259,20 +260,21 @@ MODULE thrift_profiles_mod
       SUBROUTINE get_prof_dfdrho(rho_val,t_val,SPL,val)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
-      REAL(rprec), INTENT(inout) :: t_val
+      REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(in) :: SPL(4,nt_prof,nrho_prof)
       REAL(rprec), INTENT(out) :: val
       INTEGER :: i, j
       INTEGER, parameter :: ict(4)=(/0,0,1,0/)
       REAL*8  :: xparam, yparam
       REAL*8 :: fval(1)
+      REAL(rprec) :: t
       val = 0
-      t_val = MIN(t_val,tmax)
+      t = MIN(t_val,tmax)
       IF ((rho_val >= rhomin-eps1) .and. (rho_val <= rhomax+eps1) .and. &
-          (t_val   >= tmin-eps2)   .and. (t_val   <= tmax+eps2)) THEN
-         i = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
+          (t   >= tmin-eps2)   .and. (t   <= tmax+eps2)) THEN
+         i = MIN(MAX(COUNT(taxis_prof < t),1),nt_prof-1)
          j = MIN(MAX(COUNT(raxis_prof < rho_val),1),nrho_prof-1)
-         xparam = (t_val - taxis_prof(i)) * hti(i)
+         xparam = (t - taxis_prof(i)) * hti(i)
          yparam = (rho_val   - raxis_prof(j)) * hri(j)
          CALL R8HERM2FCN(ict,1,1,fval,i,j,xparam,yparam,&
                          ht(i),hti(i),hr(j),hri(j),&
@@ -285,20 +287,21 @@ MODULE thrift_profiles_mod
       SUBROUTINE get_prof_dfdt(rho_val,t_val,SPL,val)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
-      REAL(rprec), INTENT(inout) :: t_val
+      REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(in) :: SPL(4,nt_prof,nrho_prof)
       REAL(rprec), INTENT(out) :: val
       INTEGER :: i, j
       INTEGER, parameter :: ict(4)=(/0,1,0,0/)
       REAL*8  :: xparam, yparam
       REAL*8 :: fval(1)
+      REAL(rprec) :: t
       val = 0
-      t_val = MIN(t_val,tmax)
+      t = MIN(t_val,tmax)
       IF ((rho_val >= rhomin-eps1) .and. (rho_val <= rhomax+eps1) .and. &
-          (t_val   >= tmin-eps2)   .and. (t_val   <= tmax+eps2)) THEN
-         i = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
+          (t   >= tmin-eps2)   .and. (t   <= tmax+eps2)) THEN
+         i = MIN(MAX(COUNT(taxis_prof < t),1),nt_prof-1)
          j = MIN(MAX(COUNT(raxis_prof < rho_val),1),nrho_prof-1)
-         xparam = (t_val - taxis_prof(i)) * hti(i)
+         xparam = (t - taxis_prof(i)) * hti(i)
          yparam = (rho_val   - raxis_prof(j)) * hri(j)
          CALL R8HERM2FCN(ict,1,1,fval,i,j,xparam,yparam,&
                          ht(i),hti(i),hr(j),hri(j),&
