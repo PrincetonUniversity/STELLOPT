@@ -483,13 +483,15 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: rho_val
       REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(out) :: val
+      REAL(rprec) :: rho
       INTEGER     :: i
       REAL(rprec) :: zeff, f
       val = 0
-      IF (rho_val>0.9) rho_val = 0.9 
+      rho = rho_val
+      IF (rho_val>0.9) rho = 0.9 
       ! https://en.wikipedia.org/wiki/Spitzer_resistivity
-      CALL get_prof_zeff(rho_val,t_val,zeff)
-      CALL get_prof_etaperp(rho_val,t_val,val)
+      CALL get_prof_zeff(rho,t_val,zeff)
+      CALL get_prof_etaperp(rho,t_val,val)
       F = (1+1.198*zeff+0.222*zeff*zeff)/(1+2.966*zeff+0.753*zeff*zeff)
       val = val * F
       RETURN
