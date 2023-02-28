@@ -244,12 +244,12 @@
          WRITE(6,'(A10,2X,ES13.5)') 'prev.UEDGE',THRIFT_UEDGE(1)
          WRITE(6,'(A10,2X,ES13.5)') 'this.UEDGE',THRIFT_UEDGE(2)
          WRITE(6,*) '==============================================================================='
-         WRITE(6,*) 'UGRID (THIS ITERATION)'
+         WRITE(6,*) 'UGRID (NEXT ITERATION)'
          WRITE(6,*) 'RHO      U'
          DO i = 1, nrho
-            WRITE(6,'(F5.3, 1X, ES13.5)') THRIFT_RHO(i), THRIFT_UGRID(i,1)
+            WRITE(6,'(F5.3, 1X, ES13.5)') THRIFT_RHO(i), THRIFT_UGRID(i,2)
          END DO
-         WRITE(6, '(A5,1X,ES13.5)') 'EDGE',THRIFT_UEDGE(1)
+         WRITE(6, '(A5,1X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
       END IF
 
       ! Populate of tridiagonal matrix and RHS; AI,CI of size nrho-1, BI,DI of size nrho
@@ -273,7 +273,7 @@
       !BI(nrho)   = BI(nrho)   - temp1*CI(nrho-1)
       !DI(nrho)   = DI(nrho)   - temp1*DI(nrho-1)
 
-      ! Set u_nrho^n+1 = u_nrho+1^n+1, should be fine for good enough grid resolution
+      ! Set u_nrho^n+1 = u_nrho+1^n+1, should be fine with good enough grid resolution
       BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = THRIFT_UEDGE(2);
 
       ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
@@ -292,10 +292,10 @@
       END DO
       
       IF (lverbj) THEN
-         WRITE(6,*)'-------------------------------------------------------------------------------'
-         WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
-         WRITE(6,*) temp1
-         WRITE(6,*)'-------------------------------------------------------------------------------'
+      !   WRITE(6,*) '==============================================================================='
+      !   WRITE(6,*)' MATRIX ELEMENT AT (nrho,nrho-2)'
+      !   WRITE(6,*) temp1
+         WRITE(6,*) '==============================================================================='
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
          WRITE(6,*)''
          WRITE(6,'(I4, 1X,5(2X,ES13.5))') 1, 0.0, BI(1), CI(1), DI(1),THRIFT_UGRID(1,2)
@@ -304,7 +304,6 @@
          END DO
          WRITE(6,'(I4, 1X, 5(ES13.5,2X))') nrho, AI(nrho-1),BI(nrho), 0.0,DI(nrho), THRIFT_UGRID(nrho,2)
          !WRITE(6,'(A5,60X,ES13.5)') 'EDGE',THRIFT_UEDGE(2)
-         WRITE(6,*)'-------------------------------------------------------------------------------'
       END IF
 
       ! ITOTAL: u = mu0 I / phip => I = 2*phi_a*rho*u/mu0
@@ -329,7 +328,7 @@
       END DO
 
       IF (lverbj) THEN
-         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*) '==============================================================================='
          WRITE(6,*)' POST MATRIX ALGORITHM'
          WRITE(6,*)'  i        ITOTAL        ISOURCE        IPLASMA        JPLASMA        JSOURCE'
          WRITE(6,*)''
@@ -337,7 +336,7 @@
             WRITE(6,'(I4, 1X, 5(ES13.5,2X))') &
             i, B_der(i), C_der(i), D_der(i), THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
          END DO
-         WRITE(6,*)'-------------------------------------------------------------------------------'
+         WRITE(6,*) '==============================================================================='
       END IF     
       DEALLOCATE(A_temp, B_temp, C_temp, D_temp, &
                B_der, C_der, D_der, &
