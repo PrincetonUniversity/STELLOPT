@@ -231,7 +231,7 @@
          WRITE(6,*) '==============================================================================='
          WRITE(6,*) 'CALCULATING UEDGE'
          WRITE(6,'(A10,2X,ES13.5)') 'RMAJOR', THRIFT_RMAJOR(nrho+2,1)
-         WRITE(6,'(A10,2X,ES13.5)') 'AMINOR',THRIFT_AMINOR(nrho+2),1
+         WRITE(6,'(A10,2X,ES13.5)') 'AMINOR',THRIFT_AMINOR(nrho+2,1)
          WRITE(6,'(A10,2X,ES13.5)') 'LEXT',temp1
          WRITE(6,'(A10,2X,ES13.5)') 'PHIEDGE',THRIFT_PHIEDGE(1)
          WRITE(6,'(A10,2X,ES13.5)') 'ETAPARA',etapara
