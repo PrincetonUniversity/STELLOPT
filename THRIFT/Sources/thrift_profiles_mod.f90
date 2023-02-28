@@ -241,6 +241,7 @@ MODULE thrift_profiles_mod
       REAL*8  :: xparam, yparam
       REAL*8 :: fval(1)
       val = 0
+      t_val = MIN(t_val,tmax)
       IF ((rho_val >= rhomin-eps1) .and. (rho_val <= rhomax+eps1) .and. &
           (t_val   >= tmin-eps2)   .and. (t_val   <= tmax+eps2)) THEN
          i = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
@@ -266,6 +267,7 @@ MODULE thrift_profiles_mod
       REAL*8  :: xparam, yparam
       REAL*8 :: fval(1)
       val = 0
+      t_val = MIN(t_val,tmax)
       IF ((rho_val >= rhomin-eps1) .and. (rho_val <= rhomax+eps1) .and. &
           (t_val   >= tmin-eps2)   .and. (t_val   <= tmax+eps2)) THEN
          i = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
@@ -291,6 +293,7 @@ MODULE thrift_profiles_mod
       REAL*8  :: xparam, yparam
       REAL*8 :: fval(1)
       val = 0
+      t_val = MIN(t_val,tmax)
       IF ((rho_val >= rhomin-eps1) .and. (rho_val <= rhomax+eps1) .and. &
           (t_val   >= tmin-eps2)   .and. (t_val   <= tmax+eps2)) THEN
          i = MIN(MAX(COUNT(taxis_prof < t_val),1),nt_prof-1)
