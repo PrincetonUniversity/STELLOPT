@@ -357,12 +357,9 @@
       CALL curden_to_curtot(THRIFT_JECCD(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IECCD(:,mytimestep))
       CALL curden_to_curtot(THRIFT_JNBCD(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_INBCD(:,mytimestep))
       CALL curden_to_curtot(THRIFT_JOHMIC(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IOHMIC(:,mytimestep))
-      THRIFT_ISOURCE(:,mytimestep) = THRIFT_JBOOT(:,mytimestep)+THRIFT_JECCD(:,mytimestep)&
-         +THRIFT_JNBCD(:,mytimestep)+THRIFT_JOHMIC(:,mytimestep)
-      THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_JSOURCE(:,mytimestep)
-      WRITE(6,*) THRIFT_IBOOT(nrho,mytimestep)
-      WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
-      WRITE(6,*) THRIFT_I(nrho,mytimestep)
+      THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
+         +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
+      THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
       RETURN
 
 
