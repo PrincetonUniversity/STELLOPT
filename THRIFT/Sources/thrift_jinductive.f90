@@ -257,7 +257,7 @@
       !DI(nrho)   = DI(nrho)   - temp1*DI(nrho-1)
 
       ! Set u_nrho^n+1 = u_nrho+1^n+1, should be fine with good enough grid resolution
-      BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = temp1*mu0/(2*THRIFT_PHIEDGE(:,2));
+      BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = temp1*mu0/(2*THRIFT_PHIEDGE(2));
 
       ! Solve system of equations
       CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
@@ -302,8 +302,8 @@
       END IF
 
       ! ITOTAL: u = mu0 I / phip => I = 2*phi_a*rho*u/mu0
-      B_der = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
-      CALL curden_to_curtot(THRIFT_JSOURCE,THRIFT_AMINOR,C_der,mytimestep)
+      THRIFT_I(:,mytimestep) = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
+      CALL curden_to_curtot(THRIFT_JSOURCE,THRIFT_AMINOR,THRIFT_ISOURCE,mytimestep)
 
       ! ISOURCE(j) = sum_i=1->j JSOURCE(i)*Delta(i)A = ISOURCE(j-1)+JSOURCE(j)*Delta(j)A
       ! A(i) = pi*aminor(i)^2, Delta(i)A = A(i) - A(i-1) (AMINOR is in [0,1])
@@ -314,10 +314,10 @@
       !END DO
 
       ! IPLASMA = ITOTAL - ISOURCE
-      D_der = B_der - C_der
+      THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep) - THRIFT_ISOURCE(:,mytimestep)
 
       ! JPLASMA(i) = (IPLASMA(i)-IPLASMA(i-1))/(pi*(aminor(i)^2-aminor(i-1)^2))
-      CALL curtot_to_curden(D_der,THRIFT_AMINOR,THRIFT_JPLASMA,mytimestep)
+      CALL curtot_to_curden(THRIFT_IPLASMA,THRIFT_AMINOR,THRIFT_JPLASMA,mytimestep)
 
       ! Subtract change in JSOURCE
       THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep)-(THRIFT_JSOURCE(:,mytimestep)-THRIFT_JSOURCE(:,itime))
@@ -335,7 +335,8 @@
          WRITE(6,*)''
          DO i = 1, nrho
             WRITE(6,'(I4, 1X, 5(ES13.5,2X))') &
-            i, B_der(i), C_der(i), D_der(i), THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
+               i, THRIFT_I(i,mytimestep), THRIFT_ISOURCE(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
+               THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
          END DO
          WRITE(6,*) '==============================================================================='
       END IF     
