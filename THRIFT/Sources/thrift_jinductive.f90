@@ -156,9 +156,9 @@
 
       ! Calculate derivatives of ABCD
       h = THRIFT_RHO(2)-THRIFT_RHO(1) ! h = Delta rho
-      CALL deriv1_rho_o2(B, h, B_der)
-      CALL deriv1_rho_o2(C, h, C_der)
-      CALL deriv1_rho_o2(D, h, D_der)
+      CALL deriv1_rho_o2(B_temp, h, B_der)
+      CALL deriv1_rho_o2(C_temp, h, C_der)
+      CALL deriv1_rho_o2(D_temp, h, D_der)
 
       !DO i = 2, nrho-1
       !   B_der(i) = (B_temp(i+2)-B_temp(i))/(2*h)
