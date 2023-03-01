@@ -32,16 +32,6 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 
-      ! Calculate currents from source equations
-      CALL curden_to_curtot(THRIFT_JBOOT,THRIFT_AMINOR,THRIFT_IBOOT,mytimestep)
-      CALL curden_to_curtot(THRIFT_JECCD,THRIFT_AMINOR,THRIFT_IECCD,mytimestep)
-      CALL curden_to_curtot(THRIFT_JNBCD,THRIFT_AMINOR,THRIFT_INBCD,mytimestep)
-      CALL curden_to_curtot(THRIFT_JOHMIC,THRIFT_AMINOR,THRIFT_IOHMIC,mytimestep)
-      THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
-         +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
-      WRITE(6,*) THRIFT_ISOURCE(nrho,1)
-      WRITE(6,*) THRIFT_JBOOT(:,1)
-      WRITE(6,*) THRIFT_IBOOT(:,1)
       ! If at zero beta, copy previous value of JPLASMA
       IF (eq_beta == 0) THEN
          IF (mytimestep /= 1) THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep-1)
@@ -65,6 +55,14 @@
          CALL get_equil_sus(s,THRIFT_S11(i,2), temp1,temp1,temp1, ier)
          CALL get_equil_Rmajor(s,THRIFT_RMAJOR(i,2), temp1, THRIFT_AMINOR(i,2),ier)
       END DO
+
+      ! Calculate currents from source equations
+      CALL curden_to_curtot(THRIFT_JBOOT,THRIFT_AMINOR,THRIFT_IBOOT,mytimestep)
+      CALL curden_to_curtot(THRIFT_JECCD,THRIFT_AMINOR,THRIFT_IECCD,mytimestep)
+      CALL curden_to_curtot(THRIFT_JNBCD,THRIFT_AMINOR,THRIFT_INBCD,mytimestep)
+      CALL curden_to_curtot(THRIFT_JOHMIC,THRIFT_AMINOR,THRIFT_IOHMIC,mytimestep)
+      THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
+         +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
 
       ! If we start at t=0, declare total current density = 0 and skip timestep
       IF (tstart==0 .and. mytimestep==1) THEN
