@@ -39,7 +39,9 @@
       CALL curden_to_curtot(THRIFT_JOHMIC,THRIFT_AMINOR,THRIFT_IOHMIC,mytimestep)
       THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
          +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
-      WRITE(6,*) THRIFT_ISOURCE(nrho,mytimestep)
+      WRITE(6,*) THRIFT_ISOURCE(nrho,1)
+      WRITE(6,*) THRIFT_JBOOT(:,1)
+      WRITE(6,*) THRIFT_IBOOT(:,1)
       ! If at zero beta, copy previous value of JPLASMA
       IF (eq_beta == 0) THEN
          IF (mytimestep /= 1) THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep-1)
