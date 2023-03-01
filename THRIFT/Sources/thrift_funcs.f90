@@ -32,6 +32,7 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     REAL(rprec), DIMENSION(:), INTENT(in) :: DI
     REAL(rprec), DIMENSION(:) :: c_p
     REAL(rprec), DIMENSION(:) :: d_p
+    INTEGER :: i,n
     REAL(rprec), DIMENSION(:), INTENT(out) :: val
     n = SIZE(DI)
     c_p = 0; d_p = 0
@@ -60,6 +61,7 @@ SUBROUTINE curden_to_curtot(j_arr, aminor_arr, i_arr)
     REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
     REAL(rprec), DIMENSION(:), INTENT(in) :: aminor_arr
     REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr
+    INTEGER :: i,n
     n = SIZE(j_arr)
     ! I(i) = I(i-1)+J(i)*dA(i)
     i_arr(1) = j_arr(1)*pi*(aminor_arr(2)**2-aminor_arr(1)**2)
@@ -80,6 +82,7 @@ SUBROUTINE deriv1_rho_o2(arr, step, der_arr)
     REAL(rprec), DIMENSION(:), INTENT(in) :: arr
     REAL(rprec), INTENT(in) :: step
     REAL(rprec), DIMENSION(:), INTENT(out) :: der_arr
+    INTEGER :: i,n
     n = SIZE(arr)-2
     ! Near magnetic axis: dY/drho(1) = [Y(3) + 3*Y(2) - 4*Y(1)]/3h
     der_arr(1) = (arr(3)+3*arr(2)-4*arr(1))/(3*step)
