@@ -104,14 +104,11 @@ SUBROUTINE deriv1_rho_o2(arr, step, der_arr)
     REAL(rprec), DIMENSION(:), INTENT(out) :: der_arr
     INTEGER :: i,n
     n = SIZE(arr)-2
-    ! Near magnetic axis: dY/drho(1) = [Y(3) + 3*Y(2) - 4*Y(1)]/3h
-    der_arr(1) = (arr(3)+3*arr(2)-4*arr(1))/(3*step)
-    ! For i in [2,nrho-1]: dY/drho(i) = [Y(j+1)-Y(j-1)]/2h = [Y(i+2)-Y(i)]/2h
-    DO i = 2, n-1
+    der_arr(1) = (arr(3)+3*arr(2)-4*arr(1))/(3*step) ! dY/drho(1) = [Y(3) + 3*Y(2) - 4*Y(1)]/3h
+    DO i = 2, n-1 ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h = [Y(i+2)-Y(i)]/2h
         der_arr(i) = (arr(i+2)-arr(i))/(2*step)
     END DO
-    ! Near plasma edge: dY/drho(nrho) = [4*Y(nrho+2) - 3*Y(nrho+1) - Y(nrho)]/3h
-    der_arr(n) = (4*arr(n+2)-3*arr(n+1)-arr(n))/(3*step)
+    der_arr(n) = (4*arr(n+2)-3*arr(n+1)-arr(n))/(3*step) ! [4*Y(nrho+2) - 3*Y(nrho+1) - Y(nrho)]/3h
     RETURN
 END SUBROUTINE deriv1_rho_o2
 
