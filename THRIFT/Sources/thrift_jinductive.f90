@@ -183,12 +183,6 @@
       THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-k/temp2)
       ! I_total at edge
       temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
-      WRITE(6,*) 'EDGE I THIS STEP'
-      WRITE(6,*) temp1
-      WRITE(6,*) 'EDGE IPLASMA PREV STEP'
-      WRITE(6,*) THRIFT_IPLASMA(nrho,itime)
-      WRITE(6,*) 'EDGE IPLASMA THIS STEP'
-      WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
 
        !! Calculate uedge for this timestep
       !t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
@@ -233,12 +227,8 @@
       ! ITOTAL = phip*u/mu0 = 2*phi_a*rho*u/mu0
       THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
       CALL curden_to_curtot(THRIFT_JSOURCE,THRIFT_AMINOR,THRIFT_ISOURCE,mytimestep)
-      WRITE(6,*) 'EDGE I POST SOLVE'
-      WRITE(6,*) THRIFT_I(nrho,mytimestep)
       ! IPLASMA = ITOTAL - ISOURCE
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep) - THRIFT_ISOURCE(:,mytimestep)
-      WRITE(6,*) 'EDGE IPLASMA POST SOLVE'
-      WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
       ! JPLASMA
       CALL curtot_to_curden(THRIFT_IPLASMA,THRIFT_AMINOR,THRIFT_JPLASMA,mytimestep)
       ! Subtract change in JSOURCE
