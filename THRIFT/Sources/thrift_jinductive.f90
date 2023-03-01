@@ -39,7 +39,7 @@
       CALL curden_to_curtot(THRIFT_JOHMIC,THRIFT_AMINOR,THRIFT_IOHMIC,mytimestep)
       THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
          +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
-
+      WRITE(6,*) THRIFT_ISOURCE(nrho,mytimestep)
       ! If at zero beta, copy previous value of JPLASMA
       IF (eq_beta == 0) THEN
          IF (mytimestep /= 1) THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep-1)
@@ -226,17 +226,17 @@
       temp2 = temp1*THRIFT_AMINOR(nrho+2,1)**2/(2*etapara*THRIFT_RMAJOR(nrho+2,1)) ! temp2 <- tau_L/R
       ! First decay I_plasma
       THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-k/temp2)
-      WRITE(6,*) "IPLASMA EDGE PREV"
-      WRITE(6,*) THRIFT_IPLASMA(nrho,itime)
-      WRITE(6,*) "DECAY"
-      WRITE(6,*) exp(-k/temp2)
-      WRITE(6,*) "IPLASMA EDGE THIS"
-      WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
-      WRITE(6,*) "ISOURCE EDGE THIS"
-      WRITE(6,*) THRIFT_ISOURCE(nrho,mytimestep)
+      !WRITE(6,*) "IPLASMA EDGE PREV"
+      !WRITE(6,*) THRIFT_IPLASMA(nrho,itime)
+      !WRITE(6,*) "DECAY"
+      !WRITE(6,*) exp(-k/temp2)
+      !WRITE(6,*) "IPLASMA EDGE THIS"
+      !WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
+      !WRITE(6,*) "ISOURCE EDGE THIS"
+      !WRITE(6,*) THRIFT_ISOURCE(nrho,mytimestep)
       ! I_total
       temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
-      WRITE(6,*) "I EDGE THIS"
+      !WRITE(6,*) "I EDGE THIS"
       WRITE(6,*) temp1
 
       !! Calculate uedge for this timestep
@@ -331,12 +331,12 @@
 
       ! IPLASMA = ITOTAL - ISOURCE
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep) - THRIFT_ISOURCE(:,mytimestep)
-      WRITE(6,*) "THRIFT I THIS"
-      WRITE(6,*) THRIFT_I(:,mytimestep)
-      WRITE(6,*) "THRIFT ISOURCE THIS"
-      WRITE(6,*) THRIFT_ISOURCE(:,mytimestep)
-      WRITE(6,*) "THRIFT IPLASMA THIS"
-      WRITE(6,*) THRIFT_IPLASMA(:,mytimestep)
+      !WRITE(6,*) "THRIFT I THIS"
+      !WRITE(6,*) THRIFT_I(:,mytimestep)
+      !WRITE(6,*) "THRIFT ISOURCE THIS"
+      !WRITE(6,*) THRIFT_ISOURCE(:,mytimestep)
+      !WRITE(6,*) "THRIFT IPLASMA THIS"
+      !WRITE(6,*) THRIFT_IPLASMA(:,mytimestep)
 
       ! JPLASMA(i) = (IPLASMA(i)-IPLASMA(i-1))/(pi*(aminor(i)^2-aminor(i-1)^2))
       CALL curtot_to_curden(THRIFT_IPLASMA,THRIFT_AMINOR,THRIFT_JPLASMA,mytimestep)
