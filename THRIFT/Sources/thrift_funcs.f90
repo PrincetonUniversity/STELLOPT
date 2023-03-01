@@ -55,7 +55,7 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
        val(i) = d_p(i)-c_p(i)*val(i+1) 
     END DO
 
-    DEALLOCATE(c_p(n),d_p(n))
+    DEALLOCATE(c_p,d_p)
     RETURN
 END SUBROUTINE solve_tdm
 
