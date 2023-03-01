@@ -152,8 +152,6 @@
          rho, etapara, THRIFT_VP(i,2), pprime, temp2*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
       END DO
 
-
-
       ! Calculate derivatives of ABCD
       h = THRIFT_RHO(2)-THRIFT_RHO(1) ! h = Delta rho
       CALL deriv1_rho_o2(B_temp, h, B_der)
@@ -362,6 +360,9 @@
       THRIFT_ISOURCE(:,mytimestep) = THRIFT_JBOOT(:,mytimestep)+THRIFT_JECCD(:,mytimestep)&
          +THRIFT_JNBCD(:,mytimestep)+THRIFT_JOHMIC(:,mytimestep)
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_JSOURCE(:,mytimestep)
+      WRITE(6,*) THRIFT_IBOOT(nrho,mytimestep)
+      WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
+      WRITE(6,*) THRIFT_I(nrho,mytimestep)
       RETURN
 
 
