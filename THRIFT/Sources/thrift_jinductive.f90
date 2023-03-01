@@ -183,6 +183,10 @@
       THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-k/temp2)
       ! I_total at edge
       temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
+      !WRITE(6,*) 'EDGE I NEXT STEP'
+      !WRITE(6,*) temp1
+      !WRITE(6,*) 'EDGE IPLASMA NEXT STEP'
+      !WRITE(6,*) 
 
        !! Calculate uedge for this timestep
       !t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
@@ -203,7 +207,7 @@
       BI(1) = 1; CI(1) = 0; DI(1) = 0   
       ! Enclosed current at edge must equal temp1 next timestep
       BI(nrho) = 1; AI(nrho-1) = 0; DI (nrho) = mu0*temp1/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2)) 
-      DO i = 1, nrho-1 ! elsewhere
+      DO i = 2, nrho-1 ! elsewhere
          CI(i) = a3(i)/(2*h) +a4(i)/(h**2)   
          AI(i) = -a3(i)/(2*h)+a4(i)/(h**2)   
          BI(i) = a2(i)-2*a4(i)/(h**2)-1/k    
