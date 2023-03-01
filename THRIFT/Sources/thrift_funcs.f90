@@ -30,11 +30,12 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     REAL(rprec), DIMENSION(:), INTENT(in) :: BI
     REAL(rprec), DIMENSION(:), INTENT(in) :: CI
     REAL(rprec), DIMENSION(:), INTENT(in) :: DI
-    REAL(rprec), DIMENSION(:) :: c_p
-    REAL(rprec), DIMENSION(:) :: d_p
+
     INTEGER :: i,n
     REAL(rprec), DIMENSION(:), INTENT(out) :: val
     n = SIZE(DI)
+    REAL(rprec), DIMENSION(n) :: c_p
+    REAL(rprec), DIMENSION(n) :: d_p
     c_p = 0; d_p = 0
     !! Forward sweep
     ! c_1' = c_1/b_1   ;  c_i' =              c_i/(b_i - a_i*c_i-1') [1<i<=n-1]
