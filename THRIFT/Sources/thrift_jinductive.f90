@@ -321,12 +321,17 @@
 
       ! IPLASMA = ITOTAL - ISOURCE
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep) - THRIFT_ISOURCE(:,mytimestep)
+      WRITE(6,*) THRIFT_I(:,mytimestep)
+      WRITE(6,*) THRIFT_ISOURCE(:,mytimestep)
+      WRITE(6,*) THRIFT_IPLASMA(:,mytimestep)
 
       ! JPLASMA(i) = (IPLASMA(i)-IPLASMA(i-1))/(pi*(aminor(i)^2-aminor(i-1)^2))
       CALL curtot_to_curden(THRIFT_IPLASMA,THRIFT_AMINOR,THRIFT_JPLASMA,mytimestep)
 
       ! Subtract change in JSOURCE
       THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep)-(THRIFT_JSOURCE(:,mytimestep)-THRIFT_JSOURCE(:,itime))
+      WRITE(6,*) THRIFT_JSOURCE(:,mytimestep)-THRIFT_JSOURCE(:,itime)
+      WRITE(6,*) THRIFT_JPLASMA(:,mytimestep)
 
       !temp2 = 0;
       !DO i = 1, nrho
