@@ -11,6 +11,7 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
+      USE thrift_funcs
       USE thrift_equil
       USE thrift_profiles_mod
       USE stel_tools
@@ -31,8 +32,7 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 
-      THRIFT_I        = 0; THRIFT_IBOOT    = 0; THRIFT_IPLASMA  = 0
-      THRIFT_IECCD    = 0; THRIFT_INBCD    = 0; THRIFT_IOHMIC   = 0
+
 
       ! If at zero beta, copy previous value of JPLASMA
       IF (eq_beta == 0) THEN
@@ -152,30 +152,27 @@
          rho, etapara, THRIFT_VP(i,2), pprime, temp2*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
       END DO
 
-      ! Visualisation of different grids
-      ! j=1 2    3    4    5    6    7
-      !  |  |    |    |    |    |    |  ...   ABCD_temp grid
-      !     |    |    |    |    |    |  ...   ABCD_der,alpha grid
-      !    i=1   2    3    4    5    6        => j(i) = i+1 
+
 
       ! Calculate derivatives of ABCD
       h = THRIFT_RHO(2)-THRIFT_RHO(1) ! h = Delta rho
-      ! For i in [2,nrho-1]: dY/drho(i) = [Y(j+1)-Y(j-1)]/2h = [Y(i+2)-Y(i)]/2h
-      DO i = 2, nrho-1
-         B_der(i) = (B_temp(i+2)-B_temp(i))/(2*h)
-         C_der(i) = (C_temp(i+2)-C_temp(i))/(2*h)
-         D_der(i) = (D_temp(i+2)-D_temp(i))/(2*h)
-      END DO
-      
-      ! Near magnetic axis: dY/drho(1) = [Y(3) + 3*Y(2) - 4*Y(1)]/3h
-      B_der(1) = (B_temp(3)+3*B_temp(2)-4*B_temp(1))/(3*h)
-      C_der(1) = (C_temp(3)+3*C_temp(2)-4*C_temp(1))/(3*h)
-      D_der(1) = (D_temp(3)+3*D_temp(2)-4*D_temp(1))/(3*h)
+      CALL deriv1_rho_o2(B, h, B_der)
+      CALL deriv1_rho_o2(C, h, C_der)
+      CALL deriv1_rho_o2(D, h, D_der)
 
-      ! Near plasma edge: dY/drho(nrho) = [4*Y(nrho+2) - 3*Y(nrho+1) - Y(nrho)]/3h
-      B_der(nrho) = (4*B_temp(nrho+2)-3*B_temp(nrho+1)-B_temp(nrho))/(3*h)
-      C_der(nrho) = (4*C_temp(nrho+2)-3*C_temp(nrho+1)-C_temp(nrho))/(3*h)
-      D_der(nrho) = (4*D_temp(nrho+2)-3*D_temp(nrho+1)-D_temp(nrho))/(3*h)
+      !DO i = 2, nrho-1
+      !   B_der(i) = (B_temp(i+2)-B_temp(i))/(2*h)
+      !   C_der(i) = (C_temp(i+2)-C_temp(i))/(2*h)
+      !   D_der(i) = (D_temp(i+2)-D_temp(i))/(2*h)
+      !END DO
+      
+      !B_der(1) = (B_temp(3)+3*B_temp(2)-4*B_temp(1))/(3*h)
+      !C_der(1) = (C_temp(3)+3*C_temp(2)-4*C_temp(1))/(3*h)
+      !D_der(1) = (D_temp(3)+3*D_temp(2)-4*D_temp(1))/(3*h)
+
+      !B_der(nrho) = (4*B_temp(nrho+2)-3*B_temp(nrho+1)-B_temp(nrho))/(3*h)
+      !C_der(nrho) = (4*C_temp(nrho+2)-3*C_temp(nrho+1)-C_temp(nrho))/(3*h)
+      !D_der(nrho) = (4*D_temp(nrho+2)-3*D_temp(nrho+1)-D_temp(nrho))/(3*h)
       
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
@@ -255,20 +252,22 @@
       ! Set u_nrho^n+1 = u_nrho+1^n+1, should be fine with good enough grid resolution
       BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = THRIFT_UEDGE(2);
 
-      ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
-      ! Forward sweep
-      C_temp = 0; D_temp = 0;
-      C_temp(1) = CI(1)/BI(1) !c_1' = c_1/b_1
-      D_temp(1) = DI(1)/BI(1) !d_1' = d_1/b_1
-      DO i = 2, nrho ! A on wiki goes from 2,n; AI here goes from 1, n-1 -> shift by -1
-         IF (i /= nrho) C_temp(i) =        CI(i)/(BI(i)-AI(i-1)*C_temp(i-1))! c_i' =              c_i/(b_i - a_i*c_i-1')
-         D_temp(i) = (DI(i)-AI(i-1)*D_temp(i-1))/(BI(i)-AI(i-1)*C_temp(i-1))! d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1')
-      END DO
+      CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
+      ! ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
+      ! ! Forward sweep
+      !C_temp = 0; D_temp = 0;
+      !C_temp(1) = CI(1)/BI(1) !c_1' = c_1/b_1
+      !D_temp(1) = DI(1)/BI(1) !d_1' = d_1/b_1
+      !DO i = 2, nrho ! A on wiki goes from 2,n; AI here goes from 1, n-1 -> shift by -1
+      !   IF (i /= nrho) C_temp(i) =        CI(i)/(BI(i)-AI(i-1)*C_temp(i-1))! c_i' =              c_i/(b_i - a_i*c_i-1')
+      !   D_temp(i) = (DI(i)-AI(i-1)*D_temp(i-1))/(BI(i)-AI(i-1)*C_temp(i-1))! d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1')
+      !END DO
       ! Back substitution
-      THRIFT_UGRID(nrho,2) = D_temp(nrho) ! x_n = d_n'
-      DO i = nrho-1, 1, -1
-         THRIFT_UGRID(i,2) = D_temp(i)-C_temp(i)*THRIFT_UGRID(i+1,2) ! x_i = d_i' - c_i'*x_i+1
-      END DO
+      !THRIFT_UGRID(nrho,2) = D_temp(nrho) ! x_n = d_n'
+      !DO i = nrho-1, 1, -1
+      !   THRIFT_UGRID(i,2) = D_temp(i)-C_temp(i)*THRIFT_UGRID(i+1,2) ! x_i = d_i' - c_i'*x_i+1
+      !END DO
+
 
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
@@ -348,14 +347,21 @@
 
 1000  CONTINUE
       ! Calculate enclosed currents for progress
-      DO i = 1, nrho
-         THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
-         THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
-         THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
-         THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
-         THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
-      END DO
-      THRIFT_I = THRIFT_IPLASMA + THRIFT_IBOOT + THRIFT_IECCD + THRIFT_INBCD + THRIFT_IOHMIC
+      !DO i = 1, nrho
+      !   THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
+      !   THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
+      !   THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
+      !   THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
+      !   THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
+      !END DO
+      CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IPLASMA(:,mytimestep))
+      CALL curden_to_curtot(THRIFT_JBOOT(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IBOOT(:,mytimestep))
+      CALL curden_to_curtot(THRIFT_JECCD(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IECCD(:,mytimestep))
+      CALL curden_to_curtot(THRIFT_JNBCD(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_INBCD(:,mytimestep))
+      CALL curden_to_curtot(THRIFT_JOHMIC(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IOHMIC(:,mytimestep))
+      THRIFT_ISOURCE(:,mytimestep) = THRIFT_JBOOT(:,mytimestep)+THRIFT_JECCD(:,mytimestep)&
+         +THRIFT_JNBCD(:,mytimestep)+THRIFT_JOHMIC(:,mytimestep)
+      THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_JSOURCE(:,mytimestep)
       RETURN
 
 
