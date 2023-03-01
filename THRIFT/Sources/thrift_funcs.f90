@@ -39,7 +39,7 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     c_p = 0; d_p = 0
     !! Forward sweep
     ! c_1' = c_1/b_1   ;  c_i' =              c_i/(b_i - a_i*c_i-1') [1<i<=n-1]
-    ! d_1' = d_1/b_1   ;  d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1') [1<i<=n]
+    ! d_1' = d_1/b_1   ;  d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1') [1<i<=n  ]
     c_p(1) = CI(1)/BI(1) 
     d_p(1) = DI(1)/BI(1) 
     DO i = 2, n 
