@@ -23,5 +23,6 @@ thrift_paraexe.o \
 thrift_input_mod.o \
 thrift_profiles_mod.o \
 thrift_interface_mod.o \
+thrift_funcs.o \
 thrift_runtime.o \
 thrift_main.o 

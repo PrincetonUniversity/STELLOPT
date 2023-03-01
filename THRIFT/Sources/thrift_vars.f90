@@ -43,22 +43,26 @@ MODULE thrift_vars
     LOGICAL, DIMENSION(:), ALLOCATABLE :: lbooz
     REAL(rprec), DIMENSION(2) :: THRIFT_UEDGE, THRIFT_PHIEDGE
     INTEGER :: ntimesteps, nrho, npicard, &
-               win_thrift_j, win_thrift_jboot, &
-               win_thrift_jplasma, win_thrift_jeccd, win_thrift_jnbcd, &
-               win_thrift_johmic, win_thrift_rho, win_thrift_t, &
-               win_lbooz, win_thrift_jsource, win_thrift_ugrid, &
-               win_thrift_vp, win_thrift_bav, win_thrift_bsqav, &
-               win_thrift_s11, win_thrift_aminor, win_thrift_rmajor
-    REAL(rprec) :: tstart, tend, jtol, picard_factor, THRIFT_I, THRIFT_IPLASMA,&
-                 THRIFT_IBOOT, THRIFT_IECCD, THRIFT_INBCD, THRIFT_IOHMIC
+             win_thrift_j, win_thrift_jplasma, win_thrift_jboot, &
+             win_thrift_jeccd, win_thrift_jnbcd, win_thrift_johmic, &
+             win_thrift_jsource, &
+             win_thrift_i, win_thrift_iplasma, win_thrift_iboot, &
+             win_thrift_ieccd, win_thrift_inbcd, win_thrift_iohmic, &
+             win_thrift_isource, &
+             win_thrift_rho, win_thrift_t, &
+             win_lbooz, win_thrift_ugrid, &
+             win_thrift_vp, win_thrift_bav, win_thrift_bsqav, &
+             win_thrift_s11, win_thrift_aminor, win_thrift_rmajor
+    REAL(rprec) :: tstart, tend, jtol, picard_factor, 
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_T(:)
-    REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_J, THRIFT_S11, &
-                 THRIFT_S12, THRIFT_S22, THRIFT_JBOOT, THRIFT_JPLASMA, &
+    REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_J, THRIFT_JPLASMA, THRIFT_JBOOT,&
                  THRIFT_JECCD, THRIFT_JNBCD, THRIFT_JOHMIC, THRIFT_JSOURCE, &
-                 THRIFT_UGRID, THRIFT_VP, THRIFT_BAV, THRIFT_BSQAV, &
-                 THRIFT_AMINOR, THRIFT_RMAJOR
+                 THRIFT_I, THRIFT_IPLASMA, THRIFT_IBOOT, THRIFT_IECCD, THRIFT_INBCD, &
+                 THRIFT_IOHMIC, THRIFT_ISOURCE, THRIFT_UGRID, THRIFT_VP,&
+                 THRIFT_BAV, THRIFT_BSQAV, &
+                 THRIFT_AMINOR, THRIFT_RMAJOR, &
+                 THRIFT_S11,THRIFT_S12, THRIFT_S22
 
-                 
     ! For TRAVIS
     INTEGER, PARAMETER :: nsys   = 16
     INTEGER :: nra_ecrh, nphi_ecrh

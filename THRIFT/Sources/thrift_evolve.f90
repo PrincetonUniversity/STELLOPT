@@ -30,22 +30,20 @@
       IF (myworkid .ne. master) RETURN
 
       ! Initialize the current density
-      THRIFT_J        = 0 
-      THRIFT_JBOOT    = 0 
-      THRIFT_JPLASMA  = 0
-      THRIFT_JECCD    = 0
-      THRIFT_JNBCD    = 0
+      THRIFT_J        = 0; THRIFT_JPLASMA  = 0; THRIFT_JSOURCE  = 0
+      THRIFT_JBOOT    = 0; THRIFT_JECCD    = 0; THRIFT_JNBCD    = 0
       THRIFT_JOHMIC   = 0
-      THRIFT_JSOURCE  = 0
-      THRIFT_UGRID    = 0
-      THRIFT_UEDGE    = 0
-      THRIFT_VP       = 0
-      THRIFT_BAV      = 0
-      THRIFT_BSQAV    = 0
-      THRIFT_S11      = 0
-      THRIFT_AMINOR   = 0
-      THRIFT_RMAJOR   = 0
-      THRIFT_PHIEDGE  = 0
+      ! Initialize total current
+      THRIFT_I        = 0; THRIFT_IPLASMA  = 0; THRIFT_ISOURCE  = 0
+      THRIFT_IBOOT    = 0; THRIFT_IECCD    = 0; THRIFT_INBCD    = 0
+      THRIFT_IOHMIC   = 0;     
+      ! Initialize remainder
+      THRIFT_UGRID    = 0; THRIFT_UEDGE    = 0
+      THRIFT_VP       = 0; THRIFT_PHIEDGE  = 0; THRIFT_S11      = 0
+      THRIFT_BAV      = 0; THRIFT_BSQAV    = 0
+      THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0
+      
+
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
