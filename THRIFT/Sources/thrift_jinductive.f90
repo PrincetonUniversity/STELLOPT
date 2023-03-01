@@ -194,15 +194,15 @@
       THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-dt/temp2)
       ! I_total at edge
       temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
-      WRITE(6,*)'==============================================================================='
-      WRITE(6,*) 'SIMPLE FTCS RATE OF CHANGE'
-      WRITE(6,*) ''
-      WRITE(6,'(ES13.5)') 0.0
-      DO i = 2,nrho-1
-         WRITE(6,'(ES13.5)') a1(i)+a2(i)*THRIFT_UGRID(i,1)+a3(i)*(THRIFT_UGRID(i+1,1)-THRIFT_UGRID(i-1,1))/(2*drho)&
-         +a4(i)*(THRIFT_UGRID(i+1,1)-2*THRIFT_UGRID(i,1)+THRIFT_UGRID(i-1,1))/(drho**2)
-      END DO
-      WRITE(6,'(ES13.5)') mu0/(2*THRIFT_PHIEDGE(2))*(THRIFT_IPLASMA(nrho,mytimestep)-THRIFT_IPLASMA(nrho,itime))
+      !WRITE(6,*)'==============================================================================='
+      !WRITE(6,*) 'SIMPLE FTCS RATE OF CHANGE'
+      !WRITE(6,*) ''
+      !WRITE(6,'(ES13.5)') 0.0
+      !DO i = 2,nrho-1
+      !   WRITE(6,'(ES13.5)') a1(i)+a2(i)*THRIFT_UGRID(i,1)+a3(i)*(THRIFT_UGRID(i+1,1)-THRIFT_UGRID(i-1,1))/(2*drho)&
+      !   +a4(i)*(THRIFT_UGRID(i+1,1)-2*THRIFT_UGRID(i,1)+THRIFT_UGRID(i-1,1))/(drho**2)
+      !END DO
+      !WRITE(6,'(ES13.5)') mu0/(2*THRIFT_PHIEDGE(2))*(THRIFT_IPLASMA(nrho,mytimestep)-THRIFT_IPLASMA(nrho,itime))
 
        !! Calculate uedge for this timestep
       !t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
