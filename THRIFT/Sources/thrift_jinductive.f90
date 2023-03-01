@@ -67,7 +67,7 @@
       ! If first timestep, declare JPLASMA = JSOURCE (total current zero)
       IF (mytimestep==1) THEN
          THRIFT_JPLASMA(:,mytimestep)=-THRIFT_JSOURCE(:,mytimestep) 
-         curden_to_curtot(THRIFT_JPLASMA,THRIFT_AMINOR,THRIFT_IPLASMA.mytimestep)
+         CALL curden_to_curtot(THRIFT_JPLASMA,THRIFT_AMINOR,THRIFT_IPLASMA.mytimestep)
          IF (tstart==0) GOTO 1000 ! If t=0 as well, go to next iteration
       END IF
 
