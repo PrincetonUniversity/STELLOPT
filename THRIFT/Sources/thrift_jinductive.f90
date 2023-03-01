@@ -32,7 +32,13 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 
-
+      ! Calculate currents from source equations
+      CALL curden_to_curtot(THRIFT_JBOOT,THRIFT_AMINOR,THRIFT_IBOOT,mytimestep)
+      CALL curden_to_curtot(THRIFT_JECCD,THRIFT_AMINOR,THRIFT_IECCD,mytimestep)
+      CALL curden_to_curtot(THRIFT_JNBCD,THRIFT_AMINOR,THRIFT_INBCD,mytimestep)
+      CALL curden_to_curtot(THRIFT_JOHMIC,THRIFT_AMINOR,THRIFT_IOHMIC,mytimestep)
+      THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
+         +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
 
       ! If at zero beta, copy previous value of JPLASMA
       IF (eq_beta == 0) THEN
@@ -366,14 +372,8 @@
                AI, BI, CI, DI)
 
 1000  CONTINUE
-      ! Calculate enclosed currents for progress
+      ! Calculate enclosed plasma current
       CALL curden_to_curtot(THRIFT_JPLASMA,THRIFT_AMINOR,THRIFT_IPLASMA,mytimestep)
-      CALL curden_to_curtot(THRIFT_JBOOT,THRIFT_AMINOR,THRIFT_IBOOT,mytimestep)
-      CALL curden_to_curtot(THRIFT_JECCD,THRIFT_AMINOR,THRIFT_IECCD,mytimestep)
-      CALL curden_to_curtot(THRIFT_JNBCD,THRIFT_AMINOR,THRIFT_INBCD,mytimestep)
-      CALL curden_to_curtot(THRIFT_JOHMIC,THRIFT_AMINOR,THRIFT_IOHMIC,mytimestep)
-      THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
-         +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
       RETURN
 
