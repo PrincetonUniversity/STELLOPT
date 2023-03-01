@@ -211,7 +211,7 @@
       BI(nrho) = 1; AI(nrho-1) = 0; DI (nrho) = mu0*temp1/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2)) 
       DO i = 2, nrho-1 ! elsewhere
          CI(i) = a3(i)/(2*h) +a4(i)/(h**2)   
-         AI(i) = -a3(i)/(2*h)+a4(i)/(h**2)   
+         IF (i/=nrho-1) AI(i) = -a3(i)/(2*h)+a4(i)/(h**2)   
          BI(i) = a2(i)-2*a4(i)/(h**2)-1/k    
          DI(i) = -THRIFT_UGRID(i,1)/k-a1(i)  
       END DO
