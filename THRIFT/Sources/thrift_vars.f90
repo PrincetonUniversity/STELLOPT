@@ -53,7 +53,7 @@ MODULE thrift_vars
              win_lbooz, win_thrift_ugrid, &
              win_thrift_vp, win_thrift_bav, win_thrift_bsqav, &
              win_thrift_s11, win_thrift_aminor, win_thrift_rmajor
-    REAL(rprec) :: tstart, tend, jtol, picard_factor, 
+    REAL(rprec) :: tstart, tend, jtol, picard_factor
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_T(:)
     REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_J, THRIFT_JPLASMA, THRIFT_JBOOT,&
                  THRIFT_JECCD, THRIFT_JNBCD, THRIFT_JOHMIC, THRIFT_JSOURCE, &
