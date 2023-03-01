@@ -132,7 +132,8 @@
             IF (lverb) THEN
              WRITE(6,'(1X,ES9.1E1,1X,I2,1X,F5.2,5(1X,ES11.3E1))') &
                 THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
-                THRIFT_I, THRIFT_IPLASMA, THRIFT_IBOOT, THRIFT_IECCD, THRIFT_INBCD!,&
+                THRIFT_I(nrho,mytimestep), THRIFT_IPLASMA(nhro,mytimestep), THRIFT_IBOOT(nrho,mytimestep),&
+                THRIFT_IECCD(nrho,mytimestep), THRIFT_INBCD(nrho,mytimestep)!,&
                 !THRIFT_IOHMIC,&
                 !MAXVAL(deltaj)
             END IF
