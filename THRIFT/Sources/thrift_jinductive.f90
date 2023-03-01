@@ -274,7 +274,8 @@
 
       ! Set u_nrho^n+1 = u_nrho+1^n+1, should be fine with good enough grid resolution
       BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = temp1*mu0/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2));
-
+      ! Set u_1 = 0
+      BI(1) = 1; CI(1) = 0; DI(1) = 0
       ! Solve system of equations
       CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
 
