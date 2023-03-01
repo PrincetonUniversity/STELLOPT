@@ -89,7 +89,7 @@ SUBROUTINE curtot_to_curden(i_arr, aminor_arr, j_arr,timestep)
         j_arr(i,timestep) = (i_arr(i,timestep)-i_arr(i-1,timestep))/(pi*(aminor_arr(i+1,2)**2-aminor_arr(i,2)**2))
     END DO
     RETURN
-END SUBROUTINE curden_to_curtot
+END SUBROUTINE curtot_to_curden
 
 SUBROUTINE deriv1_rho_o2(arr, step, der_arr)
     ! Calculate the first derivative (O2 accurate)
