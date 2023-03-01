@@ -220,8 +220,14 @@
       temp2 = temp1*THRIFT_AMINOR(nrho+2,1)**2/(2*etapara*THRIFT_RMAJOR(nrho+2,1)) ! temp2 <- tau_L/R
       ! First decay I_plasma
       THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-k/temp2)
+      WRITE(6,*) THRIFT_IPLASMA(nrho,itime)
+      WRITE(6,*) -k
+      WRITE(6,*) temp2
+      WRITE(6,*) exp(-k/temp2)
+      WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
       ! I_total
       temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
+      WRITE(6,*) temp1
 
       !! Calculate uedge for this timestep
       !t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
