@@ -94,6 +94,14 @@
          WRITE(iunit,*) THRIFT_JOHMIC
          WRITE(iunit,*) THRIFT_JPLASMA
          WRITE(iunit,*) THRIFT_JSOURCE
+
+         WRITE(iunit,*) THRIFT_I
+         WRITE(iunit,*) THRIFT_IBOOT
+         WRITE(iunit,*) THRIFT_IECCD
+         WRITE(iunit,*) THRIFT_INBCD
+         WRITE(iunit,*) THRIFT_IOHMIC
+         WRITE(iunit,*) THRIFT_IPLASMA
+         WRITE(iunit,*) THRIFT_ISOURCE
          CLOSE(iunit)
 #endif
       END IF
