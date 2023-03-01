@@ -237,7 +237,7 @@
       ! I_total
       temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
       !WRITE(6,*) "I EDGE THIS"
-      WRITE(6,*) temp1
+      !WRITE(6,*) temp1
 
       !! Calculate uedge for this timestep
       !t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
@@ -343,10 +343,10 @@
 
       ! Subtract change in JSOURCE
       THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep)-(THRIFT_JSOURCE(:,mytimestep)-THRIFT_JSOURCE(:,itime))
-      WRITE(6,*) "DELTA JSOURCE THIS"
-      WRITE(6,*) THRIFT_JSOURCE(:,mytimestep)-THRIFT_JSOURCE(:,itime)
-      WRITE(6,*) "THRIFT JPLASMA THIS"
-      WRITE(6,*) THRIFT_JPLASMA(:,mytimestep)
+      !WRITE(6,*) "DELTA JSOURCE THIS"
+      !WRITE(6,*) THRIFT_JSOURCE(:,mytimestep)-THRIFT_JSOURCE(:,itime)
+      !WRITE(6,*) "THRIFT JPLASMA THIS"
+      !WRITE(6,*) THRIFT_JPLASMA(:,mytimestep)
 
       !temp2 = 0;
       !DO i = 1, nrho
