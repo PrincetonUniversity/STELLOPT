@@ -35,6 +35,7 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: c_p
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: d_p
     n = SIZE(DI)
+    ALLOCATE(c_p(n),d_p(n))
     c_p = 0; d_p = 0
     !! Forward sweep
     ! c_1' = c_1/b_1   ;  c_i' =              c_i/(b_i - a_i*c_i-1') [1<i<=n-1]
@@ -53,6 +54,8 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     DO i = n-1, 1, -1
        val(i) = d_p(i)-c_p(i)*val(i+1) 
     END DO
+
+    DEALLOCATE(c_p(n),d_p(n))
     RETURN
 END SUBROUTINE solve_tdm
 
