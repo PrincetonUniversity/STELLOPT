@@ -30,10 +30,10 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     REAL(rprec), DIMENSION(:), INTENT(in) :: BI
     REAL(rprec), DIMENSION(:), INTENT(in) :: CI
     REAL(rprec), DIMENSION(:), INTENT(in) :: DI
+    REAL(rprec), DIMENSION(:) :: c_p
+    REAL(rprec), DIMENSION(:) :: d_p
+    REAL(rprec), DIMENSION(:), INTENT(out) :: val
     n = SIZE(DI)
-    REAL(rprec), DIMENSION(n) :: c_p
-    REAL(rprec), DIMENSION(n) :: d_p
-    REAL(rprec), DIMENSION(n), INTENT(out) :: val
     c_p = 0; d_p = 0
     !! Forward sweep
     ! c_1' = c_1/b_1   ;  c_i' =              c_i/(b_i - a_i*c_i-1') [1<i<=n-1]
@@ -59,8 +59,8 @@ SUBROUTINE curden_to_curtot(j_arr, aminor_arr, i_arr)
     ! Calculates array of enclosed current from current density array
     REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
     REAL(rprec), DIMENSION(:), INTENT(in) :: aminor_arr
+    REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr
     n = SIZE(j_arr)
-    REAL(rprec), DIMENSION(n), INTENT(out) :: i_arr
     ! I(i) = I(i-1)+J(i)*dA(i)
     i_arr(1) = j_arr(1)*pi*(aminor_arr(2)**2-aminor_arr(1)**2)
     DO i = 2, n
@@ -79,9 +79,8 @@ SUBROUTINE deriv1_rho_o2(arr, step, der_arr)
 
     REAL(rprec), DIMENSION(:), INTENT(in) :: arr
     REAL(rprec), INTENT(in) :: step
+    REAL(rprec), DIMENSION(:), INTENT(out) :: der_arr
     n = SIZE(arr)-2
-    REAL(rprec), DIMENSION(n), INTENT(out) :: der_arr
-
     ! Near magnetic axis: dY/drho(1) = [Y(3) + 3*Y(2) - 4*Y(1)]/3h
     der_arr(1) = (arr(3)+3*arr(2)-4*arr(1))/(3*step)
     ! For i in [2,nrho-1]: dY/drho(i) = [Y(j+1)-Y(j-1)]/2h = [Y(i+2)-Y(i)]/2h
