@@ -250,22 +250,8 @@
       ! Set u_nrho^n+1 = u_nrho+1^n+1, should be fine with good enough grid resolution
       BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = THRIFT_UEDGE(2);
 
+      ! Solve system of equations
       CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
-      ! ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
-      ! ! Forward sweep
-      !C_temp = 0; D_temp = 0;
-      !C_temp(1) = CI(1)/BI(1) !c_1' = c_1/b_1
-      !D_temp(1) = DI(1)/BI(1) !d_1' = d_1/b_1
-      !DO i = 2, nrho ! A on wiki goes from 2,n; AI here goes from 1, n-1 -> shift by -1
-      !   IF (i /= nrho) C_temp(i) =        CI(i)/(BI(i)-AI(i-1)*C_temp(i-1))! c_i' =              c_i/(b_i - a_i*c_i-1')
-      !   D_temp(i) = (DI(i)-AI(i-1)*D_temp(i-1))/(BI(i)-AI(i-1)*C_temp(i-1))! d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1')
-      !END DO
-      ! Back substitution
-      !THRIFT_UGRID(nrho,2) = D_temp(nrho) ! x_n = d_n'
-      !DO i = nrho-1, 1, -1
-      !   THRIFT_UGRID(i,2) = D_temp(i)-C_temp(i)*THRIFT_UGRID(i+1,2) ! x_i = d_i' - c_i'*x_i+1
-      !END DO
-
 
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
@@ -345,13 +331,6 @@
 
 1000  CONTINUE
       ! Calculate enclosed currents for progress
-      !DO i = 1, nrho
-      !   THRIFT_IPLASMA= THRIFT_IPLASMA + THRIFT_JPLASMA(i,mytimestep)*pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
-      !   THRIFT_IBOOT  = THRIFT_IBOOT   + THRIFT_JBOOT(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
-      !   THRIFT_IECCD  = THRIFT_IECCD   + THRIFT_JECCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
-      !   THRIFT_INBCD  = THRIFT_INBCD   + THRIFT_JNBCD(i,mytimestep)  *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
-      !   THRIFT_IOHMIC = THRIFT_IOHMIC  + THRIFT_JOHMIC(i,mytimestep) *pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
-      !END DO
       CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IPLASMA(:,mytimestep))
       CALL curden_to_curtot(THRIFT_JBOOT(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IBOOT(:,mytimestep))
       CALL curden_to_curtot(THRIFT_JECCD(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IECCD(:,mytimestep))
