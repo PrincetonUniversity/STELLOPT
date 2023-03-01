@@ -220,13 +220,17 @@
       temp2 = temp1*THRIFT_AMINOR(nrho+2,1)**2/(2*etapara*THRIFT_RMAJOR(nrho+2,1)) ! temp2 <- tau_L/R
       ! First decay I_plasma
       THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-k/temp2)
+      WRITE(6,*) "IPLASMA EDGE PREV"
       WRITE(6,*) THRIFT_IPLASMA(nrho,itime)
-      WRITE(6,*) -k
-      WRITE(6,*) temp2
+      WRITE(6,*) "DECAY"
       WRITE(6,*) exp(-k/temp2)
+      WRITE(6,*) "IPLASMA EDGE THIS"
       WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
+      WRITE(6,*) "ISOURCE EDGE THIS"
+      WRITE(6,*) THRIFT_ISOURCE(nrho,mytimestep)
       ! I_total
       temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
+      WRITE(6,*) "I EDGE THIS"
       WRITE(6,*) temp1
 
       !! Calculate uedge for this timestep
@@ -321,8 +325,11 @@
 
       ! IPLASMA = ITOTAL - ISOURCE
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep) - THRIFT_ISOURCE(:,mytimestep)
+      WRITE(6,*) "THRIFT I THIS"
       WRITE(6,*) THRIFT_I(:,mytimestep)
+      WRITE(6,*) "THRIFT ISOURCE THIS"
       WRITE(6,*) THRIFT_ISOURCE(:,mytimestep)
+      WRITE(6,*) "THRIFT IPLASMA THIS"
       WRITE(6,*) THRIFT_IPLASMA(:,mytimestep)
 
       ! JPLASMA(i) = (IPLASMA(i)-IPLASMA(i-1))/(pi*(aminor(i)^2-aminor(i-1)^2))
@@ -330,7 +337,9 @@
 
       ! Subtract change in JSOURCE
       THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep)-(THRIFT_JSOURCE(:,mytimestep)-THRIFT_JSOURCE(:,itime))
+      WRITE(6,*) "DELTA JSOURCE THIS"
       WRITE(6,*) THRIFT_JSOURCE(:,mytimestep)-THRIFT_JSOURCE(:,itime)
+      WRITE(6,*) "THRIFT JPLASMA THIS"
       WRITE(6,*) THRIFT_JPLASMA(:,mytimestep)
 
       !temp2 = 0;
