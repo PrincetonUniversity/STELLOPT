@@ -17,7 +17,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL :: lfirst_pass, lfirst_sub_pass
-      INTEGER :: nsubsteps, i, ier
+      INTEGER :: i, ier
       REAL(rprec) :: alpha, rho, s, aminor1, aminor2, temp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
       CHARACTER(len = 16)     :: temp1_str, temp2_str

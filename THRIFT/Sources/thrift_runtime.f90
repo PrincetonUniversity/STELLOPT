@@ -68,7 +68,7 @@ MODULE thrift_runtime
 
     LOGICAL :: lverb, lvmec, lread_input, limas
     INTEGER :: nprocs_thrift, nparallel_runs, mboz, nboz, ier_paraexe, &
-               mytimestep
+               mytimestep, nsubsteps
     REAL(rprec) :: pi, pi2, invpi2, mu0, to3
     CHARACTER(256) :: id_string, prof_string, bootstrap_type, &
                       eccd_type, nbcd_type, &
