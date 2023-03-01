@@ -59,17 +59,34 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     RETURN
 END SUBROUTINE solve_tdm
 
-SUBROUTINE curden_to_curtot(j_arr, aminor_arr, i_arr)
+SUBROUTINE curden_to_curtot(j_arr, aminor_arr, i_arr,timestep)
     ! Calculates array of enclosed current from current density array
-    REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
-    REAL(rprec), DIMENSION(:), INTENT(in) :: aminor_arr
-    REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr
-    INTEGER :: i,n
-    n = SIZE(j_arr)
+    REAL(rprec), DIMENSION(:,:), INTENT(in) :: j_arr
+    REAL(rprec), DIMENSION(:,:), INTENT(in) :: aminor_arr
+    REAL(rprec), DIMENSION(:,:), INTENT(out) :: i_arr
+    INTEGER, INTENT(in) :: timestep
+    INTEGER :: i, n
+    n = SIZE(j_arr, DIM=1)
     ! I(i) = I(i-1)+J(i)*dA(i)
-    i_arr(1) = j_arr(1)*pi*(aminor_arr(2)**2-aminor_arr(1)**2)
+    i_arr(1,timestep) = j_arr(1,timestep)*pi*(aminor_arr(2,2)**2-aminor_arr(1,2)**2)
     DO i = 2, n
-        i_arr(i) = i_arr(i-1) + j_arr(i)*pi*(aminor_arr(i+1)**2-aminor_arr(i)**2)
+        i_arr(i,timestep) = i_arr(i-1,timestep) + j_arr(i,timestep)*pi*(aminor_arr(i+1,2)**2-aminor_arr(i,2)**2)
+    END DO
+    RETURN
+END SUBROUTINE curden_to_curtot
+
+SUBROUTINE curtot_to_curden(i_arr, aminor_arr, j_arr,timestep)
+    ! Calculates array of density from enclosed current array
+    REAL(rprec), DIMENSION(:,:), INTENT(in) :: i_arr
+    REAL(rprec), DIMENSION(:,:), INTENT(in) :: aminor_arr
+    REAL(rprec), DIMENSION(:,:), INTENT(out) :: j_arr
+    INTEGER, INTENT(in) :: timestep
+    INTEGER :: i, n
+    n = SIZE(i_arr, DIM=1)
+    ! J(i) = dI(i)/dA(i)
+    j_arr(1,timestep) = i_arr(1,timestep)/(pi*(aminor_arr(2,2)**2-aminor_arr(1,2)**2))
+    DO i = 2, n
+        j_arr(i,timestep) = (i_arr(i,timestep)-i_arr(i-1,timestep))/(pi*(aminor_arr(i+1,2)**2-aminor_arr(i,2)**2))
     END DO
     RETURN
 END SUBROUTINE curden_to_curtot

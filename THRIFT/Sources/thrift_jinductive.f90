@@ -214,17 +214,26 @@
       ! Calculate L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)      
       temp1 = mu0*THRIFT_RMAJOR(nrho+2,1)*&
          (log(8*THRIFT_RMAJOR(nrho+2,1)/THRIFT_AMINOR(nrho+2,1)) - 2 + 0.25) ! temp1 <- L_ext
-      ! Calculate uedge for this timestep
-      t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
-      !CALL get_prof_etapara(THRIFT_RHO(INT(nrho/2)),t,etapara)
+      ! L/R time
+      t = THRIFT_T(itime)
       CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara)
-      CALL get_prof_pprime(THRIFT_RHO(nrho),t,pprime) 
-      temp2 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*h) ! du/drho at edge
+      temp2 = temp1*THRIFT_AMINOR(nrho+2,1)**2/(2*etapara*THRIFT_RMAJOR(nrho+2,1)) ! temp2 <- tau_L/R
+      ! First decay I_plasma
+      THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(k/temp2)
+      ! I_total
+      temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
+
+      !! Calculate uedge for this timestep
+      !t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
+      !CALL get_prof_etapara(THRIFT_RHO(INT(nrho/2)),t,etapara)
+      !CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara)
+      !CALL get_prof_pprime(THRIFT_RHO(nrho),t,pprime) 
+      !temp2 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*h) ! du/drho at edge
       ! uedge [ current timestep ] =  u - dt*mu0/(2*Phi_a)*eta/Lext*dV/dphi* ...
       ! [(p' + <B^2>/mu0)*u + <B^2>/mu0*du/drho - <J.B>]  [ edge, preceding timestep ]
-      THRIFT_UEDGE(2) = THRIFT_UEDGE(1)-k*mu0/(2*THRIFT_PHIEDGE(1))*etapara/temp1*THRIFT_VP(nrho+2,1) * &  
-            (((pprime + THRIFT_BSQAV(nrho+2,1)/mu0)*THRIFT_UEDGE(1)) + THRIFT_BSQAV(nrho+2,1)/mu0*temp2 &               
-            - THRIFT_JSOURCE(nrho,itime)*THRIFT_BAV(nrho+2,1))   
+      !THRIFT_UEDGE(2) = THRIFT_UEDGE(1)-k*mu0/(2*THRIFT_PHIEDGE(1))*etapara/temp1*THRIFT_VP(nrho+2,1) * &  
+      !      (((pprime + THRIFT_BSQAV(nrho+2,1)/mu0)*THRIFT_UEDGE(1)) + THRIFT_BSQAV(nrho+2,1)/mu0*temp2 &               
+      !      - THRIFT_JSOURCE(nrho,itime)*THRIFT_BAV(nrho+2,1))   
 
       ! Populate of tridiagonal matrix and RHS; AI,CI of size nrho-1, BI,DI of size nrho
       ! (Do most of the work in one loop and fix mistakes afterwards)
@@ -234,11 +243,11 @@
          BI(i) = a2(i)-2*a4(i)/(h**2)-1/k    ! Middle diagonal ((1,nrho) wrong)
          DI(i) = -THRIFT_UGRID(i,1)/k-a1(i)  ! Right-hand side (B(nrho) wrong)
       END DO
-      AI(nrho-1)= -a3(nrho)/(3*h)+2*a4(nrho)/(h**2)          ! Lower diagonal fixed
+      !AI(nrho-1)= -a3(nrho)/(3*h)+2*a4(nrho)/(h**2)          ! Lower diagonal fixed
         BI(1)    = a2(1)-a3(1)/(2*h)-a4(1)/(h**2)-1/k  ! Middle diagonal half fixed
-        BI(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
-        DI(nrho) = -THRIFT_UGRID(nrho,1)/k-a1(nrho) &
-      - THRIFT_UEDGE(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
+      !  BI(nrho) = a2(nrho)-a3(nrho)/h+5*a4(nrho)/(h**2)-1/k! Middle diagonal fixed
+      !  DI(nrho) = -THRIFT_UGRID(nrho,1)/k-a1(nrho) &
+      !- THRIFT_UEDGE(2)*(4*a3(nrho)/(3*h)+16*a4(nrho)/(5*h**2)) ! Fix B(nrho)
 
       !s11 = BI(nrho); s12 = AI(nrho-1); temp2 = DI(nrho) ! For writing to screen
       !temp1 = -a4(nrho)/(5*h**2) ! Element at (nrho,nrho-2)
@@ -248,7 +257,7 @@
       !DI(nrho)   = DI(nrho)   - temp1*DI(nrho-1)
 
       ! Set u_nrho^n+1 = u_nrho+1^n+1, should be fine with good enough grid resolution
-      BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = THRIFT_UEDGE(2);
+      BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = temp1*mu0/(2*THRIFT_PHIEDGE(:,2));
 
       ! Solve system of equations
       CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
@@ -294,24 +303,30 @@
 
       ! ITOTAL: u = mu0 I / phip => I = 2*phi_a*rho*u/mu0
       B_der = 2*eq_phiedge/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
+      CALL curden_to_curtot(THRIFT_JSOURCE,THRIFT_AMINOR,C_der,mytimestep)
 
       ! ISOURCE(j) = sum_i=1->j JSOURCE(i)*Delta(i)A = ISOURCE(j-1)+JSOURCE(j)*Delta(j)A
       ! A(i) = pi*aminor(i)^2, Delta(i)A = A(i) - A(i-1) (AMINOR is in [0,1])
-      C_der = 0;
-      DO i = 1, nrho
-         C_der(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
-         IF (i /= 1) C_der(i) = C_der(i) + C_der(i-1)
-      END DO
+      !C_der = 0;
+      !DO i = 1, nrho
+      !   C_der(i) = THRIFT_JSOURCE(i,mytimestep)*pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2)
+      !   IF (i /= 1) C_der(i) = C_der(i) + C_der(i-1)
+      !END DO
 
       ! IPLASMA = ITOTAL - ISOURCE
       D_der = B_der - C_der
 
       ! JPLASMA(i) = (IPLASMA(i)-IPLASMA(i-1))/(pi*(aminor(i)^2-aminor(i-1)^2))
-      temp2 = 0;
-      DO i = 1, nrho
-         IF (i /= 1) temp2 = D_der(i-1) ! IPLASMA
-         THRIFT_JPLASMA(i,mytimestep) = (D_der(i)-temp2)/(pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2))
-      END DO
+      CALL curtot_to_curden(D_der,THRIFT_AMINOR,THRIFT_JPLASMA,mytimestep)
+
+      ! Subtract change in JSOURCE
+      THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep)-(THRIFT_JSOURCE(:,mytimestep)-THRIFT_JSOURCE(:,itime))
+
+      !temp2 = 0;
+      !DO i = 1, nrho
+      !   IF (i /= 1) temp2 = D_der(i-1) ! IPLASMA
+      !   THRIFT_JPLASMA(i,mytimestep) = (D_der(i)-temp2)/(pi*(THRIFT_AMINOR(i+1,2)**2-THRIFT_AMINOR(i,2)**2))
+      !END DO
 
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
@@ -331,11 +346,11 @@
 
 1000  CONTINUE
       ! Calculate enclosed currents for progress
-      CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IPLASMA(:,mytimestep))
-      CALL curden_to_curtot(THRIFT_JBOOT(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IBOOT(:,mytimestep))
-      CALL curden_to_curtot(THRIFT_JECCD(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IECCD(:,mytimestep))
-      CALL curden_to_curtot(THRIFT_JNBCD(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_INBCD(:,mytimestep))
-      CALL curden_to_curtot(THRIFT_JOHMIC(:,mytimestep),THRIFT_AMINOR(:,2),THRIFT_IOHMIC(:,mytimestep))
+      CALL curden_to_curtot(THRIFT_JPLASMA,THRIFT_AMINOR,THRIFT_IPLASMA,mytimestep)
+      CALL curden_to_curtot(THRIFT_JBOOT,THRIFT_AMINOR,THRIFT_IBOOT,mytimestep)
+      CALL curden_to_curtot(THRIFT_JECCD,THRIFT_AMINOR,THRIFT_IECCD,mytimestep)
+      CALL curden_to_curtot(THRIFT_JNBCD,THRIFT_AMINOR,THRIFT_INBCD,mytimestep)
+      CALL curden_to_curtot(THRIFT_JOHMIC,THRIFT_AMINOR,THRIFT_IOHMIC,mytimestep)
       THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
          +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
