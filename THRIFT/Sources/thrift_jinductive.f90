@@ -198,7 +198,7 @@
       WRITE(6,*) 'SIMPLE FTCS RATE OF CHANGE'
       WRITE(6,*) ''
       WRITE(6,'(ES13.5)') 0.0
-      DO i = 1,nrho
+      DO i = 2,nrho-1
          WRITE(6,'(ES13.5)') a1(i)+a2(i)*THRIFT_UGRID(i,1)+a3(i)*(THRIFT_UGRID(i+1,1)-THRIFT_UGRID(i-1,1))/(2*drho)&
          +a4(i)*(THRIFT_UGRID(i+1,1)-2*THRIFT_UGRID(i,1)+THRIFT_UGRID(i-1,1))/(drho**2)
       END DO
