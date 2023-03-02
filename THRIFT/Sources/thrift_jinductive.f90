@@ -230,7 +230,9 @@
       ! Solve system of equations
       CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
       CALL check_sol(AI,BI,CI,DI,THRIFT_UGRID(:,2),A_temp)
+      WRITE(6,*) 'RESIDUES'
       WRITE(6,*) A_temp
+      WRITE(6,*) 'END RESIDUES'
 
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
