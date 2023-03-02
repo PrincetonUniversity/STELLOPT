@@ -28,9 +28,62 @@
                                                 B_der, C_der, D_der, &
                                                 a1, a2, a3, a4, &
                                                 AI, BI, CI, DI
+                                                rho_temp
+
+!
+! STUPID DIFFUSION SUBROUTINE
+!
+! Allocations
+ALLOCATE(A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
+B_der(nrho),    C_der(nrho),    D_der(nrho), &
+a1(nrho  ), a2(nrho), a3(nrho  ), a4(nrho), &
+AI(nrho-1), BI(nrho), CI(nrho-1), DI(nrho),
+rho_temp(nrho))
+
+A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
+B_der  = 0; C_der  = 0; D_der  = 0;
+a1     = 0; a2     = 0; a3     = 0; a4     = 0;
+AI     = 0; BI     = 0; CI     = 0; DI     = 0;
+                             
+DO i=1,nrho !init
+   rho_temp(i) = (i-1)/(nrho-1)
+   D_der(i) = SIN(pi*rho_temp(i))
+END DO
+h = rho_temp(2)-rho_temp(1)
+k = THRIFT_T(5)-THRIFT_T(4)
+DO itime=1,20
+   WRITE(D_der(i))
+   DO i = 1, nrho-1
+      AI(i) = 1/h**2
+      BI(i) = -2/h**2-1/k
+      CI(i) = 1/h**2
+      DI(i) = -D_der(i)/k
+   END DO
+   CALL solve_tdm(AI,BI,CI,DI,nrho,C_der)
+   D_der = C_der
+END DO
+
+
+
+
+RETURN
+
+
+
+
+
+
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
       ! If at zero beta, copy previous value of JPLASMA onto this timestep
       IF (eq_beta == 0) THEN
@@ -86,16 +139,6 @@
       IF (t>tmax.and.THRIFT_T(mytimestep-1)<=tmax.and.(nsubsteps==1)) WRITE(6,*) &
          '! THRIFT has exceeded end time of profiles file. Proceeding with profiles at t=tmax !' 
 
-      ! Allocations
-      ALLOCATE(A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
-               B_der(nrho),    C_der(nrho),    D_der(nrho), &
-               a1(nrho  ), a2(nrho), a3(nrho  ), a4(nrho), &
-               AI(nrho-1), BI(nrho), CI(nrho-1), DI(nrho))
-
-      A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
-      B_der  = 0; C_der  = 0; D_der  = 0;
-      a1     = 0; a2     = 0; a3     = 0; a4     = 0;
-      AI     = 0; BI     = 0; CI     = 0; DI     = 0;
 
       ! Calculate ABCD (values at **current** timestep)
       IF (lverbj) THEN
@@ -163,7 +206,7 @@
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          a1(i) = A_temp(i+1)*D_der(i) ! a1 = A dD/drho
-         a2(i) = A_temp(i+1)*(1/rho*B_der(i) - B_temp(i+1)/(rho**2) + C_der(i))  ! a2 = A (1/rho dB/drho - B/rho^2 + dC/drho)  
+         a2(i) = A_temp(i+1)*(B_der(i)/rho - B_temp(i+1)/(rho**2) + C_der(i))  ! a2 = A (1/rho dB/drho - B/rho^2 + dC/drho)  
          a3(i) = A_temp(i+1)*(B_der(i) + B_temp(i+1)/rho + C_temp(i+1))      ! a3 = A (dB/drho + B/rho + C)             
          a4(i) = A_temp(i+1)*B_temp(i+1)         ! a4 = A B                    
       END DO
