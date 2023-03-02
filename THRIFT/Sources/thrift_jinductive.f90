@@ -215,7 +215,7 @@
          a4(i) = A_temp(i+1)*B_temp(i+1)         ! a4 = A B                    
       END DO
 
-      a1 = 0; a2 = 0; a3 = 0;
+      !a1 = 0; a2 = 0; a3 = 0;
       THRIFT_ALPHA1(:,mytimestep) = a1; 
       THRIFT_ALPHA2(:,mytimestep) = a2;
       THRIFT_ALPHA3(:,mytimestep) = a3;
@@ -231,30 +231,32 @@
          END DO
       END IF
       
-      ! Calculate L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)      
-      temp1 = mu0*THRIFT_RMAJOR(nrho+2,1)*&
-         (log(8*THRIFT_RMAJOR(nrho+2,1)/THRIFT_AMINOR(nrho+2,1)) - 2 + 0.25) ! temp1 <- L_ext
+      !! OLD EXPONENTIAL DECAY CODE
+      !! Calculate L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)      
+      !temp1 = mu0*THRIFT_RMAJOR(nrho+2,1)*&
+      !   (log(8*THRIFT_RMAJOR(nrho+2,1)/THRIFT_AMINOR(nrho+2,1)) - 2 + 0.25) ! temp1 <- L_ext
       ! L/R time
-      t = THRIFT_T(itime)
-      CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara) 
-      temp2 = temp1*THRIFT_AMINOR(nrho+2,1)**2/(2*etapara*THRIFT_RMAJOR(nrho+2,1)) ! temp2 <- tau_L/R
-      IF (nsubsteps==1.and.(mytimestep==1.or.(mytimestep==2.and.tstart==0))) &
-         WRITE(6,'(A25,F8.6)') 'Estimated tau_L/R    ',temp2
+      !t = THRIFT_T(itime)
+      !CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara) 
+      !temp2 = temp1*THRIFT_AMINOR(nrho+2,1)**2/(2*etapara*THRIFT_RMAJOR(nrho+2,1)) ! temp2 <- tau_L/R
+      !IF (nsubsteps==1.and.(mytimestep==1.or.(mytimestep==2.and.tstart==0))) &
+      !   WRITE(6,'(A25,F8.6)') 'Estimated tau_L/R    ',temp2
       ! Decay I_plasma at edge
-      THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-dt/temp2)
+      !THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-dt/temp2)
       !WRITE(6,*) THRIFT_IPLASMA(nrho,itime)
       !WRITE(6,*) dt
       !WRITE(6,*) temp2
       !WRITE(6,*) EXP(-dt/temp2)
       !WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
       ! I_total at edge
-      temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
+      !temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
       !WRITE(6,*) 'I EDGE PREV STEP'
       !WRITE(6,*) THRIFT_I(nrho,itime)
       !WRITE(6,*) 'I EDGE THIS STEP (PREDICTED)'
       !WRITE(6,*) temp1
 
-       !! Calculate uedge for this timestep
+      !! OLD UEDGE CODE
+      !! Calculate uedge for this timestep
       !t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
       !CALL get_prof_etapara(THRIFT_RHO(INT(nrho/2)),t,etapara)
       !CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara)
@@ -278,8 +280,13 @@
          CI(i) = a3(i)/(2*drho) +a4(i)/(drho**2)   
          DI(i) = -THRIFT_UGRID(i,1)/dt-a1(i)  
       END DO
-      ! BC2: Enclosed current at edge must equal temp1 next timestep
-      BI(nrho) = 1; AI(nrho-1) = 0; DI (nrho) = mu0*temp1/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2)) 
+      !! Old BC2
+      !! BC2: Enclosed current at edge must equal temp1 next timestep
+      !BI(nrho) = 1; AI(nrho-1) = 0; DI (nrho) = mu0*temp1/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2)) 
+      ! BC2: No gradient at edge
+      AI(nrho-1) = 0
+      BI(nrho) = a2(nrho)-2*a4(nrho)/(drho**2)-1/dt
+      DI(nrho) = -THRIFT_UGRID(nrho,1)/dt-a1(nrho)
 
       THRIFT_MATLD(:,mytimestep) = AI; 
       THRIFT_MATMD(:,mytimestep) = BI;
