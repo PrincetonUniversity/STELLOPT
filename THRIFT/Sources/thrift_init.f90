@@ -89,9 +89,9 @@
       CALL mpialloc(THRIFT_ALPHA2,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha2)
       CALL mpialloc(THRIFT_ALPHA3,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha3)
       CALL mpialloc(THRIFT_ALPHA4,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha4)
-      CALL mpialloc(THRIFT_MATLD,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matld)
+      CALL mpialloc(THRIFT_MATLD, nrho-1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matld)
       CALL mpialloc(THRIFT_MATMD,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matmd)
-      CALL mpialloc(THRIFT_MATUD,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matud)
+      CALL mpialloc(THRIFT_MATUD, nrho-1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matud)
       CALL mpialloc(THRIFT_MATRHS,  nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matrhs)       
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
