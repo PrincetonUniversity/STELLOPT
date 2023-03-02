@@ -284,6 +284,7 @@
       !! BC2: Enclosed current at edge must equal temp1 next timestep
       !BI(nrho) = 1; AI(nrho-1) = 0; DI (nrho) = mu0*temp1/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2)) 
       ! BC2: No gradient at edge
+      AI(nrho-2)=0; BI(nrho-1)=1; CI(nrho-1)=-1; DI(nrho)=0
       AI(nrho-1) = 0
       BI(nrho) = a2(nrho)-2*a4(nrho)/(drho**2)-1/dt
       DI(nrho) = -THRIFT_UGRID(nrho,1)/dt-a1(nrho)
