@@ -52,7 +52,8 @@ END DO
 h = rho_temp(2)-rho_temp(1)
 k = THRIFT_T(5)-THRIFT_T(4)
 DO itime=1,20
-   WRITE(D_der(i))
+   WRITE(6,*) itime
+   WRITE(6,*) D_der(i)
    DO i = 1, nrho-1
       AI(i) = 1/h**2
       BI(i) = -2/h**2-1/k
