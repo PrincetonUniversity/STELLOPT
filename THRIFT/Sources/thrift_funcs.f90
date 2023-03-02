@@ -59,6 +59,23 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     RETURN
 END SUBROUTINE solve_tdm
 
+SUBROUTINE check_sol(AI,BI,CI,DI,sol,residue)
+    REAL(rprec), DIMENSION(:), INTENT(in) :: AI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: BI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: CI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: DI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: sol
+    REAL(rprec), DIMENSION(:), INTENT(out) :: residue
+    INTEGER :: i,n
+    n = size(BI) 
+    residue(1) = BI(1)*sol(1)+C1(1)*sol(2)-DI(1)
+    DO i = 2, n-1
+        residue(i) = A(i-1)*sol(i-1)+B(i)*sol(i)+C(i)*sol(i+1)-DI(i)
+    END DO
+    residue(n) = A(n-1)*sol(n-1)+B(n)*sol(n)-DI(n)
+    RETURN
+END SUBROUTINE check_sol
+
 SUBROUTINE curden_to_curtot(j_arr, aminor_arr, i_arr,timestep)
     ! Calculates array of enclosed current from current density array
     REAL(rprec), DIMENSION(:,:), INTENT(in) :: j_arr
