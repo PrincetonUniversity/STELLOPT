@@ -43,8 +43,9 @@
       THRIFT_BAV      = 0; THRIFT_BSQAV    = 0
       THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0
       ! Initialize coefficients
-      THRIFT_A = 0; THRIFT_B = 0; THRIFT_C = 0; THRIFT_D = 0;
+      THRIFT_COEFF_A = 0; THRIFT_COEFF_B = 0; THRIFT_COEFF_C = 0; THRIFT_COEFF_D= 0;
       THRIFT_ALPHA1=0; THRIFT_ALPHA2=0; THRIFT_ALPHA3=0;THRIFT_ALPHA4=0;
+      THRIFT_MATLD = 0; THRIFT_MATMD = 0; THRIFT_MATUD = 0; THRIFT_MATRHS = 0;
 
 
       ! Allocate the convergence helper
