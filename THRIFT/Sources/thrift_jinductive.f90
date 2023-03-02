@@ -49,8 +49,8 @@ DO i=1,nrho !init
    rho_temp(i) = (i-1)/(nrho-1)
    D_der(i) = SIN(pi*rho_temp(i))
 END DO
-dt = rho_temp(2)-rho_temp(1)
-drho = THRIFT_T(5)-THRIFT_T(4)
+dt = THRIFT_T(5)-THRIFT_T(4)
+drho = rho_temp(2)-rho_temp(1)
 DO itime=1,20
    WRITE(6,*) 'iter'
    WRITE(6,*) itime-1
@@ -58,7 +58,7 @@ DO itime=1,20
    DO i=1, nrho
       WRITE(6,*) D_der(i)
    END DO
-   DO i = 2, nrho-1
+   DO i = 1, nrho-1
       AI(i) = 1/drho**2
       BI(i) = -2/drho**2-1/dt
       CI(i) = 1/drho**2
