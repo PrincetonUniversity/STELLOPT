@@ -273,7 +273,7 @@ RETURN
          DI(i) = -THRIFT_UGRID(i,1)/dt-a1(i)  
       END DO
       ! Solve system of equations
-      CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
+      CALL solve_tdm(AI,BI,CI,DI,nrho,THRIFT_UGRID(:,2))
       CALL check_sol(AI,BI,CI,DI,THRIFT_UGRID(:,2),B_der)
       !WRITE(6,*) 'RESIDUES'
       !WRITE(6,*) B_der
