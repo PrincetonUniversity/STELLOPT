@@ -247,10 +247,10 @@
       !WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
       ! I_total at edge
       temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
-      WRITE(6,*) 'I EDGE PREV STEP'
-      WRITE(6,*) THRIFT_I(nrho,itime)
-      WRITE(6,*) 'I EDGE THIS STEP (PREDICTED)'
-      WRITE(6,*) temp1
+      !WRITE(6,*) 'I EDGE PREV STEP'
+      !WRITE(6,*) THRIFT_I(nrho,itime)
+      !WRITE(6,*) 'I EDGE THIS STEP (PREDICTED)'
+      !WRITE(6,*) temp1
 
        !! Calculate uedge for this timestep
       !t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
