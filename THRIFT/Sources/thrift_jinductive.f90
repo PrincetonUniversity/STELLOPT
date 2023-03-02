@@ -240,11 +240,11 @@
          WRITE(6,'(A25,F8.6)') 'Estimated tau_L/R    ',temp2
       ! Decay I_plasma at edge
       THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-dt/temp2)
-      WRITE(6,*) THRIFT_IPLASMA(nrho,itime)
-      WRITE(6,*) dt
-      WRITE(6,*) temp2
-      WRITE(6,*) EXP(-dt/temp2)
-      WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
+      !WRITE(6,*) THRIFT_IPLASMA(nrho,itime)
+      !WRITE(6,*) dt
+      !WRITE(6,*) temp2
+      !WRITE(6,*) EXP(-dt/temp2)
+      !WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
       ! I_total at edge
       temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
 
@@ -266,20 +266,20 @@
       ! Populate tridiagonal matrix and RHS
       ! BC1: Enclosed current at magnetic axis = 0 always
       BI(1) = 1; CI(1) = 0; DI(1) = 0   
-      ! BC2: Enclosed current at edge must equal temp1 next timestep
-      BI(nrho) = 1; AI(nrho-1) = 0; DI (nrho) = mu0*temp1/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2)) 
-
-      DO i = 2, nrho-1 ! elsewhere
+      DO i = 2, nrho-1 ! Between boundaries
          IF (i/=nrho-1) & 
          AI(i) = -a3(i)/(2*drho)+a4(i)/(drho**2)  
          BI(i) = a2(i)-2*a4(i)/(drho**2)-1/dt     
          CI(i) = a3(i)/(2*drho) +a4(i)/(drho**2)   
          DI(i) = -THRIFT_UGRID(i,1)/dt-a1(i)  
       END DO
+      ! BC2: Enclosed current at edge must equal temp1 next timestep
+      BI(nrho) = 1; AI(nrho-1) = 0; DI (nrho) = mu0*temp1/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2)) 
+
       THRIFT_MATLD(:,mytimestep) = AI; 
       THRIFT_MATMD(:,mytimestep) = BI;
       THRIFT_MATUD(:,mytimestep) = CI;
-      THRIFT_MATRHS(:,mytimestep) = DI;
+      THRIFT_MATRHS(:,mytimestep)= DI;
 
       ! Solve system of equations
       CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
