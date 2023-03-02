@@ -56,6 +56,7 @@
          CALL write_var_hdf5(fid,'THRIFT_T',ntimesteps,ier,DBLVAR=THRIFT_T,ATT='Time Slice Grid [s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_T',ier)
          ! 2D Floats
+         ! Current densities
          CALL write_var_hdf5(fid,'THRIFT_J',nrho,ntimesteps,ier,DBLVAR=THRIFT_J,ATT='Total Current Density [A/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_J',ier)
          CALL write_var_hdf5(fid,'THRIFT_JBOOT',nrho,ntimesteps,ier,DBLVAR=THRIFT_JBOOT,ATT='Total Bootstrap Current Density [A/m^2]',ATT_NAME='description')
@@ -70,6 +71,7 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JPLASMA',ier)
          CALL write_var_hdf5(fid,'THRIFT_JSOURCE',nrho,ntimesteps,ier,DBLVAR=THRIFT_JSOURCE,ATT='Total Source Current Density [A/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JSOURCE',ier)
+         ! Currents
          CALL write_var_hdf5(fid,'THRIFT_I',nrho,ntimesteps,ier,DBLVAR=THRIFT_I,ATT='Total Enclosed Current [A]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_I',ier)
          CALL write_var_hdf5(fid,'THRIFT_IBOOT',nrho,ntimesteps,ier,DBLVAR=THRIFT_IBOOT,ATT='Total Enclosed Bootstrap Current [A]',ATT_NAME='description')
@@ -84,6 +86,23 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_IPLASMA',ier)
          CALL write_var_hdf5(fid,'THRIFT_ISOURCE',nrho,ntimesteps,ier,DBLVAR=THRIFT_ISOURCE,ATT='Total Enclosed Source Current [A]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ISOURCE',ier)
+         ! Coefficients
+         CALL write_var_hdf5(fid,'THRIFT_A',nrho,ntimesteps,ier,DBLVAR=THRIFT_A,ATT='Coefficient A',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_A',ier)
+         CALL write_var_hdf5(fid,'THRIFT_B',nrho,ntimesteps,ier,DBLVAR=THRIFT_B,ATT='Coefficient B',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_B',ier)
+         CALL write_var_hdf5(fid,'THRIFT_C',nrho,ntimesteps,ier,DBLVAR=THRIFT_C,ATT='Coefficient C',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_C',ier)
+         CALL write_var_hdf5(fid,'THRIFT_D',nrho,ntimesteps,ier,DBLVAR=THRIFT_D,ATT='Coefficient D',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_D',ier)
+         CALL write_var_hdf5(fid,'THRIFT_ALPHA1',nrho,ntimesteps,ier,DBLVAR=THRIFT_ALPHA1,ATT='Coefficient alpha_1',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ALPHA1',ier)
+         CALL write_var_hdf5(fid,'THRIFT_ALPHA2',nrho,ntimesteps,ier,DBLVAR=THRIFT_ALPHA2,ATT='Coefficient alpha_2',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ALPHA2',ier)
+         CALL write_var_hdf5(fid,'THRIFT_ALPHA3',nrho,ntimesteps,ier,DBLVAR=THRIFT_ALPHA3,ATT='Coefficient alpha_3',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ALPHA3',ier)
+         CALL write_var_hdf5(fid,'THRIFT_ALPHA4',nrho,ntimesteps,ier,DBLVAR=THRIFT_ALPHA4,ATT='Coefficient alpha_4',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ALPHA4',ier)
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'thrift_'//TRIM(id_string)//'.h5',ier)
 #else
