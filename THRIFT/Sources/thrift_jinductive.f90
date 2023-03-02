@@ -64,8 +64,13 @@ DO itime=1,20
       CI(i) = 1/drho**2
       DI(i) = -D_der(i)/dt
    END DO
+
    BI(1) = 1; CI(1) = 0; DI(1) = 0;
    BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = 0;
+   WRITE(6,*) AI
+   WRITE(6,*) BI
+   WRITE(6,*) CI
+   WRITE(6,*) DI
    CALL solve_tdm(AI,BI,CI,DI,C_der)
    D_der = C_der
 END DO
