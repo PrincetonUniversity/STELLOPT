@@ -27,7 +27,7 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: A_temp,B_temp,C_temp,D_temp,&
                                                 B_der, C_der, D_der, &
                                                 a1, a2, a3, a4, &
-                                                AI, BI, CI, DI,
+                                                AI, BI, CI, DI
 !                                                rho_temp
 !      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: datadiff
 !
