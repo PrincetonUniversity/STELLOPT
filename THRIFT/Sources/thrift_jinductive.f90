@@ -28,7 +28,7 @@
                                                 B_der, C_der, D_der, &
                                                 a1, a2, a3, a4, &
                                                 AI, BI, CI, DI,&
-                                                rho_temp
+                                                rho_temp, datadiff
 
 !
 ! STUPID DIFFUSION SUBROUTINE
@@ -38,7 +38,7 @@ ALLOCATE(A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
 B_der(nrho),    C_der(nrho),    D_der(nrho), &
 a1(nrho  ), a2(nrho), a3(nrho  ), a4(nrho), &
 AI(nrho-1), BI(nrho), CI(nrho-1), DI(nrho),&
-rho_temp(nrho))
+rho_temp(nrho), datadiff(nrho,20))
 
 A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
 B_der  = 0; C_der  = 0; D_der  = 0;
@@ -47,42 +47,26 @@ AI     = 0; BI     = 0; CI     = 0; DI     = 0;
                              
 DO i=1,nrho !init
    rho_temp(i) = (i*1.0-1)/(nrho-1)
-   D_der(i) = SIN(pi*rho_temp(i))
+   datadiff(i,1) = SIN(pi*rho_temp(i))
 END DO
 dt = THRIFT_T(5)-THRIFT_T(4)
 drho = rho_temp(2)-rho_temp(1)
-WRITE(6,*) rho_temp
-DO itime=1,20
-   !WRITE(6,*) 'iter'
-   !WRITE(6,*) itime-1
-   !WRITE(6,*) 'sol'
-   DO i=1, nrho
-      WRITE(6,*) D_der(i)
-   END DO
+DO itime=2,20
+
    DO i = 1, nrho-1
       AI(i) = 1/drho**2
       BI(i) = -2/drho**2-1/dt
       CI(i) = 1/drho**2
-      DI(i) = -D_der(i)/dt
+      DI(i) = -datadiff(i,itime-1)/dt
    END DO
 
    BI(1) = 1; CI(1) = 0; DI(1) = 0;
    BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = 0;
-   !WRITE(6,*) '---'
-   !WRITE(6,*) AI
-   !WRITE(6,*) '---'
-   !WRITE(6,*) BI
-   !WRITE(6,*) '---'
-   !WRITE(6,*) CI
-   !WRITE(6,*) '---'
-   !WRITE(6,*) DI
-   !WRITE(6,*) '---'
 
-   CALL solve_tdm(AI,BI,CI,DI,C_der)
-   D_der = C_der
+
+   CALL solve_tdm(AI,BI,CI,DI,datadiff(:,itime))
 END DO
-
-
+WRITE(6,*) DATADIFF
 
 
 RETURN
