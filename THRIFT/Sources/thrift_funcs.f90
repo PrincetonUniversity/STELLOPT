@@ -22,19 +22,19 @@ MODULE thrift_funcs
 !-----------------------------------------------------------------------
 
 CONTAINS
-SUBROUTINE solve_tdm(AI,BI,CI,DI,n,val)
+SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
     ! AI, CI are arrays of size n-1, BI,DI of size n, val of size n
     IMPLICIT NONE
-    INTEGER, INTENT(in) :: n
-    REAL(rprec), DIMENSION(2:n), INTENT(in) :: AI
-    REAL(rprec), DIMENSION(1:n), INTENT(in) :: BI
-    REAL(rprec), DIMENSION(1:n-1), INTENT(in) :: CI
-    REAL(rprec), DIMENSION(1:n), INTENT(in) :: DI
-    REAL(rprec), DIMENSION(1:n), INTENT(out) :: val
-    INTEGER :: i
+    REAL(rprec), DIMENSION(:), INTENT(in) :: AI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: BI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: CI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: DI
+    REAL(rprec), DIMENSION(:), INTENT(out) :: val
+    INTEGER :: i,n
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: c_p
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: d_p
+    n = SIZE(DI)
     ALLOCATE(c_p(n),d_p(n))
     c_p = 0; d_p = 0
     !! Forward sweep
@@ -43,10 +43,10 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,n,val)
     c_p(1) = CI(1)/BI(1) 
     d_p(1) = DI(1)/BI(1) 
     DO i = 2, n-1 
-       c_p(i) =          CI(i)/(BI(i)-AI(i)*c_p(i-1))
-       d_p(i) = (DI(i)-AI(i)*d_p(i-1))/(BI(i)-AI(i)*c_p(i-1))
+       c_p(i) =          CI(i)/(BI(i)-AI(i-1)*c_p(i-1))
+       d_p(i) = (DI(i)-AI(i-1)*d_p(i-1))/(BI(i)-AI(i-1)*c_p(i-1))
     END DO
-    c_p(n) = (DI(n)-AI(n)*d_p(n-1))/(BI(n)-AI(n)*c_p(n-1))
+    c_p(n) = (DI(n)-AI(n-1)*d_p(n-1))/(BI(n)-AI(n-1)*c_p(n-1))
     !! Back substitution
     ! x_n = d_n'
     ! x_i = d_i' - c_i'*x_i+1

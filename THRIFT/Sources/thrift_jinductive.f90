@@ -66,7 +66,7 @@ DO itime=1,20
    END DO
    BI(1) = 1; CI(1) = 0; DI(1) = 0;
    BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = 0;
-   CALL solve_tdm(AI,BI,CI,DI,nrho,C_der)
+   CALL solve_tdm(AI,BI,CI,DI,C_der)
    D_der = C_der
 END DO
 
@@ -279,7 +279,7 @@ RETURN
          DI(i) = -THRIFT_UGRID(i,1)/dt-a1(i)  
       END DO
       ! Solve system of equations
-      CALL solve_tdm(AI,BI,CI,DI,nrho,THRIFT_UGRID(:,2))
+      CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
       CALL check_sol(AI,BI,CI,DI,THRIFT_UGRID(:,2),B_der)
       !WRITE(6,*) 'RESIDUES'
       !WRITE(6,*) B_der
