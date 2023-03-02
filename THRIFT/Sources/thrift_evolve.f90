@@ -124,13 +124,13 @@
             IF (lverb .and. lfirst_pass) THEN
             
                WRITE(6,*)''
-               WRITE(6,*)'  T  NSUB BETA        ITOR     IPLASMA       IBOOT       IECCD       INBCD'
+               WRITE(6,*)'   T  NSUB BETA        ITOR     IPLASMA       IBOOT       IECCD       INBCD'
                WRITE(6,*)'==============================================================================='
             END IF
 
             ! Print progress
             IF (lverb) THEN
-             WRITE(6,'(1X,F5.3,1X,I2,1X,F5.2,5(1X,ES11.3E1))') &
+             WRITE(6,'(1X,F6.3,1X,I2,1X,F5.2,5(1X,ES11.3E1))') &
                 THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
                 THRIFT_I(nrho,mytimestep), THRIFT_IPLASMA(nrho,mytimestep), THRIFT_IBOOT(nrho,mytimestep),&
                 THRIFT_IECCD(nrho,mytimestep), THRIFT_INBCD(nrho,mytimestep)!,&

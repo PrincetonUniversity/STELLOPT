@@ -187,9 +187,6 @@
       temp2 = temp1*THRIFT_AMINOR(nrho+2,1)**2/(2*etapara*THRIFT_RMAJOR(nrho+2,1)) ! temp2 <- tau_L/R
       IF (nsubsteps==1.and.(mytimestep==1.or.(mytimestep==2.and.tstart==0))) &
       WRITE(6,'(A25,F8.6)') 'Estimated tau_L/R    ',temp2
-      WRITE(6,*) ''
-      
-
       ! Decay I_plasma at edge
       THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-dt/temp2)
       ! I_total at edge
@@ -232,8 +229,9 @@
       END DO
       ! Solve system of equations
       CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
+      CALL check_sol(AI,BI,CI,DI,THRIFT_UGRID(:,2),A_temp)
+      WRITE(6,*) A_temp
 
-      
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
