@@ -68,11 +68,11 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol,residue)
     REAL(rprec), DIMENSION(:), INTENT(out) :: residue
     INTEGER :: i,n
     n = size(BI) 
-    residue(1) = BI(1)*sol(1)+C1(1)*sol(2)-DI(1)
+    residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
     DO i = 2, n-1
-        residue(i) = A(i-1)*sol(i-1)+B(i)*sol(i)+C(i)*sol(i+1)-DI(i)
+        residue(i) = AI(i-1)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
     END DO
-    residue(n) = A(n-1)*sol(n-1)+B(n)*sol(n)-DI(n)
+    residue(n) = AI(n-1)*sol(n-1)+BI(n)*sol(n)-DI(n)
     RETURN
 END SUBROUTINE check_sol
 
