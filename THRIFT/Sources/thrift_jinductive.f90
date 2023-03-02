@@ -52,14 +52,20 @@ END DO
 dt = rho_temp(2)-rho_temp(1)
 drho = THRIFT_T(5)-THRIFT_T(4)
 DO itime=1,20
-   WRITE(6,*) itime
-   WRITE(6,*) D_der(i)
-   DO i = 1, nrho-1
-      AI(i) = 1/dt**2
-      BI(i) = -2/dt**2-1/drho
-      CI(i) = 1/dt**2
-      DI(i) = -D_der(i)/drho
+   WRITE(6,*) 'iter'
+   WRITE(6,*) itime-1
+   WRITE(6,*) 'sol'
+   DO i=1, nrho
+      WRITE(6,*) D_der(i)
    END DO
+   DO i = 2, nrho-1
+      AI(i) = 1/drho**2
+      BI(i) = -2/drho**2-1/dt
+      CI(i) = 1/drho**2
+      DI(i) = -D_der(i)/dt
+   END DO
+   BI(1) = 1; CI(1) = 0; DI(1) = 0;
+   BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = 0;
    CALL solve_tdm(AI,BI,CI,DI,nrho,C_der)
    D_der = C_der
 END DO
