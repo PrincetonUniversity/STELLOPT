@@ -179,7 +179,10 @@
          IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') &
          rho, etapara, THRIFT_VP(i,2), pprime, temp2*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
       END DO
-
+      THRIFT_A(:,mytimestep) = A_temp
+      THRIFT_B(:,mytimestep) = B_temp
+      THRIFT_C(:,mytimestep) = C_temp
+      THRIFT_D(:,mytimestep) = D_temp
       ! drho = grid step (assuming constant spacing)
       drho = THRIFT_RHO(2)-THRIFT_RHO(1) 
       ! Calculate derivatives of ABCD
@@ -210,6 +213,11 @@
          a4(i) = A_temp(i+1)*B_temp(i+1)         ! a4 = A B                    
       END DO
       a1 = 0; a2 = 0; a3 = 0;
+      THRIFT_ALPHA1(:,mytimestep) = a1; 
+      THRIFT_ALPHA2(:,mytimestep) = a2;
+      THRIFT_ALPHA3(:,mytimestep) = a3;
+      THRIFT_ALPHA4(:,mytimestep) = a4;
+
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' ALPHAS'

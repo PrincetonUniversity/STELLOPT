@@ -42,7 +42,9 @@
       THRIFT_VP       = 0; THRIFT_PHIEDGE  = 0; THRIFT_S11      = 0
       THRIFT_BAV      = 0; THRIFT_BSQAV    = 0
       THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0
-      
+      ! Initialize coefficients
+      THRIFT_A = 0; THRIFT_B = 0; THRIFT_C = 0; THRIFT_D = 0;
+      THRIFT_ALPHA1=0; THRIFT_ALPHA2=0; THRIFT_ALPHA3=0;THRIFT_ALPHA4=0;
 
 
       ! Allocate the convergence helper
