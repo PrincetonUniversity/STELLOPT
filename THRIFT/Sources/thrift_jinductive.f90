@@ -28,7 +28,8 @@
                                                 B_der, C_der, D_der, &
                                                 a1, a2, a3, a4, &
                                                 AI, BI, CI, DI,&
-                                                rho_temp, datadiff
+                                                rho_temp
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: datadiff
 
 !
 ! STUPID DIFFUSION SUBROUTINE
