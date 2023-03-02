@@ -27,7 +27,7 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: A_temp,B_temp,C_temp,D_temp,&
                                                 B_der, C_der, D_der, &
                                                 a1, a2, a3, a4, &
-                                                AI, BI, CI, DI
+                                                AI, BI, CI, DI,&
                                                 rho_temp
 
 !
@@ -37,7 +37,7 @@
 ALLOCATE(A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
 B_der(nrho),    C_der(nrho),    D_der(nrho), &
 a1(nrho  ), a2(nrho), a3(nrho  ), a4(nrho), &
-AI(nrho-1), BI(nrho), CI(nrho-1), DI(nrho),
+AI(nrho-1), BI(nrho), CI(nrho-1), DI(nrho),&
 rho_temp(nrho))
 
 A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
@@ -49,16 +49,16 @@ DO i=1,nrho !init
    rho_temp(i) = (i-1)/(nrho-1)
    D_der(i) = SIN(pi*rho_temp(i))
 END DO
-h = rho_temp(2)-rho_temp(1)
-k = THRIFT_T(5)-THRIFT_T(4)
+dt = rho_temp(2)-rho_temp(1)
+drho = THRIFT_T(5)-THRIFT_T(4)
 DO itime=1,20
    WRITE(6,*) itime
    WRITE(6,*) D_der(i)
    DO i = 1, nrho-1
-      AI(i) = 1/h**2
-      BI(i) = -2/h**2-1/k
-      CI(i) = 1/h**2
-      DI(i) = -D_der(i)/k
+      AI(i) = 1/dt**2
+      BI(i) = -2/dt**2-1/drho
+      CI(i) = 1/dt**2
+      DI(i) = -D_der(i)/drho
    END DO
    CALL solve_tdm(AI,BI,CI,DI,nrho,C_der)
    D_der = C_der
