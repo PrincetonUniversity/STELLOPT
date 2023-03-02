@@ -213,7 +213,7 @@
          a4(i) = A_temp(i+1)*B_temp(i+1)         ! a4 = A B                    
       END DO
 
-      a1 = 0; a2 = 0; a3 = 0;
+      a2 = 0; a3 = 0;
       THRIFT_ALPHA1(:,mytimestep) = a1; 
       THRIFT_ALPHA2(:,mytimestep) = a2;
       THRIFT_ALPHA3(:,mytimestep) = a3;
