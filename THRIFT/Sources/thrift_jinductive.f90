@@ -53,9 +53,9 @@ dt = THRIFT_T(5)-THRIFT_T(4)
 drho = rho_temp(2)-rho_temp(1)
 WRITE(6,*) rho_temp
 DO itime=1,20
-   WRITE(6,*) 'iter'
-   WRITE(6,*) itime-1
-   WRITE(6,*) 'sol'
+   !WRITE(6,*) 'iter'
+   !WRITE(6,*) itime-1
+   !WRITE(6,*) 'sol'
    DO i=1, nrho
       WRITE(6,*) D_der(i)
    END DO
@@ -68,15 +68,15 @@ DO itime=1,20
 
    BI(1) = 1; CI(1) = 0; DI(1) = 0;
    BI(nrho) = 1; AI(nrho-1) = 0; DI(nrho) = 0;
-   WRITE(6,*) '---'
-   WRITE(6,*) AI
-   WRITE(6,*) '---'
-   WRITE(6,*) BI
-   WRITE(6,*) '---'
-   WRITE(6,*) CI
-   WRITE(6,*) '---'
-   WRITE(6,*) DI
-   WRITE(6,*) '---'
+   !WRITE(6,*) '---'
+   !WRITE(6,*) AI
+   !WRITE(6,*) '---'
+   !WRITE(6,*) BI
+   !WRITE(6,*) '---'
+   !WRITE(6,*) CI
+   !WRITE(6,*) '---'
+   !WRITE(6,*) DI
+   !WRITE(6,*) '---'
 
    CALL solve_tdm(AI,BI,CI,DI,C_der)
    D_der = C_der
