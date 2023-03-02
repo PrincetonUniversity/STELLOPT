@@ -22,22 +22,21 @@ MODULE thrift_funcs
 !-----------------------------------------------------------------------
 
 CONTAINS
-SUBROUTINE solve_tdm(AI,BI,CI,DI,n,val)
+SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
     ! AI, CI are arrays of size n-1, BI,DI of size n, val of size n
     IMPLICIT NONE
-    INTEGER, INTENT(in) :: n
     REAL(rprec), DIMENSION(:), INTENT(in) :: AI
     REAL(rprec), DIMENSION(:), INTENT(in) :: BI
     REAL(rprec), DIMENSION(:), INTENT(in) :: CI
     REAL(rprec), DIMENSION(:), INTENT(in) :: DI
     REAL(rprec), DIMENSION(:), INTENT(out) :: val
-    INTEGER :: i
+    INTEGER :: i,n
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: c_p
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: d_p
     REAL(rprec) :: denom
     n = SIZE(DI)
-    ALLOCATE(c_p(n),d_p(n))
+    ALLOCATE(c_p(n), d_p(n))
     c_p = 0; d_p = 0
     !! Forward sweep
     ! c_1' = c_1/b_1   ;  c_i' =              c_i/(b_i - a_i*c_i-1') [1<i<=n-1]
@@ -58,7 +57,7 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,n,val)
        val(i) = d_p(i)-c_p(i)*val(i+1) 
     END DO
 
-    DEALLOCATE(c_p,d_p)
+    DEALLOCATE(c_p, d_p)
     RETURN
 END SUBROUTINE solve_tdm
 
