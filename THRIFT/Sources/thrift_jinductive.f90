@@ -46,7 +46,7 @@ a1     = 0; a2     = 0; a3     = 0; a4     = 0;
 AI     = 0; BI     = 0; CI     = 0; DI     = 0;
                              
 DO i=1,nrho !init
-   rho_temp(i) = (i-1)/(nrho-1)
+   rho_temp(i) = (i*1.0-1)/(nrho-1)
    D_der(i) = SIN(pi*rho_temp(i))
 END DO
 dt = THRIFT_T(5)-THRIFT_T(4)
