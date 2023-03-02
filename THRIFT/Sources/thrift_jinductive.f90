@@ -98,6 +98,8 @@
          CALL get_equil_Rmajor(s,THRIFT_RMAJOR(i,2), temp1, THRIFT_AMINOR(i,2),ier)
       END DO
 
+      THRIFT_S11 = ABS(THRIFT_S11)
+
       ! Calculate enclosed currents for source terms
       CALL curden_to_curtot(THRIFT_JBOOT,THRIFT_AMINOR,THRIFT_IBOOT,mytimestep)
       CALL curden_to_curtot(THRIFT_JECCD,THRIFT_AMINOR,THRIFT_IECCD,mytimestep)
