@@ -247,7 +247,10 @@
       !WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
       ! I_total at edge
       temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
-
+      WRITE(6,*) 'I EDGE PREV STEP'
+      WRITE(6,*) THRIFT_I(nrho,itime)
+      WRITE(6,*) 'I EDGE THIS STEP (PREDICTED)'
+      WRITE(6,*) temp1
 
        !! Calculate uedge for this timestep
       !t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
@@ -283,7 +286,7 @@
 
       ! Solve system of equations
       CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
-      CALL check_sol(AI,BI,CI,DI,THRIFT_UGRID(:,2),B_der)
+      !CALL check_sol(AI,BI,CI,DI,THRIFT_UGRID(:,2),B_der)
       !WRITE(6,*) 'RESIDUES'
       !WRITE(6,*) B_der
       !WRITE(6,*) 'END RESIDUES'
@@ -301,6 +304,9 @@
 
       ! ITOTAL = phip*u/mu0 = 2*phi_a*rho*u/mu0
       THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
+      WRITE(6,*) 'I EDGE THIS STEP (CALCULATED)'
+      WRITE(6,*) THRIFT_I(nrho,mytimestep)
+       
       CALL curden_to_curtot(THRIFT_JSOURCE,THRIFT_AMINOR,THRIFT_ISOURCE,mytimestep)
       ! IPLASMA = ITOTAL - ISOURCE
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep) - THRIFT_ISOURCE(:,mytimestep)
