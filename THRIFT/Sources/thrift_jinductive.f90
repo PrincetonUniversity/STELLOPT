@@ -179,10 +179,10 @@
          IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') &
          rho, etapara, THRIFT_VP(i,2), pprime, temp2*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
       END DO
-      THRIFT_A(:,mytimestep) = A_temp
-      THRIFT_B(:,mytimestep) = B_temp
-      THRIFT_C(:,mytimestep) = C_temp
-      THRIFT_D(:,mytimestep) = D_temp
+      THRIFT_COEFF_A(:,mytimestep) = A_temp
+      THRIFT_COEFF_B(:,mytimestep) = B_temp
+      THRIFT_COEFF_C(:,mytimestep) = C_temp
+      THRIFT_COEFF_D(:,mytimestep) = D_temp
       ! drho = grid step (assuming constant spacing)
       drho = THRIFT_RHO(2)-THRIFT_RHO(1) 
       ! Calculate derivatives of ABCD
@@ -212,6 +212,7 @@
          a3(i) = A_temp(i+1)*(B_der(i) + B_temp(i+1)/rho + C_temp(i+1))      ! a3 = A (dB/drho + B/rho + C)             
          a4(i) = A_temp(i+1)*B_temp(i+1)         ! a4 = A B                    
       END DO
+
       a1 = 0; a2 = 0; a3 = 0;
       THRIFT_ALPHA1(:,mytimestep) = a1; 
       THRIFT_ALPHA2(:,mytimestep) = a2;
@@ -236,20 +237,17 @@
       CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara) 
       temp2 = temp1*THRIFT_AMINOR(nrho+2,1)**2/(2*etapara*THRIFT_RMAJOR(nrho+2,1)) ! temp2 <- tau_L/R
       IF (nsubsteps==1.and.(mytimestep==1.or.(mytimestep==2.and.tstart==0))) &
-      WRITE(6,'(A25,F8.6)') 'Estimated tau_L/R    ',temp2
+         WRITE(6,'(A25,F8.6)') 'Estimated tau_L/R    ',temp2
       ! Decay I_plasma at edge
       THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-dt/temp2)
+      WRITE(6,*) THRIFT_IPLASMA(nrho,itime)
+      WRITE(6,*) dt
+      WRITE(6,*) temp2
+      WRITE(6,*) EXP(-dt/temp2)
+      WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
       ! I_total at edge
       temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
-      !WRITE(6,*)'==============================================================================='
-      !WRITE(6,*) 'SIMPLE FTCS RATE OF CHANGE'
-      !WRITE(6,*) ''
-      !WRITE(6,'(ES13.5)') 0.0
-      !DO i = 2,nrho-1
-      !   WRITE(6,'(ES13.5)') a1(i)+a2(i)*THRIFT_UGRID(i,1)+a3(i)*(THRIFT_UGRID(i+1,1)-THRIFT_UGRID(i-1,1))/(2*drho)&
-      !   +a4(i)*(THRIFT_UGRID(i+1,1)-2*THRIFT_UGRID(i,1)+THRIFT_UGRID(i-1,1))/(drho**2)
-      !END DO
-      !WRITE(6,'(ES13.5)') mu0/(2*THRIFT_PHIEDGE(2))*(THRIFT_IPLASMA(nrho,mytimestep)-THRIFT_IPLASMA(nrho,itime))
+
 
        !! Calculate uedge for this timestep
       !t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
@@ -270,7 +268,7 @@
       BI(1) = 1; CI(1) = 0; DI(1) = 0   
       ! BC2: Enclosed current at edge must equal temp1 next timestep
       BI(nrho) = 1; AI(nrho-1) = 0; DI (nrho) = mu0*temp1/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2)) 
-      a2 = 0; a3 = 0;
+
       DO i = 2, nrho-1 ! elsewhere
          IF (i/=nrho-1) & 
          AI(i) = -a3(i)/(2*drho)+a4(i)/(drho**2)  
@@ -278,6 +276,11 @@
          CI(i) = a3(i)/(2*drho) +a4(i)/(drho**2)   
          DI(i) = -THRIFT_UGRID(i,1)/dt-a1(i)  
       END DO
+      THRIFT_MATLD(:,mytimestep) = AI; 
+      THRIFT_MATMD(:,mytimestep) = BI;
+      THRIFT_MATUD(:,mytimestep) = CI;
+      THRIFT_MATRHS(:,mytimestep) = DI;
+
       ! Solve system of equations
       CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
       CALL check_sol(AI,BI,CI,DI,THRIFT_UGRID(:,2),B_der)
