@@ -304,8 +304,8 @@
 
       ! ITOTAL = phip*u/mu0 = 2*phi_a*rho*u/mu0
       THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
-      WRITE(6,*) 'I EDGE THIS STEP (CALCULATED)'
-      WRITE(6,*) THRIFT_I(nrho,mytimestep)
+      !WRITE(6,*) 'I EDGE THIS STEP (CALCULATED)'
+      !WRITE(6,*) THRIFT_I(nrho,mytimestep)
        
       CALL curden_to_curtot(THRIFT_JSOURCE,THRIFT_AMINOR,THRIFT_ISOURCE,mytimestep)
       ! IPLASMA = ITOTAL - ISOURCE
