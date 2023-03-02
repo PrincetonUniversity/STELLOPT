@@ -220,6 +220,7 @@
       BI(1) = 1; CI(1) = 0; DI(1) = 0   
       ! BC2: Enclosed current at edge must equal temp1 next timestep
       BI(nrho) = 1; AI(nrho-1) = 0; DI (nrho) = mu0*temp1/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2)) 
+      a3(nrho-1) = 0 ! no radial derivative in I at edge
       DO i = 2, nrho-1 ! elsewhere
          IF (i/=nrho-1) & 
          AI(i) = -a3(i)/(2*drho)+a4(i)/(drho**2)  
