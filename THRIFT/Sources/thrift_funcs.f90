@@ -78,6 +78,19 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol,residue)
     RETURN
 END SUBROUTINE check_sol
 
+
+SUBROUTINE extrapolate_arr(j_arr, j_extr)
+    REAL(rprec), DIMENSION(:), INTENT(IN)  :: j_arr
+    REAL(rprec), DIMENSION(:), INTENT(OUT) :: j_extr
+    INTEGER :: n
+    n = SIZE(j_arr)
+    j_extr(1) = (3*j_arr(1)-j_arr(2))/2
+    j_extr(2:n) = j_arr
+    j_extr(n) = (-j_arr(n-1)+3*j_arr(n))/2
+    RETURN
+END SUBROUTINE extrapolate_arr
+
+
 SUBROUTINE curden_to_curtot(j_arr, aminor_arr, i_arr)
     ! Calculates array of enclosed current from current density array
     REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
@@ -92,6 +105,8 @@ SUBROUTINE curden_to_curtot(j_arr, aminor_arr, i_arr)
     END DO
     RETURN
 END SUBROUTINE curden_to_curtot
+
+
 
 SUBROUTINE curtot_to_curden(i_arr, aminor_arr, j_arr)
     ! Calculates array of density from enclosed current array
@@ -120,12 +135,15 @@ SUBROUTINE deriv1_rho_o2(arr, step, der_arr)
     REAL(rprec), INTENT(in) :: step
     REAL(rprec), DIMENSION(:), INTENT(out) :: der_arr
     INTEGER :: i,n
-    n = SIZE(arr)-2
-    der_arr(1) = (arr(3)+3*arr(2)-4*arr(1))/(3*step) ! dY/drho(1) = [Y(3) + 3*Y(2) - 4*Y(1)]/3h
-    DO i = 2, n-1 ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h = [Y(i+2)-Y(i)]/2h
+    n = SIZE(arr)
+    ! Derivatives at 1,n not necessary
+    der_arr(1) = 0
+    der_arr(2) = (arr(3)+3*arr(2)-4*arr(1))/(3*step) ! dY/drho(1) = [Y(3) + 3*Y(2) - 4*Y(1)]/3h
+    DO i = 3, n-2 ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h = [Y(i+2)-Y(i)]/2h
         der_arr(i) = (arr(i+2)-arr(i))/(2*step)
     END DO
-    der_arr(n) = (4*arr(n+2)-3*arr(n+1)-arr(n))/(3*step) ! [4*Y(nrho+2) - 3*Y(nrho+1) - Y(nrho)]/3h
+    der_arr(n-1) = (4*arr(n+2)-3*arr(n+1)-arr(n))/(3*step) ! [4*Y(nrho+2) - 3*Y(nrho+1) - Y(nrho)]/3h
+    der_arr(n) = 0
     RETURN
 END SUBROUTINE deriv1_rho_o2
 
