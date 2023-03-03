@@ -88,7 +88,7 @@ SUBROUTINE curden_to_curtot(j_arr, aminor_arr, i_arr)
     ! I(i) = I(i-1)+J(i)*dA(i)
     i_arr(1) = j_arr(1)*pi*(aminor_arr(2,2)**2-aminor_arr(1,2)**2)
     DO i = 2, n
-        i_arr(i) = i_arr(i-1) + j_arr(i)*pi*(aminor_arr(i+1,2)**2-aminor_arr(i,2)**2)
+        i_arr(i) = i_arr(i-1) + j_arr(i)*pi*(aminor_arr(i,2)**2-aminor_arr(i-1,2)**2)
     END DO
     RETURN
 END SUBROUTINE curden_to_curtot
@@ -103,7 +103,7 @@ SUBROUTINE curtot_to_curden(i_arr, aminor_arr, j_arr)
     ! J(i) = dI(i)/dA(i)
     j_arr(1) = i_arr(1)/(pi*(aminor_arr(2,2)**2-aminor_arr(1,2)**2))
     DO i = 2, n
-        j_arr(i) = (i_arr(i)-i_arr(i-1))/(pi*(aminor_arr(i+1,2)**2-aminor_arr(i,2)**2))
+        j_arr(i) = (i_arr(i)-i_arr(i-1))/(pi*(aminor_arr(i,2)**2-aminor_arr(i-1,2)**2))
     END DO
     RETURN
 END SUBROUTINE curtot_to_curden
