@@ -195,7 +195,7 @@
          WRITE(6,*)'RHO       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
          WRITE(6,*)''
          DO i = 1, nrho
-            WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') THRIFT_RHO(i), a1(i), a2(i), a3(i), a4(i)
+            WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') THRIFT_RHO(i), alpha_1(i), alpha_2(i), alpha_3(i), alpha_4(i)
          END DO
       END IF
       
