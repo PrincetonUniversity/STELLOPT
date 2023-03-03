@@ -85,8 +85,8 @@ SUBROUTINE extrapolate_arr(j_arr, j_extr)
     INTEGER :: n
     n = SIZE(j_arr)
     j_extr(1) = (3*j_arr(1)-j_arr(2))/2
-    j_extr(2:n) = j_arr
-    j_extr(n) = (-j_arr(n-1)+3*j_arr(n))/2
+    j_extr(2:n+1) = j_arr
+    j_extr(n+2) = (-j_arr(n-1)+3*j_arr(n))/2
     RETURN
 END SUBROUTINE extrapolate_arr
 
