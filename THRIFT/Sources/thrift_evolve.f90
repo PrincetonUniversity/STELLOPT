@@ -107,12 +107,14 @@
             ! Update the plasma current  
             CALL thrift_jinductive
 
+
             ! Update total current
+            WRITE(6,*) "UPDATING TOTAL CURRENT"
             THRIFT_J(:,mytimestep) = (1-picard_factor)*THRIFT_J(:,mytimestep) &
                                    +  picard_factor*(   THRIFT_JPLASMA(:,mytimestep) &
                                                       + THRIFT_JSOURCE(:,mytimestep))
 
-
+            WRITE(6,*) "CHECKING CONVERGENCE"
             ! Check the convergence
             deltaj = 0
             IF (nsubsteps==1) THEN
@@ -135,8 +137,8 @@
             IF (lverb) THEN
              WRITE(6,'(1X,F6.3,1X,I2,1X,F5.2,5(1X,ES11.3))') &
                 THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
-                THRIFT_I(nrho,mytimestep), THRIFT_IPLASMA(nrho,mytimestep), THRIFT_IBOOT(nrho,mytimestep),&
-                THRIFT_IECCD(nrho,mytimestep), THRIFT_INBCD(nrho,mytimestep)!,&
+                THRIFT_I(nrho+2,mytimestep), THRIFT_IPLASMA(nrho+2,mytimestep), THRIFT_IBOOT(nrho+2,mytimestep),&
+                THRIFT_IECCD(nrho+2,mytimestep), THRIFT_INBCD(nrho+2,mytimestep)!,&
                 !THRIFT_IOHMIC,&
                 !MAXVAL(deltaj)
             END IF
