@@ -67,7 +67,7 @@
       END IF
 
       ! Allocation (part 1)
-      ALLOCATE(rho_full(nrho+2),j_full(nrho+2), jsource_full(nrho+2), jsourceprev_full(nrho+2))
+      ALLOCATE(rho_full(nrho+2),jplasma_full(nrho+2),j_full(nrho+2), jsource_full(nrho+2), jsourceprev_full(nrho+2))
 
       rho_full(1) = 0.0
       rho_full(2:nrho+1) = THRIFT_RHO
@@ -343,7 +343,7 @@
       1000  CONTINUE
       ! Calculate enclosed plasma current
       CALL curden_to_curtot(jplasma_full,THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep))
-      DEALLOCATE(rho_full, j_full, jsource_full, jsourceprev_full)
+      DEALLOCATE(rho_full, j_full, jplasma_full, jsource_full, jsourceprev_full)
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
       RETURN
 
