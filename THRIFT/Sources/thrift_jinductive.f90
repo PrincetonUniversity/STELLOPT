@@ -48,7 +48,7 @@
                B_der(nrho+2),  C_der(nrho+2),  D_der(nrho+2), &
                a1(nrho),       a2(nrho),       a3(nrho),       a4(nrho), &
                AI(nrho+2),     BI(nrho+2),     CI(nrho+2),     DI(nrho+2), &
-               rho_full(nrho+2),j_full(nrho+2),jplasma_full(nrho+2), 
+               rho_full(nrho+2),j_full(nrho+2),jplasma_full(nrho+2), &
                jsource_full(nrho+2),           jsourceprev_full(nrho+2))
 
       A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
@@ -306,7 +306,7 @@
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
 
       DEALLOCATE(A_temp, B_temp, C_temp, D_temp, B_der, C_der, D_der, &
-      a1, a2, a3, a4, AI, BI, CI, DI, rho_full,&
+      a1, a2, a3, a4, AI, BI, CI, DI, rho_full, &
       j_full,jplasma_full,jsource_full,jsourceprev_full)
 
       RETURN
