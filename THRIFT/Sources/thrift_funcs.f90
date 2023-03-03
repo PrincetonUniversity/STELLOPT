@@ -125,12 +125,6 @@ END SUBROUTINE curtot_to_curden
 
 SUBROUTINE deriv1_rho_o2(arr, step, der_arr)
     ! Calculate the first derivative (O2 accurate)
-    ! Visualisation of different grids
-    ! j=1 2    3    4    5    6    7
-    !  |  |    |    |    |    |    |  ...   arr grid
-    !     |    |    |    |    |    |  ...   der grid
-    !    i=1   2    3    4    5    6        => j(i) = i+1
-
     REAL(rprec), DIMENSION(:), INTENT(in) :: arr
     REAL(rprec), INTENT(in) :: step
     REAL(rprec), DIMENSION(:), INTENT(out) :: der_arr
@@ -139,10 +133,10 @@ SUBROUTINE deriv1_rho_o2(arr, step, der_arr)
     ! Derivatives at 1,n not necessary
     der_arr(1) = 0
     der_arr(2) = (arr(3)+3*arr(2)-4*arr(1))/(3*step) ! dY/drho(1) = [Y(3) + 3*Y(2) - 4*Y(1)]/3h
-    DO i = 3, n-2 ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h = [Y(i+2)-Y(i)]/2h
-        der_arr(i) = (arr(i+2)-arr(i))/(2*step)
+    DO i = 3, n-2 ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h 
+        der_arr(i) = (arr(i+1)-arr(i-1))/(2*step)
     END DO
-    der_arr(n-1) = (4*arr(n+2)-3*arr(n+1)-arr(n))/(3*step) ! [4*Y(nrho+2) - 3*Y(nrho+1) - Y(nrho)]/3h
+    der_arr(n-1) = (4*arr(n)-3*arr(n-1)-arr(n-2))/(3*step) ! [4*Y(n) - 3*Y(n-1) - Y(n-2)]/3h
     der_arr(n) = 0
     RETURN
 END SUBROUTINE deriv1_rho_o2
