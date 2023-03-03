@@ -243,17 +243,8 @@
       !   WRITE(6,'(A25,F8.6)') 'Estimated tau_L/R    ',temp2
       ! Decay I_plasma at edge
       !THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-dt/temp2)
-      !WRITE(6,*) THRIFT_IPLASMA(nrho,itime)
-      !WRITE(6,*) dt
-      !WRITE(6,*) temp2
-      !WRITE(6,*) EXP(-dt/temp2)
-      !WRITE(6,*) THRIFT_IPLASMA(nrho,mytimestep)
       ! I_total at edge
       !temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
-      !WRITE(6,*) 'I EDGE PREV STEP'
-      !WRITE(6,*) THRIFT_I(nrho,itime)
-      !WRITE(6,*) 'I EDGE THIS STEP (PREDICTED)'
-      !WRITE(6,*) temp1
 
       !! OLD UEDGE CODE
       !! Calculate uedge for this timestep
@@ -268,7 +259,12 @@
       !      (((pprime + THRIFT_BSQAV(nrho+2,1)/mu0)*THRIFT_UEDGE(1)) + THRIFT_BSQAV(nrho+2,1)/mu0*temp2 &               
       !      - THRIFT_JSOURCE(nrho,itime)*THRIFT_BAV(nrho+2,1))   
 
-
+      !! NEW UEDGE CODE
+      ! No gradient at edge
+      rho = THRIFT_RHO(nrho)
+      CALL get_prof_pprime(rho, t, pprime)
+      temp1 = THRIFT_BSQAV(nrho,2)/(mu0*rho)*pprime
+      temp1 = THRIFT_JSOURCE(nrho,mytimestep)*THRIFT_BAV(nrho,2)/temp1
 
       ! Populate tridiagonal matrix and RHS
       ! BC1: Enclosed current at magnetic axis = 0 always
@@ -280,14 +276,17 @@
          CI(i) = a3(i)/(2*drho) +a4(i)/(drho**2)   
          DI(i) = -THRIFT_UGRID(i,1)/dt-a1(i)  
       END DO
-      !! Old BC2
-      !! BC2: Enclosed current at edge must equal temp1 next timestep
+      !! New BC2
+      AI(nrho-1) = 0; BI(nrho) = 1; DI(nhro) = temp1
+
+
+      !! Old BC2: Enclosed current at edge must equal temp1 next timestep
       !BI(nrho) = 1; AI(nrho-1) = 0; DI (nrho) = mu0*temp1/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2)) 
-      ! BC2: No gradient at edge
-      AI(nrho-2)=0; BI(nrho-1)=1; CI(nrho-1)=-1; DI(nrho)=0
-      AI(nrho-1) = 0
-      BI(nrho) = a2(nrho)-2*a4(nrho)/(drho**2)-1/dt
-      DI(nrho) = -THRIFT_UGRID(nrho,1)/dt-a1(nrho)
+      !! Old BC2: No gradient at edge
+      !AI(nrho-2)=0; BI(nrho-1)=1; CI(nrho-1)=-1; DI(nrho)=0
+      !AI(nrho-1) = 0
+      !BI(nrho) = a2(nrho)-2*a4(nrho)/(drho**2)-1/dt
+      !DI(nrho) = -THRIFT_UGRID(nrho,1)/dt-a1(nrho)
 
       THRIFT_MATLD(:,mytimestep) = AI; 
       THRIFT_MATMD(:,mytimestep) = BI;
