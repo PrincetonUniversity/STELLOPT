@@ -328,19 +328,17 @@
          WRITE(6,*) '==============================================================================='
       END IF     
 
-      WRITE(6,*) "DEALLOCATING"
       DEALLOCATE(A_temp, B_temp, C_temp, D_temp, &
                B_der, C_der, D_der, &
                a1, a2, a3, a4, &
                AI, BI, CI, DI, &
-               rho_full, jsource_full, jplasma_full)
-      WRITE(6,*) "DEALLOCATION DONE"
-1000  CONTINUE
+               rho_full, jsource_full)
+
+      1000  CONTINUE
       ! Calculate enclosed plasma current
       CALL curden_to_curtot(jplasma_full,THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep))
+      DEALLOCATE(jplasma_full)
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
-      WRITE(6,*) 'THRIFT_JINDUCTIVE DONE'
-
       RETURN
 
 !----------------------------------------------------------------------

@@ -109,12 +109,10 @@
 
 
             ! Update total current
-            WRITE(6,*) "UPDATING TOTAL CURRENT"
             THRIFT_J(:,mytimestep) = (1-picard_factor)*THRIFT_J(:,mytimestep) &
                                    +  picard_factor*(   THRIFT_JPLASMA(:,mytimestep) &
                                                       + THRIFT_JSOURCE(:,mytimestep))
 
-            WRITE(6,*) "CHECKING CONVERGENCE"
             ! Check the convergence
             deltaj = 0
             IF (nsubsteps==1) THEN
