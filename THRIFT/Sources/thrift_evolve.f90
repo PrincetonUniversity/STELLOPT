@@ -49,7 +49,7 @@
 
 
       ! Allocate the convergence helper
-      ALLOCATE(deltaj(nrho), jold(nrho))
+      ALLOCATE(deltaj(nrho+2), jold(nrho+2))
       alpha = 0.05
       jold   = 1E3 ! so on loop 1 we don't divide by zero
       lscreen_subcodes = .TRUE.
