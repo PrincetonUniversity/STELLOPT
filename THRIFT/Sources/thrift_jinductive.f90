@@ -28,7 +28,8 @@
                                                 B_der, C_der, D_der, &
                                                 a1, a2, a3, a4, &
                                                 AI, BI, CI, DI, &
-                                                rho_full, jsource_full,jplasma_full
+                                                rho_full, & 
+                                                j_full, jsource_full, jplasma_full, jsourceprev_full
 !      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: datadiff
 !
 ! STUPID DIFFUSION SUBROUTINE
@@ -65,7 +66,8 @@
          GOTO 1000 
       END IF
 
-      ALLOCATE(rho_full(nrho+2),jsource_full(nrho+2), jplasma_full(nrho+2))
+      ! Allocation (part 1)
+      ALLOCATE(rho_full(nrho+2),j_full(nrho+2), jsource_full(nrho+2), jsourceprev_full(nrho+2))
 
       rho_full(1) = 0.0
       rho_full(2:nrho+1) = THRIFT_RHO
@@ -85,14 +87,14 @@
       THRIFT_S11 = ABS(THRIFT_S11)
 
       ! Calculate enclosed currents for source terms (tracking only)
-      CALL extrapolate_arr( THRIFT_JBOOT(:,mytimestep), jsource_full)
-      CALL curden_to_curtot(jsource_full,THRIFT_AMINOR, THRIFT_IBOOT(:,mytimestep))
-      CALL extrapolate_arr( THRIFT_JECCD(:,mytimestep), jsource_full)
-      CALL curden_to_curtot(jsource_full,THRIFT_AMINOR, THRIFT_IECCD(:,mytimestep))
-      CALL extrapolate_arr( THRIFT_JNBCD(:,mytimestep), jsource_full)
-      CALL curden_to_curtot(jsource_full,THRIFT_AMINOR, THRIFT_INBCD(:,mytimestep))
-      CALL extrapolate_arr(THRIFT_JOHMIC(:,mytimestep), jsource_full)
-      CALL curden_to_curtot(jsource_full,THRIFT_AMINOR,THRIFT_IOHMIC(:,mytimestep))
+      CALL extrapolate_arr( THRIFT_JBOOT(:,mytimestep), j_full)
+      CALL curden_to_curtot(j_full,THRIFT_AMINOR, THRIFT_IBOOT(:,mytimestep))
+      CALL extrapolate_arr( THRIFT_JECCD(:,mytimestep), j_full)
+      CALL curden_to_curtot(j_full,THRIFT_AMINOR, THRIFT_IECCD(:,mytimestep))
+      CALL extrapolate_arr( THRIFT_JNBCD(:,mytimestep), j_full)
+      CALL curden_to_curtot(j_full,THRIFT_AMINOR, THRIFT_INBCD(:,mytimestep))
+      CALL extrapolate_arr(THRIFT_JOHMIC(:,mytimestep), j_full)
+      CALL curden_to_curtot(j_full,THRIFT_AMINOR,THRIFT_IOHMIC(:,mytimestep))
       THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
          +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
 
@@ -102,9 +104,8 @@
       ! If mytimestep = 1 & tstart = 0, ITOT=0 and continue to next iteration
       ! If mytimestep = 1 & tstart > 0, ITOT=0 and calculate change in IPLASMA between tstart&t=0
       IF (mytimestep==1) THEN
-         jplasma_full = -jsource_full
-         THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
-         CALL curden_to_curtot(jplasma_full,THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep)) ! tracking
+         THRIFT_JPLASMA(:,mytimestep) = -jsource_full(2:nrho+1)
+         CALL curden_to_curtot(-jsource_full,THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep)) ! tracking
          IF (tstart==0) GOTO 1000 ! nothing 
       END IF
 
@@ -137,7 +138,7 @@
 !     CALCULATING COEFFICIENTS
 !----------------------------------------------------------------------
 
-      ! Calculate ABCD (values at **current** timestep)
+      ! Calculate ABCD (values at current timestep)
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
@@ -243,6 +244,10 @@
       !temp2 = 1+(1/(THRIFT_RHO(nrho)+drho))*(1-pprime/temp1)
       !temp1 = (source_edge*THRIFT_BAV(nrho+2,2)/temp1)/temp2
 
+!----------------------------------------------------------------------
+!     MATRIX OPERATIONS
+!----------------------------------------------------------------------
+
       ! Populate tridiagonal matrix and RHS
       ! BC1: Enclosed current at magnetic axis = 0 always
       AI(1) = 0; BI(1) = 1; CI(1) = 0; DI(1) = 0   
@@ -291,9 +296,6 @@
       ! Solve system of equations
       CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
       !CALL check_sol(AI,BI,CI,DI,THRIFT_UGRID(:,2),B_der)
-      !WRITE(6,*) 'RESIDUES'
-      !WRITE(6,*) B_der
-      !WRITE(6,*) 'END RESIDUES'
 
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
@@ -304,17 +306,22 @@
          END DO
       END IF
 
+!----------------------------------------------------------------------
+!     POST SOLVING SYSTEM OF EQUATIONS
+!----------------------------------------------------------------------
+
       ! ITOTAL = phip*u/mu0 = 2*phi_a*rho*u/mu0
       THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*(rho_full*THRIFT_UGRID(:,2))
-
-      CALL curden_to_curtot(jsource_full,THRIFT_AMINOR,THRIFT_ISOURCE(:,mytimestep))
-      ! IPLASMA = ITOTAL - ISOURCE
-      THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep) - THRIFT_ISOURCE(:,mytimestep)
-      ! JPLASMA
-      CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),THRIFT_AMINOR,jplasma_full)
+      ! JTOTAL
+      CALL curtot_to_curden(THRIFT_I(:,mytimestep),THRIFT_AMINOR,j_full)
+      THRIFT_J(:,mytimestep) = j_full(2:nrho+1)
+      ! JPLASMA = JTOTAL - JSOURCE
+      jplasma_full = j_full - jsource_full
       ! Subtract change in JSOURCE
-      THRIFT_JPLASMA(:,mytimestep)=jplasma_full(2:nrho+1)-(THRIFT_JSOURCE(:,mytimestep)-THRIFT_JSOURCE(:,prevtimestep))
-
+      CALL extrapolate_arr(THRIFT_JSOURCE(:,prevtimestep), jsourceprev_full)
+      jplasma_full = j_plasma_full - (jsource_full-jsourceprev_full)
+      THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
+      
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
          WRITE(6,*)' POST MATRIX ALGORITHM'
@@ -331,13 +338,12 @@
       DEALLOCATE(A_temp, B_temp, C_temp, D_temp, &
                B_der, C_der, D_der, &
                a1, a2, a3, a4, &
-               AI, BI, CI, DI, &
-               rho_full, jsource_full)
+               AI, BI, CI, DI)
 
       1000  CONTINUE
       ! Calculate enclosed plasma current
       CALL curden_to_curtot(jplasma_full,THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep))
-      DEALLOCATE(jplasma_full)
+      DEALLOCATE(rho_full, j_full, jsource_full, jsourceprev_full)
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
       RETURN
 
