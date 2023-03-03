@@ -18,7 +18,7 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: ier
+      INTEGER :: ier, fg
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -57,43 +57,44 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_T',ier)
          ! 2D Floats
          ! Current densities
-         CALL write_var_hdf5(fid,'THRIFT_J',nrho,ntimesteps,ier,DBLVAR=THRIFT_J,ATT='Total Current Density [A/m^2]',ATT_NAME='description')
+         nfg = SIZE(THRIFT_J(:,1))
+         CALL write_var_hdf5(fid,'THRIFT_J',nfg,ntimesteps,ier,DBLVAR=THRIFT_J,ATT='Total Current Density [A/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_J',ier)
-         CALL write_var_hdf5(fid,'THRIFT_JBOOT',nrho,ntimesteps,ier,DBLVAR=THRIFT_JBOOT,ATT='Total Bootstrap Current Density [A/m^2]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_JBOOT',nfg,ntimesteps,ier,DBLVAR=THRIFT_JBOOT,ATT='Total Bootstrap Current Density [A/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JBOOT',ier)
-         CALL write_var_hdf5(fid,'THRIFT_JECCD',nrho,ntimesteps,ier,DBLVAR=THRIFT_JECCD,ATT='Total ECCD Current Density [A/m^2]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_JECCD',nfg,ntimesteps,ier,DBLVAR=THRIFT_JECCD,ATT='Total ECCD Current Density [A/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JECCD',ier)
-         CALL write_var_hdf5(fid,'THRIFT_JNBCD',nrho,ntimesteps,ier,DBLVAR=THRIFT_JNBCD,ATT='Total NBCD Current Density [A/m^2]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_JNBCD',nfg,ntimesteps,ier,DBLVAR=THRIFT_JNBCD,ATT='Total NBCD Current Density [A/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JNBCD',ier)
-         CALL write_var_hdf5(fid,'THRIFT_JOHMIC',nrho,ntimesteps,ier,DBLVAR=THRIFT_JOHMIC,ATT='Total Ohmic Current Density [A/m^2]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_JOHMIC',nfg,ntimesteps,ier,DBLVAR=THRIFT_JOHMIC,ATT='Total Ohmic Current Density [A/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JOHMIC',ier)
-         CALL write_var_hdf5(fid,'THRIFT_JPLASMA',nrho,ntimesteps,ier,DBLVAR=THRIFT_JPLASMA,ATT='Total Plasma Response Current Density [A/m^2]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_JPLASMA',nfg,ntimesteps,ier,DBLVAR=THRIFT_JPLASMA,ATT='Total Plasma Response Current Density [A/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JPLASMA',ier)
-         CALL write_var_hdf5(fid,'THRIFT_JSOURCE',nrho,ntimesteps,ier,DBLVAR=THRIFT_JSOURCE,ATT='Total Source Current Density [A/m^2]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_JSOURCE',nfg,ntimesteps,ier,DBLVAR=THRIFT_JSOURCE,ATT='Total Source Current Density [A/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JSOURCE',ier)
          ! Currents
-         CALL write_var_hdf5(fid,'THRIFT_I',nrho,ntimesteps,ier,DBLVAR=THRIFT_I,ATT='Total Enclosed Current [A]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_I',nfg,ntimesteps,ier,DBLVAR=THRIFT_I,ATT='Total Enclosed Current [A]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_I',ier)
-         CALL write_var_hdf5(fid,'THRIFT_IBOOT',nrho,ntimesteps,ier,DBLVAR=THRIFT_IBOOT,ATT='Total Enclosed Bootstrap Current [A]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_IBOOT',nfg,ntimesteps,ier,DBLVAR=THRIFT_IBOOT,ATT='Total Enclosed Bootstrap Current [A]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_IBOOT',ier)
-         CALL write_var_hdf5(fid,'THRIFT_IECCD',nrho,ntimesteps,ier,DBLVAR=THRIFT_IECCD,ATT='Total Enclosed ECCD Current [A]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_IECCD',nfg,ntimesteps,ier,DBLVAR=THRIFT_IECCD,ATT='Total Enclosed ECCD Current [A]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_IECCD',ier)
-         CALL write_var_hdf5(fid,'THRIFT_INBCD',nrho,ntimesteps,ier,DBLVAR=THRIFT_INBCD,ATT='Total Enclosed NBCD Current [A]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_INBCD',nfg,ntimesteps,ier,DBLVAR=THRIFT_INBCD,ATT='Total Enclosed NBCD Current [A]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_INBCD',ier)
-         CALL write_var_hdf5(fid,'THRIFT_IOHMIC',nrho,ntimesteps,ier,DBLVAR=THRIFT_IOHMIC,ATT='Total Enclosed Ohmic Current [A]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_IOHMIC',nfg,ntimesteps,ier,DBLVAR=THRIFT_IOHMIC,ATT='Total Enclosed Ohmic Current [A]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_IOHMIC',ier)
-         CALL write_var_hdf5(fid,'THRIFT_IPLASMA',nrho,ntimesteps,ier,DBLVAR=THRIFT_IPLASMA,ATT='Total Enclosed Plasma Response Current [A]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_IPLASMA',nfg,ntimesteps,ier,DBLVAR=THRIFT_IPLASMA,ATT='Total Enclosed Plasma Response Current [A]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_IPLASMA',ier)
-         CALL write_var_hdf5(fid,'THRIFT_ISOURCE',nrho,ntimesteps,ier,DBLVAR=THRIFT_ISOURCE,ATT='Total Enclosed Source Current [A]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_ISOURCE',nfg,ntimesteps,ier,DBLVAR=THRIFT_ISOURCE,ATT='Total Enclosed Source Current [A]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ISOURCE',ier)
          ! Coefficients
-         CALL write_var_hdf5(fid,'THRIFT_COEFF_A',nrho+2,ntimesteps,ier,DBLVAR=THRIFT_COEFF_A,ATT='Coefficient A',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_COEFF_A',nfg,ntimesteps,ier,DBLVAR=THRIFT_COEFF_A,ATT='Coefficient A',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_A',ier)
-         CALL write_var_hdf5(fid,'THRIFT_COEFF_B',nrho+2,ntimesteps,ier,DBLVAR=THRIFT_COEFF_B,ATT='Coefficient B',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_COEFF_B',nfg,ntimesteps,ier,DBLVAR=THRIFT_COEFF_B,ATT='Coefficient B',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_B',ier)
-         CALL write_var_hdf5(fid,'THRIFT_COEFF_C',nrho+2,ntimesteps,ier,DBLVAR=THRIFT_COEFF_C,ATT='Coefficient C',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_COEFF_C',nfg,ntimesteps,ier,DBLVAR=THRIFT_COEFF_C,ATT='Coefficient C',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_C',ier)
-         CALL write_var_hdf5(fid,'THRIFT_COEFF_D',nrho+2,ntimesteps,ier,DBLVAR=THRIFT_COEFF_D,ATT='Coefficient D',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_COEFF_D',nfg,ntimesteps,ier,DBLVAR=THRIFT_COEFF_D,ATT='Coefficient D',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_D',ier)
          
          CALL write_var_hdf5(fid,'THRIFT_ALPHA1',nrho,ntimesteps,ier,DBLVAR=THRIFT_ALPHA1,ATT='Coefficient alpha_1',ATT_NAME='description')
@@ -105,13 +106,13 @@
          CALL write_var_hdf5(fid,'THRIFT_ALPHA4',nrho,ntimesteps,ier,DBLVAR=THRIFT_ALPHA4,ATT='Coefficient alpha_4',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ALPHA4',ier)
          
-         CALL write_var_hdf5(fid,'THRIFT_MATLD',nrho+1,ntimesteps,ier,DBLVAR=THRIFT_MATLD,ATT='Matrix equation lower diagonal',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_MATLD',nfg,ntimesteps,ier,DBLVAR=THRIFT_MATLD,ATT='Matrix equation lower diagonal',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATLD',ier)
-         CALL write_var_hdf5(fid,'THRIFT_MATMD',nrho+2,ntimesteps,ier,DBLVAR=THRIFT_MATMD,ATT='Matrix equation main diagonal',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_MATMD',nfg,ntimesteps,ier,DBLVAR=THRIFT_MATMD,ATT='Matrix equation main diagonal',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATMD',ier)
-         CALL write_var_hdf5(fid,'THRIFT_MATUD',nrho+1,ntimesteps,ier,DBLVAR=THRIFT_MATUD,ATT='Matrix equation upper diagonal',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_MATUD',nfg,ntimesteps,ier,DBLVAR=THRIFT_MATUD,ATT='Matrix equation upper diagonal',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATUD',ier)
-         CALL write_var_hdf5(fid,'THRIFT_MATRHS',nrho+2,ntimesteps,ier,DBLVAR=THRIFT_MATRHS,ATT='Matrix equation RHS',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_MATRHS',nfg,ntimesteps,ier,DBLVAR=THRIFT_MATRHS,ATT='Matrix equation RHS',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATRHS',ier)
                   
          CALL close_hdf5(fid,ier)
