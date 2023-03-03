@@ -67,7 +67,7 @@
       END IF
 
       ! Allocation (part 1)
-      ALLOCATE(rho_full(nrho+2),jplasma_full(nrho+2),j_full(nrho+2), jsource_full(nrho+2), jsourceprev_full(nrho+2))
+      ALLOCATE(rho_full(nrho+2),j_full(nrho+2), jsource_full(nrho+2), jsourceprev_full(nrho+2))
 
       rho_full(1) = 0.0
       rho_full(2:nrho+1) = THRIFT_RHO
@@ -102,10 +102,11 @@
       CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep), jsource_full)
            
       ! If mytimestep = 1 & tstart = 0, ITOT=0 and continue to next iteration
-      IF (mytimestep==1.and.tstart==0) THEN
-         jplasma_full = -jsource_full
-         THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
-         GOTO 1000 ! skip iteration 
+      ! If mytimestep = 1 & tstart > 0, ITOT=0 and calculate change in IPLASMA between tstart&t=0
+      IF (mytimestep==1) THEN
+         THRIFT_JPLASMA(:,mytimestep) = -jsource_full(2:nrho+1)
+         CALL curden_to_curtot(-jsource_full,THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep)) ! tracking
+         IF (tstart==0) GOTO 1000 ! nothing 
       END IF
 
       ! t = current simulation time
@@ -137,7 +138,7 @@
 !     CALCULATING COEFFICIENTS
 !----------------------------------------------------------------------
 
-      ! Calculate ABCD (values at current timestep)
+      ! Calculate ABCD (values at **current** timestep)
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
@@ -243,10 +244,6 @@
       !temp2 = 1+(1/(THRIFT_RHO(nrho)+drho))*(1-pprime/temp1)
       !temp1 = (source_edge*THRIFT_BAV(nrho+2,2)/temp1)/temp2
 
-!----------------------------------------------------------------------
-!     MATRIX OPERATIONS
-!----------------------------------------------------------------------
-
       ! Populate tridiagonal matrix and RHS
       ! BC1: Enclosed current at magnetic axis = 0 always
       AI(1) = 0; BI(1) = 1; CI(1) = 0; DI(1) = 0   
@@ -295,6 +292,9 @@
       ! Solve system of equations
       CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
       !CALL check_sol(AI,BI,CI,DI,THRIFT_UGRID(:,2),B_der)
+      !WRITE(6,*) 'RESIDUES'
+      !WRITE(6,*) B_der
+      !WRITE(6,*) 'END RESIDUES'
 
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
@@ -305,10 +305,6 @@
          END DO
       END IF
 
-!----------------------------------------------------------------------
-!     POST SOLVING SYSTEM OF EQUATIONS
-!----------------------------------------------------------------------
-
       ! ITOTAL = phip*u/mu0 = 2*phi_a*rho*u/mu0
       THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*(rho_full*THRIFT_UGRID(:,2))
       ! JTOTAL
@@ -318,7 +314,7 @@
       jplasma_full = j_full - jsource_full
       ! Subtract change in JSOURCE
       CALL extrapolate_arr(THRIFT_JSOURCE(:,prevtimestep), jsourceprev_full)
-      jplasma_full = jplasma_full - (jsource_full-jsourceprev_full)
+      jplasma_full = j_plasma_full - (jsource_full-jsourceprev_full)
       THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
       
       IF (lverbj) THEN
@@ -342,7 +338,7 @@
       1000  CONTINUE
       ! Calculate enclosed plasma current
       CALL curden_to_curtot(jplasma_full,THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep))
-      DEALLOCATE(rho_full, j_full, jplasma_full, jsource_full, jsourceprev_full)
+      DEALLOCATE(rho_full, j_full, jsource_full, jsourceprev_full)
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
       RETURN
 
