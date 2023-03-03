@@ -107,7 +107,7 @@
             ! Update the plasma current  
             CALL thrift_jinductive
 
-
+            
             ! Update total current
             THRIFT_J(:,mytimestep) = (1-picard_factor)*THRIFT_J(:,mytimestep) &
                                    +  picard_factor*(   THRIFT_JPLASMA(:,mytimestep) &
