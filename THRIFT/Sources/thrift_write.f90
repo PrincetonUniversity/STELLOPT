@@ -57,7 +57,7 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_T',ier)
          ! 2D Floats
          ! Current densities
-         nfg = SIZE(THRIFT_J(:,1))
+         nfg = nrho+2
          CALL write_var_hdf5(fid,'THRIFT_J',nrho,ntimesteps,ier,DBLVAR=THRIFT_J,ATT='Total Current Density [A/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_J',ier)
          CALL write_var_hdf5(fid,'THRIFT_JBOOT',nrho,ntimesteps,ier,DBLVAR=THRIFT_JBOOT,ATT='Total Bootstrap Current Density [A/m^2]',ATT_NAME='description')
