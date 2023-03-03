@@ -27,8 +27,8 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: A_temp,B_temp,C_temp,D_temp,&
                                                 B_der, C_der, D_der, &
                                                 a1, a2, a3, a4, &
-                                                AI, BI, CI, DI
-!                                                rho_temp
+                                                AI, BI, CI, DI,
+                                                rho_full, jsource_full
 !      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: datadiff
 !
 !
@@ -80,16 +80,15 @@
          GOTO 1000 
       END IF
 
+      ALLOCATE(rho_full(nrho+2))
+
+      rho_full(1) = 0.0
+      rho_full(2:nrho+1) = THRIFT_RHO
+      rho_full(nrho+2) = 1.0
       ! Store magnetic variables; both preceding and current timestep vals are necessary
       THRIFT_PHIEDGE(2) = eq_phiedge
       DO i = 1, nrho+2
-         IF (i==1) THEN
-            rho = 0
-         ELSE IF (i==nrho+2) THEN
-            rho = 1
-         ELSE
-            rho = THRIFT_RHO(i-1)
-         END IF
+         rho = rho_full(i)
          s = rho*rho
          ier = 0
          CALL EZspline_interp(vp_spl,rho,THRIFT_VP(i,2),ier)
@@ -101,10 +100,10 @@
       THRIFT_S11 = ABS(THRIFT_S11)
 
       ! Calculate enclosed currents for source terms
-      CALL curden_to_curtot(THRIFT_JBOOT,THRIFT_AMINOR,THRIFT_IBOOT,mytimestep)
-      CALL curden_to_curtot(THRIFT_JECCD,THRIFT_AMINOR,THRIFT_IECCD,mytimestep)
-      CALL curden_to_curtot(THRIFT_JNBCD,THRIFT_AMINOR,THRIFT_INBCD,mytimestep)
-      CALL curden_to_curtot(THRIFT_JOHMIC,THRIFT_AMINOR,THRIFT_IOHMIC,mytimestep)
+      CALL curden_to_curtot(THRIFT_JBOOT(:,mytimestep),THRIFT_AMINOR,THRIFT_IBOOT(:,mytimestep))
+      CALL curden_to_curtot(THRIFT_JECCD(:,mytimestep),THRIFT_AMINOR,THRIFT_IECCD(:,mytimestep))
+      CALL curden_to_curtot(THRIFT_JNBCD(:,mytimestep),THRIFT_AMINOR,THRIFT_INBCD(:,mytimestep))
+      CALL curden_to_curtot(THRIFT_JOHMIC(:,mytimestep),THRIFT_AMINOR,THRIFT_IOHMIC(:,mytimestep))
       THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
          +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
 
@@ -131,15 +130,15 @@
 
          '! THRIFT has exceeded end time of profiles file. Proceeding with profiles at t=tmax !' 
       ! Allocate
-         ALLOCATE(A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
-         B_der(nrho),    C_der(nrho),    D_der(nrho), &
-         a1(nrho  ), a2(nrho), a3(nrho  ), a4(nrho), &
-         AI(nrho+1), BI(nrho+2), CI(nrho+1), DI(nrho+2))
-         
-         A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
-         B_der  = 0; C_der  = 0; D_der  = 0;
-         a1     = 0; a2     = 0; a3     = 0; a4     = 0;
-         AI     = 0; BI     = 0; CI     = 0; DI     = 0;
+      ALLOCATE(A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
+      B_der(nrho),    C_der(nrho),    D_der(nrho), &
+      a1(nrho  ), a2(nrho), a3(nrho  ), a4(nrho), &
+      AI(nrho+2), BI(nrho+2), CI(nrho+2), DI(nrho+2), jsource_full(nrho+2))
+      
+      A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
+      B_der  = 0; C_der  = 0; D_der  = 0;
+      a1     = 0; a2     = 0; a3     = 0; a4     = 0;
+      AI     = 0; BI     = 0; CI     = 0; DI     = 0;
 
       ! Calculate ABCD (values at **current** timestep)
       IF (lverbj) THEN
@@ -151,25 +150,14 @@
       ! Extrapolate source current density to magnetic axis and edge
       source_axis = (3*THRIFT_JSOURCE(1,mytimestep)-THRIFT_JSOURCE(2,mytimestep))/2
       source_edge = (-THRIFT_JSOURCE(nrho-1,mytimestep)+3*THRIFT_JSOURCE(nrho,mytimestep))/2
+      
+      jsource_full(1) = source_axis
+      jsource_full(2:nrho+1) + THRIFT_JSOURCE(:,mytimestep)
+      jsource_full(nrho+2) = source_edge
 
       DO i = 1, nrho+2
-         ! calculate rho, etapara, current
-         IF (i==1) THEN 
-            rho = 0
-            !CALL get_prof_etapara(rho,t,etapara)
-            temp2 = source_axis
-            !CALL get_prof_pprime(rho,t,pprime)
-         ELSE IF (i==nrho+2) THEN ! etapara breaks when rho=1
-            rho = 1
-            !CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara)
-            temp2 = source_edge
-            !CALL get_prof_pprime(THRIFT_RHO(nrho),t,pprime)
-         ELSE
-            rho = THRIFT_RHO(i-1)
-            !CALL get_prof_etapara(rho,t,etapara)
-            temp2 = THRIFT_JSOURCE(i-1,mytimestep)
-            !CALL get_prof_pprime(rho,t,pprime)
-         END IF
+         rho = rho_full(i)
+         temp2 = jsource_full(i)
          CALL get_prof_etapara(MIN(rho,THRIFT_RHO(nrho)),t,etapara)
          CALL get_prof_pprime(rho,t,pprime)
          temp1 = 2*etapara*THRIFT_VP(i,2) ! temp1 <- 2 eta dV/dPhi 
@@ -181,10 +169,12 @@
          IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') &
          rho, etapara, THRIFT_VP(i,2), pprime, temp2*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
       END DO
+      
       THRIFT_COEFF_A(:,mytimestep) = A_temp
       THRIFT_COEFF_B(:,mytimestep) = B_temp
       THRIFT_COEFF_C(:,mytimestep) = C_temp
       THRIFT_COEFF_D(:,mytimestep) = D_temp
+      
       ! drho = grid step (assuming constant spacing)
       drho = THRIFT_RHO(2)-THRIFT_RHO(1) 
       ! Calculate derivatives of ABCD
@@ -272,7 +262,7 @@
 
       ! Populate tridiagonal matrix and RHS
       ! BC1: Enclosed current at magnetic axis = 0 always
-      BI(1) = 1; CI(1) = 0; DI(1) = 0   
+      AI(1) = 0; BI(1) = 1; CI(1) = 0; DI(1) = 0   
       DO i = 2, nrho+1 ! Between boundaries
          j = i - 1
          IF (i==2) THEN
@@ -293,10 +283,11 @@
       !! New BC2
       rho = 1
       CALL get_prof_pprime(rho,t, pprime)
-      AI(nrho+1) = -THRIFT_RHO(nrho)/drho;
+      AI(nrho+2) = -THRIFT_RHO(nrho)/drho
+      CI(nrho+2) = 0
       temp1 = THRIFT_BSQAV(nrho+2,2)/mu0
       BI(nrho+2) = 1/drho+mu0*pprime/temp1
-      DI(nrho+2) = source_edge*THRIFT_BAV(nrho+2,2)/temp1
+      DI(nrho+2) = jsource_full(nrho+2)*THRIFT_BAV(nrho+2,2)/temp1
       
       !AI(nrho-1) = 0; BI(nrho) = 1; DI(nrho) = THRIFT_RHO(nrho)/(THRIFT_RHO(nrho)+drho)*temp1
 
@@ -325,23 +316,21 @@
          WRITE(6,*) '==============================================================================='
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
          WRITE(6,*)''
-         WRITE(6,'(I4, 1X,5(2X,ES13.5))') 1, 0.0, BI(1), CI(1), DI(1),THRIFT_UGRID(1,2)
-         DO i = 2, nrho-1
-            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, AI(i-1), BI(i), CI(i), DI(i),THRIFT_UGRID(i,2)
+         DO i = 1, nrho+2
+            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, AI(i), BI(i), CI(i), DI(i),THRIFT_UGRID(i,2)
          END DO
-         WRITE(6,'(I4, 1X, 5(ES13.5,2X))') nrho, AI(nrho-1),BI(nrho), 0.0,DI(nrho), THRIFT_UGRID(nrho,2)
       END IF
 
       ! ITOTAL = phip*u/mu0 = 2*phi_a*rho*u/mu0
-      THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*(THRIFT_RHO*THRIFT_UGRID(:,2))
+      THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*(rho_full*THRIFT_UGRID(:,2))
       !WRITE(6,*) 'I EDGE THIS STEP (CALCULATED)'
       !WRITE(6,*) THRIFT_I(nrho,mytimestep)
        
-      CALL curden_to_curtot(THRIFT_JSOURCE,THRIFT_AMINOR,THRIFT_ISOURCE,mytimestep)
+      CALL curden_to_curtot(jsource_full,THRIFT_AMINOR,THRIFT_ISOURCE(:,mytimestep)))
       ! IPLASMA = ITOTAL - ISOURCE
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep) - THRIFT_ISOURCE(:,mytimestep)
       ! JPLASMA
-      CALL curtot_to_curden(THRIFT_IPLASMA,THRIFT_AMINOR,THRIFT_JPLASMA,mytimestep)
+      CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),THRIFT_AMINOR,THRIFT_JPLASMA(:,mytimestep))
       ! Subtract change in JSOURCE
       THRIFT_JPLASMA(:,mytimestep)=THRIFT_JPLASMA(:,mytimestep)-(THRIFT_JSOURCE(:,mytimestep)-THRIFT_JSOURCE(:,itime))
 
@@ -350,7 +339,7 @@
          WRITE(6,*)' POST MATRIX ALGORITHM'
          WRITE(6,*)'  i        ITOTAL        ISOURCE        IPLASMA        JPLASMA        JSOURCE'
          WRITE(6,*)''
-         DO i = 1, nrho
+         DO i = 1, nrho+2
             WRITE(6,'(I4, 1X, 5(ES13.5,2X))') &
                i, THRIFT_I(i,mytimestep), THRIFT_ISOURCE(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
                THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
@@ -360,11 +349,12 @@
       DEALLOCATE(A_temp, B_temp, C_temp, D_temp, &
                B_der, C_der, D_der, &
                a1, a2, a3, a4, &
-               AI, BI, CI, DI)
+               AI, BI, CI, DI, &
+               rho_full, jsource_full)
 
 1000  CONTINUE
       ! Calculate enclosed plasma current
-      CALL curden_to_curtot(THRIFT_JPLASMA,THRIFT_AMINOR,THRIFT_IPLASMA,mytimestep)
+      CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep))
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
       RETURN
 

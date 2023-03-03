@@ -24,7 +24,7 @@ MODULE thrift_funcs
 CONTAINS
 SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
-    ! AI, CI are arrays of size n-1, BI,DI of size n, val of size n
+    ! All arrays are of size n=nrho+2
     IMPLICIT NONE
     REAL(rprec), DIMENSION(:), INTENT(in) :: AI
     REAL(rprec), DIMENSION(:), INTENT(in) :: BI
@@ -44,10 +44,10 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     c_p(1) = CI(1)/BI(1) 
     d_p(1) = DI(1)/BI(1) 
     DO i = 2, n 
-        denom = BI(i)-AI(i-1)*c_p(i-1)
+        denom = BI(i)-AI(i)*c_p(i-1)
        IF (i/=n) & 
           c_p(i) = CI(i)/denom
-       d_p(i) = (DI(i)-AI(i-1)*d_p(i-1))/denom
+       d_p(i) = (DI(i)-AI(i)*d_p(i-1))/denom
     END DO 
     !! Back substitution
     ! x_n = d_n'
@@ -72,40 +72,38 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol,residue)
     n = size(BI) 
     residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
     DO i = 2, n-1
-        residue(i) = AI(i-1)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
+        residue(i) = AI(i)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
     END DO
-    residue(n) = AI(n-1)*sol(n-1)+BI(n)*sol(n)-DI(n)
+    residue(n) = AI(n)*sol(n-1)+BI(n)*sol(n)-DI(n)
     RETURN
 END SUBROUTINE check_sol
 
-SUBROUTINE curden_to_curtot(j_arr, aminor_arr, i_arr,timestep)
+SUBROUTINE curden_to_curtot(j_arr, aminor_arr, i_arr)
     ! Calculates array of enclosed current from current density array
-    REAL(rprec), DIMENSION(:,:), INTENT(in) :: j_arr
+    REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
     REAL(rprec), DIMENSION(:,:), INTENT(in) :: aminor_arr
-    REAL(rprec), DIMENSION(:,:), INTENT(out) :: i_arr
-    INTEGER, INTENT(in) :: timestep
+    REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr
     INTEGER :: i, n
     n = SIZE(j_arr, DIM=1)
     ! I(i) = I(i-1)+J(i)*dA(i)
-    i_arr(1,timestep) = j_arr(1,timestep)*pi*(aminor_arr(2,2)**2-aminor_arr(1,2)**2)
+    i_arr(1) = j_arr(1)*pi*(aminor_arr(2,2)**2-aminor_arr(1,2)**2)
     DO i = 2, n
-        i_arr(i,timestep) = i_arr(i-1,timestep) + j_arr(i,timestep)*pi*(aminor_arr(i+1,2)**2-aminor_arr(i,2)**2)
+        i_arr(i) = i_arr(i-1) + j_arr(i)*pi*(aminor_arr(i+1,2)**2-aminor_arr(i,2)**2)
     END DO
     RETURN
 END SUBROUTINE curden_to_curtot
 
-SUBROUTINE curtot_to_curden(i_arr, aminor_arr, j_arr,timestep)
+SUBROUTINE curtot_to_curden(i_arr, aminor_arr, j_arr)
     ! Calculates array of density from enclosed current array
-    REAL(rprec), DIMENSION(:,:), INTENT(in) :: i_arr
+    REAL(rprec), DIMENSION(:), INTENT(in) :: i_arr
     REAL(rprec), DIMENSION(:,:), INTENT(in) :: aminor_arr
-    REAL(rprec), DIMENSION(:,:), INTENT(out) :: j_arr
-    INTEGER, INTENT(in) :: timestep
+    REAL(rprec), DIMENSION(:), INTENT(out) :: j_arr
     INTEGER :: i, n
     n = SIZE(i_arr, DIM=1)
     ! J(i) = dI(i)/dA(i)
-    j_arr(1,timestep) = i_arr(1,timestep)/(pi*(aminor_arr(2,2)**2-aminor_arr(1,2)**2))
+    j_arr(1) = i_arr(1)/(pi*(aminor_arr(2,2)**2-aminor_arr(1,2)**2))
     DO i = 2, n
-        j_arr(i,timestep) = (i_arr(i,timestep)-i_arr(i-1,timestep))/(pi*(aminor_arr(i+1,2)**2-aminor_arr(i,2)**2))
+        j_arr(i) = (i_arr(i)-i_arr(i-1))/(pi*(aminor_arr(i+1,2)**2-aminor_arr(i,2)**2))
     END DO
     RETURN
 END SUBROUTINE curtot_to_curden
