@@ -309,7 +309,7 @@
       THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*(rho_full*THRIFT_UGRID(:,2))
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep)-THRIFT_ISOURCE(:,mytimestep)
       CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),THRIFT_AMINOR,jplasma_full)
-      THRIFT_JPLASMA = jplasma_full(2:nrho+1)
+      THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
       !! JTOTAL
       !CALL curtot_to_curden(THRIFT_I(:,mytimestep),THRIFT_AMINOR,j_full)
       !THRIFT_J(:,mytimestep) = j_full(2:nrho+1)
