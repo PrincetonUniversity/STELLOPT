@@ -21,7 +21,7 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: i,itime, ier
+      INTEGER :: i,j,itime, ier
       REAL(rprec) :: rho,s,drho,dt,t,s11,s12,etapara,pprime,&
                      temp1,temp2,source_axis,source_edge,Aminor,Rmajor
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: A_temp,B_temp,C_temp,D_temp,&
@@ -134,7 +134,7 @@
          ALLOCATE(A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
          B_der(nrho),    C_der(nrho),    D_der(nrho), &
          a1(nrho  ), a2(nrho), a3(nrho  ), a4(nrho), &
-         AI(nrho-1), BI(nrho), CI(nrho-1), DI(nrho))
+         AI(nrho+1), BI(nrho+2), CI(nrho+1), DI(nrho+2))
          
          A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
          B_der  = 0; C_der  = 0; D_der  = 0;
@@ -273,19 +273,30 @@
       ! Populate tridiagonal matrix and RHS
       ! BC1: Enclosed current at magnetic axis = 0 always
       BI(1) = 1; CI(1) = 0; DI(1) = 0   
-      DO i = 2, nrho-1 ! Between boundaries
-         IF (i/=nrho-1) & 
-         AI(i) = -a3(i)/(2*drho)+a4(i)/(drho**2)  
-         BI(i) = a2(i)-2*a4(i)/(drho**2)-1/dt     
-         CI(i) = a3(i)/(2*drho) +a4(i)/(drho**2)   
-         DI(i) = -THRIFT_UGRID(i,1)/dt-a1(i)  
+      DO i = 2, nrho+1 ! Between boundaries
+         j = i - 1
+         IF (i==2) THEN
+            AI(i) = -a3(j)/drho+4*a4(j)/(drho**2)
+            BI(i) = a2(j)-a3(j)/(2*drho)-6*a4(1)/(drho**2)-1/dt
+            CI(i) = a3(j)/(2*drho)+2*a4(j)/(drho**2)
+         ELSE IF (i==nrho+1) THEN
+            AI(i) = -a3(j)/(2*drho)+2*a4(j)/(drho**2)
+            BI(i) = a2(j)-a3(j)/(2*drho)-6*a4(j)/(drho**2)-1/dt
+            CI(i) = a3(j)/drho+4*a4(j)/(drho**2)
+         ELSE
+            AI(i) = -a3(j)/(2*drho)+a4(j)/(drho**2)  
+            BI(i) = a2(j)-2*a4(j)/(drho**2)-1/dt     
+            CI(i) = a3(j)/(2*drho) +a4(j)/(drho**2)  
+         END IF
+         DI(i) = -THRIFT_UGRID(j,1)/dt-a1(j)  
       END DO
       !! New BC2
-      CALL get_prof_pprime(THRIFT_RHO(nrho),t, pprime)
-      AI(nrho-1) = -THRIFT_RHO(nrho-1)/(2*drho);
-      temp1 = THRIFT_BSQAV(nrho+1,2)/(mu0*THRIFT_RHO(nrho))
-      BI(nrho) = THRIFT_RHO(nrho)/(2*drho)+pprime/temp1
-      DI(nrho) = THRIFT_JSOURCE(nrho,mytimestep)*THRIFT_BAV(nrho+1,2)/temp1
+      rho = 1
+      CALL get_prof_pprime(rho,t, pprime)
+      AI(nrho+1) = -THRIFT_RHO(nrho)/drho;
+      temp1 = THRIFT_BSQAV(nrho+2,2)/mu0
+      BI(nrho+2) = 1/drho+mu0*pprime/temp1
+      DI(nrho+2) = source_edge*THRIFT_BAV(nrho+2,2)/temp1
       
       !AI(nrho-1) = 0; BI(nrho) = 1; DI(nrho) = THRIFT_RHO(nrho)/(THRIFT_RHO(nrho)+drho)*temp1
 
