@@ -278,7 +278,7 @@
          DI(i) = -THRIFT_UGRID(i,1)/dt-a1(i)  
       END DO
       !! New BC2
-      AI(nrho-1) = 0; BI(nrho) = 1; DI(nrho) = THRIFT_RHO(nrho)/(TRIFT_RHO(nrho)+drho)*temp1
+      AI(nrho-1) = 0; BI(nrho) = 1; DI(nrho) = THRIFT_RHO(nrho)/(THRIFT_RHO(nrho)+drho)*temp1
 
 
       !! Old BC2: Enclosed current at edge must equal temp1 next timestep
