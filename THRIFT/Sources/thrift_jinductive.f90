@@ -107,7 +107,7 @@
       DO i = 1, nrho+2
          rho = rho_full(i)
          temp2 = jsource_full(i)
-         CALL get_prof_etapara(rho),mytime,etapara)
+         CALL get_prof_etapara(rho,mytime,etapara)
          CALL get_prof_pprime(rho,mytime,pprime)
          temp1 = 2*etapara*THRIFT_VP(i,2) ! temp1 <- 2 eta dV/dPhi 
          IF (i > 1) &
