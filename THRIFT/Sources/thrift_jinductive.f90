@@ -104,8 +104,9 @@
       ! If mytimestep = 1 & tstart = 0, ITOT=0 and continue to next iteration
       ! If mytimestep = 1 & tstart > 0, ITOT=0 and calculate change in IPLASMA between tstart&t=0
       IF (mytimestep==1) THEN
-         THRIFT_JPLASMA(:,mytimestep) = -jsource_full(2:nrho+1)
-         CALL curden_to_curtot(-jsource_full,THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep)) ! tracking
+         jplasma_full = -jsource_full
+         THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
+         CALL curden_to_curtot(jplasma_full,THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep)) ! tracking
          IF (tstart==0) GOTO 1000 ! nothing 
       END IF
 
