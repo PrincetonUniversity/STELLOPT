@@ -37,15 +37,15 @@
       THRIFT_I        = 0; THRIFT_IPLASMA  = 0; THRIFT_ISOURCE  = 0
       THRIFT_IBOOT    = 0; THRIFT_IECCD    = 0; THRIFT_INBCD    = 0
       THRIFT_IOHMIC   = 0;     
-      ! Initialize remainder
+      ! Initialize magnetic variables
       THRIFT_UGRID    = 0; THRIFT_UEDGE    = 0
       THRIFT_VP       = 0; THRIFT_PHIEDGE  = 0; THRIFT_S11      = 0
       THRIFT_BAV      = 0; THRIFT_BSQAV    = 0
       THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0
       ! Initialize coefficients
-      THRIFT_COEFF_A = 0; THRIFT_COEFF_B = 0; THRIFT_COEFF_C = 0; THRIFT_COEFF_D= 0;
-      THRIFT_ALPHA1=0; THRIFT_ALPHA2=0; THRIFT_ALPHA3=0;THRIFT_ALPHA4=0;
-      THRIFT_MATLD = 0; THRIFT_MATMD = 0; THRIFT_MATUD = 0; THRIFT_MATRHS = 0;
+      THRIFT_COEFF_A = 0; THRIFT_COEFF_B = 0; THRIFT_COEFF_C = 0; THRIFT_COEFF_D = 0;
+      THRIFT_ALPHA1  = 0; THRIFT_ALPHA2  = 0; THRIFT_ALPHA3  = 0; THRIFT_ALPHA4  = 0;
+      THRIFT_MATLD   = 0; THRIFT_MATMD   = 0; THRIFT_MATUD   = 0; THRIFT_MATRHS  = 0;
 
 
       ! Allocate the convergence helper
@@ -109,9 +109,14 @@
 
             
             ! Update total current
-            THRIFT_J(:,mytimestep) = (1-picard_factor)*THRIFT_J(:,mytimestep) &
-                                   +  picard_factor*(   THRIFT_JPLASMA(:,mytimestep) &
-                                                      + THRIFT_JSOURCE(:,mytimestep))
+            IF (nsubsteps==1) THEN
+              THRIFT_J(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep) &
+                                    +  THRIFT_JSOURCE(:,mytimestep)
+            ELSE
+              THRIFT_J(:,mytimestep) = THRIFT_J(:,mytimestep)*(1-picard_factor) &
+                     +  picard_factor*(THRIFT_JPLASMA(:,mytimestep) &
+                                     + THRIFT_JSOURCE(:,mytimestep))
+            END IF
 
             ! Check the convergence
             deltaj = 0
