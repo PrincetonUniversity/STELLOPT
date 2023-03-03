@@ -309,12 +309,12 @@
       THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*(rho_full*THRIFT_UGRID(:,2))
       ! JTOTAL
       CALL curtot_to_curden(THRIFT_I(:,mytimestep),THRIFT_AMINOR,j_full)
-      THRIFT_J(:,mytimestep) = j_full(2:nrho+1)
+      !THRIFT_J(:,mytimestep) = j_full(2:nrho+1)
       ! JPLASMA = JTOTAL - JSOURCE
       jplasma_full = j_full - jsource_full
       ! Subtract change in JSOURCE
       CALL extrapolate_arr(THRIFT_JSOURCE(:,prevtimestep), jsourceprev_full)
-      !jplasma_full = jplasma_full - (jsource_full-jsourceprev_full)
+      jplasma_full = jplasma_full - (jsource_full-jsourceprev_full)
       THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
       
       IF (lverbj) THEN
