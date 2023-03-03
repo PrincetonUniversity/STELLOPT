@@ -34,7 +34,7 @@
 !----------------------------------------------------------------------
 
       ! Read the Input Namelist for THRIFT
-      IF (lverb) WRITE(6,'(A)') '----- Input Parameters -----'
+      IF (lverb) WRITE(6,'(A)') '----- THRIFT Input Parameters -----'
       CALL init_thrift_input
 
       ! Read the THRIFT input
@@ -50,9 +50,14 @@
       ! Output to screen
       IF (lverb) THEN 
          WRITE(6,'(A)') '   FILE:             input.' // TRIM(id_string)
-         WRITE(6,'(A)') '   BOOTSTRAP MODEL: ' // TRIM(bootstrap_type)
-         WRITE(6,'(A)') '   ECCD MODEL:      ' // TRIM(eccd_type)
-         WRITE(6,'(A)') '   NBCD MODEL:      ' // TRIM(nbcd_type)
+         WRITE(6,'(A)') '   BOOTSTRAP MODEL:  ' // TRIM(bootstrap_type)
+         WRITE(6,'(A)') '   ECCD MODEL:       ' // TRIM(eccd_type)
+         WRITE(6,'(A)') '   NBCD MODEL:       ' // TRIM(nbcd_type)
+         WRITE(6,'(A)') ''
+         WRITE(6,'(A11,I5)') '   NRHO:   ', nrho
+         WRITE(6,'(A11,I5)') '   NT:     ', ntimesteps
+         WRITE(6,'(A11,F8.4)') '   TSTART: ', tstart
+         WRITE(6,'(A11,F8.4)') '   TEND:   ', tend
       END IF
 
       ! Create the worker pool
