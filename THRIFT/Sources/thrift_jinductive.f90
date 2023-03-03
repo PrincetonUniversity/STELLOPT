@@ -111,7 +111,7 @@
       ! If mytimestep = 1 & tstart > 0, ITOT=0 and calculate change in IPLASMA between tstart&t=0
       IF (mytimestep==1) THEN
          THRIFT_JPLASMA(:,mytimestep)=-THRIFT_JSOURCE(:,mytimestep) 
-         CALL curden_to_curtot(THRIFT_JPLASMA,THRIFT_AMINOR,THRIFT_IPLASMA,mytimestep)
+         CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep))
          IF (tstart==0) GOTO 1000
       END IF
 
@@ -152,7 +152,7 @@
       source_edge = (-THRIFT_JSOURCE(nrho-1,mytimestep)+3*THRIFT_JSOURCE(nrho,mytimestep))/2
       
       jsource_full(1) = source_axis
-      jsource_full(2:nrho+1) + THRIFT_JSOURCE(:,mytimestep)
+      jsource_full(2:nrho+1) = THRIFT_JSOURCE(:,mytimestep)
       jsource_full(nrho+2) = source_edge
 
       DO i = 1, nrho+2
@@ -326,7 +326,7 @@
       !WRITE(6,*) 'I EDGE THIS STEP (CALCULATED)'
       !WRITE(6,*) THRIFT_I(nrho,mytimestep)
        
-      CALL curden_to_curtot(jsource_full,THRIFT_AMINOR,THRIFT_ISOURCE(:,mytimestep)))
+      CALL curden_to_curtot(jsource_full,THRIFT_AMINOR,THRIFT_ISOURCE(:,mytimestep))
       ! IPLASMA = ITOTAL - ISOURCE
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep) - THRIFT_ISOURCE(:,mytimestep)
       ! JPLASMA
