@@ -261,10 +261,11 @@
 
       !! NEW UEDGE CODE
       ! No gradient at edge
-      rho = THRIFT_RHO(nrho)
+      rho = 1
       CALL get_prof_pprime(rho, t, pprime)
-      temp1 = THRIFT_BSQAV(nrho,2)/(mu0*rho)*pprime
-      temp1 = THRIFT_JSOURCE(nrho,mytimestep)*THRIFT_BAV(nrho,2)/temp1
+      temp1 = THRIFT_BSQAV(nrho+2,2)/mu0+pprime
+      temp2 = 1+(1/(THRIFT_RHO(nrho)+drho))*(1-pprime/temp1)
+      temp1 = (source_edge*THRIFT_BAV(nrho+2,2)/temp1)/temp2
 
       ! Populate tridiagonal matrix and RHS
       ! BC1: Enclosed current at magnetic axis = 0 always
@@ -277,7 +278,7 @@
          DI(i) = -THRIFT_UGRID(i,1)/dt-a1(i)  
       END DO
       !! New BC2
-      AI(nrho-1) = 0; BI(nrho) = 1; DI(nrho) = temp1
+      AI(nrho-1) = 0; BI(nrho) = 1; DI(nrho) = THRIFT_RHO(nrho)/(TRIFT_RHO(nrho)+drho)*temp1
 
 
       !! Old BC2: Enclosed current at edge must equal temp1 next timestep
