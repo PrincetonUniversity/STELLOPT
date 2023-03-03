@@ -102,11 +102,10 @@
       CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep), jsource_full)
            
       ! If mytimestep = 1 & tstart = 0, ITOT=0 and continue to next iteration
-      ! If mytimestep = 1 & tstart > 0, ITOT=0 and calculate change in IPLASMA between tstart&t=0
-      IF (mytimestep==1) THEN
-         THRIFT_JPLASMA(:,mytimestep) = -jsource_full(2:nrho+1)
-         CALL curden_to_curtot(-jsource_full,THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep)) ! tracking
-         IF (tstart==0) GOTO 1000 ! nothing 
+      IF (mytimestep==1.and.tstart==0) THEN
+         jplasma_full = -jsource_full
+         THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
+         GOTO 1000 ! skip iteration 
       END IF
 
       ! t = current simulation time
@@ -317,9 +316,11 @@
       THRIFT_J(:,mytimestep) = j_full(2:nrho+1)
       ! JPLASMA = JTOTAL - JSOURCE
       jplasma_full = j_full - jsource_full
+      WRITE(6,*) jplasma_full
       ! Subtract change in JSOURCE
       CALL extrapolate_arr(THRIFT_JSOURCE(:,prevtimestep), jsourceprev_full)
       jplasma_full = jplasma_full - (jsource_full-jsourceprev_full)
+      write(6,*) jplasma_full
       THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
       
       IF (lverbj) THEN
