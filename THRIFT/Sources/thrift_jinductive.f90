@@ -137,7 +137,7 @@
          DO i = 1, nrho+2
             WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') rho_full(i), &
             THRIFT_COEFF_A(i,mytimestep), THRIFT_COEFF_B(i,mytimestep),& 
-            THRIFT_COEFF_C(i,mytimestep), THRIFT_COEFF_D(i,mytimestep)(i),&
+            THRIFT_COEFF_C(i,mytimestep), THRIFT_COEFF_D(i,mytimestep),&
             B_der(i), C_der(i), D_der(i)
          END DO
       END IF
@@ -237,7 +237,7 @@
             THRIFT_MATMD(i,mytimestep) = a2 - 2*a4/(drho**2) - 1/dt     
             THRIFT_MATUD(i,mytimestep) = a3/(2*drho) + a4/(drho**2)  
          END IF
-         THRIFT_MATRHS(i) = - THRIFT_UGRID(j,1)/dt - a1 
+         THRIFT_MATRHS(i,mytimestep) = - THRIFT_UGRID(j,1)/dt - a1 
       END DO
 
       ! Plasma edge (rho=1)
@@ -317,7 +317,7 @@
          +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
 
-      DEALLOCATE( A_temp,  B_temp,  C_temp,  D_temp,  B_der, C_der, D_der, &
+      DEALLOCATE( B_der, C_der, D_der, &
                   AI,      BI,      CI,      DI, &
                   rho_full, j_full, jplasma_full, jsource_full, jsourceprev_full)
 
