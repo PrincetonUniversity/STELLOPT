@@ -316,11 +316,9 @@
       THRIFT_J(:,mytimestep) = j_full(2:nrho+1)
       ! JPLASMA = JTOTAL - JSOURCE
       jplasma_full = j_full - jsource_full
-      WRITE(6,*) jplasma_full
       ! Subtract change in JSOURCE
       CALL extrapolate_arr(THRIFT_JSOURCE(:,prevtimestep), jsourceprev_full)
       jplasma_full = jplasma_full - (jsource_full-jsourceprev_full)
-      write(6,*) jplasma_full
       THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
       
       IF (lverbj) THEN
