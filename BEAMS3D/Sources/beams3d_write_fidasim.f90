@@ -805,7 +805,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    INTEGER(HID_T) ::  qid_gid,temp_gid
    LOGICAL :: lexist
    CHARACTER(LEN=1000) :: line
-   CHARACTER(64) :: comment,nbi_data_source, spec_data_source,runid,device,name,system,&
+   CHARACTER(128) :: comment,nbi_data_source, spec_data_source,runid,device,name,system,&
                      tables_file,equilibrium_file,geometry_file,distribution_file,neutrals_file,result_dir
    CHARACTER(20), DIMENSION(MAXCHAN) :: id
    DOUBLE PRECISION, DIMENSION(3) :: origin,current_fractions,src,axis_nbi,  divy,   divz
