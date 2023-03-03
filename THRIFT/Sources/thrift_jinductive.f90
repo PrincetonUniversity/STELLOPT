@@ -23,10 +23,11 @@
       IMPLICIT NONE
       INTEGER :: i,j,prevtimestep, ier
       REAL(rprec) :: rho,s,drho,dt,mytime,s11,s12,etapara,pprime,&
-                     temp1,temp2,source_axis,source_edge,Aminor,Rmajor
+                     temp1,temp2,source_axis,source_edge,Aminor,Rmajor,&
+                     a1,a2,a3,a4
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: A_temp,B_temp,C_temp,D_temp,&
                                                 B_der, C_der, D_der, &
-                                                a1, a2, a3, a4, &
+                                                alpha_1, alpha_2, alpha_3, alpha_4, &
                                                 AI, BI, CI, DI, &
                                                 rho_full, & 
                                                 j_full, jsource_full, jplasma_full, jsourceprev_full
@@ -46,16 +47,17 @@
       ! Allocate
       ALLOCATE(A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
                B_der(nrho+2),  C_der(nrho+2),  D_der(nrho+2), &
-               a1(nrho),       a2(nrho),       a3(nrho),       a4(nrho), &
+               alpha_1(nrho),  alpha_2(nrho),  alpha_3(nrho),  alpha_4(nrho), &
                AI(nrho+2),     BI(nrho+2),     CI(nrho+2),     DI(nrho+2), &
                rho_full(nrho+2),j_full(nrho+2),jplasma_full(nrho+2), &
                jsource_full(nrho+2),           jsourceprev_full(nrho+2))
 
       A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
-      B_der  = 0; C_der  = 0; D_der  = 0; rho_full=0;
-      a1     = 0; a2     = 0; a3     = 0; a4     = 0;
+      B_der  = 0; C_der  = 0; D_der  = 0; 
+      alpha_1= 0; alpha_2= 0; alpha_3= 0; alpha_4= 0;
       AI     = 0; BI     = 0; CI     = 0; DI     = 0;
-
+      
+      rho_full=0;
       j_full = 0; 
       jplasma_full = 0;
       jsource_full = 0; 
@@ -99,6 +101,13 @@
 !----------------------------------------------------------------------
 !     CALCULATING COEFFICIENTS ABCD
 !----------------------------------------------------------------------
+!     Calculate ABCD (everything evaluated at rho_j)
+!     > A(j) = S11/(4*rho*Phi_edge^2)
+!     > B(j) = 2*etapara*dV/dPhi*<B^2>/mu_0
+!     > C(j) = 2*etapara*dV/dPhi*dp/drho
+!     > D(j) =-2*etapara*dV/dPhi*<Js.B>
+!----------------------------------------------------------------------
+
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
@@ -119,14 +128,16 @@
            rho, etapara, THRIFT_VP(i,2), pprime, temp2*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
       END DO
       
+      !! REWRITE: GET RID OF ABCD_TEMP AND USE THRIFT_COEFF INSTEAD
       THRIFT_COEFF_A(:,mytimestep) = A_temp
       THRIFT_COEFF_B(:,mytimestep) = B_temp
       THRIFT_COEFF_C(:,mytimestep) = C_temp
       THRIFT_COEFF_D(:,mytimestep) = D_temp
-      
-      ! drho = grid step (assuming constant spacing)
+!----------------------------------------------------------------------
+!     Calculate derivatives of ABCD here (see deriv1_rho_o2)
+!     > drho = grid spacing
+!----------------------------------------------------------------------
       drho = THRIFT_RHO(2)-THRIFT_RHO(1) 
-      ! Calculate derivatives of ABCD
       CALL deriv1_rho_o2(B_temp, drho, B_der)
       CALL deriv1_rho_o2(C_temp, drho, C_der)
       CALL deriv1_rho_o2(D_temp, drho, D_der)
@@ -141,21 +152,42 @@
              B_der(i), C_der(i), D_der(i)
          END DO
       END IF
+!----------------------------------------------------------------------
+!     CALCULATING COEFFICIENTS ALPHA
+!----------------------------------------------------------------------
+!     Calculate alpha_1234 (everything evaluated at rho_j)
+!     > a1(j) = A*dD/drho
+!     > a2(j) = A*((dB/drho)/rho - B/rho^2 + dC/drho)
+!     > a3(j) = A*(dB/drho + B/rho + C)
+!     > a4(j) = A*B
+!
+!     NOTE: (Derivatives of) ABCD are required on the full [0,1] grid,
+!     so their arrays are of size nrho+2. Alphas are only needed on the
+!     (0,1) (THRIFT_RHO) grid, so have arrays of size nrho. Hence indices
+!     for the RHS of these equations are shifted by 1 (j = i+1)
+!
+!         0                                1        rho
+!         |  |     |     | ... |     |     |  |     ABCD:  j
+!        j=1 2     3                 n    n+1 n+2
+!            |     |     | ... |     |     |        a1234: i
+!           i=1    2                n-1    n        => j = i + 1
+!
+!----------------------------------------------------------------------
 
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          j = i + 1
-         a1(i) = A_temp(j)*D_der(j) ! a1 = A dD/drho
-         a2(i) = A_temp(j)*(B_der(j)/rho - B_temp(j)/(rho**2) + C_der(j))  ! a2 = A (1/rho dB/drho - B/rho^2 + dC/drho)  
-         a3(i) = A_temp(j)*(B_der(j) + B_temp(j)/rho + C_temp(j))      ! a3 = A (dB/drho + B/rho + C)             
-         a4(i) = A_temp(j)*B_temp(j)         ! a4 = A B                    
+         alpha_1(i) = A_temp(j)*D_der(j) 
+         alpha_2(i) = A_temp(j)*(B_der(j)/rho - B_temp(j)/(rho**2) + C_der(j))  
+         alpha_3(i) = A_temp(j)*(B_der(j) + B_temp(j)/rho + C_temp(j))            
+         alpha_4(i) = A_temp(j)*B_temp(j)            
       END DO
 
-      !a1 = 0; a2 = 0; a3 = 0;
-      THRIFT_ALPHA1(:,mytimestep) = a1; 
-      THRIFT_ALPHA2(:,mytimestep) = a2;
-      THRIFT_ALPHA3(:,mytimestep) = a3;
-      THRIFT_ALPHA4(:,mytimestep) = a4;
+      !! REWRITE: Same as coeff
+      THRIFT_ALPHA1(:,mytimestep) = alpha_1; 
+      THRIFT_ALPHA2(:,mytimestep) = alpha_2;
+      THRIFT_ALPHA3(:,mytimestep) = alpha_3;
+      THRIFT_ALPHA4(:,mytimestep) = alpha_4;
 
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
@@ -167,82 +199,66 @@
          END DO
       END IF
       
-      !! OLD EXPONENTIAL DECAY CODE
-      !! Calculate L_ext = mu0*R_eff( ln( 8 R_eff/r_eff )-2 + F_shaping)      
-      !temp1 = mu0*THRIFT_RMAJOR(nrho+2,1)*&
-      !   (log(8*THRIFT_RMAJOR(nrho+2,1)/THRIFT_AMINOR(nrho+2,1)) - 2 + 0.25) ! temp1 <- L_ext
-      ! L/R time
-      !t = THRIFT_T(itime)
-      !CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara) 
-      !temp2 = temp1*THRIFT_AMINOR(nrho+2,1)**2/(2*etapara*THRIFT_RMAJOR(nrho+2,1)) ! temp2 <- tau_L/R
-      !IF (nsubsteps==1.and.(mytimestep==1.or.(mytimestep==2.and.tstart==0))) &
-      !   WRITE(6,'(A25,F8.6)') 'Estimated tau_L/R    ',temp2
-      ! Decay I_plasma at edge
-      !THRIFT_IPLASMA(nrho,mytimestep) = THRIFT_IPLASMA(nrho,itime)*exp(-dt/temp2)
-      ! I_total at edge
-      !temp1 = THRIFT_IPLASMA(nrho,mytimestep)+THRIFT_ISOURCE(nrho,mytimestep)
+!----------------------------------------------------------------------
+!     SOLVING SYSTEM OF EQUATIONS
+!----------------------------------------------------------------------
+!     Populate matrix and RHS of the system of equations (N=nrho)
+!
+!     | B1   C1    0   0 .  0   0   0   0  | | u1  |   | D1  |  BC AXIS
+!     | A2   B2   C2   0 .  0   0   0   0  | | u2  |   | D2  |     \
+!     |  0   A3   B3  C3 .  0   0   0   0  | | u3  |   | D3  |     |
+!     |  .    .    .    ... .   .   .   .  | | .   | = |  .  |  evol. eq.
+!     |  0    0    0   0 . AN  BN  CN   0  | | uN  |   | DN  |     |
+!     |  0    0    0   0 .  0  AN1 BN1 CN1 | | uN1 |   | DN1 |     /
+!     |  0    0    0   0 .  0   0  AN2 BN2 | | UN2 |   | DN2 |  BC EDGE
+!                    
+!     The {uj} contain the current: u(j) = mu0*Itotal/(2*rho*phip)
+!     First equation encapsulates the BC for the magnetic axis:
+!        I(x=0,t) = 0 
+!
+!     Last equation encapsulates the BC for the plasma edge:
+!        f(x=1,t) = <B^2>/mu0 d(rho*u)/drho + dp/drho*u - <Js.B> = 0
+!
+!     Remaining equations are the evolution equation on THRIFT_RHO grid: 
+!        du/dt = a1 + a2*u + a3*du/drho + a4*d2u/drho2
+!
+!     NOTE: Since alphas exist on THRIFT_RHO grid but system of eqs.
+!     calculates {uj} on [0,1], indices on RHS are shifted by -1.
+!----------------------------------------------------------------------
 
-      !! OLD UEDGE CODE
-      !! Calculate uedge for this timestep
-      !t = THRIFT_T(itime) ! t = previous sim time (or current sim time if mytimestep=1)
-      !CALL get_prof_etapara(THRIFT_RHO(INT(nrho/2)),t,etapara)
-      !CALL get_prof_etapara(THRIFT_RHO(nrho),t,etapara)
-      !CALL get_prof_pprime(THRIFT_RHO(nrho),t,pprime) 
-      !temp2 = (-8*THRIFT_UEDGE(1)+9*THRIFT_UGRID(nrho,1)-THRIFT_UGRID(nrho-1,1))/(3*drho) ! du/drho at edge
-      ! uedge [ current timestep ] =  u - dt*mu0/(2*Phi_a)*eta/Lext*dV/dphi* ...
-      ! [(p' + <B^2>/mu0)*u + <B^2>/mu0*du/drho - <J.B>]  [ edge, preceding timestep ]
-      !THRIFT_UEDGE(2) = THRIFT_UEDGE(1)-dt*mu0/(2*THRIFT_PHIEDGE(1))*etapara/temp1*THRIFT_VP(nrho+2,1) * &  
-      !      (((pprime + THRIFT_BSQAV(nrho+2,1)/mu0)*THRIFT_UEDGE(1)) + THRIFT_BSQAV(nrho+2,1)/mu0*temp2 &               
-      !      - THRIFT_JSOURCE(nrho,itime)*THRIFT_BAV(nrho+2,1))   
-
-      !! OLD UEDGE CODE
-      ! No gradient at edge
-      !rho = 1
-      !CALL get_prof_pprime(rho, t, pprime)
-      !temp1 = THRIFT_BSQAV(nrho+2,2)/mu0+pprime
-      !temp2 = 1+(1/(THRIFT_RHO(nrho)+drho))*(1-pprime/temp1)
-      !temp1 = (source_edge*THRIFT_BAV(nrho+2,2)/temp1)/temp2
-
-      ! Populate tridiagonal matrix and RHS
-      ! BC1: Enclosed current at magnetic axis = 0 always
-      AI(1) = 0; BI(1) = 1; CI(1) = 0; DI(1) = 0   
-      DO i = 2, nrho+1 ! On the proper grid
+      ! Magnetic axis (rho=0)
+      AI(1) = 0  
+      BI(1) = 1
+      CI(1) = 0
+      DI(1) = 0   
+      ! THRIFT_RHO grid (rho in (0,1))
+      DO i = 2, nrho+1 
          j = i - 1 
+         a1 = alpha_1(j); a2 = alpha_2(j); a3 = alpha_3(j); a4 = alpha_4(j)
          IF (i==2) THEN
-            AI(i) = -a3(j)/drho+4*a4(j)/(drho**2)
-            BI(i) = a2(j)-a3(j)/(2*drho)-6*a4(1)/(drho**2)-1/dt
-            CI(i) = a3(j)/(2*drho)+2*a4(j)/(drho**2)
+            AI(i) = -a3/drho + 4*a4/(drho**2)
+            BI(i) = a2 - a3/(2*drho) - 6*a4/(drho**2) - 1/dt
+            CI(i) = a3/(2*drho) + 2*a4/(drho**2)
          ELSE IF (i==nrho+1) THEN
-            AI(i) = -a3(j)/(2*drho)+2*a4(j)/(drho**2)
-            BI(i) = a2(j)-a3(j)/(2*drho)-6*a4(j)/(drho**2)-1/dt
-            CI(i) = a3(j)/drho+4*a4(j)/(drho**2)
+            AI(i) = -a3/(2*drho) + 2*a4/(drho**2)
+            BI(i) = a2 - a3/(2*drho) - 6*a4/(drho**2) - 1/dt
+            CI(i) = a3/drho + 4*a4/(drho**2)
          ELSE
-            AI(i) = -a3(j)/(2*drho)+a4(j)/(drho**2)  
-            BI(i) = a2(j)-2*a4(j)/(drho**2)-1/dt     
-            CI(i) = a3(j)/(2*drho) +a4(j)/(drho**2)  
+            AI(i) = -a3/(2*drho) + a4/(drho**2)  
+            BI(i) = a2 - 2*a4/(drho**2) - 1/dt     
+            CI(i) = a3/(2*drho) + a4/(drho**2)  
          END IF
-         DI(i) = -THRIFT_UGRID(j,1)/dt-a1(j)  
+         DI(i) = - THRIFT_UGRID(j,1)/dt - a1 
       END DO
-      !! New BC2
+      ! Plasma edge
       rho = 1
-      CALL get_prof_pprime(rho,mytime, pprime)
+      CALL get_prof_pprime(rho, mytime, pprime)
+      temp1      = THRIFT_BSQAV(nrho+2,2)/mu0
       AI(nrho+2) = -THRIFT_RHO(nrho)/drho
+      BI(nrho+2) = 1/drho + pprime/temp1
       CI(nrho+2) = 0
-      temp1 = THRIFT_BSQAV(nrho+2,2)/mu0
-      BI(nrho+2) = 1/drho+mu0*pprime/temp1
       DI(nrho+2) = jsource_full(nrho+2)*THRIFT_BAV(nrho+2,2)/temp1
       
-      !AI(nrho-1) = 0; BI(nrho) = 1; DI(nrho) = THRIFT_RHO(nrho)/(THRIFT_RHO(nrho)+drho)*temp1
-
-
-      !! Old BC2: Enclosed current at edge must equal temp1 next timestep
-      !BI(nrho) = 1; AI(nrho-1) = 0; DI (nrho) = mu0*temp1/(2*THRIFT_RHO(nrho)*THRIFT_PHIEDGE(2)) 
-      !! Old BC2: No gradient at edge
-      !AI(nrho-2)=0; BI(nrho-1)=1; CI(nrho-1)=-1; DI(nrho)=0
-      !AI(nrho-1) = 0
-      !BI(nrho) = a2(nrho)-2*a4(nrho)/(drho**2)-1/dt
-      !DI(nrho) = -THRIFT_UGRID(nrho,1)/dt-a1(nrho)
-
       THRIFT_MATLD(:,mytimestep) = AI; 
       THRIFT_MATMD(:,mytimestep) = BI;
       THRIFT_MATUD(:,mytimestep) = CI;
@@ -260,21 +276,21 @@
          END DO
       END IF
 
-      ! ITOTAL = phip*u/mu0 = 2*phi_a*rho*u/mu0
-      THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*(rho_full*THRIFT_UGRID(:,2))
+!----------------------------------------------------------------------
+!     POST SOLVING EQUATIONS
+!----------------------------------------------------------------------
+!     Solution to previous system of equations yields {uj} at this step.
+!     Get ITOTAL from u(j) = mu0*I/(2*rho*Phi_a)
+!     Obtain ISOURCE from JSOURCE with curden_to_curtot subroutine.
+!     Plasma current: IPLASMA = ITOTAL - ISOURCE
+!     Obtain JPLASMA from IPLASMA with curtot_to_curden subroutine.
+!----------------------------------------------------------------------
+
+      THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*( rho_full*THRIFT_UGRID(:,2) )
       CALL curden_to_curtot(jsource_full,THRIFT_AMINOR,THRIFT_ISOURCE(:,mytimestep))
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep)-THRIFT_ISOURCE(:,mytimestep)
       CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),THRIFT_AMINOR,jplasma_full)
       THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
-      !! JTOTAL
-      !CALL curtot_to_curden(THRIFT_I(:,mytimestep),THRIFT_AMINOR,j_full)
-      !THRIFT_J(:,mytimestep) = j_full(2:nrho+1)
-      ! JPLASMA = JTOTAL - JSOURCE
-      !jplasma_full = j_full - jsource_full
-      ! Subtract change in JSOURCE
-      !CALL extrapolate_arr(THRIFT_JSOURCE(:,prevtimestep), jsourceprev_full)
-      !jplasma_full = jplasma_full - (jsource_full-jsourceprev_full)
-      !THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
       
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
@@ -289,8 +305,13 @@
          WRITE(6,*) '==============================================================================='
       END IF     
 
+!----------------------------------------------------------------------
+!     TRACKING TOTAL CURRENTS
+!----------------------------------------------------------------------
+!     The quantities THRIFT_IXXXXX are not necessary to evolve the 
+!     current density profile, but are nice to have.
+!----------------------------------------------------------------------
       1000  CONTINUE
-      ! Calculate enclosed plasma currents
       CALL extrapolate_arr(THRIFT_JBOOT(:,mytimestep),  j_full)
       CALL curden_to_curtot(j_full,THRIFT_AMINOR, THRIFT_IBOOT(:,mytimestep))
       CALL extrapolate_arr(THRIFT_JECCD(:,mytimestep),  j_full)
@@ -305,9 +326,10 @@
          +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
 
-      DEALLOCATE(A_temp, B_temp, C_temp, D_temp, B_der, C_der, D_der, &
-      a1, a2, a3, a4, AI, BI, CI, DI, rho_full, &
-      j_full,jplasma_full,jsource_full,jsourceprev_full)
+      DEALLOCATE( A_temp,  B_temp,  C_temp,  D_temp,  B_der, C_der, D_der, &
+                  alpha_1, alpha_2, alpha_3, alpha_4, &
+                  AI,      BI,      CI,      DI, &
+                  rho_full, j_full, jplasma_full, jsource_full, jsourceprev_full)
 
       RETURN
 
