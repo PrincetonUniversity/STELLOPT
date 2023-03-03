@@ -24,10 +24,8 @@
       INTEGER :: i,j,prevtimestep, ier
       REAL(rprec) :: rho,s,drho,dt,mytime,s11,s12,etapara,pprime,&
                      temp1,temp2,source_axis,source_edge,Aminor,Rmajor,&
-                     a1,a2,a3,a4
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: A_temp,B_temp,C_temp,D_temp,&
-                                                B_der, C_der, D_der, &
-                                                alpha_1, alpha_2, alpha_3, alpha_4, &
+                     A_temp,B_temp,C_temp,D_temp,a1,a2,a3,a4
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: B_der, C_der, D_der, &
                                                 AI, BI, CI, DI, &
                                                 rho_full, & 
                                                 j_full, jsource_full, jplasma_full, jsourceprev_full
@@ -45,16 +43,12 @@
       END IF
 
       ! Allocate
-      ALLOCATE(A_temp(nrho+2), B_temp(nrho+2), C_temp(nrho+2), D_temp(nrho+2), &
-               B_der(nrho+2),  C_der(nrho+2),  D_der(nrho+2), &
-               alpha_1(nrho),  alpha_2(nrho),  alpha_3(nrho),  alpha_4(nrho), &
+      ALLOCATE(B_der(nrho+2),  C_der(nrho+2),  D_der(nrho+2), &
                AI(nrho+2),     BI(nrho+2),     CI(nrho+2),     DI(nrho+2), &
                rho_full(nrho+2),j_full(nrho+2),jplasma_full(nrho+2), &
                jsource_full(nrho+2),           jsourceprev_full(nrho+2))
 
-      A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0;
       B_der  = 0; C_der  = 0; D_der  = 0; 
-      alpha_1= 0; alpha_2= 0; alpha_3= 0; alpha_4= 0;
       AI     = 0; BI     = 0; CI     = 0; DI     = 0;
       
       rho_full=0;
@@ -105,42 +99,35 @@
 !     > A(j) = S11/(4*rho*Phi_edge^2)
 !     > B(j) = 2*etapara*dV/dPhi*<B^2>/mu_0
 !     > C(j) = 2*etapara*dV/dPhi*dp/drho
-!     > D(j) =-2*etapara*dV/dPhi*<Js.B>
+!     > D(j) = -2*etapara*dV/dPhi*<Js.B>
 !----------------------------------------------------------------------
-
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
          WRITE(6,*) ' RHO  ETAPARA     DV/DPHI      DP/DRHO     <J.B>      BSQAV        S11'
       END IF
+
       DO i = 1, nrho+2
          rho = rho_full(i)
-         temp2 = jsource_full(i)
          CALL get_prof_etapara(MIN(rho,THRIFT_RHO(nrho)),mytime,etapara)
          CALL get_prof_pprime(rho,mytime,pprime)
          temp1 = 2*etapara*THRIFT_VP(i,2) ! temp1 <- 2 eta dV/dPhi 
          IF (i > 1) &
-            A_temp(i) = THRIFT_S11(i,2)/(4*rho*THRIFT_PHIEDGE(2)**2) ! S11/(4 rho phi_a^2)
-         B_temp(i) = temp1*THRIFT_BSQAV(i,2)/mu0! 2 eta dV/dPhi <B^2>/mu_0
-         C_temp(i) = temp1*pprime               ! 2 eta dV/dPhi dp/drho
-         D_temp(i) = -temp1*temp2*THRIFT_BAV(i,2)   ! -2 eta dV/dPhi <J.B>
+            THRIFT_COEFF_A(i,mytimestep) = THRIFT_S11(i,2)/(4*rho*THRIFT_PHIEDGE(2)**2)
+         THRIFT_COEFF_B(i,mytimestep) = temp1*THRIFT_BSQAV(i,2)/mu0
+         THRIFT_COEFF_C(i,mytimestep) = temp1*pprime               
+         THRIFT_COEFF_D(i,mytimestep) = -temp1*jsource_full(i)*THRIFT_BAV(i,2)  
          IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') &
            rho, etapara, THRIFT_VP(i,2), pprime, temp2*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
       END DO
-      
-      !! REWRITE: GET RID OF ABCD_TEMP AND USE THRIFT_COEFF INSTEAD
-      THRIFT_COEFF_A(:,mytimestep) = A_temp
-      THRIFT_COEFF_B(:,mytimestep) = B_temp
-      THRIFT_COEFF_C(:,mytimestep) = C_temp
-      THRIFT_COEFF_D(:,mytimestep) = D_temp
 !----------------------------------------------------------------------
 !     Calculate derivatives of ABCD here (see deriv1_rho_o2)
 !     > drho = grid spacing
 !----------------------------------------------------------------------
       drho = THRIFT_RHO(2)-THRIFT_RHO(1) 
-      CALL deriv1_rho_o2(B_temp, drho, B_der)
-      CALL deriv1_rho_o2(C_temp, drho, C_der)
-      CALL deriv1_rho_o2(D_temp, drho, D_der)
+      CALL deriv1_rho_o2(THRIFT_COEFF_B(:,mytimestep), drho, B_der)
+      CALL deriv1_rho_o2(THRIFT_COEFF_C(:,mytimestep), drho, C_der)
+      CALL deriv1_rho_o2(THRIFT_COEFF_D(:,mytimestep), drho, D_der)
 
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
@@ -148,8 +135,10 @@
          WRITE(6,*)' RHO         A         B          C          D       BDER       CDER       DDER'
          WRITE(6,*)''
          DO i = 1, nrho+2
-            WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') rho_full(i), A_temp(i), B_temp(i), C_temp(i), D_temp(i),&
-             B_der(i), C_der(i), D_der(i)
+            WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') rho_full(i), &
+            THRIFT_COEFF_A(i,mytimestep), THRIFT_COEFF_B(i,mytimestep),& 
+            THRIFT_COEFF_C(i,mytimestep), THRIFT_COEFF_D(i,mytimestep)(i),&
+            B_der(i), C_der(i), D_der(i)
          END DO
       END IF
 !----------------------------------------------------------------------
@@ -177,17 +166,13 @@
       DO i = 1, nrho
          rho = THRIFT_RHO(i)
          j = i + 1
-         alpha_1(i) = A_temp(j)*D_der(j) 
-         alpha_2(i) = A_temp(j)*(B_der(j)/rho - B_temp(j)/(rho**2) + C_der(j))  
-         alpha_3(i) = A_temp(j)*(B_der(j) + B_temp(j)/rho + C_temp(j))            
-         alpha_4(i) = A_temp(j)*B_temp(j)            
+         A_temp = THRIFT_COEFF_A(j,mytimestep); B_temp = THRIFT_COEFF_B(j,mytimestep)
+         C_temp = THRIFT_COEFF_C(j,mytimestep); D_temp = THRIFT_COEFF_D(j,mytimestep)
+         THRIFT_ALPHA1(i,mytimestep) = A_temp*D_der(j) 
+         THRIFT_ALPHA2(i,mytimestep) = A_temp*(B_der(j)/rho - B_temp/(rho**2) + C_der(j))  
+         THRIFT_ALPHA3(i,mytimestep) = A_temp*(B_der(j) + B_temp/rho + C_temp)            
+         THRIFT_ALPHA4(i,mytimestep) = A_temp*B_temp           
       END DO
-
-      !! REWRITE: Same as coeff
-      THRIFT_ALPHA1(:,mytimestep) = alpha_1; 
-      THRIFT_ALPHA2(:,mytimestep) = alpha_2;
-      THRIFT_ALPHA3(:,mytimestep) = alpha_3;
-      THRIFT_ALPHA4(:,mytimestep) = alpha_4;
 
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
@@ -195,7 +180,9 @@
          WRITE(6,*)'RHO       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
          WRITE(6,*)''
          DO i = 1, nrho
-            WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))') THRIFT_RHO(i), alpha_1(i), alpha_2(i), alpha_3(i), alpha_4(i)
+            WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))')  THRIFT_RHO(i), &
+            THRIFT_ALPHA1(i,mytimestep), THRIFT_ALPHA2(i,mytimestep),&
+            THRIFT_ALPHA3(i,mytimestep), THRIFT_ALPHA4(i,mytimestep)
          END DO
       END IF
       
@@ -227,52 +214,56 @@
 !----------------------------------------------------------------------
 
       ! Magnetic axis (rho=0)
-      AI(1) = 0  
-      BI(1) = 1
-      CI(1) = 0
-      DI(1) = 0   
+      THRIFT_MATLD(1,mytimestep) = 0  
+      THRIFT_MATMD(1,mytimestep) = 1
+      THRIFT_MATUD(1,mytimestep) = 0
+      THRIFT_MATRHS(1,mytimestep) = 0   
+
       ! THRIFT_RHO grid (rho in (0,1))
       DO i = 2, nrho+1 
          j = i - 1 
-         a1 = alpha_1(j); a2 = alpha_2(j); a3 = alpha_3(j); a4 = alpha_4(j)
+         a1 = THRIFT_ALPHA1(j,mytimestep); a2 = THRIFT_ALPHA2(j,mytimestep); 
+         a3 = THRIFT_ALPHA3(j,mytimestep); a4 = THRIFT_ALPHA4(j,mytimestep); 
          IF (i==2) THEN
-            AI(i) = -a3/drho + 4*a4/(drho**2)
-            BI(i) = a2 - a3/(2*drho) - 6*a4/(drho**2) - 1/dt
-            CI(i) = a3/(2*drho) + 2*a4/(drho**2)
+            THRIFT_MATLD(i,mytimestep) = -a3/drho + 4*a4/(drho**2)
+            THRIFT_MATMD(i,mytimestep) = a2 - a3/(2*drho) - 6*a4/(drho**2) - 1/dt
+            THRIFT_MATUD(i,mytimestep) = a3/(2*drho) + 2*a4/(drho**2)
          ELSE IF (i==nrho+1) THEN
-            AI(i) = -a3/(2*drho) + 2*a4/(drho**2)
-            BI(i) = a2 - a3/(2*drho) - 6*a4/(drho**2) - 1/dt
-            CI(i) = a3/drho + 4*a4/(drho**2)
+            THRIFT_MATLD(i,mytimestep) = -a3/(2*drho) + 2*a4/(drho**2)
+            THRIFT_MATMD(i,mytimestep) = a2 - a3/(2*drho) - 6*a4/(drho**2) - 1/dt
+            THRIFT_MATUD(i,mytimestep) = a3/drho + 4*a4/(drho**2)
          ELSE
-            AI(i) = -a3/(2*drho) + a4/(drho**2)  
-            BI(i) = a2 - 2*a4/(drho**2) - 1/dt     
-            CI(i) = a3/(2*drho) + a4/(drho**2)  
+            THRIFT_MATLD(i,mytimestep) = -a3/(2*drho) + a4/(drho**2)  
+            THRIFT_MATMD(i,mytimestep) = a2 - 2*a4/(drho**2) - 1/dt     
+            THRIFT_MATUD(i,mytimestep) = a3/(2*drho) + a4/(drho**2)  
          END IF
-         DI(i) = - THRIFT_UGRID(j,1)/dt - a1 
+         THRIFT_MATRHS(i) = - THRIFT_UGRID(j,1)/dt - a1 
       END DO
-      ! Plasma edge
+
+      ! Plasma edge (rho=1)
       rho = 1
       CALL get_prof_pprime(rho, mytime, pprime)
-      temp1      = THRIFT_BSQAV(nrho+2,2)/mu0
-      AI(nrho+2) = -THRIFT_RHO(nrho)/drho
-      BI(nrho+2) = 1/drho + pprime/temp1
-      CI(nrho+2) = 0
-      DI(nrho+2) = jsource_full(nrho+2)*THRIFT_BAV(nrho+2,2)/temp1
-      
-      THRIFT_MATLD(:,mytimestep) = AI; 
-      THRIFT_MATMD(:,mytimestep) = BI;
-      THRIFT_MATUD(:,mytimestep) = CI;
-      THRIFT_MATRHS(:,mytimestep)= DI;
+      temp1 = THRIFT_BSQAV(nrho+2,2)/mu0
+      THRIFT_MATLD(nrho+2,mytimestep)  = -THRIFT_RHO(nrho)/drho
+      THRIFT_MATMD(nrho+2,mytimestep)  = 1/drho + pprime/temp1
+      THRIFT_MATUD(nrho+2,mytimestep)  = 0
+      THRIFT_MATRHS(nrho+2,mytimestep) = jsource_full(nrho+2)*THRIFT_BAV(nrho+2,2)/temp1
 
       ! Solve system of equations
-      CALL solve_tdm(AI,BI,CI,DI,THRIFT_UGRID(:,2))
+      CALL solve_tdm(THRIFT_MATLD(:,mytimestep),&
+                     THRIFT_MATMD(:,mytimestep),&
+                     THRIFT_MATUD(:,mytimestep),&
+                     THRIFT_MATRHS(:,mytimestep),&
+                     THRIFT_UGRID(:,2))
 
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
          WRITE(6,*)''
          DO i = 1, nrho+2
-            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, AI(i), BI(i), CI(i), DI(i),THRIFT_UGRID(i,2)
+            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, &
+            THRIFT_MATLD(i,mytimestep), THRIFT_MATMD(i,mytimestep), &
+            THRIFT_MATUD(i,mytimestep), THRIFT_MATRHS(i,mytimestep),THRIFT_UGRID(i,2)
          END DO
       END IF
 
@@ -327,7 +318,6 @@
       THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
 
       DEALLOCATE( A_temp,  B_temp,  C_temp,  D_temp,  B_der, C_der, D_der, &
-                  alpha_1, alpha_2, alpha_3, alpha_4, &
                   AI,      BI,      CI,      DI, &
                   rho_full, j_full, jplasma_full, jsource_full, jsourceprev_full)
 
