@@ -139,7 +139,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
 
     ! J(i) = dI/dA = dI/drho*drho/dA
     j_temp = dIdrho/dAdrho
-    CALL extrapolate_arr(j_temp, j_arr)
+    CALL extrapolate_arr(j_temp(2:nrho+1), j_arr)
     
     DEALLOCATE(dIdrho, dAdrho, rho_full, j_temp)
     RETURN
