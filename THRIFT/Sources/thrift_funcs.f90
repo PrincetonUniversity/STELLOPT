@@ -153,6 +153,11 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     !END DO
     !j_temp(nrho+2)=0
 
+    ! J = dI/dA = dI/drho*drho/dA
+    !   dA/drho = dA/dV*dV/drho = 1/(2*pi*Rmajor) dV/drho
+    !   dV/drho = 2*rho*Phi_a*dV/dPhi
+    ! J = dI/drho*(pi*Rmajor)/(rho*Phi_a)*dV/dPhi
+
     CALL deriv1_rho_o2(i_arr,i_der)
     j_temp(1) = 0; j_temp(nrho+2) = 0;
     DO i = 2,nrho+1
