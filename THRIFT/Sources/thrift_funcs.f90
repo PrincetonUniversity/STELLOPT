@@ -68,7 +68,8 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol,residue)
     REAL(rprec), DIMENSION(:), INTENT(in) :: DI
     REAL(rprec), DIMENSION(:), INTENT(in) :: sol
     REAL(rprec), DIMENSION(:), INTENT(out) :: residue
-
+    INTEGER :: i
+    
     residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
     DO i = 2, nrho-1
         residue(i) = AI(i)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
@@ -126,7 +127,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     REAL(rprec), DIMENSION(:), INTENT(in) :: i_arr
     REAL(rprec), DIMENSION(:), INTENT(out) :: j_arr
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: dIdrho, dAdrho, rho_full, j_temp
-    ALLOCATE(dIdrho(nrho+2), dAdrho(nrho+2), rho_full(nrho+2), j_temp(nrho_2))
+    ALLOCATE(dIdrho(nrho+2), dAdrho(nrho+2), rho_full(nrho+2), j_temp(nrho+2))
 
     rho_full(1) = 0.0
     rho_full(2:nrho+1) = THRIFT_RHO
