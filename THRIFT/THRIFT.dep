@@ -97,6 +97,7 @@ thrift_jinductive.o : \
 
 thrift_funcs.o : \
       thrift_runtime.o \
+      thrift_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
 
 thrift_load_vmec.o : \
