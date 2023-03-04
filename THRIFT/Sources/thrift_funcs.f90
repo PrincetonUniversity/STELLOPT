@@ -150,10 +150,10 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
         j_temp(i) = dIi/dAi
     END DO
     j_temp(nrho+2)=0
-    
+
     CALL extrapolate_arr(j_temp(2:nrho+1), j_arr)
     
-    DEALLOCATE(dIdrho, dAdrho, rho_full, j_temp)
+    DEALLOCATE(rho_full, j_temp)
     RETURN
 
 END SUBROUTINE curtot_to_curden
