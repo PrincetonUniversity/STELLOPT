@@ -278,9 +278,9 @@
 !----------------------------------------------------------------------
 
       THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*( rho_full*THRIFT_UGRID(:,2) )
-      CALL curden_to_curtot(jsource_full,THRIFT_AMINOR,THRIFT_ISOURCE(:,mytimestep))
+      CALL curden_to_curtot(jsource_full,THRIFT_ISOURCE(:,mytimestep))
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep)-THRIFT_ISOURCE(:,mytimestep)
-      CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),THRIFT_AMINOR,jplasma_full)
+      CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),jplasma_full)
       THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
       
       IF (lverbj) THEN
@@ -304,14 +304,14 @@
 !----------------------------------------------------------------------
       1000  CONTINUE
       CALL extrapolate_arr(THRIFT_JBOOT(:,mytimestep),  j_full)
-      CALL curden_to_curtot(j_full,THRIFT_AMINOR, THRIFT_IBOOT(:,mytimestep))
+      CALL curden_to_curtot(j_full, THRIFT_IBOOT(:,mytimestep))
       CALL extrapolate_arr(THRIFT_JECCD(:,mytimestep),  j_full)
-      CALL curden_to_curtot(j_full,THRIFT_AMINOR, THRIFT_IECCD(:,mytimestep))
+      CALL curden_to_curtot(j_full, THRIFT_IECCD(:,mytimestep))
       CALL extrapolate_arr(THRIFT_JNBCD(:,mytimestep),  j_full)
-      CALL curden_to_curtot(j_full,THRIFT_AMINOR, THRIFT_INBCD(:,mytimestep))
+      CALL curden_to_curtot(j_full, THRIFT_INBCD(:,mytimestep))
       CALL extrapolate_arr(THRIFT_JOHMIC(:,mytimestep), j_full)
-      CALL curden_to_curtot(j_full,THRIFT_AMINOR,THRIFT_IOHMIC(:,mytimestep))
-      CALL curden_to_curtot(jplasma_full,THRIFT_AMINOR,THRIFT_IPLASMA(:,mytimestep))
+      CALL curden_to_curtot(j_full,THRIFT_IOHMIC(:,mytimestep))
+      CALL curden_to_curtot(jplasma_full,THRIFT_IPLASMA(:,mytimestep))
 
       THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
          +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
