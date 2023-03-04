@@ -28,7 +28,7 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: B_der, C_der, D_der, &
                                                 AI, BI, CI, DI, &
                                                 rho_full, & 
-                                                j_full, jsource_full, jplasma_full, jsourceprev_full
+                                                j_full, jsource_full, jplasma_full
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -46,16 +46,17 @@
       ALLOCATE(B_der(nrho+2),  C_der(nrho+2),  D_der(nrho+2), &
                AI(nrho+2),     BI(nrho+2),     CI(nrho+2),     DI(nrho+2), &
                rho_full(nrho+2),j_full(nrho+2),jplasma_full(nrho+2), &
-               jsource_full(nrho+2),           jsourceprev_full(nrho+2))
+               jsource_full(nrho+2))
 
-      B_der  = 0; C_der  = 0; D_der  = 0; 
-      AI     = 0; BI     = 0; CI     = 0; DI     = 0;
-      
+      B_der  = 0; C_der  = 0; D_der  = 0
+      AI     = 0; BI     = 0; CI     = 0; DI     = 0
+      A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0
+      a1     = 0; a2     = 0; a3     = 0; a4     = 0
+   
       rho_full=0;
       j_full = 0; 
       jplasma_full = 0;
       jsource_full = 0; 
-      jsourceprev_full = 0;
 
       ! Define temp variable for the full grid
       rho_full(1) = 0.0
@@ -244,7 +245,7 @@
             THRIFT_MATMD(i,mytimestep) = a2 - 2*a4/(drho**2) - 1.0/dt     
             THRIFT_MATUD(i,mytimestep) = a3/(2*drho) + a4/(drho**2)  
          END IF
-         THRIFT_MATRHS(i,mytimestep) = - THRIFT_UGRID(j,1)/dt - a1 
+         THRIFT_MATRHS(i,mytimestep) = -THRIFT_UGRID(j,1)/dt - a1 
       END DO
 
       ! Plasma edge (rho=1)
@@ -320,13 +321,17 @@
       CALL curden_to_curtot(j_full,THRIFT_IOHMIC(:,mytimestep))
       CALL curden_to_curtot(jplasma_full,THRIFT_IPLASMA(:,mytimestep))
 
-      THRIFT_ISOURCE(:,mytimestep) = THRIFT_IBOOT(:,mytimestep)+THRIFT_IECCD(:,mytimestep)&
-         +THRIFT_INBCD(:,mytimestep)+THRIFT_IOHMIC(:,mytimestep)
-      THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
+      THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,mytimestep)&
+                                    + THRIFT_IECCD(:,mytimestep)&
+                                    + THRIFT_INBCD(:,mytimestep)&
+                                    + THRIFT_IOHMIC(:,mytimestep)
+
+      THRIFT_I(:,mytimestep)  = THRIFT_IPLASMA(:,mytimestep)&
+                              + THRIFT_ISOURCE(:,mytimestep)
 
       DEALLOCATE( B_der, C_der, D_der, &
                   AI,      BI,      CI,      DI, &
-                  rho_full, j_full, jplasma_full, jsource_full, jsourceprev_full)
+                  rho_full, j_full, jplasma_full, jsource_full)
 
       RETURN
 
