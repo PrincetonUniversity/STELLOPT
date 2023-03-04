@@ -125,9 +125,9 @@
 !     > drho = grid spacing
 !----------------------------------------------------------------------
       drho = THRIFT_RHO(2)-THRIFT_RHO(1) 
-      CALL deriv1_rho_o2(THRIFT_COEFF_B(:,mytimestep), drho, B_der)
-      CALL deriv1_rho_o2(THRIFT_COEFF_C(:,mytimestep), drho, C_der)
-      CALL deriv1_rho_o2(THRIFT_COEFF_D(:,mytimestep), drho, D_der)
+      CALL deriv1_rho_o2(THRIFT_COEFF_B(:,mytimestep), B_der)
+      CALL deriv1_rho_o2(THRIFT_COEFF_C(:,mytimestep), C_der)
+      CALL deriv1_rho_o2(THRIFT_COEFF_D(:,mytimestep), D_der)
 
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
