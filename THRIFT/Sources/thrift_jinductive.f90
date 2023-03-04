@@ -81,7 +81,7 @@
          CALL get_equil_Bav(s,THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), ier)
          CALL get_equil_sus(s,THRIFT_S11(i,2), temp1,temp1,temp1, ier)
          CALL get_equil_Rmajor(s,THRIFT_RMAJOR(i,2), temp1, THRIFT_AMINOR(i,2),ier)
-         IF (lverbj) WRITE(6,'(F5.3,5(1X,F10.6)),1X,ES10.3)') &
+         IF (lverbj) WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
            rho, THRIFT_VP(i,2), THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), ABS(THRIFT_S11(i,2)), THRIFT_RMAJOR(i,2), THRIFT_AMINOR(i,2)
       END DO
       THRIFT_S11 = ABS(THRIFT_S11)
