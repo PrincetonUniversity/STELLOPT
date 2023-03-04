@@ -148,7 +148,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
         dIi = i_arr(i) - i_arr(i-1)
         !dAi = pi*((rho_full(i)*THRIFT_AMINOR(i,2))**2-(rho_full(i-1)*THRIFT_AMINOR(i-1,2))**2)
         dVi = THRIFT_RMAJOR(i,2)*(rho_full(i)**2)*(THRIFT_AMINOR(i,2)**2) &
-                - THRIFT_RMAJOR(i-1,2)*(rho_full(i-1)**2)*(THRIFT_AMINOR(i-1,2)**2) &
+                - THRIFT_RMAJOR(i-1,2)*(rho_full(i-1)**2)*(THRIFT_AMINOR(i-1,2)**2) 
         j_temp(i) = THRIFT_RMAJOR(i,2)*dIi/(pi*dVi)
     END DO
     j_temp(nrho+2)=0
