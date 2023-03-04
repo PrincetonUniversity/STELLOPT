@@ -127,10 +127,10 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     ! Calculates array of density from enclosed current array
     REAL(rprec), DIMENSION(:), INTENT(in) :: i_arr
     REAL(rprec), DIMENSION(:), INTENT(out) :: j_arr
-    REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_full, j_temp
+    REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_full, j_temp, i_der
     INTEGER :: i
     REAL(rprec) :: dVi, dIi
-    ALLOCATE(j_temp(nrho+2), rho_full(nrho+2))
+    ALLOCATE(j_temp(nrho+2), rho_full(nrho+2),i_der(nrho+2))
 
     rho_full(1) = 0.0
     rho_full(2:nrho+1) = THRIFT_RHO
@@ -143,15 +143,21 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     ! J(i) = dI/dA = dI/drho*drho/dA
     !j_temp = dIdrho/dAdrho
     
-    j_temp(1) = 0
-    DO i = 2, nrho+2
-        dIi = i_arr(i) - i_arr(i-1)
-        !dAi = pi*((rho_full(i)*THRIFT_AMINOR(i,2))**2-(rho_full(i-1)*THRIFT_AMINOR(i-1,2))**2)
-        dVi = THRIFT_RMAJOR(i,2)*(rho_full(i)**2)*(THRIFT_AMINOR(i,2)**2) &
-                - THRIFT_RMAJOR(i-1,2)*(rho_full(i-1)**2)*(THRIFT_AMINOR(i-1,2)**2) 
-        j_temp(i) = THRIFT_RMAJOR(i,2)*dIi/(pi*dVi)
+    !j_temp(1) = 0
+    !DO i = 2, nrho+2
+    !    dIi = i_arr(i) - i_arr(i-1)
+    !    !dAi = pi*((rho_full(i)*THRIFT_AMINOR(i,2))**2-(rho_full(i-1)*THRIFT_AMINOR(i-1,2))**2)
+    !    dVi = THRIFT_RMAJOR(i,2)*(rho_full(i)**2)*(THRIFT_AMINOR(i,2)**2) &
+    !            - THRIFT_RMAJOR(i-1,2)*(rho_full(i-1)**2)*(THRIFT_AMINOR(i-1,2)**2) 
+    !    j_temp(i) = THRIFT_RMAJOR(i,2)*dIi/(pi*dVi)
+    !END DO
+    !j_temp(nrho+2)=0
+
+    CALL deriv1_rho_o2(i_arr,i_der)
+    j_temp(1) = 0; j_temp(nrho+2) = 0;
+    DO i = 2,nrho+1
+        j_temp(i) = i_der(i)*pi*THRIFT_RMAJOR(i,2)/(rho_full(i)*THRIFT_PHIEDGE(2))*THRIFT_VP(i,2)
     END DO
-    j_temp(nrho+2)=0
 
     CALL extrapolate_arr(j_temp(2:nrho+1), j_arr)
     
