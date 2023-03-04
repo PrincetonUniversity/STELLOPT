@@ -99,7 +99,7 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
     REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr
     INTEGER :: i
-    REAL(rprec) :: drhoa
+    REAL(rprec) :: dAi
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_full
     ALLOCATE(rho_full(nrho+2))
 
@@ -111,8 +111,9 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     ! I(i) = I(i-1)+2*pi*J(i)*(rho(i)*a(i))*d(rho*a)(i)
     i_arr(1) = 0
     DO i = 2, nrho+2
-        drhoa = rho_full(i)*THRIFT_AMINOR(i,2)-rho_full(i-1)*THRIFT_AMINOR(i-1,2) !d(rho*a)
-        i_arr(i) = i_arr(i-1) + 2*pi*j_arr(i)*rho_full(i)*THRIFT_AMINOR(i,2)*drhoa
+        dAi = (rho_full(i)*THRIFT_AMINOR(i,2))**2-(rho_full(i-1)*THRIFT_AMINOR(i-1,2))**2 !d[(rho*a)^2]
+        !i_arr(i) = i_arr(i-1) + 2*pi*j_arr(i)*rho_full(i)*THRIFT_AMINOR(i,2)*dAi
+        i_arr(i) = i_arr(i-1) + pi*j_arr(i)*dAi
     END DO
     
     DEALLOCATE(rho_full)
