@@ -64,7 +64,12 @@
 
       ! Extrapolate source current density to magnetic axis and edge
       CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep), jsource_full)     
-
+      IF (lverbj) THEN
+         WRITE(6,*)'==============================================================================='
+         WRITE(6,*)' CALCULATING MAGNETIC VARIABLES'
+         WRITE(6,*) ' RHO     DV/DPHI        <B>      <B^2>        S11     RMAJOR     AMINOR   '
+      END IF
+      
       !! ONLY NECESSARY AT CURRENT TIMESTEP !! REWRITE PLS 
       ! Store magnetic variables; both preceding and current timestep vals are necessary
       THRIFT_PHIEDGE(2) = eq_phiedge
@@ -76,6 +81,8 @@
          CALL get_equil_Bav(s,THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), ier)
          CALL get_equil_sus(s,THRIFT_S11(i,2), temp1,temp1,temp1, ier)
          CALL get_equil_Rmajor(s,THRIFT_RMAJOR(i,2), temp1, THRIFT_AMINOR(i,2),ier)
+         IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') &
+           rho, THRIFT_VP(i,2), THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), ABS(THRIFT_S11(i,2)), THRIFT_RMAJOR(i,2), THRIFT_AMINOR(i,2)
       END DO
       THRIFT_S11 = ABS(THRIFT_S11)
 
@@ -118,7 +125,7 @@
          THRIFT_COEFF_C(i,mytimestep) = temp1*pprime               
          THRIFT_COEFF_D(i,mytimestep) = -temp1*jsource_full(i)*THRIFT_BAV(i,2)  
          IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') &
-           rho, etapara, THRIFT_VP(i,2), pprime, temp2*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
+           rho, etapara, THRIFT_VP(i,2), pprime, jsource_full(i)*THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), THRIFT_S11(i,2)
       END DO
 !----------------------------------------------------------------------
 !     Calculate derivatives of ABCD here (see deriv1_rho_o2)
