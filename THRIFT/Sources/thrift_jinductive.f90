@@ -26,7 +26,6 @@
                      temp1,temp2,source_axis,source_edge,Aminor,Rmajor,&
                      A_temp,B_temp,C_temp,D_temp,a1,a2,a3,a4
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: B_der, C_der, D_der, &
-                                                AI, BI, CI, DI, &
                                                 rho_full, & 
                                                 j_full, jsource_full, jplasma_full
 
@@ -44,12 +43,10 @@
 
       ! Allocate
       ALLOCATE(B_der(nrho+2),  C_der(nrho+2),  D_der(nrho+2), &
-               AI(nrho+2),     BI(nrho+2),     CI(nrho+2),     DI(nrho+2), &
                rho_full(nrho+2),j_full(nrho+2),jplasma_full(nrho+2), &
                jsource_full(nrho+2))
 
       B_der  = 0; C_der  = 0; D_der  = 0
-      AI     = 0; BI     = 0; CI     = 0; DI     = 0
       A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0
       a1     = 0; a2     = 0; a3     = 0; a4     = 0
    
@@ -78,10 +75,10 @@
          rho = rho_full(i)
          s = rho*rho
          ier = 0
-         CALL EZspline_interp(vp_spl,rho,THRIFT_VP(i,2),ier)
-         CALL get_equil_Bav(s,THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), ier)
-         CALL get_equil_sus(s,THRIFT_S11(i,2), temp1,temp1,temp1, ier)
-         CALL get_equil_Rmajor(s,THRIFT_RMAJOR(i,2), temp1, THRIFT_AMINOR(i,2),ier)
+         CALL EZspline_interp(vp_spl, rho, THRIFT_VP(i,2), ier)
+         CALL get_equil_Bav(s, THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), ier)
+         CALL get_equil_sus(s, THRIFT_S11(i,2), temp1, temp1, temp1, ier)
+         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,2), temp1, THRIFT_AMINOR(i,2),ier)
          IF (lverbj) WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
            rho, THRIFT_VP(i,2), THRIFT_BAV(i,2), THRIFT_BSQAV(i,2), ABS(THRIFT_S11(i,2)), THRIFT_RMAJOR(i,2), THRIFT_AMINOR(i,2)
       END DO
@@ -330,7 +327,6 @@
                               + THRIFT_ISOURCE(:,mytimestep)
 
       DEALLOCATE( B_der, C_der, D_der, &
-                  AI,      BI,      CI,      DI, &
                   rho_full, j_full, jplasma_full, jsource_full)
 
       RETURN
