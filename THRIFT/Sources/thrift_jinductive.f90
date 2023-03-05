@@ -249,8 +249,8 @@
       rho = 1
       CALL get_prof_pprime(rho, mytime, pprime)
       temp1 = THRIFT_BSQAV(nrho+2,2)/mu0
-      THRIFT_MATLD(nrho+2,mytimestep)  = -THRIFT_RHO(nrho)/drho
-      THRIFT_MATMD(nrho+2,mytimestep)  = 1 + pprime/temp1 + 1/(1+0.5*drho)/drhov
+      THRIFT_MATLD(nrho+2,mytimestep)  = -1.0/drho
+      THRIFT_MATMD(nrho+2,mytimestep)  = 1 + pprime/temp1 + drho/(1+0.5*drho)
       THRIFT_MATUD(nrho+2,mytimestep)  = 0
       THRIFT_MATRHS(nrho+2,mytimestep) = jsource_full(nrho+2)*THRIFT_BAV(nrho+2,2)/temp1
 
