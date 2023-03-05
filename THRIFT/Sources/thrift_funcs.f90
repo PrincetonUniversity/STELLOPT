@@ -99,7 +99,7 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
     REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr
     INTEGER :: i
-    REAL(rprec) :: drhoai
+    REAL(rprec) :: drho
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_full
     ALLOCATE(rho_full(nrho+2))
 
@@ -111,8 +111,8 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     ! I(i) = I(i-1)+2*pi*J(i)*(rho(i)*a(i))*d(rho*a)(i)
     i_arr(1) = 0
     DO i = 2, nrho+2
-        drhoai = (rho_full(i)*THRIFT_AMINOR(i,2))-(rho_full(i-1)*THRIFT_AMINOR(i-1,2)) !d[(rho*a)]
-        i_arr(i) = i_arr(i-1) + 2*pi*j_arr(i)*rho_full(i)*THRIFT_AMINOR(i,2)*drhoai
+        drho = (rho_full(i)-rho_full(i-1)) !d[(rho*a)]
+        i_arr(i) = i_arr(i-1) + j_arr(i)*pi*rho_full(i)*THRIFT_AMINOR(i,2)*drho
         !i_arr(i) = i_arr(i-1) + pi*j_arr(i)*dAi
     END DO
     
@@ -159,10 +159,11 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     ! J = dI/drho*(pi*Rmajor)/(rho*Phi_a)*dV/dPhi
 
     CALL deriv1_rho_o2(i_arr,i_der)
-    j_temp(1) = 0; j_temp(nrho+2) = 0;
-    DO i = 2,nrho+1
-        j_temp(i) = i_der(i)*pi*THRIFT_RMAJOR(i,2)/(rho_full(i)*THRIFT_PHIEDGE(2))*THRIFT_VP(i,2)
-    END DO
+    j_temp = i_der/(THRIFT_AMINOR(:,2)*pi)
+    !DO i = 2,nrho+1
+    !    j_temp(i) = i_der(i)*pi*THRIFT_RMAJOR(i,2)/(rho_full(i)*THRIFT_PHIEDGE(2))*THRIFT_VP(i,2)
+    !END DO
+    
 
     CALL extrapolate_arr(j_temp(2:nrho+1), j_arr)
     
