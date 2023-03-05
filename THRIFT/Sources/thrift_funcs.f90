@@ -180,14 +180,14 @@ SUBROUTINE deriv1_rho_o2(arr, der_arr)
     REAL(rprec) :: step
     step = THRIFT_RHO(2) - THRIFT_RHO(1)
 
-    ! Derivatives at 1,nrho not necessary
+    ! Set derivatives = 0 on boundaries
     der_arr(1) = 0
     der_arr(2) = (arr(3)+3*arr(2)-4*arr(1))/(3*step) ! dY/drho(1) = [Y(3) + 3*Y(2) - 4*Y(1)]/3h
-    DO i = 3, nrho-2 ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h 
+    DO i = 3, nrho ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h 
         der_arr(i) = (arr(i+1)-arr(i-1))/(2*step)
     END DO
-    der_arr(nrho-1) = (4*arr(nrho)-3*arr(nrho-1)-arr(nrho-2))/(3*step) ! [4*Y(n) - 3*Y(n-1) - Y(n-2)]/3h
-    der_arr(nrho) = 0
+    der_arr(nrho+1) = (4*arr(nrho+2)-3*arr(nrho+1)-arr(nrho-2))/(3*step) ! [4*Y(n) - 3*Y(n-1) - Y(n-2)]/3h
+    der_arr(nrho+2) = 0
 
     RETURN
 
