@@ -230,29 +230,43 @@
          a1 = THRIFT_ALPHA1(j,mytimestep); a2 = THRIFT_ALPHA2(j,mytimestep); 
          a3 = THRIFT_ALPHA3(j,mytimestep); a4 = THRIFT_ALPHA4(j,mytimestep); 
          IF (i==2) THEN
-            THRIFT_MATLD(i,mytimestep) = -a3/drho + 4*a4/(drho**2)
-            THRIFT_MATMD(i,mytimestep) = a2 - a3/(2*drho) - 6*a4/(drho**2) - 1.0/dt
-            THRIFT_MATUD(i,mytimestep) = a3/(2*drho) + 2*a4/(drho**2)
+            THRIFT_MATLD(i,mytimestep) = -4*a3/(3*drho) + 16*a4/(5*drho**2)
+            THRIFT_MATMD(i,mytimestep) = a2 + a3/drho - 5*a4/(drho**2) - 1.0/dt
+            THRIFT_MATUD(i,mytimestep) = a3/(3*drho) + 2*a4/(drho**2)
          ELSE IF (i==nrho+1) THEN
-            THRIFT_MATLD(i,mytimestep) = -a3/(2*drho) + 2*a4/(drho**2)
-            THRIFT_MATMD(i,mytimestep) = a2 - a3/(2*drho) - 6*a4/(drho**2) - 1.0/dt
-            THRIFT_MATUD(i,mytimestep) = a3/drho + 4*a4/(drho**2)
+            THRIFT_MATLD(i,mytimestep) = -a3/(3*drho) + 2*a4/(drho**2)
+            THRIFT_MATMD(i,mytimestep) = a2 - a3/drho - 5*a4/(drho**2) - 1.0/dt
+            THRIFT_MATUD(i,mytimestep) = 4*a3/(3*drho) + 16*a4/(5*drho**2)
          ELSE
             THRIFT_MATLD(i,mytimestep) = -a3/(2*drho) + a4/(drho**2)  
             THRIFT_MATMD(i,mytimestep) = a2 - 2*a4/(drho**2) - 1.0/dt     
             THRIFT_MATUD(i,mytimestep) = a3/(2*drho) + a4/(drho**2)  
          END IF
          THRIFT_MATRHS(i,mytimestep) = -THRIFT_UGRID(j,1)/dt - a1 
-      END DO
+      END DO 
 
       ! Plasma edge (rho=1)
       rho = 1
       CALL get_prof_pprime(rho, mytime, pprime)
       temp1 = THRIFT_BSQAV(nrho+2,2)/mu0
       THRIFT_MATLD(nrho+2,mytimestep)  = -THRIFT_RHO(nrho)/drho
-      THRIFT_MATMD(nrho+2,mytimestep)  = 1.0/drho + pprime/temp1
+      THRIFT_MATMD(nrho+2,mytimestep)  = 1 + pprime/temp1 + 1/(1+0.5*drho)/drhov
       THRIFT_MATUD(nrho+2,mytimestep)  = 0
       THRIFT_MATRHS(nrho+2,mytimestep) = jsource_full(nrho+2)*THRIFT_BAV(nrho+2,2)/temp1
+
+      ! Nonzero element at (2,4)
+      temp1 = -THRIFT_ALPHA4(1,mytimestep)/(5*drho**2)
+      temp1 = temp1/THRIFT_MATUD(3,mytimestep)
+      THRIFT_MATUD(2,mytimestep)  = THRIFT_MATUD(2,mytimestep)  - temp1*THRIFT_MATMD(3,mytimestep)
+      THRIFT_MATMD(2,mytimestep)  = THRIFT_MATMD(2,mytimestep)  - temp1*THRIFT_MATLD(3,mytimestep)
+      THRIFT_MATRHS(2,mytimestep) = THRIFT_MATRHS(2,mytimestep) - temp1*THRIFT_MATRHS(3,mytimestep)
+
+      ! Nonzero element at (nrho+1,nrho-2)
+      temp2 = -THRIFT_ALPHA4(nrho,mytimestep)/(5*drho**2)  
+      temp2 = temp2/THRIFT_MATLD(nrho,mytimestep)
+      THRIFT_MATLD(nrho+1,mytimestep)  = THRIFT_MATLD(nrho+1,mytimestep)  - temp2*THRIFT_MATMD(nrho,mytimestep)
+      THRIFT_MATMD(nrho+1,mytimestep)  = THRIFT_MATMD(nrho+1,mytimestep)  - temp2*THRIFT_MATUD(nrho,mytimestep)
+      THRIFT_MATRHS(nrho+1,mytimestep) = THRIFT_MATRHS(nrho+1,mytimestep) - temp2*THRIFT_MATRHS(nrho,mytimestep)
 
       ! Solve system of equations
       CALL solve_tdm(THRIFT_MATLD(:,mytimestep),&
