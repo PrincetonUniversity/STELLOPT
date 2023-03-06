@@ -101,7 +101,7 @@
 !     CALCULATING COEFFICIENTS ABCD
 !----------------------------------------------------------------------
 !     Calculate ABCD (everything evaluated at rho_j)
-!     > A(j) = S11/(4*rho*Phi_edge^2)
+!     > A(j) = S11/(4*rho*Phi_edge)
 !     > B(j) = 2*etapara*dV/dPhi*<B^2>/mu_0
 !     > C(j) = 2*etapara*dV/dPhi*dp/drho
 !     > D(j) = -2*etapara*dV/dPhi*<Js.B>
@@ -118,7 +118,7 @@
          CALL get_prof_pprime(rho,mytime,pprime)
          temp1 = 2*etapara*THRIFT_VP(i,2) ! temp1 <- 2 eta dV/dPhi 
          IF (i > 1) &
-            THRIFT_COEFF_A(i,mytimestep) = THRIFT_S11(i,2)/(4*rho*THRIFT_PHIEDGE(2)**2)
+            THRIFT_COEFF_A(i,mytimestep) = THRIFT_S11(i,2)/(4*rho*THRIFT_PHIEDGE(2))
          THRIFT_COEFF_B(i,mytimestep) = temp1*THRIFT_BSQAV(i,2)/mu0
          THRIFT_COEFF_C(i,mytimestep) = temp1*pprime               
          THRIFT_COEFF_D(i,mytimestep) = -temp1*jsource_full(i)*THRIFT_BAV(i,2)  
@@ -250,7 +250,7 @@
       CALL get_prof_pprime(rho, mytime, pprime)
       temp1 = THRIFT_BSQAV(nrho+2,2)/mu0
       THRIFT_MATLD(nrho+2,mytimestep)  = -1.0/drho
-      THRIFT_MATMD(nrho+2,mytimestep)  = 1 + pprime/temp1 + drho/(1+0.5*drho)
+      THRIFT_MATMD(nrho+2,mytimestep)  = 1 + pprime/temp1 + 1/drho*(1.0/(1+0.5*drho))
       THRIFT_MATUD(nrho+2,mytimestep)  = 0
       THRIFT_MATRHS(nrho+2,mytimestep) = jsource_full(nrho+2)*THRIFT_BAV(nrho+2,2)/temp1
 
