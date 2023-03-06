@@ -112,8 +112,9 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     i_arr(1) = 0
     DO i = 2, nrho+2
         drho = (rho_full(i)-rho_full(i-1)) !d[(rho*a)]
-        i_arr(i) = i_arr(i-1) + j_arr(i)*pi*rho_full(i)*THRIFT_AMINOR(i,2)*drho
+        !i_arr(i) = i_arr(i-1) + j_arr(i)*pi*rho_full(i)*THRIFT_AMINOR(i,2)*drho
         !i_arr(i) = i_arr(i-1) + pi*j_arr(i)*dAi
+        i_arr(i) = i_arr(i-1) + 2*pi*rho_full(i)*THRIFT_AMINOR(i,2)**2*j_arr(i)*drho
     END DO
     
     DEALLOCATE(rho_full)
@@ -158,8 +159,11 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     !   dV/drho = 2*rho*Phi_a*dV/dPhi
     ! J = dI/drho*(pi*Rmajor)/(rho*Phi_a)*dV/dPhi
 
+    j_temp(1) = 0
     CALL deriv1_rho_o2(i_arr,i_der)
-    j_temp = i_der/(THRIFT_AMINOR(:,2)*pi)
+    DO i = 2, nrho+1
+        j_temp = i_der(i)/(2*pi*rho_full(i)*THRIFT_AMINOR(i,2)**2)
+    END DO
     !DO i = 2,nrho+1
     !    j_temp(i) = i_der(i)*pi*THRIFT_RMAJOR(i,2)/(rho_full(i)*THRIFT_PHIEDGE(2))*THRIFT_VP(i,2)
     !END DO
