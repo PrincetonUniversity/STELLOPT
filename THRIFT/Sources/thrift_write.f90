@@ -73,6 +73,8 @@
          CALL write_var_hdf5(fid,'THRIFT_JSOURCE',nrho,ntimesteps,ier,DBLVAR=THRIFT_JSOURCE,ATT='Total Source Current Density [A/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JSOURCE',ier)
          ! Currents
+         CALL write_var_hdf5(fid,'THRIFT_UGRID',nfg,ntimesteps,ier,DBLVAR=THRIFT_UGRID,ATT='U on the full grid',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_UGRID',ier)
          CALL write_var_hdf5(fid,'THRIFT_I',nfg,ntimesteps,ier,DBLVAR=THRIFT_I,ATT='Total Enclosed Current [A]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_I',ier)
          CALL write_var_hdf5(fid,'THRIFT_IBOOT',nfg,ntimesteps,ier,DBLVAR=THRIFT_IBOOT,ATT='Total Enclosed Bootstrap Current [A]',ATT_NAME='description')

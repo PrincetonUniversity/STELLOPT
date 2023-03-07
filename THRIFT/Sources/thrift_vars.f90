@@ -41,7 +41,7 @@ MODULE thrift_vars
 
     LOGICAL :: leccd, lnbcd, lohmic, ldiagno, lscreen_subcodes, lverbj
     LOGICAL, DIMENSION(:), ALLOCATABLE :: lbooz
-    REAL(rprec), DIMENSION(2) :: THRIFT_UEDGE, THRIFT_PHIEDGE
+    REAL(rprec), DIMENSION(2) :: THRIFT_PHIEDGE
     INTEGER :: ntimesteps, nrho, npicard, &
              win_thrift_j, win_thrift_jplasma, win_thrift_jboot, &
              win_thrift_jeccd, win_thrift_jnbcd, win_thrift_johmic, &
