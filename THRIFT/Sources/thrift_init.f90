@@ -79,7 +79,7 @@
       CALL mpialloc(THRIFT_INBCD,  nrho+2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_inbcd)
       CALL mpialloc(THRIFT_IOHMIC, nrho+2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_iohmic)
       CALL mpialloc(THRIFT_ISOURCE,nrho+2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_isource)
-      CALL mpialloc(THRIFT_UGRID,  nrho+2,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_ugrid)           
+      CALL mpialloc(THRIFT_UGRID,  nrho+2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_ugrid)           
       CALL mpialloc(THRIFT_VP,     nrho+2,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_vp)     
       CALL mpialloc(THRIFT_BAV,    nrho+2,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_bav)     
       CALL mpialloc(THRIFT_BSQAV,  nrho+2,          2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_bsqav)     

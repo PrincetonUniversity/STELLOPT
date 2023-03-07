@@ -38,7 +38,7 @@
       THRIFT_IBOOT    = 0; THRIFT_IECCD    = 0; THRIFT_INBCD    = 0
       THRIFT_IOHMIC   = 0;     
       ! Initialize magnetic variables
-      THRIFT_UGRID    = 0; THRIFT_UEDGE    = 0
+      THRIFT_UGRID    = 0; 
       THRIFT_VP       = 0; THRIFT_PHIEDGE  = 0; THRIFT_S11      = 0
       THRIFT_BAV      = 0; THRIFT_BSQAV    = 0
       THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0
@@ -154,8 +154,6 @@
 
          END DO
          ! Once converged, update values
-         THRIFT_UGRID(:,1)  = THRIFT_UGRID(:,2)
-         THRIFT_UEDGE(1)    = THRIFT_UEDGE(2)
          THRIFT_VP(:,1)     = THRIFT_VP(:,2) 
          THRIFT_BAV(:,1)    = THRIFT_BAV(:,2)
          THRIFT_BSQAV(:,1)  = THRIFT_BSQAV(:,2) 
