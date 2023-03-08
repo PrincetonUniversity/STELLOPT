@@ -180,6 +180,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q1,sigma_stella_q1
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q2,sigma_stella_q2
       REAL(rprec), DIMENSION(nsd)   ::  target_raderb00,sigma_raderb00
+      REAL(rprec), DIMENSION(nsd)   ::  target_mshear,sigma_mshear
       REAL(rprec), DIMENSION(nsd)   ::  target_mbm,sigma_mbm
       REAL(rprec), DIMENSION(nsd)   ::  target_gamma_c, sigma_gamma_c ! this is ganmma_c implennted in STELLOPT (?) (EdiSan)
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
@@ -323,6 +324,7 @@
       INTEGER, PARAMETER :: jtarget_knosos_vbb = 917
       INTEGER, PARAMETER :: jtarget_knosos_wbw = 918
       INTEGER, PARAMETER :: jtarget_knosos_dbo = 919
+      INTEGER, PARAMETER :: jtarget_mshear   = 921
 
 
 
@@ -516,6 +518,8 @@
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
          CASE(jtarget_raderb00)
             WRITE(iunit, out_format) 'Radial derivative of B_00'
+         CASE(jtarget_mshear)
+            WRITE(iunit, out_format) 'Magnetic shear'
          CASE(jtarget_mbm)
             WRITE(iunit, out_format) 'B_max-B_min(s=1)'
          CASE(jtarget_gamma_c)

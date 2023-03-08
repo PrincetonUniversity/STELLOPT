@@ -30,20 +30,20 @@
 !DEC$ IF DEFINED (GENE)
       !USE par_other, ONLY: svn_gene => svn_rev, release_gene => release !OLD SVN Version
       USE par_other, ONLY: svn_gene => git_master, release_gene => git_branch
-!DEC$ ENDIF        
+!DEC$ ENDIF
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       USE beams3d_runtime, ONLY: BEAMS3D_VERSION
-!DEC$ ENDIF        
+!DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
       USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, zmns_coil, zmnc_coil, mnmax_coil, xm_coil, xn_coil, verbose, regcoil_nml
       !USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
       !                             rc_zmnc_stellopt, rc_zmns_stellopt, &
       !                             rc_nfp => nfp
 !DEC$ ENDIF
-      
+
 !-----------------------------------------------------------------------
 !     Module Variables
-!         
+!
 !-----------------------------------------------------------------------
       IMPLICIT NONE
 !-----------------------------------------------------------------------
@@ -68,7 +68,7 @@
 !                               Determines mutation scaling factor (GADE)
 !                               Determines Velocity scaling factor (PSO)
 !            mode               Determines if scaling is automatic (1) or user(0) (LMDIF)
-!                               Determines strategy (GADE) 
+!                               Determines strategy (GADE)
 !                               Determines number of divisions if > numprocs (MAP)
 !            cr_strategy        Crossover strategy (GADE, 0:exponential, 1: binomial)
 !            npopulation        Size of population (defaults to nproc if -1 or not set)
@@ -89,8 +89,8 @@
 !            lac_s_opt          Logical array to control AC_AUX_S variation
 !            lac_f_opt          Logical array to control AC_AUX_F variation
 !            lai_s_opt          Logical array to control AI_AUX_S variation
-!            lai_f_opt          Logical array to control AI_AUX_F variation                         
-!            lphi_s_opt         Logical array to control PHI_AUX_S variation (Electrostatic potential) 
+!            lai_f_opt          Logical array to control AI_AUX_F variation
+!            lphi_s_opt         Logical array to control PHI_AUX_S variation (Electrostatic potential)
 !            lphi_f_opt         Logical array to control PHI_AUX_F variation (Electrostatic potential)
 !            lah_f_opt          Logical array to control AH_AUX_F variation
 !            lat_f_opt          Logical array to control AT_AUX_F variation
@@ -206,14 +206,14 @@
 !            xn_resjac          Array of corresponding n values to target
 !            target_separatrix  Target array minimum distance between plasma and separatrix
 !            r_separatrix       Array of (ntheta,nzeta) radial separatrix values [m]
-!            z_separatrix       Array of (ntheta,nzeta) vertical separatrix values [m] 
+!            z_separatrix       Array of (ntheta,nzeta) vertical separatrix values [m]
 !            phi_separatrix     Array of (ntheta,nzeta) toroidal angle separatrix values [rad]
 !            target_txport      Array of target values for turbulent transport optimization
 !            s_txport           Array of normalized toroidal fluxes to calculated turbulent transport
 !            target_dkes        Array of target values for drift kinetic optimization
 !            nu_dkes            Array of nu values for DKES optimization [m] (Efield from phi array)
 !            target_knosos_1nu  Array of target values for drift kinetic optimization (1/nu regime)
-!            target_knosos_snu  Array of target values for drift kinetic optimization (sqrtnu regime)      
+!            target_knosos_snu  Array of target values for drift kinetic optimization (sqrtnu regime)
 !            target_knosos_sbp  Array of target values for drift kinetic optimization (sb-p regime)
 !            target_knosos_gmc  Array of target values for drift kinetic optimization (gamma_c for fast ion confinement)
 !            target_knosos_gma  Array of target values for drift kinetic optimization (gamma_alpha fast ion confinement)
@@ -221,7 +221,7 @@
 !            target_knosos_vbm  Array of target values for drift kinetic optimization (test)
 !            target_knosos_vb0  Array of target values for drift kinetic optimization (test)
 !            target_knosos_vbb  Array of target values for drift kinetic optimization (test)
-!            target_knosos_wbw  Array of target values for drift kinetic optimization (test)      
+!            target_knosos_wbw  Array of target values for drift kinetic optimization (test)
 !            target_knosos_dbo  Array of target values for drift kinetic optimization (test)
 !!            nu_knosos          Array of nu values for KNOSOS optimization [m] (Efield from phi array)
 !            target_stella_q1  Array of target values for turbulence optimization (q1)
@@ -230,7 +230,7 @@
 !            target_mbm         Targer for B_max minus B_min at s=1
 !            target_limter      Target array minimum distance between plasma and limiter surface
 !            r_limiter          Array of (ntheta,nzeta) radial limiter values [m]
-!            z_limiter          Array of (ntheta,nzeta) vertical limiter values [m] 
+!            z_limiter          Array of (ntheta,nzeta) vertical limiter values [m]
 !            phi_limiter        Array of (ntheta,nzeta) toroidal angle limiter values [rad]
 !            txport_proxy       String of proxy function name.
 !            curvature_P2       Min value of 2nd principal curvature
@@ -246,7 +246,7 @@
 !                         target_regcoil_current_density, sigma_regcoil_current_density, &
 !                         regcoil_winding_surface_separation, &
 !                         regcoil_current_density
-!      
+!
 !-----------------------------------------------------------------------
 !     Subroutines
 !
@@ -404,6 +404,7 @@
                          target_stella_q1, sigma_stella_q1, &
                          target_stella_q2, sigma_stella_q2, &
                          target_raderb00, sigma_raderb00, &
+                         target_mshear, sigma_mshear, &
                          target_mbm, sigma_mbm, &
                          target_jdotb,sigma_jdotb,target_bmin,sigma_bmin,&
                          target_bmax,sigma_bmax,target_jcurv,sigma_jcurv,&
@@ -449,7 +450,7 @@
                          lRosenbrock_X_opt, dRosenbrock_X_opt, &
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
                          target_Rosenbrock_F, sigma_Rosenbrock_F
-       
+
 !-----------------------------------------------------------------------
 !     Subroutines
 !         read_stellopt_input:   Reads optimum namelist
@@ -659,7 +660,7 @@
       sigma_regcoil_chi2_b  = bigno
       target_regcoil_current_density = 8.0e6
       sigma_regcoil_current_density  = bigno
-      
+
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
       phi_type        = 'akima_spline'
@@ -681,8 +682,8 @@
       ne_aux_f(1:3)   = 1.0 ! Do this so we can scale T to P
       zeff_aux_s(:)   = -1.0
       zeff_aux_s(1:3) = (/0.0,0.50,1.0/)
-      zeff_aux_f(:)   = 0.0 
-      zeff_aux_f(1:3) = 1.0 
+      zeff_aux_f(:)   = 0.0
+      zeff_aux_f(1:3) = 1.0
       te_aux_s(:)     = -1.0
       te_aux_f(:)     = 0.0
       ti_aux_s(:)     = -1.0
@@ -697,7 +698,7 @@
       bootj_aux_s(:)   = -1.0
       ! bootj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       bootj_aux_f(:)   = 0.0
-      sfincs_s        = -1 
+      sfincs_s        = -1
       sfincs_s(1:3)   = (/ 0.2, 0.5, 0.8 /)
       vboot_tolerance = 0.01
       ! The default setting for VBOOT_MAX_ITERATIONS is very high (1e4).
@@ -1023,6 +1024,8 @@
       sigma_stella_q2   = bigno
       target_raderb00   = 0
       sigma_raderb00    = bigno
+      target_mshear     = 0
+      sigma_mshear      = bigno
       target_mbm        = 0
       sigma_mbm         = bigno
       target_jdotb      = 0.0
@@ -1175,13 +1178,13 @@
          IF (myid == master) THEN
             WRITE(6,*) '<----REGCOIL: Reading NESCIN Spectrum from file'
          end if
-         !call regcoil_read_nescin_spectrum(regcoil_nescin_filename, (myid == master)) 
+         !call regcoil_read_nescin_spectrum(regcoil_nescin_filename, (myid == master))
          verbose = (myid == master)
          ! We need to read geometry_option_coil and nescin_filename from the input namelist before the coil surface can be loaded.
          CALL safe_open(iunit, istat, TRIM(filename), 'old', 'formatted')
          READ(iunit, nml=regcoil_nml, iostat=istat)
          CLOSE(iunit)
-         call regcoil_init_coil_surface() 
+         call regcoil_init_coil_surface()
          IF (myid == master) THEN
             WRITE(6,*) '<----REGCOIL: Initializing winding surface with NESCIN Spectrum'
          end if
@@ -1209,7 +1212,7 @@
             regcoil_rcws_zbound_c(m, n) = zmnc_coil(imn)
             regcoil_rcws_zbound_s(m, n) = zmns_coil(imn)
          end do
-         
+
          if (myid==master) then
             WRITE(6,*) '<----STELLOPT_INPUT_MOD: Finished parsing nescoil data and', &
                  ' assigning stellopt variables'
@@ -1236,7 +1239,7 @@
          ne_opt = ne_opt / ne_norm
          ne_aux_f = ne_aux_f / ne_norm
       END IF
-         
+
       ! Print code messages
       CALL tolower(equil_type)
       IF ((myid == master) .and. (TRIM(equil_type(1:4)) == 'vmec') ) THEN
@@ -1296,7 +1299,7 @@
          WRITE(6,"(2X,A)") "=========    (D. V. ANDERSON, W. A. COOPER, R. GRUBER AND U. SCHWENN)   ========="
          WRITE(6,"(2X,A)") "=========                   wilfred.cooper@epfl.ch                      ========="
          WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "         
+         WRITE(6,*)        "    "
       END IF
 !DEC$ ELSE
       IF (ANY(sigma_kink < bigno)) THEN
@@ -1398,7 +1401,7 @@
          END IF
       END IF
 !DEC$ ENDIF
-!DEC$ IF DEFINED (KNOSOS_OPT) 
+!DEC$ IF DEFINED (KNOSOS_OPT)
       IF (myid == master .and. (ANY(sigma_knosos_1nu < bigno) .or. ANY(sigma_knosos_snu < bigno) .or. ANY(sigma_knosos_sbp < bigno) .or.&
            ANY(sigma_knosos_gmc < bigno) .or. ANY(sigma_knosos_gma < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_vbm < bigno) .or. &
            ANY(sigma_knosos_vb0 < bigno) .or. ANY(sigma_knosos_vbb < bigno) .or. ANY(sigma_knosos_wbw < bigno) .or. ANY(sigma_knosos_dbo < bigno))) THEN
@@ -1435,7 +1438,7 @@
          END IF
       END IF
 !DEC$ ENDIF
-!DEC$ IF DEFINED (STELLA_OPT) 
+!DEC$ IF DEFINED (STELLA_OPT)
       IF (myid == master .and. (ANY(sigma_stella_q1 < bigno) .or. ANY(sigma_stella_q2 < bigno))) THEN
          WRITE(6,*)        " stella "
          WRITE(6,"(2X,A)") "================================================================================="
@@ -1456,7 +1459,7 @@
             WRITE(6,*) '  information.'
          END IF
       END IF
-!DEC$ ENDIF  
+!DEC$ ENDIF
       IF (myid == master .and. (ANY(sigma_fluxloop < bigno) .or. ANY(sigma_bprobe < bigno) .or. ANY(sigma_segrog < bigno) )) THEN
          WRITE(6,*)        " Magnetic Diagnostic calculation provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
@@ -1680,7 +1683,7 @@
       CALL write_stel_lvar_vec(iunit,lth_opt,th_min,th_max,dth_opt,'TH',0,20)
 
       CALL write_stel_lvar_vec(iunit,lam_f_opt,am_f_min,am_f_max,dam_f_opt,'AM_F',1,ndatafmax)
- 
+
       CALL write_stel_lvar_vec(iunit,lac_f_opt,ac_f_min,ac_f_max,dac_f_opt,'AC_F',1,ndatafmax)
 
       CALL write_stel_lvar_vec(iunit,lai_f_opt,ai_f_min,ai_f_max,dai_f_opt,'AI_F',1,ndatafmax)
@@ -1706,7 +1709,7 @@
       CALL write_stel_lvar_vec(iunit,lbootj_f_opt,bootj_f_min,bootj_f_max,dbootj_f_opt,'BOOTJ_F',1,ndatafmax)
 
       CALL write_stel_lvar_vec(iunit,lemis_xics_f_opt,emis_xics_f_min,emis_xics_f_max,demis_xics_f_opt,'EMIS_XICS_F',1,ndatafmax)
-      
+
       IF (ANY(laxis_opt)) THEN
          DO n = LBOUND(laxis_opt,DIM=1), UBOUND(laxis_opt,DIM=1)
             IF (laxis_opt(n) .and. (raxis_min(n)>-bigno .or. raxis_max(n)<bigno .or. zaxis_min(n)>-bigno .or. zaxis_max(n)<bigno)) THEN
@@ -1777,7 +1780,7 @@
         END DO
       END IF
 
-      
+
       IF (ANY(lbound_opt)) THEN
          DO m = LBOUND(lbound_opt,DIM=2), UBOUND(lbound_opt,DIM=2)
            DO n = LBOUND(lbound_opt,DIM=1), UBOUND(lbound_opt,DIM=1)
@@ -1840,7 +1843,7 @@
          END DO
          WRITE(iunit,outint) 'NPTS_BIOT',npts_biot
       END IF
-      
+
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Profile Functions'
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1921,16 +1924,16 @@
          WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'PHI_AUX_F',(phi_aux_f(n), n=1,ik)
       END IF
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-      WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS' 
+      WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS'
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       IF (sigma_x < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_X',target_x
          WRITE(iunit,outflt) 'SIGMA_X',sigma_x
-      END IF 
+      END IF
       IF (sigma_y < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_Y',target_y
          WRITE(iunit,outflt) 'SIGMA_Y',sigma_y
-      END IF 
+      END IF
       IF (ANY(sigma_Rosenbrock_F < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Rosenbrock Test Function'
@@ -1948,83 +1951,83 @@
       IF (sigma_phiedge < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_PHIEDGE',target_phiedge
          WRITE(iunit,outflt) 'SIGMA_PHIEDGE',sigma_phiedge
-      END IF 
+      END IF
       IF (sigma_curtor < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_CURTOR',target_curtor
          WRITE(iunit,outflt) 'SIGMA_CURTOR',sigma_curtor
-      END IF 
+      END IF
       IF (sigma_curtor_max < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_CURTOR_MAX',target_curtor_max
          WRITE(iunit,outflt) 'SIGMA_CURTOR_MAX',sigma_curtor_max
-      END IF 
+      END IF
       IF (sigma_rbtor < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_RBTOR',target_rbtor
          WRITE(iunit,outflt) 'SIGMA_RBTOR',sigma_rbtor
-      END IF 
+      END IF
       IF (sigma_b0 < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_B0',target_b0
          WRITE(iunit,outflt) 'SIGMA_B0',sigma_b0
-      END IF 
+      END IF
       IF (sigma_r0 < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_R0',target_r0
          WRITE(iunit,outflt) 'SIGMA_R0',sigma_r0
-      END IF 
+      END IF
       IF (sigma_z0 < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_Z0',target_z0
          WRITE(iunit,outflt) 'SIGMA_Z0',sigma_z0
-      END IF 
+      END IF
       IF (sigma_volume < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_VOLUME',target_volume
          WRITE(iunit,outflt) 'SIGMA_VOLUME',sigma_volume
-      END IF 
+      END IF
       IF (sigma_beta < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_BETA',target_beta
          WRITE(iunit,outflt) 'SIGMA_BETA',sigma_beta
-      END IF 
+      END IF
       IF (sigma_betapol < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_BETAPOL',target_betapol
          WRITE(iunit,outflt) 'SIGMA_BETAPOL',sigma_betapol
-      END IF 
+      END IF
       IF (sigma_betator < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_BETATOR',target_betator
          WRITE(iunit,outflt) 'SIGMA_BETATOR',sigma_betator
-      END IF 
+      END IF
       IF (sigma_wp < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_WP',target_wp
          WRITE(iunit,outflt) 'SIGMA_WP',sigma_wp
-      END IF 
+      END IF
       IF (sigma_aspect < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_ASPECT',target_aspect
          WRITE(iunit,outflt) 'SIGMA_ASPECT',sigma_aspect
-      END IF 
+      END IF
       IF (sigma_curvature < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_CURVATURE',target_curvature
          WRITE(iunit,outflt) 'SIGMA_CURVATURE',sigma_curvature
-      END IF 
+      END IF
       IF (sigma_kappa < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_KAPPA',target_kappa
          WRITE(iunit,outflt) 'SIGMA_KAPPA',sigma_kappa
          WRITE(iunit,outflt) 'PHI_KAPPA',phi_kappa
-      END IF 
+      END IF
       IF (sigma_kappa_box < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_KAPPA_BOX',target_kappa_box
          WRITE(iunit,outflt) 'SIGMA_KAPPA_BOX',sigma_kappa_box
          WRITE(iunit,outflt) 'PHI_KAPPA_BOX',phi_kappa_box
-      END IF 
+      END IF
       IF (sigma_kappa_avg < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_KAPPA_AVG',target_kappa_avg
          WRITE(iunit,outflt) 'SIGMA_KAPPA_AVG',sigma_kappa_avg
-      END IF 
+      END IF
       IF (sigma_aspect_max < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_ASPECT_MAX',target_aspect_max
          WRITE(iunit,outflt) 'SIGMA_ASPECT_MAX',sigma_aspect_max
          WRITE(iunit,outflt) 'WIDTH_ASPECT_MAX',width_aspect_max
-      END IF          
+      END IF
       IF (sigma_gradp_max < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_GRADP_MAX',target_gradp_max
          WRITE(iunit,outflt) 'SIGMA_GRADP_MAX',sigma_gradp_max
          WRITE(iunit,outflt) 'WIDTH_GRADP_MAX',width_gradp_max
-      END IF          
+      END IF
       IF (sigma_pmin < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_PMIN',target_pmin
          WRITE(iunit,outflt) 'SIGMA_PMIN',sigma_pmin
@@ -2033,7 +2036,7 @@
       IF (sigma_curvature_P2 < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
          WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
-      END IF          
+      END IF
       IF ((ANY(sigma_coillen < bigno)).OR.(ANY(sigma_coilsegvar < bigno)).OR.&
            (ANY(sigma_coilcrv < bigno)).OR.(sigma_coilsep < bigno).OR.&
            (ANY(sigma_coilself < bigno)).OR.(ANY(sigma_coiltorvar < bigno)).OR.&
@@ -2098,14 +2101,14 @@
       END IF
       IF (ANY(lbooz)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          BOOZER COORDINATE TRANSFORMATION'  
+         WRITE(iunit,'(A)') '!          BOOZER COORDINATE TRANSFORMATION'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,outint) 'MBOZ',mboz 
+         WRITE(iunit,outint) 'MBOZ',mboz
          WRITE(iunit,outint) 'NBOZ',nboz
       END IF
       IF (ANY(sigma_helicity < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          BOOZER COORDINATE HELICITY'  
+         WRITE(iunit,'(A)') '!          BOOZER COORDINATE HELICITY'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outcmp) 'HELICITY',NINT(REAL(helicity)),NINT(AIMAG(helicity))
          n=0
@@ -2120,7 +2123,7 @@
       END IF
       IF (ANY(sigma_helicity_old < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          BOOZER COORDINATE HELICITY (OLD)'  
+         WRITE(iunit,'(A)') '!          BOOZER COORDINATE HELICITY (OLD)'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outcmp) 'HELICITY',NINT(REAL(helicity)),NINT(AIMAG(helicity))
          n=0
@@ -2135,7 +2138,7 @@
       END IF
       IF (ANY(sigma_resjac < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          BOOZER Resonant Modes'  
+         WRITE(iunit,'(A)') '!          BOOZER Resonant Modes'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
          DO ik = 1,UBOUND(sigma_resjac,DIM=1)
@@ -2151,7 +2154,7 @@
       END IF
       IF (ANY(sigma_balloon < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          BALLOONING CALCULATION'  
+         WRITE(iunit,'(A)') '!          BALLOONING CALCULATION'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=COUNT(balloon_theta >= 0.0)
          WRITE(iunit,"(2X,A,1X,'=',10(2X,ES22.12E3))") 'BALLOON_THETA',(balloon_theta(ik), ik = 1, n)
@@ -2169,7 +2172,7 @@
       END IF
       IF (ANY(sigma_bootstrap < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          BOOTSTRAP CALCULATION'  
+         WRITE(iunit,'(A)') '!          BOOTSTRAP CALCULATION'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
          DO ik = 1,UBOUND(sigma_bootstrap,DIM=1)
@@ -2183,7 +2186,7 @@
       END IF
       IF (ANY(sigma_neo < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          NEOCLASSICAL TRANSPORT (NEO)'  
+         WRITE(iunit,'(A)') '!          NEOCLASSICAL TRANSPORT (NEO)'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
          DO ik = 1,UBOUND(sigma_neo,DIM=1)
@@ -2197,7 +2200,7 @@
       END IF
       IF (ANY(sigma_kink < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          KINK STABILITY (TERPSICHORE)'  
+         WRITE(iunit,'(A)') '!          KINK STABILITY (TERPSICHORE)'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,"(2(2X,A,1X,'=',1X,I5))") 'MLMNB_KINK',mlmnb_kink,'IVAC_KINK',ivac_kink
          WRITE(iunit,"(2(2X,A,1X,'=',1X,I5))") 'MMAXDF_KINK',mmaxdf_kink,'NMAXDF_KINK',nmaxdf_kink
@@ -2214,7 +2217,7 @@
       END IF
       IF (ANY(sigma_dkes < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          DRIFT-KINETICS (DKES)'  
+         WRITE(iunit,'(A)') '!          DRIFT-KINETICS (DKES)'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
          DO ik = 1,UBOUND(sigma_dkes,DIM=1)
@@ -2366,7 +2369,7 @@
             END DO
          END IF
       END IF
-      
+
       IF (ANY(sigma_stella_q1 < bigno) .or. ANY(sigma_stella_q2 < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          TURBULENCE (stella)                                         '
@@ -2394,7 +2397,7 @@
             END DO
          END IF
       END IF
-      
+
       IF(ANY(sigma_raderb00 < bigno)) THEN
          WRITE(iunit,'(A)')'!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Radial Derivative of B00 (dB_00ds)'
@@ -2409,7 +2412,22 @@
                  'SIGMA_RADERB00(',ik,') = ',sigma_raderb00(ik)
          END DO
       END IF
-      
+
+      IF(ANY(sigma_mshear < bigno)) THEN
+         WRITE(iunit,'(A)')'!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Magnetic shear'
+         WRITE(iunit,'(A)')'!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_mshear,DIM=1)
+            IF(sigma_mshear(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_mshear(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                 'TARGET_MSHEAR(',ik,') = ',target_mshear(ik), &
+                 'SIGMA_MSHEAR(',ik,') = ',sigma_mshear(ik)
+         END DO
+      END IF
+
       IF(ANY(sigma_mbm < bigno)) THEN
          WRITE(iunit,'(A)')'!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Maximum value of B (minus minimum value at s=1)            '
@@ -2424,10 +2442,10 @@
                  'SIGMA_MBM(',ik,') = ',sigma_mbm(ik)
          END DO
       END IF
-      
+
       IF (ANY(sigma_jdotb < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          Parllel Current (<J.B>)'  
+         WRITE(iunit,'(A)') '!          Parllel Current (<J.B>)'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
          DO ik = 1,UBOUND(sigma_jdotb,DIM=1)
@@ -2441,7 +2459,7 @@
       END IF
       IF (ANY(sigma_magwell < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          Magnetic Well (W>0 Stable)'  
+         WRITE(iunit,'(A)') '!          Magnetic Well (W>0 Stable)'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
          DO ik = 1,UBOUND(sigma_magwell,DIM=1)
@@ -2452,10 +2470,10 @@
                           'TARGET_MAGWELL(',ik,') = ',target_magwell(ik), &
                           'SIGMA_MAGWELL(',ik,') = ',sigma_magwell(ik)
          END DO
-      END IF 
+      END IF
       IF (ANY(sigma_gamma_c < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          Gamma_c Energetic Particle Metric'  
+         WRITE(iunit,'(A)') '!          Gamma_c Energetic Particle Metric'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
          DO ik = 1,UBOUND(sigma_gamma_c,DIM=1)
@@ -2469,7 +2487,7 @@
       END IF
       IF (ANY(sigma_jcurv < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          Toroidal Current (<JCURV>)'  
+         WRITE(iunit,'(A)') '!          Toroidal Current (<JCURV>)'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
          DO ik = 1,UBOUND(sigma_jcurv,DIM=1)
@@ -2483,7 +2501,7 @@
       END IF
       IF (ANY(sigma_bmin < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          |B|_min'  
+         WRITE(iunit,'(A)') '!          |B|_min'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
          DO ik = 1,UBOUND(sigma_bmin,DIM=1)
@@ -2497,7 +2515,7 @@
       END IF
       IF (ANY(sigma_bmax < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          |B|_max'  
+         WRITE(iunit,'(A)') '!          |B|_max'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
          DO ik = 1,UBOUND(sigma_bmax,DIM=1)
@@ -2511,7 +2529,7 @@
       END IF
       IF (ANY(sigma_Jstar < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          TRAPPED PARTICLE CONFINEMENT (J*)'  
+         WRITE(iunit,'(A)') '!          TRAPPED PARTICLE CONFINEMENT (J*)'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,"(2X,A,1X,'=',1(2X,I4.4))") 'NumJstar',NumJstar
          n=0
@@ -2526,7 +2544,7 @@
       END IF
       IF (ANY(sigma_txport < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          TURBULENT TRANSPORT'  
+         WRITE(iunit,'(A)') '!          TURBULENT TRANSPORT'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outstr) 'TXPORT_PROXY',TRIM(txport_proxy)
          WRITE(iunit,outboo) 'LGLOBAL_TXPORT',lglobal_txport
@@ -2547,11 +2565,11 @@
       END IF
       IF (ANY(sigma_orbit < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          ORBIT OPTIMIZATION'  
+         WRITE(iunit,'(A)') '!          ORBIT OPTIMIZATION'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outflt) 'MASS_ORBIT',mass_orbit
          WRITE(iunit,outflt) 'Z_ORBIT',Z_orbit
-         WRITE(iunit,outint) 'NU_ORBIT',nu_orbit 
+         WRITE(iunit,outint) 'NU_ORBIT',nu_orbit
          WRITE(iunit,outint) 'NV_ORBIT',nv_orbit
          n=0
          DO ik = 1,UBOUND(sigma_orbit,DIM=1)
@@ -2569,9 +2587,9 @@
       END IF
       IF (sigma_coil_bnorm < bigno) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          COIL OPTIMIZATION'  
+         WRITE(iunit,'(A)') '!          COIL OPTIMIZATION'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,outint) 'NU_BNORM',nu_bnorm 
+         WRITE(iunit,outint) 'NU_BNORM',nu_bnorm
          WRITE(iunit,outint) 'NV_BNORM',nv_bnorm
          WRITE(iunit,outflt) 'TARGET_COIL_BNORM',target_coil_bnorm
          WRITE(iunit,outflt) 'SIGMA_COIL_BNORM',sigma_coil_bnorm
@@ -2585,12 +2603,12 @@
           (ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
           (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) ) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          REGCOIL OPTIMIZATION'  
+         WRITE(iunit,'(A)') '!          REGCOIL OPTIMIZATION'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outflt) 'TARGET_REGCOL_CURRENT_DENSITY',target_regcoil_current_density
          WRITE(iunit,outflt) 'SIGMA_REGCOL_CURRENT_DENSITY',sigma_regcoil_current_density
          WRITE(iunit,outflt) 'REGCOIL_CURRENT_DENSITY',regcoil_current_density
- 
+
          ! Options for uniform winding surface separations
          IF (lregcoil_winding_surface_separation_opt) THEN
             WRITE(iunit,outflt) &
@@ -2610,7 +2628,7 @@
 
          ! Options for current density optimization - Not completely developted/tested
          IF (lregcoil_current_density_opt) THEN
-            WRITE(iunit,onevar) 'LREGCOIL_CURRENT_DENSITY', & 
+            WRITE(iunit,onevar) 'LREGCOIL_CURRENT_DENSITY', &
                    lregcoil_current_density_opt, &
                    'REGCOIL_CURRENT_DENSITY_MIN', &
                    regcoil_current_density_min, &
@@ -2655,7 +2673,7 @@
                  END DO
              END DO
 
-             ! r-boundary sin components 
+             ! r-boundary sin components
              DO m = LBOUND(lregcoil_rcws_rbound_s_opt,DIM=1), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=1)
                  DO n = LBOUND(lregcoil_rcws_rbound_s_opt,DIM=2), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=2)
                      IF(lregcoil_rcws_rbound_s_opt(m,n)  ) THEN
@@ -2710,7 +2728,7 @@
          DO ik = 1, UBOUND(sigma_extcur,DIM=1)
             IF (sigma_extcur(ik) < bigno) THEN
                WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
-                  'TARGET_EXTCUR(',ik,')',target_extcur(ik),& 
+                  'TARGET_EXTCUR(',ik,')',target_extcur(ik),&
                   'SIGMA_EXTCUR(',ik,')',sigma_extcur(ik)
             END IF
          END DO
@@ -2723,14 +2741,14 @@
             IF (sigma_press(ik) < bigno .and. s_press(ik) < 0) THEN
                WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_PRESS(',ik,')',r_press(ik),&
-                  'PHI_PRESS(',ik,')',phi_press(ik),& 
+                  'PHI_PRESS(',ik,')',phi_press(ik),&
                   'Z_PRESS(',ik,')',z_press(ik),&
-                  'TARGET_PRESS(',ik,')',target_press(ik),& 
+                  'TARGET_PRESS(',ik,')',target_press(ik),&
                   'SIGMA_PRESS(',ik,')',sigma_press(ik)
             ELSE IF (sigma_press(ik) < bigno .and. s_press(ik) >= 0) THEN
                WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_PRESS(',ik,')',s_press(ik),&
-                  'TARGET_PRESS(',ik,')',target_press(ik),& 
+                  'TARGET_PRESS(',ik,')',target_press(ik),&
                   'SIGMA_PRESS(',ik,')',sigma_press(ik)
             END IF
          END DO
@@ -2743,14 +2761,14 @@
             IF (sigma_pressprime(ik) < bigno .and. s_pressprime(ik) < 0) THEN
                WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_PRESSPRIME(',ik,')',r_pressprime(ik),&
-                  'PHI_PRESSPRIME(',ik,')',phi_pressprime(ik),& 
+                  'PHI_PRESSPRIME(',ik,')',phi_pressprime(ik),&
                   'Z_PRESSPRIME(',ik,')',z_pressprime(ik),&
-                  'TARGET_PRESSPRIME(',ik,')',target_pressprime(ik),& 
+                  'TARGET_PRESSPRIME(',ik,')',target_pressprime(ik),&
                   'SIGMA_PRESSPRIME(',ik,')',sigma_pressprime(ik)
             ELSE IF (sigma_pressprime(ik) < bigno .and. s_pressprime(ik) >= 0) THEN
                WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_PRESSPRIME(',ik,')',s_pressprime(ik),&
-                  'TARGET_PRESSPRIME(',ik,')',target_pressprime(ik),& 
+                  'TARGET_PRESSPRIME(',ik,')',target_pressprime(ik),&
                   'SIGMA_PRESSPRIME(',ik,')',sigma_pressprime(ik)
             END IF
          END DO
@@ -2763,14 +2781,14 @@
             IF (sigma_ne(ik) < bigno_ne .and. s_ne(ik) < 0) THEN
                WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_NE(',ik,')',r_ne(ik),&
-                  'PHI_NE(',ik,')',phi_ne(ik),& 
+                  'PHI_NE(',ik,')',phi_ne(ik),&
                   'Z_NE(',ik,')',z_ne(ik),&
-                  'TARGET_NE(',ik,')',target_ne(ik),& 
+                  'TARGET_NE(',ik,')',target_ne(ik),&
                   'SIGMA_NE(',ik,')',sigma_ne(ik)
             ELSE IF (sigma_ne(ik) < bigno_ne .and. s_ne(ik) >= 0) THEN
                WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_NE(',ik,')',s_ne(ik),&
-                  'TARGET_NE(',ik,')',target_ne(ik),& 
+                  'TARGET_NE(',ik,')',target_ne(ik),&
                   'SIGMA_NE(',ik,')',sigma_ne(ik)
             END IF
          END DO
@@ -2914,14 +2932,14 @@
             IF (sigma_te(ik) < bigno .and. s_te(ik) < 0) THEN
                WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_TE(',ik,')',r_te(ik),&
-                  'PHI_TE(',ik,')',phi_te(ik),& 
+                  'PHI_TE(',ik,')',phi_te(ik),&
                   'Z_TE(',ik,')',z_te(ik),&
-                  'TARGET_TE(',ik,')',target_te(ik),& 
+                  'TARGET_TE(',ik,')',target_te(ik),&
                   'SIGMA_TE(',ik,')',sigma_te(ik)
             ELSE IF (sigma_te(ik) < bigno .and. s_te(ik) >= 0) THEN
                WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_TE(',ik,')',s_te(ik),&
-                  'TARGET_TE(',ik,')',target_te(ik),& 
+                  'TARGET_TE(',ik,')',target_te(ik),&
                   'SIGMA_TE(',ik,')',sigma_te(ik)
             END IF
          END DO
@@ -2934,14 +2952,14 @@
             IF (sigma_ti(ik) < bigno .and. s_ti(ik) < 0) THEN
                WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_TI(',ik,')',r_ti(ik),&
-                  'PHI_TI(',ik,')',phi_ti(ik),& 
+                  'PHI_TI(',ik,')',phi_ti(ik),&
                   'Z_TI(',ik,')',z_ti(ik),&
-                  'TARGET_TI(',ik,')',target_ti(ik),& 
+                  'TARGET_TI(',ik,')',target_ti(ik),&
                   'SIGMA_TI(',ik,')',sigma_ti(ik)
             ELSE IF (sigma_ti(ik) < bigno .and. s_ti(ik) >= 0) THEN
                WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_TI(',ik,')',s_ti(ik),&
-                  'TARGET_TI(',ik,')',target_ti(ik),& 
+                  'TARGET_TI(',ik,')',target_ti(ik),&
                   'SIGMA_TI(',ik,')',sigma_ti(ik)
             END IF
          END DO
@@ -2955,14 +2973,14 @@
             IF (sigma_vphi(ik) < bigno .and. s_vphi(ik) < 0) THEN
                WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_VPHI(',ik,')',r_vphi(ik),&
-                  'PHI_VPHI(',ik,')',phi_vphi(ik),& 
+                  'PHI_VPHI(',ik,')',phi_vphi(ik),&
                   'Z_VPHI(',ik,')',z_vphi(ik),&
-                  'TARGET_VPHI(',ik,')',target_vphi(ik),& 
+                  'TARGET_VPHI(',ik,')',target_vphi(ik),&
                   'SIGMA_VPHI(',ik,')',sigma_vphi(ik)
             ELSE IF (sigma_vphi(ik) < bigno .and. s_vphi(ik) >= 0) THEN
                WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_VPHI(',ik,')',s_vphi(ik),&
-                  'TARGET_VPHI(',ik,')',target_vphi(ik),& 
+                  'TARGET_VPHI(',ik,')',target_vphi(ik),&
                   'SIGMA_VPHI(',ik,')',sigma_vphi(ik)
             END IF
          END DO
@@ -2988,7 +3006,7 @@
                   IF (sigma_ece(u,v) >= bigno) CYCLE
                   WRITE(iunit,"(3(5X,A,I3.3,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                         'TARGET_ECE(',u,',',v,')',target_ece(u,v),&
-                        'SIGMA_ECE(',u,',',v,')',sigma_ece(u,v),& 
+                        'SIGMA_ECE(',u,',',v,')',sigma_ece(u,v),&
                         'FREQ_ECE(',u,',',v,')',freq_ece(u,v)
                END DO
          END DO
@@ -3001,14 +3019,14 @@
             IF (sigma_iota(ik) < bigno .and. s_iota(ik) < 0) THEN
                WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_IOTA(',ik,')',r_iota(ik),&
-                  'PHI_IOTA(',ik,')',phi_iota(ik),& 
+                  'PHI_IOTA(',ik,')',phi_iota(ik),&
                   'Z_IOTA(',ik,')',z_iota(ik),&
-                  'TARGET_IOTA(',ik,')',target_iota(ik),& 
+                  'TARGET_IOTA(',ik,')',target_iota(ik),&
                   'SIGMA_IOTA(',ik,')',sigma_iota(ik)
             ELSE IF (sigma_iota(ik) < bigno .and. s_iota(ik) >= 0) THEN
                WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_IOTA(',ik,')',s_iota(ik),&
-                  'TARGET_IOTA(',ik,')',target_iota(ik),& 
+                  'TARGET_IOTA(',ik,')',target_iota(ik),&
                   'SIGMA_IOTA(',ik,')',sigma_iota(ik)
             END IF
          END DO
@@ -3021,14 +3039,14 @@
             IF (sigma_vaciota(ik) < bigno .and. s_vaciota(ik) < 0) THEN
                WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_VACIOTA(',ik,')',r_vaciota(ik),&
-                  'PHI_VACIOTA(',ik,')',phi_vaciota(ik),& 
+                  'PHI_VACIOTA(',ik,')',phi_vaciota(ik),&
                   'Z_VACIOTA(',ik,')',z_vaciota(ik),&
-                  'TARGET_VACIOTA(',ik,')',target_vaciota(ik),& 
+                  'TARGET_VACIOTA(',ik,')',target_vaciota(ik),&
                   'SIGMA_VACIOTA(',ik,')',sigma_vaciota(ik)
             ELSE IF (sigma_vaciota(ik) < bigno .and. s_vaciota(ik) >= 0) THEN
                WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_VACIOTA(',ik,')',s_vaciota(ik),&
-                  'TARGET_VACIOTA(',ik,')',target_vaciota(ik),& 
+                  'TARGET_VACIOTA(',ik,')',target_vaciota(ik),&
                   'SIGMA_VACIOTA(',ik,')',sigma_vaciota(ik)
             END IF
          END DO
@@ -3062,7 +3080,7 @@
             IF (sigma_mse(ik) < bigno .and. s_mse(ik) < 0) THEN
                WRITE(iunit,"(13(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_MSE(',ik,')',r_mse(ik),&
-                  'PHI_MSE(',ik,')',phi_mse(ik),& 
+                  'PHI_MSE(',ik,')',phi_mse(ik),&
                   'Z_MSE(',ik,')',z_mse(ik),&
                   'A1_MSE(',ik,')',a1_mse(ik),&
                   'A2_MSE(',ik,')',a2_mse(ik),&
@@ -3071,8 +3089,8 @@
                   'A5_MSE(',ik,')',a5_mse(ik),&
                   'A6_MSE(',ik,')',a6_mse(ik),&
                   'A7_MSE(',ik,')',a7_mse(ik),&
-                  'TARGET_MSE(',ik,')',target_mse(ik),& 
-                  'SIGMA_MSE(',ik,')',sigma_mse(ik),& 
+                  'TARGET_MSE(',ik,')',target_mse(ik),&
+                  'SIGMA_MSE(',ik,')',sigma_mse(ik),&
                   'VAC_MSE(',ik,')',vac_mse(ik)
             ELSE IF (sigma_mse(ik) < bigno .and. s_mse(ik) >= 0) THEN
                WRITE(iunit,"(11(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
@@ -3084,8 +3102,8 @@
                   'A5_MSE(',ik,')',a5_mse(ik),&
                   'A6_MSE(',ik,')',a6_mse(ik),&
                   'A7_MSE(',ik,')',a7_mse(ik),&
-                  'TARGET_MSE(',ik,')',target_mse(ik),& 
-                  'SIGMA_MSE(',ik,')',sigma_mse(ik),& 
+                  'TARGET_MSE(',ik,')',target_mse(ik),&
+                  'SIGMA_MSE(',ik,')',sigma_mse(ik),&
                   'VAC_MSE(',ik,')',vac_mse(ik)
             END IF
          END DO
@@ -3171,7 +3189,7 @@
       CHARACTER(LEN=256) :: lname,minname,maxname,dname
       INTEGER :: n, ik
       CHARACTER(LEN=*), PARAMETER :: vecvar  = "(2X,A,'(',I3.3,')',1X,'=',1X,L1,2(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3))"
-      
+
 
       IF (ANY(lvar)) THEN
         lname   = 'L'//TRIM(str_name)//'_OPT'
@@ -3200,5 +3218,5 @@
       END DO
       RETURN
       END FUNCTION find_last_nonzero
-      
+
       END MODULE stellopt_input_mod
