@@ -49,7 +49,7 @@ MODULE thrift_vars
              win_thrift_i, win_thrift_iplasma, win_thrift_iboot, &
              win_thrift_ieccd, win_thrift_inbcd, win_thrift_iohmic, &
              win_thrift_isource, &
-             win_thrift_rho, win_thrift_t, win_thrift_rhofull&
+             win_thrift_rho, win_thrift_t, win_thrift_rhofull,&
              win_lbooz, win_thrift_ugrid, &
              win_thrift_vp, win_thrift_bav, win_thrift_bsqav, &
              win_thrift_s11, win_thrift_aminor, win_thrift_rmajor, &
