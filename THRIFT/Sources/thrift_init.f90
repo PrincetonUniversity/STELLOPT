@@ -63,8 +63,9 @@
       ! Create the worker pool
 
       ! Allocate the Current Grid
-      CALL mpialloc(THRIFT_RHO, nrho,       myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rho)
-      CALL mpialloc(THRIFT_T,   ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_t)
+      CALL mpialloc(THRIFT_RHO,      nrho,      myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rho)
+      CALL mpialloc(THRIFT_RHOFULL,nrho+2,      myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rhofull)
+      CALL mpialloc(THRIFT_T,  ntimesteps,      myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_t)
       CALL mpialloc(THRIFT_J,      nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_j)
       CALL mpialloc(THRIFT_JBOOT,  nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jboot)
       CALL mpialloc(THRIFT_JPLASMA,nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jplasma)
@@ -124,8 +125,10 @@
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho)
         FORALL(i = 1:ntimesteps) THRIFT_T(i) = tstart + (i-1)*dt
       END IF
-      ! NB: If grids are changed to be non-uniform, change definition of 
-      ! time/space steps in thrift_jinductive.f90 or things will break
+
+      THRIFT_RHOFULL(1) = 0.0
+      THRIFT_RHOFULL(2:nrho+1) = THRIFT_RHO
+      THRIFT_RHOFULL(nrho+2) = 1.0
       
       ! Split off workers
       CALL thrift_init_mpisubgroup
