@@ -100,24 +100,15 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr
     INTEGER :: i
     REAL(rprec) :: drho
-    REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_full
-    ALLOCATE(rho_full(nrho+2))
-
-    rho_full(1) = 0.0
-    rho_full(2:nrho+1) = THRIFT_RHO
-    rho_full(nrho+2) = 1.0
 
     ! I(1) = I(rho=0) = 0
-    ! I(i) = I(i-1)+2*pi*J(i)*(rho(i)*a(i))*d(rho*a)(i)
     i_arr(1) = 0
     DO i = 2, nrho+2
-        drho = (rho_full(i)-rho_full(i-1)) !d[(rho*a)]
-        !i_arr(i) = i_arr(i-1) + j_arr(i)*pi*rho_full(i)*THRIFT_AMINOR(i,2)*drho
-        !i_arr(i) = i_arr(i-1) + pi*j_arr(i)*dAi
-        i_arr(i) = i_arr(i-1) + 2*pi*rho_full(i)*THRIFT_AMINOR(i,2)**2*j_arr(i)*drho
+        drho = (THRIFT_RHOFULL(i)-THRIFT_RHOFULL(i-1))
+        ! I(i) = I(i-1) + J*dA/drho*drho
+        i_arr(i) = i_arr(i-1) + j_arr(i)*(2*pi*THRIFT_RHOFULL(i)*THRIFT_AMINOR(i,2)**2)*drho
     END DO
     
-    DEALLOCATE(rho_full)
     RETURN
 
 END SUBROUTINE curden_to_curtot
@@ -128,50 +119,20 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     ! Calculates array of density from enclosed current array
     REAL(rprec), DIMENSION(:), INTENT(in) :: i_arr
     REAL(rprec), DIMENSION(:), INTENT(out) :: j_arr
-    REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_full, j_temp, i_der
+    REAL(rprec), DIMENSION(:), ALLOCATABLE :: j_temp, i_der
     INTEGER :: i
     REAL(rprec) :: dVi, dIi
-    ALLOCATE(j_temp(nrho+2), rho_full(nrho+2),i_der(nrho+2))
-
-    rho_full(1) = 0.0
-    rho_full(2:nrho+1) = THRIFT_RHO
-    rho_full(nrho+2) = 1.0
-
-    !CALL deriv1_rho_o2(i_arr, dIdrho)
-    ! dA/drho = 2*pi*(rho*a**2)
-    !dAdrho = 2*pi*rho_full*(THRIFT_AMINOR(:,2))**2
-
-    ! J(i) = dI/dA = dI/drho*drho/dA
-    !j_temp = dIdrho/dAdrho
-    
-    !j_temp(1) = 0
-    !DO i = 2, nrho+2
-    !    dIi = i_arr(i) - i_arr(i-1)
-    !    !dAi = pi*((rho_full(i)*THRIFT_AMINOR(i,2))**2-(rho_full(i-1)*THRIFT_AMINOR(i-1,2))**2)
-    !    dVi = THRIFT_RMAJOR(i,2)*(rho_full(i)**2)*(THRIFT_AMINOR(i,2)**2) &
-    !            - THRIFT_RMAJOR(i-1,2)*(rho_full(i-1)**2)*(THRIFT_AMINOR(i-1,2)**2) 
-    !    j_temp(i) = THRIFT_RMAJOR(i,2)*dIi/(pi*dVi)
-    !END DO
-    !j_temp(nrho+2)=0
-
-    ! J = dI/dA = dI/drho*drho/dA
-    !   dA/drho = dA/dV*dV/drho = 1/(2*pi*Rmajor) dV/drho
-    !   dV/drho = 2*rho*Phi_a*dV/dPhi
-    ! J = dI/drho*(pi*Rmajor)/(rho*Phi_a)*dV/dPhi
+    ALLOCATE(j_temp(nrho+2), ,i_der(nrho+2))
 
     j_temp(1) = 0
     CALL deriv1_rho_o2(i_arr,i_der)
     DO i = 2, nrho+1
-        j_temp = i_der(i)/(2*pi*rho_full(i)*THRIFT_AMINOR(i,2)**2)
+        j_temp = i_der(i)/(2*pi*THRIFT_RHOFULL(i)*THRIFT_AMINOR(i,2)**2)
     END DO
-    !DO i = 2,nrho+1
-    !    j_temp(i) = i_der(i)*pi*THRIFT_RMAJOR(i,2)/(rho_full(i)*THRIFT_PHIEDGE(2))*THRIFT_VP(i,2)
-    !END DO
-    
 
     CALL extrapolate_arr(j_temp(2:nrho+1), j_arr)
     
-    DEALLOCATE(rho_full, j_temp)
+    DEALLOCATE(j_temp)
     RETURN
 
 END SUBROUTINE curtot_to_curden

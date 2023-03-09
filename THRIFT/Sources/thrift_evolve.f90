@@ -111,14 +111,14 @@
 
             
             ! Update total current
-            !IF (nsubsteps==1) THEN
-            !  THRIFT_J(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep) &
-            !                        +  THRIFT_JSOURCE(:,mytimestep)
-            !ELSE
+            IF (nsubsteps==1) THEN
+              THRIFT_J(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep) &
+                                    +  THRIFT_JSOURCE(:,mytimestep)
+            ELSE
               THRIFT_J(:,mytimestep) = THRIFT_J(:,mytimestep)*(1-picard_factor) &
                      +  picard_factor*(THRIFT_JPLASMA(:,mytimestep) &
                                      + THRIFT_JSOURCE(:,mytimestep))
-            !END IF
+            END IF
 
             ! Check the convergence
             deltaj = 0
@@ -138,6 +138,7 @@
                IF (lnbcd)  header_str = TRIM(header_str)//'       INBCD'
                IF (lohmic) header_str = TRIM(header_str)//'      IOHMIC'
                header_str = TRIM(header_str)//'  max_deltaJ'
+               
                WRITE(6,*)''
                WRITE(6,*) header_str
                WRITE(6,*)'==============================================================================='

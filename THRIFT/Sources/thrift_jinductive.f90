@@ -26,7 +26,6 @@
                      temp1,temp2,source_axis,source_edge,Aminor,Rmajor,&
                      A_temp,B_temp,C_temp,D_temp,a1,a2,a3,a4
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: B_der, C_der, D_der, &
-                                                rho_full, & 
                                                 j_full, jsource_full, jplasma_full
 
 !----------------------------------------------------------------------
@@ -43,22 +42,17 @@
 
       ! Allocate
       ALLOCATE(B_der(nrho+2),  C_der(nrho+2),  D_der(nrho+2), &
-               rho_full(nrho+2),j_full(nrho+2),jplasma_full(nrho+2), &
+               j_full(nrho+2),jplasma_full(nrho+2), &
                jsource_full(nrho+2))
 
       B_der  = 0; C_der  = 0; D_der  = 0
       A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0
       a1     = 0; a2     = 0; a3     = 0; a4     = 0
    
-      rho_full=0;
       j_full = 0; 
       jplasma_full = 0;
       jsource_full = 0; 
 
-      ! Define temp variable for the full grid
-      rho_full(1) = 0.0
-      rho_full(2:nrho+1) = THRIFT_RHO
-      rho_full(nrho+2) = 1.0
 
       ! Extrapolate source current density to magnetic axis and edge
       CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep), jsource_full)     
@@ -72,7 +66,7 @@
       ! Store magnetic variables; both preceding and current timestep vals are necessary
       THRIFT_PHIEDGE(2) = eq_phiedge
       DO i = 1, nrho+2
-         rho = rho_full(i)
+         rho = THRIFT_RHOFULL(i)
          s = rho*rho
          ier = 0
          CALL EZspline_interp(vp_spl, rho, THRIFT_VP(i,2), ier)
@@ -113,7 +107,7 @@
       END IF
 
       DO i = 1, nrho+2
-         rho = rho_full(i)
+         rho = THRIFT_RHOFULL(i)
          CALL get_prof_etapara(MIN(rho,THRIFT_RHO(nrho)),mytime,etapara)
          CALL get_prof_pprime(rho,mytime,pprime)
          temp1 = 2*etapara*THRIFT_VP(i,2) ! temp1 <- 2 eta dV/dPhi 
@@ -140,7 +134,7 @@
          WRITE(6,*)' RHO         A         B          C          D       BDER       CDER       DDER'
          WRITE(6,*)''
          DO i = 1, nrho+2
-            WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') rho_full(i), &
+            WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') THRIFT_RHOFULL(i), &
             THRIFT_COEFF_A(i,mytimestep), THRIFT_COEFF_B(i,mytimestep),& 
             THRIFT_COEFF_C(i,mytimestep), THRIFT_COEFF_D(i,mytimestep),&
             B_der(i), C_der(i), D_der(i)
@@ -301,7 +295,7 @@
 !     Obtain JPLASMA from IPLASMA with curtot_to_curden subroutine.
 !----------------------------------------------------------------------
 
-      THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*( rho_full*THRIFT_UGRID(:,mytimestep) )
+      THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(2)/mu0*( THRIFT_RHOFULL*THRIFT_UGRID(:,mytimestep) )
       CALL curden_to_curtot(jsource_full,THRIFT_ISOURCE(:,mytimestep))
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep)-THRIFT_ISOURCE(:,mytimestep)
       CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),jplasma_full)
@@ -346,7 +340,7 @@
                               + THRIFT_ISOURCE(:,mytimestep)
 
       DEALLOCATE( B_der, C_der, D_der, &
-                  rho_full, j_full, jplasma_full, jsource_full)
+                  j_full, jplasma_full, jsource_full)
 
       RETURN
 
