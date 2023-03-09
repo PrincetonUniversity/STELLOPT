@@ -118,7 +118,7 @@
               THRIFT_J(:,mytimestep) = THRIFT_J(:,mytimestep)*(1-picard_factor) &
                      +  picard_factor*(THRIFT_JPLASMA(:,mytimestep) &
                                      + THRIFT_JSOURCE(:,mytimestep))
-            END IF
+            !END IF
 
             ! Check the convergence
             deltaj = 0
