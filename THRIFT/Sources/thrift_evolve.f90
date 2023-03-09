@@ -21,6 +21,8 @@
       REAL(rprec) :: alpha, rho, s, aminor1, aminor2, temp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
       CHARACTER(len = 16)     :: temp1_str, temp2_str
+      CHARACTER(len = 79)     :: header_str,progress_str
+      CHARACTER(len = 12)     :: temp_prog_str
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -132,16 +134,36 @@
             IF (lverb .and. lfirst_pass) THEN
             
                WRITE(6,*)''
-               WRITE(6,*)'  T  NSUB  BETA        ITOR    IPLASMA       IBOOT       IECCD       INBCD'
+               header_str = '  T  NSUB  BETA        ITOR    IPLASMA       IBOOT'
+               IF (leccd)  header_str = header_str//'       IECCD'
+               IF (lnbcd)  header_str = header_str//'       INBCD'
+               IF (lohmic) header_str = header_str//'      IOHMIC'
+                           header_str = header_str//'  max_deltaJ'
+               WRITE(6,*) header_str
                WRITE(6,*)'==============================================================================='
             END IF
 
             ! Print progress
             IF (lverb) THEN
-             WRITE(6,'(1X,F6.3,1X,I2,1X,F5.2,5(1X,ES11.3))') &
-                THRIFT_T(mytimestep),nsubsteps,eq_beta*100,&
-                THRIFT_I(nrho+2,mytimestep), THRIFT_IPLASMA(nrho+2,mytimestep), THRIFT_IBOOT(nrho+2,mytimestep),&
-                THRIFT_IECCD(nrho+2,mytimestep), THRIFT_INBCD(nrho+2,mytimestep)!,&
+                  WRITE(progress_str,'(1X,F6.3,1X,I2,1X,F5.2,3(1X,ES11.3))') &
+                  THRIFT_T(mytimestep),nsubsteps,eq_beta*100,THRIFT_I(nrho+2,mytimestep),&
+                  THRIFT_IPLASMA(nrho+2,mytimestep), THRIFT_IBOOT(nrho+2,mytimestep)
+                  IF (leccd) THEN
+                        WRITE(temp_prog_str,'(ES11.3)') THRIFT_IECCD(nrho+2,mytimestep)
+                        progress_str = progress_str//" "//temp_prog_str
+                  END IF
+                  IF (lnbcd) THEN
+                        WRITE(temp_prog_str,'(ES11.3)') THRIFT_INBCD(nrho+2,mytimestep)
+                        progress_str = progress_str//" "//temp_prog_str
+                  END IF
+                  IF (lohmic) THEN
+                        WRITE(temp_prog_str,'(ES11.3)') THRIFT_IOHMIC(nrho+2,mytimestep)
+                        progress_str = progress_str//" "//temp_prog_str
+                  END IF
+                  WRITE(temp_prog_str,'(ES11.3)') MAXVAL(deltaj)
+            !WRITE(6,'(1X,F6.3,1X,I2,1X,F5.2,5(1X,ES11.3))') &
+                WRITE(6,*) progress_str
+                !THRIFT_IECCD(nrho+2,mytimestep), THRIFT_INBCD(nrho+2,mytimestep)!,&
                 !THRIFT_IOHMIC,&
                 !MAXVAL(deltaj)
             END IF
