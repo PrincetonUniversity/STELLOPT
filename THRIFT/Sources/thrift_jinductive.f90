@@ -296,13 +296,17 @@
 !     POST SOLVING EQUATIONS
 !----------------------------------------------------------------------
 !     Solving system of equations yields {uj} at this timestep.
-!     Get ITOTAL from u(j) = mu0*I/(2*rho*Phi_a)
+!     Get ITOTAL from u(j) = mu0*I/(2*rho*Phi_a) -> I(j) = 2*rho*Phi_a/mu0 * u(j)
 !     Obtain ISOURCE from JSOURCE with curden_to_curtot subroutine.
 !     Plasma current: IPLASMA = ITOTAL - ISOURCE
 !     Obtain JPLASMA from IPLASMA with curtot_to_curden subroutine.
 !----------------------------------------------------------------------
 
-      THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(1,mytimestep)/mu0*( THRIFT_RHOFULL*THRIFT_UGRID(:,mytimestep) )
+      !THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(1,mytimestep)/mu0*( THRIFT_RHOFULL*THRIFT_UGRID(:,mytimestep) )
+      ! trying something
+      DO i = 1, nrho+2
+         THRIFT_I(i,mytimestep) = 2*THRIFT_RHOFULL(i)*THRIFT_PHIEDGE(1,mytimestep)/mu0*THRIFT_UGRID(i,mytimestep)
+      END DO
       CALL curden_to_curtot(jsource_full,THRIFT_ISOURCE(:,mytimestep))
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep)-THRIFT_ISOURCE(:,mytimestep)
       CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),jplasma_full)
