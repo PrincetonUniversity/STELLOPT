@@ -106,7 +106,7 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     DO i = 2, nrho+2
         drho = (THRIFT_RHOFULL(i)-THRIFT_RHOFULL(i-1))
         ! I(i) = I(i-1) + J*dA/drho*drho
-        i_arr(i) = i_arr(i-1) + j_arr(i)*(2*pi*THRIFT_RHOFULL(i)*THRIFT_AMINOR(i,2)**2)*drho
+        i_arr(i) = i_arr(i-1) + j_arr(i)*(2*pi*THRIFT_RHOFULL(i)*THRIFT_AMINOR(i,mytimestep)**2)*drho
     END DO
     
     RETURN
@@ -127,7 +127,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     j_temp(1) = 0
     CALL deriv1_rho_o2(i_arr,i_der)
     DO i = 2, nrho+1
-        j_temp = i_der(i)/(2*pi*THRIFT_RHOFULL(i)*THRIFT_AMINOR(i,2)**2)
+        j_temp = i_der(i)/(2*pi*THRIFT_RHOFULL(i)*THRIFT_AMINOR(i,mytimestep)**2)
     END DO
 
     CALL extrapolate_arr(j_temp(2:nrho+1), j_arr)

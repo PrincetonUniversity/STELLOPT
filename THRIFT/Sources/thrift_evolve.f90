@@ -46,6 +46,7 @@
       THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0
       ! Initialize coefficients
       THRIFT_COEFF_A = 0; THRIFT_COEFF_B = 0; THRIFT_COEFF_C = 0; THRIFT_COEFF_D = 0;
+      THRIFT_COEFF_BP= 0; THRIFT_COEFF_CP= 0; THRIFT_COEFF_DP= 0;
       THRIFT_ALPHA1  = 0; THRIFT_ALPHA2  = 0; THRIFT_ALPHA3  = 0; THRIFT_ALPHA4  = 0;
       THRIFT_MATLD   = 0; THRIFT_MATMD   = 0; THRIFT_MATUD   = 0; THRIFT_MATRHS  = 0;
 
@@ -173,14 +174,7 @@
             lfirst_sub_pass = .FALSE.
 
          END DO
-         ! Once converged, update values
-         THRIFT_VP(:,1)     = THRIFT_VP(:,2) 
-         THRIFT_BAV(:,1)    = THRIFT_BAV(:,2)
-         THRIFT_BSQAV(:,1)  = THRIFT_BSQAV(:,2) 
-         THRIFT_S11(:,1)    = THRIFT_S11(:,2)
-         THRIFT_AMINOR(:,1) = THRIFT_AMINOR(:,2)
-         THRIFT_RMAJOR(:,1) = THRIFT_RMAJOR(:,2)
-         THRIFT_PHIEDGE(1)  = THRIFT_PHIEDGE(2)
+
       END DO
 
       ! Deallocate helpers

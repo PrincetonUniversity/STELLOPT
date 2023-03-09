@@ -91,7 +91,22 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_IPLASMA',ier)
          CALL write_var_hdf5(fid,'THRIFT_ISOURCE',nfg,ntimesteps,ier,DBLVAR=THRIFT_ISOURCE,ATT='Total Enclosed Source Current [A]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ISOURCE',ier)
-         ! Coefficients
+         ! Magnetic variables
+         CALL write_var_hdf5(fid,'THRIFT_PHIEDGE',1,ntimesteps,ier,DBLVAR=THRIFT_PHIEDGE,ATT='Toroidal magnetic flux at plasma edge [Wb]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PHIEDGE',ier)
+         CALL write_var_hdf5(fid,'THRIFT_VP',nfg,ntimesteps,ier,DBLVAR=THRIFT_VP,ATT='dV/dPhi',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_VP',ier)
+         CALL write_var_hdf5(fid,'THRIFT_S11',nfg,ntimesteps,ier,DBLVAR=THRIFT_S11,ATT='Susceptance matrix element S11',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_S11',ier)
+         CALL write_var_hdf5(fid,'THRIFT_BAV',nfg,ntimesteps,ier,DBLVAR=THRIFT_BAV,ATT='Flux surface average magnetic field [T]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_BAV',ier)
+         CALL write_var_hdf5(fid,'THRIFT_BSQAV',nfg,ntimesteps,ier,DBLVAR=THRIFT_BSQAV,ATT='Flux surface average magnetic field squared [T^2]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_BSQAV',ier)
+         CALL write_var_hdf5(fid,'THRIFT_RMAJOR',nfg,ntimesteps,ier,DBLVAR=THRIFT_RMAJOR,ATT='Effective major radius [m]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_RMAJOR',ier)
+         CALL write_var_hdf5(fid,'THRIFT_AMINOR',nfg,ntimesteps,ier,DBLVAR=THRIFT_AMINOR,ATT='Effective minor radius [m]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_AMINOR',ier)
+         ! ABCD
          CALL write_var_hdf5(fid,'THRIFT_COEFF_A',nfg,ntimesteps,ier,DBLVAR=THRIFT_COEFF_A,ATT='Coefficient A',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_A',ier)
          CALL write_var_hdf5(fid,'THRIFT_COEFF_B',nfg,ntimesteps,ier,DBLVAR=THRIFT_COEFF_B,ATT='Coefficient B',ATT_NAME='description')
@@ -100,7 +115,13 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_C',ier)
          CALL write_var_hdf5(fid,'THRIFT_COEFF_D',nfg,ntimesteps,ier,DBLVAR=THRIFT_COEFF_D,ATT='Coefficient D',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_D',ier)
-         
+         CALL write_var_hdf5(fid,'THRIFT_COEFF_BP',nfg,ntimesteps,ier,DBLVAR=THRIFT_COEFF_BP,ATT='Derivative of coefficient B',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_BP',ier)
+         CALL write_var_hdf5(fid,'THRIFT_COEFF_CP',nfg,ntimesteps,ier,DBLVAR=THRIFT_COEFF_CP,ATT='Derivative of coefficient C',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_CP',ier)
+         CALL write_var_hdf5(fid,'THRIFT_COEFF_DP',nfg,ntimesteps,ier,DBLVAR=THRIFT_COEFF_DP,ATT='Derivative of coefficient D',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_DP',ier)
+         ! Alphas
          CALL write_var_hdf5(fid,'THRIFT_ALPHA1',nrho,ntimesteps,ier,DBLVAR=THRIFT_ALPHA1,ATT='Coefficient alpha_1',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ALPHA1',ier)
          CALL write_var_hdf5(fid,'THRIFT_ALPHA2',nrho,ntimesteps,ier,DBLVAR=THRIFT_ALPHA2,ATT='Coefficient alpha_2',ATT_NAME='description')
@@ -109,7 +130,7 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ALPHA3',ier)
          CALL write_var_hdf5(fid,'THRIFT_ALPHA4',nrho,ntimesteps,ier,DBLVAR=THRIFT_ALPHA4,ATT='Coefficient alpha_4',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ALPHA4',ier)
-         
+         ! System of equations
          CALL write_var_hdf5(fid,'THRIFT_MATLD',nfg,ntimesteps,ier,DBLVAR=THRIFT_MATLD,ATT='Matrix equation lower diagonal',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATLD',ier)
          CALL write_var_hdf5(fid,'THRIFT_MATMD',nfg,ntimesteps,ier,DBLVAR=THRIFT_MATMD,ATT='Matrix equation main diagonal',ATT_NAME='description')
