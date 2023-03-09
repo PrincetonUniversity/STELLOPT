@@ -50,7 +50,7 @@ MODULE thrift_vars
              win_thrift_isource, &
              win_thrift_rho, win_thrift_t, win_thrift_rhofull,&
              win_lbooz, win_thrift_ugrid, &
-             win_thrift_vp, win_thrift_bav, win_thrift_bsqav, win_thrift_phiedge &
+             win_thrift_vp, win_thrift_bav, win_thrift_bsqav, win_thrift_phiedge, &
              win_thrift_s11, win_thrift_aminor, win_thrift_rmajor, &
              win_thrift_coeff_a, win_thrift_coeff_b, win_thrift_coeff_c, win_thrift_coeff_d,&
              win_thrift_coeff_bp, win_thrift_coeff_cp, win_thrift_coeff_dp,&
