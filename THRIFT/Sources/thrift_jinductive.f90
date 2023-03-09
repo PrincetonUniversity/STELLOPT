@@ -238,11 +238,11 @@
             THRIFT_MATLD(i, mytimestep) = -4*a3/(3*drho) + 16*a4/(5*drho**2)     ! ai, j = 1        ## i = 2
             THRIFT_MATMD(i, mytimestep) = a2 + a3/drho - 5*a4/(drho**2) - 1.0/dt ! bi, j = 1        ## i = 2
             THRIFT_MATUD(i, mytimestep) = a3/(3*drho) + 2*a4/(drho**2)           ! ci, j = 1        ## i = 2
-         ELSE IF ((j>1).and.(j<nrho))
+         ELSEIF ((j>1).and.(j<nrho))
             THRIFT_MATLD(i, mytimestep) = -a3/drho + a4/(drho**2)                ! ai, 1 < j < nrho ## 2 < i < nrho+1
             THRIFT_MATMD(i, mytimestep) = a2 - 2*a4/(drho**2) - 1.0/dt           ! bi, 1 < j < nrho ## 2 < i < nrho+1
             THRIFT_MATUD(i, mytimestep) = a3/(2*drho) + a4/(drho**2)             ! ci, 1 < j < nrho ## 2 < i < nrho+1
-         ELSE IF (j==nrho) THEN
+         ELSEIF (j==nrho) THEN
             THRIFT_MATLD(i, mytimestep) = -a3/(3*drho) + 2*a4/(drho**2)          ! ai, j = nrho     ## i = nrho+1
             THRIFT_MATMD(i, mytimestep) = a2 - a3/drho - 5*a4/(drho**2) - 1.0/dt ! bi, j = nrho     ## i = nrho+1
             THRIFT_MATUD(i, mytimestep) = 4*a3/(3*drho) + 16*a4/(5*drho**2)      ! ci, j = nrho     ## i = nrho+1
@@ -346,8 +346,7 @@
       THRIFT_I(:,mytimestep)  = THRIFT_IPLASMA(:,mytimestep)&
                               + THRIFT_ISOURCE(:,mytimestep)
 
-      DEALLOCATE( B_der, C_der, D_der, &
-                  j_full, jplasma_full, jsource_full)
+      DEALLOCATE( j_full, jplasma_full, jsource_full)
 
       RETURN
 
