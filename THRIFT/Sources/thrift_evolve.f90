@@ -21,8 +21,8 @@
       REAL(rprec) :: alpha, rho, s, aminor1, aminor2, temp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
       CHARACTER(len = 16)     :: temp1_str, temp2_str
-      CHARACTER(len = 79)     :: header_str,progress_str
-      CHARACTER(len = 12)     :: temp_prog_str
+      CHARACTER(len = 52)     :: header_str,progress_str
+      CHARACTER(len = 11)     :: temp_prog_str
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -133,12 +133,12 @@
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN
             
-               WRITE(6,*)''
-               header_str = '  T  NSUB  BETA        ITOR    IPLASMA       IBOOT'
+               header_str = '   T  NSUB  BETA        ITOR     IPLASMA       IBOOT'
                IF (leccd)  header_str = header_str//'       IECCD'
                IF (lnbcd)  header_str = header_str//'       INBCD'
                IF (lohmic) header_str = header_str//'      IOHMIC'
-                           header_str = header_str//'  max_deltaJ'
+               header_str = header_str//'  max_deltaJ'
+               WRITE(6,*)''
                WRITE(6,*) header_str
                WRITE(6,*)'==============================================================================='
             END IF
