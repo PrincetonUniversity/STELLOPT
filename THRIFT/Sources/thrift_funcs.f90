@@ -122,7 +122,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: j_temp, i_der
     INTEGER :: i
     REAL(rprec) :: dVi, dIi
-    ALLOCATE(j_temp(nrho+2), ,i_der(nrho+2))
+    ALLOCATE(j_temp(nrho+2),i_der(nrho+2))
 
     j_temp(1) = 0
     CALL deriv1_rho_o2(i_arr,i_der)
