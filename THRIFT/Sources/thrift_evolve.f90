@@ -111,10 +111,10 @@
 
             
             ! Update total current
-            IF (nsubsteps==1) THEN
-              THRIFT_J(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep) &
-                                    +  THRIFT_JSOURCE(:,mytimestep)
-            ELSE
+            !IF (nsubsteps==1) THEN
+            !  THRIFT_J(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep) &
+            !                        +  THRIFT_JSOURCE(:,mytimestep)
+            !ELSE
               THRIFT_J(:,mytimestep) = THRIFT_J(:,mytimestep)*(1-picard_factor) &
                      +  picard_factor*(THRIFT_JPLASMA(:,mytimestep) &
                                      + THRIFT_JSOURCE(:,mytimestep))
@@ -162,11 +162,7 @@
                   END IF
                   WRITE(temp_prog_str,'(ES11.3)') MAXVAL(deltaj)
                   progress_str = TRIM(progress_str)//" "//temp_prog_str
-                  !WRITE(6,'(1X,F6.3,1X,I2,1X,F5.2,5(1X,ES11.3))') &
                 WRITE(6,*) progress_str
-                !THRIFT_IECCD(nrho+2,mytimestep), THRIFT_INBCD(nrho+2,mytimestep)!,&
-                !THRIFT_IOHMIC,&
-                !MAXVAL(deltaj)
             END IF
             ! Turn off screen output after one run
             lscreen_subcodes = .FALSE.
