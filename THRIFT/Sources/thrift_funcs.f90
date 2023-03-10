@@ -10,6 +10,8 @@ MODULE thrift_funcs
     !     Libraries
     !-------------------------------------------------------------------
     USE stel_kinds, ONLY: rprec
+    USE stel_tools
+    USE EZspline_obj
     USE thrift_runtime
     USE thrift_vars
     IMPLICIT NONE
@@ -115,24 +117,72 @@ END SUBROUTINE curden_to_curtot
 
 
 
-SUBROUTINE curtot_to_curden(i_arr, j_arr)
+SUBROUTINE curtot_to_curden(I_arr, j_arr)
     ! Calculates array of density from enclosed current array
-    REAL(rprec), DIMENSION(:), INTENT(in) :: i_arr
+    REAL(rprec), DIMENSION(:), INTENT(in) :: I_arr
     REAL(rprec), DIMENSION(:), INTENT(out) :: j_arr
-    REAL(rprec), DIMENSION(:), ALLOCATABLE :: j_temp, i_der
-    INTEGER :: i
-    REAL(rprec) :: dVi, dIi
-    ALLOCATE(j_temp(nrho+2),i_der(nrho+2))
+    REAL(rprec), DIMENSION(:), ALLOCATABLE :: js_temp,  s_temp, jrho_temp
+    INTEGER :: i, ier, ns
+    TYPE(EZspline1_r8) :: I_spl
+    REAL(rprec) :: I_temp1, I_temp2,dIds, temp, Aminor
 
-    j_temp(1) = 0
-    CALL deriv1_rho_o2(i_arr,i_der)
-    DO i = 2, nrho+1
-        j_temp(i) = i_der(i)/(2*pi*THRIFT_RHOFULL(i)*THRIFT_AMINOR(i,mytimestep)**2)
+    ! number of gridpoints in s space
+    ns = 101;
+
+    ! Allocate s grid and temp j grids
+    ALLOCATE(s_temp(ns), js_temp(ns), jrho_temp(nrho))
+    s_temp = 0; js_temp = 0; jrho_temp = 0;
+    
+    ! Setup s grid
+    ds = 1.0/(ns-1)
+    DO i = 1, ns
+        s_temp(i) = (i-1)*ds
     END DO
 
-    CALL extrapolate_arr(j_temp(2:nrho+1), j_arr)
+     ! Create I spline (in rho space)
+    bcs0=(/ 0, 0/)
+    CALL EZspline_init(I_spl,nrho+2,bcs0,ier)
+    I_spl%x1        = THRIFT_RHOFULL
+    I_spl%isHermite = 1
+    CALL EZspline_setup(I_spl,I_arr,ier,EXACT_DIM=.true.)
+
+    ! Calculate J in s space
+    js_temp(1) = 0
+    DO i = 2:ns-1
+        ! Spline in rho space; rho = sqrt(s)
+        ! Gives I at the required s values
+        CALL EZSpline_interp(I_spl,sqrt(s_temp(i+1)),I_temp1, ier )
+        CALL EZSpline_interp(I_spl,sqrt(s_temp(i-1)),I_temp2, ier )
+        ! dI/ds
+        dIds = (I_temp1-I_temp2)/(s_temp(i+1)-s_temp(i-1))
+        ! a_eff
+        CALL get_equil_Rmajor(s_temp(i),temp, temp, Aminor, ier )
+        ! J = dI/ds*ds/dA = dI/ds/(pi*a_eff^2)
+        js_temp(i) = dIds/(pi*Aminor**2)
+    END DO
+    js_temp(ns) = 0
     
-    DEALLOCATE(j_temp)
+    ! Free spline
+    CALL EZspline_free(I_spl,ier)
+
+    ! Setup J spline (in s space)
+    bcs0=(/ 0, 0/)
+    CALL EZspline_init(I_spl,ns,bcs0,ier)
+    I_spl%x1        = s_temp
+    I_spl%isHermite = 1
+    CALL EZspline_setup(I_spl,js_temp,ier,EXACT_DIM=.true.)   
+
+    ! Interpolate to find J in rho space
+    DO i = 1, nrho
+        ! Spline in s space: s = rho^2
+        CALL EZSpline_interp(I_spl,THRIFT_RHO(i)**2, jrho_temp(i), ier)
+    END DO
+
+    ! Free spline
+    CALL EZspline_free(I_spl,ier)
+    CALL extrapolate_arr(jrho_temp, j_arr)
+    
+    DEALLOCATE(s_temp, js_temp, jrho_temp)
     RETURN
 
 END SUBROUTINE curtot_to_curden
