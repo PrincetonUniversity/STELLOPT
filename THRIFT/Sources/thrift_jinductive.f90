@@ -340,15 +340,15 @@
       CALL curden_to_curtot(j_full, THRIFT_INBCD(:,mytimestep))
       CALL extrapolate_arr(THRIFT_JOHMIC(:,mytimestep), j_full)
       CALL curden_to_curtot(j_full,THRIFT_IOHMIC(:,mytimestep))
-      CALL curden_to_curtot(jplasma_full,THRIFT_IPLASMA(:,mytimestep))
+!      CALL curden_to_curtot(jplasma_full,THRIFT_IPLASMA(:,mytimestep))
 
-      THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,mytimestep)&
-                                    + THRIFT_IECCD(:,mytimestep)&
-                                    + THRIFT_INBCD(:,mytimestep)&
-                                    + THRIFT_IOHMIC(:,mytimestep)
+!      THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,mytimestep)&
+!                                    + THRIFT_IECCD(:,mytimestep)&
+!                                    + THRIFT_INBCD(:,mytimestep)&
+!                                    + THRIFT_IOHMIC(:,mytimestep)
 
-      THRIFT_I(:,mytimestep)  = THRIFT_IPLASMA(:,mytimestep)&
-                              + THRIFT_ISOURCE(:,mytimestep)
+!      THRIFT_I(:,mytimestep)  = THRIFT_IPLASMA(:,mytimestep)&
+!                              + THRIFT_ISOURCE(:,mytimestep)
 
       DEALLOCATE( j_full, jplasma_full, jsource_full)
 
