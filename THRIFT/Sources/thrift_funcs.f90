@@ -123,8 +123,9 @@ SUBROUTINE curtot_to_curden(I_arr, j_arr)
     REAL(rprec), DIMENSION(:), INTENT(out) :: j_arr
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: js_temp,  s_temp, jrho_temp
     INTEGER :: i, ier, ns
+    INTEGER :: bcs0(2)
     TYPE(EZspline1_r8) :: I_spl
-    REAL(rprec) :: I_temp1, I_temp2,dIds, temp, Aminor
+    REAL(rprec) :: ds, I_temp1, I_temp2,dIds, temp, Aminor
 
     ! number of gridpoints in s space
     ns = 101;
@@ -148,7 +149,7 @@ SUBROUTINE curtot_to_curden(I_arr, j_arr)
 
     ! Calculate J in s space
     js_temp(1) = 0
-    DO i = 2:ns-1
+    DO i = 2, ns-1
         ! Spline in rho space; rho = sqrt(s)
         ! Gives I at the required s values
         CALL EZSpline_interp(I_spl,sqrt(s_temp(i+1)),I_temp1, ier )
