@@ -61,8 +61,7 @@
          WRITE(6,*) ' RHO    DV/DPHI        <B>      <B^2>     RMAJOR     AMINOR        S11 '
       END IF
 
-      !! ONLY NECESSARY AT CURRENT TIMESTEP !! REWRITE PLS 
-      ! Store magnetic variables; both preceding and current timestep vals are necessary
+      ! Store magnetic variables
       THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge
       DO i = 1, nrho+2
          rho = THRIFT_RHOFULL(i)
@@ -340,15 +339,17 @@
       CALL curden_to_curtot(j_full, THRIFT_INBCD(:,mytimestep))
       CALL extrapolate_arr(THRIFT_JOHMIC(:,mytimestep), j_full)
       CALL curden_to_curtot(j_full,THRIFT_IOHMIC(:,mytimestep))
-!      CALL curden_to_curtot(jplasma_full,THRIFT_IPLASMA(:,mytimestep))
+      CALL curden_to_curtot(jplasma_full,THRIFT_IPLASMA(:,mytimestep))
+      WRITE(6,*) jplasma_full
+      WRITE(6,*) THRIFT_IPLASMA(:,mytimestep)
 
-!      THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,mytimestep)&
-!                                    + THRIFT_IECCD(:,mytimestep)&
-!                                    + THRIFT_INBCD(:,mytimestep)&
-!                                    + THRIFT_IOHMIC(:,mytimestep)
+      THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,mytimestep)&
+                                    + THRIFT_IECCD(:,mytimestep)&
+                                    + THRIFT_INBCD(:,mytimestep)&
+                                    + THRIFT_IOHMIC(:,mytimestep)
 
-!      THRIFT_I(:,mytimestep)  = THRIFT_IPLASMA(:,mytimestep)&
-!                              + THRIFT_ISOURCE(:,mytimestep)
+      THRIFT_I(:,mytimestep)  = THRIFT_IPLASMA(:,mytimestep)&
+                              + THRIFT_ISOURCE(:,mytimestep)
 
       DEALLOCATE( j_full, jplasma_full, jsource_full)
 
