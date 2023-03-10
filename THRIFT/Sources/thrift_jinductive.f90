@@ -340,8 +340,6 @@
       CALL extrapolate_arr(THRIFT_JOHMIC(:,mytimestep), j_full)
       CALL curden_to_curtot(j_full,THRIFT_IOHMIC(:,mytimestep))
       CALL curden_to_curtot(jplasma_full,THRIFT_IPLASMA(:,mytimestep))
-      WRITE(6,*) jplasma_full
-      WRITE(6,*) THRIFT_IPLASMA(:,mytimestep)
 
       THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,mytimestep)&
                                     + THRIFT_IECCD(:,mytimestep)&
