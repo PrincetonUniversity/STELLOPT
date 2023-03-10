@@ -258,6 +258,9 @@
       THRIFT_MATMD(nrho+2,mytimestep)  = 1 + pprime/temp1 + (rho/(rho+0.5*drho))/drho
       THRIFT_MATUD(nrho+2,mytimestep)  = 0
       THRIFT_MATRHS(nrho+2,mytimestep) = jsource_full(nrho+2)*THRIFT_BAV(nrho+2,mytimestep)/temp1
+!----------------------------------------------------------------------
+!     Nonzero element management
+!----------------------------------------------------------------------
 
       ! Nonzero element at M(2,4)
       temp1 = -THRIFT_ALPHA4(1,mytimestep)/(5*drho**2)
@@ -272,6 +275,8 @@
       THRIFT_MATLD( nrho+1,mytimestep) = THRIFT_MATLD( nrho+1,mytimestep) - temp2*THRIFT_MATMD( nrho,mytimestep)
       THRIFT_MATMD( nrho+1,mytimestep) = THRIFT_MATMD( nrho+1,mytimestep) - temp2*THRIFT_MATUD( nrho,mytimestep)
       THRIFT_MATRHS(nrho+1,mytimestep) = THRIFT_MATRHS(nrho+1,mytimestep) - temp2*THRIFT_MATRHS(nrho,mytimestep)
+
+!----------------------------------------------------------------------
 
       ! Solve system of equations
       CALL solve_tdm( THRIFT_MATLD( :,mytimestep),&
