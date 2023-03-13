@@ -98,6 +98,8 @@
 !     > B(j) = 2*etapara*dV/dPhi*<B^2>/mu_0
 !     > C(j) = 2*etapara*dV/dPhi*dp/drho
 !     > D(j) = -2*etapara*dV/dPhi*<Js.B>
+!     A is not necessary at the boundaries; B,C,D are as derivatives
+!     need to be taken.
 !----------------------------------------------------------------------
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
@@ -306,11 +308,7 @@
 !     Obtain JPLASMA from IPLASMA with curtot_to_curden subroutine.
 !----------------------------------------------------------------------
 
-      !THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(1,mytimestep)/mu0*( THRIFT_RHOFULL*THRIFT_UGRID(:,mytimestep) )
-      ! trying something
-      DO i = 1, nrho+2
-         THRIFT_I(i,mytimestep) = 2*THRIFT_RHOFULL(i)*THRIFT_PHIEDGE(1,mytimestep)/mu0*THRIFT_UGRID(i,mytimestep)
-      END DO
+      THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(1,mytimestep)/mu0*( THRIFT_RHOFULL*THRIFT_UGRID(:,mytimestep) )
       CALL curden_to_curtot(jsource_full,THRIFT_ISOURCE(:,mytimestep))
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep)-THRIFT_ISOURCE(:,mytimestep)
       CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),jplasma_full)
