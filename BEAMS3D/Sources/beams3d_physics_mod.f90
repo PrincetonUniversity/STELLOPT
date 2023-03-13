@@ -840,7 +840,7 @@ MODULE beams3d_physics_mod
             moment = 1000*TINY(moment)
             RETURN
          END IF
-
+         
          RETURN
 
       END SUBROUTINE beams3d_ionize

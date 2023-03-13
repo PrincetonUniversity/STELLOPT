@@ -23,7 +23,7 @@ SUBROUTINE beams3d_follow_gc
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
                             TE_spl, TI_spl, wall_load, wall_shine, &
                             plasma_mass, plasma_Zmean, therm_factor, &
-                            nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida
+                            nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida,raxis
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE beams3d_write_par
@@ -90,12 +90,15 @@ SUBROUTINE beams3d_follow_gc
     relab = "M"
     mf = 10
 
-    ! Calc max time to follow particles
-    i = MAXLOC(ABS(t_end),1)
-    tf_max = t_end(i)
-
     ! Calculate timestep for integration
     vel_max = MAX(MAXVAL(ABS(vll_start)),1E6)
+
+    ! Calc max time to follow particles
+    i = MAXLOC(ABS(t_end),1)
+    !IF (lbeam) t_end(i) = MAX(t_end(i),2*MAXVAL(raxis)/vel_max)
+    tf_max = t_end(i)
+
+   ! Calculate timestep for integration
     dt = SIGN(MAX(lendt_m/vel_max,1D-9),tf_max)
 
     ! Calculate number of integration timesteps per output timestep
