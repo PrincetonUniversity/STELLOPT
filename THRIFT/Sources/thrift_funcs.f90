@@ -69,8 +69,9 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol)
     REAL(rprec), DIMENSION(:), INTENT(in) :: CI
     REAL(rprec), DIMENSION(:), INTENT(in) :: DI
     REAL(rprec), DIMENSION(:), INTENT(in) :: sol
-    REAL(rprec), DIMENSION(:) :: residue
+    REAL(rprec), DIMENSION(:), ALLOCATABLE :: residue
     INTEGER :: i
+
     ALLOCATE(residue(nrho+2))
     
     residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
