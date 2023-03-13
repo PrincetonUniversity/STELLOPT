@@ -63,20 +63,24 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
 
 END SUBROUTINE solve_tdm
 
-SUBROUTINE check_sol(AI,BI,CI,DI,sol,residue)
+SUBROUTINE check_sol(AI,BI,CI,DI,sol)
     REAL(rprec), DIMENSION(:), INTENT(in) :: AI
     REAL(rprec), DIMENSION(:), INTENT(in) :: BI
     REAL(rprec), DIMENSION(:), INTENT(in) :: CI
     REAL(rprec), DIMENSION(:), INTENT(in) :: DI
     REAL(rprec), DIMENSION(:), INTENT(in) :: sol
-    REAL(rprec), DIMENSION(:), INTENT(out) :: residue
+    REAL(rprec), DIMENSION(:) :: residue
     INTEGER :: i
+    ALLOCATE(residue(nrho+2))
     
     residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
-    DO i = 2, nrho-1
+    DO i = 2, nrho+1
         residue(i) = AI(i)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
     END DO
-    residue(nrho) = AI(nrho)*sol(nrho-1)+BI(nrho)*sol(nrho)-DI(nrho)
+    residue(nrho+2) = AI(nrho+2)*sol(nrho+1)+BI(nrho+2)*sol(nrho+2)-DI(nrho+2)
+    WRITE(6,*) maxval(residue)
+
+    DEALLOCATE(residue(nrho+2))
 
     RETURN
 
