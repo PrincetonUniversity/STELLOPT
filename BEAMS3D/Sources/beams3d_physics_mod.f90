@@ -180,68 +180,61 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-               !IF (coul_type .eq. 1) THEN
-                  ! Same formulation as NUBEAM internal calculation (r8_coulog.f90), different Units than usual: 
-                  !Z is in elementary charge, A is in amu, energy and temperature in keV.
-                  sm=zero
-                  do i=1,COUNT(NI_AUX_Z>0)  
-                     omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ne_temp & !assume ni=ne (should be changed for multi-ion plasmas)
-                           +9.18d15*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)**2*modb**2
-                     vrel2=9.58d10*(ti_temp/1000.0/(NI_AUX_M(i)*inv_dalton) + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
-                     sm=sm+omega2/vrel2
-                  end do
+               ! Same formulation as NUBEAM internal calculation (r8_coulog.f90), different Units than usual: 
+               !Z is in elementary charge, A is in amu, energy and temperature in keV.
 
-                  !Electrons
-                  omega2=1.74d0*1836.1*ne_temp &
-                        +9.18d15*1836.1**2*modb**2
-                  vrel2=9.58d10*(te_temp/1000.0d0*1836.1d0 + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
-                  sm=sm+omega2/vrel2
-                  bmax=sqrt(one/sm)
-               
-                  ! next calculate rmin, including quantum corrections.  The classical
-                  ! rmin is:
-                  !
-                  ! rmincl = e_alpha e_beta / (m_ab vrel**2)
-                  !
-                  ! where m_ab = m_a m_b / (m_a+m_b) is the reduced mass.
-                  ! vrel**2 = 3 T_b/m_b + 2 E_a / m_a
-                  ! (Note:  the two different definitions of vrel2 used in this code
-                  ! are each correct for their application.)
-                  !
-                  ! The quantum rmin is:
-                  !
-                  ! rminqu = hbar/( 2 exp(0.5) m_ab vrel)
-                  !
-                  ! and the proper rmin is the larger of rmincl and rminqu
-                  !
-                  do i=1,COUNT(NI_AUX_Z>0)
-                     vrel2=9.58d10*(3*ti_temp/1000.0d0/(NI_AUX_M(i)*inv_dalton) + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
-                     bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/vrel2
-                     bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
-                     bmin=max(bmincl,bminqu)
-                     coulomb_log=log(bmax/bmin) !only last coulomb log is saved - nubeam keeps per-species coulomb log, but not sure what effect this has
-                  end do
-               ! ELSE IF (coul_type .eq. 2) THEN 
-               !    ! Coulomb log approximation (NRL pg. 35)
-               !    coulomb_log = 43 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
-               ! ELSE IF (coul_type .eq. 3) THEN ! Complete Formulation according to LOCUST paper
-               !    omega_p2 = (ne_temp * plasma_Zmean*e_charge* plasma_Zmean*e_charge ) / (plasma_mass * eps_0)
-               !    Omega_p =  (plasma_Zmean*e_charge) / plasma_mass * modb
-               !    bmax = 1/sqrt((omega_p2 + Omega_p*Omega_p)/(te_temp*e_charge/plasma_mass + speed*speed))
-               !    mu_ip = plasma_mass * mymass / (plasma_mass + mymass)
-               !    u_ip2 = 3 *  (te_temp)*e_charge / plasma_mass + speed*speed
-               !    bmin_c = (charge_beams(1) * (plasma_Zmean*e_charge)) / (4*pi*eps_0 * mu_ip * u_ip2)
-               !    bmin_q = hbar / (2*mu_ip*sqrt(u_ip2)) * exp(-.5)
-               !    bmin = max(bmin_q,bmin_c)
-               !    coulomb_log = log(bmax/bmin)
+               !sm=zero
+               !DO i=1,COUNT(NI_AUX_Z>0)  
+               !      omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ne_temp & !assume ni=ne (should be changed for multi-ion plasmas)
+               !            +9.18d15*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)**2*modb**2
+               !      vrel2=9.58d10*(ti_temp/1000.0/(NI_AUX_M(i)*inv_dalton) + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
+               !      sm=sm+omega2/vrel2
+               !END DO
 
-               ! ELSE IF (coul_type .eq. 4) THEN   !Old coulomb log approximation
-               !    IF (te_temp < 10*myZ*myZ) THEN
-               !       coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
-               !    ELSE
-               !       coulomb_log = 24 - log( sqrt(ne_temp*1E-6)/(te_temp) )
-               !    END IF
-               ! END IF
+               !Electrons
+               !omega2=1.74d0*1836.1*ne_temp +9.18d15*1836.1**2*modb**2
+               !vrel2=9.58d10*(te_temp/1000.0d0*1836.1d0 + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
+               !sm=sm+omega2/vrel2
+               !bmax=sqrt(one/sm)
+
+               ! next calculate rmin, including quantum corrections.  The classical
+               ! rmin is:
+               !
+               ! rmincl = e_alpha e_beta / (m_ab vrel**2)
+               !
+               ! where m_ab = m_a m_b / (m_a+m_b) is the reduced mass.
+               ! vrel**2 = 3 T_b/m_b + 2 E_a / m_a
+               ! (Note:  the two different definitions of vrel2 used in this code
+               ! are each correct for their application.)
+               !
+               ! The quantum rmin is:
+               !
+               ! rminqu = hbar/( 2 exp(0.5) m_ab vrel)
+               !
+               ! and the proper rmin is the larger of rmincl and rminqu
+               !
+
+               !DO i=1,COUNT(NI_AUX_Z>0)
+               !   vrel2=9.58d10*(3*ti_temp/1000.0d0/(NI_AUX_M(i)*inv_dalton) + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
+               !   bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/vrel2
+               !   bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
+               !   bmin=max(bmincl,bminqu)
+               !   coulomb_log=log(bmax/bmin) !only last coulomb log is saved - nubeam keeps per-species coulomb log, but not sure what effect this has
+               !END DO
+
+               ! OLD NRL Formula (2019 pg 34)
+               coulomb_log = 43 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
+
+               ! From LOCUST
+               !omega_p2 = (ne_temp * plasma_Zmean*e_charge* plasma_Zmean*e_charge ) / (plasma_mass * eps_0)
+               !Omega_p =  (plasma_Zmean*e_charge) / plasma_mass * modb
+               !bmax = 1/sqrt((omega_p2 + Omega_p*Omega_p)/(te_temp*e_charge/plasma_mass + speed*speed))
+               !mu_ip = plasma_mass * mymass / (plasma_mass + mymass)
+               !u_ip2 = 3 *  (te_temp)*e_charge / plasma_mass + speed*speed
+               !bmin_c = (charge_beams(1) * (plasma_Zmean*e_charge)) / (4*pi*eps_0 * mu_ip * u_ip2)
+               !bmin_q = hbar / (2*mu_ip*sqrt(u_ip2)) * exp(-.5)
+               !bmin = max(bmin_q,bmin_c)
+               !coulomb_log = log(bmax/bmin)
 
                coulomb_log = max(coulomb_log,one)
 
