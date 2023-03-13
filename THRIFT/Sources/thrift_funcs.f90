@@ -81,7 +81,7 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol)
     residue(nrho+2) = AI(nrho+2)*sol(nrho+1)+BI(nrho+2)*sol(nrho+2)-DI(nrho+2)
     WRITE(6,*) maxval(residue)
 
-    DEALLOCATE(residue(nrho+2))
+    DEALLOCATE(residue)
 
     RETURN
 
