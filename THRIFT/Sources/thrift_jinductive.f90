@@ -281,16 +281,22 @@
 !----------------------------------------------------------------------
 
       ! Solve system of equations
-      CALL solve_tdm( THRIFT_MATLD( :,mytimestep),&
-                      THRIFT_MATMD( :,mytimestep),&
-                      THRIFT_MATUD( :,mytimestep),&
-                      THRIFT_MATRHS(:,mytimestep),&
-                      THRIFT_UGRID( :,mytimestep))
-      CALL check_sol( THRIFT_MATLD( :,mytimestep),&
-                      THRIFT_MATMD( :,mytimestep),&
-                      THRIFT_MATUD( :,mytimestep),&
-                      THRIFT_MATRHS(:,mytimestep),&
-                      THRIFT_UGRID( :,mytimestep))
+      !CALL solve_tdm( THRIFT_MATLD( :,mytimestep),&
+      !                THRIFT_MATMD( :,mytimestep),&
+      !                THRIFT_MATUD( :,mytimestep),&
+      !                THRIFT_MATRHS(:,mytimestep),&
+      !                THRIFT_UGRID( :,mytimestep))
+
+      ier = 0
+      THRIFT_UGRID(:,mytimestep) = THRIFT_MATRHS(:,mytimestep)
+      CALL DGTSV(nrho+2, 1, THRIFT_MATLD(:,mytimestep), THRIFT_MATMD(:,mytimestep),&
+      THRIFT_MATUD(:,mytimestep),THRIFT_UGRID(:,mytimestep),nrho+2,ier)
+
+      !CALL check_sol( THRIFT_MATLD( :,mytimestep),&
+      !                THRIFT_MATMD( :,mytimestep),&
+      !                THRIFT_MATUD( :,mytimestep),&
+      !                THRIFT_MATRHS(:,mytimestep),&
+      !                THRIFT_UGRID( :,mytimestep))
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
