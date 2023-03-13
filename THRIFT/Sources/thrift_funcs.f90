@@ -87,9 +87,9 @@ SUBROUTINE extrapolate_arr(j_arr, j_extr)
     REAL(rprec), DIMENSION(:), INTENT(IN)  :: j_arr
     REAL(rprec), DIMENSION(:), INTENT(OUT) :: j_extr
 
-    j_extr(1) = (3*j_arr(1)-j_arr(2))/2
+    j_extr(1)        = (3*j_arr(1)-j_arr(2))/2
     j_extr(2:nrho+1) = j_arr
-    j_extr(nrho+2) = (-j_arr(nrho-1)+3*j_arr(nrho))/2
+    j_extr(nrho+2)   = (-j_arr(nrho-1)+3*j_arr(nrho))/2
 
     RETURN
 
