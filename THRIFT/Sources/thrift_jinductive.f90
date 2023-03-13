@@ -94,7 +94,7 @@
 !     CALCULATING COEFFICIENTS ABCD
 !----------------------------------------------------------------------
 !     Calculate ABCD (everything evaluated at rho_j)
-!     > A(j) = S11/(4*rho*Phi_edge)
+!     > A(j) = S11/(4*rho*Phi_edge^2)
 !     > B(j) = 2*etapara*dV/dPhi*<B^2>/mu_0
 !     > C(j) = 2*etapara*dV/dPhi*dp/drho
 !     > D(j) = -2*etapara*dV/dPhi*<Js.B>
@@ -109,7 +109,7 @@
          rho = THRIFT_RHOFULL(i)
          CALL get_prof_etapara(MIN(rho,THRIFT_RHO(nrho)),mytime,etapara)
          CALL get_prof_pprime(rho,mytime,pprime)
-         temp1 = 2*etapara*THRIFT_VP(i,mytimestep) ! temp1 <- 2 eta dV/dPhi 
+         temp1 = 2*etapara*THRIFT_VP(i,mytimestep)**2 ! temp1 <- 2 eta dV/dPhi 
          IF (i > 1) &
             THRIFT_COEFF_A(i,mytimestep) = THRIFT_S11(i,mytimestep)/(4*rho*THRIFT_PHIEDGE(1,mytimestep))
          THRIFT_COEFF_B(i,mytimestep) = temp1*THRIFT_BSQAV(i,mytimestep)/mu0
@@ -234,19 +234,19 @@
          a4 = THRIFT_ALPHA4(j, mytimestep)
 
          IF (j==1) THEN 
-            THRIFT_MATLD(i, mytimestep) =   -4*a3/(3*drho)+16*a4/(5*drho**2)        ! ai, j = 1        ## i = 2
-            THRIFT_MATMD(i, mytimestep) = a2  +a3/(drho)  - 5*a4/(drho**2)  -1.0/dt ! bi, j = 1        ## i = 2
-            THRIFT_MATUD(i, mytimestep) =      a3/(3*drho)+ 2*a4/(drho**2)          ! ci, j = 1        ## i = 2
+            THRIFT_MATLD(i, mytimestep) =   -4/3*a3/drho+16/5*a4/drho**2         ! ai, j = 1        ## i = 2
+            THRIFT_MATMD(i, mytimestep) = a2    +a3/drho   -5*a4/drho**2-1.0/dt  ! bi, j = 1        ## i = 2
+            THRIFT_MATUD(i, mytimestep) =    1/3*a3/drho   +2*a4/drho**2         ! ci, j = 1        ## i = 2
          ELSE IF ((j>1).and.(j<nrho)) THEN
-            THRIFT_MATLD(i, mytimestep) =     -a3/(2*drho)+   a4/(drho**2)          ! ai, 1 < j < nrho ## 2 < i < nrho+1
-            THRIFT_MATMD(i, mytimestep) = a2              - 2*a4/(drho**2) - 1.0/dt ! bi, 1 < j < nrho ## 2 < i < nrho+1
-            THRIFT_MATUD(i, mytimestep) =      a3/(2*drho)+   a4/(drho**2)          ! ci, 1 < j < nrho ## 2 < i < nrho+1
+            THRIFT_MATLD(i, mytimestep) =   -1/2*a3/drho     +a4/drho**2         ! ai, 1 < j < nrho ## 2 < i < nrho+1
+            THRIFT_MATMD(i, mytimestep) = a2               -2*a4/drho**2-1.0/dt  ! bi, 1 < j < nrho ## 2 < i < nrho+1
+            THRIFT_MATUD(i, mytimestep) =    1/2*a3/drho     +a4/drho**2         ! ci, 1 < j < nrho ## 2 < i < nrho+1
          ELSE IF (j==nrho) THEN
-            THRIFT_MATLD(i, mytimestep) =     -a3/(3*drho)+ 2*a4/(drho**2)          ! ai, j = nrho     ## i = nrho+1
-            THRIFT_MATMD(i, mytimestep) = a2  -a3/(drho)  - 5*a4/(drho**2) - 1.0/dt ! bi, j = nrho     ## i = nrho+1
-            THRIFT_MATUD(i, mytimestep) =    4*a3/(3*drho)+16*a4/(5*drho**2)        ! ci, j = nrho     ## i = nrho+1
+            THRIFT_MATLD(i, mytimestep) =   -1/3*a3/drho   +2*a4/drho**2         ! ai, j = nrho     ## i = nrho+1
+            THRIFT_MATMD(i, mytimestep) = a2    -a3/drho   -5*a4/drho**2-1.0/dt  ! bi, j = nrho     ## i = nrho+1
+            THRIFT_MATUD(i, mytimestep) =    4/3*a3/drho+16/5*a4/drho**2         ! ci, j = nrho     ## i = nrho+1
          END IF
-         THRIFT_MATRHS(i,mytimestep) = -THRIFT_UGRID(i, prevtimestep)/dt - a1 
+         THRIFT_MATRHS(i,mytimestep)    = -THRIFT_UGRID(i, prevtimestep)/dt-a1 
 
       END DO 
 
@@ -255,7 +255,7 @@
       CALL get_prof_pprime(rho, mytime, pprime)
       temp1 = THRIFT_BSQAV(nrho+2,mytimestep)/mu0
       THRIFT_MATLD(nrho+2,mytimestep)  = -1.0/drho
-      THRIFT_MATMD(nrho+2,mytimestep)  = 1 + pprime/temp1 + (rho/(rho+0.5*drho))/drho
+      THRIFT_MATMD(nrho+2,mytimestep)  = 1.0 + pprime/temp1 + 1.0/(drho*(1+drho/2))
       THRIFT_MATUD(nrho+2,mytimestep)  = 0
       THRIFT_MATRHS(nrho+2,mytimestep) = jsource_full(nrho+2)*THRIFT_BAV(nrho+2,mytimestep)/temp1
 !----------------------------------------------------------------------

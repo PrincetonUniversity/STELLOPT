@@ -202,7 +202,7 @@ SUBROUTINE deriv1_rho_o2(arr, der_arr)
     DO i = 3, nrho ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h 
         der_arr(i) = (arr(i+1)-arr(i-1))/(2*step)
     END DO
-    der_arr(nrho+1) = (4*arr(nrho+2)-3*arr(nrho+1)-arr(nrho-2))/(3*step) ! [4*Y(n) - 3*Y(n-1) - Y(n-2)]/3h
+    der_arr(nrho+1) = (4*arr(nrho+2)-3*arr(nrho+1)-arr(nrho))/(3*step) ! [4*Y(n) - 3*Y(n-1) - Y(n-2)]/3h
     der_arr(nrho+2) = 0
 
     RETURN
