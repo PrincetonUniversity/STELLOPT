@@ -286,7 +286,11 @@
                       THRIFT_MATUD( :,mytimestep),&
                       THRIFT_MATRHS(:,mytimestep),&
                       THRIFT_UGRID( :,mytimestep))
-
+      CALL check_sol( THRIFT_MATLD( :,mytimestep),&
+                      THRIFT_MATMD( :,mytimestep),&
+                      THRIFT_MATUD( :,mytimestep),&
+                      THRIFT_MATRHS(:,mytimestep),&
+                      THRIFT_UGRID( :,mytimestep))
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
