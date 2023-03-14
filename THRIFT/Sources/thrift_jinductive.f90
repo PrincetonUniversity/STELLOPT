@@ -311,7 +311,7 @@
       THRIFT_MATUD(nssize,mytimestep)  = 0
       THRIFT_MATRHS(nssize,mytimestep) = jsource*THRIFT_BAV(nssize,mytimestep)/temp1
       
-      d1 = THRIFT_LD(2:nssize,mytimestep)
+      d1 = THRIFT_MATLD(2:nssize,mytimestep)
       d2 = THRIFT_MATMD(:,mytimestep)
       d3 = THRIFT_MATUD(1:nssize-1,mytimestep)
       d4 = THRIFT_MATRHS(:,mytimestep)
