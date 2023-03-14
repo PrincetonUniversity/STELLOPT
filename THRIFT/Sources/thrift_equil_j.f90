@@ -97,7 +97,7 @@
                !AC_AUX_F(i) = j_val*vp*eq_phiedge/(2*pi*Rmajor)
                AC_AUX_F(i) = j_val*pi*Aminor**2
             END DO
-            !AC_AUX_F(1) = 2*AC_AUX_F(2)-AC_AUX_F(3)
+            AC_AUX_F(1) = 2*AC_AUX_F(2)-AC_AUX_F(3)
             CURTOR = SUM(AC_AUX_F(1:n_eq),DIM=1)/DBLE(n_eq-1)
          ELSE
             DO i = 1, n_eq
