@@ -131,7 +131,7 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
         rho = SQRT(s)
         ier = 0
         CALL EZspline_interp(j_spl, rho, j_temp, ier)
-        i_arr = i_arr(i-1) + j_temp*(pi*THRIFT_AMINOR(i,mytimestep)**2)*ds
+        i_arr(i) = i_arr(i-1) + j_temp*(pi*THRIFT_AMINOR(i,mytimestep)**2)*ds
     END DO
     CALL EZspline_free(j_spl,ier)
     DEALLOCATE(j_temp_spl)

@@ -332,11 +332,11 @@
                       THRIFT_MATRHS(:,mytimestep),&
                       THRIFT_UGRID( :,mytimestep))
 
-      CALL check_sol( THRIFT_MATLD( :,mytimestep),&
-                      THRIFT_MATMD( :,mytimestep),&
-                      THRIFT_MATUD( :,mytimestep),&
-                      THRIFT_MATRHS(:,mytimestep),&
-                      THRIFT_UGRID( :,mytimestep))
+      !CALL check_sol( THRIFT_MATLD( :,mytimestep),&
+      !                THRIFT_MATMD( :,mytimestep),&
+      !                THRIFT_MATUD( :,mytimestep),&
+      !                THRIFT_MATRHS(:,mytimestep),&
+      !                THRIFT_UGRID( :,mytimestep))
       IF (lverbj) THEN
          WRITE(6,*) '==============================================================================='
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
@@ -351,8 +351,8 @@
 !----------------------------------------------------------------------
 !     POST SOLVING EQUATIONS
 !----------------------------------------------------------------------
-!     Solving system of equations yields {uj} at this timestep.
-!     Get ITOTAL from u(j) = mu0*I/(2*rho*Phi_a) -> I(j) = 2*rho*Phi_a/mu0 * u(j)
+!     Solving system of equations yields u(s_j) at this timestep.
+!     ITOTAL(s_j) = Phi_a/mu0 * u(s_j)
 !     Obtain ISOURCE from JSOURCE with curden_to_curtot subroutine.
 !     Plasma current: IPLASMA = ITOTAL - ISOURCE
 !     Obtain JPLASMA from IPLASMA with curtot_to_curden subroutine.
@@ -390,16 +390,16 @@
 !     current density profile, but are nice to have.
 !----------------------------------------------------------------------
       1000  CONTINUE
-      CALL curden_to_curtot(THRIFT_JBOOT(:,mytimestep), THRIFT_IBOOT(:,mytimestep))
-      CALL curden_to_curtot(THRIFT_JECCD(:,mytimestep), THRIFT_IECCD(:,mytimestep))
-      CALL curden_to_curtot(THRIFT_JNBCD(:,mytimestep), THRIFT_INBCD(:,mytimestep))
-      CALL curden_to_curtot(THRIFT_JOHMIC(:,mytimestep),THRIFT_IOHMIC(:,mytimestep))
+      CALL curden_to_curtot(THRIFT_JBOOT(:,  mytimestep),THRIFT_IBOOT(:,  mytimestep))
+      CALL curden_to_curtot(THRIFT_JECCD(:,  mytimestep),THRIFT_IECCD(:,  mytimestep))
+      CALL curden_to_curtot(THRIFT_JNBCD(:,  mytimestep),THRIFT_INBCD(:,  mytimestep))
+      CALL curden_to_curtot(THRIFT_JOHMIC(:, mytimestep),THRIFT_IOHMIC(:, mytimestep))
       CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_IPLASMA(:,mytimestep))
 
-      THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,mytimestep)&
-                                    + THRIFT_IECCD(:,mytimestep)&
-                                    + THRIFT_INBCD(:,mytimestep)&
-                                    + THRIFT_IOHMIC(:,mytimestep)
+      THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,  mytimestep)&
+                                    + THRIFT_IECCD(:,  mytimestep)&
+                                    + THRIFT_INBCD(:,  mytimestep)&
+                                    + THRIFT_IOHMIC(:, mytimestep)
       THRIFT_I(:,mytimestep)        = THRIFT_IPLASMA(:,mytimestep)&
                                     + THRIFT_ISOURCE(:,mytimestep)
       DEALLOCATE(j_temp)
