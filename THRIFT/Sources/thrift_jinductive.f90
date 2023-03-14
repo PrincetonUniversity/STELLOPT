@@ -29,8 +29,9 @@
                      A_temp,B_temp,C_temp,D_temp,&
                      BP_temp, CP_temp, DP_temp,&
                      a1,a2,a3,a4
+                     
       TYPE(EZspline1_r8) :: splinor
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: j_temp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE ::d1,d2,d3,d4,j_temp
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -256,11 +257,14 @@
 !     calculates {uj} on [0,1], indices on RHS are shifted by -1.
 !----------------------------------------------------------------------
 
+      ALLOCATE(d1(nssize-1),d2(nssize),d3(nssize-1),d4(nssize))
       ! Magnetic axis (s=0)
       THRIFT_MATLD(1,  mytimestep) = 0  
       THRIFT_MATMD(1,  mytimestep) = 1
       THRIFT_MATUD(1,  mytimestep) = 0
       THRIFT_MATRHS(1, mytimestep) = 0   
+
+      d3(1) = THRIFT_MATUD(1,mytimestep)
 
       drho = THRIFT_RHO(2)-THRIFT_RHO(1) 
       ! THRIFT_RHO grid (rho in (0,1))
@@ -278,16 +282,17 @@
          !   THRIFT_MATMD(i, mytimestep) = a2    +a3/drho   -5*a4/drho**2-1.0/dt  ! bi, j = 1        ## i = 2
          !   THRIFT_MATUD(i, mytimestep) =    1/3*a3/drho   +2*a4/drho**2         ! ci, j = 1        ## i = 2
          !ELSE IF ((j>1).and.(j<nrho)) THEN
-         THRIFT_MATLD(i, mytimestep) =   -1/2*a3/ds+a4/ds**2         ! ai, 1 < j < nrho ## 2 < i < nrho+1
+         THRIFT_MATLD(i, mytimestep) =   -a3/(2*ds)+a4/ds**2         ! ai, 1 < j < nrho ## 2 < i < nrho+1
          THRIFT_MATMD(i, mytimestep) = a2        -2*a4/ds**2-1.0/dt  ! bi, 1 < j < nrho ## 2 < i < nrho+1
-         THRIFT_MATUD(i, mytimestep) =    1/2*a3/ds+a4/ds**2         ! ci, 1 < j < nrho ## 2 < i < nrho+1
+         THRIFT_MATUD(i, mytimestep) =    a3/(2*ds)+a4/ds**2         ! ci, 1 < j < nrho ## 2 < i < nrho+1
          !ELSE IF (j==nrho) THEN
          !   THRIFT_MATLD(i, mytimestep) =   -1/3*a3/drho   +2*a4/drho**2         ! ai, j = nrho     ## i = nrho+1
          !   THRIFT_MATMD(i, mytimestep) = a2    -a3/drho   -5*a4/drho**2-1.0/dt  ! bi, j = nrho     ## i = nrho+1
          !   THRIFT_MATUD(i, mytimestep) =    4/3*a3/drho+16/5*a4/drho**2         ! ci, j = nrho     ## i = nrho+1
          !END IF
          THRIFT_MATRHS(i,mytimestep)    = -THRIFT_UGRID(i, prevtimestep)/dt-a1 
-
+         d1(i-1) = THRIFT_MATLD(i,mytimestep)
+         d3(i)   = THRIFT_MATUD(i,mytimestep)
       END DO 
 
       ! Plasma edge (s=1)
@@ -305,6 +310,12 @@
       !THRIFT_MATMD(nrho+2,mytimestep)  = 1.0 + pprime/temp1 + 1.0/(drho*(1+drho/2))
       !THRIFT_MATUD(nrho+2,mytimestep)  = 0
       !THRIFT_MATRHS(nrho+2,mytimestep) = jsource_full(nrho+2)*THRIFT_BAV(nrho+2,mytimestep)/temp1
+      d2 = THRIFT_MATMD(:,mytimestep)
+      d3(nssize-1) = THRIFT_MATUD(nssize-1,mytimestep)
+      d4 = THRIFT_MATRHS(:,mytimestep)
+
+
+
 !----------------------------------------------------------------------
 !     Nonzero element management
 !----------------------------------------------------------------------
@@ -326,12 +337,13 @@
 !----------------------------------------------------------------------
 
       ! Solve system of equations
-      CALL solve_tdm( THRIFT_MATLD( :,mytimestep),&
-                      THRIFT_MATMD( :,mytimestep),&
-                      THRIFT_MATUD( :,mytimestep),&
-                      THRIFT_MATRHS(:,mytimestep),&
-                      THRIFT_UGRID( :,mytimestep))
-
+      !CALL solve_tdm( THRIFT_MATLD( :,mytimestep),&
+      !                THRIFT_MATMD( :,mytimestep),&
+      !                THRIFT_MATUD( :,mytimestep),&
+      !                THRIFT_MATRHS(:,mytimestep),&
+      !                THRIFT_UGRID( :,mytimestep))
+      CALL DGTSV(nssize, 1, d1, d2, d3, d4, nssize, ier)
+      THRIFT_UGRID(:,mytimestep) = d4
       !CALL check_sol( THRIFT_MATLD( :,mytimestep),&
       !                THRIFT_MATMD( :,mytimestep),&
       !                THRIFT_MATUD( :,mytimestep),&
