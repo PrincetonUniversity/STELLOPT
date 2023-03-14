@@ -93,14 +93,16 @@ thrift_jinductive.o : \
       thrift_profiles_mod.o \
       thrift_funcs.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_tools.o \
-      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o 
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline.o 
 
 thrift_funcs.o : \
       thrift_runtime.o \
       thrift_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_tools.o \
-      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o 
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline.o 
 
 thrift_load_vmec.o : \
       thrift_runtime.o \

@@ -12,6 +12,7 @@ MODULE thrift_funcs
     USE stel_kinds, ONLY: rprec
     USE stel_tools
     USE EZspline_obj
+    USE EZspline
     USE thrift_runtime
     USE thrift_vars
     IMPLICIT NONE
