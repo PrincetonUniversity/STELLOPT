@@ -37,15 +37,16 @@
 !----------------------------------------------------------------------
 !     PRELIMINARIES
 !----------------------------------------------------------------------
-
+      ! Allocate
+      ALLOCATE(j_temp(nrho+2))
+      
       ! If at zero beta, copy previous value of JPLASMA onto this timestep and skip
       IF (eq_beta == 0) THEN
          IF (mytimestep /= 1) THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep-1)
          GOTO 1000 
       END IF
 
-      ! Allocate
-      ALLOCATE(j_temp(nrho+2))
+      
 
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
