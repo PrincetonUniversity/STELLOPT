@@ -38,15 +38,31 @@
 !----------------------------------------------------------------------
 !     PRELIMINARIES
 !----------------------------------------------------------------------
-      ! Allocate
+      CALL curden_to_curtot(THRIFT_JBOOT(:,  mytimestep),THRIFT_IBOOT(:,  mytimestep))
+      CALL curden_to_curtot(THRIFT_JECCD(:,  mytimestep),THRIFT_IECCD(:,  mytimestep))
+      CALL curden_to_curtot(THRIFT_JNBCD(:,  mytimestep),THRIFT_INBCD(:,  mytimestep))
+      CALL curden_to_curtot(THRIFT_JOHMIC(:, mytimestep),THRIFT_IOHMIC(:, mytimestep))
+      CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_IPLASMA(:,mytimestep))
 
+      THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,  mytimestep)&
+                                    + THRIFT_IECCD(:,  mytimestep)&
+                                    + THRIFT_INBCD(:,  mytimestep)&
+                                    + THRIFT_IOHMIC(:, mytimestep)
+
+      mytime = THRIFT_T(mytimestep) ! mytime = current sim time
+      prevtimestep = mytimestep-1   ! previous time step index
+      dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
+      IF (mytime>tmax.and.THRIFT_T(prevtimestep)<=tmax.and.(nsubsteps==1)) WRITE(6,*) &
+         '! THRIFT has exceeded end time of profiles file. Proceeding with profiles at t=tmax !' 
+ 
       ! If at zero beta, copy previous value of JPLASMA onto this timestep and skip
       IF (eq_beta == 0) THEN
-         IF (mytimestep /= 1) THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep-1)
-         GOTO 1000 
+         IF (mytimestep /= 1) THEN
+            THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,prevtimestep)
+            THRIFT_IPLASMA(:,mytimestep) = THRIFT_IPLASMA(:,prevtimestep)
+            THRIFT_I(:,mytimestep)       = THRIFT_I(:,prevtimestep)
+         RETURN
       END IF
-
-      
 
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
@@ -89,14 +105,11 @@
       ! If mytimestep = 1 ITOT=0 and continue to next iteration
       IF (mytimestep==1) THEN
          THRIFT_JPLASMA(:,mytimestep) = -THRIFT_JSOURCE(:,mytimestep)
-         GOTO 1000 ! skip iteration. 
+         THRIFT_IPLASMA(:,mytimestep) = -THRIFT_ISOURCE(:,mytimestep)
+         THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
+         RETURN 
       END IF
 
-      mytime = THRIFT_T(mytimestep) ! mytime = current sim time
-      prevtimestep = mytimestep-1   ! previous time step index
-      dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
-      IF (mytime>tmax.and.THRIFT_T(prevtimestep)<=tmax.and.(nsubsteps==1)) WRITE(6,*) &
-         '! THRIFT has exceeded end time of profiles file. Proceeding with profiles at t=tmax !' 
          
 !----------------------------------------------------------------------
 !     CALCULATING COEFFICIENTS ABCD
@@ -344,7 +357,7 @@
       !                THRIFT_MATRHS(:,mytimestep),&
       !                THRIFT_UGRID( :,mytimestep))
       CALL DGTSV(nssize, 1, d1, d2, d3, d4, nssize, ier)
-      THRIFT_UGRID(:,mytimestep+1) = d4
+      THRIFT_UGRID(:,mytimestep) = d4
       !CALL check_sol( THRIFT_MATLD( :,mytimestep),&
       !                THRIFT_MATMD( :,mytimestep),&
       !                THRIFT_MATUD( :,mytimestep),&
@@ -371,9 +384,11 @@
 !     Obtain JPLASMA from IPLASMA with curtot_to_curden subroutine.
 !----------------------------------------------------------------------
       ALLOCATE(j_temp(nrho))
+
       THRIFT_I(:,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)/mu0*THRIFT_UGRID(:,mytimestep)
       CALL curtot_to_curden(THRIFT_I(:,mytimestep),j_temp)
       THRIFT_JPLASMA(:,mytimestep) = j_temp - THRIFT_JSOURCE(:,mytimestep)
+      
       DEALLOCATE(j_temp)
 
       IF (lverbj) THEN
@@ -405,18 +420,8 @@
 !     current density profile, but are nice to have.
 !----------------------------------------------------------------------
       1000  CONTINUE
-      CALL curden_to_curtot(THRIFT_JBOOT(:,  mytimestep),THRIFT_IBOOT(:,  mytimestep))
-      CALL curden_to_curtot(THRIFT_JECCD(:,  mytimestep),THRIFT_IECCD(:,  mytimestep))
-      CALL curden_to_curtot(THRIFT_JNBCD(:,  mytimestep),THRIFT_INBCD(:,  mytimestep))
-      CALL curden_to_curtot(THRIFT_JOHMIC(:, mytimestep),THRIFT_IOHMIC(:, mytimestep))
-      CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_IPLASMA(:,mytimestep))
 
-      THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,  mytimestep)&
-                                    + THRIFT_IECCD(:,  mytimestep)&
-                                    + THRIFT_INBCD(:,  mytimestep)&
-                                    + THRIFT_IOHMIC(:, mytimestep)
-      THRIFT_I(:,mytimestep)        = THRIFT_IPLASMA(:,mytimestep)&
-                                    + THRIFT_ISOURCE(:,mytimestep)
+
       RETURN
 
 !----------------------------------------------------------------------
