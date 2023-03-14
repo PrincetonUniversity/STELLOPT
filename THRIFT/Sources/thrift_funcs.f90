@@ -38,24 +38,24 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: c_p
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: d_p
     REAL(rprec) :: denom
-    ALLOCATE(c_p(nssize), d_p(nssize))
+    ALLOCATE(c_p(ngp), d_p(ngp))
     c_p = 0; d_p = 0
     !! Forward sweep
     ! c_1' = c_1/b_1   ;  c_i' =              c_i/(b_i - a_i*c_i-1') [1<i<=n-1]
     ! d_1' = d_1/b_1   ;  d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1') [1<i<=n  ]
     c_p(1) = CI(1)/BI(1) 
     d_p(1) = DI(1)/BI(1) 
-    DO i = 2, nssize
+    DO i = 2, ngp
         denom = BI(i)-AI(i)*c_p(i-1)
-        IF (i/=nssize) & 
+        IF (i/=ngp) & 
           c_p(i) = CI(i)/denom
         d_p(i) = (DI(i)-AI(i)*d_p(i-1))/denom
     END DO 
     !! Back substitution
     ! x_n = d_n'
     ! x_i = d_i' - c_i'*x_i+1
-    val(nssize) = d_p(nssize) 
-    DO i = nssize-1, 1, -1
+    val(ngp) = d_p(ngp) 
+    DO i = ngp-1, 1, -1
        val(i) = d_p(i)-c_p(i)*val(i+1) 
     END DO
 
@@ -73,13 +73,13 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol)
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: residue
     INTEGER :: i
 
-    ALLOCATE(residue(nssize))
+    ALLOCATE(residue(ngp))
     
     residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
-    DO i = 2, nssize-1
+    DO i = 2, ngp-1
         residue(i) = AI(i)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
     END DO
-    residue(nssize) = AI(nssize)*sol(nssize)+BI(nssize)*sol(nssize)-DI(nssize)
+    residue(ngp) = AI(ngp)*sol(ngp)+BI(ngp)*sol(ngp)-DI(ngp)
     WRITE(6,*) maxval(residue)
 
     DEALLOCATE(residue)
@@ -94,8 +94,8 @@ SUBROUTINE extrapolate_arr(j_arr, j_extr)
     REAL(rprec), DIMENSION(:), INTENT(OUT) :: j_extr
 
     j_extr(1)        = (3*j_arr(1)-j_arr(2))/2
-    j_extr(2:nrho+1) = j_arr
-    j_extr(nrho+2)   = (-j_arr(nrho-1)+3*j_arr(nrho))/2
+    j_extr(2:ngp+1) = j_arr
+    j_extr(ngp+2)   = (-j_arr(ngp-1)+3*j_arr(ngp))/2
 
     RETURN
 
@@ -112,21 +112,21 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     REAL(rprec) :: s,rho,ds,j_temp
     TYPE(EZspline1_r8) :: j_spl
 
-    ALLOCATE(j_temp_spl(nrho+2))
+    ALLOCATE(j_temp_spl(ngp+2))
 
     ds = THRIFT_S(2)-THRIFT_S(1)
     CALL extrapolate_arr(j_arr,j_temp_spl)
     ! Create J spline (in rho space)
 
     bcs0=(/ 0, 0/)
-    CALL EZspline_init(j_spl,nrho+2,bcs0,ier)
+    CALL EZspline_init(j_spl,ngp+2,bcs0,ier)
     j_spl%x1        = THRIFT_RHOFULL
     j_spl%isHermite = 1
     CALL EZspline_setup(j_spl,j_temp_spl,ier,EXACT_DIM=.true.)
     
     ! Calculate I (in s space)
     i_arr(1) = 0
-    DO i = 2, nssize
+    DO i = 2, ngp
         s = THRIFT_S(i)
         rho = SQRT(s)
         ier = 0
@@ -152,35 +152,35 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     TYPE(EZspline1_r8) :: j_spl
     REAL(rprec) :: ds, rho, s, dIds, dAds
 
-    ALLOCATE(j_temp(nssize))
-    WRITE(6,*) ' i        I(i+1)        I(i-1)      dI/ds(i)         dA/ds        J(s_i)'
+    ALLOCATE(j_temp(ngp))
+ !   WRITE(6,*) ' i        I(i+1)        I(i-1)      dI/ds(i)         dA/ds        J(s_i)'
 
     ! Calculate J (in s space)
     ds = THRIFT_S(2)-THRIFT_S(1)
-    DO i = 2, nssize-1
+    DO i = 2, ngp-1
         dIds = (i_arr(i+1)-i_arr(i-1))/(2*ds)
         dAds = pi*THRIFT_AMINOR(i,mytimestep)**2
         j_temp(i) = dIds/dAds
-        WRITE(6,'(I3,5(1X,ES13.5))') i, i_arr(i+1), i_arr(i-1), dIds, dAds, j_temp(i)
+ !       WRITE(6,'(I3,5(1X,ES13.5))') i, i_arr(i+1), i_arr(i-1), dIds, dAds, j_temp(i)
     END DO
 
     ! Extrapolate to boundaries
     j_temp(1)  = 2*j_temp(2)   -j_temp(3)    ! s = 0
-    j_temp(nssize) = 2*j_temp(nssize-1)-j_temp(nssize-2) ! s = 1
+    j_temp(ngp) = 2*j_temp(ngp-1)-j_temp(ngp-2) ! s = 1
     ! Setup J spline (in s space)
-    CALL EZspline_init(j_spl,nssize,bcs0,ier)
+    CALL EZspline_init(j_spl,ngp,bcs0,ier)
     j_spl%x1        = THRIFT_S
     j_spl%isHermite = 1
     CALL EZspline_setup(j_spl,j_temp,ier,EXACT_DIM=.true.)  
-    WRITE(6,*) ' i        J(rho_i)'
+ !   WRITE(6,*) ' i        J(rho_i)'
 
     ! Convert J to rho space
-    DO i = 1, nrho
+    DO i = 1, ngp
        rho = THRIFT_RHO(i)
        s = rho*rho
        ier = 0
        CALL EZspline_interp(j_spl, s, j_arr(i), ier)
-       WRITE(6,'(I3,1X,ES13.5)') i, j_arr(i)
+ !      WRITE(6,'(I3,1X,ES13.5)') i, j_arr(i)
       
     END DO
 
@@ -201,11 +201,11 @@ SUBROUTINE deriv1_rho_o2(arr, der_arr)
     ! Set derivatives = 0 on boundaries
     der_arr(1) = 0
     der_arr(2) = (arr(3)+3*arr(2)-4*arr(1))/(3*step) ! dY/drho(1) = [Y(3) + 3*Y(2) - 4*Y(1)]/3h
-    DO i = 3, nrho ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h 
+    DO i = 3, ngp ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h 
         der_arr(i) = (arr(i+1)-arr(i-1))/(2*step)
     END DO
-    der_arr(nrho+1) = (4*arr(nrho+2)-3*arr(nrho+1)-arr(nrho))/(3*step) ! [4*Y(n) - 3*Y(n-1) - Y(n-2)]/3h
-    der_arr(nrho+2) = 0
+    der_arr(ngp+1) = (4*arr(ngp+2)-3*arr(ngp+1)-arr(ngp))/(3*step) ! [4*Y(n) - 3*Y(n-1) - Y(n-2)]/3h
+    der_arr(ngp+2) = 0
 
     RETURN
 
