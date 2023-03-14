@@ -47,7 +47,7 @@ MODULE thrift_vars
              win_thrift_jsource, win_thrift_etapara,&
              win_thrift_i, win_thrift_iplasma, win_thrift_iboot, &
              win_thrift_ieccd, win_thrift_inbcd, win_thrift_iohmic, &
-             win_thrift_isource, &
+             win_thrift_isource, win_thrift_pprime,&
              win_thrift_rho, win_thrift_t, win_thrift_s, win_thrift_rhofull,&
              win_thrift_rhoins, win_thrift_sinrho,&
              win_lbooz, win_thrift_ugrid, &
@@ -64,7 +64,7 @@ MODULE thrift_vars
                  THRIFT_I, THRIFT_IPLASMA, THRIFT_IBOOT, THRIFT_IECCD, THRIFT_INBCD, &
                  THRIFT_IOHMIC, THRIFT_ISOURCE, THRIFT_UGRID, THRIFT_VP,&
                  THRIFT_BAV, THRIFT_BSQAV, THRIFT_ETAPARA, &
-                 THRIFT_AMINOR, THRIFT_RMAJOR, &
+                 THRIFT_AMINOR, THRIFT_RMAJOR, THRIFT_PPRIME &
                  THRIFT_S11,THRIFT_S12, THRIFT_S22, THRIFT_PHIEDGE, &
                  THRIFT_COEFF_A, THRIFT_COEFF_B, THRIFT_COEFF_C, THRIFT_COEFF_D,&
                  THRIFT_COEFF_BP, THRIFT_COEFF_CP, THRIFT_COEFF_DP,&
