@@ -38,24 +38,24 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: c_p
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: d_p
     REAL(rprec) :: denom
-    ALLOCATE(c_p(nrho+2), d_p(nrho+2))
+    ALLOCATE(c_p(nssize), d_p(nssize))
     c_p = 0; d_p = 0
     !! Forward sweep
     ! c_1' = c_1/b_1   ;  c_i' =              c_i/(b_i - a_i*c_i-1') [1<i<=n-1]
     ! d_1' = d_1/b_1   ;  d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1') [1<i<=n  ]
     c_p(1) = CI(1)/BI(1) 
     d_p(1) = DI(1)/BI(1) 
-    DO i = 2, nrho+2
+    DO i = 2, nssize
         denom = BI(i)-AI(i)*c_p(i-1)
-        IF (i/=nrho+2) & 
+        IF (i/=nssize) & 
           c_p(i) = CI(i)/denom
         d_p(i) = (DI(i)-AI(i)*d_p(i-1))/denom
     END DO 
     !! Back substitution
     ! x_n = d_n'
     ! x_i = d_i' - c_i'*x_i+1
-    val(nrho+2) = d_p(nrho+2) 
-    DO i = nrho+1, 1, -1
+    val(nssize) = d_p(nssize) 
+    DO i = nssize-1, 1, -1
        val(i) = d_p(i)-c_p(i)*val(i+1) 
     END DO
 
@@ -106,18 +106,26 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     ! Takes a J(rho) array and returns an I(s) array.
     REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
     REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr
+    REAL(rprec), DIMENSION(:), ALLOCATABLE :: j_temp_spl
     INTEGER :: i, ier
     INTEGER :: bcs0(2)
     REAL(rprec) :: s,rho,ds,j_temp
     TYPE(EZspline1_r8) :: j_spl
 
     ds = THRIFT_S(2)-THRIFT_S(1)
+    ! Temp J array
+    j_temp_spl = 0
+    j_temp_spl(1) = 2*j_arr(2)-j_arr(3)
+    j_temp_spl(2:nrho+1) = j_arr
+    j_temp_spl(nrho+2) = 2*j_arr(nrho+1)-j_arr(nrho)
+     
     ! Create J spline (in rho space)
+
     bcs0=(/ 0, 0/)
-    CALL EZspline_init(J_spl,nrho,bcs0,ier)
-    J_spl%x1        = THRIFT_RHO
-    J_spl%isHermite = 1
-    CALL EZspline_setup(J_spl,j_arr,ier,EXACT_DIM=.true.)
+    CALL EZspline_init(j_spl,nrho+2,bcs0,ier)
+    j_spl%x1        = THRIFT_RHO
+    j_spl%isHermite = 1
+    CALL EZspline_setup(j_spl,j_temp_spl,ier,EXACT_DIM=.true.)
     
     ! Calculate I (in s space)
     i_arr(1) = 0
