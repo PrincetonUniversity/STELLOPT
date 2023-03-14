@@ -172,6 +172,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     j_spl%x1        = THRIFT_S
     j_spl%isHermite = 1
     CALL EZspline_setup(j_spl,j_temp,ier,EXACT_DIM=.true.)  
+    WRITE(6,*) ' i        J(rho_i)'
 
     ! Convert J to rho space
     DO i = 1, nrho
@@ -179,7 +180,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
        s = rho*rho
        ier = 0
        CALL EZspline_interp(j_spl, s, j_arr(i), ier)
-!       WRITE(6,'(I3,1X,ES13.5)') i, j_arr(i)
+       WRITE(6,'(I3,1X,ES13.5)') i, j_arr(i)
       
     END DO
 
