@@ -143,7 +143,7 @@
       splinor%x1        = THRIFT_RHOFULL
       splinor%isHermite = 1
       CALL EZspline_setup(splinor,j_temp,ier,EXACT_DIM=.true.)
-      DO i = 1, nrho
+      DO i = 1, nssize
          s = THRIFT_S(i)
          rho = SQRT(s)
          CALL get_prof_pprime(rho, mytime, pprime)
