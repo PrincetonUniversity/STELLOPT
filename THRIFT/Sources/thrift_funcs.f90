@@ -150,20 +150,20 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     INTEGER :: i, ier
     INTEGER :: bcs0(2)
     TYPE(EZspline1_r8) :: j_spl
-    REAL(rprec) :: ds, rho, s
+    REAL(rprec) :: ds, rho, s, dIds
 
     ALLOCATE(j_temp(nssize))
 
     ! Calculate J (in s space)
     ds = THRIFT_S(2)-THRIFT_S(1)
     DO i = 2, nssize-1
-       j_temp(i) = (i_arr(i+1)-i_arr(i-1))/(2*ds)*1.0/(pi*THRIFT_AMINOR(i,mytimestep)**2)
+        j_temp(i) = (i_arr(i+1)-i_arr(i-1))/(2*ds)*1.0/(pi*THRIFT_AMINOR(i,mytimestep)**2)
     END DO
 
     ! Extrapolate to boundaries
     j_temp(1)  = 2*j_temp(2)   -j_temp(3)    ! s = 0
     j_temp(nssize) = 2*j_temp(nssize-1)-j_temp(nssize-2) ! s = 1
-
+    WRITE(6,*) j_temp
     ! Setup J spline (in s space)
     CALL EZspline_init(j_spl,nssize,bcs0,ier)
     j_spl%x1        = THRIFT_S
@@ -177,6 +177,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
        ier = 0
        CALL EZspline_interp(j_spl, s, j_arr(i), ier)
     END DO
+    WRITE(6,*) j_arr
 
     CALL EZspline_free(j_spl,ier)
     DEALLOCATE(j_temp)
