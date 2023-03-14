@@ -386,7 +386,7 @@ SUBROUTINE beams3d_follow_gc
                        weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
                        weight(myline) = weight_save
-                       IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
+                       !IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
                        mytdex = 2
