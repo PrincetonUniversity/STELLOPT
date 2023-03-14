@@ -11,8 +11,8 @@ MODULE thrift_funcs
     !-------------------------------------------------------------------
     USE stel_kinds, ONLY: rprec
     USE stel_tools
-    USE EZspline_obj
     USE EZspline
+    USE EZspline_obj
     USE thrift_runtime
     USE thrift_vars
     IMPLICIT NONE
@@ -109,7 +109,7 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     INTEGER :: i, ier
     INTEGER :: bcs0(2)
     REAL(rprec) :: s,rho,ds,j_temp
-    TYPE(EZspline1_r8) :: J_spl
+    TYPE(EZspline1_r8) :: j_spl
 
     ds = THRIFT_S(2)-THRIFT_S(1)
     ! Create J spline (in rho space)
@@ -125,10 +125,10 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
         s = THRIFT_S(i)
         rho = SQRT(s)
         ier = 0
-        CALL EZspline_interp(J_spl, rho, j_temp, ier)
+        CALL EZspline_interp(j_spl, rho, j_temp, ier)
         i_arr = i_arr(i-1) + j_temp*(pi*THRIFT_AMINOR(i,mytimestep)**2)*ds
     END DO
-    CALL EZspline_free(J_spl)
+    CALL EZspline_free(j_spl,ier)
     RETURN
 
 END SUBROUTINE curden_to_curtot
@@ -170,7 +170,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
        CALL EZspline_interp(j_spl, s, j_arr(i), ier)
     END DO
 
-    CALL EZspline_free(j_spl)
+    CALL EZspline_free(j_spl,ier)
     DEALLOCATE(j_temp)
     RETURN
 

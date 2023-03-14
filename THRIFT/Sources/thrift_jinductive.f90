@@ -133,7 +133,7 @@
          IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') &
            s, THRIFT_ETAPARA(i,mytimestep), THRIFT_VP(i,mytimestep), pprime, jsource*THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), THRIFT_S11(i,mytimestep)
       END DO
-      CALL EZspline_free(splinor)
+      CALL EZspline_free(splinor,ier)
 
 !-----OLD CODE IN RHO SPACE
 !      DO i = 1, nrho+2
