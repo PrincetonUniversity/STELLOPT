@@ -134,7 +134,6 @@
 
       ! Define grids
       dt = (tend-tstart)/(ntimesteps-1)
-      WRITE(6,*) tstart
       IF (myid_sharmem == master) THEN
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho)
         FORALL(i = 1:nssize) THRIFT_S(i)   = DBLE(i-1)/DBLE(nssize-1)
