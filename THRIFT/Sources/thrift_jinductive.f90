@@ -115,7 +115,7 @@
       END IF
 
       CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep),j_temp)
-      
+
       ! Setup J spline
       bcs0=(/ 0, 0/)
       CALL EZspline_init(splinor,nrho+2,bcs0,ier)
@@ -361,7 +361,18 @@
       CALL curden_to_curtot(THRIFT_JSOURCE(:,mytimestep), THRIFT_ISOURCE(:,mytimestep))
       THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep)-THRIFT_ISOURCE(:,mytimestep)
       CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep), THRIFT_JPLASMA(:,mytimestep))
-
+      IF (lverbj) THEN
+            WRITE(6,*) '==============================================================================='
+            WRITE(6,*)' POST MATRIX ALGORITHM'
+            WRITE(6,*)'  i        ITOTAL        ISOURCE        IPLASMA        JPLASMA        JSOURCE'
+            WRITE(6,*)''
+            DO i = 1, nssize
+               WRITE(6,'(I4, 1X, 5(ES13.5,2X))') &
+                  i, THRIFT_I(i,mytimestep), THRIFT_ISOURCE(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
+                  THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
+            END DO
+            WRITE(6,*) '==============================================================================='
+      END IF
       
 
 !-----OLD CODE IN RHO SPACE
@@ -370,19 +381,6 @@
 !      THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep)-THRIFT_ISOURCE(:,mytimestep)
 !      CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),jplasma_full)
 !      THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
-!      
-!      IF (lverbj) THEN
-!         WRITE(6,*) '==============================================================================='
-!         WRITE(6,*)' POST MATRIX ALGORITHM'
-!         WRITE(6,*)'  i        ITOTAL        ISOURCE        IPLASMA        JPLASMA        JSOURCE'
-!         WRITE(6,*)''
-!         DO i = 1, nrho+2
-!            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') &
-!               i, THRIFT_I(i,mytimestep), THRIFT_ISOURCE(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
-!               jplasma_full(i), jsource_full(i)
-!         END DO
-!         WRITE(6,*) '==============================================================================='
-!      END IF     
 !-----
 
 !----------------------------------------------------------------------
