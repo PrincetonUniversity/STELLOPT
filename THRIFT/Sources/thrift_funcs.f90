@@ -76,10 +76,10 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol)
     ALLOCATE(residue(nrho+2))
     
     residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
-    DO i = 2, nrho+1
+    DO i = 2, nssize
         residue(i) = AI(i)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
     END DO
-    residue(nrho+2) = AI(nrho+2)*sol(nrho+1)+BI(nrho+2)*sol(nrho+2)-DI(nrho+2)
+    residue(nssize) = AI(nssize)*sol(nssize)+BI(nssize)*sol(nssize)-DI(nssize)
     WRITE(6,*) maxval(residue)
 
     DEALLOCATE(residue)
