@@ -112,6 +112,8 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     REAL(rprec) :: s,rho,ds,j_temp
     TYPE(EZspline1_r8) :: j_spl
 
+    ALLOCATE(j_temp_spl(nrho+2))
+
     ds = THRIFT_S(2)-THRIFT_S(1)
     ! Temp J array
     j_temp_spl = 0
@@ -137,6 +139,8 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
         i_arr = i_arr(i-1) + j_temp*(pi*THRIFT_AMINOR(i,mytimestep)**2)*ds
     END DO
     CALL EZspline_free(j_spl,ier)
+    DEALLOCATE(j_temp_spl)
+
     RETURN
 
 END SUBROUTINE curden_to_curtot
