@@ -118,8 +118,7 @@
          CALL write_var_hdf5(fid,'THRIFT_RMAJOR',nssize,ntimesteps,ier,DBLVAR=THRIFT_RMAJOR,ATT='Effective major radius [m] (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_RMAJOR',ier)
          CALL write_var_hdf5(fid,'THRIFT_AMINOR',nssize,ntimesteps,ier,DBLVAR=THRIFT_AMINOR,ATT='Effective minor radius  [m] (s-space)',ATT_NAME='description')
-         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_AMINOR',ier
-
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_AMINOR',ier)
          ! ABCD
          CALL write_var_hdf5(fid,'THRIFT_COEFF_A',nssize,ntimesteps,ier,DBLVAR=THRIFT_COEFF_A,ATT='Coefficient A (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_A',ier)
