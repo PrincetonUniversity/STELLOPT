@@ -49,7 +49,7 @@
                                     + THRIFT_IECCD(:,  mytimestep)&
                                     + THRIFT_INBCD(:,  mytimestep)&
                                     + THRIFT_IOHMIC(:, mytimestep)
-
+      WRITE(6,*) THRIFT_JSOURCE(:,mytimestep)
       ! If mytimestep = 1 ITOT=0 and continue to next iteration
       IF (mytimestep==1) THEN
             THRIFT_JPLASMA(:,mytimestep) = -THRIFT_JSOURCE(:,mytimestep)
