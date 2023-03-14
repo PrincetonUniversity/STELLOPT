@@ -150,14 +150,16 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     INTEGER :: i, ier
     INTEGER :: bcs0(2)
     TYPE(EZspline1_r8) :: j_spl
-    REAL(rprec) :: ds, rho, s, dIds
+    REAL(rprec) :: ds, rho, s, dIds, dAds
 
     ALLOCATE(j_temp(nssize))
 
     ! Calculate J (in s space)
     ds = THRIFT_S(2)-THRIFT_S(1)
     DO i = 2, nssize-1
-        j_temp(i) = (i_arr(i+1)-i_arr(i-1))/(2*ds)*1.0/(pi*THRIFT_AMINOR(i,mytimestep)**2)
+        dIds = (i_arr(i+1)-i_arr(i-1))/(2*ds)
+        dAds = pi*THRIFT_AMINOR(i,mytimestep)**2
+        j_temp(i) = dIds/dAds
     END DO
 
     ! Extrapolate to boundaries
