@@ -62,6 +62,7 @@
             THRIFT_IPLASMA(:,mytimestep) = THRIFT_IPLASMA(:,prevtimestep)
             THRIFT_I(:,mytimestep)       = THRIFT_I(:,prevtimestep)
          RETURN
+         END IF
       END IF
 
       IF (lverbj) THEN
@@ -419,8 +420,6 @@
 !     The quantities THRIFT_IXXXXX are not necessary to evolve the 
 !     current density profile, but are nice to have.
 !----------------------------------------------------------------------
-      1000  CONTINUE
-
 
       RETURN
 
