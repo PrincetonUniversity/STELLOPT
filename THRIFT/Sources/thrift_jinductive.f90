@@ -204,7 +204,7 @@
 !----------------------------------------------------------------------
 !     CALCULATING COEFFICIENTS ALPHA
 !----------------------------------------------------------------------
-!     Calculate alpha_1234 (everything evaluated at rho_j)
+!     Calculate alpha_1234 (everything evaluated at s_j)
 !     > a1(j) = A*dD/drho
 !     > a2(j) = A*((dB/drho)/rho - B/rho^2 + dC/drho)
 !     > a3(j) = A*(dB/drho + B/rho + C)
@@ -215,7 +215,7 @@
 !     (0,1) (THRIFT_RHO) grid, so have arrays of size nssize. Hence indices
 !     for the RHS of these equations are shifted by 1 (j = i+1)
 !
-!         0                                1        rho
+!         0                                1        s
 !         |  |     |     | ... |     |     |  |     ABCD:  j
 !        j=1 2     3                 n    n+1 n+2
 !            |     |     | ... |     |     |        a1234: i
@@ -229,8 +229,7 @@
          WRITE(6,*)''
       END IF
 
-      DO i = 1, nssize
-
+      DO i = 1, nssize-2
          j = i + 1
          ! Temp variables for legibility
          A_temp = THRIFT_COEFF_A(j,mytimestep) 
@@ -285,39 +284,23 @@
       THRIFT_MATUD(1,  mytimestep) = 0
       THRIFT_MATRHS(1, mytimestep) = 0   
 
-      d3(1) = THRIFT_MATUD(1,mytimestep)
-
       drho = THRIFT_RHO(2)-THRIFT_RHO(1) 
       ! THRIFT_RHO grid (rho in (0,1))
       DO i = 2, nssize-1
-         j = i - 1 
-
+         j = i - 1
          ! Temp variables for legibility
          a1 = THRIFT_ALPHA1(j, mytimestep) 
          a2 = THRIFT_ALPHA2(j, mytimestep) 
          a3 = THRIFT_ALPHA3(j, mytimestep) 
          a4 = THRIFT_ALPHA4(j, mytimestep)
 
-         !IF (j==1) THEN 
-         !   THRIFT_MATLD(i, mytimestep) =   -4/3*a3/drho+16/5*a4/drho**2         ! ai, j = 1        ## i = 2
-         !   THRIFT_MATMD(i, mytimestep) = a2    +a3/drho   -5*a4/drho**2-1.0/dt  ! bi, j = 1        ## i = 2
-         !   THRIFT_MATUD(i, mytimestep) =    1/3*a3/drho   +2*a4/drho**2         ! ci, j = 1        ## i = 2
-         !ELSE IF ((j>1).and.(j<nssize)) THEN
-         THRIFT_MATLD(i, mytimestep) =   -a3/(2*ds)+a4/ds**2         ! ai, 1 < j < nssize ## 2 < i < nssize+1
-         THRIFT_MATMD(i, mytimestep) = a2        -2*a4/ds**2-1.0/dt  ! bi, 1 < j < nssize ## 2 < i < nssize+1
-         THRIFT_MATUD(i, mytimestep) =    a3/(2*ds)+a4/ds**2         ! ci, 1 < j < nssize ## 2 < i < nssize+1
-         !ELSE IF (j==nssize) THEN
-         !   THRIFT_MATLD(i, mytimestep) =   -1/3*a3/drho   +2*a4/drho**2         ! ai, j = nssize     ## i = nssize+1
-         !   THRIFT_MATMD(i, mytimestep) = a2    -a3/drho   -5*a4/drho**2-1.0/dt  ! bi, j = nssize     ## i = nssize+1
-         !   THRIFT_MATUD(i, mytimestep) =    4/3*a3/drho+16/5*a4/drho**2         ! ci, j = nssize     ## i = nssize+1
-         !END IF
-         THRIFT_MATRHS(i,mytimestep)    = -THRIFT_UGRID(i, prevtimestep)/dt-a1 
-         d1(i-1) = THRIFT_MATLD(i,mytimestep)
-         d3(i)   = THRIFT_MATUD(i,mytimestep)
+         THRIFT_MATLD(i, mytimestep) =   -a3/(2*ds)+a4/ds**2         
+         THRIFT_MATMD(i, mytimestep) = a2        -2*a4/ds**2-1.0/dt  
+         THRIFT_MATUD(i, mytimestep) =    a3/(2*ds)+a4/ds**2         
+         THRIFT_MATRHS(i,mytimestep) = -THRIFT_UGRID(i,prevtimestep)/dt-a1 
       END DO 
 
       ! Plasma edge (s=1)
-
       s = 1
       rho = SQRT(s)
       CALL get_prof_pprime(rho, mytime, pprime)
@@ -327,15 +310,11 @@
       THRIFT_MATMD(nssize,mytimestep)  = 1.0/(2*ds)+pprime/temp1
       THRIFT_MATUD(nssize,mytimestep)  = 0
       THRIFT_MATRHS(nssize,mytimestep) = jsource*THRIFT_BAV(nssize,mytimestep)/temp1
-      !THRIFT_MATLD(nssize+2,mytimestep)  = -1.0/drho
-      !THRIFT_MATMD(nssize+2,mytimestep)  = 1.0 + pprime/temp1 + 1.0/(drho*(1+drho/2))
-      !THRIFT_MATUD(nssize+2,mytimestep)  = 0
-      !THRIFT_MATRHS(nssize+2,mytimestep) = jsource_full(nssize+2)*THRIFT_BAV(nssize+2,mytimestep)/temp1
+      
+      d1 = THRIFT_LD(2:nssize,mytimestep)
       d2 = THRIFT_MATMD(:,mytimestep)
-      d3(nssize-1) = THRIFT_MATUD(nssize-1,mytimestep)
+      d3 = THRIFT_MATUD(1:nssize-1,mytimestep)
       d4 = THRIFT_MATRHS(:,mytimestep)
-
-
 
 !----------------------------------------------------------------------
 !     Nonzero element management
