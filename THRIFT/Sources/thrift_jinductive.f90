@@ -38,6 +38,7 @@
 !----------------------------------------------------------------------
 !     PRELIMINARIES
 !----------------------------------------------------------------------
+ 
       CALL curden_to_curtot(THRIFT_JBOOT(:,  mytimestep),THRIFT_IBOOT(:,  mytimestep))
       CALL curden_to_curtot(THRIFT_JECCD(:,  mytimestep),THRIFT_IECCD(:,  mytimestep))
       CALL curden_to_curtot(THRIFT_JNBCD(:,  mytimestep),THRIFT_INBCD(:,  mytimestep))
@@ -49,9 +50,17 @@
                                     + THRIFT_INBCD(:,  mytimestep)&
                                     + THRIFT_IOHMIC(:, mytimestep)
 
+      ! If mytimestep = 1 ITOT=0 and continue to next iteration
+      IF (mytimestep==1) THEN
+            THRIFT_JPLASMA(:,mytimestep) = -THRIFT_JSOURCE(:,mytimestep)
+            THRIFT_IPLASMA(:,mytimestep) = -THRIFT_ISOURCE(:,mytimestep)
+            THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
+            RETURN 
+      END IF
+
       mytime = THRIFT_T(mytimestep) ! mytime = current sim time
       prevtimestep = mytimestep-1   ! previous time step index
-      IF (prevtimestep/=0) dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
+      dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
       IF (mytime>tmax.and.THRIFT_T(prevtimestep)<=tmax.and.(nsubsteps==1)) WRITE(6,*) &
          '! THRIFT has exceeded end time of profiles file. Proceeding with profiles at t=tmax !' 
  
@@ -103,13 +112,7 @@
       END DO
       THRIFT_S11 = ABS(THRIFT_S11)
 
-      ! If mytimestep = 1 ITOT=0 and continue to next iteration
-      IF (mytimestep==1) THEN
-         THRIFT_JPLASMA(:,mytimestep) = -THRIFT_JSOURCE(:,mytimestep)
-         THRIFT_IPLASMA(:,mytimestep) = -THRIFT_ISOURCE(:,mytimestep)
-         THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
-         RETURN 
-      END IF
+
 
          
 !----------------------------------------------------------------------
