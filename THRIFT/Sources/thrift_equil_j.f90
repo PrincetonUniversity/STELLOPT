@@ -24,7 +24,7 @@
       LOGICAL, INTENT(IN) :: lfirst_pass
       INTEGER :: i, ier, itime
       INTEGER :: bcs0(2)
-      REAL(rprec) :: s_val, rho_val, j_val, vp, Rmajor, temp
+      REAL(rprec) :: s_val, rho_val, j_val, vp, Rmajor, Aminor, temp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, j_temp
       TYPE(EZspline1_r8) :: j_spl
       INTEGER, PARAMETER :: n_eq = 99
@@ -93,8 +93,9 @@
                !CALL EZspline_interp(phip_spl,rho_val,phip,ier) ! dPhi/drho
                AC_AUX_S(i) = s_val
                !AC_AUX_F(i) = j_val*vp*phip/(2*pi2*rho_val*eq_Rmajor)
-               CALL get_equil_Rmajor(s_val, Rmajor, temp, temp, ier)
-               AC_AUX_F(i) = j_val*vp*eq_phiedge/(2*pi*Rmajor)
+               CALL get_equil_Rmajor(s_val, Rmajor, temp, Aminor, ier)
+               !AC_AUX_F(i) = j_val*vp*eq_phiedge/(2*pi*Rmajor)
+               AC_AUX_F(i) = j_val*pi*Aminor**2
             END DO
             !AC_AUX_F(1) = 2*AC_AUX_F(2)-AC_AUX_F(3)
             CURTOR = SUM(AC_AUX_F(1:n_eq),DIM=1)/DBLE(n_eq-1)
