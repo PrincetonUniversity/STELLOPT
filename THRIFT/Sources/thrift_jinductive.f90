@@ -39,7 +39,6 @@
 !     PRELIMINARIES
 !----------------------------------------------------------------------
       ! Allocate
-      ALLOCATE(j_temp(nrho+2))
 
       ! If at zero beta, copy previous value of JPLASMA onto this timestep and skip
       IF (eq_beta == 0) THEN
@@ -70,6 +69,7 @@
 !           ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
 !      END DO
 !-----
+      ALLOCATE(j_temp(nrho+2))
       THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge     
       DO i = 1, nssize
          s = THRIFT_S(i)
@@ -136,6 +136,7 @@
          IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') &
            s, THRIFT_ETAPARA(i,mytimestep), THRIFT_VP(i,mytimestep), pprime, jsource*THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), THRIFT_S11(i,mytimestep)
       END DO
+      DEALLOCATE(j_temp)
       CALL EZspline_free(splinor,ier)
 
 !-----OLD CODE IN RHO SPACE
@@ -343,7 +344,7 @@
       !                THRIFT_MATRHS(:,mytimestep),&
       !                THRIFT_UGRID( :,mytimestep))
       CALL DGTSV(nssize, 1, d1, d2, d3, d4, nssize, ier)
-      THRIFT_UGRID(:,mytimestep) = d4
+      THRIFT_UGRID(:,mytimestep+1) = d4
       !CALL check_sol( THRIFT_MATLD( :,mytimestep),&
       !                THRIFT_MATMD( :,mytimestep),&
       !                THRIFT_MATUD( :,mytimestep),&
@@ -369,18 +370,20 @@
 !     Plasma current: IPLASMA = ITOTAL - ISOURCE
 !     Obtain JPLASMA from IPLASMA with curtot_to_curden subroutine.
 !----------------------------------------------------------------------
+      ALLOCATE(j_temp(nrho))
       THRIFT_I(:,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)/mu0*THRIFT_UGRID(:,mytimestep)
-      CALL curden_to_curtot(THRIFT_JSOURCE(:,mytimestep), THRIFT_ISOURCE(:,mytimestep))
-      THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep)-THRIFT_ISOURCE(:,mytimestep)
-      CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep), THRIFT_JPLASMA(:,mytimestep))
+      CALL curtot_to_curden(THRIFT_I(:,mytimestep),j_temp)
+      THRIFT_JPLASMA(:,mytimestep) = j_temp - THRIFT_JSOURCE(:,mytimestep)
+      DEALLOCATE(j_temp)
+
       IF (lverbj) THEN
             WRITE(6,*) '==============================================================================='
             WRITE(6,*)' POST MATRIX ALGORITHM'
-            WRITE(6,*)'  i        ITOTAL        ISOURCE        IPLASMA        JPLASMA        JSOURCE'
+            WRITE(6,*)'  i        ITOTAL        IPLASMA        JPLASMA        JSOURCE'
             WRITE(6,*)''
             DO i = 1, nssize
-               WRITE(6,'(I4, 1X, 5(ES13.5,2X))') &
-                  i, THRIFT_I(i,mytimestep), THRIFT_ISOURCE(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
+               WRITE(6,'(I4, 1X, 4(ES13.5,2X))') &
+                  i, THRIFT_I(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
                   THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
             END DO
             WRITE(6,*) '==============================================================================='
@@ -414,7 +417,6 @@
                                     + THRIFT_IOHMIC(:, mytimestep)
       THRIFT_I(:,mytimestep)        = THRIFT_IPLASMA(:,mytimestep)&
                                     + THRIFT_ISOURCE(:,mytimestep)
-      DEALLOCATE(j_temp)
       RETURN
 
 !----------------------------------------------------------------------
