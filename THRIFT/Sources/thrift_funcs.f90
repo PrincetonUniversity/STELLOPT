@@ -160,7 +160,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
         dIds = (i_arr(i+1)-i_arr(i-1))/(2*ds)
         dAds = pi*THRIFT_AMINOR(i,mytimestep)**2
         j_temp(i) = dIds/dAds
-        WRITE(6,'(I3,3(ES13.5,1X))') i, dI/ds, dA/ds, j_temp(i)
+        WRITE(6,'(I3,3(ES13.5,1X))') i, dIds, dA/ds, j_temp(i)
     END DO
 
     ! Extrapolate to boundaries
