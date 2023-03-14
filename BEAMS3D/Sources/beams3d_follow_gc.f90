@@ -95,7 +95,7 @@ SUBROUTINE beams3d_follow_gc
 
     ! Calc max time to follow particles
     i = MAXLOC(ABS(t_end),1)
-    !IF (lbeam) t_end(i) = MAX(t_end(i),2*MAXVAL(raxis)/vel_max)
+    IF (lbeam) t_end(i) = MAX(t_end(i),2*MAXVAL(raxis)/vel_max)
     tf_max = t_end(i)
 
    ! Calculate timestep for integration
