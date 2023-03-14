@@ -57,6 +57,10 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_S',ier)
          CALL write_var_hdf5(fid,'THRIFT_RHOFULL',ngp+2,ier,DBLVAR=THRIFT_RHOFULL,ATT='Extended Radial Grid (r/a)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_RHOFULL',ier)
+         CALL write_var_hdf5(fid,'THRIFT_SINRHO',ngp,ier,DBLVAR=THRIFT_SINRHO,ATT='s grid expressed as rho values',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_SINRHO',ier)
+         CALL write_var_hdf5(fid,'THRIFT_RHOINS',ngp,ier,DBLVAR=THRIFT_RHOINS,ATT='Rho grid expressed as s values',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_RHOINS',ier)
          CALL write_var_hdf5(fid,'THRIFT_T',ntimesteps,ier,DBLVAR=THRIFT_T,ATT='Time Slice Grid [s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_T',ier)
          ! 2D Floats

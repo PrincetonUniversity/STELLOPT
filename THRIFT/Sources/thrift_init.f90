@@ -67,8 +67,8 @@
       CALL mpialloc(THRIFT_RHOFULL,ngp+2,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rhofull)
       CALL mpialloc(THRIFT_T,  ntimesteps,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_t)
       CALL mpialloc(THRIFT_S,          ngp,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_s)
-      CALL mpialloc(THRIFT_RHOINS,  ntimesteps,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_t)
-      CALL mpialloc(THRIFT_SINRHO,          ngp,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_s)
+      CALL mpialloc(THRIFT_RHOINS,  ntimesteps,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rhoins)
+      CALL mpialloc(THRIFT_SINRHO,          ngp,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_sinrho)
 
       ! Current densities
       CALL mpialloc(THRIFT_J,        ngp, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_j)
