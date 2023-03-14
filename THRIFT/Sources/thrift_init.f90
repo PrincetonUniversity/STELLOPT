@@ -106,10 +106,10 @@
       CALL mpialloc(THRIFT_COEFF_CP,nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_coeff_cp)
       CALL mpialloc(THRIFT_COEFF_DP,nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_coeff_dp)
       ! Alphas
-      CALL mpialloc(THRIFT_ALPHA1,   nssize-2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha1)
-      CALL mpialloc(THRIFT_ALPHA2,   nssize-2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha2)
-      CALL mpialloc(THRIFT_ALPHA3,   nssize-2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha3)
-      CALL mpialloc(THRIFT_ALPHA4,   nssize-2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha4)
+      CALL mpialloc(THRIFT_ALPHA1,   nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha1)
+      CALL mpialloc(THRIFT_ALPHA2,   nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha2)
+      CALL mpialloc(THRIFT_ALPHA3,   nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha3)
+      CALL mpialloc(THRIFT_ALPHA4,   nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha4)
       ! System of equations
       CALL mpialloc(THRIFT_MATLD,  nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matld)
       CALL mpialloc(THRIFT_MATMD,  nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matmd)
