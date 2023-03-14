@@ -15,6 +15,7 @@
       USE thrift_equil
       USE thrift_profiles_mod
       USE stel_tools
+      USE EZspline
       USE EZspline_obj
 !-----------------------------------------------------------------------
 !     Local Variables
