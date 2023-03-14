@@ -131,8 +131,10 @@
       WRITE(iunit_out,outint) 'NPICARD',npicard
       WRITE(iunit_out,outflt) 'PICARD_FACTOR',picard_factor
       WRITE(iunit_out,'(A)') '!---------- GRID PARAMETERS ------------'
-      WRITE(iunit_out,outint) 'NGP',ngp
+      WRITE(iunit_out,outint) 'NRHO',nrho
+      WRITE(iunit_out,outint) 'NS',nssize
       WRITE(iunit_out,outint) 'NTIMESTEPS',ntimesteps
+      WRITE(iunit_out,outflt) 'TEND',tstart
       WRITE(iunit_out,outflt) 'TEND',tend
       WRITE(iunit_out,'(A)') '!---------- BOOZER TRANSFORMATION ------------'
       WRITE(iunit_out,outint) 'MBOZ',mboz
