@@ -40,7 +40,7 @@
 !----------------------------------------------------------------------
 
       THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge     
-      DO i = 1, nssize
+      DO i = 1, ngp
          s = THRIFT_S(i)
          rho = SQRT(s)
          ier = 0
@@ -48,7 +48,7 @@
          CALL get_equil_sus(s, THRIFT_S11(i,mytimestep), temp1, temp1, temp1, ier)
          CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), ier)
          THRIFT_VP(i,mytimestep) = 2*pi**2*THRIFT_RMAJOR(i,mytimestep)*THRIFT_AMINOR(i,mytimestep)**2
-         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nssize-1))), mytime, THRIFT_ETAPARA(i,mytimestep))
+         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(ngp-1))), mytime, THRIFT_ETAPARA(i,mytimestep))
          IF (lverbj) WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
               s, THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
               ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
@@ -98,7 +98,7 @@
 
       ! Store magnetic variables
 !-----OLD CODE IN RHO SPACE
-!      DO i = 1, nrho+2
+!      DO i = 1, ngp+2
 !         rho = THRIFT_RHOFULL(i)
 !         s = rho*rho
 !         ier = 0
@@ -133,17 +133,17 @@
          WRITE(6,*) '   S  ETAPARA     DV/DPHI      DP/DRHO     <J.B>      BSQAV        S11'
       END IF
 
-      ALLOCATE(j_temp(nrho+2))
+      ALLOCATE(j_temp(ngp+2))
 
       CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep),j_temp)
 
       ! Setup J spline
       bcs0=(/ 0, 0/)
-      CALL EZspline_init(splinor,nrho+2,bcs0,ier)
+      CALL EZspline_init(splinor,ngp+2,bcs0,ier)
       splinor%x1        = THRIFT_RHOFULL
       splinor%isHermite = 1
       CALL EZspline_setup(splinor,j_temp,ier,EXACT_DIM=.true.)
-      DO i = 1, nssize
+      DO i = 1, ngp
          s = THRIFT_S(i)
          rho = SQRT(s)
          CALL get_prof_pprime(rho, mytime, pprime)
@@ -160,9 +160,9 @@
       CALL EZspline_free(splinor,ier)
 
 !-----OLD CODE IN RHO SPACE
-!      DO i = 1, nrho+2
+!      DO i = 1, ngp+2
 !         rho = THRIFT_RHOFULL(i)
-!         CALL get_prof_etapara(MIN(rho,THRIFT_RHO(nrho)),mytime,etapara)
+!         CALL get_prof_etapara(MIN(rho,THRIFT_RHO(ngp)),mytime,etapara)
 !         CALL get_prof_pprime(rho,mytime,pprime)
 !         temp1 = 2*etapara*THRIFT_VP(i,mytimestep) ! temp1 <- 2 eta dV/dPhi 
 !         IF (i > 1) &
@@ -178,7 +178,7 @@
 !     Calculate derivatives of ABCD here (see deriv1_rho_o2)
 !----------------------------------------------------------------------
       ds = THRIFT_S(2)-THRIFT_S(1)
-      DO i = 2, nssize-1
+      DO i = 2, ngp-1
          THRIFT_COEFF_BP(i,mytimestep) = (THRIFT_COEFF_B(i+1,mytimestep)-THRIFT_COEFF_B(i-1,mytimestep))/(2*ds)
          THRIFT_COEFF_CP(i,mytimestep) = (THRIFT_COEFF_C(i+1,mytimestep)-THRIFT_COEFF_C(i-1,mytimestep))/(2*ds)
          THRIFT_COEFF_DP(i,mytimestep) = (THRIFT_COEFF_D(i+1,mytimestep)-THRIFT_COEFF_D(i-1,mytimestep))/(2*ds)
@@ -193,7 +193,7 @@
          WRITE(6,*)' COEFFICIENTS ABCD'
          WRITE(6,*)'   S         A         B          C          D       BDER       CDER       DDER'
          WRITE(6,*)''
-         DO i = 1, nssize
+         DO i = 1, ngp
             WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') THRIFT_S(i), &
             THRIFT_COEFF_A(i,mytimestep), THRIFT_COEFF_B(i,mytimestep),& 
             THRIFT_COEFF_C(i,mytimestep), THRIFT_COEFF_D(i,mytimestep),&
@@ -211,8 +211,8 @@
 !     > a4(j) = A*B
 !
 !     NOTE: (Derivatives of) ABCD are required on the full [0,1] grid,
-!     so their arrays are of size nrho+2. Alphas are only needed on the
-!     (0,1) (THRIFT_RHO) grid, so have arrays of size nrho. Hence indices
+!     so their arrays are of size ngp+2. Alphas are only needed on the
+!     (0,1) (THRIFT_RHO) grid, so have arrays of size ngp. Hence indices
 !     for the RHS of these equations are shifted by 1 (j = i+1)
 !
 !         0                                1        rho
@@ -229,7 +229,7 @@
          WRITE(6,*)''
       END IF
 
-      DO i = 1, nssize-2
+      DO i = 1, ngp-2
 
          j = i + 1
          ! Temp variables for legibility
@@ -254,7 +254,7 @@
 !----------------------------------------------------------------------
 !     SOLVING SYSTEM OF EQUATIONS
 !----------------------------------------------------------------------
-!     Populate matrix and RHS of the system of equations (N=nrho)
+!     Populate matrix and RHS of the system of equations (N=ngp)
 !
 !     | B1   C1    0   0 .  0   0   0   0  | | u1  |   | D1  |  BC AXIS
 !     | A2   B2   C2  X2 .  0   0   0   0  | | u2  |   | D2  |     \
@@ -278,7 +278,7 @@
 !     calculates {uj} on [0,1], indices on RHS are shifted by -1.
 !----------------------------------------------------------------------
 
-      ALLOCATE(d1(nssize-1),d2(nssize),d3(nssize-1),d4(nssize))
+      ALLOCATE(d1(ngp-1),d2(ngp),d3(ngp-1),d4(ngp))
       ! Magnetic axis (s=0)
       THRIFT_MATLD(1,  mytimestep) = 0  
       THRIFT_MATMD(1,  mytimestep) = 1
@@ -289,7 +289,7 @@
 
       drho = THRIFT_RHO(2)-THRIFT_RHO(1) 
       ! THRIFT_RHO grid (rho in (0,1))
-      DO i = 2, nssize-1
+      DO i = 2, ngp-1
          j = i - 1 
 
          ! Temp variables for legibility
@@ -302,14 +302,14 @@
          !   THRIFT_MATLD(i, mytimestep) =   -4/3*a3/drho+16/5*a4/drho**2         ! ai, j = 1        ## i = 2
          !   THRIFT_MATMD(i, mytimestep) = a2    +a3/drho   -5*a4/drho**2-1.0/dt  ! bi, j = 1        ## i = 2
          !   THRIFT_MATUD(i, mytimestep) =    1/3*a3/drho   +2*a4/drho**2         ! ci, j = 1        ## i = 2
-         !ELSE IF ((j>1).and.(j<nrho)) THEN
-         THRIFT_MATLD(i, mytimestep) =   -a3/(2*ds)+a4/ds**2         ! ai, 1 < j < nrho ## 2 < i < nrho+1
-         THRIFT_MATMD(i, mytimestep) = a2        -2*a4/ds**2-1.0/dt  ! bi, 1 < j < nrho ## 2 < i < nrho+1
-         THRIFT_MATUD(i, mytimestep) =    a3/(2*ds)+a4/ds**2         ! ci, 1 < j < nrho ## 2 < i < nrho+1
-         !ELSE IF (j==nrho) THEN
-         !   THRIFT_MATLD(i, mytimestep) =   -1/3*a3/drho   +2*a4/drho**2         ! ai, j = nrho     ## i = nrho+1
-         !   THRIFT_MATMD(i, mytimestep) = a2    -a3/drho   -5*a4/drho**2-1.0/dt  ! bi, j = nrho     ## i = nrho+1
-         !   THRIFT_MATUD(i, mytimestep) =    4/3*a3/drho+16/5*a4/drho**2         ! ci, j = nrho     ## i = nrho+1
+         !ELSE IF ((j>1).and.(j<ngp)) THEN
+         THRIFT_MATLD(i, mytimestep) =   -a3/(2*ds)+a4/ds**2         ! ai, 1 < j < ngp ## 2 < i < ngp+1
+         THRIFT_MATMD(i, mytimestep) = a2        -2*a4/ds**2-1.0/dt  ! bi, 1 < j < ngp ## 2 < i < ngp+1
+         THRIFT_MATUD(i, mytimestep) =    a3/(2*ds)+a4/ds**2         ! ci, 1 < j < ngp ## 2 < i < ngp+1
+         !ELSE IF (j==ngp) THEN
+         !   THRIFT_MATLD(i, mytimestep) =   -1/3*a3/drho   +2*a4/drho**2         ! ai, j = ngp     ## i = ngp+1
+         !   THRIFT_MATMD(i, mytimestep) = a2    -a3/drho   -5*a4/drho**2-1.0/dt  ! bi, j = ngp     ## i = ngp+1
+         !   THRIFT_MATUD(i, mytimestep) =    4/3*a3/drho+16/5*a4/drho**2         ! ci, j = ngp     ## i = ngp+1
          !END IF
          THRIFT_MATRHS(i,mytimestep)    = -THRIFT_UGRID(i, prevtimestep)/dt-a1 
          d1(i-1) = THRIFT_MATLD(i,mytimestep)
@@ -322,17 +322,17 @@
       rho = SQRT(s)
       CALL get_prof_pprime(rho, mytime, pprime)
       ! jsource still contains JSOURCE(s=1)
-      temp1 = THRIFT_BSQAV(nssize,mytimestep)/mu0
-      THRIFT_MATLD(nssize,mytimestep)  = -1.0/(2*ds)
-      THRIFT_MATMD(nssize,mytimestep)  = 1.0/(2*ds)+pprime/temp1
-      THRIFT_MATUD(nssize,mytimestep)  = 0
-      THRIFT_MATRHS(nssize,mytimestep) = jsource*THRIFT_BAV(nssize,mytimestep)/temp1
-      !THRIFT_MATLD(nrho+2,mytimestep)  = -1.0/drho
-      !THRIFT_MATMD(nrho+2,mytimestep)  = 1.0 + pprime/temp1 + 1.0/(drho*(1+drho/2))
-      !THRIFT_MATUD(nrho+2,mytimestep)  = 0
-      !THRIFT_MATRHS(nrho+2,mytimestep) = jsource_full(nrho+2)*THRIFT_BAV(nrho+2,mytimestep)/temp1
+      temp1 = THRIFT_BSQAV(ngp,mytimestep)/mu0
+      THRIFT_MATLD(ngp,mytimestep)  = -1.0/(2*ds)
+      THRIFT_MATMD(ngp,mytimestep)  = 1.0/(2*ds)+pprime/temp1
+      THRIFT_MATUD(ngp,mytimestep)  = 0
+      THRIFT_MATRHS(ngp,mytimestep) = jsource*THRIFT_BAV(ngp,mytimestep)/temp1
+      !THRIFT_MATLD(ngp+2,mytimestep)  = -1.0/drho
+      !THRIFT_MATMD(ngp+2,mytimestep)  = 1.0 + pprime/temp1 + 1.0/(drho*(1+drho/2))
+      !THRIFT_MATUD(ngp+2,mytimestep)  = 0
+      !THRIFT_MATRHS(ngp+2,mytimestep) = jsource_full(ngp+2)*THRIFT_BAV(ngp+2,mytimestep)/temp1
       d2 = THRIFT_MATMD(:,mytimestep)
-      d3(nssize-1) = THRIFT_MATUD(nssize-1,mytimestep)
+      d3(ngp-1) = THRIFT_MATUD(ngp-1,mytimestep)
       d4 = THRIFT_MATRHS(:,mytimestep)
 
 
@@ -348,12 +348,12 @@
 !      THRIFT_MATMD( 2,mytimestep) = THRIFT_MATMD( 2,mytimestep) - temp1*THRIFT_MATLD( 3,mytimestep)
 !      THRIFT_MATRHS(2,mytimestep) = THRIFT_MATRHS(2,mytimestep) - temp1*THRIFT_MATRHS(3,mytimestep)
 !
-!      ! Nonzero element at M(nrho+1,nrho-2)
-!      temp2 = -THRIFT_ALPHA4(nrho,mytimestep)/(5*drho**2)  
-!      temp2 = temp2/THRIFT_MATLD(nrho,mytimestep)
-!      THRIFT_MATLD( nrho+1,mytimestep) = THRIFT_MATLD( nrho+1,mytimestep) - temp2*THRIFT_MATMD( nrho,mytimestep)
-!      THRIFT_MATMD( nrho+1,mytimestep) = THRIFT_MATMD( nrho+1,mytimestep) - temp2*THRIFT_MATUD( nrho,mytimestep)
-!      THRIFT_MATRHS(nrho+1,mytimestep) = THRIFT_MATRHS(nrho+1,mytimestep) - temp2*THRIFT_MATRHS(nrho,mytimestep)
+!      ! Nonzero element at M(ngp+1,ngp-2)
+!      temp2 = -THRIFT_ALPHA4(ngp,mytimestep)/(5*drho**2)  
+!      temp2 = temp2/THRIFT_MATLD(ngp,mytimestep)
+!      THRIFT_MATLD( ngp+1,mytimestep) = THRIFT_MATLD( ngp+1,mytimestep) - temp2*THRIFT_MATMD( ngp,mytimestep)
+!      THRIFT_MATMD( ngp+1,mytimestep) = THRIFT_MATMD( ngp+1,mytimestep) - temp2*THRIFT_MATUD( ngp,mytimestep)
+!      THRIFT_MATRHS(ngp+1,mytimestep) = THRIFT_MATRHS(ngp+1,mytimestep) - temp2*THRIFT_MATRHS(ngp,mytimestep)
 !
 !----------------------------------------------------------------------
 
@@ -363,7 +363,7 @@
       !                THRIFT_MATUD( :,mytimestep),&
       !                THRIFT_MATRHS(:,mytimestep),&
       !                THRIFT_UGRID( :,mytimestep))
-      CALL DGTSV(nssize, 1, d1, d2, d3, d4, nssize, ier)
+      CALL DGTSV(ngp, 1, d1, d2, d3, d4, ngp, ier)
       THRIFT_UGRID(:,mytimestep) = d4
       !CALL check_sol( THRIFT_MATLD( :,mytimestep),&
       !                THRIFT_MATMD( :,mytimestep),&
@@ -374,7 +374,7 @@
          WRITE(6,*) '==============================================================================='
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
          WRITE(6,*)''
-         DO i = 1, nssize
+         DO i = 1, ngp
             WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, &
             THRIFT_MATLD(i,mytimestep), THRIFT_MATMD(i,mytimestep), &
             THRIFT_MATUD(i,mytimestep), THRIFT_MATRHS(i,mytimestep),THRIFT_UGRID(i,mytimestep)
@@ -390,7 +390,7 @@
 !     Plasma current: IPLASMA = ITOTAL - ISOURCE
 !     Obtain JPLASMA from IPLASMA with curtot_to_curden subroutine.
 !----------------------------------------------------------------------
-      ALLOCATE(j_temp(nrho))
+      ALLOCATE(j_temp(ngp))
 
       THRIFT_I(:,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)/mu0*THRIFT_UGRID(:,mytimestep)
       CALL curtot_to_curden(THRIFT_I(:,mytimestep),j_temp)
@@ -404,7 +404,7 @@
             WRITE(6,*)' POST MATRIX ALGORITHM'
             WRITE(6,*)'  i        ITOTAL        IPLASMA        JPLASMA        JSOURCE'
             WRITE(6,*)''
-            DO i = 1, nssize
+            DO i = 1, ngp
                WRITE(6,'(I4, 1X, 4(ES13.5,2X))') &
                   i, THRIFT_I(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
                   THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
@@ -418,7 +418,7 @@
 !      CALL curden_to_curtot(jsource_full,THRIFT_ISOURCE(:,mytimestep))
 !      THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep)-THRIFT_ISOURCE(:,mytimestep)
 !      CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),jplasma_full)
-!      THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nrho+1)
+!      THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:ngp+1)
 !-----
 
 !----------------------------------------------------------------------
