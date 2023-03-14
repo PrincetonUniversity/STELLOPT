@@ -76,7 +76,7 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol)
     ALLOCATE(residue(nssize))
     
     residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
-    DO i = 2, nssize
+    DO i = 2, nssize-1
         residue(i) = AI(i)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
     END DO
     residue(nssize) = AI(nssize)*sol(nssize)+BI(nssize)*sol(nssize)-DI(nssize)
