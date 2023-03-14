@@ -41,7 +41,7 @@ MODULE thrift_vars
 
     LOGICAL :: leccd, lnbcd, lohmic, ldiagno, lscreen_subcodes, lverbj
     LOGICAL, DIMENSION(:), ALLOCATABLE :: lbooz
-    INTEGER :: ntimesteps, nrho, ns, npicard, &
+    INTEGER :: ntimesteps, nrho, nssize, npicard, &
              win_thrift_j, win_thrift_jplasma, win_thrift_jboot, &
              win_thrift_jeccd, win_thrift_jnbcd, win_thrift_johmic, &
              win_thrift_jsource, win_thrift_etapara,&

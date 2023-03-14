@@ -69,7 +69,7 @@
 !      END DO
 !-----
       THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge     
-      DO i = 1, ns
+      DO i = 1, nssize
          s = THRIFT_S(i)
          rho = SQRT(s)
          ier = 0
@@ -77,7 +77,7 @@
          CALL get_equil_sus(s, THRIFT_S11(i,mytimestep), temp1, temp1, temp1, ier)
          CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), ier)
          THRIFT_VP(i,mytimestep) = 2*pi**2*THRIFT_RMAJOR(i,mytimestep)*THRIFT_AMINOR(i,mytimestep)**2
-         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(ns-1))), mytime, THRIFT_ETAPARA(i,mytimestep))
+         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nssize-1))), mytime, THRIFT_ETAPARA(i,mytimestep))
          IF (lverbj) WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
               s, THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
               ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
@@ -119,7 +119,7 @@
       splinor%x1        = THRIFT_RHO
       splinor%isHermite = 1
       CALL EZspline_setup(splinor,THRIFT_JSOURCE(:,mytimestep),ier,EXACT_DIM=.true.)
-      DO i = 1, ns
+      DO i = 1, nssize
          s = THRIFT_S(i)
          rho = SQRT(s)
          CALL get_prof_pprime(rho, mytime, pprime)
@@ -153,7 +153,7 @@
 !     Calculate derivatives of ABCD here (see deriv1_rho_o2)
 !----------------------------------------------------------------------
       ds = THRIFT_S(2)-THRIFT_S(1)
-      DO i = 2, ns-1
+      DO i = 2, nssize-1
          THRIFT_COEFF_BP(i,mytimestep) = (THRIFT_COEFF_B(i+1,mytimestep)-THRIFT_COEFF_B(i-1,mytimestep))/(2*ds)
          THRIFT_COEFF_CP(i,mytimestep) = (THRIFT_COEFF_C(i+1,mytimestep)-THRIFT_COEFF_C(i-1,mytimestep))/(2*ds)
          THRIFT_COEFF_DP(i,mytimestep) = (THRIFT_COEFF_D(i+1,mytimestep)-THRIFT_COEFF_D(i-1,mytimestep))/(2*ds)
@@ -168,7 +168,7 @@
          WRITE(6,*)' COEFFICIENTS ABCD'
          WRITE(6,*)'   S         A         B          C          D       BDER       CDER       DDER'
          WRITE(6,*)''
-         DO i = 1, ns
+         DO i = 1, nssize
             WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') THRIFT_S(i), &
             THRIFT_COEFF_A(i,mytimestep), THRIFT_COEFF_B(i,mytimestep),& 
             THRIFT_COEFF_C(i,mytimestep), THRIFT_COEFF_D(i,mytimestep),&
@@ -204,7 +204,7 @@
          WRITE(6,*)''
       END IF
 
-      DO i = 1, ns-2
+      DO i = 1, nssize-2
 
          j = i + 1
          ! Temp variables for legibility
@@ -261,7 +261,7 @@
 
       drho = THRIFT_RHO(2)-THRIFT_RHO(1) 
       ! THRIFT_RHO grid (rho in (0,1))
-      DO i = 2, ns-1
+      DO i = 2, nssize-1
          j = i - 1 
 
          ! Temp variables for legibility
@@ -293,11 +293,11 @@
       rho = SQRT(s)
       CALL get_prof_pprime(rho, mytime, pprime)
       ! jsource still contains JSOURCE(s=1)
-      temp1 = THRIFT_BSQAV(ns,mytimestep)/mu0
-      THRIFT_MATLD(ns,mytimestep)  = -1.0/(2*ds)
-      THRIFT_MATMD(ns,mytimestep)  = 1.0/(2*ds)+pprime/temp1
-      THRIFT_MATUD(ns,mytimestep)  = 0
-      THRIFT_MATRHS(ns,mytimestep) = jsource*THRIFT_BAV(ns,mytimestep)/temp1
+      temp1 = THRIFT_BSQAV(nssize,mytimestep)/mu0
+      THRIFT_MATLD(nssize,mytimestep)  = -1.0/(2*ds)
+      THRIFT_MATMD(nssize,mytimestep)  = 1.0/(2*ds)+pprime/temp1
+      THRIFT_MATUD(nssize,mytimestep)  = 0
+      THRIFT_MATRHS(nssize,mytimestep) = jsource*THRIFT_BAV(nssize,mytimestep)/temp1
       !THRIFT_MATLD(nrho+2,mytimestep)  = -1.0/drho
       !THRIFT_MATMD(nrho+2,mytimestep)  = 1.0 + pprime/temp1 + 1.0/(drho*(1+drho/2))
       !THRIFT_MATUD(nrho+2,mytimestep)  = 0
@@ -338,7 +338,7 @@
          WRITE(6,*) '==============================================================================='
          WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
          WRITE(6,*)''
-         DO i = 1, ns
+         DO i = 1, nssize
             WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, &
             THRIFT_MATLD(i,mytimestep), THRIFT_MATMD(i,mytimestep), &
             THRIFT_MATUD(i,mytimestep), THRIFT_MATRHS(i,mytimestep),THRIFT_UGRID(i,mytimestep)

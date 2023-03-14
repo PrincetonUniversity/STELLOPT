@@ -51,7 +51,7 @@
       mboz               = 32
       nboz               = 16
       nrho               = 16
-      ns                 = 16
+      nssize             = 16
       ntimesteps         = 32
       npicard            = 5
       tstart             = 0.1
