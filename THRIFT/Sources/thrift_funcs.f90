@@ -73,7 +73,7 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol)
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: residue
     INTEGER :: i
 
-    ALLOCATE(residue(nrho+2))
+    ALLOCATE(residue(nssize))
     
     residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
     DO i = 2, nssize
