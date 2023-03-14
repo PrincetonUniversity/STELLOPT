@@ -160,7 +160,8 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
         dIds = (i_arr(i+1)-i_arr(i-1))/(2*ds)
         dAds = pi*THRIFT_AMINOR(i,mytimestep)**2
         j_temp(i) = dIds/dAds
-        WRITE(6,'(I3,3(ES13.5,1X))') i, dIds, dAds, j_temp(i)
+        WRITE(6,*) '  i        I(i+1)        I(i-1)      dI/ds(i)         dA/ds        J(s_i)'
+        WRITE(6,'(I3,5(1X,ES13.5))') i, i_arr(i+1), i_arr(i-1), dIds, dAds, j_temp(i)
     END DO
 
     ! Extrapolate to boundaries
@@ -178,6 +179,8 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
        s = rho*rho
        ier = 0
        CALL EZspline_interp(j_spl, s, j_arr(i), ier)
+!       WRITE(6,'(I3,1X,ES13.5)') i, j_arr(i)
+      
     END DO
 
     CALL EZspline_free(j_spl,ier)
