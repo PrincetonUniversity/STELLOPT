@@ -41,7 +41,7 @@ MODULE thrift_vars
 
     LOGICAL :: leccd, lnbcd, lohmic, ldiagno, lscreen_subcodes, lverbj
     LOGICAL, DIMENSION(:), ALLOCATABLE :: lbooz
-    INTEGER :: ntimesteps, nrho, nssize, npicard, &
+    INTEGER :: ntimesteps, ngp,  npicard, &
              win_thrift_j, win_thrift_jplasma, win_thrift_jboot, &
              win_thrift_jeccd, win_thrift_jnbcd, win_thrift_johmic, &
              win_thrift_jsource, win_thrift_etapara,&
@@ -49,6 +49,7 @@ MODULE thrift_vars
              win_thrift_ieccd, win_thrift_inbcd, win_thrift_iohmic, &
              win_thrift_isource, &
              win_thrift_rho, win_thrift_t, win_thrift_s, win_thrift_rhofull,&
+             win_thrift_rhoins, win_thrift_sinrho,&
              win_lbooz, win_thrift_ugrid, &
              win_thrift_vp, win_thrift_bav, win_thrift_bsqav, win_thrift_phiedge, &
              win_thrift_s11, win_thrift_aminor, win_thrift_rmajor, &
@@ -64,6 +65,7 @@ MODULE thrift_vars
                  THRIFT_IOHMIC, THRIFT_ISOURCE, THRIFT_UGRID, THRIFT_VP,&
                  THRIFT_BAV, THRIFT_BSQAV, THRIFT_ETAPARA, &
                  THRIFT_AMINOR, THRIFT_RMAJOR, &
+                 THRIFT_RHOINS, THRIFT_SINRHO, &
                  THRIFT_S11,THRIFT_S12, THRIFT_S22, THRIFT_PHIEDGE, &
                  THRIFT_COEFF_A, THRIFT_COEFF_B, THRIFT_COEFF_C, THRIFT_COEFF_D,&
                  THRIFT_COEFF_BP, THRIFT_COEFF_CP, THRIFT_COEFF_DP,&
