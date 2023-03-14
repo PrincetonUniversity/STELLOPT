@@ -119,7 +119,7 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     j_temp_spl = 0
     j_temp_spl(1) = 2*j_arr(2)-j_arr(3)
     j_temp_spl(2:nrho+1) = j_arr
-    j_temp_spl(nrho+2) = 2*j_arr(nrho+1)-j_arr(nrho)
+    j_temp_spl(nrho+2) = 2*j_arr(nrho-1)-j_arr(nrho-2)
      
     ! Create J spline (in rho space)
 
