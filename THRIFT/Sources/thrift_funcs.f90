@@ -153,7 +153,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     REAL(rprec) :: ds, rho, s, dIds, dAds
 
     ALLOCATE(j_temp(nssize))
-    WRITE(6,*) ' i        I(i+1)        I(i-1)      dI/ds(i)         dA/ds        J(s_i)'
+!    WRITE(6,*) ' i        I(i+1)        I(i-1)      dI/ds(i)         dA/ds        J(s_i)'
 
     ! Calculate J (in s space)
     ds = THRIFT_S(2)-THRIFT_S(1)
