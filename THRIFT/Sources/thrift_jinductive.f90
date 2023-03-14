@@ -54,7 +54,7 @@
               ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
       END DO
       THRIFT_S11 = ABS(THRIFT_S11)
-      
+
       CALL curden_to_curtot(THRIFT_JBOOT(:,  mytimestep),THRIFT_IBOOT(:,  mytimestep))
       CALL curden_to_curtot(THRIFT_JECCD(:,  mytimestep),THRIFT_IECCD(:,  mytimestep))
       CALL curden_to_curtot(THRIFT_JNBCD(:,  mytimestep),THRIFT_INBCD(:,  mytimestep))
@@ -65,7 +65,7 @@
                                     + THRIFT_IECCD(:,  mytimestep)&
                                     + THRIFT_INBCD(:,  mytimestep)&
                                     + THRIFT_IOHMIC(:, mytimestep)
-      WRITE(6,*) THRIFT_JSOURCE(:,mytimestep)
+      !WRITE(6,*) THRIFT_JSOURCE(:,mytimestep)
       ! If mytimestep = 1 ITOT=0 and continue to next iteration
       IF (mytimestep==1) THEN
             THRIFT_JPLASMA(:,mytimestep) = -THRIFT_JSOURCE(:,mytimestep)
