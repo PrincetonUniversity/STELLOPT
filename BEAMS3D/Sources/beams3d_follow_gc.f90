@@ -381,7 +381,7 @@ SUBROUTINE beams3d_follow_gc
                        ! Follow into plasma
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1
-                       tf_nag = t_nag
+                       !tf_nag = t_nag
                        weight_save = weight(myline)
                        weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
