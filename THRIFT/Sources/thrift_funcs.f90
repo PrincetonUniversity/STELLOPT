@@ -105,7 +105,8 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     ! Takes a J(rho) array and returns an I(s) array.
     REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
     REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr
-    INTEGER :: i
+    INTEGER :: i, ier
+    INTEGER :: bcs0(2)
     REAL(rprec) :: s,rho,ds,j_temp
     TYPE(EZspline1_r8) :: J_spl
 
@@ -141,7 +142,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     INTEGER :: i, ier
     INTEGER :: bcs0(2)
     TYPE(EZspline1_r8) :: j_spl
-    REAL(rprec) :: ds
+    REAL(rprec) :: ds, rho, s
 
     ALLOCATE(j_temp(nssize-2))
 
