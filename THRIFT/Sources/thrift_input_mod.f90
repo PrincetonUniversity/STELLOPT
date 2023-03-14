@@ -26,7 +26,7 @@
 !            nr             Number of radial gridpoints
 !-----------------------------------------------------------------------
       NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
-                              nrho, nssize, tstart, tend, ntimesteps, jtol, &
+                              ngp, tstart, tend, ntimesteps, jtol, &
                               picard_factor, npicard, lverbj, &
                               eccd_type, &
                               vessel_ecrh, mirror_ecrh, wmode_ecrh, &
@@ -50,8 +50,7 @@
       nparallel_runs     = 1
       mboz               = 32
       nboz               = 16
-      nrho               = 16
-      nssize             = 16
+      ngp                = 16
       ntimesteps         = 32
       npicard            = 5
       tstart             = 0.1
@@ -131,7 +130,7 @@
       WRITE(iunit_out,outint) 'NPICARD',npicard
       WRITE(iunit_out,outflt) 'PICARD_FACTOR',picard_factor
       WRITE(iunit_out,'(A)') '!---------- GRID PARAMETERS ------------'
-      WRITE(iunit_out,outint) 'NRHO',nrho
+      WRITE(iunit_out,outint) 'NGP',ngp
       WRITE(iunit_out,outint) 'NTIMESTEPS',ntimesteps
       WRITE(iunit_out,outflt) 'TEND',tend
       WRITE(iunit_out,'(A)') '!---------- BOOZER TRANSFORMATION ------------'
