@@ -432,7 +432,10 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
        & i_p_ap1I,i_p_ap1II,i_p_ap2I,i_p_ap2II,i_p_ap2III,i_p_ap2IV,&
        & wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV,lambda,&
        & BI7,BI3,BI3b,BI3f,dlambda_lm1,dlambda_lp1)
+#ifdef MPIandPETSc
   CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+#endif
+  !CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
   DEALLOCATE(connected,bottom,z1,t1,B1,hBpp1,vd1,zb,tb,Bb,hBppb,vdb,&
        &    z2,t2,B2,hBpp2,vd2,alphap_w,Bt,Btt,lambdab_w,lambdac_w) 
 
@@ -543,8 +546,9 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 
   END DO
   IF(DEBUG) CALL FLUSH(3200+myrank)
-  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+  !CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 #ifdef MPIandPETSc 
+  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
   
   CALL MatAssemblyBegin(matCOL,MAT_FINAL_ASSEMBLY,ierr)
   CALL MatAssemblyEnd(  matCOL,MAT_FINAL_ASSEMBLY,ierr)
@@ -1247,8 +1251,9 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
   
   CALL CPU_TIME(tstart)
 
-  DO ierr=1,nw
-     WRITE(iout,*) 'extr',Bb(ierr),Bt(ierr)
+  DO iw=1,nw !ierr=1,nw
+     !WRITE(iout,*) 'extr',Bb(ierr),Bt(ierr)
+     WRITE(iout,*) 'extr',Bb(iw),Bt(iw)
   END DO
   
   !Create uniform grid
