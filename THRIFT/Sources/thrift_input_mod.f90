@@ -26,7 +26,7 @@
 !            nr             Number of radial gridpoints
 !-----------------------------------------------------------------------
       NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
-                              ngp, tstart, tend, ntimesteps, jtol, &
+                              nrho,nssize, tstart, tend, ntimesteps, jtol, &
                               picard_factor, npicard, lverbj, &
                               eccd_type, &
                               vessel_ecrh, mirror_ecrh, wmode_ecrh, &
@@ -50,7 +50,8 @@
       nparallel_runs     = 1
       mboz               = 32
       nboz               = 16
-      ngp                = 16
+      nrho               = 16
+      nssize             = 16
       ntimesteps         = 32
       npicard            = 5
       tstart             = 0.1

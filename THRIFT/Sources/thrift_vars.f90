@@ -41,7 +41,7 @@ MODULE thrift_vars
 
     LOGICAL :: leccd, lnbcd, lohmic, ldiagno, lscreen_subcodes, lverbj
     LOGICAL, DIMENSION(:), ALLOCATABLE :: lbooz
-    INTEGER :: ntimesteps, ngp,  npicard, &
+    INTEGER :: ntimesteps, nrho, nssize,  npicard, &
              win_thrift_j, win_thrift_jplasma, win_thrift_jboot, &
              win_thrift_jeccd, win_thrift_jnbcd, win_thrift_johmic, &
              win_thrift_jsource, win_thrift_etapara,&
@@ -58,21 +58,20 @@ MODULE thrift_vars
              win_thrift_alpha1, win_thrift_alpha2, win_thrift_alpha3, win_thrift_alpha4,&
              win_thrift_matld, win_thrift_matmd, win_thrift_matud, win_thrift_matrhs
     REAL(rprec) :: tstart, tend, jtol, picard_factor
-    REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_T(:), THRIFT_S(:), THRIFT_RHOFULL(:)
+    REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_T(:), THRIFT_S(:), THRIFT_RHOFULL(:), THRIFT_RHOINS(:), THRIFT_SINRHO(:)
     REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_J, THRIFT_JPLASMA, THRIFT_JBOOT,&
                  THRIFT_JECCD, THRIFT_JNBCD, THRIFT_JOHMIC, THRIFT_JSOURCE, &
                  THRIFT_I, THRIFT_IPLASMA, THRIFT_IBOOT, THRIFT_IECCD, THRIFT_INBCD, &
                  THRIFT_IOHMIC, THRIFT_ISOURCE, THRIFT_UGRID, THRIFT_VP,&
                  THRIFT_BAV, THRIFT_BSQAV, THRIFT_ETAPARA, &
                  THRIFT_AMINOR, THRIFT_RMAJOR, &
-                 THRIFT_RHOINS, THRIFT_SINRHO, &
                  THRIFT_S11,THRIFT_S12, THRIFT_S22, THRIFT_PHIEDGE, &
                  THRIFT_COEFF_A, THRIFT_COEFF_B, THRIFT_COEFF_C, THRIFT_COEFF_D,&
                  THRIFT_COEFF_BP, THRIFT_COEFF_CP, THRIFT_COEFF_DP,&
                  THRIFT_ALPHA1,THRIFT_ALPHA2,THRIFT_ALPHA3,THRIFT_ALPHA4,&
                  THRIFT_MATLD, THRIFT_MATMD, THRIFT_MATUD, THRIFT_MATRHS
 
-                 
+
     ! For TRAVIS
     INTEGER, PARAMETER :: nsys   = 16
     INTEGER :: nra_ecrh, nphi_ecrh
