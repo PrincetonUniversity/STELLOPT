@@ -119,7 +119,7 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     
     ! Calculate I (in s space)
     i_arr(1) = 0
-    DO i = 2, ns
+    DO i = 2, nssize
         s = THRIFT_S(i)
         rho = SQRT(s)
         ier = 0
@@ -143,19 +143,19 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     TYPE(EZspline1_r8) :: j_spl
     REAL(rprec) :: ds
 
-    ALLOCATE(j_temp(ns-2))
+    ALLOCATE(j_temp(nssize-2))
 
     ! Calculate J (in s space)
-    DO i = 2, ns-1
+    DO i = 2, nssize-1
        j_temp(i) = (i_arr(i+1)-i_arr(i-1))/(2*ds)*1.0/(pi*THRIFT_AMINOR(i,mytimestep)**2)
     END DO
 
     ! Extrapolate to boundaries
     j_temp(1)  = 2*j_temp(2)   -j_temp(3)    ! s = 0
-    j_temp(ns) = 2*j_temp(ns-1)-j_temp(ns-2) ! s = 1
+    j_temp(nssize) = 2*j_temp(nssize-1)-j_temp(nssize-2) ! s = 1
 
     ! Setup J spline (in s space)
-    CALL EZspline_init(j_spl,ns,bcs0,ier)
+    CALL EZspline_init(j_spl,nssize,bcs0,ier)
     j_spl%x1        = THRIFT_S
     j_spl%isHermite = 1
     CALL EZspline_setup(j_spl,j_temp,ier,EXACT_DIM=.true.)  
