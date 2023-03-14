@@ -38,7 +38,23 @@
 !----------------------------------------------------------------------
 !     PRELIMINARIES
 !----------------------------------------------------------------------
- 
+
+      THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge     
+      DO i = 1, nssize
+         s = THRIFT_S(i)
+         rho = SQRT(s)
+         ier = 0
+         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp1,THRIFT_AMINOR(i,mytimestep), ier)
+         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep), temp1, temp1, temp1, ier)
+         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), ier)
+         THRIFT_VP(i,mytimestep) = 2*pi**2*THRIFT_RMAJOR(i,mytimestep)*THRIFT_AMINOR(i,mytimestep)**2
+         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nssize-1))), mytime, THRIFT_ETAPARA(i,mytimestep))
+         IF (lverbj) WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
+              s, THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
+              ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
+      END DO
+      THRIFT_S11 = ABS(THRIFT_S11)
+      
       CALL curden_to_curtot(THRIFT_JBOOT(:,  mytimestep),THRIFT_IBOOT(:,  mytimestep))
       CALL curden_to_curtot(THRIFT_JECCD(:,  mytimestep),THRIFT_IECCD(:,  mytimestep))
       CALL curden_to_curtot(THRIFT_JNBCD(:,  mytimestep),THRIFT_INBCD(:,  mytimestep))
@@ -95,22 +111,7 @@
 !           ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
 !      END DO
 !-----
-      ALLOCATE(j_temp(nrho+2))
-      THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge     
-      DO i = 1, nssize
-         s = THRIFT_S(i)
-         rho = SQRT(s)
-         ier = 0
-         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp1,THRIFT_AMINOR(i,mytimestep), ier)
-         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep), temp1, temp1, temp1, ier)
-         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), ier)
-         THRIFT_VP(i,mytimestep) = 2*pi**2*THRIFT_RMAJOR(i,mytimestep)*THRIFT_AMINOR(i,mytimestep)**2
-         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nssize-1))), mytime, THRIFT_ETAPARA(i,mytimestep))
-         IF (lverbj) WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
-              s, THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
-              ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
-      END DO
-      THRIFT_S11 = ABS(THRIFT_S11)
+
 
 
 
@@ -131,6 +132,8 @@
          WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
          WRITE(6,*) '   S  ETAPARA     DV/DPHI      DP/DRHO     <J.B>      BSQAV        S11'
       END IF
+
+      ALLOCATE(j_temp(nrho+2))
 
       CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep),j_temp)
 
