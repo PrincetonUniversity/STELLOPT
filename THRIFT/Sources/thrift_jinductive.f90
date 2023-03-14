@@ -51,7 +51,7 @@
 
       mytime = THRIFT_T(mytimestep) ! mytime = current sim time
       prevtimestep = mytimestep-1   ! previous time step index
-      dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
+      IF (prevtimestep/=0) dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
       IF (mytime>tmax.and.THRIFT_T(prevtimestep)<=tmax.and.(nsubsteps==1)) WRITE(6,*) &
          '! THRIFT has exceeded end time of profiles file. Proceeding with profiles at t=tmax !' 
  
