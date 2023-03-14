@@ -30,6 +30,7 @@
                      BP_temp, CP_temp, DP_temp,&
                      a1,a2,a3,a4
       TYPE(EZspline1_r8) :: splinor
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: j_temp
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -114,12 +115,17 @@
          WRITE(6,*) '   S  ETAPARA     DV/DPHI      DP/DRHO     <J.B>      BSQAV        S11'
       END IF
 
+      ! temp
+      j_temp(1) = 2*THRIFT_JSOURCE(2,mytimestep)-THRIFT_JSOURCE(3,mytimestep)
+      j_temp(2:nrho+1) = THRIFT_JSOURCE(:,mytimestep)
+      j_temp(nrho+2) = 2*THRIFT_JSOURCE(nrho+1,mytimestep)-THRIFT_JSOURCE(nrho,mytimestep)
+      
       ! Setup J spline
       bcs0=(/ 0, 0/)
-      CALL EZspline_init(splinor,nrho,bcs0,ier)
-      splinor%x1        = THRIFT_RHO
+      CALL EZspline_init(splinor,nrho+2,bcs0,ier)
+      splinor%x1        = THRIFT_RHOFULL
       splinor%isHermite = 1
-      CALL EZspline_setup(splinor,THRIFT_JSOURCE(:,mytimestep),ier,EXACT_DIM=.true.)
+      CALL EZspline_setup(splinor,j_temp,ier,EXACT_DIM=.true.)
       DO i = 1, nssize
          s = THRIFT_S(i)
          rho = SQRT(s)
