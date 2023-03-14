@@ -39,7 +39,7 @@
 !----------------------------------------------------------------------
       ! Allocate
       ALLOCATE(j_temp(nrho+2))
-      
+
       ! If at zero beta, copy previous value of JPLASMA onto this timestep and skip
       IF (eq_beta == 0) THEN
          IF (mytimestep /= 1) THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep-1)
@@ -114,11 +114,8 @@
          WRITE(6,*) '   S  ETAPARA     DV/DPHI      DP/DRHO     <J.B>      BSQAV        S11'
       END IF
 
-      ! temp
-      j_temp(1) = 2*THRIFT_JSOURCE(2,mytimestep)-THRIFT_JSOURCE(3,mytimestep)
-      j_temp(2:nrho+1) = THRIFT_JSOURCE(:,mytimestep)
-      j_temp(nrho+2) = 2*THRIFT_JSOURCE(nrho+1,mytimestep)-THRIFT_JSOURCE(nrho,mytimestep)
-
+      CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep),j_temp)
+      
       ! Setup J spline
       bcs0=(/ 0, 0/)
       CALL EZspline_init(splinor,nrho+2,bcs0,ier)

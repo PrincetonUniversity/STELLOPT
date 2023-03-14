@@ -115,12 +115,7 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
     ALLOCATE(j_temp_spl(nrho+2))
 
     ds = THRIFT_S(2)-THRIFT_S(1)
-    ! Temp J array
-    j_temp_spl = 0
-    j_temp_spl(1) = 2*j_arr(2)-j_arr(3)
-    j_temp_spl(2:nrho+1) = j_arr
-    j_temp_spl(nrho+2) = 2*j_arr(nrho-1)-j_arr(nrho-2)
-     
+    CALL extrapolate_arr(j_arr,j_temp_spl)
     ! Create J spline (in rho space)
 
     bcs0=(/ 0, 0/)
