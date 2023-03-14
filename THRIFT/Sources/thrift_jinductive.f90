@@ -395,6 +395,7 @@
       THRIFT_I(:,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)/mu0*THRIFT_UGRID(:,mytimestep)
       CALL curtot_to_curden(THRIFT_I(:,mytimestep),j_temp)
       THRIFT_JPLASMA(:,mytimestep) = j_temp - THRIFT_JSOURCE(:,mytimestep)
+      CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_IPLASMA(:,mytimestep))
       
       DEALLOCATE(j_temp)
 
