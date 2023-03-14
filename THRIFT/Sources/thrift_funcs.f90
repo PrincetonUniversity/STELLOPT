@@ -159,13 +159,14 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     DO i = 2, nssize-1
         dIds = (i_arr(i+1)-i_arr(i-1))/(2*ds)
         dAds = pi*THRIFT_AMINOR(i,mytimestep)**2
+        WRITE(6,*) dIds
+        WRITE(6,*) dAds
         j_temp(i) = dIds/dAds
     END DO
 
     ! Extrapolate to boundaries
     j_temp(1)  = 2*j_temp(2)   -j_temp(3)    ! s = 0
     j_temp(nssize) = 2*j_temp(nssize-1)-j_temp(nssize-2) ! s = 1
-    WRITE(6,*) j_temp
     ! Setup J spline (in s space)
     CALL EZspline_init(j_spl,nssize,bcs0,ier)
     j_spl%x1        = THRIFT_S
@@ -179,7 +180,6 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
        ier = 0
        CALL EZspline_interp(j_spl, s, j_arr(i), ier)
     END DO
-    WRITE(6,*) j_arr
 
     CALL EZspline_free(j_spl,ier)
     DEALLOCATE(j_temp)
