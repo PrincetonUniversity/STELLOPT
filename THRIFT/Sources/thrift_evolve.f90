@@ -35,12 +35,13 @@
       THRIFT_J        = 0; THRIFT_JPLASMA  = 0; THRIFT_JSOURCE  = 0
       THRIFT_JBOOT    = 0; THRIFT_JECCD    = 0; THRIFT_JNBCD    = 0
       THRIFT_JOHMIC   = 0
-      ! Initialize total current
+      ! Initialize enclosed currents
       THRIFT_I        = 0; THRIFT_IPLASMA  = 0; THRIFT_ISOURCE  = 0
       THRIFT_IBOOT    = 0; THRIFT_IECCD    = 0; THRIFT_INBCD    = 0
-      THRIFT_IOHMIC   = 0;     
+      THRIFT_IOHMIC   = 0; THRIFT_UGRID    = 0;   
+      ! Initialize profile variables
+      THRIFT_PPRIME   = 0; THRIFT_ETAPARA  = 0
       ! Initialize magnetic variables
-      THRIFT_UGRID    = 0; THRIFT_ETAPARA  = 0
       THRIFT_VP       = 0; THRIFT_PHIEDGE  = 0; THRIFT_S11      = 0
       THRIFT_BAV      = 0; THRIFT_BSQAV    = 0
       THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0
@@ -114,7 +115,7 @@
             ! Update total current
             IF (nsubsteps==1) THEN
               THRIFT_J(:,mytimestep) = THRIFT_JPLASMA(:,mytimestep) &
-                                    +  THRIFT_JSOURCE(:,mytimestep)
+                                     + THRIFT_JSOURCE(:,mytimestep)
             ELSE
               THRIFT_J(:,mytimestep) = THRIFT_J(:,mytimestep)*(1-picard_factor) &
                      +  picard_factor*(THRIFT_JPLASMA(:,mytimestep) &

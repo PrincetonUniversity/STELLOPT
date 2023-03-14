@@ -88,6 +88,9 @@
       CALL mpialloc(THRIFT_IOHMIC,  nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_iohmic)
       CALL mpialloc(THRIFT_ISOURCE, nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_isource)
       CALL mpialloc(THRIFT_UGRID,   nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_ugrid)  
+      ! Profile variables
+      CALL mpialloc(THRIFT_ETAPARA,nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_etapara)  
+      CALL mpialloc(THRIFT_PPRIME ,nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_pprime)  
       ! magnetic variables
       CALL mpialloc(THRIFT_PHIEDGE,     1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_phiedge)
       CALL mpialloc(THRIFT_VP,     nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_vp)     
@@ -96,7 +99,6 @@
       CALL mpialloc(THRIFT_S11,    nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_s11)     
       CALL mpialloc(THRIFT_AMINOR, nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_aminor)     
       CALL mpialloc(THRIFT_RMAJOR, nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rmajor)  
-      CALL mpialloc(THRIFT_ETAPARA,nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_etapara)  
       ! ABCD
       CALL mpialloc(THRIFT_COEFF_A, nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_coeff_a)
       CALL mpialloc(THRIFT_COEFF_B, nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_coeff_b)
