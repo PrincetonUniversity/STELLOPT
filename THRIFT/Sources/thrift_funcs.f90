@@ -152,7 +152,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     TYPE(EZspline1_r8) :: j_spl
     REAL(rprec) :: ds, rho, s
 
-    ALLOCATE(j_temp(nssize-2))
+    ALLOCATE(j_temp(nssize))
 
     ! Calculate J (in s space)
     DO i = 2, nssize-1
