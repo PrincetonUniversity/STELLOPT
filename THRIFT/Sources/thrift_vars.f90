@@ -70,6 +70,7 @@ MODULE thrift_vars
                  THRIFT_ALPHA1,THRIFT_ALPHA2,THRIFT_ALPHA3,THRIFT_ALPHA4,&
                  THRIFT_MATLD, THRIFT_MATMD, THRIFT_MATUD, THRIFT_MATRHS
 
+                 
     ! For TRAVIS
     INTEGER, PARAMETER :: nsys   = 16
     INTEGER :: nra_ecrh, nphi_ecrh
