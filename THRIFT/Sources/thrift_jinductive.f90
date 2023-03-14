@@ -45,10 +45,8 @@
       END IF
 
       ! Allocate
-      A_temp  = 0; B_temp  = 0; C_temp  = 0; D_temp  = 0
-                   BP_temp = 0; CP_temp = 0; DP_temp = 0
-      a1      = 0; a2      = 0; a3      = 0; a4      = 0
-   
+      ALLOCATE(j_temp(nrho+2))
+
       IF (lverbj) THEN
          WRITE(6,*)'==============================================================================='
          WRITE(6,*)' CALCULATING MAGNETIC VARIABLES'
@@ -119,7 +117,7 @@
       j_temp(1) = 2*THRIFT_JSOURCE(2,mytimestep)-THRIFT_JSOURCE(3,mytimestep)
       j_temp(2:nrho+1) = THRIFT_JSOURCE(:,mytimestep)
       j_temp(nrho+2) = 2*THRIFT_JSOURCE(nrho+1,mytimestep)-THRIFT_JSOURCE(nrho,mytimestep)
-      
+
       ! Setup J spline
       bcs0=(/ 0, 0/)
       CALL EZspline_init(splinor,nrho+2,bcs0,ier)
@@ -408,7 +406,7 @@
                                     + THRIFT_IOHMIC(:,mytimestep)
       THRIFT_I(:,mytimestep)        = THRIFT_IPLASMA(:,mytimestep)&
                                     + THRIFT_ISOURCE(:,mytimestep)
-
+      DEALLOCATE(j_temp)
       RETURN
 
 !----------------------------------------------------------------------
