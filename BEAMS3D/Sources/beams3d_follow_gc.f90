@@ -257,7 +257,7 @@ SUBROUTINE beams3d_follow_gc
                     my_end = t_end(l)
                     ltherm = .false.
                     lneut  = .false.
-                    lcollision = lbeam
+                    lcollision = lbeam .or. lcollision
                     ! Collision parameters
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
