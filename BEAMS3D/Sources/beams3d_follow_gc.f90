@@ -386,12 +386,12 @@ SUBROUTINE beams3d_follow_gc
                        ! Follow into plasma
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1
-                       !tf_nag = t_nag
+                       tf_nag = t_nag
                        weight_save = weight(myline)
                        weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
                        weight(myline) = weight_save
-                       !IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
+                       IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
                        mytdex = 2
@@ -403,9 +403,7 @@ SUBROUTINE beams3d_follow_gc
                        ! Adjust timestep timestep
                        !CALL beams3d_calc_dt(q,moment,mymass,dt)
                     END IF
-                    IF (ldepo) CYCLE
-                    t_nag = 0.0 !Reset time after deposition simulation
-                    tf_nag = 0.0                   
+                    IF (ldepo) CYCLE              
                     DO
                         IF (lcollision) istate = 1
                         CALL FLUSH(6)
