@@ -234,9 +234,9 @@
 !     SOLVE SYSTEM OF EQUATIONS
 !======================================================================
       CALL DGTSV(nssize, 1, DIAGSUB, DIAGMID, DIAGSUP, RHS, nssize, ier)
+      THRIFT_UGRID(:,mytimestep) = RHS
       DEALLOCATE(alpha1,  alpha2,  alpha3,  alpha4,&
                   DIAGSUB, DIAGMID, DIAGSUP, RHS)
-      THRIFT_UGRID(:,mytimestep) = RHS
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
