@@ -137,10 +137,16 @@
       ! Coefficients
       WRITE(6,*) ' COEFFICIENTS '
       temp_arr= THRIFT_ETAPARA(:,mytimestep)*THRIFT_VP(:,mytimestep)
+      WRITE(6,*) ' 1 '
       A_temp = THRIFT_S11(:,mytimestep)/THRIFT_PHIEDGE(1,mytimestep)**2
+      WRITE(6,*) ' 2 '
       B_temp = temp_arr*THRIFT_BSQAV(:,mytimestep)
+      WRITE(6,*) ' 3 '
       C_temp = temp_arr*THRIFT_PPRIME(:,mytimestep)
+      WRITE(6,*) ' 4 '
       D_temp = -temp_arr*j_temp*THRIFT_BAV(:,mytimestep)
+      WRITE(6,*) ' 5 '
+
       DEALLOCATE(temp_arr)
 
 !     Derivatives
