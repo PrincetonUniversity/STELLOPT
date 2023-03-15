@@ -193,7 +193,7 @@ SUBROUTINE print_calc_magvars()
 
     DO i = 1, nssize
         WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
-              s, THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
+              THRIFT_S(i), THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
               ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
     END DO
 
@@ -211,7 +211,7 @@ SUBROUTINE print_calc_abcd(j_arr)
 
     DO i = 1, nssize
         WRITE(6,'(F5.3,6(1X,ES10.3))') &
-        s, THRIFT_ETAPARA(i,mytimestep), THRIFT_VP(i,mytimestep), THRIFT_PPRIME(i,mytimestep),&
+        THRIFT_S(i), THRIFT_ETAPARA(i,mytimestep), THRIFT_VP(i,mytimestep), THRIFT_PPRIME(i,mytimestep),&
         j_arr(i)*THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), THRIFT_S11(i,mytimestep)
     END DO
 
@@ -246,7 +246,7 @@ SUBROUTINE print_alpha()
     WRITE(6,*)''
 
     DO i = 1, nssize
-        WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))')  s, &
+        WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))')  THRIFT_S(i),&
         THRIFT_ALPHA1(i,mytimestep), THRIFT_ALPHA2(i,mytimestep),&
         THRIFT_ALPHA3(i,mytimestep), THRIFT_ALPHA4(i,mytimestep)
      END DO
