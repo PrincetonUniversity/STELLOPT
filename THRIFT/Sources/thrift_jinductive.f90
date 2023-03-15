@@ -24,46 +24,35 @@
       IMPLICIT NONE
       INTEGER :: i,j,prevtimestep,ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho,s,drho,ds,dt,mytime,s11,s12,etapara,pprime,jsource,&
-                     temp1,temp2,source_axis,source_edge,Aminor,Rmajor,&
+      REAL(rprec) :: rho,s,drho,ds,dt,mytime,s11,jsource,temp  
+      TYPE(EZspline1_r8) :: splinor
+      REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
                      BP_temp, CP_temp, DP_temp,&
-                     a1,a2,a3,a4
-                     
-      TYPE(EZspline1_r8) :: splinor
-      REAL(rprec), DIMENSION(:), ALLOCATABLE ::d1,d2,d3,d4,j_temp
-
+                     alpha1,alpha2,alpha3,alpha4
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 !     CALCULATE MAGNETIC VARIABLES
 !----------------------------------------------------------------------
-!     V'=dV/ds = 2*pi*R*(pi*a^2)
-
-      IF (lverbj) THEN
-            WRITE(6,*)'==============================================================================='
-            WRITE(6,*)' CALCULATING MAGNETIC VARIABLES'
-            WRITE(6,*) ' S    DV/DPHI        <B>      <B^2>     RMAJOR     AMINOR        S11 '
-         END IF
 
       THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge     
       DO i = 1, nssize
          s = THRIFT_S(i)
-         rho = SQRT(s)
          ier = 0
-         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp1, THRIFT_AMINOR(i,mytimestep), ier)
-         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep), temp1, temp1, temp1, ier)
+         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
+         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep), temp, temp, temp, ier)
          CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), ier)
+         ! V' = dV/ds = 2*pi*R*(pi*a^2)
          THRIFT_VP(i,mytimestep) = 2*pi**2*THRIFT_RMAJOR(i,mytimestep)*THRIFT_AMINOR(i,mytimestep)**2
-         IF (lverbj) WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
-              s, THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
-              ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
       END DO
       THRIFT_S11 = ABS(THRIFT_S11)
+      IF (lverbj) CALL print_calc_magvars()
 
 !----------------------------------------------------------------------
 !     UPDATE TRACKER VARIABLES
 !----------------------------------------------------------------------
+
       CALL curden_to_curtot(THRIFT_JBOOT(:,  mytimestep),THRIFT_IBOOT(:,  mytimestep))
       CALL curden_to_curtot(THRIFT_JECCD(:,  mytimestep),THRIFT_IECCD(:,  mytimestep))
       CALL curden_to_curtot(THRIFT_JNBCD(:,  mytimestep),THRIFT_INBCD(:,  mytimestep))
@@ -75,6 +64,10 @@
                                     + THRIFT_INBCD(:,  mytimestep)&
                                     + THRIFT_IOHMIC(:, mytimestep)
 
+!----------------------------------------------------------------------
+!     TIME AND BETA=0
+!----------------------------------------------------------------------
+
       ! SPECIAL CASE >> If mytimestep = 1 ITOT=0 and continue to next iteration
       IF (mytimestep==1) THEN
             THRIFT_JPLASMA(:,mytimestep) = -THRIFT_JSOURCE(:,mytimestep)
@@ -82,6 +75,7 @@
             THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
             RETURN 
       END IF
+
       ! Time variables
       mytime = THRIFT_T(mytimestep) ! mytime = current sim time
       prevtimestep = mytimestep-1   ! previous time step index
@@ -89,7 +83,7 @@
       IF (mytime>tmax.and.THRIFT_T(prevtimestep)<=tmax.and.(nsubsteps==1)) WRITE(6,*) &
          '! THRIFT has exceeded end time of profiles file. Proceeding with profiles at t=tmax !' 
  
-      ! SPECIAL CASE >> If at zero beta, copy previous value of JPLASMA onto this timestep and skip
+      ! SPECIAL CASE >> If at zero beta, copy previous value of JPLASMA and skip
       IF (eq_beta == 0) THEN
          IF (mytimestep /= 1) THEN
             THRIFT_JPLASMA(:,mytimestep) = THRIFT_JPLASMA(:,prevtimestep)
@@ -98,26 +92,7 @@
          RETURN
          END IF
       END IF
-
-!-----OLD CODE IN RHO SPACE
-!      DO i = 1, nrho+2
-!         rho = THRIFT_RHOFULL(i)
-!         s = rho*rho
-!         ier = 0
-!         CALL EZspline_interp(vp_spl, rho, THRIFT_VP(i,mytimestep), ier)
-!         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), ier)
-!         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep), temp1, temp1, temp1, ier)
-!         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp1, THRIFT_AMINOR(i,mytimestep),ier)
-!         IF (lverbj) WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
-!           rho, THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
-!           ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
-!      END DO
-!-----
-
-
-
-
-         
+  
 !----------------------------------------------------------------------
 !     CALCULATING COEFFICIENTS ABCD
 !----------------------------------------------------------------------
@@ -126,130 +101,97 @@
 !     > B(j) = etapara*V'*<B^2>/mu_0
 !     > C(j) = etapara*V'*p'
 !     > D(j) = -etapara*V'*<Js.B>
-!     A is not necessary at the boundaries; B,C,D are as derivatives
-!     need to be taken.
 !----------------------------------------------------------------------
 
-      IF (lverbj) THEN
-         WRITE(6,*)'==============================================================================='
-         WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
-         WRITE(6,*) '   S  ETAPARA     DV/DPHI      DP/DRHO     <J.B>      BSQAV        S11'
-      END IF
+      ALLOCATE(j_temp(nrho+2),&
+               A_temp(nssize),B_temp(nssize),C_temp(nssize),D_temp(nssize),&
+               BP_temp(nssize),CP_temp(nssize),DP_temp(nssize))
 
       ! Set up J spline
-      ALLOCATE(j_temp(nrho+2))
       CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep),j_temp)
       bcs0=(/ 0, 0/)
       CALL EZspline_init(splinor,nrho+2,bcs0,ier)
       splinor%x1        = THRIFT_RHOFULL
       splinor%isHermite = 1
       CALL EZspline_setup(splinor,j_temp,ier,EXACT_DIM=.true.)
+      DEALLOCATE(j_temp) 
       ! J spline set up
 
+      ! Make the calculations
+      ALLOCATE(j_temp(nssize))
       DO i = 1, nssize
          s = THRIFT_S(i)
          rho = SQRT(s)
+         ! A
+         A_temp(i) = THRIFT_S11(i,mytimestep)/THRIFT_PHIEDGE(1,mytimestep)**2
+         ! Helper variable
+         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nssize-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
+         temp = THRIFT_ETAPARA(i,mytimestep)*THRIFT_VP(i,mytimestep)
+         ! B
+         B_temp(i) =  temp*THRIFT_BSQAV(i,mytimestep)/mu0
+         ! C
          CALL get_prof_pprime(rho, mytime, THRIFT_PPRIME(i,mytimestep))
-         CALL EZspline_interp(splinor, rho, jsource, ier)
-         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nssize-1))), mytime, THRIFT_ETAPARA(i,mytimestep))
-         temp1 = THRIFT_ETAPARA(i,mytimestep)*THRIFT_VP(i,mytimestep)
-         THRIFT_COEFF_A(i,mytimestep) = THRIFT_S11(i,mytimestep)/THRIFT_PHIEDGE(1,mytimestep)**2
-         THRIFT_COEFF_B(i,mytimestep) = temp1*THRIFT_BSQAV(i,mytimestep)/mu0
-         THRIFT_COEFF_C(i,mytimestep) = temp1*THRIFT_PPRIME(i,mytimestep)
-         THRIFT_COEFF_D(i,mytimestep) = -temp1*jsource*THRIFT_BAV(i,mytimestep)
-         IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') &
-           s, THRIFT_ETAPARA(i,mytimestep), THRIFT_VP(i,mytimestep), THRIFT_PPRIME(i,mytimestep),&
-            jsource*THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), THRIFT_S11(i,mytimestep)
+         C_temp(i) =  temp*THRIFT_PPRIME(i,mytimestep)
+         ! D
+         CALL EZspline_interp(splinor, rho, j_temp(i), ier)
+         jsource = j_temp(i)
+         D_temp(i) = -temp*jsource*THRIFT_BAV(i,mytimestep)
       END DO
-      ! Spline clean up
+
+      IF (lverbj) CALL print_calc_abcd(j_temp)
       DEALLOCATE(j_temp)
       CALL EZspline_free(splinor,ier)
-      ! Spline cleaned up
 
-!-----OLD CODE IN RHO SPACE
-!      DO i = 1, nrho+2
-!         rho = THRIFT_RHOFULL(i)
-!         CALL get_prof_etapara(MIN(rho,THRIFT_RHO(nrho)),mytime,etapara)
-!         CALL get_prof_pprime(rho,mytime,pprime)
-!         temp1 = 2*etapara*THRIFT_VP(i,mytimestep) ! temp1 <- 2 eta dV/dPhi 
-!         IF (i > 1) &
-!            THRIFT_COEFF_A(i,mytimestep) = THRIFT_S11(i,mytimestep)/(4*rho*THRIFT_PHIEDGE(1,mytimestep)**2)
-!         THRIFT_COEFF_B(i,mytimestep) = temp1*THRIFT_BSQAV(i,mytimestep)/mu0
-!         THRIFT_COEFF_C(i,mytimestep) = temp1*pprime               
-!         THRIFT_COEFF_D(i,mytimestep) = -temp1*jsource_full(i)*THRIFT_BAV(i,mytimestep)  
-!         IF (lverbj) WRITE(6,'(F5.3,6(1X,ES10.3))') &
-!           rho, etapara, THRIFT_VP(i,mytimestep), pprime, jsource_full(i)*THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), THRIFT_S11(i,mytimestep)
-!      END DO
-!-----
-!     Calculate derivatives of ABCD here
+!     Calculate derivatives of ABCD
       ds = THRIFT_S(2)-THRIFT_S(1)
       DO i = 2, nssize-1
-         THRIFT_COEFF_BP(i,mytimestep) = (THRIFT_COEFF_B(i+1,mytimestep)-THRIFT_COEFF_B(i-1,mytimestep))/(2*ds)
-         THRIFT_COEFF_CP(i,mytimestep) = (THRIFT_COEFF_C(i+1,mytimestep)-THRIFT_COEFF_C(i-1,mytimestep))/(2*ds)
-         THRIFT_COEFF_DP(i,mytimestep) = (THRIFT_COEFF_D(i+1,mytimestep)-THRIFT_COEFF_D(i-1,mytimestep))/(2*ds)
+         BP_temp(i) = (B_temp(i+1)-B_temp(i-1))/(2*ds)
+         CP_temp(i) = (C_temp(i+1)-C_temp(i-1))/(2*ds)
+         DP_temp(i) = (C_temp(i+1)-D_temp(i-1))/(2*ds)
       END DO
-!-----OLD CODE IN RHO SPACE
-!      CALL deriv1_rho_o2(THRIFT_COEFF_B(:,mytimestep), THRIFT_COEFF_BP(:,mytimestep))
-!      CALL deriv1_rho_o2(THRIFT_COEFF_C(:,mytimestep), THRIFT_COEFF_CP(:,mytimestep))
-!      CALL deriv1_rho_o2(THRIFT_COEFF_D(:,mytimestep), THRIFT_COEFF_DP(:,mytimestep))
-!-----
-      IF (lverbj) THEN
-         WRITE(6,*)'==============================================================================='
-         WRITE(6,*)' COEFFICIENTS ABCD'
-         WRITE(6,*)'   S         A         B          C          D       BDER       CDER       DDER'
-         WRITE(6,*)''
-         DO i = 1, nssize
-            WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') THRIFT_S(i), &
-            THRIFT_COEFF_A(i,mytimestep), THRIFT_COEFF_B(i,mytimestep),& 
-            THRIFT_COEFF_C(i,mytimestep), THRIFT_COEFF_D(i,mytimestep),&
-            THRIFT_COEFF_BP(i,mytimestep),THRIFT_COEFF_CP(i,mytimestep),&
-            THRIFT_COEFF_DP(i,mytimestep)
-         END DO
-      END IF
+
+      ! Store values
+      THRIFT_COEFF_A(:,mytimestep) = A_temp 
+      THRIFT_COEFF_B(:,mytimestep) = B_temp
+      THRIFT_COEFF_C(:,mytimestep) = C_temp
+      THRIFT_COEFF_D(:,mytimestep) = D_temp
+      THRIFT_COEFF_BP(:,mytimestep) = BP_temp
+      THRIFT_COEFF_CP(:,mytimestep) = CP_temp
+      THRIFT_COEFF_DP(:,mytimestep) = DP_temp
+
+      IF (lverbj) CALL print_abcd()
+
 !----------------------------------------------------------------------
 !     CALCULATING COEFFICIENTS ALPHA
 !----------------------------------------------------------------------
 !     Calculate alpha_1234 (everything evaluated at s_j)
 !     > a1(j) = A*D'
 !     > a2(j) = A*C'
-!     > a3(j) = A*(B'+C)
+!     > a3(j) = A*(B'+ C)
 !     > a4(j) = A*B
-!
-!     NOTE: (Derivatives of) ABCD are required on the full s=[0,1] grid,
-!     so their arrays are of size nssize. Alphas are not needed on the
-!     boundaries, so have arrays of size nssize. Hence indices for the 
-!     RHS of these equations are shifted by 1 (j = i+1)
-!
-!         0                                1        s
-!         |  |     |     | ... |     |     |  |     ABCD:  j
-!        j=1 2     3                 n    n+1 n+2
-!            |     |     | ... |     |     |        a1234: i
-!           i=1    2                n-1    n        => j = i + 1
-!
 !----------------------------------------------------------------------
-      IF (lverbj) THEN
-         WRITE(6,*)'==============================================================================='
-         WRITE(6,*)' ALPHAS'
-         WRITE(6,*)'  S       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
-         WRITE(6,*)''
-      END IF
-      DO i = 1, nssize-2
-         j = i + 1
-         ! Temp variables for legibility
-         A_temp = THRIFT_COEFF_A(j,mytimestep) 
-         B_temp = THRIFT_COEFF_B(j,mytimestep); BP_temp = THRIFT_COEFF_BP(j,mytimestep)
-         C_temp = THRIFT_COEFF_C(j,mytimestep); CP_temp = THRIFT_COEFF_CP(j,mytimestep)
-         D_temp = THRIFT_COEFF_D(j,mytimestep); DP_temp = THRIFT_COEFF_DP(j,mytimestep)
-         
-         THRIFT_ALPHA1(i,mytimestep) = A_temp*DP_temp
-         THRIFT_ALPHA2(i,mytimestep) = A_temp*CP_temp
-         THRIFT_ALPHA3(i,mytimestep) = A_temp*(BP_temp+C_temp)            
-         THRIFT_ALPHA4(i,mytimestep) = A_temp*B_temp   
 
-         IF (lverbj) WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))')  s, &
-            THRIFT_ALPHA1(i,mytimestep), THRIFT_ALPHA2(i,mytimestep),&
-            THRIFT_ALPHA3(i,mytimestep), THRIFT_ALPHA4(i,mytimestep)
+      ALLOCATE(alpha1(nssize-2),
+               alpha2(nssize-2),
+               alpha3(nssize-2),
+               alpha4(nssize-2))
+
+      DO i = 1, nssize-2
+         j = i + 1 ! ABCD in [0,1], alphas in (0,1), so index shifts
+         alpha1(i) = A_temp(j)* DP_temp(j)
+         alpha2(i) = A_temp(j)* CP_temp(j)
+         alpha3(i) = A_temp(j)*(BP_temp(j)+C_temp(j))            
+         alpha4(i) = A_temp(j)*  B_temp(j)  
       END DO
+
+      THRIFT_ALPHA1(:,mytimestep) = alpha1
+      THRIFT_ALPHA2(:,mytimestep) = alpha2
+      THRIFT_ALPHA3(:,mytimestep) = alpha3
+      THRIFT_ALPHA4(:,mytimestep) = alpha4
+
+      DEALLOCATE(A_temp,B_temp,C_temp,D_temp,BP_temp,CP_temp,DP_temp)
+
+      IF (lverbj) CALL print_alpha()
 
 !----------------------------------------------------------------------
 !     SOLVING SYSTEM OF EQUATIONS
@@ -271,94 +213,52 @@
 !     Last equation encapsulates the BC for the plasma edge:
 !        f(s=1,t) = <B^2>/mu0 u' + p'u - <Js.B> = 0
 !
-!     Remaining equations are the evolution equation on THRIFT_RHO grid: 
+!     Remaining equations are the evolution equation on s in (0,1)
 !        du/dt = a1 + a2*u + a3*u' + a4*u"
-!     LD = Ai   MD = Bi  UD = Ci  RHS = Di
-!     NOTE: Since alphas exist on grid excluding boundaries but system
-!     calculates {u} on full grid, indices on RHS are shifted by -1.
+!
 !----------------------------------------------------------------------
 
-      ALLOCATE(d1(nssize-1),d2(nssize),d3(nssize-1),d4(nssize))
+      ALLOCATE(DIAGSUB(nssize-1),
+               DIAGMID(nssize),
+               DIAGSUP(nssize-1),
+               RHS(nssize))
+
       ! Magnetic axis (s=0)
-      THRIFT_MATLD(1,  mytimestep) = 0  
-      THRIFT_MATMD(1,  mytimestep) = 1
-      THRIFT_MATUD(1,  mytimestep) = 0
-      THRIFT_MATRHS(1, mytimestep) = 0   
+     !DIAGSUB(1) in row 2
+      DIAGMID(1) = 1
+      DIAGSUP(1) = 0
+      RHS(1)     = 0
 
-      drho = THRIFT_RHO(2)-THRIFT_RHO(1) 
-      ! THRIFT_RHO grid (rho in (0,1))
-      DO i = 2, nssize-1
-         j = i - 1
-         ! Temp variables for legibility
-         a1 = THRIFT_ALPHA1(j, mytimestep) 
-         a2 = THRIFT_ALPHA2(j, mytimestep) 
-         a3 = THRIFT_ALPHA3(j, mytimestep) 
-         a4 = THRIFT_ALPHA4(j, mytimestep)
-
-         THRIFT_MATLD(i, mytimestep) =   -a3/(2*ds)+a4/ds**2         
-         THRIFT_MATMD(i, mytimestep) = a2        -2*a4/ds**2-1.0/dt  
-         THRIFT_MATUD(i, mytimestep) =    a3/(2*ds)+a4/ds**2         
-         THRIFT_MATRHS(i,mytimestep) = -THRIFT_UGRID(i,prevtimestep)/dt-a1 
-      END DO 
+      ! On the (0,1) grid
+      DIAGSUB(1:nssize-2) = -alpha3/(2*ds) + alpha4/(ds**2)
+      DIAGMID(2:nssize-1) =  alpha2       -2*alpha4/(ds**2) - 1.0/dt
+      DIAGSUP(2:nssize-1) =  alpha3/(2*ds) + alpha4/(ds**2)
+      RHS(2:nssize-1)     = -alpha1-THRIFT_UGRID(2:nssize-1,prevtimestep)/dt
 
       ! Plasma edge (s=1)
-      ! jsource still contains JSOURCE(s=1)
-      temp1 = THRIFT_BSQAV(nssize,mytimestep)/mu0
-      THRIFT_MATLD(nssize,mytimestep)  = -1.0/(2*ds)
-      THRIFT_MATMD(nssize,mytimestep)  = 1.0/(2*ds)+THRIFT_PPRIME(nssize,mytimestep)/temp1
-      THRIFT_MATUD(nssize,mytimestep)  = 0
-      THRIFT_MATRHS(nssize,mytimestep) = jsource*THRIFT_BAV(nssize,mytimestep)/temp1
-      
-      d1 = THRIFT_MATLD(2:nssize,mytimestep)
-      d2 = THRIFT_MATMD(:,mytimestep)
-      d3 = THRIFT_MATUD(1:nssize-1,mytimestep)
-      d4 = THRIFT_MATRHS(:,mytimestep)
+      temp = THRIFT_BSQAV(nssize,mytimestep)/mu0
+      DIAGSUB(nssize-1) = -1.0/(2*ds)
+      DIAGMID(nssize)   =  1.0/(2*ds)+THRIFT_PPRIME(nssize,mytimestep)/temp
+      ! jsource = jsource(nssize) still
+      RHS(nssize)       = jsource*THRIFT_BAV(nssize,mytimestep)/temp
 
-!----------------------------------------------------------------------
-!     Nonzero element management
-!----------------------------------------------------------------------
-!
-!      ! Nonzero element at M(2,4)
-!      temp1 = -THRIFT_ALPHA4(1,mytimestep)/(5*drho**2)
-!      temp1 = temp1/THRIFT_MATUD(3,mytimestep)
-!      THRIFT_MATUD( 2,mytimestep) = THRIFT_MATUD( 2,mytimestep) - temp1*THRIFT_MATMD( 3,mytimestep)
-!      THRIFT_MATMD( 2,mytimestep) = THRIFT_MATMD( 2,mytimestep) - temp1*THRIFT_MATLD( 3,mytimestep)
-!      THRIFT_MATRHS(2,mytimestep) = THRIFT_MATRHS(2,mytimestep) - temp1*THRIFT_MATRHS(3,mytimestep)
-!
-!      ! Nonzero element at M(nssize+1,nssize-2)
-!      temp2 = -THRIFT_ALPHA4(nssize,mytimestep)/(5*drho**2)  
-!      temp2 = temp2/THRIFT_MATLD(nssize,mytimestep)
-!      THRIFT_MATLD( nssize+1,mytimestep) = THRIFT_MATLD( nssize+1,mytimestep) - temp2*THRIFT_MATMD( nssize,mytimestep)
-!      THRIFT_MATMD( nssize+1,mytimestep) = THRIFT_MATMD( nssize+1,mytimestep) - temp2*THRIFT_MATUD( nssize,mytimestep)
-!      THRIFT_MATRHS(nssize+1,mytimestep) = THRIFT_MATRHS(nssize+1,mytimestep) - temp2*THRIFT_MATRHS(nssize,mytimestep)
-!
-!----------------------------------------------------------------------
+      ! Store values
+      THRIFT_MATMD(:,mytimestep)  = DIAGMID
+      THRIFT_MATUD(:,mytimestep)  = DIAGSUP
+      THRIFT_MATLD(:,mytimestep)  = DIAGSUB
+      THRIFT_MATRHS(:,mytimestep) = RHS
+
+      if (lverbj) CALL print_syseqs()
 
       ! Solve system of equations
-      !CALL solve_tdm( THRIFT_MATLD( :,mytimestep),&
-      !                THRIFT_MATMD( :,mytimestep),&
-      !                THRIFT_MATUD( :,mytimestep),&
-      !                THRIFT_MATRHS(:,mytimestep),&
-      !                THRIFT_UGRID( :,mytimestep))
+      CALL DGTSV(nssize, 1, DIAGSUB, DIAGMID, DIAGSUP, RHS, nssize, ier)
+      THRIFT_UGRID(:,mytimestep) = RHS
 
-      CALL DGTSV(nssize, 1, d1, d2, d3, d4, nssize, ier)
-      THRIFT_UGRID(:,mytimestep) = d4
-      CALL check_sol( THRIFT_MATLD( :,mytimestep),&
-                      THRIFT_MATMD( :,mytimestep),&
-                      THRIFT_MATUD( :,mytimestep),&
-                      THRIFT_MATRHS(:,mytimestep),&
-                      THRIFT_UGRID( :,mytimestep))
+      IF (lverbj) CALL check_sol(THRIFT_MATLD(:,mytimestep),THRIFT_MATMD(:,mytimestep),&
+                                 THRIFT_MATUD(:,mytimestep),THRIFT_MATRHS(:,mytimestep),THRIFT_UGRID(:,mytimestep))
 
-      IF (lverbj) THEN
-         WRITE(6,*) '==============================================================================='
-         WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS       SOLUTION'
-         WRITE(6,*)''
-         DO i = 1, nssize
-            WRITE(6,'(I4, 1X, 5(ES13.5,2X))') i, &
-            THRIFT_MATLD(i,mytimestep), THRIFT_MATMD(i,mytimestep), &
-            THRIFT_MATUD(i,mytimestep), THRIFT_MATRHS(i,mytimestep),THRIFT_UGRID(i,mytimestep)
-         END DO
-      END IF
+      DEALLOCATE(alpha1,  alpha2,  alpha3,  alpha4,&
+                 DIAGSUB, DIAGMID, DIAGSUP, RHS)
 
 !----------------------------------------------------------------------
 !     POST SOLVING EQUATIONS
@@ -376,29 +276,9 @@
       THRIFT_JPLASMA(:,mytimestep) = j_temp - THRIFT_JSOURCE(:,mytimestep)
       CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_IPLASMA(:,mytimestep))
       
-      DEALLOCATE(j_temp)
-
-      IF (lverbj) THEN
-            WRITE(6,*) '==============================================================================='
-            WRITE(6,*)' POST MATRIX ALGORITHM'
-            WRITE(6,*)'  i        ITOTAL        IPLASMA        JPLASMA        JSOURCE'
-            WRITE(6,*)''
-            DO i = 1, nssize
-               WRITE(6,'(I4, 1X, 4(ES13.5,2X))') &
-                  i, THRIFT_I(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
-                  THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
-            END DO
-            WRITE(6,*) '==============================================================================='
-      END IF
+      IF (lverbj) CALL print_postevolve(j_temp)
       
-
-!-----OLD CODE IN RHO SPACE
-!      THRIFT_I(:,mytimestep) = 2*THRIFT_PHIEDGE(1,mytimestep)/mu0*( THRIFT_RHOFULL*THRIFT_UGRID(:,mytimestep) )
-!      CALL curden_to_curtot(jsource_full,THRIFT_ISOURCE(:,mytimestep))
-!      THRIFT_IPLASMA(:,mytimestep) = THRIFT_I(:,mytimestep)-THRIFT_ISOURCE(:,mytimestep)
-!      CALL curtot_to_curden(THRIFT_IPLASMA(:,mytimestep),jplasma_full)
-!      THRIFT_JPLASMA(:,mytimestep) = jplasma_full(2:nssize+1)
-!-----
+      DEALLOCATE(j_temp)
       RETURN
 
 !----------------------------------------------------------------------
