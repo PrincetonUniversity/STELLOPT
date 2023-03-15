@@ -116,8 +116,6 @@
       jsource = j_temp(nssize)
       
       IF (lverbj) CALL print_calc_abcd(j_temp)
-
-      DEALLOCATE(j_temp) 
 !======================================================================
 !     CALCULATE ABCD AND DERIVATIVES
 !======================================================================
@@ -127,30 +125,21 @@
 !     > D(j) = -etapara*V'*<Js.B>
 !======================================================================
       ! Allocations
-      WRITE(6,*) ' ALLOCATIONS '
-
       ALLOCATE(A_temp(nssize),B_temp(nssize),C_temp(nssize),D_temp(nssize),&
                BP_temp(nssize),CP_temp(nssize),DP_temp(nssize), temp_arr(nssize))
       A_temp  = 0; B_temp  = 0; C_temp  = 0; D_temp = 0
       BP_temp = 0; CP_temp = 0; DP_temp = 0; temp_arr= 0
 
       ! Coefficients
-      WRITE(6,*) ' COEFFICIENTS '
       temp_arr= THRIFT_ETAPARA(:,mytimestep)*THRIFT_VP(:,mytimestep)
-      WRITE(6,*) ' 1 '
       A_temp = THRIFT_S11(:,mytimestep)/THRIFT_PHIEDGE(1,mytimestep)**2
-      WRITE(6,*) ' 2 '
       B_temp = temp_arr*THRIFT_BSQAV(:,mytimestep)
-      WRITE(6,*) ' 3 '
       C_temp = temp_arr*THRIFT_PPRIME(:,mytimestep)
-      WRITE(6,*) ' 4 '
       D_temp = -temp_arr*j_temp*THRIFT_BAV(:,mytimestep)
-      WRITE(6,*) ' 5 '
 
-      DEALLOCATE(temp_arr)
+      DEALLOCATE(j_temp, temp_arr)
 
 !     Derivatives
-      WRITE(6,*) ' DERIVATIVES '
       ds = THRIFT_S(2)-THRIFT_S(1)
       DO i = 2, nssize-1
          BP_temp(i) = (B_temp(i+1)-B_temp(i-1))/(2*ds)
