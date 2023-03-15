@@ -267,7 +267,7 @@ SUBROUTINE print_syseqs()
        THRIFT_MATLD(i-1,mytimestep), THRIFT_MATMD(i,mytimestep),THRIFT_MATUD(i,mytimestep), THRIFT_MATRHS(i,mytimestep)
     END DO
     i = nssize
-    WRITE(6,'(I4, 1X,2(ES13.5,2X)),13X,ES13.5') i, THRIFT_MATLD(i-1,mytimestep), THRIFT_MATMD(i,mytimestep), THRIFT_MATRHS(i,mytimestep)
+    WRITE(6,'(I4, 1X,2(ES13.5,2X)),A15,ES13.5') i, THRIFT_MATLD(i-1,mytimestep), THRIFT_MATMD(i,mytimestep),'               ', THRIFT_MATRHS(i,mytimestep)
     
 END SUBROUTINE print_syseqs
 
