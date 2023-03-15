@@ -107,6 +107,8 @@
       ALLOCATE(j_temp(nrho+2),&
                A_temp(nssize),B_temp(nssize),C_temp(nssize),D_temp(nssize),&
                BP_temp(nssize),CP_temp(nssize),DP_temp(nssize))
+      j_temp = 0; A_temp = 0; B_temp = 0; C_temp = 0; D_temp = 0
+      BP_temp = 0; CP_temp = 0; DP_temp = 0
 
       ! Set up J spline
       CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep),j_temp)
@@ -173,6 +175,7 @@
 !----------------------------------------------------------------------
 
       ALLOCATE(alpha1(nssize-2),alpha2(nssize-2),alpha3(nssize-2),alpha4(nssize-2))
+      alpha1 = 0; alpha2 = 0; alpha3 = 0; alpha4 = 0
 
       DO i = 1, nssize-2
          j = i + 1 ! ABCD in [0,1], alphas in (0,1), so index shifts
@@ -217,7 +220,7 @@
 !----------------------------------------------------------------------
 
       ALLOCATE(DIAGSUB(nssize-1),DIAGMID(nssize),DIAGSUP(nssize-1),RHS(nssize))
-
+      DIAGSUB = 0; DIAGMID = 0; DIAGSUP = 0; RHS = 0;
       ! Magnetic axis (s=0)
      !DIAGSUB(1) in row 2
       DIAGMID(1) = 1
@@ -265,6 +268,7 @@
 !     Obtain JPLASMA from IPLASMA with curtot_to_curden subroutine.
 !----------------------------------------------------------------------
       ALLOCATE(j_temp(nrho))
+      j_temp = 0
 
       THRIFT_I(:,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)/mu0*THRIFT_UGRID(:,mytimestep)
       CALL curtot_to_curden(THRIFT_I(:,mytimestep),j_temp)
