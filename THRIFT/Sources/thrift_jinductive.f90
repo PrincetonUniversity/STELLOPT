@@ -112,12 +112,12 @@
          CALL get_prof_pprime(rho, mytime, THRIFT_PPRIME(i,mytimestep))
          CALL EZspline_interp(splinor, rho, j_temp(i), ier)
       END DO
+      CALL EZspline_free(splinor,ier)      
       jsource = j_temp(nssize)
       
       IF (lverbj) CALL print_calc_abcd(j_temp)
 
       DEALLOCATE(j_temp) 
-      CALL EZspline_free(splinor,ier)      
 !======================================================================
 !     CALCULATE ABCD AND DERIVATIVES
 !======================================================================
@@ -127,29 +127,34 @@
 !     > D(j) = -etapara*V'*<Js.B>
 !======================================================================
       ! Allocations
+      WRITE(6,*) ' ALLOCATIONS '
+
       ALLOCATE(A_temp(nssize),B_temp(nssize),C_temp(nssize),D_temp(nssize),&
                BP_temp(nssize),CP_temp(nssize),DP_temp(nssize), temp_arr(nssize))
       A_temp  = 0; B_temp  = 0; C_temp  = 0; D_temp = 0
       BP_temp = 0; CP_temp = 0; DP_temp = 0; temp_arr= 0
 
       ! Coefficients
+      WRITE(6,*) ' COEFFICIENTS '
       temp_arr= THRIFT_ETAPARA(:,mytimestep)*THRIFT_VP(:,mytimestep)
       A_temp = THRIFT_S11(:,mytimestep)/THRIFT_PHIEDGE(1,mytimestep)**2
       B_temp = temp_arr*THRIFT_BSQAV(:,mytimestep)
       C_temp = temp_arr*THRIFT_PPRIME(:,mytimestep)
       D_temp = -temp_arr*j_temp*THRIFT_BAV(:,mytimestep)
+      DEALLOCATE(temp_arr)
 
 !     Derivatives
+      WRITE(6,*) ' DERIVATIVES '
       ds = THRIFT_S(2)-THRIFT_S(1)
       DO i = 2, nssize-1
          BP_temp(i) = (B_temp(i+1)-B_temp(i-1))/(2*ds)
          CP_temp(i) = (C_temp(i+1)-C_temp(i-1))/(2*ds)
          DP_temp(i) = (D_temp(i+1)-D_temp(i-1))/(2*ds)
       END DO
-      DEALLOCATE(temp_arr)
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
+      WRITE(6,*) ' STORING '
       THRIFT_COEFF_A(:,mytimestep) = A_temp 
       THRIFT_COEFF_B(:,mytimestep) = B_temp; THRIFT_COEFF_BP(:,mytimestep) = BP_temp
       THRIFT_COEFF_C(:,mytimestep) = C_temp; THRIFT_COEFF_CP(:,mytimestep) = CP_temp
