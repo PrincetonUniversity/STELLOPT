@@ -149,7 +149,6 @@
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
-      WRITE(6,*) ' STORING '
       THRIFT_COEFF_A(:,mytimestep) = A_temp 
       THRIFT_COEFF_B(:,mytimestep) = B_temp; THRIFT_COEFF_BP(:,mytimestep) = BP_temp
       THRIFT_COEFF_C(:,mytimestep) = C_temp; THRIFT_COEFF_CP(:,mytimestep) = CP_temp
