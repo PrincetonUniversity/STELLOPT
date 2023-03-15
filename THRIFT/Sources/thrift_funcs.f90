@@ -120,10 +120,7 @@ SUBROUTINE curden_to_curtot(j_arr, i_arr)
 
     bcs0=(/ 0, 0/)
     CALL EZspline_init(j_spl,nrho+2,bcs0,ier)
-    WRITE(6,*) ' Setting x1'
-    WRITE(6,*) THRIFT_RHOFULL
     j_spl%x1        = THRIFT_RHOFULL
-    WRITE(6,*) ' Set x1'
     j_spl%isHermite = 1
     CALL EZspline_setup(j_spl,j_temp_spl,ier,EXACT_DIM=.true.)
     
