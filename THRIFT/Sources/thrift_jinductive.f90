@@ -24,11 +24,11 @@
       IMPLICIT NONE
       INTEGER :: i,j,prevtimestep,ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho,s,drho,ds,dt,mytime,s11,jsource,temp  
+      REAL(rprec) :: rho,s,drho,ds,dt,mytime,s11,jsource
       TYPE(EZspline1_r8) :: splinor
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
-                     BP_temp, CP_temp, DP_temp,&
+                     BP_temp, CP_temp, DP_temp,temp  &
                      alpha1,alpha2,alpha3,alpha4,&
                      DIAGSUB,DIAGMID,DIAGSUP,RHS
 !----------------------------------------------------------------------
