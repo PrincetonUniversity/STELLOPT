@@ -24,11 +24,11 @@
       IMPLICIT NONE
       INTEGER :: i,j,prevtimestep,ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho,s,drho,ds,dt,mytime,s11,jsource
+      REAL(rprec) :: rho,s,drho,ds,dt,mytime,jsource,temp
       TYPE(EZspline1_r8) :: splinor
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
-                     BP_temp, CP_temp, DP_temp,temp  &
+                     BP_temp, CP_temp, DP_temp,temp_arr,  &
                      alpha1,alpha2,alpha3,alpha4,&
                      DIAGSUB,DIAGMID,DIAGSUP,RHS
 !----------------------------------------------------------------------
@@ -41,7 +41,7 @@
          s = THRIFT_S(i)
          ier = 0
          CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
-         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep), temp, temp, temp, ier)
+         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep), temp,temp,temp, ier)
          CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), ier)
          ! V' = dV/ds = 2*pi*R*(pi*a^2)
          THRIFT_VP(i,mytimestep) = 2*pi**2*THRIFT_RMAJOR(i,mytimestep)*THRIFT_AMINOR(i,mytimestep)**2
@@ -128,16 +128,16 @@
 !======================================================================
       ! Allocations
       ALLOCATE(A_temp(nssize),B_temp(nssize),C_temp(nssize),D_temp(nssize),&
-               BP_temp(nssize),CP_temp(nssize),DP_temp(nssize), temp(nssize))
+               BP_temp(nssize),CP_temp(nssize),DP_temp(nssize), temp_arr(nssize))
       A_temp  = 0; B_temp  = 0; C_temp  = 0; D_temp = 0
-      BP_temp = 0; CP_temp = 0; DP_temp = 0; temp   = 0
+      BP_temp = 0; CP_temp = 0; DP_temp = 0; temp_arr= 0
 
       ! Coefficients
-      temp   = THRIFT_ETAPARA(:,mytimestep)*THRIFT_VP(:,mytimestep)
+      temp_arr= THRIFT_ETAPARA(:,mytimestep)*THRIFT_VP(:,mytimestep)
       A_temp = THRIFT_S11(:,mytimestep)/THRIFT_PHIEDGE(1,mytimestep)**2
-      B_temp = temp*THRIFT_BSQAV(:,mytimestep)
-      C_temp = temp*THRIFT_PPRIME(:,mytimestep)
-      D_temp = -temp*j_temp*THRIFT_BAV(:,mytimestep)
+      B_temp = temp_arr*THRIFT_BSQAV(:,mytimestep)
+      C_temp = temp_arr*THRIFT_PPRIME(:,mytimestep)
+      D_temp = -temp_arr*j_temp*THRIFT_BAV(:,mytimestep)
 
 !     Derivatives
       ds = THRIFT_S(2)-THRIFT_S(1)
@@ -146,7 +146,7 @@
          CP_temp(i) = (C_temp(i+1)-C_temp(i-1))/(2*ds)
          DP_temp(i) = (D_temp(i+1)-D_temp(i-1))/(2*ds)
       END DO
-      DEALLOCATE(temp)
+      DEALLOCATE(temp_arr)
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
