@@ -64,6 +64,8 @@
             WRITE(6,'(A,I8)') '   NPOINC_OLD: ', npoinc
             IF (lfusion_old) WRITE(6,'(A,I8)') '   FUSION RUN DETECTED'
          END IF
+         CALL read_scalar_hdf5(fid,'ldepo',ier,BOOVAR=ldepo_old)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ldepo_old',ier)
          !CALL read_scalar_hdf5(fid,'partvmax',ier,DBLVAR=vpartmax)
          !partvmax = MAX(partvmax,vpartmax)
          !IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'partvmax',ier)
@@ -125,9 +127,9 @@
          !   IF lfusion_old then start from 0
          !   IF ldepo run then start from 2
          !   ELSE Start from wall_hit
-         ldepo_old = .false.
+         !ldepo_old = .false.
          state_flag = 0
-         IF (ANY(end_state==3)) ldepo_old = .true.
+         !IF (ANY(end_state==3)) ldepo_old = .true.
          IF (lfusion_old) THEN
             end_state = 0
             state_flag = 0

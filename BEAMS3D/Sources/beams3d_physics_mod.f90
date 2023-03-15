@@ -19,13 +19,12 @@ MODULE beams3d_physics_mod
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
                                moment_lines, mybeam, mycharge, myZ, &
-                               mymass, inv_mymass, myv_neut, rand_prob, &
-                               cum_prob, tau, &
+                               mymass, inv_mymass, myv_neut, tau, &
                                epower_prof, ipower_prof, &
                                end_state, fact_crit, fact_pa, &
                                fact_vsound, fact_coul, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
-                               ns_prof5, my_end
+                               ns_prof5, my_end,rand_prob, cum_prob
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
                               MODB_spl, MODB4D, &
                               phimax, S4D, X4D, Y4D, TE4D, NE4D, TI4D, ZEFF4D, &
@@ -350,8 +349,9 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          USE beams3d_grid
          USE beams3d_lines, ONLY: myline,xlast,ylast,zlast
+                                 !R_lines, PHI_lines, Z_lines
          USE beams3d_runtime, ONLY: lvessel, to3, lplasma_only, &
-                                    lvessel_beam, lsuzuki
+                                    lvessel_beam, lsuzuki,ldepo
          USE wall_mod, ONLY: collide, uncount_wall_hit
 
          !--------------------------------------------------------------
@@ -377,6 +377,7 @@ MODULE beams3d_physics_mod
          INTEGER          :: ier, l, m
          DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
                              s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp
+         REAL(rprec) :: rand_prob, cum_prob
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
          DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
@@ -475,6 +476,7 @@ MODULE beams3d_physics_mod
          xlast = qf(1)
          ylast = qf(2)
          zlast = qf(3)
+         
 
          !--------------------------------------------------------------
          !     Follow particle track out of plasma
@@ -519,9 +521,19 @@ MODULE beams3d_physics_mod
          rlocal(1) = SQRT(qs(1)*qs(1)+qs(2)*qs(2))
          plocal(1) = ATAN2(qs(2),qs(1))
          zlocal(1) = qs(3)
+         ! IF (ldepo) THEN ! First Plasma/wall hit location
+         !    R_lines(3,myline) = rlocal(1)
+         !    PHI_lines(3,myline) = plocal(1)
+         !    Z_lines(3,myline) = zlocal(1)
+         ! END IF
          rlocal(num_depo) = SQRT(qe(1)*qe(1)+qe(2)*qe(2))
          plocal(num_depo) = ATAN2(qe(2),qe(1))
          zlocal(num_depo) = qe(3)
+         ! IF (ldepo) THEN ! Exit location
+         !    R_lines(4,myline) = rlocal(num_depo)
+         !    PHI_lines(4,myline) = plocal(num_depo)
+         !    Z_lines(4,myline) = zlocal(num_depo)
+         ! END IF
          DO i = 2, num_depo-1
             qf = (i-1)*(qe-qs)/(REAL(num_depo-1)) + qs
             rlocal(i) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
@@ -553,7 +565,7 @@ MODULE beams3d_physics_mod
                CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             NI5D(1,1,1,1,m),nr,nphi,nz)
-               nilocal(m,l) = MAX(fval(1),zero)
+               nilocal(m,l) = MAX(fval(1),one) !Set to one to prevent NaN Zeff later on
             END DO
          END DO
          tilocal = tilocal*1D-3
@@ -676,6 +688,11 @@ MODULE beams3d_physics_mod
             q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
             q(2) = ATAN2(qf(2),qf(1))
             q(3) = qf(3)
+            ! IF (ldepo) THEN !outside location
+            !    R_lines(5,myline) = q(1)
+            !    PHI_lines(5,myline) = q(2)
+            !    Z_lines(5,myline) = q(3)
+            ! END IF
             IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN; t = my_end+dt_local; RETURN; END IF  ! We're outside the grid
          END DO
 
@@ -840,7 +857,7 @@ MODULE beams3d_physics_mod
             moment = 1000*TINY(moment)
             RETURN
          END IF
-
+         
          RETURN
 
       END SUBROUTINE beams3d_ionize

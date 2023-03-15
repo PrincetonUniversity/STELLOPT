@@ -23,7 +23,7 @@ SUBROUTINE beams3d_follow_gc
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
                             TE_spl, TI_spl, wall_load, wall_shine, &
                             plasma_mass, plasma_Zmean, therm_factor, &
-                            nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida
+                            nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida,raxis
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE beams3d_write_par
@@ -90,13 +90,19 @@ SUBROUTINE beams3d_follow_gc
     relab = "M"
     mf = 10
 
-    ! Calc max time to follow particles
-    i = MAXLOC(ABS(t_end),1)
-    tf_max = t_end(i)
-
     ! Calculate timestep for integration
     vel_max = MAX(MAXVAL(ABS(vll_start)),1E6)
+
+    ! Calc max time to follow particles
+    i = MAXLOC(ABS(t_end),1)
+    IF (lbeam) t_end(i) = MAX(t_end(i),2*MAXVAL(raxis)/vel_max)
+    tf_max = t_end(i)
+
+   ! Calculate timestep for integration
     dt = SIGN(MAX(lendt_m/vel_max,1D-9),tf_max)
+
+    !Temporarily reduce npoinc by 2 for combined depo+slowing down runs
+    IF (lbeam .and. .not. ldepo) NPOINC = NPOINC-2
 
     ! Calculate number of integration timesteps per output timestep
     ndt_max = MAX(CEILING(tf_max/(dt*NPOINC)),1)
@@ -106,6 +112,8 @@ SUBROUTINE beams3d_follow_gc
     dt = tf_max/(ndt_max*NPOINC)
     dt_out = tf_max/NPOINC
     
+    IF (lbeam .and. .not. ldepo) NPOINC = NPOINC+2
+
     ! Break up the work
     CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
 
@@ -378,12 +386,12 @@ SUBROUTINE beams3d_follow_gc
                        ! Follow into plasma
                        CALL beams3d_follow_neut(t_nag,q)
                        mytdex = 1
-                       tf_nag = t_nag
+                       !tf_nag = t_nag
                        weight_save = weight(myline)
                        weight(myline) = 0
                        CALL out_beams3d_nag(tf_nag,q)
                        weight(myline) = weight_save
-                       IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
+                       !IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
                        mytdex = 2
@@ -396,6 +404,8 @@ SUBROUTINE beams3d_follow_gc
                        !CALL beams3d_calc_dt(q,moment,mymass,dt)
                     END IF
                     IF (ldepo) CYCLE
+                    t_nag = 0.0 !Reset time after deposition simulation
+                    tf_nag = 0.0                   
                     DO
                         IF (lcollision) istate = 1
                         CALL FLUSH(6)
