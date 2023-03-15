@@ -170,7 +170,7 @@ MODULE beams3d_physics_mod
             !     speed     Total particle speed
             !-----------------------------------------------------------
             te_cube = te_temp * te_temp * te_temp
-            inv_mymass = 1/mymass
+            inv_mymass = one/mymass
             v_s = fact_vsound*sqrt(ti_temp)
             speed = sqrt( vll*vll + 2*moment*modb*inv_mymass ) !+ sign(real(80000),vll)
             vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)
@@ -242,7 +242,7 @@ MODULE beams3d_physics_mod
                v_crit = fact_crit*SQRT(te_temp)
                vcrit_cube = v_crit*v_crit*v_crit
                tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here
-               tau_spit_inv = (1.0D0)/tau_spit
+               tau_spit_inv = one/tau_spit
                vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
 
@@ -293,8 +293,8 @@ MODULE beams3d_physics_mod
            speed_cube = vc3_tauinv*zeff_temp*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-           sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
-           zeta_mean = zeta_o *(1.0D0 - speed_cube )  ! The new mean in the distribution.
+           sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
+           zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
            zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
