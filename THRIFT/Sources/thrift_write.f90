@@ -144,11 +144,11 @@
          CALL write_var_hdf5(fid,'THRIFT_ALPHA4',nssize-2,ntimesteps,ier,DBLVAR=THRIFT_ALPHA4,ATT='Coefficient alpha_4 (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ALPHA4',ier)
          ! System of equations
-         CALL write_var_hdf5(fid,'THRIFT_MATLD',nssize,ntimesteps,ier,DBLVAR=THRIFT_MATLD,ATT='Matrix equation lower diagonal',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_MATLD',nssize-1,ntimesteps,ier,DBLVAR=THRIFT_MATLD,ATT='Matrix equation lower diagonal',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATLD',ier)
          CALL write_var_hdf5(fid,'THRIFT_MATMD',nssize,ntimesteps,ier,DBLVAR=THRIFT_MATMD,ATT='Matrix equation main diagonal',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATMD',ier)
-         CALL write_var_hdf5(fid,'THRIFT_MATUD',nssize,ntimesteps,ier,DBLVAR=THRIFT_MATUD,ATT='Matrix equation upper diagonal',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_MATUD',nssize-1,ntimesteps,ier,DBLVAR=THRIFT_MATUD,ATT='Matrix equation upper diagonal',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATUD',ier)
          CALL write_var_hdf5(fid,'THRIFT_MATRHS',nssize,ntimesteps,ier,DBLVAR=THRIFT_MATRHS,ATT='Matrix equation RHS',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATRHS',ier)

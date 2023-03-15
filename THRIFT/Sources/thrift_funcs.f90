@@ -150,38 +150,31 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     INTEGER :: i, ier
     INTEGER :: bcs0(2)
     TYPE(EZspline1_r8) :: j_spl
-    REAL(rprec) :: ds, rho, s, dIds, dAds
+    REAL(rprec) :: ds, rho, s
 
     ALLOCATE(j_temp(nssize))
- !   WRITE(6,*) ' i        I(i+1)        I(i-1)      dI/ds(i)         dA/ds        J(s_i)'
 
     ! Calculate J (in s space)
     ds = THRIFT_S(2)-THRIFT_S(1)
     DO i = 2, nssize-1
-        dIds = (i_arr(i+1)-i_arr(i-1))/(2*ds)
-        dAds = pi*THRIFT_AMINOR(i,mytimestep)**2
-        j_temp(i) = dIds/dAds
- !       WRITE(6,'(I3,5(1X,ES13.5))') i, i_arr(i+1), i_arr(i-1), dIds, dAds, j_temp(i)
+        j_temp(i) = (i_arr(i+1)-i_arr(i-1))/(2*ds)*1.0/(pi*THRIFT_AMINOR(i,mytimestep)**2)
     END DO
 
     ! Extrapolate to boundaries
-    j_temp(1)  = 2*j_temp(2)   -j_temp(3)    ! s = 0
+    j_temp(1)      = 2*j_temp(2)       -j_temp(3)        ! s = 0
     j_temp(nssize) = 2*j_temp(nssize-1)-j_temp(nssize-2) ! s = 1
     ! Setup J spline (in s space)
     CALL EZspline_init(j_spl,nssize,bcs0,ier)
     j_spl%x1        = THRIFT_S
     j_spl%isHermite = 1
     CALL EZspline_setup(j_spl,j_temp,ier,EXACT_DIM=.true.)  
- !   WRITE(6,*) ' i        J(rho_i)'
 
     ! Convert J to rho space
     DO i = 1, nrho
        rho = THRIFT_RHO(i)
        s = rho*rho
        ier = 0
-       CALL EZspline_interp(j_spl, s, j_arr(i), ier)
- !      WRITE(6,'(I3,1X,ES13.5)') i, j_arr(i)
-      
+       CALL EZspline_interp(j_spl, s, j_arr(i), ier)      
     END DO
 
     CALL EZspline_free(j_spl,ier)
@@ -190,25 +183,109 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
 
 END SUBROUTINE curtot_to_curden
 
-SUBROUTINE deriv1_rho_o2(arr, der_arr)
-    ! Calculate the first derivative (O2 accurate)
-    REAL(rprec), DIMENSION(:), INTENT(in) :: arr
-    REAL(rprec), DIMENSION(:), INTENT(out) :: der_arr
+SUBROUTINE print_calc_magvars()
+
     INTEGER :: i
-    REAL(rprec) :: step
-    step = THRIFT_RHO(2) - THRIFT_RHO(1)
+    WRITE(6,*)'==============================================================================='
+    WRITE(6,*)' CALCULATING MAGNETIC VARIABLES'
+    WRITE(6,*)' S    DV/DPHI        <B>      <B^2>     RMAJOR     AMINOR        S11 '
+    WRITE(6,*)''
 
-    ! Set derivatives = 0 on boundaries
-    der_arr(1) = 0
-    der_arr(2) = (arr(3)+3*arr(2)-4*arr(1))/(3*step) ! dY/drho(1) = [Y(3) + 3*Y(2) - 4*Y(1)]/3h
-    DO i = 3, nrho ! dY/drho(i) = [Y(j+1)-Y(j-1)]/2h 
-        der_arr(i) = (arr(i+1)-arr(i-1))/(2*step)
+    DO i = 1, nssize
+        WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
+              s, THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
+              ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
     END DO
-    der_arr(nrho+1) = (4*arr(nrho+2)-3*arr(nrho+1)-arr(nrho))/(3*step) ! [4*Y(n) - 3*Y(n-1) - Y(n-2)]/3h
-    der_arr(nrho+2) = 0
 
-    RETURN
+END SUBROUTINE print_calc_magvars
 
-END SUBROUTINE deriv1_rho_o2
+SUBROUTINE print_calc_abcd(j_arr)
+
+    REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
+    INTEGER :: i
+
+    WRITE(6,*)'==============================================================================='
+    WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
+    WRITE(6,*)'   S  ETAPARA       DV/DS      DP/DRHO     <J.B>      BSQAV        S11'
+    WRITE(6,*)''
+
+    DO i = 1, nssize
+        WRITE(6,'(F5.3,6(1X,ES10.3))') &
+        s, THRIFT_ETAPARA(i,mytimestep), THRIFT_VP(i,mytimestep), THRIFT_PPRIME(i,mytimestep),&
+        j_arr(i)*THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), THRIFT_S11(i,mytimestep)
+    END DO
+
+END SUBROUTINE print_calc_abcd
+
+
+SUBROUTINE print_abcd()
+
+    INTEGER :: i
+
+    WRITE(6,*)'==============================================================================='
+    WRITE(6,*)' COEFFICIENTS ABCD'
+    WRITE(6,*)'   S         A         B          C          D       BDER       CDER       DDER'
+    WRITE(6,*)''
+
+    DO i = 1, nssize
+        WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') THRIFT_S(i),&
+        THRIFT_COEFF_A(i,mytimestep),THRIFT_COEFF_B(i,mytimestep),THRIFT_COEFF_C(i,mytimestep),THRIFT_COEFF_D(i,mytimestep),&
+        THRIFT_COEFF_BP(i,mytimestep),THRIFT_COEFF_CP(i,mytimestep),THRIFT_COEFF_DP(i,mytimestep)
+     END DO
+    
+END SUBROUTINE print_abcd
+
+
+SUBROUTINE print_alpha()
+
+    INTEGER :: i
+
+    WRITE(6,*)'==============================================================================='
+    WRITE(6,*)' ALPHAS'
+    WRITE(6,*)'  S       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
+    WRITE(6,*)''
+
+    DO i = 1, nssize
+        WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))')  s, &
+        THRIFT_ALPHA1(i,mytimestep), THRIFT_ALPHA2(i,mytimestep),&
+        THRIFT_ALPHA3(i,mytimestep), THRIFT_ALPHA4(i,mytimestep)
+     END DO
+    
+END SUBROUTINE print_alpha
+
+SUBROUTINE print_syseqs()
+
+    INTEGER :: i
+
+    WRITE(6,*) '==============================================================================='
+    WRITE(6,*)' SYSTEM OF EQUATIONS'
+    WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS '
+    WRITE(6,*)''
+    WRITE(6,'(I4, 1X, 15X, 3(ES13.5,2X))') 1, THRIFT_MATMD(1,mytimestep), THRIFT_MATUD(1,mytimestep), THRIFT_MATRHS(1,mytimestep)
+    DO i = 2, nssize-1
+       WRITE(6,'(I4, 1X, 4(ES13.5,2X))') i, &
+       THRIFT_MATLD(i-1,mytimestep), THRIFT_MATMD(i,mytimestep),THRIFT_MATUD(i,mytimestep), THRIFT_MATRHS(i,mytimestep)
+    END DO
+    i = nssize
+    WRITE(6,'(I4, 1X,2(ES13.5,2X)),15X,ES13.5') i, THRIFT_MATLD(i-1,mytimestep), THRIFT_MATMD(i,mytimestep), THRIFT_MATRHS(i,mytimestep)
+    
+END SUBROUTINE print_syseqs
+
+SUBROUTINE print_postevolve(j_arr)
+
+    REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
+    INTEGER :: i
+
+    WRITE(6,*) '==============================================================================='
+    WRITE(6,*)' POST EVOLUTION' 
+    WRITE(6,*)'  i  s        ITOTAL  ISOURCE        IPLASMA   rho   J     JPLASMA        JSOURCE'
+    WRITE(6,*)''
+    DO i = 1, nssize
+        WRITE(6,'(I4, 1X, F5.3, 3(1X,ES13.5), 1X, F5.3, 3(1X,ES13.5))') &
+           i, THRIFT_S(i), THRIFT_I(i,mytimestep), THRIFT_ISOURCE(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
+           THRIFT_RHO(i), j_arr(i), THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
+     END DO
+    
+END SUBROUTINE print_postevolve
 
 END MODULE thrift_funcs
