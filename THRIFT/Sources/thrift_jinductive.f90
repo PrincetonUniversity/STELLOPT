@@ -29,7 +29,8 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
                      BP_temp, CP_temp, DP_temp,&
-                     alpha1,alpha2,alpha3,alpha4
+                     alpha1,alpha2,alpha3,alpha4,&
+                     DIAGSUB,DIAGMID,DIAGSUP,RHS
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -171,10 +172,7 @@
 !     > a4(j) = A*B
 !----------------------------------------------------------------------
 
-      ALLOCATE(alpha1(nssize-2),
-               alpha2(nssize-2),
-               alpha3(nssize-2),
-               alpha4(nssize-2))
+      ALLOCATE(alpha1(nssize-2),alpha2(nssize-2),alpha3(nssize-2),alpha4(nssize-2))
 
       DO i = 1, nssize-2
          j = i + 1 ! ABCD in [0,1], alphas in (0,1), so index shifts
@@ -218,10 +216,7 @@
 !
 !----------------------------------------------------------------------
 
-      ALLOCATE(DIAGSUB(nssize-1),
-               DIAGMID(nssize),
-               DIAGSUP(nssize-1),
-               RHS(nssize))
+      ALLOCATE(DIAGSUB(nssize-1),DIAGMID(nssize),DIAGSUP(nssize-1),RHS(nssize))
 
       ! Magnetic axis (s=0)
      !DIAGSUB(1) in row 2
