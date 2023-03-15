@@ -150,7 +150,7 @@
       DO i = 2, nssize-1
          BP_temp(i) = (B_temp(i+1)-B_temp(i-1))/(2*ds)
          CP_temp(i) = (C_temp(i+1)-C_temp(i-1))/(2*ds)
-         DP_temp(i) = (C_temp(i+1)-D_temp(i-1))/(2*ds)
+         DP_temp(i) = (D_temp(i+1)-D_temp(i-1))/(2*ds)
       END DO
 
       ! Store values
