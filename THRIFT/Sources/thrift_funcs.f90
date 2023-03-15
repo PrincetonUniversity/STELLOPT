@@ -245,8 +245,8 @@ SUBROUTINE print_alpha()
     WRITE(6,*)'  S       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
     WRITE(6,*)''
 
-    DO i = 1, nssize
-        WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))')  THRIFT_S(i),&
+    DO i = 1, nssize-2
+        WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))')  THRIFT_S(i+1),&
         THRIFT_ALPHA1(i,mytimestep), THRIFT_ALPHA2(i,mytimestep),&
         THRIFT_ALPHA3(i,mytimestep), THRIFT_ALPHA4(i,mytimestep)
      END DO
