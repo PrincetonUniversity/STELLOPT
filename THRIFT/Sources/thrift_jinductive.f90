@@ -133,7 +133,7 @@
       ! Coefficients
       temp_arr= THRIFT_ETAPARA(:,mytimestep)*THRIFT_VP(:,mytimestep)
       A_temp = THRIFT_S11(:,mytimestep)/THRIFT_PHIEDGE(1,mytimestep)**2
-      B_temp = temp_arr*THRIFT_BSQAV(:,mytimestep)
+      B_temp = temp_arr*THRIFT_BSQAV(:,mytimestep)/mu0
       C_temp = temp_arr*THRIFT_PPRIME(:,mytimestep)
       D_temp = -temp_arr*j_temp*THRIFT_BAV(:,mytimestep)
 
