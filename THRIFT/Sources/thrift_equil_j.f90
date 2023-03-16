@@ -50,14 +50,15 @@
 
       ! Create J array
       ALLOCATE(rho_temp(nrho+2),j_temp(nrho+2))
-      !rho_temp(1)        = 0.0
-      rho_temp(1)        = -THRIFT_RHO(1)
+      rho_temp(1)        = 0.0
+      !rho_temp(1)        = -THRIFT_RHO(1)
       rho_temp(2:nrho+1) = THRIFT_RHO
       rho_temp(nrho+2)   = 1.0
       !j_temp(1)          = 0.0
-      j_temp(1)          = THRIFT_J(1,itime)
+      !j_temp(1)          = THRIFT_J(1,itime)
+      j_temp(1)          = (3*THRIFT_J(1,itime)-THRIFT_J(2,itime))/2
       j_temp(2:nrho+1)   = THRIFT_J(:,itime)
-      j_temp(nrho+2)     = 0.0
+      j_temp(nrho+2)     = (3*THRIFT_J(nrho,itime)-THRIFT_J(nrho-1,itime))/2
 
       ! Create Splines
       bcs0=(/ 0, 0/)
@@ -97,7 +98,7 @@
                !AC_AUX_F(i) = j_val*vp*eq_phiedge/(2*pi*Rmajor)
                AC_AUX_F(i) = j_val*pi*Aminor**2
             END DO
-            AC_AUX_F(1) = 2*AC_AUX_F(2)-AC_AUX_F(3)
+            !AC_AUX_F(1) = 2*AC_AUX_F(2)-AC_AUX_F(3)
             CURTOR = SUM(AC_AUX_F(1:n_eq),DIM=1)/DBLE(n_eq-1)
          ELSE
             DO i = 1, n_eq

@@ -129,7 +129,7 @@ SUBROUTINE curden_to_curtot(j_arr_in, i_arr)
         s = THRIFT_S(i)
         rho = SQRT(s)
         ier = 0
-        CALL EZspline_interp(j_spl, rho, j_interp, ier)
+        CALL EZspline_interp(j_spl,rho,j_interp,ier)
         i_arr(i) = i_arr(i-1) + j_interp*(pi*THRIFT_AMINOR(i,mytimestep)**2)*ds
     END DO
     CALL EZspline_free(j_spl,ier)
