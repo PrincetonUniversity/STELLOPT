@@ -26,7 +26,7 @@ MODULE thrift_funcs
 !-----------------------------------------------------------------------
 
 CONTAINS
-SUBROUTINE solve_tdm(AI,BI,CI,DI,val)
+SUBROUTINE solve_tdm(AI,BI,CI,DI,val) ! no longer used
     ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
     IMPLICIT NONE
     REAL(rprec), DIMENSION(:), INTENT(in) :: AI

@@ -1,9 +1,9 @@
 !-----------------------------------------------------------------------
 !     Subroutine:    thrift_jinductive
 !     Authors:       L. van Ham
-!     Date:          01/23/2023
-!     Description:   This subroutine updates the plasma response to
-!                    source currents.  
+!     Date:          16/03/2023
+!     Description:   This subroutine calculates the inductive component
+!                    of the total current. 
 !-----------------------------------------------------------------------
       SUBROUTINE thrift_jinductive
 !-----------------------------------------------------------------------
@@ -22,9 +22,9 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: i,j,prevtimestep,ier
+      INTEGER :: i, j, prevtimestep, ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho,s,drho,ds,dt,mytime,jsource,temp
+      REAL(rprec) :: rho, s, drho, ds, dt, mytime, jsource, temp
       TYPE(EZspline1_r8) :: splinor
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
@@ -35,14 +35,15 @@
 !     BEGIN SUBROUTINE
 !======================================================================
 !     CALCULATE MAGNETIC VARIABLES
+!     > Phiedge, Rmajor, Aminor, S11, Bav, Bsqav, VP
 !======================================================================
       THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge     
       DO i = 1, nssize
          s = THRIFT_S(i)
          ier = 0
          CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
-         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep), temp,temp,temp, ier)
-         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), ier)
+         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),temp,temp,temp,ier)
+         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
          ! V' = dV/ds = dV/dA dA/ds = 2*pi*R*(pi*a^2)
          THRIFT_VP(i,mytimestep) = (2*pi*THRIFT_RMAJOR(i,mytimestep))*(pi*THRIFT_AMINOR(i,mytimestep)**2)
       END DO
@@ -57,12 +58,12 @@
       CALL curden_to_curtot(THRIFT_JOHMIC(:, mytimestep),THRIFT_IOHMIC(:, mytimestep))
       CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_IPLASMA(:,mytimestep))
 
-      THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,  mytimestep)&
-                                    + THRIFT_IECCD(:,  mytimestep)&
-                                    + THRIFT_INBCD(:,  mytimestep)&
+      THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,  mytimestep) &
+                                    + THRIFT_IECCD(:,  mytimestep) &
+                                    + THRIFT_INBCD(:,  mytimestep) &
                                     + THRIFT_IOHMIC(:, mytimestep)
 !======================================================================
-!     TIME AND BETA=0
+!     TIME STUFF AND SPECIAL CASES
 !======================================================================
       ! If mytimestep = 1 ITOT=0 and continue to next iteration
       IF (mytimestep==1) THEN
@@ -89,7 +90,7 @@
          END IF
       END IF
 !======================================================================
-!     GRAB REMAINING VARIABLES
+!     GRAB REMAINING VARIABLES (PPRIME, ETAPARA, JSOURCE(s))
 !======================================================================
       ! Set up J spline
       ALLOCATE(j_temp(nrho+2))
@@ -139,7 +140,7 @@
 
       DEALLOCATE(j_temp, temp_arr)
 
-!     Derivatives
+      ! Derivatives
       ds = THRIFT_S(2)-THRIFT_S(1)
       DO i = 2, nssize-1
          BP_temp(i) = (B_temp(i+1)-B_temp(i-1))/(2*ds)
@@ -233,9 +234,9 @@
 !     SOLVE SYSTEM OF EQUATIONS
 !======================================================================
       CALL DGTSV(nssize, 1, DIAGSUB, DIAGMID, DIAGSUP, RHS, nssize, ier)
+      ! Store solution
       THRIFT_UGRID(:,mytimestep) = RHS
-      DEALLOCATE(alpha1,  alpha2,  alpha3,  alpha4,&
-                  DIAGSUB, DIAGMID, DIAGSUP, RHS)
+      DEALLOCATE(alpha1,alpha2,alpha3,alpha4,DIAGSUB,DIAGMID,DIAGSUP,RHS)
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
@@ -251,12 +252,10 @@
       CALL curtot_to_curden(THRIFT_I(:,mytimestep),j_temp)
       THRIFT_JPLASMA(:,mytimestep) = j_temp - THRIFT_JSOURCE(:,mytimestep)
       CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_IPLASMA(:,mytimestep))
-      
+
       IF (lverbj) CALL print_postevolve(j_temp)
-      
       DEALLOCATE(j_temp)
       RETURN
-
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
