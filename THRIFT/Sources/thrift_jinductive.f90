@@ -34,20 +34,41 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !======================================================================
-!     CALCULATE MAGNETIC VARIABLES
-!     > Phiedge, Rmajor, Aminor, S11, Bav, Bsqav, VP
+!     CALCULATE MAGNETIC VARIABLES AND OTHER PROFILE DATA
+!     > Etapara, p', Js, Phiedge, Rmajor, Aminor, S11, Bav, Bsqav, VP
 !======================================================================
+      ! Set up Jsource spline
+      ALLOCATE(j_temp(nrho+2))
+      j_temp = 0
+      CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep),j_temp)
+      bcs0=(/ 0, 0/)
+      CALL EZspline_init(splinor,nrho+2,bcs0,ier)
+      splinor%x1        = THRIFT_RHOFULL
+      splinor%isHermite = 1
+      CALL EZspline_setup(splinor,j_temp,ier,EXACT_DIM=.true.)
+      DEALLOCATE(j_temp) 
+
+      ! Grab vars from profiles
+      mytime = THRIFT_T(mytimestep)
       THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge     
+      ALLOCATE(j_temp(nssize))
+      j_temp = 0
       DO i = 1, nssize
          s = THRIFT_S(i)
+         rho = SQRT(s)
          ier = 0
          CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
          CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),temp,temp,temp,ier)
          CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
          ! V' = dV/ds = dV/dA dA/ds = 2*pi*R*(pi*a^2)
          THRIFT_VP(i,mytimestep) = (2*pi*THRIFT_RMAJOR(i,mytimestep))*(pi*THRIFT_AMINOR(i,mytimestep)**2)
+         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nssize-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
+         CALL get_prof_pprime(rho, mytime, THRIFT_PPRIME(i,mytimestep))
+         CALL EZspline_interp(splinor, rho, j_temp(i), ier)
       END DO
       THRIFT_S11 = ABS(THRIFT_S11)
+      jsource = j_temp(nssize)
+      CALL EZspline_free(splinor,ier)      
       IF (lverbj) CALL print_calc_magvars()
 !======================================================================
 !     UPDATE TRACKER VARIABLES
@@ -74,7 +95,6 @@
       END IF
 
       ! Time variables
-      mytime = THRIFT_T(mytimestep) ! mytime = current sim time
       prevtimestep = mytimestep-1   ! previous time step index
       dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
       IF (mytime>tmax.and.THRIFT_T(prevtimestep)<=tmax.and.(nsubsteps==1)) WRITE(6,*) &
@@ -90,34 +110,6 @@
          END IF
       END IF
 !======================================================================
-!     GRAB REMAINING VARIABLES (PPRIME, ETAPARA, JSOURCE(s))
-!======================================================================
-      ! Set up J spline
-      ALLOCATE(j_temp(nrho+2))
-      j_temp = 0
-      CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep),j_temp)
-      bcs0=(/ 0, 0/)
-      CALL EZspline_init(splinor,nrho+2,bcs0,ier)
-      splinor%x1        = THRIFT_RHOFULL
-      splinor%isHermite = 1
-      CALL EZspline_setup(splinor,j_temp,ier,EXACT_DIM=.true.)
-      DEALLOCATE(j_temp) 
-
-      ! Grab vars from profiles
-      ALLOCATE(j_temp(nssize))
-      j_temp = 0
-      DO i = 1, nssize
-         s = THRIFT_S(i)
-         rho = SQRT(s)
-         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nssize-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
-         CALL get_prof_pprime(rho, mytime, THRIFT_PPRIME(i,mytimestep))
-         CALL EZspline_interp(splinor, rho, j_temp(i), ier)
-      END DO
-      CALL EZspline_free(splinor,ier)      
-      jsource = j_temp(nssize)
-      
-      IF (lverbj) CALL print_calc_abcd(j_temp)
-!======================================================================
 !     CALCULATE ABCD AND DERIVATIVES
 !======================================================================
 !     > A(j) = S11/Phi_a^2
@@ -125,6 +117,9 @@
 !     > C(j) = etapara*V'*p'
 !     > D(j) = -etapara*V'*<Js.B>
 !======================================================================
+
+      IF (lverbj) CALL print_calc_abcd(j_temp)
+      
       ! Allocations
       ALLOCATE(A_temp(nssize),B_temp(nssize),C_temp(nssize),D_temp(nssize),&
                BP_temp(nssize),CP_temp(nssize),DP_temp(nssize), temp_arr(nssize))
