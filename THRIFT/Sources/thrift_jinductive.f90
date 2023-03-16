@@ -43,8 +43,8 @@
          CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
          CALL get_equil_sus(s, THRIFT_S11(i,mytimestep), temp,temp,temp, ier)
          CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), ier)
-         ! V' = dV/ds = 2*pi*R*(pi*a^2)
-         THRIFT_VP(i,mytimestep) = 2*pi**2*THRIFT_RMAJOR(i,mytimestep)*THRIFT_AMINOR(i,mytimestep)**2
+         ! V' = dV/ds = dV/dA dA/ds = 2*pi*R*(pi*a^2)
+         THRIFT_VP(i,mytimestep) = (2*pi*THRIFT_RMAJOR(i,mytimestep))*(pi*THRIFT_AMINOR(i,mytimestep)**2)
       END DO
       THRIFT_S11 = ABS(THRIFT_S11)
       IF (lverbj) CALL print_calc_magvars()
