@@ -54,8 +54,8 @@
          WRITE(6,'(A)') '   ECCD MODEL:       ' // TRIM(eccd_type)
          WRITE(6,'(A)') '   NBCD MODEL:       ' // TRIM(nbcd_type)
          WRITE(6,'(A)') ''
-         WRITE(6,'(A11,I5)') '   NRHO:', nrho
-         WRITE(6,'(A11,I5)') '   NS:', nssize
+         WRITE(6,'(A11,I5)') '   NRHO:   ', nrho
+         WRITE(6,'(A11,I5)') '   NS:     ', nssize
          WRITE(6,'(A11,I5)') '   NT:     ', ntimesteps
          WRITE(6,'(A11,F8.4)') '   TSTART: ', tstart
          WRITE(6,'(A11,F8.4)') '   TEND:   ', tend
@@ -64,12 +64,12 @@
       ! Create the worker pool
 
       ! Grid allocations
-      CALL mpialloc(THRIFT_RHO,      nrho,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rho)
-      CALL mpialloc(THRIFT_RHOFULL,nrho+2,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rhofull)
-      CALL mpialloc(THRIFT_T,  ntimesteps,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_t)
-      CALL mpialloc(THRIFT_S,          nssize,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_s)
-      CALL mpialloc(THRIFT_RHOINS,  nrho,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rhoins)
-      CALL mpialloc(THRIFT_SINRHO,          nssize,             myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_sinrho)
+      CALL mpialloc(THRIFT_RHO,       nrho,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rho)
+      CALL mpialloc(THRIFT_RHOFULL, nrho+2,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rhofull)
+      CALL mpialloc(THRIFT_T,   ntimesteps,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_t)
+      CALL mpialloc(THRIFT_S,       nssize,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_s)
+      CALL mpialloc(THRIFT_RHOINS,    nrho,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rhoins)
+      CALL mpialloc(THRIFT_SINRHO,  nssize,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_sinrho)
 
       ! Current densities
       CALL mpialloc(THRIFT_J,        nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_j)
@@ -79,6 +79,7 @@
       CALL mpialloc(THRIFT_JNBCD,    nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jnbcd)
       CALL mpialloc(THRIFT_JOHMIC,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_johmic)
       CALL mpialloc(THRIFT_JSOURCE,  nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jsource)
+      
       ! Total currents
       CALL mpialloc(THRIFT_I,       nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_i)
       CALL mpialloc(THRIFT_IBOOT,   nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_iboot)
@@ -88,10 +89,12 @@
       CALL mpialloc(THRIFT_IOHMIC,  nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_iohmic)
       CALL mpialloc(THRIFT_ISOURCE, nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_isource)
       CALL mpialloc(THRIFT_UGRID,   nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_ugrid)  
+      
       ! Profile variables
       CALL mpialloc(THRIFT_ETAPARA,nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_etapara)  
       CALL mpialloc(THRIFT_PPRIME ,nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_pprime)  
-      ! magnetic variables
+      
+      ! Magnetic variables
       CALL mpialloc(THRIFT_PHIEDGE,     1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_phiedge)
       CALL mpialloc(THRIFT_VP,     nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_vp)     
       CALL mpialloc(THRIFT_BAV,    nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_bav)     
@@ -99,6 +102,7 @@
       CALL mpialloc(THRIFT_S11,    nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_s11)     
       CALL mpialloc(THRIFT_AMINOR, nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_aminor)     
       CALL mpialloc(THRIFT_RMAJOR, nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rmajor)  
+      
       ! ABCD
       CALL mpialloc(THRIFT_COEFF_A, nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_coeff_a)
       CALL mpialloc(THRIFT_COEFF_B, nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_coeff_b)
@@ -107,16 +111,19 @@
       CALL mpialloc(THRIFT_COEFF_BP,nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_coeff_bp)
       CALL mpialloc(THRIFT_COEFF_CP,nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_coeff_cp)
       CALL mpialloc(THRIFT_COEFF_DP,nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_coeff_dp)
+      
       ! Alphas
       CALL mpialloc(THRIFT_ALPHA1,   nssize-2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha1)
       CALL mpialloc(THRIFT_ALPHA2,   nssize-2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha2)
       CALL mpialloc(THRIFT_ALPHA3,   nssize-2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha3)
       CALL mpialloc(THRIFT_ALPHA4,   nssize-2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha4)
+      
       ! System of equations
       CALL mpialloc(THRIFT_MATLD,  nssize-1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matld)
       CALL mpialloc(THRIFT_MATMD,  nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matmd)
       CALL mpialloc(THRIFT_MATUD,  nssize-1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matud)
       CALL mpialloc(THRIFT_MATRHS, nssize, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matrhs)       
+      
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
       SELECT CASE (TRIM(bootstrap_type))
