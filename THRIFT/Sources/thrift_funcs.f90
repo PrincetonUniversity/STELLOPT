@@ -38,24 +38,24 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val) ! no longer used
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: c_p
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: d_p
     REAL(rprec) :: denom
-    ALLOCATE(c_p(nssize), d_p(nssize))
+    ALLOCATE(c_p(nsj), d_p(nsj))
     c_p = 0; d_p = 0
     !! Forward sweep
     ! c_1' = c_1/b_1   ;  c_i' =              c_i/(b_i - a_i*c_i-1') [1<i<=n-1]
     ! d_1' = d_1/b_1   ;  d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1') [1<i<=n  ]
     c_p(1) = CI(1)/BI(1) 
     d_p(1) = DI(1)/BI(1) 
-    DO i = 2, nssize
+    DO i = 2, nsj
         denom = BI(i)-AI(i)*c_p(i-1)
-        IF (i/=nssize) & 
+        IF (i/=nsj) & 
           c_p(i) = CI(i)/denom
         d_p(i) = (DI(i)-AI(i)*d_p(i-1))/denom
     END DO 
     !! Back substitution
     ! x_n = d_n'
     ! x_i = d_i' - c_i'*x_i+1
-    val(nssize) = d_p(nssize) 
-    DO i = nssize-1, 1, -1
+    val(nsj) = d_p(nsj) 
+    DO i = nsj-1, 1, -1
        val(i) = d_p(i)-c_p(i)*val(i+1) 
     END DO
 
@@ -73,13 +73,13 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol)
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: residue
     INTEGER :: i
 
-    ALLOCATE(residue(nssize))
+    ALLOCATE(residue(nsj))
     
     residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
-    DO i = 2, nssize-1
+    DO i = 2, nsj-1
         residue(i) = AI(i-1)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
     END DO
-    residue(nssize) = AI(nssize-1)*sol(nssize)+BI(nssize)*sol(nssize)-DI(nssize)
+    residue(nsj) = AI(nsj-1)*sol(nsj)+BI(nsj)*sol(nsj)-DI(nsj)
     WRITE(6,*) maxval(residue)
 
     DEALLOCATE(residue)
@@ -125,7 +125,7 @@ SUBROUTINE curden_to_curtot(j_arr_in, i_arr)
     
     ! Calculate I (in s space)
     i_arr(1) = 0
-    DO i = 2, nssize
+    DO i = 2, nsj
         s = THRIFT_S(i)
         rho = SQRT(s)
         ier = 0
@@ -151,19 +151,19 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     TYPE(EZspline1_r8) :: j_spl
     REAL(rprec) :: ds, rho, s
 
-    ALLOCATE(j_temp(nssize))
+    ALLOCATE(j_temp(nsj))
 
     ! Calculate J (in s space)
     ds = THRIFT_S(2)-THRIFT_S(1)
-    DO i = 2, nssize-1
+    DO i = 2, nsj-1
         j_temp(i) = (i_arr(i+1)-i_arr(i-1))/(2*ds)*1.0/(pi*THRIFT_AMINOR(i,mytimestep)**2)
     END DO
 
     ! Extrapolate to boundaries
     j_temp(1)      = 2*j_temp(2)       -j_temp(3)        ! s = 0
-    j_temp(nssize) = 2*j_temp(nssize-1)-j_temp(nssize-2) ! s = 1
+    j_temp(nsj) = 2*j_temp(nsj-1)-j_temp(nsj-2) ! s = 1
     ! Setup J spline (in s space)
-    CALL EZspline_init(j_spl,nssize,bcs0,ier)
+    CALL EZspline_init(j_spl,nsj,bcs0,ier)
     j_spl%x1        = THRIFT_S
     j_spl%isHermite = 1
     CALL EZspline_setup(j_spl,j_temp,ier,EXACT_DIM=.true.)  
@@ -190,7 +190,7 @@ SUBROUTINE print_calc_magvars()
     WRITE(6,*)' CALCULATING MAGNETIC VARIABLES'
     WRITE(6,*)' S    DV/DS          <B>      <B^2>     RMAJOR     AMINOR        S11 '
     WRITE(6,*)''
-    DO i = 1, nssize
+    DO i = 1, nsj
         WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
               THRIFT_S(i), THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
               ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
@@ -204,7 +204,7 @@ SUBROUTINE print_calc_abcd(j_arr)
     WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
     WRITE(6,*)'   S  ETAPARA       DV/DS      DP/DRHO     <J.B>      BSQAV        S11'
     WRITE(6,*)''
-    DO i = 1, nssize
+    DO i = 1, nsj
         WRITE(6,'(F5.3,6(1X,ES10.3))') &
         THRIFT_S(i), THRIFT_ETAPARA(i,mytimestep), THRIFT_VP(i,mytimestep), THRIFT_PPRIME(i,mytimestep),&
         j_arr(i)*THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), THRIFT_S11(i,mytimestep)
@@ -217,7 +217,7 @@ SUBROUTINE print_abcd()
     WRITE(6,*)' COEFFICIENTS ABCD'
     WRITE(6,*)'   S         A         B          C          D       BDER       CDER       DDER'
     WRITE(6,*)''
-    DO i = 1, nssize
+    DO i = 1, nsj
         WRITE(6,'(F5.3, 1X, 7(ES10.2,1X))') THRIFT_S(i),&
         THRIFT_COEFF_A(i,mytimestep),THRIFT_COEFF_B(i,mytimestep),THRIFT_COEFF_C(i,mytimestep),THRIFT_COEFF_D(i,mytimestep),&
         THRIFT_COEFF_BP(i,mytimestep),THRIFT_COEFF_CP(i,mytimestep),THRIFT_COEFF_DP(i,mytimestep)
@@ -231,7 +231,7 @@ SUBROUTINE print_alpha()
     WRITE(6,*)' ALPHAS'
     WRITE(6,*)'  S       ALPHA 1        ALPHA 2        ALPHA 3        ALPHA 4'
     WRITE(6,*)''
-    DO i = 1, nssize-2
+    DO i = 1, nsj-2
         WRITE(6,'(F5.3, 1X, 4(ES13.5,2X))')  THRIFT_S(i+1),&
         THRIFT_ALPHA1(i,mytimestep), THRIFT_ALPHA2(i,mytimestep),&
         THRIFT_ALPHA3(i,mytimestep), THRIFT_ALPHA4(i,mytimestep)
@@ -245,11 +245,11 @@ SUBROUTINE print_syseqs()
     WRITE(6,*)'  i         LOWER           MAIN          UPPER            RHS '
     WRITE(6,*)''
     WRITE(6,'(I4, 1X, 15X, 3(ES13.5,2X))') 1, THRIFT_MATMD(1,mytimestep), THRIFT_MATUD(1,mytimestep), THRIFT_MATRHS(1,mytimestep)
-    DO i = 2, nssize-1
+    DO i = 2, nsj-1
        WRITE(6,'(I4, 1X, 4(ES13.5,2X))') i, &
        THRIFT_MATLD(i-1,mytimestep), THRIFT_MATMD(i,mytimestep),THRIFT_MATUD(i,mytimestep), THRIFT_MATRHS(i,mytimestep)
     END DO
-    i = nssize
+    i = nsj
     WRITE(6,'(I4, 1X,2(ES13.5,2X),15X,ES13.5)') i, THRIFT_MATLD(i-1,mytimestep), THRIFT_MATMD(i,mytimestep),THRIFT_MATRHS(i,mytimestep)
 END SUBROUTINE print_syseqs
 
@@ -260,7 +260,7 @@ SUBROUTINE print_postevolve(j_arr)
     WRITE(6,*)' POST EVOLUTION' 
     WRITE(6,*)'  i  s        ITOTAL  ISOURCE        IPLASMA   rho   J     JPLASMA        JSOURCE'
     WRITE(6,*)''
-    DO i = 1, nssize
+    DO i = 1, nsj
         WRITE(6,'(I4, 1X, F5.3, 3(1X,ES13.5), 1X, F5.3, 3(1X,ES13.5))') &
            i, THRIFT_S(i), THRIFT_I(i,mytimestep), THRIFT_ISOURCE(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
            THRIFT_RHO(i), j_arr(i), THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
