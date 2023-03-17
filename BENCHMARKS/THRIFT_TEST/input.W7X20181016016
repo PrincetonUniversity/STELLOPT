@@ -233,10 +233,12 @@
   JTOL = 0.01
   NPICARD = 10
   PICARD_FACTOR = 0.75
+  LVERBJ = F
   !---------- GRID PARAMETERS ------------
-  NRHO = 64
-  NTIMESTEPS = 15
-  TEND = 1.5
+  NRHO = 1024
+  NTIMESTEPS = 313
+  TSTART = 0
+  TEND = 3.120
   ! BOOZER TRANSFORM
   !---------- BOOZER TRANSFORMATION ------------
   MBOZ = 32
