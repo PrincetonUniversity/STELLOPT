@@ -125,7 +125,7 @@
             ! Check the convergence
             deltaj = 0
             IF (nsubsteps==1) THEN
-               WHERE(ABS(THRIFT_J(:,mytimestep))>0) deltaj = ABS(THRIFT_J(:,mytimestep))
+            deltaj = ABS(THRIFT_J(:,mytimestep))
                jold = THRIFT_J(:,mytimestep)
             ELSE
                WHERE(ABS(jold)>0) deltaj = ABS( THRIFT_J(:,mytimestep) - jold) / ABS(jold)
