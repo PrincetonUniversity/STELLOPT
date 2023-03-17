@@ -130,7 +130,7 @@ SUBROUTINE curden_to_curtot(j_arr_in, i_arr)
         rho = SQRT(s)
         ier = 0
         CALL EZspline_interp(j_spl,rho,j_interp,ier)
-        i_arr(i) = i_arr(i-1) + j_interp*(pi*THRIFT_AMINOR(end,mytimestep)**2)*ds
+        i_arr(i) = i_arr(i-1) + j_interp*(pi*THRIFT_AMINOR(nsj,mytimestep)**2)*ds
     END DO
     CALL EZspline_free(j_spl,ier)
     DEALLOCATE(j_full)
@@ -156,7 +156,7 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     ! Calculate J (in s space)
     ds = THRIFT_S(2)-THRIFT_S(1)
     DO i = 2, nsj-1
-        j_temp(i) = (i_arr(i+1)-i_arr(i-1))/(2*ds)*1.0/(pi*THRIFT_AMINOR(end,mytimestep)**2)
+        j_temp(i) = (i_arr(i+1)-i_arr(i-1))/(2*ds)*1.0/(pi*THRIFT_AMINOR(nsj,mytimestep)**2)
     END DO
 
     ! Extrapolate to boundaries
