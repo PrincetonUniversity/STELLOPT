@@ -41,10 +41,10 @@
   PICARD_FACTOR = 0.75
   LVERBJ = F
   !---------- GRID PARAMETERS ------------
-  NRHO = 64
-  NTIMESTEPS = 15
+  NRHO = 1024
+  NTIMESTEPS = 201
   TSTART = 0
-  TEND = 1.5
+  TEND = 2
   ! BOOZER TRANSFORM
   !---------- BOOZER TRANSFORMATION ------------
   MBOZ = 32
