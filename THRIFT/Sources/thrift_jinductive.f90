@@ -24,7 +24,7 @@
       IMPLICIT NONE
       INTEGER :: i, j, prevtimestep, ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho, s, drho, ds, dt, mytime, jsource, temp
+      REAL(rprec) :: rho, s, drho, ds, dt, mytime, js_edge, temp
       TYPE(EZspline1_r8) :: splinor
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
@@ -51,9 +51,9 @@
       ! Grab vars from profiles
       mytime = THRIFT_T(mytimestep)
       THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge     
-      ALLOCATE(j_temp(nssize))
+      ALLOCATE(j_temp(nsj))
       j_temp = 0
-      DO i = 1, nssize
+      DO i = 1, nsj
          s = THRIFT_S(i)
          rho = SQRT(s)
          ier = 0
@@ -62,12 +62,12 @@
          CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
          ! V' = dV/ds = dV/dA dA/ds = 2*pi*R*(pi*a^2)
          THRIFT_VP(i,mytimestep) = (2*pi*THRIFT_RMAJOR(i,mytimestep))*(pi*THRIFT_AMINOR(i,mytimestep)**2)
-         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nssize-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
+         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
          CALL get_prof_pprime(rho, mytime, THRIFT_PPRIME(i,mytimestep))
          CALL EZspline_interp(splinor, rho, j_temp(i), ier)
       END DO
       THRIFT_S11 = ABS(THRIFT_S11)
-      jsource = j_temp(nssize)
+      js_edge = j_temp(nsj)
       CALL EZspline_free(splinor,ier)      
       IF (lverbj) CALL print_calc_magvars()
 !======================================================================
@@ -84,7 +84,7 @@
                                     + THRIFT_INBCD(:,  mytimestep) &
                                     + THRIFT_IOHMIC(:, mytimestep)
 !======================================================================
-!     TIME STUFF AND SPECIAL CASES
+!     SPECIAL CASES 
 !======================================================================
       ! If mytimestep = 1 ITOT=0 and continue to next iteration
       IF (mytimestep==1) THEN
@@ -121,8 +121,8 @@
       IF (lverbj) CALL print_calc_abcd(j_temp)
       
       ! Allocations
-      ALLOCATE(A_temp(nssize),B_temp(nssize),C_temp(nssize),D_temp(nssize),&
-               BP_temp(nssize),CP_temp(nssize),DP_temp(nssize), temp_arr(nssize))
+      ALLOCATE(A_temp(nsj),B_temp(nsj),C_temp(nsj),D_temp(nsj),&
+               BP_temp(nsj),CP_temp(nsj),DP_temp(nsj), temp_arr(nsj))
       A_temp  = 0; B_temp  = 0; C_temp  = 0; D_temp = 0
       BP_temp = 0; CP_temp = 0; DP_temp = 0; temp_arr= 0
 
@@ -137,7 +137,7 @@
 
       ! Derivatives
       ds = THRIFT_S(2)-THRIFT_S(1)
-      DO i = 2, nssize-1
+      DO i = 2, nsj-1
          BP_temp(i) = (B_temp(i+1)-B_temp(i-1))/(2*ds)
          CP_temp(i) = (C_temp(i+1)-C_temp(i-1))/(2*ds)
          DP_temp(i) = (D_temp(i+1)-D_temp(i-1))/(2*ds)
@@ -158,10 +158,10 @@
 !     > alpha3 = A*(B'+ C)
 !     > alpha4 = A*B
 !======================================================================
-      ALLOCATE(alpha1(nssize-2),alpha2(nssize-2),alpha3(nssize-2),alpha4(nssize-2))
+      ALLOCATE(alpha1(nsj-2),alpha2(nsj-2),alpha3(nsj-2),alpha4(nsj-2))
       alpha1 = 0; alpha2 = 0; alpha3 = 0; alpha4 = 0
 
-      DO i = 1, nssize-2
+      DO i = 1, nsj-2
          j = i + 1 ! ABCD in [0,1], alphas in (0,1), so index shifts
          alpha1(i) = A_temp(j)* DP_temp(j)
          alpha2(i) = A_temp(j)* CP_temp(j)
@@ -180,7 +180,7 @@
 !======================================================================
 !     SYSTEM OF EQUATIONS
 !======================================================================
-!     Populate matrix and RHS of the system of equations (N=nssize)
+!     Populate matrix and RHS of the system of equations (N=nsj, NX=N-X)
 !
 !     | B1   C1    0   0 .  0   0   0   0  | | u1  |   | D1  |  BC AXIS
 !     | A2   B2   C2   0 .  0   0   0   0  | | u2  |   | D2  |     \
@@ -200,7 +200,7 @@
 !     Remaining equations are the evolution equation on s in (0,1)
 !        du/dt = a1 + a2*u + a3*u' + a4*u"
 !======================================================================
-      ALLOCATE(DIAGSUB(nssize-1),DIAGMID(nssize),DIAGSUP(nssize-1),RHS(nssize))
+      ALLOCATE(DIAGSUB(nsj-1),DIAGMID(nsj),DIAGSUP(nsj-1),RHS(nsj))
       DIAGSUB = 0; DIAGMID = 0; DIAGSUP = 0; RHS = 0;
 
       ! Magnetic axis (s=0)
@@ -208,15 +208,15 @@
       DIAGSUP(1) = 0
       RHS(1)     = 0
       ! On the (0,1) grid
-      DIAGSUB(1:nssize-2) = -alpha3/(2*ds) + alpha4/(ds**2)
-      DIAGMID(2:nssize-1) =  alpha2       -2*alpha4/(ds**2) - 1.0/dt
-      DIAGSUP(2:nssize-1) =  alpha3/(2*ds) + alpha4/(ds**2)
-      RHS(2:nssize-1)     = -alpha1-THRIFT_UGRID(2:nssize-1,prevtimestep)/dt
+      DIAGSUB(1:nsj-2) = -alpha3/(2*ds) + alpha4/(ds**2)
+      DIAGMID(2:nsj-1) =  alpha2       -2*alpha4/(ds**2) - 1.0/dt
+      DIAGSUP(2:nsj-1) =  alpha3/(2*ds) + alpha4/(ds**2)
+      RHS(2:nsj-1)     = -alpha1-THRIFT_UGRID(2:nsj-1,prevtimestep)/dt
       ! Plasma edge (s=1)
-      temp = THRIFT_BSQAV(nssize,mytimestep)/mu0
-      DIAGSUB(nssize-1) = -1.0/(2*ds)
-      DIAGMID(nssize)   =  1.0/(2*ds)+THRIFT_PPRIME(nssize,mytimestep)/temp
-      RHS(nssize)       = jsource*THRIFT_BAV(nssize,mytimestep)/temp
+      temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
+      DIAGSUB(nsj-1) = -1.0/(2*ds)
+      DIAGMID(nsj)   =  1.0/(2*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
+      RHS(nsj)       = js_edge*THRIFT_BAV(nsj,mytimestep)/temp
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
@@ -228,7 +228,7 @@
 !======================================================================
 !     SOLVE SYSTEM OF EQUATIONS
 !======================================================================
-      CALL DGTSV(nssize, 1, DIAGSUB, DIAGMID, DIAGSUP, RHS, nssize, ier)
+      CALL DGTSV(nsj, 1, DIAGSUB, DIAGMID, DIAGSUP, RHS, nsj, ier)
       ! Store solution
       THRIFT_UGRID(:,mytimestep) = RHS
       DEALLOCATE(alpha1,alpha2,alpha3,alpha4,DIAGSUB,DIAGMID,DIAGSUP,RHS)

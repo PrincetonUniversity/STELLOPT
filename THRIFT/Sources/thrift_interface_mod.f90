@@ -38,7 +38,7 @@ MODULE THRIFT_INTERFACE_MOD
 !         thrift_init_constants:   Constants initialization
 !         thrift_init_commandline: Handle the command line
 !-----------------------------------------------------------------------
-CONTAINS
+      CONTAINS
 
       SUBROUTINE thrift_init_mpi
       IMPLICIT NONE

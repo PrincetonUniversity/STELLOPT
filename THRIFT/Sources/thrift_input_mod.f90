@@ -26,7 +26,7 @@
 !            nr             Number of radial gridpoints
 !-----------------------------------------------------------------------
       NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
-                              nrho,nssize, tstart, tend, ntimesteps, jtol, &
+                              nrho, tstart, tend, ntimesteps, jtol, &
                               picard_factor, npicard, lverbj, &
                               eccd_type, &
                               vessel_ecrh, mirror_ecrh, wmode_ecrh, &
@@ -51,7 +51,7 @@
       mboz               = 32
       nboz               = 16
       nrho               = 16
-      nssize             = 16
+!      nsj                = 16
       ntimesteps         = 32
       npicard            = 5
       tstart             = 0.1
@@ -106,6 +106,7 @@
       CALL tolower(bootstrap_type)
       CALL tolower(eccd_type)
       leccd = eccd_type .ne. ''
+      nsj = nrho;
       RETURN
       END SUBROUTINE read_thrift_input
 
@@ -132,7 +133,7 @@
       WRITE(iunit_out,outflt) 'PICARD_FACTOR',picard_factor
       WRITE(iunit_out,'(A)') '!---------- GRID PARAMETERS ------------'
       WRITE(iunit_out,outint) 'NRHO',nrho
-      WRITE(iunit_out,outint) 'NS',nssize
+!      WRITE(iunit_out,outint) 'NSJ',nsj
       WRITE(iunit_out,outint) 'NTIMESTEPS',ntimesteps
       WRITE(iunit_out,outflt) 'TEND',tstart
       WRITE(iunit_out,outflt) 'TEND',tend

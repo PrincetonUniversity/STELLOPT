@@ -149,18 +149,18 @@
             ! Print progress
             IF (lverb) THEN
                   WRITE(progress_str,'(1X,F6.3,1X,I2,1X,F5.2,3(1X,ES11.3))') &
-                  THRIFT_T(mytimestep),nsubsteps,eq_beta*100,THRIFT_I(nssize,mytimestep),&
-                  THRIFT_IPLASMA(nssize,mytimestep), THRIFT_IBOOT(nssize,mytimestep)
+                  THRIFT_T(mytimestep),nsubsteps,eq_beta*100,THRIFT_I(nsj,mytimestep),&
+                  THRIFT_IPLASMA(nsj,mytimestep), THRIFT_IBOOT(nsj,mytimestep)
                   IF (leccd) THEN
-                        WRITE(temp_prog_str,'(ES11.3)') THRIFT_IECCD(nssize,mytimestep)
+                        WRITE(temp_prog_str,'(ES11.3)') THRIFT_IECCD(nsj,mytimestep)
                         progress_str = TRIM(progress_str)//" "//temp_prog_str
                   END IF
                   IF (lnbcd) THEN
-                        WRITE(temp_prog_str,'(ES11.3)') THRIFT_INBCD(nssize,mytimestep)
+                        WRITE(temp_prog_str,'(ES11.3)') THRIFT_INBCD(nsj,mytimestep)
                         progress_str = TRIM(progress_str)//" "//temp_prog_str
                   END IF
                   IF (lohmic) THEN
-                        WRITE(temp_prog_str,'(ES11.3)') THRIFT_IOHMIC(nssize,mytimestep)
+                        WRITE(temp_prog_str,'(ES11.3)') THRIFT_IOHMIC(nsj,mytimestep)
                         progress_str = TRIM(progress_str)//" "//temp_prog_str
                   END IF
                   WRITE(temp_prog_str,'(ES11.3)') MAXVAL(deltaj)
