@@ -24,7 +24,7 @@
       IMPLICIT NONE
       INTEGER :: i, j, prevtimestep, ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho, s, drho, ds, dt, mytime, js_edge, temp
+      REAL(rprec) :: rho,s,drho,ds,dt,mytime,js_edge,p2,p1,temp
       TYPE(EZspline1_r8) :: splinor
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
@@ -60,8 +60,9 @@
          CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
          CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),temp,temp,temp,ier)
          CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
-         ! V' = dV/ds = dV/dA dA/ds = 2*pi*R*(pi*a^2)
-         THRIFT_VP(i,mytimestep) = (2*pi*THRIFT_RMAJOR(i,mytimestep))*(pi*THRIFT_AMINOR(i,mytimestep)**2)
+         CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
+         ! V' = dV/ds = dV/dPhi dPhi/ds = Phi_edge * dV/dPhi
+         THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)*temp
          ! eta breaks at rho=1(s=1) so look one gridpoint back
          CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
          CALL get_prof_pprime(rho, mytime, THRIFT_PPRIME(i,mytimestep))
@@ -69,7 +70,18 @@
       END DO
       THRIFT_S11 = ABS(THRIFT_S11)
       js_edge = j_temp(nsj)
-      CALL EZspline_free(splinor,ier)      
+      CALL EZspline_free(splinor,ier)  
+
+      ! Get pprime in s-space using finite difference
+      ds = THRIFT_S(2)-THRIFT_S(1)
+      THRIFT_PPRIME(1,mytimestep) = 0
+      DO i = 2, nsj-1
+         CALL get_prof_p( SQRT(THRIFT_S(i+1)), mytime, p1)
+         CALL get_prof_p( SQRT(THRIFT_S(i-1)), mytime, p2)
+         THRIFT_PPRIME(i,mytimestep) = (p2-p1)/(2*ds)
+      END DO
+      THRIFT_PPRIME(nsj,mytimestep) = 2*THRIFT_PPRIME(nsj-1,mytimestep)-THRIFT_PPRIME(nsj-2,mytimestep)
+    
       IF (lverbj) CALL print_calc_magvars()
 !======================================================================
 !     UPDATE TRACKER VARIABLES
@@ -137,7 +149,6 @@
       DEALLOCATE(j_temp, temp_arr)
 
       ! Derivatives
-      ds = THRIFT_S(2)-THRIFT_S(1)
       DO i = 2, nsj-1
          BP_temp(i) = (B_temp(i+1)-B_temp(i-1))/(2*ds)
          CP_temp(i) = (C_temp(i+1)-C_temp(i-1))/(2*ds)
