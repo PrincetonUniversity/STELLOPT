@@ -51,8 +51,8 @@
       IF (lverb) THEN 
          WRITE(6,'(A)') '   FILE:             input.' // TRIM(id_string)
          WRITE(6,'(A)') '   BOOTSTRAP MODEL:  ' // TRIM(bootstrap_type)
-         WRITE(6,'(A)') '   ECCD MODEL:       ' // TRIM(eccd_type)
-         WRITE(6,'(A)') '   NBCD MODEL:       ' // TRIM(nbcd_type)
+         IF (leccd) WRITE(6,'(A)') '   ECCD MODEL:       ' // TRIM(eccd_type)
+         IF (lnbcd) WRITE(6,'(A)') '   NBCD MODEL:       ' // TRIM(nbcd_type)
          WRITE(6,'(A)') ''
          WRITE(6,'(A11,I5)') '   NRHO:   ', nrho
          WRITE(6,'(A11,I5)') '   NS:     ', nsj
