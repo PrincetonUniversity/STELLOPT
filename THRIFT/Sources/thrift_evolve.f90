@@ -139,7 +139,7 @@
                IF (leccd)  header_str = TRIM(header_str)//'       IECCD'
                IF (lnbcd)  header_str = TRIM(header_str)//'       INBCD'
                IF (lohmic) header_str = TRIM(header_str)//'      IOHMIC'
-               header_str = TRIM(header_str)//'  max_deltaJ'
+               header_str = TRIM(header_str)//' MAX dJ/JOLD'
                
                WRITE(6,*)''
                WRITE(6,*) header_str
