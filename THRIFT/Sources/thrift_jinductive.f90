@@ -65,7 +65,6 @@
          THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)*temp
          ! eta breaks at rho=1(s=1) so look one gridpoint back
          CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
-         CALL get_prof_pprime(rho, mytime, THRIFT_PPRIME(i,mytimestep))
          CALL EZspline_interp(splinor, rho, j_temp(i), ier)
       END DO
       THRIFT_S11 = ABS(THRIFT_S11)
