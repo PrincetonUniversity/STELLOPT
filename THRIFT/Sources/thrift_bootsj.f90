@@ -13,6 +13,7 @@
       USE thrift_vars, nrho_thrift => nrho
       USE thrift_profiles_mod
       USE thrift_equil
+      USE thrift_funcs
       USE mpi_params
       USE mpi_inc
       USE EZspline
@@ -47,15 +48,16 @@
       integer :: irho, irho1, ierr, iunit, ijbs, ians, ians_plot
       real(rprec), dimension(:), allocatable :: cputimes
       real(rprec) :: time1, timecpu, unit, file, status, err,&
-         time2, r, x, al31t, gradbs1, gradbs2,&
-         gradbs3, gradbs4,  al31s, aibstot, a, roa, zeff_temp
+         time2, r, x, al31t, gradbs1, gradbs2, temp, &
+         gradbs3, gradbs4,  al31s, aibstot, a, roa, zeff_temp,&
+         s_val, rho_val
       real(rprec) :: a1, tempe0, tempi0, pres10, pres0, jdotb
       real(rprec), dimension(:), allocatable :: work
       integer :: ihere = 0
       CHARACTER(LEN=32) :: temp_str
       ! Helpers to get dI/ds
       REAL(rprec) :: vp, dPhidrho
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, dIds_temp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, dIds_temp,j_temp
       TYPE(EZspline1_r8) :: dIds_spl
       INTEGER :: bcs0(2)
 !-----------------------------------------------
@@ -456,14 +458,21 @@
                dIds_spl%isHermite = 1
                CALL EZspline_setup(dIds_spl,dIds_temp,ier,EXACT_DIM=.true.)
                DEALLOCATE(rho_temp,dIds_temp)
-               DO i = 1, nrho_thrift
-                  CALL EZspline_interp(dIds_spl,THRIFT_RHO(i),THRIFT_JBOOT(i,mytimestep),ier)
-                  CALL EZspline_interp(vp_spl,THRIFT_RHO(i),vp,ier) ! dV/dPhi
-                  CALL EZspline_interp(phip_spl,THRIFT_RHO(i),dPhidrho,ier) ! dPhi/drho
-                  vp = vp*dPhidrho*2*THRIFT_RHO(i) ! dV/ds = dV/dPhi * dPhi/drho * ds/drho
-                  THRIFT_JBOOT(i,mytimestep) = THRIFT_JBOOT(i,mytimestep)*pi2*eq_Rmajor/vp
+
+               ! Calculate J in s space = dI/ds * 1/(pi*a^2)
+               ALLOCATE(j_temp(nsj))
+               DO i = 1, nsj
+                  s_val = THRIFT_S(i)
+                  rho_val = SQRT(s_val)
+                  CALL EZspline_interp(dIds_spl,rho_val,temp,ier)
+                  j_temp(i) = temp/(pi*THRIFT_AMINOR(nsj,mytimestep)**2)
                END DO
                CALL EZspline_free(dIds_spl,ier)
+
+               ! Convert to J in rho space
+               CALL Js_to_Jrho(j_temp, THRIFT_JBOOT(:,mytimestep))
+               DEALLOCATE(j_temp)
+
             END IF
 
             !  Output to screen the total bootstrap current
