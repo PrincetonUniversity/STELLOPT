@@ -20,7 +20,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i, ier
-      REAL(rprec) :: epsilon, p1, p2
+      REAL(rprec) :: epsilon, p1, p2, ds
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: pprime, j_temp
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -56,7 +56,7 @@
             
             ALLOCATE(j_temp(nsj))
             epsilon = eq_Aminor/eq_Rmajor ! Inverse Aspect Ratio
-            j_temp = SQRT(epsilon)*eq_Rmajor/Phi_edge*THRIFT_S*pprime
+            j_temp = SQRT(epsilon)*eq_Rmajor/eq_phiedge*THRIFT_S*pprime
             CALL Js_to_Jrho(j_temp, THRIFT_JBOOT(:,mytimestep))
             DEALLOCATE(pprime, j_temp)
 
