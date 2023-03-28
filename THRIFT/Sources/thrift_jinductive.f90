@@ -24,7 +24,7 @@
       IMPLICIT NONE
       INTEGER :: i, j, prevtimestep, ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho,s,drho,ds,dt,mytime,js_edge,p2,p1,temp
+      REAL(rprec) :: rho,s,drho,ds,dt,mytime,js_edge,pp1,pm1,temp
       TYPE(EZspline1_r8) :: splinor
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
@@ -76,9 +76,9 @@
       ds = THRIFT_S(2)-THRIFT_S(1)
       THRIFT_PPRIME(1,mytimestep) = 0
       DO i = 2, nsj-1
-         CALL get_prof_p( SQRT(THRIFT_S(i+1)), mytime, p1)
-         CALL get_prof_p( SQRT(THRIFT_S(i-1)), mytime, p2)
-         THRIFT_PPRIME(i,mytimestep) = (p2-p1)/(2*ds)
+         CALL get_prof_p( SQRT(THRIFT_S(i+1)), mytime, pp1)
+         CALL get_prof_p( SQRT(THRIFT_S(i-1)), mytime, pm1)
+         THRIFT_PPRIME(i,mytimestep) = (pp1-pm1)/(2*ds)
       END DO
       THRIFT_PPRIME(nsj,mytimestep) = 2*THRIFT_PPRIME(nsj-1,mytimestep)-THRIFT_PPRIME(nsj-2,mytimestep)
     

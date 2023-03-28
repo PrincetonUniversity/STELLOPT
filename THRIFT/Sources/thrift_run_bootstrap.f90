@@ -20,7 +20,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i, ier
-      REAL(rprec) :: epsilon, p1, p2, ds
+      REAL(rprec) :: epsilon, pp1, pm1, ds
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: pprime, j_temp
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -41,9 +41,9 @@
             ds = THRIFT_S(2)-THRIFT_S(1)
             pprime(1) = 0
             DO i = 2, nsj-1
-               CALL get_prof_p( SQRT(THRIFT_S(i+1)), THRIFT_T(mytimestep), p1)
-               CALL get_prof_p( SQRT(THRIFT_S(i-1)), THRIFT_T(mytimestep), p2)
-               pprime(i) = (p2-p1)/(2*ds)
+               CALL get_prof_p( SQRT(THRIFT_S(i+1)), THRIFT_T(mytimestep), pp1)
+               CALL get_prof_p( SQRT(THRIFT_S(i-1)), THRIFT_T(mytimestep), pm1)
+               pprime(i) = (pp1-pm1)/(2*ds)
             END DO
             pprime(nsj) = 2*pprime(nsj-1) - pprime(nsj-2)
 
