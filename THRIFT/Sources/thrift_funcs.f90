@@ -190,7 +190,7 @@ SUBROUTINE Js_to_Jrho(j_s_in, j_rho_out)
        rho = THRIFT_RHO(i)
        s = rho*rho
        ier = 0
-       CALL EZspline_interp(j_spl,s,j_s_out(i),ier)      
+       CALL EZspline_interp(j_spl,s,j_rho_out(i),ier)      
     END DO
     CALL EZspline_free(j_spl,ier)
 
