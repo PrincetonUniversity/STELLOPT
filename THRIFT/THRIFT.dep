@@ -54,7 +54,8 @@ thrift_equil_p.o : \
 
 thrift_evolve.o : \
       thrift_runtime.o \
-      thrift_vars.o
+      thrift_vars.o \
+      thrift_funcs.o
 
 thrift_init.o : \
       thrift_runtime.o \
