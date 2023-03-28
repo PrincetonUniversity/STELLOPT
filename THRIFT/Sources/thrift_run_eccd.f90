@@ -20,7 +20,7 @@
       IMPLICIT NONE
       INTEGER :: i, ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: Rc, w, Ieccd, Inorm, vp, dPhidrho, &
+      REAL(rprec) :: Rc, w, Ieccd, Inorm, vp, dPhidrho, temp, &
                      s_val, rho_val
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: dIds_temp, j_temp
       TYPE(EZspline1_r8) :: dIds_spl
