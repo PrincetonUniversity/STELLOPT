@@ -194,8 +194,7 @@ SUBROUTINE Js_to_Jrho(j_s_in, j_rho_out)
     END DO
     CALL EZspline_free(j_spl,ier)
 
-
-END SUBROUTINE dIds_to_Jrho
+END SUBROUTINE Js_to_Jrho
 !!===============================================================================
 !!  PRINTER FUNCTIONS 
 !!===============================================================================
