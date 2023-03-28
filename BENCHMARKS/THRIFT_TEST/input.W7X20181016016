@@ -228,8 +228,8 @@
 &THRIFT_INPUT
   !---------- GENERAL PARAMETERS ------------
   NPARALLEL_RUNS = 1
-  BOOTSTRAP_TYPE = 'simple'
-  ECCD_TYPE = 'TRAVIS'
+  BOOTSTRAP_TYPE = 'bootsj'
+  ECCD_TYPE = ''
   JTOL = 0.01
   NPICARD = 10
   PICARD_FACTOR = 0.75
