@@ -4,6 +4,7 @@ thrift_bootsj.o : \
       thrift_input_mod.o \
       thrift_profiles_mod.o \
       thrift_equil.o \
+      thrift_funcs.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  \
       $(LIB_DIR)/$(LOCTYPE)/bootsj_input.o \
@@ -151,7 +152,8 @@ thrift_runtime.o : \
 thrift_run_bootstrap.o : \
       thrift_runtime.o \
       thrift_equil.o \
-      thrift_vars.o
+      thrift_vars.o \
+      thrift_funcs.o
 
 thrift_run_diagnostics.o : \
       thrift_runtime.o \
@@ -161,7 +163,8 @@ thrift_run_diagnostics.o : \
 thrift_run_eccd.o : \
       thrift_runtime.o \
       thrift_equil.o \
-      thrift_vars.o
+      thrift_vars.o \
+      thrift_funcs.o
 
 thrift_run_equil.o : \
       thrift_runtime.o \
