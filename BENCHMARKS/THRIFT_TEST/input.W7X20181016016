@@ -238,7 +238,7 @@
   NRHO = 1024
   NTIMESTEPS = 313
   TSTART = 0
-  TEND = 3.120
+  TEND = 31.20
   ! BOOZER TRANSFORM
   !---------- BOOZER TRANSFORMATION ------------
   MBOZ = 32

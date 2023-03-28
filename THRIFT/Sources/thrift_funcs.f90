@@ -171,6 +171,9 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
 END SUBROUTINE curtot_to_curden
 
 SUBROUTINE Js_to_Jrho(j_s_in, j_rho_out)
+    ! This subroutine takes an array of J on THRIFT_S and
+    ! returns an array of J on THRIFT_RHO by interpolating
+    ! J(s) on the requested values of rho
     REAL(rprec), DIMENSION(:), INTENT(in) :: j_s_in
     REAL(rprec), DIMENSION(:), INTENT(out) :: j_rho_out
     INTEGER :: i, ier
@@ -216,7 +219,7 @@ SUBROUTINE print_calc_abcd(j_arr)
     INTEGER :: i
     WRITE(6,*)'==============================================================================='
     WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
-    WRITE(6,*)'   S  ETAPARA       DV/DS      DP/DRHO     <J.B>      BSQAV        S11'
+    WRITE(6,*)'   S  ETAPARA       DV/DS      DP/DS       <J.B>      BSQAV        S11'
     WRITE(6,*)''
     DO i = 1, nsj
         WRITE(6,'(F5.3,6(1X,ES10.3))') &
