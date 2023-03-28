@@ -142,7 +142,9 @@
                                           + THRIFT_IECCD(:,  mytimestep) &
                                           + THRIFT_INBCD(:,  mytimestep) &
                                           + THRIFT_IOHMIC(:, mytimestep)
-                                          
+            THRIFT_I(:,mytimestep)        = THRIFT_IPLASMA(:,mytimestep) &
+                                          + THRIFT_ISOURCE(:,mytimestep)
+
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN
             
