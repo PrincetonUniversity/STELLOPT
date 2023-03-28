@@ -465,7 +465,7 @@
                   s_val = THRIFT_S(i)
                   rho_val = SQRT(s_val)
                   CALL EZspline_interp(dIds_spl,rho_val,temp,ier)
-                  j_temp(i) = temp/(pi2/2*THRIFT_AMINOR(nsj,mytimestep)**2)
+                  j_temp(i) = temp/(pi2/2*eq_Aminor**2)
                END DO
                CALL EZspline_free(dIds_spl,ier)
 
