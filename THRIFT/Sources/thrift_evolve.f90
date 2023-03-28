@@ -11,6 +11,7 @@
       USE thrift_runtime
       USE thrift_equil
       USE thrift_vars
+      USE thrift_funcs
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -131,7 +132,17 @@
                WHERE(ABS(jold)>0) deltaj = ABS( THRIFT_J(:,mytimestep) - jold) / ABS(jold)
                jold = THRIFT_J(:,mytimestep)
             END IF
-
+            ! Calculate total currents
+            CALL curden_to_curtot(THRIFT_JBOOT(:,  mytimestep),THRIFT_IBOOT(:,  mytimestep))
+            CALL curden_to_curtot(THRIFT_JECCD(:,  mytimestep),THRIFT_IECCD(:,  mytimestep))
+            CALL curden_to_curtot(THRIFT_JNBCD(:,  mytimestep),THRIFT_INBCD(:,  mytimestep))
+            CALL curden_to_curtot(THRIFT_JOHMIC(:, mytimestep),THRIFT_IOHMIC(:, mytimestep))
+            CALL curden_to_curtot(THRIFT_JPLASMA(:,mytimestep),THRIFT_IPLASMA(:,mytimestep))
+            THRIFT_ISOURCE(:,mytimestep)  = THRIFT_IBOOT(:,  mytimestep) &
+                                          + THRIFT_IECCD(:,  mytimestep) &
+                                          + THRIFT_INBCD(:,  mytimestep) &
+                                          + THRIFT_IOHMIC(:, mytimestep)
+                                          
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN
             
