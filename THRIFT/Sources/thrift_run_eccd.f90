@@ -11,6 +11,7 @@
       USE thrift_runtime
       USE thrift_equil
       USE thrift_vars
+      USE thrift_funcs
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -18,7 +19,11 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i, ier
-      REAL(rprec) :: Rc, w, Ieccd, Inorm, vp, dPhidrho
+      INTEGER :: bcs0(2)
+      REAL(rprec) :: Rc, w, Ieccd, Inorm, vp, dPhidrho, &
+                     s_val, rho_val
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: dIds_temp, j_temp
+      TYPE(EZspline1_r8) :: dIds_spl
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -40,19 +45,35 @@
             Ieccd = 43E3
             ! From Wolfram
             Inorm = 0.5*w*sqrt(pi)*(ERF((1-Rc)/w)+ERF(rc/w))
-            DO i = 1, nrho
-               ! dI/ds
-               THRIFT_JECCD(i,mytimestep) = Ieccd*EXP(-(THRIFT_RHO(i)-Rc)**2/w**2)/Inorm
-               ! But we need j = dI/ds*Aminor/dVds
-               ! But we need j = dI/ds * ds/dA
-               !               = dI/ds / (dA/ds)
-               !               = dI/ds / (dV/ds / (2*pi*Rmajor)) 
-               !               = dI/ds * 2 * pi * Rmajor / dV/ds
-               CALL EZspline_interp(vp_spl,THRIFT_RHO(i),vp,ier)
-               CALL EZspline_interp(phip_spl,THRIFT_RHO(i),dPhidrho,ier) ! dPhi/drho
-               vp = vp*dPhidrho/(2*THRIFT_RHO(i)) ! dV/ds = dV/dPhi * dPhi/drho / ds/drho
-               THRIFT_JECCD(i,mytimestep) = THRIFT_JECCD(i,mytimestep)*pi2*eq_Rmajor/vp
+
+            ! Calculate dI/ds
+            ALLOCATE(dIds_temp(nrho+2))
+            dIds_temp(1) = 0.0
+            DO i = 2, nrho+1
+               dIds_temp(i) = Ieccd*EXP(-(THRIFT_RHO(i-1)-Rc)**2/w**2)/Inorm
             END DO
+            dIds_temp(nrho+2) = 0.0
+            ! Setup dIds spline
+            bcs0=(/ 0, 0/)
+            CALL EZspline_init(dIds_spl,nrho+2,bcs0,ier)
+            dIds_spl%x1 = THRIFT_RHOFULL
+            dIds_spl%isHermite = 1
+            CALL EZspline_setup(dIds_spl,dIds_temp,ier,EXACT_DIM=.true.)
+
+            ! Calculate J in s space = dI/ds * 1/(pi*a^2)
+            ALLOCATE(j_temp(nsj))
+            DO i = 1, nsj
+               s_val = THRIFT_S(i)
+               rho_val = SQRT(s_val)
+               CALL EZspline_interp(dIds_spl,rho_val,temp,ier)
+               j_temp(i) = temp/(pi*THRIFT_AMINOR(nsj,mytimestep)**2)
+            END DO
+            CALL EZspline_free(dIds_spl,ier)
+
+            ! Convert to J in rho space
+            CALL Js_to_Jrho(j_temp, THRIFT_JBOOT(:,mytimestep))
+            DEALLOCATE(j_temp)
+
             IF (lscreen_subcodes) THEN
                WRITE(6,*) '-------------------  ANALYTIC ECCD MODEL  ---------------------'
                WRITE(6,'(A)') '    RHO     J_ECCD'

@@ -162,25 +162,40 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
     ! Extrapolate to boundaries
     j_temp(1)      = 2*j_temp(2)       -j_temp(3)        ! s = 0
     j_temp(nsj) = 2*j_temp(nsj-1)-j_temp(nsj-2) ! s = 1
-    ! Setup J spline (in s space)
-    CALL EZspline_init(j_spl,nsj,bcs0,ier)
-    j_spl%x1        = THRIFT_S
-    j_spl%isHermite = 1
-    CALL EZspline_setup(j_spl,j_temp,ier,EXACT_DIM=.true.)  
 
-    ! Convert J to rho space
-    DO i = 1, nrho
-       rho = THRIFT_RHO(i)
-       s = rho*rho
-       ier = 0
-       CALL EZspline_interp(j_spl, s, j_arr(i), ier)      
-    END DO
-
-    CALL EZspline_free(j_spl,ier)
+    ! Convert to J rho
+    CALL Js_to_Jrho(j_temp, j_arr)
     DEALLOCATE(j_temp)
     RETURN
 
 END SUBROUTINE curtot_to_curden
+
+SUBROUTINE Js_to_Jrho(j_s_in, j_rho_out)
+    REAL(rprec), DIMENSION(:), INTENT(in) :: j_s_in
+    REAL(rprec), DIMENSION(:), INTENT(out) :: j_rho_out
+    INTEGER :: i, ier
+    INTEGER :: bcs0(2)
+    TYPE(EZspline1_r8) :: j_spl
+    REAL(rprec) :: rho, s
+
+    ! Setup J spline (in s space)
+    bcs0=(/ 0, 0/)
+    CALL EZspline_init(j_spl,nsj,bcs0,ier)
+    j_spl%x1        = THRIFT_S
+    j_spl%isHermite = 1
+    CALL EZspline_setup(j_spl,j_s_in,ier,EXACT_DIM=.true.)  
+
+    ! Interpolate J (in rho space)
+    DO i = 1, nrho
+       rho = THRIFT_RHO(i)
+       s = rho*rho
+       ier = 0
+       CALL EZspline_interp(j_spl,s,j_s_out(i),ier)      
+    END DO
+    CALL EZspline_free(j_spl,ier)
+
+
+END SUBROUTINE dIds_to_Jrho
 !!===============================================================================
 !!  PRINTER FUNCTIONS 
 !!===============================================================================
