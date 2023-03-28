@@ -13,13 +13,15 @@
       USE thrift_vars
       USE thrift_equil
       USE thrift_profiles_mod
+      USE thrift_funcs
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i, ier
-      REAL(rprec) :: pprime, rho, epsilon, phip
+      REAL(rprec) :: epsilon, p1, p2
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: pprime, j_temp
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -34,19 +36,30 @@
 
       SELECT CASE(TRIM(bootstrap_type))
          CASE ('model','simple','test')
-            ! j_BS = sqrt(epsilon) Rmajor *dp/dPsi
-            ! epsilon = r/R (inverse aspect ratio)
-            ! dp/dPsi : Pa/Wb (toroidal flux derivative)
-            ! dp/dPsi = dp/drho * drho/dPhi
-            !         = dp/drho / (dPhi/drho)
-            DO i = 1, nrho
-               rho = THRIFT_RHO(i)
-               epsilon = rho*eq_Aminor/eq_Rmajor ! Inverse Aspect Ratio
-               CALL get_prof_pprime(rho,THRIFT_T(mytimestep),pprime) ! dpdrho
-               CALL EZspline_interp(phip_spl,rho,phip,ier) ! dPsi/drho
-               pprime = pprime / phip
-               THRIFT_JBOOT(i,mytimestep) = SQRT(epsilon) * pprime * eq_Rmajor
+            ! Calculate dpds 
+            ALLOCATE(pprime(nsj))
+            ds = THRIFT_S(2)-THRIFT_S(1)
+            pprime(1) = 0
+            DO i = 2, nsj-1
+               CALL get_prof_p( SQRT(THRIFT_S(i+1)), THRIFT_T(mytimestep), p1)
+               CALL get_prof_p( SQRT(THRIFT_S(i-1)), THRIFT_T(mytimestep), p2)
+               pprime(i) = (p2-p1)/(2*ds)
             END DO
+            pprime(nsj) = 2*pprime(nsj-1) - pprime(nsj-2)
+
+            ! j_BS = sqrt(epsilon) Rmajor *dp/dPhi
+            ! epsilon = a/R (inverse aspect ratio)
+            ! dp/dPhi : Pa/Wb (toroidal flux derivative)
+            ! dp/dPhi = dp/ds * ds/dPhi
+            !         = dp/ds / Phi_edge
+            ! j_BS = s*sqrt(epsilon)*Rmajor/Phi_edge*dp/ds
+            
+            ALLOCATE(j_temp(nsj))
+            epsilon = eq_Aminor/eq_Rmajor ! Inverse Aspect Ratio
+            j_temp = SQRT(epsilon)*eq_Rmajor/Phi_edge*THRIFT_S*pprime
+            CALL Js_to_Jrho(j_temp, THRIFT_JBOOT(:,mytimestep))
+            DEALLOCATE(pprime, j_temp)
+
          CASE ('bootsj')
             CALL thrift_paraexe('booz_xform',proc_string,lscreen_subcodes)
             CALL thrift_paraexe('bootsj',proc_string,lscreen_subcodes)
