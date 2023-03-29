@@ -19,7 +19,7 @@
       IMPLICIT NONE
       LOGICAL :: lfirst_pass, lfirst_sub_pass
       INTEGER :: i, ier
-      REAL(rprec) :: alpha, rho, s, aminor1, aminor2, temp
+      REAL(rprec) :: alpha, rho, s
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
       CHARACTER(len = 16)     :: temp1_str, temp2_str
       CHARACTER(len = 79)     :: header_str,progress_str

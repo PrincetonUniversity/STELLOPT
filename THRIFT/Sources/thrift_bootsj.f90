@@ -455,11 +455,13 @@
                DEALLOCATE(dIds_temp)
 
                ! Calculate J in s space = dI/ds * 1/(pi*a^2)
+               WRITE(6,*) 'Interping dIds'
                DO i = 1, nsj
                   s_val = THRIFT_S(i)
                   CALL EZspline_interp(dIds_spl,s_val,temp,ier)
                   THRIFT_JBOOT(i,mytimestep) = temp/(pi2/2*eq_Aminor**2) ! for some reason 'pi' is an ambigious reference
                END DO
+               WRITE(6,*) 'Done interping dIds'
                CALL EZspline_free(dIds_spl,ier)
 
             END IF
