@@ -67,7 +67,7 @@
 !     > D(j) = -etapara*V'*<Js.B>
 !======================================================================
 
-      IF (lverbj) CALL print_calc_abcd(THRIFT_JSOURCE(:,mytimestep)))
+      IF (lverbj) CALL print_calc_abcd()
       
       ! Allocations
       ALLOCATE(A_temp(nsj),B_temp(nsj),C_temp(nsj),D_temp(nsj),&

@@ -128,17 +128,16 @@ SUBROUTINE print_calc_magvars()
     END DO
 END SUBROUTINE print_calc_magvars
 
-SUBROUTINE print_calc_abcd(j_arr)
-    REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
+SUBROUTINE print_calc_abcd()
     INTEGER :: i
     WRITE(6,*)'==============================================================================='
     WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
-    WRITE(6,*)'   S  ETAPARA       DV/DS      DP/DS       <J.B>      BSQAV        S11'
+    WRITE(6,*)'   S  ETAPARA       DV/DS      DP/DS       <Js.B>      <B^2>        S11'
     WRITE(6,*)''
     DO i = 1, nsj
         WRITE(6,'(F5.3,6(1X,ES10.3))') &
         THRIFT_S(i), THRIFT_ETAPARA(i,mytimestep), THRIFT_VP(i,mytimestep), THRIFT_PPRIME(i,mytimestep),&
-        j_arr(i)*THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), THRIFT_S11(i,mytimestep)
+        THRIFT_JSOURCE(i,mytimestep)*THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep),THRIFT_S11(i,mytimestep)
     END DO
 END SUBROUTINE print_calc_abcd
 
