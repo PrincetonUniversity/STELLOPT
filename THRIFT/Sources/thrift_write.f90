@@ -82,6 +82,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JPLASMA',ier)
          CALL write_var_hdf5(fid,'THRIFT_JSOURCE',nrho,ntimesteps,ier,DBLVAR=THRIFT_JSOURCE,ATT='Source Current Density [A/m^2] (rho-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JSOURCE',ier)
+         CALL write_var_hdf5(fid,'THRIFT_JBOOT_S',nsj,ntimesteps,ier,DBLVAR=THRIFT_JBOOT_S,ATT='Bootstrap Current Density [A/m^2] (s-space)',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_JBOOT_S',ier)
          ! Currents
          CALL write_var_hdf5(fid,'THRIFT_UGRID',nsj,ntimesteps,ier,DBLVAR=THRIFT_UGRID,ATT='U (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_UGRID',ier)
@@ -102,6 +104,8 @@
          ! Profile variables
          CALL write_var_hdf5(fid,'THRIFT_ETAPARA',nsj,ntimesteps,ier,DBLVAR=THRIFT_ETAPARA,ATT=' Parallel electric resistivity (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ETAPARA',ier)
+         CALL write_var_hdf5(fid,'THRIFT_P',nsj,ntimesteps,ier,DBLVAR=THRIFT_P,ATT=' Pressure (s-space)',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_P',ier)
          CALL write_var_hdf5(fid,'THRIFT_PPRIME',nsj,ntimesteps,ier,DBLVAR=THRIFT_PPRIME,ATT=' Radial derivative of pressure (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PPRIME',ier)
          ! Magnetic variables

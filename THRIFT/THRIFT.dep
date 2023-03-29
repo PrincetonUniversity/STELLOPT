@@ -101,6 +101,7 @@ thrift_jinductive.o : \
 thrift_funcs.o : \
       thrift_runtime.o \
       thrift_vars.o \
+      thrift_equil.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_tools.o \
       $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o \

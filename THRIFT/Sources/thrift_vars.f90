@@ -61,16 +61,16 @@ MODULE thrift_vars
     INTEGER :: ntimesteps, nrho, nsj,  npicard, &
              win_thrift_j,       win_thrift_i, win_thrift_ugrid, &
              win_thrift_jplasma, win_thrift_iplasma, &
-             win_thrift_jboot,   win_thrift_iboot,   &
+             win_thrift_jboot,   win_thrift_iboot,   win_thrift_jboot_s, &
              win_thrift_jeccd,   win_thrift_ieccd,   &
              win_thrift_jnbcd,   win_thrift_inbcd,   &
              win_thrift_johmic,  win_thrift_iohmic,  &
-             win_thrift_jsource, win_thrift_isource, &
+             win_thrift_jsource, win_thrift_isource,  &
              win_thrift_rho,     win_thrift_rhofull, win_thrift_rhoins, & 
              win_thrift_s,       win_thrift_sinrho,  &
              win_thrift_t,       win_lbooz,  &
-             win_thrift_etapara, win_thrift_pprime,   win_thrift_phiedge, win_thrift_vp,       &
-             win_thrift_bav,     win_thrift_bsqav,    win_thrift_s11,   &
+             win_thrift_etapara, win_thrift_pprime,   win_thrift_phiedge,  win_thrift_vp,       &
+             win_thrift_bav,     win_thrift_bsqav,    win_thrift_s11,      win_thrift_p, &
              win_thrift_aminor,  win_thrift_rmajor,  &
              win_thrift_coeff_a, win_thrift_coeff_b,  win_thrift_coeff_c,  win_thrift_coeff_d, &
                                  win_thrift_coeff_bp, win_thrift_coeff_cp, win_thrift_coeff_dp,&
@@ -79,16 +79,16 @@ MODULE thrift_vars
     REAL(rprec) :: tstart, tend, jtol, picard_factor
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), THRIFT_RHOINS(:), &
                                           THRIFT_S(:),   THRIFT_SINRHO(:),  THRIFT_T(:)
-    REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_ETAPARA, THRIFT_PPRIME, THRIFT_PHIEDGE, &
+    REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_ETAPARA, THRIFT_P, THRIFT_PPRIME, &
                  THRIFT_J,THRIFT_I,THRIFT_UGRID, &
                  THRIFT_JPLASMA, THRIFT_IPLASMA, &
-                 THRIFT_JBOOT,   THRIFT_IBOOT,   &
+                 THRIFT_JBOOT,   THRIFT_IBOOT,   THRIFT_JBOOT_S,&
                  THRIFT_JECCD,   THRIFT_IECCD,   &
                  THRIFT_JNBCD,   THRIFT_INBCD,   &
                  THRIFT_JOHMIC,  THRIFT_IOHMIC,  &
-                 THRIFT_JSOURCE, THRIFT_ISOURCE, &
+                 THRIFT_JSOURCE, THRIFT_ISOURCE,  &
                  THRIFT_BSQAV,   THRIFT_BAV,     THRIFT_S11,     THRIFT_VP,      &
-                 THRIFT_AMINOR,  THRIFT_RMAJOR,  &
+                 THRIFT_AMINOR,  THRIFT_RMAJOR,  THRIFT_PHIEDGE, &
                  THRIFT_COEFF_A, THRIFT_COEFF_B, THRIFT_COEFF_C, THRIFT_COEFF_D, &
                                  THRIFT_COEFF_BP,THRIFT_COEFF_CP,THRIFT_COEFF_DP,&
                  THRIFT_ALPHA1,  THRIFT_ALPHA2,  THRIFT_ALPHA3,  THRIFT_ALPHA4,  &

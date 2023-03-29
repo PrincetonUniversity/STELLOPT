@@ -21,7 +21,7 @@
       IMPLICIT NONE
       INTEGER :: i, ier
       REAL(rprec) :: epsilon, pp1, pm1, ds
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: pprime, j_temp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE ::  j_temp
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -36,17 +36,6 @@
 
       SELECT CASE(TRIM(bootstrap_type))
          CASE ('model','simple','test')
-            ! Calculate dpds 
-            ALLOCATE(pprime(nsj))
-            pprime = 0;
-            pprime(1) = 0
-            ds = THRIFT_S(2)-THRIFT_S(1)
-            DO i = 2, nsj-1
-               CALL get_prof_p( SQRT(THRIFT_S(i+1)), THRIFT_T(mytimestep), pp1)
-               CALL get_prof_p( SQRT(THRIFT_S(i-1)), THRIFT_T(mytimestep), pm1)
-               pprime(i) = (pp1-pm1)/(2*ds)
-            END DO
-            pprime(nsj) = 2*pprime(nsj-1) - pprime(nsj-2)
 
             ! j_BS = sqrt(epsilon) Rmajor *dp/dPhi
             ! epsilon = a/R (inverse aspect ratio)
@@ -58,9 +47,10 @@
             ALLOCATE(j_temp(nsj))
             j_temp = 0
             epsilon = eq_Aminor/eq_Rmajor ! Inverse Aspect Ratio
-            j_temp = SQRT(epsilon)*eq_Rmajor/eq_phiedge*THRIFT_S*pprime
+            j_temp = SQRT(epsilon)*eq_Rmajor/eq_phiedge*THRIFT_S*THRIFT_PPRIME(:,mytimestep)
+            THRIFT_JBOOT_S(:,mytimestep) = j_temp
             CALL Js_to_Jrho(j_temp, THRIFT_JBOOT(:,mytimestep))
-            DEALLOCATE(pprime, j_temp)
+            DEALLOCATE(j_temp)
 
          CASE ('bootsj')
             CALL thrift_paraexe('booz_xform',proc_string,lscreen_subcodes)

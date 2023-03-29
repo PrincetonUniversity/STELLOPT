@@ -15,6 +15,8 @@ MODULE thrift_funcs
     USE EZspline_obj
     USE thrift_runtime
     USE thrift_vars
+    USE thrift_equil
+
     IMPLICIT NONE
 !-----------------------------------------------------------------------
 !     Input Namelists
@@ -26,6 +28,45 @@ MODULE thrift_funcs
 !-----------------------------------------------------------------------
 
 CONTAINS
+
+SUBROUTINE update_vars()
+    IMPLICIT NONE
+    REAL(rprec) :: mytime, s, rho, temp, p_p1, p_m1
+    INTEGER :: i, ier
+
+    ! Grab vars from profiles
+    mytime = THRIFT_T(mytimestep)
+    THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge    
+    DO i = 1, nsj
+        s = THRIFT_S(i)
+        rho = SQRT(s)
+        ier = 0
+        CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
+        CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),temp,temp,temp,ier)
+        CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
+        CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
+        ! V' = dV/ds = dV/dPhi dPhi/ds = Phi_edge * dV/dPhi
+        THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)*temp
+        ! eta breaks at rho=1(s=1) so look one gridpoint back
+        CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
+        CALL get_prof_p(rho, mytime, THRIFT_P(i,mytimestep))
+     END DO
+     THRIFT_S11 = ABS(THRIFT_S11)
+
+    ! Get pprime in s-space using finite difference
+     ds = THRIFT_S(2)-THRIFT_S(1)
+     THRIFT_PPRIME(1,mytimestep) = 0
+     DO i = 2, nsj-1
+        p_p1 = THRIFT_P(i+1, mytimestep)
+        p_m1 = THRIFT_P(i-1, mytimestep)
+        THRIFT_PPRIME(i,mytimestep) = (p_p1-p_m1)/(2*ds)
+     END DO
+     THRIFT_PPRIME(nsj,mytimestep) = 2*THRIFT_PPRIME(nsj-1,mytimestep)-THRIFT_PPRIME(nsj-2,mytimestep)
+   
+     IF (lverbj) CALL print_calc_magvars()
+END SUBROUTINE update_vars
+
+
 SUBROUTINE solve_tdm(AI,BI,CI,DI,val) ! no longer used
     ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
     IMPLICIT NONE

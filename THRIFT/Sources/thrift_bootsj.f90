@@ -468,7 +468,7 @@
                   j_temp(i) = temp/(pi2/2*eq_Aminor**2) ! for some reason 'pi' is an ambigious reference
                END DO
                CALL EZspline_free(dIds_spl,ier)
-
+               THRIFT_JBOOT_S(:,mytimestep) = j_temp
                ! Convert to J in rho space
                CALL Js_to_Jrho(j_temp, THRIFT_JBOOT(:,mytimestep))
                DEALLOCATE(j_temp)
