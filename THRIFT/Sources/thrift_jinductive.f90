@@ -115,6 +115,7 @@
       DEALLOCATE(j_temp, temp_arr)
 
       ! Derivatives
+      ds = THRIFT_S(2) - THRIFT_S(1)
       DO i = 2, nsj-1
          BP_temp(i) = (B_temp(i+1)-B_temp(i-1))/(2*ds)
          CP_temp(i) = (C_temp(i+1)-C_temp(i-1))/(2*ds)
