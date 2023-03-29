@@ -38,8 +38,9 @@
          CASE ('model','simple','test')
             ! Calculate dpds 
             ALLOCATE(pprime(nsj))
-            ds = THRIFT_S(2)-THRIFT_S(1)
+            pprime = 0;
             pprime(1) = 0
+            ds = THRIFT_S(2)-THRIFT_S(1)
             DO i = 2, nsj-1
                CALL get_prof_p( SQRT(THRIFT_S(i+1)), THRIFT_T(mytimestep), pp1)
                CALL get_prof_p( SQRT(THRIFT_S(i-1)), THRIFT_T(mytimestep), pm1)
@@ -55,6 +56,7 @@
             ! j_BS = s*sqrt(epsilon)*Rmajor/Phi_edge*dp/ds
             
             ALLOCATE(j_temp(nsj))
+            j_temp = 0
             epsilon = eq_Aminor/eq_Rmajor ! Inverse Aspect Ratio
             j_temp = SQRT(epsilon)*eq_Rmajor/eq_phiedge*THRIFT_S*pprime
             CALL Js_to_Jrho(j_temp, THRIFT_JBOOT(:,mytimestep))
