@@ -16,6 +16,7 @@ MODULE thrift_funcs
     USE thrift_runtime
     USE thrift_vars
     USE thrift_equil
+    USE thrift_profiles_mod
 
     IMPLICIT NONE
 !-----------------------------------------------------------------------
