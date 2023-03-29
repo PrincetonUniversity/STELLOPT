@@ -465,7 +465,7 @@
                DO i = 1, nsj
                   s_val = THRIFT_S(i)
                   CALL EZspline_interp(dIds_spl,s_val,temp,ier)
-                  j_temp(i) = temp/(pi*eq_Aminor**2) ! for some reason 'pi' is an ambigious reference
+                  j_temp(i) = temp/(pi2/2*eq_Aminor**2) ! for some reason 'pi' is an ambigious reference
                END DO
                CALL EZspline_free(dIds_spl,ier)
 
