@@ -56,8 +56,7 @@
       integer :: ihere = 0
       CHARACTER(LEN=32) :: temp_str
       ! Helpers to get dI/ds
-      REAL(rprec) :: vp, dPhidrho
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, dIds_temp,j_temp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE ::  dIds_temp!, rho_temp
       TYPE(EZspline1_r8) :: dIds_spl
       INTEGER :: bcs0(2)
 !-----------------------------------------------
@@ -437,41 +436,31 @@
             END IF
 #endif
             !  Now compute values for BOOTSJ
-            ! rhoar : norm toroidal flux (s)
+            ! rhoar : norm toroidal flux (s) 
             ! diBs : dI/ds - what VMEC needs
-            ! But we need j = dI/ds*Aminor/dVds
-            ! But we need j = dI/ds * ds/dA
-            !               = dI/ds / (dA/ds)
-            !               = dI/ds / (dV/ds / (2*pi*Rmajor)) 
-            !               = dI/ds * 2 * pi * Rmajor / dV/ds
+
             IF (myworkid == master) THEN
-               ALLOCATE(rho_temp(irup+2),dIds_temp(irup+2))
-               rho_temp(1)        = 0.0
-               rho_temp(2:irup+1) = rhoar
-               rho_temp(irup+2)   = 1.0
+               ALLOCATE(dIds_temp(irup+2))
+!               rho_temp(1)        = 0.0
+!               rho_temp(2:irup+1) = rhoar
+!               rho_temp(irup+2)   = 1.0
                dIds_temp(2:irup+1)   = dibs*1E6 ! dibs is in MA
                dIds_temp(1)          = 2*dIds_temp(2)-dIds_temp(3)
                dIds_temp(irup+2)     = 2*dIds_temp(irup+1)-dIds_temp(irup)
                bcs0=(/ 0, 0/)
                CALL EZspline_init(dIds_spl,irup+2,bcs0,ier)
-               dIds_spl%x1        = sqrt(rho_temp)
+               dIds_spl%x1        = THRIFT_RHOFULL
                dIds_spl%isHermite = 1
                CALL EZspline_setup(dIds_spl,dIds_temp,ier,EXACT_DIM=.true.)
-               DEALLOCATE(rho_temp,dIds_temp)
+               DEALLOCATE(dIds_temp)
 
                ! Calculate J in s space = dI/ds * 1/(pi*a^2)
-               ! dIds is in s space but grids dont necessarily agree
-               ALLOCATE(j_temp(nsj))
                DO i = 1, nsj
                   s_val = THRIFT_S(i)
                   CALL EZspline_interp(dIds_spl,s_val,temp,ier)
-                  j_temp(i) = temp/(pi2/2*eq_Aminor**2) ! for some reason 'pi' is an ambigious reference
+                  THRIFT_JBOOT(i,mytimestep) = temp/(pi2/2*eq_Aminor**2) ! for some reason 'pi' is an ambigious reference
                END DO
                CALL EZspline_free(dIds_spl,ier)
-               THRIFT_JBOOT_S(:,mytimestep) = j_temp
-               ! Convert to J in rho space
-               CALL Js_to_Jrho(j_temp, THRIFT_JBOOT(:,mytimestep))
-               DEALLOCATE(j_temp)
 
             END IF
 
