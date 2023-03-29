@@ -238,36 +238,6 @@ SUBROUTINE beams3d_follow_fo
                     mytdex = MAX(COUNT(R_lines(0:npoinc,l)>0,DIM=1),1)
                     ! Don't do particle if stopped
                     IF ((mytdex>=npoinc) .or. end_state(l) /= 0) CYCLE
-                    ! Not handle Coordinate conversion
-                    IF (lbeam .and. mytdex==3) THEN ! Deposition Particle
-                        mytdex = 2
-                        ! Neutral location
-                        q(1) = R_lines(mytdex-1,l)
-                        q(2) = PHI_lines(mytdex-1,l)
-                        q(3) = Z_lines(mytdex-1,l)
-                        q(4) = vr_lines(mytdex-1,l)
-                        q(5) = vphi_lines(mytdex-1,l)
-                        q(6) = vz_lines(mytdex-1,l)
-                    ELSEIF (mytdex == 1 .or. lboxsim) THEN
-                        mytdex = 1
-                        ! Initial condition
-                        q(1) = R_lines(mytdex-1,l)
-                        q(2) = PHI_lines(mytdex-1,l)
-                        q(3) = Z_lines(mytdex-1,l)
-                        q(4) = vr_lines(mytdex-1,l)
-                        q(5) = vphi_lines(mytdex-1,l)
-                        q(6) = vz_lines(mytdex-1,l)
-                    ELSE ! We need to step from GC to FO
-                        q(1) = R_lines(mytdex-1,l)
-                        q(2) = PHI_lines(mytdex-1,l)
-                        q(3) = Z_lines(mytdex-1,l)
-                        q(4) = vll_lines(mytdex-1,l)
-                        q(5) = moment_lines(mytdex-1,l)
-                        CALL beams3d_gc2fo(t_nag,q)
-                    END IF
-                    xlast = q(1)*cos(q(2))
-                    ylast = q(1)*sin(q(2))
-                    zlast = q(3)
                     ! Particle Parameters
                     mycharge = charge(l)
                     myZ = Zatom(l)
@@ -280,6 +250,23 @@ SUBROUTINE beams3d_follow_fo
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+                    ! Now handle Coordinate conversion
+                    IF (lbeam .and. mytdex == 3) mytdex = 2 ! BEAM -> FO Run
+                    IF (lboxsim)  mytdex = 1
+                    q(1) = R_lines(mytdex-1,l)
+                    q(2) = PHI_lines(mytdex-1,l)
+                    q(3) = Z_lines(mytdex-1,l)
+                    xlast = q(1)*cos(q(2))
+                    ylast = q(1)*sin(q(2))
+                    zlast = q(3)
+                    IF (mytdex == 1 .and. lrestart_particles) THEN ! GC->FO
+                        q(5) = moment_lines(mytdex-1,l)
+                        CALL beams3d_gc2fo(t_nag,q)
+                    ELSE
+                        q(4) = vr_lines(mytdex-1,l)
+                        q(5) = vphi_lines(mytdex-1,l)
+                        q(6) = vz_lines(mytdex-1,l)
+                    END IF
                     ! Now calc dt
                     CALL beams3d_calc_dt(2,q(1),q(2),q(3),dt)
                     tf_nag = t_nag+dt
