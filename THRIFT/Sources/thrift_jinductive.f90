@@ -24,8 +24,8 @@
       IMPLICIT NONE
       INTEGER :: i, j, prevtimestep, ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho,s,drho,ds,dt,mytime,js_edge,pp1,pm1,temp
-      TYPE(EZspline1_r8) :: splinor
+      REAL(rprec) :: rho,s,ds,dt,mytime,js_edge,temp
+      TYPE(EZspline1_r8) :: j_spl
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
                      BP_temp, CP_temp, DP_temp,temp_arr,  &
@@ -34,54 +34,32 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !======================================================================
-!     CALCULATE MAGNETIC VARIABLES AND OTHER PROFILE DATA
-!     > Etapara, p', Js, Phiedge, Rmajor, Aminor, S11, Bav, Bsqav, VP
+!     CREATE TEMP JSOURCE ARRAY IN S SPACE
 !======================================================================
+                     
       ! Set up Jsource spline
       ALLOCATE(j_temp(nrho+2))
       j_temp = 0
       CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep),j_temp)
       bcs0=(/ 0, 0/)
-      CALL EZspline_init(splinor,nrho+2,bcs0,ier)
-      splinor%x1        = THRIFT_RHOFULL
-      splinor%isHermite = 1
-      CALL EZspline_setup(splinor,j_temp,ier,EXACT_DIM=.true.)
+      ier = 0
+      CALL EZspline_init(j_spl,nrho+2,bcs0,ier)
+      j_spl%x1        = THRIFT_RHOFULL
+      j_spl%isHermite = 1
+      CALL EZspline_setup(j_spl,j_temp,ier,EXACT_DIM=.true.)
       DEALLOCATE(j_temp) 
-
-      ! Grab vars from profiles
-      mytime = THRIFT_T(mytimestep)
-      THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge     
+ 
+      ! Calculate j_temp
       ALLOCATE(j_temp(nsj))
       j_temp = 0
       DO i = 1, nsj
          s = THRIFT_S(i)
          rho = SQRT(s)
          ier = 0
-         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
-         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),temp,temp,temp,ier)
-         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
-         CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
-         ! V' = dV/ds = dV/dPhi dPhi/ds = Phi_edge * dV/dPhi
-         THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)*temp
-         ! eta breaks at rho=1(s=1) so look one gridpoint back
-         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
-         CALL EZspline_interp(splinor, rho, j_temp(i), ier)
+         CALL EZspline_interp(j_spl, rho, j_temp(i), ier)
       END DO
-      THRIFT_S11 = ABS(THRIFT_S11)
       js_edge = j_temp(nsj)
-      CALL EZspline_free(splinor,ier)  
-
-      ! Get pprime in s-space using finite difference
-      ds = THRIFT_S(2)-THRIFT_S(1)
-      THRIFT_PPRIME(1,mytimestep) = 0
-      DO i = 2, nsj-1
-         CALL get_prof_p( SQRT(THRIFT_S(i+1)), mytime, pp1)
-         CALL get_prof_p( SQRT(THRIFT_S(i-1)), mytime, pm1)
-         THRIFT_PPRIME(i,mytimestep) = (pp1-pm1)/(2*ds)
-      END DO
-      THRIFT_PPRIME(nsj,mytimestep) = 2*THRIFT_PPRIME(nsj-1,mytimestep)-THRIFT_PPRIME(nsj-2,mytimestep)
-    
-      IF (lverbj) CALL print_calc_magvars()
+      CALL EZspline_free(j_spl,ier)  
 
 !======================================================================
 !     SPECIAL CASES 
@@ -97,6 +75,7 @@
       ! Time variables
       prevtimestep = mytimestep-1   ! previous time step index
       dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
+      mytime = THRIFT_T(mytimestep)
       IF (mytime>tmax.and.THRIFT_T(prevtimestep)<=tmax.and.(nsubsteps==1)) WRITE(6,*) &
          '! THRIFT has exceeded end time of profiles file. Proceeding with profiles at t=tmax !' 
  
