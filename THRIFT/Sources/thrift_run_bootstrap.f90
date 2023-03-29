@@ -48,7 +48,6 @@
             epsilon = eq_Aminor/eq_Rmajor ! Inverse Aspect Ratio
             THRIFT_JBOOT(:,mytimestep) = SQRT(eq_Aminor*eq_Rmajor)/eq_phiedge*THRIFT_S*THRIFT_PPRIME(:,mytimestep)
 
-
          CASE ('bootsj')
             CALL thrift_paraexe('booz_xform',proc_string,lscreen_subcodes)
             CALL thrift_paraexe('bootsj',proc_string,lscreen_subcodes)
