@@ -64,7 +64,7 @@ SUBROUTINE solve_tdm(AI,BI,CI,DI,val) ! no longer used
 
 END SUBROUTINE solve_tdm
 
-SUBROUTINE check_sol(AI,BI,CI,DI,sol)
+SUBROUTINE check_sol(AI,BI,CI,DI,sol) ! no longer used either
     REAL(rprec), DIMENSION(:), INTENT(in) :: AI
     REAL(rprec), DIMENSION(:), INTENT(in) :: BI
     REAL(rprec), DIMENSION(:), INTENT(in) :: CI
@@ -171,9 +171,10 @@ SUBROUTINE curtot_to_curden(i_arr, j_arr)
 END SUBROUTINE curtot_to_curden
 
 SUBROUTINE Js_to_Jrho(j_s_in, j_rho_out)
-    ! This subroutine takes an array of J on THRIFT_S and
-    ! returns an array of J on THRIFT_RHO by interpolating
-    ! J(s) on the requested values of rho
+    ! This subroutine takes an array of J on the THRIFT_S grid and
+    ! returns an array of J on THRIFT_RHO grid using interpolation
+    ! j_s_in must be of size nsj
+    ! j_rho_out must be of size nrho
     REAL(rprec), DIMENSION(:), INTENT(in) :: j_s_in
     REAL(rprec), DIMENSION(:), INTENT(out) :: j_rho_out
     INTEGER :: i, ier
@@ -181,6 +182,7 @@ SUBROUTINE Js_to_Jrho(j_s_in, j_rho_out)
     TYPE(EZspline1_r8) :: j_spl
     REAL(rprec) :: rho, s
 
+    ier = 0
     ! Setup J spline (in s space)
     bcs0=(/ 0, 0/)
     CALL EZspline_init(j_spl,nsj,bcs0,ier)
