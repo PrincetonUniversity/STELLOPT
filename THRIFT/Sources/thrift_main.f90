@@ -23,24 +23,32 @@ PROGRAM THRIFT
     !-----------------------------------------------------------------------
 
     ! Setup MPI
+    WRITE(6,*) 'setup mpi'
     CALL thrift_init_mpi
+    
 
     ! Setup HDF5
+    WRITE(6,*) 'setup hdf5'
     CALL thrift_init_hdf5
 
-    ! Initialize constanst
+    ! Initialize constants
+    WRITE(6,*) 'setup constants'
     CALL thrift_init_constants
 
     ! Handle the command line
+    WRITE(6,*) 'commandline'
     CALL thrift_init_commandline
 
     ! Output the header information
+    WRITE(6,*) 'header'
     CALL thrift_output_header
 
     ! Initialize the Calculation
+    WRITE(6,*) 'init'
     CALL thrift_init
 
     ! ----work here
+    WRITE(6,*) 'evolve'
     CALL thrift_evolve
 
     ! ----Write output
