@@ -56,7 +56,7 @@
       integer :: ihere = 0
       CHARACTER(LEN=32) :: temp_str
       ! Helpers to get dI/ds
-      REAL(rprec), DIMENSION(:), ALLOCATABLE ::  dIds_temp!, rho_temp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE ::  dIds_temp, rho_temp
       TYPE(EZspline1_r8) :: dIds_spl
       INTEGER :: bcs0(2)
 !-----------------------------------------------
@@ -440,7 +440,7 @@
             ! diBs : dI/ds - what VMEC needs
 
             IF (myworkid == master) THEN
-               ALLOCATE(dIds_temp(irup+2))
+               ALLOCATE(dIds_temp(irup+2),rho_temp(irup+2))
                rho_temp(1)        = 0.0
                rho_temp(2:irup+1) = rhoar
                rho_temp(irup+2)   = 1.0
@@ -452,7 +452,7 @@
                dIds_spl%x1        = SQRT(rhoar)
                dIds_spl%isHermite = 1
                CALL EZspline_setup(dIds_spl,dIds_temp,ier,EXACT_DIM=.true.)
-               DEALLOCATE(dIds_temp)
+               DEALLOCATE(dIds_temp,rho_temp)
 
                ! Calculate J in s space = dI/ds * 1/(pi*a^2)
                WRITE(6,*) 'Interping dIds'
