@@ -75,12 +75,14 @@
 !        Don't think this is necessary anymore
 !         ! Check to make sure we have dV/ds and Aminor
 !         IF (EZspline_allocated(vp_spl)) THEN
+         WRITE(6,*) 'Interping equil j'
             DO i = 1, n_eq
                s_val = s_temp(i)
                CALL EZspline_interp(j_spl,s_val,j_val,ier)
                AC_AUX_S(i) = s_val
                AC_AUX_F(i) = j_val*pi*eq_Aminor**2
             END DO
+         WRITE(6,*) 'Done interping equil j'
             CURTOR = SUM(AC_AUX_F(1:n_eq),DIM=1)/DBLE(n_eq-1)
 !         ELSE
 !            DO i = 1, n_eq
