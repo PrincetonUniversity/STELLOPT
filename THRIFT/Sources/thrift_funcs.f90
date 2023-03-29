@@ -31,7 +31,7 @@ CONTAINS
 
 SUBROUTINE update_vars()
     IMPLICIT NONE
-    REAL(rprec) :: mytime, s, rho, temp, p_p1, p_m1
+    REAL(rprec) :: mytime, s, rho, temp, p_p1, p_m1, ds
     INTEGER :: i, ier
 
     ! Grab vars from profiles
