@@ -31,6 +31,7 @@
 
       ! For when we collect the workers
       IF (myworkid .ne. master) RETURN
+      write(6,*) 'initialize stufff'
 
       ! Initialize the current density
       THRIFT_J        = 0; THRIFT_JPLASMA  = 0; THRIFT_JSOURCE  = 0
@@ -52,6 +53,7 @@
       THRIFT_ALPHA1  = 0; THRIFT_ALPHA2  = 0; THRIFT_ALPHA3  = 0; THRIFT_ALPHA4  = 0;
       THRIFT_MATLD   = 0; THRIFT_MATMD   = 0; THRIFT_MATUD   = 0; THRIFT_MATRHS  = 0;
 
+      write(6,*) 'passed'
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
