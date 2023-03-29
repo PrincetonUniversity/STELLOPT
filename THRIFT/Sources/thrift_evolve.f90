@@ -31,12 +31,11 @@
 
       ! For when we collect the workers
       IF (myworkid .ne. master) RETURN
-      write(6,*) 'initialize stufff'
 
       ! Initialize the current density
       THRIFT_J        = 0; THRIFT_JPLASMA  = 0; THRIFT_JSOURCE  = 0
       THRIFT_JBOOT    = 0; THRIFT_JECCD    = 0; THRIFT_JNBCD    = 0
-      THRIFT_JOHMIC   = 0; THRIFT_JBOOT_S  = 0;
+      THRIFT_JOHMIC   = 0; THRIFT_JBOOT_S  = 0
       ! Initialize enclosed currents
       THRIFT_I        = 0; THRIFT_IPLASMA  = 0; THRIFT_ISOURCE  = 0
       THRIFT_IBOOT    = 0; THRIFT_IECCD    = 0; THRIFT_INBCD    = 0
@@ -53,8 +52,6 @@
       THRIFT_ALPHA1  = 0; THRIFT_ALPHA2  = 0; THRIFT_ALPHA3  = 0; THRIFT_ALPHA4  = 0;
       THRIFT_MATLD   = 0; THRIFT_MATMD   = 0; THRIFT_MATUD   = 0; THRIFT_MATRHS  = 0;
 
-      write(6,*) 'passed'
-
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
       alpha = 0.05
@@ -63,10 +60,7 @@
       lfirst_pass = .TRUE.
       
       ! Loop over timesteps
-      write(6,*) 'start loop'
       DO mytimestep = 1, ntimesteps
-      
-            write(6,*) 'setup p'
 
          ! Setup the profiles
          CALL thrift_equil_p
@@ -88,24 +82,18 @@
             proc_string = TRIM(TRIM(id_string) // '.' //  &
                   TRIM(ADJUSTL(temp1_str)) // '_' // &
                   TRIM(ADJUSTL(temp2_str)))
-                  write(6,*) 'setup j'
 
             ! Update equilbrium current
             CALL thrift_equil_j(lfirst_sub_pass)
-
-            write(6,*) 'run equil'
 
             ! Run equilibrium
             CALL thrift_run_equil
 
             ! Update equilibrium/profile variables
-            write(6,*) 'update vars'
             CALL update_vars
 
             ! Calculate Bootstrap
-            write(6,*) 'bootstrap'
             CALL thrift_run_bootstrap
-            write(6,*) 'eccd'
 
             ! Calculate Current Drive
             IF (leccd)  CALL thrift_run_ECCD
@@ -122,7 +110,6 @@
                                            + THRIFT_JECCD(:,mytimestep) &
                                            + THRIFT_JNBCD(:,mytimestep) &
                                            + THRIFT_JOHMIC(:,mytimestep)
-                                           write(6,*) 'jinductive'
 
             ! Update the plasma current  
             CALL thrift_jinductive
