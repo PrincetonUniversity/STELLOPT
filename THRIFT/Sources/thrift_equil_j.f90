@@ -57,9 +57,9 @@
       CALL EZspline_setup(j_spl,THRIFT_J(:,mytimestep),ier,EXACT_DIM=.true.)
 
       ! temporary s grid 
-      ALLOCATE(s_temp)
+      ALLOCATE(s_temp(n_eq))
       s_temp = 0
-      FORALL(i = 1:n_eq) s_temp = DBLE(i-1)/DBLE(n_eq-1)
+      FORALL(i = 1:n_eq) s_temp(i) = DBLE(i-1)/DBLE(n_eq-1)
 
       ! Update equilibrium inputs
       IF (lvmec) THEN
@@ -91,7 +91,8 @@
 !         END IF
       END IF
 
-      ! Deallocate Spline
+      ! Deallocate
+      DEALLOCATE(s_temp)
       CALL EZspline_free(j_spl,ier)
 
       RETURN
