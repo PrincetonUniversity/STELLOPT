@@ -34,36 +34,6 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !======================================================================
-!     CREATE TEMP JSOURCE ARRAY IN S SPACE
-!======================================================================
-                     
-      ! Set up Jsource spline
-      ALLOCATE(j_temp(nrho+2))
-      j_temp = 0
-      CALL extrapolate_arr(THRIFT_JSOURCE(:,mytimestep),j_temp)
-      bcs0=(/ 0, 0/)
-      ier = 0
-      CALL EZspline_init(j_spl,nrho+2,bcs0,ier)
-      j_spl%x1        = THRIFT_RHOFULL
-      j_spl%isHermite = 1
-      CALL EZspline_setup(j_spl,j_temp,ier,EXACT_DIM=.true.)
-      DEALLOCATE(j_temp) 
- 
-      ! Calculate j_temp
-      ALLOCATE(j_temp(nsj))
-      j_temp = 0
-      DO i = 1, nsj
-         s = THRIFT_S(i)
-         rho = SQRT(s)
-         ier = 0
-         CALL EZspline_interp(j_spl, rho, j_temp(i), ier)
-      END DO
-      js_edge = j_temp(nsj)
-      CALL EZspline_free(j_spl,ier)  
-
-!======================================================================
-!     SPECIAL CASES 
-!======================================================================
       ! If mytimestep = 1 ITOT=0 and continue to next iteration
       IF (mytimestep==1) THEN
             THRIFT_JPLASMA(:,mytimestep) = -THRIFT_JSOURCE(:,mytimestep)
@@ -97,7 +67,7 @@
 !     > D(j) = -etapara*V'*<Js.B>
 !======================================================================
 
-      IF (lverbj) CALL print_calc_abcd(j_temp)
+      IF (lverbj) CALL print_calc_abcd(THRIFT_JSOURCE(:,mytimestep)))
       
       ! Allocations
       ALLOCATE(A_temp(nsj),B_temp(nsj),C_temp(nsj),D_temp(nsj),&
@@ -110,9 +80,9 @@
       A_temp = THRIFT_S11(:,mytimestep)/THRIFT_PHIEDGE(1,mytimestep)**2
       B_temp = temp_arr*THRIFT_BSQAV(:,mytimestep)/mu0
       C_temp = temp_arr*THRIFT_PPRIME(:,mytimestep)
-      D_temp = -temp_arr*j_temp*THRIFT_BAV(:,mytimestep)
+      D_temp = -temp_arr*THRIFT_JSOURCE(:,mytimestep)*THRIFT_BAV(:,mytimestep)
 
-      DEALLOCATE(j_temp, temp_arr)
+      DEALLOCATE(temp_arr)
 
       ! Derivatives
       ds = THRIFT_S(2) - THRIFT_S(1)
@@ -219,8 +189,11 @@
 !======================================================================
 !     CALCULATE PLASMA CURRENT
 !======================================================================
-      ALLOCATE(j_temp(nrho))
-      j_temp = 0
+      ! We cannot use THRIFT_J directly, otherwise we cannot do proper
+      ! picard iterations.
+
+      ALLOCATE(j_temp(nsj))
+      j_temp = 0 ! Will store total current density
 
       THRIFT_I(:,mytimestep) = (THRIFT_PHIEDGE(1,mytimestep)/mu0)*THRIFT_UGRID(:,mytimestep)
       CALL curtot_to_curden(THRIFT_I(:,mytimestep),j_temp)

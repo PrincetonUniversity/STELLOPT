@@ -66,12 +66,10 @@
                s_val = THRIFT_S(i)
                rho_val = SQRT(s_val)
                CALL EZspline_interp(dIds_spl,rho_val,temp,ier)
-               j_temp(i) = temp/(pi*eq_Aminor**2)
+               THRIFT_JECCD(i,mytimestep) = temp/(pi*eq_Aminor**2)
             END DO
             CALL EZspline_free(dIds_spl,ier)
 
-            ! Convert to J in rho space
-            CALL Js_to_Jrho(j_temp, THRIFT_JBOOT(:,mytimestep))
             DEALLOCATE(j_temp)
 
             IF (lscreen_subcodes) THEN
