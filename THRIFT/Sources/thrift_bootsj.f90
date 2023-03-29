@@ -460,12 +460,12 @@
                DEALLOCATE(rho_temp,dIds_temp)
 
                ! Calculate J in s space = dI/ds * 1/(pi*a^2)
+               ! dIds is in s space but grids dont necessarily agree
                ALLOCATE(j_temp(nsj))
                DO i = 1, nsj
                   s_val = THRIFT_S(i)
-                  rho_val = SQRT(s_val)
-                  CALL EZspline_interp(dIds_spl,rho_val,temp,ier)
-                  j_temp(i) = temp/(pi2/2*eq_Aminor**2)
+                  CALL EZspline_interp(dIds_spl,s_val,temp,ier)
+                  j_temp(i) = temp/(pi*eq_Aminor**2) ! for some reason 'pi' is an ambigious reference
                END DO
                CALL EZspline_free(dIds_spl,ier)
 
