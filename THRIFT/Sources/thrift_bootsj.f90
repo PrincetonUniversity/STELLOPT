@@ -441,15 +441,15 @@
 
             IF (myworkid == master) THEN
                ALLOCATE(dIds_temp(irup+2))
-!               rho_temp(1)        = 0.0
-!               rho_temp(2:irup+1) = rhoar
-!               rho_temp(irup+2)   = 1.0
+               rho_temp(1)        = 0.0
+               rho_temp(2:irup+1) = rhoar
+               rho_temp(irup+2)   = 1.0
                dIds_temp(2:irup+1)   = dibs*1E6 ! dibs is in MA
                dIds_temp(1)          = 2*dIds_temp(2)-dIds_temp(3)
                dIds_temp(irup+2)     = 2*dIds_temp(irup+1)-dIds_temp(irup)
                bcs0=(/ 0, 0/)
                CALL EZspline_init(dIds_spl,irup+2,bcs0,ier)
-               dIds_spl%x1        = THRIFT_RHOFULL
+               dIds_spl%x1        = SQRT(rhoar)
                dIds_spl%isHermite = 1
                CALL EZspline_setup(dIds_spl,dIds_temp,ier,EXACT_DIM=.true.)
                DEALLOCATE(dIds_temp)
