@@ -61,8 +61,11 @@
       lfirst_pass = .TRUE.
       
       ! Loop over timesteps
+      write(6,*) 'start loop'
       DO mytimestep = 1, ntimesteps
       
+            write(6,*) 'setup p'
+
          ! Setup the profiles
          CALL thrift_equil_p
 
@@ -83,18 +86,24 @@
             proc_string = TRIM(TRIM(id_string) // '.' //  &
                   TRIM(ADJUSTL(temp1_str)) // '_' // &
                   TRIM(ADJUSTL(temp2_str)))
+                  write(6,*) 'setup j'
 
             ! Update equilbrium current
             CALL thrift_equil_j(lfirst_sub_pass)
+
+            write(6,*) 'run equil'
 
             ! Run equilibrium
             CALL thrift_run_equil
 
             ! Update equilibrium/profile variables
+            write(6,*) 'update vars'
             CALL update_vars
 
             ! Calculate Bootstrap
+            write(6,*) 'bootstrap'
             CALL thrift_run_bootstrap
+            write(6,*) 'eccd'
 
             ! Calculate Current Drive
             IF (leccd)  CALL thrift_run_ECCD
@@ -111,6 +120,7 @@
                                            + THRIFT_JECCD(:,mytimestep) &
                                            + THRIFT_JNBCD(:,mytimestep) &
                                            + THRIFT_JOHMIC(:,mytimestep)
+                                           write(6,*) 'jinductive'
 
             ! Update the plasma current  
             CALL thrift_jinductive
