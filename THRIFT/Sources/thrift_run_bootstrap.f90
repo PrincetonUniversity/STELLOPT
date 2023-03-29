@@ -46,7 +46,7 @@
             !      = s*sqrt(aminor*Rmajor)/Phi_edge*dp/ds
             
             epsilon = eq_Aminor/eq_Rmajor ! Inverse Aspect Ratio
-            THRIFT_JBOOT(:mytimestep) = SQRT(eq_Aminor*eq_Rmajor)/eq_phiedge*THRIFT_S*THRIFT_PPRIME(:,mytimestep)
+            THRIFT_JBOOT(:,mytimestep) = SQRT(eq_Aminor*eq_Rmajor)/eq_phiedge*THRIFT_S*THRIFT_PPRIME(:,mytimestep)
 
 
          CASE ('bootsj')
