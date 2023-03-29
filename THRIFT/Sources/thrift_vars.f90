@@ -82,7 +82,7 @@ MODULE thrift_vars
     REAL(rprec), DIMENSION(:,:), POINTER :: THRIFT_ETAPARA, THRIFT_P, THRIFT_PPRIME, &
                  THRIFT_J,THRIFT_I,THRIFT_UGRID, &
                  THRIFT_JPLASMA, THRIFT_IPLASMA, &
-                 THRIFT_JBOOT,   THRIFT_IBOOT,   THRIFT_JBOOT_S,&
+                 THRIFT_JBOOT,   THRIFT_IBOOT,   THRIFT_JBOOT_S, &
                  THRIFT_JECCD,   THRIFT_IECCD,   &
                  THRIFT_JNBCD,   THRIFT_INBCD,   &
                  THRIFT_JOHMIC,  THRIFT_IOHMIC,  &

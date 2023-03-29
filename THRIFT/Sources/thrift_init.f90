@@ -94,7 +94,8 @@
       ! Profile variables
       CALL mpialloc(THRIFT_ETAPARA,nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_etapara)  
       CALL mpialloc(THRIFT_PPRIME ,nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_pprime)  
-      
+      CALL mpialloc(THRIFT_P      ,nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_p)  
+    
       ! Magnetic variables
       CALL mpialloc(THRIFT_PHIEDGE,     1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_phiedge)
       CALL mpialloc(THRIFT_VP,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_vp)     
