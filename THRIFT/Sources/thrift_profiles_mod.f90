@@ -174,10 +174,10 @@ MODULE thrift_profiles_mod
          END DO
          DO i = 1, nion_prof
             IF (lverb) WRITE(6,'(A,I1,A,F9.3,A,F9.3,A,I3,A,I2)') '   Ni(',i,')= [', &
-                        MINVAL(temp_ni(:,:,i))*1E-20,',',MAXVAL(temp_ni(i,:,:))*1E-20,'] E20 m^-3;  M: ',&
+                        MINVAL(temp_ni(i,:,:))*1E-20,',',MAXVAL(temp_ni(i,:,:))*1E-20,'] E20 m^-3;  M: ',&
                         NINT(Matom_prof(i)/1.66053906660E-27),' amu;  Z: ',Zatom_prof(i)
             IF (lverb) WRITE(6,'(A,I1,A,F9.3,A,F9.3,A)') '   Ti(',i,')= [', &
-                        MINVAL(temp_ti(:,:,i))*1E-3,',',MAXVAL(temp_ti(i,:,:))*1E-3,'] keV'
+                        MINVAL(temp_ti(i,:,:))*1E-3,',',MAXVAL(temp_ti(i,:,:))*1E-3,'] keV'
          END DO
          pres2d = (pres2d + SUM(temp_ti*temp_ni,1))*e_charge
          ! DEALLOCATE Helpers
