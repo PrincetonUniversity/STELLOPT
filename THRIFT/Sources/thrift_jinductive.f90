@@ -24,7 +24,7 @@
       IMPLICIT NONE
       INTEGER :: i, j, prevtimestep, ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho,s,ds,dt,mytime,js_edge,temp
+      REAL(rprec) :: rho,s,ds,dt,mytime,temp
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
                      BP_temp, CP_temp, DP_temp,temp_arr,  &
@@ -164,7 +164,7 @@
       temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
       DIAGSUB(nsj-1) = -1.0/(2*ds)
       DIAGMID(nsj)   =  1.0/(2*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
-      RHS(nsj)       = js_edge*THRIFT_BAV(nsj,mytimestep)/temp
+      RHS(nsj)       = THRIFT_JSOURCE(nsj,mytimestep)*THRIFT_BAV(nsj,mytimestep)/temp
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
