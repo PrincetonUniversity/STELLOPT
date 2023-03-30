@@ -160,11 +160,21 @@
       DIAGMID(2:nsj-1) =  alpha2       -2*alpha4/(ds**2) - 1.0/dt
       DIAGSUP(2:nsj-1) =  alpha3/(2*ds) + alpha4/(ds**2)
       RHS(2:nsj-1)     = -alpha1-THRIFT_UGRID(2:nsj-1,prevtimestep)/dt
-      ! Plasma edge (s=1)
+!      ! Plasma edge (s=1) (old)
+!      temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
+!      DIAGSUB(nsj-1) = -1.0/(2*ds)
+!      DIAGMID(nsj)   =  1.0/(2*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
+!      RHS(nsj)       = THRIFT_JSOURCE(nsj,mytimestep)*THRIFT_BAV(nsj,mytimestep)/temp
+      ! Plasma edge (new!)
       temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
-      DIAGSUB(nsj-1) = -1.0/(2*ds)
-      DIAGMID(nsj)   =  1.0/(2*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
+      DIAGSUB(nsj-1) = -8/(6*ds)
+      DIAGMID( nsj ) =  7/(6*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
       RHS(nsj)       = THRIFT_JSOURCE(nsj,mytimestep)*THRIFT_BAV(nsj,mytimestep)/temp
+      ! Row operations to make a tridiagonal matrix
+      temp = (1/(6*ds))/DIAGSUB(nsj-2)
+      DIAGSUB(nsj-1) = DIAGSUB(nsj-1) - temp*DIAGMID(nsj-1)
+      DIAGMID( nsj ) = DIAGMID( nsj ) - temp*DIAGSUP(nsj-1)
+      RHS( nsj )     =     RHS( nsj ) - temp*RHS(nsj-1)
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
