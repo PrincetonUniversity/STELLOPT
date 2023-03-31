@@ -44,21 +44,22 @@ SUBROUTINE update_vars()
         ier = 0
         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),temp,temp,temp,ier)
-        IF (ISNAN(THRIFT_S11(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_S11',ier)
         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
-        IF (ISNAN(THRIFT_BAV(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BAV',ier)
-        IF (ISNAN(THRIFT_BSQAV(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BSQAV',ier)
         CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
         ! V' = dV/ds = dV/dPhi dPhi/ds = Phi_edge * dV/dPhi
         THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)*temp
-        IF (ISNAN(THRIFT_VP(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_VP',ier)
         ! eta breaks at rho=1(s=1) so look one gridpoint back
         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
-        IF (ISNAN(THRIFT_ETAPARA(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',ier)
         CALL get_prof_p(rho, mytime, THRIFT_P(i,mytimestep))
-        IF (ISNAN(THRIFT_P(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_P',ier)
      END DO
      THRIFT_S11 = ABS(THRIFT_S11)
+     ! Check for NaN
+     IF (ANY(ISNAN(THRIFT_S11(:,mytimestep))))      CALL handle_err(THRIFT_NAN_ERR,'THRIFT_S11',ier)
+     IF (ANY(ISNAN(THRIFT_BAV(:,mytimestep))))      CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BAV',ier)
+     IF (ANY(ISNAN(THRIFT_BSQAV(:,mytimestep))))    CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BSQAV',ier)
+     IF (ANY(ISNAN(THRIFT_VP(:,mytimestep))))       CALL handle_err(THRIFT_NAN_ERR,'THRIFT_VP',ier)
+     IF (ANY(ISNAN(THRIFT_ETAPARA(:,mytimestep))))  CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',ier)
+     IF (ANY(ISNAN(THRIFT_P(:,mytimestep))))        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_P',ier)
 
     ! Get pprime in s-space using finite difference
      ds = THRIFT_S(2)-THRIFT_S(1)
