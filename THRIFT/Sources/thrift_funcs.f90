@@ -44,13 +44,19 @@ SUBROUTINE update_vars()
         ier = 0
         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),temp,temp,temp,ier)
+        IF (ISNAN(THRIFT_S11(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_S11',ier)
         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
+        IF (ISNAN(THRIFT_BAV(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BAV',ier)
+        IF (ISNAN(THRIFT_BSQAV(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BSQAV',ier)
         CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
         ! V' = dV/ds = dV/dPhi dPhi/ds = Phi_edge * dV/dPhi
         THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)*temp
+        IF (ISNAN(THRIFT_VP(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_VP',ier)
         ! eta breaks at rho=1(s=1) so look one gridpoint back
         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
+        IF (ISNAN(THRIFT_ETAPARA(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',ier)
         CALL get_prof_p(rho, mytime, THRIFT_P(i,mytimestep))
+        IF (ISNAN(THRIFT_P(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_P',ier)
      END DO
      THRIFT_S11 = ABS(THRIFT_S11)
 
@@ -61,10 +67,12 @@ SUBROUTINE update_vars()
         p_p1 = THRIFT_P(i+1, mytimestep)
         p_m1 = THRIFT_P(i-1, mytimestep)
         THRIFT_PPRIME(i,mytimestep) = (p_p1-p_m1)/(2*ds)
+        IF (ISNAN(THRIFT_PPRIME(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_PPRIME',ier)
      END DO
      THRIFT_PPRIME(nsj,mytimestep) = 2*THRIFT_PPRIME(nsj-1,mytimestep)-THRIFT_PPRIME(nsj-2,mytimestep)
    
-     IF (lverbj) CALL print_calc_magvars()
+     IF (lverbj) CALL print_calc_vars()
+     
 END SUBROUTINE update_vars
 
 SUBROUTINE curden_to_curtot(j_arr_in, i_arr_out)
@@ -115,31 +123,18 @@ END SUBROUTINE curtot_to_curden
 !!===============================================================================
 !!  PRINTER FUNCTIONS 
 !!===============================================================================
-SUBROUTINE print_calc_magvars()
+SUBROUTINE print_calc_vars()
     INTEGER :: i
     WRITE(6,*)'==============================================================================='
     WRITE(6,*)' CALCULATING MAGNETIC VARIABLES'
-    WRITE(6,*)' S    DV/DS          <B>      <B^2>     RMAJOR     AMINOR        S11 '
+    WRITE(6,*)'   S  VPRIME     BAV   BSQAV        S11    JSOURCE    ETAPARA     PPRIME'
     WRITE(6,*)''
     DO i = 1, nsj
-        WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
-              THRIFT_S(i), THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
-              ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
+        WRITE(6,'(F5.3,3(1X,F7.3),4(1X,ES10.3))') &
+            THRIFT_S(i),THRIFT_VP(i,mytimestep),THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), &
+            THRIFT_S11(i,mytimestep),THRIFT_JSOURCE(i,mytimestep),THRIFT_ETAPARA(i,mytimestep),THRIFT_PPRIME(i,mytimestep)
     END DO
-END SUBROUTINE print_calc_magvars
-
-SUBROUTINE print_calc_abcd()
-    INTEGER :: i
-    WRITE(6,*)'==============================================================================='
-    WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
-    WRITE(6,*)'   S  ETAPARA       DV/DS      DP/DS       <Js.B>      <B^2>        S11'
-    WRITE(6,*)''
-    DO i = 1, nsj
-        WRITE(6,'(F5.3,6(1X,ES10.3))') &
-        THRIFT_S(i), THRIFT_ETAPARA(i,mytimestep), THRIFT_VP(i,mytimestep), THRIFT_PPRIME(i,mytimestep),&
-        THRIFT_JSOURCE(i,mytimestep)*THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep),THRIFT_S11(i,mytimestep)
-    END DO
-END SUBROUTINE print_calc_abcd
+END SUBROUTINE print_calc_vars
 
 SUBROUTINE print_abcd()
     INTEGER :: i
