@@ -257,7 +257,7 @@ CONTAINS
         ELSEIF (error_num .eq. THRIFT_NAN_ERR) THEN
             WRITE(6, *) '  NAN IN THRIFT EVOLUTION VARS'
             WRITE(6, *) '  VAR:   ', TRIM(string_val)
-            WRITE(6, *) '  IERR:      ', ierr
+            WRITE(6, *) '  TIMESTEP:      ', ierr
         ELSEIF (error_num .eq. MPI_CHECK) THEN
         ELSE
             WRITE(6, *) '  THRIFT ENCOUNTERED AN UNKNOWN ERROR'

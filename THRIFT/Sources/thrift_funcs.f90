@@ -54,12 +54,12 @@ SUBROUTINE update_vars()
      END DO
      THRIFT_S11 = ABS(THRIFT_S11)
      ! Check for NaN
-     IF (ANY(ISNAN(THRIFT_S11(:,mytimestep))))      CALL handle_err(THRIFT_NAN_ERR,'THRIFT_S11',ier)
-     IF (ANY(ISNAN(THRIFT_BAV(:,mytimestep))))      CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BAV',ier)
-     IF (ANY(ISNAN(THRIFT_BSQAV(:,mytimestep))))    CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BSQAV',ier)
-     IF (ANY(ISNAN(THRIFT_VP(:,mytimestep))))       CALL handle_err(THRIFT_NAN_ERR,'THRIFT_VP',ier)
-     IF (ANY(ISNAN(THRIFT_ETAPARA(:,mytimestep))))  CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',ier)
-     IF (ANY(ISNAN(THRIFT_P(:,mytimestep))))        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_P',ier)
+     IF (ANY(ISNAN(THRIFT_S11(:,mytimestep))))      CALL handle_err(THRIFT_NAN_ERR,'THRIFT_S11',mytimestep)
+     IF (ANY(ISNAN(THRIFT_BAV(:,mytimestep))))      CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BAV',mytimestep)
+     IF (ANY(ISNAN(THRIFT_BSQAV(:,mytimestep))))    CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BSQAV',mytimestep)
+     IF (ANY(ISNAN(THRIFT_VP(:,mytimestep))))       CALL handle_err(THRIFT_NAN_ERR,'THRIFT_VP',mytimestep)
+     IF (ANY(ISNAN(THRIFT_ETAPARA(:,mytimestep))))  CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',mytimestep)
+     IF (ANY(ISNAN(THRIFT_P(:,mytimestep))))        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_P',mytimestep)
 
     ! Get pprime in s-space using finite difference
      ds = THRIFT_S(2)-THRIFT_S(1)
