@@ -27,7 +27,6 @@
       REAL(rprec) :: s_val, j_val, temp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: s_temp
       TYPE(EZspline1_r8) :: j_spl
-      INTEGER, PARAMETER :: n_eq = 99
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
