@@ -43,14 +43,11 @@
             ! dp/dPhi = dp/ds * ds/dPhi
             !         = dp/ds / Phi_edge
             ! j_BS = s*sqrt(epsilon)*Rmajor/Phi_edge*dp/ds
+            !      = s*sqrt(aminor*Rmajor)/Phi_edge*dp/ds
             
-            ALLOCATE(j_temp(nsj))
-            j_temp = 0
             epsilon = eq_Aminor/eq_Rmajor ! Inverse Aspect Ratio
-            j_temp = SQRT(epsilon)*eq_Rmajor/eq_phiedge*THRIFT_S*THRIFT_PPRIME(:,mytimestep)
-            THRIFT_JBOOT_S(:,mytimestep) = j_temp
-            CALL Js_to_Jrho(j_temp, THRIFT_JBOOT(:,mytimestep))
-            DEALLOCATE(j_temp)
+            THRIFT_JBOOT(:mytimestep) = SQRT(eq_Aminor*eq_Rmajor)/eq_phiedge*THRIFT_S*THRIFT_PPRIME(:,mytimestep)
+
 
          CASE ('bootsj')
             CALL thrift_paraexe('booz_xform',proc_string,lscreen_subcodes)

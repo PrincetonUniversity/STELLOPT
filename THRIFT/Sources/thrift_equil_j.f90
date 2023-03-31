@@ -24,8 +24,8 @@
       LOGICAL, INTENT(IN) :: lfirst_pass
       INTEGER :: i, ier, itime
       INTEGER :: bcs0(2)
-      REAL(rprec) :: s_val, rho_val, j_val, vp, Rmajor, Aminor, temp
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_temp, j_temp
+      REAL(rprec) :: s_val, j_val, temp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: s_temp
       TYPE(EZspline1_r8) :: j_spl
       INTEGER, PARAMETER :: n_eq = 99
 !----------------------------------------------------------------------
@@ -48,65 +48,47 @@
          itime = mytimestep
       END IF
 
-      ! Create J array
-      ALLOCATE(rho_temp(nrho+2),j_temp(nrho+2))
-      rho_temp(1)        = 0.0
-      !rho_temp(1)        = -THRIFT_RHO(1)
-      rho_temp(2:nrho+1) = THRIFT_RHO
-      rho_temp(nrho+2)   = 1.0
-      !j_temp(1)          = 0.0
-      !j_temp(1)          = THRIFT_J(1,itime)
-      j_temp(1)          = (3*THRIFT_J(1,itime)-THRIFT_J(2,itime))/2
-      j_temp(2:nrho+1)   = THRIFT_J(:,itime)
-      j_temp(nrho+2)     = (3*THRIFT_J(nrho,itime)-THRIFT_J(nrho-1,itime))/2
-
-      ! Create Splines
+      ! Create J spline
       bcs0=(/ 0, 0/)
-      CALL EZspline_init(j_spl,nrho+2,bcs0,ier)
-      j_spl%x1        = rho_temp
+      ier = 0
+      CALL EZspline_init(j_spl,nsj,bcs0,ier)
+      j_spl%x1        = THRIFT_S
       j_spl%isHermite = 1
-      CALL EZspline_setup(j_spl,j_temp,ier,EXACT_DIM=.true.)
+      CALL EZspline_setup(j_spl,THRIFT_J(:,mytimestep),ier,EXACT_DIM=.true.)
 
-      ! Deallocate helper arrays
-      DEALLOCATE(rho_temp,j_temp)
+      ! temporary s grid 
+      ALLOCATE(s_temp)
+      s_temp = 0
+      FORALL(i = 1:n_eq) s_temp = DBLE(i-1)/DBLE(n_eq-1)
 
       ! Update equilibrium inputs
       IF (lvmec) THEN
          ! VMEC requires dI/ds be specified in AC_AUX_F
-         !   dA/ds = dV/ds/(2*pi*R)
-         !   dV/ds = dV/dPhi * dPhi/ds
-         !   dPhi/ds = dPhi/drho * drho/ds = dPhi/drho / (2*rho)
+         !   A     = pi*(rho*aminor)^2 = pi*s*aminor^2
+         !   dA/ds = pi*aminor^2
          !   j     = dI/ds * ds/dA = dI/ds / (dA/ds)
          !   dI/ds = j * dA/ds
-         !         = j * dV/ds / (2*pi*R)
-         !         = j * dV/dPhi * dPhi/ds / (2*pi*R)
-         !         = j * dV/dPhi * dPhi/drho / (4*pi*rho*R)
-         !         = j * dV/dPhi * Phi_edge / (2*pi*R)
+         !         = j*pi*aminor^2
+
          PCURR_TYPE = 'akima_spline_ip'
          NCURR = 1
-         ! Check to make sure we have dV/ds and Aminor
-         IF (EZspline_allocated(vp_spl)) THEN
+!        Don't think this is necessary anymore
+!         ! Check to make sure we have dV/ds and Aminor
+!         IF (EZspline_allocated(vp_spl)) THEN
             DO i = 1, n_eq
-               s_val = DBLE(i-1)/DBLE(n_eq-1)
-               rho_val = sqrt(s_val)
-               CALL EZspline_interp(j_spl,rho_val,j_val,ier)
-               CALL EZspline_interp(vp_spl,rho_val,vp,ier) ! dV/dPhi
-               !CALL EZspline_interp(phip_spl,rho_val,phip,ier) ! dPhi/drho
+               s_val = s_temp(i)
+               CALL EZspline_interp(j_spl,s_val,j_val,ier)
                AC_AUX_S(i) = s_val
-               !AC_AUX_F(i) = j_val*vp*phip/(2*pi2*rho_val*eq_Rmajor)
-               CALL get_equil_Rmajor(s_val, Rmajor, temp, Aminor, ier)
-               !AC_AUX_F(i) = j_val*vp*eq_phiedge/(2*pi*Rmajor)
-               AC_AUX_F(i) = j_val*pi*Aminor**2
+               AC_AUX_F(i) = j_val*pi*eq_Aminor**2
             END DO
-            !AC_AUX_F(1) = 2*AC_AUX_F(2)-AC_AUX_F(3)
             CURTOR = SUM(AC_AUX_F(1:n_eq),DIM=1)/DBLE(n_eq-1)
-         ELSE
-            DO i = 1, n_eq
-               s_val = DBLE(i-1)/DBLE(n_eq-1)
-               AC_AUX_S(i) = s_val
-            END DO
-            CURTOR = 0
-         END IF
+!         ELSE
+!            DO i = 1, n_eq
+!               s_val = s_temp(i)
+!               AC_AUX_S(i) = s_val
+!            END DO
+!            CURTOR = 0
+!         END IF
       END IF
 
       ! Deallocate Spline
