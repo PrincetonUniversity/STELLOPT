@@ -66,21 +66,18 @@
       ! Grid allocations
       CALL mpialloc(THRIFT_RHO,       nrho,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rho)
       CALL mpialloc(THRIFT_RHOFULL, nrho+2,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rhofull)
+      CALL mpialloc(THRIFT_S,          nsj,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_s)
+      CALL mpialloc(THRIFT_SNOB,     nsj-2,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_snob)
       CALL mpialloc(THRIFT_T,   ntimesteps,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_t)
-      CALL mpialloc(THRIFT_S,       nsj,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_s)
-      CALL mpialloc(THRIFT_RHOINS,    nrho,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rhoins)
-      CALL mpialloc(THRIFT_SINRHO,  nsj,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_sinrho)
 
       ! Current densities
-      CALL mpialloc(THRIFT_J,        nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_j)
-      CALL mpialloc(THRIFT_JBOOT,    nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jboot)
-      CALL mpialloc(THRIFT_JPLASMA,  nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jplasma)
-      CALL mpialloc(THRIFT_JECCD,    nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jeccd)
-      CALL mpialloc(THRIFT_JNBCD,    nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jnbcd)
-      CALL mpialloc(THRIFT_JOHMIC,   nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_johmic)
-      CALL mpialloc(THRIFT_JSOURCE,  nrho, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jsource)
-      CALL mpialloc(THRIFT_JBOOT_S,   nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jboot_s)
-     
+      CALL mpialloc(THRIFT_J,         nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_j)
+      CALL mpialloc(THRIFT_JBOOT,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jboot)
+      CALL mpialloc(THRIFT_JPLASMA,   nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jplasma)
+      CALL mpialloc(THRIFT_JECCD,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jeccd)
+      CALL mpialloc(THRIFT_JNBCD,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jnbcd)
+      CALL mpialloc(THRIFT_JOHMIC,    nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_johmic)
+      CALL mpialloc(THRIFT_JSOURCE,   nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jsource)     
       ! Total currents
       CALL mpialloc(THRIFT_I,       nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_i)
       CALL mpialloc(THRIFT_IBOOT,   nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_iboot)
@@ -97,7 +94,7 @@
       CALL mpialloc(THRIFT_P      ,nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_p)  
     
       ! Magnetic variables
-      CALL mpialloc(THRIFT_PHIEDGE,     1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_phiedge)
+      CALL mpialloc(THRIFT_PHIEDGE,  1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_phiedge)
       CALL mpialloc(THRIFT_VP,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_vp)     
       CALL mpialloc(THRIFT_BAV,    nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_bav)     
       CALL mpialloc(THRIFT_BSQAV,  nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_bsqav)     
@@ -121,10 +118,10 @@
       CALL mpialloc(THRIFT_ALPHA4,   nsj-2, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_alpha4)
       
       ! System of equations
-      CALL mpialloc(THRIFT_MATLD,  nsj-1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matld)
-      CALL mpialloc(THRIFT_MATMD,  nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matmd)
-      CALL mpialloc(THRIFT_MATUD,  nsj-1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matud)
-      CALL mpialloc(THRIFT_MATRHS, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matrhs)       
+      CALL mpialloc(THRIFT_MATLD,    nsj-1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matld)
+      CALL mpialloc(THRIFT_MATMD,      nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matmd)
+      CALL mpialloc(THRIFT_MATUD,    nsj-1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matud)
+      CALL mpialloc(THRIFT_MATRHS,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matrhs)       
       
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
@@ -149,16 +146,16 @@
       ! Define grids
       dt = (tend-tstart)/(ntimesteps-1)
       IF (myid_sharmem == master) THEN
-        FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho)
-        FORALL(i = 1:nsj) THRIFT_S(i)   = DBLE(i-1)/DBLE(nsj-1)
-        FORALL(i = 1:ntimesteps) THRIFT_T(i) = tstart + (i-1)*dt
+        FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho) ! (half) rho grid
+        FORALL(i = 1:nsj)  THRIFT_S(i)   = DBLE(i-1)/DBLE(nsj-1)  ! (full)  s  grid
+        FORALL(i = 1:ntimesteps) THRIFT_T(i) = tstart + (i-1)*dt  !       time grid
       END IF
+
+      ! Extra variables (used in debugging process)
       THRIFT_RHOFULL(1) = 0.0
       THRIFT_RHOFULL(2:nrho+1) = THRIFT_RHO
       THRIFT_RHOFULL(nrho+2) = 1.0
-
-      THRIFT_SINRHO = SQRT(THRIFT_S)
-      THRIFT_RHOINS = THRIFT_RHO**2
+      THRIFT_SNOB = THRIFT_S(2:nsj-1)
 
       ! Split off workers
       CALL thrift_init_mpisubgroup

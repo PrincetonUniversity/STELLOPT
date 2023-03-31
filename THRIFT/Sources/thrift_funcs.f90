@@ -67,181 +67,51 @@ SUBROUTINE update_vars()
      IF (lverbj) CALL print_calc_magvars()
 END SUBROUTINE update_vars
 
-
-SUBROUTINE solve_tdm(AI,BI,CI,DI,val) ! no longer used
-    ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
-    IMPLICIT NONE
-    REAL(rprec), DIMENSION(:), INTENT(in) :: AI
-    REAL(rprec), DIMENSION(:), INTENT(in) :: BI
-    REAL(rprec), DIMENSION(:), INTENT(in) :: CI
-    REAL(rprec), DIMENSION(:), INTENT(in) :: DI
-    REAL(rprec), DIMENSION(:), INTENT(out) :: val
-    INTEGER :: i
-    REAL(rprec), DIMENSION(:), ALLOCATABLE :: c_p
-    REAL(rprec), DIMENSION(:), ALLOCATABLE :: d_p
-    REAL(rprec) :: denom
-    ALLOCATE(c_p(nsj), d_p(nsj))
-    c_p = 0; d_p = 0
-    !! Forward sweep
-    ! c_1' = c_1/b_1   ;  c_i' =              c_i/(b_i - a_i*c_i-1') [1<i<=n-1]
-    ! d_1' = d_1/b_1   ;  d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1') [1<i<=n  ]
-    c_p(1) = CI(1)/BI(1) 
-    d_p(1) = DI(1)/BI(1) 
-    DO i = 2, nsj
-        denom = BI(i)-AI(i)*c_p(i-1)
-        IF (i/=nsj) & 
-          c_p(i) = CI(i)/denom
-        d_p(i) = (DI(i)-AI(i)*d_p(i-1))/denom
-    END DO 
-    !! Back substitution
-    ! x_n = d_n'
-    ! x_i = d_i' - c_i'*x_i+1
-    val(nsj) = d_p(nsj) 
-    DO i = nsj-1, 1, -1
-       val(i) = d_p(i)-c_p(i)*val(i+1) 
-    END DO
-
-    DEALLOCATE(c_p, d_p)
-    RETURN
-
-END SUBROUTINE solve_tdm
-
-SUBROUTINE check_sol(AI,BI,CI,DI,sol) ! no longer used either
-    REAL(rprec), DIMENSION(:), INTENT(in) :: AI
-    REAL(rprec), DIMENSION(:), INTENT(in) :: BI
-    REAL(rprec), DIMENSION(:), INTENT(in) :: CI
-    REAL(rprec), DIMENSION(:), INTENT(in) :: DI
-    REAL(rprec), DIMENSION(:), INTENT(in) :: sol
-    REAL(rprec), DIMENSION(:), ALLOCATABLE :: residue
-    INTEGER :: i
-
-    ALLOCATE(residue(nsj))
-    
-    residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
-    DO i = 2, nsj-1
-        residue(i) = AI(i-1)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
-    END DO
-    residue(nsj) = AI(nsj-1)*sol(nsj)+BI(nsj)*sol(nsj)-DI(nsj)
-    WRITE(6,*) maxval(residue)
-
-    DEALLOCATE(residue)
-
-    RETURN
-
-END SUBROUTINE check_sol
-
-
-SUBROUTINE extrapolate_arr(j_arr, j_extr)
-    REAL(rprec), DIMENSION(:), INTENT(IN)  :: j_arr
-    REAL(rprec), DIMENSION(:), INTENT(OUT) :: j_extr
-
-    j_extr(1)        = (3*j_arr(1)-j_arr(2))/2
-    j_extr(2:nrho+1) = j_arr
-    j_extr(nrho+2)   = (3*j_arr(nrho)-j_arr(nrho-1))/2
-
-    RETURN
-
-END SUBROUTINE extrapolate_arr
-
-
-SUBROUTINE curden_to_curtot(j_arr_in, i_arr)
-    ! Takes a J(rho) array and returns an I(s) array.
+SUBROUTINE curden_to_curtot(j_arr_in, i_arr_out)
+    ! Takes a J(s) array and returns an I(s) array.
     REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr_in
-    REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr
-    REAL(rprec), DIMENSION(:), ALLOCATABLE :: j_full
-    INTEGER :: i, ier
-    INTEGER :: bcs0(2)
-    REAL(rprec) :: s,rho,ds,j_interp
-    TYPE(EZspline1_r8) :: j_spl
+    REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr_out
+    INTEGER :: i
+    REAL(rprec) :: ds
 
-    ALLOCATE(j_full(nrho+2))
-
+    ! Grid spacing
     ds = THRIFT_S(2)-THRIFT_S(1)
-    CALL extrapolate_arr(j_arr_in,j_full)
-    ! Create J spline (in rho space)
-    bcs0=(/ 0, 0/)
-    CALL EZspline_init(j_spl,nrho+2,bcs0,ier)
-    j_spl%x1        = THRIFT_RHOFULL
-    j_spl%isHermite = 1
-    CALL EZspline_setup(j_spl,j_full,ier,EXACT_DIM=.true.)
-    
-    ! Calculate I (in s space)
-    i_arr(1) = 0
-    DO i = 2, nsj
-        s = THRIFT_S(i)
-        rho = SQRT(s)
-        ier = 0
-        CALL EZspline_interp(j_spl,rho,j_interp,ier)
-        i_arr(i) = i_arr(i-1) + j_interp*(pi*THRIFT_AMINOR(nsj,mytimestep)**2)*ds
+    ! No enclosed current on-axis
+    i_arr_out(1) = 0
+    ! Elsewhere: I(i) = I(i-1) + J(i)*dA(i) ; 
+    !            dA(i) = dA/ds*ds = pi*aminor^2 * ds
+    DO i = 2, nsj 
+        i_arr_out(i) = i_arr_out(i-1) + j_arr_in(i)*(pi*eq_Aminor**2)*ds
     END DO
-    CALL EZspline_free(j_spl,ier)
-    DEALLOCATE(j_full)
-
     RETURN
 
 END SUBROUTINE curden_to_curtot
 
+SUBROUTINE curtot_to_curden(i_arr_in, j_arr_out)
+    ! Takes an I(s) array and returns a J(s) array
+    REAL(rprec), DIMENSION(:), INTENT(in) :: i_arr_in
+    REAL(rprec), DIMENSION(:), INTENT(out) :: j_arr_out
+    INTEGER :: i
+    REAL(rprec) :: ds
 
-
-SUBROUTINE curtot_to_curden(i_arr, j_arr)
-    ! Takes an I(s) array and returns a J(rho) array
-    REAL(rprec), DIMENSION(:), INTENT(in) :: i_arr
-    REAL(rprec), DIMENSION(:), INTENT(out) :: j_arr
-    REAL(rprec), DIMENSION(:), ALLOCATABLE :: j_temp
-    INTEGER :: i, ier
-    INTEGER :: bcs0(2)
-    TYPE(EZspline1_r8) :: j_spl
-    REAL(rprec) :: ds, rho, s
-
-    ALLOCATE(j_temp(nsj))
-
-    ! Calculate J (in s space)
+    ! Grid spacing
     ds = THRIFT_S(2)-THRIFT_S(1)
+    ! Current density not on boundaries
+    !    J = dI/dA 
+    !      = dI/ds ds/dA
+    !      = dI/ds / (pi*aminor^2) 
     DO i = 2, nsj-1
-        j_temp(i) = (i_arr(i+1)-i_arr(i-1))/(2*ds)*1.0/(pi*THRIFT_AMINOR(nsj,mytimestep)**2)
+        j_arr_out(i) = (i_arr_in(i+1)-i_arr_in(i-1))/(2*ds)*1.0/(pi*eq_Aminor**2)
     END DO
 
-    ! Extrapolate to boundaries
-    j_temp(1)      = 2*j_temp(2)       -j_temp(3)        ! s = 0
-    j_temp(nsj) = 2*j_temp(nsj-1)-j_temp(nsj-2) ! s = 1
+    ! Extrapolate current density to boundaries
+    j_arr_out(1)= 2*j_arr_out(2)    -j_arr_out(3)     ! s = 0
+    j_temp(nsj) = 2*j_arr_out(nsj-1)-j_arr_out(nsj-2) ! s = 1
 
-    ! Convert to J rho
-    CALL Js_to_Jrho(j_temp, j_arr)
-    DEALLOCATE(j_temp)
     RETURN
 
 END SUBROUTINE curtot_to_curden
 
-SUBROUTINE Js_to_Jrho(j_s_in, j_rho_out)
-    ! This subroutine takes an array of J on the THRIFT_S grid and
-    ! returns an array of J on THRIFT_RHO grid using interpolation
-    ! j_s_in must be of size nsj
-    ! j_rho_out must be of size nrho
-    REAL(rprec), DIMENSION(:), INTENT(in) :: j_s_in
-    REAL(rprec), DIMENSION(:), INTENT(out) :: j_rho_out
-    INTEGER :: i, ier
-    INTEGER :: bcs0(2)
-    TYPE(EZspline1_r8) :: j_spl
-    REAL(rprec) :: rho, s
-
-    ier = 0
-    ! Setup J spline (in s space)
-    bcs0=(/ 0, 0/)
-    CALL EZspline_init(j_spl,nsj,bcs0,ier)
-    j_spl%x1        = THRIFT_S
-    j_spl%isHermite = 1
-    CALL EZspline_setup(j_spl,j_s_in,ier,EXACT_DIM=.true.)  
-
-    ! Interpolate J (in rho space)
-    DO i = 1, nrho
-       rho = THRIFT_RHO(i)
-       s = rho*rho
-       ier = 0
-       CALL EZspline_interp(j_spl,s,j_rho_out(i),ier)      
-    END DO
-    CALL EZspline_free(j_spl,ier)
-
-END SUBROUTINE Js_to_Jrho
 !!===============================================================================
 !!  PRINTER FUNCTIONS 
 !!===============================================================================
@@ -328,4 +198,116 @@ SUBROUTINE print_postevolve(j_arr)
      END DO
 END SUBROUTINE print_postevolve
 
+
+!!===============================================================================
+!!  NO LONGER IN USE 
+!!===============================================================================
+
+SUBROUTINE solve_tdm(AI,BI,CI,DI,val) ! no longer used
+    ! Thomas algorithm: https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm 
+    IMPLICIT NONE
+    REAL(rprec), DIMENSION(:), INTENT(in) :: AI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: BI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: CI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: DI
+    REAL(rprec), DIMENSION(:), INTENT(out) :: val
+    INTEGER :: i
+    REAL(rprec), DIMENSION(:), ALLOCATABLE :: c_p
+    REAL(rprec), DIMENSION(:), ALLOCATABLE :: d_p
+    REAL(rprec) :: denom
+    ALLOCATE(c_p(nsj), d_p(nsj))
+    c_p = 0; d_p = 0
+    !! Forward sweep
+    ! c_1' = c_1/b_1   ;  c_i' =              c_i/(b_i - a_i*c_i-1') [1<i<=n-1]
+    ! d_1' = d_1/b_1   ;  d_i' = (d_i-a_i*d_i-1')/(b_i - a_i*c_i-1') [1<i<=n  ]
+    c_p(1) = CI(1)/BI(1) 
+    d_p(1) = DI(1)/BI(1) 
+    DO i = 2, nsj
+        denom = BI(i)-AI(i)*c_p(i-1)
+        IF (i/=nsj) & 
+          c_p(i) = CI(i)/denom
+        d_p(i) = (DI(i)-AI(i)*d_p(i-1))/denom
+    END DO 
+    !! Back substitution
+    ! x_n = d_n'
+    ! x_i = d_i' - c_i'*x_i+1
+    val(nsj) = d_p(nsj) 
+    DO i = nsj-1, 1, -1
+       val(i) = d_p(i)-c_p(i)*val(i+1) 
+    END DO
+
+    DEALLOCATE(c_p, d_p)
+    RETURN
+
+END SUBROUTINE solve_tdm
+
+SUBROUTINE check_sol(AI,BI,CI,DI,sol) ! no longer used either
+    REAL(rprec), DIMENSION(:), INTENT(in) :: AI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: BI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: CI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: DI
+    REAL(rprec), DIMENSION(:), INTENT(in) :: sol
+    REAL(rprec), DIMENSION(:), ALLOCATABLE :: residue
+    INTEGER :: i
+
+    ALLOCATE(residue(nsj))
+    
+    residue(1) = BI(1)*sol(1)+CI(1)*sol(2)-DI(1)
+    DO i = 2, nsj-1
+        residue(i) = AI(i-1)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
+    END DO
+    residue(nsj) = AI(nsj-1)*sol(nsj)+BI(nsj)*sol(nsj)-DI(nsj)
+    WRITE(6,*) maxval(residue)
+
+    DEALLOCATE(residue)
+
+    RETURN
+
+END SUBROUTINE check_sol
+
+
+SUBROUTINE extrapolate_arr(j_arr, j_extr)
+    REAL(rprec), DIMENSION(:), INTENT(IN)  :: j_arr
+    REAL(rprec), DIMENSION(:), INTENT(OUT) :: j_extr
+
+    j_extr(1)        = (3*j_arr(1)-j_arr(2))/2
+    j_extr(2:nrho+1) = j_arr
+    j_extr(nrho+2)   = (3*j_arr(nrho)-j_arr(nrho-1))/2
+
+    RETURN
+
+END SUBROUTINE extrapolate_arr
+
+SUBROUTINE Js_to_Jrho(j_s_in, j_rho_out)
+    ! This subroutine takes an array of J on the THRIFT_S grid and
+    ! returns an array of J on THRIFT_RHO grid using interpolation
+    ! j_s_in must be of size nsj
+    ! j_rho_out must be of size nrho
+    REAL(rprec), DIMENSION(:), INTENT(in) :: j_s_in
+    REAL(rprec), DIMENSION(:), INTENT(out) :: j_rho_out
+    INTEGER :: i, ier
+    INTEGER :: bcs0(2)
+    TYPE(EZspline1_r8) :: j_spl
+    REAL(rprec) :: rho, s
+
+    ier = 0
+    ! Setup J spline (in s space)
+    bcs0=(/ 0, 0/)
+    CALL EZspline_init(j_spl,nsj,bcs0,ier)
+    j_spl%x1        = THRIFT_S
+    j_spl%isHermite = 1
+    CALL EZspline_setup(j_spl,j_s_in,ier,EXACT_DIM=.true.)  
+
+    ! Interpolate J (in rho space)
+    DO i = 1, nrho
+       rho = THRIFT_RHO(i)
+       s = rho*rho
+       ier = 0
+       CALL EZspline_interp(j_spl,s,j_rho_out(i),ier)      
+    END DO
+    CALL EZspline_free(j_spl,ier)
+
+END SUBROUTINE Js_to_Jrho
 END MODULE thrift_funcs
+
+

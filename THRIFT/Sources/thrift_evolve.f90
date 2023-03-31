@@ -35,7 +35,7 @@
       ! Initialize the current density
       THRIFT_J        = 0; THRIFT_JPLASMA  = 0; THRIFT_JSOURCE  = 0
       THRIFT_JBOOT    = 0; THRIFT_JECCD    = 0; THRIFT_JNBCD    = 0
-      THRIFT_JOHMIC   = 0; THRIFT_JBOOT_S  = 0
+      THRIFT_JOHMIC   = 0; 
       ! Initialize enclosed currents
       THRIFT_I        = 0; THRIFT_IPLASMA  = 0; THRIFT_ISOURCE  = 0
       THRIFT_IBOOT    = 0; THRIFT_IECCD    = 0; THRIFT_INBCD    = 0
@@ -113,7 +113,6 @@
 
             ! Update the plasma current  
             CALL thrift_jinductive
-
             
             ! Update total current
             IF (nsubsteps==1) THEN
