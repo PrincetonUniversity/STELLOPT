@@ -127,7 +127,7 @@ END SUBROUTINE curtot_to_curden
 SUBROUTINE print_calc_vars()
     INTEGER :: i
     WRITE(6,*)'==============================================================================='
-    WRITE(6,*)' CALCULATING MAGNETIC VARIABLES'
+    WRITE(6,*)' CALCULATING EVOLUTION VARIABLES'
     WRITE(6,*)'   S  VPRIME     BAV   BSQAV        S11    JSOURCE    ETAPARA     PPRIME'
     WRITE(6,*)''
     DO i = 1, nsj
