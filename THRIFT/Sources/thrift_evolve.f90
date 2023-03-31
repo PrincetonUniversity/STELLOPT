@@ -84,12 +84,15 @@
                   TRIM(ADJUSTL(temp2_str)))
 
             ! Update equilbrium current
+            IF (lverbj) WRITE(6,*) "Updating equilibrium current"
             CALL thrift_equil_j(lfirst_sub_pass)
 
             ! Run equilibrium
+            IF (lverbj) WRITE(6,*) "Running equilibrium"
             CALL thrift_run_equil
 
             ! Update equilibrium/profile variables
+            IF (lverbj) WRITE(6,*) "Updating equilibrium current"
             CALL update_vars
 
             ! Calculate Bootstrap
