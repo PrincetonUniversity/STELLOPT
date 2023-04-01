@@ -202,17 +202,18 @@ SUBROUTINE beams3d_follow
           CALL beams3d_follow_neut(tf_nag,q)
           ! Save the point to index 1 with weight set to 0
           mytdex = 1; ndt=0; ndt_max = 1 ! Save the point
-          weight_save = weight(myline)
-          weight(myline) = 0
           t_last(i) = tf_nag ! Save timestep after follow_neut
           CALL out_beams3d_nag(tf_nag,q)
-          weight(myline) = weight_save
           IF (tf_nag > t_end(i)) CYCLE
           ! Step to gyrocenter
           CALL beams3d_ionize(q)
           ! Save to index 2
+          ! no weight becasue it just jumped to this point
           mytdex = 2; ndt=0; ndt_max = 1 ! Save point
+          weight_save = weight(myline)
+          weight(myline) = 0
           CALL out_beams3d_nag(tf_nag,q)
+          weight(myline) = weight_save
        END DO
     END IF
 
