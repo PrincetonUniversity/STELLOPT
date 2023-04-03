@@ -187,7 +187,11 @@
 
       ! We want dV/dPhi = dV/ds*ds/dPhi = dV/ds / (dPhi/ds)
       !     Note that Vp is missing a factor of 4*pi*pi
+      !     Also need to map to full grid
       vp = pi2*pi2*vp
+      vp(1) = (3*vp(2)-vp(3))/2.0
+      vp(2:ns-1) = (vp(2:ns-1)+ vp(3:ns))
+      vp(ns) = 2*vp(ns) - vp(ns-2)
       vp = vp/phipf
 
       ! Iota Spline
