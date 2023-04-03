@@ -56,6 +56,7 @@ MODULE thrift_runtime
     INTEGER, PARAMETER :: MPI_REDU_ERR = 823
     INTEGER, PARAMETER :: MPI_BCAST_ERR = 83
     INTEGER, PARAMETER :: MPI_FINE_ERR = 89
+    INTEGER, PARAMETER :: THRIFT_NAN_ERR = 9
 
     INTEGER, PARAMETER :: MAXPARTICLES = 2**18
     INTEGER, PARAMETER :: MAXBEAMS = 32
@@ -253,6 +254,10 @@ CONTAINS
             PRINT *,myworkid,' calling STOP'
             CALL FLUSH(6)
             STOP
+        ELSEIF (error_num .eq. THRIFT_NAN_ERR) THEN
+            WRITE(6, *) '  NAN IN THRIFT EVOLUTION VARS'
+            WRITE(6, *) '  VAR:   ', TRIM(string_val)
+            WRITE(6, *) '  TIMESTEP:      ', ierr
         ELSEIF (error_num .eq. MPI_CHECK) THEN
         ELSE
             WRITE(6, *) '  THRIFT ENCOUNTERED AN UNKNOWN ERROR'
