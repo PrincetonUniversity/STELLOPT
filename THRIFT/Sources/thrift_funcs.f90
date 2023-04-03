@@ -101,18 +101,35 @@ END SUBROUTINE update_vars
 
 SUBROUTINE calc_iota()
     IMPLICIT NONE
-    REAL(rprec) :: phiedge, curtor, s11, s12
+    REAL(rprec) :: phiedge, curtor, s11, s12, ds
+    REAL(rprec) :: ds11_0,ds11_1,ds11_2,ds12_0,ds12_1,ds12_2,dI_2,dI_1,dI_0
     INTEGER :: i
 
-    DO i = 1, nsj
+    DO i = 2, nsj
         phiedge = THRIFT_PHIEDGE(mytimestep)
         curtor = THRIFT_I(i,mytimestep)
         s11 = THRIFT_S11(i,mytimestep)
         s12 = THRIFT_S12(i,mytimestep)
-        ! Calculate iota if s11 and phiedge exist
+        ! Calculate iota if s11 and phiedge exist 
         IF ((s11>0).and.(phiedge>0)) THRIFT_IOTA(i,mytimestep) = mu0*curtor/(s11*phiedge)-s12/s11
     END DO
-
+    ! S11, I, S12 are 0 at the magnetic axis; use l'Hôpital's rule (extrapolate derivative to axis)
+    ds = THRIFT_S(2) - THRIFT_S(1)
+    ! I
+    dI_2 = (THRIFT_I(4,mytimestep)-THRIFT_I(2,mytimestep))/(2*ds)
+    dI_1 = (THRIFT_I(3,mytimestep)-THRIFT_I(1,mytimestep))/(2*ds)
+    dI_0 = 2*dI_1 - dI_2
+    ! S11
+    dS11_2 = (THRIFT_S11(4,mytimestep)-THRIFT_S11(2,mytimestep))/(2*ds)
+    dS11_1 = (THRIFT_S11(3,mytimestep)-THRIFT_S11(1,mytimestep))/(2*ds)
+    dS11_0 = 2*dS11_1 - dS11_2    
+    ! S12
+    dS12_2 = (THRIFT_S12(4,mytimestep)-THRIFT_S12(2,mytimestep))/(2*ds)
+    dS12_1 = (THRIFT_S12(3,mytimestep)-THRIFT_S12(1,mytimestep))/(2*ds)
+    dS12_0 = 2*dS12_1 - dS12_2
+    ! Iota
+    THRIFT_IOTA(1,mytimestep) = (mu0*dI_0-dS12_0)/(phiedge*dS11_0)
+        
 END SUBROUTINE calc_iota
 
 SUBROUTINE curden_to_curtot(j_arr_in, i_arr_out)
