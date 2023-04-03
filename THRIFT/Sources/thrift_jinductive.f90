@@ -74,7 +74,7 @@
 
       ! Coefficients
       temp_arr= THRIFT_ETAPARA(:,mytimestep)*THRIFT_VP(:,mytimestep)
-      A_temp = THRIFT_S11(:,mytimestep)/THRIFT_PHIEDGE(1,mytimestep)**2
+      A_temp = THRIFT_S11(:,mytimestep)/THRIFT_PHIEDGE(mytimestep)**2
       B_temp = temp_arr*THRIFT_BSQAV(:,mytimestep)/mu0
       C_temp = temp_arr*THRIFT_PPRIME(:,mytimestep)
       D_temp = -temp_arr*THRIFT_JSOURCE(:,mytimestep)*THRIFT_BAV(:,mytimestep)
@@ -202,7 +202,7 @@
       ALLOCATE(j_temp(nsj))
       j_temp = 0 ! Will store total current density
 
-      THRIFT_I(:,mytimestep) = (THRIFT_PHIEDGE(1,mytimestep)/mu0)*THRIFT_UGRID(:,mytimestep)
+      THRIFT_I(:,mytimestep) = (THRIFT_PHIEDGE(mytimestep)/mu0)*THRIFT_UGRID(:,mytimestep)
       CALL curtot_to_curden(THRIFT_I(:,mytimestep),j_temp)
       THRIFT_JPLASMA(:,mytimestep) = j_temp - THRIFT_JSOURCE(:,mytimestep)
 
