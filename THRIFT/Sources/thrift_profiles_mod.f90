@@ -334,7 +334,10 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: rho_val
       REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(out) :: val
+      ReAL(rprec) :: clamp
       CALL get_prof_f(rho_val,t_val,TE3D,val)
+      clamp = 14 ! minimum Te is 14eV
+      te = MAXVAL( (/clamp,te/) ) 
       RETURN
       END SUBROUTINE get_prof_te
 
@@ -472,14 +475,12 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(out) :: val
       INTEGER     :: i
-      REAL(rprec) :: clog, te, zeff, clamp
+      REAL(rprec) :: clog, te, zeff
       val = 0
-      clamp = 14 ! clamp te to 14 keV at edge
       ! https://en.wikipedia.org/wiki/Spitzer_resistivity
       CALL get_prof_te(rho_val,t_val,te)
       CALL get_prof_zeff(rho_val,t_val,zeff)
       CALL get_prof_coulln(rho_val,t_val,clog)
-      te = MAXVAL( (/clamp,te/) ) 
       WRITE(6,'(A11,ES11.3,A6,ES11.3,A6,ES11.3)') "ETAPERP: T=",te," ZEFF=",zeff," CLOG=",clog
       val = 1.0313621201E-04*zeff*clog/(te**1.5)
       RETURN
