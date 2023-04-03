@@ -77,7 +77,7 @@ MODULE thrift_vars
              win_thrift_alpha1,  win_thrift_alpha2,   win_thrift_alpha3,   win_thrift_alpha4,   &
              win_thrift_matld,   win_thrift_matmd,    win_thrift_matud,    win_thrift_matrhs
     REAL(rprec) :: tstart, tend, jtol, picard_factor
-    REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), &
+    REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), THRIFT_PHIEDGE, &
                                           THRIFT_S(:),   THRIFT_SNOB(:),  THRIFT_T(:)
     REAL(rprec), DIMENSION(:,:), POINTER :: &
                  THRIFT_J,THRIFT_I,THRIFT_UGRID, &
@@ -87,7 +87,7 @@ MODULE thrift_vars
                  THRIFT_JNBCD,   THRIFT_INBCD,   &
                  THRIFT_JOHMIC,  THRIFT_IOHMIC,  &
                  THRIFT_JSOURCE, THRIFT_ISOURCE, &
-                 THRIFT_ETAPARA, THRIFT_P,       THRIFT_PPRIME,  THRIFT_PHIEDGE, &
+                 THRIFT_ETAPARA, THRIFT_P,       THRIFT_PPRIME,  &
                  THRIFT_BAV,     THRIFT_BSQAV,   THRIFT_S11,     THRIFT_S12,     &
                  THRIFT_IOTA,    THRIFT_AMINOR,  THRIFT_RMAJOR,  THRIFT_VP,      &
                  THRIFT_COEFF_A, THRIFT_COEFF_B, THRIFT_COEFF_C, THRIFT_COEFF_D, &
