@@ -149,8 +149,7 @@
             THRIFT_I(:,mytimestep)        = THRIFT_IPLASMA(:,mytimestep) &
                                           + THRIFT_ISOURCE(:,mytimestep)
             ! Calculate iota
-            THRIFT_IOTA(:,mytimestep) = mu0/THRIFT_PHIEDGE(mytimestep)*THRIFT_I(:,mytimestep)/THRIFT_S11(:,mytimestep)&
-                                          -THRIFT_S12(:,mytimestep)/THRIFT_S11(:,mytimestep)
+            CALL calc_iota
 
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN

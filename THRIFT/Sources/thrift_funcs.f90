@@ -43,7 +43,7 @@ SUBROUTINE update_vars()
         rho = SQRT(s)
         ier = 0
         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
-        CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),temp,temp,temp,ier)
+        CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),THRIFT_S12(i,mytimestep),temp,temp,ier)
         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
         CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
         ! V' = dV/ds = dV/dPhi dPhi/ds = Phi_edge * dV/dPhi
@@ -53,13 +53,36 @@ SUBROUTINE update_vars()
         CALL get_prof_p(rho, mytime, THRIFT_P(i,mytimestep))
      END DO
      THRIFT_S11 = ABS(THRIFT_S11)
-     ! Check for NaN
-     IF (ANY(ISNAN(THRIFT_S11(:,mytimestep))))      CALL handle_err(THRIFT_NAN_ERR,'THRIFT_S11',mytimestep)
-     IF (ANY(ISNAN(THRIFT_BAV(:,mytimestep))))      CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BAV',mytimestep)
-     IF (ANY(ISNAN(THRIFT_BSQAV(:,mytimestep))))    CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BSQAV',mytimestep)
-     IF (ANY(ISNAN(THRIFT_VP(:,mytimestep))))       CALL handle_err(THRIFT_NAN_ERR,'THRIFT_VP',mytimestep)
-     IF (ANY(ISNAN(THRIFT_ETAPARA(:,mytimestep))))  CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',mytimestep)
-     IF (ANY(ISNAN(THRIFT_P(:,mytimestep))))        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_P',mytimestep)
+
+     ! Handle NaN
+     IF (ANY(ISNAN(THRIFT_S11(:,mytimestep)))) THEN
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_S11',mytimestep)
+        THRIFT_S11(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_S12(:,mytimestep)))) THEN
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_S12',mytimestep)
+        THRIFT_S12(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_BAV(:,mytimestep)))) THEN
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BAV',mytimestep)
+        THRIFT_BAV(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_BSQAV(:,mytimestep))))       THEN   
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BSQAV',mytimestep)
+        THRIFT_BSQAV(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_VP(:,mytimestep))))        THEN     
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_VP',mytimestep)
+        THRIFT_VP(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_ETAPARA(:,mytimestep))))      THEN  
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',mytimestep)
+        THRIFT_ETAPARA(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_P(:,mytimestep))))            THEN  
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_P',mytimestep)
+        THRIFT_P(:,mytimestep) = 0
+     END IF
 
     ! Get pprime in s-space using finite difference
      ds = THRIFT_S(2)-THRIFT_S(1)
@@ -68,13 +91,28 @@ SUBROUTINE update_vars()
         p_p1 = THRIFT_P(i+1, mytimestep)
         p_m1 = THRIFT_P(i-1, mytimestep)
         THRIFT_PPRIME(i,mytimestep) = (p_p1-p_m1)/(2*ds)
-        IF (ISNAN(THRIFT_PPRIME(i,mytimestep))) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_PPRIME',ier)
      END DO
      THRIFT_PPRIME(nsj,mytimestep) = 2*THRIFT_PPRIME(nsj-1,mytimestep)-THRIFT_PPRIME(nsj-2,mytimestep)
    
      IF (lverbj) CALL print_calc_vars()
      
 END SUBROUTINE update_vars
+
+SUBROUTINE calc_iota()
+    IMPLICIT NONE
+    REAL(rprec) :: phiedge, curtor, s11, s12
+    INTEGER :: i
+
+    DO i = 1, nsj
+        phiedge = THRIFT_PHIEDGE(mytimestep)
+        curtor = THRIFT_I(i,mytimestep)
+        s11 = THRIFT_S11(i,mytimestep)
+        s12 = THRIFT_S12(i,mytimestep)
+        ! Calculate iota if s11 and phiedge exist
+        IF ((s11>0).and.(phiedge>0)) THRIFT_IOTA(i,mytimestep) = mu0*curtor/(s11*phiedge)-s12/s11
+    END DO
+
+END SUBROUTINE calc_iota
 
 SUBROUTINE curden_to_curtot(j_arr_in, i_arr_out)
     ! Takes a J(s) array and returns an I(s) array.
