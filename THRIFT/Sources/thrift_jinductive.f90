@@ -24,8 +24,7 @@
       IMPLICIT NONE
       INTEGER :: i, j, prevtimestep, ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho,s,ds,dt,mytime,js_edge,temp
-      TYPE(EZspline1_r8) :: j_spl
+      REAL(rprec) :: rho,s,ds,dt,mytime,temp
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
                      BP_temp, CP_temp, DP_temp,temp_arr,  &
@@ -66,8 +65,6 @@
 !     > C(j) = etapara*V'*p'
 !     > D(j) = -etapara*V'*<Js.B>
 !======================================================================
-
-      IF (lverbj) CALL print_calc_abcd(THRIFT_JSOURCE(:,mytimestep))
       
       ! Allocations
       ALLOCATE(A_temp(nsj),B_temp(nsj),C_temp(nsj),D_temp(nsj),&
@@ -77,7 +74,7 @@
 
       ! Coefficients
       temp_arr= THRIFT_ETAPARA(:,mytimestep)*THRIFT_VP(:,mytimestep)
-      A_temp = THRIFT_S11(:,mytimestep)/THRIFT_PHIEDGE(1,mytimestep)**2
+      A_temp = THRIFT_S11(:,mytimestep)/THRIFT_PHIEDGE(mytimestep)**2
       B_temp = temp_arr*THRIFT_BSQAV(:,mytimestep)/mu0
       C_temp = temp_arr*THRIFT_PPRIME(:,mytimestep)
       D_temp = -temp_arr*THRIFT_JSOURCE(:,mytimestep)*THRIFT_BAV(:,mytimestep)
@@ -161,11 +158,21 @@
       DIAGMID(2:nsj-1) =  alpha2       -2*alpha4/(ds**2) - 1.0/dt
       DIAGSUP(2:nsj-1) =  alpha3/(2*ds) + alpha4/(ds**2)
       RHS(2:nsj-1)     = -alpha1-THRIFT_UGRID(2:nsj-1,prevtimestep)/dt
-      ! Plasma edge (s=1)
+!      ! Plasma edge (s=1) (old)
+!      temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
+!      DIAGSUB(nsj-1) = -1.0/(2*ds)
+!      DIAGMID(nsj)   =  1.0/(2*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
+!      RHS(nsj)       = THRIFT_JSOURCE(nsj,mytimestep)*THRIFT_BAV(nsj,mytimestep)/temp
+      ! Plasma edge (new!)
       temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
-      DIAGSUB(nsj-1) = -1.0/(2*ds)
-      DIAGMID(nsj)   =  1.0/(2*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
-      RHS(nsj)       = js_edge*THRIFT_BAV(nsj,mytimestep)/temp
+      DIAGSUB(nsj-1) = -8/(6*ds)
+      DIAGMID( nsj ) =  7/(6*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
+      RHS(nsj)       = THRIFT_JSOURCE(nsj,mytimestep)*THRIFT_BAV(nsj,mytimestep)/temp
+      ! Row operations to make a tridiagonal matrix
+      temp = (1/(6*ds))/DIAGSUB(nsj-2)
+      DIAGSUB(nsj-1) = DIAGSUB(nsj-1) - temp*DIAGMID(nsj-1)
+      DIAGMID( nsj ) = DIAGMID( nsj ) - temp*DIAGSUP(nsj-1)
+      RHS( nsj )     =     RHS( nsj ) - temp*RHS(nsj-1)
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
@@ -195,7 +202,7 @@
       ALLOCATE(j_temp(nsj))
       j_temp = 0 ! Will store total current density
 
-      THRIFT_I(:,mytimestep) = (THRIFT_PHIEDGE(1,mytimestep)/mu0)*THRIFT_UGRID(:,mytimestep)
+      THRIFT_I(:,mytimestep) = (THRIFT_PHIEDGE(mytimestep)/mu0)*THRIFT_UGRID(:,mytimestep)
       CALL curtot_to_curden(THRIFT_I(:,mytimestep),j_temp)
       THRIFT_JPLASMA(:,mytimestep) = j_temp - THRIFT_JSOURCE(:,mytimestep)
 

@@ -56,7 +56,7 @@
       integer :: ihere = 0
       CHARACTER(LEN=32) :: temp_str
       ! Helpers to get dI/ds
-      REAL(rprec), DIMENSION(:), ALLOCATABLE ::  dIds_temp!, rho_temp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE ::  dIds_temp, rho_temp
       TYPE(EZspline1_r8) :: dIds_spl
       INTEGER :: bcs0(2)
 !-----------------------------------------------
@@ -440,23 +440,26 @@
             ! diBs : dI/ds - what VMEC needs
 
             IF (myworkid == master) THEN
-               ALLOCATE(dIds_temp(irup+2))
-!               rho_temp(1)        = 0.0
-!               rho_temp(2:irup+1) = rhoar
-!               rho_temp(irup+2)   = 1.0
+               ALLOCATE(dIds_temp(irup+2),rho_temp(irup+2))
+               rho_temp(1)        = 0.0
+               rho_temp(2:irup+1) = rhoar
+               rho_temp(irup+2)   = 1.0
                dIds_temp(2:irup+1)   = dibs*1E6 ! dibs is in MA
                dIds_temp(1)          = 2*dIds_temp(2)-dIds_temp(3)
                dIds_temp(irup+2)     = 2*dIds_temp(irup+1)-dIds_temp(irup)
                bcs0=(/ 0, 0/)
                CALL EZspline_init(dIds_spl,irup+2,bcs0,ier)
-               dIds_spl%x1        = THRIFT_RHOFULL
+               !dIds_spl%x1        = SQRT(rho_temp)
+               dIds_spl%x1        = rho_temp ! dibs is on s grid
                dIds_spl%isHermite = 1
                CALL EZspline_setup(dIds_spl,dIds_temp,ier,EXACT_DIM=.true.)
-               DEALLOCATE(dIds_temp)
+               DEALLOCATE(dIds_temp,rho_temp)
 
                ! Calculate J in s space = dI/ds * 1/(pi*a^2)
                DO i = 1, nsj
                   s_val = THRIFT_S(i)
+               !   rho_val = SQRT(s_val)
+               !   CALL EZspline_interp(dIds_spl,rho_val,temp,ier)
                   CALL EZspline_interp(dIds_spl,s_val,temp,ier)
                   THRIFT_JBOOT(i,mytimestep) = temp/(pi2/2*eq_Aminor**2) ! for some reason 'pi' is an ambigious reference
                END DO

@@ -29,8 +29,8 @@
       IF (lvmec) THEN
          PMASS_TYPE = 'akima_spline'
          PRES_SCALE = one
-         DO i = 1, 99
-           s_val = DBLE(i-1)/DBLE(99-1)
+         DO i = 1, n_eq
+           s_val = DBLE(i-1)/DBLE(n_eq-1)
            rho_val = sqrt(s_val)
            CALL get_prof_p(rho_val,THRIFT_T(mytimestep),p_val)
            !WRITE(6,*) rho_val,THRIFT_T(mytimestep),p_val

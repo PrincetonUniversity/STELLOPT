@@ -37,22 +37,52 @@ SUBROUTINE update_vars()
 
     ! Grab vars from profiles
     mytime = THRIFT_T(mytimestep)
-    THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge    
+    THRIFT_PHIEDGE(mytimestep) = eq_phiedge    
     DO i = 1, nsj
         s = THRIFT_S(i)
         rho = SQRT(s)
         ier = 0
         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
-        CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),temp,temp,temp,ier)
+        CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),THRIFT_S12(i,mytimestep),temp,temp,ier)
         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
         CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
         ! V' = dV/ds = dV/dPhi dPhi/ds = Phi_edge * dV/dPhi
-        THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)*temp
+        THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(mytimestep)*temp
         ! eta breaks at rho=1(s=1) so look one gridpoint back
         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
         CALL get_prof_p(rho, mytime, THRIFT_P(i,mytimestep))
      END DO
      THRIFT_S11 = ABS(THRIFT_S11)
+
+     ! Handle NaN
+     IF (ANY(ISNAN(THRIFT_S11(:,mytimestep)))) THEN
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_S11',mytimestep)
+        THRIFT_S11(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_S12(:,mytimestep)))) THEN
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_S12',mytimestep)
+        THRIFT_S12(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_BAV(:,mytimestep)))) THEN
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BAV',mytimestep)
+        THRIFT_BAV(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_BSQAV(:,mytimestep))))       THEN   
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BSQAV',mytimestep)
+        THRIFT_BSQAV(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_VP(:,mytimestep))))        THEN     
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_VP',mytimestep)
+        THRIFT_VP(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_ETAPARA(:,mytimestep))))      THEN  
+        IF (mytimestep/=1) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',mytimestep)
+        THRIFT_ETAPARA(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_P(:,mytimestep))))            THEN  
+        IF (mytimestep/=1) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_P',mytimestep)
+        THRIFT_P(:,mytimestep) = 0
+     END IF
 
     ! Get pprime in s-space using finite difference
      ds = THRIFT_S(2)-THRIFT_S(1)
@@ -62,10 +92,45 @@ SUBROUTINE update_vars()
         p_m1 = THRIFT_P(i-1, mytimestep)
         THRIFT_PPRIME(i,mytimestep) = (p_p1-p_m1)/(2*ds)
      END DO
+     THRIFT_PPRIME(1,mytimestep)   = 2*THRIFT_PPRIME(1,mytimestep)-THRIFT_PPRIME(2,mytimestep)
      THRIFT_PPRIME(nsj,mytimestep) = 2*THRIFT_PPRIME(nsj-1,mytimestep)-THRIFT_PPRIME(nsj-2,mytimestep)
    
-     IF (lverbj) CALL print_calc_magvars()
+     IF (lverbj) CALL print_calc_vars()
+     
 END SUBROUTINE update_vars
+
+SUBROUTINE calc_iota()
+    IMPLICIT NONE
+    REAL(rprec) :: phiedge, curtor, s11, s12, ds
+    REAL(rprec) :: ds11_0,ds11_1,ds11_2,ds12_0,ds12_1,ds12_2,dI_2,dI_1,dI_0
+    INTEGER :: i
+
+    DO i = 2, nsj
+        phiedge = THRIFT_PHIEDGE(mytimestep)
+        curtor = THRIFT_I(i,mytimestep)
+        s11 = THRIFT_S11(i,mytimestep)
+        s12 = THRIFT_S12(i,mytimestep)
+        ! Calculate iota if s11 and phiedge exist 
+        IF ((s11>0).and.(phiedge>0)) THRIFT_IOTA(i,mytimestep) = mu0*curtor/(s11*phiedge)-s12/s11
+    END DO
+    ! S11, I, S12 are 0 at the magnetic axis; use l'Hôpital's rule (extrapolate derivative to axis)
+    ds = THRIFT_S(2) - THRIFT_S(1)
+    ! I
+    dI_2 = (THRIFT_I(4,mytimestep)-THRIFT_I(2,mytimestep))/(2*ds)
+    dI_1 = (THRIFT_I(3,mytimestep)-THRIFT_I(1,mytimestep))/(2*ds)
+    dI_0 = 2*dI_1 - dI_2
+    ! S11
+    dS11_2 = (THRIFT_S11(4,mytimestep)-THRIFT_S11(2,mytimestep))/(2*ds)
+    dS11_1 = (THRIFT_S11(3,mytimestep)-THRIFT_S11(1,mytimestep))/(2*ds)
+    dS11_0 = 2*dS11_1 - dS11_2    
+    ! S12
+    dS12_2 = (THRIFT_S12(4,mytimestep)-THRIFT_S12(2,mytimestep))/(2*ds)
+    dS12_1 = (THRIFT_S12(3,mytimestep)-THRIFT_S12(1,mytimestep))/(2*ds)
+    dS12_0 = 2*dS12_1 - dS12_2
+    ! Iota
+    THRIFT_IOTA(1,mytimestep) = (mu0*dI_0-phiedge*dS12_0)/(phiedge*dS11_0)
+
+END SUBROUTINE calc_iota
 
 SUBROUTINE curden_to_curtot(j_arr_in, i_arr_out)
     ! Takes a J(s) array and returns an I(s) array.
@@ -105,7 +170,7 @@ SUBROUTINE curtot_to_curden(i_arr_in, j_arr_out)
     END DO
 
     ! Extrapolate current density to boundaries
-    j_arr_out(1)= 2*j_arr_out(2)    -j_arr_out(3)     ! s = 0
+    j_arr_out(1)   = 2*j_arr_out(2)    -j_arr_out(3)     ! s = 0
     j_arr_out(nsj) = 2*j_arr_out(nsj-1)-j_arr_out(nsj-2) ! s = 1
 
     RETURN
@@ -115,32 +180,18 @@ END SUBROUTINE curtot_to_curden
 !!===============================================================================
 !!  PRINTER FUNCTIONS 
 !!===============================================================================
-SUBROUTINE print_calc_magvars()
+SUBROUTINE print_calc_vars()
     INTEGER :: i
     WRITE(6,*)'==============================================================================='
-    WRITE(6,*)' CALCULATING MAGNETIC VARIABLES'
-    WRITE(6,*)' S    DV/DS          <B>      <B^2>     RMAJOR     AMINOR        S11 '
+    WRITE(6,*)' CALCULATING EVOLUTION VARIABLES'
+    WRITE(6,*)'   S  VPRIME     BAV   BSQAV        S11    ETAPARA     PPRIME'
     WRITE(6,*)''
     DO i = 1, nsj
-        WRITE(6,'(F5.3,5(1X,F10.6),1X,ES10.3)') &
-              THRIFT_S(i), THRIFT_VP(i,mytimestep), THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), &
-              ABS(THRIFT_S11(i,mytimestep)), THRIFT_RMAJOR(i,mytimestep), THRIFT_AMINOR(i,mytimestep)
+        WRITE(6,'(F5.3,3(1X,F7.3),3(1X,ES10.3))') &
+            THRIFT_S(i),THRIFT_VP(i,mytimestep),THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), &
+            THRIFT_S11(i,mytimestep),THRIFT_ETAPARA(i,mytimestep),THRIFT_PPRIME(i,mytimestep)
     END DO
-END SUBROUTINE print_calc_magvars
-
-SUBROUTINE print_calc_abcd(j_arr)
-    REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr
-    INTEGER :: i
-    WRITE(6,*)'==============================================================================='
-    WRITE(6,*)' CALCULATING COEFFICIENTS A,B,C,D'
-    WRITE(6,*)'   S  ETAPARA       DV/DS      DP/DS       <J.B>      BSQAV        S11'
-    WRITE(6,*)''
-    DO i = 1, nsj
-        WRITE(6,'(F5.3,6(1X,ES10.3))') &
-        THRIFT_S(i), THRIFT_ETAPARA(i,mytimestep), THRIFT_VP(i,mytimestep), THRIFT_PPRIME(i,mytimestep),&
-        j_arr(i)*THRIFT_BAV(i,mytimestep), THRIFT_BSQAV(i,mytimestep), THRIFT_S11(i,mytimestep)
-    END DO
-END SUBROUTINE print_calc_abcd
+END SUBROUTINE print_calc_vars
 
 SUBROUTINE print_abcd()
     INTEGER :: i
@@ -189,12 +240,11 @@ SUBROUTINE print_postevolve(j_arr)
     INTEGER :: i
     WRITE(6,*) '==============================================================================='
     WRITE(6,*)' POST EVOLUTION' 
-    WRITE(6,*)'  i  s        ITOTAL  ISOURCE        IPLASMA   rho   J     JPLASMA        JSOURCE'
+    WRITE(6,*)'  i     s        ITOTAL        JTOTAL       JPLASMA        JSOURCE'
     WRITE(6,*)''
     DO i = 1, nsj
         WRITE(6,'(I4, 1X, F5.3, 3(1X,ES13.5), 1X, F5.3, 3(1X,ES13.5))') &
-           i, THRIFT_S(i), THRIFT_I(i,mytimestep), THRIFT_ISOURCE(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
-           THRIFT_RHO(i), j_arr(i), THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
+           i, THRIFT_S(i), THRIFT_I(i,mytimestep),j_arr(i),THRIFT_JPLASMA(i,mytimestep),THRIFT_JSOURCE(i,mytimestep)
      END DO
 END SUBROUTINE print_postevolve
 
@@ -257,7 +307,7 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol) ! no longer used either
         residue(i) = AI(i-1)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
     END DO
     residue(nsj) = AI(nsj-1)*sol(nsj)+BI(nsj)*sol(nsj)-DI(nsj)
-    WRITE(6,*) maxval(residue)
+    WRITE(6,'(A19,ES13.3)') "RESIDUE THIS ITER: ",maxval(residue)
 
     DEALLOCATE(residue)
 

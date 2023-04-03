@@ -19,7 +19,7 @@
       IMPLICIT NONE
       LOGICAL :: lfirst_pass, lfirst_sub_pass
       INTEGER :: i, ier
-      REAL(rprec) :: alpha, rho, s, aminor1, aminor2, temp
+      REAL(rprec) :: alpha, rho, s
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
       CHARACTER(len = 16)     :: temp1_str, temp2_str
       CHARACTER(len = 79)     :: header_str,progress_str
@@ -32,25 +32,25 @@
       ! For when we collect the workers
       IF (myworkid .ne. master) RETURN
 
-      ! Initialize the current density
+      ! Initialize variables for current densities
       THRIFT_J        = 0; THRIFT_JPLASMA  = 0; THRIFT_JSOURCE  = 0
       THRIFT_JBOOT    = 0; THRIFT_JECCD    = 0; THRIFT_JNBCD    = 0
-      THRIFT_JOHMIC   = 0; 
-      ! Initialize enclosed currents
+      THRIFT_JOHMIC   = 0 
+      ! Initialize variables for enclosed currents
       THRIFT_I        = 0; THRIFT_IPLASMA  = 0; THRIFT_ISOURCE  = 0
       THRIFT_IBOOT    = 0; THRIFT_IECCD    = 0; THRIFT_INBCD    = 0
-      THRIFT_IOHMIC   = 0; THRIFT_UGRID    = 0;   
+      THRIFT_IOHMIC   = 0; THRIFT_UGRID    = 0
       ! Initialize profile variables
       THRIFT_P        = 0; THRIFT_PPRIME   = 0; THRIFT_ETAPARA  = 0
       ! Initialize magnetic variables
-      THRIFT_VP       = 0; THRIFT_PHIEDGE  = 0; THRIFT_S11      = 0
-      THRIFT_BAV      = 0; THRIFT_BSQAV    = 0
-      THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0
+      THRIFT_S11      = 0; THRIFT_S12      = 0; THRIFT_IOTA     = 0
+      THRIFT_BAV      = 0; THRIFT_BSQAV    = 0; THRIFT_PHIEDGE  = 0
+      THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0; THRIFT_VP       = 0      
       ! Initialize coefficients
-      THRIFT_COEFF_A = 0; THRIFT_COEFF_B = 0; THRIFT_COEFF_C = 0; THRIFT_COEFF_D = 0;
-      THRIFT_COEFF_BP= 0; THRIFT_COEFF_CP= 0; THRIFT_COEFF_DP= 0;
-      THRIFT_ALPHA1  = 0; THRIFT_ALPHA2  = 0; THRIFT_ALPHA3  = 0; THRIFT_ALPHA4  = 0;
-      THRIFT_MATLD   = 0; THRIFT_MATMD   = 0; THRIFT_MATUD   = 0; THRIFT_MATRHS  = 0;
+      THRIFT_COEFF_A  = 0; THRIFT_COEFF_B  = 0; THRIFT_COEFF_C  = 0; THRIFT_COEFF_D  = 0
+                           THRIFT_COEFF_BP = 0; THRIFT_COEFF_CP = 0; THRIFT_COEFF_DP = 0
+      THRIFT_ALPHA1   = 0; THRIFT_ALPHA2   = 0; THRIFT_ALPHA3   = 0; THRIFT_ALPHA4   = 0
+      THRIFT_MATLD    = 0; THRIFT_MATMD    = 0; THRIFT_MATUD    = 0; THRIFT_MATRHS   = 0
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nrho), jold(nrho))
@@ -84,12 +84,15 @@
                   TRIM(ADJUSTL(temp2_str)))
 
             ! Update equilbrium current
+            IF (lverbj) WRITE(6,*) "Updating equilibrium current"
             CALL thrift_equil_j(lfirst_sub_pass)
 
             ! Run equilibrium
+            IF (lverbj) WRITE(6,*) "Running equilibrium"
             CALL thrift_run_equil
 
             ! Update equilibrium/profile variables
+            IF (lverbj) WRITE(6,*) "Updating equilibrium current"
             CALL update_vars
 
             ! Calculate Bootstrap
@@ -112,6 +115,7 @@
                                            + THRIFT_JOHMIC(:,mytimestep)
 
             ! Update the plasma current  
+            IF (lverbj) WRITE(6,*) "Evolving current"
             CALL thrift_jinductive
             
             ! Update total current
@@ -145,6 +149,9 @@
                                           + THRIFT_IOHMIC(:, mytimestep)
             THRIFT_I(:,mytimestep)        = THRIFT_IPLASMA(:,mytimestep) &
                                           + THRIFT_ISOURCE(:,mytimestep)
+            ! Calculate iota
+            IF (lverbj) WRITE(6,*) "Calculating iota"
+            CALL calc_iota
 
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN
