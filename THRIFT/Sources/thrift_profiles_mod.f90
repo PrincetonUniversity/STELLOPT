@@ -337,7 +337,7 @@ MODULE thrift_profiles_mod
       ReAL(rprec) :: clamp
       CALL get_prof_f(rho_val,t_val,TE3D,val)
       clamp = 14 ! minimum Te is 14eV
-      te = MAXVAL( (/clamp,te/) ) 
+      val = MAXVAL( (/clamp,val/) ) 
       RETURN
       END SUBROUTINE get_prof_te
 
