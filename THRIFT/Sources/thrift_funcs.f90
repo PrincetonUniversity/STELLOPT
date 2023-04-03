@@ -128,8 +128,8 @@ SUBROUTINE calc_iota()
     dS12_1 = (THRIFT_S12(3,mytimestep)-THRIFT_S12(1,mytimestep))/(2*ds)
     dS12_0 = 2*dS12_1 - dS12_2
     ! Iota
-    THRIFT_IOTA(1,mytimestep) = (mu0*dI_0-dS12_0)/(phiedge*dS11_0)
-        
+    THRIFT_IOTA(1,mytimestep) = (mu0*dI_0-phiedge*dS12_0)/(phiedge*dS11_0)
+
 END SUBROUTINE calc_iota
 
 SUBROUTINE curden_to_curtot(j_arr_in, i_arr_out)
