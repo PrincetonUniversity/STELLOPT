@@ -480,6 +480,7 @@ MODULE thrift_profiles_mod
       CALL get_prof_zeff(rho_val,t_val,zeff)
       CALL get_prof_coulln(rho_val,t_val,clog)
       te = MAXVAL( (/clamp,te/) ) 
+      WRITE(6,'(A11,ES11.3,A6,ES11.3,A6,ES11.3)') "ETAPERP: T=",te," ZEFF=",zeff," CLOG=",clog
       val = 1.0313621201E-04*zeff*clog/(te**1.5)
       RETURN
       END SUBROUTINE get_prof_etaperp
