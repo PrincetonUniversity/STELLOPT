@@ -672,16 +672,13 @@
                gammarel     = SQRT(1.0 / ( (1.0+v_total/c_speed) * (1.0-v_total/c_speed) ))
                rtemp(k,4,1) = (gammarel-1.0)*mass(i)*c_speed*c_speed/e_charge
                rtemp(k,5,1) = vll_lines(d3,i)/v_total
-               !rtemp(k,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)/e_charge
-               !rtemp(i,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)
-               !rtemp(k,5,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
                rtemp(k,6,1) = 0          ! zeta
                rtemp(k,7,1) = mass(i)*inv_amu ! mass
                rtemp(k,8,1) = Zatom(i)
                rtemp(k,9,1) = NINT(mass(i)*inv_amu) ! Anum
                rtemp(k,10,1) = Zatom(i)
                rtemp(k,11,1) = weight(i) ! weight
-               rtemp(k,12,1) = 0.0 ! time
+               rtemp(k,12,1) = t_end(i) ! time
                rtemp(k,13,1) = k
                k=k+1
             END DO
