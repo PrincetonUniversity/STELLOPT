@@ -37,7 +37,7 @@ SUBROUTINE update_vars()
 
     ! Grab vars from profiles
     mytime = THRIFT_T(mytimestep)
-    THRIFT_PHIEDGE(1,mytimestep) = eq_phiedge    
+    THRIFT_PHIEDGE(mytimestep) = eq_phiedge    
     DO i = 1, nsj
         s = THRIFT_S(i)
         rho = SQRT(s)
@@ -47,7 +47,7 @@ SUBROUTINE update_vars()
         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
         CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
         ! V' = dV/ds = dV/dPhi dPhi/ds = Phi_edge * dV/dPhi
-        THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(1,mytimestep)*temp
+        THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(mytimestep)*temp
         ! eta breaks at rho=1(s=1) so look one gridpoint back
         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
         CALL get_prof_p(rho, mytime, THRIFT_P(i,mytimestep))
