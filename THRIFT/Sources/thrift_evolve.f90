@@ -115,6 +115,7 @@
                                            + THRIFT_JOHMIC(:,mytimestep)
 
             ! Update the plasma current  
+            IF (lverbj) WRITE(6,*) "Evolving current"
             CALL thrift_jinductive
             
             ! Update total current
@@ -149,6 +150,7 @@
             THRIFT_I(:,mytimestep)        = THRIFT_IPLASMA(:,mytimestep) &
                                           + THRIFT_ISOURCE(:,mytimestep)
             ! Calculate iota
+            IF (lverbj) WRITE(6,*) "Calculating iota"
             CALL calc_iota
 
             ! Print Header
