@@ -111,7 +111,7 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_VP',ier)
          CALL write_var_hdf5(fid,'THRIFT_S11',nsj,ntimesteps,ier,DBLVAR=THRIFT_S11,ATT='Susceptance matrix element S11 (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_S11',ier)
-         CALL write_var_hdf5(fid,'THRIFT_S12',nsj,ntimesteps,ier,DBLVAR=THRIFT_S11,ATT='Susceptance matrix element S12 (s-space)',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_S12',nsj,ntimesteps,ier,DBLVAR=THRIFT_S12,ATT='Susceptance matrix element S12 (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_S12',ier)
          CALL write_var_hdf5(fid,'THRIFT_BAV',nsj,ntimesteps,ier,DBLVAR=THRIFT_BAV,ATT='<B> [T] (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_BAV',ier)
