@@ -76,11 +76,11 @@ SUBROUTINE update_vars()
         THRIFT_VP(:,mytimestep) = 0
      END IF
      IF (ANY(ISNAN(THRIFT_ETAPARA(:,mytimestep))))      THEN  
-        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',mytimestep)
+        IF (mytimestep/=1) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',mytimestep)
         THRIFT_ETAPARA(:,mytimestep) = 0
      END IF
      IF (ANY(ISNAN(THRIFT_P(:,mytimestep))))            THEN  
-        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_P',mytimestep)
+        IF (mytimestep/=1) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_P',mytimestep)
         THRIFT_P(:,mytimestep) = 0
      END IF
 
@@ -166,12 +166,12 @@ SUBROUTINE print_calc_vars()
     INTEGER :: i
     WRITE(6,*)'==============================================================================='
     WRITE(6,*)' CALCULATING EVOLUTION VARIABLES'
-    WRITE(6,*)'   S  VPRIME     BAV   BSQAV        S11    JSOURCE    ETAPARA     PPRIME'
+    WRITE(6,*)'   S  VPRIME     BAV   BSQAV        S11    ETAPARA     PPRIME'
     WRITE(6,*)''
     DO i = 1, nsj
-        WRITE(6,'(F5.3,3(1X,F7.3),4(1X,ES10.3))') &
+        WRITE(6,'(F5.3,3(1X,F7.3),3(1X,ES10.3))') &
             THRIFT_S(i),THRIFT_VP(i,mytimestep),THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), &
-            THRIFT_S11(i,mytimestep),THRIFT_JSOURCE(i,mytimestep),THRIFT_ETAPARA(i,mytimestep),THRIFT_PPRIME(i,mytimestep)
+            THRIFT_S11(i,mytimestep),THRIFT_ETAPARA(i,mytimestep),THRIFT_PPRIME(i,mytimestep)
     END DO
 END SUBROUTINE print_calc_vars
 
@@ -222,12 +222,11 @@ SUBROUTINE print_postevolve(j_arr)
     INTEGER :: i
     WRITE(6,*) '==============================================================================='
     WRITE(6,*)' POST EVOLUTION' 
-    WRITE(6,*)'  i  s        ITOTAL  ISOURCE        IPLASMA   rho   J     JPLASMA        JSOURCE'
+    WRITE(6,*)'  i     s        ITOTAL        JTOTAL       JPLASMA        JSOURCE'
     WRITE(6,*)''
     DO i = 1, nsj
         WRITE(6,'(I4, 1X, F5.3, 3(1X,ES13.5), 1X, F5.3, 3(1X,ES13.5))') &
-           i, THRIFT_S(i), THRIFT_I(i,mytimestep), THRIFT_ISOURCE(i,mytimestep), THRIFT_IPLASMA(i,mytimestep),&
-           THRIFT_RHO(i), j_arr(i), THRIFT_JPLASMA(i,mytimestep), THRIFT_JSOURCE(i,mytimestep)
+           i, THRIFT_S(i), THRIFT_I(i,mytimestep),j_arr(i),THRIFT_JPLASMA(i,mytimestep),THRIFT_JSOURCE(i,mytimestep)
      END DO
 END SUBROUTINE print_postevolve
 
@@ -290,7 +289,7 @@ SUBROUTINE check_sol(AI,BI,CI,DI,sol) ! no longer used either
         residue(i) = AI(i-1)*sol(i-1)+BI(i)*sol(i)+CI(i)*sol(i+1)-DI(i)
     END DO
     residue(nsj) = AI(nsj-1)*sol(nsj)+BI(nsj)*sol(nsj)-DI(nsj)
-    WRITE(6,*) maxval(residue)
+    WRITE(6,'(A19,ES13.3)') "RESIDUE THIS ITER: ",maxval(residue)
 
     DEALLOCATE(residue)
 
