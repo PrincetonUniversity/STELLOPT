@@ -63,6 +63,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_RHOFULL',ier)
          CALL write_var_hdf5(fid,'THRIFT_T',ntimesteps,ier,DBLVAR=THRIFT_T,ATT='Time Slice Grid [s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_T',ier)
+         CALL write_var_hdf5(fid,'THRIFT_PHIEDGE',ntimesteps,ier,DBLVAR=THRIFT_PHIEDGE,ATT='Toroidal magnetic flux at plasma edge [Wb] (s-space)',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PHIEDGE',ier)
          ! 2D Floats
          ! Current densities
          nfg = nrho+2
@@ -105,8 +107,6 @@
          CALL write_var_hdf5(fid,'THRIFT_PPRIME',nsj,ntimesteps,ier,DBLVAR=THRIFT_PPRIME,ATT=' Radial derivative of pressure (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PPRIME',ier)
          ! Magnetic variables
-         CALL write_var_hdf5(fid,'THRIFT_PHIEDGE',1,ntimesteps,ier,DBLVAR=THRIFT_PHIEDGE,ATT='Toroidal magnetic flux at plasma edge [Wb] (s-space)',ATT_NAME='description')
-         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PHIEDGE',ier)
          CALL write_var_hdf5(fid,'THRIFT_VP',nsj,ntimesteps,ier,DBLVAR=THRIFT_VP,ATT='dV/dPhi (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_VP',ier)
          CALL write_var_hdf5(fid,'THRIFT_S11',nsj,ntimesteps,ier,DBLVAR=THRIFT_S11,ATT='Susceptance matrix element S11 (s-space)',ATT_NAME='description')
