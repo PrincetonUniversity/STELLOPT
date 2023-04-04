@@ -90,11 +90,11 @@ MODULE beams3d_physics_mod
          INTEGER        :: ier
          DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
-                          reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
+                          reduction, dve,dvi, tau_spit, v_crit, coulomb_log, coulomb_loge,  te_cube, &
                           speed_cube, vcrit_cube, vfrac, modb, s_temp, &
                           vc3_tauinv, vbeta, zeff_temp,&
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
-                          sm,omega2,vrel2,bmax,bmincl,bminqu,bmin
+                          sm,omega2,vrel2,bmax,bmincl,bminqu,bmin, bmine
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          ! For splines
          INTEGER :: i,j,k, l
@@ -194,7 +194,11 @@ MODULE beams3d_physics_mod
                   vrel2=9.58d10*(te_temp/1000.0d0*1836.1d0 + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
                   sm=sm+omega2/vrel2
                   bmax=sqrt(one/sm)
-               
+                  bmincl=0.13793d0*abs(mycharge/e_charge)*(electron_mass+mymass)/(electron_mass*mymass*vrel2)*inv_dalton
+                  bminqu=1.9121d-8*(mymass+electron_mass)/(electron_mass*mymass*sqrt(vrel2))*inv_dalton
+                  bmin=max(bmincl,bminqu)
+                  coulomb_loge=log(bmax/bmin) !only last coulomb log is saved - nubeam keeps per-species coulomb log, but not sure what effect this has
+                     
                   ! next calculate rmin, including quantum corrections.  The classical
                   ! rmin is:
                   !
@@ -216,7 +220,7 @@ MODULE beams3d_physics_mod
                      bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/vrel2
                      bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
                      bmin=max(bmincl,bminqu)
-                     coulomb_log=log(bmax/bmin) !only last coulomb log is saved - nubeam keeps per-species coulomb log, but not sure what effect this has
+                     coulomb_log=log(bmax/bmin) !only last coulomb log is saved - TODO: implement for multi-species
                   end do
                ! ELSE IF (coul_type .eq. 2) THEN 
                !    ! Coulomb log approximation (NRL pg. 35)
@@ -243,9 +247,9 @@ MODULE beams3d_physics_mod
                coulomb_log = max(coulomb_log,one)
 
                ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-               v_crit = fact_crit*SQRT(te_temp)
+               v_crit = fact_crit*SQRT(te_temp) * (coulomb_log/coulomb_loge)**(1.0/3.0)
                vcrit_cube = v_crit*v_crit*v_crit
-               tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here
+               tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here
                tau_spit_inv = (1.0D0)/tau_spit
                vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
