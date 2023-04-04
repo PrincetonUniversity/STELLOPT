@@ -120,7 +120,7 @@ MODULE beams3d_physics_mod
          te_temp  = 0; ne_temp  = 0; ti_temp  = 0; zeff_temp=1;
          speed = 0; reduction = 0
 
-         tau_spit_inv = 0.0; v_crit   = 0.0; coulomb_log = 15
+         tau_spit_inv = 0.0; v_crit   = 0.0; coulomb_log = 15 ; coulomb_loge = 15
          tau_inv = 10.0; vcrit_cube = 0.0; vc3_tauinv = 0
 
          ! Check that we're inside the domain then proceed
@@ -194,8 +194,8 @@ MODULE beams3d_physics_mod
                   vrel2=9.58d10*(te_temp/1000.0d0*1836.1d0 + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
                   sm=sm+omega2/vrel2
                   bmax=sqrt(one/sm)
-                  bmincl=0.13793d0*abs(mycharge/e_charge)*(electron_mass+mymass)/(electron_mass*mymass*vrel2)*inv_dalton
-                  bminqu=1.9121d-8*(mymass+electron_mass)/(electron_mass*mymass*sqrt(vrel2))*inv_dalton
+                  bmincl=0.13793d0*abs(mycharge/e_charge)*(1/1836.1+mymass*inv_dalton)/(1/1836.1*mymass*inv_dalton*vrel2)
+                  bminqu=1.9121d-8*(mymass*inv_dalton+1/1836.1)/(1/1836.1*mymass*inv_dalton*sqrt(vrel2))
                   bmin=max(bmincl,bminqu)
                   coulomb_loge=log(bmax/bmin) !only last coulomb log is saved - nubeam keeps per-species coulomb log, but not sure what effect this has
                      
