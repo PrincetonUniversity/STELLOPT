@@ -46,7 +46,7 @@
 
             ! From Wolfram
             Inorm = 0.5*w*( SQRT(pi)*Rc*( ERF((1-Rc)/w) + ERF(Rc/w) )+w*( EXP(-Rc**2/w**2) - EXP(-(Rc-1)**2/w**2) ))
-            Inorm = 2*Ieccd/(pi*eq_Aminor**2*Inorm)
+            Inorm = Ieccd/(2*pi*eq_Aminor**2*Inorm)
 
             ! Calculate J (rho-space)
             ALLOCATE(j_temp(nrho+2))
