@@ -52,7 +52,7 @@ SUBROUTINE update_vars()
         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
         CALL get_prof_p(rho, mytime, THRIFT_P(i,mytimestep))
      END DO
-     !THRIFT_S11 = ABS(THRIFT_S11)
+     THRIFT_S11 = ABS(THRIFT_S11)
 
      ! Handle NaN
      IF (ANY(ISNAN(THRIFT_S11(:,mytimestep)))) THEN
