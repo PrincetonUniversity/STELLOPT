@@ -230,16 +230,6 @@
       CALL EZspline_setup(vp_spl,vp,iflag,EXACT_DIM=.true.)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: vp',iflag)
 
-      ! <B_V> Spline (B Toroidal)
-      bcs1=(/ 0, 0/)
-      IF (EZspline_allocated(BV_spl)) CALL EZspline_free(BV_spl,iflag)
-      CALL EZspline_init(BV_spl,ns,bcs1,iflag)
-      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: BV',iflag)
-      BV_spl%isHermite = 0
-      FORALL (k=1:ns) BV_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns-1))
-      CALL EZspline_setup(BV_spl,bvco,iflag,EXACT_DIM=.true.)
-      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: BV',iflag)
-
 
       RETURN
 !----------------------------------------------------------------------
