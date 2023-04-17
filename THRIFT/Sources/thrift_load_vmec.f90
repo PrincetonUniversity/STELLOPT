@@ -194,6 +194,11 @@
       vp(ns) = 2*vp(ns-1) - vp(ns-2)
       vp = vp/phipf
 
+      ! <B_V> from half to full grid
+      bvco(1) = (3*bvco(2)-bvco(3))/2.0
+      bvco(2:ns-1) = (bvco(2:ns-1)+ bvco(3:ns))/2.0
+      bvco(ns) = 2*bvco(ns-1) - bvco(ns-2)
+
       ! Iota Spline
       bcs1=(/ 0, 0/)
       IF (EZspline_allocated(iota_spl)) CALL EZspline_free(iota_spl,iflag)
