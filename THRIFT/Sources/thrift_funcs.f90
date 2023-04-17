@@ -44,7 +44,7 @@ SUBROUTINE update_vars()
         ier = 0
         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),THRIFT_S12(i,mytimestep),temp,temp,ier)
-        CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier)
+        CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier, BVAV_VAL = THRIFT_BVAV(i,mytimestep))
         CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
         ! V' = dV/ds = dV/dPhi dPhi/ds = Phi_edge * dV/dPhi
         THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(mytimestep)*temp
@@ -74,6 +74,10 @@ SUBROUTINE update_vars()
      IF (ANY(ISNAN(THRIFT_VP(:,mytimestep))))        THEN     
         CALL handle_err(THRIFT_NAN_ERR,'THRIFT_VP',mytimestep)
         THRIFT_VP(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_BVAV(:,mytimestep)))) THEN
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BVAV',mytimestep)
+        THRIFT_BVAV(:,mytimestep) = 0
      END IF
      IF (ANY(ISNAN(THRIFT_ETAPARA(:,mytimestep))))      THEN  
         IF (mytimestep/=1) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',mytimestep)
