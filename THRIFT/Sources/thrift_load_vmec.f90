@@ -194,6 +194,11 @@
       vp(ns) = 2*vp(ns-1) - vp(ns-2)
       vp = vp/phipf
 
+      ! <B_V> from half to full grid
+      bvco(1) = (3*bvco(2)-bvco(3))/2.0
+      bvco(2:ns-1) = (bvco(2:ns-1)+ bvco(3:ns))/2.0
+      bvco(ns) = 2*bvco(ns-1) - bvco(ns-2)
+
       ! Iota Spline
       bcs1=(/ 0, 0/)
       IF (EZspline_allocated(iota_spl)) CALL EZspline_free(iota_spl,iflag)
@@ -224,6 +229,16 @@
       FORALL (k=1:ns) vp_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns-1))
       CALL EZspline_setup(vp_spl,vp,iflag,EXACT_DIM=.true.)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: vp',iflag)
+
+      ! <B_V> Spline (B Toroidal)
+      bcs1=(/ 0, 0/)
+      IF (EZspline_allocated(BV_spl)) CALL EZspline_free(BV_spl,iflag)
+      CALL EZspline_init(BV_spl,ns,bcs1,iflag)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: BV',iflag)
+      BV_spl%isHermite = 0
+      FORALL (k=1:ns) BV_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns-1))
+      CALL EZspline_setup(BV_spl,bvco,iflag,EXACT_DIM=.true.)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: BV',iflag)
 
 
       RETURN

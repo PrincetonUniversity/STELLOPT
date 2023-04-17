@@ -75,7 +75,8 @@ MODULE thrift_vars
              win_thrift_coeff_a, win_thrift_coeff_b,  win_thrift_coeff_c,  win_thrift_coeff_d,  &
                                  win_thrift_coeff_bp, win_thrift_coeff_cp, win_thrift_coeff_dp, &
              win_thrift_alpha1,  win_thrift_alpha2,   win_thrift_alpha3,   win_thrift_alpha4,   &
-             win_thrift_matld,   win_thrift_matmd,    win_thrift_matud,    win_thrift_matrhs
+             win_thrift_matld,   win_thrift_matmd,    win_thrift_matud,    win_thrift_matrhs,   &
+             win_thrift_bvav
     REAL(rprec) :: tstart, tend, jtol, picard_factor
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), THRIFT_PHIEDGE(:), &
                                           THRIFT_S(:),   THRIFT_SNOB(:),  THRIFT_T(:)
@@ -93,7 +94,8 @@ MODULE thrift_vars
                  THRIFT_COEFF_A, THRIFT_COEFF_B, THRIFT_COEFF_C, THRIFT_COEFF_D, &
                                  THRIFT_COEFF_BP,THRIFT_COEFF_CP,THRIFT_COEFF_DP,&
                  THRIFT_ALPHA1,  THRIFT_ALPHA2,  THRIFT_ALPHA3,  THRIFT_ALPHA4,  &
-                 THRIFT_MATLD,   THRIFT_MATMD,   THRIFT_MATUD,   THRIFT_MATRHS
+                 THRIFT_MATLD,   THRIFT_MATMD,   THRIFT_MATUD,   THRIFT_MATRHS,  &
+                 THRIFT_BVAV
 
     ! For TRAVIS
     INTEGER, PARAMETER :: nsys   = 16
