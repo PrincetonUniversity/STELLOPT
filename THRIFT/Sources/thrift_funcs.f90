@@ -48,6 +48,7 @@ SUBROUTINE update_vars()
         CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
         ! V' = dV/ds = dV/dPhi dPhi/ds = Phi_edge * dV/dPhi
         THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(mytimestep)*temp
+        CALL EZspline_interp(BV_spl,s,THRIFT_BVAV(i,mytimestep),ier)
         ! eta breaks at rho=1(s=1) so look one gridpoint back
         CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
         CALL get_prof_p(rho, mytime, THRIFT_P(i,mytimestep))
@@ -74,6 +75,10 @@ SUBROUTINE update_vars()
      IF (ANY(ISNAN(THRIFT_VP(:,mytimestep))))        THEN     
         CALL handle_err(THRIFT_NAN_ERR,'THRIFT_VP',mytimestep)
         THRIFT_VP(:,mytimestep) = 0
+     END IF
+     IF (ANY(ISNAN(THRIFT_BVAV(:,mytimestep)))) THEN
+        CALL handle_err(THRIFT_NAN_ERR,'THRIFT_BVAV',mytimestep)
+        THRIFT_BVAV(:,mytimestep) = 0
      END IF
      IF (ANY(ISNAN(THRIFT_ETAPARA(:,mytimestep))))      THEN  
         IF (mytimestep/=1) CALL handle_err(THRIFT_NAN_ERR,'THRIFT_ETAPARA',mytimestep)

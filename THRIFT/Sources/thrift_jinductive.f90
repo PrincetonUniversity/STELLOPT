@@ -77,7 +77,7 @@
       A_temp = THRIFT_S11(:,mytimestep)/THRIFT_PHIEDGE(mytimestep)**2
       B_temp = temp_arr*THRIFT_BSQAV(:,mytimestep)/mu0
       C_temp = temp_arr*THRIFT_PPRIME(:,mytimestep)
-      D_temp = -temp_arr*THRIFT_JSOURCE(:,mytimestep)*THRIFT_BAV(:,mytimestep)
+      D_temp = -temp_arr*THRIFT_JSOURCE(:,mytimestep)*THRIFT_BVAV(:,mytimestep)
 
       DEALLOCATE(temp_arr)
 
@@ -167,7 +167,7 @@
       temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
       DIAGSUB(nsj-1) = -8/(6*ds)
       DIAGMID( nsj ) =  7/(6*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
-      RHS(nsj)       = THRIFT_JSOURCE(nsj,mytimestep)*THRIFT_BAV(nsj,mytimestep)/temp
+      RHS(nsj)       = THRIFT_JSOURCE(nsj,mytimestep)*THRIFT_BVAV(nsj,mytimestep)/temp
       ! Row operations to make a tridiagonal matrix
       temp = (1/(6*ds))/DIAGSUB(nsj-2)
       DIAGSUB(nsj-1) = DIAGSUB(nsj-1) - temp*DIAGMID(nsj-1)
