@@ -115,6 +115,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_S12',ier)
          CALL write_var_hdf5(fid,'THRIFT_BAV',nsj,ntimesteps,ier,DBLVAR=THRIFT_BAV,ATT='<B> [T] (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_BAV',ier)
+         CALL write_var_hdf5(fid,'THRIFT_BVAV',nsj,ntimesteps,ier,DBLVAR=THRIFT_BVAV,ATT='<Bv> [T] (s-space)',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_BVAV',ier)
          CALL write_var_hdf5(fid,'THRIFT_BSQAV',nsj,ntimesteps,ier,DBLVAR=THRIFT_BSQAV,ATT='<B^2> [T^2] (s-space) ',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_BSQAV',ier)
          CALL write_var_hdf5(fid,'THRIFT_IOTA',nsj,ntimesteps,ier,DBLVAR=THRIFT_IOTA,ATT='Rotational transform (s-space) ',ATT_NAME='description')
