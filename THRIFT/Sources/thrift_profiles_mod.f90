@@ -434,6 +434,7 @@ MODULE thrift_profiles_mod
          f_bot = f_bot + nk*Zatom_prof(i)
       END DO
       IF (f_bot > 0) val = f_top/f_bot
+      val = MAX(val,1.0)
       RETURN
       END SUBROUTINE get_prof_zeff
 
@@ -451,6 +452,7 @@ MODULE thrift_profiles_mod
       END DO
       CALL get_prof_ne(rho_val,t_val,f_bot)
       IF (f_bot > 0) val = f_top/f_bot
+      val = MAX(val,1.0)
       RETURN
       END SUBROUTINE get_prof_zeffne
 
@@ -485,6 +487,29 @@ MODULE thrift_profiles_mod
       RETURN
       END SUBROUTINE get_prof_etaperp
 
+      SUBROUTINE get_prof_sigmaspitz_sauter(rho_val,t_val,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(out) :: val
+      INTEGER     :: i
+      REAL(rprec) :: clog, ne, te, zeff, Zfunc
+      val = 0
+      ! O. Sauter et al, Phys. Plasmas 6 (1999) 2834. https://aip.scitation.org/doi/pdf/10.1063/1.873240
+      CALL get_prof_te(rho_val,t_val,te)
+      CALL get_prof_ne(rho_val,t_val,ne)
+      CALL get_prof_zeff(rho_val,t_val,zeff)
+      IF (ne > 1E16) THEN
+         clog = 31.3_rprec - log(sqrt(ne)/te) ! Eq. 18d
+      ELSE
+         clog = 17.0
+      END IF
+      Zfunc = 0.58_rprec + 0.74_rprec / (0.76_rprec + zeff) ! Eq. 18a
+      val = 1.9012E+04 * (te**1.5) / (zeff * Zfunc * clog ) ! Eq. 18a
+      !PRINT *,'     SPITZ:',rho_val,te,ne,zeff,clog,Zfunc,val
+      RETURN
+      END SUBROUTINE get_prof_sigmaspitz_sauter
+
       SUBROUTINE get_prof_etapara(rho_val,t_val,val)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
@@ -503,6 +528,36 @@ MODULE thrift_profiles_mod
       val = val * F
       RETURN
       END SUBROUTINE get_prof_etapara
+
+      SUBROUTINE get_prof_etaneo_sauter(rho_val,t_val,ft_val,q_val,R_val,eps_val,val)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: t_val
+      REAL(rprec), INTENT(in) :: ft_val ! trapped fraction
+      REAL(rprec), INTENT(in) :: q_val  ! 1/iota
+      REAL(rprec), INTENT(in) :: R_val  ! Rmajor [m]
+      REAL(rprec), INTENT(in) :: eps_val ! Inverse Aspect Ratio (r/R)
+      REAL(rprec), INTENT(out) :: val
+      REAL(rprec) :: rho
+      INTEGER     :: i
+      REAL(rprec) :: zeff, sigspitz, te, ne, nuestar, Zfunc, Zft33eff
+      val = 0
+      rho = rho_val
+      ! O. Sauter et al, Phys. Plasmas 6 (1999) 2834. https://aip.scitation.org/doi/pdf/10.1063/1.873240
+      CALL get_prof_zeff(rho,t_val,zeff)
+      CALL get_prof_te(rho,t_val,te)
+      CALL get_prof_ne(rho,t_val,ne)
+      CALL get_prof_sigmaspitz_sauter(rho,t_val,sigspitz)
+      Zfunc = 0.58_rprec + 0.74_rprec / (0.76_rprec + zeff) ! Eq. 18a
+      nuestar = 6.921E-18 * q_val * R_val * ne * zeff * Zfunc / (te * te * eps_val**1.5) ! Eq. 18b
+      Zft33eff = ft_val / ( 1.0 + &
+                           (0.55 - 0.1 * ft_val) * sqrt(nuestar) + &
+                            0.45 * (1.0 - ft_val) * nuestar / (zeff**1.5)) ! Eq.13b
+      val = 1 - (1.0 + 0.36/zeff)*Zft33eff + 0.59*Zft33eff*Zft33eff/zeff - 0.23*Zft33eff*Zft33eff*Zft33eff/zeff ! Eq. 13a
+      val = 1.0/(val * sigspitz) ! sigma to eta
+      !PRINT *,'       NEO:',rho,te,ne,zeff,sigspitz,Zfunc,nuestar,val
+      RETURN
+      END SUBROUTINE get_prof_etaneo_sauter
 
       SUBROUTINE free_profiles
       USE mpi_sharmem
