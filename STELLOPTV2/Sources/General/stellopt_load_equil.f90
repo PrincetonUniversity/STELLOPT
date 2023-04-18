@@ -89,8 +89,8 @@
       DOUBLE PRECISION, ALLOCATABLE :: Vol(:)
       DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
 
-      DOUBLE PRECISION, PARAMETER :: sextrap=2.25
-!      DOUBLE PRECISION, PARAMETER :: sextrap=1.00
+!      DOUBLE PRECISION, PARAMETER :: sextrap=2.25
+      DOUBLE PRECISION, PARAMETER :: sextrap=1.00
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
