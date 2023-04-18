@@ -71,6 +71,7 @@
 !        X_SPL           Spline Variables
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      INTEGER, PARAMETER ::  nlambda=256
       INTEGER, PARAMETER ::  lintsteps=512
       INTEGER, PARAMETER, PRIVATE ::  neval_max=10000
       INTEGER, PRIVATE      ::  domain_flag, nfp
@@ -604,12 +605,14 @@
                       ZU4D(1,:,:,:)*ZU4D(1,:,:,:))
             f_temp = f_temp / G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
+            grho(1) = 0
             CALL EZspline_setup(S11_spl,grho,iflag); f_temp = 0; grho = 0
             ! Calc S21
             f_temp = (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
                       ZU4D(1,:,:,:)*ZV4D(1,:,:,:))*nfp
             f_temp = f_temp / G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
+            grho(1) = 0
             CALL EZspline_setup(S21_spl,grho,iflag); f_temp = 0; grho = 0
             ! Calc S12
             f_temp = (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
@@ -620,6 +623,7 @@
                               LV4D(1,:,:,:)*nfp
             f_temp = f_temp / G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
+            grho(1) = 0
             CALL EZspline_setup(S12_spl,grho,iflag); f_temp = 0; grho = 0
             ! Calc S22
             f_temp = (RV4D(1,:,:,:)*RV4D(1,:,:,:)*nfp*nfp+ &
@@ -631,6 +635,7 @@
                               LV4D(1,:,:,:)*nfp*nfp
             f_temp = f_temp / G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
+            grho(1) = 2*grho(2) - grho(3)
             CALL EZspline_setup(S22_spl,grho,iflag); f_temp = 0; grho = 0
             ! Bav
             f_temp = B4D(1,:,:,:)*G4D(1,:,:,:)
@@ -671,6 +676,34 @@
             grho = [(sum(Vp(1:u)),u=1,size(Vp))]
             grho(1) = 0
             CALL EZspline_setup(VOL_spl,ABS(grho*pi2*pi2/(nu*nv*(k2-k1+1))),iflag); f_temp = 0; grho = 0
+
+            ! Trapped Particle Fraction
+            ! B/Bmax
+            !grho   = BSQ_SPL%fspl(1,:)
+            !f_temp = B4D(1,:,:,:)*B4D(1,:,:,:)
+            !grho2 = grho / (Vp * MAXVAL(MAXVAL(f_temp,DIM=1),DIM=1))
+            !grho2(1) = 2*grho2(2) - grho2(3) ! Grho2 is <B^2/B_max^2>
+            ! Now do lambda
+            !IF (ALLOCATED(fmn_temp)) DEALLOCATE(fmn_temp)
+            !ALLOCATE(fmn_temp(nlambda,k1:k2))
+            !f_temp = B4D(1,:,:,:)
+            !f_temp = f_temp/MAXVAL(MAXVAL(f_temp,DIM=1),DIM=1) ! B/Bmax
+            !dlambda = one/(nlambda - 1)
+            !DO mn = 1, nlambda
+            !   fmn_temp(mn,k1:k2) = (mn-1)*dlambda
+            !   fmn_temp(mn,k1:k2) = fmn_temp(mn,k1:k2)/SUM(SUM(SQRT(one-(mn-1)*dlambda*f_temp(:,:,k1:k2))*G4D(1,:,:,k1:k2),DIM=1),DIM=1)
+            !END DO
+            !grho = SUM(fmn_temp,DIM=1)*dlambda
+            !DO u = k1, k2
+            !   DO mn = 1, nlambda
+            !      lambda(mn) = (mn-1)*dlambda
+            !      denom(mn) = SUM(SQRT(one-lambda(mn)*f_temp(:,:,u))*G4D(1,:,:,u))
+            !   END DO
+            !   grho(u) = SUM(lambda/denom)*dlambda
+            !END DO
+            !grho2 = one - 0.75*grho2*Vp*grho
+            !grho2(1) = 2*grho2(2) - grho2(3)
+            !CALL EZspline_setup(FTRAP_spl,grho2,iflag); f_temp = 0; grho = 0
 
             ! Deallocate arrays
             DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
