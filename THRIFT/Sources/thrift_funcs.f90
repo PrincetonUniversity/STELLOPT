@@ -45,17 +45,19 @@ SUBROUTINE update_vars()
         CALL get_equil_Rmajor(s, THRIFT_RMAJOR(i,mytimestep), temp, THRIFT_AMINOR(i,mytimestep), ier)
         CALL get_equil_sus(s, THRIFT_S11(i,mytimestep),THRIFT_S12(i,mytimestep),temp,temp,ier)
         CALL get_equil_Bav(s, THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), ier, BVAV_VAL = THRIFT_BVAV(i,mytimestep))
+        CALL get_equil_ftrap(s, ftrap, ier)
         CALL EZspline_interp(iota_spl, rho, q, ier) ! Iota
         CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
         ! V' = dV/ds = dV/dPhi dPhi/ds = Phi_edge * dV/dPhi
         THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(mytimestep)*temp
+        InvAspect = THRIFT_AMINOR(i,mytimestep)/THRIFT_RMAJOR(i,mytimestep)
+        q = ABS(1.0/q) ! iota -> q
         ! eta breaks at rho=1(s=1) so look one gridpoint back
         !CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
-        InvAspect = THRIFT_AMINOR(i,mytimestep)/THRIFT_RMAJOR(i,mytimestep)
-        q = 1.0/q ! iota -> q
-        CALL get_prof_etaspitz_sauter(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime, &
-            ft_val,q,THRIFT_RMAJOR(i,mytimestep),InvAspect,&
+        CALL get_prof_etaneo_sauter(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime, &
+            ftrap,q,THRIFT_RMAJOR(i,mytimestep),InvAspect,&
             THRIFT_ETAPARA(i,mytimestep))
+        !PRINT *,rho,ftrap,q,THRIFT_RMAJOR(i,mytimestep),InvAspect,THRIFT_ETAPARA(i,mytimestep)
         CALL get_prof_p(rho, mytime, THRIFT_P(i,mytimestep))
      END DO
      THRIFT_S11 = ABS(THRIFT_S11)
