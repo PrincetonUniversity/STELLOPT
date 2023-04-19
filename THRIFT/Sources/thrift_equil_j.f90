@@ -40,10 +40,13 @@
       !   RETURN
       !END IF
 
+      ! Check which values to use; can be simplified but split to be explicit
       ! If first pass then just set everything to previous timestep
-      IF (mytimestep>1) THEN
+      IF (mytimestep.eq.1) THEN
+         itime = mytimestep
+      ELSE IF (nsubsteps.eq.1) THEN ! On first substep (after first timestep!), look at prev timestep value
          itime = mytimestep-1
-      ELSE
+      ELSE ! On any substep after first, look at prev substep value
          itime = mytimestep
       END IF
 
@@ -53,7 +56,7 @@
       CALL EZspline_init(j_spl,nsj,bcs0,ier)
       j_spl%x1        = THRIFT_S
       j_spl%isHermite = 1
-      CALL EZspline_setup(j_spl,THRIFT_J(:,mytimestep),ier,EXACT_DIM=.true.)
+      CALL EZspline_setup(j_spl,THRIFT_J(:,itime),ier,EXACT_DIM=.true.)
 
       ! temporary s grid 
       ALLOCATE(s_temp(n_eq))
