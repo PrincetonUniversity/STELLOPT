@@ -301,7 +301,7 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
             speed_cube = (speed*speed*speed)
             CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-            sigma = sqrt( ABS(e_charge*dt*(te_temp*speed_cube+ti_temp*vcrit_cube)*tau_spit_inv*inv_mymass/speed_cube) ) ! The standard deviation.
+            sigma = sqrt( ABS(2*e_charge*dt*(te_temp*speed_cube+ti_temp*vcrit_cube)*tau_spit_inv*inv_mymass/speed_cube) ) ! The standard deviation.
             speed = speed+sigma*zeta
 
            !------------------------------------------------------------
