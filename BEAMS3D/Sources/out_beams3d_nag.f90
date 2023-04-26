@@ -109,8 +109,8 @@ SUBROUTINE out_beams3d_nag(t, q)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
        IF (lfidasim2) THEN
-            x0 = MOD(q(2), phimax)
-            IF (x0 < 0) x0 = x0 + phimax
+            !x0 = MOD(q(2), phimax_fida)
+            !IF (x0 < 0) x0 = x0 + phimax_fida
             i = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
             j = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
             k = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
