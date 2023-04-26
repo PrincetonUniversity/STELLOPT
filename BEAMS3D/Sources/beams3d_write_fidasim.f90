@@ -25,7 +25,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
          BR4D, BPHI4D, BZ4D, &
          hr, hp, hz, hri, hpi, hzi, S4D, U4D, &
-         rmin, rmax,  phimin, phimax, raxis, zaxis, phiaxis, &
+         rmin, rmax,  phimin, phimax, &
          rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
          raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
          nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
@@ -257,15 +257,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL h5dclose_f(temp_gid,ier)
          DEALLOCATE(mask)
 
-         !--------------------------------------------------------------
-         !           B-FIELD
-         !  NOTE On PSI:
-         !     In B_STS B_STS_eval_rho defines psi as
-         !         rho[0] = sqrt( (psi - Bdata->psi0) / delta );
-         !     So psi is TOROIDAL FLUX.
-         !--------------------------------------------------------------
-
-
          ALLOCATE(rtemp(nr_fida,nz_fida, nphi_fida))
          ALLOCATE(rtemp2(nr_fida,nz_fida, nphi_fida))
          ALLOCATE(rtemp3(nr_fida,nz_fida, nphi_fida))
@@ -273,11 +264,13 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             DO n = 1,nz_fida
                DO m = 1,nphi_fida            
                   ! Eval Spline
+                  x0 = MOD(phiaxis_fida(m), phimax)
+                  IF (x0 < 0) x0 = x0 + phimax
                   i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
-                  j = MIN(MAX(COUNT(phiaxis < phiaxis_fida(m)),1),nphi-1)
+                  j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
                   k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
                   xparam = (raxis_fida(l) - raxis(i)) * hri(i)
-                  yparam = (phiaxis_fida(m) - phiaxis(j)) * hpi(j)
+                  yparam = (x0 - phiaxis(j)) * hpi(j)
                   zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                                  hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -291,7 +284,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                                  hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                                  BZ4D(1,1,1,1),nr,nphi,nz)
                   rtemp3(l,n,m) = fval(1)
-
+                  
                END DO
             END DO
          END DO
@@ -342,12 +335,14 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   DO m = 1,nphi_fida            
                      ! Eval Spline
                      ! Get the gridpoint info (this is possible since all grids are the same)
-                     i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
-                     j = MIN(MAX(COUNT(phiaxis < phiaxis_fida(m)),1),nphi-1)
-                     k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
-                     xparam = (raxis_fida(l) - raxis(i)) * hri(i)
-                     yparam = (phiaxis_fida(m) - phiaxis(j)) * hpi(j)
-                     zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
+                  x0 = MOD(phiaxis_fida(m), phimax)
+                  IF (x0 < 0) x0 = x0 + phimax
+                  i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
+                  j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
+                  k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
+                  xparam = (raxis_fida(l) - raxis(i)) * hri(i)
+                  yparam = (x0 - phiaxis(j)) * hpi(j)
+                  zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
                      ! Evaluate the Splines
                      CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,& !evaluate at grid points
                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -498,11 +493,13 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                DO m = 1,nphi_fida            
                   ! Eval Spline
                   ! Get the gridpoint info (this is possible since all grids are the same)
+                  x0 = MOD(phiaxis_fida(m), phimax)
+                  IF (x0 < 0) x0 = x0 + phimax
                   i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
-                  j = MIN(MAX(COUNT(phiaxis < phiaxis_fida(m)),1),nphi-1)
+                  j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
                   k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
                   xparam = (raxis_fida(l) - raxis(i)) * hri(i)
-                  yparam = (phiaxis_fida(m) - phiaxis(j)) * hpi(j)
+                  yparam = (x0 - phiaxis(j)) * hpi(j)
                   zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
                   ! Evaluate the Splines
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
@@ -521,6 +518,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                                  hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                                  ZEFF4D(1,1,1,1),nr,nphi,nz)
                   rtemp4(l,n,m) = max(fval(1),one)
+                  !write(6,'(F8.3,F8.3,F8.3)') phiaxis_fida(m),phimax,MODULO(phiaxis_fida(m),phimax)
                END DO
             END DO
          END DO
@@ -590,8 +588,10 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                DO j=1,nphi_fida
                   !convert i,j,k to distribution function lfidasim indices l,m,n
                   !determine beams3d-grid indices
+                  x0 = MOD(phiaxis_fida(j), pi2)
+                  IF (x0 < 0) x0 = x0 + pi2
                   i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
-                  j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
+                  j3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin, because dist has full toroidal revolution
                   k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
                   !setup interpolation
                   xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
@@ -607,8 +607,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   z0 = fval2(1)
 
                   IF (z0 < 0) z0 = z0 + pi2
-                  x0    = phiaxis_fida(j)
-                  IF (x0 < 0) x0 = x0 + pi2
                   ! Calc dist func bins
                   l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
                   m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
@@ -698,8 +696,10 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                      DO j=1,nphi_fida
                         !convert i,j,k to distribution function indices l,m,n
                         !determine beams3d-grid indices
+                        x0 = MOD(phiaxis_fida(j), pi2)
+                        IF (x0 < 0) x0 = x0 + pi2
                         i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
-                        j3 = MIN(MAX(COUNT(phiaxis < phiaxis_fida(j)),1),nphi-1)
+                        j3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin, because dist has full toroidal revolution
                         k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
                         !setup interpolation
                         xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
@@ -718,7 +718,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                         IF (x0 < 0) x0 = x0 + pi2
                         IF (y0 < 0) y0 = -y0
                         ! Calc dist func bins
-                        x0    = phiaxis_fida(j)
+                        !x0    = phiaxis_fida(j)
                         l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
                         m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                         n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
