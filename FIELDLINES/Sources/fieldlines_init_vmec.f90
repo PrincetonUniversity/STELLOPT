@@ -97,8 +97,8 @@
       END IF
       CALL MPI_BCAST(phi_vmec,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(presf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      CALL MPI_BCAST(phipf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(iotaf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(phipf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(iotaf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xm,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xn,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xm_nyq,mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
