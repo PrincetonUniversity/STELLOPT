@@ -132,12 +132,13 @@
             ! Check the convergence
             deltaj = 0
             IF (nsubsteps==1) THEN
-            deltaj = ABS(THRIFT_J(:,mytimestep))
-               jold = THRIFT_J(:,mytimestep)
+               deltaj = ABS(THRIFT_J(:,mytimestep))
             ELSE
                WHERE(ABS(jold)>0) deltaj = ABS( THRIFT_J(:,mytimestep) - jold) / ABS(jold)
-               jold = THRIFT_J(:,mytimestep)
             END IF
+            ! Set new jold
+            jold = THRIFT_J(:,mytimestep)
+
             ! Calculate total currents
             CALL curden_to_curtot(THRIFT_JBOOT(:,  mytimestep),THRIFT_IBOOT(:,  mytimestep))
             CALL curden_to_curtot(THRIFT_JECCD(:,  mytimestep),THRIFT_IECCD(:,  mytimestep))
