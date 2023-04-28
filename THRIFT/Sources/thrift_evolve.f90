@@ -63,6 +63,7 @@
       DO mytimestep = 1, ntimesteps
 
          ! Setup the profiles
+         IF (lverbj) WRITE(6,*) "Updating equilibrium pressure"
          CALL thrift_equil_p
 
          ! Converge Source Currents
