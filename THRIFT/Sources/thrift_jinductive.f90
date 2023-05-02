@@ -24,7 +24,7 @@
       IMPLICIT NONE
       INTEGER :: i, j, prevtimestep, ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho,s,ds,dt,mytime,temp,Lext,K1,K2,tA,tB
+      REAL(rprec) :: rho,s,ds,dt,mytime,temp,Lext,rmaj,amin
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
                      BP_temp, CP_temp, DP_temp,temp_arr,  &
@@ -134,7 +134,7 @@
 !     |  .    .    .    ... .   .   .   .  | | .   | = |  .  |  evol. eq.
 !     |  0    0    0   0 . an2 bn2 cn2  0  | | un2 |   | yn2 |     |
 !     |  0    0    0   0 .  0  an1 bn1 cn1 | | un1 |   | yn1 |     /
-!     |  0    0    0   0 .  A   B   C   D  | | un  |   | yn  |  BC EDGE
+!     |  0    0    0   0 .  0   X  an  cn  | | un  |   | yn  |  BC EDGE
 !                    
 !     The {u} contain the current: u(s_j) = mu0/phi_edge*I(s_j)
 !     First equation encapsulates the BC for the magnetic axis:
@@ -142,7 +142,6 @@
 !
 !     Last equation encapsulates the BC for the plasma edge:
 !        E(s=1,t) = -L_ext * dI/dt / (2*pi*R0)
-!     [A = Kn2; B = -2*Kn1; C = -Kn2; D = 2*Kn1-1/dt]
 !
 !     Remaining equations are the evolution equation on s in (0,1)
 !        du/dt = a1 + a2*u + a3*u' + a4*u"
@@ -162,26 +161,19 @@
       RHS(2:nsj-1)     = -alpha1-THRIFT_UGRID(2:nsj-1,prevtimestep)/dt
 
       ! Plasma edge ; We have to manipulate the last row to get a TDM
-      K1 = THRIFT_RMAJOR(nsj,mytimestep); K2 = THRIFT_AMINOR(nsj,mytimestep) ! rmajor and aminor helpers
-      Lext = mu0*K1*(log(8*K1/K2) - 2) ! mu0 R (log(8R/a)-2)
-      temp = -K1/(K2**2*Lext*ds)       ! R/(a^2*Lext*ds)
-
-      ! KX corresponds to KnX
-      K1 = temp*THRIFT_ETAPARA(nsj-1,mytimestep)
-      K2 = temp*THRIFT_ETAPARA(nsj-2,mytimestep)
-
-      tA = K2/DIAGSUB(nsj-3)                           ! A/an2
-      tB = (-2*K1 - tA*DIAGMID(nsj-2))/DIAGSUB(nsj-2)  ! (B-tA*bn2)/an1
-
-      temp = -(2*pi*THRIFT_RMAJOR(nsj,mytimestep)*mu0)/(Lext*THRIFT_PHIEDGE(mytimestep))
-      RHS(nsj) = -THRIFT_UGRID(nsj,prevtimestep)/dt + & !
-                  (2*THRIFT_ETAPARA(nsj-1,mytimestep)*THRIFT_JSOURCE(nsj-1,mytimestep) &
-                    -THRIFT_ETAPARA(nsj-2,mytimestep)*THRIFT_JSOURCE(nsj-2,mytimestep))*temp
-
-      ! Last row in TDM form
-      DIAGSUB(nsj-1) = -K2-tA*DIAGSUP(nsj-2) -tB*DIAGMID(nsj-1)  ! C-tA*cn2-tB*bn1
-      DIAGMID(nsj)   = (2*K1-1.0/dt)         -tB*DIAGSUP(nsj-1)  ! D       -tB*cn1
-      RHS(nsj)       = RHS(nsj)-tA*RHS(nsj-2)-tB*RHS(nsj-1)      !yn-tA*yn2-tB*yn1
+      rmaj = THRIFT_RMAJOR(nsj,mytimestep); amin = THRIFT_AMINOR(nsj,mytimestep) ! R,a helpers
+      Lext = mu0*rmaj*(log(8*rmaj/amin)-2) ! mu0 R (log(8R/a)-2)
+      temp = rmaj/(amin**2*ds)*THRIFT_ETAPARA(nsj,mytimestep)/Lext ! X = R0/(a^2 ds)*eta/Lext
+      ! Initial final equation (not TDM, excluding off-subdiagonal entry X)
+      DIAGSUB(nsj-1) = -4*temp
+      DIAGMID( nsj ) = 3*temp+1.0/dt
+      RHS(nsj)       = THRIFT_UGRID(nsj,prevtimestep)/dt + 2*pi*rmaj*mu0/THRIFT_PHIEDGE(mytimestep)* &
+                        THRIFT_ETAPARA(nsj,mytimestep)/Lext*THRIFT_JSOURCE(nsj,mytimestep)
+      ! Row manips to get TDM form
+      temp = temp/DIAGSUB(nsj-2) ! 
+      DIAGSUB(nsj-1) = DIAGSUB(nsj-1) - temp*DIAGMID(nsj-1)
+      DIAGMID( nsj ) = DIAGMID( nsj ) - temp*DIAGSUP(nsj-1)
+      RHS(nsj)       = RHS(nsj)       - temp*RHS(nsj-1)
 
       ! old code with different BC (zero flux of u)
 !      temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
