@@ -173,10 +173,15 @@
       tA = K2/DIAGSUB(nsj-3)                           ! A/an2
       tB = (-2*K1 - tA*DIAGMID(nsj-2))/DIAGSUB(nsj-2)  ! (B-tA*bn2)/an1
 
+      temp = -(2*pi*THRIFT_RMAJOR(nsj,mytimestep)*mu0)/(L_ext*THRIFT_PHIEDGE(mytimestep))
+      RHS(nsj) = -THRIFT_UGRID(nsj,prevtimestep)/dt + & !
+                  (2*THRIFT_ETAPARA(nsj-1,mytimestep)*THRIFT_JSOURCE(nsj-1,mytimestep) &
+                    -THRIFT_ETAPARA(nsj-2,mytimestep)*THRIFT_JSOURCE(nsj-2,mytimestep))*temp
+
       ! Last row in TDM form
-      DIAGSUB(nsj-1) = -K2-tA*DIAGSUP(nsj-2)-tB*DIAGMID(nsj-1)                        ! C-tA*cn2-tB*bn1
-      DIAGMID(nsj)   = (2*K1-1.0/dt)        -tB*DIAGSUP(nsj-1)                        ! D       -tB*cn1
-      RHS(nsj)       = -THRIFT_UGRID(nsj,prevtimestep)/dt-tA*RHS(nsj-2)-tB*RHS(nsj-1) !yn-tA*yn2-tB*yn1
+      DIAGSUB(nsj-1) = -K2-tA*DIAGSUP(nsj-2) -tB*DIAGMID(nsj-1)  ! C-tA*cn2-tB*bn1
+      DIAGMID(nsj)   = (2*K1-1.0/dt)         -tB*DIAGSUP(nsj-1)  ! D       -tB*cn1
+      RHS(nsj)       = RHS(nsj)-tA*RHS(nsj-2)-tB*RHS(nsj-1)      !yn-tA*yn2-tB*yn1
 
       ! old code with different BC (zero flux of u)
 !      temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
