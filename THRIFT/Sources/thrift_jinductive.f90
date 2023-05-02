@@ -167,10 +167,10 @@
       ! Initial final equation (not TDM, excluding off-subdiagonal entry X)
       DIAGSUB(nsj-1) = -4*temp
       DIAGMID( nsj ) = 3*temp+1.0/dt
-      RHS(nsj)       = THRIFT_UGRID(nsj,prevtimestep)/dt + 2*pi*rmaj*mu0/THRIFT_PHIEDGE(mytimestep)* &
-                        THRIFT_ETAPARA(nsj,mytimestep)/Lext*THRIFT_JSOURCE(nsj,mytimestep)
+      RHS(nsj)       = THRIFT_UGRID(nsj,prevtimestep)/dt !+ 2*pi*rmaj*mu0/THRIFT_PHIEDGE(mytimestep)* &
+                        !THRIFT_ETAPARA(nsj,mytimestep)/Lext*THRIFT_JSOURCE(nsj,mytimestep)
       ! Row manips to get TDM form
-      temp = temp/DIAGSUB(nsj-2) ! 
+      temp = temp/DIAGSUB(nsj-2) ! X/an1
       DIAGSUB(nsj-1) = DIAGSUB(nsj-1) - temp*DIAGMID(nsj-1)
       DIAGMID( nsj ) = DIAGMID( nsj ) - temp*DIAGSUP(nsj-1)
       RHS(nsj)       = RHS(nsj)       - temp*RHS(nsj-1)
