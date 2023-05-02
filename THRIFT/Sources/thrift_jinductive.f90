@@ -24,7 +24,7 @@
       IMPLICIT NONE
       INTEGER :: i, j, prevtimestep, ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho,s,ds,dt,mytime,temp
+      REAL(rprec) :: rho,s,ds,dt,mytime,temp,Lext,K1,K2,tA,tB
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
                      BP_temp, CP_temp, DP_temp,temp_arr,  &
@@ -126,22 +126,23 @@
 !======================================================================
 !     SYSTEM OF EQUATIONS
 !======================================================================
-!     Populate matrix and RHS of the system of equations (N=nsj, NX=N-X)
+!     Populate matrix and RHS of the system of equations (n=nsj, nX=n-X)
 !
-!     | B1   C1    0   0 .  0   0   0   0  | | u1  |   | D1  |  BC AXIS
-!     | A2   B2   C2   0 .  0   0   0   0  | | u2  |   | D2  |     \
-!     |  0   A3   B3  C3 .  0   0   0   0  | | u3  |   | D3  |     |
+!     | b1   c1    0   0 .  0   0   0   0  | | u1  |   | y1  |  BC AXIS
+!     | a2   b2   c2   0 .  0   0   0   0  | | u2  |   | y2  |     \
+!     |  0   a3   b3  c3 .  0   0   0   0  | | u3  |   | y3  |     |
 !     |  .    .    .    ... .   .   .   .  | | .   | = |  .  |  evol. eq.
-!     |  0    0    0   0 . AN2 BN2 CN2  0  | | uN2 |   | DN2 |     |
-!     |  0    0    0   0 .  0  AN1 BN1 CN1 | | uN1 |   | DN1 |     /
-!     |  0    0    0   0 .  0   0  AN  BN  | | UN  |   | DN  |  BC EDGE
+!     |  0    0    0   0 . an2 bn2 cn2  0  | | un2 |   | yn2 |     |
+!     |  0    0    0   0 .  0  an1 bn1 cn1 | | un1 |   | yn1 |     /
+!     |  0    0    0   0 .  A   B   C   D  | | un  |   | yn  |  BC EDGE
 !                    
 !     The {u} contain the current: u(s_j) = mu0/phi_edge*I(s_j)
 !     First equation encapsulates the BC for the magnetic axis:
 !        I(s=0,t) = 0 
 !
 !     Last equation encapsulates the BC for the plasma edge:
-!        f(s=1,t) = <B^2>/mu0 u' + p'u - <Js.B> = 0
+!        E(s=1,t) = -L_ext * dI/dt / (2*pi*R0)
+!     [A = Kn2; B = -2*Kn1; C = -Kn2; D = 2*Kn1-1/dt]
 !
 !     Remaining equations are the evolution equation on s in (0,1)
 !        du/dt = a1 + a2*u + a3*u' + a4*u"
@@ -153,21 +154,40 @@
       DIAGMID(1) = 1
       DIAGSUP(1) = 0
       RHS(1)     = 0
+
       ! On the (0,1) grid
       DIAGSUB(1:nsj-2) = -alpha3/(2*ds) + alpha4/(ds**2)
       DIAGMID(2:nsj-1) =  alpha2       -2*alpha4/(ds**2) - 1.0/dt
       DIAGSUP(2:nsj-1) =  alpha3/(2*ds) + alpha4/(ds**2)
       RHS(2:nsj-1)     = -alpha1-THRIFT_UGRID(2:nsj-1,prevtimestep)/dt
-      ! Plasma edge (new!)
-      temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
-      DIAGSUB(nsj-1) = -4/(2*ds)
-      DIAGMID( nsj ) =  3/(2*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
-      RHS(nsj)       = THRIFT_JSOURCE(nsj,mytimestep)*THRIFT_BAV(nsj,mytimestep)/temp
-      ! Row operations to make a tridiagonal matrix
-      temp = (1/(2*ds))/DIAGSUB(nsj-2)
-      DIAGSUB(nsj-1) = DIAGSUB(nsj-1) - temp*DIAGMID(nsj-1)
-      DIAGMID( nsj ) = DIAGMID( nsj ) - temp*DIAGSUP(nsj-1)
-      RHS( nsj )     =     RHS( nsj ) - temp*RHS(nsj-1)
+
+      ! Plasma edge ; We have to manipulate the last row to get a TDM
+      K1 = THRIFT_RMAJOR(nsj,mytimestep); K2 = THRIFT_AMINOR(nsj,mytimestep) ! rmajor and aminor helpers
+      Lext = mu0*K1*(log(8*K1/K2) - 2) ! mu0 R (log(8R/a)-2)
+      temp = -K1/(K2**2*Lext*ds)       ! R/(a^2*Lext*ds)
+
+      ! KX corresponds to KnX
+      K1 = temp*THRIFT_ETAPARA(nsj-1,mytimestep)
+      K2 = temp*THRIFT_ETAPARA(nsj-2,mytimestep)
+
+      tA = K2/DIAGSUB(nsj-3)                           ! A/an2
+      tB = (-2*K1 - tA*DIAGMID(nsj-2))/DIAGSUB(nsj-2)  ! (B-tA*bn2)/an1
+
+      ! Last row in TDM form
+      DIAGSUB(nsj-1) = -K2-tA*DIAGSUP(nsj-2)-tB*DIAGMID(nsj-1)                        ! C-tA*cn2-tB*bn1
+      DIAGMID(nsj)   = (2*K1-1.0/dt)        -tB*DIAGSUP(nsj-1)                        ! D       -tB*cn1
+      RHS(nsj)       = -THRIFT_UGRID(nsj,prevtimestep)/dt-tA*RHS(nsj-2)-tB*RHS(nsj-1) !yn-tA*yn2-tB*yn1
+
+      ! old code with different BC (zero flux of u)
+!      temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
+!      DIAGSUB(nsj-1) = -4/(2*ds)
+!      DIAGMID( nsj ) =  3/(2*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
+!      RHS(nsj)       = THRIFT_JSOURCE(nsj,mytimestep)*THRIFT_BAV(nsj,mytimestep)/temp
+!      ! Row operations to make a tridiagonal matrix
+!      temp = (1/(2*ds))/DIAGSUB(nsj-2)
+!      DIAGSUB(nsj-1) = DIAGSUB(nsj-1) - temp*DIAGMID(nsj-1)
+!      DIAGMID( nsj ) = DIAGMID( nsj ) - temp*DIAGSUP(nsj-1)
+!      RHS( nsj )     =     RHS( nsj ) - temp*RHS(nsj-1)
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
