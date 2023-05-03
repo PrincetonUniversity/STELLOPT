@@ -142,6 +142,7 @@
 !
 !     Last equation encapsulates the BC for the plasma edge:
 !        E(s=1,t) = -L_ext * dI/dt / (2*pi*R0)
+!     (We have to manipulate the last row to get a TDM)
 !
 !     Remaining equations are the evolution equation on s in (0,1)
 !        du/dt = a1 + a2*u + a3*u' + a4*u"
@@ -160,15 +161,16 @@
       DIAGSUP(2:nsj-1) =  alpha3/(2*ds) + alpha4/(ds**2)
       RHS(2:nsj-1)     = -alpha1-THRIFT_UGRID(2:nsj-1,prevtimestep)/dt
 
-      ! Plasma edge ; We have to manipulate the last row to get a TDM
+      ! Plasma edge (s=1)
       rmaj = THRIFT_RMAJOR(nsj,mytimestep); amin = THRIFT_AMINOR(nsj,mytimestep) ! R,a helpers
       Lext = mu0*rmaj*(log(8*rmaj/amin)-2) ! mu0 R (log(8R/a)-2)
+      ! First calculate RHS
+      temp = 2*pi*rmaj*mu0/THRIFT_PHIEDGE(mytimestep)*THRIFT_ETAPARA(nsj,mytimestep)/Lext*THRIFT_JSOURCE(nsj,mytimestep)
+      RHS(nsj) = THRIFT_UGRID(nsj,prevtimestep)/dt + temp ! u/dt + 2*pi*R*(mu0/phi_edge)*(eta/Lext)*Js
+      ! Then matrix elements
       temp = rmaj/(amin**2*ds)*THRIFT_ETAPARA(nsj,mytimestep)/Lext ! X = R0/(a^2 ds)*eta/Lext
-      ! Initial final equation (not TDM, excluding off-subdiagonal entry X)
       DIAGSUB(nsj-1) = -4*temp
       DIAGMID( nsj ) = 3*temp+1.0/dt
-      RHS(nsj)       = THRIFT_UGRID(nsj,prevtimestep)/dt !+ 2*pi*rmaj*mu0/THRIFT_PHIEDGE(mytimestep)* &
-                        !THRIFT_ETAPARA(nsj,mytimestep)/Lext*THRIFT_JSOURCE(nsj,mytimestep)
       ! Row manips to get TDM form
       temp = temp/DIAGSUB(nsj-2) ! X/an1
       DIAGSUB(nsj-1) = DIAGSUB(nsj-1) - temp*DIAGMID(nsj-1)
