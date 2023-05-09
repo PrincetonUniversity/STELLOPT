@@ -53,7 +53,7 @@
       THRIFT_MATLD    = 0; THRIFT_MATMD    = 0; THRIFT_MATUD    = 0; THRIFT_MATRHS   = 0
 
       ! Allocate the convergence helper
-      ALLOCATE(deltaj(nrho), jold(nrho))
+      ALLOCATE(deltaj(nsj), jold(nsj))
       alpha = 0.05
       jold   = 1E3 ! so on loop 1 we don't divide by zero
       lscreen_subcodes = .TRUE.
@@ -69,7 +69,7 @@
          ! Converge Source Currents
          deltaj = 10*jtol; nsubsteps = 0; eq_beta = 1E-9
          lfirst_sub_pass = .TRUE.
-         DO WHILE (ANY(deltaj > jtol))
+         DO WHILE (ANY(ABS(deltaj) > jtol))
 
             ! Update Substeps
             nsubsteps = nsubsteps + 1
@@ -132,9 +132,13 @@
             ! Check the convergence
             deltaj = 0
             IF (nsubsteps==1) THEN
-               deltaj = ABS(THRIFT_J(:,mytimestep))
+               deltaj = THRIFT_J(:,mytimestep)
             ELSE
-               WHERE(ABS(jold)>0) deltaj = ABS( THRIFT_J(:,mytimestep) - jold) / ABS(jold)
+               WHERE(ABS(jold)>0) deltaj = (THRIFT_J(:,mytimestep) - jold) / jold
+               DO i = 1, nsj
+                  THRIFT_JPLASMA(i,mytimestep) = picard_factor*(1+deltaj(nsj))/(picard_factor+deltaj(nsj))*THRIFT_JPLASMA(i,mytimestep)
+                  THRIFT_JSOURCE(i,mytimestep) = picard_factor*(1+deltaj(nsj))/(picard_factor+deltaj(nsj))*THRIFT_JSOURCE(i,mytimestep)
+               END DO
             END IF
             ! Set new jold
             jold = THRIFT_J(:,mytimestep)
