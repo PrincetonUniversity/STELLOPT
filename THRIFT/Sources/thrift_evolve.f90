@@ -190,7 +190,7 @@
                         WRITE(temp_prog_str,'(ES11.3)') THRIFT_IOHMIC(nsj,mytimestep)
                         progress_str = TRIM(progress_str)//" "//temp_prog_str
                   END IF
-                  WRITE(temp_prog_str,'(ES11.3)') MAXVAL(deltaj)
+                  WRITE(temp_prog_str,'(ES11.3)') MAXVAL(ABS(deltaj))
                   progress_str = TRIM(progress_str)//" "//temp_prog_str
                 WRITE(6,*) progress_str
             END IF
