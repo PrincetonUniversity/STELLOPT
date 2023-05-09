@@ -18,7 +18,7 @@
 !        Rc, w       Model profile coefficients
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: i, ier
+      INTEGER :: i, ier, i1,i2
       INTEGER :: bcs0(2)
       REAL(rprec) :: Rc, w, Ieccd, Inorm, vp, dPhidrho, temp, &
                      s_val, rho_val
@@ -34,6 +34,18 @@
          RETURN
       END IF
 
+      ! Get Power at timestep
+      i1 = COUNT(PECRH_AUX_T < THRIFT_T(mytimestep))
+      i2 = i1+1
+      WRITE(6,*) i1,i2
+      IF (PECRH_AUX_F(i1)<=0 .or. PECRH_AUX_F(i2)<=0) THEN
+         THRIFT_JECCD(:,mytimestep) = 0
+         RETURN
+         WRITE(6,*) " -- DEBUG: ECCD off"
+      END IF
+      WRITE(6,*) " -- DEBUG: ECCD on"
+
+
       SELECT CASE(TRIM(eccd_type))
          CASE ('model','offaxis','test')
             ! See Turkin, Yu., Maassberg, H., Beidler, C. D., 
@@ -42,7 +54,11 @@
             !        387–394 (2006).
             Rc = 0.15
             w  = 0.1
-            Ieccd = 3E3
+            ! Linear interpolation of PECRH
+            Ieccd =    ( PECRH_AUX_F(i2)      - PECRH_AUX_F(i1) ) &
+                     * ( THRIFT_T(mytimestep) - PECRH_AUX_T(i1) ) &
+                     / ( PECRH_AUX_T(i2)      - PECRH_AUX_T(i1) ) &
+                     + PECRH_AUX_F(i1)
 
             ! From Wolfram
             Inorm = 0.5*w*( SQRT(pi)*Rc*( ERF((1-Rc)/w) + ERF(Rc/w) )+w*( EXP(-Rc**2/w**2) - EXP(-(Rc-1)**2/w**2) ))
