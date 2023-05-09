@@ -34,7 +34,8 @@
                               antennaposition_ecrh, &
                               targetposition_ecrh, rbeam_ecrh, &
                               rfocus_ecrh, nra_ecrh, nphi_ecrh, &
-                              freq_ecrh, power_ecrh
+                              freq_ecrh, power_ecrh, &
+                              pecrh_aux_t, pecrh_aux_f
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -63,6 +64,9 @@
       lnbcd              = .FALSE.
       lohmic             = .FALSE.
       lverbj             = .FALSE.
+      ! For ecrh
+      pecrh_aux_t     = 1E6
+      pecrh_aux_f     = 0.0
       ! TRAVIS vars
       vessel_ecrh     = ''
       mirror_ecrh     = ''
@@ -134,13 +138,14 @@
       WRITE(iunit_out,outflt) 'PICARD_FACTOR',picard_factor
       WRITE(iunit_out,'(A)') '!---------- GRID PARAMETERS ------------'
       WRITE(iunit_out,outint) 'NRHO',nrho
-!      WRITE(iunit_out,outint) 'NSJ',nsj
       WRITE(iunit_out,outint) 'NTIMESTEPS',ntimesteps
-      WRITE(iunit_out,outflt) 'TEND',tstart
+      WRITE(iunit_out,outflt) 'TSTART',tstart
       WRITE(iunit_out,outflt) 'TEND',tend
       WRITE(iunit_out,'(A)') '!---------- BOOZER TRANSFORMATION ------------'
       WRITE(iunit_out,outint) 'MBOZ',mboz
       WRITE(iunit_out,outint) 'MBOZ',nboz
+      WRITE(iunit_out,'(A)') '!---------- ECCD PARAMETERS ------------'
+      WRITE(iunit_out,outstr) 'ECCD_TYPE',eccd_type
       WRITE(iunit_out,'(A)') '/'
       RETURN
       END SUBROUTINE write_thrift_namelist
