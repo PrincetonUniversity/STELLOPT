@@ -97,6 +97,10 @@ MODULE thrift_vars
                  THRIFT_MATLD,   THRIFT_MATMD,   THRIFT_MATUD,   THRIFT_MATRHS,  &
                  THRIFT_BVAV
 
+    ! For ECCD in general
+    INTEGER, PARAMETER :: ntime_ecrh = 200
+    REAL(rprec), DIMENSION(ntime_ecrh) :: PECRH_AUX_T, PECRH_AUX_F
+
     ! For TRAVIS
     INTEGER, PARAMETER :: nsys   = 16
     INTEGER :: nra_ecrh, nphi_ecrh
@@ -104,5 +108,6 @@ MODULE thrift_vars
     REAL(rprec), DIMENSION(nsys) :: freq_ecrh, power_ecrh
     REAL(rprec), DIMENSION(nsys,3)     :: antennaposition_ecrh, &
                  targetposition_ecrh,rbeam_ecrh,rfocus_ecrh
+
 
 END MODULE thrift_vars
