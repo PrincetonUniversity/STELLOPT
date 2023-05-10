@@ -135,10 +135,10 @@
                deltaj = THRIFT_J(:,mytimestep)
             ELSE
                WHERE(ABS(jold)>0) deltaj = (THRIFT_J(:,mytimestep) - jold) / jold
-               DO i = 1, nsj
-                  THRIFT_JPLASMA(i,mytimestep) = picard_factor*(1+deltaj(nsj))/(picard_factor+deltaj(nsj))*THRIFT_JPLASMA(i,mytimestep)
-                  THRIFT_JSOURCE(i,mytimestep) = picard_factor*(1+deltaj(nsj))/(picard_factor+deltaj(nsj))*THRIFT_JSOURCE(i,mytimestep)
-               END DO
+               !DO i = 1, nsj
+               !   THRIFT_JPLASMA(i,mytimestep) = picard_factor*(1+deltaj(nsj))/(picard_factor+deltaj(nsj))*THRIFT_JPLASMA(i,mytimestep)
+               !   THRIFT_JSOURCE(i,mytimestep) = picard_factor*(1+deltaj(nsj))/(picard_factor+deltaj(nsj))*THRIFT_JSOURCE(i,mytimestep)
+               !END DO
             END IF
             ! Set new jold
             jold = THRIFT_J(:,mytimestep)
