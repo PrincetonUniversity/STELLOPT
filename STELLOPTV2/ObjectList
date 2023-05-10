@@ -79,6 +79,8 @@ chisq_dkes.o \
 chisq_knosos.o \
 chisq_stella.o \
 chisq_raderb00.o \
+chisq_mshear.o \
+chisq_mercier.o \
 chisq_mbm.o \
 chisq_wp.o \
 chisq_bootstrap.o \
