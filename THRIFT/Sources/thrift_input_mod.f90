@@ -27,7 +27,7 @@
 !-----------------------------------------------------------------------
       NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
                               nrho, tstart, tend, ntimesteps, n_eq, jtol, &
-                              picard_factor, npicard, lverbj, &
+                              picard_factor, npicard, lverbj, boot_factor, &
                               eccd_type, &
                               vessel_ecrh, mirror_ecrh, wmode_ecrh, &
                               targettype_ecrh, antennatype_ecrh, &
@@ -64,6 +64,8 @@
       lnbcd              = .FALSE.
       lohmic             = .FALSE.
       lverbj             = .FALSE.
+      ! For BOOTSJ
+      boot_factor        = 1
       ! For ecrh
       pecrh_aux_t     = 1E6
       pecrh_aux_f     = 0.0
