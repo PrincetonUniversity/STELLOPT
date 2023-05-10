@@ -98,6 +98,7 @@
 
             ! Calculate Bootstrap
             CALL thrift_run_bootstrap
+            THRIFT_JBOOT(:,mytimestep) = boot_factor*THRIFT_JBOOT(:,mytimestep)
 
             ! Calculate Current Drive
             IF (leccd)  CALL thrift_run_ECCD
