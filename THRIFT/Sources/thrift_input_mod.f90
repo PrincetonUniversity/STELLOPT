@@ -35,7 +35,7 @@
                               targetposition_ecrh, rbeam_ecrh, &
                               rfocus_ecrh, nra_ecrh, nphi_ecrh, &
                               freq_ecrh, power_ecrh, &
-                              pecrh_aux_t, pecrh_aux_f
+                              pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -66,9 +66,11 @@
       lverbj             = .FALSE.
       ! For BOOTSJ
       boot_factor        = 1
-      ! For ecrh
+      ! For ecrh simple model
       pecrh_aux_t     = 1E6
       pecrh_aux_f     = 0
+      ecrh_rc         = 0.3
+      ecrh_w          = 0.175
       ! TRAVIS vars
       vessel_ecrh     = ''
       mirror_ecrh     = ''
