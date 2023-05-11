@@ -100,6 +100,7 @@ MODULE thrift_vars
     ! For ECCD in general
     INTEGER, PARAMETER :: ntime_ecrh = 200
     REAL(rprec), DIMENSION(ntime_ecrh) :: PECRH_AUX_T, PECRH_AUX_F
+    REAL(rprec) :: ecrh_rc, ecrh_w
 
     ! For TRAVIS
     INTEGER, PARAMETER :: nsys   = 16

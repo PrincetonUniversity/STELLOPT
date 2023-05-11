@@ -56,8 +56,8 @@
             !        Geiger, J. & Marushchenko, N. B. Current Control 
             !        by ECCD for W7-X. Fusion Science and Technology 50,
             !        387–394 (2006).
-            Rc = 0.15
-            w  = 0.1
+            Rc = ecrh_rc
+            w  = ecrh_w
 
             ! From Wolfram
             Inorm = 0.5*w*( SQRT(pi)*Rc*( ERF((1-Rc)/w) + ERF(Rc/w) )+w*( EXP(-Rc**2/w**2) - EXP(-(Rc-1)**2/w**2) ))
