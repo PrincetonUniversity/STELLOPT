@@ -37,7 +37,7 @@
       ! Get Power at timestep
       i1 = COUNT(PECRH_AUX_T < THRIFT_T(mytimestep))
       i2 = i1+1
-      IF (PECRH_AUX_F(i1)<=0 .or. PECRH_AUX_F(i2)<=0) THEN
+      IF (PECRH_AUX_F(i1)==0 .or. PECRH_AUX_F(i2)==0) THEN
          THRIFT_JECCD(:,mytimestep) = 0
          RETURN
       END IF

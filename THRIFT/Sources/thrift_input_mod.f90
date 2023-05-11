@@ -68,7 +68,7 @@
       boot_factor        = 1
       ! For ecrh
       pecrh_aux_t     = 1E6
-      pecrh_aux_f     = 0.0
+      pecrh_aux_f     = 0
       ! TRAVIS vars
       vessel_ecrh     = ''
       mirror_ecrh     = ''
