@@ -51,7 +51,7 @@
 
 
       SELECT CASE(TRIM(eccd_type))
-         CASE ('model','offaxis','test')
+         CASE ('model','offaxis','test','simple')
             ! See Turkin, Yu., Maassberg, H., Beidler, C. D., 
             !        Geiger, J. & Marushchenko, N. B. Current Control 
             !        by ECCD for W7-X. Fusion Science and Technology 50,
