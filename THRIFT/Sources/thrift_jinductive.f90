@@ -45,8 +45,6 @@
       prevtimestep = mytimestep-1   ! previous time step index
       dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
       mytime = THRIFT_T(mytimestep)
-      IF (mytime>tmax.and.THRIFT_T(prevtimestep)<=tmax.and.(nsubsteps==1)) WRITE(6,*) &
-         '! THRIFT has exceeded end time of profiles file. Proceeding with profiles at t=tmax !' 
  
       ! If at zero beta, copy previous value of JPLASMA and skip
       IF (eq_beta == 0) THEN
@@ -128,20 +126,20 @@
 !======================================================================
 !     Populate matrix and RHS of the system of equations (n=nsj, nX=n-X)
 !
-!     | b1   c1    0   0 .  0   0   0   0  | | u1  |   | y1  |  BC AXIS
+!     | b1   c1   X1   0 .  0   0   0   0  | | u1  |   | y1  |  BC AXIS
 !     | a2   b2   c2   0 .  0   0   0   0  | | u2  |   | y2  |     \
 !     |  0   a3   b3  c3 .  0   0   0   0  | | u3  |   | y3  |     |
 !     |  .    .    .    ... .   .   .   .  | | .   | = |  .  |  evol. eq.
 !     |  0    0    0   0 . an2 bn2 cn2  0  | | un2 |   | yn2 |     |
 !     |  0    0    0   0 .  0  an1 bn1 cn1 | | un1 |   | yn1 |     /
-!     |  0    0    0   0 .  0   X  an  cn  | | un  |   | yn  |  BC EDGE
+!     |  0    0    0   0 .  0  X2  an  cn  | | un  |   | yn  |  BC EDGE
 !                    
-!     The {u} contain the current: u(s_j) = mu0/phi_edge*I(s_j)
+!     The {u} contain the current: u_j = mu0/phi_edge*I_j
 !     First equation encapsulates the BC for the magnetic axis:
-!        I(s=0,t) = 0 
+!        dI/ds(s=0,t) = 0 
 !
 !     Last equation encapsulates the BC for the plasma edge:
-!        E(s=1,t) = -L_ext * dI/dt / (2*pi*R0)
+!        E(s=1,t) = -L_ext/(2*pi*R0) * dI/dt 
 !     (We have to manipulate the last row to get a TDM)
 !
 !     Remaining equations are the evolution equation on s in (0,1)
@@ -150,32 +148,35 @@
       ALLOCATE(DIAGSUB(nsj-1),DIAGMID(nsj),DIAGSUP(nsj-1),RHS(nsj))
       DIAGSUB = 0; DIAGMID = 0; DIAGSUP = 0; RHS = 0;
 
-      ! Magnetic axis (s=0)
-      DIAGMID(1) = 1
-      DIAGSUP(1) = 0
-      RHS(1)     = 0
-
       ! On the (0,1) grid
       DIAGSUB(1:nsj-2) = -alpha3/(2*ds) + alpha4/(ds**2)
       DIAGMID(2:nsj-1) =  alpha2       -2*alpha4/(ds**2) - 1.0/dt
       DIAGSUP(2:nsj-1) =  alpha3/(2*ds) + alpha4/(ds**2)
       RHS(2:nsj-1)     = -alpha1-THRIFT_UGRID(2:nsj-1,prevtimestep)/dt
-
+      ! Magnetic axis (s=0)
+      DIAGMID(1) = 3
+      DIAGSUP(1) = -4
+      RHS(1)     = 0
       ! Plasma edge (s=1)
       rmaj = THRIFT_RMAJOR(nsj,mytimestep); amin = THRIFT_AMINOR(nsj,mytimestep) ! R,a helpers
       Lext = mu0*rmaj*(log(8*rmaj/amin)-2) ! mu0 R (log(8R/a)-2)
-      ! First calculate RHS
       temp = 2*pi*rmaj*mu0/THRIFT_PHIEDGE(mytimestep)*THRIFT_ETAPARA(nsj,mytimestep)/Lext*THRIFT_JSOURCE(nsj,mytimestep)
       RHS(nsj) = THRIFT_UGRID(nsj,prevtimestep)/dt + temp ! u/dt + 2*pi*R*(mu0/phi_edge)*(eta/Lext)*Js
-      ! Then matrix elements
-      temp = rmaj/(amin**2*ds)*THRIFT_ETAPARA(nsj,mytimestep)/Lext ! X = R0/(a^2 ds)*eta/Lext
+      temp = rmaj/(amin**2*ds)*THRIFT_ETAPARA(nsj,mytimestep)/Lext ! X2 = R0/(a^2 ds)*eta/Lext
       DIAGSUB(nsj-1) = -4*temp
       DIAGMID( nsj ) = 3*temp+1.0/dt
-      ! Row manips to get TDM form
-      temp = temp/DIAGSUB(nsj-2) ! X/an1
-      DIAGSUB(nsj-1) = DIAGSUB(nsj-1) - temp*DIAGMID(nsj-1)
-      DIAGMID( nsj ) = DIAGMID( nsj ) - temp*DIAGSUP(nsj-1)
-      RHS(nsj)       = RHS(nsj)       - temp*RHS(nsj-1)
+
+      ! Row manipulations to get TDM for DGTSV
+      ! Eliminate X2
+      temp = temp/DIAGSUB(nsj-2) ! X2/an1
+      DIAGSUB(nsj-1)    = DIAGSUB(nsj-1)  - temp*DIAGMID(nsj-1)
+      DIAGMID(nsj)      = DIAGMID(nsj)    - temp*DIAGSUP(nsj-1)
+      RHS(nsj)          = RHS(nsj)        - temp*RHS(nsj-1)
+      ! Eliminate X1
+      temp = 1.0/DIAGSUP(2) ! X1/c2 [X1=1]
+      DIAGMID(1)        = DIAGMID(1)      - temp*DIAGSUB(1)
+      DIAGSUP(1)        = DIAGSUP(1)      - temp*DIAGMID(2)
+      RHS(1)            = RHS(1)          - temp*RHS(2)
 
       ! old code with different BC (zero flux of u)
 !      temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
