@@ -540,7 +540,7 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(out) :: val
       REAL(rprec) :: rho
       INTEGER     :: i
-      REAL(rprec) :: zeff, sigspitz, te, ne, nuestar, Zfunc, Zft33eff
+      REAL(rprec) :: zeff, sigspitz, te, ne, nuestar, Zfunc, Zft33eff, clog
       val = 0
       rho = rho_val
       ! O. Sauter et al, Phys. Plasmas 6 (1999) 2834. https://aip.scitation.org/doi/pdf/10.1063/1.873240
@@ -549,7 +549,12 @@ MODULE thrift_profiles_mod
       CALL get_prof_ne(rho,t_val,ne)
       CALL get_prof_sigmaspitz_sauter(rho,t_val,sigspitz)
       Zfunc = 0.58_rprec + 0.74_rprec / (0.76_rprec + zeff) ! Eq. 18a
-      nuestar = 6.921E-18 * q_val * R_val * ne * zeff * Zfunc / (te * te * eps_val**1.5) ! Eq. 18b
+      IF (ne > 1E16) THEN
+         clog = 31.3_rprec - log(sqrt(ne)/te) ! Eq. 18d
+      ELSE
+         clog = 17.0
+      END IF      
+      nuestar = 6.921E-18 * q_val * R_val * ne * zeff * clog / (te * te * eps_val**1.5) ! Eq. 18b
       Zft33eff = ft_val / ( 1.0 + &
                            (0.55 - 0.1 * ft_val) * sqrt(nuestar) + &
                             0.45 * (1.0 - ft_val) * nuestar / (zeff**1.5)) ! Eq.13b
