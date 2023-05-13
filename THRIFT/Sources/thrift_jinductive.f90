@@ -126,7 +126,7 @@
 !======================================================================
 !     Populate matrix and RHS of the system of equations (n=nsj, nX=n-X)
 !
-!     | b1   c1   X1   0 .  0   0   0   0  | | u1  |   | y1  |  BC AXIS
+!     | b1   c1    0   0 .  0   0   0   0  | | u1  |   | y1  |  BC AXIS
 !     | a2   b2   c2   0 .  0   0   0   0  | | u2  |   | y2  |     \
 !     |  0   a3   b3  c3 .  0   0   0   0  | | u3  |   | y3  |     |
 !     |  .    .    .    ... .   .   .   .  | | .   | = |  .  |  evol. eq.
@@ -136,7 +136,7 @@
 !                    
 !     The {u} contain the current: u_j = mu0/phi_edge*I_j
 !     First equation encapsulates the BC for the magnetic axis:
-!        dI/ds(s=0,t) = 0 
+!        I(s=0,t) = 0 
 !
 !     Last equation encapsulates the BC for the plasma edge:
 !        E(s=1,t) = -L_ext/(2*pi*R0) * dI/dt 
@@ -154,9 +154,14 @@
       DIAGSUP(2:nsj-1) =  alpha3/(2*ds) + alpha4/(ds**2)
       RHS(2:nsj-1)     = -alpha1-THRIFT_UGRID(2:nsj-1,prevtimestep)/dt
       ! Magnetic axis (s=0)
-      DIAGMID(1) = 3
-      DIAGSUP(1) = -4
-      RHS(1)     = 0
+      DIAGMID(1)  = 1
+      DIAGSUP(1)  = 0
+      RHS(1)      = 0
+      ! code for dI/ds = 0
+      !DIAGMID(1) = 3
+      !DIAGSUP(1) = -4
+      !RHS(1)     = 0
+
       ! Plasma edge (s=1)
       rmaj = THRIFT_RMAJOR(nsj,mytimestep); amin = THRIFT_AMINOR(nsj,mytimestep) ! R,a helpers
       Lext = mu0*rmaj*(log(8*rmaj/amin)-2) ! mu0 R (log(8R/a)-2)
@@ -172,22 +177,14 @@
       DIAGSUB(nsj-1)    = DIAGSUB(nsj-1)  - temp*DIAGMID(nsj-1)
       DIAGMID(nsj)      = DIAGMID(nsj)    - temp*DIAGSUP(nsj-1)
       RHS(nsj)          = RHS(nsj)        - temp*RHS(nsj-1)
-      ! Eliminate X1
-      temp = 1.0/DIAGSUP(2) ! X1/c2 [X1=1]
-      DIAGMID(1)        = DIAGMID(1)      - temp*DIAGSUB(1)
-      DIAGSUP(1)        = DIAGSUP(1)      - temp*DIAGMID(2)
-      RHS(1)            = RHS(1)          - temp*RHS(2)
+      
+      ! code for dI/ds = 0
+      !! Eliminate X1
+      !temp = 1.0/DIAGSUP(2) ! X1/c2 [X1=1]
+      !DIAGMID(1)        = DIAGMID(1)      - temp*DIAGSUB(1)
+      !DIAGSUP(1)        = DIAGSUP(1)      - temp*DIAGMID(2)
+      !RHS(1)            = RHS(1)          - temp*RHS(2)
 
-      ! old code with different BC (zero flux of u)
-!      temp = THRIFT_BSQAV(nsj,mytimestep)/mu0
-!      DIAGSUB(nsj-1) = -4/(2*ds)
-!      DIAGMID( nsj ) =  3/(2*ds)+THRIFT_PPRIME(nsj,mytimestep)/temp
-!      RHS(nsj)       = THRIFT_JSOURCE(nsj,mytimestep)*THRIFT_BAV(nsj,mytimestep)/temp
-!      ! Row operations to make a tridiagonal matrix
-!      temp = (1/(2*ds))/DIAGSUB(nsj-2)
-!      DIAGSUB(nsj-1) = DIAGSUB(nsj-1) - temp*DIAGMID(nsj-1)
-!      DIAGMID( nsj ) = DIAGMID( nsj ) - temp*DIAGSUP(nsj-1)
-!      RHS( nsj )     =     RHS( nsj ) - temp*RHS(nsj-1)
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
