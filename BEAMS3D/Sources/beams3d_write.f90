@@ -19,7 +19,7 @@
                                  ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
                                  plasma_mass, plasma_Zmean, &
                                  B_kick_min, B_kick_max, freq_kick, E_kick, NI
-      USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
+      USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, t_end_in, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
@@ -177,6 +177,9 @@
                CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of steps per trajectory period',&
                                       ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)
+               CALL write_scalar_hdf5(fid,'t_end_in',ier,DBLVAR=MAXVAL(t_end_in),ATT='Maximum simulation time set by namelist',&
+                                       ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'t_end_in',ier) 
                !CALL write_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end,ATT='Time at End of Trajectory [s]',&
                !                    ATT_NAME='description')
                !IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'t_end',ier)
@@ -228,9 +231,9 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nbeams',ier)
                CALL write_scalar_hdf5(fid,'nsteps',ier,INTVAR=nsteps+1,ATT='Number of Steps Along Trajectory',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nsteps',ier)
-               CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of steps per trajectory period',&
+               CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of saved steps along trajectory',&
                                       ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)              
                CALL write_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end,ATT='Time at End of Trajectory [s]',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'t_end',ier)

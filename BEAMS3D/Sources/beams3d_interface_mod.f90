@@ -216,6 +216,10 @@ CONTAINS
                 i = i + 1
                 lrestart_particles = .true.
                 CALL GETCARG(i, restart_string, numargs)
+            case ("-restart_grid")
+                i = i + 1
+                lrestart_grid = .true.
+                CALL GETCARG(i, restart_string, numargs)
             case ("-coil")
                 i = i + 1
                 lcoil = .true.

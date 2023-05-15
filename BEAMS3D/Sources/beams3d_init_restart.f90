@@ -21,6 +21,7 @@
 #endif
       USE mpi_params
       USE mpi_inc
+      USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -30,7 +31,7 @@
       LOGICAL :: lplasma_old, ldepo_old, lfusion_old
       INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2, start_dex
-      REAL(rprec) :: vpartmax, B_help, version_old
+      REAL(rprec) :: vpartmax, B_help, version_old,t_end_restart
       REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
                                                 weight2
@@ -81,7 +82,7 @@
          IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
          IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
          IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)
-         IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
+         IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)  
          ALLOCATE(mass2(nparticles),charge2(nparticles),Zatom2(nparticles),&
             beam2(nparticles), weight2(nparticles), end_state(nparticles))
          ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
@@ -115,8 +116,75 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_lines',ier)
          CALL read_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_lines',ier)
+         IF (lrestart_grid) THEN
+            CALL read_scalar_hdf5(fid,'nr',ier,INTVAR=nr)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nr',ier)
+            CALL read_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nphi',ier)
+            CALL read_scalar_hdf5(fid,'nz',ier,INTVAR=nz)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nz',ier)   
+            CALL read_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'npoinc',ier)        
+            CALL read_scalar_hdf5(fid,'t_end_in',ier,DBLVAR=t_end_restart)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'t_end',ier)       
+            t_end_in = t_end_restart !Broadcast to t_end_in                                   
+            CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis) 
+            CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
+            CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
+            CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
+            CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
+            CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
+            CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
+            CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
+            CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
+            CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
+            CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
+            CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
+            CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
+            CALL mpialloc(TE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE)
+            CALL mpialloc(NE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE)
+            CALL mpialloc(TI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI)
+            CALL mpialloc(ZEFF_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF_ARR)
+            CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
+            CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
+            CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
+            CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
+            CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
+            CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)          
+            !ALLOCATE(raxis(nr),zaxis(nz),phiaxis(nphi))
+            CALL read_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'raxis',ier)
+            CALL read_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'phiaxis',ier)
+            CALL read_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'zaxis',ier)
+            CALL read_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_R',ier)
+            CALL read_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_PHI',ier)        
+            CALL read_var_hdf5(fid,'B_Z',nr,nphi,nz,ier,DBLVAR=B_Z)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_Z',ier)
+            CALL read_var_hdf5(fid,'TE',nr,nphi,nz,ier,DBLVAR=TE)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'TE',ier)
+            CALL read_var_hdf5(fid,'NE',nr,nphi,nz,ier,DBLVAR=NE)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'NE',ier)
+            CALL read_var_hdf5(fid,'TI',nr,nphi,nz,ier,DBLVAR=TI)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'TI',ier)     
+            CALL read_var_hdf5(fid,'NI',nion,nr,nphi,nz,ier,DBLVAR=NI)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'NI',ier)    
+            CALL read_var_hdf5(fid,'ZEFF_ARR',nr,nphi,nz,ier,DBLVAR=ZEFF_ARR)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ZEFF_ARR',ier) 
+            CALL read_var_hdf5(fid,'POT_ARR',nr,nphi,nz,ier,DBLVAR=POT_ARR)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'POT_ARR',ier)               
+            CALL read_var_hdf5(fid,'U_ARR',nr,nphi,nz,ier,DBLVAR=U_ARR)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'U_ARR',ier) 
+            CALL read_var_hdf5(fid,'S_ARR',nr,nphi,nz,ier,DBLVAR=S_ARR)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_ARR',ier)                                                                    
+         END IF
+
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
+
 
 
          ! Helper for where to start loading particles
@@ -187,7 +255,7 @@
 
          ! Restore quantities
          nparticles = k-1
-         npoinc = npoinc_save
+         IF (.not. lrestart_grid) npoinc = npoinc_save
          nbeams = MAXVAL(beam)
          IF (lverb) THEN
             WRITE(6,'(A,I6)') '   # of Beams: ', nbeams
@@ -207,7 +275,6 @@
       END IF
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(mass,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(charge,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(Zatom,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(weight,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -217,6 +284,18 @@
       CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (lrestart_particles) THEN
+         CALL MPI_BCAST(nr,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BCAST(nz,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BCAST(nphi,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BCAST(npoinc,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+         IF (myworkid /= master) THEN
+            ALLOCATE(raxis(nr),zaxis(nz),phiaxis(nphi))
+         END IF
+         CALL MPI_BCAST(raxis,nr,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BCAST(phiaxis,nphi,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BCAST(zaxis,nz,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      END IF
 #endif
 
       RETURN
