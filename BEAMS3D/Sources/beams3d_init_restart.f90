@@ -42,7 +42,7 @@
          WRITE(6,'(A)')  '----- Reading Restart File -----'
          WRITE(6,'(A)')  '   FILE: '//TRIM(restart_string)
       END IF
-
+      
       IF (myworkid == master) THEN
          IF (lrestart_grid) THEN
             CALL beams3d_read(restart_string(9:(len(TRIM(restart_string))-3)))
@@ -225,91 +225,92 @@
 
          END IF
 
-            ! Helper for where to start loading particles
-            ALLOCATE(start_dex(nparticles))
-            start_dex=0 ! Default
+         ! Helper for where to start loading particles
+         ALLOCATE(start_dex(nparticles))
+         start_dex=0 ! Default
 
-            ! Decide what to do
-            !   IF lfusion_old then start from 0
-            !   IF ldepo run then start from 2
-            !   ELSE Start from wall_hit
-            !ldepo_old = .false.
+         ! Decide what to do
+         !   IF lfusion_old then start from 0
+         !   IF ldepo run then start from 2
+         !   ELSE Start from wall_hit
+         !ldepo_old = .false.
+         state_flag = 0
+         !IF (ANY(end_state==3)) ldepo_old = .true.
+         IF (lfusion_old) THEN
+            end_state = 0
             state_flag = 0
-            !IF (ANY(end_state==3)) ldepo_old = .true.
-            IF (lfusion_old) THEN
-               end_state = 0
-               state_flag = 0
-               IF (lplasma_only) THEN 
-                  WHERE(S_lines(0,:) >= 1) end_state = -1
-               END IF
-            ELSEIF (ldepo_old) THEN
-               state_flag = 0
-               start_dex = 2
-               IF (lplasma_only) THEN 
-                  WHERE(S_lines(1,:) >= 1) end_state = -1
-               END IF
-            ELSE
-               state_flag = 2
-               DO i = 1, nparticles
-                  start_dex(i) = COUNT(R_lines(:,i)>0) - 1 ! Note indexed from 0
-               END DO
+            IF (lplasma_only) THEN 
+               WHERE(S_lines(0,:) >= 1) end_state = -1
             END IF
-            k = COUNT(end_state == state_flag)
-
-            IF (lverb) THEN
-               WRITE(6,'(A,I8)') '   NPARTICLES_RESTART: ', k
+         ELSEIF (ldepo_old) THEN
+            state_flag = 0
+            start_dex = 2
+            IF (lplasma_only) THEN 
+               WHERE(S_lines(1,:) >= 1) end_state = -1
             END IF
-
-            ! Allocate the particles
-            ALLOCATE(  R_start(k), phi_start(k), Z_start(k),mu_start(k),vll_start(k))
-            IF (.not. lrestart_grid) THEN
-               ALLOCATE(v_neut(3,k), mass(k), charge(k), &
-                      Zatom(k), t_end(k),  &
-                     beam(k), weight(k) )
-            END IF
-
-            ! Now fill the arrays downselecting for non-shinethrough particles
-            k = 1
+         ELSE
+            state_flag = 2
             DO i = 1, nparticles
-               IF (end_state(i) /= state_flag) CYCLE
-               npoinc_extract = start_dex(i)
-               R_start(k)   = R_lines(npoinc_extract,i)
-               Z_start(k)   = Z_lines(npoinc_extract,i)
-               phi_start(k) = PHI_lines(npoinc_extract,i)
-               vll_start(k) = vll_lines(npoinc_extract,i)
-               v_neut(3,k)   = 0.0
-               mass(k)      = mass2(i)
-               WRITE(27,'(EN12.3)')  mass(k) 
-               charge(k)   = charge2(i)
-               Zatom(k)    = Zatom2(i)
-               beam(k)     = beam2(i)
-               weight(k)   = weight2(i)
-               t_end(k)    = MAXVAL(t_end_in)
-               IF (lrestart_grid) THEN
-                  mu_start(k) = moment_lines(npoinc_extract,i)
-                  
-               ELSE
-                  q = (/R_start(k), phi_start(k), Z_start(k)/)
-                  mu_start(k)  = moment_lines(npoinc_extract,i)*B_lines(npoinc_extract,i)
-                  CALL beams3d_MODB(q,B_help)
-                  mu_start(k) = mu_start(k)/B_help
-               END IF
-               k = k + 1
+               start_dex(i) = COUNT(R_lines(:,i)>0) - 1 ! Note indexed from 0
             END DO
-            DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state, S_lines, B_lines)
-            DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, start_dex)
+         END IF
+         k = COUNT(end_state == state_flag)
 
-            ! Restore quantities
-            nparticles = k-1
-            IF (.not. lrestart_grid) npoinc = npoinc_save
-            nbeams = MAXVAL(beam)
-            IF (lverb) THEN
-               WRITE(6,'(A,I6)') '   # of Beams: ', nbeams
+         IF (lverb) THEN
+            WRITE(6,'(A,I8)') '   NPARTICLES_RESTART: ', k
+         END IF
+
+         ! Allocate the particles
+         ALLOCATE(  R_start(k), phi_start(k), Z_start(k),mu_start(k),vll_start(k))
+         IF (.not. lrestart_grid) THEN
+            ALLOCATE(v_neut(3,k), mass(k), charge(k), &
+                     Zatom(k), t_end(k),  &
+                  beam(k), weight(k) )
+         END IF
+
+         ! Now fill the arrays downselecting for non-shinethrough particles
+         k = 1
+         DO i = 1, nparticles
+            IF (end_state(i) /= state_flag) CYCLE
+            npoinc_extract = start_dex(i)
+            R_start(k)   = R_lines(npoinc_extract,i)
+            Z_start(k)   = Z_lines(npoinc_extract,i)
+            phi_start(k) = PHI_lines(npoinc_extract,i)
+            vll_start(k) = vll_lines(npoinc_extract,i)
+            v_neut(3,k)   = 0.0
+            mass(k)      = mass2(i)
+            !WRITE(27,'(EN12.3)')  mass(k) 
+            charge(k)   = charge2(i)
+            Zatom(k)    = Zatom2(i)
+            beam(k)     = beam2(i)
+            weight(k)   = weight2(i)
+            t_end(k)    = MAXVAL(t_end_in)
+            IF (lrestart_grid) THEN
+               mu_start(k) = moment_lines(npoinc_extract,i)
+               
+            ELSE
+               q = (/R_start(k), phi_start(k), Z_start(k)/)
+               mu_start(k)  = moment_lines(npoinc_extract,i)*B_lines(npoinc_extract,i)
+               CALL beams3d_MODB(q,B_help)
+               mu_start(k) = mu_start(k)/B_help
             END IF
+            k = k + 1
+         END DO
+         DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state, S_lines, B_lines)
+         DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, start_dex)
+
+         ! Restore quantities
+         nparticles = k-1
+         IF (.not. lrestart_grid) npoinc = npoinc_save
+         nbeams = MAXVAL(beam)
+         IF (lverb) THEN
+            WRITE(6,'(A,I6)') '   # of Beams: ', nbeams
+         END IF
          
       END IF
-
+     
 #if defined(MPI_OPT)
+
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nparticles,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nbeams,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -319,7 +320,9 @@
                     v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
                     mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
                     beam(nparticles), weight(nparticles) )
+                    
       END IF
+      
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(charge,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -345,6 +348,7 @@
          ! CALL MPI_BCAST(zaxis,nz,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
          ! CALL MPI_BCAST(TE,nr*nphi*nz,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       END IF
+      
 #endif
 
       RETURN

@@ -278,24 +278,24 @@
       ! CALL read_var_hdf5(fid,'dist_Waxis',ns_prof5,DBLVAR=dist_Waxis)
       ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_Waxis',ier) 
 
-      ! Try to read the faces
-      CALL read_scalar_hdf5(fid,'nvertex',ier,INTVAR=nvertex)
-      IF (ier == 0) THEN
-         ALLOCATE(vertex(nvertex,3))
-         CALL read_var_hdf5(fid,'wall_vertex',nvertex,3,ier,DBLVAR=vertex)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'wall_vertex',ier)
-      END IF
-      ier = 0
-      CALL read_scalar_hdf5(fid,'nface',ier,INTVAR=nface)
-      IF (ier == 0) THEN
-         ALLOCATE(face(nface,3),ihit_array(nface))
-         CALL read_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'wall_faces',ier)
-         CALL read_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array)
-         !IF (ier /= 0) DEALLOCATE(ihit_array)
-         !lwall_loaded=.true.
-      END IF
-      ier = 0
+      ! ! Try to read the faces
+      ! CALL read_scalar_hdf5(fid,'nvertex',ier,INTVAR=nvertex)
+      ! IF (ier == 0) THEN
+      !    ALLOCATE(vertex(nvertex,3))
+      !    CALL read_var_hdf5(fid,'wall_vertex',nvertex,3,ier,DBLVAR=vertex)
+      !    IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'wall_vertex',ier)
+      ! END IF
+      ! ier = 0
+      ! CALL read_scalar_hdf5(fid,'nface',ier,INTVAR=nface)
+      ! IF (ier == 0) THEN
+      !    ALLOCATE(face(nface,3),ihit_array(nface))
+      !    CALL read_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face)
+      !    IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'wall_faces',ier)
+      !    CALL read_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array)
+      !    !IF (ier /= 0) DEALLOCATE(ihit_array)
+      !    !lwall_loaded=.true.
+      ! END IF
+      ! ier = 0
 
       ! Close the file
       CALL close_hdf5(fid,ier)

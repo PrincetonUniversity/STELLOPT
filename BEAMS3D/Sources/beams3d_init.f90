@@ -270,31 +270,33 @@
       !!              Initialize Background Grids
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      IF (lrestart_grid .and. (myid_sharmem == 0)) THEN
+      IF (lrestart_grid) THEN
          CALL beams3d_init_restart
          CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
-         CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)   
-         X_ARR = 1.5
-         Y_ARR = 1.5         
+         CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR) 
          CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
          CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
          CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
          CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
          CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
-         CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)        
-              
-            ! Setup grid helpers
-            ! Note: All helpers are defined in terms of differences on half grid
-            !       so values are indexed from 1 to n-1.  Which we store at n
-            !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            !        hr(i) = raxis(i+1) - raxis(i)
-            !        hri    = one / hr
-         FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
-         FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
-         FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
-         hri = one / hr
-         hpi = one / hp
-         hzi = one / hz
+         CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)  
+         IF (myid_sharmem == 0) THEN   
+            X_ARR = 1.5
+            Y_ARR = 1.5  
+               ! Setup grid helpers
+               ! Note: All helpers are defined in terms of differences on half grid
+               !       so values are indexed from 1 to n-1.  Which we store at n
+               !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+               !        hr(i) = raxis(i+1) - raxis(i)
+               !        hri    = one / hr
+            FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
+            FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
+            FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
+            hri = one / hr
+            hpi = one / hp
+            hzi = one / hz
+            WRITE(6,'(A)') ' Allocated!'
+         END IF
          
       ELSE
          ! Create the background grid
