@@ -27,7 +27,7 @@
 !-----------------------------------------------------------------------
       NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
                               nrho, tstart, tend, ntimesteps, n_eq, jtol, &
-                              picard_factor, npicard, lverbj, &
+                              picard_factor, npicard, lverbj, boot_factor, &
                               eccd_type, &
                               vessel_ecrh, mirror_ecrh, wmode_ecrh, &
                               targettype_ecrh, antennatype_ecrh, &
@@ -35,7 +35,7 @@
                               targetposition_ecrh, rbeam_ecrh, &
                               rfocus_ecrh, nra_ecrh, nphi_ecrh, &
                               freq_ecrh, power_ecrh, &
-                              pecrh_aux_t, pecrh_aux_f
+                              pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -64,9 +64,13 @@
       lnbcd              = .FALSE.
       lohmic             = .FALSE.
       lverbj             = .FALSE.
-      ! For ecrh
+      ! For BOOTSJ
+      boot_factor        = 1
+      ! For ecrh simple model
       pecrh_aux_t     = 1E6
       pecrh_aux_f     = 0
+      ecrh_rc         = 0.3
+      ecrh_w          = 0.175
       ! TRAVIS vars
       vessel_ecrh     = ''
       mirror_ecrh     = ''
