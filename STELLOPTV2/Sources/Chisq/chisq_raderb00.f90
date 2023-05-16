@@ -33,8 +33,8 @@
 !
 !-----------------------------------------------------------------------
       INTEGER     :: ik, ier, iCount, diagUnit, istat
-      REAL(rprec) :: raderb00(nsd)
-      DOUBLE PRECISION :: s_val(nsd), b00(nsd)
+      REAL(rprec) :: raderb00(nsd),  rr
+      DOUBLE PRECISION :: rr_val(nsd), b00(nsd)
       TYPE(EZspline1_r8) :: b00prof_spl
       character(256) :: fname
 !----------------------------------------------------------------------
@@ -43,8 +43,8 @@
       diagUnit = 222
       IF (iflag < 0) RETURN
       ik = COUNT(sigma < bigno)
-!        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'RADERB0 ',ik, 3
-!        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA dB_00/ds'
+        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'RADERB0 ',ik, 3
+        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA dB_00/ds'
       IF (niter >= 0) THEN
         fname = 'rdB00_out' // trim(proc_string)
         istat=0
@@ -61,19 +61,19 @@
             ! positions at which the boozer transform was carried out
             IF (lbooz(ik)) THEN
                 iCount=iCount+1
-                s_val(iCount) = rho(ik)
+                rr_val(iCount) = rho(ik)
                 b00(iCount) = bmnc_b(1, ik)
                 !write(*,*) 's_val(ik): ', s_val(iCount)
             END IF
         END DO
 !            write(*,*) 'lbooz(ik) .eq. .true.: ', iCount
-        CALL setup_prof_spline(b00prof_spl, iCount, s_val, b00, ier)
+        CALL setup_prof_spline(b00prof_spl, iCount, rr_val, b00, ier)
         DO ik = 1, nsd
           IF (sigma(ik) >= bigno) CYCLE
-
-          CALL EZspline_isInDomain(b00prof_spl, rho(ik), ier)
+          rr  = rho(ik)
+          CALL EZspline_isInDomain(b00prof_spl, rr, ier)
           IF (ier .ne. 0) RETURN
-          CALL EZspline_derivative(b00prof_spl, 1, rho(ik), raderb00(ik), ier)
+          CALL EZspline_derivative(b00prof_spl, 1, rr, raderb00(ik), ier)
           !write(*,*) 'derivative: ', raderb00
 
         !  normalization
@@ -82,8 +82,8 @@
           targets(mtargets) = target(ik)
           sigmas(mtargets)  = sigma(ik)
           vals(mtargets)    = raderb00(ik)
-        !            write(*,*) 'rho(ik)' , rho(ik), 'raderb00(ik): ',  raderb00(ik), 'b00(ik)', b00(ik)
-        !            IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target(ik), sigma(ik), raderb00(ik)
+                   ! write(*,*) 'rho(ik)' , rho(ik), 'raderb00(ik): ',  raderb00(ik), 'b00(ik)', b00(ik)
+          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target(ik), sigma(ik), raderb00(ik)
           IF (iflag == 1) THEN
               WRITE(diagUnit,'(2ES22.12E3)') rho(ik), raderb00(ik)
           END IF

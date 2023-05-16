@@ -373,10 +373,16 @@ chisq_knosos.o : \
       $(KNOSOS_DIR)/$(LOCTYPE)/knosos_stellopt.o
 
 
-chisq_stella.o : \
+#chisq_stella.o : \
+#      stellopt_runtime.o \
+#      stellopt_targets.o \
+#      $(STELLA_DIR)/$(LOCTYPE)/stella_stellopt.o
+
+chisq_mercier.o: \
       stellopt_runtime.o \
       stellopt_targets.o \
-      $(STELLA_DIR)/$(LOCTYPE)/stella_stellopt.o
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      equil_utils.o
 
 
 chisq_raderb00.o : \
@@ -384,6 +390,10 @@ chisq_raderb00.o : \
       stellopt_targets.o \
       equil_utils.o 
       
+chisq_mshear.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o
 
 chisq_mbm.o : \
       stellopt_runtime.o \

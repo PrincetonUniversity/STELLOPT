@@ -15,7 +15,7 @@
       USE stellopt_input_mod
       USE stellopt_targets
       IMPLICIT NONE
-      
+
 !-----------------------------------------------------------------------
 !     Input Variables
 !        m       Number of function dimensions
@@ -26,7 +26,7 @@
       INTEGER, INTENT(in)      :: ncnt
       INTEGER, INTENT(inout)   :: m,iflag
       REAL(rprec), INTENT(out) :: fvec(m)
-      
+
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -106,12 +106,12 @@
       ! PRESSURE (MIN)
       IF (sigma_pmin < bigno)  &
          CALL chisq_pmin(target_pmin,sigma_pmin,ncnt,iflag)
-         
+
       !------------- ARRAY TARGETS ----------------------------
       ! EXTERNAL CURRENTS
       IF (ANY(sigma_extcur < bigno))  &
          CALL chisq_extcur(target_extcur,sigma_extcur,ncnt,iflag)
-         
+
       !------------- LINE INTEGRATED TARGETS -------------------
       ! LINE ELECTRON DENSITY
       IF (ANY(sigma_ne_line < bigno_ne)) &
@@ -146,12 +146,12 @@
       ! VISUAL BREMSSTRAHLUNG
       IF (ANY(sigma_visbrem_line < bigno)) &
          CALL chisq_line_visbrem(target_visbrem_line, sigma_visbrem_line, ncnt,iflag)
-         
+
       !------------- OTHER TARGETS -------------------
       !  ECE Reflectometry
       IF (ANY(sigma_ece < bigno)) &
          CALL chisq_ece(target_ece, sigma_ece, ncnt,iflag)
-         
+
       !------------- PROFILE TARGETS ---------------------------
       ! PRESSURE PROFILE
       IF (ANY(sigma_press < bigno)) &
@@ -198,10 +198,16 @@
       ! Radial derivative of B00
       IF (ANY(sigma_raderb00 < bigno)) &
          CALL chisq_raderb00(target_raderb00, sigma_raderb00, ncnt,iflag)
+      !magnetic shear
+      IF (ANY(sigma_mshear < bigno)) &
+         CALL chisq_mshear(target_mshear, sigma_mshear, ncnt, iflag)
+      !mercier stability
+      IF (ANY(sigma_dmer < bigno)) &
+         CALL chisq_dmercier(target_dmer, sigma_dmer, ncnt, iflag)
       ! Maximum value of B (minus minimum value at s=1)
       IF (ANY(sigma_mbm < bigno)) &
          CALL chisq_mbm(target_mbm, sigma_mbm, ncnt,iflag)
-         
+
       !------------- COIL GEOMETRY TARGETS ---------------------
       ! Coil lengths
       IF (ANY(sigma_coillen < bigno)) &
@@ -284,7 +290,7 @@
 !      IF (ANY(sigma_stella_q1 < bigno)) &
 !         CALL chisq_stella(target_stella_q1, sigma_stella_q1, ncnt,iflag, jtarget_stella_q1)
 !      IF (ANY(sigma_stella_q2 < bigno)) &
-!         CALL chisq_stella(target_stella_q2, sigma_stella_q2, ncnt,iflag, jtarget_stella_q2)      
+!         CALL chisq_stella(target_stella_q2, sigma_stella_q2, ncnt,iflag, jtarget_stella_q2)
       ! TXPORT
       IF (ANY(sigma_txport < bigno)) &
          CALL chisq_txport(target_txport, sigma_txport, ncnt,iflag)
@@ -322,10 +328,10 @@
 
       ! Return if an initialization call
       IF (ncnt < 0) RETURN
-      
+
       ! Check some stuff
       IF (mtargets .ne. m) THEN; iflag=-2; RETURN; END IF
-      
+
       ! Calculate fvec
       fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
       RETURN
