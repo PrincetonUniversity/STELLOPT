@@ -8,15 +8,15 @@ def read_beams3d(file):
         for temp in ['lascot', 'lbeam', 'lbeam_simple', 'lcoil', 'lcollision', 'ldepo', 'lflux', 'lmgrid', 'lpies', 'lspec',\
                      'lvac', 'lvessel', 'lvmec']:
             if temp in f:
-                beams_data[temp] = np.int(f[temp][0])
+                beams_data[temp] = (f[temp][0]).astype(int)
         # Integers
         for temp in ['nbeams', 'nface', 'nparticles', 'nphi', 'npoinc', 'nz', 'nsteps', 'nvertex', 'nz']:
             if temp in f:
-                beams_data[temp] = np.int(f[temp][0])
+                beams_data[temp] = (f[temp][0]).astype(int)
         # Floats
         for temp in ['VERSION','iota0']:
             if temp in f:
-                beams_data[temp] = np.float(f[temp][0])
+                beams_data[temp] = (f[temp][0]).astype(float)
         # Arrays
         for temp in ['B_PHI', 'B_R', 'B_Z', 'B_lines', 'NE', 'PE_lines', 'PHI_lines', 'PI_lines', 'POT_ARR', 'R_lines',\
                     'S_ARR', 'S_lines', 'Shinethrough', 'TE', 'TI', 'U_ARR', 'U_lines', 'ZEFF_ARR', 'Z_lines', 'Zatom', \
