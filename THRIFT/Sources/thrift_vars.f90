@@ -77,7 +77,7 @@ MODULE thrift_vars
              win_thrift_alpha1,  win_thrift_alpha2,   win_thrift_alpha3,   win_thrift_alpha4,   &
              win_thrift_matld,   win_thrift_matmd,    win_thrift_matud,    win_thrift_matrhs,   &
              win_thrift_bvav
-    REAL(rprec) :: tstart, tend, jtol, picard_factor
+    REAL(rprec) :: tstart, tend, jtol, picard_factor, boot_factor
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), THRIFT_PHIEDGE(:), &
                                           THRIFT_S(:),   THRIFT_SNOB(:),  THRIFT_T(:)
     REAL(rprec), DIMENSION(:,:), POINTER :: &
@@ -100,6 +100,7 @@ MODULE thrift_vars
     ! For ECCD in general
     INTEGER, PARAMETER :: ntime_ecrh = 200
     REAL(rprec), DIMENSION(ntime_ecrh) :: PECRH_AUX_T, PECRH_AUX_F
+    REAL(rprec) :: ecrh_rc, ecrh_w
 
     ! For TRAVIS
     INTEGER, PARAMETER :: nsys   = 16

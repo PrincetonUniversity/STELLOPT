@@ -98,6 +98,7 @@
 
             ! Calculate Bootstrap
             CALL thrift_run_bootstrap
+            THRIFT_JBOOT(:,mytimestep) = boot_factor*THRIFT_JBOOT(:,mytimestep)
 
             ! Calculate Current Drive
             IF (leccd)  CALL thrift_run_ECCD
@@ -135,10 +136,10 @@
                deltaj = THRIFT_J(:,mytimestep)
             ELSE
                WHERE(ABS(jold)>0) deltaj = (THRIFT_J(:,mytimestep) - jold) / jold
-               DO i = 1, nsj
-                  THRIFT_JPLASMA(i,mytimestep) = picard_factor*(1+deltaj(nsj))/(picard_factor+deltaj(nsj))*THRIFT_JPLASMA(i,mytimestep)
-                  THRIFT_JSOURCE(i,mytimestep) = picard_factor*(1+deltaj(nsj))/(picard_factor+deltaj(nsj))*THRIFT_JSOURCE(i,mytimestep)
-               END DO
+               !DO i = 1, nsj
+               !   THRIFT_JPLASMA(i,mytimestep) = picard_factor*(1+deltaj(nsj))/(picard_factor+deltaj(nsj))*THRIFT_JPLASMA(i,mytimestep)
+               !   THRIFT_JSOURCE(i,mytimestep) = picard_factor*(1+deltaj(nsj))/(picard_factor+deltaj(nsj))*THRIFT_JSOURCE(i,mytimestep)
+               !END DO
             END IF
             ! Set new jold
             jold = THRIFT_J(:,mytimestep)
@@ -190,7 +191,7 @@
                         WRITE(temp_prog_str,'(ES11.3)') THRIFT_IOHMIC(nsj,mytimestep)
                         progress_str = TRIM(progress_str)//" "//temp_prog_str
                   END IF
-                  WRITE(temp_prog_str,'(ES11.3)') MAXVAL(deltaj)
+                  WRITE(temp_prog_str,'(ES11.3)') MAXVAL(ABS(deltaj))
                   progress_str = TRIM(progress_str)//" "//temp_prog_str
                 WRITE(6,*) progress_str
             END IF
