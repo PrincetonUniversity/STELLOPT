@@ -12,7 +12,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
-                               weight, invpi2, ndt, ndt_max, lfidasim, lfidasim2
+                               weight, invpi2, ndt, ndt_max, lfidasim, lfidasim2, rho_scale
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nsteps, nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
@@ -65,6 +65,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     !CALL EZspline_isInDomain(S_spl,q(1),x0,q(3),ier)
     y0 = 0  ! If we're out of domain then don't worry about collisions
     !IF (ier==0) THEN
+    !WRITE(6,'(F7.3,F7.3,F7.3,F12.3, EN12.3)')  q(1), q(2),q(3),q(4),moment
     IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
         (x0 >= phimin-eps2) .and. (x0 <= phimax+eps2) .and. &
         (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
@@ -90,16 +91,18 @@ SUBROUTINE out_beams3d_nag(t, q)
       z0 = ATAN2(fval2(1),fval(1))
       S_lines(mytdex, myline) = y0
       U_lines(mytdex, myline) = z0
+      
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        MODB4D(1,1,1,1),nr,nphi,nz)
        B_lines(mytdex, myline) = fval(1)
+       !WRITE(6,'(F12.3)') fval(1)
        ! Calc dist func bins
        x0    = MOD(q(2),pi2)
        IF (x0 < 0) x0 = x0 + pi2
        IF (z0 < 0) z0 = z0 + pi2
        vperp = SQRT(2*moment*fval(1)*inv_mymass)
-       d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+       d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1/ rho_scale    ), ns_prof1), 1) ! Rho Bin, Apply scale to enable distribution outside LCFS
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
        d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
        d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
@@ -109,19 +112,15 @@ SUBROUTINE out_beams3d_nag(t, q)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
        IF (lfidasim2) THEN
-            x0 = MOD(q(2), phimax)
-            IF (x0 < 0) x0 = x0 + phimax
-            i = MIN(MAX(FLOOR((q(1)-rmin_fida)*r_h)+1,0),nr_fida+1)
-            j = MIN(MAX(FLOOR((x0-phimin_fida)*p_h)+1,0),nphi_fida+1)
-            k = MIN(MAX(FLOOR((q(3)-zmin_fida)*z_h)+1,0),nz_fida+1)
+            !x0 = MOD(q(2), phimax_fida)
+            !IF (x0 < 0) x0 = x0 + phimax_fida
+            i = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
+            j = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
+            k = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
             y0 = (q(4)**2+vperp**2)
-            d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h+1),1),nenergy_fida)
-            d5 = MIN(MAX(FLOOR((q(4)/SQRT(y0)-pimin_fida)*pi_h)+1,1),npitch_fida)
-            ! IF ((i > 0) .and. (i <= nr_fida) .and. &
-            ! (j > 0) .and. (j <= nphi_fida) .and. &
-            ! (k > 0) .and. (k <= nz_fida)) THEN
-               dist5d_fida(mybeam,i,k,j,d4,d5) = dist5d_fida(mybeam,i,k,j,d4,d5) + xw
-            ! END IF
+            d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h),1),nenergy_fida)
+            d5 = MIN(MAX(CEILING((q(4)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
+		    dist5d_fida(i,k,j,d4,d5) = dist5d_fida(i,k,j,d4,d5) + xw
         END IF
        IF (lcollision) CALL beams3d_physics(t,q)
        IF (ltherm) THEN
@@ -183,7 +182,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        zlast = q(3)
     END IF
     ndt = ndt + 1
-    IF (ndt .ge. ndt_max) THEN ! ge needed if npoinc = ndt
+    IF (ndt .gt. ndt_max) THEN ! ge needed if npoinc = ndt
        mytdex = mytdex + 1
        ndt = 1
     END IF

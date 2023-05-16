@@ -15,12 +15,13 @@
       USE beams3d_lines
       USE beams3d_grid
       USE beams3d_runtime
+      USE wall_mod
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Input Variables
-!          file_ext     Extension of file (beam_ext.h5)
+!          file_ext     Extension of file (beams3d_ext.h5)
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(in)           :: file_ext
@@ -30,7 +31,7 @@
 !          iunit        File ID
 !-----------------------------------------------------------------------
       INTEGER :: ier, iunit
-      REAL(rprec) :: ver_temp
+      REAL(rprec) :: ver_temp, t_end_restart
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -85,6 +86,19 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'npoinc',ier)
       CALL read_scalar_hdf5(fid,'nbeams',ier,INTVAR=nbeams)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nbeams',ier)
+      CALL read_scalar_hdf5(fid,'ns_prof1',ier,INTVAR=ns_prof1)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ns_prof1',ier)      
+      CALL read_scalar_hdf5(fid,'ns_prof2',ier,INTVAR=ns_prof2)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ns_prof2',ier)        
+      CALL read_scalar_hdf5(fid,'ns_prof3',ier,INTVAR=ns_prof3)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ns_prof3',ier)        
+      CALL read_scalar_hdf5(fid,'ns_prof4',ier,INTVAR=ns_prof4)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ns_prof4',ier)        
+      CALL read_scalar_hdf5(fid,'ns_prof5',ier,INTVAR=ns_prof5)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ns_prof5',ier)  
+      CALL read_scalar_hdf5(fid,'t_end_in',ier,DBLVAR=t_end_restart)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'t_end',ier)       
+      t_end_in = t_end_restart !Broadcast to t_end_in      
       IF (ALLOCATED(t_end)) DEALLOCATE(t_end)
       IF (ALLOCATED(mass)) DEALLOCATE(mass)
       IF (ALLOCATED(charge)) DEALLOCATE(charge)
@@ -110,8 +124,8 @@
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
       IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)
       IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
-      IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
       IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
+      IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
       IF (ALLOCATED(S_lines)) DEALLOCATE(S_lines)
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
@@ -127,10 +141,10 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PHI_lines',ier)
       CALL read_var_hdf5(fid,'vll_lines',npoinc+1,nparticles,ier,DBLVAR=vll_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vll_lines',ier)
-      CALL read_var_hdf5(fid,'neut_lines',npoinc+1,nparticles,ier,BOOVAR=neut_lines)
-      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'neut_lines',ier)
       CALL read_var_hdf5(fid,'moment_lines',npoinc+1,nparticles,ier,DBLVAR=moment_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'moment_lines',ier)
+      CALL read_var_hdf5(fid,'neut_lines',npoinc+1,nparticles,ier,BOOVAR=neut_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'neut_lines',ier)
       CALL read_var_hdf5(fid,'S_lines',npoinc+1,nparticles,ier,DBLVAR=S_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_lines',ier)
       CALL read_var_hdf5(fid,'U_lines',npoinc+1,nparticles,ier,DBLVAR=U_lines)
@@ -197,7 +211,7 @@
       IF (ASSOCIATED(B_PHI))   DEALLOCATE(B_PHI)
       IF (ASSOCIATED(S_ARR))   DEALLOCATE(S_ARR)
       IF (ASSOCIATED(U_ARR))   DEALLOCATE(U_ARR)
-      IF (ASSOCIATED(POT_ARR)) DEALLOCATE(POT_ARR)
+      IF (ASSOCIATED(POT_ARR)) DEALLOCATE(POT_ARR)  
       ALLOCATE(raxis(nr))
       ALLOCATE(phiaxis(nphi))
       ALLOCATE(zaxis(nz))
@@ -213,7 +227,7 @@
       CALL read_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'zaxis',ier)
       CALL read_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis)
-      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'phiaxis',ier)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'phiaxis',ier)     
       CALL read_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_R',ier)
       CALL read_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI)
@@ -226,6 +240,44 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'U_ARR',ier)
       CALL read_var_hdf5(fid,'POT_ARR',nr,nphi,nz,ier,DBLVAR=POT_ARR)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'POT_ARR',ier)
+
+      IF (ASSOCIATED(TE))     DEALLOCATE(TE)
+      IF (ASSOCIATED(NE))     DEALLOCATE(NE)   
+      IF (ASSOCIATED(TI))     DEALLOCATE(TI)
+      IF (ASSOCIATED(NI))     DEALLOCATE(NI)             
+      IF (ASSOCIATED(ZEFF_ARR))     DEALLOCATE(ZEFF_ARR)  
+      ALLOCATE(TE(nr,nphi,nz))
+      ALLOCATE(NE(nr,nphi,nz))
+      ALLOCATE(TI(nr,nphi,nz))
+      ALLOCATE(NI(NION,nr,nphi,nz))
+      ALLOCATE(ZEFF_ARR(nr,nphi,nz))
+      rmax = MAXVAL(raxis)
+      rmin = MINVAL(raxis)
+      phimax = MAXVAL(phiaxis)
+      phimin = MINVAL(phiaxis)
+      zmax = MAXVAL(zaxis)
+      zmin = MINVAL(zaxis) 
+      CALL read_var_hdf5(fid,'TE',nr,nphi,nz,ier,DBLVAR=TE)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'TE',ier)
+      CALL read_var_hdf5(fid,'NE',nr,nphi,nz,ier,DBLVAR=NE)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'NE',ier)
+      CALL read_var_hdf5(fid,'TI',nr,nphi,nz,ier,DBLVAR=TI)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'TI',ier)     
+      CALL read_var_hdf5(fid,'NI',nion,nr,nphi,nz,ier,DBLVAR=NI)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'NI',ier)    
+      CALL read_var_hdf5(fid,'ZEFF_ARR',nr,nphi,nz,ier,DBLVAR=ZEFF_ARR)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ZEFF_ARR',ier)  
+      ! CALL read_var_hdf5(fid,'dist_rhoaxis',ns_prof1,ier,DBLVAR=dist_rhoaxis)
+      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_rhoaxis',ier)      
+      ! CALL read_var_hdf5(fid,'dist_uaxis',ns_prof2,ier,DBLVAR=dist_uaxis)
+      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_uaxis',ier)
+      ! CALL read_var_hdf5(fid,'dist_paxis',ns_prof2,ier,DBLVAR=dist_paxis)
+      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_paxis',ier)      
+      ! CALL read_var_hdf5(fid,'dist_Vaxis',ns_prof4,DBLVAR=dist_Vaxis)
+      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_Vaxis',ier)               
+      ! CALL read_var_hdf5(fid,'dist_Waxis',ns_prof5,DBLVAR=dist_Waxis)
+      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_Waxis',ier) 
+
       ! Try to read the faces
       CALL read_scalar_hdf5(fid,'nvertex',ier,INTVAR=nvertex)
       IF (ier == 0) THEN
@@ -241,6 +293,7 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'wall_faces',ier)
          CALL read_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array)
          !IF (ier /= 0) DEALLOCATE(ihit_array)
+         !lwall_loaded=.true.
       END IF
       ier = 0
 

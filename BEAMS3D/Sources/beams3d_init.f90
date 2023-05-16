@@ -113,6 +113,11 @@
         lbeam = .false.
       END IF
 
+      IF (ldepo) THEN
+         lfidasim = .false.
+         lfidasim2 = .false.
+      END IF
+
       ! Handle existence of ADAS for NBI
       IF (lbeam .and. .not.lsuzuki .and. myid_sharmem==master) THEN
          lsuzuki = .not.adas_tables_avail()
@@ -265,8 +270,32 @@
       !!              Initialize Background Grids
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      IF (lrestart_grid) THEN
-         !CALL beams3d_init_restart
+      IF (lrestart_grid .and. (myid_sharmem == 0)) THEN
+         CALL beams3d_init_restart
+         CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
+         CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)   
+         X_ARR = 1.5
+         Y_ARR = 1.5         
+         CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
+         CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
+         CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
+         CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
+         CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
+         CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)        
+              
+            ! Setup grid helpers
+            ! Note: All helpers are defined in terms of differences on half grid
+            !       so values are indexed from 1 to n-1.  Which we store at n
+            !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            !        hr(i) = raxis(i+1) - raxis(i)
+            !        hri    = one / hr
+         FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
+         FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
+         FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
+         hri = one / hr
+         hpi = one / hp
+         hzi = one / hz
+         
       ELSE
          ! Create the background grid
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
@@ -292,13 +321,6 @@
          CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
          CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
          CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
-         IF (lfidasim2) THEN
-            CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
-            CALL mpialloc(phiaxis_fida, nphi_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis_fida)
-            CALL mpialloc(zaxis_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis_fida)
-            CALL mpialloc(energy_fida,nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
-            CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
-         END IF
          IF (myid_sharmem == 0) THEN
             FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
             FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
@@ -327,6 +349,15 @@
             MODB = 0
 
          END IF
+
+         IF (lfidasim2) THEN
+            CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
+            CALL mpialloc(phiaxis_fida, nphi_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis_fida)
+            CALL mpialloc(zaxis_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis_fida)
+            CALL mpialloc(energy_fida,nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
+            CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
+         END IF
+
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
 
 
@@ -341,7 +372,9 @@
       END IF
 
       ! Put the plasma field on the background grid
-      IF (lvmec .and. .not.lvac) THEN
+      IF (lrestart_grid) THEN
+         continue
+      ELSE IF(lvmec .and. .not.lvac) THEN
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_vmec
@@ -396,7 +429,7 @@
       ! Construct 3D Profile Splines
       IF (.not. lvac) THEN
          ! First Allocated Spline on master threads
-         IF (myid_sharmem == 0) THEN
+         IF (myid_sharmem == master) THEN
             CALL EZspline_init(TE_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TE',ier)
             CALL EZspline_init(NE_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
@@ -565,11 +598,12 @@
          S4D = S_SPL%fspl
          U4D = U_SPL%fspl
          POT4D = POT_SPL%fspl
-
+         S4D = S4D / rho_scale !Apply scale to enable distribution outside LCFS
          X_ARR = S4D(1,:,:,:) * COS(U4D(1,:,:,:))
          Y_ARR = S4D(1,:,:,:) * SIN(U4D(1,:,:,:))
          CALL EZspline_setup(X_spl,X_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:X_spl',ier)
+        
          CALL EZspline_setup(Y_spl,Y_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:Y_spl',ier)
          X4D = X_SPL%fspl
@@ -606,21 +640,23 @@
 
       ! Output Grid
       CALL beams3d_write('GRID_INIT')
-      CALL mpidealloc(B_R,win_B_R)
-      CALL mpidealloc(B_PHI,win_B_PHI)
-      CALL mpidealloc(B_Z,win_B_Z)
-      CALL mpidealloc(MODB,win_MODB)
-      CALL mpidealloc(S_ARR,win_S_ARR)
-      CALL mpidealloc(U_ARR,win_U_ARR)
-      CALL mpidealloc(X_ARR,win_X_ARR)
-      CALL mpidealloc(Y_ARR,win_Y_ARR)
-      CALL mpidealloc(POT_ARR,win_POT_ARR)
-      IF (.not. lvac) THEN
-         CALL mpidealloc(TE,win_TE)
-         CALL mpidealloc(NE,win_NE)
-         CALL mpidealloc(NI,win_NI)
-         CALL mpidealloc(TI,win_TI)
-         CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
+      IF (.not. lrestart_grid) THEN
+         CALL mpidealloc(B_R,win_B_R)
+         CALL mpidealloc(B_PHI,win_B_PHI)
+         CALL mpidealloc(B_Z,win_B_Z)
+         CALL mpidealloc(MODB,win_MODB)
+         CALL mpidealloc(S_ARR,win_S_ARR)
+         CALL mpidealloc(U_ARR,win_U_ARR)
+         CALL mpidealloc(X_ARR,win_X_ARR)
+         CALL mpidealloc(Y_ARR,win_Y_ARR)
+         CALL mpidealloc(POT_ARR,win_POT_ARR)
+         IF (.not. lvac) THEN
+            CALL mpidealloc(TE,win_TE)
+            CALL mpidealloc(NE,win_NE)
+            CALL mpidealloc(NI,win_NI)
+            CALL mpidealloc(TI,win_TI)
+            CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
+         END IF
       END IF
 
       ! DEALLOCATE Variables
@@ -646,7 +682,9 @@
       CALL RANDOM_SEED
       
       ! Initialize beams (define a distribution of directions and weights)
-      IF (lbeam) THEN
+      IF (lrestart_grid) THEN
+         CONTINUE
+      ELSEIF (lbeam) THEN
          IF (.not. lsuzuki) CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
          IF (lw7x) THEN
             CALL beams3d_init_beams_w7x
@@ -692,7 +730,7 @@
                ndot_prof(nbeams,ns_prof1))
       ipower_prof=0; epower_prof=0; ndot_prof=0
       CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
-      IF (lfidasim2)       CALL mpialloc(dist5d_fida, nbeams, nr_fida, nz_fida, nphi_fida, nenergy_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d_fida)
+      IF (lfidasim2)       CALL mpialloc(dist5d_fida, nr_fida, nz_fida, nphi_fida, nenergy_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d_fida)
       IF (myid_sharmem == master) THEN
          dist5d_prof = 0
          IF (lfidasim2) dist5d_fida = 0
@@ -766,8 +804,8 @@
          FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0         
          e_h = 1/( energy_fida(2) - energy_fida(1)) !(energy_fida(nenergy_fida) - energy_fida(1)) / (nenergy_fida)
          pi_h = 1/(pitch_fida(2) - pitch_fida(1))!(pitch_fida(npitch_fida) - pitch_fida(1)) / (npitch_fida)
-         emin_fida = energy_fida(1)
-         pimin_fida = pitch_fida(1)
+         emin_fida = energy_fida(1)-1/e_h/2
+         pimin_fida = pitch_fida(1)-1/pi_h/2
          !IF (myid_sharmem == master .and. myworkid == master) THEN        
          !END IF
          IF (lfidasim .and. lverb) THEN
