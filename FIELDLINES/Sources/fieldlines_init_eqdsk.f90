@@ -161,24 +161,6 @@
             B_R(i,:,k) = B_R(i,:,k) + brtemp
             B_PHI(i,:,k) = B_PHI(i,:,k) + bptemp
             B_Z(i,:,k) = B_Z(i,:,k) + bztemp
-
-            ! ! Flux
-            ! CALL get_eqdsk_fluxspl(raxis_g(i),zaxis_g(k),rhoflx,uflx)
-            ! sflx = rhoflx*rhoflx
-            ! IF (zaxis_g(k)>zsmax .or. zaxis_g(k)<zsmin .or. &
-            !     raxis_g(i)>rsmax .or. raxis_g(i)<rsmin) THEN
-            ! IF (sflx<1) sflx = 2-sflx ! Handle flux issue
-            ! END IF
-            ! S_ARR(i,:,k)=sflx
-            ! IF (uflx<0)  uflx = uflx+pi2
-            ! U_ARR(i,:,k)=uflx
-            ! IF (MOD(s,nr) == 0) THEN
-            ! IF (lverb) THEN
-            !     CALL backspace_out(6,6)
-            !     WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
-            !     CALL FLUSH(6)
-            ! END IF
-            ! END IF
         END DO
         
 #if defined(MPI_OPT)
