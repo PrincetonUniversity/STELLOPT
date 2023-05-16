@@ -270,8 +270,32 @@
       !!              Initialize Background Grids
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      IF (lrestart_grid) THEN
+      IF (lrestart_grid .and. (myid_sharmem == 0)) THEN
          CALL beams3d_init_restart
+         CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
+         CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)   
+         X_ARR = 1.5
+         Y_ARR = 1.5         
+         CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
+         CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
+         CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
+         CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
+         CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
+         CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)        
+              
+            ! Setup grid helpers
+            ! Note: All helpers are defined in terms of differences on half grid
+            !       so values are indexed from 1 to n-1.  Which we store at n
+            !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            !        hr(i) = raxis(i+1) - raxis(i)
+            !        hri    = one / hr
+         FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
+         FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
+         FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
+         hri = one / hr
+         hpi = one / hp
+         hzi = one / hz
+         
       ELSE
          ! Create the background grid
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
@@ -348,7 +372,9 @@
       END IF
 
       ! Put the plasma field on the background grid
-      IF (lvmec .and. .not.lvac) THEN
+      IF (lrestart_grid) THEN
+         continue
+      ELSE IF(lvmec .and. .not.lvac) THEN
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_vmec
@@ -403,7 +429,7 @@
       ! Construct 3D Profile Splines
       IF (.not. lvac) THEN
          ! First Allocated Spline on master threads
-         IF (myid_sharmem == 0) THEN
+         IF (myid_sharmem == master) THEN
             CALL EZspline_init(TE_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TE',ier)
             CALL EZspline_init(NE_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
@@ -577,6 +603,7 @@
          Y_ARR = S4D(1,:,:,:) * SIN(U4D(1,:,:,:))
          CALL EZspline_setup(X_spl,X_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:X_spl',ier)
+        
          CALL EZspline_setup(Y_spl,Y_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:Y_spl',ier)
          X4D = X_SPL%fspl
@@ -613,21 +640,23 @@
 
       ! Output Grid
       CALL beams3d_write('GRID_INIT')
-      CALL mpidealloc(B_R,win_B_R)
-      CALL mpidealloc(B_PHI,win_B_PHI)
-      CALL mpidealloc(B_Z,win_B_Z)
-      CALL mpidealloc(MODB,win_MODB)
-      CALL mpidealloc(S_ARR,win_S_ARR)
-      CALL mpidealloc(U_ARR,win_U_ARR)
-      CALL mpidealloc(X_ARR,win_X_ARR)
-      CALL mpidealloc(Y_ARR,win_Y_ARR)
-      CALL mpidealloc(POT_ARR,win_POT_ARR)
-      IF (.not. lvac) THEN
-         CALL mpidealloc(TE,win_TE)
-         CALL mpidealloc(NE,win_NE)
-         CALL mpidealloc(NI,win_NI)
-         CALL mpidealloc(TI,win_TI)
-         CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
+      IF (.not. lrestart_grid) THEN
+         CALL mpidealloc(B_R,win_B_R)
+         CALL mpidealloc(B_PHI,win_B_PHI)
+         CALL mpidealloc(B_Z,win_B_Z)
+         CALL mpidealloc(MODB,win_MODB)
+         CALL mpidealloc(S_ARR,win_S_ARR)
+         CALL mpidealloc(U_ARR,win_U_ARR)
+         CALL mpidealloc(X_ARR,win_X_ARR)
+         CALL mpidealloc(Y_ARR,win_Y_ARR)
+         CALL mpidealloc(POT_ARR,win_POT_ARR)
+         IF (.not. lvac) THEN
+            CALL mpidealloc(TE,win_TE)
+            CALL mpidealloc(NE,win_NE)
+            CALL mpidealloc(NI,win_NI)
+            CALL mpidealloc(TI,win_TI)
+            CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
+         END IF
       END IF
 
       ! DEALLOCATE Variables
@@ -653,7 +682,9 @@
       CALL RANDOM_SEED
       
       ! Initialize beams (define a distribution of directions and weights)
-      IF (lbeam) THEN
+      IF (lrestart_grid) THEN
+         CONTINUE
+      ELSEIF (lbeam) THEN
          IF (.not. lsuzuki) CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
          IF (lw7x) THEN
             CALL beams3d_init_beams_w7x
@@ -668,8 +699,6 @@
          CALL beams3d_init_restart
       ELSEIF (lfusion) THEN
          CALL beams3d_init_fusion
-      ELSEIF (lrestart_grid) THEN
-         CONTINUE
       ELSE
         ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
            v_neut(3,nparticles), mass(nparticles), charge(nparticles), &

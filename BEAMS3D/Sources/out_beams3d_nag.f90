@@ -65,6 +65,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     !CALL EZspline_isInDomain(S_spl,q(1),x0,q(3),ier)
     y0 = 0  ! If we're out of domain then don't worry about collisions
     !IF (ier==0) THEN
+    !WRITE(6,'(F7.3,F7.3,F7.3,F12.3, EN12.3)')  q(1), q(2),q(3),q(4),moment
     IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
         (x0 >= phimin-eps2) .and. (x0 <= phimax+eps2) .and. &
         (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
@@ -90,10 +91,12 @@ SUBROUTINE out_beams3d_nag(t, q)
       z0 = ATAN2(fval2(1),fval(1))
       S_lines(mytdex, myline) = y0
       U_lines(mytdex, myline) = z0
+      
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        MODB4D(1,1,1,1),nr,nphi,nz)
        B_lines(mytdex, myline) = fval(1)
+       !WRITE(6,'(F12.3)') fval(1)
        ! Calc dist func bins
        x0    = MOD(q(2),pi2)
        IF (x0 < 0) x0 = x0 + pi2
