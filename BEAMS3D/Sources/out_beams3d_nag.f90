@@ -65,7 +65,7 @@ SUBROUTINE out_beams3d_nag(t, q)
    !CALL EZspline_isInDomain(S_spl,q(1),x0,q(3),ier)
    y0 = 0  ! If we're out of domain then don't worry about collisions
    !IF (ier==0) THEN
-   !WRITE(6,'(F7.3,F7.3,F7.3,F12.3, EN12.3)')  q(1), q(2),q(3),q(4),moment
+   !WRITE(6,'(F7.3,F7.3,F7.3,F12.3, EN12.3, EN12.3)')  q(1), q(2),q(3),q(4),moment,inv_mymass
    IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
       (x0 >= phimin-eps2) .and. (x0 <= phimax+eps2) .and. &
       (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
