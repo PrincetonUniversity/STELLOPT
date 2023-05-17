@@ -9,64 +9,64 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    !-----------------------------------------------------------------------
    !     Libraries
    !-----------------------------------------------------------------------
-      USE stel_kinds, ONLY: rprec
+   USE stel_kinds, ONLY: rprec
 #ifdef LHDF5
-         USE hdf5
-         USE ez_hdf5
+   USE hdf5
+   USE ez_hdf5
 #endif
-      USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, &
-         ns_prof4, ns_prof5, dist5d_prof, &
-         partvmax, dist5D_fida, &
-         h2_prof, h3_prof, h4_prof, h5_prof, &
-         nsh_prof4,  r_h, p_h, z_h, e_h, pi_h
-      USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-         zaxis, phiaxis, POT_ARR, &
-         TE, TI, NE, npot, nte, nti, &
-         POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
-         BR4D, BPHI4D, BZ4D, &
-         hr, hp, hz, hri, hpi, hzi, S4D, U4D, &
-         rmin, rmax,  phimin, phimax, &
-         rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
-         raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-         nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
-      USE beams3d_runtime, ONLY: id_string, nbeams, beam, lverb, handle_err, &
-         HDF5_OPEN_ERR,HDF5_WRITE_ERR,HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, &
-         charge, mass,pi, pi2, mass_beams, lfidasim2, lsplit
-      USE safe_open_mod, ONLY: safe_open
-      USE beams3d_write_par
-      USE mpi_params
-      USE mpi_inc
+   USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, &
+      ns_prof4, ns_prof5, dist5d_prof, &
+      partvmax, dist5D_fida, &
+      h2_prof, h3_prof, h4_prof, h5_prof, &
+      nsh_prof4,  r_h, p_h, z_h, e_h, pi_h
+   USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
+      zaxis, phiaxis, POT_ARR, &
+      TE, TI, NE, npot, nte, nti, &
+      POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
+      BR4D, BPHI4D, BZ4D, &
+      hr, hp, hz, hri, hpi, hzi, S4D, U4D, &
+      rmin, rmax,  phimin, phimax, &
+      rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
+      raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
+      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
+   USE beams3d_runtime, ONLY: id_string, nbeams, beam, lverb, handle_err, &
+      HDF5_OPEN_ERR,HDF5_WRITE_ERR,HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, &
+      charge, mass,pi, pi2, mass_beams, lfidasim2, lsplit
+   USE safe_open_mod, ONLY: safe_open
+   USE beams3d_write_par
+   USE mpi_params
+   USE mpi_inc
    !-----------------------------------------------------------------------
    !     Input Variables
    !          write_type  Type of write to preform
    !-----------------------------------------------------------------------
-      IMPLICIT NONE
-      CHARACTER(*), INTENT(IN):: write_type
+   IMPLICIT NONE
+   CHARACTER(*), INTENT(IN):: write_type
    !-----------------------------------------------------------------------
    !     Local Variables
    !          ier          Error Flag
    !          iunit        File ID
    !-----------------------------------------------------------------------
-      INTEGER :: ier, iunit,istat, i, j, d1, d2, d3, k, k1, k2, kmax ,ider, &
-         l, m, n, b, i3, j3, k3
-      INTEGER(HID_T) ::  qid_gid, temp_gid
-      INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask
-   
-      REAL*8 :: fvalE(1,3), fval(1), fval2(1), xparam, yparam, zparam
-      REAL(rprec) :: jac, v_parr, v_perp, pitch, v
-      REAL(rprec), DIMENSION(4) :: rt,zt,pt
-      REAL(rprec), DIMENSION(:,:,:,:,:), POINTER :: dist5d_temp
-   
-      DOUBLE PRECISION         :: x0, y0, z0, vol
-      DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
-   
-      CHARACTER(LEN=8) :: temp_str8 
-   
-      INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/), ictE(8)=(/0,1,1,1,0,0,0,0/)
-      REAL*8, PARAMETER :: one = 1
-      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
-      DOUBLE PRECISION, PARAMETER :: zero          = 0.0D0 ! 0.0   
-   
+   INTEGER :: ier, iunit,istat, i, j, d1, d2, d3, k, k1, k2, kmax ,ider, &
+      l, m, n, b, i3, j3, k3
+   INTEGER(HID_T) ::  qid_gid, temp_gid
+   INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask
+
+   REAL*8 :: fvalE(1,3), fval(1), fval2(1), xparam, yparam, zparam
+   REAL(rprec) :: jac, v_parr, v_perp, pitch, v
+   REAL(rprec), DIMENSION(4) :: rt,zt,pt
+   REAL(rprec), DIMENSION(:,:,:,:,:), POINTER :: dist5d_temp
+
+   DOUBLE PRECISION         :: x0, y0, z0, vol
+   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
+
+   CHARACTER(LEN=8) :: temp_str8
+
+   INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/), ictE(8)=(/0,1,1,1,0,0,0,0/)
+   REAL*8, PARAMETER :: one = 1
+   DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
+   DOUBLE PRECISION, PARAMETER :: zero          = 0.0D0 ! 0.0
+
    !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -262,7 +262,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ALLOCATE(rtemp3(nr_fida,nz_fida, nphi_fida))
          DO l = 1,nr_fida
             DO n = 1,nz_fida
-               DO m = 1,nphi_fida            
+               DO m = 1,nphi_fida
                   ! Eval Spline
                   x0 = MOD(phiaxis_fida(m), phimax)
                   IF (x0 < 0) x0 = x0 + phimax
@@ -273,22 +273,22 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   yparam = (x0 - phiaxis(j)) * hpi(j)
                   zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                                 BR4D(1,1,1,1),nr,nphi,nz)
+                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                     BR4D(1,1,1,1),nr,nphi,nz)
                   rtemp(l,n,m) = fval(1)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                                 BPHI4D(1,1,1,1),nr,nphi,nz)
+                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                     BPHI4D(1,1,1,1),nr,nphi,nz)
                   rtemp2(l,n,m) = fval(1)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                                 BZ4D(1,1,1,1),nr,nphi,nz)
+                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                     BZ4D(1,1,1,1),nr,nphi,nz)
                   rtemp3(l,n,m) = fval(1)
-                  
+
                END DO
             END DO
          END DO
-         
+
 
          CALL write_var_hdf5(qid_gid,'br',nr_fida,nz_fida,nphi_fida,ier,DBLVAR=rtemp)
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'br',ier)
@@ -332,17 +332,17 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             r1dtemp = 1
             DO l = 1,nr_fida
                DO n = 1,nz_fida
-                  DO m = 1,nphi_fida            
+                  DO m = 1,nphi_fida
                      ! Eval Spline
                      ! Get the gridpoint info (this is possible since all grids are the same)
-                  x0 = MOD(phiaxis_fida(m), phimax)
-                  IF (x0 < 0) x0 = x0 + phimax
-                  i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
-                  j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
-                  k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
-                  xparam = (raxis_fida(l) - raxis(i)) * hri(i)
-                  yparam = (x0 - phiaxis(j)) * hpi(j)
-                  zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
+                     x0 = MOD(phiaxis_fida(m), phimax)
+                     IF (x0 < 0) x0 = x0 + phimax
+                     i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
+                     j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
+                     k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
+                     xparam = (raxis_fida(l) - raxis(i)) * hri(i)
+                     yparam = (x0 - phiaxis(j)) * hpi(j)
+                     zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
                      ! Evaluate the Splines
                      CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,& !evaluate at grid points
                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -490,7 +490,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 
          DO l = 1,nr_fida
             DO n = 1,nz_fida
-               DO m = 1,nphi_fida            
+               DO m = 1,nphi_fida
                   ! Eval Spline
                   ! Get the gridpoint info (this is possible since all grids are the same)
                   x0 = MOD(phiaxis_fida(m), phimax)
@@ -503,20 +503,20 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
                   ! Evaluate the Splines
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                                 TE4D(1,1,1,1),nr,nphi,nz)
+                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                     TE4D(1,1,1,1),nr,nphi,nz)
                   rtemp(l,n,m) = max(fval(1),zero)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                                 NE4D(1,1,1,1),nr,nphi,nz)
+                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                     NE4D(1,1,1,1),nr,nphi,nz)
                   rtemp2(l,n,m) = max(fval(1),zero)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                                 TI4D(1,1,1,1),nr,nphi,nz)
+                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                     TI4D(1,1,1,1),nr,nphi,nz)
                   rtemp3(l,n,m) = max(fval(1),zero)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                                 ZEFF4D(1,1,1,1),nr,nphi,nz)
+                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                     ZEFF4D(1,1,1,1),nr,nphi,nz)
                   rtemp4(l,n,m) = max(fval(1),one)
                   !write(6,'(F8.3,F8.3,F8.3)') phiaxis_fida(m),phimax,MODULO(phiaxis_fida(m),phimax)
                END DO
@@ -581,45 +581,45 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   END DO
                END DO
             END DO
-         ELSE 
-         !convert to r z phi
-         DO i=1,nr_fida
-            DO k = 1, nz_fida
-               DO j=1,nphi_fida
-                  !convert i,j,k to distribution function lfidasim indices l,m,n
-                  !determine beams3d-grid indices
-                  x0 = MOD(phiaxis_fida(j), pi2)
-                  IF (x0 < 0) x0 = x0 + pi2
-                  i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
-                  j3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin, because dist has full toroidal revolution
-                  k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
-                  !setup interpolation
-                  xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
-                  yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
-                  zparam = (zaxis_fida(k) - zaxis(k3)) * hzi(k3)
-                  CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&!maybe switch to x/y interpolation?
-                     hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                     S4D(1,1,1,1),nr,nphi,nz)
-                  y0 = fval(1)
-                  CALL R8HERM3FCN(ict,1,1,fval2,i3,j3,k3,xparam,yparam,zparam,&
-                     hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                     U4D(1,1,1,1),nr,nphi,nz)
-                  z0 = fval2(1)
+         ELSE
+            !convert to r z phi
+            DO i=1,nr_fida
+               DO k = 1, nz_fida
+                  DO j=1,nphi_fida
+                     !convert i,j,k to distribution function lfidasim indices l,m,n
+                     !determine beams3d-grid indices
+                     x0 = MOD(phiaxis_fida(j), pi2)
+                     IF (x0 < 0) x0 = x0 + pi2
+                     i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
+                     j3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3-1), 1) ! V Bin, because dist has full toroidal revolution, TODO: CHECK -1
+                     k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
+                     !setup interpolation
+                     xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
+                     yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
+                     zparam = (zaxis_fida(k) - zaxis(k3)) * hzi(k3)
+                     CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&!maybe switch to x/y interpolation?
+                        hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
+                        S4D(1,1,1,1),nr,nphi,nz)
+                     y0 = fval(1)
+                     CALL R8HERM3FCN(ict,1,1,fval2,i3,j3,k3,xparam,yparam,zparam,&
+                        hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
+                        U4D(1,1,1,1),nr,nphi,nz)
+                     z0 = fval2(1)
 
-                  IF (z0 < 0) z0 = z0 + pi2
-                  ! Calc dist func bins
-                  l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
-                  m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
-                  n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                   !IF (y0 .GT. 1.05) THEN
-                   !   rtemp(i,k,j) = 0 !distribution is 0 outside plasma
-                   !ELSE
+                     IF (z0 < 0) z0 = z0 + pi2
+                     ! Calc dist func bins
+                     l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+                     m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
+                     n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
+                     !IF (y0 .GT. 1.05) THEN
+                     !   rtemp(i,k,j) = 0 !distribution is 0 outside plasma
+                     !ELSE
                      rtemp(i,k,j) = SUM(dist5d_prof(:,l,m,n,:,:))!output in r-z-phi
-                   !END IF
+                     !END IF
+                  END DO
                END DO
             END DO
-         END DO
-      END IF
+         END IF
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          CALL h5gopen_f(fid,'/', qid_gid, ier)
          CALL write_var_hdf5(qid_gid,'denf',nr_fida,nz_fida,nphi_fida,ier,DBLVAR=DBLE(rtemp/1000000.0)) !in cm^3
@@ -636,7 +636,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          !ALLOCATE(pitch_fida(npitch_fida))
          !ALLOCATE(energy_fida(nenergy_fida))
          !FORALL(i = 1:nenergy_fida) energy_fida(i) = (i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass_beams) * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
-         !FORALL(i = 1:npitch_fida) pitch_fida(i) = (i-0.5) / REAL(npitch_fida) * 2.0 - 1.0 
+         !FORALL(i = 1:npitch_fida) pitch_fida(i) = (i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
 
          ! CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          ! CALL write_var_hdf5(fid,'energy',nenergy_fida,ier,DBLVAR=energy_fida) ! in keV
@@ -666,18 +666,18 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   !IF (v .gt. partvmax) THEN !) .or. (v .eq. 0.0))
                   !   IF (.not. lfidasim2) dist5d_fida(b,:,:,:,d1,d2) = 0
                   !ELSE
-                     pitch = pitch_fida(d2)
-                     v_parr = pitch * v
-                     v_perp = SQRT(1- pitch * pitch) * v
-                     !determine beams3d-grid indices (velocity space)
-                     i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
-                     j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
-                     jac = pi2 * v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
-                     IF (lfidasim2) THEN
-                        dist5d_temp(d1,d2,:,:,:) = dist5d_fida(:,:,:,d1,d2)*e_h*pi_h*REAL(1.0e-6)!dist5d_fida(b,:,:,:,i3,j3) * jac
-                     ELSE   
-                        dist5d_fida(:,:,:,d1,d2) = dist5d_fida(:,:,:,d1,d2) + dist5d_prof(b,:,:,:,i3,j3) * jac ! conversion to final grid comes in next steps
-                     END IF
+                  pitch = pitch_fida(d2)
+                  v_parr = pitch * v
+                  v_perp = SQRT(1- pitch * pitch) * v
+                  !determine beams3d-grid indices (velocity space)
+                  i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
+                  j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
+                  jac = pi2 * v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
+                  IF (lfidasim2) THEN
+                     dist5d_temp(d1,d2,:,:,:) = dist5d_fida(:,:,:,d1,d2)*e_h*pi_h*REAL(1.0e-6)!dist5d_fida(b,:,:,:,i3,j3) * jac
+                  ELSE
+                     dist5d_fida(:,:,:,d1,d2) = dist5d_fida(:,:,:,d1,d2) + dist5d_prof(b,:,:,:,i3,j3) * jac ! conversion to final grid comes in next steps
+                  END IF
 
                   !END IF
                END DO
@@ -687,50 +687,50 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          IF (.not. lfidasim2) THEN
             ALLOCATE(dist5d_temp(ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
             dist5d_temp(:,:,:,:,:) = dist5d_fida(:,:,:,:,:)
-            DEALLOCATE(dist5d_fida) 
+            DEALLOCATE(dist5d_fida)
             !Interpolate rho u v to r phi z distribution function (nearest neighbor at the moment)
             !Now allocate with correct dimensions
             ALLOCATE(dist5d_fida(nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
-               DO i=1,nr_fida
-                  DO k = 1, nz_fida
-                     DO j=1,nphi_fida
-                        !convert i,j,k to distribution function indices l,m,n
-                        !determine beams3d-grid indices
-                        x0 = MOD(phiaxis_fida(j), pi2)
-                        IF (x0 < 0) x0 = x0 + pi2
-                        i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
-                        j3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin, because dist has full toroidal revolution
-                        k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
-                        !setup interpolation
-                        xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
-                        yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
-                        zparam = (zaxis_fida(k) - zaxis(k3)) * hzi(k3)
-                        CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&!maybe switch to x/y interpolation?
-                           hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                           S4D(1,1,1,1),nr,nphi,nz)
-                        y0 = fval(1)
-                        CALL R8HERM3FCN(ict,1,1,fval2,i3,j3,k3,xparam,yparam,zparam,&
-                           hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                           U4D(1,1,1,1),nr,nphi,nz)
-                        z0 = fval2(1)
+            DO i=1,nr_fida
+               DO k = 1, nz_fida
+                  DO j=1,nphi_fida
+                     !convert i,j,k to distribution function indices l,m,n
+                     !determine beams3d-grid indices
+                     x0 = MOD(phiaxis_fida(j), pi2)
+                     IF (x0 < 0) x0 = x0 + pi2
+                     i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
+                     j3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin, because dist has full toroidal revolution
+                     k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
+                     !setup interpolation
+                     xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
+                     yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
+                     zparam = (zaxis_fida(k) - zaxis(k3)) * hzi(k3)
+                     CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&!maybe switch to x/y interpolation?
+                        hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
+                        S4D(1,1,1,1),nr,nphi,nz)
+                     y0 = fval(1)
+                     CALL R8HERM3FCN(ict,1,1,fval2,i3,j3,k3,xparam,yparam,zparam,&
+                        hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
+                        U4D(1,1,1,1),nr,nphi,nz)
+                     z0 = fval2(1)
 
-                        IF (z0 < 0) z0 = z0 + pi2
-                        IF (x0 < 0) x0 = x0 + pi2
-                        IF (y0 < 0) y0 = -y0
-                        ! Calc dist func bins
-                        !x0    = phiaxis_fida(j)
-                        l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
-                        m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
-                        n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                        !IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
-                        !   dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
-                        !ELSE
-                           dist5d_fida(:,:,i,k,j) = dist5d_temp(l,m,n,:,:) !output in r-z-phi
-                        !END IF
+                     IF (z0 < 0) z0 = z0 + pi2
+                     IF (x0 < 0) x0 = x0 + pi2
+                     IF (y0 < 0) y0 = -y0
+                     ! Calc dist func bins
+                     !x0    = phiaxis_fida(j)
+                     l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+                     m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
+                     n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
+                     !IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
+                     !   dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
+                     !ELSE
+                     dist5d_fida(:,:,i,k,j) = dist5d_temp(l,m,n,:,:) !output in r-z-phi
+                     !END IF
 
-                     END DO
                   END DO
                END DO
+            END DO
          END IF
 
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
@@ -748,7 +748,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          END IF
          CALL close_hdf5(fid,ier)
          IF (.not. lfidasim2) THEN
-         DEALLOCATE(dist5d_fida)
+            DEALLOCATE(dist5d_fida)
          END IF
          DEALLOCATE(pitch_fida)
          DEALLOCATE(energy_fida)
@@ -786,8 +786,8 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
 !     Libraries
 !-----------------------------------------------------------------------
 #ifdef LHDF5
-      USE hdf5
-      USE ez_hdf5
+   USE hdf5
+   USE ez_hdf5
 #endif
    USE beams3d_runtime
    !, ONLY: id_string,&
@@ -799,30 +799,30 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    USE mpi_params
    USE mpi_inc
 
-   !!!! Namelist 
+   !!!! Namelist
    INTEGER, parameter :: MAXCHAN = 300
    INTEGER :: ier, iunit,istat
    INTEGER(HID_T) ::  qid_gid,temp_gid
    LOGICAL :: lexist
    CHARACTER(LEN=1000) :: line
    CHARACTER(128) :: comment,nbi_data_source, spec_data_source,runid,device,name,system,&
-                     tables_file,equilibrium_file,geometry_file,distribution_file,neutrals_file,result_dir
+      tables_file,equilibrium_file,geometry_file,distribution_file,neutrals_file,result_dir
    CHARACTER(20), DIMENSION(MAXCHAN) :: id
    DOUBLE PRECISION, DIMENSION(3) :: origin,current_fractions,src,axis_nbi,  divy,   divz
    DOUBLE PRECISION, DIMENSION(3,MAXCHAN) :: axis_spec,  lens
    DOUBLE PRECISION, DIMENSION(MAXCHAN) :: sigma_pi,spot_size,radius
    DOUBLE PRECISION  :: time, lambdamin,  lambdamax,   alpha,   beta,   gamma,      xminf,&
-                     xmax,   ymin,   ymax,   zmin,   zmax, ab,   ai,   pinj,   einj,&
-                     focy,focz,widz,widy,emax_wght,lambdamin_wght, lambdamax_wght
+      xmax,   ymin,   ymax,   zmin,   zmax, ab,   ai,   pinj,   einj,&
+      focy,focz,widz,widy,emax_wght,lambdamin_wght, lambdamax_wght
    INTEGER ::  nlambda, nx, ny, nz, impurity_charge, ne_wght, np_wght, nphi_wght, nlambda_wght,&
-               calc_npa,   calc_fida,   calc_pnpa,   calc_pfida,   calc_bes,   calc_dcx,   calc_halo, &
-               calc_cold,   calc_brems,   calc_birth,   calc_fida_wght,   calc_npa_wght,   calc_neutron,&
-               shape, load_neutrals,verbose,flr,naperture,nchan,namelist_present
+      calc_npa,   calc_fida,   calc_pnpa,   calc_pfida,   calc_bes,   calc_dcx,   calc_halo, &
+      calc_cold,   calc_brems,   calc_birth,   calc_fida_wght,   calc_npa_wght,   calc_neutron,&
+      shape, load_neutrals,verbose,flr,naperture,nchan,namelist_present
    INTEGER, DIMENSION(10) :: ashape
    DOUBLE PRECISION, DIMENSION(10) :: awidy,awidz, aoffy, aoffz, adist
    INTEGER(HID_T) :: shot,  n_fida,   n_nbi,   n_pfida,   n_pnpa,   n_dcx,   n_npa,   n_halo,   n_birth,&
-                     seed
-   
+      seed
+
 
    NAMELIST /fidasim_inputs_b3d/ comment,tables_file, equilibrium_file,geometry_file,distribution_file,&
       result_dir,neutrals_file,shot, time, runid, device, nlambda,seed,load_neutrals,verbose,flr,&
@@ -838,15 +838,15 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
       spec_data_source,nchan,system,id,lens,axis_spec,sigma_pi,spot_size,radius
 
    NAMELIST /fidasim_inputs/ tables_file, equilibrium_file,geometry_file,distribution_file,&
-   result_dir,neutrals_file,shot, time, runid,  nlambda,seed,load_neutrals,verbose,flr,&
-   lambdamin, lambdamax, nx, ny, nz, alpha, beta, gamma, origin,&
-   xmin, xmax, ymin, ymax, zmin, zmax, ab, ai, current_fractions,&
-   pinj, einj, impurity_charge, n_fida, n_nbi, n_pfida, n_pnpa,&
-   n_dcx, n_npa, n_halo, n_birth, ne_wght, np_wght, nphi_wght,&
-   emax_wght, nlambda_wght, lambdamin_wght, lambdamax_wght,&
-   calc_npa, calc_fida, calc_pnpa, calc_pfida, calc_bes, calc_dcx,&
-   calc_halo, calc_cold, calc_brems, calc_birth, calc_fida_wght, calc_npa_wght,&
-   calc_neutron!comment,device,,id
+      result_dir,neutrals_file,shot, time, runid,  nlambda,seed,load_neutrals,verbose,flr,&
+      lambdamin, lambdamax, nx, ny, nz, alpha, beta, gamma, origin,&
+      xmin, xmax, ymin, ymax, zmin, zmax, ab, ai, current_fractions,&
+      pinj, einj, impurity_charge, n_fida, n_nbi, n_pfida, n_pnpa,&
+      n_dcx, n_npa, n_halo, n_birth, ne_wght, np_wght, nphi_wght,&
+      emax_wght, nlambda_wght, lambdamin_wght, lambdamax_wght,&
+      calc_npa, calc_fida, calc_pnpa, calc_pfida, calc_bes, calc_dcx,&
+      calc_halo, calc_cold, calc_brems, calc_birth, calc_fida_wght, calc_npa_wght,&
+      calc_neutron!comment,device,,id
 
    !Default values
    shot = 0    !! Shot Number
@@ -926,7 +926,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    np_wght = 10    !! Number of Pitches for Weights
    nphi_wght = 8    !! Number of Gyro-angles for Weights
    emax_wght = 150.000000    !! Maximum Energy for Weights [keV]
-   nlambda_wght = 10    !! Number of Wavelengths for Weights 
+   nlambda_wght = 10    !! Number of Wavelengths for Weights
    lambdamin_wght = 647.000000    !! Minimum Wavelength for Weights [nm]
    lambdamax_wght = 669.000000    !! Maximum Wavelength for Weights [nm]
 
@@ -989,7 +989,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
          namelist_present=1
          EXIT
       END IF
-      IF (istat > 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)      
+      IF (istat > 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
    END DO
    rewind(iunit)
    IF (namelist_present==1) THEN
@@ -1001,17 +1001,17 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
          write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
          IF (istat > 0) CALL handle_err(NAMELIST_READ_ERR,'fidasim_inputs_b3d in: input.'//TRIM(id_string),istat)
       END IF
-   ELSE     
+   ELSE
       write(6,'(A)') 'Continuing without FIDASIM input generation'
       write(6,'(A)') 'Is the namelist present in the input file?'
       return
    END IF
    CLOSE(iunit)
-   
+
    equilibrium_file = TRIM(result_dir) // TRIM(runid) //  '_equilibrium.h5'   !! File containing plasma parameters and fields
    geometry_file = TRIM(result_dir) // TRIM(runid) //  '_geometry.h5'      !! File containing NBI and diagnostic geometry
    distribution_file = TRIM(result_dir) // TRIM(runid) //  '_distribution.h5'      !! File containing fast-ion distribution
-   neutrals_file = TRIM(result_dir) // TRIM(runid) //  '_neutrals.h5'  
+   neutrals_file = TRIM(result_dir) // TRIM(runid) //  '_neutrals.h5'
 
    ! Open the inputs.dat file
    iunit = 10
@@ -1036,9 +1036,9 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
 
 
 
-         !--------------------------------------------------------------
-         !           NBI
-         !--------------------------------------------------------------
+   !--------------------------------------------------------------
+   !           NBI
+   !--------------------------------------------------------------
 
 
 

@@ -184,6 +184,7 @@ CONTAINS
             case ("-fidasim")
                 lfidasim = .true.
             case ("-fidasim2")
+                lfidasim = .true.
                 lfidasim2 = .true.
             case ("-vmec")
                 i = i + 1
