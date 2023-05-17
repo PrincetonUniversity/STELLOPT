@@ -257,6 +257,7 @@ SUBROUTINE beams3d_init
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    IF (lrestart_grid) THEN
+
       CALL beams3d_init_restart
       CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
       CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
@@ -266,6 +267,22 @@ SUBROUTINE beams3d_init
       CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
       CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
       CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
+      ! CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
+      ! CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
+      ! CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
+      CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
+      ! CALL mpialloc(TE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE)
+      ! WRITE (27, '(EN12.3)') NE
+      ! CALL mpialloc(NE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE)
+      ! WRITE (29, '(EN12.3)') NE
+      ! CALL mpialloc(TI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI)
+      ! CALL mpialloc(ZEFF_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF_ARR)
+      ! CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
+      ! CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
+      ! CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
+      ! CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
+      ! CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
+      ! CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
       IF (myid_sharmem == 0) THEN
          X_ARR = 1.5
          Y_ARR = 1.5
@@ -329,11 +346,12 @@ SUBROUTINE beams3d_init
          hpi = one / hp
          hzi = one / hz
          ! Do this here so EQDSK vac RMP works.
-         B_R = 0
-         B_PHI = 0
-         B_Z = 0
-         MODB = 0
-
+         IF (.not. lrestart_grid) THEN
+            B_R = 0
+            B_PHI = 0
+            B_Z = 0
+            MODB = 0
+         END IF
       END IF
    END IF
 
@@ -502,12 +520,16 @@ SUBROUTINE beams3d_init
    END IF
 
    ! Construct MODB
+
    IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
+
 
 
 
    ! Construct Splines on shared memory master nodes
    IF (myid_sharmem == master) THEN
+      WRITE (27, '(F7.3)') phiaxis
+      WRITE (29, '(F7.3)') zaxis
       bcs1=(/ 0, 0/)
       bcs2=(/-1,-1/)
       bcs3=(/ 0, 0/)
@@ -568,6 +590,7 @@ SUBROUTINE beams3d_init
       CALL EZspline_setup(BR_spl,B_R,ier,EXACT_DIM=.true.)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BR_spl',ier)
       CALL EZspline_setup(BPHI_spl,B_PHI,ier,EXACT_DIM=.true.)
+
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BPHI_spl',ier)
       CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.true.)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BZ_spl',ier)
@@ -611,7 +634,9 @@ SUBROUTINE beams3d_init
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:Y_spl',ier)
       X4D = X_SPL%fspl
       Y4D = Y_SPL%fspl
-
+      ! WRITE (27, '(F7.3)') BPHI4D(1,:,:,:)
+      ! WRITE (28, '(F7.3)') S4D(1,:,:,:)
+      ! WRITE (29, '(F7.3)') X4D(1,:,:,:)
       CALL EZspline_free(BR_spl,ier)
       CALL EZspline_free(BPHI_spl,ier)
       CALL EZspline_free(BZ_spl,ier)
