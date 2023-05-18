@@ -39,8 +39,8 @@
       diagUnit = 223
       IF (iflag < 0) RETURN
       ik = COUNT(sigma < bigno)
-        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'DMERCIER ',ik, 3
-        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA   DMERCIER'
+        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'DMER ', ik, 4
+        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA   DMER  #'
       IF (niter >= 0) THEN
         fname = 'dmerc_out' // trim(proc_string)
         istat=0
@@ -60,7 +60,7 @@
           sigmas(mtargets)  = sigma(ik)
           vals(mtargets)    = DMerc(ik)
             !write(*,*) 'rho(ik)' , rho(ik), 'mshear(ik): ',  DMerc(ik)
-          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target(ik), sigma(ik), DMerc(ik)
+          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2X,I3.3)') target(ik), sigma(ik), DMerc(ik), ik
           IF (iflag == 1) THEN
               WRITE(diagUnit,'(2ES22.12E3)') rho(ik), DMerc(ik)
           END IF

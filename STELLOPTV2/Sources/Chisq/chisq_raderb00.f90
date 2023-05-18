@@ -43,8 +43,8 @@
       diagUnit = 222
       IF (iflag < 0) RETURN
       ik = COUNT(sigma < bigno)
-        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'RADERB0 ',ik, 3
-        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA dB_00/ds'
+        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'RADERB0 ',ik, 4
+        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA dB_00/ds  #'
       IF (niter >= 0) THEN
         fname = 'rdB00_out' // trim(proc_string)
         istat=0
@@ -83,7 +83,7 @@
           sigmas(mtargets)  = sigma(ik)
           vals(mtargets)    = raderb00(ik)
                    ! write(*,*) 'rho(ik)' , rho(ik), 'raderb00(ik): ',  raderb00(ik), 'b00(ik)', b00(ik)
-          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target(ik), sigma(ik), raderb00(ik)
+          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2X,I3.3)') target(ik), sigma(ik), raderb00(ik), ik
           IF (iflag == 1) THEN
               WRITE(diagUnit,'(2ES22.12E3)') rho(ik), raderb00(ik)
           END IF
