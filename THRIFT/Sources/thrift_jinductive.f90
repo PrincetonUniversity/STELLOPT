@@ -216,7 +216,10 @@
 
       THRIFT_I(:,mytimestep) = (THRIFT_PHIEDGE(mytimestep)/mu0)*THRIFT_UGRID(:,mytimestep)
       CALL curtot_to_curden(THRIFT_I(:,mytimestep),j_temp)
-      THRIFT_JPLASMA(:,mytimestep) = j_temp - THRIFT_JSOURCE(:,mytimestep)
+      THRIFT_JPLASMA(:,mytimestep)   = j_temp - THRIFT_JSOURCE(:,mytimestep)
+      ! Extrapolate to boundaries
+      THRIFT_JPLASMA(1,mytimestep)   = 2*THRIFT_JPLASMA(2,mytimestep)    -THRIFT_JPLASMA(3,mytimestep)
+      THRIFT_JPLASMA(nsj,mytimestep) = 2*THRIFT_JPLASMA(nsj-1,mytimestep)-THRIFT_JPLASMA(nsj-2,mytimestep)
 
       IF (lverbj) CALL print_postevolve(j_temp)
       DEALLOCATE(j_temp)

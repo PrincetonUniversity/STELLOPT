@@ -162,10 +162,6 @@ SUBROUTINE curtot_to_curden(i_arr_in, j_arr_out)
         j_arr_out(i) = (i_arr_in(i+1)-i_arr_in(i-1))/(2*ds)*1.0/(pi*eq_Aminor**2)
     END DO
 
-    ! Extrapolate current density to boundaries
-    j_arr_out(1)   = 2*j_arr_out(2)    -j_arr_out(3)     ! s = 0
-    j_arr_out(nsj) = 2*j_arr_out(nsj-1)-j_arr_out(nsj-2) ! s = 1
-
     RETURN
 
 END SUBROUTINE curtot_to_curden
