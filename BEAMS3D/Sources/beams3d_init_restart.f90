@@ -61,6 +61,7 @@ SUBROUTINE beams3d_init_restart
             lbeam=.false.
          END IF
       END IF
+      CALL beams3d_read_grid(restart_string(9:(len(TRIM(restart_string))-3)))
       ! IF (lrestart_grid) THEN
       ! CALL read_scalar_hdf5(fid,'nr',ier,INTVAR=nr)
       ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nr',ier)
