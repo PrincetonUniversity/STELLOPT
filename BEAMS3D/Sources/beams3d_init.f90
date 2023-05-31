@@ -14,6 +14,7 @@
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
       USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
+      USE read_fieldlines_mod, ONLY: read_fieldlines_mag, get_fieldlines_grid
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input, init_beams3d_input
@@ -105,6 +106,13 @@
          CALL read_hint_mag(TRIM(id_string)//'.magslice',ier)
          phimin = 0
          CALL get_hint_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
+      ELSE IF (lfieldlines .and. lread_input) THEN
+         CALL read_beams3d_input('input.'//TRIM(id_string),ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE:     input.' // TRIM(id_string)
+         IF (lverb) WRITE(6,'(A)') '   FIELDLINES FILE: fieldlines_' // TRIM(id_string) // '.h5'
+         CALL read_fieldlines_mag('fieldlines_'//TRIM(id_string)//'.h5',MPI_COMM_SHARMEM,ier)
+         phimin = 0
+         CALL get_fieldlines_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
       END IF
 
       IF (lrestart_particles) THEN
@@ -365,6 +373,10 @@
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_hint
+      ELSE IF (lfieldlines .and. .not.lvac) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+         CALL beams3d_init_fieldlines
       ELSE IF (leqdsk) THEN
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
