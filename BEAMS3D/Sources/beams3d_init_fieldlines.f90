@@ -105,7 +105,7 @@
          B_R(i,j,k) = brtemp
          B_PHI(i,j,k) = bptemp
          B_Z(i,j,k) = bztemp
-         S_ARR(i,j,k) = sflx/rminor_norm
+         S_ARR(i,j,k) = (sflx/rminor_norm)**2
          U_ARR(i,j,k) = uflx
 
          IF (sflx <= 1) THEN
