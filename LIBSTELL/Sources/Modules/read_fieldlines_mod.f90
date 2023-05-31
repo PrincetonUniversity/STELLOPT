@@ -136,12 +136,12 @@
          CHARACTER(*), INTENT(in) :: filename
          INTEGER, INTENT(inout) :: comm_read
          INTEGER, INTENT(out) :: istat
-         INTEGER :: mylocalid, nlocal, s, i, j, k, mystart, myend, npoinc
+         INTEGER :: mylocalid, nlocal, s, i, j, k, mystart, myend, npoinc, l, m
          REAL(DTYPE) :: r1,r2,p1,p2,z1,z2
          LOGICAL, DIMENSION(:), ALLOCATABLE :: mask_axis
-         LOGICAL, DIMENSION(:,:), ALLOCATABLE :: mask_lines
          REAL(DTYPE), DIMENSION(:,:), POINTER :: zeta_lines
-         INTEGER :: win_zeta_lines
+         INTEGER, DIMENSION(:,:,:), POINTER :: N3D
+         INTEGER :: win_zeta_lines, win_N3D
          LOGICAL :: lexist
          istat = 0
 
@@ -152,8 +152,6 @@
          CALL MPI_COMM_SIZE(comm_read, nlocal, istat)
 #endif
 
-         PRINT *,'GOT HERE0'
-
          ! Check for the file
          INQUIRE(FILE=TRIM(filename),EXIST=lexist)
          IF (.not.lexist) THEN
@@ -161,7 +159,6 @@
             IF (mylocalid == 0) WRITE(6,*) " ERROR: Could not find file: "//TRIM(filename)
             RETURN
          END IF
-         PRINT *,'GOT HERE1'
 
          ! Read HDF5 File
 #if defined(LHDF5)
@@ -176,7 +173,6 @@
          istat = -5
          RETURN
 #endif
-         PRINT *,'GOT HERE2'
 
          ! Broadcast arrays sizes and allocate arrays.
 #if defined(MPI_OPT)
@@ -194,7 +190,6 @@
          CALL mpialloc(Y_lines,      nlines, nsteps+1, mylocalid, master, comm_read, win_Y_lines)
          CALL mpialloc(rminor_lines, nlines, nsteps+1, mylocalid, master, comm_read, win_rminor_lines)
          CALL mpialloc(zeta_lines,   nlines, nsteps+1, mylocalid, master, comm_read, win_zeta_lines)
-         PRINT *,'GOT HERE3'
 
          ! Read Arrays and close file
 #if defined(LHDF5)
@@ -205,9 +200,10 @@
             CALL close_hdf5(fid,istat)
             zeta_lines = MODULO(PHI_lines,phiaxis(nphi))
          END IF
+#endif
+#if defined(MPI_OPT)
          CALL MPI_BARRIER(comm_read,istat)
 #endif
-         PRINT *,'GOT HERE4'
 
          ! Create rminor helper
          IF (mylocalid == master) THEN
@@ -221,7 +217,6 @@
             END DO
          END IF
 
-         PRINT *,'GOT HERE5'
 
 
          ! Check we've read the background grids
@@ -231,41 +226,42 @@
             RETURN
          END IF
          CALL setup_fieldlines_helpers
-         PRINT *,'GOT HERE6'
 
          ! Allocate rho grid
          CALL mpialloc(X3D,      nr, nphi, nz, mylocalid, master, comm_read, win_X3D)
          CALL mpialloc(Y3D,      nr, nphi, nz, mylocalid, master, comm_read, win_Y3D)
          CALL mpialloc(Rminor3D, nr, nphi, nz, mylocalid, master, comm_read, win_Rminor3D)
-         PRINT *,'GOT HERE7'
+         CALL mpialloc(N3D,      nr, nphi, nz, mylocalid, master, comm_read, win_N3D)
 
          ! Allocate helper
-         ALLOCATE(mask_lines(nlines,nsteps+1), mask_axis(nsteps+1))
+         ALLOCATE(mask_axis(nsteps+1))
 
          ! Create the background helpers
-         CALL MPI_CALC_MYRANGE(comm_read,1,nr*nphi*nz,mystart,myend)
+         CALL MPI_CALC_MYRANGE(comm_read,1,nlines*(nsteps+1),mystart,myend)
          DO s = mystart, myend
-            i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
-            r1 = raxis(i)   - dr * 0.5
-            z1 = zaxis(k)   - dz * 0.5
-            p1 = phiaxis(j) - dp * 0.5
-            r2 = r1 + dr
-            z2 = z1 + dz
-            p2 = p1 + dp
-            mask_lines = .FALSE.
-            WHERE(R_lines   >= r1 .AND. R_lines   < r2 .AND. &
-                  Z_lines   >= z1 .AND. Z_lines   < z2 .AND. &
-                  zeta_lines >= p1 .AND. zeta_lines < p2) mask_lines = .TRUE.
-            IF (ANY(mask_lines)) THEN
-               Rminor3D(i,j,k) = SUM(rminor_lines, MASK=mask_lines) / COUNT(mask_lines)
-               X3D(i,j,k)      = SUM(X_lines,      MASK=mask_lines) / COUNT(mask_lines)
-               Y3D(i,j,k)      = SUM(Y_lines,      MASK=mask_lines) / COUNT(mask_lines)
-            END IF
+            l = MOD(s-1,nlines)+1
+            m = MOD(s-1,nlines*(nsteps+1))
+            m = FLOOR(REAL(m) / REAL(nlines))+1
+            i = COUNT((raxis-0.5*dr)   <= R_lines(l,m))
+            j = COUNT((phiaxis-0.5*dp) <= zeta_lines(l,m))
+            k = COUNT((zaxis-0.5*dz)   <= Z_lines(l,m))
+            i = MIN(MAX(i,1),nr)
+            j = MIN(MAX(j,1),nphi)
+            k = MIN(MAX(k,1),nz)
+            Rminor3D(i,j,k) = Rminor3D(i,j,k) + rminor_lines(l,m)
+            X3D(i,j,k) = X3D(i,j,k) + X_lines(l,m)
+            Y3D(i,j,k) = Y3D(i,j,k) + Y_lines(l,m)
+            N3D(i,j,k) = N3D(i,j,k) + 1
          END DO
-         PRINT *,'GOT HERE8'
+         CALL MPI_BARRIER(comm_read,istat)
+         IF (mylocalid==master) THEN
+            WHERE(N3D > 0) 
+               Rminor3D = Rminor3D / N3D
+               X3D = X3D / N3D
+               Y3D = Y3D / N3D
+            END WHERE
+         END IF
+         IF (ASSOCIATED(N3D))      CALL mpidealloc(N3D,   win_N3D)
 
          ! Calculate magaxis
          CALL MPI_CALC_MYRANGE(comm_read,1,nphi,mystart,myend)
@@ -277,10 +273,9 @@
             RMAGAXIS(j) = SUM(R_lines(1,:), MASK=mask_axis) / COUNT(mask_axis)
             ZMAGAXIS(j) = SUM(Z_lines(1,:), MASK=mask_axis) / COUNT(mask_axis)
          END DO
-         PRINT *,'GOT HERE9'
 
          ! Deallocated local variables
-         DEALLOCATE(mask_lines, mask_axis)
+         DEALLOCATE(mask_axis)
          IF (ASSOCIATED(zeta_lines))   CALL mpidealloc(zeta_lines,   win_zeta_lines)
          ! Deallocated globals which we don't anymore
          IF (ASSOCIATED(R_lines))      CALL mpidealloc(R_lines,   win_R_lines)
