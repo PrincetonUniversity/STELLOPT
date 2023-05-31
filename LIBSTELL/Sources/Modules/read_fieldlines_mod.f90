@@ -60,10 +60,11 @@
          IMPLICIT NONE
          CHARACTER(*), INTENT(in) :: filename
          INTEGER, INTENT(inout) :: comm_read
-         INTEGER, INTENT(out) :: istat
+         INTEGER, INTENT(inout) :: istat
          INTEGER :: mylocalid, nlocal
          LOGICAL :: lexist
          istat = 0
+
 
          ! MPI Stuff
 #if defined(MPI_OPT)
@@ -119,9 +120,10 @@
             CALL read_var_hdf5(fid, 'B_Z',     nr, nphi, nz, istat, DBLVAR=BZ3D)
             CALL close_hdf5(fid,istat)
          END IF
+#endif
+#if defined(MPI_OPT)
          CALL MPI_BARRIER(comm_read,istat)
 #endif
-
          ! Helpers
          CALL setup_fieldlines_helpers
 
@@ -150,6 +152,8 @@
          CALL MPI_COMM_SIZE(comm_read, nlocal, istat)
 #endif
 
+         PRINT *,'GOT HERE0'
+
          ! Check for the file
          INQUIRE(FILE=TRIM(filename),EXIST=lexist)
          IF (.not.lexist) THEN
@@ -157,6 +161,7 @@
             IF (mylocalid == 0) WRITE(6,*) " ERROR: Could not find file: "//TRIM(filename)
             RETURN
          END IF
+         PRINT *,'GOT HERE1'
 
          ! Read HDF5 File
 #if defined(LHDF5)
@@ -171,6 +176,7 @@
          istat = -5
          RETURN
 #endif
+         PRINT *,'GOT HERE2'
 
          ! Broadcast arrays sizes and allocate arrays.
 #if defined(MPI_OPT)
@@ -188,6 +194,7 @@
          CALL mpialloc(Y_lines,      nlines, nsteps+1, mylocalid, master, comm_read, win_Y_lines)
          CALL mpialloc(rminor_lines, nlines, nsteps+1, mylocalid, master, comm_read, win_rminor_lines)
          CALL mpialloc(zeta_lines,   nlines, nsteps+1, mylocalid, master, comm_read, win_zeta_lines)
+         PRINT *,'GOT HERE3'
 
          ! Read Arrays and close file
 #if defined(LHDF5)
@@ -200,6 +207,7 @@
          END IF
          CALL MPI_BARRIER(comm_read,istat)
 #endif
+         PRINT *,'GOT HERE4'
 
          ! Create rminor helper
          IF (mylocalid == master) THEN
@@ -208,7 +216,12 @@
                Y_lines(i,:) = Z_lines(i,:) - Z_lines(1,:)
             END DO
             rminor_lines = SQRT(X_lines**2 + Y_lines**2)
+            DO i = 1, nlines
+               rminor_lines(i,:) = SUM(rminor_lines(i,:))/(nsteps+1)
+            END DO
          END IF
+
+         PRINT *,'GOT HERE5'
 
 
          ! Check we've read the background grids
@@ -218,11 +231,13 @@
             RETURN
          END IF
          CALL setup_fieldlines_helpers
+         PRINT *,'GOT HERE6'
 
          ! Allocate rho grid
          CALL mpialloc(X3D,      nr, nphi, nz, mylocalid, master, comm_read, win_X3D)
          CALL mpialloc(Y3D,      nr, nphi, nz, mylocalid, master, comm_read, win_Y3D)
          CALL mpialloc(Rminor3D, nr, nphi, nz, mylocalid, master, comm_read, win_Rminor3D)
+         PRINT *,'GOT HERE7'
 
          ! Allocate helper
          ALLOCATE(mask_lines(nlines,nsteps+1), mask_axis(nsteps+1))
@@ -250,6 +265,7 @@
                Y3D(i,j,k)      = SUM(Y_lines,      MASK=mask_lines) / COUNT(mask_lines)
             END IF
          END DO
+         PRINT *,'GOT HERE8'
 
          ! Calculate magaxis
          CALL MPI_CALC_MYRANGE(comm_read,1,nphi,mystart,myend)
@@ -261,6 +277,7 @@
             RMAGAXIS(j) = SUM(R_lines(1,:), MASK=mask_axis) / COUNT(mask_axis)
             ZMAGAXIS(j) = SUM(Z_lines(1,:), MASK=mask_axis) / COUNT(mask_axis)
          END DO
+         PRINT *,'GOT HERE9'
 
          ! Deallocated local variables
          DEALLOCATE(mask_lines, mask_axis)
