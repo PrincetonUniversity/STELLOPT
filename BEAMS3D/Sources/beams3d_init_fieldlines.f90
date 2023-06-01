@@ -21,7 +21,7 @@
                                  phiedge_eq, reff_eq, NI_spl_s, NI
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE read_fieldlines_mod, ONLY: get_fieldlines_grid, get_fieldlines_B, &
-                               read_fieldlines_deallocate, read_fieldlines_lines, &
+                               read_fieldlines_deallocate, setup_fieldlines_rhogrid, &
                                get_fieldlines_magaxis, get_fieldlines_gridB
       USE mpi_params
       USE mpi_inc
@@ -71,7 +71,7 @@
          WRITE(6,'(A,F6.3,A)')           '   AMINOR_NORM = ',rminor_norm,' [m]'
       END IF
 
-      CALL read_fieldlines_lines('fieldlines_'//TRIM(id_string)//'.h5',MPI_COMM_SHARMEM,ier)
+      CALL setup_fieldlines_rhogrid('fieldlines_'//TRIM(id_string)//'.h5',MPI_COMM_SHARMEM,ier)
 
       ! Calculate the axis values
       DO s = 1, nphi
