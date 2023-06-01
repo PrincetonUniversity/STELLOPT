@@ -29,6 +29,8 @@
       DOUBLE PRECISION, PRIVATE :: pi2, dr, dp, dz
       REAL(DTYPE), DIMENSION(:), POINTER, PRIVATE :: raxis, zaxis, phiaxis, &
                  RMAGAXIS, ZMAGAXIS
+      REAL(DTYPE), DIMENSION(:), POINTER, PRIVATE :: &
+                 R_1D, PHI_1D, Z_1D, rminor_1D, X_1D, Y_1D
       REAL(DTYPE), DIMENSION(:,:), POINTER, PRIVATE :: &
                  R_lines, PHI_lines, Z_lines, rminor_lines, X_lines, Y_lines
       REAL(DTYPE), DIMENSION(:,:,:), POINTER, PRIVATE :: &
@@ -38,14 +40,15 @@
                  win_R_lines, win_PHI_lines, win_Z_lines, &
                  win_rminor_lines, win_X_lines, win_Y_lines, &
                  win_X3D, win_Y3D, win_Rminor3D, &
-                 win_RMAGAXIS, win_ZMAGAXIS
+                 win_RMAGAXIS, win_ZMAGAXIS, &
+                 win_R_1D, win_PHI_1D, win_Z_1D, win_rminor_1D, win_X_1D, win_Y_1D
 
       CONTAINS
 
 !-----------------------------------------------------------------------
 !     Module Subroutines
 !           read_fieldlines_mag:  For reading fieldlines B-Field Data
-!           read_fieldlines_lines:  For reading fieldlines Lines Data
+!           setup_fieldlines_rhogrid:  For setting up rho grid
 !           setup_fieldlines_helpers: Setup grid helpers
 !           get_fieldlines_grid: Returns the grid information
 !           get_fieldlines_magaxis: Get magnetic axis information
@@ -131,7 +134,7 @@
 
       END SUBROUTINE read_fieldlines_mag
 
-      SUBROUTINE read_fieldlines_lines(filename,comm_read,istat)
+      SUBROUTINE setup_fieldlines_rhogrid(filename,comm_read,istat)
          IMPLICIT NONE
          CHARACTER(*), INTENT(in) :: filename
          INTEGER, INTENT(inout) :: comm_read
@@ -140,8 +143,10 @@
          REAL(DTYPE) :: r1,r2,p1,p2,z1,z2
          LOGICAL, DIMENSION(:), ALLOCATABLE :: mask_axis
          REAL(DTYPE), DIMENSION(:,:), POINTER :: zeta_lines
+         REAL(DTYPE), DIMENSION(:), POINTER :: ZETA_1D
          INTEGER, DIMENSION(:,:,:), POINTER :: N3D
          INTEGER :: win_zeta_lines, win_N3D
+         INTEGER :: win_zeta_1D
          LOGICAL :: lexist
          istat = 0
 
@@ -175,30 +180,42 @@
 #endif
 
          ! Broadcast arrays sizes and allocate arrays.
+         ! Note that in FIELDLINES _lines are sized (1:nlines,0:nsteps)
+         ! But FIELDLINES saves nsteps as nsteps+1
+         ! so we ressize them to (1:nlines,1:nsteps)
 #if defined(MPI_OPT)
          CALL MPI_BARRIER(comm_read,istat)
          CALL MPI_BCAST(nlines, 1, MPI_INTEGER, master, comm_read, istat)
          CALL MPI_BCAST(nsteps, 1, MPI_INTEGER, master, comm_read, istat)
          CALL MPI_BCAST(npoinc, 1, MPI_INTEGER, master, comm_read, istat)
 #endif         
-         CALL mpialloc(RMAGAXIS,     nphi,             mylocalid, master, comm_read, win_RMAGAXIS)
-         CALL mpialloc(ZMAGAXIS,     nphi,             mylocalid, master, comm_read, win_ZMAGAXIS)
-         CALL mpialloc(R_lines,      nlines, nsteps+1, mylocalid, master, comm_read, win_R_lines)
-         CALL mpialloc(PHI_lines,    nlines, nsteps+1, mylocalid, master, comm_read, win_PHI_lines)
-         CALL mpialloc(Z_lines,      nlines, nsteps+1, mylocalid, master, comm_read, win_Z_lines)
-         CALL mpialloc(X_lines,      nlines, nsteps+1, mylocalid, master, comm_read, win_X_lines)
-         CALL mpialloc(Y_lines,      nlines, nsteps+1, mylocalid, master, comm_read, win_Y_lines)
-         CALL mpialloc(rminor_lines, nlines, nsteps+1, mylocalid, master, comm_read, win_rminor_lines)
-         CALL mpialloc(zeta_lines,   nlines, nsteps+1, mylocalid, master, comm_read, win_zeta_lines)
+         CALL mpialloc(RMAGAXIS,  nphi,          mylocalid, master, comm_read, win_RMAGAXIS)
+         CALL mpialloc(ZMAGAXIS,  nphi,          mylocalid, master, comm_read, win_ZMAGAXIS)
+         CALL mpialloc(R_1D,      nlines*nsteps, mylocalid, master, comm_read, win_R_1D)
+         CALL mpialloc(PHI_1D,    nlines*nsteps, mylocalid, master, comm_read, win_PHI_1D)
+         CALL mpialloc(Z_1D,      nlines*nsteps, mylocalid, master, comm_read, win_Z_1D)
+         CALL mpialloc(X_1D,      nlines*nsteps, mylocalid, master, comm_read, win_X_1D)
+         CALL mpialloc(Y_1D,      nlines*nsteps, mylocalid, master, comm_read, win_Y_1D)
+         CALL mpialloc(rminor_1D, nlines*nsteps, mylocalid, master, comm_read, win_rminor_1D)
+         CALL mpialloc(ZETA_1D,   nlines*nsteps, mylocalid, master, comm_read, win_ZETA_1D)
+
+         ! Create 2D Pointers
+         R_lines(1:nlines,1:nsteps) => R_1D
+         Z_lines(1:nlines,1:nsteps) => Z_1D
+         X_lines(1:nlines,1:nsteps) => X_1D
+         Y_lines(1:nlines,1:nsteps) => Y_1D
+         PHI_lines(1:nlines,1:nsteps) => PHI_1D
+         rminor_lines(1:nlines,1:nsteps) => rminor_1D
+         zeta_lines(1:nlines,1:nsteps) => ZETA_1D
 
          ! Read Arrays and close file
 #if defined(LHDF5)
          IF (mylocalid == master) THEN
-            CALL read_var_hdf5(fid, 'R_lines',   nlines, nsteps+1, istat, DBLVAR=R_lines)
-            CALL read_var_hdf5(fid, 'PHI_lines', nlines, nsteps+1, istat, DBLVAR=PHI_lines)
-            CALL read_var_hdf5(fid, 'Z_lines',   nlines, nsteps+1, istat, DBLVAR=Z_lines)
+            CALL read_var_hdf5(fid, 'R_lines',   nlines*nsteps, istat, DBLVAR=R_1D)
+            CALL read_var_hdf5(fid, 'PHI_lines', nlines*nsteps, istat, DBLVAR=PHI_1D)
+            CALL read_var_hdf5(fid, 'Z_lines',   nlines*nsteps, istat, DBLVAR=Z_1D)
             CALL close_hdf5(fid,istat)
-            zeta_lines = MODULO(PHI_lines,phiaxis(nphi))
+            ZETA_1D = MODULO(PHI_1D,phiaxis(nphi))
          END IF
 #endif
 #if defined(MPI_OPT)
@@ -213,11 +230,9 @@
             END DO
             rminor_lines = SQRT(X_lines**2 + Y_lines**2)
             DO i = 1, nlines
-               rminor_lines(i,:) = SUM(rminor_lines(i,:))/(nsteps+1)
+               rminor_lines(i,:) = SUM(rminor_lines(i,:))/(nsteps)
             END DO
          END IF
-
-
 
          ! Check we've read the background grids
          IF (nr <= 0 .OR.  nphi <= 0 .OR. nz <= 0) THEN
@@ -234,23 +249,26 @@
          CALL mpialloc(N3D,      nr, nphi, nz, mylocalid, master, comm_read, win_N3D)
 
          ! Allocate helper
-         ALLOCATE(mask_axis(nsteps+1))
+         ALLOCATE(mask_axis(nsteps))
+
+         ! Default the rho grid to the largest value of Rminor
+         IF (mylocalid==master) Rminor3D = MAXVAL(rminor_lines)
+#if defined(MPI_OPT)
+         CALL MPI_BARRIER(comm_read,istat)
+#endif
 
          ! Create the background helpers
-         CALL MPI_CALC_MYRANGE(comm_read,1,nlines*(nsteps+1),mystart,myend)
+         CALL MPI_CALC_MYRANGE(comm_read,1,nlines*nsteps,mystart,myend)
          DO s = mystart, myend
-            l = MOD(s-1,nlines)+1
-            m = MOD(s-1,nlines*(nsteps+1))
-            m = FLOOR(REAL(m) / REAL(nlines))+1
-            i = COUNT((raxis-0.5*dr)   <= R_lines(l,m))
-            j = COUNT((phiaxis-0.5*dp) <= zeta_lines(l,m))
-            k = COUNT((zaxis-0.5*dz)   <= Z_lines(l,m))
+            i = COUNT((raxis-0.5*dr)   <= R_1D(s))
+            j = COUNT((phiaxis-0.5*dp) <= zeta_1D(s))
+            k = COUNT((zaxis-0.5*dz)   <= Z_1D(s))
             i = MIN(MAX(i,1),nr)
             j = MIN(MAX(j,1),nphi)
             k = MIN(MAX(k,1),nz)
-            Rminor3D(i,j,k) = Rminor3D(i,j,k) + rminor_lines(l,m)
-            X3D(i,j,k) = X3D(i,j,k) + X_lines(l,m)
-            Y3D(i,j,k) = Y3D(i,j,k) + Y_lines(l,m)
+            Rminor3D(i,j,k) = Rminor3D(i,j,k) + rminor_1D(s)
+            X3D(i,j,k) = X3D(i,j,k) + X_1D(s)
+            Y3D(i,j,k) = Y3D(i,j,k) + Y_1D(s)
             N3D(i,j,k) = N3D(i,j,k) + 1
          END DO
          CALL MPI_BARRIER(comm_read,istat)
@@ -261,6 +279,7 @@
                Y3D = Y3D / N3D
             END WHERE
          END IF
+         CALL MPI_BARRIER(comm_read,istat)
          IF (ASSOCIATED(N3D))      CALL mpidealloc(N3D,   win_N3D)
 
          ! Calculate magaxis
@@ -276,17 +295,31 @@
 
          ! Deallocated local variables
          DEALLOCATE(mask_axis)
-         IF (ASSOCIATED(zeta_lines))   CALL mpidealloc(zeta_lines,   win_zeta_lines)
+
+#if defined(MPI_OPT)
+         CALL MPI_BARRIER(comm_read,istat)
+#endif
+         ! Locals
+         IF (ASSOCIATED(zeta_lines)) NULLIFY(zeta_lines)
+         IF (ASSOCIATED(zeta_1D))   CALL mpidealloc(zeta_1D,   win_zeta_1D)
+
+         ! Globals
+         IF (ASSOCIATED(R_lines))      NULLIFY(R_lines)
+         IF (ASSOCIATED(Z_lines))      NULLIFY(Z_lines)
+         IF (ASSOCIATED(X_lines))      NULLIFY(X_lines)
+         IF (ASSOCIATED(Y_lines))      NULLIFY(Y_lines)
+         IF (ASSOCIATED(PHI_lines))    NULLIFY(PHI_lines)
+         IF (ASSOCIATED(rminor_lines)) NULLIFY(rminor_lines)
          ! Deallocated globals which we don't anymore
-         IF (ASSOCIATED(R_lines))      CALL mpidealloc(R_lines,   win_R_lines)
-         IF (ASSOCIATED(Z_lines))      CALL mpidealloc(Z_lines,   win_Z_lines)
-         IF (ASSOCIATED(PHI_lines))    CALL mpidealloc(PHI_lines,   win_PHI_lines)
-         IF (ASSOCIATED(X_lines))      CALL mpidealloc(X_lines,   win_X_lines)
-         IF (ASSOCIATED(Y_lines))      CALL mpidealloc(Y_lines,   win_Y_lines)
-         IF (ASSOCIATED(rminor_lines)) CALL mpidealloc(rminor_lines,   win_rminor_lines)
+         IF (ASSOCIATED(R_1D))      CALL mpidealloc(R_1D,      win_R_1D)
+         IF (ASSOCIATED(Z_1D))      CALL mpidealloc(Z_1D,      win_Z_1D)
+         IF (ASSOCIATED(PHI_1D))    CALL mpidealloc(PHI_1D,    win_PHI_1D)
+         IF (ASSOCIATED(X_1D))      CALL mpidealloc(X_1D,      win_X_1D)
+         IF (ASSOCIATED(Y_1D))      CALL mpidealloc(Y_1D,      win_Y_1D)
+         IF (ASSOCIATED(rminor_1D)) CALL mpidealloc(rminor_1D, win_rminor_1D)
 
          RETURN
-      END SUBROUTINE read_fieldlines_lines
+      END SUBROUTINE setup_fieldlines_rhogrid
 
       SUBROUTINE setup_fieldlines_helpers
          IMPLICIT NONE
@@ -460,12 +493,21 @@
          IF (ASSOCIATED(X3D))          CALL mpidealloc(X3D,          win_X3D)
          IF (ASSOCIATED(Y3D))          CALL mpidealloc(Y3D,          win_Y3D)
          IF (ASSOCIATED(Rminor3D))     CALL mpidealloc(Rminor3D,     win_Rminor3D)
-         IF (ASSOCIATED(R_lines))      CALL mpidealloc(R_lines,      win_R_lines)
-         IF (ASSOCIATED(PHI_lines))    CALL mpidealloc(PHI_lines,    win_PHI_lines)
-         IF (ASSOCIATED(Z_lines))      CALL mpidealloc(Z_lines,      win_Z_lines)
-         IF (ASSOCIATED(X_lines))      CALL mpidealloc(X_lines,      win_X_lines)
-         IF (ASSOCIATED(Y_lines))      CALL mpidealloc(Y_lines,      win_Y_lines)
-         IF (ASSOCIATED(rminor_lines)) CALL mpidealloc(rminor_lines, win_rminor_lines)
+
+         ! The 2D arrays are just pointers while the 1D arrays are the actual data
+         IF (ASSOCIATED(R_lines))      NULLIFY(R_lines)
+         IF (ASSOCIATED(Z_lines))      NULLIFY(Z_lines)
+         IF (ASSOCIATED(X_lines))      NULLIFY(X_lines)
+         IF (ASSOCIATED(Y_lines))      NULLIFY(Y_lines)
+         IF (ASSOCIATED(PHI_lines))    NULLIFY(PHI_lines)
+         IF (ASSOCIATED(rminor_lines)) NULLIFY(rminor_lines)
+         ! Deallocated globals which we don't anymore
+         IF (ASSOCIATED(R_1D))      CALL mpidealloc(R_1D,      win_R_1D)
+         IF (ASSOCIATED(Z_1D))      CALL mpidealloc(Z_1D,      win_Z_1D)
+         IF (ASSOCIATED(PHI_1D))    CALL mpidealloc(PHI_1D,    win_PHI_1D)
+         IF (ASSOCIATED(X_1D))      CALL mpidealloc(X_1D,      win_X_1D)
+         IF (ASSOCIATED(Y_1D))      CALL mpidealloc(Y_1D,      win_Y_1D)
+         IF (ASSOCIATED(rminor_1D)) CALL mpidealloc(rminor_1D, win_rminor_1D)
          RETURN
       END SUBROUTINE read_fieldlines_deallocate
 
