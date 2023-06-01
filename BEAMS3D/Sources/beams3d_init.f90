@@ -167,7 +167,7 @@
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF ((lvmec .or. leqdsk .or. lhint) .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk .or. lhint .or. lfieldlines) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Plasma Parameters -----'
          ! TE
          IF (nte>0) THEN
