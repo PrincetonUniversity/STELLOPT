@@ -39,7 +39,7 @@
       LOGICAL :: lcreate_wall
       INTEGER :: ier, s, i, j, k, u
       REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
-                     tetemp,netemp,titemp,zetemp,pottemp
+                     tetemp,netemp,titemp,zetemp,pottemp, rminor
       INTEGER :: nrh,nzh,nph
       REAL(rprec) :: rmin_hint, rmax_hint, zmin_hint, zmax_hint, &
                      pmax_hint, pres_max
@@ -101,11 +101,12 @@
          sflx = 0.0
 
          ! Bfield
-         CALL get_fieldlines_gridB(i,j,k,brtemp,bptemp,bztemp,sflx,uflx)
+         CALL get_fieldlines_gridB(i,j,k,brtemp,bptemp,bztemp,rminor,uflx)
          B_R(i,j,k) = brtemp
          B_PHI(i,j,k) = bptemp
          B_Z(i,j,k) = bztemp
-         S_ARR(i,j,k) = (sflx/rminor_norm)**2
+         sflx = (rminor/rminor_norm)**2
+         S_ARR(i,j,k) = sflx
          U_ARR(i,j,k) = uflx
 
          IF (sflx <= 1) THEN
