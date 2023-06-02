@@ -154,7 +154,7 @@
       NI_AUX_Z = 0
       NI_AUX_M = 0
       npoinc = 1
-      follow_tol   = 1.0D-7
+      follow_tol   = 1.0D-9
       vc_adapt_tol = 1.0D-5
       int_type = "LSODE"
       ldebug = .false.
