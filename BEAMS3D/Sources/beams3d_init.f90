@@ -282,6 +282,7 @@ SUBROUTINE beams3d_init
       ! CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
       ! CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
       ! CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
+	  ldepo=.false. !Restart can never be depo run
       IF (myid_sharmem == 0) THEN
          X_ARR = 1.5
          Y_ARR = 1.5
@@ -364,9 +365,15 @@ SUBROUTINE beams3d_init
       IF (rmax_fida .eq. 0.0) rmax_fida = rmax
       IF (zmax_fida .eq. 0.0) zmax_fida = zmax
       IF (phimax_fida .eq. 0.0) phimax_fida = phimax
+	  IF (lrestart_grid) THEN
+	        IF (nr_fida .eq. 0) nr_fida = ns_prof1
+      IF (nphi_fida .eq. 0) nphi_fida = ns_prof3
+      IF (nz_fida .eq. 0) nz_fida = ns_prof2
+	  ELSE
       IF (nr_fida .eq. 0) nr_fida = nr
       IF (nphi_fida .eq. 0) nphi_fida = nphi
       IF (nz_fida .eq. 0) nz_fida = nz
+	  END IF
       IF (nenergy_fida .eq. 0) nenergy_fida = ns_prof4
       IF (npitch_fida .eq. 0) npitch_fida = ns_prof5
    END IF
@@ -379,8 +386,6 @@ SUBROUTINE beams3d_init
    END IF
 
    CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
-
-
 
 
    ! Put the vacuum field on the background grid
@@ -661,10 +666,10 @@ SUBROUTINE beams3d_init
 
    IF (myid_sharmem==master) CALL beams3d_volume !requires S_ARR
 
-
    ! Output Grid
    CALL beams3d_write('GRID_INIT')
-   IF (.not. lrestart_grid) THEN
+     !IF (lverb)  WRITE(6,'(A)')  'Grid_Init Completed'
+   !IF (.not. lrestart_grid) THEN
       CALL mpidealloc(B_R,win_B_R)
       CALL mpidealloc(B_PHI,win_B_PHI)
       CALL mpidealloc(B_Z,win_B_Z)
@@ -681,10 +686,10 @@ SUBROUTINE beams3d_init
          CALL mpidealloc(TI,win_TI)
          CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
       END IF
-   END IF
+   !END IF
 
    ! DEALLOCATE Variables
-   IF (.not.lvac) THEN
+   IF (.not.lvac .and. .not. lrestart_grid) THEN
       IF (nte > 0) CALL EZspline_free(TE_spl_s,ier)
       IF (nne > 0) CALL EZspline_free(NE_spl_s,ier)
       IF (nti > 0) CALL EZspline_free(TI_spl_s,ier)
@@ -728,7 +733,6 @@ SUBROUTINE beams3d_init
          v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
          mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
          beam(nparticles), weight(nparticles) )
-
       R_start = r_start_in(1:nparticles)
       phi_start = phi_start_in(1:nparticles)
       Z_start = z_start_in(1:nparticles)
@@ -745,10 +749,12 @@ SUBROUTINE beams3d_init
       charge_beams(1) = charge_in(1)
       mass_beams(1)   = mass_in(1)
    END IF
+   IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
+   
    ! In all cases create an end_state array
    ALLOCATE(end_state(nparticles))
    end_state=0
-
+   
    ! Setup distribution
    ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
       ndot_prof(nbeams,ns_prof1))
@@ -761,6 +767,8 @@ SUBROUTINE beams3d_init
    END IF
    h2_prof = ns_prof2*invpi2
    h3_prof = ns_prof3*invpi2
+   	 
+
 
 
    ! Determine maximum particle velocity
@@ -787,6 +795,7 @@ SUBROUTINE beams3d_init
       STOP
    END IF
 
+
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!              Wall Load Helpers here
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -795,6 +804,7 @@ SUBROUTINE beams3d_init
    IF (lwall_loaded) THEN
       IF (lverb) THEN
          CALL wall_info(6)
+		 !IF (ALLOCATED(R_wall_temp)) DEALLOCATE(R_wall_temp)
          ALLOCATE(R_wall_temp(nvertex))
          FORALL (i = 1:nvertex) R_wall_temp(i) = SQRT(vertex(i,1)*vertex(i,1)+vertex(i,2)*vertex(i,2))
          WRITE(6,'(A,F9.5,A,F9.5,A)') '   R_WALL   = [',MINVAL(R_wall_temp),',',MAXVAL(R_wall_temp),']'
@@ -854,6 +864,8 @@ SUBROUTINE beams3d_init
       CALL beams3d_distnorm
       STOP
    END IF
+   
+  ! WRITE (6, '(F7.3)') MAXVAL(BPHI4D(1,:,:,:))
 
 #if defined(MPI_OPT)
    CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)

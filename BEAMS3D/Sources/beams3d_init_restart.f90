@@ -54,119 +54,32 @@ SUBROUTINE beams3d_init_restart
          Zatom2 = Zatom
          weight2 = weight
          mass2=mass
-         lfusion_old = .FALSE. !WHY IS THIS TRUE?
-         IF (ldepo) THEN
-            ldepo_old=.true.
-            ldepo=.false. !Restart can never be depo run
-            lbeam=.false.
-         END IF
+	   lfusion_old = .FALSE. !WHY IS THIS TRUE?
       END IF
+		IF (ldepo) THEN
+            ldepo_old=.true.
+		END IF
+      ldepo=.false. !Restart can never be depo run
+      lbeam=.false.
       CALL beams3d_read_grid(restart_string(9:(len(TRIM(restart_string))-3)))
-      ! IF (lrestart_grid) THEN
-      ! CALL read_scalar_hdf5(fid,'nr',ier,INTVAR=nr)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nr',ier)
-      ! CALL read_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nphi',ier)
-      ! CALL read_scalar_hdf5(fid,'nz',ier,INTVAR=nz)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nz',ier)
-      ! CALL read_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'npoinc',ier)
-      ! CALL read_scalar_hdf5(fid,'t_end_in',ier,DBLVAR=t_end_restart)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'t_end',ier)
-      ! t_end_in = t_end_restart !Broadcast to t_end_in
-      ! CALL read_scalar_hdf5(fid,'nvertex',ier,DBLVAR=nvertex)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nvertex
-      ! CALL read_scalar_hdf5(fid,'nface',ier,DBLVAR=nface)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nface',ier)
-      ! CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
-      ! CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
-      ! CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
-      ! CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
-      ! CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
-      ! CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
-      ! CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
-      ! CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
-      ! CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
-      ! CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
-      ! CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
-      ! CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
-      ! CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
-      ! CALL mpialloc(TE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE)
-      ! CALL mpialloc(NE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE)
-      ! CALL mpialloc(TI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI)
-      ! CALL mpialloc(ZEFF_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF_ARR)
-      ! CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
-      ! CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
-      ! CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
-      ! CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
-      ! CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
-      ! CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
-
-      ! CALL mpialloc(face, nface,3, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
-      ! CALL mpialloc(vertex, nvertex,3 myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
-      ! !ALLOCATE(raxis(nr),zaxis(nz),phiaxis(nphi))
-      ! CALL read_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'raxis',ier)
-      ! CALL read_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'phiaxis',ier)
-      ! CALL read_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'zaxis',ier)
-      ! CALL read_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_R',ier)
-      ! CALL read_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_PHI',ier)
-      ! CALL read_var_hdf5(fid,'B_Z',nr,nphi,nz,ier,DBLVAR=B_Z)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_Z',ier)
-      ! CALL read_var_hdf5(fid,'TE',nr,nphi,nz,ier,DBLVAR=TE)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'TE',ier)
-      ! CALL read_var_hdf5(fid,'NE',nr,nphi,nz,ier,DBLVAR=NE)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'NE',ier)
-      ! CALL read_var_hdf5(fid,'TI',nr,nphi,nz,ier,DBLVAR=TI)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'TI',ier)
-      ! CALL read_var_hdf5(fid,'NI',nion,nr,nphi,nz,ier,DBLVAR=NI)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'NI',ier)
-      ! CALL read_var_hdf5(fid,'ZEFF_ARR',nr,nphi,nz,ier,DBLVAR=ZEFF_ARR)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ZEFF_ARR',ier)
-      ! CALL read_var_hdf5(fid,'POT_ARR',nr,nphi,nz,ier,DBLVAR=POT_ARR)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'POT_ARR',ier)
-      ! CALL read_var_hdf5(fid,'U_ARR',nr,nphi,nz,ier,DBLVAR=U_ARR)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'U_ARR',ier)
-      ! CALL read_var_hdf5(fid,'S_ARR',nr,nphi,nz,ier,DBLVAR=S_ARR)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_ARR',ier)
-
-      ! CALL read_var_hdf5(fid,'wall_vertex',nvertex,3,ier,DBLVAR=vertex)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'wall_vertex',ier)
-      ! CALL read_var_hdf5(fid,'wall_faces',nface,3,ier,DBLVAR=face)
-      ! IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'wall_faces',ier)
-
-      ! ! CALL write_scalar_hdf5(fid,'nvertex',ier,INTVAR=nvertex,ATT='Number of Wall Vertices',ATT_NAME='description')
-      ! ! IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nvertex',ier)
-      ! ! CALL write_var_hdf5(fid,'wall_vertex',nvertex,3,ier,DBLVAR=vertex,ATT='Wall Verticies (x,y,z) [m]',ATT_NAME='description')
-      ! ! IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_vertex',ier)
-      ! ! CALL write_scalar_hdf5(fid,'nface',ier,INTVAR=nface,ATT='Number of Wall Faces',ATT_NAME='description')
-      ! ! IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nface',ier)
-      ! ! CALL write_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face,ATT='Wall Faces',ATT_NAME='description')
-      ! ! IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_faces',ier)
-
-      !END IF
-      CALL MPI_BCAST(nr,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(nz,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(nphi,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+	  CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
+	  
       CALL MPI_BCAST(npoinc,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(ns_prof1,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(ns_prof2,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(ns_prof3,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(ns_prof4,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(ns_prof5,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(ldepo_old,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      ! IF (myworkid /= master) THEN
-      !    ALLOCATE(raxis(nr),zaxis(nz),phiaxis(nphi))
-      !    ALLOCATE(TE(nr,nphi,nz))
-      ! END IF
-      ! CALL MPI_BCAST(raxis,nr,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      ! CALL MPI_BCAST(phiaxis,nphi,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      ! CALL MPI_BCAST(zaxis,nz,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      ! CALL MPI_BCAST(TE,nr*nphi*nz,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+	  !CALL MPI_BCAST(ldepo,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+	  CALL MPI_BCAST(raxis,nr,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+       CALL MPI_BCAST(phiaxis,nphi,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+       CALL MPI_BCAST(zaxis,nz,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+	   CALL MPI_BCAST(rmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+	   CALL MPI_BCAST(rmin,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+	   CALL MPI_BCAST(zmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+	   CALL MPI_BCAST(zmin,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+	   CALL MPI_BCAST(phimax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+	   CALL MPI_BCAST(phimin,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)	   
       id_string = 'restart_grid'
    END IF
    IF (myworkid == master) THEN
@@ -267,9 +180,9 @@ SUBROUTINE beams3d_init_restart
             WHERE(S_lines(0,:) >= 1) end_state = -1
          END IF
       ELSEIF (ldepo_old) THEN
+	 ! WRITE(6,'(A)') 'OLD DEPOSITION RUN!'
          state_flag = 0
          start_dex = 2
-
          IF (lplasma_only) THEN
             WHERE(S_lines(1,:) >= 1) end_state = -1
          END IF
@@ -304,7 +217,6 @@ SUBROUTINE beams3d_init_restart
          vll_start(k) = vll_lines(npoinc_extract,i)
          v_neut(3,k)   = 0.0
          mass(k)      = mass2(i)
-         !WRITE(27,'(EN12.3)')  mass(k)
          charge(k)   = charge2(i)
          Zatom(k)    = Zatom2(i)
          beam(k)     = beam2(i)
@@ -312,7 +224,8 @@ SUBROUTINE beams3d_init_restart
          t_end(k)    = MAXVAL(t_end_in)
          IF (lrestart_grid) THEN
             mu_start(k) = moment_lines(npoinc_extract,i)
-
+            charge_beams(beam2(i))=charge2(i)
+            mass_beams(beam2(i))=mass2(i)
          ELSE
             q = (/R_start(k), phi_start(k), Z_start(k)/)
             mu_start(k)  = moment_lines(npoinc_extract,i)*B_lines(npoinc_extract,i)
@@ -340,11 +253,22 @@ SUBROUTINE beams3d_init_restart
    CALL MPI_BCAST(nbeams,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
    CALL MPI_BCAST(partvmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
    IF (myworkid /= master) THEN
+		IF (ALLOCATED(R_start)) DEALLOCATE(R_start)
+         IF (ALLOCATED(phi_start)) DEALLOCATE(phi_start)
+         IF (ALLOCATED(Z_start)) DEALLOCATE(Z_start)
+         IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
+		 IF (ALLOCATED(mass)) DEALLOCATE(mass)
+         IF (ALLOCATED(charge)) DEALLOCATE(charge)
+         IF (ALLOCATED(mu_start)) DEALLOCATE(mu_start)
+         IF (ALLOCATED(Zatom)) DEALLOCATE(Zatom)
+         IF (ALLOCATED(t_end)) DEALLOCATE(t_end)
+         IF (ALLOCATED(vll_start)) DEALLOCATE(vll_start)
+         IF (ALLOCATED(beam)) DEALLOCATE(beam)
+         IF (ALLOCATED(weight)) DEALLOCATE(weight)
       ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
          v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
          mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
          beam(nparticles), weight(nparticles) )
-
    END IF
    CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
    CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -358,6 +282,13 @@ SUBROUTINE beams3d_init_restart
    CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
    CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
    CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+   ! IF (lrestart_grid .and. lfidasim2) THEN
+	 ! CALL MPI_BCAST(nr_fida,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      ! CALL MPI_BCAST(nphi_fida,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      ! CALL MPI_BCAST(nz_fida,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      ! CALL MPI_BCAST(nenergy_fida,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      ! CALL MPI_BCAST(npitch_fida,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+   ! END IF
 
 #endif
 

@@ -43,7 +43,7 @@ SUBROUTINE beams3d_read_grid(file_ext)
 #if defined(LHDF5)
 
    IF (myid_sharmem == master) THEN
-      IF (lverb) WRITE(6,'(A)')  '   FILE: '//'beams3d_'//TRIM(file_ext)//'.h5'
+      !IF (lverb) WRITE(6,'(A)')  '   FILE: '//'beams3d_'//TRIM(file_ext)//'.h5'
       CALL open_hdf5('beams3d_'//TRIM(file_ext)//'.h5',fid,ier,LCREATE=.false.)
       IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(file_ext)//'.h5',ier)
       CALL read_scalar_hdf5(fid,'nr',ier,INTVAR=nr)
@@ -54,6 +54,10 @@ SUBROUTINE beams3d_read_grid(file_ext)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nz',ier)
    END IF
    ! Grid
+   CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
+   	        CALL MPI_BCAST(nr,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(nz,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(nphi,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
    IF (ASSOCIATED(raxis))   DEALLOCATE(raxis)
    IF (ASSOCIATED(zaxis))   DEALLOCATE(zaxis)
    IF (ASSOCIATED(phiaxis)) DEALLOCATE(phiaxis)
@@ -128,7 +132,7 @@ SUBROUTINE beams3d_read_grid(file_ext)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'TE',ier)
       CALL read_var_hdf5(fid,'NE',nr,nphi,nz,ier,DBLVAR=NE)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'NE',ier)
-      WRITE (27, '(EN12.3)') MAXVAL(NE)
+      !WRITE (27, '(EN12.3)') MAXVAL(NE)
       CALL read_var_hdf5(fid,'TI',nr,nphi,nz,ier,DBLVAR=TI)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'TI',ier)
       CALL read_var_hdf5(fid,'NI',nion,nr,nphi,nz,ier,DBLVAR=NI)
