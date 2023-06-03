@@ -102,7 +102,7 @@ SUBROUTINE beams3d_follow_gc
     dt = SIGN(MAX(lendt_m/vel_max,1D-9),tf_max)
 
     !Temporarily reduce npoinc by 2 for combined depo+slowing down runs
-    IF ((lbeam .and. .not. ldepo) .or. lrestart_grid) NPOINC = NPOINC-2
+    IF (lbeam .and. .not. ldepo) NPOINC = NPOINC-2
 
     ! Calculate number of integration timesteps per output timestep
     ndt_max = MAX(CEILING(tf_max/(dt*NPOINC)),1)
@@ -112,7 +112,7 @@ SUBROUTINE beams3d_follow_gc
     dt = tf_max/(ndt_max*NPOINC)
     dt_out = tf_max/NPOINC
     
-    IF ((lbeam .and. .not. ldepo) .or. lrestart_grid) NPOINC = NPOINC+2
+    IF (lbeam .and. .not. ldepo) NPOINC = NPOINC+2
 
     ! Break up the work
     CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)

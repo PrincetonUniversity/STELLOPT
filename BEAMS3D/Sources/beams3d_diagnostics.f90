@@ -18,7 +18,7 @@
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
-                                 MPI_REDU_ERR, pi2, weight
+                                 MPI_REDU_ERR, pi2, weight,lrestart_grid
       USE safe_open_mod, ONLY: safe_open
       USE EZspline
       USE mpi_params ! MPI

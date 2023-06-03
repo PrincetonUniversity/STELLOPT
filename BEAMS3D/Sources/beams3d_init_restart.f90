@@ -56,14 +56,8 @@ SUBROUTINE beams3d_init_restart
          mass2=mass
 	   lfusion_old = .FALSE. !WHY IS THIS TRUE?
       END IF
-		IF (ldepo) THEN
-            ldepo_old=.true.
-		END IF
-      ldepo=.false. !Restart can never be depo run
-      lbeam=.false.
       CALL beams3d_read_grid(restart_string(9:(len(TRIM(restart_string))-3)))
 	  CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-	  
       CALL MPI_BCAST(npoinc,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(ns_prof1,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(ns_prof2,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -81,6 +75,11 @@ SUBROUTINE beams3d_init_restart
 	   CALL MPI_BCAST(phimax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
 	   CALL MPI_BCAST(phimin,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)	   
       id_string = 'restart_grid'
+	  	  		IF (ldepo) THEN
+            ldepo_old=.true.
+		END IF
+      ldepo=.false. !Restart can never be depo run
+      lbeam=.false.
    END IF
    IF (myworkid == master) THEN
       IF (.not. lrestart_grid) THEN
