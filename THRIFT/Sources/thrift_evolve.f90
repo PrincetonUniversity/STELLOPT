@@ -145,6 +145,7 @@
             jold = THRIFT_J(:,mytimestep)
 
             ! Calculate total currents
+            CALL curden_to_curtot(THRIFT_J(:,mytimestep),THRIFT_I(,mytimestep))
             CALL curden_to_curtot(THRIFT_JBOOT(:,  mytimestep),THRIFT_IBOOT(:,  mytimestep))
             CALL curden_to_curtot(THRIFT_JECCD(:,  mytimestep),THRIFT_IECCD(:,  mytimestep))
             CALL curden_to_curtot(THRIFT_JNBCD(:,  mytimestep),THRIFT_INBCD(:,  mytimestep))
@@ -154,8 +155,6 @@
                                           + THRIFT_IECCD(:,  mytimestep) &
                                           + THRIFT_INBCD(:,  mytimestep) &
                                           + THRIFT_IOHMIC(:, mytimestep)
-            THRIFT_I(:,mytimestep)        = THRIFT_IPLASMA(:,mytimestep) &
-                                          + THRIFT_ISOURCE(:,mytimestep)
             ! Calculate iota
             IF (lverbj) WRITE(6,*) "Calculating iota"
             CALL calc_iota

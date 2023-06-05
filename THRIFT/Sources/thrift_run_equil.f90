@@ -12,7 +12,7 @@
       USE thrift_equil
       USE thrift_vars
       USE read_wout_mod, ONLY: read_wout_deallocate, read_wout_file, &
-                               betatot, Aminor, Rmajor,phi, Volume
+                               betatot, Aminor, Rmajor,phi, Volume, ns
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -31,7 +31,7 @@
          eq_beta      = betatot
          eq_Aminor    = Aminor
          eq_Rmajor    = Rmajor
-         eq_phiedge   = MAXVAL(phi)
+         eq_phiedge   = phi(ns)
          eq_volume    = Volume
          ! Load equil_utils for helpers later on
          CALL thrift_load_vmec
