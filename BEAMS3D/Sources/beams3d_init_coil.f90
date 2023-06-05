@@ -54,7 +54,13 @@ SUBROUTINE beams3d_init_coil
       OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
       IF (ier /= 0) CALL handle_err(FILE_OPEN_ERR,id_string,ier)
       CALL read_indata_namelist(iunit,ier)
-      IF (ier /= 0) CALL handle_err(COIL_ERR,id_string,ier)
+      !IF (ier /= 0) CALL handle_err(COIL_ERR,id_string,ier) !Old error without namelist output
+      IF (ier /= 0) THEN
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         IF (istat > 0) CALL handle_err(COIL_ERR,id_string,ier)
+      END IF
       CLOSE(iunit)
    END IF
 #if defined(MPI_OPT)
