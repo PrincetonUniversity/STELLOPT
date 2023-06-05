@@ -36,6 +36,7 @@ SUBROUTINE beams3d_init_coil
    INTEGER :: ier, iunit, s, i, j, mystart, myend, k, ik, ig, coil_dex
    REAL(rprec)  :: br, bphi, bz, current, current_first, &
       br_temp, bphi_temp, bz_temp
+   CHARACTER(LEN=1000) :: line
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -59,7 +60,7 @@ SUBROUTINE beams3d_init_coil
          backspace(iunit)
          read(iunit,fmt='(A)') line
          write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-         IF (istat > 0) CALL handle_err(COIL_ERR,id_string,ier)
+         IF (ier > 0) CALL handle_err(COIL_ERR,id_string,ier)
       END IF
       CLOSE(iunit)
    END IF
