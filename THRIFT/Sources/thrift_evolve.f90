@@ -145,7 +145,7 @@
             jold = THRIFT_J(:,mytimestep)
 
             ! Calculate total currents
-            CALL curden_to_curtot(THRIFT_J(:,mytimestep),THRIFT_I(,mytimestep))
+            CALL curden_to_curtot(THRIFT_J(:,mytimestep),THRIFT_I(:,mytimestep))
             CALL curden_to_curtot(THRIFT_JBOOT(:,  mytimestep),THRIFT_IBOOT(:,  mytimestep))
             CALL curden_to_curtot(THRIFT_JECCD(:,  mytimestep),THRIFT_IECCD(:,  mytimestep))
             CALL curden_to_curtot(THRIFT_JNBCD(:,  mytimestep),THRIFT_INBCD(:,  mytimestep))
