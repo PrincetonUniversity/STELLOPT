@@ -45,7 +45,7 @@
       IF (iflag < 0) RETURN
       ik = COUNT(sigma < bigno)
         IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MSHEAR ',ik, 4
-        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA   MSHEAR #'
+        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA   MSHEAR  k'
       IF (niter >= 0) THEN
         fname = 'msh_out' // trim(proc_string)
         istat=0

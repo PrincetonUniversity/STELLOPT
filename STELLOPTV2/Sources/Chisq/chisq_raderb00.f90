@@ -43,7 +43,7 @@
       diagUnit = 222
       IF (iflag < 0) RETURN
       ik = COUNT(sigma < bigno)
-        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'RADERB0 ',ik, 4
+        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'RADERB00 ',ik, 4
         IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA dB_00/ds  #'
       IF (niter >= 0) THEN
         fname = 'rdB00_out' // trim(proc_string)

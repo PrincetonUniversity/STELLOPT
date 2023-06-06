@@ -40,7 +40,7 @@
       IF (iflag < 0) RETURN
       ik = COUNT(sigma < bigno)
         IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'DMER ', ik, 4
-        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA   DMER  #'
+        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  DMER  k'
       IF (niter >= 0) THEN
         fname = 'dmerc_out' // trim(proc_string)
         istat=0
