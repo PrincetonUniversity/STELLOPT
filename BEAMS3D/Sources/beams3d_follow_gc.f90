@@ -120,7 +120,7 @@ SUBROUTINE beams3d_follow_gc
     ! Save mystart and myend
     mystart_save = mystart
     myend_save = myend
-
+	!WRITE(6, '(I9,I9,I9,I9,EN12.3,EN12.3,I9)') NPOINC,mystart_save,myend_save,nsteps,dt,dt_out,ndt_max
     IF (lhitonly) THEN
         npoinc = 2
     END IF

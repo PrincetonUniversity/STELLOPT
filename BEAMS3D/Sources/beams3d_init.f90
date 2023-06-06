@@ -258,7 +258,7 @@ SUBROUTINE beams3d_init
 
    IF (lrestart_grid) THEN
       CALL beams3d_init_restart
-	  CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
       CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
       CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
       CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
@@ -268,21 +268,7 @@ SUBROUTINE beams3d_init
       CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
       CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
       CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
-      ! CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
-      ! CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
-      ! CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
-      ! CALL mpialloc(TE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE)
-      ! CALL mpialloc(NE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE)
-      ! WRITE (29, '(EN12.3)') NE
-      ! CALL mpialloc(TI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI)
-      ! CALL mpialloc(ZEFF_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF_ARR)
-      ! CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
-      ! CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
-      ! CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
-      ! CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
-      ! CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
-      ! CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
-	  ldepo=.false. !Restart can never be depo run
+      ldepo=.false. !Restart can never be depo run
       IF (myid_sharmem == 0) THEN
          X_ARR = 1.5
          Y_ARR = 1.5
@@ -346,12 +332,10 @@ SUBROUTINE beams3d_init
          hpi = one / hp
          hzi = one / hz
          ! Do this here so EQDSK vac RMP works.
-         IF (.not. lrestart_grid) THEN
-            B_R = 0
-            B_PHI = 0
-            B_Z = 0
-            MODB = 0
-         END IF
+         B_R = 0
+         B_PHI = 0
+         B_Z = 0
+         MODB = 0
       END IF
    END IF
 
@@ -365,15 +349,15 @@ SUBROUTINE beams3d_init
       IF (rmax_fida .eq. 0.0) rmax_fida = rmax
       IF (zmax_fida .eq. 0.0) zmax_fida = zmax
       IF (phimax_fida .eq. 0.0) phimax_fida = phimax
-	  IF (lrestart_grid) THEN
-	        IF (nr_fida .eq. 0) nr_fida = ns_prof1
-      IF (nphi_fida .eq. 0) nphi_fida = ns_prof3
-      IF (nz_fida .eq. 0) nz_fida = ns_prof2
-	  ELSE
-      IF (nr_fida .eq. 0) nr_fida = nr
-      IF (nphi_fida .eq. 0) nphi_fida = nphi
-      IF (nz_fida .eq. 0) nz_fida = nz
-	  END IF
+      IF (lrestart_grid) THEN
+         IF (nr_fida .eq. 0) nr_fida = ns_prof1
+         IF (nphi_fida .eq. 0) nphi_fida = ns_prof3
+         IF (nz_fida .eq. 0) nz_fida = ns_prof2
+      ELSE
+         IF (nr_fida .eq. 0) nr_fida = nr
+         IF (nphi_fida .eq. 0) nphi_fida = nphi
+         IF (nz_fida .eq. 0) nz_fida = nz
+      END IF
       IF (nenergy_fida .eq. 0) nenergy_fida = ns_prof4
       IF (npitch_fida .eq. 0) npitch_fida = ns_prof5
    END IF
@@ -668,24 +652,24 @@ SUBROUTINE beams3d_init
 
    ! Output Grid
    CALL beams3d_write('GRID_INIT')
-     !IF (lverb)  WRITE(6,'(A)')  'Grid_Init Completed'
+   !IF (lverb)  WRITE(6,'(A)')  'Grid_Init Completed'
    !IF (.not. lrestart_grid) THEN
-      CALL mpidealloc(B_R,win_B_R)
-      CALL mpidealloc(B_PHI,win_B_PHI)
-      CALL mpidealloc(B_Z,win_B_Z)
-      CALL mpidealloc(MODB,win_MODB)
-      CALL mpidealloc(S_ARR,win_S_ARR)
-      CALL mpidealloc(U_ARR,win_U_ARR)
-      CALL mpidealloc(X_ARR,win_X_ARR)
-      CALL mpidealloc(Y_ARR,win_Y_ARR)
-      CALL mpidealloc(POT_ARR,win_POT_ARR)
-      IF (.not. lvac) THEN
-         CALL mpidealloc(TE,win_TE)
-         CALL mpidealloc(NE,win_NE)
-         CALL mpidealloc(NI,win_NI)
-         CALL mpidealloc(TI,win_TI)
-         CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
-      END IF
+   CALL mpidealloc(B_R,win_B_R)
+   CALL mpidealloc(B_PHI,win_B_PHI)
+   CALL mpidealloc(B_Z,win_B_Z)
+   CALL mpidealloc(MODB,win_MODB)
+   CALL mpidealloc(S_ARR,win_S_ARR)
+   CALL mpidealloc(U_ARR,win_U_ARR)
+   CALL mpidealloc(X_ARR,win_X_ARR)
+   CALL mpidealloc(Y_ARR,win_Y_ARR)
+   CALL mpidealloc(POT_ARR,win_POT_ARR)
+   IF (.not. lvac) THEN
+      CALL mpidealloc(TE,win_TE)
+      CALL mpidealloc(NE,win_NE)
+      CALL mpidealloc(NI,win_NI)
+      CALL mpidealloc(TI,win_TI)
+      CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
+   END IF
    !END IF
 
    ! DEALLOCATE Variables
@@ -750,15 +734,17 @@ SUBROUTINE beams3d_init
       mass_beams(1)   = mass_in(1)
    END IF
    IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
-   
+
    ! In all cases create an end_state array
    ALLOCATE(end_state(nparticles))
    end_state=0
-   
+
    ! Setup distribution
+   
    ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
       ndot_prof(nbeams,ns_prof1))
    ipower_prof=0; epower_prof=0; ndot_prof=0
+   CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
    CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
    IF (lfidasim2)       CALL mpialloc(dist5d_fida, nr_fida, nz_fida, nphi_fida, nenergy_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d_fida)
    IF (myid_sharmem == master) THEN
@@ -767,7 +753,7 @@ SUBROUTINE beams3d_init
    END IF
    h2_prof = ns_prof2*invpi2
    h3_prof = ns_prof3*invpi2
-   	 
+
 
 
 
@@ -804,7 +790,7 @@ SUBROUTINE beams3d_init
    IF (lwall_loaded) THEN
       IF (lverb) THEN
          CALL wall_info(6)
-		 !IF (ALLOCATED(R_wall_temp)) DEALLOCATE(R_wall_temp)
+         !IF (ALLOCATED(R_wall_temp)) DEALLOCATE(R_wall_temp)
          ALLOCATE(R_wall_temp(nvertex))
          FORALL (i = 1:nvertex) R_wall_temp(i) = SQRT(vertex(i,1)*vertex(i,1)+vertex(i,2)*vertex(i,2))
          WRITE(6,'(A,F9.5,A,F9.5,A)') '   R_WALL   = [',MINVAL(R_wall_temp),',',MAXVAL(R_wall_temp),']'
@@ -864,8 +850,8 @@ SUBROUTINE beams3d_init
       CALL beams3d_distnorm
       STOP
    END IF
-   
-  ! WRITE (6, '(F7.3)') MAXVAL(BPHI4D(1,:,:,:))
+
+   ! WRITE (6, '(F7.3)') MAXVAL(BPHI4D(1,:,:,:))
 
 #if defined(MPI_OPT)
    CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
