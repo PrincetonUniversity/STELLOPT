@@ -1,10 +1,10 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_raderb00
+!     Subroutine:    chisq_mercier
 !     Authors:       E. Sanchez (edi.sanchez@ciemat.es))
-!     Date:          15/11/2020
-!     Description:   This subroutine calculates the radial derivative of B00 (in Boozer coordinates)
+!     Date:          08/05/2023
+!     Description:   This subroutine calculates the mercier stability (DMercier) target contribution to Chisquare
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_raderb00(target,sigma,niter,iflag)
+      SUBROUTINE chisq_dmercier(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -12,11 +12,9 @@
       USE equil_utils
       USE stellopt_targets
       USE equil_vals, ONLY: Baxis
+      USE read_wout_mod, ONLY: read_wout_file, DMerc
 
       USE safe_open_mod
-      USE read_boozer_mod
-      USE EZspline_obj
-      USE EZspline
 
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -33,20 +31,18 @@
 !
 !-----------------------------------------------------------------------
       INTEGER     :: ik, ier, iCount, diagUnit, istat
-      REAL(rprec) :: raderb00(nsd),  rr
-      DOUBLE PRECISION :: rr_val(nsd), b00(nsd)
-      TYPE(EZspline1_r8) :: b00prof_spl
+      REAL(rprec) :: dmercier(nsd)
       character(256) :: fname
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      diagUnit = 222
+      diagUnit = 223
       IF (iflag < 0) RETURN
       ik = COUNT(sigma < bigno)
-        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'RADERB0 ',ik, 4
-        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA dB_00/ds  #'
+        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'DMER ', ik, 4
+        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA   DMER  #'
       IF (niter >= 0) THEN
-        fname = 'rdB00_out' // trim(proc_string)
+        fname = 'dmerc_out' // trim(proc_string)
         istat=0
         ! Data are output to separated file for easier diagnostic
         CALL safe_open(diagUnit,istat,fname,'replace','formatted')
@@ -55,40 +51,20 @@
          iflag=-1
          RETURN
         END IF
-        CALL read_boozer_file (proc_string, ier)
-        iCount =0
-        DO ik = 1, nsd
-            ! positions at which the boozer transform was carried out
-            IF (lbooz(ik)) THEN
-                iCount=iCount+1
-                rr_val(iCount) = rho(ik)
-                b00(iCount) = bmnc_b(1, ik)
-                !write(*,*) 's_val(ik): ', s_val(iCount)
-            END IF
-        END DO
-!            write(*,*) 'lbooz(ik) .eq. .true.: ', iCount
-        CALL setup_prof_spline(b00prof_spl, iCount, rr_val, b00, ier)
+        ! read Dmercier data
+        CALL read_wout_file (proc_string, ier)
         DO ik = 1, nsd
           IF (sigma(ik) >= bigno) CYCLE
-          rr  = rho(ik)
-          CALL EZspline_isInDomain(b00prof_spl, rr, ier)
-          IF (ier .ne. 0) RETURN
-          CALL EZspline_derivative(b00prof_spl, 1, rr, raderb00(ik), ier)
-          !write(*,*) 'derivative: ', raderb00
-
-        !  normalization
-          raderb00(ik) = raderb00(ik)/ Baxis
           mtargets = mtargets + 1
           targets(mtargets) = target(ik)
           sigmas(mtargets)  = sigma(ik)
-          vals(mtargets)    = raderb00(ik)
-                   ! write(*,*) 'rho(ik)' , rho(ik), 'raderb00(ik): ',  raderb00(ik), 'b00(ik)', b00(ik)
-          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2X,I3.3)') target(ik), sigma(ik), raderb00(ik), ik
+          vals(mtargets)    = DMerc(ik)
+            !write(*,*) 'rho(ik)' , rho(ik), 'mshear(ik): ',  DMerc(ik)
+          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2X,I3.3)') target(ik), sigma(ik), DMerc(ik), ik
           IF (iflag == 1) THEN
-              WRITE(diagUnit,'(2ES22.12E3)') rho(ik), raderb00(ik)
+              WRITE(diagUnit,'(2ES22.12E3)') rho(ik), DMerc(ik)
           END IF
         END DO
-        CALL EZspline_free(b00prof_spl,ier)
 
         CALL FLUSH(6)
         CALL FLUSH(diagUnit)
@@ -97,20 +73,14 @@
          DO ik = 1, nsd
             ! define the radial positions at which the boozxform is run (lbooz = true))
             IF (sigma(ik) < bigno) THEN
-               lbooz(ik) = .TRUE.
-               IF(ik.GT.2) THEN
-                  lbooz(ik-1) = .TRUE.
-               END IF
-               IF(ik.LT.nsd) THEN
-                  lbooz(ik+1) = .TRUE.
-               END IF
                mtargets = mtargets + 1
-               IF (niter == -2) target_dex(mtargets)=jtarget_raderb00
+               IF (niter == -2) target_dex(mtargets)=jtarget_dmer
             END IF
          END DO
       END IF
+      !CALL DEALLOCATE_READ_WOUT
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_raderb00
+      END SUBROUTINE chisq_dmercier

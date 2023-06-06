@@ -1,10 +1,10 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_raderb00
+!     Subroutine:    chisq_mshear
 !     Authors:       E. Sanchez (edi.sanchez@ciemat.es))
 !     Date:          15/11/2020
-!     Description:   This subroutine calculates the radial derivative of B00 (in Boozer coordinates)
+!     Description:   This subroutine calculates the magnetic shear target contribution to Chisquare
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_raderb00(target,sigma,niter,iflag)
+      SUBROUTINE chisq_mshear(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -33,20 +33,21 @@
 !
 !-----------------------------------------------------------------------
       INTEGER     :: ik, ier, iCount, diagUnit, istat
-      REAL(rprec) :: raderb00(nsd),  rr
-      DOUBLE PRECISION :: rr_val(nsd), b00(nsd)
-      TYPE(EZspline1_r8) :: b00prof_spl
+      REAL(rprec) :: msh(nsd)
+      DOUBLE PRECISION :: iota_v, s_val
+!      TYPE(EZspline1_r8) :: iot_spl
       character(256) :: fname
+      REAL(rprec) :: iota, iotaprime
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      diagUnit = 222
+      diagUnit = 223
       IF (iflag < 0) RETURN
       ik = COUNT(sigma < bigno)
-        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'RADERB0 ',ik, 4
-        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA dB_00/ds  #'
+        IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MSHEAR ',ik, 4
+        IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA   MSHEAR #'
       IF (niter >= 0) THEN
-        fname = 'rdB00_out' // trim(proc_string)
+        fname = 'msh_out' // trim(proc_string)
         istat=0
         ! Data are output to separated file for easier diagnostic
         CALL safe_open(diagUnit,istat,fname,'replace','formatted')
@@ -55,40 +56,28 @@
          iflag=-1
          RETURN
         END IF
-        CALL read_boozer_file (proc_string, ier)
-        iCount =0
-        DO ik = 1, nsd
-            ! positions at which the boozer transform was carried out
-            IF (lbooz(ik)) THEN
-                iCount=iCount+1
-                rr_val(iCount) = rho(ik)
-                b00(iCount) = bmnc_b(1, ik)
-                !write(*,*) 's_val(ik): ', s_val(iCount)
-            END IF
-        END DO
-!            write(*,*) 'lbooz(ik) .eq. .true.: ', iCount
-        CALL setup_prof_spline(b00prof_spl, iCount, rr_val, b00, ier)
         DO ik = 1, nsd
           IF (sigma(ik) >= bigno) CYCLE
-          rr  = rho(ik)
-          CALL EZspline_isInDomain(b00prof_spl, rr, ier)
+          s_val = rho(ik) * rho(ik)
+          CALL EZspline_isInDomain(iota_spl, s_val, ier)
           IF (ier .ne. 0) RETURN
-          CALL EZspline_derivative(b00prof_spl, 1, rr, raderb00(ik), ier)
-          !write(*,*) 'derivative: ', raderb00
-
-        !  normalization
-          raderb00(ik) = raderb00(ik)/ Baxis
+          !write(*,*) 'mag.shear: '
+          CALL EZspline_interp(iota_spl, s_val, iota_v, ier)
+          !write(*,*) 'mag.shear: 2'
+          CALL EZspline_derivative(iota_spl, 1, s_val, iotaprime, ier)
+          msh(ik) =  2  * rho(ik) * iotaprime /iota_v
+          !write(*,*) 'mag.shear: ', msh(ik)
           mtargets = mtargets + 1
           targets(mtargets) = target(ik)
           sigmas(mtargets)  = sigma(ik)
-          vals(mtargets)    = raderb00(ik)
-                   ! write(*,*) 'rho(ik)' , rho(ik), 'raderb00(ik): ',  raderb00(ik), 'b00(ik)', b00(ik)
-          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2X,I3.3)') target(ik), sigma(ik), raderb00(ik), ik
+          vals(mtargets)    = msh(ik)
+            !write(*,*) 'rho(ik)' , rho(ik), 'mshear(ik): ',  msh(ik)
+          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2X,I3.3)') target(ik), sigma(ik), msh(ik), ik
           IF (iflag == 1) THEN
-              WRITE(diagUnit,'(2ES22.12E3)') rho(ik), raderb00(ik)
+              WRITE(diagUnit,'(2ES22.12E3)') rho(ik), msh(ik)
           END IF
         END DO
-        CALL EZspline_free(b00prof_spl,ier)
+        !CALL EZspline_free(iota_spl,ier)
 
         CALL FLUSH(6)
         CALL FLUSH(diagUnit)
@@ -105,7 +94,7 @@
                   lbooz(ik+1) = .TRUE.
                END IF
                mtargets = mtargets + 1
-               IF (niter == -2) target_dex(mtargets)=jtarget_raderb00
+               IF (niter == -2) target_dex(mtargets)=jtarget_mshear
             END IF
          END DO
       END IF
@@ -113,4 +102,4 @@
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_raderb00
+      END SUBROUTINE chisq_mshear

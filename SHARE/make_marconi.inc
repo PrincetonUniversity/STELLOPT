@@ -3,8 +3,12 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(HOME)/bin
+  MYHOME =  $(PATH_STELLOPT_EXE)
+#   !$(HOME)/bin
   PRECOMP:= fpp -C -P -DLINUX
+
+#  PRECOMP:= /lib/cpp  -P -traditional -DLINUX
+
   COMPILE = ifort
   COMPILE_FREE = ifort
   LINK    = ftn -Bstatic -o
@@ -28,6 +32,7 @@
 #            MPI Options
 #######################################################################
   LMPI    = T
+#  PRECOMP+= -DMPI # Da problemas con LIBSTELL/Sources/Modules/mpi_sharmem.f90
   MPI_COMPILE = mpiifort
   MPI_COMPILE_FREE = mpiifort
   MPI_COMPILE_C = mpiifort
@@ -89,6 +94,18 @@
   LNEO  = T
 
 #######################################################################
+#            KNOSOS Options
+#######################################################################
+  LKNOSOS = T
+  KNOSOS_LIB = -lfftw3
+
+#######################################################################
+#            STELLA Options
+#######################################################################
+  LSTELLA = F
+  STELLA_LIB = 
+
+#######################################################################
 #            GENE Options
 #######################################################################
   LGENE = F
@@ -116,7 +133,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -125,7 +142,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)/TRAVIS-src
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
