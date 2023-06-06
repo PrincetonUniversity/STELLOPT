@@ -97,8 +97,8 @@
       END IF
       CALL MPI_BCAST(phi_vmec,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(presf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      CALL MPI_BCAST(phipf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(iotaf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(phipf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(iotaf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xm,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xn,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xm_nyq,mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
@@ -164,6 +164,16 @@
             xm_temp = xm_nyq
             xn_temp = -xn_nyq/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
             IF(lverb) WRITE(6,'(A)')        '   NYQUIST DETECTED IN WOUT FILE!'
+            
+            ! Only non-Nyquist elements will be set in loops below, so zero out full array initially.
+            ! This prevents uninitialized array contents messing up the computation.
+            rmnc_temp = zero
+            zmns_temp = zero
+            if (lasym) then
+               rmns_temp = zero
+               zmnc_temp = zero
+            end if
+            
             DO u = 1,mnmax_temp
                DO v = 1, mnmax
                   IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN

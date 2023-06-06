@@ -42,7 +42,7 @@
       IF (niter >= 0) THEN
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
-            CALL get_equil_Bav(rho(ik),Bav,Bsqav,ier,dBsqav) ! stel_tools (rho)
+            CALL get_equil_Bav(shat(ik),Bav,Bsqav,ier,dBsqav) ! stel_tools (rho)
             CALL get_equil_volume(shat(ik),V,ier,Vp)
             CALL get_equil_p(shat(ik),p,ier,pp)
             W = V*(2*mu0*pp/Vp+dBsqav)/Bsqav

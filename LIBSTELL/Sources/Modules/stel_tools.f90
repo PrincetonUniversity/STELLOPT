@@ -71,6 +71,7 @@
 !        X_SPL           Spline Variables
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      INTEGER, PARAMETER ::  nlambda=256
       INTEGER, PARAMETER ::  lintsteps=512
       INTEGER, PARAMETER, PRIVATE ::  neval_max=10000
       INTEGER, PRIVATE      ::  domain_flag, nfp
@@ -83,7 +84,8 @@
       DOUBLE PRECISION, DIMENSION(:), POINTER, PRIVATE :: x1, x2, x3
       DOUBLE PRECISION, DIMENSION(:,:), POINTER, PRIVATE ::&
                                     VP2D, GRHO2D, GRHO22D, BAV2D, BSQ2D, &
-                                    S112D, S122D, S212D, S222D
+                                    S112D, S122D, S212D, S222D, I2D, PHI2D, &
+                                    RMAJ2D, VOL2D, BVAV2D
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER, PRIVATE ::  R4D, Z4D, &
                                     G4D, RU4D, ZU4D, RV4D, ZV4D, BS4D, BU4D, &
                                     BV4D, B4D, L4D, LU4D, LV4D
@@ -91,6 +93,7 @@
                           win_ZV4D, win_BS4D, win_BU4D, win_BV4D, win_B4D, &   
                           win_L4D, win_LU4D, win_LV4D, win_VP2D, win_GRHO2D, win_GRHO22D, &
                           win_BAV2D, win_BSQ2D, win_S112D, win_S122D, win_S212D, win_S222D, &
+                          win_I2D, win_phi2D, win_RMAJ2D, win_VOL2D, win_BVAV2D,&
                           win_x1, win_x2, win_x3, nx1, nx2, nx3
       REAL*8, PRIVATE :: eps1, eps2, eps3, x1_min, x1_max, x2_min, x2_max, x3_min, x3_max
       REAL*8, parameter, PRIVATE :: small = 1.e-10_ezspline_r8
@@ -147,9 +150,15 @@
       INTERFACE get_equil_rho
          MODULE PROCEDURE get_equil_rho_dbl, get_equil_rho_sgl
       END INTERFACE
+      INTERFACE get_equil_Rmajor
+         MODULE PROCEDURE get_equil_Rmajor_dbl, get_equil_Rmajor_sgl
+      END INTERFACE
       INTERFACE get_equil_sus
          MODULE PROCEDURE get_equil_sus_dbl, get_equil_sus_sgl
       END INTERFACE
+!      INTERFACE get_equil_iota
+!         MODULE PROCEDURE get_equil_iota_dbl, get_equil_iota_sgl
+!      END INTERFACE
       INTERFACE line_int
          MODULE PROCEDURE line_int_dbl, line_int_sgl
       END INTERFACE
@@ -191,7 +200,8 @@
       DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
       DOUBLE PRECISION, ALLOCATABLE :: gsr(:,:,:),gsp(:,:,:),gsz(:,:,:),gs(:,:,:)
       TYPE(EZspline1_r8) :: Vp_spl, grho_spl, grho2_spl, Bav_spl, Bsq_spl
-      TYPE(EZspline1_r8) :: S11_spl, S12_spl, S21_spl, S22_spl
+      TYPE(EZspline1_r8) :: S11_spl, S12_spl, S21_spl, S22_spl, I_spl, PHI_spl, &
+                            RMAJ_spl, VOL_spl, BVav_spl
       TYPE(EZspline3_r8) :: R_spl, Z_spl, G_spl
       TYPE(EZspline3_r8) :: Ru_spl, Zu_spl
       TYPE(EZspline3_r8) :: Rv_spl, Zv_spl
@@ -276,19 +286,29 @@
             IF (ASSOCIATED(GRHO22D)) CALL mpidealloc(GRHO22D, win_GRHO22D)
             IF (ASSOCIATED(BAV2D))   CALL mpidealloc(BAV2D,   win_BAV2D)
             IF (ASSOCIATED(BSQ2D))   CALL mpidealloc(BSQ2D,   win_BSQ2D)
+            IF (ASSOCIATED(BVAV2D))   CALL mpidealloc(BVAV2D,   win_BVAV2D)
             IF (ASSOCIATED(S112D))   CALL mpidealloc(S112D,   win_S112D)
             IF (ASSOCIATED(S122D))   CALL mpidealloc(S122D,   win_S122D)
             IF (ASSOCIATED(S212D))   CALL mpidealloc(S212D,   win_S212D)
             IF (ASSOCIATED(S222D))   CALL mpidealloc(S222D,   win_S222D)
+            IF (ASSOCIATED(I2D))     CALL mpidealloc(I2D,     win_I2D)
+            IF (ASSOCIATED(PHI2D))   CALL mpidealloc(PHI2D,   win_PHI2D)
+            IF (ASSOCIATED(RMAJ2D))  CALL mpidealloc(RMAJ2D,  win_RMAJ2D)
+            IF (ASSOCIATED(VOL2D))   CALL mpidealloc(VOL2D,   win_VOL2D)
             CALL mpialloc(VP2D,    2, ns_t, shar_rank, 0, shar_comm, win_VP2D)
             CALL mpialloc(GRHO2D,  2, ns_t, shar_rank, 0, shar_comm, win_GRHO2D)
             CALL mpialloc(GRHO22D, 2, ns_t, shar_rank, 0, shar_comm, win_GRHO22D)
             CALL mpialloc(BAV2D,   2, ns_t, shar_rank, 0, shar_comm, win_BAV2D)
             CALL mpialloc(BSQ2D,   2, ns_t, shar_rank, 0, shar_comm, win_BSQ2D)
+            CALL mpialloc(BVAV2D,  2, ns_t, shar_rank, 0, shar_comm, win_BVAV2D)
             CALL mpialloc(S112D,   2, ns_t, shar_rank, 0, shar_comm, win_S112D)
             CALL mpialloc(S122D,   2, ns_t, shar_rank, 0, shar_comm, win_S122D)
             CALL mpialloc(S212D,   2, ns_t, shar_rank, 0, shar_comm, win_S212D)
             CALL mpialloc(S222D,   2, ns_t, shar_rank, 0, shar_comm, win_S222D)
+            CALL mpialloc(I2D,     2, ns_t, shar_rank, 0, shar_comm, win_I2D)
+            CALL mpialloc(PHI2D,   2, ns_t, shar_rank, 0, shar_comm, win_PHI2D)
+            CALL mpialloc(RMAJ2D,  2, ns_t, shar_rank, 0, shar_comm, win_RMAJ2D)
+            CALL mpialloc(VOL2D,   2, ns_t, shar_rank, 0, shar_comm, win_VOL2D)
          END IF
       ELSE
 #endif
@@ -333,19 +353,29 @@
             IF (ASSOCIATED(GRHO22D)) DEALLOCATE(GRHO22D)
             IF (ASSOCIATED(BAV2D))   DEALLOCATE(BAV2D)
             IF (ASSOCIATED(BSQ2D))   DEALLOCATE(BSQ2D)
+            IF (ASSOCIATED(BVAV2D))  DEALLOCATE(BVAV2D)
             IF (ASSOCIATED(S112D))   DEALLOCATE(S112D)
             IF (ASSOCIATED(S122D))   DEALLOCATE(S122D)
             IF (ASSOCIATED(S212D))   DEALLOCATE(S212D)
             IF (ASSOCIATED(S222D))   DEALLOCATE(S222D)
+            IF (ASSOCIATED(I2D))     DEALLOCATE(I2D)
+            IF (ASSOCIATED(PHI2D))   DEALLOCATE(PHI2D)
+            IF (ASSOCIATED(RMAJ2D))  DEALLOCATE(RMAJ2D)
+            IF (ASSOCIATED(VOL2D))  DEALLOCATE(VOL2D)
             ALLOCATE(VP2D(2,ns_t))
             ALLOCATE(GRHO2D(2,ns_t))
             ALLOCATE(GRHO22D(2,ns_t))
             ALLOCATE(BAV2D(2,ns_t))
             ALLOCATE(BSQ2D(2,ns_t))
+            ALLOCATE(BVAV2D(2,ns_t))
             ALLOCATE(S112D(2,ns_t))
             ALLOCATE(S122D(2,ns_t))
             ALLOCATE(S212D(2,ns_t))
             ALLOCATE(S222D(2,ns_t))
+            ALLOCATE(I2D(2,ns_t))
+            ALLOCATE(PHI2D(2,ns_t))
+            ALLOCATE(RMAJ2D(2,ns_t))
+            ALLOCATE(VOL2D(2,ns_t))
          END IF
 #if defined(MPI_OPT)
       END IF
@@ -510,15 +540,20 @@
          ! Calculate rho_s
          IF (PRESENT(gmnc) .or. PRESENT(gmns)) THEN
             ! Allocations
-            IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(Vp_spl,iflag)
-            IF (EZspline_allocated(grho_spl)) CALL EZspline_free(grho_spl,iflag)
+            IF (EZspline_allocated(Vp_spl))    CALL EZspline_free(Vp_spl,iflag)
+            IF (EZspline_allocated(grho_spl))  CALL EZspline_free(grho_spl,iflag)
             IF (EZspline_allocated(grho2_spl)) CALL EZspline_free(grho2_spl,iflag)
-            IF (EZspline_allocated(S11_spl)) CALL EZspline_free(S11_spl,iflag)
-            IF (EZspline_allocated(S12_spl)) CALL EZspline_free(S12_spl,iflag)
-            IF (EZspline_allocated(S21_spl)) CALL EZspline_free(S21_spl,iflag)
-            IF (EZspline_allocated(S22_spl)) CALL EZspline_free(S22_spl,iflag)
-            IF (EZspline_allocated(Bav_spl)) CALL EZspline_free(Bav_spl,iflag)
-            IF (EZspline_allocated(Bsq_spl)) CALL EZspline_free(Bsq_spl,iflag)
+            IF (EZspline_allocated(S11_spl))   CALL EZspline_free(S11_spl,iflag)
+            IF (EZspline_allocated(S12_spl))   CALL EZspline_free(S12_spl,iflag)
+            IF (EZspline_allocated(S21_spl))   CALL EZspline_free(S21_spl,iflag)
+            IF (EZspline_allocated(S22_spl))   CALL EZspline_free(S22_spl,iflag)
+            IF (EZspline_allocated(Bav_spl))   CALL EZspline_free(Bav_spl,iflag)
+            IF (EZspline_allocated(Bsq_spl))   CALL EZspline_free(Bsq_spl,iflag)
+            IF (EZspline_allocated(BVav_spl))   CALL EZspline_free(BVav_spl,iflag)
+            IF (EZspline_allocated(I_spl))     CALL EZspline_free(I_spl,iflag)
+            IF (EZspline_allocated(PHI_spl))   CALL EZspline_free(PHI_spl,iflag)
+            IF (EZspline_allocated(RMAJ_spl))  CALL EZspline_free(RMAJ_spl,iflag)
+            IF (EZspline_allocated(VOL_spl))   CALL EZspline_free(VOL_spl,iflag)
             CALL EZspline_init(Vp_spl,ns_t,bcs0,iflag)
             CALL EZspline_init(grho_spl,ns_t,bcs0,iflag)
             CALL EZspline_init(grho2_spl,ns_t,bcs0,iflag)
@@ -528,9 +563,15 @@
             CALL EZspline_init(S22_spl,ns_t,bcs0,iflag)
             CALL EZspline_init(Bav_spl,ns_t,bcs0,iflag)
             CALL EZspline_init(Bsq_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(BVav_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(I_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(PHI_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(RMAJ_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(VOL_spl,ns_t,bcs0,iflag)
             Vp_spl%x1 = rho; grho_spl%x1 = rho; grho2_spl%x1 = rho
             S11_spl%x1 = rho; S12_spl%x1 = rho; S21_spl%x1 = rho; S22_spl%x1=rho
-            Bav_spl%x1 = rho; Bsq_spl%x1 = rho
+            Bav_spl%x1 = rho; Bsq_spl%x1 = rho; I_spl%x1 = rho; PHI_spl%x1 = rho
+            RMAJ_spl%x1 = rho; VOL_spl%x1 = rho; BVav_spl%x1 = rho
             ALLOCATE(Vp(k1:k2),grho(k1:k2),grho2(k1:k2))
             ALLOCATE(gsr(nu,nv,k1:k2),gsp(nu,nv,k1:k2),gsz(nu,nv,k1:k2),&
                      gs(nu,nv,k1:k2))
@@ -549,7 +590,7 @@
             grho2 = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
             grho2 = grho2 / Vp
             grho2(1) = 2*grho2(2) - grho2(3)
-            ! <|grad(rho|>|
+            ! <|grad(rho)|>|
             gs = sqrt(gs) !|grad(rho)|
             grho = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
             grho = grho / Vp
@@ -564,12 +605,14 @@
                       ZU4D(1,:,:,:)*ZU4D(1,:,:,:))
             f_temp = f_temp / G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
+            grho(1) = 0
             CALL EZspline_setup(S11_spl,grho,iflag); f_temp = 0; grho = 0
             ! Calc S21
             f_temp = (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
                       ZU4D(1,:,:,:)*ZV4D(1,:,:,:))*nfp
             f_temp = f_temp / G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
+            grho(1) = 0
             CALL EZspline_setup(S21_spl,grho,iflag); f_temp = 0; grho = 0
             ! Calc S12
             f_temp = (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
@@ -580,6 +623,7 @@
                               LV4D(1,:,:,:)*nfp
             f_temp = f_temp / G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
+            grho(1) = 0
             CALL EZspline_setup(S12_spl,grho,iflag); f_temp = 0; grho = 0
             ! Calc S22
             f_temp = (RV4D(1,:,:,:)*RV4D(1,:,:,:)*nfp*nfp+ &
@@ -591,6 +635,7 @@
                               LV4D(1,:,:,:)*nfp*nfp
             f_temp = f_temp / G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
+            grho(1) = 2*grho(2) - grho(3)
             CALL EZspline_setup(S22_spl,grho,iflag); f_temp = 0; grho = 0
             ! Bav
             f_temp = B4D(1,:,:,:)*G4D(1,:,:,:)
@@ -604,6 +649,62 @@
             grho2 = grho / Vp
             grho2(1) = 2*grho2(2) - grho2(3)
             CALL EZspline_setup(Bsq_spl,grho2,iflag); f_temp = 0; grho = 0
+            ! B.V
+            f_temp = BV4D(1,:,:,:)*G4D(1,:,:,:)
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
+            grho2 = grho / Vp
+            grho2(1) = 2*grho2(2) - grho2(3)
+            CALL EZspline_setup(BVav_spl,grho2,iflag); f_temp = 0; grho = 0
+            ! PHI
+            f_temp = BV4D(1,:,:,:)*G4D(1,:,:,:)
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
+            CALL EZspline_setup(PHI_spl,grho2,iflag); f_temp = 0; grho = 0
+            ! I = 2pi.*B_u(0,0)/mu0; B_u = B^u*guu + B^v*guv
+            f_temp =  (   RU4D(1,:,:,:)*RU4D(1,:,:,:) &
+                        + ZU4D(1,:,:,:)*ZU4D(1,:,:,:)) * BU4D(1,:,:,:) &
+                   +  (   RU4D(1,:,:,:)*RV4D(1,:,:,:) &
+                        + ZU4D(1,:,:,:)*ZV4D(1,:,:,:)) * BV4D(1,:,:,:)*nfp
+            grho   = pi2*SUM(f_temp(:,1,:),DIM=1)/(nu1*pi2*2E-7) ! B_u
+            CALL EZspline_setup(I_SPL,grho,iflag); f_temp = 0; grho = 0
+            ! Rmajor
+            f_temp = R4D(1,:,:,:)*G4D(1,:,:,:)
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
+            grho2 = grho / Vp
+            grho2(1) = 2*grho2(2) - grho2(3)
+            CALL EZspline_setup(RMAJ_spl,grho2,iflag); f_temp = 0; grho = 0
+            ! Volume
+            grho = [(sum(Vp(1:u)),u=1,size(Vp))]
+            grho(1) = 0
+            CALL EZspline_setup(VOL_spl,ABS(grho*pi2*pi2/(nu*nv*(k2-k1+1))),iflag); f_temp = 0; grho = 0
+
+            ! Trapped Particle Fraction
+            ! B/Bmax
+            !grho   = BSQ_SPL%fspl(1,:)
+            !f_temp = B4D(1,:,:,:)*B4D(1,:,:,:)
+            !grho2 = grho / (Vp * MAXVAL(MAXVAL(f_temp,DIM=1),DIM=1))
+            !grho2(1) = 2*grho2(2) - grho2(3) ! Grho2 is <B^2/B_max^2>
+            ! Now do lambda
+            !IF (ALLOCATED(fmn_temp)) DEALLOCATE(fmn_temp)
+            !ALLOCATE(fmn_temp(nlambda,k1:k2))
+            !f_temp = B4D(1,:,:,:)
+            !f_temp = f_temp/MAXVAL(MAXVAL(f_temp,DIM=1),DIM=1) ! B/Bmax
+            !dlambda = one/(nlambda - 1)
+            !DO mn = 1, nlambda
+            !   fmn_temp(mn,k1:k2) = (mn-1)*dlambda
+            !   fmn_temp(mn,k1:k2) = fmn_temp(mn,k1:k2)/SUM(SUM(SQRT(one-(mn-1)*dlambda*f_temp(:,:,k1:k2))*G4D(1,:,:,k1:k2),DIM=1),DIM=1)
+            !END DO
+            !grho = SUM(fmn_temp,DIM=1)*dlambda
+            !DO u = k1, k2
+            !   DO mn = 1, nlambda
+            !      lambda(mn) = (mn-1)*dlambda
+            !      denom(mn) = SUM(SQRT(one-lambda(mn)*f_temp(:,:,u))*G4D(1,:,:,u))
+            !   END DO
+            !   grho(u) = SUM(lambda/denom)*dlambda
+            !END DO
+            !grho2 = one - 0.75*grho2*Vp*grho
+            !grho2(1) = 2*grho2(2) - grho2(3)
+            !CALL EZspline_setup(FTRAP_spl,grho2,iflag); f_temp = 0; grho = 0
+
             ! Deallocate arrays
             DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
             f_temp = 0
@@ -612,19 +713,29 @@
             GRHO22D = GRHO2_SPL%fspl
             BAV2D   = BAV_SPL%fspl
             BSQ2D   = BSQ_SPL%fspl
+            BVAV2D  = BVAV_SPL%fspl
             S112D   = S11_SPL%fspl
             S122D   = S12_SPL%fspl
             S212D   = S21_SPL%fspl
             S222D   = S22_SPL%fspl
+            I2D     = I_SPL%fspl
+            PHI2D   = PHI_SPL%fspl
+            RMAJ2D  = RMAJ_SPL%fspl
+            VOL2D   = VOL_SPL%fspl
             CALL EZspline_free(VP_spl,iflag)
             CALL EZspline_free(GRHO_spl,iflag)
             CALL EZspline_free(GRHO2_spl,iflag)
             CALL EZspline_free(BAV_spl,iflag)
             CALL EZspline_free(BSQ_spl,iflag)
+            CALL EZspline_free(BVAV_spl,iflag)
             CALL EZspline_free(S11_spl,iflag)
             CALL EZspline_free(S12_spl,iflag)
             CALL EZspline_free(S21_spl,iflag)
             CALL EZspline_free(S22_spl,iflag)
+            CALL EZspline_free(I_spl,iflag)
+            CALL EZspline_free(PHI_spl,iflag)
+            CALL EZspline_free(RMAJ_spl,iflag)
+            CALL EZspline_free(VOL_spl,iflag)
          END IF
          ! DEALLOCATIONS
          DEALLOCATE(xu,xv,rho)
@@ -747,7 +858,8 @@
       DOUBLE PRECISION, ALLOCATABLE :: rs(:,:,:), zs(:,:,:), ru12(:,:,:), zu12(:,:,:)
       DOUBLE PRECISION, ALLOCATABLE :: gsr(:,:,:),gsp(:,:,:),gsz(:,:,:),gs(:,:,:)
       TYPE(EZspline1_r8) :: Vp_spl, grho_spl, grho2_spl, Bav_spl, Bsq_spl
-      TYPE(EZspline1_r8) :: S11_spl, S12_spl, S21_spl, S22_spl
+      TYPE(EZspline1_r8) :: S11_spl, S12_spl, S21_spl, S22_spl, I_spl, PHI_spl, &
+                            RMAJ_spl, VOL_spl
       TYPE(EZspline3_r8) :: R_spl, Z_spl, G_spl
       TYPE(EZspline3_r8) :: Ru_spl, Zu_spl
       TYPE(EZspline3_r8) :: Rv_spl, Zv_spl
@@ -833,6 +945,10 @@
          IF (ASSOCIATED(S122D))   CALL mpidealloc(S122D,   win_S122D)
          IF (ASSOCIATED(S212D))   CALL mpidealloc(S212D,   win_S212D)
          IF (ASSOCIATED(S222D))   CALL mpidealloc(S222D,   win_S222D)
+         IF (ASSOCIATED(I2D))     CALL mpidealloc(I2D,     win_I2D)
+         IF (ASSOCIATED(PHI2D))   CALL mpidealloc(PHI2D,   win_PHI2D)
+         IF (ASSOCIATED(RMAJ2D))  CALL mpidealloc(RMAJ2D,  win_RMAJ2D)
+         IF (ASSOCIATED(VOL2D))   CALL mpidealloc(VOL2D,   win_VOL2D)
          CALL mpialloc(VP2D,    2, ns_t, shar_rank, 0, shar_comm, win_VP2D)
          CALL mpialloc(GRHO2D,  2, ns_t, shar_rank, 0, shar_comm, win_GRHO2D)
          CALL mpialloc(GRHO22D, 2, ns_t, shar_rank, 0, shar_comm, win_GRHO22D)
@@ -842,6 +958,10 @@
          CALL mpialloc(S122D,   2, ns_t, shar_rank, 0, shar_comm, win_S122D)
          CALL mpialloc(S212D,   2, ns_t, shar_rank, 0, shar_comm, win_S212D)
          CALL mpialloc(S222D,   2, ns_t, shar_rank, 0, shar_comm, win_S222D)
+         CALL mpialloc(I2D,     2, ns_t, shar_rank, 0, shar_comm, win_I2D)
+         CALL mpialloc(PHI2D,   2, ns_t, shar_rank, 0, shar_comm, win_PHI2D)
+         CALL mpialloc(RMAJ2D,  2, ns_t, shar_rank, 0, shar_comm, win_RMAJ2D)
+         CALL mpialloc(VOL2D,   2, ns_t, shar_rank, 0, shar_comm, win_VOL2D)
       ELSE
 #endif
          shar_rank = 0; shar_size = 1
@@ -888,6 +1008,10 @@
          IF (ASSOCIATED(S122D))   DEALLOCATE(S122D)
          IF (ASSOCIATED(S212D))   DEALLOCATE(S212D)
          IF (ASSOCIATED(S222D))   DEALLOCATE(S222D)
+         IF (ASSOCIATED(I2D))     DEALLOCATE(I2D)
+         IF (ASSOCIATED(PHI2D))   DEALLOCATE(PHI2D)
+         IF (ASSOCIATED(RMAJ2D))  DEALLOCATE(RMAJ2D)
+         IF (ASSOCIATED(VOL2D))  DEALLOCATE(VOL2D)
          ALLOCATE(VP2D(2,ns_t))
          ALLOCATE(GRHO2D(2,ns_t))
          ALLOCATE(GRHO22D(2,ns_t))
@@ -897,6 +1021,10 @@
          ALLOCATE(S122D(2,ns_t))
          ALLOCATE(S212D(2,ns_t))
          ALLOCATE(S222D(2,ns_t))
+         ALLOCATE(I2D(2,ns_t))
+         ALLOCATE(PHI2D(2,ns_t))
+         ALLOCATE(RMAJ2D(2,ns_t))
+         ALLOCATE(VOL2D(2,ns_t))
 #if defined(MPI_OPT)
       END IF
 #endif
@@ -1190,6 +1318,10 @@
          IF (EZspline_allocated(S22_spl)) CALL EZspline_free(S22_spl,iflag)
          IF (EZspline_allocated(Bav_spl)) CALL EZspline_free(Bav_spl,iflag)
          IF (EZspline_allocated(Bsq_spl)) CALL EZspline_free(Bsq_spl,iflag)
+         IF (EZspline_allocated(I_spl))     CALL EZspline_free(I_spl,iflag)
+         IF (EZspline_allocated(PHI_spl))   CALL EZspline_free(PHI_spl,iflag)
+         IF (EZspline_allocated(RMAJ_spl))  CALL EZspline_free(RMAJ_spl,iflag)
+         IF (EZspline_allocated(VOL_spl))   CALL EZspline_free(VOL_spl,iflag)
 
          ! Initialize Splines
          CALL EZspline_init(Vp_spl,ns_t,bcs0,iflag)
@@ -1201,6 +1333,10 @@
          CALL EZspline_init(S22_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(Bav_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(Bsq_spl,ns_t,bcs0,iflag)
+         CALL EZspline_init(I_spl,ns_t,bcs0,iflag)
+         CALL EZspline_init(PHI_spl,ns_t,bcs0,iflag)
+         CALL EZspline_init(RMAJ_spl,ns_t,bcs0,iflag)
+         CALL EZspline_init(VOL_spl,ns_t,bcs0,iflag)
          Vp_spl%x1 = rho; grho_spl%x1 = rho; grho2_spl%x1 = rho
          S11_spl%x1 = rho; S12_spl%x1 = rho; S21_spl%x1 = rho; S22_spl%x1=rho
          Bav_spl%x1 = rho; Bsq_spl%x1 = rho
@@ -1277,6 +1413,27 @@
          grho2 = grho / Vp
          grho2(1) = 2*grho2(2) - grho2(3)
          CALL EZspline_setup(Bsq_spl,grho2,iflag); f_temp = 0; grho = 0
+         ! PHI
+         f_temp = BV4D(1,:,:,:)*G4D(1,:,:,:)
+         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
+         CALL EZspline_setup(PHI_spl,grho2,iflag); f_temp = 0; grho = 0
+         ! I = 2pi.*B_u(0,0)/mu0; B_u = B^u*guu + B^v*guv
+         f_temp =  (   RU4D(1,:,:,:)*RU4D(1,:,:,:) &
+                     + ZU4D(1,:,:,:)*ZU4D(1,:,:,:)) * BU4D(1,:,:,:) &
+                +  (   RU4D(1,:,:,:)*RV4D(1,:,:,:) &
+                     + ZU4D(1,:,:,:)*ZV4D(1,:,:,:)) * BV4D(1,:,:,:)*nfp
+         grho   = pi2*SUM(f_temp(:,1,:),DIM=1)/(nu1*pi2*2E-7) ! B_u
+         CALL EZspline_setup(I_SPL,grho,iflag); f_temp = 0; grho = 0
+         ! Rmajor
+         f_temp = R4D(1,:,:,:)*G4D(1,:,:,:)
+         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
+         grho2 = grho / Vp
+         grho2(1) = 2*grho2(2) - grho2(3)
+         CALL EZspline_setup(RMAJ_spl,grho2,iflag); f_temp = 0; grho = 0
+         ! Volume
+         grho = [(sum(Vp(1:u)),u=1,size(Vp))]
+         grho(1) = 0
+         CALL EZspline_setup(VOL_spl,ABS(grho*pi2*pi2/(nu*nv*(k2-k1+1))),iflag); f_temp = 0; grho = 0
          
          ! Deallocate arrays
          DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
@@ -1290,6 +1447,10 @@
          S122D   = S12_SPL%fspl
          S212D   = S21_SPL%fspl
          S222D   = S22_SPL%fspl
+         I2D     = I_SPL%fspl
+         PHI2D   = PHI_SPL%fspl
+         RMAJ2D  = RMAJ_SPL%fspl
+         VOL2D   = VOL_SPL%fspl
          CALL EZspline_free(VP_spl,iflag)
          CALL EZspline_free(GRHO_spl,iflag)
          CALL EZspline_free(GRHO2_spl,iflag)
@@ -1299,6 +1460,10 @@
          CALL EZspline_free(S12_spl,iflag)
          CALL EZspline_free(S21_spl,iflag)
          CALL EZspline_free(S22_spl,iflag)
+         CALL EZspline_free(I_spl,iflag)
+         CALL EZspline_free(PHI_spl,iflag)
+         CALL EZspline_free(RMAJ_spl,iflag)
+         CALL EZspline_free(VOL_spl,iflag)
          
          ! DEALLOCATIONS
          DEALLOCATE(xu,xv,rho,rhoinv)
@@ -1814,9 +1979,6 @@
       rho_val = SQRT(s_val)
       IF (s_val >= 0 .and. s_val <= 1) THEN
          rho = sqrt(s_val)
-         !CALL EZspline_interp(Vp_spl,rho_val,vp,ier)
-         !CALL EZspline_interp(grho_spl,rho_val,gradrho,ier)
-         !CALL EZspline_interp(grho2_spl,rho_val,gradrho2,ier)
          CALL lookupgrid1d(rho_val,k,hz,hzi,zparam)
          CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,VP2D(1,1),nx3)
          vp = fval(1);
@@ -1849,6 +2011,54 @@
       rho = rho_dbl; vp = vp_dbl; gradrho = gradrho_dbl; gradrho2 = gradrho2_dbl
       RETURN
       END SUBROUTINE get_equil_rho_sgl
+      
+      SUBROUTINE get_equil_rmajor_dbl(s_val,Rmajor,Vol,Aminor,ier)
+      USE EZspline
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in)    ::  s_val
+      DOUBLE PRECISION, INTENT(out)   ::  Rmajor
+      DOUBLE PRECISION, INTENT(out)   ::  Vol
+      DOUBLE PRECISION, INTENT(out)   ::  Aminor
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION :: rho_val
+      INTEGER :: k
+      REAL*8 :: zparam, hz, hzi
+      REAL*8 :: fval(1)
+      INTEGER, parameter :: ict(3)=(/1,0,0/)
+      Rmajor = 0; Vol=0; Aminor=0
+      IF (ier < 0) RETURN
+      rho_val = SQRT(s_val)
+      IF (s_val >= 0 .and. s_val <= 1) THEN
+         rho_val = sqrt(s_val)
+         CALL lookupgrid1d(rho_val,k,hz,hzi,zparam)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,RMAJ2D(1,1),nx3)
+         Rmajor = fval(1);
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,VOL2D(1,1),nx3)
+         Vol = fval(1);
+         Aminor = SQRT(2*Vol/(pi2*pi2*Rmajor))
+      ELSE
+         ier=-1
+      END IF
+      RETURN
+      END SUBROUTINE get_equil_rmajor_dbl
+      
+      SUBROUTINE get_equil_rmajor_sgl(s_val,Rmajor,Vol,Aminor,ier)
+      USE EZspline
+      IMPLICIT NONE
+      REAL, INTENT(in)    ::  s_val
+      REAL, INTENT(out)   ::  Rmajor
+      REAL, INTENT(out)   ::  Vol
+      REAL, INTENT(out)   ::  Aminor
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION    ::  s_dbl
+      DOUBLE PRECISION    ::  Rmajor_dbl
+      DOUBLE PRECISION    ::  Vol_dbl
+      DOUBLE PRECISION    ::  Aminor_dbl
+      s_dbl = s_val
+      CALL get_equil_rmajor_dbl(s_dbl,Rmajor_dbl,Vol_dbl,Aminor_dbl,ier)
+      Rmajor = Rmajor_dbl; Vol = Vol_dbl; Aminor = Aminor_dbl
+      RETURN
+      END SUBROUTINE get_equil_rmajor_sgl
       
       SUBROUTINE get_equil_nhat_dbl(s_val,u_val,v_val,nhat,ier)
       USE EZspline
@@ -1918,6 +2128,52 @@
       RETURN
       END SUBROUTINE get_equil_nhat_sgl
       
+!      SUBROUTINE get_equil_iota_dbl(s_val,iota,ier)
+!      USE EZspline
+!      IMPLICIT NONE
+!      DOUBLE PRECISION, INTENT(in)    ::  s_val
+!      DOUBLE PRECISION, INTENT(out)   ::  iota
+!      INTEGER, INTENT(inout)     ::  ier
+!      DOUBLE PRECISION :: rho_val, s11, s12, I, phip
+!      INTEGER :: k
+!      REAL*8 :: zparam, hz, hzi
+!      REAL*8 :: fval(1)
+!      INTEGER, parameter :: ict(3)=(/1,0,0/)
+!      INTEGER, parameter :: ict2(3)=(/0,1,0/)
+!      iota = 0
+!      IF (ier < 0) RETURN
+!      rho_val = SQRT(s_val)
+!      IF (s_val >= 0 .and. s_val <= 1) THEN
+!         CALL lookupgrid1d(rho_val,k,hz,hzi,zparam)
+!         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S112D(1,1),nx3)
+!         s11 = fval(1);
+!         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S122D(1,1),nx3)
+!         s12 = fval(1);
+!         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,I2D(1,1),nx3)
+!         I = fval(1);
+!         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,I2D(1,1),nx3)
+!         phip = fval(1);
+!         iota = pi2*2E-7.*I/phip - S11/S12
+!      ELSE
+!         ier=-1
+!      END IF
+!      RETURN
+!      END SUBROUTINE get_equil_iota_dbl
+!      
+!      SUBROUTINE get_equil_iota_sgl(s_val,iota,ier)
+!      USE EZspline
+!      IMPLICIT NONE
+!      REAL, INTENT(in)    ::  s_val
+!      REAL, INTENT(out)   ::  iota
+!      INTEGER, INTENT(inout)     ::  ier
+!      DOUBLE PRECISION    ::  s_dbl
+!      DOUBLE PRECISION    ::  iota_dbl
+!      s_dbl = s_val
+!      CALL get_equil_iota_sgl(s_dbl,iota_dbl,ier)
+!      iota = iota_dbl
+!      RETURN
+!      END SUBROUTINE get_equil_iota_sgl
+      
       SUBROUTINE get_equil_sus_dbl(s_val,s11,s12,s21,s22,ier)
       USE EZspline
       IMPLICIT NONE
@@ -1945,10 +2201,6 @@
          s21 = fval(1);
          CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S222D(1,1),nx3)
          s22 = fval(1);
-         !CALL EZspline_interp(S11_spl,rho_val,s11,ier)
-         !CALL EZspline_interp(S12_spl,rho_val,s12,ier)
-         !CALL EZspline_interp(S21_spl,rho_val,s21,ier)
-         !CALL EZspline_interp(S22_spl,rho_val,s22,ier)
       ELSE
          ier=-1
       END IF
@@ -2375,13 +2627,14 @@
       RETURN
       END SUBROUTINE get_equil_Bflx_sgl
 
-      SUBROUTINE get_equil_Bav_dbl(s_val,Bav,Bsqav,ier,Bsqavp_val)
+      SUBROUTINE get_equil_Bav_dbl(s_val,Bav,Bsqav,ier,Bsqavp_val,Bvav_val)
       USE EZspline
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in)    ::  s_val
       DOUBLE PRECISION, INTENT(out)   ::  Bav
       DOUBLE PRECISION, INTENT(out)   ::  Bsqav
       DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  Bsqavp_val
+      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  Bvav_val
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val, vp_val
       INTEGER :: k
@@ -2410,26 +2663,33 @@
          vp_val = fval(1,1)
          Bsqavp_val = 2*rho_val*Bsqavp_val/vp_val  ! d/dV = (dPhi/drho)*(dV/dPhi)^-1 * d/drho
       END IF
+      IF (PRESENT(Bvav_val)) THEN
+         CALL r8fvspline(ict1,1,1,fval,k,zparam,hz,hzi,BVAV2D(1,1),nx3)
+         Bvav_val = fval(1,1)
+      END IF
       RETURN
       END SUBROUTINE get_equil_Bav_dbl
 
-      SUBROUTINE get_equil_Bav_sgl(s_val,Bav,Bsqav,ier,Bsqavp_val)
+      SUBROUTINE get_equil_Bav_sgl(s_val,Bav,Bsqav,ier,Bsqavp_val,Bvav_val)
       USE EZspline
       IMPLICIT NONE
       REAL, INTENT(in)    ::  s_val
       REAL, INTENT(out)   ::  Bav
       REAL, INTENT(out)   ::  Bsqav
       REAL, INTENT(out), OPTIONAL   ::  Bsqavp_val
+      REAL, INTENT(out), OPTIONAL   ::  Bvav_val
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION    ::  s_dbl
       DOUBLE PRECISION   ::  Bav_dbl
       DOUBLE PRECISION   ::  Bsqav_dbl
       DOUBLE PRECISION   ::  Bsqavp_dbl
+      DOUBLE PRECISION   ::  Bvav_dbl
       s_dbl = s_val
-      CALL get_equil_Bav_dbl(s_dbl,Bav_dbl,Bsqav_dbl,ier,BSQAVP_VAL=Bsqavp_dbl)
+      CALL get_equil_Bav_dbl(s_dbl,Bav_dbl,Bsqav_dbl,ier,BSQAVP_VAL=Bsqavp_dbl,BVAV_VAL=Bvav_dbl)
       Bav = Bav_dbl
       Bsqav = Bsqav_dbl
       IF (PRESENT(Bsqavp_val)) Bsqavp_val = Bsqavp_dbl
+      IF (PRESENT(Bvav_val)) Bvav_val = Bvav_dbl
       RETURN
       END SUBROUTINE get_equil_Bav_sgl
 
