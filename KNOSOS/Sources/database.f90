@@ -96,7 +96,6 @@ SUBROUTINE CALC_DATABASE(s,is,ns)
      cmul_1NU=ABS(D11nu/D11pla)  !CMUL such that plateau and 1/nu transport are equal 
 !     cmul_1NU=ABS(aiota/rad_R*eps32)!Use formula, because between plateau and 1/nu there
      D11pla=D11pla*fdkes(1)           !might exist banana regime
-
      IF(KN_STELLOPT(2)) THEN
         cmul0=nu(iv0)/v(iv0)/2
         new_nb=nb(1)*cmult/cmul0

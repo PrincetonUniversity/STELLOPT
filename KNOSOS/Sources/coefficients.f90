@@ -279,11 +279,11 @@ SUBROUTINE CALC_VDBP(z_in,t_in,B_out,Bp_out,hBpp_out,vd)
   !Others
   REAL*8 B_0,dBdz_0,dBdt_0,dBdpsi
   REAL*8 B_1,dBdz_1,dBdt_1
-  REAL*8 Phi_1,dPhdz,dPhdt,vdummy(Nnmp)
+  REAL*8 eta,dPhdz,dPhdt,vdummy(Nnmp)
   REAL*8 denom
 
   CALL CALCB(z_in,t_in,3,USE_B0,&
-       & B_0,dBdz_0,dBdt_0,dBdpsi,hBpp_out,B_1,dBdz_1,dBdt_1,Phi_1,dPhdz,dPhdt,vdummy)
+       & B_0,dBdz_0,dBdt_0,dBdpsi,hBpp_out,B_1,dBdz_1,dBdt_1,eta,dPhdz,dPhdt,vdummy)
 
   B_out =B_0                !quantities used for bounce integrals: if USE_B0, B_0 is what matters
   Bp_out=iota*dBdt_0+dBdz_0
@@ -363,7 +363,7 @@ END SUBROUTINE DELTA_PHASE
 
 
 SUBROUTINE CALCB_DEL(cosnm,sinnm,flag,flagB1,&
-     & B_0,dBdz_0,dBdt_0,dBdpsi,B_1,dBdz_1,dBdt_1,Phi_1,dPhdz,dPhdt)
+     & B_0,dBdz_0,dBdt_0,dBdpsi,B_1,dBdz_1,dBdt_1,eta,dPhdz,dPhdt)
 
 !-----------------------------------------------------------------------------------------------
 !Calculate magnetic field and derivatives at angular position where cosnm and sinnm were precalculated
@@ -374,7 +374,7 @@ SUBROUTINE CALCB_DEL(cosnm,sinnm,flag,flagB1,&
 !-IF(.NOT.flagB1) calculate only B_0 (usually B_1=0, so B=B_0) and its derivatives dBdz_0 and dBdt_0
 !-IF(flagB1) calculate also B_1 and their derivatives dBdz_1 and dBdt_1
 !------
-!Phi_1, dPhdz, and dPhdt not implemented (see older versions)
+!eta, dPhdz, and dPhdt not implemented (see older versions)
 !-----------------------------------------------------------------------------------------------
   
   USE GLOBAL
@@ -386,7 +386,7 @@ SUBROUTINE CALCB_DEL(cosnm,sinnm,flag,flagB1,&
   !Output
   REAL*8 B_0,dBdz_0,dBdt_0,dBdpsi
   REAL*8 B_1,dBdz_1,dBdt_1
-  REAL*8 Phi_1,dPhdz,dPhdt
+  REAL*8 eta,dPhdz,dPhdt
   !Others
   INTEGER nm,nm2
   REAL*8 n,m
@@ -398,7 +398,7 @@ SUBROUTINE CALCB_DEL(cosnm,sinnm,flag,flagB1,&
   dBdpsi  =0
   dPhdz =0
   dPhdt =0
-  Phi_1 =0
+  eta =0
   IF(flagB1) THEN
      B_1   =0
      dBdz_1=0
@@ -434,7 +434,10 @@ SUBROUTINE CALCB_DEL(cosnm,sinnm,flag,flagB1,&
         IF(flag.EQ.0.OR.flag.EQ.2) THEN
            B_0=B_0+bnmc0(nm)*cosnm(nm)+bnms0(nm)*sinnm(nm)
            IF(flagB1) B_1=B_1+bnmc1(nm)*cosnm(nm)+bnms1(nm)*sinnm(nm)
-           IF(TANG_VM.AND.flag.GT.1) dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosnm(nm)+dbnmsdpsi(nm)*sinnm(nm)
+           IF(TANG_VM.AND.flag.GT.1) THEN
+              dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosnm(nm)+dbnmsdpsi(nm)*sinnm(nm)
+              eta=eta+enmc(nm)*cosnm(nm)+enms(nm)*sinnm(nm)
+           END IF
         END IF
         IF(flag.NE.0) THEN
            qnmsinnm=bnmc0(nm)*sinnm(nm)
@@ -458,7 +461,10 @@ SUBROUTINE CALCB_DEL(cosnm,sinnm,flag,flagB1,&
         IF(flag.EQ.0.OR.flag.EQ.2) THEN
            B_0=B_0+bnmc0(nm)*cosnm(nm)
            IF(flagB1) B_1=B_1+bnmc1(nm)*cosnm(nm)
-           IF(TANG_VM.AND.flag.GT.1) dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosnm(nm)
+           IF(TANG_VM.AND.flag.GT.1) THEN
+              dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosnm(nm)
+              eta=eta+enmc(nm)*cosnm(nm)+enms(nm)*sinnm(nm)
+           END IF
         END IF
         IF(flag.NE.0) THEN
            qnmsinnm=bnmc0(nm)*sinnm(nm)
@@ -1003,7 +1009,7 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
   INTEGER iq
   REAL*8 B_0,dBdz_0,dBdt_0,dBdpsi,dummy,vdummy(Nnmp)
   REAL*8 B_1,dBdz_1,dBdt_1
-  REAL*8 Phi_1,dPhdz,dPhdt 
+  REAL*8 eta,dPhdz,dPhdt 
   REAL*8 lambdaB0,sqrt1mlb
   REAL*8 vds,vda,denom,factB,factnm(Nnm)
   !Time
@@ -1017,9 +1023,9 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
 
   Qint=0
   IF(DELTA) THEN
-     CALL CALCB_DEL(cosnm,sinnm,2,USE_B0,B_0,dBdz_0,dBdt_0,dBdpsi,B_1,dBdz_1,dBdt_1,Phi_1,dPhdz,dPhdt)
+     CALL CALCB_DEL(cosnm,sinnm,2,USE_B0,B_0,dBdz_0,dBdt_0,dBdpsi,B_1,dBdz_1,dBdt_1,eta,dPhdz,dPhdt)
   ELSE
-     CALL CALCB(z_l,t_l,2,USE_B0,B_0,dBdz_0,dBdt_0,dBdpsi,dummy,B_1,dBdz_1,dBdt_1,Phi_1,dPhdz,dPhdt,vdummy)
+     CALL CALCB(z_l,t_l,2,USE_B0,B_0,dBdz_0,dBdt_0,dBdpsi,dummy,B_1,dBdz_1,dBdt_1,eta,dPhdz,dPhdt,vdummy)
   END IF
   lambdaB0=lambd*B_0
   sqrt1mlb=SQRT(1.-lambdaB0)
@@ -1033,7 +1039,12 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
   END IF
   denom=aiBtpBz*B_0
   factB=(1.0-0.5*lambdaB0)/denom
-  vda=factB*(iBtpBz*dBdpsi+(Bzeta*dBdt_0-Btheta*dBdz_0)*diotadpsi*(z_l-z_ini))
+  !  vda=factB*(iBtpBz*dBdpsi+(Bzeta*dBdt_0-Btheta*dBdz_0)*diotadpsi*(z_l-z_ini))
+  vda=iBtpBz*dBdpsi
+  vda=vda+(Bzeta*dBdt_0-Btheta*dBdz_0)*diotadpsi*(z_l-z_ini)
+  vda=vda-(iota*dBdt_0+dBdz_0)*eta
+  vda=vda+((1.0-lambdaB0)/(1.0-0.5*lambdaB0))*(iBtpBz/B_0)*dmu0Pdpsi
+  vda=vda*factB
   IF(USE_B1) THEN
      vds=factB*(Btheta*dBdz_1-Bzeta*dBdt_1) 
   ELSE

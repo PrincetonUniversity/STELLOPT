@@ -41,7 +41,7 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
   !Namelist 'species' contains the list of species calculated
   NAMELIST /species/ NBB,ZB,AB,REGB,FRACB,NBULK,SS_IMP
   !Namelist 'fastions' contains parameters of the fast ions
-  NAMELIST /fastions/ GTH,TENDFI,DTFI,EFI,ZFI,LINEART,JMAP,LJMAP,GLOBALFI,&
+  NAMELIST /fastions/ GTH,TENDFI,DTFI,EFI,AFI,ZFI,LINEART,JMAP,LJMAP,GLOBALFI,&
        & MODELFI,RANDOMSL,FIDELTA,FITRANS,JCORRECTION,JTRANS,PREC_J,PREC_TRANS,PREC_S,JORBIT,FDMAX
   !Namelist 'others' contains other variables
   NAMELIST /others/ FAST_IONS,QN,TRACE_IMP,PLATEAU_OR_PS,USE_B0,&
@@ -100,6 +100,10 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
   INTEGER, PARAMETER :: nefieldn=27
   REAL*8 efieldn(nefieldn) /0.0,3E-7,1E-6,3E-6,1E-5,3E-5,1E-4,3E-4,1E-3,2E-3,5E-3,&
        & 1E-2,2E-2,3E-2,5E-2,1E-1,2E-1,3E-1,5E-1,7E-1,8E-1,1.0,1.2,1.5,2.0,3.0,5.0/
+! INTEGER, PARAMETER :: ncmuln=1
+! REAL*8 cmuln(ncmuln) /1E-4/
+! INTEGER, PARAMETER :: nefieldn=1
+!  REAL*8 efieldn(nefieldn) /3E-2/
   INTEGER, PARAMETER :: nvmagn=1
   REAL*8 vmagn(nvmagn) /0.0/
 !  INTEGER, PARAMETER :: nvmagn=66
@@ -254,7 +258,7 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
   JCORRECTION=.TRUE.
   JTRANS=.TRUE.
   FITRANS=.TRUE.
-  PREC_J=2E-4
+  PREC_J=1E-4
   IF(KNOSOS_STELLOPT.OR.MODELFI) PREC_J=1E-4
   PREC_TRANS=1E-1
   PREC_S=1E-4
@@ -322,7 +326,7 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
      MAL    = 64
   END IF
   TRUNCATE_B= -200     
-  PREC_B=     1E-5     
+  PREC_B=     1E-6     
   PREC_EXTR=  1E-6   
   IF(KNOSOS_STELLOPT.OR.MODELFI) PREC_EXTR=  1E-7
   PREC_BINT=  1E-2     
@@ -582,6 +586,7 @@ SUBROUTINE READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
      NEW_DALPHA=.FALSE.
      RE_SOURCE=.FALSE.
   END IF
+  PREC_TOP=.TRUE.
   IF(GEN_FLAG(4)) INT_G_NEW=.TRUE.
 !  IF(TANGO) RE_SOURCE=.FALSE.
 

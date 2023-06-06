@@ -74,8 +74,8 @@ MODULE GLOBAL
   !Global configuration constants
   INTEGER helN,helM,sgnhel
   REAL*8 rad_a,rad_R,atorflux,torflux,sgnB
-  INTEGER, PARAMETER :: mpolbd=128
-  INTEGER, PARAMETER :: ntorbd=128
+  INTEGER, PARAMETER :: mpolbd=256
+  INTEGER, PARAMETER :: ntorbd=256
   INTEGER, PARAMETER :: mpold = 1100
   INTEGER, PARAMETER :: ntord = 1100
   INTEGER, PARAMETER :: nmd=2*mpolbd*ntorbd
@@ -86,20 +86,23 @@ MODULE GLOBAL
   !Flux-surface constants
   REAL*8 eps,eps32,avB,avB2,etet
   REAL*8 psip,chip,iota,siota,aiota,iota2,diotadpsi,Bzeta,Btheta,phi0
-  REAL*8 iBtpBz,aiBtpBz,dBzdpsi,dBtdpsi,dB0dpsi
+  REAL*8 iBtpBz,aiBtpBz,dBzdpsi,dBtdpsi,dB0dpsi,dmu0Pdpsi
   REAL*8 Bmax,Bmax_av,Bmin,Bmin_av
   REAL*8 spol,dspolds
   !Magnetic field map
   REAL(rprec) borbi(-ntorbd:ntorbd,0:mpolbd)
   REAL(rprec) borbic(-ntorbd:ntorbd,0:mpolbd)  ,borbis(-ntorbd:ntorbd,0:mpolbd)
   REAL(rprec) borbic0(-ntorbd:ntorbd,0:mpolbd),borbis0(-ntorbd:ntorbd,0:mpolbd)
+  REAL(rprec) etac(-ntorbd:ntorbd,0:mpolbd),etas(-ntorbd:ntorbd,0:mpolbd)  
   REAL(rprec) dborbicdpsi(-ntorbd:ntorbd,0:mpolbd),dborbisdpsi(-ntorbd:ntorbd,0:mpolbd)
-  REAL(rprec) dborbic0dpsi(-ntorbd:ntorbd,0:mpolbd),dborbis0dpsi(-ntorbd:ntorbd,0:mpolbd)   
+  REAL(rprec) dborbic0dpsi(-ntorbd:ntorbd,0:mpolbd),dborbis0dpsi(-ntorbd:ntorbd,0:mpolbd)
+  REAL(rprec) drorbicdpsi(-ntorbd:ntorbd,0:mpolbd),dporbisdpsi(-ntorbd:ntorbd,0:mpolbd),dzorbisdpsi(-ntorbd:ntorbd,0:mpolbd)
+  REAL(rprec) drorbisdpsi(-ntorbd:ntorbd,0:mpolbd),dporbicdpsi(-ntorbd:ntorbd,0:mpolbd),dzorbicdpsi(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 rorbic(-ntorbd:ntorbd,0:mpolbd),rorbis(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 zorbic(-ntorbd:ntorbd,0:mpolbd),zorbis(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 porbic(-ntorbd:ntorbd,0:mpolbd),porbis(-ntorbd:ntorbd,0:mpolbd)
-  REAL*8 bnmc(nmd),bnmc0(nmd),bnmc1(nmd),dbnmcdpsi(nmd)
-  REAL*8 bnms(nmd),bnms0(nmd),bnms1(nmd),dbnmsdpsi(nmd)
+  REAL*8 bnmc(nmd),bnmc0(nmd),bnmc1(nmd),dbnmcdpsi(nmd),enmc(nmd)
+  REAL*8 bnms(nmd),bnms0(nmd),bnms1(nmd),dbnmsdpsi(nmd),enms(nmd)
   REAL*8, ALLOCATABLE :: absnablar(:,:)
   REAL*8, ALLOCATABLE ::  posx(:,:), posy(:,:), posz(:,:)
   REAL*8, ALLOCATABLE :: zoomx(:,:),zoomy(:,:),zoomz(:,:),zoomdr(:,:)

@@ -317,6 +317,7 @@ SUBROUTINE READ_BOOZMNDATA(s0,boozmndata_read)
   ixn_b=ixn_b/nfp_b
   torflux=psi_b(ns_b)/TWOPI
   psip=2*torflux*sqrt(s0)/rad_a
+  nzperiod=nfp_b
 
 END SUBROUTINE READ_BOOZMNDATA
 
@@ -546,6 +547,7 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   ixn_b=ixn_b/nfp_b
   torflux=psi_b(ns_b)/TWOPI
   psip=2*torflux*sqrt(s0)/rad_a
+  nzperiod=nfp_b
 
 END SUBROUTINE READ_BOOZMNNC
 
@@ -653,7 +655,8 @@ SUBROUTINE READ_BOOZTXT(s0,booztxt_read)
   pmns_b=pmns_b*TWOPI/nfp_b
   torflux=torflux/TWOPI
   psip=2*torflux*sqrt(s0)/rad_a
-                
+  nzperiod=nfp_b
+  
 END SUBROUTINE READ_BOOZTXT
 
 
@@ -827,6 +830,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
   REAL*8 s0,E_o_mu
   !Others
   INTEGER imn,n,m,is,is0,is1
+  REAL*8, PARAMETER :: mu0=1.256637E-6
   REAL*8 fs0,fs1,f_ext(mboz_b)
   !Time
   CHARACTER*30, PARAMETER :: routine="INTERPOLATE_FIELD"
@@ -895,7 +899,8 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
   diotadpsi=FS*(iota_b(is1)-iota_b(is0))/dpsi
   dBzdpsi =    (bvco_b(is1)-bvco_b(is0))/dpsi
   dBtdpsi =    (buco_b(is1)-buco_b(is0))/dpsi
-  
+  dmu0Pdpsi=mu0*(pres_b(is1)-pres_b(is0))/dpsi
+
   !Calculate several other flux-surface quantities
   psip=2*atorflux*sqrt(s0)/rad_a
   aiota=ABS(iota)
@@ -917,24 +922,38 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
   zorbic=0
   dborbicdpsi=0
   dborbisdpsi=0
+  drorbicdpsi=0
+  drorbisdpsi=0
+  dporbicdpsi=0
+  dporbisdpsi=0
+  dzorbicdpsi=0
+  dzorbisdpsi=0
   DO imn=1,mnboz_b
      n=ixn_b(imn)
      m=ixm_b(imn)
      IF(s0.GE.s_b(js_b(1)).OR.m.EQ.0) THEN
         borbic(n,m)=bmnc_b(imn,is0)*fs0+bmnc_b(imn,is1)*fs1
-         IF(STELL_ANTISYMMETRIC) borbis(n,m)=bmns_b(imn,is0)*fs0+bmns_b(imn,is1)*fs1
+        IF(STELL_ANTISYMMETRIC) borbis(n,m)=bmns_b(imn,is0)*fs0+bmns_b(imn,is1)*fs1
         IF(booz_read) THEN
-           porbis(n,m)=pmns_b(imn,is0)*fs0+pmns_b(imn,is1)*fs1
            rorbic(n,m)=rmnc_b(imn,is0)*fs0+rmnc_b(imn,is1)*fs1
+           porbis(n,m)=pmns_b(imn,is0)*fs0+pmns_b(imn,is1)*fs1
            zorbis(n,m)=zmns_b(imn,is0)*fs0+zmns_b(imn,is1)*fs1
            IF(STELL_ANTISYMMETRIC) THEN
-              porbic(n,m)=pmnc_b(imn,is0)*fs0+pmnc_b(imn,is1)*fs1
               rorbis(n,m)=rmns_b(imn,is0)*fs0+rmns_b(imn,is1)*fs1
+              porbic(n,m)=pmnc_b(imn,is0)*fs0+pmnc_b(imn,is1)*fs1
               zorbic(n,m)=zmnc_b(imn,is0)*fs0+zmnc_b(imn,is1)*fs1
            END IF
 !           IF(is0.LT.2.OR.is1.GT.ns_b-1) THEN
            dborbicdpsi(n,m)=(bmnc_b(imn,is1)-bmnc_b(imn,is0))/dpsi
-           dborbisdpsi(n,m)=(bmns_b(imn,is1)-bmns_b(imn,is0))/dpsi
+           drorbicdpsi(n,m)=(rmnc_b(imn,is1)-rmnc_b(imn,is0))/dpsi
+           dporbisdpsi(n,m)=(pmns_b(imn,is1)-pmns_b(imn,is0))/dpsi
+           dzorbisdpsi(n,m)=(zmns_b(imn,is1)-zmns_b(imn,is0))/dpsi
+           IF(STELL_ANTISYMMETRIC) THEN
+              dborbisdpsi(n,m)=(bmns_b(imn,is1)-bmns_b(imn,is0))/dpsi
+              drorbisdpsi(n,m)=(rmns_b(imn,is1)-rmns_b(imn,is0))/dpsi
+              dporbicdpsi(n,m)=(pmnc_b(imn,is1)-pmnc_b(imn,is0))/dpsi
+              dzorbicdpsi(n,m)=(zmnc_b(imn,is1)-zmnc_b(imn,is0))/dpsi
+           END IF
 !           ELSE
 !              dborbicdpsi(n,m)=(fs0*(bmnc_b(imn,is1)-bmnc_b(imn,is0-1))+fs1*(bmnc_b(imn,is1+1)-bmnc_b(imn,is0)))/(4*dpsi)
 !              dborbisdpsi(n,m)=(fs0*(bmns_b(imn,is1)-bmns_b(imn,is0-1))+fs1*(bmns_b(imn,is1+1)-bmns_b(imn,is0)))/(4*dpsi)
@@ -953,7 +972,15 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
               zorbic(n,m)=zmnc_b(imn,is0)*f_ext(m)
            END IF
            dborbicdpsi(n,m)=bmnc_b(imn,is0)*f_ext(m)*(m/2.)/(s0*atorflux)
-           IF(STELL_ANTISYMMETRIC) dborbisdpsi(n,m)=bmns_b(imn,is0)*f_ext(m)*(m/2.)/(s0*atorflux)
+           drorbicdpsi(n,m)=(rmnc_b(imn,is1)-rmnc_b(imn,is0))/dpsi
+           dporbisdpsi(n,m)=(pmns_b(imn,is1)-pmns_b(imn,is0))/dpsi
+           dzorbisdpsi(n,m)=(zmns_b(imn,is1)-zmns_b(imn,is0))/dpsi
+           IF(STELL_ANTISYMMETRIC) THEN
+              dborbisdpsi(n,m)=bmns_b(imn,is0)*f_ext(m)*(m/2.)/(s0*atorflux)
+              drorbisdpsi(n,m)=(rmns_b(imn,is1)-rmns_b(imn,is0))/dpsi
+              dporbicdpsi(n,m)=(pmnc_b(imn,is1)-pmnc_b(imn,is0))/dpsi
+              dzorbicdpsi(n,m)=(zmnc_b(imn,is1)-zmnc_b(imn,is0))/dpsi
+           END IF
         END IF
      END IF
   END DO
@@ -980,7 +1007,9 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)
   ELSE
      CALL FIND_BMIN_BMAX(-1,MAL,MAL,.TRUE.)
   END IF
-
+  
+  CALL CALC_ETA()
+  
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE INTERPOLATE_FIELD
@@ -1159,6 +1188,8 @@ SUBROUTINE FILL_NM()
            bnms0(nm)    =borbis0(n,m)     
            dbnmsdpsi(nm)=dborbisdpsi(n,m)
         END IF
+        enmc(nm)=etac(n,m)
+        enms(nm)=etas(n,m)
 !        phnmc(nm)=phorbicc(n,m)
 !        phnms(nm)=phorbics(n,m)
 !        pnm(nm)=porbis(n,m)
@@ -1200,7 +1231,7 @@ END SUBROUTINE FILL_NM
 
 SUBROUTINE CALCB(z,t,flag,flagB1,&
      & B_0,dBdz_0,dBdt_0,dBdpsi,hBpp,&
-     & B_1,dBdz_1,dBdt_1,Phi_1,dPhdz,dPhdt,vde)
+     & B_1,dBdz_1,dBdt_1,eta,dPhdz,dPhdt,vde)
 
 !-------------------------------------------------------------------------------------------------
 !Calculate magnetic field and derivatives at angular position (z,t)
@@ -1213,7 +1244,7 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
 !-IF(.NOT.flagB1) calculate only B_0 (usually B_1=0, so B=B_0) and its derivatives dBdz_0 and dBdt_0
 !-IF(flagB1) calculate also B_1 and their derivatives dBdz_1 and dBdt_1
 !------
-!Phi_1, dPhdz, and dPhdt not implemented (see older versions)
+!eta, dPhdz, and dPhdt not implemented (see older versions)
 !-------------------------------------------------------------------------------------------------
 
   USE GLOBAL
@@ -1225,7 +1256,7 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
   !Output
   REAL*8 B_0,dBdz_0,dBdt_0,dBdpsi,hBpp
   REAL*8 B_1,dBdz_1,dBdt_1
-  REAL*8 Phi_1,dPhdz,dPhdt,vde(Nnmp)
+  REAL*8 eta,dPhdz,dPhdt,vde(Nnmp)
   !Others
   INTEGER nm,nm2
   REAL*8 cosinex,sinex,d2Bdz2,d2Bdt2,d2Bdzt
@@ -1243,7 +1274,7 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
   dBdt_1=0
   dPhdz=0
   dPhdt=0
-  Phi_1=0
+  eta=0
 
 !!$  IF(flag.NE.0) THEN
 !!$     DO nm=1,Nnm
@@ -1295,7 +1326,10 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
         IF(flag.NE.1) THEN
            B_0=B_0+bnmc0(nm)*cosinex+bnms0(nm)*sinex
            IF(flagB1) B_1=B_1+bnmc1(nm)*cosinex+bnms1(nm)*sinex
-           IF(TANG_VM.AND.flag.GT.0) dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosinex+dbnmsdpsi(nm)*sinex
+           IF(TANG_VM.AND.flag.GT.0) THEN
+              dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosinex+dbnmsdpsi(nm)*sinex
+              eta=eta+enmc(nm)*cosinex+enms(nm)*sinex
+           END IF
            IF(flag.EQ.3) THEN
               d2Bdz2=d2Bdz2-bnmc0(nm)*cosinex*nzperiod*np(nm)*nzperiod*np(nm)&
                          & -bnms0(nm)*  sinex*nzperiod*np(nm)*nzperiod*np(nm)
@@ -1325,7 +1359,10 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
            cosinex=COS(mp(nm)*t+nzperiod*np(nm)*z)
            B_0=B_0+bnmc0(nm)*cosinex
            IF(flagB1) B_1=B_1+bnmc1(nm)*cosinex
-           IF(TANG_VM.AND.flag.GT.0) dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosinex
+           IF(TANG_VM.AND.flag.GT.0) THEN
+              dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosinex
+              eta=eta+enmc(nm)*cosinex+enms(nm)*sinex
+           END IF
            IF(flag.EQ.3) THEN
               d2Bdz2=d2Bdz2-bnmc0(nm)*cosinex*nzperiod*np(nm)*nzperiod*np(nm)
               d2Bdzt=d2Bdzt-bnmc0(nm)*cosinex*nzperiod*np(nm)*mp(nm)
@@ -1506,6 +1543,147 @@ SUBROUTINE CALC_XYZ(s,z,t,x1,x2,x3,Bzt,flag_plot)
 
 END SUBROUTINE CALC_XYZ
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+SUBROUTINE CALC_ETA()
+
+!-------------------------------------------------------------------------------------------------
+!Calculate eta
+!-------------------------------------------------------------------------------------------------
+
+  USE GLOBAL
+  IMPLICIT NONE
+  !Input
+!  LOGICAL flag_plot
+!  REAL*8 s,z,t
+  !Output
+!  REAL*8 x1,x2,x3,Bzt
+  !Others
+  INTEGER, PARAMETER :: nt=128
+  INTEGER n,m,iz,it
+  REAL*8 dz,dt,zeta(nt),theta(nt),eta(nt,nt)
+  REAL*8 arg,th,zt,cosine,sine
+  REAL*8 B,R,p,x,y,z,cosp,sinp
+  REAL*8 dRdpsi,dpdpsi,dzdpsi
+  REAL*8 dRdz,dpdz,dzdz
+  REAL*8 dRdt,dpdt,dzdt
+  REAL*8 dxdpsi,dxdz,dxdt,dydpsi,dydz,dydt
+
+  
+  dz=TWOPI/nt/nzperiod
+  dt=TWOPI/nt
+  DO iz=1,nt
+     zeta(iz)=(iz-1.)*dz
+  END DO
+  DO it=1,nt
+     theta(it)=(it-1.)*dt
+  END DO
+
+  DO it=1,nt
+     th=theta(it)
+     DO iz=1,nt
+        zt=zeta(iz)
+        B=0
+        R=0
+        p=zt
+        z=0
+        dRdpsi=0
+        dpdpsi=0
+        dzdpsi=0
+        dRdz=0
+        dpdz=1
+        dzdz=0
+        dRdt=0
+        dpdt=0
+        dzdt=0
+        DO m=0,mpolb
+           DO n=-ntorb,ntorb 
+              arg=m*th+n*nzperiod*zt
+              cosine=COS(arg)
+              sine  =SIN(arg)
+              B=B+borbic(n,m)*cosine
+              R=R+rorbic(n,m)*cosine
+              p=p-porbis(n,m)*  sine
+              z=z+zorbis(n,m)*  sine
+              dRdpsi=dRdpsi+drorbicdpsi(n,m)*cosine
+              dpdpsi=dpdpsi-dporbisdpsi(n,m)*  sine
+              dzdpsi=dzdpsi+dzorbisdpsi(n,m)*  sine
+              dRdz=dRdz-n*nzperiod*rorbic(n,m)*  sine
+              dpdz=dpdz-n*nzperiod*porbis(n,m)*cosine
+              dzdz=dzdz+n*nzperiod*zorbis(n,m)*cosine
+              dRdt=dRdt         -m*rorbic(n,m)*  sine
+              dpdt=dpdt         -m*porbis(n,m)*cosine
+              dzdt=dzdt         +m*zorbis(n,m)*cosine
+              
+              IF(STELL_ANTISYMMETRIC) THEN
+                 B=B+borbis(n,m)*sine
+                 R=R+rorbis(n,m)*  sine
+                 p=p-porbic(n,m)*cosine
+                 z=z+zorbic(n,m)*cosine
+                 dRdz=dRdz+n*nzperiod*drorbisdpsi(n,m)*cosine
+                 dpdz=dpdz+n*nzperiod*dporbicdpsi(n,m)*  sine
+                 dzdz=dzdz-n*nzperiod*dzorbicdpsi(n,m)*  sine
+                 dRdt=dRdt         +m*rorbis(n,m)*cosine
+                 dpdt=dpdt         +m*porbic(n,m)*  sine
+                 dzdt=dzdt         -m*zorbic(n,m)*  sine
+                 dRdpsi=dRdpsi+drorbisdpsi(n,m)*  sine
+                 dpdpsi=dpdpsi-dporbicdpsi(n,m)*cosine
+                 dzdpsi=dzdpsi+dzorbicdpsi(n,m)*cosine              
+              END IF
+           END DO
+        END DO
+        cosp=COS(p)
+        sinp=SIN(p)
+        x=R*cosp
+        y=R*sinp
+        dxdpsi=dRdpsi*cosp-R*sinp*dpdpsi
+        dydpsi=dRdpsi*sinp+R*cosp*dpdpsi
+        dxdz=dRdz*cosp-R*sinp*dpdz
+        dydz=dRdz*sinp+R*cosp*dpdz
+        dxdt=dRdt*cosp-R*sinp*dpdt
+        dydt=dRdt*sinp+R*cosp*dpdt
+
+        eta(iz,it)=((dxdz+iota*dxdt)*dxdpsi+&
+        &    (dydz+iota*dydt)*dydpsi+&
+        &    (dzdz+iota*dzdt)*dzdpsi)*&
+        &    (B*B/iBtpBz)
+
+     END DO
+  END DO
+
+
+  etac=0
+  etas=0
+  DO m=0,mpolb
+     DO n=-ntorb,ntorb 
+        DO it=1,nt
+           th=theta(it)
+           DO iz=1,nt
+              zt=zeta(iz)
+              arg=m*th+n*nzperiod*zt
+              cosine=COS(arg)
+              sine  =SIN(arg)
+              etac(n,m)=etac(n,m)+eta(iz,it)*cosine
+              etas(n,m)=etas(n,m)+eta(iz,it)*sine
+           END DO
+        END DO
+        IF(m.EQ.0) THEN
+           IF(n.EQ.0) THEN
+              etac(n,m)=etac(n,m)/2.
+           ELSE IF(n.LT.0) THEN
+              etac(n,m)=0
+              etas(n,m)=0
+           END IF
+        END IF
+        etac(n,m)=etac(n,m)*2/REAL(nt*nt)
+        etas(n,m)=etas(n,m)*2/REAL(nt*nt)
+     END DO
+  END DO
+  
+
+END SUBROUTINE CALC_ETA
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

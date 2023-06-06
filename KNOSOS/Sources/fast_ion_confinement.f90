@@ -152,6 +152,7 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
   CALL LABEL_GRIDPOINTS(nalpha,nalphab,nlambda,nw,bottom,connected,&
        & alphap_w,z1,z2,Bb,Bt,lambda,&
        & zetap,zetax,thetax,B_al,npoint,i_l,i_w,i_p)
+
   IF(.NOT.MODELFI.AND..FALSE.) THEN !col
      DO ila=1,nlambda 
         i_l(npoint+ila)=nlambda+ila
@@ -267,17 +268,18 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 #endif
 
   CALL CPU_TIME(tstart)
-
   NAN=SQRT(MONE)
   s0=vs(is)
 
   !Model -1: f_trapped
   g=0.5
+
   CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
           & g,.TRUE.,thetap,B_al,vds_al,f_t)   !Calculate f_{trapped}
+
   KN_FTR=f_t
 !  gth=(2./PI)*ATAN((1.-s0)/(2.0*PI))
- 
+
   !Model 0: Nemov's Gamma_c
   g=2.0*ATAN(BI3/ABS(BI4*atorflux))/PI
   CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g*g,.TRUE.,&
@@ -291,7 +293,6 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   g=2.0*ATAN(BI3/ABS(BI4*atorflux))/PI
   CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,ABS(g),.TRUE.,&
        & thetap,B_al,vds_al,Gamma_cc)
-  
   !Create table of gamma_c^* and other quantities (ignoring small ripples)
   !and find maximum gamma_c^*
   maxg=-1
@@ -328,7 +329,6 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
            IF(g(ipoint).GT.gth.AND.g(ipoint).LT.g(jpoint)) WRITE(iout,*) 'WARNING: ripple largest sb',g(ipoint),g(jpoint)
         END DO
      END DO
-
 !!$     !Complete (needed in QS)
 !!$     DO ial=1,nalpha
 !!$        IF(il0(ial).NE.0) THEN
@@ -350,6 +350,8 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      
   END DO  
 
+  WRITE(iout,*) 'there'
+       
   !Model I: largest superbanana
   save_g=g
   g=0
@@ -556,6 +558,8 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      tau_d(jla)=tau_a/TWOEFIoZ
   END DO
 
+  WRITE(iout,*) 'ewhere'
+       
   DO jla=2,nlambda
      IF(.NOT.bif(jla).AND.bif(jla-1)) WRITE(iout,'(" (lambda_s~=",1pe23.16,") ")') 0.5*(lambda(jla-1)+lambda(jla))
 !     IF(.NOT.bif(jla).AND.bif(jla-1)) THEN
@@ -1061,7 +1065,7 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
   INTEGER irank(npoint)
   LOGICAL CONVERGED_Q,barely_trapped,passing
   LOGICAL computed(npoint),transition,conv_step,stochastic,step_a,split
-  LOGICAL time_off,lost,axis,prompt_loss,stochastic_loss,periodic,confined_sb,error_J,end_orbit
+  LOGICAL time_off,lost,axis,prompt_loss,stochastic_loss,periodic,wide_banana,confined_sb,error_J,end_orbit
   INTEGER ila,ial,il,ipoint,it,iorbit,norbit,naturn
   REAL*8 da,ds,dat,dst,smin,smax,fd,fd0,dt,dalpha,dalpha_max
   REAL*8 t,s0,alpha0,mu_o_E,E_o_mu,J0!,Jref!,alpha_sep
@@ -1074,7 +1078,7 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
   REAL*8 s_test,alpha_test,theta_test,zeta_test,zl_test,tl_test,zr_test,tr_test,dB_test,J_test
   REAL*8 dJds_test,dJda_test,dJdla_test,dsdt_test,dadt_test,dsda_test,ptran_test,dban_test
   REAL*8 ran,zeta_split,J_split,dJds_split,dJda_split,dtheta
-  REAL*8, PARAMETER :: Jmin=1E-3
+  REAL*8, PARAMETER :: Jmin=5E-2
 !col REAL*8 E,mu  
   !Time
   CHARACTER*30, PARAMETER :: routine="FAST_ION_ORBITS"
@@ -1154,7 +1158,6 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
            IF(ipoint.LE.1.OR.computed(ipoint)) CYCLE
            iorbit=iorbit+1
            WRITE(iout,'(" Calculating orbit ",I8," (",I8," out of ",I8,")")') ipoint,iorbit,norbit
-!           WRITE(iout,'(" Calculating orbit ",I8," out of ",I8)') iorbit,norbit
            WRITE(iout,'(" s_min= ",F6.4," s_max=",F6.4)') smin,smax
            
            IF(.NOT.RSEED) CALL INIT_RANDOMSEED(myrank+ipoint)
@@ -1175,8 +1178,8 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
            alpha0=alpha
            dalpha_max=0
 
-           IF(DEBUG) WRITE(6200+myrank,'(19(1pe13.5),3L,F9.4,4(I6))') t,s,alpha,theta,zeta,&
-                mu_o_E,1./Bmax,1./Bmin,zl,tl,zr,tr,J,J0,dJda,dJds,dsdt,dadt,fd,step_a,&
+           IF(DEBUG) WRITE(6200+myrank,'(20(1pe13.5),3L,F9.4,4(I6))') t,s,alpha,theta,zeta,&
+                mu_o_E,1./Bmax,1./Bmin,zl,tl,zr,tr,J,J0,dJda,dJds,dsdt,dadt,dban,fd,step_a,&
                 & transition,stochastic,ran,ila,ial,il,ipoint
 
            DO WHILE(.NOT.end_orbit)
@@ -1204,7 +1207,7 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
 
                  barely_trapped=ABS(zl-zr).GT.TWOPI
 
-
+!!$ OLD
 !!$                 IF(.NOT.transition.AND..NOT.ISNAN(dsdt_new)) THEN
 !!$                    IF(ABS(dtheta).LT.ALMOST_ZERO) THEN
 !!$                       dtheta=(theta_new-theta)*fd
@@ -1233,6 +1236,41 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
 !!$                    END IF
 !!$                 END IF
 
+
+
+!!$ ALMOST WORKING
+!                 transition=.FALSE.
+!                 IF(fd.EQ.fd0) THEN
+!                    conv_step=.FALSE.
+!                 ELSE IF(ISNAN(dsdt_new)) THEN
+!                    IF(.NOT.ISNAN(dsdt_test)) THEN
+!                       CALL COPY_FI(s_test,alpha_test,theta_test,zeta_test,zl_test,tl_test,zr_test,tr_test,&
+!                            & dB_test,J_test,dJds_test,dJda_test,dsdt_test,dadt_test,dsda_test,ptran_test,dban_test,&
+!                            & s_new,alpha_new,theta_new,zeta_new,zl_new,tl_new,zr_new,tr_new,&
+!                            & dB_new,J_new,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new)
+!                       CALL INTERPOLATE_FIELD(s_new,.TRUE.,E_o_mu)
+!                       conv_step=.TRUE.
+!                    ELSE
+!                       conv_step=.FALSE.
+!                    END IF
+!                 ELSE IF(J_new.LT.Jmin) THEN
+!                    conv_step=.TRUE.
+!                 ELSE IF ((J_new.GT.Jmin.AND.CONVERGED_Q(J_new,J_test,PREC_TRANS)).OR.CONVERGED_Q(J_new,J_test,PREC_BINT)) THEN
+!                    IF(CONVERGED_Q(J_new,J,PREC_TRANS)) THEN
+!                       transition=.FALSE.
+!                       conv_step=.TRUE.
+!                    ELSE
+!                       transition=.TRUE.
+!                       IF(CONVERGED_Q(J_new,J_test,PREC_BINT).AND.CONVERGED_Q(ptran_new,ptran,PREC_TRANS)) THEN
+!                          conv_step=.TRUE.
+!                       ELSE
+!                          conv_step=.FALSE.
+!                       END IF
+!                    END IF
+!                 END IF
+
+
+
                  transition=.FALSE.
                  IF(fd.EQ.fd0) THEN
                     conv_step=.FALSE.
@@ -1247,18 +1285,9 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
                     ELSE
                        conv_step=.FALSE.
                     END IF
-                 ELSE IF ((J_new.GT.10*Jmin.AND.CONVERGED_Q(J_new,J_test,PREC_TRANS)).OR.CONVERGED_Q(J_new,J_test,PREC_BINT)) THEN
-                    IF(CONVERGED_Q(J_new,J,PREC_TRANS)) THEN
-                       transition=.FALSE.
-                       conv_step=.TRUE.
-                    ELSE
-                       transition=.TRUE.
-                       IF(CONVERGED_Q(J_new,J_test,PREC_BINT).AND.CONVERGED_Q(ptran_new,ptran,PREC_TRANS)) THEN
-                          conv_step=.TRUE.
-                       ELSE
-                          conv_step=.FALSE.
-                       END IF
-                    END IF
+                 ELSE IF(J_new.LT.Jmin.OR.CONVERGED_Q(J_new,J_test,PREC_TRANS)) THEN
+                    conv_step=.TRUE.
+                    IF(.NOT.CONVERGED_Q(J_new,J,PREC_TRANS)) transition=.TRUE.
                  END IF
                  
                  IF(conv_step) THEN
@@ -1331,9 +1360,10 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
 
               END IF
 
-              IF(JCORRECTION.AND.J_new.GT.ALMOST_ZERO.AND.s_new.GT.smin.AND.s_new.LT.1) THEN
+              IF((JCORRECTION.AND.J_new.GT.ALMOST_ZERO.AND.s_new.GT.smin.AND.s_new.LT.1).OR. &
+                 & (J_new.LT.Jmin)) THEN
 
-                 IF(J0.LT.Jmin) J0=Jmin
+                 IF(.NOT.JCORRECTION.OR.J0.LT.Jmin) J0=Jmin
 
                  IF((JTRANS.OR..NOT.transition).AND..NOT.barely_trapped) THEN
 
@@ -1381,8 +1411,8 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
                    & dB_new,J_new,dJds_new,dJda_new,dsdt_new,dadt_new,dsda_new,ptran_new,dban_new,&
                    & s,alpha,theta,zeta,zl,tl,zr,tr,dla,J,dJds,dJda,dsdt,dadt,dsda,ptran,dban)
               
-              IF(DEBUG) WRITE(6200+myrank,'(19(1pe13.5),3L,F9.4,4(I6))') t,s,alpha,theta,zeta,&
-                   mu_o_E,1./Bmax,1./Bmin,zl,tl,zr,tr,J,J0,dJda,dJds,dsdt,dadt,fd,step_a,transition,stochastic,ptran,ila,ial,il,ipoint
+              IF(DEBUG) WRITE(6200+myrank,'(20(1pe13.5),3L,F9.4,4(I6))') t,s,alpha,theta,zeta,&
+                   mu_o_E,1./Bmax,1./Bmin,zl,tl,zr,tr,J,J0,dJda,dJds,dsdt,dadt,dban,fd,step_a,transition,stochastic,ptran,ila,ial,il,ipoint
 
 !col              compute vc,vhiD,taus (precalcular Te,ni,ne,lnL)
 !              en calc_dadas, calcular overline{B^{-1}v_parallel^2}              
@@ -1405,6 +1435,7 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
 !!$              END IF
               time_off=t.GT.TENDFI
               lost=s.GT.1.0-dban
+              wide_banana=lost.AND.dban.GT.0.1
               axis=s.LT.smin
               prompt_loss=lost.AND..NOT.stochastic
               stochastic_loss=lost.AND.stochastic
@@ -1415,8 +1446,8 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
               IF(end_orbit) THEN
 !                 IF(DEBUG)
                 IF(LEN(TRIM(KN_EXT)).EQ.0) &
-                &  WRITE(6300+myrank,'(I6,2(1pe13.5),9L)') ipoint,t,s,time_off,lost,&
-                      & prompt_loss,stochastic_loss,periodic,confined_sb,axis,error_J
+                &  WRITE(6300+myrank,'(I6,2(1pe13.5),10L)') ipoint,t,s,time_off,lost,&
+                      & prompt_loss,stochastic_loss,periodic,confined_sb,wide_banana,axis,error_J
                  EXIT
               END IF
            END DO
@@ -1775,9 +1806,9 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
   tl=tl
   tr=tr
 
-  IF(JORBIT.GT.0.AND.DEBUG) WRITE(6200+myrank,'(19(1pe13.5),3L,F9.4,4(I6))') REAL(it),&
+  IF(JORBIT.GT.0.AND.DEBUG) WRITE(6200+myrank,'(20(1pe13.5),3L,F9.4,4(I6))') REAL(it),&
        s_new,alpha_new,theta_new,zeta_new,1/E_o_mu,1./Bmax,1./Bmin,&
-       & zl_new,tl_new,zr_new,tr_new,J_new,J0,dJda_new,dJds_new,dsdt_new,dadt_new,fd,step_a,&
+       & zl_new,tl_new,zr_new,tr_new,J_new,J0,dJda_new,dJds_new,dsdt_new,dadt_new,dban_new,fd,step_a,&
        & transition,transition,ptran_new!,ila,ial,il,ipoint
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
