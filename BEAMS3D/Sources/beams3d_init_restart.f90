@@ -43,123 +43,83 @@ SUBROUTINE beams3d_init_restart
       WRITE(6,'(A)')  '   FILE: '//TRIM(restart_string)
    END IF
 
-   IF (lrestart_grid) THEN
-      rho_scale=1.0
-      IF (myid_sharmem == master) THEN
-         CALL beams3d_read(restart_string(9:(len(TRIM(restart_string))-3)))
-         ALLOCATE(mass2(nparticles),charge2(nparticles),Zatom2(nparticles),&
-            beam2(nparticles), weight2(nparticles))
-         beam2 = beam
-         charge2=charge
-         Zatom2 = Zatom
-         weight2 = weight
-         mass2=mass
-	   lfusion_old = .FALSE. !WHY IS THIS TRUE?
-      END IF
-      CALL beams3d_read_grid(restart_string(9:(len(TRIM(restart_string))-3)))
-	  CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(npoinc,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(ns_prof1,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(ns_prof2,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(ns_prof3,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(ns_prof4,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(ns_prof5,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-	  !CALL MPI_BCAST(ldepo,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
-	  CALL MPI_BCAST(raxis,nr,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-       CALL MPI_BCAST(phiaxis,nphi,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-       CALL MPI_BCAST(zaxis,nz,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-	   CALL MPI_BCAST(rmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-	   CALL MPI_BCAST(rmin,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-	   CALL MPI_BCAST(zmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-	   CALL MPI_BCAST(zmin,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-	   CALL MPI_BCAST(phimax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-	   CALL MPI_BCAST(phimin,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)	   
-      id_string = 'restart_grid'
-	  	  		IF (ldepo) THEN
-            ldepo_old=.true.
-		END IF
-      ldepo=.false. !Restart can never be depo run
-      lbeam=.false.
-   END IF
    IF (myworkid == master) THEN
-      IF (.not. lrestart_grid) THEN
-         ! Save quantities
-         lfusion_old = .FALSE.
-         npoinc_save = npoinc
-         ! Read the data
-         CALL open_hdf5(TRIM(restart_string),fid,ier,LCREATE=.false.)
-         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(restart_string),ier)
-         CALL read_scalar_hdf5(fid,'nparticles',ier,INTVAR=nparticles)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nparticles',ier)
-         CALL read_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'npoinc',ier)
-         CALL read_scalar_hdf5(fid,'VERSION',ier,DBLVAR=version_old)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'version_old',ier)
-         IF (version_old >= 2.8) THEN
-            CALL read_scalar_hdf5(fid,'lfusion',ier,BOOVAR=lfusion_old)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lfusion',ier)
-         END IF
-         IF (lverb) THEN
-            WRITE(6,'(A,I8)') '   NPARTICLES_OLD: ', nparticles
-            WRITE(6,'(A,I8)') '   NPOINC_OLD: ', npoinc
-            IF (lfusion_old) WRITE(6,'(A,I8)') '   FUSION RUN DETECTED'
-         END IF
-         CALL read_scalar_hdf5(fid,'ldepo',ier,BOOVAR=ldepo_old)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ldepo_old',ier)
-         !CALL read_scalar_hdf5(fid,'partvmax',ier,DBLVAR=vpartmax)
-         !partvmax = MAX(partvmax,vpartmax)
-         !IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'partvmax',ier)
-         IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
-         IF (ALLOCATED(mass)) DEALLOCATE(mass)
-         IF (ALLOCATED(charge)) DEALLOCATE(charge)
-         IF (ALLOCATED(Zatom)) DEALLOCATE(Zatom)
-         IF (ALLOCATED(beam)) DEALLOCATE(beam)
-         IF (ALLOCATED(weight)) DEALLOCATE(weight)
-         IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
-         IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
-         IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
-         IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
-         IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
-         IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)
-         IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
-         ALLOCATE(mass2(nparticles),charge2(nparticles),Zatom2(nparticles),&
-            beam2(nparticles), weight2(nparticles), end_state(nparticles))
-         ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
-            vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles),&
-            S_lines(0:npoinc,nparticles),B_lines(0:npoinc,nparticles))
-         CALL read_var_hdf5(fid,'mass',nparticles,ier,DBLVAR=mass2)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'mass2',ier)
-         CALL read_var_hdf5(fid,'charge',nparticles,ier,DBLVAR=charge2)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'charge2',ier)
-         CALL read_var_hdf5(fid,'Zatom',nparticles,ier,DBLVAR=Zatom2)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Zatom2',ier)
-         CALL read_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight2)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'weight2',ier)
-         CALL read_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam2)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'beam2',ier)
-         CALL read_var_hdf5(fid,'end_state',nparticles,ier,INTVAR=end_state)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'end_state',ier)
-         CALL read_var_hdf5(fid,'R_lines',npoinc+1,nparticles,ier,DBLVAR=R_lines)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'R_lines',ier)
-         CALL read_var_hdf5(fid,'Z_lines',npoinc+1,nparticles,ier,DBLVAR=Z_lines)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Z_lines',ier)
-         CALL read_var_hdf5(fid,'PHI_lines',npoinc+1,nparticles,ier,DBLVAR=PHI_lines)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PHI_lines',ier)
-         CALL read_var_hdf5(fid,'vll_lines',npoinc+1,nparticles,ier,DBLVAR=vll_lines)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vll_lines',ier)
-         CALL read_var_hdf5(fid,'neut_lines',npoinc+1,nparticles,ier,BOOVAR=neut_lines)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'neut_lines',ier)
-         CALL read_var_hdf5(fid,'moment_lines',npoinc+1,nparticles,ier,DBLVAR=moment_lines)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'moment_lines',ier)
-         CALL read_var_hdf5(fid,'S_lines',npoinc+1,nparticles,ier,DBLVAR=S_lines)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_lines',ier)
-         CALL read_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_lines',ier)
-
-         CALL close_hdf5(fid,ier)
-         IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
-
+      ! Save quantities
+      lfusion_old = .FALSE.
+      npoinc_save = npoinc
+      ! Read the data
+      CALL open_hdf5(TRIM(restart_string),fid,ier,LCREATE=.false.)
+      IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(restart_string),ier)
+      CALL read_scalar_hdf5(fid,'nparticles',ier,INTVAR=nparticles)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nparticles',ier)
+      CALL read_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'npoinc',ier)
+      CALL read_scalar_hdf5(fid,'VERSION',ier,DBLVAR=version_old)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'version_old',ier)
+      IF (version_old >= 2.8) THEN
+         CALL read_scalar_hdf5(fid,'lfusion',ier,BOOVAR=lfusion_old)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lfusion',ier)
       END IF
+      IF (lverb) THEN
+         WRITE(6,'(A,I8)') '   NPARTICLES_OLD: ', nparticles
+         WRITE(6,'(A,I8)') '   NPOINC_OLD: ', npoinc
+         IF (lfusion_old) WRITE(6,'(A,I8)') '   FUSION RUN DETECTED'
+      END IF
+      CALL read_scalar_hdf5(fid,'ldepo',ier,BOOVAR=ldepo_old)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ldepo_old',ier)
+      !CALL read_scalar_hdf5(fid,'partvmax',ier,DBLVAR=vpartmax)
+      !partvmax = MAX(partvmax,vpartmax)
+      !IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'partvmax',ier)
+      IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
+      IF (ALLOCATED(mass)) DEALLOCATE(mass)
+      IF (ALLOCATED(charge)) DEALLOCATE(charge)
+      IF (ALLOCATED(Zatom)) DEALLOCATE(Zatom)
+      IF (ALLOCATED(beam)) DEALLOCATE(beam)
+      IF (ALLOCATED(weight)) DEALLOCATE(weight)
+      IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
+      IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
+      IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
+      IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
+      IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
+      IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)
+      IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
+      ALLOCATE(mass2(nparticles),charge2(nparticles),Zatom2(nparticles),&
+         beam2(nparticles), weight2(nparticles), end_state(nparticles))
+      ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
+         vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles),&
+         S_lines(0:npoinc,nparticles),B_lines(0:npoinc,nparticles))
+      CALL read_var_hdf5(fid,'mass',nparticles,ier,DBLVAR=mass2)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'mass2',ier)
+      CALL read_var_hdf5(fid,'charge',nparticles,ier,DBLVAR=charge2)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'charge2',ier)
+      CALL read_var_hdf5(fid,'Zatom',nparticles,ier,DBLVAR=Zatom2)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Zatom2',ier)
+      CALL read_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight2)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'weight2',ier)
+      CALL read_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam2)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'beam2',ier)
+      CALL read_var_hdf5(fid,'end_state',nparticles,ier,INTVAR=end_state)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'end_state',ier)
+      CALL read_var_hdf5(fid,'R_lines',npoinc+1,nparticles,ier,DBLVAR=R_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'R_lines',ier)
+      CALL read_var_hdf5(fid,'Z_lines',npoinc+1,nparticles,ier,DBLVAR=Z_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Z_lines',ier)
+      CALL read_var_hdf5(fid,'PHI_lines',npoinc+1,nparticles,ier,DBLVAR=PHI_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PHI_lines',ier)
+      CALL read_var_hdf5(fid,'vll_lines',npoinc+1,nparticles,ier,DBLVAR=vll_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vll_lines',ier)
+      CALL read_var_hdf5(fid,'neut_lines',npoinc+1,nparticles,ier,BOOVAR=neut_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'neut_lines',ier)
+      CALL read_var_hdf5(fid,'moment_lines',npoinc+1,nparticles,ier,DBLVAR=moment_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'moment_lines',ier)
+      CALL read_var_hdf5(fid,'S_lines',npoinc+1,nparticles,ier,DBLVAR=S_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_lines',ier)
+      CALL read_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_lines',ier)
+
+      CALL close_hdf5(fid,ier)
+      IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
+
 
       ! Helper for where to start loading particles
       ALLOCATE(start_dex(nparticles))
@@ -179,7 +139,7 @@ SUBROUTINE beams3d_init_restart
             WHERE(S_lines(0,:) >= 1) end_state = -1
          END IF
       ELSEIF (ldepo_old) THEN
-	 ! WRITE(6,'(A)') 'OLD DEPOSITION RUN!'
+         ! WRITE(6,'(A)') 'OLD DEPOSITION RUN!'
          state_flag = 0
          start_dex = 2
          IF (lplasma_only) THEN
@@ -199,11 +159,10 @@ SUBROUTINE beams3d_init_restart
 
       ! Allocate the particles
       ALLOCATE(  R_start(k), phi_start(k), Z_start(k),mu_start(k),vll_start(k))
-      IF (.not. lrestart_grid) THEN
-         ALLOCATE(v_neut(3,k), mass(k), charge(k), &
-            Zatom(k), t_end(k),  &
-            beam(k), weight(k) )
-      END IF
+
+      ALLOCATE(v_neut(3,k), mass(k), charge(k), &
+         Zatom(k), t_end(k),  &
+         beam(k), weight(k) )
 
       ! Now fill the arrays downselecting for non-shinethrough particles
       k = 1
@@ -221,16 +180,10 @@ SUBROUTINE beams3d_init_restart
          beam(k)     = beam2(i)
          weight(k)   = weight2(i)
          t_end(k)    = MAXVAL(t_end_in)
-         IF (lrestart_grid) THEN
-            mu_start(k) = moment_lines(npoinc_extract,i)
-            charge_beams(beam2(i))=charge2(i)
-            mass_beams(beam2(i))=mass2(i)
-         ELSE
-            q = (/R_start(k), phi_start(k), Z_start(k)/)
-            mu_start(k)  = moment_lines(npoinc_extract,i)*B_lines(npoinc_extract,i)
-            CALL beams3d_MODB(q,B_help)
-            mu_start(k) = mu_start(k)/B_help
-         END IF
+         q = (/R_start(k), phi_start(k), Z_start(k)/)
+         mu_start(k)  = moment_lines(npoinc_extract,i)*B_lines(npoinc_extract,i)
+         CALL beams3d_MODB(q,B_help)
+         mu_start(k) = mu_start(k)/B_help
          k = k + 1
       END DO
       DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state, S_lines, B_lines)
@@ -238,7 +191,7 @@ SUBROUTINE beams3d_init_restart
 
       ! Restore quantities
       nparticles = k-1
-      IF (.not. lrestart_grid) npoinc = npoinc_save
+      npoinc = npoinc_save
       nbeams = MAXVAL(beam)
       IF (lverb) THEN
          WRITE(6,'(A,I6)') '   # of Beams: ', nbeams
@@ -252,18 +205,18 @@ SUBROUTINE beams3d_init_restart
    CALL MPI_BCAST(nbeams,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
    CALL MPI_BCAST(partvmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
    IF (myworkid /= master) THEN
-		IF (ALLOCATED(R_start)) DEALLOCATE(R_start)
-         IF (ALLOCATED(phi_start)) DEALLOCATE(phi_start)
-         IF (ALLOCATED(Z_start)) DEALLOCATE(Z_start)
-         IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
-		 IF (ALLOCATED(mass)) DEALLOCATE(mass)
-         IF (ALLOCATED(charge)) DEALLOCATE(charge)
-         IF (ALLOCATED(mu_start)) DEALLOCATE(mu_start)
-         IF (ALLOCATED(Zatom)) DEALLOCATE(Zatom)
-         IF (ALLOCATED(t_end)) DEALLOCATE(t_end)
-         IF (ALLOCATED(vll_start)) DEALLOCATE(vll_start)
-         IF (ALLOCATED(beam)) DEALLOCATE(beam)
-         IF (ALLOCATED(weight)) DEALLOCATE(weight)
+      IF (ALLOCATED(R_start)) DEALLOCATE(R_start)
+      IF (ALLOCATED(phi_start)) DEALLOCATE(phi_start)
+      IF (ALLOCATED(Z_start)) DEALLOCATE(Z_start)
+      IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
+      IF (ALLOCATED(mass)) DEALLOCATE(mass)
+      IF (ALLOCATED(charge)) DEALLOCATE(charge)
+      IF (ALLOCATED(mu_start)) DEALLOCATE(mu_start)
+      IF (ALLOCATED(Zatom)) DEALLOCATE(Zatom)
+      IF (ALLOCATED(t_end)) DEALLOCATE(t_end)
+      IF (ALLOCATED(vll_start)) DEALLOCATE(vll_start)
+      IF (ALLOCATED(beam)) DEALLOCATE(beam)
+      IF (ALLOCATED(weight)) DEALLOCATE(weight)
       ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
          v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
          mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
@@ -281,13 +234,6 @@ SUBROUTINE beams3d_init_restart
    CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
    CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
    CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-   ! IF (lrestart_grid .and. lfidasim2) THEN
-	 ! CALL MPI_BCAST(nr_fida,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      ! CALL MPI_BCAST(nphi_fida,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      ! CALL MPI_BCAST(nz_fida,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      ! CALL MPI_BCAST(nenergy_fida,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      ! CALL MPI_BCAST(npitch_fida,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-   ! END IF
 
 #endif
 

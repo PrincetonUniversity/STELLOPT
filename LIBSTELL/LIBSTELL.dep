@@ -7,6 +7,13 @@ read_fieldlines_mod.o :  \
       mpi_params.o \
       mpi_inc.o
 
+read_beams3d_mod.o :  \
+      stel_kinds.o \
+      ez_hdf5.o \
+      mpi_sharmem.o \
+      mpi_params.o \
+      mpi_inc.o
+
 fzero.o : \
       stel_kinds.o
       
