@@ -983,7 +983,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    IF (.not.lexist) THEN
       write(6,'(A)') 'Continuing without FIDASIM input generation'
       write(6,'(A)') 'Is the namelist present in the input file?'
-	  IF (lrestart_grid) write(6,'(A)') 'This is the normal behavior with restart_grid for now.'
+      IF (lrestart_grid) write(6,'(A)') 'This is the normal behavior with restart_grid for now.'
       return
    END IF
    CALL safe_open(iunit,istat,'input.' // TRIM(id_string),'old','formatted')

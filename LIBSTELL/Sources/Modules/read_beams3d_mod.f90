@@ -1,11 +1,11 @@
 !-----------------------------------------------------------------------
-!     Module:        read_fieldlines_mod
-!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
-!     Date:          05/30/2023
+!     Module:        read_beams3d_mod
+!     Authors:       D. Kulla (david.kulla@ipp.mpg.de), S. Lazerson (samuel.lazerson@ipp.mpg.de)
+!     Date:          07/06/2023
 !     Description:   This module stores routines for reading
-!                    FIELDLINES data.
+!                    BEAMS3D data.
 !-----------------------------------------------------------------------
-MODULE read_fieldlines_mod
+MODULE read_beams3d_mod
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -34,11 +34,10 @@ MODULE read_fieldlines_mod
    REAL(DTYPE), DIMENSION(:,:), POINTER, PRIVATE :: &
       R_lines, PHI_lines, Z_lines, rminor_lines, X_lines, Y_lines
    REAL(DTYPE), DIMENSION(:,:,:), POINTER, PRIVATE :: &
-      BR3D, BPHI3D, BZ3D, X3D, Y3D, Rminor3D
+      BR3D, BPHI3D, BZ3D, X3D, Y3D, Rminor3D, U3D, S3D
    INTEGER :: win_raxis, win_phiaxis, win_zaxis, &
-      win_BR3D, win_BPHI3D, win_BZ3D, &
-      win_R_lines, win_PHI_lines, win_Z_lines, &
-      win_rminor_lines, win_X_lines, win_Y_lines, &
+      win_BR3D, win_BPHI3D, win_BZ3D, win_U3D, win_S3D,&
+      win_rminor_lines, &
       win_X3D, win_Y3D, win_Rminor3D, &
       win_RMAGAXIS, win_ZMAGAXIS, &
       win_R_1D, win_PHI_1D, win_Z_1D, win_rminor_1D, win_X_1D, win_Y_1D
@@ -47,19 +46,18 @@ CONTAINS
 
 !-----------------------------------------------------------------------
 !     Module Subroutines
-!           read_fieldlines_mag:  For reading fieldlines B-Field Data
-!           setup_fieldlines_rhogrid:  For setting up rho grid
-!           setup_fieldlines_helpers: Setup grid helpers
-!           get_fieldlines_grid: Returns the grid information
-!           get_fieldlines_magaxis: Get magnetic axis information
-!           get_fieldlines_B: Get magnetic field at a point in space
-!           get_fieldlines_gridB: Get magnetic field at gridpoint
-!           read_fieldlines_deallocate: Deallocated arrays
+!           read_beams3d_mag:  For reading beams3d B-Field Data
+!           setup_beams3d_helpers: Setup grid helpers
+!           get_beams3d_grid: Returns the grid information
+!           get_beams3d_magaxis: Get magnetic axis information
+!           get_beams3d_B: Get magnetic field at a point in space
+!           get_beams3d_gridB: Get magnetic field at gridpoint
+!           read_beams3d_deallocate: Deallocated arrays
 !
 !
 !-----------------------------------------------------------------------
 
-   SUBROUTINE read_fieldlines_mag(filename,comm_read,istat)
+   SUBROUTINE read_beams3d_mag(filename,comm_read,istat)
       IMPLICIT NONE
       CHARACTER(*), INTENT(in) :: filename
       INTEGER, INTENT(inout) :: comm_read
@@ -111,6 +109,8 @@ CONTAINS
       CALL mpialloc(BR3D,   nr, nphi, nz, mylocalid, master, comm_read, win_BR3D)
       CALL mpialloc(BPHI3D, nr, nphi, nz, mylocalid, master, comm_read, win_BPHI3D)
       CALL mpialloc(BZ3D,   nr, nphi, nz, mylocalid, master, comm_read, win_BZ3D)
+      CALL mpialloc(U3D, nr, nphi, nz, mylocalid, master, comm_read, win_U3D)
+      CALL mpialloc(S3D,   nr, nphi, nz, mylocalid, master, comm_read, win_S3D)
 
       ! Read Arrays and close file
 #if defined(LHDF5)
@@ -121,6 +121,8 @@ CONTAINS
          CALL read_var_hdf5(fid, 'B_R',     nr, nphi, nz, istat, DBLVAR=BR3D)
          CALL read_var_hdf5(fid, 'B_PHI',   nr, nphi, nz, istat, DBLVAR=BPHI3D)
          CALL read_var_hdf5(fid, 'B_Z',     nr, nphi, nz, istat, DBLVAR=BZ3D)
+         CALL read_var_hdf5(fid, 'S_ARR',     nr, nphi, nz, istat, DBLVAR=S3D)
+         CALL read_var_hdf5(fid, 'U_ARR',   nr, nphi, nz, istat, DBLVAR=U3D)
          CALL close_hdf5(fid,istat)
       END IF
 #endif
@@ -128,200 +130,13 @@ CONTAINS
       CALL MPI_BARRIER(comm_read,istat)
 #endif
       ! Helpers
-      CALL setup_fieldlines_helpers
+      CALL setup_beams3d_helpers
 
       RETURN
 
-   END SUBROUTINE read_fieldlines_mag
+   END SUBROUTINE read_beams3d_mag
 
-   SUBROUTINE setup_fieldlines_rhogrid(filename,comm_read,istat)
-      IMPLICIT NONE
-      CHARACTER(*), INTENT(in) :: filename
-      INTEGER, INTENT(inout) :: comm_read
-      INTEGER, INTENT(out) :: istat
-      INTEGER :: mylocalid, nlocal, s, i, j, k, mystart, myend, npoinc, l, m
-      REAL(DTYPE) :: r1,r2,p1,p2,z1,z2
-      LOGICAL, DIMENSION(:), ALLOCATABLE :: mask_axis
-      REAL(DTYPE), DIMENSION(:,:), POINTER :: zeta_lines
-      REAL(DTYPE), DIMENSION(:), POINTER :: ZETA_1D
-      INTEGER, DIMENSION(:,:,:), POINTER :: N3D
-      INTEGER :: win_zeta_lines, win_N3D
-      INTEGER :: win_zeta_1D
-      LOGICAL :: lexist
-      istat = 0
-
-      ! MPI Stuff
-#if defined(MPI_OPT)
-      CALL MPI_BARRIER(comm_read,istat)
-      CALL MPI_COMM_RANK(comm_read, mylocalid, istat)
-      CALL MPI_COMM_SIZE(comm_read, nlocal, istat)
-#endif
-
-      ! Check for the file
-      INQUIRE(FILE=TRIM(filename),EXIST=lexist)
-      IF (.not.lexist) THEN
-         istat=-1
-         IF (mylocalid == 0) WRITE(6,*) " ERROR: Could not find file: "//TRIM(filename)
-         RETURN
-      END IF
-
-      ! Read HDF5 File
-#if defined(LHDF5)
-      IF (mylocalid == master) THEN
-         CALL open_hdf5(TRIM(filename),fid,istat)
-         CALL read_scalar_hdf5(fid,'nlines',istat,INTVAR=nlines)
-         CALL read_scalar_hdf5(fid,'nsteps',istat,INTVAR=nsteps)
-         CALL read_scalar_hdf5(fid,'npoinc',istat,INTVAR=npoinc)
-      END IF
-#else
-      IF (mylocalid == 0) WRITE(6,*) " ERROR: HDF5 Required for this functionality."
-      istat = -5
-      RETURN
-#endif
-
-      ! Broadcast arrays sizes and allocate arrays.
-      ! Note that in FIELDLINES _lines are sized (1:nlines,0:nsteps)
-      ! But FIELDLINES saves nsteps as nsteps+1
-      ! so we ressize them to (1:nlines,1:nsteps)
-#if defined(MPI_OPT)
-      CALL MPI_BARRIER(comm_read,istat)
-      CALL MPI_BCAST(nlines, 1, MPI_INTEGER, master, comm_read, istat)
-      CALL MPI_BCAST(nsteps, 1, MPI_INTEGER, master, comm_read, istat)
-      CALL MPI_BCAST(npoinc, 1, MPI_INTEGER, master, comm_read, istat)
-#endif
-      CALL mpialloc(RMAGAXIS,  nphi,          mylocalid, master, comm_read, win_RMAGAXIS)
-      CALL mpialloc(ZMAGAXIS,  nphi,          mylocalid, master, comm_read, win_ZMAGAXIS)
-      CALL mpialloc(R_1D,      nlines*nsteps, mylocalid, master, comm_read, win_R_1D)
-      CALL mpialloc(PHI_1D,    nlines*nsteps, mylocalid, master, comm_read, win_PHI_1D)
-      CALL mpialloc(Z_1D,      nlines*nsteps, mylocalid, master, comm_read, win_Z_1D)
-      CALL mpialloc(X_1D,      nlines*nsteps, mylocalid, master, comm_read, win_X_1D)
-      CALL mpialloc(Y_1D,      nlines*nsteps, mylocalid, master, comm_read, win_Y_1D)
-      CALL mpialloc(rminor_1D, nlines*nsteps, mylocalid, master, comm_read, win_rminor_1D)
-      CALL mpialloc(ZETA_1D,   nlines*nsteps, mylocalid, master, comm_read, win_ZETA_1D)
-
-      ! Create 2D Pointers
-      R_lines(1:nlines,1:nsteps) => R_1D
-      Z_lines(1:nlines,1:nsteps) => Z_1D
-      X_lines(1:nlines,1:nsteps) => X_1D
-      Y_lines(1:nlines,1:nsteps) => Y_1D
-      PHI_lines(1:nlines,1:nsteps) => PHI_1D
-      rminor_lines(1:nlines,1:nsteps) => rminor_1D
-      zeta_lines(1:nlines,1:nsteps) => ZETA_1D
-
-      ! Read Arrays and close file
-#if defined(LHDF5)
-      IF (mylocalid == master) THEN
-         CALL read_var_hdf5(fid, 'R_lines',   nlines*nsteps, istat, DBLVAR=R_1D)
-         CALL read_var_hdf5(fid, 'PHI_lines', nlines*nsteps, istat, DBLVAR=PHI_1D)
-         CALL read_var_hdf5(fid, 'Z_lines',   nlines*nsteps, istat, DBLVAR=Z_1D)
-         CALL close_hdf5(fid,istat)
-         ZETA_1D = MODULO(PHI_1D,phiaxis(nphi))
-      END IF
-#endif
-#if defined(MPI_OPT)
-      CALL MPI_BARRIER(comm_read,istat)
-#endif
-
-      ! Create rminor helper
-      IF (mylocalid == master) THEN
-         DO i = 1, nlines
-            X_lines(i,:) = R_lines(i,:) - R_lines(1,:)
-            Y_lines(i,:) = Z_lines(i,:) - Z_lines(1,:)
-         END DO
-         rminor_lines = SQRT(X_lines**2 + Y_lines**2)
-         DO i = 1, nlines
-            rminor_lines(i,:) = SUM(rminor_lines(i,:))/(nsteps)
-         END DO
-      END IF
-
-      ! Check we've read the background grids
-      IF (nr <= 0 .OR.  nphi <= 0 .OR. nz <= 0) THEN
-         IF (mylocalid==master) WRITE(6,*) "ERROR: NR,NPHI,NZ <= 0 in read_fieldines_lines"
-         istat = -6
-         RETURN
-      END IF
-      CALL setup_fieldlines_helpers
-
-      ! Allocate rho grid
-      CALL mpialloc(X3D,      nr, nphi, nz, mylocalid, master, comm_read, win_X3D)
-      CALL mpialloc(Y3D,      nr, nphi, nz, mylocalid, master, comm_read, win_Y3D)
-      CALL mpialloc(Rminor3D, nr, nphi, nz, mylocalid, master, comm_read, win_Rminor3D)
-      CALL mpialloc(N3D,      nr, nphi, nz, mylocalid, master, comm_read, win_N3D)
-
-      ! Allocate helper
-      ALLOCATE(mask_axis(nsteps))
-
-      ! Default the rho grid to the largest value of Rminor
-      IF (mylocalid==master) Rminor3D = MAXVAL(rminor_lines)
-#if defined(MPI_OPT)
-      CALL MPI_BARRIER(comm_read,istat)
-#endif
-
-      ! Create the background helpers
-      CALL MPI_CALC_MYRANGE(comm_read,1,nlines*nsteps,mystart,myend)
-      DO s = mystart, myend
-         i = COUNT((raxis-0.5*dr)   <= R_1D(s))
-         j = COUNT((phiaxis-0.5*dp) <= zeta_1D(s))
-         k = COUNT((zaxis-0.5*dz)   <= Z_1D(s))
-         i = MIN(MAX(i,1),nr)
-         j = MIN(MAX(j,1),nphi)
-         k = MIN(MAX(k,1),nz)
-         Rminor3D(i,j,k) = Rminor3D(i,j,k) + rminor_1D(s)
-         X3D(i,j,k) = X3D(i,j,k) + X_1D(s)
-         Y3D(i,j,k) = Y3D(i,j,k) + Y_1D(s)
-         N3D(i,j,k) = N3D(i,j,k) + 1
-      END DO
-      CALL MPI_BARRIER(comm_read,istat)
-      IF (mylocalid==master) THEN
-         WHERE(N3D > 0)
-            Rminor3D = Rminor3D / N3D
-            X3D = X3D / N3D
-            Y3D = Y3D / N3D
-         END WHERE
-      END IF
-      CALL MPI_BARRIER(comm_read,istat)
-      IF (ASSOCIATED(N3D))      CALL mpidealloc(N3D,   win_N3D)
-
-      ! Calculate magaxis
-      CALL MPI_CALC_MYRANGE(comm_read,1,nphi,mystart,myend)
-      DO j = mystart, myend
-         p1 = phiaxis(j) - dp * 0.5
-         p2 = p1 + dp
-         mask_axis = .FALSE.
-         WHERE(zeta_lines(1,:) >= p1 .AND. zeta_lines(1,:) < p2) mask_axis = .TRUE.
-         RMAGAXIS(j) = SUM(R_lines(1,:), MASK=mask_axis) / COUNT(mask_axis)
-         ZMAGAXIS(j) = SUM(Z_lines(1,:), MASK=mask_axis) / COUNT(mask_axis)
-      END DO
-
-      ! Deallocated local variables
-      DEALLOCATE(mask_axis)
-
-#if defined(MPI_OPT)
-      CALL MPI_BARRIER(comm_read,istat)
-#endif
-      ! Locals
-      IF (ASSOCIATED(zeta_lines)) NULLIFY(zeta_lines)
-      IF (ASSOCIATED(zeta_1D))   CALL mpidealloc(zeta_1D,   win_zeta_1D)
-
-      ! Globals
-      IF (ASSOCIATED(R_lines))      NULLIFY(R_lines)
-      IF (ASSOCIATED(Z_lines))      NULLIFY(Z_lines)
-      IF (ASSOCIATED(X_lines))      NULLIFY(X_lines)
-      IF (ASSOCIATED(Y_lines))      NULLIFY(Y_lines)
-      IF (ASSOCIATED(PHI_lines))    NULLIFY(PHI_lines)
-      IF (ASSOCIATED(rminor_lines)) NULLIFY(rminor_lines)
-      ! Deallocated globals which we don't anymore
-      IF (ASSOCIATED(R_1D))      CALL mpidealloc(R_1D,      win_R_1D)
-      IF (ASSOCIATED(Z_1D))      CALL mpidealloc(Z_1D,      win_Z_1D)
-      IF (ASSOCIATED(PHI_1D))    CALL mpidealloc(PHI_1D,    win_PHI_1D)
-      IF (ASSOCIATED(X_1D))      CALL mpidealloc(X_1D,      win_X_1D)
-      IF (ASSOCIATED(Y_1D))      CALL mpidealloc(Y_1D,      win_Y_1D)
-      IF (ASSOCIATED(rminor_1D)) CALL mpidealloc(rminor_1D, win_rminor_1D)
-
-      RETURN
-   END SUBROUTINE setup_fieldlines_rhogrid
-
-   SUBROUTINE setup_fieldlines_helpers
+   SUBROUTINE setup_beams3d_helpers
       IMPLICIT NONE
       INTEGER :: i, j, k
       INTEGER :: ij(2)
@@ -329,9 +144,9 @@ CONTAINS
       dr = (raxis(nr)-raxis(1))/DBLE(nr-1)
       dz = (zaxis(nz)-zaxis(1))/DBLE(nz-1)
       RETURN
-   END SUBROUTINE setup_fieldlines_helpers
+   END SUBROUTINE setup_beams3d_helpers
 
-   SUBROUTINE get_fieldlines_grid(nr_out,nz_out,nphi_out,rmin_out,rmax_out,zmin_out,zmax_out,phimax_out)
+   SUBROUTINE get_beams3d_grid(nr_out,nz_out,nphi_out,rmin_out,rmax_out,zmin_out,zmax_out,phimax_out)
       IMPLICIT NONE
       INTEGER, INTENT(out) :: nr_out, nz_out, nphi_out
       REAL(rprec), INTENT(out) :: rmin_out, rmax_out, zmin_out, zmax_out, phimax_out
@@ -340,29 +155,36 @@ CONTAINS
       rmax_out = raxis(nr); zmax_out = zaxis(nz)
       phimax_out = phiaxis(nphi)
       RETURN
-   END SUBROUTINE get_fieldlines_grid
+   END SUBROUTINE get_beams3d_grid
 
-   SUBROUTINE get_fieldlines_magaxis(phi_in,raxis_out,zaxis_out)
+   SUBROUTINE get_beams3d_magaxis(phi_in,raxis_out,zaxis_out)
       IMPLICIT NONE
       REAL(rprec), INTENT(in)  :: phi_in
       REAL(rprec), INTENT(out) :: raxis_out
       REAL(rprec), INTENT(out) :: zaxis_out
-      INTEGER :: km, kp
-      REAL(rprec) :: phim, dk
-      raxis_out = -1; zaxis_out = 0
-      phim = MOD(phi_in,phiaxis(nphi))
-      IF (phim < 0) phim = phim + pi2
-      km = FLOOR((phim)/dp)
-      kp = CEILING((phim)/dp)
-      km = MIN(MAX(km,1),nphi-1)
-      kp = MIN(MAX(kp,2),nphi)
-      dk = phim  -km*dp
-      raxis_out = RMAGAXIS(km) + (RMAGAXIS(kp)-RMAGAXIS(km))*dk
-      zaxis_out = ZMAGAXIS(km) + (ZMAGAXIS(kp)-ZMAGAXIS(km))*dk
-      RETURN
-   END SUBROUTINE get_fieldlines_magaxis
+      ! Define beam_data or read it from a source
 
-   SUBROUTINE get_fieldlines_B(r,phi,z,br,bp,bz,rminor,theta)
+      INTEGER :: phidex
+      INTEGER :: position(2)
+      REAL(rprec) :: smin
+      REAL(rprec), ALLOCATABLE :: S2D(:,:)
+
+      ! Find phidex for the given phi_in value
+      phidex = FINDLOC(phiaxis, phi_in,DIM=1)
+      ALLOCATE(S2D(nr,nz))
+      S2D = S3D(:, phidex, :)
+      smin = MINVAL(S2D)
+      ! Find minimum value and its indices
+      position = FINDLOC(S2D,smin)
+
+      ! Assign output values
+      raxis_out = raxis(position(1))
+      zaxis_out = zaxis(position(2))
+      DEALLOCATE(S2D)
+
+   END SUBROUTINE get_beams3d_magaxis
+
+   SUBROUTINE get_beams3d_B(r,phi,z,br,bp,bz,rminor,theta)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: r, phi, z
       REAL(rprec), INTENT(out) :: br, bp, bz
@@ -459,28 +281,28 @@ CONTAINS
       END IF
 
       RETURN
-   END SUBROUTINE get_fieldlines_B
+   END SUBROUTINE get_beams3d_B
 
-   SUBROUTINE get_fieldlines_gridB(i,j,k,br,bp,bz,rminor,theta)
+   SUBROUTINE get_beams3d_gridB(i,j,k,br,bp,bz,rho,theta)
       IMPLICIT NONE
       INTEGER, INTENT(in) :: i,j,k
       REAL(rprec), INTENT(out) :: br, bp, bz
-      REAL(rprec), INTENT(out), OPTIONAL :: rminor, theta
+      REAL(rprec), INTENT(out), OPTIONAL :: rho, theta
       br = 0; bp = 0; bz=0
       IF (i>nr .or. j>nphi .or. k>nz) RETURN
       bp = BPHI3D(i,j,k)
       br = BR3D(i,j,k) * bp / raxis(i)
       bz = BZ3D(i,j,k) * bp / raxis(i)
-      IF (PRESENT(rminor)) THEN
-         rminor = Rminor3D(i,j,k)
+      IF (PRESENT(rho)) THEN
+         rho = S3D(i,j,k)
       END IF
       IF (PRESENT(theta)) THEN
-         theta = ATAN2(Y3D(i,j,k),X3D(i,j,k))
+         theta = U3D(i,j,k)
       END IF
       RETURN
-   END SUBROUTINE get_fieldlines_gridB
+   END SUBROUTINE get_beams3d_gridB
 
-   SUBROUTINE read_fieldlines_deallocate
+   SUBROUTINE read_beams3d_deallocate
       IMPLICIT NONE
       IF (ASSOCIATED(raxis))        CALL mpidealloc(raxis,        win_raxis)
       IF (ASSOCIATED(phiaxis))      CALL mpidealloc(phiaxis,      win_phiaxis)
@@ -492,6 +314,8 @@ CONTAINS
       IF (ASSOCIATED(BZ3D))         CALL mpidealloc(BZ3D,         win_BZ3D)
       IF (ASSOCIATED(X3D))          CALL mpidealloc(X3D,          win_X3D)
       IF (ASSOCIATED(Y3D))          CALL mpidealloc(Y3D,          win_Y3D)
+      IF (ASSOCIATED(S3D))          CALL mpidealloc(S3D,          win_S3D)
+      IF (ASSOCIATED(U3D))          CALL mpidealloc(U3D,          win_U3D)
       IF (ASSOCIATED(Rminor3D))     CALL mpidealloc(Rminor3D,     win_Rminor3D)
 
       ! The 2D arrays are just pointers while the 1D arrays are the actual data
@@ -509,6 +333,6 @@ CONTAINS
       IF (ASSOCIATED(Y_1D))      CALL mpidealloc(Y_1D,      win_Y_1D)
       IF (ASSOCIATED(rminor_1D)) CALL mpidealloc(rminor_1D, win_rminor_1D)
       RETURN
-   END SUBROUTINE read_fieldlines_deallocate
+   END SUBROUTINE read_beams3d_deallocate
 
-END MODULE read_fieldlines_mod
+END MODULE read_beams3d_mod
