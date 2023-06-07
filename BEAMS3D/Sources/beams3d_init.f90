@@ -144,7 +144,6 @@ SUBROUTINE beams3d_init
 
    ! Output some information
    IF (lverb ) THEN
-      ! IF (.not. lrestart_grid) THEN
       WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
       WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
       WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
@@ -160,7 +159,6 @@ SUBROUTINE beams3d_init
       IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
       IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
       IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
-      ! END IF
       IF (lcollision) WRITE(6,'(A)') '   COLLISION OPERATOR ON!'
       IF (lkick) WRITE(6,'(A)') '   KICK MODEL ON!'
       IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
@@ -351,37 +349,6 @@ SUBROUTINE beams3d_init
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!              Initialize Background Grids
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-   ! IF (lrestart_grid) THEN
-   !    CALL beams3d_init_restart
-   !    CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
-   !    CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
-   !    CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
-   !    CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
-   !    CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
-   !    CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
-   !    CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
-   !    CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
-   !    CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
-   !    CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
-   !    ldepo=.false. !Restart can never be depo run
-   !    IF (myid_sharmem == 0) THEN
-   !       X_ARR = 1.5
-   !       Y_ARR = 1.5
-   !       ! Setup grid helpers
-   !       ! Note: All helpers are defined in terms of differences on half grid
-   !       !       so values are indexed from 1 to n-1.  Which we store at n
-   !       !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-   !       !        hr(i) = raxis(i+1) - raxis(i)
-   !       !        hri    = one / hr
-   !       FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
-   !       FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
-   !       FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
-   !       hri = one / hr
-   !       hpi = one / hp
-   !       hzi = one / hz
-   !    END IF
-   ! ELSE
    ! Create the background grid
    CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
    CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
@@ -465,9 +432,6 @@ SUBROUTINE beams3d_init
       CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
    END IF
    ! Put the plasma field on the background grid
-   ! IF (lrestart_grid) THEN
-   !    continue
-   ! ELSE
    IF (lvmec .and. .not.lvac) THEN
       CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
       CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
@@ -756,7 +720,6 @@ SUBROUTINE beams3d_init
    ! Output Grid
    CALL beams3d_write('GRID_INIT')
    !IF (lverb)  WRITE(6,'(A)')  'Grid_Init Completed'
-   !IF (.not. lrestart_grid) THEN
    CALL mpidealloc(B_R,win_B_R)
    CALL mpidealloc(B_PHI,win_B_PHI)
    CALL mpidealloc(B_Z,win_B_Z)
@@ -773,7 +736,6 @@ SUBROUTINE beams3d_init
       CALL mpidealloc(TI,win_TI)
       CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
    END IF
-   !END IF
 
    ! DEALLOCATE Variables
    IF (.not.lvac) THEN
@@ -798,9 +760,6 @@ SUBROUTINE beams3d_init
    CALL RANDOM_SEED
 
    ! Initialize beams (define a distribution of directions and weights)
-   ! IF (lrestart_grid) THEN
-   !    CONTINUE
-   ! ELSE
    IF (lbeam) THEN
       IF (.not. lsuzuki) CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
       IF (lw7x) THEN
@@ -812,8 +771,6 @@ SUBROUTINE beams3d_init
       END IF
       ! Randomize particles Only for beam depo runs
       IF (lrandomize) CALL beams3d_randomize_particles
-      ! ELSEIF (lrestart_particles) THEN
-      !    CALL beams3d_init_restart
    ELSEIF (lfusion) THEN
       CALL beams3d_init_fusion
    ELSE
