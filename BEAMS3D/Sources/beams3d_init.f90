@@ -473,7 +473,9 @@ SUBROUTINE beams3d_init
       CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
    END IF
    ! Put the plasma field on the background grid
-   IF (lvmec .and. .not.lvac) THEN
+   IF (lrestart_grid) THEN
+      continue
+   ELSE IF (lvmec .and. .not.lvac) THEN
       CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
       CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
       CALL beams3d_init_vmec
