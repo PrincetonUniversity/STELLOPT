@@ -55,9 +55,9 @@ SUBROUTINE beams3d_read_grid(file_ext)
    END IF
    ! Grid
    CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
-   	        CALL MPI_BCAST(nr,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(nz,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(nphi,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+   CALL MPI_BCAST(nr,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+   CALL MPI_BCAST(nz,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+   CALL MPI_BCAST(nphi,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
    IF (ASSOCIATED(raxis))   DEALLOCATE(raxis)
    IF (ASSOCIATED(zaxis))   DEALLOCATE(zaxis)
    IF (ASSOCIATED(phiaxis)) DEALLOCATE(phiaxis)
