@@ -36,7 +36,7 @@
                                 lkink, lvaciota, ljcurv, loutput_harm, lmode, lorbit, &
                                 lac, lam, lai, lphiedge, lpscale, lcurtor, lkappa, &
                                 lwell, lcurvature, lfieldlines, &
-                                ltxport, ltxport_tem, ltxport_ae
+                                ltxport, ltxport_tem, ltxport_ae, ldkes_erdiff
       INTEGER                :: m,n,ns,j
       REAL(rprec)            :: bound_min, bound_max, var, var_min, var_max, &
                                 temp, rho_exp,r1t,r2t,z1t, delta, filter_harm, pi2
@@ -91,6 +91,7 @@
       lballoon = .FALSE.
       lneo = .FALSE.
       ldkes = .FALSE.
+      ldkes_erdiff = .FALSE.
       lbootsj = .FALSE.
       ltxport = .FALSE.
       ltxport_tem = .FALSE.
@@ -223,6 +224,9 @@
             CASE ("-dkes")
                ldkes = .TRUE.
                lneed_booz = .TRUE.
+            CASE ("-dkes_erdiff")
+               ldkes_erdiff = .TRUE.
+               lneed_booz = .TRUE.
             CASE ("-fix_ntor")
                lfix_ntor = .TRUE.
             CASE ("-bootstrap")
@@ -289,6 +293,7 @@
                WRITE(6,*) '   -balloon          Ballooning Target'
                WRITE(6,*) '   -neo              Neoclassical (NEO) Target'
                WRITE(6,*) '   -dkes             Neoclassical (DKES) Target'
+               WRITE(6,*) '   -dkes_erdiff      DKES L11 Er difference Target'
                WRITE(6,*) '   -bootstrap        Bootstrap (BOOTSJ) Target'
                WRITE(6,*) '   -txport           Turbulent Transport Target (prox1d)'
                WRITE(6,*) '   -txport_tem       Turbulent Transport Target (TEM)'
@@ -973,6 +978,17 @@
          WRITE(6,'(A)')'!       Neoclassical Transport Calculation (as calculated by DKES)'
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
          WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_DKES(1:',ns,') = ',ns,'*0.0  SIGMA_DKES(1:',ns,') = ',ns,'*1.0'
+         WRITE(6,'(4X,A)') 'NU_DKES = 1.0E-3 1.0E-3'
+         WRITE(6,'(4X,A)') 'ER_DKES = 0.1  0.001'
+      END IF
+      IF (ldkes_erdiff) THEN
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       L11 Er Spread Calculation (as calculated by DKES)'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_DKES_ERDIFF(1:',ns,') = ',ns,'*0.0  SIGMA_DKES_ERDIFF(1:',ns,') = ',ns,'*1.0'
+         WRITE(6,'(4X,A)') 'NU_DKES_ERDIFF = 1.0E-3'
+         WRITE(6,'(4X,A)') 'EP_DKES_ERDIFF = 1.0'
+         WRITE(6,'(4X,A)') 'EM_DKES_ERDIFF = 1.0E-3'
       END IF
       IF (lbootsj) THEN
          ! Note boozer quantities are on half grid so nboot = ns-1
