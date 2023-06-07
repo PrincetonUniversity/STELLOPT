@@ -327,7 +327,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             CALL write_var_hdf5(qid_gid,'ez',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=rtemp)
             DEALLOCATE(rtemp)
          ELSE
-            ALLOCATE(r4dtemp(nr_fida,nphi_fida,nz_fida,3))
+            ALLOCATE(r4dtemp(nr_fida,nz_fida,nphi_fida,3))
             ALLOCATE(r1dtemp(3))
             r1dtemp = 1
             DO l = 1,nr_fida
