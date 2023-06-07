@@ -14,6 +14,7 @@ SUBROUTINE beams3d_init
       nv_in => nzeta, nfp_in => nfp, nigroup
    USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
    USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
+   USE read_fieldlines_mod, ONLY: read_fieldlines_mag, get_fieldlines_grid
    USE beams3d_runtime
    USE beams3d_grid
    USE beams3d_input_mod, ONLY: read_beams3d_input, init_beams3d_input
@@ -105,6 +106,13 @@ SUBROUTINE beams3d_init
       CALL read_hint_mag(TRIM(id_string)//'.magslice',ier)
       phimin = 0
       CALL get_hint_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
+   ELSE IF (lfieldlines .and. lread_input) THEN
+      CALL read_beams3d_input('input.'//TRIM(id_string),ier)
+      IF (lverb) WRITE(6,'(A)') '   FILE:     input.' // TRIM(id_string)
+      IF (lverb) WRITE(6,'(A)') '   FIELDLINES FILE: fieldlines_' // TRIM(id_string) // '.h5'
+      CALL read_fieldlines_mag('fieldlines_'//TRIM(id_string)//'.h5',MPI_COMM_SHARMEM,ier)
+      phimin = 0
+      CALL get_fieldlines_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
    END IF
 
    IF (lrestart_particles .or. lrestart_grid) THEN
@@ -243,9 +251,89 @@ SUBROUTINE beams3d_init
             MINVAL(POT_AUX_F(1:npot))*1E-3,',',MAXVAL(POT_AUX_F(1:npot))*1E-3,'] kV;  NPOT: ',npot
       END IF
 
-      IF (lverb) THEN
-         WRITE(6,'(A,F9.5,A)') '   PLASMA_MASS =  ',plasma_mass/1.66053906660E-27,' amu'
-         WRITE(6,'(A,F9.5,A)') '   PLASMA_ZMEAN =  ',plasma_zmean,' [Z]'
+      ! Construct 1D splines
+      bcs1_s=(/ 0, 0 /)
+      IF ((lvmec .or. leqdsk .or. lhint .or. lfieldlines) .and. .not.lvac) THEN
+         IF (lverb) WRITE(6,'(A)') '----- Plasma Parameters -----'
+         ! TE
+         IF (nte>0) THEN
+            CALL EZspline_init(TE_spl_s,nte,bcs1_s,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init1',ier)
+            TE_spl_s%isHermite   = 0
+            TE_spl_s%x1          = TE_AUX_S(1:nte)
+            CALL EZspline_setup(TE_spl_s,TE_AUX_F(1:nte),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init2',ier)
+            IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   Te   = [', &
+               MINVAL(TE_AUX_F(1:nte))*1E-3,',',MAXVAL(TE_AUX_F(1:nte))*1E-3,'] keV;  NTE:   ',nte
+         END IF
+         ! TI
+         IF (nti>0) THEN
+            CALL EZspline_init(TI_spl_s,nti,bcs1_s,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init3',ier)
+            TI_spl_s%isHermite   = 0
+            TI_spl_s%x1          = TI_AUX_S(1:nti)
+            CALL EZspline_setup(TI_spl_s,TI_AUX_F(1:nti),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init4',ier)
+            IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   Ti   = [', &
+               MINVAL(TI_AUX_F(1:nti))*1E-3,',',MAXVAL(TI_AUX_F(1:nti))*1E-3,'] keV;  NTI:   ',nti
+         END IF
+         ! NE
+         IF (nne>0) THEN
+            ! Check values
+            IF (ALL(NE_AUX_F(1:nne) < 1E4)) THEN
+               IF (lverb) WRITE(6,'(A)') '   Rescaling Electron Density (1E18)'
+               NE_AUX_F(1:nne) = NE_AUX_F(1:nne)*1E18
+            END IF
+            CALL EZspline_init(NE_spl_s,nne,bcs1_s,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init5',ier)
+            NE_spl_s%x1          = NE_AUX_S(1:nne)
+            NE_spl_s%isHermite   = 0
+            CALL EZspline_setup(NE_spl_s,NE_AUX_F(1:nne),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init6',ier)
+            IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A)') '   Ne   = [', &
+               MINVAL(NE_AUX_F(1:nne))*1E-20,',',MAXVAL(NE_AUX_F(1:nne))*1E-20,'] E20 m^-3;  NNE:   ',nne
+         END IF
+         ! NION
+         DO i = 1, NION
+            k = COUNT(NI_AUX_S .ge. 0)
+            CALL EZspline_init(NI_spl_s(i),k,bcs1_s,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init9b',ier)
+            NI_spl_s(i)%x1          = NI_AUX_S(1:k)
+            NI_spl_s(i)%isHermite   = 0
+            CALL EZspline_setup(NI_spl_s(i),NI_AUX_F(i,1:k),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init10b',ier)
+            IF (lverb .and. ANY(NI_AUX_F(i,:)>0)) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A,I3,A,I2)') '   Ni(',i,')= [', &
+               MINVAL(NI_AUX_F(i,1:k))*1E-20,',',MAXVAL(NI_AUX_F(i,1:k))*1E-20,'] E20 m^-3;  M: ',&
+               NINT(NI_AUX_M(i)/1.66053906660E-27),' amu;  Z: ',NI_AUX_Z(i)
+         END DO
+         ! ZEFF
+         IF (nzeff>0) THEN
+            CALL EZspline_init(ZEFF_spl_s,nzeff,bcs1_s,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init7',ier)
+            ZEFF_spl_s%isHermite   = 0
+            ZEFF_spl_s%x1          = ZEFF_AUX_S(1:nzeff)
+            CALL EZspline_setup(ZEFF_spl_s,ZEFF_AUX_F(1:nzeff),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init8',ier)
+            IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   Zeff = [', &
+               MINVAL(ZEFF_AUX_F(1:nzeff)),',',MAXVAL(ZEFF_AUX_F(1:nzeff)),'];  NZEFF: ',nzeff
+         END IF
+         ! POTENTIAL
+         IF (npot>0) THEN
+            CALL EZspline_init(POT_spl_s,npot,bcs1_s,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init9',ier)
+            POT_spl_s%x1          = POT_AUX_S(1:npot)
+            POT_spl_s%isHermite   = 0
+            CALL EZspline_setup(POT_spl_s,POT_AUX_F(1:npot),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init10',ier)
+            IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   V    = [', &
+               MINVAL(POT_AUX_F(1:npot))*1E-3,',',MAXVAL(POT_AUX_F(1:npot))*1E-3,'] kV;  NPOT: ',npot
+         END IF
+
+         IF (lverb) THEN
+            WRITE(6,'(A,F9.5,A)') '   PLASMA_MASS =  ',plasma_mass/1.66053906660E-27,' amu'
+            WRITE(6,'(A,F9.5,A)') '   PLASMA_ZMEAN =  ',plasma_zmean,' [Z]'
+         END IF
+
       END IF
 
    END IF
@@ -368,22 +456,10 @@ SUBROUTINE beams3d_init
       CALL mpialloc(energy_fida,nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
       CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
    END IF
-
-   CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
-
-
-   ! Put the vacuum field on the background grid
-   IF (lmgrid) THEN
-      CALL beams3d_init_mgrid
-   ELSE IF (lcoil) THEN
-      CALL beams3d_init_coil
-   END IF
-
-
    ! Put the plasma field on the background grid
    IF (lrestart_grid) THEN
       continue
-   ELSE IF(lvmec .and. .not.lvac) THEN
+   ELSE IF (lvmec .and. .not.lvac) THEN
       CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
       CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
       CALL beams3d_init_vmec
@@ -395,10 +471,24 @@ SUBROUTINE beams3d_init
       CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
       CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
       CALL beams3d_init_hint
+   ELSE IF (lfieldlines) THEN
+      CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+      CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+      CALL beams3d_init_fieldlines
    ELSE IF (leqdsk) THEN
       CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
       CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
       CALL beams3d_init_eqdsk
+   END IF
+
+   CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
+
+
+   ! Put the vacuum field on the background grid
+   IF (lmgrid) THEN
+      CALL beams3d_init_mgrid
+   ELSE IF (lcoil) THEN
+      CALL beams3d_init_coil
    END IF
 
    ! Adjust the torodial distribution function grid

@@ -77,6 +77,7 @@
       END IF
       DO ik = 1, nsd
          WRITE(temp_str,'(A,I3.3)') '_s',ik
+         CALL move_txtfile('input_dkes.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'input_dkes.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
          CALL move_txtfile('dkesout.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'dkesout.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
          CALL move_txtfile('opt_dkes.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'opt_dkes.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
          CALL move_txtfile('results.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'results.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
