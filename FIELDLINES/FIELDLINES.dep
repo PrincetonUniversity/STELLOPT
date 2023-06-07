@@ -79,6 +79,15 @@ fieldlines_init_subgrid.o: \
       fieldlines_lines.o
       
 
+fieldlines_gridgen.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o \
+      fieldlines_lines.o
+      
+
 fieldlines_grid.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
       
