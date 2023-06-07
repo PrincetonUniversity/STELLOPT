@@ -34,7 +34,6 @@ beams3d_free.o \
 beams3d_init_restart.o \
 out_beams3d_nag.o \
 beams3d_read.o \
-beams3d_read_grid.o \
 beams3d_init_coil.o \
 beams3d_init_vmec.o \
 beams3d_grid.o \
