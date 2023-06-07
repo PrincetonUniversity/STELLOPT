@@ -1,5 +1,6 @@
 ObjectFiles = \
 read_fieldlines_mod.o \
+read_beams3d_mod.o \
 git_version_mod.o \
 d1mach.o \
 dqag.o \

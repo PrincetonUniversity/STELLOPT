@@ -15,6 +15,7 @@ SUBROUTINE beams3d_init
    USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
    USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
    USE read_fieldlines_mod, ONLY: read_fieldlines_mag, get_fieldlines_grid
+   USE read_beams3d_mod, ONLY: read_beams3d_mag, get_beams3d_grid
    USE beams3d_runtime
    USE beams3d_grid
    USE beams3d_input_mod, ONLY: read_beams3d_input, init_beams3d_input
@@ -113,6 +114,13 @@ SUBROUTINE beams3d_init
       CALL read_fieldlines_mag('fieldlines_'//TRIM(id_string)//'.h5',MPI_COMM_SHARMEM,ier)
       phimin = 0
       CALL get_fieldlines_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
+   ELSE IF (lrestart_grid .and. lread_input) THEN
+      CALL read_beams3d_input('input.'//TRIM(id_string),ier)
+      IF (lverb) WRITE(6,'(A)') '   FILE:     input.' // TRIM(id_string)
+      IF (lverb) WRITE(6,'(A)') '   RESTART GRID FILE: ' // TRIM(restart_string)
+      CALL read_beams3d_mag(TRIM(restart_string),MPI_COMM_SHARMEM,ier)
+      phimin = 0
+      CALL get_beams3d_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
    END IF
 
    IF (lrestart_particles .or. lrestart_grid) THEN
@@ -136,23 +144,21 @@ SUBROUTINE beams3d_init
 
    ! Output some information
    IF (lverb ) THEN
-      IF (.not. lrestart_grid) THEN
-         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
-         IF (lbeam) THEN
-            WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles_start
-            WRITE(6,'(A,I6)')                          '   # of Beams:   ', nbeams
-         ELSEIF (lfusion) THEN
-            WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles_start
-            WRITE(6,'(A,I6)')                          '   # of species: ', nbeams
-         ELSE
-            WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles
-         END IF
-         IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
-         IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
-         IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
+      WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
+      WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
+      WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
+      IF (lbeam) THEN
+         WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles_start
+         WRITE(6,'(A,I6)')                          '   # of Beams:   ', nbeams
+      ELSEIF (lfusion) THEN
+         WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles_start
+         WRITE(6,'(A,I6)')                          '   # of species: ', nbeams
+      ELSE
+         WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles
       END IF
+      IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
+      IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
+      IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
       IF (lcollision) WRITE(6,'(A)') '   COLLISION OPERATOR ON!'
       IF (lkick) WRITE(6,'(A)') '   KICK MODEL ON!'
       IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
@@ -175,7 +181,7 @@ SUBROUTINE beams3d_init
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF ((lvmec .or. leqdsk .or. lhint .or. lfieldlines) .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk .or. lhint .or. lfieldlines .or. lrestart_grid) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Plasma Parameters -----'
          ! TE
          IF (nte>0) THEN
@@ -264,88 +270,56 @@ SUBROUTINE beams3d_init
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!              Initialize Background Grids
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-   IF (lrestart_grid) THEN
-      CALL beams3d_init_restart
-      CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
-      CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
-      CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
-      CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
-      CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
-      CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
-      CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
-      CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
-      CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
-      CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
-      ldepo=.false. !Restart can never be depo run
-      IF (myid_sharmem == 0) THEN
-         X_ARR = 1.5
-         Y_ARR = 1.5
-         ! Setup grid helpers
-         ! Note: All helpers are defined in terms of differences on half grid
-         !       so values are indexed from 1 to n-1.  Which we store at n
-         !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         !        hr(i) = raxis(i+1) - raxis(i)
-         !        hri    = one / hr
-         FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
-         FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
-         FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
-         hri = one / hr
-         hpi = one / hp
-         hzi = one / hz
-      END IF
-   ELSE
-      ! Create the background grid
-      CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
-      CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
-      CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
-      CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
-      CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
-      CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
-      CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
-      CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
-      CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
-      CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
-      CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
-      CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
-      CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
-      CALL mpialloc(TE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE)
-      CALL mpialloc(NE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE)
-      CALL mpialloc(TI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI)
-      CALL mpialloc(ZEFF_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF_ARR)
-      CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
-      CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
-      CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
-      CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
-      CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
-      CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
-      IF (myid_sharmem == 0) THEN
-         FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
-         FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
-         FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
-         S_ARR = 1.5
-         X_ARR = 1.5
-         Y_ARR = 1.5
-         POT_ARR = 0
-         NI = 0
-         ! Setup grid helpers
-         ! Note: All helpers are defined in terms of differences on half grid
-         !       so values are indexed from 1 to n-1.  Which we store at n
-         !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         !        hr(i) = raxis(i+1) - raxis(i)
-         !        hri    = one / hr
-         FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
-         FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
-         FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
-         hri = one / hr
-         hpi = one / hp
-         hzi = one / hz
-         ! Do this here so EQDSK vac RMP works.
-         B_R = 0
-         B_PHI = 0
-         B_Z = 0
-         MODB = 0
-      END IF
+   ! Create the background grid
+   CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
+   CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
+   CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
+   CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
+   CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
+   CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
+   CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
+   CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
+   CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
+   CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
+   CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
+   CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
+   CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
+   CALL mpialloc(TE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE)
+   CALL mpialloc(NE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE)
+   CALL mpialloc(TI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI)
+   CALL mpialloc(ZEFF_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF_ARR)
+   CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
+   CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
+   CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
+   CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
+   CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
+   CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
+   IF (myid_sharmem == 0) THEN
+      FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
+      FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
+      FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
+      S_ARR = 1.5
+      X_ARR = 1.5
+      Y_ARR = 1.5
+      POT_ARR = 0
+      NI = 0
+      ! Setup grid helpers
+      ! Note: All helpers are defined in terms of differences on half grid
+      !       so values are indexed from 1 to n-1.  Which we store at n
+      !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+      !        hr(i) = raxis(i+1) - raxis(i)
+      !        hri    = one / hr
+      FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
+      FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
+      FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
+      hri = one / hr
+      hpi = one / hp
+      hzi = one / hz
+      ! Do this here so EQDSK vac RMP works.
+      B_R = 0
+      B_PHI = 0
+      B_Z = 0
+      MODB = 0
    END IF
    
     CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)  
@@ -390,9 +364,7 @@ SUBROUTINE beams3d_init
   
    
    ! Put the plasma field on the background grid
-   IF (lrestart_grid) THEN
-      continue
-   ELSE IF (lvmec .and. .not.lvac) THEN
+   IF (lvmec .and. .not.lvac) THEN
       CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
       CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
       CALL beams3d_init_vmec
@@ -412,6 +384,10 @@ SUBROUTINE beams3d_init
       CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
       CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
       CALL beams3d_init_eqdsk
+   ELSE IF (lrestart_grid) THEN
+      CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+      CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+      CALL beams3d_init_restartgrid
    END IF
 
    ! Adjust the torodial distribution function grid
@@ -666,7 +642,6 @@ SUBROUTINE beams3d_init
    ! Output Grid
    CALL beams3d_write('GRID_INIT')
    !IF (lverb)  WRITE(6,'(A)')  'Grid_Init Completed'
-   !IF (.not. lrestart_grid) THEN
    CALL mpidealloc(B_R,win_B_R)
    CALL mpidealloc(B_PHI,win_B_PHI)
    CALL mpidealloc(B_Z,win_B_Z)
@@ -683,10 +658,9 @@ SUBROUTINE beams3d_init
       CALL mpidealloc(TI,win_TI)
       CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
    END IF
-   !END IF
 
    ! DEALLOCATE Variables
-   IF (.not.lvac .and. .not. lrestart_grid) THEN
+   IF (.not.lvac) THEN
       IF (nte > 0) CALL EZspline_free(TE_spl_s,ier)
       IF (nne > 0) CALL EZspline_free(NE_spl_s,ier)
       IF (nti > 0) CALL EZspline_free(TI_spl_s,ier)
@@ -708,9 +682,7 @@ SUBROUTINE beams3d_init
    CALL RANDOM_SEED
 
    ! Initialize beams (define a distribution of directions and weights)
-   IF (lrestart_grid) THEN
-      CONTINUE
-   ELSEIF (lbeam) THEN
+   IF (lbeam) THEN
       IF (.not. lsuzuki) CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
       IF (lw7x) THEN
          CALL beams3d_init_beams_w7x
@@ -721,8 +693,6 @@ SUBROUTINE beams3d_init
       END IF
       ! Randomize particles Only for beam depo runs
       IF (lrandomize) CALL beams3d_randomize_particles
-   ELSEIF (lrestart_particles) THEN
-      CALL beams3d_init_restart
    ELSEIF (lfusion) THEN
       CALL beams3d_init_fusion
    ELSE
@@ -753,7 +723,7 @@ SUBROUTINE beams3d_init
    end_state=0
 
    ! Setup distribution
-   
+
    ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
       ndot_prof(nbeams,ns_prof1))
    ipower_prof=0; epower_prof=0; ndot_prof=0

@@ -327,7 +327,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             CALL write_var_hdf5(qid_gid,'ez',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=rtemp)
             DEALLOCATE(rtemp)
          ELSE
-            ALLOCATE(r4dtemp(nr_fida,nphi_fida,nz_fida,3))
+            ALLOCATE(r4dtemp(nr_fida,nz_fida,nphi_fida,3))
             ALLOCATE(r1dtemp(3))
             r1dtemp = 1
             DO l = 1,nr_fida
@@ -983,7 +983,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    IF (.not.lexist) THEN
       write(6,'(A)') 'Continuing without FIDASIM input generation'
       write(6,'(A)') 'Is the namelist present in the input file?'
-	  IF (lrestart_grid) write(6,'(A)') 'This is the normal behavior with restart_grid for now.'
+      IF (lrestart_grid) write(6,'(A)') 'This is the normal behavior with restart_grid for now.'
       return
    END IF
    CALL safe_open(iunit,istat,'input.' // TRIM(id_string),'old','formatted')
