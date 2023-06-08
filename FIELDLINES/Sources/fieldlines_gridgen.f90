@@ -26,14 +26,9 @@
       IMPLICIT NONE
       INTEGER :: i, j, k, i1, i2, j2, k2, l, l1, l2, n1, ier, mystart
       REAL(rprec) :: r1, r2, r0, z0, z1, z2, rinner, zinner, phiend_temp,&
-                     phi0, ra, za, phia
+                     phi0, ra, za, phia, dr, dz
       LOGICAL, DIMENSION(:,:,:), POINTER :: lgoodline
       INTEGER :: win_lgoodline
-!-----------------------------------------------------------------------
-!     External Functions
-!          A00ADF               NAG Detection
-!-----------------------------------------------------------------------
-!      EXTERNAL A00ADF
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -45,8 +40,7 @@
          r0 = ra
          z0 = za
          phi0 = phia
-         WRITE(6,'(A)') '===========AXIS SEARCH=========='
-         WRITE(6,'(A,3(F8.5,A))')     '   AXIS_GUESS[R,PHI,Z] = [',ra,',',phia,',',za,'];'
+         !WRITE(6,'(A,3(F8.5,A))')     '   AXIS_GUESS[R,PHI,Z] = [',ra,',',phia,',',za,'];'
          CALL fieldlines_find_axis(r0,z0,phi0)
          WRITE(6,'(A,3(F8.5,A))') '         AXIS[R,PHI,Z] = [',r0,',',phi0,',',z0,']'
       END IF
@@ -73,6 +67,8 @@
          nlines = n1 - 1
          WRITE(6,'(A)') '===========PHI = 0 Grid=========='
       END IF
+      dr = (raxis(nr)-raxis(1))/DBLE(nr-1)
+      dz = (zaxis(nz)-zaxis(1))/DBLE(nz-1)
       npoinc = nphi - 1 ! so that steps are in phiaxis
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
@@ -105,9 +101,15 @@
          IF ((R_lines(i,l2-1) < raxis(nr)) .AND. (R_lines(i,l2-1) > raxis(1)) .AND. &
             (Z_lines(i,l2-1) < zaxis(nz)) .AND. (Z_lines(i,l2-1) > zaxis(1))) THEN
                DO l = l1,l2-1
-                  i2 = COUNT(raxis<=R_lines(i,l))
+                  !i2 = COUNT(raxis<=R_lines(i,l))
                   j2 = MOD(l,npoinc)+1
-                  k2 = COUNT(zaxis<=Z_lines(i,l))
+                  !k2 = COUNT(zaxis<=Z_lines(i,l))
+                  i2 = COUNT((raxis-0.5*dr)   <= R_lines(i,l))
+                  !j = COUNT((phiaxis-0.5*dp) <= zeta_1D(s))
+                  k2 = COUNT((zaxis-0.5*dz)   <= Z_lines(i,l))
+                  i2 = MIN(MAX(i2,1),nr)
+                  j2 = MIN(MAX(j2,1),nphi)
+                  k2 = MIN(MAX(k2,1),nz)
                   lgoodline(i2,j2,k2) = .TRUE.
                END DO
          END IF
