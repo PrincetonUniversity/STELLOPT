@@ -142,6 +142,7 @@
          INTEGER :: mylocalid, nlocal, s, i, j, k, mystart, myend, npoinc, l, m
          REAL(DTYPE) :: r1,r2,p1,p2,z1,z2
          LOGICAL, DIMENSION(:), ALLOCATABLE :: mask_axis
+         REAL(DTYPE), DIMENSION(:), ALLOCATABLE :: R_help, Z_help
          REAL(DTYPE), DIMENSION(:,:), POINTER :: zeta_lines
          REAL(DTYPE), DIMENSION(:), POINTER :: ZETA_1D
          INTEGER, DIMENSION(:,:,:), POINTER :: N3D
@@ -224,14 +225,29 @@
 
          ! Create rminor helper
          IF (mylocalid == master) THEN
+            ALLOCATE(R_help(nsteps),Z_help(nsteps))
             DO i = 1, nlines
-               X_lines(i,:) = R_lines(i,:) - R_lines(1,:)
-               Y_lines(i,:) = Z_lines(i,:) - Z_lines(1,:)
+               ! Should use PHI_lines to figure things out
+               IF (PHI_lines(i,1) /= 0.0) THEN
+                  j = COUNT(ABS(PHI_lines(i,:)) <= phiaxis(nphi))
+                  l = nsteps - j + 1
+                  m = nsteps - j + 2
+                  R_help(1:l)      = R_lines(i,j:nsteps)
+                  R_help(m:nsteps) = R_lines(i,1:j-1)
+                  Z_help(1:l)      = Z_lines(i,j:nsteps)
+                  Z_help(m:nsteps) = Z_lines(i,1:j-1)
+               ELSE
+                  R_help = R_lines(i,:)
+                  Z_help = Z_lines(i,:)
+               END IF
+               X_lines(i,:) = R_help - R_lines(1,:)
+               Y_lines(i,:) = Z_help - Z_lines(1,:)
             END DO
             rminor_lines = SQRT(X_lines**2 + Y_lines**2)
             DO i = 1, nlines
                rminor_lines(i,:) = SUM(rminor_lines(i,:))/(nsteps)
             END DO
+            DEALLOCATE(R_help,Z_help)
          END IF
 
          ! Check we've read the background grids
