@@ -117,6 +117,7 @@
       INTEGER, PARAMETER ::  runtype_full      = 327
       INTEGER, PARAMETER ::  runtype_norun     = 328
       INTEGER, PARAMETER ::  runtype_backflow  = 329
+      INTEGER, PARAMETER ::  runtype_gridgen   = 422
       
       INTEGER, PARAMETER ::  MAXLINES   = 2**19
       INTEGER, PARAMETER ::  NLOCAL = 128  ! Number of local processors

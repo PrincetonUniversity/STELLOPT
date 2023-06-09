@@ -60,6 +60,7 @@
       alpha = 0.75
       nfp = (pi2/phimax)
       phi2 = phi0+pi2/nfp
+      delta_phi = phimax-phimin
       !phi2 = phi0+pi2
       IF (lverb) WRITE(6,'(A)') '===========AXIS SEARCH=========='
       IF (lverb) WRITE(6,'(A)') '        R0        Z0       Error     '
