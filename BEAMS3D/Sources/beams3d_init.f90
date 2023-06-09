@@ -125,8 +125,8 @@ SUBROUTINE beams3d_init
 
    IF (lrestart_particles .or. lrestart_grid) THEN
       ldepo = .false.
-      lbbnbi = .false.
-      lbeam = .false.
+      !lbbnbi = .false.
+      !lbeam = .false.
    END IF
 
    IF (ldepo .and. (lfidasim .or. lfidasim2)) THEN
