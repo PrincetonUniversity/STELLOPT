@@ -44,6 +44,7 @@
          !WRITE(6,'(A,3(F8.5,A))')     '   AXIS_GUESS[R,PHI,Z] = [',ra,',',phia,',',za,'];'
          CALL fieldlines_find_axis(r0,z0,phi0)
          WRITE(6,'(A,3(F8.5,A))') '         AXIS[R,PHI,Z] = [',r0,',',phi0,',',z0,']'
+         ra = r0; za = z0; phia = phi0
       END IF
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
