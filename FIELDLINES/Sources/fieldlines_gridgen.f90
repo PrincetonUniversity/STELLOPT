@@ -29,6 +29,7 @@
                      phi0, ra, za, phia, dr, dz
       LOGICAL, DIMENSION(:,:,:), POINTER :: lgoodline
       INTEGER :: win_lgoodline
+      INTEGER :: MPI_COMM_LOCAL
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -46,7 +47,7 @@
       END IF
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_gridgen',ierr_mpi)
       ! Now allocate the helper
       CALL mpialloc(lgoodline, nr, nphi, nz, myworkid, master, MPI_COMM_SHARMEM, win_lgoodline)
       IF (myworkid == master) lgoodline = .FALSE.
@@ -54,6 +55,7 @@
 
       ! Now do a grid search
       IF (myworkid == master) THEN
+         r_start = -1; z_start = -1; phi_start = 0; phi_end = 0;
          n1 = 1
          DO i = 2, nr-1
             DO j = 2, nz-1
@@ -72,24 +74,24 @@
       npoinc = nphi - 1 ! so that steps are in phiaxis
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_BCAST(nlines,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_BCAST(r_start,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_BCAST(z_start,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_BCAST(phi_start,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_BCAST(phi_end,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, nprocs_fieldlines, ierr_mpi )          ! MPI
 #endif
       CALL fieldlines_follow  ! This call on subgrid grid
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_gridgen',ierr_mpi)
 #endif
 
       ! Now find lines still in the grid
@@ -116,7 +118,17 @@
       END DO
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_gridgen',ierr_mpi)
+      ! Have master nodes reduce the lgood variable
+      i = MPI_UNDEFINED
+      IF (myid_sharmem == master) i = 0
+      CALL MPI_COMM_SPLIT( MPI_COMM_FIELDLINES,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
+      IF (myid_sharmem == master) THEN
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE,lgoodline,nr*nphi*nz,MPI_LOGICAL,MPI_LOR,MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+      END IF
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_gridgen',ierr_mpi)
 #endif
       IF (myworkid == master) THEN
          WRITE(6,'(A,I8,A,I8)') '  PHI=0 NGOOD/NTOTAL = ',COUNT(lgoodline(2:nr,1,2:nz)),'/',(nr-2)*(nz-2)
@@ -173,17 +185,17 @@
       npoinc = nphi - 1 ! so that steps are in phiaxis
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_BCAST(nlines,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_BCAST(r_start,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_BCAST(z_start,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_BCAST(phi_start,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_BCAST(phi_end,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
       CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, nprocs_fieldlines, ierr_mpi )          ! MPI
       IF (ASSOCIATED(lgoodline))   CALL mpidealloc(lgoodline,   win_lgoodline)
 #endif
