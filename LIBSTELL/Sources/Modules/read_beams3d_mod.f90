@@ -291,8 +291,8 @@ CONTAINS
       br = 0; bp = 0; bz=0
       IF (i>nr .or. j>nphi .or. k>nz) RETURN
       bp = BPHI3D(i,j,k)
-      br = BR3D(i,j,k) * bp / raxis(i)
-      bz = BZ3D(i,j,k) * bp / raxis(i)
+      br = BR3D(i,j,k)
+      bz = BZ3D(i,j,k)
       IF (PRESENT(rho)) THEN
          rho = S3D(i,j,k)
       END IF
