@@ -17,7 +17,7 @@
   FLAGS_R = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
             -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high
   FLAGS_D = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -g -traceback -xCORE-AVX512 -qopt-zmm-usage=high
+            -assume noold_unit_star -g -traceback -check all -ftrapuv -xCORE-AVX512 -qopt-zmm-usage=high
   LIBS    =  ${MKLROOT}/lib/intel64/libmkl_blas95_lp64.a \
              ${MKLROOT}/lib/intel64/libmkl_lapack95_lp64.a \
              ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a \
