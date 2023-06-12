@@ -50,8 +50,8 @@
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_gridgen',ierr_mpi)
       ! Now allocate the helper
-      CALL mpialloc(lgoodline, nr, nphi, nz, myworkid, master, MPI_COMM_SHARMEM, win_lgoodline)
-      IF (myworkid == master) lgoodline = .FALSE.
+      CALL mpialloc(lgoodline, nr, nphi, nz, myid_sharmem, master, MPI_COMM_SHARMEM, win_lgoodline)
+      IF (myid_sharmem == master) lgoodline = .FALSE.
 #endif
 
       ! Now do a grid search
