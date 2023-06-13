@@ -63,8 +63,8 @@
          dr = (raxis(nr-1) - ra) / DBLE(nr-1)
          dz = (0.0         - za) / DBLE(nr-1)
          DO i = 2,nr
-            r_start(n1) = ra + dr * DBLE(i-1)/DBLE(nr-1)
-            z_start(n1) = za + dz * DBLE(i-1)/DBLE(nr-1)
+            r_start(n1) = ra + dr * DBLE(i-1)
+            z_start(n1) = za + dz * DBLE(i-1)
             phi_start(n1)   = phiaxis(1)
             phi_end(n1)     = phiaxis(nphi)*phi_factor
             n1 = n1 + 1
@@ -128,11 +128,8 @@
          IF ((R_lines(i,l2-1) < raxis(nr)) .AND. (R_lines(i,l2-1) > raxis(1)) .AND. &
             (Z_lines(i,l2-1) < zaxis(nz)) .AND. (Z_lines(i,l2-1) > zaxis(1))) THEN
                DO l = l1,l2-1
-                  !i2 = COUNT(raxis<=R_lines(i,l))
                   j2 = MOD(l,npoinc)+1
-                  !k2 = COUNT(zaxis<=Z_lines(i,l))
                   i2 = COUNT((raxis-0.5*dr)   <= R_lines(i,l))
-                  !j = COUNT((phiaxis-0.5*dp) <= zeta_1D(s))
                   k2 = COUNT((zaxis-0.5*dz)   <= Z_lines(i,l))
                   i2 = MIN(MAX(i2,1),nr)
                   j2 = MIN(MAX(j2,1),nphi)
@@ -175,34 +172,71 @@
          dr = (re - ra) / DBLE(nr-1)
          dz = (ze - za) / DBLE(nr-1)
          DO i = 2,nr
-            r_start(n1) = ra + dr * DBLE(i-1)/DBLE(nr-1)
-            z_start(n1) = za + dz * DBLE(i-1)/DBLE(nr-1)
+            r_start(n1) = ra + dr * DBLE(i-1)
+            z_start(n1) = za + dz * DBLE(i-1)
             phi_start(n1)   = phiaxis(1)
             n1 = n1 + 1
          END DO
          ! Now find missing points
-         DO l = 1, nr*nphi*nz
+         DO l = 1, nr*nz
             i = MOD(l-1,nr)+1
-            j = MOD(l-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(l) / REAL(nr*nphi))
+            k = MOD(l-1,nr*nz)
+            k = FLOOR(REAL(k) / REAL(nr))+1
             i = MAX(MIN(i,nr-1),2)
             k = MAX(MIN(k,nz-1),2)
-            IF (lgoodline(i,j,k)) CYCLE
-            i2 = 0
-            IF (lgoodline(i-1, j, k-1)) i2 = i2+1
-            IF (lgoodline(i-1, j, k  )) i2 = i2+1
-            IF (lgoodline(i-1, j, k+1)) i2 = i2+1
-            IF (lgoodline(i  , j, k-1)) i2 = i2+1
-            IF (lgoodline(i  , j, k+1)) i2 = i2+1
-            IF (lgoodline(i+1, j, k-1)) i2 = i2+1
-            IF (lgoodline(i+1, j, k  )) i2 = i2+1
-            IF (lgoodline(i+1, j, k+1)) i2 = i2+1
-            IF (i2 > 6) THEN
-               r_start(n1)     = raxis(i)
-               phi_start(n1)   = phiaxis(j)
-               z_start(n1)     = zaxis(k)
-               n1 = n1 + 1
+            j = 1
+            IF (.not.lgoodline(i,j,k)) THEN
+               i2 = 0
+               IF (lgoodline(i-1, j, k-1)) i2 = i2+1
+               IF (lgoodline(i-1, j, k  )) i2 = i2+1
+               IF (lgoodline(i-1, j, k+1)) i2 = i2+1
+               IF (lgoodline(i  , j, k-1)) i2 = i2+1
+               IF (lgoodline(i  , j, k+1)) i2 = i2+1
+               IF (lgoodline(i+1, j, k-1)) i2 = i2+1
+               IF (lgoodline(i+1, j, k  )) i2 = i2+1
+               IF (lgoodline(i+1, j, k+1)) i2 = i2+1
+               IF (i2 > 6) THEN
+                  r_start(n1)     = raxis(i)
+                  phi_start(n1)   = phiaxis(j)
+                  z_start(n1)     = zaxis(k)
+                  n1 = n1 + 1
+               END IF
+            END IF
+            j = nphi/4
+            IF (.not.lgoodline(i,j,k)) THEN
+               i2 = 0
+               IF (lgoodline(i-1, j, k-1)) i2 = i2+1
+               IF (lgoodline(i-1, j, k  )) i2 = i2+1
+               IF (lgoodline(i-1, j, k+1)) i2 = i2+1
+               IF (lgoodline(i  , j, k-1)) i2 = i2+1
+               IF (lgoodline(i  , j, k+1)) i2 = i2+1
+               IF (lgoodline(i+1, j, k-1)) i2 = i2+1
+               IF (lgoodline(i+1, j, k  )) i2 = i2+1
+               IF (lgoodline(i+1, j, k+1)) i2 = i2+1
+               IF (i2 > 6) THEN
+                  r_start(n1)     = raxis(i)
+                  phi_start(n1)   = phiaxis(j)
+                  z_start(n1)     = zaxis(k)
+                  n1 = n1 + 1
+               END IF
+            END IF
+            j = nphi/2
+            IF (.not.lgoodline(i,j,k)) THEN
+               i2 = 0
+               IF (lgoodline(i-1, j, k-1)) i2 = i2+1
+               IF (lgoodline(i-1, j, k  )) i2 = i2+1
+               IF (lgoodline(i-1, j, k+1)) i2 = i2+1
+               IF (lgoodline(i  , j, k-1)) i2 = i2+1
+               IF (lgoodline(i  , j, k+1)) i2 = i2+1
+               IF (lgoodline(i+1, j, k-1)) i2 = i2+1
+               IF (lgoodline(i+1, j, k  )) i2 = i2+1
+               IF (lgoodline(i+1, j, k+1)) i2 = i2+1
+               IF (i2 > 6) THEN
+                  r_start(n1)     = raxis(i)
+                  phi_start(n1)   = phiaxis(j)
+                  z_start(n1)     = zaxis(k)
+                  n1 = n1 + 1
+               END IF
             END IF
          END DO
          nlines = n1 - 1
