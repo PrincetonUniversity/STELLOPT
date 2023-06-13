@@ -146,7 +146,7 @@
          INTEGER, INTENT(inout) :: comm_read
          INTEGER, INTENT(out) :: istat
          INTEGER :: mylocalid, nlocal, s, i, j, k, mystart, myend, l, m
-         REAL(DTYPE) :: r1,r2,p1,p2,z1,z2
+         REAL(DTYPE) :: r1,r2,p1,p2,z1,z2, Rminor_max
          LOGICAL, DIMENSION(:), ALLOCATABLE :: mask_axis
          REAL(DTYPE), DIMENSION(:), ALLOCATABLE :: R_help, Z_help
          REAL(DTYPE), DIMENSION(:,:), POINTER :: zeta_lines
@@ -284,13 +284,13 @@
          END DO
          CALL MPI_BARRIER(comm_read,istat)
          IF (mylocalid==master) THEN
-            p1 = MAXVAL(Rminor3D)
+            Rminor_max = MAXVAL(Rminor3D)
             WHERE(N3D > 0) 
                Rminor3D = Rminor3D / N3D
                X3D = X3D / N3D
                Y3D = Y3D / N3D
             ELSEWHERE
-               Rminor3D = p1
+               Rminor3D = Rminor_max
             END WHERE
          END IF
          CALL MPI_BARRIER(comm_read,istat)
