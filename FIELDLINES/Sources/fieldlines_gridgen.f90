@@ -30,7 +30,7 @@
       LOGICAL, DIMENSION(:,:,:), POINTER :: lgoodline
       INTEGER :: win_lgoodline
       INTEGER :: MPI_COMM_LOCAL
-      INTEGER, PARAMETER :: phi_factor = 1000
+      INTEGER, PARAMETER :: phi_factor = 100
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -155,16 +155,25 @@
          phi_start(1) = phiaxis(1)
          n1 = 2
          ! PHI = 0
-         DO l = 1, nr*nz
-            i = MOD(l-1,nr)+1
-            j = MOD(l-1,nr*nz)
-            j = FLOOR(REAL(j) / REAL(nr))+1
+         j = COUNT(zaxis >= za)
+         DO i = 1, nr
             IF (.not.lgoodline(i,1,j)) CYCLE
-            r_start(n1)     = raxis(i)
-            z_start(n1)     = zaxis(j)
+            r_start(n1) = raxis(i)
+            z_start(n1) = za
             phi_start(n1)   = phiaxis(1)
             n1 = n1 + 1
          END DO
+         ! Old way
+         !DO l = 1, nr*nz
+         !   i = MOD(l-1,nr)+1
+         !   j = MOD(l-1,nr*nz)
+         !   j = FLOOR(REAL(j) / REAL(nr))+1
+         !   IF (.not.lgoodline(i,1,j)) CYCLE
+         !   r_start(n1)     = raxis(i)
+         !   z_start(n1)     = zaxis(j)
+         !   phi_start(n1)   = phiaxis(1)
+         !   n1 = n1 + 1
+         !END DO
          ! Now find missing points
          DO l = 1, nr*nphi*nz
             i = MOD(l-1,nr)+1
@@ -183,7 +192,7 @@
             IF (lgoodline(i+1, j, k-1)) i2 = i2+1
             IF (lgoodline(i+1, j, k  )) i2 = i2+1
             IF (lgoodline(i+1, j, k+1)) i2 = i2+1
-            IF (i2 > 5) THEN
+            IF (i2 > 8) THEN
                r_start(n1)     = raxis(i)
                phi_start(n1)   = phiaxis(j)
                z_start(n1)     = zaxis(k)
