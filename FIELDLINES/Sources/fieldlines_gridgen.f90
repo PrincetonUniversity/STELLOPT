@@ -58,15 +58,24 @@
       IF (myworkid == master) THEN
          r_start = -1; z_start = -1; phi_start = 0; phi_end = 0;
          n1 = 1
+      !  Do just Rmajor at Zaxis
          DO i = 2, nr-1
-            DO j = 2, nz-1
-               r_start(n1)     = raxis(i)
-               z_start(n1)     = zaxis(j)
-               phi_start(n1)   = phiaxis(1)
-               phi_end(n1)     = phiaxis(1)+10*pi2
-               n1 = n1 + 1
-            END DO
+            r_start(n1) = raxis(i)
+            z_start(n1) = za
+            phi_start(n1)   = phiaxis(1)
+            phi_end(n1)     = phiaxis(1)+10*pi2
+            n1 = n1 + 1
          END DO
+      !  Do the entire PHI=0 Plane
+      !   DO i = 2, nr-1
+      !      DO j = 2, nz-1
+      !         r_start(n1)     = raxis(i)
+      !         z_start(n1)     = zaxis(j)
+      !         phi_start(n1)   = phiaxis(1)
+      !         phi_end(n1)     = phiaxis(1)+10*pi2
+      !         n1 = n1 + 1
+      !      END DO
+      !   END DO
          nlines = n1 - 1
          WRITE(6,'(A)') '===========PHI = 0 Grid=========='
       END IF
