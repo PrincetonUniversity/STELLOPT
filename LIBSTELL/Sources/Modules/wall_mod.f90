@@ -125,6 +125,7 @@
                           free_mpi_array2d_int, free_mpi_array2d_dbl
       END INTERFACE
 
+      PRIVATE :: LINE_BOX_INTERSECTION
       PRIVATE :: mpialloc_1d_int,mpialloc_1d_dbl,mpialloc_2d_int,mpialloc_2d_dbl
       PRIVATE :: free_mpi_array1d_int, free_mpi_array1d_dbl, free_mpi_array2d_int, free_mpi_array2d_dbl
       CONTAINS
@@ -1512,17 +1513,36 @@
             rmin = wall%blocks(i)%rmin - epsilon
             rmax = wall%blocks(i)%rmax + epsilon
 
+            ! Extend the domain to include the neighbors (SAL)
+            !rmin = rmin - (rmax - rmin)*0.25
+            !rmax = rmax + (rmax - rmin)*0.25
+
             ! Check vertices in block
             mask_face(:,:) = .FALSE.
-            mask_face(:,1) = (A0(:,1) < rmax(1) .and. A0(:,1) >= rmin(1) &
-               .and. A0(:,2) < rmax(2) .and. A0(:,2) >= rmin(2) &
-               .and. A0(:,3) < rmax(3) .and. A0(:,3) >= rmin(3))
-            mask_face(:,2) = (A1(:,1) < rmax(1) .and. A1(:,1) >= rmin(1) &
-               .and. A1(:,2) < rmax(2) .and. A1(:,2) >= rmin(2) &
-               .and. A1(:,3) < rmax(3) .and. A1(:,3) >= rmin(3))
-            mask_face(:,3) = (A2(:,1) < rmax(1) .and. A2(:,1) >= rmin(1) &
-               .and. A2(:,2) < rmax(2) .and. A2(:,2) >= rmin(2) &
-               .and. A2(:,3) < rmax(3) .and. A2(:,3) >= rmin(3))
+
+
+            !mask_face(:,1) = (A0(:,1) < rmax(1) .and. A0(:,1) >= rmin(1) &
+            !   .and. A0(:,2) < rmax(2) .and. A0(:,2) >= rmin(2) &
+            !   .and. A0(:,3) < rmax(3) .and. A0(:,3) >= rmin(3))
+            !mask_face(:,2) = (A1(:,1) < rmax(1) .and. A1(:,1) >= rmin(1) &
+            !   .and. A1(:,2) < rmax(2) .and. A1(:,2) >= rmin(2) &
+            !   .and. A1(:,3) < rmax(3) .and. A1(:,3) >= rmin(3))
+            !mask_face(:,3) = (A2(:,1) < rmax(1) .and. A2(:,1) >= rmin(1) &
+            !   .and. A2(:,2) < rmax(2) .and. A2(:,2) >= rmin(2) &
+            !   .and. A2(:,3) < rmax(3) .and. A2(:,3) >= rmin(3))
+
+            ! Could probably vectorize
+            DO j = 1,nface
+               CALL LINE_BOX_INTERSECTION(A0(j,1),A0(j,2),A0(j,3), &
+                  A1(j,1),A1(j,2),A1(j,3),rmin(1),rmin(2),rmin(3),&
+                  rmax(1),rmax(2),rmax(3),mask_face(j,1))
+               CALL LINE_BOX_INTERSECTION(A1(j,1),A1(j,2),A1(j,3), &
+                  A2(j,1),A2(j,2),A2(j,3),rmin(1),rmin(2),rmin(3),&
+                  rmax(1),rmax(2),rmax(3),mask_face(j,2))
+               CALL LINE_BOX_INTERSECTION(A2(j,1),A2(j,2),A2(j,3), &
+                  A0(j,1),A0(j,2),A0(j,3),rmin(1),rmin(2),rmin(3),&
+                  rmax(1),rmax(2),rmax(3),mask_face(j,3))
+            END DO
 
             ! Count found faces
             mask = ANY(mask_face,2)
@@ -1591,17 +1611,34 @@
                ! Define bounds block
                rmin = wall%blocks(i)%rmin - epsilon
                rmax = wall%blocks(i)%rmax + epsilon
+
+               ! Extend the domain to include the neighbors (SAL)
+               !rmin = rmin - (rmax - rmin)*0.25
+               !rmax = rmax + (rmax - rmin)*0.25
       
                ! Check which vertices are in block         
-               mask_face(:,1) = (A0(:,1) < rmax(1) .and. A0(:,1) >= rmin(1) &
-                  .and. A0(:,2) < rmax(2) .and. A0(:,2) >= rmin(2) &
-                  .and. A0(:,3) < rmax(3) .and. A0(:,3) >= rmin(3))
-               mask_face(:,2) = (A1(:,1) < rmax(1) .and. A1(:,1) >= rmin(1) &
-                  .and. A1(:,2) < rmax(2) .and. A1(:,2) >= rmin(2) &
-                  .and. A1(:,3) < rmax(3) .and. A1(:,3) >= rmin(3))
-               mask_face(:,3) = (A2(:,1) < rmax(1) .and. A2(:,1) >= rmin(1) &
-                  .and. A2(:,2) < rmax(2) .and. A2(:,2) >= rmin(2) &
-                  .and. A2(:,3) < rmax(3) .and. A2(:,3) >= rmin(3))
+               !mask_face(:,1) = (A0(:,1) < rmax(1) .and. A0(:,1) >= rmin(1) &
+               !   .and. A0(:,2) < rmax(2) .and. A0(:,2) >= rmin(2) &
+               !   .and. A0(:,3) < rmax(3) .and. A0(:,3) >= rmin(3))
+               !mask_face(:,2) = (A1(:,1) < rmax(1) .and. A1(:,1) >= rmin(1) &
+               !   .and. A1(:,2) < rmax(2) .and. A1(:,2) >= rmin(2) &
+               !   .and. A1(:,3) < rmax(3) .and. A1(:,3) >= rmin(3))
+               !mask_face(:,3) = (A2(:,1) < rmax(1) .and. A2(:,1) >= rmin(1) &
+               !   .and. A2(:,2) < rmax(2) .and. A2(:,2) >= rmin(2) &
+               !   .and. A2(:,3) < rmax(3) .and. A2(:,3) >= rmin(3))
+
+               ! Could probably vectorize
+               DO j = 1,nface
+                  CALL LINE_BOX_INTERSECTION(A0(j,1),A0(j,2),A0(j,3), &
+                     A1(j,1),A1(j,2),A1(j,3),rmin(1),rmin(2),rmin(3),&
+                     rmax(1),rmax(2),rmax(3),mask_face(j,1))
+                  CALL LINE_BOX_INTERSECTION(A1(j,1),A1(j,2),A1(j,3), &
+                     A2(j,1),A2(j,2),A2(j,3),rmin(1),rmin(2),rmin(3),&
+                     rmax(1),rmax(2),rmax(3),mask_face(j,2))
+                  CALL LINE_BOX_INTERSECTION(A2(j,1),A2(j,2),A2(j,3), &
+                     A0(j,1),A0(j,2),A0(j,3),rmin(1),rmin(2),rmin(3),&
+                     rmax(1),rmax(2),rmax(3),mask_face(j,3))
+               END DO
 
                ! Mask
                mask = ANY(mask_face,2)
@@ -1673,6 +1710,72 @@
    
          CLOSE(10)        
       END SUBROUTINE WRITE_WALL
+
+
+
+      SUBROUTINE LINE_BOX_INTERSECTION(x1, y1, z1, x2, y2, z2, xmin, ymin, zmin, xmax, ymax, zmax, intersects)
+      !-----------------------------------------------------------------------
+      ! LINE_BOX_INTERSECTION: Determines if line intersects a 3D box
+      !-----------------------------------------------------------------------
+      ! param[in]: x1,y1,z1,x2,y2,z2 Line Endpoints
+      ! param[in]: xmin,ymin,zmin,xmax,ymax,zmax Box bounds
+      ! param[out]: intersects Does Line Intersect
+      !----------------------------------------------------------------------- 
+      IMPLICIT NONE
+      LOGICAL, INTENT(out) :: intersects
+      DOUBLE PRECISION, INTENT(IN) :: x1, y1, z1, x2, y2, z2, &
+                                      xmin, ymin, zmin, xmax, ymax, zmax
+      DOUBLE PRECISION :: tmin, tmax, t
+      DOUBLE PRECISION :: tax,tbx,tay,tby,taz,tbz, divx,divy,divz
+      DOUBLE PRECISION :: txmin,txmax,tymin,tymax,tzmin,tzmax
+
+      intersects = .false.
+      tmin =-1.0D30
+      tmax = 1.0D30
+
+      !http://people.csail.mit.edu/amy/papers/box-jgt.pdf
+      !https://tavianator.com/2011/ray_box.html
+      divx = one/(x2-x1)
+      divy = one/(y2-y1)
+      divz = one/(z2-z1)
+      tax = (xmin - x1) * divx
+      tbx = (xmax - x1) * divx
+      tay = (ymin - y1) * divy
+      tby = (ymax - y1) * divy
+      taz = (zmin - z1) * divz
+      tbz = (zmax - z1) * divz
+      ! Sort them so tmin < tmax
+      tmin = MIN(tax,tbx)
+      tmax = MAX(tax,tbx)
+      tmin = MAX(tmin,MIN(tay,tby,tmax))
+      tmax = MIN(tmax,MAX(tay,tby,tmin))
+      tmin = MAX(tmin,MIN(taz,tbz,tmax))
+      tmax = MIN(tmax,MAX(taz,tbz,tmin))
+
+      ! Check if there is an intersection
+      ! Note that this test includes a test for tmax<=one
+      ! This is because we only want to include boxes which the
+      ! ray itself lies inside
+      intersects = ((tmax > MAX(tmin,zero)) .and. (tmax <= one))
+
+      IF (.FALSE.) THEN 
+         PRINT *,'X1  ',x1,y1,z1
+         PRINT *,'X2  ',x2,y2,z2
+         PRINT *,'MIN ',xmin,ymin,zmin
+         PRINT *,'MAX ',xmax,ymax,zmax
+         PRINT *,'DX  ',divx,divy,divz
+         PRINT *,'TA  ',tax,tay,taz
+         PRINT *,'TB  ',tbx,tby,tbz
+         PRINT *,'TMIN',MIN(tax,tbx),MIN(tay,tby),MIN(taz,tbz)
+         PRINT *,'TMAX',MAX(tax,tbx),MAX(tay,tby),MAX(taz,tbz)
+         PRINT *,tmin,tmax,intersects
+         STOP
+      END IF
+
+      RETURN
+
+      END SUBROUTINE LINE_BOX_INTERSECTION
+
    
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
