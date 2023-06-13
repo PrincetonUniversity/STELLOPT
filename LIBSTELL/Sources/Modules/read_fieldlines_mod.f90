@@ -140,7 +140,7 @@
          INTEGER, INTENT(inout) :: comm_read
          INTEGER, INTENT(out) :: istat
          INTEGER :: mylocalid, nlocal, s, i, j, k, mystart, myend, npoinc, l, m
-         REAL(DTYPE) :: r1,r2,p1,p2,z1,z2
+         REAL(DTYPE) :: r1,r2,p1,p2,z1,z2, Rminor_max
          LOGICAL, DIMENSION(:), ALLOCATABLE :: mask_axis
          REAL(DTYPE), DIMENSION(:), ALLOCATABLE :: R_help, Z_help
          REAL(DTYPE), DIMENSION(:,:), POINTER :: zeta_lines
@@ -223,8 +223,6 @@
          CALL MPI_BARRIER(comm_read,istat)
 #endif
 
-         IF (myworkid == master) PRINT *,'GOT HERE 0'
-
          CALL MPI_CALC_MYRANGE(comm_read,1,nlines,mystart,myend)
          ! Create rminor helper
          ALLOCATE(R_help(nsteps),Z_help(nsteps))
@@ -254,7 +252,6 @@
 #if defined(MPI_OPT)
          CALL MPI_BARRIER(comm_read,istat)
 #endif
-         IF (myworkid == master) PRINT *,'GOT HERE 1'
 
          ! Check we've read the background grids
          IF (nr <= 0 .OR.  nphi <= 0 .OR. nz <= 0) THEN
@@ -274,11 +271,10 @@
          ALLOCATE(mask_axis(nsteps))
 
          ! Default the rho grid to the largest value of Rminor
-         IF (mylocalid==master) Rminor3D = MAXVAL(rminor_lines)
+         IF (mylocalid==master) Rminor3D = 0.0
 #if defined(MPI_OPT)
          CALL MPI_BARRIER(comm_read,istat)
 #endif
-         IF (myworkid == master) PRINT *,'GOT HERE 2'
 
          ! Create the background helpers
          CALL MPI_CALC_MYRANGE(comm_read,1,nlines*nsteps,mystart,myend)
@@ -296,15 +292,17 @@
          END DO
          CALL MPI_BARRIER(comm_read,istat)
          IF (mylocalid==master) THEN
+            Rminor_max = MAXVAL(Rminor3D)
             WHERE(N3D > 0) 
                Rminor3D = Rminor3D / N3D
                X3D = X3D / N3D
                Y3D = Y3D / N3D
+            ELSEWHERE
+               Rminor3D = Rminor_max
             END WHERE
          END IF
          CALL MPI_BARRIER(comm_read,istat)
          IF (ASSOCIATED(N3D))      CALL mpidealloc(N3D,   win_N3D)
-         IF (myworkid == master) PRINT *,'GOT HERE 3'
 
          ! Calculate magaxis
          CALL MPI_CALC_MYRANGE(comm_read,1,nphi,mystart,myend)
