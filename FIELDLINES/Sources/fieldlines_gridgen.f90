@@ -30,6 +30,7 @@
       LOGICAL, DIMENSION(:,:,:), POINTER :: lgoodline
       INTEGER :: win_lgoodline
       INTEGER :: MPI_COMM_LOCAL
+      INTEGER, PARAMETER :: phi_factor = 1000
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -63,7 +64,7 @@
             r_start(n1) = raxis(i)
             z_start(n1) = za
             phi_start(n1)   = phiaxis(1)
-            phi_end(n1)     = phiaxis(1)+10*pi2
+            phi_end(n1)     = phiaxis(nphi)*phi_factor
             n1 = n1 + 1
          END DO
       !  Do the entire PHI=0 Plane
@@ -191,7 +192,7 @@
          END DO
          nlines = n1 - 1
       END IF
-      phi_end(1:nlines) = pi2*100.0
+      phi_end(1:nlines) = phiaxis(nphi)*phi_factor
       npoinc = nphi - 1 ! so that steps are in phiaxis
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
