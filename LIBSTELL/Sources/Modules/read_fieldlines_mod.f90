@@ -24,7 +24,7 @@
 
       ! HINT Variables
       INTEGER, PARAMETER, PRIVATE :: DTYPE =  SELECTED_REAL_KIND(15)
-      INTEGER ::  nr, nz, nphi, nlines, nsteps
+      INTEGER ::  nr, nz, nphi, nlines, nsteps, npoinc
       DOUBLE PRECISION, PRIVATE, PARAMETER :: one           = 1.0D0 ! 1.0
       DOUBLE PRECISION, PRIVATE :: pi2, dr, dp, dz
       REAL(DTYPE), DIMENSION(:), POINTER, PRIVATE :: raxis, zaxis, phiaxis, &
@@ -91,6 +91,9 @@
             CALL read_scalar_hdf5(fid,'nr',istat,INTVAR=nr)
             CALL read_scalar_hdf5(fid,'nphi',istat,INTVAR=nphi)
             CALL read_scalar_hdf5(fid,'nz',istat,INTVAR=nz)
+            CALL read_scalar_hdf5(fid,'nlines',istat,INTVAR=nlines)
+            CALL read_scalar_hdf5(fid,'nsteps',istat,INTVAR=nsteps)
+            CALL read_scalar_hdf5(fid,'npoinc',istat,INTVAR=npoinc)
          END IF
 #else
          IF (mylocalid == 0) WRITE(6,*) " ERROR: HDF5 Required for this functionality."
@@ -104,6 +107,9 @@
          CALL MPI_BCAST(nr,   1, MPI_INTEGER, master, comm_read, istat)
          CALL MPI_BCAST(nphi, 1, MPI_INTEGER, master, comm_read, istat)
          CALL MPI_BCAST(nz,   1, MPI_INTEGER, master, comm_read, istat)
+         CALL MPI_BCAST(nlines, 1, MPI_INTEGER, master, comm_read, istat)
+         CALL MPI_BCAST(nsteps, 1, MPI_INTEGER, master, comm_read, istat)
+         CALL MPI_BCAST(npoinc, 1, MPI_INTEGER, master, comm_read, istat)
 #endif         
          CALL mpialloc(raxis,   nr,   mylocalid, master, comm_read, win_raxis)
          CALL mpialloc(phiaxis, nphi, mylocalid, master, comm_read, win_phiaxis)
@@ -139,7 +145,7 @@
          CHARACTER(*), INTENT(in) :: filename
          INTEGER, INTENT(inout) :: comm_read
          INTEGER, INTENT(out) :: istat
-         INTEGER :: mylocalid, nlocal, s, i, j, k, mystart, myend, npoinc, l, m
+         INTEGER :: mylocalid, nlocal, s, i, j, k, mystart, myend, l, m
          REAL(DTYPE) :: r1,r2,p1,p2,z1,z2
          LOGICAL, DIMENSION(:), ALLOCATABLE :: mask_axis
          REAL(DTYPE), DIMENSION(:), ALLOCATABLE :: R_help, Z_help
@@ -166,30 +172,10 @@
             RETURN
          END IF
 
-         ! Read HDF5 File
-#if defined(LHDF5)
-         IF (mylocalid == master) THEN
-            CALL open_hdf5(TRIM(filename),fid,istat)
-            CALL read_scalar_hdf5(fid,'nlines',istat,INTVAR=nlines)
-            CALL read_scalar_hdf5(fid,'nsteps',istat,INTVAR=nsteps)
-            CALL read_scalar_hdf5(fid,'npoinc',istat,INTVAR=npoinc)
-         END IF
-#else
-         IF (mylocalid == 0) WRITE(6,*) " ERROR: HDF5 Required for this functionality."
-         istat = -5
-         RETURN
-#endif
-
-         ! Broadcast arrays sizes and allocate arrays.
          ! Note that in FIELDLINES _lines are sized (1:nlines,0:nsteps)
          ! But FIELDLINES saves nsteps as nsteps+1
          ! so we ressize them to (1:nlines,1:nsteps)
-#if defined(MPI_OPT)
-         CALL MPI_BARRIER(comm_read,istat)
-         CALL MPI_BCAST(nlines, 1, MPI_INTEGER, master, comm_read, istat)
-         CALL MPI_BCAST(nsteps, 1, MPI_INTEGER, master, comm_read, istat)
-         CALL MPI_BCAST(npoinc, 1, MPI_INTEGER, master, comm_read, istat)
-#endif         
+         ! Also for speed we allocate them as 1D arrays but then point at them with 2D pointers
          CALL mpialloc(RMAGAXIS,  nphi,          mylocalid, master, comm_read, win_RMAGAXIS)
          CALL mpialloc(ZMAGAXIS,  nphi,          mylocalid, master, comm_read, win_ZMAGAXIS)
          CALL mpialloc(R_1D,      nlines*nsteps, mylocalid, master, comm_read, win_R_1D)
@@ -212,18 +198,22 @@
          ! Read Arrays and close file
 #if defined(LHDF5)
          IF (mylocalid == master) THEN
+            CALL open_hdf5(TRIM(filename),fid,istat)
             CALL read_var_hdf5(fid, 'R_lines',   nlines*nsteps, istat, DBLVAR=R_1D)
             CALL read_var_hdf5(fid, 'PHI_lines', nlines*nsteps, istat, DBLVAR=PHI_1D)
             CALL read_var_hdf5(fid, 'Z_lines',   nlines*nsteps, istat, DBLVAR=Z_1D)
             CALL close_hdf5(fid,istat)
             ZETA_1D = MODULO(PHI_1D,phiaxis(nphi))
          END IF
+#else
+         IF (mylocalid == 0) WRITE(6,*) " ERROR: HDF5 Required for this functionality."
+         istat = -5
+         RETURN
 #endif
+
 #if defined(MPI_OPT)
          CALL MPI_BARRIER(comm_read,istat)
 #endif
-
-         IF (myworkid == master) PRINT *,'GOT HERE 0'
 
          CALL MPI_CALC_MYRANGE(comm_read,1,nlines,mystart,myend)
          ! Create rminor helper
@@ -254,7 +244,6 @@
 #if defined(MPI_OPT)
          CALL MPI_BARRIER(comm_read,istat)
 #endif
-         IF (myworkid == master) PRINT *,'GOT HERE 1'
 
          ! Check we've read the background grids
          IF (nr <= 0 .OR.  nphi <= 0 .OR. nz <= 0) THEN
@@ -273,12 +262,11 @@
          ! Allocate helper
          ALLOCATE(mask_axis(nsteps))
 
-         ! Default the rho grid to the largest value of Rminor
-         IF (mylocalid==master) Rminor3D = MAXVAL(rminor_lines)
+         ! First, set the Rminor 3D grid to zero for summing
+         IF (mylocalid==master) Rminor3D = 0.0
 #if defined(MPI_OPT)
          CALL MPI_BARRIER(comm_read,istat)
 #endif
-         IF (myworkid == master) PRINT *,'GOT HERE 2'
 
          ! Create the background helpers
          CALL MPI_CALC_MYRANGE(comm_read,1,nlines*nsteps,mystart,myend)
@@ -296,15 +284,17 @@
          END DO
          CALL MPI_BARRIER(comm_read,istat)
          IF (mylocalid==master) THEN
+            p1 = MAXVAL(Rminor3D)
             WHERE(N3D > 0) 
                Rminor3D = Rminor3D / N3D
                X3D = X3D / N3D
                Y3D = Y3D / N3D
+            ELSEWHERE
+               Rminor3D = p1
             END WHERE
          END IF
          CALL MPI_BARRIER(comm_read,istat)
          IF (ASSOCIATED(N3D))      CALL mpidealloc(N3D,   win_N3D)
-         IF (myworkid == master) PRINT *,'GOT HERE 3'
 
          ! Calculate magaxis
          CALL MPI_CALC_MYRANGE(comm_read,1,nphi,mystart,myend)
