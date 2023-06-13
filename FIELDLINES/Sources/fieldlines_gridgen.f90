@@ -31,7 +31,7 @@
       LOGICAL, DIMENSION(:,:,:), POINTER :: lgoodline
       INTEGER :: win_lgoodline
       INTEGER :: MPI_COMM_LOCAL
-      INTEGER, PARAMETER :: phi_factor = 100
+      INTEGER, PARAMETER :: phi_factor = 1000
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -70,7 +70,7 @@
             n1 = n1 + 1
          END DO
          nlines = n1 - 1
-         WRITE(6,'(A)') '===========Initial Raxis to Edge Grid=========='
+         WRITE(6,'(A)') '===========Initial Raxis to Boundary Grid=========='
       END IF
       npoinc = nphi - 1 ! so that steps are in phiaxis
 #if defined(MPI_OPT)
@@ -120,6 +120,46 @@
       re = r_start(i2)
       ze = z_start(i2)
       phie = phi_start(i2)
+
+      ! Now rerun from axis to re
+      IF (myworkid == master) THEN
+         r_start = -1; z_start = -1; phi_start = 0; phi_end = 0;
+         n1 = 1
+      !  Do just Rmajor from magnetic axis
+         dr = (re - ra) / DBLE(nr-1)
+         dz = (ze - za) / DBLE(nr-1)
+         DO i = 2,nr
+            r_start(n1) = ra + dr * DBLE(i-1)
+            z_start(n1) = za + dz * DBLE(i-1)
+            phi_start(n1)   = phiaxis(1)
+            phi_end(n1)     = phiaxis(nphi)*phi_factor
+            n1 = n1 + 1
+         END DO
+         nlines = n1 - 1
+         WRITE(6,'(A)') '===========Initial Raxis to Edge Grid=========='
+      END IF
+      npoinc = nphi - 1 ! so that steps are in phiaxis
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_gridgen',ierr_mpi)
+      CALL MPI_BCAST(nlines,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
+      CALL MPI_BCAST(r_start,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
+      CALL MPI_BCAST(z_start,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
+      CALL MPI_BCAST(phi_start,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
+      CALL MPI_BCAST(phi_end,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_gridgen',ierr_mpi)
+      CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, nprocs_fieldlines, ierr_mpi )          ! MPI
+#endif
+      CALL fieldlines_follow  ! This call on subgrid grid
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_gridgen',ierr_mpi)
+#endif
 
       ! Now find lines still in the grid
       dr = (raxis(nr)-raxis(1))/DBLE(nr-1)
