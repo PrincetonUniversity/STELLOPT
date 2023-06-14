@@ -121,6 +121,15 @@
         lbeam = .false.
       END IF
 
+      ! Reset the distribution function if just doing a depo run
+      IF (ldepo) THEN
+         nrho_dist = 64
+         ntheta_dist = 2
+         nphi_dist   = 2
+         nvpara_dist = 2
+         nvperp_dist = 2
+      END IF
+
       ! Handle existence of ADAS for NBI
       IF (lbeam .and. .not.lsuzuki .and. myid_sharmem==master) THEN
          lsuzuki = .not.adas_tables_avail()
