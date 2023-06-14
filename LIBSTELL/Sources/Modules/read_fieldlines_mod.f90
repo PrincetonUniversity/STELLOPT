@@ -226,9 +226,9 @@
                l = nsteps - j + 1
                m = l + 1
                R_help(1:l) = R_lines(i,j:nsteps)
-               R_help(1:m) = 0.0
+               R_help(m:nsteps) = 0.0
                Z_help(1:l) = Z_lines(i,j:nsteps)
-               Z_help(1:m) = 0.0
+               Z_help(m:nsteps) = 0.0
             ELSE
                R_help = R_lines(i,:)
                Z_help = Z_lines(i,:)
