@@ -220,9 +220,9 @@
          ALLOCATE(R_help(nsteps),Z_help(nsteps),mask_axis(nsteps))
          DO i = mystart, myend
             ! Should use PHI_lines to figure things out
-            IF (PHI_lines(i,1) /= 0.0) THEN
+            IF (PHI_lines(i,1) /= PHI_lines(1,1)) THEN
                ! Just rephase
-               j = COUNT(ABS(PHI_lines(i,:)) <= phiaxis(nphi))
+               j = COUNT(ABS(PHI_lines(i,1:npoinc)) <= phiaxis(nphi))
                l = nsteps - j + 1
                m = l + 1
                R_help(1:l) = R_lines(i,j:nsteps)
@@ -239,7 +239,12 @@
          END DO
          DO i = mystart, myend
             mask_axis = R_help > 0
-            rminor_lines(i,:) = SUM(rminor_lines(i,:), MASK = mask_axis)/COUNT(mask_axis)
+            r1 = SUM(rminor_lines(i,:), MASK = mask_axis)/COUNT(mask_axis)
+            WHERE (mask_axis) 
+               rminor_lines(i,:) = r1
+            ELSEWHERE
+               rminor_lines(i,:) = 0
+            END WHERE
          END DO
          DEALLOCATE(R_help,Z_help)
 
@@ -270,6 +275,7 @@
          ! Create the background helpers
          CALL MPI_CALC_MYRANGE(comm_read,1,nlines*nsteps,mystart,myend)
          DO s = mystart, myend
+            IF (R_1D(s) <= 0.0) CYCLE
             i = COUNT((raxis-0.5*dr)   <= R_1D(s))
             j = COUNT((phiaxis-0.5*dp) <= zeta_1D(s))
             k = COUNT((zaxis-0.5*dz)   <= Z_1D(s))
@@ -354,6 +360,19 @@
          phimax_out = phiaxis(nphi)
          RETURN
       END SUBROUTINE get_fieldlines_grid
+
+      SUBROUTINE get_fieldlines_info(iunit)
+         IMPLICIT NONE
+         INTEGER, INTENT(IN) :: iunit
+         WRITE(iunit,'(A)')               '----- FIELDLINES Information -----'
+         WRITE(iunit,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',raxis(1),',',raxis(nr),'];  NR:   ',nr
+         WRITE(iunit,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phiaxis(1),',',phiaxis(nphi),'];  NPHI: ',nphi
+         WRITE(iunit,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zaxis(1),',',zaxis(nz),'];  NZ:   ',nz
+         WRITE(iunit,'(A,I7)')               '   NPOINC = ',npoinc
+         WRITE(iunit,'(A,I7)')               '   NLINES = ',nlines
+         WRITE(iunit,'(A,I7)')               '   NSTEPS = ',nsteps
+         RETURN
+      END SUBROUTINE get_fieldlines_info
 
       SUBROUTINE get_fieldlines_magaxis(phi_in,raxis_out,zaxis_out)
          IMPLICIT NONE
