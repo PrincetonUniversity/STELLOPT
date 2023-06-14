@@ -263,7 +263,12 @@
          CALL mpialloc(N3D,      nr, nphi, nz, mylocalid, master, comm_read, win_N3D)
 
          ! First, set the Rminor 3D grid to zero for summing
-         IF (mylocalid==master) Rminor3D = 0.0
+         IF (mylocalid==master) THEN
+            Rminor3D = 0.0
+            X3D = 0.0
+            Y3D = 0.0
+            N3D = 0
+         END IF
 #if defined(MPI_OPT)
          CALL MPI_BARRIER(comm_read,istat)
 #endif
@@ -291,7 +296,7 @@
                X3D = X3D / N3D
                Y3D = Y3D / N3D
             ELSEWHERE
-               Rminor3D = Rminor_max
+               Rminor3D = -1
             END WHERE
          END IF
          CALL MPI_BARRIER(comm_read,istat)
