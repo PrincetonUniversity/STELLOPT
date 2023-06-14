@@ -240,11 +240,7 @@
          DO i = mystart, myend
             mask_axis = R_help > 0
             r1 = SUM(rminor_lines(i,:), MASK = mask_axis)/COUNT(mask_axis)
-            WHERE (mask_axis) 
-               rminor_lines(i,:) = r1
-            ELSEWHERE
-               rminor_lines(i,:) = 0
-            END WHERE
+            rminor_lines(i,:) = r1
          END DO
          DEALLOCATE(R_help,Z_help)
 
