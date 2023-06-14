@@ -123,11 +123,10 @@
 
       ! Reset the distribution function if just doing a depo run
       IF (ldepo) THEN
-         nrho_dist = 64
-         ntheta_dist = 2
-         nphi_dist   = 2
-         nvpara_dist = 2
-         nvperp_dist = 2
+         ns_prof2 = 4
+         ns_prof3   = 2
+         ns_prof4 = 2
+         ns_prof5 = 4
       END IF
 
       ! Handle existence of ADAS for NBI
