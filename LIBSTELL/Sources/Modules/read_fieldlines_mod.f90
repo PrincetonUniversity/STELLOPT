@@ -217,17 +217,18 @@
 
          CALL MPI_CALC_MYRANGE(comm_read,1,nlines,mystart,myend)
          ! Create rminor helper
-         ALLOCATE(R_help(nsteps),Z_help(nsteps))
+         ALLOCATE(R_help(nsteps),Z_help(nsteps),mask_axis(nsteps))
          DO i = mystart, myend
             ! Should use PHI_lines to figure things out
             IF (PHI_lines(i,1) /= 0.0) THEN
+               ! Just rephase
                j = COUNT(ABS(PHI_lines(i,:)) <= phiaxis(nphi))
                l = nsteps - j + 1
-               m = nsteps - j + 2
-               R_help(1:l)      = R_lines(i,j:nsteps)
-               R_help(m:nsteps) = R_lines(i,1:j-1)
-               Z_help(1:l)      = Z_lines(i,j:nsteps)
-               Z_help(m:nsteps) = Z_lines(i,1:j-1)
+               m = l + 1
+               R_help(1:l) = R_lines(i,j:nsteps)
+               R_help(1:m) = 0.0
+               Z_help(1:l) = Z_lines(i,j:nsteps)
+               Z_help(1:m) = 0.0
             ELSE
                R_help = R_lines(i,:)
                Z_help = Z_lines(i,:)
@@ -237,7 +238,8 @@
             rminor_lines(i,:) = SQRT(X_lines(i,:)**2+Y_lines(i,:)**2)
          END DO
          DO i = mystart, myend
-            rminor_lines(i,:) = SUM(rminor_lines(i,:))/(nsteps)
+            mask_axis = R_help > 0
+            rminor_lines(i,:) = SUM(rminor_lines(i,:), MASK = mask_axis)/COUNT(mask_axis)
          END DO
          DEALLOCATE(R_help,Z_help)
 
@@ -258,9 +260,6 @@
          CALL mpialloc(Y3D,      nr, nphi, nz, mylocalid, master, comm_read, win_Y3D)
          CALL mpialloc(Rminor3D, nr, nphi, nz, mylocalid, master, comm_read, win_Rminor3D)
          CALL mpialloc(N3D,      nr, nphi, nz, mylocalid, master, comm_read, win_N3D)
-
-         ! Allocate helper
-         ALLOCATE(mask_axis(nsteps))
 
          ! First, set the Rminor 3D grid to zero for summing
          IF (mylocalid==master) Rminor3D = 0.0
