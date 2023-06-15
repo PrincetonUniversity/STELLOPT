@@ -247,7 +247,7 @@ MODULE beams3d_physics_mod
                coulomb_log = max(coulomb_log,one)
 
                ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-               v_crit = fact_crit*SQRT(te_temp) * (coulomb_log/coulomb_loge)**(1.0/3.0)
+               v_crit = 5.33e4*SQRT(te_temp) * (plasma_Zmean * coulomb_log/coulomb_loge)**(1.0/3.0)
                vcrit_cube = v_crit*v_crit*v_crit
                tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here
                tau_spit_inv = (1.0D0)/tau_spit
