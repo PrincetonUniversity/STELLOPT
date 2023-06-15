@@ -320,7 +320,7 @@
       END IF
 
       ! Now we need to reformulate B_R and B_Z as functions of phi
-      IF (myid_sharmem == master) THEN
+      IF (myid_sharmem == master .and. .not. lrestart) THEN
          DO k = 1, nz
             DO j = 1, nphi
                DO i = 1, nr
