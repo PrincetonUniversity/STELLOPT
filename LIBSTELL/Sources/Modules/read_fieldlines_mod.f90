@@ -241,6 +241,10 @@
             mask_axis = R_help > 0
             r1 = SUM(rminor_lines(i,:), MASK = mask_axis)/COUNT(mask_axis)
             rminor_lines(i,:) = r1
+            WHERE(.not.mask_axis) 
+               X_lines(i,:) = 0.0
+               Y_lines(i,:) = 0.0
+            END WHERE
          END DO
          DEALLOCATE(R_help,Z_help)
 
