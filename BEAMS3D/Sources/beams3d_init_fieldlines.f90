@@ -134,6 +134,16 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
+      ! Fix the last index of the grids since this can get screwed up
+      IF (myworkid == master) THEN
+         S_ARR(:,nphi,:)   = S_ARR(:,1,:)
+         U_ARR(:,nphi,:)   = U_ARR(:,1,:)
+         TE(:,nphi,:)      = TE(:,1,:)
+         NE(:,nphi,:)      = NE(:,1,:)
+         TI(:,nphi,:)      = TI(:,1,:)
+         POT_ARR(:,nphi,:) = POT_ARR(:,1,:)
+         NI(:,:,nphi,:)    = NI(:,:,1,:)
+      END IF
       
 
       ! Calculate Gfactor for mgrid
