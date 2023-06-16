@@ -1725,6 +1725,7 @@
       LOGICAL, INTENT(out) :: intersects
       DOUBLE PRECISION, INTENT(IN) :: x1, y1, z1, x2, y2, z2, &
                                       xmin, ymin, zmin, xmax, ymax, zmax
+      LOGICAL          :: inside
       DOUBLE PRECISION :: tmin, tmax, t
       DOUBLE PRECISION :: tax,tbx,tay,tby,taz,tbz, divx,divy,divz
       DOUBLE PRECISION :: txmin,txmax,tymin,tymax,tzmin,tzmax
@@ -1757,6 +1758,10 @@
       ! This is because we only want to include boxes which the
       ! ray itself lies inside
       intersects = ((tmax > MAX(tmin,zero)) .and. (tmax <= one))
+
+      inside = ((tmin >= zero) .and. (tmax >= zero) .and. (tmin <= one))
+
+      intersects = (inside .or. intersects)
 
       IF (.FALSE.) THEN 
          PRINT *,'X1  ',x1,y1,z1
