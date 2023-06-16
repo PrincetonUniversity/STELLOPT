@@ -1792,7 +1792,7 @@
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in) :: x1i, y1i, z1i, x2i, y2i, z2i, xmin, ymin, zmin, xmax, ymax, zmax
       LOGICAL, INTENT(out) :: intersects
-      DOUBLE PRECISION :: tmin, tmax, x1, y1, z1, x2, y2, z2, dx, dy, dz
+      DOUBLE PRECISION :: tmin, tmax, x1, y1, z1, x2, y2, z2, dx, dy, dz, t1, t2
 
       intersects = .false.
 
@@ -1810,17 +1810,24 @@
       dz = one/(z2-z1)
 
       ! Calculate the minimum and maximum values of t for each axis
-      tmin = max((xmin - x1) * dx, (xmax - x1) * dx)
-      tmax = min((xmin - x1) * dx, (xmax - x1) * dx)
-
-      tmin = max(tmin, max((ymin - y1) * dy, (ymax - y1) * dy))
-      tmax = min(tmax, min((ymin - y1) * dy, (ymax - y1) * dy))
-
-      tmin = max(tmin, max((zmin - z1) * dz, (zmax - z1) * dz))
-      tmax = min(tmax, min((zmin - z1) * dz, (zmax - z1) * dz))
+      tmin = zero
+      tmax = 1.0D20
+      t1 = (xmin - x1) * dx
+      t2 = (xmax - x1) * dx
+      tmin = max(tmin, min(min(t1, t2), tmax))
+      tmax = min(tmax, max(max(t1, t2), tmin))
+      t1 = (ymin - y1) * dy
+      t2 = (ymax - y1) * dy
+      tmin = max(tmin, min(min(t1, t2), tmax))
+      tmax = min(tmax, max(max(t1, t2), tmin))
+      t1 = (zmin - z1) * dz
+      t2 = (zmax - z1) * dz
+      tmin = max(tmin, min(min(t1, t2), tmax))
+      tmax = min(tmax, max(max(t1, t2), tmin))
 
       ! Check if there is an intersection
-      intersects = ((tmin <= tmax .and. tmax >= 0) .or. (tmin >= 0 .and. tmin <= 1))
+
+      intersects = (tmin < tmax)
 
       RETURN
 
