@@ -355,9 +355,8 @@
                   END DO
                END IF
             ELSE
-               pottemp = 0; sflx = 1
-               IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
-               POT_ARR(i,j,k) = pottemp
+               br = 1
+               IF (npot > 0) CALL EZspline_interp(POT_spl_s,br,POT_ARR(i,j,k),ier)
             END IF
          ELSE IF (.not. luse_vc) THEN
             B_R(i,j,k)   = 0
