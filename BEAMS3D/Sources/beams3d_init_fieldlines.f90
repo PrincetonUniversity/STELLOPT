@@ -123,7 +123,7 @@
             POT_ARR(i,j,k) = pottemp
          ELSE
             pottemp = 0; sflx = 1
-	    IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
+	      IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
             POT_ARR(i,j,k) = pottemp
          END IF
          IF (MOD(s,nr) == 0) THEN
