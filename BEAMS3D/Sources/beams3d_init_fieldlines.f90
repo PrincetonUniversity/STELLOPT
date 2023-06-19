@@ -121,6 +121,10 @@
             END IF
             NE(i,j,k) = netemp; TE(i,j,k) = tetemp; TI(i,j,k) = titemp
             POT_ARR(i,j,k) = pottemp
+         ELSE
+            pottemp = 0; sflx = 1
+	    IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
+            POT_ARR(i,j,k) = pottemp
          END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
@@ -141,6 +145,7 @@
          TE(:,nphi,:)      = TE(:,1,:)
          NE(:,nphi,:)      = NE(:,1,:)
          TI(:,nphi,:)      = TI(:,1,:)
+         ZEFF_ARR(:,nphi,:) = ZEFF_ARR(:,1,:)
          POT_ARR(:,nphi,:) = POT_ARR(:,1,:)
          NI(:,:,nphi,:)    = NI(:,:,1,:)
       END IF
