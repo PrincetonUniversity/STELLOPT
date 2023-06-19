@@ -173,6 +173,9 @@
                case ("-full")
                    nruntype = runtype_full
                    lauto = .true.
+               case ("-gridgen")
+                   nruntype = runtype_gridgen
+                   lauto = .true.
                case ("-backflow")
                    nruntype = runtype_backflow
                case ("-field_start")
@@ -201,6 +204,7 @@
                   write(6,*)'     -field_start file line:  Restart from a field line.'
                   write(6,*)'     -axis          Coil on mag_axis with curtor'
                   write(6,*)'     -full          Full Auto calculation'
+                  write(6,*)'     -gridgen       Grid generation type run'
                   write(6,*)'     -vac           Only vacuum field'
                   write(6,*)'     -plasma        Only Plasma field (in equilibrium)'
                   write(6,*)'     -reverse       Follow field backwards'
@@ -354,6 +358,9 @@
             IF (lverb) WRITE(6,'(A)') '===========Wall Hits=========='
             CALL fieldlines_follow
             CALL fieldlines_init_backflow
+         CASE(runtype_gridgen)
+            IF (lverb) WRITE(6,'(A)') '===========Grid Generation=========='
+            CALL fieldlines_gridgen
          CASE(runtype_norun)
       END SELECT
       ! Output Date
