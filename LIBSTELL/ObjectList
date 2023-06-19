@@ -1,4 +1,5 @@
 ObjectFiles = \
+read_fieldlines_mod.o \
 git_version_mod.o \
 d1mach.o \
 dqag.o \

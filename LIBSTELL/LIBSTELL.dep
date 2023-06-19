@@ -1,5 +1,12 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
-      
+
+read_fieldlines_mod.o :  \
+      stel_kinds.o \
+      ez_hdf5.o \
+      mpi_sharmem.o \
+      mpi_params.o \
+      mpi_inc.o
+
 fzero.o : \
       stel_kinds.o
       
