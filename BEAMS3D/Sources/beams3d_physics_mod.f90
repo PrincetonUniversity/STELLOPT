@@ -358,7 +358,8 @@ MODULE beams3d_physics_mod
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
                           inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
-                          vc3_tauinv, vbeta, zeff_temp, br_temp, bphi_temp, bz_temp, vperp, binv
+                          vc3_tauinv, vbeta, zeff_temp, br_temp, bphi_temp, bz_temp, vperp, &
+                          sm,omega2,vrel2,bmax,bmincl,bminqu,bmin, binv
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          ! For splines
          INTEGER :: i,j,k, l
