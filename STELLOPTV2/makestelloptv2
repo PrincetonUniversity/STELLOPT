@@ -118,47 +118,47 @@ $(LIB_VMEC) :
 	
 #Construct beams3d library. 
 $(LIB_BEAMS3D) :
-	@cd $(BEAMS3D_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BEAMS3D) *.o *.mod
+	@cd $(BEAMS3D_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BEAMS3D) *.o
 	
 #Construct bnorm library. 
 $(LIB_BNORM) :
-	@cd $(BNORM_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BNORM) *.o *.mod
+	@cd $(BNORM_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BNORM) *.o
 	
 #Construct bootsj library. 
 $(LIB_BOOTSJ) :
-	@cd $(BOOTSJ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOTSJ) *.o *.mod
+	@cd $(BOOTSJ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOTSJ) *.o
 	
 #Construct boozer library. 
 $(LIB_BOOZ) :
-	@cd $(BOOZ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOZ) *.o *.mod
+	@cd $(BOOZ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOZ) *.o
 	
 #Construct cobra library. 
 $(LIB_COBRA) :
-	@cd $(COBRA_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_COBRA) *.o *.mod
+	@cd $(COBRA_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_COBRA) *.o
 	
 #Construct diagno library. 
 $(LIB_DIAGNO) :
-	@cd $(DIAGNO_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_DIAGNO) *.o *.mod
+	@cd $(DIAGNO_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_DIAGNO) *.o
 	
 #Construct DKES library. 
 $(LIB_DKES) :
-	@cd $(DKES_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_DKES) *.o *.mod
+	@cd $(DKES_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_DKES) *.o
 	
 #Construct DKES library. 
 $(LIB_JINV) :
-	@cd $(JINV_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_JINV) *.o *.mod
+	@cd $(JINV_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_JINV) *.o
 	
 #Construct fieldlines library. 
 $(LIB_FIELDLINES) :
-	@cd $(FIELDLINES_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_FIELDLINES) *.o *.mod
+	@cd $(FIELDLINES_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_FIELDLINES) *.o
 	
 #Construct MAKEGRID library. 
 $(LIB_MGRID) :
-	@cd $(MGRID_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_MGRID) *.o *.mod
+	@cd $(MGRID_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_MGRID) *.o
 	
 #Construct NEO library. 
 $(LIB_NEO) :
-	@cd $(NEO_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_NEO) *.o *.mod
+	@cd $(NEO_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_NEO) *.o
 
 #Construct COILOPT library. 
 $(LIB_COILOPTPP) :
@@ -166,7 +166,7 @@ $(LIB_COILOPTPP) :
 
 #Construct GENE library
 $(LIB_GENE) :
-	@cd $(GENE_DIR); ar -cruv $(LIB_GENE) *.o *.mod
+	@cd $(GENE_DIR); ar -cruv $(LIB_GENE) *.o
 
 #Construct COILOPT library. 
 $(LIB_REGCOIL) :
@@ -174,4 +174,4 @@ $(LIB_REGCOIL) :
 
 #Construct TERPSICHORE library. 
 $(LIB_TERPSICHORE) :
-	@cd $(TERPSICHORE_DIR);make; ar -cruv $(LIB_TERPSICHORE) *.o *.mod
+	@cd $(TERPSICHORE_DIR);make; ar -cruv $(LIB_TERPSICHORE) *.o

@@ -83,7 +83,6 @@ SUBROUTINE out_beams3d_nag(t, q)
                        Y4D(1,1,1,1),nr,nphi,nz)
        y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
        rho_help = sqrt(y0)
-       !z0 = fval(1)
        z0 = ATAN2(fval2(1),fval(1))
        S_lines(mytdex, myline) = y0 
        U_lines(mytdex, myline) = z0

@@ -254,6 +254,9 @@
       ! DKES
       IF (ANY(sigma_dkes < bigno)) &
          CALL chisq_dkes(target_dkes, sigma_dkes, ncnt,iflag)
+      ! DKES ERdiff
+      IF (ANY(sigma_dkes_erdiff < bigno)) &
+         CALL chisq_dkes_erdiff(target_dkes_erdiff, sigma_dkes_erdiff, ncnt,iflag)
       ! TXPORT
       IF (ANY(sigma_txport < bigno)) &
          CALL chisq_txport(target_txport, sigma_txport, ncnt,iflag)

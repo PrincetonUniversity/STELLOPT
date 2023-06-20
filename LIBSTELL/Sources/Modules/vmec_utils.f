@@ -1178,8 +1178,17 @@ C-----------------------------------------------
       DO ieval = 1, niter
          nfe = nfe + 1
 
-         sflux = MAX(xc_opt(1), zero)
-         uflux = xc_opt(2)
+         if (xc_opt(1) .lt. zero) then
+           ! if initial guess for s is > 0,
+           ! flip theta by 180 deg
+           sflux = -xc_opt(1)
+           uflux = xc_opt(2) + 0.5_dp
+         else
+           ! standard case for s guess >= 0
+           sflux = MAX(xc_opt(1), zero)
+           uflux = xc_opt(2)
+         end if
+         
          c_flx(1) = sflux;  c_flx(2) = uflux
 
 !        COMPUTE R,Z, Ru, Zu

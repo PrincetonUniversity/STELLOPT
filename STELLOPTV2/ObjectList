@@ -1,4 +1,5 @@
 ObjectFiles = \
+chisq_dkes_erdiff.o \
 chisq_line_visbrem.o \
 chisq_gamma_c.o \
 chisq_pressprime.o \

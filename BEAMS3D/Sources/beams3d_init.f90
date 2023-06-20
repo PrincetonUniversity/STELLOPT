@@ -14,6 +14,7 @@
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
       USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
+      USE read_fieldlines_mod, ONLY: read_fieldlines_mag, get_fieldlines_grid
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input, init_beams3d_input
@@ -105,6 +106,13 @@
          CALL read_hint_mag(TRIM(id_string)//'.magslice',ier)
          phimin = 0
          CALL get_hint_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
+      ELSE IF (lfieldlines .and. lread_input) THEN
+         CALL read_beams3d_input('input.'//TRIM(id_string),ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE:     input.' // TRIM(id_string)
+         IF (lverb) WRITE(6,'(A)') '   FIELDLINES FILE: fieldlines_' // TRIM(id_string) // '.h5'
+         CALL read_fieldlines_mag('fieldlines_'//TRIM(id_string)//'.h5',MPI_COMM_SHARMEM,ier)
+         phimin = 0
+         CALL get_fieldlines_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
       END IF
 
       ! Handle particle restarting
@@ -116,6 +124,14 @@
 
       ! If we set vacuum then override lcollision
       IF (lvac) lcollision=.FALSE.
+
+      ! Reset the distribution function if just doing a depo run
+      IF (ldepo) THEN
+         ns_prof2 = 4
+         ns_prof3   = 2
+         ns_prof4 = 2
+         ns_prof5 = 4
+      END IF
 
       ! Handle existence of ADAS for NBI
       IF (lbeam .and. .not.lsuzuki .and. myid_sharmem==master) THEN
@@ -166,7 +182,7 @@
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF ((lvmec .or. leqdsk .or. lhint) .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk .or. lhint .or. lfieldlines) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Plasma Parameters -----'
          ! TE
          IF (nte>0) THEN
@@ -208,14 +224,15 @@
          END IF
          ! NION
          DO i = 1, NION
-            CALL EZspline_init(NI_spl_s(i),nzeff,bcs1_s,ier)
+            k = COUNT(NI_AUX_S .ge. 0)
+            CALL EZspline_init(NI_spl_s(i),k,bcs1_s,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init9b',ier)
-            NI_spl_s(i)%x1          = NI_AUX_S(1:nzeff)
+            NI_spl_s(i)%x1          = NI_AUX_S(1:k)
             NI_spl_s(i)%isHermite   = 0
-            CALL EZspline_setup(NI_spl_s(i),NI_AUX_F(i,1:nzeff),ier,EXACT_DIM=.true.)
+            CALL EZspline_setup(NI_spl_s(i),NI_AUX_F(i,1:k),ier,EXACT_DIM=.true.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init10b',ier)
             IF (lverb .and. ANY(NI_AUX_F(i,:)>0)) WRITE(6,'(A,I1,A,F9.5,A,F9.5,A,I3,A,I2)') '   Ni(',i,')= [', &
-                        MINVAL(NI_AUX_F(i,1:nzeff))*1E-20,',',MAXVAL(NI_AUX_F(i,1:nzeff))*1E-20,'] E20 m^-3;  M: ',&
+                        MINVAL(NI_AUX_F(i,1:k))*1E-20,',',MAXVAL(NI_AUX_F(i,1:k))*1E-20,'] E20 m^-3;  M: ',&
                         NINT(NI_AUX_M(i)/1.66053906660E-27),' amu;  Z: ',NI_AUX_Z(i)
          END DO
          ! ZEFF
@@ -371,6 +388,10 @@
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_hint
+      ELSE IF (lfieldlines) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+         CALL beams3d_init_fieldlines
       ELSE IF (leqdsk) THEN
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)

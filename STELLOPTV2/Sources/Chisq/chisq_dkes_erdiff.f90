@@ -1,11 +1,11 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_dkes
-!     Authors:       S. Lazerson (lazerson@pppl.gov)
-!     Date:          05/26/2012
-!     Description:   This is the chisquared routine which compares
-!                    target to equilibrium DKES values.
+!     Subroutine:    chisq_dkes_erdiff
+!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+!     Date:          12/19/2022
+!     Description:   This is the chisquared which handles the proxy
+!                    for temperature screening using DKES.
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_dkes(target,sigma,niter,iflag)
+      SUBROUTINE chisq_dkes_erdiff(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -32,67 +32,72 @@
 !     Local Variables
 !
 !-----------------------------------------------------------------------
-      INTEGER :: ik, ij, ii
+      INTEGER :: ik, ii
+      REAL(rprec) :: fp, fm
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       ! Count values
-      ik = 0
-      DO ii = 1, nsd
-         IF (sigma(ii) >= bigno) CYCLE
-         DO ij = 1, nprof
-            IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
-            ik = ik + 1
-         END DO
-      ENDDO
-      !ik   = COUNT(sigma < bigno)
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'DKES ',ik,15
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  S  NU  ER  L11p  L11m  L33p  L33m  L31p  L31m  SCAL11  SCAL33  SCAL31'
+      ik   = COUNT(sigma < bigno)
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'DKES_ERDIFF ',ik,25
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  S  NU  ERp ERm '&
+                // ' L11p+  L11m+  L33p+  L33m+  L31p+  L31m+  SCAL11+  SCAL33+  SCAL31+'& 
+                // ' L11p-  L11m-  L33p-  L33m-  L31p-  L31m-  SCAL11-  SCAL33-  SCAL31-'
       IF (niter >= 0) THEN
          ik = 0
          DO ii = 1, nsd
             IF (sigma(ii) >= bigno) CYCLE
-            DO ij = 1, nprof
-               IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
-               ik = ik + 1
-               mtargets = mtargets + 1
-               targets(mtargets) = target_dkes(ii)
-               sigmas(mtargets)  = sigma_dkes(ii)
+            mtargets = mtargets + 1
+            targets(mtargets) = target(ii)
+            sigmas(mtargets)  = sigma(ii)
 !DEC$ IF DEFINED (DKES_OPT)
-               vals(mtargets)    = 0.5*(DKES_L11p(ik)+DKES_L11m(ik))
-               IF (iflag == 1) WRITE(iunit_out,'(15ES22.12E3)') &
+            ik = ik + 1
+            fp = 0.5*(DKES_L11p(ik)+DKES_L11m(ik))
+            ik = ik + 1
+            fm = 0.5*(DKES_L11p(ik)+DKES_L11m(ik))
+            vals(mtargets) = fp - fm
+            IF (iflag == 1) WRITE(iunit_out,'(25ES22.12E3)') &
                   targets(mtargets),sigmas(mtargets),vals(mtargets),&
-                  shat(ii), nu_dkes(ij), E_dkes(ij), &
+                  shat(ii), nu_dkes_Erdiff, Ep_dkes_Erdiff, &
+                  Em_dkes_erdiff,&
+                  DKES_L11p(ik-1),DKES_L11m(ik-1),DKES_L33p(ik-1),&
+                  DKES_L33m(ik-1),DKES_L31p(ik-1),DKES_L31m(ik-1),&
+                  DKES_scal11(ik-1),DKES_scal33(ik-1),DKES_scal31(ik-1), &
                   DKES_L11p(ik),DKES_L11m(ik),DKES_L33p(ik),&
                   DKES_L33m(ik),DKES_L31p(ik),DKES_L31m(ik),&
                   DKES_scal11(ik),DKES_scal33(ik),DKES_scal31(ik)
+
 !DEC$ ELSE
-               vals(mtargets) = target_dkes(ii)
-               IF (iflag == 1) WRITE(iunit_out,'(15ES22.12E3)') &
+            vals(mtargets) = target(ii)
+            IF (iflag == 1) WRITE(iunit_out,'(25ES22.12E3)') &
                   targets(mtargets),sigmas(mtargets),vals(mtargets),&
-                  shat(ii), nu_dkes(ij), E_dkes(ij), &
+                  shat(ii), nu_dkes_Erdiff, Ep_dkes_Erdiff, &
+                  Em_dkes_erdiff,&
+                  0.0, 0.0, 0.0,&
+                  0.0, 0.0, 0.0,&
+                  0.0, 0.0, 0.0,&
                   0.0, 0.0, 0.0,&
                   0.0, 0.0, 0.0,&
                   0.0, 0.0, 0.0
 !DEC$ ENDIF
-            END DO
          END DO
       ELSE
          nruns_dkes = 0
          DO ii = 1, nsd
             IF (sigma(ii) >= bigno) CYCLE
-               DO ij = 1, nprof
-                  IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
-                  lbooz(ii) = .TRUE.
-                  mtargets = mtargets + 1
-                  nruns_dkes = nruns_dkes + 1
-                  IF (niter == -2) target_dex(mtargets)=jtarget_dkes
-               END DO
+            lbooz(ii) = .TRUE.
+            mtargets = mtargets + 1
+            nruns_dkes = nruns_dkes + 2
+            E_dkes(1) = Ep_DKES_Erdiff
+            E_dkes(2) = Em_DKES_Erdiff
+            nu_dkes(1) = nu_dkes_Erdiff
+            nu_dkes(2) = nu_dkes_Erdiff
+            IF (niter == -2) target_dex(mtargets)=jtarget_dkes_erdiff
          END DO
       END IF
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_dkes
+      END SUBROUTINE chisq_dkes_erdiff

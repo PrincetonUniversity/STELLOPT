@@ -1,4 +1,4 @@
-      SUBROUTINE residue(a, bm1, bp1, cm2, cp2, csave, fz1, fz3,
+      SUBROUTINE residue_dkes(a, bm1, bp1, cm2, cp2, csave, fz1, fz3,
      1   srces, rsd1, rsd3, g11, g33, g31, g13, crs1, crs3)
 !-----------------------------------------------
 !   M o d u l e s
@@ -205,4 +205,4 @@
 
       DEALLOCATE (src1, src3, xrc1, xrc3, stat=k)
 
-      END SUBROUTINE residue
+      END SUBROUTINE residue_dkes

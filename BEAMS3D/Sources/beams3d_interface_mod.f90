@@ -109,6 +109,7 @@ CONTAINS
       invpi2 = 1./pi2
       mu0 = (16.0E-7) * ATAN(1.0)
       to3 = REAL(2)/REAL(3)
+      rminor_norm = 1.0
       lverb = .true.
       lread_input = .true.
       RETURN
@@ -155,6 +156,7 @@ CONTAINS
         lfusion = .false.
         lfusion_alpha = .false.
         lboxsim = .false.
+        lfieldlines = .false.
         id_string = ''
         coil_string = ''
         mgrid_string = ''
@@ -202,6 +204,13 @@ CONTAINS
                 i = i + 1
                 lhint = .true.
                 CALL GETCARG(i, id_string, numargs)
+            case ("-fieldlines")
+                i = i + 1
+                lfieldlines = .true.
+                CALL GETCARG(i, id_string, numargs)
+                i = i + 1
+                CALL GETCARG(i,args(i),numargs)
+                READ(args(i),*,IOSTAT=ier) rminor_norm
             case ("-eqdsk")
                 i = i + 1
                 leqdsk = .true.
@@ -261,7 +270,8 @@ CONTAINS
                 write(6, *) '    <options>'
                 write(6, *) '     -vmec ext:     VMEC input/wout extension'
                 write(6, *) '     -hint ext:     HINT input/wout extension'
-                write(6, *) '     -eqdsk in gf   BEAMS3D input file and gfile'
+                write(6, *) '     -eqdsk in gf   EQDSK input file and gfile'
+                write(6, *) '     -fieldlines ext a:   FIELDLINES input/HDF5 extension and Aminor normalization'
                 !write(6,*)'     -pies ext:   PIES input extension (must have &INDATA namelist)'
                 !write(6,*)'     -spec ext:     SPEC input extension (must have &INDATA namelist)'
                 write(6, *) '     -vessel file:  Vessel File (for limiting)'
@@ -314,6 +324,8 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lhint, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+      CALL MPI_BCAST(lfieldlines, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(leqdsk, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lmgrid, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -325,9 +337,9 @@ CONTAINS
       CALL MPI_BCAST(lvac, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lfidasim, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi) 
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lfidasim2, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi) 
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)  
       CALL MPI_BCAST(lascot, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lascotfl, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -365,6 +377,8 @@ CONTAINS
       CALL MPI_BCAST(limas,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lboxsim,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+      CALL MPI_BCAST(rminor_norm,1,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
 #endif
       RETURN

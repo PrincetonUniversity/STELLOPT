@@ -11,7 +11,9 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime, ONLY:  proc_string, bigno, rprec
       USE equil_utils, ONLY: get_equil_phi, nrad, shat, phi_type
-      USE stellopt_targets, ONLY: nu_dkes, sigma_dkes, lbooz, nsd
+      USE stellopt_targets, ONLY: nu_dkes, sigma_dkes, lbooz, nsd, &
+                                  E_dkes, nprof, nruns_dkes, &
+                                  sigma_dkes_erdiff
       ! NEO LIBRARIES
 !DEC$ IF DEFINED (DKES_OPT)
       USE Vimatrix
@@ -19,8 +21,12 @@
       USE Vcmain
       USE dkes_input, lscreen_dkes => lscreen
       USE dkes_realspace
+      USE read_wout_mod, ONLY: read_wout_file, read_wout_deallocate
+      USE read_boozer_mod, ONLY: bcast_boozer_vars
 !DEC$ ENDIF
       USE safe_open_mod
+      USE mpi_params
+      USE mpi_inc
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -34,27 +40,31 @@
 !        ier         Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
-      INTEGER :: ir, irun, istat, neqs, ik, ier_phi
+      INTEGER :: ir, irun, istat, neqs, ik, ij, ier_phi, mystart, myend
+      INTEGER, DIMENSION(:), ALLOCATABLE :: ik_dkes
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: Earr_dkes, nuarr_dkes
       REAL(rprec), DIMENSION(:), POINTER :: f0p1, f0p2, f0m1, f0m2
       REAL(rprec) :: tcpu0, tcpu1, tcpui, tcput, tcpu, tcpua, dkes_efield,&
                      phi_temp
       CHARACTER :: tb*1           
-      CHARACTER*50 :: arg1(7)       
+      CHARACTER*50 :: arg1(6)       
       INTEGER :: numargs, icount, index_blank, iodata, iout_opt,&
                  idata, iout
       INTEGER :: m, n ! nmax, mmax (revmoed due to conflict with dkes_realspace
       CHARACTER :: output_file*64, opt_file*64, dkes_input_file*64, temp_str*64
-      LOGICAL :: lexist  
+      LOGICAL :: lexist, lfirst_pass  
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
 !DEC$ IF DEFINED (DKES_OPT)
       lscreen_dkes = lscreen
+      lfirst_pass = .TRUE.
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------    DKES CALCULATION     -------------------------'
-      ! Now we need to mimic some behavior to avoid reading from command line
-      arg1(1) = proc_string
-      arg1(5) = 'F'
+!DEC$ IF DEFINED (MPI_OPT)
+      ierr_mpi = 0
+      CALL MPI_BCAST(nruns_dkes,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+!DEC$ ENDIF
       ! Enter the main loop
       IF (ALLOCATED(DKES_L11p)) DEALLOCATE(DKES_L11p)
       IF (ALLOCATED(DKES_L33p)) DEALLOCATE(DKES_L33p)
@@ -65,32 +75,60 @@
       IF (ALLOCATED(DKES_scal11)) DEALLOCATE(DKES_scal11)
       IF (ALLOCATED(DKES_scal33)) DEALLOCATE(DKES_scal33)
       IF (ALLOCATED(DKES_scal31)) DEALLOCATE(DKES_scal31)
-      ALLOCATE(DKES_L11p(nsd),DKES_L33p(nsd),DKES_L31p(nsd),&
-               DKES_L11m(nsd),DKES_L33m(nsd),DKES_L31m(nsd),&
-               DKES_scal11(nsd),DKES_scal33(nsd),DKES_scal31(nsd))
+      ALLOCATE(DKES_L11p(nruns_dkes),DKES_L33p(nruns_dkes),DKES_L31p(nruns_dkes),&
+               DKES_L11m(nruns_dkes),DKES_L33m(nruns_dkes),DKES_L31m(nruns_dkes),&
+               DKES_scal11(nruns_dkes),DKES_scal33(nruns_dkes),DKES_scal31(nruns_dkes))
       DKES_L11p=0.0; DKES_L33p=0.0; DKES_L31p=0.0
       DKES_L11m=0.0; DKES_L33m=0.0; DKES_L31m=0.0
       DKES_scal11=0.0; DKES_scal33=0.0; DKES_scal31=0.0
-      DO ik = 2, nsd
+      ! Setup the helper arrays
+      IF (ALLOCATED(ik_dkes)) DEALLOCATE(ik_dkes)
+      IF (ALLOCATED(nuarr_dkes)) DEALLOCATE(nuarr_dkes)
+      IF (ALLOCATED(Earr_dkes)) DEALLOCATE(Earr_dkes)
+      ALLOCATE(ik_dkes(nruns_dkes),nuarr_dkes(nruns_dkes),Earr_dkes(nruns_dkes))
+      IF (myworkid == master) THEN
+         ik = 0
+         DO ir = 1, nsd
+            IF (sigma_dkes(ir) >= bigno .and. sigma_dkes_erdiff(ir) >= bigno) CYCLE
+            DO ij = 1, nprof
+               IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
+               ik = ik + 1
+               ik_dkes(ik)    = ir
+               nuarr_dkes(ik) = nu_dkes(ij)
+               Earr_dkes(ik)  = E_dkes(ij)
+            END DO
+         ENDDO
+      END IF
+      ! Now read the wout file
+      CALL read_wout_file(proc_string, ier)
+      ! Now bcast the boozer parameters
+      CALL bcast_boozer_vars(master, MPI_COMM_MYWORLD, ierr_mpi)
+!DEC$ IF DEFINED (MPI_OPT)
+      ierr_mpi = 0
+      CALL MPI_BCAST(ik_dkes,nruns_dkes,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(nuarr_dkes,nruns_dkes,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(Earr_dkes,nruns_dkes,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+!DEC$ ENDIF
+      CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD,1,nruns_dkes,mystart,myend)
+      ! Loop over radial surfaces
+      DO ik = mystart,myend
          ipmb = 0
-         DKES_rad_dex = ik
-         IF(.not. lbooz(ik)) CYCLE
-         IF(sigma_dkes(ik) >= bigno) CYCLE
+         DKES_rad_dex = ik_dkes(ik)
+         IF(.not. lbooz(ik_dkes(ik))) CYCLE
          tb = char(9)                                   !record file addition
          CALL second0 (tcpu0)
-         ! Get ER based on phi specification
-         ier_phi = 0
-         CALL get_equil_phi(shat(ik),phi_type,phi_temp,ier_phi,dkes_efield)
-         IF (ier_phi < 0) dkes_efield = 0.0
+         dkes_efield = Earr_dkes(ik)
+         arg1(1) = TRIM(proc_string)
          !!!! CALL read_dkes_input
-         WRITE(arg1(2),'(i3)') ik
-         WRITE(arg1(3),'(e20.10)') nu_dkes(ik)
-         dkes_efield = 0.0
+         WRITE(arg1(2),'(i3)') ik_dkes(ik)
+         WRITE(arg1(3),'(e20.10)') nuarr_dkes(ik)
          WRITE(arg1(4),'(e20.10)') dkes_efield
-         IF (lscreen) arg1(5) = 'T'
+         arg1(5) = 'F'
+         IF (lscreen .and. lfirst_pass) arg1(5) = 'T'
          WRITE(temp_str,'(i3.3)') ik
-         ier_phi = 0
-         CALL dkes_input_prepare(arg1,5,dkes_input_file,ier_phi)
+         arg1(6) = '_s' // TRIM(temp_str)
+         ier_phi = 0 ! We don't read the boozmn or wout file we've done that already
+         CALL dkes_input_prepare(arg1,6,dkes_input_file,ier_phi)
          output_file= 'dkesout.' // TRIM(proc_string) // '_s' // TRIM(temp_str)
          opt_file= 'opt_dkes.' // TRIM(proc_string) // '_s' // TRIM(temp_str)       !DAS 2/21/2000  !Probably won't need
          summary_file = 'results.' // TRIM(proc_string) //'_s' // TRIM(temp_str) !record file addition
@@ -157,6 +195,11 @@
          CALL second0 (tcpu1); tcpui = tcpu1 - tcpu0
          CALL header
          CALL second0 (tcpu0); tcput = zero
+         ! Here things get a bit screwy
+         ! DKES allows for an array of nu/v and E/v to be evaluated
+         ! but dkes_input_prepare does not.  So nrun will always be 1 for stellopt
+         ! which is probably fine since we can parallelize over runs easier.
+         ! But in the future this logic could be improved.
          nrun = MAX(nrun, 1)
          nrun = MIN(nrun, krun)
          DO ir = 1, nrun
@@ -183,7 +226,7 @@
                   WRITE (ioout, 1000) ier
                   STOP
                ENDIF
-               CALL residue (blk1, blk2, blk3, blk4, blk5, blk6,&
+               CALL residue_dkes (blk1, blk2, blk3, blk4, blk5, blk6,&
                              f0p1, f0p2, srces0, rsd1p, rsd3p, g11p, g33p,&
                              g31p, g13p, crs1p, crs3p)
             ENDIF
@@ -194,11 +237,16 @@
                   WRITE (ioout, 1050) ier
                   STOP
                ENDIF
-               CALL residue (blk1, blk2, blk3, blk4, blk5, blk6,&
+               CALL residue_dkes (blk1, blk2, blk3, blk4, blk5, blk6,&
                     f0m1, f0m2, srces0, rsd1m, rsd3m, g11m, g33m,&
                     g31m, g13m, crs1m, crs3m)
             ENDIF
+            ! This is a trick to get the arrays corretly sorted
+            DKES_rad_dex = ik
+            IF (.not. lfirst_pass) lscreen_dkes = .FALSE.
             CALL dkes_printout (f0p1, f0m1, f0p2, f0m2, srces0)
+            DKES_rad_dex = ik_dkes(ik)
+            ! End trick
             CALL second0 (tcpu1); tcpu = tcpu1 - tcpu0; tcpu0 = tcpu1; tcput = tcput + tcpu; tcpua = tcput/irun
             WRITE (ioout, 1100) tcpu
             CLOSE(unit=itab_out)
@@ -210,8 +258,34 @@
             bl02, bl03, bl04, cl01, cl02, cl03, cl04, fzerop, fzerom)
          CLOSE(unit=ioout)
          CLOSE(unit=ioout_opt)
+         lfirst_pass = .FALSE.
       END DO
+!DEC$ IF DEFINED (MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      IF (myworkid == master) THEN
+         CALL MPI_REDUCE(MPI_IN_PLACE, DKES_L11p, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, DKES_L11m, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, DKES_L33p, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, DKES_L33m, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, DKES_L31p, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, DKES_L31m, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, DKES_scal11, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, DKES_scal33, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, DKES_scal31, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+      ELSE
+         CALL MPI_REDUCE(DKES_L11p,    DKES_L11p, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(DKES_L11m,    DKES_L11m, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(DKES_L33p,    DKES_L33p, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(DKES_L33m,    DKES_L33m, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(DKES_L31p,    DKES_L31p, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(DKES_L31m,    DKES_L31m, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(DKES_scal11,  DKES_scal11, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(DKES_scal33,  DKES_scal33, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(DKES_scal31,  DKES_scal31, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+      END IF
+!DEC$ ENDIF
       IF (lscreen) WRITE(6,'(a)') ' -----------------  DKES CALCULATION (DONE) ----------------'
+      IF (myworkid .ne. master) CALL read_wout_deallocate
 !DEC$ ELSE
       IF (lscreen) WRITE(6,'(a)') ' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
       IF (lscreen) WRITE(6,'(a)') ' !! DKES based optimization not supported on your machine !!'

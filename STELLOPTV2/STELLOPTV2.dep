@@ -373,7 +373,15 @@ chisq_neo.o : \
 chisq_dkes.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      equil_vals.o 
+      equil_vals.o \
+      $(DKES_DIR)/$(LOCTYPE)/dkes_realspace.o
+      
+
+chisq_dkes_erdiff.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_vals.o \
+      $(DKES_DIR)/$(LOCTYPE)/dkes_realspace.o
       
 
 chisq_ne.o : \
