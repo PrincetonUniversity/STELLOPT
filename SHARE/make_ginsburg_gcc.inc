@@ -1,48 +1,47 @@
 #######################################################################
-#            Define User Specific Output Paths
-#######################################################################
-  # Set a default directory if one has not already been defined.
-  STELLOPT_HOME ?= $(HOME)/bin
-
-
-#######################################################################
 #            Define Basic Utilities
 #######################################################################
-  # Temporaryily copy STELLOPT_HOME to MYHOME since MYHOME is currently
-  # used in all the makefiles.
-  MYHOME = $(STELLOPT_HOME)
-  
   SHELL = /bin/sh
   PWD1 = `pwd`
-  PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
-  COMPILE = gfortran
-  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none \
-                          -ffixed-line-length-none
-  LINK    = gfortran $(FLAGS) -o
-  LINK_AR = ar -ruvs
-  LINK_C  = gcc -Wl,-no_compact_unwind
+  MYHOME = $(STELLOPT_PATH)/bin
+  PRECOMP:= /lib/cpp -traditional -DLINUX
+  COMPILE = $(FC) 
+  COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none -fallow-argument-mismatch 
+  LINK    = ld $(FLAGS) -o
+  LINK_AR = ar -ruv
+  LINK_C  = $(CC) -shared -Wl,--no-undefined -Wl,-export-dynamic 
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
-  FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check
-  LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
-  FLAGS_R += -fallow-argument-mismatch
-  FLAGS_D += -fallow-argument-mismatch
+  # temp add some checking flags to avoid BEAMS3d issues
+  FLAGS_R = -O2 -g -fbacktrace -fallow-argument-mismatch 
+  FLAGS_D = -g -O0 -fcheck=all -fbacktrace -Wextra \
+   -Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan -fallow-argument-mismatch 
 
-  
+# Crutch for broken module vars
+  NETCDF_F = $(NETCDF_FORTRAN_HOME)
+  NETCDF_C = $(NETCDF_C_HOME)
+
+  LIBS = -L${MKLROOT}/lib/intel64 \
+         -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 \
+         -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
+         -lpthread -lm -ldl
+
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90
-  MPI_COMPILE_FREE = mpif90 -ffree-form -ffree-line-length-none \
-                            -ffixed-line-length-none 
-  MPI_COMPILE_C = mpicc 
-  MPI_LINK = mpif90 -Wl,-no_compact_unwind
-  MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 2
+  MPI_COMPILE = mpifort
+  MPI_COMPILE_FREE = mpifort -ffree-form \
+                     -ffree-line-length-none -ffixed-line-length-none -fallow-argument-mismatch 
+  MPI_COMPILE_C = mpicc
+  MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
+  MPI_RUN = srun
+  MPI_RUN_OPTS = -N 1 -n 32 -p general -t 30:00 -q debug --mem 8G -J STELLOPT_BENCH
+  MPI_RUN_OPTS_SM = -N 1 -n 32 -p general -t 30:00 -q debug --mem 8G -J STELLOPT_BENCH
+  MPI_RUN_OPTS_MD = -N 2 -n 64 -p general -t 30:00 --mem 8G -J STELLOPT_BENCH
+  MPI_RUN_OPTS_LG = -N 4 -n 128 -p general -t 30:00 --mem 8G -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
@@ -54,37 +53,41 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --fflags)
-  NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
+  NETCDF_F = /burg/opt/netcdf-fortran-4.5.3
+  NETCDF_C = /burg/opt/netcdf-c-4.7.4
+  NETCDF_INC = -I$(NETCDF_F)/include -I$(NETCDF_C)/include 
+  NETCDF_LIB = -L$(NETCDF_C)/lib -lnetcdf -L$(NETCDF_F)/lib -lnetcdff
 
 #######################################################################
-#            FFTW3 Options
+#            NTCC Options
 #######################################################################
-  LFFTW3 = T
-  FFTW3_INC = -I/opt/local/include
-  FFTW3_LIB = -L/opt/local/lib -lfftw3
+  LNTCC = F
+  NTCC_INC = -I$(NTCC_HOME)/mod -I$(PSPLINE_HOME)/mod
+  NTCC_LIB = -L$(NTCC_HOME)/lib -laladdinsub -lr8slatec -ladpak\
+             -lcppsub -lcomput -lportlib -lezcdf -lmds_sub \
+             -lmdstransp -lvaxonly -L$(PSPLINE_HOME)/lib -lpspline
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I/opt/local/include
-  HDF5_LIB = -L/opt/local/lib -lhdf5hl_fortran -lhdf5_hl \
-             -lhdf5_fortran -lhdf5 -lz -ldl -lm
+  HDF5_INC =  -I$(HDF5INCLUDE)
+  HDF5_LIB = -L$(HDF5DIR) -lhdf5_hl -lhdf5_fortran -lhdf5 \
+             -lhdf5hl_fortran -lpthread -lz -lm
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
-  PGPLOT_INC = -I/opt/local/include
-  PGPLOT_LIB = -L/opt/local/lib -lpgplot -lX11
+  PGPLOT_INC = 
+  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
-  SILO_INC = -I/opt/local/include
-  SILO_LIB = -L/opt/local/lib -lsilo
+  SILO_INC = -I$(SILOHOME)/include
+  SILO_LIB = -L$(SILOHOME)/lib -lsilo
 
 #######################################################################
 #            DKES/NEO Options
@@ -100,8 +103,7 @@
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
   GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L/u/slazerso/src/GENE17_2016/external/pppl_cluster/futils/src -lfutils \
-             -L$(FFTWHOME)/lib -lfftw3 \
+             -L$(FFTW_HOME)/lib -lfftw3 \
              -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 
@@ -113,7 +115,7 @@
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
   COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++
 
 #######################################################################
 #            TERPSICHORE Options
@@ -132,7 +134,7 @@
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            REGCOIL Options
@@ -155,6 +157,19 @@
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 
 #######################################################################
+#            MANGO Options
+#######################################################################
+
+LMANGO = F
+
+MANGO_DIR = /p/focus/share/mango
+
+# If LMANGO=T, any flags specified in the next 2 lines will be added to MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS respectively
+# as defined in $(MANGO_DIR)/lib/mangoMakeVariables
+MANGO_INC=
+MANGO_LIB=
+
+#######################################################################
 #            Available Energy Options
 #######################################################################
   LAEOPT= F
@@ -166,5 +181,4 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-
-LIB_SHARE = $(LIBS)
+LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc

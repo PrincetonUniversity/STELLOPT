@@ -544,6 +544,101 @@
 
 
 
+      SUBROUTINE bcast_boozer_vars(local_master, comm, ierr)
+      USE stel_kinds, ONLY: rprec
+      USE mpi_inc
+!-----------------------------------------------
+!   D u m m y   A r g u m e n t s
+!-----------------------------------------------
+      INTEGER, INTENT(inout) :: comm
+      INTEGER, INTENT(in)    :: local_master
+      INTEGER, INTENT(inout) :: ierr
+      INTEGER :: mylocalid
+!-----------------------------------------------
+!
+!     Broadcast of variables
+!
+      ierr = 0
+!DEC$ IF DEFINED (MPI_OPT)
+      CALL MPI_BARRIER(comm, ierr)
+      CALL MPI_COMM_RANK(comm, mylocalid, ierr )
+      ! Should add a check to make sure we've 
+      ! Read the boozer file
+      ! First broadcast the basic values
+      CALL MPI_BCAST(lasym_b, 1, MPI_LOGICAL, local_master, comm, ierr)
+      CALL MPI_BCAST(mnboz_b, 1, MPI_INTEGER, local_master, comm, ierr)
+      CALL MPI_BCAST(mboz_b,  1, MPI_INTEGER, local_master, comm, ierr)
+      CALL MPI_BCAST(nboz_b,  1, MPI_INTEGER, local_master, comm, ierr)
+      CALL MPI_BCAST(nfp_b,   1, MPI_INTEGER, local_master, comm, ierr)
+      CALL MPI_BCAST(ns_b,    1, MPI_INTEGER, local_master, comm, ierr)
+      CALL MPI_BCAST(aspect_b,  1, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(rmax_b,    1, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(rmin_b,    1, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(betaxis_b, 1, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      ! Now allocate arrays
+      IF (mylocalid .ne. 0) THEN
+         IF (ALLOCATED(iota_b)) DEALLOCATE(iota_b)
+         IF (ALLOCATED(pres_b)) DEALLOCATE(pres_b)
+         IF (ALLOCATED(beta_b)) DEALLOCATE(beta_b)
+         IF (ALLOCATED(phip_b)) DEALLOCATE(phip_b)
+         IF (ALLOCATED(phi_b))  DEALLOCATE(phi_b)
+         IF (ALLOCATED(bvco_b)) DEALLOCATE(bvco_b)
+         IF (ALLOCATED(buco_b)) DEALLOCATE(buco_b)
+         IF (ALLOCATED(idx_b))  DEALLOCATE(idx_b)
+         IF (ALLOCATED(ixm_b))  DEALLOCATE(ixm_b)
+         IF (ALLOCATED(ixn_b))  DEALLOCATE(ixn_b)
+         ALLOCATE (iota_b(ns_b), pres_b(ns_b), beta_b(ns_b), phip_b(ns_b), &
+           phi_b(ns_b), bvco_b(ns_b), buco_b(ns_b), idx_b(ns_b),           &
+           ixm_b(mnboz_b), ixn_b(mnboz_b), stat=ierr)
+         IF (ALLOCATED(bmnc_b))  DEALLOCATE(bmnc_b)
+         IF (ALLOCATED(rmnc_b))  DEALLOCATE(rmnc_b)
+         IF (ALLOCATED(zmns_b))  DEALLOCATE(zmns_b)
+         IF (ALLOCATED(pmns_b))  DEALLOCATE(pmns_b)
+         IF (ALLOCATED(gmnc_b))  DEALLOCATE(gmnc_b)
+         ALLOCATE (bmnc_b(mnboz_b,ns_b), rmnc_b(mnboz_b,ns_b),             &
+           zmns_b(mnboz_b,ns_b), pmns_b(mnboz_b,ns_b),                     &
+           gmnc_b(mnboz_b,ns_b), stat=ierr)
+         IF (lasym_b) THEN
+            IF (ALLOCATED(bmns_b))  DEALLOCATE(bmns_b)
+            IF (ALLOCATED(rmns_b))  DEALLOCATE(rmns_b)
+            IF (ALLOCATED(zmnc_b))  DEALLOCATE(zmnc_b)
+            IF (ALLOCATED(pmnc_b))  DEALLOCATE(pmnc_b)
+            IF (ALLOCATED(gmns_b))  DEALLOCATE(gmns_b)
+            ALLOCATE (bmns_b(mnboz_b,ns_b), rmns_b(mnboz_b,ns_b),             &
+              zmnc_b(mnboz_b,ns_b), pmnc_b(mnboz_b,ns_b),                     &
+              gmns_b(mnboz_b,ns_b), stat=ierr)
+         END IF
+      ENDIF
+      CALL MPI_BARRIER(comm, ierr)
+      CALL MPI_BCAST(idx_b,  ns_b,    MPI_INTEGER,          local_master, comm, ierr)
+      CALL MPI_BCAST(ixm_b,  mnboz_b, MPI_INTEGER,          local_master, comm, ierr)
+      CALL MPI_BCAST(ixn_b,  mnboz_b, MPI_INTEGER,          local_master, comm, ierr)
+      CALL MPI_BCAST(iota_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(pres_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(beta_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(phip_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(phi_b,  ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(bvco_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(buco_b, ns_b,    MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(bmnc_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(rmnc_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(zmns_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(pmns_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      CALL MPI_BCAST(gmnc_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+      IF (lasym_b) THEN
+         CALL MPI_BCAST(bmns_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+         CALL MPI_BCAST(rmns_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+         CALL MPI_BCAST(zmnc_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+         CALL MPI_BCAST(pmnc_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)
+         CALL MPI_BCAST(gmns_b, mnboz_b*ns_b, MPI_DOUBLE_PRECISION, local_master, comm, ierr)   
+      END IF
+!DEC$ ENDIF
+      RETURN
+
+      END SUBROUTINE bcast_boozer_vars
+
+
+
       SUBROUTINE pack_cdf (nbooz, var_name, array2d)
       USE stel_kinds, ONLY: rprec
       USE ezcdf

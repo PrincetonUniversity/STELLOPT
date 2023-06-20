@@ -46,6 +46,7 @@
 !     v4.00 10/14/22 - Full Orbit model implemented
 !                    - Particle duplication implemented
 !                    - Box Modeling implemented
+!                    - FIELDLINES Interface Added
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -133,14 +134,14 @@ MODULE beams3d_runtime
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
                lascot, lascot4, lbbnbi, lfidasim, lfidasim2, lsplit, lvessel_beam, lascotfl, lrandomize, &
                lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim, &
-               lboxsim, limas
+               lboxsim, limas, lfieldlines
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
                ndt, ndt_max, duplicate_factor
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &
                    ne_scale, te_scale, ti_scale, zeff_scale, fusion_scale, &
-                   lendt_m, te_col_min
+                   lendt_m, te_col_min, rminor_norm
     REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
                                         charge_beams, Zatom_beams, P_beams
     REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams

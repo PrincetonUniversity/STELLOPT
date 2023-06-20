@@ -1,10 +1,10 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    beams3d_init_hint
+!     Subroutine:    beams3d_init_fieldlines
 !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
-!     Date:          02/15/2021
-!     Description:   This subroutine reads the HINT files.
+!     Date:          05/31/2023
+!     Description:   This subroutine reads the FIELDLINS files.
 !-----------------------------------------------------------------------
-      SUBROUTINE beams3d_init_hint
+      SUBROUTINE beams3d_init_fieldlines
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -20,10 +20,10 @@
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq, NI_spl_s, NI
       USE beams3d_lines, ONLY: GFactor, ns_prof1
-      USE read_hint_mod, ONLY: get_hint_grid, get_hint_B, get_hint_press, &
-                               get_hint_maxp, read_hint_deallocate, &
-                               get_hint_magaxis, get_hint_gridB, &
-                               get_hint_gridpress
+      USE read_fieldlines_mod, ONLY: get_fieldlines_grid, get_fieldlines_B, &
+                               read_fieldlines_deallocate, setup_fieldlines_rhogrid, &
+                               get_fieldlines_magaxis, get_fieldlines_gridB, &
+                               get_fieldlines_info
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -40,7 +40,7 @@
       LOGICAL :: lcreate_wall
       INTEGER :: ier, s, i, j, k, u
       REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
-                     tetemp,netemp,titemp,zetemp,pottemp
+                     tetemp,netemp,titemp,zetemp,pottemp, rminor
       INTEGER :: nrh,nzh,nph
       REAL(rprec) :: rmin_hint, rmax_hint, zmin_hint, zmax_hint, &
                      pmax_hint, pres_max
@@ -61,23 +61,19 @@
 #endif
       mylocalmaster = master
 
-      ! Get the maximum pressure
-      CALL get_hint_maxp(pres_max)
-
       ! Write info to screen
       IF (lverb) THEN
          betatot = 0
-         CALL get_hint_grid(nrh,nzh,nph,rmin_hint,rmax_hint,zmin_hint,zmax_hint,pmax_hint)
-         WRITE(6,'(A)')               '----- HINT Information -----'
-         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin_hint,',',rmax_hint,'];  NR:   ',nrh
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',0.0,',',pmax_hint,'];  NPHI: ',nph
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin_hint,',',zmax_hint,'];  NZ:   ',nzh
-         WRITE(6,'(A,F7.2,A)')           '   PRES_MAX = ',pres_max*1E-3,' [kPa]'
+         CALL get_fieldlines_grid(nrh,nzh,nph,rmin_hint,rmax_hint,zmin_hint,zmax_hint,pmax_hint)
+         CALL get_fieldlines_info(6)
+         WRITE(6,'(A,F6.3,A)')           '   AMINOR_NORM = ',rminor_norm,' [m]'
       END IF
+
+      CALL setup_fieldlines_rhogrid('fieldlines_'//TRIM(id_string)//'.h5',MPI_COMM_SHARMEM,ier)
 
       ! Calculate the axis values
       DO s = 1, nphi
-         CALL get_hint_magaxis(phiaxis(s),req_axis(s),zeq_axis(s))
+         CALL get_fieldlines_magaxis(phiaxis(s),req_axis(s),zeq_axis(s))
       END DO
 
       
@@ -103,21 +99,13 @@
          sflx = 0.0
 
          ! Bfield
-         CALL get_hint_gridB(i,j,k,brtemp,bptemp,bztemp)
+         CALL get_fieldlines_gridB(i,j,k,brtemp,bptemp,bztemp,rminor,uflx)
          B_R(i,j,k) = brtemp
          B_PHI(i,j,k) = bptemp
          B_Z(i,j,k) = bztemp
-
-         ! Flux
-         CALL get_hint_gridpress(i,j,k,sflx)
-         sflx = MAX(sflx,0.0)
-         sflx = (pres_max-sflx)/pres_max 
-	 IF (sflx >= 0.9999) sflx = 1.0001 ! Trick for deposition
-         S_ARR(i,j,k)=sflx
-
-         ! Poloidal Angle
-         CALL get_hint_magaxis(phiaxis(j),brtemp,bztemp)
-         U_ARR(i,j,k)=ATAN2(zaxis_g(k)-bztemp,raxis_g(i)-brtemp)
+         sflx = (rminor/rminor_norm)**2
+         S_ARR(i,j,k) = sflx
+         U_ARR(i,j,k) = uflx
 
          IF (sflx <= 1) THEN
             tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0
@@ -134,9 +122,9 @@
             NE(i,j,k) = netemp; TE(i,j,k) = tetemp; TI(i,j,k) = titemp
             POT_ARR(i,j,k) = pottemp
          ELSE
-             pottemp = 0; sflx = 1
-             IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
-             POT_ARR(i,j,k) = pottemp
+            pottemp = 0; sflx = 1
+	      IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
+            POT_ARR(i,j,k) = pottemp
          END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
@@ -150,6 +138,17 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
+      ! Fix the last index of the grids since this can get screwed up
+      IF (myworkid == master) THEN
+         S_ARR(:,nphi,:)   = S_ARR(:,1,:)
+         U_ARR(:,nphi,:)   = U_ARR(:,1,:)
+         TE(:,nphi,:)      = TE(:,1,:)
+         NE(:,nphi,:)      = NE(:,1,:)
+         TI(:,nphi,:)      = TI(:,1,:)
+         ZEFF_ARR(:,nphi,:) = ZEFF_ARR(:,1,:)
+         POT_ARR(:,nphi,:) = POT_ARR(:,1,:)
+         NI(:,:,nphi,:)    = NI(:,:,1,:)
+      END IF
       
 
       ! Calculate Gfactor for mgrid
@@ -168,7 +167,7 @@
 
       ! Deallocations
 !      IF (myworkid == master) THEN
-         CALL read_hint_deallocate
+         CALL read_fieldlines_deallocate
 !      ELSE
 !         DEALLOCATE(vp,phi)
 !         DEALLOCATE(xm,xn,xm_nyq,xn_nyq)
@@ -193,11 +192,11 @@
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_fieldlines',ierr_mpi)
 #endif
 
       RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------    
-      END SUBROUTINE beams3d_init_hint
+      END SUBROUTINE beams3d_init_fieldlines

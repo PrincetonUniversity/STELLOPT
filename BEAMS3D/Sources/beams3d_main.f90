@@ -27,8 +27,6 @@ PROGRAM BEAMS3D
 
     ! Setup HDF5
     CALL beams3d_init_hdf5
-
-
     ! Initialize constanst
     CALL beams3d_init_constants
 

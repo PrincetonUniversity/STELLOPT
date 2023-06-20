@@ -69,7 +69,7 @@ c                    differently.
 #if defined(MPI_OPT)
       CALL MPI_COMM_SIZE( comm, local_size, istat)
       CALL MPI_COMM_RANK( comm, local_rank, istat )
-      delta = CEILING(REAL(n2-n1+1)/REAL(local_size))
+      delta = CEILING(DBLE(n2-n1+1)/DBLE(local_size))
       mystart = n1 + local_rank*delta
       myend   = mystart + delta - 1
       maxend = local_size*delta

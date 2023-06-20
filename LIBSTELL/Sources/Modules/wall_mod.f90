@@ -1711,9 +1711,7 @@
          CLOSE(10)        
       END SUBROUTINE WRITE_WALL
 
-
-
-      SUBROUTINE LINE_BOX_INTERSECTION(x1, y1, z1, x2, y2, z2, xmin, ymin, zmin, xmax, ymax, zmax, intersects)
+      SUBROUTINE LINE_BOX_INTERSECTION(x1i, y1i, z1i, x2i, y2i, z2i, xmin, ymin, zmin, xmax, ymax, zmax, intersects)
       !-----------------------------------------------------------------------
       ! LINE_BOX_INTERSECTION: Determines if line intersects a 3D box
       !-----------------------------------------------------------------------
@@ -1722,55 +1720,44 @@
       ! param[out]: intersects Does Line Intersect
       !----------------------------------------------------------------------- 
       IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in) :: x1i, y1i, z1i, x2i, y2i, z2i, xmin, ymin, zmin, xmax, ymax, zmax
       LOGICAL, INTENT(out) :: intersects
-      DOUBLE PRECISION, INTENT(IN) :: x1, y1, z1, x2, y2, z2, &
-                                      xmin, ymin, zmin, xmax, ymax, zmax
-      DOUBLE PRECISION :: tmin, tmax, t
-      DOUBLE PRECISION :: tax,tbx,tay,tby,taz,tbz, divx,divy,divz
-      DOUBLE PRECISION :: txmin,txmax,tymin,tymax,tzmin,tzmax
+      DOUBLE PRECISION :: tmin, tmax, x1, y1, z1, x2, y2, z2, dx, dy, dz, t1, t2
 
       intersects = .false.
-      tmin =-1.0D30
-      tmax = 1.0D30
 
-      !http://people.csail.mit.edu/amy/papers/box-jgt.pdf
-      !https://tavianator.com/2011/ray_box.html
-      divx = one/(x2-x1)
-      divy = one/(y2-y1)
-      divz = one/(z2-z1)
-      tax = (xmin - x1) * divx
-      tbx = (xmax - x1) * divx
-      tay = (ymin - y1) * divy
-      tby = (ymax - y1) * divy
-      taz = (zmin - z1) * divz
-      tbz = (zmax - z1) * divz
-      ! Sort them so tmin < tmax
-      tmin = MIN(tax,tbx)
-      tmax = MAX(tax,tbx)
-      tmin = MAX(tmin,MIN(tay,tby,tmax))
-      tmax = MIN(tmax,MAX(tay,tby,tmin))
-      tmin = MAX(tmin,MIN(taz,tbz,tmax))
-      tmax = MIN(tmax,MAX(taz,tbz,tmin))
+      ! Force x2 > x1
+      x1 = MIN(x1i,x2i)
+      y1 = MIN(y1i,y2i)
+      z1 = MIN(z1i,z2i)
+      x2 = MAX(x1i,x2i)
+      y2 = MAX(y1i,y2i)
+      z2 = MAX(z1i,z2i)
+
+      ! Helpers
+      dx = one/(x2-x1)
+      dy = one/(y2-y1)
+      dz = one/(z2-z1)
+
+      ! Calculate the minimum and maximum values of t for each axis
+      tmin = zero
+      tmax = 1.0D20
+      t1 = (xmin - x1) * dx
+      t2 = (xmax - x1) * dx
+      tmin = max(tmin, min(min(t1, t2), tmax))
+      tmax = min(tmax, max(max(t1, t2), tmin))
+      t1 = (ymin - y1) * dy
+      t2 = (ymax - y1) * dy
+      tmin = max(tmin, min(min(t1, t2), tmax))
+      tmax = min(tmax, max(max(t1, t2), tmin))
+      t1 = (zmin - z1) * dz
+      t2 = (zmax - z1) * dz
+      tmin = max(tmin, min(min(t1, t2), tmax))
+      tmax = min(tmax, max(max(t1, t2), tmin))
 
       ! Check if there is an intersection
-      ! Note that this test includes a test for tmax<=one
-      ! This is because we only want to include boxes which the
-      ! ray itself lies inside
-      intersects = ((tmax > MAX(tmin,zero)) .and. (tmax <= one))
 
-      IF (.FALSE.) THEN 
-         PRINT *,'X1  ',x1,y1,z1
-         PRINT *,'X2  ',x2,y2,z2
-         PRINT *,'MIN ',xmin,ymin,zmin
-         PRINT *,'MAX ',xmax,ymax,zmax
-         PRINT *,'DX  ',divx,divy,divz
-         PRINT *,'TA  ',tax,tay,taz
-         PRINT *,'TB  ',tbx,tby,tbz
-         PRINT *,'TMIN',MIN(tax,tbx),MIN(tay,tby),MIN(taz,tbz)
-         PRINT *,'TMAX',MAX(tax,tbx),MAX(tay,tby),MAX(taz,tbz)
-         PRINT *,tmin,tmax,intersects
-         STOP
-      END IF
+      intersects = (tmin < tmax)
 
       RETURN
 
