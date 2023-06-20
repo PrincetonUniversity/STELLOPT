@@ -60,6 +60,8 @@ and provide content through the discussions on each page.
 
 [TORLINES](TORLINES)
 
+[THRIFT](THRIFT)
+
 [VMEC](VMEC)
 
 [VMEC2PIES](VMEC2PIES)
