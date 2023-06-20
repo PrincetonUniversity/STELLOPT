@@ -708,13 +708,6 @@
                fmn_temp(mn,k1:k2) = fmn_temp(mn,k1:k2)/SUM(SUM(SQRT(one-(mn-1)*dlambda*f_temp(:,:,k1:k2))*G4D(1,:,:,k1:k2),DIM=1),DIM=1)
             END DO
             grho = SUM(fmn_temp,DIM=1)*dlambda
-            !DO u = k1, k2
-            !   DO mn = 1, nlambda
-            !      lambda(mn) = (mn-1)*dlambda
-            !      denom(mn) = SUM(SQRT(one-lambda(mn)*f_temp(:,:,u))*G4D(1,:,:,u))
-            !   END DO
-            !   grho(u) = SUM(lambda/denom)*dlambda
-            !END DO
             grho2 = one - 0.75*grho2*Vp*grho
             grho2(1) = 2*grho2(2) - grho2(3)
             CALL EZspline_setup(FTRAP_spl,grho2,iflag); f_temp = 0; grho = 0

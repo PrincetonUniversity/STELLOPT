@@ -53,7 +53,7 @@ for temp in varlist:
     cal = np.where(act==0,0,cal)
     div = np.where(act==0,1,act)
     perct = 100*sum(abs(act-cal)/div)
-    print('  '+temp+': '+str(cal[0])+'   '+str(act[0])+'   '+str(int(perct))+'%')
+    print('  '+temp+': '+str(cal[0])+'   '+str(act[0])+'   '+str(round(perct))+'%')
     if perct > failtol:
         lfail = 1
 print('=================')
