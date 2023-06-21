@@ -318,24 +318,15 @@ test_fieldlines_coll_ef: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
 	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll_ef -vac -coil coils.NCSX_nfp1 -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@echo ""
 
-test_thrift_atf:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec ATF -prof profiles_ATF_test.h5
-	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec ATF -prof profiles_ATF_test.h5
+test_thrift:
+	@echo "Beginning testing of THRIFT"
+	$(MAKE) test_thrift_analytical
+	@echo "Tesing of THRIFT complete"
 	@echo ""
 
-test_thrift_steady:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec ATF -prof profiles_ATF_steady.h5
-	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec ATF -prof profiles_ATF_steady.h5
-	@echo ""
-
-test_thrift_w7x:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec W7X20181016016 -prof profiles_W7X20181016016.h5
-	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec W7X20181016016 -prof profiles_W7X20181016016.h5
-	@echo ""
-
-test_thrift_atf_eccd:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec ATF_ECCD -prof profiles_ATF_test.h5
-	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xthrift -vmec ATF_ECCD -prof profiles_ATF_test.h5
+test_thrift_analytical:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec analytical -prof profiles_analytical.h5
+	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec analytical -prof profiles_analytical.h5
 	@echo ""
 
 FIELDLINES_TEST/fieldlines_NCSX_s1.h5: 
