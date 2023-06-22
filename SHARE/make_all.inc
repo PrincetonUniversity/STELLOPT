@@ -90,6 +90,30 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
+else ifeq ($(MAKECMDGOALS),xthrift)
+  PRECOMP += -DSKS  -DSKS2
+  VMEC_DIR = ../../VMEC2000
+  LIB_VMEC= libvmec.a
+  MOD_PATH+= -I$(VMEC_DIR)/$(LOCTYPE)
+  BOOTSJ_DIR = ../../BOOTSJ
+  LIB_BOOTSJ = libbootsj.a
+  MOD_PATH+= -I$(BOOTSJ_DIR)/$(LOCTYPE)
+  BOOZ_DIR = ../../BOOZ_XFORM
+  LIB_BOOZ= libbooz.a
+  MOD_PATH+= -I$(BOOZ_DIR)/$(LOCTYPE)
+  DIAGNO_DIR = ../../DIAGNO
+  LIB_DIAGNO= libdiagno.a
+  MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
+  LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
+  $(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
+  $(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
+  $(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO)
+  LGENE = F
+  LCOILOPT = F
+  LSFINCS = F
+  LREGCOIL= F
+  LMANGO = F
+  LTERPSICHORE = F
 else ifeq ($(MAKECMDGOALS),help)
 else ifeq ($(MAKECMDGOALS),test_stellopt)
 else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
@@ -220,7 +244,7 @@ ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
-  LINK    = $(MPI_COMPILE) $(FLAGS) -o 
+  LINK    = $(MPI_LINK) $(FLAGS) -o 
   LINK_C  = $(MPI_LINK) -shared
 endif
 ifeq ($(LNETCDF),T)
@@ -270,7 +294,7 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
-  LINK = $(LINK_C)
+  LINK = $(LINK_C) -shared
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
