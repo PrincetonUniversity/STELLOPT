@@ -103,9 +103,9 @@ MODULE thrift_profiles_mod
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'raxis_prof',ier)
          CALL read_var_hdf5(fid,'taxis_prof',nt_prof,ier,DBLVAR=taxis_prof)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'taxis_prof',ier)
-         CALL read_var_hdf5(fid,'Z_prof',nt_prof,ier,INTVAR=Zatom_prof)
+         CALL read_var_hdf5(fid,'Z_prof',nion_prof,ier,INTVAR=Zatom_prof)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Zatom_prof',ier)
-         CALL read_var_hdf5(fid,'mass_prof',nt_prof,ier,DBLVAR=Matom_prof)
+         CALL read_var_hdf5(fid,'mass_prof',nion_prof,ier,DBLVAR=Matom_prof)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Matom_prof',ier)
          IF (lverb) THEN
             WRITE(6,'(A,F9.3,A,F9.3,A,I4)') '   RHO  = [',minval(raxis_prof),',',maxval(raxis_prof),'];  NRHO: ',nrho_prof
