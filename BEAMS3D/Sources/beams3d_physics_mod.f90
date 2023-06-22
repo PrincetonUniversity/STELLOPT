@@ -182,8 +182,10 @@ MODULE beams3d_physics_mod
                   !Z is in elementary charge, A is in amu, energy and temperature in keV.
                   sm=zero
                   do i=1,COUNT(NI_AUX_Z>0)  
-                     omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ne_temp & !assume ni=ne (should be changed for multi-ion plasmas)
-                           +9.18d15*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)**2*modb**2
+                     !omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ne_temp & !assume ni=ne (should be changed for multi-ion plasmas)
+                     !      +9.18d15*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)**2*modb**2
+                     omega2=1.74d0*plasma_Zmean & !assume ni=ne (should be changed for multi-ion plasmas)
+                           +9.18d15*plasma_Zmean/(NI_AUX_M(i)*inv_dalton)*modb**2						   
                      vrel2=9.58d10*(ti_temp/1000.0/(NI_AUX_M(i)*inv_dalton) + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
                      sm=sm+omega2/vrel2
                   end do
