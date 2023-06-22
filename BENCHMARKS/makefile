@@ -327,6 +327,7 @@ test_thrift:
 test_thrift_analytical:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec analytical -prof profiles_analytical.h5
 	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec analytical -prof profiles_analytical.h5
+	@cd $(THRIFT_TEST_DIR); ./test_THRIFT.py
 	@echo ""
 
 FIELDLINES_TEST/fieldlines_NCSX_s1.h5: 
