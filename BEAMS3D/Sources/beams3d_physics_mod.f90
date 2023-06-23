@@ -190,7 +190,7 @@ MODULE beams3d_physics_mod
                      sm=sm+omega2/vrel2
                   end do
 
-                  !Electrons
+                  !Electrons A_e=1836.1
                   omega2=1.74d0*1836.1*ne_temp &
                         +9.18d15*1836.1**2*modb**2
                   vrel2=9.58d10*(te_temp/1000.0d0*1836.1d0 + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
@@ -309,7 +309,7 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
-           speed_cube = vc3_tauinv*zeff_temp*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
+           speed_cube = vc3_tauinv*zeff_temp*fact_pa/inv_dalton*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
