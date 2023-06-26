@@ -18,6 +18,7 @@
 !     Input/Output Variables
 !
 !-----------------------------------------------------------------------
+      IMPLICIT NONE
       REAL(rprec), INTENT(in)    ::  target
       REAL(rprec), INTENT(in)    ::  sigma
       INTEGER,     INTENT(in)    ::  niter

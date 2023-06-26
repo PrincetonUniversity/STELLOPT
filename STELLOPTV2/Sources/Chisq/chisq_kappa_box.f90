@@ -18,6 +18,7 @@
 !     Input/Output Variables
 !
 !-----------------------------------------------------------------------
+      IMPLICIT NONE
       REAL(rprec), INTENT(in)    ::  target
       REAL(rprec), INTENT(in)    ::  sigma
       INTEGER,     INTENT(in)    ::  niter
@@ -47,7 +48,7 @@
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KAPPA_BOX ',1,4
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET SIGMA KAPPA PHI'
       IF (niter >= 0) THEN
-         v = MOD(phi_kapa_box,pi2/nfp)*nfp
+         v = MOD(phi_kappa_box,pi2/nfp)*nfp
          DO i = 1, nt
             s=1; u = pi2*REAL((i-1))/REAL(nt); ier = 0
             CALL get_equil_RZ(s,u,v,Rarr(i),Zarr(i),ier)
