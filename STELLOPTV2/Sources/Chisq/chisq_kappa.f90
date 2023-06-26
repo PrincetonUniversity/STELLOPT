@@ -18,6 +18,7 @@
 !     Input/Output Variables
 !
 !-----------------------------------------------------------------------
+      IMPLICIT NONE
       REAL(rprec), INTENT(in)    ::  target
       REAL(rprec), INTENT(in)    ::  sigma
       INTEGER,     INTENT(in)    ::  niter
@@ -54,7 +55,7 @@
       IF (niter >= 0) THEN
          ! Need axis Point
          s = 0; u = 0; ier = 0
-         v = MOD(phi_kapa,pi2/nfp)*nfp
+         v = MOD(phi_kappa,pi2/nfp)*nfp
          CALL get_equil_RZ(s,u,v,Rax,Zax,ier)
          ! First calculated outboard point
          temp = Rax + 0.05*aminor
@@ -68,10 +69,10 @@
          ier = 0
          phi = phi_kappa
          CALL get_equil_s(temp,phi,Zax,s,ier,u)
-         s=1; v = MOD(phi_kapa_box,pi2/nfp)*nfp; ier = 0
+         s=1; v = MOD(phi_kappa,pi2/nfp)*nfp; ier = 0
          CALL get_equil_RZ(s,u,v,Rin,temp,ier)
          ! Now get all points
-         v = MOD(phi_kapa_box,pi2/nfp)*nfp
+         v = MOD(phi_kappa,pi2/nfp)*nfp
          DO i = 1, nt
             s=1; u = pi2*REAL((i-1))/REAL(nt); ier = 0
             CALL get_equil_RZ(s,u,v,temp,Zarr(i),ier)
