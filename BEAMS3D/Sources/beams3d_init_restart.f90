@@ -30,7 +30,7 @@
       LOGICAL :: lplasma_old, ldepo_old, lfusion_old
       INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2, start_dex
-      REAL(rprec) :: vpartmax, B_help, version_old
+      REAL(rprec) :: vpartmax, B_help, version_old, s_fullorbit
       REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
                                                 weight2
@@ -146,10 +146,16 @@
                WHERE(S_lines(0,:) >= 1) end_state = -1
             END IF
          ELSEIF (ldepo_old) THEN
+            ! Only orbiting particles
             state_flag = 0
+            ! Use ionization point unless outside FO radius
             start_dex = 2
+            s_fullorbit = SIGN(rho_fullorbit*rho_fullorbit,rho_fullorbit)
+            WHERE(S_lines(1,:) >= s_fullorbit) start_dex = 1
+            ! IF plasma run only consider particles born inside equilibrium
             IF (lplasma_only) THEN 
-               WHERE(S_lines(1,:) >= 1) end_state = -1
+               WHERE((S_lines(1,:) >= 1) .and. (start_dex == 1)) end_state = -1
+               WHERE((S_lines(1,:) >= 2) .and. (start_dex == 2)) end_state = -1
             END IF
          ELSE
             state_flag = 2
