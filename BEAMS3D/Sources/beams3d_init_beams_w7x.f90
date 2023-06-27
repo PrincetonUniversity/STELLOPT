@@ -72,9 +72,9 @@
                   vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
                   mass(nparticles), charge(nparticles), Zatom(nparticles), &
                   mu_start(nparticles), t_end(nparticles), &
-                  beam(nparticles), weight(nparticles), STAT=ier   )
+                  beam(nparticles), weight(nparticles), lgc2fo_start(nparticles), STAT=ier   )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R,phi,Z _start, etc.', ier)
-
+      lgc2fo_start(:) = .TRUE.
       ! Handle beam distrbution
       IF (myworkid == master) THEN
          k1 = 1; k2 = nparticles_start
@@ -160,6 +160,7 @@
       CALL MPI_BCAST(vr_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(vphi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(vz_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(lgc2fo_start,nparticles,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
 #endif
 
 

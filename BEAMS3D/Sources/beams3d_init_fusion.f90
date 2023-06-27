@@ -161,8 +161,10 @@
                   mass(nparticles), charge(nparticles), Zatom(nparticles), &
                   mu_start(nparticles), t_end(nparticles), &
                   beam(nparticles), weight(nparticles), &
-                  vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles))
+                  vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
+                  lgc2fo_start(nparticles))
 
+      lgc2fo_start(:) = .TRUE.
       vr_start=0; vphi_start=0; vz_start=0
       ! BEAM 1 D+T -> He4
       E_BEAMS(1) = 3.52E6*e_charge*fusion_scale
@@ -346,6 +348,7 @@
       CALL MPI_BCAST(Z_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(lgc2fo_start,nparticles,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
 #endif
       CALL mpidealloc(l3d,win_l3d)
       CALL mpidealloc(rateDT,win_rateDT)

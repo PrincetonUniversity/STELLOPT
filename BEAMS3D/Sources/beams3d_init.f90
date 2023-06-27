@@ -703,11 +703,11 @@
       ELSEIF (lfusion) THEN
          CALL beams3d_init_fusion
       ELSE
-        ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
+         ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
            vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
            mass(nparticles), charge(nparticles), &
            mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
-           beam(nparticles), weight(nparticles) )
+           beam(nparticles), weight(nparticles), lgc2fo_start(nparticles) )
 
          R_start    = r_start_in(1:nparticles)
          phi_start  = phi_start_in(1:nparticles)
@@ -726,6 +726,7 @@
          nbeams = 1
          charge_beams(1) = charge_in(1)
          mass_beams(1)   = mass_in(1)
+         lgc2fo_start(:) = .TRUE.
       END IF
       
       ! Duplicate particles if requested
