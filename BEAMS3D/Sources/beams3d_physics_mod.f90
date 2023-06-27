@@ -983,23 +983,10 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION, INTENT(inout) :: q(4)
 
          !--------------------------------------------------------------
-         !     Local parameters
-         !--------------------------------------------------------------
-         REAL*8, PARAMETER :: one = 1
-
-         !--------------------------------------------------------------
          !     Local variables
          !--------------------------------------------------------------
          INTEGER          :: ier
-         DOUBLE PRECISION :: r_temp, phi_temp, z_temp, x, y, &
-                             br_temp, bp_temp, bz_temp, modb_temp, &
-                             bx_temp, by_temp, binv, &
-                             rho(3), vperp, q6(6)
-         ! For splines
-         INTEGER :: i,j,k
-         REAL*8 :: xparam, yparam, zparam
-         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
-         REAL*8 :: fval(1)
+         DOUBLE PRECISION :: q6(6)
 
          !--------------------------------------------------------------
          !     Begin Subroutine
@@ -1013,76 +1000,6 @@ MODULE beams3d_physics_mod
          CALL beams3d_part2gc(q6)
          q(1:4)  = q6(1:4) !R,phi,Z,vll
          RETURN
-
-
-         ! ! Handle inputs
-         ! ier = 0
-         ! phi_temp = MOD(q(2),phimax)
-         ! IF (phi_temp < 0) phi_temp = phi_temp + phimax
-         ! r_temp = q(1)
-         ! z_temp = q(3)
-         ! x = q(1)*cos(q(2))
-         ! y = q(1)*sin(q(2))
-
-
-         ! ! Eval Spline
-         ! i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         ! j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-         ! k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
-         ! xparam = (r_temp - raxis(i)) * hri(i)
-         ! yparam = (phi_temp - phiaxis(j)) * hpi(j)
-         ! zparam = (z_temp - zaxis(k)) * hzi(k)
-         ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-         !                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-         !                 BR4D(1,1,1,1),nr,nphi,nz)
-         ! br_temp = fval(1)
-         ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-         !                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-         !                 BPHI4D(1,1,1,1),nr,nphi,nz)
-         ! bp_temp = fval(1)
-         ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-         !                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-         !                 BZ4D(1,1,1,1),nr,nphi,nz)
-         ! bz_temp = fval(1)
-         ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-         !                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-         !                 MODB4D(1,1,1,1),nr,nphi,nz)
-         ! modb_temp = fval(1)
-         ! bx_temp = br_temp*cos(q(2))-bp_temp*sin(q(2))
-         ! by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
-         ! binv = one/modb_temp
-
-         ! ! First calculate vll
-         ! q(4) = ( myv_neut(1) * bx_temp + &
-         !          myv_neut(2) * by_temp + &
-         !          myv_neut(3) * bz_temp  ) * binv
-
-         ! ! Note we're now in xyz space
-
-         ! ! F_em = q v x B
-         ! ! rho is F_em norm
-         ! rho(1) = myv_neut(2)*bz_temp - myv_neut(3)*by_temp
-         ! rho(2) = myv_neut(3)*bx_temp - myv_neut(1)*bz_temp
-         ! rho(3) = myv_neut(1)*by_temp - myv_neut(2)*bx_temp
-         ! IF (mycharge < 0) rho = -rho
-         ! rho = rho / SQRT(SUM(rho*rho))
-
-         ! ! Now calculate the gyroradius
-         ! !    rg = m * vperp / (q * B)
-         ! !    vperp = sqrt(v.v-vll*vll)
-         ! vperp = SQRT(ABS(SUM(myv_neut*myv_neut) - q(4)*q(4)))
-         ! x     = x + rho(1)*mymass*vperp*binv/mycharge
-         ! y     = y + rho(2)*mymass*vperp*binv/mycharge
-         ! q(3)  = q(3)+rho(3)*mymass*vperp*binv/mycharge
-         ! q(1)  = SQRT(x*x+y*y)
-         ! q(2)  = ATAN2(y,x)
-
-         ! ! Now calculate magnetic moment
-         ! !    mu = m*vperp^2/(2*B)=m*(v.v-vll.vll)/(2*B)
-         ! moment = 0.5*mymass*vperp*vperp*binv
-         ! moment = MAX(moment,10*TINY(moment))
-
-         ! RETURN
 
       END SUBROUTINE beams3d_ionize
 
@@ -1125,9 +1042,6 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
-         lneut = .false.
-         end_state(myline) = 0
-
          ! Handle inputs
          ier = 0
          phi_temp = MOD(q(2),phimax)
@@ -1168,12 +1082,11 @@ MODULE beams3d_physics_mod
          by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
          binv = one/modb_temp
 
-         ! First calculate vll
+         ! First calculate vll and vperp
          vll = ( vx * bx_temp + &
                   vy * by_temp + &
                   vz * bz_temp  ) * binv
-
-         ! Note we're now in xyz space
+         vperp = SQRT(ABS(vx*vx+vy*vy+vz*vz - vll*vll))
 
          ! F_em = q v x B
          ! rho is F_em norm
@@ -1186,10 +1099,10 @@ MODULE beams3d_physics_mod
          ! Now calculate the gyroradius
          !    rg = m * vperp / (q * B)
          !    vperp = sqrt(v.v-vll*vll)
-         vperp = SQRT(ABS(vx*vx+vy*vy+vz*vz - vll*vll))
-         x     = x + rho(1)*mymass*vperp*binv/mycharge
-         y     = y + rho(2)*mymass*vperp*binv/mycharge
-         q(3)  = q(3)+rho(3)*mymass*vperp*binv/mycharge
+         rho   = rho*mymass*vperp*binv/mycharge !Rg
+         x     = x + rho(1)
+         y     = y + rho(2)
+         q(3)  = q(3)+rho(3)
          q(1)  = SQRT(x*x+y*y)
          q(2)  = ATAN2(y,x)
          q(4)  = vll
