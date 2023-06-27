@@ -1119,94 +1119,45 @@ MODULE beams3d_physics_mod
       END SUBROUTINE beams3d_part2gc
 
       !-----------------------------------------------------------------
-      !     Function:      beams3d_neutralize
-      !     Authors:       M. McMillan (matthew.mcmillan@my.wheaton.edu)
-      !     Date:          12/01/2018
-      !     Description:   Calculate neutralization of an ion.  Note
-      !                    that this never had the desired effect, 
-      !                    is most deffinitely broken, and isn't called
-      !                    anywhere in the code.
+      !     Function:      beams3d_neutralize_gc
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          06/27/2023
+      !     Description:   Neutralizes a gryocenter
       !-----------------------------------------------------------------
-      SUBROUTINE beams3d_neutralize(t, q)
+      SUBROUTINE beams3d_neutralize_gc(q)
 
          !--------------------------------------------------------------
          !     Input Parameters
-         !          t          Location along fieldline in t
          !          q            (q(1),q(2),q(3),q(4)) = (R,phi,Z,vll)
          !--------------------------------------------------------------
          IMPLICIT NONE
-         DOUBLE PRECISION, INTENT(inout) :: t
          DOUBLE PRECISION, INTENT(inout) :: q(4)
 
          !--------------------------------------------------------------
          !     Local parameters
          !--------------------------------------------------------------
          DOUBLE PRECISION, PARAMETER :: zero = 0
-         DOUBLE PRECISION, PARAMETER :: one = 1
 
          !--------------------------------------------------------------
          !     Local Variables
          !--------------------------------------------------------------
          INTEGER          :: ier
-         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, modb_temp
-         DOUBLE PRECISION :: bx_temp, by_temp, bz_temp, br_temp, bp_temp
-         DOUBLE PRECISION :: binv, bnz, e1(3), e2(3), theta, rho(3), x, y, vperp
-
+         DOUBLE PRECISION :: q6(6)
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
-         ier = 0
-         phi_temp = MOD(q(2),phimax)
-         IF (phi_temp < zero) phi_temp = phi_temp + phimax
-         r_temp = q(1)
-         z_temp = q(3)
-
-         ! Evaluate Splines
-         CALL EZspline_interp(BR_spl,r_temp,phi_temp,z_temp,br_temp,ier)
-         CALL EZspline_interp(BPHI_spl,r_temp,phi_temp,z_temp,bp_temp,ier)
-         CALL EZspline_interp(BZ_spl,r_temp,phi_temp,z_temp,bz_temp,ier)
-         CALL EZspline_interp(MODB_spl,r_temp,phi_temp,z_temp,modb_temp,ier)
-         bx_temp = br_temp*cos(q(2))-bp_temp*sin(q(2))
-         by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
-         binv = one/modb_temp
-         bnz    = sqrt(modb_temp*modb_temp - bz_temp*bz_temp)
-         vperp  = sqrt( 2*modb_temp*moment/mymass )
-
-         ! Unit vectors
-         IF (bnz == zero) THEN
-            e1    = (/one,zero,zero/)
-            e2    = (/zero,one,zero/)
-         ELSE
-            e1 = (/ -bz_temp*bx_temp, -bz_temp*by_temp, one /)
-            e1 = e1*binv/bnz
-            e2 = (/ by_temp*e1(3)-bz_temp*e1(2), bz_temp*e1(1)-bx_temp*e1(3), bx_temp*e1(2)-by_temp*e1(1) /)
-            e2 = e2*binv
-         END IF
-
-         CALL RANDOM_NUMBER(theta)
-         theta = theta*pi2
-         rho         = ( sin(theta)*e1 + cos(theta)*e2 )
-
-         myv_neut(1) = q(4)*binv*bx_temp - vperp*binv*( by_temp*rho(3)-bz_temp*rho(2) )
-         myv_neut(2) = q(4)*binv*by_temp - vperp*binv*( bz_temp*rho(1)-bx_temp*rho(3) )
-         myv_neut(3) = q(4)*binv*bz_temp - vperp*binv*( bx_temp*rho(2)-by_temp*rho(1) )
-
-         rho         = ( mymass*vperp*binv/mycharge )*rho
-         x           = q(1)*cos(q(2)) + rho(1)
-         y           = q(1)*sin(q(2)) + rho(2)
-
-         q(1)        = sqrt(x*x + y*y)
-         q(2)        = ATAN2(y,x)
-         IF (q(2) < 0) q(2) = q(2)+pi2
-         q(3)        = q(3) + rho(3)
-
-         moment = 0.5*binv*mymass*( myv_neut(1)*myv_neut(1) + myv_neut(2)*myv_neut(2) + myv_neut(3)*myv_neut(3) - q(4)*q(4) )
-
-         lneut = .true.
-
-         CALL RANDOM_NUMBER(rand_prob)
-
-      END SUBROUTINE beams3d_neutralize
+         q6(1:4) = q(1:4)
+         q6(5) = moment
+         q6(6) = zero
+         CALL beams3d_gc2fo(q6)
+         myv_neut(1) = q6(4)*cos(q6(2))-q6(5)*sin(q6(2))
+         myv_neut(2) = q6(4)*sin(q6(2))+q6(5)*cos(q6(2))
+         myv_neut(3) = q6(6)
+         q(1:3) = q6(1:3)
+         q(4) = SQRT(SUM(myv_neut*myv_neut))
+         lneut = .TRUE.
+         RETURN
+      END SUBROUTINE beams3d_neutralize_gc
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_gc2fo
@@ -1338,7 +1289,6 @@ MODULE beams3d_physics_mod
          q(6) = vll_temp*bz_temp + vperp*zg*rg
          q(4) = vx*cos(phi_temp) + vy*sin(phi_temp)
          q(5) =-vx*sin(phi_temp) + vy*cos(phi_temp)
-
 
          RETURN
 
