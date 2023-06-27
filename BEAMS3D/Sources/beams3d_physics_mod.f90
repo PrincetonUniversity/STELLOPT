@@ -972,7 +972,7 @@ MODULE beams3d_physics_mod
       !     Description:   Ionizes a particle relocating it to its
       !                    gyrocenter.
       !-----------------------------------------------------------------
-      SUBROUTINE beams3d_ionize(q,lnorand)
+      SUBROUTINE beams3d_ionize(q)
          USE beams3d_grid
 
          !--------------------------------------------------------------
@@ -981,7 +981,6 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION, INTENT(inout) :: q(4)
-         LOGICAL, OPTIONAL :: lnorand
 
          !--------------------------------------------------------------
          !     Local parameters
@@ -991,12 +990,11 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Local variables
          !--------------------------------------------------------------
-         LOGICAL          :: lrand
          INTEGER          :: ier
          DOUBLE PRECISION :: r_temp, phi_temp, z_temp, x, y, &
                              br_temp, bp_temp, bz_temp, modb_temp, &
                              bx_temp, by_temp, binv, &
-                             rho(3), vperp
+                             rho(3), vperp, q6(6)
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -1006,12 +1004,129 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
-         lrand = .true.
          lneut = .false.
          end_state(myline) = 0
-         rand_prob = 0
-         IF (PRESENT(lnorand)) lrand = .not. lnorand
-         IF (lrand) CALL RANDOM_NUMBER(rand_prob)
+         q6(1:3) = q(1:3)
+         q6(4)   = myv_neut(1)*cos(q(2))+myv_neut(2)*sin(q(2))
+         q6(5)   = myv_neut(2)*cos(q(2))-myv_neut(1)*sin(q(2))
+         q6(6)   = myv_neut(3)
+         CALL beams3d_part2gc(q6)
+         q(1:4)  = q6(1:4) !R,phi,Z,vll
+         RETURN
+
+
+         ! ! Handle inputs
+         ! ier = 0
+         ! phi_temp = MOD(q(2),phimax)
+         ! IF (phi_temp < 0) phi_temp = phi_temp + phimax
+         ! r_temp = q(1)
+         ! z_temp = q(3)
+         ! x = q(1)*cos(q(2))
+         ! y = q(1)*sin(q(2))
+
+
+         ! ! Eval Spline
+         ! i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+         ! j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+         ! k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+         ! xparam = (r_temp - raxis(i)) * hri(i)
+         ! yparam = (phi_temp - phiaxis(j)) * hpi(j)
+         ! zparam = (z_temp - zaxis(k)) * hzi(k)
+         ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         !                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+         !                 BR4D(1,1,1,1),nr,nphi,nz)
+         ! br_temp = fval(1)
+         ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         !                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+         !                 BPHI4D(1,1,1,1),nr,nphi,nz)
+         ! bp_temp = fval(1)
+         ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         !                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+         !                 BZ4D(1,1,1,1),nr,nphi,nz)
+         ! bz_temp = fval(1)
+         ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         !                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+         !                 MODB4D(1,1,1,1),nr,nphi,nz)
+         ! modb_temp = fval(1)
+         ! bx_temp = br_temp*cos(q(2))-bp_temp*sin(q(2))
+         ! by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
+         ! binv = one/modb_temp
+
+         ! ! First calculate vll
+         ! q(4) = ( myv_neut(1) * bx_temp + &
+         !          myv_neut(2) * by_temp + &
+         !          myv_neut(3) * bz_temp  ) * binv
+
+         ! ! Note we're now in xyz space
+
+         ! ! F_em = q v x B
+         ! ! rho is F_em norm
+         ! rho(1) = myv_neut(2)*bz_temp - myv_neut(3)*by_temp
+         ! rho(2) = myv_neut(3)*bx_temp - myv_neut(1)*bz_temp
+         ! rho(3) = myv_neut(1)*by_temp - myv_neut(2)*bx_temp
+         ! IF (mycharge < 0) rho = -rho
+         ! rho = rho / SQRT(SUM(rho*rho))
+
+         ! ! Now calculate the gyroradius
+         ! !    rg = m * vperp / (q * B)
+         ! !    vperp = sqrt(v.v-vll*vll)
+         ! vperp = SQRT(ABS(SUM(myv_neut*myv_neut) - q(4)*q(4)))
+         ! x     = x + rho(1)*mymass*vperp*binv/mycharge
+         ! y     = y + rho(2)*mymass*vperp*binv/mycharge
+         ! q(3)  = q(3)+rho(3)*mymass*vperp*binv/mycharge
+         ! q(1)  = SQRT(x*x+y*y)
+         ! q(2)  = ATAN2(y,x)
+
+         ! ! Now calculate magnetic moment
+         ! !    mu = m*vperp^2/(2*B)=m*(v.v-vll.vll)/(2*B)
+         ! moment = 0.5*mymass*vperp*vperp*binv
+         ! moment = MAX(moment,10*TINY(moment))
+
+         ! RETURN
+
+      END SUBROUTINE beams3d_ionize
+
+      !-----------------------------------------------------------------
+      !     Function:      beams3d_part2gc
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          06/27/2023
+      !     Description:   Ionizes a particle relocating it to its
+      !                    gyrocenter.
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_part2gc(q)
+         USE beams3d_grid
+
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          q            (1:6) = (R,phi,Z,vR,Vphi,Vz)
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: q(6)
+
+         !--------------------------------------------------------------
+         !     Local parameters
+         !--------------------------------------------------------------
+         REAL*8, PARAMETER :: one = 1
+
+         !--------------------------------------------------------------
+         !     Local variables
+         !--------------------------------------------------------------
+         INTEGER          :: ier
+         DOUBLE PRECISION :: r_temp, phi_temp, z_temp, x, y, &
+                             br_temp, bp_temp, bz_temp, modb_temp, &
+                             bx_temp, by_temp, binv, &
+                             rho(3), vperp, vx, vy, vz, vll
+         ! For splines
+         INTEGER :: i,j,k
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         REAL*8 :: fval(1)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+         lneut = .false.
+         end_state(myline) = 0
 
          ! Handle inputs
          ier = 0
@@ -1021,6 +1136,9 @@ MODULE beams3d_physics_mod
          z_temp = q(3)
          x = q(1)*cos(q(2))
          y = q(1)*sin(q(2))
+         vx = q(4)*cos(q(2))-q(5)*sin(q(2))
+         vy = q(4)*sin(q(2))+q(5)*cos(q(2))
+         vz = q(6)
 
 
          ! Eval Spline
@@ -1051,29 +1169,32 @@ MODULE beams3d_physics_mod
          binv = one/modb_temp
 
          ! First calculate vll
-         q(4) = ( myv_neut(1) * bx_temp + &
-                  myv_neut(2) * by_temp + &
-                  myv_neut(3) * bz_temp  ) * binv
+         vll = ( vx * bx_temp + &
+                  vy * by_temp + &
+                  vz * bz_temp  ) * binv
 
          ! Note we're now in xyz space
 
          ! F_em = q v x B
          ! rho is F_em norm
-         rho(1) = myv_neut(2)*bz_temp - myv_neut(3)*by_temp
-         rho(2) = myv_neut(3)*bx_temp - myv_neut(1)*bz_temp
-         rho(3) = myv_neut(1)*by_temp - myv_neut(2)*bx_temp
+         rho(1) = vy*bz_temp - vz*by_temp
+         rho(2) = vz*bx_temp - vx*bz_temp
+         rho(3) = vx*by_temp - vy*bx_temp
          IF (mycharge < 0) rho = -rho
          rho = rho / SQRT(SUM(rho*rho))
 
          ! Now calculate the gyroradius
          !    rg = m * vperp / (q * B)
          !    vperp = sqrt(v.v-vll*vll)
-         vperp = SQRT(ABS(SUM(myv_neut*myv_neut) - q(4)*q(4)))
+         vperp = SQRT(ABS(vx*vx+vy*vy+vz*vz - vll*vll))
          x     = x + rho(1)*mymass*vperp*binv/mycharge
          y     = y + rho(2)*mymass*vperp*binv/mycharge
          q(3)  = q(3)+rho(3)*mymass*vperp*binv/mycharge
          q(1)  = SQRT(x*x+y*y)
          q(2)  = ATAN2(y,x)
+         q(4)  = vll
+         q(5)  = 0
+         q(6)  = 0
 
          ! Now calculate magnetic moment
          !    mu = m*vperp^2/(2*B)=m*(v.v-vll.vll)/(2*B)
@@ -1082,170 +1203,7 @@ MODULE beams3d_physics_mod
 
          RETURN
 
-      END SUBROUTINE beams3d_ionize
-
-      !-----------------------------------------------------------------
-      !     Function:      beams3d_ionize_old
-      !     Authors:       S. Lazerson (lazerson@pppl.gov)
-      !                    M. McMillan (matthew.mcmillan@my.wheaton.edu)
-      !     Date:          12/01/2018
-      !     Description:   Ionizes a particle relocating it to its
-      !                    gyrocenter.
-      !-----------------------------------------------------------------
-      SUBROUTINE beams3d_ionize_old(q,lnorand)
-         USE beams3d_grid
-
-         !--------------------------------------------------------------
-         !     Input Parameters
-         !          q            (q(1),q(2),q(3),q(4)) = (R,phi,Z,vll)
-         !--------------------------------------------------------------
-         IMPLICIT NONE
-         DOUBLE PRECISION, INTENT(inout) :: q(4)
-         LOGICAL, OPTIONAL :: lnorand
-
-         !--------------------------------------------------------------
-         !     Local parameters
-         !--------------------------------------------------------------
-         REAL*8, PARAMETER :: one = 1
-
-         !--------------------------------------------------------------
-         !     Local variables
-         !--------------------------------------------------------------
-         LOGICAL          :: lrand
-         INTEGER          :: ier
-         DOUBLE PRECISION :: r_temp, phi_temp, z_temp, x, y, &
-                             br_temp, bp_temp, bz_temp, modb_temp, &
-                             bx_temp, by_temp, binv, &
-                             rho(3), rho2(3) 
-         ! For splines
-         INTEGER :: i,j,k
-         REAL*8 :: xparam, yparam, zparam
-         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
-         REAL*8 :: fval(1)
-
-         !--------------------------------------------------------------
-         !     Begin Subroutine
-         !--------------------------------------------------------------
-         lrand = .true.
-         lneut = .false.
-         end_state(myline) = 0
-         rand_prob = 0
-         IF (PRESENT(lnorand)) lrand = .not. lnorand
-         IF (lrand) CALL RANDOM_NUMBER(rand_prob)
-
-         ! Handle inputs
-         ier = 0
-         phi_temp = MOD(q(2),phimax)
-         IF (phi_temp < 0) phi_temp = phi_temp + phimax
-         r_temp = q(1)
-         z_temp = q(3)
-
-         ! Eval Spline
-         i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-         k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
-         xparam = (r_temp - raxis(i)) * hri(i)
-         yparam = (phi_temp - phiaxis(j)) * hpi(j)
-         zparam = (z_temp - zaxis(k)) * hzi(k)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BR4D(1,1,1,1),nr,nphi,nz)
-         br_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BPHI4D(1,1,1,1),nr,nphi,nz)
-         bp_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BZ4D(1,1,1,1),nr,nphi,nz)
-         bz_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         MODB4D(1,1,1,1),nr,nphi,nz)
-         modb_temp = fval(1)
-         bx_temp = br_temp*cos(q(2))-bp_temp*sin(q(2))
-         by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
-         binv = one/modb_temp
-
-         ! rg = m*vperp/(q*B)
-         ! Neutral position is average of gyrocenter |B|
-         ! So step but then recalc at new position
-
-         ! Calculate Gyroradius
-         rho(1) = myv_neut(2)*bz_temp - myv_neut(3)*by_temp
-         rho(2) = myv_neut(3)*bx_temp - myv_neut(1)*bz_temp
-         rho(3) = myv_neut(1)*by_temp - myv_neut(2)*bx_temp
-         !rho = rho*binv
-         rho    = (mymass*binv*binv/mycharge)*rho 
-
-         ! Calculate BxRg
-         rho2(1) = by_temp*rho(3) - bz_temp*rho(2)
-         rho2(2) = bz_temp*rho(1) - bx_temp*rho(3)
-         rho2(3) = bx_temp*rho(2) - by_temp*rho(1)
-         rho2 = rho2*binv
-
-         ! Since rho==rg then rho2==rg but sqrt(rho+rho2)==rhog
-         rho = inv_sqrt2 * rho * cos(pi2*rand_prob)
-         rho2 = inv_sqrt2* rho2 * sin(pi2*rand_prob)
-
-         ! Move to Gyrocenter
-         x = q(1)*cos(q(2)) + rho(1) + rho2(1)
-         y = q(1)*sin(q(2)) + rho(2) + rho2(2)
-         z_temp= q(3) + rho(3) + rho2(3)
-         r_temp = sqrt(x*x + y*y)
-         phi_temp = ATAN2(y,x)
-         IF (phi_temp<0) phi_temp = phi_temp + pi2
-
-         ! Save on full toroidal grid
-         q(1) = r_temp
-         q(2) = phi_temp
-         q(3) = z_temp
-
-         ! Modify phi for splines
-         phi_temp = MOD(phi_temp,phimax)
-
-         ! Now recompute Splines
-         i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-         k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
-         xparam = (r_temp - raxis(i)) * hri(i)
-         yparam = (phi_temp - phiaxis(j)) * hpi(j)
-         zparam = (z_temp - zaxis(k)) * hzi(k)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BR4D(1,1,1,1),nr,nphi,nz)
-         br_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BPHI4D(1,1,1,1),nr,nphi,nz)
-         bp_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BZ4D(1,1,1,1),nr,nphi,nz)
-         bz_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         MODB4D(1,1,1,1),nr,nphi,nz)
-         modb_temp = fval(1)
-         bx_temp = br_temp*cos(q(2))-bp_temp*sin(q(2))
-         by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
-         binv = one/modb_temp
-
-
-         ! Calculate the parallel velocity vll=v.B/B
-         q(4) = binv*SUM(myv_neut*(/bx_temp,by_temp,bz_temp/))
-         !q(4) = binv*( myv_neut(1)*bx_temp + myv_neut(2)*by_temp + myv_neut(3)*bz_temp )
-
-         ! Calculate the magnetic moment mu = m*vperp^2/(2*B)=m*(v.v-vll.vll)/(2*B)
-         moment = 0.5*binv*mymass*(SUM(myv_neut*myv_neut) - q(4)*q(4))
-         !moment = 0.5*binv*mymass*(myv_neut(1)*myv_neut(1) + myv_neut(2)*myv_neut(2) + myv_neut(3)*myv_neut(3) - q(4)*q(4) )
-
-         ! Check to see we didn't inject perfectly parallel (negative moment possible)
-         moment = MAX(moment,1000*TINY(moment))
-
-         RETURN
-
-      END SUBROUTINE beams3d_ionize_old
+      END SUBROUTINE beams3d_part2gc
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_neutralize
@@ -1343,17 +1301,15 @@ MODULE beams3d_physics_mod
       !     Date:          10/22/2021
       !     Description:   Convert a gyrocenter to a full orbit.
       !-----------------------------------------------------------------
-      SUBROUTINE beams3d_gc2fo(t, q)
+      SUBROUTINE beams3d_gc2fo(q)
          USE beams3d_grid
 
          !--------------------------------------------------------------
          !     Input Parameters
-         !          t          Location along fieldline in t
          !          q          on input R,phi,Z,vll,moment
          !                     on exit  R,phi,Z,vR,Vphi,Vz
          !--------------------------------------------------------------
          IMPLICIT NONE
-         DOUBLE PRECISION, INTENT(inout) :: t
          DOUBLE PRECISION, INTENT(inout) :: q(6)
 
          !--------------------------------------------------------------

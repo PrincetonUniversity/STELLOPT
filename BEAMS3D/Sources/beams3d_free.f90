@@ -179,6 +179,7 @@
       IF (ALLOCATED(Zatom))     DEALLOCATE(Zatom)
       IF (ALLOCATED(t_end))     DEALLOCATE(t_end)
       IF (ALLOCATED(vll_start)) DEALLOCATE(vll_start)
+      IF (ALLOCATED(lgc2fo_start)) DEALLOCATE(lgc2fo_start)
       IF (ALLOCATED(beam))      DEALLOCATE(beam)
       IF (ALLOCATED(weight))    DEALLOCATE(weight)
       IF (ALLOCATED(shine_through))    DEALLOCATE(shine_through)

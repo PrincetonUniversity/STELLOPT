@@ -29,6 +29,7 @@
       IMPLICIT NONE
       LOGICAL :: lplasma_old, ldepo_old, lfusion_old
       INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
+      LOGICAL, DIMENSION(:), ALLOCATABLE :: lgc2fo_old
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2, start_dex
       REAL(rprec) :: vpartmax, B_help, version_old, s_fullorbit
       REAL(rprec), DIMENSION(3) :: q
@@ -83,7 +84,8 @@
          IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)
          IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
          ALLOCATE(mass2(nparticles),charge2(nparticles),Zatom2(nparticles),&
-            beam2(nparticles), weight2(nparticles), end_state(nparticles))
+            beam2(nparticles), weight2(nparticles), end_state(nparticles), lgc2fo_old(nparticles))
+         lgc2fo_old(:) = .TRUE.
          ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
             vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles),&
             S_lines(0:npoinc,nparticles),B_lines(0:npoinc,nparticles), &
@@ -151,11 +153,14 @@
             ! Use ionization point unless outside FO radius
             start_dex = 2
             s_fullorbit = SIGN(rho_fullorbit*rho_fullorbit,rho_fullorbit)
-            WHERE(S_lines(1,:) >= s_fullorbit) start_dex = 1
+            WHERE(S_lines(1,:) >= s_fullorbit) 
+               start_dex = 1
+               lgc2fo_old = .FALSE.
+            END WHERE
             ! IF plasma run only consider particles born inside equilibrium
             IF (lplasma_only) THEN 
                WHERE((S_lines(1,:) >= 1) .and. (start_dex == 1)) end_state = -1
-               WHERE((S_lines(1,:) >= 2) .and. (start_dex == 2)) end_state = -1
+               WHERE((S_lines(2,:) >= 1) .and. (start_dex == 2)) end_state = -1
             END IF
          ELSE
             state_flag = 2
@@ -174,7 +179,7 @@
                     vr_start(k), vphi_start(k), vz_start(k), &
                     mass(k), charge(k), &
                     mu_start(k), Zatom(k), t_end(k), vll_start(k), &
-                    beam(k), weight(k) )
+                    beam(k), weight(k), lgc2fo_start(k) )
 
          ! Now fill the arrays downselecting for non-shinethrough particles
          k = 1
@@ -194,6 +199,7 @@
             Zatom(k)    = Zatom2(i)
             beam(k)     = beam2(i)
             weight(k)   = weight2(i)
+            lgc2fo_start(k) = lgc2fo_old(i)
             t_end(k)    = MAXVAL(t_end_in)
             q = (/R_start(k), phi_start(k), Z_start(k)/)
             CALL beams3d_MODB(q,B_help)
@@ -202,7 +208,7 @@
          END DO
          DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, &
             neut_lines, end_state, S_lines, B_lines, vr_lines, vphi_lines, vz_lines)
-         DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, start_dex)
+         DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, start_dex, lgc2fo_old)
 
          ! Restore quantities
          nparticles = k-1
@@ -223,8 +229,9 @@
                     vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
                     mass(nparticles), charge(nparticles), &
                     mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
-                    beam(nparticles), weight(nparticles) )
+                    beam(nparticles), weight(nparticles), lgc2fo_start(nparticles) )
       END IF
+      CALL MPI_BCAST(lgc2fo_start, nparticles, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mass,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
