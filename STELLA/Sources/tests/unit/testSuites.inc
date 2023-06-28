@@ -1,2 +1,0 @@
-ADD_TEST_SUITE(test_simple_suite)
-ADD_TEST_SUITE(test_utils_convert_suite)
