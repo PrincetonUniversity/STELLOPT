@@ -73,9 +73,9 @@
             ELSE IF(jtarget_knosos.EQ.jtarget_knosos_qer) THEN
                vals(mtargets)    = KNOSOS_qer(ik)
             ELSE IF(jtarget_knosos.EQ.jtarget_knosos_vb0) THEN
-               !vals(mtargets)    = KNOSOS_vb0(ik)
+               vals(mtargets)    = KNOSOS_vb0(ik)
             ELSE IF(jtarget_knosos.EQ.jtarget_knosos_vbm) THEN
-               !vals(mtargets)    = KNOSOS_vbm(ik)
+               vals(mtargets)    = KNOSOS_vbm(ik)
             ELSE IF(jtarget_knosos.EQ.jtarget_knosos_vbb) THEN
                vals(mtargets)    = KNOSOS_vbb(ik)
             ELSE IF(jtarget_knosos.EQ.jtarget_knosos_wbw) THEN
