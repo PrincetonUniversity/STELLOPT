@@ -245,7 +245,7 @@ endif
 ifeq ($(LKNOSOS),T)
   MOD1_PATH += $(KNOSOS_INC)
   PRECOMP += -DKNOSOS_OPT
-  MOD_PATH += -I$(KNOSOS_DIR)
+  MOD_PATH += $(KNOSOS_INC)
 else
   KNOSOS_LIB = 
   KNOSOS_DIR = 

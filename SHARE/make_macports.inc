@@ -72,6 +72,11 @@
              -lhdf5_fortran -lhdf5 -lz -ldl -lm
 
 #######################################################################
+#            PETSC Options
+#######################################################################
+  PETSC_DIR ?= /opt/local/lib/petsc
+
+#######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
@@ -167,11 +172,11 @@
 #######################################################################
 #            KNOSOS Options
 #######################################################################
-  LKNOSOS= F
-  AEOPT_DIR = $(KNOSOS_PATH)
-  AEOPT_INC = -I$(KNOSOS_DIR)/SOURCE 
+  LKNOSOS= T
+  KNOSOS_DIR = $(KNOSOS_PATH)
+  KNOSOS_INC = -I$(KNOSOS_DIR)/SOURCES
   LIB_KNOSOS = libknosos.a
-  KNOSOS_LIB = $(KNOSOS_PATH)/SOURCE/$(LIB_KNOSOS)
+  KNOSOS_LIB = $(KNOSOS_PATH)/SOURCES/$(LIB_KNOSOS)
 
 #######################################################################
 #            LIBSTELL Shared Options
