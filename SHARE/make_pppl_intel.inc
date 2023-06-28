@@ -155,6 +155,15 @@
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 
 #######################################################################
+#            Available Energy Options
+#######################################################################
+  LAEOPT= F
+  AEOPT_DIR = $(AEOPT_PATH)
+  AEOPT_INC = -I$(AEOPT_DIR) 
+  LIB_AEOPT = libtrapAE.a
+  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
 LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc

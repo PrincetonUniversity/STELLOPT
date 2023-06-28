@@ -24,7 +24,8 @@
                                     HDF5_CLOSE_ERR, FIELDLINES_VERSION,&
                                     ladvanced, lbfield_only, lreverse,&
                                     lafield_only, lemc3, lmodb, &
-                                    MPI_BARRIER_ERR, iota0, lhint, lpres
+                                    MPI_BARRIER_ERR, iota0, lhint, lpres,&
+                                    leqdsk,eqdsk_string
       USE fieldlines_write_par
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -54,6 +55,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lpies',ier)
          CALL write_scalar_hdf5(fid,'lspec',ier,BOOVAR=lspec,ATT='SPEC input',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lspec',ier)
+         CALL write_scalar_hdf5(fid,'leqdsk',ier,BOOVAR=leqdsk,ATT='EQDSK input',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'leqdsk',ier)
          CALL write_scalar_hdf5(fid,'lhint',ier,BOOVAR=lhint,ATT='HINT input',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lhint',ier)
          CALL write_scalar_hdf5(fid,'lcoil',ier,BOOVAR=lcoil,ATT='Coil input',ATT_NAME='description')
@@ -129,7 +132,7 @@
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'raxis',ier)
             CALL write_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis,ATT='Toroidal Axis [rad]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phiaxis',ier)
-            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [rad]',ATT_NAME='description')
+            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [m]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zaxis',ier)
             CALL write_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R,ATT='Radial Fieldline Eq. (BR)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_R',ier)
@@ -152,11 +155,11 @@
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'raxis',ier)
             CALL write_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis,ATT='Toroidal Axis [rad]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phiaxis',ier)
-            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [rad]',ATT_NAME='description')
+            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [m]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zaxis',ier)
-            CALL write_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R,ATT='Radial Fieldline Eq. (BR/BPHI)',ATT_NAME='description')
+            CALL write_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R,ATT='Radial Fieldline Eq. (R*BR/BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_R',ier)
-            CALL write_var_hdf5(fid,'B_Z',nr,nphi,nz,ier,DBLVAR=B_Z,ATT='Vertical Fieldline Eq. (BZ/BPHI)',ATT_NAME='description')
+            CALL write_var_hdf5(fid,'B_Z',nr,nphi,nz,ier,DBLVAR=B_Z,ATT='Vertical Fieldline Eq. (R*BZ/BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_Z',ier)
             CALL write_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI,ATT='Toroidal Field (BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_PHI',ier)

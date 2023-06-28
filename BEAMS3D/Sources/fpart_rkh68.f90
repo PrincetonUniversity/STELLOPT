@@ -1,6 +1,6 @@
 !-----------------------------------------------------------------------
 !     Function:      fpart_rkh68
-!     Authors:       M. McMillan (matthew.mcmillan@my.wheaton.edu)
+!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
 !     Date:          06/20/2012
 !     Description:   Just a wrapper to fpart_nag.
 !
@@ -12,12 +12,12 @@
 !-----------------------------------------------------------------------
 !     Input Variables
 !          t          time coordinates
-!          q          (q(1),q(2),q(3),q(4)) = (R,phi,Z,vll)
+!          q          q(k) = (R,phi,Z,v_r,Vphi,V_z)
 !          qdot       dq/dt
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER          :: istat
-      DOUBLE PRECISION :: t, q(4), qdot(4)
+      DOUBLE PRECISION :: t, q(6), qdot(6)
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !------------------------------------------------

@@ -33,6 +33,9 @@
 !      USE read_boozer_mod
       USE EZspline_obj
       USE EZspline
+!DEC$ IF DEFINED (AEOPT)
+      USE trapped_avail_energy_mod
+!DEC$ ENDIF
 !DEC$ IF DEFINED (GENE)
       USE gene_subroutine, ONLY: rungene
       USE par_in, ONLY: diagdir,file_extension
@@ -530,6 +533,15 @@
                         CALL EZspline_free(Bhat_spl,ier)
                         CALL EZspline_free(L2_spl,ier)
                      END DO
+                  CASE('availenergy')
+!DEC$ IF DEFINED (AEOPT)
+                     DO ialpha = 1, nalpha0_
+                        CALL compute_AE(maxPnt, g11(ialpha,:), g12(ialpha,:), g22(ialpha,:), Bhat(ialpha,:), &
+                                        abs_jac(ialpha,:), L1(ialpha,:), L2(ialpha,:), dBdt(ialpha,:), &
+                                        1, dpdx, q, shat, result)
+                        vqqprox(ialpha,:) = result/maxPnt
+                     END DO
+!DEC$ ENDIF
                   CASE('all')
                      ! prox1
                      qqfac=(one+one/(rhsrkp*(one+(tau_s*slocav)**2)))

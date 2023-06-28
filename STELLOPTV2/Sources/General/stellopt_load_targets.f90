@@ -229,6 +229,9 @@
       ! Coil excursion outside prescribed box
       IF (ANY(sigma_coilrect < bigno)) &
            CALL chisq_coilrect(target_coilrect, sigma_coilrect, ncnt, iflag)
+      ! Coil incursion into proscribed polygon set
+      IF (ANY(sigma_coilpoly < bigno)) &
+           CALL chisq_coilpoly(target_coilpoly, sigma_coilpoly, ncnt, iflag)
 
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries
@@ -286,11 +289,9 @@
          CALL chisq_knosos(target_knosos_wbw, sigma_knosos_wbw, ncnt,iflag , jtarget_knosos_wbw)
       IF (ANY(sigma_knosos_dbo < bigno)) &
          CALL chisq_knosos(target_knosos_dbo, sigma_knosos_dbo, ncnt,iflag , jtarget_knosos_dbo)
-      ! STELLA
-!      IF (ANY(sigma_stella_q1 < bigno)) &
-!         CALL chisq_stella(target_stella_q1, sigma_stella_q1, ncnt,iflag, jtarget_stella_q1)
-!      IF (ANY(sigma_stella_q2 < bigno)) &
-!         CALL chisq_stella(target_stella_q2, sigma_stella_q2, ncnt,iflag, jtarget_stella_q2)
+      ! DKES ERdiff
+      IF (ANY(sigma_dkes_erdiff < bigno)) &
+         CALL chisq_dkes_erdiff(target_dkes_erdiff, sigma_dkes_erdiff, ncnt,iflag)
       ! TXPORT
       IF (ANY(sigma_txport < bigno)) &
          CALL chisq_txport(target_txport, sigma_txport, ncnt,iflag)

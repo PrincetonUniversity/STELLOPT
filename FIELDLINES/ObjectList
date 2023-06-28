@@ -1,4 +1,6 @@
 ObjectFiles = \
+fieldlines_gridgen.o \
+fieldlines_init_backflow.o \
 fieldlines_init_errorfield.o \
 fieldlines_init_hint.o \
 fieldlines_init_fline.o \
@@ -15,6 +17,7 @@ fieldlines_runtime.o \
 fieldlines_init_I.o \
 fieldlines_init_coil.o \
 fieldlines_init_vmec.o \
+fieldlines_init_eqdsk.o \
 fieldlines_write.o \
 monit_find_axis.o \
 fieldlines_find_hc.o \

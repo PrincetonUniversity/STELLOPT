@@ -15,9 +15,9 @@
                                shine_through, &
                                B_lines, end_state, shine_port, Gfactor, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
-                               dense_prof, dist5d_prof, &
+                               dense_prof, dist5d_prof, dist5d_fida, &
                                win_ndot, win_epower, win_ipower, win_jprof, &
-                               win_dense, win_dist5d
+                               win_dense, win_dist5d, win_dist5d_fida
       USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -25,7 +25,7 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: ier
+      INTEGER :: ier,i
       INTEGER, INTENT(INOUT), OPTIONAL :: IN_COMM
 !-----------------------------------------------------------------------
 !     External Functions
@@ -52,6 +52,9 @@
       IF (EZspline_allocated(NE_spl_s))   CALL EZspline_free(NE_spl_s,ier)
       IF (EZspline_allocated(TI_spl_s))   CALL EZspline_free(TI_spl_S,ier)
       IF (EZspline_allocated(Vp_spl_s))   CALL EZspline_free(Vp_spl_S,ier)
+      DO i = 1, NION
+         IF (EZspline_allocated(NI_spl_s(i)))   CALL EZspline_free(NI_spl_s(i),ier)
+      END DO
       IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
       IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
@@ -65,12 +68,17 @@
       IF (ALLOCATED(beam)) DEALLOCATE(beam)
       IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
       IF (ALLOCATED(Gfactor)) DEALLOCATE(Gfactor)
+      !IF (ALLOCATED(energy_fida))  DEALLOCATE(energy_fida)
+      !IF (ALLOCATED(pitch_fida))    DEALLOCATE(pitch_fida)
       IF (PRESENT(IN_COMM)) THEN
          IF (ASSOCIATED(req_axis)) CALL mpidealloc(req_axis,win_req_axis)
          IF (ASSOCIATED(zeq_axis)) CALL mpidealloc(zeq_axis,win_zeq_axis)
          IF (ASSOCIATED(raxis))    CALL mpidealloc(raxis,win_raxis)
          IF (ASSOCIATED(phiaxis))  CALL mpidealloc(phiaxis,win_phiaxis)
          IF (ASSOCIATED(zaxis))    CALL mpidealloc(zaxis,win_zaxis)
+         IF (ASSOCIATED(raxis_fida))    CALL mpidealloc(raxis_fida,win_raxis_fida)
+         IF (ASSOCIATED(phiaxis_fida))  CALL mpidealloc(phiaxis_fida,win_phiaxis_fida)
+         IF (ASSOCIATED(zaxis_fida))    CALL mpidealloc(zaxis_fida,win_zaxis_fida)
          IF (ASSOCIATED(hr))       CALL mpidealloc(hr,win_hr)
          IF (ASSOCIATED(hp))       CALL mpidealloc(hp,win_hp)
          IF (ASSOCIATED(hz))       CALL mpidealloc(hz,win_hz)
@@ -83,9 +91,12 @@
          IF (ASSOCIATED(MODB))     CALL mpidealloc(MODB,win_MODB)
          IF (ASSOCIATED(S_ARR))    CALL mpidealloc(S_ARR,win_S_ARR)
          IF (ASSOCIATED(U_ARR))    CALL mpidealloc(U_ARR,win_U_ARR)
+         IF (ASSOCIATED(X_ARR))    CALL mpidealloc(X_ARR,win_X_ARR)
+         IF (ASSOCIATED(Y_ARR))    CALL mpidealloc(Y_ARR,win_Y_ARR)
          IF (ASSOCIATED(TE))       CALL mpidealloc(TE,win_TE)
          IF (ASSOCIATED(TI))       CALL mpidealloc(TI,win_TI)
          IF (ASSOCIATED(NE))       CALL mpidealloc(NE,win_NE)
+         IF (ASSOCIATED(NI))       CALL mpidealloc(NI,win_NI)
          IF (ASSOCIATED(ZEFF_ARR)) CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
          IF (ASSOCIATED(POT_ARR))  CALL mpidealloc(POT_ARR,win_POT_ARR)
          IF (ASSOCIATED(BR4D))     CALL mpidealloc(BR4D,win_BR4D)
@@ -94,10 +105,13 @@
          IF (ASSOCIATED(MODB4D))   CALL mpidealloc(MODB4D,win_MODB4D)
          IF (ASSOCIATED(TE4D))     CALL mpidealloc(TE4D,win_TE4D)
          IF (ASSOCIATED(NE4D))     CALL mpidealloc(NE4D,win_NE4D)
+         IF (ASSOCIATED(NI5D))     CALL mpidealloc(NI5D,win_NI5D)
          IF (ASSOCIATED(TI4D))     CALL mpidealloc(TI4D,win_TI4D)
          IF (ASSOCIATED(ZEFF4D))   CALL mpidealloc(ZEFF4D,win_ZEFF4D)
          IF (ASSOCIATED(S4D))      CALL mpidealloc(S4D,win_S4D)
          IF (ASSOCIATED(U4D))      CALL mpidealloc(U4D,win_U4D)
+         IF (ASSOCIATED(X4D))      CALL mpidealloc(X4D,win_X4D)
+         IF (ASSOCIATED(Y4D))      CALL mpidealloc(Y4D,win_Y4D)
          IF (ASSOCIATED(POT4D))    CALL mpidealloc(POT4D,win_POT4D)
          IF (ASSOCIATED(wall_load))   CALL mpidealloc(wall_load,win_wall_load)
          IF (ASSOCIATED(wall_shine))  CALL mpidealloc(wall_shine,win_wall_shine)
@@ -112,6 +126,7 @@
          IF (ASSOCIATED(j_prof))    DEALLOCATE(j_prof)
          IF (ASSOCIATED(dense_prof))    DEALLOCATE(dense_prof)
          IF (ASSOCIATED(dist5d_prof)) CALL mpidealloc(dist5d_prof,win_dist5d)
+         IF (ASSOCIATED(dist5d_fida)) CALL mpidealloc(dist5d_fida,win_dist5d_fida)
       ELSE
          IF (ASSOCIATED(req_axis)) DEALLOCATE(req_axis)
          IF (ASSOCIATED(zeq_axis)) DEALLOCATE(zeq_axis)
@@ -133,6 +148,7 @@
          IF (ASSOCIATED(TE))       DEALLOCATE(TE)
          IF (ASSOCIATED(TI))       DEALLOCATE(TI)
          IF (ASSOCIATED(NE))       DEALLOCATE(NE)
+         IF (ASSOCIATED(NI))       DEALLOCATE(NI)
          IF (ASSOCIATED(ZEFF_ARR)) DEALLOCATE(ZEFF_ARR)
          IF (ASSOCIATED(POT_ARR))  DEALLOCATE(POT_ARR)
          IF (ASSOCIATED(BR4D))     DEALLOCATE(BR4D)
@@ -141,6 +157,7 @@
          IF (ASSOCIATED(MODB4D))   DEALLOCATE(MODB4D)
          IF (ASSOCIATED(TE4D))     DEALLOCATE(TE4D)
          IF (ASSOCIATED(NE4D))     DEALLOCATE(NE4D)
+         IF (ASSOCIATED(NI5D))     DEALLOCATE(NI5D)
          IF (ASSOCIATED(TI4D))     DEALLOCATE(TI4D)
          IF (ASSOCIATED(ZEFF4D))   DEALLOCATE(ZEFF4D)
          IF (ASSOCIATED(S4D))      DEALLOCATE(S4D)

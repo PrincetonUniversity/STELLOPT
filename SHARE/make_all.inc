@@ -27,6 +27,8 @@ ifeq ($(LGENE),T)
              -L$(PETSC_HOME)/lib -lpetsc
 endif
 
+LIMAS?=F
+
 # Handle Which Code is being CALLED
 ifeq ($(MAKECMDGOALS),xstelloptv2)
   PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2
@@ -90,29 +92,30 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
-  ifeq ($(LKNOSOS),T)
-    KNOSOS_DIR = ../../KNOSOS
-    LIB_KNOSOS = libknosos.a
-    MOD_PATH += -I$(KNOSOS_DIR)/$(LOCTYPE)
-    PRECOMP += -DKNOSOS_OPT
-    LIB_LINK += $(KNOSOS_DIR)/$(LOCTYPE)/$(LIB_KNOSOS)
-    LIB_LINK += $(KNOSOS_LIB)
-  else
-    KNOSOS_DIR = 
-    LIB_KNOSOS = 
-  endif
-  ifeq ($(LSTELLA),T)
-    STELLA_DIR = ../../STELLA
-    LIB_STELLA = libstella.a
-    MOD_PATH += -I$(STELLA_DIR)/$(LOCTYPE)
-    CPPFLAGS = -DFCOMPILER=_INTEL_ -DISO_C_BINDING -DMPI -DFFT=_FFTW3_ -DNETCDF -DLAPACK -DMPIINC
-    PRECOMP += -DSTELLA_OPT
-    LIB_LINK += $(STELLA_DIR)/$(LOCTYPE)/$(LIB_STELLA)
-  else
-    STELLA_DIR =
-    LIB_STELLA =
-  endif
-
+else ifeq ($(MAKECMDGOALS),xthrift)
+  PRECOMP += -DSKS  -DSKS2
+  VMEC_DIR = ../../VMEC2000
+  LIB_VMEC= libvmec.a
+  MOD_PATH+= -I$(VMEC_DIR)/$(LOCTYPE)
+  BOOTSJ_DIR = ../../BOOTSJ
+  LIB_BOOTSJ = libbootsj.a
+  MOD_PATH+= -I$(BOOTSJ_DIR)/$(LOCTYPE)
+  BOOZ_DIR = ../../BOOZ_XFORM
+  LIB_BOOZ= libbooz.a
+  MOD_PATH+= -I$(BOOZ_DIR)/$(LOCTYPE)
+  DIAGNO_DIR = ../../DIAGNO
+  LIB_DIAGNO= libdiagno.a
+  MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
+  LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
+  $(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
+  $(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
+  $(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO)
+  LGENE = F
+  LCOILOPT = F
+  LSFINCS = F
+  LREGCOIL= F
+  LMANGO = F
+  LTERPSICHORE = F
 else ifeq ($(MAKECMDGOALS),help)
 else ifeq ($(MAKECMDGOALS),test_stellopt)
 else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
@@ -230,21 +233,18 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
-#ifeq ($(LSTELLA),T)
-#  STELLA_DIR = ../../STELLA
-#  LIB_STELLA = libstella.a
-#  MOD_PATH += -I$(STELLA_DIR)/$(LOCTYPE)
-#  CPPFLAGS = -DFCOMPILER=_INTEL_ -DISO_C_BINDING -DMPI -DFFT=_FFTW3_ -DNETCDF -DLAPACK -DMPIINC
-#  PRECOMP += -DSTELLA_OPT
-#  LIB_LINK += $(STELLA_DIR)/$(LOCTYPE)/$(LIB_STELLA)
-#else
-#  STELLA_DIR =
-#  LIB_STELLA =
-#endif
+ifeq ($(LAEOPT),T)
+  MOD1_PATH += $(AEOPT_INC)
+  PRECOMP += -DAEOPT
+  MOD_PATH += -I$(AEOPT_DIR)
+else
+  AEOPT_LIB = 
+  AEOPT_DIR = 
+  LIB_AEOPT = 
+endif
 
 # Handle other codes
-#LIB_LINK += $(STELLA_LIB) $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
-LIB_LINK +=  $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
+LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(AEOPT_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
@@ -257,7 +257,7 @@ ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
-  LINK    = $(MPI_COMPILE) $(FLAGS) -o 
+  LINK    = $(MPI_LINK) $(FLAGS) -o 
   LINK_C  = $(MPI_LINK) -shared
 endif
 ifeq ($(LNETCDF),T)
@@ -276,7 +276,7 @@ ifeq ($(LFFTW3),T)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
-  PRECOMP += -DLHDF5 -DH5_USE_16_API
+  PRECOMP += -DLHDF5
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
   LIB_SHARE += $(HDF5_LIB)
@@ -292,6 +292,12 @@ ifeq ($(LSILO),T)
   LIB_LINK += $(SILO_LIB)
   LIB_SHARE += $(SILO_LIB)
 endif
+ifeq ($(LIMAS),T)
+  MOD1_PATH += $(IMAS_INC)
+  PRECOMP += -DIMAS
+  LIB_LINK += $(IMAS_LIB)
+  LIB_SHARE += $(IMAS_LIB)
+endif
 
 # This is hear because of MPI above resetting LINK
 ifeq ($(MAKECMDGOALS),libstell.a)
@@ -301,12 +307,25 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
-  LINK = $(LINK_C)
+  LINK = $(LINK_C) -shared
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
   INC_PATH = 
 endif
+
+# Pass Git information to code
+#GIT_BRANCH  = $(shell git branch --show-current) #Only works on version >2.2
+GIT_REPO    = $(shell git ls-remote --get-url)
+GIT_BRANCH  = $(shell git rev-parse --abbrev-ref HEAD)
+GIT_VERSION = $(shell git describe --abbrev=4 --dirty --always --tags)
+GIT_HASH    = $(shell git show -s --format=%H)
+TIME        = $(shell date +"%d.%m.%Y %H:%M:%S")
+PRECOMP += -DGIT_VERSION_EXT="'$(GIT_VERSION)'"
+PRECOMP += -DGIT_HASH_EXT="'$(GIT_HASH)'"
+PRECOMP += -DGIT_BRANCH_EXT="'$(GIT_BRANCH)'"
+PRECOMP += -DGIT_REPO_EXT="'$(GIT_REPO)'"
+PRECOMP += -DBUILT_ON_EXT="'$(TIME)'"
 
 #This must come here
 MOD_PATH+= -I

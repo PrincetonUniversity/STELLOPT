@@ -128,7 +128,9 @@
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
+  LIB_FADDEEVA = libfaddeeva64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
+               $(TRAVIS_DIR)/faddeeva_package/lib/$(LIB_FADDEEVA) \
                $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
@@ -148,6 +150,15 @@
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+
+#######################################################################
+#            Available Energy Options
+#######################################################################
+  LAEOPT= F
+  AEOPT_DIR = $(AEOPT_PATH)
+  AEOPT_INC = -I$(AEOPT_DIR) 
+  LIB_AEOPT = libtrapAE.a
+  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
 #            LIBSTELL Shared Options

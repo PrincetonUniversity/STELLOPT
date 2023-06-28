@@ -9,6 +9,7 @@
   DIAGNO_TEST_DIR = DIAGNO_TEST
   FIELDLINES_TEST_DIR = FIELDLINES_TEST
   STELLOPT_TEST_DIR = STELLOPT_TEST
+  THRIFT_TEST_DIR = THRIFT_TEST
   VMEC_TEST_DIR = VMEC_TEST
 
 # We do the following to handle Testing on Large Systems
@@ -94,6 +95,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_depo
 	$(MAKE) test_beams3d_eqdsk
 	$(MAKE) test_beams3d_fusion
+	$(MAKE) test_beams3d_multiion
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
 
@@ -152,6 +154,13 @@ test_beams3d_eqdsk:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_eqdsk.py
+	@echo ""
+
+test_beams3d_multiion:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_multiion -plasma -depo -suzuki
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_multiion -plasma -depo -suzuki
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_multiion.py
 	@echo ""
 
 test_stellopt:
@@ -262,6 +271,11 @@ test_stellopt_gene:
 	@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.GENE; rm -f *_opt*
 	@echo ""
 
+test_stellopt_availenergy:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.AVAILENERGYOPT;
+	@cd $(STELLOPT_TEST_DIR)/AVAILENERGYOPT; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.AVAILENERGYOPT; rm -f *_opt*
+	@echo ""
+
 test_stellopt_sfincs:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;
 	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs; rm -f *_opt*
@@ -284,22 +298,40 @@ test_fieldlines_full:
 	@cd $(FIELDLINES_TEST_DIR); ./compare_NCSX_s1.py
 	@echo ""
 
-test_fieldlines_coll: fieldlines_NCSX_s1.h5
+test_fieldlines_coll: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@echo ""
 
-test_fieldlines_coll_acc: fieldlines_NCSX_s1.h5
+test_fieldlines_backflow: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114 -backflow
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114 -backflow
+	@echo ""
+
+test_fieldlines_coll_acc: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh_acc0.25v4.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh_acc0.25v4.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@echo ""
 
-test_fieldlines_coll_ef: fieldlines_NCSX_s1.h5
+test_fieldlines_coll_ef: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll_ef -coil coils.NCSX_nfp1 -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll_ef -vac -coil coils.NCSX_nfp1 -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@echo ""
 
-fieldlines_NCSX_s1.h5: test_fieldlines_full
+test_thrift:
+	@echo "Beginning testing of THRIFT"
+	$(MAKE) test_thrift_analytical
+	@echo "Tesing of THRIFT complete"
+	@echo ""
+
+test_thrift_analytical:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec analytical -prof profiles_analytical.h5
+	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec analytical -prof profiles_analytical.h5
+	@cd $(THRIFT_TEST_DIR); ./test_THRIFT.py
+	@echo ""
+
+FIELDLINES_TEST/fieldlines_NCSX_s1.h5: 
+	@$(MAKE) test_fieldlines_full
 
 clean_test:
 	@cd $(VMEC_TEST_DIR); rm -f dcon* jxbout* mercier* threed1* parvmecinfo* wout*
@@ -320,6 +352,7 @@ clean_test:
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TOK_R0_RHO stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TRAVIS stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs stellopt_cleanup_dir
+	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/AVAILENERGYOPT stellopt_cleanup_dir
 
 stellopt_cleanup_dir:
 	@cd $(SUBDIR); rm -f answers* auto* beams3d* b_norm_eq_* b_norm_init_* b_norm_final_* bnorm.* boot_fit.* boozmn* checkpoint_* \
@@ -340,6 +373,7 @@ help:
 	@echo "      MPI_RUN_OPTS_MD: " $(MPI_RUN_OPTS_MD)
 	@echo "      MPI_RUN_OPTS_LG: " $(MPI_RUN_OPTS_LG)
 	@echo ""
+	@echo "      LAEOPT:          " $(LAEOPT)
 	@echo "      LCOILOPT:        " $(LCOILOPT)
 	@echo "      LGENE:           " $(LGENE)
 	@echo "      LREGCOIL:        " $(LREGCOIL)
@@ -352,5 +386,6 @@ help:
 	@echo "      test_diagno     Tesing of DIAGNO"
 	@echo "      test_fieldlines Tesing of FIELDLINES"
 	@echo "      test_stellopt   Tesing of STELLOPT"
+	@echo "      test_thrift_atf Tesing of THRIFT (ATF Case)"
 	@echo "      test_vmec       Tesing of VMEC"
 	@echo "      clean_test      Remove files generated by tests"

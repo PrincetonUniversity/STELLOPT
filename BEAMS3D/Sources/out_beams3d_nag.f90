@@ -12,7 +12,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
-                               weight, invpi2, ndt, ndt_max
+                               weight, invpi2, ndt, ndt_max, lfidasim, lfidasim2
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nsteps, nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
@@ -21,8 +21,8 @@ SUBROUTINE out_beams3d_nag(t, q)
                              ndot_prof, partvmax, &
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
-                             dist5d_prof, win_dist5d, nsh_prof4, &
-                             h2_prof, h3_prof, h4_prof, h5_prof, my_end
+                             dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
+                             h2_prof, h3_prof, h4_prof, h5_prof, my_end, r_h, p_h, z_h
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
@@ -47,7 +47,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     ! For splines
     INTEGER :: i,j,k,l
     REAL*8 :: xparam, yparam, zparam !, hx, hy, hz, hxi, hyi, hzi
-    REAL*8 :: fval(1)
+    REAL*8 :: fval(1), fval2(1)
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
     REAL*8, PARAMETER :: one = 1
     !-----------------------------------------------------------------------
@@ -67,6 +67,8 @@ SUBROUTINE out_beams3d_nag(t, q)
     IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
         (x0 >= phimin-eps2) .and. (x0 <= phimax+eps2) .and. &
         (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
+
+
        i = MIN(MAX(COUNT(raxis < q(1)),1),nr-1)
        j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
        k = MIN(MAX(COUNT(zaxis < q(3)),1),nz-1)
@@ -75,14 +77,18 @@ SUBROUTINE out_beams3d_nag(t, q)
        zparam = (q(3) - zaxis(k)) * hzi(k)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       S4D(1,1,1,1),nr,nphi,nz)
-       y0 = fval(1)
-       S_lines(mytdex, myline) = y0 
-       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                       X4D(1,1,1,1),nr,nphi,nz)
+       !y0 = fval(1)
+
+       CALL R8HERM3FCN(ict,1,1,fval2,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       U4D(1,1,1,1),nr,nphi,nz)
-       z0 = fval(1)
-       U_lines(mytdex, myline) = z0
+                       Y4D(1,1,1,1),nr,nphi,nz)
+
+      y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
+      !z0 = fval(1)
+      z0 = ATAN2(fval2(1),fval(1))
+      S_lines(mytdex, myline) = y0
+      U_lines(mytdex, myline) = z0
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        MODB4D(1,1,1,1),nr,nphi,nz)
@@ -90,6 +96,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        ! Calc dist func bins
        x0    = MOD(q(2),pi2)
        IF (x0 < 0) x0 = x0 + pi2
+       IF (z0 < 0) z0 = z0 + pi2
        vperp = SQRT(2*moment*fval(1)/mymass)
        d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
@@ -100,6 +107,21 @@ SUBROUTINE out_beams3d_nag(t, q)
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
+       IF (lfidasim2) THEN
+            x0 = MOD(q(2), phimax)
+            IF (x0 < 0) x0 = x0 + phimax
+            ! i = MIN(MAX(COUNT(raxis_fida < q(1)),1),nr_fida)
+            ! j = MIN(MAX(COUNT(phiaxis_fida < x0),1),nphi_fida)
+            ! k = MIN(MAX(COUNT(zaxis_fida < q(3)),1),nz_fida)
+            i = MIN(MAX(FLOOR((q(1)-rmin_fida)/r_h)+1,0),nr_fida+1)
+            j = MIN(MAX(FLOOR((x0-phimin_fida)/p_h)+1,0),nphi_fida+1)
+            k = MIN(MAX(FLOOR((q(3)-zmin_fida)/z_h)+1,0),nz_fida+1)
+            IF ((i > 0) .and. (i <= nr_fida) .and. &
+            (j > 0) .and. (j <= nphi_fida) .and. &
+            (k > 0) .and. (k <= nz_fida)) THEN
+               dist5d_fida(mybeam,i,k,j,d4,d5) = dist5d_fida(mybeam,i,k,j,d4,d5) + xw !This shouldnt slow down the code, but perhaps increase the memory usage
+            END IF
+         END IF
        IF (lcollision) CALL beams3d_physics(t,q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
@@ -131,7 +153,7 @@ SUBROUTINE out_beams3d_nag(t, q)
              wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*q(4)*q(4)/get_wall_area(l)
           ELSE
              end_state(myline) = 2
-             CALL fpart_nag(t,q2,qdot)
+             CALL fgc_nag(t,q2,qdot)
              qdot(4)=0
              wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*(SUM(qdot*qdot)+vperp*vperp)/get_wall_area(l)
           END IF

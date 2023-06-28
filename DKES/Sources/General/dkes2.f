@@ -185,7 +185,7 @@ c     end record file addition
  1000          FORMAT(/' blk5d error in block = ',i5)
                STOP
             ENDIF
-            CALL residue (blk1, blk2, blk3, blk4, blk5, blk6,
+            CALL residue_dkes (blk1, blk2, blk3, blk4, blk5, blk6,
      1           f0p1, f0p2, srces0, rsd1p, rsd3p, g11p, g33p,
      2           g31p, g13p, crs1p, crs3p)
          ENDIF
@@ -200,7 +200,7 @@ c     end record file addition
  1050          FORMAT(/' blk5d error : ierm = ',i5)
                STOP
             ENDIF
-            CALL residue (blk1, blk2, blk3, blk4, blk5, blk6,
+            CALL residue_dkes (blk1, blk2, blk3, blk4, blk5, blk6,
      1           f0m1, f0m2, srces0, rsd1m, rsd3m, g11m, g33m,
      2           g31m, g13m, crs1m, crs3m)
          ENDIF

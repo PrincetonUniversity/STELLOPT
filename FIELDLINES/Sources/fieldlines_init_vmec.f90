@@ -45,6 +45,7 @@
       REAL :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
               bx_vc, by_vc
       REAL(rprec) :: br, bphi, bz, sflx, uflx
+      DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: rmnc_temp(:,:),zmns_temp(:,:),&
                            bumnc_temp(:,:),bvmnc_temp(:,:),&
                            rmns_temp(:,:),zmnc_temp(:,:),&
@@ -89,24 +90,28 @@
       CALL MPI_BCAST(lwout_opened,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(Aminor,1,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (myworkid /= master) THEN
-         ALLOCATE(phi_vmec(ns),presf(ns))
+         ALLOCATE(phi_vmec(ns),presf(ns),iotaf(ns),phipf(ns))
          ALLOCATE(xm(mnmax),xn(mnmax),xm_nyq(mnmax_nyq),xn_nyq(mnmax_nyq))
-         ALLOCATE(rmnc(mnmax,ns),zmns(mnmax,ns),bsupumnc(mnmax_nyq,ns),bsupvmnc(mnmax_nyq,ns))
-         IF (lasym) ALLOCATE(rmns(mnmax,ns),zmnc(mnmax,ns),bsupumns(mnmax_nyq,ns),bsupvmns(mnmax_nyq,ns))
+         ALLOCATE(rmnc(mnmax,ns),zmns(mnmax,ns),lmns(mnmax,ns),bsupumnc(mnmax_nyq,ns),bsupvmnc(mnmax_nyq,ns))
+         IF (lasym) ALLOCATE(rmns(mnmax,ns),zmnc(mnmax,ns),lmnc(mnmax,ns),bsupumns(mnmax_nyq,ns),bsupvmns(mnmax_nyq,ns))
       END IF
       CALL MPI_BCAST(phi_vmec,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(presf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(phipf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(iotaf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xm,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xn,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xm_nyq,mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xn_nyq,mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(rmnc,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(zmns,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(lmns,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(bsupumnc,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(bsupvmnc,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (lasym) THEN
          CALL MPI_BCAST(rmns,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
          CALL MPI_BCAST(zmnc,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         CALL MPI_BCAST(lmnc,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
          CALL MPI_BCAST(bsupumns,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
          CALL MPI_BCAST(bsupvmns,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       END IF
@@ -159,6 +164,16 @@
             xm_temp = xm_nyq
             xn_temp = -xn_nyq/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
             IF(lverb) WRITE(6,'(A)')        '   NYQUIST DETECTED IN WOUT FILE!'
+            
+            ! Only non-Nyquist elements will be set in loops below, so zero out full array initially.
+            ! This prevents uninitialized array contents messing up the computation.
+            rmnc_temp = zero
+            zmns_temp = zero
+            if (lasym) then
+               rmns_temp = zero
+               zmnc_temp = zero
+            end if
+            
             DO u = 1,mnmax_temp
                DO v = 1, mnmax
                   IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
@@ -189,11 +204,20 @@
                zmnc_temp(:,2) = zmnc(:,ns)
             END IF
          ENDIF
-         bumnc_temp(:,1) = (1.5*bsupumnc(:,ns) - 0.5*bsupumnc(:,ns-1))
-         bvmnc_temp(:,1) = (1.5*bsupvmnc(:,ns) - 0.5*bsupvmnc(:,ns-1))
+         ! Get B onto full grid
+         ALLOCATE(mfact(mnmax_temp,2))
+         WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
+            mfact(:,1)= 1.5
+            mfact(:,2)=-0.5
+         ELSEWHERE
+            mfact(:,1)= 1.5*SQRT((ns-1.0)/(ns-1.5))
+            mfact(:,2)=-0.5*SQRT((ns-1.0)/(ns-2.5))
+         ENDWHERE
+         bumnc_temp(:,1) = mfact(:,1)*bsupumnc(:,ns) + mfact(:,2)*bsupumnc(:,ns-1)
+         bvmnc_temp(:,1) = mfact(:,1)*bsupvmnc(:,ns) + mfact(:,2)*bsupvmnc(:,ns-1)
          IF (lasym) THEN
-            bumns_temp(:,1) = 1.5*bsupumns(:,ns) - 0.5*bsupumns(:,ns-1)
-            bvmns_temp(:,1) = 1.5*bsupvmns(:,ns) - 0.5*bsupvmns(:,ns-1)
+            bumns_temp(:,1) = mfact(:,1)*bsupumns(:,ns) + mfact(:,2)*bsupumns(:,ns-1)
+            bvmns_temp(:,1) = mfact(:,1)*bsupvmns(:,ns) + mfact(:,2)*bsupvmns(:,ns-1)
             CALL init_virtual_casing(mnmax_temp,nu,nv,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
                                          RMNS=rmns_temp, ZMNC=zmnc_temp,&
@@ -208,6 +232,7 @@
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
                                          COMM=MPI_COMM_FIELDLINES)
          END IF
+         DEALLOCATE(mfact)
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
 
@@ -348,10 +373,10 @@
          CALL read_wout_deallocate
       ELSE
          lwout_opened = .FALSE.
-         DEALLOCATE(phi_vmec,presf)
+         DEALLOCATE(phi_vmec,presf,phipf,iotaf)
          DEALLOCATE(xm,xn,xm_nyq,xn_nyq)
-         DEALLOCATE(rmnc,zmns,bsupumnc,bsupvmnc)
-         IF (lasym) DEALLOCATE(rmns,zmnc,bsupumns,bsupvmns)
+         DEALLOCATE(rmnc,zmns,lmns,bsupumnc,bsupvmnc)
+         IF (lasym) DEALLOCATE(rmns,zmnc,lmnc,bsupumns,bsupvmns)
       END IF
 
       IF (EZspline_allocated(p_spl)) CALL EZspline_free(p_spl,ier)

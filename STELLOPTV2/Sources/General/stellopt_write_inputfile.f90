@@ -18,6 +18,9 @@
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       USE beams3d_input_mod, ONLY: write_beams3d_namelist
 !DEC$ ENDIF
+!DEC$ IF DEFINED (AEOPT)
+      USE trapped_avail_energy_mod, ONLY: write_avail_energy_nml
+!DEC$ ENDIF
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -62,6 +65,9 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
+!DEC$ ENDIF
+!DEC$ IF DEFINED (AEOPT)
+      IF (ANY(sigma_txport < bigno)) CALL write_avail_energy_nml(iunit_out,ier)
 !DEC$ ENDIF
       IF (lcoil_geom) CALL write_mgrid_namelist(iunit_out,ier)
       WRITE(iunit_out,'(A)') '&END'

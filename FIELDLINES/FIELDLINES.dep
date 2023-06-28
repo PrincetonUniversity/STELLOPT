@@ -44,6 +44,16 @@ fieldlines_init.o: \
       fieldlines_lines.o
       
 
+fieldlines_init_backflow.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      fieldlines_runtime.o \
+      fieldlines_lines.o
+      
+
 fmag_nag.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       fieldlines_grid.o \
@@ -64,6 +74,15 @@ fieldlines_find_hc.o: \
 fieldlines_init_subgrid.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o \
+      fieldlines_lines.o
+      
+
+fieldlines_gridgen.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
       fieldlines_runtime.o \
       fieldlines_grid.o \
       fieldlines_lines.o
@@ -230,7 +249,17 @@ fieldlines_init_vmec.o: \
       fieldlines_runtime.o \
       fieldlines_lines.o \
       fieldlines_grid.o
-      
+
+fieldlines_init_eqdsk.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_eqdsk_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      fieldlines_runtime.o \
+      fieldlines_lines.o \
+      fieldlines_grid.o
+            
 
 fieldlines_init_hint.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \

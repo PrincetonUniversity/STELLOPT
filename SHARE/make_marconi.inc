@@ -19,12 +19,13 @@
 #            Define Compiler Flags
 #######################################################################
   DIAG_DISABLE = -diag-disable=15009
-  FLAGS_R = -O2 -fp-model strict -ip -assume noold_unit_star \
-		-axMIC-AVX512 $(DIAG_DISABLE) \
-		-I$(MKL_LIB)
-  FLAGS_D = -g -traceback -O0 -fp-model strict -ip \
-		-assume noold_unit_star -axMIC-AVX512 $(DIAG_DISABLE) \
-		-I$(MKL_INC)
+  FLAGS_R = -O2 -xCORE-AVX512 -qopt-zmm-usage=high \
+		-fp-model strict -ip -assume noold_unit_star \
+		$(DIAG_DISABLE) -I$(MKL_LIB)
+  FLAGS_D = -g -traceback -O0 \
+		-xCORE-AVX512 -qopt-zmm-usage=high \
+		-fp-model strict -ip -assume noold_unit_star \
+		$(DIAG_DISABLE) -I$(MKL_INC)
   LIBS    = -L$(MKL_LIB)  -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
 		-lmkl_blacs_intelmpi_lp64 -lmkl_scalapack_lp64
 
@@ -169,6 +170,15 @@
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+
+#######################################################################
+#            Available Energy Options
+#######################################################################
+  LAEOPT= F
+  AEOPT_DIR = $(AEOPT_PATH)
+  AEOPT_INC = -I$(AEOPT_DIR) 
+  LIB_AEOPT = libtrapAE.a
+  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
 #            LIBSTELL Shared Options

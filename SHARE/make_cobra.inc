@@ -15,7 +15,7 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high
+            -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high -g -traceback
   FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
             -assume noold_unit_star -g -traceback -xCORE-AVX512 -qopt-zmm-usage=high
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
@@ -148,6 +148,15 @@
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+
+#######################################################################
+#            Available Energy Options
+#######################################################################
+  LAEOPT= F
+  AEOPT_DIR = $(AEOPT_PATH)
+  AEOPT_INC = -I$(AEOPT_DIR) 
+  LIB_AEOPT = libtrapAE.a
+  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
 #            LIBSTELL Shared Options

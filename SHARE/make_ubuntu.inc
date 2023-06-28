@@ -14,9 +14,11 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas
+  FLAGS_R = -O2 -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
-  LIBS    = -L/usr/lib -lblas -llapack -lscalapack-openmpi \
+  LIBS    = -L/usr/lib -lblas -llapack -lscalapack-openmpi
+  FLAGS_R += -Wno-argument-mismatch
+  FLAGS_D += -Wno-argument-mismatch
 
 #######################################################################
 #            MPI Options
@@ -140,6 +142,15 @@
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+
+#######################################################################
+#            Available Energy Options
+#######################################################################
+  LAEOPT= F
+  AEOPT_DIR = $(AEOPT_PATH)
+  AEOPT_INC = -I$(AEOPT_DIR) 
+  LIB_AEOPT = libtrapAE.a
+  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
 #            LIBSTELL Shared Options

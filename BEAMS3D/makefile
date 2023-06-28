@@ -49,3 +49,19 @@ static_release:
 	@echo "Static Release version - xbeams3d - is now updated"
 	@echo "To free up space, delete all *.o files from Release"
 	@echo ""
+
+lib_release:
+	@echo "Beginning release compilation and linking of libbeams3d.a"
+	@cd $(REL); rm -f *.f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) libbeams3d.a FLAGS="-fPIC $(FLAGS_R) $(MOD1_PATH)" TYPE="release" LOCTYPE="Release"
+	@rm -f $(REL)\*.f; rm -f $(REL)\*.f90
+	@echo "Release version - libbeams3d.a - is now updated"
+	@echo "To free up space, delete all *.o files from Release"
+	@echo ""
+
+lib_debug:
+	@echo "Beginning debug compilation and linking of libbeams3d.a"
+	@cd $(DBG); rm -f *.f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) libbeams3d.a FLAGS="-fPIC $(FLAGS_D) $(MOD1_PATH)" TYPE="debug" LOCTYPE="Debug"
+	@rm -f $(DBG)\*.f; rm -f $(DBG)\*.f90
+	@echo "Debug version - libbeams3d.a - is now updated"
+	@echo "To free up space, delete all *.o files from Release"
+	@echo ""

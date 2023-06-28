@@ -116,8 +116,10 @@
       INTEGER, PARAMETER ::  runtype_advanced  = 1
       INTEGER, PARAMETER ::  runtype_full      = 327
       INTEGER, PARAMETER ::  runtype_norun     = 328
+      INTEGER, PARAMETER ::  runtype_backflow  = 329
+      INTEGER, PARAMETER ::  runtype_gridgen   = 422
       
-      INTEGER, PARAMETER ::  MAXLINES   = 2**18
+      INTEGER, PARAMETER ::  MAXLINES   = 2**19
       INTEGER, PARAMETER ::  NLOCAL = 128  ! Number of local processors
       
       LOGICAL         :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
@@ -125,9 +127,9 @@
                          ladvanced, lauto, lplasma_only, lbfield_only,&
                          lreverse, lhitonly, lafield_only, lraw, lemc3, &
                          lerror_field, lwall_trans, ledge_start, lnescoil,&
-                         lmodb, lfield_start, lhint, lpres
+                         lmodb, lfield_start, lhint, leqdsk, lpres
       INTEGER         :: nextcur, npoinc, nruntype, num_hcp, &
-                         nprocs_fieldlines, line_select
+                         nprocs_fieldlines, line_select, ldex_default
       REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc, &
                          iota0
       REAL(rprec), DIMENSION(20)           :: errorfield_amp, errorfield_phase
@@ -137,7 +139,7 @@
       REAL(rprec), ALLOCATABLE :: extcur(:)
       CHARACTER(256)  :: id_string, mgrid_string, coil_string, &
                          vessel_string, int_type, restart_string, &
-                         nescoil_string
+                         nescoil_string, eqdsk_string
       
       REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.80
 !-----------------------------------------------------------------------

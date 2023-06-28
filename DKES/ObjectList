@@ -8,7 +8,7 @@ vnamecl2.o \
 dkes_input.o \
 dkes2.o \
 blox.o \
-residue.o \
+residue_dkes.o \
 dkes_realspace.o \
 wrout.o \
 blk5d.o \

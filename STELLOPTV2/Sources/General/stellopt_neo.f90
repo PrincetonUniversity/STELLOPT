@@ -11,7 +11,7 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime, ONLY:  proc_string, bigno
       USE stellopt_vars, ONLY: equil_type
-      USE equil_vals, ONLY: eff_ripple
+      USE equil_vals, ONLY: eps_eff32
       USE stellopt_targets, ONLY: sigma_neo
       USE safe_open_mod
       USE mpi_params
@@ -330,9 +330,9 @@
             END IF
             ! Loop over magnetic surfaces
             reff = 0
-            IF (ALLOCATED(eff_ripple)) DEALLOCATE(eff_ripple)
-            ALLOCATE(eff_ripple(ns_b))
-            eff_ripple = 0
+            IF (ALLOCATED(eps_eff32)) DEALLOCATE(eps_eff32)
+            ALLOCATE(eps_eff32(ns_b))
+            eps_eff32 = 0
             IF (lscreen) THEN
                WRITE(6,'(A)')           '==========================================='
                WRITE(6,'(A)')           '=================  N E O =================='
@@ -344,7 +344,7 @@
                WRITE(6,'(2X,2(A,I4.4))')'NSTEP_MIN = ',nstep_min,';   NSTEP_MAX = ',nstep_max
                WRITE(6,'(2X,A,I3.3)')   'NSTEP_PER = ',nstep_per
                WRITE(6,'(A)')           '------------------------------------------------------------------'
-               WRITE(6,'(A)')           '  SURF  EPS_EFF        REFF       IOTA        B_REF       R_REF'
+               WRITE(6,'(A)')           '  SURF  EPS_EFF^(3/2)  REFF       IOTA        B_REF       R_REF'
                WRITE(6,'(A)')           '------------------------------------------------------------------'
                CALL FLUSH(6)
             END IF
@@ -471,7 +471,7 @@
                         lambda_ps1,lambda_ps2,                                 &
                         lambda_b1,lambda_b2
                   END IF
-                  eff_ripple(fluxs_arr(fluxs_arr_i)) = epstot
+                  eps_eff32(fluxs_arr(fluxs_arr_i)) = epstot
                   IF (lscreen) WRITE(6,'(2X,I3,5(2X,E11.4))') fluxs_arr(fluxs_arr_i),epstot,reff,iota(psi_ind),b_ref,r_ref
                   CALL FLUSH(6)
                END DO

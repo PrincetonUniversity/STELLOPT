@@ -12,7 +12,6 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE safe_open_mod, ONLY: safe_open
-      USE de_mod, ONLY: nopt, n_pop, n_free
       USE fdjac_mod, ONLY: FLAG_CLEANUP, FLAG_CLEANUP_LEV, FLAG_SINGLETASK
       USE mpi_params
       USE mpi_inc
@@ -87,29 +86,31 @@
             CASE('map')
                WRITE(6,*) '    OPTIMIZER: Parameter Space Mapping'
                WRITE(6,*) '         NPOP: ',npopulation
-               WRITE(6,*) '         NDIV: ',ndiv
+               WRITE(6,*) '         NOPT: ',noptimizers
+               WRITE(6,*) '         NDIV: ',mode
                WRITE(6,*) '            N: ',nvars
                WRITE(6,*) '            M: ',mtargets
                WRITE(6,*) '        NFUNC: ',mode**nvars
             CASE('map_linear')
                WRITE(6,*) '    OPTIMIZER: Linear Mapping'
-               WRITE(6,*) '         NPOP: ',npopulation
-               WRITE(6,*) '         NDIV: ',ndiv
+               WRITE(6,*) '         NOPT: ',noptimizers
+               WRITE(6,*) '         NDIV: ',mode
                WRITE(6,*) '            N: ',nvars
                WRITE(6,*) '            M: ',mtargets
-               WRITE(6,*) '        NFUNC: ',ndiv*nvars
+               WRITE(6,*) '        NFUNC: ',mode*mode
             CASE('map_plane')
                WRITE(6,*) '    OPTIMIZER: Hyperplane Mapping'
-               WRITE(6,*) '         NPOP: ',npop
-               WRITE(6,*) '         NDIV: ',ndiv
+               WRITE(6,*) '         NOPT: ',noptimizers
+               WRITE(6,*) '         NDIV: ',mode
                WRITE(6,*) '       FACTOR: ',factor,'  (Scale factor for vectors)'
                WRITE(6,*) '            N: ',nvars
                WRITE(6,*) '            M: ',mtargets
-               WRITE(6,*) '        NFUNC: ',ndiv*ndiv
+               WRITE(6,*) '        NFUNC: ',mode*mode
             CASE('map_hypers')
                WRITE(6,*) '    OPTIMIZER: Hypersphere Mapping'
                WRITE(6,*) '         NRAD: ',nfunc_max
-               WRITE(6,*) '         NPOL: ',npop
+               WRITE(6,*) '         NPOP: ',npopulation
+               WRITE(6,*) '         NOPT: ',noptimizers
                WRITE(6,*) '         DRHO: ',factor
                WRITE(6,*) '         ERHO: ',epsfcn
                WRITE(6,*) '            N: ',nvars
@@ -122,7 +123,7 @@
                WRITE(6,'(A,2X,1ES12.4)') '       C_local: ',epsfcn
                WRITE(6,'(A,2X,1ES12.4)') '      C_global: ',1.0
                WRITE(6,'(A,2X,1ES12.4)') '        Vscale: ',factor
-               WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npop
+               WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npopulation
             CASE('rocket')
                WRITE(6,*) '    OPTIMIZER: Rocket'
                WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
@@ -131,7 +132,7 @@
                WRITE(6,'(A,2X,1ES12.4)') '       C_local: ',c1
                WRITE(6,'(A,2X,1ES12.4)') '      C_global: ',c2
                WRITE(6,'(A,2X,1ES12.4)') '        Vscale: ',factor
-               WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npop
+               WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npopulation
          CASE DEFAULT
             ! This 'case default' section is entered if either a MANGO algorithm is selected, 
             ! or if an invalid opt_type is selected. In the latter case
@@ -216,9 +217,6 @@
             nprint         = 1           ! Keep every minimum
             iunit          = 27          ! Eventually we want to reinstate this with iunit=6
             iunit_restart  = 28
-            n_free         = nvars
-            nopt           = mtargets
-            n_pop          = npopulation
             IF (myid == master) THEN
                CALL safe_open(iunit,info,TRIM('gade_data.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
                INQUIRE(FILE=TRIM('gade_restart.'//TRIM(id_string)),EXIST=lfile_exists)
@@ -228,25 +226,18 @@
                   CALL safe_open(iunit_restart,info,TRIM('gade_restart.'//TRIM(id_string)),'unknown','formatted')
                END IF
             END IF
-            !lrestart       = .FALSE.
             nfev           = 0
             CALL DE2_Evolve(stellopt_fcn,mtargets,nvars,npopulation,&
                             vars_min,vars_max,vars,fvec,nfunc_max,&
                             factor,epsfcn,mode,cr_strategy,iunit,&
                             iunit_restart,lrestart)
-            !CALL DE_Evolve(stellopt_fcn,nvars,vars_min,vars_max,target_fitness,&
-            !               npop,nfunc_max,factor,epsfcn,mode,&
-            !               cr_strategy,nprint,iunit,iunit_restart,&
-            !               numprocs,lrestart,vars,chisq_min,nfev)
             CLOSE(iunit)
             CLOSE(iunit_restart)
          CASE('map')
             lskip_min = .true.
             nprint = 6
-            npop   = npopulation
-            ndiv   = mode
             lno_restart = .true.
-            CALL MAP(stellopt_fcn,nvars,mtargets,vars_min,vars_max,npop,nprint,ndiv,MPI_COMM_STEL)
+            CALL MAP(stellopt_fcn,nvars,mtargets,vars_min,vars_max,npopulation,nprint,mode,MPI_COMM_STEL)
             info = 5
             IF (lverb) THEN
                 WRITE(6,*) '!!!!!  PARAMETER SPACE MAPPING DONE  !!!!!'
@@ -255,10 +246,8 @@
          CASE('map_linear')
             lskip_min = .true.
             nprint = 6
-            npop   = npopulation
-            ndiv   = mode
             lno_restart = .true.
-            CALL MAP_LINEAR(stellopt_fcn,nvars,mtargets,vars,vars_min,vars_max,npop,nprint,ndiv)
+            CALL MAP_LINEAR(stellopt_fcn,nvars,mtargets,vars,vars_min,vars_max,noptimizers,nprint,mode)
             info = 5
             IF (lverb) THEN
                 WRITE(6,*) '!!!!!  LINEAR MAPPING DONE  !!!!!'
@@ -267,10 +256,8 @@
          CASE('map_plane')
             lskip_min = .true.
             nprint = 6
-            npop   = npopulation
-            ndiv   = mode
             lno_restart = .true.
-            CALL MAP_PLANE(stellopt_fcn,nvars,mtargets,vars,vars_min,vars_max,factor,npop,nprint,ndiv)
+            CALL MAP_PLANE(stellopt_fcn,nvars,mtargets,vars,vars_min,vars_max,factor,noptimizers,nprint,mode)
             info = 5
             IF (lverb) THEN
                 WRITE(6,*) '!!!!!  HYPERPLANE MAPPING DONE  !!!!!'
@@ -281,13 +268,9 @@
             ALLOCATE(wa1(nvars),fvec(mtargets))
             wa1 = vars
             nprint = 6
-            npop   = npopulation
-            ndiv   = mode
-            c1 = factor
-            c2 = epsfcn
             lno_restart = .true.
-            CALL MAP_HYPERS(stellopt_fcn,mtargets,nvars,npop,vars_min,vars_max,&
-                            wa1,fvec,c1,c2,nfunc_max,MPI_COMM_STEL)
+            CALL MAP_HYPERS(stellopt_fcn,mtargets,nvars,noptimizers,vars_min,vars_max,&
+                            wa1,fvec,factor,epsfcn,nfunc_max,MPI_COMM_STEL)
             IF (lverb) THEN
                 WRITE(6,*) '!!!!!  HYPERSHPERE MAPPING DONE  !!!!!'
             END IF
@@ -295,21 +278,19 @@
          CASE('pso')
             ALLOCATE(wa1(nvars),fvec(mtargets))
             wa1 = vars
-            npop = npopulation
             lno_restart = .TRUE.
             c1 = epsfcn
             c2 = 1.0
-            CALL PSO_Evolve(stellopt_fcn,mtargets,nvars,npop,vars_min,vars_max,&
+            CALL PSO_Evolve(stellopt_fcn,mtargets,nvars,npopulation,vars_min,vars_max,&
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
             DEALLOCATE(wa1)
          CASE('rocket')
             ALLOCATE(wa1(nvars))
             wa1 = vars
-            npop = npopulation
             lno_restart = .TRUE.
             c1 = epsfcn
             c2 = 1.0
-            CALL ROCKET_Evolve(stellopt_fcn,mtargets,nvars,npop,vars_min,vars_max,&
+            CALL ROCKET_Evolve(stellopt_fcn,mtargets,nvars,npopulation,vars_min,vars_max,&
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
             DEALLOCATE(wa1)
          CASE DEFAULT

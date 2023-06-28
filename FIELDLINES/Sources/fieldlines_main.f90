@@ -126,6 +126,12 @@
                    i = i + 1
                    lvmec = .true.
                    CALL GETCARG(i,id_string,numargs)
+                case ("-eqdsk")
+                    i = i + 1
+                    leqdsk = .true.
+                    CALL GETCARG(i, id_string, numargs)
+                    i = i + 1
+                    CALL GETCARG(i, eqdsk_string, numargs)
                case ("-pies")
                    i = i + 1
                    lpies = .true.
@@ -142,6 +148,7 @@
                    i = i + 1
                    lmgrid = .true.
                    CALL GETCARG(i,mgrid_string,numargs)
+
                case ("-coil","-coils")
                    i = i + 1
                    lcoil  = .true.
@@ -166,6 +173,11 @@
                case ("-full")
                    nruntype = runtype_full
                    lauto = .true.
+               case ("-gridgen")
+                   nruntype = runtype_gridgen
+                   lauto = .true.
+               case ("-backflow")
+                   nruntype = runtype_backflow
                case ("-field_start")
                    lfield_start = .true.
                    i = i + 1
@@ -180,6 +192,7 @@
                   write(6,*)'    <options>'
                   write(6,*)'     -vmec ext:     VMEC input/wout extension'
                   write(6,*)'     -vmec ext:     HINT input/magslice extension'
+                  write(6,*) '    -eqdsk in gf   Fieldlines input file and gfile'
                   !write(6,*)'     -pies ext:   PIES input extension (must have &INDATA namelist)'
                   !write(6,*)'     -spec ext:     SPEC input extension (must have &INDATA namelist)'
                   write(6,*)'     -vessel file:  Vessel File (for limiting)'
@@ -191,9 +204,11 @@
                   write(6,*)'     -field_start file line:  Restart from a field line.'
                   write(6,*)'     -axis          Coil on mag_axis with curtor'
                   write(6,*)'     -full          Full Auto calculation'
+                  write(6,*)'     -gridgen       Grid generation type run'
                   write(6,*)'     -vac           Only vacuum field'
                   write(6,*)'     -plasma        Only Plasma field (in equilibrium)'
                   write(6,*)'     -reverse       Follow field backwards'
+                  write(6,*)'     -backflow      Follow wall hits in reverse'
                   write(6,*)'     -auto          Auto calculate starting points'
                   write(6,*)'     -edge          Auto calculate starting points (from VMEC edge)'
                   write(6,*)'     -field         Output B-Field on Grid (no fieldlines)'
@@ -229,6 +244,8 @@
       id_string = ADJUSTL(id_string)
       mgrid_string = TRIM(mgrid_string)
       mgrid_string = ADJUSTL(mgrid_string)
+      eqdsk_string = TRIM(eqdsk_string)
+      eqdsk_string = ADJUSTL(eqdsk_string)
       restart_string = TRIM(restart_string)
       restart_string = ADJUSTL(restart_string)
       coil_string = TRIM(coil_string)
@@ -243,6 +260,8 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(mgrid_string,256,MPI_CHARACTER, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      CALL MPI_BCAST(eqdsk_string, 256, MPI_CHARACTER, master, MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'eqdsk_string', ierr_mpi)
       CALL MPI_BCAST(coil_string,256,MPI_CHARACTER, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(vessel_string,256,MPI_CHARACTER, master, MPI_COMM_FIELDLINES,ierr_mpi)
@@ -251,6 +270,8 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(lvmec,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      CALL MPI_BCAST(leqdsk, 1, MPI_LOGICAL, master, MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_BCAST(lhint,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(lhitonly,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
@@ -333,6 +354,13 @@
             CALL fieldlines_follow  ! This call on subgrid grid
             !CALL fieldlines_periodic_orbits  ! This call on subgrid grid
             !IF (lverb) CALL fieldlines_calc_surface_fit(25)
+         CASE(runtype_backflow)
+            IF (lverb) WRITE(6,'(A)') '===========Wall Hits=========='
+            CALL fieldlines_follow
+            CALL fieldlines_init_backflow
+         CASE(runtype_gridgen)
+            IF (lverb) WRITE(6,'(A)') '===========Grid Generation=========='
+            CALL fieldlines_gridgen
          CASE(runtype_norun)
       END SELECT
       ! Output Date

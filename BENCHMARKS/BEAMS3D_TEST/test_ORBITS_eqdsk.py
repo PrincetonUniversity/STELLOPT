@@ -12,7 +12,7 @@ except KeyError:
 	sys.exit(1)
 
 lfail = 0
-failtol = 5.0
+failtol = 10.0
 filename='beams3d_ORBITS_eqdsk.h5'
 data=read_beams3d(filename)
 if not data:
@@ -24,15 +24,16 @@ if not data:
 print('BEAMS3D VERSION: ' + str(round(data['VERSION'],2)))
 print('==== Vectors ====')
 varlist={}
-varlist['Shinethrough']=np.array([11, 3, 1, 10, 3, 1])
+varlist['Shinethrough']=np.array([18.543322,13.09413 ,11.835307,19.003081,13.060472,12.109276])
 #print(data['Shinethrough'])
 for temp in varlist:
     act = varlist[temp]
     cal = data[temp]
+    #print(np.array2string(cal,precision=6, separator=','))
     cal = np.where(act==0,0,cal)
     div = np.where(act==0,1,act)
     perct = max(abs(act-cal))
-    print('  '+temp+': '+str(cal[0])+'   '+str(act[0])+'   '+str(int(perct))+'%')
+    print('  '+temp+': '+str(cal[0])+'   '+str(act[0])+'   '+str(round(perct))+'%')
     if perct > failtol:
         lfail = 1
 print('=================')

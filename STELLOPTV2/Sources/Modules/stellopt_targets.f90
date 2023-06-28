@@ -61,6 +61,7 @@
       INTEGER, PARAMETER :: nv_max = 361
       INTEGER, PARAMETER :: nsys   = 16
       INTEGER, PARAMETER :: npart_max = 16384
+      INTEGER, PARAMETER :: maxkopoly = 16, maxpolypts = 128
       REAL(rprec) ::  target_phiedge, sigma_phiedge
       REAL(rprec) ::  target_curtor, sigma_curtor
       REAL(rprec) ::  target_curtor_max, sigma_curtor_max
@@ -165,7 +166,6 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_txport, sigma_txport, &
                                         s_txport
       CHARACTER(256)                ::  txport_proxy
-      REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES, nu_DKES
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_1nu,sigma_knosos_1nu
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_snu,sigma_knosos_snu
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_sbp,sigma_knosos_sbp
@@ -183,7 +183,12 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_mshear,sigma_mshear
       REAL(rprec), DIMENSION(nsd)   ::  target_dmer,sigma_dmer
       REAL(rprec), DIMENSION(nsd)   ::  target_mbm,sigma_mbm
-      REAL(rprec), DIMENSION(nsd)   ::  target_gamma_c, sigma_gamma_c ! this is ganmma_c implennted in STELLOPT (?) (EdiSan)
+      INTEGER                       ::  nruns_dkes
+      REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES
+      REAL(rprec), DIMENSION(nprof) ::  E_DKES, nu_DKES
+      REAL(rprec), DIMENSION(nsd)   ::  target_DKES_erdiff, sigma_DKES_erdiff
+      REAL(rprec)                   ::  nu_dkes_erdiff, Ep_dkes_erdiff, Em_dkes_erdiff
+      REAL(rprec), DIMENSION(nsd)        :: target_gamma_c, sigma_gamma_c
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_limiter, sigma_limiter, &
@@ -212,7 +217,7 @@
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
       REAL(rprec), DIMENSION(nigroup)    :: target_coilsegvar, sigma_coilsegvar
-      INTEGER     :: npts_biot, npts_clen, npts_torx, npts_curv, npts_csep, npts_cself, npts_crect
+      INTEGER     :: npts_biot, npts_clen, npts_torx, npts_curv, npts_csep, npts_cself, npts_crect, npts_cpoly
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
@@ -220,6 +225,8 @@
       REAL(rprec), DIMENSION(nigroup)    :: coilrectvmin, coilrectvmax, coilrectduu, coilrectdul
       REAL(rprec), DIMENSION(nigroup)    :: target_coilrect, sigma_coilrect
       REAL(rprec) :: coilrectpfw
+      REAL(rprec), DIMENSION(nigroup)    :: target_coilpoly, sigma_coilpoly
+      REAL(rprec), DIMENSION(maxpolypts,maxkopoly) :: kopolyu, kopolyv
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -282,8 +289,9 @@
       INTEGER, PARAMETER :: jtarget_Jstar      = 604
       INTEGER, PARAMETER :: jtarget_helicity   = 605
       INTEGER, PARAMETER :: jtarget_resjac     = 606
-      INTEGER, PARAMETER :: jtarget_txport     = 607
-      INTEGER, PARAMETER :: jtarget_dkes       = 608
+      INTEGER, PARAMETER :: jtarget_txport      = 607
+      INTEGER, PARAMETER :: jtarget_dkes        = 608
+      INTEGER, PARAMETER :: jtarget_dkes_erdiff = 6080
 !      INTEGER, PARAMETER :: jtarget_knosos_1nu = 6081
 !      INTEGER, PARAMETER :: jtarget_knosos_snu = 6082
 !      INTEGER, PARAMETER :: jtarget_knosos_sbp = 6083
@@ -309,6 +317,7 @@
       INTEGER, PARAMETER :: jtarget_coilsegvar = 618
       INTEGER, PARAMETER :: jtarget_coiltorvar = 619
       INTEGER, PARAMETER :: jtarget_coilrect   = 620
+      INTEGER, PARAMETER :: jtarget_coilpoly   = 621
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
       INTEGER, PARAMETER :: jtarget_Rosenbrock_F   = 902
@@ -456,6 +465,8 @@
             WRITE(iunit, out_format) 'Particle Orbits (BEAMS3D)'
          CASE(jtarget_dkes)
             WRITE(iunit, out_format) 'Drift-Kinetics (DKES)'
+         CASE(jtarget_dkes_erdiff)
+            WRITE(iunit, out_format) 'DKES Delta-Er'
          CASE(jtarget_knosos_1nu)
             WRITE(iunit, out_format) 'KNOSOS 1/nu transport'
          CASE(jtarget_knosos_snu)
@@ -516,6 +527,8 @@
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
          CASE(jtarget_coilrect)
             WRITE(iunit, out_format) 'Coil Excursion from v Bounds'
+         CASE(jtarget_coilpoly)
+            WRITE(iunit, out_format) 'Coil Intrusions into Polygonal Keepout Regions'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
          CASE(jtarget_raderb00)
