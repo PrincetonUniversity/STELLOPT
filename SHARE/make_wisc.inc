@@ -144,6 +144,15 @@
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
+#            KNOSOS Options
+#######################################################################
+  LKNOSOS= F
+  KNOSOS_DIR = $(KNOSOS_PATH)
+  KNOSOS_INC = -I$(KNOSOS_DIR)/SOURCES
+  LIB_KNOSOS = libknosos.a
+  KNOSOS_LIB = $(KNOSOS_PATH)/SOURCES/$(LIB_KNOSOS)
+
+#######################################################################
 #            LIBSTELL Shared Options (experimental for Python)
 #######################################################################
   LIB_SHARE = -L$(GCC4_HOME)/lib64 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L$(MPIHOME)/lib -lmpi -lmpi_mpifh $(LIBS)
