@@ -372,14 +372,7 @@ chisq_neo.o : \
 
 chisq_knosos.o : \
       stellopt_runtime.o \
-      stellopt_targets.o \
-      $(KNOSOS_DIR)/$(LOCTYPE)/knosos_stellopt.o
-
-
-#chisq_stella.o : \
-#      stellopt_runtime.o \
-#      stellopt_targets.o \
-#      $(STELLA_DIR)/$(LOCTYPE)/stella_stellopt.o
+      stellopt_targets.o 
 
 chisq_mercier.o: \
       stellopt_runtime.o \

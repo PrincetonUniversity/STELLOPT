@@ -18,7 +18,6 @@
         USE knosos_stellopt_mod
 !DEC$ ENDIF
         USE safe_open_mod
-        USE equil_vals, ONLY: eff_ripple
         USE mpi_params
         USE mpi_inc
 

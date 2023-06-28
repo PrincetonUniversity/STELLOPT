@@ -165,6 +165,15 @@
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
+#            KNOSOS Options
+#######################################################################
+  LKNOSOS= F
+  AEOPT_DIR = $(KNOSOS_PATH)
+  AEOPT_INC = -I$(KNOSOS_DIR)/SOURCE 
+  LIB_KNOSOS = libknosos.a
+  KNOSOS_LIB = $(KNOSOS_PATH)/SOURCE/$(LIB_KNOSOS)
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
 

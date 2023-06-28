@@ -21,6 +21,11 @@ ifeq ($(LSFINCS),T)
   SFINCS_INC += -I${PETSC_DIR}/include
   SFINCS_LIB += $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
 endif
+ifeq ($(LKNOSOS),T)
+  include ${PETSC_DIR}/lib/petsc/conf/variables
+  SFINCS_INC += -I${PETSC_DIR}/include
+  SFINCS_LIB += $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+endif
 ifeq ($(LGENE),T)
   GENE_LIB +=-L$(FFTW_HOME)/lib -lfftw3 -lfftw3f -Xlinker \
              -L$(SLEPC_HOME)/lib -lslepc \
@@ -154,11 +159,6 @@ ifeq ($(MAKECMDGOALS),xdes_plot)
     LIB_LINK += $(PGPLOT_LIB)
   endif
 endif
-ifeq ($(MAKECMDGOALS),xknosos)
-  ifeq ($(LKNOSOS),T)
-    LIB_LINK += $(KNOSOS_LIB)
-  endif
-endif
 ifeq ($(MAKECMDGOALS),stella)
   ifeq ($(LSTELLA),T)
     LIB_LINK += $(STELLA_LIB)
@@ -242,9 +242,18 @@ else
   AEOPT_DIR = 
   LIB_AEOPT = 
 endif
+ifeq ($(LKNOSOS),T)
+  MOD1_PATH += $(KNOSOS_INC)
+  PRECOMP += -DKNOSOS_OPT
+  MOD_PATH += -I$(KNOSOS_DIR)
+else
+  KNOSOS_LIB = 
+  KNOSOS_DIR = 
+  LIB_KNOSOS = 
+endif
 
 # Handle other codes
-LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(AEOPT_LIB)
+LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(AEOPT_LIB) $(KNOSOS_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

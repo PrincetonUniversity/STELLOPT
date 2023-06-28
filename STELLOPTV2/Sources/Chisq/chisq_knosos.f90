@@ -13,7 +13,9 @@
       USE stellopt_runtime
       USE stellopt_targets
       USE equil_utils, ONLY: get_equil_phi,rho, phi_type
+!DEC$ IF DEFINED (KNOSOS_OPT)
       USE knosos_stellopt_mod
+!DEC$ ENDIF
 !-----------------------------------------------------------------------
 !     Input/Output Variables
 !
