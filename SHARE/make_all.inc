@@ -159,11 +159,6 @@ ifeq ($(MAKECMDGOALS),xdes_plot)
     LIB_LINK += $(PGPLOT_LIB)
   endif
 endif
-ifeq ($(MAKECMDGOALS),stella)
-  ifeq ($(LSTELLA),T)
-    LIB_LINK += $(STELLA_LIB)
-  endif
-endif
 
 
 # Other Codes
@@ -251,9 +246,18 @@ else
   KNOSOS_DIR = 
   LIB_KNOSOS = 
 endif
+ifeq ($(LSTELLA),T)
+  MOD1_PATH += $(STELLA_INC)
+  PRECOMP += -DSTELLA_OPT
+  MOD_PATH += $(STELLA_INC)
+else
+  STELLA_LIB = 
+  STELLA_DIR = 
+  LIB_STELLA = 
+endif
 
 # Handle other codes
-LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(AEOPT_LIB) $(KNOSOS_LIB)
+LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(AEOPT_LIB) $(KNOSOS_LIB) $(STELLA_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

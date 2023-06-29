@@ -179,6 +179,15 @@
   KNOSOS_LIB = $(KNOSOS_PATH)/SOURCES/$(LIB_KNOSOS)
 
 #######################################################################
+#            STELLA Options
+#######################################################################
+  LSTELLA= F
+  STELLA_DIR = $(STELLA_PATH)
+  STELLA_INC = -I$(STELLA_DIR)/build/mod
+  LIB_STELLA = libstella.a
+  STELLA_LIB = $(STELLA_PATH)/build/$(LIB_STELLA)
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
 
