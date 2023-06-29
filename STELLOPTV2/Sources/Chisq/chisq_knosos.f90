@@ -57,8 +57,6 @@
             mtargets = mtargets + 1
             targets(mtargets) = target(ik) 
             sigmas(mtargets)  = sigma(ik)
-!            targets(mtargets) = target_knosos(ik) 
-!            sigmas(mtargets)  = sigma_knosos(ik)  
 !DEC$ IF DEFINED (KNOSOS_OPT)
             IF(jtarget_knosos.EQ.jtarget_knosos_1nu) THEN
                vals(mtargets)    = KNOSOS_1nu(ik)
@@ -94,6 +92,7 @@
       ELSE
          DO ik = 1, nsd
             IF (sigma(ik) < bigno) THEN
+               ! KNOSOS needs neighboring surfaces
                lbooz(ik) = .TRUE.
                IF(ik.GT.2) THEN
                   lbooz(ik-1) = .TRUE.
@@ -104,6 +103,10 @@
                IF (niter == -2) target_dex(mtargets)=jtarget_knosos
             END IF
          END DO
+!DEC$ IF DEFINED (KNOSOS_OPT)
+         KN_STELLOPT = .TRUE.
+!DEC$ ENDIF
+
       END IF
       RETURN
 !----------------------------------------------------------------------
