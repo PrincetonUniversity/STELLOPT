@@ -479,7 +479,7 @@ SUBROUTINE beams3d_init
       END IF
       ! Handle the NI array separately (Use NE_spl since it should be free now)
       CALL mpialloc(NI5D, 8, nr, nphi, nz, NION, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI5D)
-      IF (myid_sharmem == 0) THEN
+      IF (myid_sharmem == master) THEN
          DO i = 1, NION
             CALL EZspline_init(NE_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: NI',ier)
