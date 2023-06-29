@@ -292,16 +292,6 @@
       INTEGER, PARAMETER :: jtarget_txport      = 607
       INTEGER, PARAMETER :: jtarget_dkes        = 608
       INTEGER, PARAMETER :: jtarget_dkes_erdiff = 6080
-!      INTEGER, PARAMETER :: jtarget_knosos_1nu = 6081
-!      INTEGER, PARAMETER :: jtarget_knosos_snu = 6082
-!      INTEGER, PARAMETER :: jtarget_knosos_sbp = 6083
-!      INTEGER, PARAMETER :: jtarget_knosos_gmc = 6084
-!      INTEGER, PARAMETER :: jtarget_knosos_gma = 6090
-!      INTEGER, PARAMETER :: jtarget_knosos_qer = 6085
-!      INTEGER, PARAMETER :: jtarget_knosos_vbm = 6086
-!      INTEGER, PARAMETER :: jtarget_knosos_vbb = 6087
-!      INTEGER, PARAMETER :: jtarget_knosos_wbw = 6088
-!      INTEGER, PARAMETER :: jtarget_knosos_dbo = 6089
       INTEGER, PARAMETER :: jtarget_stella_q1  = 6180
       INTEGER, PARAMETER :: jtarget_stella_q2  = 6181
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
