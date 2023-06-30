@@ -4,7 +4,7 @@
       DOUBLE PRECISION, INTENT(in)    :: E_in, & !keV/amu
                              ne_in,& !m^-3
                              te_in   !keV
-      DOUBLE PRECISION, DIMENSION(nion), INTENT(in)    :: ni_in
+      DOUBLE PRECISION, DIMENSION(nion), INTENT(in)    :: ni_in !m^-3?
       INTEGER, DIMENSION(nion), INTENT(in) :: A_in, &
                                               Z_in
       DOUBLE PRECISION, INTENT(out) :: sigma ! [cm^2]
