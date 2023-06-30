@@ -161,12 +161,12 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             S4D(1,1,1,1),nr,nphi,nz)
-            s_temp = fval(1)
+            s_temp = max(fval(1),zero)
 			DO l = 1, NION
                CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             NI5D(1,1,1,1,l),nr,nphi,nz)
-               ni_temp(l) = MAX(fval(1),one) !Set to one to prevent NaN Zeff later on
+               ni_temp(l) = max(fval(1),zero) !Set to one to prevent NaN Zeff later on
             END DO
 
             !-----------------------------------------------------------
@@ -203,7 +203,7 @@ MODULE beams3d_physics_mod
                   vrel2=9.58d10*(te_temp/1000.0d0*1836.1d0 + speed**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
                   sm=sm+omega2/vrel2
                   bmax=sqrt(one/sm)
-                  bmincl=0.13793d0*abs(mycharge/e_charge)*(1/1836.1+mymass*inv_dalton)/(1/1836.1*mymass*inv_dalton*vrel2)
+                  bmincl=0.13793d0*abs(mycharge/e_charge)*(1.0/1836.1+mymass*inv_dalton)/(1.0/1836.1*mymass*inv_dalton*vrel2)
                   bminqu=1.9121d-8*(mymass*inv_dalton+1/1836.1)/(1/1836.1*mymass*inv_dalton*sqrt(vrel2))
                   bmin=max(bmincl,bminqu)
                   coulomb_loge=log(bmax/bmin) !only last coulomb log is saved
@@ -211,16 +211,17 @@ MODULE beams3d_physics_mod
 					 zi2=zero
 					 
                   do i=1,COUNT(NI_AUX_Z>0)
-                     vrel2=9.58d10*(3*ti_temp/1000.0d0/(NI_AUX_M(i)*inv_dalton) +  speed**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
+                     vrel2=9.58d10*(3.0*ti_temp/1000.0d0/(NI_AUX_M(i)*inv_dalton) +  speed**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
                      bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/vrel2
                      bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
                      bmin=max(bmincl,bminqu)
                      coulomb_log=log(bmax/bmin) !only last coulomb log is saved - TODO: implement for multi-species
+					 coulomb_log = max(coulomb_log,one)
 					 zi2_ai = zi2_ai+ni_temp(i) *NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton) * coulomb_log
 					 zi2 = zi2+ni_temp(i) *NI_AUX_Z(i)**2 * coulomb_log
                   end do
-
-               coulomb_log = max(coulomb_log,one)
+				coulomb_loge = max(coulomb_loge,one)
+               
 			   zi2_ai=zi2_ai/(ne_temp*coulomb_loge)
 			   zi2=zi2/(ne_temp*coulomb_loge)
 
@@ -228,7 +229,7 @@ MODULE beams3d_physics_mod
                v_crit = 5.33e4*SQRT(te_temp) * (zi2_ai)**(1.0/3.0)
                vcrit_cube = v_crit*v_crit*v_crit
                !tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here
-			   tau_spit=6.32e8*mymass*inv_dalton/(myZ*myZ*coulomb_loge)*SQRT(te_cube)/(ne_temp*1e-6)
+			   tau_spit=6.32e8*mymass*inv_dalton/(myZ*myZ*coulomb_loge)*SQRT(te_cube)/(ne_temp*1.0e-6)
                tau_spit_inv = (1.0D0)/tau_spit
                vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
