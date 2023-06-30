@@ -216,8 +216,8 @@ MODULE beams3d_physics_mod
                      bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
                      bmin=max(bmincl,bminqu)
                      coulomb_log=log(bmax/bmin) !only last coulomb log is saved - TODO: implement for multi-species
-					 zi2_ai = zi2_ai+ne_temp*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton) * coulomb_log
-					 zi2 = zi2_ai+ne_temp*NI_AUX_Z(i)**2 * coulomb_log
+					 zi2_ai = zi2_ai+ni_temp(i) *NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton) * coulomb_log
+					 zi2 = zi2+ni_temp(i) *NI_AUX_Z(i)**2 * coulomb_log
                   end do
 
                coulomb_log = max(coulomb_log,one)
@@ -227,7 +227,8 @@ MODULE beams3d_physics_mod
                ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
                v_crit = 5.33e4*SQRT(te_temp) * (zi2_ai)**(1.0/3.0)
                vcrit_cube = v_crit*v_crit*v_crit
-               tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here
+               !tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here
+			   tau_spit=6.32e8*mymass*inv_dalton/(myZ*myZ*coulomb_loge)*SQRT(te_cube)/(ne_temp*1e-6)
                tau_spit_inv = (1.0D0)/tau_spit
                vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
@@ -286,7 +287,7 @@ MODULE beams3d_physics_mod
            !  Pitch Angle Scattering
            !------------------------------------------------------------
            !speed_cube = vc3_tauinv*zeff_temp*fact_pa/inv_dalton*dt/(speed*speed*speed) ! redefine as inverse
-		   speed_cube = vc3_tauinv*zi2/zi2_ai/2.d0*inv_mymass/inv_dalton*dt/(speed*speed*speed) ! redefine as inverse
+		   speed_cube = vc3_tauinv*zi2/zi2_ai*inv_mymass/inv_dalton*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
