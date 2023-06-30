@@ -134,6 +134,21 @@ SUBROUTINE beams3d_init
       lfidasim2 = .false.
       WRITE(6,'(A)') 'DEPO RUN DETECTED, DISABLING FIDASIM OUTPUT!'
    END IF
+   
+      ! Reset the distribution function if just doing a depo run
+      IF (ldepo) THEN
+         ns_prof2 = 4
+         ns_prof3   = 2
+         ns_prof4 = 2
+         ns_prof5 = 4
+      END IF
+
+      ! Handle existence of ADAS for NBI
+      IF (lbeam .and. .not.lsuzuki .and. myid_sharmem==master) THEN
+         lsuzuki = .not.adas_tables_avail()
+      END IF
+      CALL MPI_BCAST(lsuzuki,1,MPI_LOGICAL, master, MPI_COMM_SHARMEM,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_init:lsuzuki',ierr_mpi)
 
    ! Handle existence of ADAS for NBI
    IF (lbeam .and. .not.lsuzuki .and. myid_sharmem==master) THEN

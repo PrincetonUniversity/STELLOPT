@@ -65,7 +65,7 @@
 !DEC$ IF DEFINED (MPI_OPT)
             CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, numprocs_local, ierr_mpi )
             CALL MPI_BCAST(mboz_xboozer,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_BCAST(mboz_xboozer,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(nboz_xboozer,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_BCAST(ns_vmec,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_BCAST(lbooz,nsd,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
 !DEC$ ENDIF

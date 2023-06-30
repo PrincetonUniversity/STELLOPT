@@ -7,11 +7,11 @@ def read_fieldlines(file):
         # Logicals
         for temp in ['ladvanced', 'laxis_i', 'lcoil', 'lmgrid', 'lmu', 'lpies', 'lreverse', 'lspec', 'lvac', 'lvessel', 'lvmec']:
             if temp in f:
-                fieldline_data[temp] = np.int(f[temp][0])
+                fieldline_data[temp] = np.int64(f[temp][0])
         # Integers
         for temp in ['nlines', 'nphi', 'npoinc', 'nr', 'nsteps', 'nz']:
             if temp in f:
-                fieldline_data[temp] = np.int(f[temp][0])
+                fieldline_data[temp] = np.int64(f[temp][0])
         # Floats
         for temp in ['VERSION','iota0']:
             if temp in f:

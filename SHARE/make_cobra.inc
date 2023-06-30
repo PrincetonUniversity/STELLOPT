@@ -15,7 +15,7 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high
+            -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high -g -traceback
   FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
             -assume noold_unit_star -g -traceback -xCORE-AVX512 -qopt-zmm-usage=high
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \

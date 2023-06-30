@@ -354,6 +354,9 @@
                      CALL EZspline_interp(NI_spl_s(u),sflx,NI(u,i,j,k),ier)
                   END DO
                END IF
+            ELSE
+               br = 1
+               IF (npot > 0) CALL EZspline_interp(POT_spl_s,br,POT_ARR(i,j,k),ier)
             END IF
          ELSE IF (.not. luse_vc) THEN
             B_R(i,j,k)   = 0
