@@ -23,7 +23,7 @@ SUBROUTINE beams3d_follow_gc
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
                             TE_spl, TI_spl, wall_load, wall_shine, &
                             plasma_mass, plasma_Zmean, therm_factor, &
-                            nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida
+                            nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida,raxis
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE beams3d_write_par
@@ -68,7 +68,7 @@ SUBROUTINE beams3d_follow_gc
 
     DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
     DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
-    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+    !DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 
     !-----------------------------------------------------------------------
     !     External Functions
@@ -90,13 +90,19 @@ SUBROUTINE beams3d_follow_gc
     relab = "M"
     mf = 10
 
-    ! Calc max time to follow particles
-    i = MAXLOC(ABS(t_end),1)
-    tf_max = t_end(i)
-
     ! Calculate timestep for integration
     vel_max = MAX(MAXVAL(ABS(vll_start)),1E6)
+
+    ! Calc max time to follow particles
+    i = MAXLOC(ABS(t_end),1)
+    IF (lbeam) t_end(i) = MAX(t_end(i),2*MAXVAL(raxis)/vel_max)
+    tf_max = t_end(i)
+
+   ! Calculate timestep for integration
     dt = SIGN(MAX(lendt_m/vel_max,1D-9),tf_max)
+
+    !Temporarily reduce npoinc by 2 for combined depo+slowing down runs
+    IF (lbeam .and. .not. ldepo) NPOINC = NPOINC-2
 
     ! Calculate number of integration timesteps per output timestep
     ndt_max = MAX(CEILING(tf_max/(dt*NPOINC)),1)
@@ -106,13 +112,15 @@ SUBROUTINE beams3d_follow_gc
     dt = tf_max/(ndt_max*NPOINC)
     dt_out = tf_max/NPOINC
     
+    IF (lbeam .and. .not. ldepo) NPOINC = NPOINC+2
+
     ! Break up the work
     CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
 
     ! Save mystart and myend
     mystart_save = mystart
     myend_save = myend
-
+	!WRITE(6, '(I9,I9,I9,I9,EN12.3,EN12.3,I9)') NPOINC,mystart_save,myend_save,nsteps,dt,dt_out,ndt_max
     IF (lhitonly) THEN
         npoinc = 2
     END IF
@@ -203,10 +211,12 @@ SUBROUTINE beams3d_follow_gc
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    inv_mymass = 1/mymass
+                    E_by_v=mymass*0.5d-3/e_charge
                     moment = mu_start(l)
                     my_end = t_end(l)
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
-                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+                    fact_pa   = inv_mymass/plasma_Zmean
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
@@ -266,11 +276,13 @@ SUBROUTINE beams3d_follow_gc
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    inv_mymass = 1/mymass
+                    E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
-                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+                    fact_pa   = inv_mymass/plasma_Zmean
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
@@ -355,11 +367,13 @@ SUBROUTINE beams3d_follow_gc
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    inv_mymass = 1/mymass
+                    E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
-                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+                    fact_pa   = inv_mymass/plasma_Zmean
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     ! Setup timestep
@@ -389,7 +403,7 @@ SUBROUTINE beams3d_follow_gc
                        ! Adjust timestep timestep
                        !CALL beams3d_calc_dt(q,moment,mymass,dt)
                     END IF
-                    IF (ldepo) CYCLE
+                    IF (ldepo) CYCLE              
                     DO
                         IF (lcollision) istate = 1
                         CALL FLUSH(6)
@@ -474,13 +488,12 @@ SUBROUTINE beams3d_follow_gc
        ! This only works becasue of how FORTRAN orders things.
        DO l = 1, ns_prof5
           CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_prof(:,:,:,:,:,l), nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-          IF (lfidasim2) CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,l), nbeams*nr_fida*nphi_fida*nz_fida*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        END DO
-      !  IF (lfidasim2) THEN
-      !    DO l =1, npitch_fida
-      !       CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,l), nbeams*nr_fida*nenergy_fida*nphi_fida*nz_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-      !    END DO
-      ! END IF
+       IF (lfidasim2) THEN
+          DO l =1, npitch_fida
+             CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,l), nr_fida*nphi_fida*nz_fida*nenergy_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+          END DO
+      END IF
        IF (ASSOCIATED(ihit_array)) THEN
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
        END IF
