@@ -1,0 +1,200 @@
+thrift_bootsj.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_input_mod.o \
+      thrift_profiles_mod.o \
+      thrift_equil.o \
+      thrift_funcs.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  \
+      $(LIB_DIR)/$(LOCTYPE)/bootsj_input.o \
+      $(BOOTSJ_DIR)/$(LOCTYPE)/parambs.o \
+      $(BOOTSJ_DIR)/$(LOCTYPE)/vmec0.o \
+      $(BOOTSJ_DIR)/$(LOCTYPE)/trig.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o 
+
+thrift_boozer.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
+      $(BOOZ_DIR)/$(LOCTYPE)/booz_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(BOOZ_DIR)/$(LOCTYPE)/booz_persistent.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  
+
+thrift_diagno.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_equil.o \
+      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_input_mod.o \
+      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
+      $(LIB_DIR)/$(LOCTYPE)/virtual_casing_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  
+
+thrift_equil.o : \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
+
+thrift_equil_j.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_equil.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o 
+
+thrift_equil_p.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_profiles_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o
+
+thrift_evolve.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_funcs.o
+
+thrift_init.o : \
+      thrift_runtime.o \
+      thrift_input_mod.o \
+      thrift_vars.o \
+      thrift_profiles_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_sharmem.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
+
+thrift_init_mpisubgroup.o : \
+      thrift_runtime.o \
+      thrift_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
+
+thrift_input_mod.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
+
+thrift_interface_mod.o : \
+      thrift_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/git_version_mod.o 
+
+thrift_jinductive.o : \
+      thrift_profiles_mod.o \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_equil.o \
+      thrift_profiles_mod.o \
+      thrift_funcs.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_tools.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline.o 
+
+thrift_funcs.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_equil.o \
+      thrift_profiles_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_tools.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline.o 
+
+thrift_load_vmec.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_equil.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_tools.o 
+
+thrift_main.o : \
+      thrift_runtime.o \
+      thrift_interface_mod.o
+
+thrift_paraexe.o : \
+      thrift_runtime.o \
+      thrift_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
+      $(VMEC_DIR)/$(LOCTYPE)/parallel_vmec_module.o \
+      $(VMEC_DIR)/$(LOCTYPE)/vmec_params.o
+
+thrift_profiles_mod.o : \
+      thrift_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline_type.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_sharmem.o
+
+thrift_reinit_vmec.o : \
+      $(LIB_DIR)/$(LOCTYPE)/mgrid_mod.o \
+      $(VMEC_DIR)/$(LOCTYPE)/vmec_main.o \
+      $(VMEC_DIR)/$(LOCTYPE)/vmec_params.o \
+      $(VMEC_DIR)/$(LOCTYPE)/vacmod.o \
+      $(VMEC_DIR)/$(LOCTYPE)/vspline.o \
+      $(VMEC_DIR)/$(LOCTYPE)/timer_sub.o 
+
+thrift_runtime.o : \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
+
+thrift_run_bootstrap.o : \
+      thrift_runtime.o \
+      thrift_equil.o \
+      thrift_vars.o \
+      thrift_funcs.o
+
+thrift_run_diagnostics.o : \
+      thrift_runtime.o \
+      thrift_equil.o \
+      thrift_vars.o
+
+thrift_run_eccd.o : \
+      thrift_runtime.o \
+      thrift_equil.o \
+      thrift_vars.o \
+      thrift_funcs.o
+
+thrift_run_equil.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_equil.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o 
+
+thrift_run_nbcd.o : \
+      thrift_profiles_mod.o \
+      thrift_runtime.o \
+      thrift_equil.o \
+      thrift_vars.o
+
+thrift_travis.o : \
+      thrift_runtime.o \
+      thrift_input_mod.o \
+      thrift_vars.o \
+      thrift_equil.o \
+      thrift_profiles_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_tools.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o
+
+thrift_vars.o : \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
+
+thrift_write.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/ez_hdf5.o 

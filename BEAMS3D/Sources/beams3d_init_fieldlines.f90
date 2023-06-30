@@ -22,7 +22,8 @@
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE read_fieldlines_mod, ONLY: get_fieldlines_grid, get_fieldlines_B, &
                                read_fieldlines_deallocate, setup_fieldlines_rhogrid, &
-                               get_fieldlines_magaxis, get_fieldlines_gridB
+                               get_fieldlines_magaxis, get_fieldlines_gridB, &
+                               get_fieldlines_info
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -64,10 +65,7 @@
       IF (lverb) THEN
          betatot = 0
          CALL get_fieldlines_grid(nrh,nzh,nph,rmin_hint,rmax_hint,zmin_hint,zmax_hint,pmax_hint)
-         WRITE(6,'(A)')               '----- FIELDLINES Information -----'
-         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin_hint,',',rmax_hint,'];  NR:   ',nrh
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',0.0,',',pmax_hint,'];  NPHI: ',nph
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin_hint,',',zmax_hint,'];  NZ:   ',nzh
+         CALL get_fieldlines_info(6)
          WRITE(6,'(A,F6.3,A)')           '   AMINOR_NORM = ',rminor_norm,' [m]'
       END IF
 
@@ -123,6 +121,10 @@
             END IF
             NE(i,j,k) = netemp; TE(i,j,k) = tetemp; TI(i,j,k) = titemp
             POT_ARR(i,j,k) = pottemp
+         ELSE
+            pottemp = 0; sflx = 1
+	      IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
+            POT_ARR(i,j,k) = pottemp
          END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
@@ -136,6 +138,17 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
+      ! Fix the last index of the grids since this can get screwed up
+      IF (myworkid == master) THEN
+         S_ARR(:,nphi,:)   = S_ARR(:,1,:)
+         U_ARR(:,nphi,:)   = U_ARR(:,1,:)
+         TE(:,nphi,:)      = TE(:,1,:)
+         NE(:,nphi,:)      = NE(:,1,:)
+         TI(:,nphi,:)      = TI(:,1,:)
+         ZEFF_ARR(:,nphi,:) = ZEFF_ARR(:,1,:)
+         POT_ARR(:,nphi,:) = POT_ARR(:,1,:)
+         NI(:,:,nphi,:)    = NI(:,:,1,:)
+      END IF
       
 
       ! Calculate Gfactor for mgrid

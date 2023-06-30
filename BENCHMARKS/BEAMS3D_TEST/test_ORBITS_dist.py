@@ -64,7 +64,7 @@ for temp in varlist:
     #perct = max(abs(act-cal))
     #print('  '+temp+': '+str(cal[0])+'   '+str(act[0])+'   '+str(int(perct))+'%')
     perct = 100*abs((act-cal)/act)
-    print('  '+temp+'['+'mid'+','+str(ib)+']: '+str(cal)+'   '+str(act)+'   '+str(int(perct))+'%')
+    print('  '+temp+'['+'mid'+','+str(ib)+']: '+str(cal)+'   '+str(act)+'   '+str(round(perct))+'%')
     if perct > failtol:
         lfail = 1
     ir=32; ib = 1;
@@ -75,7 +75,7 @@ for temp in varlist:
     #perct = max(abs(act-cal))
     #print('  '+temp+': '+str(cal[0])+'   '+str(act[0])+'   '+str(int(perct))+'%')
     perct = 100*abs((act-cal)/act)
-    print('  '+temp+'['+'mid'+','+str(ib)+']: '+str(cal)+'   '+str(act)+'   '+str(int(perct))+'%')
+    print('  '+temp+'['+'mid'+','+str(ib)+']: '+str(cal)+'   '+str(act)+'   '+str(round(perct))+'%')
     if perct > failtol:
         lfail = 1
 print('=================')

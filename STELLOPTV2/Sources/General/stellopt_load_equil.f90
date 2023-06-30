@@ -226,30 +226,7 @@
             !    wlo_odd  = wlo_even*sqrt(s/s_lo)
             !    f = f(jlo)*wlo + f(jhi)*whi  Interpolant
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-            !   Second extrapolate to axis (not reference below)
-            k = 1
-            WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
-               mfact(:,1)= 1.0/2.0
-               mfact(:,2)= 3.0/2.0
-            ELSEWHERE
-               mfact(:,1)= 0
-               mfact(:,2)= 0
-            ENDWHERE
-            lmns_temp(:,k) = mfact(:,1)*lmns_temp(:,k+1)+mfact(:,2)*lmns_temp(:,k+2)
-            gmnc_temp(:,k) = mfact(:,1)*gmnc_vmec(:,k+1)+mfact(:,2)*gmnc_vmec(:,k+2)
-            bmnc_temp(:,k) = mfact(:,1)*bmnc_vmec(:,k+1)+mfact(:,2)*bmnc_vmec(:,k+2)
-            bsupumnc_temp(:,k) = mfact(:,1)*bsupumnc_vmec(:,k+1)+mfact(:,2)*bsupumnc_vmec(:,k+2)
-            bsupvmnc_temp(:,k) = mfact(:,1)*bsupvmnc_vmec(:,k+1)+mfact(:,2)*bsupvmnc_vmec(:,k+2)
-            IF (lasym_vmec) THEN
-               lmnc_temp(:,k) = mfact(:,1)*lmnc_temp(:,k+1)+mfact(:,2)*lmnc_temp(:,k+2)
-               gmns_temp(:,k) = mfact(:,1)*gmns_vmec(:,k+1)+mfact(:,2)*gmns_vmec(:,k+2)
-               bmns_temp(:,k) = mfact(:,1)*bmns_vmec(:,k+1)+mfact(:,2)*bmns_vmec(:,k+2)
-               bsupumns_temp(:,k) = mfact(:,1)*bsupumns_vmec(:,k+1)+mfact(:,2)*bsupumns_vmec(:,k+2)
-               bsupvmns_temp(:,k) = mfact(:,1)*bsupvmns_vmec(:,k+1)+mfact(:,2)*bsupvmns_vmec(:,k+2)
-            END IF
-
-            !   Third interpolate from half grid to full (respect overwrite indexing)
+            !   First interpolate from half grid to full (respect overwrite indexing)
             DO k = 2, ns_vmec-1
                WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
                   mfact(:,1)= 0.5
@@ -272,7 +249,7 @@
                END IF
             END DO
 
-            !   Fourth, extrapolate to ns
+            !   Second, extrapolate to ns
             !       note that ns-1 is full grid but ns is on half grid
             k = ns_vmec
             WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
@@ -293,6 +270,28 @@
                bmns_temp(:,k) = mfact(:,1)*bmns_vmec(:,k)+mfact(:,2)*bmns_vmec(:,k-1)
                bsupumns_temp(:,k) = mfact(:,1)*bsupumns_vmec(:,k)+mfact(:,2)*bsupumns_vmec(:,k-1)
                bsupvmns_temp(:,k) = mfact(:,1)*bsupvmns_vmec(:,k)+mfact(:,2)*bsupvmns_vmec(:,k-1)
+            
+            !   Third extrapolate to axis This is the Samantha Lazerson bugfix 2023.01.29
+            k = 1
+            WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
+               mfact(:,1)= 2.0
+               mfact(:,2)=-1.0
+            ELSEWHERE
+               mfact(:,1)= 0
+               mfact(:,2)= 0
+            ENDWHERE
+            lmns_temp(:,k) = mfact(:,1)*lmns_temp(:,k+1)+mfact(:,2)*lmns_temp(:,k+2)
+            gmnc_temp(:,k) = mfact(:,1)*gmnc_vmec(:,k+1)+mfact(:,2)*gmnc_vmec(:,k+2)
+            bmnc_temp(:,k) = mfact(:,1)*bmnc_vmec(:,k+1)+mfact(:,2)*bmnc_vmec(:,k+2)
+            bsupumnc_temp(:,k) = mfact(:,1)*bsupumnc_vmec(:,k+1)+mfact(:,2)*bsupumnc_vmec(:,k+2)
+            bsupvmnc_temp(:,k) = mfact(:,1)*bsupvmnc_vmec(:,k+1)+mfact(:,2)*bsupvmnc_vmec(:,k+2)
+            IF (lasym_vmec) THEN
+               lmnc_temp(:,k) = mfact(:,1)*lmnc_temp(:,k+1)+mfact(:,2)*lmnc_temp(:,k+2)
+               gmns_temp(:,k) = mfact(:,1)*gmns_vmec(:,k+1)+mfact(:,2)*gmns_vmec(:,k+2)
+               bmns_temp(:,k) = mfact(:,1)*bmns_vmec(:,k+1)+mfact(:,2)*bmns_vmec(:,k+2)
+               bsupumns_temp(:,k) = mfact(:,1)*bsupumns_vmec(:,k+1)+mfact(:,2)*bsupumns_vmec(:,k+2)
+               bsupvmns_temp(:,k) = mfact(:,1)*bsupvmns_vmec(:,k+1)+mfact(:,2)*bsupvmns_vmec(:,k+2)
+            END IF
             END IF
             DEALLOCATE(mfact)
 

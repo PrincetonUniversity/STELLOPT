@@ -93,7 +93,7 @@
       l1i   =          + AIMAG(sqrtval)
       l2r   = 0.5*traq - REAL(sqrtval)
       l2i   =          - AIMAG(sqrtval)
-      iota0 = 2.*ATAN2(l1i,l1r)
+      iota0 = 2.*ATAN2(l1i,l1r)/phiaxis(nphi)
       IF (lverb) THEN
          WRITE(6,'(A,F8.5,SP,F8.5,A)') '      AXIS: EIGN. VAL 1    =  ',l1r,l1i,'i '
          WRITE(6,'(A,F8.5,SP,F8.5,A)') '            EIGN. VAL 2    =  ',l2r,l2i,'i '
