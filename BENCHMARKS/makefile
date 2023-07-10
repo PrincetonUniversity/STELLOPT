@@ -88,10 +88,16 @@ test_fieldlines:
 
 test_beams3d:
 	@echo "Beginning testing of BEAMS3D"
+	@if [ -n $(ADASDIR) ]; then \
+		if [ -d $(ADASDIR) ]; then \
+			$(MAKE) test_beams3d_depo_adas;\
+		fi; \
+	fi
 	$(MAKE) test_beams3d_basic
 	$(MAKE) test_beams3d_er
 	$(MAKE) test_beams3d_loss
 	$(MAKE) test_beams3d_slow
+	$(MAKE) test_beams3d_depo
 	$(MAKE) test_beams3d_restart
 	$(MAKE) test_beams3d_eqdsk
 	$(MAKE) test_beams3d_fusion
@@ -133,6 +139,13 @@ test_beams3d_depo:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_depo.py
+	@echo ""
+
+test_beams3d_depo_adas:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo_adas -plasma -depo
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo_adas -plasma -depo
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_depo_adas.py
 	@echo ""
 
 test_beams3d_restart:
