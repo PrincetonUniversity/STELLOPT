@@ -66,6 +66,125 @@ MODULE beams3d_physics_mod
       CONTAINS
 
       !-----------------------------------------------------------------
+      !     Function:      coulomb_log_nrl19
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          07/05/2023
+      !     Description:   Coulomb log as defined in NRL 2019
+      !-----------------------------------------------------------------
+      DOUBLE PRECISION FUNCTION coulomb_log_nrl19(ne_in,te_in,vbeta_in,Zeff_in)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          ne_in        Electron Density [m^-3]
+         !          te_in        Electron Temperature [eV]
+         !          vbeta_in     Normalized Particle Velocity [c]
+         !          Zeff_in      Plasma effective charge [arb]
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
+         DOUBLE PRECISION :: ne_cm
+         ne_cm = ne_in * 1E-6
+         coulomb_log_nrl19 = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
+         RETURN
+      END FUNCTION coulomb_log_nrl19
+
+      !-----------------------------------------------------------------
+      !     Function:      coulomb_log_locust
+      !     Authors:       D. Kulla (david.kulla@ipp.mpg.de)
+      !     Date:          07/05/2023
+      !     Description:   Coulomb log as defined in LOCUST code
+      !-----------------------------------------------------------------
+      DOUBLE PRECISION FUNCTION coulomb_log_locust(ne_in,te_in,vbeta_in,Zeff_in,modb_in,speed_in)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          ne_in        Electron Density [m^-3]
+         !          te_in        Electron Temperature [eV]
+         !          vbeta_in     Normalized Particle Velocity [c]
+         !          Zeff_in      Plasma effective charge [arb]
+         !          modb_in      Magnetic Field strenght [T]
+         !          speed_in     Particle Speed [m/s]
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in, modb_in, speed_in
+         DOUBLE PRECISION :: omega_p2, omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
+         omega_p2 = (ne_in * Zeff_in*e_charge* Zeff_in*e_charge ) / (plasma_mass * eps_0)
+         Omega_p =  (Zeff_in*e_charge) / plasma_mass * modb_in
+         bmax = one/sqrt((omega_p2 + Omega_p*Omega_p)/(te_in*e_charge/plasma_mass + speed_in*speed_in))
+         mu_ip = plasma_mass * mymass / (plasma_mass + mymass)
+         u_ip2 = 3 * (te_in)*e_charge / plasma_mass + speed_in*speed_in
+         bmin_c = (mycharge * (Zeff_in*e_charge)) / (4*pi*eps_0 * mu_ip * u_ip2)
+         bmin_q = hbar / (2*mu_ip*sqrt(u_ip2)) * 0.60653065971
+         bmin = max(bmin_q,bmin_c)
+         coulomb_log_locust = log(bmax/bmin)
+         RETURN
+      END FUNCTION coulomb_log_locust
+
+      !-----------------------------------------------------------------
+      !     Function:      coulomb_log_nubeam
+      !     Authors:       D. Kulla (david.kulla@ipp.mpg.de)
+      !     Date:          07/05/2023
+      !     Description:   Coulomb log as defined in NUBEAM code
+      !                    (r8_coulog.f90).
+      !-----------------------------------------------------------------
+      DOUBLE PRECISION FUNCTION coulomb_log_nubeam(ne_in,te_in,ti_in,vbeta_in,Zeff_in,modb_in,speed_in)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          ne_in        Electron Density [m^-3]
+         !          te_in        Electron Temperature [eV]
+         !          ti_in        Electron Temperature [eV]
+         !          vbeta_in     Normalized Particle Velocity [c]
+         !          Zeff_in      Plasma effective charge [arb]
+         !          modb_in      Magnetic Field strenght [T]
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, ti_in, vbeta_in, Zeff_in, modb_in, speed_in
+         INTEGER :: i
+         DOUBLE PRECISION :: sm, omega2, vrel2,bmincl,bminqm,bmax,bmin,coulomb_log
+         ! Same formulation as NUBEAM internal calculation (r8_coulog.f90), different Units than usual: 
+         !Z is in elementary charge, A is in amu, energy and temperature in keV.
+
+         sm=zero
+         DO i=1,COUNT(NI_AUX_Z>0)  
+            omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ne_in & !assume ni=ne (should be changed for multi-ion plasmas)
+                  +9.18d15*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)**2*modb_in*modb_in
+            vrel2=9.58d10*(ti_in/1000.0/(NI_AUX_M(i)*inv_dalton) + speed_in*speed_in/(e_charge*inv_dalton*2000.0d0)) !Assume same ti for all species
+            sm=sm+omega2/vrel2
+         END DO
+
+         !Electrons
+         omega2=1.74d0*1836.1*ne_in +9.18d15*1836.1*1836.1*modb_in*modb_in
+         vrel2=9.58d10*(te_in/1000.0d0*1836.1d0 + speed_in*speed_in/(e_charge*inv_dalton*2000.0d0)) !Assume same ti for all species
+         sm=sm+omega2/vrel2
+         bmax=sqrt(one/sm)
+
+         ! next calculate rmin, including quantum corrections.  The classical
+         ! rmin is:
+         !
+         ! rmincl = e_alpha e_beta / (m_ab vrel**2)
+         !
+         ! where m_ab = m_a m_b / (m_a+m_b) is the reduced mass.
+         ! vrel**2 = 3 T_b/m_b + 2 E_a / m_a
+         ! (Note:  the two different definitions of vrel2 used in this code
+         ! are each correct for their application.)
+         !
+         ! The quantum rmin is:
+         !
+         ! rminqu = hbar/( 2 exp(0.5) m_ab vrel)
+         !
+         ! and the proper rmin is the larger of rmincl and rminqu
+         !
+
+         DO i=1,COUNT(NI_AUX_Z>0)
+            vrel2=9.58d10*(3*ti_in/1000.0d0/(NI_AUX_M(i)*inv_dalton) + speed_in*speed_in/(e_charge*inv_dalton*2000.0d0)) !Assume same ti for all species
+            bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/vrel2
+            bminqm=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
+            bmin=max(bmincl,bminqm)
+            coulomb_log=log(bmax/bmin) !only last coulomb log is saved - nubeam keeps per-species coulomb log, but not sure what effect this has
+         END DO
+         coulomb_log_nubeam = coulomb_log
+         RETURN
+      END FUNCTION coulomb_log_nubeam
+
+      !-----------------------------------------------------------------
       !     Function:      beams3d_physics_gc
       !     Authors:       S. Lazerson (lazerson@pppl.gov)
       !                    M. McMillan (matthew.mcmillan@my.wheaton.edu)
@@ -180,61 +299,10 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-               ! Same formulation as NUBEAM internal calculation (r8_coulog.f90), different Units than usual: 
-               !Z is in elementary charge, A is in amu, energy and temperature in keV.
 
-               !sm=zero
-               !DO i=1,COUNT(NI_AUX_Z>0)  
-               !      omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ne_temp & !assume ni=ne (should be changed for multi-ion plasmas)
-               !            +9.18d15*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)**2*modb**2
-               !      vrel2=9.58d10*(ti_temp/1000.0/(NI_AUX_M(i)*inv_dalton) + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
-               !      sm=sm+omega2/vrel2
-               !END DO
-
-               !Electrons
-               !omega2=1.74d0*1836.1*ne_temp +9.18d15*1836.1**2*modb**2
-               !vrel2=9.58d10*(te_temp/1000.0d0*1836.1d0 + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
-               !sm=sm+omega2/vrel2
-               !bmax=sqrt(one/sm)
-
-               ! next calculate rmin, including quantum corrections.  The classical
-               ! rmin is:
-               !
-               ! rmincl = e_alpha e_beta / (m_ab vrel**2)
-               !
-               ! where m_ab = m_a m_b / (m_a+m_b) is the reduced mass.
-               ! vrel**2 = 3 T_b/m_b + 2 E_a / m_a
-               ! (Note:  the two different definitions of vrel2 used in this code
-               ! are each correct for their application.)
-               !
-               ! The quantum rmin is:
-               !
-               ! rminqu = hbar/( 2 exp(0.5) m_ab vrel)
-               !
-               ! and the proper rmin is the larger of rmincl and rminqu
-               !
-
-               !DO i=1,COUNT(NI_AUX_Z>0)
-               !   vrel2=9.58d10*(3*ti_temp/1000.0d0/(NI_AUX_M(i)*inv_dalton) + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
-               !   bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/vrel2
-               !   bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
-               !   bmin=max(bmincl,bminqu)
-               !   coulomb_log=log(bmax/bmin) !only last coulomb log is saved - nubeam keeps per-species coulomb log, but not sure what effect this has
-               !END DO
-
-               ! OLD NRL Formula (2019 pg 34)
-               coulomb_log = 43 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
-
-               ! From LOCUST
-               !omega_p2 = (ne_temp * plasma_Zmean*e_charge* plasma_Zmean*e_charge ) / (plasma_mass * eps_0)
-               !Omega_p =  (plasma_Zmean*e_charge) / plasma_mass * modb
-               !bmax = 1/sqrt((omega_p2 + Omega_p*Omega_p)/(te_temp*e_charge/plasma_mass + speed*speed))
-               !mu_ip = plasma_mass * mymass / (plasma_mass + mymass)
-               !u_ip2 = 3 *  (te_temp)*e_charge / plasma_mass + speed*speed
-               !bmin_c = (charge_beams(1) * (plasma_Zmean*e_charge)) / (4*pi*eps_0 * mu_ip * u_ip2)
-               !bmin_q = hbar / (2*mu_ip*sqrt(u_ip2)) * exp(-.5)
-               !bmin = max(bmin_q,bmin_c)
-               !coulomb_log = log(bmax/bmin)
+               !coulomb_log = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+               !coulomb_log = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
+               coulomb_log = coulomb_log_nubeam(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
 
                coulomb_log = max(coulomb_log,one)
 
@@ -460,68 +528,10 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-               !IF (coul_type .eq. 1) THEN
-                  ! Same formulation as NUBEAM internal calculation (r8_coulog.f90), different Units than usual: 
-                  !Z is in elementary charge, A is in amu, energy and temperature in keV.
-                  sm=zero
-                  do i=1,COUNT(NI_AUX_Z>0)  
-                     omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ne_temp & !assume ni=ne (should be changed for multi-ion plasmas)
-                           +9.18d15*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)**2*modb**2
-                     vrel2=9.58d10*(ti_temp/1000.0/(NI_AUX_M(i)*inv_dalton) + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
-                     sm=sm+omega2/vrel2
-                  end do
 
-                  !Electrons
-                  omega2=1.74d0*1836.1*ne_temp &
-                        +9.18d15*1836.1**2*modb**2
-                  vrel2=9.58d10*(te_temp/1000.0d0*1836.1d0 + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
-                  sm=sm+omega2/vrel2
-                  bmax=sqrt(one/sm)
-               
-                  ! next calculate rmin, including quantum corrections.  The classical
-                  ! rmin is:
-                  !
-                  ! rmincl = e_alpha e_beta / (m_ab vrel**2)
-                  !
-                  ! where m_ab = m_a m_b / (m_a+m_b) is the reduced mass.
-                  ! vrel**2 = 3 T_b/m_b + 2 E_a / m_a
-                  ! (Note:  the two different definitions of vrel2 used in this code
-                  ! are each correct for their application.)
-                  !
-                  ! The quantum rmin is:
-                  !
-                  ! rminqu = hbar/( 2 exp(0.5) m_ab vrel)
-                  !
-                  ! and the proper rmin is the larger of rmincl and rminqu
-                  !
-                  do i=1,COUNT(NI_AUX_Z>0)
-                     vrel2=9.58d10*(3*ti_temp/1000.0d0/(NI_AUX_M(i)*inv_dalton) + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
-                     bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/vrel2
-                     bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
-                     bmin=max(bmincl,bminqu)
-                     coulomb_log=log(bmax/bmin) !only last coulomb log is saved - nubeam keeps per-species coulomb log, but not sure what effect this has
-                  end do
-               ! ELSE IF (coul_type .eq. 2) THEN 
-               !    ! Coulomb log approximation (NRL pg. 35)
-               !    coulomb_log = 43 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
-               ! ELSE IF (coul_type .eq. 3) THEN ! Complete Formulation according to LOCUST paper
-               !    omega_p2 = (ne_temp * plasma_Zmean*e_charge* plasma_Zmean*e_charge ) / (plasma_mass * eps_0)
-               !    Omega_p =  (plasma_Zmean*e_charge) / plasma_mass * modb
-               !    bmax = 1/sqrt((omega_p2 + Omega_p*Omega_p)/(te_temp*e_charge/plasma_mass + speed*speed))
-               !    mu_ip = plasma_mass * mymass / (plasma_mass + mymass)
-               !    u_ip2 = 3 *  (te_temp)*e_charge / plasma_mass + speed*speed
-               !    bmin_c = (charge_beams(1) * (plasma_Zmean*e_charge)) / (4*pi*eps_0 * mu_ip * u_ip2)
-               !    bmin_q = hbar / (2*mu_ip*sqrt(u_ip2)) * exp(-.5)
-               !    bmin = max(bmin_q,bmin_c)
-               !    coulomb_log = log(bmax/bmin)
-
-               ! ELSE IF (coul_type .eq. 4) THEN   !Old coulomb log approximation
-               !    IF (te_temp < 10*myZ*myZ) THEN
-               !       coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
-               !    ELSE
-               !       coulomb_log = 24 - log( sqrt(ne_temp*1E-6)/(te_temp) )
-               !    END IF
-               ! END IF
+               !coulomb_log = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+               !coulomb_log = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
+               coulomb_log = coulomb_log_nubeam(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
 
                coulomb_log = max(coulomb_log,one)
 
@@ -675,6 +685,8 @@ MODULE beams3d_physics_mod
          ! For Suzuki
          INTEGER :: A_IN(NION), Z_IN(NION)
          DOUBLE PRECISION :: ni_in(NION)
+         ! ADAS Helpers
+         INTEGER :: myA
 
          !--------------------------------------------------------------
          !     Begin Subroutine
@@ -860,8 +872,7 @@ MODULE beams3d_physics_mod
             END DO
             tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4 !cm^2 to m^2 for sigma
          ELSE
-            zefflocal = MATMUL(NI_AUX_Z*NI_AUX_Z,NILOCAL)/MATMUL(NI_AUX_Z,NILOCAL)
-            zeff_temp = SUM(zefflocal)/DBLE(num_depo)
+            A_in = NINT(NI_AUX_M*inv_dalton)
             !--------------------------------------------------------------
             !     USE ADAS to calcualte ionization rates
             !--------------------------------------------------------------
@@ -874,8 +885,11 @@ MODULE beams3d_physics_mod
             ! izbeam  Beam Z (always int)
             ! iztarg  Target Z (can be real)
             ! btsigv  cross section
-            CALL adas_btsigv(2,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvii,ier)  ! Ion Impact ionization cross-section term.
-            CALL adas_btsigv(1,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
+            DO m = 1, NION
+                CALL adas_btsigv(2,1,energy,tilocal,num_depo,myZ,A_in(m),sigvii,ier)  ! Ion Impact ionization cross-section term.
+                CALL adas_btsigv(1,1,energy,tilocal,num_depo,myZ,A_in(m),sigvcx,ier)  ! Charge Exchange ionization cross-section term.
+                tau_inv = tau_inv + (sigvii+sigvcx)*nilocal(m,:)
+            END DO
             ! Arguments to sigvte(zneut,tevec,n1,sigv_adas,istat)
             ! zneut charge (=1)
             ! tevec electron temperature [keV]
@@ -884,12 +898,7 @@ MODULE beams3d_physics_mod
             ! factor here is mp/me (assumes ion) Source NUBEAM: getsigs_adas.f, line 43
             telocal = telocal + to3*mpome*energy
             CALL adas_sigvte_ioniz(myZ,telocal,num_depo,sigvei,ier)        ! Electron Impact ionization cross-section term.
-            ! Do this because Ztarg changes for each point.
-            !DO l = 1, num_depo
-            !   CALL adas_btsigv(2,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvii(l),ier)  ! Ion Impact ionization cross-section term.
-            !   CALL adas_btsigv(1,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvcx(l),ier)  ! Charge Exchange ionization cross-section term.
-            !END DO
-            tau_inv = ((sigvii + sigvcx + sigvei)*nelocal) ! Delete a term if desired. (save a comment)
+            tau_inv = tau_inv + sigvei*nelocal
          END IF
 
          !--------------------------------------------------------------
