@@ -19,13 +19,13 @@
                                  ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
                                  plasma_mass, plasma_Zmean, &
                                  B_kick_min, B_kick_max, freq_kick, E_kick, NI
-      USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
+      USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, t_end_in, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
                                     charge, Zatom, mass, ldepo, v_neut,lcollision, lfusion, &
-                                    leqdsk, eqdsk_string, lhint, lhitonly, lkick, NION
+                                    leqdsk, eqdsk_string, lhint, lhitonly, lkick, NION, rho_scale, pi2
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE mpi_params
@@ -35,12 +35,14 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       CHARACTER(*), INTENT(IN):: write_type
+      DOUBLE PRECISION, ALLOCATABLE :: rtemp(:)
 !-----------------------------------------------------------------------
 !     Local Variables
+!          i            Index    
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-      INTEGER :: ier, iunit
+      INTEGER :: i,ier, iunit
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -48,6 +50,7 @@
          SELECT CASE (TRIM(write_type))
             CASE('GRID_INIT')
 #if defined(LHDF5)
+               !IF (lverb) WRITE(6,'(A)')  '----- GRID_INIT -----'
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
                CALL write_scalar_hdf5(fid,'VERSION',ier,DBLVAR=BEAMS3D_VERSION,ATT='Version Number',ATT_NAME='description')
@@ -96,11 +99,12 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_mass',ier)
                CALL write_scalar_hdf5(fid,'plasma_Zmean',ier,DBLVAR=plasma_Zmean,ATT='Plasma [Z]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_Zmean',ier)
+
                CALL write_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis,ATT='Radial Axis [m]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'raxis',ier)
                CALL write_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis,ATT='Toroidal Axis [rad]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phiaxis',ier)
-               CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [rad]',ATT_NAME='description')
+               CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [m]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zaxis',ier)
                CALL write_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R,ATT='Radial Trajectory Eq. (BR)',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_R',ier)
@@ -161,6 +165,7 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_kick',ier)
                END IF
             CASE('TRAJECTORY_PARTIAL')
+               !IF (lverb) WRITE(6,'(A)')  '----- TRAJECTORY_PARTIAL -----'
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
                CALL write_scalar_hdf5(fid,'nparticles',ier,INTVAR=nparticles,ATT='Number of Trajectories',ATT_NAME='description')
@@ -172,6 +177,9 @@
                CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of steps per trajectory period',&
                                       ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)
+               CALL write_scalar_hdf5(fid,'t_end_in',ier,DBLVAR=MAXVAL(t_end_in),ATT='Maximum simulation time set by namelist',&
+                                       ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'t_end_in',ier) 
                !CALL write_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end,ATT='Time at End of Trajectory [s]',&
                !                    ATT_NAME='description')
                !IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'t_end',ier)
@@ -214,6 +222,7 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_shine',ier)
                END IF
             CASE('TRAJECTORY_FULL')
+               !IF (lverb) WRITE(6,'(A)')  '----- TRAJECTORY_FULL -----'
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
                CALL write_scalar_hdf5(fid,'nparticles',ier,INTVAR=nparticles,ATT='Number of Trajectories',ATT_NAME='description')
@@ -222,9 +231,9 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nbeams',ier)
                CALL write_scalar_hdf5(fid,'nsteps',ier,INTVAR=nsteps+1,ATT='Number of Steps Along Trajectory',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nsteps',ier)
-               CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of steps per trajectory period',&
+               CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of saved steps along trajectory',&
                                       ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)              
                CALL write_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end,ATT='Time at End of Trajectory [s]',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'t_end',ier)
@@ -314,6 +323,44 @@
                CALL write_scalar_hdf5(fid,'ns_prof5',ier,INTVAR=ns_prof5,&
                                    ATT='Vperp Dist. Grid Points [0, vmax]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof5',ier)
+               ! % Make the 5D Axis variables
+               ! data.dist_rhoaxis=(double(1:data.ns_prof1)-0.5)./(data.ns_prof1);
+               ! data.dist_uaxis=2.*pi.*(double(1:data.ns_prof2)-0.5)./(data.ns_prof2);
+               ! data.dist_paxis=2.*pi.*(double(1:data.ns_prof3)-0.5)./(data.ns_prof3);
+               ! d4=data.partvmax.*2./(data.ns_prof4);
+               ! d5=data.partvmax./data.ns_prof5;
+               ! data.dist_Vaxis= (-data.partvmax+d4.*0.5):d4:(data.partvmax-d4.*0.5);
+               ! data.dist_Waxis=data.partvmax.*(double(1:data.ns_prof5)-0.5)./(data.ns_prof5);
+               ALLOCATE(rtemp(ns_prof1))
+               FORALL(i = 1:ns_prof1) rtemp(i) = (DBLE(i)-0.5)/ns_prof1*rho_scale
+                  CALL write_var_hdf5(fid,'dist_rhoaxis',ns_prof1,ier,DBLVAR=rtemp,&
+                                      ATT='Rhoaxis (radial coordinate) from S_ARR [-]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'rhoaxis',ier)
+               DEALLOCATE(rtemp)
+               ALLOCATE(rtemp(ns_prof2))
+               FORALL(i = 1:ns_prof2) rtemp(i) = (DBLE(i)-0.5)/ns_prof2*pi2
+                  CALL write_var_hdf5(fid,'dist_uaxis',ns_prof2,ier,DBLVAR=rtemp,&
+                                      ATT='U-Axis (poloidal angle) [-]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'uaxis',ier)
+                  DEALLOCATE(rtemp)
+                  ALLOCATE(rtemp(ns_prof3))
+               FORALL(i = 1:ns_prof3) rtemp(i) = (DBLE(i)-0.5)/ns_prof3*pi2
+                  CALL write_var_hdf5(fid,'dist_paxis',ns_prof3,ier,DBLVAR=rtemp,&
+                                      ATT='Phi-Axis (toroidal angle) [-]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'paxis',ier)
+                  DEALLOCATE(rtemp)
+                  ALLOCATE(rtemp(ns_prof4))
+               FORALL(i = 1:ns_prof4) rtemp(i) =  2*partvmax/(ns_prof4) * (DBLE(i)-0.5) - partvmax !partvmax* (2*(DBLE(i)-1)/ns_prof4-1)
+                  CALL write_var_hdf5(fid,'dist_Vaxis',ns_prof4,ier,DBLVAR=rtemp,&
+                                      ATT='V-Axis (parallel velocity v_ll) [-]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vaxis',ier)
+                  DEALLOCATE(rtemp)
+                  ALLOCATE(rtemp(ns_prof5))
+               FORALL(i = 1:ns_prof5) rtemp(i) = (DBLE(i)-0.5)/ns_prof5*partvmax
+                  CALL write_var_hdf5(fid,'dist_Waxis',ns_prof5,ier,DBLVAR=rtemp,&
+                                      ATT='W-Axis (perpendicular velocity v_perp) [-]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'waxis',ier)
+
                IF (ASSOCIATED(ndot_prof)) THEN
                   CALL write_var_hdf5(fid,'ndot_prof',nbeams,ns_prof1,ier,DBLVAR=ndot_prof,&
                                       ATT='Fast Ion Source [m^-3/s]',ATT_NAME='description')

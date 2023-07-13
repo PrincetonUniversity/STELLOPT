@@ -19,16 +19,15 @@ MODULE beams3d_physics_mod
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
                                moment_lines, mybeam, mycharge, myZ, &
-                               mymass, myv_neut, rand_prob, &
-                               cum_prob, tau, &
+                               mymass, inv_mymass, myv_neut, tau, &
                                epower_prof, ipower_prof, &
                                end_state, fact_crit, fact_pa, &
                                fact_vsound, fact_coul, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
-                               ns_prof5, my_end
+                               ns_prof5, my_end,rand_prob, cum_prob
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
                               MODB_spl, MODB4D, &
-                              phimax, S4D, X4D, Y4D, TE4D, NE4D, TI4D, ZEFF4D, &
+                              phimax, S4D, X4D, Y4D, TE4D, NE4D, NI5D,TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
                               zaxis, U4D,nzeff, &
@@ -45,7 +44,7 @@ MODULE beams3d_physics_mod
       !-----------------------------------------------------------------
 
       DOUBLE PRECISION, PRIVATE, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
-      DOUBLE PRECISION, PRIVATE, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_sqrt2     = 0.7071067812   !1/sqrt(2)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: mpome         = 5.44602984424355D-4 !e_c
@@ -91,12 +90,13 @@ MODULE beams3d_physics_mod
          INTEGER        :: ier
          DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
-                          reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
-                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
+                          reduction, dve,dvi, tau_spit, v_crit, coulomb_log, coulomb_loge,  te_cube, &
+                          speed_cube, vcrit_cube, vfrac, modb, s_temp, &
                           vc3_tauinv, vbeta, zeff_temp,&
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
-                          sm,omega2,vrel2,bmax,bmincl,bminqu,bmin
+                          sm,omega2,vrel2,bmax,bmincl,bminqu,bmin, bmine, zi2_ai, zi2
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
+		 DOUBLE PRECISION :: ni_temp(NION)
          ! For splines
          INTEGER :: i,j,k, l
          REAL*8 :: xparam, yparam, zparam
@@ -121,7 +121,7 @@ MODULE beams3d_physics_mod
          te_temp  = 0; ne_temp  = 0; ti_temp  = 0; zeff_temp=1;
          speed = 0; reduction = 0
 
-         tau_spit_inv = 0.0; v_crit   = 0.0; coulomb_log = 15
+         tau_spit_inv = 0.0; v_crit   = 0.0; coulomb_log = 15 ; coulomb_loge = 15
          tau_inv = 10.0; vcrit_cube = 0.0; vc3_tauinv = 0
 
          ! Check that we're inside the domain then proceed
@@ -161,7 +161,13 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             S4D(1,1,1,1),nr,nphi,nz)
-            s_temp = fval(1)
+            s_temp = max(fval(1),zero)
+			DO l = 1, NION
+               CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            NI5D(1,1,1,1,l),nr,nphi,nz)
+               ni_temp(l) = max(fval(1),zero) !Set to one to prevent NaN Zeff later on
+            END DO
 
             !-----------------------------------------------------------
             !  Helpers
@@ -169,7 +175,6 @@ MODULE beams3d_physics_mod
             !     speed     Total particle speed
             !-----------------------------------------------------------
             te_cube = te_temp * te_temp * te_temp
-            inv_mymass = 1/mymass
             v_s = fact_vsound*sqrt(ti_temp)
             speed = sqrt( vll*vll + 2*moment*modb*inv_mymass ) !+ sign(real(80000),vll)
             vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)
@@ -183,71 +188,48 @@ MODULE beams3d_physics_mod
                   ! Same formulation as NUBEAM internal calculation (r8_coulog.f90), different Units than usual: 
                   !Z is in elementary charge, A is in amu, energy and temperature in keV.
                   sm=zero
-                  do i=1,COUNT(NI_AUX_Z>0)  
-                     omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ne_temp & !assume ni=ne (should be changed for multi-ion plasmas)
+                  do i=1,COUNT(NI_AUX_Z>0) 
+                     omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ni_temp(i) & !assume ni=ne (should be changed for multi-ion plasmas)
                            +9.18d15*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)**2*modb**2
-                     vrel2=9.58d10*(ti_temp/1000.0/(NI_AUX_M(i)*inv_dalton) + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
+                     !omega2=1.74d0*plasma_Zmean & !assume ni=ne (should be changed for multi-ion plasmas)
+                     !      +9.18d15*plasma_Zmean/(NI_AUX_M(i)*inv_dalton)*modb**2						   
+                     vrel2=9.58d10*(ti_temp/1000.0/(NI_AUX_M(i)*inv_dalton) + speed**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
                      sm=sm+omega2/vrel2
                   end do
 
-                  !Electrons
+                  !Electrons A_e=1836.1
                   omega2=1.74d0*1836.1*ne_temp &
                         +9.18d15*1836.1**2*modb**2
-                  vrel2=9.58d10*(te_temp/1000.0d0*1836.1d0 + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
+                  vrel2=9.58d10*(te_temp/1000.0d0*1836.1d0 + speed**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
                   sm=sm+omega2/vrel2
                   bmax=sqrt(one/sm)
-               
-                  ! next calculate rmin, including quantum corrections.  The classical
-                  ! rmin is:
-                  !
-                  ! rmincl = e_alpha e_beta / (m_ab vrel**2)
-                  !
-                  ! where m_ab = m_a m_b / (m_a+m_b) is the reduced mass.
-                  ! vrel**2 = 3 T_b/m_b + 2 E_a / m_a
-                  ! (Note:  the two different definitions of vrel2 used in this code
-                  ! are each correct for their application.)
-                  !
-                  ! The quantum rmin is:
-                  !
-                  ! rminqu = hbar/( 2 exp(0.5) m_ab vrel)
-                  !
-                  ! and the proper rmin is the larger of rmincl and rminqu
-                  !
+                  bmincl=0.13793d0*abs(mycharge/e_charge)*(1.0/1836.1+mymass*inv_dalton)/(1.0/1836.1*mymass*inv_dalton*vrel2)
+                  bminqu=1.9121d-8*(mymass*inv_dalton+1/1836.1)/(1/1836.1*mymass*inv_dalton*sqrt(vrel2))
+                  bmin=max(bmincl,bminqu)
+                  coulomb_loge=log(bmax/bmin) !only last coulomb log is saved
+                     zi2_ai=zero
+					 zi2=zero
+					 
                   do i=1,COUNT(NI_AUX_Z>0)
-                     vrel2=9.58d10*(3*ti_temp/1000.0d0/(NI_AUX_M(i)*inv_dalton) + speed**2/2.0d0/e_charge/inv_dalton/1000.0d0) !Assume same ti for all species
+                     vrel2=9.58d10*(3.0*ti_temp/1000.0d0/(NI_AUX_M(i)*inv_dalton) +  speed**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
                      bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/vrel2
                      bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
                      bmin=max(bmincl,bminqu)
-                     coulomb_log=log(bmax/bmin) !only last coulomb log is saved - nubeam keeps per-species coulomb log, but not sure what effect this has
+                     coulomb_log=log(bmax/bmin) !only last coulomb log is saved - TODO: implement for multi-species
+					 coulomb_log = max(coulomb_log,one)
+					 zi2_ai = zi2_ai+ni_temp(i) *NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton) * coulomb_log
+					 zi2 = zi2+ni_temp(i) *NI_AUX_Z(i)**2 * coulomb_log
                   end do
-               ! ELSE IF (coul_type .eq. 2) THEN 
-               !    ! Coulomb log approximation (NRL pg. 35)
-               !    coulomb_log = 43 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
-               ! ELSE IF (coul_type .eq. 3) THEN ! Complete Formulation according to LOCUST paper
-               !    omega_p2 = (ne_temp * plasma_Zmean*e_charge* plasma_Zmean*e_charge ) / (plasma_mass * eps_0)
-               !    Omega_p =  (plasma_Zmean*e_charge) / plasma_mass * modb
-               !    bmax = 1/sqrt((omega_p2 + Omega_p*Omega_p)/(te_temp*e_charge/plasma_mass + speed*speed))
-               !    mu_ip = plasma_mass * mymass / (plasma_mass + mymass)
-               !    u_ip2 = 3 *  (te_temp)*e_charge / plasma_mass + speed*speed
-               !    bmin_c = (charge_beams(1) * (plasma_Zmean*e_charge)) / (4*pi*eps_0 * mu_ip * u_ip2)
-               !    bmin_q = hbar / (2*mu_ip*sqrt(u_ip2)) * exp(-.5)
-               !    bmin = max(bmin_q,bmin_c)
-               !    coulomb_log = log(bmax/bmin)
-
-               ! ELSE IF (coul_type .eq. 4) THEN   !Old coulomb log approximation
-               !    IF (te_temp < 10*myZ*myZ) THEN
-               !       coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
-               !    ELSE
-               !       coulomb_log = 24 - log( sqrt(ne_temp*1E-6)/(te_temp) )
-               !    END IF
-               ! END IF
-
-               coulomb_log = max(coulomb_log,one)
+				coulomb_loge = max(coulomb_loge,one)
+               
+			   zi2_ai=zi2_ai/(ne_temp*coulomb_loge)
+			   zi2=zi2/(ne_temp*coulomb_loge)
 
                ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-               v_crit = fact_crit*SQRT(te_temp)
+               v_crit = 5.33e4*SQRT(te_temp) * (zi2_ai)**(1.0/3.0)
                vcrit_cube = v_crit*v_crit*v_crit
-               tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here
+               !tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here
+			   tau_spit=6.32e8*mymass*inv_dalton/(myZ*myZ*coulomb_loge)*SQRT(te_cube)/(ne_temp*1.0e-6)
                tau_spit_inv = (1.0D0)/tau_spit
                vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
@@ -293,10 +275,20 @@ MODULE beams3d_physics_mod
             moment = vfrac*vfrac*moment
             speed = newspeed
 
+
+           !------------------------------------------------------------
+           !  Velocity diffusion - TODO: integrate into heating calculation
+           !------------------------------------------------------------
+            speed_cube = (speed*speed*speed)
+            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+            sigma = sqrt( ABS(2*e_charge*dt*(te_temp*speed_cube+ti_temp*vcrit_cube)*tau_spit_inv*inv_mymass/speed_cube) ) ! The standard deviation.
+            speed = speed+sigma*zeta
+
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
-           speed_cube = vc3_tauinv*zeff_temp*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
+           !speed_cube = vc3_tauinv*zeff_temp*fact_pa/inv_dalton*dt/(speed*speed*speed) ! redefine as inverse
+		   speed_cube = vc3_tauinv*zi2/zi2_ai*inv_mymass/inv_dalton*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
@@ -351,8 +343,9 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          USE beams3d_grid
          USE beams3d_lines, ONLY: myline,xlast,ylast,zlast
+                                 !R_lines, PHI_lines, Z_lines
          USE beams3d_runtime, ONLY: lvessel, to3, lplasma_only, &
-                                    lvessel_beam, lsuzuki
+                                    lvessel_beam, lsuzuki,ldepo
          USE wall_mod, ONLY: collide, uncount_wall_hit
 
          !--------------------------------------------------------------
@@ -378,6 +371,7 @@ MODULE beams3d_physics_mod
          INTEGER          :: ier, l, m
          DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
                              s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp
+         REAL(rprec) :: rand_prob, cum_prob
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
          DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
@@ -476,6 +470,7 @@ MODULE beams3d_physics_mod
          xlast = qf(1)
          ylast = qf(2)
          zlast = qf(3)
+         
 
          !--------------------------------------------------------------
          !     Follow particle track out of plasma
@@ -520,9 +515,19 @@ MODULE beams3d_physics_mod
          rlocal(1) = SQRT(qs(1)*qs(1)+qs(2)*qs(2))
          plocal(1) = ATAN2(qs(2),qs(1))
          zlocal(1) = qs(3)
+         ! IF (ldepo) THEN ! First Plasma/wall hit location
+         !    R_lines(3,myline) = rlocal(1)
+         !    PHI_lines(3,myline) = plocal(1)
+         !    Z_lines(3,myline) = zlocal(1)
+         ! END IF
          rlocal(num_depo) = SQRT(qe(1)*qe(1)+qe(2)*qe(2))
          plocal(num_depo) = ATAN2(qe(2),qe(1))
          zlocal(num_depo) = qe(3)
+         ! IF (ldepo) THEN ! Exit location
+         !    R_lines(4,myline) = rlocal(num_depo)
+         !    PHI_lines(4,myline) = plocal(num_depo)
+         !    Z_lines(4,myline) = zlocal(num_depo)
+         ! END IF
          DO i = 2, num_depo-1
             qf = (i-1)*(qe-qs)/(REAL(num_depo-1)) + qs
             rlocal(i) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
@@ -554,7 +559,7 @@ MODULE beams3d_physics_mod
                CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             NI5D(1,1,1,1,m),nr,nphi,nz)
-               nilocal(m,l) = MAX(fval(1),zero)
+               nilocal(m,l) = MAX(fval(1),one) !Set to one to prevent NaN Zeff later on
             END DO
          END DO
          tilocal = tilocal*1D-3
@@ -677,6 +682,11 @@ MODULE beams3d_physics_mod
             q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
             q(2) = ATAN2(qf(2),qf(1))
             q(3) = qf(3)
+            ! IF (ldepo) THEN !outside location
+            !    R_lines(5,myline) = q(1)
+            !    PHI_lines(5,myline) = q(2)
+            !    Z_lines(5,myline) = q(3)
+            ! END IF
             IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN; t = my_end+dt_local; RETURN; END IF  ! We're outside the grid
          END DO
 
@@ -841,7 +851,7 @@ MODULE beams3d_physics_mod
             moment = 1000*TINY(moment)
             RETURN
          END IF
-
+         
          RETURN
 
       END SUBROUTINE beams3d_ionize

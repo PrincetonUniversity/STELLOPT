@@ -18,7 +18,7 @@
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
-                                 MPI_REDU_ERR, pi2, weight
+                                 MPI_REDU_ERR, pi2, weight,lrestart_grid
       USE safe_open_mod, ONLY: safe_open
       USE EZspline
       USE mpi_params ! MPI
@@ -161,6 +161,7 @@
                IF (i==1) WRITE(6,'(A)')  ' BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Lost [%]  Shinethrough [%]  Port [%]'
                WRITE(6,'(I5,3(9X,I5),8X,I8,3(8X,F5.1))') i,NINT(E_BEAMS(i)*6.24150636309E15),NINT(CHARGE_BEAMS(i)*6.24150636309E18),&
                                          NINT(MASS_BEAMS(i)*5.97863320194E26), ninj2, 100.*nlost(i)/ninj, shine_through(i), shine_port(i)
+               IF (i==nbeams) WRITE(6,'(A,EN12.3)')     '# of Fast Ions in Distribution:: ',SUM(dist5d_prof)           
                CALL FLUSH(6)
             END IF
             ! Write Distribution Function
@@ -183,7 +184,7 @@
       DEALLOCATE(partmask,real_mask)
 
       ! These diagnostics need Vp to be defined
-      IF (.not.ldepo .and. myworkid == master) THEN
+      IF ((.not.ldepo .or. lrestart_grid).and. myworkid == master) THEN
          ! Allocate the parallel and perpendicular velcoity axis
          nhalf = ns_prof4/2
          ALLOCATE(dense_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1))
