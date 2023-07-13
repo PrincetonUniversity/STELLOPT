@@ -48,7 +48,7 @@
                      win_S4D, win_U4D,  win_X4D, win_Y4D, win_POT4D, win_req_axis, win_zeq_axis, &
                      win_wall_load, win_wall_shine, win_hr, win_hp, win_hz, &
                      win_hri, win_hpi, win_hzi, win_NI5D, win_NI, &
-                     win_raxis_fida, win_phiaxis_fida, win_zaxis_fida, &
+                     win_raxis_fida, win_phiaxis_fida, win_zaxis_fida, win_energy_fida, win_pitch_fida, &
                      win_beam_density, &
                      nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, tmin, tmax, delta_t, &
@@ -57,7 +57,7 @@
                      E_kick, freq_kick, t_fida, rho_fullorbit, rho_help
       REAL(rprec), POINTER :: raxis(:), zaxis(:), phiaxis(:)
       REAL(rprec), POINTER :: req_axis(:), zeq_axis(:)
-      REAL :: rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida
+      REAL :: rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, emin_fida, pimin_fida
       REAL(rprec), POINTER :: raxis_fida(:), zaxis_fida(:), phiaxis_fida(:), energy_fida(:), pitch_fida(:)
       REAL(rprec), POINTER :: wall_load(:,:), wall_shine(:,:)
       REAL(rprec), POINTER :: B_R(:,:,:),B_PHI(:,:,:), B_Z(:,:,:), MODB(:,:,:),&
