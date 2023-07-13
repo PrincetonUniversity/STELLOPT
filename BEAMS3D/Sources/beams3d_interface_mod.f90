@@ -9,24 +9,24 @@ MODULE BEAMS3D_INTERFACE_MOD
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
-      USE beams3d_runtime
-      USE mpi_params
-      USE mpi_inc
-      USE wall_mod, ONLY: wall_free
+   USE beams3d_runtime
+   USE mpi_params
+   USE mpi_inc
+   USE wall_mod, ONLY: wall_free
 #if defined(LHDF5)
-      USE hdf5
+   USE hdf5
 #endif
 
 !-----------------------------------------------------------------------
 !     Module Variables
 !
 !-----------------------------------------------------------------------
-      IMPLICIT NONE
-      INTEGER :: vmajor, vminor, liblen
-      INTEGER :: h5major, h5minor, h5rel, h5par
-      INTEGER :: mpi_info_beams3d
-      CHARACTER(LEN=MPI_MAX_LIBRARY_VERSION_STRING) :: mpi_lib_name
-      
+   IMPLICIT NONE
+   INTEGER :: vmajor, vminor, liblen
+   INTEGER :: h5major, h5minor, h5rel, h5par
+   INTEGER :: mpi_info_beams3d
+   CHARACTER(LEN=MPI_MAX_LIBRARY_VERSION_STRING) :: mpi_lib_name
+
 !-----------------------------------------------------------------------
 !     Subroutines
 !         beams3d_init_mpi:         MPI initialization
@@ -36,7 +36,7 @@ MODULE BEAMS3D_INTERFACE_MOD
 !-----------------------------------------------------------------------
 CONTAINS
 
-      SUBROUTINE beams3d_init_mpi
+   SUBROUTINE beams3d_init_mpi
       IMPLICIT NONE
       myworkid = master
 #if defined(MPI_OPT)
@@ -59,18 +59,18 @@ CONTAINS
       CALL MPI_INFO_SET(mpi_info_beams3d, "romio_ds_write",    "disable", ierr_mpi)
 #endif
       RETURN
-      END SUBROUTINE beams3d_init_mpi
+   END SUBROUTINE beams3d_init_mpi
 
-      SUBROUTINE beams3d_init_mpi_split(comm)
+   SUBROUTINE beams3d_init_mpi_split(comm)
       IMPLICIT NONE
       INTEGER, INTENT(INOUT) :: comm
 #if defined(MPI_OPT)
       CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
       CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
 #endif
-      END SUBROUTINE beams3d_init_mpi_split
+   END SUBROUTINE beams3d_init_mpi_split
 
-      SUBROUTINE beams3d_cleanup
+   SUBROUTINE beams3d_cleanup
       IMPLICIT NONE
       INTEGER :: ier
       ! Clean up
@@ -87,9 +87,9 @@ CONTAINS
 #endif
       IF (lverb) WRITE(6, '(A)') '----- BEAMS3D DONE -----'
       RETURN
-      END SUBROUTINE
+   END SUBROUTINE
 
-      SUBROUTINE beams3d_init_hdf5
+   SUBROUTINE beams3d_init_hdf5
       IMPLICIT NONE
       INTEGER :: ier
 #if defined(LHDF5)
@@ -100,9 +100,9 @@ CONTAINS
       h5par = 1
 #endif
       RETURN
-      END SUBROUTINE beams3d_init_hdf5
+   END SUBROUTINE beams3d_init_hdf5
 
-      SUBROUTINE beams3d_init_constants
+   SUBROUTINE beams3d_init_constants
       IMPLICIT NONE
       pi = 4.0 * ATAN(1.0)
       pi2 = 8.0 * ATAN(1.0)
@@ -113,9 +113,9 @@ CONTAINS
       lverb = .true.
       lread_input = .true.
       RETURN
-      END SUBROUTINE beams3d_init_constants
+   END SUBROUTINE beams3d_init_constants
 
-      SUBROUTINE beams3d_init_commandline
+   SUBROUTINE beams3d_init_commandline
       IMPLICIT NONE
       INTEGER :: numargs, i, ier
       INTEGER, parameter :: arg_len = 256
@@ -123,54 +123,54 @@ CONTAINS
       CHARACTER*(arg_len), allocatable, dimension(:) :: args
       lverb = .false.
       IF (myworkid == master) THEN
-        numargs = 0
-        i = 0
-        arg1 = ''
-        limas = .false.
-        lverb = .true.
-        lvmec = .false.
-        lpies = .false.
-        lspec = .false.
-        leqdsk = .false.
-        lcoil = .false.
-        lmgrid = .false.
-        lvessel = .false.
-        lvac = .false.
-        lrestart_grid = .false.
-        lrestart_particles = .false.
-        lhitonly  = .false.
-        lplasma_only = .false.
-        lraw = .false.
-        ldepo = .false.
-        lbeam_simple = .false.
-        lcollision = .false.
-        lw7x = .false.
-        lascot = .false.
-        lfidasim = .false.
-        lfidasim2 = .false.
-        lascot4 = .false.
-        lbbnbi = .false.
-        lascotfl = .false.
-        lrandomize = .false.
-        lsuzuki = .false.
-        lfusion = .false.
-        lfusion_alpha = .false.
-        lboxsim = .false.
-        lfieldlines = .false.
-        id_string = ''
-        coil_string = ''
-        mgrid_string = ''
-        vessel_string = ''
-        restart_string = ''
-        bbnbi_string = ''
-        eqdsk_string = ''
+         numargs = 0
+         i = 0
+         arg1 = ''
+         limas = .false.
+         lverb = .true.
+         lvmec = .false.
+         lpies = .false.
+         lspec = .false.
+         leqdsk = .false.
+         lcoil = .false.
+         lmgrid = .false.
+         lvessel = .false.
+         lvac = .false.
+         lrestart_grid = .false.
+         lrestart_particles = .false.
+         lhitonly  = .false.
+         lplasma_only = .false.
+         lraw = .false.
+         ldepo = .false.
+         lbeam_simple = .false.
+         lcollision = .false.
+         lw7x = .false.
+         lascot = .false.
+         lfidasim = .false.
+         lfidasim2 = .false.
+         lascot4 = .false.
+         lbbnbi = .false.
+         lascotfl = .false.
+         lrandomize = .false.
+         lsuzuki = .false.
+         lfusion = .false.
+         lfusion_alpha = .false.
+         lboxsim = .false.
+         lfieldlines = .false.
+         id_string = ''
+         coil_string = ''
+         mgrid_string = ''
+         vessel_string = ''
+         restart_string = ''
+         bbnbi_string = ''
+         eqdsk_string = ''
 
-        ! First Handle the input arguments
-        CALL GETCARG(1, arg1, numargs)
-        ALLOCATE(args(numargs))
-        ! Cycle through Arguments
-        i = 1
-        DO WHILE (i <= numargs)
+         ! First Handle the input arguments
+         CALL GETCARG(1, arg1, numargs)
+         ALLOCATE(args(numargs))
+         ! Cycle through Arguments
+         i = 1
+         DO WHILE (i <= numargs)
             call GETCARG(i, args(i), numargs)
             select case (args(i))
             case ("-noverb") ! No Verbose Output
@@ -297,10 +297,10 @@ CONTAINS
                 write(6, *) '     -help:         Output help message'
             end select
             i = i + 1
-        END DO
-        DEALLOCATE(args)
+         END DO
+         DEALLOCATE(args)
       END IF
-    ! Broadcast variables
+      ! Broadcast variables
 #if defined(MPI_OPT)
       CALL MPI_BCAST(id_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
@@ -339,7 +339,7 @@ CONTAINS
       CALL MPI_BCAST(lfidasim, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lfidasim2, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)  
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lascot, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lascotfl, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -382,9 +382,9 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
 #endif
       RETURN
-      END SUBROUTINE beams3d_init_commandline
+   END SUBROUTINE beams3d_init_commandline
 
-      SUBROUTINE beams3d_output_header
+   SUBROUTINE beams3d_output_header
       IMPLICIT NONE
       INTEGER :: nshar
 
@@ -405,14 +405,14 @@ CONTAINS
       CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nshar, ierr_mpi) ! MPI
 #endif
       IF (lverb) THEN
-        WRITE(6, '(a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
+         WRITE(6, '(a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
 #if defined(LHDF5)
-        IF (h5par > 0) THEN
-           WRITE(6,'(A)')      '-----  HDF5 (Parallel) Parameters  -----'
-        ELSE
-           WRITE(6,'(A)')      '-----  HDF5 Parameters  -----'
-        ENDIF
-        WRITE(6,'(A,I2,2(A,I2.2))')  '   HDF5_version:  ', h5major,'.',h5minor,' release: ',h5rel
+         IF (h5par > 0) THEN
+            WRITE(6,'(A)')      '-----  HDF5 (Parallel) Parameters  -----'
+         ELSE
+            WRITE(6,'(A)')      '-----  HDF5 Parameters  -----'
+         ENDIF
+         WRITE(6,'(A,I2,2(A,I2.2))')  '   HDF5_version:  ', h5major,'.',h5minor,' release: ',h5rel
 #endif
         WRITE(6,'(A)')      '-----  MPI Parameters  -----'
         WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
@@ -427,6 +427,6 @@ CONTAINS
         WRITE(6,'(A,A)')  '   Hash:       ', TRIM(git_hash)
       END IF
       RETURN
-      END SUBROUTINE beams3d_output_header
+   END SUBROUTINE beams3d_output_header
 
 END MODULE BEAMS3D_INTERFACE_MOD

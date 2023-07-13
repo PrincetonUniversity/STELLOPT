@@ -139,11 +139,11 @@
          dr = rdim/nr
          dz = zdim/nz
          ! COCOS Stuff (assume sigma_rphiZ=1 and we want COCOS11)
-         IF (qpsi(1)>0 .and. spp(1) >0) THEN
+         IF (qpsi(1)>0 .and. SUM(spp) >0) THEN
             cocos_BRZ_factor = -1.0; COCOS_ID = 17
-         ELSEIF (qpsi(1)>0 .and. spp(1) < 0) THEN
+         ELSEIF (qpsi(1)>0 .and. SUM(spp) < 0) THEN
             cocos_BRZ_factor =  1.0; COCOS_ID = 11
-         ELSEIF (qpsi(1)<0 .and. spp(1) >0) THEN
+         ELSEIF (qpsi(1)<0 .and. SUM(spp) >0) THEN
             cocos_BRZ_factor = -1.0; COCOS_ID = 13
          ELSE
             cocos_BRZ_factor =  1.0; COCOS_ID = 15
