@@ -289,6 +289,7 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !speed_cube = vc3_tauinv*zeff_temp*fact_pa/inv_dalton*dt/(speed*speed*speed) ! redefine as inverse
 		   speed_cube = vc3_tauinv*zi2/zi2_ai*inv_mymass/inv_dalton*dt/(speed*speed*speed) ! redefine as inverse
+		   speed_cube=max(speed_cube,1.0d-9)
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
