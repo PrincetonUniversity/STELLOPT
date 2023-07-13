@@ -300,9 +300,9 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
 
-               !coulomb_log = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+               coulomb_log = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
                !coulomb_log = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-               coulomb_log = coulomb_log_nubeam(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+               !coulomb_log = coulomb_log_nubeam(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
 
                coulomb_log = max(coulomb_log,one)
 
@@ -529,9 +529,9 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
 
-               !coulomb_log = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+               coulomb_log = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
                !coulomb_log = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-               coulomb_log = coulomb_log_nubeam(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+               !coulomb_log = coulomb_log_nubeam(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
 
                coulomb_log = max(coulomb_log,one)
 
