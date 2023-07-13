@@ -256,8 +256,8 @@ SUBROUTINE beams3d_follow
           CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_prof(:,:,:,:,:,l), nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        END DO
        IF (lfidasim2) THEN
-          DO l = 1, ns_prof5
-             CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,:,l), nbeams*nr_fida*nphi_fida*nz_fida*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+          DO l = 1, npitch_fida
+             CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,l), nbeams*nr_fida*nphi_fida*nz_fida*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
           END DO
        END IF
        IF (ASSOCIATED(ihit_array)) THEN
