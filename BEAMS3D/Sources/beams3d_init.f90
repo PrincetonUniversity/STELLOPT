@@ -741,7 +741,7 @@
                ndot_prof(nbeams,ns_prof1))
       ipower_prof=0; epower_prof=0; ndot_prof=0
       CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
-      IF (lfidasim2) CALL mpialloc(dist5d_fida, nbeams, nr_fida, nz_fida, nphi_fida, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d_fida)
+      IF (lfidasim2) CALL mpialloc(dist5d_fida, nr_fida, nz_fida, nphi_fida, nenergy_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d_fida)
       IF (myid_sharmem == master) THEN
          dist5d_prof = 0
          IF (lfidasim2) dist5d_fida = 0

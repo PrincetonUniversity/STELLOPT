@@ -11,7 +11,7 @@ SUBROUTINE outpart_beams3d_nag(t, q)
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
-                               weight, invpi2, ndt, ndt_max
+                               weight, invpi2, ndt, ndt_max, lfidasim, lfidasim2
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nparticles, moment_lines, myend, &
                              vr_lines, vphi_lines, vz_lines, &
@@ -21,8 +21,9 @@ SUBROUTINE outpart_beams3d_nag(t, q)
                              ndot_prof, partvmax, &
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
-                             dist5d_prof, win_dist5d, nsh_prof4, &
-                             h2_prof, h3_prof, h4_prof, h5_prof, my_end
+                             dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
+                             h2_prof, h3_prof, h4_prof, h5_prof, my_end, &
+                             r_h, p_h, z_h, e_h, pi_h, E_by_v
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics_fo
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
@@ -130,6 +131,17 @@ SUBROUTINE outpart_beams3d_nag(t, q)
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
+       IF (lfidasim2) THEN
+          !x0 = MOD(q(2), phimax_fida)
+          !IF (x0 < 0) x0 = x0 + phimax_fida
+          i = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
+          j = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
+          k = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
+          y0 = (q(4)**2+vperp**2)
+          d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h),1),nenergy_fida)
+          d5 = MIN(MAX(CEILING((q(4)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
+          dist5d_fida(i,k,j,d4,d5) = dist5d_fida(i,k,j,d4,d5) + xw 
+       END IF
        IF (lcollision) CALL beams3d_physics_fo(t,q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
