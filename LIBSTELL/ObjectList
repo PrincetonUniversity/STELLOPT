@@ -1,4 +1,5 @@
 ObjectFiles = \
+mumaterial_mod.o \
 nbcd_okano.o \
 nclass_mod.o \
 read_fieldlines_mod.o \

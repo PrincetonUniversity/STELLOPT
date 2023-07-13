@@ -93,6 +93,12 @@ test_beams3d:
 	$(MAKE) test_beams3d_loss
 	$(MAKE) test_beams3d_slow
 	$(MAKE) test_beams3d_depo
+	@if [ -n "$(ADASDIR)" ]; then \
+		if [ -d $(ADASDIR) ]; then \
+			$(MAKE) test_beams3d_depo_adas;\
+		fi; \
+	fi
+	$(MAKE) test_beams3d_restart
 	$(MAKE) test_beams3d_eqdsk
 	$(MAKE) test_beams3d_fusion
 	$(MAKE) test_beams3d_multiion
@@ -135,6 +141,21 @@ test_beams3d_depo:
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_depo.py
 	@echo ""
 
+test_beams3d_depo_adas:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo_adas -plasma -depo
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo_adas -plasma -depo
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_depo_adas.py
+	@echo ""
+
+test_beams3d_restart:
+	$(MAKE) test_beams3d_depo
+	@cd $(BEAMS3D_TEST_DIR);
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_restart -plasma -restart beams3d_ORBITS_depo.h5
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_restart -plasma -restart beams3d_ORBITS_depo.h5
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_restart.py
+	@echo ""
+
 test_beams3d_dist:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_dist -plasma -collisions
@@ -161,6 +182,13 @@ test_beams3d_multiion:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_multiion -plasma -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_multiion -plasma -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_multiion.py
+	@echo ""
+
+test_beams3d_fullorbit:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
+	#@cd $(BEAMS3D_TEST_DIR); ./test_beams3d_fullorbit.py
 	@echo ""
 
 test_stellopt:
