@@ -112,6 +112,7 @@
          CALL get_hint_gridpress(i,j,k,sflx)
          sflx = MAX(sflx,0.0)
          sflx = (pres_max-sflx)/pres_max 
+	 IF (sflx >= 0.9999) sflx = 1.0001 ! Trick for deposition
          S_ARR(i,j,k)=sflx
 
          ! Poloidal Angle

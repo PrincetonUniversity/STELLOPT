@@ -12,6 +12,7 @@
       USE beams3d_grid
       USE beams3d_lines, ONLY: R_lines, PHI_lines, Z_lines, vll_lines, &
                                neut_lines, moment_lines, S_lines, U_lines, &
+                               vr_lines, vphi_lines, vz_lines, &
                                shine_through, &
                                B_lines, end_state, shine_port, Gfactor, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
@@ -36,7 +37,6 @@
 !     Begin Subroutine
 !-----------------------------------------------------------------------
       ier = 0
-      !IF (lvessel) CALL wall_free(ier)  !Moved to beams3d_follow
       IF (EZspline_allocated(BR_spl))   CALL EZspline_free(BR_spl,ier)
       IF (EZspline_allocated(BZ_spl))   CALL EZspline_free(BZ_spl,ier)
       IF (EZspline_allocated(BPHI_spl)) CALL EZspline_free(BPHI_spl,ier)
@@ -64,6 +64,9 @@
       IF (ALLOCATED(S_lines)) DEALLOCATE(S_lines)
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
+      IF (ALLOCATED(vr_lines)) DEALLOCATE(vr_lines)
+      IF (ALLOCATED(vphi_lines)) DEALLOCATE(vphi_lines)
+      IF (ALLOCATED(vz_lines)) DEALLOCATE(vz_lines)
       IF (ALLOCATED(weight)) DEALLOCATE(weight)
       IF (ALLOCATED(beam)) DEALLOCATE(beam)
       IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
@@ -115,18 +118,13 @@
          IF (ASSOCIATED(POT4D))    CALL mpidealloc(POT4D,win_POT4D)
          IF (ASSOCIATED(wall_load))   CALL mpidealloc(wall_load,win_wall_load)
          IF (ASSOCIATED(wall_shine))  CALL mpidealloc(wall_shine,win_wall_shine)
-         !IF (ASSOCIATED(ndot_prof))    CALL mpidealloc(ndot_prof,win_ndot)
-         !IF (ASSOCIATED(epower_prof))  CALL mpidealloc(epower_prof,win_epower)
-         !IF (ASSOCIATED(ipower_prof))  CALL mpidealloc(ipower_prof,win_ipower)
-         !IF (ASSOCIATED(j_prof))       CALL mpidealloc(j_prof,win_jprof)
-         !IF (ASSOCIATED(dense_prof))   CALL mpidealloc(dense_prof,win_dense)
-         IF (ASSOCIATED(ndot_prof))    DEALLOCATE(ndot_prof)
-         IF (ASSOCIATED(epower_prof))    DEALLOCATE(epower_prof)
-         IF (ASSOCIATED(ipower_prof))    DEALLOCATE(ipower_prof)
-         IF (ASSOCIATED(j_prof))    DEALLOCATE(j_prof)
-         IF (ASSOCIATED(dense_prof))    DEALLOCATE(dense_prof)
          IF (ASSOCIATED(dist5d_prof)) CALL mpidealloc(dist5d_prof,win_dist5d)
          IF (ASSOCIATED(dist5d_fida)) CALL mpidealloc(dist5d_fida,win_dist5d_fida)
+         IF (ASSOCIATED(ndot_prof))    DEALLOCATE(ndot_prof)
+         IF (ASSOCIATED(epower_prof))  DEALLOCATE(epower_prof)
+         IF (ASSOCIATED(ipower_prof))  DEALLOCATE(ipower_prof)
+         IF (ASSOCIATED(j_prof))       DEALLOCATE(j_prof)
+         IF (ASSOCIATED(dense_prof))   DEALLOCATE(dense_prof)
       ELSE
          IF (ASSOCIATED(req_axis)) DEALLOCATE(req_axis)
          IF (ASSOCIATED(zeq_axis)) DEALLOCATE(zeq_axis)
@@ -181,13 +179,13 @@
       IF (ALLOCATED(R_start))   DEALLOCATE(R_start)
       IF (ALLOCATED(phi_start)) DEALLOCATE(phi_start)
       IF (ALLOCATED(Z_start))   DEALLOCATE(Z_start)
-      IF (ALLOCATED(v_neut))    DEALLOCATE(v_neut)
       IF (ALLOCATED(mass))      DEALLOCATE(mass)
       IF (ALLOCATED(charge))    DEALLOCATE(charge)
       IF (ALLOCATED(mu_start))  DEALLOCATE(mu_start)
       IF (ALLOCATED(Zatom))     DEALLOCATE(Zatom)
       IF (ALLOCATED(t_end))     DEALLOCATE(t_end)
       IF (ALLOCATED(vll_start)) DEALLOCATE(vll_start)
+      IF (ALLOCATED(lgc2fo_start)) DEALLOCATE(lgc2fo_start)
       IF (ALLOCATED(beam))      DEALLOCATE(beam)
       IF (ALLOCATED(weight))    DEALLOCATE(weight)
       IF (ALLOCATED(shine_through))    DEALLOCATE(shine_through)

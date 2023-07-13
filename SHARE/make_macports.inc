@@ -30,6 +30,7 @@
   LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
   FLAGS_R += -fallow-argument-mismatch
   FLAGS_D += -fallow-argument-mismatch
+
   
 #######################################################################
 #            MPI Options

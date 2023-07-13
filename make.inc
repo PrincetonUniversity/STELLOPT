@@ -1,8 +1,7 @@
 # Shamelessly stolen from ASCOT4
 MACHINE ?= $(shell uname -n | \
 	awk '/dion-ubuntu/{print "ubuntu"}\
-	     /lazersons-air/{print "macports"}\
-	     /Lazersons-MacBook-Air/{print "macports"}\
+	     /Lazersons-Air/{print "macports"}\
 	     /cori/{print "cori"}\
 	     /dawson/{print "pppl_gcc"}\
 	     /sunfire/{print "pppl_gcc"}\

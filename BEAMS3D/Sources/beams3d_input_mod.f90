@@ -19,6 +19,7 @@
                               nzeff, npot, plasma_mass, &
                               plasma_Zmean, therm_factor, &
                               B_kick_min, B_kick_max, freq_kick, E_kick, &
+                              rho_fullorbit, &
                               rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
                               raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
                               nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
@@ -83,13 +84,16 @@
                                TI_AUX_F, POT_AUX_S, POT_AUX_F, &
                                NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
                                ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
-                               ldebug, rho_scale, ne_scale, te_scale, ti_scale, &
+                               ldebug, ne_scale, te_scale, ti_scale, &
                                zeff_scale, &
                                plasma_zavg, plasma_mass, plasma_Zmean, &
                                therm_factor, fusion_scale, &
                                nrho_dist, ntheta_dist, & 
                                nzeta_dist, nphi_dist, nvpara_dist, nvperp_dist, &
                                partvmax, lendt_m, te_col_min, &
+                               B_kick_min, B_kick_max, freq_kick, E_kick,&
+                               vr_start_in, vphi_start_in, vz_start_in, &
+                               rho_fullorbit, duplicate_factor, &
                                B_kick_min, B_kick_max, freq_kick, E_kick, &
                                rmin_fida, rmax_fida, zmin_fida, &
                                zmax_fida,phimin_fida, phimax_fida, &
@@ -117,15 +121,18 @@
       phimax =  pi2
       nparticles_start = 10
 
-      r_start_in   = -1.0
-      z_start_in   = -1.0
-      phi_start_in = -1.0
-      vll_start_in = -1.0
-      t_end_in     = -1.0
-      mu_start_in  = -1.0
-      mass_in      = -1.0
-      charge_in    = -1.0
-      Zatom_in     = -1.0
+      r_start_in    = -1.0
+      z_start_in    = -1.0
+      phi_start_in  = -1.0
+      vll_start_in  = -1.0
+      vr_start_in   =  0.0
+      vphi_start_in =  0.0
+      vz_start_in   =  0.0
+      t_end_in      = -1.0
+      mu_start_in   = -1.0
+      mass_in       = -1.0
+      charge_in     = -1.0
+      Zatom_in      = -1.0
 
       Adist_beams = 1.0_rprec
       Asize_beams = -1.0_rprec
@@ -158,7 +165,6 @@
       vc_adapt_tol = 1.0D-5
       int_type = "LSODE"
       ldebug = .false.
-      rho_scale = 1.0
       ne_scale = 1.0
       te_scale = 1.0
       ti_scale = 1.0
@@ -175,6 +181,10 @@
       B_kick_max = 0.0 ! T
       freq_kick = 38.5E6 ! Hz
       E_kick = 100 !V/m
+
+      ! Full Oribt model
+      rho_fullorbit = 1.0E10 ! Default to off
+      duplicate_factor = 1 ! No particle duplication
 
       ! Distribution Function Defaults
       nrho_dist = 64
@@ -241,7 +251,8 @@
          TE_AUX_F = TE_AUX_F*te_scale
          TI_AUX_F = TI_AUX_F*ti_scale
          ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
-         lbeam = .true.; lkick = .false.
+         lbeam = .true.; lkick = .false.; lgcsim = .true.
+         
          IF (r_start_in(1) /= -1.0) lbeam = .false.
          IF (lfusion .or. lrestart_particles) lbeam = .false.
          IF (lbbnbi) lbeam = .true.
@@ -257,8 +268,6 @@
                nbeams = nbeams + 1
             END DO
             IF (nbeams == 0)  CALL handle_err(BAD_BEAMDEX_ERR,'beams3d_input in: input.'//TRIM(id_string),nbeams)
-         ELSEIF (ANY(Dex_beams>0) .and. ALL(r_start_in .eq. -1.0) .and. .not. lrestart_particles) THEN ! .and. (r_start_in .eq. -1.0)
-            CALL handle_err(BAD_BBNBI_ERR,'beams3d_input in: input.'//TRIM(id_string),nbeams)
          END IF
          IF (lfusion) THEN
             r_start_in = -1
@@ -352,6 +361,19 @@
          END DO
 !      END IF
 
+#if !defined(NAG)
+      IF (int_type=='NAG') THEN
+         int_type = 'LSODE'
+         IF (lverb) THEN
+            WRITE(6,*) '======================================='
+            WRITE(6,*) '  INT_TYPE = NAG in input but BEAMS3D'
+            WRITE(6,*) '  is not linked to NAG library.'
+            WRITE(6,*) '  Using INT_TYPE = LSODE instead.'
+            WRITE(6,*) '======================================='
+         END IF
+      END IF
+#endif
+
 #if defined(HDF5_PAR)
       ! Makes sure that NPARTICLES is divisible by the number of processes
       ! Needed for HDF5 parallel writes.
@@ -415,7 +437,6 @@
       END IF
       IF (lbeam) THEN
          WRITE(iunit_out,"(A)") '!---------- Profiles ------------'
-         WRITE(iunit_out,outflt) 'RHO_SCALE',RHO_SCALE
          WRITE(iunit_out,outflt) 'NE_SCALE',NE_SCALE
          WRITE(iunit_out,outflt) 'TE_SCALE',TE_SCALE
          WRITE(iunit_out,outflt) 'TI_SCALE',TI_SCALE
@@ -512,7 +533,6 @@
       CALL MPI_BCAST(NE_AUX_F,MAXPROFLEN,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(TI_AUX_S,MAXPROFLEN,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(TI_AUX_F,MAXPROFLEN,MPI_REAL8, local_master, comm,istat)
-      CALL MPI_BCAST(rho_scale,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(te_scale,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(ne_scale,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(ti_scale,1,MPI_REAL8, local_master, comm,istat)

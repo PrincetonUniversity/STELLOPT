@@ -27,7 +27,6 @@ PROGRAM BEAMS3D
 
     ! Setup HDF5
     CALL beams3d_init_hdf5
-
     ! Initialize constanst
     CALL beams3d_init_constants
 
@@ -41,7 +40,7 @@ PROGRAM BEAMS3D
     CALL beams3d_init
 
     ! Follow Fieldlines
-    CALL beams3d_follow_gc
+    CALL beams3d_follow
 
     ! Write Ouput
     CALL beams3d_write('TRAJECTORY_PARTIAL')

@@ -69,7 +69,7 @@
             coil_string_beams => coil_string, mgrid_string_beams => mgrid_string,&
             vessel_string_beams => vessel_string, restart_string_beams => restart_string, &
             lraw_beams => lraw, nbeams_beams => nbeams, &
-            lvac_beams => lvac, lhitonly, nparticles_start, &
+            lvac_beams => lvac, lhitonly, lboxsim_beams => lboxsim, nparticles_start, &
             vll_start_in, R_start_in, Z_start_in, PHI_start_in, mu_start_in, &
             mu_start_in, charge_in, mass_in, t_end_in, Zatom_in, &
             TE_AUX_S_BEAMS => TE_AUX_S, TE_AUX_F_BEAMS => TE_AUX_F, &
@@ -329,6 +329,7 @@
                lw7x_beams   = .FALSE.
                lrandomize_beams = .FALSE.
                lsuzuki_beams = .FALSE.
+               lboxsim_beams = .FALSE.
                id_string_beams    = TRIM(file_str)
                coil_string_beams  = ''
                mgrid_string_beams = ''
@@ -362,6 +363,8 @@
                CALL MPI_BCAST(NI_AUX_M_BEAMS,NION_BEAMS,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(TI_AUX_S_BEAMS,nti,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(TI_AUX_F_BEAMS,nti,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_S_BEAMS,nzeff,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_F_BEAMS,nzeff,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(ZEFF_AUX_S_BEAMS,nzeff,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(ZEFF_AUX_F_BEAMS,nzeff,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(R_start_in,nparticles_start,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
@@ -386,7 +389,7 @@
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe',ierr_mpi)
 
                ! Follow particles
-               CALL beams3d_follow_gc
+               CALL beams3d_follow
                nbeams_beams = 1  ! Do this so the read in cleanup doesn't fail
                CALL beams3d_write('TRAJECTORY_PARTIAL')
 
