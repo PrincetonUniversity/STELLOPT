@@ -51,6 +51,7 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_sqrt2     = 0.7071067812   !1/sqrt(2)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: mpome         = 5.44602984424355D-4 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_dalton    = 6.02214076208E+26 ! 1./AMU [1/kg]
+   DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_Ae    = 1.0/1836.1d0 ! AMU./electron_mass
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_cspeed    = 3.3356409520E-09 ! 1./c [s/m]
       DOUBLE PRECISION, PRIVATE, PARAMETER :: zero          = 0.0D0 ! 0.0
       DOUBLE PRECISION, PRIVATE, PARAMETER :: half          = 0.5D0 ! 1/2
@@ -151,36 +152,37 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION :: slow_par(3)
       DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, ti_in, ni_in(NION),vbeta_in, Zeff_in, speed_in,modb
          INTEGER :: i
-      DOUBLE PRECISION :: sm, omega2, vrel2,bmincl,bminqu,bmax,bmin,coulomb_log, coulomb_loge, zi2_ai, zi2
+      DOUBLE PRECISION :: sm, omega2, vrel2,vrel2_part,bmincl,bminqu,bmax,bmin,coulomb_log, coulomb_loge, zi2_ai, zi2,myA
          ! Same formulation as NUBEAM internal calculation (r8_coulog.f90), different Units than usual: 
          !Z is in elementary charge, A is in amu, energy and temperature in keV.
+      vrel2_part=speed_in**2/e_charge/(mymass*inv_dalton*inv_dalton)
          sm=zero
       do i=1,COUNT(NI_AUX_Z>0)
-         omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ni_in(i) & !assume ni=ne (should be changed for multi-ion plasmas)
-            +9.18d15*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)**2*modb**2
-         !omega2=1.74d0*plasma_Zmean & !assume ni=ne (should be changed for multi-ion plasmas)
-         !      +9.18d15*plasma_Zmean/(NI_AUX_M(i)*inv_dalton)*modb**2
-         vrel2=9.58d10*(ti_in/1000.0/(NI_AUX_M(i)*inv_dalton) + speed_in**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
+         myA = NI_AUX_M(i)*inv_dalton
+         omega2=1.74d0*NI_AUX_Z(i)**2/(myA)*ni_in(i) & !assume ni=ne (should be changed for multi-ion plasmas)
+            +9.18d15*NI_AUX_Z(i)**2/(myA)**2*modb**2
+         vrel2=9.58d7*(ti_in/(myA) + vrel2_part) !Assume same ti for all species
             sm=sm+omega2/vrel2
       end do
+      myA = mymass*inv_dalton
 
       !Electrons A_e=1836.1
       omega2=1.74d0*1836.1*ne_in &
          +9.18d15*1836.1**2*modb**2
-      vrel2=9.58d10*(te_in/1000.0d0*1836.1d0 + speed_in**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
+      vrel2=9.58d7*(te_in*1836.1d0 + vrel2_part) !Assume same ti for all species
          sm=sm+omega2/vrel2
          bmax=sqrt(one/sm)
-      bmincl=0.13793d0*abs(mycharge/e_charge)*(1.0/1836.1+mymass*inv_dalton)/(1.0/1836.1*mymass*inv_dalton*vrel2)
-      bminqu=1.9121d-8*(mymass*inv_dalton+1/1836.1)/(1/1836.1*mymass*inv_dalton*sqrt(vrel2))
+      bmincl=0.13793d0*abs(mycharge/e_charge)*(inv_Ae+myA)/(inv_Ae*myA*vrel2)
+      bminqu=1.9121d-8*(myA+inv_Ae)/(inv_Ae*myA*sqrt(vrel2))
       bmin=max(bmincl,bminqu)
       coulomb_loge=log(bmax/bmin) !only last coulomb log is saved
       zi2_ai=zero
       zi2=zero
 
       do i=1,COUNT(NI_AUX_Z>0)
-         vrel2=9.58d10*(3.0*ti_in/1000.0d0/(NI_AUX_M(i)*inv_dalton) +  speed_in**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
-            bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/vrel2
-         bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
+         vrel2=9.58d7*(3.0*ti_in/(NI_AUX_M(i)*inv_dalton) +  vrel2_part) !Assume same ti for all species
+         bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/myA/vrel2
+         bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/myA/sqrt(vrel2)
          bmin=max(bmincl,bminqu)
          coulomb_log=log(bmax/bmin) !only last coulomb log is saved - TODO: implement for multi-species
       coulomb_log = max(coulomb_log,one)
@@ -192,11 +194,9 @@ MODULE beams3d_physics_mod
       zi2_ai=zi2_ai/(ne_in*coulomb_loge)
       zi2=zi2/(ne_in*coulomb_loge)
 
-
       slow_par(1) = 5.33e4*SQRT(te_in) * (zi2_ai)**(1.0/3.0)
-      slow_par(2) =6.32e8*mymass*inv_dalton/(myZ*myZ*coulomb_loge)*SQRT(te_in*te_in*te_in)/(ne_in*1.0e-6)
-      slow_par(3) =zi2/zi2_ai/mymass/inv_dalton
-
+      slow_par(2) =6.32e8*myA/(myZ*myZ*coulomb_loge)*SQRT(te_in*te_in*te_in)/(ne_in*1.0e-6)
+      slow_par(3) =zi2/zi2_ai/myA
          RETURN
       END FUNCTION coulomb_log_nubeam
 
@@ -311,7 +311,7 @@ MODULE beams3d_physics_mod
             !     v_s       Local Sound Speed
             !     speed     Total particle speed
             !-----------------------------------------------------------
-            te_cube = te_temp * te_temp * te_temp
+         !te_cube = te_temp * te_temp * te_temp
             inv_mymass = one/mymass
             v_s = fact_vsound*sqrt(ti_temp)
             speed = sqrt( vll*vll + 2*moment*modb*inv_mymass ) !+ sign(real(80000),vll)
