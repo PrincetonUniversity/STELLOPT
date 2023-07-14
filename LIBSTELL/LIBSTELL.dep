@@ -1310,9 +1310,6 @@ read_spec_mod.o : \
       read_wout_mod.o
       
 
-read_pies_mod.o : \
-      read_wout_mod.o
-
 
 smpint.o : 
 
