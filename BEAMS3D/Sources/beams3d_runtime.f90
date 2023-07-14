@@ -206,6 +206,10 @@ CONTAINS
             WRITE(6, *) '  BEAMS3D ENCOUNTERED AN ERROR READING THE MGRID FILE'
             WRITE(6, *) '  VARIABLES: ', TRIM(string_val)
             WRITE(6, *) '  IERR:      ', ierr
+      ELSEIF (error_num .eq. COIL_ERR) THEN
+         WRITE(6, *) '  BEAMS3D ENCOUNTERED AN ERROR READING THE COILS FILE'
+         WRITE(6, *) '  VARIABLES: ', TRIM(string_val)
+         WRITE(6, *) '  IERR:      ', ierr
         ELSEIF (error_num .eq. INIT_BEAMS_ERR) THEN
             WRITE(6, *) '  BEAMS3D ENCOUNTERED AN ERROR INITIALIZING THE BEAMS'
             WRITE(6, *) '  VARIABLES: ', TRIM(string_val)
@@ -217,6 +221,9 @@ CONTAINS
         ELSEIF (error_num .eq. BAD_BEAMDEX_ERR) THEN
             WRITE(6, *) '  BEAMS3D ENCOUNTERED AN NAMELIST ERROR'
             WRITE(6, *) '    -BEAMLET USED BUT NO DEX_BEAM SET!'
+      ELSEIF (error_num .eq. BAD_BBNBI_ERR) THEN
+         WRITE(6, *) '  BEAMS3D ENCOUNTERED A NAMELIST/INPUT ERROR'
+         WRITE(6, *) '    DEX_BEAM SET BUT NO -BEAMLET USED (AND NO R_START_IN GIVEN)!'
         ELSEIF (error_num .eq. NETCDF_OPEN_ERR) THEN
             WRITE(6, *) '  BEAMS3D ENCOUNTERED AN ERROR OPENING A NETCDF FILE'
             WRITE(6, *) '  VARIABLES: ', TRIM(string_val)
