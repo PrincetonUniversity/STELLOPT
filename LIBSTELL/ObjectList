@@ -75,7 +75,6 @@ diagnostic_T.o \
 fftpack.o \
 vmec_utils.o \
 v3post_rfun.o \
-read_pies_mod.o \
 system_mod.o \
 saddle_surface.o \
 cyl_flux.o \
