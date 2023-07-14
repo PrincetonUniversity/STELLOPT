@@ -188,6 +188,7 @@ CONTAINS
                lfidasim = .true.
              case ("-fidasim2")
                lfidasim2 = .true.
+               lfidasim=.true.
              case ("-vmec")
                i = i + 1
                lvmec = .true.
@@ -226,6 +227,13 @@ CONTAINS
                i = i + 1
                lrestart_particles = .true.
                CALL GETCARG(i, restart_string, numargs)
+             case ("-restart_grid")
+               i = i + 1
+               lrestart_grid = .true.
+               CALL GETCARG(i, id_string, numargs)
+               i = i + 1
+               CALL GETCARG(i, restart_string, numargs)
+               restart_string=TRIM(restart_string)
              case ("-coil")
                i = i + 1
                lcoil = .true.
@@ -301,12 +309,17 @@ CONTAINS
          DEALLOCATE(args)
 
          ! Handle particle restarting
-         IF (lrestart_particles) THEN
+         IF (lrestart_particles .or. lrestart_grid) THEN
             ldepo = .false.
             lbbnbi = .false.
             lbeam = .false.
          END IF
 
+         IF (ldepo .and. (lfidasim .or. lfidasim2)) THEN
+            lfidasim = .false.
+            lfidasim2 = .false.
+            WRITE(6,'(A)') 'DEPO RUN DETECTED, DISABLING FIDASIM OUTPUT!'
+         END IF
 
       END IF
       ! Broadcast variables
