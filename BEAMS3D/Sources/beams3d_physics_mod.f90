@@ -71,7 +71,7 @@ MODULE beams3d_physics_mod
       !     Date:          07/05/2023
       !     Description:   Coulomb log as defined in NRL 2019
       !-----------------------------------------------------------------
-      DOUBLE PRECISION FUNCTION coulomb_log_nrl19(ne_in,te_in,vbeta_in,Zeff_in)
+   FUNCTION coulomb_log_nrl19(ne_in,te_in,vbeta_in,Zeff_in)  result(slow_par)
          !--------------------------------------------------------------
          !     Input Parameters
          !          ne_in        Electron Density [m^-3]
@@ -80,10 +80,16 @@ MODULE beams3d_physics_mod
          !          Zeff_in      Plasma effective charge [arb]
          !--------------------------------------------------------------
          IMPLICIT NONE
+      DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
-         DOUBLE PRECISION :: ne_cm
+      DOUBLE PRECISION :: ne_cm, coulomb_log
          ne_cm = ne_in * 1E-6
-         coulomb_log_nrl19 = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
+      coulomb_log = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
+
+      ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
+      slow_par(1) = fact_crit*SQRT(te_in) !vcrit
+      slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
+      slow_par(3) =zeff_in*fact_pa
          RETURN
       END FUNCTION coulomb_log_nrl19
 
@@ -93,7 +99,7 @@ MODULE beams3d_physics_mod
       !     Date:          07/05/2023
       !     Description:   Coulomb log as defined in LOCUST code
       !-----------------------------------------------------------------
-      DOUBLE PRECISION FUNCTION coulomb_log_locust(ne_in,te_in,vbeta_in,Zeff_in,modb_in,speed_in)
+   FUNCTION coulomb_log_locust(ne_in,te_in,vbeta_in,Zeff_in,modb_in,speed_in)  result(slow_par)
          !--------------------------------------------------------------
          !     Input Parameters
          !          ne_in        Electron Density [m^-3]
@@ -104,8 +110,9 @@ MODULE beams3d_physics_mod
          !          speed_in     Particle Speed [m/s]
          !--------------------------------------------------------------
          IMPLICIT NONE
+      DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in, modb_in, speed_in
-         DOUBLE PRECISION :: omega_p2, omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
+      DOUBLE PRECISION :: omega_p2, omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin, coulomb_log
          omega_p2 = (ne_in * Zeff_in*e_charge* Zeff_in*e_charge ) / (plasma_mass * eps_0)
          Omega_p =  (Zeff_in*e_charge) / plasma_mass * modb_in
          bmax = one/sqrt((omega_p2 + Omega_p*Omega_p)/(te_in*e_charge/plasma_mass + speed_in*speed_in))
@@ -114,7 +121,13 @@ MODULE beams3d_physics_mod
          bmin_c = (mycharge * (Zeff_in*e_charge)) / (4*pi*eps_0 * mu_ip * u_ip2)
          bmin_q = hbar / (2*mu_ip*sqrt(u_ip2)) * 0.60653065971
          bmin = max(bmin_q,bmin_c)
-         coulomb_log_locust = log(bmax/bmin)
+      coulomb_log = log(bmax/bmin)
+      coulomb_log = max(coulomb_log,one)
+
+      ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
+      slow_par(1) = fact_crit*SQRT(te_in) !vcrit
+      slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
+      slow_par(3) =zeff_in*fact_pa
          RETURN
       END FUNCTION coulomb_log_locust
 
@@ -125,7 +138,7 @@ MODULE beams3d_physics_mod
       !     Description:   Coulomb log as defined in NUBEAM code
       !                    (r8_coulog.f90).
       !-----------------------------------------------------------------
-      DOUBLE PRECISION FUNCTION coulomb_log_nubeam(ne_in,te_in,ti_in,vbeta_in,Zeff_in,modb_in,speed_in)
+   FUNCTION coulomb_log_nubeam(ne_in,te_in,ti_in,vbeta_in,Zeff_in,modb_in,speed_in) result(slow_par)
          !--------------------------------------------------------------
          !     Input Parameters
          !          ne_in        Electron Density [m^-3]
@@ -136,6 +149,7 @@ MODULE beams3d_physics_mod
          !          modb_in      Magnetic Field strenght [T]
          !--------------------------------------------------------------
          IMPLICIT NONE
+      DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, ti_in, vbeta_in, Zeff_in, modb_in, speed_in
          INTEGER :: i
          DOUBLE PRECISION :: sm, omega2, vrel2,bmincl,bminqm,bmax,bmin,coulomb_log
@@ -180,7 +194,12 @@ MODULE beams3d_physics_mod
             bmin=max(bmincl,bminqm)
             coulomb_log=log(bmax/bmin) !only last coulomb log is saved - nubeam keeps per-species coulomb log, but not sure what effect this has
          END DO
-         coulomb_log_nubeam = coulomb_log
+      coulomb_log = max(coulomb_log,one)
+
+      ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
+      slow_par(1) = fact_crit*SQRT(te_in) !vcrit
+      slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
+      slow_par(3) =zeff_in*fact_pa
          RETURN
       END FUNCTION coulomb_log_nubeam
 
@@ -217,6 +236,7 @@ MODULE beams3d_physics_mod
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
+      DOUBLE PRECISION :: slow_par(3), ni_temp(NION)
          ! For splines
          INTEGER :: i,j,k, l
          REAL*8 :: xparam, yparam, zparam
@@ -300,18 +320,17 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
 
-               coulomb_log = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-               !coulomb_log = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-               !coulomb_log = coulomb_log_nubeam(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+            slow_par = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+            !slow_par = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
+            !slow_par = coulomb_log_nubeam(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
 
-               coulomb_log = max(coulomb_log,one)
-
-               ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-               v_crit = fact_crit*SQRT(te_temp)
-               vcrit_cube = v_crit*v_crit*v_crit
-               tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here
-               tau_spit_inv = one/tau_spit
+            vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
+            tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
+
+            ! vcrit_cube = v_crit*v_crit*v_crit
+            ! tau_spit_inv = one/tau_spit
+            ! vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
 
             !-----------------------------------------------------------
@@ -358,7 +377,7 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
-           speed_cube = vc3_tauinv*zeff_temp*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
+         speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
@@ -429,6 +448,7 @@ MODULE beams3d_physics_mod
                           vc3_tauinv, vbeta, zeff_temp, br_temp, bphi_temp, bz_temp, vperp, &
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin, binv
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
+      DOUBLE PRECISION :: slow_par(3), ni_temp(NION)
          ! For splines
          INTEGER :: i,j,k, l
          REAL*8 :: xparam, yparam, zparam
@@ -529,17 +549,12 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
 
-               coulomb_log = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-               !coulomb_log = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-               !coulomb_log = coulomb_log_nubeam(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+            slow_par = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+            !slow_par = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
+            !slow_par = coulomb_log_nubeam(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
 
-               coulomb_log = max(coulomb_log,one)
-
-               ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-               v_crit = fact_crit*SQRT(te_temp)
-               vcrit_cube = v_crit*v_crit*v_crit
-               tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here
-               tau_spit_inv = (1.0D0)/tau_spit
+            vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
+            tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
 
@@ -590,7 +605,7 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
-           speed_cube = vc3_tauinv*zeff_temp*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
+         speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
