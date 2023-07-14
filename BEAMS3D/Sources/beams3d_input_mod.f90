@@ -6,38 +6,38 @@
 !                    subroutine which initializes and reads the
 !                    FIELDLINES input namelist.
 !-----------------------------------------------------------------------
-      MODULE beams3d_input_mod
+MODULE beams3d_input_mod
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
-      USE stel_kinds, ONLY: rprec
-      USE beams3d_runtime
-      USE beams3d_lines, ONLY: nparticles, ns_prof1, ns_prof2, ns_prof3, &
-                               ns_prof4, ns_prof5, partvmax
-      USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
-                              phimin, phimax, vc_adapt_tol, nte, nne, nti,&
-                              nzeff, npot, plasma_mass, &
-                              plasma_Zmean, therm_factor, &
-                              B_kick_min, B_kick_max, freq_kick, E_kick, &
-                              rho_fullorbit, &
-                              rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
-                              raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-                              nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
-      USE safe_open_mod, ONLY: safe_open
-      USE mpi_params
-      USE mpi_inc
+   USE stel_kinds, ONLY: rprec
+   USE beams3d_runtime
+   USE beams3d_lines, ONLY: nparticles, ns_prof1, ns_prof2, ns_prof3, &
+      ns_prof4, ns_prof5, partvmax
+   USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
+      phimin, phimax, vc_adapt_tol, nte, nne, nti,&
+      nzeff, npot, plasma_mass, &
+      plasma_Zmean, therm_factor, &
+      B_kick_min, B_kick_max, freq_kick, E_kick, &
+      rho_fullorbit, &
+      rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
+      raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
+      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
+   USE safe_open_mod, ONLY: safe_open
+   USE mpi_params
+   USE mpi_inc
 
 !-----------------------------------------------------------------------
 !     Module Variables
 !
 !-----------------------------------------------------------------------
-      IMPLICIT NONE
-      ! These are helpers to give the ns1_prof variables user friendly names
-      INTEGER :: nrho_dist, ntheta_dist, nzeta_dist, nvpara_dist, nvperp_dist, nphi_dist
-      REAL(rprec) :: temp
-      ! These are helpers for backwards compatibility all values here
-      ! will be ignored elsewhere in the code.
-      REAL(rprec) :: plasma_zavg ! 
+   IMPLICIT NONE
+   ! These are helpers to give the ns1_prof variables user friendly names
+   INTEGER :: nrho_dist, ntheta_dist, nzeta_dist, nvpara_dist, nvperp_dist, nphi_dist
+   REAL(rprec) :: temp
+   ! These are helpers for backwards compatibility all values here
+   ! will be ignored elsewhere in the code.
+   REAL(rprec) :: plasma_zavg !
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         &beams3d_input
@@ -70,45 +70,45 @@
 !                   phimin and phimax) to properly represent a given
 !                   field period.
 !-----------------------------------------------------------------------
-      NAMELIST /beams3d_input/ nr, nphi, nz, rmin, rmax, zmin, zmax, &
-                               phimin, phimax, nparticles_start, &
-                               r_start_in, phi_start_in, z_start_in, &
-                               vll_start_in, npoinc, follow_tol, &
-                               t_end_in, mu_start_in, charge_in, &
-                               mass_in, Zatom_in, vc_adapt_tol,  &
-                               int_type, Adist_beams, Asize_beams, &
-                               Div_beams, E_beams, Dex_beams, &
-                               mass_beams, charge_beams, Zatom_beams, &
-                               r_beams, z_beams, phi_beams, TE_AUX_S, &
-                               TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
-                               TI_AUX_F, POT_AUX_S, POT_AUX_F, &
-                               NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
-                               ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
-                               ldebug, ne_scale, te_scale, ti_scale, &
-                               zeff_scale, &
-                               plasma_zavg, plasma_mass, plasma_Zmean, &
-                               therm_factor, fusion_scale, &
-                               nrho_dist, ntheta_dist, & 
-                               nzeta_dist, nphi_dist, nvpara_dist, nvperp_dist, &
-                               partvmax, lendt_m, te_col_min, &
-                               B_kick_min, B_kick_max, freq_kick, E_kick,&
-                               vr_start_in, vphi_start_in, vz_start_in, &
-                               rho_fullorbit, duplicate_factor, &
-                               B_kick_min, B_kick_max, freq_kick, E_kick, &
-                               rmin_fida, rmax_fida, zmin_fida, &
-                               zmax_fida,phimin_fida, phimax_fida, &
-                               raxis_fida, zaxis_fida, phiaxis_fida, &
-                               nr_fida, nphi_fida, nz_fida, nenergy_fida, &
-                               npitch_fida, energy_fida, pitch_fida, t_fida
-      
+   NAMELIST /beams3d_input/ nr, nphi, nz, rmin, rmax, zmin, zmax, &
+      phimin, phimax, nparticles_start, &
+      r_start_in, phi_start_in, z_start_in, &
+      vll_start_in, npoinc, follow_tol, &
+      t_end_in, mu_start_in, charge_in, &
+      mass_in, Zatom_in, vc_adapt_tol,  &
+      int_type, Adist_beams, Asize_beams, &
+      Div_beams, E_beams, Dex_beams, &
+      mass_beams, charge_beams, Zatom_beams, &
+      r_beams, z_beams, phi_beams, TE_AUX_S, &
+      TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
+      TI_AUX_F, POT_AUX_S, POT_AUX_F, &
+      NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
+      ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
+      ldebug, ne_scale, te_scale, ti_scale, &
+      zeff_scale, &
+      plasma_zavg, plasma_mass, plasma_Zmean, &
+      therm_factor, fusion_scale, &
+      nrho_dist, ntheta_dist, &
+      nzeta_dist, nphi_dist, nvpara_dist, nvperp_dist, &
+      partvmax, lendt_m, te_col_min, &
+      B_kick_min, B_kick_max, freq_kick, E_kick,&
+      vr_start_in, vphi_start_in, vz_start_in, &
+      rho_fullorbit, duplicate_factor, &
+      B_kick_min, B_kick_max, freq_kick, E_kick, &
+      rmin_fida, rmax_fida, zmin_fida, &
+      zmax_fida,phimin_fida, phimax_fida, &
+      raxis_fida, zaxis_fida, phiaxis_fida, &
+      nr_fida, nphi_fida, nz_fida, nenergy_fida, &
+      npitch_fida, energy_fida, pitch_fida, t_fida
+
 !-----------------------------------------------------------------------
 !     Subroutines
 !         init_beams3d_input:   Initializes the namelist
 !         read_beams3d_input:   Reads beams3d_input namelist
 !-----------------------------------------------------------------------
-      CONTAINS
+CONTAINS
 
-      SUBROUTINE init_beams3d_input
+   SUBROUTINE init_beams3d_input
       IMPLICIT NONE
       nr     = 101
       nphi   = 360
@@ -209,156 +209,158 @@
       npitch_fida = 0
       t_fida = 0.0
       RETURN
-      END SUBROUTINE init_beams3d_input
-      
-      SUBROUTINE read_beams3d_input(filename, istat)
-         IMPLICIT NONE
-         CHARACTER(*), INTENT(in) :: filename
-         INTEGER, INTENT(out) :: istat
-         LOGICAL :: lexist
-         INTEGER :: iunit, local_master, i1
-         CHARACTER(LEN=1000) :: line
+   END SUBROUTINE init_beams3d_input
+
+   SUBROUTINE read_beams3d_input(filename, istat)
+      IMPLICIT NONE
+      CHARACTER(*), INTENT(in) :: filename
+      INTEGER, INTENT(out) :: istat
+      LOGICAL :: lexist
+      INTEGER :: iunit, local_master, i1
+      CHARACTER(LEN=1000) :: line
       ! Initializations
       local_master = 0
 
 
       ! Read namelist
-         IF (filename /= 'IMAS') THEN
-            istat=0
-            iunit=12
-            INQUIRE(FILE=TRIM(filename),EXIST=lexist)
-            IF (.not.lexist) stop 'Could not find input file'
-            CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
-            IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: '//TRIM(filename),istat)
-            READ(iunit,NML=beams3d_input,IOSTAT=istat)
-            IF (istat /= 0) THEN
-               backspace(iunit)
-               read(iunit,fmt='(A)') line
-               write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-               CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: '//TRIM(filename),istat)
-            END IF
-            CLOSE(iunit)
+      IF (filename /= 'IMAS') THEN
+         istat=0
+         iunit=12
+         INQUIRE(FILE=TRIM(filename),EXIST=lexist)
+         IF (.not.lexist) stop 'Could not find input file'
+         CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
+         IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: '//TRIM(filename),istat)
+         READ(iunit,NML=beams3d_input,IOSTAT=istat)
+         IF (istat /= 0) THEN
+            backspace(iunit)
+            read(iunit,fmt='(A)') line
+            write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+            CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: '//TRIM(filename),istat)
          END IF
+         CLOSE(iunit)
+      END IF
 
-         ! Update dist function sizes
-         ns_prof1=nrho_dist
-         ns_prof2=ntheta_dist
-         ns_prof3=MAX(nzeta_dist,nphi_dist)
-         ns_prof4=nvpara_dist
-         ns_prof5=nvperp_dist
+      ! Update dist function sizes
+      ns_prof1=nrho_dist
+      ns_prof2=ntheta_dist
+      ns_prof3=MAX(nzeta_dist,nphi_dist)
+      ns_prof4=nvpara_dist
+      ns_prof5=nvperp_dist
 
-         NE_AUX_F = NE_AUX_F*ne_scale
-         TE_AUX_F = TE_AUX_F*te_scale
-         TI_AUX_F = TI_AUX_F*ti_scale
-         ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
-         lbeam = .true.; lkick = .false.; lgcsim = .true.
-         
-         IF (r_start_in(1) /= -1.0) lbeam = .false.
-         IF (lfusion .or. lrestart_particles) lbeam = .false.
-         IF (lbbnbi) lbeam = .true.
-         IF (lbeam) lcollision = .true.
-         IF (B_kick_min >=0 ) lkick = .true.
+      NE_AUX_F = NE_AUX_F*ne_scale
+      TE_AUX_F = TE_AUX_F*te_scale
+      TI_AUX_F = TI_AUX_F*ti_scale
+      ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
+      lbeam = .true.; lkick = .false.; lgcsim = .true.
+
+      IF (r_start_in(1) /= -1.0) lbeam = .false.
+      IF (lfusion .or. lrestart_particles) lbeam = .false.
+      IF (lbbnbi) lbeam = .true.
+      IF (lbeam) lcollision = .true.
+      IF (B_kick_min >=0 ) lkick = .true.
+      nbeams = 0
+      DO WHILE ((Asize_beams(nbeams+1) >= 0.0).and.(nbeams<MAXBEAMS))
+         nbeams = nbeams + 1
+      END DO
+      IF (lbbnbi) THEN
          nbeams = 0
-         DO WHILE ((Asize_beams(nbeams+1) >= 0.0).and.(nbeams<MAXBEAMS))
+         DO WHILE ((Dex_beams(nbeams+1) > 0).and.(nbeams<MAXBEAMS))
             nbeams = nbeams + 1
          END DO
-         IF (lbbnbi) THEN
-            nbeams = 0
-            DO WHILE ((Dex_beams(nbeams+1) > 0).and.(nbeams<MAXBEAMS))
-               nbeams = nbeams + 1
-            END DO
-            IF (nbeams == 0)  CALL handle_err(BAD_BEAMDEX_ERR,'beams3d_input in: input.'//TRIM(id_string),nbeams)
-         END IF
-         IF (lfusion) THEN
-            r_start_in = -1
-            nbeams = 4
-            IF (lfusion_alpha) nbeams = 1
-         END IF
-         nte = 0
-         DO WHILE ((TE_AUX_S(nte+1) >= 0.0).and.(nte<MAXPROFLEN))
-            nte = nte + 1
-         END DO
-         nne = 0
-         DO WHILE ((NE_AUX_S(nne+1) >= 0.0).and.(nne<MAXPROFLEN))
-            nne = nne + 1
-         END DO
-         nti = 0
-         DO WHILE ((TI_AUX_S(nti+1) >= 0.0).and.(nti<MAXPROFLEN))
-            nti = nti + 1
-         END DO
+         IF (nbeams == 0)  CALL handle_err(BAD_BEAMDEX_ERR,'beams3d_input in: input.'//TRIM(id_string),nbeams)
+      ELSEIF (ANY(Dex_beams>0) .and. ALL(r_start_in .eq. -1.0) .and. .not. lrestart_particles) THEN ! .and. (r_start_in .eq. -1.0)
+         CALL handle_err(BAD_BBNBI_ERR,'beams3d_input in: input.'//TRIM(id_string),nbeams)
+      END IF
+      IF (lfusion) THEN
+         r_start_in = -1
+         nbeams = 4
+         IF (lfusion_alpha) nbeams = 1
+      END IF
+      nte = 0
+      DO WHILE ((TE_AUX_S(nte+1) >= 0.0).and.(nte<MAXPROFLEN))
+         nte = nte + 1
+      END DO
+      nne = 0
+      DO WHILE ((NE_AUX_S(nne+1) >= 0.0).and.(nne<MAXPROFLEN))
+         nne = nne + 1
+      END DO
+      nti = 0
+      DO WHILE ((TI_AUX_S(nti+1) >= 0.0).and.(nti<MAXPROFLEN))
+         nti = nti + 1
+      END DO
+      nzeff = 0
+      DO WHILE ((ZEFF_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
+         nzeff = nzeff + 1
+      END DO
+      npot = 0
+      DO WHILE ((POT_AUX_S(npot+1) >= 0.0).and.(npot<MAXPROFLEN))
+         npot = npot + 1
+      END DO
+
+      ! Handle multiple ion species
+      IF (ANY(NI_AUX_S >0)) THEN
          nzeff = 0
-         DO WHILE ((ZEFF_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
+         DO WHILE ((NI_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
             nzeff = nzeff + 1
          END DO
-         npot = 0
-         DO WHILE ((POT_AUX_S(npot+1) >= 0.0).and.(npot<MAXPROFLEN))
-            npot = npot + 1
-         END DO
-
-         ! Handle multiple ion species
-         IF (ANY(NI_AUX_S >0)) THEN
-            nzeff = 0
-            DO WHILE ((NI_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
-               nzeff = nzeff + 1
-            END DO
-            ! Now calc Zeff(1)
-            DO i1 = 1, nzeff
-               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
-               temp = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
-               IF (temp > 0) THEN
-                  ZEFF_AUX_F(i1) = MAX(SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
-               ELSE
-                  ZEFF_AUX_F(i1) = 1
-               END IF
-            END DO
-            plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
-            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*plasma_mass/NI_AUX_M,DIM=1,MASK=(NI_AUX_M>1E-27))/(SUM(NI_AUX_F(:,1)*NI_AUX_Z))
-         ELSEIF (lfusion) THEN ! Assume 50/50 D T
-            nzeff=nne
-            NI_AUX_S = NE_AUX_S
-            NI_AUX_F(1,:) = 0.5*NE_AUX_F
-            NI_AUX_F(2,:) = 0.5*NE_AUX_F
-            NI_AUX_M(1) = 3.3435837724E-27;   NI_AUX_Z(1) = 1
-            NI_AUX_M(2) = 5.008267217094E-27; NI_AUX_Z(2) = 1 
-            ! Now calc Zeff(1)
-            DO i1 = 1, nzeff
-               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
-               temp = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
-               IF (temp > 0) THEN
-                  ZEFF_AUX_F(i1) = MAX(SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
-               ELSE
-                  ZEFF_AUX_F(i1) = 1
-               END IF
-            END DO
-            plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
-            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*plasma_mass/NI_AUX_M,DIM=1,MASK=(NI_AUX_M>1E-27))/(SUM(NI_AUX_F(:,1)*NI_AUX_Z))
-         ELSEIF (nne > 0) THEN ! Ni=Ne, Z=Zeff
-            NI_AUX_Z(1) = 1 ! Assume Hydrogen Plasma
-            NI_AUX_M(1) = plasma_mass
-            NI_AUX_S = NE_AUX_S
-            NI_AUX_F(1,:) = NE_AUX_F
-            ! First check if user provided ZEFF
-            IF (.not. ANY(ZEFF_AUX_S >0)) THEN
-               ! NI=NE
-               ! Default ZEFF_AUX_S
-               nzeff = 6
-               ZEFF_AUX_S(1:6) = (/0.0,0.2,0.4,0.6,0.8,1.0/)
-               ZEFF_AUX_F(1:6) = (/1.0,1.0,1.0,1.0,1.0,1.0/)
+         ! Now calc Zeff(1)
+         DO i1 = 1, nzeff
+            ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+            temp = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+            IF (temp > 0) THEN
+               ZEFF_AUX_F(i1) = MAX(SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
+            ELSE
+               ZEFF_AUX_F(i1) = 1
             END IF
-         ELSE
+         END DO
+         plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
+         plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*plasma_mass/NI_AUX_M,DIM=1,MASK=(NI_AUX_M>1E-27))/(SUM(NI_AUX_F(:,1)*NI_AUX_Z))
+      ELSEIF (lfusion) THEN ! Assume 50/50 D T
+         nzeff=nne
+         NI_AUX_S = NE_AUX_S
+         NI_AUX_F(1,:) = 0.5*NE_AUX_F
+         NI_AUX_F(2,:) = 0.5*NE_AUX_F
+         NI_AUX_M(1) = 3.3435837724E-27;   NI_AUX_Z(1) = 1
+         NI_AUX_M(2) = 5.008267217094E-27; NI_AUX_Z(2) = 1
+         ! Now calc Zeff(1)
+         DO i1 = 1, nzeff
+            ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+            temp = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+            IF (temp > 0) THEN
+               ZEFF_AUX_F(i1) = MAX(SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
+            ELSE
+               ZEFF_AUX_F(i1) = 1
+            END IF
+         END DO
+         plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
+         plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*plasma_mass/NI_AUX_M,DIM=1,MASK=(NI_AUX_M>1E-27))/(SUM(NI_AUX_F(:,1)*NI_AUX_Z))
+      ELSEIF (nne > 0) THEN ! Ni=Ne, Z=Zeff
+         NI_AUX_Z(1) = 1 ! Assume Hydrogen Plasma
+         NI_AUX_M(1) = plasma_mass
+         NI_AUX_S = NE_AUX_S
+         NI_AUX_F(1,:) = NE_AUX_F
+         ! First check if user provided ZEFF
+         IF (.not. ANY(ZEFF_AUX_S >0)) THEN
+            ! NI=NE
+            ! Default ZEFF_AUX_S
             nzeff = 6
             ZEFF_AUX_S(1:6) = (/0.0,0.2,0.4,0.6,0.8,1.0/)
             ZEFF_AUX_F(1:6) = (/1.0,1.0,1.0,1.0,1.0,1.0/)
-            NI_AUX_S(1:6)   = (/0.0,0.2,0.4,0.6,0.8,1.0/)
-            NI_AUX_F(:,1:6) = 0
-            NI_AUX_Z(1) = 1
-            NI_AUX_M(1) = plasma_mass
          END IF
+      ELSE
+         nzeff = 6
+         ZEFF_AUX_S(1:6) = (/0.0,0.2,0.4,0.6,0.8,1.0/)
+         ZEFF_AUX_F(1:6) = (/1.0,1.0,1.0,1.0,1.0,1.0/)
+         NI_AUX_S(1:6)   = (/0.0,0.2,0.4,0.6,0.8,1.0/)
+         NI_AUX_F(:,1:6) = 0
+         NI_AUX_Z(1) = 1
+         NI_AUX_M(1) = plasma_mass
+      END IF
 
-         nparticles = 0
-         DO WHILE ((r_start_in(nparticles+1) >= 0.0).and.(nparticles<MAXPARTICLES))
-            nparticles = nparticles + 1
-         END DO
+      nparticles = 0
+      DO WHILE ((r_start_in(nparticles+1) >= 0.0).and.(nparticles<MAXPARTICLES))
+         nparticles = nparticles + 1
+      END DO
 !      END IF
 
 #if !defined(NAG)
@@ -385,9 +387,9 @@
       END IF
 #endif
 
-      END SUBROUTINE read_beams3d_input
+   END SUBROUTINE read_beams3d_input
 
-      SUBROUTINE write_beams3d_namelist(iunit_out, istat)
+   SUBROUTINE write_beams3d_namelist(iunit_out, istat)
       INTEGER, INTENT(in) :: iunit_out
       INTEGER, INTENT(out) :: istat
       INTEGER :: ik, n
@@ -487,12 +489,12 @@
       END IF
       WRITE(iunit_out,'(A)') '/'
 
-      END SUBROUTINE write_beams3d_namelist
+   END SUBROUTINE write_beams3d_namelist
 
-      SUBROUTINE BCAST_BEAMS3D_INPUT(local_master,comm,istat)
+   SUBROUTINE BCAST_BEAMS3D_INPUT(local_master,comm,istat)
       USE mpi_inc
       IMPLICIT NONE
-      
+
       INTEGER, INTENT(inout) :: comm
       INTEGER, INTENT(in)    :: local_master
       INTEGER, INTENT(inout) :: istat
@@ -541,31 +543,31 @@
       CALL MPI_BCAST(t_end_in,MAXPARTICLES,MPI_REAL8, local_master, comm,istat)
 
       IF (lbeam) THEN
-          CALL MPI_BCAST(Adist_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(Dex_beams,MAXBEAMS,MPI_INTEGER, local_master, comm,istat)
-          CALL MPI_BCAST(Asize_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(Div_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(E_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(r_beams,MAXBEAMS*2,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(z_beams,MAXBEAMS*2,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(phi_beams,MAXBEAMS*2,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(mass_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(charge_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(Zatom_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(Adist_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(Dex_beams,MAXBEAMS,MPI_INTEGER, local_master, comm,istat)
+         CALL MPI_BCAST(Asize_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(Div_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(E_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(r_beams,MAXBEAMS*2,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(z_beams,MAXBEAMS*2,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(phi_beams,MAXBEAMS*2,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(mass_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(charge_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(Zatom_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
       ELSE
-          CALL MPI_BCAST(r_start_in,nparticles,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(z_start_in,nparticles,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(phi_start_in,nparticles,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(mu_start_in,nparticles,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(vll_start_in,nparticles,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(mass_in,nparticles,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(charge_in,nparticles,MPI_REAL8, local_master, comm,istat)
-          CALL MPI_BCAST(Zatom_in,nparticles,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(r_start_in,nparticles,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(z_start_in,nparticles,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(phi_start_in,nparticles,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(mu_start_in,nparticles,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(vll_start_in,nparticles,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(mass_in,nparticles,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(charge_in,nparticles,MPI_REAL8, local_master, comm,istat)
+         CALL MPI_BCAST(Zatom_in,nparticles,MPI_REAL8, local_master, comm,istat)
       END IF
 
       CALL MPI_BCAST(follow_tol,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(int_type, 256, MPI_CHARACTER, local_master, comm,istat)
 #endif
-      END SUBROUTINE BCAST_BEAMS3D_INPUT
+   END SUBROUTINE BCAST_BEAMS3D_INPUT
 
-      END MODULE beams3d_input_mod
+END MODULE beams3d_input_mod

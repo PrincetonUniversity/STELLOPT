@@ -47,7 +47,6 @@ SUBROUTINE beams3d_follow
 
    ! Calc max time to follow particles
    i = MAXLOC(ABS(t_end),1)
-   WRITE(6,'(F9.5)') t_end
    tf_max = t_end(i)
 
    ! Calculate timestep for integration
