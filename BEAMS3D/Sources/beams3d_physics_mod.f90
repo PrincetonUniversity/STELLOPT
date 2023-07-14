@@ -138,68 +138,65 @@ MODULE beams3d_physics_mod
       !     Description:   Coulomb log as defined in NUBEAM code
       !                    (r8_coulog.f90).
       !-----------------------------------------------------------------
-   FUNCTION coulomb_log_nubeam(ne_in,te_in,ti_in,vbeta_in,Zeff_in,modb_in,speed_in) result(slow_par)
+   FUNCTION coulomb_log_nubeam(ne_in,ni_in,te_in,ti_in,vbeta_in,Zeff_in,modb,speed_in) result(slow_par)
          !--------------------------------------------------------------
          !     Input Parameters
          !          ne_in        Electron Density [m^-3]
+      !          ni_in        Ion Densities [m^-3]
          !          te_in        Electron Temperature [eV]
          !          ti_in        Electron Temperature [eV]
-         !          vbeta_in     Normalized Particle Velocity [c]
          !          Zeff_in      Plasma effective charge [arb]
-         !          modb_in      Magnetic Field strenght [T]
          !--------------------------------------------------------------
          IMPLICIT NONE
       DOUBLE PRECISION :: slow_par(3)
-         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, ti_in, vbeta_in, Zeff_in, modb_in, speed_in
+      DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, ti_in, ni_in(NION),vbeta_in, Zeff_in, speed_in,modb
          INTEGER :: i
-         DOUBLE PRECISION :: sm, omega2, vrel2,bmincl,bminqm,bmax,bmin,coulomb_log
+      DOUBLE PRECISION :: sm, omega2, vrel2,bmincl,bminqu,bmax,bmin,coulomb_log, coulomb_loge, zi2_ai, zi2
          ! Same formulation as NUBEAM internal calculation (r8_coulog.f90), different Units than usual: 
          !Z is in elementary charge, A is in amu, energy and temperature in keV.
-
          sm=zero
-         DO i=1,COUNT(NI_AUX_Z>0)  
-            omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ne_in & !assume ni=ne (should be changed for multi-ion plasmas)
-                  +9.18d15*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)**2*modb_in*modb_in
-            vrel2=9.58d10*(ti_in/1000.0/(NI_AUX_M(i)*inv_dalton) + speed_in*speed_in/(e_charge*inv_dalton*2000.0d0)) !Assume same ti for all species
+      do i=1,COUNT(NI_AUX_Z>0)
+         omega2=1.74d0*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)*ni_in(i) & !assume ni=ne (should be changed for multi-ion plasmas)
+            +9.18d15*NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton)**2*modb**2
+         !omega2=1.74d0*plasma_Zmean & !assume ni=ne (should be changed for multi-ion plasmas)
+         !      +9.18d15*plasma_Zmean/(NI_AUX_M(i)*inv_dalton)*modb**2
+         vrel2=9.58d10*(ti_in/1000.0/(NI_AUX_M(i)*inv_dalton) + speed_in**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
             sm=sm+omega2/vrel2
-         END DO
+      end do
 
-         !Electrons
-         omega2=1.74d0*1836.1*ne_in +9.18d15*1836.1*1836.1*modb_in*modb_in
-         vrel2=9.58d10*(te_in/1000.0d0*1836.1d0 + speed_in*speed_in/(e_charge*inv_dalton*2000.0d0)) !Assume same ti for all species
+      !Electrons A_e=1836.1
+      omega2=1.74d0*1836.1*ne_in &
+         +9.18d15*1836.1**2*modb**2
+      vrel2=9.58d10*(te_in/1000.0d0*1836.1d0 + speed_in**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
          sm=sm+omega2/vrel2
          bmax=sqrt(one/sm)
+      bmincl=0.13793d0*abs(mycharge/e_charge)*(1.0/1836.1+mymass*inv_dalton)/(1.0/1836.1*mymass*inv_dalton*vrel2)
+      bminqu=1.9121d-8*(mymass*inv_dalton+1/1836.1)/(1/1836.1*mymass*inv_dalton*sqrt(vrel2))
+      bmin=max(bmincl,bminqu)
+      coulomb_loge=log(bmax/bmin) !only last coulomb log is saved
+      zi2_ai=zero
+      zi2=zero
 
-         ! next calculate rmin, including quantum corrections.  The classical
-         ! rmin is:
-         !
-         ! rmincl = e_alpha e_beta / (m_ab vrel**2)
-         !
-         ! where m_ab = m_a m_b / (m_a+m_b) is the reduced mass.
-         ! vrel**2 = 3 T_b/m_b + 2 E_a / m_a
-         ! (Note:  the two different definitions of vrel2 used in this code
-         ! are each correct for their application.)
-         !
-         ! The quantum rmin is:
-         !
-         ! rminqu = hbar/( 2 exp(0.5) m_ab vrel)
-         !
-         ! and the proper rmin is the larger of rmincl and rminqu
-         !
-
-         DO i=1,COUNT(NI_AUX_Z>0)
-            vrel2=9.58d10*(3*ti_in/1000.0d0/(NI_AUX_M(i)*inv_dalton) + speed_in*speed_in/(e_charge*inv_dalton*2000.0d0)) !Assume same ti for all species
+      do i=1,COUNT(NI_AUX_Z>0)
+         vrel2=9.58d10*(3.0*ti_in/1000.0d0/(NI_AUX_M(i)*inv_dalton) +  speed_in**2/e_charge/1000.0d0/(mymass*inv_dalton**2)) !Assume same ti for all species
             bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/vrel2
-            bminqm=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
-            bmin=max(bmincl,bminqm)
-            coulomb_log=log(bmax/bmin) !only last coulomb log is saved - nubeam keeps per-species coulomb log, but not sure what effect this has
-         END DO
+         bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/mymass/inv_dalton/sqrt(vrel2)
+         bmin=max(bmincl,bminqu)
+         coulomb_log=log(bmax/bmin) !only last coulomb log is saved - TODO: implement for multi-species
       coulomb_log = max(coulomb_log,one)
+         zi2_ai = zi2_ai+ni_in(i) *NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton) * coulomb_log
+         zi2 = zi2+ni_in(i) *NI_AUX_Z(i)**2 * coulomb_log
+      end do
+      coulomb_loge = max(coulomb_loge,one)
 
-      ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-      slow_par(1) = fact_crit*SQRT(te_in) !vcrit
-      slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
-      slow_par(3) =zeff_in*fact_pa
+      zi2_ai=zi2_ai/(ne_in*coulomb_loge)
+      zi2=zi2/(ne_in*coulomb_loge)
+
+
+      slow_par(1) = 5.33e4*SQRT(te_in) * (zi2_ai)**(1.0/3.0)
+      slow_par(2) =6.32e8*mymass*inv_dalton/(myZ*myZ*coulomb_loge)*SQRT(te_in*te_in*te_in)/(ne_in*1.0e-6)
+      slow_par(3) =zi2/zi2_ai/mymass/inv_dalton
+
          RETURN
       END FUNCTION coulomb_log_nubeam
 
@@ -302,6 +299,12 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             S4D(1,1,1,1),nr,nphi,nz)
             s_temp = fval(1)
+         DO l = 1, NION
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+               hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+               NI5D(1,1,1,1,l),nr,nphi,nz)
+            ni_temp(l) = max(fval(1),zero) !Set to one to prevent NaN Zeff later on
+         END DO
 
             !-----------------------------------------------------------
             !  Helpers
@@ -320,9 +323,9 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
 
-            slow_par = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+            !slow_par = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
             !slow_par = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-            !slow_par = coulomb_log_nubeam(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+            slow_par = coulomb_log_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
 
             vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
             tau_spit_inv = one/slow_par(2)
