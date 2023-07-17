@@ -866,7 +866,7 @@ CONTAINS
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                NI5D(1,1,1,1,m),nr,nphi,nz)
-            nilocal(m,l) = MAX(fval(1),zero)
+            nilocal(m,l) = MAX(fval(1),one) !Set to one to prevent NaN Zeff later on
          END DO
       END DO
       tilocal = tilocal*1D-3
