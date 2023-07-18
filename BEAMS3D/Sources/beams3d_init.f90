@@ -421,6 +421,9 @@ SUBROUTINE beams3d_init
    END IF
    !WRITE_FIDASIM comes after spline setup as it needs 3D Grids
 
+   IF (lverb) THEN
+      WRITE(6,'(A)')'----- Constructing Splines -----'
+   END IF
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!              Setup Splines
@@ -500,8 +503,6 @@ SUBROUTINE beams3d_init
 
    ! Construct MODB
    IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
-
-
 
    ! Construct Splines on shared memory master nodes
    IF (myid_sharmem == master) THEN
@@ -626,7 +627,7 @@ SUBROUTINE beams3d_init
 
    ! Print Grid info to screen
    IF (lverb) THEN
-      WRITE(6,'(A)')'----- Constructing Splines -----'
+      ! WRITE(6,'(A)')'----- Constructing Splines -----'
       WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',MINVAL(raxis),',',MAXVAL(raxis),'];  NR:   ',nr
       WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',MINVAL(phiaxis),',',MAXVAL(phiaxis),'];  NPHI: ',nphi
       WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',MINVAL(zaxis),',',MAXVAL(zaxis),'];  NZ:   ',nz
