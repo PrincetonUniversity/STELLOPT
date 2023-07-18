@@ -26,7 +26,7 @@
                                dist5d_fida, win_dist5d_fida,&
                                win_epower, win_ipower, win_ndot, win_jprof, &
                                win_dense, nsh_prof4, h2_prof, h3_prof, &
-                               h4_prof, h5_prof, r_h, p_h, z_h
+      h4_prof, h5_prof, r_h, p_h, z_h, e_h, pi_h
       USE wall_mod
       USE mpi_params
       USE adas_mod_parallel, ONLY: adas_load_tables, adas_tables_avail
