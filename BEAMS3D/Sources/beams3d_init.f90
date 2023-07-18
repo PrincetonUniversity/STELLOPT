@@ -333,6 +333,8 @@
             CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
             CALL mpialloc(phiaxis_fida, nphi_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis_fida)
             CALL mpialloc(zaxis_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis_fida)
+      CALL mpialloc(energy_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
+      CALL mpialloc(pitch_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
          END IF
          IF (myid_sharmem == 0) THEN
             FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
@@ -806,11 +808,11 @@
 
 
    IF (lfidasim) THEN
-         ALLOCATE(raxis_fida(nr_fida))
-         ALLOCATE(zaxis_fida(nz_fida))
-         ALLOCATE(phiaxis_fida(nphi_fida))
-         ALLOCATE(energy_fida(nenergy_fida))
-         ALLOCATE(pitch_fida(npitch_fida))
+      ! ALLOCATE(raxis_fida(nr_fida))
+      ! ALLOCATE(zaxis_fida(nz_fida))
+      ! ALLOCATE(phiaxis_fida(nphi_fida))
+      ! ALLOCATE(energy_fida(nenergy_fida))
+      ! ALLOCATE(pitch_fida(npitch_fida))
          FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
          FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
          FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
