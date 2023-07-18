@@ -780,10 +780,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL close_hdf5(fid,ier)
          IF (.not. lfidasim2) THEN
             DEALLOCATE(dist5d_fida)
-            DEALLOCATE(pitch_fida)
-            DEALLOCATE(energy_fida)
          END IF
          DEALLOCATE(dist5d_temp)
+
 
        CASE('DISTRIBUTION_GC_MC')
        CASE('DISTRIBUTION_FO')
