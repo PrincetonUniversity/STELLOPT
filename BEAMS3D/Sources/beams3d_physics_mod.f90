@@ -378,6 +378,15 @@ CONTAINS
          speed = newspeed
 
          !------------------------------------------------------------
+         !  Velocity diffusion - TODO: integrate into heating calculation
+         !------------------------------------------------------------
+         speed_cube = (speed*speed*speed)
+         CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+         sigma = sqrt( ABS(2*e_charge*dt*(te_temp*speed_cube+ti_temp*vcrit_cube)*tau_spit_inv*inv_mymass/speed_cube) ) ! The standard deviation.
+         speed = speed+sigma*zeta
+
+
+         !------------------------------------------------------------
          !  Pitch Angle Scattering
          !------------------------------------------------------------
          speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
