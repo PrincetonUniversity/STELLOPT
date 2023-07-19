@@ -681,6 +681,10 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
        CASE('DISTRIBUTION_GC_F')
+
+         IF (lverb) THEN
+            WRITE(6, '(A)') '----- WRITING FIDASIM DISTRIBUTION -----'
+         END IF
          ! Do phase space change of coordinates
          !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
          IF (lfidasim2) THEN
