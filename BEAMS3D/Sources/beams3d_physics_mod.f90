@@ -190,6 +190,7 @@ CONTAINS
          zi2 = zi2+ni_in(i) *NI_AUX_Z(i)**2 * coulomb_log
       end do
       coulomb_loge = max(coulomb_loge,one)
+      coulomb_log = max(coulomb_log,one)
 
       zi2_ai=zi2_ai/(ne_in*coulomb_loge)
       zi2=zi2/(ne_in*coulomb_loge)
