@@ -1893,7 +1893,7 @@ CONTAINS
 
       !Begin Newton Method
       residual = 1.0
-      factor = 1.0
+      factor = 0.1
       IF (r_out<0) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75
 
       ! PHI does not change
@@ -1905,7 +1905,7 @@ CONTAINS
       u = MOD(u,pi2)
 
       x0 = s * COS(u)
-      y0 = s * SIN(U)
+      y0 = s * SIN(u)
 
       fnorm = x0*x0+y0*y0
       fnorm = MIN(1./fnorm,1E5)
@@ -1930,17 +1930,18 @@ CONTAINS
 
          x_term   = x0 - fvalx(1,1)
          y_term   = y0 - fvaly(1,1)
-
+         !WRITE(327,*) '----- ',x0,y0,r_out,z_out,hr(i), hri(i)
+         !WRITE(327,*) '----- ',s,u,fvalx(1,1), fvalx(1,2),fvalx(1,4),fvaly(1,1), fvaly(1,2),fvaly(1,4)
          detJ = fvalx(1,2) * fvaly(1,4) - fvaly(1,2) * fvalx(1,4)
-         detJ = SIGN(detJ,MAX(ABS(detJ),0.0001)) !Upper bound for step size as detJ enters in denominator
-         delR = -(-SIGN(detJ,x_term*fvaly(1,4)) + y_term*fvalx(1,4))/detJ
-         delZ = -( SIGN(detJ,x_term*fvaly(1,2))  - y_term*fvalx(1,2))/detJ
+         detJ = SIGN(MAX(ABS(detJ),0.0001),detJ) !Upper bound for step size as detJ enters in denominator
+         delR = -(-SIGN(x_term*fvaly(1,4),detJ) + y_term*fvalx(1,4))/detJ
+         delZ = -( SIGN(x_term*fvaly(1,2),detJ)  - y_term*fvalx(1,2))/detJ
 
          delR = MIN(MAX(delR,-hr(1)),hr(1))
          delZ = MIN(MAX(delZ,-hz(1)),hz(1))
 
-         residual = (x_term*x_term+y_term*y_term)*fnorm
-         !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual,tau,delR,delZ
+         residual = (x_term*x_term+y_term*y_term)!*fnorm
+         !WRITE(327,*) '----- ',x0,y0,fvalx(1,1),fvaly(1,1),residual,detJ,delR,delZ
 
          IF (residual < 0.01) THEN !"Damping" of oscillation
             delR = delR*0.5
@@ -1949,7 +1950,7 @@ CONTAINS
 
          r_out = MAX(MIN(r_out + delR*factor,raxis(nr)),raxis(1))
          z_out = MAX(MIN(z_out + delZ*factor,zaxis(nz)),zaxis(1))
-         !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual
+
          n=n+1
       END DO
 

@@ -15,7 +15,7 @@ SUBROUTINE beams3d_write(write_type)
 #endif
    USE beams3d_lines
    USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-      zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
+      zaxis, phiaxis, S_ARR, U_ARR, X_ARR, Y_ARR, POT_ARR, &
       ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
       plasma_mass, plasma_Zmean, &
       B_kick_min, B_kick_max, freq_kick, E_kick, NI
@@ -25,7 +25,7 @@ SUBROUTINE beams3d_write(write_type)
       HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
       HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
       charge, Zatom, mass, ldepo, lcollision, lfusion, lboxsim, &
-      leqdsk, eqdsk_string, lhint, lhitonly, lkick, NION
+      leqdsk, eqdsk_string, lhint, lhitonly, lkick, NION,pi2
    USE safe_open_mod, ONLY: safe_open
    USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
    USE mpi_params
@@ -35,12 +35,13 @@ SUBROUTINE beams3d_write(write_type)
 !-----------------------------------------------------------------------
    IMPLICIT NONE
    CHARACTER(*), INTENT(IN):: write_type
+   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:)
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-   INTEGER :: ier, iunit
+   INTEGER :: ier, iunit,i
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -114,6 +115,10 @@ SUBROUTINE beams3d_write(write_type)
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_ARR',ier)
          CALL write_var_hdf5(fid,'U_ARR',nr,nphi,nz,ier,DBLVAR=U_ARR,ATT='Equilibrium Poloidal Angle [rad]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'U_ARR',ier)
+         CALL write_var_hdf5(fid,'X_ARR',nr,nphi,nz,ier,DBLVAR=X_ARR,ATT='Cartesian S/U grid',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'X_ARR',ier)
+         CALL write_var_hdf5(fid,'Y_ARR',nr,nphi,nz,ier,DBLVAR=Y_ARR,ATT='Cartesian S/U grid',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Y_ARR',ier)
          CALL write_var_hdf5(fid,'POT_ARR',nr,nphi,nz,ier,DBLVAR=POT_ARR,ATT='Electrostatic Potential [V]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'POT_ARR',ier)
          IF (ALLOCATED(GFactor)) THEN
@@ -307,7 +312,7 @@ SUBROUTINE beams3d_write(write_type)
             ATT='Vperp Dist. Grid Points [0, vmax]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof5',ier)
          ALLOCATE(rtemp(ns_prof1))
-         FORALL(i = 1:ns_prof1) rtemp(i) = (DBLE(i)-0.5)/ns_prof1*rho_scale
+         FORALL(i = 1:ns_prof1) rtemp(i) = (DBLE(i)-0.5)/ns_prof1
          CALL write_var_hdf5(fid,'dist_rhoaxis',ns_prof1,ier,DBLVAR=rtemp,&
             ATT='Rhoaxis (radial coordinate) from S_ARR [-]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'rhoaxis',ier)
