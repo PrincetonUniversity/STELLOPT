@@ -767,7 +767,11 @@ CONTAINS
                   hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                   S4D(1,1,1,1),nr,nphi,nz)
                s_temp = fval(1)
-               IF (s_temp < one) EXIT
+               ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+               !    hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+               !    NE4D(1,1,1,1),nr,nphi,nz)
+               ! ne_temp = max(fval(1),zero)
+               IF (s_temp < one ) EXIT !.or. ne_temp > zero
             END IF
             IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN
                t = my_end+dt_local
@@ -825,6 +829,10 @@ CONTAINS
                   hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                   S4D(1,1,1,1),nr,nphi,nz)
                s_temp = fval(1)
+               ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+               !    hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+               !    NE4D(1,1,1,1),nr,nphi,nz)
+               ! ne_temp = max(fval(1),zero)
                IF (s_temp > one) EXIT INNER
             ELSE
                EXIT INNER
@@ -1924,9 +1932,9 @@ CONTAINS
          y_term   = y0 - fvaly(1,1)
 
          detJ = fvalx(1,2) * fvaly(1,4) - fvaly(1,2) * fvalx(1,4)
-         detJ = MAX(detJ,0.0001) !Upper bound for step size as detJ enters in denominator
-         delR = -(-x_term*fvaly(1,4) + y_term*fvalx(1,4))/detJ
-         delZ = -( x_term*fvaly(1,2)  - y_term*fvalx(1,2))/detJ
+         detJ = SIGN(detJ,MAX(ABS(detJ),0.0001)) !Upper bound for step size as detJ enters in denominator
+         delR = -(-SIGN(detJ,x_term*fvaly(1,4)) + y_term*fvalx(1,4))/detJ
+         delZ = -( SIGN(detJ,x_term*fvaly(1,2))  - y_term*fvalx(1,2))/detJ
 
          delR = MIN(MAX(delR,-hr(1)),hr(1))
          delZ = MIN(MAX(delZ,-hz(1)),hz(1))
