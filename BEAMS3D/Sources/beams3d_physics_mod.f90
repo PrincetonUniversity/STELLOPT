@@ -1893,7 +1893,7 @@ CONTAINS
 
       !Begin Newton Method
       residual = 1.0
-      factor = 0.1
+      factor = 1.0
       IF (r_out<0) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75
 
       ! PHI does not change
@@ -1916,10 +1916,12 @@ CONTAINS
       !  dF/dR  = -ds/dR*(u0-u(R,Z))-du/dR*(s0-s(R,Z))
       !  dF/dZ  = -ds/dZ*(u0-u(R,Z))-du/dZ*(s0-s(R,Z))
       DO WHILE (residual > 1.0E-9 .and. n<1000)
+
          i = MIN(MAX(COUNT(raxis < r_out),1),nr-1)
          k = MIN(MAX(COUNT(zaxis < z_out),1),nz-1)
          xparam = (r_out - raxis(i)) * hri(i)
          zparam = (z_out - zaxis(k)) * hzi(k)
+         !IF (n .eq. 1) WRITE(6,*) '----- ', i,j,k, r_out, phi_out, z_out, xparam, yparam, zparam
          ! Evaluate the Splines
          CALL R8HERM3FCN(ict,1,1,fvalx,i,j,k,xparam,yparam,zparam,&
             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -1930,19 +1932,21 @@ CONTAINS
 
          x_term   = x0 - fvalx(1,1)
          y_term   = y0 - fvaly(1,1)
-         !WRITE(327,*) '----- ',x0,y0,r_out,z_out,hr(i), hri(i)
+
          !WRITE(327,*) '----- ',s,u,fvalx(1,1), fvalx(1,2),fvalx(1,4),fvaly(1,1), fvaly(1,2),fvaly(1,4)
          detJ = fvalx(1,2) * fvaly(1,4) - fvaly(1,2) * fvalx(1,4)
-         detJ = SIGN(MAX(ABS(detJ),0.0001),detJ) !Upper bound for step size as detJ enters in denominator
-         delR = -(-SIGN(x_term*fvaly(1,4),detJ) + y_term*fvalx(1,4))/detJ
-         delZ = -( SIGN(x_term*fvaly(1,2),detJ)  - y_term*fvalx(1,2))/detJ
+         detJ = MAX(detJ,0.0001) !Upper bound for step size as detJ enters in denominator
+         delR = -(- x_term*fvaly(1,4) + y_term*fvalx(1,4))/detJ
+         delZ = -( x_term*fvaly(1,2)  - y_term*fvalx(1,2))/detJ
 
          delR = MIN(MAX(delR,-hr(1)),hr(1))
          delZ = MIN(MAX(delZ,-hz(1)),hz(1))
 
          residual = (x_term*x_term+y_term*y_term)!*fnorm
-         !WRITE(327,*) '----- ',x0,y0,fvalx(1,1),fvaly(1,1),residual,detJ,delR,delZ
-
+         ! WRITE(325,*) '----- ',s,u,residual,fvalx(1,1),fvalx(1,2),fvalx(1,3),fvalx(1,4)
+         ! WRITE(326,*) '----- ',s,u,residual,fvaly(1,1),fvaly(1,2),fvaly(1,3),fvaly(1,4)
+         ! WRITE(327,*) '----- ',s,u,residual,detJ,delR,delZ
+         ! WRITE(328,*) '----- ',s,u,i,j,k, r_out,phi_out,z_out
          IF (residual < 0.01) THEN !"Damping" of oscillation
             delR = delR*0.5
             delZ = delZ*0.5
@@ -1954,7 +1958,7 @@ CONTAINS
          n=n+1
       END DO
 
-      !        IF (n>=500) PRINT *,s,u,fnorm,residual
+      !IF (n==1000) WRITE(6,*) '----- ',x0,y0,fvalx(1,1),fvaly(1,1),residual,detJ,delR,delZ
 
 
       RETURN
