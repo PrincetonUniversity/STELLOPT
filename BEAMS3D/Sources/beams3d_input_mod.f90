@@ -22,7 +22,8 @@ MODULE beams3d_input_mod
       rho_fullorbit, &
       rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
       raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
+      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida,&
+      s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
    USE safe_open_mod, ONLY: safe_open
    USE mpi_params
    USE mpi_inc
@@ -79,7 +80,7 @@ MODULE beams3d_input_mod
       int_type, Adist_beams, Asize_beams, &
       Div_beams, E_beams, Dex_beams, &
       mass_beams, charge_beams, Zatom_beams, &
-      r_beams, z_beams, phi_beams, TE_AUX_S, &
+      r_beams, z_beams, phi_beams, s_max, TE_AUX_S, &
       TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
       TI_AUX_F, POT_AUX_S, POT_AUX_F, &
       NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
@@ -146,6 +147,12 @@ CONTAINS
       charge_beams = 0.0_rprec
       Zatom_beams = 1.0_rprec
       P_beams = 0.0_rprec
+      s_max = 1.0_rprec
+      s_max_te = 0.0_rprec
+      s_max_ti = 0.0_rprec
+      s_max_ne = 0.0_rprec
+      s_max_zeff = 0.0_rprec
+      s_max_pot = 0.0_rprec
       TE_AUX_S = -1
       TE_AUX_F = -1
       NE_AUX_S = -1
@@ -280,22 +287,27 @@ CONTAINS
       nte = 0
       DO WHILE ((TE_AUX_S(nte+1) >= 0.0).and.(nte<MAXPROFLEN))
          nte = nte + 1
+         s_max_te=TE_AUX_S(nte+1)
       END DO
       nne = 0
       DO WHILE ((NE_AUX_S(nne+1) >= 0.0).and.(nne<MAXPROFLEN))
          nne = nne + 1
+         s_max_ne=NE_AUX_S(nne+1)
       END DO
       nti = 0
       DO WHILE ((TI_AUX_S(nti+1) >= 0.0).and.(nti<MAXPROFLEN))
          nti = nti + 1
+         s_max_ti=TI_AUX_S(nti+1)
       END DO
       nzeff = 0
       DO WHILE ((ZEFF_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
          nzeff = nzeff + 1
+         s_max_zeff=ZEFF_AUX_S(nzeff+1)
       END DO
       npot = 0
       DO WHILE ((POT_AUX_S(npot+1) >= 0.0).and.(npot<MAXPROFLEN))
          npot = npot + 1
+         s_max_pot=POT_AUX_S(npot+1)
       END DO
 
       ! Handle multiple ion species
@@ -303,6 +315,7 @@ CONTAINS
          nzeff = 0
          DO WHILE ((NI_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
             nzeff = nzeff + 1
+            s_max_zeff=ZEFF_AUX_S(nzeff+1)
          END DO
          ! Now calc Zeff(1)
          DO i1 = 1, nzeff
