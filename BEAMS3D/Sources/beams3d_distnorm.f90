@@ -101,7 +101,7 @@ SUBROUTINE beams3d_distnorm
          0.5 * abs( (rt(3) - rt(2)) *(zt(4) - zt(2)) - (rt(4) - rt(2)) *(zt(3) - zt(2)))
 
       m = MIN(MAX(COUNT(phiaxis < p1),1),nphi-1)
-      WRITE(327,*) m,s1,s2,u1,u2,rt,zt,area
+      !WRITE(329,*) i,j,k,s1,s2,u1,u2,p1,rt,zt,area
 !         CALL FLUSH(327)
       dvol = area*sum(rt)*dp*0.25
       dist5d_prof(:,i,j,k,:,:) = dist5d_prof(:,i,j,k,:,:)/dvol

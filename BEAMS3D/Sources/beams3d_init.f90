@@ -637,6 +637,7 @@ SUBROUTINE beams3d_init
       WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',MINVAL(phiaxis),',',MAXVAL(phiaxis),'];  NPHI: ',nphi
       WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',MINVAL(zaxis),',',MAXVAL(zaxis),'];  NZ:   ',nz
       WRITE(6,'(A,I1)')               '   HERMITE FORM: ',1
+      WRITE(6,'(A,F8.5)') '   Min. of S_ARR: ', MINVAL(S4D(1,:,:,:))
       CALL FLUSH(6)
    END IF
 
