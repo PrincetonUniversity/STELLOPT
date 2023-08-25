@@ -22,7 +22,8 @@
                               rho_fullorbit, &
                               rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
                               raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-                              nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
+                              nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida, &
+                              dexionT, dexionD
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -160,6 +161,8 @@
       NI_AUX_F = 0
       NI_AUX_Z = 0
       NI_AUX_M = 0
+      dexionT = 1
+      dexionD = 2
       npoinc = 1
       follow_tol   = 1.0D-9
       vc_adapt_tol = 1.0D-5
@@ -271,8 +274,11 @@
          END IF
          IF (lfusion) THEN
             r_start_in = -1
-            nbeams = 4
-            IF (lfusion_alpha) nbeams = 1
+            nbeams = 0
+            IF (lfusion_alpha) nbeams = nbeams + 1
+            IF (lfusion_tritium) nbeams = nbeams + 1
+            IF (lfusion_proton) nbeams = nbeams + 1
+            IF (lfusion_He3) nbeams = nbeams + 1
          END IF
          nte = 0
          DO WHILE ((TE_AUX_S(nte+1) >= 0.0).and.(nte<MAXPROFLEN))
@@ -313,6 +319,13 @@
             END DO
             plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
             plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*plasma_mass/NI_AUX_M,DIM=1,MASK=(NI_AUX_M>1E-27))/(SUM(NI_AUX_F(:,1)*NI_AUX_Z))
+            ! Set indices for T and D
+            DO i1 = 1, NION
+               IF ((NI_AUX_Z(i1) == 1) .and. (NINT(NI_AUX_M(i1)*6.02214076208E+26) == 3)) dexionT = i1
+               IF ((NI_AUX_Z(i1) == 1) .and. (NINT(NI_AUX_M(i1)*6.02214076208E+26) == 2)) dexionD = i1
+            END DO
+            WRITE(6,*) ' Tritium index: ',dexionT
+            WRITE(6,*) ' Deuturium index: ',dexionD
          ELSEIF (lfusion) THEN ! Assume 50/50 D T
             nzeff=nne
             NI_AUX_S = NE_AUX_S
