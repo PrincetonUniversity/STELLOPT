@@ -272,6 +272,12 @@ CONTAINS
             case ("-fusion_tritium")
                 lfusion = .true.
                 lfusion_tritium = .true.
+            case ("-fusion_proton")
+                lfusion = .true.
+                lfusion_proton = .true.
+            case ("-fusion_he3")
+                lfusion = .true.
+                lfusion_He3 = .true.
             case ("-boxsim")
                 lboxsim = .true.
             case ("-help", "-h") ! Output Help message
@@ -300,9 +306,11 @@ CONTAINS
                 write(6, *) '     -collisions:     Force collision operator'
                 write(6, *) '     -rand:           Randomize particle processor'
                 write(6, *) '     -suzuki:         Force Suzuki NBI model'
-                write(6, *) '     -fusion:         Fusion Reaction Rates for birth'
-                write(6, *) '     -fusion_alpha:   Fusion Reaction Rates for birth (alphas only)'
-                write(6, *) '     -fusion_tritium: Fusion Reaction Rates for birth (tritium only)'
+                write(6, *) '     -fusion:         Thermal Fusion Births Rates (all)'
+                write(6, *) '     -fusion_alpha:   Thermal Fusion Births Rates (alphas only)'
+                write(6, *) '     -fusion_tritium: Thermal Fusion Births Rates  (tritium only)'
+                write(6, *) '     -fusion_proton:  Thermal Fusion Births Rates  (proton only)'
+                write(6, *) '     -fusion_he3:     Fusion Reaction Rates for birth (He3 only)'
                 write(6, *) '     -boxsim:         Inject charged particles for box modeling'
                 write(6, *) '     -noverb:         Supress all screen output'
                 write(6, *) '     -help:           Output help message'
