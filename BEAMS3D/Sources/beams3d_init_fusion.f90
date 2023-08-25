@@ -38,7 +38,7 @@
       REAL(rprec) :: maxrateDT, maxrateDDT, maxrateDDHe, &
                      dV, w_total, vpart, dr, dphi, &
                      dz, X1_rand, Y1_rand, Z1_rand, sval, sfactor, &
-                     rtemp, roffset, utemp, rerr, uerr
+                     rtemp, roffset, utemp, rerr, uerr, s_fullorbit
       REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), ALLOCATABLE, DIMENSION(:) :: X_rand, Y_rand, Z_rand, &
                                                 P_rand, R_axis, Z_axis
@@ -111,19 +111,53 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
-      ! need to break this up into multiple loops
+
+      ! Calc DT rate
+      IF (lfusion_alpha) THEN
+         DO s = mystart, myend
+            i = MOD(s-1,nr1)+1
+            j = MOD(s-1,nr1*nphi1)
+            j = FLOOR(REAL(j) / REAL(nr1))+1
+            k = CEILING(REAL(s) / REAL(nr1*nphi1))
+            q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
+            CALL beams3d_DTRATE(q,rateDT(i,j,k))
+            maxrateDT = MAX(rateDT(i,j,k),maxrateDT)
+         END DO
+      END IF
+
+      ! Calc DD -> T + p
+      IF (lfusion_tritium .or. lfusion_proton) THEN
+         DO s = mystart, myend
+            i = MOD(s-1,nr1)+1
+            j = MOD(s-1,nr1*nphi1)
+            j = FLOOR(REAL(j) / REAL(nr1))+1
+            k = CEILING(REAL(s) / REAL(nr1*nphi1))
+            q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
+            CALL beams3d_DDTRATE(q,rateDDT(i,j,k))
+            maxrateDDT = MAX(rateDDT(i,j,k),maxrateDDT)
+         END DO
+      END IF
+
+      ! Calc DD -> He3
+      IF (lfusion_He3) THEN
+         DO s = mystart, myend
+            i = MOD(s-1,nr1)+1
+            j = MOD(s-1,nr1*nphi1)
+            j = FLOOR(REAL(j) / REAL(nr1))+1
+            k = CEILING(REAL(s) / REAL(nr1*nphi1))
+            q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
+            CALL beams3d_DDHe3RATE(q,rateDDHe(i,j,k))
+            maxrateDDHe = MAX(rateDDHe(i,j,k),maxrateDDHe)
+         END DO
+      END IF
+
+      ! l3d array and volume normalization
       DO s = mystart, myend
          i = MOD(s-1,nr1)+1
          j = MOD(s-1,nr1*nphi1)
          j = FLOOR(REAL(j) / REAL(nr1))+1
          k = CEILING(REAL(s) / REAL(nr1*nphi1))
          q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
-         CALL beams3d_DTRATE(q,rateDT(i,j,k))
-         maxrateDT = MAX(rateDT(i,j,k),maxrateDT)
-         CALL beams3d_DDTRATE(q,rateDDT(i,j,k))
-         maxrateDDT = MAX(rateDDT(i,j,k),maxrateDDT)
-         CALL beams3d_DDHe3RATE(q,rateDDHe(i,j,k))
-         maxrateDDHe = MAX(rateDDHe(i,j,k),maxrateDDHe)
          CALL beams3d_SFLX(q,sval)
          IF (sval < sfactor) l3d(i,j,k) = .true.
          ! We really want the total number of particles in the box (dV=rdrdpdz)
@@ -132,6 +166,7 @@
          rateDDT(i,j,k) = rateDDT(i,j,k) * dV
          rateDDHe(i,j,k) = rateDDHe(i,j,k) * dV
       END DO
+
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,maxrateDT,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_LOCAL,ierr_mpi)
@@ -149,7 +184,6 @@
       END IF
 
       ! From this point forward we act like a NB calc in the initialization sense
-      ! Eventually we'll include DD-T and DD-He3 as BEAM(2 and (3))
       nbeams = 0
       IF (lfusion_alpha) nbeams = nbeams + 1
       IF (lfusion_tritium) nbeams = nbeams + 1
@@ -163,6 +197,9 @@
                   vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
                   lgc2fo_start(nparticles))
 
+      ! We set this true because we assume all particles generated are gyrocenters. Should a
+      ! particle have RHO > RHO_FO then we don't follow the GC and follow_fo takes care of
+      ! the GC2FO step.  Otherwise we follow GC like normal.
       lgc2fo_start(:) = .TRUE.
       vr_start=0; vphi_start=0; vz_start=0; i = 0
       IF (lfusion_alpha) THEN
@@ -376,13 +413,10 @@
       CALL mpidealloc(rateDDHe,win_rateDDHe)
 
 
-      ! Now we calcualte values over particles (share the work)
+      ! Now we need to calculate the magnetic moment as mu is perp energy
       CALL mpialloc(B_help, nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_help)
 
-      ! Initialize helpers
-      IF (mylocalid == mylocalmaster) THEN
-         B_help = 0
-      END IF
+      IF (mylocalid == mylocalmaster) B_help = 0
       
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nparticles, mystart, myend)
@@ -396,7 +430,8 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
-
+      
+      ! Now calculate mu
       mu_start = (mu_start - 0.5*mass*vll_start*vll_start) / B_help
 
       CALL mpidealloc(B_help,win_B_help)
