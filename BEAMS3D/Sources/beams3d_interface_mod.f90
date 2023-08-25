@@ -154,7 +154,10 @@ CONTAINS
          lrandomize = .false.
          lsuzuki = .false.
          lfusion = .false.
-         lfusion_alpha = .false.
+         lfusion_alpha   = .false.
+         lfusion_tritium = .false.
+         lfusion_proton  = .false.
+         lfusion_He3     = .false.
          lboxsim = .false.
          lfieldlines = .false.
          id_string = ''
@@ -259,42 +262,50 @@ CONTAINS
                 lsuzuki = .true.
             case ("-fusion")
                 lfusion = .true.
+                lfusion_alpha = .true.
+                lfusion_tritium = .true.
+                lfusion_proton = .true.
+                lfusion_He3 = .true.
             case ("-fusion_alpha")
                 lfusion = .true.
                 lfusion_alpha = .true.
+            case ("-fusion_tritium")
+                lfusion = .true.
+                lfusion_tritium = .true.
             case ("-boxsim")
                 lboxsim = .true.
             case ("-help", "-h") ! Output Help message
                 write(6, *) ' Beam MC Code'
                 write(6, *) ' Usage: xbeams3d <options>'
                 write(6, *) '    <options>'
-                write(6, *) '     -vmec ext:     VMEC input/wout extension'
-                write(6, *) '     -hint ext:     HINT input/wout extension'
-                write(6, *) '     -eqdsk in gf   EQDSK input file and gfile'
+                write(6, *) '     -vmec ext:       VMEC input/wout extension'
+                write(6, *) '     -hint ext:       HINT input/wout extension'
+                write(6, *) '     -eqdsk in gf     EQDSK input file and gfile'
                 write(6, *) '     -fieldlines ext a:   FIELDLINES input/HDF5 extension and Aminor normalization'
                 !write(6,*)'     -pies ext:   PIES input extension (must have &INDATA namelist)'
                 !write(6,*)'     -spec ext:     SPEC input extension (must have &INDATA namelist)'
-                write(6, *) '     -vessel file:  Vessel File (for limiting)'
-                write(6, *) '     -mgrid file:   MAKEGRID File (for vacuum)'
-                write(6, *) '     -coil file:    Coils. File (for vacuum)'
-                write(6, *) '     -restart ext:  BEAMS3D HDF5 extension for starting particles'
-                write(6, *) '     -beamlet ext:  Beamlet file for beam geometry'
-                write(6, *) '     -beam_simple:  Monoenergetic BEAMS'
-                write(6, *) '     -ascot5:       Output data in ASCOT5 gyro-center format'
-                write(6, *) '     -ascot5_fl:    Output data in ASCOT5 fieldline format'
-                write(6, *) '     -ascot4:       Output data in ASCOT4 format'
-                write(6, *) '     -raw:          Treat coil currents as raw (scale factors)'
-                write(6, *) '     -vac:          Only vacuum field'
-                write(6, *) '     -plasma:       Only plasma field'
-                write(6, *) '     -depo:         Only Deposition'
-                write(6, *) '     -collisions:   Force collision operator'
-                write(6, *) '     -rand:         Randomize particle processor'
-                write(6, *) '     -suzuki:       Force Suzuki NBI model'
-                write(6, *) '     -fusion:       Fusion Reaction Rates for birth'
-                write(6, *) '     -fusion_alpha: Fusion Reaction Rates for birth (alphas only)'
-                write(6, *) '     -boxsim:       Inject charged particles for box modeling'
-                write(6, *) '     -noverb:       Supress all screen output'
-                write(6, *) '     -help:         Output help message'
+                write(6, *) '     -vessel file:    Vessel File (for limiting)'
+                write(6, *) '     -mgrid file:     MAKEGRID File (for vacuum)'
+                write(6, *) '     -coil file:      Coils. File (for vacuum)'
+                write(6, *) '     -restart ext:    BEAMS3D HDF5 extension for starting particles'
+                write(6, *) '     -beamlet ext:    Beamlet file for beam geometry'
+                write(6, *) '     -beam_simple:    Monoenergetic BEAMS'
+                write(6, *) '     -ascot5:         Output data in ASCOT5 gyro-center format'
+                write(6, *) '     -ascot5_fl:      Output data in ASCOT5 fieldline format'
+                write(6, *) '     -ascot4:         Output data in ASCOT4 format'
+                write(6, *) '     -raw:            Treat coil currents as raw (scale factors)'
+                write(6, *) '     -vac:            Only vacuum field'
+                write(6, *) '     -plasma:         Only plasma field'
+                write(6, *) '     -depo:           Only Deposition'
+                write(6, *) '     -collisions:     Force collision operator'
+                write(6, *) '     -rand:           Randomize particle processor'
+                write(6, *) '     -suzuki:         Force Suzuki NBI model'
+                write(6, *) '     -fusion:         Fusion Reaction Rates for birth'
+                write(6, *) '     -fusion_alpha:   Fusion Reaction Rates for birth (alphas only)'
+                write(6, *) '     -fusion_tritium: Fusion Reaction Rates for birth (tritium only)'
+                write(6, *) '     -boxsim:         Inject charged particles for box modeling'
+                write(6, *) '     -noverb:         Supress all screen output'
+                write(6, *) '     -help:           Output help message'
             end select
             i = i + 1
          END DO
@@ -373,6 +384,12 @@ CONTAINS
       CALL MPI_BCAST(lfusion,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lfusion_alpha,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+      CALL MPI_BCAST(lfusion_tritium,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+      CALL MPI_BCAST(lfusion_proton,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+      CALL MPI_BCAST(lfusion_He3,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(limas,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
