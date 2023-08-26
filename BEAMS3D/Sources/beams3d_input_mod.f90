@@ -324,8 +324,8 @@
                IF ((NI_AUX_Z(i1) == 1) .and. (NINT(NI_AUX_M(i1)*6.02214076208E+26) == 3)) dexionT = i1
                IF ((NI_AUX_Z(i1) == 1) .and. (NINT(NI_AUX_M(i1)*6.02214076208E+26) == 2)) dexionD = i1
             END DO
-            WRITE(6,*) ' Tritium index: ',dexionT
-            WRITE(6,*) ' Deuturium index: ',dexionD
+            !WRITE(6,*) ' Tritium index: ',dexionT
+            !WRITE(6,*) ' Deuturium index: ',dexionD
          ELSEIF (lfusion) THEN ! Assume 50/50 D T
             nzeff=nne
             NI_AUX_S = NE_AUX_S
