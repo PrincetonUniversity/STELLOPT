@@ -42,8 +42,8 @@
 !-----------------------------------------------------------------------
       
       ! Recalculate U for all particles
-      mystart = LBOUND(R_lines,2)
-      DO myline = mystart,myend
+      !mystart = LBOUND(R_lines,2)
+      DO myline = mystart_save, myend_save
          DO mystep = 0, npoinc
             s1 = S_lines(mystep,myline)
             r1 = R_lines(mystep,myline)
@@ -68,9 +68,6 @@
          END DO
       END DO
       WHERE ( R_lines < 0 ) U_lines = 0
-
-      ! Wait to deallocate till everyone is done with the memory
-      CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
 
       RETURN
 !-----------------------------------------------------------------------

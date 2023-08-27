@@ -18,7 +18,8 @@
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
                                  ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
                                  plasma_mass, plasma_Zmean, &
-                                 B_kick_min, B_kick_max, freq_kick, E_kick, NI
+                                 B_kick_min, B_kick_max, freq_kick, &
+                                 E_kick, NI, beam_density
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -209,6 +210,11 @@
                   CALL write_var_hdf5(fid,'wall_shine',nbeams,nface,ier,DBLVAR=wall_shine,&
                                    ATT='Neutral Beam Shine-through [W/m^2]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_shine',ier)
+               END IF
+               IF (ASSOCIATED(BEAM_DENSITY)) THEN
+                  CALL write_var_hdf5(fid,'beam_density',nbeams,nr,nphi,nz,ier,DBLVAR=beam_density,&
+                                   ATT='Neutral Beam Density [1/m^3]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'beam_density',ier)
                END IF
             CASE('TRAJECTORY_FULL')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
