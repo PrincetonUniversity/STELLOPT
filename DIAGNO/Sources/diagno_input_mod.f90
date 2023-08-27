@@ -56,6 +56,7 @@
       CHARACTER(*), INTENT(in) :: filename
       INTEGER, INTENT(out) :: istat
       INTEGER :: i, iunit
+      CHARACTER(LEN=1000) :: line
       ! Initializations
       nu     = 100
       nv     = 100
@@ -102,6 +103,7 @@
             WRITE(6,*) '   -Reading DIAGNO_IN namelist from diagno.control file'
          END IF
          iunit = 25
+         istat = 0
          CALL safe_open(iunit,istat,'diagno.control','old','formatted')
          IF (istat /= 0) THEN
             WRITE(6,*) '   -Could not open diagno.control file'
@@ -109,11 +111,15 @@
             CALL write_diagno_input(6,istat)
             stop
          END IF
+         istat = 0
          READ(iunit,NML=diagno_in,IOSTAT=istat)
          IF (istat /= 0) THEN
             WRITE(6,*) '   -Could not read DIAGNO_IN from diagno.control file'
             WRITE(6,*) '   -Dumping DIAGNO_IN to screen'
             CALL write_diagno_input(6,istat)
+            backspace(iunit)
+            read(iunit,fmt='(A)') line
+            write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
             stop
          END IF
       END IF
