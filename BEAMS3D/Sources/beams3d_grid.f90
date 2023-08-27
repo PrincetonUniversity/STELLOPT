@@ -63,7 +63,7 @@
       REAL(rprec), POINTER :: B_R(:,:,:),B_PHI(:,:,:), B_Z(:,:,:), MODB(:,:,:),&
                                   TE(:,:,:), NE(:,:,:), TI(:,:,:), ZEFF_ARR(:,:,:), &
                                   S_ARR(:,:,:), U_ARR(:,:,:), X_ARR(:,:,:), Y_ARR(:,:,:), POT_ARR(:,:,:)
-      REAL(rprec), POINTER :: NI(:,:,:,:), BEAM_DENSE(:,:,:,:)
+      REAL(rprec), POINTER :: NI(:,:,:,:), BEAM_DENSITY(:,:,:,:)
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
                                                   NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET
       REAL(rprec), DIMENSION(:,:,:,:), POINTER :: BR4D, BPHI4D, BZ4D, MODB4D, &
