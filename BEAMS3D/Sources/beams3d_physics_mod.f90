@@ -73,14 +73,18 @@ MODULE beams3d_physics_mod
       !     Description:   Coulomb log as defined in NRL 2019
       !-----------------------------------------------------------------
    FUNCTION coulomb_log_nrl19(ne_in,te_in,vbeta_in,Zeff_in)  result(slow_par)
-         !--------------------------------------------------------------
-         !     Input Parameters
-         !          ne_in        Electron Density [m^-3]
-         !          te_in        Electron Temperature [eV]
-         !          vbeta_in     Normalized Particle Velocity [c]
-         !          Zeff_in      Plasma effective charge [arb]
-         !--------------------------------------------------------------
-         IMPLICIT NONE
+      !--------------------------------------------------------------
+      !     Input Parameters
+      !          ne_in        Electron Density [m^-3]
+      !          te_in        Electron Temperature [eV]
+      !          vbeta_in     Normalized Particle Velocity [c]
+      !          Zeff_in      Plasma effective charge [arb]
+      !     Output Parameters
+      !          slow_par(1)  Critical velocity vcrit [m/s]    
+      !          slow_par(2)  Spitzer time tau_spit [s]    
+      !          slow_par(3)  Pitch angle scattering factor [arb]  
+      !--------------------------------------------------------------
+      IMPLICIT NONE
       DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
       DOUBLE PRECISION :: ne_cm, coulomb_log
@@ -101,16 +105,20 @@ MODULE beams3d_physics_mod
       !     Description:   Coulomb log as defined in LOCUST code
       !-----------------------------------------------------------------
    FUNCTION coulomb_log_locust(ne_in,te_in,vbeta_in,Zeff_in,modb_in,speed_in)  result(slow_par)
-         !--------------------------------------------------------------
-         !     Input Parameters
-         !          ne_in        Electron Density [m^-3]
-         !          te_in        Electron Temperature [eV]
-         !          vbeta_in     Normalized Particle Velocity [c]
-         !          Zeff_in      Plasma effective charge [arb]
-         !          modb_in      Magnetic Field strenght [T]
-         !          speed_in     Particle Speed [m/s]
-         !--------------------------------------------------------------
-         IMPLICIT NONE
+      !--------------------------------------------------------------
+      !     Input Parameters
+      !          ne_in        Electron Density [m^-3]
+      !          te_in        Electron Temperature [eV]
+      !          vbeta_in     Normalized Particle Velocity [c]
+      !          Zeff_in      Plasma effective charge [arb]
+      !          modb_in      Magnetic Field strength [T]
+      !          speed_in     Particle Speed [m/s]
+      !     Output Parameters
+      !          slow_par(1)  Critical velocity vcrit [m/s]    
+      !          slow_par(2)  Spitzer time tau_spit [s]    
+      !          slow_par(3)  Pitch angle scattering factor [arb]  
+      !--------------------------------------------------------------
+      IMPLICIT NONE
       DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in, modb_in, speed_in
       DOUBLE PRECISION :: omega_p2, omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin, coulomb_log
@@ -144,11 +152,15 @@ MODULE beams3d_physics_mod
          !     Input Parameters
          !          ne_in        Electron Density [m^-3]
       !          ni_in        Ion Densities [m^-3]
-         !          te_in        Electron Temperature [eV]
-         !          ti_in        Electron Temperature [eV]
-         !          Zeff_in      Plasma effective charge [arb]
-         !--------------------------------------------------------------
-         IMPLICIT NONE
+      !          te_in        Electron Temperature [eV]
+      !          ti_in        Electron Temperature [eV]
+      !          Zeff_in      Plasma effective charge [arb]
+      !     Output Parameters
+      !          slow_par(1)  Critical velocity vcrit [m/s]    
+      !          slow_par(2)  Spitzer time tau_spit [s]    
+      !          slow_par(3)  Pitch angle scattering factor [arb]  
+      !--------------------------------------------------------------
+      IMPLICIT NONE
       DOUBLE PRECISION :: slow_par(3)
       DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, ti_in, ni_in(NION),vbeta_in, Zeff_in, speed_in,modb
          INTEGER :: i
