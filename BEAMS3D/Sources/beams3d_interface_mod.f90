@@ -309,7 +309,7 @@ CONTAINS
          DEALLOCATE(args)
 
          ! Handle particle restarting
-         IF (lrestart_particles .or. lrestart_grid) THEN
+         IF (lrestart_particles) THEN
             ldepo = .false.
             !lbbnbi = .false.
             !lbeam = .false.
