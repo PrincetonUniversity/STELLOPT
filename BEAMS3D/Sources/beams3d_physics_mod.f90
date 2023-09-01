@@ -336,9 +336,9 @@ CONTAINS
          !-----------------------------------------------------------
          IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
 
-            !slow_par = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+            slow_par = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
             !slow_par = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-            slow_par = coulomb_log_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+            !slow_par = coulomb_log_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
 
             vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
             tau_spit_inv = one/slow_par(2)
