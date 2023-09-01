@@ -79,6 +79,10 @@ CONTAINS
       !          te_in        Electron Temperature [eV]
       !          vbeta_in     Normalized Particle Velocity [c]
       !          Zeff_in      Plasma effective charge [arb]
+      !     Output Parameters
+      !          slow_par(1)  Critical velocity vcrit [m/s]    
+      !          slow_par(2)  Spitzer time tau_spit [s]    
+      !          slow_par(3)  Pitch angle scattering factor [arb]  
       !--------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION :: slow_par(3)
@@ -107,8 +111,12 @@ CONTAINS
       !          te_in        Electron Temperature [eV]
       !          vbeta_in     Normalized Particle Velocity [c]
       !          Zeff_in      Plasma effective charge [arb]
-      !          modb_in      Magnetic Field strenght [T]
+      !          modb_in      Magnetic Field strength [T]
       !          speed_in     Particle Speed [m/s]
+      !     Output Parameters
+      !          slow_par(1)  Critical velocity vcrit [m/s]    
+      !          slow_par(2)  Spitzer time tau_spit [s]    
+      !          slow_par(3)  Pitch angle scattering factor [arb]  
       !--------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION :: slow_par(3)
@@ -147,6 +155,10 @@ CONTAINS
       !          te_in        Electron Temperature [eV]
       !          ti_in        Electron Temperature [eV]
       !          Zeff_in      Plasma effective charge [arb]
+      !     Output Parameters
+      !          slow_par(1)  Critical velocity vcrit [m/s]    
+      !          slow_par(2)  Spitzer time tau_spit [s]    
+      !          slow_par(3)  Pitch angle scattering factor [arb]  
       !--------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION :: slow_par(3)
