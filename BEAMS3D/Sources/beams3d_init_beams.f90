@@ -32,7 +32,7 @@
 !     Begin Subroutine
 !-----------------------------------------------------------------------
 
-      CALL init_random_seed
+      CALL init_random_seed(nseed)
       IF (lverb) THEN
          WRITE(6, '(A)') '----- INITIALIZING BEAMS -----'
          WRITE(6, '(A,I4)') '      nbeams: ', nbeams

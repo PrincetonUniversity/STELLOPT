@@ -136,7 +136,7 @@ MODULE beams3d_runtime
                lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim, &
                lboxsim, limas, lfieldlines
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
-               ndt, ndt_max, duplicate_factor
+               ndt, ndt_max, duplicate_factor,nseed
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &

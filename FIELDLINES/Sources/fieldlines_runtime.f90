@@ -129,7 +129,7 @@
                          lerror_field, lwall_trans, ledge_start, lnescoil,&
                          lmodb, lfield_start, lhint, leqdsk, lpres
       INTEGER         :: nextcur, npoinc, nruntype, num_hcp, &
-                         nprocs_fieldlines, line_select, ldex_default
+                         nprocs_fieldlines, line_select, ldex_default,nseed
       REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc, &
                          iota0
       REAL(rprec), DIMENSION(20)           :: errorfield_amp, errorfield_phase

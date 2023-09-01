@@ -282,7 +282,7 @@
 
       ! Handle mu
       IF (lmu) THEN
-         CALL init_random_seed()
+         CALL init_random_seed(nseed)
          CALL mpialloc(MU3D, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU)
          CALL mpialloc(MU4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU4D)
          IF (myid_sharmem == master) THEN

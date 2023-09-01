@@ -99,7 +99,8 @@
                                zmax_fida,phimin_fida, phimax_fida, &
                                raxis_fida, zaxis_fida, phiaxis_fida, &
                                nr_fida, nphi_fida, nz_fida, nenergy_fida, &
-                               npitch_fida, energy_fida, pitch_fida, t_fida
+                               npitch_fida, energy_fida, pitch_fida, t_fida, &
+                               nseed
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -110,6 +111,9 @@
 
       SUBROUTINE init_beams3d_input
       IMPLICIT NONE
+      ! RNG Seed default
+      nseed=-1
+
       nr     = 101
       nphi   = 360
       nz     = 101

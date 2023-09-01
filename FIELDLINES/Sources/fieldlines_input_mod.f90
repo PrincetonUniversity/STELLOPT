@@ -65,7 +65,7 @@
                                   npoinc, dphi, follow_tol,&
                                   vc_adapt_tol, int_type, &
                                   r_hc, phi_hc, z_hc, num_hcp, delta_hc,&
-                                  errorfield_amp,errorfield_phase
+                                  errorfield_amp,errorfield_phase,nseed
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -82,6 +82,7 @@
       CHARACTER(LEN=1000) :: line
       ! Initializations
       local_master = 0
+      nseed=-1
       nr     = 101
       nphi   = 360
       nz     = 101

@@ -10,7 +10,7 @@
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
-      USE stel_kinds, ONLY: rprec
+      USE stel_kinds, ONLY: rprec 
       USE beams3d_runtime
       USE beams3d_lines, ONLY: nparticles, partvmax
       USE beams3d_grid, ONLY: X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
@@ -40,7 +40,7 @@
 !     Begin Subroutine
 !-----------------------------------------------------------------------
 
-      CALL init_random_seed
+      CALL init_random_seed(nseed)
 
       IF (myworkid == master) THEN
          CALL H5open_f(ier)

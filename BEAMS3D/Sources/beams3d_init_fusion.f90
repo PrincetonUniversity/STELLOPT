@@ -78,7 +78,7 @@
 #endif
       mylocalmaster = master
 
-      CALL init_random_seed
+      CALL init_random_seed(nseed)
       IF (lverb) THEN
          WRITE(6, '(A)') '----- INITIALIZING FUSION REACTIONS -----'
          WRITE(6, '(A,I6)') '      nparticles_start: ', nparticles_start
