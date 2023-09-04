@@ -118,51 +118,53 @@
       END IF
 
       ! These diagnostics need Vp to be defined
-      IF ((.not.ldepo .or. lrestart_grid) .and. .not.lboxsim .and. myworkid == master) THEN
-         ! Allocate the parallel and perpendicular velcoity axis
-         nhalf = ns_prof4/2
-         ALLOCATE(dense_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1))
-         ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
-         ALLOCATE(help3d(nbeams,ns_prof1,ns_prof4))
-         FORALL(k = 1:ns_prof4) vllaxis(k) = partvmax*REAL(k-nhalf-0.5)/REAL(nhalf)
-         FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*REAL(k-0.5)/REAL(ns_prof5)
-         ! The DIST5D distribution is not normalized to anything at this point.
-         !    We calculate a radial profile of FI density.
-         help3d = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=4),DIM=3)
-         dense_prof = SUM(help3d,DIM=3)
-         ! Now calculate J_fast
-         j_prof = 0
-         DO k = 1, ns_prof4
-            j_prof = j_prof + help3d(:,:,k)*vllaxis(k)
-         END DO
-         DO k = 1, ns_prof1
-            j_prof(1:nbeams,k) = j_prof(1:nbeams,k)*charge_beams(1:nbeams) ! [A*m]
-         END DO
-         DEALLOCATE(help3d)
-         !dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
-         ! We not apply the volume element for the radial profiles [m^-3]
-         DO k = 1, ns_prof1
-            s1 = REAL(k-0.5)/REAL(ns_prof1) ! Rho
-            s2 = s1*s1
-            CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
-            vp_temp = vp_temp*2*s1*(1./REAL(ns_prof1))
-            epower_prof(:,k) = epower_prof(:,k)/vp_temp
-            ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
-            ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
-            dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
-            j_prof(:,k)      =      j_prof(:,k)/vp_temp ! [A/m^2]
-         END DO
-         ! Normalize to velocity space volume element
-         ! dvll = partvmax*2/ns_prof4 ! dVll
-         ! dvperp = pi2*partvmax/ns_prof5 ! dVperp
-         ! DO k = 1, ns_prof5 ! VPERP
-         !    !s2 = REAL(k-0.5)/REAL(ns_prof5) ! Vperp_frac
-         !    vp_temp = vperpaxis(k)*dvll*dvperp
-         !    dist5d_prof(:,:,:,:,:,k) = dist5d_prof(:,:,:,:,:,k)/vp_temp
-         ! END DO
-         ! DEALLOCATIONS
-         DEALLOCATE(vperpaxis,vllaxis)
+      IF ((.not.ldepo .or. lrestart_grid) .and. .not.lboxsim) THEN
          CALL beams3d_distnorm
+         IF (myworkid == master) THEN    
+            ! Allocate the parallel and perpendicular velcoity axis
+            nhalf = ns_prof4/2
+            ALLOCATE(dense_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1))
+            ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
+            ALLOCATE(help3d(nbeams,ns_prof1,ns_prof4))
+            FORALL(k = 1:ns_prof4) vllaxis(k) = partvmax*REAL(k-nhalf-0.5)/REAL(nhalf)
+            FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*REAL(k-0.5)/REAL(ns_prof5)
+            ! The DIST5D distribution is not normalized to anything at this point.
+            !    We calculate a radial profile of FI density.
+            help3d = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=4),DIM=3)
+            dense_prof = SUM(help3d,DIM=3)
+            ! Now calculate J_fast
+            j_prof = 0
+            DO k = 1, ns_prof4
+               j_prof = j_prof + help3d(:,:,k)*vllaxis(k)
+            END DO
+            DO k = 1, ns_prof1
+               j_prof(1:nbeams,k) = j_prof(1:nbeams,k)*charge_beams(1:nbeams) ! [A*m]
+            END DO
+            DEALLOCATE(help3d)
+            !dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
+            ! We not apply the volume element for the radial profiles [m^-3]
+            DO k = 1, ns_prof1
+               s1 = REAL(k-0.5)/REAL(ns_prof1) ! Rho
+               s2 = s1*s1
+               CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
+               vp_temp = vp_temp*2*s1*(1./REAL(ns_prof1))
+               epower_prof(:,k) = epower_prof(:,k)/vp_temp
+               ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
+               ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
+               dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
+               j_prof(:,k)      =      j_prof(:,k)/vp_temp ! [A/m^2]
+            END DO
+            ! Normalize to velocity space volume element
+            ! dvll = partvmax*2/ns_prof4 ! dVll
+            ! dvperp = pi2*partvmax/ns_prof5 ! dVperp
+            ! DO k = 1, ns_prof5 ! VPERP
+            !    !s2 = REAL(k-0.5)/REAL(ns_prof5) ! Vperp_frac
+            !    vp_temp = vperpaxis(k)*dvll*dvperp
+            !    dist5d_prof(:,:,:,:,:,k) = dist5d_prof(:,:,:,:,:,k)/vp_temp
+            ! END DO
+            ! DEALLOCATIONS
+            DEALLOCATE(vperpaxis,vllaxis)
+         END IF
       END IF
 
       CALL beams3d_write('DIAG')

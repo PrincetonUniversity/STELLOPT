@@ -11,7 +11,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime, ONLY: lfidasim, lfidasim2, nbeams, pi2, &
-                              EZSPLINE_ERR
+                              EZSPLINE_ERR,lverb
       USE beams3d_grid, ONLY: raxis, phiaxis, zaxis, X4D, Y4D, S4D, &
                               nr, nphi, nz
       USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
@@ -22,6 +22,7 @@
       USE EZspline
       USE mpi_params !Used for call to write_fidasim
       USE mpi_inc
+      USE mpi_sharmem
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
@@ -39,7 +40,13 @@
 !        drho,du,dp    Delta coordiantes
 !        xt,yt,zt    Helper for xyz coordiantes of voxel
 !-----------------------------------------------------------------------
-      INTEGER ::  s, i, j, k, nvol, m
+      INTEGER ::  s, i, j, k, nvol, m,mystart, myend
+#if defined(MPI_OPT)
+      INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
+      INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
+      INTEGER :: numprocs_local, mylocalid, mylocalmaster
+      INTEGER :: MPI_COMM_LOCAL
+#endif
       INTEGER, DIMENSION(2) :: minln
       REAL(rprec) :: rho1, rho2, s1, s2, u1, u2, p1, ds, du, dp, area, dvol
       REAL(rprec), DIMENSION(4) :: rt,zt,pt
@@ -60,8 +67,21 @@
       zt = 0
       pt = 0
 
-      ! Iterate over volumes
-      DO s = 1, nvol
+      IF (lverb) THEN
+         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Distribution Volume calculation [',0,']%'
+         CALL FLUSH(6)
+      END IF
+#if defined(MPI_OPT)
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+#endif      
+            ! Break up the Work
+      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nvol, mystart, myend)
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+#endif
+      DO s = mystart, myend
          ! Distribution grid index
          i = MOD(s-1,(ns_prof1))+1
          j = MOD(s-1,(ns_prof1)*(ns_prof2))
@@ -97,30 +117,39 @@
             area = 0.5 * abs( (rt(2) - rt(1)) *(zt(3) - zt(1)) - (rt(3) - rt(1)) *(zt(2) - zt(1))) + &
                   0.5 * abs( (rt(3) - rt(2)) *(zt(4) - zt(2)) - (rt(4) - rt(2)) *(zt(3) - zt(2)))
 
-!         m = MIN(MAX(COUNT(phiaxis < p1),1),nphi-1)
-!         WRITE(327,*) m,s1,s2,u1,u2,rt,zt,area
-!         CALL FLUSH(327)
+         ! m = MIN(MAX(COUNT(phiaxis < p1),1),nphi-1)
+         ! WRITE(327,*) m,s1,s2,u1,u2,rt,zt,area
+         ! CALL FLUSH(327)
          dvol = area*sum(rt)*dp*0.25
          dist5d_prof(:,i,j,k,:,:) = dist5d_prof(:,i,j,k,:,:)/dvol
-!        WRITE(328,*) i,j,k,dvol,rt,zt
-!         CALL FLUSH(328)
+      !  WRITE(328,*) i,j,k,dvol,rt,zt
+      !   CALL FLUSH(328)
+         IF (MOD(s,nr) == 0) THEN
+            IF (lverb) THEN
+               CALL backspace_out(6,6)
+               WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
+               CALL FLUSH(6)
+            END IF
+         END IF         
       END DO
 
-      IF (lfidasim) THEN
-            CALL beams3d_write_fidasim('DENF') !write density before velocity space normalization
+      IF (myworkid == master) THEN
+         IF (lfidasim) THEN
+               CALL beams3d_write_fidasim('DENF') !write density before velocity space normalization
+         END IF
+
+         ! Do phase space volume elements 
+         ds = 2.0*partvmax/ns_prof4
+         du =   partvmax/ns_prof5
+         dvol = pi2*ds*du
+         nvol = ns_prof4*ns_prof5
+         DO j = 1, ns_prof5
+         u1 = REAL(j-0.5)*du
+         dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
+         !  WRITE(329,*) j,dvol*u1
+         !  CALL FLUSH(329)
+         END DO
       END IF
-
-      ! Do phase space volume elements 
-      ds = 2.0*partvmax/ns_prof4
-      du =   partvmax/ns_prof5
-      dvol = pi2*ds*du
-      nvol = ns_prof4*ns_prof5
-      DO j = 1, ns_prof5
-        u1 = REAL(j-0.5)*du
-        dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
-!        WRITE(329,*) j,dvol*u1
-!        CALL FLUSH(329)
-      END DO
 
       
 
