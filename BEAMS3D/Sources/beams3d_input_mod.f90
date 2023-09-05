@@ -301,7 +301,6 @@ CONTAINS
       END DO
       nzeff = 0
       DO WHILE ((ZEFF_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
-         s_max_zeff=ZEFF_AUX_S(nzeff+1)
          nzeff = nzeff + 1
       END DO
       npot = 0
@@ -314,7 +313,7 @@ CONTAINS
       IF (ANY(NI_AUX_S >0)) THEN
          nzeff = 0
          DO WHILE ((NI_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
-            s_max_zeff=NI_AUX_S(nzeff+1)
+            !s_max_zeff=NI_AUX_S(nzeff+1)
             nzeff = nzeff + 1
          END DO
          ! Now calc Zeff(1)
@@ -370,6 +369,7 @@ CONTAINS
          NI_AUX_Z(1) = 1
          NI_AUX_M(1) = plasma_mass
       END IF
+      s_max_zeff=ZEFF_AUX_S(nzeff)
 
       nparticles = 0
       DO WHILE ((r_start_in(nparticles+1) >= 0.0).and.(nparticles<MAXPARTICLES))
