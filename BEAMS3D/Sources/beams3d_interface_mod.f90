@@ -173,154 +173,132 @@ CONTAINS
          DO WHILE (i <= numargs)
             call GETCARG(i, args(i), numargs)
             select case (args(i))
-             case ("-noverb") ! No Verbose Output
-               lverb = .false.
-             case ("-vac") ! Vacuum Fields Only
-               lvac = .true.
-             case ("-ascot","-ascot5")
-               lascot = .true.
-             case ("-ascot_fl","-ascot5_fl")
-               lascot = .true.
-               lascotfl = .true.
-             case ("-ascot4")
-               lascot4 = .true.
-             case ("-fidasim")
-               lfidasim = .true.
-             case ("-fidasim2")
-               lfidasim2 = .true.
-               lfidasim=.true.
-             case ("-vmec")
-               i = i + 1
-               lvmec = .true.
-               CALL GETCARG(i, id_string, numargs)
-             case ("-pies")
-               i = i + 1
-               lpies = .true.
-               CALL GETCARG(i, id_string, numargs)
-             case ("-spec")
-               i = i + 1
-               lspec = .true.
-               CALL GETCARG(i, id_string, numargs)
-             case ("-hint")
-               i = i + 1
-               lhint = .true.
-               CALL GETCARG(i, id_string, numargs)
-             case ("-fieldlines")
-               i = i + 1
-               lfieldlines = .true.
-               CALL GETCARG(i, id_string, numargs)
-               i = i + 1
-               CALL GETCARG(i,args(i),numargs)
-               READ(args(i),*,IOSTAT=ier) rminor_norm
-             case ("-eqdsk")
-               i = i + 1
-               leqdsk = .true.
-               CALL GETCARG(i, id_string, numargs)
-               i = i + 1
-               CALL GETCARG(i, eqdsk_string, numargs)
-             case ("-mgrid")
-               i = i + 1
-               lmgrid = .true.
-               lcoil = .false.
-               CALL GETCARG(i, mgrid_string, numargs)
-             case ("-restart")
-               i = i + 1
-               lrestart_particles = .true.
-               CALL GETCARG(i, restart_string, numargs)
-             case ("-restart_grid")
-               i = i + 1
-               lrestart_grid = .true.
-               CALL GETCARG(i, id_string, numargs)
-               i = i + 1
-               CALL GETCARG(i, restart_string, numargs)
-               restart_string=TRIM(restart_string)
-             case ("-coil")
-               i = i + 1
-               lcoil = .true.
-               lmgrid = .false.
-               CALL GETCARG(i, coil_string, numargs)
-             case ("-vessel")
-               i = i + 1
-               lvessel = .true.
-               CALL GETCARG(i, vessel_string, numargs)
-             case ("-beamlet")
-               i = i + 1
-               lbbnbi = .true.
-               CALL GETCARG(i, bbnbi_string, numargs)
-             case ("-hitonly","-hit_only")
-               lhitonly  = .true.
-             case ("-depo")
-               ldepo  = .true.
-             case ("-raw")
-               lraw  = .true.
-             case ("-w7x")
-               lw7x  = .true.
-             case ("-beam_simple")
-               lbeam_simple  = .true.
-             case ("-collisions")
-               lcollision = .true.
-             case ("-plasma")
-               lplasma_only = .true.
-             case ("-rand")
-               lrandomize = .true.
-             case ("-suzuki")
-               lsuzuki = .true.
-             case ("-fusion")
-               lfusion = .true.
-             case ("-fusion_alpha")
-               lfusion = .true.
-               lfusion_alpha = .true.
-             case ("-boxsim")
-               lboxsim = .true.
-             case ("-help", "-h") ! Output Help message
-               write(6, *) ' Beam MC Code'
-               write(6, *) ' Usage: xbeams3d <options>'
-               write(6, *) '    <options>'
-               write(6, *) '     -vmec ext:     VMEC input/wout extension'
-               write(6, *) '     -hint ext:     HINT input/wout extension'
-               write(6, *) '     -eqdsk in gf   EQDSK input file and gfile'
-               write(6, *) '     -fieldlines ext a:   FIELDLINES input/HDF5 extension and Aminor normalization'
-               !write(6,*)'     -pies ext:   PIES input extension (must have &INDATA namelist)'
-               !write(6,*)'     -spec ext:     SPEC input extension (must have &INDATA namelist)'
-               write(6, *) '     -vessel file:  Vessel File (for limiting)'
-               write(6, *) '     -mgrid file:   MAKEGRID File (for vacuum)'
-               write(6, *) '     -coil file:    Coils. File (for vacuum)'
-               write(6, *) '     -restart ext:  BEAMS3D HDF5 extension for starting particles'
-               write(6, *) '     -beamlet ext:  Beamlet file for beam geometry'
-               write(6, *) '     -beam_simple:  Monoenergetic BEAMS'
-               write(6, *) '     -ascot5:       Output data in ASCOT5 gyro-center format'
-               write(6, *) '     -ascot5_fl:    Output data in ASCOT5 fieldline format'
-               write(6, *) '     -ascot4:       Output data in ASCOT4 format'
-               write(6, *) '     -raw:          Treat coil currents as raw (scale factors)'
-               write(6, *) '     -vac:          Only vacuum field'
-               write(6, *) '     -plasma:       Only plasma field'
-               write(6, *) '     -depo:         Only Deposition'
-               write(6, *) '     -collisions:   Force collision operator'
-               write(6, *) '     -rand:         Randomize particle processor'
-               write(6, *) '     -suzuki:       Force Suzuki NBI model'
-               write(6, *) '     -fusion:       Fusion Reaction Rates for birth'
-               write(6, *) '     -fusion_alpha: Fusion Reaction Rates for birth (alphas only)'
-               write(6, *) '     -boxsim:       Inject charged particles for box modeling'
-               write(6, *) '     -noverb:       Supress all screen output'
-               write(6, *) '     -help:         Output help message'
+            case ("-noverb") ! No Verbose Output
+                lverb = .false.
+            case ("-vac") ! Vacuum Fields Only
+                lvac = .true.
+            case ("-ascot","-ascot5")
+                lascot = .true.
+            case ("-ascot_fl","-ascot5_fl")
+                lascot = .true.
+                lascotfl = .true.
+            case ("-ascot4")
+                lascot4 = .true.
+            case ("-fidasim")
+                lfidasim = .true.
+            case ("-fidasim2")
+                lfidasim2 = .true.
+            case ("-vmec")
+                i = i + 1
+                lvmec = .true.
+                CALL GETCARG(i, id_string, numargs)
+            case ("-pies")
+                i = i + 1
+                lpies = .true.
+                CALL GETCARG(i, id_string, numargs)
+            case ("-spec")
+                i = i + 1
+                lspec = .true.
+                CALL GETCARG(i, id_string, numargs)
+            case ("-hint")
+                i = i + 1
+                lhint = .true.
+                CALL GETCARG(i, id_string, numargs)
+            case ("-fieldlines")
+                i = i + 1
+                lfieldlines = .true.
+                CALL GETCARG(i, id_string, numargs)
+                i = i + 1
+                CALL GETCARG(i,args(i),numargs)
+                READ(args(i),*,IOSTAT=ier) rminor_norm
+            case ("-eqdsk")
+                i = i + 1
+                leqdsk = .true.
+                CALL GETCARG(i, id_string, numargs)
+                i = i + 1
+                CALL GETCARG(i, eqdsk_string, numargs)
+            case ("-mgrid")
+                i = i + 1
+                lmgrid = .true.
+                lcoil = .false.
+                CALL GETCARG(i, mgrid_string, numargs)
+            case ("-restart")
+                i = i + 1
+                lrestart_particles = .true.
+                CALL GETCARG(i, restart_string, numargs)
+            case ("-coil")
+                i = i + 1
+                lcoil = .true.
+                lmgrid = .false.
+                CALL GETCARG(i, coil_string, numargs)
+            case ("-vessel")
+                i = i + 1
+                lvessel = .true.
+                CALL GETCARG(i, vessel_string, numargs)
+            case ("-beamlet")
+                i = i + 1
+                lbbnbi = .true.
+                CALL GETCARG(i, bbnbi_string, numargs)
+            case ("-hitonly","-hit_only")
+                lhitonly  = .true.
+            case ("-depo")
+                ldepo  = .true.
+            case ("-raw")
+                lraw  = .true.
+            case ("-w7x")
+                lw7x  = .true.
+            case ("-beam_simple")
+                lbeam_simple  = .true.
+            case ("-collisions")
+                lcollision = .true.
+            case ("-plasma")
+                lplasma_only = .true.
+            case ("-rand")
+                lrandomize = .true.
+            case ("-suzuki")
+                lsuzuki = .true.
+            case ("-fusion")
+                lfusion = .true.
+            case ("-fusion_alpha")
+                lfusion = .true.
+                lfusion_alpha = .true.
+            case ("-boxsim")
+                lboxsim = .true.
+            case ("-help", "-h") ! Output Help message
+                write(6, *) ' Beam MC Code'
+                write(6, *) ' Usage: xbeams3d <options>'
+                write(6, *) '    <options>'
+                write(6, *) '     -vmec ext:     VMEC input/wout extension'
+                write(6, *) '     -hint ext:     HINT input/wout extension'
+                write(6, *) '     -eqdsk in gf   EQDSK input file and gfile'
+                write(6, *) '     -fieldlines ext a:   FIELDLINES input/HDF5 extension and Aminor normalization'
+                !write(6,*)'     -pies ext:   PIES input extension (must have &INDATA namelist)'
+                !write(6,*)'     -spec ext:     SPEC input extension (must have &INDATA namelist)'
+                write(6, *) '     -vessel file:  Vessel File (for limiting)'
+                write(6, *) '     -mgrid file:   MAKEGRID File (for vacuum)'
+                write(6, *) '     -coil file:    Coils. File (for vacuum)'
+                write(6, *) '     -restart ext:  BEAMS3D HDF5 extension for starting particles'
+                write(6, *) '     -beamlet ext:  Beamlet file for beam geometry'
+                write(6, *) '     -beam_simple:  Monoenergetic BEAMS'
+                write(6, *) '     -ascot5:       Output data in ASCOT5 gyro-center format'
+                write(6, *) '     -ascot5_fl:    Output data in ASCOT5 fieldline format'
+                write(6, *) '     -ascot4:       Output data in ASCOT4 format'
+                write(6, *) '     -raw:          Treat coil currents as raw (scale factors)'
+                write(6, *) '     -vac:          Only vacuum field'
+                write(6, *) '     -plasma:       Only plasma field'
+                write(6, *) '     -depo:         Only Deposition'
+                write(6, *) '     -collisions:   Force collision operator'
+                write(6, *) '     -rand:         Randomize particle processor'
+                write(6, *) '     -suzuki:       Force Suzuki NBI model'
+                write(6, *) '     -fusion:       Fusion Reaction Rates for birth'
+                write(6, *) '     -fusion_alpha: Fusion Reaction Rates for birth (alphas only)'
+                write(6, *) '     -boxsim:       Inject charged particles for box modeling'
+                write(6, *) '     -noverb:       Supress all screen output'
+                write(6, *) '     -help:         Output help message'
             end select
             i = i + 1
          END DO
          DEALLOCATE(args)
-
-         ! Handle particle restarting
-         IF (lrestart_particles) THEN
-            ldepo = .false.
-            !lbbnbi = .false.
-            !lbeam = .false.
-         END IF
-
-         IF (ldepo .and. (lfidasim .or. lfidasim2)) THEN
-            lfidasim = .false.
-            lfidasim2 = .false.
-            WRITE(6,'(A)') 'DEPO RUN DETECTED, DISABLING FIDASIM OUTPUT!'
-         END IF
-
       END IF
       ! Broadcast variables
 #if defined(MPI_OPT)
@@ -436,17 +414,17 @@ CONTAINS
          ENDIF
          WRITE(6,'(A,I2,2(A,I2.2))')  '   HDF5_version:  ', h5major,'.',h5minor,' release: ',h5rel
 #endif
-         WRITE(6,'(A)')      '-----  MPI Parameters  -----'
-         WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
-         WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
-         WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_beams
-         WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
-         WRITE(6,'(A)')      '-----  GIT Repository  -----'
-         WRITE(6,'(A,A)')  '   Repository: ', TRIM(git_repository)
-         WRITE(6,'(A,A)')  '   Branch:     ', TRIM(git_branch)
-         WRITE(6,'(A,A)')  '   Version:    ', TRIM(git_version)
-         WRITE(6,'(A,A)')  '   Built-on:   ', TRIM(built_on)
-         WRITE(6,'(A,A)')  '   Hash:       ', TRIM(git_hash)
+        WRITE(6,'(A)')      '-----  MPI Parameters  -----'
+        WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
+        WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
+        WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_beams
+        WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
+        WRITE(6,'(A)')      '-----  GIT Repository  -----'
+        WRITE(6,'(A,A)')  '   Repository: ', TRIM(git_repository)
+        WRITE(6,'(A,A)')  '   Branch:     ', TRIM(git_branch)
+        WRITE(6,'(A,A)')  '   Version:    ', TRIM(git_version)
+        WRITE(6,'(A,A)')  '   Built-on:   ', TRIM(built_on)
+        WRITE(6,'(A,A)')  '   Hash:       ', TRIM(git_hash)
       END IF
       RETURN
    END SUBROUTINE beams3d_output_header
