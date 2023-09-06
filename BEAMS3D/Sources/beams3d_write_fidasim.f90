@@ -349,7 +349,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                         POT4D(1,1,1,1),nr,nphi,nz)
                      r1dtemp(1:3) =-fvalE(1,1:3)
-                     r4dtemp(l,n,m,1:3) = -r1dtemp(1:3)
+                     r1dtemp(2)=r1dtemp(2)/(raxis_fida(l)+r_h/2)
+                     r4dtemp(l,n,m,1:3) = r1dtemp(1:3)
                   END DO
                END DO
             END DO
