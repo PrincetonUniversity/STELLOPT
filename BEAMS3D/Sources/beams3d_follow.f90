@@ -226,7 +226,7 @@ SUBROUTINE beams3d_follow
 #if defined(MPI_OPT)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
 #endif
-    IF (lbeam) CALL beams3d_beam_density
+    IF (lbeam .and. lbeamdensity) CALL beams3d_beam_density
 
     ! Follow Trajectories
     IF (.not.ldepo) THEN
