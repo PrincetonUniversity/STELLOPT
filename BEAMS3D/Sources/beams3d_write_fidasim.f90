@@ -28,10 +28,11 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       rmin, rmax,  phimin, phimax, &
       rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
       raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida
+      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida,nne
    USE beams3d_runtime, ONLY: id_string, nbeams, beam, lverb, handle_err, &
       HDF5_OPEN_ERR,HDF5_WRITE_ERR,HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, &
-      charge, mass,pi, pi2, mass_beams, lfidasim2, lsplit
+      charge, mass,pi, pi2, mass_beams, lfidasim2, lsplit,TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
+      POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F
    USE safe_open_mod, ONLY: safe_open
    USE beams3d_write_par
    USE mpi_params
@@ -49,7 +50,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    !-----------------------------------------------------------------------
    INTEGER :: ier, iunit,istat, i, j, d1, d2, d3, k, k1, k2, kmax ,ider, &
       l, m, n, b, i3, j3, k3
-   INTEGER(HID_T) ::  qid_gid, temp_gid
+   INTEGER(HID_T) ::  qid_gid, qid_gid2, temp_gid
    INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask
 
    REAL*8 :: fvalE(1,3), fval(1), fval2(1), xparam, yparam, zparam
@@ -348,7 +349,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                         POT4D(1,1,1,1),nr,nphi,nz)
                      r1dtemp(1:3) =-fvalE(1,1:3)
-                     r4dtemp(l,n,m,1:3) = -r1dtemp(1:3)
+                     r1dtemp(2)=r1dtemp(2)/(raxis_fida(l)+1/r_h/2)
+                     r4dtemp(l,n,m,1:3) = r1dtemp(1:3)
                   END DO
                END DO
             END DO
@@ -551,6 +553,54 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          CALL write_att_hdf5(temp_gid,'description','Effective Nuclear Charge: Zeff(r,z,phi)',ier)
          CALL h5dclose_f(temp_gid,ier)
 
+
+         !--------------------------------------------------------------
+         !           Profiles
+         !--------------------------------------------------------------
+         CALL h5gcreate_f(qid_gid,'profiles', qid_gid2, ier)
+         CALL write_att_hdf5(qid_gid2,'data_source','Data initialized from BEAMS3D ',ier)
+         CALL write_att_hdf5(qid_gid2,'description','no bulk plasma rotation/flow',ier)
+
+         CALL write_var_hdf5(qid_gid2,'rho',nne, ier,DBLVAR=DBLE(SQRT(NE_AUX_S)))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'rho',ier)
+         CALL h5dopen_f(qid_gid2, 'rho', temp_gid, ier)
+         CALL write_att_hdf5(temp_gid,'units','-',ier)
+         CALL write_att_hdf5(temp_gid,'description','sqrt(s)',ier)
+         CALL h5dclose_f(temp_gid,ier)
+
+
+         CALL write_var_hdf5(qid_gid2,'dene',nne, ier,DBLVAR=DBLE(NE_AUX_F*1.0E-6))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dene',ier)
+         CALL h5dopen_f(qid_gid2, 'dene', temp_gid, ier)
+         CALL write_att_hdf5(temp_gid,'units','[m^-3]',ier)
+         CALL write_att_hdf5(temp_gid,'description','Electron Density',ier)
+         CALL h5dclose_f(temp_gid,ier)
+
+         CALL write_var_hdf5(qid_gid2,'te',nne, ier,DBLVAR=DBLE(TE_AUX_F*1.0E-3))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'te',ier)
+         CALL h5dopen_f(qid_gid2, 'te', temp_gid, ier)
+         CALL write_att_hdf5(temp_gid,'units','[eV]',ier)
+         CALL write_att_hdf5(temp_gid,'description','Electron Temperature',ier)
+         CALL h5dclose_f(temp_gid,ier)
+
+
+         CALL write_var_hdf5(qid_gid2,'ti',nne, ier,DBLVAR=DBLE(TI_AUX_F*1.0E-3))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ti',ier)
+         CALL h5dopen_f(qid_gid2, 'ti', temp_gid, ier)
+         CALL write_att_hdf5(temp_gid,'units','[eV]',ier)
+         CALL write_att_hdf5(temp_gid,'description','Ion Temperature',ier)
+         CALL h5dclose_f(temp_gid,ier)
+
+
+         CALL write_var_hdf5(qid_gid2,'zeff',nne, ier,DBLVAR=DBLE(ZEFF_AUX_F))
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zeff',ier)
+         CALL h5dopen_f(qid_gid2, 'zeff', temp_gid, ier)
+         CALL write_att_hdf5(temp_gid,'units','[-]',ier)
+         CALL write_att_hdf5(temp_gid,'description','Effective Charge',ier)
+         CALL h5dclose_f(temp_gid,ier)
+
+
+         CALL h5gclose_f(qid_gid2, ier)
          DEALLOCATE(rtemp)
          DEALLOCATE(rtemp2)
          DEALLOCATE(rtemp3)
@@ -569,7 +619,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
          rtemp = 0.0
          IF (lfidasim2) THEN
-
             DO i=1,nr_fida
                vol =(raxis_fida(i) + 1 / 2.0 / r_h) / r_h / z_h / p_h
                !WRITE(327,*) i, vol
@@ -633,23 +682,10 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
        CASE('DISTRIBUTION_GC_F')
-         !ALLOCATE(pitch_fida(npitch_fida))
-         !ALLOCATE(energy_fida(nenergy_fida))
-         !FORALL(i = 1:nenergy_fida) energy_fida(i) = (i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass_beams) * partvmax * partvmax /e_charge / 1000.0 !Potential error when different beam species are used!
-         !FORALL(i = 1:npitch_fida) pitch_fida(i) = (i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
 
-         ! CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
-         ! CALL write_var_hdf5(fid,'energy',nenergy_fida,ier,DBLVAR=energy_fida) ! in keV
-         ! CALL h5dopen_f(fid, '/energy', temp_gid, ier)
-         ! CALL write_att_hdf5(temp_gid,'description','Energy array',ier)
-         ! CALL write_att_hdf5(temp_gid,'units','keV',ier)
-         ! CALL h5dclose_f(temp_gid,ier)
-         ! CALL write_var_hdf5(fid,'pitch',npitch_fida,ier,DBLVAR=pitch_fida)
-         ! CALL h5dopen_f(fid, '/pitch', temp_gid, ier)
-         ! CALL write_att_hdf5(temp_gid,'description','Pitch array',ier)
-         ! CALL write_att_hdf5(temp_gid,'units','-',ier)
-         ! CALL h5dclose_f(temp_gid,ier)
-
+         IF (lverb) THEN
+            WRITE(6, '(A)') '----- WRITING FIDASIM DISTRIBUTION -----'
+         END IF
          ! Do phase space change of coordinates
          !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
          IF (lfidasim2) THEN
@@ -659,30 +695,30 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             ALLOCATE(dist5d_fida(ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida)) !nenergy and npitch are always aligned to distribution
             dist5d_fida = 0
          END IF
-         DO b = 1,nbeams
+
+         IF (lfidasim2) THEN
             DO d1 = 1, nenergy_fida
                DO d2 = 1, npitch_fida
-                  v = SQRT(2 * energy_fida(d1) *1000.0 * e_charge / mass_beams(b))
-                  !IF (v .gt. partvmax) THEN !) .or. (v .eq. 0.0))
-                  !   IF (.not. lfidasim2) dist5d_fida(b,:,:,:,d1,d2) = 0
-                  !ELSE
-                  pitch = pitch_fida(d2)
-                  v_parr = pitch * v
-                  v_perp = SQRT(1- pitch * pitch) * v
-                  !determine beams3d-grid indices (velocity space)
-                  i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
-                  j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
-                  jac = pi2 * v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
-                  IF (lfidasim2) THEN
-                     dist5d_temp(d1,d2,:,:,:) = dist5d_fida(:,:,:,d1,d2)*e_h*pi_h*REAL(1.0e-6)!dist5d_fida(b,:,:,:,i3,j3) * jac
-                  ELSE
-                     dist5d_fida(:,:,:,d1,d2) = dist5d_fida(:,:,:,d1,d2) + dist5d_prof(b,:,:,:,i3,j3) * jac ! conversion to final grid comes in next steps
-                  END IF
-
-                  !END IF
+                  dist5d_temp(d1,d2,:,:,:) = dist5d_fida(:,:,:,d1,d2)*e_h*pi_h*REAL(1.0e-6)
                END DO
             END DO
-         END DO
+         ELSE
+            DO b = 1,nbeams
+               DO d1 = 1, nenergy_fida
+                  DO d2 = 1, npitch_fida
+                     v = SQRT(2 * energy_fida(d1) *1000.0 * e_charge / mass_beams(b))
+                     pitch = pitch_fida(d2)
+                     v_parr = pitch * v
+                     v_perp = SQRT(1- pitch * pitch) * v
+                     !determine beams3d-grid indices (velocity space)
+                     i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
+                     j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
+                     jac = pi2 * v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
+                     dist5d_fida(:,:,:,d1,d2) = dist5d_fida(:,:,:,d1,d2) + dist5d_prof(b,:,:,:,i3,j3) * jac ! conversion to final grid comes in next steps
+                  END DO
+               END DO
+            END DO
+         END IF
 
          IF (.not. lfidasim2) THEN
             ALLOCATE(dist5d_temp(ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
@@ -750,23 +786,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          IF (.not. lfidasim2) THEN
             DEALLOCATE(dist5d_fida)
          END IF
-         DEALLOCATE(pitch_fida)
-         DEALLOCATE(energy_fida)
-         !DEALLOCATE(dist5d_temp)
+         DEALLOCATE(dist5d_temp)
 
-
-         ! INQUIRE(FILE=TRIM(fidasim_input_dat),EXIST=lexist)
-         ! IF (.not.lexist) THEN
-         !    istat=-1
-         !    WRITE(6,*) " ERROR: Could not find file: "//TRIM(fidasim_input_dat)
-         !    RETURN
-         ! END IF
-         ! INQUIRE(FILE=TRIM(fidasim_geometry),EXIST=lexist)
-         ! IF (.not.lexist) THEN
-         !    istat=-1
-         !    WRITE(6,*) " ERROR: Could not find file: "//TRIM(fidasim_geometry)
-         !    RETURN
-         ! END IF
 
        CASE('DISTRIBUTION_GC_MC')
        CASE('DISTRIBUTION_FO')
