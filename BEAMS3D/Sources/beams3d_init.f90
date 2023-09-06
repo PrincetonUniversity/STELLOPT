@@ -321,8 +321,8 @@ SUBROUTINE beams3d_init
       CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
       CALL mpialloc(phiaxis_fida, nphi_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis_fida)
       CALL mpialloc(zaxis_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis_fida)
-      CALL mpialloc(energy_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
-      CALL mpialloc(pitch_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
+      CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
+      CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
    END IF
    IF (myid_sharmem == 0) THEN
       FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
