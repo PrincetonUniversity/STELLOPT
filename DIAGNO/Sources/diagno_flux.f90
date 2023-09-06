@@ -98,8 +98,9 @@
 !     Begin Subroutine
 !-----------------------------------------------------------------------
       ! Basic copy of MPI_COMM_DIANGO
-      ncg = SIZE(coil_group)
-      IF (ncg == 0) ncg = 2 ! Just so we don't allocate a zero size array
+      ncg = 2
+      IF (ALLOCATED(coil_group)) ncg = SIZE(coil_group)
+      !IF (ncg == 0) ncg = 2 ! Just so we don't allocate a zero size array
 
       if(lverb) write(6,*)' --Calculating Fluxloop Values'
       int_fac=1./int_step
