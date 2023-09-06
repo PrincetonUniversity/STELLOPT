@@ -32,7 +32,7 @@ MODULE beams3d_physics_mod
                               phimax, S4D, X4D, Y4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
-                              zaxis, U4D,nzeff, &
+                              zaxis, U4D,nzeff, dexionT, dexionD, &
                               hr, hp, hz, hri, hpi, hzi, &
                               B_kick_min, B_kick_max, E_kick, freq_kick, &
                               plasma_mass, NI5D, BR4D, BZ4D, BPHI4D
@@ -1383,11 +1383,11 @@ MODULE beams3d_physics_mod
             ! Assume 1 and 2 are D and T
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NI5D(1,1,1,1,1),nr,nphi,nz)
+                            NI5D(1,1,1,1,dexionT),nr,nphi,nz)
             nd_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NI5D(1,1,1,1,2),nr,nphi,nz)
+                            NI5D(1,1,1,1,dexionD),nr,nphi,nz)
             nt_temp = max(fval(1),zero)
          ELSE
             RETURN
@@ -1486,7 +1486,7 @@ MODULE beams3d_physics_mod
             ! Assume 1 and 2 are D and T
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NI5D(1,1,1,1,1),nr,nphi,nz)
+                            NI5D(1,1,1,1,dexionD),nr,nphi,nz)
             nd_temp = max(fval(1),zero)
          ELSE
             RETURN
@@ -1584,7 +1584,7 @@ MODULE beams3d_physics_mod
             ti_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NI5D(1,1,1,1,1),nr,nphi,nz)
+                            NI5D(1,1,1,1,dexionD),nr,nphi,nz)
             nd_temp = max(fval(1),zero)
          ELSE
             RETURN
