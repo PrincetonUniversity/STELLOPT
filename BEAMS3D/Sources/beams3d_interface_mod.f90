@@ -157,6 +157,7 @@ CONTAINS
          lfusion_alpha = .false.
          lboxsim = .false.
          lfieldlines = .false.
+         lbeamdensity = .true.
          id_string = ''
          coil_string = ''
          mgrid_string = ''
@@ -264,6 +265,8 @@ CONTAINS
                 lfusion_alpha = .true.
             case ("-boxsim")
                 lboxsim = .true.
+            case ("-nobeamdensity")
+                lbeamdensity = .false.
             case ("-help", "-h") ! Output Help message
                 write(6, *) ' Beam MC Code'
                 write(6, *) ' Usage: xbeams3d <options>'
@@ -293,6 +296,7 @@ CONTAINS
                 write(6, *) '     -fusion:       Fusion Reaction Rates for birth'
                 write(6, *) '     -fusion_alpha: Fusion Reaction Rates for birth (alphas only)'
                 write(6, *) '     -boxsim:       Inject charged particles for box modeling'
+                write(6, *) '     -nobeamdensity: Supress beam density calc.'
                 write(6, *) '     -noverb:       Supress all screen output'
                 write(6, *) '     -help:         Output help message'
             end select
@@ -377,6 +381,8 @@ CONTAINS
       CALL MPI_BCAST(limas,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lboxsim,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+      CALL MPI_BCAST(lbeamdensity,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(rminor_norm,1,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
