@@ -25,7 +25,7 @@
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
                                     charge, Zatom, mass, ldepo, lcollision, lfusion, lboxsim, &
-                                    leqdsk, eqdsk_string, lhint, lhitonly, lkick, NION
+                                    leqdsk, eqdsk_string, lhint, lhitonly, lkick, NION, pi2
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE mpi_params
@@ -35,12 +35,13 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       CHARACTER(*), INTENT(IN):: write_type
+   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:)      
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-      INTEGER :: ier, iunit
+      INTEGER :: ier, iunit, i
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
