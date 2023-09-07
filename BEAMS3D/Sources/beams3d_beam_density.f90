@@ -96,9 +96,8 @@
 
       ! Barrier so  calculation is done
 #if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
 #endif
-
       ! Now Divide by the grid volumes
       CALL MPI_CALC_MYRANGE(MPI_COMM_SHARMEM, 1, (nr-1)*(nphi-1)*(nz-1), mystart, myend)
       DO s = mystart,myend
@@ -111,7 +110,7 @@
       END DO
 
 #if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
 #endif
 
       RETURN
