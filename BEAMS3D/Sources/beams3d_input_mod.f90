@@ -289,28 +289,27 @@
          END IF
          nte = 0
          DO WHILE ((TE_AUX_S(nte+1) >= 0.0).and.(nte<MAXPROFLEN))
+            s_max_te=TE_AUX_S(nte+1)
             nte = nte + 1
-         s_max_te=TE_AUX_S(nte+1)
          END DO
          nne = 0
          DO WHILE ((NE_AUX_S(nne+1) >= 0.0).and.(nne<MAXPROFLEN))
+            s_max_ne=NE_AUX_S(nne+1)
             nne = nne + 1
-         s_max_ne=NE_AUX_S(nne+1)
          END DO
          nti = 0
          DO WHILE ((TI_AUX_S(nti+1) >= 0.0).and.(nti<MAXPROFLEN))
+            s_max_ti=TI_AUX_S(nti+1)
             nti = nti + 1
-         s_max_ti=TI_AUX_S(nti+1)
          END DO
          nzeff = 0
          DO WHILE ((ZEFF_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
             nzeff = nzeff + 1
-         s_max_zeff=ZEFF_AUX_S(nzeff+1)
          END DO
          npot = 0
          DO WHILE ((POT_AUX_S(npot+1) >= 0.0).and.(npot<MAXPROFLEN))
+            s_max_pot=POT_AUX_S(npot+1)
             npot = npot + 1
-         s_max_pot=POT_AUX_S(npot+1)
          END DO
 
          ! Handle multiple ion species
@@ -339,6 +338,7 @@
             END DO
             !WRITE(6,*) ' Tritium index: ',dexionT
             !WRITE(6,*) ' Deuturium index: ',dexionD
+            s_max_zeff=ZEFF_AUX_S(nzeff+1)
          ELSEIF (lfusion) THEN ! Assume 50/50 D T
             nzeff=nne
             NI_AUX_S = NE_AUX_S

@@ -219,7 +219,7 @@
             NE_spl_s%isHermite   = 0
              CALL EZspline_setup(NE_spl_s,NE_AUX_F(1:nne),ier,EXACT_DIM=.true.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init6',ier)
-         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A,A,F8.5)') '   Ne   = [', &
+         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A,F8.5)') '   Ne   = [', &
             MINVAL(NE_AUX_F(1:nne))*1E-20,',',MAXVAL(NE_AUX_F(1:nne))*1E-20,'] E20 m^-3;  NNE:   ',nne, ';  S_MAX_NE: ',s_max_ne
          END IF
          ! NION
