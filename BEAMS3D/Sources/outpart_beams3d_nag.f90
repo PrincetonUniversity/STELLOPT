@@ -131,17 +131,17 @@ SUBROUTINE outpart_beams3d_nag(t, q)
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
-       IF (lfidasim2) THEN
-          !x0 = MOD(q(2), phimax_fida)
-          !IF (x0 < 0) x0 = x0 + phimax_fida
-          i = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
-          j = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
-          k = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
-          y0 = (q(4)**2+vperp**2)
-          d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h),1),nenergy_fida)
-          d5 = MIN(MAX(CEILING((q(4)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
-          dist5d_fida(i,k,j,d4,d5) = dist5d_fida(i,k,j,d4,d5) + xw 
-       END IF
+          IF (lfidasim2) THEN
+             !x0 = MOD(q(2), phimax_fida)
+             !IF (x0 < 0) x0 = x0 + phimax_fida
+            d1 = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
+            d2 = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
+            d3 = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
+            y0 = (q(4)**2+vperp**2)
+            d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h),1),nenergy_fida)
+            d5 = MIN(MAX(CEILING((q(4)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
+            dist5d_fida(d1,d3,d2,d4,d5) = dist5d_fida(d1,d3,d2,d4,d5) + xw
+          END IF
        IF (lcollision) CALL beams3d_physics_fo(t,q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
