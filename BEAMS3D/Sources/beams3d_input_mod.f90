@@ -380,6 +380,7 @@
             NI_AUX_Z(1) = 1
             NI_AUX_M(1) = plasma_mass
          END IF
+      s_max_zeff=ZEFF_AUX_S(nzeff)
 
          nparticles = 0
          DO WHILE ((r_start_in(nparticles+1) >= 0.0).and.(nparticles<MAXPARTICLES))
