@@ -98,7 +98,7 @@ SUBROUTINE beams3d_follow_fo
        q(3) = Z_lines(mytdex,myline)
        my_end = t_end(myline)
        CALL beams3d_calc_dt(2,q(1),q(2),q(3),dtmax)
-       WRITE(6, '(A)') '----- FOLLOWING PARTICLE TRAJECTORIES -----'
+       WRITE(6, '(A)') '----- FOLLOWING FULL ORBIT TRAJECTORIES -----'
        WRITE(6, '(A,A)')          '       Method: ', TRIM(int_type)
        WRITE(6, '(A,I9)')          '   Particles: ', nparticles
        WRITE(6, '(A,I9,2(A,EN12.3))') '       Steps: ', ndt_max*NPOINC, '   dt_min: ', dtmin,'   dt_max: ', dtmax
