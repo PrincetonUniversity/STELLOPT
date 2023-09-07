@@ -179,17 +179,17 @@
          IF (uflx<0)  uflx = uflx+pi2
          U_ARR(i,:,k)=uflx
 
-         IF (sflx <= 1) THEN
-            tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0
-            IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,tetemp,ier)
-            IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,netemp,ier)
-            IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,titemp,ier)
-            IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
-            !IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
-            IF (nzeff > 0) THEN 
-               CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
-               DO u=1, NION
-                  CALL EZspline_interp(NI_spl_s(u),sflx,nitemp,ier)
+      IF (sflx <= s_max) THEN
+         tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0
+         IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),tetemp,ier)
+         IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),netemp,ier)
+         IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),titemp,ier)
+         IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),pottemp,ier)
+         !IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
+         IF (nzeff > 0) THEN
+            CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),zetemp,ier)
+            DO u=1, NION
+               CALL EZspline_interp(NI_spl_s(u),MIN(sflx,s_max_zeff),nitemp,ier)
                   NI(u,i,:,k)=nitemp
                END DO
             END IF
@@ -240,6 +240,8 @@
          CALL backspace_out(6,36)
          WRITE(6,*)
          CALL FLUSH(6)
+      END IF    
+   END IF
       END IF    
 
       ! Fix ZEFF
