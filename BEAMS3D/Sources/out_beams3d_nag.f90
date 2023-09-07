@@ -115,7 +115,7 @@ SUBROUTINE out_beams3d_nag(t, q)
             y0 = (q(4)**2+vperp**2)
             d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h),1),nenergy_fida)
             d5 = MIN(MAX(CEILING((q(4)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
-            dist5d_fida(d1,d2,d3,d4,d5) = dist5d_fida(d1,d2,d3,d4,d5) + xw
+            dist5d_fida(d1,d3,d2,d4,d5) = dist5d_fida(d1,d3,d2,d4,d5) + xw
           END IF
           IF (lcollision) CALL beams3d_physics_gc(t,q)
           IF (ltherm) THEN
