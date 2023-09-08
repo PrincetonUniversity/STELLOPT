@@ -32,13 +32,13 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: ier, iunit, istat, i, j, k, nhalf, sbeam, ebeam, ninj2
-      REAL(rprec) :: maxdist,mindist,v1,v2,dist,ddist,s1,s2, vp_temp, dvll, dvperp, ninj
+      REAL(rprec) :: maxdist,mindist,v1,v2,dist,ddist,s1,s2, vp_temp, &
+                     dvll, dvperp, ninj, ndist
       LOGICAL, ALLOCATABLE     :: partmask(:), partmask2(:,:), partmask2t(:,:)
       INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:)
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
-      REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:), nlost(:), norbit(:)
+      REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:), nlost(:), norbit(:), tlow(:), thigh(:)
       REAL, ALLOCATABLE     :: help3d(:,:,:)
-      INTEGER, PARAMETER :: ndist = 100
 #if defined(MPI_OPT)
       INTEGER :: mystart, mypace
       REAL(rprec), ALLOCATABLE :: buffer_mast(:,:), buffer_slav(:,:)
@@ -65,10 +65,14 @@
       IF (ALLOCATED(shine_port)) DEALLOCATE(shine_port)
       IF (ALLOCATED(nlost)) DEALLOCATE(nlost)
       IF (ALLOCATED(norbit)) DEALLOCATE(norbit)
+      IF (ALLOCATED(tlow)) DEALLOCATE(tlow)
+      IF (ALLOCATED(thigh)) DEALLOCATE(thigh)
       ALLOCATE(shine_through(nbeams))
       ALLOCATE(shine_port(nbeams))
       ALLOCATE(nlost(nbeams))
       ALLOCATE(norbit(nbeams))
+      ALLOCATE(tlow(nbeams))
+      ALLOCATE(thigh(nbeams))
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
@@ -86,6 +90,8 @@
          nlost(i)          =      SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 2 .and. (beam(mystart:myend)==i)))
          shine_through(i)  = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
          shine_port(i)     = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
+         tlow(i)           = MINVAL(t_end(mystart:myend), MASK = (beam(mystart:myend)==i))
+         thigh(i)          = MAXVAL(t_end(mystart:myend), MASK = (beam(mystart:myend)==i))
       END DO
 
 #if defined(MPI_OPT)
@@ -94,29 +100,33 @@
          CALL MPI_REDUCE(MPI_IN_PLACE, shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, norbit,        nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, nlost,         nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, tlow,          nbeams,                  MPI_REAL,          MPI_MIN, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, thigh,         nbeams,                  MPI_REAL,          MPI_MAX, master, MPI_COMM_BEAMS, ierr_mpi)
       ELSE
          CALL MPI_REDUCE(shine_through, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(shine_port,    shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(norbit,        norbit,        nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(nlost,         tlow,          nbeams,                  MPI_REAL,          MPI_MIN, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(nlost,         thigh,         nbeams,                  MPI_REAL,          MPI_MAX, master, MPI_COMM_BEAMS, ierr_mpi)
       END IF
 #endif
 
-      IF (myworkid == master) THEN
+      IF (myworkid == master .and. lverb) THEN
          ! Screen Output
          DO i = 1, nbeams
             ninj  = SUM(weight,MASK=(beam==i))
             ninj2  = COUNT(beam==i)
-            ! Screen Output
-            IF (lverb) THEN
-               IF (i==1) WRITE(6,'(A)')  ' BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Orbiting [%]    Lost [%]  Shinethrough [%]  Port [%]'
-               WRITE(6,'(I5,3(9X,I5),8X,I8,4(9X,F5.1))') i,NINT(E_BEAMS(i)*6.24150636309E15),NINT(CHARGE_BEAMS(i)*6.24150636309E18),&
-                                         NINT(MASS_BEAMS(i)*5.97863320194E26), ninj2, 100.*norbit(i)/ninj, 100.*nlost(i)/ninj, shine_through(i), shine_port(i)
-               IF (i==nbeams) WRITE(6,'(A,EN12.3)')     '# of Fast Ions in Distribution:: ',SUM(dist5d_prof)                          
-               CALL FLUSH(6)
-            END IF
+            ndist = SUM(dist5d_prof(i,:,:,:,:,:))
+            IF (i==1) WRITE(6,'(A)')  ' BEAMLINE  E [keV]  Q [e]   M [Mp]   Markers [#]    NDIST [#]    Orbit [%]    Lost [%]   Shine. [%]  Port [%]    T_MIN [s]       T_MAX [s]'
+            WRITE(6,'(I5,3(4X,I5),4X,I8,7X,EN10.1,4(6X,F5.1),2(6X,EN10.1))') i,NINT(E_BEAMS(i)*6.24150636309E15),NINT(CHARGE_BEAMS(i)*6.24150636309E18),&
+                                      NINT(MASS_BEAMS(i)*5.97863320194E26), ninj2, ndist, 100.*norbit(i)/ninj, 100.*nlost(i)/ninj, shine_through(i), shine_port(i), tlow(i), thigh(i)
+            CALL FLUSH(6)
          END DO
       END IF
+
+      ! DEALLOCATE tlow/thigh
+      DEALLOCATE(tlow,thigh)
 
       ! These diagnostics need Vp to be defined
       IF ((.not.ldepo .or. lrestart_grid) .and. .not.lboxsim .and. myworkid == master) THEN
