@@ -319,14 +319,6 @@ CONTAINS
          END DO
          DEALLOCATE(args)
 
-         ! Handle particle restarting
-         IF (lrestart_particles) THEN
-            ldepo = .false.
-            lbbnbi = .false.
-            lbeam = .false.
-         END IF
-
-
       END IF
       ! Broadcast variables
 #if defined(MPI_OPT)
