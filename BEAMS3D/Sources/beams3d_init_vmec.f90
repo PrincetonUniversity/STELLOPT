@@ -24,7 +24,8 @@
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
-                                 phiedge_eq, reff_eq, NI_spl_s, NI
+                                 phiedge_eq, reff_eq, NI_spl_s, NI,&
+                                 s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE wall_mod, ONLY: wall_load_mn
       USE mpi_params
@@ -343,17 +344,17 @@
                B_Z(i,j,k)   = bz
                sflx = 1.5 ! Assume s=1 for lplasma_only
             END IF
-            IF (sflx <= 1) THEN
-               IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,TE(i,j,k),ier)
-               IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
-               IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
-               IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
-               IF (nzeff > 0) THEN 
-                  CALL EZspline_interp(ZEFF_spl_s,sflx,ZEFF_ARR(i,j,k),ier)
-                  DO u=1, NION
-                     CALL EZspline_interp(NI_spl_s(u),sflx,NI(u,i,j,k),ier)
-                  END DO
-               END IF
+         IF (sflx <= s_max) THEN
+            IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),TE(i,j,k),ier)
+            IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),NE(i,j,k),ier)
+            IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),TI(i,j,k),ier)
+            IF (nzeff > 0) THEN
+               CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),ZEFF_ARR(i,j,k),ier)
+               DO u=1, NION
+                  CALL EZspline_interp(NI_spl_s(u),MIN(sflx,s_max_zeff),NI(u,i,j,k),ier)
+               END DO
+            END IF
+            IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),POT_ARR(i,j,k),ier)
             ELSE
                br = 1
                IF (npot > 0) CALL EZspline_interp(POT_spl_s,br,POT_ARR(i,j,k),ier)
