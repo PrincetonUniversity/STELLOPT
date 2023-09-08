@@ -193,7 +193,7 @@
             CALL EZspline_setup(TE_spl_s,TE_AUX_F(1:nte),ier,EXACT_DIM=.true.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init2',ier)
          IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A,F8.5)') '   Te   = [', &
-            MINVAL(TE_AUX_F(1:nte))*1E-3,',',MAXVAL(TE_AUX_F(1:nte))*1E-3,'] keV;  NTE:   ',nte, ';  S_MAX_TI: ',s_max_te
+            MINVAL(TE_AUX_F(1:nte))*1E-3,',',MAXVAL(TE_AUX_F(1:nte))*1E-3,'] keV;  NTE:   ',nte, ';  S_MAX_TE: ',s_max_te
          END IF
          ! TI
          IF (nti>0) THEN
