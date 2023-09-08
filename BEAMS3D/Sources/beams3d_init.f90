@@ -115,6 +115,12 @@
          CALL get_fieldlines_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
       END IF
 
+      ! Handle particle restarting
+      IF (lrestart_particles) THEN
+        ldepo = .false.
+        lbbnbi = .false.
+        lbeam = .false.
+      END IF
 
       ! If we set vacuum then override lcollision
       IF (lvac) lcollision=.FALSE.
@@ -263,6 +269,18 @@
       !!              Fidasim Grid Spec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   
       IF (lfidasim) THEN
+         ! !IF (rmin_fida .eq. 0.0) rmin_fida = rmin
+         ! rmin_fida = rmin
+         ! zmin_fida = zmin
+         ! phimin_fida = phimin
+         ! rmax_fida = rmax
+         ! zmax_fida = zmax
+         ! phimax_fida = phimax
+         ! nr_fida = nr
+         ! nphi_fida = nphi
+         ! nz_fida = nz
+         ! nenergy_fida = ns_prof4
+         ! npitch_fida = ns_prof5
          IF (rmin_fida == 0.0) rmin_fida = rmin
          IF (zmin_fida .eq. 0.0) zmin_fida = zmin
          IF (phimin_fida .eq. 0.0) phimin_fida = phimin
@@ -284,7 +302,9 @@
       !!              Initialize Background Grids
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   IF (.not. lrestart_grid) THEN
+      IF (lrestart_grid) THEN
+         !CALL beams3d_init_restart
+      ELSE
          ! Create the background grid
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
          CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
@@ -409,9 +429,6 @@
       END IF
       !WRITE_FIDASIM comes after spline setup as it needs 3D Grids
 
-   IF (lverb) THEN
-      WRITE(6,'(A)')'----- Constructing Splines -----'
-   END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Setup Splines
@@ -491,6 +508,8 @@
          
       ! Construct MODB
       IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
+
+
 
       ! Construct Splines on shared memory master nodes
       IF (myid_sharmem == master) THEN
@@ -615,6 +634,7 @@
 
       ! Print Grid info to screen
       IF (lverb) THEN
+         WRITE(6,'(A)')'----- Constructing Splines -----'
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',MINVAL(raxis),',',MAXVAL(raxis),'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',MINVAL(phiaxis),',',MAXVAL(phiaxis),'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',MINVAL(zaxis),',',MAXVAL(zaxis),'];  NZ:   ',nz
