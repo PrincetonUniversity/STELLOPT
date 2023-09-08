@@ -54,7 +54,7 @@
          OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
          IF (ier /= 0) CALL handle_err(FILE_OPEN_ERR,id_string,ier)
          CALL read_indata_namelist(iunit,ier)
-         IF (ier /= 0) CALL handle_err(COIL_ERR,id_string,ier)
+         IF (ier /= 0) CALL handle_err(VMEC_INPUT_ERR,id_string,ier)
          CLOSE(iunit)
       END IF
 #if defined(MPI_OPT)
