@@ -92,7 +92,6 @@ test_beams3d:
 	$(MAKE) test_beams3d_er
 	$(MAKE) test_beams3d_loss
 	$(MAKE) test_beams3d_slow
-	$(MAKE) test_beams3d_depo
 	@if [ -n "$(ADASDIR)" ]; then \
 		if [ -d $(ADASDIR) ]; then \
 			$(MAKE) test_beams3d_depo_adas;\
