@@ -47,6 +47,7 @@
 !                    - Particle duplication implemented
 !                    - Box Modeling implemented
 !                    - FIELDLINES Interface Added
+!     v4.05 08/25/23 - Fast Tritium only calculation added
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -134,7 +135,7 @@ MODULE beams3d_runtime
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
                lascot, lascot4, lbbnbi, lfidasim, lfidasim2, lsplit, lvessel_beam, lascotfl, lrandomize, &
                lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim, &
-               lboxsim, limas, lfieldlines, lbeamdensity
+               lboxsim, limas, lfieldlines, lfusion_tritium, lfusion_proton, lfusion_He3, lbeamdensity
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
                ndt, ndt_max, duplicate_factor
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
@@ -162,7 +163,7 @@ MODULE beams3d_runtime
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.00 ! this is the full orbit test version
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.05 ! this is the full orbit test version
 
     !-----------------------------------------------------------------------
     !     Subroutines
