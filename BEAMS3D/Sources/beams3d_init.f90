@@ -746,10 +746,10 @@
                ndot_prof(nbeams,ns_prof1))
       ipower_prof=0; epower_prof=0; ndot_prof=0
       CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
-      IF (lfidasim2) CALL mpialloc(dist5d_fida, nr_fida, nz_fida, nphi_fida, nenergy_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d_fida)
+      IF (lfidasim_cyl) CALL mpialloc(dist5d_fida, nr_fida, nz_fida, nphi_fida, nenergy_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d_fida)
       IF (myid_sharmem == master) THEN
          dist5d_prof = 0
-         IF (lfidasim2) dist5d_fida = 0
+         IF (lfidasim_cyl) dist5d_fida = 0
       END IF
       h2_prof = ns_prof2*invpi2
       h3_prof = ns_prof3*invpi2
@@ -764,7 +764,7 @@
       h5_prof = ns_prof5/partvmax
 
       ! Fida Distribution
-      IF (lfidasim2) THEN
+      IF (lfidasim_cyl) THEN
       r_h = (nr_fida) / (rmax_fida - rmin_fida)
       z_h = (nz_fida) / (zmax_fida - zmin_fida)
       p_h = (nphi_fida) / (phimax_fida - phimin_fida)

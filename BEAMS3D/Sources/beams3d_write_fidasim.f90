@@ -31,7 +31,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida,nne
    USE beams3d_runtime, ONLY: id_string, nbeams, beam, lverb, handle_err, &
       HDF5_OPEN_ERR,HDF5_WRITE_ERR,HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, &
-      charge, mass,pi, pi2, mass_beams, lfidasim2, lsplit,TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
+      charge, mass,pi, pi2, mass_beams, lfidasim_cyl, lsplit,TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
       POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F
    USE safe_open_mod, ONLY: safe_open
    USE beams3d_write_par
@@ -618,7 +618,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
          !ALLOCATE(r4dtemp(nbeams,nr_fida,nphi_fida,nz_fida))
          ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
          rtemp = 0.0
-         IF (lfidasim2) THEN
+         IF (lfidasim_cyl) THEN
             DO i=1,nr_fida
                vol =(raxis_fida(i) + 1 / 2.0 / r_h) / r_h / z_h / p_h
                !WRITE(327,*) i, vol
@@ -684,7 +684,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
        CASE('DISTRIBUTION_GC_F')
          ! Do phase space change of coordinates
          !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
-         IF (lfidasim2) THEN
+         IF (lfidasim_cyl) THEN
             ALLOCATE(dist5d_temp(nenergy_fida, npitch_fida,nr_fida,nz_fida,nphi_fida)) !need temp as velocity bins are in vll/vperp initially
             dist5d_temp = 0
          ELSE
@@ -692,7 +692,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             dist5d_fida = 0
          END IF
 
-         IF (lfidasim2) THEN
+         IF (lfidasim_cyl) THEN
             DO d1 = 1, nenergy_fida
                DO d2 = 1, npitch_fida
                   dist5d_temp(d1,d2,:,:,:) = dist5d_fida(:,:,:,d1,d2)*e_h*pi_h*REAL(1.0e-6)
@@ -716,7 +716,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             END DO
          END IF
 
-         IF (.not. lfidasim2) THEN
+         IF (.not. lfidasim_cyl) THEN
             ALLOCATE(dist5d_temp(ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
             dist5d_temp(:,:,:,:,:) = dist5d_fida(:,:,:,:,:)
             DEALLOCATE(dist5d_fida)
@@ -767,7 +767,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
 
          CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
          IF (ASSOCIATED(dist5d_fida)) THEN
-            IF (lfidasim2) THEN
+            IF (lfidasim_cyl) THEN
                CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=dist5d_temp)
             ELSE
                CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=dist5d_fida)
@@ -779,7 +779,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_fida',ier)
          END IF
          CALL close_hdf5(fid,ier)
-         IF (.not. lfidasim2) THEN
+         IF (.not. lfidasim_cyl) THEN
             DEALLOCATE(dist5d_fida)
          END IF
          DEALLOCATE(dist5d_temp)

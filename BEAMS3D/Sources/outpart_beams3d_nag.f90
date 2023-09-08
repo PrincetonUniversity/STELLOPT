@@ -11,7 +11,7 @@ SUBROUTINE outpart_beams3d_nag(t, q)
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
-                               weight, invpi2, ndt, ndt_max, lfidasim, lfidasim2
+                               weight, invpi2, ndt, ndt_max, lfidasim, lfidasim_cyl
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nparticles, moment_lines, myend, &
                              vr_lines, vphi_lines, vz_lines, &
@@ -131,7 +131,7 @@ SUBROUTINE outpart_beams3d_nag(t, q)
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
-          IF (lfidasim2) THEN
+          IF (lfidasim_cyl) THEN
              !x0 = MOD(q(2), phimax_fida)
              !IF (x0 < 0) x0 = x0 + phimax_fida
             d1 = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
