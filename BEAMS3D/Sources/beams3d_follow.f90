@@ -169,6 +169,7 @@ SUBROUTINE beams3d_follow
 
     ! Beam Deposition
     IF (lbeam) THEN
+      IF (lverb) WRITE(6, '(A)') '----- FOLLOWING NEUTRAL TRAJECTORIES -----'
        DO i = mystart, myend
           lneut = lbeam
           ltherm = .FALSE.

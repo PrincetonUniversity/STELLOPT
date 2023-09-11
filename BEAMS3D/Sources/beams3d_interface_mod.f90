@@ -319,6 +319,7 @@ CONTAINS
             i = i + 1
          END DO
          DEALLOCATE(args)
+
       END IF
       ! Broadcast variables
 #if defined(MPI_OPT)
