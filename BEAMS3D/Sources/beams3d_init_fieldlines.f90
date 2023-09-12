@@ -18,7 +18,8 @@
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
-                                 phiedge_eq, reff_eq, NI_spl_s, NI
+                                 phiedge_eq, reff_eq, NI_spl_s, NI,&
+                                 s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE read_fieldlines_mod, ONLY: get_fieldlines_grid, get_fieldlines_B, &
                                read_fieldlines_deallocate, setup_fieldlines_rhogrid, &
@@ -107,16 +108,16 @@
          S_ARR(i,j,k) = sflx
          U_ARR(i,j,k) = uflx
 
-         IF (sflx <= 1) THEN
+         IF (sflx <= s_max) THEN
             tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0
-            IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,tetemp,ier)
-            IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,netemp,ier)
-            IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,titemp,ier)
-            IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
+            IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),tetemp,ier)
+            IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),netemp,ier)
+            IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),titemp,ier)
+            IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),pottemp,ier)
             IF (nzeff > 0) THEN 
-               CALL EZspline_interp(ZEFF_spl_s,sflx,ZEFF_ARR(i,j,k),ier)
+               CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),ZEFF_ARR(i,j,k),ier)
                DO u=1, NION
-                  CALL EZspline_interp(NI_spl_s(u),sflx,NI(u,i,j,k),ier)
+                  CALL EZspline_interp(NI_spl_s(u),MIN(sflx,s_max_zeff),NI(u,i,j,k),ier)
                END DO
             END IF
             NE(i,j,k) = netemp; TE(i,j,k) = tetemp; TI(i,j,k) = titemp
