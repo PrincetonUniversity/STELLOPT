@@ -130,7 +130,7 @@
             READ(iunit,*) vertex(ik,1),vertex(ik,2),vertex(ik,3)
          END DO
          DO ik = 1, ntet
-            READ(iunit,*) tet(ik,1),tet(ik,2),tet(ik,3),tet(ik,4),state_dex(4)
+            READ(iunit,*) tet(ik,1),tet(ik,2),tet(ik,3),tet(ik,4),state_dex(ik)
          END DO
          ! This next section will get more complicated in the future for now
          ! we just handle the soft constant and hard magnets
