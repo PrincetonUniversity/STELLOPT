@@ -44,6 +44,9 @@
                                      win_state_dex, win_state_type, &
                                      win_constant_mu, win_m
 
+      CHARACTER(LEN=256), PRIVATE :: machine_string
+      CHARACTER(LEN=256), PRIVATE :: date
+
 
       INTEGER, PRIVATE                    :: mystart, myend, mydelta
       INTEGER, PRIVATE                    :: shar_rank, shar_size, shar_comm
@@ -88,10 +91,13 @@
       END IF
 #endif
       ! open file, return if fails
+      iunit = 327; istat = 0
       CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
-      IF (istat/=0) RETURN
+      IF (istat/= 0) RETURN
       ! read info
       IF (shar_rank == 0) THEN
+         READ(iunit,'(A)') machine_string
+         READ(iunit,'(A)') date
          READ(iunit,*) nvertex, ntet, nstate
       END IF
       ! Broadcast info to MPI and allocate vertex and face info
@@ -150,6 +156,16 @@
 
       RETURN
       END SUBROUTINE mumaterial_load
+
+      SUBROUTINE mumaterial_info(iunit)
+      IMPLICIT NONE
+      INTEGER, INTENT(IN) :: iunit
+      WRITE(iunit,*) 'NAME: ',TRIM(machine_string)
+      WRITE(iunit,*) 'DATE: ',TRIM(date)
+      WRITE(iunit,*) 'NVERTEX: ',nvertex
+      WRITE(iunit,*) 'NTET: ',ntet
+      WRITE(iunit,*) 'NSTATE: ',nstate
+      END SUBROUTINE mumaterial_info
       
       SUBROUTINE mumaterial_init(getBfld, comm)
       !-----------------------------------------------------------------------
