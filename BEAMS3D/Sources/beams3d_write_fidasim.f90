@@ -817,7 +817,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    USE mpi_inc
 
    !!!! Namelist
-   INTEGER, parameter :: MAXCHAN = 300
+   INTEGER, parameter :: MAXCHAN = 512
    INTEGER :: ier, iunit,istat
    INTEGER(HID_T) ::  qid_gid,temp_gid
    LOGICAL :: lexist
@@ -975,23 +975,6 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    aoffz = -1.0
    adist = -1.0
 
-
-!Read namelist
-   ! istat=0
-   ! iunit=12
-   ! INQUIRE(FILE='fidasim.' // TRIM(fidasim_id_string),EXIST=lexist)
-   ! IF (.not.lexist) stop 'Could not find input file'
-   ! CALL safe_open(iunit,istat,'fidasim.' //TRIM(fidasim_id_string),'old','formatted')
-   ! IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'in: '//'fidasim.'//TRIM(fidasim_id_string),istat)
-   ! READ(iunit,NML=fidasim_inputs,IOSTAT=istat)
-   ! IF (istat /= 0 .and. istat /= -1) THEN
-   !    backspace(iunit)
-   !    read(iunit,fmt='(A)') line
-   !    write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-   !    CALL handle_err(NAMELIST_READ_ERR,'in: '//'fidasim.'//TRIM(fidasim_id_string),istat)
-   ! END IF
-   ! CLOSE(iunit)
-
    namelist_present = 0
    istat=0
    iunit=12
@@ -1007,11 +990,12 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
    DO WHILE (istat == 0)
       read(iunit,fmt='(A)', IOSTAT=istat) line
-      IF (TRIM(line) == '&fidasim_inputs_b3d') THEN
+     CALL TOLOWER(TRIM(line))
+      IF ( line == '&fidasim_inputs_b3d') THEN
          namelist_present=1
          EXIT
       END IF
-      IF (istat > 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+      IF (istat > 0) CALL handle_err(NAMELIST_PRESENT_ERR,'fidasim_inputs_b3d in: input.'//TRIM(id_string),istat)
    END DO
    rewind(iunit)
    IF (namelist_present==1) THEN
