@@ -10,7 +10,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE beams3d_runtime, ONLY: lfidasim, lfidasim2, nbeams, pi2, &
+      USE beams3d_runtime, ONLY: lfidasim, lfidasim_cyl, nbeams, pi2, &
                               EZSPLINE_ERR
       USE beams3d_grid, ONLY: raxis, phiaxis, zaxis, X4D, Y4D, S4D, &
                               nr, nphi, nz
