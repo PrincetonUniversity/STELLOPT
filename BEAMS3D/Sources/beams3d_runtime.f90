@@ -89,6 +89,7 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: FILE_OPEN_ERR = 1
     INTEGER, PARAMETER :: ALLOC_ERR = 11
     INTEGER, PARAMETER :: NAMELIST_READ_ERR = 12
+    INTEGER, PARAMETER :: NAMELIST_PRESENT_ERR = 15
     INTEGER, PARAMETER :: BAD_INPUT_ERR = 13
     INTEGER, PARAMETER :: BAD_BEAMDEX_ERR = 14
     INTEGER, PARAMETER :: VMEC_INPUT_ERR = 2
@@ -241,6 +242,10 @@ CONTAINS
             WRITE(6, *) '  BEAMS3D ENCOUNTERED AN ERROR READING A NAMELIST'
             WRITE(6, *) '  ', TRIM(string_val)
             WRITE(6, *) '  IERR:      ', ierr
+        ELSEIF (error_num .eq. NAMELIST_PRESENT_ERR) THEN
+            WRITE(6, *) '  BEAMS3D ENCOUNTERED AN ERROR FINDING A NAMELIST'
+            WRITE(6, *) '  ', TRIM(string_val)
+            WRITE(6, *) '  IERR:      ', ierr            
         ELSEIF (error_num .eq. D02CJF_ERR) THEN
             WRITE(6, *) '  BEAMS3D ENCOUNTERED A NAG ERROR (D02CJF)'
             WRITE(6, *) '     CALLING FUNCTION ', TRIM(string_val)
