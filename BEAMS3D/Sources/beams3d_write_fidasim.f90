@@ -990,8 +990,8 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
    DO WHILE (istat == 0)
       read(iunit,fmt='(A)', IOSTAT=istat) line
-     CALL TOLOWER(TRIM(line))
-      IF ( line == '&fidasim_inputs_b3d') THEN
+     CALL TOLOWER(line)
+      IF ( TRIM(line) == '&fidasim_inputs_b3d') THEN
          namelist_present=1
          EXIT
       END IF
