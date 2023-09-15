@@ -68,13 +68,18 @@
       
 !-----------------------------------------------------------------------
 !     Subroutines
-!         muMaterial_setd: Overrides default values
+!         mumaterial_setd: Overrides default values
 !         mumaterial_load: Loads a magnetic material file
 !         mumaterial_init: Calculates magnetization of material
-!         mumaterial_getb: Calculates magnetic field at a point in space
+!         mumaterial_getb_scalar: Calculates magnetic field at a point in space
+!         mumaterial_getb_vector: Calculates magnetic field for multiple points in space
+!         mumaterial_output: Output tiles, H-field and points to file
 !-----------------------------------------------------------------------
 !     Functions
 !-----------------------------------------------------------------------
+      INTERFACE mumaterial_getb
+            MODULE PROCEDURE mumaterial_getb_scalar, mumaterial_getb_vector
+      END INTERFACE
       CONTAINS
       
 
@@ -178,9 +183,27 @@
          DO ik = 1, nstate
             READ(iunit,*) state_type(ik)
             IF (state_type(ik) == 1) THEN
-               READ(iunit,*) constant_mu(ik)!Mag(ik,1),Mag(ik,2),Mag(ik,3) ! todo
+               READ(iunit,*) constant_mu(ik)
             ELSEIF (state_type(ik) == 2) THEN
                PRINT *, 'STATE_TYPE == 2 (soft magnet) not yet supported.'
+                  ! old function for loading state function, may be applicable, adapted from MagTense Standalone IO
+                  ! subroutine loadStateFunctionFortran(stateFunction)
+                  !       integer :: i
+                  !       type(MagStateFunction), dimension(1), intent(out) :: stateFunction
+                  !       OPEN(11, file='stateFunction.dat')
+                  !       read(11,*) stateFunction(1)%nT,stateFunction(1)%nH
+                        
+                  !       allocate( stateFunction(1)%M(stateFunction(1)%nT,stateFunction(1)%nH) )
+                  !       allocate( stateFunction(1)%T(stateFunction(1)%nT) )
+                  !       allocate( stateFunction(1)%H(stateFunction(1)%nH) )
+                        
+                  !       stateFunction(1)%T(1) = 300
+                  !       DO i=1,stateFunction(1)%nH
+                  !       read(11,*) stateFunction(1)%H(i),stateFunction(1)%M(1,i)        
+                  !       END DO
+                        
+                  !       close (11)
+                  ! end subroutine loadStateFunctionFortran
             ELSEIF (state_type(ik) == 3) THEN
                READ(iunit,*) constant_mu(ik)
             ELSE
@@ -262,24 +285,17 @@
             tiles(ik)%magnetType = state_type(state_dex(ik))
 
             IF (tiles(ik)%magnetType == 1) THEN
-               ! tiles(ik)%M = Mag(ik,:) ! todo does this need to be set at all? 
-               !tiles(ik)%mu_r_ea = 1 ! todo it seems this needs to be set, maybe better to load this regardless of type
-               !tiles(ik)%mu_r_oa = 1
                tiles(ik)%mu_r_ea = constant_mu(state_dex(ik))
                tiles(ik)%mu_r_oa = constant_mu(state_dex(ik))
             ELSEIF (tiles(ik)%magnetType == 2) THEN
                PRINT *, 'STATE_TYPE == 2 (soft magnet) not yet supported.'
-               ! tiles(ik)%stateFunctionIndex = state_dex(ik) ! todo something different from state_dex I assume?
-               tiles(ik)%mu_r_ea = 1
-               tiles(ik)%mu_r_oa = 1
+               ! tiles(ik)%stateFunctionIndex = some_array(state_dex(ik))
+               ! mu_r should not have to be set here
             ELSEIF (tiles(ik)%magnetType == 3) THEN
                tiles(ik)%mu_r_ea = constant_mu(state_dex(ik))
                tiles(ik)%mu_r_oa = constant_mu(state_dex(ik))
             END IF
-
-            ! tiles(ik)%stateFunctionIndex = state_dex(ik) ! todo only set when using state function?
-
-
+      
             ! determine centroid
             x = (tiles(ik)%vert(1,1) + tiles(ik)%vert(1,2) + tiles(ik)%vert(1,3) + tiles(ik)%vert(1,4))/4
             y = (tiles(ik)%vert(2,1) + tiles(ik)%vert(2,2) + tiles(ik)%vert(2,3) + tiles(ik)%vert(2,4))/4
@@ -305,15 +321,15 @@
                   tiles(ik)%u_oa2 = [Bx_n*By_n, -Bx_n*Bx_n - Bz_n*Bz_n, By_n*Bz_n]
             END IF
 
-            tiles(ik)%M = tiles(ik)%Mrem * tiles(ik)%u_ea ! todo not sure if necessary, is done in python
+            ! preset magnetization
+            tiles(ik)%M = tiles(ik)%Mrem * tiles(ik)%u_ea
 
             ! call setupEvaluationPoints(tiles(ik)) ! only for cylindrical tiles
       END DO
 
       
       
-      allocate(stateFunction(1)) ! todo temporary until statefunction is properly implemented
-      call loadStateFunctionFortran(stateFunction)
+      !allocate(stateFunction(1)) ! todo temporary until statefunction is properly implemented
 
       call iterateMagnetization(tiles, ntet, stateFunction, size(stateFunction), temp, maxErr, maxIter, 0.d0) ! todo replace size?
 
@@ -321,27 +337,10 @@
       END SUBROUTINE mumaterial_init
 
 
-      subroutine loadStateFunctionFortran(stateFunction) ! todo temp
-            integer :: i
-            type(MagStateFunction), dimension(1), intent(out) :: stateFunction
-            open(11, file='stateFunction.dat')
-            read(11,*) stateFunction(1)%nT,stateFunction(1)%nH
-                
-            allocate( stateFunction(1)%M(stateFunction(1)%nT,stateFunction(1)%nH) )
-            allocate( stateFunction(1)%T(stateFunction(1)%nT) )
-            allocate( stateFunction(1)%H(stateFunction(1)%nH) )
-            
-            stateFunction(1)%T(1) = 300
-            do i=1,stateFunction(1)%nH
-                read(11,*) stateFunction(1)%H(i),stateFunction(1)%M(1,i)        
-            enddo
-            
-            close (11)
-
-    end subroutine loadStateFunctionFortran
+      
 
 
-      SUBROUTINE mumaterial_getb(x, y, z, Bx, By, Bz)
+      SUBROUTINE mumaterial_getb_scalar(x, y, z, Bx, By, Bz)
       !-----------------------------------------------------------------------
       ! mumaterial_getb: Calculates magnetic field at a point in space
       !-----------------------------------------------------------------------
@@ -367,35 +366,107 @@
       Bz = H(1,3) * mu0
 
       RETURN
-      END SUBROUTINE mumaterial_getb
+      END SUBROUTINE mumaterial_getb_scalar
 
 
 
 
 
-      SUBROUTINE mumaterial_getb_grid(points, n_points, B)
+      SUBROUTINE mumaterial_getb_vector(x, y, z, Bx, By, Bz)
       !-----------------------------------------------------------------------
-      ! mumaterial_getb_grid: Calculates magnetic field at multiple points in space
+      ! mumaterial_getb_vector: Calculates magnetic field at multiple points in space
       !-----------------------------------------------------------------------
-      ! param[in]: points. Points at which to determine the magnetic field
-      ! param[in]: n_points. Number of points
-      ! param[out]: B. B-field at required points [T]
+      ! param[in]: x. x-coordinates of points at which to determine the magnetic field
+      ! param[in]: y. y-coordinates of points at which to determine the magnetic field
+      ! param[in]: z. z-coordinates of points at which to determine the magnetic field
+      ! param[out]: Bx. x-value of B-field at required points [T]
+      ! param[out]: By. y-value of B-field at required points [T]
+      ! param[out]: Bz. z-value of B-field at required points [T]
       !-----------------------------------------------------------------------
-      DOUBLE PRECISION, INTENT(in) :: points(n_points,3)
-      INTEGER, INTENT(in) :: n_points
-      DOUBLE PRECISION, INTENT(out), ALLOCATABLE :: B(:,:)
+      DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
+      DOUBLE PRECISION, INTENT(out), ALLOCATABLE :: Bx(:), By(:), Bz(:)
+      INTEGER :: n_points
       DOUBLE PRECISION :: mu0
+      DOUBLE PRECISION, ALLOCATABLE :: B(:,:), points(:,:)
 
-      allocate(B(n_points,3)) ! todo assuming this needs to be allocated here and not in main program
+      n_points = size(x)
+
+      allocate(points(n_points,3))
+      allocate(B(n_points,3))
+      allocate(Bx(n_points))
+      allocate(By(n_points))
+      allocate(Bz(n_points))
 
       mu0 = 16 * atan(1.d0) * 1.d-7
+
+      points(:,1) = x
+      points(:,2) = y
+      points(:,3) = z
 
       call getFieldFromTiles(tiles, B, points, ntet, n_points)
 
       B = B * mu0
+      Bx = B(:,1)
+      By = B(:,2)
+      Bz = B(:,3)
+      
+      RETURN
+      END SUBROUTINE mumaterial_getb_vector
+
+
+
+
+
+      SUBROUTINE mumaterial_output(path, x, y, z)
+      !-----------------------------------------------------------------------
+      ! mumaterial_output: Outputs tiles, H-field and points to text files
+      !-----------------------------------------------------------------------
+      ! param[in]: path. Path to store files in
+      ! param[in]: x. x-cooridinates of points at which to determine the magnetic field
+      ! param[in]: y. y-cooridinates of points at which to determine the magnetic field
+      ! param[in]: z. z-cooridinates of points at which to determine the magnetic field
+      !-----------------------------------------------------------------------
+      CHARACTER(LEN=*), INTENT(in) :: path
+      DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
+      INTEGER :: n_points
+      DOUBLE PRECISION, ALLOCATABLE :: H(:,:), points(:,:)
+      INTEGER :: i, j
+
+      n_points = size(x)
+      allocate(points(n_points,3))
+      points(:,1) = x
+      points(:,2) = y
+      points(:,3) = z
+
+      OPEN(12, file=TRIM(path)//'/tiles.dat')
+        WRITE(12, "(I15)") ntet
+        DO i = 1, ntet
+            WRITE(12,"(F15.7,A,F15.7,A,F15.7,A)") tiles(i)%u_ea(1),',',tiles(i)%u_ea(2),',',tiles(i)%u_ea(3),',   :u_ea_x,u_ea_y,u_ea_z'
+            WRITE(12,"(F15.7,A,F15.7,A,F15.7,A)") tiles(i)%Mrem,',',tiles(i)%mu_r_ea,',',tiles(i)%mu_r_oa,',   :Mrem,mu_r_ea,mu_r_oa'
+            WRITE(12,"(I1,A,I1,A,I1,A,I1,A)") tiles(i)%tileType,',',tiles(i)%magnetType,',',tiles(i)%stateFunctionIndex,',',tiles(i)%includeInIteration,',   :tileType,magnetType,stFcnIndex,inclIter'
+            DO j = 1, 4
+                WRITE(12,"(F15.7,A,F15.7,A,F15.7,A)") tiles(i)%vert(1,j), ',', tiles(i)%vert(2,j), ',', tiles(i)%vert(3,j),',   :vert'
+            END DO
+        END DO
+      CLOSE(12)
+
+      OPEN(13, file=TRIM(path)//'/points.dat')
+        DO i = 1, n_points
+            WRITE(13, "(F15.7,A,F15.7,A,F15.7)") points(i, 1), ',', points(i, 2), ',', points(i, 3)
+        END DO
+      CLOSE(13)
+
+      allocate(H(n_points,3))
+      call getFieldFromTiles(tiles, H, points, ntet, n_points)
+
+      OPEN(14, file=TRIM(path)//'/H.dat')
+        DO i = 1, n_points
+            WRITE(14, "(E15.7,A,E15.7,A,E15.7)") H(i, 1), ',', H(i, 2), ',', H(i, 3)
+        END DO
+      CLOSE(14)
 
       RETURN
-      END SUBROUTINE mumaterial_getb_grid
+      END SUBROUTINE
 
 
 
