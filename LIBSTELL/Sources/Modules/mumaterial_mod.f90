@@ -97,6 +97,8 @@
       DOUBLE PRECISION, INTENT(in) :: mE, T
       INTEGER, INTENT(in) :: mI
 
+      WRITE(*,*) "Setting max Error, max Iterations and Temperature to: ", mE, mI, T
+
       maxErr = mE
       maxIter = mI
       temp = T
@@ -168,7 +170,7 @@
 #if defined(MPI_OPT)
       END IF
 #endif
-
+      WRITE(*,*) "Reading tile data"
       ! read in the mesh
       IF (istat/=0) RETURN
       IF (shar_rank == 0) THEN
@@ -218,7 +220,7 @@
       ! close file
       CLOSE(iunit)
 
-
+      WRITE(*,*) "Finished reading tile data"
 
       ! set default values
       call MUMATERIAL_SETD(1.0d-5, 100, 300.d0)
@@ -246,24 +248,28 @@
 
 
 
-      SUBROUTINE mumaterial_init(getBfld, comm)
+      SUBROUTINE mumaterial_init(getBfld, offset, comm)
       !-----------------------------------------------------------------------
       ! mumaterial_init: Calculates magnetization of material
       !-----------------------------------------------------------------------
       ! fcn           : getBfld. Function which returns the vacuum magnetic field
       !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
+      ! param[in]: offset. Offset of all tiles from the origin
       ! param[in, out]: comm. MPI communicator, handles shared memory
       !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
 #endif
       IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in) :: offset(3)
       INTEGER, INTENT(inout), OPTIONAL :: comm
       EXTERNAL:: getBfld
       INTEGER :: ik
       DOUBLE PRECISION :: mu0, norm, x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n
       
       mu0 = 16 * atan(1.d0) * 1.d-7
+
+      WRITE(*,*) "Setting up tiles"
       
       allocate(tiles(ntet))
 
@@ -272,10 +278,10 @@
             ! each tetrahedron is a tile
             ! tet(ik,1) contains the relevant vertex index for tile vertex 1
             ! vertex(index,:) returns the relevant coordinates
-            tiles(ik)%vert(:,1) = vertex(tet(ik,1),:)
-            tiles(ik)%vert(:,2) = vertex(tet(ik,2),:)
-            tiles(ik)%vert(:,3) = vertex(tet(ik,3),:)
-            tiles(ik)%vert(:,4) = vertex(tet(ik,4),:)
+            tiles(ik)%vert(:,1) = [vertex(tet(ik,1),1)+offset(1), vertex(tet(ik,1),2)+offset(2), vertex(tet(ik,1),3)+offset(3)]
+            tiles(ik)%vert(:,2) = [vertex(tet(ik,2),1)+offset(1), vertex(tet(ik,2),2)+offset(2), vertex(tet(ik,2),3)+offset(3)]
+            tiles(ik)%vert(:,3) = [vertex(tet(ik,3),1)+offset(1), vertex(tet(ik,3),2)+offset(2), vertex(tet(ik,3),3)+offset(3)]
+            tiles(ik)%vert(:,4) = [vertex(tet(ik,4),1)+offset(1), vertex(tet(ik,4),2)+offset(2), vertex(tet(ik,4),3)+offset(3)]
 
             ! tetrahedron tile
             tiles(ik)%tileType = 5
@@ -297,9 +303,9 @@
             END IF
       
             ! determine centroid
-            x = (tiles(ik)%vert(1,1) + tiles(ik)%vert(1,2) + tiles(ik)%vert(1,3) + tiles(ik)%vert(1,4))/4
-            y = (tiles(ik)%vert(2,1) + tiles(ik)%vert(2,2) + tiles(ik)%vert(2,3) + tiles(ik)%vert(2,4))/4
-            z = (tiles(ik)%vert(3,1) + tiles(ik)%vert(3,2) + tiles(ik)%vert(3,3) + tiles(ik)%vert(3,4))/4
+            x = (tiles(ik)%vert(1,1) + tiles(ik)%vert(1,2) + tiles(ik)%vert(1,3) + tiles(ik)%vert(1,4))/4.0
+            y = (tiles(ik)%vert(2,1) + tiles(ik)%vert(2,2) + tiles(ik)%vert(2,3) + tiles(ik)%vert(2,4))/4.0
+            z = (tiles(ik)%vert(3,1) + tiles(ik)%vert(3,2) + tiles(ik)%vert(3,3) + tiles(ik)%vert(3,4))/4.0
             
             ! get B-field and determine strength
             call getBfld(x, y, z, Bx, By, Bz)
@@ -327,7 +333,7 @@
             ! call setupEvaluationPoints(tiles(ik)) ! only for cylindrical tiles
       END DO
 
-      
+      WRITE(*,*) "Running iterations"      
       
       !allocate(stateFunction(1)) ! todo temporary until statefunction is properly implemented
 
@@ -359,7 +365,7 @@
 
       point(1,:) = [x, y, z]
 
-      call getFieldFromTiles(tiles, H, point, ntet, 1)
+      call getFieldFromTiles(tiles, H, point, ntet, 1) ! todo likely possible to directly call function related to tetrahedrons
 
       Bx = H(1,1) * mu0
       By = H(1,2) * mu0
@@ -403,7 +409,7 @@
       points(:,2) = y
       points(:,3) = z
 
-      call getFieldFromTiles(tiles, B, points, ntet, n_points)
+      call getFieldFromTiles(tiles, B, points, ntet, n_points) ! todo likely possible to directly call function related to tetrahedrons
 
       B = B * mu0
       Bx = B(:,1)
@@ -432,6 +438,8 @@
       DOUBLE PRECISION, ALLOCATABLE :: H(:,:), points(:,:)
       INTEGER :: i, j
 
+      WRITE(*,*) "Outputting tiles"
+
       n_points = size(x)
       allocate(points(n_points,3))
       points(:,1) = x
@@ -450,14 +458,20 @@
         END DO
       CLOSE(12)
 
+      WRITE(*,*) "Outputting points"
+
       OPEN(13, file=TRIM(path)//'/points.dat')
         DO i = 1, n_points
             WRITE(13, "(F15.7,A,F15.7,A,F15.7)") points(i, 1), ',', points(i, 2), ',', points(i, 3)
         END DO
       CLOSE(13)
 
+      WRITE(*,*) "Getting H-field"
+
       allocate(H(n_points,3))
       call getFieldFromTiles(tiles, H, points, ntet, n_points)
+
+      WRITE(*,*) "Outputting H-field"
 
       OPEN(14, file=TRIM(path)//'/H.dat')
         DO i = 1, n_points
