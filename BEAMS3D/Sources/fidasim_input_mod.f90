@@ -911,7 +911,7 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    calc_npa_wght = 0    !! Calculate NPA weights
    !! Debugging Switches
    seed = -1    !! RNG Seed. If seed is negative a random seed is used
-   flr = 2    !! Turn on Finite Larmor Radius corrections
+   flr = 1    !! Turn on Finite Larmor Radius corrections
    load_neutrals = 0    !! Load neutrals from neutrals file
    verbose = 1    !! Verbose
    !! Monte Carlo Settings
@@ -1017,8 +1017,8 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    ! Open the inputs.dat file
    iunit = 10
    CALL safe_open(iunit,istat,'fidasim_'//TRIM(id_string)//'_inputs.dat','replace','formatted')
-   WRITE(iunit,nml=fidasim_inputs)
-   !CALL WriteNamelist(iunit, fidasim_inputs)
+   !WRITE(iunit,nml=fidasim_inputs)
+   CALL write_fidasim_namelist(iunit, istat)
    CALL FLUSH(iunit)
    CLOSE(iunit)
 
@@ -1035,8 +1035,6 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    !--------------------------------------------------------------
    !           NBI
    !--------------------------------------------------------------
-
-
 
    CALL h5gcreate_f(fid,'nbi', qid_gid, ier)
    CALL write_att_hdf5(qid_gid,'coordinate_system','Right-handed cartesian',ier)
@@ -1238,5 +1236,88 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
 !     End Subroutine
 !-----------------------------------------------------------------------
 END SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
+
+
+
+      SUBROUTINE write_fidasim_namelist(iunit_out, istat)
+      INTEGER, INTENT(in) :: iunit_out
+      INTEGER, INTENT(out) :: istat
+      INTEGER :: ik, n
+      CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
+      CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
+      CHARACTER(LEN=*), PARAMETER :: outflt  = "(2X,A,1X,'=',1X,ES22.12E3)"
+      CHARACTER(LEN=*), PARAMETER :: outexp  = "(2X,A,1X,'=',1X,ES22.12E3)"
+      CHARACTER(LEN=*), PARAMETER :: outcmp  = "(2x,A,1X,'=','(',i3,',',i3,')')"
+      CHARACTER(LEN=*), PARAMETER :: outstr  = "(2X,A,1X,'=',1X,'''',A,'''')"
+      CHARACTER(LEN=*), PARAMETER :: onevar  = "(2X,A,1X,'=',1X,L1,2(2X,A,1X,'=',1X,ES22.12E3))"
+      CHARACTER(LEN=*), PARAMETER :: vecvar  = "(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3)"
+      CHARACTER(LEN=*), PARAMETER :: vecvar2  = "(2X,A,'(',I3.3,',',I3.3,')',1X,'=',1X,ES22.12E3)"
+      istat = 0
+      WRITE(iunit_out,'(A)') '&FIDASIM_INPUTS'
+      WRITE(iunit_out,'(A)') '!---------- STRING VARIABLES ------------'
+      WRITE(iunit_out,outstr) 'TABLES_FILE',TRIM(tables_file)
+      WRITE(iunit_out,outstr) 'EQUILIBRIUM_FILE',TRIM(equilibrium_file)
+      WRITE(iunit_out,outstr) 'GEOMETRY_FILE',TRIM(geometry_file)
+      WRITE(iunit_out,outstr) 'DISTRIBUTION_FILE',TRIM(distribution_file)
+      WRITE(iunit_out,outstr) 'NEUTRALS_FILE',TRIM(neutrals_file)
+      WRITE(iunit_out,outstr) 'RESULT_DIR',TRIM(result_dir)
+      WRITE(iunit_out,outstr) 'RUNID',TRIM(runid)
+      WRITE(iunit_out,'(A)') '!---------- INTEGER VARIABLES ------------'
+      WRITE(iunit_out,outint) 'SHOT',shot
+      WRITE(iunit_out,outint) 'SEED',seed
+      WRITE(iunit_out,outint) 'FLR',flr
+      WRITE(iunit_out,outint) 'VERBOSE',verbose
+      WRITE(iunit_out,outint) 'NLAMBDA',nlambda
+      WRITE(iunit_out,outint) 'LOAD_NEUTRALS',load_neutrals
+      WRITE(iunit_out,outint) 'NX',nx
+      WRITE(iunit_out,outint) 'NY',ny
+      WRITE(iunit_out,outint) 'NZ',nz
+      WRITE(iunit_out,outint) 'N_NBI',n_nbi
+      WRITE(iunit_out,outint) 'N_DCX',n_dcx
+      WRITE(iunit_out,outint) 'N_HALO',n_halo
+      WRITE(iunit_out,outint) 'N_BIRTH',n_birth
+      WRITE(iunit_out,outint) 'N_FIDA',n_fida
+      WRITE(iunit_out,outint) 'N_PFIDA',n_pfida
+      WRITE(iunit_out,outint) 'N_NPA',n_npa
+      WRITE(iunit_out,outint) 'NE_WGHT',ne_wght
+      WRITE(iunit_out,outint) 'NP_WGHT',np_wght
+      WRITE(iunit_out,outint) 'NPHI_WGHT',nphi_wght
+      WRITE(iunit_out,outint) 'NLAMBDA_WGHT',nlambda_wght
+      WRITE(iunit_out,outint) 'CALC_BREMS',calc_brems
+      WRITE(iunit_out,outint) 'CALC_COLD',calc_cold
+      WRITE(iunit_out,outint) 'CALC_NEUTRON',calc_neutron
+      WRITE(iunit_out,outint) 'CALC_DCX',calc_dcx
+      WRITE(iunit_out,outint) 'CALC_HALO',calc_halo
+      WRITE(iunit_out,outint) 'CALC_BES',calc_bes
+      WRITE(iunit_out,outint) 'CALC_FIDA',calc_fida
+      WRITE(iunit_out,outint) 'CALC_PFIDA',calc_pfida
+      WRITE(iunit_out,outint) 'CALC_NPA',calc_npa
+      WRITE(iunit_out,outint) 'CALC_FIDA_WGHT',calc_fida_wght
+      WRITE(iunit_out,outint) 'CALC_NPA_WGHT',calc_npa_wght
+      WRITE(iunit_out,'(A)') '!---------- FLOAT VARIABLES ------------'
+       WRITE(iunit_out,outflt) 'XMIN',xmin  
+       WRITE(iunit_out,outflt) 'XMAX',xmax  
+       WRITE(iunit_out,outflt) 'YMIN',ymin  
+       WRITE(iunit_out,outflt) 'YMAX',ymax         
+       WRITE(iunit_out,outflt) 'ZMIN',zmin  
+       WRITE(iunit_out,outflt) 'ZMAX',zmax         
+       WRITE(iunit_out,outflt) 'PINJ',pinj
+       WRITE(iunit_out,outflt) 'EINJ',einj
+       WRITE(iunit_out,outflt) 'AI',ai
+       WRITE(iunit_out,outflt) 'ab',ab
+       WRITE(iunit_out,outflt) 'ALPHA',alpha
+       WRITE(iunit_out,outflt) 'BETA',beta
+       WRITE(iunit_out,outflt) 'GAMMA',gamma
+       WRITE(iunit_out,outflt) 'LAMBDAMIN',lambdamin
+       WRITE(iunit_out,outflt) 'LAMBDAMAX',lambdamax
+       WRITE(iunit_out,outflt) 'LAMBDAMIN_WGHT',lambdamin_wght
+       WRITE(iunit_out,outflt) 'LAMBDAMAX_WGHT',lambdamax_wght
+       WRITE(iunit_out,outflt) 'EMAX_WGHT',emax_wght
+       WRITE(iunit_out,'(A)') '!---------- ARRAY VARIABLES ------------'
+       WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'CURRENT_FRACTIONS',(current_fractions(n), n=1,3)
+       WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ORIGIN',(origin(n), n=1,3)
+      WRITE(iunit_out,'(A)') '/'
+
+      END SUBROUTINE write_fidasim_namelist
 
 END MODULE fidasim_input_mod
