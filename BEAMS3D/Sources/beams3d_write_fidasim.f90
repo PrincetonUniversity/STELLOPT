@@ -975,36 +975,20 @@ SUBROUTINE read_fidasim_namelist_and_make_input_and_geometry
    aoffz = -1.0
    adist = -1.0
 
-   namelist_present = 0
+
+       ! Read namelist
    istat=0
    iunit=12
-   !Check that fidasim inputs namelist exists
-   INQUIRE(FILE='input.' // TRIM(id_string),EXIST=lexist)
+   INQUIRE(FILE=TRIM('input.' // TRIM(id_string)),EXIST=lexist)
+   IF (.not.lexist) stop 'Could not find input file'
    CALL safe_open(iunit,istat,'input.' // TRIM(id_string),'old','formatted')
-   IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
-   DO WHILE (istat == 0)
-      read(iunit,fmt='(A)', IOSTAT=istat) line
-     CALL TOLOWER(line)
-      IF ( TRIM(line) == '&fidasim_inputs_b3d') THEN
-         namelist_present=1
-         EXIT
-      END IF
-      IF (istat > 0) CALL handle_err(NAMELIST_READ_ERR,'fidasim_inputs_b3d in: input.'//TRIM(id_string),istat)
-   END DO
-   rewind(iunit)
-   IF (namelist_present==1) THEN
-      istat = 0
-      READ(iunit,NML=fidasim_inputs_b3d,IOSTAT=istat)
-      IF (istat /= 0) THEN
-         backspace(iunit)
-         read(iunit,fmt='(A)') line
-         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-         IF (istat > 0) CALL handle_err(NAMELIST_READ_ERR,'fidasim_inputs_b3d in: input.'//TRIM(id_string),istat)
-      END IF
-   ELSE
-      write(6,'(A)') 'Continuing without FIDASIM input generation'
-      write(6,'(A)') 'Is the namelist present in the input file?'
-      return
+   IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'fidasim_inputs_b3d in: ' //'input.' //TRIM(id_string),istat)
+   READ(iunit,NML=fidasim_inputs_b3d,IOSTAT=istat)
+   IF (istat /= 0) THEN
+      backspace(iunit)
+      read(iunit,fmt='(A)') line
+      write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+      CALL handle_err(NAMELIST_READ_ERR,'fidasim_inputs_b3d in: '//'input.' //TRIM(id_string),istat)
    END IF
    CLOSE(iunit)
 
