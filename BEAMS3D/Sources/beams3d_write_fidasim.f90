@@ -67,6 +67,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    REAL*8, PARAMETER :: one = 1
    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
    DOUBLE PRECISION, PARAMETER :: zero          = 0.0D0 ! 0.0
+   DOUBLE PRECISION, PARAMETER :: t_min          = 1.0D-3 !
 
    !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -507,7 +508,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                      hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                      TE4D(1,1,1,1),nr,nphi,nz)
-                  rtemp(l,n,m) = max(fval(1),zero)
+                  rtemp(l,n,m) = max(fval(1),t_min)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                      hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                      NE4D(1,1,1,1),nr,nphi,nz)
@@ -515,7 +516,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                      hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                      TI4D(1,1,1,1),nr,nphi,nz)
-                  rtemp3(l,n,m) = max(fval(1),zero)
+                  rtemp3(l,n,m) = max(fval(1),t_min)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                      hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                      ZEFF4D(1,1,1,1),nr,nphi,nz)
