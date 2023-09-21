@@ -52,7 +52,7 @@ MODULE fidasim_input_mod
    DOUBLE PRECISION  :: time, lambdamin,  lambdamax,   alpha,   beta,   gamma,      xminf,&
       xmax,   ymin,   ymax,   zmin,   zmax, ab,   ai,   pinj,   einj,&
       focy,focz,widz,widy,emax_wght,lambdamin_wght, lambdamax_wght
-   INTEGER ::  nlambda, nx, ny,impurity_charge, ne_wght, np_wght, nphi_wght, nlambda_wght,& !!!! nz, 
+   INTEGER ::  nlambda, nx_beam, ny_beam,nz_beam,impurity_charge, ne_wght, np_wght, nphi_wght, nlambda_wght,& !!!! nz, 
       calc_npa,   calc_fida,   calc_pnpa,   calc_pfida,   calc_bes,   calc_dcx,   calc_halo, &
       calc_cold,   calc_brems,   calc_birth,   calc_fida_wght,   calc_npa_wght,   calc_neutron,&
       shape, load_neutrals,verbose,flr,naperture,nchan,namelist_present
@@ -75,16 +75,16 @@ MODULE fidasim_input_mod
       nbi_data_source,name,shape,src,axis_nbi,divy,divz,focy,focz,widz,widy,naperture,ashape,awidy,awidz, aoffy, aoffz, adist,&
       spec_data_source,nchan,system,id,lens,axis_spec,sigma_pi,spot_size,radius
 
-   NAMELIST /fidasim_inputs/ tables_file, equilibrium_file,geometry_file,distribution_file,&
-      result_dir,neutrals_file,shot, time, runid,  nlambda,seed,load_neutrals,verbose,flr,&
-      lambdamin, lambdamax, nx, ny, nz, alpha, beta, gamma, origin,&
-      xmin, xmax, ymin, ymax, zmin, zmax, ab, ai, current_fractions,&
-      pinj, einj, impurity_charge, n_fida, n_nbi, n_pfida, n_pnpa,&
-      n_dcx, n_npa, n_halo, n_birth, ne_wght, np_wght, nphi_wght,&
-      emax_wght, nlambda_wght, lambdamin_wght, lambdamax_wght,&
-      calc_npa, calc_fida, calc_pnpa, calc_pfida, calc_bes, calc_dcx,&
-      calc_halo, calc_cold, calc_brems, calc_birth, calc_fida_wght, calc_npa_wght,&
-      calc_neutron!comment,device,,id
+!    NAMELIST /fidasim_inputs/ tables_file, equilibrium_file,geometry_file,distribution_file,&
+!       result_dir,neutrals_file,shot, time, runid,  nlambda,seed,load_neutrals,verbose,flr,&
+!       lambdamin, lambdamax, nx, ny, nz, alpha, beta, gamma, origin,&
+!       xmin, xmax, ymin, ymax, zmin, zmax, ab, ai, current_fractions,&
+!       pinj, einj, impurity_charge, n_fida, n_nbi, n_pfida, n_pnpa,&
+!       n_dcx, n_npa, n_halo, n_birth, ne_wght, np_wght, nphi_wght,&
+!       emax_wght, nlambda_wght, lambdamin_wght, lambdamax_wght,&
+!       calc_npa, calc_fida, calc_pnpa, calc_pfida, calc_bes, calc_dcx,&
+!       calc_halo, calc_cold, calc_brems, calc_birth, calc_fida_wght, calc_npa_wght,&
+!       calc_neutron!comment,device,,id
 
 
       CONTAINS
@@ -459,9 +459,9 @@ SUBROUTINE init_fidasim_input
    ai = 0.000000     !! Ion Species mass [amu]
    impurity_charge = 5     !! Impurity Charge
    !! Beam Grid Settings
-   nx = 90    !! Number of cells in X direction (Into Plasma)
-   ny = 40    !! Number of cells in Y direction
-   nz = 40    !! Number of cells in Z direction
+   nx_beam = 90    !! Number of cells in X direction (Into Plasma)
+   ny_beam = 40    !! Number of cells in Y direction
+   nz_beam = 40    !! Number of cells in Z direction
    xmin = 0.000000     !! Minimum X value [cm]
    xmax = 180.000000     !! Maximum X value [cm]
    ymin = -40.000000     !! Minimum Y value [cm]
@@ -518,6 +518,89 @@ SUBROUTINE init_fidasim_input
    adist = -1.0
 
 END SUBROUTINE init_fidasim_input
+
+SUBROUTINE write_fidasim_namelist(iunit_out, istat)
+      INTEGER, INTENT(in) :: iunit_out
+      INTEGER, INTENT(out) :: istat
+      INTEGER :: ik, n
+      CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
+      CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
+      CHARACTER(LEN=*), PARAMETER :: outflt  = "(2X,A,1X,'=',1X,ES22.12E3)"
+      CHARACTER(LEN=*), PARAMETER :: outexp  = "(2X,A,1X,'=',1X,ES22.12E3)"
+      CHARACTER(LEN=*), PARAMETER :: outcmp  = "(2x,A,1X,'=','(',i3,',',i3,')')"
+      CHARACTER(LEN=*), PARAMETER :: outstr  = "(2X,A,1X,'=',1X,'''',A,'''')"
+      CHARACTER(LEN=*), PARAMETER :: onevar  = "(2X,A,1X,'=',1X,L1,2(2X,A,1X,'=',1X,ES22.12E3))"
+      CHARACTER(LEN=*), PARAMETER :: vecvar  = "(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3)"
+      CHARACTER(LEN=*), PARAMETER :: vecvar2  = "(2X,A,'(',I3.3,',',I3.3,')',1X,'=',1X,ES22.12E3)"
+      istat = 0
+      WRITE(iunit_out,'(A)') '&FIDASIM_INPUTS'
+      WRITE(iunit_out,'(A)') '!---------- STRING VARIABLES ------------'
+      WRITE(iunit_out,outstr) 'TABLES_FILE',TRIM(tables_file)
+      WRITE(iunit_out,outstr) 'EQUILIBRIUM_FILE',TRIM(equilibrium_file)
+      WRITE(iunit_out,outstr) 'GEOMETRY_FILE',TRIM(geometry_file)
+      WRITE(iunit_out,outstr) 'DISTRIBUTION_FILE',TRIM(distribution_file)
+      WRITE(iunit_out,outstr) 'NEUTRALS_FILE',TRIM(neutrals_file)
+      WRITE(iunit_out,outstr) 'RESULT_DIR',TRIM(result_dir)
+      WRITE(iunit_out,outstr) 'RUNID',TRIM(runid)
+      WRITE(iunit_out,'(A)') '!---------- INTEGER VARIABLES ------------'
+      WRITE(iunit_out,outint) 'SHOT',shot
+      WRITE(iunit_out,outint) 'SEED',seed
+      WRITE(iunit_out,outint) 'FLR',flr
+      WRITE(iunit_out,outint) 'VERBOSE',verbose
+      WRITE(iunit_out,outint) 'NLAMBDA',nlambda
+      WRITE(iunit_out,outint) 'LOAD_NEUTRALS',load_neutrals
+      WRITE(iunit_out,outint) 'NX',nx_beam
+      WRITE(iunit_out,outint) 'NY',ny_beam
+      WRITE(iunit_out,outint) 'NZ',nz_beam
+      WRITE(iunit_out,outint) 'N_NBI',n_nbi
+      WRITE(iunit_out,outint) 'N_DCX',n_dcx
+      WRITE(iunit_out,outint) 'N_HALO',n_halo
+      WRITE(iunit_out,outint) 'N_BIRTH',n_birth
+      WRITE(iunit_out,outint) 'N_FIDA',n_fida
+      WRITE(iunit_out,outint) 'N_PFIDA',n_pfida
+      WRITE(iunit_out,outint) 'N_NPA',n_npa
+      WRITE(iunit_out,outint) 'NE_WGHT',ne_wght
+      WRITE(iunit_out,outint) 'NP_WGHT',np_wght
+      WRITE(iunit_out,outint) 'NPHI_WGHT',nphi_wght
+      WRITE(iunit_out,outint) 'NLAMBDA_WGHT',nlambda_wght
+      WRITE(iunit_out,outint) 'CALC_BREMS',calc_brems
+      WRITE(iunit_out,outint) 'CALC_COLD',calc_cold
+      WRITE(iunit_out,outint) 'CALC_NEUTRON',calc_neutron
+      WRITE(iunit_out,outint) 'CALC_DCX',calc_dcx
+      WRITE(iunit_out,outint) 'CALC_HALO',calc_halo
+      WRITE(iunit_out,outint) 'CALC_BES',calc_bes
+      WRITE(iunit_out,outint) 'CALC_FIDA',calc_fida
+      WRITE(iunit_out,outint) 'CALC_PFIDA',calc_pfida
+      WRITE(iunit_out,outint) 'CALC_NPA',calc_npa
+      WRITE(iunit_out,outint) 'CALC_FIDA_WGHT',calc_fida_wght
+      WRITE(iunit_out,outint) 'CALC_NPA_WGHT',calc_npa_wght
+      WRITE(iunit_out,'(A)') '!---------- FLOAT VARIABLES ------------'
+       WRITE(iunit_out,outflt) 'XMIN',xmin  
+       WRITE(iunit_out,outflt) 'XMAX',xmax  
+       WRITE(iunit_out,outflt) 'YMIN',ymin  
+       WRITE(iunit_out,outflt) 'YMAX',ymax         
+       WRITE(iunit_out,outflt) 'ZMIN',zmin  
+       WRITE(iunit_out,outflt) 'ZMAX',zmax         
+       WRITE(iunit_out,outflt) 'PINJ',pinj
+       WRITE(iunit_out,outflt) 'EINJ',einj
+       WRITE(iunit_out,outflt) 'AI',ai
+       WRITE(iunit_out,outflt) 'ab',ab
+       WRITE(iunit_out,outflt) 'ALPHA',alpha
+       WRITE(iunit_out,outflt) 'BETA',beta
+       WRITE(iunit_out,outflt) 'GAMMA',gamma
+       WRITE(iunit_out,outflt) 'LAMBDAMIN',lambdamin
+       WRITE(iunit_out,outflt) 'LAMBDAMAX',lambdamax
+       WRITE(iunit_out,outflt) 'LAMBDAMIN_WGHT',lambdamin_wght
+       WRITE(iunit_out,outflt) 'LAMBDAMAX_WGHT',lambdamax_wght
+       WRITE(iunit_out,outflt) 'EMAX_WGHT',emax_wght
+       WRITE(iunit_out,'(A)') '!---------- ARRAY VARIABLES ------------'
+       WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'CURRENT_FRACTIONS',(current_fractions(n), n=1,3)
+       WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ORIGIN',(origin(n), n=1,3)
+      WRITE(iunit_out,'(A)') '/'
+
+END SUBROUTINE write_fidasim_namelist
+
+
 
 SUBROUTINE write_fidasim_geometry
 
@@ -731,88 +814,6 @@ SUBROUTINE write_fidasim_geometry
 !     End Subroutine
 !-----------------------------------------------------------------------
 END SUBROUTINE write_fidasim_geometry
-
-
-SUBROUTINE write_fidasim_namelist(iunit_out, istat)
-      INTEGER, INTENT(in) :: iunit_out
-      INTEGER, INTENT(out) :: istat
-      INTEGER :: ik, n
-      CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
-      CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
-      CHARACTER(LEN=*), PARAMETER :: outflt  = "(2X,A,1X,'=',1X,ES22.12E3)"
-      CHARACTER(LEN=*), PARAMETER :: outexp  = "(2X,A,1X,'=',1X,ES22.12E3)"
-      CHARACTER(LEN=*), PARAMETER :: outcmp  = "(2x,A,1X,'=','(',i3,',',i3,')')"
-      CHARACTER(LEN=*), PARAMETER :: outstr  = "(2X,A,1X,'=',1X,'''',A,'''')"
-      CHARACTER(LEN=*), PARAMETER :: onevar  = "(2X,A,1X,'=',1X,L1,2(2X,A,1X,'=',1X,ES22.12E3))"
-      CHARACTER(LEN=*), PARAMETER :: vecvar  = "(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3)"
-      CHARACTER(LEN=*), PARAMETER :: vecvar2  = "(2X,A,'(',I3.3,',',I3.3,')',1X,'=',1X,ES22.12E3)"
-      istat = 0
-      WRITE(iunit_out,'(A)') '&FIDASIM_INPUTS'
-      WRITE(iunit_out,'(A)') '!---------- STRING VARIABLES ------------'
-      WRITE(iunit_out,outstr) 'TABLES_FILE',TRIM(tables_file)
-      WRITE(iunit_out,outstr) 'EQUILIBRIUM_FILE',TRIM(equilibrium_file)
-      WRITE(iunit_out,outstr) 'GEOMETRY_FILE',TRIM(geometry_file)
-      WRITE(iunit_out,outstr) 'DISTRIBUTION_FILE',TRIM(distribution_file)
-      WRITE(iunit_out,outstr) 'NEUTRALS_FILE',TRIM(neutrals_file)
-      WRITE(iunit_out,outstr) 'RESULT_DIR',TRIM(result_dir)
-      WRITE(iunit_out,outstr) 'RUNID',TRIM(runid)
-      WRITE(iunit_out,'(A)') '!---------- INTEGER VARIABLES ------------'
-      WRITE(iunit_out,outint) 'SHOT',shot
-      WRITE(iunit_out,outint) 'SEED',seed
-      WRITE(iunit_out,outint) 'FLR',flr
-      WRITE(iunit_out,outint) 'VERBOSE',verbose
-      WRITE(iunit_out,outint) 'NLAMBDA',nlambda
-      WRITE(iunit_out,outint) 'LOAD_NEUTRALS',load_neutrals
-      WRITE(iunit_out,outint) 'NX',nx
-      WRITE(iunit_out,outint) 'NY',ny
-      WRITE(iunit_out,outint) 'NZ',nz
-      WRITE(iunit_out,outint) 'N_NBI',n_nbi
-      WRITE(iunit_out,outint) 'N_DCX',n_dcx
-      WRITE(iunit_out,outint) 'N_HALO',n_halo
-      WRITE(iunit_out,outint) 'N_BIRTH',n_birth
-      WRITE(iunit_out,outint) 'N_FIDA',n_fida
-      WRITE(iunit_out,outint) 'N_PFIDA',n_pfida
-      WRITE(iunit_out,outint) 'N_NPA',n_npa
-      WRITE(iunit_out,outint) 'NE_WGHT',ne_wght
-      WRITE(iunit_out,outint) 'NP_WGHT',np_wght
-      WRITE(iunit_out,outint) 'NPHI_WGHT',nphi_wght
-      WRITE(iunit_out,outint) 'NLAMBDA_WGHT',nlambda_wght
-      WRITE(iunit_out,outint) 'CALC_BREMS',calc_brems
-      WRITE(iunit_out,outint) 'CALC_COLD',calc_cold
-      WRITE(iunit_out,outint) 'CALC_NEUTRON',calc_neutron
-      WRITE(iunit_out,outint) 'CALC_DCX',calc_dcx
-      WRITE(iunit_out,outint) 'CALC_HALO',calc_halo
-      WRITE(iunit_out,outint) 'CALC_BES',calc_bes
-      WRITE(iunit_out,outint) 'CALC_FIDA',calc_fida
-      WRITE(iunit_out,outint) 'CALC_PFIDA',calc_pfida
-      WRITE(iunit_out,outint) 'CALC_NPA',calc_npa
-      WRITE(iunit_out,outint) 'CALC_FIDA_WGHT',calc_fida_wght
-      WRITE(iunit_out,outint) 'CALC_NPA_WGHT',calc_npa_wght
-      WRITE(iunit_out,'(A)') '!---------- FLOAT VARIABLES ------------'
-       WRITE(iunit_out,outflt) 'XMIN',xmin  
-       WRITE(iunit_out,outflt) 'XMAX',xmax  
-       WRITE(iunit_out,outflt) 'YMIN',ymin  
-       WRITE(iunit_out,outflt) 'YMAX',ymax         
-       WRITE(iunit_out,outflt) 'ZMIN',zmin  
-       WRITE(iunit_out,outflt) 'ZMAX',zmax         
-       WRITE(iunit_out,outflt) 'PINJ',pinj
-       WRITE(iunit_out,outflt) 'EINJ',einj
-       WRITE(iunit_out,outflt) 'AI',ai
-       WRITE(iunit_out,outflt) 'ab',ab
-       WRITE(iunit_out,outflt) 'ALPHA',alpha
-       WRITE(iunit_out,outflt) 'BETA',beta
-       WRITE(iunit_out,outflt) 'GAMMA',gamma
-       WRITE(iunit_out,outflt) 'LAMBDAMIN',lambdamin
-       WRITE(iunit_out,outflt) 'LAMBDAMAX',lambdamax
-       WRITE(iunit_out,outflt) 'LAMBDAMIN_WGHT',lambdamin_wght
-       WRITE(iunit_out,outflt) 'LAMBDAMAX_WGHT',lambdamax_wght
-       WRITE(iunit_out,outflt) 'EMAX_WGHT',emax_wght
-       WRITE(iunit_out,'(A)') '!---------- ARRAY VARIABLES ------------'
-       WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'CURRENT_FRACTIONS',(current_fractions(n), n=1,3)
-       WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ORIGIN',(origin(n), n=1,3)
-      WRITE(iunit_out,'(A)') '/'
-
-END SUBROUTINE write_fidasim_namelist
 
 
 SUBROUTINE write_fidasim_equilibrium
