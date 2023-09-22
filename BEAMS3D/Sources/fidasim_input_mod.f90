@@ -52,7 +52,7 @@ MODULE fidasim_input_mod
    DOUBLE PRECISION  :: time, lambdamin,  lambdamax,   alpha,   beta,   gamma,      xminf,&
       xmax,   ymin,   ymax,   zmin,   zmax, ab,   ai,   pinj,   einj,&
       focy,focz,widz,widy,emax_wght,lambdamin_wght, lambdamax_wght
-   INTEGER ::  nlambda, nx_beam, ny_beam,nz_beam,impurity_charge, ne_wght, np_wght, nphi_wght, nlambda_wght,& !!!! nz, 
+   INTEGER ::  nlambda, nx_beam, ny_beam,nz_beam, nz_tmp,impurity_charge, ne_wght, np_wght, nphi_wght, nlambda_wght,& !!!! nz, 
       calc_npa,   calc_fida,   calc_pnpa,   calc_pfida,   calc_bes,   calc_dcx,   calc_halo, &
       calc_cold,   calc_brems,   calc_birth,   calc_fida_wght,   calc_npa_wght,   calc_neutron,&
       shape, load_neutrals,verbose,flr,naperture,nchan,namelist_present
@@ -142,6 +142,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
        CASE('INIT')
 
         CALL init_fidasim_input
+		nz_tmp=nz !This is important for grid interpolation and necessary to prevent renaming the namelist
        ! Read namelist
    istat=0
    iunit=12
@@ -157,8 +158,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
       CALL handle_err(NAMELIST_READ_ERR,'fidasim_inputs_b3d in: '//'input.' //TRIM(id_string),istat)
    END IF
    CLOSE(iunit)
-
-
    equilibrium_file = TRIM(result_dir) // TRIM(runid) //  '_equilibrium.h5'   !! File containing plasma parameters and fields
    geometry_file = TRIM(result_dir) // TRIM(runid) //  '_geometry.h5'      !! File containing NBI and diagnostic geometry
    distribution_file = TRIM(result_dir) // TRIM(runid) //  '_distribution.h5'      !! File containing fast-ion distribution
@@ -171,6 +170,9 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    CALL write_fidasim_namelist(iunit, istat)
    CALL FLUSH(iunit)
    CLOSE(iunit)
+   
+nz=nz_tmp !This is important for grid interpolation and necessary to prevent renaming the namelist
+
 
    CALL write_fidasim_geometry
 
