@@ -286,6 +286,20 @@
             ! tetrahedron tile
             tiles(ik)%tileType = 5
             tiles(ik)%includeInIteration = 1
+            
+            ! todo check if necessary
+            tiles(ik)%stateFunctionIndex = 0
+            tiles(ik)%Mrem = 0
+            tiles(ik)%u_ea = 0.0
+            tiles(ik)%u_oa1 = 0.0
+            tiles(ik)%u_oa2 = 0.0
+
+            ! set applied field [A/m] at centre of tile
+            x = (tiles(ik)%vert(1,1) + tiles(ik)%vert(1,2) + tiles(ik)%vert(1,3) + tiles(ik)%vert(1,4))/4.0
+            y = (tiles(ik)%vert(2,1) + tiles(ik)%vert(2,2) + tiles(ik)%vert(2,3) + tiles(ik)%vert(2,4))/4.0
+            z = (tiles(ik)%vert(3,1) + tiles(ik)%vert(3,2) + tiles(ik)%vert(3,3) + tiles(ik)%vert(3,4))/4.0
+            call getBfld(x, y, z, Bx, By, Bz)
+            tiles(ik)%Happ = [Bx/mu0, By/mu0, Bz/mu0]
 
             ! hard magnet or soft magnet with state function or with constant permeability
             tiles(ik)%magnetType = state_type(state_dex(ik))
@@ -293,6 +307,25 @@
             IF (tiles(ik)%magnetType == 1) THEN
                tiles(ik)%mu_r_ea = constant_mu(state_dex(ik))
                tiles(ik)%mu_r_oa = constant_mu(state_dex(ik))
+
+            ! todo change this to use actual remanent magnetisation
+               ! set remanent magnetization to strength of the field [A/m] and easy axis in the direction of the field
+               norm = sqrt(Bx*Bx + By*By + Bz*Bz)
+               Bx_n = Bx / norm
+               By_n = By / norm
+               Bz_n = Bz / norm
+               tiles(ik)%Mrem = norm / mu0
+               tiles(ik)%u_ea = [Bx_n, By_n, Bz_n]
+               
+               ! get orthogonal axes
+               IF (By/=0 .or. Bz/=0) THEN          ! cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
+                     tiles(ik)%u_oa1 = [0.d0, Bz_n, -By_n]
+                     tiles(ik)%u_oa2 = [-By_n*By_n - Bz_n*Bz_n, Bx_n*By_n, Bx_n*Bz_n]
+               ELSE                                ! cross product of u_ea with [0, 1, 0] and cross product of u_ea with cross product
+                     tiles(ik)%u_oa1 = [-Bz_n, 0.d0, Bx_n]
+                     tiles(ik)%u_oa2 = [Bx_n*By_n, -Bx_n*Bx_n - Bz_n*Bz_n, By_n*Bz_n]
+               END IF
+
             ELSEIF (tiles(ik)%magnetType == 2) THEN
                PRINT *, 'STATE_TYPE == 2 (soft magnet) not yet supported.'
                ! tiles(ik)%stateFunctionIndex = some_array(state_dex(ik))
@@ -302,47 +335,44 @@
                tiles(ik)%mu_r_oa = constant_mu(state_dex(ik))
             END IF
       
-            ! determine centroid
-            x = (tiles(ik)%vert(1,1) + tiles(ik)%vert(1,2) + tiles(ik)%vert(1,3) + tiles(ik)%vert(1,4))/4.0
-            y = (tiles(ik)%vert(2,1) + tiles(ik)%vert(2,2) + tiles(ik)%vert(2,3) + tiles(ik)%vert(2,4))/4.0
-            z = (tiles(ik)%vert(3,1) + tiles(ik)%vert(3,2) + tiles(ik)%vert(3,3) + tiles(ik)%vert(3,4))/4.0
+
             
-            ! get B-field and determine strength
-            call getBfld(x, y, z, Bx, By, Bz)
-            norm = sqrt(Bx*Bx + By*By + Bz*Bz)
-            Bx_n = Bx / norm
-            By_n = By / norm
-            Bz_n = Bz / norm
-            
-            ! set remanent magnetization to strength of the field [A/m] and easy axis in the direction of the field
-            tiles(ik)%Mrem = norm / mu0
-            tiles(ik)%u_ea = [Bx_n, By_n, Bz_n]
-            
-            ! get orthogonal axes
-            IF (By/=0 .or. Bz/=0) THEN          ! cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
-                  tiles(ik)%u_oa1 = [0.d0, Bz_n, -By_n]
-                  tiles(ik)%u_oa2 = [-By_n*By_n - Bz_n*Bz_n, Bx_n*By_n, Bx_n*Bz_n]
-            ELSE                                ! cross product of u_ea with [0, 1, 0] and cross product of u_ea with cross product
-                  tiles(ik)%u_oa1 = [-Bz_n, 0.d0, Bx_n]
-                  tiles(ik)%u_oa2 = [Bx_n*By_n, -Bx_n*Bx_n - Bz_n*Bz_n, By_n*Bz_n]
-            END IF
+
 
             ! preset magnetization
-            tiles(ik)%M = tiles(ik)%Mrem * tiles(ik)%u_ea
+            !tiles(ik)%M = tiles(ik)%Mrem * tiles(ik)%u_ea
 
             ! call setupEvaluationPoints(tiles(ik)) ! only for cylindrical tiles
       END DO
 
       WRITE(*,*) "Running iterations"      
       
-      !allocate(stateFunction(1)) ! todo temporary until statefunction is properly implemented
+      allocate(stateFunction(1)) ! todo temporary until statefunction is properly implemented
+      call loadStateFunctionFortran(stateFunction)
 
-      call iterateMagnetization(tiles, ntet, stateFunction, size(stateFunction), temp, maxErr, maxIter, 0.d0) ! todo replace size?
+
+      CALL iterateMagnetization(tiles, ntet, stateFunction, size(stateFunction), temp, maxErr, maxIter, 0.d0) ! todo replace size?
 
       RETURN
       END SUBROUTINE mumaterial_init
 
-
+      subroutine loadStateFunctionFortran(stateFunction)
+            integer :: i
+            type(MagStateFunction), dimension(1), intent(out) :: stateFunction
+            OPEN(11, file='stateFunction.dat')
+            read(11,*) stateFunction(1)%nT,stateFunction(1)%nH
+            
+            allocate( stateFunction(1)%M(stateFunction(1)%nT,stateFunction(1)%nH) )
+            allocate( stateFunction(1)%T(stateFunction(1)%nT) )
+            allocate( stateFunction(1)%H(stateFunction(1)%nH) )
+            
+            stateFunction(1)%T(1) = 300
+            DO i=1,stateFunction(1)%nH
+            read(11,*) stateFunction(1)%H(i),stateFunction(1)%M(1,i)        
+            END DO
+            
+            close (11)
+      end subroutine loadStateFunctionFortran
       
 
 
