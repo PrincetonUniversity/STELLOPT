@@ -413,7 +413,7 @@
       ! Load vessel if not done already vessel
       IF (lvessel .and. (.not. lwall_loaded)) THEN
       IF (lverb) THEN
-         WRITE(6,'(A)') 'Loading Vessel!'
+         WRITE(6,'(A)') '----- Loading wall data -----'
       END IF
          CALL wall_load_txt(TRIM(vessel_string),ier,.false.,MPI_COMM_BEAMS)
          IF (lverb) THEN
