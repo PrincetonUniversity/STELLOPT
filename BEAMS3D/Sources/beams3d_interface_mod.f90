@@ -78,12 +78,15 @@ CONTAINS
       CALL beams3d_free(MPI_COMM_SHARMEM)
       IF (lvessel) CALL wall_free(ier,MPI_COMM_BEAMS)
 #if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
+      ierr_mpi = 0; CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_main', ierr_mpi)
-      ierr_mpi=0
-      CALL MPI_INFO_FREE(mpi_info_beams3d, ierr_mpi)
-      CALL MPI_FINALIZE(ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'beams3d_main', ierr_mpi)
+      ierr_mpi = 0; CALL MPI_INFO_FREE(mpi_info_beams3d, ierr_mpi)
+      ierr_mpi = 0; CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_main', ierr_mpi)
+      ierr_mpi = 0; CALL MPI_COMM_FREE(MPI_COMM_SHARMEM, ierr_mpi)
+      ierr_mpi = 0; CALL MPI_COMM_FREE(MPI_COMM_BEAMS, ierr_mpi)
+      ierr_mpi = 0; CALL MPI_FINALIZE(ierr_mpi)
+      !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'beams3d_main', ierr_mpi)
 #endif
       IF (lverb) WRITE(6, '(A)') '----- BEAMS3D DONE -----'
       RETURN
