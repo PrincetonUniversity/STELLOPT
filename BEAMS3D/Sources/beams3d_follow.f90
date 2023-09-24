@@ -292,10 +292,13 @@ SUBROUTINE beams3d_follow
     DEALLOCATE(itemp)
     IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
     IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-    IF (ALLOCATED(t_last)) DEALLOCATE(t_last)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
 #endif
+
+    ! Adjust T_END back to values of T_last
+    t_end(mystart:myend) = t_last(mystart:myend)
+    IF (ALLOCATED(t_last)) DEALLOCATE(t_last)
 
     RETURN
     !-----------------------------------------------------------------------
