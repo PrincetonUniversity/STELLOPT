@@ -240,7 +240,7 @@ CONTAINS
         ELSEIF (error_num .eq. NAMELIST_READ_ERR) THEN
             WRITE(6, *) '  BEAMS3D ENCOUNTERED AN ERROR READING A NAMELIST'
             WRITE(6, *) '  ', TRIM(string_val)
-            WRITE(6, *) '  IERR:      ', ierr
+            WRITE(6, *) '  IERR:      ', ierr          
         ELSEIF (error_num .eq. D02CJF_ERR) THEN
             WRITE(6, *) '  BEAMS3D ENCOUNTERED A NAG ERROR (D02CJF)'
             WRITE(6, *) '     CALLING FUNCTION ', TRIM(string_val)

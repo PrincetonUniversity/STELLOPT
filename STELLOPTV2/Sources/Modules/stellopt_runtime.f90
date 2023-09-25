@@ -193,6 +193,7 @@
       INTEGER, PARAMETER ::  MPI_SEND_ERR       = 821
       INTEGER, PARAMETER ::  MPI_RECV_ERR       = 822
       INTEGER, PARAMETER ::  MPI_BCAST_ERR      = 830
+      INTEGER, PARAMETER ::  MPI_FREE_ERR       = 840
       INTEGER, PARAMETER ::  MPI_FINE_ERR       = 890
       
       LOGICAL                  :: lverb, lkeep_mins, lneed_output, lrestart,&
@@ -390,6 +391,15 @@
             WRITE(6,*) '  STELLOPT ENCOUNTERED AN HDF ERROR'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
             WRITE(6,*) '  IERR:      ',ierr
+      ELSEIF (error_num == MPI_FREE_ERR) THEN
+            WRITE(6,*) '  STELLOPT ENCOUNTERED AN MPI_FREE ERROR'
+            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+            WRITE(6,*) '  IERR:      ',ierr
+      ELSEIF (error_num == MPI_FINE_ERR) THEN
+            WRITE(6,*) '  STELLOPT ENCOUNTERED AN MPI_FINALIZE ERROR'
+            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+            WRITE(6,*) '  IERR:      ',ierr
+            STOP 'MPI_FINE_ERR'
       ELSEIF (error_num <= MPI_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED AN MPI ERROR'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
