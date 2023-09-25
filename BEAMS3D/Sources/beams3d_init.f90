@@ -27,6 +27,7 @@
                                win_epower, win_ipower, win_ndot, win_jprof, &
                                win_dense, nsh_prof4, h2_prof, h3_prof, &
       h4_prof, h5_prof, r_h, p_h, z_h, e_h, pi_h
+      USE fidasim_input_mod, ONLY: beams3d_write_fidasim
       USE wall_mod
       USE mpi_params
       USE adas_mod_parallel, ONLY: adas_load_tables, adas_tables_avail
@@ -412,7 +413,7 @@
       ! Load vessel if not done already vessel
       IF (lvessel .and. (.not. lwall_loaded)) THEN
       IF (lverb) THEN
-         WRITE(6,'(A)') 'Loading Vessel!'
+         WRITE(6,'(A)') '----- Loading wall data -----'
       END IF
          CALL wall_load_txt(TRIM(vessel_string),ier,.false.,MPI_COMM_BEAMS)
          IF (lverb) THEN

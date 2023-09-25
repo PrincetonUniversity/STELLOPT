@@ -18,6 +18,7 @@
                                ns_prof4, ns_prof5, dist5d_prof, &
                                partvmax, dist5d_fida
       USE beams3d_physics_mod, ONLY: beams3d_suv2rzp
+      USE fidasim_input_mod, ONLY: beams3d_write_fidasim
       USE EZspline_obj
       USE EZspline
       USE mpi_params !Used for call to write_fidasim

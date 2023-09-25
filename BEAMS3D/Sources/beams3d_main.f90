@@ -12,6 +12,7 @@ PROGRAM BEAMS3D
     !-----------------------------------------------------------------------
     USE beams3d_runtime
     USE beams3d_interface_mod
+    USE fidasim_input_mod, ONLY: beams3d_write_fidasim
 
     !-----------------------------------------------------------------------
     !     Local Variables
