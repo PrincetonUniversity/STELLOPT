@@ -32,13 +32,13 @@
 !          X_rand           Random number arrays (X,Y,Z,P)
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: s,i,j,k,k1,k2, nr1, nphi1, nz1
+      INTEGER :: s,i,j,k,k1,k2, nr1, nphi1, nz1, l
       INTEGER :: minik(2)
       INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: n3d
       REAL(rprec) :: maxrateDT, maxrateDDT, maxrateDDHe, &
                      dV, w_total, vpart, dr, dphi, &
                      dz, X1_rand, Y1_rand, Z1_rand, sval, sfactor, &
-                     rtemp, roffset, utemp, rerr, uerr
+                     rtemp, roffset, utemp, rerr, uerr, s_fullorbit
       REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), ALLOCATABLE, DIMENSION(:) :: X_rand, Y_rand, Z_rand, &
                                                 P_rand, R_axis, Z_axis
@@ -112,20 +112,52 @@
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
 
+      ! Calc DT rate
+      IF (lfusion_alpha) THEN
+         DO s = mystart, myend
+            i = MOD(s-1,nr1)+1
+            j = MOD(s-1,nr1*nphi1)
+            j = FLOOR(REAL(j) / REAL(nr1))+1
+            k = CEILING(REAL(s) / REAL(nr1*nphi1))
+            q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
+            CALL beams3d_DTRATE(q,rateDT(i,j,k))
+            maxrateDT = MAX(rateDT(i,j,k),maxrateDT)
+         END DO
+      END IF
+
+      ! Calc DD -> T + p
+      IF (lfusion_tritium .or. lfusion_proton) THEN
+         DO s = mystart, myend
+            i = MOD(s-1,nr1)+1
+            j = MOD(s-1,nr1*nphi1)
+            j = FLOOR(REAL(j) / REAL(nr1))+1
+            k = CEILING(REAL(s) / REAL(nr1*nphi1))
+            q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
+            CALL beams3d_DDTRATE(q,rateDDT(i,j,k))
+            maxrateDDT = MAX(rateDDT(i,j,k),maxrateDDT)
+         END DO
+      END IF
+
+      ! Calc DD -> He3
+      IF (lfusion_He3) THEN
+         DO s = mystart, myend
+            i = MOD(s-1,nr1)+1
+            j = MOD(s-1,nr1*nphi1)
+            j = FLOOR(REAL(j) / REAL(nr1))+1
+            k = CEILING(REAL(s) / REAL(nr1*nphi1))
+            q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
+            CALL beams3d_DDHe3RATE(q,rateDDHe(i,j,k))
+            maxrateDDHe = MAX(rateDDHe(i,j,k),maxrateDDHe)
+         END DO
+      END IF
+
+      ! l3d array and volume normalization
       DO s = mystart, myend
          i = MOD(s-1,nr1)+1
          j = MOD(s-1,nr1*nphi1)
          j = FLOOR(REAL(j) / REAL(nr1))+1
          k = CEILING(REAL(s) / REAL(nr1*nphi1))
-         ! S on full grid
-         !IF ((i==nr) .or. (j==nphi) .or. (k==nz)) CYCLE
          q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
-         CALL beams3d_DTRATE(q,rateDT(i,j,k))
-         maxrateDT = MAX(rateDT(i,j,k),maxrateDT)
-         CALL beams3d_DDTRATE(q,rateDDT(i,j,k))
-         maxrateDDT = MAX(rateDDT(i,j,k),maxrateDDT)
-         CALL beams3d_DDHe3RATE(q,rateDDHe(i,j,k))
-         maxrateDDHe = MAX(rateDDHe(i,j,k),maxrateDDHe)
          CALL beams3d_SFLX(q,sval)
          IF (sval < sfactor) l3d(i,j,k) = .true.
          ! We really want the total number of particles in the box (dV=rdrdpdz)
@@ -134,6 +166,7 @@
          rateDDT(i,j,k) = rateDDT(i,j,k) * dV
          rateDDHe(i,j,k) = rateDDHe(i,j,k) * dV
       END DO
+
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,maxrateDT,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_LOCAL,ierr_mpi)
@@ -144,18 +177,18 @@
       ! Output reaction rate info
       IF (myworkid == master) THEN
          IF (lverb) THEN
-            WRITE(6, '(A,ES11.4,A)') '      max D + T -> He4   rate: ', maxrateDT,' [part/(m^3 s)]'
-            IF (.not. lfusion_alpha) THEN
-               WRITE(6, '(A,ES11.4,A)') '      max D + D -> T + p rate: ', maxrateDDT,' [part/(m^3 s)]'
-               WRITE(6, '(A,ES11.4,A)') '      max D + D -> He3   rate: ', maxrateDDHe,' [part/(m^3 s)]'
-            END IF
+            IF (lfusion_alpha) WRITE(6, '(A,ES11.4,A)') '      max D + T -> He4   rate: ', maxrateDT,' [part/(m^3 s)]'
+            IF (lfusion_tritium .or. lfusion_proton) WRITE(6, '(A,ES11.4,A)') '      max D + D -> T + p rate: ', maxrateDDT,' [part/(m^3 s)]'
+            IF (lfusion_He3) WRITE(6, '(A,ES11.4,A)') '      max D + D -> He3   rate: ', maxrateDDHe,' [part/(m^3 s)]'
          END IF
       END IF
 
       ! From this point forward we act like a NB calc in the initialization sense
-      ! Eventually we'll include DD-T and DD-He3 as BEAM(2 and (3))
-      nbeams = 4
-      IF (lfusion_alpha) nbeams = 1 ! Do alphas only
+      nbeams = 0
+      IF (lfusion_alpha) nbeams = nbeams + 1
+      IF (lfusion_tritium) nbeams = nbeams + 1
+      IF (lfusion_proton) nbeams = nbeams + 1
+      IF (lfusion_He3) nbeams = nbeams + 1
       nparticles = nbeams*nparticles_start
       ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
                   mass(nparticles), charge(nparticles), Zatom(nparticles), &
@@ -164,25 +197,38 @@
                   vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
                   lgc2fo_start(nparticles))
 
+      ! We set this true because we assume all particles generated are gyrocenters. Should a
+      ! particle have RHO > RHO_FO then we don't follow the GC and follow_fo takes care of
+      ! the GC2FO step.  Otherwise we follow GC like normal.
       lgc2fo_start(:) = .TRUE.
-      vr_start=0; vphi_start=0; vz_start=0
-      ! BEAM 1 D+T -> He4
-      E_BEAMS(1) = 3.52E6*e_charge*fusion_scale
-      MASS_BEAMS(1) = mHe4
-      CHARGE_BEAMS(1) = 2*e_charge
-      IF (.not. lfusion_alpha) THEN
-         ! BEAM 2 D+D -> T (+p) fast Tritium
-         E_BEAMS(2) = 1.01E6*e_charge*fusion_scale
-         MASS_BEAMS(2) = mT
-         CHARGE_BEAMS(2) = e_charge
-         ! BEAM 3 D+D -> (T) +p fast proton
-         E_BEAMS(3) = 3.02E6*e_charge*fusion_scale
-         MASS_BEAMS(3) = mp
-         CHARGE_BEAMS(3) = e_charge
-         ! BEAM 4 D+D -> He3
-         E_BEAMS(4) = 0.82E6*e_charge*fusion_scale
-         MASS_BEAMS(4) = mHe3
-         CHARGE_BEAMS(4) = 2*e_charge
+      vr_start=0; vphi_start=0; vz_start=0; i = 0
+      IF (lfusion_alpha) THEN
+         ! BEAM D+T -> He4
+         i = i + 1
+         E_BEAMS(i) = 3.52E6*e_charge*fusion_scale
+         MASS_BEAMS(i) = mHe4
+         CHARGE_BEAMS(i) = 2*e_charge
+      END IF
+      IF (lfusion_tritium) THEN
+         ! BEAM D+D -> T (+p) fast Tritium
+         i = i + 1
+         E_BEAMS(i) = 1.01E6*e_charge*fusion_scale
+         MASS_BEAMS(i) = mT
+         CHARGE_BEAMS(i) = e_charge
+      END IF
+      IF (lfusion_proton) THEN
+         ! BEAM D+D -> (T) +p fast proton
+         i = i + 1
+         E_BEAMS(i) = 3.02E6*e_charge*fusion_scale
+         MASS_BEAMS(i) = mp
+         CHARGE_BEAMS(i) = e_charge
+      END IF
+      IF (lfusion_He3) THEN
+         ! BEAM D+D -> He3
+         i = i + 1
+         E_BEAMS(i) = 0.82E6*e_charge*fusion_scale
+         MASS_BEAMS(i) = mHe3
+         CHARGE_BEAMS(i) = 2*e_charge
       END IF
 
       ! Now we need to monte-carlo our way to get particles inside the grid
@@ -237,32 +283,36 @@
          ! Uniform about 0
          CALL RANDOM_NUMBER(P_rand)
          P_rand = 2*(P_rand-0.5)
-         k1 = 1
-         ! Do the D-T -> H4 reaction
-         vpart = sqrt(2*E_BEAMS(1)/mHe4)
-         DO s = 1,nr1*nphi1*nz1
-            i = MOD(s-1,nr1)+1
-            j = MOD(s-1,nr1*nphi1)
-            j = FLOOR(REAL(j) / REAL(nr1))+1
-            k = CEILING(REAL(s) / REAL(nr1*nphi1))
-            IF (n3d(i,j,k)==0) CYCLE
-            k2 = n3d(i,j,k)+k1-1
-            R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
-            phi_start(k1:k2) = phiaxis(j) + Y_rand(k1:k2)*hp(j)
-            Z_start(k1:k2)   =   zaxis(k) + Z_rand(k1:k2)*hz(k)
-            vll_start(k1:k2) = vpart*P_rand(k1:k2) 
-            mu_start(k1:k2)  = E_BEAMS(1) ! Total energy for now
-            beam(k1:k2)      = 1
-            mass(k1:k2)      = MASS_BEAMS(1)
-            charge(k1:k2)    = CHARGE_BEAMS(1)
-            Zatom(k1:k2)     = 2
-            t_end(k1:k2)     = t_end_in(1)
-            weight(k1:k2)    = rateDT(i,j,k)/n3d(i,j,k)
-            k1 = k2+1
-         END DO
-         IF (.not. lfusion_alpha) THEN
+         k1 = 1 ; l = 0
+         IF (lfusion_alpha) THEN
+            ! Do the D-T -> H4 reaction
+            l = l + 1
+            vpart = sqrt(2*E_BEAMS(l)/mHe4)
+            DO s = 1,nr1*nphi1*nz1
+               i = MOD(s-1,nr1)+1
+               j = MOD(s-1,nr1*nphi1)
+               j = FLOOR(REAL(j) / REAL(nr1))+1
+               k = CEILING(REAL(s) / REAL(nr1*nphi1))
+               IF (n3d(i,j,k)==0) CYCLE
+               k2 = n3d(i,j,k)+k1-1
+               R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
+               phi_start(k1:k2) = phiaxis(j) + Y_rand(k1:k2)*hp(j)
+               Z_start(k1:k2)   =   zaxis(k) + Z_rand(k1:k2)*hz(k)
+               vll_start(k1:k2) = vpart*P_rand(k1:k2) 
+               mu_start(k1:k2)  = E_BEAMS(l) ! Total energy for now
+               beam(k1:k2)      = l
+               mass(k1:k2)      = MASS_BEAMS(l)
+               charge(k1:k2)    = CHARGE_BEAMS(l)
+               Zatom(k1:k2)     = 2
+               t_end(k1:k2)     = t_end_in(1)
+               weight(k1:k2)    = rateDT(i,j,k)/n3d(i,j,k)
+               k1 = k2+1
+            END DO
+         END IF
+         IF (lfusion_tritium) THEN
             ! Do the D-D -> T reaction
-            vpart = sqrt(2*E_BEAMS(2)/mT)
+            l = l + 1
+            vpart = sqrt(2*E_BEAMS(l)/mT)
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
                j = MOD(s-1,nr1*nphi1)
@@ -274,17 +324,20 @@
                phi_start(k1:k2) = phiaxis(j) + Y_rand(k1:k2)*hp(j)
                Z_start(k1:k2)   =   zaxis(k) + Z_rand(k1:k2)*hz(k)
                vll_start(k1:k2) = vpart*P_rand(k1:k2) 
-               mu_start(k1:k2)  = E_BEAMS(2) ! Total energy for now
-               beam(k1:k2)      = 2
-               mass(k1:k2)      = MASS_BEAMS(2)
-               charge(k1:k2)    = CHARGE_BEAMS(2)
+               mu_start(k1:k2)  = E_BEAMS(l) ! Total energy for now
+               beam(k1:k2)      = l
+               mass(k1:k2)      = MASS_BEAMS(l)
+               charge(k1:k2)    = CHARGE_BEAMS(l)
                Zatom(k1:k2)     = 1
                t_end(k1:k2)     = t_end_in(1)
                weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
                k1 = k2+1
             END DO
+         END IF
+         IF (lfusion_proton) THEN
             ! Do the D-D -> p reaction
-            vpart = sqrt(2*E_BEAMS(3)/mp)
+            l = l + 1
+            vpart = sqrt(2*E_BEAMS(l)/mp)
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
                j = MOD(s-1,nr1*nphi1)
@@ -296,17 +349,20 @@
                phi_start(k1:k2) = phiaxis(j) + Y_rand(k1:k2)*hp(j)
                Z_start(k1:k2)   =   zaxis(k) + Z_rand(k1:k2)*hz(k)
                vll_start(k1:k2) = vpart*P_rand(k1:k2) 
-               mu_start(k1:k2)  = E_BEAMS(3) ! Total energy for now
-               beam(k1:k2)      = 3
-               mass(k1:k2)      = MASS_BEAMS(3)
-               charge(k1:k2)    = CHARGE_BEAMS(3)
+               mu_start(k1:k2)  = E_BEAMS(l) ! Total energy for now
+               beam(k1:k2)      = l
+               mass(k1:k2)      = MASS_BEAMS(l)
+               charge(k1:k2)    = CHARGE_BEAMS(l)
                Zatom(k1:k2)     = 1
                t_end(k1:k2)     = t_end_in(1)
                weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
                k1 = k2+1
             END DO
+         END IF
+         IF (lfusion_He3) THEN
             ! Do the D-D -> He3 reaction
-            vpart = sqrt(2*E_BEAMS(4)/mHe3)
+            l = l + 1
+            vpart = sqrt(2*E_BEAMS(l)/mHe3)
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
                j = MOD(s-1,nr1*nphi1)
@@ -318,16 +374,17 @@
                phi_start(k1:k2) = phiaxis(j) + Y_rand(k1:k2)*hp(j)
                Z_start(k1:k2)   =   zaxis(k) + Z_rand(k1:k2)*hz(k)
                vll_start(k1:k2) = vpart*P_rand(k1:k2) 
-               mu_start(k1:k2)  = E_BEAMS(4) ! Total energy for now
-               beam(k1:k2)      = 4
-               mass(k1:k2)      = MASS_BEAMS(4)
-               charge(k1:k2)    = CHARGE_BEAMS(4)
+               mu_start(k1:k2)  = E_BEAMS(l) ! Total energy for now
+               beam(k1:k2)      = l
+               mass(k1:k2)      = MASS_BEAMS(l)
+               charge(k1:k2)    = CHARGE_BEAMS(l)
                Zatom(k1:k2)     = 2
                t_end(k1:k2)     = t_end_in(1)
                weight(k1:k2)    = rateDDHe(i,j,k)/n3d(i,j,k)
                k1 = k2+1
             END DO
          END IF
+
          ! Deallocate and cleanup
          DEALLOCATE(X_rand,Y_rand,Z_rand,P_rand,n3d)
          partvmax = SQRT(MAXVAL(2*mu_start/mass)) ! Partvmax from max energy
@@ -356,13 +413,10 @@
       CALL mpidealloc(rateDDHe,win_rateDDHe)
 
 
-      ! Now we calcualte values over particles (share the work)
+      ! Now we need to calculate the magnetic moment as mu is perp energy
       CALL mpialloc(B_help, nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_help)
 
-      ! Initialize helpers
-      IF (mylocalid == mylocalmaster) THEN
-         B_help = 0
-      END IF
+      IF (mylocalid == mylocalmaster) B_help = 0
       
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nparticles, mystart, myend)
@@ -376,7 +430,8 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
-
+      
+      ! Now calculate mu
       mu_start = (mu_start - 0.5*mass*vll_start*vll_start) / B_help
 
       CALL mpidealloc(B_help,win_B_help)

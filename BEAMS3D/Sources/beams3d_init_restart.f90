@@ -142,12 +142,14 @@
          state_flag = 0
          IF (ANY(end_state==3)) ldepo_old = .true.
          IF (lfusion_old) THEN
+            WRITE(6,'(A)') '   Detected old fusion run! '
             end_state = 0
             state_flag = 0
             IF (lplasma_only) THEN 
                WHERE(S_lines(0,:) >= 1) end_state = -1
             END IF
          ELSEIF (ldepo_old) THEN
+            WRITE(6,'(A)') '   Detected old deposition run! '
             ! Only orbiting particles
             state_flag = 0
             ! Use ionization point unless outside FO radius
@@ -159,10 +161,12 @@
             END WHERE
             ! IF plasma run only consider particles born inside equilibrium
             IF (lplasma_only) THEN 
+               WRITE(6,'(A)') '   Detected old plasma only run! '
                WHERE((S_lines(1,:) >= 1) .and. (start_dex == 1)) end_state = -1
                WHERE((S_lines(2,:) >= 1) .and. (start_dex == 2)) end_state = -1
             END IF
          ELSE
+            WRITE(6,'(A)') '   Detected old restart run! Using wall strikes for restart. '
             state_flag = 2
             DO i = 1, nparticles
                start_dex(i) = COUNT(R_lines(:,i)>0) - 1 ! Note indexed from 0

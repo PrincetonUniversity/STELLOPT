@@ -30,6 +30,20 @@
       character*(arg_len)                          :: arg1
       character*(arg_len),allocatable,dimension(:) :: args
       character(256)                               :: tstr1,tstr2
+
+#if defined(GIT_VERSION_EXT)
+      CHARACTER(64), PARAMETER :: git_repository = GIT_REPO_EXT
+      CHARACTER(32), PARAMETER :: git_version = GIT_VERSION_EXT
+      CHARACTER(40), PARAMETER :: git_hash = GIT_HASH_EXT
+      CHARACTER(32), PARAMETER :: git_branch = GIT_BRANCH_EXT
+      CHARACTER(19), PARAMETER :: built_on = BUILT_ON_EXT
+#else
+      CHARACTER(64), PARAMETER :: git_repository = "not from a git repo"
+      CHARACTER(32), PARAMETER :: git_version = ""
+      CHARACTER(40), PARAMETER :: git_hash = ""
+      CHARACTER(32), PARAMETER :: git_branch = ""
+      CHARACTER(19), PARAMETER :: built_on = ""
+#endif
 !-----------------------------------------------------------------------
 !     Begin Program
 !-----------------------------------------------------------------------
@@ -125,26 +139,36 @@
             i = i + 1
          END DO
          DEALLOCATE(args)
-         WRITE(6,'(a,f5.2)') 'STELLOPT Version ',STELLOPT_VERSION
+         IF (lverb) THEN
+            WRITE(6,'(a,f5.2)') 'STELLOPT Version ',STELLOPT_VERSION
+            WRITE(6,'(A)')    '-----  GIT Repository  -----'
+            WRITE(6,'(A,A)')  '   Repository: ', TRIM(git_repository)
+            WRITE(6,'(A,A)')  '   Branch:     ', TRIM(git_branch)
+            WRITE(6,'(A,A)')  '   Version:    ', TRIM(git_version)
+            WRITE(6,'(A,A)')  '   Built-on:   ', TRIM(built_on)
+            WRITE(6,'(A,A)')  '   Hash:       ', TRIM(git_hash)
+            WRITE(6,'(A)')    '----------------------------'
+            WRITE(6,'(A)')    ''
+         END IF
       ELSE 
          lverb=.false.   ! Shutup the slaves
       END IF
       ! Broadcast variables
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BCAST(lrestart,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_1',ierr_mpi)
       CALL MPI_BCAST(lrenorm,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_2',ierr_mpi)
       CALL MPI_BCAST(ltriangulate,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_3',ierr_mpi)
       CALL MPI_BCAST(lauto_domain,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_4',ierr_mpi)
       CALL MPI_BCAST(pct_domain,1,MPI_REAL8, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_5',ierr_mpi)
       CALL MPI_BCAST(id_string,256,MPI_CHARACTER, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_6',ierr_mpi)
       CALL MPI_BCAST(id_tag,256,MPI_CHARACTER, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_7',ierr_mpi)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
@@ -192,9 +216,12 @@
       ! All procs (master and workers) will do this part
       ! Clean up
 !DEC$ IF DEFINED (MPI_OPT)
+      ierr_mpi = 0
       CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FREE_ERR,'stellopt_main',ierr_mpi)
+      ierr_mpi = 0
       CALL MPI_FINALIZE(ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'stellot_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
       IF (lverb) WRITE(6,'(A)')'----- STELLOPT DONE -----'
      
