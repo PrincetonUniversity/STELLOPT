@@ -47,6 +47,7 @@
 !                    - Particle duplication implemented
 !                    - Box Modeling implemented
 !                    - FIELDLINES Interface Added
+!     v4.05 08/25/23 - Fast Tritium only calculation added
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -132,9 +133,9 @@ MODULE beams3d_runtime
                lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
-               lascot, lascot4, lbbnbi, lfidasim, lfidasim2, lsplit, lvessel_beam, lascotfl, lrandomize, &
+               lascot, lascot4, lbbnbi, lfidasim, lfidasim_cyl, lsplit, lvessel_beam, lascotfl, lrandomize, &
                lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim, &
-               lboxsim, limas, lfieldlines
+               lboxsim, limas, lfieldlines, lfusion_tritium, lfusion_proton, lfusion_He3
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
                ndt, ndt_max, duplicate_factor
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
@@ -162,7 +163,7 @@ MODULE beams3d_runtime
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.00 ! this is the full orbit test version
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.05 ! this is the full orbit test version
 
     !-----------------------------------------------------------------------
     !     Subroutines
@@ -239,7 +240,7 @@ CONTAINS
         ELSEIF (error_num .eq. NAMELIST_READ_ERR) THEN
             WRITE(6, *) '  BEAMS3D ENCOUNTERED AN ERROR READING A NAMELIST'
             WRITE(6, *) '  ', TRIM(string_val)
-            WRITE(6, *) '  IERR:      ', ierr
+            WRITE(6, *) '  IERR:      ', ierr          
         ELSEIF (error_num .eq. D02CJF_ERR) THEN
             WRITE(6, *) '  BEAMS3D ENCOUNTERED A NAG ERROR (D02CJF)'
             WRITE(6, *) '     CALLING FUNCTION ', TRIM(string_val)

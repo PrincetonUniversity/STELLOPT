@@ -25,7 +25,8 @@
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
-                                 phiedge_eq, reff_eq, NI_spl_s, NI
+                                 phiedge_eq, reff_eq, NI_spl_s, NI,&
+                                 s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE wall_mod, ONLY: wall_load_seg
       USE mpi_params
@@ -179,27 +180,27 @@
          IF (uflx<0)  uflx = uflx+pi2
          U_ARR(i,:,k)=uflx
 
-         IF (sflx <= 1) THEN
-            tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0
-            IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,tetemp,ier)
-            IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,netemp,ier)
-            IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,titemp,ier)
-            IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
-            !IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
-            IF (nzeff > 0) THEN 
-               CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
-               DO u=1, NION
-                  CALL EZspline_interp(NI_spl_s(u),sflx,nitemp,ier)
+      IF (sflx <= s_max) THEN
+         tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0
+         IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),tetemp,ier)
+         IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),netemp,ier)
+         IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),titemp,ier)
+         IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),pottemp,ier)
+         !IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
+         IF (nzeff > 0) THEN
+            CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),zetemp,ier)
+            DO u=1, NION
+               CALL EZspline_interp(NI_spl_s(u),MIN(sflx,s_max_zeff),nitemp,ier)
                   NI(u,i,:,k)=nitemp
-               END DO
-            END IF
+            END DO
+         END IF
             NE(i,:,k) = netemp; TE(i,:,k) = tetemp; TI(i,:,k) = titemp
             POT_ARR(i,:,k) = pottemp; ZEFF_ARR(i,:,k) = zetemp
-         ELSE
-            pottemp = 0; sflx = 1
-            IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
-            POT_ARR(i,:,k) = pottemp
-         END IF
+      ELSE
+         pottemp = 0; sflx = 1
+         IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
+         POT_ARR(i,:,k) = pottemp
+      END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
                CALL backspace_out(6,6)
@@ -240,7 +241,7 @@
          CALL backspace_out(6,36)
          WRITE(6,*)
          CALL FLUSH(6)
-      END IF    
+      END IF     
 
       ! Fix ZEFF
       IF (mylocalid == mylocalmaster) WHERE(ZEFF_ARR < 1) ZEFF_ARR = 1
