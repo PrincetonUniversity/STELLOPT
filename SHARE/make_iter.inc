@@ -167,6 +167,27 @@
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
+#            Available Energy Options
+#######################################################################
+  LAEOPT= F
+  AEOPT_DIR = $(AEOPT_PATH)
+  AEOPT_INC = -I$(AEOPT_DIR) 
+  LIB_AEOPT = libtrapAE.a
+  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
+
+#######################################################################
+#            MagTense Options
+#######################################################################
+  LMAGTENSE= F
+  MAGTENSE_DIR = $(MAGTENSE_PATH)
+  MAGTENSE_INC = -I$(MAGTENSE_DIR)/source/NumericalIntegration/NumericalIntegration/ \
+    -I$(MAGTENSE_DIR)/source/TileDemagTensor/TileDemagTensor/ \
+    -I$(MAGTENSE_DIR)/source/DemagField/DemagField/ 
+  MAGTENSE_LIB = $(MAGTENSE_DIR)/source/NumericalIntegration/NumericalIntegration/libNumericalIntegration.a \
+    $(MAGTENSE_DIR)/source/TileDemagTensor/TileDemagTensor/libTileDemagTensor.a \
+    $(MAGTENSE_DIR)/source/DemagField/DemagField/libDemagField.a 
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
   LIB_SHARE = $(LIBS) 
