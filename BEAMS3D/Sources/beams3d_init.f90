@@ -159,6 +159,7 @@
          IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
          IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
+         IF (lmgrid) WRITE(6,'(A)')    '   MUMAT: ' // TRIM(mumat_string)
          IF (.not.lgcsim) WRITE(6,'(A)') '   FULL ORIBT SIMULATION!'
          IF (lcollision) WRITE(6,'(A)') '   COLLISION OPERATOR ON!'
          IF (lkick) WRITE(6,'(A)') '   KICK MODEL ON!'
@@ -330,12 +331,12 @@
          CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
          CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
          CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
-   IF (lfidasim) THEN
+         IF (lfidasim) THEN
             CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
             CALL mpialloc(phiaxis_fida, nphi_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis_fida)
             CALL mpialloc(zaxis_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis_fida)
-      CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
-      CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
+            CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
+            CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
          END IF
          IF (myid_sharmem == 0) THEN
             FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
@@ -366,9 +367,6 @@
 
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
-
-
-
 
          ! Put the vacuum field on the background grid
          IF (lmgrid) THEN
@@ -402,6 +400,7 @@
       END IF
 
       ! Adjust magnetic field for magnetic material
+      IF (lmumat) CALL beams3d_init_mumat
 
       ! Adjust the torodial distribution function grid
       ns_prof3 = MAX(ns_prof3,8*NINT(pi2/phimax)) ! Min 8 per field period
