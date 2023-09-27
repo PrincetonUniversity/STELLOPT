@@ -126,7 +126,7 @@ SUBROUTINE beams3d_follow
 
     ! Some helpers
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
-    fact_crit_pro = SQRT(2*e_charge/electron_mass)*(0.75*sqrt_pi*electron_mass)**(1.0/3.0) ! Wesson pg 226 5.4.9
+    fact_crit= SQRT(2.0*e_charge/electron_mass)*(0.75*sqrt_pi*electron_mass*plasma_Zmean/plasma_mass)**(1.0/3.0) ! Wesson pg 226 5.4.9
     !fact_crit=fact_crit_pro*(plasma_Zmean/plasma_mass)**(1.0/3.0)
     !fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick !old
     !fact_kick = 2*freq_kick*E_kick
@@ -156,9 +156,9 @@ SUBROUTINE beams3d_follow
        mymass = mass(i)
        mybeam = Beam(i)
        moment = mu_start(i)
-       fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+       fact_pa   = 1/(mymass*plasma_Zmean/plasma_mass)
        fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-       fact_crit=fact_crit_pro/mymass**(1.0/3.0)
+       
        ! Save the IC of the neutral
        my_end = t_end(i)
        myline = i
@@ -190,9 +190,9 @@ SUBROUTINE beams3d_follow
           my_end = t_end(i)
           myline = i
           mytdex = 1
-          fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+          fact_pa   = 1/(mymass*plasma_Zmean/plasma_mass)
           fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-          fact_crit=fact_crit_pro/mymass**(1.0/3.0)
+          
           ! Define neutral trajectory
           myv_neut(1) = vr_start(i)*cos(phi_start(i)) - vphi_start(i)*sin(phi_start(i))
           myv_neut(2) = vr_start(i)*sin(phi_start(i)) + vphi_start(i)*cos(phi_start(i))
