@@ -35,7 +35,7 @@ MODULE beams3d_physics_mod
                               zaxis, U4D,nzeff, dexionT, dexionD, &
                               hr, hp, hz, hri, hpi, hzi, &
                               B_kick_min, B_kick_max, E_kick, freq_kick, &
-                              plasma_mass, NI5D, BR4D, BZ4D, BPHI4D
+                              plasma_mass, NI5D, BR4D, BZ4D, BPHI4D,plasma_Zmean
       USE EZspline_obj
       USE EZspline
       USE adas_mod_parallel
@@ -87,15 +87,15 @@ MODULE beams3d_physics_mod
       IMPLICIT NONE
       DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
-      DOUBLE PRECISION :: ne_cm, coulomb_log
+      DOUBLE PRECISION :: ne_cm, coulomb_loge, coulomb_logi
          ne_cm = ne_in * 1E-6
-      !coulomb_log = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
-      coulomb_log=log(1.09d11 * te_in/Zeff_in/sqrt(ne_cm))
-      WRITE(6,*) coulomb_log
+      coulomb_logi = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
+      coulomb_loge=log(1.09d11 * te_in/Zeff_in/sqrt(ne_cm))
+      !WRITE(6,*) coulomb_loge, coulomb_logi
       ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-      slow_par(1) = fact_crit*SQRT(te_in) !vcrit
-      slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
-      slow_par(3) =zeff_in!fact_pa !zeff_in/
+      slow_par(1) = fact_crit*SQRT(te_in)*(coulomb_logi/coulomb_loge)**(1.0/3.0) !vcrit, the coulomb ratio is from Weiland (2018) eq.11
+      slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here, tau_spit
+      slow_par(3) =zeff_in*fact_pa
          RETURN
       END FUNCTION coulomb_log_nrl19
 
@@ -198,13 +198,14 @@ MODULE beams3d_physics_mod
          bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/myA/sqrt(vrel2)
          bmin=max(bmincl,bminqu)
          coulomb_log=log(bmax/bmin) !only last coulomb log is saved - TODO: implement for multi-species
-      coulomb_log = max(coulomb_log,one)
+         coulomb_log = max(coulomb_log,one)
          zi2_ai = zi2_ai+ni_in(i) *NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton) * coulomb_log
          zi2 = zi2+ni_in(i) *NI_AUX_Z(i)**2 * coulomb_log
+         !WRITE(6,*) coulomb_log, coulomb_loge
       end do
       coulomb_loge = max(coulomb_loge,one)
       coulomb_log = max(coulomb_log,one)
-
+      
       zi2_ai=zi2_ai/(ne_in*coulomb_loge)
       zi2=zi2/(ne_in*coulomb_loge)
 
@@ -341,13 +342,13 @@ MODULE beams3d_physics_mod
             vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
             tau_spit_inv = one/slow_par(2)
             vc3_tauinv = vcrit_cube*tau_spit_inv
-            WRITE(6, *) 'NRL19: ', tau_spit_inv, vc3_tauinv*slow_par(3)
+            WRITE(6, *) 'NRL19: ',slow_par, vc3_tauinv*slow_par(3)
             !slow_par = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
             slow_par = coulomb_log_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
             vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
             tau_spit_inv = one/slow_par(2)
             vc3_tauinv = vcrit_cube*tau_spit_inv
-            WRITE(6, *) 'NUBEAM: ', tau_spit_inv, vc3_tauinv*slow_par(3)
+            WRITE(6, *) 'NUBEAM: ', slow_par , vc3_tauinv*slow_par(3)
 
 
 
