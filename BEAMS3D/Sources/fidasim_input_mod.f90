@@ -141,7 +141,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    IF (myworkid == master) THEN
       SELECT CASE (TRIM(write_type))
          CASE('INIT')
-
+            
             CALL init_fidasim_input
             nz_tmp=nz !This is important for grid interpolation and necessary to prevent renaming the namelist
             ! Read namelist
@@ -159,10 +159,10 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                CALL handle_err(NAMELIST_READ_ERR,'fidasim_inputs_b3d in: '//'input.' //TRIM(id_string),istat)
             END IF
             CLOSE(iunit)
-            equilibrium_file = TRIM(result_dir) // TRIM(runid) //  '_equilibrium.h5'   !! File containing plasma parameters and fields
-            geometry_file = TRIM(result_dir) // TRIM(runid) //  '_geometry.h5'      !! File containing NBI and diagnostic geometry
-            distribution_file = TRIM(result_dir) // TRIM(runid) //  '_distribution.h5'      !! File containing fast-ion distribution
-            neutrals_file = TRIM(result_dir) // TRIM(runid) //  '_neutrals.h5'
+            IF (equilibrium_file .eq. 'none')   equilibrium_file = TRIM(result_dir) // TRIM(runid) //  '_equilibrium.h5'   !! File containing plasma parameters and fields
+            IF (geometry_file .eq. 'none')  geometry_file = TRIM(result_dir) // TRIM(runid) //  '_geometry.h5'      !! File containing NBI and diagnostic geometry
+            IF (distribution_file .eq. 'none') distribution_file = TRIM(result_dir) // TRIM(runid) //  '_distribution.h5'      !! File containing fast-ion distribution
+            IF (neutrals_file .eq. 'none') neutrals_file = TRIM(result_dir) // TRIM(runid) //  '_neutrals.h5'
 
             ! Open the inputs.dat file
             iunit = 10
@@ -397,14 +397,14 @@ SUBROUTINE init_fidasim_input
    time = 0.0    !! Time [s]
    runid = 'hard-coded value!'    !! runID
    result_dir = 'hard-coded value!'   !! Result Directory
-   comment = 'hard-coded value!'
-   device =  'hard-coded value!'
+   comment = 'none'
+   device =  'none'
    !! Input Files
-   tables_file = 'hard-coded value!'  !! Atomic Tables File
-   equilibrium_file = 'hard-coded value!'    !! File containing plasma parameters and fields
-   geometry_file = 'hard-coded value!'    !! File containing NBI and diagnostic geometry
-   distribution_file = 'hard-coded value!'    !! File containing fast-ion distribution
-   neutrals_file = 'hard-coded value!'
+   tables_file = 'none'  !! Atomic Tables File
+   equilibrium_file = 'none'    !! File containing plasma parameters and fields
+   geometry_file = 'none'    !! File containing NBI and diagnostic geometry
+   distribution_file = 'none'    !! File containing fast-ion distribution
+   neutrals_file = 'none'
    !! Simulation Switches
    calc_bes = 0    !! Calculate NBI Spectra
    calc_dcx = 0   !! Calculate Direct CX Spectra
@@ -559,6 +559,7 @@ SUBROUTINE write_fidasim_namelist(iunit_out, istat)
       WRITE(iunit_out,outint) 'CALC_NPA',calc_npa
       WRITE(iunit_out,outint) 'CALC_FIDA_WGHT',calc_fida_wght
       WRITE(iunit_out,outint) 'CALC_NPA_WGHT',calc_npa_wght
+      WRITE(iunit_out,outint) 'IMPURITY_CHARGE',impurity_charge
       WRITE(iunit_out,'(A)') '!---------- FLOAT VARIABLES ------------'
        WRITE(iunit_out,outflt) 'XMIN',xmin  
        WRITE(iunit_out,outflt) 'XMAX',xmax  
