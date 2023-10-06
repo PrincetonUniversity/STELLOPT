@@ -737,6 +737,18 @@
       ! Duplicate particles if requested
       IF (duplicate_factor > 1) CALL beams3d_duplicate_part
 
+      ! Print a warning if the range of phi_start > hphi
+      IF (lverb) THEN
+         phitemp = MAXVAL(phi_start)-MINVAL(phi_start)
+         IF ((phitemp < hp(1)) .and. (phitemp > 0) .and. lbeamdensity) THEN
+            print *,phiaxis(nphi)-phiaxis(1),phitemp
+            i = (phiaxis(nphi)-phiaxis(1))/phitemp
+            WRITE(6,'(A)')    ' WARNING: The range of PHI_START > dphi.'
+            WRITE(6,'(A,I4)') '          Consider increasing nphi >=',i
+            CALL FLUSH(6)
+         END IF
+      END IF
+
       ! In all cases create an end_state array
       ALLOCATE(end_state(nparticles))
       end_state=0
