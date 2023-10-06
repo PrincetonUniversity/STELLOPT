@@ -255,8 +255,18 @@
             POT_spl_s%isHermite   = 0
             CALL EZspline_setup(POT_spl_s,POT_AUX_F(1:npot),ier,EXACT_DIM=.true.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init10',ier)
-         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A,F8.5)') '   V    = [', &
-            MINVAL(POT_AUX_F(1:npot))*1E-3,',',MAXVAL(POT_AUX_F(1:npot))*1E-3,'] kV;  NPOT: ',npot, ';  S_MAX_POT: ',s_max_pot
+            IF (lverb) THEN
+               IF (MAXVAL(ABS(POT_AUX_F(1:npot))) > 1E6) THEN
+                  WRITE(6,'(A,F9.4,A,F9.4,A,I4,A,F8.5)') '   V    = [', &
+                     MINVAL(POT_AUX_F(1:npot))*1E-6,',',MAXVAL(POT_AUX_F(1:npot))*1E-6,'] MV;  NPOT: ',npot, ';  S_MAX_POT: ',s_max_pot
+               ELSEIF (MAXVAL(ABS(POT_AUX_F(1:npot))) > 1E3) THEN
+                  WRITE(6,'(A,F9.4,A,F9.4,A,I4,A,F8.5)') '   V    = [', &
+                     MINVAL(POT_AUX_F(1:npot))*1E-3,',',MAXVAL(POT_AUX_F(1:npot))*1E-3,'] kV;  NPOT: ',npot, ';  S_MAX_POT: ',s_max_pot
+               ELSE
+                  WRITE(6,'(A,F9.4,A,F9.4,A,I4,A,F8.5)') '   V    = [', &
+                     MINVAL(POT_AUX_F(1:npot)),',',MAXVAL(POT_AUX_F(1:npot)),'] V;  NPOT: ',npot, ';  S_MAX_POT: ',s_max_pot
+               END IF
+            END IF
          END IF
 
          IF (lverb) THEN
@@ -737,6 +747,17 @@
       
       ! Duplicate particles if requested
       IF (duplicate_factor > 1) CALL beams3d_duplicate_part
+
+      ! Print a warning if the range of phi_start > hphi
+      IF (lverb) THEN
+         phitemp = MAXVAL(phi_start)-MINVAL(phi_start)
+         IF ((phitemp < hp(1)) .and. (phitemp > 0) .and. lbeamdensity) THEN
+            i = (phiaxis(nphi)-phiaxis(1))/phitemp
+            WRITE(6,'(A)')    ' WARNING: The range of PHI_START > dphi.'
+            WRITE(6,'(A,I4)') '          Consider increasing nphi >=',i
+            CALL FLUSH(6)
+         END IF
+      END IF
 
       ! In all cases create an end_state array
       ALLOCATE(end_state(nparticles))
