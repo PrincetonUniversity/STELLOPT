@@ -751,7 +751,6 @@
       IF (lverb) THEN
          phitemp = MAXVAL(phi_start)-MINVAL(phi_start)
          IF ((phitemp < hp(1)) .and. (phitemp > 0) .and. lbeamdensity) THEN
-            print *,phiaxis(nphi)-phiaxis(1),phitemp
             i = (phiaxis(nphi)-phiaxis(1))/phitemp
             WRITE(6,'(A)')    ' WARNING: The range of PHI_START > dphi.'
             WRITE(6,'(A,I4)') '          Consider increasing nphi >=',i
