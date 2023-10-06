@@ -27,7 +27,6 @@
       INTEGER :: ier, l, nl, i, j, k, m, s
       DOUBLE PRECISION :: x0, y0, z0, x1, y1, z1, hr2, hz2, hp2, d, &
                           denbeam, dl, dV
-      LOGICAL, DIMENSION(:,:,:,:), ALLOCATABLE :: lgrid
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: xl,yl,zl,rl,sl,pl
 #if defined(MPI_OPT)
       INTEGER :: MPI_COMM_LOCAL
@@ -40,10 +39,9 @@
       ! Allocate the Grid
       CALL mpialloc(BEAM_DENSITY, nbeams, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BEAM_DENSITY)
       IF (myid_sharmem == 0) BEAM_DENSITY = 0
-      ALLOCATE(lgrid(nbeams,nr,nphi,nz))
       nl = nr + nr/2 + 1
       ALLOCATE(xl(nl),yl(nl),zl(nl),rl(nl),pl(nl),sl(nl))
-      FORALL(s=1:nl) sl(s) = DBLE(s-1)/DBLE(nl-1)
+      FORALL(s=1:nl) sl(s) = DBLE(s-0.5)/DBLE(nl) ! half grid
 
 
       IF (lverb) WRITE(6,'(A)') '----- BEAM Density Calc. -----'
@@ -63,26 +61,23 @@
          ! We have a chord with particles/s (weight) going along it.
          ! Since the velocity is constant then the TOF is just L/v = t
          ! The the total number of particles is just n=W*t = W*L/v
-         ! then we jsut need to calc the volume of the voxel to get particles/m^3
-         d  = SQRT((x1-x0)**2 + (y1-y0)**2 + (z1-z0)**2)
-         denbeam = weight(l)*d/vll_lines(0,l) ! This is the total number of particles
+         ! then we just need to calc the volume of the voxel to get particles/m^3
+         d  = SQRT((x1-x0)**2 + (y1-y0)**2 + (z1-z0)**2)/DBLE(nl) ! so it's dl
+         denbeam = weight(l)*d/vll_lines(0,l) ! This is the total number of particles per step
          xl = x0 + sl*(x1-x0)
          yl = y0 + sl*(y1-y0)
          zl = z0 + sl*(z1-z0)
          rl = sqrt(xl*xl+yl*yl)
          pl = atan2(yl,xl)
          pl = MODULO(pl,phimax)
-         LGRID = .FALSE.
          DO s = 1, nl
             ! Find gridpoint but use half grid
             i = MIN(MAX(COUNT(raxis-hr2 < rl(s)),1),nr)
             j = MIN(MAX(COUNT(phiaxis-hp2 < pl(s)),1),nphi)
             k = MIN(MAX(COUNT(zaxis-hz2 < zl(s)),1),nz)
-            LGRID(m,i,j,k) = .true.
+            BEAM_DENSITY(m,i,j,k) = BEAM_DENSITY(m,i,j,k) + denbeam
          END DO
-         WHERE(lgrid) BEAM_DENSITY = BEAM_DENSITY + denbeam
       END DO
-      DEALLOCATE(lgrid)
       DEALLOCATE(xl,yl,zl,rl,pl,sl)
 
       ! Fix edges which are double counts
