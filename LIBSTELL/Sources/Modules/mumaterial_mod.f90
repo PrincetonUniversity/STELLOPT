@@ -98,12 +98,12 @@
       DOUBLE PRECISION, INTENT(in) :: mE, la, laF
       INTEGER, INTENT(in) :: mI
 
-      WRITE(*,*) "Setting max Error, max Iterations to: ", mE, mI
+      WRITE(*,'(A18,E10.4,A17,I4,A9,E10.4,A16,E10.4)') "Setting max Error:", mE, " max Iterations: ", mI, " lambda: ", la, " lambda factor: ", laF
 
       maxErr = mE
       maxIter = mI
       lambdaStart = la
-      lambdaFactor = la
+      lambdaFactor = laF
 
       RETURN
       END SUBROUTINE mumaterial_setd
@@ -261,8 +261,8 @@
       DOUBLE PRECISION, INTENT(IN) :: lambdaStart, lambdaFac
       INTEGER :: i, i_tile, j_tile, count, lambdaCount
       LOGICAL :: run, first
-      DOUBLE PRECISION :: M_old(3), Mnorm(ntet), Mnorm_old(ntet), H(3), N_store(3,3,ntet,ntet)
-      DOUBLE PRECISION :: H_old(3), H_new(3), M_new(3), lambda, lambda_s, error, maxDiff(4)
+      DOUBLE PRECISION :: Mnorm(ntet), Mnorm_old(ntet), H(3), N_store(3,3,ntet,ntet)
+      DOUBLE PRECISION :: H_old(3), H_new(3), M_new(3,ntet), lambda, lambda_s, error, maxDiff(4)
 
       ! Get initial magnetization
       ! DO i = 1, ntet
@@ -290,17 +290,16 @@
       DO
             ! Get the field and new magnetization for each tile
             DO i_tile = 1, ntet
-                  M_old = M(:,i_tile)
                   H = Happ(:,i_tile)
 
                   ! Get the field from all other tiles
                   DO j_tile = 1, ntet
                         IF (first) THEN
-                              CALL mumaterial_getN(vertex(tet(j_tile,1),:), vertex(tet(j_tile,2),:), vertex(tet(j_tile,3),:), vertex(tet(j_tile,4),:), tet_cen(:,i_tile), N_store(:,:,i_tile,j_tile))
+                              CALL mumaterial_getN(vertex(tet(j_tile,1),:), vertex(tet(j_tile,2),:), vertex(tet(j_tile,3),:), vertex(tet(j_tile,4),:), tet_cen(:,i_tile), N_store(:,:,j_tile,i_tile))
                         END IF
 
                         IF (i_tile .ne. j_tile) THEN ! Current tile is not included in H
-                              H = H + MATMUL(N_store(:,:,i_tile,j_tile),M(:,j_tile))
+                              H = H + MATMUL(N_store(:,:,j_tile,i_tile), M(:,j_tile))
                         END IF
                   END DO
 
@@ -318,7 +317,7 @@
                               H_new = H_old + lambda_s * (H_new - H_old)
 
                               IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. 0.0001*lambda_s) THEN
-                                    M_new = MATMUL(N_store(:,:,i_tile,i_tile), H_new)
+                                    M_new(:,i_tile) = (constant_mu(state_dex(i_tile)) - 1) * H_new
                                     EXIT
                               END IF
                         END DO
@@ -327,16 +326,16 @@
                         STOP
                   END SELECT
 
-                  M(:,i_tile) = M_old + lambda*(M_new - M_old)
-                  Mnorm(i_tile) = NORM2(M(:,i_tile))
+                  
             END DO
-            
+            M = M + lambda*(M_new - M)
             
             first = .FALSE.
             count = count + 1
 
             error = 0.d0
             DO i = 1, ntet   
+                  Mnorm(i) = NORM2(M(:,i))
                   IF (Mnorm_old(i) .ne. 0.d0 .AND. ABS((Mnorm(i) - Mnorm_old(i))/Mnorm_old(i)) .gt. error) THEN
                         error = ABS((Mnorm(i) - Mnorm_old(i))/Mnorm_old(i))
                   END IF
@@ -349,11 +348,11 @@
             IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) THEN
                   EXIT
             ELSE
-                  maxDiff = CSHIFT(maxDiff, 1)
+                  maxDiff = CSHIFT(maxDiff, -1)
                   maxDiff(1) = error
 
-                  ! Update lambda if there is any increase in the error
-                  IF (lambdaCount .gt. 4 .AND. ((maxDiff(2) - maxDiff(1)) .gt. 0.d0 .OR. (maxDiff(3) - maxDiff(2)) .gt. 0.d0 .OR. (maxDiff(4) - maxDiff(3)) .gt. 0.d0)) THEN
+                  ! Update lambda if there is any increase in the error (maxDiff(1) is the most recent)
+                  IF (lambdaCount .gt. 4 .AND. ((maxDiff(2) - maxDiff(1)) .lt. 0.d0 .OR. (maxDiff(3) - maxDiff(2)) .lt. 0.d0 .OR. (maxDiff(4) - maxDiff(3)) .lt. 0.d0)) THEN
                         lambda = lambda * lambdaFac
                         lambdaCount = 1
                   END IF
@@ -361,8 +360,6 @@
                   lambdaCount = lambdaCount + 1
                   
                   Mnorm_old = Mnorm
-
-
             END IF
       END DO
 
@@ -677,9 +674,9 @@
       
 
 
-      SUBROUTINE mumaterial_getb_scalar(x, y, z, Bx, By, Bz)
+      SUBROUTINE mumaterial_getb_scalar(x, y, z, Bx, By, Bz, getBfld)
       !-----------------------------------------------------------------------
-      ! mumaterial_getb: Calculates magnetic field at a point in space
+      ! mumaterial_getb: Calculates total magnetic field at a point in space
       !-----------------------------------------------------------------------
       ! param[in]: x. x-coordinate of point where to get the B-field
       ! param[in]: y. y-coordinate of point where to get the B-field
@@ -689,6 +686,7 @@
       ! param[out]: Bz. z-component of B-field at this point [T]
       !-----------------------------------------------------------------------
       IMPLICIT NONE
+      EXTERNAL:: getBfld
       DOUBLE PRECISION, INTENT(in) :: x, y, z
       DOUBLE PRECISION, INTENT(out) :: Bx, By, Bz
       DOUBLE PRECISION :: H(3), mu0, N(3,3)
@@ -702,9 +700,11 @@
             H = H + MATMUL(N, M(:,i))
       END DO
 
-      Bx = H(1) * mu0
-      By = H(2) * mu0
-      Bz = H(3) * mu0
+      CALL getBfld(x, y, z, Bx, By, Bz)
+
+      Bx = Bx + H(1) * mu0
+      By = By + H(2) * mu0
+      Bz = Bz + H(3) * mu0
 
       RETURN
       END SUBROUTINE mumaterial_getb_scalar
@@ -713,9 +713,9 @@
 
 
 
-      SUBROUTINE mumaterial_getb_vector(x, y, z, Bx, By, Bz)
+      SUBROUTINE mumaterial_getb_vector(x, y, z, Bx, By, Bz, getBfld)
       !-----------------------------------------------------------------------
-      ! mumaterial_getb_vector: Calculates magnetic field at multiple points in space
+      ! mumaterial_getb_vector: Calculates total magnetic field at multiple points in space
       !-----------------------------------------------------------------------
       ! param[in]: x. x-coordinates of points at which to determine the magnetic field
       ! param[in]: y. y-coordinates of points at which to determine the magnetic field
@@ -725,6 +725,7 @@
       ! param[out]: Bz. z-value of B-field at required points [T]
       !-----------------------------------------------------------------------
       IMPLICIT NONE
+      EXTERNAL:: getBfld
       DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
       DOUBLE PRECISION, INTENT(out), ALLOCATABLE :: Bx(:), By(:), Bz(:)
       INTEGER :: n_points, i
@@ -736,7 +737,7 @@
       allocate(Bz(n_points))
 
       DO i = 1, n_points
-            CALL mumaterial_getb_scalar(x(i), y(i), z(i), Bx(i), By(i), Bz(i))
+            CALL mumaterial_getb_scalar(x(i), y(i), z(i), Bx(i), By(i), Bz(i), getBfld)
       END DO
       
       RETURN
@@ -744,7 +745,7 @@
 
 
 
-      SUBROUTINE mumaterial_output(path, x, y, z)
+      SUBROUTINE mumaterial_output(path, x, y, z, getBfld)
       !-----------------------------------------------------------------------
       ! mumaterial_output: Outputs tiles, H-field and points to text files
       !-----------------------------------------------------------------------
@@ -754,6 +755,7 @@
       ! param[in]: z. z-cooridinates of points at which to determine the magnetic field
       !-----------------------------------------------------------------------
       IMPLICIT NONE
+      EXTERNAL:: getBfld
       CHARACTER(LEN=*), INTENT(in) :: path
       DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
       INTEGER :: n_points
@@ -772,7 +774,7 @@
 
       WRITE(*,*) "Getting B-field"
 
-      CALL mumaterial_getb(x, y, z, Bx, By, Bz)
+      CALL mumaterial_getb(x, y, z, Bx, By, Bz, getBfld)
 
       WRITE(*,*) "Outputting B-field"
 
