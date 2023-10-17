@@ -1855,6 +1855,78 @@ MODULE beams3d_physics_mod
       END SUBROUTINE beams3d_SFLX
 
       !-----------------------------------------------------------------
+      !     Function:      beams3d_SUFLX
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          09/28/2023
+      !     Description:   Returns normalized toroidal flux and
+      !                    poloidal angle at a given point in space.
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_SUFLX(q,S,U)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          q    (q(1),q(2),q(3)) = (R,phi,Z)
+         !          S    Backbround grid normalized flux
+         !          U    Backbround grid poloidal angle
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: q(3)
+         DOUBLE PRECISION, INTENT(out) :: S
+         DOUBLE PRECISION, INTENT(out) :: U
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        r_temp     Helpers (r,phi,z)
+         !        i,j,k      Spline Grid indicies
+         !        xparam     Spline subgrid factor [0,1] (yparam,zparam)
+         !        ict        Spline output control
+         !        fval       Spline output array
+         !--------------------------------------------------------------
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp
+         ! For splines
+         INTEGER :: i,j,k
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         REAL*8 :: fval(1)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+
+         ! Setup position in a vll arrays
+         r_temp   = q(1)
+         phi_temp = MODULO(q(2), phimax)
+         IF (phi_temp < 0) phi_temp = phi_temp + phimax
+         z_temp   = q(3)
+
+         ! Initialize values
+         S = 2; U = 0
+
+         ! Check that we're inside the domain then proceed
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+             (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+             (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
+            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            xparam = (r_temp - raxis(i)) * hri(i)
+            yparam = (phi_temp - phiaxis(j)) * hpi(j)
+            zparam = (z_temp - zaxis(k)) * hzi(k)
+            ! Evaluate the Splines
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            S4D(1,1,1,1),nr,nphi,nz)
+            S = max(fval(1),zero)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            U4D(1,1,1,1),nr,nphi,nz)
+            U = fval(1)
+         END IF
+
+         RETURN
+
+      END SUBROUTINE beams3d_SUFLX
+
+      !-----------------------------------------------------------------
       !     Function:      beams3d_suv2rzp
       !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
       !     Date:          03/07/2021
