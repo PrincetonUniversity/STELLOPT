@@ -342,13 +342,13 @@ MODULE beams3d_physics_mod
             vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
             tau_spit_inv = one/slow_par(2)
             vc3_tauinv = vcrit_cube*tau_spit_inv
-            WRITE(6, *) 'NRL19: ',slow_par, vc3_tauinv*slow_par(3)
+            !WRITE(6, *) 'NRL19: ',slow_par, vc3_tauinv*slow_par(3)
             !slow_par = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-            slow_par = coulomb_log_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
-            vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
-            tau_spit_inv = one/slow_par(2)
-            vc3_tauinv = vcrit_cube*tau_spit_inv
-            WRITE(6, *) 'NUBEAM: ', slow_par , vc3_tauinv*slow_par(3)
+            !slow_par = coulomb_log_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+            !vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
+            !tau_spit_inv = one/slow_par(2)
+            !vc3_tauinv = vcrit_cube*tau_spit_inv
+            !WRITE(6, *) 'NUBEAM: ', slow_par , vc3_tauinv*slow_par(3)
 
 
 
@@ -576,10 +576,10 @@ MODULE beams3d_physics_mod
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
 
             slow_par = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-            WRITE(6, *) 'NRL19: ', slow_par
+            !WRITE(6, *) 'NRL19: ', slow_par
             !slow_par = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-            slow_par = coulomb_log_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
-            WRITE(6, *) 'NUBEAM: ', slow_par
+            !slow_par = coulomb_log_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+            !WRITE(6, *) 'NUBEAM: ', slow_par
 
             vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
             tau_spit_inv = one/slow_par(2)
