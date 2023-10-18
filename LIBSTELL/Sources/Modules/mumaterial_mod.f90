@@ -49,8 +49,8 @@
       INTEGER, POINTER, PRIVATE :: tet(:,:)
       INTEGER, POINTER, PRIVATE :: state_dex(:)
       INTEGER, POINTER, PRIVATE :: state_type(:)
-      DOUBLE PRECISION, POINTER, PRIVATE :: constant_mu(:)
-      DOUBLE PRECISION, POINTER, PRIVATE :: M(:,:), Happ(:,:)
+      DOUBLE PRECISION, POINTER, PRIVATE :: constant_mu(:), constant_mu_o(:)
+      DOUBLE PRECISION, POINTER, PRIVATE :: M(:,:), Happ(:,:), Mrem(:,:)
       INTEGER, PRIVATE            :: win_vertex, win_tet,  &
                                      win_state_dex, win_state_type, &
                                      win_constant_mu, win_m
@@ -153,7 +153,7 @@
       ! Broadcast info to MPI and allocate vertex and face info
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-      ! todo: tet_cen, M, Happ
+      ! todo: tet_cen, M, Happ, Mrem, constant_mu_o
          CALL MPI_Bcast(nvertex,1,MPI_INTEGER,0,shar_comm,istat)
          CALL MPI_Bcast(ntet,1,MPI_INTEGER,0,shar_comm,istat)
          CALL MPI_Bcast(nstate,1,MPI_INTEGER,0,shar_comm,istat)
@@ -169,7 +169,8 @@
          ! if no MPI, allocate everything on one node
          ALLOCATE(vertex(nvertex,3),tet(ntet,4),state_dex(ntet), &
                   state_type(nstate),constant_mu(nstate), &
-                  tet_cen(3,ntet),M(3,ntet),Happ(3,ntet),STAT=istat)
+                  tet_cen(3,ntet),M(3,ntet),Happ(3,ntet), &
+                  constant_mu_o(nstate),Mrem(3,ntet),STAT=istat)
          shared = .false.
 #if defined(MPI_OPT)
       END IF
@@ -189,7 +190,8 @@
          DO ik = 1, nstate
             READ(iunit,*) state_type(ik)
             IF (state_type(ik) == 1) THEN
-               READ(iunit,*) constant_mu(ik)
+               READ(iunit,*) constant_mu(ik), constant_mu_o(ik)
+               READ(iunit,*) Mrem(1,ik),Mrem(2,ik),Mrem(3,ik)
             ELSEIF (state_type(ik) == 2) THEN
                PRINT *, 'STATE_TYPE == 2 (soft magnet) not yet supported.'
                   ! old function for loading state function, may be applicable, adapted from MagTense Standalone IO
@@ -263,6 +265,7 @@
       LOGICAL :: run, first
       DOUBLE PRECISION :: Mnorm(ntet), Mnorm_old(ntet), H(3), N_store(3,3,ntet,ntet)
       DOUBLE PRECISION :: H_old(3), H_new(3), M_new(3,ntet), lambda, lambda_s, error, maxDiff(4)
+      DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
       ! Get initial magnetization
       ! DO i = 1, ntet
@@ -305,7 +308,39 @@
 
                   SELECT CASE (state_type(state_dex(i_tile)))
                   CASE (1) ! Hard magnet
+                        Mrem_norm = NORM2(Mrem(:,state_dex(i_tile)))
+                        u_ea = Mrem(:,state_dex(i_tile))/Mrem_norm ! easy axis assumed parallel to remanent magnetization
+                        IF (u_ea(2)/=0 .OR. u_ea(3)/=0) THEN      ! cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
+                              u_oa_1 = [0.d0, u_ea(3), -u_ea(2)]
+                              u_oa_2 = [-u_ea(2)*u_ea(2) - u_ea(3)*u_ea(3), u_ea(1)*u_ea(2), u_ea(1)*u_ea(3)]
+                        ELSE                                      ! cross product of u_ea with [0, 1, 0] and cross product of u_ea with cross product
+                              u_oa_1 = [-u_ea(3), 0.d0, u_ea(1)]
+                              u_oa_2 = [u_ea(1)*u_ea(2), -u_ea(1)*u_ea(1) - u_ea(3)*u_ea(3), u_ea(2)*u_ea(3)]
+                        END IF
 
+                        u_oa_1 = u_oa_1/NORM2(u_oa_1)
+                        u_oa_2 = u_oa_2/NORM2(u_oa_2)
+                        
+                        lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 1/constant_mu_o(state_dex(i_tile)), 0.5)
+                        H_new = H
+                        DO
+                              H_old = H_new
+
+                              ! Determine magnetization taking into account easy axis
+                              M_tmp = (Mrem_norm + (constant_mu(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
+                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
+                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
+
+                              H_new = H + MATMUL(N_store(:,:,i_tile,i_tile), M_tmp)
+                              H_new = H_old + lambda_s * (H_new - H_old)
+
+                              IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. maxErr*lambda_s) THEN
+                                    M_new(:,i_tile) = (Mrem_norm + (constant_mu(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
+                                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
+                                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
+                                    EXIT
+                              END IF
+                        END DO
                   CASE (2) ! Soft magnet using state function
 
                   CASE (3) ! Soft magnet using constant permeability
@@ -316,7 +351,7 @@
                               H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N_store(:,:,i_tile,i_tile), H_new)
                               H_new = H_old + lambda_s * (H_new - H_old)
 
-                              IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. 0.0001*lambda_s) THEN
+                              IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. maxErr*lambda_s) THEN
                                     M_new(:,i_tile) = (constant_mu(state_dex(i_tile)) - 1) * H_new
                                     EXIT
                               END IF
