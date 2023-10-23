@@ -306,11 +306,18 @@
       IF (maxDist .gt. 0.d0) THEN ! Double approach since not using neighbours is faster for smaller objects
             WRITE (*,*) "Determining nearest neighbours"
             ALLOCATE(N_store(ntet))
-            DO i = 1, ntet                  
+            DO i = 1, ntet
                   ALLOCATE(nearestNeighbours(i)%idx(1))
                   nearestNeighbours(i)%idx(1) = i
-                  DO j = 2, ntet
+            END DO
+
+            DO i = 1, ntet                  
+                  IF (MOD(i, 1000) .eq. 0) THEN
+                        WRITE(*,'(A6,I8,A9,F6.2,A1)') "Tile: ", i, "Complete: ", i*1.d2/ntet, '%'
+                  END IF
+                  DO j = i+1, ntet
                         IF (i .ne. j .AND. NORM2(tet_cen(:,i)-tet_cen(:,j)) .lt. maxDist) THEN
+                              ! set j as nearest neighbour for i
                               n = SIZE(nearestNeighbours(i)%idx)
                               ALLOCATE(neighbours_temp(n))
                               neighbours_temp = nearestNeighbours(i)%idx
@@ -319,6 +326,16 @@
                               nearestNeighbours(i)%idx(1:n) = neighbours_temp
                               nearestNeighbours(i)%idx(n+1) = j
                               DEALLOCATE(neighbours_temp)
+
+                              ! set i as nearest neighbour for j
+                              n = SIZE(nearestNeighbours(j)%idx)
+                              ALLOCATE(neighbours_temp(n))
+                              neighbours_temp = nearestNeighbours(j)%idx
+                              DEALLOCATE(nearestNeighbours(j)%idx)
+                              ALLOCATE(nearestNeighbours(j)%idx(n+1))
+                              nearestNeighbours(j)%idx(1:n) = neighbours_temp
+                              nearestNeighbours(j)%idx(n+1) = i
+                              DEALLOCATE(neighbours_temp)
                         END IF
                   END DO
                   ALLOCATE(N_store(i)%N(3,3,SIZE(nearestNeighbours(i)%idx)))
@@ -326,6 +343,9 @@
 
             WRITE(*,*) "Determining N-tensors"
             DO i = 1, ntet
+                  IF (MOD(i, 1000) .eq. 0) THEN
+                        WRITE(*,'(A6,I8,A9,F6.2,A1)') "Tile: ", i, "Complete: ", i*1.d2/ntet, '%'
+                  END IF
                   DO j = 1, SIZE(nearestNeighbours(i)%idx)
                         CALL mumaterial_getN(vertex(:,tet(1,nearestNeighbours(i)%idx(j))), vertex(:,tet(2,nearestNeighbours(i)%idx(j))), vertex(:,tet(3,nearestNeighbours(i)%idx(j))), vertex(:,tet(4,nearestNeighbours(i)%idx(j))), tet_cen(:,i), N_store(i)%N(:,:,j))
                   END DO
