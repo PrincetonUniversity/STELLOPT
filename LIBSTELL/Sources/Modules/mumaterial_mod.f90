@@ -38,10 +38,23 @@
 !           M:                Magnet M Vector for hard magnet (nstate,3)
 !
 !-----------------------------------------------------------------------
-      INTEGER, PRIVATE                    :: nvertex, ntet, nstate
-      ! TYPE(MagTile), PRIVATE, ALLOCATABLE              :: tiles(:)
-      ! TYPE(MagStateFunction), PRIVATE, ALLOCATABLE     :: stateFunction(:)
-      DOUBLE PRECISION, PRIVATE           :: maxErr, lambdaStart, lambdaFactor
+      TYPE stateFunctionType
+            DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: H(:), M(:)
+      END TYPE stateFunctionType
+
+      TYPE nearestNeighboursType
+            INTEGER, PRIVATE, ALLOCATABLE :: idx(:)
+      END TYPE nearestNeighboursType
+
+      TYPE NStoreType
+            DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: N(:,:,:)
+      END TYPE
+      
+      INTEGER, PRIVATE                    :: nvertex, ntet, nstate, nMH
+      TYPE(stateFunctionType), PRIVATE, ALLOCATABLE     :: stateFunction(:)
+      TYPE(nearestNeighboursType), PRIVATE, ALLOCATABLE :: nearestNeighbours(:)
+      LOGICAL, PRIVATE                    :: neighbours
+      DOUBLE PRECISION, PRIVATE           :: maxErr, lambdaStart, lambdaFactor, maxDist
       INTEGER, PRIVATE                    :: maxIter
 
 
@@ -86,7 +99,7 @@
 
 
 
-      SUBROUTINE mumaterial_setd(mE, mI, la, laF)
+      SUBROUTINE mumaterial_setd(mE, mI, la, laF, mD)
       !-----------------------------------------------------------------------
       ! mumaterial_setd: Sets default values
       !-----------------------------------------------------------------------
@@ -95,15 +108,21 @@
       ! param[in]: T. New temp: temperature of magnetic material in MagTense
       !-----------------------------------------------------------------------
       IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(in) :: mE, la, laF
+      DOUBLE PRECISION, INTENT(in) :: mE, la, laF, mD
       INTEGER, INTENT(in) :: mI
 
       WRITE(*,'(A18,E10.4,A17,I4,A9,E10.4,A16,E10.4)') "Setting max Error:", mE, " max Iterations: ", mI, " lambda: ", la, " lambda factor: ", laF
+      IF (mD .le. 0.0d0) THEN
+            WRITE(*,'(A27)') "Nearest neighbours disabled"
+      ELSE
+            WRITE(*,'(A42,E10.4)') "Nearest neighbours enabled; max distance: ", mD
+      END IF
 
       maxErr = mE
       maxIter = mI
       lambdaStart = la
       lambdaFactor = laF
+      maxDist = mD
 
       RETURN
       END SUBROUTINE mumaterial_setd
@@ -153,7 +172,7 @@
       ! Broadcast info to MPI and allocate vertex and face info
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-      ! todo: tet_cen, M, Happ, Mrem, constant_mu_o
+      ! todo: tet_cen, M, Happ, Mrem, constant_mu_o, nMH, stateFunction, vertex, tet, N_store, nearestneighbours, maxDist
          CALL MPI_Bcast(nvertex,1,MPI_INTEGER,0,shar_comm,istat)
          CALL MPI_Bcast(ntet,1,MPI_INTEGER,0,shar_comm,istat)
          CALL MPI_Bcast(nstate,1,MPI_INTEGER,0,shar_comm,istat)
@@ -167,10 +186,11 @@
       ELSE
 #endif
          ! if no MPI, allocate everything on one node
-         ALLOCATE(vertex(nvertex,3),tet(ntet,4),state_dex(ntet), &
+         ALLOCATE(vertex(3,nvertex),tet(4,ntet),state_dex(ntet), &
                   state_type(nstate),constant_mu(nstate), &
                   tet_cen(3,ntet),M(3,ntet),Happ(3,ntet), &
-                  constant_mu_o(nstate),Mrem(3,ntet),STAT=istat)
+                  constant_mu_o(nstate),Mrem(3,ntet),stateFunction(nstate), &
+                  nearestNeighbours(ntet),STAT=istat)
          shared = .false.
 #if defined(MPI_OPT)
       END IF
@@ -180,10 +200,10 @@
       IF (istat/=0) RETURN
       IF (shar_rank == 0) THEN
          DO ik = 1, nvertex
-            READ(iunit,*) vertex(ik,1),vertex(ik,2),vertex(ik,3)
+            READ(iunit,*) vertex(1,ik),vertex(2,ik),vertex(3,ik)
          END DO
          DO ik = 1, ntet
-            READ(iunit,*) tet(ik,1),tet(ik,2),tet(ik,3),tet(ik,4),state_dex(ik)
+            READ(iunit,*) tet(1,ik),tet(2,ik),tet(3,ik),tet(4,ik),state_dex(ik)
          END DO
          ! This next section will get more complicated in the future for now
          ! we just handle the soft constant and hard magnets
@@ -193,25 +213,11 @@
                READ(iunit,*) constant_mu(ik), constant_mu_o(ik)
                READ(iunit,*) Mrem(1,ik),Mrem(2,ik),Mrem(3,ik)
             ELSEIF (state_type(ik) == 2) THEN
-               PRINT *, 'STATE_TYPE == 2 (soft magnet) not yet supported.'
-                  ! old function for loading state function, may be applicable, adapted from MagTense Standalone IO
-                  ! subroutine loadStateFunctionFortran(stateFunction)
-                  !       integer :: i
-                  !       type(MagStateFunction), dimension(1), intent(out) :: stateFunction
-                  !       OPEN(11, file='stateFunction.dat')
-                  !       read(11,*) stateFunction(1)%nT,stateFunction(1)%nH
-                        
-                  !       allocate( stateFunction(1)%M(stateFunction(1)%nT,stateFunction(1)%nH) )
-                  !       allocate( stateFunction(1)%T(stateFunction(1)%nT) )
-                  !       allocate( stateFunction(1)%H(stateFunction(1)%nH) )
-                        
-                  !       stateFunction(1)%T(1) = 300
-                  !       DO i=1,stateFunction(1)%nH
-                  !       read(11,*) stateFunction(1)%H(i),stateFunction(1)%M(1,i)        
-                  !       END DO
-                        
-                  !       close (11)
-                  ! end subroutine loadStateFunctionFortran
+               READ(iunit,*) nMH
+               ALLOCATE(stateFunction(ik)%H(nMH),stateFunction(ik)%M(nMH))
+               DO i = 1, nMH
+                  READ(iunit,*) stateFunction(ik)%H(i),stateFunction(ik)%M(i)
+               END DO
             ELSEIF (state_type(ik) == 3) THEN
                READ(iunit,*) constant_mu(ik)
             ELSE
@@ -229,7 +235,7 @@
       WRITE(*,*) "Finished reading tile data"
 
       ! set default values
-      call MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0)
+      CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 0.d0)
 
       RETURN
       END SUBROUTINE mumaterial_load
@@ -257,54 +263,143 @@
 
 
 
+      SUBROUTINE mumaterial_init(getBfld, offset, comm)
+      !-----------------------------------------------------------------------
+      ! mumaterial_init: Calculates magnetization of material
+      !-----------------------------------------------------------------------
+      ! fcn           : getBfld. Function which returns the vacuum magnetic field
+      !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
+      ! param[in]: offset. Offset of all tiles from the origin
+      ! param[in, out]: comm. MPI communicator, handles shared memory
+      !-----------------------------------------------------------------------
+#if defined(MPI_OPT)
+      USE mpi
+#endif
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in) :: offset(3)
+      INTEGER, INTENT(inout), OPTIONAL :: comm
+      EXTERNAL:: getBfld
+      INTEGER :: i, j, j_tile, n
+      DOUBLE PRECISION :: mu0, norm, x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n
+      DOUBLE PRECISION, ALLOCATABLE :: neighbours_temp(:)
+      DOUBLE PRECISION, ALLOCATABLE :: N_store_all(:,:,:,:)
+      TYPE(NStoreType), ALLOCATABLE :: N_store(:)
+      
+      mu0 = 16 * atan(1.d0) * 1.d-7
 
-      SUBROUTINE mumaterial_iterate_magnetization(lambdaStart, lambdaFac)
+      WRITE(*,*) "Setting up tiles"
+      
+
+      IF (MAXVAL(ABS(offset)) .gt. 0.d0) THEN
+            DO i = 1, nvertex
+                  vertex(:,i) = vertex(:,i) + offset
+            END DO
+      END IF
+
+      DO i = 1, ntet
+            tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
+
+            CALL getBfld(tet_cen(1,i), tet_cen(2,i), tet_cen(3,i), Bx, By, Bz)
+            Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
+      END DO
+
+      IF (maxDist .gt. 0.d0) THEN ! Double approach since not using neighbours is faster for smaller objects
+            WRITE (*,*) "Determining nearest neighbours"
+            ALLOCATE(N_store(ntet))
+            DO i = 1, ntet                  
+                  ALLOCATE(nearestNeighbours(i)%idx(1))
+                  nearestNeighbours(i)%idx(1) = i
+                  DO j = 2, ntet
+                        IF (i .ne. j .AND. NORM2(tet_cen(:,i)-tet_cen(:,j)) .lt. maxDist) THEN
+                              n = SIZE(nearestNeighbours(i)%idx)
+                              ALLOCATE(neighbours_temp(n))
+                              neighbours_temp = nearestNeighbours(i)%idx
+                              DEALLOCATE(nearestNeighbours(i)%idx)
+                              ALLOCATE(nearestNeighbours(i)%idx(n+1))
+                              nearestNeighbours(i)%idx(1:n) = neighbours_temp
+                              nearestNeighbours(i)%idx(n+1) = j
+                              DEALLOCATE(neighbours_temp)
+                        END IF
+                  END DO
+                  ALLOCATE(N_store(i)%N(3,3,SIZE(nearestNeighbours(i)%idx)))
+            END DO
+
+            WRITE(*,*) "Determining N-tensors"
+            DO i = 1, ntet
+                  DO j = 1, SIZE(nearestNeighbours(i)%idx)
+                        CALL mumaterial_getN(vertex(:,tet(1,nearestNeighbours(i)%idx(j))), vertex(:,tet(2,nearestNeighbours(i)%idx(j))), vertex(:,tet(3,nearestNeighbours(i)%idx(j))), vertex(:,tet(4,nearestNeighbours(i)%idx(j))), tet_cen(:,i), N_store(i)%N(:,:,j))
+                  END DO
+            END DO
+            neighbours = .TRUE.
+      ELSE
+            WRITE(*,*) "Determining N-tensors"
+            ALLOCATE(N_store_all(3,3,ntet,ntet))
+            DO i = 1, ntet                  
+                  DO j = 1, ntet
+                        CALL mumaterial_getN(vertex(:,tet(1,j)), vertex(:,tet(2,j)), vertex(:,tet(3,j)), vertex(:,tet(4,j)), tet_cen(:,i), N_store_all(:,:,j,i))
+                  END DO
+            END DO
+            neighbours = .FALSE.
+      END IF
+
+
+
+      WRITE(*,*) "Running iterations"      
+
+      IF (neighbours) THEN
+            CALL mumaterial_iterate_magnetization(lambdaStart, lambdaFactor, N_store=N_store)
+      ELSE
+            CALL mumaterial_iterate_magnetization(lambdaStart, lambdaFactor, N_store_all=N_store_all)
+      END IF
+
+      RETURN
+      END SUBROUTINE mumaterial_init
+
+
+
+
+
+
+
+
+
+      
+      SUBROUTINE mumaterial_iterate_magnetization(lambdaStart, lambdaFac, N_store_all, N_store)
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(IN) :: lambdaStart, lambdaFac
-      INTEGER :: i, i_tile, j_tile, count, lambdaCount
-      LOGICAL :: run, first
-      DOUBLE PRECISION :: Mnorm(ntet), Mnorm_old(ntet), H(3), N_store(3,3,ntet,ntet)
-      DOUBLE PRECISION :: H_old(3), H_new(3), M_new(3,ntet), lambda, lambda_s, error, maxDiff(4)
+      INTEGER :: i, j, i_tile, j_tile, count, lambdaCount
+      LOGICAL :: run
+      DOUBLE PRECISION :: Mnorm(ntet), Mnorm_old(ntet), H(3), N(3,3)
+      DOUBLE PRECISION :: H_old(3), H_new(3), M_new(3,ntet), lambda, lambda_s, error, maxDiff(4), Hnorm, M_tmp_norm
+      DOUBLE PRECISION, OPTIONAL :: N_store_all(3,3,ntet,ntet)
+      TYPE(NStoreType), OPTIONAL :: N_store(ntet)
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
-      ! Get initial magnetization
-      ! DO i = 1, ntet
-      !       SELECT CASE (state_type(state_dex(i)))
-      !       CASE (1) ! Hard magnet
-      !             WRITE(*,*) "Hard magnet not yet implemented. Is it even necessary?" ! todo
-      !       CASE (2) ! Soft magnet using state function
-      !             !CALL mumaterial_getM_soft(Happ(:,i), stateFunction(?), M(:,i)) ! todo
-      !       CASE (3) 
-      !             M(:,i) = Happ(:,i) * (constant_mu(state_dex(i)) - 1)
-      !       CASE DEFAULT
-      !             WRITE(*,*) "Unkown magnet type" ! todo stop?
-      !             STOP
-      !       END SELECT
-      !       Mnorm(i) = NORM2(M(:,i))
-      ! END DO
-      count = 0;
+      count = 0
       lambda = lambdaStart
-      lambdaCount = 0;
-      Mnorm_old = 0.d0;
-      maxDiff = 0.d0;
-
+      lambdaCount = 0
+      Mnorm_old = 0.d0
+      maxDiff = 0.d0
       ! Iterate on magnetization
-      first = .TRUE.
       DO
             ! Get the field and new magnetization for each tile
             DO i_tile = 1, ntet
                   H = Happ(:,i_tile)
 
                   ! Get the field from all other tiles
-                  DO j_tile = 1, ntet
-                        IF (first) THEN
-                              CALL mumaterial_getN(vertex(tet(j_tile,1),:), vertex(tet(j_tile,2),:), vertex(tet(j_tile,3),:), vertex(tet(j_tile,4),:), tet_cen(:,i_tile), N_store(:,:,j_tile,i_tile))
-                        END IF
-
-                        IF (i_tile .ne. j_tile) THEN ! Current tile is not included in H
-                              H = H + MATMUL(N_store(:,:,j_tile,i_tile), M(:,j_tile))
-                        END IF
-                  END DO
+                  IF (neighbours) THEN
+                        DO j = 2, SIZE(nearestNeighbours(i_tile)%idx) ! Current tile is not included in H
+                                    H = H + MATMUL(N_store(i_tile)%N(:,:,j), M(:,nearestNeighbours(i_tile)%idx(j)))
+                        END DO
+                        N = N_store(i_tile)%N(:,:,1)  
+                  ELSE
+                        DO j_tile = 1, ntet
+                              IF (i_tile .ne. j_tile) THEN ! Current tile is not included in H
+                                    H = H + MATMUL(N_store_all(:,:,j_tile,i_tile), M(:,j_tile))
+                              END IF
+                        END DO
+                        N = N_store_all(:,:,i_tile,i_tile)
+                  END IF
 
                   SELECT CASE (state_type(state_dex(i_tile)))
                   CASE (1) ! Hard magnet
@@ -331,7 +426,7 @@
                                     + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
                                     + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
 
-                              H_new = H + MATMUL(N_store(:,:,i_tile,i_tile), M_tmp)
+                              H_new = H + MATMUL(N, M_tmp)
                               H_new = H_old + lambda_s * (H_new - H_old)
 
                               IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. maxErr*lambda_s) THEN
@@ -342,13 +437,39 @@
                               END IF
                         END DO
                   CASE (2) ! Soft magnet using state function
+                        H_new = H
+                        DO
+                              H_old = H_new
+                              Hnorm = NORM2(H_new)
+                              IF (Hnorm .ne. 0) THEN
+                                    ! CALL spline...(...,M_tmp_norm)
+                                    M_tmp = M_tmp_norm * H_new / Hnorm
+                              ELSE
+                                    M_tmp = 0
+                                    M_tmp_norm = 0
+                              END IF
+                              lambda_s = MIN(Hnorm/M_tmp_norm, 0.5)
 
+                              H_new = H + MATMUL(N, M_tmp)
+                              H_new = H_old + lambda_s * (H_new - H_old)
+
+                              IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. maxErr*lambda_s) THEN
+                                    Hnorm = NORM2(H_new)
+                                    IF (Hnorm .ne. 0) THEN
+                                          ! CALL spline...(...,M_tmp_norm)
+                                          M_new(:,i_tile) = M_tmp_norm * H_new / Hnorm
+                                    ELSE
+                                          M_new(:,i_tile) = 0
+                                    END IF
+                                    EXIT
+                              END IF
+                        END DO
                   CASE (3) ! Soft magnet using constant permeability
                         lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 0.5)
                         H_new = H
                         DO
                               H_old = H_new
-                              H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N_store(:,:,i_tile,i_tile), H_new)
+                              H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N, H_new)
                               H_new = H_old + lambda_s * (H_new - H_old)
 
                               IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. maxErr*lambda_s) THEN
@@ -365,7 +486,6 @@
             END DO
             M = M + lambda*(M_new - M)
             
-            first = .FALSE.
             count = count + 1
 
             error = 0.d0
@@ -617,95 +737,7 @@
 
 
 
-      SUBROUTINE mumaterial_init(getBfld, offset, comm)
-      !-----------------------------------------------------------------------
-      ! mumaterial_init: Calculates magnetization of material
-      !-----------------------------------------------------------------------
-      ! fcn           : getBfld. Function which returns the vacuum magnetic field
-      !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
-      ! param[in]: offset. Offset of all tiles from the origin
-      ! param[in, out]: comm. MPI communicator, handles shared memory
-      !-----------------------------------------------------------------------
-#if defined(MPI_OPT)
-      USE mpi
-#endif
-      IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(in) :: offset(3)
-      INTEGER, INTENT(inout), OPTIONAL :: comm
-      EXTERNAL:: getBfld
-      INTEGER :: ik
-      DOUBLE PRECISION :: mu0, norm, x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n
-      
-      mu0 = 16 * atan(1.d0) * 1.d-7
 
-      WRITE(*,*) "Setting up tiles"
-      
-
-      IF (MAXVAL(ABS(offset)) .gt. 0.d0) THEN
-            DO ik = 1, nvertex
-                  vertex(ik,:) = vertex(ik,:) + offset
-            END DO
-      END IF
-
-      DO ik = 1, ntet
-            tet_cen(:,ik) = (vertex(tet(ik,1),:) + vertex(tet(ik,2),:) + vertex(tet(ik,3),:) + vertex(tet(ik,4),:))/4.d0
-            
-            CALL getBfld(tet_cen(1,ik), tet_cen(2,ik), tet_cen(3,ik), Bx, By, Bz)
-            Happ(:,ik) = [Bx/mu0, By/mu0, Bz/mu0]
-
-            ! IF (tiles(ik)%magnetType == 1) THEN
-            !    tiles(ik)%mu_r_ea = constant_mu(state_dex(ik))
-            !    tiles(ik)%mu_r_oa = constant_mu(state_dex(ik))
-
-            ! ! todo change this to use actual remanent magnetisation
-            !    ! set remanent magnetization to strength of the field [A/m] and easy axis in the direction of the field
-            !    norm = sqrt(Bx*Bx + By*By + Bz*Bz)
-            !    Bx_n = Bx / norm
-            !    By_n = By / norm
-            !    Bz_n = Bz / norm
-            !    tiles(ik)%Mrem = norm / mu0
-            !    tiles(ik)%u_ea = [Bx_n, By_n, Bz_n]
-               
-            !    ! get orthogonal axes
-            !    IF (By/=0 .or. Bz/=0) THEN          ! cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
-            !          tiles(ik)%u_oa1 = [0.d0, Bz_n, -By_n]
-            !          tiles(ik)%u_oa2 = [-By_n*By_n - Bz_n*Bz_n, Bx_n*By_n, Bx_n*Bz_n]
-            !    ELSE                                ! cross product of u_ea with [0, 1, 0] and cross product of u_ea with cross product
-            !          tiles(ik)%u_oa1 = [-Bz_n, 0.d0, Bx_n]
-            !          tiles(ik)%u_oa2 = [Bx_n*By_n, -Bx_n*Bx_n - Bz_n*Bz_n, By_n*Bz_n]
-            !    END IF
-      END DO
-            
-      WRITE(*,*) "Running iterations"      
-      
-      ! allocate(stateFunction(1)) ! todo temporary until statefunction is properly implemented
-      ! call loadStateFunctionFortran(stateFunction)
-
-
-      ! CALL iterateMagnetization(tiles, ntet, stateFunction, size(stateFunction), temp, maxErr, maxIter, 0.d0) ! todo replace size?
-
-      CALL mumaterial_iterate_magnetization(lambdaStart, lambdaFactor)
-
-      RETURN
-      END SUBROUTINE mumaterial_init
-
-      ! subroutine loadStateFunctionFortran(stateFunction)
-      !       integer :: i
-      !       type(MagStateFunction), dimension(1), intent(out) :: stateFunction
-      !       OPEN(11, file='stateFunction.dat')
-      !       read(11,*) stateFunction(1)%nT,stateFunction(1)%nH
-            
-      !       allocate( stateFunction(1)%M(stateFunction(1)%nT,stateFunction(1)%nH) )
-      !       allocate( stateFunction(1)%T(stateFunction(1)%nT) )
-      !       allocate( stateFunction(1)%H(stateFunction(1)%nH) )
-            
-      !       stateFunction(1)%T(1) = 300
-      !       DO i=1,stateFunction(1)%nH
-      !       read(11,*) stateFunction(1)%H(i),stateFunction(1)%M(1,i)        
-      !       END DO
-            
-      !       close (11)
-      ! end subroutine loadStateFunctionFortran
       
 
 
@@ -731,7 +763,7 @@
       H = 0.d0
 
       DO i = 1, ntet
-            CALL mumaterial_getN(vertex(tet(i,1),:), vertex(tet(i,2),:), vertex(tet(i,3),:), vertex(tet(i,4),:), [x, y, z], N)
+            CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), [x, y, z], N)
             H = H + MATMUL(N, M(:,i))
       END DO
 
