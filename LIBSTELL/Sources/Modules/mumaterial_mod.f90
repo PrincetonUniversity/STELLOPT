@@ -202,11 +202,11 @@
          DO ik = 1, nvertex
             READ(iunit,*) vertex(1,ik),vertex(2,ik),vertex(3,ik)
          END DO
+
          DO ik = 1, ntet
             READ(iunit,*) tet(1,ik),tet(2,ik),tet(3,ik),tet(4,ik),state_dex(ik)
          END DO
-         ! This next section will get more complicated in the future for now
-         ! we just handle the soft constant and hard magnets
+
          DO ik = 1, nstate
             READ(iunit,*) state_type(ik)
             IF (state_type(ik) == 1) THEN
@@ -312,30 +312,33 @@
             END DO
 
             DO i = 1, ntet                  
-                  IF (MOD(i, 1000) .eq. 0) THEN
-                        WRITE(*,'(A6,I8,A9,F6.2,A1)') "Tile: ", i, "Complete: ", i*1.d2/ntet, '%'
+                  IF (MOD(i, 100) .eq. 0) THEN
+                        WRITE(*,'(A6,I8,A11,F6.2,A1)') "Tile: ", i, " Complete: ", i*1.d2/ntet, '%'
                   END IF
                   DO j = i+1, ntet
                         IF (i .ne. j .AND. NORM2(tet_cen(:,i)-tet_cen(:,j)) .lt. maxDist) THEN
-                              ! set j as nearest neighbour for i
-                              n = SIZE(nearestNeighbours(i)%idx)
-                              ALLOCATE(neighbours_temp(n))
-                              neighbours_temp = nearestNeighbours(i)%idx
-                              DEALLOCATE(nearestNeighbours(i)%idx)
-                              ALLOCATE(nearestNeighbours(i)%idx(n+1))
-                              nearestNeighbours(i)%idx(1:n) = neighbours_temp
-                              nearestNeighbours(i)%idx(n+1) = j
-                              DEALLOCATE(neighbours_temp)
+                              ! ! set j as nearest neighbour for i
+                              ! n = SIZE(nearestNeighbours(i)%idx)
+                              ! ALLOCATE(neighbours_temp(n))
+                              ! neighbours_temp = nearestNeighbours(i)%idx
+                              ! DEALLOCATE(nearestNeighbours(i)%idx)
+                              ! ALLOCATE(nearestNeighbours(i)%idx(n+1))
+                              ! nearestNeighbours(i)%idx(1:n) = neighbours_temp
+                              ! nearestNeighbours(i)%idx(n+1) = j
+                              ! DEALLOCATE(neighbours_temp)
 
-                              ! set i as nearest neighbour for j
-                              n = SIZE(nearestNeighbours(j)%idx)
-                              ALLOCATE(neighbours_temp(n))
-                              neighbours_temp = nearestNeighbours(j)%idx
-                              DEALLOCATE(nearestNeighbours(j)%idx)
-                              ALLOCATE(nearestNeighbours(j)%idx(n+1))
-                              nearestNeighbours(j)%idx(1:n) = neighbours_temp
-                              nearestNeighbours(j)%idx(n+1) = i
-                              DEALLOCATE(neighbours_temp)
+                              ! ! set i as nearest neighbour for j
+                              ! n = SIZE(nearestNeighbours(j)%idx)
+                              ! ALLOCATE(neighbours_temp(n))
+                              ! neighbours_temp = nearestNeighbours(j)%idx
+                              ! DEALLOCATE(nearestNeighbours(j)%idx)
+                              ! ALLOCATE(nearestNeighbours(j)%idx(n+1))
+                              ! nearestNeighbours(j)%idx(1:n) = neighbours_temp
+                              ! nearestNeighbours(j)%idx(n+1) = i
+                              ! DEALLOCATE(neighbours_temp)
+
+                              nearestNeighbours(i)%idx = [nearestNeighbours(i)%idx, j]
+                              nearestNeighbours(j)%idx = [nearestNeighbours(j)%idx, i]
                         END IF
                   END DO
                   ALLOCATE(N_store(i)%N(3,3,SIZE(nearestNeighbours(i)%idx)))
@@ -343,8 +346,8 @@
 
             WRITE(*,*) "Determining N-tensors"
             DO i = 1, ntet
-                  IF (MOD(i, 1000) .eq. 0) THEN
-                        WRITE(*,'(A6,I8,A9,F6.2,A1)') "Tile: ", i, "Complete: ", i*1.d2/ntet, '%'
+                  IF (MOD(i, 100) .eq. 0) THEN
+                        WRITE(*,'(A6,I8,A11,F6.2,A1)') "Tile: ", i, " Complete: ", i*1.d2/ntet, '%'
                   END IF
                   DO j = 1, SIZE(nearestNeighbours(i)%idx)
                         CALL mumaterial_getN(vertex(:,tet(1,nearestNeighbours(i)%idx(j))), vertex(:,tet(2,nearestNeighbours(i)%idx(j))), vertex(:,tet(3,nearestNeighbours(i)%idx(j))), vertex(:,tet(4,nearestNeighbours(i)%idx(j))), tet_cen(:,i), N_store(i)%N(:,:,j))
@@ -389,7 +392,7 @@
       DOUBLE PRECISION, INTENT(IN) :: lambdaStart, lambdaFac
       INTEGER :: i, j, i_tile, j_tile, count, lambdaCount
       LOGICAL :: run
-      DOUBLE PRECISION :: Mnorm(ntet), Mnorm_old(ntet), H(3), N(3,3)
+      DOUBLE PRECISION :: Mnorm(ntet), Mnorm_old(ntet), H(3), N(3,3), chi(ntet)
       DOUBLE PRECISION :: H_old(3), H_new(3), M_new(3,ntet), lambda, lambda_s, error, maxDiff(4), Hnorm, M_tmp_norm
       DOUBLE PRECISION, OPTIONAL :: N_store_all(3,3,ntet,ntet)
       TYPE(NStoreType), OPTIONAL :: N_store(ntet)
@@ -421,6 +424,7 @@
                         N = N_store_all(:,:,i_tile,i_tile)
                   END IF
 
+                  H_new = H
                   SELECT CASE (state_type(state_dex(i_tile)))
                   CASE (1) ! Hard magnet
                         Mrem_norm = NORM2(Mrem(:,state_dex(i_tile)))
@@ -437,7 +441,6 @@
                         u_oa_2 = u_oa_2/NORM2(u_oa_2)
                         
                         lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 1/constant_mu_o(state_dex(i_tile)), 0.5)
-                        H_new = H
                         DO
                               H_old = H_new
 
@@ -457,12 +460,11 @@
                               END IF
                         END DO
                   CASE (2) ! Soft magnet using state function
-                        H_new = H
                         DO
                               H_old = H_new
                               Hnorm = NORM2(H_new)
                               IF (Hnorm .ne. 0) THEN
-                                    ! CALL spline...(...,M_tmp_norm)
+                                    CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
                                     M_tmp = M_tmp_norm * H_new / Hnorm
                               ELSE
                                     M_tmp = 0
@@ -476,17 +478,18 @@
                               IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. maxErr*lambda_s) THEN
                                     Hnorm = NORM2(H_new)
                                     IF (Hnorm .ne. 0) THEN
-                                          ! CALL spline...(...,M_tmp_norm)
+                                          CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
                                           M_new(:,i_tile) = M_tmp_norm * H_new / Hnorm
+                                          chi(i_tile) = M_tmp_norm / Hnorm
                                     ELSE
                                           M_new(:,i_tile) = 0
+                                          chi(i_tile) = 0
                                     END IF
                                     EXIT
                               END IF
                         END DO
                   CASE (3) ! Soft magnet using constant permeability
                         lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 0.5)
-                        H_new = H
                         DO
                               H_old = H_new
                               H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N, H_new)
@@ -521,6 +524,7 @@
             WRITE(*,'(A7,I5,A8,E15.7,A13,E15.7)') 'Count: ', count, ' Error: ', error, ' Max. Error: ', maxErr*lambda
 
             IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) THEN
+                  WRITE(*,'(A14,E15.7)') "Average mu_r: ", SUM(chi)/ntet + 1
                   EXIT
             ELSE
                   maxDiff = CSHIFT(maxDiff, -1)
@@ -626,7 +630,6 @@
 
       RETURN
       END SUBROUTINE mumaterial_getN
-
 
       FUNCTION mumaterial_getNxz(r, l, h)
       IMPLICIT NONE
@@ -736,7 +739,6 @@
 
       END FUNCTION mumaterial_getNzz
 
-
       FUNCTION mumaterial_cross(a, b)
             IMPLICIT NONE
             DOUBLE PRECISION, INTENT(IN), DIMENSION(3) :: a, b
@@ -752,10 +754,81 @@
 
 
 
-      
 
+      SUBROUTINE mumaterial_getState(fx, fy, x, y)
+      !-----------------------------------------------------------------------
+      ! mumaterial_getState: Interpolates a function f at x to get a value y using B-splines based on De Boor's algorithm
+      !-----------------------------------------------------------------------
+      ! param[in]: fx. x-coordinates of function to be interpolated
+      ! param[in]: fy. y-coordinates of function to be interpolated
+      ! param[in]: x. x-coordinate of evaluation point
+      ! param[in]: y. y-coordinate of evaluation point
+      !-----------------------------------------------------------------------
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(IN) :: fx(:), fy(:), x
+      DOUBLE PRECISION, INTENT(OUT) :: y
+      INTEGER :: n, i, k, p, r
+      DOUBLE PRECISION :: alpha
+      DOUBLE PRECISION, ALLOCATABLE :: t(:), d(:)
 
+      p = 3 ! Degree of the polynomial used
+      n = SIZE(fx)
 
+      ALLOCATE(t(2+2*(p-1)))
+      ALLOCATE(d(p+1))
+
+      ! Determine left index k
+      ! Assume fx in non-decreasing
+      IF (x .lt. fx(1)) THEN
+            k = 1
+      ELSEIF (x .gt. fx(n)) THEN
+            k = n
+      ELSE
+            DO i = 2, n 
+                  IF (x .lt. fx(i)) THEN
+                        k = i - 1
+                        EXIT
+                  END IF
+            END DO
+      END IF
+
+      ! Determine array with x-values, add padding if necessary
+      DO i = 1, 2+2*(p-1)
+            r = k + i - p
+            IF (r .lt. 1) THEN
+                  t(i) = fx(1)
+            ELSEIF (r .gt. n) THEN
+                  t(i) = fx(n)
+            ELSE
+                  t(i) = fx(r)
+            END IF
+      END DO
+
+      ! Determine array with coefficients, add padding if necessary
+      DO i = 1, p+1
+            r = k + i - p
+            IF (r .lt. 1) THEN
+                  d(i) = fy(1)
+            ELSEIF (r .gt. n) THEN
+                  d(i) = fy(n)
+            ELSE
+                  d(i) = fy(r)
+            END IF
+      END DO
+
+      ! Determine spline coefficients
+      DO r = 1, p
+            DO i = p, r, -1
+                  alpha = (x - t(i)) / (t(i+1+p-r) - t(i))
+                  d(i) = (1 - alpha) * d(i) + alpha * d(i+1)
+            END DO
+      END DO
+
+      ! Set output variable
+      y = d(3)
+
+      RETURN
+      END SUBROUTINE mumaterial_getState
 
 
       
