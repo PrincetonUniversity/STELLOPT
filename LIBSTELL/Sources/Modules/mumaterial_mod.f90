@@ -1,7 +1,7 @@
 !-----------------------------------------------------------------------
 !     Module:        mumaterial_mod
 !     Authors:       S. Lazerson (lazerson@pppl.gov), Björn Hamstra
-!     Date:          September 2023
+!     Date:          October 2023
 !     Description:   This module is designed to help calculate the
 !                    magnetic field arrising from ferromagnetic
 !                    material
@@ -11,8 +11,6 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE safe_open_mod
-      ! USE TileNComponents
-      ! USE IterateMagnetSolution
       IMPLICIT NONE
 
 !-----------------------------------------------------------------------
@@ -26,36 +24,29 @@
 !           nstate:           Number of state functions
 !           tiles:            Magnetic tiles
 !           stateFunction:    Array of state functions
-!           maxErr:           Max allowed error for convergence in MagTense iteration
-!           maxIter           Max allowed number of MagTense iterations
-!           temp:             Temperature of magnetic material [K]
-!           vertex:           Vertices [m] (nvertex,3)
-!           tet:              Tetrahedron (ntet,4) index into vertex
+!           maxErr:           Max allowed error for convergence in all iterations
+!           maxIter:          Max allowed number of iterations
+!           maxNb:            Max number of neighbours, <=0 disables nearest neighbours
+!           lambdaStart:      Base value for lambda in iterate
+!           lambdaFactor:     Mutiplication factor for lambda
+!           vertex:           Vertices [m] (3,nvertex)
+!           tet:              Tetrahedron (4,ntet) index into vertex
 !           state_dex:        State function for each tetrahedron
-!           state_type:       Type of state function (nstate) (1 or 3)
-!                                (type 2 not yet supported)
+!           state_type:       Type of state function (nstate) (1-3)
 !           constant_mu:      Mu values for constant permeability (nstate)
-!           M:                Magnet M Vector for hard magnet (nstate,3)
-!
+!           constant_mu_o:    Mu values for orthogonal axis for hard magnet (nstate)
+!           Mrem:             Magnet M Vector for hard magnet (3,nstate)
+!           M:                Magnetization for all tetrahedrons (3,ntet)
+!           Happ:             Applied magnetic field [A/m] at the centre of all tetrahedrons (3,ntet)
 !-----------------------------------------------------------------------
       TYPE stateFunctionType
             DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: H(:), M(:)
       END TYPE stateFunctionType
-
-      TYPE nearestNeighboursType
-            INTEGER, PRIVATE, ALLOCATABLE :: idx(:)
-      END TYPE nearestNeighboursType
-
-      TYPE NStoreType
-            DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: N(:,:,:)
-      END TYPE
       
       INTEGER, PRIVATE                    :: nvertex, ntet, nstate, nMH
       TYPE(stateFunctionType), PRIVATE, ALLOCATABLE     :: stateFunction(:)
-      TYPE(nearestNeighboursType), PRIVATE, ALLOCATABLE :: nearestNeighbours(:)
-      LOGICAL, PRIVATE                    :: neighbours
-      DOUBLE PRECISION, PRIVATE           :: maxErr, lambdaStart, lambdaFactor, maxDist
-      INTEGER, PRIVATE                    :: maxIter
+      DOUBLE PRECISION, PRIVATE           :: maxErr, lambdaStart, lambdaFactor
+      INTEGER, PRIVATE                    :: maxIter, maxNb
 
 
       DOUBLE PRECISION, POINTER, PRIVATE :: vertex(:,:), tet_cen(:,:)
@@ -84,8 +75,9 @@
 !         mumaterial_setd: Sets default values
 !         mumaterial_load: Loads a magnetic material file
 !         mumaterial_init: Calculates magnetization of material
-!         mumaterial_getb_scalar: Calculates magnetic field at a point in space
-!         mumaterial_getb_vector: Calculates magnetic field for multiple points in space
+!         mumaterial_getb: Calculates magnetic field in space
+!             mumaterial_getb_scalar: Calculates magnetic field at a point in space
+!             mumaterial_getb_vector: Calculates magnetic field for multiple points in space
 !         mumaterial_output: Output tiles, H-field and points to file
 !-----------------------------------------------------------------------
 !     Functions
@@ -99,7 +91,7 @@
 
 
 
-      SUBROUTINE mumaterial_setd(mE, mI, la, laF, mD)
+      SUBROUTINE mumaterial_setd(mE, mI, la, laF, mNb)
       !-----------------------------------------------------------------------
       ! mumaterial_setd: Sets default values
       !-----------------------------------------------------------------------
@@ -108,21 +100,21 @@
       ! param[in]: T. New temp: temperature of magnetic material in MagTense
       !-----------------------------------------------------------------------
       IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(in) :: mE, la, laF, mD
-      INTEGER, INTENT(in) :: mI
+      DOUBLE PRECISION, INTENT(in) :: mE, la, laF
+      INTEGER, INTENT(in) :: mI, mNb
 
       WRITE(*,'(A18,E10.4,A17,I4,A9,E10.4,A16,E10.4)') "Setting max Error:", mE, " max Iterations: ", mI, " lambda: ", la, " lambda factor: ", laF
-      IF (mD .le. 0.0d0) THEN
+      IF (mNb .le. 0) THEN
             WRITE(*,'(A27)') "Nearest neighbours disabled"
       ELSE
-            WRITE(*,'(A42,E10.4)') "Nearest neighbours enabled; max distance: ", mD
+            WRITE(*,'(A42,I7)') "Nearest neighbours enabled; max number: ", mNb
       END IF
 
       maxErr = mE
       maxIter = mI
       lambdaStart = la
       lambdaFactor = laF
-      maxDist = mD
+      maxNb = mNb
 
       RETURN
       END SUBROUTINE mumaterial_setd
@@ -190,7 +182,7 @@
                   state_type(nstate),constant_mu(nstate), &
                   tet_cen(3,ntet),M(3,ntet),Happ(3,ntet), &
                   constant_mu_o(nstate),Mrem(3,ntet),stateFunction(nstate), &
-                  nearestNeighbours(ntet),STAT=istat)
+                  STAT=istat)
          shared = .false.
 #if defined(MPI_OPT)
       END IF
@@ -235,7 +227,7 @@
       WRITE(*,*) "Finished reading tile data"
 
       ! set default values
-      CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 0.d0)
+      CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 0)
 
       RETURN
       END SUBROUTINE mumaterial_load
@@ -279,11 +271,13 @@
       DOUBLE PRECISION, INTENT(in) :: offset(3)
       INTEGER, INTENT(inout), OPTIONAL :: comm
       EXTERNAL:: getBfld
-      INTEGER :: i, j, j_tile, n
+      INTEGER :: i, j
       DOUBLE PRECISION :: mu0, norm, x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n
-      DOUBLE PRECISION, ALLOCATABLE :: neighbours_temp(:)
       DOUBLE PRECISION, ALLOCATABLE :: N_store_all(:,:,:,:)
-      TYPE(NStoreType), ALLOCATABLE :: N_store(:)
+      DOUBLE PRECISION, ALLOCATABLE :: N_store(:,:,:,:)
+      INTEGER, ALLOCATABLE :: neighbours(:,:)
+      DOUBLE PRECISION, ALLOCATABLE :: dist(:)
+      LOGICAL, ALLOCATABLE :: mask(:)
       
       mu0 = 16 * atan(1.d0) * 1.d-7
 
@@ -303,45 +297,24 @@
             Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
       END DO
 
-      IF (maxDist .gt. 0.d0) THEN ! Double approach since not using neighbours is faster for smaller objects
+      IF (maxNb .gt. 0) THEN ! Double approach since not using neighbours is faster for smaller objects
             WRITE (*,*) "Determining nearest neighbours"
-            ALLOCATE(N_store(ntet))
-            DO i = 1, ntet
-                  ALLOCATE(nearestNeighbours(i)%idx(1))
-                  nearestNeighbours(i)%idx(1) = i
-            END DO
+            ALLOCATE(neighbours(maxNb,ntet), dist(ntet), mask(ntet), N_store(3,3,maxNb+1,ntet))
+            neighbours = 0
 
-            DO i = 1, ntet                  
+            DO i = 1, ntet
                   IF (MOD(i, 100) .eq. 0) THEN
                         WRITE(*,'(A6,I8,A11,F6.2,A1)') "Tile: ", i, " Complete: ", i*1.d2/ntet, '%'
                   END IF
-                  DO j = i+1, ntet
-                        IF (i .ne. j .AND. NORM2(tet_cen(:,i)-tet_cen(:,j)) .lt. maxDist) THEN
-                              ! ! set j as nearest neighbour for i
-                              ! n = SIZE(nearestNeighbours(i)%idx)
-                              ! ALLOCATE(neighbours_temp(n))
-                              ! neighbours_temp = nearestNeighbours(i)%idx
-                              ! DEALLOCATE(nearestNeighbours(i)%idx)
-                              ! ALLOCATE(nearestNeighbours(i)%idx(n+1))
-                              ! nearestNeighbours(i)%idx(1:n) = neighbours_temp
-                              ! nearestNeighbours(i)%idx(n+1) = j
-                              ! DEALLOCATE(neighbours_temp)
-
-                              ! ! set i as nearest neighbour for j
-                              ! n = SIZE(nearestNeighbours(j)%idx)
-                              ! ALLOCATE(neighbours_temp(n))
-                              ! neighbours_temp = nearestNeighbours(j)%idx
-                              ! DEALLOCATE(nearestNeighbours(j)%idx)
-                              ! ALLOCATE(nearestNeighbours(j)%idx(n+1))
-                              ! nearestNeighbours(j)%idx(1:n) = neighbours_temp
-                              ! nearestNeighbours(j)%idx(n+1) = i
-                              ! DEALLOCATE(neighbours_temp)
-
-                              nearestNeighbours(i)%idx = [nearestNeighbours(i)%idx, j]
-                              nearestNeighbours(j)%idx = [nearestNeighbours(j)%idx, i]
-                        END IF
+                  DO j = 1, ntet
+                        dist(j) = NORM2(tet_cen(:,i)-tet_cen(:,j)) 
                   END DO
-                  ALLOCATE(N_store(i)%N(3,3,SIZE(nearestNeighbours(i)%idx)))
+                  mask = .TRUE.
+                  mask(i) = .FALSE.
+                  DO j = 1, maxNb
+                        neighbours(j,i) = MINLOC(dist, 1, mask)
+                        mask(neighbours(j,i)) = .FALSE.
+                  END DO
             END DO
 
             WRITE(*,*) "Determining N-tensors"
@@ -349,30 +322,32 @@
                   IF (MOD(i, 100) .eq. 0) THEN
                         WRITE(*,'(A6,I8,A11,F6.2,A1)') "Tile: ", i, " Complete: ", i*1.d2/ntet, '%'
                   END IF
-                  DO j = 1, SIZE(nearestNeighbours(i)%idx)
-                        CALL mumaterial_getN(vertex(:,tet(1,nearestNeighbours(i)%idx(j))), vertex(:,tet(2,nearestNeighbours(i)%idx(j))), vertex(:,tet(3,nearestNeighbours(i)%idx(j))), vertex(:,tet(4,nearestNeighbours(i)%idx(j))), tet_cen(:,i), N_store(i)%N(:,:,j))
+                  DO j = 1, maxNb
+                        CALL mumaterial_getN(vertex(:,tet(1,neighbours(j,i))), vertex(:,tet(2,neighbours(j,i))), vertex(:,tet(3,neighbours(j,i))), vertex(:,tet(4,neighbours(j,i))), tet_cen(:,i), N_store(:,:,j,i))
                   END DO
+                  CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), tet_cen(:,i), N_store(:,:,maxNb+1,i))
             END DO
-            neighbours = .TRUE.
       ELSE
             WRITE(*,*) "Determining N-tensors"
             ALLOCATE(N_store_all(3,3,ntet,ntet))
-            DO i = 1, ntet                  
+            DO i = 1, ntet  
+                  IF (MOD(i, 100) .eq. 0) THEN
+                        WRITE(*,'(A6,I8,A11,F6.2,A1)') "Tile: ", i, " Complete: ", i*1.d2/ntet, '%'
+                  END IF                
                   DO j = 1, ntet
                         CALL mumaterial_getN(vertex(:,tet(1,j)), vertex(:,tet(2,j)), vertex(:,tet(3,j)), vertex(:,tet(4,j)), tet_cen(:,i), N_store_all(:,:,j,i))
                   END DO
             END DO
-            neighbours = .FALSE.
       END IF
 
 
 
       WRITE(*,*) "Running iterations"      
 
-      IF (neighbours) THEN
-            CALL mumaterial_iterate_magnetization(lambdaStart, lambdaFactor, N_store=N_store)
+      IF (maxNb .gt. 0) THEN
+            CALL mumaterial_iterate_magnetization(lambdaStart, lambdaFactor, .TRUE., N_store=N_store, neighbours=neighbours)
       ELSE
-            CALL mumaterial_iterate_magnetization(lambdaStart, lambdaFactor, N_store_all=N_store_all)
+            CALL mumaterial_iterate_magnetization(lambdaStart, lambdaFactor, .FALSE., N_store_all=N_store_all)
       END IF
 
       RETURN
@@ -387,15 +362,29 @@
 
 
       
-      SUBROUTINE mumaterial_iterate_magnetization(lambdaStart, lambdaFac, N_store_all, N_store)
+      SUBROUTINE mumaterial_iterate_magnetization(lambdaStart, lambdaFac, use_neighbours, N_store_all, N_store, neighbours)
+      !-----------------------------------------------------------------------
+      ! mumaterial_iterate_magnetization: Iterates the magnetic field over all tiles, called by mumaterial_init
+      !-----------------------------------------------------------------------
+      ! param[in]: lambdaStart. Starting value for lambda for iterative method
+      ! param[in]: lambdaFac. Multiplication factor for lambda for numerical damping
+      ! param[in]: use_neighbours. Use nearest neighbours or not
+      ! param[in]: N_store_all. Storage for all demagnetization tensors when not using nearest neighbours
+      ! param[in]: N_store. Storage for demagnetization tensors from nearest neighbours
+      ! param[in]: neighbours. Indices of nearest neighbours
+      ! param[in, out]: comm. MPI communicator, handles shared memory ! todo
+      !-----------------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(IN) :: lambdaStart, lambdaFac
+      LOGICAL, INTENT(IN) :: use_neighbours
+      DOUBLE PRECISION, OPTIONAL :: N_store_all(3,3,ntet,ntet)
+      DOUBLE PRECISION, OPTIONAL :: N_store(3,3,maxNb+1,ntet)
+      INTEGER, OPTIONAL :: neighbours(maxNb,ntet)
+
       INTEGER :: i, j, i_tile, j_tile, count, lambdaCount
       LOGICAL :: run
       DOUBLE PRECISION :: Mnorm(ntet), Mnorm_old(ntet), H(3), N(3,3), chi(ntet)
       DOUBLE PRECISION :: H_old(3), H_new(3), M_new(3,ntet), lambda, lambda_s, error, maxDiff(4), Hnorm, M_tmp_norm
-      DOUBLE PRECISION, OPTIONAL :: N_store_all(3,3,ntet,ntet)
-      TYPE(NStoreType), OPTIONAL :: N_store(ntet)
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
       count = 0
@@ -410,11 +399,11 @@
                   H = Happ(:,i_tile)
 
                   ! Get the field from all other tiles
-                  IF (neighbours) THEN
-                        DO j = 2, SIZE(nearestNeighbours(i_tile)%idx) ! Current tile is not included in H
-                                    H = H + MATMUL(N_store(i_tile)%N(:,:,j), M(:,nearestNeighbours(i_tile)%idx(j)))
+                  IF (use_neighbours) THEN
+                        DO j = 1, maxNb ! Current tile is not included in H, j is index of the neighbour, not the index of that specific tile
+                                    H = H + MATMUL(N_store(:,:,j,i_tile), M(:,neighbours(j,i_tile)))
                         END DO
-                        N = N_store(i_tile)%N(:,:,1)  
+                        N = N_store(:,:,maxNb+1,i_tile)  
                   ELSE
                         DO j_tile = 1, ntet
                               IF (i_tile .ne. j_tile) THEN ! Current tile is not included in H
@@ -424,19 +413,21 @@
                         N = N_store_all(:,:,i_tile,i_tile)
                   END IF
 
+                  ! Determine field and magnetization at tile due to all other tiles and itself
                   H_new = H
                   SELECT CASE (state_type(state_dex(i_tile)))
                   CASE (1) ! Hard magnet
                         Mrem_norm = NORM2(Mrem(:,state_dex(i_tile)))
-                        u_ea = Mrem(:,state_dex(i_tile))/Mrem_norm ! easy axis assumed parallel to remanent magnetization
-                        IF (u_ea(2)/=0 .OR. u_ea(3)/=0) THEN      ! cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
+                        u_ea = Mrem(:,state_dex(i_tile))/Mrem_norm ! Easy axis assumed parallel to remanent magnetization
+                        IF (u_ea(2)/=0 .OR. u_ea(3)/=0) THEN      ! Cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
                               u_oa_1 = [0.d0, u_ea(3), -u_ea(2)]
                               u_oa_2 = [-u_ea(2)*u_ea(2) - u_ea(3)*u_ea(3), u_ea(1)*u_ea(2), u_ea(1)*u_ea(3)]
-                        ELSE                                      ! cross product of u_ea with [0, 1, 0] and cross product of u_ea with cross product
+                        ELSE                                      ! Cross product of u_ea with [0, 1, 0] and cross product of u_ea with cross product
                               u_oa_1 = [-u_ea(3), 0.d0, u_ea(1)]
                               u_oa_2 = [u_ea(1)*u_ea(2), -u_ea(1)*u_ea(1) - u_ea(3)*u_ea(3), u_ea(2)*u_ea(3)]
                         END IF
 
+                        ! Normalize unit vectors
                         u_oa_1 = u_oa_1/NORM2(u_oa_1)
                         u_oa_2 = u_oa_2/NORM2(u_oa_2)
                         
@@ -511,6 +502,7 @@
             
             count = count + 1
 
+            ! Determine change in magnetization
             error = 0.d0
             DO i = 1, ntet   
                   Mnorm(i) = NORM2(M(:,i))
@@ -524,7 +516,7 @@
             WRITE(*,'(A7,I5,A8,E15.7,A13,E15.7)') 'Count: ', count, ' Error: ', error, ' Max. Error: ', maxErr*lambda
 
             IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) THEN
-                  WRITE(*,'(A14,E15.7)') "Average mu_r: ", SUM(chi)/ntet + 1
+                  WRITE(*,'(A14,E15.7)') "Average mu_r: ", SUM(chi)/ntet + 1.0
                   EXIT
             ELSE
                   maxDiff = CSHIFT(maxDiff, -1)
@@ -552,6 +544,13 @@
 
 
       SUBROUTINE mumaterial_getN(v1, v2, v3, v4, pos, N)
+      !-----------------------------------------------------------------------
+      ! mumaterial_getN: Helper function to determine the demagnetization tensor
+      !-----------------------------------------------------------------------
+      ! param[in]: v1-4: Vertices of the tetrahedron (3)
+      ! param[in]: pos: Reference position for which to determine the demagnetization tensor (3)
+      ! param[in]: N. Resulting demagnetization tensor (3,3)
+      !-----------------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in), DIMENSION(3) :: v1, v2, v3, v4, pos
       DOUBLE PRECISION, INTENT(out) :: N(3,3)
@@ -632,6 +631,13 @@
       END SUBROUTINE mumaterial_getN
 
       FUNCTION mumaterial_getNxz(r, l, h)
+      !-----------------------------------------------------------------------
+      ! mumaterial_getNxz: Helper function to determine the x-component of the demagnetization tensor
+      !-----------------------------------------------------------------------
+      ! param[in]: r: Reference position for which to determine the demagnetization tensor (3)
+      ! param[in]: l: Bottom side of the triangle 
+      ! param[in]: h. Top side of the triangle
+      !-----------------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION :: mumaterial_getNxz
       DOUBLE PRECISION, INTENT(IN) :: r(3), l, h
@@ -668,6 +674,13 @@
       END FUNCTION mumaterial_getNxz
 
       FUNCTION mumaterial_getNyz(r, l, h)
+      !-----------------------------------------------------------------------
+      ! mumaterial_getNyz: Helper function to determine the y-component of the demagnetization tensor
+      !-----------------------------------------------------------------------
+      ! param[in]: r: Reference position for which to determine the demagnetization tensor (3)
+      ! param[in]: l: Bottom side of the triangle 
+      ! param[in]: h. Top side of the triangle
+      !-----------------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION :: mumaterial_getNyz
       DOUBLE PRECISION, INTENT(IN) :: r(3), l, h
@@ -705,6 +718,13 @@
       END FUNCTION mumaterial_getNyz
 
       FUNCTION mumaterial_getNzz(r, l, h)
+      !-----------------------------------------------------------------------
+      ! mumaterial_getNzz: Helper function to determine the z-component of the demagnetization tensor
+      !-----------------------------------------------------------------------
+      ! param[in]: r: Reference position for which to determine the demagnetization tensor (3)
+      ! param[in]: l: Bottom side of the triangle 
+      ! param[in]: h. Top side of the triangle
+      !-----------------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION :: mumaterial_getNzz
       DOUBLE PRECiSION, INTENT(IN) :: r(3), l, h
@@ -778,7 +798,7 @@
       ALLOCATE(d(p+1))
 
       ! Determine left index k
-      ! Assume fx in non-decreasing
+      ! Assume fx is non-decreasing
       IF (x .lt. fx(1)) THEN
             k = 1
       ELSEIF (x .gt. fx(n)) THEN
@@ -844,6 +864,8 @@
       ! param[out]: Bx. x-component of B-field at this point [T]
       ! param[out]: By. y-component of B-field at this point [T]
       ! param[out]: Bz. z-component of B-field at this point [T]
+      ! fcn           : getBfld. Function which returns the vacuum magnetic field
+      !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
       !-----------------------------------------------------------------------
       IMPLICIT NONE
       EXTERNAL:: getBfld
@@ -883,6 +905,8 @@
       ! param[out]: Bx. x-value of B-field at required points [T]
       ! param[out]: By. y-value of B-field at required points [T]
       ! param[out]: Bz. z-value of B-field at required points [T]
+      ! fcn           : getBfld. Function which returns the vacuum magnetic field
+      !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
       !-----------------------------------------------------------------------
       IMPLICIT NONE
       EXTERNAL:: getBfld
@@ -905,14 +929,18 @@
 
 
 
+
+
       SUBROUTINE mumaterial_output(path, x, y, z, getBfld)
       !-----------------------------------------------------------------------
-      ! mumaterial_output: Outputs tiles, H-field and points to text files
+      ! mumaterial_output: Outputs B-field and points to text files
       !-----------------------------------------------------------------------
       ! param[in]: path. Path to store files in
       ! param[in]: x. x-cooridinates of points at which to determine the magnetic field
       ! param[in]: y. y-cooridinates of points at which to determine the magnetic field
       ! param[in]: z. z-cooridinates of points at which to determine the magnetic field
+      ! fcn           : getBfld. Function which returns the vacuum magnetic field
+      !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
       !-----------------------------------------------------------------------
       IMPLICIT NONE
       EXTERNAL:: getBfld
@@ -951,39 +979,6 @@
 
 
 
-      ! SUBROUTINE mumaterial_field_variation(getBfld, use_demag)
-      ! EXTERNAL :: getBfld
-      ! LOGICAL, INTENT(in) :: use_demag
-      ! INTEGER :: i
-      ! DOUBLE PRECISION :: Bnorm, diffNorm1, diffNorm2, diffNorm3, diffNorm4, Bnorm_c, Bxc, Byc, Bzc, theta1, theta2, theta3, theta4, x, y, z
-      ! DOUBLE PRECISION :: Htmp(3), mu_0
-
-      ! mu0 = 16 * atan(1.d0) * 1.d-7
-
-      ! DO i = 1, ntet
-      !       x = (tiles(ik)%vert(1,1) + tiles(ik)%vert(1,2) + tiles(ik)%vert(1,3) + tiles(ik)%vert(1,4))/4.0
-      !       y = (tiles(ik)%vert(2,1) + tiles(ik)%vert(2,2) + tiles(ik)%vert(2,3) + tiles(ik)%vert(2,4))/4.0
-      !       z = (tiles(ik)%vert(3,1) + tiles(ik)%vert(3,2) + tiles(ik)%vert(3,3) + tiles(ik)%vert(3,4))/4.0
-      !       CALL getBfld(x, y, z, Bxc, Byc, Bzc)
-      !       Bnormc = sqrt(Bxc*Bxc + Byc*Byc + Bzc*Bzc)
-            
-      !       x = tiles(i)%vert(1,1)
-      !       y = tiles(i)%vert(2,1)
-      !       z = tiles(i)%vert(3,1)
-      !       CALL getBfld(x, y, z, Bx, By, Bz)
-      !       IF (use_demag) THEN
-      !             CALL getFieldFromTetrahedronTile(tiles(i), Htmp, [x, y, z], 1)
-      !             Bx = Bx + Htmp(1)*mu_0*tiles(i)%mu_r_ea
-      !             By = By + Htmp(2)*mu_0*tiles(i)%mu_r_ea
-      !             Bz = Bz + Htmp(3)*mu_0*tiles(i)%mu_r_ea
-      !       END IF
-      !       Bnorm = sqrt(Bx*Bx + By*By + Bz*Bz)
-      !       diffNorm1 = abs(Bnorm-Bnorm_c)
-      !       theta1 = 
-      ! END DO
-
-      ! RETURN
-      ! END SUBROUTINE
 
 
 
