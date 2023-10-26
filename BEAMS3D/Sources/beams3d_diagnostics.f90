@@ -107,8 +107,8 @@
          CALL MPI_REDUCE(shine_port,    shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(norbit,        norbit,        nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-         CALL MPI_REDUCE(nlost,         tlow,          nbeams,                  MPI_REAL,          MPI_MIN, master, MPI_COMM_BEAMS, ierr_mpi)
-         CALL MPI_REDUCE(nlost,         thigh,         nbeams,                  MPI_REAL,          MPI_MAX, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(tlow,          tlow,          nbeams,                  MPI_REAL,          MPI_MIN, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(thigh,         thigh,         nbeams,                  MPI_REAL,          MPI_MAX, master, MPI_COMM_BEAMS, ierr_mpi)
       END IF
 #endif
 
