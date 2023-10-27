@@ -246,21 +246,25 @@
          END DO
       END IF
 
-! #if defined(MPI_OPT) ! todo: deal with state functions
-!       IF (PRESENT(comm)) THEN
-!             CALL MPI_Bcast(nMH,1,MPI_INTEGER,0,shar_comm,istat)
-!             IF (shar_rank .ne. 0) THEN
-!                   DO ik = 1, nstate
-!                         ALLOCATE(stateFunction(ik)%H(nMH),stateFunction(ik)%M(nMH))
-!                   END DO
-!             END IF
-
-!             DO ik = 1, nstate
-!                   CALL MPI_Bcast(stateFunction(ik)%H,nMH,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
-!                   CALL MPI_Bcast(stateFunction(ik)%M,nMH,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
-!             END DO
-!       END IF
-! #endif
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN ! Transfer state functions
+            DO ik = 1, nstate
+                  IF (shar_rank .eq. 0) THEN
+                        IF (ALLOCATED(stateFunction(ik)%H)) THEN
+                              nMH = SIZE(stateFunction(ik)%H)
+                        ELSE
+                              nMH = -1
+                        END IF
+                  END IF
+                  CALL MPI_Bcast(nMH,1,MPI_INTEGER,0,shar_comm,istat)
+                  IF (nMH .gt. 0) THEN
+                        IF (shar_rank .ne. 0) ALLOCATE(stateFunction(ik)%H(nMH),stateFunction(ik)%M(nMH))
+                        CALL MPI_Bcast(stateFunction(ik)%H,nMH,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
+                        CALL MPI_Bcast(stateFunction(ik)%M,nMH,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
+                  END IF
+            END DO
+      END IF
+#endif
 
       ! close file
       CLOSE(iunit)
@@ -325,9 +329,8 @@
       EXTERNAL:: getBfld
       INTEGER :: i, j, s
       DOUBLE PRECISION :: mu0, norm, x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n
-      DOUBLE PRECISION, ALLOCATABLE :: N_store_all(:,:,:,:), N_store_local(:,:,:,:)
-      DOUBLE PRECISION, ALLOCATABLE :: N_store(:,:,:,:)
-      INTEGER, ALLOCATABLE :: neighbours(:,:)
+      DOUBLE PRECISION, ALLOCATABLE :: N_store_all(:,:,:,:), N_store_local(:,:,:,:), N_store(:,:,:,:)
+      INTEGER, ALLOCATABLE :: neighbours(:,:), neighbours_local(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: dist(:)
       LOGICAL, ALLOCATABLE :: mask(:)
       
@@ -369,8 +372,11 @@
 
       IF (maxNb .gt. 0) THEN ! Double approach since not using neighbours is faster for smaller objects
             IF (shar_rank == 0) WRITE (*,*) "Determining nearest neighbours"
-            ALLOCATE(neighbours(maxNb,ntet), dist(ntet), mask(ntet), N_store(3,3,maxNb+1,ntet))
+            ALLOCATE(neighbours(maxNb,ntet), neighbours_local(maxNb,ntet), dist(ntet), mask(ntet), &
+                     N_store(3,3,maxNb+1,ntet), N_store_local(3,3,maxNb+1,ntet))
+            
             neighbours = 0
+            neighbours_local = 0
 
             ! Determine neighbours
             IF (lcomm) THEN
@@ -388,23 +394,28 @@
                   mask = .TRUE.
                   mask(i) = .FALSE.
                   DO j = 1, maxNb
-                        neighbours(j,i) = MINLOC(dist, 1, mask)
-                        mask(neighbours(j,i)) = .FALSE.
+                        neighbours_local(j,i) = MINLOC(dist, 1, mask)
+                        mask(neighbours_local(j,i)) = .FALSE.
                   END DO
             END DO
 
-#if defined(MPI_OPT)
             IF (lcomm) THEN
-                  CALL MPI_ALLREDUCE(neighbours, neighbours, ntet*maxNb, MPI_INTEGER, MPI_SUM, comm, istat)
-            END IF
+#if defined(MPI_OPT)
+                  CALL MPI_ALLREDUCE(neighbours_local, neighbours, ntet*maxNb, MPI_INTEGER, MPI_SUM, shar_comm, istat)
 #endif
+            ELSE
+                  neighbours = neighbours_local
+            END IF
 
 
 
             IF (shar_rank == 0) WRITE(*,*) "Determining N-tensors"
+            N_store_local = 0
+            N_store = 0
+
             ! Calculate N-tensor of tile itself
             DO i = mystart, myend
-                  CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), tet_cen(:,i), N_store(:,:,maxNb+1,i))
+                  CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), tet_cen(:,i), N_store_local(:,:,maxNb+1,i))
             END DO
 
             ! Calculate N-tensors of neighbours
@@ -420,14 +431,20 @@
             DO s = mystart, myend            
                   j = MOD(s-1,maxNb) + 1
                   i = (s-j)/maxNb + 1
-                  CALL mumaterial_getN(vertex(:,tet(1,neighbours(j,i))), vertex(:,tet(2,neighbours(j,i))), vertex(:,tet(3,neighbours(j,i))), vertex(:,tet(4,neighbours(j,i))), tet_cen(:,i), N_store(:,:,j,i))                
+                  CALL mumaterial_getN(vertex(:,tet(1,neighbours(j,i))), vertex(:,tet(2,neighbours(j,i))), vertex(:,tet(3,neighbours(j,i))), vertex(:,tet(4,neighbours(j,i))), tet_cen(:,i), N_store_local(:,:,j,i))                
             END DO
 
-#if defined(MPI_OPT)
+
             IF (lcomm) THEN
-                  CALL MPI_ALLREDUCE(N_store, N_store, ntet*maxNb*9, MPI_DOUBLE_PRECISION, MPI_SUM, comm, istat)
-            END IF
+#if defined(MPI_OPT)
+                  CALL MPI_ALLREDUCE(N_store_local, N_store, ntet*maxNb*9, MPI_DOUBLE_PRECISION, MPI_SUM, shar_comm, istat)
 #endif
+            ELSE
+                  N_store = N_store_local
+            END IF
+
+
+
       ELSE ! Calculate N-tensors for all tiles
             IF (shar_rank == 0) WRITE(*,*) "Determining N-tensors"
             ALLOCATE(N_store_all(3,3,ntet,ntet),N_store_local(3,3,ntet,ntet))
@@ -441,11 +458,14 @@
                   i = (s-j)/ntet + 1
                   CALL mumaterial_getN(vertex(:,tet(1,j)), vertex(:,tet(2,j)), vertex(:,tet(3,j)), vertex(:,tet(4,j)), tet_cen(:,i), N_store_local(:,:,j,i))
             END DO
-#if defined(MPI_OPT)
+
             IF (lcomm) THEN
-                  CALL MPI_ALLREDUCE(N_store_local, N_store_all, ntet*ntet*9, MPI_DOUBLE_PRECISION, MPI_SUM, comm, istat)
-            END IF ! todo: else set main to local
+#if defined(MPI_OPT)            
+                  CALL MPI_ALLREDUCE(N_store_local, N_store_all, ntet*ntet*9, MPI_DOUBLE_PRECISION, MPI_SUM, shar_comm, istat)
 #endif
+            ELSE
+                  N_store_all = N_store_local
+            END IF
       END IF
 
 
@@ -488,7 +508,7 @@
       ! param[in]: N_store_all. Storage for all demagnetization tensors when not using nearest neighbours
       ! param[in]: N_store. Storage for demagnetization tensors from nearest neighbours
       ! param[in]: neighbours. Indices of nearest neighbours
-      ! param[in, out]: comm. MPI communicator, handles shared memory ! todo
+      ! param[in, out]: comm. MPI communicator, handles shared memory
       !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
@@ -497,7 +517,7 @@
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(IN) :: lambdaStart, lambdaFac
       LOGICAL, INTENT(IN) :: use_neighbours
-      DOUBLE PRECISION, OPTIONAL :: N_store_all(3,3,ntet,ntet)
+      DOUBLE PRECISION, OPTIONAL :: N_store_all(3,3,ntet,ntet) ! presetting size speeds up calculations
       DOUBLE PRECISION, OPTIONAL :: N_store(3,3,maxNb+1,ntet)
       INTEGER, OPTIONAL :: neighbours(maxNb,ntet)
       INTEGER, INTENT(inout), OPTIONAL :: comm
@@ -505,7 +525,7 @@
       INTEGER :: i, j, i_tile, j_tile, count, lambdaCount
       INTEGER :: istat, mystart, myend
       LOGICAL :: run, lcomm, stop_iterate
-      DOUBLE PRECISION :: Mnorm(ntet), Mnorm_old(ntet), H(3), N(3,3), chi(ntet)
+      DOUBLE PRECISION :: Mnorm(ntet), Mnorm_old(ntet), H(3), N(3,3), chi(ntet), chi_local(ntet)
       DOUBLE PRECISION :: H_old(3), H_new(3), M_new(3,ntet), M_new_local(3,ntet), lambda, lambda_s, error, maxDiff(4), Hnorm, M_tmp_norm
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
@@ -614,10 +634,10 @@
                                     IF (Hnorm .ne. 0) THEN
                                           CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
                                           M_new_local(:,i_tile) = M_tmp_norm * H_new / Hnorm
-                                          chi(i_tile) = M_tmp_norm / Hnorm
+                                          chi_local(i_tile) = M_tmp_norm / Hnorm
                                     ELSE
                                           M_new_local(:,i_tile) = 0
-                                          chi(i_tile) = 0 ! todo: currently not shared
+                                          chi_local(i_tile) = 0
                                     END IF
                                     EXIT
                               END IF
@@ -642,7 +662,7 @@
                   
             END DO
 #if defined(MPI_OPT)
-            IF (lcomm) CALL MPI_REDUCE(M_new_local, M_new, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, istat)
+            IF (lcomm) CALL MPI_REDUCE(M_new_local, M_new, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, 0, shar_comm, istat)
 #endif
             IF (shar_rank .eq. 0) THEN 
                   M = M + lambda*(M_new - M)
@@ -663,7 +683,6 @@
                   WRITE(*,'(A7,I5,A8,E15.7,A13,E15.7)') 'Count: ', count, ' Error: ', error, ' Max. Error: ', maxErr*lambda
 
                   IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) THEN
-                        WRITE(*,'(A14,E15.7)') "Average mu_r: ", SUM(chi)/ntet + 1.0
                         stop_iterate = .TRUE.
                   ELSE
                         maxDiff = CSHIFT(maxDiff, -1)
@@ -684,7 +703,19 @@
 #if defined(MPI_OPT)
             IF (lcomm) CALL MPI_Bcast(stop_iterate,1,MPI_LOGICAL,0,shar_comm,istat)
 #endif
-            IF (stop_iterate) EXIT
+            IF (stop_iterate) THEN
+                  IF (state_type(state_dex(1)) .eq. 2) THEN ! assume model is using only state functions, determine average mu_r for analysis
+                        IF (lcomm) THEN
+#if defined(MPI_OPT)
+                              CALL MPI_REDUCE(chi_local, chi, ntet, MPI_DOUBLE_PRECISION, MPI_SUM, 0, shar_comm, istat)
+#endif
+                        ELSE
+                              chi = chi_local
+                        END IF
+                        IF (shar_rank .eq. 0) WRITE(*,'(A14,E15.7)') "Average mu_r: ", SUM(chi)/ntet + 1.0
+                  END IF
+                  EXIT
+            END IF
       END DO
 
       IF (shar_rank .eq. 0) WRITE(*,*) "Finished determining magnetization"
@@ -773,7 +804,7 @@
 
             N_loc = 0.d0
 
-            N_loc(1,3) = mumaterial_getNxz(r, v(1,1), v(2,2)) - mumaterial_getNxz(r, v(1,3), v(2,2)) ! todo: exchange indices? also for P
+            N_loc(1,3) = mumaterial_getNxz(r, v(1,1), v(2,2)) - mumaterial_getNxz(r, v(1,3), v(2,2))
             N_loc(2,3) = mumaterial_getNyz(r, v(1,1), v(2,2)) - mumaterial_getNyz(r, v(1,3), v(2,2))
             N_loc(3,3) = mumaterial_getNzz(r, v(1,1), v(2,2)) - mumaterial_getNzz(r, v(1,3), v(2,2))
 
@@ -1048,7 +1079,7 @@
 
 
 
-      SUBROUTINE mumaterial_getb_vector(x, y, z, Bx, By, Bz, getBfld)
+      SUBROUTINE mumaterial_getb_vector(x, y, z, Bx, By, Bz, getBfld, comm)
       !-----------------------------------------------------------------------
       ! mumaterial_getb_vector: Calculates total magnetic field at multiple points in space
       !-----------------------------------------------------------------------
@@ -1061,21 +1092,58 @@
       ! fcn           : getBfld. Function which returns the vacuum magnetic field
       !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
       !-----------------------------------------------------------------------
+#if defined(MPI_OPT)
+      USE mpi
+      USE mpi_params
+#endif
       IMPLICIT NONE
       EXTERNAL:: getBfld
       DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
       DOUBLE PRECISION, INTENT(out), ALLOCATABLE :: Bx(:), By(:), Bz(:)
-      INTEGER :: n_points, i
+      INTEGER, INTENT(inout), OPTIONAL :: comm
+      DOUBLE PRECISION, ALLOCATABLE :: Bx_local(:), By_local(:), Bz_local(:)
+      INTEGER :: n_points, i, istat  ! todo: do something with istat
+      LOGICAL :: lcomm
+
+      shar_rank = 0; shar_size = 1; lcomm = .FALSE.
 
       n_points = size(x)
 
-      allocate(Bx(n_points))
-      allocate(By(n_points))
-      allocate(Bz(n_points))
+      IF (PRESENT(comm)) THEN
+#if defined(MPI_OPT)
+         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
+         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
+         CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
+         CALL MPI_CALC_MYRANGE(shar_comm, 1, n_points, mystart, myend)
+         lcomm = .TRUE.
+#endif
+      ELSE
+         mystart = 1
+         myend = n_points
+      END IF
 
-      DO i = 1, n_points
-            CALL mumaterial_getb_scalar(x(i), y(i), z(i), Bx(i), By(i), Bz(i), getBfld)
+      allocate(Bx(n_points),By(n_points),Bz(n_points))
+      allocate(Bx_local(n_points),By_local(n_points),Bz_local(n_points))
+
+      Bx_local = 0
+      By_local = 0
+      Bz_local = 0
+
+      DO i = mystart, myend
+            CALL mumaterial_getb_scalar(x(i), y(i), z(i), Bx_local(i), By_local(i), Bz_local(i), getBfld)
       END DO
+
+      IF (lcomm) THEN
+#if defined(MPI_OPT)
+            CALL MPI_ALLREDUCE(Bx_local, Bx, n_points, MPI_DOUBLE_PRECISION, MPI_SUM, shar_comm, istat)
+            CALL MPI_ALLREDUCE(By_local, By, n_points, MPI_DOUBLE_PRECISION, MPI_SUM, shar_comm, istat)
+            CALL MPI_ALLREDUCE(Bz_local, Bz, n_points, MPI_DOUBLE_PRECISION, MPI_SUM, shar_comm, istat)
+#endif
+      ELSE
+            Bx = Bx_local
+            By = By_local
+            Bz = Bz_local
+      END IF
       
       RETURN
       END SUBROUTINE mumaterial_getb_vector
@@ -1084,7 +1152,7 @@
 
 
 
-      SUBROUTINE mumaterial_output(path, x, y, z, getBfld)
+      SUBROUTINE mumaterial_output(path, x, y, z, getBfld, comm)
       !-----------------------------------------------------------------------
       ! mumaterial_output: Outputs B-field and points to text files
       !-----------------------------------------------------------------------
@@ -1095,35 +1163,56 @@
       ! fcn           : getBfld. Function which returns the vacuum magnetic field
       !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
       !-----------------------------------------------------------------------
+#if defined(MPI_OPT)
+      USE mpi
+#endif      
       IMPLICIT NONE
       EXTERNAL:: getBfld
       CHARACTER(LEN=*), INTENT(in) :: path
       DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
+      INTEGER, INTENT(inout), OPTIONAL :: comm
       INTEGER :: n_points
       DOUBLE PRECISION, ALLOCATABLE :: Bx(:), By(:), Bz(:)
-      INTEGER :: i, j
+      INTEGER :: i, j, rank, istat ! todo: do somethinig with istat
+      LOGICAL :: lcomm
 
-      n_points = size(x)
+      rank = 0; lcomm = .FALSE.
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_COMM_RANK( comm, rank, istat )
+         lcomm = .TRUE.
+      END IF
+#endif
 
-      WRITE(*,*) "Outputting points"
+      IF (rank .eq. 0) THEN
+            n_points = size(x)
 
-      OPEN(13, file=TRIM(path)//'/points.dat')
-        DO i = 1, n_points
-            WRITE(13, "(F15.7,A,F15.7,A,F15.7)") x(i), ',', y(i), ',', z(i)
-        END DO
-      CLOSE(13)
+            WRITE(*,*) "Outputting points"
 
-      WRITE(*,*) "Getting B-field"
+            OPEN(13, file=TRIM(path)//'/points.dat')
+            DO i = 1, n_points
+                  WRITE(13, "(F15.7,A,F15.7,A,F15.7)") x(i), ',', y(i), ',', z(i)
+            END DO
+            CLOSE(13)
+      END IF
 
-      CALL mumaterial_getb(x, y, z, Bx, By, Bz, getBfld)
+      IF (.NOT. lcomm) WRITE(*,*) "Getting B-field"
 
-      WRITE(*,*) "Outputting B-field"
+      IF (lcomm) THEN
+            CALL mumaterial_getb_vector(x, y, z, Bx, By, Bz, getBfld, comm)
+      ELSE
+            CALL mumaterial_getb(x, y, z, Bx, By, Bz, getBfld)
+      END IF
 
-      OPEN(14, file=TRIM(path)//'/B.dat')
-        DO i = 1, n_points
-            WRITE(14, "(E15.7,A,E15.7,A,E15.7)") Bx(i), ',', By(i), ',', Bz(i)
-        END DO
-      CLOSE(14)
+      IF (rank .eq. 0) THEN
+            WRITE(*,*) "Outputting B-field"
+
+            OPEN(14, file=TRIM(path)//'/B.dat')
+            DO i = 1, n_points
+                  WRITE(14, "(E15.7,A,E15.7,A,E15.7)") Bx(i), ',', By(i), ',', Bz(i)
+            END DO
+            CLOSE(14)
+      END IF
 
       RETURN
       END SUBROUTINE
