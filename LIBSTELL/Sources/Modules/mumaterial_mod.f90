@@ -983,9 +983,11 @@
       ! Determine left index k
       ! Assume fx is non-decreasing
       IF (x .lt. fx(1)) THEN
-            k = 1
+            y = fy(1)
+            RETURN
       ELSEIF (x .gt. fx(n)) THEN
-            k = n
+            y = fy(n)
+            RETURN
       ELSE
             DO i = 2, n 
                   IF (x .lt. fx(i)) THEN
