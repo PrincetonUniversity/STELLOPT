@@ -204,6 +204,15 @@ MANGO_LIB=
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
+#            KNOSOS Options
+#######################################################################
+  LKNOSOS= F
+  KNOSOS_DIR = $(KNOSOS_PATH)
+  KNOSOS_INC = -I$(KNOSOS_DIR)/SOURCES
+  LIB_KNOSOS = libknosos.a
+  KNOSOS_LIB = $(KNOSOS_PATH)/SOURCES/$(LIB_KNOSOS)
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
 

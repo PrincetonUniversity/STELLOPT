@@ -1,0 +1,2 @@
+/var/spool/slurm/d/job1549721/slurm_script: line 27: return: can only `return' from a function or sourced script
+/var/spool/slurm/d/job1549721/slurm_script: line 88: return: can only `return' from a function or sourced script

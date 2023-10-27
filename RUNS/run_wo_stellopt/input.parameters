@@ -1,0 +1,8 @@
+&parameters
+ TIME=.TRUE. 
+ DEBUG=.FALSE.
+ GEN_FLAG=.FALSE.
+ MAL=32
+ MLAMBDA=128
+ NER=50
+/

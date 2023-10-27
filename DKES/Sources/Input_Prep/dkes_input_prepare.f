@@ -126,7 +126,7 @@
 !     REAL(rprec), PARAMETER :: radial_position = 0.5_dp
 !     REAL(rprec), PARAMETER :: cmul = 0.05_dp
 !     REAL(rprec), PARAMETER :: efield = 0._dp
-      INTEGER, PARAMETER :: max_bmns = 25
+      INTEGER, PARAMETER :: max_bmns = 50
       INTEGER            :: legendre_modes = 100
       INTEGER            :: coupling_order = 4
       INTEGER, PARAMETER :: mhi = 100

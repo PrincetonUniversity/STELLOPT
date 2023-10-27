@@ -370,6 +370,33 @@ chisq_neo.o : \
       equil_utils.o
       
 
+chisq_knosos.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o 
+
+chisq_mercier.o: \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      equil_utils.o
+
+
+chisq_raderb00.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+chisq_mshear.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o
+
+chisq_mbm.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+
+
 chisq_dkes.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -667,12 +694,26 @@ stellopt_vboot.o : \
       $(BOOTSJ_DIR)/$(LOCTYPE)/parambs.o
       
 
-stellopt_dkes.o : \
+stellopt_knosos.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o \
       $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
-      
+
+
+stellopt_stella.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o
+
+
+stellopt_dkes.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o
+
 
 stellopt_cas3d.o : \
       stellopt_runtime.o \
@@ -882,3 +923,4 @@ chisq_coiltorvar.o : \
 
 chisq_coilrect.o : \
       stellopt_targets.o 
+

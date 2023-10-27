@@ -1,0 +1,25 @@
+#!/bin/bash
+#SBATCH --error=%j_%x.err
+#SBATCH --output=%j_%x.out
+###        SBATCH --ntasks=160
+#SBATCH --partition=xula2
+#SBATCH --tasks-per-node=36
+#SBATCH --nodes=3
+#SBATCH --mem=160G
+#SBATCH --time=100:0:0
+
+NPROCS=$SLURM_NTASKS
+
+inputF=input.1395_664b1.5Z66mTVBT1WIota6IOa4c
+
+cd ${SLURM_SUBMIT_DIR}
+
+. /mnt/lustre/home/u6156/STELLOPT/CIEMAT/SHARE/env.stellop.xula.intel
+
+exefile=/mnt/lustre/home/u6156/STELLOPT/CIEMAT/xintel/xstelloptv2
+
+ldd $exefile
+echo which $exefile
+
+mpirun  -np $NPROCS $exefile $inputF $opt  > log.$inputF.${SLURM_JOBID}
+

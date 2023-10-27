@@ -73,6 +73,11 @@
              -lhdf5_fortran -lhdf5 -lz -ldl -lm
 
 #######################################################################
+#            PETSC Options
+#######################################################################
+  PETSC_DIR ?= /opt/local/lib/petsc
+
+#######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
@@ -164,6 +169,24 @@
   AEOPT_INC = -I$(AEOPT_DIR) 
   LIB_AEOPT = libtrapAE.a
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
+
+#######################################################################
+#            KNOSOS Options
+#######################################################################
+  LKNOSOS= T
+  KNOSOS_DIR = $(KNOSOS_PATH)
+  KNOSOS_INC = -I$(KNOSOS_DIR)/SOURCES
+  LIB_KNOSOS = libknosos.a
+  KNOSOS_LIB = $(KNOSOS_PATH)/SOURCES/$(LIB_KNOSOS)
+
+#######################################################################
+#            STELLA Options
+#######################################################################
+  LSTELLA= F
+  STELLA_DIR = $(STELLA_PATH)
+  STELLA_INC = -I$(STELLA_DIR)/build/mod
+  LIB_STELLA = libstella.a
+  STELLA_LIB = $(STELLA_PATH)/build/$(LIB_STELLA)
 
 #######################################################################
 #            LIBSTELL Shared Options

@@ -439,6 +439,19 @@
 !DEC$ ENDIF
 
          ! NOTE ALL parallel secondary codes go here
+!DEC$ IF DEFINED (KNOSOS_OPT)
+         ctemp_str = 'knosos'
+         IF ((ANY(sigma_knosos_1nu < bigno) .or. ANY(sigma_knosos_snu < bigno) .or. ANY(sigma_knosos_sbp < bigno) .or. ANY(sigma_knosos_vb0 < bigno) .or. &
+              ANY(sigma_knosos_gmc < bigno) .or. ANY(sigma_knosos_gma < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_vbm < bigno) .or. &
+              ANY(sigma_knosos_vbb < bigno) .or. ANY(sigma_knosos_wbw < bigno) .or. ANY(sigma_knosos_dbo < bigno)) .and. (iflag>=0)) &
+              CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+!DEC$ ENDIF
+!DEC$ IF DEFINED (STELLA_OPT)
+!         IF (ANY(sigma_stella_q1 < bigno) .or. ANY(sigma_stella_q2 < bigno)) CALL stellopt_stella(lscreen,iflag)
+         ctemp_str = 'stella'
+         IF ((ANY(sigma_stella_q1 < bigno) .or. ANY(sigma_stella_q2 < bigno)) .and. (iflag>=0)) &
+              CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+!DEC$ ENDIF
 !DEC$ IF DEFINED (TXPORT_OPT)
          IF (ANY(sigma_txport < bigno)) CALL stellopt_txport(lscreen,iflag)
 !DEC$ ENDIF

@@ -133,9 +133,9 @@
          opt_file= 'opt_dkes.' // TRIM(proc_string) // '_s' // TRIM(temp_str)       !DAS 2/21/2000  !Probably won't need
          summary_file = 'results.' // TRIM(proc_string) //'_s' // TRIM(temp_str) !record file addition
          !  OPEN INPUT AND OUTPUT FILES FOR READING (AND WRITING OUTPUT)
-         idata    = 7
-         iout     = 30
-         iout_opt = 14
+         idata    = 7000+myworkid
+         iout     = 30000+myworkid
+         iout_opt = 14000+myworkid
          iodata = idata
          CALL safe_open(iodata, istat, dkes_input_file, 'old', 'formatted')
          IF (istat .ne. 0) STOP 'Error reading input file in DKES'
@@ -207,6 +207,7 @@
             efield1 = efield(irun)
             cmul1 = cmul(irun)
             if(ir .eq. 1) then
+               itab_out=90000+myworkid
                call safe_open(itab_out, istat, summary_file,'unknown', &
               'formatted')
                write(itab_out,'("*",/,"cmul",a1,"efield",a1,"weov",a1,"wtov", &

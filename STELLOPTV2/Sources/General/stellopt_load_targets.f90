@@ -15,7 +15,7 @@
       USE stellopt_input_mod
       USE stellopt_targets
       IMPLICIT NONE
-      
+
 !-----------------------------------------------------------------------
 !     Input Variables
 !        m       Number of function dimensions
@@ -26,7 +26,7 @@
       INTEGER, INTENT(in)      :: ncnt
       INTEGER, INTENT(inout)   :: m,iflag
       REAL(rprec), INTENT(out) :: fvec(m)
-      
+
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -106,12 +106,12 @@
       ! PRESSURE (MIN)
       IF (sigma_pmin < bigno)  &
          CALL chisq_pmin(target_pmin,sigma_pmin,ncnt,iflag)
-         
+
       !------------- ARRAY TARGETS ----------------------------
       ! EXTERNAL CURRENTS
       IF (ANY(sigma_extcur < bigno))  &
          CALL chisq_extcur(target_extcur,sigma_extcur,ncnt,iflag)
-         
+
       !------------- LINE INTEGRATED TARGETS -------------------
       ! LINE ELECTRON DENSITY
       IF (ANY(sigma_ne_line < bigno_ne)) &
@@ -146,12 +146,12 @@
       ! VISUAL BREMSSTRAHLUNG
       IF (ANY(sigma_visbrem_line < bigno)) &
          CALL chisq_line_visbrem(target_visbrem_line, sigma_visbrem_line, ncnt,iflag)
-         
+
       !------------- OTHER TARGETS -------------------
       !  ECE Reflectometry
       IF (ANY(sigma_ece < bigno)) &
          CALL chisq_ece(target_ece, sigma_ece, ncnt,iflag)
-         
+
       !------------- PROFILE TARGETS ---------------------------
       ! PRESSURE PROFILE
       IF (ANY(sigma_press < bigno)) &
@@ -195,7 +195,19 @@
       ! CURRENT DENSITY <JCURV>
       IF (ANY(sigma_jcurv < bigno)) &
          CALL chisq_jcurv(target_jcurv, sigma_jcurv, ncnt,iflag)
-         
+      ! Radial derivative of B00
+      IF (ANY(sigma_raderb00 < bigno)) &
+         CALL chisq_raderb00(target_raderb00, sigma_raderb00, ncnt,iflag)
+      !magnetic shear
+      IF (ANY(sigma_mshear < bigno)) &
+         CALL chisq_mshear(target_mshear, sigma_mshear, ncnt, iflag)
+      !mercier stability
+      IF (ANY(sigma_dmer < bigno)) &
+         CALL chisq_dmercier(target_dmer, sigma_dmer, ncnt, iflag)
+      ! Maximum value of B (minus minimum value at s=1)
+      IF (ANY(sigma_mbm < bigno)) &
+         CALL chisq_mbm(target_mbm, sigma_mbm, ncnt,iflag)
+
       !------------- COIL GEOMETRY TARGETS ---------------------
       ! Coil lengths
       IF (ANY(sigma_coillen < bigno)) &
@@ -254,6 +266,29 @@
       ! DKES
       IF (ANY(sigma_dkes < bigno)) &
          CALL chisq_dkes(target_dkes, sigma_dkes, ncnt,iflag)
+      ! KNOSOS
+      IF (ANY(sigma_knosos_1nu < bigno)) &
+         CALL chisq_knosos(target_knosos_1nu, sigma_knosos_1nu, ncnt,iflag , jtarget_knosos_1nu)
+      IF (ANY(sigma_knosos_snu < bigno)) &
+         CALL chisq_knosos(target_knosos_snu, sigma_knosos_snu, ncnt,iflag , jtarget_knosos_snu)
+      IF (ANY(sigma_knosos_sbp < bigno)) &
+         CALL chisq_knosos(target_knosos_sbp, sigma_knosos_sbp, ncnt,iflag , jtarget_knosos_sbp)
+      IF (ANY(sigma_knosos_gmc < bigno)) &
+         CALL chisq_knosos(target_knosos_gmc, sigma_knosos_gmc, ncnt,iflag , jtarget_knosos_gmc)
+      IF (ANY(sigma_knosos_gma < bigno)) &
+         CALL chisq_knosos(target_knosos_gma, sigma_knosos_gma, ncnt,iflag , jtarget_knosos_gma)
+      IF (ANY(sigma_knosos_qer < bigno)) &
+         CALL chisq_knosos(target_knosos_qer, sigma_knosos_qer, ncnt,iflag , jtarget_knosos_qer)
+      IF (ANY(sigma_knosos_vbm < bigno)) &
+         CALL chisq_knosos(target_knosos_vbm, sigma_knosos_vbm, ncnt,iflag , jtarget_knosos_vbm)
+      IF (ANY(sigma_knosos_vb0 < bigno)) &
+         CALL chisq_knosos(target_knosos_vb0, sigma_knosos_vb0, ncnt,iflag , jtarget_knosos_vb0)
+      IF (ANY(sigma_knosos_vbb < bigno)) &
+         CALL chisq_knosos(target_knosos_vbb, sigma_knosos_vbb, ncnt,iflag , jtarget_knosos_vbb)
+      IF (ANY(sigma_knosos_wbw < bigno)) &
+         CALL chisq_knosos(target_knosos_wbw, sigma_knosos_wbw, ncnt,iflag , jtarget_knosos_wbw)
+      IF (ANY(sigma_knosos_dbo < bigno)) &
+         CALL chisq_knosos(target_knosos_dbo, sigma_knosos_dbo, ncnt,iflag , jtarget_knosos_dbo)
       ! DKES ERdiff
       IF (ANY(sigma_dkes_erdiff < bigno)) &
          CALL chisq_dkes_erdiff(target_dkes_erdiff, sigma_dkes_erdiff, ncnt,iflag)
@@ -294,10 +329,10 @@
 
       ! Return if an initialization call
       IF (ncnt < 0) RETURN
-      
+
       ! Check some stuff
       IF (mtargets .ne. m) THEN; iflag=-2; RETURN; END IF
-      
+
       ! Calculate fvec
       fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
       RETURN
