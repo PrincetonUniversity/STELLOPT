@@ -235,9 +235,8 @@
             ELSEIF (state_type(ik) == 2) THEN
                READ(iunit,*) nMH
                ALLOCATE(stateFunction(ik)%H(nMH),stateFunction(ik)%M(nMH))
-               DO i = 1, nMH
-                  READ(iunit,*) stateFunction(ik)%H(i),stateFunction(ik)%M(i)
-               END DO
+               READ(iunit,*) stateFunction(ik)%H(:)
+               READ(iunit,*) stateFunction(ik)%M(:)
             ELSEIF (state_type(ik) == 3) THEN
                READ(iunit,*) constant_mu(ik)
             ELSE
