@@ -25,7 +25,7 @@
                                  small, eps1, eps2, eps3
       USE beams3d_physics_mod, ONLY: beams3d_BCART
       USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init, &
-                                mumaterial_info, mumaterial_getb
+                                mumaterial_info, mumaterial_getbmag_scalar
       USE mpi_params  
       USE mpi_inc      
       USE mpi_sharmem
@@ -120,7 +120,7 @@
 
       ! Initialize the magnetic calculation
       offset = 0.0
-      CALL MUMATERIAL_INIT(beams3d_BCART, offset, MPI_COMM_BEAMS)
+      CALL MUMATERIAL_INIT(beams3d_BCART, MPI_COMM_BEAMS, offset)
 
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
@@ -137,7 +137,7 @@
          x_temp    = raxis(i)*cos(phiaxis(j))
          y_temp    = raxis(i)*sin(phiaxis(j))
          z_temp    = zaxis(k)
-         CALL mumaterial_getb(x_temp,y_temp, z_temp, bx_temp, by_temp, bz_temp)
+         CALL mumaterial_getbmag_scalar(x_temp,y_temp, z_temp, bx_temp, by_temp, bz_temp)
          br_temp = bx_temp*cos(phiaxis(j))+by_temp*sin(phiaxis(j))
          bphi_temp = by_temp*cos(phiaxis(j)) - bx_temp*sin(phiaxis(j))
          B_R(i,j,k) = B_R(i,j,k) + br_temp
