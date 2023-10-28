@@ -291,16 +291,47 @@
       SUBROUTINE mumaterial_info(iunit)
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: iunit
-      WRITE(iunit,*) 'NAME: ',TRIM(machine_string)
-      WRITE(iunit,*) 'DATE: ',TRIM(date)
-      WRITE(iunit,*) 'NVERTEX: ',nvertex
-      WRITE(iunit,*) 'NTET: ',ntet
-      WRITE(iunit,*) 'NSTATE: ',nstate
+      INTEGER :: i,k
+      WRITE(iunit,'(A)')         ' -----  Magnetic Material  -----'
+      WRITE(iunit,'(3X,A,A)')    'Model Name   : ',TRIM(machine_string)
+      WRITE(iunit,'(3X,A,A)')    'Date         : ',TRIM(date)
+      WRITE(iunit,'(3X,A,I7)')   'Vertices     : ',nvertex
+      WRITE(iunit,'(3X,A,I7)')   'Tetrahedrons : ',ntet
+      WRITE(iunit,'(3X,A,I7)')   'State Funcs. : ',nstate
+      WRITE(iunit,'(3X,A,I7)')   'Max Iter.    : ',maxIter
+      WRITE(iunit,'(3X,A,EN12.3)') 'Max Error    : ',maxErr
+      WRITE(iunit,'(3X,A,EN12.3)') 'Lambda       : ',lambdaStart
+      WRITE(iunit,'(3X,A,EN12.3)') 'Lambda_fact  : ',lambdaFactor
+      IF (maxNb > 0) THEN
+         WRITE(iunit,'(3X,A,I7)')   'N-N Tiles    : ',maxNb
+      ELSE
+         WRITE(iunit,'(3X,A)')      'Full Model Run'
+      END IF
+      DO i = 1, nstate
+         WRITE(iunit,'(6X,A,I3)') 'State Fuction ',i
+         IF (state_type(i)==1) THEN
+            WRITE(iunit,'(9X,A)') 'Type: Hard Magnet'
+            WRITE(iunit,'(9X,A,EN12.3)') 'Mu :',constant_mu(i)
+            WRITE(iunit,'(9X,A,EN12.3)') 'Mu_o :',constant_mu_o(i)
+            WRITE(iunit,'(9X,A,3(EN12.3))') 'Mrem :',Mrem(:,i)
+         ELSEIF (state_type(i)==2) THEN
+            k = SIZE(stateFunction(i)%H)
+            WRITE(iunit,'(9X,A)')    'Type   : Soft Magnet (H-M)'
+            WRITE(iunit,'(9X,A,I3)') 'NKnots :',k
+            WRITE(iunit,'(9X,A,2(EN12.3))') 'H:',stateFunction(i)%H(1),stateFunction(i)%H(k)
+            WRITE(iunit,'(9X,A,2(EN12.3))') 'H:',stateFunction(i)%M(1),stateFunction(i)%M(k)
+         ELSEIF (state_type(i)==3) THEN
+            WRITE(iunit,'(9X,A)') 'Type: Soft Magnet (mu constant)'
+            WRITE(iunit,'(9X,A,EN12.3)') 'Mu :',constant_mu(i)
+         ELSE
+            WRITE(iunit,'(9X,A,I3)') 'Type: UNKNOWN (ERROR) state_type=',state_type(i)
+         END IF
+      END DO
       END SUBROUTINE mumaterial_info
 
 
 
-     SUBROUTINE mumaterial_init(getBfld, comm, offset)
+      SUBROUTINE mumaterial_init(getBfld, comm, offset)
       !-----------------------------------------------------------------------
       ! mumaterial_init: Calculates magnetization of material
       !-----------------------------------------------------------------------
@@ -1301,6 +1332,43 @@
 
       RETURN
       END SUBROUTINE mumaterial_getb_scalar
+
+
+      
+
+
+      SUBROUTINE mumaterial_getbmag_scalar(x, y, z, Bx, By, Bz)
+      !-----------------------------------------------------------------------
+      ! mumaterial_getbmag: Calculates total magnetic field at a point in space
+      !-----------------------------------------------------------------------
+      ! param[in]: x. x-coordinate of point where to get the B-field
+      ! param[in]: y. y-coordinate of point where to get the B-field
+      ! param[in]: z. z-coordinate of point where to get the B-field
+      ! param[out]: Bx. x-component of B-field at this point [T]
+      ! param[out]: By. y-component of B-field at this point [T]
+      ! param[out]: Bz. z-component of B-field at this point [T]
+      !-----------------------------------------------------------------------
+      IMPLICIT NONE
+      EXTERNAL:: getBfld
+      DOUBLE PRECISION, INTENT(in) :: x, y, z
+      DOUBLE PRECISION, INTENT(out) :: Bx, By, Bz
+      DOUBLE PRECISION :: H(3), mu0, N(3,3)
+      INTEGER :: i
+
+      mu0 = 16.0D-7 * atan(1.d0)
+      H = 0.d0
+
+      DO i = 1, ntet
+            CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), [x, y, z], N)
+            H = H + MATMUL(N, M(:,i))
+      END DO
+
+      Bx = H(1) * mu0
+      By = H(2) * mu0
+      Bz = H(3) * mu0
+
+      RETURN
+      END SUBROUTINE mumaterial_getbmag_scalar
 
 
 
