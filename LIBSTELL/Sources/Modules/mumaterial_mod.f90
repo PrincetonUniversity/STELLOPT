@@ -377,6 +377,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Allocate helpers and Neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      NULLIFY(N_store,neighbours)
       k = ntet+1
       IF (maxNb .gt. 0) k = maxNb+1
 #if defined(MPI_OPT)
@@ -473,7 +474,7 @@
       IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
 
-      !IF (ASSOCIATED(neighbours)) CALL free_mpi_array2d_int(win_neighbours,neighbours,lcomm)
+      IF (ASSOCIATED(neighbours)) CALL free_mpi_array2d_int(win_neighbours,neighbours,lcomm)
       IF (ASSOCIATED(N_store))CALL free_mpi_array4d_dbl(win_N_store,N_store,lcomm)
 
       RETURN
@@ -526,6 +527,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Allocate Helper Arrays
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      NULLIFY(M_new,chi,Mnorm,Mnorm_old)
 #if defined(MPI_OPT)
       CALL mpialloc_2d_dbl(M_new,3,ntet,shar_rank,0,shar_comm,win_M_new)
       CALL mpialloc_1d_dbl(chi,ntet,shar_rank,0,shar_comm,win_chi)
@@ -629,14 +631,10 @@
                         Hnorm = NORM2(H_new)
                         IF (Hnorm .ne. 0) THEN
                            CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
-                           !M_new_local(:,i_tile) = M_tmp_norm * H_new / Hnorm
                            M_new(:,i_tile) = M_tmp_norm * H_new / Hnorm
-                           !chi_local(i_tile) = M_tmp_norm / Hnorm
                            chi(i_tile) = M_tmp_norm / Hnorm
                         ELSE
-                           !M_new_local(:,i_tile) = 0
                            M_new(:,i_tile) = 0
-                           !chi_local(i_tile) = 0
                            chi(i_tile) = 0
                         END IF
                         EXIT
