@@ -166,9 +166,9 @@
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
-#            MagTense Options
+#            MagTense Options (can probably remove)
 #######################################################################
-  LMAGTENSE= T
+  LMAGTENSE= F
   MAGTENSE_DIR = $(MAGTENSE_PATH)
   MAGTENSE_INC = -I$(MAGTENSE_DIR)/source/NumericalIntegration/NumericalIntegration/ \
     -I$(MAGTENSE_DIR)/source/TileDemagTensor/TileDemagTensor/ \
