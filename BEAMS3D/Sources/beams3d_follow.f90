@@ -17,7 +17,8 @@ SUBROUTINE beams3d_follow
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
                             TE_spl, TI_spl, wall_load, wall_shine, rho_fullorbit, &
                             plasma_mass, plasma_Zmean, therm_factor, &
-                            nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida
+                            nr_fida, nphi_fida, nz_fida, nenergy_fida, &
+                            npitch_fida, BEAM_DENSITY
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE beams3d_write_par
@@ -221,6 +222,12 @@ SUBROUTINE beams3d_follow
 
     DEALLOCATE(q)
 
+    ! Calcualte Beam Density
+#if defined(MPI_OPT)
+    CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
+#endif
+    IF (lbeam .and. lbeamdensity) CALL beams3d_beam_density
+
     ! Follow Trajectories
     IF (.not.ldepo) THEN
         CALL beams3d_follow_gc
@@ -270,32 +277,38 @@ SUBROUTINE beams3d_follow
        IF (ASSOCIATED(wall_shine)) THEN
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,wall_shine,nface*nbeams,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
        END IF
+       IF (ASSOCIATED(BEAM_DENSITY)) THEN
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE, BEAM_DENSITY, nbeams*nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+       END IF
        CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
     END IF
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
 
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'R_lines', DBLVAR=R_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'PHI_lines', DBLVAR=PHI_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'Z_lines', DBLVAR=Z_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'vll_lines', DBLVAR=vll_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend, 'moment_lines', DBLVAR=moment_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,     'vr_lines', DBLVAR=vr_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,   'vphi_lines', DBLVAR=vphi_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,     'vz_lines', DBLVAR=vz_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'S_lines', DBLVAR=S_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'U_lines', DBLVAR=U_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'B_lines', DBLVAR=B_lines)
-    CALL beams3d_write1d_parhdf5(         1, nparticles, mystart, myend,      't_end',   DBLVAR=t_last,FILENAME='beams3d_'//TRIM(id_string))
-    ALLOCATE(itemp(0:npoinc,mystart:myend))
-    itemp = 0; WHERE(neut_lines) itemp=1;
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,   'neut_lines', INTVAR=itemp)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'R_lines', DBLVAR=R_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,    'PHI_lines', DBLVAR=PHI_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'Z_lines', DBLVAR=Z_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,    'vll_lines', DBLVAR=vll_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save, 'moment_lines', DBLVAR=moment_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,     'vr_lines', DBLVAR=vr_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'vphi_lines', DBLVAR=vphi_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,     'vz_lines', DBLVAR=vz_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'S_lines', DBLVAR=S_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'U_lines', DBLVAR=U_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'B_lines', DBLVAR=B_lines)
+    CALL beams3d_write1d_parhdf5(         1, nparticles, mystart_save, myend_save,      't_end',   DBLVAR=t_last,FILENAME='beams3d_'//TRIM(id_string))
+    ALLOCATE(itemp(0:npoinc,mystart_save:myend_save))
+    itemp = 0; WHERE(neut_lines) itemp=1
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'neut_lines', INTVAR=itemp)
     DEALLOCATE(itemp)
     IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
     IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-    IF (ALLOCATED(t_last)) DEALLOCATE(t_last)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
 #endif
+
+    ! Adjust T_END back to values of T_last
+    t_end(mystart:myend) = t_last(mystart:myend)
+    IF (ALLOCATED(t_last)) DEALLOCATE(t_last)
 
     RETURN
     !-----------------------------------------------------------------------

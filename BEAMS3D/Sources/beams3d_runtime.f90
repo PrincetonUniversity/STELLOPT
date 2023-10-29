@@ -137,7 +137,7 @@ MODULE beams3d_runtime
                lascot, lascot4, lbbnbi, lfidasim, lfidasim_cyl, lsplit, lvessel_beam, lascotfl, lrandomize, &
                lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim, &
                lboxsim, limas, lfieldlines, lfusion_tritium, lfusion_proton, &
-               lfusion_He3, lmumat
+               lfusion_He3, lbeamdensity, lmumat
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
                ndt, ndt_max, duplicate_factor
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams

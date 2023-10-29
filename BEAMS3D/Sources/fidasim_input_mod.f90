@@ -32,6 +32,7 @@ MODULE fidasim_input_mod
    !    POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F
    USE safe_open_mod, ONLY: safe_open
    USE beams3d_write_par
+   USE beams3d_physics_mod, ONLY: beams3d_SUFLX
    USE mpi_params
    USE mpi_inc
 
@@ -46,7 +47,7 @@ MODULE fidasim_input_mod
    CHARACTER(128) :: comment,nbi_data_source, spec_data_source,runid,device,name,system,&
       tables_file,equilibrium_file,geometry_file,distribution_file,neutrals_file,result_dir
    CHARACTER(20), DIMENSION(MAXCHAN) :: id
-   DOUBLE PRECISION, DIMENSION(3) :: origin,current_fractions,src,axis_nbi,  divy,   divz
+   DOUBLE PRECISION, DIMENSION(3) :: origin,current_fractions,src,axis_nbi,  divy,   divz, q
    DOUBLE PRECISION, DIMENSION(3,MAXCHAN) :: axis_spec,  lens
    DOUBLE PRECISION, DIMENSION(MAXCHAN) :: sigma_pi,spot_size,radius
    DOUBLE PRECISION  :: time, lambdamin,  lambdamax,   alpha,   beta,   gamma,      xminf,&
@@ -135,271 +136,253 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    DOUBLE PRECISION, PARAMETER :: t_min          = 1.0D-3 !
 
    !-----------------------------------------------------------------------
-!     Begin Subroutine
-!-----------------------------------------------------------------------
+   !     Begin Subroutine
+   !-----------------------------------------------------------------------
    IF (myworkid == master) THEN
       SELECT CASE (TRIM(write_type))
-       CASE('INIT')
+         CASE('INIT')
+            
+            CALL init_fidasim_input
+            nz_tmp=nz !This is important for grid interpolation and necessary to prevent renaming the namelist
+            ! Read namelist
+            istat=0
+            iunit=12
+            INQUIRE(FILE=TRIM('input.' // TRIM(id_string)),EXIST=lexist)
+            IF (.not.lexist) stop 'Could not find input file'
+            CALL safe_open(iunit,istat,'input.' // TRIM(id_string),'old','formatted')
+            IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'fidasim_inputs_b3d in: ' //'input.' //TRIM(id_string),istat)
+            READ(iunit,NML=fidasim_inputs_b3d,IOSTAT=istat)
+            IF (istat /= 0) THEN
+               backspace(iunit)
+               read(iunit,fmt='(A)') line
+               write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+               CALL handle_err(NAMELIST_READ_ERR,'fidasim_inputs_b3d in: '//'input.' //TRIM(id_string),istat)
+            END IF
+            CLOSE(iunit)
+            IF (equilibrium_file .eq. 'none')   equilibrium_file = TRIM(result_dir) // TRIM(runid) //  '_equilibrium.h5'   !! File containing plasma parameters and fields
+            IF (geometry_file .eq. 'none')  geometry_file = TRIM(result_dir) // TRIM(runid) //  '_geometry.h5'      !! File containing NBI and diagnostic geometry
+            IF (distribution_file .eq. 'none') distribution_file = TRIM(result_dir) // TRIM(runid) //  '_distribution.h5'      !! File containing fast-ion distribution
+            IF (neutrals_file .eq. 'none') neutrals_file = TRIM(result_dir) // TRIM(runid) //  '_neutrals.h5'
 
-        CALL init_fidasim_input
-		nz_tmp=nz !This is important for grid interpolation and necessary to prevent renaming the namelist
-       ! Read namelist
-   istat=0
-   iunit=12
-   INQUIRE(FILE=TRIM('input.' // TRIM(id_string)),EXIST=lexist)
-   IF (.not.lexist) stop 'Could not find input file'
-   CALL safe_open(iunit,istat,'input.' // TRIM(id_string),'old','formatted')
-   IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'fidasim_inputs_b3d in: ' //'input.' //TRIM(id_string),istat)
-   READ(iunit,NML=fidasim_inputs_b3d,IOSTAT=istat)
-   IF (istat /= 0) THEN
-      backspace(iunit)
-      read(iunit,fmt='(A)') line
-      write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-      CALL handle_err(NAMELIST_READ_ERR,'fidasim_inputs_b3d in: '//'input.' //TRIM(id_string),istat)
-   END IF
-   CLOSE(iunit)
-   IF (equilibrium_file .eq. 'none')   equilibrium_file = TRIM(result_dir) // TRIM(runid) //  '_equilibrium.h5'   !! File containing plasma parameters and fields
-   IF (geometry_file .eq. 'none')  geometry_file = TRIM(result_dir) // TRIM(runid) //  '_geometry.h5'      !! File containing NBI and diagnostic geometry
-   IF (distribution_file .eq. 'none') distribution_file = TRIM(result_dir) // TRIM(runid) //  '_distribution.h5'      !! File containing fast-ion distribution
-   IF (neutrals_file .eq. 'none') neutrals_file = TRIM(result_dir) // TRIM(runid) //  '_neutrals.h5'
-
-   ! Open the inputs.dat file
-   iunit = 10
-   CALL safe_open(iunit,istat,'fidasim_'//TRIM(id_string)//'_inputs.dat','replace','formatted')
-   !WRITE(iunit,nml=fidasim_inputs)
-   CALL write_fidasim_namelist(iunit, istat)
-   CALL FLUSH(iunit)
-   CLOSE(iunit)
+            ! Open the inputs.dat file
+            iunit = 10
+            CALL safe_open(iunit,istat,'fidasim_'//TRIM(id_string)//'_inputs.dat','replace','formatted')
+            !WRITE(iunit,nml=fidasim_inputs)
+            CALL write_fidasim_namelist(iunit, istat)
+            CALL FLUSH(iunit)
+            CLOSE(iunit)
    
-nz=nz_tmp !This is important for grid interpolation and necessary to prevent renaming the namelist
+            nz=nz_tmp !This is important for grid interpolation and necessary to prevent renaming the namelist
 
 
-   CALL write_fidasim_geometry
+            CALL write_fidasim_geometry
 
-         CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.true.)
-         CALL h5gopen_f(fid,'/', qid_gid, ier)
-         CALL write_att_hdf5(qid_gid,'data_source','Data initialized from BEAMS3D',ier)
-         CALL write_var_hdf5(qid_gid,'type',ier,INTVAR=1)
-         CALL h5dopen_f(fid, 'type', temp_gid, ier)
-         CALL write_att_hdf5(temp_gid,'description','Distribution type: 1="Guiding Center Density Function", 2="Guiding Center Monte Carlo", 3="Full Orbit Monte Carlo"',ier)
-         CALL h5dclose_f(temp_gid,ier)
-
-
-         ! FIDASIM GRID
-         CALL write_fidasim_grid(qid_gid)
-
-        !Energy grid is only in distribution
-         CALL write_var_hdf5(qid_gid,'nenergy',ier,INTVAR=nenergy_fida)
-         CALL h5dopen_f(fid, 'nenergy', temp_gid, ier)
-         CALL write_att_hdf5(temp_gid,'units','-',ier)
-         CALL write_att_hdf5(temp_gid,'description','Number of energy values',ier)
-         CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(qid_gid,'npitch',ier,INTVAR=npitch_fida)
-         CALL h5dopen_f(fid, 'npitch', temp_gid, ier)
-         CALL write_att_hdf5(temp_gid,'units','-',ier)
-         CALL write_att_hdf5(temp_gid,'description','Number of pitch values',ier)
-         CALL h5dclose_f(temp_gid,ier)
-
-         CALL write_var_hdf5(fid,'energy',nenergy_fida,ier,DBLVAR=energy_fida) ! in keV
-         CALL h5dopen_f(fid, '/energy', temp_gid, ier)
-         CALL write_att_hdf5(temp_gid,'description','Energy array',ier)
-         CALL write_att_hdf5(temp_gid,'units','keV',ier)
-         CALL h5dclose_f(temp_gid,ier)
-         CALL write_var_hdf5(fid,'pitch',npitch_fida,ier,DBLVAR=pitch_fida)
-         CALL h5dopen_f(fid, '/pitch', temp_gid, ier)
-         CALL write_att_hdf5(temp_gid,'description','Pitch array',ier)
-         CALL write_att_hdf5(temp_gid,'units','-',ier)
-         CALL h5dclose_f(temp_gid,ier)
-
-         ! Close file
-         CALL h5gclose_f(qid_gid, ier)
-         CALL close_hdf5(fid,ier)
-         IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'fidasim_'//TRIM(id_string)//'_distribution.h5',ier)
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.true.)
+            CALL h5gopen_f(fid,'/', qid_gid, ier)
+            CALL write_att_hdf5(qid_gid,'data_source','Data initialized from BEAMS3D',ier)
+            CALL write_var_hdf5(qid_gid,'type',ier,INTVAR=1)
+            CALL h5dopen_f(fid, 'type', temp_gid, ier)
+            CALL write_att_hdf5(temp_gid,'description','Distribution type: 1="Guiding Center Density Function", 2="Guiding Center Monte Carlo", 3="Full Orbit Monte Carlo"',ier)
+            CALL h5dclose_f(temp_gid,ier)
 
 
-         CALL write_fidasim_equilibrium
-    
+            ! FIDASIM GRID
+            CALL write_fidasim_grid(qid_gid)
 
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !Energy grid is only in distribution
+            CALL write_var_hdf5(qid_gid,'nenergy',ier,INTVAR=nenergy_fida)
+            CALL h5dopen_f(fid, 'nenergy', temp_gid, ier)
+            CALL write_att_hdf5(temp_gid,'units','-',ier)
+            CALL write_att_hdf5(temp_gid,'description','Number of energy values',ier)
+            CALL h5dclose_f(temp_gid,ier)
+            CALL write_var_hdf5(qid_gid,'npitch',ier,INTVAR=npitch_fida)
+            CALL h5dopen_f(fid, 'npitch', temp_gid, ier)
+            CALL write_att_hdf5(temp_gid,'units','-',ier)
+            CALL write_att_hdf5(temp_gid,'description','Number of pitch values',ier)
+            CALL h5dclose_f(temp_gid,ier)
 
-       CASE('DENF')
-         ! Distribution needs to be in density [part/m^3] here - called from distnorm (before velocity space normalization)
-         !ALLOCATE(r4dtemp(nbeams,nr_fida,nphi_fida,nz_fida))
-         ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
-         rtemp = 0.0
-         IF (lfidasim_cyl) THEN
-            DO i=1,nr_fida
-               vol =(raxis_fida(i) + 1 / 2.0 / r_h) / r_h / z_h / p_h
-               !WRITE(327,*) i, vol
-               !CALL FLUSH(327)
-               dist5d_fida(i,:,:,:,:) = dist5d_fida(i,:,:,:,:) / vol
-               DO j = 1, nz_fida
-                  DO k=1,nphi_fida
-                     rtemp(i,j,k) = SUM(dist5d_fida(i,j,k,:,:))
+            CALL write_var_hdf5(fid,'energy',nenergy_fida,ier,DBLVAR=energy_fida) ! in keV
+            CALL h5dopen_f(fid, '/energy', temp_gid, ier)
+            CALL write_att_hdf5(temp_gid,'description','Energy array',ier)
+            CALL write_att_hdf5(temp_gid,'units','keV',ier)
+            CALL h5dclose_f(temp_gid,ier)
+            CALL write_var_hdf5(fid,'pitch',npitch_fida,ier,DBLVAR=pitch_fida)
+            CALL h5dopen_f(fid, '/pitch', temp_gid, ier)
+            CALL write_att_hdf5(temp_gid,'description','Pitch array',ier)
+            CALL write_att_hdf5(temp_gid,'units','-',ier)
+            CALL h5dclose_f(temp_gid,ier)
+
+            ! Close file
+            CALL h5gclose_f(qid_gid, ier)
+            CALL close_hdf5(fid,ier)
+            IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'fidasim_'//TRIM(id_string)//'_distribution.h5',ier)
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+            CALL write_fidasim_equilibrium
+       
+
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+         CASE('DENF')
+            ! Distribution needs to be in density [part/m^3] here - called from distnorm (before velocity space normalization)
+            !ALLOCATE(r4dtemp(nbeams,nr_fida,nphi_fida,nz_fida))
+            ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
+            rtemp = 0.0
+            IF (lfidasim_cyl) THEN
+               DO i=1,nr_fida
+                  vol =(raxis_fida(i) + 1 / 2.0 / r_h) / r_h / z_h / p_h
+                  dist5d_fida(i,:,:,:,:) = dist5d_fida(i,:,:,:,:) / vol
+                  DO j = 1, nz_fida
+                     DO k=1,nphi_fida
+                        rtemp(i,j,k) = SUM(dist5d_fida(i,j,k,:,:))
+                     END DO
                   END DO
                END DO
-            END DO
-         ELSE
-            !convert to r z phi
-            DO i=1,nr_fida
-               DO k = 1, nz_fida
-                  DO j=1,nphi_fida
-                     !convert i,j,k to distribution function lfidasim indices l,m,n
-                     !determine beams3d-grid indices
-                     x0 = MOD(phiaxis_fida(j), pi2)
-                     IF (x0 < 0) x0 = x0 + pi2
-                     i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
-                     j3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3-1), 1) ! V Bin, because dist has full toroidal revolution, TODO: CHECK -1
-                     k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
-                     !setup interpolation
-                     xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
-                     yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
-                     zparam = (zaxis_fida(k) - zaxis(k3)) * hzi(k3)
-                     CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&!maybe switch to x/y interpolation?
-                        hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                        S4D(1,1,1,1),nr,nphi,nz)
-                     y0 = fval(1)
-                     CALL R8HERM3FCN(ict,1,1,fval2,i3,j3,k3,xparam,yparam,zparam,&
-                        hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                        U4D(1,1,1,1),nr,nphi,nz)
-                     z0 = fval2(1)
+            ELSE
+               !convert to r z phi
+               DO i=1,nr_fida
+                  DO k = 1, nz_fida
+                     DO j=1,nphi_fida
+                        !Get S and U
+                        q(1) = raxis_fida(i)
+                        q(2) = phiaxis_fida(j)
+                        q(3) = zaxis_fida(k)
+                        CALL beams3d_SUFLX(q,y0,z0)
 
-                     IF (z0 < 0) z0 = z0 + pi2
-                     ! Calc dist func bins
-                     l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
-                     m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
-                     n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                     !IF (y0 .GT. 1.05) THEN
-                     !   rtemp(i,k,j) = 0 !distribution is 0 outside plasma
-                     !ELSE
-                     rtemp(i,k,j) = SUM(dist5d_prof(:,l,m,n,:,:))!output in r-z-phi
-                     !END IF
+                        ! Skip if S > 1
+                        IF (y0 > 1.0) CYCLE
+
+                        ! Keep U positive
+                        IF (z0 < 0) z0 = z0 + pi2
+
+                        ! Create x0 (index over full toridal angle)
+                        x0 = MOD(phiaxis_fida(j),pi2)
+                        IF (x0<0) x0 = x0 + pi2
+
+                        ! Calc dist func bins
+                        l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+                        m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
+                        n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
+                        rtemp(i,k,j) = SUM(dist5d_prof(:,l,m,n,:,:))!output in r-z-phi
+
+                     END DO
                   END DO
                END DO
-            END DO
-         END IF
-         CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
-         CALL h5gopen_f(fid,'/', qid_gid, ier)
-         CALL write_var_hdf5(qid_gid,'denf',nr_fida,nz_fida,nphi_fida,ier,DBLVAR=DBLE(rtemp/1000000.0)) !in cm^3
-         CALL h5dopen_f(qid_gid, 'denf', temp_gid, ier)
-         CALL write_att_hdf5(temp_gid,'description','Fast-ion density (nr_fida,nz_fida,nphi_fida)',ier)
-         CALL write_att_hdf5(temp_gid,'units','part/(cm^3)',ier)
-         CALL h5dclose_f(temp_gid,ier)
-         CALL h5gclose_f(qid_gid, ier)
-         DEALLOCATE(rtemp)
-         CALL close_hdf5(fid,ier)
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            END IF
+            CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
+            CALL h5gopen_f(fid,'/', qid_gid, ier)
+            CALL write_var_hdf5(qid_gid,'denf',nr_fida,nz_fida,nphi_fida,ier,DBLVAR=DBLE(rtemp/1000000.0)) !in cm^3
+            CALL h5dopen_f(qid_gid, 'denf', temp_gid, ier)
+            CALL write_att_hdf5(temp_gid,'description','Fast-ion density (nr_fida,nz_fida,nphi_fida)',ier)
+            CALL write_att_hdf5(temp_gid,'units','part/(cm^3)',ier)
+            CALL h5dclose_f(temp_gid,ier)
+            CALL h5gclose_f(qid_gid, ier)
+            DEALLOCATE(rtemp)
+            CALL close_hdf5(fid,ier)
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-       CASE('DISTRIBUTION_GC_F')
-         ! Do phase space change of coordinates
-         !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
-         IF (lfidasim_cyl) THEN
-            ALLOCATE(dist5d_temp(nenergy_fida, npitch_fida,nr_fida,nz_fida,nphi_fida)) !need temp as velocity bins are in vll/vperp initially
-            dist5d_temp = 0
-         ELSE
-            ALLOCATE(dist5d_fida(ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida)) !nenergy and npitch are always aligned to distribution
-            dist5d_fida = 0
-         END IF
+         CASE('DISTRIBUTION_GC_F')
+            ! Do phase space change of coordinates
+            !Allocate with Radial-like dimensions for clean transfer and to avoid explicitly looping over every element
+            IF (lfidasim_cyl) THEN
+               ALLOCATE(dist5d_temp(nenergy_fida, npitch_fida,nr_fida,nz_fida,nphi_fida)) !need temp as velocity bins are in vll/vperp initially
+               dist5d_temp = 0
+            ELSE
+               ALLOCATE(dist5d_fida(ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida)) !nenergy and npitch are always aligned to distribution
+               dist5d_fida = 0
+            END IF
 
-         IF (lfidasim_cyl) THEN
-            DO d1 = 1, nenergy_fida
-               DO d2 = 1, npitch_fida
-                  dist5d_temp(d1,d2,:,:,:) = dist5d_fida(:,:,:,d1,d2)*e_h*pi_h*REAL(1.0e-6)
-               END DO
-            END DO
-         ELSE
-            DO b = 1,nbeams
+            IF (lfidasim_cyl) THEN
                DO d1 = 1, nenergy_fida
                   DO d2 = 1, npitch_fida
-                     v = SQRT(2 * energy_fida(d1) *1000.0 * e_charge / mass_beams(b))
-                     pitch = pitch_fida(d2)
-                     v_parr = pitch * v
-                     v_perp = SQRT(1- pitch * pitch) * v
-                     !determine beams3d-grid indices (velocity space)
-                     i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
-                     j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
-                     jac = pi2 * v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
-                     dist5d_fida(:,:,:,d1,d2) = dist5d_fida(:,:,:,d1,d2) + dist5d_prof(b,:,:,:,i3,j3) * jac ! conversion to final grid comes in next steps
+                     dist5d_temp(d1,d2,:,:,:) = dist5d_fida(:,:,:,d1,d2)*e_h*pi_h*REAL(1.0e-6)
                   END DO
                END DO
-            END DO
-         END IF
-
-         IF (.not. lfidasim_cyl) THEN
-            ALLOCATE(dist5d_temp(ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
-            dist5d_temp(:,:,:,:,:) = dist5d_fida(:,:,:,:,:)
-            DEALLOCATE(dist5d_fida)
-            !Interpolate rho u v to r phi z distribution function (nearest neighbor at the moment)
-            !Now allocate with correct dimensions
-            ALLOCATE(dist5d_fida(nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
-            DO i=1,nr_fida
-               DO k = 1, nz_fida
-                  DO j=1,nphi_fida
-                     !convert i,j,k to distribution function indices l,m,n
-                     !determine beams3d-grid indices
-                     x0 = MOD(phiaxis_fida(j), pi2)
-                     IF (x0 < 0) x0 = x0 + pi2
-                     i3 = MIN(MAX(COUNT(raxis < raxis_fida(i)),1),nr-1)
-                     j3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin, because dist has full toroidal revolution
-                     k3 = MIN(MAX(COUNT(zaxis < zaxis_fida(k)),1),nz-1)
-                     !setup interpolation
-                     xparam = (raxis_fida(i) - raxis(i3)) * hri(i3)
-                     yparam = (phiaxis_fida(j) - phiaxis(j3)) * hpi(j3)
-                     zparam = (zaxis_fida(k) - zaxis(k3)) * hzi(k3)
-                     CALL R8HERM3FCN(ict,1,1,fval,i3,j3,k3,xparam,yparam,zparam,&!maybe switch to x/y interpolation?
-                        hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                        S4D(1,1,1,1),nr,nphi,nz)
-                     y0 = fval(1)
-                     CALL R8HERM3FCN(ict,1,1,fval2,i3,j3,k3,xparam,yparam,zparam,&
-                        hr(i3),hri(i3),hp(j3),hpi(j3),hz(k3),hzi(k3),&
-                        U4D(1,1,1,1),nr,nphi,nz)
-                     z0 = fval2(1)
-
-                     IF (z0 < 0) z0 = z0 + pi2
-                     IF (x0 < 0) x0 = x0 + pi2
-                     IF (y0 < 0) y0 = -y0
-                     ! Calc dist func bins
-                     !x0    = phiaxis_fida(j)
-                     l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
-                     m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
-                     n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-                     !IF (y0 .GT. 1.05) THEN !might introduce a small deviation here
-                     !   dist5d_fida(b,:,:,i,k,j) = 0 !distribution is 0 outside plasma
-                     !ELSE
-                     dist5d_fida(:,:,i,k,j) = dist5d_temp(l,m,n,:,:) !output in r-z-phi
-                     !END IF
-
-                  END DO
-               END DO
-            END DO
-         END IF
-
-         CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
-         IF (ASSOCIATED(dist5d_fida)) THEN
-            IF (lfidasim_cyl) THEN
-               CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=dist5d_temp)
             ELSE
-               CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=dist5d_fida)
+               DO b = 1,nbeams
+                  DO d1 = 1, nenergy_fida
+                     DO d2 = 1, npitch_fida
+                        v = SQRT(2 * energy_fida(d1) *1000.0 * e_charge / mass_beams(b))
+                        pitch = pitch_fida(d2)
+                        v_parr = pitch * v
+                        v_perp = SQRT(1- pitch * pitch) * v
+                        !determine beams3d-grid indices (velocity space)
+                        i3 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*v_parr), ns_prof4), 1) ! vll
+                        j3 = MAX(MIN(CEILING(v_perp*h5_prof         ), ns_prof5), 1) ! Vperp
+                        jac = pi2 * v / mass_beams(b) * e_charge / REAL(1000) ! * pi2
+                        dist5d_fida(:,:,:,d1,d2) = dist5d_fida(:,:,:,d1,d2) + dist5d_prof(b,:,:,:,i3,j3) * jac ! conversion to final grid comes in next steps
+                     END DO
+                  END DO
+               END DO
             END IF
-            CALL h5dopen_f(fid, '/f', temp_gid, ier)
-            CALL write_att_hdf5(temp_gid,'description','Distribution Function (nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida)',ier)
-            CALL write_att_hdf5(temp_gid,'units','part/(cm^3 keV)',ier)
-            CALL h5dclose_f(temp_gid,ier)
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_fida',ier)
-         END IF
-         CALL close_hdf5(fid,ier)
-         IF (.not. lfidasim_cyl) THEN
-            DEALLOCATE(dist5d_fida)
-         END IF
-         DEALLOCATE(dist5d_temp)
+
+            IF (.not. lfidasim_cyl) THEN
+               ALLOCATE(dist5d_temp(ns_prof1, ns_prof2, ns_prof3, nenergy_fida, npitch_fida))
+               dist5d_temp(:,:,:,:,:) = dist5d_fida(:,:,:,:,:)
+               DEALLOCATE(dist5d_fida)
+               !Interpolate rho u v to r phi z distribution function (nearest neighbor at the moment)
+               !Now allocate with correct dimensions
+               ALLOCATE(dist5d_fida(nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida))
+               DO i=1,nr_fida
+                  DO k = 1, nz_fida
+                     DO j=1,nphi_fida
+                        !Get S and U
+                        q(1) = raxis_fida(i)
+                        q(2) = phiaxis_fida(j)
+                        q(3) = zaxis_fida(k)
+                        CALL beams3d_SUFLX(q,y0,z0)
+
+                        ! Skip if S > 1
+                        IF (y0 > 1.0) CYCLE
+
+                        ! Handle negative y0
+                        IF (y0 < 0) THEN
+                           z0 = z0 + pi2*0.5
+                           y0 = -y0
+                        END IF
+
+                        ! Create x0 (index over full toridal angle)
+                        x0 = MOD(phiaxis_fida(j),pi2)
+                        IF (x0<0) x0 = x0 + pi2
+
+                        ! Calc dist func bins
+                        l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+                        m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
+                        n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
+                        dist5d_fida(:,:,i,k,j) = dist5d_temp(l,m,n,:,:) !output in r-z-phi
+
+                     END DO
+                  END DO
+               END DO
+            END IF
+
+            CALL open_hdf5('fidasim_'//TRIM(id_string)//'_distribution.h5',fid,ier,LCREATE=.false.)
+            IF (ASSOCIATED(dist5d_fida)) THEN
+               IF (lfidasim_cyl) THEN
+                  CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=dist5d_temp)
+               ELSE
+                  CALL write_var_hdf5(fid,'f',nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida,ier,DBLVAR=dist5d_fida)
+               END IF
+               CALL h5dopen_f(fid, '/f', temp_gid, ier)
+               CALL write_att_hdf5(temp_gid,'description','Distribution Function (nenergy_fida,npitch_fida,nr_fida,nz_fida,nphi_fida)',ier)
+               CALL write_att_hdf5(temp_gid,'units','part/(cm^3 keV)',ier)
+               CALL h5dclose_f(temp_gid,ier)
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_fida',ier)
+            END IF
+            CALL close_hdf5(fid,ier)
+            IF (.not. lfidasim_cyl) THEN
+               DEALLOCATE(dist5d_fida)
+            END IF
+            DEALLOCATE(dist5d_temp)
 
 
-       CASE('DISTRIBUTION_GC_MC')
-       CASE('DISTRIBUTION_FO')
+         CASE('DISTRIBUTION_GC_MC')
+         CASE('DISTRIBUTION_FO')
 
       END SELECT
-   END IF !myworkid==master
+   END IF
+
    RETURN
 
 !-----------------------------------------------------------------------

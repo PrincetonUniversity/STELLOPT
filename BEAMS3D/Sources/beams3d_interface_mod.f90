@@ -78,12 +78,15 @@ CONTAINS
       CALL beams3d_free(MPI_COMM_SHARMEM)
       IF (lvessel) CALL wall_free(ier,MPI_COMM_BEAMS)
 #if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
+      ierr_mpi = 0; CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_main', ierr_mpi)
-      ierr_mpi=0
-      CALL MPI_INFO_FREE(mpi_info_beams3d, ierr_mpi)
-      CALL MPI_FINALIZE(ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'beams3d_main', ierr_mpi)
+      ierr_mpi = 0; CALL MPI_INFO_FREE(mpi_info_beams3d, ierr_mpi)
+      ierr_mpi = 0; CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_main', ierr_mpi)
+      ierr_mpi = 0; CALL MPI_COMM_FREE(MPI_COMM_SHARMEM, ierr_mpi)
+      ierr_mpi = 0; CALL MPI_COMM_FREE(MPI_COMM_BEAMS, ierr_mpi)
+      ierr_mpi = 0; CALL MPI_FINALIZE(ierr_mpi)
+      !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'beams3d_main', ierr_mpi)
 #endif
       IF (lverb) WRITE(6, '(A)') '----- BEAMS3D DONE -----'
       RETURN
@@ -161,6 +164,7 @@ CONTAINS
          lfusion_He3     = .false.
          lboxsim = .false.
          lfieldlines = .false.
+         lbeamdensity = .true.
          id_string = ''
          coil_string = ''
          mgrid_string = ''
@@ -286,6 +290,8 @@ CONTAINS
                 lfusion_He3 = .true.
             case ("-boxsim")
                 lboxsim = .true.
+            case ("-nobeamdensity")
+                lbeamdensity = .false.
             case ("-help", "-h") ! Output Help message
                 write(6, *) ' Beam MC Code'
                 write(6, *) ' Usage: xbeams3d <options>'
@@ -319,6 +325,7 @@ CONTAINS
                 write(6, *) '     -fusion_proton:  Thermal Fusion Births Rates  (proton only)'
                 write(6, *) '     -fusion_he3:     Fusion Reaction Rates for birth (He3 only)'
                 write(6, *) '     -boxsim:         Inject charged particles for box modeling'
+                write(6, *) '     -nobeamdensity:  Supress beam density calc.'
                 write(6, *) '     -noverb:         Supress all screen output'
                 write(6, *) '     -help:           Output help message'
             end select
@@ -414,6 +421,8 @@ CONTAINS
       CALL MPI_BCAST(limas,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lboxsim,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+      CALL MPI_BCAST(lbeamdensity,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(rminor_norm,1,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
