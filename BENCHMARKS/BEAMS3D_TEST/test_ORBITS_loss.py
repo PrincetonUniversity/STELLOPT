@@ -29,8 +29,8 @@ for temp in varlist:
     cal = data[temp]
     cal = np.where(act==0,0,cal)
     div = np.where(act==0,1,act)
-    perct = 100*sum(abs(act-cal)/div)
-    print('  '+temp+': '+str(cal[0])+'   '+str(act[0])+'   '+str(round(perct))+'%')
+    perct = 100*np.sqrt(sum((act-cal)**2)/len(act))/np.mean(act) #normalized root mean squared deviation
+    print(f'  {temp}: {cal[0]:.4f}   {act[0]:.4f}   {perct:.2f}%')
     if perct > failtol:
         lfail = 1
 print('=================')
