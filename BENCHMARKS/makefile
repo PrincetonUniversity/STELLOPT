@@ -92,6 +92,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_er
 	$(MAKE) test_beams3d_loss
 	$(MAKE) test_beams3d_slow
+
 	@if [ -n "$(ADASDIR)" ]; then \
 		if [ -d $(ADASDIR) ]; then \
 			$(MAKE) test_beams3d_depo_adas;\
@@ -101,6 +102,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_eqdsk
 	$(MAKE) test_beams3d_fusion
 	$(MAKE) test_beams3d_multiion
+	$(MAKE) test_beams3d_fidasim	
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
 
@@ -190,6 +192,13 @@ test_beams3d_fullorbit:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
 	#@cd $(BEAMS3D_TEST_DIR); ./test_beams3d_fullorbit.py
+	@echo ""
+
+test_beams3d_fidasim:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_FIDASIM -plasma -fidasim_cyl -collisions
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_FIDASIM -plasma -fidasim_cyl -collisions
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_FIDASIM.py
 	@echo ""
 
 test_stellopt:
