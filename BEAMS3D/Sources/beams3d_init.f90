@@ -743,6 +743,8 @@
          mass_beams(1)   = mass_in(1)
          lgc2fo_start(:) = .TRUE.
       END IF
+
+      IF (lboxsim) lgc2fo_start(:)=.FALSE.
       
       ! Duplicate particles if requested
       IF (duplicate_factor > 1) CALL beams3d_duplicate_part
