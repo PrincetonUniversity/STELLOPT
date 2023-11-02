@@ -19,6 +19,7 @@
 
 !-----------------------------------------------------------------------
 !     Module Variables
+!           lverb:            Controls output to screen
 !           nvertex:          Number of vertices
 !           ntet:             Number of tetrahedrons
 !           nstate:           Number of state functions
@@ -42,7 +43,8 @@
       TYPE stateFunctionType
             DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: H(:), M(:)
       END TYPE stateFunctionType
-      
+
+      LOGICAL, PRIVATE                    :: lverb
       INTEGER, PRIVATE                    :: nvertex, ntet, nstate
       TYPE(stateFunctionType), PRIVATE, ALLOCATABLE     :: stateFunction(:)
       DOUBLE PRECISION, PRIVATE           :: maxErr, lambdaStart, lambdaFactor
@@ -89,6 +91,17 @@
       CONTAINS
       
 
+      SUBROUTINE mumaterial_setverb(lverbin)
+      !-----------------------------------------------------------------------
+      ! mumaterial_setverb: Sets Verbosity
+      !-----------------------------------------------------------------------
+      ! param[in]: lverbin. Verbosity on
+      !-----------------------------------------------------------------------
+      IMPLICIT NONE
+      LOGICAL, INTENT(IN) :: lverbin
+      lverb = lverbin
+      RETURN
+      END SUBROUTINE mumaterial_setverb
 
 
 
@@ -116,11 +129,11 @@
       END IF
 #endif
       IF (rank .eq. 0) THEN
-            WRITE(6,'(A18,E10.4,A17,I4,A9,E10.4,A16,E10.4)') "Setting max Error:", mE, " max Iterations: ", mI, " lambda: ", la, " lambda factor: ", laF
+            IF (lverb) WRITE(6,'(A18,E10.4,A17,I4,A9,E10.4,A16,E10.4)') "Setting max Error:", mE, " max Iterations: ", mI, " lambda: ", la, " lambda factor: ", laF
             IF (mNb .le. 0) THEN
-                  WRITE(6,'(A27)') "Nearest neighbours disabled"
+                  IF (lverb) WRITE(6,'(A27)') "Nearest neighbours disabled"
             ELSE
-                  WRITE(6,'(A42,I7)') "Nearest neighbours enabled; max number: ", mNb
+                  IF (lverb) WRITE(6,'(A42,I7)') "Nearest neighbours enabled; max number: ", mNb
             END IF
       
 
@@ -215,7 +228,6 @@
 #if defined(MPI_OPT)
       END IF
 #endif
-      IF (shar_rank == 0) WRITE(6,*) "Reading tile data"
       ! read in the mesh
       IF (istat/=0) RETURN
       IF (shar_rank == 0) THEN
@@ -268,8 +280,6 @@
       ! close file
       CLOSE(iunit)
 
-      IF (shar_rank == 0) WRITE(6,*) "Finished reading tile data"
-
       ! set default values
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
@@ -285,10 +295,12 @@
       END SUBROUTINE mumaterial_load
 
 
-
-
-
       SUBROUTINE mumaterial_info(iunit)
+      !-----------------------------------------------------------------------
+      ! mumaterial_info: Prints info to iunit
+      !-----------------------------------------------------------------------
+      ! param[in]: iunit. Unit number to print to
+      !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: iunit
       INTEGER :: i,k
@@ -355,7 +367,7 @@
       INTEGER :: win_neighbours
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER :: N_store
       INTEGER :: win_N_store
-      DOUBLE PRECISION, ALLOCATABLE :: dist(:)
+      DOUBLE PRECISION, ALLOCATABLE :: dist(:), dx(:,:)
       LOGICAL, ALLOCATABLE :: mask(:)
       
       EXTERNAL:: getBfld
@@ -376,7 +388,7 @@
       !! Apply offset
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (PRESENT(offset)) THEN
-         IF (shar_rank == 0) WRITE(6,*) "Applying offset"
+         IF (shar_rank == 0 .AND. lverb) WRITE(6,*) "Applying offset"
          IF (MAXVAL(ABS(offset)) .gt. 0.d0) THEN
             CALL MPI_CALC_MYRANGE(shar_comm, 1, nvertex, mystart, myend)
             DO i = mystart, myend
@@ -392,7 +404,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Calculate the Applied H-Field
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (shar_rank == 0) WRITE(6,*) "Calculating Fields at Tet. centers"
+      IF (shar_rank == 0 .AND. lverb) WRITE(6,*) "Calculating Fields at Tet. centers"
       CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet, mystart, myend)
       DO i = mystart, myend
             tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
@@ -424,16 +436,21 @@
       ! Nearest neighbor search
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (maxNb .gt. 0) THEN ! Double approach since not using neighbours is faster for smaller objects
-         IF (shar_rank == 0) WRITE (*,*) "Determining nearest neighbours"
+         IF (shar_rank == 0 .AND. lverb) WRITE (*,*) "Determining nearest neighbours"
 
-         ALLOCATE(mask(ntet),dist(ntet))
+         ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
 
          ! Determine neighbours
          CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet, mystart, myend)
          DO i = mystart, myend
-            DO j = 1, ntet
-               dist(j) = NORM2(tet_cen(:,i)-tet_cen(:,j)) 
-            END DO
+            ! We need to define helper variables dx(3,ntet)
+            dx(1,:) = tet_cen(1,:)-tet_cen(1,i)
+            dx(2,:) = tet_cen(2,:)-tet_cen(2,i)
+            dx(3,:) = tet_cen(3,:)-tet_cen(3,i)
+            dist = NORM2(dx,DIM=1)
+            !DO j = 1, ntet
+            !   dist(j) = NORM2(tet_cen(:,i)-tet_cen(:,j)) 
+            !END DO
             mask = .TRUE.
             mask(i) = .FALSE.
             DO j = 1, maxNb
@@ -443,13 +460,13 @@
             END DO
          END DO
 
-         DEALLOCATE(mask,dist)
+         DEALLOCATE(mask,dist,dx)
 
 #if defined(MPI_OPT)
          IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
 
-         IF (shar_rank == 0) WRITE(6,*) "Determining N-tensors (nearest neighbours)"
+         IF (shar_rank == 0 .AND. lverb) WRITE(6,*) "Determining N-tensors (nearest neighbours)"
          DO i = mystart, myend
             N_store(:,:,:,i) = 0
             CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), tet_cen(:,i), N_store(:,:,maxNb+1,i))
@@ -469,7 +486,7 @@
       ! Or do the full problem (all tiles)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ELSE
-         IF (shar_rank == 0) WRITE(6,*) "Determining N-tensors (full)"
+         IF (shar_rank == 0 .AND. lverb) WRITE(6,*) "Determining N-tensors (full)"
 
          CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet*ntet, mystart, myend)
          DO s = mystart, myend            
@@ -482,7 +499,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Iterate over the magnetization
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (shar_rank == 0) WRITE(6,*) "Running iterations"   
+      IF (shar_rank == 0 .AND. lverb) WRITE(6,*) "Running iterations"   
       IF (lcomm) THEN
             IF (maxNb .gt. 0) THEN
                   CALL mumaterial_iterate_magnetization(lambdaStart, lambdaFactor, maxNb, N_store=N_store, neighbours=neighbours, comm=comm)
@@ -582,6 +599,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet, mystart, myend)
       Mnorm_old(mystart:myend) = 0
+      chi(mystart:myend) = 0
+      Mnorm(mystart:myend) = 0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Main Iteration Loop
@@ -707,7 +726,7 @@
                END IF
             END DO
 
-            WRITE(6,'(A7,I5,A8,E15.7,A13,E15.7)') 'Count: ', count, ' Error: ', error, ' Max. Error: ', maxErr*lambda
+            IF (lverb) WRITE(6,'(A7,I5,A8,E15.7,A13,E15.7)') 'Count: ', count, ' Error: ', error, ' Max. Error: ', maxErr*lambda
             CALL FLUSH(6)
 
             IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) THEN
@@ -730,10 +749,11 @@
 
 #if defined(MPI_OPT)
          IF (lcomm) CALL MPI_Bcast(stop_iterate,1,MPI_LOGICAL,0,shar_comm,istat)
+         IF (lcomm) CALL MPI_Bcast(lambda,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
 #endif
          IF (stop_iterate) THEN
             IF (state_type(state_dex(1)) .eq. 2) THEN ! assume model is using only state functions, determine average mu_r for analysis
-                  IF (shar_rank .eq. 0) WRITE(6,'(A14,E15.7)') "Average mu_r: ", SUM(chi)/ntet + 1.0
+                  IF (shar_rank .eq. 0 .AND. lverb) WRITE(6,'(A14,E15.7)') "Average mu_r: ", SUM(chi)/ntet + 1.0
             END IF
             EXIT
          END IF
@@ -744,7 +764,7 @@
       CALL free_mpi_array1d_dbl(win_Mnorm,Mnorm,lcomm)
       CALL free_mpi_array1d_dbl(win_Mnorm_old,Mnorm_old,lcomm)
 
-      IF (shar_rank .eq. 0) WRITE(6,*) "Finished determining magnetization"
+      IF (shar_rank .eq. 0 .AND. lverb) WRITE(6,*) "Finished determining magnetization"
 
       RETURN
       END SUBROUTINE mumaterial_iterate_magnetization
