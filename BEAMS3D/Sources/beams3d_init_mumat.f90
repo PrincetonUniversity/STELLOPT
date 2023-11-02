@@ -25,7 +25,8 @@
                                  small, eps1, eps2, eps3
       USE beams3d_physics_mod, ONLY: beams3d_BCART
       USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init, &
-                                mumaterial_info, mumaterial_getbmag_scalar
+                                mumaterial_info, mumaterial_getbmag_scalar,&
+                                mumaterial_setverb
       USE mpi_params  
       USE mpi_inc      
       USE mpi_sharmem
@@ -54,6 +55,11 @@
       CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
 #endif
       
+      ! Set mumaterial verbosity
+      !CALL mumaterial_setverb(lverb)
+      CALL mumaterial_setverb(.FALSE.)
+      IF (mylocalid == 1) CALL mumaterial_setverb(.TRUE.)
+
       ! Read the mu materials file
       CALL mumaterial_load(TRIM(mumat_string),istat,MPI_COMM_LOCAL)
 
