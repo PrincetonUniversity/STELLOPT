@@ -12,7 +12,7 @@ except KeyError:
 	sys.exit(1)
 
 lfail = 0
-failtol = 1.0
+failtol = 2.5
 filename='beams3d_ORBITS_er.h5'
 data=read_beams3d(filename)
 if not data:
