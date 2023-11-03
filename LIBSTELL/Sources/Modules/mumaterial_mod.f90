@@ -146,11 +146,11 @@
 
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-            CALL MPI_Bcast(maxErr,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
-            CALL MPI_Bcast(maxIter,1,MPI_INTEGER,0,shar_comm,istat)
-            CALL MPI_Bcast(lambdaStart,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
-            CALL MPI_Bcast(lambdaFactor,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
-            CALL MPI_Bcast(maxNb,1,MPI_INTEGER,0,shar_comm,istat)
+            CALL MPI_Bcast(maxErr,       1, MPI_DOUBLE_PRECISION, 0, comm, istat)
+            CALL MPI_Bcast(maxIter,      1, MPI_INTEGER,          0, comm, istat)
+            CALL MPI_Bcast(lambdaStart,  1, MPI_DOUBLE_PRECISION, 0, comm, istat)
+            CALL MPI_Bcast(lambdaFactor, 1, MPI_DOUBLE_PRECISION, 0, comm, istat)
+            CALL MPI_Bcast(maxNb,        1, MPI_INTEGER,          0, comm, istat)
       END IF
 #endif
       RETURN
@@ -175,7 +175,7 @@
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)       :: istat
       INTEGER, INTENT(inout), OPTIONAL :: comm
-      LOGICAL :: shared
+      LOGICAL :: shared, lverb_temp
       INTEGER :: iunit ,ik, i, j, nMH
 
       shar_rank = 0; shar_size = 1;
@@ -281,6 +281,8 @@
       CLOSE(iunit)
 
       ! set default values
+      lverb_temp = lverb
+      lverb = .FALSE.
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
             CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 100, comm)
@@ -291,6 +293,7 @@
 #if defined(MPI_OPT)
       END IF
 #endif
+      lverb = lverb_temp
       RETURN
       END SUBROUTINE mumaterial_load
 
@@ -361,7 +364,7 @@
       INTEGER, INTENT(inout), OPTIONAL :: comm
       INTEGER :: istat ! todo: do something with this
       LOGICAL :: lcomm
-      INTEGER :: i, j, s, k
+      INTEGER :: i, j, s, k, comm_master, rank_total
       DOUBLE PRECISION :: mu0, norm, x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n
       INTEGER, DIMENSION(:,:), POINTER :: neighbours
       INTEGER :: win_neighbours
@@ -379,6 +382,11 @@
          CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
          CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
          lcomm = .TRUE.
+         ! Make a communicator of just the master nodes
+         CALL MPI_COMM_RANK( comm, rank_total, istat )
+         i = MPI_UNDEFINED
+         IF (shar_rank == master) i = 0
+         CALL MPI_COMM_SPLIT( comm, i, rank_total, comm_master, istat)
       END IF
 #endif
 
@@ -398,14 +406,18 @@
       END IF
 
 #if defined(MPI_OPT)
-      IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
+      IF (shar_rank == 0) THEN
+         tet_cen(:,:) = 0.0
+         Happ(:,:) = 0.0
+      END IF
+      IF (lcomm) CALL MPI_BARRIER(comm,istat)
 #endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! Calculate the Applied H-Field
+      !! Calculate the Applied H-Field (do over all nodes)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (shar_rank == 0 .AND. lverb) WRITE(6,*) "Calculating Fields at Tet. centers"
-      CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet, mystart, myend)
+      CALL MPI_CALC_MYRANGE(comm, 1, ntet, mystart, myend)
       DO i = mystart, myend
             tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
             CALL getBfld(tet_cen(1,i), tet_cen(2,i), tet_cen(3,i), Bx, By, Bz)
@@ -413,7 +425,11 @@
       END DO
 
 #if defined(MPI_OPT)
-      IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
+      IF (shar_rank == master .and. lcomm) THEN
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, tet_cen, 3*ntet, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, Happ, 3*ntet, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
+      END IF
+      IF (lcomm) CALL MPI_BARRIER(comm,istat)
 #endif
 
       
@@ -424,8 +440,13 @@
       k = ntet+1
       IF (maxNb .gt. 0) k = maxNb+1
 #if defined(MPI_OPT)
-      IF (maxNb .gt. 0) CALL mpialloc_2d_int(neighbours,maxNb,ntet,shar_rank,0,shar_comm,win_neighbours)
+      IF (maxNb .gt. 0) THEN
+         CALL mpialloc_2d_int(neighbours,maxNb,ntet,shar_rank,0,shar_comm,win_neighbours)
+         IF (shar_rank==0) neighbours = 0
+      END IF
       CALL mpialloc_4d_dbl(N_store,3,3,k,ntet,shar_rank,0,shar_comm,win_N_store)
+      IF (shar_rank == 0) N_store(:,:,:,:) = 0.0
+      IF (lcomm) CALL MPI_BARRIER(comm,istat)
 #else
       IF (maxNb .gt. 0) ALLOCATE(neighbours(k-1,ntet))
       ALLOCATE(neighbours(i,ntet),N_store(3,3,k,ntet))
@@ -441,16 +462,14 @@
          ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
 
          ! Determine neighbours
-         CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet, mystart, myend)
+         !CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet, mystart, myend)
+         CALL MPI_CALC_MYRANGE(comm, 1, ntet, mystart, myend)
          DO i = mystart, myend
             ! We need to define helper variables dx(3,ntet)
             dx(1,:) = tet_cen(1,:)-tet_cen(1,i)
             dx(2,:) = tet_cen(2,:)-tet_cen(2,i)
             dx(3,:) = tet_cen(3,:)-tet_cen(3,i)
             dist = NORM2(dx,DIM=1)
-            !DO j = 1, ntet
-            !   dist(j) = NORM2(tet_cen(:,i)-tet_cen(:,j)) 
-            !END DO
             mask = .TRUE.
             mask(i) = .FALSE.
             DO j = 1, maxNb
@@ -463,7 +482,10 @@
          DEALLOCATE(mask,dist,dx)
 
 #if defined(MPI_OPT)
-         IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
+         IF (shar_rank == master .and. lcomm) THEN
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, neighbours, maxNb*ntet, MPI_INTEGER, MPI_MAX, comm_master, istat)
+         END IF
+         IF (lcomm) CALL MPI_BARRIER(comm,istat)
 #endif
 
          IF (shar_rank == 0 .AND. lverb) WRITE(6,*) "Determining N-tensors (nearest neighbours)"
@@ -472,28 +494,38 @@
             CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), tet_cen(:,i), N_store(:,:,maxNb+1,i))
          END DO
 
-#if defined(MPI_OPT)
-         IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
-#endif
-            ! Calculate N-tensors of neighbours
-         CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet*maxNb, mystart, myend)
+         ! Calculate N-tensors of neighbours
+         CALL MPI_CALC_MYRANGE(comm, 1, ntet*maxNb, mystart, myend)
          DO s = mystart, myend            
-               j = MOD(s-1,maxNb) + 1
-               i = (s-j)/maxNb + 1
-               CALL mumaterial_getN(vertex(:,tet(1,neighbours(j,i))), vertex(:,tet(2,neighbours(j,i))), vertex(:,tet(3,neighbours(j,i))), vertex(:,tet(4,neighbours(j,i))), tet_cen(:,i), N_store(:,:,j,i))                
+            j = MOD(s-1,maxNb) + 1
+            i = (s-j)/maxNb + 1
+            CALL mumaterial_getN(vertex(:,tet(1,neighbours(j,i))), vertex(:,tet(2,neighbours(j,i))), vertex(:,tet(3,neighbours(j,i))), vertex(:,tet(4,neighbours(j,i))), tet_cen(:,i), N_store(:,:,j,i))                
          END DO
+
+#if defined(MPI_OPT)
+         IF (shar_rank == master .and. lcomm) THEN
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, N_store, SIZE(N_store), MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat)
+         END IF
+         IF (lcomm) CALL MPI_BARRIER(comm,istat)
+#endif
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Or do the full problem (all tiles)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ELSE
          IF (shar_rank == 0 .AND. lverb) WRITE(6,*) "Determining N-tensors (full)"
 
-         CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet*ntet, mystart, myend)
+         CALL MPI_CALC_MYRANGE(comm, 1, ntet*ntet, mystart, myend)
          DO s = mystart, myend            
                j = MOD(s-1,ntet) + 1
                i = (s-j)/ntet + 1
                CALL mumaterial_getN(vertex(:,tet(1,j)), vertex(:,tet(2,j)), vertex(:,tet(3,j)), vertex(:,tet(4,j)), tet_cen(:,i), N_store(:,:,j,i))
          END DO
+#if defined(MPI_OPT)
+         IF (shar_rank == master .and. lcomm) THEN
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, N_store, SIZE(N_store), MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat)
+         END IF
+         IF (lcomm) CALL MPI_BARRIER(comm,istat)
+#endif
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -519,7 +551,7 @@
       END IF
 
 #if defined(MPI_OPT)
-      IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
+      IF (lcomm) CALL MPI_BARRIER(comm,istat)
 #endif
 
       IF (ASSOCIATED(neighbours)) CALL free_mpi_array2d_int(win_neighbours,neighbours,lcomm)
