@@ -58,7 +58,7 @@
       ! Set mumaterial verbosity
       !CALL mumaterial_setverb(lverb)
       CALL mumaterial_setverb(.FALSE.)
-      IF (mylocalid == 1) CALL mumaterial_setverb(.TRUE.)
+      IF (mylocalid == 0) CALL mumaterial_setverb(.TRUE.)
 
       ! Read the mu materials file
       CALL mumaterial_load(TRIM(mumat_string),istat,MPI_COMM_LOCAL)
