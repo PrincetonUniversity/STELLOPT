@@ -26,7 +26,7 @@
       USE beams3d_physics_mod, ONLY: beams3d_BCART
       USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init, &
                                 mumaterial_info, mumaterial_getbmag_scalar,&
-                                mumaterial_setverb
+                                mumaterial_setverb, mumaterial_setd
       USE mpi_params  
       USE mpi_inc      
       USE mpi_sharmem
@@ -61,13 +61,15 @@
       IF (mylocalid == 0) CALL mumaterial_setverb(.TRUE.)
 
       ! Read the mu materials file
-      CALL mumaterial_load(TRIM(mumat_string),istat,MPI_COMM_LOCAL)
+      CALL mumaterial_load(TRIM(mumat_string),istat,MPI_COMM_BEAMS)
+
+      ! Set parameters
+      CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 100, MPI_COMM_LOCAL)
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL, ierr_mpi)
 #endif
       
-      !CALL initialize_biotsavart(extcur,TRIM(coil_string(coil_dex+6:256)),SCALED=.true.)
       IF (lverb) THEN
          WRITE(6,'(A)')   '----- Magnetic material Information -----'
          WRITE(6,'(A,A)') '   FILE: ',TRIM(mumat_string)
