@@ -141,7 +141,8 @@
             maxIter = mI
             lambdaStart = la
             lambdaFactor = laF
-            maxNb = mNb
+            maxNb = MIN(mNb,ntet-1)
+            IF (mNb .le. 0) maxNb = ntet-1
       END IF
 
 #if defined(MPI_OPT)
@@ -155,9 +156,6 @@
 #endif
       RETURN
       END SUBROUTINE mumaterial_setd
-
-
-
 
 
       SUBROUTINE mumaterial_load(filename,istat,comm)
@@ -346,6 +344,151 @@
 
 
 
+      SUBROUTINE mumaterial_init_new(getBfld, comm, offset)
+      !-----------------------------------------------------------------------
+      ! mumaterial_init: Calculates magnetization of material
+      !-----------------------------------------------------------------------
+      ! fcn           : getBfld. Function which returns the vacuum magnetic field
+      !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
+      ! param[in]: offset. Offset of all tiles from the origin
+      ! param[in, out]: comm. MPI communicator, handles shared memory
+      !-----------------------------------------------------------------------
+#if defined(MPI_OPT)
+      USE mpi
+      USE mpi_params
+#endif
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in), OPTIONAL :: offset(3)
+      INTEGER, INTENT(inout), OPTIONAL :: comm
+      LOGICAL :: lcomm
+      LOGICAL, ALLOCATABLE :: mask(:)
+      INTEGER :: i, j, k, istat, comm_master, rank_total
+      INTEGER, DIMENSION(:,:), POINTER :: neighbours
+      DOUBLE PRECISION :: x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n, mu0
+      DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER :: N_store
+      DOUBLE PRECISION, ALLOCATABLE :: dist(:), dx(:,:)
+
+      EXTERNAL:: getBfld
+      
+      shar_rank = 0; shar_size = 1; lcomm = .FALSE.
+      mu0 = 16.0D-7 * ATAN(1.d0)
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
+         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
+         CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
+         lcomm = .TRUE.
+         ! Make a communicator of just the master nodes
+         CALL MPI_COMM_RANK( comm, rank_total, istat )
+         i = MPI_UNDEFINED
+         IF (shar_rank == master) i = 0
+         CALL MPI_COMM_SPLIT( comm, i, rank_total, comm_master, istat)
+      END IF
+#endif
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! Apply offset
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      IF (PRESENT(offset)) THEN
+         IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Applying offset"
+         IF (MAXVAL(ABS(offset)) .gt. 0.d0) THEN
+            CALL MPI_CALC_MYRANGE(shar_comm, 1, nvertex, mystart, myend)
+            DO i = mystart, myend
+               vertex(:,i) = vertex(:,i) + offset
+            END DO
+         END IF
+      END IF
+
+#if defined(MPI_OPT)
+      IF (shar_rank == 0) THEN
+         tet_cen(:,:) = 0.0
+         Happ(:,:) = 0.0
+      END IF
+      IF (lcomm) CALL MPI_BARRIER(comm,istat)
+#endif
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! Calculate the Applied H-Field (do over all nodes)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Calculating Fields at Tet. centers"
+      CALL MPI_CALC_MYRANGE(comm, 1, ntet, mystart, myend)
+      DO i = mystart, myend
+            tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
+            CALL getBfld(tet_cen(1,i), tet_cen(2,i), tet_cen(3,i), Bx, By, Bz)
+            Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
+      END DO
+
+#if defined(MPI_OPT)
+      IF (shar_rank == master .and. lcomm) THEN
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, tet_cen, 3*ntet, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, Happ, 3*ntet, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
+      END IF
+      IF (lcomm) CALL MPI_BARRIER(comm,istat)
+#endif
+
+      ! From here on out each thread only works on it's own subset
+      CALL MPI_CALC_MYRANGE(comm, 1, nvertex, mystart, myend)
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Allocate helpers and Neighbors
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      NULLIFY(N_store,neighbours)
+      k = maxNb+1
+      ALLOCATE(neighbours(maxNb,mystart:myend))
+      ALLOCATE(N_store(3,3,maxNb+1,mystart:myend))
+      neighbours(:,:) = 0
+      N_store(:,:,:,:) = 0.0
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Calculate nearest neighbors
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbours"
+      ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
+      DO i = mystart, myend
+         ! We need to define helper variables dx(3,ntet)
+         dx(1,:) = tet_cen(1,:)-tet_cen(1,i)
+         dx(2,:) = tet_cen(2,:)-tet_cen(2,i)
+         dx(3,:) = tet_cen(3,:)-tet_cen(3,i)
+         dist = NORM2(dx,DIM=1)
+         mask = .TRUE.
+         mask(i) = .FALSE.
+         DO j = 1, maxNb
+            k = MINLOC(dist,1,mask)
+            neighbours(j,i) = k
+            mask(k) = .FALSE.
+         END DO
+      END DO
+      DEALLOCATE(mask,dist,dx)
+
+      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating N_tensor"
+      DO i = mystart, myend
+         N_store(:,:,:,i) = 0
+         CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), tet_cen(:,i), N_store(:,:,maxNb+1,i))
+      END DO
+
+      ! Calculate N-tensors of neighbours
+      DO i = mystart, myend      
+         DO j = 1, maxNb     
+            CALL mumaterial_getN(vertex(:,tet(1,neighbours(j,i))), vertex(:,tet(2,neighbours(j,i))), vertex(:,tet(3,neighbours(j,i))), vertex(:,tet(4,neighbours(j,i))), tet_cen(:,i), N_store(:,:,j,i)) 
+         END DO               
+      END DO
+
+      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
+      IF (lcomm) THEN
+            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, N_store, comm)
+      ELSE
+            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, N_store)
+      END IF
+
+      ! DEALLOCATE Helpers
+      DEALLOCATE(neighbours)
+      DEALLOCATE(N_store)
+
+      RETURN
+      END SUBROUTINE mumaterial_init_new
+
+
+
       SUBROUTINE mumaterial_init(getBfld, comm, offset)
       !-----------------------------------------------------------------------
       ! mumaterial_init: Calculates magnetization of material
@@ -482,6 +625,7 @@
          DEALLOCATE(mask,dist,dx)
 
 #if defined(MPI_OPT)
+         IF (lcomm) CALL MPI_BARRIER(comm,istat)
          IF (shar_rank == master .and. lcomm) THEN
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, neighbours, maxNb*ntet, MPI_INTEGER, MPI_MAX, comm_master, istat)
          END IF
@@ -503,6 +647,7 @@
          END DO
 
 #if defined(MPI_OPT)
+         IF (lcomm) CALL MPI_BARRIER(comm,istat)
          IF (shar_rank == master .and. lcomm) THEN
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, N_store, SIZE(N_store), MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat)
          END IF
@@ -521,6 +666,7 @@
                CALL mumaterial_getN(vertex(:,tet(1,j)), vertex(:,tet(2,j)), vertex(:,tet(3,j)), vertex(:,tet(4,j)), tet_cen(:,i), N_store(:,:,j,i))
          END DO
 #if defined(MPI_OPT)
+         IF (lcomm) CALL MPI_BARRIER(comm,istat)
          IF (shar_rank == master .and. lcomm) THEN
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, N_store, SIZE(N_store), MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat)
          END IF
@@ -559,6 +705,216 @@
 
       RETURN
       END SUBROUTINE mumaterial_init
+
+      SUBROUTINE mumaterial_iterate_magnetization_new(N1, iA, iB, neighbours, N_store, comm)
+      !-----------------------------------------------------------------------
+      ! mumaterial_iterate_magnetization: Iterates the magnetic field over all tiles, called by mumaterial_init
+      !-----------------------------------------------------------------------
+      ! param[in]: N_store. Storage for demagnetization tensors from nearest neighbours
+      ! param[in]: neighbours. Indices of nearest neighbours
+      ! param[in, out]: comm. MPI communicator, handles shared memory
+      !-----------------------------------------------------------------------
+#if defined(MPI_OPT)
+      USE mpi
+      USE mpi_params
+#endif
+      IMPLICIT NONE
+      INTEGER, INTENT(IN) :: N1, iA, iB
+      INTEGER, OPTIONAL :: neighbours(N1,iA:iB)
+      DOUBLE PRECISION, OPTIONAL :: N_store(3,3,N1+1,iA:iB)
+      INTEGER, INTENT(inout), OPTIONAL :: comm
+
+      LOGICAL :: lcomm
+      INTEGER :: count, i_tile, j_tile, lambdaCount, istat, comm_master, rank_total, iC, iD
+      DOUBLE PRECISION, DIMENSION(:), POINTER :: chi, Mnorm, Mnorm_old
+      DOUBLE PRECISION, DIMENSION(:,:), POINTER :: M_new
+
+      DOUBLE PRECISION :: H(3), N(3,3)
+      DOUBLE PRECISION :: H_old(3), H_new(3), lambda, lambda_s, error, maxDiff(4), Hnorm, M_tmp_norm
+      DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
+
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
+         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
+         CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
+         lcomm = .TRUE.
+         ! Make a communicator of just the master nodes
+         CALL MPI_COMM_RANK( comm, rank_total, istat )
+         i_tile = MPI_UNDEFINED
+         IF (shar_rank == master) i_tile = 0
+         CALL MPI_COMM_SPLIT( comm, i_tile, rank_total, comm_master, istat)
+         ! Get extent of shared memory area
+         iC = iA
+         iD = iB
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, iC, 1, MPI_INTEGER, MPI_MIN, shar_comm, istat)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, iD, 1, MPI_INTEGER, MPI_MAX, shar_comm, istat)
+         PRINT *,shar_rank,iA,iB,iC,iD
+      END IF
+#endif
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Allocate Helper Arrays
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ALLOCATE(M_new(3,iA:iB),chi(iA:iB),Mnorm(iA:iB),Mnorm_old(iA:iB))
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Defaults
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      count = 0
+      lambda = lambdaStart
+      lambdaCount = 0
+      maxDiff = 0.d0
+      chi = 0.0
+      Mnorm = 0.0
+      Mnorm_old = 0.0
+      M(:,iA:iB) = 0.0
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Main Iteration Loop
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      DO
+         M_new = 0.0
+         error = 0.d0
+         ! Get the field and new magnetization for each tile
+         DO i_tile = iA, iB
+            H = Happ(:,i_tile)
+            ! Get the field from all other tiles
+            DO j_tile = 1, maxNb
+               H = H + MATMUL(N_store(:,:,j_tile,i_tile), M(:,neighbours(j_tile,i_tile)))
+            END DO
+            N = N_store(:,:,maxNb+1,i_tile)  
+
+            ! Determine field and magnetization at tile due to all other tiles and itself
+            H_new = H
+            SELECT CASE (state_type(state_dex(i_tile)))
+               CASE (1) ! Hard magnet
+                  Mrem_norm = NORM2(Mrem(:,state_dex(i_tile)))
+                  u_ea = Mrem(:,state_dex(i_tile))/Mrem_norm ! Easy axis assumed parallel to remanent magnetization
+                  IF (u_ea(2)/=0 .OR. u_ea(3)/=0) THEN      ! Cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
+                     u_oa_1 = [0.d0, u_ea(3), -u_ea(2)]
+                     u_oa_2 = [-u_ea(2)*u_ea(2) - u_ea(3)*u_ea(3), u_ea(1)*u_ea(2), u_ea(1)*u_ea(3)]
+                  ELSE                                      ! Cross product of u_ea with [0, 1, 0] and cross product of u_ea with cross product
+                     u_oa_1 = [-u_ea(3), 0.d0, u_ea(1)]
+                     u_oa_2 = [u_ea(1)*u_ea(2), -u_ea(1)*u_ea(1) - u_ea(3)*u_ea(3), u_ea(2)*u_ea(3)]
+                  END IF
+
+                  ! Normalize unit vectors
+                  u_oa_1 = u_oa_1/NORM2(u_oa_1)
+                  u_oa_2 = u_oa_2/NORM2(u_oa_2)
+                     
+                  lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 1/constant_mu_o(state_dex(i_tile)), 0.5)
+                  DO
+                     H_old = H_new
+                     ! Determine magnetization taking into account easy axis
+                     M_tmp = (Mrem_norm + (constant_mu(state_dex(i_tile))   - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
+                                        + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
+                                        + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
+
+                     H_new = H + MATMUL(N, M_tmp)
+                     H_new = H_old + lambda_s * (H_new - H_old)
+
+                     IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. maxErr*lambda_s) THEN
+                        M_new(:,i_tile) = (Mrem_norm + (constant_mu(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
+                                                     + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
+                                                     + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
+                        EXIT
+                     END IF
+                  END DO
+               CASE (2) ! Soft magnet using state function
+                  DO
+                     H_old = H_new
+                     Hnorm = NORM2(H_new)
+                     IF (Hnorm .ne. 0) THEN
+                        CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
+                        M_tmp = M_tmp_norm * H_new / Hnorm
+                     ELSE
+                        M_tmp = 0
+                        M_tmp_norm = 0
+                     END IF
+                     lambda_s = MIN(Hnorm/M_tmp_norm, 0.5)
+                     H_new = H + MATMUL(N, M_tmp)
+                     H_new = H_old + lambda_s * (H_new - H_old)
+
+                     IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. maxErr*lambda_s) THEN
+                        Hnorm = NORM2(H_new)
+                        IF (Hnorm .ne. 0) THEN
+                           CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
+                           M_new(:,i_tile) = M_tmp_norm * H_new / Hnorm
+                           chi(i_tile) = M_tmp_norm / Hnorm
+                        ELSE
+                           M_new(:,i_tile) = 0
+                           chi(i_tile) = 0
+                        END IF
+                        EXIT
+                     END IF
+                  END DO
+               CASE (3) ! Soft magnet using constant permeability
+                  lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 0.5)
+                  DO
+                     H_old = H_new
+                     H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N, H_new)
+                     H_new = H_old + lambda_s * (H_new - H_old)
+
+                     IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. maxErr*lambda_s) THEN
+                        M_new(:,i_tile) = (constant_mu(state_dex(i_tile)) - 1) * H_new
+                        EXIT
+                     END IF
+                  END DO
+               CASE DEFAULT
+                  WRITE(6,*) "Unknown magnet type: ", state_type(state_dex(i_tile))
+                  STOP
+            END SELECT
+            ! Moved from further down
+            M(:,i_tile) = M(:,i_tile) + lambda*(M_new(:,i_tile) - M(:,i_tile))
+            Mnorm(i_tile) = NORM2(M(:,i_tile))
+            error = MAX(ABS((Mnorm(i_tile) - Mnorm_old(i_tile))/Mnorm_old(i_tile)),error)
+         END DO
+
+         ! We need to add a section here where each master thread exchanges array info
+         ! so all nodes have a proper form of M.
+
+         ! Now each shared memory group has correct values from iC to iD otherwise
+         ! so we zero out everything outside that range and allgather between
+         ! master nodes.
+#if defined(MPI_OPT)
+         IF (lcomm) CALL MPI_BARRIER(comm,istat)
+         ! We should probably now make sure everyone has the same M
+         IF (shar_rank == master .and. lcomm) THEN
+            M(:,1:iC-1)=0.0
+            M(:,iD+1:ntet)=0.0
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, M, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat)
+         END IF
+         IF (lcomm) CALL MPI_BARRIER(comm,istat)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm, istat)
+#endif
+
+         Mnorm_old = Mnorm
+
+         ! Determine change in magnetization
+         count = count + 1
+         IF (lverb) WRITE(6,'(A7,I5,A8,E15.7,A13,E15.7)') 'Count: ', count, ' Error: ', error, ' Max. Error: ', maxErr*lambda
+         CALL FLUSH(6)
+
+         IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) EXIT
+            
+         maxDiff = CSHIFT(maxDiff, -1)
+         maxDiff(1) = error
+
+         ! Update lambda if there is any increase in the error (maxDiff(1) is the most recent)
+         IF (lambdaCount .gt. 4 .AND. ((maxDiff(2) - maxDiff(1)) .lt. 0.d0 .OR. (maxDiff(3) - maxDiff(2)) .lt. 0.d0 .OR. (maxDiff(4) - maxDiff(3)) .lt. 0.d0)) THEN
+               lambda = lambda * lambdaFactor
+               lambdaCount = 1
+         !ELSE
+            !lambda = MIN(lambdaStart,lambda/lambdaFactor)
+         END IF
+         lambdaCount = lambdaCount + 1
+      END DO
+
+      DEALLOCATE(M_new,chi,Mnorm,Mnorm_old)
+
+      RETURN
+      END SUBROUTINE mumaterial_iterate_magnetization_new
 
       SUBROUTINE mumaterial_iterate_magnetization(lambdaStart, lambdaFac, N1, N_store, neighbours, comm)
       !-----------------------------------------------------------------------
