@@ -479,6 +479,7 @@
       ELSE
             CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, N_store)
       END IF
+      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  End Iterations"
 
       ! DEALLOCATE Helpers
       DEALLOCATE(neighbours)
@@ -767,7 +768,7 @@
       maxDiff = 0.d0
       chi = 0.0
       Mnorm = 0.0
-      Mnorm_old = 0.0
+      Mnorm_old = 1.0E-5 ! Initial value is large
       M(:,iA:iB) = 0.0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -893,7 +894,7 @@
 
          ! Determine change in magnetization
          count = count + 1
-         IF (lverb) WRITE(6,'(A7,I5,A8,E15.7,A13,E15.7)') 'Count: ', count, ' Error: ', error, ' Max. Error: ', maxErr*lambda
+         IF (lverb) WRITE(6,'(5X,A7,I5,A8,E15.7,A13,E15.7)') 'Count: ', count, ' Error: ', error, ' Max. Error: ', maxErr*lambda
          CALL FLUSH(6)
 
          IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) EXIT
@@ -902,7 +903,7 @@
          maxDiff(1) = error
 
          ! Update lambda if there is any increase in the error (maxDiff(1) is the most recent)
-         IF (lambdaCount .gt. 4 .AND. ((maxDiff(2) - maxDiff(1)) .lt. 0.d0 .OR. (maxDiff(3) - maxDiff(2)) .lt. 0.d0 .OR. (maxDiff(4) - maxDiff(3)) .lt. 0.d0)) THEN
+         IF (lambdaCount .gt. 5 .AND. ((maxDiff(2) - maxDiff(1)) .lt. 0.d0 .OR. (maxDiff(3) - maxDiff(2)) .lt. 0.d0 .OR. (maxDiff(4) - maxDiff(3)) .lt. 0.d0)) THEN
                lambda = lambda * lambdaFactor
                lambdaCount = 1
          !ELSE

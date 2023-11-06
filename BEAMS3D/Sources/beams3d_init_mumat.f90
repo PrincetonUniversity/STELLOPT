@@ -24,7 +24,7 @@
                                  win_BR4D, win_BPHI4D, win_BZ4D, &
                                  small, eps1, eps2, eps3
       USE beams3d_physics_mod, ONLY: beams3d_BCART
-      USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init, &
+      USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init_new, &
                                 mumaterial_info, mumaterial_getbmag_scalar,&
                                 mumaterial_setverb, mumaterial_setd
       USE mpi_params  
@@ -71,10 +71,8 @@
 #endif
       
       IF (lverb) THEN
-         WRITE(6,'(A)')   '----- Magnetic material Information -----'
-         WRITE(6,'(A,A)') '   FILE: ',TRIM(mumat_string)
          CALL mumaterial_info(6)
-         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Magnetic Field Calculation [',0,']%'
+         WRITE(6,'(A,A)') '   FILE: ',TRIM(mumat_string)
          CALL FLUSH(6)
       END IF
 
@@ -128,7 +126,12 @@
 
       ! Initialize the magnetic calculation
       offset = 0.0
-      CALL MUMATERIAL_INIT(beams3d_BCART, MPI_COMM_BEAMS, offset)
+      CALL MUMATERIAL_INIT_NEW(beams3d_BCART, MPI_COMM_BEAMS, offset)
+
+      IF (lverb) THEN
+         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Magnetic Field Calculation [',0,']%'
+         CALL FLUSH(6)
+      END IF
 
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
@@ -145,7 +148,9 @@
          x_temp    = raxis(i)*cos(phiaxis(j))
          y_temp    = raxis(i)*sin(phiaxis(j))
          z_temp    = zaxis(k)
+         PRINT *,s,i,j,k
          CALL mumaterial_getbmag_scalar(x_temp,y_temp, z_temp, bx_temp, by_temp, bz_temp)
+         PRINT *,s,i,j,k
          br_temp = bx_temp*cos(phiaxis(j))+by_temp*sin(phiaxis(j))
          bphi_temp = by_temp*cos(phiaxis(j)) - bx_temp*sin(phiaxis(j))
          B_R(i,j,k) = B_R(i,j,k) + br_temp
