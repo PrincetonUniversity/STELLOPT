@@ -102,6 +102,31 @@
       lverb = lverbin
       RETURN
       END SUBROUTINE mumaterial_setverb
+      
+
+      SUBROUTINE mumaterial_free()
+      !-----------------------------------------------------------------------
+      ! mumaterial_free: Deallocates memory
+      !-----------------------------------------------------------------------
+      IMPLICIT NONE
+      INTEGER :: ik
+      IF (ASSOCIATED(state_dex))     CALL free_mpi_array1d_int(win_state_dex,state_dex,.TRUE.)
+      IF (ASSOCIATED(state_type))    CALL free_mpi_array1d_int(win_state_type,state_type,.TRUE.)
+      IF (ASSOCIATED(constant_mu))   CALL free_mpi_array1d_dbl(win_constant_mu,constant_mu,.TRUE.)
+      IF (ASSOCIATED(constant_mu_o)) CALL free_mpi_array1d_dbl(win_constant_mu_o,constant_mu_o,.TRUE.)
+      IF (ASSOCIATED(tet))           CALL free_mpi_array2d_int(win_tet,tet,.TRUE.)
+      IF (ASSOCIATED(vertex))        CALL free_mpi_array2d_dbl(win_vertex,vertex,.TRUE.)
+      IF (ASSOCIATED(tet_cen))       CALL free_mpi_array2d_dbl(win_tet_cen,tet_cen,.TRUE.)
+      IF (ASSOCIATED(Mrem))          CALL free_mpi_array2d_dbl(win_Mrem,Mrem,.TRUE.)
+      IF (ASSOCIATED(M))             CALL free_mpi_array2d_dbl(win_M,M,.TRUE.)
+      IF (ASSOCIATED(Happ))          CALL free_mpi_array2d_dbl(win_Happ,Happ,.TRUE.)
+      DO ik = 1, nstate
+         IF (ALLOCATED(stateFunction(ik)%H)) DEALLOCATE(stateFunction(ik)%H)
+         IF (ALLOCATED(stateFunction(ik)%M)) DEALLOCATE(stateFunction(ik)%M)
+      END DO
+      IF (ALLOCATED(stateFunction)) DEALLOCATE(stateFunction)
+      RETURN
+      END SUBROUTINE mumaterial_free
 
 
 
@@ -185,6 +210,9 @@
          CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
       END IF
 #endif
+
+      NULLIFY(vertex, tet, tet_cen, state_dex, state_type, constant_mu, &
+              constant_mu_o, Mrem, M, Happ)
 
       ! open file, return if fails
       iunit = 327; istat = 0
@@ -2149,6 +2177,27 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!    Memory Freeing Subroutines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+         SUBROUTINE free_mpi_array1d_int(win_local,array_local,isshared)
+         IMPLICIT NONE
+         LOGICAL, INTENT(in) :: isshared
+         INTEGER, INTENT(inout) :: win_local
+         INTEGER, POINTER, INTENT(inout) :: array_local(:)
+         INTEGER :: istat
+         istat=0
+#if defined(MPI_OPT)
+         IF (isshared) THEN
+            CALL MPI_WIN_FENCE(0, win_local,istat)
+            CALL MPI_WIN_FREE(win_local,istat)
+            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
+         ELSE
+#endif
+            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
+#if defined(MPI_OPT)
+         ENDIF
+#endif
+         RETURN
+         END SUBROUTINE free_mpi_array1d_int
    
          SUBROUTINE free_mpi_array1d_dbl(win_local,array_local,isshared)
          IMPLICIT NONE

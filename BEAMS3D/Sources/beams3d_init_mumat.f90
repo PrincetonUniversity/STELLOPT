@@ -26,7 +26,8 @@
       USE beams3d_physics_mod, ONLY: beams3d_BCART
       USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init_new, &
                                 mumaterial_info, mumaterial_getbmag_scalar,&
-                                mumaterial_setverb, mumaterial_setd
+                                mumaterial_setverb, mumaterial_setd, &
+                                mumaterial_free
       USE mpi_params  
       USE mpi_inc      
       USE mpi_sharmem
@@ -148,9 +149,7 @@
          x_temp    = raxis(i)*cos(phiaxis(j))
          y_temp    = raxis(i)*sin(phiaxis(j))
          z_temp    = zaxis(k)
-         PRINT *,s,i,j,k
          CALL mumaterial_getbmag_scalar(x_temp,y_temp, z_temp, bx_temp, by_temp, bz_temp)
-         PRINT *,s,i,j,k
          br_temp = bx_temp*cos(phiaxis(j))+by_temp*sin(phiaxis(j))
          bphi_temp = by_temp*cos(phiaxis(j)) - bx_temp*sin(phiaxis(j))
          B_R(i,j,k) = B_R(i,j,k) + br_temp
@@ -177,6 +176,7 @@
       CALL mpidealloc(BR4D,win_BR4D)
       CALL mpidealloc(BPHI4D,win_BPHI4D)
       CALL mpidealloc(BZ4D,win_BZ4D)
+      CALL MUMATERIAL_FREE()
 
 
 
