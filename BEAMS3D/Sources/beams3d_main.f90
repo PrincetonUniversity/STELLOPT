@@ -26,6 +26,9 @@ PROGRAM BEAMS3D
     ! Setup MPI
     CALL beams3d_init_mpi
 
+    ! Nullify pointers
+    CALL beams3d_init_pointers
+
     ! Setup HDF5
     CALL beams3d_init_hdf5
     ! Initialize constanst
