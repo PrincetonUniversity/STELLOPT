@@ -80,7 +80,8 @@ CONTAINS
             raxis_fida,zaxis_fida,phiaxis_fida,energy_fida,pitch_fida, &
             req_axis,zeq_axis,TE4D,NE4D,TI4D,ZEFF4D,NI5D,BR4D,BPHI4D, &
             BZ4D,MODB4D,S4D,U4D,X4D,Y4D,POT4D,dist5d_prof,dist5d_fida, &
-            BEAM_DENSITY)
+            BEAM_DENSITY,wall_load,wall_shine, ndot_prof, epower_prof, &
+            ipower_prof,j_prof,dense_prof)
    END SUBROUTINE
   
 
