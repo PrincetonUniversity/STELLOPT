@@ -763,6 +763,7 @@ C-----------------------------------------------
       dwmins(:,1:mpol1:2) = dwlo_odd
       dwplus(:,1:mpol1:2) = dwhi_odd
 
+      zcs = 0; zcc =  0; zss = 0 ! 11.21.2023 - SAL  
       IF (.not.lasym) THEN
          IF (lthreed) THEN
             IF (ntmax .ne. 2) STOP 'ntmax != 2 in flx2cyl!'
