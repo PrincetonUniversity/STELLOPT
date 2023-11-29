@@ -99,9 +99,8 @@ MODULE beams3d_input_mod
       B_kick_min, B_kick_max, freq_kick, E_kick, &
       rmin_fida, rmax_fida, zmin_fida, &
       zmax_fida, phimin_fida, phimax_fida, &
-      raxis_fida, zaxis_fida, phiaxis_fida, &
       nr_fida, nphi_fida, nz_fida, nenergy_fida, &
-      npitch_fida, energy_fida, pitch_fida, t_fida
+      npitch_fida, t_fida
 
    ! -----------------------------------------------------------------------
    ! Subroutines
