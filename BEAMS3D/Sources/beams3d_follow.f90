@@ -256,29 +256,39 @@ SUBROUTINE beams3d_follow
    CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS, i, myworkid, MPI_COMM_LOCAL, ierr_mpi)
    IF (myid_sharmem == master) THEN
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,   end_state,     nparticles,          MPI_INTEGER, MPI_MAX, MPI_COMM_LOCAL, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_follow_end', ierr_mpi)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE, epower_prof, nbeams * ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_follow_epow', ierr_mpi)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE, ipower_prof, nbeams * ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_follow_ipow', ierr_mpi)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,   ndot_prof, nbeams * ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_follow_ndot', ierr_mpi)
       ! This only works becasue of how FORTRAN orders things.
       DO l = 1, ns_prof5
          CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_prof(:,:,:,:,:, l), nbeams * ns_prof1 * ns_prof2 * ns_prof3 * ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+         IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_follow_dist', ierr_mpi)
       END DO
       IF (lfidasim_cyl) THEN
          DO l = 1, npitch_fida
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:, l), nr_fida * nphi_fida * nz_fida * nenergy_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+            IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_follow_fida', ierr_mpi)
          END DO
       END IF
       IF (ASSOCIATED(ihit_array)) THEN
          CALL MPI_ALLREDUCE(MPI_IN_PLACE, ihit_array, nface, MPI_INTEGER, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+         IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_follow_ihit', ierr_mpi)
       END IF
       IF (ASSOCIATED(wall_load)) THEN
          CALL MPI_ALLREDUCE(MPI_IN_PLACE, wall_load, nface * nbeams, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+         IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_follow_wall', ierr_mpi)
       END IF
       IF (ASSOCIATED(wall_shine)) THEN
          CALL MPI_ALLREDUCE(MPI_IN_PLACE, wall_shine, nface * nbeams, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+         IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_follow_shine', ierr_mpi)
       END IF
       IF (ASSOCIATED(BEAM_DENSITY)) THEN
          CALL MPI_ALLREDUCE(MPI_IN_PLACE, BEAM_DENSITY, nbeams * nr * nphi * nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+         IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_follow_bdens', ierr_mpi)
       END IF
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL, ierr_mpi)
    END IF
