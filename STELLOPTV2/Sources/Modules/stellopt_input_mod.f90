@@ -376,6 +376,8 @@
                          target_txport, sigma_txport, s_txport, txport_proxy,&
                          target_dkes, sigma_dkes, nu_dkes, E_dkes,&
                          target_dkes_Erdiff, sigma_dkes_Erdiff, nu_dkes_Erdiff, Ep_dkes_Erdiff, Em_dkes_Erdiff, &
+                         target_dkes_alpha, sigma_dkes_alpha, &
+                         nup_dkes_alpha, num_dkes_alpha, Ep_dkes_alpha, Em_dkes_alpha, &
                          target_jdotb,sigma_jdotb,target_bmin,sigma_bmin,&
                          target_bmax,sigma_bmax,target_jcurv,sigma_jcurv,&
                          target_orbit,sigma_orbit,nu_orbit,nv_orbit,&
@@ -964,6 +966,7 @@
       vll_orbit         = 0
       mu_orbit          = 0
       vperp_orbit       = 0
+      nruns_dkes        = 0 ! This is here to default the value for each run
       target_dkes       = 0.0
       sigma_dkes        = bigno
       nu_dkes           = -bigno
@@ -973,6 +976,12 @@
       nu_dkes_erdiff     = 0
       Ep_dkes_Erdiff     = 0
       Em_dkes_erdiff     = 0
+      target_dkes_alpha  = 0.0
+      sigma_dkes_alpha   = bigno
+      nup_dkes_alpha     = 0
+      num_dkes_alpha     = 0
+      Ep_dkes_alpha      = 0
+      Em_dkes_alpha      = 0
       target_jdotb       = 0.0
       sigma_jdotb       = bigno
       target_jcurv      = 0.0
@@ -1333,7 +1342,7 @@
       END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
-      IF (myid == master .and. (ANY(sigma_dkes < bigno) .or. ANY(sigma_dkes_Erdiff < bigno))) THEN
+      IF (myid == master .and. (ANY(sigma_dkes < bigno) .or. ANY(sigma_dkes_Erdiff < bigno)) .or. ANY(sigma_dkes_alpha < bigno)) THEN
          WRITE(6,*)        " Drift-Kinetic Equation Solver (DKES) provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,"(2X,A)") "=========           Drift Kinetic Equation Solver, Variational          ========="
@@ -1343,8 +1352,10 @@
          WRITE(6,*)        "    "
       END IF
 !DEC$ ELSE
-      IF (ANY(sigma_dkes < bigno) .or. ANY(sigma_dkes_Erdiff < bigno)) THEN
+      IF (ANY(sigma_dkes < bigno) .or. ANY(sigma_dkes_Erdiff < bigno) .or. ANY(sigma_dkes_alpha < bigno)) THEN
          sigma_dkes(:) = bigno
+         sigma_dkes_Erdiff(:) = bigno
+         sigma_dkes_alpha(:) = bigno
          IF (myid == master) THEN
             WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
             WRITE(6,*) '  Drift-kinetic optimization with the DKES'
@@ -1447,8 +1458,6 @@
          WRITE(6,"(2X,A)") "=========       Gyrokinetic Electromagnetic Numerical Experiment        ========="
          WRITE(6,"(2X,A)") "=========                  (F. Jenko, P. Xanthopoulos)                  ========="
          WRITE(6,"(2X,A)") "=========              http://www2.ipp.mpg.de/~fsj/gene/                ========="
-         !WRITE(6,"(2X,A)") "=========              GENE11  (release "//release_gene//")                  ========="
-         !WRITE(6,"(2X,A)") "=========                      (svn-revision: "//svn_gene//")     ========="
          WRITE(6,"(2X,A)") "=========              GENE11  (git-branch "//release_gene//")                  ========="
          WRITE(6,"(2X,A)") "=========                      (git-master: "//svn_gene//")     ========="
          WRITE(6,"(2X,A)") "================================================================================="
@@ -1477,6 +1486,7 @@
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
       target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
       target_dkes_Erdiff(1) = 0.0; sigma_dkes_Erdiff(1) = bigno
+      target_dkes_alpha(1) = 0.0; sigma_dkes_alpha(1) = bigno
 
       ! Fix profile types
 !      IF (TRIM(bootj_type) == "boot_model_sal") bootj_aux_s(21) =  1.0
@@ -2185,6 +2195,28 @@
                WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_DKES_ERDIFF(',ik,') = ',target_dkes(ik), &
                           'SIGMA_DKES_ERDIFF(',ik,') = ',sigma_dkes(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_dkes_alpha < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          DKES D_11 Alpha'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_dkes_alpha,DIM=1)
+            IF(sigma_dkes_alpha(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_dkes_alpha(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_DKES_ALPHA(',ik,') = ',target_dkes_alpha(ik), &
+                          'SIGMA_DKES_ALPHA(',ik,') = ',sigma_dkes_alpha(ik)
+               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
+                             'NUP_DKES_ALPHA(',ik,') = ',nup_dkes_alpha(ik), &
+                             'NUM_DKES_ALPHA(',ik,') = ',num_dkes_alpha(ik)
+               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
+                             'Ep_DKES_ALPHA(',ik,') = ',Ep_dkes_alpha(ik), &
+                             'Em_DKES_ALPHA(',ik,') = ',Em_dkes_alpha(ik)
             END IF
          END DO
       END IF
