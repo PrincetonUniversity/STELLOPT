@@ -2170,13 +2170,13 @@
                WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_DKES(',ik,') = ',target_dkes(ik), &
                           'SIGMA_DKES(',ik,') = ',sigma_dkes(ik)
-               DO ii = 1, nprof
-                  IF (E_dkes(ii)>-bigno .and. nu_dkes(ii)>-bigno) &
-                     WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
-                             'NU_DKES(',ii,') = ',NU_dkes(ii), &
-                             'E_DKES(',ii,') = ',E_dkes(ii)
-               END DO
             END IF
+         END DO
+         DO ii = 1, nprof
+            IF (E_dkes(ii)>-bigno .and. nu_dkes(ii)>-bigno) &
+               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
+                       'NU_DKES(',ii,') = ',NU_dkes(ii), &
+                       'E_DKES(',ii,') = ',E_dkes(ii)
          END DO
       END IF
       IF (ANY(sigma_dkes_Erdiff < bigno)) THEN
@@ -2211,13 +2211,17 @@
                WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_DKES_ALPHA(',ik,') = ',target_dkes_alpha(ik), &
                           'SIGMA_DKES_ALPHA(',ik,') = ',sigma_dkes_alpha(ik)
-               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
-                             'NUP_DKES_ALPHA(',ik,') = ',nup_dkes_alpha(ik), &
-                             'NUM_DKES_ALPHA(',ik,') = ',num_dkes_alpha(ik)
-               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
-                             'Ep_DKES_ALPHA(',ik,') = ',Ep_dkes_alpha(ik), &
-                             'Em_DKES_ALPHA(',ik,') = ',Em_dkes_alpha(ik)
             END IF
+         END DO
+         DO ii = 1, nprof
+            IF (Ep_DKES_alpha(ii) <= -bigno .or. nup_dkes_alpha(ii) <= -bigno .or. &
+                Em_DKES_alpha(ii) <= -bigno .or. num_dkes_alpha(ii) <= -bigno) CYCLE
+               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
+                             'NUP_DKES_ALPHA(',ii,') = ',nup_dkes_alpha(ii), &
+                             'NUM_DKES_ALPHA(',ii,') = ',num_dkes_alpha(ii)
+               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
+                             'Ep_DKES_ALPHA(',ii,') = ',Ep_dkes_alpha(ii), &
+                             'Em_DKES_ALPHA(',ii,') = ',Em_dkes_alpha(ii)
          END DO
       END IF
       IF (ANY(sigma_jdotb < bigno)) THEN
