@@ -213,7 +213,7 @@
       LOGICAL                  :: lcentered_differences ! Available for MANGO algorithms
       CHARACTER(256)           :: axis_init_option
       
-      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.80
+      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.85
       
       REAL(rprec), PARAMETER :: bigno = 1.0E+10
 !-----------------------------------------------------------------------
