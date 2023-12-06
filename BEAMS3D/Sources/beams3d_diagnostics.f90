@@ -75,7 +75,7 @@ SUBROUTINE beams3d_diagnostics
    ALLOCATE(thigh(nbeams))
 #if defined(MPI_OPT)
    CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
-   IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
+   IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_diag_bar', ierr_mpi)
 #endif
 
    ! Do not need R_lines or PHI_lines after this point
@@ -97,18 +97,30 @@ SUBROUTINE beams3d_diagnostics
 #if defined(MPI_OPT)
    IF (myworkid == master) THEN
       CALL MPI_REDUCE(MPI_IN_PLACE, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diagm_shine', ierr_mpi)
       CALL MPI_REDUCE(MPI_IN_PLACE, shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diagm_port', ierr_mpi)
       CALL MPI_REDUCE(MPI_IN_PLACE, norbit,        nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diagm_norbit', ierr_mpi)
       CALL MPI_REDUCE(MPI_IN_PLACE, nlost,         nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diagm_nlost', ierr_mpi)
       CALL MPI_REDUCE(MPI_IN_PLACE, tlow,          nbeams,                  MPI_REAL,          MPI_MIN, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diagm_tlow', ierr_mpi)
       CALL MPI_REDUCE(MPI_IN_PLACE, thigh,         nbeams,                  MPI_REAL,          MPI_MAX, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diagm_thigh', ierr_mpi)
    ELSE
       CALL MPI_REDUCE(shine_through, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diag_shine', ierr_mpi)
       CALL MPI_REDUCE(shine_port,    shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diag_port', ierr_mpi)
       CALL MPI_REDUCE(norbit,        norbit,        nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diag_norbit', ierr_mpi)
       CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diag_nlost', ierr_mpi)
       CALL MPI_REDUCE(tlow,          tlow,          nbeams,                  MPI_REAL,          MPI_MIN, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diag_tlow', ierr_mpi)
       CALL MPI_REDUCE(thigh,         thigh,         nbeams,                  MPI_REAL,          MPI_MAX, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diag_thigh', ierr_mpi)
    END IF
 #endif
 
