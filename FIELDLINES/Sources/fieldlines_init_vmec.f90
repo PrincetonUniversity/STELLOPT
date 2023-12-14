@@ -137,6 +137,20 @@
          WRITE(6,'(A,F7.3,A)')        '   VOLUME  = ',Volume,' [m^3]'
       END IF
 
+      ! Setup pressure spline if using this.
+      IF (lpres) THEN
+         CALL EZspline_init(p_spl,ns,bcs1,ier)
+         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,&
+                            'EZspline_init/fieldlines_init_vmec',ier)
+         p_spl%isHermite = 1
+         p_spl%x1 = phi_vmec/phi_vmec(ns) !Spline over normalized toroidal flux
+         CALL EZspline_setup(p_spl,presf,ier)
+         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,&
+                            'EZspline_setup/fieldlines_init_vmec',ier)
+         ! Default to constant pressure
+         PRES_G = presf(ns)
+      END IF 
+
       IF (luse_vc) THEN
          nu = 8 * mpol + 1 
          nu = 2 ** CEILING(log(DBLE(nu))/log(2.0_rprec))
@@ -236,17 +250,6 @@
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
 
-         IF (lpres) THEN
-            CALL EZspline_init(p_spl,ns,bcs1,ier)
-            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,&
-                               'EZspline_init/fieldlines_init_vmec',ier)
-            p_spl%isHermite = 1
-            p_spl%x1 = phi_vmec/phi_vmec(ns) !Spline over normalized toroidal flux
-            CALL EZspline_setup(p_spl,presf,ier)
-            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,&
-                               'EZspline_setup/fieldlines_init_vmec',ier)
-         END IF 
-
          adapt_tol = 0.0
          adapt_rel = vc_adapt_tol
          DEALLOCATE(xm_temp,xn_temp)
@@ -262,92 +265,100 @@
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL,1, nr*nphi*nz, mystart, myend)
 
 
-         IF (lafield_only) THEN
-            DO s = mystart, myend
-               i = MOD(s-1,nr)+1
-               j = MOD(s-1,nr*nphi)
-               j = FLOOR(REAL(j) / REAL(nr))+1
-               k = CEILING(REAL(s) / REAL(nr*nphi))
-               sflx = 0.0
-               CALL GetAcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
-                            br, bphi, bz, SFLX=sflx,info=ier)
-               IF (ier == 0 .and. bphi /= 0 .and. sflx<=1) THEN
+      IF (lafield_only) THEN
+         DO s = mystart, myend
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)
+            j = FLOOR(REAL(j) / REAL(nr))+1
+            k = CEILING(REAL(s) / REAL(nr*nphi))
+            sflx = 0.0
+            CALL GetAcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
+                         br, bphi, bz, SFLX=sflx,info=ier)
+            IF (ier == 0 .and. bphi /= 0 .and. sflx<=1) THEN
+               B_R(i,j,k)   = br
+               B_PHI(i,j,k) = bphi
+               B_Z(i,j,k)   = bz
+            ELSE IF (lplasma_only) THEN
+               B_R(i,j,k)   = 0.0
+               B_PHI(i,j,k) = 1.0
+               B_Z(i,j,k)   = 0.0
+            ELSE IF (ier == -3 .or. bphi == 0 .or. sflx>1) THEN
+               xaxis_vc = raxis_g(i)*cos(phiaxis(j))
+               yaxis_vc = raxis_g(i)*sin(phiaxis(j))
+               zaxis_vc = zaxis_g(k)
+               ier = 1
+               CALL vecpot_vc(xaxis_vc,yaxis_vc,zaxis_vc,bx_vc,by_vc,bz_vc,ier)
+               IF (ier == 0) THEN
+                  br_vc   = bx_vc * cos(phiaxis(j)) + by_vc * sin(phiaxis(j))
+                  bphi_vc = by_vc * cos(phiaxis(j)) - bx_vc * sin(phiaxis(j))
+                  IF (ABS(br_vc) > 0)   B_R(i,j,k)   = B_R(i,j,k) + br_vc
+                  IF (ABS(bphi_vc) > 0) B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_vc
+                  IF (ABS(bz_vc) > 0)   B_Z(i,j,k)   = B_Z(i,j,k) + bz_vc
+               END IF
+            ELSE
+               ! This is an error code check
+               PRINT *,'ERROR in GetAcyl Detected'
+               PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
+               print *,'br,bphi,bz,myworkid',br,bphi,bz,myworkid
+               stop 'ERROR in GetAcyl'
+            END IF
+            IF (lverb .and. (MOD(s,nr) == 0)) THEN
+               CALL backspace_out(6,6)
+               WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
+               CALL FLUSH(6)
+            END IF
+         END DO
+      ELSE
+         DO s = mystart, myend
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)
+            j = FLOOR(REAL(j) / REAL(nr))+1
+            k = CEILING(REAL(s) / REAL(nr*nphi))
+            sflx = 0.0
+            ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
+            ! however, if cyl2flx fails to converge then s may be
+            ! greater than 1 but cyl2flux won't throw the -3 code.
+            ! In this case GetBcyl returns br,bphi,bz = 0.  So
+            ! bphi == 0 or ier ==-3 indicate that a point is
+            ! outside the VMEC domain.
+            CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
+                               br, bphi, bz, SFLX=sflx,info=ier)
+            IF (ier == 0 .and. bphi /= 0) THEN
+               ! Handle equilibrium data
+               IF (sflx <=1.0) THEN ! Inside equilibrium
                   B_R(i,j,k)   = br
                   B_PHI(i,j,k) = bphi
                   B_Z(i,j,k)   = bz
-               ELSE IF (lplasma_only) THEN
-                  B_R(i,j,k)   = 0.0
-                  B_PHI(i,j,k) = 1.0
-                  B_Z(i,j,k)   = 0.0
-               ELSE IF (ier == -3 .or. bphi == 0 .or. sflx>1) THEN
-                  xaxis_vc = raxis_g(i)*cos(phiaxis(j))
-                  yaxis_vc = raxis_g(i)*sin(phiaxis(j))
-                  zaxis_vc = zaxis_g(k)
-                  ier = 1
-                  CALL vecpot_vc(xaxis_vc,yaxis_vc,zaxis_vc,bx_vc,by_vc,bz_vc,ier)
-                  IF (ier == 0) THEN
-                     br_vc   = bx_vc * cos(phiaxis(j)) + by_vc * sin(phiaxis(j))
-                     bphi_vc = by_vc * cos(phiaxis(j)) - bx_vc * sin(phiaxis(j))
-                     IF (ABS(br_vc) > 0)   B_R(i,j,k)   = B_R(i,j,k) + br_vc
-                     IF (ABS(bphi_vc) > 0) B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_vc
-                     IF (ABS(bz_vc) > 0)   B_Z(i,j,k)   = B_Z(i,j,k) + bz_vc
-                  END IF
-               ELSE
-                  ! This is an error code check
-                  PRINT *,'ERROR in GetAcyl Detected'
-                  PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
-                  print *,'br,bphi,bz,myworkid',br,bphi,bz,myworkid
-                  stop 'ERROR in GetAcyl'
+                  if (lpres) CALL EZspline_interp(p_spl,sflx,PRES_G(i,j,k),ier)
+               ELSE IF (.not. luse_vc) THEN  ! Overwrite data outside
+                  B_R(i,j,k)   = br
+                  B_PHI(i,j,k) = bphi
+                  B_Z(i,j,k)   = bz
+                  sflx = 1.5 ! Assume s=1 for lplasma_only
                END IF
-               IF (lverb .and. (MOD(s,nr) == 0)) THEN
-                  CALL backspace_out(6,6)
-                  WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
-                  CALL FLUSH(6)
+            ELSE IF (.not. luse_vc) THEN
+               B_R(i,j,k)   = 0.0
+               B_PHI(i,j,k) = 1.0
+               B_Z(i,j,k)   = 0.0
+            END IF
+            ! Virtual casing
+            IF (luse_vc .and. sflx > 1) THEN
+               xaxis_vc = raxis_g(i)*cos(phiaxis(j))
+               yaxis_vc = raxis_g(i)*sin(phiaxis(j))
+               zaxis_vc = zaxis_g(k)
+               adapt_rel = 0.0
+               adapt_tol = vc_adapt_tol*sqrt(B_R(i,j,k)**2+B_PHI(i,j,k)**2+B_Z(i,j,k)**2)
+               ier = 1
+               CALL bfield_vc(xaxis_vc,yaxis_vc,zaxis_vc,bx_vc,by_vc,bz_vc,ier)
+               IF (ier == 0) THEN
+                  br_vc   = bx_vc * cos(phiaxis(j)) + by_vc * sin(phiaxis(j))
+                  bphi_vc = by_vc * cos(phiaxis(j)) - bx_vc * sin(phiaxis(j))
+                  IF (ABS(br_vc) > 0)   B_R(i,j,k)   = B_R(i,j,k) + br_vc
+                  IF (ABS(bphi_vc) > 0) B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_vc
+                  IF (ABS(bz_vc) > 0)   B_Z(i,j,k)   = B_Z(i,j,k) + bz_vc
+               ELSE IF (ier > 1) THEN ! Only report real errors not failure to find tolerance errors
+                  WRITE(6,*) myworkid,mylocalid,i,j,k,ier
                END IF
-            END DO
-         ELSE
-            DO s = mystart, myend
-               i = MOD(s-1,nr)+1
-               j = MOD(s-1,nr*nphi)
-               j = FLOOR(REAL(j) / REAL(nr))+1
-               k = CEILING(REAL(s) / REAL(nr*nphi))
-               sflx = 0.0
-               ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
-               ! however, if cyl2flx fails to converge then s may be
-               ! greater than 1 but cyl2flux won't throw the -3 code.
-               ! In this case GetBcyl returns br,bphi,bz = 0.  So
-               ! bphi == 0 or ier ==-3 indicate that a point is
-               ! outside the VMEC domain.
-               CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
-                                  br, bphi, bz, SFLX=sflx,info=ier)
-               IF (ier == 0 .and. bphi /= 0 .and. sflx<=1) THEN
-                  B_R(i,j,k)   = B_R(i,j,k) + br
-                  B_PHI(i,j,k) = B_PHI(i,j,k)+ bphi
-                  B_Z(i,j,k)   = B_Z(i,j,k) + bz
-                  IF (lpres) THEN 
-                     CALL EZspline_interp(p_spl,sflx,PRES_G(i,j,k),ier)
-                  END IF
-               ELSE IF (lplasma_only) THEN
-                  B_R(i,j,k)   = 0.0
-                  B_PHI(i,j,k) = 1.0
-                  B_Z(i,j,k)   = 0.0
-               ELSE IF (ier == -3 .or. bphi == 0 .or. sflx>1) THEN
-                  xaxis_vc = raxis_g(i)*cos(phiaxis(j))
-                  yaxis_vc = raxis_g(i)*sin(phiaxis(j))
-                  zaxis_vc = zaxis_g(k)
-                  ier = 1
-                  CALL bfield_vc(xaxis_vc,yaxis_vc,zaxis_vc,bx_vc,by_vc,bz_vc,ier)
-                  IF (ier == 0) THEN
-                     br_vc   = bx_vc * cos(phiaxis(j)) + by_vc * sin(phiaxis(j))
-                     bphi_vc = by_vc * cos(phiaxis(j)) - bx_vc * sin(phiaxis(j))
-                     IF (ABS(br_vc) > 0)   B_R(i,j,k)   = B_R(i,j,k) + br_vc
-                     IF (ABS(bphi_vc) > 0) B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_vc
-                     IF (ABS(bz_vc) > 0)   B_Z(i,j,k)   = B_Z(i,j,k) + bz_vc
-                  END IF
-                  IF (lpres) THEN ! constant presssure outsise LCFS 
-                     sflx = 1.0
-                     CALL EZspline_interp(p_spl,sflx,PRES_G(i,j,k),ier)
-                  END IF
                ! ELSE
                !    ! This is an error code check
                !    PRINT *,'ERROR in GetBcyl Detected'
