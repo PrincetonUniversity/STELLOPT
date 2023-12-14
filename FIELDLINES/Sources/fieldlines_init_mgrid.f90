@@ -59,11 +59,11 @@
          END IF
 #if defined(MPI_OPT)
          CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
+         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid1',ierr_mpi)
          CALL MPI_BCAST(nv_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
+         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid2',ierr_mpi)
          CALL MPI_BCAST(nfp_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
+         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid3',ierr_mpi)
 #endif
          nextcur = nigroup
          ALLOCATE(extcur(nextcur),STAT=ier)
@@ -80,7 +80,7 @@
          CALL FLUSH(6)
       END IF
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_mgrid',ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_mgrid4',ierr_mpi)
       
       ! Check for grid consistency
       IF ((rmin < rminb) .or. (rmax > rmaxb) .or. &
@@ -95,7 +95,7 @@
             END IF
 #if defined(MPI_OPT)
          CALL MPI_FINALIZE(ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_FINE_ERR,'fieldlines_init_mgrid',ierr_mpi)
+         IF (ierr_mpi /=0) CALL handle_err(MPI_FINE_ERR,'fieldlines_init_mgrid5',ierr_mpi)
 #endif
          stop
       END IF
@@ -144,11 +144,11 @@
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil1',ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_mgrid6',ierr_mpi)
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_coil: MPI_COMM_LOCAL',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_mgrid7: MPI_COMM_LOCAL',ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil',ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_mgrid8',ierr_mpi)
 #endif
       
       RETURN
