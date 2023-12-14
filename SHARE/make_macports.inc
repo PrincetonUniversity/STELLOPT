@@ -93,6 +93,19 @@
   LNEO  = T
 
 #######################################################################
+#            IMAS Options
+#######################################################################
+  LIMAS = T
+  # This is a bit messy but follows the module file concept
+  IMAS_VER = 3.39.0-187-g004ca48
+  IMAS_UALVER = 5.0.0-287-g3841c5c9
+  IMAS_HOME = /Users/lazerson/imas
+  IMAS_PREFIX = $(IMAS_HOME)/core/IMAS/$(IMAS_VER)-$(IMAS_UALVER)
+  IMAS_INC = -I$(IMAS_PREFIX)/include
+  IMAS_LIB = -L$(IMAS_PREFIX)/lib -lal \
+             -Wl,--defsym,AL_VER_5.0.0_287_g3841c5c9=0 -Wl,-rpath,$(IMAS_DIR)/lib
+
+#######################################################################
 #            GENE Options
 #######################################################################
   LGENE = F

@@ -103,7 +103,11 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_IN, IDS_EQ_OUT, INDATA_XML, status_code, status_mess
 
   !----  Interface with Equilibirum IDS
   CALL VMEC_EQIN_IMAS(IDS_EQ_IN,status_code,status_message)
-  IF (status_code .ne. 0) RETURN
+  IF (status_code .ne. 0) THEN
+     WRITE(*,*) 'Error reading IDS_EQUILIBRIUM, using input file.'
+     status_code = 0
+     CALL VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
+  ENDIF
 
   !---- Setup VMEC Run
   myseq=0
@@ -423,6 +427,85 @@ SUBROUTINE VMEC_EQIN_IMAS(IDS_EQ_IN, status_code, status_message)
 
   RETURN
 END SUBROUTINE VMEC_EQIN_IMAS
+
+!-----------------------------------------------------------------------
+!     SUBROUTINE:        VMEC_COILSIN_IMAS
+!     PURPOSE:           Handles the equilibrium IDS.
+!-----------------------------------------------------------------------
+SUBROUTINE VMEC_COILSIN_IMAS(IDS_TF_IN, IDS_PF_IN, IDS_3DCOILS_IN, status_code, status_message)
+  !---------------------------------------------------------------------
+  !     Libraries
+  !---------------------------------------------------------------------
+  USE ids_schemas
+  USE vmec_input
+  USE mgrid_mod, ONLY: bvac
+
+  !---------------------------------------------------------------------
+  !     INPUT/OUTPUT VARIABLES
+  !        INDATA_XML : VMEC INDATA namelist AS XML
+  !        STATUS_CODE : STATUS Flag
+  !        STATUS_MESSAGE : Text Message
+  !---------------------------------------------------------------------
+  IMPLICIT NONE
+  TYPE(ids_tf), INTENT(IN) :: IDS_TF_IN
+  TYPE(ids_pf_active), INTENT(IN) :: IDS_PF_IN
+  TYPE(ids_coils_non_axisymmetric), INTENT(IN) :: IDS_3DCOILS_IN
+  INTEGER, INTENT(OUT) :: status_code
+  CHARACTER(LEN=:), POINTER, INTENT(OUT) :: status_message
+
+  !---------------------------------------------------------------------
+  !     SUBROUTINE VARIABLES
+  !---------------------------------------------------------------------
+  INTEGER :: ncoils_tf, isperiodic_tf, icoil, nconductor_tf
+  REAL*8  :: B0, pi2, s_temp, x
+  REAL*8, ALLOCATABLE, DIMENSION(:) :: R_BND, Z_BND, radius, theta, &
+                                       s_in, f_in, f2_in, f3_in
+
+  !---------------------------------------------------------------------
+  !     BEGIN EXECUTION
+  !---------------------------------------------------------------------
+  status_code = 0
+  itime = 1
+  pi2 = 8.0*ATAN(1.0)
+
+  !----  First add toroidal field 
+  !----  Check the IDS for timeslices
+  IF (.not. ASSOCIATED(IDS_TF_IN%time_slice)) THEN
+     WRITE(*,*) 'No time slices in this TF coil'
+
+  !----  TF coil periodiciy
+  isperiodic_tf = IDS_TF_IN%is_periodic
+
+  !----  TF coil count
+  ncoils_tf = IDS_TF_IN%coils_n
+
+  !----  Loop over TF coils
+  DO icoil = 1, ncoils_tf
+     WRITE(*,*) 'COIL_NAME : ',IDS_TF_IN%coil(icoil)%name
+     WRITE(*,*) '            ID : ',IDS_TF_IN%coil(icoil)%identifier
+     WRITE(*,*) '         TURNS : ',IDS_TF_IN%coil(icoil)%turns
+     nconductor_tf = size(IDS_TF_IN%coil(icoil)%conductor)
+     WRITE(*,*) '    CONDUCTORS : ',nconductor_tf
+     DO jconductor = 1, nconductor_tf
+        WRITE(*,*) '    CONDUCTOR #',jconductor
+        WRITE(*,*) '      TYPE:    ',IDS_TF_IN%coil(icoil)%conductor(jconductor)%elements%
+     END DO
+  END DO
+ 
+  !----  Loop over TF field
+  IF (ids_is_valid(IDS_TF_IN%field_map(itime))) THEN
+     WRITE(*,*) ' TF GRID TYPE : ',IDS_TF_IN%field_map(itime)%grid%identifier%name
+     type_tfvac_grid = IDS_TF_IN%field_map(itime)%grid%identifier%name
+     
+  ENDIF
+
+
+
+
+
+  END IF
+  RETURN
+END SUBROUTINE VMEC_COILSIN_IMAS
 
 !-----------------------------------------------------------------------
 !     SUBROUTINE:        VMEC_EQOUT_IMAS
