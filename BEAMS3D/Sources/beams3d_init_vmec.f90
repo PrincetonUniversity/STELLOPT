@@ -1,69 +1,63 @@
-! -----------------------------------------------------------------------
-! Subroutine:    beams3d_init_vmec
-! Authors:       S. Lazerson (lazerson@pppl.gov)
-! Date:          04/25/2012
-! Description:   This subroutine reads the VMEC wout file and
-! initializes the plasma fields.  This is achieved
-! through utilization of a virtual casing principle.
-! This is stil under development but working.
-! -----------------------------------------------------------------------
-SUBROUTINE beams3d_init_vmec
-   ! -----------------------------------------------------------------------
-   ! Libraries
-   ! -----------------------------------------------------------------------
-   USE stel_kinds, ONLY: rprec
-   USE read_wout_mod
-   USE vmec_utils
-   USE virtual_casing_mod, pi2_vc => pi2
-   USE beams3d_runtime
-   USE beams3d_grid, ONLY: raxis_g => raxis, phiaxis, &
-      zaxis_g => zaxis, nr, nphi, nz, &
-      rmin, rmax, zmin, zmax, phimin, &
-      phimax, vc_adapt_tol, B_R, B_Z, B_PHI,&
-      BR_spl, BZ_spl, TE_spl_s, NE_spl_s, TI_spl_s, &
-      nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
-      U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
-      ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
-      phiedge_eq, reff_eq, NI_spl_s, NI,&
-      s_max, s_max_te, s_max_ne, s_max_zeff, s_max_ti, s_max_pot
-   USE beams3d_lines, ONLY: GFactor, ns_prof1
-   USE wall_mod, ONLY: wall_load_mn
-   USE mpi_params
-   USE mpi_inc
-   ! -----------------------------------------------------------------------
-   ! Local Variables
-   ! ier            Error Flag
-   ! iunit          File ID Number
-   ! -----------------------------------------------------------------------
-   IMPLICIT NONE
-   INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-#if defined(MPI_OPT)
-   INTEGER(KIND=BYTE_8), ALLOCATABLE :: mnum(:), moffsets(:)
-   integer :: numprocs_local, mylocalid, mylocalmaster
-   integer :: MPI_COMM_LOCAL
-#endif
-   logical :: lnyquist, luse_vc, lcreate_wall, lverb_wall
-   integer(kind=byte_8) :: chunk
-   integer :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
-   integer :: bcs1_s(2)
-   INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
-   real :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
-      bx_vc, by_vc, dr_temp
-   real(rprec) :: br, bphi, bz, sflx, uflx, xaxis, yaxis
-   DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
-   DOUBLE PRECISION, ALLOCATABLE :: rmnc_temp(:,:), zmns_temp(:,:),&
-      bumnc_temp(:,:), bvmnc_temp(:,:),&
-      rmns_temp(:,:), zmnc_temp(:,:),&
-      bumns_temp(:,:), bvmns_temp(:,:)
-   logical :: lold_field = .true.  ! If false we attempt to subtract the vacuum field from the VMEC total field
-   INTEGER, PARAMETER :: scaleup=2
-   LOGICAL, ALLOCATABLE, DIMENSION(:) :: lsmooth
-   ! -----------------------------------------------------------------------
-   ! Begin Subroutine
-   ! -----------------------------------------------------------------------
-   ! Handle what we do
-   luse_vc = ((lmgrid .or. lcoil) .and. .not. lplasma_only)
-   lcreate_wall = (lplasma_only .and. .not. lvessel)
+!-----------------------------------------------------------------------
+!     Subroutine:    beams3d_init_vmec
+!     Authors:       S. Lazerson (lazerson@pppl.gov)
+!     Date:          04/25/2012
+!     Description:   This subroutine reads the VMEC wout file and
+!                    initializes the plasma fields.  This is achieved
+!                    through utilization of a virtual casing principle.
+!                    This is stil under development but working.
+!-----------------------------------------------------------------------
+      SUBROUTINE beams3d_init_vmec
+!-----------------------------------------------------------------------
+!     Libraries
+!-----------------------------------------------------------------------
+      USE stel_kinds, ONLY: rprec
+      USE read_wout_mod
+      USE vmec_utils
+      USE virtual_casing_mod, pi2_vc => pi2
+      USE beams3d_runtime
+      USE beams3d_grid, ONLY: raxis_g => raxis, phiaxis, &
+                                 zaxis_g => zaxis, nr, nphi, nz, &
+                                 rmin, rmax, zmin, zmax, phimin, &
+                                 phimax, vc_adapt_tol, B_R, B_Z, B_PHI,&
+                                 BR_spl, BZ_spl, TE_spl_s, NE_spl_s, TI_spl_s, &
+                                 nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
+                                 U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
+                                 ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
+                                 phiedge_eq, reff_eq, NI_spl_s, NI,&
+                                 s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
+      USE beams3d_lines, ONLY: GFactor, ns_prof1
+      USE wall_mod, ONLY: wall_load_mn
+      USE mpi_params
+      USE mpi_inc
+!-----------------------------------------------------------------------
+!     Local Variables
+!          ier            Error Flag
+!          iunit          File ID Number
+!-----------------------------------------------------------------------
+      IMPLICIT NONE
+      INTEGER :: numprocs_local, mylocalid, mylocalmaster
+      INTEGER :: MPI_COMM_LOCAL
+      LOGICAL :: lnyquist, luse_vc, lcreate_wall, lverb_wall
+      INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
+      INTEGER :: bcs1_s(2)
+      INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
+      REAL :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
+              bx_vc, by_vc
+      REAL(rprec) :: br, bphi, bz, sflx, uflx, xaxis, yaxis
+      DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
+      DOUBLE PRECISION, ALLOCATABLE :: rmnc_temp(:,:),zmns_temp(:,:),&
+                           bumnc_temp(:,:),bvmnc_temp(:,:),&
+                           rmns_temp(:,:),zmnc_temp(:,:),&
+                           bumns_temp(:,:),bvmns_temp(:,:)
+      INTEGER, PARAMETER :: scaleup=2
+      LOGICAL, ALLOCATABLE, DIMENSION(:) :: lsmooth
+!-----------------------------------------------------------------------
+!     Begin Subroutine
+!-----------------------------------------------------------------------
+      ! Handle what we do
+      luse_vc = ((lmgrid .or. lcoil) .and. .not.lplasma_only)
+      lcreate_wall = (lplasma_only .and. .not. lvessel)
 
    ! Divide up Work
    mylocalid = myworkid
@@ -217,31 +211,53 @@ SUBROUTINE beams3d_init_vmec
          mnmax_temp = mnmax
          lnyquist = .false.
       END IF
-      ALLOCATE(xm_temp(mnmax_temp), xn_temp(mnmax_temp), STAT = ier)
-      IF (ier /= 0) CALL handle_err(ALLOC_ERR,'XM_TEMP XN_TEMP', ier)
-      ALLOCATE(rmnc_temp(mnmax_temp, 2), zmns_temp(mnmax_temp, 2),&
-         bumnc_temp(mnmax_temp, 1), bvmnc_temp(mnmax_temp, 1), STAT = ier)
-      IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNC_TEMP ZMNS_TEMP BUMNC_TEMP BVMNC_TEMP', ier)
-      IF (lasym) ALLOCATE(rmns_temp(mnmax_temp, 2), zmnc_temp(mnmax_temp, 2),&
-         bumns_temp(mnmax_temp, 1), bvmns_temp(mnmax_temp, 1), STAT = ier)
-      IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNS_TEMP ZMNC_TEMP BUMNS_TEMP BVMNS_TEMP', ier)
-      rmnc_temp = 0; zmns_temp = 0
-      IF (lnyquist) THEN
-         xm_temp = xm_nyq
-         xn_temp = - xn_nyq / nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
-         IF (lverb) WRITE(6,'(A)')        '   NYQUIST DETECTED IN WOUT FILE!'
-         DO u = 1, mnmax_temp
-            DO v = 1, mnmax
-               IF ((xm(v) == xm_nyq(u)) .and. (xn(v) == xn_nyq(u))) THEN
-                  rmnc_temp(u, 1) = rmnc(v, ns - 1)
-                  zmns_temp(u, 1) = zmns(v, ns - 1)
-                  rmnc_temp(u, 2) = rmnc(v, ns)
-                  zmns_temp(u, 2) = zmns(v, ns)
-                  IF (lasym) THEN
-                     rmns_temp(u, 1) = rmns(v, ns - 1)
-                     zmnc_temp(u, 1) = zmnc(v, ns - 1)
-                     rmns_temp(u, 2) = rmns(v, ns)
-                     zmnc_temp(u, 2) = zmnc(v, ns)
+
+      ! Initialize Virtual Casing
+      IF (luse_vc) THEN
+         nu = 8 * mpol + 1 
+         nu = 2 ** CEILING(log(DBLE(nu))/log(2.0_rprec))
+         nv = 8 * ntor + 1
+         nv = 2 ** CEILING(log(DBLE(nv))/log(2.0_rprec))
+         IF (nv < 128) nv = 128
+
+         ! Handle Nyquist issues
+         IF (SIZE(xm_nyq) > SIZE(xm)) THEN
+            mnmax_temp = SIZE(xm_nyq)
+            lnyquist = .true.
+         ELSE
+            mnmax_temp = mnmax
+            lnyquist = .false.
+         END IF
+         ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp), STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'XM_TEMP XN_TEMP',ier)
+         ALLOCATE(rmnc_temp(mnmax_temp,2),zmns_temp(mnmax_temp,2),&
+                  bumnc_temp(mnmax_temp,1),bvmnc_temp(mnmax_temp,1), STAT = ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNC_TEMP ZMNS_TEMP BUMNC_TEMP BVMNC_TEMP',ier)
+         IF (lasym) ALLOCATE(rmns_temp(mnmax_temp,2),zmnc_temp(mnmax_temp,2),&
+                     bumns_temp(mnmax_temp,1),bvmns_temp(mnmax_temp,1), STAT = ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNS_TEMP ZMNC_TEMP BUMNS_TEMP BVMNS_TEMP',ier)
+         rmnc_temp = zero; zmns_temp =zero
+         IF (lasym) THEN
+            rmns_temp = zero
+            zmnc_temp = zero
+         END IF
+         IF (lnyquist) THEN
+            xm_temp = xm_nyq
+            xn_temp = -xn_nyq/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
+            IF(lverb) WRITE(6,'(A)')        '   NYQUIST DETECTED IN WOUT FILE!'
+            DO u = 1,mnmax_temp
+               DO v = 1, mnmax
+                  IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
+                     rmnc_temp(u,1) = rmnc(v,ns-1)
+                     zmns_temp(u,1) = zmns(v,ns-1)
+                     rmnc_temp(u,2) = rmnc(v,ns)
+                     zmns_temp(u,2) = zmns(v,ns)
+                     IF (lasym) THEN
+                        rmns_temp(u,1) = rmns(v,ns-1)
+                        zmnc_temp(u,1) = zmnc(v,ns-1)
+                        rmns_temp(u,2) = rmns(v,ns)
+                        zmnc_temp(u,2) = zmnc(v,ns)
+                     END IF
                   END IF
                END IF
             END DO
@@ -314,50 +330,55 @@ SUBROUTINE beams3d_init_vmec
 #if defined(MPI_OPT)
    CALL MPI_BARRIER(MPI_COMM_LOCAL, ierr_mpi)
 #endif
-   DO s = mystart, myend
-      i = MOD(s - 1, nr) + 1
-      j = MOD(s - 1, nr * nphi)
-      j = FLOOR(REAL(j) / REAL(nr)) + 1
-      k = CEILING(REAL(s) / REAL(nr * nphi))
-      sflx = 0.0
-      ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
-      ! however, if cyl2flx fails to converge then s may be
-      ! greater than 1 but cyl2flux will not throw the -3 code.
-      ! In this case GetBcyl returns br,bphi,bz = 0.  So
-      ! bphi == 0 or ier ==-3 indicate that a point is
-      ! outside the VMEC domain.
-      CALL GetBcyl(raxis_g(i), phiaxis(j), zaxis_g(k),&
-         br, bphi, bz, SFLX = sflx, UFLX = uflx, info = ier)
-      IF (ier == 0 .and. bphi /= 0) THEN ! We have field data
-         ! Save Grid data
-         S_ARR(i, j, k) = MAX(sflx, 0.0)
-         IF (uflx < 0)  uflx = uflx + pi2
-         U_ARR(i, j, k) = uflx
-         ! Handle equilibrium data
-         IF (sflx <= 1.0) THEN ! Inside equilibrium
-            B_R(i, j, k)   = br
-            B_PHI(i, j, k) = bphi
-            B_Z(i, j, k)   = bz
-         ELSE IF (.not. luse_vc) THEN  ! Overwrite data outside
-            B_R(i, j, k)   = br
-            B_PHI(i, j, k) = bphi
-            B_Z(i, j, k)   = bz
-            sflx = 1.5 ! Assume s=1 for lplasma_only
-         END IF
-         IF (sflx <= s_max) THEN
-            IF (nte > 0) CALL EZspline_interp(TE_spl_s, MIN(sflx, s_max_te), TE(i, j, k), ier)
-            IF (nne > 0) CALL EZspline_interp(NE_spl_s, MIN(sflx, s_max_ne), NE(i, j, k), ier)
-            IF (nti > 0) CALL EZspline_interp(TI_spl_s, MIN(sflx, s_max_ti), TI(i, j, k), ier)
-            IF (nzeff > 0) THEN
-               CALL EZspline_interp(ZEFF_spl_s, MIN(sflx, s_max_zeff), ZEFF_ARR(i, j, k), ier)
-               DO u = 1, NION
-                  CALL EZspline_interp(NI_spl_s(u), MIN(sflx, s_max_zeff), NI(u, i, j, k), ier)
-               END DO
+      DO s = mystart, myend
+         i = MOD(s-1,nr)+1
+         j = MOD(s-1,nr*nphi)
+         j = FLOOR(REAL(j) / REAL(nr))+1
+         k = CEILING(REAL(s) / REAL(nr*nphi))
+         sflx = 0.0
+         ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
+         ! however, if cyl2flx fails to converge then s may be
+         ! greater than 1 but cyl2flux will not throw the -3 code.
+         ! In this case GetBcyl returns br,bphi,bz = 0.  So
+         ! bphi == 0 or ier ==-3 indicate that a point is
+         ! outside the VMEC domain.
+         CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
+                      br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
+         IF (ier == 0 .and. bphi /= 0) THEN ! We have field data
+            ! Save Grid data
+            S_ARR(i,j,k) = MAX(sflx,0.0)
+            IF (uflx<0)  uflx = uflx+pi2
+            U_ARR(i,j,k) = uflx
+            ! Handle equilibrium data
+            IF (sflx <=1.0) THEN ! Inside equilibrium
+               B_R(i,j,k)   = br
+               B_PHI(i,j,k) = bphi
+               B_Z(i,j,k)   = bz
+            ELSE IF (.not. luse_vc) THEN  ! Overwrite data outside
+               B_R(i,j,k)   = br
+               B_PHI(i,j,k) = bphi
+               B_Z(i,j,k)   = bz
+               sflx = 1.5 ! Assume s=1 for lplasma_only
             END IF
-            IF (npot > 0) CALL EZspline_interp(POT_spl_s, MIN(sflx, s_max_pot), POT_ARR(i, j, k), ier)
-         ELSE
-            br = 1
-            IF (npot > 0) CALL EZspline_interp(POT_spl_s, br, POT_ARR(i, j, k), ier)
+            IF (sflx <= s_max) THEN
+               IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),TE(i,j,k),ier)
+               IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),NE(i,j,k),ier)
+               IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),TI(i,j,k),ier)
+               IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),POT_ARR(i,j,k),ier)
+               IF (nzeff > 0) THEN
+                  CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),ZEFF_ARR(i,j,k),ier)
+                  DO u=1, NION
+                     CALL EZspline_interp(NI_spl_s(u),MIN(sflx,s_max_zeff),NI(u,i,j,k),ier)
+                  END DO
+               END IF
+            ELSE
+               br = 1
+               IF (npot > 0) CALL EZspline_interp(POT_spl_s,br,POT_ARR(i,j,k),ier)
+            END IF
+         ELSE IF (.not. luse_vc) THEN
+            B_R(i,j,k)   = 0
+            B_PHI(i,j,k) = 1
+            B_Z(i,j,k)   = 0
          END IF
       ELSE IF (.not. luse_vc) THEN
          B_R(i, j, k)   = 0
