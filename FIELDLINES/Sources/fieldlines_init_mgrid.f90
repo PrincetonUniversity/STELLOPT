@@ -26,11 +26,8 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-      INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
-      INTEGER :: numprocs_local, mylocalid, mylocalmaster
+      INTEGER :: mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-      INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, iunit, s, i, j, mystart, myend, k
       REAL(rprec)  :: br, bphi, bz
 !-----------------------------------------------------------------------
@@ -38,25 +35,22 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      numprocs_local = 1; mylocalid = master
+      mylocalid = master
 #if defined(MPI_OPT)
       CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
-      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
 #endif
       mylocalmaster = master
 
-
       ! Read the input file for the EXTCUR array, NV, and NFP
-      IF (.not. ALLOCATED(extcur) .and. lmgrid) THEN
-         IF (mylocalid == mylocalmaster) THEN
-            iunit = 11
-            OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
-            IF (ier /= 0) CALL handle_err(FILE_OPEN_ERR,id_string,ier)
-            CALL read_indata_namelist(iunit,ier)
-            IF (ier /= 0) CALL handle_err(VMEC_INPUT_ERR,id_string,ier)
-            CLOSE(iunit)
-         END IF
+      IF (mylocalid == mylocalmaster) THEN
+         iunit = 11
+         OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
+         IF (ier /= 0) CALL handle_err(FILE_OPEN_ERR,id_string,ier)
+         CALL read_indata_namelist(iunit,ier)
+         IF (ier /= 0) CALL handle_err(VMEC_INPUT_ERR,id_string,ier)
+         CLOSE(iunit)
+      END IF
 #if defined(MPI_OPT)
          CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
          IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid1',ierr_mpi)
@@ -65,12 +59,12 @@
          CALL MPI_BCAST(nfp_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
          IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid3',ierr_mpi)
 #endif
-         nextcur = nigroup
-         ALLOCATE(extcur(nextcur),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'EXTCUR',ier)
-         extcur = 0.0
-         extcur(1:nextcur) = extcur_in(1:nextcur)
-      END IF
+
+      IF (ALLOCATED(extcur)) DEALLOCATE(extcur)
+      nextcur = nigroup
+      ALLOCATE(extcur(nextcur))
+      extcur = 0.0
+      extcur(1:nextcur) = extcur_in(1:nextcur)
       
       ! Read the mgrid file
       CALL mgrid_load(mgrid_string,extcur,nextcur,nv_in,nfp_in,ier,mylocalid,MPI_COMM_LOCAL)
@@ -130,9 +124,6 @@
          END DO
       END IF
       
-      ! Free Variables (put this here to make room)
-      CALL mgrid_free(ier,MPI_COMM_LOCAL)
-      
       ! Clean up the progress bar
       IF (lverb) THEN
          CALL backspace_out(6,38)
@@ -141,6 +132,8 @@
          CALL FLUSH(6)
       END IF    
       
+      ! Free Variables (put this here to make room)
+      CALL mgrid_free(ier,MPI_COMM_LOCAL)
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)

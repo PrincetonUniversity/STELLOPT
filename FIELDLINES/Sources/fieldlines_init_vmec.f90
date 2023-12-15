@@ -22,7 +22,8 @@
                                  phimax, vc_adapt_tol, B_R, B_Z, B_PHI,&
                                  BR_spl, BZ_spl, PRES_G
       USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
-      USE mpi_params                                                    ! MPI
+      USE mpi_params
+      USE mpi_inc
       USE EZspline_obj
       USE EZspline
 !      USE mpi
@@ -32,14 +33,9 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-#if defined(MPI_OPT)
-      INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-#endif
-      LOGICAL :: lnyquist, luse_vc, lcreate_wall
-      INTEGER(KIND=BYTE_8) :: chunk
+      LOGICAL :: lnyquist, luse_vc
       INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
       INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
       REAL :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
@@ -50,7 +46,6 @@
                            bumnc_temp(:,:),bvmnc_temp(:,:),&
                            rmns_temp(:,:),zmnc_temp(:,:),&
                            bumns_temp(:,:),bvmns_temp(:,:)
-      LOGICAL :: lvolint = .false.
       TYPE(EZspline1_r8) :: p_spl
       INTEGER :: bcs1(2)
 !-----------------------------------------------------------------------
@@ -61,6 +56,8 @@
       luse_vc = ((lcoil .or. lmgrid) .and. .not.lplasma_only)
 
       ! Divide up Work
+      mylocalid = myworkid
+      numprocs_local = 1
 #if defined(MPI_OPT)
       CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
@@ -174,20 +171,15 @@
          IF (lasym) ALLOCATE(rmns_temp(mnmax_temp,2),zmnc_temp(mnmax_temp,2),&
                      bumns_temp(mnmax_temp,1),bvmns_temp(mnmax_temp,1), STAT = ier)
          IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNS_TEMP ZMNC_TEMP BUMNS_TEMP BVMNS_TEMP',ier)
+         rmnc_temp = zero; zmns_temp = zero
+         IF (lasym) THEN
+            rmns_temp = zero
+            zmnc_temp = zero
+         END IF
          IF (lnyquist) THEN
             xm_temp = xm_nyq
             xn_temp = -xn_nyq/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
-            IF(lverb) WRITE(6,'(A)')        '   NYQUIST DETECTED IN WOUT FILE!'
-            
-            ! Only non-Nyquist elements will be set in loops below, so zero out full array initially.
-            ! This prevents uninitialized array contents messing up the computation.
-            rmnc_temp = zero
-            zmns_temp = zero
-            if (lasym) then
-               rmns_temp = zero
-               zmnc_temp = zero
-            end if
-            
+            IF(lverb) WRITE(6,'(A)')        '   NYQUIST DETECTED IN WOUT FILE!'            
             DO u = 1,mnmax_temp
                DO v = 1, mnmax
                   IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
@@ -388,6 +380,7 @@
          DEALLOCATE(xm,xn,xm_nyq,xn_nyq)
          DEALLOCATE(rmnc,zmns,lmns,bsupumnc,bsupvmnc)
          IF (lasym) DEALLOCATE(rmns,zmnc,lmnc,bsupumns,bsupvmns)
+         DEALLOCATE(rzl_local)
       END IF
 
       IF (EZspline_allocated(p_spl)) CALL EZspline_free(p_spl,ier)
