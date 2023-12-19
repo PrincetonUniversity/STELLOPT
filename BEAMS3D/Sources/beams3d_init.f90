@@ -786,7 +786,7 @@
       h5_prof = ns_prof5/partvmax
 
       ! Fida Distribution
-      IF (lfidasim_cyl) THEN
+      IF (lfidasim) THEN
       r_h = (nr_fida) / (rmax_fida - rmin_fida)
       z_h = (nz_fida) / (zmax_fida - zmin_fida)
       p_h = (nphi_fida) / (phimax_fida - phimin_fida)
