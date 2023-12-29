@@ -3095,6 +3095,7 @@
 
       mpol1 = mpol-1
       rcc = 1;  zsc = 1
+      zcs = 0; zcc =  0; zss = 0 ! 11.21.2023 - SAL  
       IF (.not.lasym) THEN
          IF (lthreed) THEN
             ntmax = 2
