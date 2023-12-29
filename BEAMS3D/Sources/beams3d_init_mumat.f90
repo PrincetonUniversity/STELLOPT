@@ -37,7 +37,8 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: iunit, i, j, k, s, istat, mystart, myend, ier
+      INTEGER :: iunit, i, j, k, s, istat, mystart, myend, ier, &
+                 ourstart, ourend
       INTEGER :: bcs1(2), bcs2(2), bcs3(2)
       REAL(rprec)  :: bx_temp, by_temp, bz_temp, x_temp, &
                       y_temp, z_temp, br_temp, bphi_temp
@@ -135,7 +136,39 @@
       END IF
 
       ! Break up the Work
-      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
+      !CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
+      CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nr*nphi*nz, mystart, myend)
+
+      ! Find largest mystart in local
+      CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_ALLREDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, MPI_COMM_LOCAL, ierr_mpi)
+
+      ! Zero out non-work areas
+      IF (myid_sharmem == master) THEN
+         WRITE(6,*) myworkid, ourstart, ourend
+         DO s = 1, ourstart-1
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)
+            j = FLOOR(REAL(j) / REAL(nr))+1
+            k = CEILING(REAL(s) / REAL(nr*nphi))
+            B_R(i,j,k) = 0.0
+            B_PHI(i,j,k) = 0.0
+            B_Z(i,j,k) = 0.0
+         END DO
+         DO s = ourend+1, nr*nphi*nz
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)
+            j = FLOOR(REAL(j) / REAL(nr))+1
+            k = CEILING(REAL(s) / REAL(nr*nphi))
+            B_R(i,j,k) = 0.0
+            B_PHI(i,j,k) = 0.0
+            B_Z(i,j,k) = 0.0
+         END DO
+      END IF
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+#endif
       
       ! Get the fields
       DO s = mystart, myend
@@ -171,8 +204,21 @@
          CALL FLUSH(6)
       END IF    
 
-      ! Clean up
-      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+      ! Now have master threads share results
+#if defined(MPI_OPT)
+      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+      i = MPI_UNDEFINED
+      IF (myid_sharmem == master) i = 0
+      CALL MPI_COMM_SPLIT(MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
+      IF (myid_sharmem == master) THEN
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_R,   nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_PHI, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_Z,   nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+      END IF
+      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
+#endif
+
+      ! Free memory
       CALL mpidealloc(BR4D,win_BR4D)
       CALL mpidealloc(BPHI4D,win_BPHI4D)
       CALL mpidealloc(BZ4D,win_BZ4D)
