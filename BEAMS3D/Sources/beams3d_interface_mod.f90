@@ -70,6 +70,21 @@ CONTAINS
 #endif
    END SUBROUTINE beams3d_init_mpi_split
 
+   SUBROUTINE beams3d_init_pointers
+   USE beams3d_grid
+   USE beams3d_lines
+   IMPLICIT NONE
+   ! Nullify pointers
+   NULLIFY(raxis,phiaxis,zaxis,hr,hp,hz,hri,hpi,hzi,B_R,B_PHI,B_Z, &
+            MODB,TE,NE,TI,ZEFF_ARR,POT_ARR,S_ARR,U_ARR,X_ARR,Y_ARR,NI, &
+            raxis_fida,zaxis_fida,phiaxis_fida,energy_fida,pitch_fida, &
+            req_axis,zeq_axis,TE4D,NE4D,TI4D,ZEFF4D,NI5D,BR4D,BPHI4D, &
+            BZ4D,MODB4D,S4D,U4D,X4D,Y4D,POT4D,dist5d_prof,dist5d_fida, &
+            BEAM_DENSITY,wall_load,wall_shine, ndot_prof, epower_prof, &
+            ipower_prof,j_prof,dense_prof)
+   END SUBROUTINE
+  
+
    SUBROUTINE beams3d_cleanup
       IMPLICIT NONE
       INTEGER :: ier

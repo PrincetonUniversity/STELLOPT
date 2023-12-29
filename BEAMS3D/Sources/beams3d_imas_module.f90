@@ -97,6 +97,9 @@ SUBROUTINE BEAMS3D_IMAS(IDS_EQ_IN, PROF_IN, MARKERS_IN, WALL_IN, DIST_OUT, INDAT
 
   !----  BEAMS3D MPI
   CALL beams3d_init_mpi
+  
+  !----  BEAMS3D Nullify pointers
+  CALL beams3d_init_pointers
 
   !----  BEAMS3D HDF5
   CALL beams3d_init_hdf5
