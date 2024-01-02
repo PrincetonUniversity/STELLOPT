@@ -130,11 +130,6 @@
       offset = 0.0
       CALL MUMATERIAL_INIT_NEW(beams3d_BCART, MPI_COMM_BEAMS, offset)
 
-      IF (lverb) THEN
-         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Magnetic Field Calculation [',0,']%'
-         CALL FLUSH(6)
-      END IF
-
       ! Break up the Work
       !CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
       CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nr*nphi*nz, mystart, myend)
@@ -145,7 +140,6 @@
 
       ! Zero out non-work areas
       IF (myid_sharmem == master) THEN
-         WRITE(6,*) myworkid, ourstart, ourend
          DO s = 1, ourstart-1
             i = MOD(s-1,nr)+1
             j = MOD(s-1,nr*nphi)
@@ -169,6 +163,12 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
+
+      ! Start progress 
+      IF (lverb) THEN
+         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Magnetic Field Calculation [',0,']%'
+      END IF
+      CALL FLUSH(6)
       
       ! Get the fields
       DO s = mystart, myend
@@ -204,6 +204,7 @@
          CALL FLUSH(6)
       END IF    
 
+
       ! Now have master threads share results
 #if defined(MPI_OPT)
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
@@ -214,6 +215,7 @@
          CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_R,   nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
          CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_PHI, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
          CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_Z,   nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       END IF
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
 #endif
@@ -227,8 +229,6 @@
 
 
 #if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_coil',ierr_mpi)
 #endif
