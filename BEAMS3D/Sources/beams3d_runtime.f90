@@ -139,12 +139,12 @@ MODULE beams3d_runtime
                lboxsim, limas, lfieldlines, lfusion_tritium, lfusion_proton, &
                lfusion_He3, lbeamdensity, lmumat
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
-               ndt, ndt_max, duplicate_factor
+               ndt, ndt_max, duplicate_factor, mumaterial_niter, mumaterial_nneighbor
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &
                    ne_scale, te_scale, ti_scale, zeff_scale, fusion_scale, &
-                   lendt_m, te_col_min, rminor_norm
+                   lendt_m, te_col_min, rminor_norm, mumaterial_tol, mumaterial_lambda, mumaterial_lamfactor
     REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
                                         charge_beams, Zatom_beams, P_beams
     REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
@@ -165,7 +165,7 @@ MODULE beams3d_runtime
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string, mumat_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.05 ! this is the full orbit test version
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.10 ! this is the full orbit test version
 
     !-----------------------------------------------------------------------
     !     Subroutines
