@@ -1342,7 +1342,9 @@
       END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
-      IF (myid == master .and. (ANY(sigma_dkes < bigno) .or. ANY(sigma_dkes_Erdiff < bigno)) .or. ANY(sigma_dkes_alpha < bigno)) THEN
+      IF (myid == master .and. ( ANY(sigma_dkes < bigno) .or. &
+                                 ANY(sigma_dkes_Erdiff < bigno) .or. &
+                                 ANY(sigma_dkes_alpha < bigno) ) ) THEN
          WRITE(6,*)        " Drift-Kinetic Equation Solver (DKES) provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,"(2X,A)") "=========           Drift Kinetic Equation Solver, Variational          ========="
