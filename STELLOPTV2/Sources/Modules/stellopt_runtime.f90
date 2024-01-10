@@ -227,7 +227,9 @@
       INTEGER,INTENT(in)      :: error_num
       INTEGER,INTENT(in)      :: ierr
       CHARACTER(*),INTENT(in) :: string_val
-      INTEGER                 :: ierr2
+      INTEGER                 :: ierr2, ierr3
+      character(256)          :: local_str
+
    
       WRITE(6,*) '!!!!! ERROR !!!!!'
       
@@ -394,15 +396,30 @@
       ELSEIF (error_num == MPI_FREE_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED AN MPI_FREE ERROR'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+!DEC$ IF DEFINED (MPI_OPT)
+            ierr3 = 0
+            CALL MPI_ERROR_STRING(ierr, local_str, ierr2, ierr3)
+            WRITE(6,*) '  ERROR MSG: ',local_str(1:ierr2)
+!DEC$ ENDIF
             WRITE(6,*) '  IERR:      ',ierr
       ELSEIF (error_num == MPI_FINE_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED AN MPI_FINALIZE ERROR'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+!DEC$ IF DEFINED (MPI_OPT)
+            ierr3 = 0
+            CALL MPI_ERROR_STRING(ierr, local_str, ierr2, ierr3)
+            WRITE(6,*) '  ERROR MSG: ',local_str(1:ierr2)
+!DEC$ ENDIF
             WRITE(6,*) '  IERR:      ',ierr
             STOP 'MPI_FINE_ERR'
       ELSEIF (error_num <= MPI_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED AN MPI ERROR'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+!DEC$ IF DEFINED (MPI_OPT)
+            ierr3 = 0
+            CALL MPI_ERROR_STRING(ierr, local_str, ierr2, ierr3)
+            WRITE(6,*) '  ERROR MSG: ',local_str(1:ierr2)
+!DEC$ ENDIF
             WRITE(6,*) '  IERR:      ',ierr
       ELSE
            WRITE(6,*) '  STELLOPT ENCOUNTERED AN UNKNOWN ERROR'
