@@ -978,10 +978,10 @@
       Em_dkes_erdiff     = 0
       target_dkes_alpha  = 0.0
       sigma_dkes_alpha   = bigno
-      nup_dkes_alpha     = 0
-      num_dkes_alpha     = 0
-      Ep_dkes_alpha      = 0
-      Em_dkes_alpha      = 0
+      nup_dkes_alpha     = -2*bigno
+      num_dkes_alpha     = -2*bigno
+      Ep_dkes_alpha      = -2*bigno
+      Em_dkes_alpha      = -2*bigno
       target_jdotb       = 0.0
       sigma_jdotb       = bigno
       target_jcurv      = 0.0
