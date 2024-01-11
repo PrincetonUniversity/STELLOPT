@@ -732,7 +732,8 @@
          vr_start   = vr_start_in(1:nparticles)
          vphi_start = vphi_start_in(1:nparticles)
          vz_start   = vz_start_in(1:nparticles)
-         weight = 1.0/nparticles
+         weight     = weight_in(1:nparticles)
+         !weight = 1.0/nparticles
          Zatom = Zatom_in(1:nparticles)
          mass = mass_in(1:nparticles)
          charge = charge_in(1:nparticles)
