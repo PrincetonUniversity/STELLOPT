@@ -583,7 +583,7 @@ MODULE MPI_SHARMEM
       array_shape(5) = n5
       disp_unit = 1
       window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(INT(n1, KIND=MPI_ADDRESS_KIND)*n2*n3*n4*n5,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
@@ -620,7 +620,7 @@ MODULE MPI_SHARMEM
       array_shape(5) = n5
       disp_unit = 1
       window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(INT(n1, KIND=MPI_ADDRESS_KIND)*n2*n3*n4*n5,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
@@ -657,7 +657,7 @@ MODULE MPI_SHARMEM
       array_shape(5) = n5
       disp_unit = 1
       window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(INT(n1, KIND=MPI_ADDRESS_KIND)*n2*n3*n4*n5,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
@@ -694,7 +694,7 @@ MODULE MPI_SHARMEM
       array_shape(5) = n5
       disp_unit = 1
       window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(INT(n1, KIND=MPI_ADDRESS_KIND)*n2*n3*n4*n5,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
@@ -733,7 +733,7 @@ MODULE MPI_SHARMEM
       array_shape(6) = n6
       disp_unit = 1
       window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(INT(n1, KIND=MPI_ADDRESS_KIND)*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
@@ -772,7 +772,7 @@ MODULE MPI_SHARMEM
       array_shape(6) = n6
       disp_unit = 1
       window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(INT(n1, KIND=MPI_ADDRESS_KIND)*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
@@ -811,7 +811,7 @@ MODULE MPI_SHARMEM
       array_shape(6) = n6
       disp_unit = 1
       window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(INT(n1, KIND=MPI_ADDRESS_KIND)*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
@@ -850,7 +850,7 @@ MODULE MPI_SHARMEM
       array_shape(6) = n6
       disp_unit = 1
       window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(INT(n1, KIND=MPI_ADDRESS_KIND)*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
