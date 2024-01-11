@@ -404,6 +404,48 @@ with it. Here they are broken down by specialty
       TARGET_NEO(55) = 0.0  SIGMA_NEO(55) = 0.01
       TARGET_NEO(98) = 0.0  SIGMA_NEO(98) = 0.01
     !------------------------------------------------------------------------
+    !       Neoclassical L11 Transport Coefficient (as calculated by DKES)
+    !         Target runs over radial grid
+    !         Multiple NU/E pairs possible for a given grid
+    !         NU : nu / v = CMUL
+    !         E:    E / v = EFIELD
+    !------------------------------------------------------------------------
+      TARGET_DKES(8) = 0.0   SIGMA_DKES(8) = 1.0E-2
+      TARGET_DKES(32) = 0.0  SIGMA_DKES(32) = 1.0E-2
+      TARGET_DKES(72) = 0.0  SIGMA_DKES(72) = 1.0E-2
+         NU_DKES(1) = 2.50E-06  E_DKES(1) = 5.00E-04
+         NU_DKES(2) = 2.50E-06  E_DKES(2) = 2.74E-03
+    !------------------------------------------------------------------------
+    !       L11 Er Spread (as calculated by DKES)
+    !         Computes difference between two DKES runs at two Er values
+    !         Target runs over radial grid
+    !         NU_DKES_ERDIFF : nu / v = CMUL
+    !         EP_DKES_ERDIFF : Upper Er value
+    !         EM_DKES_ERDIFF : Lower Er value  
+    !------------------------------------------------------------------------
+      TARGET_DKES_ERDIFF(8) = 0.0   SIGMA_DKES_ERDIFF(8) = 1.0E-2
+      TARGET_DKES_ERDIFF(32) = 0.0  SIGMA_DKES_ERDIFF(32) = 1.0E-2
+      TARGET_DKES_ERDIFF(72) = 0.0  SIGMA_DKES_ERDIFF(72) = 1.0E-2
+         NU_DKES_ERDIFF = 2.50E-06  
+         EP_DKES_ERDIFF = 0.0
+         EM_DKES_ERDIFF = 1.0E-3
+    !------------------------------------------------------------------------
+    !       L11 Alpha (as calculated by DKES)
+    !         Computes difference between two DKES runs at two Er/nu values
+    !         Multiple NU/E pairs possible for a given grid
+    !         NUP_DKES_ALPHA : Upper NU value
+    !         NUM_DKES_ALPHA : Lower NU value
+    !         EP_DKES_ERDIFF : Upper Er value
+    !         EM_DKES_ERDIFF : Lower Er value  
+    !------------------------------------------------------------------------
+      TARGET_DKES_ALPHA(8) = 0.0   SIGMA_DKES_ALPHA(8) = 1.0E-2
+      TARGET_DKES_ALPHA(32) = 0.0  SIGMA_DKES_ALPHA(32) = 1.0E-2
+      TARGET_DKES_ALPHA(72) = 0.0  SIGMA_DKES_ALPHA(72) = 1.0E-2
+         NUP_DKES_ALPHA(1) = 2.50E-06  NUM_DKES_ALPHA(1) = 2.50E-06
+         EP_DKES_ALPHA(1) = 5.00E-04   EM_DKES_ALPHA(1) = 5.00E-04
+         NUP_DKES_ALPHA(2) = 2.50E-06  NUM_DKES_ALPHA(2) = 2.50E-06
+         EP_DKES_ALPHA(2) = 2.74E-03   EM_DKES_ALPHA(2) = 2.74E-03
+    !------------------------------------------------------------------------
     !       Bootstrap Calculation (as calculated by BOOTSJ)
     !         Note that the bootstrap current is by surface. Axis (01) is ignored.
     !         If BEAMJ AND BOOTJ profiles are being utilized, the comparrision will be made

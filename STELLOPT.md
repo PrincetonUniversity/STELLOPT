@@ -92,6 +92,9 @@ outlines the currently available targets:
  | JSTAR | Vector | Array of radial locations for particle confinement calculation |
  | ORBIT | Vector | Array of radial locations on which to calculate confinement [BEAMS3D](BEAMS3D) |
  | COIL_BNORM | Single | Calculation of residual coil normal field after calculation by [COILOPT++](COILOPT)|
+ | DKES | Vector | Array of surfaces on which to calculated L11 [DKES](DKES)|
+ | DKES_ERDIF | Vector | Array of surfaces on which to calculated L11 Er Spread [DKES](DKES)|
+ | DKES_ALPHA | Vector | Array of surfaces on which to calculated L11 Er Alpha [DKES](DKES)|
 
 ------------------------------------------------------------------------
 
@@ -137,6 +140,9 @@ which control the code behavior are:
  | -tri FILE1 FILE2 | NONE | Use FILE1 and FILE2 to set Min and Max bounds respectively (used in hyperplane mapping mode) |
  | -xvec_file FILE1 | NONE | Use FILE1 to initialize population for Differential Evolution and Particle Swarm runs. |
  | -help | NONE | Print help message |
+
+ Also note that we provide a helper utility `xvmec2stel` whicn can
+ generate a template `OPTIMUM` namelist based on an `INDATA` namelist.
 
 ------------------------------------------------------------------------
 
