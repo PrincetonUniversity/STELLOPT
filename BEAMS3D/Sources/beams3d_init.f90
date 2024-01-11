@@ -743,7 +743,10 @@
          nbeams = 1
          charge_beams(1) = charge_in(1)
          mass_beams(1)   = mass_in(1)
-         lgc2fo_start(:) = .TRUE.
+         lgc2fo_start = .FALSE.
+         WHERE ((vr_start == 0) .and. (vphi_start == 0) .and. (vz_start == 0))
+            lgc2fo_start = .TRUE.
+         END WHERE
       END IF
       
       ! Duplicate particles if requested
