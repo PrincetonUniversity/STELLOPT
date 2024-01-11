@@ -154,6 +154,7 @@ SUBROUTINE beams3d_follow
        mycharge = charge(i)
        myZ = Zatom(i)
        mymass = mass(i)
+	   E_by_v=mymass*0.5d-3/e_charge
        mybeam = Beam(i)
        moment = mu_start(i)
        fact_pa   = plasma_mass/(mymass*plasma_Zmean)
@@ -184,6 +185,7 @@ SUBROUTINE beams3d_follow
           mycharge = charge(i)
           myZ = Zatom(i)
           mymass = mass(i)
+		  E_by_v=mymass*0.5d-3/e_charge
           mybeam = Beam(i)
           moment = mu_start(i)
           my_end = t_end(i)
