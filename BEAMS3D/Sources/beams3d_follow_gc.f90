@@ -135,6 +135,7 @@ SUBROUTINE beams3d_follow_gc
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+					E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
                     ltherm = .false.
