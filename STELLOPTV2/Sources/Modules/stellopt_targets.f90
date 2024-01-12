@@ -171,6 +171,8 @@
       REAL(rprec), DIMENSION(nprof) ::  E_DKES, nu_DKES
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES_erdiff, sigma_DKES_erdiff
       REAL(rprec)                   ::  nu_dkes_erdiff, Ep_dkes_erdiff, Em_dkes_erdiff
+      REAL(rprec), DIMENSION(nsd)   ::  target_DKES_alpha, sigma_DKES_alpha
+      REAL(rprec), DIMENSION(nprof) ::  nup_dkes_alpha, num_dkes_alpha, Ep_dkes_alpha, Em_dkes_alpha
       REAL(rprec), DIMENSION(nsd)        :: target_gamma_c, sigma_gamma_c
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
@@ -275,6 +277,7 @@
       INTEGER, PARAMETER :: jtarget_txport     = 607
       INTEGER, PARAMETER :: jtarget_dkes       = 608
       INTEGER, PARAMETER :: jtarget_dkes_erdiff       = 6081
+      INTEGER, PARAMETER :: jtarget_dkes_alpha        = 6082
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
       INTEGER, PARAMETER :: jtarget_jcurv      = 6091
       INTEGER, PARAMETER :: jtarget_bmin       = 610
@@ -422,6 +425,8 @@
             WRITE(iunit, out_format) 'Drift-Kinetics (DKES)'
          CASE(jtarget_dkes_erdiff)
             WRITE(iunit, out_format) 'DKES Delta-Er'
+         CASE(jtarget_dkes_alpha)
+            WRITE(iunit, out_format) 'DKES Alpha (D11 Slope)'
          CASE(jtarget_jdotb)
             WRITE(iunit, out_format) '<J.B>'
          CASE(jtarget_jcurv)
