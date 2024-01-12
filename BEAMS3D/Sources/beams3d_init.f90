@@ -732,7 +732,8 @@
          vr_start   = vr_start_in(1:nparticles)
          vphi_start = vphi_start_in(1:nparticles)
          vz_start   = vz_start_in(1:nparticles)
-         weight = 1.0/nparticles
+         weight     = weight_in(1:nparticles)
+         !weight = 1.0/nparticles
          Zatom = Zatom_in(1:nparticles)
          mass = mass_in(1:nparticles)
          charge = charge_in(1:nparticles)
@@ -742,7 +743,10 @@
          nbeams = 1
          charge_beams(1) = charge_in(1)
          mass_beams(1)   = mass_in(1)
-         lgc2fo_start(:) = .TRUE.
+         lgc2fo_start = .FALSE.
+         WHERE ((vr_start == 0) .and. (vphi_start == 0) .and. (vz_start == 0))
+            lgc2fo_start = .TRUE.
+         END WHERE
       END IF
       
       ! Duplicate particles if requested
