@@ -1723,8 +1723,8 @@
       DOUBLE PRECISION, INTENT(in) :: x1i, y1i, z1i, x2i, y2i, z2i, xmin, ymin, zmin, xmax, ymax, zmax
       LOGICAL, INTENT(out) :: intersects
       DOUBLE PRECISION :: tmin, tmax, x1, y1, z1, x2, y2, z2, dx, dy, dz, t1, t2
-
-      intersects = .false.
+	DOUBLE PRECISION, PARAMETER :: EPSILON = 1.0D-10
+       intersects = .false.
 
       ! Force x2 > x1
       x1 = MIN(x1i,x2i)
@@ -1733,6 +1733,20 @@
       x2 = MAX(x1i,x2i)
       y2 = MAX(y1i,y2i)
       z2 = MAX(z1i,z2i)
+
+    ! Check for parallel cases
+    ! Handle parallel cases
+    IF (ABS(x2 - x1) < EPSILON) THEN
+		IF ((z1 > zmin .AND. z1 < zmax) .AND. (y1 > ymin .AND. y1 < ymax))   intersects = .true.
+		RETURN
+	ELSE IF (ABS(y2 - y1) < EPSILON) THEN
+		IF ((z1 > zmin .AND. z1 < zmax) .AND. (x1 > xmin .AND. x1 < xmax))   intersects = .true.
+		RETURN
+	ELSE IF (ABS(z2 - z1) < EPSILON) THEN
+		IF ((y1 > ymin .AND. y1 < ymax) .AND. (x1 > xmin .AND. x1 < xmax))   intersects = .true.
+		RETURN
+	END IF
+
 
       ! Helpers
       dx = one/(x2-x1)
