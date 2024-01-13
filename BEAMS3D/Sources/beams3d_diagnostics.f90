@@ -37,12 +37,10 @@
       LOGICAL, ALLOCATABLE     :: partmask(:), partmask2(:,:), partmask2t(:,:)
       INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:)
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
-      REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:), nlost(:), norbit(:), tlow(:), thigh(:)
+      REAL, ALLOCATABLE     :: vllaxis(:),vperpaxis(:), nlost(:), norbit(:), tlow(:), thigh(:)
       REAL, ALLOCATABLE     :: help3d(:,:,:)
-#if defined(MPI_OPT)
-      INTEGER :: mystart, mypace
-      REAL(rprec), ALLOCATABLE :: buffer_mast(:,:), buffer_slav(:,:)
-#endif
+      REAL(rprec), ALLOCATABLE     :: dbl_help(:)
+      INTEGER :: mystart
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -67,12 +65,16 @@
       IF (ALLOCATED(norbit)) DEALLOCATE(norbit)
       IF (ALLOCATED(tlow)) DEALLOCATE(tlow)
       IF (ALLOCATED(thigh)) DEALLOCATE(thigh)
+      IF (ALLOCATED(dbl_help)) DEALLOCATE(dbl_help)
+      IF (ALLOCATED(int_mask)) DEALLOCATE(int_mask)
       ALLOCATE(shine_through(nbeams))
       ALLOCATE(shine_port(nbeams))
       ALLOCATE(nlost(nbeams))
       ALLOCATE(norbit(nbeams))
       ALLOCATE(tlow(nbeams))
       ALLOCATE(thigh(nbeams))
+      ALLOCATE(dbl_help(mystart:myend))
+      ALLOCATE(int_mask(mystart:myend))
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
@@ -85,14 +87,18 @@
 
       ! Calculate shinethrough and loss
       shine_through = 0
+      dbl_help(mystart:myend) = t_end(mystart:myend)
+      int_mask(mystart:myend) = beam(mystart:myend)
       DO i = 1, nbeams
          norbit(i)         =      SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 0 .and. (beam(mystart:myend)==i)))
          nlost(i)          =      SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 2 .and. (beam(mystart:myend)==i)))
          shine_through(i)  = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
          shine_port(i)     = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
-         tlow(i)           = MINVAL(t_end(mystart:myend), MASK = (beam(mystart:myend)==i))
-         thigh(i)          = MAXVAL(t_end(mystart:myend), MASK = (beam(mystart:myend)==i))
+         tlow(i)           = MINVAL(dbl_help, MASK = (int_mask==i))
+         thigh(i)          = MAXVAL(dbl_help, MASK = (int_mask==i))
       END DO
+      DEALLOCATE(dbl_help)
+      DEALLOCATE(int_mask)
 
 #if defined(MPI_OPT)
       IF (myworkid == master) THEN
