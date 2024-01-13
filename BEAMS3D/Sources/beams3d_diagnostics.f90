@@ -39,7 +39,7 @@
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
       REAL, ALLOCATABLE     :: vllaxis(:),vperpaxis(:), nlost(:), norbit(:), tlow(:), thigh(:)
       REAL, ALLOCATABLE     :: help3d(:,:,:)
-      REAL(rprec), ALLOCATABLE     :: dbl_help(:)
+      REAL, ALLOCATABLE     :: dbl_help(:)
       INTEGER :: mystart
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -89,6 +89,8 @@
       shine_through = 0
       dbl_help(mystart:myend) = t_end(mystart:myend)
       int_mask(mystart:myend) = beam(mystart:myend)
+
+
       DO i = 1, nbeams
          norbit(i)         =      SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 0 .and. (beam(mystart:myend)==i)))
          nlost(i)          =      SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 2 .and. (beam(mystart:myend)==i)))
