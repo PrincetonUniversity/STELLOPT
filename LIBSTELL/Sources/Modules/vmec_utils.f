@@ -90,13 +90,13 @@ C-----------------------------------------------
       CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w, 
      1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin, 
      2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1, RS=Rs1, ZS=Zs1)
-      PRINT *,nfp,c_flx,r_cyl,Rv1,Zv1
-      Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
 
       IF (info_loc.eq.-1 .and. (fmin .le. fmin_acceptable)) info_loc = 0
 
       IF (PRESENT(info)) info = info_loc
       IF (info_loc .ne. 0) RETURN
+
+      Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
 
       IF (PRESENT(sflx)) sflx = c_flx(1)  
       IF (PRESENT(uflx)) uflx = c_flx(2)
