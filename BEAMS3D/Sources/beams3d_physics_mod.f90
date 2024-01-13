@@ -1943,8 +1943,8 @@ MODULE beams3d_physics_mod
          x0 = s * COS(u)
          y0 = s * SIN(U)
 
-         fnorm = x0*x0+y0*y0
-         fnorm = MIN(1./fnorm,1E5)
+         fnorm = MAX(x0*x0+y0*y0,1E-5)
+         fnorm = 1./fnorm
          n = 1
 
          ! Loop Basically a NEWTON's METHOD
