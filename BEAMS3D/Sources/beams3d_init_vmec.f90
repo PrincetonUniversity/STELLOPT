@@ -307,6 +307,8 @@
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
       ALLOCATE(lsmooth(mystart:myend))
       lsmooth = .false.
+      
+      uflx = 0.0
 
       IF (mylocalid == mylocalmaster) THEN
          TE = 0; NE = 0; TI=0; S_ARR=scaleup*scaleup; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;
