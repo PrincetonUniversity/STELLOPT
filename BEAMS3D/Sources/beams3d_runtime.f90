@@ -48,7 +48,8 @@
 !                    - Box Modeling implemented
 !                    - FIELDLINES Interface Added
 !     v4.05 08/25/23 - Fast Tritium only calculation added
-!     v4.10 09/25/23 - Mu material interface added.
+!     v4.07 01/11/24 - Added ability to specifiy weights in the input
+!     v4.10 01/12/24 - Mu material interface added.
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -156,7 +157,7 @@ MODULE beams3d_runtime
     REAL(rprec), DIMENSION(NION) :: NI_AUX_M
     REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
                                             & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in, &
-                                            vr_start_in, vphi_start_in, vz_start_in
+                                            vr_start_in, vphi_start_in, vz_start_in, weight_in
     LOGICAL, ALLOCATABLE :: lgc2fo_start(:)
     REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), mu_start(:), &
                                 & mass(:), charge(:), Zatom(:), t_end(:), weight(:), vr_start(:), vphi_start(:), vz_start(:)
