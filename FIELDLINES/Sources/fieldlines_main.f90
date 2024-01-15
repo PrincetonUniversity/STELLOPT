@@ -42,6 +42,20 @@
       character(LEN=MPI_MAX_LIBRARY_VERSION_STRING) :: mpi_lib_name
       character*(arg_len)                          :: arg1
       character*(arg_len),allocatable,dimension(:) :: args
+
+#if defined(GIT_VERSION_EXT)
+      CHARACTER(64), PARAMETER :: git_repository = GIT_REPO_EXT
+      CHARACTER(32), PARAMETER :: git_version = GIT_VERSION_EXT
+      CHARACTER(40), PARAMETER :: git_hash = GIT_HASH_EXT
+      CHARACTER(32), PARAMETER :: git_branch = GIT_BRANCH_EXT
+      CHARACTER(19), PARAMETER :: built_on = BUILT_ON_EXT
+#else
+      CHARACTER(64), PARAMETER :: git_repository = "not from a git repo"
+      CHARACTER(32), PARAMETER :: git_version = ""
+      CHARACTER(40), PARAMETER :: git_hash = ""
+      CHARACTER(32), PARAMETER :: git_branch = ""
+      CHARACTER(19), PARAMETER :: built_on = ""
+#endif
 !-----------------------------------------------------------------------
 !     Begin Program
 !-----------------------------------------------------------------------
@@ -226,18 +240,24 @@
          DEALLOCATE(args)
          WRITE(6,'(a,f5.2)') 'FIELDLINES Version ',FIELDLINES_VERSION
 #if defined(LHDF5)
-        IF (h5par > 0) THEN
-           WRITE(6,'(A)')      '-----  HDF5 (Parallel) Parameters  -----'
-        ELSE
-           WRITE(6,'(A)')      '-----  HDF5 Parameters  -----'
-        ENDIF
-        WRITE(6,'(A,I2,2(A,I2.2))')  '   HDF5_version:  ', h5major,'.',h5minor,' release: ',h5rel
+         IF (h5par > 0) THEN
+            WRITE(6,'(A)')      '-----  HDF5 (Parallel) Parameters  -----'
+         ELSE
+            WRITE(6,'(A)')      '-----  HDF5 Parameters  -----'
+         ENDIF
+         WRITE(6,'(A,I2,2(A,I2.2))')  '   HDF5_version:  ', h5major,'.',h5minor,' release: ',h5rel
 #endif
          WRITE(6,'(A)')      '-----  MPI Parameters  -----'
          WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
          WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
          WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_fieldlines
          WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
+         WRITE(6,'(A)')      '-----  GIT Repository  -----'
+         WRITE(6,'(A,A)')  '   Repository: ', TRIM(git_repository)
+         WRITE(6,'(A,A)')  '   Branch:     ', TRIM(git_branch)
+         WRITE(6,'(A,A)')  '   Version:    ', TRIM(git_version)
+         WRITE(6,'(A,A)')  '   Built-on:   ', TRIM(built_on)
+         WRITE(6,'(A,A)')  '   Hash:       ', TRIM(git_hash)
       END IF
       CALL FLUSH(6)
       id_string = TRIM(id_string)

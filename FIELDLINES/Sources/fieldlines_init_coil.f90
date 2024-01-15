@@ -26,11 +26,8 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-      INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
-      INTEGER :: numprocs_local, mylocalid, mylocalmaster
+      INTEGER :: mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-      INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, iunit, s, i, j, mystart, myend, k, ik, ig
       REAL(rprec)  :: br, bphi, bz, current, current_first, &
                       br_temp, bphi_temp, bz_temp
@@ -39,11 +36,10 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      numprocs_local = 1; mylocalid = master
+      mylocalid = master
 #if defined(MPI_OPT)
       CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
-      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
 #endif
       mylocalmaster = master
       
