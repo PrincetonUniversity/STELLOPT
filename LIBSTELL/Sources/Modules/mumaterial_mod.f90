@@ -154,12 +154,12 @@
       END IF
 #endif
       IF (rank .eq. 0) THEN
-            IF (lverb) WRITE(6,'(A18,E10.4,A17,I4,A9,E10.4,A16,E10.4)') "Setting max Error:", mE, " max Iterations: ", mI, " lambda: ", la, " lambda factor: ", laF
-            IF (mNb .le. 0) THEN
-                  IF (lverb) WRITE(6,'(A27)') "Nearest neighbours disabled"
-            ELSE
-                  IF (lverb) WRITE(6,'(A42,I7)') "Nearest neighbours enabled; max number: ", mNb
-            END IF
+            !IF (lverb) WRITE(6,'(A18,E11.4,A17,I4,A9,E11.4,A16,E11.4)') "Setting max Error:", mE, " max Iterations: ", mI, " lambda: ", la, " lambda factor: ", laF
+            !IF (mNb .le. 0) THEN
+            !      IF (lverb) WRITE(6,'(A27)') "Nearest neighbours disabled"
+            !ELSE
+            !      IF (lverb) WRITE(6,'(A42,I7)') "Nearest neighbours enabled; max number: ", mNb
+            !END IF
       
 
             maxErr = mE
@@ -352,18 +352,18 @@
          WRITE(iunit,'(6X,A,I3)') 'State Fuction ',i
          IF (state_type(i)==1) THEN
             WRITE(iunit,'(9X,A)') 'Type: Hard Magnet'
-            WRITE(iunit,'(9X,A,EN12.3)') 'Mu :',constant_mu(i)
-            WRITE(iunit,'(9X,A,EN12.3)') 'Mu_o :',constant_mu_o(i)
-            WRITE(iunit,'(9X,A,3(EN12.3))') 'Mrem :',Mrem(:,i)
+            WRITE(iunit,'(9X,A,EN12.3)')    '  Mu   :',constant_mu(i)
+            WRITE(iunit,'(9X,A,EN12.3)')    '  Mu_o :',constant_mu_o(i)
+            WRITE(iunit,'(9X,A,3(EN12.3))') '  Mrem :',Mrem(:,i)
          ELSEIF (state_type(i)==2) THEN
             k = SIZE(stateFunction(i)%H)
-            WRITE(iunit,'(9X,A)')    'Type   : Soft Magnet (H-M)'
-            WRITE(iunit,'(9X,A,I3)') 'NKnots :',k
-            WRITE(iunit,'(9X,A,2(EN12.3))') 'H:',stateFunction(i)%H(1),stateFunction(i)%H(k)
-            WRITE(iunit,'(9X,A,2(EN12.3))') 'H:',stateFunction(i)%M(1),stateFunction(i)%M(k)
+            WRITE(iunit,'(9X,A)')           '  Type : Soft Magnet (H-M)'
+            WRITE(iunit,'(9X,A,I3)')        'NKnots :',k
+            WRITE(iunit,'(9X,A,2(EN12.3))') '     H :',stateFunction(i)%H(1),stateFunction(i)%H(k)
+            WRITE(iunit,'(9X,A,2(EN12.3))') '     M :',stateFunction(i)%M(1),stateFunction(i)%M(k)
          ELSEIF (state_type(i)==3) THEN
             WRITE(iunit,'(9X,A)') 'Type: Soft Magnet (mu constant)'
-            WRITE(iunit,'(9X,A,EN12.3)') 'Mu :',constant_mu(i)
+            WRITE(iunit,'(9X,A,EN12.3)')    '    Mu :',constant_mu(i)
          ELSE
             WRITE(iunit,'(9X,A,I3)') 'Type: UNKNOWN (ERROR) state_type=',state_type(i)
          END IF
