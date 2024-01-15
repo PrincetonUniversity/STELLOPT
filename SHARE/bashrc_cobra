@@ -1,0 +1,21 @@
+# For clean up runs
+alias stellopt_cleanup="rm -f answers* auto* beams3d* b_norm_eq_* b_norm_init_* b_norm_final_* bnorm.* boozmn* checkpoint_* coilopt_params.* coil_spline*.out curv* dcon* deltamn.* diagno_seg.* diagno_flux.* diagno_bth.* dkes* dprof.* fevals* field* gade* gist* eigenvalues* input.*.***** input.*_min input_dkes.* jacobian.* jprof.* jxb* jBbs* LMsave* log_gene.* map.* map_plane.* mercier* mom* neo* nrg* opt* parameters_* parvmecinfo_* parvmecinfo.txt results* rhomn* RZ* stellopt.* tprof* wout* temp_input.* threed1.* tv_out_* txport* xvec.* uv_* var_* vsp*"
+alias que="squeue -u $USER --format='%.18i %.7P %.16j %.5u %.8T %.10M %.20V %.6D %R'"
+alias run_cobra_single="srun --ntasks=1 --cpus-per-task=1 --mem=2000mb --time=0:30:00 -p express"
+alias run_cobra_1="srun --nodes=1 --ntasks-per-node=40 --time=0:30:00 -p express"
+alias run_cobra_2="srun --nodes=2 --ntasks-per-node=40 --time=0:30:00 -p express"
+alias run_cobra_4="srun --nodes=4 --ntasks-per-node=40 --time=0:30:00 -p express"
+alias run_cobra_8="srun --nodes=8 --ntasks-per-node=40 --time=0:30:00 -p express"
+
+# Set module files
+module purge
+module load git 
+module load intel/2023.1.0.x
+module load mkl/2023.1
+module load impi/2021.9
+module load hdf5-mpi/1.14.1
+module load netcdf-mpi/4.8.1
+module load fftw-mpi/3.3.10
+module load anaconda/3/2023.03
+module load petsc-complex-double/3.19
+module load slepc-complex-double/3.19
