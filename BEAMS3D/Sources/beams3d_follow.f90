@@ -307,7 +307,7 @@ SUBROUTINE beams3d_follow
 #endif
 
     ! Adjust T_END back to values of T_last
-    t_end(mystart:myend) = t_last(mystart:myend)
+    t_end(mystart_save:myend_save) = t_last(mystart_save:myend_save)
     IF (ALLOCATED(t_last)) DEALLOCATE(t_last)
 
     RETURN
