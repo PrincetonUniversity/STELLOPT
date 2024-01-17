@@ -281,7 +281,7 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             S4D(1,1,1,1),nr,nphi,nz)
-            s_temp = fval(1)
+            s_temp = max(fval(1),zero)
 
             !-----------------------------------------------------------
             !  Helpers
@@ -488,7 +488,7 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             S4D(1,1,1,1),nr,nphi,nz)
-            s_temp = fval(1)
+            s_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BR4D(1,1,1,1),nr,nphi,nz)
@@ -867,7 +867,7 @@ MODULE beams3d_physics_mod
             DO l = 1, num_depo
                nelocal(l)  = MAX(MIN(nelocal(l),1E21),1E18)
                telocal(l)  = MAX(MIN(telocal(l),energy(l)*0.5),energy(l)*0.01)
-               ni_in = nilocal(:,l)
+               ni_in = MAX(MIN(nilocal(:,l),1E21),1E18)
                CALL suzuki_sigma(NION,energy(l),nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
             END DO
             tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4 !cm^2 to m^2 for sigma
@@ -1943,8 +1943,8 @@ MODULE beams3d_physics_mod
          x0 = s * COS(u)
          y0 = s * SIN(U)
 
-         fnorm = x0*x0+y0*y0
-         fnorm = MIN(1./fnorm,1E5)
+         fnorm = MAX(x0*x0+y0*y0,1E-5)
+         fnorm = 1./fnorm
          n = 1
 
          ! Loop Basically a NEWTON's METHOD

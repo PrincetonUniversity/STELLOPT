@@ -232,7 +232,7 @@
       INTEGER        :: arank = 1
       INTEGER(HID_T) :: dset_id
       INTEGER(HID_T) :: type
-      INTEGER(HID_T) :: strlen
+      INTEGER(HSIZE_T) :: strlen
       INTEGER(HID_T) :: attr_id  
       INTEGER(HID_T) :: dspace_id
       INTEGER(HID_T) :: aspace_id
@@ -329,7 +329,7 @@
       INTEGER        :: arank = 1
       INTEGER        :: boo_temp(n)
       INTEGER(HID_T) :: type
-      INTEGER(HID_T) :: strlen
+      INTEGER(HSIZE_T) :: strlen
       INTEGER(HID_T) :: dset_id
       INTEGER(HID_T) :: attr_id  
       INTEGER(HID_T) :: dspace_id
