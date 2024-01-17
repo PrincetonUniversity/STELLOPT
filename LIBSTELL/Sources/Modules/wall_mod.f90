@@ -1689,7 +1689,7 @@
          WRITE(10, *) 'DATE: ', TRIM(date(6:))
          WRITE(10, "(I12, I12)") 0, 0
          WRITE(10, "(I12, I12)") nvertex, nface
-         WRITE(10, "(E20.10, E20.10, E20.10)") TRANSPOSE(vertex)
+         WRITE(10, "(ES20.10, ES20.10, ES20.10)") TRANSPOSE(vertex)
          WRITE(10, "(I12, I12, I12)") TRANSPOSE(face)
 
          IF (ASSOCIATED(wall%blocks)) THEN
@@ -1698,7 +1698,7 @@
             WRITE(10, "(E20.10, I12, I12, I12)") wall%stepsize, wall%br
       
             DO i=1,wall%nblocks
-               WRITE(10, "(6(E20.10))") wall%blocks(i)%rmin(1), wall%blocks(i)%rmax(1), wall%blocks(i)%rmin(2), &
+               WRITE(10, "(6(ES20.10))") wall%blocks(i)%rmin(1), wall%blocks(i)%rmax(1), wall%blocks(i)%rmin(2), &
                                        wall%blocks(i)%rmax(2), wall%blocks(i)%rmin(3), wall%blocks(i)%rmax(3)
                WRITE(10, "(I12)") wall%blocks(i)%nfaces
                IF (wall%blocks(i)%nfaces > 0) WRITE(10, "(I12)") wall%blocks(i)%face
