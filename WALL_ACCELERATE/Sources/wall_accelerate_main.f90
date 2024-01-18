@@ -125,8 +125,7 @@ PROGRAM WALL_ACCELERATE
    
 #if defined(MPI_OPT)
          CALL wall_load_txt(vessel_string, ier, lverb, MPI_COMM_WALLACC)  
-         WRITE(6,'(A,I2.2)') 'WALL ERRORCODE: ',ier
-         CALL MPI_BARRIER(MPI_COMM_WALLACC,ierr_mpi)
+         WRITE(6,'(A,I5)') 'WALL ERRORCODE: ',ier
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'wall_acc_main',ierr_mpi)
 #else
          CALL wall_load_txt(vessel_string, ier, lverb) 
