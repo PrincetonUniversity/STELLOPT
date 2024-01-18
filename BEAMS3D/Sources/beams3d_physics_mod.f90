@@ -712,9 +712,9 @@ MODULE beams3d_physics_mod
          ylast = qf(2)
          zlast = qf(3)
          x0 = qf(1); y0 = qf(2); z0 = qf(3)
-         DO l = 1, 3
+         OUTER_A: DO l = 1, 3
             dt_local = stepsize(l)/q(4)
-            DO
+            INNER_A: DO
                qf = qf + myv_neut*dt_local
                q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
@@ -722,8 +722,6 @@ MODULE beams3d_physics_mod
                t = t + dt_local
                phi_temp = MODULO(q(2), phimax)
                IF (phi_temp < 0) phi_temp = phi_temp + phimax
-               !CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
-               !IF (ier==0) THEN
                IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
                    (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
                    (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
@@ -734,22 +732,19 @@ MODULE beams3d_physics_mod
                   yparam = (phi_temp - phiaxis(j)) * hpi(j)
                   zparam = (q(3) - zaxis(k)) * hzi(k)
                   s_temp =1.5
-                  !CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                                   hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                                   S4D(1,1,1,1),nr,nphi,nz)
                   s_temp = fval(1)
-                  IF (s_temp < one) EXIT
+                  IF (s_temp < one) EXIT INNER_A
                END IF
-               IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN
-                  t = my_end+dt_local
-                  RETURN
-               END IF  ! We're outside the grid
-            END DO
+               ! Break if we're outside the grid
+               IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) EXIT INNER_A
+            END DO INNER_A
             ! Take a step back
             qf = qf - myv_neut*dt_local
             t  =  t - dt_local
-         END DO
+         END DO OUTER_A
          qs=qf
 
          !--------------------------------------------------------------
@@ -763,6 +758,9 @@ MODULE beams3d_physics_mod
                q(3) = qf(3)
                end_state(myline) = 4
                CALL uncount_wall_hit
+               RETURN
+            ELSE IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN
+               t = my_end+dt_local
                RETURN
             END IF
          END IF
