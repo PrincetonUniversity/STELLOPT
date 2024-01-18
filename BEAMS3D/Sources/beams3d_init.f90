@@ -26,7 +26,7 @@
                                dist5d_fida, win_dist5d_fida,&
                                win_epower, win_ipower, win_ndot, win_jprof, &
                                win_dense, nsh_prof4, h2_prof, h3_prof, &
-      h4_prof, h5_prof, r_h, p_h, z_h, e_h, pi_h, E_by_v
+      h4_prof, h5_prof, r_h, p_h, z_h, e_h, pi_h
       USE fidasim_input_mod, ONLY: beams3d_write_fidasim
       USE wall_mod
       USE mpi_params
@@ -50,7 +50,6 @@
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
       REAL(rprec) :: stemp, utemp, rtemp, ztemp, phitemp
-      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -835,20 +834,16 @@
 
 
    IF (lfidasim) THEN
-      ! ALLOCATE(raxis_fida(nr_fida))
-      ! ALLOCATE(zaxis_fida(nz_fida))
-      ! ALLOCATE(phiaxis_fida(nphi_fida))
-      ! ALLOCATE(energy_fida(nenergy_fida))
-      ! ALLOCATE(pitch_fida(npitch_fida))
-         FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
-         FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
-         FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
+      FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
+      FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
+      FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
       FORALL(i = 1:nenergy_fida) energy_fida(i) = REAL(i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass) * partvmax * partvmax /1.60217662E-19 / 1000.0
-         FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
-      e_h = 1/( energy_fida(2) - energy_fida(1)) !(energy_fida(nenergy_fida) - energy_fida(1)) / (nenergy_fida)
-      pi_h = 1/(pitch_fida(2) - pitch_fida(1))!(pitch_fida(npitch_fida) - pitch_fida(1)) / (npitch_fida)
-      emin_fida = energy_fida(1)-1/e_h/2 !Correct since e_h~1/energy
+      FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
+      e_h = 1/( energy_fida(2) - energy_fida(1)) 
+      pi_h = 1/(pitch_fida(2) - pitch_fida(1))
+      emin_fida = energy_fida(1)-1/e_h/2 !e_h~1/energy
       pimin_fida = pitch_fida(1)-1/pi_h/2
+
       IF (lverb) THEN
          WRITE(6,'(F9.5,F9.5,F9.5,F9.5,F9.5)') r_h, p_h, z_h, e_h, pi_h
          WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
