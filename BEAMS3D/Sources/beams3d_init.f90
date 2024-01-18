@@ -839,8 +839,16 @@
       FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
       FORALL(i = 1:nenergy_fida) energy_fida(i) = REAL(i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass) * partvmax * partvmax /1.60217662E-19 / 1000.0
       FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
-      e_h = 1/( energy_fida(2) - energy_fida(1)) 
-      pi_h = 1/(pitch_fida(2) - pitch_fida(1))
+      IF (nenergy_fida .eq. 1) THEN
+         e_h = 1.0/2.d0/energy_fida(1)
+      ELSE 
+         e_h = 1.0/( energy_fida(2) - energy_fida(1)) 
+      END IF
+      IF (npitch_fida .eq. 1) THEN 
+         pi_h = 1.0/2.d0
+      ELSE
+         pi_h = 1/(pitch_fida(2) - pitch_fida(1))
+      END IF
       emin_fida = energy_fida(1)-1/e_h/2 !e_h~1/energy
       pimin_fida = pitch_fida(1)-1/pi_h/2
 
