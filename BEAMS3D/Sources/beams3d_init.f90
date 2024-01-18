@@ -50,10 +50,7 @@
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
       REAL(rprec) :: stemp, utemp, rtemp, ztemp, phitemp
-	    INTEGER :: default_kind
-  INTEGER(MPI_ADDRESS_KIND) :: mpi_ak_max
-  INTEGER :: int_max, int_kind, int_digits, int_range
-  DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -771,30 +768,11 @@
       ALLOCATE(end_state(nparticles))
       end_state=0
 
-  ! ! Find the maximum value of MPI_ADDRESS_KIND
-  ! mpi_ak_max = HUGE(0_MPI_ADDRESS_KIND)
-
-  ! ! Find details of the default INTEGER
-  ! int_max = HUGE(0)
-  ! int_kind = KIND(0)
-  ! int_digits = DIGITS(0)
-  ! int_range = RANGE(0)
-
-  ! PRINT *, '0_MPI_ADDRESS_KIND max value: ', mpi_ak_max
-    ! mpi_ak_max = HUGE(8_MPI_ADDRESS_KIND)
-  ! PRINT *, '8_MPI_ADDRESS_KIND max value: ', mpi_ak_max
-  ! PRINT *, 'Default INTEGER max value: ', int_max
-  ! PRINT *, 'Default INTEGER kind: ', int_kind
-  ! PRINT *, 'Default INTEGER digits: ', int_digits
-  ! PRINT *, 'Default INTEGER range: ', int_range	  
-
       ! Setup distribution
       ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
                ndot_prof(nbeams,ns_prof1))
       ipower_prof=0; epower_prof=0; ndot_prof=0
-	  !WRITE(6,*)nbeams,' ', ns_prof1, ' ',ns_prof2,' ', ns_prof3,' ', ns_prof4,' ', ns_prof5,' ', myid_sharmem, ' ', MPI_COMM_SHARMEM, ' ',win_dist5d
       CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
-	  !WRITE(6,*) nr_fida,' ', nz_fida, ' ',nphi_fida,' ', nenergy_fida, ' ',npitch_fida,' ', myid_sharmem,' ', MPI_COMM_SHARMEM, ' ', win_dist5d_fida
       IF (lfidasim_cyl) CALL mpialloc(dist5d_fida, nr_fida, nz_fida, nphi_fida, nenergy_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d_fida)
       IF (myid_sharmem == master) THEN
          dist5d_prof = 0
