@@ -1723,6 +1723,7 @@
       DOUBLE PRECISION, INTENT(in) :: x1i, y1i, z1i, x2i, y2i, z2i, xmin, ymin, zmin, xmax, ymax, zmax
       LOGICAL, INTENT(out) :: intersects
       DOUBLE PRECISION :: tmin, tmax, x1, y1, z1, x2, y2, z2, dx, dy, dz, t1, t2
+      
       intersects = .false.
 
       ! Force x2 > x1
