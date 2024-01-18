@@ -724,7 +724,7 @@ C-----------------------------------------------
 !
       rho  = SQRT(si)
       hs1  = one/(ns-1)
-      jslo = 1 + ABS(si)/hs1
+      jslo = 1 + NINT(ABS(si)/hs1)
       jslo = MIN(jslo,ns-1)
       jshi = jslo + 1
       slo  = hs1*(jslo-1)
