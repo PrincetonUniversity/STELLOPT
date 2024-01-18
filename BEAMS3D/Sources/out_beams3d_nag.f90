@@ -112,7 +112,7 @@ SUBROUTINE out_beams3d_nag(t, q)
             d1 = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
             d2 = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
             d3 = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
-            y0 = (q(4)**2+vperp**2)
+            y0 = MAX((q(4)**2+vperp**2),1.0)
             d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h),1),nenergy_fida)
             d5 = MIN(MAX(CEILING((q(4)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
             dist5d_fida(d1,d3,d2,d4,d5) = dist5d_fida(d1,d3,d2,d4,d5) + xw

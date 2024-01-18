@@ -155,6 +155,7 @@ SUBROUTINE beams3d_follow
        mycharge = charge(i)
        myZ = Zatom(i)
        mymass = mass(i)
+	    E_by_v=mymass*0.5d-3/e_charge
        mybeam = Beam(i)
        moment = mu_start(i)
        fact_pa   = 1/(mymass*plasma_Zmean/plasma_mass)
@@ -186,6 +187,7 @@ SUBROUTINE beams3d_follow
           mycharge = charge(i)
           myZ = Zatom(i)
           mymass = mass(i)
+		    E_by_v=mymass*0.5d-3/e_charge
           mybeam = Beam(i)
           moment = mu_start(i)
           my_end = t_end(i)
@@ -310,7 +312,7 @@ SUBROUTINE beams3d_follow
 #endif
 
     ! Adjust T_END back to values of T_last
-    t_end(mystart:myend) = t_last(mystart:myend)
+    t_end(mystart_save:myend_save) = t_last(mystart_save:myend_save)
     IF (ALLOCATED(t_last)) DEALLOCATE(t_last)
 
     RETURN
