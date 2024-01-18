@@ -1083,17 +1083,12 @@
       r0(1) = x0
       r0(2) = y0
       r0(3) = z0
-      DO i=1,3
-         outlow(i) = .false.
-         outhigh(i) = .false.
-         tcomp(i) = zero
-         ! check direction line to determine in which direction to step through the blocks
-         IF (dr(i) < zero) THEN
-            step(i) = -1
-         ELSE
-            step(i) = 1
-         END IF
-      END DO
+      outlow  = .FALSE.
+      outhigh = .FALSE.
+      tcomp   = zero
+      ! check direction line to determine in which direction to step through the blocks
+      step = 1
+      WHERE(dr < zero) step = -1
 
       k1 = 1; k2 = wall%nblocks
       b_found = -1
@@ -1171,6 +1166,7 @@
             alphal = FN(ik,1)*dr(1) + FN(ik,2)*dr(2) + FN(ik,3)*dr(3)
             betal = FN(ik,1)*r0(1) + FN(ik,2)*r0(2) + FN(ik,3)*r0(3)
             ! tloc indicated when hit. If hit between r0 and r1, tloc between 0 and 1
+            IF (alphal == zero) CYCLE
             tloc = (d(ik)-betal)/alphal
             IF (tloc > one) CYCLE
             IF (tloc <= zero) CYCLE
@@ -1193,14 +1189,18 @@
          END DO
          
          ! Check when the line will leave the block
-         DO i=1,3
-            IF (step(i) .eq. 1) THEN
-               tDelta(i) = (b%rmax(i) - r0(i)) / dr(i)
-            ELSE
-               tDelta(i) = (b%rmin(i) - r0(i)) / dr(i)
-            END IF
-         END DO
-
+         WHERE(step == 1)
+            tDelta = (b%rmax - r0)
+         ELSEWHERE
+            tDelta = (b%rmin - r0)
+         END WHERE
+         ! Handle division by zero
+         WHERE (dr == zero)
+            tDelta = 1.0E20
+         ELSEWHERE
+            tDelta = tDelta / dr
+         END WHERE
+                    
          ! Check if leaves block before hits. 
          ! Compare with tcomp to make sure that ray always moves in positive time direction 
          IF (ANY(tDelta < tmin .and. tDelta > tcomp)) THEN
@@ -1723,7 +1723,7 @@
       DOUBLE PRECISION, INTENT(in) :: x1i, y1i, z1i, x2i, y2i, z2i, xmin, ymin, zmin, xmax, ymax, zmax
       LOGICAL, INTENT(out) :: intersects
       DOUBLE PRECISION :: tmin, tmax, x1, y1, z1, x2, y2, z2, dx, dy, dz, t1, t2
-
+      
       intersects = .false.
 
       ! Force x2 > x1
@@ -1735,9 +1735,26 @@
       z2 = MAX(z1i,z2i)
 
       ! Helpers
-      dx = one/(x2-x1)
-      dy = one/(y2-y1)
-      dz = one/(z2-z1)
+      dx = x2-x1
+      dy = y2-y1
+      dz = z2-z1
+      
+      ! IF statemnt for parallel lines
+      IF (dx == zero) THEN
+         dx = 1.0D20
+      ELSE
+         dx = one/dx
+      END IF
+      IF (dy == zero) THEN
+         dy = 1.0D20
+      ELSE
+         dy = one/dy
+      END IF
+      IF (dz == zero) THEN
+         dz = 1.0D20
+      ELSE
+         dz = one/dz
+      ENDIF
 
       ! Calculate the minimum and maximum values of t for each axis
       tmin = zero

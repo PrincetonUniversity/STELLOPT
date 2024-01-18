@@ -732,7 +732,8 @@
          vr_start   = vr_start_in(1:nparticles)
          vphi_start = vphi_start_in(1:nparticles)
          vz_start   = vz_start_in(1:nparticles)
-         weight = 1.0/nparticles
+         weight     = weight_in(1:nparticles)
+         !weight = 1.0/nparticles
          Zatom = Zatom_in(1:nparticles)
          mass = mass_in(1:nparticles)
          charge = charge_in(1:nparticles)
@@ -742,7 +743,10 @@
          nbeams = 1
          charge_beams(1) = charge_in(1)
          mass_beams(1)   = mass_in(1)
-         lgc2fo_start(:) = .TRUE.
+         lgc2fo_start = .FALSE.
+         WHERE ((vr_start == 0) .and. (vphi_start == 0) .and. (vz_start == 0))
+            lgc2fo_start = .TRUE.
+         END WHERE
       END IF
       
       ! Duplicate particles if requested
@@ -786,7 +790,7 @@
       h5_prof = ns_prof5/partvmax
 
       ! Fida Distribution
-      IF (lfidasim_cyl) THEN
+      IF (lfidasim) THEN
       r_h = (nr_fida) / (rmax_fida - rmin_fida)
       z_h = (nz_fida) / (zmax_fida - zmin_fida)
       p_h = (nphi_fida) / (phimax_fida - phimin_fida)
@@ -830,19 +834,22 @@
 
 
    IF (lfidasim) THEN
-      ! ALLOCATE(raxis_fida(nr_fida))
-      ! ALLOCATE(zaxis_fida(nz_fida))
-      ! ALLOCATE(phiaxis_fida(nphi_fida))
-      ! ALLOCATE(energy_fida(nenergy_fida))
-      ! ALLOCATE(pitch_fida(npitch_fida))
-         FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
-         FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
-         FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
+      FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
+      FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
+      FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
       FORALL(i = 1:nenergy_fida) energy_fida(i) = REAL(i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass) * partvmax * partvmax /1.60217662E-19 / 1000.0
-         FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
-      e_h = 1/( energy_fida(2) - energy_fida(1)) !(energy_fida(nenergy_fida) - energy_fida(1)) / (nenergy_fida)
-      pi_h = 1/(pitch_fida(2) - pitch_fida(1))!(pitch_fida(npitch_fida) - pitch_fida(1)) / (npitch_fida)
-      emin_fida = energy_fida(1)-1/e_h/2 !Correct since e_h~1/energy
+      FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
+      IF (nenergy_fida .eq. 1) THEN
+         e_h = 1.0/2.d0/energy_fida(1)
+      ELSE 
+         e_h = 1.0/( energy_fida(2) - energy_fida(1)) 
+      END IF
+      IF (npitch_fida .eq. 1) THEN 
+         pi_h = 1.0/2.d0
+      ELSE
+         pi_h = 1/(pitch_fida(2) - pitch_fida(1))
+      END IF
+      emin_fida = energy_fida(1)-1/e_h/2 !e_h~1/energy
       pimin_fida = pitch_fida(1)-1/pi_h/2
 
       IF (lverb) THEN

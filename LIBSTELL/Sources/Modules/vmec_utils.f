@@ -90,12 +90,13 @@ C-----------------------------------------------
       CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w, 
      1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin, 
      2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1, RS=Rs1, ZS=Zs1)
-      Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
 
       IF (info_loc.eq.-1 .and. (fmin .le. fmin_acceptable)) info_loc = 0
 
       IF (PRESENT(info)) info = info_loc
       IF (info_loc .ne. 0) RETURN
+
+      Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
 
       IF (PRESENT(sflx)) sflx = c_flx(1)  
       IF (PRESENT(uflx)) uflx = c_flx(2)
@@ -723,7 +724,7 @@ C-----------------------------------------------
 !
       rho  = SQRT(si)
       hs1  = one/(ns-1)
-      jslo = 1 + ABS(si)/hs1
+      jslo = 1 + NINT(ABS(si)/hs1)
       jslo = MIN(jslo,ns-1)
       jshi = jslo + 1
       slo  = hs1*(jslo-1)
@@ -733,23 +734,42 @@ C-----------------------------------------------
       whi  = (si - slo)/hs1 ! x
       wlo  = one - whi ! (1-x)
 
-      ! Odd modes we include a factor of sqrt(s)=rho
-      wlo_odd = wlo*rho/rholo
-      whi_odd = whi*rho/rhohi
-
       ! Derivative values
       dwlo = -DBLE(ns-1)
       dwhi =  DBLE(ns-1)
-      dwlo_odd = -(3*rho-shi/rho)/(2*hs1*rholo)
-      dwhi_odd =  (3*rho-slo/rho)/(2*hs1*rhohi)
-
+              
       ! Adjust near axis
       IF (jslo .eq. 1) THEN
          wlo_odd = 0
          whi_odd = rho/rhohi
          dwlo_odd = 0
          dwhi_odd = 0.5/(rho*rhohi)
+      ELSE ! Otherwise
+         ! Odd modes we include a factor of sqrt(s)=rho
+         wlo_odd = wlo*rho/rholo
+         whi_odd = whi*rho/rhohi
+         dwlo_odd = -(3*rho-shi/rho)/(2*hs1*rholo)
+         dwhi_odd =  (3*rho-slo/rho)/(2*hs1*rhohi)
       END IF
+
+!     Old way with floating point exception when rholo=0
+!      ! Odd modes we include a factor of sqrt(s)=rho
+!      wlo_odd = wlo*rho/rholo
+!      whi_odd = whi*rho/rhohi
+!
+!      ! Derivative values
+!      dwlo = -DBLE(ns-1)
+!      dwhi =  DBLE(ns-1)
+!      dwlo_odd = -(3*rho-shi/rho)/(2*hs1*rholo)
+!      dwhi_odd =  (3*rho-slo/rho)/(2*hs1*rhohi)
+!
+!      ! Adjust near axis
+!      IF (jslo .eq. 1) THEN
+!         wlo_odd = 0
+!         whi_odd = rho/rhohi
+!         dwlo_odd = 0
+!         dwhi_odd = 0.5/(rho*rhohi)
+!      END IF
 
       mpol1 = mpol-1
 
@@ -763,6 +783,7 @@ C-----------------------------------------------
       dwmins(:,1:mpol1:2) = dwlo_odd
       dwplus(:,1:mpol1:2) = dwhi_odd
 
+      zcs = 0; zcc =  0; zss = 0 ! 11.21.2023 - SAL  
       IF (.not.lasym) THEN
          IF (lthreed) THEN
             IF (ntmax .ne. 2) STOP 'ntmax != 2 in flx2cyl!'
@@ -1137,7 +1158,7 @@ C-----------------------------------------------
       REAL(rprec) :: c_flx(3), r_cyl_out(3), fvec(nvar), sflux, 
      1               uflux, eps0, eps, epu, xc_min(2), factor
       REAL(rprec) :: x0(3), xs(3), xu(3), dels, delu, tau, fmin0,
-     1               ru1, zu1, edge_value, snew, rs1, zs1
+     1               ru1, zu1, edge_value, snew, rs1, zs1, z_small
 C-----------------------------------------------
 !
 !     INPUT/OUTPUT:
@@ -1164,6 +1185,7 @@ C-----------------------------------------------
 !     without yielding a lower value of F.
 !
       iflag = -1      
+      z_small=TINY(1.0_rprec)
       eps0 = SQRT(EPSILON(eps))
       xc_min = xc_opt
 
@@ -1234,7 +1256,8 @@ C-----------------------------------------------
 
 !           NEWTON STEP
             tau = xu(1)*xs(3) - xu(3)*xs(1)
-            IF (ABS(tau) .le. ABS(eps)*r_target**2) THEN
+            !IF (ABS(tau) .le. ABS(eps)*r_target**2) THEN
+            IF (ABS(tau) .le. ABS(z_small)*r_target**2) THEN
                iflag = -2
                EXIT
             END IF

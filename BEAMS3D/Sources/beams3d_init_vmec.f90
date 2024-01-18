@@ -36,26 +36,20 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-#if defined(MPI_OPT)
-      INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-#endif
       LOGICAL :: lnyquist, luse_vc, lcreate_wall, lverb_wall
-      INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
       INTEGER :: bcs1_s(2)
       INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
       REAL :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
-              bx_vc, by_vc, dr_temp
+              bx_vc, by_vc
       REAL(rprec) :: br, bphi, bz, sflx, uflx, xaxis, yaxis
       DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: rmnc_temp(:,:),zmns_temp(:,:),&
                            bumnc_temp(:,:),bvmnc_temp(:,:),&
                            rmns_temp(:,:),zmnc_temp(:,:),&
                            bumns_temp(:,:),bvmns_temp(:,:)
-      LOGICAL :: lold_field = .true.  ! If false we attempt to subtract the vacuum field from the VMEC total field
       INTEGER, PARAMETER :: scaleup=2
       LOGICAL, ALLOCATABLE, DIMENSION(:) :: lsmooth
 !-----------------------------------------------------------------------
@@ -207,7 +201,6 @@
          nv = 8 * ntor + 1
          nv = 2 ** CEILING(log(DBLE(nv))/log(2.0_rprec))
          IF (nv < 128) nv = 128
-         dr_temp    = 1./REAL(ns)
 
          ! Handle Nyquist issues
          IF (SIZE(xm_nyq) > SIZE(xm)) THEN
@@ -225,7 +218,11 @@
          IF (lasym) ALLOCATE(rmns_temp(mnmax_temp,2),zmnc_temp(mnmax_temp,2),&
                      bumns_temp(mnmax_temp,1),bvmns_temp(mnmax_temp,1), STAT = ier)
          IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNS_TEMP ZMNC_TEMP BUMNS_TEMP BVMNS_TEMP',ier)
-         rmnc_temp = 0; zmns_temp =0
+         rmnc_temp = zero; zmns_temp =zero
+         IF (lasym) THEN
+            rmns_temp = zero
+            zmnc_temp = zero
+         END IF
          IF (lnyquist) THEN
             xm_temp = xm_nyq
             xn_temp = -xn_nyq/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
@@ -307,6 +304,8 @@
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
       ALLOCATE(lsmooth(mystart:myend))
       lsmooth = .false.
+      
+      uflx = 0.0
 
       IF (mylocalid == mylocalmaster) THEN
          TE = 0; NE = 0; TI=0; S_ARR=scaleup*scaleup; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;
@@ -344,17 +343,17 @@
                B_Z(i,j,k)   = bz
                sflx = 1.5 ! Assume s=1 for lplasma_only
             END IF
-         IF (sflx <= s_max) THEN
-            IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),TE(i,j,k),ier)
-            IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),NE(i,j,k),ier)
-            IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),TI(i,j,k),ier)
-            IF (nzeff > 0) THEN
-               CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),ZEFF_ARR(i,j,k),ier)
-               DO u=1, NION
-                  CALL EZspline_interp(NI_spl_s(u),MIN(sflx,s_max_zeff),NI(u,i,j,k),ier)
-               END DO
-            END IF
-            IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),POT_ARR(i,j,k),ier)
+            IF (sflx <= s_max) THEN
+               IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),TE(i,j,k),ier)
+               IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),NE(i,j,k),ier)
+               IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),TI(i,j,k),ier)
+               IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),POT_ARR(i,j,k),ier)
+               IF (nzeff > 0) THEN
+                  CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),ZEFF_ARR(i,j,k),ier)
+                  DO u=1, NION
+                     CALL EZspline_interp(NI_spl_s(u),MIN(sflx,s_max_zeff),NI(u,i,j,k),ier)
+                  END DO
+               END IF
             ELSE
                br = 1
                IF (npot > 0) CALL EZspline_interp(POT_spl_s,br,POT_ARR(i,j,k),ier)

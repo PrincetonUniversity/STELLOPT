@@ -24,7 +24,7 @@ MODULE fidasim_input_mod
       rmin, rmax,  phimin, phimax, &
       rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
       raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida,nne
+      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida,nne, nte, nti, nzeff
    USE beams3d_runtime
    ! , ONLY: id_string, nbeams, beam, lverb, handle_err, &
    !    HDF5_OPEN_ERR,HDF5_WRITE_ERR,HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, &
@@ -1086,22 +1086,22 @@ SUBROUTINE write_fidasim_equilibrium
         CALL write_att_hdf5(qid_gid2,'data_source','Data initialized from BEAMS3D ',ier)
         CALL write_att_hdf5(qid_gid2,'description','no bulk plasma rotation/flow',ier)
 
-        CALL write_var_hdf5(qid_gid2,'rho',nne, ier,DBLVAR=DBLE(SQRT(NE_AUX_S)))
+        CALL write_var_hdf5(qid_gid2,'rho',nne, ier,DBLVAR=DBLE(SQRT(NE_AUX_S(1:nne))))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'rho',ier)
         CALL h5dopen_f(qid_gid2, 'rho', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'units','-',ier)
-        CALL write_att_hdf5(temp_gid,'description','sqrt(s)',ier)
+        CALL write_att_hdf5(temp_gid,'description','sqrt(s), nne',ier)
         CALL h5dclose_f(temp_gid,ier)
 
 
-        CALL write_var_hdf5(qid_gid2,'dene',nne, ier,DBLVAR=DBLE(NE_AUX_F*1.0E-6))
+        CALL write_var_hdf5(qid_gid2,'dene',nne, ier,DBLVAR=DBLE(NE_AUX_F(1:nne)*1.0E-6))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dene',ier)
         CALL h5dopen_f(qid_gid2, 'dene', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'units','[m^-3]',ier)
         CALL write_att_hdf5(temp_gid,'description','Electron Density',ier)
         CALL h5dclose_f(temp_gid,ier)
 
-        CALL write_var_hdf5(qid_gid2,'te',nne, ier,DBLVAR=DBLE(TE_AUX_F*1.0E-3))
+        CALL write_var_hdf5(qid_gid2,'te',nte, ier,DBLVAR=DBLE(TE_AUX_F(1:nte)*1.0E-3))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'te',ier)
         CALL h5dopen_f(qid_gid2, 'te', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'units','[eV]',ier)
@@ -1109,7 +1109,7 @@ SUBROUTINE write_fidasim_equilibrium
         CALL h5dclose_f(temp_gid,ier)
 
 
-        CALL write_var_hdf5(qid_gid2,'ti',nne, ier,DBLVAR=DBLE(TI_AUX_F*1.0E-3))
+        CALL write_var_hdf5(qid_gid2,'ti',nti, ier,DBLVAR=DBLE(TI_AUX_F(1:nti)*1.0E-3))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ti',ier)
         CALL h5dopen_f(qid_gid2, 'ti', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'units','[eV]',ier)
@@ -1117,7 +1117,7 @@ SUBROUTINE write_fidasim_equilibrium
         CALL h5dclose_f(temp_gid,ier)
 
 
-        CALL write_var_hdf5(qid_gid2,'zeff',nne, ier,DBLVAR=DBLE(ZEFF_AUX_F))
+        CALL write_var_hdf5(qid_gid2,'zeff',nzeff, ier,DBLVAR=DBLE(ZEFF_AUX_F(1:nzeff)))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zeff',ier)
         CALL h5dopen_f(qid_gid2, 'zeff', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'units','[-]',ier)

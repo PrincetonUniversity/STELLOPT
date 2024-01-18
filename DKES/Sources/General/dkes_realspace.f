@@ -22,6 +22,7 @@ C-----------------------------------------------
      
       ! ADDED BY SAL to ease optimizer use
       INTEGER :: DKES_rad_dex
+      INTEGER, ALLOCATABLE, DIMENSION(:) :: DKES_rundex
       REAL(rprec), ALLOCATABLE, DIMENSION(:) ::
      1   DKES_L11p, DKES_L33p, DKES_L31p,
      2   DKES_L11m, DKES_L33m, DKES_L31m,
