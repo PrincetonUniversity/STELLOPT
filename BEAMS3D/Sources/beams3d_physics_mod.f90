@@ -281,7 +281,7 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             S4D(1,1,1,1),nr,nphi,nz)
-            s_temp = fval(1)
+            s_temp = max(fval(1),zero)
 
             !-----------------------------------------------------------
             !  Helpers
@@ -488,7 +488,7 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             S4D(1,1,1,1),nr,nphi,nz)
-            s_temp = fval(1)
+            s_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BR4D(1,1,1,1),nr,nphi,nz)
