@@ -455,7 +455,7 @@
 #endif
 
       ! From here on out each thread only works on it's own subset
-      CALL MPI_CALC_MYRANGE(comm, 1, nvertex, mystart, myend)
+      CALL MPI_CALC_MYRANGE(comm, 1, ntet, mystart, myend)
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Allocate helpers and Neighbors
