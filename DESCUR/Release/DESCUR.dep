@@ -1,0 +1,79 @@
+# Microsoft Developer Studio Generated Dependency File, included by DESCUR.mak
+
+amplitud.o : \
+      vname0.o \
+      vname1.o 
+      
+
+descur.o : \
+      vname0.o \
+      vname1.o 
+      
+
+evolve.o : \
+      vname0.o \
+      vname1.o 
+      
+
+fftrans.o : \
+      vname0.o \
+      vname1.o 
+      
+
+fixaray.o : \
+      vname0.o \
+      vname1.o 
+      
+
+funct.o : \
+      vname0.o \
+      vname1.o 
+      
+
+getangle.o : \
+      vname0.o \
+      vname1.o 
+      
+
+getrz.o : \
+      vname1.o 
+      
+
+inguess.o : \
+      vname0.o \
+      vname1.o 
+      
+
+order.o : \
+      vname0.o \
+      vname1.o 
+      
+
+printit.o : \
+      vname0.o \
+      vname1.o 
+      
+
+read_wout_curve.o : \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      vname0.o \
+      vname1.o 
+      
+
+restart.o : \
+      vname0.o \
+      vname1.o 
+      
+
+scrunch.o : \
+      vname0.o \
+      vname1.o 
+      
+
+vname0.o : \
+      ../../LIBSTELL/Release/stel_kinds.o 
+      
+
+vname1.o : \
+      vname0.o 
+      
