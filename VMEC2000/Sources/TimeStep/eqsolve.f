@@ -52,8 +52,16 @@ C-----------------------------------------------
  1000 CONTINUE
 
       itfsq = 0
-      w1      = zero
+      w1      = one
       r00s    = zero
+      r00     = one
+      wb      = zero
+      wp      = zero
+      w0      = one
+#ifdef _ANIMEC
+      wpar = zero
+#endif
+
 
 !
 !     COMPUTE INITIAL R, Z AND MAGNETIC FLUX PROFILES
@@ -151,11 +159,11 @@ C-----------------------------------------------
          END IF
 
 !       Store force residual, wdot for plotting
-         wdota = ABS(w0 - w1)/w0
+         IF (ABS(w0) > zero) wdota = ABS(w0 - w1)/w0
 
          CALL MPI_Bcast(r00, 1, MPI_REAL8, 0, NS_COMM, MPI_ERR)
 
-         r0dot = ABS(r00 - r00s)/r00
+         IF (ABS(r00) > zero) r0dot = ABS(r00 - r00s)/r00
          r00s = r00
          w1 = w0
          IF (ivac .eq. 1) THEN
@@ -222,8 +230,8 @@ C-----------------------------------------------
       CALL second0(teqsoloff)
       eqsolve_time = eqsolve_time + (teqsoloff-teqsolon)
 
-   60 FORMAT(/,' MHD Energy = ',1p,e12.6,3x, 'd(ln W)/dt = ',1p,e9.3,
-     &       3x,'d(ln R0)/dt = ',e9.3)
+   60 FORMAT(/,' MHD Energy = ',1p,e13.6,3x, 'd(ln W)/dt = ',1p,e10.3,
+     &       3x,'d(ln R0)/dt = ',e10.3)
    70 FORMAT(' Average radial force balance: Int[FR(m=0)]',
      &       '/Int(B**2/R) = ',1p,e12.5,' (should tend to zero)'/)
    80 FORMAT(' Function calls in GMRES: ',i5)
