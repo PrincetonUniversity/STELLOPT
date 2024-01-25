@@ -32,7 +32,7 @@ C-----------------------------------------------
      &   rmnc, zmns, lmns, rmns, zmnc, lmnc
       REAL(dp), DIMENSION(:,:,:), POINTER :: lu, lv
       REAL(dp) :: presf_ns, delr_mse, delt0
-      REAL(dp) :: tbroadon, tbroadoff
+      REAL(dp) :: tbroadon=0, tbroadoff=0
       REAL(dp), EXTERNAL :: pmass
       INTEGER :: i, j, k, nsmin, nsmax, m
       REAL(dp), ALLOCATABLE, DIMENSION(:) :: bcastbuf
@@ -152,6 +152,8 @@ C-----------------------------------------------
          CALL second0(tbcovoff)
          bcovar_time=bcovar_time+(tbcovoff - tbcovon)
 
+      ELSE
+         tbcovoff = 0.0; tbcovon = 0.0
       END IF ACTIVE1
       
       CALL MPI_BCast( ier_flag, 1, MPI_INTEGER, 0, 
