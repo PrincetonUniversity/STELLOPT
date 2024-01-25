@@ -116,7 +116,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    !-----------------------------------------------------------------------
    INTEGER :: ier, iunit,istat, i, j, d1, d2, d3, k, k1, k2, kmax ,ider, &
       l, m, n, b, i3, j3, k3
-   INTEGER(HID_T) ::  qid_gid, qid_gid2, temp_gid
+   !INTEGER(HID_T) ::    qid_gid, temp_gid
+   INTEGER(HID_T) :: qid_gid2
    INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask
 
    REAL*8 :: fvalE(1,3), fval(1), fval2(1), xparam, yparam, zparam
@@ -130,7 +131,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    CHARACTER(LEN=8) :: temp_str8
 
    INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/), ictE(8)=(/0,1,1,1,0,0,0,0/)
-   REAL*8, PARAMETER :: one = 1
    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
    DOUBLE PRECISION, PARAMETER :: zero          = 0.0D0 ! 0.0
    DOUBLE PRECISION, PARAMETER :: t_min          = 1.0D-3 !
@@ -506,7 +506,7 @@ END SUBROUTINE init_fidasim_input
 
 SUBROUTINE write_fidasim_namelist(iunit_out, istat)
       INTEGER, INTENT(in) :: iunit_out
-      INTEGER, INTENT(out) :: istat
+      !INTEGER, INTENT(out) :: istat
       INTEGER :: ik, n
       CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
       CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
@@ -804,8 +804,10 @@ END SUBROUTINE write_fidasim_geometry
 
 SUBROUTINE write_fidasim_equilibrium
 
-        INTEGER :: ier, i, j, k, l, m, n
-        INTEGER(HID_T) ::  qid_gid, qid_gid2, temp_gid
+        !INTEGER :: ier
+        INTEGER :: i, j, k, l, m, n
+        !INTEGER(HID_T) ::  qid_gid, temp_gid
+        INTEGER(HID_T) ::  qid_gid2
         INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask
 
         REAL*8 :: fvalE(1,3), fval(1), xparam, yparam, zparam
@@ -1139,10 +1141,9 @@ END SUBROUTINE write_fidasim_equilibrium
 
 
 SUBROUTINE write_fidasim_grid(qid_gid_in)
-
-        INTEGER :: ier
-        INTEGER(HID_T), INTENT(IN)::  qid_gid_in
-        INTEGER(HID_T) ::  temp_gid
+         INTEGER(HID_T), INTENT(IN)::  qid_gid_in
+       !  INTEGER :: ier
+      !   INTEGER(HID_T) ::  temp_gid
 
         DOUBLE PRECISION, ALLOCATABLE :: r2dtemp(:,:)
 
