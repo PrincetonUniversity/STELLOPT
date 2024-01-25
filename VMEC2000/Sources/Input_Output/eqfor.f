@@ -636,6 +636,7 @@ C-----------------------------------------------
       rlao = volume_p/(twopi*cross_area_p)       !LAO, NUCL.FUS.25(1985)1421
       flao = rshaf/rlao
 !      fgeo = rshaf/rcen
+      fgeo = rshaf/rcenin ! S. Lazerson (no idea if this is right)
 
       smaleli = factor*sumbpol
       vvc_smaleli = smaleli ! Save result for v3fit.
@@ -644,7 +645,7 @@ C-----------------------------------------------
 !      dmusubi_meas = 2*twopi*factor*delphid*rbtor
       lambda = p5*smaleli + betai
       s11 = er - rshaf*sigr0              !Shafranov def. based on RT, Eq.(12)
-      s12 = er - rcen*sigr0               !R = Rgeometric
+      s12 = er - rcenin*sigr0               !R = Rgeometric
       s13 = er - rlao*sigr0               !R = RLao
       s2  = sigr0*rshaf
       s3  = sigz1                         !1/2 S3 in Eq.(14c)
@@ -652,7 +653,7 @@ C-----------------------------------------------
       delta2 = one - fgeo
       delta3 = one - flao
       IF(rank.EQ.0) WRITE (nthreed, 168)
-      IF(rank.EQ.0) WRITE (nthreed, 170) rshaf, rcen, rlao,
+      IF(rank.EQ.0) WRITE (nthreed, 170) rshaf, rcenin, rlao,
      1   scaling_ratio, s3, smaleli, musubi, betai, lambda
 !      IF (lrecon.AND.rank.EQ.0) WRITE (nthreed, 172) dmusubi_meas
       IF(rank.EQ.0) WRITE (nthreed, 174) delta1, delta2, delta3, 
