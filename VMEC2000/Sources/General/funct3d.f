@@ -409,7 +409,9 @@ C-----------------------------------------------
          CALL SAXLASTNTYPE(pgc, pscalxc, pgc)
 
          CALL residue_par(pgc, pgc(1+irzloff), pgc(1+2*irzloff))
-
+         
+      ELSE
+         treson = 0.0
       END IF ACTIVE2
 
 !NEED THIS ON ALL PROCESSORS IN GROUP (NOT JUST ACTIVE ONES) FOR STOPPING CRITERION IN EVOLVE
@@ -428,6 +430,8 @@ C-----------------------------------------------
          fsqz = bcastbuf(3); fsqz1 = bcastbuf(4)
          fsql = bcastbuf(5); fsql1 = bcastbuf(6)
          DEALLOCATE(bcastbuf)
+      ELSE
+         tbroadon = 0.0; tbroadoff = 0.0
       END IF
 #endif
 
