@@ -55,9 +55,10 @@ C-----------------------------------------------
       w1      = one
       r00s    = zero
       r00     = one
-      wb      = zero
+      wb      = one
       wp      = zero
       w0      = one
+      wdota   = zero
 #ifdef _ANIMEC
       wpar = zero
 #endif

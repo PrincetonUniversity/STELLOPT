@@ -21,7 +21,7 @@ C-----------------------------------------------
       LOGICAL :: lscreen
       LOGICAL :: loutput !SAL 070719
       INTEGER :: i, j, ij, k, js, jk, lk, lt, lz, jcount
-      REAL(dp) :: tfileon, tfileoff
+      REAL(dp) :: tfileon=0, tfileoff=0
       REAL(dp), ALLOCATABLE :: buffer(:,:), tmp(:,:)
 C-----------------------------------------------
       CALL second0(tfileon)
