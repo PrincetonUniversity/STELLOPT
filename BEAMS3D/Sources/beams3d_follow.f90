@@ -158,7 +158,7 @@ SUBROUTINE beams3d_follow
 	    E_by_v=mymass*0.5d-3/e_charge
        mybeam = Beam(i)
        moment = mu_start(i)
-       fact_pa   = 1/(mymass*plasma_Zmean/plasma_mass)
+       fact_pa   = plasma_mass/(mymass*plasma_Zmean)
        fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
        
        ! Save the IC of the neutral
@@ -193,7 +193,7 @@ SUBROUTINE beams3d_follow
           my_end = t_end(i)
           myline = i
           mytdex = 1
-          fact_pa   = 1/(mymass*plasma_Zmean/plasma_mass)
+          fact_pa   = plasma_mass/(mymass*plasma_Zmean)
           fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
           
           ! Define neutral trajectory

@@ -143,7 +143,7 @@ SUBROUTINE beams3d_follow_gc
                     lcollision = lbeam
                     ! Collision parameters
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
-                    fact_pa   = 1/(mymass*plasma_Zmean/plasma_mass)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
 					
                     ! Now calc dt
@@ -193,7 +193,7 @@ SUBROUTINE beams3d_follow_gc
                     lcollision = lbeam
                     ! Collision parameters
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
-                    fact_pa   = 1/(mymass*plasma_Zmean/plasma_mass)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
 					
                     ! Now calc dt
@@ -266,7 +266,7 @@ SUBROUTINE beams3d_follow_gc
                     lcollision = lbeam .or. lcollision
                     ! Collision parameters
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
-                    fact_pa   = 1/(mymass*plasma_Zmean/plasma_mass)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
 					
                     ! Now calc dt
