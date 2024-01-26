@@ -72,7 +72,32 @@ MODULE beams3d_physics_mod
       !     Date:          07/05/2023
       !     Description:   Coulomb log as defined in NRL 2019
       !-----------------------------------------------------------------
-   FUNCTION coulomb_log_nrl19(ne_in,te_in,vbeta_in,Zeff_in)  result(slow_par)
+   FUNCTION coulomb_log_nrl19(ne_in,te_in,vbeta_in,Zeff_in)   result(slow_par)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          ne_in        Electron Density [m^-3]
+         !          te_in        Electron Temperature [eV]
+         !          vbeta_in     Normalized Particle Velocity [c]
+         !          Zeff_in      Plasma effective charge [arb]
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION :: slow_par(3)
+         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
+         DOUBLE PRECISION :: ne_cm,coulomb_log
+         ne_cm = ne_in * 1E-6
+         coulomb_log = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
+         slow_par(1) = fact_crit*SQRT(te_in) 
+         slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
+         slow_par(3) =Zeff_in*fact_pa         
+      END FUNCTION coulomb_log_nrl19
+
+      !-----------------------------------------------------------------
+      !     Function:      coulomb_log_nrl19
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          07/05/2023
+      !     Description:   Coulomb log as defined in NRL 2019
+      !-----------------------------------------------------------------
+   FUNCTION coulomb_log_nrl19_ie(ne_in,te_in,vbeta_in,Zeff_in)  result(slow_par)
       !--------------------------------------------------------------
       !     Input Parameters
       !          ne_in        Electron Density [m^-3]
@@ -97,7 +122,7 @@ MODULE beams3d_physics_mod
       slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here, tau_spit
       slow_par(3) =zeff_in*fact_pa
          RETURN
-      END FUNCTION coulomb_log_nrl19
+      END FUNCTION coulomb_log_nrl19_ie
 
       !-----------------------------------------------------------------
       !     Function:      coulomb_log_locust
