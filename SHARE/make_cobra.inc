@@ -14,11 +14,16 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -assume noold_unit_star \
+  FLAGS_A = -I$(MKL_HOME)/include -assume noold_unit_star \
             -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip 
-  FLAGS_D = -I$(MKL_HOME)/include -O0 -assume noold_unit_star \
-            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip \
-            -check all,noarg_temp_created -ftrapuv -g -traceback
+
+  FLAGS_R = $(FLAGS_A) -O2
+
+  FLAGS_D = $(FLAGS_A) -O0 \
+            -check all,noarg_temp_created -ftrapuv -g -traceback \
+            -fp-model=no-except
+
+#  FLAGS_R = $(FLAGS_D)
 
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
             -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
