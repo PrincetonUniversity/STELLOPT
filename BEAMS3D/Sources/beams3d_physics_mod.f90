@@ -67,37 +67,46 @@ MODULE beams3d_physics_mod
       CONTAINS
 
       !-----------------------------------------------------------------
-      !     Function:      coulomb_log_nrl19
+      !     Function:      coll_op_nrl19
       !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
       !     Date:          07/05/2023
-      !     Description:   Coulomb log as defined in NRL 2019
+      !     Description:   Slowing down calc using
+      !                    Coulomb log as defined in NRL 2019 for all species
+      !                    Calculationg method before 2024
       !-----------------------------------------------------------------
-   FUNCTION coulomb_log_nrl19(ne_in,te_in,vbeta_in,Zeff_in)   result(slow_par)
+   FUNCTION coll_op_nrl19(ne_in,te_in,vbeta_in,Zeff_in)   result(slow_par)
          !--------------------------------------------------------------
          !     Input Parameters
          !          ne_in        Electron Density [m^-3]
          !          te_in        Electron Temperature [eV]
          !          vbeta_in     Normalized Particle Velocity [c]
          !          Zeff_in      Plasma effective charge [arb]
+      !     Output Parameters
+      !          slow_par(1)     Critical velocity vcrit [m/s]    
+      !          slow_par(2)     Spitzer time tau_spit [s]    
+      !          slow_par(3)     Pitch angle scattering factor [arb]        
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
-         DOUBLE PRECISION :: ne_cm,coulomb_log
+         DOUBLE PRECISION :: ne_cm,coulomb_log,fact_crit_legacy
          ne_cm = ne_in * 1E-6
          coulomb_log = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
-         slow_par(1) = fact_crit*SQRT(te_in) 
+         fact_crit_legacy = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0)
+         slow_par(1) = fact_crit_legacy*SQRT(te_in) 
          slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
          slow_par(3) =Zeff_in*fact_pa         
-      END FUNCTION coulomb_log_nrl19
+      END FUNCTION coll_op_nrl19
 
       !-----------------------------------------------------------------
-      !     Function:      coulomb_log_nrl19
-      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Function:      coll_op_nrl19_ie
+      !     Authors:       D. Kulla (david.kulla@ipp.mpg.de)
       !     Date:          07/05/2023
-      !     Description:   Coulomb log as defined in NRL 2019
+      !     Description:   Slowing down calc using
+      !                    Coulomb log as defined in NRL 2019 for ions
+      !                    Coulomb log as defined in NRL 2019 for electrons
       !-----------------------------------------------------------------
-   FUNCTION coulomb_log_nrl19_ie(ne_in,te_in,vbeta_in,Zeff_in)  result(slow_par)
+   FUNCTION coll_op_nrl19_ie(ne_in,te_in,vbeta_in,Zeff_in)  result(slow_par)
       !--------------------------------------------------------------
       !     Input Parameters
       !          ne_in        Electron Density [m^-3]
@@ -122,58 +131,17 @@ MODULE beams3d_physics_mod
       slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here, tau_spit
       slow_par(3) =zeff_in*fact_pa
          RETURN
-      END FUNCTION coulomb_log_nrl19_ie
+      END FUNCTION coll_op_nrl19_ie
 
       !-----------------------------------------------------------------
-      !     Function:      coulomb_log_locust
+      !     Function:      coll_op_nubeam
       !     Authors:       D. Kulla (david.kulla@ipp.mpg.de)
       !     Date:          07/05/2023
-      !     Description:   Coulomb log as defined in LOCUST code
-      !-----------------------------------------------------------------
-   FUNCTION coulomb_log_locust(ne_in,te_in,vbeta_in,Zeff_in,modb_in,speed_in)  result(slow_par)
-      !--------------------------------------------------------------
-      !     Input Parameters
-      !          ne_in        Electron Density [m^-3]
-      !          te_in        Electron Temperature [eV]
-      !          vbeta_in     Normalized Particle Velocity [c]
-      !          Zeff_in      Plasma effective charge [arb]
-      !          modb_in      Magnetic Field strength [T]
-      !          speed_in     Particle Speed [m/s]
-      !     Output Parameters
-      !          slow_par(1)  Critical velocity vcrit [m/s]    
-      !          slow_par(2)  Spitzer time tau_spit [s]    
-      !          slow_par(3)  Pitch angle scattering factor [arb]  
-      !--------------------------------------------------------------
-      IMPLICIT NONE
-      DOUBLE PRECISION :: slow_par(3)
-         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in, modb_in, speed_in
-      DOUBLE PRECISION :: omega_p2, omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin, coulomb_log
-         omega_p2 = (ne_in * Zeff_in*e_charge* Zeff_in*e_charge ) / (plasma_mass * eps_0)
-         Omega_p =  (Zeff_in*e_charge) / plasma_mass * modb_in
-         bmax = one/sqrt((omega_p2 + Omega_p*Omega_p)/(te_in*e_charge/plasma_mass + speed_in*speed_in))
-         mu_ip = plasma_mass * mymass / (plasma_mass + mymass)
-         u_ip2 = 3 * (te_in)*e_charge / plasma_mass + speed_in*speed_in
-         bmin_c = (mycharge * (Zeff_in*e_charge)) / (4*pi*eps_0 * mu_ip * u_ip2)
-         bmin_q = hbar / (2*mu_ip*sqrt(u_ip2)) * 0.60653065971
-         bmin = max(bmin_q,bmin_c)
-      coulomb_log = log(bmax/bmin)
-      coulomb_log = max(coulomb_log,one)
-
-      ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-      slow_par(1) = fact_crit_pro/mymass**(1.0/3.0)*SQRT(te_in) !vcrit
-      slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
-      slow_par(3) =zeff_in*fact_pa
-         RETURN
-      END FUNCTION coulomb_log_locust
-
-      !-----------------------------------------------------------------
-      !     Function:      coulomb_log_nubeam
-      !     Authors:       D. Kulla (david.kulla@ipp.mpg.de)
-      !     Date:          07/05/2023
-      !     Description:   Coulomb log as defined in NUBEAM code
+      !     Description:   Slowing down calc using
+      !                    Coulomb log as defined in NUBEAM code
       !                    (r8_coulog.f90).
       !-----------------------------------------------------------------
-   FUNCTION coulomb_log_nubeam(ne_in,ni_in,te_in,ti_in,vbeta_in,Zeff_in,modb,speed_in) result(slow_par)
+   FUNCTION coll_op_nubeam(ne_in,ni_in,te_in,ti_in,vbeta_in,Zeff_in,modb,speed_in) result(slow_par)
          !--------------------------------------------------------------
          !     Input Parameters
          !          ne_in        Electron Density [m^-3]
@@ -238,7 +206,7 @@ MODULE beams3d_physics_mod
       slow_par(2) =6.32e8*myA/(myZ*myZ*coulomb_loge)*SQRT(te_in*te_in*te_in)/(ne_in*1.0e-6)
       slow_par(3) =zi2/zi2_ai/myA
          RETURN
-      END FUNCTION coulomb_log_nubeam
+      END FUNCTION coll_op_nubeam
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_physics_gc
@@ -364,13 +332,13 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
 
-            slow_par = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+            slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
             vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
             tau_spit_inv = one/slow_par(2)
             vc3_tauinv = vcrit_cube*tau_spit_inv
             !WRITE(6, *) 'NRL19: ',slow_par, vc3_tauinv*slow_par(3)
-            !slow_par = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-            !slow_par = coulomb_log_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+            !slow_par = coll_op_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
+            !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
             !vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
             !tau_spit_inv = one/slow_par(2)
             !vc3_tauinv = vcrit_cube*tau_spit_inv
@@ -601,10 +569,10 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
 
-            slow_par = coulomb_log_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+            slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
             !WRITE(6, *) 'NRL19: ', slow_par
-            !slow_par = coulomb_log_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-            !slow_par = coulomb_log_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+            !slow_par = coll_op_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
+            !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
             !WRITE(6, *) 'NUBEAM: ', slow_par
 
             vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
