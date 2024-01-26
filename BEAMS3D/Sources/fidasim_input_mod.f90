@@ -24,7 +24,7 @@ MODULE fidasim_input_mod
       rmin, rmax,  phimin, phimax, &
       rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
       raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida,nne
+      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida,nne, nte, nti, nzeff
    USE beams3d_runtime
    ! , ONLY: id_string, nbeams, beam, lverb, handle_err, &
    !    HDF5_OPEN_ERR,HDF5_WRITE_ERR,HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, &
@@ -116,7 +116,8 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    !-----------------------------------------------------------------------
    INTEGER :: ier, iunit,istat, i, j, d1, d2, d3, k, k1, k2, kmax ,ider, &
       l, m, n, b, i3, j3, k3
-   INTEGER(HID_T) ::  qid_gid, qid_gid2, temp_gid
+   !INTEGER(HID_T) ::    qid_gid, temp_gid
+   INTEGER(HID_T) :: qid_gid2
    INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask
 
    REAL*8 :: fvalE(1,3), fval(1), fval2(1), xparam, yparam, zparam
@@ -130,7 +131,6 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    CHARACTER(LEN=8) :: temp_str8
 
    INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/), ictE(8)=(/0,1,1,1,0,0,0,0/)
-   REAL*8, PARAMETER :: one = 1
    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
    DOUBLE PRECISION, PARAMETER :: zero          = 0.0D0 ! 0.0
    DOUBLE PRECISION, PARAMETER :: t_min          = 1.0D-3 !
@@ -506,7 +506,7 @@ END SUBROUTINE init_fidasim_input
 
 SUBROUTINE write_fidasim_namelist(iunit_out, istat)
       INTEGER, INTENT(in) :: iunit_out
-      INTEGER, INTENT(out) :: istat
+      !INTEGER, INTENT(out) :: istat
       INTEGER :: ik, n
       CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
       CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
@@ -804,8 +804,10 @@ END SUBROUTINE write_fidasim_geometry
 
 SUBROUTINE write_fidasim_equilibrium
 
-        INTEGER :: ier, i, j, k, l, m, n
-        INTEGER(HID_T) ::  qid_gid, qid_gid2, temp_gid
+        !INTEGER :: ier
+        INTEGER :: i, j, k, l, m, n
+        !INTEGER(HID_T) ::  qid_gid, temp_gid
+        INTEGER(HID_T) ::  qid_gid2
         INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask
 
         REAL*8 :: fvalE(1,3), fval(1), xparam, yparam, zparam
@@ -1086,22 +1088,22 @@ SUBROUTINE write_fidasim_equilibrium
         CALL write_att_hdf5(qid_gid2,'data_source','Data initialized from BEAMS3D ',ier)
         CALL write_att_hdf5(qid_gid2,'description','no bulk plasma rotation/flow',ier)
 
-        CALL write_var_hdf5(qid_gid2,'rho',nne, ier,DBLVAR=DBLE(SQRT(NE_AUX_S)))
+        CALL write_var_hdf5(qid_gid2,'rho',nne, ier,DBLVAR=DBLE(SQRT(NE_AUX_S(1:nne))))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'rho',ier)
         CALL h5dopen_f(qid_gid2, 'rho', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'units','-',ier)
-        CALL write_att_hdf5(temp_gid,'description','sqrt(s)',ier)
+        CALL write_att_hdf5(temp_gid,'description','sqrt(s), nne',ier)
         CALL h5dclose_f(temp_gid,ier)
 
 
-        CALL write_var_hdf5(qid_gid2,'dene',nne, ier,DBLVAR=DBLE(NE_AUX_F*1.0E-6))
+        CALL write_var_hdf5(qid_gid2,'dene',nne, ier,DBLVAR=DBLE(NE_AUX_F(1:nne)*1.0E-6))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dene',ier)
         CALL h5dopen_f(qid_gid2, 'dene', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'units','[m^-3]',ier)
         CALL write_att_hdf5(temp_gid,'description','Electron Density',ier)
         CALL h5dclose_f(temp_gid,ier)
 
-        CALL write_var_hdf5(qid_gid2,'te',nne, ier,DBLVAR=DBLE(TE_AUX_F*1.0E-3))
+        CALL write_var_hdf5(qid_gid2,'te',nte, ier,DBLVAR=DBLE(TE_AUX_F(1:nte)*1.0E-3))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'te',ier)
         CALL h5dopen_f(qid_gid2, 'te', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'units','[eV]',ier)
@@ -1109,7 +1111,7 @@ SUBROUTINE write_fidasim_equilibrium
         CALL h5dclose_f(temp_gid,ier)
 
 
-        CALL write_var_hdf5(qid_gid2,'ti',nne, ier,DBLVAR=DBLE(TI_AUX_F*1.0E-3))
+        CALL write_var_hdf5(qid_gid2,'ti',nti, ier,DBLVAR=DBLE(TI_AUX_F(1:nti)*1.0E-3))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ti',ier)
         CALL h5dopen_f(qid_gid2, 'ti', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'units','[eV]',ier)
@@ -1117,7 +1119,7 @@ SUBROUTINE write_fidasim_equilibrium
         CALL h5dclose_f(temp_gid,ier)
 
 
-        CALL write_var_hdf5(qid_gid2,'zeff',nne, ier,DBLVAR=DBLE(ZEFF_AUX_F))
+        CALL write_var_hdf5(qid_gid2,'zeff',nzeff, ier,DBLVAR=DBLE(ZEFF_AUX_F(1:nzeff)))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zeff',ier)
         CALL h5dopen_f(qid_gid2, 'zeff', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'units','[-]',ier)
@@ -1139,10 +1141,9 @@ END SUBROUTINE write_fidasim_equilibrium
 
 
 SUBROUTINE write_fidasim_grid(qid_gid_in)
-
-        INTEGER :: ier
-        INTEGER(HID_T), INTENT(IN)::  qid_gid_in
-        INTEGER(HID_T) ::  temp_gid
+         INTEGER(HID_T), INTENT(IN)::  qid_gid_in
+       !  INTEGER :: ier
+      !   INTEGER(HID_T) ::  temp_gid
 
         DOUBLE PRECISION, ALLOCATABLE :: r2dtemp(:,:)
 
