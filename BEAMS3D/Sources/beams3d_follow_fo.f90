@@ -151,7 +151,7 @@ SUBROUTINE beams3d_follow_fo
                     ltherm = .false.
                     lneut  = .false.
                     ! Collision parameters
-                    fact_pa   = 1/(mymass*plasma_Zmean/plasma_mass)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
 					
                     DO ! Must do it this way becasue lbeam changes q(4) values
@@ -197,7 +197,7 @@ SUBROUTINE beams3d_follow_fo
                     ltherm = .false.
                     lneut  = .false.
                     ! Collision parameters
-                    fact_pa   = 1/(mymass*plasma_Zmean/plasma_mass)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
 					
                     ! Setup DRKHVG parameters
@@ -254,7 +254,7 @@ SUBROUTINE beams3d_follow_fo
                     ltherm = .false.
                     lneut  = .false.
                     ! Collision parameters
-                    fact_pa   = 1/(mymass*plasma_Zmean/plasma_mass)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
 					
                     ! Now handle Coordinate conversion
