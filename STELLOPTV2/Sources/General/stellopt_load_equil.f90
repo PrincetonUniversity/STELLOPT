@@ -140,7 +140,11 @@
             ! Get the external currents
             IF (ALLOCATED(extcur)) DEALLOCATE(extcur)
             ALLOCATE(extcur(nextcur))
-            extcur(1:nextcur) = extcur_vmec(1:nextcur)
+            IF (ALLOCATED(extcur_vmec)) THEN
+               extcur(1:nextcur) = extcur_vmec(1:nextcur)
+            ELSE
+               extcur = 0.0
+            END IF
             ! Radial Splines Arrays
             CALL setup_prof_spline(pres_spl,  ns_vmec, shat, pres_vmec, iflag)
             CALL setup_prof_spline(iota_spl,  ns_vmec, shat, iota_vmec, iflag)
