@@ -153,6 +153,7 @@ SUBROUTINE beams3d_follow_fo
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+					
                     DO ! Must do it this way becasue lbeam changes q(4) values
 #if defined(NAG)
                        CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_nag,tol_nag,relab,outpart_beams3d_nag,D02CJW,w,ier)
@@ -198,6 +199,7 @@ SUBROUTINE beams3d_follow_fo
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+					
                     ! Setup DRKHVG parameters
                     iopt = 0 
                     DO
@@ -254,6 +256,7 @@ SUBROUTINE beams3d_follow_fo
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+					
                     ! Now handle Coordinate conversion
                     IF (lbeam .and. mytdex == 3) mytdex = 2 ! BEAM -> FO Run
                     IF (lboxsim)  mytdex = 1

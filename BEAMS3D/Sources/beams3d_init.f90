@@ -853,7 +853,6 @@
       pimin_fida = pitch_fida(1)-1/pi_h/2
 
       IF (lverb) THEN
-         WRITE(6,'(F9.5,F9.5,F9.5,F9.5,F9.5)') r_h, p_h, z_h, e_h, pi_h
          WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
          WRITE(6,'(A,F9.5)') '   T_FIDA   = ',t_fida
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R_FIDA   = [',rmin_fida,',',rmax_fida,'];  NR:   ',nr_fida
