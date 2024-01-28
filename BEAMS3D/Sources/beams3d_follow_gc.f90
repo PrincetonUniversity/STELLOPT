@@ -135,6 +135,7 @@ SUBROUTINE beams3d_follow_gc
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+					E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
                     ltherm = .false.
@@ -144,6 +145,7 @@ SUBROUTINE beams3d_follow_gc
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+					
                     ! Now calc dt
                     CALL beams3d_calc_dt(1,q(1),q(2),q(3),dt)
                     tf_nag = t_nag+dt
@@ -193,6 +195,7 @@ SUBROUTINE beams3d_follow_gc
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+					
                     ! Now calc dt
                     CALL beams3d_calc_dt(1,q(1),q(2),q(3),dt)
                     tf_nag = t_nag+dt
@@ -265,6 +268,7 @@ SUBROUTINE beams3d_follow_gc
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+					
                     ! Now calc dt
                     CALL beams3d_calc_dt(1,q(1),q(2),q(3),dt)
                     tf_nag = t_nag+dt
