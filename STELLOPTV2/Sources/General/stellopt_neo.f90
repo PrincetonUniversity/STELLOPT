@@ -341,7 +341,7 @@
                WRITE(6,'(2X,2(A,I3.3))')'THETA_N = ',theta_n,';   PHI_N = ',phi_n
                WRITE(6,'(2X,1(A,I3.3))')'NPARTICLES = ',npart
                WRITE(6,'(2X,A,E14.4)')  'ACCURACY   = ',acc_req
-               WRITE(6,'(2X,2(A,I4.4))')'NSTEP_MIN = ',nstep_min,';   NSTEP_MAX = ',nstep_max
+               WRITE(6,'(2X,2(A,I6.6))')'NSTEP_MIN = ',nstep_min,';   NSTEP_MAX = ',nstep_max
                WRITE(6,'(2X,A,I3.3)')   'NSTEP_PER = ',nstep_per
                WRITE(6,'(A)')           '------------------------------------------------------------------'
                WRITE(6,'(A)')           '  SURF  EPS_EFF^(3/2)  REFF       IOTA        B_REF       R_REF'

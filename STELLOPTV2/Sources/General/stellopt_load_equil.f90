@@ -382,7 +382,7 @@
          WRITE(6,'(A,F7.3,A)') '                    ',betat,'  (toroidal)'
          WRITE(6,'(A,E20.12)') '  TORIDAL CURRENT:  ',curtor
          WRITE(6,'(A,F7.3)')   '     TORIDAL FLUX:  ',phiedge
-         WRITE(6,'(A,F7.3)')   '           VOLUME:  ',volume    
+         WRITE(6,'(A,F7.1)')   '           VOLUME:  ',volume    
          WRITE(6,'(A,F7.3)')   '     MAJOR RADIUS:  ',rmajor
          WRITE(6,'(A,F7.3)')   '     MINOR RADIUS:  ',aminor
          WRITE(6,'(A,F7.3)')   '       AXIS FIELD:  ',Baxis
