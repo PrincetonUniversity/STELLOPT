@@ -195,7 +195,7 @@
       DOUBLE PRECISION, INTENT(in),OPTIONAL :: gmnc(1:mnmax,k1:k2),gmns(1:mnmax,k1:k2)
       INTEGER, INTENT(in), OPTIONAL :: comm
       DOUBLE PRECISION, INTENT(in),OPTIONAL :: smax
-      INTEGER ::  ns_t, u, mn, isherm, nu1, nv1
+      INTEGER ::  ns_t, u, mn, isherm, nu1, nv1, k1p
       INTEGER ::  shar_comm, shar_rank, shar_size
       INTEGER ::  xn(1:mnmax)
       DOUBLE PRECISION :: dlambda
@@ -395,6 +395,7 @@
          ALLOCATE(f_temp(nu,nv,k1:k2))
          FORALL(u=k1:k2) rho(u) = S_MAX*REAL(u-1)/REAL(ns_t-1)
          rho = SQRT(rho) ! Improves lookup near axis
+         IF (rho(k1) == 0.0) k1p = k1+1
          FORALL(u=1:nu) xu(u) = REAL(u-1)/REAL(nu-1)
          FORALL(u=1:nv) xv(u) = REAL(u-1)/REAL(nv-1)
          ! Preform Init
@@ -592,7 +593,7 @@
             gsz =   RU4D(1,:,:,:)*R4D(1,:,:,:)
             f_temp   = G4D(1,:,:,:)
             gs  = (gsr*gsr+gsp*gsp+gsz*gsz)/(f_temp*f_temp)  !|grad(s)|^2
-            FORALL(u=k1:k2) gs(:,:,u) = gs(:,:,u)/(4*rho(u)*rho(u)) !|grad(rho)|^2
+            FORALL(u=k1p:k2) gs(:,:,u) = gs(:,:,u)/(4.0*rho(u)*rho(u)) !|grad(rho)|^2
             ! dV/ds
             Vp = SUM(SUM(f_temp,DIM=1),DIM=1)
             !Vp(1) = 2*Vp(2) - Vp(3)
