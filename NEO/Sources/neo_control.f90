@@ -13,6 +13,6 @@ MODULE neo_control
   INTEGER                            :: spline_test
   INTEGER                            :: max_m_mode, max_n_mode
   INTEGER                            :: lab_swi, inp_swi, ref_swi, eout_swi
-  INTEGER                            :: no_fluxs
+  INTEGER                            :: no_fluxs=0
   INTEGER, DIMENSION(:), ALLOCATABLE :: fluxs_arr
 END MODULE neo_control
