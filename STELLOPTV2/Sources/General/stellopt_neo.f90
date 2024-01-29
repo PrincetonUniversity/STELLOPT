@@ -128,6 +128,7 @@
             END IF
 !DEC$ ENDIF
             ! CALL neo_read_control (Assume NEO namelist has been read)
+            lambda_b = 0.0; lambda_ps1 = 0.0; lambda_ps2=0.0; lambda_b1 = 0.0; lambda_b2=0.0
             in_file  = 'dummy'
             extension = TRIM(proc_string)
             out_file = 'neo_out.'//TRIM(proc_string)
