@@ -10,21 +10,21 @@ Cobra
 -----
 
     module load git
-    module load intel
-    module load mkl
-    module load impi
-    module load hdf5-mpi/1.10.5
-    module load netcdf-mpi/4.7.0
+    module load intel/2023.1.0.x
+    module load mkl/2023.1
+    module load impi/2021.9
+    module load hdf5-mpi/1.14.1
+    module load netcdf-mpi/4.8.1
     module load fftw-mpi
 
 Raven
 -----
 
     module load git
-    module load intel/19.1.2
-    module load mkl
-    module load impi/2019.8
-    module load netcdf-mpi
+    module load intel/21.4.0
+    module load mkl/2021.2
+    module load impi/2021.4
+    module load netcdf-mpi/4.8.1
     module load hdf5-mpi
     module load fftw-mpi
     module load anaconda/3/2020.02
