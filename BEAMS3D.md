@@ -374,7 +374,9 @@ bins by VLL the particles at each NPOINC time step.
 
 ### Tutorials
 
-[NCSX Neutral Beam Injection Example](NCSX Neutral Beam Injection Example.md)
+[NCSX Neutral Beam Deposition Example](NCSX Neutral Beam Deposition Example.md)
+
+[NCSX Neutral Beam Restart Example](NCSX Neutral Beam Restart Example.md)
 
 [Benchmarking and Validation](BEAMS3D Validation and Benchmarking on HPC systems.md)
 
