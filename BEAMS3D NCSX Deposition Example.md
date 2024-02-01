@@ -305,3 +305,5 @@ BEAMS3D Version  4.07
 
 ![](images/inject_ncsx_c09r00_full.png)
 
+![](images/NCSX_NBI_DEPO.png)
+
