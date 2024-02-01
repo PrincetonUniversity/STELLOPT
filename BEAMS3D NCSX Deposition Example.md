@@ -10,9 +10,11 @@ coils file from that example.
 ------------------------------------------------------------------------
 
 **Edit the input namelist text file.**
+
 The following namelist should be added to the VMEC input file. And for
 clarity the input and wout file should be renamed `input.ncsx_c09r00_free_birth`
-and `wout_ncsx_c09r00_free_birth.nc`.
+and `wout_ncsx_c09r00_free_birth.nc`. Additionally, a wall file with port
+openings is requried: [NCSX port wall](examples/NCSX_wall_nbiport_acc.dat).
 
 ```fortran
 &BEAMS3D_INPUT
