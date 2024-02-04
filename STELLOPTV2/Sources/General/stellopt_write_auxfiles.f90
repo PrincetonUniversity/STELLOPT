@@ -8,7 +8,7 @@
       SUBROUTINE stellopt_write_auxfiles
       USE stellopt_runtime
       USE stellopt_input_mod
-      USE equil_utils, ONLY: move_txtfile, copy_txtfile, copy_boozer_file
+      USE equil_utils, ONLY: move_txtfile, copy_txtfile, copy_boozer_file, nrad
       USE beams3d_runtime, ONLY: id_string_beams => id_string, lverb_beams => lverb
       
 !-----------------------------------------------------------------------
@@ -75,7 +75,7 @@
          ! This is total CRAP, no system calls suggest adding read/write paradigm
          CALL SYSTEM('cp mgrid_'//TRIM(proc_string_old)//'.nc mgrid_'//TRIM(proc_string)//'.nc')
       END IF
-      DO ik = 1, nsd
+      DO ik = 1, nrad
          WRITE(temp_str,'(A,I3.3)') '_s',ik
          CALL move_txtfile('input_dkes.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'input_dkes.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
          CALL move_txtfile('dkesout.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'dkesout.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
