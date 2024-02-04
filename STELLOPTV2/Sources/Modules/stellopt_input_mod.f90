@@ -505,6 +505,8 @@
       laxis_opt(:)        = .FALSE.
       lcoil_spline(:,:)   = .FALSE.
       lwindsurf(:)        = .FALSE.
+      dxval_opt       = -1.0
+      dyval_opt       = -1.0
       dphiedge_opt    = -1.0
       dcurtor_opt     = -1.0
       dpscale_opt     = -1.0
@@ -571,6 +573,8 @@
       sigma_Rosenbrock_F(1:ROSENBROCK_DIM)  = bigno
 
       IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
+         xval_min        = -bigno;  xval_max        = bigno
+         yval_min        = -bigno;  yval_max        = bigno
          phiedge_min     = -bigno;  phiedge_max     = bigno
          curtor_min      = -bigno;  curtor_max      = bigno
          bcrit_min       = -bigno;  bcrit_max       = bigno

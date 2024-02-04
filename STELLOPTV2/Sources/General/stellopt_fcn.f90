@@ -397,15 +397,18 @@
                END IF
             CASE('spec')
             CASE('test')
-               !Do Nothing
+               ! We need to set a few thing so hte error checks are defined
+               am_aux_s(:) = -1
+               am_aux_f(:) =  0
+               pres_scale  =  1.0
          END SELECT
          ! Check profiles for negative values of pressure
          dex = MINLOC(am_aux_s(2:),DIM=1)
          IF (dex > 2) THEN
-            IF (ANY(am_aux_f(1:dex) < 0)) iflag = -55
-            IF (ALL(am_aux_f(1:dex) == 0)) iflag = -55
+            IF (ANY(am_aux_f(1:dex) < 0.0)) iflag = -55
+            IF (ALL(am_aux_f(1:dex) == 0.0)) iflag = -55
          END IF
-         IF (pres_scale < 0) iflag = -55
+         IF (pres_scale < 0.0) iflag = -55
          ! Now call any functions necessary to read or load the
          ! equilibrium output.  Things like conversion to other
          ! coordinate systems should be put here.  Note that it should be
