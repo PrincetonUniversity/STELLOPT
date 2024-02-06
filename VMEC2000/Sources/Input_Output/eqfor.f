@@ -439,8 +439,8 @@ C-----------------------------------------------
      1   ' RBtor(s=0)            = ',f14.6,' [T-m]',/
      1   ' Volume Average B      = ',f14.6,' [T]',/
      2   ' Ion Larmor Radius     = ',f14.6,' [M] X Ti(keV)**0.5',/
-     3   ' <J||**2>/<J-perp**2>  = ',f14.6,' (Vol. Averaged)',/
-     4   ' <JPS**2>/<J-perp**2>  = ',f14.6,' (Vol. Averaged)',/)
+     3   ' <J||**2>/<J-perp**2>  = ',e20.6,' (Vol. Averaged)',/
+     4   ' <JPS**2>/<J-perp**2>  = ',e20.6,' (Vol. Averaged)',/)
 
       IF(rank.EQ.0) WRITE (nthreed, 90)
    90 FORMAT(/,71('-'),/,' MORE GEOMETRIC AND PHYSICS QUANTITIES',/,
