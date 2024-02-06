@@ -122,6 +122,8 @@
                   lpar = mn+mnsize*(js - 1) + (ntype - 1)*mns + 1
                   IF (MOD(m,2) .eq. 0) THEN
                      pscalxc(lpar) = one
+                  ELSEIF (psqrts(1,MAX(2,js)) .eq. 0) THEN
+                     pscalxc(lpar) = one
                   ELSE
                      pscalxc(lpar) = one/psqrts(1,MAX(2,js))
                   END IF
