@@ -154,8 +154,13 @@
       vp(ns+1) = 0
       DO js = nsmin, nsmax
          vp(js) = signgs*SUM(gsqrt(:,js)*pwint(:,js))
+         ! Added by SAL 02/06/2024 should be a new error
+         IF (vp(js) .eq. 0.0) ier_flag = arz_bad_value_flag
       END DO
 
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,ier_flag,1,MPI_INTEGER,
+     1                MPI_MAX,NS_COMM,MPI_ERR)
+      IF (ier_flag .ne. norm_term_flag) RETURN
 !
 !     COMPUTE CONTRA-VARIANT COMPONENTS OF B (Bsupu,v) ON RADIAL HALF-MESH
 !     TO ACCOMODATE LRFP=T CASES, THE OVERALL PHIP FACTOR (PRIOR TO v8.46)
