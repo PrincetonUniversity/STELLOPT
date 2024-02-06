@@ -42,13 +42,13 @@
       DO js = nsmin, nsmax
          jcurv(js) = (signgs*ohs)*(buco(js+1) - buco(js))
          jcuru(js) =-(signgs*ohs)*(bvco(js+1) - bvco(js))
-         vpphi(js) = (vp(js+1) + vp(js))/2
+         vpphi(js) = (vp(js+1) + vp(js))*0.5
          presgrad(js) = (pres(js+1) - pres(js))*ohs
          equif(js) = (-phipf(js)*jcuru(js) + chipf(js)*jcurv(js))
-     1                /vpphi(js) + presgrad(js)
+     1                  /vpphi(js) + presgrad(js)
       END DO
-      equif(1) = 0
-      equif(ns) = 0
+      equif(1) = 0.0
+      equif(ns) = 0.0
 
       !SKS-RANGE: All LHS's computed correctly in [t1lglob, trglob]
 
