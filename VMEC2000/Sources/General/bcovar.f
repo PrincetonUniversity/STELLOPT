@@ -2,7 +2,7 @@
       USE vmec_main, fpsi => bvco, p5 => cp5
       USE vmec_params, ONLY: ns4, signgs, pdamp, lamscale, ntmax,
      &                       bsub_bad_js1_flag, arz_bad_value_flag,
-     &                       norm_term_flag
+     &                       norm_term_flag, vpp_bad_value_flag
       USE realspace, ONLY: pextra1, pextra2, pextra3, pextra4,
      &                     pguu, pguv, pgvv, pru, pzu,
      &                     pr1, prv, pzv, pshalf, pwint, pz1,
@@ -155,7 +155,7 @@
       DO js = nsmin, nsmax
          vp(js) = signgs*SUM(gsqrt(:,js)*pwint(:,js))
          ! Added by SAL 02/06/2024 should be a new error
-         IF (vp(js) .eq. 0.0) ier_flag = arz_bad_value_flag
+         IF (vp(js) .eq. 0.0) ier_flag = vpp_bad_value_flag
       END DO
 
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,ier_flag,1,MPI_INTEGER,
