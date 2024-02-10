@@ -31,7 +31,7 @@ C-----------------------------------------------
       REAL(dp) :: dcon, currv, aspect, hs, ohs, voli, 
      1   signiota, rc0mse, r00, r0scale, z00, dkappa, fsqsum0,
      2   pressum0, fnorm, fsqr=1, fsqz=1, fsql=1, fnorm1, fnorml, 
-     3   fsqr1, fsqz1, fsql1, fsq, fedge, wb, wp, r00b, z00b, fz00_edge
+     3   fsqr1=1, fsqz1=1, fsql1=1, fsq, fedge, wb, wp, r00b, z00b, fz00_edge
 #ifdef _ANIMEC
      4  ,wpar, wper
 #endif
@@ -46,7 +46,7 @@ C-----------------------------------------------
       REAL(dp), DIMENSION(:), ALLOCATABLE :: pperp_ns
       REAL(dp) :: medge, phedg
 #endif
-      REAL(dp) :: rbtor, rbtor0, ctor, delbsq, res0, res1, delt0r   !DO NOT remove res0, delt0r -> V3FIT
+      REAL(dp) :: rbtor, rbtor0, ctor=0, delbsq, res0, res1, delt0r   !DO NOT remove res0, delt0r -> V3FIT
       REAL(dp), DIMENSION(ndatafmax) ::
      1  spfa, spfa2, hp, sifa, sifa2, hi
       LOGICAL :: lthreed, lconm1
