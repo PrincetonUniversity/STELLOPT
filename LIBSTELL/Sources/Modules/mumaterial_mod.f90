@@ -315,11 +315,11 @@
       lverb = .FALSE.
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-            CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 100, 1, comm)
+            CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 100, 1.0d0, comm)
             CALL MPI_BARRIER(shar_comm,istat)
       ELSE
 #endif
-            CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 1, 0)
+            CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 100, 1.0d0)
 #if defined(MPI_OPT)
       END IF
 #endif
@@ -404,7 +404,7 @@
       DOUBLE PRECISION :: x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n, mu0
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER :: N_store
       DOUBLE PRECISION, ALLOCATABLE :: dist(:), dx(:,:)
-      INTEGER, ALLOCATABLE :: nCount(:) 
+      INTEGER, POINTER :: nCount(:) 
 
       EXTERNAL:: getBfld
       

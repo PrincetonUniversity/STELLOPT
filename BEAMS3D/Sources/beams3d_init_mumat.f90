@@ -68,7 +68,7 @@
       ! Set parameters
       !CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 100, MPI_COMM_LOCAL)
       CALL MUMATERIAL_SETD(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
-                           mumaterial_lamfactor, mumaterial_nneighbor, MPI_COMM_LOCAL)
+                           mumaterial_lamfactor, mumaterial_nneighbor, mumaterial_dist, MPI_COMM_LOCAL)
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL, ierr_mpi)

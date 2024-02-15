@@ -1,0 +1,107 @@
+Begin building STELLOPT with option: clean_release with 1 CPUs.
+make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building LIBSTELL
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building BCYCLIC
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building BEAMS3D
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building BOOTSJ
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building BNORM
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building BOOZ_XFORM
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building COBRAVMEC
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building COILOPT
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building DIAGNO
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building DKES
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building FIELDLINES
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building J_INVARIANT
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building MAKEGRID
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building NEO
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building NESCOIL
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building PENTA
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building TORLINES
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building VMEC2000
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building VMEC2PIES
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building VMEC2SPEC
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building VMEC2STEL
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building VMEC2V690
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building VMEC2XGC
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building STELLOPTV2
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+Begin building WALL_ACCELERATE
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.
+../make.inc:20: cobra/u/lucv/src/STELLOPT/SHARE/make_cobra.inc: No such file or directory
+../make.inc:24: cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc: No such file or directory
+make: *** No rule to make target 'cobra/u/lucv/src/STELLOPT/SHARE/make_all.inc'.  Stop.

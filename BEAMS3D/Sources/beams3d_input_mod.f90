@@ -103,7 +103,7 @@
                                nr_fida, nphi_fida, nz_fida, nenergy_fida, &
                                npitch_fida, t_fida, &
                                mumaterial_tol, mumaterial_lambda, mumaterial_lamfactor, &
-                               mumaterial_niter, mumaterial_nneighbor
+                               mumaterial_niter, mumaterial_nneighbor, mumaterial_dist
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -228,6 +228,7 @@
       mumaterial_lambda = 0.7
       mumaterial_lamfactor = 0.75
       mumaterial_nneighbor = 100
+      mumaterial_dist = 1.0D0
       RETURN
       END SUBROUTINE init_beams3d_input
       
@@ -632,6 +633,7 @@
 
       CALL MPI_BCAST(mumaterial_niter,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(mumaterial_nneighbor,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(mumaterial_dist,1,MPI_REAL8, local_master, comm, istat)
       CALL MPI_BCAST(mumaterial_tol,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(mumaterial_lambda,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(mumaterial_lamfactor,1,MPI_REAL8, local_master, comm,istat)
