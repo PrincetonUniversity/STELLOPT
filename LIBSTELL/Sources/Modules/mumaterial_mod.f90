@@ -28,6 +28,7 @@
 !           maxErr:           Max allowed error for convergence in all iterations
 !           maxIter:          Max allowed number of iterations
 !           maxNb:            Max number of neighbours, <=0 disables nearest neighbours
+!           maxDist:          Max distance of neighbours, <=0 disables distance limit
 !           lambdaStart:      Base value for lambda in iterate
 !           lambdaFactor:     Mutiplication factor for lambda
 !           vertex:           Vertices [m] (3,nvertex)
@@ -47,7 +48,7 @@
       LOGICAL, PRIVATE                    :: lverb
       INTEGER, PRIVATE                    :: nvertex, ntet, nstate
       TYPE(stateFunctionType), PRIVATE, ALLOCATABLE     :: stateFunction(:)
-      DOUBLE PRECISION, PRIVATE           :: maxErr, lambdaStart, lambdaFactor
+      DOUBLE PRECISION, PRIVATE           :: maxErr, lambdaStart, lambdaFactor, maxDist
       INTEGER, PRIVATE                    :: maxIter, maxNb
 
 
@@ -130,7 +131,7 @@
 
 
 
-      SUBROUTINE mumaterial_setd(mE, mI, la, laF, mNb, comm)
+      SUBROUTINE mumaterial_setd(mE, mI, la, laF, mNb, mDist, comm)
       !-----------------------------------------------------------------------
       ! mumaterial_setd: Sets default values
       !-----------------------------------------------------------------------
@@ -142,7 +143,7 @@
       USE mpi
 #endif
       IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(in) :: mE, la, laF
+      DOUBLE PRECISION, INTENT(in) :: mE, la, laF, mDist
       INTEGER, INTENT(in) :: mI, mNb
       INTEGER, INTENT(inout), OPTIONAL :: comm
       INTEGER :: istat, rank ! todo: do something with this
@@ -167,7 +168,9 @@
             lambdaStart = la
             lambdaFactor = laF
             maxNb = MIN(mNb,ntet-1)
+            maxDist = mDist
             IF (mNb .le. 0) maxNb = ntet-1
+            IF (mDist .le. 0) maxDist = 1D6 ! big number
       END IF
 
 #if defined(MPI_OPT)
@@ -177,6 +180,7 @@
             CALL MPI_Bcast(lambdaStart,  1, MPI_DOUBLE_PRECISION, 0, comm, istat)
             CALL MPI_Bcast(lambdaFactor, 1, MPI_DOUBLE_PRECISION, 0, comm, istat)
             CALL MPI_Bcast(maxNb,        1, MPI_INTEGER,          0, comm, istat)
+            CALL MPI_Bcast(maxDist,      1, MPI_DOUBLE_PRECISION, 0, comm, istat)
       END IF
 #endif
       RETURN
@@ -311,11 +315,11 @@
       lverb = .FALSE.
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-            CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 100, comm)
+            CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 100, 1, comm)
             CALL MPI_BARRIER(shar_comm,istat)
       ELSE
 #endif
-            CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 0)
+            CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 1, 0)
 #if defined(MPI_OPT)
       END IF
 #endif
@@ -347,6 +351,11 @@
          WRITE(iunit,'(3X,A,I7)')   'N-N Tiles    : ',maxNb
       ELSE
          WRITE(iunit,'(3X,A)')      'Full Model Run'
+      END IF
+      IF (maxDist > 0) THEN
+         WRITE(iunit,'(3X,A,EN12.3)')  'N-dist cutoff:', maxDist
+      ELSE
+         WRITE(iunit,'(3X,A)')         'No dist cutoff'
       END IF
       DO i = 1, nstate
          WRITE(iunit,'(6X,A,I3)') 'State Fuction ',i
@@ -395,6 +404,7 @@
       DOUBLE PRECISION :: x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n, mu0
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER :: N_store
       DOUBLE PRECISION, ALLOCATABLE :: dist(:), dx(:,:)
+      INTEGER, ALLOCATABLE :: nCount(:) 
 
       EXTERNAL:: getBfld
       
@@ -460,12 +470,14 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Allocate helpers and Neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      NULLIFY(N_store,neighbours)
+      NULLIFY(N_store,neighbours,nCount)
       k = maxNb+1
       ALLOCATE(neighbours(maxNb,mystart:myend))
       ALLOCATE(N_store(3,3,maxNb+1,mystart:myend))
+      ALLOCATE(nCount(mystart:myend))
       neighbours(:,:) = 0
       N_store(:,:,:,:) = 0.0
+      nCount(:) = maxNb
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate nearest neighbors
@@ -480,7 +492,8 @@
          dist = NORM2(dx,DIM=1)
          mask = .TRUE.
          mask(i) = .FALSE.
-         DO j = 1, maxNb
+         nCount(i) = MIN(maxNb, COUNT( dist .le. maxDist )-1 ) ! Check whether this makes sense
+         DO j = 1, nCount(i)
             k = MINLOC(dist,1,mask)
             neighbours(j,i) = k
             mask(k) = .FALSE.
@@ -496,22 +509,23 @@
 
       ! Calculate N-tensors of neighbours
       DO i = mystart, myend      
-         DO j = 1, maxNb     
+         DO j = 1, nCount(i)     
             CALL mumaterial_getN(vertex(:,tet(1,neighbours(j,i))), vertex(:,tet(2,neighbours(j,i))), vertex(:,tet(3,neighbours(j,i))), vertex(:,tet(4,neighbours(j,i))), tet_cen(:,i), N_store(:,:,j,i)) 
          END DO               
       END DO
 
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
       IF (lcomm) THEN
-            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, N_store, comm)
+            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, nCount, N_store, comm)
       ELSE
-            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, N_store)
+            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, nCount, N_store)
       END IF
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  End Iterations"
 
       ! DEALLOCATE Helpers
       DEALLOCATE(neighbours)
       DEALLOCATE(N_store)
+      DEALLOCATE(nCount)
 
       RETURN
       END SUBROUTINE mumaterial_init_new
@@ -735,12 +749,13 @@
       RETURN
       END SUBROUTINE mumaterial_init
 
-      SUBROUTINE mumaterial_iterate_magnetization_new(N1, iA, iB, neighbours, N_store, comm)
+      SUBROUTINE mumaterial_iterate_magnetization_new(N1, iA, iB, neighbours, nCount, N_store, comm)
       !-----------------------------------------------------------------------
       ! mumaterial_iterate_magnetization: Iterates the magnetic field over all tiles, called by mumaterial_init
       !-----------------------------------------------------------------------
       ! param[in]: N_store. Storage for demagnetization tensors from nearest neighbours
       ! param[in]: neighbours. Indices of nearest neighbours
+      ! param[in]: nCount. Nearest neighbour count used for each tetrahedron.
       ! param[in, out]: comm. MPI communicator, handles shared memory
       !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
@@ -750,6 +765,7 @@
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: N1, iA, iB
       INTEGER, OPTIONAL :: neighbours(N1,iA:iB)
+      INTEGER, INTENT(IN) :: nCount(iA:iB) 
       DOUBLE PRECISION, OPTIONAL :: N_store(3,3,N1+1,iA:iB)
       INTEGER, INTENT(inout), OPTIONAL :: comm
 
@@ -809,7 +825,7 @@
          DO i_tile = iA, iB
             H = Happ(:,i_tile)
             ! Get the field from all other tiles
-            DO j_tile = 1, maxNb
+            DO j_tile = 1, nCount(i_tile)
                H = H + MATMUL(N_store(:,:,j_tile,i_tile), M(:,neighbours(j_tile,i_tile)))
             END DO
             N = N_store(:,:,maxNb+1,i_tile)  
