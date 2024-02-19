@@ -184,6 +184,7 @@ CONTAINS
          mgrid_string = ''
          vessel_string = ''
          restart_string = ''
+         restart_grid_string = ''
          bbnbi_string = ''
          eqdsk_string = ''
 
@@ -254,8 +255,8 @@ CONTAINS
                lrestart_grid = .true.
                CALL GETCARG(i, id_string, numargs)
                i = i + 1
-               CALL GETCARG(i, restart_string, numargs)
-               restart_string=TRIM(restart_string)                
+               CALL GETCARG(i, restart_grid_string, numargs)
+               restart_grid_string=TRIM(restart_grid_string)                
             case ("-coil")
                 i = i + 1
                 lcoil = .true.

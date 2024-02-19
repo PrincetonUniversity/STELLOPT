@@ -118,8 +118,8 @@
       ELSE IF (lrestart_grid .and. lread_input) THEN
          CALL read_beams3d_input('input.'//TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE:     input.' // TRIM(id_string)
-         IF (lverb) WRITE(6,'(A)') '   RESTART GRID FILE: ' // TRIM(restart_string)
-         CALL read_beams3d_mag(TRIM(restart_string),MPI_COMM_SHARMEM,ier)
+         IF (lverb) WRITE(6,'(A)') '   RESTART GRID FILE: ' // TRIM(restart_grid_string)
+         CALL read_beams3d_mag(TRIM(restart_grid_string),MPI_COMM_SHARMEM,ier)
          phimin = 0
          CALL get_beams3d_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)         
       END IF
