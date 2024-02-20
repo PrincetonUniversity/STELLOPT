@@ -1932,17 +1932,18 @@
       END IF
 #endif
 
-      IF (rank .eq. 0) THEN
-            n_points = size(x)
-
-            WRITE(6,*) "Outputting points"
-
-            OPEN(13, file=TRIM(path)//'/points.dat')
-            DO i = 1, n_points
-                  WRITE(13, "(F15.7,A,F15.7,A,F15.7)") x(i), ',', y(i), ',', z(i)
-            END DO
-            CLOSE(13)
-      END IF
+!     Points handled elsewhere
+!      IF (rank .eq. 0) THEN
+!            n_points = size(x)
+!
+!            WRITE(6,*) "Outputting points"
+!
+!            OPEN(13, file=TRIM(path)//'/points.dat')
+!            DO i = 1, n_points
+!                  WRITE(13, "(F15.7,A,F15.7,A,F15.7)") x(i), ',', y(i), ',', z(i)
+!            END DO
+!            CLOSE(13)
+!      END IF
 
       IF (.NOT. lcomm) WRITE(6,*) "Getting B-field"
 
