@@ -170,7 +170,7 @@
             maxNb = MIN(mNb,ntet-1)
             maxDist = mDist
             IF (mNb .le. 0) maxNb = ntet-1
-            IF (mDist .le. 0) maxDist = 1D6 ! big number
+            IF (mDist .le. 0) maxDist = 1D18 ! big number
       END IF
 
 #if defined(MPI_OPT)
@@ -498,6 +498,7 @@
             neighbours(j,i) = k
             mask(k) = .FALSE.
          END DO
+	 IF (lverb) WRITE(6,'(A9,I9,A25,I9)') "Tet. no. ", i, "     Neighbors counted: ", nCount(i)
       END DO
       DEALLOCATE(mask,dist,dx)
 
