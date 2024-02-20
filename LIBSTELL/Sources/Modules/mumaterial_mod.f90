@@ -1935,7 +1935,6 @@
 
 !     Points handled elsewhere
 !      IF (rank .eq. 0) THEN
-!            n_points = size(x)
 !
 !            WRITE(6,*) "Outputting points"
 !
@@ -1955,6 +1954,8 @@
       END IF
 
       IF (rank .eq. 0) THEN
+            n_points = size(x)
+
             WRITE(6,*) "Outputting B-field"
 
             OPEN(14, file=TRIM(path)//'/B.dat')
