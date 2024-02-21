@@ -458,15 +458,13 @@
 
 #if defined(MPI_OPT)
       IF (shar_rank == master .and. lcomm) THEN
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE, tet_cen, 3*ntet, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE, Happ, 3*ntet, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, tet_cen, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, Happ, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat)
       END IF
       IF (lcomm) CALL MPI_BARRIER(comm,istat)
 #endif
 
-      ! From here on out each thread only works on it's own subset
-      CALL MPI_CALC_MYRANGE(comm, 1, ntet, mystart, myend)
-      
+      ! From here on out each thread only works on its own subset      
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Allocate helpers and Neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
