@@ -563,7 +563,7 @@
         currumnc(mnmax_nyq,ns),                                         &
         iotas(ns), mass(ns), pres(ns), beta_vol(ns), phip(ns),          &
         buco(ns), bvco(ns), phi(ns), iotaf(ns), presf(ns), phipf(ns),   &
-        chipf(ns),                                                      &
+        chipf(ns), qfact(ns),                                           &
         vp(ns), overr(ns), jcuru(ns), jcurv(ns), specw(ns), Dmerc(ns),  &
         Dshear(ns), Dwell(ns), Dcurr(ns), Dgeod(ns), equif(ns),         &
         raxis(0:ntor,2), zaxis(0:ntor,2), jdotb(ns), bdotb(ns),         &
@@ -826,6 +826,9 @@
       END IF
 
       chipf = iotaf*phipf
+
+      qfact=HUGE(qfact)
+      WHERE (iotaf(1:ns) .NE. 0) qfact=1.0/iotaf(1:ns)
 !
 !     CONVERT FROM INTERNAL UNITS TO PHYSICAL UNITS IF NEEDED
 !
