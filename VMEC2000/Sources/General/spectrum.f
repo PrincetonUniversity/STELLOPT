@@ -52,7 +52,10 @@ C-----------------------------------------------
          END DO
       END DO
 
-      specw(nsmin:nsmax) = dnumer(nsmin:nsmax)/denom(nsmin:nsmax)
+      DO js = nsmin,nsmax
+         IF (denom(js) .ne. zero) specw(js) = dnumer(js)/denom(js)
+      END DO
+      !specw(nsmin:nsmax) = dnumer(nsmin:nsmax)/denom(nsmin:nsmax)
 
       END SUBROUTINE spectrum_par
 
