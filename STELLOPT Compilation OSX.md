@@ -24,40 +24,44 @@ also chosen OpenMPI but the sources could also be built with MPICH.
 Please note that as of GCC10 the flag `-fallow-argument-mismatc` must be
 added at compile time.
 
-    <===OSX Version===>
-    10.14 Mojave Something appears to be broken in scalapack build (GCC7/GCC8/GCC9)
     <===gccX version===>
-    #  gcc7  : Appears to be working
-    #  gcc8  : Problems with PetSc so no GENE/SFINCS
-    #  gcc9  : Problems with PetSc so no GENE/SFINCS
-    #  gcc10 : Appears to be working
-    sudo port install gccX                   (gccX should be gcc7 or gcc8 or another gcc variant)
-    sudo port install openmpi-gccX +fortran
-    sudo port select --set mpi openmpi-gccX-fortran
-    # Soft link for mpifort is broken for GCC8 as of Feb 20, 2019 ignore next line otherwise
-    sudo ln -sf /opt/local/bin/mpifort-openmpi-gcc8 /opt/local/bin/mpifort
-    sudo port install hdf5 +fortran +gccX +hl +openmpi
-    sudo port install netcdf-fortran +gccX +openmpi
-    sudo port install fftw-3 +gccX +openmpi
-    sudo port install OpenBLAS +gccX +lapack +native
-    sudo port install scalapack +gccX +openmpi +openblas
+    #  gcc10 : Working
+    #  gcc11 : Issue with hdf5 02.23.2024
+    #  gcc12 : Issue with hdf5 02.23.2024
+    #  gcc13 : Issue with openmpi-gcc12 02.23.2024
+    sudo port install gcc10                   (gccX should be gcc7 or gcc8 or another gcc variant)
+    sudo port install gcc10-libcxx (for example is gcc10 above then gcc10-libcxx)
+    sudo port install openmpi-gcc10 +fortran
+    sudo port select --set mpi openmpi-gcc10-fortran
+    sudo port select --set gcc mp-gcc10
+    sudo port install hdf5 +fortran +gcc10 +hl +openmpi
+    sudo port install pnetcdf +gcc10 +openmpi -mpich
+    sudo port install netcdf +gcc10
+    sudo port install netcdf-fortran +gcc10
+    sudo port install fftw-3 +gcc10 +openmpi
+    sudo port install OpenBLAS +gcc10 +lapack +native
+    sudo port install scalapack +gcc10 +openmpi +openblas
+    sudo port install git
     # The following are needed for TRAVIS
-    sudo port install netcdf-cxx4 +gccX +openmpi
+    sudo port install netcdf-cxx4 +gcc10
     # The following are needed for COILOPT++
-    sudo port install silo +gccX -hdf5
+    sudo port install silo +gcc10 -hdf5
     sudo port install gsl +gccX +optimize
     # The following is for Python support (please take note of your python version)
-    sudo port install python38 +gccX
-    sudo port select --set python python27
-    sudo port select --set python3 python37
-    sudo port install py38-scipy +gccX +openblas
-    # For GUI support
-    sudo port install py38-pyqt4 +gccX     (Note there is a weird issue with dbus requireing the port to be force installed)
-    sudo port install py38-matplotlib +dvipng +pyside +qt4 +tkinter +gccX
-    sudo port install py38-h5py +gccX +openmpi
+    sudo port install pythonYY +gcc10
+    sudo port select --set python pythonYY
+    sudo port select --set python3 pythonYY
+    sudo port install pyYY-pip
+    sudo port select --set pip pipYY
+    sudo port select --set pip3 pipYY
+    # It is suggested to use pip3 to install the rest of your python packages
+    pip3 install scipy h5py pyqt4 matplotlib
+    # If you use the matlabVMEC package then you need python3.10
+    # but dont need to set it as default
+    sudo port install python310
     # The following are needed for GENE
-    #sudo port install petsc +gccX +openmpi +openblas -accelerate +metis +mumps +parmetis +suitesparse +superlu_dist +complex
-    #sudo port install slepc +gccX +openmpi +openblas +arpack -accelerate
+    #sudo port install petsc +gcc10 +openmpi +openblas -accelerate +metis +mumps +parmetis +suitesparse +superlu_dist +complex
+    #sudo port install slepc +gcc10 +openmpi +openblas +arpack -accelerate
 
 4\. Now pull stellopt with the command 
 
