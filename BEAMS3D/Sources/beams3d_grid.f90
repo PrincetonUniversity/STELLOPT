@@ -40,7 +40,7 @@
 !         plasma_Zmean   [Z] = sum(n*Z*Z*mi/mj)/sum(n*Z) sum over j ion species (mi: plasma mass)
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER  ::    nr, nphi, nz, nte, nne, nti, nzeff, npot, dexionT, dexionD
+      INTEGER  ::    nr, nphi, nz, nte, nne, nti, nzeff, npot, dexionT, dexionD, dexionHe3
       INTEGER  ::    win_raxis, win_phiaxis, win_zaxis, win_B_R, win_B_PHI, win_B_Z,&
                      win_MODB, win_TE, win_NE, win_TI, win_ZEFF_ARR,&
                      win_S_ARR, win_U_ARR,win_X_ARR,win_Y_ARR, win_POT_ARR, win_BR4D, win_BPHI4D, &
