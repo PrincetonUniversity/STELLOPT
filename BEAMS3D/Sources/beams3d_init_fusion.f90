@@ -12,7 +12,9 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
       USE beams3d_grid, ONLY: nr, nphi, nz, hr, hp, hz, raxis, zaxis, &
-                              phiaxis, S4D, U4D
+                              phiaxis, S4D, U4D, &
+                              NEUTRONS_ARR, win_NEUTRONS, &
+                              E_NEUTRONS, win_E_NEUTRONS
       USE beams3d_lines, ONLY: nparticles, partvmax
       USE beams3d_physics_mod, ONLY: beams3d_DTRATE, beams3d_MODB, &
                                      beams3d_SFLX, beams3d_DDTRATE, &
@@ -196,6 +198,12 @@
                   beam(nparticles), weight(nparticles), &
                   vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
                   lgc2fo_start(nparticles))
+      CALL mpialloc(NEUTRONS_ARR, nbeams, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NEUTRONS)
+      CALL mpialloc(E_NEUTRONS, nbeams, myid_sharmem, 0, MPI_COMM_SHARMEM, win_E_NEUTRONS)
+      IF (myworkid == master) THEN
+         NEUTRONS_ARR = 0.0
+         E_NEUTRONS = 0.0
+      END IF
 
       ! We set this true because we assume all particles generated are gyrocenters. Should a
       ! particle have RHO > RHO_FO then we don't follow the GC and follow_fo takes care of
@@ -288,6 +296,7 @@
             ! Do the D-T -> H4 reaction
             l = l + 1
             vpart = sqrt(2*E_BEAMS(l)/mHe4)
+            E_NEUTRONS(l) = 14.06E6
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
                j = MOD(s-1,nr1*nphi1)
@@ -306,6 +315,7 @@
                Zatom(k1:k2)     = 2
                t_end(k1:k2)     = t_end_in(1)
                weight(k1:k2)    = rateDT(i,j,k)/n3d(i,j,k)
+               NEUTRONS_ARR(l,i,j,k) = rateDT(i,j,k)
                k1 = k2+1
             END DO
          END IF
@@ -313,6 +323,7 @@
             ! Do the D-D -> T reaction
             l = l + 1
             vpart = sqrt(2*E_BEAMS(l)/mT)
+            !E_NEUTRONS(l) = 3.02E6
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
                j = MOD(s-1,nr1*nphi1)
@@ -331,6 +342,7 @@
                Zatom(k1:k2)     = 1
                t_end(k1:k2)     = t_end_in(1)
                weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
+               !NEUTRONS_ARR(l,i,j,k) = rateDDT(i,j,k)
                k1 = k2+1
             END DO
          END IF
@@ -338,6 +350,7 @@
             ! Do the D-D -> p reaction
             l = l + 1
             vpart = sqrt(2*E_BEAMS(l)/mp)
+            !E_NEUTRONS(l) = 2.45E6
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
                j = MOD(s-1,nr1*nphi1)
@@ -356,6 +369,7 @@
                Zatom(k1:k2)     = 1
                t_end(k1:k2)     = t_end_in(1)
                weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
+               !NEUTRONS_ARR(l,i,j,k) = rateDDT(i,j,k)
                k1 = k2+1
             END DO
          END IF
@@ -363,6 +377,7 @@
             ! Do the D-D -> He3 reaction
             l = l + 1
             vpart = sqrt(2*E_BEAMS(l)/mHe3)
+            E_NEUTRONS(l) = 2.45E6
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
                j = MOD(s-1,nr1*nphi1)
@@ -381,6 +396,7 @@
                Zatom(k1:k2)     = 2
                t_end(k1:k2)     = t_end_in(1)
                weight(k1:k2)    = rateDDHe(i,j,k)/n3d(i,j,k)
+               NEUTRONS_ARR(l,i,j,k) = rateDDHe(i,j,k)
                k1 = k2+1
             END DO
          END IF
