@@ -340,12 +340,12 @@
          CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
          CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
          CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
-   IF (lfidasim) THEN
+         IF (lfidasim) THEN
             CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
             CALL mpialloc(phiaxis_fida, nphi_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis_fida)
             CALL mpialloc(zaxis_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis_fida)
-      CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
-      CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
+            CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
+            CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
          END IF
          IF (myid_sharmem == 0) THEN
             FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
@@ -376,9 +376,6 @@
 
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
-
-
-
 
          ! Put the vacuum field on the background grid
          IF (lmgrid) THEN
@@ -422,9 +419,7 @@
       
       ! Load vessel if not done already vessel
       IF (lvessel .and. (.not. lwall_loaded)) THEN
-      IF (lverb) THEN
-         WRITE(6,'(A)') '----- Loading wall data -----'
-      END IF
+         IF (lverb) WRITE(6,'(A)') '----- Loading wall data -----'
          CALL wall_load_txt(TRIM(vessel_string),ier,.false.,MPI_COMM_BEAMS)
          IF (lverb) THEN
             IF (ier /=0 ) WRITE(6,'(A)') 'ERROR: Loading VESSEL : ' // TRIM(vessel_string)
@@ -443,7 +438,6 @@
       IF (lascot) THEN
          CALL beams3d_write_ascoth5('INIT')
       END IF
-      !WRITE_FIDASIM comes after spline setup as it needs 3D Grids
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -791,9 +785,9 @@
 
       ! Fida Distribution
       IF (lfidasim) THEN
-      r_h = (nr_fida) / (rmax_fida - rmin_fida)
-      z_h = (nz_fida) / (zmax_fida - zmin_fida)
-      p_h = (nphi_fida) / (phimax_fida - phimin_fida)
+         r_h = (nr_fida) / (rmax_fida - rmin_fida)
+         z_h = (nz_fida) / (zmax_fida - zmin_fida)
+         p_h = (nphi_fida) / (phimax_fida - phimin_fida)
       END IF
 
       ! Do a reality check
@@ -833,34 +827,34 @@
       END IF
 
 
-   IF (lfidasim) THEN
-      FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
-      FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
-      FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
-      FORALL(i = 1:nenergy_fida) energy_fida(i) = REAL(i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass) * partvmax * partvmax /1.60217662E-19 / 1000.0
-      FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
-      IF (nenergy_fida .eq. 1) THEN
-         e_h = 1.0/2.d0/energy_fida(1)
-      ELSE 
-         e_h = 1.0/( energy_fida(2) - energy_fida(1)) 
-      END IF
-      IF (npitch_fida .eq. 1) THEN 
-         pi_h = 1.0/2.d0
-      ELSE
-         pi_h = 1/(pitch_fida(2) - pitch_fida(1))
-      END IF
-      emin_fida = energy_fida(1)-1/e_h/2 !e_h~1/energy
-      pimin_fida = pitch_fida(1)-1/pi_h/2
+      IF (lfidasim) THEN
+         FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
+         FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
+         FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
+         FORALL(i = 1:nenergy_fida) energy_fida(i) = REAL(i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass) * partvmax * partvmax /1.60217662E-19 / 1000.0
+         FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
+         IF (nenergy_fida .eq. 1) THEN
+            e_h = 1.0/2.d0/energy_fida(1)
+         ELSE 
+            e_h = 1.0/( energy_fida(2) - energy_fida(1)) 
+         END IF
+         IF (npitch_fida .eq. 1) THEN 
+            pi_h = 1.0/2.d0
+         ELSE
+            pi_h = 1/(pitch_fida(2) - pitch_fida(1))
+         END IF
+         emin_fida = energy_fida(1)-1/e_h/2 !e_h~1/energy
+         pimin_fida = pitch_fida(1)-1/pi_h/2
 
-      IF (lverb) THEN
-         WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
-         WRITE(6,'(A,F9.5)') '   T_FIDA   = ',t_fida
-         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R_FIDA   = [',rmin_fida,',',rmax_fida,'];  NR:   ',nr_fida
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI_FIDA = [',phimin_fida,',',phimax_fida,'];  NPHI: ',nphi_fida
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z_FIDA   = [',zmin_fida,',',zmax_fida,'];  NZ:   ',nz_fida
-         WRITE(6,'(A,F8.5,A,F10.5,A,I4)') '   ENERGY_FIDA   = [',energy_fida(1),',',energy_fida(nenergy_fida),'];  NENERGY:   ',nenergy_fida
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PITCH_FIDA   = [',pitch_fida(1),',',pitch_fida(npitch_fida),'];  NPITCH:   ',npitch_fida
-      END IF
+         IF (lverb) THEN
+            WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
+            WRITE(6,'(A,F9.5)') '   T_FIDA   = ',t_fida
+            WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R_FIDA   = [',rmin_fida,',',rmax_fida,'];  NR:   ',nr_fida
+            WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI_FIDA = [',phimin_fida,',',phimax_fida,'];  NPHI: ',nphi_fida
+            WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z_FIDA   = [',zmin_fida,',',zmax_fida,'];  NZ:   ',nz_fida
+            WRITE(6,'(A,F8.5,A,F10.5,A,I4)') '   ENERGY_FIDA   = [',energy_fida(1),',',energy_fida(nenergy_fida),'];  NENERGY:   ',nenergy_fida
+            WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PITCH_FIDA   = [',pitch_fida(1),',',pitch_fida(npitch_fida),'];  NPITCH:   ',npitch_fida
+         END IF
          CALL beams3d_write_fidasim('INIT')
       END IF
 
