@@ -198,8 +198,8 @@
          IF (lverb) THEN
             IF (lfusion_alpha) WRITE(6, '(A,ES11.4,A)') '      max D + T -> He4   rate: ', maxrateDT,' [part/(m^3 s)]'
             IF (lfusion_tritium .or. lfusion_proton) WRITE(6, '(A,ES11.4,A)') '      max D + D -> T + p rate: ', maxrateDDT,' [part/(m^3 s)]'
-            IF (lfusion_He3) WRITE(6, '(A,ES11.4,A)') '      max D + D -> He3   rate: ', maxrateDDHe,' [part/(m^3 s)]'
-            IF (lfusion_DHe3) WRITE(6, '(A,ES11.4,A)') '      max D + He3 -> He4 + p   rate: ', maxrateDHe3,' [part/(m^3 s)]'
+            IF (lfusion_He3) WRITE(6, '(A,ES11.4,A)')  '      max D + D -> He3   rate: ', maxrateDDHe,' [part/(m^3 s)]'
+            IF (lfusion_DHe3) WRITE(6, '(A,ES11.4,A)') '      max D +He3-> He4 + p   rate: ', maxrateDHe3,' [part/(m^3 s)]'
          END IF
       END IF
 
