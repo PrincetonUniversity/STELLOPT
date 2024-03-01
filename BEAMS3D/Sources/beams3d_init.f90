@@ -782,7 +782,7 @@
 
 
       ! Determine maximum particle velocity
-      partvmax=MAX(MAXVAL(ABS(vll_start))*6.0/5.0,partvmax)
+      partvmax=MAX(MAXVAL(ABS(vll_start)),partvmax)
       !IF (lverb) WRITE(6,'(A,F8.5)') '   PARTVMAX  = ',partvmax
       !partpmax=MAX(MAXVAL(ABS(partvmax*mass)),partpmax)
       nsh_prof4 = ns_prof4/2
