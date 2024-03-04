@@ -19,7 +19,7 @@
                                  ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
                                  plasma_mass, plasma_Zmean, &
                                  B_kick_min, B_kick_max, freq_kick, &
-                                 E_kick, NI, beam_density
+                                 E_kick, NI, beam_density, E_NEUTRONS, NEUTRONS_ARR
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -379,6 +379,16 @@
                   CALL write_var_hdf5(fid,'Shineport',nbeams,ier,DBLVAR=shine_port,&
                                    ATT='Loss to Port [%]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'shine_port',ier)
+               END IF
+               IF (ASSOCIATED(NEUTRONS_ARR)) THEN
+                  CALL write_var_hdf5(fid,'NEUTRON_RATE',nbeams,nr,nphi,nz,ier,DBLVAR=NEUTRONS_ARR,&
+                                      ATT='Neutron Rate [m^-3]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'NEUTRONS_ARR',ier)
+               END IF
+               IF (ASSOCIATED(E_NEUTRONS)) THEN
+                  CALL write_var_hdf5(fid,'E_NEUTRONS',nbeams,ier,DBLVAR=E_NEUTRONS,&
+                                      ATT='Neutron Energy [eV]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_NEUTRONS',ier)
                END IF
          END SELECT
          CALL close_hdf5(fid,ier)
