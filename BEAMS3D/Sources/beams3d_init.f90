@@ -26,7 +26,7 @@
                                dist5d_fida, win_dist5d_fida,&
                                win_epower, win_ipower, win_ndot, win_jprof, &
                                win_dense, nsh_prof4, h2_prof, h3_prof, &
-      h4_prof, h5_prof, r_h, p_h, z_h, e_h, pi_h
+                               h4_prof, h5_prof, r_h, p_h, z_h, e_h, pi_h
       USE fidasim_input_mod, ONLY: beams3d_write_fidasim
       USE wall_mod
       USE mpi_params
@@ -129,7 +129,7 @@
       ! Reset the distribution function if just doing a depo run
       IF (ldepo) THEN
          ns_prof2 = 4
-         ns_prof3   = 2
+         ns_prof3 = 2
          ns_prof4 = 2
          ns_prof5 = 4
       END IF
@@ -550,19 +550,19 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:Y_spl',ier)
          CALL EZspline_init(POT_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:POT_spl',ier)
-         BR_spl%isHermite   = 1
+         BR_spl%isHermite   = 0
          BR_spl%x1   = raxis
          BR_spl%x2   = phiaxis
          BR_spl%x3   = zaxis
-         BPHI_spl%isHermite = 1
+         BPHI_spl%isHermite = 0
          BPHI_spl%x1 = raxis
          BPHI_spl%x2 = phiaxis
          BPHI_spl%x3 = zaxis
-         BZ_spl%isHermite   = 1
+         BZ_spl%isHermite   = 0
          BZ_spl%x1   = raxis
          BZ_spl%x2   = phiaxis
          BZ_spl%x3   = zaxis
-         MODB_spl%isHermite = 1
+         MODB_spl%isHermite = 0
          MODB_spl%x1 = raxis
          MODB_spl%x2 = phiaxis
          MODB_spl%x3 = zaxis
@@ -582,7 +582,7 @@
          Y_spl%x1 = raxis
          Y_spl%x2 = phiaxis
          Y_spl%x3 = zaxis
-         POT_spl%isHermite = 1
+         POT_spl%isHermite = 0
          POT_spl%x1 = raxis
          POT_spl%x2 = phiaxis
          POT_spl%x3 = zaxis
@@ -604,15 +604,15 @@
       END IF
       ! Allocate Shared memory space
       CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
-      CALL mpialloc(BR4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BR4D)
+      CALL mpialloc(BR4D,   8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BR4D)
       CALL mpialloc(BPHI4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BPHI4D)
-      CALL mpialloc(BZ4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BZ4D)
+      CALL mpialloc(BZ4D,   8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BZ4D)
       CALL mpialloc(MODB4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB4D)
-      CALL mpialloc(S4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S4D)
-      CALL mpialloc(U4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U4D)
-      CALL mpialloc(X4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X4D)
-      CALL mpialloc(Y4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y4D)
-      CALL mpialloc(POT4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT4D)
+      CALL mpialloc(S4D,    8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S4D)
+      CALL mpialloc(U4D,    8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U4D)
+      CALL mpialloc(X4D,    8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X4D)
+      CALL mpialloc(Y4D,    8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y4D)
+      CALL mpialloc(POT4D,  8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT4D)
       ! Copy Spline info to shared memory and Free
       IF (myid_sharmem == master) THEN
          BR4D = BR_SPL%fspl

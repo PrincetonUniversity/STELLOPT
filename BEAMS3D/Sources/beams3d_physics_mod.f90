@@ -51,7 +51,7 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_sqrt2     = 0.7071067812   !1/sqrt(2)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: mpome         = 5.44602984424355D-4 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_dalton    = 6.02214076208E+26 ! 1./AMU [1/kg]
-   DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_Ae    = 1.0/1836.1d0 ! AMU./electron_mass
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_Ae        = 1.0/1836.1d0 ! AMU./electron_mass
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_cspeed    = 3.3356409520E-09 ! 1./c [s/m]
       DOUBLE PRECISION, PRIVATE, PARAMETER :: zero          = 0.0D0 ! 0.0
       DOUBLE PRECISION, PRIVATE, PARAMETER :: half          = 0.5D0 ! 1/2
@@ -245,7 +245,8 @@ MODULE beams3d_physics_mod
          ! For splines
          INTEGER :: i,j,k, l
          REAL*8 :: xparam, yparam, zparam
-         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict(8)    = (/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict10(10) = (/1,0,0,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
 
 
@@ -283,7 +284,7 @@ MODULE beams3d_physics_mod
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
             ! Evaluate the Splines
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             MODB4D(1,1,1,1),nr,nphi,nz)
             modb = fval(1)
@@ -397,7 +398,7 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
-         speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
+           speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
@@ -472,7 +473,8 @@ MODULE beams3d_physics_mod
          ! For splines
          INTEGER :: i,j,k, l
          REAL*8 :: xparam, yparam, zparam
-         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict(8)    = (/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict10(10) = (/1,0,0,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
 
          !--------------------------------------------------------------
@@ -529,15 +531,15 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             S4D(1,1,1,1),nr,nphi,nz)
             s_temp = max(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BR4D(1,1,1,1),nr,nphi,nz)
             br_temp = fval(1)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BPHI4D(1,1,1,1),nr,nphi,nz)
             bphi_temp = fval(1)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BZ4D(1,1,1,1),nr,nphi,nz)
             bz_temp = fval(1)
@@ -627,7 +629,7 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
-         speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
+           speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
@@ -717,7 +719,8 @@ MODULE beams3d_physics_mod
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
-         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict(8)    = (/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict10(10) = (/1,0,0,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
          ! For Suzuki
          INTEGER :: A_IN(NION), Z_IN(NION)
@@ -1082,7 +1085,8 @@ MODULE beams3d_physics_mod
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
-         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict(8)    = (/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict10(10) = (/1,0,0,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
 
          !--------------------------------------------------------------
@@ -1108,19 +1112,19 @@ MODULE beams3d_physics_mod
          xparam = (r_temp - raxis(i)) * hri(i)
          yparam = (phi_temp - phiaxis(j)) * hpi(j)
          zparam = (z_temp - zaxis(k)) * hzi(k)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BR4D(1,1,1,1),nr,nphi,nz)
          br_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BPHI4D(1,1,1,1),nr,nphi,nz)
          bp_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BZ4D(1,1,1,1),nr,nphi,nz)
          bz_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          MODB4D(1,1,1,1),nr,nphi,nz)
          modb_temp = fval(1)
@@ -1241,7 +1245,8 @@ MODULE beams3d_physics_mod
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
-         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict(8)    = (/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict10(10) = (/1,0,0,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
 
          !--------------------------------------------------------------
@@ -1264,19 +1269,19 @@ MODULE beams3d_physics_mod
          xparam = (r_temp - raxis(i)) * hri(i)
          yparam = (phi_temp - phiaxis(j)) * hpi(j)
          zparam = (z_temp - zaxis(k)) * hzi(k)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BR4D(1,1,1,1),nr,nphi,nz)
          br_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BPHI4D(1,1,1,1),nr,nphi,nz)
          bp_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BZ4D(1,1,1,1),nr,nphi,nz)
          bz_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          MODB4D(1,1,1,1),nr,nphi,nz)
          modb_temp = fval(1)
@@ -1668,7 +1673,8 @@ MODULE beams3d_physics_mod
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
-         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict(8)    = (/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict10(10) = (/1,0,0,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
 
          !--------------------------------------------------------------
@@ -1695,7 +1701,7 @@ MODULE beams3d_physics_mod
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
             ! Evaluate the Splines
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             MODB4D(1,1,1,1),nr,nphi,nz)
             B = max(fval(1),zero)
@@ -1736,7 +1742,8 @@ MODULE beams3d_physics_mod
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
-         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict(8)    = (/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict10(10) = (/1,0,0,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
 
          !--------------------------------------------------------------
@@ -1762,15 +1769,15 @@ MODULE beams3d_physics_mod
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z - zaxis(k)) * hzi(k)
             ! Evaluate the Splines
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BR4D(1,1,1,1),nr,nphi,nz)
             Br = fval(1)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BPHI4D(1,1,1,1),nr,nphi,nz)
             Bphi = fval(1)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BZ4D(1,1,1,1),nr,nphi,nz)
             Bz = fval(1)
@@ -2067,7 +2074,8 @@ MODULE beams3d_physics_mod
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
-         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict(8)    = (/1,0,0,0,0,0,0,0/)
+         INTEGER, parameter :: ict10(10) = (/1,0,0,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
 
          !--------------------------------------------------------------
@@ -2097,7 +2105,7 @@ MODULE beams3d_physics_mod
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
             ! Evaluate the Splines
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             MODB4D(1,1,1,1),nr,nphi,nz)
             !vperp = SQRT(2*mu*fval(1)/mass)

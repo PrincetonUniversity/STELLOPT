@@ -51,7 +51,8 @@ SUBROUTINE outpart_beams3d_nag(t, q)
     INTEGER :: i,j,k,l
     REAL*8 :: xparam, yparam, zparam !, hx, hy, hz, hxi, hyi, hzi
     REAL*8 :: fval(1), fval2(1)
-    INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+    INTEGER, parameter :: ict(8)    = (/1,0,0,0,0,0,0,0/)
+    INTEGER, parameter :: ict10(10) = (/1,0,0,0,0,0,0,0,0,0/)
     REAL*8, PARAMETER :: one = 1
     !-----------------------------------------------------------------------
     !     Begin Function
@@ -91,15 +92,15 @@ SUBROUTINE outpart_beams3d_nag(t, q)
        U_lines(mytdex, myline) = z0
        
        ! Now We get Br, Bphi, Bz to calc B (and vll)
-       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+       CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        BR4D(1,1,1,1),nr,nphi,nz)
        br_temp = fval(1)
-       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+       CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        BPHI4D(1,1,1,1),nr,nphi,nz)
        bphi_temp = fval(1)
-       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+       CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        BZ4D(1,1,1,1),nr,nphi,nz)
        bz_temp = fval(1)

@@ -55,8 +55,8 @@
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam
       REAL*8 :: fval(1,4), fvalE(1,3)
-      INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
-      INTEGER, parameter :: ictE(8)=(/0,1,1,1,0,0,0,0/)
+      INTEGER, parameter :: ict(10)  = (/1,1,1,1,0,0,0,0,0,0/)
+      INTEGER, parameter :: ictE(10) = (/0,1,1,1,0,0,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -91,23 +91,23 @@
          !                i,j,k,xparam,yparam,zparam,&
          !                hx,hxi,hy,hyi,hz,hzi,ier)
          ! Evaluate the Splines
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BR4D(1,1,1,1),nr,nphi,nz)
          br_temp = fval(1,1); gradbr(1:3) = fval(1,2:4)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BPHI4D(1,1,1,1),nr,nphi,nz)
          bphi_temp = fval(1,1); gradbphi(1:3) = fval(1,2:4)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BZ4D(1,1,1,1),nr,nphi,nz)
          bz_temp = fval(1,1); gradbz(1:3) = fval(1,2:4)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          MODB4D(1,1,1,1),nr,nphi,nz)
          modb_temp = fval(1,1); gradb(1:3) = fval(1,2:4)
-         CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,&
+         CALL r8fvtricub(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          POT4D(1,1,1,1),nr,nphi,nz)
          Efield(1:3) =-fvalE(1,1:3)

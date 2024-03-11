@@ -49,7 +49,8 @@ SUBROUTINE out_beams3d_nag(t, q)
     INTEGER :: i,j,k,l
     REAL*8 :: xparam, yparam, zparam !, hx, hy, hz, hxi, hyi, hzi
     REAL*8 :: fval(1), fval2(1)
-    INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+    INTEGER, parameter :: ict(8)    = (/1,0,0,0,0,0,0,0/)
+    INTEGER, parameter :: ict10(10) = (/1,0,0,0,0,0,0,0,0,0/)
     REAL*8, PARAMETER :: one = 1
     !-----------------------------------------------------------------------
     !     Begin Function
@@ -87,7 +88,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        z0 = ATAN2(fval2(1),fval(1))
        S_lines(mytdex, myline) = y0 
        U_lines(mytdex, myline) = z0
-       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+       CALL r8fvtricub(ict10,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        MODB4D(1,1,1,1),nr,nphi,nz)
        B_lines(mytdex, myline) = fval(1)
