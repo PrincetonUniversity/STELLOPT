@@ -184,6 +184,7 @@ CONTAINS
          mgrid_string = ''
          vessel_string = ''
          restart_string = ''
+         restart_grid_string = ''
          bbnbi_string = ''
          eqdsk_string = ''
 
@@ -249,6 +250,13 @@ CONTAINS
                 i = i + 1
                 lrestart_particles = .true.
                 CALL GETCARG(i, restart_string, numargs)
+             case ("-restart_grid")
+               i = i + 1
+               lrestart_grid = .true.
+               CALL GETCARG(i, id_string, numargs)
+               i = i + 1
+               CALL GETCARG(i, restart_grid_string, numargs)
+               restart_grid_string=TRIM(restart_grid_string)                
             case ("-coil")
                 i = i + 1
                 lcoil = .true.
@@ -357,6 +365,8 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(restart_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+      CALL MPI_BCAST(restart_grid_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)	  
       CALL MPI_BCAST(eqdsk_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
