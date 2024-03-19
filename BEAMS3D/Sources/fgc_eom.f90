@@ -120,9 +120,9 @@
          Bhat(3) = bz_temp*binv
          
          ! Curl(B) in cylindical coordiantes
-         curlB(1)= gradbz(2) - gradbphi(3)
-         curlB(2)= gradbr(3) - gradbz(1)
-         curlB(3)=bphi_temp*rinv-gradbr(2)+gradbphi(1)
+         curlB(1) = gradbz(2) - gradbphi(3)
+         curlB(2) = gradbr(3) - gradbz(1)
+         curlB(3) = gradbphi(1) - gradbr(2) + bphi_temp*rinv
          
          ! grad(B)xB
          gradBcrossB(1) = gradB(2) * bz_temp   - gradB(3) * bphi_temp
@@ -133,7 +133,7 @@
          A = vll * mymass * cinv *binv
          Bstar(1) = br_temp   + A * (curlB(1) - gradBcrossB(1) * binv )
          Bstar(2) = bphi_temp + A * (curlB(2) - gradBcrossB(2) * binv )
-         Bstar(3) = br_temp   + A * (curlB(3) - gradBcrossB(3) * binv )
+         Bstar(3) = bz_temp   + A * (curlB(3) - gradBcrossB(3) * binv )
 
          ! E* = -grad(Phi) - mu*grad(B)/q
          B = moment * cinv
