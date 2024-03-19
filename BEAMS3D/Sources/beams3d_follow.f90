@@ -36,6 +36,7 @@ SUBROUTINE beams3d_follow
     INTEGER, ALLOCATABLE :: itemp(:,:)
     REAL :: dist
     REAL(rprec) :: tf_max, vel_max, weight_save
+    double precision :: start_time, end_time, elapsed_time
     DOUBLE PRECISION :: tf_nag, t_nag
     DOUBLE PRECISION, ALLOCATABLE :: q(:)
 
@@ -235,8 +236,12 @@ SUBROUTINE beams3d_follow
 
     ! Follow Trajectories
     IF (.not.ldepo) THEN
+      start_time = MPI_Wtime()
         CALL beams3d_follow_gc
         IF (rho_fullorbit < 100) CALL beams3d_follow_fo
+         end_time = MPI_Wtime()
+      elapsed_time = end_time - start_time
+      WRITE(6, '(A,F9.5)') 'Time spent orbit following: ', elapsed_time
     END IF
 
     ! Fix U_lines
