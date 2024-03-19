@@ -404,6 +404,12 @@ fpart_rkh68.o:
 
 fgc_lsode.o: 
       
+fgc_eom.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      beams3d_grid.o \
+      beams3d_lines.o \
+      beams3d_runtime.o
 
 fgc_nag.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
