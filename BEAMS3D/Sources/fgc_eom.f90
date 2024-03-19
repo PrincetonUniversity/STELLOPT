@@ -99,7 +99,7 @@
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          MODB4D(1,1,1,1),nr,nphi,nz)
-         modb_temp = fval(1,1); gradB(1:3) = fval(1,2:4) !modb_temp=normB
+         modb_temp = fval(1,1); gradb(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          POT4D(1,1,1,1),nr,nphi,nz)
