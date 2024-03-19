@@ -148,7 +148,9 @@
          qdot(1) = vll * Bstar(1) + Estar(2) * Bhat(3) - Estar(3)*Bhat(2)
          qdot(2) = vll * Bstar(2) + Estar(3) * Bhat(1) - Estar(1)*Bhat(3)
          qdot(3) = vll * Bstar(3) + Estar(1) * Bhat(2) - Estar(2)*Bhat(1)
-         qdot(4) = mycharge * ( Bstar(1) * Estar(1) + Bstar(2) * Estar(2) + Bstar(3) * Estar(3) ) / mymass
+         !qdot(4) = mycharge * ( Bstar(1) * Estar(1) + Bstar(2) * Estar(2) + Bstar(3) * Estar(3) ) / mymass
+         ! This explicitly removes the E.B Force
+         qdot(4) = - B * mycharge * ( Bstar(1) * gradB(1) + Bstar(2) * gradB(2) + Bstar(3) * gradB(3) ) / mymass
 
          qdot = qdot * BhatDotBstar
 
