@@ -124,13 +124,9 @@
          binv    = one/modb_temp
          cinv    = one/mycharge
          ! Normalization \vec{B}/|B|
-         Bhat(1) = br_temp*binv
-         Bhat(2) = bphi_temp*binv
-         Bhat(3) = bz_temp*binv
+         Bhat = [br_temp, bphi_temp, bz_temp] * binv  ! Vectorized normalization
 
-         B = [br_temp,&
-            bphi_temp,&
-            bz_temp]
+         B = [br_temp,bphi_temp,bz_temp]
 
          curlB(1)= gradbz(2) - gradbphi(3)
          curlB(2)= gradbr(3) - gradbz(1)
@@ -140,20 +136,19 @@
                         gradB(3)*B(1) - gradB(1)*B(3),&
                         gradB(1)*B(2) - gradB(2)*B(1)]
 
-         Bstar=B + vll * mymass / mycharge * (curlB / modb_temp - gradBcrossB / (modb_temp*modb_temp))
-         Estar=Efield - moment * gradB / mycharge
-
-         BhatDotBstar=SUM(Bhat*Bstar)
+         Bstar=B + vll * mymass *cinv * (curlB *binv - gradBcrossB *binv*binv)
+         Estar=Efield - moment * gradB *cinv
+         BhatDotBstar=one/dot_product(Bhat,Bstar)
 
          EstarcrossBhat=[Estar(2)*Bhat(3) - Estar(3)*Bhat(2),&
                         Estar(3)*Bhat(1) - Estar(1)*Bhat(3),&
                         Estar(1)*Bhat(2) - Estar(2)*Bhat(1)]
 
-        qdot(1:3)=(vll * Bstar   + EstarcrossBhat) / BhatDotBstar
-        qdot(4)=mycharge /mymass *SUM(Bstar*Estar)/BhatDotBstar
+        qdot(1:3)=(vll * Bstar   + EstarcrossBhat) * BhatDotBstar
+        qdot(4)=mycharge /mymass *dot_product(Bstar,Estar)*BhatDotBstar
         ! Because dphi/dt = vphi/R !rad/s
          qdot(2) = qdot(2)*rinv
-         WRITE(myworkid+327,*) t,qdot
+         !WRITE(myworkid+327,*) t,qdot
       ELSE
          qdot(1:4) = 0
       END IF
