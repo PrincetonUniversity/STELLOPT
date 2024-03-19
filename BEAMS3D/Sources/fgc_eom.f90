@@ -49,16 +49,16 @@
 !-----------------------------------------------------------------------
       INTEGER :: ier
       REAL(rprec) :: r_temp, phi_temp, z_temp, modb_temp, br_temp, bz_temp, bphi_temp,&
-                      vll, rinv, binv, cinv, BhatDotBstar
-      REAL(rprec) :: Bhat(3),B(3), Bstar(3),&
+                      vll, rinv, binv, cinv, BhatDotBstar, A, B
+      REAL(rprec) :: Bhat(3),Bstar(3),&
                     gradB(3),gradbr(3),gradbz(3),gradbphi(3),gradBcrossB(3),curlB(3),&
                     Efield(3),Estar(3),EstarcrossBhat(3),ExB(3)
       ! For splines
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam
       REAL*8 :: fval(1,4), fvalE(1,3)
-      INTEGER, parameter :: ict(10)  = (/1,1,1,1,0,0,0,0,0,0/)
-      INTEGER, parameter :: ictE(10) = (/0,1,1,1,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict(8)  = (/1,1,1,1,0,0,0,0/)
+      INTEGER, parameter :: ictE(8) = (/0,1,1,1,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -73,11 +73,9 @@
       z_temp   = q(3)
       vll      = q(4)
       rinv = one/r_temp
-!      CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
       IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
           (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
           (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-!      IF (ier == 0) THEN
          ! Get the gridpoint info
          i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
          j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
@@ -85,31 +83,24 @@
          xparam = (r_temp - raxis(i)) * hri(i)
          yparam = (phi_temp - phiaxis(j)) * hpi(j)
          zparam = (z_temp - zaxis(k)) * hzi(k)
-         !CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
-         !                BR_spl%x1(1),BR_spl%n1,&
-         !                BR_spl%x2(1),BR_spl%n2,&
-         !                BR_spl%x3(1),BR_spl%n3,&
-         !                BR_spl%ilin1,BR_spl%ilin2,BR_spl%ilin3,&
-         !                i,j,k,xparam,yparam,zparam,&
-         !                hx,hxi,hy,hyi,hz,hzi,ier)
          ! Evaluate the Splines
-         CALL r8fvtricuB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BR4D(1,1,1,1),nr,nphi,nz)
          br_temp = fval(1,1); gradbr(1:3) = fval(1,2:4)
-         CALL r8fvtricuB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BPHI4D(1,1,1,1),nr,nphi,nz)
          bphi_temp = fval(1,1); gradbphi(1:3) = fval(1,2:4)
-         CALL r8fvtricuB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BZ4D(1,1,1,1),nr,nphi,nz)
          bz_temp = fval(1,1); gradbz(1:3) = fval(1,2:4)
-         CALL r8fvtricuB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          MODB4D(1,1,1,1),nr,nphi,nz)
          modb_temp = fval(1,1); gradB(1:3) = fval(1,2:4) !modb_temp=normB
-         CALL r8fvtricuB(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,&
+         CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          POT4D(1,1,1,1),nr,nphi,nz)
          Efield(1:3) =-fvalE(1,1:3)
@@ -124,31 +115,45 @@
          binv    = one/modb_temp
          cinv    = one/mycharge
          ! Normalization \vec{B}/|B|
-         Bhat = [br_temp, bphi_temp, bz_temp] * binv  ! Vectorized normalization
-
-         B = [br_temp,bphi_temp,bz_temp]
-
+         Bhat(1) = br_temp*binv
+         Bhat(2) = bphi_temp*binv
+         Bhat(3) = bz_temp*binv
+         
+         ! Curl(B) in cylindical coordiantes
          curlB(1)= gradbz(2) - gradbphi(3)
          curlB(2)= gradbr(3) - gradbz(1)
          curlB(3)=bphi_temp*rinv-gradbr(2)+gradbphi(1)
+         
+         ! grad(B)xB
+         gradBcrossB(1) = gradB(2) * bz_temp   - gradB(3) * bphi_temp
+         gradBcrossB(2) = gradB(3) * br_temp   - gradB(1) * bz_temp
+         gradBcrossB(3) = gradB(1) * bphi_temp - gradB(2) * br_temp
 
-         gradBcrossB=[gradB(2)*B(3) - gradB(3)*B(2),&
-                        gradB(3)*B(1) - gradB(1)*B(3),&
-                        gradB(1)*B(2) - gradB(2)*B(1)]
+         ! B* = B + vll*m*(curl(B) - grad(B)xb)/(B*q)
+         A = vll * mymass * cinv *binv
+         Bstar(1) = br_temp   + A * (curlB(1) - gradBcrossB(1) * binv )
+         Bstar(2) = bphi_temp + A * (curlB(2) - gradBcrossB(2) * binv )
+         Bstar(3) = br_temp   + A * (curlB(3) - gradBcrossB(3) * binv )
 
-         Bstar=B + vll * mymass *cinv * (curlB *binv - gradBcrossB *binv*binv)
-         Estar=Efield - moment * gradB *cinv
-         BhatDotBstar=one/dot_product(Bhat,Bstar)
+         ! E* = -grad(Phi) - mu*grad(B)/q
+         B = moment * cinv
+         Estar = Efield - B * gradB
 
-         EstarcrossBhat=[Estar(2)*Bhat(3) - Estar(3)*Bhat(2),&
-                        Estar(3)*Bhat(1) - Estar(1)*Bhat(3),&
-                        Estar(1)*Bhat(2) - Estar(2)*Bhat(1)]
+         ! Note here we define this as 1/b.B*
+         BhatDotBstar = Bhat(1)*Bstar(1) + Bhat(2)*BStar(2) + Bhat(3)*BStar(3)
+         BhatDotBstar = one / BhatDotBstar
 
-        qdot(1:3)=(vll * Bstar   + EstarcrossBhat) * BhatDotBstar
-        qdot(4)=mycharge /mymass *dot_product(Bstar,Estar)*BhatDotBstar
+         ! dX/dt = (vll * B* + cross(E*,b))/(b.B*)
+         ! dvll/dt = (q/m * B*.E*)/(b.B*)
+         qdot(1) = vll * Bstar(1) + Estar(2) * Bhat(3) - Estar(3)*Bhat(2)
+         qdot(2) = vll * Bstar(2) + Estar(3) * Bhat(1) - Estar(1)*Bhat(3)
+         qdot(3) = vll * Bstar(3) + Estar(1) * Bhat(2) - Estar(2)*Bhat(1)
+         qdot(4) = mycharge * ( Bstar(1) * Estar(1) + Bstar(2) * Estar(2) + Bstar(3) * Estar(3) ) / mymass
+
+         qdot = qdot * BhatDotBstar
+
         ! Because dphi/dt = vphi/R !rad/s
          qdot(2) = qdot(2)*rinv
-         !WRITE(myworkid+327,*) t,qdot
       ELSE
          qdot(1:4) = 0
       END IF
