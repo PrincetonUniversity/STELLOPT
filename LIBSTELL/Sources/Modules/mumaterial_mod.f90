@@ -158,7 +158,7 @@
 
       color = MPI_UNDEFINED
       IF (shar_rank.EQ.0) color = 0
-      CALL MPI_COMM_SPLIT( comm_myworld, color, shar_rank, comm_master )
+      CALL MPI_COMM_SPLIT( comm_myworld, color, shar_rank, comm_master, istat )
       RETURN
       END SUBROUTINE mumaterial_setup
 
@@ -210,7 +210,7 @@
       lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
       shar_rank = 0; master_rank = 0
       lismaster = .FALSE.
-      IF (NOT(lcomm)) lismaster = .TRUE.
+      IF (.NOT.lcomm) lismaster = .TRUE.
       ! initialize MPI
 #if defined(MPI_OPT)
     IF (lcomm) THEN
@@ -1265,7 +1265,7 @@
       shar_rank = 0; master_rank = 0; world_rank = 0; 
       lcomm = ((PRESENT(comm_world).AND.PRESENT(shar_comm)).AND.PRESENT(comm_master))
       lismaster = .FALSE.
-      IF (NOT(lcomm)) lismaster = .TRUE.
+      IF (.NOT.lcomm) lismaster = .TRUE.
 
 #if defined(MPI_OPT)
       IF (lcomm) THEN
