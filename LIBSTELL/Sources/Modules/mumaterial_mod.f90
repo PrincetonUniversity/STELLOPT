@@ -139,6 +139,11 @@
       ! param[out]: shar_comm. Shared memory communicator for calculations
       ! param[out]: comm_master. Master communicator handles cross-node stuff
       !-----------------------------------------------------------------------            
+#if defined(MPI_OPT)
+      USE mpi
+      USE mpi_params
+#endif
+    
       IMPLICIT NONE
 
       INTEGER, INTENT(inout) :: comm, istat
@@ -152,7 +157,7 @@
       CALL MPI_COMM_RANK( shar_comm, shar_rank, istat)
 
       color = MPI_UNDEFINED
-      IF (mysharrank.eq.0) color = 0
+      IF (shar_rank.EQ.0) color = 0
       CALL MPI_COMM_SPLIT( comm_myworld, color, shar_rank, comm_master )
       RETURN
       END SUBROUTINE mumaterial_setup
@@ -199,19 +204,21 @@
       INTEGER, INTENT(inout)       :: istat
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master
       INTEGER :: shar_rank, master_rank
-      LOGICAL :: lverb_temp, lcomm
+      LOGICAL :: lverb_temp, lcomm, lismaster
       INTEGER :: iunit ,ik, i, j, nMH
 
       lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
-      shar_rank = 0
-      master_rank = 0
-
+      shar_rank = 0; master_rank = 0
+      lismaster = .FALSE.
+      IF (NOT(lcomm)) lismaster = .TRUE.
       ! initialize MPI
 #if defined(MPI_OPT)
     IF (lcomm) THEN
-        CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
-        IF (shar_rank.eq.0) CALL MPI_COMM_RANK( comm_master, master_rank, istat )
+        IF (shar_rank.eq.0) THEN
+            CALL MPI_COMM_RANK( comm_master, master_rank, istat )
+            IF (master_rank.EQ.0) lismaster = .TRUE.
+        END IF
     END IF
 #endif
 
@@ -223,7 +230,7 @@
       CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
       IF (istat/= 0) RETURN
       ! master reads info
-      IF ((shar_rank.eq.0).and.(master_rank.eq.0)) THEN
+      IF (lismaster) THEN
          READ(iunit,'(A)') machine_string
          READ(iunit,'(A)') date
          READ(iunit,*) nvertex, ntet, nstate
@@ -269,7 +276,7 @@
       ! read in the mesh
       IF (istat/=0) RETURN
       
-      IF ((shar_rank.EQ.0).AND.(master_rank.EQ.0)) THEN
+      IF (lismaster) THEN
          DO ik = 1, nvertex
             READ(iunit,*) vertex(1,ik),vertex(2,ik),vertex(3,ik)
          END DO
@@ -586,7 +593,7 @@
 
       lcomm = (PRESENT(shar_comm).AND.PRESENT(comm_master))
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
+      IF (lcomm) THEN
          ! Get extent of shared memory area
          CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
          iC = iA
@@ -982,14 +989,21 @@
 
         SUBROUTINE mumaterial_sync_array2d_dbl(array, n1, n2, comm_master, shar_comm, &
             ourstart, ourend, istat)
+
+#if defined(MPI_OPT)
+        USE mpi
+        USE mpi_params
+#endif
+
         IMPLICIT NONE
+        
 
         INTEGER, INTENT(in) :: n1, n2
         DOUBLE PRECISION, DIMENSION(n1,n2), INTENT(inout) :: array
         INTEGER, INTENT(inout) :: comm_master, shar_comm
         INTEGER, INTENT(in) :: ourstart, ourend
         INTEGER :: shar_rank, istat
-        INTEGER :: start, end,
+        INTEGER :: start, end
 
         ! Zero array "above" data to keep
         IF (ourstart.NE.1) THEN
@@ -1204,7 +1218,7 @@
          IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, npoints, mystart, myend)
 #endif
 
-      allocate(B(3,npoints)))
+      allocate(B(3,npoints))
       B = 0
 
       DO i = mystart, myend
