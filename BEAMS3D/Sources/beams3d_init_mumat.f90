@@ -43,35 +43,47 @@
       REAL(rprec)  :: bx_temp, by_temp, bz_temp, x_temp, &
                       y_temp, z_temp, br_temp, bphi_temp
       REAL(rprec) :: offset(3)
-      INTEGER :: numprocs_local, mylocalid, mylocalmaster
-      INTEGER :: MPI_COMM_LOCAL
+      INTEGER :: numprocs_local, mylocalid, mymasterid
+      INTEGER :: MPI_COMM_MUSHARE, MPI_COMM_MUMASTER
+      LOGICAL :: lismaster, lissubmaster
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
       istat = 0; ier = 0; iunit = 327
-
+      lismaster = .TRUE.; lissubmaster = .TRUE.
       ! Divide up Work
 #if defined(MPI_OPT)
-      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
-      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
-      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_MUSHARE, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_MUSHARE, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_MUSHARE, numprocs_local, ierr_mpi )          ! MPI
+      lismaster = .FALSE.; lissubmaster = .FALSE.
+      i = MPI_UNDEFINED
+      IF (mylocalid.EQ.0) THEN 
+        i = 0; lissubmaster = .TRUE.
+      END IF
+      CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS, i, mylocalid, MPI_COMM_MUMASTER)
+      ! note: MPI_COMM_SHARMEM is derived from MPI_COMM_BEAMS
+
+      ! Locate main master
+      IF (lissubmaster) THEN
+        CALL MPI_COMM_RANK( MPI_COMM_MUMASTER, mymasterid, istat)
+        IF (mymasterid.EQ.0) lismaster = .TRUE.
+      END IF
 #endif
-      
-      ! Set mumaterial verbosity
-      !CALL mumaterial_setverb(lverb)
+
+    ! Set mumaterial verbosity
       CALL mumaterial_setverb(.FALSE.)
-      IF (mylocalid == 0) CALL mumaterial_setverb(.TRUE.)
+      IF (lismaster) CALL mumaterial_setverb(.TRUE.)
 
       ! Read the mu materials file
-      CALL mumaterial_load(TRIM(mumat_string),istat,MPI_COMM_BEAMS)
+      CALL MUMATERIAL_LOAD(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER)
 
       ! Set parameters
-      !CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 100, MPI_COMM_LOCAL)
       CALL MUMATERIAL_SETD(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
-                           mumaterial_lamfactor, mumaterial_nneighbor, MPI_COMM_LOCAL)
+                           mumaterial_lamfactor, mumaterial_nneighbor)
 
 #if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_MUSHARE,  ierr_mpi)
 #endif
       
       IF (lverb) THEN
@@ -81,7 +93,7 @@
       END IF
 
       ! Create the Splines 
-      IF (myid_sharmem == master) THEN
+      IF (lissubmaster) THEN
          bcs1=(/ 0, 0/)
          bcs2=(/-1,-1/)
          bcs3=(/ 0, 0/)
@@ -110,11 +122,11 @@
          CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumag:BZ_spl',ier)
       END IF
-      CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
-      CALL mpialloc(BR4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BR4D)
-      CALL mpialloc(BPHI4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BPHI4D)
-      CALL mpialloc(BZ4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BZ4D)
-      IF (myid_sharmem == master) THEN
+      CALL MPI_BARRIER(MPI_COMM_MUSHARE, ier)
+      CALL mpialloc(BR4D,   8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_MUSHARE, win_BR4D)
+      CALL mpialloc(BPHI4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_MUSHARE, win_BPHI4D)
+      CALL mpialloc(BZ4D,   8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_MUSHARE, win_BZ4D)
+      IF (lissubmaster) THEN
          BR4D = BR_SPL%fspl
          BPHI4D = BPHI_SPL%fspl
          BZ4D = BZ_SPL%fspl
@@ -126,22 +138,19 @@
       eps2 = (phimax-phimin)*small
       eps3 = (zmax-zmin)*small
 
-
-
       ! Initialize the magnetic calculation
       offset = 0.0
-      CALL MUMATERIAL_INIT_NEW(beams3d_BCART, MPI_COMM_BEAMS, offset)
+      CALL MUMATERIAL_INIT_NEW(beams3d_BCART, MPI_COMM_BEAMS, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, offset)
 
       ! Break up the Work
-      !CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
       CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nr*nphi*nz, mystart, myend)
 
       ! Find largest mystart in local
-      CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_LOCAL, ierr_mpi)
-      CALL MPI_ALLREDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_MUSHARE, ierr_mpi)
+      CALL MPI_ALLREDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, MPI_COMM_MUSHARE, ierr_mpi)
 
       ! Zero out non-work areas
-      IF (myid_sharmem == master) THEN
+      IF (lissubmaster) THEN
          DO s = 1, ourstart-1
             i = MOD(s-1,nr)+1
             j = MOD(s-1,nr*nphi)
@@ -163,7 +172,7 @@
       END IF
 
 #if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_MUSHARE,ierr_mpi)
 #endif
 
       ! Start progress 
@@ -206,18 +215,14 @@
          CALL FLUSH(6)
       END IF    
 
-
       ! Now have master threads share results
 #if defined(MPI_OPT)
-      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-      i = MPI_UNDEFINED
-      IF (myid_sharmem == master) i = 0
-      CALL MPI_COMM_SPLIT(MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
-      IF (myid_sharmem == master) THEN
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_R,   nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_PHI, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_Z,   nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_MUSHARE, ierr_mpi)
+      IF (lissubmaster) THEN
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_R,   nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MUSHARE, ierr_mpi)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_PHI, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MUSHARE, ierr_mpi)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_Z,   nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MUSHARE, ierr_mpi)
+         CALL MPI_COMM_FREE(MPI_COMM_MUSHARE,ierr_mpi)
       END IF
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
 #endif

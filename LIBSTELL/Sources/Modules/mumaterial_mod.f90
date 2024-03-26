@@ -66,7 +66,7 @@
       CHARACTER(LEN=256), PRIVATE :: date
 
 
-      INTEGER, PRIVATE                    :: mystart, myend, mydelta
+      INTEGER, PRIVATE                    :: mystart, myend, mydelta, ourstart, ourend
       INTEGER, PRIVATE                    :: shar_rank, shar_comm
 
 
@@ -193,7 +193,8 @@
       !-----------------------------------------------------------------------
       ! param[in]: filename. The file name to load in
       ! param[in, out]: istat. Integer that shows error if != 0
-      ! param[in, out]: comm. MPI communicator, handles shared memory
+      ! param[in, out]: shar_comm. MUMAT shared memory communicator
+      ! param[in, out]: comm_master. MUMAT communicator of sharmem masters
       !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
@@ -209,11 +210,12 @@
 
       lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
       shar_rank = 0; master_rank = 0
-      lismaster = .FALSE.
-      IF (.NOT.lcomm) lismaster = .TRUE.
+      lismaster = .TRUE.
+      
       ! initialize MPI
 #if defined(MPI_OPT)
     IF (lcomm) THEN
+        lismaster = .FALSE.
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
         IF (shar_rank.eq.0) THEN
             CALL MPI_COMM_RANK( comm_master, master_rank, istat )
@@ -457,7 +459,9 @@
             
 #if defined(MPI_OPT)
             IF (lcomm) THEN
-               CALL mumaterial_sync_array2d_dbl(vertex,3,nvertex,comm_master,shar_comm,mystart,myend,istat)
+                CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, shar_comm, ierr_mpi)
+                CALL MPI_ALLREDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, shar_comm, ierr_mpi)
+                CALL mumaterial_sync_array2d_dbl(vertex,3,nvertex,comm_master,shar_comm,ourstart,ourend,istat)
             END IF
 #endif
          END IF
@@ -987,7 +991,7 @@
             RETURN
       END FUNCTION mumaterial_cross
 
-        SUBROUTINE mumaterial_sync_array2d_dbl(array, n1, n2, comm_master, shar_comm, &
+      SUBROUTINE mumaterial_sync_array2d_dbl(array, n1, n2, comm_master, shar_comm, &
             ourstart, ourend, istat)
 
 #if defined(MPI_OPT)
@@ -1005,27 +1009,20 @@
         INTEGER :: shar_rank, istat
         INTEGER :: start, end
 
-        ! Zero array "above" data to keep
-        IF (ourstart.NE.1) THEN
-            CALL MPI_CALC_MYRANGE(shar_comm, 1, ourstart-1, start, end)
-            array(:,mystart:myend) = 0
-        END IF
-        ! Zero array "below" data to keep
-        IF (ourend.NE.n1) THEN
-            CALL MPI_CALC_MYRANGE(shar_comm,ourend+1,n1, start, end)
-            array(:,mystart:myend) = 0
-        END IF
-
-        ! Make sure the array is properly modified on the shared memory
-        CALL MPI_BARRIER( shar_comm, istat ) 
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
-        IF (shar_rank.eq.0) THEN
-            ! Make sure the other masters are also done with their array
-            CALL MPI_BARRIER( comm_master, istat )
+        IF (shar_rank.EQ.0) THEN
+            ! Zero array "above" data to keep
+            IF (ourstart.NE.1) array(:,1:(ourstart-1)) = 0
+            ! Zero array "below" data to keep
+            IF (ourend.NE.n1)  array(:,(ourend+1):n1) = 0
+
+            ! Make sure the other masters are also done with their array [unnecessary]
+            ! CALL MPI_BARRIER( comm_master, istat )
+
             ! Finally, reduce arrays onto all shared memory islands
             CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat )
         END IF
-        CALL MPI_BARRIER( shar_comm, istat ) 
+        CALL MPI_BARRIER( shar_comm, istat)
 
       END SUBROUTINE mumaterial_sync_array2d_dbl
 
