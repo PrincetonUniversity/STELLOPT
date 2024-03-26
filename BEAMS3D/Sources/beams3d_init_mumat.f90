@@ -61,12 +61,12 @@
       IF (mylocalid.EQ.0) THEN 
         i = 0; lissubmaster = .TRUE.
       END IF
-      CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS, i, mylocalid, MPI_COMM_MUMASTER)
+      CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS, i, mylocalid, MPI_COMM_MUMASTER, ierr_mpi)
       ! note: MPI_COMM_SHARMEM is derived from MPI_COMM_BEAMS
 
       ! Locate main master
       IF (lissubmaster) THEN
-        CALL MPI_COMM_RANK( MPI_COMM_MUMASTER, mymasterid, istat)
+        CALL MPI_COMM_RANK( MPI_COMM_MUMASTER, mymasterid, ierr_mpi)
         IF (mymasterid.EQ.0) lismaster = .TRUE.
       END IF
 #endif
