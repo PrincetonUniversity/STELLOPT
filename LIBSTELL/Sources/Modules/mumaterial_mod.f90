@@ -67,7 +67,7 @@
 
 
       INTEGER, PRIVATE                    :: mystart, myend, mydelta, ourstart, ourend
-      INTEGER, PRIVATE                    :: shar_rank, shar_comm
+      INTEGER, PRIVATE                    :: shar_rank, shar_comm, world_rank
 
 
 
@@ -153,6 +153,7 @@
       INTEGER :: color
 
       CALL MPI_COMM_DUP( comm, comm_myworld, istat )
+      CALL MPI_COMM_RANK( comm_myworld, world_rank, istat)
       CALL MPI_COMM_SPLIT_TYPE( comm_myworld, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
       CALL MPI_COMM_RANK( shar_comm, shar_rank, istat)
 
@@ -730,9 +731,9 @@
          ! Synchronise M
          IF (lcomm) THEN
             CALL mumaterial_sync_array2d_dbl(M,3,ntet,comm_master,shar_comm,iA,iB,istat)
-            IF (lverb) WRITE(6,*) 'Waiting for error allreduce'
+            WRITE(6,*) 'Waiting for error allreduce:  ', world_rank, ' / ', shar_rank 
             IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
-            IF (lverb) WRITE(6,*) 'Waiting for world barrier'
+            WRITE(6,*) 'Waiting for world barrier: ', world_rank, ' / ', shar_rank 
             CALL MPI_BARRIER( comm_world, istat)
          END IF
 #endif
@@ -1022,10 +1023,10 @@
             ! CALL MPI_BARRIER( comm_master, istat )
 
             ! Finally, reduce arrays onto all shared memory islands
-            IF (lverb) WRITE(6,*) 'Waiting for sync allreduce'
+            WRITE(6,*) 'Waiting for sync allreduce: ', world_rank, ' / ', shar_rank 
             CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat )
         END IF
-        IF (lverb) WRITE(6,*) 'Waiting for sync shar_comm barrier'
+        WRITE(6,*) 'Waiting for sync shar_comm barrier:  ', world_rank, ' / ', shar_rank 
         CALL MPI_BARRIER( shar_comm, istat)
 
       END SUBROUTINE mumaterial_sync_array2d_dbl
