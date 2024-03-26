@@ -731,9 +731,7 @@
          ! Synchronise M
          IF (lcomm) THEN
             CALL mumaterial_sync_array2d_dbl(M,3,ntet,comm_master,shar_comm,iA,iB,istat)
-            WRITE(6,*) 'Waiting for error allreduce:  ', world_rank, ' / ', shar_rank 
             IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
-            WRITE(6,*) 'Waiting for world barrier: ', world_rank, ' / ', shar_rank 
             CALL MPI_BARRIER( comm_world, istat)
          END IF
 #endif
@@ -745,7 +743,10 @@
          IF (lverb) WRITE(6,'(5X,A7,I5,A8,E15.7,A13,E15.7)') 'Count: ', count, ' Error: ', error, ' Max. Error: ', maxErr*lambda
          CALL FLUSH(6)
 
-         IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) EXIT
+         IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) THEN 
+            IF (lverb) WRITE(6,*) 'Exiting loop'
+            EXIT
+         END IF
             
          maxDiff = CSHIFT(maxDiff, -1)
          maxDiff(1) = error
@@ -1023,10 +1024,8 @@
             ! CALL MPI_BARRIER( comm_master, istat )
 
             ! Finally, reduce arrays onto all shared memory islands
-            WRITE(6,*) 'Waiting for sync allreduce: ', world_rank, ' / ', shar_rank 
             CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat )
         END IF
-        WRITE(6,*) 'Waiting for sync shar_comm barrier:  ', world_rank, ' / ', shar_rank 
         CALL MPI_BARRIER( shar_comm, istat)
 
       END SUBROUTINE mumaterial_sync_array2d_dbl
