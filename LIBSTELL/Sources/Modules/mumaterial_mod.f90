@@ -553,7 +553,7 @@
 
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
       IF (lcomm) THEN
-            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, N_store, shar_comm, comm_master)
+            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, N_store, shar_comm, comm_master, comm_world)
       ELSE
             CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, N_store)
       END IF
@@ -567,7 +567,7 @@
       END SUBROUTINE mumaterial_init_new
 
 
-      SUBROUTINE mumaterial_iterate_magnetization_new(N1, iA, iB, neighbours, N_store, shar_comm, comm_master)
+      SUBROUTINE mumaterial_iterate_magnetization_new(N1, iA, iB, neighbours, N_store, shar_comm, comm_master, comm_world)
       !-----------------------------------------------------------------------
       ! mumaterial_iterate_magnetization: Iterates the magnetic field over all tiles, called by mumaterial_init
       !-----------------------------------------------------------------------
@@ -583,7 +583,7 @@
       INTEGER, INTENT(IN) :: N1, iA, iB
       INTEGER, OPTIONAL :: neighbours(N1,iA:iB)
       DOUBLE PRECISION, OPTIONAL :: N_store(3,3,N1+1,iA:iB)
-      INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master
+      INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master, comm_world
       INTEGER :: shar_rank
 
       LOGICAL :: lcomm
@@ -730,8 +730,10 @@
          ! Synchronise M
          IF (lcomm) THEN
             CALL mumaterial_sync_array2d_dbl(M,3,ntet,comm_master,shar_comm,iA,iB,istat)
+            IF (lverb) WRITE(6,*) 'Waiting for error allreduce'
             IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
-            CALL MPI_BARRIER( shar_comm, istat)
+            IF (lverb) WRITE(6,*) 'Waiting for world barrier'
+            CALL MPI_BARRIER( comm_world, istat)
          END IF
 #endif
 
@@ -1020,8 +1022,10 @@
             ! CALL MPI_BARRIER( comm_master, istat )
 
             ! Finally, reduce arrays onto all shared memory islands
+            IF (lverb) WRITE(6,*) 'Waiting for sync allreduce'
             CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat )
         END IF
+        IF (lverb) WRITE(6,*) 'Waiting for sync shar_comm barrier'
         CALL MPI_BARRIER( shar_comm, istat)
 
       END SUBROUTINE mumaterial_sync_array2d_dbl
