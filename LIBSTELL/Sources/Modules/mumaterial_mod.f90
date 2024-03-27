@@ -425,8 +425,6 @@
       INTEGER :: shar_rank, master_rank
       LOGICAL :: lcomm
       INTEGER :: i, j, k, istat
-      CHARACTER(LEN=8) :: fmt
-      CHARACTER(LEN=5) :: name
 
       INTEGER, DIMENSION(:,:), POINTER :: neighbours
       LOGICAL, ALLOCATABLE :: mask(:)
@@ -441,10 +439,6 @@
       lcomm = ((PRESENT(shar_comm).AND.PRESENT(comm_master)).AND.PRESENT(comm_world))
       CALL MPI_COMM_RANK( comm_world, world_rank, istat )
       CALL MPI_COMM_SIZE( comm_world, world_size, istat )
-      i = world_rank / world_size
-      fmt = '(I5.5)'
-      WRITE(name,fmt) i
-      CALL MPI_COMM_SET_NAME( shar_comm, name, istat )
 
 #if defined(MPI_OPT)
       IF (lcomm) THEN
@@ -1024,26 +1018,27 @@
         INTEGER, INTENT(in) :: mystart,myend
         INTEGER :: ourstart, ourend
         INTEGER :: shar_rank, istat
-        CHARACTER(LEN=5) :: name
+        INTEGER :: color
 
-        CALL MPI_COMM_GET_NAME(shar_comm, name, 5, istat)
+        color = world_rank / world_size
+
         IF (lverb) WRITE(6,*) "  MUMAT_SYNC:  Calculating ourstart and ourend"
         CALL MPI_REDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, 0, shar_comm, ierr_mpi)
         CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, shar_comm, ierr_mpi)
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
         IF (shar_rank.EQ.0) THEN
-            WRITE(6,*) "  ", shar_rank, " / ", name, " will zero array sections"
+            WRITE(6,*) "  ", shar_rank, " / ", color, " will zero array sections"
             IF (ourstart.NE.1) array(:,1:(ourstart-1)) = 0 ! Zero array "above" data to keep
             IF (ourend.NE.n1)  array(:,(ourend+1):n1)  = 0 ! Zero array "below" data to keep
             ! Reduce arrays onto all shared memory islands
-            WRITE(6,*) "  ", shar_rank, " / ", name, " waiting at master barrier"
+            WRITE(6,*) "  ", shar_rank, " / ", color, " waiting at master barrier"
             CALL MPI_BARRIER( comm_master, istat )
-            WRITE(6,*) "  ", shar_rank, " / ", name, " waiting for master allreduce"
+            WRITE(6,*) "  ", shar_rank, " / ", color, " waiting for master allreduce"
             CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat )
         END IF
-        IF ((shar_rank.EQ.0).OR.(shar_rank.EQ.1)) WRITE(6,*) "  ", shar_rank, " / ", name, " waiting at share barrier"
+        IF ((shar_rank.EQ.0).OR.(shar_rank.EQ.1)) WRITE(6,*) "  ", shar_rank, " / ", color, " waiting at share barrier"
         CALL MPI_BARRIER( shar_comm, istat)
-        IF ((shar_rank.EQ.0).OR.(shar_rank.EQ.1)) WRITE(6,*) "  ", shar_rank, " / ", name, " has passed share barrier"
+        IF ((shar_rank.EQ.0).OR.(shar_rank.EQ.1)) WRITE(6,*) "  ", shar_rank, " / ", color, " has passed share barrier"
 
 
       END SUBROUTINE mumaterial_sync_array2d_dbl
