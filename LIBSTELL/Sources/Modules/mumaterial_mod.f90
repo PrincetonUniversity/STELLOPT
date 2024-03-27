@@ -209,7 +209,7 @@
       INTEGER :: iunit ,ik, i, j, nMH
 
       lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
-      shar_rank = 0; master_rank = 0, master_size = 0;
+      shar_rank = 0; master_rank = 0; master_size = 0;
       lismaster = .TRUE.; ldosync = .FALSE.
       
       ! initialize MPI
