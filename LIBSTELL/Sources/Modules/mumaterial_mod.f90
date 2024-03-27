@@ -1009,7 +1009,7 @@
 #endif
 
         IMPLICIT NONE
-        
+
         INTEGER, INTENT(in) :: n1, n2
         DOUBLE PRECISION, DIMENSION(n1,n2), INTENT(inout) :: array
         INTEGER, INTENT(inout) :: comm_master, shar_comm
@@ -1017,23 +1017,23 @@
         INTEGER :: ourstart, ourend
         INTEGER :: shar_rank, istat
 
-!        IF (lverb) WRITE(6,*) "  MUMAT_SYNC:  Calculating ourstart and ourend"
+        IF (lverb) WRITE(6,*) "  MUMAT_SYNC:  Calculating ourstart and ourend"
         CALL MPI_REDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, 0, shar_comm, ierr_mpi)
         CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, shar_comm, ierr_mpi)
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
         IF (shar_rank.EQ.0) THEN
-!            WRITE(6,*) "   Thread with rank ", shar_rank, " will zero array sections"
+            WRITE(6,*) "   Thread with rank ", shar_rank, " will zero array sections"
             IF (ourstart.NE.1) array(:,1:(ourstart-1)) = 0 ! Zero array "above" data to keep
             IF (ourend.NE.n1)  array(:,(ourend+1):n1)  = 0 ! Zero array "below" data to keep
             ! Reduce arrays onto all shared memory islands
-!            WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting at comm_master barrier"
+            WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting at comm_master barrier"
             CALL MPI_BARRIER( comm_master, istat )
-!            WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting for comm_master allreduce"
+            WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting for comm_master allreduce"
             CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat )
         END IF
-!        WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting at shar_comm barrier"
+        WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting at shar_comm barrier"
         CALL MPI_BARRIER( shar_comm, istat)
-!        WRITE(6,*) "   Thread with rank ", shar_rank, " has passed shar_comm barrier"
+        WRITE(6,*) "   Thread with rank ", shar_rank, " has passed shar_comm barrier"
 
 
       END SUBROUTINE mumaterial_sync_array2d_dbl
