@@ -1207,6 +1207,7 @@
       EXTERNAL:: getBfld
       DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
       DOUBLE PRECISION, INTENT(out), ALLOCATABLE :: B(:,:)
+      DOUBLE PRECISION, ALLOCATABLE :: B_local(:,:)
       INTEGER, INTENT(inout), OPTIONAL :: comm_world, shar_comm, comm_master
       LOGICAL :: lcomm
       INTEGER :: i, istat 
@@ -1217,22 +1218,26 @@
 
       npoints = size(x)
       mystart = 1; myend = npoints
+
 #if defined(MPI_OPT)
          IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, npoints, mystart, myend)
 #endif
 
-      allocate(B(3,npoints))
-      B = 0
+      allocate(B_local(3,npoints),B(3,npoints))
+      B_local = 0; B = 0
 
       DO i = mystart, myend
-            CALL mumaterial_getb_scalar(x(i), y(i), z(i), B(1,i), B(2,i), B(3,i), getBfld)
+            CALL mumaterial_getb_scalar(x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i), getBfld)
       END DO
-
+    
 #if defined(MPI_OPT)
       IF (lcomm) THEN
-        CALL mumaterial_sync_array2d_dbl(B,3,npoints,comm_master,shar_comm,mystart,myend,istat)
-      END IF
+        CALL MPI_REDUCE(B_local,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,0,shar_comm,istat)
+        CALL MPI_ALLREDUCE( MPI_IN_PLACE,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,comm_master,istat)
+    END IF
 #endif
+
+      deallocate(B_local)
       
       RETURN
       END SUBROUTINE mumaterial_getb_vector
