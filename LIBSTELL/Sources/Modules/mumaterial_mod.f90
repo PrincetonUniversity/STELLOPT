@@ -67,7 +67,7 @@
 
 
       INTEGER, PRIVATE                    :: mystart, myend, mydelta, ourstart, ourend
-      INTEGER, PRIVATE                    :: shar_rank, shar_comm, world_rank, master_size
+      INTEGER, PRIVATE                    :: shar_rank, shar_comm, master_size
 
 
 
@@ -153,7 +153,6 @@
       INTEGER :: color
 
       CALL MPI_COMM_DUP( comm, comm_myworld, istat )
-      CALL MPI_COMM_RANK( comm_myworld, world_rank, istat)
       CALL MPI_COMM_SPLIT_TYPE( comm_myworld, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
       CALL MPI_COMM_RANK( shar_comm, shar_rank, istat)
 
@@ -435,8 +434,7 @@
       EXTERNAL:: getBfld
       
       mu0 = 16.0D-7 * ATAN(1.d0)
-      shar_rank = 0
-      master_rank = 0
+      shar_rank = 0; master_rank = 0
       lcomm = ((PRESENT(shar_comm).AND.PRESENT(comm_master)).AND.PRESENT(comm_world))
 
 #if defined(MPI_OPT)
@@ -462,9 +460,8 @@
             
 #if defined(MPI_OPT)
             IF (lcomm.AND.ldosync) THEN
-                CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, shar_comm, ierr_mpi)
-                CALL MPI_ALLREDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, shar_comm, ierr_mpi)
-                CALL mumaterial_sync_array2d_dbl(vertex,3,nvertex,comm_master,shar_comm,ourstart,ourend,istat)
+                IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Synchronising offset vertices"
+                CALL mumaterial_sync_array2d_dbl(vertex,3,nvertex,comm_master,shar_comm,mystart,myend,istat)
             END IF
 #endif
          END IF
@@ -499,8 +496,10 @@
 
 #if defined(MPI_OPT)
       IF (lcomm.AND.ldosync) THEN
+        IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
         ! TODO: Allocate locally, then remove this line
+        IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Synchronising Fields at Tet. centers"
         CALL mumaterial_sync_array2d_dbl(Happ,   3,ntet,comm_master,shar_comm,mystart,myend,istat)
       END IF
 #endif
@@ -732,6 +731,7 @@
 #if defined(MPI_OPT)
          ! Synchronise M
          IF (lcomm.AND.ldosync) THEN
+            IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Synchronising M this iteration"
             CALL mumaterial_sync_array2d_dbl(M,3,ntet,comm_master,shar_comm,iA,iB,istat)
             IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
             CALL MPI_BARRIER( comm_world, istat)
@@ -997,8 +997,10 @@
             RETURN
       END FUNCTION mumaterial_cross
 
+
+
       SUBROUTINE mumaterial_sync_array2d_dbl(array, n1, n2, comm_master, shar_comm, &
-            ourstart, ourend, istat)
+            mystart,myend,istat)
 
 #if defined(MPI_OPT)
         USE mpi
@@ -1007,25 +1009,21 @@
 
         IMPLICIT NONE
         
-
         INTEGER, INTENT(in) :: n1, n2
         DOUBLE PRECISION, DIMENSION(n1,n2), INTENT(inout) :: array
         INTEGER, INTENT(inout) :: comm_master, shar_comm
-        INTEGER, INTENT(in) :: ourstart, ourend
+        INTEGER, INTENT(in) :: mystart,myend
+        INTEGER :: ourstart, ourend
         INTEGER :: shar_rank, istat
-        INTEGER :: start, end
 
+        CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, shar_comm, ierr_mpi)
+        CALL MPI_ALLREDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, shar_comm, ierr_mpi)
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
         IF (shar_rank.EQ.0) THEN
-            ! Zero array "above" data to keep
-            IF (ourstart.NE.1) array(:,1:(ourstart-1)) = 0
-            ! Zero array "below" data to keep
-            IF (ourend.NE.n1)  array(:,(ourend+1):n1) = 0
-
-            ! Make sure the other masters are also done with their array [unnecessary]
-            ! CALL MPI_BARRIER( comm_master, istat )
-
-            ! Finally, reduce arrays onto all shared memory islands
+            IF (ourstart.NE.1) array(:,1:(ourstart-1)) = 0 ! Zero array "above" data to keep
+            IF (ourend.NE.n1)  array(:,(ourend+1):n1)  = 0 ! Zero array "below" data to keep
+            ! Reduce arrays onto all shared memory islands
+            CALL MPI_BARRIER( comm_master, istat )
             CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat )
         END IF
         CALL MPI_BARRIER( shar_comm, istat)
@@ -1266,12 +1264,12 @@
       CHARACTER(LEN=*), INTENT(in) :: path
       DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
       INTEGER, INTENT(inout), OPTIONAL :: comm_world, shar_comm, comm_master
-      INTEGER :: i, shar_rank, world_rank, master_rank, istat 
+      INTEGER :: i, shar_rank, master_rank, istat 
       LOGICAL :: lcomm, lismaster
       INTEGER :: npoints
       DOUBLE PRECISION, ALLOCATABLE :: B(:,:)
 
-      shar_rank = 0; master_rank = 0; world_rank = 0; 
+      shar_rank = 0; master_rank = 0;
       lcomm = ((PRESENT(comm_world).AND.PRESENT(shar_comm)).AND.PRESENT(comm_master))
       lismaster = .FALSE.
       IF (.NOT.lcomm) lismaster = .TRUE.
