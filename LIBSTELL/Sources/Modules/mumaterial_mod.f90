@@ -222,7 +222,7 @@
             IF (master_rank.EQ.0) lismaster = .TRUE.
             CALL MPI_COMM_SIZE( comm_master, master_size, istat )
         END IF
-        CALL MPI_Bcast( master_size, 1, MPI_INTEGER, 0, shar_comm)
+        CALL MPI_Bcast( master_size, 1, MPI_INTEGER, 0, shar_comm, istat)
         IF (master_size.GE.2) ldosync = .TRUE.
     END IF
 #endif
