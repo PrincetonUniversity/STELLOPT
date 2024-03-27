@@ -44,7 +44,7 @@
             DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: H(:), M(:)
       END TYPE stateFunctionType
 
-      LOGICAL, PRIVATE                    :: lverb
+      LOGICAL, PRIVATE                    :: lverb, ldosync
       INTEGER, PRIVATE                    :: nvertex, ntet, nstate
       TYPE(stateFunctionType), PRIVATE, ALLOCATABLE     :: stateFunction(:)
       DOUBLE PRECISION, PRIVATE           :: maxErr, lambdaStart, lambdaFactor
@@ -67,7 +67,7 @@
 
 
       INTEGER, PRIVATE                    :: mystart, myend, mydelta, ourstart, ourend
-      INTEGER, PRIVATE                    :: shar_rank, shar_comm, world_rank
+      INTEGER, PRIVATE                    :: shar_rank, shar_comm, world_rank, master_size
 
 
 
@@ -211,7 +211,7 @@
 
       lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
       shar_rank = 0; master_rank = 0
-      lismaster = .TRUE.
+      lismaster = .TRUE.; ldosync = .FALSE.
       
       ! initialize MPI
 #if defined(MPI_OPT)
@@ -221,6 +221,8 @@
         IF (shar_rank.eq.0) THEN
             CALL MPI_COMM_RANK( comm_master, master_rank, istat )
             IF (master_rank.EQ.0) lismaster = .TRUE.
+            CALL MPI_COMM_SIZE( comm_master, master_size, istat )
+            IF (master_size.GE.2) ldosync = .TRUE.
         END IF
     END IF
 #endif
@@ -459,7 +461,7 @@
             END DO
             
 #if defined(MPI_OPT)
-            IF (lcomm) THEN
+            IF (lcomm.AND.ldosync) THEN
                 CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, shar_comm, ierr_mpi)
                 CALL MPI_ALLREDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, shar_comm, ierr_mpi)
                 CALL mumaterial_sync_array2d_dbl(vertex,3,nvertex,comm_master,shar_comm,ourstart,ourend,istat)
@@ -496,7 +498,7 @@
       END DO
 
 #if defined(MPI_OPT)
-      IF (lcomm) THEN
+      IF (lcomm.AND.ldosync) THEN
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
         ! TODO: Allocate locally, then remove this line
         CALL mumaterial_sync_array2d_dbl(Happ,   3,ntet,comm_master,shar_comm,mystart,myend,istat)
@@ -504,7 +506,7 @@
 #endif
 
       ! From here on out each thread only works on its own subset
-      IF (lcomm) CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet, mystart, myend)
+      IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Allocate helpers and Neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -596,7 +598,7 @@
       DOUBLE PRECISION :: H_old(3), H_new(3), lambda, lambda_s, error, maxDiff(4), Hnorm, M_tmp_norm
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
-      lcomm = (PRESENT(shar_comm).AND.PRESENT(comm_master))
+      lcomm = ((PRESENT(shar_comm).AND.PRESENT(comm_master)).AND.PRESENT(comm_world))
 #if defined(MPI_OPT)
       IF (lcomm) THEN
          ! Get extent of shared memory area
@@ -729,7 +731,7 @@
 
 #if defined(MPI_OPT)
          ! Synchronise M
-         IF (lcomm) THEN
+         IF (lcomm.AND.ldosync) THEN
             CALL mumaterial_sync_array2d_dbl(M,3,ntet,comm_master,shar_comm,iA,iB,istat)
             IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
             CALL MPI_BARRIER( comm_world, istat)
