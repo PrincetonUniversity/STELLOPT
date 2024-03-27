@@ -67,7 +67,7 @@
 
 
       INTEGER, PRIVATE                    :: mystart, myend, mydelta, ourstart, ourend
-      INTEGER, PRIVATE                    :: shar_rank, shar_comm, master_size, world_rank, mycomm_index
+      INTEGER, PRIVATE                    :: shar_rank, shar_comm, master_size, world_rank, world_size, mycomm_index
 
 
 
