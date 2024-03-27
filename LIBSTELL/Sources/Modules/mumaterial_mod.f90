@@ -209,7 +209,7 @@
       INTEGER :: iunit ,ik, i, j, nMH
 
       lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
-      shar_rank = 0; master_rank = 0
+      shar_rank = 0; master_rank = 0, master_size = 0;
       lismaster = .TRUE.; ldosync = .FALSE.
       
       ! initialize MPI
@@ -221,8 +221,9 @@
             CALL MPI_COMM_RANK( comm_master, master_rank, istat )
             IF (master_rank.EQ.0) lismaster = .TRUE.
             CALL MPI_COMM_SIZE( comm_master, master_size, istat )
-            IF (master_size.GE.2) ldosync = .TRUE.
         END IF
+        CALL MPI_Bcast( master_size, 1, MPI_INTEGER, 0, shar_comm)
+        IF (master_size.GE.2) ldosync = .TRUE.
     END IF
 #endif
 
@@ -1016,23 +1017,23 @@
         INTEGER :: ourstart, ourend
         INTEGER :: shar_rank, istat
 
-        IF (lverb) WRITE(6,*) "  MUMAT_SYNC:  Calculating ourstart and ourend"
-        CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, shar_comm, ierr_mpi)
-        CALL MPI_ALLREDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, shar_comm, ierr_mpi)
+!        IF (lverb) WRITE(6,*) "  MUMAT_SYNC:  Calculating ourstart and ourend"
+        CALL MPI_REDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, 0, shar_comm, ierr_mpi)
+        CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, shar_comm, ierr_mpi)
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
         IF (shar_rank.EQ.0) THEN
-            WRITE(6,*) "   Thread with rank ", shar_rank, " will zero array sections"
+!            WRITE(6,*) "   Thread with rank ", shar_rank, " will zero array sections"
             IF (ourstart.NE.1) array(:,1:(ourstart-1)) = 0 ! Zero array "above" data to keep
             IF (ourend.NE.n1)  array(:,(ourend+1):n1)  = 0 ! Zero array "below" data to keep
             ! Reduce arrays onto all shared memory islands
-            WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting at comm_master barrier"
+!            WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting at comm_master barrier"
             CALL MPI_BARRIER( comm_master, istat )
-            WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting for comm_master allreduce"
+!            WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting for comm_master allreduce"
             CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat )
         END IF
-        WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting at shar_comm barrier"
+!        WRITE(6,*) "   Thread with rank ", shar_rank, " is waiting at shar_comm barrier"
         CALL MPI_BARRIER( shar_comm, istat)
-        WRITE(6,*) "   Thread with rank ", shar_rank, " has passed shar_comm barrier"
+!        WRITE(6,*) "   Thread with rank ", shar_rank, " has passed shar_comm barrier"
 
 
       END SUBROUTINE mumaterial_sync_array2d_dbl
