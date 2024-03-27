@@ -1233,7 +1233,8 @@
 #if defined(MPI_OPT)
       IF (lcomm) THEN
         CALL MPI_REDUCE(B_local,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,0,shar_comm,istat)
-        CALL MPI_ALLREDUCE( MPI_IN_PLACE,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,comm_master,istat)
+        CALL MPI_COMM_RANK( shar_comm, shar_rank, istat)
+        IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE( MPI_IN_PLACE,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,comm_master,istat)
     END IF
 #endif
 
