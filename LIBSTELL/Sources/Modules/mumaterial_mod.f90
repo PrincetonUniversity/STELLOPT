@@ -439,6 +439,7 @@
       lcomm = ((PRESENT(shar_comm).AND.PRESENT(comm_master)).AND.PRESENT(comm_world))
       CALL MPI_COMM_RANK( comm_world, world_rank, istat )
       CALL MPI_COMM_SIZE( comm_world, world_size, istat )
+      mycomm_index = 8*world_rank/world_size
 
 #if defined(MPI_OPT)
       IF (lcomm) THEN
@@ -486,7 +487,9 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Calculate the Applied H-Field (do over all nodes)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Calculating Fields at Tet. centers"
+      IF (lverb) THEN 
+        WRITE(6,*) "  MUMAT_INIT:  Calculating Fields at Tet. centers"; FLUSH(6)
+      END IF
       mystart = 1; myend = ntet
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
@@ -499,10 +502,14 @@
 
 #if defined(MPI_OPT)
       IF (lcomm.AND.ldosync) THEN
-        IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"
+        IF (lverb) THEN
+          WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"; FLUSH(6)
+        END IF
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
         ! TODO: Allocate locally, then remove this line
-        IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Synchronising Fields at Tet. centers"
+        IF (lverb) THEN 
+            WRITE(6,*) "  MUMAT_INIT:  Synchronising Fields at Tet. centers"; FLUSH(6)
+        END IF
         CALL mumaterial_sync_array2d_dbl(Happ,   3,ntet,comm_master,shar_comm,mystart,myend,istat)
       END IF
 #endif
@@ -522,7 +529,9 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate nearest neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbours"
+      IF (lverb) THEN 
+        WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbours"; FLUSH(6)
+      END IF
       ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
       DO i = mystart, myend
          ! We need to define helper variables dx(3,ntet)
@@ -734,7 +743,9 @@
 #if defined(MPI_OPT)
          ! Synchronise M
          IF (lcomm.AND.ldosync) THEN
-            IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Synchronising M this iteration"
+            IF (lverb) THEN 
+                WRITE(6,*) "  MUMAT_INIT:  Synchronising M this iteration"; FLUSH(6)
+            END IF
             CALL mumaterial_sync_array2d_dbl(M,3,ntet,comm_master,shar_comm,iA,iB,istat)
             IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
             CALL MPI_BARRIER( comm_world, istat)
@@ -1020,13 +1031,13 @@
         INTEGER :: shar_rank, istat
         INTEGER :: color
 
-        color = 40*world_rank/world_size
+        color = 2*world_rank/world_size
 
-        IF (lverb) WRITE(6,*) "  MUMAT_SYNC:  Calculating ourstart and ourend"
         CALL MPI_REDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, 0, shar_comm, ierr_mpi)
         CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, shar_comm, ierr_mpi)
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
         IF (shar_rank.EQ.0) THEN
+            WRITE(6,*) "  MUMAT_SYNC: node=", color, " ourstart=", ourstart, " ourend=", ourend; FLUSH(6)
             IF (ourstart.NE.1) array(:,1:(ourstart-1)) = 0 ! Zero array "above" data to keep
             IF (ourend.NE.n1)  array(:,(ourend+1):n1)  = 0 ! Zero array "below" data to keep
             ! Reduce arrays onto all shared memory islands
