@@ -68,7 +68,7 @@
 
       INTEGER, PRIVATE                    :: mystart, myend, mydelta, ourstart, ourend
       INTEGER, PRIVATE                    :: shar_rank, shar_comm, master_size, world_rank, world_size, mycomm_index
-      LOGICAL, private                    :: lismaster
+      LOGICAL, PRIVATE                    :: lismaster
 
 
 
@@ -524,14 +524,14 @@
 
     IF (ldebug) THEN
         WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
-        OPEN(14, file=TRIM(path)//'/tet_cen.dat')
-        DO i = 1, npoints
+        OPEN(14, file='./tet_cen.dat')
+        DO i = 1, ntet
             WRITE(14, "(E15.7,A,E15.7,A,E15.7)") tet_cen(1,i), ',', tet_cen(2,i), ',', tet_cen(3,i)
         END DO
         CLOSE(14)
         WRITE(6,*) "  MUMAT_DEBUG: Outputting fields at tet. centers"
-        OPEN(14, file=TRIM(path)//'/Happ.dat')
-        DO i = 1, npoints
+        OPEN(14, file='./Happ.dat')
+        DO i = 1, ntet
             WRITE(14, "(E15.7,A,E15.7,A,E15.7)") Happ(1,i), ',', Happ(2,i), ',', Happ(3,i)
         END DO
         CLOSE(14)
@@ -774,8 +774,8 @@
         IF (ldebug) THEN
             WRITE(6,*) "  MUMAT_DEBUG: Outputting M this iteration"
             WRITE(strcount, *) count
-            OPEN(14, file=TRIM(path)//'/M'//TRIM(strcount)//'.dat')
-            DO i = 1, npoints
+            OPEN(14, file='./M'//TRIM(strcount)//'.dat')
+            DO i = 1, ntet
                 WRITE(14, "(E15.7,A,E15.7,A,E15.7)") M(1,i), ',', M(2,i), ',', M(3,i)
             END DO
             CLOSE(14)
@@ -1313,13 +1313,10 @@
       INTEGER :: npoints
       DOUBLE PRECISION, ALLOCATABLE :: B(:,:)
 
-      shar_rank = 0; master_rank = 0;
-
-
       IF (lismaster) THEN
             npoints = size(x)
             WRITE(6,*) "Outputting points"
-            OPEN(13, file=TRIM(path)//'/points.dat')
+            OPEN(13, file='./points.dat')
             DO i = 1, npoints
                   WRITE(13, "(F15.7,A,F15.7,A,F15.7)") x(i), ',', y(i), ',', z(i)
             END DO
@@ -1328,10 +1325,9 @@
 
       CALL mumaterial_getb_vector(x, y, z, B, getBfld, comm_world, shar_comm, comm_master)
  
-
       IF (lismaster) THEN
             WRITE(6,*) "Outputting B-field"
-            OPEN(14, file=TRIM(path)//'/B.dat')
+            OPEN(14, file='./B.dat')
             DO i = 1, npoints
                   WRITE(14, "(E15.7,A,E15.7,A,E15.7)") B(1,i), ',', B(2,i), ',', B(3,i)
             END DO
