@@ -112,7 +112,7 @@
         !-----------------------------------------------------------------------
         IMPLICIT NONE
         LOGICAL, INTENT(IN) :: ldebugin
-        ldebug = ldebug
+        ldebug = ldebugin
         RETURN
         END SUBROUTINE mumaterial_debug
 
