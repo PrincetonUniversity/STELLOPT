@@ -754,7 +754,7 @@
          CALL FLUSH(6)
 
          IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) THEN 
-            IF (shar_rank.EQ.0)) WRITE(6,*) 'Exiting loop'
+            IF (shar_rank.EQ.0) WRITE(6,*) 'Exiting loop'
             EXIT
          END IF
             
