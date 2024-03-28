@@ -774,8 +774,8 @@
 #endif
         IF (ldebug) THEN
             WRITE(6,*) "  MUMAT_DEBUG: Outputting M this iteration"
-            WRITE(strcount, *) count
-            filename = './M' // TRIM(strcount) // '.dat'
+            WRITE(strcount, '(I0)') count
+            filename = './M' // TRIM(ADJUSTL(strcount)) // '.dat'
             OPEN(14, file=TRIM(filename))
             DO i = 1, ntet
                 WRITE(14, "(E15.7,A,E15.7,A,E15.7)") M(1,i), ',', M(2,i), ',', M(3,i)
