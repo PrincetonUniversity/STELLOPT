@@ -68,6 +68,7 @@
 
       INTEGER, PRIVATE                    :: mystart, myend, mydelta, ourstart, ourend
       INTEGER, PRIVATE                    :: shar_rank, shar_comm, master_size, world_rank, world_size, mycomm_index
+      LOGICAL, private                    :: lismaster
 
 
 
@@ -216,7 +217,7 @@
       INTEGER, INTENT(inout)       :: istat
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master
       INTEGER :: shar_rank, master_rank
-      LOGICAL :: lverb_temp, lcomm, lismaster
+      LOGICAL :: lverb_temp, lcomm
       INTEGER :: iunit ,ik, i, j, nMH
 
       lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
@@ -521,7 +522,7 @@
       END IF
 #endif
 
-    IF (lismaster.AND.ldebug) THEN
+    IF (ldebug) THEN
         WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
         OPEN(14, file=TRIM(path)//'/tet_cen.dat')
         DO i = 1, npoints
@@ -770,10 +771,10 @@
             CALL MPI_BARRIER( comm_world, istat)
          END IF
 #endif
-        IF (lismaster.AND.ldebug) THEN
+        IF (ldebug) THEN
             WRITE(6,*) "  MUMAT_DEBUG: Outputting M this iteration"
             WRITE(strcount, *) count
-            OPEN(14, file=TRIM(path)//'/M'//TRIM(count)//'.dat')
+            OPEN(14, file=TRIM(path)//'/M'//TRIM(strcount)//'.dat')
             DO i = 1, npoints
                 WRITE(14, "(E15.7,A,E15.7,A,E15.7)") M(1,i), ',', M(2,i), ',', M(3,i)
             END DO
@@ -1308,25 +1309,12 @@
       CHARACTER(LEN=*), INTENT(in) :: path
       DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
       INTEGER, INTENT(inout), OPTIONAL :: comm_world, shar_comm, comm_master
-      INTEGER :: i, shar_rank, master_rank, istat 
-      LOGICAL :: lcomm, lismaster
+      INTEGER :: i, istat 
       INTEGER :: npoints
       DOUBLE PRECISION, ALLOCATABLE :: B(:,:)
 
       shar_rank = 0; master_rank = 0;
-      lcomm = ((PRESENT(comm_world).AND.PRESENT(shar_comm)).AND.PRESENT(comm_master))
-      lismaster = .FALSE.
-      IF (.NOT.lcomm) lismaster = .TRUE.
 
-#if defined(MPI_OPT)
-      IF (lcomm) THEN
-         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
-         IF (shar_rank.EQ.0) THEN
-            CALL MPI_COMM_RANK( comm_master, master_rank, istat)
-            IF (master_rank.EQ.0) lismaster = .TRUE.
-         END IF
-      END IF
-#endif
 
       IF (lismaster) THEN
             npoints = size(x)
