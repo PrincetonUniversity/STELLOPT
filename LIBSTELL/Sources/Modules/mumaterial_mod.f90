@@ -44,7 +44,7 @@
             DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: H(:), M(:)
       END TYPE stateFunctionType
 
-      LOGICAL, PRIVATE                    :: lverb, ldosync
+      LOGICAL, PRIVATE                    :: lverb, ldosync, ldebug
       INTEGER, PRIVATE                    :: nvertex, ntet, nstate
       TYPE(stateFunctionType), PRIVATE, ALLOCATABLE     :: stateFunction(:)
       DOUBLE PRECISION, PRIVATE           :: maxErr, lambdaStart, lambdaFactor
@@ -103,6 +103,17 @@
       RETURN
       END SUBROUTINE mumaterial_setverb
       
+      SUBROUTINE mumaterial_debug(ldebugin)
+        !-----------------------------------------------------------------------
+        ! mumaterial_setverb: Sets Verbosity
+        !-----------------------------------------------------------------------
+        ! param[in]: lverbin. Verbosity on
+        !-----------------------------------------------------------------------
+        IMPLICIT NONE
+        LOGICAL, INTENT(IN) :: ldebugin
+        ldebug = ldebug
+        RETURN
+        END SUBROUTINE mumaterial_debug
 
       SUBROUTINE mumaterial_free()
       !-----------------------------------------------------------------------
@@ -510,6 +521,21 @@
       END IF
 #endif
 
+    IF (lismaster.AND.ldebug) THEN
+        WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
+        OPEN(14, file=TRIM(path)//'/tet_cen.dat')
+        DO i = 1, npoints
+            WRITE(14, "(E15.7,A,E15.7,A,E15.7)") tet_cen(1,i), ',', tet_cen(2,i), ',', tet_cen(3,i)
+        END DO
+        CLOSE(14)
+        WRITE(6,*) "  MUMAT_DEBUG: Outputting fields at tet. centers"
+        OPEN(14, file=TRIM(path)//'/Happ.dat')
+        DO i = 1, npoints
+            WRITE(14, "(E15.7,A,E15.7,A,E15.7)") Happ(1,i), ',', Happ(2,i), ',', Happ(3,i)
+        END DO
+        CLOSE(14)
+    END IF
+
       ! From here on out each thread only works on its own subset
       IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -593,6 +619,7 @@
       DOUBLE PRECISION, OPTIONAL :: N_store(3,3,N1+1,iA:iB)
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master, comm_world
       INTEGER :: shar_rank
+      CHARACTER(LEN=6) :: strcount
 
       LOGICAL :: lcomm
       INTEGER :: count, i_tile, j_tile, lambdaCount, istat, iC, iD
@@ -737,15 +764,21 @@
 #if defined(MPI_OPT)
          ! Synchronise M
          IF (lcomm.AND.ldosync) THEN
-            IF (lverb) THEN 
-                WRITE(6,*) "  MUMAT_INIT:  Synchronising M this iteration"; FLUSH(6)
-            END IF
             CALL mumaterial_sync_array2d_dbl(M,3,ntet,comm_master,shar_comm,iA,iB,istat)
+            
             IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
             CALL MPI_BARRIER( comm_world, istat)
          END IF
 #endif
-
+        IF (lismaster.AND.ldebug) THEN
+            WRITE(6,*) "  MUMAT_DEBUG: Outputting M this iteration"
+            WRITE(strcount, *) count
+            OPEN(14, file=TRIM(path)//'/M'//TRIM(count)//'.dat')
+            DO i = 1, npoints
+                WRITE(14, "(E15.7,A,E15.7,A,E15.7)") M(1,i), ',', M(2,i), ',', M(3,i)
+            END DO
+            CLOSE(14)
+        END IF
          Mnorm_old = Mnorm
 
          ! Determine change in magnetization
