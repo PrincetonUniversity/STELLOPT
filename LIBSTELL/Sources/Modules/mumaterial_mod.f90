@@ -502,14 +502,10 @@
 
 #if defined(MPI_OPT)
       IF (lcomm.AND.ldosync) THEN
-        IF (lverb) THEN
-          WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"; FLUSH(6)
-        END IF
+        IF (lverb)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
         ! TODO: Allocate locally, then remove this line
-        IF (lverb) THEN 
-            WRITE(6,*) "  MUMAT_INIT:  Synchronising Fields at Tet. centers"; FLUSH(6)
-        END IF
+        IF (lverb)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Fields at Tet. centers"
         CALL mumaterial_sync_array2d_dbl(Happ,   3,ntet,comm_master,shar_comm,mystart,myend,istat)
       END IF
 #endif
@@ -529,9 +525,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate nearest neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb) THEN 
-        WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbours"; FLUSH(6)
-      END IF
+      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbours"
       ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
       DO i = mystart, myend
          ! We need to define helper variables dx(3,ntet)
@@ -760,7 +754,7 @@
          CALL FLUSH(6)
 
          IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) THEN 
-            IF (lverb) WRITE(6,*) 'Exiting loop'
+            IF (shar_rank.EQ.0)) WRITE(6,*) 'Exiting loop'
             EXIT
          END IF
             
@@ -1037,24 +1031,12 @@
         CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, shar_comm, ierr_mpi)
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
         IF (shar_rank.EQ.0) THEN
-            WRITE(6,*) "  MUMAT_SYNC: node=", color, " ourstart=", ourstart, " ourend=", ourend; FLUSH(6)
             IF (ourstart.NE.1) array(:,1:(ourstart-1)) = 0 ! Zero array "above" data to keep
             IF (ourend.NE.n1)  array(:,(ourend+1):n1)  = 0 ! Zero array "below" data to keep
             ! Reduce arrays onto all shared memory islands
-            WRITE(6,*) "  ", shar_rank, " / ", color, " waiting at master barrier";  CALL FLUSH(6)
-            CALL MPI_BARRIER( comm_master, istat )
-            WRITE(6,*) "  ", shar_rank, " / ", color, " waiting for master allreduce";  CALL FLUSH(6)
             CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat )
         END IF
-        IF ((shar_rank.EQ.0).OR.(shar_rank.EQ.1)) THEN 
-            WRITE(6,*) "  ", shar_rank, " / ", color, " waiting at share barrier"
-            CALL FLUSH(6)
-        END IF
         CALL MPI_BARRIER( shar_comm, istat)
-        IF ((shar_rank.EQ.0).OR.(shar_rank.EQ.1)) THEN
-            WRITE(6,*) "  ", shar_rank, " / ", color, " has passed share barrier"
-            CALL FLUSH(6)
-        END IF
 
 
       END SUBROUTINE mumaterial_sync_array2d_dbl
