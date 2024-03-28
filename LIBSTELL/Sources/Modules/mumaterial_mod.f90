@@ -623,7 +623,7 @@
       CHARACTER(LEN=6) :: strcount
 
       LOGICAL :: lcomm
-      INTEGER :: count, i_tile, j_tile, lambdaCount, istat, iC, iD
+      INTEGER :: count, i_tile, j_tile, lambdaCount, istat, iC, iD, i
       DOUBLE PRECISION, DIMENSION(:), POINTER :: chi, Mnorm, Mnorm_old
       DOUBLE PRECISION, DIMENSION(:,:), POINTER :: M_new
 
