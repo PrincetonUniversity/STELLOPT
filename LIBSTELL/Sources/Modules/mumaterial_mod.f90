@@ -621,6 +621,7 @@
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master, comm_world
       INTEGER :: shar_rank
       CHARACTER(LEN=6) :: strcount
+      CHARACTER(LEN=20) :: filename
 
       LOGICAL :: lcomm
       INTEGER :: count, i_tile, j_tile, lambdaCount, istat, iC, iD, i
@@ -774,7 +775,8 @@
         IF (ldebug) THEN
             WRITE(6,*) "  MUMAT_DEBUG: Outputting M this iteration"
             WRITE(strcount, *) count
-            OPEN(14, file='./M'//TRIM(strcount)//'.dat')
+            filename = './M' // TRIM(strcount) // '.dat'
+            OPEN(14, file=TRIM(filename))
             DO i = 1, ntet
                 WRITE(14, "(E15.7,A,E15.7,A,E15.7)") M(1,i), ',', M(2,i), ',', M(3,i)
             END DO
