@@ -1057,7 +1057,7 @@
         INTEGER, INTENT(inout) :: comm_master, shar_comm
         INTEGER, INTENT(in) :: mystart,myend
         INTEGER :: ourstart, ourend
-        INTEGER :: shar_rank, istat
+        INTEGER :: shar_rank, istat, i
         INTEGER :: color
 
         color = 2*world_rank/world_size
@@ -1066,8 +1066,12 @@
         CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, shar_comm, ierr_mpi)
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
         IF (shar_rank.EQ.0) THEN
-            IF (ourstart.NE.1) array(:,1:(ourstart-1)) = 0 ! Zero array "above" data to keep
-            IF (ourend.NE.n1)  array(:,(ourend+1):n1)  = 0 ! Zero array "below" data to keep
+            DO i = 1, ourstart-1
+                array(:,i) = 0 ! Zero array "above" data to keep
+            END DO
+            DO i = ourend+1, n1
+                array(:,i) = 0 ! Zero array "below" data to keep
+            END DO
             ! Reduce arrays onto all shared memory islands
             CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat )
         END IF
