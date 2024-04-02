@@ -312,7 +312,7 @@
                ALLOCATE(stateFunction(ik)%H(nMH),stateFunction(ik)%M(nMH))
                READ(iunit,*) stateFunction(ik)%H(:)
                READ(iunit,*) stateFunction(ik)%M(:)
-            ELSEIF (state_type(ik) == 3) THEN
+            ELSEIF (state_type(ik) == 3) THEN 
                READ(iunit,*) constant_mu(ik)
             ELSE
                PRINT *, '!!! UNKNOWN STATE_TYPE == ',state_type(ik)
@@ -602,7 +602,7 @@
       END SUBROUTINE mumaterial_init_new
 
 
-      SUBROUTINE mumaterial_iterate_magnetization_new(N1, iA, iB, neighbours, N_store, shar_comm, comm_master, comm_world)
+      SUBROUTINE mumaterial_iterate_magnetization_new(N1, mystart, myend, neighbours, N_store, shar_comm, comm_master, comm_world)
       !-----------------------------------------------------------------------
       ! mumaterial_iterate_magnetization: Iterates the magnetic field over all tiles, called by mumaterial_init
       !-----------------------------------------------------------------------
@@ -615,9 +615,9 @@
       USE mpi_params
 #endif
       IMPLICIT NONE
-      INTEGER, INTENT(IN) :: N1, iA, iB
-      INTEGER, OPTIONAL :: neighbours(N1,iA:iB)
-      DOUBLE PRECISION, OPTIONAL :: N_store(3,3,N1+1,iA:iB)
+      INTEGER, INTENT(IN) :: N1, mystart, myend
+      INTEGER, OPTIONAL :: neighbours(N1,mystart:myend)
+      DOUBLE PRECISION, OPTIONAL :: N_store(3,3,N1+1,mystart:myend)
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master, comm_world
       INTEGER :: shar_rank
       CHARACTER(LEN=6) :: strcount
@@ -637,18 +637,18 @@
       IF (lcomm) THEN
          ! Get extent of shared memory area
          CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
-         iC = iA
-         iD = iB
+         iC = mystart
+         iD = myend
          CALL MPI_ALLREDUCE(MPI_IN_PLACE, iC, 1, MPI_INTEGER, MPI_MIN, shar_comm, istat)
          CALL MPI_ALLREDUCE(MPI_IN_PLACE, iD, 1, MPI_INTEGER, MPI_MAX, shar_comm, istat)
-         PRINT *,shar_rank,iA,iB,iC,iD
+         PRINT *,shar_rank,mystart,myend,iC,iD
       END IF
 #endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Allocate Helper Arrays
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ALLOCATE(M_new(3,iA:iB),chi(iA:iB),Mnorm(iA:iB),Mnorm_old(iA:iB))
+      ALLOCATE(M_new(3,mystart:myend),chi(mystart:myend),Mnorm(mystart:myend),Mnorm_old(mystart:myend))
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Defaults
@@ -660,7 +660,7 @@
       chi = 0.0
       Mnorm = 0.0
       Mnorm_old = 1.0E-5 ! Initial value is large
-      M(:,iA:iB) = 0.0
+      M(:,iC:iD) = 0.0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Main Iteration Loop
@@ -669,7 +669,7 @@
          M_new = 0.0
          error = 0.d0
          ! Get the field and new magnetization for each tile
-         DO i_tile = iA, iB
+         DO i_tile = mystart, myend
             H = Happ(:,i_tile)
             ! Get the field from all other tiles
             DO j_tile = 1, maxNb
@@ -766,8 +766,7 @@
 #if defined(MPI_OPT)
          ! Synchronise M
          IF (lcomm.AND.ldosync) THEN
-            CALL mumaterial_sync_array2d_dbl(M,3,ntet,comm_master,shar_comm,iA,iB,istat)
-            
+            CALL mumaterial_sync_array2d_dbl(M,3,ntet,comm_master,shar_comm,mystart,myend,istat)
             IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
             CALL MPI_BARRIER( comm_world, istat)
          END IF
