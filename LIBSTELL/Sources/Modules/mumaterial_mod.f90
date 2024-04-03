@@ -67,7 +67,7 @@
 
 
       INTEGER, PRIVATE                    :: mystart, myend, mydelta, ourstart, ourend
-      INTEGER, PRIVATE                    :: shar_rank, shar_comm, master_size, world_rank, world_size, mycomm_index
+      INTEGER, PRIVATE                    :: shar_rank, shar_comm, master_size, world_rank, world_size
       LOGICAL, PRIVATE                    :: lismaster
 
 
@@ -217,7 +217,7 @@
       INTEGER, INTENT(inout)       :: istat
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master
       INTEGER :: shar_rank, master_rank
-      LOGICAL :: lverb_temp, lcomm
+      LOGICAL :: lcomm
       INTEGER :: iunit ,ik, i, j, nMH
 
       lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
@@ -256,7 +256,7 @@
       ! Broadcast info to MPI and allocate vertex and face info
 #if defined(MPI_OPT)
       IF (lcomm) THEN
-            IF (shar_rank.eq.0) THEN ! master 0 broadcasts to other masters
+            IF (shar_rank.eq.0) THEN ! world master broadcasts to other masters
                   CALL MPI_Bcast(nvertex,1,MPI_INTEGER,0,comm_master,istat)
                   CALL MPI_Bcast(ntet,   1,MPI_INTEGER,0,comm_master,istat)
                   CALL MPI_Bcast(nstate, 1,MPI_INTEGER,0,comm_master,istat)
@@ -273,11 +273,9 @@
             CALL mpialloc_1d_int(state_type,nstate,   shar_rank,0,shar_comm,win_state_type)
             CALL mpialloc_1d_dbl(constant_mu,nstate,  shar_rank,0,shar_comm,win_constant_mu)
             CALL mpialloc_1d_dbl(constant_mu_o,nstate,shar_rank,0,shar_comm,win_constant_mu_o)
-            ! TODO: Allocate locally
-            CALL mpialloc_2d_dbl(Mrem,3,ntet,         shar_rank,0,shar_comm,win_Mrem)       
+            CALL mpialloc_2d_dbl(Mrem,3,ntet,         shar_rank,0,shar_comm,win_Mrem)  ! TODO: Allocate locally
             CALL mpialloc_2d_dbl(M,3,ntet,            shar_rank,0,shar_comm,win_m)
-            ! TODO: Allocate locally
-            CALL mpialloc_2d_dbl(Happ,3,ntet,         shar_rank,0,shar_comm,win_Happ)       
+            CALL mpialloc_2d_dbl(Happ,3,ntet,         shar_rank,0,shar_comm,win_Happ)  ! TODO: Allocate locally
             ALLOCATE(stateFunction(nstate))
       ELSE
 #endif
@@ -328,8 +326,7 @@
             CALL MPI_Bcast(state_type,   nstate,   MPI_INTEGER,         0,comm_master,istat)
             CALL MPI_Bcast(constant_mu,  nstate,   MPI_DOUBLE_PRECISION,0,comm_master,istat)
             CALL MPI_Bcast(constant_mu_o,nstate,   MPI_DOUBLE_PRECISION,0,comm_master,istat)
-            ! TODO: Remove once allocated locally (make sure code works beforehand)
-            CALL MPI_Bcast(Mrem,         3*ntet,   MPI_DOUBLE_PRECISION,0,comm_master,istat)
+            CALL MPI_Bcast(Mrem,         3*ntet,   MPI_DOUBLE_PRECISION,0,comm_master,istat) ! TODO: Remove once allocated locally (make sure code works beforehand)
       END IF
       IF (lcomm) THEN ! Transfer state functions
             DO ik = 1, nstate
@@ -362,10 +359,7 @@
       CLOSE(iunit)
 
       ! set default values
-      lverb_temp = lverb
-      lverb = .FALSE.
       CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 0)
-      lverb = lverb_temp
       RETURN
       END SUBROUTINE mumaterial_load
 
@@ -451,7 +445,6 @@
       lcomm = ((PRESENT(shar_comm).AND.PRESENT(comm_master)).AND.PRESENT(comm_world))
       CALL MPI_COMM_RANK( comm_world, world_rank, istat )
       CALL MPI_COMM_SIZE( comm_world, world_size, istat )
-      mycomm_index = 8*world_rank/world_size
 
 #if defined(MPI_OPT)
       IF (lcomm) THEN
@@ -486,12 +479,8 @@
 #if defined(MPI_OPT)
       IF (lcomm) THEN
          CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet, mystart, myend)
-         tet_cen(:,mystart:myend) = 0.0
-         ! TODO: Allocate locally [ ALLOCATE(Happ(3,mystart:myend)) ]
-         ! since Happ is only required for loop over process assigned tets
-         ! (saves time and allocated memory)
-         ! BEFORE THAT: make sure code works without this change
-         Happ(:,mystart:myend) = 0.0    
+         tet_cen(:,mystart:myend) = 100.0
+         Happ(:,mystart:myend) = 0.0    ! TODO: Allocate locally BEFORE THAT: make sure code works without this change
          CALL MPI_BARRIER( shar_comm,istat )
       END IF
 #endif
@@ -1072,7 +1061,9 @@
             DO i = ourend+1, n1
                 array(:,i) = 0 ! Zero array "below" data to keep
             END DO
-            ! Reduce arrays onto all shared memory islands
+        END IF
+        CALL MPI_BARRIER( shar_comm, istat)
+        IF (shar_rank.EQ.0) THEN ! Reduce arrays onto all shared memory islands
             CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, istat )
         END IF
         CALL MPI_BARRIER( shar_comm, istat)
