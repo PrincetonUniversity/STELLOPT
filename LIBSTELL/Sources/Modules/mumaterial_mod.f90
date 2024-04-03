@@ -132,8 +132,6 @@
       IF (ASSOCIATED(M))             CALL free_mpi_array2d_dbl(win_M,M,.TRUE.)
       ! TODO: Remove once allocated locally (Make sure code works beforehand)
       IF (ASSOCIATED(Mrem))          CALL free_mpi_array2d_dbl(win_Mrem,Mrem,.TRUE.)
-      ! TODO: Remove once allocated locally (Make sure code works beforehand)
-!      IF (ASSOCIATED(Happ))          CALL free_mpi_array2d_dbl(win_Happ,Happ,.TRUE.)
       DO ik = 1, nstate
          IF (ALLOCATED(stateFunction(ik)%H)) DEALLOCATE(stateFunction(ik)%H)
          IF (ALLOCATED(stateFunction(ik)%M)) DEALLOCATE(stateFunction(ik)%M)
@@ -275,7 +273,6 @@
             CALL mpialloc_1d_dbl(constant_mu_o,nstate,shar_rank,0,shar_comm,win_constant_mu_o)
             CALL mpialloc_2d_dbl(Mrem,3,ntet,         shar_rank,0,shar_comm,win_Mrem)  ! TODO: Allocate locally
             CALL mpialloc_2d_dbl(M,3,ntet,            shar_rank,0,shar_comm,win_m)
-!            CALL mpialloc_2d_dbl(Happ,3,ntet,         shar_rank,0,shar_comm,win_Happ)  ! TODO: Allocate locally
             ALLOCATE(stateFunction(nstate))
       ELSE
 #endif
@@ -480,7 +477,6 @@
       IF (lcomm) THEN
          CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet, mystart, myend)
          tet_cen(:,mystart:myend) = 100.0
-!         Happ(:,mystart:myend) = 0.0    ! TODO: Allocate locally BEFORE THAT: make sure code works without this change
          CALL MPI_BARRIER( shar_comm,istat )
       END IF
 #endif
@@ -506,9 +502,6 @@
       IF (lcomm.AND.ldosync) THEN
         IF (ldebug)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
-        ! TODO: Allocate locally, then remove this line
- !       IF (ldebug)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Fields at Tet. centers"
-!        CALL mumaterial_sync_array2d_dbl(Happ,   3,ntet,comm_master,shar_comm,mystart,myend,istat)
       END IF
 #endif
 

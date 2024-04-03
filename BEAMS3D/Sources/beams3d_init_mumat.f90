@@ -143,14 +143,18 @@
       CALL MUMATERIAL_INIT_NEW(beams3d_BCART, MPI_COMM_BEAMS, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, offset)
 
       ! Break up the Work
+      IF (lverb) WRITE(6,*) 'Calculating range'
       CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nr*nphi*nz, mystart, myend)
 
       ! Find largest mystart in local
+      IF (lverb) WRITE(6,*) 'Calculating ourstart and ourend'
       CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_MUSHARE, ierr_mpi)
       CALL MPI_ALLREDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, MPI_COMM_MUSHARE, ierr_mpi)
+      IF (lverb) WRITE(6,*) 'Range calculated'
 
       ! Zero out non-work areas
       IF (lissubmaster) THEN
+        IF (lverb) WRITE(6,*) 'Zeroing out non-work areas'
          DO s = 1, ourstart-1
             i = MOD(s-1,nr)+1
             j = MOD(s-1,nr*nphi)
@@ -172,7 +176,9 @@
       END IF
 
 #if defined(MPI_OPT)
+      IF (lverb) WRITE(6,*) 'Waiting at barrier'
       CALL MPI_BARRIER(MPI_COMM_MUSHARE,ierr_mpi)
+      IF (lverb) WRITE(6,*) 'Passed barrier'
 #endif
 
       ! Start progress 
