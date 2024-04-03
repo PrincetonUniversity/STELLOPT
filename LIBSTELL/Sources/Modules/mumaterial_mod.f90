@@ -613,7 +613,7 @@
       CHARACTER(LEN=20) :: filename
 
       LOGICAL :: lcomm
-      INTEGER :: count, i_tile, j_tile, lambdaCount, istat, iC, iD, i
+      INTEGER :: count, i_tile, j_tile, lambdaCount, istat, ourstart, ourend, i
       DOUBLE PRECISION, DIMENSION(:), POINTER :: chi, Mnorm, Mnorm_old
       DOUBLE PRECISION, DIMENSION(:,:), POINTER :: M_new
 
@@ -624,13 +624,12 @@
       lcomm = ((PRESENT(shar_comm).AND.PRESENT(comm_master)).AND.PRESENT(comm_world))
 #if defined(MPI_OPT)
       IF (lcomm) THEN
-         ! Get extent of shared memory area
          CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
-         iC = mystart
-         iD = myend
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE, iC, 1, MPI_INTEGER, MPI_MIN, shar_comm, istat)
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE, iD, 1, MPI_INTEGER, MPI_MAX, shar_comm, istat)
-         PRINT *,shar_rank,mystart,myend,iC,iD
+         ! Get extent of shared memory area
+         ourstart = mystart
+         ourend = myend
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, ourstart, 1, MPI_INTEGER, MPI_MIN, shar_comm, istat)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE, ourend,   1, MPI_INTEGER, MPI_MAX, shar_comm, istat)
       END IF
 #endif
 
@@ -649,11 +648,13 @@
       chi = 0.0
       Mnorm = 0.0
       Mnorm_old = 1.0E-5 ! Initial value is large
-      M(:,iC:iD) = 0.0
+      M(:,ourstart:ourend) = 0.0
 
-      WRITE(6,*) ''
-      WRITE(6,*) '  Count            Error       Max. Error           Lambda'
-      WRITE(6,*) '==============================================================================='
+      IF (lverb) THEN
+        WRITE(6,*) ''
+        WRITE(6,*) '  Count            Error       Max. Error           Lambda'
+        WRITE(6,*) '============================================================================'
+      END IF
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Main Iteration Loop
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -777,7 +778,7 @@
 
          ! Determine change in magnetization
          count = count + 1
-         IF (lverb) WRITE(6,'(2X,I5,A2,E15.7,A2,E15.7,A2,E15.7)') count, '  ', error, '  ', maxErr*lambda, '  ', lambda
+         IF (lverb) WRITE(6,'(3X,I5,A2,E15.7,A2,E15.7,A2,E15.7)') count, '  ', error, '  ', maxErr*lambda, '  ', lambda
          CALL FLUSH(6)
 
          IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) THEN 
