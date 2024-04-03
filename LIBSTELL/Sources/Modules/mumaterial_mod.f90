@@ -469,7 +469,7 @@
             
 #if defined(MPI_OPT)
             IF (lcomm.AND.ldosync) THEN
-                IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Synchronising offset vertices"
+                IF (ldebug) WRITE(6,*) "  MUMAT_DEBUG:  Synchronising offset vertices"
                 CALL mumaterial_sync_array2d_dbl(vertex,3,nvertex,comm_master,shar_comm,mystart,myend,istat)
             END IF
 #endif
@@ -503,10 +503,10 @@
 
 #if defined(MPI_OPT)
       IF (lcomm.AND.ldosync) THEN
-        IF (lverb)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"
+        IF (ldebug)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
         ! TODO: Allocate locally, then remove this line
-        IF (lverb)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Fields at Tet. centers"
+        IF (ldebug)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Fields at Tet. centers"
         CALL mumaterial_sync_array2d_dbl(Happ,   3,ntet,comm_master,shar_comm,mystart,myend,istat)
       END IF
 #endif
@@ -651,6 +651,9 @@
       Mnorm_old = 1.0E-5 ! Initial value is large
       M(:,iC:iD) = 0.0
 
+      WRITE(6,*) ''
+      WRITE(6,*) '  Count            Error       Max. Error           Lambda'
+      WRITE(6,*) '==============================================================================='
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Main Iteration Loop
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -774,7 +777,7 @@
 
          ! Determine change in magnetization
          count = count + 1
-         IF (lverb) WRITE(6,'(5X,A7,I5,A8,E15.7,A13,E15.7)') 'Count: ', count, ' Error: ', error, ' Max. Error: ', maxErr*lambda
+         IF (lverb) WRITE(6,'(2X,I5,A2,E15.7,A2,E15.7,A2,E15.7)') count, '  ', error, '  ', maxErr*lambda, '  ', lambda
          CALL FLUSH(6)
 
          IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) THEN 
@@ -1055,7 +1058,6 @@
         CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, shar_comm, ierr_mpi)
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
         IF (shar_rank.EQ.0) THEN
-            WRITE(6,*) color, n2, ourstart, ourend 
             DO i = 1, ourstart-1
                 array(:,i) = 0 ! Zero array "above" data to keep
             END DO
