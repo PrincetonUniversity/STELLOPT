@@ -222,7 +222,7 @@
 
       lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
       shar_rank = 0; master_rank = 0; master_size = 0;
-      lismaster = .TRUE.; ldosync = .FALSE.
+      lismaster = .TRUE.; ldosync = .TRUE.
       
       ! initialize MPI
 #if defined(MPI_OPT)
