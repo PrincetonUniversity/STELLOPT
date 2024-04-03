@@ -133,7 +133,7 @@
       ! TODO: Remove once allocated locally (Make sure code works beforehand)
       IF (ASSOCIATED(Mrem))          CALL free_mpi_array2d_dbl(win_Mrem,Mrem,.TRUE.)
       ! TODO: Remove once allocated locally (Make sure code works beforehand)
-      IF (ASSOCIATED(Happ))          CALL free_mpi_array2d_dbl(win_Happ,Happ,.TRUE.)
+!      IF (ASSOCIATED(Happ))          CALL free_mpi_array2d_dbl(win_Happ,Happ,.TRUE.)
       DO ik = 1, nstate
          IF (ALLOCATED(stateFunction(ik)%H)) DEALLOCATE(stateFunction(ik)%H)
          IF (ALLOCATED(stateFunction(ik)%M)) DEALLOCATE(stateFunction(ik)%M)
@@ -275,14 +275,14 @@
             CALL mpialloc_1d_dbl(constant_mu_o,nstate,shar_rank,0,shar_comm,win_constant_mu_o)
             CALL mpialloc_2d_dbl(Mrem,3,ntet,         shar_rank,0,shar_comm,win_Mrem)  ! TODO: Allocate locally
             CALL mpialloc_2d_dbl(M,3,ntet,            shar_rank,0,shar_comm,win_m)
-            CALL mpialloc_2d_dbl(Happ,3,ntet,         shar_rank,0,shar_comm,win_Happ)  ! TODO: Allocate locally
+!            CALL mpialloc_2d_dbl(Happ,3,ntet,         shar_rank,0,shar_comm,win_Happ)  ! TODO: Allocate locally
             ALLOCATE(stateFunction(nstate))
       ELSE
 #endif
          ! if no MPI, allocate everything on one node
          ALLOCATE(vertex(3,nvertex),tet(4,ntet),state_dex(ntet), &
                   state_type(nstate),constant_mu(nstate), &
-                  tet_cen(3,ntet),M(3,ntet),Happ(3,ntet), &
+                  tet_cen(3,ntet),M(3,ntet), &
                   constant_mu_o(nstate),Mrem(3,ntet),stateFunction(nstate), &
                   STAT=istat)
 #if defined(MPI_OPT)
@@ -480,7 +480,7 @@
       IF (lcomm) THEN
          CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet, mystart, myend)
          tet_cen(:,mystart:myend) = 100.0
-         Happ(:,mystart:myend) = 0.0    ! TODO: Allocate locally BEFORE THAT: make sure code works without this change
+!         Happ(:,mystart:myend) = 0.0    ! TODO: Allocate locally BEFORE THAT: make sure code works without this change
          CALL MPI_BARRIER( shar_comm,istat )
       END IF
 #endif
@@ -495,6 +495,7 @@
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
 #endif
+      ALLOCATE(Happ(3,mystart:myend))
       DO i = mystart, myend
         tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
         CALL getBfld(tet_cen(1,i), tet_cen(2,i), tet_cen(3,i), Bx, By, Bz)
@@ -516,12 +517,6 @@
         OPEN(14, file='./tet_cen.dat')
         DO i = 1, ntet
             WRITE(14, "(E15.7,A,E15.7,A,E15.7)") tet_cen(1,i), ',', tet_cen(2,i), ',', tet_cen(3,i)
-        END DO
-        CLOSE(14)
-        WRITE(6,*) "  MUMAT_DEBUG: Outputting fields at tet. centers"
-        OPEN(14, file='./Happ.dat')
-        DO i = 1, ntet
-            WRITE(14, "(E15.7,A,E15.7,A,E15.7)") Happ(1,i), ',', Happ(2,i), ',', Happ(3,i)
         END DO
         CLOSE(14)
     END IF
@@ -586,6 +581,7 @@
       ! DEALLOCATE Helpers
       DEALLOCATE(neighbours)
       DEALLOCATE(N_store)
+      DEALLOCATE(Happ)
 
       RETURN
       END SUBROUTINE mumaterial_init_new
@@ -781,10 +777,7 @@
          IF (lverb) WRITE(6,'(3X,I5,A2,E15.7,A2,E15.7,A2,E15.7)') count, '  ', error, '  ', maxErr*lambda, '  ', lambda
          CALL FLUSH(6)
 
-         IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) THEN 
-            IF (shar_rank.EQ.0) WRITE(6,*) 'Exiting loop'
-            EXIT
-         END IF
+         IF (count .gt. 2 .AND. (error .lt. maxErr*lambda .OR. count .gt. maxIter)) EXIT
             
          maxDiff = CSHIFT(maxDiff, -1)
          maxDiff(1) = error
