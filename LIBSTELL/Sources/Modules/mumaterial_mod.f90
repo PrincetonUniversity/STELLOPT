@@ -507,8 +507,8 @@
         IF (ldebug)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
         ! TODO: Allocate locally, then remove this line
-        IF (ldebug)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Fields at Tet. centers"
-        CALL mumaterial_sync_array2d_dbl(Happ,   3,ntet,comm_master,shar_comm,mystart,myend,istat)
+ !       IF (ldebug)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Fields at Tet. centers"
+!        CALL mumaterial_sync_array2d_dbl(Happ,   3,ntet,comm_master,shar_comm,mystart,myend,istat)
       END IF
 #endif
 
