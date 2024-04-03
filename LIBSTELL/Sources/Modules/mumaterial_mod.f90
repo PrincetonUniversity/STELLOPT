@@ -1055,11 +1055,11 @@
         CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, shar_comm, ierr_mpi)
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
         IF (shar_rank.EQ.0) THEN
-            WRITE(6,*) color, n1, ourstart, ourend 
+            WRITE(6,*) color, n2, ourstart, ourend 
             DO i = 1, ourstart-1
                 array(:,i) = 0 ! Zero array "above" data to keep
             END DO
-            DO i = ourend+1, n1
+            DO i = ourend+1, n2
                 array(:,i) = 0 ! Zero array "below" data to keep
             END DO
         END IF
