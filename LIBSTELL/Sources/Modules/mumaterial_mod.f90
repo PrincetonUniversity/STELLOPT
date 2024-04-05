@@ -1379,6 +1379,8 @@
       END DO
 
       IF (lverb) WRITE (6,*) SIZE(out)
+      IF (lverb) WRITE (6,*) SIZE(deck(n-s+1:n))
+     
       IF (lverb) WRITE (6,*) 'RANDOM: Outputting the deck'
 
       out = deck(n-s+1:n)
