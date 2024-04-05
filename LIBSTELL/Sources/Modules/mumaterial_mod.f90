@@ -434,6 +434,7 @@
       INTEGER :: i, j, k, istat
 
       INTEGER, DIMENSION(:,:), POINTER :: neighbours
+      INTEGER, ALLOCATABLE :: ntemp(:)
       LOGICAL, ALLOCATABLE :: mask(:)
       DOUBLE PRECISION :: x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n, mu0
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER :: N_store
@@ -535,9 +536,12 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbours"
         IF (lsample) THEN
+            ALLOCATE(ntemp(maxNb))
             DO i = mystart, myend
-                CALL random(ntet, i, maxNb, neighbours(:,i))
+                CALL random(ntet, i, maxNb, ntemp)
+                neighbours(:,i) = ntemp
             END DO
+            DEALLOCATE(ntemp(maxNb))
         ELSE 
             ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
             DO i = mystart, myend
@@ -1341,7 +1345,7 @@
       IMPLICIT NONE
 
       INTEGER, INTENT(in) :: count, ind, s
-      INTEGER, DIMENSION(:), INTENT(out) :: out
+      INTEGER, DIMENSION(:), INTENT(inout) :: out
       INTEGER, ALLOCATABLE :: deck(:) 
       DOUBLE PRECISION :: R_dbl
       INTEGER :: i, n, R_int, temp
