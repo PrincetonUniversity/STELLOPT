@@ -541,7 +541,7 @@
                 CALL random(ntet, i, maxNb, ntemp)
                 neighbours(:,i) = ntemp
             END DO
-            DEALLOCATE(ntemp(maxNb))
+            DEALLOCATE(ntemp)
         ELSE 
             ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
             DO i = mystart, myend
