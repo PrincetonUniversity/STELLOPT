@@ -1382,10 +1382,9 @@
 
       out = deck(n-s+1:n)
 
-      IF (lverb) WRITE (6,*) 'RANDOM: Trying to deallocate deck'
-
+      IF (lverb) WRITE (6,*) 'RANDOM: Trying to deallocate deck'; FLUSH(6)
       DEALLOCATE(deck)
-      IF (lverb) WRITE (6,*) 'RANDOM: Deck deallocated'
+      IF (lverb) WRITE (6,*) 'RANDOM: Deck deallocated'; FLUSH(6)
 
       END SUBROUTINE RANDOM
 
