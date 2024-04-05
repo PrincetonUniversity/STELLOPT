@@ -537,6 +537,7 @@
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbours"
         IF (lsample) THEN
             ALLOCATE(ntemp(maxNb))
+            ntemp = 0
             DO i = mystart, myend
                 CALL random(ntet, i, maxNb, ntemp)
                 IF (lverb) WRITE (6,*) 'RANDOM: Assigning to neighbors'
@@ -1377,6 +1378,7 @@
         deck(i) = temp
       END DO
 
+      IF (lverb) WRITE (6,*) SIZE(out)
       IF (lverb) WRITE (6,*) 'RANDOM: Outputting the deck'
 
       out = deck(n-s+1:n)
