@@ -38,7 +38,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: iunit, i, j, k, s, istat, mystart, myend, ier, &
-                 ourstart, ourend
+                 ourstart, ourend, debugt
       INTEGER :: bcs1(2), bcs2(2), bcs3(2)
       REAL(rprec)  :: bx_temp, by_temp, bz_temp, x_temp, &
                       y_temp, z_temp, br_temp, bphi_temp
@@ -180,7 +180,7 @@
       CALL MPI_BARRIER(MPI_COMM_MUSHARE,ierr_mpi)
       IF (lverb) WRITE(6,*) 'Passed barrier'
 #endif
-
+      IF (lverb) WRITE(6,*) 'TEST'
       ! Start progress 
       IF (lverb) THEN
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Magnetic Field Calculation [',0,']%'
@@ -200,11 +200,11 @@
          y_temp    = raxis(i)*sin(phiaxis(j))
          z_temp    = zaxis(k)
          CALL mumaterial_getbmag_scalar(x_temp,y_temp, z_temp, bx_temp, by_temp, bz_temp)
-         br_temp = bx_temp*cos(phiaxis(j))+by_temp*sin(phiaxis(j))
+         br_temp   = bx_temp*cos(phiaxis(j)) + by_temp*sin(phiaxis(j))
          bphi_temp = by_temp*cos(phiaxis(j)) - bx_temp*sin(phiaxis(j))
-         B_R(i,j,k) = B_R(i,j,k) + br_temp
+         B_R(i,j,k)   = B_R(i,j,k)   + br_temp
          B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_temp
-         B_Z(i,j,k) = B_Z(i,j,k) + bz_temp
+         B_Z(i,j,k)   = B_Z(i,j,k)   + bz_temp
          IF (lverb .and. (MOD(s,nr) == 0)) THEN
             CALL backspace_out(6,6)
             WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'

@@ -215,7 +215,7 @@
       INTEGER, INTENT(inout)       :: istat
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master
       INTEGER :: shar_rank, master_rank
-      LOGICAL :: lcomm
+      LOGICAL :: lcomm,
       INTEGER :: iunit ,ik, i, j, nMH
 
       lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
@@ -746,11 +746,13 @@
          END DO
 
 #if defined(MPI_OPT)
-         ! Synchronise M
-         IF (lcomm.AND.ldosync) THEN
-            CALL mumaterial_sync_array2d_dbl(M,3,ntet,comm_master,shar_comm,mystart,myend,istat)
-            IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_master, istat)
+         ! Synchronise
+         IF (lcomm) THEN
+            IF (ldosync) THEN
+                CALL mumaterial_sync_array2d_dbl(M,3,ntet,comm_master,shar_comm,mystart,myend,istat)
+            END IF
             CALL MPI_BARRIER( comm_world, istat)
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_world, istat)
          END IF
 #endif
         IF (ldebug) THEN
@@ -764,8 +766,6 @@
             CLOSE(14)
         END IF
          Mnorm_old = Mnorm
-
-         ! Determine change in magnetization
          count = count + 1
          IF (lverb) WRITE(6,'(3X,I5,A2,E15.7,A2,E15.7,A2,E15.7)') count, '  ', error, '  ', maxErr*lambda, '  ', lambda
          CALL FLUSH(6)
