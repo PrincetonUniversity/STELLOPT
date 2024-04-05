@@ -1341,8 +1341,8 @@
       IMPLICIT NONE
 
       INTEGER, INTENT(in) :: count, ind, s
-      INTEGER, ALLOCATABLE, INTENT(out) :: out(:)
-      INTEGER, ALLOCATABLE :: deck(:)
+      INTEGER, DIMENSION(:), INTENT(out) :: out
+      INTEGER, ALLOCATABLE :: deck(:) 
       DOUBLE PRECISION :: R_dbl
       INTEGER :: i, n, R_int, temp
 
