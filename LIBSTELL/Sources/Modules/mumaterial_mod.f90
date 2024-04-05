@@ -44,7 +44,7 @@
             DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: H(:), M(:)
       END TYPE stateFunctionType
 
-      LOGICAL, PRIVATE                    :: lverb, ldosync, ldebug
+      LOGICAL, PRIVATE                    :: lverb, ldosync, lsample, ldebug
       INTEGER, PRIVATE                    :: nvertex, ntet, nstate
       TYPE(stateFunctionType), PRIVATE, ALLOCATABLE     :: stateFunction(:)
       DOUBLE PRECISION, PRIVATE           :: maxErr, lambdaStart, lambdaFactor
@@ -172,19 +172,21 @@
       RETURN
       END SUBROUTINE mumaterial_setup
 
-      SUBROUTINE mumaterial_setd(mE, mI, la, laF, mNb)
+      SUBROUTINE mumaterial_setd(mE, mI, la, laF, mNb, lsa)
       !-----------------------------------------------------------------------
       ! mumaterial_setd: Sets default values
       !-----------------------------------------------------------------------
       ! param[in]: mE. New maxErr: max error for MagTense convergence
       ! param[in]: mI. New maxIter: max amount of MagTense iterations
       ! param[in]: T. New temp: temperature of magnetic material in MagTense
+      ! param[in] (opt): lsa. Use random sampling.
       ! MPI should not be necessary here, every process calls this subroutine
       !-----------------------------------------------------------------------
       IMPLICIT NONE
 
       DOUBLE PRECISION, INTENT(in) :: mE, la, laF
       INTEGER, INTENT(in) :: mI, mNb
+      LOGICAL, INTENT(in), OPTIONAL :: lsa
 
       maxErr = mE
       maxIter = mI
@@ -192,6 +194,8 @@
       lambdaFactor = laF
       maxNb = MIN(mNb,ntet-1)
       IF (mNb .le. 0) maxNb = ntet-1
+      lsample = .FALSE.
+      IF (PRESENT(lsa)) lsample = lsa
 
       RETURN
       END SUBROUTINE mumaterial_setd
@@ -433,7 +437,7 @@
       LOGICAL, ALLOCATABLE :: mask(:)
       DOUBLE PRECISION :: x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n, mu0
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER :: N_store
-      DOUBLE PRECISION, ALLOCATABLE :: dist(:), dx(:,:)
+      DOUBLE PRECISION, ALLOCATABLE :: dist(:), dx(:,:), rands(:)
 
       EXTERNAL:: getBfld
       
@@ -530,22 +534,28 @@
       ! Calculate nearest neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbours"
-      ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
-      DO i = mystart, myend
-         ! We need to define helper variables dx(3,ntet)
-         dx(1,:) = tet_cen(1,:)-tet_cen(1,i)
-         dx(2,:) = tet_cen(2,:)-tet_cen(2,i)
-         dx(3,:) = tet_cen(3,:)-tet_cen(3,i)
-         dist = NORM2(dx,DIM=1)
-         mask = .TRUE.
-         mask(i) = .FALSE.
-         DO j = 1, maxNb
-            k = MINLOC(dist,1,mask)
-            neighbours(j,i) = k
-            mask(k) = .FALSE.
-         END DO
-      END DO
-      DEALLOCATE(mask,dist,dx)
+        IF (lsample) THEN
+            DO i = mystart, myend
+                CALL random(ntet, i, maxNb, neighbours(:,i))
+            END DO
+        ELSE 
+            ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
+            DO i = mystart, myend
+                ! We need to define helper variables dx(3,ntet)
+                dx(1,:) = tet_cen(1,:)-tet_cen(1,i)
+                dx(2,:) = tet_cen(2,:)-tet_cen(2,i)
+                dx(3,:) = tet_cen(3,:)-tet_cen(3,i)
+                dist = NORM2(dx,DIM=1)
+                mask = .TRUE.
+                mask(i) = .FALSE.
+                DO j = 1, maxNb
+                    k = MINLOC(dist,1,mask)
+                    neighbours(j,i) = k
+                    mask(k) = .FALSE.
+                END DO
+            END DO
+            DEALLOCATE(mask,dist,dx)
+        END IF
 
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating N_tensor"
       DO i = mystart, myend
@@ -1326,7 +1336,42 @@
 
 
 
+      SUBROUTINE random(count, ind, s, out)
 
+      IMPLICIT NONE
+
+      INTEGER, INTENT(in) :: count, ind, s
+      INTEGER, ALLOCATABLE(:), INTENT(out) :: out
+      INTEGER, ALLOCATABLE(:) :: deck
+      DOUBLE PRECISION :: R_dbl
+      INTEGER :: i, n, R_int, temp
+
+      n = count-1
+      ! Create the deck
+      ALLOCATE(deck(n), out(s))
+      DO i = 1, ind-1
+        deck(i) = i
+      END DO
+      IF (ind.lt.count) THEN
+        DO i = ind, n
+            deck(i) = i + 1
+        END DO
+      END IF
+
+      ! Shuffle deck using Fisher-Yates algorithm
+      DO i = n, 2, -1
+        CALL RANDOM_NUMBER(R_dbl)
+        R_int = R_dbl*i
+        temp = deck(R_int)
+        deck(R_int) = deck(i)
+        deck(i) = temp
+      END DO
+
+      out = deck(n-s+1:n)
+
+      DEALLOCATE(deck)
+
+      END SUBROUTINE RANDOM
 
 
 
