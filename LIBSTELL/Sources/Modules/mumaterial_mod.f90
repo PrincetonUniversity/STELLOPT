@@ -1348,7 +1348,7 @@
 
       n = count-1
       ! Create the deck
-      ALLOCATE(deck(n), out(s))
+      ALLOCATE(deck(n))
       DO i = 1, ind-1
         deck(i) = i
       END DO
