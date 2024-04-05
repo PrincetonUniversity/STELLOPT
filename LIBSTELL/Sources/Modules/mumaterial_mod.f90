@@ -539,8 +539,11 @@
             ALLOCATE(ntemp(maxNb))
             DO i = mystart, myend
                 CALL random(ntet, i, maxNb, ntemp)
+                IF (lverb) WRITE (6,*) 'RANDOM: Assigning to neighbors'
+
                 neighbours(:,i) = ntemp
             END DO
+            IF (lverb) WRITE (6,*) 'RANDOM: Deallocating ntemp'
             DEALLOCATE(ntemp)
         ELSE 
             ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
@@ -1350,6 +1353,7 @@
       DOUBLE PRECISION :: R_dbl
       INTEGER :: i, n, R_int, temp
 
+      IF (lverb) WRITE (6,*) 'RANDOM: Creating the deck'
       n = count-1
       ! Create the deck
       ALLOCATE(deck(n))
@@ -1362,6 +1366,8 @@
         END DO
       END IF
 
+      IF (lverb) WRITE (6,*) 'RANDOM: Shuffling the deck'
+
       ! Shuffle deck using Fisher-Yates algorithm
       DO i = n, 2, -1
         CALL RANDOM_NUMBER(R_dbl)
@@ -1371,9 +1377,13 @@
         deck(i) = temp
       END DO
 
+      IF (lverb) WRITE (6,*) 'RANDOM: Outputting the deck'
+
       out = deck(n-s+1:n)
 
+
       DEALLOCATE(deck)
+      IF (lverb) WRITE (6,*) 'RANDOM: Deck deallocated'
 
       END SUBROUTINE RANDOM
 
