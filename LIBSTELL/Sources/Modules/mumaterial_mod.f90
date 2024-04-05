@@ -215,7 +215,7 @@
       INTEGER, INTENT(inout)       :: istat
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master
       INTEGER :: shar_rank, master_rank
-      LOGICAL :: lcomm,
+      LOGICAL :: lcomm
       INTEGER :: iunit ,ik, i, j, nMH
 
       lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
