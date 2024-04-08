@@ -179,7 +179,7 @@
       ! param[in]: mE. New maxErr: max error for MagTense convergence
       ! param[in]: mI. New maxIter: max amount of MagTense iterations
       ! param[in]: T. New temp: temperature of magnetic material in MagTense
-      ! param[in] (opt): lsa. Use get_random_tets sampling.
+      ! param[in] (opt): lsa. Use random sampling.
       ! MPI should not be necessary here, every process calls this subroutine
       !-----------------------------------------------------------------------
       IMPLICIT NONE
@@ -540,11 +540,8 @@
             ntemp = 0
             DO i = mystart, myend
                 CALL get_random_tets(ntet, i, maxNb, ntemp)
-                IF (lverb) WRITE (6,*) 'RANDOM: Assigning to neighbors'
-
                 neighbors(:,i) = ntemp
             END DO
-            IF (lverb) WRITE (6,*) 'RANDOM: Deallocating ntemp'
             DEALLOCATE(ntemp)
         ELSE 
             ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
@@ -1354,7 +1351,6 @@
       DOUBLE PRECISION :: R_dbl
       INTEGER :: i, n, R_int, temp
 
-      IF (lverb) WRITE (6,*) 'RANDOM: Creating the deck'
       n = count-1
       ! Create the deck
       ALLOCATE(deck(n))
@@ -1367,8 +1363,6 @@
         END DO
       END IF
 
-      IF (lverb) WRITE (6,*) 'RANDOM: Shuffling the deck'
-
       ! Shuffle deck using Fisher-Yates algorithm
       DO i = n, 2, -1
         CALL RANDOM_NUMBER(R_dbl)
@@ -1378,13 +1372,8 @@
         deck(i) = temp
       END DO
 
-      IF (lverb) WRITE (6,*) 'RANDOM: Outputting the deck'
-
       out = deck(n-s+1:n)
-
-      IF (lverb) WRITE (6,*) 'RANDOM: Trying to deallocate deck'; FLUSH(6)
       IF (ALLOCATED(deck)) DEALLOCATE(deck)
-      IF (lverb) WRITE (6,*) 'RANDOM: Deck deallocated'; FLUSH(6)
 
       END SUBROUTINE RANDOM
 
