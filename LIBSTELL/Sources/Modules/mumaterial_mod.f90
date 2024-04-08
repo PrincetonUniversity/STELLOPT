@@ -27,7 +27,7 @@
 !           stateFunction:    Array of state functions
 !           maxErr:           Max allowed error for convergence in all iterations
 !           maxIter:          Max allowed number of iterations
-!           maxNb:            Max number of neighbours, <=0 disables nearest neighbours
+!           maxNb:            Max number of neighbors, <=0 disables nearest neighbors
 !           lambdaStart:      Base value for lambda in iterate
 !           lambdaFactor:     Mutiplication factor for lambda
 !           vertex:           Vertices [m] (3,nvertex)
@@ -179,7 +179,7 @@
       ! param[in]: mE. New maxErr: max error for MagTense convergence
       ! param[in]: mI. New maxIter: max amount of MagTense iterations
       ! param[in]: T. New temp: temperature of magnetic material in MagTense
-      ! param[in] (opt): lsa. Use random sampling.
+      ! param[in] (opt): lsa. Use get_random_tets sampling.
       ! MPI should not be necessary here, every process calls this subroutine
       !-----------------------------------------------------------------------
       IMPLICIT NONE
@@ -433,7 +433,7 @@
       LOGICAL :: lcomm
       INTEGER :: i, j, k, istat
 
-      INTEGER, DIMENSION(:,:), POINTER :: neighbours
+      INTEGER, DIMENSION(:,:), POINTER :: neighbors
       INTEGER, ALLOCATABLE :: ntemp(:)
       LOGICAL, ALLOCATABLE :: mask(:)
       DOUBLE PRECISION :: x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n, mu0
@@ -524,25 +524,25 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Allocate helpers and Neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      NULLIFY(N_store,neighbours)
+      NULLIFY(N_store,neighbors)
       k = maxNb+1
-      ALLOCATE(neighbours(maxNb,mystart:myend))
+      ALLOCATE(neighbors(maxNb,mystart:myend))
       ALLOCATE(N_store(3,3,maxNb+1,mystart:myend))
-      neighbours(:,:) = 0
+      neighbors(:,:) = 0
       N_store(:,:,:,:) = 0.0
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate nearest neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbours"
+      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbors"
         IF (lsample) THEN
             ALLOCATE(ntemp(maxNb))
             ntemp = 0
             DO i = mystart, myend
-                CALL random(ntet, i, maxNb, ntemp)
+                CALL get_random_tets(ntet, i, maxNb, ntemp)
                 IF (lverb) WRITE (6,*) 'RANDOM: Assigning to neighbors'
 
-                neighbours(:,i) = ntemp
+                neighbors(:,i) = ntemp
             END DO
             IF (lverb) WRITE (6,*) 'RANDOM: Deallocating ntemp'
             DEALLOCATE(ntemp)
@@ -558,7 +558,7 @@
                 mask(i) = .FALSE.
                 DO j = 1, maxNb
                     k = MINLOC(dist,1,mask)
-                    neighbours(j,i) = k
+                    neighbors(j,i) = k
                     mask(k) = .FALSE.
                 END DO
             END DO
@@ -571,10 +571,10 @@
          CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), tet_cen(:,i), N_store(:,:,maxNb+1,i))
       END DO
 
-      ! Calculate N-tensors of neighbours
+      ! Calculate N-tensors of neighbors
       DO i = mystart, myend      
          DO j = 1, maxNb     
-            CALL mumaterial_getN(vertex(:,tet(1,neighbours(j,i))), vertex(:,tet(2,neighbours(j,i))), vertex(:,tet(3,neighbours(j,i))), vertex(:,tet(4,neighbours(j,i))), tet_cen(:,i), N_store(:,:,j,i)) 
+            CALL mumaterial_getN(vertex(:,tet(1,neighbors(j,i))), vertex(:,tet(2,neighbors(j,i))), vertex(:,tet(3,neighbors(j,i))), vertex(:,tet(4,neighbors(j,i))), tet_cen(:,i), N_store(:,:,j,i)) 
          END DO               
       END DO
 
@@ -583,14 +583,14 @@
 
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
       IF (lcomm) THEN
-            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, N_store, shar_comm, comm_master, comm_world)
+            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbors, N_store, shar_comm, comm_master, comm_world)
       ELSE
-            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbours, N_store)
+            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbors, N_store)
       END IF
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  End Iterations"
 
       ! DEALLOCATE Helpers
-      DEALLOCATE(neighbours)
+      DEALLOCATE(neighbors)
       DEALLOCATE(N_store)
       DEALLOCATE(Happ)
 
@@ -598,12 +598,12 @@
       END SUBROUTINE mumaterial_init_new
 
 
-      SUBROUTINE mumaterial_iterate_magnetization_new(N1, mystart, myend, neighbours, N_store, shar_comm, comm_master, comm_world)
+      SUBROUTINE mumaterial_iterate_magnetization_new(N1, mystart, myend, neighbors, N_store, shar_comm, comm_master, comm_world)
       !-----------------------------------------------------------------------
       ! mumaterial_iterate_magnetization: Iterates the magnetic field over all tiles, called by mumaterial_init
       !-----------------------------------------------------------------------
-      ! param[in]: N_store. Storage for demagnetization tensors from nearest neighbours
-      ! param[in]: neighbours. Indices of nearest neighbours
+      ! param[in]: N_store. Storage for demagnetization tensors from nearest neighbors
+      ! param[in]: neighbors. Indices of nearest neighbors
       ! param[in, out]: comm. MPI communicator, handles shared memory
       !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
@@ -612,7 +612,7 @@
 #endif
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: N1, mystart, myend
-      INTEGER, OPTIONAL :: neighbours(N1,mystart:myend)
+      INTEGER, OPTIONAL :: neighbors(N1,mystart:myend)
       DOUBLE PRECISION, OPTIONAL :: N_store(3,3,N1+1,mystart:myend)
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master, comm_world
       INTEGER :: shar_rank
@@ -673,7 +673,7 @@
             H = Happ(:,i_tile)
             ! Get the field from all other tiles
             DO j_tile = 1, maxNb
-               H = H + MATMUL(N_store(:,:,j_tile,i_tile), M(:,neighbours(j_tile,i_tile)))
+               H = H + MATMUL(N_store(:,:,j_tile,i_tile), M(:,neighbors(j_tile,i_tile)))
             END DO
             N = N_store(:,:,maxNb+1,i_tile)  
 
@@ -1344,7 +1344,7 @@
 
 
 
-      SUBROUTINE random(count, ind, s, out)
+      SUBROUTINE get_random_tets(count, ind, s, out)
 
       IMPLICIT NONE
 
@@ -1372,7 +1372,7 @@
       ! Shuffle deck using Fisher-Yates algorithm
       DO i = n, 2, -1
         CALL RANDOM_NUMBER(R_dbl)
-        R_int = R_dbl*i
+        R_int = R_dbl*i+1
         temp = deck(R_int)
         deck(R_int) = deck(i)
         deck(i) = temp
