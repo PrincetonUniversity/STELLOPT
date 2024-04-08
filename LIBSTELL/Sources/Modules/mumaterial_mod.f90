@@ -1349,7 +1349,7 @@
       IMPLICIT NONE
 
       INTEGER, INTENT(in) :: count, ind, s
-      INTEGER, DIMENSION(:), INTENT(inout) :: out
+      INTEGER, DIMENSION(s), INTENT(inout) :: out
       INTEGER, ALLOCATABLE :: deck(:) 
       DOUBLE PRECISION :: R_dbl
       INTEGER :: i, n, R_int, temp
@@ -1383,7 +1383,7 @@
       out = deck(n-s+1:n)
 
       IF (lverb) WRITE (6,*) 'RANDOM: Trying to deallocate deck'; FLUSH(6)
-      DEALLOCATE(deck)
+      IF (ALLOCATED(deck)) DEALLOCATE(deck)
       IF (lverb) WRITE (6,*) 'RANDOM: Deck deallocated'; FLUSH(6)
 
       END SUBROUTINE RANDOM
