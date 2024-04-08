@@ -669,9 +669,15 @@
          DO i_tile = mystart, myend
             H = Happ(:,i_tile)
             ! Get the field from all other tiles
-            DO j_tile = 1, maxNb
-               H = H + MATMUL(N_store(:,:,j_tile,i_tile), M(:,neighbors(j_tile,i_tile)))
-            END DO
+            IF (lsample) THEN
+              DO j_tile = 1, maxNb
+                H = H + (ntet-1)/Maxnb*MATMUL(N_store(:,:,j_tile,i_tile), M(:,neighbors(j_tile,i_tile)))
+              END DO
+            ELSE
+              DO j_tile = 1, maxNb
+                H = H + MATMUL(N_store(:,:,j_tile,i_tile), M(:,neighbors(j_tile,i_tile)))
+              END DO
+            END IF
             N = N_store(:,:,maxNb+1,i_tile)  
 
             ! Determine field and magnetization at tile due to all other tiles and itself
