@@ -1381,7 +1381,7 @@
       out = deck(n-s+1:n)
       IF (ALLOCATED(deck)) DEALLOCATE(deck)
 
-      END SUBROUTINE RANDOM
+      END SUBROUTINE get_random_tets
 
 
 
