@@ -221,6 +221,7 @@
       INTEGER :: shar_rank, master_rank, world_rank, world_size
       LOGICAL :: lcomm
       INTEGER :: iunit ,ik, i, j, nMH
+      DOUBLE PRECISION :: temp
 
       lcomm = ((PRESENT(shar_comm).and.PRESENT(comm_master)).AND.PRESENT(comm_world))
       shar_rank = 0; master_rank = 0; master_size = 0;
@@ -235,12 +236,14 @@
             CALL MPI_COMM_RANK( comm_master, master_rank, istat )
             IF (master_rank.EQ.0) lismaster = .TRUE.
             CALL MPI_COMM_SIZE( comm_master, master_size, istat )
+	    WRITE(6,*) master_size
         END IF
         CALL MPI_Bcast( master_size, 1, MPI_INTEGER, 0, shar_comm, istat)
         IF (master_size.GE.2) ldosync = .TRUE.
         CALL MPI_COMM_RANK( comm_world, world_rank, istat )
         CALL MPI_COMM_SIZE( comm_world, world_size, istat )
-        color = world_rank/world_size*master_size
+	temp = 1./world_size
+	color = world_rank*master_size*temp
     END IF
 #endif
 
@@ -533,9 +536,10 @@
       lwork = .FALSE.
       tol = 0.0001
       delta = 1.0
+      WRITE(6,*) "MASTER: My color is", color
 
       ! Global master, create first box
-      IF (color.EQ.0) THEN
+      IF (lismaster) THEN
         lwork = .TRUE.
         ALLOCATE(BOX1(ntet))
         DO i = 1, ntet
@@ -1159,6 +1163,9 @@
       END DO
 
       ptsinbox = COUNT(xyz(dim,:).LT.divval)
+      WRITE(6,*) divval
+      WRITE(6,*) ptsinbox
+
       ALLOCATE(box1(ptsinbox),box2(n-ptsinbox))
       box1 = FINDLOC(xyz(dim,:).LT.divval,.TRUE.)
       box1 = boxin(box1)
