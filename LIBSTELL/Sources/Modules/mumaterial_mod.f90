@@ -221,7 +221,6 @@
       INTEGER :: shar_rank, master_rank, world_rank, world_size
       LOGICAL :: lcomm
       INTEGER :: iunit ,ik, i, j, nMH
-      DOUBLE PRECISION :: temp
 
       lcomm = ((PRESENT(shar_comm).and.PRESENT(comm_master)).AND.PRESENT(comm_world))
       shar_rank = 0; master_rank = 0; master_size = 0;
@@ -236,15 +235,12 @@
             CALL MPI_COMM_RANK( comm_master, master_rank, istat )
             IF (master_rank.EQ.0) lismaster = .TRUE.
             CALL MPI_COMM_SIZE( comm_master, master_size, istat )
-	        WRITE(6,*) 'MASTER: ', master_size
         END IF
         CALL MPI_Bcast( master_size, 1, MPI_INTEGER, 0, shar_comm, istat)
         IF (master_size.GE.2) ldosync = .TRUE.
         CALL MPI_COMM_RANK( comm_world, world_rank, istat )
         CALL MPI_COMM_SIZE( comm_world, world_size, istat )
-        IF (lverb) WRITE(6,*) 'WORLD: ', world_size
-        temp = 1.0/world_size
-        color = world_rank*master_size*temp
+
         END IF
 #endif
 
@@ -436,7 +432,7 @@
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: offset(3)
       INTEGER, INTENT(inout), OPTIONAL :: comm_world, shar_comm, comm_master
-      INTEGER :: shar_rank, master_rank
+      INTEGER :: shar_rank, master_rank, color
       LOGICAL :: lcomm, lwork
       INTEGER :: i, j, k, istat
 
@@ -531,12 +527,14 @@
 #if defined(MPI_OPT)
     ! First masters split boxes
     IF ((lcomm.AND.ldosync).AND.shar_rank.EQ.0) THEN
-    
+
       Bx = master_size
       splits = LOG(Bx)/LOG(2.0) ! log_2(X) = ln(X)/log(2)
       lwork = .FALSE.
       tol = 0.0001
       delta = 1.0
+
+      color = world_rank*Bx/world_size
       WRITE(6,*) "MASTER: My color is", color
 
       ! Global master, create first box
