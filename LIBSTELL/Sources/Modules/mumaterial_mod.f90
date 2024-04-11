@@ -201,7 +201,7 @@
       END SUBROUTINE mumaterial_setd
 
 
-      SUBROUTINE mumaterial_load(filename,istat,shar_comm,comm_master)
+      SUBROUTINE mumaterial_load(filename,istat,shar_comm,comm_master,comm_world)
       !-----------------------------------------------------------------------
       ! mumaterial_load: Loads magnetic material file.
       !-----------------------------------------------------------------------
@@ -217,12 +217,12 @@
 
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)       :: istat
-      INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master
+      INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master, comm_world
       INTEGER :: shar_rank, master_rank, world_rank, world_size
       LOGICAL :: lcomm
       INTEGER :: iunit ,ik, i, j, nMH
 
-      lcomm = (PRESENT(shar_comm).and.PRESENT(comm_master))
+      lcomm = ((PRESENT(shar_comm).and.PRESENT(comm_master)).AND.PRESENT(comm_world))
       shar_rank = 0; master_rank = 0; master_size = 0;
       lismaster = .TRUE.; ldosync = .TRUE.
       
@@ -439,7 +439,7 @@
       INTEGER, DIMENSION(:,:), POINTER :: neighbors
       INTEGER, ALLOCATABLE :: ntemp(:)
       LOGICAL, ALLOCATABLE :: mask(:)
-      DOUBLE PRECISION :: x, y, z, Bx, By, Bz, Bx_n, By_n, Bz_n, mu0
+      DOUBLE PRECISION :: Bx, By, Bz, Bx_n, By_n, Bz_n, mu0
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER :: N_store
       DOUBLE PRECISION, ALLOCATABLE :: dist(:), dx(:,:), rands(:)
 
@@ -527,19 +527,21 @@
 #if defined(MPI_OPT)
     ! First masters split boxes
     IF ((lcomm.AND.ldosync).AND.shar_rank.EQ.0) THEN
-
-      splits = LOG(master_size)/LOG(2) ! log_2(X) = ln(X)/log(2)
+    
+      Bx = master_size
+      splits = LOG(Bx)/LOG(2.0) ! log_2(X) = ln(X)/log(2)
       lwork = .FALSE.
       tol = 0.0001
       delta = 1.0
 
       ! Global master, create first box
-      IF (color.EQ.0) 
+      IF (color.EQ.0) THEN
         lwork = .TRUE.
         ALLOCATE(BOX1(ntet))
         DO i = 1, ntet
             BOX1(i) = i
         END DO
+      END IF
 
       DO
         IF (splits.EQ.0) EXIT ! Reached end
@@ -582,7 +584,7 @@
 #endif
 
       ! From here on out each thread only works on its own subset
-      IF (lcomm) CALL MPI_CALC_MYRANGE(comm_shar, 1, boxsize, mystart, myend)
+      IF (lcomm) CALL MPI_CALC_MYRANGE(shar_comm, 1, boxsize, mystart, myend)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Allocate helpers and Neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1123,7 +1125,7 @@
       INTEGER, INTENT(in) :: n, dim
       DOUBLE PRECISION, DIMENSION(3,n), INTENT(in) :: coords
       DOUBLE PRECISION, INTENT(in) :: tol, delta
-      INTEGER, ALLOCATABLE, INTENT(in)  :: boxin(n)
+      INTEGER, INTENT(in)  :: boxin(n)
       INTEGER, ALLOCATABLE, INTENT(out) :: box1(:)
       INTEGER, ALLOCATABLE, INTENT(out) :: box2(:) 
 
@@ -1160,7 +1162,8 @@
       box1 = boxin(box1)
       box2 = FINDLOC(xyz(dim,:).LT.divval,.FALSE.)
       box2 = boxin(box2)
-
+      DEALLOCATE(xyz)
+      
       END SUBROUTINE mumaterial_split
 
       SUBROUTINE mumaterial_sync_array2d_dbl(array, n1, n2, comm_master, shar_comm, &
