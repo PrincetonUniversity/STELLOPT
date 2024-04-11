@@ -67,7 +67,7 @@
 
 
       INTEGER, PRIVATE                    :: mystart, myend, mydelta, ourstart, ourend
-      INTEGER, PRIVATE                    :: shar_rank, shar_comm, master_size, world_rank, world_size
+      INTEGER, PRIVATE                    :: shar_rank, shar_comm, master_size, world_rank, world_size, color
       LOGICAL, PRIVATE                    :: lismaster
 
 
@@ -218,7 +218,7 @@
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)       :: istat
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master
-      INTEGER :: shar_rank, master_rank
+      INTEGER :: shar_rank, master_rank, world_rank, world_size
       LOGICAL :: lcomm
       INTEGER :: iunit ,ik, i, j, nMH
 
@@ -238,6 +238,9 @@
         END IF
         CALL MPI_Bcast( master_size, 1, MPI_INTEGER, 0, shar_comm, istat)
         IF (master_size.GE.2) ldosync = .TRUE.
+        CALL MPI_COMM_RANK( comm_world, world_rank, istat )
+        CALL MPI_COMM_SIZE( comm_world, world_size, istat )
+        color = world_rank/world_size*master_size
     END IF
 #endif
 
@@ -430,7 +433,7 @@
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: offset(3)
       INTEGER, INTENT(inout), OPTIONAL :: comm_world, shar_comm, comm_master
       INTEGER :: shar_rank, master_rank
-      LOGICAL :: lcomm
+      LOGICAL :: lcomm, lwork
       INTEGER :: i, j, k, istat
 
       INTEGER, DIMENSION(:,:), POINTER :: neighbors
@@ -440,13 +443,15 @@
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER :: N_store
       DOUBLE PRECISION, ALLOCATABLE :: dist(:), dx(:,:), rands(:)
 
+      DOUBLE PRECISION :: tol, delta
+      INTEGER :: splits, dim, boxsize, reci
+      INTEGER, ALLOCATABLE :: BOX1(:)
+      INTEGER, DIMENSION(:), POINTER :: BOX2(:)
       EXTERNAL:: getBfld
       
       mu0 = 16.0D-7 * ATAN(1.d0)
       shar_rank = 0; master_rank = 0
       lcomm = ((PRESENT(shar_comm).AND.PRESENT(comm_master)).AND.PRESENT(comm_world))
-      CALL MPI_COMM_RANK( comm_world, world_rank, istat )
-      CALL MPI_COMM_SIZE( comm_world, world_size, istat )
 
 #if defined(MPI_OPT)
       IF (lcomm) THEN
@@ -518,61 +523,115 @@
         END DO
         CLOSE(14)
     END IF
+      
+#if defined(MPI_OPT)
+    ! First masters split boxes
+    IF ((lcomm.AND.ldosync).AND.shar_rank.EQ.0) THEN
+
+      splits = LOG(master_size)/LOG(2) ! log_2(X) = ln(X)/log(2)
+      lwork = .FALSE.
+      tol = 0.0001
+      delta = 1.0
+
+      ! Global master, create first box
+      IF (color.EQ.0) 
+        lwork = .TRUE.
+        ALLOCATE(BOX1(ntet))
+        DO i = 1, ntet
+            BOX1(i) = i
+        END DO
+
+      DO
+        IF (splits.EQ.0) EXIT ! Reached end
+
+        IF (lwork) THEN 
+            boxsize = size(BOX1)
+            ALLOCATE(BOXIN(boxsize))
+            BOXIN = BOX1
+
+            dim = MOD(splits-1,3)+1 
+            CALL mumaterial_split(boxsize, BOXIN, tet_cen, dim, tol, delta, BOX1, BOX2) ! Split box
+            DEALLOCATE(BOXIN)
+
+            splits = splits-1 
+
+            ! now mail one of new boxes to the appropriate recipient
+            reci = color + 2**(splits-1) 
+            boxsize = SIZE(BOX2)
+            CALL MPI_SEND(boxsize,    1, MPI_INTEGER, reci, 1234, comm_master, istat) 
+            CALL MPI_SEND(BOX2, boxsize, MPI_INTEGER, reci, 1235, comm_master, istat)
+            DEALLOCATE(BOX2) 
+            CALL MPI_SEND(splits,     1, MPI_INTEGER, reci, 1236, comm_master, istat) 
+        ELSE
+            ! wait for mail
+            CALL MPI_RECV(boxsize,    1, MPI_INTEGER, MPI_ANY_SOURCE, 1234, comm_master, istat)
+            ALLOCATE(BOX1(boxsize))
+            CALL MPI_RECV(BOX1, boxsize, MPI_INTEGER, MPI_ANY_SOURCE, 1235, comm_master, istat)
+            CALL MPI_RECV(splits,     1, MPI_INTEGER, MPI_ANY_SOURCE, 1236, comm_master, istat)
+            lwork = .TRUE. ! Activate node
+        END IF
+      END DO
+    END IF
+
+    ! Masters now broadcast box contents to subjects
+    IF (shar_rank.EQ.0) boxsize = SIZE(BOX1)
+
+    CALL MPI_BCAST(boxsize,    1, MPI_INTEGER, 0, shar_comm, istat)
+    CALL MPI_BCAST(BOX1, boxsize, MPI_INTEGER, 0, shar_comm, istat)
+
+#endif
 
       ! From here on out each thread only works on its own subset
-      IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
+      IF (lcomm) CALL MPI_CALC_MYRANGE(comm_shar, 1, boxsize, mystart, myend)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Allocate helpers and Neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      NULLIFY(N_store,neighbors)
+      NULLIFY(N_store)
+!      NULLIFY(N_store,neighbors)
       k = maxNb+1
-      ALLOCATE(neighbors(maxNb,mystart:myend))
-      ALLOCATE(N_store(3,3,maxNb+1,mystart:myend))
-      neighbors(:,:) = 0
+!      ALLOCATE(neighbors(maxNb,mystart:myend))
+      ALLOCATE(N_store(3,3,boxsize,mystart:myend))
+!      neighbors(:,:) = 0
       N_store(:,:,:,:) = 0.0
       
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Calculate nearest neighbors
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbors"
-        IF (lsample) THEN
-            ALLOCATE(ntemp(maxNb))
-            ntemp = 0
-            DO i = mystart, myend
-                CALL get_random_tets(ntet, i, maxNb, ntemp)
-                neighbors(:,i) = ntemp
-            END DO
-            DEALLOCATE(ntemp)
-        ELSE 
-            ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
-            DO i = mystart, myend
-                ! We need to define helper variables dx(3,ntet)
-                dx(1,:) = tet_cen(1,:)-tet_cen(1,i)
-                dx(2,:) = tet_cen(2,:)-tet_cen(2,i)
-                dx(3,:) = tet_cen(3,:)-tet_cen(3,i)
-                dist = NORM2(dx,DIM=1)
-                mask = .TRUE.
-                mask(i) = .FALSE.
-                DO j = 1, maxNb
-                    k = MINLOC(dist,1,mask)
-                    neighbors(j,i) = k
-                    mask(k) = .FALSE.
-                END DO
-            END DO
-            DEALLOCATE(mask,dist,dx)
-        END IF
+    !   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !   ! Calculate nearest neighbors
+    !   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !   IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbors"
+    !     IF (lsample) THEN
+    !         ALLOCATE(ntemp(maxNb))
+    !         ntemp = 0
+    !         DO i = mystart, myend
+    !             CALL get_random_tets(ntet, i, maxNb, ntemp)
+    !             neighbors(:,i) = ntemp
+    !         END DO
+    !         DEALLOCATE(ntemp)
+    !     ELSE 
+    !         ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
+    !         DO i = mystart, myend
+    !             ! We need to define helper variables dx(3,ntet)
+    !             dx(1,:) = tet_cen(1,:)-tet_cen(1,i)
+    !             dx(2,:) = tet_cen(2,:)-tet_cen(2,i)
+    !             dx(3,:) = tet_cen(3,:)-tet_cen(3,i)
+    !             dist = NORM2(dx,DIM=1)
+    !             mask = .TRUE.
+    !             mask(i) = .FALSE.
+    !             DO j = 1, maxNb
+    !                 k = MINLOC(dist,1,mask)
+    !                 neighbors(j,i) = k
+    !                 mask(k) = .FALSE.
+    !             END DO
+    !         END DO
+    !         DEALLOCATE(mask,dist,dx)
+    !     END IF
 
+      ! Calculate N-tensor
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating N_tensor"
       DO i = mystart, myend
          N_store(:,:,:,i) = 0
-         CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), tet_cen(:,i), N_store(:,:,maxNb+1,i))
-      END DO
-
-      ! Calculate N-tensors of neighbors
-      DO i = mystart, myend      
-         DO j = 1, maxNb     
-            CALL mumaterial_getN(vertex(:,tet(1,neighbors(j,i))), vertex(:,tet(2,neighbors(j,i))), vertex(:,tet(3,neighbors(j,i))), vertex(:,tet(4,neighbors(j,i))), tet_cen(:,i), N_store(:,:,j,i)) 
-         END DO               
+         DO j = 1, boxsize
+            CALL mumaterial_getN(vertex(:,tet(1,BOX1(j))), vertex(:,tet(2,BOX1(j))), vertex(:,tet(3,BOX1(j))), vertex(:,tet(4,BOX1(j))), tet_cen(:,i), N_store(:,:,j,i)) 
+         END DO  
       END DO
 
       ! No longer necessary
@@ -580,14 +639,18 @@
 
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
       IF (lcomm) THEN
-            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbors, N_store, shar_comm, comm_master, comm_world)
+!            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbors, N_store, shar_comm, comm_master, comm_world)
+            CALL mumaterial_iterate_magnetization_new(boxsize, mystart, myend, BOX1, N_store, shar_comm, comm_master, comm_world)
+
       ELSE
-            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbors, N_store)
+!            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbors, N_store)
+            CALL mumaterial_iterate_magnetization_new(boxsize, mystart, myend, BOX1, N_store)
+
       END IF
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  End Iterations"
 
       ! DEALLOCATE Helpers
-      DEALLOCATE(neighbors)
+!      DEALLOCATE(neighbors)
       DEALLOCATE(N_store)
       DEALLOCATE(Happ)
 
@@ -595,7 +658,9 @@
       END SUBROUTINE mumaterial_init_new
 
 
-      SUBROUTINE mumaterial_iterate_magnetization_new(N1, mystart, myend, neighbors, N_store, shar_comm, comm_master, comm_world)
+!      SUBROUTINE mumaterial_iterate_magnetization_new(N1, mystart, myend, neighbors, N_store, shar_comm, comm_master, comm_world)
+      SUBROUTINE mumaterial_iterate_magnetization_new(boxsize, mystart, myend, N_store, box, shar_comm, comm_master, comm_world)
+
       !-----------------------------------------------------------------------
       ! mumaterial_iterate_magnetization: Iterates the magnetic field over all tiles, called by mumaterial_init
       !-----------------------------------------------------------------------
@@ -608,9 +673,10 @@
       USE mpi_params
 #endif
       IMPLICIT NONE
-      INTEGER, INTENT(IN) :: N1, mystart, myend
-      INTEGER, OPTIONAL :: neighbors(N1,mystart:myend)
-      DOUBLE PRECISION, OPTIONAL :: N_store(3,3,N1+1,mystart:myend)
+      INTEGER, INTENT(IN) :: boxsize, mystart, myend
+      INTEGER :: box(boxsize)
+!      INTEGER, OPTIONAL :: neighbors(boxsize,mystart:myend)
+      DOUBLE PRECISION, OPTIONAL :: N_store(3,3,boxsize+1,mystart:myend)
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master, comm_world
       INTEGER :: shar_rank
       CHARACTER(LEN=6) :: strcount
@@ -669,16 +735,11 @@
          DO i_tile = mystart, myend
             H = Happ(:,i_tile)
             ! Get the field from all other tiles
-            IF (lsample) THEN
-              DO j_tile = 1, maxNb
-                H = H + (ntet-1)/Maxnb*MATMUL(N_store(:,:,j_tile,i_tile), M(:,neighbors(j_tile,i_tile)))
-              END DO
-            ELSE
-              DO j_tile = 1, maxNb
-                H = H + MATMUL(N_store(:,:,j_tile,i_tile), M(:,neighbors(j_tile,i_tile)))
-              END DO
-            END IF
-            N = N_store(:,:,maxNb+1,i_tile)  
+            DO j_tile = 1, boxsize
+                IF (j_tile.EQ.i_tile) CYCLE
+                H = H + MATMUL(N_store(:,:,j_tile, i_tile), M(:,box(j_tile)))
+            END DO
+            N = N_store(:,:,i_tile,i_tile)  
 
             ! Determine field and magnetization at tile due to all other tiles and itself
             H_new = H
@@ -1040,7 +1101,67 @@
             RETURN
       END FUNCTION mumaterial_cross
 
+      RECURSIVE SUBROUTINE mumaterial_split(n,boxin,coords,dim,tol,delta,box1,box2)
+      !-----------------------------------------------------------------------
+      ! mumaterial_split: Divides a set of neighboring tetrahedrons into two
+      ! approximately equally sized groups of neighboring tetrahedrons
+      !-----------------------------------------------------------------------
+      ! param[in]: coords. coordinates of tetrahedrons given in boxin
+      ! param[in]: dim. dimension over which to split (1:X, 2:Y, 3:Z)
+      ! param[in]: tol. allowed deviation from exact 50/50 split
+      ! param[in]: delta. initial increment in dim
+      ! param[out]: box1. collection of half the input tets.
+      ! param[out]: box2. collection of other half of input tets.
+      !-----------------------------------------------------------------------
+#if defined(MPI_OPT)
+      USE mpi
+      USE mpi_params
+#endif     
 
+      IMPLICIT NONE
+
+      INTEGER, INTENT(in) :: n, dim
+      DOUBLE PRECISION, DIMENSION(3,n), INTENT(in) :: coords
+      DOUBLE PRECISION, INTENT(in) :: tol, delta
+      INTEGER, ALLOCATABLE, INTENT(in)  :: boxin(n)
+      INTEGER, ALLOCATABLE, INTENT(out) :: box1(:)
+      INTEGER, ALLOCATABLE, INTENT(out) :: box2(:) 
+
+      INTEGER :: i, iter, maxiter, ptsinbox
+      DOUBLE PRECISION, ALLOCATABLE :: xyz(:,:)
+      DOUBLE PRECISION :: divval, prevdev, currdev
+
+      ALLOCATE(xyz(3,n))
+      DO i = 1, n
+        xyz(:,i) = coords(:,boxin(i))
+      END DO
+
+      divval = (MIN(xyz(dim,:))+MAX(xyz(dim,:)))/2 ! initial estimate of dividing value
+      prevdev = 2 
+      maxiter = 200
+
+      DO
+        ptsinbox = COUNT(xyz(dim,:).LT.divval)
+        currdev = ABS(ptsinbox/n-0.5) ! deviation from 50/50 split
+
+        IF (currdev.LE.tol) EXIT
+
+        IF (currdev-prevdev>0) delta = -0.5*delta ! reverse direction, decrease step size
+        divval = divval + delta
+        prevdev = currdev
+        
+        iter = iter + 1 
+        IF (iter.GE.maxiter) EXIT ! don't get stuck here forever
+      END DO
+
+      ptsinbox = COUNT(xyz(dim,:).LT.divval)
+      ALLOCATE(box1(ptsinbox),box2(n-ptsinbox))
+      box1 = FINDLOC(xyz(dim,:).LT.divval,.TRUE.)
+      box1 = boxin(box1)
+      box2 = FINDLOC(xyz(dim,:).LT.divval,.FALSE.)
+      box2 = boxin(box2)
+
+      END SUBROUTINE mumaterial_split
 
       SUBROUTINE mumaterial_sync_array2d_dbl(array, n1, n2, comm_master, shar_comm, &
             mystart,myend,istat)
@@ -1058,9 +1179,6 @@
         INTEGER, INTENT(in) :: mystart,myend
         INTEGER :: ourstart, ourend
         INTEGER :: shar_rank, istat, i
-        INTEGER :: color
-
-        color = 2*world_rank/world_size
 
         CALL MPI_REDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, 0, shar_comm, ierr_mpi)
         CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, shar_comm, ierr_mpi)
