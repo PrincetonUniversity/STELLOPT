@@ -661,7 +661,7 @@
 
 
 !      SUBROUTINE mumaterial_iterate_magnetization_new(N1, mystart, myend, neighbors, N_store, shar_comm, comm_master, comm_world)
-      SUBROUTINE mumaterial_iterate_magnetization_new(boxsize, mystart, myend, N_store, box, shar_comm, comm_master, comm_world)
+      SUBROUTINE mumaterial_iterate_magnetization_new(boxsize, mystart, myend, box, N_store, shar_comm, comm_master, comm_world)
 
       !-----------------------------------------------------------------------
       ! mumaterial_iterate_magnetization: Iterates the magnetic field over all tiles, called by mumaterial_init
@@ -676,7 +676,7 @@
 #endif
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: boxsize, mystart, myend
-      INTEGER, ALLOCATABLE :: box(boxsize)
+      INTEGER :: box(boxsize)
 !      INTEGER, OPTIONAL :: neighbors(boxsize,mystart:myend)
       DOUBLE PRECISION, OPTIONAL :: N_store(3,3,boxsize+1,mystart:myend)
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master, comm_world
