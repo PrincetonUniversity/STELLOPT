@@ -1142,7 +1142,8 @@
       prevdev = 2 
       maxiter = 200
       usedelta = delta
-
+      iter = 0
+      
       DO
         ptsinbox = COUNT(xyz(dim,:).LT.divval)
         currdev = ABS(ptsinbox/n-0.5) ! deviation from 50/50 split
