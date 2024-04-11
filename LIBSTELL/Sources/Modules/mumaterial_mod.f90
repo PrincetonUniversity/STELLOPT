@@ -569,6 +569,7 @@
             ! now mail one of new boxes to the appropriate recipient
             reci = color + 2**(splits-1) 
             boxsize = SIZE(BOX2)
+            WRITE(6,*) boxsize
             WRITE(6,*) 'MASTER: Sending mail'; FLUSH(6)
             CALL MPI_SEND(boxsize,    1, MPI_INTEGER, reci, 1234, comm_master, istat) 
             CALL MPI_SEND(BOX2, boxsize, MPI_INTEGER, reci, 1235, comm_master, istat)
