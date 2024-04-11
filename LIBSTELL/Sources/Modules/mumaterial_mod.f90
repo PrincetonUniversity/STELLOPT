@@ -548,6 +548,8 @@
       END IF
 
       splits = LOG(Bx)/LOG(2.0) ! log_2(X) = ln(X)/log(2)
+      WRITE(6,*) 'MASTER: Splits left: ', splits; FLUSH(6)
+      
       tol = 0.0001
       delta = 1.0
 
@@ -565,7 +567,7 @@
             DEALLOCATE(BOXIN)
 
             splits = splits-1 
-
+            WRITE(6,*) 'MASTER: Splits left: ', splits; FLUSH(6)
             ! now mail one of new boxes to the appropriate recipient
             reci = color + 2**(splits-1) 
             boxsize = SIZE(BOX2)
