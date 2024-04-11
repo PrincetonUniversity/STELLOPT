@@ -1131,16 +1131,17 @@
 
       INTEGER :: i, iter, maxiter, ptsinbox
       DOUBLE PRECISION, ALLOCATABLE :: xyz(:,:)
-      DOUBLE PRECISION :: divval, prevdev, currdev
+      DOUBLE PRECISION :: divval, prevdev, currdev, usedelta
 
       ALLOCATE(xyz(3,n))
       DO i = 1, n
         xyz(:,i) = coords(:,boxin(i))
       END DO
 
-      divval = (MIN(xyz(dim,:))+MAX(xyz(dim,:)))/2 ! initial estimate of dividing value
+      divval = (MINVAL(xyz(dim,:))+MAXVAL(xyz(dim,:)))/2 ! initial estimate of dividing value
       prevdev = 2 
       maxiter = 200
+      usedelta = delta
 
       DO
         ptsinbox = COUNT(xyz(dim,:).LT.divval)
@@ -1148,8 +1149,8 @@
 
         IF (currdev.LE.tol) EXIT
 
-        IF (currdev-prevdev>0) delta = -0.5*delta ! reverse direction, decrease step size
-        divval = divval + delta
+        IF (currdev-prevdev>0) usedelta = -0.5*usedelta ! reverse direction, decrease step size
+        divval = divval + usedelta
         prevdev = currdev
         
         iter = iter + 1 
@@ -1163,7 +1164,7 @@
       box2 = FINDLOC(xyz(dim,:).LT.divval,.FALSE.)
       box2 = boxin(box2)
       DEALLOCATE(xyz)
-      
+
       END SUBROUTINE mumaterial_split
 
       SUBROUTINE mumaterial_sync_array2d_dbl(array, n1, n2, comm_master, shar_comm, &
