@@ -585,8 +585,8 @@
 
     ! Masters now broadcast box contents to subjects
     IF (shar_rank.EQ.0) boxsize = SIZE(BOX1)
-
     CALL MPI_BCAST(boxsize,    1, MPI_INTEGER, 0, shar_comm, istat)
+    IF (shar_rank.NE.0) ALLOCATE(BOX1(boxsize))
     CALL MPI_BCAST(BOX1, boxsize, MPI_INTEGER, 0, shar_comm, istat)
 
 #endif
