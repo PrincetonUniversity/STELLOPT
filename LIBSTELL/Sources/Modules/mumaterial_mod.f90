@@ -431,7 +431,7 @@
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: offset(3)
       INTEGER, INTENT(inout), OPTIONAL :: comm_world, shar_comm, comm_master
-      INTEGER :: shar_rank, master_rank, color, world_rank, world_size
+      INTEGER :: shar_rank, master_rank, master_size, color, world_rank, world_size
       LOGICAL :: lcomm, lwork
       INTEGER :: i, j, k, istat
 
@@ -527,13 +527,14 @@
     ! First masters split boxes
     IF ((lcomm.AND.ldosync).AND.shar_rank.EQ.0) THEN
 
-      Bx = master_size
       splits = LOG(Bx)/LOG(2.0) ! log_2(X) = ln(X)/log(2)
       lwork = .FALSE.
       tol = 0.0001
       delta = 1.0
       CALL MPI_COMM_RANK( comm_world, world_rank, istat )
       CALL MPI_COMM_SIZE( comm_world, world_size, istat )
+      CALL MPI_COMM_SIZE( comm_master, master_size, istat )
+      Bx = master_size
 
       color = world_rank*Bx/world_size
       WRITE(6,*) "MASTER: My msize is", master_size
