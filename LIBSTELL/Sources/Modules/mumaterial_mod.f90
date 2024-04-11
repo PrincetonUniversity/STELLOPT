@@ -593,12 +593,12 @@
 
     ! Masters now broadcast box contents to subjects
     IF (shar_rank.EQ.0) boxsize = SIZE(BOX1)
-    IF (lverb) WRITE(6,*) 'MASTER: Broadcasting boxsize of size ', boxsize; FLUSH(6)
+    IF (shar_rank.EQ.0) WRITE(6,*) 'MASTER: Broadcasting boxsize of size ', boxsize; FLUSH(6)
     CALL MPI_Bcast(boxsize,    1, MPI_INTEGER, 0, shar_comm, istat)
     IF (shar_rank.NE.0) ALLOCATE(BOX1(boxsize))
-    IF (lverb) WRITE(6,*) 'MASTER: Broadcasting BOX1 to shared threads'; FLUSH(6)
+    IF (shar_rank.EQ.0) WRITE(6,*) 'MASTER: Broadcasting BOX1 to shared threads'; FLUSH(6)
     CALL MPI_Bcast(BOX1, boxsize, MPI_INTEGER, 0, shar_comm, istat)
-    IF (lverb) WRITE(6,*) 'MASTER: Waiting at barrier'; FLUSH(6)
+    IF (shar_rank.EQ.0) WRITE(6,*) 'MASTER: Waiting at barrier'; FLUSH(6)
     CALL MPI_BARRIER(comm_world, istat)
 #endif
 
