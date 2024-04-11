@@ -676,7 +676,7 @@
 #endif
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: boxsize, mystart, myend
-      INTEGER, ALLOCATABLE(:) :: box(boxsize)
+      INTEGER, ALLOCATABLE :: box(boxsize)
 !      INTEGER, OPTIONAL :: neighbors(boxsize,mystart:myend)
       DOUBLE PRECISION, OPTIONAL :: N_store(3,3,boxsize+1,mystart:myend)
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master, comm_world
