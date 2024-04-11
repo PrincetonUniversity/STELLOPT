@@ -608,7 +608,6 @@
       ! Allocate helpers and Neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       NULLIFY(N_store)
-      k = maxNb+1
       ALLOCATE(N_store(3,3,boxsize,mystart:myend))
       N_store(:,:,:,:) = 0.0
 
@@ -621,7 +620,8 @@
          END DO  
       END DO
 
-      ! No longer necessary
+      ! Sync up before deallocating tet_cen
+      CALL MPI_BARRIER(shar_comm, istat)
       CALL free_mpi_array2d_dbl(win_tet_cen,tet_cen,.TRUE.)
 
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
