@@ -535,6 +535,8 @@
       delta = 1.0
 
       color = world_rank*Bx/world_size
+      WRITE(6,*) "MASTER: My wrank is", world_rank
+      WRITE(6,*) "MASTER: My wsize is", world_size
       WRITE(6,*) "MASTER: My color is", color
 
       ! Global master, create first box
