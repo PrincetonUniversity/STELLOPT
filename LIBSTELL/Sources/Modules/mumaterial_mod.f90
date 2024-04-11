@@ -527,15 +527,10 @@
     ! First masters split boxes
     IF ((lcomm.AND.ldosync).AND.shar_rank.EQ.0) THEN
 
-      splits = LOG(Bx)/LOG(2.0) ! log_2(X) = ln(X)/log(2)
-      lwork = .FALSE.
-      tol = 0.0001
-      delta = 1.0
       CALL MPI_COMM_RANK( comm_world, world_rank, istat )
       CALL MPI_COMM_SIZE( comm_world, world_size, istat )
       CALL MPI_COMM_SIZE( comm_master, master_size, istat )
       Bx = master_size
-
       color = world_rank*Bx/world_size
       WRITE(6,*) "MASTER: My msize is", master_size
       WRITE(6,*) "MASTER: My wrank is", world_rank
@@ -543,13 +538,18 @@
       WRITE(6,*) "MASTER: My color is", color
 
       ! Global master, create first box
-      IF (lismaster) THEN
+      lwork = .FALSE.
+      IF (color.EQ.0) THEN
         lwork = .TRUE.
         ALLOCATE(BOX1(ntet))
         DO i = 1, ntet
             BOX1(i) = i
         END DO
       END IF
+
+      splits = LOG(Bx)/LOG(2.0) ! log_2(X) = ln(X)/log(2)
+      tol = 0.0001
+      delta = 1.0
 
       DO
         IF (splits.EQ.0) EXIT ! Reached end
@@ -1171,10 +1171,9 @@
       WRITE(6,*) ptsinbox
 
       ALLOCATE(box1(ptsinbox),box2(n-ptsinbox))
-      box1 = FINDLOC(xyz(dim,:).LT.divval,.TRUE.)
-      box1 = boxin(box1)
-      box2 = FINDLOC(xyz(dim,:).LT.divval,.FALSE.)
-      box2 = boxin(box2)
+      box1 = boxin(FINDLOC(xyz(dim,:).LT.divval,.TRUE.,1))
+      box2 = boxin(FINDLOC(xyz(dim,:).LT.divval,.FALSE.,1))
+
       DEALLOCATE(xyz)
 
       END SUBROUTINE mumaterial_split
