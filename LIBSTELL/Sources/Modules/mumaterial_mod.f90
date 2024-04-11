@@ -236,15 +236,16 @@
             CALL MPI_COMM_RANK( comm_master, master_rank, istat )
             IF (master_rank.EQ.0) lismaster = .TRUE.
             CALL MPI_COMM_SIZE( comm_master, master_size, istat )
-	    WRITE(6,*) master_size
+	        WRITE(6,*) 'MASTER: ', master_size
         END IF
         CALL MPI_Bcast( master_size, 1, MPI_INTEGER, 0, shar_comm, istat)
         IF (master_size.GE.2) ldosync = .TRUE.
         CALL MPI_COMM_RANK( comm_world, world_rank, istat )
         CALL MPI_COMM_SIZE( comm_world, world_size, istat )
-	temp = 1./world_size
-	color = world_rank*master_size*temp
-    END IF
+        IF (lverb) WRITE(6,*) 'WORLD: ', world_size
+        temp = 1.0/world_size
+        color = world_rank*master_size*temp
+        END IF
 #endif
 
       NULLIFY(vertex, tet, tet_cen, state_dex, state_type, constant_mu, &
