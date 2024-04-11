@@ -567,9 +567,7 @@
             splits = splits-1 
             WRITE(6,*) 'MASTER: Splits left: ', splits; FLUSH(6)
             ! now mail one of new boxes to the appropriate recipient
-            WRITE(6,*) color
-            WRITE(6,*) 2**(splits-1)
-            reci = color + 2**(splits-1) 
+            reci = color + 2**splits 
             WRITE(6,*) 'MASTER: Recipient: ', reci; FLUSH(6)
             boxsize = SIZE(BOX2)
             WRITE(6,*) boxsize
