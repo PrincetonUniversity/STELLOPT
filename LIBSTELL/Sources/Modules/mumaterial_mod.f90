@@ -546,9 +546,8 @@
             BOX1(i) = i
         END DO
       END IF
-      WRITE(6,*) LOG(Bx)
 
-      splits = LOG(Bx)/LOG(2.0) ! log_2(X) = ln(X)/log(2)
+      splits = NINT(LOG(Bx)/LOG(2.0)) ! log_2(X) = ln(X)/log(2)
       WRITE(6,*) 'MASTER: Splits left: ', splits; FLUSH(6)
 
       tol = 0.0001
