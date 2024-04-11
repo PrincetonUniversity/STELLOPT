@@ -445,8 +445,8 @@
 
       DOUBLE PRECISION :: tol, delta
       INTEGER :: splits, dim, boxsize, reci
-      INTEGER, ALLOCATABLE :: BOX1(:)
-      INTEGER, DIMENSION(:), POINTER :: BOX2(:)
+      INTEGER, ALLOCATABLE :: BOXIN(:), BOX1(:), BOX2(:)
+
       EXTERNAL:: getBfld
       
       mu0 = 16.0D-7 * ATAN(1.d0)
