@@ -434,7 +434,7 @@
       INTEGER :: shar_rank, master_rank, master_size, color, world_rank, world_size
       LOGICAL :: lcomm, lwork
       INTEGER :: i, j, k, istat
-      TYPE(MPI_Status) :: mstat
+      INTEGER :: mstat(MPI_STATUS_SIZE)
 
       INTEGER, DIMENSION(:,:), POINTER :: neighbors
       INTEGER, ALLOCATABLE :: ntemp(:)
