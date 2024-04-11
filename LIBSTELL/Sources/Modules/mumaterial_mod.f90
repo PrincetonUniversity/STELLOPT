@@ -532,10 +532,6 @@
       CALL MPI_COMM_SIZE( comm_master, master_size, istat )
       Bx = master_size
       color = world_rank*Bx/world_size
-      WRITE(6,*) "MASTER: My msize is", master_size
-      WRITE(6,*) "MASTER: My wrank is", world_rank
-      WRITE(6,*) "MASTER: My wsize is", world_size
-      WRITE(6,*) "MASTER: My color is", color
 
       ! Global master, create first box
       lwork = .FALSE.
@@ -546,15 +542,17 @@
             BOX1(i) = i
         END DO
       END IF
+      WRITE(6,*) 'MASTER: LWORK is ', lwork
 
       splits = NINT(LOG(Bx)/LOG(2.0)) ! log_2(X) = ln(X)/log(2)
-      WRITE(6,*) 'MASTER: Splits left: ', splits; FLUSH(6)
-
       tol = 0.0001
       delta = 1.0
 
       DO
-        IF (splits.EQ.0) EXIT ! Reached end
+        IF (splits.EQ.0) THEN
+            WRITE(6,*) 'EXITING LOOP'
+            EXIT ! Reached end
+        END IF
 
         IF (lwork) THEN 
             boxsize = size(BOX1)
@@ -576,9 +574,10 @@
             CALL MPI_SEND(BOX2, boxsize, MPI_INTEGER, reci, 1235, comm_master, istat)
             DEALLOCATE(BOX2) 
             CALL MPI_SEND(splits,     1, MPI_INTEGER, reci, 1236, comm_master, istat) 
-
+            WRITE(6,*) 'MASTER: Mail sent'; FLUSH(6)
         ELSE
             ! wait for mail
+            WRITE(6,*) 'MASTER: Waiting for mail'; FLUSH(6)
             CALL MPI_RECV(boxsize,    1, MPI_INTEGER, MPI_ANY_SOURCE, 1234, comm_master, istat)
             ALLOCATE(BOX1(boxsize))
             CALL MPI_RECV(BOX1, boxsize, MPI_INTEGER, MPI_ANY_SOURCE, 1235, comm_master, istat)
@@ -591,11 +590,12 @@
 
     ! Masters now broadcast box contents to subjects
     IF (shar_rank.EQ.0) boxsize = SIZE(BOX1)
+    IF (lverb) WRITE(6,*) 'MASTER: Broadcasting boxsize of size ', boxsize; FLUSH(6)
     CALL MPI_Bcast(boxsize,    1, MPI_INTEGER, 0, shar_comm, istat)
-    IF (lverb) WRITE(6,*) 'MASTER: Broadcasted boxsize'; FLUSH(6)
     IF (shar_rank.NE.0) ALLOCATE(BOX1(boxsize))
+    IF (lverb) WRITE(6,*) 'MASTER: Broadcasting BOX1 to shared threads'; FLUSH(6)
     CALL MPI_Bcast(BOX1, boxsize, MPI_INTEGER, 0, shar_comm, istat)
-    IF (lverb) WRITE(6,*) 'MASTER: Broadcasted BOX1'; FLUSH(6)
+    IF (lverb) WRITE(6,*) 'MASTER: Waiting at barrier'; FLUSH(6)
     CALL MPI_BARRIER(comm_world, istat)
 #endif
 
