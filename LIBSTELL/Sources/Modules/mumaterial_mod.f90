@@ -434,6 +434,7 @@
       INTEGER :: shar_rank, master_rank, master_size, color, world_rank, world_size
       LOGICAL :: lcomm, lwork
       INTEGER :: i, j, k, istat
+      TYPE(MPI_Status) :: mstat
 
       INTEGER, DIMENSION(:,:), POINTER :: neighbors
       INTEGER, ALLOCATABLE :: ntemp(:)
@@ -577,13 +578,13 @@
             DEALLOCATE(BOX2) 
             CALL MPI_SEND(splits,     1, MPI_INTEGER, reci, 1236, comm_master, istat) 
             WRITE(6,*) 'MASTER: Mail sent'; FLUSH(6)
-        ELSE
+        ELSE 
             ! wait for mail
             WRITE(6,*) 'MASTER: Waiting for mail'; FLUSH(6)
-            CALL MPI_RECV(boxsize,    1, MPI_INTEGER, MPI_ANY_SOURCE, 1234, comm_master, istat)
+            CALL MPI_RECV(boxsize,    1, MPI_INTEGER, MPI_ANY_SOURCE, 1234, comm_master, mstat, istat)
             ALLOCATE(BOX1(boxsize))
-            CALL MPI_RECV(BOX1, boxsize, MPI_INTEGER, MPI_ANY_SOURCE, 1235, comm_master, istat)
-            CALL MPI_RECV(splits,     1, MPI_INTEGER, MPI_ANY_SOURCE, 1236, comm_master, istat)
+            CALL MPI_RECV(BOX1, boxsize, MPI_INTEGER, MPI_ANY_SOURCE, 1235, comm_master, mstat, istat)
+            CALL MPI_RECV(splits,     1, MPI_INTEGER, MPI_ANY_SOURCE, 1236, comm_master, mstat, istat)
             WRITE(6,*) 'MASTER: Mail received'; FLUSH(6)
             lwork = .TRUE. ! Activate node
         END IF
