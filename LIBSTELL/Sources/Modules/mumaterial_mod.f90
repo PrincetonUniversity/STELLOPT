@@ -558,6 +558,7 @@
             boxsize = size(BOX1)
             ALLOCATE(BOXIN(boxsize))
             BOXIN = BOX1
+            DEALLOCATE(BOX1)
 
             dim = MOD(splits-1,3)+1 
             CALL mumaterial_split(boxsize, BOXIN, tet_cen, dim, tol, delta, BOX1, BOX2) ! Split box
@@ -568,16 +569,19 @@
             ! now mail one of new boxes to the appropriate recipient
             reci = color + 2**(splits-1) 
             boxsize = SIZE(BOX2)
+            WRITE(6,*) 'MASTER: Sending mail'
             CALL MPI_SEND(boxsize,    1, MPI_INTEGER, reci, 1234, comm_master, istat) 
             CALL MPI_SEND(BOX2, boxsize, MPI_INTEGER, reci, 1235, comm_master, istat)
             DEALLOCATE(BOX2) 
             CALL MPI_SEND(splits,     1, MPI_INTEGER, reci, 1236, comm_master, istat) 
+
         ELSE
             ! wait for mail
             CALL MPI_RECV(boxsize,    1, MPI_INTEGER, MPI_ANY_SOURCE, 1234, comm_master, istat)
             ALLOCATE(BOX1(boxsize))
             CALL MPI_RECV(BOX1, boxsize, MPI_INTEGER, MPI_ANY_SOURCE, 1235, comm_master, istat)
             CALL MPI_RECV(splits,     1, MPI_INTEGER, MPI_ANY_SOURCE, 1236, comm_master, istat)
+            WRITE(6,*) 'MASTER: Mail received'
             lwork = .TRUE. ! Activate node
         END IF
       END DO
@@ -588,7 +592,7 @@
     CALL MPI_BCAST(boxsize,    1, MPI_INTEGER, 0, shar_comm, istat)
     IF (shar_rank.NE.0) ALLOCATE(BOX1(boxsize))
     CALL MPI_BCAST(BOX1, boxsize, MPI_INTEGER, 0, shar_comm, istat)
-
+    CALL MPI_BARRIER(comm_world, istat)
 #endif
 
       ! From here on out each thread only works on its own subset
@@ -597,43 +601,9 @@
       ! Allocate helpers and Neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       NULLIFY(N_store)
-!      NULLIFY(N_store,neighbors)
       k = maxNb+1
-!      ALLOCATE(neighbors(maxNb,mystart:myend))
       ALLOCATE(N_store(3,3,boxsize,mystart:myend))
-!      neighbors(:,:) = 0
       N_store(:,:,:,:) = 0.0
-      
-    !   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !   ! Calculate nearest neighbors
-    !   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !   IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbors"
-    !     IF (lsample) THEN
-    !         ALLOCATE(ntemp(maxNb))
-    !         ntemp = 0
-    !         DO i = mystart, myend
-    !             CALL get_random_tets(ntet, i, maxNb, ntemp)
-    !             neighbors(:,i) = ntemp
-    !         END DO
-    !         DEALLOCATE(ntemp)
-    !     ELSE 
-    !         ALLOCATE(mask(ntet),dist(ntet),dx(3,ntet))
-    !         DO i = mystart, myend
-    !             ! We need to define helper variables dx(3,ntet)
-    !             dx(1,:) = tet_cen(1,:)-tet_cen(1,i)
-    !             dx(2,:) = tet_cen(2,:)-tet_cen(2,i)
-    !             dx(3,:) = tet_cen(3,:)-tet_cen(3,i)
-    !             dist = NORM2(dx,DIM=1)
-    !             mask = .TRUE.
-    !             mask(i) = .FALSE.
-    !             DO j = 1, maxNb
-    !                 k = MINLOC(dist,1,mask)
-    !                 neighbors(j,i) = k
-    !                 mask(k) = .FALSE.
-    !             END DO
-    !         END DO
-    !         DEALLOCATE(mask,dist,dx)
-    !     END IF
 
       ! Calculate N-tensor
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating N_tensor"
@@ -1173,7 +1143,7 @@
       ALLOCATE(box1(ptsinbox),box2(n-ptsinbox))
       box1 = boxin(FINDLOC(xyz(dim,:).LT.divval,.TRUE.,1))
       box2 = boxin(FINDLOC(xyz(dim,:).LT.divval,.FALSE.,1))
-
+      
       DEALLOCATE(xyz)
 
       END SUBROUTINE mumaterial_split
