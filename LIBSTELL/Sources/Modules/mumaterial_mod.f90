@@ -569,7 +569,7 @@
             ! now mail one of new boxes to the appropriate recipient
             reci = color + 2**(splits-1) 
             boxsize = SIZE(BOX2)
-            WRITE(6,*) 'MASTER: Sending mail'
+            WRITE(6,*) 'MASTER: Sending mail'; FLUSH(6)
             CALL MPI_SEND(boxsize,    1, MPI_INTEGER, reci, 1234, comm_master, istat) 
             CALL MPI_SEND(BOX2, boxsize, MPI_INTEGER, reci, 1235, comm_master, istat)
             DEALLOCATE(BOX2) 
@@ -581,7 +581,7 @@
             ALLOCATE(BOX1(boxsize))
             CALL MPI_RECV(BOX1, boxsize, MPI_INTEGER, MPI_ANY_SOURCE, 1235, comm_master, istat)
             CALL MPI_RECV(splits,     1, MPI_INTEGER, MPI_ANY_SOURCE, 1236, comm_master, istat)
-            WRITE(6,*) 'MASTER: Mail received'
+            WRITE(6,*) 'MASTER: Mail received'; FLUSH(6)
             lwork = .TRUE. ! Activate node
         END IF
       END DO
@@ -589,9 +589,11 @@
 
     ! Masters now broadcast box contents to subjects
     IF (shar_rank.EQ.0) boxsize = SIZE(BOX1)
-    CALL MPI_BCAST(boxsize,    1, MPI_INTEGER, 0, shar_comm, istat)
+    CALL MPI_Bcast(boxsize,    1, MPI_INTEGER, 0, shar_comm, istat)
+    IF (lverb) WRITE(6,*) 'MASTER: Broadcasted boxsize'; FLUSH(6)
     IF (shar_rank.NE.0) ALLOCATE(BOX1(boxsize))
-    CALL MPI_BCAST(BOX1, boxsize, MPI_INTEGER, 0, shar_comm, istat)
+    CALL MPI_Bcast(BOX1, boxsize, MPI_INTEGER, 0, shar_comm, istat)
+    IF (lverb) WRITE(6,*) 'MASTER: Broadcasted BOX1'; FLUSH(6)
     CALL MPI_BARRIER(comm_world, istat)
 #endif
 
