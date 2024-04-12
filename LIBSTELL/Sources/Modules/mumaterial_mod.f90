@@ -413,6 +413,24 @@
       END DO
       END SUBROUTINE mumaterial_info
 
+      SUBROUTINE mumaterial_writedebug(array, n, filename, displayname)
+
+      IMPLICIT NONE
+
+      INTEGER, INTENT(in) :: n
+      DOUBLE PRECISION, INTENT(in) :: array(3,n)
+      CHARACTER(LEN=20), INTENT(in) :: filename
+      CHARACTER(LEN=256), INTENT(in) :: displayname
+      INTEGER :: i
+
+      WRITE(6,*) '  MUMAT_DEBUG: Outputting ' // TRIM(displayname)
+      OPEN(15, file=TRIM(filename))
+      DO i = 1, n
+        WRITE(15, "(E15.7,A,E15.7,A,E15.7)") array(1,i), ',', array(2,i), ',', array(3,i)
+      END DO
+      CLOSE(15)
+        
+      END SUBROUTINE mumaterial_writedebug
 
 
       SUBROUTINE mumaterial_init_new(getBfld, comm_world, shar_comm, comm_master, offset)
@@ -481,35 +499,22 @@
             END IF
 #endif
 
-            IF (ldebug.AND.(master_rank.EQ.0)) THEN
-              WRITE(6,*) "  MUMAT_DEBUG: Outputting vertices"
-              OPEN(14, file='./verts.dat')
-              DO i = 1, nvertex
-                WRITE(14, "(E15.7,A,E15.7,A,E15.7)") vertex(1,i), ',', vertex(2,i), ',', vertex(3,i)
-              END DO
-              CLOSE(14)
-            END IF
-  
+            IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(vertex,nvertex, 'verts.dat','vertices')
          END IF
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Calculate tetrahedron centers
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb)  WRITE(6,*) "  MUMAT_INIT:  Calculating tetrahedron centers"; FLUSH(6)
+      IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Calculating tetrahedron centers"; FLUSH(6)
       mystart = 1; myend = ntet
+
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
       tet_cen(:,mystart:myend) = 99999.0
+
       CALL MPI_BARRIER(shar_comm, istat)
-      IF (ldebug.AND.(master_rank.EQ.0)) THEN
-        WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
-        OPEN(15, file='./tet_cen_prepresync.dat')
-        DO i = 1, ntet
-          WRITE(15, "(E15.7,A,E15.7,A,E15.7)") tet_cen(1,i), ',', tet_cen(2,i), ',', tet_cen(3,i)
-        END DO
-        CLOSE(15)
-      END IF
+      IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_precalc.dat','tetrahedron centers (pre-calc)')
 #endif
       DO i = mystart, myend
         tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
@@ -518,28 +523,13 @@
 #if defined(MPI_OPT)
       IF (lcomm.AND.ldosync) THEN
         CALL MPI_BARRIER(shar_comm, istat)
-        IF (ldebug.AND.(master_rank.EQ.0)) THEN
-          WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
-          OPEN(15, file='./tet_cen_presync.dat')
-          DO i = 1, ntet
-            WRITE(15, "(E15.7,A,E15.7,A,E15.7)") tet_cen(1,i), ',', tet_cen(2,i), ',', tet_cen(3,i)
-          END DO
-          CLOSE(15)
-        END IF
-        IF (ldebug) WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"
+        IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_presync.dat','tetrahedron centers (pre-sync)')
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
       END IF
 #endif
 
-      IF (ldebug.AND.(master_rank.EQ.0)) THEN
-        WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
-        OPEN(14, file='./tet_cen.dat')
-        DO i = 1, ntet
-          WRITE(14, "(E15.7,A,E15.7,A,E15.7)") tet_cen(1,i), ',', tet_cen(2,i), ',', tet_cen(3,i)
-        END DO
-        CLOSE(14)
-      END IF
-  
+      IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen.dat','tetrahedron centers)
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Domain split
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
