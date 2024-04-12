@@ -501,7 +501,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Calculating tetrahedron centers"; FLUSH(6)
       mystart = 1; myend = ntet
-
+      IF (lverb) WRITE(6,*) ASSOCIATED(tet_cen)
+      
 #if defined(MPI_OPT)
       IF (lcomm) THEN 
         CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)  ! DEBUG: This works.
