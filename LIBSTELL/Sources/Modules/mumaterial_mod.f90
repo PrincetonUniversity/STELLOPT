@@ -481,7 +481,7 @@
             END IF
 #endif
 
-            IF (ldebug.AND.(shar_rank.EQ.0)) THEN
+            IF (ldebug.AND.(master_rank.EQ.0)) THEN
               WRITE(6,*) "  MUMAT_DEBUG: Outputting vertices"
               OPEN(14, file='./verts.dat')
               DO i = 1, nvertex
@@ -508,12 +508,20 @@
 
 #if defined(MPI_OPT)
       IF (lcomm.AND.ldosync) THEN
+        IF (ldebug.AND.(master_rank.EQ.0)) THEN
+          WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
+          OPEN(15, file='./tet_cen_presync.dat')
+          DO i = 1, ntet
+            WRITE(15, "(E15.7,A,E15.7,A,E15.7)") tet_cen(1,i), ',', tet_cen(2,i), ',', tet_cen(3,i)
+          END DO
+          CLOSE(15)
+        END IF
         IF (ldebug) WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
       END IF
 #endif
 
-      IF (ldebug.AND.(shar_rank.EQ.0)) THEN
+      IF (ldebug.AND.(master_rank.EQ.0)) THEN
         WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
         OPEN(14, file='./tet_cen.dat')
         DO i = 1, ntet
@@ -521,9 +529,11 @@
         END DO
         CLOSE(14)
       END IF
-      
+  
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Domain split
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #if defined(MPI_OPT)   
-      ! IF MPI, domain needs to be split into N domains and broadcasted
       ! STEP 1: Masters split domains
       IF ((lcomm.AND.ldosync).AND.shar_rank.EQ.0) THEN 
         CALL MPI_COMM_RANK( comm_world, world_rank, istat )
@@ -574,8 +584,7 @@
             DEALLOCATE(BOX2) 
             CALL MPI_SEND(splits,     1, MPI_INTEGER, reci, 1236, comm_master, istat) 
             IF (ldebug) WRITE(6,'(A22,I5,A22)') '  MUMAT_DEBUG: MASTER ', color,' successfully sent box'; FLUSH(6)
-          ELSE 
-            ! wait for mail
+          ELSE ! wait for mail
             IF (ldebug) WRITE(6,'(A22,I5,A19)') '  MUMAT_DEBUG: MASTER ', color,' waiting for a box'; FLUSH(6)
             CALL MPI_RECV(boxsize,    1, MPI_INTEGER, MPI_ANY_SOURCE, 1234, comm_master, mstat, istat)
             ALLOCATE(BOX1(boxsize))
