@@ -596,7 +596,7 @@
       NULLIFY(N_store)
       ALLOCATE(N_store(3,3,boxsize,mystart:myend),Happ(3,mystart:myend))
       N_store(:,:,:,:) = 0.0
-      H = 0.0
+      Happ(:,:) = 0.0
 
       ! Calculate N-tensor
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating H_app and N_tensor"
