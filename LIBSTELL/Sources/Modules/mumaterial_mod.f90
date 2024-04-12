@@ -504,7 +504,7 @@
 
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
-      WRITE(6,*) world_rank, shar_rank, mystart, myend
+!      WRITE(6,*) world_rank, shar_rank, mystart, myend
       tet_cen(:,mystart:myend) = 99999.0
 
       CALL MPI_BARRIER(shar_comm, istat)
