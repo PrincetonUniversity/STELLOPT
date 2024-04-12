@@ -620,9 +620,8 @@
             CALL mumaterial_getN(vertex(:,tet(1,BOX1(j))), vertex(:,tet(2,BOX1(j))), vertex(:,tet(3,BOX1(j))), vertex(:,tet(4,BOX1(j))), tet_cen(:,i), N_store(:,:,j,i)) 
          END DO  
       END DO
-
-      ! Sync up before deallocating tet_cen
-      CALL MPI_BARRIER(comm_world, istat)
+      
+      ! No longer necessary
       CALL free_mpi_array2d_dbl(win_tet_cen,tet_cen,.TRUE.)
 
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
