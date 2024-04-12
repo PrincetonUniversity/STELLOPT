@@ -172,7 +172,7 @@
       RETURN
       END SUBROUTINE mumaterial_setup
 
-      SUBROUTINE mumaterial_setd(mE, mI, la, laF, mNb, lsa)
+      SUBROUTINE mumaterial_setd(mE, mI, la, laF, mNb)
       !-----------------------------------------------------------------------
       ! mumaterial_setd: Sets default values
       !-----------------------------------------------------------------------
@@ -186,7 +186,6 @@
 
       DOUBLE PRECISION, INTENT(in) :: mE, la, laF
       INTEGER, INTENT(in) :: mI, mNb
-      LOGICAL, INTENT(in), OPTIONAL :: lsa
 
       maxErr = mE
       maxIter = mI
@@ -194,8 +193,6 @@
       lambdaFactor = laF
       maxNb = MIN(mNb,ntet-1)
       IF (mNb .le. 0) maxNb = ntet-1
-      lsample = .FALSE.
-      IF (PRESENT(lsa)) lsample = lsa
 
       RETURN
       END SUBROUTINE mumaterial_setd
@@ -237,9 +234,7 @@
             CALL MPI_COMM_SIZE( comm_master, master_size, istat )
         END IF
         CALL MPI_Bcast( master_size, 1, MPI_INTEGER, 0, shar_comm, istat)
-        IF (master_size.GE.2) ldosync = .TRUE.
-
-
+        ldosync = (master_size.GE.2) 
         END IF
 #endif
 
@@ -482,26 +477,23 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Apply offset
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (PRESENT(offset)) THEN
-         IF (MAXVAL(ABS(offset)) .gt. 0.d0) THEN
-            IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Applying offset"
-            mystart = 1; myend = nvertex
+      IF (PRESENT(offset).AND.(MAXVAL(ABS(offset)) .gt. 0.d0)) THEN
+        IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Applying offset"
+        mystart = 1; myend = nvertex
 #if defined(MPI_OPT)
-            IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, nvertex, mystart, myend)
+        IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, nvertex, mystart, myend)
 #endif
-            DO i = mystart, myend
-               vertex(:,i) = vertex(:,i) + offset
-            END DO
+        DO i = mystart, myend
+          vertex(:,i) = vertex(:,i) + offset
+        END DO
             
 #if defined(MPI_OPT)
-            IF (lcomm.AND.ldosync) THEN
-                IF (ldebug) WRITE(6,*) "  MUMAT_DEBUG:  Synchronising offset vertices"
-                CALL mumaterial_sync_array2d_dbl(vertex,3,nvertex,comm_master,shar_comm,mystart,myend,istat)
-            END IF
+        IF (ldosync) THEN
+          IF (ldebug) WRITE(6,*) "  MUMAT_DEBUG:  Synchronising offset vertices"
+          CALL mumaterial_sync_array2d_dbl(vertex,3,nvertex,comm_master,shar_comm,mystart,myend,istat)
+        END IF
 #endif
-
-            IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(vertex,nvertex, 'verts.dat','vertices')
-         END IF
+        IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(vertex,nvertex, 'verts.dat','vertices')
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -523,21 +515,21 @@
       END DO
 
 #if defined(MPI_OPT)
-      IF (lcomm.AND.ldosync) THEN
+      IF (ldosync) THEN
         CALL MPI_BARRIER(shar_comm, istat)
         IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_presync.dat','tetrahedron centers (pre-sync)')
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
+        IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen.dat','tetrahedron centers')
       END IF
 #endif
 
-      IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen.dat','tetrahedron centers')
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Domain split
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #if defined(MPI_OPT)   
       ! STEP 1: Masters split domains
-      IF ((lcomm.AND.ldosync).AND.shar_rank.EQ.0) THEN 
+      IF (ldosync.AND.(shar_rank.EQ.0)) THEN 
         CALL MPI_COMM_RANK( comm_world, world_rank, istat )
         CALL MPI_COMM_SIZE( comm_world, world_size, istat )
         CALL MPI_COMM_SIZE( comm_master, master_size, istat )
