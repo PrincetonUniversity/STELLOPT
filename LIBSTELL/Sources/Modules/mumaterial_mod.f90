@@ -503,12 +503,12 @@
       mystart = 1; myend = ntet
 
 #if defined(MPI_OPT)
-      IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
-!      WRITE(6,*) world_rank, shar_rank, mystart, myend
-      tet_cen(:,mystart:myend) = 99999.0
-
-      CALL MPI_BARRIER(shar_comm, istat)
-      IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_precalc.dat','tetrahedron centers (pre-calc)')
+      IF (lcomm) THEN 
+        CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
+        tet_cen(:,mystart:myend) = 99999.0
+        CALL MPI_BARRIER(shar_comm, istat)
+        IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_precalc.dat','tetrahedron centers (pre-calc)')
+      END IF
 #endif
       DO i = mystart, myend
         tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
@@ -518,6 +518,7 @@
       IF (ldosync) THEN
         CALL MPI_BARRIER(shar_comm, istat)
         IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_presync.dat','tetrahedron centers (pre-sync)')
+        IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Synchronising tetrahedron centers"; FLUSH(6)
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
         IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen.dat','tetrahedron centers')
       END IF
