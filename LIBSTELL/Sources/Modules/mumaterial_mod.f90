@@ -500,6 +500,9 @@
       mystart = 1; myend = ntet
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
+      CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, shar_comm, istat)
+      CALL MPI_ALLREDUCE(myend,   ourend,   1, MPI_INTEGER, MPI_MAX, shar_comm, istat)
+      WRITE(6,*) ourstart, ourend
       tet_cen(:,mystart:myend) = 99999.0
 #endif
       DO i = mystart, myend
