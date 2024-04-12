@@ -413,7 +413,7 @@
       END DO
       END SUBROUTINE mumaterial_info
 
-      SUBROUTINE mumaterial_writedebug(array, n, filename)
+      SUBROUTINE mumaterial_writedebug(array, n, filename, displayname)
 
       IMPLICIT NONE
 
