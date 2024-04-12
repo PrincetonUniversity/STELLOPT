@@ -511,9 +511,11 @@
         IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_precalc.dat','tetrahedron centers (pre-calc)')
       END IF
 #endif
-
+      ALLOCATE(Happ(3,mystart:myend))
       DO i = mystart, myend
         tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
+        CALL getBfld(tet_cen(1,i), tet_cen(2,i), tet_cen(3,i), Bx, By, Bz)
+        Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
         WRITE(6,'(I4,E15.7,E15.7,E15.7)') i, tet_cen(1,i), tet_cen(2,i), tet_cen(3,i) 
       END DO
 
@@ -611,15 +613,12 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       NULLIFY(N_store)
-      ALLOCATE(N_store(3,3,boxsize,mystart:myend),Happ(3,mystart:myend))
+      ALLOCATE(N_store(3,3,boxsize,mystart:myend))
       N_store(:,:,:,:) = 0.0
-      Happ(:,:) = 0.0
 
       ! Calculate N-tensor
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating H_app and N_tensor"
       DO i = mystart, myend
-        CALL getBfld(tet_cen(1,i), tet_cen(2,i), tet_cen(3,i), Bx, By, Bz)
-        Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
         DO j = 1, boxsize
           CALL mumaterial_getN(vertex(:,tet(1,BOX1(j))), vertex(:,tet(2,BOX1(j))), vertex(:,tet(3,BOX1(j))), vertex(:,tet(4,BOX1(j))), tet_cen(:,i), N_store(:,:,j,i)) 
         END DO  
