@@ -598,6 +598,7 @@
     IF (shar_rank.NE.0) ALLOCATE(BOX1(boxsize))
     IF (shar_rank.EQ.0) WRITE(6,*) 'MASTER: Broadcasting BOX1 to shared threads'; FLUSH(6)
     CALL MPI_Bcast(BOX1, boxsize, MPI_INTEGER, 0, shar_comm, istat)
+    IF (shar_rank.EQ.1) WRITE(6,*) 'SUBJECT: Box received of size ', SIZE(BOX1); FLUSH(6)
     IF (shar_rank.EQ.0) WRITE(6,*) 'MASTER: Waiting at barrier'; FLUSH(6)
     CALL MPI_BARRIER(comm_world, istat)
 #endif
@@ -621,7 +622,7 @@
       END DO
 
       ! Sync up before deallocating tet_cen
-      CALL MPI_BARRIER(shar_comm, istat)
+      CALL MPI_BARRIER(comm_world, istat)
       CALL free_mpi_array2d_dbl(win_tet_cen,tet_cen,.TRUE.)
 
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
