@@ -480,6 +480,16 @@
                 CALL mumaterial_sync_array2d_dbl(vertex,3,nvertex,comm_master,shar_comm,mystart,myend,istat)
             END IF
 #endif
+
+            IF (ldebug.AND.(shar_rank.EQ.0)) THEN
+              WRITE(6,*) "  MUMAT_DEBUG: Outputting vertices"
+              OPEN(14, file='./verts.dat')
+              DO i = 1, nvertex
+                WRITE(14, "(E15.7,A,E15.7,A,E15.7)") vertex(1,i), ',', vertex(2,i), ',', vertex(3,i)
+              END DO
+              CLOSE(14)
+            END IF
+  
          END IF
       END IF
 
@@ -503,7 +513,7 @@
       END IF
 #endif
 
-      IF (ldebug) THEN
+      IF (ldebug.AND.(shar_rank.EQ.0)) THEN
         WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
         OPEN(14, file='./tet_cen.dat')
         DO i = 1, ntet
