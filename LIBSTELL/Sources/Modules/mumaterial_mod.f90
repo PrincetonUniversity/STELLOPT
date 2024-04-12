@@ -455,8 +455,8 @@
 
 #if defined(MPI_OPT)
       IF (lcomm) THEN
-         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
-         IF (shar_rank.EQ.0) CALL MPI_COMM_RANK( comm_master, master_rank, istat )
+        CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
+        IF (shar_rank.EQ.0) CALL MPI_COMM_RANK( comm_master, master_rank, istat )
       END IF
 #endif
 
@@ -483,124 +483,108 @@
          END IF
       END IF
 
-#if defined(MPI_OPT)
-      IF (lcomm) THEN
-         CALL MPI_CALC_MYRANGE(shar_comm, 1, ntet, mystart, myend)
-         tet_cen(:,mystart:myend) = 100.0
-         CALL MPI_BARRIER( shar_comm,istat )
-      END IF
-#endif
-
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! Calculate the Applied H-Field (do over all nodes)
+      !! Calculate tetrahedron centers
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb) THEN 
-        WRITE(6,*) "  MUMAT_INIT:  Calculating Fields at Tet. centers"; FLUSH(6)
-      END IF
+      IF (lverb)  WRITE(6,*) "  MUMAT_INIT:  Calculating tetrahedron centers"; FLUSH(6)
       mystart = 1; myend = ntet
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
+      tet_cen(:,mystart:myend) = 99999.0
 #endif
-      ALLOCATE(Happ(3,mystart:myend))
       DO i = mystart, myend
         tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
-        CALL getBfld(tet_cen(1,i), tet_cen(2,i), tet_cen(3,i), Bx, By, Bz)
-        Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
       END DO
 
 #if defined(MPI_OPT)
       IF (lcomm.AND.ldosync) THEN
-        IF (ldebug)  WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"
+        IF (ldebug) WRITE(6,*) "  MUMAT_INIT:  Synchronising Tet. centers"
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
       END IF
 #endif
 
-    IF (ldebug) THEN
+      IF (ldebug) THEN
         WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
         OPEN(14, file='./tet_cen.dat')
         DO i = 1, ntet
-            WRITE(14, "(E15.7,A,E15.7,A,E15.7)") tet_cen(1,i), ',', tet_cen(2,i), ',', tet_cen(3,i)
+          WRITE(14, "(E15.7,A,E15.7,A,E15.7)") tet_cen(1,i), ',', tet_cen(2,i), ',', tet_cen(3,i)
         END DO
         CLOSE(14)
-    END IF
-      
-#if defined(MPI_OPT)
-    ! First masters split boxes
-    IF ((lcomm.AND.ldosync).AND.shar_rank.EQ.0) THEN
-
-      CALL MPI_COMM_RANK( comm_world, world_rank, istat )
-      CALL MPI_COMM_SIZE( comm_world, world_size, istat )
-      CALL MPI_COMM_SIZE( comm_master, master_size, istat )
-      Bx = master_size
-      color = world_rank*Bx/world_size
-
-      ! Global master, create first box
-      lwork = .FALSE.
-      IF (color.EQ.0) THEN
-        lwork = .TRUE.
-        ALLOCATE(BOX1(ntet))
-        DO i = 1, ntet
-            BOX1(i) = i
-        END DO
       END IF
-      WRITE(6,*) 'MASTER: LWORK is ', lwork
+      
+#if defined(MPI_OPT)   
+      ! IF MPI, domain needs to be split into N domains and broadcasted
+      ! STEP 1: Masters split domains
+      IF ((lcomm.AND.ldosync).AND.shar_rank.EQ.0) THEN 
+        CALL MPI_COMM_RANK( comm_world, world_rank, istat )
+        CALL MPI_COMM_SIZE( comm_world, world_size, istat )
+        CALL MPI_COMM_SIZE( comm_master, master_size, istat )
+        Bx = master_size ! master_size needs to be not an integer 
+        color = world_rank*Bx/world_size
 
-      splits = NINT(LOG(Bx)/LOG(2.0)) ! log_2(X) = ln(X)/log(2)
-      tol = 0.0001
-      delta = 1.0
-
-      DO
-        IF (splits.EQ.0) THEN
-            WRITE(6,*) 'EXITING LOOP'
-            EXIT ! Reached end
+        lwork = .FALSE.
+        IF (color.EQ.0) THEN ! Global master, create first box
+          lwork = .TRUE.
+          ALLOCATE(BOX1(ntet))
+          DO i = 1, ntet
+            BOX1(i) = i
+          END DO
         END IF
+        IF(ldebug) WRITE(6,'(A22,I5,A11,L1)') '  MUMAT_DEBUG: MASTER ', color,': LWORK is ', lwork; FLUSH(6)
 
-        IF (lwork) THEN 
+        splits = NINT(LOG(Bx)/LOG(2.0)) ! log_2(X) = ln(X)/log(2)
+        tol = 0.0001
+        delta = 1.0
+
+        DO
+          IF (splits.EQ.0) THEN
+            IF (ldebug) WRITE(6,'(A22,I5,A13)') '  MUMAT_DEBUG: MASTER ', color,' EXITING LOOP'; FLUSH(6)
+            EXIT ! Reached end
+          END IF
+
+          IF (lwork) THEN 
+            ! Juggle arrays around
             boxsize = size(BOX1)
             ALLOCATE(BOXIN(boxsize))
             BOXIN = BOX1
             DEALLOCATE(BOX1)
 
-            dim = MOD(splits-1,3)+1 
+            dim = MOD(splits-1,3)+1 ! Whether to split in X, Y, or Zed
             CALL mumaterial_split(boxsize, BOXIN, tet_cen, dim, tol, delta, BOX1, BOX2) ! Split box
             DEALLOCATE(BOXIN)
 
             splits = splits-1 
-            WRITE(6,*) 'MASTER: Splits left: ', splits; FLUSH(6)
+            IF (ldebug) WRITE(6,'(A22,I5,A14,I5)') '  MUMAT_DEBUG: MASTER ', color,' splits left: ', splits; FLUSH(6)
             ! now mail one of new boxes to the appropriate recipient
             reci = color + 2**splits 
-            WRITE(6,*) 'MASTER: Recipient: ', reci; FLUSH(6)
             boxsize = SIZE(BOX2)
-            WRITE(6,*) boxsize
-            WRITE(6,*) 'MASTER: Sending mail'; FLUSH(6)
+            IF (ldebug) WRITE(6,'(A22,I5,A14,I5,A4,I5)') '  MUMAT_DEBUG: MASTER ', color,' sending box [', boxsize,'] to', reci; FLUSH(6)
             CALL MPI_SEND(boxsize,    1, MPI_INTEGER, reci, 1234, comm_master, istat) 
             CALL MPI_SEND(BOX2, boxsize, MPI_INTEGER, reci, 1235, comm_master, istat)
             DEALLOCATE(BOX2) 
             CALL MPI_SEND(splits,     1, MPI_INTEGER, reci, 1236, comm_master, istat) 
-            WRITE(6,*) 'MASTER: Mail sent'; FLUSH(6)
-        ELSE 
+            IF (ldebug) WRITE(6,'(A22,I5,A22)') '  MUMAT_DEBUG: MASTER ', color,' successfully sent box'; FLUSH(6)
+          ELSE 
             ! wait for mail
-            WRITE(6,*) 'MASTER: Waiting for mail'; FLUSH(6)
+            IF (ldebug) WRITE(6,'(A22,I5,A19)') '  MUMAT_DEBUG: MASTER ', color,' waiting for a box'; FLUSH(6)
             CALL MPI_RECV(boxsize,    1, MPI_INTEGER, MPI_ANY_SOURCE, 1234, comm_master, mstat, istat)
             ALLOCATE(BOX1(boxsize))
             CALL MPI_RECV(BOX1, boxsize, MPI_INTEGER, MPI_ANY_SOURCE, 1235, comm_master, mstat, istat)
             CALL MPI_RECV(splits,     1, MPI_INTEGER, MPI_ANY_SOURCE, 1236, comm_master, mstat, istat)
-            WRITE(6,*) 'MASTER: Mail received'; FLUSH(6)
+            IF (ldebug) WRITE(6,'(A22,I5,A28,I5,A1)') '  MUMAT_DEBUG: MASTER ', color,' successfully received box [', boxsize, ']'; FLUSH(6)
             lwork = .TRUE. ! Activate node
-        END IF
-      END DO
-    END IF
+          END IF
+        END DO
+      END IF
 
-    ! Masters now broadcast box contents to subjects
-    IF (shar_rank.EQ.0) boxsize = SIZE(BOX1)
-    IF (shar_rank.EQ.0) WRITE(6,*) 'MASTER: Broadcasting boxsize of size ', boxsize; FLUSH(6)
-    CALL MPI_Bcast(boxsize,    1, MPI_INTEGER, 0, shar_comm, istat)
-    IF (shar_rank.NE.0) ALLOCATE(BOX1(boxsize))
-    IF (shar_rank.EQ.0) WRITE(6,*) 'MASTER: Broadcasting BOX1 to shared threads'; FLUSH(6)
-    CALL MPI_Bcast(BOX1, boxsize, MPI_INTEGER, 0, shar_comm, istat)
-    IF (shar_rank.EQ.1) WRITE(6,*) 'SUBJECT: Box received of size ', SIZE(BOX1); FLUSH(6)
-    IF (shar_rank.EQ.0) WRITE(6,*) 'MASTER: Waiting at barrier'; FLUSH(6)
-    CALL MPI_BARRIER(comm_world, istat)
+      ! STEP 2: Masters broadcast domains to subjects
+      IF (shar_rank.EQ.0) boxsize = SIZE(BOX1)
+      IF (shar_rank.EQ.0.AND.ldebug) WRITE(6,'(A22,I5,A19,I5,A1)') '  MUMAT_DEBUG: MASTER ', color,' Broadcasting box [', boxsize, ']'; FLUSH(6)
+      CALL MPI_Bcast(boxsize,    1, MPI_INTEGER, 0, shar_comm, istat)
+      IF (shar_rank.NE.0) ALLOCATE(BOX1(boxsize))
+      CALL MPI_Bcast(BOX1, boxsize, MPI_INTEGER, 0, shar_comm, istat)
+      IF (shar_rank.EQ.1.AND.ldebug) WRITE(6,'(A37,I5,A1)') '  MUMAT_DEBUG: SUBJECT received box [', boxsize, ']'; FLUSH(6)
+      CALL MPI_BARRIER(comm_world, istat)
 #endif
 
       ! From here on out each thread only works on its own subset
@@ -608,31 +592,32 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Allocate helpers and Neighbors
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       NULLIFY(N_store)
-      ALLOCATE(N_store(3,3,boxsize,mystart:myend))
+      ALLOCATE(N_store(3,3,boxsize,mystart:myend),Happ(3,mystart:myend))
       N_store(:,:,:,:) = 0.0
+      H(:,:) = 0.0
 
       ! Calculate N-tensor
-      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating N_tensor"
+      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating H_app and N_tensor"
       DO i = mystart, myend
-         N_store(:,:,:,i) = 0
-         DO j = 1, boxsize
-            CALL mumaterial_getN(vertex(:,tet(1,BOX1(j))), vertex(:,tet(2,BOX1(j))), vertex(:,tet(3,BOX1(j))), vertex(:,tet(4,BOX1(j))), tet_cen(:,i), N_store(:,:,j,i)) 
-         END DO  
+        CALL getBfld(tet_cen(1,i), tet_cen(2,i), tet_cen(3,i), Bx, By, Bz)
+        Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
+        DO j = 1, boxsize
+          CALL mumaterial_getN(vertex(:,tet(1,BOX1(j))), vertex(:,tet(2,BOX1(j))), vertex(:,tet(3,BOX1(j))), vertex(:,tet(4,BOX1(j))), tet_cen(:,i), N_store(:,:,j,i)) 
+        END DO  
       END DO
-      
+
       ! No longer necessary
       CALL free_mpi_array2d_dbl(win_tet_cen,tet_cen,.TRUE.)
 
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
       IF (lcomm) THEN
-!            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbors, N_store, shar_comm, comm_master, comm_world)
-            CALL mumaterial_iterate_magnetization_new(boxsize, mystart, myend, BOX1, N_store, shar_comm, comm_master, comm_world)
-
+!       CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbors, N_store, shar_comm, comm_master, comm_world)
+        CALL mumaterial_iterate_magnetization_new(boxsize, mystart, myend, BOX1, N_store, shar_comm, comm_master, comm_world)
       ELSE
-!            CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbors, N_store)
-            CALL mumaterial_iterate_magnetization_new(boxsize, mystart, myend, BOX1, N_store)
-
+!       CALL mumaterial_iterate_magnetization_new(maxNb, mystart, myend, neighbors, N_store)
+        CALL mumaterial_iterate_magnetization_new(boxsize, mystart, myend, BOX1, N_store)
       END IF
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  End Iterations"
 
