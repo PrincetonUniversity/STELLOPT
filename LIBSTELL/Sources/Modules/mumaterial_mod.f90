@@ -513,7 +513,7 @@
 
       DO i = mystart, myend
         tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
-        WRITE(6,*) i, tet_cen(1,i), tet_cen(2,i), tet_cen(3,i) 
+        WRITE(6,'(I4,E15.7,E15.7,E15.7)') i, tet_cen(1,i), tet_cen(2,i), tet_cen(3,i) 
       END DO
 
 #if defined(MPI_OPT)
