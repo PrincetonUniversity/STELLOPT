@@ -419,9 +419,11 @@
 
       INTEGER, INTENT(in) :: n
       DOUBLE PRECISION, INTENT(in) :: array(3,n)
-      CHARACTER(LEN=20), INTENT(in) :: filename
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      CHARACTER(LEN=*), INTENT(in) :: displayname
       INTEGER :: i
 
+      WRITE(6,*) '  MUMAT_DEBUG: Outputting ' // TRIM(displayname)
       OPEN(15, file=TRIM(filename))
       DO i = 1, n
         WRITE(15, "(E15.7,A,E15.7,A,E15.7)") array(1,i), ',', array(2,i), ',', array(3,i)
@@ -497,7 +499,7 @@
             END IF
 #endif
 
-            IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(vertex,nvertex, 'verts.dat')
+            IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(vertex,nvertex, 'verts.dat','vertices')
          END IF
       END IF
 
@@ -512,7 +514,7 @@
       tet_cen(:,mystart:myend) = 99999.0
 
       CALL MPI_BARRIER(shar_comm, istat)
-      IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_precalc.dat')
+      IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_precalc.dat','tetrahedron centers (pre-calc)')
 #endif
       DO i = mystart, myend
         tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
@@ -521,12 +523,12 @@
 #if defined(MPI_OPT)
       IF (lcomm.AND.ldosync) THEN
         CALL MPI_BARRIER(shar_comm, istat)
-        IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_presync.dat')
+        IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_presync.dat','tetrahedron centers (pre-sync)')
         CALL mumaterial_sync_array2d_dbl(tet_cen,3,ntet,comm_master,shar_comm,mystart,myend,istat)
       END IF
 #endif
 
-      IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen.dat')
+      IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen.dat','tetrahedron centers')
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Domain split
