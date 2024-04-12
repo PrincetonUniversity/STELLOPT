@@ -501,6 +501,7 @@
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
       tet_cen(:,mystart:myend) = 99999.0
+      CALL MPI_BARRIER(shar_comm, istat)
       IF (ldebug.AND.(master_rank.EQ.0)) THEN
         WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
         OPEN(15, file='./tet_cen_prepresync.dat')
@@ -516,6 +517,7 @@
 
 #if defined(MPI_OPT)
       IF (lcomm.AND.ldosync) THEN
+        CALL MPI_BARRIER(shar_comm, istat)
         IF (ldebug.AND.(master_rank.EQ.0)) THEN
           WRITE(6,*) "  MUMAT_DEBUG: Outputting tet. centers"
           OPEN(15, file='./tet_cen_presync.dat')
