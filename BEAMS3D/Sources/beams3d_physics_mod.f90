@@ -1294,14 +1294,14 @@ MODULE beams3d_physics_mod
          ! Create the perpendicular vector
          ! (BxZ)xB
          xg = -bx_temp*bz_temp*rg
-         yg = bz_temp*by_temp*rg
+         yg = -bz_temp*by_temp*rg
          zg = (by_temp*by_temp+bx_temp*bx_temp)*rg
 
          ! Now make the rotation matrix
          !https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
          CALL RANDOM_NUMBER(theta)
          theta = (theta-0.5)*pi2
-         rot_matrix(1,1) = cos(theta)+bz_temp*bz_temp*(1-cos(theta))
+         rot_matrix(1,1) = cos(theta)+bx_temp*bx_temp*(1-cos(theta))
          rot_matrix(1,2) = bx_temp*by_temp*(1-cos(theta))-bz_temp*sin(theta)
          rot_matrix(1,3) = bx_temp*bz_temp*(1-cos(theta))+by_temp*sin(theta)
          rot_matrix(2,1) = by_temp*bx_temp*(1-cos(theta))+bz_temp*sin(theta)
