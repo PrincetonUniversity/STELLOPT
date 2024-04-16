@@ -452,9 +452,8 @@
       INTEGER, DIMENSION(:,:), POINTER :: neighbors
       INTEGER, ALLOCATABLE :: ntemp(:)
       LOGICAL, ALLOCATABLE :: mask(:)
-      DOUBLE PRECISION :: Bx, By, Bz, Bx_n, By_n, Bz_n, mu0
+      DOUBLE PRECISION :: Bx, By, Bz, mu0
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER :: N_store
-      DOUBLE PRECISION, ALLOCATABLE :: dist(:), dx(:,:), rands(:)
 
       DOUBLE PRECISION :: tol, delta
       INTEGER :: splits, dim, boxsize, reci
@@ -469,7 +468,6 @@
 #if defined(MPI_OPT)
       IF (lcomm) THEN
         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
-        CALL MPI_COMM_RANK( comm_world, world_rank, istat )
         IF (shar_rank.EQ.0) CALL MPI_COMM_RANK( comm_master, master_rank, istat )
       END IF
 #endif
@@ -501,21 +499,18 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Calculating tetrahedron centers"; FLUSH(6)
       mystart = 1; myend = ntet
-      IF (lverb) WRITE(6,*) ASSOCIATED(tet_cen)
       
 #if defined(MPI_OPT)
       IF (lcomm) THEN 
         CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)  ! DEBUG: This works.
-        tet_cen(:,mystart:myend) = 99999.0                          ! DEBUG: This does not.
+        IF (shar_rank.EQ.0) tet_cen(:,:) = 99999.0                          ! DEBUG: This does not.
         CALL MPI_BARRIER(shar_comm, istat)
         IF (ldebug.AND.(master_rank.EQ.0)) CALL mumaterial_writedebug(tet_cen, ntet, 'tet_cen_precalc.dat','tetrahedron centers (pre-calc)')
       END IF
 #endif
-      ALLOCATE(Happ(3,mystart:myend))
+
       DO i = mystart, myend
         tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
-        CALL getBfld(tet_cen(1,i), tet_cen(2,i), tet_cen(3,i), Bx, By, Bz)
-        Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
         WRITE(6,'(I4,E15.7,E15.7,E15.7)') i, tet_cen(1,i), tet_cen(2,i), tet_cen(3,i) 
       END DO
 
@@ -613,12 +608,15 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       NULLIFY(N_store)
-      ALLOCATE(N_store(3,3,boxsize,mystart:myend))
+      ALLOCATE(N_store(3,3,boxsize,mystart:myend),Happ(3,mystart:myend))
       N_store(:,:,:,:) = 0.0
+      Happ(:,:) = 0.0
 
       ! Calculate N-tensor
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating H_app and N_tensor"
       DO i = mystart, myend
+        CALL getBfld(tet_cen(1,i), tet_cen(2,i), tet_cen(3,i), Bx, By, Bz)
+        Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
         DO j = 1, boxsize
           CALL mumaterial_getN(vertex(:,tet(1,BOX1(j))), vertex(:,tet(2,BOX1(j))), vertex(:,tet(3,BOX1(j))), vertex(:,tet(4,BOX1(j))), tet_cen(:,i), N_store(:,:,j,i)) 
         END DO  
