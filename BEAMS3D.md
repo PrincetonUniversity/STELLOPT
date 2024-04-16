@@ -307,7 +307,7 @@ variables (all values in mks units, angles in radians)
 | ns_prof4 | INTEGER | 1 | Number of parallel velocity distribution gridpoints |
 | ns_prof5 | INTEGER | 1 | Number of perpendicular velocity distribution gridpoints |
 | partvmax | DOUBLE | 1 | Maximum velocity of distribution function. |
-| dist_prof | DOUBLE | nbeams,ns_prof1..5 | Distribution function. (part*m^-3*s^-3, no physical volume) |
+| dist_prof | DOUBLE | nbeams,ns_prof1..5 | Distribution function. (part*m^6*s^-3, no physical volume) |
 | ndot_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Source (m^-3/s) |
 | epower_prof | DOUBLE | nbeams,ns_prof1 | Electron Heating W/m^3 |
 | ipower_prof | DOUBLE | nbeams,ns_prof1 | Ion Heating W/m^3 |
@@ -350,9 +350,8 @@ down distribution information. These arrays are defined on a rho grid
 where $$\rho=\sqrt{s}$$. The `ns_profX` variable indicate the number of
 bins.  The extents are $$\rho=\left[0,1\right]$$, $$u=\left[0,2\pi\right]$$, $$\phi=\left[0,2\pi\right]$$,
 $$v_{para}=\left[-partvmax,partvmax\right]$$, and $$v_{perp}=\left[0,partvmax\right]$$. Also
-note that the 5D distribution fucntion is not normalized by volume,
-the user should do this before attempting to interpolate to another
-grid.
+note that fore version before 3.0 distributions were not normalized
+to the volume.
 
 **Wall Model** The wall model is stored for each run.  The `wall_faces`
 array contains the three indices into the `wall_vertex` array which
