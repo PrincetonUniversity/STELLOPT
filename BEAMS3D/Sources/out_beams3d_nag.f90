@@ -43,7 +43,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     !-----------------------------------------------------------------------
     LOGICAL             :: lhit
     INTEGER             :: ier, d1, d2, d3, d4, d5, d1f
-    DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw, vperp
+    DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw, vperp, n0,sigma_cx, p_cx
     DOUBLE PRECISION    :: q2(4),qdot(4)
     ! For splines
     INTEGER :: i,j,k,l
@@ -102,17 +102,26 @@ SUBROUTINE out_beams3d_nag(t, q)
           d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
           d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
           d5 = MAX(MIN(CEILING(vperp*h5_prof         ), ns_prof5), 1) ! Vperp
+         y0 = MAX((q(4)**2+vperp**2),1.0)
+         n0=2.0D16
+         sigma_cx=1.0D-19
+         p_cx=MAX(MIN(n0*sigma_cx*sqrt(y0)*dt,1.0),0.0)
+         weight(myline)=weight(myline)*(1.0-p_cx)
+         Write(327,*) dt, p_cx, weight(myline)
           xw = weight(myline)*dt
+
           !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
           dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
           !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
+          
+         
           IF (lfidasim_cyl) THEN
              !x0 = MOD(q(2), phimax_fida)
              !IF (x0 < 0) x0 = x0 + phimax_fida
             d1f = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
             d2 = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
             d3 = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
-            y0 = MAX((q(4)**2+vperp**2),1.0)
+            
             d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h),1),nenergy_fida)
             d5 = MIN(MAX(CEILING((q(4)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
             dist5d_fida(d1f,d3,d2,d4,d5) = dist5d_fida(d1f,d3,d2,d4,d5) + xw
