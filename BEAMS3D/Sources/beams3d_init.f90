@@ -19,7 +19,7 @@
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input, init_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
-                               ndot_prof, j_prof, dense_prof, &
+                               ndot_prof, n0_prof,j_prof, dense_prof, &
                                partvmax, partpmax, &
                                end_state, ns_prof1, ns_prof2, ns_prof3, &
                                ns_prof4, ns_prof5, dist5d_prof, win_dist5d, &
@@ -789,8 +789,8 @@
 
       ! Setup distribution
       ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
-               ndot_prof(nbeams,ns_prof1))
-      ipower_prof=0; epower_prof=0; ndot_prof=0
+               ndot_prof(nbeams,ns_prof1),n0_prof(nbeams,ns_prof1),)
+      ipower_prof=0; epower_prof=0; ndot_prof=0; n0_prof=0
       CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
       IF (lfidasim_cyl) CALL mpialloc(dist5d_fida, nr_fida, nz_fida, nphi_fida, nenergy_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d_fida)
       IF (myid_sharmem == master) THEN

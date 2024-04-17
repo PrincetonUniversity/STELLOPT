@@ -18,7 +18,7 @@ SUBROUTINE outpart_beams3d_nag(t, q)
                              vll_lines, neut_lines, mytdex, next_t,&
                              xlast, ylast, zlast, dense_prof, &
                              ltherm, S_lines, U_lines, B_lines, &
-                             ndot_prof, partvmax, &
+                             ndot_prof, n0_prof, partvmax, &
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
                              dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
@@ -45,7 +45,7 @@ SUBROUTINE outpart_beams3d_nag(t, q)
     INTEGER             :: ier, d1, d2, d3, d4, d5
     DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw,vperp, &
                                 br_temp, bphi_temp, bz_temp, &
-                                v_total, binv, vll_temp
+                                v_total, binv, vll_temp,sigma_cx, p_cx
     DOUBLE PRECISION    :: q2(6),qdot(6), q4(4)
     ! For splines
     INTEGER :: i,j,k,l
@@ -148,6 +148,20 @@ SUBROUTINE outpart_beams3d_nag(t, q)
           end_state(myline) = 1
           t = my_end
        END IF
+         IF (nn0>0) THEN
+            CALL R8HERM3FCN(ict,1,1,fval2,i,j,k,xparam,yparam,zparam,&
+                           hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                           N04D(1,1,1,1),nr,nphi,nz) 
+            !n0=fval2!2.0D16
+            !fval2(1)=2.0D16
+            sigma_cx=1.0D-19
+            p_cx=MAX(MIN(fval2(1)*sigma_cx*sqrt(y0)*dt,1.0),0.0)
+            n0_prof(mybeam,d1)   =   n0_prof(mybeam,d1) + weight(myline)*p_cx
+            weight(myline)=weight(myline)*(1.0-p_cx)
+            Write(327,*)  weight(myline)!dt, p_cx,
+            ! end_state(myline) = 1
+            ! t = my_end            
+         END IF         
     ELSE
        IF (lneut) end_state(myline)=3
        v_total = SUM(q(4:6)*q(4:6))

@@ -351,6 +351,11 @@
                                       ATT='Fast Ion Source [m^-3/s]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ndot_prof',ier)
                END IF
+               IF (ASSOCIATED(n0_prof)) THEN
+                  CALL write_var_hdf5(fid,'n0_prof',nbeams,ns_prof1,ier,DBLVAR=n0_prof,&
+                                      ATT='CX Sink [m^-3/s]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'n0_prof',ier)
+               END IF               
                IF (ASSOCIATED(epower_prof)) THEN
                   CALL write_var_hdf5(fid,'epower_prof',nbeams,ns_prof1,ier,DBLVAR=epower_prof,&
                                       ATT='Electron Power Deposition [W*m^-3]',ATT_NAME='description')

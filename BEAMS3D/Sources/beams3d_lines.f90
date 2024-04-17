@@ -34,7 +34,7 @@
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
       INTEGER, ALLOCATABLE     :: end_state(:)
       REAL(rprec), ALLOCATABLE :: shine_through(:), shine_port(:), GFactor(:), t_last(:)
-      REAL(rprec), DIMENSION(:,:), POINTER :: ndot_prof(:,:),epower_prof(:,:), &
+      REAL(rprec), DIMENSION(:,:), POINTER :: ndot_prof(:,:),epower_prof(:,:), n0_prof(:,:), &
                                   ipower_prof(:,:),j_prof(:,:), dense_prof(:,:)
       REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_prof
       REAL(rprec), DIMENSION(:,:,:,:,:), POINTER :: dist5d_fida

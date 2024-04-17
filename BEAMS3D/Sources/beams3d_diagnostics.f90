@@ -168,6 +168,7 @@
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
+            n0_prof(:,k)   =   n0_prof(:,k)/vp_temp
             dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
             j_prof(:,k)      =      j_prof(:,k)/vp_temp ! [A/m^2]
          END DO
