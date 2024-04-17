@@ -16,7 +16,7 @@
                                ns_prof4, ns_prof5, partvmax
       USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
-                              nzeff, npot, plasma_mass, &
+                              nzeff, nn0, npot, plasma_mass, &
                               plasma_Zmean, therm_factor, &
                               B_kick_min, B_kick_max, freq_kick, E_kick, &
                               rho_fullorbit, &
@@ -24,7 +24,7 @@
                               raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
                               nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida, &
                               dexionT, dexionD,dexionHe3, &
-                              s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
+                              s_max,s_max_te, s_max_ne,s_max_zeff, s_max_n0,s_max_ti, s_max_pot
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -86,7 +86,7 @@
                                TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
                                TI_AUX_F, POT_AUX_S, POT_AUX_F, &
                                NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
-                               ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
+                               ZEFF_AUX_S, ZEFF_AUX_F,N0_AUX_S, N0_AUX_F,  P_beams, &
                                ldebug, ne_scale, te_scale, ti_scale, &
                                zeff_scale, &
                                plasma_zavg, plasma_mass, plasma_Zmean, &
@@ -154,6 +154,7 @@
       s_max_ti = 0.0_rprec
       s_max_ne = 0.0_rprec
       s_max_zeff = 0.0_rprec
+      s_max_n0 = 0.0_rprec
       s_max_pot = 0.0_rprec
       TE_AUX_S = -1
       TE_AUX_F = -1
@@ -163,6 +164,8 @@
       TI_AUX_F = -1
       ZEFF_AUX_S = -1
       ZEFF_AUX_F = -1
+      N0_AUX_S = -1
+      N0_AUX_F = -1      
       POT_AUX_S = -1
       POT_AUX_F = -1
       NI_AUX_S = -1
@@ -307,6 +310,11 @@
          DO WHILE ((ZEFF_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
             nzeff = nzeff + 1
          END DO
+         nn0 = 0
+         DO WHILE ((N0_AUX_S(nn0+1) >= 0.0).and.(nn0<MAXPROFLEN))
+            s_max_n0=N0_AUX_S(nn0+1)
+            nn0 = nn0 + 1
+         END DO         
          npot = 0
          DO WHILE ((POT_AUX_S(npot+1) >= 0.0).and.(npot<MAXPROFLEN))
             s_max_pot=POT_AUX_S(npot+1)

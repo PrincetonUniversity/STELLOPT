@@ -87,6 +87,18 @@ SUBROUTINE out_beams3d_nag(t, q)
        z0 = ATAN2(fval2(1),fval(1))
        S_lines(mytdex, myline) = y0 
        U_lines(mytdex, myline) = z0
+       y0 = MAX((q(4)**2+vperp**2),1.0)
+      IF (nn0>0) THEN
+            CALL R8HERM3FCN(ict,1,1,fval2,i,j,k,xparam,yparam,zparam,&
+                           hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                           N04D(1,1,1,1),nr,nphi,nz) 
+            !n0=fval2!2.0D16
+            !fval2(1)=2.0D16
+            sigma_cx=1.0D-19
+            p_cx=MAX(MIN(fval2(1)*sigma_cx*sqrt(y0)*dt,1.0),0.0)
+            weight(myline)=weight(myline)*(1.0-p_cx)
+            Write(327,*)  weight(myline)!dt, p_cx,
+      END IF       
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        MODB4D(1,1,1,1),nr,nphi,nz)
@@ -102,19 +114,10 @@ SUBROUTINE out_beams3d_nag(t, q)
           d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
           d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
           d5 = MAX(MIN(CEILING(vperp*h5_prof         ), ns_prof5), 1) ! Vperp
-         y0 = MAX((q(4)**2+vperp**2),1.0)
-         n0=2.0D16
-         sigma_cx=1.0D-19
-         p_cx=MAX(MIN(n0*sigma_cx*sqrt(y0)*dt,1.0),0.0)
-         weight(myline)=weight(myline)*(1.0-p_cx)
-         Write(327,*) dt, p_cx, weight(myline)
           xw = weight(myline)*dt
-
           !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
           dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
           !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
-          
-         
           IF (lfidasim_cyl) THEN
              !x0 = MOD(q(2), phimax_fida)
              !IF (x0 < 0) x0 = x0 + phimax_fida
@@ -136,6 +139,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     ELSE
        IF (lneut) end_state(myline)=3
     END IF
+
     IF (lvessel .and. mytdex > 0 .and. rho_help > 0.5) THEN
        lhit = .false.
        x0    = xlast

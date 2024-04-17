@@ -17,7 +17,8 @@
                                  BR_spl, BZ_spl, TE_spl_s, NE_spl_s, TI_spl_s, &
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
-                                 ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
+                                 ZEFF_spl_s, nzeff, ZEFF_ARR, N0_spl_s, nn0, N0_ARR,&
+                                 req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq, NI_spl_s, NI
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE read_hint_mod, ONLY: get_hint_grid, get_hint_B, get_hint_press, &
@@ -40,7 +41,7 @@
       LOGICAL :: lcreate_wall
       INTEGER :: ier, s, i, j, k, u
       REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
-                     tetemp,netemp,titemp,zetemp,pottemp
+                     tetemp,netemp,titemp,zetemp,pottemp,n0temp
       INTEGER :: nrh,nzh,nph
       REAL(rprec) :: rmin_hint, rmax_hint, zmin_hint, zmax_hint, &
                      pmax_hint, pres_max
@@ -120,11 +121,12 @@
          U_ARR(i,j,k)=ATAN2(zaxis_g(k)-bztemp,raxis_g(i)-brtemp)
 
          IF (sflx <= 1) THEN
-            tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0
+            tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0;n0temp=0
             IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,tetemp,ier)
             IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,netemp,ier)
             IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,titemp,ier)
             IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
+            IF (nn0 > 0) CALL EZspline_interp(N0_spl_s,sflx,n0temp,ier)
             IF (nzeff > 0) THEN 
                CALL EZspline_interp(ZEFF_spl_s,sflx,ZEFF_ARR(i,j,k),ier)
                DO u=1, NION
@@ -132,11 +134,13 @@
                END DO
             END IF
             NE(i,j,k) = netemp; TE(i,j,k) = tetemp; TI(i,j,k) = titemp
-            POT_ARR(i,j,k) = pottemp
+            POT_ARR(i,j,k) = pottemp;N0_ARR(i,j,k) = n0temp
          ELSE
-             pottemp = 0; sflx = 1
-             IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
-             POT_ARR(i,j,k) = pottemp
+            pottemp = 0; n0temp=0; sflx = 1
+	      IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
+            POT_ARR(i,j,k) = pottemp
+ 	      IF (nn0 > 0) CALL EZspline_interp(N0_spl_s,sflx,n0temp,ier)
+            N0_ARR(i,j,k) = n0temp   
          END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN

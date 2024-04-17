@@ -148,7 +148,7 @@ MODULE beams3d_runtime
                                         charge_beams, Zatom_beams, P_beams
     REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
     REAL(rprec), DIMENSION(MAXPROFLEN) :: TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
-                                            POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F
+                                            POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F, N0_AUX_S, N0_AUX_F
     REAL(rprec), DIMENSION(MAXPROFLEN) :: NI_AUX_S
     REAL(rprec), DIMENSION(NION,MAXPROFLEN) :: NI_AUX_F
     INTEGER, DIMENSION(NION) :: NI_AUX_Z
