@@ -13,7 +13,7 @@
       USE beams3d_lines, ONLY: R_lines, PHI_lines, Z_lines, vll_lines, &
                                neut_lines, moment_lines, S_lines, U_lines, &
                                vr_lines, vphi_lines, vz_lines, &
-                               shine_through, &
+                               shine_through, end_triangle, &
                                B_lines, end_state, shine_port, Gfactor, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
                                dense_prof, dist5d_prof, dist5d_fida, &
@@ -70,6 +70,7 @@
       IF (ALLOCATED(weight)) DEALLOCATE(weight)
       IF (ALLOCATED(beam)) DEALLOCATE(beam)
       IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
+      IF (ALLOCATED(end_triangle)) DEALLOCATE(end_triangle)
       IF (ALLOCATED(Gfactor)) DEALLOCATE(Gfactor)
       IF (PRESENT(IN_COMM)) THEN
          IF (ASSOCIATED(req_axis)) CALL mpidealloc(req_axis,win_req_axis)

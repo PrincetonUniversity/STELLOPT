@@ -20,7 +20,7 @@
       USE beams3d_input_mod, ONLY: read_beams3d_input, init_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
                                ndot_prof, j_prof, dense_prof, &
-                               partvmax, partpmax, &
+                               partvmax, partpmax, end_triangle, &
                                end_state, ns_prof1, ns_prof2, ns_prof3, &
                                ns_prof4, ns_prof5, dist5d_prof, win_dist5d, &
                                dist5d_fida, win_dist5d_fida,&
@@ -758,8 +758,8 @@
       END IF
 
       ! In all cases create an end_state array
-      ALLOCATE(end_state(nparticles))
-      end_state=0
+      ALLOCATE(end_state(nparticles),end_triangle(nparticles))
+      end_state=0; end_triangle = 0
 
       ! Setup distribution
       ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &

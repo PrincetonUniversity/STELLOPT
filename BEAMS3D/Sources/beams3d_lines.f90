@@ -32,7 +32,7 @@
                      fact_coul, fact_crit_pro, &
                      partpmax, h2_prof, h3_prof, h4_prof, h5_prof, r_h, z_h, p_h, e_h, pi_h, E_by_v
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
-      INTEGER, ALLOCATABLE     :: end_state(:)
+      INTEGER, ALLOCATABLE     :: end_state(:), end_triangle(:)
       REAL(rprec), ALLOCATABLE :: shine_through(:), shine_port(:), GFactor(:), t_last(:)
       REAL(rprec), DIMENSION(:,:), POINTER :: ndot_prof(:,:),epower_prof(:,:), &
                                   ipower_prof(:,:),j_prof(:,:), dense_prof(:,:)

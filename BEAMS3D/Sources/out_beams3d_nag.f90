@@ -18,7 +18,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                              vll_lines, neut_lines, mytdex, next_t,&
                              xlast, ylast, zlast, dense_prof, &
                              ltherm, S_lines, U_lines, B_lines, &
-                             ndot_prof, partvmax, &
+                             ndot_prof, partvmax, end_triangle, &
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
                              dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
@@ -145,6 +145,7 @@ SUBROUTINE out_beams3d_nag(t, q)
           Z_lines(mytdex,myline)       = zw
           t = my_end+dt
           l = get_wall_ik()
+          end_triangle(myline) = l
           IF (lneut) THEN
              wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*q(4)*q(4)/get_wall_area(l)
           ELSE
