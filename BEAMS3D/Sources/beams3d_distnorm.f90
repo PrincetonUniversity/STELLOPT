@@ -11,7 +11,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime, ONLY: lfidasim, lfidasim_cyl, nbeams, pi2, &
-                              EZSPLINE_ERR
+                              EZSPLINE_ERR, MPI_BARRIER_ERR
       USE beams3d_grid, ONLY: raxis, phiaxis, zaxis, X4D, Y4D, S4D, &
                               nr, nphi, nz
       USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
@@ -40,13 +40,25 @@
 !        drho,du,dp    Delta coordiantes
 !        xt,yt,zt    Helper for xyz coordiantes of voxel
 !-----------------------------------------------------------------------
-      INTEGER ::  s, i, j, k, nvol
+      INTEGER ::  s, i, j, k, nvol, mystart, myend
       REAL(rprec) :: rho1, rho2, s1, s2, u1, u2, p1, ds, du, dp, area, dvol
       REAL(rprec), DIMENSION(4) :: rt,zt,pt
+      INTEGER :: numprocs_local, mylocalid, mylocalmaster
+      INTEGER :: MPI_COMM_LOCAL
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
-
+      
+      ! Setup Local communicator
+      ! Divide up Work
+      mylocalid = myworkid
+      numprocs_local = 1
+#if defined(MPI_OPT)
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )         ! MPI
+      CALL MPI_BARRIER(MPI_COMM_LOCAL, ierr_mpi)
+#endif
       ! Do physical volume elements
       nvol = (ns_prof1)*(ns_prof2)*(ns_prof3)
       ds   = 1.0/REAL(ns_prof1) !distribution defined on centers (half grid)
@@ -58,8 +70,11 @@
       zt = 0
       pt = 0
 
+      ! Divide up work
+      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nvol, mystart, myend)
+
       ! Iterate over volumes
-      DO s = 1, nvol
+      DO s = mystart, myend
          ! Distribution grid index
          i = MOD(s-1,(ns_prof1))+1
          j = MOD(s-1,(ns_prof1)*(ns_prof2))
@@ -99,24 +114,32 @@
          dist5d_prof(:,i,j,k,:,:) = dist5d_prof(:,i,j,k,:,:)/dvol
       END DO
 
-      ! Constants moved here
-      ! Factor 4 from average of rt
-      ! Factor 2 from parallel piped
-      dist5d_prof = dist5d_prof * 8 / dp
-
-      ! FIDASIM STUF
-      IF (lfidasim) THEN
-            CALL beams3d_write_fidasim('DENF') !write density before velocity space normalization
+      IF (myworkid == master) THEN
+         ! Constants moved here
+         ! Factor 4 from average of rt
+         ! Factor 2 from parallel piped
+         dist5d_prof = dist5d_prof * 8 / dp
+         ! Write Density before velocity space normalization
+         IF (lfidasim) CALL beams3d_write_fidasim('DENF')
       END IF
 
-      ! Do phase space volume elements 
-      ds = 2.0*partvmax/ns_prof4
-      du =   partvmax/ns_prof5
-      dvol = pi2*ds*du
-      DO j = 1, ns_prof5
-        u1 = REAL(j-0.5)*du
-        dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
-      END DO
+      ! Do phase space volume elements
+      IF (myworkid == master) THEN
+         ds = 2.0*partvmax/ns_prof4
+         du =   partvmax/ns_prof5
+         dvol = pi2*ds*du
+         DO j = 1, ns_prof5
+            u1 = REAL(j-0.5)*du
+            dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
+         END DO
+      END IF
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_distnorm',ierr_mpi)
+#endif
 
       RETURN
 !-----------------------------------------------------------------------
