@@ -40,12 +40,9 @@
 !        drho,du,dp    Delta coordiantes
 !        xt,yt,zt    Helper for xyz coordiantes of voxel
 !-----------------------------------------------------------------------
-      INTEGER ::  s, i, j, k, nvol, m
-      INTEGER, DIMENSION(2) :: minln
+      INTEGER ::  s, i, j, k, nvol
       REAL(rprec) :: rho1, rho2, s1, s2, u1, u2, p1, ds, du, dp, area, dvol
       REAL(rprec), DIMENSION(4) :: rt,zt,pt
-
-      INTEGER :: bcs1(2), bcs2(2), bcs3(2)
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -74,7 +71,7 @@
          rho2 = rho1+ds
          u1 = (j-1)*du
          u2 = u1+du
-         p1 = MOD((k-1)*dp*0.5,phiaxis(nphi))
+         p1 = (k-0.5)*dp
 
          ! rho to s
          s1 = rho1*rho1
@@ -95,18 +92,19 @@
          CALL beams3d_suv2rzp(s2,u2,p1,rt(4),zt(4),pt(4))
 
          ! Assume parallel piped
-            area = 0.5 * abs( (rt(2) - rt(1)) *(zt(3) - zt(1)) - (rt(3) - rt(1)) *(zt(2) - zt(1))) + &
-                  0.5 * abs( (rt(3) - rt(2)) *(zt(4) - zt(2)) - (rt(4) - rt(2)) *(zt(3) - zt(2)))
+            area = abs( (rt(2) - rt(1)) *(zt(3) - zt(1)) - (rt(3) - rt(1)) *(zt(2) - zt(1))) + &
+                   abs( (rt(3) - rt(2)) *(zt(4) - zt(2)) - (rt(4) - rt(2)) *(zt(3) - zt(2)))
 
-!         m = MIN(MAX(COUNT(phiaxis < p1),1),nphi-1)
-!         WRITE(327,*) m,s1,s2,u1,u2,rt,zt,area
-!         CALL FLUSH(327)
-         dvol = area*sum(rt)*dp*0.25
+         dvol = area*sum(rt)
          dist5d_prof(:,i,j,k,:,:) = dist5d_prof(:,i,j,k,:,:)/dvol
-!        WRITE(328,*) i,j,k,dvol,rt,zt
-!         CALL FLUSH(328)
       END DO
 
+      ! Constants moved here
+      ! Factor 4 from average of rt
+      ! Factor 2 from parallel piped
+      dist5d_prof = dist5d_prof * 8 / dp
+
+      ! FIDASIM STUF
       IF (lfidasim) THEN
             CALL beams3d_write_fidasim('DENF') !write density before velocity space normalization
       END IF
@@ -115,16 +113,10 @@
       ds = 2.0*partvmax/ns_prof4
       du =   partvmax/ns_prof5
       dvol = pi2*ds*du
-      nvol = ns_prof4*ns_prof5
       DO j = 1, ns_prof5
         u1 = REAL(j-0.5)*du
         dist5d_prof(:,:,:,:,:,j) = dist5d_prof(:,:,:,:,:,j)/(dvol*u1)
-!        WRITE(329,*) j,dvol*u1
-!        CALL FLUSH(329)
       END DO
-
-      
-
 
       RETURN
 !-----------------------------------------------------------------------
