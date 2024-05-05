@@ -289,7 +289,9 @@ if __name__=="__main__":
 	parser.add_argument("-v", "--vmec", dest="vmec_ext",
 		help="VMEC file extension", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
-		help="Plot the coils file.", default = False)
+		help="Plot the VMEC file.", default = False)
+	parser.add_argument("-b", "--boozer", dest="lbooz", action='store_true',
+		help="Output the in_booz file.", default = False)
 	args = parser.parse_args()
 	vmec_wout = VMEC()
 	vmec_input = VMEC_INDATA()
@@ -308,6 +310,16 @@ if __name__=="__main__":
 		except:
 			print(f'Could not file input file: wout_{args.vmec_ext}.nc or wout.{args.vmec_ext}')
 		if not (linput or loutput): sys.exit(-1)
+		if (loutput and args.lbooz):
+			filename = 'in_booz.'+args.vmec_ext
+			f = open(filename,'w')
+			f.write(f'{vmec_wout.mpol*4} {vmec_wout.ntor*2}\n')
+			f.write(f'{args.vmec_ext}\n')
+			for i in range(vmec_wout.ns):
+				f.write(f' {i+1}')
+			f.write('\n')
+			f.close()
+
 		# Do Input file plot
 		if (args.lplot and linput):
 			px = 1/pyplot.rcParams['figure.dpi']
