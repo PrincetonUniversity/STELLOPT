@@ -212,6 +212,34 @@
       READ (iunit, nml=mseprofile, iostat=istat)
 
       END SUBROUTINE read_mse_namelist
+
+      SUBROUTINE read_indata_namelist_byfile (filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      
+      iunit = 100
+      istat = 0
+      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      IF (istat .ne. 0) RETURN
+      CALL read_indata_namelist(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE read_indata_namelist_byfile
+
+      SUBROUTINE write_indata_namelist_byfile (filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      
+      iunit = 100
+      istat = 0
+      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      IF (istat .ne. 0) RETURN
+      CALL write_indata_namelist(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE write_indata_namelist_byfile
       
       SUBROUTINE write_indata_namelist (iunit, istat)
       IMPLICIT NONE
