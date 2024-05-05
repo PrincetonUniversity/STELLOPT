@@ -129,6 +129,21 @@ class FIELDLINES():
 		return reff, iota, iota_err
 
 	def plot_poincare(self,phi,nskip=1,ax=None):
+		"""Creates a basic Poincare plot
+
+		Plots a Poincare plot given a toroidal angle in radians (phi).
+		A number of fieldlines to skip can also be provided (nskip).
+		The user may also provide an axes (ax) to plot to.
+
+		Returns
+		----------
+		phi : float
+			Toroidal angle to plot. [radians]
+		nskip : int (optional)
+			Number of fieldlines to skip.
+		ax : axes (optional)
+			Matplotlib axes object to plot to.
+		"""
 		import numpy as np
 		import matplotlib.pyplot as pyplot
 		lplotnow = False
