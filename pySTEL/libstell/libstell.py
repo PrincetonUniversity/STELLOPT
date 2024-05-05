@@ -253,6 +253,58 @@ class LIBSTELL():
 		# Return
 		return scalar_data | array_data | string_data
 
+	def read_boozer(self,file):
+		"""Reads a boozmn file and returns a dictionary
+
+		This routine wrappers read_boozer in LIBSTELL and returns
+		a dictionary of values
+
+		Parameters
+		----------
+		file : str
+			Path to wout file.
+		Returns
+		----------
+		vars : dict
+			Dictionary of module variables
+		"""
+		import ctypes as ct
+		module_name = self.s1+'read_boozer_mod_'+self.s2
+		read_boozer = getattr(self.libstell,module_name+'_read_boozer_file'+self.s3)
+		read_boozer.argtypes=[ct.c_char_p, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.c_long]
+		read_boozer.restype=None
+		ierr = ct.c_int(0)
+		iopen = ct.c_int(0)
+		read_boozer(file.encode('UTF-8'), ct.byref(ierr), ct.byref(iopen), len(file))
+		if not (ierr.value == 0):
+			return None
+		# Setup Arrays
+		out_data={}
+		# Get Scalars
+		booList  = ['lasym_b']
+		booLen   = [1]*len(booList)
+		intList  = ['mnboz_b', 'mboz_b', 'nboz_b', 'nfp_b', 'ns_b']
+		intLen   = [1]*len(intList)
+		realList  = ['aspect_b', 'rmax_b', 'rmin_b', 'betaxis_b']
+		realLen   = [1]*len(realList)
+		scalar_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen)
+		ns = scalar_data['ns_b']
+		mnmax = scalar_data['mnboz_b']
+		# Get 1D Real Arrays
+		intList  = ['idx_b', 'ixm_b', 'ixn_b']
+		intLen   = [(ns,1),(mnmax,1),(mnmax,1)]
+		realList = ['iota_b','pres_b','phip_b','phi_b','beta_b','buco_b','bvco_b']
+		realLen = [(ns,1)]*len(realList)
+		# Add 2D Arrays
+		realList.extend(['bmnc_b','rmnc_b','zmns_b','pmns_b', 'gmnc_b'])
+		realLen.extend([(ns,mnmax)]*5)
+		if scalar_data['lasym_b']:
+			realList.extend(['bmns_b', 'rmns_b', 'zmnc_b', 'pmnc_b', 'gmns_b'])
+			realLen.extend([(ns,mnmax)]*5)
+		array_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen)
+		# Return
+		return scalar_data | array_data
+
 	def get_module_vars(self,modName,booVar=None,booLen=None,\
 		intVar=None,intLen=None,realVar=None,realLen=None,\
 		charVar=None,charLen=None,\
