@@ -184,6 +184,84 @@ class LIBSTELL():
 		write_indata_namelist.restype=None
 		write_indata_namelist(filename.encode('UTF-8'),len(filename))
 
+	def read_bootin(self,filename):
+		"""Reads a BOOTSJ BOOTIN namelist
+
+		This routine wrappers read_boot_namelist function in
+		bootsj_input. To do this we wrapper safe_open_mod
+
+		Parameters
+		----------
+		file : str
+			Path to wout file.
+		"""
+		import ctypes as ct
+		# These are defined in vparams.f but for some reason they're no in to .so
+		ntord  = 101
+		mpol1d = 101
+		ndatafmax = 101
+		# We use an added routine as a helper
+		module_name = self.s1+'bootsj_input_'+self.s2
+		read_bootin_namelist = getattr(self.libstell,module_name+'_read_boot_namelist_byfile'+self.s3)
+		read_bootin_namelist.argtypes = [ct.c_char_p,ct.c_long]
+		read_bootin_namelist.restype=None
+		read_bootin_namelist(filename.encode('UTF-8'),len(filename))
+		# Get vars
+		intList=['nrho','mbuse','nbuse','isymm0']
+		intLen=[1]*len(intList)
+		realList=['tempres', 'zeff1', 'dens0', 'teti', 'damp', 'damp_bs']
+		realLen=[1]*len(realList)
+		realList.extend(['ate','ati'])
+		realLen.extend([(12,1)]*2)
+		out_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		return out_data
+
+	def set_bootin(self,in_dict):
+		"""Set the bootin namelist variables via a passed dict
+
+		This routine passes variable information back to the module
+		for writing using a dict
+		'rho':		number of rho values to use (depricated)
+		'mbuse':	number of poloidal modes in B-field to use
+		'nbuse':	number of toroidal modes in B-field to use
+		'zeff1':	Effective ion charge
+		'dens0':	Central electron density in 1E20 m^-3 units
+		'teti':		Electron to ion temeprature ratio
+		'tempres':	Te(s) = P(s)**tempres or if -1 Te(s) = sqrt(p)
+		'damp':     Superceeded by damp_bs
+		'damp_bs':  Resonance damping factor
+		'isymm0':   if !=0 force symmetry
+		'ate':      Polynomial electron temperature
+		'ati':      Polynomial ion temperature
+
+		Parameters
+		----------
+		in_dict : dict
+			Input dictionary
+		"""
+		import ctypes as ct
+		module_name = self.s1+'bootsj_input_'+self.s2
+		for key in in_dict.keys():
+			self.set_module_var(module_name,key,in_dict[key])
+
+
+	def write_bootin(self,filename):
+		"""Wrappers writing of the BOOTSJ BOOTIN namelist
+
+		This routine wrappers write_bootsj_input in LIBSTELL
+
+		Parameters
+		----------
+		file : str
+			Path to input file.
+		"""
+		import ctypes as ct
+		module_name = self.s1+'bootsj_input_'+self.s2
+		write_bootin_namelist = getattr(self.libstell,module_name+'_write_boot_namelist_byfile'+self.s3)
+		write_bootin_namelist.argtypes = [ct.c_char_p,ct.c_long]
+		write_bootin_namelist.restype=None
+		write_bootin_namelist(filename.encode('UTF-8'),len(filename))
+
 	def read_wout(self,file):
 		"""Reads a wout file and returns a dictionary
 
@@ -410,7 +488,7 @@ class LIBSTELL():
 		else:
 		    print('   Unrecognized type:',type(val))
 		    return
-		temp=f.in_dll(self.libstell,self.s1+''+modName+'_'+self.s2+'_'+var+self.s3)
+		temp=f.in_dll(self.libstell,modName+'_'+var+self.s3)
 		if type(val) == np.ndarray:
 		    if n==1:
 		        for i,col in enumerate(val):
@@ -602,7 +680,7 @@ class FourierRep():
 		fmn = np.ndarray((mn,lt))
 		for k in range(ns):
 			fmn = np.broadcast_to(fmnc[k,:],(lt,mn)).T
-			f[k,:,:]=np.matmul((fmn*sinmt).T, cosnz)-np.matmul((fmn*cosmt).T, sinnz)
+			f[k,:,:]=np.matmul((fmn*sinmt).T, cosnz)+np.matmul((fmn*cosmt).T, sinnz)
 		return f
 		
 	def isotoro(self,r,z,zeta,svals,*args,**kwargs):
