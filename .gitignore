@@ -6,6 +6,7 @@
 *.a
 *.so
 *.zip
+*.egg-info
 .DS*
 *.dSYM
 ._*
@@ -69,3 +70,6 @@ PB3D
 
 .vscode/
 LIBSTELL/.makefile.swp
+pySTELL/build
+pySTELL/dist
+
