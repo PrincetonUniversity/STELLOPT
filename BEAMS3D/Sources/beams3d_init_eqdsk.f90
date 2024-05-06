@@ -201,10 +201,10 @@
             POT_ARR(i,:,k) = pottemp; ZEFF_ARR(i,:,k) = zetemp;N0_ARR(i,:,k) = n0temp
       ELSE
          pottemp = 0; n0temp=0; sflx = 1
-	      IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
-         POT_ARR(i,j,k) = pottemp
- 	      IF (nn0 > 0) CALL EZspline_interp(N0_spl_s,sflx,n0temp,ier)
-         N0_ARR(i,j,k) = n0temp   
+	      IF (npot > 0) CALL EZspline_interp(POT_spl_s,s_max_pot,pottemp,ier)
+         POT_ARR(i,:,k) = pottemp
+ 	      IF (nn0 > 0) CALL EZspline_interp(N0_spl_s,s_max_n0,n0temp,ier)
+         N0_ARR(i,:,k) = n0temp   
       END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
