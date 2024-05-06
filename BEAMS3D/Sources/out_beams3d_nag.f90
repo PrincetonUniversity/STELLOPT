@@ -125,22 +125,22 @@ SUBROUTINE out_beams3d_nag(t, q)
              end_state(myline) = 1
              t = my_end
           END IF
-       END IF
-         IF (nn0>0) THEN
-            CALL R8HERM3FCN(ict,1,1,fval2,i,j,k,xparam,yparam,zparam,&
-                           hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                           N04D(1,1,1,1),nr,nphi,nz) 
-            !n0=fval2!2.0D16
-            !fval2(1)=2.0D16
-            sigma_cx=0.6937e-18*(1-0.155*log10(y0*E_by_v*1.0E3))**2/(1+0.1112e-14*(y0*E_by_v*1.0E3)**(3.3)); !Reveire 1997 eq 4
-            !1.0D-19
-            p_cx=MAX(MIN(fval2(1)*sigma_cx*sqrt(y0)*dt,1.0),0.0)
-            n0_prof(mybeam,d1)   =   n0_prof(mybeam,d1) + weight(myline)*p_cx
-            weight(myline)=weight(myline)*(1.0-p_cx)
-            Write(327,*)  weight(myline)!dt, p_cx,
-            ! end_state(myline) = 1
-            ! t = my_end            
-         END IF         
+            IF (nn0>0) THEN
+               CALL R8HERM3FCN(ict,1,1,fval2,i,j,k,xparam,yparam,zparam,&
+                              hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                              N04D(1,1,1,1),nr,nphi,nz) 
+               !n0=fval2!2.0D16
+               !fval2(1)=2.0D16
+               sigma_cx=0.6937e-18*(1-0.155*log10(y0*E_by_v*1.0E3))**2/(1+0.1112e-14*(y0*E_by_v*1.0E3)**(3.3)); !Reveire 1997 eq 4
+               !1.0D-19
+               p_cx=MAX(MIN(fval2(1)*sigma_cx*sqrt(y0)*dt,1.0),0.0)
+               n0_prof(mybeam,d1)   =   n0_prof(mybeam,d1) + weight(myline)*p_cx
+               weight(myline)=weight(myline)*(1.0-p_cx)
+               Write(327,*)  weight(myline)!dt, p_cx,
+               ! end_state(myline) = 1
+               ! t = my_end            
+            END IF            
+       END IF       
     ELSE
        IF (lneut) end_state(myline)=3
     END IF
