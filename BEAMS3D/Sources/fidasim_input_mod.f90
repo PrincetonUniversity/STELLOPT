@@ -17,14 +17,14 @@ MODULE fidasim_input_mod
       nsh_prof4,  r_h, p_h, z_h, e_h, pi_h
    USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
       zaxis, phiaxis, POT_ARR, &
-      TE, TI, NE, npot, nte, nti, &
-      POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
+      TE, TI, NE, &
+      POT4D, NE4D, TE4D, TI4D, ZEFF4D, N04D, &
       BR4D, BPHI4D, BZ4D, &
       hr, hp, hz, hri, hpi, hzi, S4D, U4D, &
       rmin, rmax,  phimin, phimax, &
       rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
       raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida,nne, nte, nti, nzeff
+      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida,nne, nte, nti, nzeff, npot, nn0
    USE beams3d_runtime
    ! , ONLY: id_string, nbeams, beam, lverb, handle_err, &
    !    HDF5_OPEN_ERR,HDF5_WRITE_ERR,HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, &
@@ -126,7 +126,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
    REAL(rprec), DIMENSION(:,:,:,:,:), POINTER :: dist5d_temp
 
    DOUBLE PRECISION         :: x0, y0, z0, vol
-   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
+   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
 
    CHARACTER(LEN=8) :: temp_str8
 
@@ -813,7 +813,7 @@ SUBROUTINE write_fidasim_equilibrium
         REAL*8 :: fvalE(1,3), fval(1), xparam, yparam, zparam
 
         DOUBLE PRECISION         :: x0, y0, z0, vol
-        DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
+        DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), rtemp5(:,:,:), r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
 
         CHARACTER(LEN=8) :: temp_str8
 
@@ -1048,6 +1048,10 @@ SUBROUTINE write_fidasim_equilibrium
                     ZEFF4D(1,1,1,1),nr,nphi,nz)
                 rtemp4(l,n,m) = max(fval(1),one)
                 !write(6,'(F8.3,F8.3,F8.3)') phiaxis_fida(m),phimax,MODULO(phiaxis_fida(m),phimax)
+                CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                    hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                    N04D(1,1,1,1),nr,nphi,nz)
+                rtemp5(l,n,m) = max(fval(1),one)                
             END DO
         END DO
         END DO
@@ -1064,6 +1068,13 @@ SUBROUTINE write_fidasim_equilibrium
         CALL h5dopen_f(qid_gid, 'dene', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'units','cm^-3',ier)
         CALL write_att_hdf5(temp_gid,'description','Electron Number Density: Dene(r,z, phi)',ier)
+        CALL h5dclose_f(temp_gid,ier)
+
+        CALL write_var_hdf5(qid_gid,'denn',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=DBLE(rtemp5/1000000)) !convert from m^-3 to cm^-3
+        IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'denn',ier)
+        CALL h5dopen_f(qid_gid, 'denn', temp_gid, ier)
+        CALL write_att_hdf5(temp_gid,'units','cm^-3',ier)
+        CALL write_att_hdf5(temp_gid,'description','Cold neutral particle density: Denn(r,z, phi)',ier)
         CALL h5dclose_f(temp_gid,ier)
 
         CALL write_var_hdf5(qid_gid,'ti',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=DBLE(rtemp3/1000))
@@ -1102,6 +1113,14 @@ SUBROUTINE write_fidasim_equilibrium
         CALL write_att_hdf5(temp_gid,'units','[m^-3]',ier)
         CALL write_att_hdf5(temp_gid,'description','Electron Density',ier)
         CALL h5dclose_f(temp_gid,ier)
+
+        CALL write_var_hdf5(qid_gid2,'denn',nn0, ier,DBLVAR=DBLE(N0_AUX_F(1:nne)*1.0E-6))
+        IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'denn',ier)
+        CALL h5dopen_f(qid_gid2, 'denn', temp_gid, ier)
+        CALL write_att_hdf5(temp_gid,'units','[m^-3]',ier)
+        CALL write_att_hdf5(temp_gid,'description','Cold neutral density',ier)
+        CALL h5dclose_f(temp_gid,ier)
+
 
         CALL write_var_hdf5(qid_gid2,'te',nte, ier,DBLVAR=DBLE(TE_AUX_F(1:nte)*1.0E-3))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'te',ier)
