@@ -1016,6 +1016,7 @@ SUBROUTINE write_fidasim_equilibrium
         ALLOCATE(rtemp2(nr_fida,nz_fida, nphi_fida))
         ALLOCATE(rtemp3(nr_fida,nz_fida, nphi_fida))
         ALLOCATE(rtemp4(nr_fida,nz_fida, nphi_fida))
+        ALLOCATE(rtemp5(nr_fida,nz_fida, nphi_fida))
 
         DO l = 1,nr_fida
         DO n = 1,nz_fida
@@ -1091,7 +1092,11 @@ SUBROUTINE write_fidasim_equilibrium
         CALL write_att_hdf5(temp_gid,'description','Effective Nuclear Charge: Zeff(r,z,phi)',ier)
         CALL h5dclose_f(temp_gid,ier)
 
-
+        DEALLOCATE(rtemp)
+        DEALLOCATE(rtemp2)
+        DEALLOCATE(rtemp3)
+        DEALLOCATE(rtemp4)
+        DEALLOCATE(rtemp5)
         !--------------------------------------------------------------
         !           Profiles
         !--------------------------------------------------------------
@@ -1147,10 +1152,6 @@ SUBROUTINE write_fidasim_equilibrium
 
 
         CALL h5gclose_f(qid_gid2, ier)
-        DEALLOCATE(rtemp)
-        DEALLOCATE(rtemp2)
-        DEALLOCATE(rtemp3)
-        DEALLOCATE(rtemp4)
 
         CALL h5gclose_f(qid_gid, ier)
         ! Close file
