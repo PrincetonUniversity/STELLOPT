@@ -1,4 +1,4 @@
-##!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 This library provides a python class for reading and handling VMEC
@@ -6,20 +6,27 @@ equilibrium data.
 """
 
 # Libraries
-#from libstell import libstell
-import libstell
+import sys
+#try:
+from libstell.libstell import LIBSTELL, FourierRep
+#except:
+#	try:
+#		from libstell.libstell import LIBSTELL, FourierRep
+#	except:
+#		print('Error loading libstell')
+#		sys.exit(-1)
 
 # Constants
 
 # VMEC Class
-class VMEC(libstell.FourierRep):
+class VMEC(FourierRep):
 	"""Class for working with VMEC equilibria
 
 	"""
 	def __init__(self):
 		super().__init__()
 		self.nfp = None
-		self.libStell = libstell.LIBSTELL()
+		self.libStell = LIBSTELL()
 
 	def read_wout(self,filename):
 		"""Reads a VMEC wout_file
@@ -258,7 +265,7 @@ class VMEC_INDATA():
 	"""
 	def __init__(self, parent=None):
 		self.nfp = None
-		self.libStell = libstell.LIBSTELL()
+		self.libStell = LIBSTELL()
 
 	def read_indata(self,filename):
 		"""Reads INDATA namelist from a file
@@ -274,6 +281,21 @@ class VMEC_INDATA():
 			setattr(self, key, indata_dict[key])
 		# generate helpers
 		#print(self.rbc.shape)
+
+	def write_indata(self,filename):
+		"""Writes INDATA namelist to a file
+
+		This routine wrappers the vmec_input module writing routine.
+		Parameters
+		----------
+		filename : string
+			Input file name to write INDATA namelist to
+		"""
+		#print(self.__dict__)
+		out_dict = vars(self)
+		#del out_dict['libStell']
+		#print(d(self))
+		self.libStell.write_indata(filename,out_dict)
 
 
 
@@ -295,7 +317,7 @@ if __name__=="__main__":
 	args = parser.parse_args()
 	vmec_wout = VMEC()
 	vmec_input = VMEC_INDATA()
-	libStell = libstell.LIBSTELL()
+	libStell = LIBSTELL()
 	if args.vmec_ext:
 		linput = False
 		loutput = False
@@ -347,7 +369,7 @@ if __name__=="__main__":
 			if vmec_input.ncurr==1:
 				for i,x in enumerate(s):
 					f[i] = libStell.pcurr(x)
-					ax.set_ylabel("Current dI/ds")
+					ax.set_ylabel("Current I(s)")
 					temp_str='PCURR'
 					temp_type = vmec_input.pcurr_type
 			else:
