@@ -167,7 +167,7 @@ class LIBSTELL():
 		out_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
 		return out_data
 
-	def write_indata(self,filename):
+	def write_indata(self,filename,out_dict=None):
 		"""Wrappers writing of the VMEC INDATA namelist
 
 		This routine wrappers write_indata_namelist in LIBSTELL
@@ -176,9 +176,15 @@ class LIBSTELL():
 		----------
 		file : str
 			Path to input file.
+		out_dict : dict (optional)
+			Dictionary of items to change.
 		"""
 		import ctypes as ct
 		module_name = self.s1+'vmec_input_'+self.s2
+		# Check if we want to update values
+		if out_dict:
+			for key in out_dict:
+				self.set_module_var(module_name,key,out_dict[key])
 		write_indata_namelist = getattr(self.libstell,module_name+'_write_indata_namelist_byfile'+self.s3)
 		write_indata_namelist.argtypes = [ct.c_char_p,ct.c_long]
 		write_indata_namelist.restype=None
@@ -465,38 +471,40 @@ class LIBSTELL():
 		import numpy as np
 		import numpy.ctypeslib as npct
 		if type(val) == bool:
-		    f = ct.c_bool
+			f = ct.c_bool
 		elif type(val) == int:
-		    f = ct.c_int
+			f = ct.c_int
 		elif type(val) == float:
-		    f = ct.c_double
+			f = ct.c_double
 		elif type(val) == str:
-		    n = len(val)
-		    f = ct.c_char*n
+			n = len(val)
+			f = ct.c_char*n
 		elif type(val) in (np.ndarray,list):
-		    if type(val[0]) == bool:
-		        tt = ct.c_bool
-		    elif type(val[0]) == np.int32:
-		        tt = ct.c_int
-		    elif type(val[0]) == np.float64:
-		        tt = ct.c_double
-		    else:
-		        print('   Unrecognized type:',type(val[0]))
-		        return
-		    n = val.ndim
-		    f = tt*val.size
+			if type(val[0]) == bool:
+				tt = ct.c_bool
+			elif type(val[0]) == np.int32:
+				tt = ct.c_int
+			elif type(val[0]) == np.int64:
+				tt = ct.c_int
+			elif type(val[0]) == np.float64:
+				tt = ct.c_double
+			else:
+				print(f'   Unrecognized type ({var}):',type(val[0]))
+				return
+			n = val.ndim
+			f = tt*val.size
 		else:
-		    print('   Unrecognized type:',type(val))
-		    return
+			print(f'   Unrecognized type ({var}):',type(val))
+			return
 		temp=f.in_dll(self.libstell,modName+'_'+var+self.s3)
 		if type(val) == np.ndarray:
-		    if n==1:
-		        for i,col in enumerate(val):
-		            temp[i].value = val[i]
+			if n==1:
+				for i,col in enumerate(val):
+					temp[i] = val[i]
 		elif type(val) == str:
-		    temp.value = val.encode('UTF-8')
+			temp.value = val.encode('UTF-8')
 		else:
-		    temp.value = val
+			temp.value = val
 		return
 
 	def pcurr(self,s):
