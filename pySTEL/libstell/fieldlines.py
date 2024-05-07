@@ -1,4 +1,4 @@
-##!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 This library provides a python class for reading and handling 
@@ -122,7 +122,7 @@ class FIELDLINES():
 		iota       = np.zeros((self.nlines))
 		iota_err   = np.zeros((self.nlines))
 		for i in range(self.nlines):
-			p, residuals, rank, singular_values, rcond = np.polyfit(self.PHI_lines[0:nstep-1,i],theta[:,i],1,full=True)
+			p, residuals, rank, singular_values, rcond = np.polyfit(self.PHI_lines[0:self.nsteps-1,i],theta[:,i],1,full=True)
 			iota[i] = p[0]
 			iota_err[i] = np.sqrt(residuals)
 		iota[0] = 2.0 * iota[1] - iota[2]
