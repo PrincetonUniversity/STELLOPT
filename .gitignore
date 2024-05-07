@@ -70,6 +70,6 @@ PB3D
 
 .vscode/
 LIBSTELL/.makefile.swp
-pySTELL/build
-pySTELL/dist
+pySTEL/build
+pySTEL/dist
 
