@@ -34,12 +34,18 @@ if __name__=="__main__":
 			focus_data.plotConvergence(ax1)
 			focus_data.plotBNormal(ax2)
 			focus_data.plotPoincare(ax3)
-			ax4.remove()
-			ax4=fig.add_subplot(2,2,4,projection='3d')
-			focus_data.plotBN3D(ax4)
-			#try:
-			coil_data.read_coils_file(args.focus_ext+'.coils')
-			coil_data.plotcoilsHalfFP(ax4)
-			#except:
-			#	i=1
+			focus_data.plotIota(ax4)
 			pyplot.show()
+			# Next plot
+			fig=pyplot.figure(figsize=(1024*px,768*px))
+			ax1=fig.add_subplot(111,projection='3d')
+			focus_data.plotBN3D(ax1)
+			try:
+				coil_data.read_coils_file(args.focus_ext+'.coils')
+				coil_data.plotcoilsHalfFP(ax1)
+			except:
+				i=1
+			pyplot.show()
+			#mlab.init_notebook('x3d', 600, 600, local=True)
+			#fig = mlab.figure(bgcolor=(1,1,1), fgcolor=(0,0,0), size=(600,600))
+			#mlab.mesh(self.xsurf, self.ysurf, self.zsurf, scalars=scalars, **kwargs)
