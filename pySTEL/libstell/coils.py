@@ -5,19 +5,19 @@ This library provides a python class for working with coils files
 """
 
 # Libraries
-import libstell
+from libstell.libstell import LIBSTELL
 
 # Constants
 
 # VMEC Class
-class COILSET(libstell.LIBSTELL):
+class COILSET(LIBSTELL):
 	"""Class for working with coils files
 
 	"""
 	def __init__(self):
 		from collections import deque
 		super().__init__()
-		self.libStell = libstell.LIBSTELL()
+		self.libStell = LIBSTELL()
 		self.nfp = None
 		self.ngroups = None
 		self.groups = []
@@ -82,7 +82,7 @@ class COILSET(libstell.LIBSTELL):
 			c = current[group==(i+1)]
 			self.groups.extend([COILGROUP(x,y,z,c,coilnames[i])])
 
-	def plotcoils(self,*args,**kwargs):
+	def plotcoils(self,ax=None,*args,**kwargs):
 		"""Plots a coilset in 3D
 
 		This routine plots coils in 3D
@@ -90,8 +90,10 @@ class COILSET(libstell.LIBSTELL):
 		import numpy as np
 		import matplotlib.pyplot as pyplot
 		import mpl_toolkits.mplot3d as mplot3d
-		fig=kwargs.pop('fig',pyplot.figure())
-		ax=kwargs.pop('axes',fig.add_subplot(111,projection='3d'))
+		lplotnow = False
+		if not ax:
+			ax = pyplot.axes(projection='3d')
+			lplotnow = True
 		c_temp = self.color_cycle[0]
 		for i in range(self.ngroups):
 			for j in range(self.groups[i].ncoils):
@@ -111,7 +113,31 @@ class COILSET(libstell.LIBSTELL):
 		ax.set_title('COILS')
 		ax.set_aspect('equal', adjustable='box')
 		pyplot.legend(loc="upper left")
-		pyplot.show()
+		if lplotnow: pyplot.show()
+
+	def plotcoilsHalfFP(self,ax=None,*args,**kwargs):
+		"""Plots a coilset for a half field period
+
+		This routine plots coils in 3D
+		"""
+		import numpy as np
+		import matplotlib.pyplot as pyplot
+		import mpl_toolkits.mplot3d as mplot3d
+		lplotnow = False
+		if not ax:
+			ax = pyplot.axes(projection='3d')
+			lplotnow = True
+		c_temp = self.color_cycle[0]
+		for i in range(self.ngroups):
+			j = 0
+			ax.plot(self.groups[i].coils[j].x, \
+				   self.groups[i].coils[j].y, \
+				   self.groups[i].coils[j].z, c=c_temp, label=self.groups[i].name)
+			self.color_cycle.rotate(1)
+			c_temp = self.color_cycle[0]
+		ax.set_aspect('equal', adjustable='box')
+		pyplot.legend(loc="upper left")
+		if lplotnow: pyplot.show()
 
 	def plotcoilsRZ(self,*args,**kwargs):
 		"""Plots each coil in the RZ plot
