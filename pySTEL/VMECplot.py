@@ -86,6 +86,7 @@ class MyApp(QMainWindow):
 		self.ui.uslider.valueChanged.connect(self.CutSelect)
 		self.ui.vslider.valueChanged.connect(self.CutSelect)
 		self.ui.savebutton.clicked.connect(self.plot_to_file)
+		self.update_plot(self)
 
 	def FileSelect(self,i):
 		self.vmec_data.read_wout(self.ui.FileName.currentText())
@@ -127,6 +128,7 @@ class MyApp(QMainWindow):
 			self.ui.rhoslider.setEnabled(0)
 			self.ui.uslider.setEnabled(0)
 			self.ui.vslider.setEnabled(0)
+			self.update_plot(self)
 		elif (i<10):
 			self.ui.rho_button.setChecked(1)
 			self.ui.pol_button.setEnabled(0)
@@ -184,7 +186,43 @@ class MyApp(QMainWindow):
 		self.fig.clf()
 		self.ax = self.fig.add_subplot(111)
 		if (plot_name == 'Summary'):
-			print(plot_name)
+			#self.ax.plot([0,1],[0,0],'k')
+			self.ax.text(0.05,0.95,rf'Run: {self.vmec_data.input_extension.strip()}', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.91,rf'NS: {self.vmec_data.ns}', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.87,rf'MPOL: {self.vmec_data.mpol}', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.83,rf'NTOR: {self.vmec_data.ntor}', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.79,rf'NFP: {self.vmec_data.nfp}', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.75,rf'MGRID: {self.vmec_data.mgrid_file.strip()}', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.60,rf'Aspect: {self.vmec_data.aspect:5.3f}', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.56,rf'Rmajor: {self.vmec_data.rmajor:5.3f} [m]', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.52,rf'Aminor: {self.vmec_data.aminor:5.3f} [m]', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.48,rf'Volume: {self.vmec_data.volume:5.1f} [$m^3$]', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.33,r'$<\beta>_{total}$'+f': {self.vmec_data.betatot*100:3.2f} %', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.29,r'$<\beta>_{poloidal}$'+f': {self.vmec_data.betapol*100:3.2f} %', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.25,r'$<\beta>_{toroidal}$'+f': {self.vmec_data.betator*100:3.2f} %', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.05,0.21,r'$\beta_{axis}$'+f': {self.vmec_data.betaxis*100:3.2f} %', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.65,0.91,rf'<B>: {self.vmec_data.volavgb:3.2f} [T]', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.65,0.87,rf'<B_0>: {self.vmec_data.b0:3.2f} [T]', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.65,0.83,r'$B_{ECRH}$:'+f' {sum(self.vmec_data.bmnc[0,:]):3.2f} [T]', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
+			self.ax.text(0.65,0.79,r'$I_{tor}$:'+f' {self.vmec_data.b0:3.2f} [A]', horizontalalignment='left',\
+				verticalalignment='center', transform=self.ax.transAxes)
 		elif (plot_name == 'Iota'):
 			self.ax.plot(self.nflux,self.vmec_data.iotaf)
 			self.ax.set_xlabel('Normalized Flux')
