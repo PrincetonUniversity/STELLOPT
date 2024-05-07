@@ -26,7 +26,7 @@
                                dist5d_fida, win_dist5d_fida,&
                                win_epower, win_ipower, win_ndot, win_jprof, &
                                win_dense, nsh_prof4, h2_prof, h3_prof, &
-      h4_prof, h5_prof, r_h, p_h, z_h, e_h, pi_h
+                               h4_prof, h5_prof, r_h, p_h, z_h, e_h, pi_h
       USE fidasim_input_mod, ONLY: beams3d_write_fidasim
       USE wall_mod
       USE mpi_params
