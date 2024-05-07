@@ -6,20 +6,19 @@ transform data.
 """
 
 # Libraries
-#from libstell import libstell
-import libstell
+from libstell.libstell import LIBSTELL, FourierRep
 
 # Constants
 
 # VMEC Class
-class BOOZER(libstell.FourierRep):
+class BOOZER(FourierRep):
 	"""Class for working with VMEC equilibria
 
 	"""
 	def __init__(self):
 		super().__init__()
 		self.nfp = None
-		self.libStell = libstell.LIBSTELL()
+		self.libStell = LIBSTELL()
 
 	def read_boozer(self,filename):
 		"""Reads a BOOZER boozmn file
@@ -36,6 +35,8 @@ class BOOZER(libstell.FourierRep):
 		boozmn_dict = self.libStell.read_boozer(filename)
 		for key in boozmn_dict:
 			setattr(self, key, boozmn_dict[key])
+		self.mboz_b = int(max(np.squeeze(self.ixm_b)))
+		nmax = int(max(np.squeeze(self.ixn_b))/self.nfp_b)
 
 	def plotBmnSpectrum(self,sval,ax=None):
 		"""Plots the boozer spectrum for a surface
@@ -124,14 +125,16 @@ if __name__=="__main__":
 		help="Plot the boozer file.", default = False)
 	parser.add_argument("-s", "--surf", dest="sval",
 		help="Equilibrium surface to plot.", default = None)
+	parser.add_argument("--bootsj", dest="lbootsj", action='store_true',
+		help="Output a bootsj file.", default = False)
 	boozmn_data = BOOZER()
 	args = parser.parse_args()
 	if args.booz_ext:
-		#try:
-		boozmn_data.read_boozer(args.booz_ext)
-		#except:
-		#	print(f'Could not file boozmn file: {args.booz_ext}')
-		#	sys.exit(-1)
+		try:
+			boozmn_data.read_boozer(args.booz_ext)
+		except:
+			print(f'Could not file boozmn file: {args.booz_ext}')
+			sys.exit(-1)
 		if args.lplot:
 			if not args.sval:
 				sval = int(0.25*boozmn_data.ns_b)
@@ -143,6 +146,26 @@ if __name__=="__main__":
 			boozmn_data.plotBmnSpectrum(sval,ax=ax1)
 			boozmn_data.plotBsurf(sval,ax=ax2)
 			pyplot.show()
+		if args.lbootsj:
+			filename = 'in_bootsj.'+args.booz_ext
+			f = open(filename,'w')
+			f.write(f'{args.booz_ext}\n')
+			for i in range(1,boozmn_data.ns_b):
+				f.write(f' {i+1}')
+			f.write('\n')
+			f.close()
+			# Setup bootin dict
+			bootin_dict={'mbuse':int(max(np.squeeze(boozmn_data.ixm_b))),\
+				'nbuse':int(max(np.squeeze(boozmn_data.ixn_b))/boozmn_data.nfp_b),\
+				'teti':1.0,'zeff1':1.0,'dens0':1.0,'tempres':1.0,\
+				'damp_bs':0.001,\
+				'ate':np.array([1.0,-1.0,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.]),\
+				'ati':np.array([1.0,-1.0,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.]),\
+				}
+			boozmn_data.libStell.set_bootin(bootin_dict)
+			boozmn_data.libStell.write_bootin('input.'+args.booz_ext)
+	sys.exit(0)
+
 
 
 
