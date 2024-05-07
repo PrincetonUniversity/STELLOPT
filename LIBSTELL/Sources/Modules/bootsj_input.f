@@ -37,6 +37,20 @@
       READ (iunit, nml=bootin, iostat=istat)
 
       END SUBROUTINE read_boot_namelist
+
+      SUBROUTINE read_boot_namelist_byfile (filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      
+      iunit = 100
+      istat = 0
+      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      IF (istat .ne. 0) RETURN
+      CALL read_boot_namelist(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE read_boot_namelist_byfile
       
       SUBROUTINE write_bootsj_input(iunit,istat)
       INTEGER, INTENT(in)    :: iunit
@@ -58,6 +72,21 @@
      1             'ATI',(ati(n), n=0,11)
       WRITE(iunit,'(A)') '/'
       END SUBROUTINE write_bootsj_input
+
+      SUBROUTINE write_boot_namelist_byfile (filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      
+      iunit = 100
+      istat = 0
+      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      IF (istat .ne. 0) RETURN
+      CALL FSEEK(iunit, 0, 2, istat) ! Go to end
+      CALL write_bootsj_input(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE write_boot_namelist_byfile
 
       SUBROUTINE BCAST_BOOTSJ_INPUT(local_master,comm,istat)
 !DEC$ IF DEFINED (MPI_OPT)
