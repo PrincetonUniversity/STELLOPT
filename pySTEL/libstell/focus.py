@@ -227,7 +227,7 @@ class FOCUS():
 		tri = mtri.Triangulation(u, v)
 		vals = self.Bn.T.flatten()
 		colors = np.mean(vals[tri.triangles], axis=1)
-		tsurf=ax.plot_trisurf(vertex[:,0],vertex[:,1],vertex[:,2], triangles=tri.triangles,cmap='jet',shade=True)
+		tsurf=ax.plot_trisurf(vertex[:,0],vertex[:,1],vertex[:,2], triangles=tri.triangles,cmap='jet',shade=True, alpha=1.0)
 		tsurf.set_array(colors)
 		tsurf.autoscale()
 		pyplot.colorbar(tsurf,label='$B_n$ [T]',ax=ax)
@@ -261,6 +261,28 @@ class FOCUS():
 		ax.set_aspect('equal')
 		ax.set_xlim(rmin*0.9,rmax*1.1)
 		ax.set_ylim(zmin*1.1,zmax*1.1)
+		if lplotnow: pyplot.show()
+
+	def plotIota(self,ax=None):
+		"""Plots the FOCUS Iota
+
+		This routine plots the FOCUS rotational transform
+
+		Parameters
+		----------
+		ax : axes (optional)
+			Matplotlib axes object to plot to.
+		"""
+		import numpy as np
+		import matplotlib.pyplot as pyplot
+		lplotnow = False
+		if not ax:
+			ax = pyplot.axes()
+			lplotnow = True
+		ax.plot(self.ppr[0]-self.ppr[0,1],self.iota)
+		ax.set_xlabel('r [m]')
+		ax.set_ylabel(r'$\iota$')
+		ax.set_ylabel('Rotational Transform')
 		if lplotnow: pyplot.show()
 
 # Main routine
