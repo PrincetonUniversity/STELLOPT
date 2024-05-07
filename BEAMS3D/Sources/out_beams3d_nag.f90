@@ -136,7 +136,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                p_cx=MAX(MIN(fval2(1)*sigma_cx*sqrt(y0)*dt,1.0),0.0)
                n0_prof(mybeam,d1)   =   n0_prof(mybeam,d1) + weight(myline)*p_cx
                weight(myline)=weight(myline)*(1.0-p_cx)
-               Write(327,*)  weight(myline)!dt, p_cx,
+               !Write(327,*)  weight(myline)!dt, p_cx,
                ! end_state(myline) = 1
                ! t = my_end            
             END IF            
