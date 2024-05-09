@@ -89,7 +89,6 @@ class COILSET(LIBSTELL):
 		"""
 		import numpy as np
 		import matplotlib.pyplot as pyplot
-		import mpl_toolkits.mplot3d as mplot3d
 		lplotnow = False
 		if not ax:
 			ax = pyplot.axes(projection='3d')
@@ -272,6 +271,73 @@ class COILSET(LIBSTELL):
 				az = az + azt
 		return ax,ay,az
 
+	def coiloffset(self,dist=0.0):
+		"""Calculates offset from coils
+
+		This routine calculates an offset position based on the
+		geometric mean of the coil. It returns an odered list of points.
+
+		Parameters
+		----------
+		dist : real
+			Offset distance in [m] (- is toward geometric mean)
+		Returns
+		----------
+		vertex : ndarray [3,ncoils,npts]
+			Order set of points for each coil.
+		"""
+		import numpy as np
+		from scipy import interpolate
+		ntheta = 64
+		l_new = np.linspace(0,1,ntheta)
+		ncoils_total = 0
+		for i in range(self.ngroups):
+			for j in range(self.groups[i].ncoils):
+				ncoils_total = ncoils_total + 1
+		k = 0
+		vertex = np.zeros((3,ncoils_total,ntheta-1))
+		P_order = np.zeros(ncoils_total)
+		for i in range(self.ngroups):
+			for j in range(self.groups[i].ncoils):
+				[x0,y0,z0] = self.groups[i].coils[j].geomCenter()
+				R0 = np.sqrt(x0*x0+y0*y0)
+				P0 = np.arctan2(y0,x0)
+				P_order[k] = P0
+				l = np.linspace(0,1,self.groups[i].coils[j].npts)
+				x = np.interp(l_new,l,self.groups[i].coils[j].x,period=1)
+				y = np.interp(l_new,l,self.groups[i].coils[j].y,period=1)
+				z = np.interp(l_new,l,self.groups[i].coils[j].z,period=1)
+				R = np.sqrt(x*x+y*y)
+				p = np.arctan2(y,x)
+				dr = R-R0
+				dz = z-z0
+				d  = np.sqrt(dr*dr+dz*dz)
+				r2 = R + dr*dist/d
+				z2 = z + dz*dist/d
+				x2 = r2 * np.cos(p)
+				y2 = r2 * np.sin(p)
+				vertex[0][k][:] = x2[0:-1]
+				vertex[1][k][:] = y2[0:-1]
+				vertex[2][k][:] = z2[0:-1]
+				k = k + 1
+		# Reorder in phi
+		Pdex = P_order.argsort()
+		vertex = vertex[:,Pdex,:]
+		P_order = P_order[Pdex]
+		# Now Smooth
+		#nphi = 180
+		#phi_new = np.linspace(-np.pi,np.pi,nphi)
+		#vertex2 = np.zeros((3,nphi,ntheta))
+		#for i in range(ntheta):
+		#	x_spl = interpolate.splrep(P_order, np.squeeze(vertex[0,:,i]),per=True)
+		#	y_spl = interpolate.splrep(P_order, np.squeeze(vertex[1,:,i]),per=True)
+		#	z_spl = interpolate.splrep(P_order, np.squeeze(vertex[2,:,i]),per=True)
+		#	vertex2[0,:,i] = interpolate.splev(phi_new,x_spl)
+		#	vertex2[1,:,i] = interpolate.splev(phi_new,y_spl)
+		#	vertex2[2,:,i] = interpolate.splev(phi_new,z_spl)
+		return vertex
+
+
 class COILGROUP():
 	"""Class which defines a coil group
 
@@ -391,6 +457,25 @@ class COIL():
 		by = sum( fa * self.vy * current ) - z * ax + x * az
 		bz = sum( fa * self.vz * current ) - x * ay + y * ax
 		return fac*bx, fac*by, fac*bz
+
+	def geomCenter(self):
+		"""Calculates geometric center of the coil
+
+		This routine calculates the geometric center of the coil.
+
+		Parameters
+		----------
+		Returns
+		----------
+		x : real
+			Center in x coordinate [m]
+		y : real
+			Center in y coordinate [m]
+		z : real
+			Center in z coordinate [m]
+		"""
+		import numpy as np
+		return np.mean(self.x),np.mean(self.y),np.mean(self.z)
 
 if __name__=="__main__":
 	import sys
