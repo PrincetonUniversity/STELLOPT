@@ -9,6 +9,7 @@ quantities related to nuclear fusion
 #from libstell import libstell
 
 # Constants
+EC = 1.602176634E-19 # Electron charge
 
 # VMEC Class
 class FUSION():
@@ -36,6 +37,12 @@ class FUSION():
 						 "DDT"   : 31.3970 ,\
 						 "DDHe3" : 31.3970 ,\
 						 "DHe3"  : 68.7508 }
+		self.E_DT_He    = 3.52E6*EC
+		self.E_DD_T     = 1.01E6*EC
+		self.E_DD_p     = 3.02E6*EC
+		self.E_DD_He3   = 0.82E6*EC
+		self.E_DHe3_He4 = 3.60E6*EC
+		self.E_DHe3_p   = 1.47E7*EC
 
 	def sigmaBH(self, ti, reaction='DT'):
 		"""Computs the Bosch Hale Fusion cross sections
@@ -60,7 +67,7 @@ class FUSION():
 		C = self.C_DICT[reaction]
 		BG = self.BG_DICT[reaction]
 		MRC2 = self.MRC2_DICT[reaction]
-		ti_kev = ti * 1000.0
+		ti_kev = ti * 1E-3
 		zeta   = ( ( ( C[5] * ti_kev ) + C[3] ) * ti_kev + C[1] ) * ti_kev
 		zeta   = zeta / ( ( ( ( C[6] * ti_kev ) + C[4] ) * ti_kev + C[2] ) * ti_kev + 1.0 )
 		zeta   = 1.0 - zeta
