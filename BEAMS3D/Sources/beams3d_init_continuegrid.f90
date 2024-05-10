@@ -1,10 +1,10 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    beams3d_init_restartgrid
+!     Subroutine:    beams3d_init_continuegrid
 !     Authors:       D. Kulla (david.kulla@ipp.mpg.de) , S. Lazerson (samuel.lazerson@ipp.mpg.de)
 !     Date:          06/07/2023
 !     Description:   This subroutine reads the BEAMS3D files.
 !-----------------------------------------------------------------------
-SUBROUTINE beams3d_init_restartgrid
+SUBROUTINE beams3d_init_continuegrid
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -176,11 +176,11 @@ SUBROUTINE beams3d_init_restartgrid
    CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
    CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
    CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-   IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_restartgrid',ierr_mpi)
+   IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_continuegrid',ierr_mpi)
 #endif
 
    RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------
-END SUBROUTINE beams3d_init_restartgrid
+END SUBROUTINE beams3d_init_continuegrid
