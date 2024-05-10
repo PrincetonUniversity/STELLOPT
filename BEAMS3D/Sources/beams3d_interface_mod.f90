@@ -250,6 +250,13 @@ CONTAINS
                 i = i + 1
                 lrestart_particles = .true.
                 CALL GETCARG(i, restart_string, numargs)
+             case ("-continue")
+               i = i + 1
+               lcontinue_grid = .true.
+               CALL GETCARG(i, id_string, numargs)
+               i = i + 1
+               CALL GETCARG(i, continue_grid_string, numargs)
+               continue_grid_string=TRIM(continue_grid_string)                   
              case ("-continue_grid")
                i = i + 1
                lcontinue_grid = .true.
