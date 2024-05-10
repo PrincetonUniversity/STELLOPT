@@ -250,6 +250,23 @@ class VMEC(FourierRep):
 		S22 = np.trapz(S22, x=theta, axis=1)*scale_fact
 		return S11,S12,S21,S22
 
+	def getCurrentPoloidal(self):
+		"""Returns the poloidal total current
+		This routine returns the total poloidal current as used by the
+		BNORM code.
+
+		Returns
+		----------
+		curpol : float
+			Total poloidal current B_v*2*pi/nfp (m=0,n=0)
+		"""
+		import numpy as np
+		curpol = 1.0
+		for mn in range(self.mnmax_nyq):
+			if (self.xm_nyq[mn]==0 and self.xn_nyq[mn]==0):
+				curpol = 2.0*self.bsubvmnc[self.ns-1,mn]*np.pi/self.nfp 
+		return curpol
+
 
 # VMEC INDATA Class
 class VMEC_INDATA():
