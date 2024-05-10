@@ -115,17 +115,17 @@
          CALL read_fieldlines_mag('fieldlines_'//TRIM(id_string)//'.h5',MPI_COMM_SHARMEM,ier)
          phimin = 0
          CALL get_fieldlines_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
-      ELSE IF (lrestart_grid .and. lread_input) THEN
+      ELSE IF (lcontinue_grid .and. lread_input) THEN
          CALL read_beams3d_input('input.'//TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE:     input.' // TRIM(id_string)
-         IF (lverb) WRITE(6,'(A)') '   RESTART GRID FILE: ' // TRIM(restart_grid_string)
-         CALL read_beams3d_mag(TRIM(restart_grid_string),MPI_COMM_SHARMEM,ier)
+         IF (lverb) WRITE(6,'(A)') '   RESTART GRID FILE: ' // TRIM(continue_grid_string)
+         CALL read_beams3d_mag(TRIM(continue_grid_string),MPI_COMM_SHARMEM,ier)
          phimin = 0
          CALL get_beams3d_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)         
       END IF
 
       ! Handle particle restarting
-      IF (lrestart_particles .or. lrestart_grid) THEN
+      IF (lrestart_particles .or. lcontinue_grid) THEN
         ldepo = .false.
         lbbnbi = .false.
         lbeam = .false.
@@ -191,7 +191,7 @@
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF ((lvmec .or. leqdsk .or. lhint .or. lfieldlines  .or. lrestart_grid) .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk .or. lhint .or. lfieldlines  .or. lcontinue_grid) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Plasma Parameters -----'
          ! TE
          IF (nte>0) THEN
@@ -327,7 +327,7 @@
          CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
          CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
       END IF
-      !IF (lrestart_grid) THEN
+      !IF (lcontinue_grid) THEN
          !CALL beams3d_init_restart                
       !ELSE
          ! Create the background grid
@@ -417,10 +417,10 @@
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_eqdsk
-      ELSE IF (lrestart_grid) THEN
+      ELSE IF (lcontinue_grid) THEN
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
-         CALL beams3d_init_restartgrid         
+         CALL beams3d_init_continuegrid         
       END IF
 
       ! Adjust magnetic field for magnetic material
