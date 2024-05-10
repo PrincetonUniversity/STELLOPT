@@ -117,7 +117,8 @@ class COILSET(LIBSTELL):
 	def plotcoilsHalfFP(self,ax=None,*args,**kwargs):
 		"""Plots a coilset for a half field period
 
-		This routine plots coils in 3D
+		This routine plots coils in 3D for a half field period.
+		Really it plots the first coil in each group.
 		"""
 		import numpy as np
 		import matplotlib.pyplot as pyplot
@@ -138,14 +139,62 @@ class COILSET(LIBSTELL):
 		pyplot.legend(loc="upper left")
 		if lplotnow: pyplot.show()
 
-	def plotcoilsRZ(self,*args,**kwargs):
-		"""Plots each coil in the RZ plot
+	def plotcoilsDist(self,ax=None,*args,**kwargs):
+		"""Plots a coilset for a half field period
 
-		This routine plots coils in 3D
+		This routine plots coils in 3D for a half field period.
+		Really it plots the first coil in each group.
 		"""
 		import numpy as np
 		import matplotlib.pyplot as pyplot
-		import mpl_toolkits.mplot3d as mplot3d
+		from mpl_toolkits.mplot3d.art3d import Line3DCollection
+		lplotnow = False
+		if not ax:
+			ax = pyplot.axes(projection='3d')
+			lplotnow = True
+		c_temp = self.color_cycle[0]
+		xmin = 1E6; xmax = -1E6
+		ymin = 1E6; ymax = -1E6
+		zmin = 1E6; zmax = -1E6
+		vmin = 1E6; vmax = -1E6
+		for i in range(self.ngroups):
+			j = 0
+			x = self.groups[i].coils[j].x
+			y = self.groups[i].coils[j].y
+			z = self.groups[i].coils[j].z
+			v = self.groups[i].coils[j].dist_surf
+			points = np.array([x,y,z]).transpose().reshape(-1,1,3)
+			segs = np.concatenate([points[:-1],points[1:]],axis=1)
+			lc = Line3DCollection(segs, cmap=pyplot.get_cmap('jet'))
+			lc.set_array(v)
+			h = ax.add_collection(lc)
+			#ax.set_xlim(min(x.min(),xmin), max(x.max(),xmax))
+			#ax.set_ylim(min(y.min(),ymin), max(y.max(),ymax))
+			#ax.set_zlim(min(z.min(),zmin), max(z.max(),zmax))
+			xmin = min(x.min(),xmin)
+			xmax = max(x.max(),xmax)
+			ymin = min(y.min(),ymin)
+			ymax = max(y.max(),ymax)
+			zmin = min(z.min(),zmin)
+			zmax = max(z.max(),zmax)
+			vmin = min(v.min(),vmin)
+			vmax = max(v.max(),vmax)
+			print(v.min(),v.max(),vmin,vmax)
+		ax.axes.set_xlim3d(left=xmin, right=xmax) 
+		ax.axes.set_ylim3d(bottom=ymin, top=ymax) 
+		ax.axes.set_zlim3d(bottom=zmin, top=zmax) 
+		ax.set_aspect('equal', adjustable='box')
+		cbar = pyplot.colorbar(h,label='Distance [m]',ax=ax)
+		h.set_clim(vmin,vmax)
+		if lplotnow: pyplot.show()
+
+	def plotcoilsRZ(self,*args,**kwargs):
+		"""Plots each coil in the RZ plot
+
+		This routine plots coils in 2D R,Z projection.
+		"""
+		import numpy as np
+		import matplotlib.pyplot as pyplot
 		c_temp = self.color_cycle[0]
 		for i in range(self.ngroups):
 			fig=kwargs.pop('fig',pyplot.figure())
@@ -337,6 +386,28 @@ class COILSET(LIBSTELL):
 		#	vertex2[2,:,i] = interpolate.splev(phi_new,z_spl)
 		return vertex
 
+	def coilSurfDist(self,xs,ys,zs):
+		"""Calculates coil-surface distance
+
+		This routine calculates the distance between a coil and a 
+		surface defined by points in cartesian coordiantes (x,y,z).
+		Values are stored in the coil atribute dist_coil.
+
+		Parameters
+		----------
+		xs : ndarray
+			X points defining surface [m]
+		ys : ndarray
+			Y points defining surface [m]
+		zs : ndarray
+			Z points defining surface [m]
+		"""
+		for i in range(self.ngroups):
+			for j in range(self.groups[i].ncoils):
+				self.groups[i].coils[j].surfDist(xs,ys,zs)
+
+
+
 
 class COILGROUP():
 	"""Class which defines a coil group
@@ -375,6 +446,7 @@ class COIL():
 		self.vx = self.y[0:-1]*self.dz - self.z[0:-1]*self.dy
 		self.vy = self.z[0:-1]*self.dx - self.x[0:-1]*self.dz
 		self.vz = self.x[0:-1]*self.dy - self.y[0:-1]*self.dx
+		self.dist_surf = None
 
 	def vecpot(self,x,y,z,current):
 		"""Calculates Vector potential
@@ -476,6 +548,194 @@ class COIL():
 		"""
 		import numpy as np
 		return np.mean(self.x),np.mean(self.y),np.mean(self.z)
+
+	def surfDist(self,xs,ys,zs):
+		"""Calculates coil-surface distance
+
+		This routine calculates the distance between a coil and a 
+		surface defined by points in cartesian coordiantes (x,y,z).
+
+		Parameters
+		----------
+		xs : ndarray
+			X points defining surface [m]
+		ys : ndarray
+			Y points defining surface [m]
+		zs : ndarray
+			Z points defining surface [m]
+		"""
+		import numpy as np
+		nsurf = len(xs)
+		xc = np.broadcast_to(self.x,(nsurf,self.npts)).T
+		yc = np.broadcast_to(self.y,(nsurf,self.npts)).T
+		zc = np.broadcast_to(self.z,(nsurf,self.npts)).T
+		x  = np.broadcast_to(xs,(self.npts,nsurf))
+		y  = np.broadcast_to(ys,(self.npts,nsurf))
+		z  = np.broadcast_to(zs,(self.npts,nsurf))
+		dx = xc - x
+		dy = yc - y
+		dz = zc - z
+		dl2 = dx*dx + dy * dy + dz * dz
+		self.dist_surf = np.sqrt(np.min(dl2,axis=1))
+		return
+
+	def spline_tangent(self, order=3, der=1):
+		"""Calculate the tangent of coil using spline interpolation
+
+		This routine calculates the tangent of a coil using spline
+		interpolation. Order and derivative level can be set by user.
+
+		Parameters
+		----------
+		order : int (optional)
+			Order of spline (default: 3)
+		der : int
+			Derivative order (default:1)
+		"""
+		import numpy as np
+		from scipy import interpolate
+		t = np.linspace(0, 2 * np.pi, len(self.x), endpoint=True)
+		self.dt = 2 * np.pi / (len(self.x) - 1)
+		fx = interpolate.splrep(t, self.x, s=0, k=order)
+		fy = interpolate.splrep(t, self.y, s=0, k=order)
+		fz = interpolate.splrep(t, self.z, s=0, k=order)
+		self.xt = interpolate.splev(t, fx, der=1)
+		self.yt = interpolate.splev(t, fy, der=1)
+		self.zt = interpolate.splev(t, fz, der=1)
+		if der == 2:
+			self.xa = interpolate.splev(t, fx, der=2)
+			self.ya = interpolate.splev(t, fy, der=2)
+			self.za = interpolate.splev(t, fz, der=2)
+		return
+
+	def finiteBuildCoil(self, width=0.1, height=0.1, frame="centroid", **kwargs):
+		"""Expand single coil filament to a finite-build coil.
+
+		This routine expands a coil filament of a finite-build coil.
+		The coil width, height and build frame can be set by the user.
+
+		Parameters
+		----------
+		width : float (optional)
+			Toroidal width of the coil [m] (default: 0.1)
+		height : float (optional)
+			Radial height of the coil [m] (default: 0.1)
+		frame : string (optional)
+			Finite build frame "centroid", "frenet", "parallel" (default:centroid)
+
+		Returns
+		----------
+		x : ndarry
+			X-coordiante for plotting as a mesh [m]
+		y : ndarry
+			Y-coordiante for plotting as a mesh [m]
+		z : ndarry
+			Z-coordiante for plotting as a mesh [m]
+		"""
+		n = self.npts
+		# calculate the tangent
+		if self.xt is None:
+			self.spline_tangent()
+		xt = self.xt
+		yt = self.yt
+		zt = self.zt
+		tt = np.sqrt(xt * xt + yt * yt + zt * zt)
+		xt = xt / tt
+		yt = yt / tt
+		zt = zt / tt
+
+		# use surface normal if needed
+		if frame == "centroid":
+			# use the geometry center is a good idea
+			[center_x,center_y,center_z]=self.geomCenter()
+			xn = self.x - center_x
+			yn = self.y - center_y
+			zn = self.z - center_z
+			nt = xn * xt + yn * yt + zn * zt
+			xn = xn - nt * xt
+			yn = yn - nt * yt
+			zn = zn - nt * zt
+		elif frame == "frenet":
+			self.spline_tangent(der=2)
+			xn = self.xa
+			yn = self.ya
+			zn = self.za
+		elif frame == "parallel":
+			# parallel transport frame
+			# Hanson & Ma, Parallel Transp ort Approach to Curve Framing, 1995
+			def rotate(x, ang):
+				c = np.cos(ang)
+				s = np.sin(ang)
+				return [
+					[
+						c + x[0] ** 2 * (1 - c),
+						x[0] * x[1] * (1 - c) - s * x[2],
+						x[2] * x[0] * (1 - c) + s * x[1],
+					],
+					[
+						x[0] * x[1] * (1 - c) + s * x[2],
+						c + x[1] ** 2 * (1 - c),
+						x[2] * x[1] * (1 - c) - s * x[0],
+					],
+					[
+						x[0] * x[2] * (1 - c) - s * x[1],
+						x[1] * x[2] * (1 - c) + s * x[0],
+						c + x[2] ** 2 * (1 - c),
+					],
+				]
+
+			T = np.transpose([self.xt, self.yt, self.zt])
+			T = T / np.linalg.norm(T, axis=1)[:, np.newaxis]
+			B = np.cross(T[:-1], T[1:], axis=1)
+			B = B / np.linalg.norm(B, axis=1)[:, np.newaxis]
+			theta = np.arccos(np.sum(T[:-1] * T[1:], axis=1))
+			V = np.zeros_like(T)
+			kwargs.setdefault("vx", self.x[0] - np.average(self.x[0:-1]))
+			kwargs.setdefault("vy", self.y[0] - np.average(self.y[0:-1]))
+			vx = kwargs["vx"]
+			vy = kwargs["vy"]
+			vz = -(vx * T[0, 0] + vy * T[0, 1]) / T[0, 2]
+			vv = np.linalg.norm([vx, vy, vz])
+			V[0, :] = [vx / vv, vy / vv, vz / vv]
+			print(np.dot(V[0, :], T[0, :]))
+			for i in range(len(theta)):
+				V[i + 1, :] = rotate(B[i, :], theta[i]) @ V[i, :]
+			xn = V[:, 0]
+			yn = V[:, 1]
+			zn = V[:, 2]
+		else:
+			assert True, "not finished"
+
+		nn = np.sqrt(xn * xn + yn * yn + zn * zn)
+		xn = xn / nn
+		yn = yn / nn
+		zn = zn / nn
+		# calculate the bi-normal
+		xb = yt * zn - yn * zt
+		yb = zt * xn - zn * xt
+		zb = xt * yn - xn * yt
+		bb = np.sqrt(xb * xb + yb * yb + zb * zb)
+		xb = xb / bb
+		yb = yb / bb
+		zb = zb / bb
+		# get the boundary lines
+		z1 = self.z - width / 2 * zb + height / 2 * zn
+		x1 = self.x - width / 2 * xb + height / 2 * xn
+		x2 = self.x + width / 2 * xb + height / 2 * xn
+		y2 = self.y + width / 2 * yb + height / 2 * yn
+		z2 = self.z + width / 2 * zb + height / 2 * zn
+		x3 = self.x + width / 2 * xb - height / 2 * xn
+		y3 = self.y + width / 2 * yb - height / 2 * yn
+		z3 = self.z + width / 2 * zb - height / 2 * zn
+		x4 = self.x - width / 2 * xb - height / 2 * xn
+		y4 = self.y - width / 2 * yb - height / 2 * yn
+		z4 = self.z - width / 2 * zb - height / 2 * zn
+		y1 = self.y - width / 2 * yb + height / 2 * yn
+		# assemble
+		xx = np.array([x1, x2, x3, x4, x1])
+		yy = np.array([y1, y2, y3, y4, y1])
+		zz = np.array([z1, z2, z3, z4, z1])
+		return xx, yy, zz
 
 if __name__=="__main__":
 	import sys

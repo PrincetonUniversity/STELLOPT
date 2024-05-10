@@ -18,6 +18,10 @@ if __name__=="__main__":
 		help="VMEC file extension", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
 		help="Plot the FOCUS data.", default = False)
+	parser.add_argument("--plot3d", dest="lplot3d", action='store_true',
+		help="Plot the plams surface and coil in 3D", default = False)
+	parser.add_argument("--plotcoildist", dest="lplotcoildist", action='store_true',
+		help="Plot the coil-plasma distance.", default = False)
 	focus_data = FOCUS()
 	coil_data=COILSET()
 	args = parser.parse_args()
@@ -36,7 +40,8 @@ if __name__=="__main__":
 			focus_data.plotPoincare(ax3)
 			focus_data.plotIota(ax4)
 			pyplot.show()
-			# Next plot
+		if args.lplot3d:
+			px = 1/pyplot.rcParams['figure.dpi']
 			fig=pyplot.figure(figsize=(1024*px,768*px))
 			ax1=fig.add_subplot(111,projection='3d')
 			focus_data.plotBN3D(ax1)
@@ -46,6 +51,14 @@ if __name__=="__main__":
 			except:
 				i=1
 			pyplot.show()
-			#mlab.init_notebook('x3d', 600, 600, local=True)
-			#fig = mlab.figure(bgcolor=(1,1,1), fgcolor=(0,0,0), size=(600,600))
-			#mlab.mesh(self.xsurf, self.ysurf, self.zsurf, scalars=scalars, **kwargs)
+		if args.lplotcoildist:
+			px = 1/pyplot.rcParams['figure.dpi']
+			fig=pyplot.figure(figsize=(1024*px,768*px))
+			ax1=fig.add_subplot(111,projection='3d')
+			coil_data.read_coils_file(args.focus_ext+'.coils')
+			coil_data.coilSurfDist(focus_data.xsurf.flatten(),\
+					focus_data.ysurf.flatten(),\
+					focus_data.zsurf.flatten())
+			coil_data.plotcoilsDist(ax=ax1)
+			ax1.set_axis_off()
+			pyplot.show()
