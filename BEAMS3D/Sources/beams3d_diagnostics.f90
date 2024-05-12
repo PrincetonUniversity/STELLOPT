@@ -18,7 +18,7 @@
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
-                                 MPI_REDU_ERR, pi2, weight,lrestart_grid, lboxsim
+                                 MPI_REDU_ERR, pi2, weight,lcontinue_grid, lboxsim
       USE safe_open_mod, ONLY: safe_open
       USE EZspline
       USE mpi_params ! MPI
@@ -137,7 +137,7 @@
       DEALLOCATE(tlow,thigh)
 
       ! These diagnostics need Vp to be defined
-      IF ((.not.ldepo .or. lrestart_grid) .and. .not.lboxsim .and. myworkid == master) THEN
+      IF ((.not.ldepo .or. lcontinue_grid) .and. .not.lboxsim .and. myworkid == master) THEN
          ! Allocate the parallel and perpendicular velcoity axis
          nhalf = ns_prof4/2
          ALLOCATE(dense_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1))
