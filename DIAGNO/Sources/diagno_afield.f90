@@ -136,7 +136,7 @@
             END DO
          END IF
          IF (lmut .or. lvac) CYCLE
-         CALL afield_vc(xp(i),yp(i),zp(i),ax(i),ay(i),az(i),ier)
+         CALL vecpot_vc(xp(i),yp(i),zp(i),ax(i),ay(i),az(i),ier)
       END DO
 
       ! Now handle the arrays
