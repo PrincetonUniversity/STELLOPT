@@ -131,7 +131,7 @@ MODULE beams3d_runtime
     DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
 
     LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
-               lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
+               lvessel, lvac, lcontinue_grid, lrestart_particles, lneut, &
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
                lascot, lascot4, lbbnbi, lfidasim, lfidasim_cyl, lsplit, lvessel_beam, lascotfl, lrandomize, &
@@ -162,7 +162,7 @@ MODULE beams3d_runtime
     REAL(rprec), ALLOCATABLE :: extcur(:)
     CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
-    vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string
+    vessel_string, int_type, restart_string, continue_grid_string, bbnbi_string, eqdsk_string
 
     REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.07 ! this is the full orbit test version
 
