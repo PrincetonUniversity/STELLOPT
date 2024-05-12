@@ -70,6 +70,7 @@
 !          seg_rog_file   Segmented Rogowski Coil specification file
 !          int_type       Integration type ('midpoint','simpson','bode')
 !          flux_mut_file  Mutual inductance file
+!          afield_points_file  A-Field at a point diagnostic
 !          bfield_points_file  B-Field at a point diagnostic
 !          extcur         External currents for MGRID calculation
 !----------------------------------------------------------------------
@@ -111,7 +112,8 @@
       REAL(rprec)     :: vc_adapt_tol, units, phiedge, vc_adapt_rel
       REAL(rprec), ALLOCATABLE :: extcur(:)
       CHARACTER(256)  :: id_string, flux_diag_file, bprobes_file, &
-                         mirnov_file, seg_rog_file, bfield_points_file,&
+                         mirnov_file, seg_rog_file, afield_points_file, &
+                         bfield_points_file, &
                          int_type, coil_string, flux_mut_file, rog_mut_file,&
                          mir_mut_file, bprobes_mut_file
                          
