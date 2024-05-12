@@ -28,6 +28,7 @@
 !           bprobes file          B-field probe specification
 !           mirnov_file           Mirnov Array specification
 !           seg_rog_file          Rogowski coils specification
+!           afield_points_file    A-field points specfication
 !           bfield_points_file    B-field points specfication
 !           flux_turns            Flux loop integer scale factors
 !           units                 Units (Assume all quantities in [m])
@@ -41,6 +42,7 @@
 !-----------------------------------------------------------------------
       namelist /diagno_in/ nu, nv, &
            flux_diag_file, bprobes_file, mirnov_file, seg_rog_file,  &
+           afield_points_file, &
            bfield_points_file, flux_turns, units, int_type, &
            int_step, lrphiz, vc_adapt_tol, vc_adapt_rel,&
            flux_mut_file, lvc_field, bprobe_turns, luse_extcur, &
@@ -64,6 +66,7 @@
       bprobes_file       = ''
       mirnov_file        = ''
       seg_rog_file       = ''
+      afield_points_file = ''
       bfield_points_file = ''
       bprobes_mut_file   = ''
       mir_mut_file      = ''
@@ -135,6 +138,8 @@
       mirnov_file = ADJUSTL(mirnov_file)
       seg_rog_file = TRIM(seg_rog_file)
       seg_rog_file = ADJUSTL(seg_rog_file)
+      afield_points_file = TRIM(afield_points_file)
+      afield_points_file = ADJUSTL(afield_points_file)
       bfield_points_file = TRIM(bfield_points_file)
       bfield_points_file = ADJUSTL(bfield_points_file)
       bprobes_mut_file = TRIM(bprobes_mut_file)
@@ -175,6 +180,7 @@
       WRITE(iunit,"(2X,A,1X,'=',1X,E22.14)") 'VC_ADAPT_REL',vc_adapt_rel
       WRITE(iunit,outstr) 'INT_TYPE',TRIM(int_type)
       WRITE(iunit,"(2X,A,1X,'=',1X,I0)") 'INT_STEP',int_step
+      WRITE(iunit,outstr) 'AFIELD_POINTS_FILE',TRIM(afield_points_file)
       WRITE(iunit,outstr) 'BFIELD_POINTS_FILE',TRIM(bfield_points_file)
       WRITE(iunit,outstr) 'BPROBES_FILE',TRIM(bprobes_file)
       WRITE(iunit,outstr) 'MIRNOV_FILE',TRIM(mirnov_file)
@@ -213,6 +219,8 @@
       CALL MPI_BCAST(int_type,256,MPI_CHARACTER,local_master,comm,istat)
       IF (istat .ne. 0) RETURN
       CALL MPI_BCAST(int_step,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(afield_points_file,256,MPI_CHARACTER,local_master,comm,istat)
       IF (istat .ne. 0) RETURN
       CALL MPI_BCAST(bfield_points_file,256,MPI_CHARACTER,local_master,comm,istat)
       IF (istat .ne. 0) RETURN
