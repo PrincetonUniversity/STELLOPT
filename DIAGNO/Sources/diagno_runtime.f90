@@ -72,6 +72,7 @@
 !          flux_mut_file  Mutual inductance file
 !          bfield_points_file  B-Field at a point diagnostic
 !          extcur         External currents for MGRID calculation
+!          lbpoints_accurate_output  Enable writing bpoints outputs with more digits
 !----------------------------------------------------------------------
       IMPLICIT NONE
       
@@ -103,7 +104,8 @@
       INTEGER, PARAMETER ::  MAXLINES   = 256
       
       LOGICAL         :: lverb, lvmec, lpies, lspec, lcoil, lvac, &
-                         lrphiz, lmut, luse_mut, lvc_field
+                         lrphiz, lmut, luse_mut, lvc_field, &
+                         lbpoints_accurate_output
       LOGICAL         :: luse_extcur(512),lskip_flux(2048),lskip_rogo(2048)
       INTEGER         :: nextcur, int_step, nu, nv, nfp_diagno, eq_sgns,&
                          nprocs_diagno, mystart, myend
