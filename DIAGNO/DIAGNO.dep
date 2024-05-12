@@ -44,6 +44,14 @@ diagno_init_spec.o : \
       diagno_runtime.o
       
 
+diagno_afield.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/virtual_casing_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/biotsavart.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      diagno_runtime.o
+
+
 diagno_bfield.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/virtual_casing_mod.o \
