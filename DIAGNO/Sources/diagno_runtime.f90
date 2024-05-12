@@ -73,6 +73,7 @@
 !          afield_points_file  A-Field at a point diagnostic
 !          bfield_points_file  B-Field at a point diagnostic
 !          extcur         External currents for MGRID calculation
+!          lapoints_accurate_output  Enable writing apoints outputs with more digits
 !          lbpoints_accurate_output  Enable writing bpoints outputs with more digits
 !----------------------------------------------------------------------
       IMPLICIT NONE
@@ -106,7 +107,7 @@
       
       LOGICAL         :: lverb, lvmec, lpies, lspec, lcoil, lvac, &
                          lrphiz, lmut, luse_mut, lvc_field, &
-                         lbpoints_accurate_output
+                         lapoints_accurate_output, lbpoints_accurate_output
       LOGICAL         :: luse_extcur(512),lskip_flux(2048),lskip_rogo(2048)
       INTEGER         :: nextcur, int_step, nu, nv, nfp_diagno, eq_sgns,&
                          nprocs_diagno, mystart, myend

@@ -39,6 +39,7 @@
 !           vc_adapt_rel          Adaptive integration relative tollerance
 !           flux_mut_file         Mutual induction file (not fully implemented)
 !           lvc_field             Use virtual casing instead of volume integral for free boundary
+!           lapoints_accurate_output  Enable writing apoints outputs with more digits
 !           lbpoints_accurate_output  Enable writing bpoints outputs with more digits
 !-----------------------------------------------------------------------
       namelist /diagno_in/ nu, nv, &
@@ -48,7 +49,7 @@
            int_step, lrphiz, vc_adapt_tol, vc_adapt_rel,&
            flux_mut_file, lvc_field, bprobe_turns, luse_extcur, &
            bprobes_mut_file, mir_mut_file, rog_mut_file, segrog_turns, &
-           lbpoints_accurate_output
+           lapoints_accurate_output, lbpoints_accurate_output
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -86,6 +87,7 @@
       vc_adapt_rel   = 1.0E-04_rprec
       lvc_field      = .TRUE.
       luse_extcur(:) = .TRUE.  ! Do this so we default to using the whole coil if the user forgets
+      lapoints_accurate_output = .false. ! default for backward compatibility
       lbpoints_accurate_output = .false. ! default for backward compatibility
       ! Read namelist
       istat=0; iunit = 25
