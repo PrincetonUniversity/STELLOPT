@@ -61,7 +61,7 @@
             lmgrid_beams => lmgrid, lascot_beams => lascot, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
             lsuzuki_beams => lsuzuki, lrandomize_beams => lrandomize, &
-            lrestart_grid_beams => lrestart_grid, lrestart_particles_beams => lrestart_particles, &
+            lcontinue_grid_beams => lcontinue_grid, lrestart_particles_beams => lrestart_particles, &
             lbeam_simple_beams => lbeam_simple, &
             lplasma_only_beams => lplasma_only, lascot4_beams => lascot4, &
             lbbnbi_beams => lbbnbi, lascotfl_beams => lascotfl, &
@@ -317,7 +317,7 @@
                lraw_beams         = .FALSE.
                lvessel_beams      = .FALSE.
                lvac_beams         = .FALSE.
-               lrestart_grid_beams     = .FALSE.
+               lcontinue_grid_beams     = .FALSE.
                lrestart_particles_beams     = .FALSE.
                lbeam_simple_beams = .FALSE.
                lhitonly           = .TRUE. ! Set to true to smaller files.

@@ -15,6 +15,7 @@
       USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
       USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
       USE read_fieldlines_mod, ONLY: read_fieldlines_mag, get_fieldlines_grid
+      USE read_beams3d_mod, ONLY: read_beams3d_mag, get_beams3d_grid
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input, init_beams3d_input
@@ -114,10 +115,17 @@
          CALL read_fieldlines_mag('fieldlines_'//TRIM(id_string)//'.h5',MPI_COMM_SHARMEM,ier)
          phimin = 0
          CALL get_fieldlines_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
+      ELSE IF (lcontinue_grid .and. lread_input) THEN
+         CALL read_beams3d_input('input.'//TRIM(id_string),ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE:     input.' // TRIM(id_string)
+         IF (lverb) WRITE(6,'(A)') '   RESTART GRID FILE: ' // TRIM(continue_grid_string)
+         CALL read_beams3d_mag(TRIM(continue_grid_string),MPI_COMM_SHARMEM,ier)
+         phimin = 0
+         CALL get_beams3d_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)         
       END IF
 
       ! Handle particle restarting
-      IF (lrestart_particles) THEN
+      IF (lrestart_particles .or. lcontinue_grid) THEN
         ldepo = .false.
         lbbnbi = .false.
         lbeam = .false.
@@ -142,7 +150,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_init:lsuzuki',ierr_mpi)
 
       ! Output some information
-      IF (lverb .and. .not.lrestart_grid) THEN
+      IF (lverb) THEN
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
@@ -183,7 +191,7 @@
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF ((lvmec .or. leqdsk .or. lhint .or. lfieldlines) .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk .or. lhint .or. lfieldlines  .or. lcontinue_grid) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Plasma Parameters -----'
          ! TE
          IF (nte>0) THEN
@@ -312,10 +320,16 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Background Grids
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      IF (lrestart_grid) THEN
-         !CALL beams3d_init_restart
-      ELSE
+      IF (lfidasim) THEN
+         CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
+         CALL mpialloc(phiaxis_fida, nphi_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis_fida)
+         CALL mpialloc(zaxis_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis_fida)
+         CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
+         CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
+      END IF
+      !IF (lcontinue_grid) THEN
+         !CALL beams3d_init_restart                
+      !ELSE
          ! Create the background grid
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
          CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
@@ -383,7 +397,7 @@
          ELSE IF (lcoil) THEN
             CALL beams3d_init_coil
          END IF
-      END IF
+      !END IF
 
       ! Put the plasma field on the background grid
       IF (lvmec .and. .not.lvac) THEN
@@ -406,6 +420,10 @@
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_eqdsk
+      ELSE IF (lcontinue_grid) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+         CALL beams3d_init_continuegrid         
       END IF
 
       ! Adjust magnetic field for magnetic material
