@@ -4,7 +4,7 @@
 !                    S. Lazerson (lazerson@pppl.gov)
 !     Date:          05/12/2024
 !     Description:   This subroutine calculates the vector potential
-!                    at a point in space.
+!                    at given points in space.
 !-----------------------------------------------------------------------
       SUBROUTINE diagno_afield
 !-----------------------------------------------------------------------
