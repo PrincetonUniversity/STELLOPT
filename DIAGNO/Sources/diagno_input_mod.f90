@@ -12,10 +12,10 @@
 !-----------------------------------------------------------------------
       USE diagno_runtime
       USE safe_open_mod, ONLY: safe_open
-      
+
 !-----------------------------------------------------------------------
 !     Module Variables
-!         
+!
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL :: lexist
@@ -39,6 +39,7 @@
 !           vc_adapt_rel          Adaptive integration relative tollerance
 !           flux_mut_file         Mutual induction file (not fully implemented)
 !           lvc_field             Use virtual casing instead of volume integral for free boundary
+!           lapoints_accurate_output  Enable writing apoints outputs with more digits
 !           lbpoints_accurate_output  Enable writing bpoints outputs with more digits
 !-----------------------------------------------------------------------
       namelist /diagno_in/ nu, nv, &
@@ -48,14 +49,14 @@
            int_step, lrphiz, vc_adapt_tol, vc_adapt_rel,&
            flux_mut_file, lvc_field, bprobe_turns, luse_extcur, &
            bprobes_mut_file, mir_mut_file, rog_mut_file, segrog_turns, &
-           lbpoints_accurate_output
-      
+           lapoints_accurate_output, lbpoints_accurate_output
+
 !-----------------------------------------------------------------------
 !     Subroutines
 !         read_diagno_input:   Reads diagno_in namelist
 !-----------------------------------------------------------------------
       CONTAINS
-      
+
       SUBROUTINE read_diagno_input(filename, istat)
       CHARACTER(*), INTENT(in) :: filename
       INTEGER, INTENT(out) :: istat
@@ -86,6 +87,7 @@
       vc_adapt_rel   = 1.0E-04_rprec
       lvc_field      = .TRUE.
       luse_extcur(:) = .TRUE.  ! Do this so we default to using the whole coil if the user forgets
+      lapoints_accurate_output = .false. ! default for backward compatibility
       lbpoints_accurate_output = .false. ! default for backward compatibility
       ! Read namelist
       istat=0; iunit = 25
@@ -169,7 +171,7 @@
       IF (LEN_TRIM(rog_mut_file)>1) luse_mut = .TRUE.
       IF (lmut) luse_mut = .FALSE.
       END SUBROUTINE read_diagno_input
-      
+
       SUBROUTINE write_diagno_input(iunit,istat)
       INTEGER, INTENT(in)    :: iunit
       INTEGER, INTENT(inout) :: istat
@@ -195,6 +197,8 @@
       WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'SEGROG_TURNS',(segrog_turns(n), n=1,256)
       WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LRPHIZ',lrphiz
       WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LVC_FIELD',lvc_field
+      WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LAPOINTS_ACCURATE_OUTPUT',lapoints_accurate_output
+      WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LBPOINTS_ACCURATE_OUTPUT',lbpoints_accurate_output
       WRITE(iunit,'(A)') '/'
       CALL FLUSH(iunit)
       END SUBROUTINE write_diagno_input
