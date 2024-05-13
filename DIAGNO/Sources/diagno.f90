@@ -180,6 +180,7 @@
       
          ! Calculate diagnostic response
          if(lverb) write(6,*)' - Calculating diagnostic responses'
+         IF (LEN_TRIM(afield_points_file) > 1) CALL diagno_afield
          IF (LEN_TRIM(bfield_points_file) > 1) CALL diagno_bfield
          IF (LEN_TRIM(bprobes_file) > 1) CALL diagno_bprobes
          IF (LEN_TRIM(mirnov_file) > 1) CALL diagno_mirnov
