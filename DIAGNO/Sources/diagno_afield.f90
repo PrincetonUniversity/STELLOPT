@@ -186,13 +186,11 @@
                      IF (lverb) WRITE(6,'(13X,I8,1X,7E14.5)') i,rp(i),phip(i),zp(i),ar(i),aphi(i),az(i),moda(i)
                      WRITE(iunit_out,'(13X,I8,1X,7ES22.12E3)') i,rp(i),phip(i),zp(i),ar(i),aphi(i),az(i),moda(i)
                   END DO
-                  WRITE(iunit_out,'(A)')'   #   rp[m]    phip[deg]    zp[m]      A_R[Tm]    A_PHI[Tm]      A_Z[Tm]      |A|[Tm]'
                ELSE
                   DO i = 1, ncoils
                      IF (lverb) WRITE(6,'(13X,I8,1X,7E14.5)') i,xp(i),yp(i),zp(i),ax(i),ay(i),az(i),moda(i)
                      WRITE(iunit_out,'(13X,I8,1X,7ES22.12E3)') i,xp(i),yp(i),zp(i),ax(i),ay(i),az(i),moda(i)
                   END DO
-                  WRITE(iunit_out,'(A)')'   #   xp[m]      yp[m]      zp[m]      A_X[Tm]      A_Y[Tm]      A_Z[Tm]      |A|[Tm]'
                END IF
             ELSE
                ! backward compatibility output
