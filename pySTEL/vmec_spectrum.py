@@ -2,13 +2,8 @@
 import sys, os, getopt
 import argparse
 import numpy as np                    #For Arrays
-from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
-
-try:
-	qtCreatorPath=os.environ["STELLOPT_PATH"]
-except KeyError:
-	print("Please set environment variable STELLOPT_PATH")
-	sys.exit(1)
+import vmec
+#from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
 
 if __name__ == "__main__":
 	#print(sys.argv)
@@ -30,111 +25,112 @@ if __name__ == "__main__":
 	lspec  = args.lspec
 	lfocus = args.lfocus
 	lflip  = args.lflip
-	vmec_data=read_vmec(args.filename)
+	vmec_data = vmec.VMEC()
+	vmec_data.read_vmec(args.filename)
 	# note that we use nu+nv in pystel
-	k = vmec_data['ns']
+	k = vmec_data.ns
 	if args.k:
 		k = args.k
 	# Threshold the matricies
 	if args.thres:
-		for i in range(vmec_data['mnmax']):
-			if np.abs(vmec_data['rmnc'][k-1,i]) < args.thres:
-				vmec_data['rmnc'][k-1,i] = 0
-			if np.abs(vmec_data['zmns'][k-1,i]) < args.thres:
-				vmec_data['zmns'][k-1,i] = 0
+		for i in range(vmec_data.mnmax):
+			if np.abs(vmec_data.rmnc[k-1,i]) < args.thres:
+				vmec_data.rmnc[k-1,i] = 0
+			if np.abs(vmec_data.zmns[k-1,i]) < args.thres:
+				vmec_data.zmns[k-1,i] = 0
 	# Flip Jacobian
 	if lflip:
-		for i in range(vmec_data['mnmax']):
-			m = vmec_data['xm'][i]
+		for i in range(vmec_data.mnmax):
+			m = vmec_data.xm[i]
 			if m > 0:
 				if np.remainder(m,2) == 0:
-					vmec_data['zmns'][k-1,i] = -vmec_data['zmns'][k-1,i]
+					vmec_data.zmns[k-1,i] = -vmec_data.zmns[k-1,i]
 				else:
-					vmec_data['rmnc'][k-1,i] = -vmec_data['rmnc'][k-1,i]
-		vmec_data['xn'] = - vmec_data['xn']
+					vmec_data.rmnc[k-1,i] = -vmec_data.rmnc[k-1,i]
+		vmec_data.xn = - vmec_data.xn
 		print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
 		print('!!!!!!!!!!!!!!!! JACOBIAN SIGN FLIPPPED !!!!!!!!!!!!!!!')
 		print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
 	if lvmec:
-		ntor = vmec_data['ntor']
+		ntor = vmec_data.ntor
 		temp = '  RAXIS_CC = '
 		for i in range(ntor+1):
-			temp = temp + "{:20.10E}".format(vmec_data['rmnc'][0,i]) + ' '
+			temp = temp + "{:20.10E}".format(vmec_data.rmnc[0,i]) + ' '
 		print(temp)
 		temp = '  ZAXIS_CS = '
 		for i in range(ntor+1):
-			temp = temp + "{:20.10E}".format(vmec_data['zmns'][0,i]) + ' '
+			temp = temp + "{:20.10E}".format(vmec_data.zmns[0,i]) + ' '
 		print(temp)
-		if vmec_data['lasym']:
+		if vmec_data.lasym:
 			temp = '  RAXIS_CS = '
 			for i in range(ntor+1):
-				temp = temp + "{:20.10E}".format(vmec_data['rmns'][0,i]) + ' '
+				temp = temp + "{:20.10E}".format(vmec_data.rmns[0,i]) + ' '
 			print(temp)
 			temp = '  ZAXIS_CC = '
 			for i in range(ntor+1):
-				temp = temp + "{:20.10E}".format(vmec_data['zmnc'][0,i]) + ' '
+				temp = temp + "{:20.10E}".format(vmec_data.zmnc[0,i]) + ' '
 			print(temp)
-		for i in range(vmec_data['mnmax']):
-			temp = '  RBC(' + "{:3d}".format(-int(vmec_data['xn'][i]/vmec_data['nfp'])) + ',' \
-			                + "{:3d}".format(int(vmec_data['xm'][i])) + \
-			            ') = ' + "{:20.10E}".format(vmec_data['rmnc'][k-1,i]) + \
-			       '    ZBS(' + "{:3d}".format(-int(vmec_data['xn'][i]/vmec_data['nfp'])) + ',' \
-			                + "{:3d}".format(int(vmec_data['xm'][i])) + \
-			            ') = ' + "{:20.10E}".format(vmec_data['zmns'][k-1,i])
+		for i in range(vmec_data.mnmax):
+			temp = '  RBC(' + "{:3d}".format(-int(vmec_data.xn[i]/vmec_data.nfp)) + ',' \
+			                + "{:3d}".format(int(vmec_data.xm[i])) + \
+			            ') = ' + "{:20.10E}".format(vmec_data.rmnc[k-1,i]) + \
+			       '    ZBS(' + "{:3d}".format(-int(vmec_data.xn[i]/vmec_data.nfp)) + ',' \
+			                + "{:3d}".format(int(vmec_data.xm[i])) + \
+			            ') = ' + "{:20.10E}".format(vmec_data.zmns[k-1,i])
 			print(temp)
-		if vmec_data['lasym']:	
-			for i in range(vmec_data['mnmax']):
-				temp = '    RBS(' + "{:3d}".format(-int(vmec_data['xn'][i]/vmec_data['nfp'])) + ',' \
-				                + "{:3d}".format(int(vmec_data['xm'][i])) + \
-				            ') = ' + "{:20.10E}".format(vmec_data['rmns'][k-1,i]) + \
-				       '    ZBC(' + "{:3d}".format(-int(vmec_data['xn'][i]/vmec_data['nfp'])) + ',' \
-				                + "{:3d}".format(int(vmec_data['xm'][i])) + \
-				            ') = ' + "{:20.10E}".format(vmec_data['zmnc'][k-1,i])
+		if vmec_data.lasym:	
+			for i in range(vmec_data.mnmax):
+				temp = '    RBS(' + "{:3d}".format(-int(vmec_data.xn[i]/vmec_data.nfp)) + ',' \
+				                + "{:3d}".format(int(vmec_data.xm[i])) + \
+				            ') = ' + "{:20.10E}".format(vmec_data.rmns[k-1,i]) + \
+				       '    ZBC(' + "{:3d}".format(-int(vmec_data.xn[i]/vmec_data.nfp)) + ',' \
+				                + "{:3d}".format(int(vmec_data.xm[i])) + \
+				            ') = ' + "{:20.10E}".format(vmec_data.zmnc[k-1,i])
 				print(temp)
 	if lspec:
 		if (vmec_data['lasym']):
 			print('mn   m   n   rmnc   zmns   rmns   zmnc')
-			for i in range(vmec_data['mnmax']):
+			for i in range(vmec_data.mnmax):
 				temp = "{:3d}".format(i) + '   ' + \
-				       "{:3d}".format(int(vmec_data['xm'][i])) + '   ' + \
-				       "{:3d}".format(int(vmec_data['xn'][i]/vmec_data['nfp'])) + '   ' + \
-				       "{:20.10e}".format(vmec_data['rmnc'][k-1,i]) + '   ' + \
-				       "{:20.10e}".format(vmec_data['zmns'][k-1,i]) + '   ' + \
-				       "{:20.10e}".format(vmec_data['rmns'][k-1,i]) + '   ' + \
-				       "{:20.10e}".format(vmec_data['zmnc'][k-1,i])
+				       "{:3d}".format(int(vmec_data.xm[i])) + '   ' + \
+				       "{:3d}".format(int(vmec_data.xn[i]/vmec_data.nfp)) + '   ' + \
+				       "{:20.10e}".format(vmec_data.rmnc[k-1,i]) + '   ' + \
+				       "{:20.10e}".format(vmec_data.zmns[k-1,i]) + '   ' + \
+				       "{:20.10e}".format(vmec_data.rmns[k-1,i]) + '   ' + \
+				       "{:20.10e}".format(vmec_data.zmnc[k-1,i])
 				print(temp)
 		else:
 			print('mn   m   n   rmnc   zmns   rmns   zmnc')
-			for i in range(vmec_data['mnmax']):
+			for i in range(vmec_data.mnmax):
 				temp = "{:3d}".format(i) + '   ' + \
-				       "{:3d}".format(int(vmec_data['xm'][i])) + '   ' + \
-				       "{:3d}".format(int(vmec_data['xn'][i]/vmec_data['nfp'])) + '   ' + \
-				       "{:20.10e}".format(vmec_data['rmnc'][k-1,i]) + '   ' + \
-				       "{:20.10e}".format(vmec_data['zmns'][k-1,i]) + '   ' + \
+				       "{:3d}".format(int(vmec_data.xm[i])) + '   ' + \
+				       "{:3d}".format(int(vmec_data.xn[i]/vmec_data.nfp)) + '   ' + \
+				       "{:20.10e}".format(vmec_data.rmnc[k-1,i]) + '   ' + \
+				       "{:20.10e}".format(vmec_data.zmns[k-1,i]) + '   ' + \
 				       "{:20.10e}".format(0.0) + '   ' + \
 				       "{:20.10e}".format(0.0) 
 				print(temp)
 	if lfocus:
 		print('#bmn  bNfp nbf')
-		print("{:3d}".format(vmec_data['mnmax']) + ' ' + "{:3d}".format(vmec_data['nfp']) + ' ' + "{:3d}".format(vmec_data['mnmax']))
+		print("{:3d}".format(vmec_data.mnmax) + ' ' + "{:3d}".format(vmec_data.nfp) + ' ' + "{:3d}".format(vmec_data.mnmax))
 		print('#------plasma boundary harmonics-------')
 		print('# n m Rbc Rbs Zbc Zbs')
 		if (vmec_data['lasym']):
-			for i in range(vmec_data['mnmax']):
-				temp = "{:3d}".format(int(vmec_data['xn'][i]/vmec_data['nfp'])) + '   ' + \
-				       "{:3d}".format(int(vmec_data['xm'][i])) + '   ' + \
-				       "{:20.10e}".format(vmec_data['rmnc'][k-1,i]) + '   ' + \
-				       "{:20.10e}".format(vmec_data['rmns'][k-1,i]) + '   ' + \
-				       "{:20.10e}".format(vmec_data['zmnc'][k-1,i]) + '   ' + \
-				       "{:20.10e}".format(vmec_data['zmns'][k-1,i])
+			for i in range(vmec_data.mnmax):
+				temp = "{:3d}".format(int(vmec_data.xn[i]/vmec_data.nfp)) + '   ' + \
+				       "{:3d}".format(int(vmec_data.xm[i])) + '   ' + \
+				       "{:20.10e}".format(vmec_data.rmnc[k-1,i]) + '   ' + \
+				       "{:20.10e}".format(vmec_data.rmns[k-1,i]) + '   ' + \
+				       "{:20.10e}".format(vmec_data.zmnc[k-1,i]) + '   ' + \
+				       "{:20.10e}".format(vmec_data.zmns[k-1,i])
 				print(temp)
 		else:
-			for i in range(vmec_data['mnmax']):
-				temp = "{:3d}".format(int(vmec_data['xn'][i]/vmec_data['nfp'])) + '   ' + \
-				       "{:3d}".format(int(vmec_data['xm'][i])) + '   ' + \
-				       "{:20.10e}".format(vmec_data['rmnc'][k-1,i]) + '   ' + \
+			for i in range(vmec_data.mnmax):
+				temp = "{:3d}".format(int(vmec_data.xn[i]/vmec_data.nfp)) + '   ' + \
+				       "{:3d}".format(int(vmec_data.xm[i])) + '   ' + \
+				       "{:20.10e}".format(vmec_data.rmnc[k-1,i]) + '   ' + \
 				       "{:20.10e}".format(0.0) + '   ' + \
 				       "{:20.10e}".format(0.0) + '   ' + \
-				       "{:20.10e}".format(vmec_data['zmns'][k-1,i])
+				       "{:20.10e}".format(vmec_data.zmns[k-1,i])
 				print(temp)
 
