@@ -249,7 +249,7 @@ beams3d_init_fieldlines.o: \
       beams3d_grid.o
 
 
-beams3d_init_restartgrid.o: \
+beams3d_init_continuegrid.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/read_fieldlines_mod.o \

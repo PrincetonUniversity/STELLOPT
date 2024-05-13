@@ -23,7 +23,7 @@
                               rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
                               raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
                               nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida, &
-                              dexionT, dexionD,&
+                              dexionT, dexionD,dexionHe3, &
                               s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
@@ -336,6 +336,7 @@
             DO i1 = 1, NION
                IF ((NI_AUX_Z(i1) == 1) .and. (NINT(NI_AUX_M(i1)*6.02214076208E+26) == 3)) dexionT = i1
                IF ((NI_AUX_Z(i1) == 1) .and. (NINT(NI_AUX_M(i1)*6.02214076208E+26) == 2)) dexionD = i1
+               IF ((NI_AUX_Z(i1) == 2) .and. (NINT(NI_AUX_M(i1)*6.02214076208E+26) == 3)) dexionHe3 = i1
             END DO
             !WRITE(6,*) ' Tritium index: ',dexionT
             !WRITE(6,*) ' Deuturium index: ',dexionD
