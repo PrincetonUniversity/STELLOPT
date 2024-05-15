@@ -403,6 +403,58 @@ class COILSET(LIBSTELL):
 			for j in range(self.groups[i].ncoils):
 				self.groups[i].coils[j].surfDist(xs,ys,zs)
 
+	def blenderCoil(self,dist=0.2):
+		"""Generates the lists Blender needs to render a coilset
+
+		This routine generates the verticies and faces lists which
+		Blender needs to render a coil.
+
+		Returns
+		----------
+		vertices : list
+			List of tuples defining verticies
+		faces: list
+			List of tubles defining faces
+		"""
+		import numpy as np
+		# Generate volumetric coil rendering
+		vertices = []
+		faces = []
+		l = int(0)
+		for i in range(self.ngroups):
+			for j in range(self.groups[i].ncoils):
+				xx,yy,zz = self.groups[i].coils[j].finiteBuildCoil(width=dist,height=dist)
+				for k in range(xx.shape[1]-1):
+					vertices.append((xx[0,k],yy[0,k],zz[0,k]))
+					vertices.append((xx[1,k],yy[1,k],zz[1,k]))
+					vertices.append((xx[2,k],yy[2,k],zz[2,k]))
+					vertices.append((xx[3,k],yy[3,k],zz[3,k]))
+					faces.append((l,l+1,l+5))
+					faces.append((l,l+5,l+4))
+					l=l+1
+					faces.append((l,l+1,l+5))
+					faces.append((l,l+5,l+4))
+					l=l+1
+					faces.append((l,l+1,l+5))
+					faces.append((l,l+5,l+4))
+					l=l+1
+					faces.append((l,l-3,l+1))
+					faces.append((l,l+1,l+4))
+					l=l+1
+				vertices.append((xx[0,-1],yy[0,-1],zz[0,-1]))
+				vertices.append((xx[1,-1],yy[1,-1],zz[1,-1]))
+				vertices.append((xx[2,-1],yy[2,-1],zz[2,-1]))
+				vertices.append((xx[3,-1],yy[3,-1],zz[3,-1]))
+				l = l + 4
+		# Last step
+		#vertices = []
+		#faces = []
+		#for i in range(self.nvertex):
+		#	vertices.append((self.vertex[i,0],self.vertex[i,1],self.vertex[i,2]))
+		#for i in range(self.nfaces):
+		#	faces.append((int(self.faces[i,0]),int(self.faces[i,1]),int(self.faces[i,2])))
+		return vertices,faces
+
 
 
 
@@ -443,6 +495,9 @@ class COIL():
 		self.vx = self.y[0:-1]*self.dz - self.z[0:-1]*self.dy
 		self.vy = self.z[0:-1]*self.dx - self.x[0:-1]*self.dz
 		self.vz = self.x[0:-1]*self.dy - self.y[0:-1]*self.dx
+		self.xt = None
+		self.yt = None
+		self.zt = None
 		self.dist_surf = None
 
 	def vecpot(self,x,y,z,current):
@@ -629,6 +684,7 @@ class COIL():
 		z : ndarry
 			Z-coordiante for plotting as a mesh [m]
 		"""
+		import numpy as np
 		n = self.npts
 		# calculate the tangent
 		if self.xt is None:
