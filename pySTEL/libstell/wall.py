@@ -126,6 +126,27 @@ class WALL(LIBSTELL):
 		#tsurf=ax.plot_trisurf(self.vertex[0,:],self.vertex[1,:],self.vertex[2,:], triangles=self.faces,color='red',shade='yes',linewidth=0.0,alpha=1)
 		#if len(kwargs) == 0: pyplot.show()
 
+	def blenderWall(self):
+		"""Generates the lists Blender needs to render a wall
+
+		This routine generates the verticies and faces lists which
+		Blender needs to render a wall.
+
+		Returns
+		----------
+		vertices : list
+			List of tuples defining verticies
+		faces: list
+			List of tubles defining faces
+		"""
+		vertices = []
+		faces = []
+		for i in range(self.nvertex):
+			vertices.append((self.vertex[i,0],self.vertex[i,1],self.vertex[i,2]))
+		for i in range(self.nfaces):
+			faces.append((int(self.faces[i,0]),int(self.faces[i,1]),int(self.faces[i,2])))
+		return vertices,faces
+
 	def genWallfromOrdered(self,vertex):
 		"""Generates a wall from an orderer array
 
