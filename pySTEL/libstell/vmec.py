@@ -267,6 +267,67 @@ class VMEC(FourierRep):
 				curpol = 2.0*self.bsubvmnc[self.ns-1,mn]*np.pi/self.nfp 
 		return curpol
 
+	def extrapSurface(self,surf=None,dist=0.1):
+		"""Returns an extrapolated surface.
+		This routine extrapolates a surface a given distance using the
+		VMEC scaling for modes. The surface to extrapolate (default ns)
+		and distance to extrapolate (default 0.1 [m]) are optional
+		inputs.
+
+		Parameters
+		----------
+		surf : int (optional)
+			Surface to extrapolate (default: ns)
+		dist : float (optional)
+			Distance to extrapolate [m] (default 0.1)
+
+		Returns
+		----------
+		rmnc : ndarray
+			R cosine harmonics of extrapolated surface
+		zmns : ndarray
+			Z sine harmonics of extrapolated surface
+		zmns : ndarray
+			R sine harmonics of extrapolated surface
+		rmnc : ndarray
+			Z cosine harmonics of extrapolated surface
+		"""
+		import numpy as np
+		if surf:
+			k=surf-1
+		else:
+			k=self.ns-1
+		rho = np.sqrt(float(k)/(self.ns-1))
+		rmnc = self.rmnc[k,:]
+		zmns = self.zmns[k,:]
+		r0c = np.where(self.xm==0,self.rmnc[0,:],0)
+		z0s = np.where(self.xm==0,self.zmns[0,:],0)
+		rmnc = rmnc - r0c
+		zmns = zmns - z0s
+		if self.iasym==1:
+			rmns = self.rmns[k,:]
+			zmnc = self.zmnc[k,:]
+			r0s = np.where(self.xm==0,self.rmns[0,:],0)
+			z0c = np.where(self.xm==0,self.zmnc[0,:],0)
+			rmns = rmns - r0s
+			zmnc = zmnc - z0c
+		scale = (self.aminor+dist)/self.aminor
+		scale = scale*scale
+		#scalemn = np.ones((self.mnmax))*scale
+		scalemn = np.where(self.xm%2==1, rho*scale, scale)
+		rmnc = rmnc * scalemn
+		zmns = zmns * scalemn
+		rmnc = rmnc + r0c
+		zmns = zmns + z0s
+		if self.iasym == 1:
+			rmns = rmns * scalemn
+			zmnc = zmns * scalemn
+			rmns = rmns + r0s
+			zmnc = zmnc + z0c
+		else:
+			rmns = np.zeros((self.mnmax))
+			zmnc = np.zeros((self.mnmax))
+		return rmnc, zmns, rmns, zmnc
 
 # VMEC INDATA Class
 class VMEC_INDATA():
