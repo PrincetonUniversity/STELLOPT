@@ -67,6 +67,12 @@ class VMEC(FourierRep):
 				self.bsubvmns[:,mn] = self.h2f(self.bsubvmns[:,mn])
 		# Calc Eplasma
 		self.eplasma = 1.5*4*np.pi*np.pi*sum( self.vp * self.presf ) / self.ns
+		# Get mn00
+		self.mn00 = None
+		for mn in range(self.mnmax):
+			if self.xm[mn]==0 and self.xn[mn]==0:
+				self.mn00 = mn
+
 
 	def h2f(self,var_half):
 		"""Half to full grid
@@ -328,6 +334,203 @@ class VMEC(FourierRep):
 			rmns = np.zeros((self.mnmax))
 			zmnc = np.zeros((self.mnmax))
 		return rmnc, zmns, rmns, zmnc
+
+	def offsetCurve(self, R, Z, distance=0.1):
+		"""Returns points an offset distance from a curve
+		The routine takes a set of points in R and Z and calculates a
+		set of offset points.
+
+		Parameters
+		----------
+		R : ndarray
+			Array of points in R [m]
+		Z : ndarray
+			Array of points in Z [m]
+		dist : float (optional)
+			Distance to extrapolate [m] (default 0.1)
+
+		Returns
+		----------
+		R : ndarray
+			Offset points in R [m]
+		Z : ndarray
+			Offset points in Z [m]
+		"""
+		import numpy as np
+
+		# Calculate the tangents
+		dx = np.diff(R, append=R[0])
+		dy = np.diff(Z, append=Z[0])
+
+		# Calculate the normals
+		lengths = np.sqrt(dx**2 + dy**2)
+		normals_x = -dy / lengths
+		normals_y = dx / lengths
+
+		# Offset the points
+		offset_x = R + distance * normals_x
+		offset_y = Z + distance * normals_y
+		return offset_x, offset_y
+
+	def fitSurface(self,surf=None,dist=0.1):
+		"""Returns Fourier Harmonics of a fitted surface
+		This routine calculates a fit of Fourier coefficients to
+		a supplied surface or a surface a uniform distance from the
+		VMEC equilibrium boundary. If a surface is provided it must be
+		provided as a set of ordered points x,y,z [3,nu,nv].
+
+		Parameters
+		----------
+		surf : ndarray [3,nu,nv] (optional)
+			Surface to fit (default: use dist)
+		dist : float (optional)
+			Distance to extrapolate [m] (default 0.1)
+
+		Returns
+		----------
+		rmnc : ndarray
+			R cosine harmonics of extrapolated surface
+		zmns : ndarray
+			Z sine harmonics of extrapolated surface
+		zmns : ndarray
+			R sine harmonics of extrapolated surface
+		rmnc : ndarray
+			Z cosine harmonics of extrapolated surface
+		"""
+		import numpy as np
+		from scipy.optimize import minimize
+		ns1 = self.ns-1
+		if surf:
+			theta  = surf[0]
+			phi    = surf[1]
+			boundr = surf[3]
+			boundz = surf[4]
+			nu     = len(theta)
+			nv     = len(phi)
+		else:
+			nu = 64
+			nv = 16
+			theta = np.ndarray((nu,1))
+			phi   = np.ndarray((nv,1))
+			for j in range(nu): theta[j]=2.0*np.pi*j/float(nu)
+			if self.iasym == 1:
+				for j in range(nv):  phi[j] = 2.0*np.pi*j/float(nv-1)
+			else:
+				for j in range(nv):  phi[j] =    np.pi*j/float(nv-1)
+			phi = phi / self.nfp
+			r = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
+			z = self.sfunct(theta,phi,self.zmns,self.xm,self.xn)
+			if self.iasym==1:
+				r = r + self.sfunct(theta,phi,self.rmns,self.xm,self.xn)
+				z = z + self.cfunct(theta,phi,self.zmnc,self.xm,self.xn)
+			boundr = np.squeeze(r[ns1,:,:])
+			boundz = np.squeeze(z[ns1,:,:])
+			for v in range(nv):
+				x = boundr[:,v]
+				y = boundz[:,v]
+				x,y = self.offsetCurve(x,y,dist)
+				boundr[:,v] = x
+				boundz[:,v] = y
+		opts = (nu,nv,self.xm,self.xn,theta,phi,boundr,boundz)
+		self.fitFactor = (1.0+np.squeeze(self.xm))
+		r_temp = np.squeeze(self.rmnc[ns1,:])*self.fitFactor
+		z_temp = np.delete(self.zmns[ns1,:]*self.fitFactor,self.mn00)
+		x0 = np.concatenate((r_temp,z_temp))
+		if self.iasym == 1:
+			r1_temp = np.delete(self.rmns[ns1,:]*self.fitFactor,self.mn00)
+			z1_temp = np.squeeze(self.zmnc[ns1,:],self.mn00)*self.fitFactor
+			x0 = np.concatenate((r_temp,z_temp,r1_temp,z1_temp))
+		self.Nfeval = 0
+		self.Rfit = boundr
+		self.Zfit = boundz
+		res = minimize(self.fit_func, x0, method='CG',
+               args=opts, options={'disp': True},
+               callback=self.callbackF,tol=1.0E-1)
+		xf = res.x
+		i1 = 0; i2 = i1+self.mnmax
+		rmnc = np.broadcast_to(xf[i1:i2],(1,self.mnmax))/self.fitFactor
+		i1 = i2; i2 = i1+self.mnmax-1
+		xtemp = xf[i1:i2]
+		zmns = np.broadcast_to(np.insert(xtemp,self.mn00,0.0),(1,self.mnmax))/self.fitFactor
+		if self.iasym==1:
+			i1 = i2; i2 = i1+self.mnmax-1
+			xtemp = xf[i1:i2]
+			rmns = np.broadcast_to(np.insert(xtemp,self.mn00,0.0),(1,self.mnmax))/self.fitFactor
+			i1 = i2; i2 = i1+self.mnmax
+			zmnc = np.broadcast_to(xf[i1:i2],(1,self.mnmax))/self.fitFactor
+		else:
+			rmns = np.zeros((self.mnmax))
+			zmnc = np.zeros((self.mnmax))
+		return rmnc,zmns,rmns,zmnc
+
+	def fit_func(self,x,*args):
+		import numpy as np
+		nu = args[0]
+		nv = args[1]
+		xm = args[2]
+		xn = args[3]
+		theta = args[4]
+		phi = args[5]
+		boundr = args[6]
+		boundz = args[7]
+		mnmax = xm.shape[0]
+		i1 = 0; i2 = i1+mnmax
+		rmnc = np.broadcast_to(x[i1:i2],(1,mnmax))/self.fitFactor
+		i1 = i2; i2 = i1+mnmax-1
+		xtemp = x[i1:i2]
+		zmns = np.broadcast_to(np.insert(xtemp,self.mn00,0.0),(1,mnmax))/self.fitFactor
+		r = self.cfunct(theta,phi,rmnc,xm,xn)
+		z = self.sfunct(theta,phi,zmns,xm,xn)
+		if x.shape[0] > 2*mnmax:
+			i1 = i2; i2 = i1+mnmax-1
+			xtemp = x[i1:i2]
+			rmns = np.broadcast_to(np.insert(xtemp,self.mn00,0.0),(1,mnmax))/self.fitFactor
+			i1 = i2; i2 = i1+mnmax
+			zmnc = np.broadcast_to(x[i1:i2],(1,mnmax))/self.fitFactor
+			r = r + self.sfunct(theta,phi,rmns,xm,xn)
+			z = z + self.cfunct(theta,phi,zmnc,xm,xn)
+		# Calc distance
+		d = 0
+		for u in range(nu):
+			for v in range(nv):
+				dr = boundr[u,v] - np.squeeze(r[0,:,v])
+				dz = boundz[u,v] - np.squeeze(z[0,:,v])
+				dl2 = dr*dr + dz*dz
+				d = d + min(dl2)
+		return d
+	def callbackF(self,intermediate_result):
+		print(f'ITER: {self.Nfeval} -- dval: {intermediate_result.fun}')
+		self.Nfeval += 1
+
+	def callbackF_plot(self,Xi):
+		import numpy as np
+		import matplotlib.pyplot as pyplot
+		mnmax = self.mnmax
+		nu = 32
+		nv = 3
+		theta = np.ndarray((nu,1))
+		phi   = np.ndarray((nv,1))
+		for j in range(nu): theta[j]=2.0*np.pi*j/float(nu-1)
+		for j in range(nv):  phi[j] =    np.pi*j/float(nv-1)
+		i1 = 0; i2 = i1+mnmax
+		rmnc = np.broadcast_to(Xi[i1:i2],(1,mnmax))/self.fitFactor
+		i1 = i2; i2 = i1+mnmax
+		xtemp = Xi[i1:i2]
+		zmns = np.broadcast_to(np.insert(xtemp,self.mn00,0.0),(1,mnmax))/self.fitFactor
+		r = self.cfunct(theta,phi,rmnc,self.xm,self.xn/self.nfp)
+		z = self.sfunct(theta,phi,zmns,self.xm,self.xn/self.nfp)
+		px = 1/pyplot.rcParams['figure.dpi']
+		fig,ax = pyplot.subplots(1,1,figsize=(1024*px,768*px))
+		ax.plot(self.Rfit[:,0],self.Zfit[:,0],'ko')
+		ax.plot(self.Rfit[:,-1],self.Zfit[:,-1],'ko')
+		ax.plot(r[0,:,0],z[0,:,0],'r')
+		ax.plot(r[0,:,1],z[0,:,1],'g')
+		ax.plot(r[0,:,2],z[0,:,2],'b')
+		pyplot.show(block=False)
+		pyplot.pause(0.1)
+		print('{0:4d}   {1: 3.6f}   {2: 3.6f}   {3: 3.6f}'.format(self.Nfeval, Xi[0], Xi[1], Xi[2]))
+		self.Nfeval += 1
+		pyplot.close(fig)
 
 # VMEC INDATA Class
 class VMEC_INDATA():
