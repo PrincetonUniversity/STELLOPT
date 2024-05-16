@@ -744,6 +744,68 @@ class FourierRep():
 			pyplot.show()
 		return h
 
+	def blenderSurface(self,r,z,phi,surface=None):
+		"""Generates the lists Blender needs to render a flux surface
+
+		This routine generates the verticies and faces lists which
+		Blender needs to render a surface. It assumes
+		that datapoints are not repeated in the theta  or
+		phi direction, but those coordinates are periodic.
+
+		Parameters
+		----------
+		r : ndarray
+			Ordered list of R verticies [m] (ns,nu,nv)
+		z : ndarray
+			Ordered list of Z verticies [m] (ns,nu,nv)
+		phi : ndarray
+			Ordered list of phi coordiantes [rad] (nv)
+		surface : int (optional)
+			Surface to generate in ns (default: outermost)
+
+		Returns
+		----------
+		vertices : list
+			List of tuples defining verticies
+		faces: list
+			List of tubles defining faces
+		"""
+		import numpy as np
+		# Generate volumetric coil rendering
+		vertices = []
+		faces = []
+		if surface:
+			k = surface
+		else:
+			k = r.shape[0]-1
+		nu = np.size(r,1)
+		nv = np.size(r,2)
+		# Loop and construct
+		for v in range(nv):
+			for u in range(nu):
+				x = r[k,u,v] * np.cos(phi[v])
+				y = r[k,u,v] * np.sin(phi[v])
+				vertices.append((x,y,z[k,u,v]))
+				# Now do faces
+				i1 = u + v * nu
+				# Catch special case #1
+				if u == nu-1:
+					i2 = i1 + nu
+					i3 = i1 + 1
+					i4 = i1 - nu + 1
+					if v == nv - 1:
+						i2 = u
+						i3 = 0
+				elif u < nu-1:
+					i2 = i1 + nu
+					i3 = i1 + nu +1
+					i4 = i1 + 1
+					if v == nv -1:
+						i2 = u
+						i3 = u + 1
+				faces.append((i1,i2,i4))
+				faces.append((i2,i3,i4))
+		return vertices,faces
 
 
 # Main routine
