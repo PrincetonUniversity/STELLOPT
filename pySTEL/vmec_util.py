@@ -36,6 +36,7 @@ if __name__=="__main__":
 		except:
 			print(f'Could not file input file: wout_{args.vmec_ext}.nc or wout.{args.vmec_ext}')
 		if not (linput or loutput): sys.exit(-1)
+		# Write in_booz file
 		if (loutput and args.lbooz):
 			filename = 'in_booz.'+args.vmec_ext
 			f = open(filename,'w')
@@ -45,7 +46,6 @@ if __name__=="__main__":
 				f.write(f' {i+1}')
 			f.write('\n')
 			f.close()
-
 		# Do Input file plot
 		if (args.lplot and linput):
 			px = 1/pyplot.rcParams['figure.dpi']
