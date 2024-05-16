@@ -1,6 +1,5 @@
 *~
 *#
-
 *.o
 *.mod
 *.a
@@ -73,3 +72,6 @@ LIBSTELL/.makefile.swp
 pySTEL/build
 pySTEL/dist
 
+*.sublime-project
+*.sublime-workspace
+fort.*
