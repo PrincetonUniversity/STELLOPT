@@ -1018,11 +1018,6 @@ ipsl_T.o : \
       v3_utilities.o 
       
 
-cyl_flux.o : \
-      stel_constants.o \
-      stel_kinds.o 
-      
-
 sxrch_T.o : \
       integration_path.o \
       stel_constants.o \
@@ -1187,7 +1182,6 @@ gist_mod.o : \
       
 
 vmec_utils.o : \
-      cyl_flux.o \
       read_wout_mod.o \
       stel_constants.o \
       stel_kinds.o 

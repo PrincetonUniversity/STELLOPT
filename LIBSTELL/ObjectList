@@ -78,7 +78,6 @@ v3post_rfun.o \
 read_pies_mod.o \
 system_mod.o \
 saddle_surface.o \
-cyl_flux.o \
 flint_z.o \
 optim_params.o \
 mddc_cdf.o \
