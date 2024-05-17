@@ -461,7 +461,7 @@ class VMEC(FourierRep):
 		else:
 			rmns = np.zeros((self.mnmax))
 			zmnc = np.zeros((self.mnmax))
-		return rmnc,zmns,rmns,zmnc
+		return np.squeeze(rmnc),np.squeeze(zmns),np.squeeze(rmns),np.squeeze(zmnc)
 
 	def fit_func(self,x,*args):
 		import numpy as np
