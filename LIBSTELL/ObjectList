@@ -1,4 +1,5 @@
 ObjectFiles = \
+beams3d_globals.o \
 mumaterial_mod.o \
 nbcd_okano.o \
 nclass_mod.o \
