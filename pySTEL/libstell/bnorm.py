@@ -45,6 +45,7 @@ class BNORM(FourierRep):
 			self.xm[mn] = int(txt1)
 			self.xn[mn] = int(txt2)
 			self.bnmnc[0,mn] = float(txt3)
+			mn = mn + 1
 
 	def plotBnmnSpectrum(self,ax=None):
 		"""Plots the Bnormal spectrum for a surface
