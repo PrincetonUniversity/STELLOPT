@@ -1,5 +1,9 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
 
+beams3d_globals.o :  \
+      stel_kinds.o 
+
+
 nbcd_okano.o :
 
 nclass_mod.o :
