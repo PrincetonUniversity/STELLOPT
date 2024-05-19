@@ -12,39 +12,6 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_globals
-!      USE beams3d_runtime, ONLY: r_start_in, z_start_in, phi_start_in, &
-!                              vll_start_in, mu_start_in, vr_start_in, &
-!                              vphi_start_in, vz_start_in, t_end_in, &
-!                              mass_in, charge_in, Zatom_in, weight_in, &
-!                              NE_AUX_S, TE_AUX_S, NI_AUX_S, TI_AUX_S, &
-!                              NE_AUX_F, TE_AUX_F, NI_AUX_F, TI_AUX_F, &
-!                              ZEFF_AUX_S, POT_AUX_S, ZEFF_AUX_F, POT_AUX_F, &
-!                              NI_AUX_M, NI_AUX_Z, Adist_beams, &
-!                              Asize_beams, DIV_BEAMS, DEX_BEAMS, R_BEAMS, &
-!                              Z_BEAMS, PHI_BEAMS, E_BEAMS, MASS_BEAMS, &
-!                              CHARGE_BEAMS, ZATOM_BEAMS, P_BEAMS, &
-!                              nparticles_start, npoinc, follow_tol, &
-!                              int_type, ne_scale, te_scale, ti_scale, zeff_scale, &
-!                              fusion_scale, lendt_m, te_col_min, duplicate_factor, &
-!                              ldebug, lbeam, MAXBEAMS, lbeam, MAXBEAMS, nbeams, &
-!                              pi2, NION, NAMELIST_READ_ERR, MAXPROFLEN, &
-!                              MAXPARTICLES, lverb, BAD_BEAMDEX_ERR, lbbnbi, &
-!                              lcollision, lfusion, lrestart_particles, &
-!                              lfusion_alpha, lfusion_He3, lfusion_proton, &
-!                              lfusion_tritium, lkick, lgcsim, id_string
-!      USE beams3d_lines, ONLY: nparticles, ns_prof1, ns_prof2, ns_prof3, &
-!                               ns_prof4, ns_prof5, partvmax
-!      USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
-!                              phimin, phimax, vc_adapt_tol, nte, nne, nti,&
-!                              nzeff, npot, plasma_mass, &
-!                              plasma_Zmean, therm_factor, &
-!                              B_kick_min, B_kick_max, freq_kick, E_kick, &
-!                              rho_fullorbit, &
-!                              rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
-!                              raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-!                              nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida, &
-!                              dexionT, dexionD,dexionHe3, &
-!                              s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -265,7 +232,6 @@
                CALL FLUSH(6)
                STOP
             END IF
-            !IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: '//TRIM(filename),istat)
             READ(iunit,NML=beams3d_input,IOSTAT=istat)
             IF (istat /= 0) THEN
                WRITE(6,'(A)') 'ERROR reading namelist BEAMS3D_INPUT from file: ',TRIM(filename)
@@ -274,7 +240,6 @@
                write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
                CALL FLUSH(6)
                STOP
-               !CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: '//TRIM(filename),istat)
             END IF
             CLOSE(iunit)
          END IF
@@ -312,7 +277,6 @@
                CALL FLUSH(6)
                STOP
             END IF
-            !IF (nbeams == 0)  CALL handle_err(BAD_BEAMDEX_ERR,'beams3d_input in: input.'//TRIM(id_string),nbeams)
          END IF
          IF (lfusion) THEN
             r_start_in = -1
