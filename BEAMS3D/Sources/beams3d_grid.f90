@@ -11,6 +11,19 @@
       USE stel_kinds, ONLY: rprec
       USE EZspline_obj
       USE EZspline
+      USE beams3d_globals, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
+                                 phimin, phimax, vc_adapt_tol, nte, &
+                                 nne, nti,nzeff, npot, plasma_mass, &
+                                 plasma_Zmean, therm_factor, &
+                                 B_kick_min, B_kick_max, freq_kick, &
+                                 E_kick, rho_fullorbit, rmin_fida, &
+                                 rmax_fida, zmin_fida, zmax_fida, &
+                                 phimin_fida, phimax_fida, nr_fida, &
+                                 nphi_fida, nz_fida, nenergy_fida, &
+                                 npitch_fida, &
+                                 t_fida, dexionT, dexionD,dexionHe3, &
+                                 s_max,s_max_te, s_max_ne,s_max_zeff,&
+                                 s_max_ti, s_max_pot
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -40,7 +53,7 @@
 !         plasma_Zmean   [Z] = sum(n*Z*Z*mi/mj)/sum(n*Z) sum over j ion species (mi: plasma mass)
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER  ::    nr, nphi, nz, nte, nne, nti, nzeff, npot, dexionT, dexionD, dexionHe3
+!      INTEGER  ::    nr, nphi, nz, nte, nne, nti, nzeff, npot, dexionT, dexionD, dexionHe3
       INTEGER  ::    win_raxis, win_phiaxis, win_zaxis, win_B_R, win_B_PHI, win_B_Z,&
                      win_MODB, win_TE, win_NE, win_TI, win_ZEFF_ARR,&
                      win_S_ARR, win_U_ARR,win_X_ARR,win_Y_ARR, win_POT_ARR, win_BR4D, win_BPHI4D, &
@@ -49,16 +62,18 @@
                      win_wall_load, win_wall_shine, win_hr, win_hp, win_hz, &
                      win_hri, win_hpi, win_hzi, win_NI5D, win_NI, &
                      win_raxis_fida, win_phiaxis_fida, win_zaxis_fida, win_energy_fida, win_pitch_fida, &
-                     win_beam_density, win_NEUTRONS, win_E_NEUTRONS, &
-                     nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida
-      REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, tmin, tmax, delta_t, &
-                     vc_adapt_tol, psiedge_eq, phiedge_eq, plasma_Zmean, plasma_mass, &
-                     reff_eq, therm_factor, B_kick_min, B_kick_max, &
-      E_kick, freq_kick, t_fida, rho_fullorbit, rho_help,&
-      s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
+                     win_beam_density, win_NEUTRONS, win_E_NEUTRONS 
+!      INTEGER  ::               nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida
+!      REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, tmin, tmax, delta_t, &
+!                     vc_adapt_tol, psiedge_eq, phiedge_eq, plasma_Zmean, plasma_mass, &
+!                     reff_eq, therm_factor, B_kick_min, B_kick_max, &
+!                     E_kick, freq_kick, t_fida, rho_fullorbit, rho_help,&
+      REAL(rprec) :: tmin, tmax, delta_t, psiedge_eq, phiedge_eq, &
+                     reff_eq, rho_help
       REAL(rprec), POINTER :: raxis(:), zaxis(:), phiaxis(:)
       REAL(rprec), POINTER :: req_axis(:), zeq_axis(:), E_NEUTRONS(:)
-      REAL :: rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, emin_fida, pimin_fida
+!      REAL :: rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, emin_fida, pimin_fida
+      REAL :: emin_fida, pimin_fida
       REAL(rprec), POINTER :: raxis_fida(:), zaxis_fida(:), phiaxis_fida(:), energy_fida(:), pitch_fida(:)
       REAL(rprec), POINTER :: wall_load(:,:), wall_shine(:,:)
       REAL(rprec), POINTER :: B_R(:,:,:),B_PHI(:,:,:), B_Z(:,:,:), MODB(:,:,:),&

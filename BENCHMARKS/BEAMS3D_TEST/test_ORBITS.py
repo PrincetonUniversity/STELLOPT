@@ -3,7 +3,7 @@ import sys, os
 sys.path.insert(0, '../../pySTEL/')
 import numpy as np                    #For Arrays
 from math import pi
-from libstell.beams3d import read_beams3d
+from libstell.beams3d import BEAMS3D
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -14,27 +14,22 @@ except KeyError:
 lfail = 0
 failtol = 1.0
 filename='beams3d_ORBITS.h5'
-data=read_beams3d(filename)
-if not data:
-    print('ERROR Opening File: '+filename)
-    sys.exit(0)
+b3d = BEAMS3D()
+b3d.read_beams3d(filename)
 
 # Calc values
-rho = np.sqrt(data['S_lines'])
+rho = np.sqrt(b3d.S_lines)
 rho_max = np.max(rho,axis=1)
 rho_min = np.min(rho,axis=1)
+data = {}
 data['delta'] = rho_max-rho_min
-x = data['R_lines']-10.0
-y = data['Z_lines']
+x = b3d.R_lines - 10.0
+y = b3d.Z_lines
 theta = np.arctan2(y,x)
 theta = np.where(theta > np.pi,theta-pi,theta)
 data['turning'] = np.max(theta,axis=1)
-data['R0']=data['R_lines'][:,0]
-data['R1']=data['R_lines'][:,1]
-data['R100']=data['R_lines'][:,100]
-data['R500']=data['R_lines'][:,500]
 
-print('BEAMS3D VERSION: ' + str(data['VERSION']))
+print(f'BEAMS3D VERSION: {b3d.VERSION:4.2f}')
 print('==== Vectors ====')
 varlist={}
 varlist['turning']=np.array([0.122773,0.178807,0.234767,0.290948,0.347227,0.403768,0.460658,0.517991, \
@@ -47,27 +42,6 @@ varlist['delta']= np.array([0.009462,0.01375 ,0.018008,0.022235,0.026432,0.03059
  0.074195,0.07795 ,0.081667,0.085351,0.089   ,0.092616,0.096198,0.099746, \
  0.103264,0.106749,0.110207,0.113636,0.117039,0.120418,0.123759,0.058065, \
  0.049486,0.045529,0.04275 ,0.040595,0.038827,0.037335,0.036049,0.034923])
-varlist['R0'] = np.array([10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5,\
- 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, \
- 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5, 10.5])
-varlist['R1'] = np.array([10.499992,10.499976,10.499953,10.499923,10.499885,10.49984 ,10.499788, \
- 10.499728,10.499661,10.499588,10.499507,10.499419,10.499325,10.499223, \
- 10.499115,10.499   ,10.498879,10.498752,10.498619,10.49848 ,10.498335, \
- 10.498187,10.498033,10.497875,10.497711,10.497541,10.497367,10.497187, \
- 10.497001,10.49681 ,10.496615,10.496416,10.496213,10.496006,10.495796, \
- 10.495583,10.495366,10.495147,10.494925,10.4947  ])
-varlist['R100'] = np.array([10.499754,10.499221,10.498481,10.497609,10.496721,10.495958,10.495459, \
- 10.495355,10.495747,10.496633,10.497904,10.499233,10.499991,10.499159, \
- 10.495212,10.486074,10.469125,10.44148 ,10.400467,10.344393,10.273494, \
- 10.190546,10.101022,10.012309, 9.932664, 9.870525, 9.835362, 9.842661, \
-  9.930143,10.205196,10.613181, 9.510904,10.425695, 9.862287, 9.611502, \
-  9.512494, 9.503419, 9.576901, 9.733121, 9.957221])
-varlist['R500'] = np.array([10.503795,10.50326 ,10.500566,10.495214,10.486654,10.474814,10.460831, \
- 10.447396,10.438981,10.440809,10.456342,10.481885,10.499768,10.479957, \
- 10.405566,10.307023,10.251583,10.303552,10.476386,10.579363,10.342586, \
- 10.078698,10.120321,10.468361,10.197734, 9.873231,10.388056,10.003795, \
-  9.85138 , 9.783241,10.426957, 9.47885 , 9.722051,10.438802, 9.614975, \
-  9.973302, 9.643847,10.326634, 9.500989,10.320038])
 for temp in varlist:
     act = varlist[temp]
     cal = data[temp]
@@ -75,17 +49,19 @@ for temp in varlist:
     cal = np.where(act==0,0,cal)
     div = np.where(act==0,1,act)
     perct = 100*sum(abs(act-cal)/div)
-    print('  '+temp+': '+str(cal[0])+'   '+str(act[0])+'   '+str(round(perct))+'%')
-    if perct > failtol:
-        lfail = 1
-print('=================')
-
+    print(f'  Quantity: {temp} -- CODE -- REF. -- %')
+    for i in range(len(act)):
+        perct = 100*abs(act[i]-cal[i])/div[i]
+        print(f'  {i} {cal[i]:7.6f} {act[i]:7.6f} {round(perct)}')
+        if perct > failtol:
+            lfail = 1
+    print('=================')
 if (lfail):
     print('  STATUS: FAIL!!!!!')
+    sys.exit(-1)
 else:
     print('  STATUS: PASS')
-
-sys.exit(0)
+    sys.exit(0)
 
 
 

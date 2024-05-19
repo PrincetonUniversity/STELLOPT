@@ -10,7 +10,7 @@ beams3d_beam_density.o: \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o 
 
 beams3d_interface_mod.o: \
-      beams3d_input_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/beams3d_input_mod.o \
       beams3d_runtime.o \
       beams3d_grid.o \
       beams3d_lines.o \
@@ -20,7 +20,7 @@ beams3d_interface_mod.o: \
 
 beams3d_imas_module.o: \
       beams3d_interface_mod.o \
-      beams3d_input_mod.o 
+      ../../LIBSTELL/$(LOCTYPE)/beams3d_input_mod.o 
 
 
 beams3d_fix_poloidal.o: \
@@ -143,7 +143,7 @@ beams3d_init.o: \
       ../../LIBSTELL/$(LOCTYPE)/adas_mod_parallel.o \
       beams3d_runtime.o \
       beams3d_grid.o \
-      beams3d_input_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/beams3d_input_mod.o \
       beams3d_lines.o\
       fidasim_input_mod.o \
 
@@ -258,16 +258,6 @@ beams3d_init_continuegrid.o: \
       beams3d_lines.o \
       beams3d_runtime.o \
       beams3d_grid.o      
-      
-
-beams3d_input_mod.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
-      beams3d_runtime.o \
-      beams3d_lines.o \
-      beams3d_grid.o 
       
 
 beams3d_lines.o: \

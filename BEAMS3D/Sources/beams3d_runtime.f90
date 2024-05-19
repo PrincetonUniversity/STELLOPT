@@ -51,12 +51,35 @@
 !     v4.07 01/11/24 - Added ability to specifiy weights in the input
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
-    !-----------------------------------------------------------------------
+    !-------------------------------------------------------------------
     !     Libraries
-    !-----------------------------------------------------------------------
+    !-------------------------------------------------------------------
     USE stel_kinds, ONLY: rprec
     USE mpi_params
     USE EZspline
+    USE beams3d_globals, ONLY: r_start_in, z_start_in, phi_start_in, &
+                              vll_start_in, mu_start_in, vr_start_in, &
+                              vphi_start_in, vz_start_in, t_end_in, &
+                              mass_in, charge_in, Zatom_in, weight_in, &
+                              NE_AUX_S, TE_AUX_S, NI_AUX_S, TI_AUX_S, &
+                              NE_AUX_F, TE_AUX_F, NI_AUX_F, TI_AUX_F, &
+                              ZEFF_AUX_S, POT_AUX_S, ZEFF_AUX_F, &
+                              POT_AUX_F, NI_AUX_M, NI_AUX_Z, &
+                              Adist_beams, Asize_beams, DIV_BEAMS, &
+                              DEX_BEAMS, R_BEAMS, Z_BEAMS, PHI_BEAMS, &
+                              E_BEAMS, MASS_BEAMS, CHARGE_BEAMS, &
+                              ZATOM_BEAMS, P_BEAMS, nparticles_start, &
+                              npoinc, follow_tol, int_type, ne_scale, &
+                              te_scale, ti_scale, zeff_scale, &
+                              fusion_scale, lendt_m, te_col_min, &
+                              duplicate_factor, ldebug, lbeam, &
+                              MAXBEAMS, lbeam, MAXBEAMS, nbeams, &
+                              pi2, NION, &
+                              MAXPROFLEN, MAXPARTICLES, lverb, &
+                              lbbnbi, lcollision, lfusion, &
+                              lrestart_particles, lfusion_alpha, &
+                              lfusion_He3, lfusion_proton, &
+                              lfusion_tritium, lkick, lgcsim, id_string
     !-----------------------------------------------------------------------
     !     Module Variables
     !          lverb         Logical to control screen output
@@ -123,46 +146,57 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: MPI_BCAST_ERR = 83
     INTEGER, PARAMETER :: MPI_FINE_ERR = 89
 
-    INTEGER, PARAMETER :: MAXPARTICLES = 2**18
-    INTEGER, PARAMETER :: MAXBEAMS = 32
-    INTEGER, PARAMETER :: MAXPROFLEN = 512
-    INTEGER, PARAMETER :: NION = 4
+!    INTEGER, PARAMETER :: MAXPARTICLES = 2**18
+!    INTEGER, PARAMETER :: MAXBEAMS = 32
+!    INTEGER, PARAMETER :: MAXPROFLEN = 512
+!    INTEGER, PARAMETER :: NION = 4
 
     DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
 
-    LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
-               lvessel, lvac, lcontinue_grid, lrestart_particles, lneut, &
-               lbeam, lhitonly, lread_input, lplasma_only, lraw,&
-               ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
-               lascot, lascot4, lbbnbi, lfidasim, lfidasim_cyl, lsplit, lvessel_beam, lascotfl, lrandomize, &
-               lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim, &
-               lboxsim, limas, lfieldlines, lfusion_tritium, lfusion_proton, lfusion_He3, lbeamdensity
-    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
-               ndt, ndt_max, duplicate_factor
-    INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
+!    LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
+!               lvessel, lvac, lcontinue_grid, lrestart_particles, lneut, &
+!               lbeam, lhitonly, lread_input, lplasma_only, lraw,&
+!               ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
+!               lascot, lascot4, lbbnbi, lfidasim, lfidasim_cyl, lsplit, lvessel_beam, lascotfl, lrandomize, &
+!               lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim, &
+!               lboxsim, limas, lfieldlines, lfusion_tritium, lfusion_proton, lfusion_He3, lbeamdensity
+    LOGICAL :: lvmec, lpies, lspec, lcoil, lmgrid, &
+               lvessel, lvac, lcontinue_grid, lneut, &
+               lhitonly, lread_input, lplasma_only, lraw, &
+               ldepo, lbeam_simple, lw7x, lsuzuki, &
+               lascot, lascot4, lfidasim, lfidasim_cyl, lsplit, &
+               lvessel_beam, lascotfl, lrandomize, leqdsk, lhint, &
+               lboxsim, limas, lfieldlines, lbeamdensity
+!    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
+!               ndt, ndt_max, duplicate_factor
+    INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
+!    INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
-    REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &
-                   ne_scale, te_scale, ti_scale, zeff_scale, fusion_scale, &
-                   lendt_m, te_col_min, rminor_norm
-    REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
-                                        charge_beams, Zatom_beams, P_beams
-    REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
-    REAL(rprec), DIMENSION(MAXPROFLEN) :: TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
-                                            POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F
-    REAL(rprec), DIMENSION(MAXPROFLEN) :: NI_AUX_S
-    REAL(rprec), DIMENSION(NION,MAXPROFLEN) :: NI_AUX_F
-    INTEGER, DIMENSION(NION) :: NI_AUX_Z
-    REAL(rprec), DIMENSION(NION) :: NI_AUX_M
-    REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
-                                            & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in, &
-                                            vr_start_in, vphi_start_in, vz_start_in, weight_in
+!    REAL(rprec) :: dt, pi, invpi2, mu0, to3, dt_save, &
+!                   ne_scale, te_scale, ti_scale, zeff_scale, fusion_scale, &
+!                   lendt_m, te_col_min, rminor_norm
+    REAL(rprec) :: dt, pi, invpi2, mu0, to3, dt_save, rminor_norm
+!    REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
+!                                        charge_beams, Zatom_beams, P_beams
+!    REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
+!    REAL(rprec), DIMENSION(MAXPROFLEN) :: TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
+!                                            POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F
+!    REAL(rprec), DIMENSION(MAXPROFLEN) :: NI_AUX_S
+!    REAL(rprec), DIMENSION(NION,MAXPROFLEN) :: NI_AUX_F
+!    INTEGER, DIMENSION(NION) :: NI_AUX_Z
+!    REAL(rprec), DIMENSION(NION) :: NI_AUX_M
+!    REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
+!                                            & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in, &
+!                                            vr_start_in, vphi_start_in, vz_start_in, weight_in
     LOGICAL, ALLOCATABLE :: lgc2fo_start(:)
     REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), mu_start(:), &
                                 & mass(:), charge(:), Zatom(:), t_end(:), weight(:), vr_start(:), vphi_start(:), vz_start(:)
     REAL(rprec), ALLOCATABLE :: extcur(:)
     CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
-    CHARACTER(256) :: id_string, mgrid_string, coil_string, &
-    vessel_string, int_type, restart_string, continue_grid_string, bbnbi_string, eqdsk_string
+    CHARACTER(256) :: mgrid_string, coil_string, &
+                      vessel_string, restart_string, &
+                      continue_grid_string, bbnbi_string, &
+                      eqdsk_string
 
     REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.07 ! this is the full orbit test version
 

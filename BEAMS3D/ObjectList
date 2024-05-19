@@ -46,7 +46,6 @@ beams3d_grid.o \
 backspace_out.o \
 beams3d_follow_gc.o \
 gauss_rand.o \
-beams3d_input_mod.o \
 beams3d_init_beams.o \
 fgc_rkh68.o \
 fgc_lsode.o 
