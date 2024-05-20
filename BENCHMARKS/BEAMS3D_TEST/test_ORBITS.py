@@ -5,12 +5,6 @@ import numpy as np                    #For Arrays
 from math import pi
 from libstell.beams3d import BEAMS3D
 
-try:
-	qtCreatorPath=os.environ["STELLOPT_PATH"]
-except KeyError:
-	print("Please set environment variable STELLOPT_PATH")
-	sys.exit(1)
-
 lfail = 0
 failtol = 1.0
 filename='beams3d_ORBITS.h5'
