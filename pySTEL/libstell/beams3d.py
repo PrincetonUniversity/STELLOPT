@@ -43,7 +43,7 @@ class BEAMS3D():
 					setattr(self, temp, np.int64(f[temp][0])==1)
 			# Integers
 			for temp in ['nbeams', 'nface', 'nparticles', 'nphi', \
-						 'npoinc', 'nz', 'nsteps', 'nvertex', 'nz', \
+						 'npoinc', 'nr', 'nsteps', 'nvertex', 'nz', \
 						 'ns_prof1', 'ns_prof2', 'ns_prof3', \
 						 'ns_prof4', 'ns_prof5']:
 				if temp in f:
@@ -77,6 +77,23 @@ class BEAMS3D():
 		self.Y_lines = self.R_lines*np.sin(self.PHI_lines)
 		self.MODB    = np.sqrt(self.B_R**2 + self.B_PHI**2 + self.B_Z**2)
 		return
+
+	def calcVperp(self):
+		"""Calculates the perpendicular marker velocity
+
+		This routine calcualtes the perpendicular marker velocity
+		from the magnetic moment.
+		
+		Returns
+		-------
+		Vperp : float
+			Perpendicular velocity [m/s]
+		"""
+		mass2D = np.broadcast_to(self.mass,(self.nsteps+1,self.nparticles))
+		vperp  = np.sqrt(2.0*self.moment_lines*self.B_lines/mass2D)
+		vperp  = np.where(self.B_lines < 0,0,vperp)
+		return vperp
+
 
 	def calcBaxis(self,kphi=1):
 		"""Calculates the magnetic field on axis
@@ -126,12 +143,17 @@ class BEAMS3D():
 			Aminor = Aminor + a
 		return Aminor/self.nphi
 
-	def calcVolume(self):
+	def calcVolume(self,ns=None):
 		"""Calculates the differential volume
 
 		This routine calcualtes the differential volume and the volume
 		as a function of normalized toroidal flux (S). 
 		
+		Parameters
+		----------
+		ns : int (optional)
+			Number of radial gridpoints (default ns_prof1)
+
 		Returns
 		-------
 		S : ndarray
@@ -142,15 +164,132 @@ class BEAMS3D():
 			Differential volume dV/ds [m^3]
 		"""
 		import numpy as np
+		from scipy.signal import savgol_filter
+
+		if not ns:
+			ns = self.ns_prof1
 		dr = self.raxis[1] - self.raxis[0]
 		dz = self.zaxis[1] - self.zaxis[0]
 		dp = self.phiaxis[1] - self.phiaxis[0]
 		nfp = np.round(2*np.pi/self.phiaxis[-1])
 
 		area = dr*dz
-		vol  = self.raxis*dphi*area
-		# TBD
-		return -1,-1,-1
+		vol  = self.raxis*dp*area
+		vol2d = np.broadcast_to(vol,(self.nr,self.nz))
+		dV = np.zeros((self.nr,self.nphi,self.nz))
+		for j in range(self.nphi-1):
+			grid = np.squeeze(self.S_ARR[:,j,:])
+			dV[:,j,:] = np.where(grid<=1,vol2d,0.0)
+
+		edges = np.linspace(0.0,1.0,ns+1)
+		ds = edges[1]-edges[0]
+		s  = (edges[1:]+edges[0:-1])*0.5
+
+		plasma_dvolds = np.zeros((ns))
+		for i in range(ns):
+			dtemp = np.where( self.S_ARR > edges[i], \
+							 dV,0.0)
+			dtemp = np.where( self.S_ARR <= edges[i+1], \
+							 dtemp,0.0)
+			plasma_dvolds[i] = np.sum(dtemp)
+
+		plasma_dvolds = savgol_filter(plasma_dvolds,5,2)*nfp/ds
+		plasma_vol    = np.cumsum(plasma_dvolds)*ds
+
+		z = np.polyfit(s,plasma_vol,3)
+		p = np.poly1d(z)
+		pp = np.polyder(p)
+		plasma_dvolds = pp(s)
+		plasma_vol    = np.cumsum(plasma_dvolds)*ds
+		
+		return s, plasma_vol, plasma_dvolds
+
+	def calcDepo(self,ns=None):
+		"""Calculates the deposition profile
+
+		This routine calcualtes the radial birth profile in
+		units of [part/m^3/s] 
+		
+		Parameters
+		----------
+		ns : int (optional)
+			Number of radial gridpoints (default ns_prof1)
+
+		Returns
+		-------
+		rho : ndarray
+			Normalized minor radius array
+		birth : ndarray
+			Birth Rate [part/m^3/s]
+		"""
+		import numpy as np
+		from scipy.interpolate import PchipInterpolator
+
+		# Setup rho on centered grid
+		if not ns:
+			ns = self.ns_prof1
+		edges = np.linspace(0.0,1.0,ns+1)
+		rho  = (edges[1:]+edges[0:-1])/2.0
+
+		# Calc volume elements
+		[s,_,dVds]=self.calcVolume(ns=ns)
+		rho_s = np.sqrt(s)
+		p = PchipInterpolator(rho_s,2.0*rho_s*dVds)
+		dVdrho = p(rho)
+
+		# Select start index
+		dex_start = 0
+		if self.lbeam:
+			dex_start = 1
+
+		# Calc births
+		births    = np.zeros((self.nbeams,ns))
+		rho_lines = np.sqrt(self.S_lines)
+		for b in range(self.nbeams):
+			dexb = np.nonzero(self.Beam == b+1)
+			rho_temp = rho_lines[dexb,dex_start]
+			for i in range(ns):
+				w_temp = self.Weight[dexb]
+				w_temp = np.where(rho_temp >= edges[i],w_temp,0.0)
+				w_temp = np.where(rho_temp < edges[i+1],w_temp,0.0)
+				births[b,i] = np.sum(w_temp)
+			births[b,:] = ns * births[b,:] / dVdrho
+
+		return rho,births
+
+	def calcLoss(self,ns=None):
+		"""Calculates the losses as a function of time
+
+		This routine calcualtes the cumulative losses as a function of
+		time for each beam line.  Losses are of particles not
+		markers.
+
+		Returns
+		-------
+		time : ndarray
+			Time array [s]
+		loss : ndarray
+			Losses [particles]
+		"""
+		import numpy as np
+
+		# Setup time arrays
+		time_ns  = np.linspace(0,0.999E-6,1000)
+		time_mus = np.linspace(1E-6,0.999E-3,1000)
+		time_ms  = np.linspace(1E-3,1,1000)
+		time     = np.append([time_ns,time_mus,time_ms])
+
+		# Calc losses
+		loss = np.zeros((self.nbeams,len(time)))
+		for b in range(self.nbeams):
+			lostdex = np.nonzero(self.end_state==2 and self.Beam == b)
+			t = self.t_end[lostdex]
+			w = self.Weight[lostdext]
+			[counts,_] = np.histogram(t,bins=time,weights=w)
+			nlost  = np.cumsum(counts)
+			lost[b,:] = nlost
+
+		return time,nlost
 
 
 
