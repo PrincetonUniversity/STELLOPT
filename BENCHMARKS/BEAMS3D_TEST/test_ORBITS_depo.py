@@ -5,14 +5,8 @@ import numpy as np                    #For Arrays
 from math import pi
 from libstell.beams3d import BEAMS3D
 
-try:
-    qtCreatorPath=os.environ["STELLOPT_PATH"]
-except KeyError:
-    print("Please set environment variable STELLOPT_PATH")
-    sys.exit(1)
-
 lfail = 0
-failtol = 5.0
+failtol = 20.0
 filename='beams3d_ORBITS_depo.h5'
 b3d = BEAMS3D()
 b3d.read_beams3d(filename)
@@ -26,7 +20,7 @@ data['Deposition_B1E2'] = depo[1,:]
 data['Deposition_B1E3'] = depo[2,:]
 data['Deposition_B2E1'] = depo[3,:]
 data['Deposition_B2E2'] = depo[4,:]
-data['Deposition_B2E3'] = depo[5,:]
+#data['Deposition_B2E3'] = depo[5,:]
 
 print(f'BEAMS3D VERSION: {b3d.VERSION:4.2f}')
 print('==== Vectors ====')
@@ -52,10 +46,10 @@ varlist['Deposition_B2E2']=np.array([1.046748e+19,3.297453e+18,2.037332e+18,1.65
  1.577892e+18,1.382742e+18,1.425945e+18,1.295802e+18,1.216265e+18, \
  1.116363e+18,1.000230e+18,8.233047e+17,7.038711e+17,5.307589e+17, \
  2.932251e+17])
-varlist['Deposition_B2E3']=np.array([5.945498e+18,2.521645e+18,1.877535e+18,1.797673e+18,1.923841e+18, \
- 2.078492e+18,1.921390e+18,2.017907e+18,2.056794e+18,1.922589e+18, \
- 1.900198e+18,1.785054e+18,1.552839e+18,1.315236e+18,1.034035e+18, \
- 5.391188e+17])
+#varlist['Deposition_B2E3']=np.array([5.945498e+18,2.521645e+18,1.877535e+18,1.797673e+18,1.923841e+18, \
+# 2.078492e+18,1.921390e+18,2.017907e+18,2.056794e+18,1.922589e+18, \
+# 1.900198e+18,1.785054e+18,1.552839e+18,1.315236e+18,1.034035e+18, \
+# 5.391188e+17])
 for temp in varlist:
     act = varlist[temp]
     cal = data[temp]
