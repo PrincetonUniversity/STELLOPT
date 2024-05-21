@@ -95,7 +95,7 @@ class BEAMS3D():
 		return vperp
 
 
-	def calcBaxis(self,kphi=1):
+	def calcBaxis(self,kphi=0):
 		"""Calculates the magnetic field on axis
 
 		This routine calcualtes the magnetic field on axis
@@ -115,7 +115,7 @@ class BEAMS3D():
 		import numpy as np
 		S2D = np.squeeze(self.S_ARR[:,kphi,:])
 		B2D = np.squeeze(self.MODB[:,kphi,:])
-		dex = np.argwhere(S2D == np.min(S2D))
+		dex = np.argwhere(S2D == np.min(S2D)).flatten()
 		return B2D[dex[0],dex[1]]
 
 	def calcAminor(self):
@@ -135,12 +135,15 @@ class BEAMS3D():
 		for k in range(self.nphi): 
 			S2D = np.squeeze(self.S_ARR[:,k,:])
 			S2D = np.where(S2D>1.2,1.2,S2D)
-			dex = np.argwhere(S2D == np.min(S2D))
+			dex = np.argwhere(S2D == np.min(S2D)).flatten()
 			r0  = self.raxis[dex[0]]
 			z0  = self.zaxis[dex[1]]
 			cont_gen = contour_generator(x=self.raxis,y=self.zaxis,z=S2D, line_type=LineType.Separate)
 			lines = cont_gen.lines(1.0)
-			Aminor = Aminor + a
+			lines = lines[0]
+			x   = lines[:,0] - r0
+			y   = lines[:,1] - z0
+			Aminor = Aminor + np.mean(np.sqrt(x*x+y*y))
 		return Aminor/self.nphi
 
 	def calcVolume(self,ns=None):
@@ -203,6 +206,53 @@ class BEAMS3D():
 		plasma_vol    = np.cumsum(plasma_dvolds)*ds
 		
 		return s, plasma_vol, plasma_dvolds
+
+	def calcEr(self,ns=None):
+		"""Calculates the radial electric field
+
+		This routine calcualtes the radial electric field and returns
+		the radial grid (s), electrostatic scalar potential (V), and 
+		the radial derivative of the electrostatic scalar potential.
+		
+		Parameters
+		----------
+		ns : int (optional)
+			Number of radial gridpoints (default ns_prof1)
+
+		Returns
+		-------
+		S : ndarray
+			Normalized toroidal flux array
+		V : ndarray
+			Electrostatic scalar potential [V]
+		dVds : ndarray
+			Radial derivative of the ES potential (dV/ds) [V]
+		"""
+		import numpy as np
+		from scipy.interpolate import PchipInterpolator
+
+		# Radial grid
+		if not ns:
+			ns = self.ns_prof1
+		edges  = np.linspace(0.0,1.0,ns)
+		s_half = (edges[1:]+edges[0:-1])*0.5
+
+		# Extract data
+		[C, IA] = np.unique(self.S_ARR,return_index=True)
+		POT_FLAT = self.POT_ARR.flatten()
+		pot_temp = POT_FLAT[IA]
+
+		# Make Mirror
+		C = np.concatenate((-C[::-1], C))
+		pot_temp = np.concatenate((pot_temp[::-1], pot_temp))
+
+		# Fit
+		[C, IA] = np.unique(C,return_index=True)
+		p = PchipInterpolator(C,pot_temp[IA])
+		pot = p(edges)
+		dVds = 
+		
+		return s, V, dVds
 
 	def calcDepo(self,ns=None):
 		"""Calculates the deposition profile
