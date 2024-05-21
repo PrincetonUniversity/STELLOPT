@@ -213,6 +213,11 @@ class BEAMS3D():
 		This routine calcualtes the radial electric field and returns
 		the radial grid (s), electrostatic scalar potential (V), and 
 		the radial derivative of the electrostatic scalar potential.
+		Note that Er = dV/ds * ds/dr
+		             = dV/ds * ds/drho * drho/dr
+		             = dV/ds * 2.0 * rho * (1.0/Aminor)
+			s = rho*rho -> ds/drho = 2 * rho
+			rho = r/Aminor -> drho/dr = 1.0 / Aminor 
 		
 		Parameters
 		----------
@@ -234,8 +239,7 @@ class BEAMS3D():
 		# Radial grid
 		if not ns:
 			ns = self.ns_prof1
-		edges  = np.linspace(0.0,1.0,ns)
-		s_half = (edges[1:]+edges[0:-1])*0.5
+		s  = np.linspace(0.0,1.0,ns)
 
 		# Extract data
 		[C, IA] = np.unique(self.S_ARR,return_index=True)
@@ -249,9 +253,10 @@ class BEAMS3D():
 		# Fit
 		[C, IA] = np.unique(C,return_index=True)
 		p = PchipInterpolator(C,pot_temp[IA])
-		pot = p(edges)
-		dVds = 
-		
+		V = p(s)
+		x = np.concatenate((-s[:0:-1],s))
+		f = np.concatenate((V[:0:-1],V))
+		dVds = np.gradient(f,x)
 		return s, V, dVds
 
 	def calcDepo(self,ns=None):
