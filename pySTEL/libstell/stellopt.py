@@ -35,6 +35,67 @@ class STELLOPT():
 			'COIL_BNORM', 'REGCOIL_CHI2_B', 'CURVATURE_P2', 'GAMMA_C', \
 			'KINK']
 
+	def read_stellopt_map(self,filename='map.dat'):
+		"""Reads a STELLOPT MAP output file
+
+		This routine reads the STELLOPT map.dat  output file.
+
+		Parameters
+		----------
+		file : str
+			Path to STELLOPT file.
+		"""
+		import numpy as np
+		import re
+		f = open(filename,'r')
+		content = f.read()
+		f.close()
+		numbers = re.findall(r'-?\d+\.?\d*(?:[eE][+-]?\d+)?', content)
+		numbers = [float(num) for num in numbers]
+		mtargets  = int(numbers[0])
+		nvars     = int(numbers[1])
+		ndiv      = int(numbers[2])
+		numsearch = int(numbers[3])
+		nnext     = nvars * numsearch + 4
+		x         = numbers[4:nnext]
+		fval      = numbers[nnext:]
+		x2d       = np.reshape(x,(numsearch,nvars)).T
+		f2d       = np.reshape(fval,(numsearch,mtargets)).T
+		self.x_map = x2d
+		self.f_map = f2d
+
+	def read_stellopt_varlabels(self,filename='var_labels'):
+		"""Reads a STELLOPT var_labels output file
+
+		This routine reads the STELLOPT var_labels output file.
+
+		Parameters
+		----------
+		file : str
+			Path to var_labels file. (default 'var_labels')
+		"""
+		f = open(filename,'r')
+		line = f.readline()
+		nvars = int(line)
+		var      = []
+		varnames = []
+		for i in range(nvars):
+			line = f.readline()
+			line.replace('\n','')
+			[var1,var2] = line.split(':')
+			var.append(var1.strip())
+			varnames.append(var2.strip())
+		line = f.readline()
+		mtargets = int(line)
+		targetnames = []
+		for i in range(mtargets):
+			line = f.readline()
+			line.replace('\n','')
+			targetnames.append(line.strip())
+		self.varnames = varnames
+		self.var = var
+		self.targetnames = targetnames
+
 	def read_stellopt_output(self,filename):
 		"""Reads a STELLOPT output file
 
