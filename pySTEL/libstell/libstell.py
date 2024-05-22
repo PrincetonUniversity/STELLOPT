@@ -268,6 +268,116 @@ class LIBSTELL():
 		write_bootin_namelist.restype=None
 		write_bootin_namelist(filename.encode('UTF-8'),len(filename))
 
+	def read_beams3d_input(self,filename):
+		"""Reads a BEAMS3D BEAMS3D_INPUT namelist
+
+		This routine wrappers read_beams3d_input function in
+		beams3d_input_mod.
+
+		Parameters
+		----------
+		file : str
+			Path to wout file.
+		"""
+		import ctypes as ct
+		# A few constants defined in globals
+		module_name = self.s1+'beams3d_globals_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getmaxparticles'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		maxparticles = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getmaxbeams'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		maxbeams = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getmaxproflen'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		maxproflen = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getnion'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		nion = get_constant()
+		# Call the initialization routine
+		module_name = self.s1+'beams3d_input_mod_'+self.s2
+		init_beams3d_input = getattr(self.libstell,module_name+'_init_beams3d_input'+self.s3)
+		init_beams3d_input.argtypes = None
+		init_beams3d_input.restype = None
+		#init_beams3d_input() #not working
+		# We use an added routine as a helper
+		module_name = self.s1+'beams3d_input_mod_'+self.s2
+		read_beams3d_input = getattr(self.libstell,module_name+'_read_beams3d_input'+self.s3)
+		read_beams3d_input.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
+		read_beams3d_input.restype = None
+		istat = ct.c_int(0)
+		read_beams3d_input(filename.encode('UTF-8'),ct.byref(istat),len(filename))
+		if not (istat.value == 0):
+			return None
+		# Get vars
+		intList=['nr','nphi','nz','nparticles_start','npoinc', \
+				'duplicate_factor', 'ns_prof1','ns_prof2', \
+				'ns_prof3','ns_prof4','ns_prof5', 'nr_fida', \
+				'nphi_fida', 'nz_fida', 'nenergy_fida', 'npitch_fida']
+		intLen=[1]*len(intList)
+		intList.extend(['dex_beams','ni_aux_z'])
+		intLen.extend([(maxbeams,1),(nion,1)])
+		realList=['rmin', 'rmax', 'zmin', 'zmax', 'phimin', 'phimax', \
+				  'follow_tol', 'vc_adapt_tol', \
+				  'ne_scale', 'te_scale', 'ti_scale', 'zeff_scale', \
+				  'fusion_scale', 'plasma_zmean', 'plasma_mass', \
+				  'therm_factor', 'lendt_m', 'te_col_min', \
+				  'b_kick_min', 'b_kick_max', 'freq_kick', 'e_kick', \
+				  'rho_fullorbit', 'partvmax', 'rmin_fida', \
+				  'rmax_fida', 'zmin_fida', 'zmax_fida', 'phimin_fida', \
+				  'phimax_fida','t_fida']
+		realLen=[1]*len(realList)
+		realList.extend(['r_start_in', 'phi_start_in', 'z_start_in',\
+						 'vll_start_in', 'mu_start_in', 't_end_in', \
+						 'charge_in', 'mass_in', 'zatom_in', \
+						 'weight_in', 'vr_start_in', 'vphi_start_in', \
+						 'vz_start_in'])
+		realLen.extend([(maxparticles,1)]*13)
+		realList.extend(['mass_beams', 'charge_beams', 'e_beams',\
+						 'p_beams', 'div_beams', 'asize_beams', \
+						 'adist_beams'])
+		realLen.extend([(maxbeams,1)]*7)
+		realList.extend(['r_beams', 'z_beams', 'phi_beams'])
+		realLen.extend([(maxbeams,2)]*3)
+		realList.extend(['ne_aux_s', 'te_aux_s', 'ti_aux_s', \
+						 'ne_aux_f', 'te_aux_f', 'ti_aux_f', \
+						 'pot_aux_s', 'pot_aux_f', 'zeff_aux_s', \
+						 'zeff_aux_f'])
+		realLen.extend([(maxproflen,1)]*10)
+		realList.extend(['ni_aux_s', 'ni_aux_f', 'ni_aux_m'])
+		realLen.extend([(maxproflen,1),(nion,maxproflen),(nion,1)])
+		module_name = self.s1+'beams3d_globals_'+self.s2
+		out_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		return out_data
+
+	def write_beams3d_input(self,filename,out_dict=None):
+		"""Wrappers writing of the BEAMS3D_INPUT namelist
+
+		This routine wrappers write_beams3d_input in LIBSTELL
+
+		Parameters
+		----------
+		file : str
+			Path to input file.
+		out_dict : dict (optional)
+			Dictionary of items to change.
+		"""
+		import ctypes as ct
+		module_name = self.s1+'beams3d_globals_'+self.s2
+		# Check if we want to update values
+		if out_dict:
+			for key in out_dict:
+				self.set_module_var(module_name,key,out_dict[key])
+		module_name = self.s1+'beams3d_input_mod_'+self.s2
+		write_beams3d_namelist = getattr(self.libstell,module_name+'_write_beams3d_namelist_byfile'+self.s3)
+		write_beams3d_namelist.argtypes = [ct.c_char_p,ct.c_long]
+		write_beams3d_namelist.restype=None
+		write_beams3d_namelist(filename.encode('UTF-8'),len(filename))
+
 	def read_wout(self,file):
 		"""Reads a wout file and returns a dictionary
 
@@ -493,6 +603,8 @@ class LIBSTELL():
 				return
 			n = val.ndim
 			f = tt*val.size
+		elif type(val) == type(self):
+			return # Do nothing
 		else:
 			print(f'   Unrecognized type ({var}):',type(val))
 			return
