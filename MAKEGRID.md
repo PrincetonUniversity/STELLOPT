@@ -90,7 +90,7 @@ an input file.  The namelist has the form
   KP   = 32              ! Number of toroidal planes
   IR   = 201             ! Number of R gridpoints
   JZ   = 201             ! Number of Z gridpoints
-\
+/
 ```
 
 

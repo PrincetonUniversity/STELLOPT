@@ -48,6 +48,28 @@ or type it interactively
      Enter number of r (radial) mesh points  :  
      Enter number of z mesh points  : 
 
+or put a namelist in 'input_xgrid.dat':
+
+```fortran
+&MGRID_NLI
+  TASK = 'MGRID'
+  MGRID_EXT = 'c09r00' 
+  MGRID_MODE = 'S'
+  LSTELL_SYM = T
+  RMIN = 0.436
+  RMAX = 2.436
+  ZMIN =-1.000
+  ZMAX = 1.000
+  KP   = 36
+  IR   = 201
+  JZ   = 201
+/
+```
+
+and call via
+
+    >~/bin/xgrid input_xgrid.dat
+
 The code will begin to run and part of the screen output is:
 
      Stellarator symmetry IS assumed
