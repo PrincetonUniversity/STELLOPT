@@ -263,13 +263,13 @@
          IF (lbeam) lcollision = .true.
          IF (B_kick_min >=0 ) lkick = .true.
          nbeams = 0
-         DO WHILE ((Asize_beams(nbeams+1) >= 0.0).and.(nbeams<MAXBEAMS))
-            nbeams = nbeams + 1
+         DO WHILE (nbeams<MAXBEAMS)
+            IF (Asize_beams(nbeams+1) >= 0.0) nbeams = nbeams + 1
          END DO
          IF (lbbnbi) THEN
             nbeams = 0
-            DO WHILE ((Dex_beams(nbeams+1) > 0).and.(nbeams<MAXBEAMS))
-               nbeams = nbeams + 1
+            DO WHILE (nbeams<MAXBEAMS)
+               IF (Dex_beams(nbeams+1) > 0) nbeams = nbeams + 1
             END DO
             IF (nbeams == 0) THEN
                WRITE(6,'(A)') 'BEAMLET beam model requested but nbeams==0'
@@ -287,30 +287,30 @@
             IF (lfusion_He3) nbeams = nbeams + 1
          END IF
          nte = 0
-         DO WHILE ((TE_AUX_S(nte+1) >= 0.0).and.(nte<MAXPROFLEN))
-            s_max_te=TE_AUX_S(nte+1)
-            nte = nte + 1
+         DO WHILE (nte<MAXPROFLEN)
+            IF (TE_AUX_S(nte+1) >= 0.0) nte = nte+1
          END DO
+         IF (nte > 0) s_max_te = TE_AUX_S(nte)
          nne = 0
-         DO WHILE ((NE_AUX_S(nne+1) >= 0.0).and.(nne<MAXPROFLEN))
-            s_max_ne=NE_AUX_S(nne+1)
-            nne = nne + 1
+         DO WHILE (nne<MAXPROFLEN)
+            IF (NE_AUX_S(nne+1) >= 0.0) nne = nne+1
          END DO
+         IF (nne > 0) s_max_ne = NE_AUX_S(nne)
          nti = 0
-         DO WHILE ((TI_AUX_S(nti+1) >= 0.0).and.(nti<MAXPROFLEN))
-            s_max_ti=TI_AUX_S(nti+1)
-            nti = nti + 1
+         DO WHILE (nti<MAXPROFLEN)
+            IF (TI_AUX_S(nti+1) >= 0.0) nti = nti+1
          END DO
+         IF (nti > 0) s_max_ti = NE_AUX_S(nti)
          nzeff = 0
-         DO WHILE ((ZEFF_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
-            nzeff = nzeff + 1
+         DO WHILE (nzeff<MAXPROFLEN)
+            IF (ZEFF_AUX_S(nzeff+1) >= 0.0) nzeff = nzeff+1
          END DO
+         IF (nzeff > 0) s_max_zeff=ZEFF_AUX_S(nzeff)
          npot = 0
-         DO WHILE ((POT_AUX_S(npot+1) >= 0.0).and.(npot<MAXPROFLEN))
-            s_max_pot=POT_AUX_S(npot+1)
-            npot = npot + 1
+         DO WHILE (npot<MAXPROFLEN)
+            IF (POT_AUX_S(npot+1) >= 0.0) npot = npot+1
          END DO
-
+         IF (npot > 0)  s_max_pot = POT_AUX_S(nti)
          ! Handle multiple ion species
          IF (ANY(NI_AUX_S >0)) THEN
             nzeff = 0
@@ -383,10 +383,9 @@
          s_max_zeff=ZEFF_AUX_S(nzeff)
 
          nparticles = 0
-         DO WHILE ((r_start_in(nparticles+1) >= 0.0).and.(nparticles<MAXPARTICLES))
-            nparticles = nparticles + 1
+         DO WHILE (nparticles<MAXPARTICLES)
+            IF (r_start_in(nparticles+1) >= 0.0) nparticles = nparticles + 1
          END DO
-!      END IF
 
 #if !defined(NAG)
       IF (int_type=='NAG') THEN
@@ -472,23 +471,42 @@
       WRITE(iunit_out,outflt) 'TI_SCALE',TI_SCALE
       WRITE(iunit_out,outflt) 'ZEFF_SCALE',ZEFF_SCALE
       WRITE(iunit_out,outflt) 'THERM_FACTOR',therm_factor
-      WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NE_AUX_S',(ne_aux_s(n), n=1,nne)
-      WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NE_AUX_F',(ne_aux_f(n), n=1,nne)
-      WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'TE_AUX_S',(te_aux_s(n), n=1,nte)
-      WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'TE_AUX_F',(te_aux_f(n), n=1,nte)
-      WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'TI_AUX_S',(ti_aux_s(n), n=1,nti)
-      WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'TI_AUX_F',(ti_aux_f(n), n=1,nti)
-      ik = COUNT(NI_AUX_S .ge. 0)
-      WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NI_AUX_S',(ni_aux_s(n), n=1,ik)
-      DO n = 1, NION
-         IF (ANY(NI_AUX_F(n,:)>0)) THEN
-            WRITE(iunit_out,"(2X,A,'(',I1.1,',:) =',4(1X,ES22.12E3))") 'TI_AUX_F',n,(ni_aux_f(n,l), l=1,ik)
-         END IF
-      END DO
-      WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ZEFF_AUX_S',(zeff_aux_s(n), n=1,nzeff)
-      WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ZEFF_AUX_F',(zeff_aux_f(n), n=1,nzeff)
-      WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'POT_AUX_S',(zeff_aux_s(n), n=1,npot)
-      WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'POT_AUX_F',(zeff_aux_f(n), n=1,npot)
+      ik = COUNT(ne_aux_s >= 0)
+      IF (ik > 0) THEN
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NE_AUX_S',(ne_aux_s(n), n=1,ik)
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NE_AUX_F',(ne_aux_f(n), n=1,ik)
+      END IF
+      ik = COUNT(te_aux_s >= 0)
+      IF (ik > 0) THEN
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'TE_AUX_S',(te_aux_s(n), n=1,ik)
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'TE_AUX_F',(te_aux_f(n), n=1,ik)
+      END IF
+      ik = COUNT(ti_aux_s >= 0)
+      IF (ik > 0) THEN
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'TI_AUX_S',(ti_aux_s(n), n=1,ik)
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'TI_AUX_F',(ti_aux_f(n), n=1,ik)
+      END IF
+      ik = COUNT(ni_aux_s >= 0)
+      IF (ik > 0) THEN
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NI_AUX_M',(ni_aux_m(n), n=1,NION)
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,I0))") 'NI_AUX_Z',(ni_aux_z(n), n=1,NION)
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NI_AUX_S',(ni_aux_s(n), n=1,ik)
+         DO n = 1, NION
+            IF (ANY(NI_AUX_F(n,:)>0)) THEN
+               WRITE(iunit_out,"(2X,A,'(',I1.1,',:) =',4(1X,ES22.12E3))") 'NI_AUX_F',n,(ni_aux_f(n,l), l=1,ik)
+            END IF
+         END DO
+      END IF
+      ik = COUNT(zeff_aux_s >= 0)
+      IF (ik > 0) THEN
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ZEFF_AUX_S',(zeff_aux_s(n), n=1,ik)
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ZEFF_AUX_F',(zeff_aux_f(n), n=1,ik)
+      END IF
+      ik = COUNT(pot_aux_s >= 0)
+      IF (ik > 0) THEN
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'POT_AUX_S',(pot_aux_s(n), n=1,ik)
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'POT_AUX_F',(pot_aux_f(n), n=1,ik)
+      END IF
       IF (lbeam) THEN
          DO n = 1, nbeams
             WRITE(iunit_out,"(A,I2.2)") '!---- BEAM #',n
@@ -528,6 +546,20 @@
       WRITE(iunit_out,'(A)') '/'
 
       END SUBROUTINE write_beams3d_namelist
+
+      SUBROUTINE write_beams3d_namelist_byfile(filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      
+      iunit = 100
+      istat = 0
+      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      IF (istat .ne. 0) RETURN
+      CALL write_beams3d_namelist(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE write_beams3d_namelist_byfile
 
       SUBROUTINE BCAST_BEAMS3D_INPUT(local_master,comm,istat)
       USE mpi_inc
