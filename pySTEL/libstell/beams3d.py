@@ -6,10 +6,11 @@ BEAMS3D Energetic particle data.
 """
 
 # Libraries
+from libstell.libstell import LIBSTELL, FourierRep
 
 # Constants
 
-# FIELDLINES Class
+# BEAMS3D Class
 class BEAMS3D():
 	"""Class for working with BEAMS3D data
 
@@ -345,6 +346,44 @@ class BEAMS3D():
 			lost[b,:] = nlost
 
 		return time,nlost
+
+# BEASM3D Input Class
+class BEAMS3D_INPUT():
+	"""Class for working with BEAMS3D INPUT data
+
+	"""
+	def __init__(self, parent=None):
+		self.libStell = LIBSTELL()
+
+	def read_input(self,filename):
+		"""Reads BEAMS3D_INPUT namelist from a file
+
+		This routine wrappers the beams3d_input_mod module reading routine.
+		Parameters
+		----------
+		filename : string
+			Input file name with BEASM3D_INPUT namelist
+		"""
+		indata_dict = self.libStell.read_beams3d_input(filename)
+		for key in indata_dict:
+			setattr(self, key, indata_dict[key])
+
+	def write_input(self,filename):
+		"""Writes BEASM3D_INPUT namelist to a file
+
+		This routine wrappers the beams3d_input_mod module writing routine.
+		Parameters
+		----------
+		filename : string
+			Input file name to write BEASM3D_INPUT namelist to
+		"""
+		out_dict = vars(self)
+		self.libStell.write_beams3d_input(filename,out_dict)
+
+# Main routine
+if __name__=="__main__":
+	import sys
+	sys.exit(0)
 
 
 
