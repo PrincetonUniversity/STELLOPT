@@ -21,7 +21,7 @@ path to the variable MACPORTS in the setup script (and rezip).
 3\. Use MacPorts to install your packages. Note you should probably used
 gcc7 or gcc8 and replace the gccX\'s with the consistent version. I\'ve
 also chosen OpenMPI but the sources could also be built with MPICH.
-Please note that as of GCC10 the flag `-fallow-argument-mismatc` must be
+Please note that as of GCC10 the flag `-fallow-argument-mismatch` must be
 added at compile time.
 
     <===gccX version===>
