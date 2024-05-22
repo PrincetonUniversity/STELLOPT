@@ -6,7 +6,6 @@ equilibrium data.
 """
 
 # Libraries
-import sys
 from libstell.libstell import LIBSTELL, FourierRep
 
 # Constants
