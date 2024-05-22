@@ -73,10 +73,11 @@
 !          afield_points_file  A-Field at a point diagnostic
 !          bfield_points_file  B-Field at a point diagnostic
 !          extcur         External currents for MGRID calculation
+!          lapoints_accurate_output  Enable writing apoints outputs with more digits
 !          lbpoints_accurate_output  Enable writing bpoints outputs with more digits
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      
+
       INTEGER, PARAMETER ::  FILE_OPEN_ERR     = 1
       INTEGER, PARAMETER ::  ALLOC_ERR         = 11
       INTEGER, PARAMETER ::  NAMELIST_READ_ERR = 12
@@ -103,9 +104,10 @@
       INTEGER, PARAMETER :: MPI_FINE_ERR = 89
 
       INTEGER, PARAMETER ::  MAXLINES   = 256
-      
+
       LOGICAL         :: lverb, lvmec, lpies, lspec, lcoil, lvac, &
                          lrphiz, lmut, luse_mut, lvc_field, &
+                         lapoints_accurate_output, &
                          lbpoints_accurate_output
       LOGICAL         :: luse_extcur(512),lskip_flux(2048),lskip_rogo(2048)
       INTEGER         :: nextcur, int_step, nu, nv, nfp_diagno, eq_sgns,&
@@ -118,7 +120,7 @@
                          bfield_points_file, &
                          int_type, coil_string, flux_mut_file, rog_mut_file,&
                          mir_mut_file, bprobes_mut_file
-                         
+
       REAL(rprec), PARAMETER :: DIAGNO_VERSION = 4.00
       REAL(rprec), PARAMETER ::      pi = 3.14159265358979312D+00
       REAL(rprec), PARAMETER ::     pi2 = 6.28318530717958623
@@ -130,14 +132,14 @@
 !          handle_error  Controls Program Termination
 !-----------------------------------------------------------------------
       CONTAINS
-      
+
       SUBROUTINE handle_error(error_num,string_val,ierr)
       IMPLICIT NONE
       INTEGER,INTENT(in)      :: error_num
       INTEGER,INTENT(inout)      :: ierr
       CHARACTER(*),INTENT(in) :: string_val
       WRITE(6,*) '!!!!! ERROR !!!!!'
-      
+
       IF (error_num .eq. FILE_OPEN_ERR) THEN
             WRITE(6,*) '  DIAGNO COULD NOT OPEN A FILE.'
             WRITE(6,*) '  FILENAME: ',TRIM(string_val)
@@ -235,9 +237,9 @@
       END IF
       CALL FLUSH(6)
 !DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_FINALIZE(ierr)   
+      CALL MPI_FINALIZE(ierr)
 !DEC$ ENDIF
       STOP
       END SUBROUTINE handle_error
-      
+
       END MODULE diagno_runtime
