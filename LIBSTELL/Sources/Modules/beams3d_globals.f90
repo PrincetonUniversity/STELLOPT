@@ -53,6 +53,27 @@
                      B_kick_max, E_kick, freq_kick, rho_fullorbit, &
                      t_fida, s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
 
+      CONTAINS
 
+      ! These expose the global variables through ctypes
+      INTEGER FUNCTION getmaxparticles()
+      IMPLICIT NONE
+      getmaxparticles = MAXPARTICLES
+      END FUNCTION getmaxparticles
+      
+      INTEGER FUNCTION getMAXBEAMS()
+      IMPLICIT NONE
+      getMAXBEAMS = MAXBEAMS
+      END FUNCTION getMAXBEAMS
+      
+      INTEGER FUNCTION getMAXPROFLEN()
+      IMPLICIT NONE
+      getMAXPROFLEN = MAXPROFLEN
+      END FUNCTION getMAXPROFLEN
+      
+      INTEGER FUNCTION getNION()
+      IMPLICIT NONE
+      getNION =NION
+      END FUNCTION getNION
 
       END MODULE beams3d_globals
