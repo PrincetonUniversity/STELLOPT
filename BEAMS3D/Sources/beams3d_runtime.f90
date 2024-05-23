@@ -152,7 +152,7 @@ MODULE beams3d_runtime
     REAL(rprec), DIMENSION(MAXPROFLEN) :: NI_AUX_S
     REAL(rprec), DIMENSION(NION,MAXPROFLEN) :: NI_AUX_F
     INTEGER, DIMENSION(NION) :: NI_AUX_Z
-    REAL(rprec), DIMENSION(NION) :: NI_AUX_M
+    REAL(rprec), DIMENSION(NION) :: NI_AUX_M,ni_temp
     REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
                                             & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in, &
                                             vr_start_in, vphi_start_in, vz_start_in, weight_in

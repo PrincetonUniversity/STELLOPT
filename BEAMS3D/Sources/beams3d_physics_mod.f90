@@ -14,7 +14,7 @@ MODULE beams3d_physics_mod
       USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
                                  dt_save, lbbnbi, weight, ndt, &
                                  ndt_max, npoinc, lendt_m, te_col_min, &
-                                 NION, NI_AUX_M, NI_AUX_Z, vll_start, charge_beams
+                                 NION, NI_AUX_M, NI_AUX_Z, vll_start, charge_beams,ni_temp
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                vr_lines, vphi_lines, vz_lines, &
                                myline, mytdex, moment, ltherm, &
@@ -59,6 +59,17 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION, PRIVATE, PARAMETER :: eps_0 = 8.854187817E-12;
       DOUBLE PRECISION, PRIVATE, PARAMETER :: hbar = 1.054571817E-34;
 
+    interface
+        FUNCTION collision_operator(ne_in,te_in,ti_in,vbeta_in,Zeff_in,modb,speed_in) result(slow_par)
+            DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, ti_in,vbeta_in, Zeff_in, speed_in,modb
+            !DOUBLE PRECISION, DIMENSION(:), INTENT(in) :: ni_in
+            DOUBLE PRECISION :: slow_par(3)
+        END FUNCTION collision_operator
+    END INTERFACE
+
+    PROCEDURE(collision_operator), POINTER :: current_collision_operator
+
+
       !-----------------------------------------------------------------
       !     SUBROUTINES
       !        BEAMS3D_PHYISCS(t,q) Slowing down and pitch angle
@@ -74,7 +85,7 @@ MODULE beams3d_physics_mod
       !                    Coulomb log as defined in NRL 2019 for all species
       !                    Calculationg method before 2024
       !-----------------------------------------------------------------
-      FUNCTION coll_op_nrl19(ne_in,te_in,vbeta_in,Zeff_in)   result(slow_par)
+      FUNCTION coll_op_nrl19(ne_in,te_in,ti_in,vbeta_in,Zeff_in,modb,speed_in)   result(slow_par)
          !--------------------------------------------------------------
          !     Input Parameters
          !          ne_in        Electron Density [m^-3]
@@ -88,7 +99,8 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION :: slow_par(3)
-         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
+         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, ti_in,vbeta_in, Zeff_in, speed_in,modb
+         !DOUBLE PRECISION, DIMENSION(:), INTENT(in) :: ni_in
          DOUBLE PRECISION :: ne_cm,coulomb_log,fact_crit_legacy
          ne_cm = ne_in * 1E-6
          coulomb_log = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
@@ -106,7 +118,7 @@ MODULE beams3d_physics_mod
       !                    Coulomb log as defined in NRL 2019 for ions
       !                    Coulomb log as defined in NRL 2019 for electrons
       !-----------------------------------------------------------------
-      FUNCTION coll_op_nrl19_ie(ne_in,te_in,vbeta_in,Zeff_in)  result(slow_par)
+      FUNCTION coll_op_nrl19_ie(ne_in,te_in,ti_in,vbeta_in,Zeff_in,modb,speed_in)  result(slow_par)
          !--------------------------------------------------------------
          !     Input Parameters
          !          ne_in        Electron Density [m^-3]
@@ -120,7 +132,8 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION :: slow_par(3)
-         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
+         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, ti_in,vbeta_in, Zeff_in, speed_in,modb
+         !DOUBLE PRECISION, DIMENSION(:), INTENT(in) :: ni_in
          DOUBLE PRECISION :: ne_cm, coulomb_loge, coulomb_logi
          ne_cm = ne_in * 1E-6
          coulomb_logi = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
@@ -141,7 +154,7 @@ MODULE beams3d_physics_mod
       !                    Coulomb log as defined in NUBEAM code
       !                    (r8_coulog.f90).
       !-----------------------------------------------------------------
-      FUNCTION coll_op_nubeam(ne_in,ni_in,te_in,ti_in,vbeta_in,Zeff_in,modb,speed_in) result(slow_par)
+      FUNCTION coll_op_nubeam(ne_in,te_in,ti_in,vbeta_in,Zeff_in,modb,speed_in) result(slow_par)
          !--------------------------------------------------------------
          !     Input Parameters
          !          ne_in        Electron Density [m^-3]
@@ -156,7 +169,8 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION :: slow_par(3)
-         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, ti_in, ni_in(NION),vbeta_in, Zeff_in, speed_in,modb
+         DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, ti_in,vbeta_in, Zeff_in, speed_in,modb
+         !DOUBLE PRECISION, DIMENSION(:), INTENT(in) :: ni_in
          INTEGER :: i
          DOUBLE PRECISION :: sm, omega2, vrel2,vrel2_part,bmincl,bminqu,bmax,bmin,coulomb_log, coulomb_loge, zi2_ai, zi2,myA
          ! Same formulation as NUBEAM internal calculation (r8_coulog.f90), different Units than usual: 
@@ -165,7 +179,7 @@ MODULE beams3d_physics_mod
          sm=zero
          do i=1,COUNT(NI_AUX_Z>0)
             myA = NI_AUX_M(i)*inv_dalton
-            omega2=1.74d0*NI_AUX_Z(i)**2/(myA)*ni_in(i) & !assume ni=ne (should be changed for multi-ion plasmas)
+            omega2=1.74d0*NI_AUX_Z(i)**2/(myA)*ni_temp(i) & !assume ni=ne (should be changed for multi-ion plasmas)
                   +9.18d15*NI_AUX_Z(i)**2/(myA)**2*modb**2
             vrel2=9.58d7*(ti_in/(myA) + vrel2_part) !Assume same ti for all species
             sm=sm+omega2/vrel2
@@ -192,8 +206,8 @@ MODULE beams3d_physics_mod
             bmin=max(bmincl,bminqu)
             coulomb_log=log(bmax/bmin) !only last coulomb log is saved - TODO: implement for multi-species
             coulomb_log = max(coulomb_log,one)
-            zi2_ai = zi2_ai+ni_in(i) *NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton) * coulomb_log
-            zi2 = zi2+ni_in(i) *NI_AUX_Z(i)**2 * coulomb_log
+            zi2_ai = zi2_ai+ni_temp(i) *NI_AUX_Z(i)**2/(NI_AUX_M(i)*inv_dalton) * coulomb_log
+            zi2 = zi2+ni_temp(i) *NI_AUX_Z(i)**2 * coulomb_log
             !WRITE(6,*) coulomb_log, coulomb_loge
          end do
          coulomb_loge = max(coulomb_loge,one)
@@ -207,6 +221,22 @@ MODULE beams3d_physics_mod
          slow_par(3) =zi2/zi2_ai/myA
          RETURN
       END FUNCTION coll_op_nubeam
+
+      subroutine select_collision_operator(operator)
+         integer, intent(in) :: operator
+
+         select case (operator)
+         case (1)
+               current_collision_operator => coll_op_nrl19
+         case (2)
+               current_collision_operator => coll_op_nrl19_ie
+         case (3)
+               current_collision_operator => coll_op_nubeam               
+         case default
+               print *, "Error: Invalid collision operator selected"
+               stop
+         end select
+      end subroutine select_collision_operator
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_physics_gc
@@ -241,7 +271,8 @@ MODULE beams3d_physics_mod
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
-         DOUBLE PRECISION :: slow_par(3), ni_temp(NION)
+         DOUBLE PRECISION :: slow_par(3) 
+        ! DOUBLE PRECISION, ALLOCATABLE :: ni_temp(:)
          ! For splines
          INTEGER :: i,j,k, l
          REAL*8 :: xparam, yparam, zparam
@@ -263,6 +294,7 @@ MODULE beams3d_physics_mod
          vll      = q(4)
 
          ! Initialize values
+         !ALLOCATE(ni_temp(NIONS))
          te_temp  = 0; ne_temp  = 0; ti_temp  = 0; zeff_temp=1;
          speed = 0; reduction = 0
 
@@ -332,25 +364,11 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
 
-            slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+            slow_par = current_collision_operator(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
             vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
             tau_spit_inv = one/slow_par(2)
             vc3_tauinv = vcrit_cube*tau_spit_inv
-            !WRITE(6, *) 'NRL19: ',slow_par, vc3_tauinv*slow_par(3)
-            !slow_par = coll_op_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-            !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
-            !vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
-            !tau_spit_inv = one/slow_par(2)
-            !vc3_tauinv = vcrit_cube*tau_spit_inv
-            !WRITE(6, *) 'NUBEAM: ', slow_par , vc3_tauinv*slow_par(3)
 
-
-
-            ! vcrit_cube = v_crit*v_crit*v_crit
-
-               
-            ! tau_spit_inv = one/tau_spit
-            ! vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
 
             !-----------------------------------------------------------
@@ -569,15 +587,10 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
 
-               slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-               !WRITE(6, *) 'NRL19: ', slow_par
-               !slow_par = coll_op_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-               !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
-               !WRITE(6, *) 'NUBEAM: ', slow_par
-
-               vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
-               tau_spit_inv = one/slow_par(2)
-               vc3_tauinv = vcrit_cube*tau_spit_inv
+            slow_par = current_collision_operator(ne_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+            vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
+            tau_spit_inv = one/slow_par(2)
+            vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
 
             !-----------------------------------------------------------
