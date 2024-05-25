@@ -99,6 +99,7 @@
 
       SUBROUTINE init_beams3d_input
       IMPLICIT NONE
+      pi2 = 8.0 * ATAN(1.0)
       nr     = 101
       nphi   = 360
       nz     = 101
@@ -214,7 +215,7 @@
          CHARACTER(*), INTENT(in) :: filename
          INTEGER, INTENT(out) :: istat
          LOGICAL :: lexist
-         INTEGER :: iunit, local_master, i1
+         INTEGER :: iunit, local_master, i1, ik
          CHARACTER(LEN=1000) :: line
       ! Initializations
       local_master = 0
@@ -263,13 +264,13 @@
          IF (lbeam) lcollision = .true.
          IF (B_kick_min >=0 ) lkick = .true.
          nbeams = 0
-         DO WHILE (nbeams<MAXBEAMS)
-            IF (Asize_beams(nbeams+1) >= 0.0) nbeams = nbeams + 1
+         DO ik = 1, MAXBEAMS
+            IF (Asize_beams(ik) >= 0.0) nbeams = nbeams + 1
          END DO
          IF (lbbnbi) THEN
             nbeams = 0
-            DO WHILE (nbeams<MAXBEAMS)
-               IF (Dex_beams(nbeams+1) > 0) nbeams = nbeams + 1
+            DO ik = 1, MAXBEAMS
+               IF (Dex_beams(ik) > 0) nbeams = nbeams + 1
             END DO
             IF (nbeams == 0) THEN
                WRITE(6,'(A)') 'BEAMLET beam model requested but nbeams==0'
@@ -287,54 +288,54 @@
             IF (lfusion_He3) nbeams = nbeams + 1
          END IF
          nte = 0
-         DO WHILE (nte<MAXPROFLEN)
-            IF (TE_AUX_S(nte+1) >= 0.0) nte = nte+1
+         DO ik = 1, MAXPROFLEN
+            IF (TE_AUX_S(ik) >= 0.0) nte = nte+1
          END DO
          IF (nte > 0) s_max_te = TE_AUX_S(nte)
          nne = 0
-         DO WHILE (nne<MAXPROFLEN)
-            IF (NE_AUX_S(nne+1) >= 0.0) nne = nne+1
+         DO ik = 1, MAXPROFLEN
+            IF (NE_AUX_S(ik) >= 0.0) nne = nne+1
          END DO
          IF (nne > 0) s_max_ne = NE_AUX_S(nne)
          nti = 0
-         DO WHILE (nti<MAXPROFLEN)
-            IF (TI_AUX_S(nti+1) >= 0.0) nti = nti+1
+         DO ik = 1, MAXPROFLEN
+            IF (TI_AUX_S(ik) >= 0.0) nti = nti+1
          END DO
          IF (nti > 0) s_max_ti = NE_AUX_S(nti)
          nzeff = 0
-         DO WHILE (nzeff<MAXPROFLEN)
-            IF (ZEFF_AUX_S(nzeff+1) >= 0.0) nzeff = nzeff+1
+         DO ik = 1, MAXPROFLEN
+            IF (ZEFF_AUX_S(ik) >= 0.0) nzeff = nzeff+1
          END DO
          IF (nzeff > 0) s_max_zeff=ZEFF_AUX_S(nzeff)
          npot = 0
-         DO WHILE (npot<MAXPROFLEN)
-            IF (POT_AUX_S(npot+1) >= 0.0) npot = npot+1
+         DO ik = 1, MAXPROFLEN
+            IF (POT_AUX_S(ik) >= 0.0) npot = npot+1
          END DO
-         IF (npot > 0)  s_max_pot = POT_AUX_S(nti)
+         IF (npot > 0)  s_max_pot = POT_AUX_S(npot)
          ! Handle multiple ion species
          IF (ANY(NI_AUX_S >0)) THEN
             nzeff = 0
-            DO WHILE ((NI_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
-               nzeff = nzeff + 1
-            s_max_zeff=ZEFF_AUX_S(nzeff+1)
+            DO ik = 1, MAXPROFLEN
+               IF (NI_AUX_S(ik) >= 0.0) nzeff = nzeff+1
             END DO
+            IF (nzeff > 0) s_max_zeff=ZEFF_AUX_S(nzeff)
             ! Now calc Zeff(1)
-            DO i1 = 1, nzeff
-               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
-               temp = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+            DO ik = 1, nzeff
+               ZEFF_AUX_S(ik) = NI_AUX_S(ik)
+               temp = SUM(NI_AUX_F(:,ik)*NI_AUX_Z(:))
                IF (temp > 0) THEN
-                  ZEFF_AUX_F(i1) = MAX(SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
+                  ZEFF_AUX_F(ik) = MAX(SUM(NI_AUX_F(:,ik)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
                ELSE
-                  ZEFF_AUX_F(i1) = 1
+                  ZEFF_AUX_F(ik) = 1
                END IF
             END DO
             plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
             plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*plasma_mass/NI_AUX_M,DIM=1,MASK=(NI_AUX_M>1E-27))/(SUM(NI_AUX_F(:,1)*NI_AUX_Z))
             ! Set indices for T and D
-            DO i1 = 1, NION
-               IF ((NI_AUX_Z(i1) == 1) .and. (NINT(NI_AUX_M(i1)*6.02214076208E+26) == 3)) dexionT = i1
-               IF ((NI_AUX_Z(i1) == 1) .and. (NINT(NI_AUX_M(i1)*6.02214076208E+26) == 2)) dexionD = i1
-               IF ((NI_AUX_Z(i1) == 2) .and. (NINT(NI_AUX_M(i1)*6.02214076208E+26) == 3)) dexionHe3 = i1
+            DO ik = 1, NION
+               IF ((NI_AUX_Z(ik) == 1) .and. (NINT(NI_AUX_M(ik)*6.02214076208E+26) == 3)) dexionT = ik
+               IF ((NI_AUX_Z(ik) == 1) .and. (NINT(NI_AUX_M(ik)*6.02214076208E+26) == 2)) dexionD = ik
+               IF ((NI_AUX_Z(ik) == 2) .and. (NINT(NI_AUX_M(ik)*6.02214076208E+26) == 3)) dexionHe3 = ik
             END DO
             !WRITE(6,*) ' Tritium index: ',dexionT
             !WRITE(6,*) ' Deuturium index: ',dexionD
@@ -347,13 +348,13 @@
             NI_AUX_M(1) = 3.3435837724E-27;   NI_AUX_Z(1) = 1
             NI_AUX_M(2) = 5.008267217094E-27; NI_AUX_Z(2) = 1 
             ! Now calc Zeff(1)
-            DO i1 = 1, nzeff
-               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
-               temp = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+            DO ik = 1, nzeff
+               ZEFF_AUX_S(ik) = NI_AUX_S(ik)
+               temp = SUM(NI_AUX_F(:,ik)*NI_AUX_Z(:))
                IF (temp > 0) THEN
-                  ZEFF_AUX_F(i1) = MAX(SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
+                  ZEFF_AUX_F(ik) = MAX(SUM(NI_AUX_F(:,ik)*NI_AUX_Z(:)*NI_AUX_Z(:))/temp,1.0)
                ELSE
-                  ZEFF_AUX_F(i1) = 1
+                  ZEFF_AUX_F(ik) = 1
                END IF
             END DO
             plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
@@ -383,8 +384,8 @@
          s_max_zeff=ZEFF_AUX_S(nzeff)
 
          nparticles = 0
-         DO WHILE (nparticles<MAXPARTICLES)
-            IF (r_start_in(nparticles+1) >= 0.0) nparticles = nparticles + 1
+         DO ik = 1, MAXPARTICLES
+            IF (r_start_in(ik) >= 0.0) nparticles = nparticles + 1
          END DO
 
 #if !defined(NAG)
@@ -404,9 +405,9 @@
       ! Makes sure that NPARTICLES is divisible by the number of processes
       ! Needed for HDF5 parallel writes.
       IF (lbeam .or. lfusion) THEN
-         i1 = nparticles_start/nprocs_beams
-         IF (i1*nprocs_beams .ne. nparticles_start) THEN
-            nparticles_start = (i1+1)*nprocs_beams
+         ik = nparticles_start/nprocs_beams
+         IF (ik*nprocs_beams .ne. nparticles_start) THEN
+            nparticles_start = (ik+1)*nprocs_beams
          END IF
       END IF
 #endif
