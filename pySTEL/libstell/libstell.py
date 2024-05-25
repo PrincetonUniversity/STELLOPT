@@ -8,7 +8,7 @@ This library provides a python class for interfacing to libstell
 
 # Constants
 
-# VMEC Class
+# LIBSTELL Class
 class LIBSTELL():
 	"""Class for working with VMEC equilibria
 
@@ -303,16 +303,18 @@ class LIBSTELL():
 		init_beams3d_input = getattr(self.libstell,module_name+'_init_beams3d_input'+self.s3)
 		init_beams3d_input.argtypes = None
 		init_beams3d_input.restype = None
-		#init_beams3d_input() #not working
+		init_beams3d_input() #not working
 		# We use an added routine as a helper
 		module_name = self.s1+'beams3d_input_mod_'+self.s2
 		read_beams3d_input = getattr(self.libstell,module_name+'_read_beams3d_input'+self.s3)
 		read_beams3d_input.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
 		read_beams3d_input.restype = None
 		istat = ct.c_int(0)
+		print('-- got herea')
 		read_beams3d_input(filename.encode('UTF-8'),ct.byref(istat),len(filename))
 		if not (istat.value == 0):
 			return None
+		print('-- got hereb')
 		# Get vars
 		intList=['nr','nphi','nz','nparticles_start','npoinc', \
 				'duplicate_factor', 'ns_prof1','ns_prof2', \
