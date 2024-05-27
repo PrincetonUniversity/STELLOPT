@@ -208,6 +208,84 @@ class BEAMS3D():
 		
 		return s, plasma_vol, plasma_dvolds
 
+	def calcProfiles(self,ns=None):
+		"""Calculates the kinetic plasma profiles used
+
+		This routine claculates the kinetic profiles used in the
+		BEAMS3D simulation based on the background grid quantities.
+		
+		Parameters
+		----------
+		ns : int (optional)
+			Number of radial gridpoints (default ns_prof1)
+
+		Returns
+		-------
+		S : ndarray
+			Normalized toroidal flux array
+		ne : ndarray
+			Electron Density [m^-3]
+		ni : ndarray
+			Ion Density [m^-3]
+		te : ndarray
+			Electron Temperature [eV]
+		ti : ndarray
+			Ion Temperature [eV]
+		zeff : ndarray
+			Effective ion charge
+		"""
+		import numpy as np
+		from scipy.interpolate import PchipInterpolator
+
+		# Radial grid
+		if not ns:
+			ns = self.ns_prof1
+		s  = np.linspace(0.0,1.0,ns)
+
+		# Extract data
+		[C, IA] = np.unique(self.S_ARR,return_index=True)
+		NE_FLAT = self.NE.flatten()
+		TE_FLAT = self.TE.flatten()
+		TI_FLAT = self.TI.flatten()
+		ZEFF_FLAT = self.ZEFF_ARR.flatten()
+		ne_temp = NE_FLAT[IA]
+		te_temp = TE_FLAT[IA]
+		ti_temp = TI_FLAT[IA]
+		zeff_temp = ZEFF_FLAT[IA]
+
+		# Extract Ion density
+		nni = np.size(self.NI,3)
+		ni_temp = np.zeros((nni,len(IA)))
+		for i in range(nni):
+			NI_FLAT = self.NI[:,:,:,i].flatten()
+			ni_temp[i,:] = NI_FLAT[IA]
+
+		# Make Mirror
+		C = np.concatenate((-C[::-1], C))
+		ne_temp = np.concatenate((ne_temp[::-1], ne_temp))
+		te_temp = np.concatenate((te_temp[::-1], te_temp))
+		ti_temp = np.concatenate((ti_temp[::-1], ti_temp))
+		zeff_temp = np.concatenate((zeff_temp[::-1], zeff_temp))
+		ni_temp = np.concatenate((ni_temp[:,::-1],ni_temp),axis=1)
+
+
+		# Fit
+		[C, IA] = np.unique(C,return_index=True)
+		ne_spl = PchipInterpolator(C,ne_temp[IA])
+		te_spl = PchipInterpolator(C,te_temp[IA])
+		ti_spl = PchipInterpolator(C,ti_temp[IA])
+		zeff_spl = PchipInterpolator(C,zeff_temp[IA])
+		ne = ne_spl(s)
+		te = te_spl(s)
+		ti = ti_spl(s)
+		zeff = zeff_spl(s)
+		ni = np.zeros((nni,ns))
+		for i in range(nni):
+			ni_spl = PchipInterpolator(C,ni_temp[i,IA])
+			ni[i,:] = ni_spl(s)
+
+		return s,ne,ni,te,ti,zeff
+
 	def calcEr(self,ns=None):
 		"""Calculates the radial electric field
 
@@ -259,6 +337,34 @@ class BEAMS3D():
 		f = np.concatenate((V[:0:-1],V))
 		dVds = np.gradient(f,x)
 		return s, V, dVds
+
+	def calcMagaxis(self):
+		"""Calculates the magetic axis location
+
+		This routine calcualtes the magnetic axis location in each
+		toroidal cut of the background grid. The magnetic axis is
+		returned in an R array and Z array for each toridal cut.
+		
+		Returns
+		-------
+		R : ndarray
+			Magnetic axis radial position (R) [m]
+		Z : ndarray
+			Magnetic axis vertical position (R) [m]
+		"""
+		import numpy as np
+		raxis = []
+		zaxis = []
+		for k in range(self.nphi-1):
+			S2D = np.squeeze(self.S_ARR[:,k,:])
+			S2D = np.where(S2D>1.2,1.2,S2D)
+			dex = np.argwhere(S2D == np.min(S2D)).flatten()
+			raxis.append(self.raxis[dex[0]])
+			zaxis.append(self.zaxis[dex[1]])
+		raxis.append(raxis[0])
+		zaxis.append(zaxis[0])
+		return np.ndarray(raxis),np.ndarray(zaxis)
+
 
 	def calcDepo(self,ns=None):
 		"""Calculates the deposition profile
