@@ -363,7 +363,7 @@ class BEAMS3D():
 			zaxis.append(self.zaxis[dex[1]])
 		raxis.append(raxis[0])
 		zaxis.append(zaxis[0])
-		return np.ndarray(raxis),np.ndarray(zaxis)
+		return np.array(raxis),np.array(zaxis)
 
 
 	def calcDepo(self,ns=None):
