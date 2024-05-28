@@ -14,7 +14,7 @@ beams3d_globals.o :  \
       stel_kinds.o 
 
 diagno_runtime.o :  \
-      EZspline.o \
+      ezspline.o \
       stel_kinds.o 
 
 diagno_input_mod.o :  \
