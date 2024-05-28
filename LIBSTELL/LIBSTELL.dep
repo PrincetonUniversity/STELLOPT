@@ -1,5 +1,13 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
 
+
+fieldlines_input_mod.o: \
+      stel_kinds.o \
+      safe_open_mod.o \
+      mpi_params.o \
+      mpi_inc.o \
+      fieldlines_globals.o 
+
 fieldlines_globals.o :  \
       stel_kinds.o 
 
