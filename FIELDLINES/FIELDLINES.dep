@@ -38,10 +38,10 @@ fieldlines_init.o: \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       ../../LIBSTELL/$(LOCTYPE)/vessel_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/read_hint_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/fieldlines_input_mod.o \
       random.o \
       fieldlines_runtime.o \
       fieldlines_grid.o \
-      fieldlines_input_mod.o \
       fieldlines_lines.o
       
 
@@ -92,14 +92,6 @@ fieldlines_gridgen.o: \
 fieldlines_grid.o: \
       ../../LIBSTELL/$(LOCTYPE)/fieldlines_globals.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
-      
-
-fieldlines_input_mod.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
-      fieldlines_runtime.o \
-      fieldlines_lines.o \
-      fieldlines_grid.o 
 
 
 fieldlines_follow.o: \
