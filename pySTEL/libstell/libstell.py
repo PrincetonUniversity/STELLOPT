@@ -380,6 +380,76 @@ class LIBSTELL():
 		write_beams3d_namelist.restype=None
 		write_beams3d_namelist(filename.encode('UTF-8'),len(filename))
 
+	def read_diagno_in(self,filename):
+		"""Reads a DIAGNO_IN namelist
+
+		This routine wrappers read_diagno_input function in
+		diagno_input_mod.
+
+		Parameters
+		----------
+		filename : str
+			Path to input file.
+		Returns
+		-------
+		out_data : dict
+			Dictionary of items.
+		"""
+		import ctypes as ct
+		# These are defined in vparams.f but for some reason they're no in to .so
+		ntord  = 101
+		mpol1d = 101
+		ndatafmax = 101
+		# We use an added routine as a helper
+		module_name = self.s1+'diagno_input_mod_'+self.s2
+		read_diagno_input = getattr(self.libstell,module_name+'_read_diagno_input'+self.s3)
+		read_diagno_input.argtypes = [ct.c_char_p, ct.POINTER(ct.c_int), ct.c_long]
+		read_diagno_input.restype=None
+		ierr = ct.c_int(0)
+		read_diagno_input(filename.encode('UTF-8'),ct.byref(ierr),len(filename))
+		# Get vars
+		booList=['lrphiz','luse_mut','lvc_field','lapoints_accurate_output','lbpoints_accurate_output']
+		booLen=[1]*len(booList)
+		booList.extend(['luse_extcur'])
+		booLen.extend([(512,1)])
+		intList=['nu','nv']
+		intLen=[1]*len(intList)
+		realList=['units','vc_adapt_tol','vc_adapt_rel','int_step']
+		realLen=[1]*len(realList)
+		realList.extend(['bprobe_turns','flux_turns','segrog_turns'])
+		realLen.extend([(2048,1),(512,1),(256,1)])
+		charList=['int_type','afield_points_file','bfield_points_file',\
+		        'bprobes_file','mirnov_file', 'seg_rog_file','flux_diag_file',\
+				'bprobes_mut_file', 'mir_mut_file', 'rog_mut_file', 'flux_mut_file']
+		charLen=[(256,1)]*11
+		module_name = self.s1+'diagno_runtime_'+self.s2
+		out_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
+		return out_data
+
+	def write_diagno_in(self,filename,out_dict=None):
+		"""Wrappers writing of the DIAGNO_IN namelist
+
+		This routine wrappers write_diagno_input in LIBSTELL
+
+		Parameters
+		----------
+		filename : str
+			Path to input file.
+		out_dict : dict (optional)
+			Dictionary of items to change.
+		"""
+		import ctypes as ct
+		module_name = self.s1+'diagno_runtime_'+self.s2
+		# Check if we want to update values
+		if out_dict:
+			for key in out_dict:
+				self.set_module_var(module_name,key,out_dict[key])
+		module_name = self.s1+'diagno_input_mod_'+self.s2
+		write_diagno_input = getattr(self.libstell,module_name+'_write_diagno_input_byfile'+self.s3)
+		write_diagno_input.argtypes = [ct.c_char_p, ct.c_long]
+		write_diagno_input.restype=None
+		write_diagno_input(filename.encode('UTF-8'),len(filename))
+
 	def read_wout(self,file):
 		"""Reads a wout file and returns a dictionary
 
@@ -593,6 +663,8 @@ class LIBSTELL():
 			f = ct.c_char*n
 		elif type(val) in (np.ndarray,list):
 			if type(val[0]) == bool:
+				tt = ct.c_bool
+			elif type(val[0]) == np.bool_:
 				tt = ct.c_bool
 			elif type(val[0]) == np.int32:
 				tt = ct.c_int

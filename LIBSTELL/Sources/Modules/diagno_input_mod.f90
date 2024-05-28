@@ -80,13 +80,13 @@
       segrog_turns   = 1.0_rprec
       units          = 1.0_rprec
       int_type       = 'simpson'
-      int_step       = 2.0_rprec
+      int_step       = 2
       lrphiz         = .FALSE.
       luse_mut       = .FALSE.
       vc_adapt_tol   = 1.0E-06_rprec
       vc_adapt_rel   = 1.0E-04_rprec
       lvc_field      = .TRUE.
-      luse_extcur(:) = .TRUE.  ! Do this so we default to using the whole coil if the user forgets
+      luse_extcur    = .TRUE.  ! Do this so we default to using the whole coil if the user forgets
       lapoints_accurate_output = .false. ! default for backward compatibility
       lbpoints_accurate_output = .false. ! default for backward compatibility
       ! Read namelist
@@ -180,9 +180,9 @@
       WRITE(iunit,'(A)') '&DIAGNO_IN'
       WRITE(iunit,"(2X,A,1X,'=',1X,I0)") 'NU',nu
       WRITE(iunit,"(2X,A,1X,'=',1X,I0)") 'NV',nv
-      WRITE(iunit,"(2X,A,1X,'=',1X,E22.14)") 'UNITS',units
-      WRITE(iunit,"(2X,A,1X,'=',1X,E22.14)") 'VC_ADAPT_TOL',vc_adapt_tol
-      WRITE(iunit,"(2X,A,1X,'=',1X,E22.14)") 'VC_ADAPT_REL',vc_adapt_rel
+      WRITE(iunit,"(2X,A,1X,'=',1X,ES22.14)") 'UNITS',units
+      WRITE(iunit,"(2X,A,1X,'=',1X,ES22.14)") 'VC_ADAPT_TOL',vc_adapt_tol
+      WRITE(iunit,"(2X,A,1X,'=',1X,ES22.14)") 'VC_ADAPT_REL',vc_adapt_rel
       WRITE(iunit,outstr) 'INT_TYPE',TRIM(int_type)
       WRITE(iunit,"(2X,A,1X,'=',1X,I0)") 'INT_STEP',int_step
       WRITE(iunit,outstr) 'AFIELD_POINTS_FILE',TRIM(afield_points_file)
@@ -192,9 +192,10 @@
       WRITE(iunit,outstr) 'SEG_ROG_FILE',TRIM(seg_rog_file)
       WRITE(iunit,outstr) 'FLUX_DIAG_FILE',TRIM(flux_diag_file)
       WRITE(iunit,outstr) 'FLUX_MUT_FILE',TRIM(flux_mut_file)
-      WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'BPROBE_TURNS',(bprobe_turns(n), n=1,256)
-      WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'FLUX_TURNS',(flux_turns(n), n=1,256)
-      WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'SEGROG_TURNS',(segrog_turns(n), n=1,256)
+      IF (ANY(bprobe_turns /= 1.0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,ES22.14))") 'BPROBE_TURNS',(bprobe_turns(n), n=1,256)
+      IF (ANY(flux_turns /= 1.0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,ES22.14))") 'FLUX_TURNS',(flux_turns(n), n=1,256)
+      IF (ANY(segrog_turns /= 1.0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,ES22.14))") 'SEGROG_TURNS',(segrog_turns(n), n=1,256)
+      IF (ANY( .not. luse_extcur)) WRITE(iunit,"(2X,A,1X,'=',10(1X,L1))") 'luse_extcur',(luse_extcur(n), n=1,256)
       WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LRPHIZ',lrphiz
       WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LVC_FIELD',lvc_field
       WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LAPOINTS_ACCURATE_OUTPUT',lapoints_accurate_output
@@ -202,6 +203,20 @@
       WRITE(iunit,'(A)') '/'
       CALL FLUSH(iunit)
       END SUBROUTINE write_diagno_input
+
+      SUBROUTINE write_diagno_input_byfile(filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      
+      iunit = 100
+      istat = 0
+      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      IF (istat .ne. 0) RETURN
+      CALL write_diagno_input(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE write_diagno_input_byfile
 
       SUBROUTINE BCAST_DIAGNO_INPUT(local_master,comm,istat)
 !DEC$ IF DEFINED (MPI_OPT)
