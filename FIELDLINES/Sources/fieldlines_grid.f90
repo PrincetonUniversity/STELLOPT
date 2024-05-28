@@ -9,6 +9,8 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
+      USE fieldlines_globals, ONLY: nr, nphi, nz, rmin, rmax, zmin, &
+            zmax, phimin, phimax, vc_adapt_tol
       USE EZspline_obj
       USE EZspline
       
@@ -36,9 +38,7 @@
 !         BZ_spl         EZSpline Object for B_Z/B_PHI
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER  ::    nr, nphi, nz
-      REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, delta_phi,&
-                     vc_adapt_tol,req_axis, zeq_axis, phiedge_eq, reff_eq
+      REAL(rprec) :: delta_phi,req_axis, zeq_axis, phiedge_eq, reff_eq
       INTEGER  ::    win_raxis, win_phiaxis, win_zaxis, win_B_R, win_B_PHI, win_B_Z, &
                      win_MU, win_BR4D, win_BPHI4D, win_BZ4D, win_MODB4D, win_MU4D, win_PRES
       REAL(rprec), POINTER :: raxis(:), zaxis(:), phiaxis(:)
