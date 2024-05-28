@@ -18,6 +18,7 @@ fieldlines_write_parhdf5.o: \
       
 
 fieldlines_runtime.o: \
+      ../../LIBSTELL/$(LOCTYPE)/fieldlines_globals.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
       
 
@@ -89,6 +90,7 @@ fieldlines_gridgen.o: \
       
 
 fieldlines_grid.o: \
+      ../../LIBSTELL/$(LOCTYPE)/fieldlines_globals.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
       
 
@@ -122,6 +124,7 @@ vmec_plasfield.o : \
       
 
 fieldlines_lines.o: \
+      ../../LIBSTELL/$(LOCTYPE)/fieldlines_globals.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
       
 
