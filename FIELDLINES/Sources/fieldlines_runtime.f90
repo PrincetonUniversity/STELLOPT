@@ -50,7 +50,7 @@
       USE fieldlines_globals, ONLY: MAXLINES, lerror_field, npoinc, &
          dphi, follow_tol, num_hcp, delta_hc, mu, errorfield_amp, &
          errorfield_phase, r_start, phi_start, z_start, phi_end, r_hc, &
-         z_hc, phi_hc, int_type
+         z_hc, phi_hc, int_type, lmu
 !-----------------------------------------------------------------------
 !     Module Variables
 !          lverb         Logical to control screen output
@@ -126,7 +126,7 @@
       INTEGER, PARAMETER ::  NLOCAL = 128  ! Number of local processors
       
       LOGICAL         :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
-                         lmu, lvessel, lvac, lrestart, laxis_i, &
+                         lvessel, lvac, lrestart, laxis_i, &
                          ladvanced, lauto, lplasma_only, lbfield_only,&
                          lreverse, lhitonly, lafield_only, lraw, lemc3, &
                          lwall_trans, ledge_start, lnescoil,&
