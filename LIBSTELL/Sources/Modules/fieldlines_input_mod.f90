@@ -11,10 +11,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE fieldlines_runtime
-      USE fieldlines_lines, ONLY: nlines
-      USE fieldlines_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
-                                phimin, phimax, vc_adapt_tol
+      USE fieldlines_globals
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -95,7 +92,7 @@
       zmin   = -1.0_rprec
       zmax   =  1.0_rprec
       phimin =  0.0_rprec
-      phimax =  pi2
+      phimax =  8.0 * ATAN(1.0)
       mu     =  0.0_rprec
       r_start   = -1
       z_start   = -1
@@ -107,7 +104,7 @@
       num_hcp   = 50
       delta_hc  = 5.0E-5
       npoinc = 1
-      dphi   = pi2/360
+      dphi   = 8.0 * ATAN(1.0)/360
       follow_tol   = 1.0E-7
       vc_adapt_tol = 1.0E-5
       lerror_field = .false.
@@ -125,14 +122,19 @@
          INQUIRE(FILE=TRIM(filename),EXIST=lexist)
          IF (.not.lexist) stop 'Could not find input file'
          CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
-         !OPEN(UNIT=iunit,FILE=TRIM(filename),STATUS='old',FORM='formatted')
-         IF (istat /= 0) CALL handle_err(FILE_OPEN_ERR,'fieldlines_input in: input.'//TRIM(id_string),istat)
+         IF (istat /= 0) THEN
+            WRITE(6,'(A)') 'ERROR opening file: ',TRIM(filename)
+            CALL FLUSH(6)
+            STOP
+         END IF
          READ(iunit,NML=fieldlines_input,IOSTAT=istat)
          IF (istat /= 0) THEN
+            WRITE(6,'(A)') 'ERROR reading namelist BEAMS3D_INPUT from file: ',TRIM(filename)
             backspace(iunit)
             read(iunit,fmt='(A)') line
             write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-         IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'fieldlines_input in: input.'//TRIM(id_string),istat)
+            CALL FLUSH(6)
+            STOP
          END IF
          CLOSE(iunit)
          nlines = 0
@@ -143,8 +145,8 @@
          END DO
          IF (ALL(PHI_END .lt. 0)) THEN
             WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!PHI_END NOT SET!!!!!!!!!!!!!!!!!!!!'
-            istat = -1
-            IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'fieldlines_input in: input.'//TRIM(id_string),istat)
+            CALL FLUSH(6)
+            STOP
          END IF
          IF (ANY(errorfield_amp .ne. 0)) THEN
             lerror_field = .true.
@@ -187,5 +189,73 @@
 #endif
       IF (mu > 0.0) lmu=.true.
       END SUBROUTINE read_fieldlines_input
+
+      SUBROUTINE write_fieldlines_namelist(iunit_out, istat)
+      INTEGER, INTENT(in) :: iunit_out
+      INTEGER, INTENT(out) :: istat
+      INTEGER :: ik, n, l
+      CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
+      CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
+      CHARACTER(LEN=*), PARAMETER :: outflt  = "(2X,A,1X,'=',1X,ES22.12E3)"
+      CHARACTER(LEN=*), PARAMETER :: outexp  = "(2X,A,1X,'=',1X,ES22.12E3)"
+      CHARACTER(LEN=*), PARAMETER :: outcmp  = "(2x,A,1X,'=','(',i3,',',i3,')')"
+      CHARACTER(LEN=*), PARAMETER :: outstr  = "(2X,A,1X,'=',1X,'''',A,'''')"
+      CHARACTER(LEN=*), PARAMETER :: onevar  = "(2X,A,1X,'=',1X,L1,2(2X,A,1X,'=',1X,ES22.12E3))"
+      CHARACTER(LEN=*), PARAMETER :: vecvar  = "(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3)"
+      CHARACTER(LEN=*), PARAMETER :: vecvar2  = "(2X,A,'(',I3.3,',',I3.3,')',1X,'=',1X,ES22.12E3)"
+      istat = 0
+      WRITE(iunit_out,'(A)') '&FIELDLINES_INPUT'
+      WRITE(iunit_out,'(A)') '!---------- Background Grid Parameters ------------'
+      WRITE(iunit_out,outint) 'NR',nr
+      WRITE(iunit_out,outint) 'NZ',nz
+      WRITE(iunit_out,outint) 'NPHI',nphi
+      WRITE(iunit_out,outflt) 'RMIN',rmin
+      WRITE(iunit_out,outflt) 'RMAX',rmax
+      WRITE(iunit_out,outflt) 'ZMIN',zmin
+      WRITE(iunit_out,outflt) 'ZMAX',zmax
+      WRITE(iunit_out,outflt) 'PHIMIN',phimin
+      WRITE(iunit_out,outflt) 'PHIMAX',phimax
+      WRITE(iunit_out,outflt) 'VC_ADAPT_TOL',vc_adapt_tol
+      WRITE(iunit_out,'(A)') '!---------- Marker Tracking Parameters ------------'
+      WRITE(iunit_out,outstr) 'INT_TYPE',TRIM(int_type)
+      WRITE(iunit_out,outflt) 'FOLLOW_TOL',follow_tol
+      WRITE(iunit_out,outint) 'NPOINC',npoinc
+      WRITE(iunit_out,outflt) 'MU',mu
+      n = COUNT(r_start > 0)
+      WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'R_START',(r_start(ik), ik=1,n)
+      WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'Z_START',(z_start(ik), ik=1,n)
+      WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'PHI_START',(phi_start(ik), ik=1,n)
+      WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'PHI_END',(phi_end(ik), ik=1,n)
+      n = COUNT(r_hc > 0)
+      IF (n > 0) THEN
+         WRITE(iunit_out,'(A)') '!---------- Periodic Orbits (-full) ------------'
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'R_HC',(r_hc(ik), ik=1,n)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'Z_HC',(z_hc(ik), ik=1,n)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'PHI_HC',(phi_HC(ik), ik=1,n)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'PHI_END',(phi_end(ik), ik=1,n)
+         WRITE(iunit_out,'(A)') '/'
+      ENDIF
+      n = COUNT(errorfield_amp > 0)
+      IF (n > 0) THEN
+         WRITE(iunit_out,'(A)') '!---------- Error Fields ------------'
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'ERRORFIELD_AMP',(errorfield_amp(ik), ik=1,n)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'ERRORFIELD_PHASE',(errorfield_phase(ik), ik=1,n)
+      ENDIF
+
+      END SUBROUTINE write_fieldlines_namelist
+
+      SUBROUTINE write_fieldlines_namelist_byfile(filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      
+      iunit = 100
+      istat = 0
+      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      IF (istat .ne. 0) RETURN
+      CALL write_fieldlines_namelist(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE write_fieldlines_namelist_byfile
 
       END MODULE fieldlines_input_mod

@@ -1,4 +1,5 @@
 ObjectFiles = \
+fieldlines_input_mod.o \
 fieldlines_globals.o \
 diagno_input_mod.o \
 diagno_runtime.o \
