@@ -42,7 +42,7 @@ class STELLOPT():
 
 		Parameters
 		----------
-		file : str
+		filename : str
 			Path to STELLOPT file.
 		"""
 		import numpy as np
@@ -63,6 +63,52 @@ class STELLOPT():
 		f2d       = np.reshape(fval,(numsearch,mtargets)).T
 		self.x_map = x2d
 		self.f_map = f2d
+
+	def read_stellopt_profile(self,filename):
+		"""Reads a STELLOPT tprof output file
+
+		This routine reads the STELLOPT tprof output file.
+
+		Parameters
+		----------
+		file : str
+			Path to tprof file.
+		Returns
+		-------
+		s : ndarray
+			Array of normalized toroidal flux (s).
+		ne : ndarray
+			Array of electron density [m^-3]
+		te : ndarray
+			Array of electron temperature [eV]
+		ti : ndarray
+			Array of ion temperatures [eV]
+		zeff : ndarray
+			Effective ion charge.
+		p : ndarray
+			Pressure [Pa]
+		"""
+		import numpy as np
+		f = open(filename,'r')
+		line = f.readline() # header
+		s    = []
+		ne   = []
+		te   = []
+		ti   = []
+		zeff = []
+		p    = []
+		for line in f: # read rest of lines
+			[txt1,txt2,txt3,txt4,txt5,txt6] = line.split()
+			s.append(float(txt1))
+			ne.append(float(txt2))
+			te.append(float(txt3))
+			ti.append(float(txt4))
+			zeff.append(float(txt5))
+			p.append(float(txt6))
+		f.close()
+		return np.array(s),np.array(ne),np.array(te),np.array(ti),np.array(zeff),np.array(p)
+
+
 
 	def read_stellopt_varlabels(self,filename='var_labels'):
 		"""Reads a STELLOPT var_labels output file
@@ -92,6 +138,7 @@ class STELLOPT():
 			line = f.readline()
 			line.replace('\n','')
 			targetnames.append(line.strip())
+		f.close()
 		self.varnames = varnames
 		self.var = var
 		self.targetnames = targetnames
