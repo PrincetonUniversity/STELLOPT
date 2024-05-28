@@ -6,7 +6,7 @@ BEAMS3D Energetic particle data.
 """
 
 # Libraries
-from libstell.libstell import LIBSTELL, FourierRep
+from libstell.libstell import LIBSTELL
 
 # Constants
 
