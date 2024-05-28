@@ -29,9 +29,12 @@ class COLLISIONS():
 		self.MD = 2.01410177811*DA
 		# Tritium Mass
 		self.MT = 3.01604928*DA
+		# Helium Mass
+		self.MHe3 = 3.0160293*DA
+		self.MHe4 = 4.002603254*DA
 
 	def coullog_ee(self,ne,te):
-		"""Computs the Coulomb e-e logarithm
+		"""Computes the Coulomb e-e logarithm
 
 		This routine calculates the Coulomb Logarithm acording to the
 		NRL plasma formulary general deffinition.
@@ -54,7 +57,7 @@ class COLLISIONS():
 		return 23.5 + a1 + a2
 
 	def coullog_ei(self,ne,te,mi,Z,ni,ti):
-		"""Computs the Coulomb e-i logarithm
+		"""Computes the Coulomb e-i logarithm
 
 		This routine calculates the Coulomb Logarithm acording to the
 		NRL plasma formulary general deffinition.
@@ -93,7 +96,7 @@ class COLLISIONS():
 		return clog
 
 	def coullog_ii(self,mi1,Z1,ni1,ti1,mi2,Z2,ni2,ti2):
-		"""Computs the Coulomb i-i logarithm
+		"""Computes the Coulomb i-i logarithm
 
 		This routine calculates the Coulomb Logarithm acording to the
 		NRL plasma formulary general deffinition.
@@ -133,7 +136,7 @@ class COLLISIONS():
 		return clog
 
 	def coullog_iifast(self,ne,te,mi1,Z1,mi2,Z2,vd):
-		"""Computs the Coulomb counterstreaming i-i logarithm
+		"""Computes the Coulomb counterstreaming i-i logarithm
 
 		This routine calculates the Coulomb Logarithm acording to the
 		NRL plasma formulary general deffinition.
@@ -171,7 +174,7 @@ class COLLISIONS():
 		return clog
 
 	def collisionfreq(self,m1,Z1,T1,m2,Z2,n2,T2,clog):
-		"""Computs the collision frequency for two species
+		"""Computes the collision frequency for two species
 
 		This routine calculates the collision frequency acording to the
 		NRL plasma formulary general deffinition.
@@ -205,6 +208,52 @@ class COLLISIONS():
 		freq = 1.8E-19*np.sqrt(m1*m2)*Z1*Z1*Z2*Z2*n2_cm*clog*1000
 		freq = freq / (m1*T2+m2*T1)**1.5
 		return freq
+
+	def tauspitzer(self,mi,Zi,ne,Te,clog):
+		"""Computes the Spitzer ion-electron exchange time
+
+		This routine calculates the Spitzer ion-electron momentum
+		exchange time.
+
+		Parameters
+		----------
+		mi : real
+			Ion Mass [kg]
+		Zi : real
+			Ion Charge number
+		ne : real
+			Electron Density [m^-3]
+		Te : real
+			Electron Temperature [eV]
+		clog : real
+			Coulomb logarithm
+		Returns
+		----------
+		tau : real
+			Spitzer ion-electron momentum exchange time
+		"""
+		import numpy as np
+		return 3.777183E41*mi*np.sqrt(Te*Te*Te)/(ne*Zi*Zi*clog)
+
+	def criticalvelocity(self,mp,Te):
+		"""Computes the critical velocity
+
+		This routine calculates the critical velocity for an energetic
+		particle.
+
+		Parameters
+		----------
+		mi : real
+			Plasma Ion Mass [kg]
+		Te : real
+			Electron Temperature [eV]
+		Returns
+		----------
+		vcrit : real
+			Critical velocity [m/s]
+		"""
+		import numpy as np
+		return (0.75*np.sqrt(np.pi*mp/self.ME))**(1.0/3.0) * np.sqrt(2*EC*Te/mp)
 
 if __name__=="__main__":
 	import sys
