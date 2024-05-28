@@ -17,7 +17,7 @@ stellopt_write_eqfile.o : \
 stellopt_write_inputfile.o : \
       stellopt_input_mod.o \
       stellopt_runtime.o \
-      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/bootsj_input.o \
       $(NEO_DIR)/$(LOCTYPE)/neo_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
@@ -222,7 +222,7 @@ chisq_magwell.o : \
 chisq_bprobes.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
       
 
@@ -247,7 +247,7 @@ chisq_extcur.o : \
 chisq_fluxloops.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
 
 
@@ -449,7 +449,7 @@ chisq_gradp_max.o : \
 chisq_segrog.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
       
 
@@ -560,8 +560,8 @@ stellopt_magdiags.o : \
       stellopt_vars.o \
       stellopt_targets.o \
       equil_utils.o \
-      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_input_mod.o \
-      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/virtual_casing_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
       $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
@@ -738,8 +738,8 @@ stellopt_prof_refit.o : \
       stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
       $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
-      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_input_mod.o \
-      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/biotsavart.o
       
 
@@ -753,7 +753,7 @@ stellopt_clean_up.o : \
       $(VMEC_DIR)/$(LOCTYPE)/vmec_params.o \
       $(BOOZ_DIR)/$(LOCTYPE)/booz_params.o \
       $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
-      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/gist_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/bootsj_input.o \
       $(LIB_DIR)/$(LOCTYPE)/fdjac_mod.o \

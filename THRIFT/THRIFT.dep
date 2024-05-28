@@ -28,8 +28,8 @@ thrift_diagno.o : \
       thrift_runtime.o \
       thrift_vars.o \
       thrift_equil.o \
-      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_input_mod.o \
-      $(DIAGNO_DIR)/$(LOCTYPE)/diagno_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
       $(LIB_DIR)/$(LOCTYPE)/virtual_casing_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
