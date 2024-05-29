@@ -551,10 +551,16 @@
       SUBROUTINE write_beams3d_namelist_byfile(filename)
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER :: iunit, istat
+      LOGICAL :: lexists
       
       iunit = 100
       istat = 0
-      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      INQUIRE(FILE=TRIM(filename),exist=lexists)
+      IF (lexists) THEN
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="old", position="append")
+      ELSE
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="new")
+      END IF
       IF (istat .ne. 0) RETURN
       CALL write_beams3d_namelist(iunit,istat)
       CLOSE(iunit)

@@ -70,10 +70,9 @@
 !-----------------------------------------------------------------------
       CONTAINS
       
-      SUBROUTINE read_fieldlines_input(filename, istat, ithread)
+      SUBROUTINE read_fieldlines_input(filename, istat)
       CHARACTER(*), INTENT(in) :: filename
       INTEGER, INTENT(out) :: istat
-      INTEGER, INTENT(in) :: ithread
       LOGICAL :: lexist
       INTEGER :: i, iunit, local_master
       CHARACTER(LEN=1000) :: line
@@ -107,7 +106,6 @@
       errorfield_phase = 0
       int_type = "NAG"
       ! Read namelist
-      IF (ithread == local_master) THEN
          istat=0
          iunit=12
          INQUIRE(FILE=TRIM(filename),EXIST=lexist)
@@ -142,40 +140,8 @@
          IF (ANY(errorfield_amp .ne. 0)) THEN
             lerror_field = .true.
          END IF
-      END IF
       int_type = TRIM(int_type)
       int_type = ADJUSTL(int_type)
-#if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(nr,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(nphi,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(nz,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(nlines,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(npoinc,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(rmin,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(rmax,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(zmin,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(zmax,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(phimin,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(phimax,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(mu,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(vc_adapt_tol,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(r_start,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(z_start,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(phi_start,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(phi_end,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(dphi,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(follow_tol,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(int_type,256, MPI_CHARACTER, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(r_hc,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(phi_hc,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(z_hc,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(num_hcp,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(delta_hc,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(lerror_field,1,MPI_LOGICAL, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(errorfield_amp,20,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-      CALL MPI_BCAST(errorfield_phase,20,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-#endif
       IF (mu > 0.0) lmu=.true.
       END SUBROUTINE read_fieldlines_input
 
@@ -218,10 +184,11 @@
       n = COUNT(r_hc > 0)
       IF (n > 0) THEN
          WRITE(iunit_out,'(A)') '!---------- Periodic Orbits (-full) ------------'
+         WRITE(iunit_out,outint) 'NUM_HCP',num_hcp
+         WRITE(iunit_out,outflt) 'DELTA_HC',delta_hc
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'R_HC',(r_hc(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'Z_HC',(z_hc(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'PHI_HC',(phi_HC(ik), ik=1,n)
-         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'PHI_END',(phi_end(ik), ik=1,n)
          WRITE(iunit_out,'(A)') '/'
       ENDIF
       n = COUNT(errorfield_amp > 0)
@@ -230,21 +197,69 @@
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'ERRORFIELD_AMP',(errorfield_amp(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'ERRORFIELD_PHASE',(errorfield_phase(ik), ik=1,n)
       ENDIF
+      WRITE(iunit_out,'(A)') '/'
 
       END SUBROUTINE write_fieldlines_namelist
 
       SUBROUTINE write_fieldlines_namelist_byfile(filename)
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER :: iunit, istat
+      LOGICAL :: lexists
       
       iunit = 100
       istat = 0
-      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      INQUIRE(FILE=TRIM(filename),exist=lexists)
+      IF (lexists) THEN
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="old", position="append")
+      ELSE
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="new")
+      END IF
       IF (istat .ne. 0) RETURN
       CALL write_fieldlines_namelist(iunit,istat)
       CLOSE(iunit)
 
       RETURN
       END SUBROUTINE write_fieldlines_namelist_byfile
+
+      SUBROUTINE BCAST_FIELDLINES_INPUT(local_master,comm,istat)
+      USE mpi_inc
+      IMPLICIT NONE
+      
+      INTEGER, INTENT(inout) :: comm
+      INTEGER, INTENT(in)    :: local_master
+      INTEGER, INTENT(inout) :: istat
+      IF (istat .ne. 0) RETURN
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(nr,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(nphi,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(nz,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(nlines,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(npoinc,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(rmin,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(rmax,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(zmin,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(zmax,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(phimin,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(phimax,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(mu,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(vc_adapt_tol,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(r_start,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(z_start,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(phi_start,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(phi_end,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(dphi,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(follow_tol,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(int_type,256, MPI_CHARACTER, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(r_hc,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(phi_hc,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(z_hc,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(num_hcp,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(delta_hc,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(lerror_field,1,MPI_LOGICAL, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(errorfield_amp,20,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(errorfield_phase,20,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+#endif
+      END SUBROUTINE BCAST_FIELDLINES_INPUT
 
       END MODULE fieldlines_input_mod
