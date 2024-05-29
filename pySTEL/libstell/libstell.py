@@ -396,10 +396,6 @@ class LIBSTELL():
 			Dictionary of items.
 		"""
 		import ctypes as ct
-		# These are defined in vparams.f but for some reason they're no in to .so
-		ntord  = 101
-		mpol1d = 101
-		ndatafmax = 101
 		# We use an added routine as a helper
 		module_name = self.s1+'diagno_input_mod_'+self.s2
 		read_diagno_input = getattr(self.libstell,module_name+'_read_diagno_input'+self.s3)
@@ -449,6 +445,74 @@ class LIBSTELL():
 		write_diagno_input.argtypes = [ct.c_char_p, ct.c_long]
 		write_diagno_input.restype=None
 		write_diagno_input(filename.encode('UTF-8'),len(filename))
+
+	def read_fieldlines_input(self,filename):
+		"""Reads a FIELDLINES_INPUT namelist
+
+		This routine wrappers read_fieldlines_input function in
+		fieldlines_input_mod.
+
+		Parameters
+		----------
+		filename : str
+			Path to input file.
+		Returns
+		-------
+		out_data : dict
+			Dictionary of items.
+		"""
+		import ctypes as ct
+		# A few constants defined in globals
+		module_name = self.s1+'fieldlines_globals_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getmaxlines'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		maxlines = get_constant()
+		# We use an added routine as a helper
+		module_name = self.s1+'fieldlines_input_mod_'+self.s2
+		read_fieldlines_input = getattr(self.libstell,module_name+'_read_fieldlines_input'+self.s3)
+		read_fieldlines_input.argtypes = [ct.c_char_p, ct.POINTER(ct.c_int), ct.c_long]
+		read_fieldlines_input.restype=None
+		ierr = ct.c_int(0)
+		read_fieldlines_input(filename.encode('UTF-8'),ct.byref(ierr),len(filename))
+		# Get vars
+		intList=['nr','nphi','nz','npoinc','num_hcp']
+		intLen=[1]*len(intList)
+		realList=['rmin','rmax','zmin','zmax','phimin','phimax','vc_adapt_tol','follow_tol','mu','delta_hc']
+		realLen=[1]*len(realList)
+		realList.extend(['r_start','z_start','phi_start','phi_end','r_hc','z_hc','phi_hc'])
+		realLen.extend([(maxlines,1)]*7)
+		realList.extend(['errorfield_amp','errorfield_phase'])
+		realLen.extend([(20,1)]*2)
+		charList=['int_type']
+		charLen=[(256,1)]
+		module_name = self.s1+'fieldlines_globals_'+self.s2
+		out_data = self.get_module_vars(module_name,None,None,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
+		return out_data
+
+	def write_fieldlines_input(self,filename,out_dict=None):
+		"""Wrappers writing of the FIELDLINES_INPUT namelist
+
+		This routine wrappers write_fieldlines_input in LIBSTELL
+
+		Parameters
+		----------
+		filename : str
+			Path to input file.
+		out_dict : dict (optional)
+			Dictionary of items to change.
+		"""
+		import ctypes as ct
+		module_name = self.s1+'fieldlines_globals_'+self.s2
+		# Check if we want to update values
+		if out_dict:
+			for key in out_dict:
+				self.set_module_var(module_name,key,out_dict[key])
+		module_name = self.s1+'fieldlines_input_mod_'+self.s2
+		write_fieldlines_input = getattr(self.libstell,module_name+'_write_fieldlines_namelist_byfile'+self.s3)
+		write_fieldlines_input.argtypes = [ct.c_char_p, ct.c_long]
+		write_fieldlines_input.restype=None
+		write_fieldlines_input(filename.encode('UTF-8'),len(filename))
 
 	def read_wout(self,file):
 		"""Reads a wout file and returns a dictionary
