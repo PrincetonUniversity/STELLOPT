@@ -6,7 +6,7 @@ FIELDLINES fieldline data data.
 """
 
 # Libraries
-#from libstell import libstell
+from libstell.libstell import LIBSTELL
 
 # Constants
 
@@ -128,7 +128,7 @@ class FIELDLINES():
 		iota[0] = 2.0 * iota[1] - iota[2]
 		return reff, iota, iota_err
 
-	def plot_poincare(self,phi,nskip=1,ax=None):
+	def plot_poincare(self,phi,nskip=1,ax=None,color_data=None):
 		"""Creates a basic Poincare plot
 
 		Plots a Poincare plot given a toroidal angle in radians (phi).
@@ -147,21 +147,61 @@ class FIELDLINES():
 		import numpy as np
 		import matplotlib.pyplot as pyplot
 		lplotnow = False
+		lcdata = False
 		if not ax:
 			ax = pyplot.axes()
 			lplotnow = True
+		if color_data is not None:
+			lcdata = True
 		k = int(self.npoinc*phi/self.phiaxis[-1])
 		rmin = np.amin(self.raxis)
 		rmax = np.amax(self.raxis)
 		x = self.R_lines[k:self.nsteps-1:self.npoinc,0:self.nlines:nskip]
 		y = self.Z_lines[k:self.nsteps-1:self.npoinc,0:self.nlines:nskip]
-		ax.plot(x,y,'.k',markersize=0.1)
+		if lcdata:
+			c = color_data[k:self.nsteps-1:self.npoinc,0:self.nlines:nskip]
+			ax.scatter(x,y,s=0.1,c=c,marker='.')
+		else:
+			ax.plot(x,y,'.k',markersize=0.1)
 		ax.set_xlabel('R [m]')
 		ax.set_ylabel('Z [m]')
 		ax.set_title(rf'FIELDLINES $\phi$ = {np.rad2deg(phi):3.1f}')
 		ax.set_aspect('equal')
 		ax.set_xlim(rmin,rmax)
 		if lplotnow: pyplot.show()
+
+# FIELDLINES Input Class
+class FIELDLINES_INPUT():
+	"""Class for working with FIELDLINES INPUT data
+
+	"""
+	def __init__(self, parent=None):
+		self.libStell = LIBSTELL()
+
+	def read_input(self,filename):
+		"""Reads FIELDLINES_INPUT namelist from a file
+
+		This routine wrappers the fieldlines_input_mod module reading routine.
+		Parameters
+		----------
+		filename : string
+			Input file name with FIELDLINES_INPUT namelist
+		"""
+		indata_dict = self.libStell.read_fieldlines_input(filename)
+		for key in indata_dict:
+			setattr(self, key, indata_dict[key])
+
+	def write_input(self,filename):
+		"""Writes FIELDLINES_INPUT namelist to a file
+
+		This routine wrappers the fieldlines_input_mod module writing routine.
+		Parameters
+		----------
+		filename : string
+			Input file name to write FIELDLINES_INPUT namelist to
+		"""
+		out_dict = vars(self)
+		self.libStell.write_fieldlines_input(filename,out_dict)
 
 # Main routine
 if __name__=="__main__":
