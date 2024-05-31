@@ -653,6 +653,7 @@ stellopt_neo.o : \
       
 
 stellopt_runtime.o : \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_globals.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
       
 

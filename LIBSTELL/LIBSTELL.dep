@@ -1,5 +1,26 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
 
+stellopt_globals.o : \
+      stel_kinds.o 
+
+stellopt_vars.o : \
+      vparams.o \
+      vsvd0.o \
+      stellopt_globals.o
+
+stellopt_targets.o : \
+      stel_kinds.o  \
+      stellopt_vars.o \
+      stellopt_globals.o
+
+stellopt_input_mod.o : \
+      stel_kinds.o \
+      stellopt_vars.o \
+      stellopt_targets.o \
+      safe_open_mod.o \
+      vmec_input.o \
+      mpi_params.o \
+      stellopt_globals.o
 
 fieldlines_input_mod.o: \
       stel_kinds.o \

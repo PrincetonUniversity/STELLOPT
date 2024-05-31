@@ -1,4 +1,8 @@
 ObjectFiles = \
+stellopt_targets.o \
+stellopt_vars.o \
+stellopt_input_mod.o \
+stellopt_globals.o \
 fieldlines_input_mod.o \
 fieldlines_globals.o \
 diagno_input_mod.o \
