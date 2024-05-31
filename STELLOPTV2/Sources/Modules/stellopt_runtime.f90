@@ -195,6 +195,10 @@
       INTEGER, PARAMETER ::  MPI_BCAST_ERR      = 830
       INTEGER, PARAMETER ::  MPI_FREE_ERR       = 840
       INTEGER, PARAMETER ::  MPI_FINE_ERR       = 890
+
+      INTEGER, PARAMETER :: maxwindsurf=32
+      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.85      
+      REAL(rprec), PARAMETER :: bigno = 1.0E+10
       
       LOGICAL                  :: lverb, lkeep_mins, lneed_output, lrestart,&
                                   lrefit, lno_restart, lauto_domain, lparallel,&
@@ -212,10 +216,6 @@
                                   proc_string_old, screen_str, xvec_file
       LOGICAL                  :: lcentered_differences ! Available for MANGO algorithms
       CHARACTER(256)           :: axis_init_option
-      
-      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.85
-      
-      REAL(rprec), PARAMETER :: bigno = 1.0E+10
 !-----------------------------------------------------------------------
 !     Subroutines
 !          handle_err  Controls Program Termination

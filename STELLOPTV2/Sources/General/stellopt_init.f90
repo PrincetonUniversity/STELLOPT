@@ -54,7 +54,10 @@
       ier = 0
 
       ! Read the OPTIMUM Namelist
+      CALL init_stellopt_input
       CALL read_stellopt_input(TRIM(id_string),ier,myid)
+      CALL stellopt_read_cws
+      CALL stellopt_write_header
       !CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
       !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
 
