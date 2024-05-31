@@ -855,9 +855,9 @@
       DOUBLE PRECISION :: H(3), N(3,3), Bx, By, Bz, mu0
       DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
-      ! Variables for iteration convergence [TODO: Remove lastSign]
+      ! Variables for iteration convergence
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, Mnorm_old
-      DOUBLE PRECISION :: lambda, lambdaBlend, error, errorPrev, errorH, errorHPrev 
+      DOUBLE PRECISION :: lambda, lambdaBlend, error, errorPrev
       INTEGER          :: lambdaCount!, lastSign
 
       EXTERNAL:: getBfld
@@ -1040,15 +1040,15 @@
         IF (ldosync) CALL mumaterial_syncM(M,ntet,domsize,outmydom,comm_master,shar_comm,istat)
         IF (ldebug.AND.lismaster) CALL mumaterial_writedebug(M,ntet,'./M_' // TRIM(ADJUSTL(strcount)) // '.dat')
 
-        ! Update Happ (or quit if we hit other conditions)
-        IF (MOD(count,syncInt).EQ.0) THEN
-          IF ((count .gt. maxIter) .OR. (error.LT.maxErr)) EXIT
+        ! Exit if error lt threshold after a Happ sync or if hit maxiter
+        IF (((MOD(count,syncint).EQ.1).AND.(error.LT.maxErr)).OR.(count.GE.maxIter)) EXIT
 
+        ! Update Happ from non-neighbors
+        IF (MOD(count,syncInt).EQ.0) THEN
           DO i = mystart, myend
             i_tile = mydom(i)
             CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
             Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
-            ! Get Happ only from non-neighbors
             DO k_tile = 1,neighbors(1,i)-1
               CALL mumaterial_geth_dipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
             END DO
