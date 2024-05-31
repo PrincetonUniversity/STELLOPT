@@ -18,9 +18,6 @@ stellopt_write_header.o : \
       $(VMEC_DIR)/$(LOCTYPE)/vmec_params.o \
       $(BOOTSJ_DIR)/$(LOCTYPE)/vmec0.o
 
-stellopt_vars.o : \
-      stellopt_runtime.o
-
 stellopt_write_auxfiles.o : \
       stellopt_runtime.o \
       equil_utils.o \
@@ -613,16 +610,6 @@ stellopt_main.o : \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o
       
       
-stellopt_input_mod.o : \
-      stellopt_winding_surface.o \
-      equil_utils.o \
-      stellopt_runtime.o \
-      stellopt_vars.o \
-      stellopt_targets.o \
-      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
-      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
-      
-      
 stellopt_init.o : \
       stellopt_runtime.o \
       stellopt_vars.o \
@@ -655,12 +642,6 @@ stellopt_neo.o : \
 stellopt_runtime.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_globals.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
-      
-
-stellopt_targets.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
-      stellopt_vars.o \
-      $(LIB_DIR)/$(LOCTYPE)/vparams.o 
       
 
 stellopt_travis.o : \
