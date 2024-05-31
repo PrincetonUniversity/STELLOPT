@@ -6,6 +6,7 @@ stellopt_globals.o : \
 stellopt_vars.o : \
       vparams.o \
       vsvd0.o \
+      mpi_inc.o \
       stellopt_globals.o
 
 stellopt_targets.o : \
