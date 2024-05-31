@@ -27,7 +27,7 @@
       USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init_new, &
                                 mumaterial_info, mumaterial_getbmag_scalar,&
                                 mumaterial_setverb, mumaterial_setd, &
-                                mumaterial_free
+                                mumaterial_free, mumaterial_debug
       USE mpi_params  
       USE mpi_inc      
       USE mpi_sharmem
@@ -62,25 +62,27 @@
         i = 0; lissubmaster = .TRUE.
       END IF
       CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS, i, mylocalid, MPI_COMM_MUMASTER, ierr_mpi)
-      ! note: MPI_COMM_SHARMEM is derived from MPI_COMM_BEAMS
 
       ! Locate main master
       IF (lissubmaster) THEN
         CALL MPI_COMM_RANK( MPI_COMM_MUMASTER, mymasterid, ierr_mpi)
-        IF (mymasterid.EQ.0) lismaster = .TRUE.
+        lismaster = (mymasterid.EQ.0)
       END IF
 #endif
 
     ! Set mumaterial verbosity
-      CALL mumaterial_setverb(.FALSE.)
-      IF (lismaster) CALL mumaterial_setverb(.TRUE.)
+      CALL mumaterial_setverb(lismaster)
+      CALL mumaterial_debug(lissubmaster)
 
       ! Read the mu materials file
-      CALL MUMATERIAL_LOAD(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER)
+      CALL MUMATERIAL_LOAD(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_BEAMS)
 
       ! Set parameters
       CALL MUMATERIAL_SETD(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
-                           mumaterial_lamfactor, mumaterial_nneighbor)
+                           mumaterial_lamfactor, mumaterial_lamthresh, & 
+                           mumaterial_padfactor,mumaterial_syncinterval) 
+
+      
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_MUSHARE,  ierr_mpi)
