@@ -1,7 +1,25 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_read_cws.o : \
+      stellopt_runtime.o \
+      stellopt_vars.o \
+      stellopt_targets.o \
+      stellopt_winding_surface.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
+
+stellopt_write_header.o : \
+      stellopt_runtime.o \
+      stellopt_vars.o \
+      stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/diagno_runtime.o \
+      $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_runtime.o \
+      $(VMEC_DIR)/$(LOCTYPE)/vmec_params.o \
+      $(BOOTSJ_DIR)/$(LOCTYPE)/vmec0.o
+
 stellopt_vars.o : \
-      stellopt_winding_surface.o
+      stellopt_runtime.o
 
 stellopt_write_auxfiles.o : \
       stellopt_runtime.o \

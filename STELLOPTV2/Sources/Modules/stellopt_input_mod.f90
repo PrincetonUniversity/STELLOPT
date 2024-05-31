@@ -11,34 +11,23 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE stellopt_runtime
+      USE stellopt_runtime, ONLY: axis_init_option, cr_strategy, &
+         epsfcn, factor, ftol, gtol, lcentered_differences, lkeep_mins, &
+         lrefit, mode, noptimizers, npopulation, opt_type, refit_param, &
+         rho_exp, xtol, bigno, FILE_EXIST_ERR, FILE_OPEN_ERR, &
+         lcoil_geom, lno_restart, NAMELIST_READ_ERR, ltriangulate
       USE stellopt_vars
-      USE equil_utils, ONLY: profile_norm
-      USE windingsurface
       USE stellopt_targets
       USE safe_open_mod, ONLY: safe_open
-      USE diagno_runtime, ONLY: DIAGNO_VERSION
-      USE vmec0, ONLY: version_
       USE vmec_input, ONLY: lasym_local => lasym, am, am_aux_s, am_aux_f, pmass_type, &
                             ac, ac_aux_s, ac_aux_f, pcurr_type, &
                             ai, ai_aux_s, ai_aux_f, piota_type, &
                             ah, ah_aux_s, ah_aux_f, ph_type, &
                             at, at_aux_s, at_aux_f, pt_type, &
                             aphi
-      USE vmec_params, ONLY: version_vmec=> version_
       USE mpi_params                                                    ! MPI
-!DEC$ IF DEFINED (GENE)
-      !USE par_other, ONLY: svn_gene => svn_rev, release_gene => release !OLD SVN Version
-      USE par_other, ONLY: svn_gene => git_master, release_gene => git_branch
-!DEC$ ENDIF        
-!DEC$ IF DEFINED (BEAMS3D_OPT)
-      USE beams3d_runtime, ONLY: BEAMS3D_VERSION
-!DEC$ ENDIF        
 !DEC$ IF DEFINED (REGCOIL)
       USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, zmns_coil, zmnc_coil, mnmax_coil, xm_coil, xn_coil, verbose, regcoil_nml
-      !USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
-      !                             rc_zmnc_stellopt, rc_zmns_stellopt, &
-      !                             rc_nfp => nfp
 !DEC$ ENDIF
       
 !-----------------------------------------------------------------------
@@ -430,17 +419,8 @@
 !-----------------------------------------------------------------------
     CONTAINS
 
-      SUBROUTINE read_stellopt_input(filename, istat, ithread)
-      CHARACTER(*), INTENT(in) :: filename
-      INTEGER, INTENT(out) :: istat
-      INTEGER, INTENT(in) :: ithread
-      LOGICAL :: lexist
-      INTEGER :: i, ierr, iunit, local_master, isurf
-      CHARACTER(LEN=1000) :: line
-
-      ! Variables used in regcoil section to parse nescin spectrum
-      INTEGER :: imn, m, n
-
+      SUBROUTINE init_stellopt_input
+      IMPLICIT NONE
       ! Initializations to default values
       nfunc_max       = 5000
       opt_type        = 'LMDIF'
@@ -693,8 +673,8 @@
       coil_type(:)    = 'U'    ! Default to "unknown"
       coil_surf(:)    = 1      ! Default to 1st winding surface for back-compat
       windsurfname(:) = ''
-      windsurf(:)%mmax   = -1
-      windsurf(:)%nmax   = -1
+      !windsurf(:)%mmax   = -1
+      !windsurf(:)%nmax   = -1
       fixedcoilname   = ''
       mboz            = 64
       nboz            = 64
@@ -951,7 +931,7 @@
       nz_txport         = 128
       nalpha_txport     = 1
       alpha_start_txport= 0.0
-      alpha_end_txport  = pi2/2
+      alpha_end_txport  = 8.0 * ATAN(1.0)/2
       target_txport     = 0.0
       sigma_txport      = bigno
       s_txport          = -1.0
@@ -1035,6 +1015,20 @@
       sigma_curvature_P2     = bigno
       target_gamma_c    = 0.0
       sigma_gamma_c     = bigno
+      END SUBROUTINE init_stellopt_input
+
+      SUBROUTINE read_stellopt_input(filename, istat, ithread)
+      CHARACTER(*), INTENT(in) :: filename
+      INTEGER, INTENT(out) :: istat
+      INTEGER, INTENT(in) :: ithread
+      LOGICAL :: lexist
+      INTEGER :: i, ierr, iunit, local_master, isurf
+      CHARACTER(LEN=1000) :: line
+
+      ! Variables used in regcoil section to parse nescin spectrum
+      INTEGER :: imn, m, n
+
+      
 
       ! Read name list
       lexist            = .false.
@@ -1071,118 +1065,6 @@
       bootj_type = ADJUSTL(bootj_type)
       bootcalc_type = ADJUSTL(bootcalc_type)
 
-      ! Coil Optimization
-      IF (ANY(ANY(lcoil_spline,2),1)) THEN
-         lcoil_geom = .true.
-
-         DO isurf=1,maxwindsurf
-            IF (LEN_TRIM(windsurfname(isurf)).gt.0) THEN
-               CALL read_winding_surface(windsurfname(isurf), isurf, ierr)
-               IF (ierr.ne.0) CALL handle_err(CWS_READ_ERR, &
-                    windsurfname(isurf), ierr)
-               lwindsurf(isurf) = .TRUE.
-            ENDIF
-         ENDDO !isurf
-
-         ! Count knots, error check
-         DO i=1,nigroup
-            n = COUNT(coil_splinesx(i,:) >= 0.0)
-            coil_nctrl(i) = n - 4
-            IF ((n > 0).AND.(n < 4)) &
-                 CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', n)
-            IF (COUNT(coil_splinesy(i,:) >= 0.0) - 4 .NE. coil_nctrl(i)) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
-            IF ((.NOT.lwindsurf(coil_surf(i))) .AND. (COUNT(coil_splinesz(i,:) >= 0.0) - 4 .NE. coil_nctrl(i))) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
-            IF (ANY(lcoil_spline(i,MAX(coil_nctrl(i)+1,1):maxcoilctrl))) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
-            IF (n.GE.4) THEN
-               DO m=2,n
-                  IF (coil_splinesx(i,m).LT.coil_splinesx(i,m-1)) &
-                       CALL handle_err(KNOT_ORDER_ERR, 'read_stellopt_input', m)
-                  IF (coil_splinesy(i,m).LT.coil_splinesy(i,m-1)) &
-                       CALL handle_err(KNOT_ORDER_ERR, 'read_stellopt_input', m)
-               ENDDO
-               IF ((coil_splinesx(i,2).NE.coil_splinesx(i,1)) .OR. &
-                   (coil_splinesx(i,3).NE.coil_splinesx(i,1)) .OR. &
-                   (coil_splinesx(i,4).NE.coil_splinesx(i,1))) &
-                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
-               IF ((coil_splinesx(i,n-1).NE.coil_splinesx(i,n)) .OR. &
-                   (coil_splinesx(i,n-2).NE.coil_splinesx(i,n)) .OR. &
-                   (coil_splinesx(i,n-3).NE.coil_splinesx(i,n))) &
-                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
-               IF ((coil_splinesy(i,2).NE.coil_splinesy(i,1)) .OR. &
-                   (coil_splinesy(i,3).NE.coil_splinesy(i,1)) .OR. &
-                   (coil_splinesy(i,4).NE.coil_splinesy(i,1))) &
-                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
-               IF ((coil_splinesy(i,n-1).NE.coil_splinesy(i,n)) .OR. &
-                   (coil_splinesy(i,n-2).NE.coil_splinesy(i,n)) .OR. &
-                   (coil_splinesy(i,n-3).NE.coil_splinesy(i,n))) &
-                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
-            ENDIF !n ge 4
-         END DO !i
-      ENDIF !lcoil_spline
-
-      ! REGCOIL winding surface optimization
-      ! If targeting chi2_b on the plasma boundary AND varying the winding
-      ! surface Fourier series, then load the nescin file from the regcoil
-      ! namelist
-
-!DEC$ IF DEFINED (REGCOIL)
-      IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
-           ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
-           ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
-         rc_nfp = regcoil_num_field_periods
-         regcoil_rcws_rbound_c = 0
-         regcoil_rcws_rbound_s = 0
-         regcoil_rcws_zbound_c = 0
-         regcoil_rcws_zbound_s = 0
-         IF (myid == master) THEN
-            WRITE(6,*) '<----REGCOIL: Reading NESCIN Spectrum from file'
-         end if
-         !call regcoil_read_nescin_spectrum(regcoil_nescin_filename, (myid == master)) 
-         verbose = (myid == master)
-         ! We need to read geometry_option_coil and nescin_filename from the input namelist before the coil surface can be loaded.
-         CALL safe_open(iunit, istat, TRIM(filename), 'old', 'formatted')
-         READ(iunit, nml=regcoil_nml, iostat=istat)
-         CLOSE(iunit)
-         call regcoil_init_coil_surface() 
-         IF (myid == master) THEN
-            WRITE(6,*) '<----REGCOIL: Initializing winding surface with NESCIN Spectrum'
-         end if
-         !call regcoil_initupdate_nescin_coil_surface((myid == master))
-         ! parse the rc_(r/z)mn(c/s)_stellopt arrays and populate the regcoil_rcws_(r/z)bound_(c/s) 2D arrays
-         !do ii = -mpol_rcws,mpol_rcws
-         !   do jj = -ntor_rcws,ntor_rcws
-         !      regcoil_rcws_rbound_c(ii, jj) = rc_rmnc_stellopt(ii,jj)
-         !      regcoil_rcws_rbound_s(ii, jj) = rc_rmns_stellopt(ii,jj)
-         !      regcoil_rcws_zbound_c(ii, jj) = rc_zmnc_stellopt(ii,jj)
-         !      regcoil_rcws_zbound_s(ii, jj) = rc_zmns_stellopt(ii,jj)
-         !   end do
-         !end do
-         do imn = 1, mnmax_coil
-            m = xm_coil(imn)
-            n = xn_coil(imn)/(-regcoil_num_field_periods) ! Convert from regcoil/vmec to nescin convention
-            IF (m < -mpol_rcws .or. m > mpol_rcws .or. n < -ntor_rcws .or. n > ntor_rcws) THEN
-               WRITE(6,*) "Error! (m,n) values in nescin file exceed mpol_rcws or ntor_rcws."
-               WRITE(6,*) "mpol_rcws=",mpol_rcws," ntor_rcws=",ntor_rcws
-               WRITE(6,*) "m=",m,"  n=",n
-               STOP
-            END IF
-            regcoil_rcws_rbound_c(m, n) = rmnc_coil(imn)
-            regcoil_rcws_rbound_s(m, n) = rmns_coil(imn)
-            regcoil_rcws_zbound_c(m, n) = zmnc_coil(imn)
-            regcoil_rcws_zbound_s(m, n) = zmns_coil(imn)
-         end do
-         
-         if (myid==master) then
-            WRITE(6,*) '<----STELLOPT_INPUT_MOD: Finished parsing nescoil data and', &
-                 ' assigning stellopt variables'
-         end if
-      END IF
-!DEC$ ENDIF
-      ! End of REGCOIL winding surface optimization initializion steps
-
       ! If fixed boundary optimization or mapping turn off restart
       IF (ANY(ANY(lbound_opt,2),1) .or. opt_type=='map') lno_restart = .true.
       ! Test for proper normalization on ne profile
@@ -1201,283 +1083,6 @@
          ne_opt = ne_opt / ne_norm
          ne_aux_f = ne_aux_f / ne_norm
       END IF
-         
-      ! Print code messages
-      CALL tolower(equil_type)
-      IF ((myid == master) .and. (TRIM(equil_type(1:4)) == 'vmec') ) THEN
-         WRITE(6,*)        " Equilibrium calculation provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")       ========="
-         WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
-         WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ IF DEFINED (BEAMS3D_OPT)
-      IF (myid == master .and. ANY(sigma_orbit < bigno) ) THEN
-         WRITE(6,*)               " Energetic Particle calculation provided by: "
-         WRITE(6,"(2X,A)")        "================================================================================="
-         WRITE(6,"(2X,A,F5.2,A)") "=========                      BEAMS3D (v",BEAMS3D_VERSION,")                         ========="
-         WRITE(6,"(2X,A)")        "=========                  (M. McMillan, S. Lazerson)                   ========="
-         WRITE(6,"(2X,A)")        "=========                       lazerson@pppl.gov                       ========="
-         WRITE(6,"(2X,A)")        "=========          http://vmecwiki.pppl.wikispaces.net/BEAMS3D          ========="
-         WRITE(6,"(2X,A)")        "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ ELSE
-      IF (ANY(sigma_orbit < bigno)) THEN
-         sigma_orbit = bigno
-         IF (myid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '  STELLOPT has not been linked to the BEAMS3D code.   '
-            WRITE(6,*) '  Optimization of particle orbits not possible.'
-            WRITE(6,*) '  Disabling energetic particle targets.'
-         END IF
-      END IF
-!DEC$ ENDIF
-      IF (myid == master .and. ANY(sigma_bootstrap < bigno)) THEN
-         WRITE(6,*)        " Bootstrap calculation provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A,A,A)") "=========                    BOOTSJ (v",version_,")                             ========="
-         WRITE(6,"(2X,A)") "=========            (J. Tolliver, K. Shaing, P. Moroz)                 ========="
-         WRITE(6,"(2X,A)") "=========        http://vmecwiki.pppl.wikispaces.net/BOOTSJ             ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-      IF (myid == master .and. ANY(sigma_balloon < bigno)) THEN
-         WRITE(6,*)        " Ballooning stability calculation provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A,F5.2,A)") "=========                    COBRAVMEC (v",4.10,")                         ========="
-         WRITE(6,"(2X,A)") "=========                 (R. Sanchez, S. Hirshman)                     ========="
-         WRITE(6,"(2X,A)") "=========                   raul.sanchez@uc3m.es                        ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ IF DEFINED (TERPSICHORE)
-      IF (myid == master .and. ANY(sigma_kink < bigno)) THEN
-         WRITE(6,*)        " Kink stability calculation provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A,F5.2,A)") "=========                    TERPSICHORE (v2016)                        ========="
-         WRITE(6,"(2X,A)") "=========    (D. V. ANDERSON, W. A. COOPER, R. GRUBER AND U. SCHWENN)   ========="
-         WRITE(6,"(2X,A)") "=========                   wilfred.cooper@epfl.ch                      ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "         
-      END IF
-!DEC$ ELSE
-      IF (ANY(sigma_kink < bigno)) THEN
-         sigma_kink(:) = bigno
-         IF (myid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '  STELLOPT has not been linked to the TERPSICHORE code.   '
-            WRITE(6,*) '  Optimization of kink stability not possible.'
-            WRITE(6,*) '  Disabling kink stability targets.'
-         END IF
-      END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (TRAVIS)
-      IF (myid == master .and. ANY(sigma_ece < bigno)) THEN
-         WRITE(6,*)        " ECE Radiation calculation provided by: "
-         WRITE(6,"(2X,A)")        "================================================================================="
-         CALL printversion_sopt_f77
-         !WRITE(6,"(2X,A,F5.2,A)") "=========                            TRAVIS                             ========="
-         WRITE(6,"(2X,A)")        "=========                    (N. Marushchenko)                          ========="
-         WRITE(6,"(2X,A)")        "=========              nikolai.marushchenko@ipp.mpg.de                  ========="
-         WRITE(6,"(2X,A)")        "================================================================================="
-         WRITE(6,*)               "    "
-      END IF
-!DEC$ ELSE
-      IF (ANY(sigma_ece < bigno)) THEN
-         sigma_ece = bigno
-         IF (myid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '  STELLOPT has not been linked to the TRAVIS code.   '
-            WRITE(6,*) '  Optimization of ECE Radiation not possible.'
-            WRITE(6,*) '  Disabling ECE Radiation targets.'
-         END IF
-      END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (COILOPTPP)
-      IF (myid == master .and. (sigma_coil_bnorm < bigno)) THEN
-         WRITE(6,*)        " Stellarator Coil Optimization provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========                            COILOPT++                          ========="
-         WRITE(6,"(2X,A)") "=========                    (J. Breslau, S. Lazerson)                  ========="
-         WRITE(6,"(2X,A)") "=========                        jbreslau@pppl.gov                      ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ ELSE
-      IF (sigma_coil_bnorm < bigno) THEN
-         sigma_coil_bnorm = bigno
-         IF (myid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '  Coil optimization with the COILOPT++'
-            WRITE(6,*) '  code has been disabled.  Coil optimziation'
-            WRITE(6,*) '  has been turned off.  Contact your vendor for'
-            WRITE(6,*) '  further information.'
-         END IF
-      END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (REGCOIL)
-      IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or. &
-                                (sigma_regcoil_current_density < bigno) )) THEN
-         WRITE(6,*)        " Stellarator REGCOIL Optimization provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========                            REGCOIL                            ========="
-         WRITE(6,"(2X,A)") "=========                        (M. Landreman)                         ========="
-         WRITE(6,"(2X,A)") "=========               Matt dot Landreman at gmail dot com             ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ ELSE
-      IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or. &
-                                (sigma_regcoil_current_density < bigno) ) ) THEN
-         sigma_regcoil_chi2_b = bigno
-         sigma_regcoil_current_density = bigno
-         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-         WRITE(6,*) '  Coil optimization with the REGCOIL'
-         WRITE(6,*) '  code has been disabled.  Coil optimziation'
-         WRITE(6,*) '  has been turned off.  Contact your vendor for'
-         WRITE(6,*) '  further information.'
-      END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (DKES_OPT)
-      IF (myid == master .and. ( ANY(sigma_dkes < bigno) .or. &
-                                 ANY(sigma_dkes_Erdiff < bigno) .or. &
-                                 ANY(sigma_dkes_alpha < bigno) ) ) THEN
-         WRITE(6,*)        " Drift-Kinetic Equation Solver (DKES) provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========           Drift Kinetic Equation Solver, Variational          ========="
-         WRITE(6,"(2X,A)") "=========                    (S.Hirshman, W. van Rij)                   ========="
-         WRITE(6,"(2X,A)") "=========                      hirshmansp@ornl.gov                      ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ ELSE
-      IF (ANY(sigma_dkes < bigno) .or. ANY(sigma_dkes_Erdiff < bigno) .or. ANY(sigma_dkes_alpha < bigno)) THEN
-         sigma_dkes(:) = bigno
-         sigma_dkes_Erdiff(:) = bigno
-         sigma_dkes_alpha(:) = bigno
-         IF (myid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '  Drift-kinetic optimization with the DKES'
-            WRITE(6,*) '  code has been disabled.  Drift-kinetic optimziation'
-            WRITE(6,*) '  has been turned off.  Contact your vendor for'
-            WRITE(6,*) '  further information.'
-         END IF
-      END IF
-!DEC$ ENDIF
-      IF (myid == master .and. (ANY(sigma_fluxloop < bigno) .or. ANY(sigma_bprobe < bigno) .or. ANY(sigma_segrog < bigno) )) THEN
-         WRITE(6,*)        " Magnetic Diagnostic calculation provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A,F5.2,A)") "=========                    DIAGNO (v",DIAGNO_VERSION,")                             ========="
-         WRITE(6,"(2X,A)") "=========            (S.Lazerson, H Gardner, J. Geiger)                 ========="
-         WRITE(6,"(2X,A)") "=========                   lazerson@pppl.gov                           ========="
-         WRITE(6,"(2X,A)") "=========       http://vmecwiki.pppl.wikispaces.net/DIAGNO              ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ IF DEFINED (NEO_OPT)
-      IF (myid == master .and. ANY(sigma_neo < bigno)) THEN
-         WRITE(6,*)        " Neoclassical Transport calculation provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========                      NEO (v3.02)                              ========="
-         WRITE(6,"(2X,A)") "=========               (W.Kernbichler and S.Kasilov)                   ========="
-         WRITE(6,"(2X,A)") "=========               kernbichler@itp.tu-graz.ac.at                   ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ ELSE
-      IF (ANY(sigma_neo < bigno)) THEN
-         sigma_neo(:) = bigno
-         IF (myid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '  Neoclassical transport optimization with the NEO'
-            WRITE(6,*) '  code has been disabled.  Neoclassical optimziation'
-            WRITE(6,*) '  has been turned off.  Contact your vendor for'
-            WRITE(6,*) '  further information.'
-         END IF
-      END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (TXPORT_OPT)
-      IF (myid == master .and. ANY(sigma_txport < bigno)) THEN
-         WRITE(6,*)        " Geometry Interface to Turbulent Transport provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)")       "=========        Geometry Interface for Stellarators and Tokamaks       ========="
-         WRITE(6,"(2X,A)")       "=========          (P.Xanthopoulos, W.A.Cooper, and Yu.Turkin)          ========="
-         WRITE(6,"(2X,A)")       "=========          pax@ipp.mpg.de  http://www.ipp.mpg.de/~pax/          ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-         WRITE(6,"(2X,A)") "     NOTICE: New TXPORT variables now used to control execution COORDINATES,"
-         WRITE(6,"(2X,A)") "             IN_OUT, and SETUP namelists are ignored.  LGLOBAL_TXPORT,"
-         WRITE(6,"(2X,A)") "             NZ_TXPORT, NALPHA_TXPORT, ALPHA0_TXPORT have been added to the"
-         WRITE(6,"(2X,A)") "             OPTIMUM namelist."
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ ELSE
-      IF (ANY(sigma_txport < bigno)) THEN
-         sigma_txport(:) = bigno
-         IF (myid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '  Turbulent transport optimization with the GIST/TXPORT'
-            WRITE(6,*) '  code has been disabled.  Turbulent optimziation'
-            WRITE(6,*) '  has been turned off.  Contact your vendor for'
-            WRITE(6,*) '  further information.'
-         END IF
-      END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (AEOPT)
-      CALL tolower(txport_proxy)
-      IF (myid == master .and. ANY(sigma_txport < bigno) .and. (TRIM(txport_proxy(1:11)) == 'availenergy') ) THEN
-         WRITE(6,*)        " Turbulent Transport calculation provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========            Trapped Particle Available Energy Code             ========="
-         WRITE(6,"(2X,A)") "=========            (R. Mackenbach, S. Lazerson, J. Proll)             ========="
-         WRITE(6,"(2X,A)") "=========         https://github.com/RalfMackenbach/STELLOPT_AE         ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ ELSE
-      CALL tolower(txport_proxy)
-      IF (ANY(sigma_txport < bigno) .and. (TRIM(txport_proxy(1:11)) == 'availenergy')) THEN
-         txport_proxy = 'prox1d'
-         IF (myid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '  STELLOPT has not been linked to the Available Energy code.      '
-            WRITE(6,*) '  Optimization with Available Energy for turblent'
-            WRITE(6,*) '  transport not possible.  Defaulting to proxy function'
-            WRITE(6,*) '        txport_proxy = prox1d'
-            WRITE(6,*) '  Code Available at:'
-            WRITE(6,*) '        https://github.com/RalfMackenbach/STELLOPT_AE'
-         END IF
-      END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (GENE)
-      CALL tolower(txport_proxy)
-      IF (myid == master .and. ANY(sigma_txport < bigno) .and. (TRIM(txport_proxy(1:4)) == 'gene') ) THEN
-         WRITE(6,*)        " Turbulent Transport calculation provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========       Gyrokinetic Electromagnetic Numerical Experiment        ========="
-         WRITE(6,"(2X,A)") "=========                  (F. Jenko, P. Xanthopoulos)                  ========="
-         WRITE(6,"(2X,A)") "=========              http://www2.ipp.mpg.de/~fsj/gene/                ========="
-         WRITE(6,"(2X,A)") "=========              GENE11  (git-branch "//release_gene//")                  ========="
-         WRITE(6,"(2X,A)") "=========                      (git-master: "//svn_gene//")     ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ ELSE
-      CALL tolower(txport_proxy)
-      IF (ANY(sigma_txport < bigno) .and. (TRIM(txport_proxy(1:4)) == 'gene')) THEN
-         txport_proxy = 'prox1d'
-         IF (myid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '  STELLOPT has not been linked to the GENE code.      '
-            WRITE(6,*) '  Optimization with linear GENE for turblent'
-            WRITE(6,*) '  transport not possible.  Defaulting to proxy function'
-            WRITE(6,*) '        txport_proxy = prox1d'
-         END IF
-      END IF
-!DEC$ ENDIF
       ! Force some behavior
       lbooz(1) = .FALSE.
       target_balloon(1)   = 0.0;  sigma_balloon(1)   = bigno

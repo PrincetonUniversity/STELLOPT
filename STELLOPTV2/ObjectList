@@ -1,4 +1,6 @@
 ObjectFiles = \
+stellopt_read_cws.o \
+stellopt_write_header.o \
 chisq_dkes_alpha.o \
 chisq_dkes_erdiff.o \
 chisq_line_visbrem.o \

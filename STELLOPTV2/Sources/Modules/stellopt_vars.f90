@@ -14,7 +14,7 @@
 !-----------------------------------------------------------------------
       USE vparams, ONLY: ndatafmax, mpol1d, ntord 
       USE vsvd0
-      USE windingsurface, ONLY : maxwindsurf
+      USE stellopt_runtime, ONLY : maxwindsurf
 !-----------------------------------------------------------------------
 !     Module Variables
 !            nfunc_max          Maximum number of function evaluations
