@@ -102,8 +102,10 @@
                                zmax_fida,phimin_fida, phimax_fida, &
                                nr_fida, nphi_fida, nz_fida, nenergy_fida, &
                                npitch_fida, t_fida, &
-                               mumaterial_tol, mumaterial_lambda, mumaterial_lamfactor, &
-                               mumaterial_niter, mumaterial_nneighbor
+                               mumaterial_tol, mumaterial_niter, &
+                               mumaterial_lambda, mumaterial_lamfactor, &
+                               mumaterial_lamthresh, mumaterial_padfactor, &
+                               mumaterial_syncinterval 
       
 !-----------------------------------------------------------------------
 !     Subroutines
