@@ -1041,7 +1041,7 @@
         IF (ldebug.AND.lismaster) CALL mumaterial_writedebug(M,ntet,'./M_' // TRIM(ADJUSTL(strcount)) // '.dat')
 
         ! Exit if error lt threshold after a Happ sync or if hit maxiter
-        IF (((MOD(count,syncint).EQ.1).AND.(error.LT.maxErr)).OR.(count.GE.maxIter)) EXIT
+        IF ((((MOD(count,syncint).EQ.1).OR.(syncInt.EQ.1)).AND.(error.LT.maxErr)).OR.(count.GE.maxIter)) EXIT
 
         ! Update Happ from non-neighbors
         IF (MOD(count,syncInt).EQ.0) THEN
