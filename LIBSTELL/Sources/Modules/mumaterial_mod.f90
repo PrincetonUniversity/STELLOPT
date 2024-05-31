@@ -43,7 +43,7 @@
             DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: H(:), M(:)
       END TYPE stateFunctionType
 
-      LOGICAL, PRIVATE                    :: lverb, ldosync, lsample, ldebug
+      LOGICAL, PRIVATE                    :: lverb, ldebug
       INTEGER, PRIVATE                    :: nvertex, ntet, nstate
       TYPE(stateFunctionType), PRIVATE, ALLOCATABLE     :: stateFunction(:)
       DOUBLE PRECISION, PRIVATE           :: maxErr, lambdaStart, lambdaFactor, paddingFactor
@@ -69,7 +69,7 @@
       INTEGER, PRIVATE                    :: shar_comm, shar_rank, shar_size, &
                                              comm_master, master_rank, master_size, &
                                              comm_world, world_rank, world_size, color
-      LOGICAL, PRIVATE                    :: lcomm, lismaster
+      LOGICAL, PRIVATE                    :: lcomm, lismaster, ldosync
 
 
 
@@ -858,7 +858,7 @@
       ! Variables for iteration convergence [TODO: Remove lastSign]
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, Mnorm_old
       DOUBLE PRECISION :: lambda, lambdaBlend, error, errorPrev, errorH, errorHPrev 
-      INTEGER          :: lambdaCount, lastSign
+      INTEGER          :: lambdaCount!, lastSign
 
       EXTERNAL:: getBfld
 
@@ -888,7 +888,7 @@
       lambda = lambdaStart
       lambdaCount = 0
       lambdaBlend = 4.0
-      lastSign = 1
+!      lastSign = 1
       chi = 0.0
       Mnorm = 1.0E-5
       error = 0.d0
@@ -1031,7 +1031,7 @@
           !    lambdaCount = lambdaThresh - 1
           !  END IF
           END IF
-          lastSign = SIGN(1.0, error/errorPrev-1.0)
+!          lastSign = SIGN(1.0, error/errorPrev-1.0)
         END IF
 
         count = count + 1        
