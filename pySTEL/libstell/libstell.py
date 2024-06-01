@@ -303,18 +303,16 @@ class LIBSTELL():
 		init_beams3d_input = getattr(self.libstell,module_name+'_init_beams3d_input'+self.s3)
 		init_beams3d_input.argtypes = None
 		init_beams3d_input.restype = None
-		init_beams3d_input() #not working
+		init_beams3d_input()
 		# We use an added routine as a helper
 		module_name = self.s1+'beams3d_input_mod_'+self.s2
 		read_beams3d_input = getattr(self.libstell,module_name+'_read_beams3d_input'+self.s3)
 		read_beams3d_input.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
 		read_beams3d_input.restype = None
 		istat = ct.c_int(0)
-		print('-- got herea')
 		read_beams3d_input(filename.encode('UTF-8'),ct.byref(istat),len(filename))
 		if not (istat.value == 0):
 			return None
-		print('-- got hereb')
 		# Get vars
 		intList=['nr','nphi','nz','nparticles_start','npoinc', \
 				'duplicate_factor', 'ns_prof1','ns_prof2', \
@@ -494,6 +492,174 @@ class LIBSTELL():
 		"""Wrappers writing of the FIELDLINES_INPUT namelist
 
 		This routine wrappers write_fieldlines_input in LIBSTELL
+
+		Parameters
+		----------
+		filename : str
+			Path to input file.
+		out_dict : dict (optional)
+			Dictionary of items to change.
+		"""
+		import ctypes as ct
+		module_name = self.s1+'fieldlines_globals_'+self.s2
+		# Check if we want to update values
+		if out_dict:
+			for key in out_dict:
+				self.set_module_var(module_name,key,out_dict[key])
+		module_name = self.s1+'fieldlines_input_mod_'+self.s2
+		write_fieldlines_input = getattr(self.libstell,module_name+'_write_fieldlines_namelist_byfile'+self.s3)
+		write_fieldlines_input.argtypes = [ct.c_char_p, ct.c_long]
+		write_fieldlines_input.restype=None
+		write_fieldlines_input(filename.encode('UTF-8'),len(filename))
+
+	def read_stellopt_input(self,filename):
+		"""Reads a STELLOPT OPTIMUM namelist
+
+		This routine wrappers read_stellopt_input function in
+		stellopt_input_mod.
+
+		Parameters
+		----------
+		filename : str
+			Path to input file.
+		Returns
+		-------
+		out_data : dict
+			Dictionary of items.
+		"""
+		import ctypes as ct
+		# A few constants defined in globals
+		module_name = self.s1+'vsvd0_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getnigroup'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		nigroup = get_constant()
+		module_name = self.s1+'vparams_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getndatafmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ndatafmax = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getmpol1d'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		mpol1d = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getntord'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ntord = get_constant()
+		module_name = self.s1+'stellopt_globals_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getmaxwindsurf'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		maxwindsurf = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getbigno'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		bigno = get_constant()
+		# Call the initialization routine
+		module_name = self.s1+'stellopt_input_mod_'+self.s2
+		init_stellopt_input = getattr(self.libstell,module_name+'_init_stellopt_input'+self.s3)
+		init_stellopt_input.argtypes = None
+		init_stellopt_input.restype = None
+		init_stellopt_input() 
+		# We use an added routine as a helper
+		module_name = self.s1+'stellopt_input_mod_'+self.s2
+		read_stellopt_input = getattr(self.libstell,module_name+'_read_stellopt_input'+self.s3)
+		read_stellopt_input.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
+		read_stellopt_input.restype = None
+		istat = ct.c_int(0)
+		read_stellopt_input(filename.encode('UTF-8'),ct.byref(istat),len(filename))
+		if not (istat.value == 0):
+			return None
+		# Get vars Globals
+		module_name = self.s1+'stellopt_globals_'+self.s2
+		booList=['lcentered_differences', 'lkeep_mins', 'lrefit', 'lcoil_geom', 'lno_restart', 'ltriangulate']
+		booLen=[1]*len(booList)
+		intList=['cr_strategy', 'npopulation', 'noptimizers', 'mode', 'rho_exp']
+		intLen=[1]*len(intList)
+		realList=['ftol', 'xtol', 'gtol', 'epsfcn', 'factor', 'refit_param']
+		realLen=[1]*len(realList)
+		charList=['opt_type', 'axis_init_option']
+		charLen=[(256,1),(256,1)]
+		global_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
+		# Get vars Globals
+		module_name = self.s1+'stellopt_vars_'+self.s2
+		booList=['lphiedge_opt', 'lcurtor_opt', 'lpscale_opt', \
+			'lbcrit_opt', 'lmix_ece_opt', 'lregcoil_winding_surface_separation_opt',\
+			 'lregcoil_current_density_opt', 'lxval_opt', 'lyval_opt', \
+			 'lxics_v0_opt','mango_bound_constraints']
+		booLen=[1]*len(booList)
+		booList.append(['lextcur_opt','laphi_opt', 'lam_opt', \
+					'lac_opt', 'lai_opt','lah_opt', 'lat_opt','lne_opt', \
+					'lte_opt', 'lti_opt','lth_opt', 'lzeff_opt'])
+		booLen.append([(nigroup,1),(20,1)])
+		booLen.append([(21,1)]*10)
+		booList.append(['lam_s_opt', 'lam_f_opt', 'lac_s_opt', 'lac_f_opt' 'lai_s_opt', 'lai_f_opt',\
+					'lne_f_opt', 'lte_f_opt', 'lti_f_opt', 'lth_f_opt', 'lphi_s_opt', 'lphi_f_opt', \
+					'lzeff_f_opt', 'lemis_xics_f_opt', 'lbootj_f_opt', 'lbeamj_f_opt', 'lah_f_opt', 'lat_f_opt'])
+		booLen.append([(ndatafmax,1)]*18)
+		booList.append(['laxis_opt','lbound_opt','lrho_opt','lmode_opt','ldeltamn_opt'])
+		booLen.append([(ntord+1,1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,2*mpol1d+1)])
+		booList.append(['lcoil_spline','lwindsurf'])
+		booLen.append([(nigroup,40),(maxwindsurf,1)])
+		booList.append(['lregcoil_rcws_rbound_c_opt','lregcoil_rcws_rbound_s_opt',\
+			'lregcoil_rcws_zbound_c_opt','lregcoil_rcws_zbound_s_opt'])
+		booLen.append([(65,65)]*4)
+		intList=['nfunc_max', 'regcoil_nlambda', 'regcoil_num_field_periods', \
+			'sfincs_min_procs', 'vboot_max_iterations']
+		booList.append(['lRosenbrock_X_opt'])
+		booLen.append([(20,1)])
+		intLen=[1]*len(intList)
+		intList.append(['coil_nctrl'])
+		intLen.append([(nigroup,1)])
+		realList=['dphiedge_opt', 'dcurtor_opt', 'dbcrit_opt', \
+			'dpscale_opt', 'dmix_ece_opt', 'dxval_opt', 'dyval_opt', \
+			'dregcoil_winding_surface_separation_opt', \
+			'dregcoil_current_density_opt', 'dxics_v0_opt', \
+			'phiedge_min', 'curtor_min', 'bcrit_min', \
+			'pscale_min', 'mix_ece_min', 'xval_min', 'yval_min', 
+			'regcoil_winding_surface_separation_min', \
+			'regcoil_current_density_min', 'xics_v0_min', \
+			'phiedge_max', 'curtor_max', 'bcrit_max', \
+			'pscale_max', 'mix_ece_max', 'xval_max', 'yval_max', \
+			'regcoil_winding_surface_separation_max', \
+			'regcoil_current_density_max', 'xics_v0_max', \
+			'mix_ece', 'xval', 'yval', 'xics_v0', \
+			'regcoil_winding_surface_separation', \
+			'regcoil_current_density','vboot_tolerance']
+		realLen=[1]*len(realList)
+		realList.append(['dextcur_opt','extcur_min','extcur_max'])
+		realLen.append([(nigroup,1)*3])
+		realList.append(['daphi_opt', 'aphi_min', 'aphi_max'])
+		realLen.append([(20,1)*3])
+		realList.append(['dam_opt', 'dac_opt', 'dai_opt', 'dah_opt', 'dat_opt','dte_opt', 'dne_opt', 'dti_opt', 'dth_opt','dzeff_opt', \
+			'am_min', 'ac_min', 'ai_min', 'ah_min', 'at_min', 'am_max', 'ac_max', 'ai_max', 'ah_max', 'at_max',\
+			'te_min', 'ne_min', 'ti_min', 'th_min', 'te_max', 'ne_max', 'ti_max', 'th_max', 'zeff_max', 'zeff_min'])
+		realLen.append([(21,1)*30])
+		realList.append(['bnfou'])
+		realLen.append([(25,41)])
+		realList.append(['dregcoil_rcws_rbound_c_opt','dregcoil_rcws_rbound_s_opt','dregcoil_rcws_zbound_c_opt','dregcoil_rcws_zbound_s_opt'])
+		realLen.append([(65,65)]*4)
+		realList.append(['te_opt','ti_opt','ne_opt','th_opt','zeff_opt'])
+		realLen.append([(21,1)]*5)
+		realList.append(['ne_aux_s', 'te_aux_s', 'ti_aux_s', 'th_aux_s', 'zeff_aux_s', \
+			'phi_aux_s', 'beamj_aux_s', 'bootj_aux_s', 'sfincs_s', 'emis_xics_s',\
+			'ne_aux_f', 'te_aux_f', 'ti_aux_f', 'th_aux_f', 'zeff_aux_f', \
+			'phi_aux_f', 'beamj_aux_f', 'bootj_aux_f', 'emis_xics_f'])
+		# Stopped here SAL 31.5.2024
+		realLen.append([(ndatafmax,1)]*19)
+		charList=['sfincs_Er_option', 'equil_type', 'te_type', 'ne_type', \
+		'ti_type', 'th_type', 'beamj_type','bootj_type','zeff_type','emis_xics_type',\
+		'fixedcoilname','regcoil_nescin_filename','bootcalc_type','phi_type']
+		charLen=[(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),\
+			(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(256,1)]
+		var_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
+		return out_data
+
+	def write_stellopt_input(self,filename,out_dict=None):
+		"""Wrappers writing of the STELLOPT OPTIMUM namelist
+
+		This routine wrappers write_stellopt_input in LIBSTELL
 
 		Parameters
 		----------
