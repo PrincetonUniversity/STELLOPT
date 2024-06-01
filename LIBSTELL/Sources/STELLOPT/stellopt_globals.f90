@@ -22,5 +22,17 @@
       INTEGER :: cr_strategy, npopulation, noptimizers, mode, rho_exp
       REAL(rprec)  :: ftol, xtol, gtol, epsfcn, factor, refit_param
       CHARACTER(256)           :: opt_type, axis_init_option
+      
+      CONTAINS
+
+      INTEGER FUNCTION getmaxwindsurf()
+      IMPLICIT NONE
+      getmaxwindsurf = maxwindsurf
+      END FUNCTION getmaxwindsurf
+
+      REAL(rprec) FUNCTION getbigno()
+      IMPLICIT NONE
+      getbigno = bigno
+      END FUNCTION getbigno
 
       END MODULE stellopt_globals
