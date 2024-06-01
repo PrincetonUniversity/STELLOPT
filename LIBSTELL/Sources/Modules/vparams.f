@@ -50,4 +50,21 @@
       
       real(rprec), parameter :: dmu0   = 2.0e-7_dp*twopi                !SAL 09/26/11 for COBRA
 
+      CONTAINS
+
+      INTEGER FUNCTION getndatafmax()
+      IMPLICIT NONE
+      getndatafmax = ndatafmax
+      END FUNCTION getndatafmax
+      
+      INTEGER FUNCTION getmpol1d()
+      IMPLICIT NONE
+      getmpol1d = mpol1d
+      END FUNCTION getmpol1d
+      
+      INTEGER FUNCTION getntord()
+      IMPLICIT NONE
+      getntord = ntord
+      END FUNCTION getntord
+
       END MODULE vparams
