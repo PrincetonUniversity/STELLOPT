@@ -199,7 +199,7 @@
                             MPI_MODE_RDONLY, MPI_INFO_NULL, key, ierr_mpi )
          CALL MPI_FILE_CLOSE(key,ier)
          CALL init_stellopt_input
-         CALL read_stellopt_input(TRIM(id_string),ier,myid)
+         CALL read_stellopt_input(TRIM(id_string),ier)
          CALL stellopt_read_cws
          !CALL stellopt_write_header
 
