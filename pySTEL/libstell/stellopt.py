@@ -220,4 +220,46 @@ class STELLOPT():
 				chisq = (targ-val)/sigma
 				setattr(self,targ_name+'_CHISQ',chisq*chisq)
 
+# STELLOPT Input Class
+class STELLOPT_INPUT():
+	"""Class for working with STELLOPT INPUT data
+
+	"""
+	def __init__(self, parent=None):
+		self.libStell = LIBSTELL()
+
+	def read_input(self,filename):
+		"""Reads STELLOPT_INPUT namelist from a file
+
+		This routine uses f90nml to extract the STELLOPT_INPUT
+		namelist from a file.
+		Parameters
+		----------
+		filename : string
+			Input file name with STELLOPT_INPUT namelist
+		"""
+		indata_dict = self.libStell.read_stellopt_input(filename)
+		for key in indata_dict:
+			setattr(self, key, indata_dict[key])
+
+	def write_input(self,filename):
+		"""Writes STELLOPT_INPUT namelist to a file
+
+		This routine wrappers the beams3d_input_mod module writing routine.
+		Parameters
+		----------
+		filename : string
+			Input file name to write BEASM3D_INPUT namelist to
+		"""
+		out_dict = vars(self)
+		self.libStell.write_stellopt_input(filename,out_dict)
+
+
+
+# Main routine
+if __name__=="__main__":
+	import sys
+	sys.exit(0)
+
+
 
