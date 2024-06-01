@@ -239,8 +239,6 @@
       
       CHARACTER, DIMENSION(nigroup) :: coil_type  ! Specifies coil topology
       INTEGER, DIMENSION(nigroup)   :: coil_surf  ! Assoc. winding surf index
-
-      REAL(rprec) :: phiedge_old  ! For keeping track of phiedge
       
       INTEGER, PARAMETER ::  norm_dex   = -5
       
