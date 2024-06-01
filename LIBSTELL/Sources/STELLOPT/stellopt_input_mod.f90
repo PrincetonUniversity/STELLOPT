@@ -1016,10 +1016,9 @@
       sigma_gamma_c     = bigno
       END SUBROUTINE init_stellopt_input
 
-      SUBROUTINE read_stellopt_input(filename, istat, ithread)
+      SUBROUTINE read_stellopt_input(filename, istat)
       CHARACTER(*), INTENT(in) :: filename
       INTEGER, INTENT(out) :: istat
-      INTEGER, INTENT(in) :: ithread
       LOGICAL :: lexist
       INTEGER :: i, ierr, iunit, local_master, isurf
       CHARACTER(LEN=1000) :: line
