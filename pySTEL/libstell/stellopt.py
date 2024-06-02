@@ -6,7 +6,7 @@ STELLOPT data.
 """
 
 # Libraries
-#from libstell import libstell
+from libstell.libstell import LIBSTELL
 
 # Constants
 
@@ -227,32 +227,55 @@ class STELLOPT_INPUT():
 	"""
 	def __init__(self, parent=None):
 		self.libStell = LIBSTELL()
+		self.global_data = STELLOPT_INPUT_GLOBAL()
+		self.var_data = STELLOPT_INPUT_VAR()
+		self.target_data = STELLOPT_INPUT_TARGET()
 
 	def read_input(self,filename):
 		"""Reads STELLOPT_INPUT namelist from a file
 
-		This routine uses f90nml to extract the STELLOPT_INPUT
-		namelist from a file.
+		This routine wrappers the stellopt_input_mod module reading routine.
 		Parameters
 		----------
 		filename : string
-			Input file name with STELLOPT_INPUT namelist
+			Input file name with OPTIMUM namelist
 		"""
-		indata_dict = self.libStell.read_stellopt_input(filename)
-		for key in indata_dict:
-			setattr(self, key, indata_dict[key])
+		# there are three separate module we need to deal with
+		global_dict, var_dict, target_dict = self.libStell.read_stellopt_input(filename)
+		for key in global_dict:
+			setattr(self.global_data, key, global_dict[key])
+		for key in var_dict:
+			setattr(self.var_data, key, var_dict[key])
+		for key in target_dict:
+			setattr(self.target_data, key, target_dict[key])
 
 	def write_input(self,filename):
 		"""Writes STELLOPT_INPUT namelist to a file
 
-		This routine wrappers the beams3d_input_mod module writing routine.
+		This routine wrappers the stellopt_input_mod module writing routine.
 		Parameters
 		----------
 		filename : string
-			Input file name to write BEASM3D_INPUT namelist to
+			Input file name to write OPTIMUM namelist to
 		"""
-		out_dict = vars(self)
-		self.libStell.write_stellopt_input(filename,out_dict)
+		# there are three separate module we need to deal with
+		global_dict = vars(self.global_data)
+		var_dict = vars(self.var_data)
+		target_dict = vars(self.target_data)
+		self.libStell.write_stellopt_input(filename,global_dict,var_dict,target_dict)
+
+class STELLOPT_INPUT_GLOBAL():
+	def __init__(self):
+		pass
+
+class STELLOPT_INPUT_VAR():
+	def __init__(self):
+		pass
+
+class STELLOPT_INPUT_TARGET():
+	def __init__(self):
+		pass
+
 
 
 
