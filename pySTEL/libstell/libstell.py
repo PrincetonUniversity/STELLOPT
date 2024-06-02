@@ -122,10 +122,29 @@ class LIBSTELL():
 			Path to wout file.
 		"""
 		import ctypes as ct
-		# These are defined in vparams.f but for some reason they're no in to .so
-		ntord  = 101
-		mpol1d = 101
-		ndatafmax = 101
+		# Get constants
+		module_name = self.s1+'vsvd0_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getnigroup'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		nigroup = get_constant()
+		module_name = self.s1+'vparams_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getndatafmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ndatafmax = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getmpol1d'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		mpol1d = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getntord'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ntord = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getnsd'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		nsd = get_constant()
 		# We use an added routine as a helper
 		module_name = self.s1+'vmec_input_'+self.s2
 		read_indata_namelist = getattr(self.libstell,module_name+'_read_indata_namelist_byfile'+self.s3)
@@ -159,7 +178,7 @@ class LIBSTELL():
 		realList.extend(['raxis','zaxis','raxis_cc','raxis_cs','zaxis_cc','zaxis_cs'])
 		realLen.extend([(ntord+1,1)]*6)
 		realList.extend(['ftol_array','extcur'])
-		realLen.extend([(100,1),(300,1)])
+		realLen.extend([(100,1),(nigroup,1)])
 		charList=['pcurr_type','piota_type','pmass_type','pt_type','ph_type']
 		charLen=[(20,1)]*6
 		charList.extend(['mgrid_file','input_extension'])
@@ -202,10 +221,6 @@ class LIBSTELL():
 			Path to wout file.
 		"""
 		import ctypes as ct
-		# These are defined in vparams.f but for some reason they're no in to .so
-		ntord  = 101
-		mpol1d = 101
-		ndatafmax = 101
 		# We use an added routine as a helper
 		module_name = self.s1+'bootsj_input_'+self.s2
 		read_bootin_namelist = getattr(self.libstell,module_name+'_read_boot_namelist_byfile'+self.s3)
