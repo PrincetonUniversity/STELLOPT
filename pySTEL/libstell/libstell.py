@@ -1000,7 +1000,7 @@ class LIBSTELL():
 		if booVar:
 			ftemp = ct.POINTER(ct.c_bool)
 			for i,temp in enumerate(booVar):
-				print(temp,booLen[i])
+				#print(temp,booLen[i])
 				if booLen[i]==1:
 					out_data[temp]=ct.c_bool.in_dll(self.libstell,modName+'_'+temp+self.s3).value
 				else:
@@ -1010,7 +1010,7 @@ class LIBSTELL():
 		if intVar:
 			ftemp = ct.POINTER(ct.c_int)
 			for i,temp in enumerate(intVar):
-				print(temp,intLen[i])
+				#print(temp,intLen[i])
 				if intLen[i]==1:
 					out_data[temp]=ct.c_int.in_dll(self.libstell,modName+'_'+temp+self.s3).value
 				else:
@@ -1020,7 +1020,7 @@ class LIBSTELL():
 		if realVar:
 			ftemp = ct.POINTER(ct.c_double)
 			for i,temp in enumerate(realVar):
-				print(temp,realLen[i])
+				#print(temp,realLen[i])
 				if realLen[i]==1:
 					out_data[temp]=ct.c_double.in_dll(self.libstell,modName+'_'+temp+self.s3).value
 				else:
@@ -1030,7 +1030,7 @@ class LIBSTELL():
 		if charVar:
 			ftemp = ct.POINTER(ct.c_char)
 			for i,temp in enumerate(charVar):
-				print(temp,charLen[i])
+				#print(temp,charLen[i])
 				if charLen[i]==1:
 					out_data[temp]=ct.c_char.in_dll(self.libstell,modName+'_'+temp+self.s3).value.decode('UTF-8')
 				else:
