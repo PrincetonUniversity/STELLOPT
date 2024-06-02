@@ -547,6 +547,10 @@ class LIBSTELL():
 		get_constant.argtypes = None
 		get_constant.restype=ct.c_int
 		ntord = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getnsd'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		nsd = get_constant()
 		module_name = self.s1+'stellopt_globals_'+self.s2
 		get_constant = getattr(self.libstell,module_name+'_getmaxwindsurf'+self.s3)
 		get_constant.argtypes = None
@@ -582,36 +586,36 @@ class LIBSTELL():
 		charList=['opt_type', 'axis_init_option']
 		charLen=[(256,1),(256,1)]
 		global_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
-		# Get vars Globals
+		# Get VARS
 		module_name = self.s1+'stellopt_vars_'+self.s2
 		booList=['lphiedge_opt', 'lcurtor_opt', 'lpscale_opt', \
 			'lbcrit_opt', 'lmix_ece_opt', 'lregcoil_winding_surface_separation_opt',\
 			 'lregcoil_current_density_opt', 'lxval_opt', 'lyval_opt', \
 			 'lxics_v0_opt','mango_bound_constraints']
 		booLen=[1]*len(booList)
-		booList.append(['lextcur_opt','laphi_opt', 'lam_opt', \
+		booList.extend(['lextcur_opt','laphi_opt', 'lam_opt', \
 					'lac_opt', 'lai_opt','lah_opt', 'lat_opt','lne_opt', \
 					'lte_opt', 'lti_opt','lth_opt', 'lzeff_opt'])
-		booLen.append([(nigroup,1),(20,1)])
-		booLen.append([(21,1)]*10)
-		booList.append(['lam_s_opt', 'lam_f_opt', 'lac_s_opt', 'lac_f_opt' 'lai_s_opt', 'lai_f_opt',\
+		booLen.extend([(nigroup,1),(20,1)])
+		booLen.extend([(21,1)]*10)
+		booList.extend(['lam_s_opt', 'lam_f_opt', 'lac_s_opt', 'lac_f_opt', 'lai_s_opt', 'lai_f_opt',\
 					'lne_f_opt', 'lte_f_opt', 'lti_f_opt', 'lth_f_opt', 'lphi_s_opt', 'lphi_f_opt', \
 					'lzeff_f_opt', 'lemis_xics_f_opt', 'lbootj_f_opt', 'lbeamj_f_opt', 'lah_f_opt', 'lat_f_opt'])
-		booLen.append([(ndatafmax,1)]*18)
-		booList.append(['laxis_opt','lbound_opt','lrho_opt','lmode_opt','ldeltamn_opt'])
-		booLen.append([(ntord+1,1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,2*mpol1d+1)])
-		booList.append(['lcoil_spline','lwindsurf'])
-		booLen.append([(nigroup,40),(maxwindsurf,1)])
-		booList.append(['lregcoil_rcws_rbound_c_opt','lregcoil_rcws_rbound_s_opt',\
+		booLen.extend([(ndatafmax,1)]*18)
+		booList.extend(['laxis_opt','lbound_opt','lrho_opt','lmode_opt','ldeltamn_opt'])
+		booLen.extend([(ntord+1,1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,2*mpol1d+1)])
+		booList.extend(['lcoil_spline','lwindsurf'])
+		booLen.extend([(nigroup,40),(maxwindsurf,1)])
+		booList.extend(['lregcoil_rcws_rbound_c_opt','lregcoil_rcws_rbound_s_opt',\
 			'lregcoil_rcws_zbound_c_opt','lregcoil_rcws_zbound_s_opt'])
-		booLen.append([(65,65)]*4)
+		booLen.extend([(65,65)]*4)
 		intList=['nfunc_max', 'regcoil_nlambda', 'regcoil_num_field_periods', \
 			'sfincs_min_procs', 'vboot_max_iterations']
-		booList.append(['lRosenbrock_X_opt'])
-		booLen.append([(20,1)])
+		booList.extend(['lrosenbrock_x_opt'])
+		booLen.extend([(20,1)])
 		intLen=[1]*len(intList)
-		intList.append(['coil_nctrl'])
-		intLen.append([(nigroup,1)])
+		intList.extend(['coil_nctrl'])
+		intLen.extend([(nigroup,1)])
 		realList=['dphiedge_opt', 'dcurtor_opt', 'dbcrit_opt', \
 			'dpscale_opt', 'dmix_ece_opt', 'dxval_opt', 'dyval_opt', \
 			'dregcoil_winding_surface_separation_opt', \
@@ -628,35 +632,161 @@ class LIBSTELL():
 			'regcoil_winding_surface_separation', \
 			'regcoil_current_density','vboot_tolerance']
 		realLen=[1]*len(realList)
-		realList.append(['dextcur_opt','extcur_min','extcur_max'])
-		realLen.append([(nigroup,1)*3])
-		realList.append(['daphi_opt', 'aphi_min', 'aphi_max'])
-		realLen.append([(20,1)*3])
-		realList.append(['dam_opt', 'dac_opt', 'dai_opt', 'dah_opt', 'dat_opt','dte_opt', 'dne_opt', 'dti_opt', 'dth_opt','dzeff_opt', \
+		realList.extend(['dextcur_opt','extcur_min','extcur_max'])
+		realLen.extend([(nigroup,1)]*3)
+		realList.extend(['daphi_opt', 'aphi_min', 'aphi_max'])
+		realLen.extend([(20,1)]*3)
+		realList.extend(['dam_opt', 'dac_opt', 'dai_opt', 'dah_opt', 'dat_opt','dte_opt', 'dne_opt', 'dti_opt', 'dth_opt','dzeff_opt', \
 			'am_min', 'ac_min', 'ai_min', 'ah_min', 'at_min', 'am_max', 'ac_max', 'ai_max', 'ah_max', 'at_max',\
 			'te_min', 'ne_min', 'ti_min', 'th_min', 'te_max', 'ne_max', 'ti_max', 'th_max', 'zeff_max', 'zeff_min'])
-		realLen.append([(21,1)*30])
-		realList.append(['bnfou'])
-		realLen.append([(25,41)])
-		realList.append(['dregcoil_rcws_rbound_c_opt','dregcoil_rcws_rbound_s_opt','dregcoil_rcws_zbound_c_opt','dregcoil_rcws_zbound_s_opt'])
-		realLen.append([(65,65)]*4)
-		realList.append(['te_opt','ti_opt','ne_opt','th_opt','zeff_opt'])
-		realLen.append([(21,1)]*5)
-		realList.append(['ne_aux_s', 'te_aux_s', 'ti_aux_s', 'th_aux_s', 'zeff_aux_s', \
+		realLen.extend([(21,1)]*30)
+		realList.extend(['bnfou'])
+		realLen.extend([(25,41)])
+		realList.extend(['dregcoil_rcws_rbound_c_opt','dregcoil_rcws_rbound_s_opt','dregcoil_rcws_zbound_c_opt','dregcoil_rcws_zbound_s_opt'])
+		realLen.extend([(65,65)]*4)
+		realList.extend(['te_opt','ti_opt','ne_opt','th_opt','zeff_opt'])
+		realLen.extend([(21,1)]*5)
+		realList.extend(['ne_aux_s', 'te_aux_s', 'ti_aux_s', 'th_aux_s', 'zeff_aux_s', \
 			'phi_aux_s', 'beamj_aux_s', 'bootj_aux_s', 'sfincs_s', 'emis_xics_s',\
 			'ne_aux_f', 'te_aux_f', 'ti_aux_f', 'th_aux_f', 'zeff_aux_f', \
 			'phi_aux_f', 'beamj_aux_f', 'bootj_aux_f', 'emis_xics_f'])
-		# Stopped here SAL 31.5.2024
-		realLen.append([(ndatafmax,1)]*19)
-		charList=['sfincs_Er_option', 'equil_type', 'te_type', 'ne_type', \
-		'ti_type', 'th_type', 'beamj_type','bootj_type','zeff_type','emis_xics_type',\
-		'fixedcoilname','regcoil_nescin_filename','bootcalc_type','phi_type']
+		realLen.extend([(ndatafmax,1)]*19)
+		realList.extend(['dam_s_opt', 'dam_f_opt', 'dac_s_opt', 'dac_f_opt', 'dai_s_opt', 'dai_f_opt', 'dphi_s_opt', 'dphi_f_opt', \
+			'dne_f_opt', 'dte_f_opt', 'dti_f_opt', 'dth_f_opt', 'dzeff_f_opt', 'dbeamj_f_opt', 'dbootj_f_opt','dat_f_opt', \
+			'dah_f_opt', 'demis_xics_f_opt'])
+		realLen.extend([(ndatafmax,1)]*18)
+		realList.extend(['am_f_min', 'ac_f_min', 'ai_f_min', 'phi_f_min', 'ne_f_min', \
+			'te_f_min', 'ti_f_min', 'th_f_min', 'zeff_f_min', 'emis_xics_f_min', \
+			'beamj_f_min', 'bootj_f_min', 'ah_f_min', 'at_f_min'])
+		realLen.extend([(ndatafmax,1)]*14)
+		realList.extend(['am_f_max', 'ac_f_max', 'ai_f_max', 'phi_f_max', 'ne_f_max', \
+			'te_f_max', 'ti_f_max', 'th_f_max', 'zeff_f_max',  'emis_xics_f_max', \
+			'beamj_f_max', 'bootj_f_max', 'ah_f_max', 'at_f_max'])
+		realLen.extend([(ndatafmax,1)]*14)
+		realList.extend(['daxis_opt','raxis_min','raxis_max','zaxis_min','zaxis_max'])
+		realLen.extend([(ntord+1,1)]*5)
+		realList.extend(['rhobc', 'modemn', 'dbound_opt', 'drho_opt', 'rbc_min', \
+			'rbc_max', 'zbs_min', 'zbs_max', 'bound_min', 'bound_max', 'zbc_min',\
+			'zbc_max', 'rbs_min', 'rbs_max'])
+		realLen.extend([(2*ntord+1,1+mpol1d)]*14)
+		realList.extend(['deltamn','ddeltamn_opt','delta_min','delta_max'])
+		realLen.extend([(2*ntord+1,2*mpol1d+1)]*4)
+		realList.extend(['coil_splinesx','coil_splinesy','coil_splinesz'])
+		realLen.extend([(nigroup,44)]*3)
+		realList.extend(['coil_splinefx','coil_splinefy','coil_splinefz','dcoil_spline', \
+			'coil_splinefx_min','coil_splinefy_min','coil_splinefz_min','coil_splinefx_max','coil_splinefy_max','coil_splinefz_max'])
+		realLen.extend([(nigroup,40)]*10)
+		realList.extend(['regcoil_rcws_rbound_c', 'regcoil_rcws_rbound_s','regcoil_rcws_rbound_c_min',\
+			'regcoil_rcws_rbound_s_min','regcoil_rcws_rbound_c_max', 'regcoil_rcws_rbound_s_max',\
+			'regcoil_rcws_zbound_c', 'regcoil_rcws_zbound_s','regcoil_rcws_zbound_c_min', \
+			'regcoil_rcws_zbound_s_min','regcoil_rcws_zbound_c_max', 'regcoil_rcws_zbound_s_max'])
+		realLen.extend([(65,65)]*12)
+		realList.extend(['drosenbrock_x_opt','rosenbrock_x','rosenbrock_x_min','rosenbrock_x_max'])
+		realLen.extend([(20,1)]*4)
+		charList=['sfincs_er_option', 'equil_type', 'te_type', 'ne_type', \
+			'ti_type', 'th_type', 'beamj_type','bootj_type','zeff_type','emis_xics_type',\
+			'fixedcoilname','regcoil_nescin_filename','bootcalc_type','phi_type','coil_type']
 		charLen=[(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),\
-			(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(256,1)]
+			(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(nigroup,1)]
 		var_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
-		return out_data
+		# Get target
+		module_name = self.s1+'stellopt_targets_'+self.s2
+		booList=['lneed_magdiag', 'lglobal_txport']
+		booLen=[1]*len(booList)
+		booList.extend(['lbooz','lmse_extcur'])
+		booLen.extend([(nsd,1),(512,1)])
+		intList=['mboz', 'nboz', 'numjstar', 'nz_txport', 'nalpha_txport', 'nruns_dkes',\
+			'nu_orbit', 'nv_orbit', 'np_orbit', 'mlmnb_kink', 'ivac_kink', 'mmaxdf_kink', \
+			'nmaxdf_kink', 'nra_ece', 'nphi_ece', 'numws', 'nu_bnorm', 'nv_bnorm', \
+			'npts_biot', 'npts_clen', 'npts_torx', 'npts_curv', 'npts_csep', 'npts_cself', \
+			'npts_crect', 'npts_cpoly']
+		intLen=[1]*len(intList)
+		intList.extend(['mlmns_kink', 'lssl_kink', 'lssd_kink','nj_kink','nk_kink'])
+		intLen.extend([(16,1)]*5)
+		realList=['target_phiedge', 'sigma_phiedge', 'target_curtor', 'sigma_curtor', 'target_curtor_max', 'sigma_curtor_max', \
+			'target_volume', 'sigma_volume', 'target_beta', 'sigma_beta', 'target_betator', 'sigma_betator', \
+			'target_betapol', 'sigma_betapol', 'target_wp', 'sigma_wp', 'target_aspect', 'sigma_aspect', \
+			'target_rbtor', 'sigma_rbtor', 'target_r0', 'sigma_r0', 'target_z0', 'sigma_z0', \
+			'target_b0', 'sigma_b0', 'target_aspect_max', 'sigma_aspect_max', 'width_aspect_max', 'target_gradp_max', \
+			'sigma_gradp_max', 'width_gradp_max', 'target_pmin', 'sigma_pmin', 'width_pmin', 'target_curvature', \
+			'sigma_curvature', 'target_kappa', 'sigma_kappa', 'phi_kappa', 'target_kappa_box', 'sigma_kappa_box', \
+			'phi_kappa_box', 'target_kappa_avg', 'sigma_kappa_avg', 'target_x', 'sigma_x' ,'target_y', \
+			'sigma_y', 'qm_ratio', 'cutoff_te_line', 'target_vessel', 'sigma_vessel', 'alpha_start_txport', \
+			'alpha_end_txport', 'nu_dkes_erdiff', 'ep_dkes_erdiff', 'em_dkes_erdiff', 'mass_orbit', 'z_orbit', \
+			'target_coil_bnorm', 'sigma_coil_bnorm', 'target_regcoil_winding_surface_separation', 'sigma_regcoil_winding_surface_separation',\
+			'target_regcoil_current_density', 'sigma_regcoil_current_density', 'target_curvature_p2', 'sigma_curvature_p2', \
+			'target_coilsep',  'sigma_coilsep', 'coilrectpfw']
+		realLen=[1]*len(realList)
+		realList.extend(['target_rosenbrock_f','sigma_rosenbrock_f'])
+		realLen.extend([(20,1),(20,1)])
+		realList.extend(['target_press', 'sigma_press', 'r_press', 'z_press', 'phi_press', \
+			's_press', 'target_pressprime', 'sigma_pressprime', 'r_pressprime', 'z_pressprime', \
+			'phi_pressprime', 's_pressprime', 'target_te', 'sigma_te', 'r_te', \
+			'z_te', 'phi_te', 's_te', 'target_ne', 'sigma_ne', \
+			'r_ne', 'z_ne', 'phi_ne', 's_ne', 'target_ne_line', \
+			'sigma_ne_line', 'r0_ne_line', 'phi0_ne_line', 'z0_ne_line', 'r1_ne_line', \
+			'phi1_ne_line', 'z1_ne_line', 'target_te_line', 'sigma_te_line', 'r0_te_line', \
+			'phi0_te_line', 'z0_te_line', 'r1_te_line', 'phi1_te_line', 'z1_te_line', \
+			'target_ti_line','sigma_ti_line', 'r0_ti_line', 'phi0_ti_line', 'z0_ti_line', \
+			'r1_ti_line', 'phi1_ti_line', 'z1_ti_line', 'target_zeff_line', 'sigma_zeff_line', \
+			'r0_zeff_line', 'phi0_zeff_line', 'z0_zeff_line', 'r1_zeff_line', 'phi1_zeff_line', \
+			'z1_zeff_line', 'target_visbrem_line', 'sigma_visbrem_line', 'lambda_visbrem_line', 'r0_visbrem_line', \
+			'phi0_visbrem_line', 'z0_visbrem_line', 'r1_visbrem_line', 'phi1_visbrem_line', 'z1_visbrem_line', \
+			'calib_visbrem_line', 'target_xics', 'sigma_xics', 'target_xics_bright', 'sigma_xics_bright', \
+			'target_xics_w3', 'sigma_xics_w3', 'target_xics_v', 'sigma_xics_v', 'r0_xics', \
+			'phi0_xics', 'z0_xics', 'r1_xics', 'phi1_xics', 'z1_xics', \
+			'target_faraday', 'sigma_faraday', 'r0_faraday', 'phi0_faraday', 'z0_faraday', \
+			'r1_faraday', 'phi1_faraday', 'z1_faraday', 'target_sxr','sigma_sxr', \
+			'r0_sxr', 'phi0_sxr', 'z0_sxr', 'r1_sxr', 'phi1_sxr', \
+			'z1_sxr', 'target_ti', 'sigma_ti', 'r_ti', 'z_ti', \
+			'phi_ti', 's_ti', 'target_vphi', 'sigma_vphi', 'r_vphi', \
+			'z_vphi', 'phi_vphi', 's_vphi', 'target_iota', 'sigma_iota', \
+			'r_iota', 'z_iota', 'phi_iota', 's_iota', 'target_vaciota', \
+			'sigma_vaciota', 'r_vaciota', 'z_vaciota', 'phi_vaciota', 's_vaciota', \
+			'target_mse', 'sigma_mse', 'r_mse', 'z_mse', 'phi_mse', \
+			's_mse', 'a1_mse', 'a2_mse', 'a3_mse', 'a4_mse', \
+			'a5_mse', 'a6_mse', 'a7_mse', 'vac_mse', 'target_segrog', \
+			'sigma_segrog', 'target_fluxloop', 'sigma_fluxloop', 'target_extcur', 'sigma_extcur', \
+			'balloon_theta', 'balloon_zeta', 'e_dkes', 'nu_dkes', 'nup_dkes_alpha', \
+			'num_dkes_alpha', 'ep_dkes_alpha', 'em_dkes_alpha'])
+		realLen.extend([(512,1)]*148)
+		realList.extend(['target_bmin', 'sigma_bmin', 'target_bmax', 'sigma_bmax', 'target_jcurv', \
+			'sigma_jcurv', 'target_jdotb', 'sigma_jdotb', 'target_balloon', 'sigma_balloon', \
+			'target_bootstrap', 'sigma_bootstrap', 'target_neo', 'sigma_neo', 'target_jstar', \
+			'sigma_jstar', 'target_magwell', 'sigma_magwell', 'target_helicity', 'sigma_helicity', \
+			'target_helicity_old', 'sigma_helicity_old', 'target_resjac', 'sigma_resjac', 'xm_resjac', \
+			'xn_resjac', 'target_txport', 'sigma_txport', 's_txport', 'target_dkes', \
+			'sigma_dkes', 'target_dkes_erdiff', 'sigma_dkes_erdiff', 'target_dkes_alpha', 'sigma_dkes_alpha', \
+			'target_gamma_c', 'sigma_gamma_c', 'target_orbit', 'sigma_orbit'])
+		realLen.extend([(nsd,1)]*39)
+		realList.extend(['target_bprobe', 'sigma_bprobe'])
+		realLen.extend([(2048,1)]*2)
+		realList.extend(['target_separatrix', 'sigma_separatrix', 'r_separatrix', 'z_separatrix', 'phi_separatrix', \
+			'target_limiter', 'sigma_limiter', 'r_limiter', 'z_limiter', 'phi_limiter'])
+		realLen.extend([(361,361)]*10)
+		realList.extend(['vll_orbit', 'mu_orbit', 'vperp_orbit'])
+		realLen.extend([(16384,1)]*3)
+		realList.extend(['target_kink', 'sigma_kink'])
+		realLen.extend([(16,1)]*2)
+		realList.extend(['target_ece', 'sigma_ece', 'freq_ece'])
+		realLen.extend([(16,512)]*3)
+		realList.extend(['antennaposition_ece', 'targetposition_ece', 'rbeam_ece', 'rfocus_ece'])
+		realLen.extend([(16,3)]*4)
+		realList.extend(['target_regcoil_chi2_b', 'sigma_regcoil_chi2_b'])
+		realLen.extend([(16900,1)]*4)
+		realList.extend(['target_coillen', 'sigma_coillen', 'target_coilsegvar', 'sigma_coilsegvar', 'target_coilcrv',  \
+			'sigma_coilcrv', 'target_coilself', 'sigma_coilself', 'target_coiltorvar', 'sigma_coiltorvar', \
+			'thwt_coiltorvar', 'coilrectvmin', 'coilrectvmax', 'coilrectduu', 'coilrectdul', \
+			'target_coilrect', 'sigma_coilrect', 'target_coilpoly', 'sigma_coilpoly'])
+		realLen.extend([(nigroup,1)]*19)
+		realList.extend(['kopolyu', 'kopolyv'])
+		realLen.extend([(128,16)]*2)
+		charList=['magdiag_coil', 'vessel_string', 'txport_proxy', 'vessel_ece', 'mirror_ece', 'targettype_ece', 'antennatype_ece']
+		charLen=[(256,1)]*7
+		target_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
+		return global_data, var_data, target_data
 
-	def write_stellopt_input(self,filename,out_dict=None):
+	def write_stellopt_input(self,filename,global_dict=None,var_dict=None,target_dict=None):
 		"""Wrappers writing of the STELLOPT OPTIMUM namelist
 
 		This routine wrappers write_stellopt_input in LIBSTELL
@@ -669,16 +799,27 @@ class LIBSTELL():
 			Dictionary of items to change.
 		"""
 		import ctypes as ct
-		module_name = self.s1+'fieldlines_globals_'+self.s2
-		# Check if we want to update values
-		if out_dict:
-			for key in out_dict:
-				self.set_module_var(module_name,key,out_dict[key])
-		module_name = self.s1+'fieldlines_input_mod_'+self.s2
-		write_fieldlines_input = getattr(self.libstell,module_name+'_write_fieldlines_namelist_byfile'+self.s3)
-		write_fieldlines_input.argtypes = [ct.c_char_p, ct.c_long]
-		write_fieldlines_input.restype=None
-		write_fieldlines_input(filename.encode('UTF-8'),len(filename))
+		# Global module
+		if global_dict:
+			module_name = self.s1+'stellopt_globals_'+self.s2
+			for key in global_dict:
+				self.set_module_var(module_name,key,global_dict[key])
+		# var module
+		if var_dict:
+			module_name = self.s1+'stellopt_vars_'+self.s2
+			for key in var_dict:
+				self.set_module_var(module_name,key,var_dict[key])
+		# target module
+		if target_dict:
+			module_name = self.s1+'stellopt_targets_'+self.s2
+			for key in target_dict:
+				self.set_module_var(module_name,key,target_dict[key])
+		# Now write namelist
+		module_name = self.s1+'stellopt_input_mod_'+self.s2
+		write_stellopt_input = getattr(self.libstell,module_name+'_write_optimum_namelist_byfile'+self.s3)
+		write_stellopt_input.argtypes = [ct.c_char_p, ct.c_long]
+		write_stellopt_input.restype=None
+		write_stellopt_input(filename.encode('UTF-8'),len(filename))
 
 	def read_wout(self,file):
 		"""Reads a wout file and returns a dictionary
@@ -844,6 +985,7 @@ class LIBSTELL():
 		if booVar:
 			ftemp = ct.POINTER(ct.c_bool)
 			for i,temp in enumerate(booVar):
+				print(temp,booLen[i])
 				if booLen[i]==1:
 					out_data[temp]=ct.c_bool.in_dll(self.libstell,modName+'_'+temp+self.s3).value
 				else:
@@ -853,6 +995,7 @@ class LIBSTELL():
 		if intVar:
 			ftemp = ct.POINTER(ct.c_int)
 			for i,temp in enumerate(intVar):
+				print(temp,intLen[i])
 				if intLen[i]==1:
 					out_data[temp]=ct.c_int.in_dll(self.libstell,modName+'_'+temp+self.s3).value
 				else:
@@ -862,15 +1005,17 @@ class LIBSTELL():
 		if realVar:
 			ftemp = ct.POINTER(ct.c_double)
 			for i,temp in enumerate(realVar):
+				print(temp,realLen[i])
 				if realLen[i]==1:
 					out_data[temp]=ct.c_double.in_dll(self.libstell,modName+'_'+temp+self.s3).value
 				else:
 					if ldefined_size_arrays : ftemp=ct.c_double*prod(realLen[i])
 					out_data[temp]=npct.as_array(ftemp.in_dll(self.libstell,modName+'_'+temp+self.s3),realLen[i])
-		# Reals
+		# Characters
 		if charVar:
 			ftemp = ct.POINTER(ct.c_char)
 			for i,temp in enumerate(charVar):
+				print(temp,charLen[i])
 				if charLen[i]==1:
 					out_data[temp]=ct.c_char.in_dll(self.libstell,modName+'_'+temp+self.s3).value.decode('UTF-8')
 				else:
