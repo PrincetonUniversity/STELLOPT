@@ -66,5 +66,10 @@
       IMPLICIT NONE
       getntord = ntord
       END FUNCTION getntord
+      
+      INTEGER FUNCTION getnsd()
+      IMPLICIT NONE
+      getnsd = nsd
+      END FUNCTION getnsd
 
       END MODULE vparams
