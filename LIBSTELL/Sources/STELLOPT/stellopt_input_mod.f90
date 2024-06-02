@@ -2572,6 +2572,26 @@
       RETURN
       END SUBROUTINE write_optimum_namelist
 
+      SUBROUTINE write_optimum_namelist_byfile(filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      LOGICAL :: lexists
+      
+      iunit = 100
+      istat = 0
+      INQUIRE(FILE=TRIM(filename),exist=lexists)
+      IF (lexists) THEN
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="old", position="append")
+      ELSE
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="new")
+      END IF
+      IF (istat .ne. 0) RETURN
+      CALL write_optimum_namelist(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE write_optimum_namelist_byfile
+
       SUBROUTINE write_stel_lvar_vec(iunit,lvar,var_min,var_max,dvar,str_name,n1,n2)
       IMPLICIT NONE
       INTEGER, INTENT(in) :: iunit, n1, n2
