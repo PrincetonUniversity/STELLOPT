@@ -17,7 +17,7 @@
 !                      efforts.
 !                    - Added diffusion operator to out_fieldlines_nag,
 !                      removed old ones from fblin routines.
-!     v1.25 07/31/14 - Fixed binary output 
+!     v1.25 07/31/14 - Fixed binary output
 !     v1.26 08/25/14 - Addressed LSODE initial step error.
 !     v1.27 08/25/14 - Addressed memory leak when running in batch mode.
 !     v1.28 12/18/14 - Added -raw flag for using scaled currents.
@@ -30,7 +30,7 @@
 !                    - Added lwall_trans option
 !                    - MU Should properly work
 !                    - Fixed glitch in reverse option
-!     v1.40 08/30/16 - Switch away from que type data transfer to 
+!     v1.40 08/30/16 - Switch away from que type data transfer to
 !                      gatherv statements.
 !                    - ModB along fieldline now saved.
 !                    - MU benchmarked by B. Isralei
@@ -65,7 +65,7 @@
 !          npoinc        Number of poincare sections
 !          mu            Fieldline diffusion coefficient (mu=sqrt(D*tau*2)
 !          dphi          Toroidal angle stepsize
-!          follow_tol    Fieldlines following tollerance
+!          follow_tol    Fieldlines following tolerance
 !          pi            PI
 !          pi2           2*PI
 !          mu0           4*PI*10^-7
@@ -77,9 +77,13 @@
 !          r(/z/phi)_hc  Starting points for homoclinic tangle calc
 !          num_hcp       Number of points for homocline plot (half)
 !          delta_hc      Length of initial homocline line (half length)
+!          nstart_pol    if `-edge` is given, number of field line origins
+!                        along the poloidal circumference
+!          nstart_tor    if `-edge` is given, number of field line origins
+!                        along the full-machine toroidal circumference
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      
+
       INTEGER, PARAMETER ::  FILE_OPEN_ERR     = 1
       INTEGER, PARAMETER ::  ALLOC_ERR         = 11
       INTEGER, PARAMETER ::  NAMELIST_READ_ERR = 12
@@ -111,17 +115,17 @@
       INTEGER, PARAMETER ::  MPI_RECV_ERR       = 822
       INTEGER, PARAMETER ::  MPI_BCAST_ERR      = 83
       INTEGER, PARAMETER ::  MPI_FINE_ERR       = 89
-      
+
       INTEGER, PARAMETER ::  runtype_old       = 0
       INTEGER, PARAMETER ::  runtype_advanced  = 1
       INTEGER, PARAMETER ::  runtype_full      = 327
       INTEGER, PARAMETER ::  runtype_norun     = 328
       INTEGER, PARAMETER ::  runtype_backflow  = 329
       INTEGER, PARAMETER ::  runtype_gridgen   = 422
-      
+
       INTEGER, PARAMETER ::  MAXLINES   = 2**19
       INTEGER, PARAMETER ::  NLOCAL = 128  ! Number of local processors
-      
+
       LOGICAL         :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
                          lmu, lvessel, lvac, lrestart, laxis_i, &
                          ladvanced, lauto, lplasma_only, lbfield_only,&
@@ -129,7 +133,8 @@
                          lerror_field, lwall_trans, ledge_start, lnescoil,&
                          lmodb, lfield_start, lhint, leqdsk, lpres
       INTEGER         :: nextcur, npoinc, nruntype, num_hcp, &
-                         nprocs_fieldlines, line_select, ldex_default
+                         nprocs_fieldlines, line_select, ldex_default, &
+                         nstart_pol, nstart_tor
       REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc, &
                          iota0
       REAL(rprec), DIMENSION(20)           :: errorfield_amp, errorfield_phase
@@ -140,21 +145,21 @@
       CHARACTER(256)  :: id_string, mgrid_string, coil_string, &
                          vessel_string, int_type, restart_string, &
                          nescoil_string, eqdsk_string
-      
+
       REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.80
 !-----------------------------------------------------------------------
 !     Subroutines
 !          handle_err  Controls Program Termination
 !-----------------------------------------------------------------------
       CONTAINS
-      
+
       SUBROUTINE handle_err(error_num,string_val,ierr)
       IMPLICIT NONE
       INTEGER,INTENT(in)      :: error_num
       INTEGER,INTENT(in)      :: ierr
       CHARACTER(*),INTENT(in) :: string_val
       WRITE(6,*) '!!!!! ERROR !!!!!'
-      
+
       IF (error_num .eq. FILE_OPEN_ERR) THEN
             WRITE(6,*) '  FIELDLINES COULD NOT OPEN A FILE.'
             WRITE(6,*) '  FILENAME: ',TRIM(string_val)
@@ -295,11 +300,11 @@
       ELSEIF (error_num .eq. MPI_BARRIER_ERR) THEN
          WRITE(6,*) '  FIELDLINES ENCOUNTERED AN MPI BARRIER (FINE) ERROR'
          WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
-         WRITE(6,*) '  IERR:      ',ierr  
+         WRITE(6,*) '  IERR:      ',ierr
       ELSEIF (error_num .eq. MPI_BCAST_ERR) THEN
          WRITE(6,*) '  FIELDLINES ENCOUNTERED AN MPI BROADCAST ERROR'
          WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
-         WRITE(6,*) '  IERR:      ',ierr   
+         WRITE(6,*) '  IERR:      ',ierr
       ELSE
            WRITE(6,*) '  FIELDLINES ENCOUNTERED AN UNKNOWN ERROR'
            WRITE(6,*) '  STRING: ',TRIM(string_val)
@@ -307,7 +312,7 @@
       END IF
       CALL FLUSH(6)
 #if defined(MPI_OPT)
-      CALL MPI_FINALIZE(ierr)   
+      CALL MPI_FINALIZE(ierr)
 #endif
       STOP
       END SUBROUTINE handle_err
@@ -343,5 +348,5 @@
     RETURN
     END SUBROUTINE FIELDLINES_TRANSMIT_2DDBL
 #endif
-      
+
       END MODULE fieldlines_runtime

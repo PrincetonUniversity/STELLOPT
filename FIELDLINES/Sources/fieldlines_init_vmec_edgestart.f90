@@ -23,7 +23,9 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: u, v, ik, n_side, mn, n1_side, m, n
+      INTEGER :: u, v, ik, mn, m, n
+      INTEGER :: n_side_pol, n1_side_pol, n_side_tor, n1_side_tor
+      REAL(rprec) :: pos_pol, pos_tor
       REAL(rprec) :: phi_save, kernel, cos_kernel, sin_kernel
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -35,25 +37,32 @@
       R_START = -1; Z_START=0; PHI_START=0; PHI_END = 0;
 
       ! Determine grid size
-      !n_side = floor(sqrt(REAL(MAXLINES)))
-      n_side = 16
-      n1_side = n_side-1
+      if (nstart_pol .lt. 1 .or. nstart_pol .lt. 1) then
+         n_side_pol = floor(sqrt(REAL(MAXLINES)))
+         n_side_tor = n_side_pol
+      ELSE
+         n_side_pol = nstart_pol
+         n_side_tor = nstart_tor
+      END IF
+      n1_side_pol = n_side_pol - 1
+      n1_side_tor = n_side_tor - 1
 
       ! Now we just FFT the boundary
       ik = 1;
-      DO u = 1, n_side
-         DO v = 1, n_side
-            R_START(ik) = 0;
-            PHI_START(ik) = pi2*(v-1)/n1_side
-            IF ((lmgrid .or. lcoil) .and. lvac) THEN
-!               print *, "starting fieldlines on plasma boundary from INDATA at ", u, " ", v
+      DO u = 1, n_side_pol
+         pos_pol = (pi2 * (u-1)) / n1_side_pol
+         DO v = 1, n_side_tor
+            pos_tor = (pi2 * (v-1)) / n1_side_tor
 
+            R_START(ik) = 0
+            PHI_START(ik) = pos_tor
+            IF ((lmgrid .or. lcoil) .and. lvac) THEN
                ! Get plasma boundary from VMEC INDATA namelist.
                ! Note that `read_indata_namelist` is called from within
                ! `fieldlines_init_mgrid` and `fieldlines_init_coil`.
                DO m = 0, mpol_in - 1
                   DO n = -ntor_in, ntor_in
-                     kernel = pi2*(m*(u-1) - n*nfp_in*(v-1))/n1_side
+                     kernel = m * pos_pol - n * nfp_in * pos_tor
                      cos_kernel = cos(kernel)
                      sin_kernel = sin(kernel)
                      R_START(ik) = R_START(ik)+rbc_in(n,m)*cos_kernel
@@ -67,7 +76,7 @@
             ELSE IF (lvmec .and. .not. lvac) THEN
                ! Get plasma boundary geometry from the VMEC wout file.
                DO mn = 1, mnmax
-                  kernel = pi2*(xm(mn)*(u-1)-xn(mn)*(v-1))/n1_side
+                  kernel = pi2*(xm(mn)*(u-1)/n1_side_pol-xn(mn)*(v-1)/n1_side_tor)
                   cos_kernel = cos(kernel)
                   sin_kernel = sin(kernel)
                   R_START(ik) = R_START(ik)+rmnc(mn,ns)*cos_kernel
@@ -95,7 +104,7 @@
       !   END DO
       !END DO
       PHI_END = phi_save
-      nlines = n_side*n_side
+      nlines = n_side_pol*n_side_tor
 
       RETURN
 !-----------------------------------------------------------------------
