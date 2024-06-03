@@ -39,8 +39,6 @@
       n_side = 16
       n1_side = n_side-1
 
-      print *, "in fieldlines_init_vmec_edgestart"
-
       ! Now we just FFT the boundary
       ik = 1;
       DO u = 1, n_side
