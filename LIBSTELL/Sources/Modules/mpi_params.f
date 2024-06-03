@@ -23,7 +23,7 @@ c                    differently.
       INTEGER :: MPI_COMM_WORKERS_OK=-1, worker_id_ok=-1 !communicator subgroup, vmec ran ok
       INTEGER :: MPI_COMM_SHARMEM = 718, myid_sharmem=-1 !communicator for shared memory
       INTEGER :: MPI_COMM_STEL = 327                     !communicator which is a copy of MPI_COMM_WORLD (user must set this up)
-      INTEGER :: MPI_COMM_MYWORLD = 411                  !communicator 
+      INTEGER :: MPI_COMM_MYWORLD = 411                  !communicator
       INTEGER :: MPI_COMM_FIELDLINES = 328               !communicator for FIELDLINES code
       INTEGER :: MPI_COMM_TORLINES = 329                 !communicator for TORLINES code
       INTEGER :: MPI_COMM_BEAMS = 330                    !communicator for BEAMS3D code
@@ -34,12 +34,12 @@ c                    differently.
       INTEGER :: MPI_COMM_PARVMEC = 101                  !communicator for PARVMEC code
 
       CONTAINS
-      
+
       SUBROUTINE mpi_stel_abort(error)
 #if defined(MPI_OPT)
       USE MPI
 #endif
-      IMPLICIT NONE        
+      IMPLICIT NONE
       INTEGER, INTENT(in)                 :: error
       INTEGER                             :: length, temp
       CHARACTER(LEN=MPI_MAX_ERROR_STRING) :: message
@@ -48,7 +48,7 @@ c                    differently.
       WRITE(6,*) '!!!!!!!!!!!!MPI_ERROR DETECTED!!!!!!!!!!!!!!'
       WRITE(6,*) '  MESSAGE: ',message(1:length)
       WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      CALL FLUSH(6) 
+      CALL FLUSH(6)
 #else
       WRITE(6,*) '!!!!!!!!!!!!MPI_ERROR DETECTED!!!!!!!!!!!!!!'
       WRITE(6,*) '  MPI_STEL_ABORT CALLED BUT NO MPI'
@@ -57,6 +57,9 @@ c                    differently.
       !CALL MPI_ABORT(MPI_COMM_STEL,1,temp)
       END SUBROUTINE mpi_stel_abort
 
+      ! Distribute the workload of operating on over n1:n2 (inclusive)
+      ! over the compute ranks available in the given communicator
+      ! and return the local ranges to be worked on in mystart and myend.
       SUBROUTINE MPI_CALC_MYRANGE(comm,n1,n2,mystart,myend)
 #if defined(MPI_OPT)
       USE mpi
@@ -65,26 +68,54 @@ c                    differently.
       INTEGER, INTENT(inout) :: comm
       INTEGER, INTENT(in) :: n1, n2
       INTEGER, INTENT(out) :: mystart, myend
-      INTEGER :: delta, local_size, local_rank, istat, maxend, k, i
-      mystart = n1; myend = n2
+      INTEGER :: total_work, work_per_rank, work_remainder
+      INTEGER :: local_size, local_rank, istat
+
+      ! Default if not using MPI: just work on full range
+      mystart = n1
+      myend = n2
+
 #if defined(MPI_OPT)
-      CALL MPI_COMM_SIZE( comm, local_size, istat)
-      CALL MPI_COMM_RANK( comm, local_rank, istat )
-      delta = CEILING(DBLE(n2-n1+1)/DBLE(local_size))
-      mystart = n1 + local_rank*delta
-      myend   = mystart + delta - 1
-      maxend = local_size*delta
-      IF (maxend>n2) THEN
-         k = maxend-n2
-         DO i = (local_size-k), local_size-1
-            IF (local_rank > i) THEN
-                  mystart = mystart - 1
-                  myend   = myend - 1
-            ELSEIF (local_rank==i) THEN
-                  myend = myend - 1
-            END IF
-         END DO
+
+      ! Total number of items to work on.
+      ! NOTE: n2 is the upper range bound, inclusive!
+      total_work = n2 - n1 + 1
+
+      ! `local_size` is the number of available ranks
+      CALL MPI_COMM_SIZE(comm, local_size, istat)
+
+      IF (local_size .gt. total_work) THEN
+         STOP "cannot assign more ranks than work items"
       END IF
+
+      ! `local_rank` is the ID of the rank to compute `mystart` and `myend` for
+      CALL MPI_COMM_RANK(comm, local_rank, istat)
+
+      ! size of chunks that are present in all ranks
+      work_per_rank = total_work / local_size
+
+      ! number of work items that remain after distributing
+      ! equal chunks of work to all ranks
+      work_remainder = MODULO(total_work, local_size)
+
+      ! ranges corresponding to working on evenly distributed chunks
+      mystart = n1 +  local_rank      * work_per_rank
+      myend   = n1 + (local_rank + 1) * work_per_rank - 1
+
+      IF (local_rank .lt. work_remainder) THEN
+         ! The first `work_remainder` ranks get one additional item to work on.
+         ! This takes care of the additional `work_remainder` items
+         ! that need to be worked on, on top of the evenly distributed chunks.
+         mystart = mystart + local_rank
+         myend   = myend   + local_rank + 1
+      ELSE
+         ! All following ranks after the first `work_remainder` ones
+         ! get their ranges just shifted by a constant offset,
+         ! since they don't do any additional work.
+         mystart = mystart + work_remainder
+         myend   = myend   + work_remainder
+      END IF
+
 #endif
       RETURN
       END SUBROUTINE MPI_CALC_MYRANGE
