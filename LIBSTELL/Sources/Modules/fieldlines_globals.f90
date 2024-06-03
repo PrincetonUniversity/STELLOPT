@@ -2,7 +2,7 @@
 !     Module:        fieldlines_globals
 !     Authors:       S. Lazerson (samuel.lazerson@gauss-fusion.com)
 !     Date:          05/28/2024
-!     Description:   This module contains the FIELDLINES global 
+!     Description:   This module contains the FIELDLINES global
 !                    variables needed by the input namelist.
 !-----------------------------------------------------------------------
       MODULE fieldlines_globals
@@ -10,7 +10,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      
+
 !-----------------------------------------------------------------------
 !     Module Variables
 !-----------------------------------------------------------------------
@@ -19,7 +19,7 @@
       ! From fiellines_runtime
       INTEGER, PARAMETER ::  MAXLINES   = 2**19
       LOGICAL :: lerror_field, lmu
-      INTEGER :: npoinc, num_hcp
+      INTEGER :: npoinc, num_hcp, nstart_pol, nstart_tor
       REAL(rprec) :: dphi, follow_tol, delta_hc, mu
       REAL(rprec), DIMENSION(20)           :: errorfield_amp, errorfield_phase
       REAL(rprec), DIMENSION(MAXLINES)     :: r_start, phi_start, &

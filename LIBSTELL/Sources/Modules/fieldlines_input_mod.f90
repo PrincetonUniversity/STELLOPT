@@ -268,6 +268,8 @@
       CALL MPI_BCAST(lerror_field,1,MPI_LOGICAL, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(errorfield_amp,20,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(errorfield_phase,20,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(nstart_pol,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(nstart_tor,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
 #endif
       END SUBROUTINE BCAST_FIELDLINES_INPUT
 
