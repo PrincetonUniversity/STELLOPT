@@ -76,7 +76,7 @@
             ELSE IF (lvmec .and. .not. lvac) THEN
                ! Get plasma boundary geometry from the VMEC wout file.
                DO mn = 1, mnmax
-                  kernel = pi2*(xm(mn)*(u-1)/n1_side_pol-xn(mn)*(v-1)/n1_side_tor)
+                  kernel = xm(mn) * pos_pol - xn(mn) * pos_tor
                   cos_kernel = cos(kernel)
                   sin_kernel = sin(kernel)
                   R_START(ik) = R_START(ik)+rmnc(mn,ns)*cos_kernel
