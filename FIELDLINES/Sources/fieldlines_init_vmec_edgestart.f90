@@ -35,9 +35,11 @@
       R_START = -1; Z_START=0; PHI_START=0; PHI_END = 0;
 
       ! Determine grid size
-      n_side = floor(sqrt(REAL(MAXLINES)))
-      !n_side = 16
+      !n_side = floor(sqrt(REAL(MAXLINES)))
+      n_side = 16
       n1_side = n_side-1
+
+      print *, "in fieldlines_init_vmec_edgestart"
 
       ! Now we just FFT the boundary
       ik = 1;
@@ -46,6 +48,8 @@
             R_START(ik) = 0;
             PHI_START(ik) = pi2*(v-1)/n1_side
             IF ((lmgrid .or. lcoil) .and. lvac) THEN
+!               print *, "starting fieldlines on plasma boundary from INDATA at ", u, " ", v
+
                ! Get plasma boundary from VMEC INDATA namelist.
                ! Note that `read_indata_namelist` is called from within
                ! `fieldlines_init_mgrid` and `fieldlines_init_coil`.
@@ -56,7 +60,7 @@
                      sin_kernel = sin(kernel)
                      R_START(ik) = R_START(ik)+rbc_in(n,m)*cos_kernel
                      Z_START(ik) = Z_START(ik)+zbs_in(n,m)*sin_kernel
-                     IF(lasym) THEN
+                     IF (lasym) THEN
                         R_START(ik) = R_START(ik)+rbs_in(n,m)*sin_kernel
                         Z_START(ik) = Z_START(ik)+zbc_in(n,m)*cos_kernel
                      END IF
@@ -70,13 +74,15 @@
                   sin_kernel = sin(kernel)
                   R_START(ik) = R_START(ik)+rmnc(mn,ns)*cos_kernel
                   Z_START(ik) = Z_START(ik)+zmns(mn,ns)*sin_kernel
-                  IF(lasym) THEN
+                  IF (lasym) THEN
                      R_START(ik) = R_START(ik)+rmns(mn,ns)*sin_kernel
                      Z_START(ik) = Z_START(ik)+zmnc(mn,ns)*cos_kernel
                   END IF
                END DO
             ELSE
                ! Not sure how to interpret the command line flags in this case.
+               STOP "[fieldlines_init_vmec_edgestart] " // &
+                    "Not sure how to interpret the command line flags in this case."
             END IF
             ik = ik + 1
          END DO
