@@ -70,11 +70,11 @@
       CALL MPI_BCAST(rbc_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.3',ierr_mpi)
       CALL MPI_BCAST(zbs_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.3',ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.4',ierr_mpi)
       CALL MPI_BCAST(rbs_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.3',ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.5',ierr_mpi)
       CALL MPI_BCAST(zbc_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.3',ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.6',ierr_mpi)
 #endif
 
       IF (ALLOCATED(extcur)) DEALLOCATE(extcur)
