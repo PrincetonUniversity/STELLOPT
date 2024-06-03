@@ -3,7 +3,7 @@
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !     Date:          02/21/2012
 !     Description:   This subroutine initializes the fields on the
-!                    R, phi, Z grid.  
+!                    R, phi, Z grid.
 !-----------------------------------------------------------------------
       SUBROUTINE fieldlines_init
 !-----------------------------------------------------------------------
@@ -71,8 +71,8 @@
 
       ! Limit what the user can do
       IF (laxis_i .and. .not.lvac) lvac = .true.
-      
-      
+
+
       ! First Read The Input Namelist
       iunit = 11
 #if defined(MPI_OPT)
@@ -116,7 +116,7 @@
          END DO
          STOP
       END IF
-      
+
 !      IF (lplasma_only) THEN
 !         IF (lvmec) THEN
 !            rmin = 1.2*rmin_surf
@@ -138,7 +138,7 @@
          ELSE
             !rmin_temp = MINVAL(r_start,MASK = r_start > 0)
             !zmin_temp = MINVAL(z_start,MASK = r_start > 0)
-            
+
             rmin_temp = r_start(1)
             zmin_temp = z_start(1)
             phimin_temp = phi_start(1)
@@ -162,7 +162,7 @@
       eps1 = (rmax-rmin)*small
       eps2 = (phimax-phimin)*small
       eps3 = (zmax-zmin)*small
-      
+
       ! Output some information
       IF (lverb .and. .not.lrestart) THEN
          WRITE(6,'(A)') '----- Input Parameters -----'
@@ -180,7 +180,7 @@
          IF (lmu) WRITE(6,'(A)')   '   DIFFUSION OPERATOR TURNED ON!'
          CALL FLUSH(6)
       END IF
-       
+
       ! Create the background grid and initialize if necessary
       IF (lrestart) THEN
          CALL fieldlines_init_restart
@@ -199,7 +199,7 @@
             FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
             FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
             B_R = 0; B_PHI = 0; B_Z = 0
-            IF (lpres) PRES_G = 0 
+            IF (lpres) PRES_G = 0
          END IF
          ! Put the vacuum field on the background grid
          IF (lmgrid) THEN
@@ -216,7 +216,6 @@
          ! Do NOTHING
       ELSE IF (lvmec .and. .not.lvac) THEN
          CALL fieldlines_init_vmec
-         IF (ledge_start) CALL fieldlines_init_vmec_edgestart
       ELSE IF (lpies .and. .not.lvac) THEN
          !CALL fieldlines_init_pies
       ELSE IF (lspec .and. .not.lvac) THEN
@@ -229,12 +228,29 @@
          CALL fieldlines_init_eqdsk
       END IF
 
+      ! Optionally, override the field line starting positions
+      ! with points on the plasma boundary.
+      IF (ledge_start) THEN
+         IF (lvmec) THEN
+            ! The equilibrium comes from VMEC in this case.
+            CALL fieldlines_init_vmec_edgestart
+         ELSE IF (lpies) THEN
+            ! CALL fieldlines_init_pies_edgestart
+         ELSE IF (lspec) THEN
+            ! CALL fieldlines_init_spec_edgestart
+         ELSE IF (lhint) THEN
+            ! CALL fieldlines_init_hint_edgestart
+         ELSE IF (leqdsk) THEN
+            ! CALL fieldlines_init_eqdsk_edgestart
+         END IF
+      END IF
+
       ! Handle error fields
       IF (lerror_field) CALL fieldlines_init_errorfield
 
       ! Put curtor on axis and calculate the field
       IF (laxis_i)  CALL fieldlines_init_I
-      
+
       IF (ANY(B_PHI .eq. 0)) THEN
 #if defined(MPI_OPT)
          CALL MPI_FINALIZE(ierr_mpi)
@@ -242,7 +258,7 @@
 #endif
          stop 'ERROR: B_PHI = 0 Found'
       END IF
-      
+
       ! Handle outputting the B-FIELD
       IF (lemc3 .or. lbfield_only .or. lafield_only) THEN
          IF (lemc3 .and. myworkid==master) CALL fieldlines_write_emc3
@@ -389,5 +405,5 @@
 #endif
 !-----------------------------------------------------------------------
 !     End Subroutine
-!-----------------------------------------------------------------------    
+!-----------------------------------------------------------------------
       END SUBROUTINE fieldlines_init

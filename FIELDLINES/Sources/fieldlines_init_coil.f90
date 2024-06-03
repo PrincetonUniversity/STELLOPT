@@ -15,11 +15,15 @@
       USE fieldlines_grid, ONLY: raxis,phiaxis,zaxis, nr, nphi, nz, &
                                  rmin, rmax, zmin, zmax, phimin, &
                                  phimax, B_R, B_Z, B_PHI
+      USE vparams, ONLY: ntord, mpold
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
-                             nv_in => nzeta, nfp_in => nfp, nigroup
+                             nfp_in => nfp, nigroup, &
+                             mpol_in => mpol, ntor_in => ntor, &
+                             rbc_in => rbc, zbs_in => zbs, &
+                             rbs_in => rbs, zbc_in => zbc
       USE biotsavart
       USE mpi_params
-      USE mpi_inc            
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -28,7 +32,7 @@
       IMPLICIT NONE
       INTEGER :: mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-      INTEGER :: ier, iunit, s, i, j, mystart, myend, k, ik, ig
+      INTEGER :: ier, iunit, s, i, j, mystart, myend, k, ik, ig, bdy_size
       REAL(rprec)  :: br, bphi, bz, current, current_first, &
                       br_temp, bphi_temp, bz_temp
 !-----------------------------------------------------------------------
@@ -42,7 +46,7 @@
       CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
 #endif
       mylocalmaster = master
-      
+
       ! Read the input file for the EXTCUR array, NV, and NFP
       IF (mylocalid == mylocalmaster) THEN
          iunit = 11
@@ -55,8 +59,23 @@
 #if defined(MPI_OPT)
       CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
+      CALL MPI_BCAST(nfp_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
+      CALL MPI_BCAST(mpol_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.1',ierr_mpi)
+      CALL MPI_BCAST(ntor_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.2',ierr_mpi)
+      bdy_size = (2 * ntord + 1) * mpold
+      CALL MPI_BCAST(rbc_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.3',ierr_mpi)
+      CALL MPI_BCAST(zbs_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.3',ierr_mpi)
+      CALL MPI_BCAST(rbs_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.3',ierr_mpi)
+      CALL MPI_BCAST(zbc_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.3',ierr_mpi)
 #endif
-      
+
       ! Read the coils file
       CALL parse_coils_file(TRIM(coil_string))
       nextcur = SIZE(coil_group) !SAL
@@ -71,12 +90,12 @@
             END IF
          END DO
       END DO
-      
+
       ! Reset the phi grid limit to match mgrid
       phimin = 0.0
       phimax = pi2 / nfp_bs
       FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
-      
+
       IF (lverb) THEN
          WRITE(6,'(A)')   '----- COILS Information -----'
          WRITE(6,'(A,A)') '   FILE: ',TRIM(coil_string)
@@ -167,8 +186,8 @@
          CALL FLUSH(6)
          CALL backspace_out(6,36)
          CALL FLUSH(6)
-      END IF    
-      
+      END IF
+
       ! Free Variables
       CALL cleanup_biotsavart
 
@@ -180,9 +199,9 @@
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil',ierr_mpi)
 #endif
-      
+
       RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine
-!-----------------------------------------------------------------------    
+!-----------------------------------------------------------------------
       END SUBROUTINE fieldlines_init_coil
