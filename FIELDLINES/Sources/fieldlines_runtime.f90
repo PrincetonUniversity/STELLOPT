@@ -47,6 +47,10 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE EZspline
+      USE fieldlines_globals, ONLY: MAXLINES, lerror_field, npoinc, &
+         dphi, follow_tol, num_hcp, delta_hc, mu, errorfield_amp, &
+         errorfield_phase, r_start, phi_start, z_start, phi_end, r_hc, &
+         z_hc, phi_hc, int_type, lmu
 !-----------------------------------------------------------------------
 !     Module Variables
 !          lverb         Logical to control screen output
@@ -119,26 +123,20 @@
       INTEGER, PARAMETER ::  runtype_backflow  = 329
       INTEGER, PARAMETER ::  runtype_gridgen   = 422
       
-      INTEGER, PARAMETER ::  MAXLINES   = 2**19
       INTEGER, PARAMETER ::  NLOCAL = 128  ! Number of local processors
       
       LOGICAL         :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
-                         lmu, lvessel, lvac, lrestart, laxis_i, &
+                         lvessel, lvac, lrestart, laxis_i, &
                          ladvanced, lauto, lplasma_only, lbfield_only,&
                          lreverse, lhitonly, lafield_only, lraw, lemc3, &
-                         lerror_field, lwall_trans, ledge_start, lnescoil,&
+                         lwall_trans, ledge_start, lnescoil,&
                          lmodb, lfield_start, lhint, leqdsk, lpres
-      INTEGER         :: nextcur, npoinc, nruntype, num_hcp, &
+      INTEGER         :: nextcur, nruntype, &
                          nprocs_fieldlines, line_select, ldex_default
-      REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc, &
-                         iota0
-      REAL(rprec), DIMENSION(20)           :: errorfield_amp, errorfield_phase
-      REAL(rprec), DIMENSION(MAXLINES)     :: r_start, phi_start, &
-                                              z_start, phi_end, &
-                                              r_hc, z_hc, phi_hc
+      REAL(rprec)     :: pi, pi2, mu0, iota0
       REAL(rprec), ALLOCATABLE :: extcur(:)
       CHARACTER(256)  :: id_string, mgrid_string, coil_string, &
-                         vessel_string, int_type, restart_string, &
+                         vessel_string, restart_string, &
                          nescoil_string, eqdsk_string
       
       REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.80
