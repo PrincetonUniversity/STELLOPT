@@ -101,7 +101,7 @@ c                    differently.
       total_work = n2 - n1 + 1
 
       ! size of chunks that are present in all ranks
-      ! (Note that we _intend_ use integer division here,
+      ! (Note that we use integer division here intentionally,
       !  since the remainder is handled explicitly
       !  via the `work_remainder` variable below.)
       work_per_rank = total_work / local_size
