@@ -299,48 +299,48 @@
                                       ATT='Maximum velocity of dist func [m/s]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'partvmax',ier)
                CALL write_scalar_hdf5(fid,'ns_prof1',ier,INTVAR=ns_prof1,&
-                                   ATT='Rho Dist. Grid Points [0,1]',ATT_NAME='description')
+                                   ATT='Rho Dist. Grid Points',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof1',ier)
                CALL write_scalar_hdf5(fid,'ns_prof2',ier,INTVAR=ns_prof2,&
-                                   ATT='U Dist. Grid Points [0,2pi]',ATT_NAME='description')
+                                   ATT='U (poloidal) Dist. Grid Points',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof2',ier)
                CALL write_scalar_hdf5(fid,'ns_prof3',ier,INTVAR=ns_prof3,&
-                                   ATT='PHI Dist. Grid Points [0,2pi]',ATT_NAME='description')
+                                   ATT='PHI (toroidal) Dist. Grid Points',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof3',ier)
                CALL write_scalar_hdf5(fid,'ns_prof4',ier,INTVAR=ns_prof4,&
-                                   ATT='VLL Dist. Grid Points[-vmax,vmax]',ATT_NAME='description')
+                                   ATT='Parallel Velocity Dist. Grid Points',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof4',ier)
                CALL write_scalar_hdf5(fid,'ns_prof5',ier,INTVAR=ns_prof5,&
-                                   ATT='Vperp Dist. Grid Points [0, vmax]',ATT_NAME='description')
+                                   ATT='Perpendicular Velocity Dist. Grid Points',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof5',ier)
                ALLOCATE(rtemp(ns_prof1))
-               FORALL(i = 1:ns_prof1) rtemp(i) = (DBLE(i)-0.5)/ns_prof1
+               FORALL(i = 1:ns_prof1) rtemp(i) = (DBLE(i)-0.5)*h1_prof
                CALL write_var_hdf5(fid,'dist_rhoaxis',ns_prof1,ier,DBLVAR=rtemp,&
-                  ATT='Rhoaxis (radial coordinate) from S_ARR [-]',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'rhoaxis',ier)
+                  ATT='Dist. Func. Radial Grid (r/a)',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_rhoaxis',ier)
                DEALLOCATE(rtemp)
                ALLOCATE(rtemp(ns_prof2))
                FORALL(i = 1:ns_prof2) rtemp(i) = (DBLE(i)-0.5)/ns_prof2*pi2
                CALL write_var_hdf5(fid,'dist_uaxis',ns_prof2,ier,DBLVAR=rtemp,&
-                  ATT='U-Axis (poloidal angle) [-]',ATT_NAME='description')
+                  ATT='Dist. Func. Poloidal Grid (U) [rad]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'uaxis',ier)
                DEALLOCATE(rtemp)
                ALLOCATE(rtemp(ns_prof3))
                FORALL(i = 1:ns_prof3) rtemp(i) = (DBLE(i)-0.5)/ns_prof3*pi2
                CALL write_var_hdf5(fid,'dist_paxis',ns_prof3,ier,DBLVAR=rtemp,&
-                  ATT='Phi-Axis (toroidal angle) [-]',ATT_NAME='description')
+                  ATT='Dist. Func. Toridal Grid (phi) [rad]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'paxis',ier)
                DEALLOCATE(rtemp)
                ALLOCATE(rtemp(ns_prof4))
                FORALL(i = 1:ns_prof4) rtemp(i) =  2*partvmax/(ns_prof4) * (DBLE(i)-0.5) - partvmax !partvmax* (2*(DBLE(i)-1)/ns_prof4-1)
                CALL write_var_hdf5(fid,'dist_Vaxis',ns_prof4,ier,DBLVAR=rtemp,&
-                  ATT='V-Axis (parallel velocity v_ll) [-]',ATT_NAME='description')
+                  ATT='Dist. Func. Para. Velocity Grid (v_para) [m/s]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vaxis',ier)
                DEALLOCATE(rtemp)
                ALLOCATE(rtemp(ns_prof5))
                FORALL(i = 1:ns_prof5) rtemp(i) = (DBLE(i)-0.5)/ns_prof5*partvmax
                CALL write_var_hdf5(fid,'dist_Waxis',ns_prof5,ier,DBLVAR=rtemp,&
-                  ATT='W-Axis (perpendicular velocity v_perp) [-]',ATT_NAME='description')
+                  ATT='Dist. Func. Perp. Velocity Grid (v_perp) [m/s]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'waxis',ier)
                IF (ASSOCIATED(ndot_prof)) THEN
                   CALL write_var_hdf5(fid,'ndot_prof',nbeams,ns_prof1,ier,DBLVAR=ndot_prof,&
