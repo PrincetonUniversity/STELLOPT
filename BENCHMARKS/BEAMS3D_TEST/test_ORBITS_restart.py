@@ -28,7 +28,7 @@ for temp in varlist:
     perct = 100*sum(abs(act-cal)/div)
     print(f'  Quantity: {temp} -- CODE -- REF. -- %')
     for i in range(len(act)):
-        perct = 100*abs(act[i]-cal[i])/div[i]
+        perct = abs(act[i]-cal[i])
         print(f'  {i} {cal[i]:7.6f} {act[i]:7.6f} {round(perct)}')
         if perct > failtol:
             lfail = 1
