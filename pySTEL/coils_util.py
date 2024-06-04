@@ -11,7 +11,7 @@ if __name__=="__main__":
 	import numpy as np
 	from datetime import datetime
 	parser = ArgumentParser(description= 
-		'''Provides class for accessing coils files also servers as a
+		'''Provides class for accessing coils files also serves as a
 		   simple tool for assessing coils or coils files.''')
 	parser.add_argument("-c", "--coil", dest="coils_file",
 		help="Coils file for input", default = None)
