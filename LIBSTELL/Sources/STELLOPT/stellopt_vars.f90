@@ -14,7 +14,7 @@
 !-----------------------------------------------------------------------
       USE vparams, ONLY: ndatafmax, mpol1d, ntord 
       USE vsvd0
-      USE windingsurface, ONLY : maxwindsurf
+      USE stellopt_globals, ONLY : maxwindsurf
 !-----------------------------------------------------------------------
 !     Module Variables
 !            nfunc_max          Maximum number of function evaluations
@@ -239,8 +239,6 @@
       
       CHARACTER, DIMENSION(nigroup) :: coil_type  ! Specifies coil topology
       INTEGER, DIMENSION(nigroup)   :: coil_surf  ! Assoc. winding surf index
-
-      REAL(rprec) :: phiedge_old  ! For keeping track of phiedge
       
       INTEGER, PARAMETER ::  norm_dex   = -5
       

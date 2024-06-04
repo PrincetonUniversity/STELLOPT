@@ -1,4 +1,56 @@
-# Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
+# Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
+
+stellopt_globals.o : \
+      stel_kinds.o 
+
+stellopt_vars.o : \
+      vparams.o \
+      vsvd0.o \
+      mpi_inc.o \
+      stellopt_globals.o
+
+stellopt_targets.o : \
+      stel_kinds.o  \
+      stellopt_vars.o \
+      stellopt_globals.o
+
+stellopt_input_mod.o : \
+      stel_kinds.o \
+      stellopt_vars.o \
+      stellopt_targets.o \
+      safe_open_mod.o \
+      vmec_input.o \
+      mpi_params.o \
+      stellopt_globals.o
+
+fieldlines_input_mod.o: \
+      stel_kinds.o \
+      safe_open_mod.o \
+      mpi_params.o \
+      mpi_inc.o \
+      fieldlines_globals.o 
+
+fieldlines_globals.o :  \
+      stel_kinds.o 
+
+beams3d_input_mod.o: \
+      stel_kinds.o \
+      safe_open_mod.o \
+      mpi_params.o \
+      mpi_inc.o \
+      beams3d_globals.o 
+
+beams3d_globals.o :  \
+      stel_kinds.o 
+
+diagno_runtime.o :  \
+      ezspline.o \
+      stel_kinds.o 
+
+diagno_input_mod.o :  \
+      diagno_runtime.o \
+      safe_open_mod.o 
+
 
 nbcd_okano.o :
 
@@ -1018,11 +1070,6 @@ ipsl_T.o : \
       v3_utilities.o 
       
 
-cyl_flux.o : \
-      stel_constants.o \
-      stel_kinds.o 
-      
-
 sxrch_T.o : \
       integration_path.o \
       stel_constants.o \
@@ -1187,7 +1234,6 @@ gist_mod.o : \
       
 
 vmec_utils.o : \
-      cyl_flux.o \
       read_wout_mod.o \
       stel_constants.o \
       stel_kinds.o 

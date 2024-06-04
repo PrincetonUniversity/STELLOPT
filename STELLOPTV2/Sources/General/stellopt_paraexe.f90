@@ -78,7 +78,8 @@
             NI_AUX_Z_BEAMS => NI_AUX_Z, NI_AUX_M_BEAMS => NI_AUX_Z, &
             NION_BEAMS => NION, &
             TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, nprocs_beams, &
-            ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F
+            ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F, &
+            BEAMS3D_VERSION
       USE beams3d_lines, ONLY: nparticles_beams => nparticles, R_lines, Z_lines,&
             PHI_lines, vll_lines, moment_lines, neut_lines
       USE beams3d_grid, ONLY: nte, nne, nti, B_R, B_PHI, B_Z, raxis, zaxis, phiaxis,&

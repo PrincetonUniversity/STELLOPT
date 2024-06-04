@@ -32,4 +32,13 @@
       INTEGER, PARAMETER :: npfcoil = 40      !number of filaments in pf coil pack (for plotting)
       INTEGER, PARAMETER :: nigroup = 300     !number of external current groups
       INTEGER, PARAMETER :: ipedsvd = 8
+
+      CONTAINS
+
+      ! These expose the global variables through ctypes
+      INTEGER FUNCTION getnigroup()
+      IMPLICIT NONE
+      getnigroup = nigroup
+      END FUNCTION getnigroup
+      
       END MODULE vsvd0

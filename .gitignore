@@ -1,11 +1,11 @@
 *~
 *#
-
 *.o
 *.mod
 *.a
 *.so
 *.zip
+*.egg-info
 .DS*
 *.dSYM
 ._*
@@ -69,3 +69,9 @@ PB3D
 
 .vscode/
 LIBSTELL/.makefile.swp
+pySTEL/build
+pySTEL/dist
+
+*.sublime-project
+*.sublime-workspace
+fort.*
