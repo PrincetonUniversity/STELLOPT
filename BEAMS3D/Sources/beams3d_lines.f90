@@ -12,7 +12,7 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_globals, ONLY: nparticles, ns_prof1, ns_prof2, &
                                  ns_prof3, ns_prof4, ns_prof5, &
-                                 partvmax, s_max_dist
+                                 partvmax, rho_max_dist
       
 !-----------------------------------------------------------------------
 !     Module Variables
