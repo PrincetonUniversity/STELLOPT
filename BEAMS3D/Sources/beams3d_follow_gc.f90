@@ -27,7 +27,7 @@ SUBROUTINE beams3d_follow_gc
                             nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida,raxis
     USE mpi_params ! MPI
     USE beams3d_write_par
-    USE beams3d_physics_mod, ONLY: beams3d_calc_dt,select_collision_operator
+    USE beams3d_physics_mod, ONLY: beams3d_calc_dt,select_collision_operator,current_collision_operator,collision_operator
     USE safe_open_mod, ONLY: safe_open
     USE mpi_inc
     !-----------------------------------------------------------------------
