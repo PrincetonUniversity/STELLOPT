@@ -26,7 +26,7 @@
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq, NI_spl_s, NI,&
                                  s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
-      USE beams3d_lines, ONLY: GFactor, ns_prof1
+      USE beams3d_lines, ONLY: GFactor, ns_prof1, h1_prof
       USE wall_mod, ONLY: wall_load_mn
       USE mpi_params
       USE mpi_inc
@@ -410,7 +410,8 @@
          ! Only master has Gfactor
          ALLOCATE(Gfactor(ns_prof1))
          DO s = 1, ns_prof1
-            sflx = REAL(s-1 + 0.5)/ns_prof1 ! Half grid rho
+            sflx = MIN(REAL(s-0.5)/h1_prof,1.0)
+            !sflx = REAL(s-1 + 0.5)/ns_prof1 ! Half grid rho
             sflx = sflx*sflx
             CALL EZspline_interp(ZEFF_spl_s,sflx,uflx,ier)
             ! sflx=s uflx=Zeff
