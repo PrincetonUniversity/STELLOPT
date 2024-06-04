@@ -1,0 +1,4 @@
+wout2indata_main.o: \
+      ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o
