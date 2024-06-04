@@ -16,10 +16,14 @@
       USE fieldlines_grid, ONLY: raxis,phiaxis,zaxis, nr, nphi, nz, &
                                  rmin, rmax, zmin, zmax, phimin, &
                                  phimax, B_R, B_Z, B_PHI
+      USE vparams, ONLY: ntord, mpold
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
-                             nv_in => nzeta, nfp_in => nfp, nigroup
+                             nv_in => nzeta, nfp_in => nfp, nigroup, &
+                             mpol_in => mpol, ntor_in => ntor, &
+                             rbc_in => rbc, zbs_in => zbs, &
+                             rbs_in => rbs, zbc_in => zbc
       USE mgrid_field_mod, pi2_mgrid => pi2
-      USE mpi_params                       
+      USE mpi_params
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -28,7 +32,7 @@
       IMPLICIT NONE
       INTEGER :: mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-      INTEGER :: ier, iunit, s, i, j, mystart, myend, k
+      INTEGER :: ier, iunit, s, i, j, mystart, myend, k, bdy_size
       REAL(rprec)  :: br, bphi, bz
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -52,12 +56,25 @@
          CLOSE(iunit)
       END IF
 #if defined(MPI_OPT)
-         CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid1',ierr_mpi)
-         CALL MPI_BCAST(nv_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid2',ierr_mpi)
-         CALL MPI_BCAST(nfp_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid3',ierr_mpi)
+      CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid1',ierr_mpi)
+      CALL MPI_BCAST(nv_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid2',ierr_mpi)
+      CALL MPI_BCAST(nfp_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.0',ierr_mpi)
+      CALL MPI_BCAST(mpol_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.1',ierr_mpi)
+      CALL MPI_BCAST(ntor_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.2',ierr_mpi)
+      bdy_size = (2 * ntord + 1) * mpold
+      CALL MPI_BCAST(rbc_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.3',ierr_mpi)
+      CALL MPI_BCAST(zbs_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.4',ierr_mpi)
+      CALL MPI_BCAST(rbs_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.5',ierr_mpi)
+      CALL MPI_BCAST(zbc_in,bdy_size,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid3.6',ierr_mpi)
 #endif
 
       IF (ALLOCATED(extcur)) DEALLOCATE(extcur)
@@ -65,7 +82,7 @@
       ALLOCATE(extcur(nextcur))
       extcur = 0.0
       extcur(1:nextcur) = extcur_in(1:nextcur)
-      
+
       ! Read the mgrid file
       CALL mgrid_load(mgrid_string,extcur,nextcur,nv_in,nfp_in,ier,mylocalid,MPI_COMM_LOCAL)
       IF (lverb) THEN
@@ -75,7 +92,7 @@
       END IF
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_mgrid4',ierr_mpi)
-      
+
       ! Check for grid consistency
       IF ((rmin < rminb) .or. (rmax > rmaxb) .or. &
           (zmin < zminb) .or. (zmax > zmaxb)) THEN
@@ -93,7 +110,7 @@
 #endif
          stop
       END IF
-      
+
       ! Reset the phi grid limit to match mgrid
       phimin = 0.0
       phimax = pi2 / nfp_in
@@ -123,15 +140,15 @@
             END IF
          END DO
       END IF
-      
+
       ! Clean up the progress bar
       IF (lverb) THEN
          CALL backspace_out(6,38)
          WRITE(6,'(38X)',ADVANCE='no')
          CALL backspace_out(6,38)
          CALL FLUSH(6)
-      END IF    
-      
+      END IF
+
       ! Free Variables (put this here to make room)
       CALL mgrid_free(ier,MPI_COMM_LOCAL)
 
@@ -143,9 +160,9 @@
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_mgrid8',ierr_mpi)
 #endif
-      
+
       RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine
-!-----------------------------------------------------------------------    
+!-----------------------------------------------------------------------
       END SUBROUTINE fieldlines_init_mgrid

@@ -15,13 +15,13 @@
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
-      
+
 !-----------------------------------------------------------------------
 !     Module Variables
-!         
+!
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      
+
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         &fieldlines_input
@@ -51,6 +51,10 @@
 !                           (note set to negative value to use non-adaptive integration)
 !            int_type       Field line integration method
 !                           'NAG','LSODE','RKH68'
+!            nstart_pol     if `-edge` is given, number of field line origins
+!                           along the poloidal circumference
+!            nstart_tor     if `-edge` is given, number of field line origins
+!                           along the full-machine toroidal circumference
 !
 !            NOTE:  Some grid parameters may be overriden (such as
 !                   phimin and phimax) to properly represent a given
@@ -62,14 +66,15 @@
                                   npoinc, dphi, follow_tol,&
                                   vc_adapt_tol, int_type, &
                                   r_hc, phi_hc, z_hc, num_hcp, delta_hc,&
-                                  errorfield_amp,errorfield_phase
-      
+                                  errorfield_amp,errorfield_phase, &
+                                  nstart_pol, nstart_tor
+
 !-----------------------------------------------------------------------
 !     Subroutines
 !         read_fieldlines_input:   Reads fieldlines_input namelist
 !-----------------------------------------------------------------------
       CONTAINS
-      
+
       SUBROUTINE read_fieldlines_input(filename, istat)
       CHARACTER(*), INTENT(in) :: filename
       INTEGER, INTENT(out) :: istat
@@ -105,6 +110,10 @@
       errorfield_amp = 0
       errorfield_phase = 0
       int_type = "NAG"
+      ! defaults to equal number along poloidal and toroidal direction
+      ! for backwards compatibility ( int(floor(sqrt(maxlines))) in that case)
+      nstart_pol = 0
+      nstart_tor = 0
       ! Read namelist
          istat=0
          iunit=12
@@ -176,6 +185,8 @@
       WRITE(iunit_out,outflt) 'FOLLOW_TOL',follow_tol
       WRITE(iunit_out,outint) 'NPOINC',npoinc
       WRITE(iunit_out,outflt) 'MU',mu
+      WRITE(iunit_out,outint) 'NSTART_POL',nstart_pol
+      WRITE(iunit_out,outint) 'NSTART_TOR',nstart_tor
       n = COUNT(r_start > 0)
       WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'R_START',(r_start(ik), ik=1,n)
       WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'Z_START',(z_start(ik), ik=1,n)
@@ -205,7 +216,7 @@
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER :: iunit, istat
       LOGICAL :: lexists
-      
+
       iunit = 100
       istat = 0
       INQUIRE(FILE=TRIM(filename),exist=lexists)
@@ -224,7 +235,7 @@
       SUBROUTINE BCAST_FIELDLINES_INPUT(local_master,comm,istat)
       USE mpi_inc
       IMPLICIT NONE
-      
+
       INTEGER, INTENT(inout) :: comm
       INTEGER, INTENT(in)    :: local_master
       INTEGER, INTENT(inout) :: istat
@@ -259,6 +270,8 @@
       CALL MPI_BCAST(lerror_field,1,MPI_LOGICAL, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(errorfield_amp,20,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(errorfield_phase,20,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(nstart_pol,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(nstart_tor,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
 #endif
       END SUBROUTINE BCAST_FIELDLINES_INPUT
 
