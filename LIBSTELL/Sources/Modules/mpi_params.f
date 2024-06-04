@@ -57,39 +57,47 @@ c                    differently.
       !CALL MPI_ABORT(MPI_COMM_STEL,1,temp)
       END SUBROUTINE mpi_stel_abort
 
-      ! Distribute the workload of operating on over n1:n2 (inclusive)
-      ! over the compute ranks available in the given communicator
-      ! and return the local ranges to be worked on in mystart and myend.
+      !> Distribute the workload of operating on over n1:n2 (inclusive)
+      !> over the compute ranks available in the given communicator
+      !> and return the local ranges to be worked on in mystart and myend.
+      !
+      !> This routine must __always__ run,
+      !> hence no `STOP` statements or similar are allowed here.
+      !> If more ranks than work items are available in the communicator,
+      !> this routine returns `myend` > `mystart`,
+      !> which implies that loops like `DO i = mystart, myend` are simply skipped
+      !> in ranks that do not get a share of the workload.
       SUBROUTINE MPI_CALC_MYRANGE(comm,n1,n2,mystart,myend)
 #if defined(MPI_OPT)
       USE mpi
 #endif
       IMPLICIT NONE
-      INTEGER, INTENT(inout) :: comm
-      INTEGER, INTENT(in) :: n1, n2
-      INTEGER, INTENT(out) :: mystart, myend
-      INTEGER :: total_work, work_per_rank, work_remainder
+      INTEGER, INTENT(inout) :: comm    !< communicator to distribute work over
+      INTEGER, INTENT(in)    :: n1      !< lower bound of range to work on
+      INTEGER, INTENT(in)    :: n2      !< upper bound of range to work on (inclusive)
+      INTEGER, INTENT(out)   :: mystart !< lower bound of chunk this rank should work on
+      INTEGER, INTENT(out)   :: myend   !< upper bound of chunk this rank should work on (inclusive)
+
       INTEGER :: local_size, local_rank, istat
+      INTEGER :: total_work, work_per_rank, work_remainder
 
       ! Default if not using MPI: just work on full range
       mystart = n1
-      myend = n2
+      myend   = n2
 
 #if defined(MPI_OPT)
+
+      ! `local_size` is the number of available ranks.
+      ! We assume it is always > 0, i.e., 1, 2, 3, ...
+      CALL MPI_COMM_SIZE(comm, local_size, istat)
+
+      ! `local_rank` is the ID of the rank to compute `mystart` and `myend` for.
+      ! We assume it is always >= 0, i.e., 0, 1, 2, ...
+      CALL MPI_COMM_RANK(comm, local_rank, istat)
 
       ! Total number of items to work on.
       ! NOTE: n2 is the upper range bound, inclusive!
       total_work = n2 - n1 + 1
-
-      ! `local_size` is the number of available ranks
-      CALL MPI_COMM_SIZE(comm, local_size, istat)
-
-      IF (local_size .gt. total_work) THEN
-         STOP "cannot assign more ranks than work items"
-      END IF
-
-      ! `local_rank` is the ID of the rank to compute `mystart` and `myend` for
-      CALL MPI_COMM_RANK(comm, local_rank, istat)
 
       ! size of chunks that are present in all ranks
       work_per_rank = total_work / local_size
@@ -99,6 +107,9 @@ c                    differently.
       work_remainder = MODULO(total_work, local_size)
 
       ! ranges corresponding to working on evenly distributed chunks
+      ! `myend` is inclusive, i.e., the indices to work on are
+      ! { mystart, mystart+1, ..., myend-1, myend }.
+      ! Thus, one can use code like `DO i = mystart, myend`.
       mystart = n1 +  local_rank      * work_per_rank
       myend   = n1 + (local_rank + 1) * work_per_rank - 1
 
