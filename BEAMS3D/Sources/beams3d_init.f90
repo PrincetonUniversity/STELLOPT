@@ -21,7 +21,7 @@
       USE beams3d_input_mod, ONLY: read_beams3d_input, init_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
                                ndot_prof, j_prof, dense_prof, &
-                               partvmax, partpmax, s_max_dist,&
+                               partvmax, partpmax, rho_max_dist,&
                                end_state, ns_prof1, ns_prof2, ns_prof3, &
                                ns_prof4, ns_prof5, dist5d_prof, win_dist5d, &
                                dist5d_fida, win_dist5d_fida,&
@@ -144,7 +144,7 @@
       END IF
 
       ! Buffer in the rho direction so particles s>1 are in the 'extra' bin
-      h1_prof = ns_prof1/s_max_dist
+      h1_prof = ns_prof1/rho_max_dist
 
       ! Handle existence of ADAS for NBI
       IF (lbeam .and. .not.lsuzuki .and. myid_sharmem==master) THEN
