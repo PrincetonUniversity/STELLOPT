@@ -93,7 +93,7 @@ c                    differently.
 
       ! `local_rank` is the ID of the rank to compute `mystart` and `myend` for.
       ! We assume it is always >= 0, i.e., 0, 1, 2, ...
-      ! and only up to `local_size - 1`.
+      ! and only up to `local_size - 1` (inclusive).
       CALL MPI_COMM_RANK(comm, local_rank, istat)
 
       ! Total number of items to work on.
