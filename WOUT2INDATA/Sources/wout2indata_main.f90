@@ -34,15 +34,15 @@
 !     Local Variables
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      integer                                      :: numargs, ierr, &
-                                                      iunit
-      integer, parameter                           :: arg_len = 256, &
-                                                      iunit_init = 11
-      character*(arg_len)                          :: input_filename
-      character*(arg_len)                          :: wout_filename
-      character*(arg_len)                          :: output_filename
+      integer             :: numargs, ierr, iunit
+      integer, parameter  :: arg_len = 256, &
+                             iunit_init = 11
+      character*(arg_len) :: input_filename
+      character*(arg_len) :: wout_filename
+      character*(arg_len) :: output_filename
 
-      integer :: mn, m, n
+      character(len=1024) :: line
+      integer             :: mn, m, n
 
 !-----------------------------------------------------------------------
 !     Begin Program
@@ -53,7 +53,7 @@
       if (numargs .lt. 2) then
          write(*,*) "usage: xwout2indata input.<ext> wout_<ext>.nc"
          write(*,*) "  will write to input.<ext>_new"
-         stop
+         call exit(255)
       end if
       input_filename = TRIM(input_filename)
       CALL GETCARG(2, wout_filename, numargs)
@@ -65,12 +65,14 @@
       IF (ierr .eq. 0) THEN
          CALL read_indata_namelist(iunit, ierr)
          if (ierr .ne. 0) then
-           WRITE(*,*) 'Error parsing INDATA namelist'
-           STOP
+            backspace(iunit)
+            read(iunit, fmt='(A)') line
+            write(6,'(A)') 'Invalid line in INDATA namelist: '//TRIM(line)
+            call exit(ierr)
          end if
       ELSE
          WRITE(*,*) 'Error reading input file: ',TRIM(input_filename)
-         STOP
+         call exit(ierr)
       END IF
       CLOSE(unit=iunit)
 
@@ -78,7 +80,7 @@
       CALL read_wout_file(wout_filename,ierr)
       IF (ierr .ne. 0) THEN
          WRITE(*,*) 'Error reading wout file: ',TRIM(wout_filename)
-         STOP
+         call exit(ierr)
       END IF
 
       ! Note that we explicitly don't check
@@ -116,11 +118,11 @@
          CALL write_indata_namelist(iunit, ierr)
          if (ierr .ne. 0) then
            WRITE(*,*) 'Error writing INDATA namelist'
-           STOP
+           call exit(ierr)
          end if
       ELSE
          WRITE(*,*) 'Error opening file for writing: ',TRIM(output_filename)
-         STOP
+         call exit(ierr)
       END IF
       CLOSE(unit=iunit)
 
