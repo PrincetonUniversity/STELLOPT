@@ -1,4 +1,14 @@
 ObjectFiles = \
+stellopt_targets.o \
+stellopt_vars.o \
+stellopt_input_mod.o \
+stellopt_globals.o \
+fieldlines_input_mod.o \
+fieldlines_globals.o \
+diagno_input_mod.o \
+diagno_runtime.o \
+beams3d_input_mod.o \
+beams3d_globals.o \
 mumaterial_mod.o \
 nbcd_okano.o \
 nclass_mod.o \
@@ -78,7 +88,6 @@ v3post_rfun.o \
 read_pies_mod.o \
 system_mod.o \
 saddle_surface.o \
-cyl_flux.o \
 flint_z.o \
 optim_params.o \
 mddc_cdf.o \

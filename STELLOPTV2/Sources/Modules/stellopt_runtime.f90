@@ -146,6 +146,11 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
+      USE stellopt_globals, ONLY: axis_init_option, cr_strategy, &
+         epsfcn, factor, ftol, gtol, lcentered_differences, lkeep_mins, &
+         lrefit, mode, noptimizers, npopulation, opt_type, refit_param, &
+         rho_exp, xtol, bigno, lcoil_geom, lno_restart, ltriangulate, &
+         maxwindsurf
       USE EZspline
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -195,27 +200,33 @@
       INTEGER, PARAMETER ::  MPI_BCAST_ERR      = 830
       INTEGER, PARAMETER ::  MPI_FREE_ERR       = 840
       INTEGER, PARAMETER ::  MPI_FINE_ERR       = 890
+
+      !INTEGER, PARAMETER :: maxwindsurf=32
+      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.85      
+      !REAL(rprec), PARAMETER :: bigno = 1.0E+10
       
-      LOGICAL                  :: lverb, lkeep_mins, lneed_output, lrestart,&
-                                  lrefit, lno_restart, lauto_domain, lparallel,&
-                                  ltriangulate, lcoil_geom, lrenorm
-      INTEGER                  :: nvars, mtargets, iter, mode, iunit_out,&
-                                  cr_strategy, rho_exp, npopulation, noptimizers,&
-                                  ier_paraexe
+!      LOGICAL                  :: lverb, lkeep_mins, lneed_output, lrestart,&
+!                                  lrefit, lno_restart, lauto_domain, lparallel,&
+!                                  ltriangulate, lcoil_geom, lrenorm     
+      LOGICAL                  :: lverb, lneed_output, lrestart,&
+                                  lauto_domain, lparallel,lrenorm
+!      INTEGER                  :: nvars, mtargets, iter, mode, iunit_out,&
+!                                  cr_strategy, rho_exp, npopulation, noptimizers,&
+!                                  ier_paraexe
+      INTEGER                  :: nvars, mtargets, iter, iunit_out,ier_paraexe
       INTEGER, ALLOCATABLE     :: var_dex(:),target_dex(:)
       INTEGER, ALLOCATABLE     :: arr_dex(:,:)
-      REAL(rprec)              :: pi, pi2, mu0, ftol, xtol, gtol, epsfcn,&
-                                  factor, chisq_min, refit_param, pct_domain
+!      REAL(rprec)              :: pi, pi2, mu0, ftol, xtol, gtol, epsfcn,&
+!                                  factor, chisq_min, refit_param, pct_domain
+      REAL(rprec)              :: pi, pi2, mu0, chisq_min, pct_domain
       REAL(rprec), ALLOCATABLE :: vars(:),targets(:),sigmas(:),vals(:),&
                                   diag(:),vars_min(:),vars_max(:)
-      CHARACTER(256)           :: id_tag, id_string, opt_type, proc_string, &
+!      CHARACTER(256)           :: id_tag, id_string, opt_type, proc_string, &
+!                                  proc_string_old, screen_str, xvec_file
+      CHARACTER(256)           :: id_tag, id_string, proc_string, &
                                   proc_string_old, screen_str, xvec_file
-      LOGICAL                  :: lcentered_differences ! Available for MANGO algorithms
-      CHARACTER(256)           :: axis_init_option
-      
-      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.85
-      
-      REAL(rprec), PARAMETER :: bigno = 1.0E+10
+!      LOGICAL                  :: lcentered_differences ! Available for MANGO algorithms
+!      CHARACTER(256)           :: axis_init_option
 !-----------------------------------------------------------------------
 !     Subroutines
 !          handle_err  Controls Program Termination
