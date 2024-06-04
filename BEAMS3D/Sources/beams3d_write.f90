@@ -381,12 +381,12 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'shine_port',ier)
                END IF
                IF (ASSOCIATED(NEUTRONS_ARR)) THEN
-                  CALL write_var_hdf5(fid,'NEUTRON_RATE',nbeams,nr,nphi,nz,ier,DBLVAR=NEUTRONS_ARR,&
+                  CALL write_var_hdf5(fid,'NEUTRON_RATE',2,nr,nphi,nz,ier,DBLVAR=NEUTRONS_ARR,&
                                       ATT='Neutron Rate [m^-3]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'NEUTRONS_ARR',ier)
                END IF
                IF (ASSOCIATED(E_NEUTRONS)) THEN
-                  CALL write_var_hdf5(fid,'E_NEUTRONS',nbeams,ier,DBLVAR=E_NEUTRONS,&
+                  CALL write_var_hdf5(fid,'E_NEUTRONS',2,ier,DBLVAR=E_NEUTRONS,&
                                       ATT='Neutron Energy [eV]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_NEUTRONS',ier)
                END IF
