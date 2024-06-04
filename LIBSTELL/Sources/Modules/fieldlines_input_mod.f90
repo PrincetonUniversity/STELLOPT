@@ -185,6 +185,8 @@
       WRITE(iunit_out,outflt) 'FOLLOW_TOL',follow_tol
       WRITE(iunit_out,outint) 'NPOINC',npoinc
       WRITE(iunit_out,outflt) 'MU',mu
+      WRITE(iunit_out,outint) 'NSTART_POL',nstart_pol
+      WRITE(iunit_out,outint) 'NSTART_TOR',nstart_tor
       n = COUNT(r_start > 0)
       WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'R_START',(r_start(ik), ik=1,n)
       WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'Z_START',(z_start(ik), ik=1,n)

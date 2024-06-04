@@ -16,6 +16,7 @@
                             rbc_in => rbc, zbs_in => zbs, &
                             rbs_in => rbs, zbc_in => zbc
       USE fieldlines_lines, ONLY: nlines
+      USE fieldlines_globals, ONLY: nstart_pol, nstart_tor
       USE fieldlines_runtime
 !-----------------------------------------------------------------------
 !     Local Variables
