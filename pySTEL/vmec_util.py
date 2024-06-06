@@ -10,7 +10,7 @@ if __name__=="__main__":
 	from libstell.vmec import VMEC, VMEC_INDATA
 	from libstell.libstell import LIBSTELL
 	parser = ArgumentParser(description= 
-		'''Provides class for accessing vmec data also servers as a
+		'''Provides class for accessing vmec data also serves as a
 		   simple tool for assessing vmec wout or input files.''')
 	parser.add_argument("-v", "--vmec", dest="vmec_ext",
 		help="VMEC file extension", default = None)

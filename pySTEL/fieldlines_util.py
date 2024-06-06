@@ -10,7 +10,7 @@ if __name__=="__main__":
 	from libstell.fieldlines import FIELDLINES
 	import numpy as np
 	parser = ArgumentParser(description= 
-		'''Provides class for accessing fieldlines data also servers as a
+		'''Provides class for accessing fieldlines data also serves as a
 		   simple tool for assessing fieldlines output.''')
 	parser.add_argument("-f", "--fieldlines", dest="fieldlines_ext",
 		help="FIELDLINES file extension", default = None)

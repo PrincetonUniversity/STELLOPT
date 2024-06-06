@@ -62,7 +62,7 @@
                      win_hri, win_hpi, win_hzi, win_NI5D, win_NI, &
                      win_raxis_fida, win_phiaxis_fida, win_zaxis_fida, win_energy_fida, win_pitch_fida, &
                      win_beam_density, win_NEUTRONS, win_E_NEUTRONS 
-      REAL :: emin_fida, pimin_fida
+      REAL(rprec) :: emin_fida, pimin_fida
       REAL(rprec) :: tmin, tmax, delta_t, psiedge_eq, phiedge_eq, &
                      reff_eq, rho_help
       REAL(rprec), POINTER :: raxis(:), zaxis(:), phiaxis(:)
