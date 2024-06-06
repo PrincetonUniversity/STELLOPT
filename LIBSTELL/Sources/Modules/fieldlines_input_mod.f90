@@ -105,6 +105,7 @@
       errorfield_amp = 0
       errorfield_phase = 0
       int_type = "NAG"
+      IF (TRIM(filename) == "") RETURN
       ! Read namelist
          istat=0
          iunit=12
