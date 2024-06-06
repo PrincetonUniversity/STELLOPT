@@ -401,17 +401,6 @@
       END IF
 #endif
 
-#if defined(HDF5_PAR)
-      ! Makes sure that NPARTICLES is divisible by the number of processes
-      ! Needed for HDF5 parallel writes.
-      IF (lbeam .or. lfusion) THEN
-         ik = nparticles_start/nprocs_beams
-         IF (ik*nprocs_beams .ne. nparticles_start) THEN
-            nparticles_start = (ik+1)*nprocs_beams
-         END IF
-      END IF
-#endif
-
       END SUBROUTINE read_beams3d_input
 
       SUBROUTINE write_beams3d_namelist(iunit_out, istat)
