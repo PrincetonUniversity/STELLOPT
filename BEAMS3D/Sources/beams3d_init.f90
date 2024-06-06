@@ -124,6 +124,17 @@
          CALL get_beams3d_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)         
       END IF
 
+#if defined(HDF5_PAR)
+      ! Makes sure that NPARTICLES is divisible by the number of processes
+      ! Needed for HDF5 parallel writes.
+      IF (lbeam .or. lfusion) THEN
+         ik = nparticles_start/nprocs_beams
+         IF (ik*nprocs_beams .ne. nparticles_start) THEN
+            nparticles_start = (ik+1)*nprocs_beams
+         END IF
+      END IF
+#endif
+
       ! Handle particle restarting
       IF (lrestart_particles .or. lcontinue_grid) THEN
         ldepo = .false.
