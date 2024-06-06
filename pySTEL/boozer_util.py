@@ -9,7 +9,7 @@ if __name__=="__main__":
 	import matplotlib.pyplot as pyplot
 	from libstell.boozer import BOOZER
 	parser = ArgumentParser(description= 
-		'''Provides class for accessing boozer data also servers as a
+		'''Provides class for accessing boozer data also serves as a
 		   simple tool for assessing boozer boozmn files.''')
 	parser.add_argument("-b", "--boozer", dest="booz_ext",
 		help="BOOZER boozmn file extension", default = None)

@@ -112,7 +112,6 @@ class FIELDLINES():
 		for i in range(self.nsteps):
 			x[i,:] = x[i,:] - x[i,0]
 			y[i,:] = y[i,:] - y[i,0]
-		theta = np.arctan2(y,x)
 		theta  = np.arctan2(y,x)
 		dtheta = np.diff(theta,axis=0)
 		dtheta = np.where(dtheta<-np.pi,dtheta+2*np.pi,dtheta)
