@@ -25,29 +25,26 @@
                  mnmax_surface, nmax, mnd, nuv, nuv1, nuvh, nuvh1
       REAL(rprec) :: iota_edge, phip_edge, curpol, cut, cup, curwt, &
                      trgwt
-      REAL(rprec), DIMENSION(:), ALLOCATABLE ::  xm_plasma, xn_plasma, &
+      INTEGER, DIMENSION(:), ALLOCATABLE ::xm_plasma, xn_plasma,      & 
+                                          xm_surface, xn_surface 
+      REAL(rprec), DIMENSION(:), ALLOCATABLE ::   &
                                           rmnc_plasma, zmns_plasma,   &
                                           rmns_plasma, zmnc_plasma,   &
-                                          lmnc_plasma, lmns_plasma,   & 
-                                          xm_surface, xn_surface,     &
+                                          lmnc_plasma, lmns_plasma,       &
                                           rmnc_surface, zmns_surface, &
                                           rmns_surface, zmnc_surface, &
                                           potmnc_surface
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: x_plasma, y_plasma,   &
                                                 z_plasma, r_plasma,   &
-                                          dx_plasma, dy_plasma,       &
-                                          dz_plasma, dsur_plasma,     &
                                           nx_plasma, ny_plasma,       &
-                                          nz_plasma,                  &
+                                          nz_plasma,   dsur_plasma,   &
                                           dxdu_plasma, dydu_plasma,   &
                                           dxdv_plasma, dydv_plasma,   &
                                           bn_plasma,                  & 
                                           x_surface, y_surface,       &
                                           z_surface, r_surface,       &
-                                          dx_surface, dy_surface,     &
-                                          dz_surface, dsur_surface,   &
                                           nx_surface, ny_surface,     &
-                                          nz_surface,                 &
+                                          nz_surface, dsur_surface,   &
                                           dxdu_surface, dydu_surface, &
                                           dxdv_surface, dydv_surface, &
                                           db_normal, Babs
@@ -117,19 +114,20 @@
                   READ(iunit, '(6i6)') w_psurf, w_csurf, w_bnuv, w_jsurf, w_xerr, w_svd
                CASE("----- Plasma Surface -----")
                   READ(iunit, '(A)', iostat=istat) line
-                  READ(iunit, '(1i6)') mnmax_plasma
+                  READ(iunit, *) mnmax_plasma
                CASE("----- Plasma boundary fourier coefficients  -----")
                   READ(iunit, '(A)', iostat=istat) line
                   CALL read_nescout_plasmaboundary(iunit,istat)
                CASE("----- Coil Surface -----")
                   READ(iunit, '(A)', iostat=istat) line
-                  READ(iunit, '(1i6)') mnmax_surface
+                  READ(iunit, *) mnmax_surface
                CASE("----- Coil surface fourier coefficients -----")
                   READ(iunit, '(A)', iostat=istat) line
                   CALL read_nescout_coilsurface(iunit,istat)
                CASE("----- Calling Surface_Plasma -----")
                   IF (w_psurf>0 .or. w_psurf==-1) THEN
-                     nlines = 6 + 2*nf+1 + 5 +2*nf+1
+                     n = MAXVAL(ABS(xn_plasma))
+                     nlines = 6 + 2*n+1 + 5 +2*n+1
                      DO n = 1, nlines
                         READ(iunit, '(A)', iostat=istat) line
                      END DO
@@ -143,7 +141,7 @@
                   READ(iunit,*) bn_plasma
                CASE("----- Calling Surface_Coil -----")
                   IF (w_csurf>0 .or. w_csurf==-1) THEN
-                     n = MAXVAL(xn_surface)
+                     n = MAXVAL(ABS(xn_surface))
                      nlines = 5 + 2*n+1 + 5 +2*n+1
                      DO n = 1, nlines
                         READ(iunit, '(A)', iostat=istat) line
@@ -167,9 +165,7 @@
                      READ(iunit, '(A)', iostat=istat) line
                   END IF
                CASE("----- Calling Accuracy -----")
-                  READ(iunit, '(A)', iostat=istat) line
-                  IF (w_bnuv>0 .or. w_bnuv==-1) THEN
-                  END IF
+                  IF (w_bnuv>0 .or. w_bnuv==-1) CALL read_nescout_accuracy(iunit,istat)
 
 
             END SELECT
@@ -189,7 +185,7 @@
          INTEGER :: mn
          ALLOCATE(xm_plasma(mnmax_plasma),xn_plasma(mnmax_plasma))
          ALLOCATE(rmnc_plasma(mnmax_plasma),zmns_plasma(mnmax_plasma))
-         ALLOCATE(rmnc_plasma(mnmax_plasma),zmns_plasma(mnmax_plasma))
+         ALLOCATE(rmns_plasma(mnmax_plasma),zmnc_plasma(mnmax_plasma))
          ALLOCATE(lmnc_plasma(mnmax_plasma),lmns_plasma(mnmax_plasma))
          DO mn = 1, mnmax_plasma
             READ(iunit,'(2i4,6g20.10)') xm_plasma(mn), xn_plasma(mn), &
@@ -207,7 +203,7 @@
          INTEGER :: mn
          ALLOCATE(xm_surface(mnmax_surface),xn_surface(mnmax_surface))
          ALLOCATE(rmnc_surface(mnmax_surface),zmns_surface(mnmax_surface))
-         ALLOCATE(rmnc_surface(mnmax_surface),zmns_surface(mnmax_surface))
+         ALLOCATE(rmns_surface(mnmax_surface),zmnc_surface(mnmax_surface))
          DO mn = 1, mnmax_surface
             READ(iunit,'(2i4,4g20.10)') xm_surface(mn), xn_surface(mn), &
                                     rmnc_surface(mn), zmns_surface(mn), &
@@ -228,6 +224,7 @@
             READ(iunit,'(4g16.6)') x_plasma(mn), y_plasma(mn), &
                   z_plasma(mn), r_plasma(mn)
          END DO
+         READ(iunit, '(A)', iostat=istat) line
          RETURN
       END SUBROUTINE read_nescout_plasmaxyz
 
@@ -243,6 +240,7 @@
             READ(iunit,'(4g16.6)') dsur_plasma(mn), nx_plasma(mn), &
                                    ny_plasma(mn), nz_plasma(mn)
          END DO
+         READ(iunit, '(A)', iostat=istat) line
          RETURN
       END SUBROUTINE read_nescout_plasmanormal
 
@@ -258,6 +256,7 @@
             READ(iunit,'(4g16.6)') dxdu_plasma(mn), dydu_plasma(mn), &
                                    dxdv_plasma(mn), dydv_plasma(mn)
          END DO
+         READ(iunit, '(A)', iostat=istat) line
          RETURN
       END SUBROUTINE read_nescout_plasmaderiv
 
@@ -267,12 +266,13 @@
          INTEGER, INTENT(inout) :: istat
          INTEGER :: mn
          READ(iunit, '(A)', iostat=istat) line
-         ALLOCATE(x_surface(nuvh1),y_surface(nuvh1))
-         ALLOCATE(z_surface(nuvh1),r_surface(nuvh1))
-         DO mn = 1, nuvh1
+         ALLOCATE(x_surface(nuvh),y_surface(nuvh))
+         ALLOCATE(z_surface(nuvh),r_surface(nuvh))
+         DO mn = 1, nuvh
             READ(iunit,'(4g16.6)') x_surface(mn), y_surface(mn), &
                   z_surface(mn), r_surface(mn)
          END DO
+         READ(iunit, '(A)', iostat=istat) line
          RETURN
       END SUBROUTINE read_nescout_surfacexyz
 
@@ -282,12 +282,13 @@
          INTEGER, INTENT(inout) :: istat
          INTEGER :: mn
          READ(iunit, '(A)', iostat=istat) line
-         ALLOCATE(nx_surface(nuvh1),ny_surface(nuvh1))
-         ALLOCATE(nz_surface(nuvh1),dsur_surface(nuvh1))
-         DO mn = 1, nuvh1
+         ALLOCATE(nx_surface(nuvh),ny_surface(nuvh))
+         ALLOCATE(nz_surface(nuvh),dsur_surface(nuvh))
+         DO mn = 1, nuvh
             READ(iunit,'(4g16.6)') dsur_surface(mn), nx_surface(mn), &
                                    ny_surface(mn), nz_surface(mn)
          END DO
+         READ(iunit, '(A)', iostat=istat) line
          RETURN
       END SUBROUTINE read_nescout_surfacenormal
 
@@ -297,12 +298,13 @@
          INTEGER, INTENT(inout) :: istat
          INTEGER :: mn
          READ(iunit, '(A)', iostat=istat) line
-         ALLOCATE(dxdu_surface(nuvh1),dydu_surface(nuvh1))
-         ALLOCATE(dxdv_surface(nuvh1),dydv_surface(nuvh1))
-         DO mn = 1, nuvh1
+         ALLOCATE(dxdu_surface(nuvh),dydu_surface(nuvh))
+         ALLOCATE(dxdv_surface(nuvh),dydv_surface(nuvh))
+         DO mn = 1, nuvh
             READ(iunit,'(4g16.6)') dxdu_surface(mn), dydu_surface(mn), &
                                    dxdv_surface(mn), dydv_surface(mn)
          END DO
+         READ(iunit, '(A)', iostat=istat) line
          RETURN
       END SUBROUTINE read_nescout_surfacederiv
 
