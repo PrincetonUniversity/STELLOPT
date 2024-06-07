@@ -64,33 +64,38 @@ file has the following format
 The following table explains each parameter as defined by the preceding
 line:
 
-\|\| Input Parameter Name \|\| Description \|\| \|\| nu \|\| Number of
-poloidal grid points on current surface \|\| \|\| nv \|\| Number of
-toroidal grid points on current surface \|\| \|\| nu1 \|\| Number of
-poloidal grid points on inner surface \|\| \|\| nv1 \|\| Number of
-toroidal grid points on inner surface \|\| \|\| npol \|\| Number of
-segments of a modular or helical filament \|\| \|\| ntor \|\| Number of
-filaments per period \|\| \|\| mf \|\| Number of poloidal modes for
-current potential \|\| \|\| nf \|\| Number of toroidal modes for current
-potential \|\| \|\| md \|\| Number of poloidal modes for surface shapes
-(and B normal) \|\| \|\| nd \|\| Number of toroidal modes for surface
-shapes (and B normal) \|\| \|\| np \|\| Number of field periods \|\|
-\|\| iota\_edge \|\| Equilibrium rotational transform at edge \|\| \|\|
-phip\_edge \|\| Equilibrium toroidal flux derivative at edge \|\| \|\|
-curpol \|\| Equilibrium total poloidal current in Amps per field period
-\|\| \|\| cut \|\| Net toroidal current +/-1 or 0 \|\| \|\| cup \|\| Net
-poloidal current +/-1 or 0 \|\| \|\| ibex \|\| External field supplied
-if IBEX = 1 \|\| \|\| mstrt \|\| Method + svdscan start if \> 1, \>=0
-Berr, \<=0 Least square \|\| \|\| mstep \|\| Method + svdscan stepsize
-\<=0 least square, =0 use F04ABE, no svd \|\| \|\| mkeep \|\| svd/scan
-control 0 svdscan, else keep nkeep wgts \|\| \|\| mdspw \|\| 2 +
-exponent of dsur multiplying bfn, ben \|\| \|\| curwt \|\| Weight for
-surface current minimization (only in LSQ branch) \|\| \|\| trgwt \|\|
-Not yet implemented \|\| \|\| w\_psurf \|\| Write plasma surface info
-\|\| \|\| w\_csurf \|\| Write coil surface info \|\| \|\| w\_bnuv \|\|
-Write Bnorm field info \|\| \|\| w\_jsurf \|\| Write J surface current
-info \|\| \|\| w\_xerr \|\| Write X error (displacement) info \|\| \|\|
-w\_svd \|\| Write SVD solution info \|\|
+| Input Parameter Name | Description | 
+|:------------- |:-------------:|:----- |
+| nu | Number of poloidal grid points on current surface | 
+| nv | Number of toroidal grid points on current surface | 
+| nu1 | Number of poloidal grid points on inner surface | 
+| nv1 | Number of toroidal grid points on inner surface | 
+| npol | Number of segments of a modular or helical filament | 
+| ntor | Number of filaments per period | 
+| mf | Number of poloidal modes for current potential | 
+| nf | Number of toroidal modes for current potential | 
+| md | Number of poloidal modes for surface shapes (and B normal) | 
+| nd | Number of toroidal modes for surface shapes (and B normal) | 
+| np | Number of field periods |
+| iota\_edge | Equilibrium rotational transform at edge | 
+| phip\_edge | Equilibrium toroidal flux derivative at edge | 
+| curpol | Equilibrium total poloidal current in Amps per field period | 
+| cut | Net toroidal current +/-1 or 0 | 
+| cup | Net poloidal current +/-1 or 0 | 
+| ibex | External field supplied if IBEX = 1 | 
+| mstrt | Method + svdscan start if \> 1, \>=0 Berr, \<=0 Least square | 
+| mstep | Method + svdscan stepsize \<=0 least square, =0 use F04ABE, no svd | 
+| mkeep | svd/scan control 0 svdscan, else keep nkeep wgts | 
+| mdspw | 2 + exponent of dsur multiplying bfn, ben | 
+| curwt | Weight for surface current minimization (only in LSQ branch) | 
+| trgwt | Not yet implemented | 
+| | For the w_XXX values -2 means just option 2, +2 means 1 and 2 |
+| w\_psurf | Write plasma surface info (1: R/Z, 2: X/Y/Z, 3: NX/NY/NZ, 4: dXdu/dYdu/dXdv/dYdv )| 
+| w\_csurf | Write coil surface info (1: R/Z, 2: X/Y/Z, 3:NX/NY/NZ, 4: jx/jy/jz) | 
+| w\_bnuv | Write Bnorm field info (2: BN_EXT) | 
+| w\_jsurf | Write J surface current info (1: Potential, 2: Current) | 
+| w\_xerr | Write X error (displacement) info | 
+| w\_svd | Write SVD solution info |
 
 ------------------------------------------------------------------------
 
