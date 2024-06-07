@@ -72,7 +72,8 @@
 
     ! Set mumaterial verbosity
       CALL mumaterial_setverb(lismaster)
-      CALL mumaterial_debug(lissubmaster)
+      !CALL mumaterial_debug(lismaster,lissubmaster,.TRUE.)
+      CALL mumaterial_debug(.FALSE.,.FALSE.,.FALSE.)
 
       ! Read the mu materials file
       CALL MUMATERIAL_LOAD(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_BEAMS)
