@@ -957,6 +957,66 @@ class LIBSTELL():
 		# Return
 		return scalar_data | array_data
 
+	def read_nescout(self,file):
+		"""Reads a nescout file and returns a dictionary
+
+		This routine wrappers read_nescout in LIBSTELL and returns
+		a dictionary of values
+
+		Parameters
+		----------
+		file : str
+			Path to nescout file.
+		Returns
+		----------
+		vars : dict
+			Dictionary of module variables
+		"""
+		import ctypes as ct
+		module_name = self.s1+'read_nescoil_mod_'+self.s2
+		read_wout = getattr(self.libstell,module_name+'_read_nescout'+self.s3)
+		read_wout.argtypes=[ct.c_char_p, ct.POINTER(ct.c_int), ct.c_long]
+		read_wout.restype=None
+		ierr = ct.c_int(0)
+		read_wout(file.encode('UTF-8'), ct.byref(ierr), len(file))
+		if not (ierr.value == 0):
+			return None
+		# Setup Arrays
+		out_data={}
+		# Get Scalars
+		booList  = ['lasym']
+		booLen   = [1]*len(booList)
+		intList  = ['nu', 'nv', 'nu1', 'nv1', 'mpol', 'ntor', 'mf', 'nf', 'md', 'nd', 'np', \
+					'ibex', 'mstrt', 'mstep', 'mkeep', 'mdspw', 'w_psurf', 'w_csurf', \
+					'w_bnuv', 'w_jsurf', 'w_xerr', 'w_svd', 'mnmax_plasma', \
+					'mnmax_surface', 'nmax', 'mnd', 'nuv', 'nuv1', 'nuvh', 'nuvh1']
+		intLen   = [1]*len(intList)
+		realList = ['iota_edge', 'phip_edge', 'curpol', 'cut', 'cup', 'curwt', 'trgwt']
+		realLen = [1]*len(realList)
+		scalar_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen)
+		# Get 1D Int Arrays
+		intList= ['xm_plasma', 'xn_plasma','xm_surface', 'xn_surface']
+		intLen = [(scalar_data['mnmax_plasma'],1),(scalar_data['mnmax_plasma'],1),\
+			(scalar_data['mnmax_surface'],1),(scalar_data['mnmax_surface'],1)]
+		# Get 1D Real Arrays
+		realList = ['rmnc_plasma', 'zmns_plasma', 'rmns_plasma', \
+			'zmnc_plasma', 'lmnc_plasma', 'lmns_plasma' ]
+		realLen = [(scalar_data['mnmax_plasma'],1)]*len(realList)
+		realList.extend(['rmnc_surface', 'zmns_surface', 'rmns_surface', \
+			'zmnc_surface', 'potmnc_surface'])
+		realLen.extend([(scalar_data['mnmax_surface'],1)]*5)
+		realList.extend(['x_plasma', 'y_plasma', 'z_plasma', 'r_plasma', 'dsur_plasma', \
+			'nx_plasma', 'ny_plasma', 'nz_plasma', 'dxdu_plasma', \
+			'dydu_plasma', 'dxdv_plasma', 'dydv_plasma', 'bn_plasma', 'db_normal', 'babs'])
+		realLen.extend([(scalar_data['nuvh1'],1)]*15)
+		realList.extend(['x_surface', 'y_surface', 'z_surface', 'r_surface', 'dsur_surface',\
+			'nx_surface', 'ny_surface', 'nz_surface', 'dxdu_surface', \
+			'dydu_surface', 'dxdv_surface', 'dydv_surface'])
+		realLen.extend([(scalar_data['nuvh'],1)]*12)
+		array_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen)
+		# Return
+		return scalar_data | array_data
+
 	def get_module_vars(self,modName,booVar=None,booLen=None,\
 		intVar=None,intLen=None,realVar=None,realLen=None,\
 		charVar=None,charLen=None,\
