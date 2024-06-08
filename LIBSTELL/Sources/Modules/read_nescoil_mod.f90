@@ -33,7 +33,7 @@
                                           lmnc_plasma, lmns_plasma,       &
                                           rmnc_surface, zmns_surface, &
                                           rmns_surface, zmnc_surface, &
-                                          potmnc_surface
+                                          potmns_surface
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: x_plasma, y_plasma,   &
                                                 z_plasma, r_plasma,   &
                                           nx_plasma, ny_plasma,       &
@@ -48,6 +48,8 @@
                                           dxdu_surface, dydu_surface, &
                                           dxdv_surface, dydv_surface, &
                                           db_normal, Babs
+      REAL(rprec), DIMENSION(:), ALLOCATABLE, PRIVATE :: &
+                                          jumns_surf, jvmns_surf
       CHARACTER(LEN=256), PRIVATE :: line
 
 
@@ -151,9 +153,9 @@
                   IF (w_csurf>2 .or. w_csurf==-3) CALL read_nescout_surfacenormal(iunit,istat)
                   IF (w_csurf>2 .or. w_csurf==-3) CALL read_nescout_surfacederiv(iunit,istat)
                CASE("---- Phi(m,n) for least squares ---")
-                  ALLOCATE(potmnc_surface(mnmax_surface))
+                  ALLOCATE(potmns_surface(mnmax_surface))
                   DO n = 1, mnmax_surface
-                     READ(iunit,'(i3,2x,i3,2x,g25.16)') mtemp,ntemp,potmnc_surface(n)
+                     READ(iunit,'(i3,2x,i3,2x,g25.16)') mtemp,ntemp,potmns_surface(n)
                   END DO
                CASE("----- Calling Surfcur_Diag -----")
                   READ(iunit, '(A)', iostat=istat) line
@@ -323,6 +325,11 @@
          RETURN
       END SUBROUTINE read_nescout_accuracy
 
+      SUBROUTINE calculate_surface_current
+         IMPLICIT NONE
+         INTEGER :: mn
+      END SUBROUTINE calculate_surface_current
+
       SUBROUTINE read_nescout_deallocate
          IMPLICIT NONE
          IF (ALLOCATED(xm_plasma)) DEALLOCATE(xm_plasma)
@@ -339,7 +346,7 @@
          IF (ALLOCATED(zmns_surface)) DEALLOCATE(zmns_surface)
          IF (ALLOCATED(rmns_surface)) DEALLOCATE(rmns_surface)
          IF (ALLOCATED(zmnc_surface)) DEALLOCATE(zmnc_surface)
-         IF (ALLOCATED(potmnc_surface)) DEALLOCATE(potmnc_surface)
+         IF (ALLOCATED(potmns_surface)) DEALLOCATE(potmns_surface)
          IF (ALLOCATED(x_plasma)) DEALLOCATE(x_plasma)
          IF (ALLOCATED(y_plasma)) DEALLOCATE(y_plasma)
          IF (ALLOCATED(z_plasma)) DEALLOCATE(z_plasma)

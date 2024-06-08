@@ -1003,7 +1003,7 @@ class LIBSTELL():
 			'zmnc_plasma', 'lmnc_plasma', 'lmns_plasma' ]
 		realLen = [(scalar_data['mnmax_plasma'],1)]*len(realList)
 		realList.extend(['rmnc_surface', 'zmns_surface', 'rmns_surface', \
-			'zmnc_surface', 'potmnc_surface'])
+			'zmnc_surface', 'potmns_surface'])
 		realLen.extend([(scalar_data['mnmax_surface'],1)]*5)
 		realList.extend(['x_plasma', 'y_plasma', 'z_plasma', 'r_plasma', 'dsur_plasma', \
 			'nx_plasma', 'ny_plasma', 'nz_plasma', 'dxdu_plasma', \
