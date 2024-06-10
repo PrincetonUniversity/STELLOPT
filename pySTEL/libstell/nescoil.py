@@ -34,6 +34,62 @@ class NESCOIL(FourierRep):
 		for key in nescout_dict:
 			setattr(self, key, nescout_dict[key])
 
+	def bfield(self,x,y,z):
+		"""Evaluates the magnetic field from a NESCOIL surface current
+
+		This routine evaluates the magnetic field at a point in space
+		from a NESCOIL surface current.
+
+		Parameters
+		----------
+		x : float
+			X point to evaluate [m]
+		y : float
+			Y point to evaluate [m]
+		z : float
+			Z point to evaluate [m]
+		Returns
+		----------
+		bx : float
+			X-component of magnetic field [T]
+		by : float
+			Y-component of magnetic field [T]
+		bZ : float
+			Z-component of magnetic field [T]
+		"""
+		return self.libStell.nescout_bfield(x,y,z)
+
+	def plotpotential(self,ax=None):
+		"""Plots the NESCOIL Potential
+
+		This routine plots the NESCOIL code surface potential
+
+		Parameters
+		----------
+		ax : axes (optional)
+			Matplotlib axes object to plot to.
+		"""
+		import numpy as np
+		import matplotlib.pyplot as pyplot
+		lplotnow = False
+		if not ax:
+			ax = pyplot.axes()
+			lplotnow = True
+		theta = np.ndarray((self.nu,1))
+		zeta  = np.ndarray((self.nv,1))
+		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu-1)
+		for j in range(self.nv):  zeta[j]=2.0*np.pi*j/float(self.nv-1)
+		print(theta.shape)
+		pot = self.cfunct(theta,zeta,self.potmnc_surface,self.xm_surface,self.xn_surface)
+		#hmesh=ax.pcolormesh(theta,zeta,np.squeeze(pot[1,:,:]),cmap='jet',shading='gouraud')
+		hmesh=ax.pcolormesh(np.squeeze(pot[1,:,:]),cmap='jet',shading='gouraud')
+		#ax.semilogy(abscissa, data, **kwargs)
+		ax.set_xlabel('Toroidal angle [rad]')
+		ax.set_ylabel('Poloidal angle [rad]')
+		ax.set_title('NESCOIL Potential')
+		pyplot.colorbar(hmesh,label='$Pot$ [arb]',ax=ax)
+		if lplotnow: pyplot.show()
+
 
 
 # Main routine
