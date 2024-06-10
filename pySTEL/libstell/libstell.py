@@ -1010,12 +1010,57 @@ class LIBSTELL():
 			'dydu_plasma', 'dxdv_plasma', 'dydv_plasma', 'bn_plasma', 'db_normal', 'babs'])
 		realLen.extend([(scalar_data['nuvh1'],1)]*15)
 		realList.extend(['x_surface', 'y_surface', 'z_surface', 'r_surface', 'dsur_surface',\
-			'nx_surface', 'ny_surface', 'nz_surface', 'dxdu_surface', \
-			'dydu_surface', 'dxdv_surface', 'dydv_surface'])
-		realLen.extend([(scalar_data['nuvh'],1)]*12)
+			'nx_surface', 'ny_surface', 'nz_surface', 'xcur_surface', \
+			'ycur_surface', 'zcur_surface'])
+		realLen.extend([(scalar_data['nuvh'],1)]*11)
 		array_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen)
 		# Return
 		return scalar_data | array_data
+
+	def nescout_bfield(self,x,y,z):
+		"""Evaluates the magnetic field from a NESCOIL surface current
+
+		This routine evaluates the magnetic field at a point in space
+		from a NESCOIL surface current.
+
+		Parameters
+		----------
+		x : float
+			X point to evaluate [m]
+		y : float
+			Y point to evaluate [m]
+		z : float
+			Z point to evaluate [m]
+		Returns
+		----------
+		bx : float
+			X-component of magnetic field [T]
+		by : float
+			Y-component of magnetic field [T]
+		bZ : float
+			Z-component of magnetic field [T]
+		"""
+		import ctypes as ct
+		module_name = self.s1+'read_nescoil_mod_'+self.s2
+		# initialize values
+		bfield_init = getattr(self.libstell,module_name+'_nescoil_bfield_init_ctypes'+self.s3)
+		bfield_init.argtypes=None
+		bfield_init.restype=None
+		bfield_init()
+		# initialize values
+		bfield = getattr(self.libstell,module_name+'_nescoil_bfield'+self.s3)
+		bfield.argtypes=[ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
+		                 ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double)]
+		bfield.restype=None
+		x_ctype = ct.c_double(x)
+		y_ctype = ct.c_double(y)
+		z_ctype = ct.c_double(z)
+		bx_ctype = ct.c_double(0.0)
+		by_ctype = ct.c_double(0.0)
+		bz_ctype = ct.c_double(0.0)
+		bfield(ct.byref(x_ctype),ct.byref(y_ctype),ct.byref(z_ctype),\
+			     ct.byref(bx_ctype),ct.byref(by_ctype),ct.byref(bz_ctype))
+		return bx_ctype.value,by_ctype.value,bz_ctype.value
 
 	def get_module_vars(self,modName,booVar=None,booLen=None,\
 		intVar=None,intLen=None,realVar=None,realLen=None,\
