@@ -344,7 +344,7 @@ class LIBSTELL():
 				  'b_kick_min', 'b_kick_max', 'freq_kick', 'e_kick', \
 				  'rho_fullorbit', 'partvmax', 'rmin_fida', \
 				  'rmax_fida', 'zmin_fida', 'zmax_fida', 'phimin_fida', \
-				  'phimax_fida','t_fida']
+				  'phimax_fida', 't_fida', 'rho_max_dist']
 		realLen=[1]*len(realList)
 		realList.extend(['r_start_in', 'phi_start_in', 'z_start_in',\
 						 'vll_start_in', 'mu_start_in', 't_end_in', \

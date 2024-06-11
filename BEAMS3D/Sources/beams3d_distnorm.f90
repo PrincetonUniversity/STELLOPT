@@ -16,7 +16,8 @@
                               nr, nphi, nz
       USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof4, ns_prof5, dist5d_prof, &
-                               partvmax, dist5d_fida
+                               partvmax, dist5d_fida, h1_prof, h2_prof,&
+                               h3_prof
       USE beams3d_physics_mod, ONLY: beams3d_suv2rzp
       USE fidasim_input_mod, ONLY: beams3d_write_fidasim
       USE EZspline_obj
@@ -61,9 +62,12 @@
 #endif
       ! Do physical volume elements
       nvol = (ns_prof1)*(ns_prof2)*(ns_prof3)
-      ds   = 1.0/REAL(ns_prof1) !distribution defined on centers (half grid)
-      du   = pi2/REAL(ns_prof2)
-      dp   = pi2/REAL(ns_prof3)
+      ds   = 1.0/h1_prof
+      du   = 1.0/h2_prof
+      dp   = 1.0/h3_prof
+!      ds   = 1.0/REAL(ns_prof1) !distribution defined on centers (half grid)
+!      du   = pi2/REAL(ns_prof2)
+!      dp   = pi2/REAL(ns_prof3)
 
       !Initial condition near axis
       rt = -1 ! will then use 0.75 point of R-grid

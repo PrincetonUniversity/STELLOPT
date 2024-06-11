@@ -14,7 +14,7 @@ MODULE fidasim_input_mod
       ns_prof4, ns_prof5, dist5d_prof, &
       partvmax, dist5D_fida, &
       h2_prof, h3_prof, h4_prof, h5_prof, &
-      nsh_prof4,  r_h, p_h, z_h, e_h, pi_h
+      nsh_prof4,  r_h, p_h, z_h, e_h, pi_h, h1_prof
    USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
       zaxis, phiaxis, POT_ARR, &
       TE, TI, NE, npot, nte, nti, &
@@ -261,7 +261,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                         IF (x0<0) x0 = x0 + pi2
 
                         ! Calc dist func bins
-                        l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+                        l = MAX(MIN(CEILING(SQRT(y0)*h1_prof      ), ns_prof1), 1) ! Rho Bin
                         m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                         n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
                         rtemp(i,k,j) = SUM(dist5d_prof(:,l,m,n,:,:))!output in r-z-phi
@@ -347,7 +347,7 @@ SUBROUTINE beams3d_write_fidasim(write_type)
                         IF (x0<0) x0 = x0 + pi2
 
                         ! Calc dist func bins
-                        l = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+                        l = MAX(MIN(CEILING(SQRT(y0)*h1_prof     ), ns_prof1), 1) ! Rho Bin
                         m = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
                         n = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
                         dist5d_fida(:,:,i,k,j) = dist5d_temp(l,m,n,:,:) !output in r-z-phi
