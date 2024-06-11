@@ -168,7 +168,7 @@ SUBROUTINE beams3d_follow
        mytdex = 0
        ndt_max = 1
        ndt     = 0
-       CALL out_beams3d_nag(tf_nag,q)
+       CALL out_beams3d_gc(tf_nag,q)
        t_last(i) = tf_nag-dt
     END DO
 
@@ -212,7 +212,7 @@ SUBROUTINE beams3d_follow
           ! Save the point to index 1 with weight set to 0
           mytdex = 1; ndt=0; ndt_max = 1 ! Save the point
           t_last(i) = tf_nag ! Save timestep after follow_neut
-          CALL out_beams3d_nag(tf_nag,q)
+          CALL out_beams3d_gc(tf_nag,q)
           IF (tf_nag > t_end(i)) CYCLE
           ! Step to gyrocenter
           CALL beams3d_ionize(q)
@@ -221,7 +221,7 @@ SUBROUTINE beams3d_follow
           mytdex = 2; ndt=0; ndt_max = 1 ! Save point
           weight_save = weight(myline)
           weight(myline) = 0
-          CALL out_beams3d_nag(tf_nag,q)
+          CALL out_beams3d_gc(tf_nag,q)
           weight(myline) = weight_save
        END DO
     END IF

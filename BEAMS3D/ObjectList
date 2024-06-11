@@ -2,13 +2,13 @@ ObjectFiles = \
 beams3d_interface_mod.o \
 beams3d_beam_density.o \
 beams3d_duplicate_part.o \
-outpart_beams3d_nag.o \
+out_beams3d_part.o \
 beams3d_follow.o \
 beams3d_follow_fo.o \
 beams3d_init_fieldlines.o \
 beams3d_init_continuegrid.o \
 beams3d_imas_module.o \
-fpart_nag.o \
+fpart_eom.o \
 fpart_lsode.o \
 fpart_rkh68.o \
 beams3d_fix_poloidal.o \
@@ -37,7 +37,7 @@ beams3d_runtime.o \
 beams3d_physics_mod.o \
 beams3d_free.o \
 beams3d_init_restart.o \
-out_beams3d_nag.o \
+out_beams3d_gc.o \
 beams3d_read.o \
 beams3d_init_coil.o \
 beams3d_init_vmec.o \

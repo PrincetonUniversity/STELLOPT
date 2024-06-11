@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!     Function:      fgc_nag
+!     Function:      fgc_old
 !     Authors:       M. McMillan (matthew.mcmillan@my.wheaton.edu)
 !     Date:          06/20/2012
 !     Description:   This subroutine calculates the RHS of the ODE for 
@@ -12,7 +12,7 @@
 !
 !              https://mathworld.wolfram.com/CylindricalCoordinates.html
 !-----------------------------------------------------------------------
-      SUBROUTINE fgc_nag(t,q,qdot)
+      SUBROUTINE fgc_old(t,q,qdot)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -164,4 +164,4 @@
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------
-      END SUBROUTINE fgc_nag
+      END SUBROUTINE fgc_old
