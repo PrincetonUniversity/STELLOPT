@@ -1,12 +1,12 @@
 !-----------------------------------------------------------------------
-!     Function:      fpart_nag
+!     Function:      fpart_eom
 !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
 !     Date:          10/19/2021
 !     Description:   This subroutine calculates the RHS of the ODE for 
 !                    particle orbit following.
 !
 !-----------------------------------------------------------------------
-      SUBROUTINE fpart_nag(t,q,qdot)
+      SUBROUTINE fpart_eom(t,q,qdot)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -111,4 +111,4 @@
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------
-      END SUBROUTINE fpart_nag
+      END SUBROUTINE fpart_eom

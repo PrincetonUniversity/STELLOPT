@@ -1,11 +1,11 @@
 !-----------------------------------------------------------------------
-!     Function:      out_beams3d_nag
+!     Function:      out_beams3d_gc
 !     Authors:       S. Lazerson (lazerson@pppl.gov), M. McMillan (matthew.mcmillan@my.wheaton.edu)
 !     Date:          06/20/2012
 !     Description:   Save output from field line following while running
 !                    and updates progress bar.
 !-----------------------------------------------------------------------
-SUBROUTINE out_beams3d_nag(t, q)
+SUBROUTINE out_beams3d_gc(t, q)
     !-----------------------------------------------------------------------
     !     Libraries
     !-----------------------------------------------------------------------
@@ -149,7 +149,7 @@ SUBROUTINE out_beams3d_nag(t, q)
              wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*q(4)*q(4)/get_wall_area(l)
           ELSE
              end_state(myline) = 2
-             CALL fgc_nag(t,q2,qdot)
+             CALL fgc_eom(t,q2,qdot)
              qdot(4)=0
              wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*(SUM(qdot*qdot)+vperp*vperp)/get_wall_area(l)
           END IF
@@ -190,5 +190,5 @@ SUBROUTINE out_beams3d_nag(t, q)
     !-----------------------------------------------------------------------
     !     End Function
     !-----------------------------------------------------------------------
-END SUBROUTINE out_beams3d_nag
+END SUBROUTINE out_beams3d_gc
 
