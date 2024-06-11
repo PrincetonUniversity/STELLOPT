@@ -56,12 +56,14 @@
                                           db_normal, Babs
       ! FILE ACCESS
       CHARACTER(LEN=256), PRIVATE :: line
+      ! For the info routine
+      REAL(rprec), PRIVATE :: surf_area
       ! SHARED MEMORY
       INTEGER, PRIVATE :: win_X3D, win_Y3D, win_Z3D, win_KX3D, win_KY3D, win_KZ3D, win_x1, win_x2
       DOUBLE PRECISION, DIMENSION(:), POINTER, PRIVATE :: x1, x2
       DOUBLE PRECISION, DIMENSION(:,:,:),   POINTER, PRIVATE :: X3D, Y3D, Z3D, KX3D, KY3D, KZ3D
       ! Integration Related
-      INTEGER, PRIVATE :: nu_int, nx1, nx2
+      INTEGER, PRIVATE :: nu_int, nx1, nx2, u1,v1
       REAL(rprec), PRIVATE :: norm
       REAL*8, PRIVATE :: eps1, eps2, x1_min, x1_max, x2_min, x2_max
       DOUBLE PRECISION, PRIVATE :: x_f, y_f, z_f, norm_fsub
@@ -371,7 +373,7 @@
 
       SUBROUTINE nescoil_bfield_init_ctypes
          IMPLICIT NONE
-         CALL nescoil_bfield_init(256,256)
+         CALL nescoil_bfield_init(512,512)
       END SUBROUTINE nescoil_bfield_init_ctypes
 
       SUBROUTINE nescoil_info(iunit)
@@ -380,8 +382,9 @@
          INTEGER, INTENT(in)  :: iunit
          ! LOCAL VARIABLES
          ! BEGIN SUBROUTINE
-         WRITE(iunit,'(A)')                  '----- NESCOIL Current Surface -----'
-         !WRITE(iunit,'(A,ES11.4)')           '   MIN_GRID_DISTANCE = ',min_delta_x
+         WRITE(iunit,'(A)')                    '----- NESCOIL Current Surface -----'
+         WRITE(iunit,'(A,ES11.4,A)')           '   Surface Area: ',surf_area,' [m]'
+         WRITE(iunit,'(A,ES11.4,A)')           '   Poloidal Current: ',curpol*np,' [A]'
          !WRITE(iunit,'(A,I4,A,I4,A,I4,A,I3)')   '   NR = ',nr_vc,';   NU = ',nu_vc,';  NV = ',nv_vc,';  NFP = ',nvp/nv_vc
          !WRITE(iunit,'(A,I6)')                  '   NUVP = ',nuvp
          !WRITE(iunit,'(A,I6,A,I8,A)')                  '   MIN_CLS = ',MIN_CLS,'   (',IWRK,')'
@@ -390,15 +393,12 @@
 
       SUBROUTINE nescoil_bfield_init(nu_local, nv_local, comm)
          USE mpi_sharmem
-#if defined(MPI_OPT)
-         USE mpi
-#endif
+         USE mpi_inc
          IMPLICIT NONE
          INTEGER, INTENT(IN) :: nu_local
          INTEGER, INTENT(IN) :: nv_local
          INTEGER, INTENT(in), OPTIONAL :: comm
          INTEGER :: mn, shar_rank, shar_size,  shar_comm, nu1, u, v, ier, i1, i2
-         DOUBLE PRECISION :: factor
          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:),           &
                fmn_temp(:), yu(:), yv(:), cop(:), sip(:)
          DOUBLE PRECISION, ALLOCATABLE :: rreal(:,:), zreal(:,:), &
@@ -415,11 +415,12 @@
          IF (PRESENT(comm)) CALL MPI_BCAST(np,1,MPI_INTEGER,0,comm,ier)
 #endif
          ! Factors
-         factor = pi2 / DBLE(np) !alp
          nu_int = nu_local
          nvp    = (nv_local-1)*np + 1 ! Because of stellarator symmetry
-         norm   = one /(2*pi2*nu_local*nvp)
-         norm_fsub = np / (2*pi2)
+         norm   = DBLE(np) / DBLE(pi2*pi2*nu_local*nvp/2)
+         norm_fsub = DBLE(np) / (2*pi2)
+         u1 = nu_local-1
+         v1 = nvp - 1
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
          x1_min = 0; x2_min = 0
@@ -465,23 +466,23 @@
             IF (ASSOCIATED(KZ3D))  DEALLOCATE(KZ3D)
             ALLOCATE(x1(nx1))
             ALLOCATE(x2(nx2))
-            ALLOCATE(X3D(4,nu,nvp))
-            ALLOCATE(Y3D(4,nu,nvp))
-            ALLOCATE(Z3D(4,nu,nvp))
-            ALLOCATE(KX3D(4,nu,nvp))
-            ALLOCATE(KY3D(4,nu,nvp))
-            ALLOCATE(KZ3D(4,nu,nvp))
+            ALLOCATE(X3D(4,nu_local,nvp))
+            ALLOCATE(Y3D(4,nu_local,nvp))
+            ALLOCATE(Z3D(4,nu_local,nvp))
+            ALLOCATE(KX3D(4,nu_local,nvp))
+            ALLOCATE(KY3D(4,nu_local,nvp))
+            ALLOCATE(KZ3D(4,nu_local,nvp))
 #if defined(MPI_OPT)
          ENDIF
 #endif
          IF (shar_rank == 0) THEN
-            ALLOCATE(xu(nu),xv(nv))
+            ALLOCATE(xu(nu_local),xv(nv_local))
             ALLOCATE(rreal(nu_local,nv_local), &
                      zreal(nu_local,nv_local), &
                      rureal(nu_local,nv_local), &
                      rvreal(nu_local,nv_local), &
                      zureal(nu_local,nv_local), &
-                     zvreal(nu,nv_local), &
+                     zvreal(nu_local,nv_local), &
                      sxreal(nu_local,nv_local), &
                      syreal(nu_local,nv_local), &
                      szreal(nu_local,nv_local), &
@@ -495,15 +496,15 @@
             ALLOCATE(fmn_temp(mnmax_surface))
             FORALL(u=1:nu_local) xu(u) = DBLE(u-1)/DBLE(nu_local-1)
             FORALL(v=1:nv_local) xv(v) = DBLE(v-1)/DBLE(nv_local-1)
+            rreal = zero; rureal = zero; rvreal = zero
+            zreal = zero; zureal = zero; zvreal = zero
+            potu = zero; potv = zero
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,            &
                               rmnc_surface,xm_surface,xn_surface,  &
                               rreal,0,1)
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,            &
                               zmns_surface,xm_surface,xn_surface,  &
                               zreal,1,0)
-            !CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,            &
-            !                  potmns_surface,xm_surface,xn_surface,  &
-            !                  potreal,1,0)
             fmn_temp = -rmnc_surface*xm_surface
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,fmn_temp,xm_surface,xn_surface,rureal,1,0)
             fmn_temp = -rmnc_surface*xn_surface
@@ -518,15 +519,19 @@
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,fmn_temp,xm_surface,xn_surface,potv,0,0)
             DEALLOCATE(xu,xv,fmn_temp)
 
-            ! Add secular pieces
-            potu = potu - cut
-            potv = potv - cup
+
 
             ! Correct derivatives for missing pi2
             rureal = pi2*rureal
             rvreal = pi2*rvreal
             zureal = pi2*zureal
             zvreal = pi2*zvreal
+            potu   = pi2*potu
+            potv   = pi2*potv
+
+            ! Add secular pieces
+            potu = potu - cut
+            potv = potv - cup
 
             ! Calculate surface coords and normals
             ALLOCATE(xu(nv_local),xv(nv_local),yu(nv_local),yv(nv_local),cop(nv_local),sip(nv_local))
@@ -549,7 +554,10 @@
                potx(u,:) = potr(u,:)*cop - potp(u,:)*sip
                poty(u,:) = potr(u,:)*sip + potp(u,:)*cop
             END DO
-            PRINT *,np*SUM(SQRT(sxreal**2+syreal**2+szreal**2))/(nu_local*nv_local)
+            u = nu_local - 1
+            v = nv_local - 1
+            surf_area = np*SUM(SQRT( sxreal(1:u,1:v)**2+syreal(1:u,1:v)**2+szreal(1:u,1:v)**2))/(u*v)
+            PRINT *,surf_area
             Z3D(1,:,1:nv_local) = zreal
             KX3D(1,:,1:nv_local) = syreal*potz - szreal*poty
             KY3D(1,:,1:nv_local) = szreal*potx - sxreal*potz
@@ -624,18 +632,18 @@
          REAL(rprec), INTENT(in) :: x,y,z
          REAL(rprec), INTENT(out) :: bx,by,bz 
          ! LOCAL VARIABLES
-         DOUBLE PRECISION ::  gf(nu_int,nvp), gf3(nu_int,nvp)
+         DOUBLE PRECISION ::  gf(nu_int-1,nvp-1), gf3(nu_int-1,nvp-1)
 
-         gf = one / SQRT(   (x - X3D(1,:,:))**2 &
-                          + (y - Y3D(1,:,:))**2 &
-                          + (z - Z3D(1,:,:))**2 )
+         gf = one / SQRT(   (x - X3D(1,1:u1,1:v1))**2 &
+                          + (y - Y3D(1,1:u1,1:v1))**2 &
+                          + (z - Z3D(1,1:u1,1:v1))**2 )
          gf3 = gf*gf*gf
-         bx  = norm * SUM((   KY3D(1,:,:) * (z - Z3D(1,:,:)) &
-                            - KZ3D(1,:,:) * (y - Y3D(1,:,:)) ) *gf3 )
-         by  = norm * SUM((   KZ3D(1,:,:) * (x - X3D(1,:,:)) &
-                            - KX3D(1,:,:) * (z - Z3D(1,:,:)) ) *gf3 )
-         bz  = norm * SUM((   KX3D(1,:,:) * (y - Y3D(1,:,:)) &
-                            - KY3D(1,:,:) * (x - X3D(1,:,:)) ) *gf3 )
+         bx  = norm * SUM((   KY3D(1,1:u1,1:v1) * (z - Z3D(1,1:u1,1:v1)) &
+                            - KZ3D(1,1:u1,1:v1) * (y - Y3D(1,1:u1,1:v1)) ) *gf3 )
+         by  = norm * SUM((   KZ3D(1,1:u1,1:v1) * (x - X3D(1,1:u1,1:v1)) &
+                            - KX3D(1,1:u1,1:v1) * (z - Z3D(1,1:u1,1:v1)) ) *gf3 )
+         bz  = norm * SUM((   KX3D(1,1:u1,1:v1) * (y - Y3D(1,1:u1,1:v1)) &
+                            - KY3D(1,1:u1,1:v1) * (x - X3D(1,1:u1,1:v1)) ) *gf3 )
          RETURN
       END SUBROUTINE nescoil_bfield_dbl
 
@@ -797,9 +805,7 @@
 
       SUBROUTINE read_nescout_deallocate(comm)
          USE mpi_sharmem
-#if defined(MPI_OPT)
-         USE mpi
-#endif
+         USE mpi_inc
          IMPLICIT NONE
          INTEGER, INTENT(in), OPTIONAL :: comm
          INTEGER :: ier
