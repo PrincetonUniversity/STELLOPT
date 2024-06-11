@@ -217,11 +217,13 @@
                   beam(nparticles), weight(nparticles), &
                   vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
                   lgc2fo_start(nparticles))
-      CALL mpialloc(NEUTRONS_ARR, nbeams, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NEUTRONS)
-      CALL mpialloc(E_NEUTRONS, nbeams, myid_sharmem, 0, MPI_COMM_SHARMEM, win_E_NEUTRONS)
+      CALL mpialloc(NEUTRONS_ARR, 2, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NEUTRONS)
+      CALL mpialloc(E_NEUTRONS, 2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_E_NEUTRONS)
       IF (myworkid == master) THEN
-         NEUTRONS_ARR = 0.0
-         E_NEUTRONS = 0.0
+         NEUTRONS_ARR(1,1:nr1,1:nphi1,1:nz1) = rateDT
+         NEUTRONS_ARR(2,1:nr1,1:nphi1,1:nz1) = rateDDHe
+         E_NEUTRONS(1) = 14.06E6
+         E_NEUTRONS(2) = 2.45E6
       END IF
 
       ! We set this true because we assume all particles generated are gyrocenters. Should a
@@ -327,7 +329,6 @@
             ! Do the D-T -> H4 reaction
             l = l + 1
             vpart = sqrt(2*E_BEAMS(l)/mHe4)
-            E_NEUTRONS(l) = 14.06E6
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
                j = MOD(s-1,nr1*nphi1)
@@ -346,7 +347,6 @@
                Zatom(k1:k2)     = 2
                t_end(k1:k2)     = t_end_in(1)
                weight(k1:k2)    = rateDT(i,j,k)/n3d(i,j,k)
-               NEUTRONS_ARR(l,i,j,k) = rateDT(i,j,k)
                k1 = k2+1
             END DO
          END IF
@@ -373,7 +373,6 @@
                Zatom(k1:k2)     = 1
                t_end(k1:k2)     = t_end_in(1)
                weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
-               !NEUTRONS_ARR(l,i,j,k) = rateDDT(i,j,k)
                k1 = k2+1
             END DO
          END IF
@@ -400,7 +399,6 @@
                Zatom(k1:k2)     = 1
                t_end(k1:k2)     = t_end_in(1)
                weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
-               !NEUTRONS_ARR(l,i,j,k) = rateDDT(i,j,k)
                k1 = k2+1
             END DO
          END IF
@@ -408,7 +406,6 @@
             ! Do the D-D -> He3 reaction
             l = l + 1
             vpart = sqrt(2*E_BEAMS(l)/mHe3)
-            E_NEUTRONS(l) = 2.45E6
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
                j = MOD(s-1,nr1*nphi1)
@@ -427,7 +424,6 @@
                Zatom(k1:k2)     = 2
                t_end(k1:k2)     = t_end_in(1)
                weight(k1:k2)    = rateDDHe(i,j,k)/n3d(i,j,k)
-               NEUTRONS_ARR(l,i,j,k) = rateDDHe(i,j,k)
                k1 = k2+1
             END DO
          END IF
