@@ -1017,7 +1017,7 @@ class LIBSTELL():
 		# Return
 		return scalar_data | array_data
 
-	def nescout_bfield(self,x,y,z):
+	def nescout_bfield(self,x,y,z,istat=0):
 		"""Evaluates the magnetic field from a NESCOIL surface current
 
 		This routine evaluates the magnetic field at a point in space
@@ -1031,6 +1031,8 @@ class LIBSTELL():
 			Y point to evaluate [m]
 		z : float
 			Z point to evaluate [m]
+		istat : integer
+			Status optional (set to -327 to use explicit integration)
 		Returns
 		----------
 		bx : float
@@ -1048,9 +1050,10 @@ class LIBSTELL():
 		bfield_init.restype=None
 		bfield_init()
 		# initialize values
-		bfield = getattr(self.libstell,module_name+'_nescoil_bfield'+self.s3)
+		bfield = getattr(self.libstell,module_name+'_nescoil_bfield_adapt_dbl'+self.s3)
 		bfield.argtypes=[ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
-		                 ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double)]
+		                 ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
+		                 ct.POINTER(ct.c_int)]
 		bfield.restype=None
 		x_ctype = ct.c_double(x)
 		y_ctype = ct.c_double(y)
@@ -1058,8 +1061,9 @@ class LIBSTELL():
 		bx_ctype = ct.c_double(0.0)
 		by_ctype = ct.c_double(0.0)
 		bz_ctype = ct.c_double(0.0)
+		istat_ctype = ct.c_int(istat)
 		bfield(ct.byref(x_ctype),ct.byref(y_ctype),ct.byref(z_ctype),\
-			     ct.byref(bx_ctype),ct.byref(by_ctype),ct.byref(bz_ctype))
+			     ct.byref(bx_ctype),ct.byref(by_ctype),ct.byref(bz_ctype),ct.byref(istat_ctype))
 		return bx_ctype.value,by_ctype.value,bz_ctype.value
 
 	def get_module_vars(self,modName,booVar=None,booLen=None,\

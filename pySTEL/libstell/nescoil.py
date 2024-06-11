@@ -57,7 +57,7 @@ class NESCOIL(FourierRep):
 		bZ : float
 			Z-component of magnetic field [T]
 		"""
-		return self.libStell.nescout_bfield(x,y,z)
+		return self.libStell.nescout_bfield(x,y,z,istat=-327)
 
 	def plotpotential(self,ax=None):
 		"""Plots the NESCOIL Potential
