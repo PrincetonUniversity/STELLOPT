@@ -26,7 +26,7 @@ MODULE beams3d_physics_mod
                                end_state, fact_crit, fact_crit_pro, fact_pa, &
                                fact_vsound, fact_coul, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
-                               ns_prof5, my_end
+                               ns_prof5, my_end, fact_crit_legacy
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
                               MODB_spl, MODB4D, &
                               phimax, S4D, X4D, Y4D, TE4D, NE4D, TI4D, ZEFF4D, &
@@ -89,10 +89,10 @@ MODULE beams3d_physics_mod
          IMPLICIT NONE
          DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
-         DOUBLE PRECISION :: ne_cm,coulomb_log,fact_crit_legacy
+         DOUBLE PRECISION :: ne_cm,coulomb_log
          ne_cm = ne_in * 1E-6
          coulomb_log = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
-         fact_crit_legacy = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0)
+         !fact_crit_legacy = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0)
          slow_par(1) = fact_crit_legacy*SQRT(te_in) 
          slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
          slow_par(3) =Zeff_in*fact_pa         
@@ -331,26 +331,10 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-
-            slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-            vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
-            tau_spit_inv = one/slow_par(2)
-            vc3_tauinv = vcrit_cube*tau_spit_inv
-            !WRITE(6, *) 'NRL19: ',slow_par, vc3_tauinv*slow_par(3)
-            !slow_par = coll_op_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-            !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
-            !vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
-            !tau_spit_inv = one/slow_par(2)
-            !vc3_tauinv = vcrit_cube*tau_spit_inv
-            !WRITE(6, *) 'NUBEAM: ', slow_par , vc3_tauinv*slow_par(3)
-
-
-
-            ! vcrit_cube = v_crit*v_crit*v_crit
-
-               
-            ! tau_spit_inv = one/tau_spit
-            ! vc3_tauinv = vcrit_cube*tau_spit_inv
+               slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+               vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
+               tau_spit_inv = one/slow_par(2)
+               vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
 
             !-----------------------------------------------------------
@@ -405,7 +389,6 @@ MODULE beams3d_physics_mod
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
            zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
-           !IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
            vll = zeta*speed
 
            !------------------------------------------------------------
@@ -568,13 +551,7 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-
                slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-               !WRITE(6, *) 'NRL19: ', slow_par
-               !slow_par = coll_op_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-               !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
-               !WRITE(6, *) 'NUBEAM: ', slow_par
-
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
@@ -635,7 +612,6 @@ MODULE beams3d_physics_mod
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
            zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
-           !IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
            vll = zeta*speed
 
            !------------------------------------------------------------

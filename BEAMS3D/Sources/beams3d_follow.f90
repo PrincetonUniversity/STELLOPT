@@ -128,6 +128,7 @@ SUBROUTINE beams3d_follow
     ! Some helpers
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
     fact_crit= SQRT(2.0*e_charge/electron_mass)*(0.75*sqrt_pi*electron_mass*plasma_Zmean/plasma_mass)**(1.0/3.0) ! Wesson pg 226 5.4.9
+    fact_crit_legacy = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0)
     !fact_crit=fact_crit_pro*(plasma_Zmean/plasma_mass)**(1.0/3.0)
     !fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick !old
     !fact_kick = 2*freq_kick*E_kick
