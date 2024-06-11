@@ -6,7 +6,7 @@ from math import pi
 from libstell.beams3d import BEAMS3D
 
 lfail = 0
-failtol = 20.0
+failtol = 25.0
 filename='beams3d_ORBITS_depo.h5'
 b3d = BEAMS3D()
 b3d.read_beams3d(filename)

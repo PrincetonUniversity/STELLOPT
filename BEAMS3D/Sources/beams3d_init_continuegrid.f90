@@ -20,7 +20,7 @@ SUBROUTINE beams3d_init_continuegrid
       ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
       phiedge_eq, reff_eq, NI_spl_s, NI,&
       s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
-   USE beams3d_lines, ONLY: GFactor, ns_prof1
+   USE beams3d_lines, ONLY: GFactor, ns_prof1, h1_prof
    USE read_beams3d_mod, ONLY: get_beams3d_grid, get_beams3d_B, &
       read_beams3d_deallocate, &
       get_beams3d_magaxis, get_beams3d_gridB
