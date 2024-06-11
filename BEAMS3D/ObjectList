@@ -31,7 +31,6 @@ beams3d_init_mgrid.o \
 jacobian_lsode.o \
 beams3d_write.o \
 beams3d_diagnostics.o \
-fgc_nag.o \
 fgc_eom.o \
 beams3d_main.o \
 beams3d_runtime.o \
