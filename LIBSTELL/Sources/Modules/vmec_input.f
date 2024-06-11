@@ -107,6 +107,7 @@
       SUBROUTINE read_indata_namelist (iunit, istat)
       INTEGER, INTENT(IN) :: iunit
       INTEGER, INTENT(OUT) :: istat
+      ChARACTER(len=256) :: line
 
 !
 !     INITIALIZATIONS
@@ -187,6 +188,13 @@
       IF (iunit.eq.-327) RETURN
       
       READ (iunit, nml=indata, iostat=istat)
+
+      IF (istat /= 0) THEN
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         CALL FLUSH(6)
+      END IF
 
       IF (ALL(niter_array == -1)) niter_array = niter
       WHERE (raxis .ne. 0._dp) 
