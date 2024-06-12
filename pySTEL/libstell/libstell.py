@@ -989,30 +989,50 @@ class LIBSTELL():
 		intList  = ['nu', 'nv', 'nu1', 'nv1', 'mpol', 'ntor', 'mf', 'nf', 'md', 'nd', 'np', \
 					'ibex', 'mstrt', 'mstep', 'mkeep', 'mdspw', 'w_psurf', 'w_csurf', \
 					'w_bnuv', 'w_jsurf', 'w_xerr', 'w_svd', 'mnmax_plasma', \
-					'mnmax_surface', 'nmax', 'mnd', 'nuv', 'nuv1', 'nuvh', 'nuvh1']
+					'mnmax_surface', 'nmax', 'mnd', 'nuv', 'nuv1', 'nuvh', 'nuvh1',\
+					'mnmax_pot']
 		intLen   = [1]*len(intList)
 		realList = ['iota_edge', 'phip_edge', 'curpol', 'cut', 'cup', 'curwt', 'trgwt']
 		realLen = [1]*len(realList)
 		scalar_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen)
 		# Get 1D Int Arrays
-		intList= ['xm_plasma', 'xn_plasma','xm_surface', 'xn_surface']
+		intList= ['xm_plasma', 'xn_plasma','xm_surface', 'xn_surface', 'xm_pot', 'xn_pot']
 		intLen = [(scalar_data['mnmax_plasma'],1),(scalar_data['mnmax_plasma'],1),\
-			(scalar_data['mnmax_surface'],1),(scalar_data['mnmax_surface'],1)]
+			(scalar_data['mnmax_surface'],1),(scalar_data['mnmax_surface'],1),\
+			(scalar_data['mnmax_pot'],1),(scalar_data['mnmax_pot'],1)]
 		# Get 1D Real Arrays
 		realList = ['rmnc_plasma', 'zmns_plasma', 'rmns_plasma', \
 			'zmnc_plasma', 'lmnc_plasma', 'lmns_plasma' ]
 		realLen = [(scalar_data['mnmax_plasma'],1)]*len(realList)
 		realList.extend(['rmnc_surface', 'zmns_surface', 'rmns_surface', \
-			'zmnc_surface', 'potmns_surface'])
-		realLen.extend([(scalar_data['mnmax_surface'],1)]*5)
-		realList.extend(['x_plasma', 'y_plasma', 'z_plasma', 'r_plasma', 'dsur_plasma', \
-			'nx_plasma', 'ny_plasma', 'nz_plasma', 'dxdu_plasma', \
-			'dydu_plasma', 'dxdv_plasma', 'dydv_plasma', 'bn_plasma', 'db_normal', 'babs'])
-		realLen.extend([(scalar_data['nuvh1'],1)]*15)
-		realList.extend(['x_surface', 'y_surface', 'z_surface', 'r_surface', 'dsur_surface',\
-			'nx_surface', 'ny_surface', 'nz_surface', 'xcur_surface', \
-			'ycur_surface', 'zcur_surface'])
-		realLen.extend([(scalar_data['nuvh'],1)]*11)
+			'zmnc_surface'])
+		realLen.extend([(scalar_data['mnmax_surface'],1)]*4)
+		realList.extend(['potmns_surface'])
+		realLen.extend([(scalar_data['mnmax_pot'],1)]*1)
+		if scalar_data['w_psurf'] > 1:
+			realList.extend(['x_plasma', 'y_plasma', 'z_plasma', 'r_plasma'])
+			realLen.extend([(scalar_data['nuvh1'],1)]*4)
+		if scalar_data['w_psurf'] > 2:
+			realList.extend(['dsur_plasma', 'nx_plasma', 'ny_plasma', 'nz_plasma'])
+			realLen.extend([(scalar_data['nuvh1'],1)]*4)
+		if scalar_data['w_psurf'] > 3:
+			realList.extend(['dxdu_plasma', 'dydu_plasma', 'dxdv_plasma', 'dydv_plasma'])
+			realLen.extend([(scalar_data['nuvh1'],1)]*4)
+		if scalar_data['w_bnuv'] > 0:
+			realList.extend(['db_normal', 'babs'])
+			realLen.extend([(scalar_data['nuvh1'],1)]*2)
+		if scalar_data['w_bnuv'] > 1:
+			realList.extend(['bn_plasma'])
+			realLen.extend([(scalar_data['nuvh1'],1)])
+		if scalar_data['w_csurf'] > 1:
+			realList.extend(['x_surface', 'y_surface', 'z_surface', 'r_surface'])
+			realLen.extend([(scalar_data['nuvh'],1)]*4)
+		if scalar_data['w_csurf'] > 2:
+			realList.extend(['dsur_surface','nx_surface', 'ny_surface', 'nz_surface'])
+			realLen.extend([(scalar_data['nuvh'],1)]*4)
+		if scalar_data['w_csurf'] > 3:
+			realList.extend(['xcur_surface', 'ycur_surface', 'zcur_surface'])
+			realLen.extend([(scalar_data['nuvh'],1)]*3)
 		array_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen)
 		# Return
 		return scalar_data | array_data
