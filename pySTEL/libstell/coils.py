@@ -403,11 +403,18 @@ class COILSET(LIBSTELL):
 			for j in range(self.groups[i].ncoils):
 				self.groups[i].coils[j].surfDist(xs,ys,zs)
 
-	def blenderCoil(self,dist=0.2):
+	def blenderCoil(self,dist=0.2,lfield_period=False):
 		"""Generates the lists Blender needs to render a coilset
 
 		This routine generates the verticies and faces lists which
 		Blender needs to render a coil.
+
+		Parameters
+		----------
+		dist : float
+			Finite build coil width [m]
+		lfield_period : boolean
+			Return coilset over one field period (default: False)
 
 		Returns
 		----------
@@ -422,7 +429,9 @@ class COILSET(LIBSTELL):
 		faces = []
 		l = int(0)
 		for i in range(self.ngroups):
-			for j in range(self.groups[i].ncoils):
+			ncoil_max = self.groups[i].ncoils
+			if (lfield_period): ncoil_max = 1
+			for j in range(ncoil_max):
 				xx,yy,zz = self.groups[i].coils[j].finiteBuildCoil(width=dist,height=dist)
 				for k in range(xx.shape[1]-1):
 					vertices.append((xx[0,k],yy[0,k],zz[0,k]))
@@ -446,13 +455,6 @@ class COILSET(LIBSTELL):
 				vertices.append((xx[2,-1],yy[2,-1],zz[2,-1]))
 				vertices.append((xx[3,-1],yy[3,-1],zz[3,-1]))
 				l = l + 4
-		# Last step
-		#vertices = []
-		#faces = []
-		#for i in range(self.nvertex):
-		#	vertices.append((self.vertex[i,0],self.vertex[i,1],self.vertex[i,2]))
-		#for i in range(self.nfaces):
-		#	faces.append((int(self.faces[i,0]),int(self.faces[i,1]),int(self.faces[i,2])))
 		return vertices,faces
 
 
