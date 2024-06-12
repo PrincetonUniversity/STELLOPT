@@ -28,11 +28,12 @@
                  ibex, mstrt, mstep, mkeep, mdspw, w_psurf, w_csurf, &
                  w_bnuv, w_jsurf, w_xerr, w_svd, mnmax_plasma, &
                  mnmax_surface, nmax, mnd, nuv, nuv1, nuvh, nuvh1, &
-                 nvp
+                 nvp, mnmax_pot
       REAL(rprec) :: iota_edge, phip_edge, curpol, cut, cup, curwt, &
                      trgwt, fnuv, alp
       INTEGER, DIMENSION(:), ALLOCATABLE ::xm_plasma, xn_plasma,      & 
-                                          xm_surface, xn_surface 
+                                          xm_surface, xn_surface,     &
+                                          xm_pot, xn_pot 
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::   &
                                           rmnc_plasma, zmns_plasma,   &
                                           rmns_plasma, zmnc_plasma,   &
@@ -184,9 +185,11 @@
                   IF (w_psurf>2 .or. w_psurf==-3) CALL read_nescout_plasmanormal(iunit,istat)
                   IF (w_psurf>2 .or. w_psurf==-3) CALL read_nescout_plasmaderiv(iunit,istat)
                CASE("Calculated bn_ext(u,v) on plasma surface")
-                  READ(iunit, '(A)', iostat=istat) line
-                  ALLOCATE(bn_plasma(nuvh1))
-                  READ(iunit,*) bn_plasma
+                  IF ( w_bnuv > 1 .or. w_bnuv == -2 ) THEN
+                     READ(iunit, '(A)', iostat=istat) line
+                     ALLOCATE(bn_plasma(nuvh1))
+                     READ(iunit,*) bn_plasma
+                  END IF
                CASE("----- Calling Surface_Coil -----")
                   IF (w_csurf>0 .or. w_csurf==-1) THEN
                      n = MAXVAL(ABS(xn_surface))
@@ -199,9 +202,11 @@
                   IF (w_csurf>2 .or. w_csurf==-3) CALL read_nescout_surfacenormal(iunit,istat)
                   IF (w_csurf>3 .or. w_csurf==-4) CALL read_nescout_surfacecurrent(iunit,istat)
                CASE("---- Phi(m,n) for least squares ---")
-                  ALLOCATE(potmns_surface(mnmax_surface))
-                  DO n = 1, mnmax_surface
-                     READ(iunit,'(i3,2x,i3,2x,g25.16)') mtemp,ntemp,potmns_surface(n)
+                  mnmax_pot = (mf+1)*(2*nf+1)
+                  ALLOCATE(xm_pot(mnmax_pot),xn_pot(mnmax_pot))
+                  ALLOCATE(potmns_surface(mnmax_pot))
+                  DO n = 1, mnmax_pot
+                     READ(iunit,'(i3,2x,i3,2x,g25.16)') xm_pot(n),xn_pot(n),potmns_surface(n)
                   END DO
                CASE("----- Calling Surfcur_Diag -----")
                   READ(iunit, '(A)', iostat=istat) line
@@ -373,7 +378,7 @@
 
       SUBROUTINE nescoil_bfield_init_ctypes
          IMPLICIT NONE
-         CALL nescoil_bfield_init(512,512)
+         CALL nescoil_bfield_init(64,64)
       END SUBROUTINE nescoil_bfield_init_ctypes
 
       SUBROUTINE nescoil_info(iunit)
@@ -417,10 +422,12 @@
          ! Factors
          nu_int = nu_local
          nvp    = (nv_local-1)*np + 1 ! Because of stellarator symmetry
-         norm   = DBLE(np) / DBLE(pi2*pi2*nu_local*nvp/2)
-         norm_fsub = DBLE(np) / (2*pi2)
+         !norm   = DBLE(np) / DBLE(pi2*pi2*nu_local*nvp/2)
          u1 = nu_local-1
          v1 = nvp - 1
+         !norm = 1E-7/(u1*v1)
+         norm   = DBLE(np) / DBLE(pi2*2*u1*v1)
+         norm_fsub = DBLE(np) / (2*pi2)
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
          x1_min = 0; x2_min = 0
@@ -513,10 +520,12 @@
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,fmn_temp,xm_surface,xn_surface,zureal,0,0) 
             fmn_temp =  zmns_surface*xn_surface
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,fmn_temp,xm_surface,xn_surface,zvreal,0,0)
-            fmn_temp =  potmns_surface*xm_surface
-            CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,fmn_temp,xm_surface,xn_surface,potu,0,0)
-            fmn_temp =  potmns_surface*xn_surface
-            CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,fmn_temp,xm_surface,xn_surface,potv,0,0)
+            DEALLOCATE(fmn_temp)
+            ALLOCATE(fmn_temp(mnmax_pot))
+            fmn_temp =  potmns_surface*xm_pot
+            CALL mntouv_local(mnmax_pot,nu_local,nv_local,xu,xv,fmn_temp,xm_pot,xn_pot,potu,0,1)
+            fmn_temp =  potmns_surface*xn_pot
+            CALL mntouv_local(mnmax_pot,nu_local,nv_local,xu,xv,fmn_temp,xm_pot,xn_pot,potv,0,0)
             DEALLOCATE(xu,xv,fmn_temp)
 
 
@@ -526,8 +535,8 @@
             rvreal = pi2*rvreal
             zureal = pi2*zureal
             zvreal = pi2*zvreal
-            potu   = pi2*potu
-            potv   = pi2*potv
+            potu   = potu
+            potv   = potv
 
             ! Add secular pieces
             potu = potu - cut
@@ -548,12 +557,17 @@
                syreal(u,:) = -xv(:)*zureal(u,:) + zvreal(u,:)*xu(:)
                szreal(u,:) = -xu(:)*yv(:)       + yu(:)*xv(:)
                ! Potential
-               potr(u,:) = potu(u,:)*rureal(u,:) + potv(u,:)*rvreal(u,:)
-               potp(u,:) = potv(u,:)*rreal(u,:)
-               potz(u,:) = potu(u,:)*zureal(u,:) + potv(u,:)*zvreal(u,:)
-               potx(u,:) = potr(u,:)*cop - potp(u,:)*sip
-               poty(u,:) = potr(u,:)*sip + potp(u,:)*cop
+               !potr(u,:) = potu(u,:)*rureal(u,:) + potv(u,:)*rvreal(u,:)
+               !potp(u,:) = potv(u,:)*rreal(u,:)*alp
+               !potx(u,:) = potr(u,:)*cop - potp(u,:)*sip
+               !poty(u,:) = potr(u,:)*sip + potp(u,:)*cop
+               potx(u,:) = potu(u,:)*xu          + potv(u,:)*xv
+               poty(u,:) = potu(u,:)*yu          + potv(u,:)*yv
+               potz(u,:) = potu(u,:)*zureal(u,:) - potv(u,:)*zvreal(u,:)
             END DO
+            WRITE(327,*) X3D(1,:,1:nv_local)
+            WRITE(328,*) Y3D(1,:,1:nv_local)
+            WRITE(329,*) zreal
             u = nu_local - 1
             v = nv_local - 1
             surf_area = np*SUM(SQRT( sxreal(1:u,1:v)**2+syreal(1:u,1:v)**2+szreal(1:u,1:v)**2))/(u*v)
@@ -562,6 +576,9 @@
             KX3D(1,:,1:nv_local) = syreal*potz - szreal*poty
             KY3D(1,:,1:nv_local) = szreal*potx - sxreal*potz
             KZ3D(1,:,1:nv_local) = sxreal*poty - syreal*potx
+            WRITE(337,*) KX3D(1,:,1:nv_local)
+            WRITE(338,*) KY3D(1,:,1:nv_local)
+            WRITE(339,*) KZ3D(1,:,1:nv_local)
             DEALLOCATE(xu,xv,yu,yv,cop,sip)
             DEALLOCATE(sxreal,syreal,szreal,rureal,rvreal,zureal,zvreal,potu,potv,potr,potp,potz,potx,poty)
 
@@ -637,12 +654,12 @@
          gf = one / SQRT(   (x - X3D(1,1:u1,1:v1))**2 &
                           + (y - Y3D(1,1:u1,1:v1))**2 &
                           + (z - Z3D(1,1:u1,1:v1))**2 )
-         gf3 = gf*gf*gf
-         bx  = norm * SUM((   KY3D(1,1:u1,1:v1) * (z - Z3D(1,1:u1,1:v1)) &
+         gf3 = gf*gf*gf*norm
+         bx  = SUM((   KY3D(1,1:u1,1:v1) * (z - Z3D(1,1:u1,1:v1)) &
                             - KZ3D(1,1:u1,1:v1) * (y - Y3D(1,1:u1,1:v1)) ) *gf3 )
-         by  = norm * SUM((   KZ3D(1,1:u1,1:v1) * (x - X3D(1,1:u1,1:v1)) &
+         by  = SUM((   KZ3D(1,1:u1,1:v1) * (x - X3D(1,1:u1,1:v1)) &
                             - KX3D(1,1:u1,1:v1) * (z - Z3D(1,1:u1,1:v1)) ) *gf3 )
-         bz  = norm * SUM((   KX3D(1,1:u1,1:v1) * (y - Y3D(1,1:u1,1:v1)) &
+         bz  = SUM((   KX3D(1,1:u1,1:v1) * (y - Y3D(1,1:u1,1:v1)) &
                             - KY3D(1,1:u1,1:v1) * (x - X3D(1,1:u1,1:v1)) ) *gf3 )
          RETURN
       END SUBROUTINE nescoil_bfield_dbl
@@ -824,6 +841,8 @@
          IF (ALLOCATED(rmns_surface)) DEALLOCATE(rmns_surface)
          IF (ALLOCATED(zmnc_surface)) DEALLOCATE(zmnc_surface)
          IF (ALLOCATED(potmns_surface)) DEALLOCATE(potmns_surface)
+         IF (ALLOCATED(xm_pot)) DEALLOCATE(xm_pot)
+         IF (ALLOCATED(xn_pot)) DEALLOCATE(xn_pot)
          IF (ALLOCATED(x_plasma)) DEALLOCATE(x_plasma)
          IF (ALLOCATED(y_plasma)) DEALLOCATE(y_plasma)
          IF (ALLOCATED(z_plasma)) DEALLOCATE(z_plasma)
