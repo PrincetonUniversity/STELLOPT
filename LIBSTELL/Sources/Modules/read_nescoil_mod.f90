@@ -425,7 +425,6 @@
          !norm   = DBLE(np) / DBLE(pi2*pi2*nu_local*nvp/2)
          u1 = nu_local-1
          v1 = nvp - 1
-         !norm = 1E-7/(u1*v1)
          norm   = DBLE(np) / DBLE(pi2*2*u1*v1)
          norm_fsub = DBLE(np) / (2*pi2)
          ! These must be consistent with splines below
@@ -561,8 +560,8 @@
                !potp(u,:) = potv(u,:)*rreal(u,:)*alp
                !potx(u,:) = potr(u,:)*cop - potp(u,:)*sip
                !poty(u,:) = potr(u,:)*sip + potp(u,:)*cop
-               potx(u,:) = potu(u,:)*xu          + potv(u,:)*xv
-               poty(u,:) = potu(u,:)*yu          + potv(u,:)*yv
+               potx(u,:) = potu(u,:)*xu          - potv(u,:)*xv
+               poty(u,:) = potu(u,:)*yu          - potv(u,:)*yv
                potz(u,:) = potu(u,:)*zureal(u,:) - potv(u,:)*zvreal(u,:)
             END DO
             WRITE(327,*) X3D(1,:,1:nv_local)
