@@ -23,7 +23,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
                              dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
                              h2_prof, h3_prof, h4_prof, h5_prof, my_end, &
-                             r_h, p_h, z_h, e_h, pi_h, E_by_v
+                             r_h, p_h, z_h, e_h, pi_h, E_by_v, h1_prof
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics_gc
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
@@ -42,7 +42,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     !     jint      Index along phi
     !-----------------------------------------------------------------------
     LOGICAL             :: lhit
-    INTEGER             :: ier, d1, d2, d3, d4, d5
+    INTEGER             :: ier, d1, d2, d3, d4, d5, d1f
     DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw, vperp
     DOUBLE PRECISION    :: q2(4),qdot(4)
     ! For splines
@@ -97,7 +97,7 @@ SUBROUTINE out_beams3d_nag(t, q)
           IF (x0 < 0) x0 = x0 + pi2
           IF (z0 < 0) z0 = z0 + pi2
           vperp = SQRT(2*moment*fval(1)/mymass)
-          d1 = MAX(MIN(CEILING(rho_help*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+          d1 = MAX(MIN(CEILING(rho_help*h1_prof      ), ns_prof1), 1) ! Rho Bin
           d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
           d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
           d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
@@ -109,13 +109,13 @@ SUBROUTINE out_beams3d_nag(t, q)
           IF (lfidasim_cyl) THEN
              !x0 = MOD(q(2), phimax_fida)
              !IF (x0 < 0) x0 = x0 + phimax_fida
-            d1 = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
+            d1f = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
             d2 = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
             d3 = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
-            y0 = (q(4)**2+vperp**2)
+            y0 = MAX((q(4)**2+vperp**2),1.0)
             d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h),1),nenergy_fida)
             d5 = MIN(MAX(CEILING((q(4)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
-            dist5d_fida(d1,d3,d2,d4,d5) = dist5d_fida(d1,d3,d2,d4,d5) + xw
+            dist5d_fida(d1f,d3,d2,d4,d5) = dist5d_fida(d1f,d3,d2,d4,d5) + xw
           END IF
           IF (lcollision) CALL beams3d_physics_gc(t,q)
           IF (ltherm) THEN

@@ -198,7 +198,10 @@
          CALL MPI_FILE_OPEN(MPI_COMM_STEL, TRIM(id_string), &
                             MPI_MODE_RDONLY, MPI_INFO_NULL, key, ierr_mpi )
          CALL MPI_FILE_CLOSE(key,ier)
-         CALL read_stellopt_input(TRIM(id_string),ier,myid)
+         CALL init_stellopt_input
+         CALL read_stellopt_input(TRIM(id_string),ier)
+         CALL stellopt_read_cws
+         !CALL stellopt_write_header
 
          ! Now fix a couple things before we re-run the optimizer
          id_string = id_string(7:LEN(id_string))
@@ -206,19 +209,27 @@
       END IF
 
       IF (myworkid == master) THEN
+
          CALL stellopt_optimize
+
+!DEC$ IF DEFINED (MPI_OPT)
+         ! Only the master threads are part of MPI_COMM_STEL
+         ierr_mpi = 0
+         CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FREE_ERR,'stellopt_main: MPI_COMM_STEL',ierr_mpi)
+!DEC$ ENDIF
+
+         ! Get workers
          ltst  = .false.
          tstr1 = 'exit'
          tstr2 = ''
          CALL stellopt_paraexe(tstr1,tstr2,ltst)
+
       END IF
 
       ! All procs (master and workers) will do this part
       ! Clean up
 !DEC$ IF DEFINED (MPI_OPT)
-      ierr_mpi = 0
-      CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FREE_ERR,'stellopt_main',ierr_mpi)
       ierr_mpi = 0
       CALL MPI_FINALIZE(ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'stellopt_main',ierr_mpi)

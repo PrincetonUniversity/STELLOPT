@@ -15,18 +15,20 @@
       USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
       USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
       USE read_fieldlines_mod, ONLY: read_fieldlines_mag, get_fieldlines_grid
+      USE read_beams3d_mod, ONLY: read_beams3d_mag, get_beams3d_grid
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input, init_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
                                ndot_prof, j_prof, dense_prof, &
-                               partvmax, partpmax, &
+                               partvmax, partpmax, rho_max_dist,&
                                end_state, ns_prof1, ns_prof2, ns_prof3, &
                                ns_prof4, ns_prof5, dist5d_prof, win_dist5d, &
                                dist5d_fida, win_dist5d_fida,&
                                win_epower, win_ipower, win_ndot, win_jprof, &
-                               win_dense, nsh_prof4, h2_prof, h3_prof, &
-      h4_prof, h5_prof, r_h, p_h, z_h, e_h, pi_h
+                               win_dense, nsh_prof4, &
+                               h1_prof,h2_prof, h3_prof, h4_prof, h5_prof, &
+                               r_h, p_h, z_h, e_h, pi_h
       USE fidasim_input_mod, ONLY: beams3d_write_fidasim
       USE wall_mod
       USE mpi_params
@@ -114,10 +116,28 @@
          CALL read_fieldlines_mag('fieldlines_'//TRIM(id_string)//'.h5',MPI_COMM_SHARMEM,ier)
          phimin = 0
          CALL get_fieldlines_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
+      ELSE IF (lcontinue_grid .and. lread_input) THEN
+         CALL read_beams3d_input('input.'//TRIM(id_string),ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE:     input.' // TRIM(id_string)
+         IF (lverb) WRITE(6,'(A)') '   RESTART GRID FILE: ' // TRIM(continue_grid_string)
+         CALL read_beams3d_mag(TRIM(continue_grid_string),MPI_COMM_SHARMEM,ier)
+         phimin = 0
+         CALL get_beams3d_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)         
       END IF
 
+#if defined(HDF5_PAR)
+      ! Makes sure that NPARTICLES is divisible by the number of processes
+      ! Needed for HDF5 parallel writes.
+      IF (lbeam .or. lfusion) THEN
+         i = nparticles_start/nprocs_beams
+         IF (i*nprocs_beams .ne. nparticles_start) THEN
+            nparticles_start = (i+1)*nprocs_beams
+         END IF
+      END IF
+#endif
+
       ! Handle particle restarting
-      IF (lrestart_particles) THEN
+      IF (lrestart_particles .or. lcontinue_grid) THEN
         ldepo = .false.
         lbbnbi = .false.
         lbeam = .false.
@@ -134,6 +154,9 @@
          ns_prof5 = 4
       END IF
 
+      ! Buffer in the rho direction so particles s>1 are in the 'extra' bin
+      h1_prof = ns_prof1/rho_max_dist
+
       ! Handle existence of ADAS for NBI
       IF (lbeam .and. .not.lsuzuki .and. myid_sharmem==master) THEN
          lsuzuki = .not.adas_tables_avail()
@@ -142,7 +165,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_init:lsuzuki',ierr_mpi)
 
       ! Output some information
-      IF (lverb .and. .not.lrestart_grid) THEN
+      IF (lverb) THEN
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
@@ -183,7 +206,7 @@
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF ((lvmec .or. leqdsk .or. lhint .or. lfieldlines) .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk .or. lhint .or. lfieldlines  .or. lcontinue_grid) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Plasma Parameters -----'
          ! TE
          IF (nte>0) THEN
@@ -312,10 +335,16 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Background Grids
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      IF (lrestart_grid) THEN
-         !CALL beams3d_init_restart
-      ELSE
+      IF (lfidasim) THEN
+         CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
+         CALL mpialloc(phiaxis_fida, nphi_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis_fida)
+         CALL mpialloc(zaxis_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis_fida)
+         CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
+         CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
+      END IF
+      !IF (lcontinue_grid) THEN
+         !CALL beams3d_init_restart                
+      !ELSE
          ! Create the background grid
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
          CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
@@ -340,12 +369,12 @@
          CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
          CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
          CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
-   IF (lfidasim) THEN
+         IF (lfidasim) THEN
             CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
             CALL mpialloc(phiaxis_fida, nphi_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis_fida)
             CALL mpialloc(zaxis_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis_fida)
-      CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
-      CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
+            CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
+            CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
          END IF
          IF (myid_sharmem == 0) THEN
             FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
@@ -377,16 +406,13 @@
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
 
-
-
-
          ! Put the vacuum field on the background grid
          IF (lmgrid) THEN
             CALL beams3d_init_mgrid
          ELSE IF (lcoil) THEN
             CALL beams3d_init_coil
          END IF
-      END IF
+      !END IF
 
       ! Put the plasma field on the background grid
       IF (lvmec .and. .not.lvac) THEN
@@ -409,6 +435,10 @@
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_eqdsk
+      ELSE IF (lcontinue_grid) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+         CALL beams3d_init_continuegrid         
       END IF
 
       ! Adjust magnetic field for magnetic material
@@ -422,9 +452,7 @@
       
       ! Load vessel if not done already vessel
       IF (lvessel .and. (.not. lwall_loaded)) THEN
-      IF (lverb) THEN
-         WRITE(6,'(A)') '----- Loading wall data -----'
-      END IF
+         IF (lverb) WRITE(6,'(A)') '----- Loading wall data -----'
          CALL wall_load_txt(TRIM(vessel_string),ier,.false.,MPI_COMM_BEAMS)
          IF (lverb) THEN
             IF (ier /=0 ) WRITE(6,'(A)') 'ERROR: Loading VESSEL : ' // TRIM(vessel_string)
@@ -443,7 +471,6 @@
       IF (lascot) THEN
          CALL beams3d_write_ascoth5('INIT')
       END IF
-      !WRITE_FIDASIM comes after spline setup as it needs 3D Grids
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -732,7 +759,8 @@
          vr_start   = vr_start_in(1:nparticles)
          vphi_start = vphi_start_in(1:nparticles)
          vz_start   = vz_start_in(1:nparticles)
-         weight = 1.0/nparticles
+         weight     = weight_in(1:nparticles)
+         !weight = 1.0/nparticles
          Zatom = Zatom_in(1:nparticles)
          mass = mass_in(1:nparticles)
          charge = charge_in(1:nparticles)
@@ -742,7 +770,10 @@
          nbeams = 1
          charge_beams(1) = charge_in(1)
          mass_beams(1)   = mass_in(1)
-         lgc2fo_start(:) = .TRUE.
+         lgc2fo_start = .FALSE.
+         WHERE ((vr_start == 0) .and. (vphi_start == 0) .and. (vz_start == 0))
+            lgc2fo_start = .TRUE.
+         END WHERE
       END IF
       
       ! Duplicate particles if requested
@@ -778,7 +809,7 @@
 
 
       ! Determine maximum particle velocity
-      partvmax=MAX(MAXVAL(ABS(vll_start))*6.0/5.0,partvmax)
+      partvmax=MAX(MAXVAL(ABS(vll_start)),partvmax)
       !IF (lverb) WRITE(6,'(A,F8.5)') '   PARTVMAX  = ',partvmax
       !partpmax=MAX(MAXVAL(ABS(partvmax*mass)),partpmax)
       nsh_prof4 = ns_prof4/2
@@ -786,10 +817,10 @@
       h5_prof = ns_prof5/partvmax
 
       ! Fida Distribution
-      IF (lfidasim_cyl) THEN
-      r_h = (nr_fida) / (rmax_fida - rmin_fida)
-      z_h = (nz_fida) / (zmax_fida - zmin_fida)
-      p_h = (nphi_fida) / (phimax_fida - phimin_fida)
+      IF (lfidasim) THEN
+         r_h = (nr_fida) / (rmax_fida - rmin_fida)
+         z_h = (nz_fida) / (zmax_fida - zmin_fida)
+         p_h = (nphi_fida) / (phimax_fida - phimin_fida)
       END IF
 
       ! Do a reality check
@@ -829,32 +860,34 @@
       END IF
 
 
-   IF (lfidasim) THEN
-      ! ALLOCATE(raxis_fida(nr_fida))
-      ! ALLOCATE(zaxis_fida(nz_fida))
-      ! ALLOCATE(phiaxis_fida(nphi_fida))
-      ! ALLOCATE(energy_fida(nenergy_fida))
-      ! ALLOCATE(pitch_fida(npitch_fida))
+      IF (lfidasim) THEN
          FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
          FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
          FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
-      FORALL(i = 1:nenergy_fida) energy_fida(i) = REAL(i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass) * partvmax * partvmax /1.60217662E-19 / 1000.0
+         FORALL(i = 1:nenergy_fida) energy_fida(i) = REAL(i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass) * partvmax * partvmax /1.60217662E-19 / 1000.0
          FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
-      e_h = 1/( energy_fida(2) - energy_fida(1)) !(energy_fida(nenergy_fida) - energy_fida(1)) / (nenergy_fida)
-      pi_h = 1/(pitch_fida(2) - pitch_fida(1))!(pitch_fida(npitch_fida) - pitch_fida(1)) / (npitch_fida)
-      emin_fida = energy_fida(1)-1/e_h/2 !Correct since e_h~1/energy
-      pimin_fida = pitch_fida(1)-1/pi_h/2
+         IF (nenergy_fida .eq. 1) THEN
+            e_h = 1.0/2.d0/energy_fida(1)
+         ELSE 
+            e_h = 1.0/( energy_fida(2) - energy_fida(1)) 
+         END IF
+         IF (npitch_fida .eq. 1) THEN 
+            pi_h = 1.0/2.d0
+         ELSE
+            pi_h = 1/(pitch_fida(2) - pitch_fida(1))
+         END IF
+         emin_fida = energy_fida(1)-1/e_h/2 !e_h~1/energy
+         pimin_fida = pitch_fida(1)-1/pi_h/2
 
-      IF (lverb) THEN
-         WRITE(6,'(F9.5,F9.5,F9.5,F9.5,F9.5)') r_h, p_h, z_h, e_h, pi_h
-         WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
-         WRITE(6,'(A,F9.5)') '   T_FIDA   = ',t_fida
-         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R_FIDA   = [',rmin_fida,',',rmax_fida,'];  NR:   ',nr_fida
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI_FIDA = [',phimin_fida,',',phimax_fida,'];  NPHI: ',nphi_fida
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z_FIDA   = [',zmin_fida,',',zmax_fida,'];  NZ:   ',nz_fida
-         WRITE(6,'(A,F8.5,A,F10.5,A,I4)') '   ENERGY_FIDA   = [',energy_fida(1),',',energy_fida(nenergy_fida),'];  NENERGY:   ',nenergy_fida
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PITCH_FIDA   = [',pitch_fida(1),',',pitch_fida(npitch_fida),'];  NPITCH:   ',npitch_fida
-      END IF
+         IF (lverb) THEN
+            WRITE(6,'(A)') '----- FIDASIM Grid Parameters -----'
+            WRITE(6,'(A,F9.5)') '   T_FIDA   = ',t_fida
+            WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R_FIDA   = [',rmin_fida,',',rmax_fida,'];  NR:   ',nr_fida
+            WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI_FIDA = [',phimin_fida,',',phimax_fida,'];  NPHI: ',nphi_fida
+            WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z_FIDA   = [',zmin_fida,',',zmax_fida,'];  NZ:   ',nz_fida
+            WRITE(6,'(A,F8.5,A,F10.5,A,I4)') '   ENERGY_FIDA   = [',energy_fida(1),',',energy_fida(nenergy_fida),'];  NENERGY:   ',nenergy_fida
+            WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PITCH_FIDA   = [',pitch_fida(1),',',pitch_fida(npitch_fida),'];  NPITCH:   ',npitch_fida
+         END IF
          CALL beams3d_write_fidasim('INIT')
       END IF
 

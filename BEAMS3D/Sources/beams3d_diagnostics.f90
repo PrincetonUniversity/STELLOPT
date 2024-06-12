@@ -18,7 +18,7 @@
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
-                                 MPI_REDU_ERR, pi2, weight,lrestart_grid, lboxsim
+                                 MPI_REDU_ERR, pi2, weight,lcontinue_grid, lboxsim
       USE safe_open_mod, ONLY: safe_open
       USE EZspline
       USE mpi_params ! MPI
@@ -37,12 +37,10 @@
       LOGICAL, ALLOCATABLE     :: partmask(:), partmask2(:,:), partmask2t(:,:)
       INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:)
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
-      REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:), nlost(:), norbit(:), tlow(:), thigh(:)
+      REAL, ALLOCATABLE     :: vllaxis(:),vperpaxis(:), nlost(:), norbit(:), tlow(:), thigh(:)
       REAL, ALLOCATABLE     :: help3d(:,:,:)
-#if defined(MPI_OPT)
-      INTEGER :: mystart, mypace
-      REAL(rprec), ALLOCATABLE :: buffer_mast(:,:), buffer_slav(:,:)
-#endif
+      REAL, ALLOCATABLE     :: dbl_help(:)
+      INTEGER :: mystart
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -67,12 +65,16 @@
       IF (ALLOCATED(norbit)) DEALLOCATE(norbit)
       IF (ALLOCATED(tlow)) DEALLOCATE(tlow)
       IF (ALLOCATED(thigh)) DEALLOCATE(thigh)
+      IF (ALLOCATED(dbl_help)) DEALLOCATE(dbl_help)
+      IF (ALLOCATED(int_mask)) DEALLOCATE(int_mask)
       ALLOCATE(shine_through(nbeams))
       ALLOCATE(shine_port(nbeams))
       ALLOCATE(nlost(nbeams))
       ALLOCATE(norbit(nbeams))
       ALLOCATE(tlow(nbeams))
       ALLOCATE(thigh(nbeams))
+      ALLOCATE(dbl_help(mystart:myend))
+      ALLOCATE(int_mask(mystart:myend))
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
@@ -85,14 +87,20 @@
 
       ! Calculate shinethrough and loss
       shine_through = 0
+      dbl_help(mystart:myend) = t_end(mystart:myend)
+      int_mask(mystart:myend) = beam(mystart:myend)
+
+
       DO i = 1, nbeams
          norbit(i)         =      SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 0 .and. (beam(mystart:myend)==i)))
          nlost(i)          =      SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 2 .and. (beam(mystart:myend)==i)))
          shine_through(i)  = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
          shine_port(i)     = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
-         tlow(i)           = MINVAL(t_end(mystart:myend), MASK = (beam(mystart:myend)==i))
-         thigh(i)          = MAXVAL(t_end(mystart:myend), MASK = (beam(mystart:myend)==i))
+         tlow(i)           = MINVAL(dbl_help, MASK = (int_mask==i))
+         thigh(i)          = MAXVAL(dbl_help, MASK = (int_mask==i))
       END DO
+      DEALLOCATE(dbl_help)
+      DEALLOCATE(int_mask)
 
 #if defined(MPI_OPT)
       IF (myworkid == master) THEN
@@ -129,7 +137,7 @@
       DEALLOCATE(tlow,thigh)
 
       ! These diagnostics need Vp to be defined
-      IF ((.not.ldepo .or. lrestart_grid) .and. .not.lboxsim .and. myworkid == master) THEN
+      IF ((.not.ldepo .or. lcontinue_grid) .and. .not.lboxsim .and. myworkid == master) THEN
          ! Allocate the parallel and perpendicular velcoity axis
          nhalf = ns_prof4/2
          ALLOCATE(dense_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1))
@@ -153,28 +161,22 @@
          !dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
          ! We not apply the volume element for the radial profiles [m^-3]
          DO k = 1, ns_prof1
-            s1 = REAL(k-0.5)/REAL(ns_prof1) ! Rho
+            s1 = MIN(REAL(k-0.5)/h1_prof,1.0) ! Rho
             s2 = s1*s1
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
-            vp_temp = vp_temp*2*s1*(1./REAL(ns_prof1))
+            vp_temp = vp_temp*2*s1/h1_prof
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
             dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
             j_prof(:,k)      =      j_prof(:,k)/vp_temp ! [A/m^2]
          END DO
-         ! Normalize to velocity space volume element
-         ! dvll = partvmax*2/ns_prof4 ! dVll
-         ! dvperp = pi2*partvmax/ns_prof5 ! dVperp
-         ! DO k = 1, ns_prof5 ! VPERP
-         !    !s2 = REAL(k-0.5)/REAL(ns_prof5) ! Vperp_frac
-         !    vp_temp = vperpaxis(k)*dvll*dvperp
-         !    dist5d_prof(:,:,:,:,:,k) = dist5d_prof(:,:,:,:,:,k)/vp_temp
-         ! END DO
          ! DEALLOCATIONS
          DEALLOCATE(vperpaxis,vllaxis)
-         CALL beams3d_distnorm
       END IF
+
+      ! Normalize the distribution
+      CALL beams3d_distnorm
 
       CALL beams3d_write('DIAG')
 

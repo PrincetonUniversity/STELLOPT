@@ -12,10 +12,10 @@
 !-----------------------------------------------------------------------
       USE diagno_runtime
       USE safe_open_mod, ONLY: safe_open
-      
+
 !-----------------------------------------------------------------------
 !     Module Variables
-!         
+!
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL :: lexist
@@ -28,6 +28,7 @@
 !           bprobes file          B-field probe specification
 !           mirnov_file           Mirnov Array specification
 !           seg_rog_file          Rogowski coils specification
+!           afield_points_file    A-field points specfication
 !           bfield_points_file    B-field points specfication
 !           flux_turns            Flux loop integer scale factors
 !           units                 Units (Assume all quantities in [m])
@@ -38,20 +39,24 @@
 !           vc_adapt_rel          Adaptive integration relative tollerance
 !           flux_mut_file         Mutual induction file (not fully implemented)
 !           lvc_field             Use virtual casing instead of volume integral for free boundary
+!           lapoints_accurate_output  Enable writing apoints outputs with more digits
+!           lbpoints_accurate_output  Enable writing bpoints outputs with more digits
 !-----------------------------------------------------------------------
       namelist /diagno_in/ nu, nv, &
            flux_diag_file, bprobes_file, mirnov_file, seg_rog_file,  &
+           afield_points_file, &
            bfield_points_file, flux_turns, units, int_type, &
            int_step, lrphiz, vc_adapt_tol, vc_adapt_rel,&
            flux_mut_file, lvc_field, bprobe_turns, luse_extcur, &
-           bprobes_mut_file, mir_mut_file, rog_mut_file, segrog_turns
-      
+           bprobes_mut_file, mir_mut_file, rog_mut_file, segrog_turns, &
+           lapoints_accurate_output, lbpoints_accurate_output
+
 !-----------------------------------------------------------------------
 !     Subroutines
 !         read_diagno_input:   Reads diagno_in namelist
 !-----------------------------------------------------------------------
       CONTAINS
-      
+
       SUBROUTINE read_diagno_input(filename, istat)
       CHARACTER(*), INTENT(in) :: filename
       INTEGER, INTENT(out) :: istat
@@ -64,6 +69,7 @@
       bprobes_file       = ''
       mirnov_file        = ''
       seg_rog_file       = ''
+      afield_points_file = ''
       bfield_points_file = ''
       bprobes_mut_file   = ''
       mir_mut_file      = ''
@@ -74,13 +80,15 @@
       segrog_turns   = 1.0_rprec
       units          = 1.0_rprec
       int_type       = 'simpson'
-      int_step       = 2.0_rprec
+      int_step       = 2
       lrphiz         = .FALSE.
       luse_mut       = .FALSE.
       vc_adapt_tol   = 1.0E-06_rprec
       vc_adapt_rel   = 1.0E-04_rprec
       lvc_field      = .TRUE.
-      luse_extcur(:) = .TRUE.  ! Do this so we default to using the whole coil if the user forgets
+      luse_extcur    = .TRUE.  ! Do this so we default to using the whole coil if the user forgets
+      lapoints_accurate_output = .false. ! default for backward compatibility
+      lbpoints_accurate_output = .false. ! default for backward compatibility
       ! Read namelist
       istat=0; iunit = 25
       INQUIRE(FILE='input.'//TRIM(filename),EXIST=lexist)
@@ -135,6 +143,8 @@
       mirnov_file = ADJUSTL(mirnov_file)
       seg_rog_file = TRIM(seg_rog_file)
       seg_rog_file = ADJUSTL(seg_rog_file)
+      afield_points_file = TRIM(afield_points_file)
+      afield_points_file = ADJUSTL(afield_points_file)
       bfield_points_file = TRIM(bfield_points_file)
       bfield_points_file = ADJUSTL(bfield_points_file)
       bprobes_mut_file = TRIM(bprobes_mut_file)
@@ -161,7 +171,7 @@
       IF (LEN_TRIM(rog_mut_file)>1) luse_mut = .TRUE.
       IF (lmut) luse_mut = .FALSE.
       END SUBROUTINE read_diagno_input
-      
+
       SUBROUTINE write_diagno_input(iunit,istat)
       INTEGER, INTENT(in)    :: iunit
       INTEGER, INTENT(inout) :: istat
@@ -170,25 +180,49 @@
       WRITE(iunit,'(A)') '&DIAGNO_IN'
       WRITE(iunit,"(2X,A,1X,'=',1X,I0)") 'NU',nu
       WRITE(iunit,"(2X,A,1X,'=',1X,I0)") 'NV',nv
-      WRITE(iunit,"(2X,A,1X,'=',1X,E22.14)") 'UNITS',units
-      WRITE(iunit,"(2X,A,1X,'=',1X,E22.14)") 'VC_ADAPT_TOL',vc_adapt_tol
-      WRITE(iunit,"(2X,A,1X,'=',1X,E22.14)") 'VC_ADAPT_REL',vc_adapt_rel
+      WRITE(iunit,"(2X,A,1X,'=',1X,ES22.14)") 'UNITS',units
+      WRITE(iunit,"(2X,A,1X,'=',1X,ES22.14)") 'VC_ADAPT_TOL',vc_adapt_tol
+      WRITE(iunit,"(2X,A,1X,'=',1X,ES22.14)") 'VC_ADAPT_REL',vc_adapt_rel
       WRITE(iunit,outstr) 'INT_TYPE',TRIM(int_type)
       WRITE(iunit,"(2X,A,1X,'=',1X,I0)") 'INT_STEP',int_step
+      WRITE(iunit,outstr) 'AFIELD_POINTS_FILE',TRIM(afield_points_file)
       WRITE(iunit,outstr) 'BFIELD_POINTS_FILE',TRIM(bfield_points_file)
       WRITE(iunit,outstr) 'BPROBES_FILE',TRIM(bprobes_file)
       WRITE(iunit,outstr) 'MIRNOV_FILE',TRIM(mirnov_file)
       WRITE(iunit,outstr) 'SEG_ROG_FILE',TRIM(seg_rog_file)
       WRITE(iunit,outstr) 'FLUX_DIAG_FILE',TRIM(flux_diag_file)
       WRITE(iunit,outstr) 'FLUX_MUT_FILE',TRIM(flux_mut_file)
-      WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'BPROBE_TURNS',(bprobe_turns(n), n=1,256)
-      WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'FLUX_TURNS',(flux_turns(n), n=1,256)
-      WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'SEGROG_TURNS',(segrog_turns(n), n=1,256)
+      IF (ANY(bprobe_turns /= 1.0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,ES22.14))") 'BPROBE_TURNS',(bprobe_turns(n), n=1,256)
+      IF (ANY(flux_turns /= 1.0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,ES22.14))") 'FLUX_TURNS',(flux_turns(n), n=1,256)
+      IF (ANY(segrog_turns /= 1.0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,ES22.14))") 'SEGROG_TURNS',(segrog_turns(n), n=1,256)
+      IF (ANY( .not. luse_extcur)) WRITE(iunit,"(2X,A,1X,'=',10(1X,L1))") 'luse_extcur',(luse_extcur(n), n=1,256)
       WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LRPHIZ',lrphiz
       WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LVC_FIELD',lvc_field
+      WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LAPOINTS_ACCURATE_OUTPUT',lapoints_accurate_output
+      WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LBPOINTS_ACCURATE_OUTPUT',lbpoints_accurate_output
       WRITE(iunit,'(A)') '/'
       CALL FLUSH(iunit)
       END SUBROUTINE write_diagno_input
+
+      SUBROUTINE write_diagno_input_byfile(filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      LOGICAL :: lexists
+      
+      iunit = 100
+      istat = 0
+      INQUIRE(FILE=TRIM(filename),exist=lexists)
+      IF (lexists) THEN
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="old", position="append")
+      ELSE
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="new")
+      END IF
+      IF (istat .ne. 0) RETURN
+      CALL write_diagno_input(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE write_diagno_input_byfile
 
       SUBROUTINE BCAST_DIAGNO_INPUT(local_master,comm,istat)
 !DEC$ IF DEFINED (MPI_OPT)
@@ -213,6 +247,8 @@
       CALL MPI_BCAST(int_type,256,MPI_CHARACTER,local_master,comm,istat)
       IF (istat .ne. 0) RETURN
       CALL MPI_BCAST(int_step,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(afield_points_file,256,MPI_CHARACTER,local_master,comm,istat)
       IF (istat .ne. 0) RETURN
       CALL MPI_BCAST(bfield_points_file,256,MPI_CHARACTER,local_master,comm,istat)
       IF (istat .ne. 0) RETURN

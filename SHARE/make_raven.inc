@@ -14,10 +14,13 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high
-  FLAGS_D = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -g -traceback -check all -ftrapuv -xCORE-AVX512 -qopt-zmm-usage=high
+  FLAGS_R = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include \
+            -O2 -assume noold_unit_star \
+            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip
+  FLAGS_D = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include \
+            -O0 -assume noold_unit_star \
+            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip \
+            -check all,noarg_temp_created -ftrapuv -g -traceback
   LIBS    =  ${MKLROOT}/lib/intel64/libmkl_blas95_lp64.a \
              ${MKLROOT}/lib/intel64/libmkl_lapack95_lp64.a \
              ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a \
@@ -124,7 +127,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a

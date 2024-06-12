@@ -403,7 +403,7 @@
          dex = MINLOC(am_aux_s(2:),DIM=1)
          IF (dex > 2) THEN
             IF (ANY(am_aux_f(1:dex) < 0)) iflag = -55
-            IF (ALL(am_aux_f(1:dex) == 0)) iflag = -55
+            !IF (ALL(am_aux_f(1:dex) == 0)) iflag = -55
          END IF
          IF (pres_scale < 0) iflag = -55
          ! Now call any functions necessary to read or load the
@@ -418,24 +418,45 @@
          proc_string_old = proc_string ! So we can find the DIAGNO files
          IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
          ctemp_str = 'booz_xform'
-         IF (ANY(lbooz) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(lbooz) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
          ctemp_str = 'bootsj'
-         IF (ANY(sigma_bootstrap < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(sigma_bootstrap < bigno) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
          ctemp_str = 'diagno'
-         IF (lneed_magdiag .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (lneed_magdiag .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
          ctemp_str = 'neo'
-         IF (ANY(sigma_neo < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(sigma_neo < bigno) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ IF DEFINED (TERPSICHORE)
          ctemp_str = 'terpsichore'
-         IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TRAVIS)
          ctemp_str = 'travis'
-         IF (ANY(sigma_ece < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(sigma_ece < bigno) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
          ctemp_str = 'dkes'
-         IF ((ANY(sigma_dkes < bigno).or.ANY(sigma_dkes_erdiff < bigno)) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF ((ANY(sigma_dkes < bigno).or.ANY(sigma_dkes_erdiff < bigno).or.ANY(sigma_dkes_alpha < bigno)) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ ENDIF
 
          ! NOTE ALL parallel secondary codes go here
@@ -447,7 +468,10 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (COILOPTPP)
          ctemp_str = 'coilopt++'
-         IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
          ! JCS: skipping parallelization for now 

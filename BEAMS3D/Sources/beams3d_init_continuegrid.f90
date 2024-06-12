@@ -1,10 +1,10 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    beams3d_init_restartgrid
+!     Subroutine:    beams3d_init_continuegrid
 !     Authors:       D. Kulla (david.kulla@ipp.mpg.de) , S. Lazerson (samuel.lazerson@ipp.mpg.de)
 !     Date:          06/07/2023
 !     Description:   This subroutine reads the BEAMS3D files.
 !-----------------------------------------------------------------------
-SUBROUTINE beams3d_init_restartgrid
+SUBROUTINE beams3d_init_continuegrid
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -20,7 +20,7 @@ SUBROUTINE beams3d_init_restartgrid
       ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
       phiedge_eq, reff_eq, NI_spl_s, NI,&
       s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
-   USE beams3d_lines, ONLY: GFactor, ns_prof1
+   USE beams3d_lines, ONLY: GFactor, ns_prof1, h1_prof
    USE read_beams3d_mod, ONLY: get_beams3d_grid, get_beams3d_B, &
       read_beams3d_deallocate, &
       get_beams3d_magaxis, get_beams3d_gridB
@@ -176,11 +176,11 @@ SUBROUTINE beams3d_init_restartgrid
    CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
    CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
    CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-   IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_restartgrid',ierr_mpi)
+   IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_continuegrid',ierr_mpi)
 #endif
 
    RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------
-END SUBROUTINE beams3d_init_restartgrid
+END SUBROUTINE beams3d_init_continuegrid

@@ -107,6 +107,7 @@
       SUBROUTINE read_indata_namelist (iunit, istat)
       INTEGER, INTENT(IN) :: iunit
       INTEGER, INTENT(OUT) :: istat
+      ChARACTER(len=256) :: line
 
 !
 !     INITIALIZATIONS
@@ -188,6 +189,13 @@
       
       READ (iunit, nml=indata, iostat=istat)
 
+      IF (istat /= 0) THEN
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         CALL FLUSH(6)
+      END IF
+
       IF (ALL(niter_array == -1)) niter_array = niter
       WHERE (raxis .ne. 0._dp) 
          raxis_cc = raxis
@@ -212,6 +220,34 @@
       READ (iunit, nml=mseprofile, iostat=istat)
 
       END SUBROUTINE read_mse_namelist
+
+      SUBROUTINE read_indata_namelist_byfile (filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      
+      iunit = 100
+      istat = 0
+      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      IF (istat .ne. 0) RETURN
+      CALL read_indata_namelist(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE read_indata_namelist_byfile
+
+      SUBROUTINE write_indata_namelist_byfile (filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      
+      iunit = 100
+      istat = 0
+      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      IF (istat .ne. 0) RETURN
+      CALL write_indata_namelist(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE write_indata_namelist_byfile
       
       SUBROUTINE write_indata_namelist (iunit, istat)
       IMPLICIT NONE

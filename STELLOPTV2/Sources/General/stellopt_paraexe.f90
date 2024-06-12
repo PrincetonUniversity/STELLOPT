@@ -61,7 +61,7 @@
             lmgrid_beams => lmgrid, lascot_beams => lascot, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
             lsuzuki_beams => lsuzuki, lrandomize_beams => lrandomize, &
-            lrestart_grid_beams => lrestart_grid, lrestart_particles_beams => lrestart_particles, &
+            lcontinue_grid_beams => lcontinue_grid, lrestart_particles_beams => lrestart_particles, &
             lbeam_simple_beams => lbeam_simple, &
             lplasma_only_beams => lplasma_only, lascot4_beams => lascot4, &
             lbbnbi_beams => lbbnbi, lascotfl_beams => lascotfl, &
@@ -78,7 +78,8 @@
             NI_AUX_Z_BEAMS => NI_AUX_Z, NI_AUX_M_BEAMS => NI_AUX_Z, &
             NION_BEAMS => NION, &
             TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, nprocs_beams, &
-            ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F
+            ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F, &
+            BEAMS3D_VERSION
       USE beams3d_lines, ONLY: nparticles_beams => nparticles, R_lines, Z_lines,&
             PHI_lines, vll_lines, moment_lines, neut_lines
       USE beams3d_grid, ONLY: nte, nne, nti, B_R, B_PHI, B_Z, raxis, zaxis, phiaxis,&
@@ -317,7 +318,7 @@
                lraw_beams         = .FALSE.
                lvessel_beams      = .FALSE.
                lvac_beams         = .FALSE.
-               lrestart_grid_beams     = .FALSE.
+               lcontinue_grid_beams     = .FALSE.
                lrestart_particles_beams     = .FALSE.
                lbeam_simple_beams = .FALSE.
                lhitonly           = .TRUE. ! Set to true to smaller files.

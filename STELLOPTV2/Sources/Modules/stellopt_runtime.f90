@@ -146,6 +146,11 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
+      USE stellopt_globals, ONLY: axis_init_option, cr_strategy, &
+         epsfcn, factor, ftol, gtol, lcentered_differences, lkeep_mins, &
+         lrefit, mode, noptimizers, npopulation, opt_type, refit_param, &
+         rho_exp, xtol, bigno, lcoil_geom, lno_restart, ltriangulate, &
+         maxwindsurf
       USE EZspline
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -195,27 +200,33 @@
       INTEGER, PARAMETER ::  MPI_BCAST_ERR      = 830
       INTEGER, PARAMETER ::  MPI_FREE_ERR       = 840
       INTEGER, PARAMETER ::  MPI_FINE_ERR       = 890
+
+      !INTEGER, PARAMETER :: maxwindsurf=32
+      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.85      
+      !REAL(rprec), PARAMETER :: bigno = 1.0E+10
       
-      LOGICAL                  :: lverb, lkeep_mins, lneed_output, lrestart,&
-                                  lrefit, lno_restart, lauto_domain, lparallel,&
-                                  ltriangulate, lcoil_geom, lrenorm
-      INTEGER                  :: nvars, mtargets, iter, mode, iunit_out,&
-                                  cr_strategy, rho_exp, npopulation, noptimizers,&
-                                  ier_paraexe
+!      LOGICAL                  :: lverb, lkeep_mins, lneed_output, lrestart,&
+!                                  lrefit, lno_restart, lauto_domain, lparallel,&
+!                                  ltriangulate, lcoil_geom, lrenorm     
+      LOGICAL                  :: lverb, lneed_output, lrestart,&
+                                  lauto_domain, lparallel,lrenorm
+!      INTEGER                  :: nvars, mtargets, iter, mode, iunit_out,&
+!                                  cr_strategy, rho_exp, npopulation, noptimizers,&
+!                                  ier_paraexe
+      INTEGER                  :: nvars, mtargets, iter, iunit_out,ier_paraexe
       INTEGER, ALLOCATABLE     :: var_dex(:),target_dex(:)
       INTEGER, ALLOCATABLE     :: arr_dex(:,:)
-      REAL(rprec)              :: pi, pi2, mu0, ftol, xtol, gtol, epsfcn,&
-                                  factor, chisq_min, refit_param, pct_domain
+!      REAL(rprec)              :: pi, pi2, mu0, ftol, xtol, gtol, epsfcn,&
+!                                  factor, chisq_min, refit_param, pct_domain
+      REAL(rprec)              :: pi, pi2, mu0, chisq_min, pct_domain
       REAL(rprec), ALLOCATABLE :: vars(:),targets(:),sigmas(:),vals(:),&
                                   diag(:),vars_min(:),vars_max(:)
-      CHARACTER(256)           :: id_tag, id_string, opt_type, proc_string, &
+!      CHARACTER(256)           :: id_tag, id_string, opt_type, proc_string, &
+!                                  proc_string_old, screen_str, xvec_file
+      CHARACTER(256)           :: id_tag, id_string, proc_string, &
                                   proc_string_old, screen_str, xvec_file
-      LOGICAL                  :: lcentered_differences ! Available for MANGO algorithms
-      CHARACTER(256)           :: axis_init_option
-      
-      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.80
-      
-      REAL(rprec), PARAMETER :: bigno = 1.0E+10
+!      LOGICAL                  :: lcentered_differences ! Available for MANGO algorithms
+!      CHARACTER(256)           :: axis_init_option
 !-----------------------------------------------------------------------
 !     Subroutines
 !          handle_err  Controls Program Termination
@@ -227,7 +238,9 @@
       INTEGER,INTENT(in)      :: error_num
       INTEGER,INTENT(in)      :: ierr
       CHARACTER(*),INTENT(in) :: string_val
-      INTEGER                 :: ierr2
+      INTEGER                 :: ierr2, ierr3
+      character(256)          :: local_str
+
    
       WRITE(6,*) '!!!!! ERROR !!!!!'
       
@@ -394,15 +407,30 @@
       ELSEIF (error_num == MPI_FREE_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED AN MPI_FREE ERROR'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+!DEC$ IF DEFINED (MPI_OPT)
+            ierr3 = 0
+            CALL MPI_ERROR_STRING(ierr, local_str, ierr2, ierr3)
+            WRITE(6,*) '  ERROR MSG: ',local_str(1:ierr2)
+!DEC$ ENDIF
             WRITE(6,*) '  IERR:      ',ierr
       ELSEIF (error_num == MPI_FINE_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED AN MPI_FINALIZE ERROR'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+!DEC$ IF DEFINED (MPI_OPT)
+            ierr3 = 0
+            CALL MPI_ERROR_STRING(ierr, local_str, ierr2, ierr3)
+            WRITE(6,*) '  ERROR MSG: ',local_str(1:ierr2)
+!DEC$ ENDIF
             WRITE(6,*) '  IERR:      ',ierr
             STOP 'MPI_FINE_ERR'
       ELSEIF (error_num <= MPI_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED AN MPI ERROR'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+!DEC$ IF DEFINED (MPI_OPT)
+            ierr3 = 0
+            CALL MPI_ERROR_STRING(ierr, local_str, ierr2, ierr3)
+            WRITE(6,*) '  ERROR MSG: ',local_str(1:ierr2)
+!DEC$ ENDIF
             WRITE(6,*) '  IERR:      ',ierr
       ELSE
            WRITE(6,*) '  STELLOPT ENCOUNTERED AN UNKNOWN ERROR'

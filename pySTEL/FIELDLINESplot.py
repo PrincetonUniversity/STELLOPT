@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 import sys, os
-os.environ['ETS_TOOLKIT'] = 'qt4'
+os.environ['ETS_TOOLKIT'] = 'qt5'
 import matplotlib
-matplotlib.use("Qt4Agg")
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as _plt
 import numpy as np                    #For Arrays
 import numpy.matlib
 from math import pi
 #QT4
-from PyQt4 import uic, QtGui
-from PyQt4.QtGui import QMainWindow, QApplication, qApp, QVBoxLayout, QSizePolicy,QIcon
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+#from PyQt4 import uic, QtGui
+#from PyQt4.QtGui import QMainWindow, QApplication, qApp, QVBoxLayout, QSizePolicy,QIcon
+#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 #QT5
-#from PyQt5 import uic, QtGui, QtWidgets
-#from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy
-#from PyQt5.QtGui import QIcon
-#from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from libstell.fieldlines import read_fieldlines, calc_iota, calc_reff
+from PyQt5 import uic, QtGui, QtWidgets
+from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy
+from PyQt5.QtGui import QIcon
+# Matplotlib
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
+from libstell import fieldlines
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -26,7 +27,7 @@ except KeyError:
 	print("Please set environment variable STELLOPT_PATH")
 	sys.exit(1)
 
-qtCreatorFile = qtCreatorPath+"/pySTEL/FIELDLINESplot.ui" # Enter file here.
+qtCreatorFile = os.path.join(qtCreatorPath,'pySTEL','FIELDLINESplot.ui')
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class MyApp(QMainWindow):
@@ -46,15 +47,16 @@ class MyApp(QMainWindow):
 			if(name[0:10]=='fieldlines'):
 				self.ui.FileName.addItem(name)
 		# Init
-		self.fieldlines_data=read_fieldlines(self.ui.FileName.currentText())
+		self.fieldlines_data=fieldlines.FIELDLINES()
+		self.fieldlines_data.read_fieldlines(self.ui.FileName.currentText())
 		self.ui.PlotList.addItems(self.ui.plot_list)
 		self.ui.PlotButtons.setEnabled(0)
-		self.nlines = self.fieldlines_data['nlines']
-		self.npoinc = self.fieldlines_data['npoinc']
-		self.nsteps = self.fieldlines_data['nsteps']
-		self.nr     = self.fieldlines_data['nr']
-		self.nphi   = self.fieldlines_data['nphi']
-		self.nz     = self.fieldlines_data['nz']
+		self.nlines = self.fieldlines_data.nlines
+		self.npoinc = self.fieldlines_data.npoinc
+		self.nsteps = self.fieldlines_data.nsteps
+		self.nr     = self.fieldlines_data.nr
+		self.nphi   = self.fieldlines_data.nphi
+		self.nz     = self.fieldlines_data.nz
 		self.ui.rhoslider.setMaximum(self.nr-1)
 		self.ui.uslider.setMaximum(self.nphi-1)
 		self.ui.vslider.setMaximum(self.nz-1)
@@ -82,12 +84,12 @@ class MyApp(QMainWindow):
 	def FileSelect(self,i):
 		self.fieldlines_data=read_fieldlines(self.ui.FileName.currentText())
 		#self.ui.PlotList.addItems(self.ui.plot_list)
-		self.nlines = self.fieldlines_data['nlines']
-		self.npoinc = self.fieldlines_data['npoinc']
-		self.nsteps = self.fieldlines_data['nsteps']
-		self.nr     = self.fieldlines_data['nr']
-		self.nphi   = self.fieldlines_data['nphi']
-		self.nz     = self.fieldlines_data['nz']
+		self.nlines = self.fieldlines_data.nlines
+		self.npoinc = self.fieldlines_data.npoinc
+		self.nsteps = self.fieldlines_data.nsteps
+		self.nr     = self.fieldlines_data.nr
+		self.nphi   = self.fieldlines_data.nphi
+		self.nz     = self.fieldlines_data.nz
 		self.ui.rhoslider.setMaximum(self.nr-1)
 		self.ui.uslider.setMaximum(self.nphi-1)
 		self.ui.vslider.setMaximum(self.nz-1)
@@ -190,27 +192,27 @@ class MyApp(QMainWindow):
 		if (plot_name == 'Summary'):
 			print(plot_name)
 		elif (plot_name == 'Iota'):
-			temp = calc_iota(self.fieldlines_data)
+			reff,iota,iota_err = self.fieldlines_data.calc_iota()
 			#self.ax.errorbar(temp['rho'],temp['iota'],yerr=temp['iota_err'])
-			self.ax.plot(temp['rho'],temp['iota'],'.k')
-			self.ax.set_ylim(min(temp['iota']),max(temp['iota']))
+			self.ax.plot(reff,iota,'.k')
+			self.ax.set_ylim(min(iota),max(iota))
 			self.ax.set_xlim(0.0,1.25)
 			self.ax.set_xlabel('Normalized Flux')
 			self.ax.set_ylabel('iota')
 			self.ax.set_title('Rotational Transform')
 			#self.ax.set(xlabel='s',ylabel='iota',aspect='square')
 		elif (plot_name == 'q'):
-			temp = calc_iota(self.fieldlines_data)
-			self.ax.plot(temp['rho'],1.0/temp['iota'],'.k')
+			reff,iota,iota_err = self.fieldlines_data.calc_iota()
+			self.ax.plot(reff,1.0/iota,'.k')
 			self.ax.set_xlabel('Normalized Flux')
 			self.ax.set_ylabel('q')
 			self.ax.set_title('Safety Factor')
 		elif (plot_name == 'Poincaré'):
 			k = self.u
-			rmin = np.amin(self.fieldlines_data['raxis'])
-			rmax = np.amax(self.fieldlines_data['raxis'])
-			self.ax.plot(self.fieldlines_data['R_lines'][k:self.nsteps-1:self.npoinc,:],\
-				self.fieldlines_data['Z_lines'][k:self.nsteps-1:self.npoinc,:],\
+			rmin = np.amin(self.fieldlines_data.raxis)
+			rmax = np.amax(self.fieldlines_data.raxis)
+			self.ax.plot(self.fieldlines_data.R_lines[k:self.nsteps-1:self.npoinc,:],\
+				self.fieldlines_data.Z_lines[k:self.nsteps-1:self.npoinc,:],\
 				'.k',markersize=0.1)
 			self.ax.set_xlabel('R [m]')
 			self.ax.set_ylabel('Z [m]')
@@ -219,16 +221,16 @@ class MyApp(QMainWindow):
 			self.ax.set_xlim(rmin,rmax)
 		elif (plot_name == 'Poincaré |B|'):
 			k = self.u
-			rmin = np.amin(self.fieldlines_data['raxis'])
-			rmax = np.amax(self.fieldlines_data['raxis'])
-			cmin = np.amin(self.fieldlines_data['B_lines'][k:self.npoinc,0])
-			cmax = np.amax(self.fieldlines_data['B_lines'][k:self.npoinc,0])
+			rmin = np.amin(self.fieldlines_data.raxis)
+			rmax = np.amax(self.fieldlines_data.raxis)
+			cmin = np.amin(self.fieldlines_data.B_lines[k:self.npoinc,0])
+			cmax = np.amax(self.fieldlines_data.B_lines[k:self.npoinc,0])
 			#cmin = cmin - 0.5*np.abs(cmin)
 			#cmax = cmax + 0.5*np.abs(cmin)
-			print(self.fieldlines_data['B_lines'][0,:])
-			cax  = self.ax.scatter(self.fieldlines_data['R_lines'][k:self.nsteps-1:self.npoinc,:],\
-				self.fieldlines_data['Z_lines'][k:self.nsteps-1:self.npoinc,:],\
-				c=self.fieldlines_data['B_lines'][k:self.nsteps-1:self.npoinc,:], marker='.',s=0.3, \
+			print(self.fieldlines_data.B_lines[0,:])
+			cax  = self.ax.scatter(self.fieldlines_data.R_lines[k:self.nsteps-1:self.npoinc,:],\
+				self.fieldlines_data.Z_lines[k:self.nsteps-1:self.npoinc,:],\
+				c=self.fieldlines_data.B_lines[k:self.nsteps-1:self.npoinc,:], marker='.',s=0.3, \
 				cmap='jet')
 			self.ax.set_xlabel('R [m]')
 			self.ax.set_ylabel('Z [m]')
@@ -238,16 +240,16 @@ class MyApp(QMainWindow):
 			self.fig.colorbar(cax)
 			#cax.set_clim(cmin,cmax)
 		elif (plot_name == 'Poincaré Length'):
-			rho = self.fieldlines_data['L_lines']
+			rho = self.fieldlines_data.L_lines
 			k = self.u
-			rmin = np.amin(self.fieldlines_data['raxis'])
-			rmax = np.amax(self.fieldlines_data['raxis'])
+			rmin = np.amin(self.fieldlines_data.raxis)
+			rmax = np.amax(self.fieldlines_data.raxis)
 			cmin = np.amin(rho)
 			cmax = np.amax(rho)
 			n = np.rint((self.nsteps-1-k)/self.npoinc)
 			rho2d = np.matlib.repmat(rho,int(n),1)
-			cax  = self.ax.scatter(self.fieldlines_data['R_lines'][k:self.nsteps-1:self.npoinc,:],\
-				self.fieldlines_data['Z_lines'][k:self.nsteps-1:self.npoinc,:],\
+			cax  = self.ax.scatter(self.fieldlines_data.R_lines[k:self.nsteps-1:self.npoinc,:],\
+				self.fieldlines_data.Z_lines[k:self.nsteps-1:self.npoinc,:],\
 				c=rho2d, marker='.',s=0.3, \
 				cmap='jet')
 			self.ax.set_xlabel('R [m]')
@@ -258,16 +260,16 @@ class MyApp(QMainWindow):
 			self.fig.colorbar(cax)
 			cax.set_clim(cmin,cmax)
 		elif (plot_name == 'Poincaré a'):
-			rho = calc_reff(self.fieldlines_data)
+			rho = self.fieldlines_data.calc_reff()
 			k = self.u
-			rmin = np.amin(self.fieldlines_data['raxis'])
-			rmax = np.amax(self.fieldlines_data['raxis'])
+			rmin = np.amin(self.fieldlines_data.raxis)
+			rmax = np.amax(self.fieldlines_data.raxis)
 			cmin = np.amin(rho)
 			cmax = np.amax(rho)
 			n = np.rint((self.nsteps-1-k)/self.npoinc)
 			rho2d = np.matlib.repmat(rho,int(n),1)
-			cax  = self.ax.scatter(self.fieldlines_data['R_lines'][k:self.nsteps-1:self.npoinc,:],\
-				self.fieldlines_data['Z_lines'][k:self.nsteps-1:self.npoinc,:],\
+			cax  = self.ax.scatter(self.fieldlines_data.R_lines[k:self.nsteps-1:self.npoinc,:],\
+				self.fieldlines_data.Z_lines[k:self.nsteps-1:self.npoinc,:],\
 				c=rho2d, marker='.',s=0.3, \
 				cmap='jet')
 			self.ax.set_xlabel('R [m]')
@@ -282,18 +284,18 @@ class MyApp(QMainWindow):
 		else:
 			# First load the value based on plot
 			if (plot_name=='B_R'):
-				val = self.fieldlines_data['B_R']
+				val = self.fieldlines_data.B_R
 			elif (plot_name=='B_PHI'):
-				val = self.fieldlines_data['B_PHI']
+				val = self.fieldlines_data.B_PHI
 			elif (plot_name=='B_Z'):
-				val = self.fieldlines_data['B_Z']
-			r = self.fieldlines_data['raxis']
-			p = self.fieldlines_data['phiaxis']
-			z = self.fieldlines_data['zaxis']
-			nr2 = np.int(self.nr/2)
-			nphi2 = np.int(self.nphi/2)
-			nz2 = np.int(self.nz/2)
-			cmin = self.fieldlines_data['B_PHI'][nr2,nphi2,nz2]
+				val = self.fieldlines_data.B_Z
+			r = self.fieldlines_data.raxis
+			p = self.fieldlines_data.phiaxis
+			z = self.fieldlines_data.zaxis
+			nr2 = int(self.nr/2)
+			nphi2 = int(self.nphi/2)
+			nz2 = int(self.nz/2)
+			cmin = self.fieldlines_data.B_PHI[nr2,nphi2,nz2]
 			cmax = cmin + np.abs(cmin)*0.75
 			cmin = cmin - np.abs(cmin)*0.75
 			# Now handle the type of plot
@@ -307,19 +309,20 @@ class MyApp(QMainWindow):
 				self.ax.plot(z,val[self.s,self.u,:])
 				self.ax.set_xlabel('Z [m]')
 			elif (self.ui.flux_button.isChecked()):
-				cax=self.ax.pcolormesh(np.squeeze(val[self.s,:,:]),cmap='jet')
+				cax=self.ax.pcolormesh(z,p,np.squeeze(val[self.s,:,:]),cmap='jet')
 				self.fig.colorbar(cax)
 				self.ax.set_ylabel('Toroidal Angle [rad]')
 				self.ax.set_xlabel('Z [m]')
 				cax.set_clim(cmin,cmax)
 			elif (self.ui.poltor_button.isChecked()):
-				cax=self.ax.pcolormesh(np.squeeze(val[:,self.u,:]),cmap='jet')
+				cax=self.ax.pcolormesh(r,z,np.squeeze(val[:,self.u,:]),cmap='jet')
 				self.fig.colorbar(cax)
 				self.ax.set_xlabel('R [m]')
 				self.ax.set_ylabel('Z [m]')
 				cax.set_clim(cmin,cmax)
 			elif (self.ui.RZ_button.isChecked()):
-				cax = self.ax.pcolor(val[:,:,self.v],cmap='jet')
+				cax=self.ax.pcolormesh(p,r,np.squeeze(val[:,:,self.v]),cmap='jet')
+				#cax = self.ax.pcolor(r,p,val[:,:,self.v],cmap='jet')
 				self.fig.colorbar(cax)
 				self.ax.set_xlabel('R [m]')
 				self.ax.set_ylabel('Toroidal Angle [rad]')

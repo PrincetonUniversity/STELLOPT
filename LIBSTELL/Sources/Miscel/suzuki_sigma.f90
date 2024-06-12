@@ -35,7 +35,7 @@
          Zeff_sum1 = Zeff_sum1 + ni_in(i)*Z_in(i)*Z_in(i)
          Zeff_sum2 = Zeff_sum2 + ni_in(i)*Z_in(i)
       END DO
-      Zeff = Zeff_sum1/Zeff_sum2
+      Zeff = Zeff_sum1/Zeff_sum2 !Is NaN when sum(ni_in)=0
 
 
       ! Select low- or high-energy coefficient tables

@@ -80,24 +80,24 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init:namelist',ierr_mpi)
 #endif
       IF (lvmec) THEN
-         CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myworkid)
+         CALL read_fieldlines_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
          !IF (.not. lvac) CALL read_wout_file(TRIM(id_string),ier)
       ELSE IF (lpies) THEN
-         CALL read_fieldlines_input(TRIM(id_string) // '.in',ier,myworkid)
+         CALL read_fieldlines_input(TRIM(id_string) // '.in',ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: ' // TRIM(id_string) // '.in'
       ELSE IF (lspec) THEN
-         CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myworkid)
+         CALL read_fieldlines_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
       ELSE IF (leqdsk) THEN
-         CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myworkid)
+         CALL read_fieldlines_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
          CALL read_gfile(eqdsk_string,ier)
          IF (lverb) WRITE(6,'(A)') '   G-FILE: '// TRIM(eqdsk_string)
          CALL get_eqdsk_grid(nr,nz,rmin,rmax,zmin,zmax)
          phimin = 0; phimax=pi2
       ELSE IF (lhint) THEN
-         CALL read_fieldlines_input(TRIM(id_string)//'.input',ier,myworkid)
+         CALL read_fieldlines_input(TRIM(id_string)//'.input',ier)
          IF (lverb) WRITE(6,'(A)') '   FILE:     ' // TRIM(id_string) // '.input'
          IF (lverb) WRITE(6,'(A)') '   MAG_FILE: ' // TRIM(id_string) // '.magslice'
          CALL read_hint_mag(TRIM(id_string)//'.magslice',ier)

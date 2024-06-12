@@ -15,7 +15,8 @@
 !DEC$ IF DEFINED (DKES_OPT)
       USE dkes_realspace, ONLY: DKES_L11p, DKES_L33p, DKES_L31p, &
                                 DKES_L11m, DKES_L33m, DKES_L31m, &
-                                DKES_scal11, DKES_scal33, DKES_scal31
+                                DKES_scal11, DKES_scal33, DKES_scal31, &
+                                DKES_rundex
 !DEC$ ENDIF
       
 !-----------------------------------------------------------------------
@@ -45,7 +46,7 @@
                 // ' L11p+  L11m+  L33p+  L33m+  L31p+  L31m+  SCAL11+  SCAL33+  SCAL31+'& 
                 // ' L11p-  L11m-  L33p-  L33m-  L31p-  L31m-  SCAL11-  SCAL33-  SCAL31-'
       IF (niter >= 0) THEN
-         ik = 0
+         ik = COUNT(DKES_rundex < 2)
          DO ii = 1, nsd
             IF (sigma(ii) >= bigno) CYCLE
             mtargets = mtargets + 1
@@ -83,16 +84,11 @@
 !DEC$ ENDIF
          END DO
       ELSE
-         nruns_dkes = 0
          DO ii = 1, nsd
             IF (sigma(ii) >= bigno) CYCLE
             lbooz(ii) = .TRUE.
             mtargets = mtargets + 1
-            nruns_dkes = nruns_dkes + 2
-            E_dkes(1) = Ep_DKES_Erdiff
-            E_dkes(2) = Em_DKES_Erdiff
-            nu_dkes(1) = nu_dkes_Erdiff
-            nu_dkes(2) = nu_dkes_Erdiff
+            nruns_dkes = nruns_dkes + 2 ! Ep and Em run
             IF (niter == -2) target_dex(mtargets)=jtarget_dkes_erdiff
          END DO
       END IF

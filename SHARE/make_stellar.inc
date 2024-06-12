@@ -14,16 +14,27 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -mcmodel=large -O2 -m64 -unroll0 -fno-alias -ip -traceback \
-	-init=zero,arrays -I${MKLROOT}/include -mkl
-  FLAGS_D = -O0 -g -traceback -check all -check bounds \
-	-check noarg_temp_created -check uninit \
-	-ftrapuv -init=zero,arrays -debug all -I${MKLROOT}/include -mkl 
+#  FLAGS_R = -mcmodel=large -O2 -m64 -unroll0 -fno-alias -ip -traceback \
+#	-init=zero,arrays -I${MKLROOT}/include -mkl
+#  FLAGS_D = -O0 -g -traceback -check all -check bounds \
+#	-check noarg_temp_created -check uninit \
+#	-ftrapuv -init=zero,arrays -debug all -I${MKLROOT}/include -mkl 
 
-  LIBS = -L${MKLROOT}/lib/intel64 \
-  	 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 \
-	 -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
-	 -lpthread -lm -ldl
+  FLAGS_R = -I$(MKLROOT)/include -O2 -assume noold_unit_star \
+            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip 
+  FLAGS_D = -I${MKLROOT}/include -O0 -assume noold_unit_star \
+            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip \
+            -check all,noarg_temp_created -ftrapuv -g -traceback
+
+#  LIBS = -L${MKLROOT}/lib/intel64 \
+#  	 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 \
+#	 -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
+#	 -lpthread -lm -ldl
+
+  LIBS    = -Wl,-rpath,$(MKLROOT)/lib/intel64 \
+            -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 \
+            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
+            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread
 
 #######################################################################
 #            MPI Options
@@ -32,12 +43,12 @@
   MPI_COMPILE = mpiifort
   MPI_COMPILE_FREE = mpiifort
   MPI_COMPILE_C = mpicc
-  MPI_LINK = mpiifort -shared -fpic
+  MPI_LINK = mpiifort
   MPI_RUN = srun
-  MPI_RUN_OPTS = -N 1 -n 16 -t 30:00 -q debug -J STELLOPT_BENCH 
-  MPI_RUN_OPTS_SM = -N 1 -n 32 -t 30:00 -q debug -J STELLOPT_BENCH
-  MPI_RUN_OPTS_MD = -N 1 -n 96 -t 30:00 -q debug -J STELLOPT_BENCH
-  MPI_RUN_OPTS_LG = -N 2 -n 192 -t 30:00 -q debug -J STELLOPT_BENCH
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=96 -t 30:00 -q stellar-debug -J STELLOPT_BENCH 
+  MPI_RUN_OPTS_SM = --nodes=1 --ntasks-per-node=96 -t 30:00 -q stellar-debug -J STELLOPT_BENCH
+  MPI_RUN_OPTS_MD = --nodes=1 --ntasks-per-node=96 -t 30:00 -q stellar-debug -J STELLOPT_BENCH
+  MPI_RUN_OPTS_LG = --nodes=2 --ntasks-per-node=96 -t 30:00 -q stellar-debug -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
@@ -114,7 +125,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -133,7 +144,7 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= T
+  LREGCOIL= F
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
