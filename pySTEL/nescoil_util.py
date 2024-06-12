@@ -18,6 +18,8 @@ if __name__=="__main__":
 		help="Plot the coils file.", default = False)
 	parser.add_argument("-p3d", "--plot_3d", dest="lplot_3d", action='store_true',
 		help="Plot surfaces over half-field period", default = False)
+	parser.add_argument("-c", "--cut_coils", dest="lcut_coils", action='store_true',
+		help="Cut coils from the potential", default = False)
 	args = parser.parse_args()
 	nescout = NESCOIL()
 	if args.nescout_file: 
@@ -32,5 +34,9 @@ if __name__=="__main__":
 			nescout.plottotalpotential(ax=ax)
 			pyplot.show()
 		if args.lplot_3d: nescout.plotsurfaces()
+		if args.lcut_coils:
+			coil = nescout.cutcoils(5)
+			coil.plotcoils()
+			coil.write_coils_file(f'coils.{args.nescout_file}')
 
 	sys.exit(0)
