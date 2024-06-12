@@ -6,6 +6,7 @@ if __name__=="__main__":
 	import sys
 	from argparse import ArgumentParser
 	from libstell.nescoil import NESCOIL
+	from libstell.bnorm import BNORM
 	import matplotlib.pyplot as pyplot
 	import numpy as np
 	from datetime import datetime
@@ -15,9 +16,21 @@ if __name__=="__main__":
 		help="NESCOIL output file", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
 		help="Plot the coils file.", default = False)
+	parser.add_argument("-p3d", "--plot_3d", dest="lplot_3d", action='store_true',
+		help="Plot surfaces over half-field period", default = False)
 	args = parser.parse_args()
 	nescout = NESCOIL()
 	if args.nescout_file: 
 		nescout.read_nescout(args.nescout_file)
-		if args.lplot: nescout.plotpotential()
+		if args.lplot: 
+			px = 1/pyplot.rcParams['figure.dpi']
+			fig=pyplot.figure(figsize=(1024*px,768*px))
+			ax=fig.add_subplot(121)
+			pyplot.subplots_adjust(hspace=0.4,wspace=0.3)
+			nescout.plotpotential(ax=ax)
+			ax=fig.add_subplot(122)
+			nescout.plottotalpotential(ax=ax)
+			pyplot.show()
+		if args.lplot_3d: nescout.plotsurfaces()
+
 	sys.exit(0)
