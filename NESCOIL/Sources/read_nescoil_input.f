@@ -79,7 +79,7 @@ c read spatial dimensions
       read (iunit, *, err=99)
       write(inesc, 10) '----- Grid Spatial Dimensions -----'
       write(inesc, 10) 'nu, nv, nu1, nv1, npol, ntor'
-      write(inesc,"(6i6,2X,l)")  nu, nv, nu1, nv1, npol, ntor, 
+      write(inesc,"(6i6,l)")  nu, nv, nu1, nv1, npol, ntor, 
      1                           lasym
       
       if (lasym) stop "Non-Stellarator Symmetry not supported!"
