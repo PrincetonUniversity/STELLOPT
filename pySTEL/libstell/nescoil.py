@@ -208,8 +208,93 @@ class NESCOIL(FourierRep):
 			Number of coils per half period (suggest 5)
 		"""
 		import numpy as np
-		from libstell.coils import COILSET
+		from libstell.coils import COILSET, COILGROUP, COIL
+		from contourpy import contour_generator, LineType
+		# Generate coilset
+		coils = COILSET()
+		coils.nfp = self.np
+		coils.ngroups = ncoils_per_halfperiod
+		coils.xmin = 1E9; coils.xmax=-1E9
+		coils.ymin = 1E9; coils.ymax=-1E9
+		coils.zmin = 1E9; coils.zmax=-1E9
+		#coils.groups = []
 		# First calculate the potential on a grid
+		theta = np.ndarray((self.nu,1))
+		zeta  = np.ndarray((self.nv,1))
+		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu-1)
+		for j in range(self.nv):  zeta[j]=np.pi*j/float(self.nv-1)
+		pot = self.generateTotalPotential(theta,zeta)
+		# Now generate contours
+		potmin = np.min(pot)
+		potmax = np.max(pot)
+		delta  = 2*(potmax-potmin)/float(2*ncoils_per_halfperiod+1.5)
+		cont_gen = contour_generator(x=np.squeeze(zeta),y=np.squeeze(theta),z=np.squeeze(pot), line_type=LineType.Separate)
+		# Now loop over contours
+		for k in range(ncoils_per_halfperiod):
+			u = round(self.nu/2)
+			v = round((k+0.5)*self.nv/(ncoils_per_halfperiod))
+			level = cont_gen.lines(pot[0,u,v])
+			level = level[0]
+			th = level[:,1]
+			ze = level[:,0]
+			# Fourier transform the coil
+			r = th*0.0 ;z = th*0.0
+			for mn in range(self.mnmax_surface):
+				mtheta = th*self.xm_surface[mn]
+				nzeta  = ze*self.xn_surface[mn]
+				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
+				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
+			# Convert to XYZ and make current/group
+			ph = ze/self.np
+			x = r * np.cos(ph)
+			y = r * np.sin(ph)
+			c = x * 0.0 + self.curpol/(np.pi*4E-7)
+			g = x * 0.0 + k+1
+			c[-1] = 0.0
+			# Create stellarator symmetric coil
+			ph = (2.0*np.pi - ze)/self.np
+			x2 = r * np.cos(ph)
+			y2 = r * np.sin(ph)
+			z2 =-z
+			x2=x2[::-1]; y2=y2[::-1]; z2 = z2[::-1]
+			g2 = g
+			c2 = c
+			xo = np.append(x,x2)
+			yo = np.append(y,y2)
+			zo = np.append(z,z2)
+			co = np.append(c,c)
+			go = np.append(g,g)
+			co[-1] = 0.0
+			print(zo)
+			x  = xo; y = yo; z = zo; c = co; g =go
+			# Now make all field periods
+			for mn in range(1,self.np):
+				cop = np.cos(mn*self.alp)
+				sip = np.sin(mn*self.alp)
+				x = np.append(x,xo*sip)
+				y = np.append(y,yo*sip)
+				z = np.append(y,zo)
+				c = np.append(c,co)
+				g = np.append(g,go)
+			#print(c)
+			coils.xmin = np.minimum(coils.xmin,np.min(x))
+			coils.ymin = np.minimum(coils.ymin,np.min(y))
+			coils.zmin = np.minimum(coils.zmin,np.min(z))
+			coils.xmax = np.maximum(coils.xmax,np.max(x))
+			coils.ymax = np.maximum(coils.ymax,np.max(y))
+			coils.zmax = np.maximum(coils.zmax,np.max(z))
+			# Now create group
+			coil_name=f'MOD{k+1}'
+			coils.groups.extend([COILGROUP(x,y,z,c,coil_name)])
+		# Return a coil object
+		return coils
+
+
+
+
+
+
+
 
 
 
