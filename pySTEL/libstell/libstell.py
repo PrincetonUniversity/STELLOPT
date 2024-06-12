@@ -1429,9 +1429,10 @@ class FourierRep():
 		test=len(kwargs)
 		fig=kwargs.pop('fig',pyplot.figure())
 		h=kwargs.pop('axes',fig.add_subplot(111,projection='3d'))
+		surf_color = kwargs.pop('color','red')
 		for k in range(0,nr):
 			if (len(args)==0):
-				tsurf=h.plot_trisurf(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], triangles=tri.triangles,color='red',shade='yes',linewidth=0.0,alpha=1)
+				tsurf=h.plot_trisurf(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], triangles=tri.triangles,color=surf_color,shade='yes',linewidth=0.0,alpha=1)
 				#tsurf=mlab.triangular_mesh(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], tri.triangless)
 			else:
 				# Matplotlib way (SLOW)
