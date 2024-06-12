@@ -37,6 +37,7 @@ class VMEC(FourierRep):
 			setattr(self, key, wout_dict[key])
 		# (mu-nv) -> (mu+nv)
 		self.xn = -self.xn
+		self.xn_nyq = -self.xn_nyq
 		# Half to full grid
 		self.buco = self.h2f(self.buco)
 		self.bvco = self.h2f(self.bvco)
