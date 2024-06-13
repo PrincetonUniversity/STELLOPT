@@ -176,6 +176,9 @@
                rmns_surface(mn),zmns_surface(mn)
          END DO
 
+         ! Close file
+         CLOSE(iunit)
+
          RETURN
       END SUBROUTINE write_nescin
 
@@ -208,10 +211,10 @@
             SELECT CASE (TRIM(line))
                CASE("------ Spatial dimensions ----")
                   READ(iunit, '(A)', iostat=istat) line
-                  READ(iunit, '(6i6,l)') nu, nv, nu1, nv1, mpol, ntor, lasym
+                  READ(iunit, *) nu, nv, nu1, nv1, mpol, ntor, lasym
                CASE("------ Fourier Dimensions ----")
                   READ(iunit, '(A)', iostat=istat) line
-                  READ(iunit, '(4i6)') mf, nf, md, nd
+                  READ(iunit, *) mf, nf, md, nd
                   nmax  = 3*nv*(nu+2)+1
                   mnd   = (md + 1)*(2*nd + 1)
                   nuv   = nu*nv
@@ -221,30 +224,30 @@
                   fnuv  = 1.0 / nuv
                CASE("------ Plasma information from VMEC ----")
                   READ(iunit, '(A)', iostat=istat) line
-                  READ(iunit, '(i6,3g25.16)') np, iota_edge, phip_edge, curpol
+                  READ(iunit, *) np, iota_edge, phip_edge, curpol
                   alp   = pi2/np
                CASE("------ Current Controls ----")
                   READ(iunit, '(A)', iostat=istat) line
-                  READ(iunit, '(2g25.16,i6)') cut, cup, ibex
+                  READ(iunit, *) cut, cup, ibex
                CASE("------ SVD controls -----")
                   READ(iunit, '(A)', iostat=istat) line
-                  READ(iunit, '(4i6,2g25.16)') mstrt, mstep, mkeep, mdspw, curwt, trgwt
+                  READ(iunit, *) mstrt, mstep, mkeep, mdspw, curwt, trgwt
                CASE("------ Output controls -----")
                   READ(iunit, '(A)', iostat=istat) line
-                  READ(iunit, '(6i6)') w_psurf, w_csurf, w_bnuv, w_jsurf, w_xerr, w_svd
+                  READ(iunit, *) w_psurf, w_csurf, w_bnuv, w_jsurf, w_xerr, w_svd
                CASE("------ Plasma Surface ----")
                   READ(iunit, '(A)', iostat=istat) line
                   READ(iunit, *) mnmax_plasma
                   READ(iunit, '(A)', iostat=istat) line
                   READ(iunit, '(A)', iostat=istat) line
-                  CALL read_nescout_plasmaboundary(iunit,istat)
+                  CALL read_nescin_plasmaboundary(iunit,istat)
                   READ(iunit, '(A)', iostat=istat) line
                   READ(iunit, '(A)', iostat=istat) line
                   READ(iunit, '(A)', iostat=istat) line
                   READ(iunit, *) mnmax_surface
                   READ(iunit, '(A)', iostat=istat) line
                   READ(iunit, '(A)', iostat=istat) line
-                  CALL read_nescout_coilsurface(iunit,istat)
+                  CALL read_nescin_coilsurface(iunit,istat)
             END SELECT
          END DO
 
@@ -391,6 +394,9 @@
          ALLOCATE(rmnc_plasma(mnmax_plasma),zmns_plasma(mnmax_plasma))
          ALLOCATE(rmns_plasma(mnmax_plasma),zmnc_plasma(mnmax_plasma))
          ALLOCATE(lmnc_plasma(mnmax_plasma),lmns_plasma(mnmax_plasma))
+         xm_plasma = 0; xn_plasma = 0;
+         rmnc_plasma = zero; zmns_plasma = zero; lmns_plasma = zero
+         rmns_plasma = zero; zmnc_plasma = zero; lmnc_plasma = zero
          DO mn = 1, mnmax_plasma
             READ(iunit,'(2i4,6g20.10)') xm_plasma(mn), xn_plasma(mn), &
                   rmnc_plasma(mn), zmns_plasma(mn), lmns_plasma(mn),  &
@@ -400,6 +406,27 @@
          RETURN
       END SUBROUTINE read_nescout_plasmaboundary
 
+      SUBROUTINE read_nescin_plasmaboundary(iunit,istat)
+         IMPLICIT NONE
+         INTEGER, INTENT(inout) :: iunit
+         INTEGER, INTENT(inout) :: istat
+         INTEGER :: mn
+         ALLOCATE(xm_plasma(mnmax_plasma),xn_plasma(mnmax_plasma))
+         ALLOCATE(rmnc_plasma(mnmax_plasma),zmns_plasma(mnmax_plasma))
+         ALLOCATE(rmns_plasma(mnmax_plasma),zmnc_plasma(mnmax_plasma))
+         ALLOCATE(lmnc_plasma(mnmax_plasma),lmns_plasma(mnmax_plasma))
+         xm_plasma = 0; xn_plasma = 0;
+         rmnc_plasma = zero; zmns_plasma = zero; lmns_plasma = zero
+         rmns_plasma = zero; zmnc_plasma = zero; lmnc_plasma = zero
+         DO mn = 1, mnmax_plasma
+            READ(iunit,*) xm_plasma(mn), xn_plasma(mn), &
+                  rmnc_plasma(mn), zmns_plasma(mn), lmns_plasma(mn),  &
+                  rmns_plasma(mn), zmnc_plasma(mn), lmnc_plasma(mn)
+         END DO
+         
+         RETURN
+      END SUBROUTINE read_nescin_plasmaboundary
+
       SUBROUTINE read_nescout_coilsurface(iunit,istat)
          IMPLICIT NONE
          INTEGER, INTENT(inout) :: iunit
@@ -408,6 +435,9 @@
          ALLOCATE(xm_surface(mnmax_surface),xn_surface(mnmax_surface))
          ALLOCATE(rmnc_surface(mnmax_surface),zmns_surface(mnmax_surface))
          ALLOCATE(rmns_surface(mnmax_surface),zmnc_surface(mnmax_surface))
+         xm_surface = 0; xn_surface = 0;
+         rmnc_surface = zero; zmns_surface = zero
+         rmns_surface = zero; zmnc_surface = zero
          DO mn = 1, mnmax_surface
             READ(iunit,'(2i4,4g20.10)') xm_surface(mn), xn_surface(mn), &
                                     rmnc_surface(mn), zmns_surface(mn), &
@@ -415,6 +445,25 @@
          END DO
          RETURN
       END SUBROUTINE read_nescout_coilsurface
+
+      SUBROUTINE read_nescin_coilsurface(iunit,istat)
+         IMPLICIT NONE
+         INTEGER, INTENT(inout) :: iunit
+         INTEGER, INTENT(inout) :: istat
+         INTEGER :: mn
+         ALLOCATE(xm_surface(mnmax_surface),xn_surface(mnmax_surface))
+         ALLOCATE(rmnc_surface(mnmax_surface),zmns_surface(mnmax_surface))
+         ALLOCATE(rmns_surface(mnmax_surface),zmnc_surface(mnmax_surface))
+         xm_surface = 0; xn_surface = 0;
+         rmnc_surface = zero; zmns_surface = zero
+         rmns_surface = zero; zmnc_surface = zero
+         DO mn = 1, mnmax_surface
+            READ(iunit,*) xm_surface(mn), xn_surface(mn), &
+                                    rmnc_surface(mn), zmns_surface(mn), &
+                                    rmns_surface(mn), zmnc_surface(mn)
+         END DO
+         RETURN
+      END SUBROUTINE read_nescin_coilsurface
 
       SUBROUTINE read_nescout_plasmaxyz(iunit,istat)
          IMPLICIT NONE
