@@ -102,9 +102,160 @@
 
 !-----------------------------------------------------------------------
 !     Module Subroutines
+!           write_nescin:  For writing NESCOIL input files
+!           read_nescin:   For reading NESCOIL input files
 !           read_nescout:  For reading NESCOIL output files
 !           
 !-----------------------------------------------------------------------
+      SUBROUTINE write_nescin(filename,istat)
+         IMPLICIT NONE
+         CHARACTER(*), INTENT(in) :: filename
+         INTEGER, INTENT(inout) :: istat
+         INTEGER :: iunit, mn
+
+         ! Open the file
+         CALL safe_open (iunit, istat, filename, 'unknown', 'formatted')
+         IF (istat /= 0) THEN
+            WRITE(6,*) " ERROR: Could not open file: "//TRIM(filename)
+            RETURN
+         END IF
+
+         ! This part is lifted form BNORM/Sources/bn_write_nescoil_input.f
+
+         WRITE(iunit,'(a)') '------ Spatial dimensions ----'
+         WRITE(iunit,'(a)') 'nu, nv, nu1, nv1, npol, ntor, lasym_bn'
+         WRITE(iunit,*)      nu, nv, nu1, nv1, mpol, ntor, lasym
+         WRITE(iunit,*)
+
+         WRITE(iunit,'(a)') '------ Fourier Dimensions ----'
+         WRITE(iunit,'(a)') 'mf, nf, md, nd (max in surf and bnorm files)'
+         WRITE(iunit,*) mf, nf, md, nd
+         WRITE(iunit,*)
+
+         WRITE(iunit,'(a)') '------ Plasma information from VMEC ----'
+         WRITE(iunit,'(a)') 'np     iota_edge       phip_edge       curpol'
+         WRITE(iunit,*) np, iota_edge, phip_edge, curpol
+         WRITE(iunit,*)
+
+         WRITE(iunit,'(a)') '------ Current Controls ----'
+         WRITE(iunit,'(a)') 'cut  cup  ibex(=1,use fixed background coils)'
+         WRITE(iunit,*) cut, cup, ibex
+         WRITE(iunit,*)
+
+         WRITE(iunit,'(a)') '------ SVD controls -----'
+         WRITE(iunit,'(a)') 'mstrt, mstep, mkeep, mdspw, curwt, trgwt'
+         WRITE(iunit,*) mstrt, mstep, mkeep, mdspw, curwt, trgwt
+         WRITE(iunit,*)
+
+         WRITE(iunit,'(a)') '------ Output controls -----'
+         WRITE(iunit,'(a)') 'w_psurf w_csurf w_bnuv w_jsurf w_xerr w_svd'
+         WRITE(iunit,*) w_psurf, w_csurf, w_bnuv, w_jsurf, w_xerr, w_svd
+         WRITE(iunit,*)
+
+         WRITE(iunit,'(a)') '------ Plasma Surface ---- '
+         WRITE(iunit,'(a)') 'Number of fourier modes in table'
+         WRITE(iunit,*) mnmax_plasma
+         WRITE(iunit,'(a)') 'Table of fourier coefficients'
+         WRITE(iunit,'(a)') 'm,n,crc,czs,cls,crs,czc,clc'
+         DO mn = 1, mnmax_plasma
+            WRITE(iunit,'(x,2i6,1p6e20.12)') xm_plasma(mn),xn_plasma(mn), &
+               rmnc_plasma(mn),zmnc_plasma(mn),lmns_plasma(mn),&
+               rmns_plasma(mn),zmns_plasma(mn),lmnc_plasma(mn)
+         END DO
+         WRITE(iunit,*)
+
+         WRITE(iunit, '(a)') &
+            '------ Current Surface: Coil-Plasma separation = ??? -----'
+         WRITE(iunit,'(a)') 'Number of fourier modes in table'
+         WRITE(iunit,*) mnmax_surface
+         WRITE(iunit,'(a)') 'Table of fourier coefficients'
+         WRITE(iunit,'(a)') 'm,n,crc2,czs2,crs2,czc2'
+         DO mn = 1, mnmax_surface
+            WRITE(iunit,'(x,2i6,1p4e20.12)') xm_surface(mn),xn_surface(mn), &
+               rmnc_surface(mn),zmnc_surface(mn),&
+               rmns_surface(mn),zmns_surface(mn)
+         END DO
+
+         RETURN
+      END SUBROUTINE write_nescin
+
+      SUBROUTINE read_nescin(filename,istat)
+         IMPLICIT NONE
+         CHARACTER(*), INTENT(in) :: filename
+         INTEGER, INTENT(inout) :: istat
+         LOGICAL :: lexist
+         INTEGER :: iunit
+         ! Check for the file
+         INQUIRE(FILE=TRIM(filename),EXIST=lexist)
+         IF (.not.lexist) THEN
+            istat=-1
+            WRITE(6,*) " ERROR: Could not find file: "//TRIM(filename)
+            RETURN
+         END IF
+
+         ! Open the file
+         CALL safe_open (iunit, istat, filename, 'old', 'formatted')
+         IF (istat /= 0) THEN
+            WRITE(6,*) " ERROR: Could not open file: "//TRIM(filename)
+            RETURN
+         END IF
+
+         CALL read_nescout_deallocate! Read through file
+         DO
+            READ(iunit, '(A)', iostat=istat) line
+            IF (istat /=0) EXIT
+            ! Handle each option separately
+            SELECT CASE (TRIM(line))
+               CASE("------ Spatial dimensions ----")
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(6i6,l)') nu, nv, nu1, nv1, mpol, ntor, lasym
+               CASE("------ Fourier Dimensions ----")
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(4i6)') mf, nf, md, nd
+                  nmax  = 3*nv*(nu+2)+1
+                  mnd   = (md + 1)*(2*nd + 1)
+                  nuv   = nu*nv
+                  nuv1  = nu1*nv1
+                  nuvh  = nuv/2 + nu
+                  nuvh1 = nuv1/2 + nu1
+                  fnuv  = 1.0 / nuv
+               CASE("------ Plasma information from VMEC ----")
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(i6,3g25.16)') np, iota_edge, phip_edge, curpol
+                  alp   = pi2/np
+               CASE("------ Current Controls ----")
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(2g25.16,i6)') cut, cup, ibex
+               CASE("------ SVD controls -----")
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(4i6,2g25.16)') mstrt, mstep, mkeep, mdspw, curwt, trgwt
+               CASE("------ Output controls -----")
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(6i6)') w_psurf, w_csurf, w_bnuv, w_jsurf, w_xerr, w_svd
+               CASE("------ Plasma Surface ----")
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, *) mnmax_plasma
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(A)', iostat=istat) line
+                  CALL read_nescout_plasmaboundary(iunit,istat)
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, *) mnmax_surface
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(A)', iostat=istat) line
+                  CALL read_nescout_coilsurface(iunit,istat)
+            END SELECT
+         END DO
+
+         ! Close file
+         CLOSE(iunit)
+
+         RETURN
+      END SUBROUTINE read_nescin
+
+
+
       SUBROUTINE read_nescout(filename,istat)
          IMPLICIT NONE
          CHARACTER(*), INTENT(in) :: filename
@@ -425,8 +576,9 @@
          !norm   = DBLE(np) / DBLE(pi2*pi2*nu_local*nvp/2)
          u1 = nu_local-1
          v1 = nvp - 1
-         norm   = DBLE(np) / DBLE(pi2*2*u1*v1)
-         norm_fsub = DBLE(np) / (2*pi2)
+         !c = np.ones((npts))*self.curpol/(np.pi*4E-7*ncoils_per_halfperiod*2)
+         norm   = curpol*DBLE(np) / DBLE(u1*v1) 
+         norm_fsub = curpol*DBLE(np) / (2*pi2)
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
          x1_min = 0; x2_min = 0
@@ -564,9 +716,9 @@
                poty(u,:) = potu(u,:)*yu          - potv(u,:)*yv
                potz(u,:) = potu(u,:)*zureal(u,:) - potv(u,:)*zvreal(u,:)
             END DO
-            WRITE(327,*) X3D(1,:,1:nv_local)
-            WRITE(328,*) Y3D(1,:,1:nv_local)
-            WRITE(329,*) zreal
+            !WRITE(327,*) X3D(1,:,1:nv_local)
+            !WRITE(328,*) Y3D(1,:,1:nv_local)
+            !WRITE(329,*) zreal
             u = nu_local - 1
             v = nv_local - 1
             surf_area = np*SUM(SQRT( sxreal(1:u,1:v)**2+syreal(1:u,1:v)**2+szreal(1:u,1:v)**2))/(u*v)
@@ -575,9 +727,9 @@
             KX3D(1,:,1:nv_local) = syreal*potz - szreal*poty
             KY3D(1,:,1:nv_local) = szreal*potx - sxreal*potz
             KZ3D(1,:,1:nv_local) = sxreal*poty - syreal*potx
-            WRITE(337,*) KX3D(1,:,1:nv_local)
-            WRITE(338,*) KY3D(1,:,1:nv_local)
-            WRITE(339,*) KZ3D(1,:,1:nv_local)
+            !WRITE(337,*) KX3D(1,:,1:nv_local)
+            !WRITE(338,*) KY3D(1,:,1:nv_local)
+            !WRITE(339,*) KZ3D(1,:,1:nv_local)
             DEALLOCATE(xu,xv,yu,yv,cop,sip)
             DEALLOCATE(sxreal,syreal,szreal,rureal,rvreal,zureal,zvreal,potu,potv,potr,potp,potz,potx,poty)
 
