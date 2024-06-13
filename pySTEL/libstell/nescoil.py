@@ -195,7 +195,7 @@ class NESCOIL(FourierRep):
 		#ax.semilogy(abscissa, data, **kwargs)
 		if lplotnow: pyplot.show()
 
-	def cutcoils(self,ncoils_per_halfperiod):
+	def cutcoils(self,ncoils_per_halfperiod,lplot=False):
 		"""Cut coils from the NESCOIL potential
 
 		This routine cuts coils from the NESCOIL potential.
@@ -206,10 +206,13 @@ class NESCOIL(FourierRep):
 		----------
 		ncoils_per_halfperiod : integer
 			Number of coils per half period (suggest 5)
+		lplot : boolean (optional)
+			Plot the potential and potential lines. (default: False)
 		"""
 		import numpy as np
 		from libstell.coils import COILSET, COILGROUP, COIL
 		from contourpy import contour_generator, LineType
+		import matplotlib.pyplot as pyplot
 		# Generate coilset
 		coils = COILSET()
 		coils.nfp = self.np
@@ -229,16 +232,35 @@ class NESCOIL(FourierRep):
 		potmax = np.max(pot)
 		delta  = 2*(potmax-potmin)/float(2*ncoils_per_halfperiod+1.5)
 		cont_gen = contour_generator(x=np.squeeze(zeta),y=np.squeeze(theta),z=np.squeeze(pot), line_type=LineType.Separate)
-		# Now loop over contours
+		# Generate coutrour levels
+		cont_vals = np.zeros((ncoils_per_halfperiod))
 		for k in range(ncoils_per_halfperiod):
 			u = round(self.nu/2)
 			v = round((k+0.5)*self.nv/(ncoils_per_halfperiod))
-			level = cont_gen.lines(pot[0,u,v])
+			cont_vals[k] = pot[0,u,v]
+		# Make plot if requested
+		if lplot:
+			px = 1/pyplot.rcParams['figure.dpi']
+			fig=pyplot.figure(figsize=(1024*px,768*px))
+			ax=fig.add_subplot(111)
+			hmesh=ax.contourf(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),extend='both',cmap='Greens')
+			ax.contour(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),colors='black')
+			ax.set_xlabel('Toroidal angle [rad]')
+			ax.set_ylabel('Poloidal angle [rad]')
+			ax.set_title(r'NESCOIL Coil Cutting')
+			pyplot.colorbar(hmesh,label=r'Potential $\Phi$ [arb]',ax=ax)
+			pyplot.show()
+		# Now loop over contours
+		for k in range(ncoils_per_halfperiod):
+			#u = round(self.nu/2)
+			#v = round((k+0.5)*self.nv/(ncoils_per_halfperiod))
+			level = cont_gen.lines(cont_vals[k])
 			level = level[0]
 			th = level[:,1]
 			ze = level[:,0]
 			# Fourier transform the coil
-			r = th*0.0 ;z = th*0.0
+			npts = len(th)
+			r = np.zeros((npts)); z = np.zeros((npts))
 			for mn in range(self.mnmax_surface):
 				mtheta = th*self.xm_surface[mn]
 				nzeta  = ze*self.xn_surface[mn]
@@ -248,35 +270,26 @@ class NESCOIL(FourierRep):
 			ph = ze/self.np
 			x = r * np.cos(ph)
 			y = r * np.sin(ph)
-			c = x * 0.0 + self.curpol/(np.pi*4E-7)
-			g = x * 0.0 + k+1
+			c = np.ones((npts))*self.curpol/(np.pi*4E-7)
+			g = np.ones((npts))*(k+1)
 			c[-1] = 0.0
 			# Create stellarator symmetric coil
 			ph = (2.0*np.pi - ze)/self.np
-			x2 = r * np.cos(ph)
-			y2 = r * np.sin(ph)
-			z2 =-z
-			x2=x2[::-1]; y2=y2[::-1]; z2 = z2[::-1]
-			g2 = g
-			c2 = c
-			xo = np.append(x,x2)
-			yo = np.append(y,y2)
-			zo = np.append(z,z2)
+			xo = np.append(x,r[::-1]*np.cos(ph[::-1]))
+			yo = np.append(y,r[::-1]*np.sin(ph[::-1]))
+			zo = np.append(z,-z[::-1])
 			co = np.append(c,c)
 			go = np.append(g,g)
-			co[-1] = 0.0
-			print(zo)
 			x  = xo; y = yo; z = zo; c = co; g =go
 			# Now make all field periods
 			for mn in range(1,self.np):
 				cop = np.cos(mn*self.alp)
 				sip = np.sin(mn*self.alp)
-				x = np.append(x,xo*sip)
+				x = np.append(x,xo*cop)
 				y = np.append(y,yo*sip)
 				z = np.append(y,zo)
 				c = np.append(c,co)
 				g = np.append(g,go)
-			#print(c)
 			coils.xmin = np.minimum(coils.xmin,np.min(x))
 			coils.ymin = np.minimum(coils.ymin,np.min(y))
 			coils.zmin = np.minimum(coils.zmin,np.min(z))
