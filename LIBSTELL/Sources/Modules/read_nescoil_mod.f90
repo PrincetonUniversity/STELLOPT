@@ -578,7 +578,7 @@
 
       SUBROUTINE nescoil_bfield_init_ctypes
          IMPLICIT NONE
-         CALL nescoil_bfield_init(64,64)
+         CALL nescoil_bfield_init(128,128)
       END SUBROUTINE nescoil_bfield_init_ctypes
 
       SUBROUTINE nescoil_info(iunit)
@@ -611,7 +611,7 @@
                zureal(:,:), zvreal(:,:), sxreal(:,:),             &
                syreal(:,:), szreal(:,:), potu(:,:), potv(:,:),    &
                potr(:,:), potp(:,:), potz(:,:), potx(:,:),        &
-               poty(:,:)
+               poty(:,:), sn(:,:)
          TYPE(EZspline2_r8)   :: f_spl
          INTEGER, PARAMETER, DIMENSION(2) :: bcs1 = (/-1,-1/)
          INTEGER, PARAMETER, DIMENSION(2) :: bcs2 = (/-1,-1/)
@@ -625,8 +625,8 @@
          !norm   = DBLE(np) / DBLE(pi2*pi2*nu_local*nvp/2)
          u1 = nu_local-1
          v1 = nvp - 1
-         !c = np.ones((npts))*self.curpol/(np.pi*4E-7*ncoils_per_halfperiod*2)
-         norm   = curpol*DBLE(np) / DBLE(u1*v1) 
+         norm   = curpol*DBLE(np) / DBLE(u1*v1)
+         norm   = curpol/DBLE(u1*v1*2*pi2)
          norm_fsub = curpol*DBLE(np) / (2*pi2)
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
@@ -699,7 +699,8 @@
                      potp(nu_local,nv_local), &
                      potz(nu_local,nv_local), &
                      potx(nu_local,nv_local), &
-                     poty(nu_local,nv_local))
+                     poty(nu_local,nv_local), &
+                     sn(nu_local,nv_local))
             ALLOCATE(fmn_temp(mnmax_surface))
             FORALL(u=1:nu_local) xu(u) = DBLE(u-1)/DBLE(nu_local-1)
             FORALL(v=1:nv_local) xv(v) = DBLE(v-1)/DBLE(nv_local-1)
@@ -757,30 +758,21 @@
                syreal(u,:) = -xv(:)*zureal(u,:) + zvreal(u,:)*xu(:)
                szreal(u,:) = -xu(:)*yv(:)       + yu(:)*xv(:)
                ! Potential
-               !potr(u,:) = potu(u,:)*rureal(u,:) + potv(u,:)*rvreal(u,:)
-               !potp(u,:) = potv(u,:)*rreal(u,:)*alp
-               !potx(u,:) = potr(u,:)*cop - potp(u,:)*sip
-               !poty(u,:) = potr(u,:)*sip + potp(u,:)*cop
                potx(u,:) = potu(u,:)*xu          - potv(u,:)*xv
                poty(u,:) = potu(u,:)*yu          - potv(u,:)*yv
                potz(u,:) = potu(u,:)*zureal(u,:) - potv(u,:)*zvreal(u,:)
             END DO
-            !WRITE(327,*) X3D(1,:,1:nv_local)
-            !WRITE(328,*) Y3D(1,:,1:nv_local)
-            !WRITE(329,*) zreal
+            sn = SQRT(sxreal**2+syreal**2+szreal**2)
             u = nu_local - 1
             v = nv_local - 1
             surf_area = np*SUM(SQRT( sxreal(1:u,1:v)**2+syreal(1:u,1:v)**2+szreal(1:u,1:v)**2))/(u*v)
             PRINT *,surf_area
             Z3D(1,:,1:nv_local) = zreal
-            KX3D(1,:,1:nv_local) = syreal*potz - szreal*poty
-            KY3D(1,:,1:nv_local) = szreal*potx - sxreal*potz
-            KZ3D(1,:,1:nv_local) = sxreal*poty - syreal*potx
-            !WRITE(337,*) KX3D(1,:,1:nv_local)
-            !WRITE(338,*) KY3D(1,:,1:nv_local)
-            !WRITE(339,*) KZ3D(1,:,1:nv_local)
+            KX3D(1,:,1:nv_local) = (syreal*potz - szreal*poty)/sn
+            KY3D(1,:,1:nv_local) = (szreal*potx - sxreal*potz)/sn
+            KZ3D(1,:,1:nv_local) = (sxreal*poty - syreal*potx)/sn
             DEALLOCATE(xu,xv,yu,yv,cop,sip)
-            DEALLOCATE(sxreal,syreal,szreal,rureal,rvreal,zureal,zvreal,potu,potv,potr,potp,potz,potx,poty)
+            DEALLOCATE(sxreal,syreal,szreal,rureal,rvreal,zureal,zvreal,potu,potv,potr,potp,potz,potx,poty,sn)
 
             ! Now extend to more field periods
             ALLOCATE(cop(np),sip(np))
