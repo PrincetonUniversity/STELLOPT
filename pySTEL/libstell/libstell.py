@@ -527,6 +527,81 @@ class LIBSTELL():
 		write_fieldlines_input.restype=None
 		write_fieldlines_input(filename.encode('UTF-8'),len(filename))
 
+	def read_nescoil_input(self,filename):
+		"""Reads a NESCOIL input file
+
+		This routine wrappers read_nescin function in
+		read_nescoil_mod.
+
+		Parameters
+		----------
+		filename : str
+			Path to input file.
+		Returns
+		-------
+		out_data : dict
+			Dictionary of items.
+		"""
+		import ctypes as ct
+		# We use an added routine as a helper
+		module_name = self.s1+'read_nescoil_mod_'+self.s2
+		read_nescin = getattr(self.libstell,module_name+'_read_nescin'+self.s3)
+		read_nescin.argtypes=[ct.c_char_p, ct.POINTER(ct.c_int), ct.c_long]
+		read_nescin.restype=None
+		ierr = ct.c_int(0)
+		read_nescin(filename.encode('UTF-8'), ct.byref(ierr), len(filename))
+		# Setup Arrays
+		out_data={}
+		# Get Scalars
+		booList  = ['lasym']
+		booLen   = [1]*len(booList)
+		intList  = ['nu', 'nv', 'nu1', 'nv1', 'mpol', 'ntor', 'mf', 'nf', 'md', 'nd', 'np', \
+					'ibex', 'mstrt', 'mstep', 'mkeep', 'mdspw', 'w_psurf', 'w_csurf', \
+					'w_bnuv', 'w_jsurf', 'w_xerr', 'w_svd', 'mnmax_plasma', \
+					'mnmax_surface', 'nmax', 'mnd', 'nuv', 'nuv1', 'nuvh', 'nuvh1']
+		intLen   = [1]*len(intList)
+		realList = ['iota_edge', 'phip_edge', 'curpol', 'cut', 'cup', 'curwt', 'trgwt','alp']
+		realLen = [1]*len(realList)
+		scalar_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen)
+		# Get 1D Int Arrays
+		intList= ['xm_plasma', 'xn_plasma','xm_surface', 'xn_surface']
+		intLen = [(scalar_data['mnmax_plasma'],1),(scalar_data['mnmax_plasma'],1),\
+			(scalar_data['mnmax_surface'],1),(scalar_data['mnmax_surface'],1)]
+		# Get 1D Real Arrays
+		realList = ['rmnc_plasma', 'zmns_plasma', 'rmns_plasma', \
+			'zmnc_plasma', 'lmnc_plasma', 'lmns_plasma' ]
+		realLen = [(scalar_data['mnmax_plasma'],1)]*len(realList)
+		realList.extend(['rmnc_surface', 'zmns_surface', 'rmns_surface', \
+			'zmnc_surface'])
+		realLen.extend([(scalar_data['mnmax_surface'],1)]*4)
+		array_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen)
+		# Return
+		return scalar_data | array_data
+
+	def write_nescoil_input(self,filename,out_dict=None):
+		"""Wrappers writing of the NESCOIL nescin file
+
+		This routine wrappers write_nescin in LIBSTELL
+
+		Parameters
+		----------
+		filename : str
+			Path to input file.
+		out_dict : dict (optional)
+			Dictionary of items to change.
+		"""
+		import ctypes as ct
+		module_name = self.s1+'read_nescoil_mod_'+self.s2
+		# Check if we want to update values
+		if out_dict:
+			for key in out_dict:
+				self.set_module_var(module_name,key,out_dict[key])
+		write_nescin = getattr(self.libstell,module_name+'_write_nescin'+self.s3)
+		write_nescin.argtypes = [ct.c_char_p, ct.POINTER(ct.c_int), ct.c_long]
+		write_nescin.restype=None
+		ierr = ct.c_int(0)
+		write_nescin(filename.encode('UTF-8'),ct.byref(ierr),len(filename))
+
 	def read_stellopt_input(self,filename):
 		"""Reads a STELLOPT OPTIMUM namelist
 
@@ -1180,19 +1255,25 @@ class LIBSTELL():
 		elif type(val) == str:
 			n = len(val)
 			f = ct.c_char*n
-		elif type(val) in (np.ndarray,list):
+		elif type(val) == list:
 			if type(val[0]) == bool:
 				tt = ct.c_bool
-			elif type(val[0]) == np.bool_:
+			else:
+				print(f'   Unrecognized list type ({var}):',type(val[0]))
+				return
+			n = val.ndim
+			f = tt*val.size
+		elif type(val) == np.ndarray:
+			if val.dtype.type == np.bool_:
 				tt = ct.c_bool
-			elif type(val[0]) == np.int32:
+			elif val.dtype.type == np.int32:
 				tt = ct.c_int
-			elif type(val[0]) == np.int64:
+			elif val.dtype.type == np.int64:
 				tt = ct.c_int
-			elif type(val[0]) == np.float64:
+			elif val.dtype.type == np.float64:
 				tt = ct.c_double
 			else:
-				print(f'   Unrecognized type ({var}):',type(val[0]))
+				print(f'   Unrecognized ndarray type ({var}):',val.dtype.type)
 				return
 			n = val.ndim
 			f = tt*val.size
@@ -1312,7 +1393,7 @@ class LIBSTELL():
 
 class FourierRep():
 	def __init__(self, parent=None):
-		self.test = None
+		test = None
 
 	def cfunct(self,theta,phi,fmnc,xm,xn):
 		"""Cos transformation

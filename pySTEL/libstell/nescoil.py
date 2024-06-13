@@ -19,6 +19,33 @@ class NESCOIL(FourierRep):
 		super().__init__()
 		self.libStell = LIBSTELL()
 
+	def read_nescin(self,filename):
+		"""Reads a NESCOIL input file.
+
+		This routine reads and initilizes the NESCOIL
+		class with information from a nescin file.
+
+		Parameters
+		----------
+		file : str
+			Path to nescin file.
+		"""
+		nescin_dict = self.libStell.read_nescoil_input(filename)
+		for key in nescin_dict:
+			setattr(self, key, nescin_dict[key])
+
+	def write_nescin(self,filename):
+		"""Writes a NESCOIL input file.
+
+		This routine wrappers the write_nescoil_input module writing routine.
+		Parameters
+		----------
+		filename : string
+			Path to nescin file.
+		"""
+		out_dict = vars(self)
+		self.libStell.write_nescoil_input(filename,out_dict)
+
 	def read_nescout(self,filename):
 		"""Reads a NESCOIL output file.
 
