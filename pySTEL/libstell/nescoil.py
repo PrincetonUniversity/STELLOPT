@@ -270,7 +270,7 @@ class NESCOIL(FourierRep):
 			ph = ze/self.np
 			x = r * np.cos(ph)
 			y = r * np.sin(ph)
-			c = np.ones((npts))*self.curpol/(np.pi*4E-7)
+			c = np.ones((npts))*self.curpol/(np.pi*4E-7*ncoils_per_halfperiod*2)
 			g = np.ones((npts))*(k+1)
 			c[-1] = 0.0
 			# Create stellarator symmetric coil
