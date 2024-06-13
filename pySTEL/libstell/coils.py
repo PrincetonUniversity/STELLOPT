@@ -235,10 +235,10 @@ class COILSET(LIBSTELL):
 				current[-1] = 0
 				npts_write = self.groups[i].coils[j].npts
 				if j == self.groups[i].ncoils-1: npts_write = npts_write-1
-				for k in range(npts_write):
+				for k in range(npts_write-1):
 					f.write(f"{self.groups[i].coils[j].x[k]:.10E} {self.groups[i].coils[j].y[k]:.10E} {self.groups[i].coils[j].z[k]:.10E} {current[k]:.10E}\n")
-			k = self.groups[i].coils[j].npts-1
-			f.write(f"{self.groups[i].coils[j].x[k]:.10E} {self.groups[i].coils[j].y[k]:.10E} {self.groups[i].coils[j].z[k]:.10E} {current[k]:.10E} {i+1} {self.groups[i].name}\n")
+				k = self.groups[i].coils[j].npts-1
+				f.write(f"{self.groups[i].coils[j].x[k]:.10E} {self.groups[i].coils[j].y[k]:.10E} {self.groups[i].coils[j].z[k]:.10E} {current[k]:.10E} {i+1} {self.groups[i].name}\n")
 		f.close()
 
 	def coilbiot(self,x,y,z,extcur=None):
