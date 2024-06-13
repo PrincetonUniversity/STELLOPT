@@ -98,8 +98,10 @@ class NESCOIL(FourierRep):
 		pot = self.generatePotential(theta,zeta)
 		nu = len(theta)
 		nv = len(zeta)
-		for j in range(self.nu): pot[0,j,:] = pot[0,j,:] - self.cut*0.5*theta[j]/np.pi
-		for j in range(self.nv): pot[0,:,j] = pot[0,:,j] - self.cup*0.5*zeta[j]/(np.pi*self.np)
+		for j in range(nu): pot[0,j,:] = pot[0,j,:] - self.cut*0.5*theta[j]/np.pi
+		for j in range(nv): 
+			v = zeta[j]/(np.pi*2)
+			pot[0,:,j] = pot[0,:,j] - self.cup*v
 		return pot
 
 
@@ -189,8 +191,8 @@ class NESCOIL(FourierRep):
 		zp = self.sfunct(theta,zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
 		rc = self.cfunct(theta,zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
 		zc = self.sfunct(theta,zeta,self.zmns_surface.T,self.xm_surface,self.xn_surface)
-		ax = self.isotoro(rp,zp,zeta,0,color='red')
-		hc = self.isotoro(rc,zc,zeta,0,axes=ax,color='green')
+		ax = self.isotoro(rp,zp,zeta/self.np,0,color='red')
+		hc = self.isotoro(rc,zc,zeta/self.np,0,axes=ax,color='green')
 		#ax.set_aspect('equal', 'box')
 		#ax.semilogy(abscissa, data, **kwargs)
 		if lplotnow: pyplot.show()
@@ -220,24 +222,26 @@ class NESCOIL(FourierRep):
 		coils.xmin = 1E9; coils.xmax=-1E9
 		coils.ymin = 1E9; coils.ymax=-1E9
 		coils.zmin = 1E9; coils.zmax=-1E9
-		#coils.groups = []
-		# First calculate the potential on a grid
-		theta = np.ndarray((self.nu,1))
-		zeta  = np.ndarray((self.nv,1))
-		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu-1)
-		for j in range(self.nv):  zeta[j]=np.pi*j/float(self.nv-1)
+		# First generate potential to determine contours
+		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
+		zeta  = np.reshape( np.linspace(0,np.pi,self.nv),(self.nv,1))
+		pot = self.generateTotalPotential(theta,zeta)
+		cont_vals = np.zeros((ncoils_per_halfperiod))
+		for k in range(ncoils_per_halfperiod):
+			u = 0
+			v = round((k+0.5)*self.nv/(ncoils_per_halfperiod))
+			cont_vals[k] = pot[0,u,v]
+		# Now calculate a larger potential map so coils can span periods
+		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
+		zeta_min = (-1.0/ncoils_per_halfperiod)*np.pi
+		zeta_max = (1.0+1.0/ncoils_per_halfperiod)*np.pi
+		zeta  = np.reshape( np.linspace(zeta_min,zeta_max,self.nv),(self.nv,1))
 		pot = self.generateTotalPotential(theta,zeta)
 		# Now generate contours
 		potmin = np.min(pot)
 		potmax = np.max(pot)
 		delta  = 2*(potmax-potmin)/float(2*ncoils_per_halfperiod+1.5)
 		cont_gen = contour_generator(x=np.squeeze(zeta),y=np.squeeze(theta),z=np.squeeze(pot), line_type=LineType.Separate)
-		# Generate coutrour levels
-		cont_vals = np.zeros((ncoils_per_halfperiod))
-		for k in range(ncoils_per_halfperiod):
-			u = round(self.nu/2)
-			v = round((k+0.5)*self.nv/(ncoils_per_halfperiod))
-			cont_vals[k] = pot[0,u,v]
 		# Make plot if requested
 		if lplot:
 			px = 1/pyplot.rcParams['figure.dpi']
@@ -252,12 +256,11 @@ class NESCOIL(FourierRep):
 			pyplot.show()
 		# Now loop over contours
 		for k in range(ncoils_per_halfperiod):
-			#u = round(self.nu/2)
-			#v = round((k+0.5)*self.nv/(ncoils_per_halfperiod))
 			level = cont_gen.lines(cont_vals[k])
-			level = level[0]
-			th = level[:,1]
-			ze = level[:,0]
+			th = np.array([]); ze = np.array([])
+			for temp in level:
+				th = np.append(th,temp[:,1])
+				ze = np.append(ze,temp[:,0])
 			# Fourier transform the coil
 			npts = len(th)
 			r = np.zeros((npts)); z = np.zeros((npts))
@@ -267,7 +270,7 @@ class NESCOIL(FourierRep):
 				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
 				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
 			# Convert to XYZ and make current/group
-			ph = ze/self.np
+			ph = ze/float(self.np)
 			x = r * np.cos(ph)
 			y = r * np.sin(ph)
 			c = np.ones((npts))*self.curpol/(np.pi*4E-7*ncoils_per_halfperiod*2)
@@ -285,9 +288,9 @@ class NESCOIL(FourierRep):
 			for mn in range(1,self.np):
 				cop = np.cos(mn*self.alp)
 				sip = np.sin(mn*self.alp)
-				x = np.append(x,xo*cop)
-				y = np.append(y,yo*sip)
-				z = np.append(y,zo)
+				x = np.append(x,xo*cop - yo*sip)
+				y = np.append(y,xo*sip + yo*cop)
+				z = np.append(z,zo)
 				c = np.append(c,co)
 				g = np.append(g,go)
 			coils.xmin = np.minimum(coils.xmin,np.min(x))
@@ -301,15 +304,6 @@ class NESCOIL(FourierRep):
 			coils.groups.extend([COILGROUP(x,y,z,c,coil_name)])
 		# Return a coil object
 		return coils
-
-
-
-
-
-
-
-
-
 
 # Main routine
 if __name__=="__main__":
