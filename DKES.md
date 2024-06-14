@@ -1,3 +1,5 @@
+{% include head.html %}
+
 DKES
 ====
 
@@ -11,8 +13,18 @@ coordinates are used to describe the equilibrium, which must satisfy the
 stellarator symmetry conditions.
 
 ------------------------------------------------------------------------
+Table of Contents
+   * [Theory](#theory)
+   * [Compilation](#compilation)
+   * [Input Data Format](#input-data-format)
+   * [Execution](#execution)
+   * [Output Data Format](#output-data-format)
+   * [Visualization](#visualization)
+   * [Tutorials](#tutorials)
 
-### Theory\[\[\#Theory\]\]
+------------------------------------------------------------------------
+
+### Theory
 
 The DKES code is based on a variation principle for the linearized
 drift-kinetic, Fokker-Planck equation. The formulation neglects the effect
@@ -20,20 +32,20 @@ of magnetic drifts on the orbits of the perturbed distribution function.
 This neglect precludes the code from being able to study resonant
 superbanana orbits, and systems with very low collisionality. Such
 effects must also be considered when the radial electric field potential
-satisfies ePhi/T < 1/A. The advantage of this formualtion is that it
+satisfies $$ e\Phi/T < 1/A$$. The advantage of this formualtion is that it
 reduces the problem from 5 dimension to 3. The conservation of symmetry
 and conservative properties are also preserved allowing for a
 variation approach to be taken. 
 
 ------------------------------------------------------------------------
 
-### Compilation\[\[\#Compilation\]\]
+### Compilation
 
-BNORM is a component of the STELLOPT suite of codes.
+DKES is a component of the STELLOPT suite of codes.
 
 ------------------------------------------------------------------------
 
-### Input Data Format\[\[\#Input\]\]
+### Input Data Format
 
 The DKES code needs an 'input_dkes.ext' file which contains the `DKES_INDATA`
 namelist such as
@@ -132,7 +144,7 @@ The user can also provide DKES with such a file to ease implementation.
 
 ------------------------------------------------------------------------
 
-### Execution\[\[\#Execution\]\]
+### Execution
 
 The simplest invokation of DKES is as follow
 ```
@@ -157,7 +169,7 @@ file with the filename modifer appended if supplied.
 
 ------------------------------------------------------------------------
 
-### Output Data Format\[\[\#Output\]\]
+### Output Data Format
 
 The code will produce three files 'dkesout', 'opt_dkes', and 'results'.
 Additionally, if called using the alternative invokation an 'input_dkes'
@@ -169,7 +181,7 @@ output in 'results.'
 
 ------------------------------------------------------------------------
 
-### Visualization\[\[\#Visualization\]\]
+### Visualization
 
 The 'results' file may be read by any plotting package capable of
 importing space delimited data. Note the columns for `LXXm` and `LXXp`
@@ -177,6 +189,6 @@ are the variational bounds for the coefficients.
 
 ------------------------------------------------------------------------
 
-### Tutorials\[\[\#Tutorials\]\]
+### Tutorials
 
 Put links to tutorial pages here.
