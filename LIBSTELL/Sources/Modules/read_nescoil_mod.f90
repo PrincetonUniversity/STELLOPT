@@ -576,11 +576,6 @@
          RETURN
       END SUBROUTINE read_nescout_accuracy
 
-      SUBROUTINE nescoil_bfield_init_ctypes
-         IMPLICIT NONE
-         CALL nescoil_bfield_init(128,128)
-      END SUBROUTINE nescoil_bfield_init_ctypes
-
       SUBROUTINE nescoil_info(iunit)
          IMPLICIT NONE
          ! INPUT VARIABLES
@@ -590,11 +585,15 @@
          WRITE(iunit,'(A)')                    '----- NESCOIL Current Surface -----'
          WRITE(iunit,'(A,ES11.4,A)')           '   Surface Area: ',surf_area,' [m]'
          WRITE(iunit,'(A,ES11.4,A)')           '   Poloidal Current: ',curpol*np,' [A]'
-         !WRITE(iunit,'(A,I4,A,I4,A,I4,A,I3)')   '   NR = ',nr_vc,';   NU = ',nu_vc,';  NV = ',nv_vc,';  NFP = ',nvp/nv_vc
-         !WRITE(iunit,'(A,I6)')                  '   NUVP = ',nuvp
-         !WRITE(iunit,'(A,I6,A,I8,A)')                  '   MIN_CLS = ',MIN_CLS,'   (',IWRK,')'
          CALL FLUSH(iunit)
       END SUBROUTINE nescoil_info
+
+      SUBROUTINE nescoil_bfield_init_ctypes(nu_local, nv_local)
+         IMPLICIT NONE
+         INTEGER, INTENT(IN) :: nu_local
+         INTEGER, INTENT(IN) :: nv_local
+         CALL nescoil_bfield_init(nu_local,nv_local)
+      END SUBROUTINE nescoil_bfield_init_ctypes
 
       SUBROUTINE nescoil_bfield_init(nu_local, nv_local, comm)
          USE mpi_sharmem
