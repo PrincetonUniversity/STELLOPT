@@ -621,12 +621,13 @@
          ! Factors
          nu_int = nu_local
          nvp    = (nv_local-1)*np + 1 ! Because of stellarator symmetry
-         !norm   = DBLE(np) / DBLE(pi2*pi2*nu_local*nvp/2)
          u1 = nu_local-1
          v1 = nvp - 1
-         norm   = curpol*DBLE(np) / DBLE(u1*v1)
-         norm   = curpol/DBLE(u1*v1*2*pi2)
-         norm_fsub = curpol*DBLE(np) / (2*pi2)
+         !norm   = curpol*DBLE(np) / DBLE(u1*v1*2*pi2)
+         !norm   = curpol*DBLE(np) / DBLE(u1*v1*pi2*pi2/2)
+         !norm_fsub = curpol*DBLE(np) / (pi2*pi2*pi2*pi2/2)
+         norm   = DBLE(np) / DBLE(u1*v1)
+         norm_fsub = DBLE(np) / (pi2*pi2)
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
          x1_min = 0; x2_min = 0
@@ -682,6 +683,8 @@
          ENDIF
 #endif
          IF (shar_rank == 0) THEN
+            X3D = zero; Y3D = zero; Z3D = zero
+            KX3D = zero; KY3D = zero; KZ3D = zero
             ALLOCATE(xu(nu_local),xv(nv_local))
             ALLOCATE(rreal(nu_local,nv_local), &
                      zreal(nu_local,nv_local), &
@@ -728,15 +731,13 @@
             CALL mntouv_local(mnmax_pot,nu_local,nv_local,xu,xv,fmn_temp,xm_pot,xn_pot,potv,0,0)
             DEALLOCATE(xu,xv,fmn_temp)
 
-
-
             ! Correct derivatives for missing pi2
             rureal = pi2*rureal
             rvreal = pi2*rvreal
             zureal = pi2*zureal
             zvreal = pi2*zvreal
-            potu   = potu
-            potv   = potv
+            potu   = pi2*potu
+            potv   = pi2*potv
 
             ! Add secular pieces
             potu = potu - cut
@@ -749,27 +750,29 @@
             DO u = 1, nu_local
                X3D(1,u,1:nv_local) = rreal(u,:)*cop
                Y3D(1,u,1:nv_local) = rreal(u,:)*sip
+               ! Metric elements
                xu       = rureal(u,:)*cop
                yu       = rureal(u,:)*sip
                xv       = rvreal(u,:)*cop - rreal(u,:)*sip*alp
                yv       = rvreal(u,:)*sip + rreal(u,:)*cop*alp
+               ! Surface Normal
                sxreal(u,:) = -yu(:)*zvreal(u,:) + zureal(u,:)*yv(:)
                syreal(u,:) = -xv(:)*zureal(u,:) + zvreal(u,:)*xu(:)
                szreal(u,:) = -xu(:)*yv(:)       + yu(:)*xv(:)
                ! Potential
-               potx(u,:) = potu(u,:)*xu          - potv(u,:)*xv
-               poty(u,:) = potu(u,:)*yu          - potv(u,:)*yv
-               potz(u,:) = potu(u,:)*zureal(u,:) - potv(u,:)*zvreal(u,:)
+               potx(u,:) = potu(u,:)*xu          + potv(u,:)*xv
+               poty(u,:) = potu(u,:)*yu          + potv(u,:)*yv
+               potz(u,:) = potu(u,:)*zureal(u,:) + potv(u,:)*zvreal(u,:)
             END DO
+            Z3D(1,:,1:nv_local) = zreal
             sn = SQRT(sxreal**2+syreal**2+szreal**2)
+            KX3D(1,:,1:nv_local) = (syreal*potz - szreal*poty)/sn
+            KY3D(1,:,1:nv_local) = (szreal*potx - sxreal*potz)/sn
+            KZ3D(1,:,1:nv_local) = (sxreal*poty - syreal*potx)/sn
             u = nu_local - 1
             v = nv_local - 1
             surf_area = np*SUM(SQRT( sxreal(1:u,1:v)**2+syreal(1:u,1:v)**2+szreal(1:u,1:v)**2))/(u*v)
             PRINT *,surf_area
-            Z3D(1,:,1:nv_local) = zreal
-            KX3D(1,:,1:nv_local) = (syreal*potz - szreal*poty)/sn
-            KY3D(1,:,1:nv_local) = (szreal*potx - sxreal*potz)/sn
-            KZ3D(1,:,1:nv_local) = (sxreal*poty - syreal*potx)/sn
             DEALLOCATE(xu,xv,yu,yv,cop,sip)
             DEALLOCATE(sxreal,syreal,szreal,rureal,rvreal,zureal,zvreal,potu,potv,potr,potp,potz,potx,poty,sn)
 
@@ -790,6 +793,20 @@
                i2 = i1 + nv_local - 1
             END DO
             DEALLOCATE(cop,sip)
+
+            ! Make Truely periodic
+            X3D(1,nu_local,:) = X3D(1,1,:)
+            Y3D(1,nu_local,:) = Y3D(1,1,:)
+            Z3D(1,nu_local,:) = Z3D(1,1,:)
+            X3D(1,:,nvp) = X3D(1,:,1)
+            Y3D(1,:,nvp) = Y3D(1,:,1)
+            Z3D(1,:,nvp) = Z3D(1,:,1)
+            KX3D(1,nu_local,:) = KX3D(1,1,:)
+            KY3D(1,nu_local,:) = KY3D(1,1,:)
+            KZ3D(1,nu_local,:) = KZ3D(1,1,:)
+            KX3D(1,:,nvp) = KX3D(1,:,1)
+            KY3D(1,:,nvp) = KY3D(1,:,1)
+            KZ3D(1,:,nvp) = KZ3D(1,:,1)
 
             ! Create splines
             CALL EZspline_init(f_spl,nu_local,nvp,bcs1,bcs2,ier)
@@ -826,10 +843,10 @@
             CALL EZspline_free(f_spl,ier)
          END IF
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
-         CALL MPI_BARRIER(shar_comm,ier)
-         CALL MPI_COMM_FREE(shar_comm,ier)
-      END IF
+         IF (PRESENT(comm)) THEN
+            CALL MPI_BARRIER(shar_comm,ier)
+            CALL MPI_COMM_FREE(shar_comm,ier)
+         END IF
 #endif
       RETURN
       END SUBROUTINE nescoil_bfield_init
@@ -901,16 +918,17 @@
          END IF
 
          a(1:2) = zero
-         b(1:2) = one
+         b(1:2) = pi2
          mincls = 0
          maxcls = 16777216
          absreq = 1.0E-6
-         relreq = 1.0E-2
+         relreq = 1.0E-4
          finest = zero
          absest = zero
          x_f      = x
          y_f      = y
          z_f      = z
+         funcls   = 0
          adapt_rerun = .true.
          restar = 0
          DO WHILE (adapt_rerun) 
@@ -1006,9 +1024,8 @@
          f(1) = (ky*(z_f-zs)-kz*(y_f-ys))*gf3
          f(2) = (kz*(x_f-xs)-kx*(z_f-zs))*gf3
          f(3) = (kx*(y_f-ys)-ky*(x_f-xs))*gf3
-         !WRITE(427,*) vec(1),vec(2),xs,ys,zs
+         !WRITE(327,'(6(ES20.12))') xs,ys,zs,kx,ky,kz
          RETURN
-         ! END SUBROUTINE
       END SUBROUTINE funsub_b
 
       SUBROUTINE read_nescout_deallocate(comm)
