@@ -61,11 +61,29 @@ class NESCOIL(FourierRep):
 		for key in nescout_dict:
 			setattr(self, key, nescout_dict[key])
 
-	def bfield(self,x,y,z):
+	def bfield_init(self,nu=128,nv=128):
+		"""Initilaizes the magnetic field from a NESCOIL surface current
+
+		This routine initializes the magnetic field 
+		from a NESCOIL surface current.
+
+		Parameters
+		----------
+		nu : int (optional)
+			Number of poloidal gridpoints (default: 128)
+		nv : int (optional)
+			Number of toroidal gridpoints (default: 128)
+		"""
+		return self.libStell.nescout_bfield_init(nu,nv)
+
+	def bfield(self,x,y,z,istat=0):
 		"""Evaluates the magnetic field from a NESCOIL surface current
 
 		This routine evaluates the magnetic field at a point in space
-		from a NESCOIL surface current.
+		from a NESCOIL surface current. The status flag can be used to
+		control the integration method.  If istat<0 then a discrete
+		integral will be used, otherwise an adaptive integration is
+		used.
 
 		Parameters
 		----------
@@ -75,6 +93,8 @@ class NESCOIL(FourierRep):
 			Y point to evaluate [m]
 		z : float
 			Z point to evaluate [m]
+		istat : int (optional)
+			Status flag
 		Returns
 		----------
 		bx : float
@@ -84,7 +104,7 @@ class NESCOIL(FourierRep):
 		bZ : float
 			Z-component of magnetic field [T]
 		"""
-		return self.libStell.nescout_bfield(x,y,z,istat=-327)
+		return self.libStell.nescout_bfield(x,y,z,istat=istat)
 
 	def generatePotential(self,theta,zeta):
 		"""Computes the potential on a grid

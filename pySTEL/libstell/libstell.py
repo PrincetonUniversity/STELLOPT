@@ -1112,6 +1112,29 @@ class LIBSTELL():
 		# Return
 		return scalar_data | array_data
 
+	def nescout_bfield_init(self,nu=128,nv=128):
+		"""Initializes the magnetic field from a NESCOIL surface current
+
+		This routine evaluates the magnetic field at a point in space
+		from a NESCOIL surface current.
+
+		Parameters
+		----------
+		nu : int (optional)
+			Number of poloidal gridpoints (default: 128)
+		nv : int (optional)
+			Number of toroidal gridpoints (default: 128)
+		"""
+		import ctypes as ct
+		module_name = self.s1+'read_nescoil_mod_'+self.s2
+		# initialize values
+		bfield_init = getattr(self.libstell,module_name+'_nescoil_bfield_init_ctypes'+self.s3)
+		bfield_init.argtypes=[ct.POINTER(ct.c_int),ct.POINTER(ct.c_int)]
+		bfield_init.restype=None
+		nu_ctype = ct.c_int(nu)
+		nv_ctype = ct.c_int(nv)
+		bfield_init(nu_ctype,nv_ctype)
+
 	def nescout_bfield(self,x,y,z,istat=0):
 		"""Evaluates the magnetic field from a NESCOIL surface current
 
@@ -1139,12 +1162,6 @@ class LIBSTELL():
 		"""
 		import ctypes as ct
 		module_name = self.s1+'read_nescoil_mod_'+self.s2
-		# initialize values
-		bfield_init = getattr(self.libstell,module_name+'_nescoil_bfield_init_ctypes'+self.s3)
-		bfield_init.argtypes=None
-		bfield_init.restype=None
-		bfield_init()
-		# initialize values
 		bfield = getattr(self.libstell,module_name+'_nescoil_bfield_adapt_dbl'+self.s3)
 		bfield.argtypes=[ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
 		                 ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
