@@ -28,7 +28,7 @@ if __name__=="__main__":
 			coil = nescout.cutcoils(5,lplot=args.lplot)
 			coil_txt = args.nescout_file.split('.',1)
 			coil.write_coils_file(f'coils.{coil_txt[1]}')
-			if args.lplot_3d: coil.plotcoils()
+			if args.lplot_3d: coil.plotcoilsHalfFP()
 		else:
 			if args.lplot: 
 				px = 1/pyplot.rcParams['figure.dpi']
