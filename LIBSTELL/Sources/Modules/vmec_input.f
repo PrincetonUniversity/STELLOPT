@@ -289,6 +289,7 @@
       WRITE (iunit,'(2x,3a)') "PRECON_TYPE = '", TRIM(precon_type),"'" 
       WRITE (iunit,'(2x,a,1p,e14.6)') "PREC2D_THRESHOLD = ", 
      1                                prec2d_threshold
+      WRITE(iunit,outint) 'PRE_NITER',pre_niter
       WRITE(iunit,'(A)') '!----- Grid Parameters -----'
       WRITE(iunit,outboo) 'LASYM',lasym
       WRITE(iunit,outint4) 'NFP',nfp
