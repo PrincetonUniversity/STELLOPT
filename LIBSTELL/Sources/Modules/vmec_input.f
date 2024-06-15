@@ -11,7 +11,7 @@
       INTEGER, PARAMETER :: ns_default   = 31
       INTEGER :: nfp, ncurr, nsin, niter, nstep, nvacskip, mpol, ntor,
      1           ntheta, nzeta, mfilter_fbdy, nfilter_fbdy,
-     2           max_main_iterations, omp_num_threads
+     2           max_main_iterations, omp_num_threads, pre_niter
       INTEGER, DIMENSION(100) :: ns_array, niter_array
       INTEGER :: imse, isnodes, itse, ipnodes, iopt_raxis,
      1   imatch_phiedge, nflxs
@@ -82,7 +82,7 @@
      1   pt_type, at_aux_s, at_aux_f,
      2   rbc, zbs, rbs, zbc, spres_ped, pres_scale, raxis_cc, zaxis_cs, 
      3   raxis_cs, zaxis_cc, mpol, ntor, ntheta, nzeta, mfilter_fbdy,
-     3   nfilter_fbdy, niter_array,
+     3   nfilter_fbdy, niter_array, pre_niter, 
      4   ns_array, ftol_array, tcon0, precon_type, prec2d_threshold,
      4   curtor, sigma_current, extcur, omp_num_threads,
      5   phiedge, psa, pfa, isa, ifa, imatch_phiedge, iopt_raxis, 
@@ -120,6 +120,7 @@
       ntheta = 0;  nzeta = 0
       ns_array = 0;  ns_array(1) = ns_default
       niter_array = -1;
+      pre_niter = -1
       bloat = 1
       rbc = 0;  rbs = 0; zbs = 0; zbc = 0
       time_slice = 0
