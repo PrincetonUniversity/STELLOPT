@@ -24,27 +24,27 @@ test_vmec:
 	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1* wout*; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
-	@cd $(VMEC_TEST_DIR) && ./compare_DSHAPE.py
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file DSHAPE
 	@echo ""
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.SOLOVEV
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.SOLOVEV
-	@cd $(VMEC_TEST_DIR); ./compare_SOLOVEV.py
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file SOLOVEV
 	@echo ""
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.HELIOTRON
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.HELIOTRON
-	@cd $(VMEC_TEST_DIR); ./compare_HELIOTRON.py
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file HELIOTRON
 	@echo ""
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.ATF
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.ATF
-	@cd $(VMEC_TEST_DIR); ./compare_ATF.py
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file ATF
 	@echo ""
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.QAS
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.QAS
-	@cd $(VMEC_TEST_DIR); ./compare_QAS.py
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file QAS
 	@echo ""
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
-	@cd $(VMEC_TEST_DIR); ./compare_DIII-D.py
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file DIII-D
 	@echo "Tesing of VMEC2000 complete"
 
 test_diagno:
