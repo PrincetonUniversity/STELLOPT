@@ -33,11 +33,14 @@ if __name__=="__main__":
 
     # Extract values
     data={}
-    data['iota0'] = fieldlines.iota0
-    [_,data['iota'],_] = fieldlines.calc_iota()
-    #data['b_r'] = fieldlines.B_R.flatten()
-    #data['b_phi'] = fieldlines.B_PHI.flatten()
-    #data['b_z'] = fieldlines.B_Z.flatten()
+    if run_name == 'NCSX_s1':
+        data['iota0'] = fieldlines.iota0
+        [_,data['iota'],_] = fieldlines.calc_iota()
+    if run_name == 'NCSX_s1_coll':
+        data['wall_strikes'] = fieldlines.wall_strikes.flatten()
+    data['b_r'] = fieldlines.B_R[:,0,64].flatten()
+    data['b_phi'] = fieldlines.B_PHI[:,0,64].flatten()
+    data['b_z'] = fieldlines.B_Z[:,0,64].flatten()
 
     # Read or write to the database file.
     if args.lmake_db:
@@ -62,10 +65,14 @@ if __name__=="__main__":
         if np.isscalar(act) == 1:
             perct = 100*abs(act-cal)/act
             print(f'  {temp} {cal:7.6f} {act:7.6f} {round(perct)}')
-        else:
+        elif temp == 'wall_strikes':
             cal = np.where(act==0,0,cal)
             div = np.where(act==0,1,act)
             perct = 100*sum(abs(act-cal)/div)
+            print(f'  {temp} {max(cal):7.6f} {max(act):7.6f} {round(perct)}')
+        else:
+            cal = np.where(act==0,0,cal)
+            div = np.where(act==0,1,act)
             print(f'  Quantity: {temp} -- CODE -- REF. -- %')
             for i in range(len(act)):
                 perct = 100*abs(act[i]-cal[i])/div[i]
