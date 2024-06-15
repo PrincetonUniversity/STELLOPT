@@ -154,14 +154,14 @@ test_beams3d_basic:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS -plasma
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS -plasma
-	@cd $(BEAMS3D_TEST_DIR); ./compre.py --file ORBITS
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS
 	@echo ""
 
 test_beams3d_er:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_er -plasma
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_er -plasma
-	@cd $(BEAMS3D_TEST_DIR); ./compre.py --file ORBITS_er
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_er
 	@echo ""
 	@echo ""
 
@@ -169,28 +169,28 @@ test_beams3d_loss:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_loss -plasma
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_loss -plasma
-	@cd $(BEAMS3D_TEST_DIR); ./compre.py --file ORBITS_loss
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_loss
 	@echo ""
 
 test_beams3d_slow:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
-	@cd $(BEAMS3D_TEST_DIR); ./compre.py --file ORBITS_slow
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_slow
 	@echo ""
 
 test_beams3d_depo:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki -nobeamdensity
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki -nobeamdensity
-	@cd $(BEAMS3D_TEST_DIR); ./compre.py --file ORBITS_depo
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_depo
 	@echo ""
 
 test_beams3d_depo_adas:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo_adas -plasma -depo -nobeamdensity
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo_adas -plasma -depo -nobeamdensity
-	@cd $(BEAMS3D_TEST_DIR); ./compre.py --file ORBITS_depo_adas
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_depo_adas
 	@echo ""
 
 beams3d_ORBITS.h5:
@@ -200,42 +200,42 @@ test_beams3d_restart: beams3d_ORBITS.h5
 	@cd $(BEAMS3D_TEST_DIR);
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_restart -plasma -restart beams3d_ORBITS_depo.h5
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_restart -plasma -restart beams3d_ORBITS_depo.h5
-	@cd $(BEAMS3D_TEST_DIR); ./compre.py --file ORBITS_restart
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_restart
 	@echo ""
 
 test_beams3d_dist:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_dist -plasma -collisions
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_dist -plasma -collisions
-	@cd $(BEAMS3D_TEST_DIR); ./compre.py --file ORBITS_dist
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_dist
 	@echo ""
 
 test_beams3d_fusion:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fusion -plasma -fusion -collisions -depo
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fusion -plasma -fusion -collisions -depo
-	@cd $(BEAMS3D_TEST_DIR); ./compre.py --file ORBITS_fusion
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_fusion
 	@echo ""
 
 test_beams3d_eqdsk:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo -suzuki -nobeamdensity
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo -suzuki -nobeamdensity
-	@cd $(BEAMS3D_TEST_DIR); ./compre.py --file ORBITS_eqdsk
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_eqdsk
 	@echo ""
 
 test_beams3d_multiion:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_multiion -plasma -depo -suzuki -nobeamdensity
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_multiion -plasma -depo -suzuki -nobeamdensity
-	@cd $(BEAMS3D_TEST_DIR); ./compre.py --file ORBITS_multiion
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_multiion
 	@echo ""
 
 test_beams3d_fullorbit:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
-	#@cd $(BEAMS3D_TEST_DIR); ./test_beams3d_fullorbit.py
+	#@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_fullorbit
 	@echo ""
 
 test_fieldlines_full:
