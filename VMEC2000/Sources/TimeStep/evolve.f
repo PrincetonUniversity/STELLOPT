@@ -89,6 +89,8 @@ C-----------------------------------------------
                   WRITE (6,1000) niter
                   WRITE (nthreed,1000) niter
                END IF
+            END IF
+
             iter_on = iter2                        !Flag to monitor progress of preconditioner
          ELSE
             iter_on = iter2-11
@@ -233,7 +235,7 @@ C-----------------------------------------------
       CALL second0(tevoff)
       evolve_time = evolve_time + (tevoff - tevon)
 
-1000 FORMAT(2x,'Resetting the number of niter to ',i6)
+1000  FORMAT(2x,'Resetting the number of niter to ',i6)
 
       END SUBROUTINE evolve
 
