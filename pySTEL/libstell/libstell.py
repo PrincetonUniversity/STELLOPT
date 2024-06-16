@@ -158,7 +158,7 @@ class LIBSTELL():
 		booLen=[1]*len(booList)
 		intList=['nfp','ncurr','nsin','niter','nstep','nvacskip','mpol','ntor','ntheta','nzeta', \
 			'mfilter_fbdy','nfilter_fbdy','max_main_iterations','omp_num_threads',\
-			'imse','isnodes','itse','ipnodes','iopt_raxis','imatch_phiedge','nflxs']
+			'imse','isnodes','itse','ipnodes','iopt_raxis','imatch_phiedge','nflxs','pre_niter']
 		intLen=[1]*len(intList)
 		intList.extend(['ns_array','niter_array'])
 		intLen.extend([(100,1)]*2)

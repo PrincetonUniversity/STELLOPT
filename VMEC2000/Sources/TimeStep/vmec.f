@@ -19,7 +19,8 @@ C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
       INTEGER, PARAMETER :: nseq0 = 12
       CHARACTER(LEN=*), PARAMETER ::
-     &    increase_niter = "Try increasing NITER",
+     &    increase_niter = "Try increasing NITER or PRE_NITER if the "
+     &                  // "preconditioner is on.",
      &    bad_jacobian = "The jacobian was non-definite!",
      &    full_3d1output_request = "Full threed1-output request!"
 C-----------------------------------------------
