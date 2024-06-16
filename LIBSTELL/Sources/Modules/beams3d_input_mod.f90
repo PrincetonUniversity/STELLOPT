@@ -80,7 +80,7 @@
                                therm_factor, fusion_scale, &
                                nrho_dist, ntheta_dist, & 
                                nzeta_dist, nphi_dist, nvpara_dist, nvperp_dist, &
-                               partvmax, lendt_m, te_col_min, &
+                               partvmax, rho_max_dist, lendt_m, te_col_min, &
                                B_kick_min, B_kick_max, freq_kick, E_kick,&
                                vr_start_in, vphi_start_in, vz_start_in, &
                                rho_fullorbit, duplicate_factor, &
@@ -193,6 +193,7 @@
       nvpara_dist=32
       nvperp_dist=16
       partvmax = 0 ! Allows user to set value
+      rho_max_dist = -1
 
       !FIDASIM defaults
       rmin_fida = 0.0
@@ -251,6 +252,11 @@
          ns_prof3=MAX(nzeta_dist,nphi_dist)
          ns_prof4=nvpara_dist
          ns_prof5=nvperp_dist
+
+         ! Fix s_max_dist
+         IF (rho_max_dist < 0) THEN
+            rho_max_dist = DBLE(ns_prof1)/DBLE(ns_prof1-1)
+         END IF
 
          NE_AUX_F = NE_AUX_F*ne_scale
          TE_AUX_F = TE_AUX_F*te_scale
@@ -444,6 +450,7 @@
       WRITE(iunit_out,outint) 'NVPARA_DIST',ns_prof4
       WRITE(iunit_out,outint) 'NVPERP_DIST',ns_prof5
       WRITE(iunit_out,outflt) 'PARTVMAX',partvmax
+      WRITE(iunit_out,outflt) 'RHO_MAX_DIST',rho_max_dist
       IF (B_kick_min>0) THEN
          WRITE(iunit_out,'(A)') '!---------- Kick Model Parameters ------------'
          WRITE(iunit_out,outflt) 'E_KICK',E_kick

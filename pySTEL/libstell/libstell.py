@@ -158,7 +158,7 @@ class LIBSTELL():
 		booLen=[1]*len(booList)
 		intList=['nfp','ncurr','nsin','niter','nstep','nvacskip','mpol','ntor','ntheta','nzeta', \
 			'mfilter_fbdy','nfilter_fbdy','max_main_iterations','omp_num_threads',\
-			'imse','isnodes','itse','ipnodes','iopt_raxis','imatch_phiedge','nflxs']
+			'imse','isnodes','itse','ipnodes','iopt_raxis','imatch_phiedge','nflxs','pre_niter']
 		intLen=[1]*len(intList)
 		intList.extend(['ns_array','niter_array'])
 		intLen.extend([(100,1)]*2)
@@ -344,7 +344,7 @@ class LIBSTELL():
 				  'b_kick_min', 'b_kick_max', 'freq_kick', 'e_kick', \
 				  'rho_fullorbit', 'partvmax', 'rmin_fida', \
 				  'rmax_fida', 'zmin_fida', 'zmax_fida', 'phimin_fida', \
-				  'phimax_fida','t_fida']
+				  'phimax_fida', 't_fida', 'rho_max_dist']
 		realLen=[1]*len(realList)
 		realList.extend(['r_start_in', 'phi_start_in', 'z_start_in',\
 						 'vll_start_in', 'mu_start_in', 't_end_in', \
