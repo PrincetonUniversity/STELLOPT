@@ -23,7 +23,7 @@ SUBROUTINE out_beams3d_part(t, q)
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
                              dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
                              h2_prof, h3_prof, h4_prof, h5_prof, my_end, &
-                             r_h, p_h, z_h, e_h, pi_h, E_by_v
+                             r_h, p_h, z_h, e_h, pi_h, E_by_v, h1_prof
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics_fo
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
@@ -122,7 +122,7 @@ SUBROUTINE out_beams3d_part(t, q)
        ! Calc dist func bins
        x0    = MOD(q(2),pi2)
        IF (x0 < 0) x0 = x0 + pi2
-       d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+       d1 = MAX(MIN(CEILING(SQRT(y0)*h1_prof     ), ns_prof1), 1) ! Rho Bin
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
        d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
        d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*vll_temp), ns_prof4), 1) ! vll

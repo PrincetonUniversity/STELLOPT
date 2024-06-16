@@ -11,7 +11,8 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_globals, ONLY: nparticles, ns_prof1, ns_prof2, &
-                                 ns_prof3, ns_prof4, ns_prof5, partvmax
+                                 ns_prof3, ns_prof4, ns_prof5, &
+                                 partvmax, rho_max_dist
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -32,7 +33,7 @@
                      myqm, rand_prob, cum_prob, tau, next_t, &
                      fact_crit, fact_pa, fact_vsound, fact_kick, &
                      fact_coul, fact_crit_pro, fact_crit_legacy, &
-                     partpmax, h2_prof, h3_prof, h4_prof, h5_prof, r_h, &
+                     partpmax, h1_prof, h2_prof, h3_prof, h4_prof, h5_prof, r_h, &
                      z_h, p_h, e_h, pi_h, E_by_v
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
       INTEGER, ALLOCATABLE     :: end_state(:)
