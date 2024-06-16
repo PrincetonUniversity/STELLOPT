@@ -69,13 +69,28 @@ C-----------------------------------------------
 !        INITIATES 2D PRECONDITIONER CALCULATION
 !
          IF (iter_on .EQ. -1) THEN
-            IF (lqmr) THEN
-               nstep = 5
-               niter = iter2+100                   !Limit # preconditioner steps
-            ELSE
-               nstep = 20
-               niter = iter2+400
+            IF (pre_niter .eq. -1) THEN
+               IF (lqmr) THEN
+                  nstep = 5
+                  niter = iter2+100                   !Limit # preconditioner steps
+               ELSE
+                  nstep = 20
+                  niter = iter2+400
+               END IF
+
+               IF (rank .eq. 0) THEN
+                  WRITE (6,1000) niter
+                  WRITE (nthreed,1000) niter
+               END IF
+            ELSE IF (pre_niter .ge. 0) THEN
+               niter = iter2 + pre_niter
+
+               IF (rank .eq. 0) THEN
+                  WRITE (6,1000) niter
+                  WRITE (nthreed,1000) niter
+               END IF
             END IF
+
             iter_on = iter2                        !Flag to monitor progress of preconditioner
          ELSE
             iter_on = iter2-11
@@ -84,7 +99,9 @@ C-----------------------------------------------
 !SPH022111: ADD NEW CONTROL PARAMETER, l_comp_prec2D, TO FORCE RECALCULATION
 !           OF PRECONDITIONING BLOCKS IN V3FIT, FOR EXAMPLE
          IF (lfirst .OR. l_comp_prec2D) THEN
-            IF (l_v3fit) WRITE(*,*) 'VMEC Evolve:compute_blocks'
+            IF (l_v3fit) THEN
+               WRITE(*,*) 'VMEC Evolve:compute_blocks'
+            END IF
             IF (PARVMEC) THEN
                CALL compute_blocks_par (pxc,pxcdot,pgc)
             ELSE
@@ -217,6 +234,8 @@ C-----------------------------------------------
 
       CALL second0(tevoff)
       evolve_time = evolve_time + (tevoff - tevon)
+
+1000  FORMAT(2x,'Resetting the number of niter to ',i6)
 
       END SUBROUTINE evolve
 
