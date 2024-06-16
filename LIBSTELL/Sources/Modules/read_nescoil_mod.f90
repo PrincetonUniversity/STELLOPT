@@ -623,9 +623,7 @@
          nvp    = (nv_local-1)*np + 1 ! Because of stellarator symmetry
          u1 = nu_local-1
          v1 = nvp - 1
-         !norm   = curpol*DBLE(np) / DBLE(u1*v1*2*pi2)
-         !norm   = curpol*DBLE(np) / DBLE(u1*v1*pi2*pi2/2)
-         !norm_fsub = curpol*DBLE(np) / (pi2*pi2*pi2*pi2/2)
+         ! These normalizations were checked against the surface area
          norm   = DBLE(np) / DBLE(u1*v1)
          norm_fsub = DBLE(np) / (pi2*pi2)
          ! These must be consistent with splines below
