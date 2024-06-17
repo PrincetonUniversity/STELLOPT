@@ -1,0 +1,9 @@
+# Modules to load
+# As of Jun 16, 2024
+
+module load cray-hdf5-parallel/1.12.2.9
+module load cray-netcdf-hdf5parallel/4.9.0.9
+
+export STELLOPT_PATH=$PWD
+export MACHINE=perlmutter
+
