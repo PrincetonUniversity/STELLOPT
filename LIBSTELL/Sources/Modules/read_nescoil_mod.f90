@@ -626,6 +626,9 @@
          ! These normalizations were checked against the surface area
          norm   = DBLE(np) / DBLE(u1*v1)
          norm_fsub = DBLE(np) / (pi2*pi2)
+         ! But it should depend on curpol
+         norm   = norm * curpol / (2*pi2)
+         norm_fsub = norm_fsub * curpol / (2*pi2)
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
          x1_min = 0; x2_min = 0
