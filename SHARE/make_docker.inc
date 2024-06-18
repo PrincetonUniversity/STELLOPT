@@ -17,6 +17,8 @@
   FLAGS_R = -O2 -fexternal-blas -fPIC
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all -fPIC
   LIBS    = -L/usr/lib -lscalapack-openmpi -lblas -llapack
+  FLAGS_R += -fallow-argument-mismatch
+  FLAGS_D += -fallow-argument-mismatch
 
 #######################################################################
 #            MPI Options
