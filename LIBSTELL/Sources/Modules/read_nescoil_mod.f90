@@ -584,7 +584,8 @@
          ! BEGIN SUBROUTINE
          WRITE(iunit,'(A)')                    '----- NESCOIL Current Surface -----'
          WRITE(iunit,'(A,ES11.4,A)')           '   Surface Area: ',surf_area,' [m]'
-         WRITE(iunit,'(A,ES11.4,A)')           '   Poloidal Current: ',curpol*np,' [A]'
+         WRITE(iunit,'(A,ES11.4,A)')           '   Poloidal Current: ',curpol*np*cup,' [A]'
+         WRITE(iunit,'(A,ES11.4,A)')           '   Toroidal Current: ',curpol*np*cut,' [A]'
          CALL FLUSH(iunit)
       END SUBROUTINE nescoil_info
 
@@ -604,7 +605,8 @@
          INTEGER, INTENT(in), OPTIONAL :: comm
          INTEGER :: mn, shar_rank, shar_size,  shar_comm, nu1, u, v, ier, i1, i2
          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:),           &
-               fmn_temp(:), yu(:), yv(:), cop(:), sip(:)
+               fmn_temp(:), yu(:), yv(:), cop(:), sip(:),         &
+               hu(:), hv(:)
          DOUBLE PRECISION, ALLOCATABLE :: rreal(:,:), zreal(:,:), &
                xreal(:,:), yreal(:,:), rureal(:,:), rvreal(:,:),  &
                zureal(:,:), zvreal(:,:), sxreal(:,:),             &
@@ -627,8 +629,8 @@
          norm   = DBLE(np) / DBLE(u1*v1)
          norm_fsub = DBLE(np) / (pi2*pi2)
          ! But it should depend on curpol
-         norm   = norm * curpol / (2*pi2)
-         norm_fsub = norm_fsub * curpol / (2*pi2)
+         norm   = norm * curpol
+         norm_fsub = norm_fsub * curpol
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
          x1_min = 0; x2_min = 0
@@ -745,7 +747,8 @@
             potv = potv - cup
 
             ! Calculate surface coords and normals
-            ALLOCATE(xu(nv_local),xv(nv_local),yu(nv_local),yv(nv_local),cop(nv_local),sip(nv_local))
+            ALLOCATE(xu(nv_local),xv(nv_local),yu(nv_local),yv(nv_local), &
+               cop(nv_local),sip(nv_local),hu(nv_local),hv(nv_local))
             FORALL(v=1:nv_local) cop(v) = COS(alp*DBLE(v-1)/DBLE(nv_local-1))
             FORALL(v=1:nv_local) sip(v) = SIN(alp*DBLE(v-1)/DBLE(nv_local-1))
             DO u = 1, nu_local
@@ -756,14 +759,16 @@
                yu       = rureal(u,:)*sip
                xv       = rvreal(u,:)*cop - rreal(u,:)*sip*alp
                yv       = rvreal(u,:)*sip + rreal(u,:)*cop*alp
+               hu       = SQRT(xu*xu + yu*yu + zureal(u,:)*zureal(u,:))
+               hv       = SQRT(xv*xv + yv*yv + zvreal(u,:)*zvreal(u,:))
                ! Surface Normal
                sxreal(u,:) = -yu(:)*zvreal(u,:) + zureal(u,:)*yv(:)
                syreal(u,:) = -xv(:)*zureal(u,:) + zvreal(u,:)*xu(:)
                szreal(u,:) = -xu(:)*yv(:)       + yu(:)*xv(:)
                ! Potential
-               potx(u,:) = potu(u,:)*xu          + potv(u,:)*xv
-               poty(u,:) = potu(u,:)*yu          + potv(u,:)*yv
-               potz(u,:) = potu(u,:)*zureal(u,:) + potv(u,:)*zvreal(u,:)
+               potx(u,:) = potu(u,:)*xu/hu          + potv(u,:)*xv/hv
+               poty(u,:) = potu(u,:)*yu/hu          + potv(u,:)*yv/hv
+               potz(u,:) = potu(u,:)*zureal(u,:)/hu + potv(u,:)*zvreal(u,:)/hv
             END DO
             Z3D(1,:,1:nv_local) = zreal
             sn = SQRT(sxreal**2+syreal**2+szreal**2)
@@ -773,8 +778,7 @@
             u = nu_local - 1
             v = nv_local - 1
             surf_area = np*SUM(SQRT( sxreal(1:u,1:v)**2+syreal(1:u,1:v)**2+szreal(1:u,1:v)**2))/(u*v)
-            PRINT *,surf_area
-            DEALLOCATE(xu,xv,yu,yv,cop,sip)
+            DEALLOCATE(xu,xv,yu,yv,cop,sip,hu,hv)
             DEALLOCATE(sxreal,syreal,szreal,rureal,rvreal,zureal,zvreal,potu,potv,potr,potp,potz,potx,poty,sn)
 
             ! Now extend to more field periods
