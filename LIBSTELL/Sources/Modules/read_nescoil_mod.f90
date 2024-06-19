@@ -759,16 +759,16 @@
                yu       = rureal(u,:)*sip
                xv       = rvreal(u,:)*cop - rreal(u,:)*sip*alp
                yv       = rvreal(u,:)*sip + rreal(u,:)*cop*alp
-               hu       = SQRT(xu*xu + yu*yu + zureal(u,:)*zureal(u,:))
-               hv       = SQRT(xv*xv + yv*yv + zvreal(u,:)*zvreal(u,:))
+               hu       = one/SQRT(xu*xu + yu*yu + zureal(u,:)*zureal(u,:))
+               hv       = one/SQRT(xv*xv + yv*yv + zvreal(u,:)*zvreal(u,:))
                ! Surface Normal
                sxreal(u,:) = -yu(:)*zvreal(u,:) + zureal(u,:)*yv(:)
                syreal(u,:) = -xv(:)*zureal(u,:) + zvreal(u,:)*xu(:)
                szreal(u,:) = -xu(:)*yv(:)       + yu(:)*xv(:)
                ! Potential
-               potx(u,:) = potu(u,:)*xu/hu          + potv(u,:)*xv/hv
-               poty(u,:) = potu(u,:)*yu/hu          + potv(u,:)*yv/hv
-               potz(u,:) = potu(u,:)*zureal(u,:)/hu + potv(u,:)*zvreal(u,:)/hv
+               potx(u,:) = potu(u,:)*xu*hu          + potv(u,:)*xv*hv
+               poty(u,:) = potu(u,:)*yu*hu          + potv(u,:)*yv*hv
+               potz(u,:) = potu(u,:)*zureal(u,:)*hu + potv(u,:)*zvreal(u,:)*hv
             END DO
             Z3D(1,:,1:nv_local) = zreal
             sn = SQRT(sxreal**2+syreal**2+szreal**2)
