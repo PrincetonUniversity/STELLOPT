@@ -82,108 +82,221 @@ class COILSET(LIBSTELL):
 			c = current[group==(i+1)]
 			self.groups.extend([COILGROUP(x,y,z,c,coilnames[i])])
 
-	def plotcoils(self,ax=None,*args,**kwargs):
-		"""Plots a coilset in 3D
+	def plotcoils(self,renderer=None,render_window=None):
+		"""Plots a coilset in 3D using VTK
 
-		This routine plots coils in 3D
+		This routine plots coils in 3D using VTK
+
+		Parameters
+		----------
+		renderer : vtkRenderer (optional)
+			Renderer for plotting with VTK
+		render_window : vtkRnderWindow (optional)
+			Render window for plotting with VTK
+
 		"""
 		import numpy as np
-		import matplotlib.pyplot as pyplot
-		lplotnow = False
-		if not ax:
-			ax = pyplot.axes(projection='3d')
-			lplotnow = True
-		c_temp = self.color_cycle[0]
+		import vtk
+		# Handle optionals
+		lplotnow = True
+		if renderer or render_window: lplotnow=False
+		if not renderer: renderer = vtk.vtkRenderer()
+		if not render_window: 
+			render_window = vtk.vtkRenderWindow()
+			render_window.AddRenderer(renderer)
+			render_window_interactor = vtk.vtkRenderWindowInteractor()
+			render_window_interactor.SetRenderWindow(render_window)
 		for i in range(self.ngroups):
 			for j in range(self.groups[i].ncoils):
-				if j == 0:
-					ax.plot(self.groups[i].coils[j].x, \
-						   self.groups[i].coils[j].y, \
-						   self.groups[i].coils[j].z, c=c_temp, label=self.groups[i].name)
-				else:
-					ax.plot(self.groups[i].coils[j].x, \
-						   self.groups[i].coils[j].y, \
-						   self.groups[i].coils[j].z, c=c_temp)
-			self.color_cycle.rotate(1)
-			c_temp = self.color_cycle[0]
-		ax.set_xlim(self.xmin*1.05,self.xmax*1.05); ax.set_xlabel('X [m]')
-		ax.set_ylim(self.ymin*1.05,self.ymax*1.05); ax.set_ylabel('Y [m]')
-		ax.set_zlim(self.zmin*1.05,self.zmax*1.05); ax.set_zlabel('Z [m]')
-		ax.set_title('COILS')
-		ax.set_aspect('equal', adjustable='box')
-		pyplot.legend(loc="upper left")
-		if lplotnow: pyplot.show()
+				points_array = np.zeros((self.groups[i].coils[j].npts,3))
+				points_array[:,0] =self.groups[i].coils[j].x
+				points_array[:,1] =self.groups[i].coils[j].y
+				points_array[:,2] =self.groups[i].coils[j].z
+				# Convert numpy array to VTK points
+				points = vtk.vtkPoints()
+				for point in points_array:
+					points.InsertNextPoint(point)
+				# Create a polyline to connect the points
+				polyline = vtk.vtkPolyLine()
+				polyline.GetPointIds().SetNumberOfIds(len(points_array))
+				for k in range(len(points_array)):
+					polyline.GetPointIds().SetId(k, k)
+				# Create a cell array to store the polyline
+				cells = vtk.vtkCellArray()
+				cells.InsertNextCell(polyline)
+				# Create a polydata object and add the points and the polyline to it
+				polydata = vtk.vtkPolyData()
+				polydata.SetPoints(points)
+				polydata.SetLines(cells)
+				# Create a mapper
+				mapper = vtk.vtkPolyDataMapper()
+				mapper.SetInputData(polydata)
+				# Create an actor
+				actor = vtk.vtkActor()
+				actor.SetMapper(mapper)
+				actor.GetProperty().SetColor(self.vtkColor(i))  # Set color
+				actor.GetProperty().SetLineWidth(5)  # Set line thickness to 5
+				# Add actor
+				renderer.AddActor(actor)
+		# Render and interact
+		renderer.SetBackground(0.1, 0.2, 0.3)  # Background color
+		if lplotnow: 
+			render_window.Render()
+			render_window_interactor.Start()
 
-	def plotcoilsHalfFP(self,ax=None,*args,**kwargs):
-		"""Plots a coilset for a half field period
+	def plotcoilsHalfFP(self,renderer=None,render_window=None):
+		"""Plots a half field period of a coilset in 3D using VTK
 
-		This routine plots coils in 3D for a half field period.
-		Really it plots the first coil in each group.
+		This routine plots a half field period of a coilset in 3D using VTK
+
+		Parameters
+		----------
+		renderer : vtkRenderer (optional)
+			Renderer for plotting with VTK
+		render_window : vtkRnderWindow (optional)
+			Render window for plotting with VTK
+
 		"""
 		import numpy as np
-		import matplotlib.pyplot as pyplot
-		import mpl_toolkits.mplot3d as mplot3d
-		lplotnow = False
-		if not ax:
-			ax = pyplot.axes(projection='3d')
-			lplotnow = True
-		c_temp = self.color_cycle[0]
+		import vtk
+		# Handle optionals
+		lplotnow = True
+		if renderer or render_window: lplotnow=False
+		if not renderer: renderer = vtk.vtkRenderer()
+		if not render_window: 
+			render_window = vtk.vtkRenderWindow()
+			render_window.AddRenderer(renderer)
+			render_window_interactor = vtk.vtkRenderWindowInteractor()
+			render_window_interactor.SetRenderWindow(render_window)
 		for i in range(self.ngroups):
-			j = 0
-			ax.plot(self.groups[i].coils[j].x, \
-				   self.groups[i].coils[j].y, \
-				   self.groups[i].coils[j].z, c=c_temp, label=self.groups[i].name)
-			self.color_cycle.rotate(1)
-			c_temp = self.color_cycle[0]
-		ax.set_aspect('equal', adjustable='box')
-		pyplot.legend(loc="upper left")
-		if lplotnow: pyplot.show()
+			j =0
+			points_array = np.zeros((self.groups[i].coils[j].npts,3))
+			points_array[:,0] =self.groups[i].coils[j].x
+			points_array[:,1] =self.groups[i].coils[j].y
+			points_array[:,2] =self.groups[i].coils[j].z
+			# Convert numpy array to VTK points
+			points = vtk.vtkPoints()
+			for point in points_array:
+				points.InsertNextPoint(point)
+			# Create a polyline to connect the points
+			polyline = vtk.vtkPolyLine()
+			polyline.GetPointIds().SetNumberOfIds(len(points_array))
+			for k in range(len(points_array)):
+				polyline.GetPointIds().SetId(k, k)
+			# Create a cell array to store the polyline
+			cells = vtk.vtkCellArray()
+			cells.InsertNextCell(polyline)
+			# Create a polydata object and add the points and the polyline to it
+			polydata = vtk.vtkPolyData()
+			polydata.SetPoints(points)
+			polydata.SetLines(cells)
+			# Create a mapper
+			mapper = vtk.vtkPolyDataMapper()
+			mapper.SetInputData(polydata)
+			# Create an actor
+			actor = vtk.vtkActor()
+			actor.SetMapper(mapper)
+			actor.GetProperty().SetColor(self.vtkColor(i))  # Set Color
+			actor.GetProperty().SetLineWidth(5)  # Set line thickness to 5
+			# Add actor
+			renderer.AddActor(actor)
+		# Render and interact
+		renderer.SetBackground(0.1, 0.2, 0.3)  # Background color
+		if lplotnow: 
+			render_window.Render()
+			render_window_interactor.Start()
 
-	def plotcoilsDist(self,ax=None,*args,**kwargs):
-		"""Plots a coilset for a half field period
+	def plotcoilsDist(self,renderer=None,render_window=None):
+		"""Plots a half field period of a coilset in 3D using VTK
 
-		This routine plots coils in 3D for a half field period.
-		Really it plots the first coil in each group.
+		This routine plots a half field period of a coilset in 3D using VTK
+
+		Parameters
+		----------
+		renderer : vtkRenderer (optional)
+			Renderer for plotting with VTK
+		render_window : vtkRnderWindow (optional)
+			Render window for plotting with VTK
+
 		"""
 		import numpy as np
-		import matplotlib.pyplot as pyplot
-		from mpl_toolkits.mplot3d.art3d import Line3DCollection
-		lplotnow = False
-		if not ax:
-			ax = pyplot.axes(projection='3d')
-			lplotnow = True
-		c_temp = self.color_cycle[0]
-		xmin = 1E6; xmax = -1E6
-		ymin = 1E6; ymax = -1E6
-		zmin = 1E6; zmax = -1E6
-		vmin = 1E6; vmax = -1E6
+		import vtk
+		from matplotlib import cm
+		# Handle optionals
+		lplotnow = True
+		if renderer or render_window: lplotnow=False
+		if not renderer: renderer = vtk.vtkRenderer()
+		if not render_window: 
+			render_window = vtk.vtkRenderWindow()
+			render_window.AddRenderer(renderer)
+			render_window_interactor = vtk.vtkRenderWindowInteractor()
+			render_window_interactor.SetRenderWindow(render_window)
+		# Create a lookup table to map scalar values to colors
+		lut = vtk.vtkLookupTable()
+		lut.SetNumberOfTableValues(256)
+		lut.Build()
+		# Use matplotlib to generate the jet colormap
+		jet = cm.get_cmap('jet', 256)
+		for i in range(256):
+			rgba = jet(i / 255.0)
+			lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
+		# Get the min and max values
+		cmin = 1E20; cmax=-1E20;
 		for i in range(self.ngroups):
 			j = 0
-			x = self.groups[i].coils[j].x
-			y = self.groups[i].coils[j].y
-			z = self.groups[i].coils[j].z
-			v = self.groups[i].coils[j].dist_surf
-			points = np.array([x,y,z]).transpose().reshape(-1,1,3)
-			segs = np.concatenate([points[:-1],points[1:]],axis=1)
-			lc = Line3DCollection(segs, cmap=pyplot.get_cmap('jet'))
-			lc.set_array(v)
-			h = ax.add_collection(lc)
-			xmin = min(x.min(),xmin)
-			xmax = max(x.max(),xmax)
-			ymin = min(y.min(),ymin)
-			ymax = max(y.max(),ymax)
-			zmin = min(z.min(),zmin)
-			zmax = max(z.max(),zmax)
-			vmin = min(v.min(),vmin)
-			vmax = max(v.max(),vmax)
-			print(v.min(),v.max(),vmin,vmax)
-		ax.axes.set_xlim3d(left=xmin, right=xmax) 
-		ax.axes.set_ylim3d(bottom=ymin, top=ymax) 
-		ax.axes.set_zlim3d(bottom=zmin, top=zmax) 
-		ax.set_aspect('equal', adjustable='box')
-		cbar = pyplot.colorbar(h,label='Distance [m]',ax=ax)
-		h.set_clim(vmin,vmax)
-		if lplotnow: pyplot.show()
+			cmin = min(cmin,min(self.groups[i].coils[j].dist_surf)) 
+			cmax = max(cmin,max(self.groups[i].coils[j].dist_surf)) 
+		for i in range(self.ngroups):
+			j =0
+			points_array = np.zeros((self.groups[i].coils[j].npts,3))
+			points_array[:,0] =self.groups[i].coils[j].x
+			points_array[:,1] =self.groups[i].coils[j].y
+			points_array[:,2] =self.groups[i].coils[j].z
+			vals = np.array(self.groups[i].coils[j].dist_surf, dtype=float)
+			# Convert numpy array to VTK points
+			points = vtk.vtkPoints()
+			for point in points_array:
+				points.InsertNextPoint(point)
+			# Create a polyline to connect the points
+			polyline = vtk.vtkPolyLine()
+			polyline.GetPointIds().SetNumberOfIds(len(points_array))
+			for k in range(len(points_array)):
+				polyline.GetPointIds().SetId(k, k)
+			# Create a cell array to store the polyline
+			cells = vtk.vtkCellArray()
+			cells.InsertNextCell(polyline)
+			# Create a polydata object and add the points and the polyline to it
+			polydata = vtk.vtkPolyData()
+			polydata.SetPoints(points)
+			polydata.SetLines(cells)
+			# Add scalar values to the points
+			scalars = vtk.vtkFloatArray()
+			scalars.SetNumberOfComponents(1)
+			for value in vals:
+				scalars.InsertNextValue(value)
+			polydata.GetPointData().SetScalars(scalars)
+			# Create a mapper
+			mapper = vtk.vtkPolyDataMapper()
+			mapper.SetInputData(polydata)
+			mapper.SetLookupTable(lut)
+			mapper.SetScalarRange(cmin,cmax)
+			# Create an actor
+			actor = vtk.vtkActor()
+			actor.SetMapper(mapper)
+			actor.GetProperty().SetLineWidth(5)  # Set line thickness to 5
+			# Add actor
+			renderer.AddActor(actor)
+		# Create a scalar bar (color bar) actor
+		scalar_bar = vtk.vtkScalarBarActor()
+		scalar_bar.SetLookupTable(lut)
+		scalar_bar.SetTitle("Distance [m]")
+		scalar_bar.SetNumberOfLabels(5)
+		# Render and interact
+		renderer.AddActor2D(scalar_bar)
+		renderer.SetBackground(0.1, 0.2, 0.3)  # Background color
+		if lplotnow: 
+			render_window.Render()
+			render_window_interactor.Start()
 
 	def plotcoilsRZ(self,*args,**kwargs):
 		"""Plots each coil in the RZ plot

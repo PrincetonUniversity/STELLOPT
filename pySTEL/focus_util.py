@@ -114,13 +114,8 @@ if __name__=="__main__":
 				i=1
 			pyplot.show()
 		if args.lplotcoildist:
-			px = 1/pyplot.rcParams['figure.dpi']
-			fig=pyplot.figure(figsize=(1024*px,768*px))
-			ax1=fig.add_subplot(111,projection='3d')
 			coil_data.read_coils_file(args.focus_ext+'.coils')
 			coil_data.coilSurfDist(focus_data.xsurf.flatten(),\
 					focus_data.ysurf.flatten(),\
 					focus_data.zsurf.flatten())
-			coil_data.plotcoilsDist(ax=ax1)
-			ax1.set_axis_off()
-			pyplot.show()
+			coil_data.plotcoilsDist()

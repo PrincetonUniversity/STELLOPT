@@ -6,21 +6,19 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as _plt
 import numpy as np                    #For Arrays
 from math import pi
-#QT4
-#from PyQt4 import uic, QtGui
-#from PyQt4.QtGui import QMainWindow, QApplication, qApp, QVBoxLayout, QSizePolicy,QIcon
-#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 #QT5
 from PyQt5 import uic, QtGui, QtWidgets
-from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy, QWidget
 from PyQt5.QtGui import QIcon
 # Matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
+# VTK
+import vtk
+from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 #
 from libstell import vmec
-#from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -71,6 +69,16 @@ class MyApp(QMainWindow):
 		self.ax = self.fig.add_subplot(111)
 		self.canvas = FigureCanvas(self.fig)
 		self.ui.plot_widget.addWidget(self.canvas)
+		# VTK stuff
+		self.frame_vtk = QWidget()
+		self.vtkWidget = QVTKRenderWindowInteractor(self.frame_vtk)
+		self.ui.plot_widget.addWidget(self.vtkWidget)
+		self.vtkWidget.Initialize()
+		self.vtkWidget.Start()
+		# Create a VTK renderer and add it to the render window
+		self.renderer = vtk.vtkRenderer()
+		self.vtkWidget.GetRenderWindow().AddRenderer(self.renderer)
+		self.vtkWidget.hide()
 		#self.canvas.draw()
 		# Callbacks		
 		self.ui.FileName.currentIndexChanged.connect(self.FileSelect)
@@ -185,6 +193,8 @@ class MyApp(QMainWindow):
 		plot_name = self.ui.PlotList.currentText();
 		self.fig.clf()
 		self.ax = self.fig.add_subplot(111)
+		self.canvas.show()
+		self.vtkWidget.hide()
 		if (plot_name == 'Summary'):
 			#self.ax.plot([0,1],[0,0],'k')
 			self.ax.text(0.05,0.95,rf'Run: {self.vmec_data.input_extension.strip()}', horizontalalignment='left',\
@@ -327,11 +337,10 @@ class MyApp(QMainWindow):
 				self.ax.set_ylabel('Z [m]')
 				self.ax.set_aspect('equal')
 			elif (self.ui.ThreeD_button.isChecked()):
-				self.fig.delaxes(self.ax)
-				self.ax = self.vmec_data.isotoro(self.r,self.z,self.zeta,self.s,val,fig=self.fig)
-				self.ax.set_aspect('equal', adjustable='box')
-				self.ax.grid(False)
-				self.ax.set_axis_off()
+				self.canvas.hide()
+				self.vtkWidget.show()
+				self.renderer.RemoveAllViewProps()
+				self.vmec_data.isotoro(self.r,self.z,self.zeta,self.s,val,renderer=self.renderer,render_window=self.vtkWidget.GetRenderWindow())
 		self.canvas.draw()
 
 	def TransformVMEC(self):
@@ -356,9 +365,44 @@ class MyApp(QMainWindow):
 		self.b_v=self.vmec_data.cfunct(self.theta,self.zeta,self.vmec_data.bsubvmnc,self.vmec_data.xm_nyq,self.vmec_data.xn_nyq)
 
 	def plot_to_file(self,i):
+		from vtkmodules.vtkIOImage import vtkBMPWriter,vtkJPEGWriter,vtkPNGWriter,vtkPNMWriter,vtkPostScriptWriter,vtkTIFFWriter
+		from vtkmodules.vtkRenderingCore import vtkWindowToImageFilter
 		text = self.ui.saveas_filename.toPlainText();
-		self.fig.savefig('./'+text, dpi=300)
+		if (self.ui.ThreeD_button.isChecked()):
+			if '.bmp' in text:
+				writer = vtkBMPWriter()
+			elif '.jpg' in text:
+				writer = vtkJPEGWriter()
+			elif '.pnm' in text:
+				writer = vtkPNMWriter()
+			elif '.ps' in text:
+				if rgba:
+					rgba = False
+				writer = vtkPostScriptWriter()
+			elif '.tiff' in text:
+				writer = vtkTIFFWriter()
+			elif '.png' in text:
+				writer = vtkPNGWriter()
+			else:
+				return
 
+			renWin = self.vtkWidget.GetRenderWindow()
+			windowto_image_filter = vtkWindowToImageFilter()
+			windowto_image_filter.SetInput(renWin)
+			windowto_image_filter.SetScale(1)  # image quality
+			windowto_image_filter.SetInputBufferTypeToRGBA()
+#			if rgba:
+#				windowto_image_filter.SetInputBufferTypeToRGBA()
+#			else:
+#				windowto_image_filter.SetInputBufferTypeToRGB()
+#				# Read from the front buffer.
+#				windowto_image_filter.ReadFrontBufferOff()
+#				windowto_image_filter.Update()
+			writer.SetFileName(text)
+			writer.SetInputConnection(windowto_image_filter.GetOutputPort())
+			writer.Write()
+		else:
+			self.fig.savefig('./'+text, dpi=300)
 
 if __name__ == "__main__":
 	app = QApplication(sys.argv) 
