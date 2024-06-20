@@ -237,6 +237,7 @@ class NESCOIL(FourierRep):
 			render_window.AddRenderer(renderer)
 			render_window_interactor = vtk.vtkRenderWindowInteractor()
 			render_window_interactor.SetRenderWindow(render_window)
+			render_window.SetSize(1024, 768)
 		theta = np.ndarray((self.nu,1))
 		zeta  = np.ndarray((self.nv,1))
 		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu-1)
