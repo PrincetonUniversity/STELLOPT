@@ -106,6 +106,7 @@ class COILSET(LIBSTELL):
 			render_window.AddRenderer(renderer)
 			render_window_interactor = vtk.vtkRenderWindowInteractor()
 			render_window_interactor.SetRenderWindow(render_window)
+			render_window.SetSize(1024, 768)
 		for i in range(self.ngroups):
 			for j in range(self.groups[i].ncoils):
 				points_array = np.zeros((self.groups[i].coils[j].npts,3))
@@ -168,6 +169,7 @@ class COILSET(LIBSTELL):
 			render_window.AddRenderer(renderer)
 			render_window_interactor = vtk.vtkRenderWindowInteractor()
 			render_window_interactor.SetRenderWindow(render_window)
+			render_window.SetSize(1024, 768)
 		for i in range(self.ngroups):
 			j =0
 			points_array = np.zeros((self.groups[i].coils[j].npts,3))
@@ -231,6 +233,7 @@ class COILSET(LIBSTELL):
 			render_window.AddRenderer(renderer)
 			render_window_interactor = vtk.vtkRenderWindowInteractor()
 			render_window_interactor.SetRenderWindow(render_window)
+			render_window.SetSize(1024, 768)
 		# Create a lookup table to map scalar values to colors
 		lut = vtk.vtkLookupTable()
 		lut.SetNumberOfTableValues(256)

@@ -1588,6 +1588,7 @@ class FourierRep():
 			render_window_local.AddRenderer(renderer_local)
 			render_window_interactor = vtk.vtkRenderWindowInteractor()
 			render_window_interactor.SetRenderWindow(render_window_local)
+			render_window.SetSize(1024, 768)
 		# Create a lookup table to map scalar values to colors
 		lut = self.vtkLUTHelper(cmap)
 		# Loop over values
