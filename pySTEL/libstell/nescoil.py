@@ -212,7 +212,7 @@ class NESCOIL(FourierRep):
 		pyplot.colorbar(hmesh,label='$Pot$ [arb]',ax=ax)
 		if lplotnow: pyplot.show()
 
-	def plotsurfaces(self,ax=None):
+	def plotsurfaces(self,renderer=None,render_window=None):
 		"""Plots the NESCOIL Surfaces
 
 		This routine plots the NESCOIL current potential surface
@@ -220,16 +220,23 @@ class NESCOIL(FourierRep):
 
 		Parameters
 		----------
-		ax : axes (optional)
-			Matplotlib axes object to plot to.
+		renderer : vtkRenderer (optional)
+			Renderer for plotting with VTK
+		render_window : vtkRnderWindow (optional)
+			Render window for plotting with VTK
 		"""
 		import numpy as np
 		import matplotlib.pyplot as pyplot
-		lplotnow = False
-		if not ax:
-			#fig = pyplot.figure()
-			#ax = fig.add_subplot(111,projection='3d')
-			lplotnow = True
+		import vtk
+		# Handle optionals
+		lplotnow = True
+		if renderer or render_window: lplotnow=False
+		if not renderer: renderer = vtk.vtkRenderer()
+		if not render_window: 
+			render_window = vtk.vtkRenderWindow()
+			render_window.AddRenderer(renderer)
+			render_window_interactor = vtk.vtkRenderWindowInteractor()
+			render_window_interactor.SetRenderWindow(render_window)
 		theta = np.ndarray((self.nu,1))
 		zeta  = np.ndarray((self.nv,1))
 		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu-1)
@@ -238,11 +245,11 @@ class NESCOIL(FourierRep):
 		zp = self.sfunct(theta,zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
 		rc = self.cfunct(theta,zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
 		zc = self.sfunct(theta,zeta,self.zmns_surface.T,self.xm_surface,self.xn_surface)
-		ax = self.isotoro(rp,zp,zeta/self.np,0,color='red')
-		hc = self.isotoro(rc,zc,zeta/self.np,0,axes=ax,color='green')
-		#ax.set_aspect('equal', 'box')
-		#ax.semilogy(abscissa, data, **kwargs)
-		if lplotnow: pyplot.show()
+		self.isotoro(rp,zp,zeta/self.np,-1,renderer=renderer,render_window=render_window)
+		self.isotoro(rc,zc,zeta/self.np,-1,renderer=renderer,render_window=render_window,color='green')
+		if lplotnow:
+			render_window.Render()
+			render_window_interactor.Start()
 
 	def cutcoils(self,ncoils_per_halfperiod,lplot=False):
 		"""Cut coils from the NESCOIL potential

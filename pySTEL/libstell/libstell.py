@@ -42,6 +42,25 @@ class LIBSTELL():
 		if self.s1=='___':
 			self.s1='__'
 
+	def vtkColor(self,j):
+		"""Helper to vary colors
+
+		This routine returns a VTK color object based on a number.
+		This is done to mimic the behavior of changing colors when
+		plotting lines in matplotlib.
+
+		Parameters
+		----------
+		j : int
+			Index into predefined colors
+		"""
+		from vtkmodules.vtkCommonColor import vtkNamedColors
+		colors = vtkNamedColors()
+		color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
+		j = j % len(color_txt)
+		return colors.GetColor3d(color_txt[j])
+
+
 	def safe_open(self,iunit,istat,filename,filestat,fileform,record_in=None,access_in='SEQUENTIAL',delim_in='APOSTROPHE'):
 		"""Wrapper to safe_open in safe_open_mod
 
@@ -428,7 +447,7 @@ class LIBSTELL():
 		realList.extend(['bprobe_turns','flux_turns','segrog_turns'])
 		realLen.extend([(2048,1),(512,1),(256,1)])
 		charList=['int_type','afield_points_file','bfield_points_file',\
-		        'bprobes_file','mirnov_file', 'seg_rog_file','flux_diag_file',\
+				'bprobes_file','mirnov_file', 'seg_rog_file','flux_diag_file',\
 				'bprobes_mut_file', 'mir_mut_file', 'rog_mut_file', 'flux_mut_file']
 		charLen=[(256,1)]*11
 		module_name = self.s1+'diagno_runtime_'+self.s2
@@ -1164,8 +1183,8 @@ class LIBSTELL():
 		module_name = self.s1+'read_nescoil_mod_'+self.s2
 		bfield = getattr(self.libstell,module_name+'_nescoil_bfield_adapt_dbl'+self.s3)
 		bfield.argtypes=[ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
-		                 ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
-		                 ct.POINTER(ct.c_int)]
+						 ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
+						 ct.POINTER(ct.c_int)]
 		bfield.restype=None
 		x_ctype = ct.c_double(x)
 		y_ctype = ct.c_double(y)
@@ -1175,7 +1194,7 @@ class LIBSTELL():
 		bz_ctype = ct.c_double(0.0)
 		istat_ctype = ct.c_int(istat)
 		bfield(ct.byref(x_ctype),ct.byref(y_ctype),ct.byref(z_ctype),\
-			     ct.byref(bx_ctype),ct.byref(by_ctype),ct.byref(bz_ctype),ct.byref(istat_ctype))
+				 ct.byref(bx_ctype),ct.byref(by_ctype),ct.byref(bz_ctype),ct.byref(istat_ctype))
 		return bx_ctype.value,by_ctype.value,bz_ctype.value
 
 	def get_module_vars(self,modName,booVar=None,booLen=None,\
@@ -1412,6 +1431,33 @@ class FourierRep():
 	def __init__(self, parent=None):
 		test = None
 
+	def vtkLUTHelper(self,ctable='jet'):
+		"""Helper for VTK Lookup tables based on matplotlib
+
+		The routine helps the user create a VTK lookup table based
+		on the Matplotlib color tables.
+
+		Parameters
+		----------
+		ctable : string
+			Matplotlib colortable name
+		Returns
+		----------
+		lut : VTKLookupTable
+			VTK style lookup table class
+		"""
+		import vtk
+		from matplotlib import cm
+		lut = vtk.vtkLookupTable()
+		lut.SetNumberOfTableValues(256)
+		lut.Build()
+		# Use matplotlib to generate the jet colormap
+		jet = cm.get_cmap(ctable, 256)
+		for i in range(256):
+			rgba = jet(i / 255.0)
+			lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
+		return lut
+
 	def cfunct(self,theta,phi,fmnc,xm,xn):
 		"""Cos transformation
 
@@ -1493,60 +1539,153 @@ class FourierRep():
 			fmn = np.broadcast_to(fmnc[k,:],(lt,mn)).T
 			f[k,:,:]=np.matmul((fmn*sinmt).T, cosnz)+np.matmul((fmn*cosmt).T, sinnz)
 		return f
-		
-	def isotoro(self,r,z,zeta,svals,*args,**kwargs):
+
+	def isotoro(self,r,z,phi,svals,*args,**kwargs):
+		"""Plot a surface in 3D using VTK
+
+		This routine plots a 3D surface using the VTK library when
+		passed a r [m], z [m], and phi [rad] arrays as produced by
+		the sfunct and cfunct functions. The user may supply a surface
+		to plot as an index or array of indices.
+
+		Parameters
+		----------
+		r : ndarray
+			Ordered list of R verticies [m] (ns,nu,nv)
+		z : ndarray
+			Ordered list of Z verticies [m] (ns,nu,nv)
+		phi : ndarray
+			Ordered list of phi coordiantes [rad] (nv)
+		surface : int
+			Surface to generate in ns
+		val : ndarray (optional)
+			Ordered list of vertex values for coloring (ns,nu,nv)
+		renderer : vtkRenderer (optional)
+			Renderer for plotting with VTK
+		render_window : vtkRnderWindow (optional)
+			Render window for plotting with VTK
+		"""
+		import vtk
 		import numpy as np
-		import matplotlib.pyplot as pyplot
-		import mpl_toolkits.mplot3d as mplot3d
-		import math as math
-		import matplotlib.tri as mtri
-		#from mayavi import mlab
+		from matplotlib import cm
+		from vtkmodules.vtkCommonColor import vtkNamedColors
+		# Figure out number of surfaces to plot
 		nr = np.size(svals)
 		if (nr == 1):
+			if svals == 0: svals = 1
+			if svals == -1: svals = 0
 			s= [svals]
-			nr = 1
 		else:
 			s=svals
-		nt = np.size(r,1)
-		nz = np.size(r,2)
-		vertex = np.zeros((nt*nz,3,nr))
-		for k in range(0,nr):
-			ivertex = 0
-			ifaces = 0
-			for j in range(0,nz):
-				for i in range(0,nt):
-					vertex[ivertex,0,k]=r[s[k],i,j]*math.cos(zeta[j])
-					vertex[ivertex,1,k]=r[s[k],i,j]*math.sin(zeta[j])
-					vertex[ivertex,2,k]=z[s[k],i,j]
-					ivertex = ivertex + 1
-		u = np.linspace(0, 1, endpoint=True, num=nt)
-		v = np.linspace(0, 1, endpoint=True, num=nz)
-		u, v = np.meshgrid(u, v)
-		u, v = u.flatten(), v.flatten()
-		tri = mtri.Triangulation(u, v)
+		# Create a renderer, render window, and interactor
 		test=len(kwargs)
-		fig=kwargs.pop('fig',pyplot.figure())
-		h=kwargs.pop('axes',fig.add_subplot(111,projection='3d'))
-		surf_color = kwargs.pop('color','red')
-		for k in range(0,nr):
-			if (len(args)==0):
-				tsurf=h.plot_trisurf(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], triangles=tri.triangles,color=surf_color,shade='yes',linewidth=0.0,alpha=1)
-				#tsurf=mlab.triangular_mesh(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], tri.triangless)
-			else:
-				# Matplotlib way (SLOW)
+		cmap = kwargs.get('cmap','jet')
+		color_txt = kwargs.get('color','red')
+		renderer_local = kwargs.get('renderer',vtk.vtkRenderer())
+		render_window_local = kwargs.get('render_window',None)
+		if not render_window_local:
+			render_window_local = vtk.vtkRenderWindow()
+			render_window_local.AddRenderer(renderer_local)
+			render_window_interactor = vtk.vtkRenderWindowInteractor()
+			render_window_interactor.SetRenderWindow(render_window_local)
+		# Create a lookup table to map scalar values to colors
+		lut = self.vtkLUTHelper(cmap)
+		# Loop over values
+		for k in range(nr):
+			[vertices,indices] = self.generateSurface(r,z,phi,surface=s[k])
+			# Convert numpy arrays to VTK arrays
+			points = vtk.vtkPoints()
+			for vertex in vertices:
+				points.InsertNextPoint(vertex.tolist())
+			triangles = vtk.vtkCellArray()
+			for index in indices:
+				triangle = vtk.vtkTriangle()
+				triangle.GetPointIds().SetId(0, index[0])
+				triangle.GetPointIds().SetId(1, index[1])
+				triangle.GetPointIds().SetId(2, index[2])
+				triangles.InsertNextCell(triangle)
+			# Create a polydata object
+			polydata = vtk.vtkPolyData()
+			polydata.SetPoints(points)
+			polydata.SetPolys(triangles)
+			# Create an actor
+			actor = vtk.vtkActor()
+			# Add scalar values to the polydata (or make red)
+			scalars=None
+			if (len(args)>0): 
 				vals = args[0][s[k],:,:].T.flatten()
-				colors = np.mean(vals[tri.triangles], axis=1)
-				tsurf=h.plot_trisurf(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], triangles=tri.triangles,cmap='jet',shade=False,linewidth=0.0,alpha=1)
-				tsurf.set_array(colors)
-				tsurf.autoscale()
-				#MAYAVI Way (need to figure out how to embed)
-				#h    = mlab.figure()
-				#vals = args[0][s[k],:,:].T.flatten()
-				#tsurf=mlab.triangular_mesh(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], tri.triangles, scalars=vals, colormap='jet',figure=h)
-				#print(type(tsurf))
-		if (test==0):
-			pyplot.show()
-		return h
+				scalars = vtk.vtkFloatArray()
+				scalars.SetNumberOfComponents(1)
+				for value in vals:
+					scalars.InsertNextValue(value)
+				polydata.GetPointData().SetScalars(scalars)
+				# Create a scalar bar (color bar) actor
+				scalar_bar = vtk.vtkScalarBarActor()
+				scalar_bar.SetLookupTable(lut)
+				scalar_bar.SetTitle("")
+				scalar_bar.SetNumberOfLabels(5)
+			else:
+				colors = vtkNamedColors()
+				actor.GetProperty().SetColor(colors.GetColor3d(color_txt))
+			# Set the opacity (transparency) of the actor
+			if nr > 1:
+				actor.GetProperty().SetOpacity(1.0/float(nr))  # Set to a value between 0 (fully transparent) and 1 (fully opaque)
+			# Create a mapper and set the scalar range to the scalar values range
+			mapper = vtk.vtkPolyDataMapper()
+			mapper.SetInputData(polydata)
+			if scalars: 
+				mapper.SetLookupTable(lut)
+				mapper.SetScalarRange(scalars.GetRange())
+			actor.SetMapper(mapper)
+			# Add actor to the scene
+			renderer_local.AddActor(actor)
+		# Render and interact
+		if (len(args)>0): renderer_local.AddActor2D(scalar_bar)
+		renderer_local.SetBackground(0.1, 0.2, 0.3)  # Background color
+		if test == 0:
+			render_window_local.Render()
+			render_window_interactor.Start()
+
+	def generateSurface(self,r,z,phi,surface=None):
+		"""Generates the vertex and indices arrays to render a surface
+
+		This routine generates the verticies and faces lists which
+		are used by many routines to render a surface in 3D.
+
+		Parameters
+		----------
+		r : ndarray
+			Ordered list of R verticies [m] (ns,nu,nv)
+		z : ndarray
+			Ordered list of Z verticies [m] (ns,nu,nv)
+		phi : ndarray
+			Ordered list of phi coordiantes [rad] (nv)
+		surface : int (optional)
+			Surface to generate in ns (default: outermost)
+
+		Returns
+		----------
+		vertices : ndarray
+			Vertex values [m]
+		faces: ndarray
+			Indices defining triangles
+		"""
+		import numpy as np
+		[vertices_list,faces_list] = self.blenderSurface(r,z,phi,surface=surface)
+		ndex = len(vertices_list)
+		vertex = np.zeros((ndex,3))
+		for i in range(ndex):
+			vertex[i,0] = vertices_list[i][0]
+			vertex[i,1] = vertices_list[i][1]
+			vertex[i,2] = vertices_list[i][2]
+		# For indices we need to get it out of tupple format
+		ndex = len(faces_list)
+		faces = np.zeros((ndex,3),dtype=int)
+		for i in range(ndex):
+			faces[i,0] = faces_list[i][0]
+			faces[i,1] = faces_list[i][1]
+			faces[i,2] = faces_list[i][2]
+		return vertex,faces
 
 	def blenderSurface(self,r,z,phi,surface=None):
 		"""Generates the lists Blender needs to render a flux surface
@@ -1584,12 +1723,19 @@ class FourierRep():
 			k = r.shape[0]-1
 		nu = np.size(r,1)
 		nv = np.size(r,2)
+		# Handle only a partial period
+		if phi[nv-1]%(2.0*np.pi) == phi[0]:
+			nv = nv - 1
+			lseem = True
+		else:
+			lseem = False
 		# Loop and construct
 		for v in range(nv):
 			for u in range(nu):
 				x = r[k,u,v] * np.cos(phi[v])
 				y = r[k,u,v] * np.sin(phi[v])
 				vertices.append((x,y,z[k,u,v]))
+				if (v == nv -1) and (not lseem): continue
 				# Now do faces
 				i1 = u + v * nu
 				# Catch special case #1
@@ -1597,14 +1743,14 @@ class FourierRep():
 					i2 = i1 + nu
 					i3 = i1 + 1
 					i4 = i1 - nu + 1
-					if v == nv - 1:
+					if (v == nv - 1):
 						i2 = u
 						i3 = 0
 				elif u < nu-1:
 					i2 = i1 + nu
 					i3 = i1 + nu +1
 					i4 = i1 + 1
-					if v == nv -1:
+					if (v == nv -1):
 						i2 = u
 						i3 = u + 1
 				faces.append((i1,i2,i4))
