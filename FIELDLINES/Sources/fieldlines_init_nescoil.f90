@@ -94,12 +94,13 @@
          CALL FLUSH(6)
       END IF
 
-      CALL read_nescout_deallocate(MPI_COMM_LOCAL)
-
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_nescoil1',ierr_mpi)
 #endif
+
+      ! Deallocate
+      CALL read_nescout_deallocate(MPI_COMM_LOCAL)
 
       ! Fix any B_PHI==0 points
       IF (mylocalid == mylocalmaster) WHERE(B_PHI == 0) B_PHI = 1.0

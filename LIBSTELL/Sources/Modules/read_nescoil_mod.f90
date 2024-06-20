@@ -618,7 +618,10 @@
          INTEGER, PARAMETER, DIMENSION(2) :: bcs2 = (/-1,-1/)
 
 #if defined(MPI_OPT)
-         IF (PRESENT(comm)) CALL MPI_BCAST(np,1,MPI_INTEGER,0,comm,ier)
+         IF (PRESENT(comm)) THEN
+            CALL MPI_BCAST(np,1,MPI_INTEGER,0,comm,ier)
+            CALL MPI_BCAST(curpol,1,MPI_DOUBLE_PRECISION,0,comm,ier)
+         END IF
 #endif
          ! Factors
          nu_int = nu_local
