@@ -53,20 +53,21 @@ class WALL(LIBSTELL):
 			i1 = 4
 		self.nvertex = int(n1)
 		self.nfaces  = int(n2)
-		self.vertex  = np.zeros((self.nvertex,3))
-		self.faces   = np.zeros((self.nfaces,3))
+		self.vertex  = np.zeros((self.nvertex,3), dtype=float)
+		self.faces   = np.zeros((self.nfaces,3), dtype=int)
 		for i in range(self.nvertex):
 			line = lines[i+i1].split()
-			self.vertex[0,i] = float(line[0])
-			self.vertex[1,i] = float(line[1])
-			self.vertex[2,i] = float(line[2])
+			#print(line)
+			self.vertex[i,0] = float(line[0])
+			self.vertex[i,1] = float(line[1])
+			self.vertex[i,2] = float(line[2])
 		i1 = i1 + self.nvertex
 		for i in range(self.nfaces):
 			line = lines[i+i1].split()
 			# note we convert to python indexing
-			self.faces[0,i] = int(line[0])-1
-			self.faces[1,i] = int(line[1])-1
-			self.faces[2,i] = int(line[2])-1
+			self.faces[i,0] = int(line[0])-1
+			self.faces[i,1] = int(line[1])-1
+			self.faces[i,2] = int(line[2])-1
 
 	def write_wall(self,filename):
 		"""Directly writes a wall file
@@ -108,23 +109,83 @@ class WALL(LIBSTELL):
 		ax.scatter(self.vertex[:,0],self.vertex[:,1],self.vertex[:,2],marker='.')
 		if lplotnow: pyplot.show()
 
-	def plot_wall_3D(self,*args,**kwargs):
+	def plot_wall_3D(self,wallcolor=None,renderer=None,render_window=None):
+		"""Plots a wall in 3D using VTK
+
+		This routine plots walls in 3D using VTK
+
+		Parameters
+		----------
+		wallcolor : ndarray (optional)
+			Array of values to color code wall.
+		renderer : vtkRenderer (optional)
+			Renderer for plotting with VTK
+		render_window : vtkRnderWindow (optional)
+			Render window for plotting with VTK
+		"""
 		import numpy as np
 		import matplotlib.pyplot as pyplot
-		import mpl_toolkits.mplot3d as mplot3d
-		import math as math
-		import matplotlib.tri as mtri
-		#fig=kwargs.pop('fig',pyplot.figure())
-		#ax=kwargs.pop('axes',fig.add_subplot(111,projection='3d'))
-		# Create the mesh
-		#vectors = np.zeros()
-		#wall_mesh = mesh.Mesh(np.zeros(self.faces.shape[0], dtype=mesh.Mesh.dtype))
-		#for i, f in enumerate(self.faces):
-		#	for j in range(3):
-		#		wall_mesh.vectors[i][j] = self.vertex[f[j],:]
-		#ax.add_collection3d(mplot3d.art3d.Poly3DCollection(wall_mesh.vectors))
-		#tsurf=ax.plot_trisurf(self.vertex[0,:],self.vertex[1,:],self.vertex[2,:], triangles=self.faces,color='red',shade='yes',linewidth=0.0,alpha=1)
-		#if len(kwargs) == 0: pyplot.show()
+		import vtk
+		from vtkmodules.vtkCommonColor import vtkNamedColors
+		# Handle optionals
+		lplotnow = True
+		if renderer or render_window: lplotnow=False
+		if not renderer: renderer = vtk.vtkRenderer()
+		if not render_window: 
+			render_window = vtk.vtkRenderWindow()
+			render_window.AddRenderer(renderer)
+			render_window_interactor = vtk.vtkRenderWindowInteractor()
+			render_window_interactor.SetRenderWindow(render_window)
+			render_window.SetSize(1024, 768)
+		# Convert numpy arrays to VTK arrays
+		points = vtk.vtkPoints()
+		for vertex in self.vertex:
+			points.InsertNextPoint(vertex.tolist())
+		triangles = vtk.vtkCellArray()
+		for index in self.faces:
+			triangle = vtk.vtkTriangle()
+			triangle.GetPointIds().SetId(0, index[0])
+			triangle.GetPointIds().SetId(1, index[1])
+			triangle.GetPointIds().SetId(2, index[2])
+			triangles.InsertNextCell(triangle)
+		# Create a polydata object
+		polydata = vtk.vtkPolyData()
+		polydata.SetPoints(points)
+		polydata.SetPolys(triangles)
+		# Create an actor
+		actor = vtk.vtkActor()
+		# Add scalar values to the polydata (or make red)
+		scalars=None
+		if (wallcolor): 
+			vals = args[0][s[k],:,:].T.flatten()
+			scalars = vtk.vtkFloatArray()
+			scalars.SetNumberOfComponents(1)
+			for value in vals:
+				scalars.InsertNextValue(value)
+			polydata.GetPointData().SetScalars(scalars)
+			# Create a scalar bar (color bar) actor
+			scalar_bar = vtk.vtkScalarBarActor()
+			scalar_bar.SetLookupTable(lut)
+			scalar_bar.SetTitle("")
+			scalar_bar.SetNumberOfLabels(5)
+		else:
+			colors = vtkNamedColors()
+			actor.GetProperty().SetColor(0.5,0.5,0.5)
+		# Create a mapper and set the scalar range to the scalar values range
+		mapper = vtk.vtkPolyDataMapper()
+		mapper.SetInputData(polydata)
+		if scalars:
+			mapper.SetLookupTable(lut)
+			mapper.SetScalarRange(scalars.GetRange())
+		actor.SetMapper(mapper)
+		# Add actor to the scene
+		renderer.AddActor(actor)
+		# Render and interact
+		if (scalars): renderer.AddActor2D(scalar_bar)
+		renderer.SetBackground(0.1, 0.2, 0.3)
+		if lplotnow:
+			render_window.Render()
+			render_window_interactor.Start()
 
 	def blenderWall(self):
 		"""Generates the lists Blender needs to render a wall
