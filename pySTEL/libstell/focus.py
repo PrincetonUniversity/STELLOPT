@@ -195,43 +195,117 @@ class FOCUS():
 		pyplot.colorbar(hmesh,label='$B_n$ [T]',ax=ax)
 		if lplotnow: pyplot.show()
 
-	def plotBN3D(self,ax=None):
+	def vtkLUTHelper(self,ctable='jet'):
+		"""Helper for VTK Lookup tables based on matplotlib
+
+		The routine helps the user create a VTK lookup table based
+		on the Matplotlib color tables.
+
+		Parameters
+		----------
+		ctable : string
+			Matplotlib colortable name
+		Returns
+		----------
+		lut : VTKLookupTable
+			VTK style lookup table class
+		"""
+		import vtk
+		from matplotlib import cm
+		lut = vtk.vtkLookupTable()
+		lut.SetNumberOfTableValues(256)
+		lut.Build()
+		# Use matplotlib to generate the jet colormap
+		jet = cm.get_cmap(ctable, 256)
+		for i in range(256):
+			rgba = jet(i / 255.0)
+			lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
+		return lut
+
+	def plotBN3D(self,renderer=None,render_window=None):
 		"""Plots the FOCUS B-normal in 3D
 
 		This routine plots the FOCUS code B-normal in 3D
 
 		Parameters
 		----------
-		ax : axes (optional)
-			Matplotlib axes object to plot to.
+		renderer : vtkRenderer (optional)
+			Renderer for plotting with VTK
+		render_window : vtkRnderWindow (optional)
+			Render window for plotting with VTK
 		"""
 		import numpy as np
 		import matplotlib.pyplot as pyplot
-		import matplotlib.tri as mtri
-		lplotnow = False
-		if not ax:
-			ax = pyplot.axes()
-			lplotnow = True
-		vertex = np.zeros((self.Nzeta*self.Nteta,3))
-		ivertex = 0
-		for v in range(self.Nzeta):
-			for u in range(self.Nteta):
-				vertex[ivertex,0]=self.xsurf[u,v]
-				vertex[ivertex,1]=self.ysurf[u,v]
-				vertex[ivertex,2]=self.zsurf[u,v]
-				ivertex = ivertex + 1
-		u = np.linspace(0, 1, endpoint=True, num=self.Nteta)
-		v = np.linspace(0, 1, endpoint=True, num=self.Nteta)
-		u, v = np.meshgrid(u, v)
-		u, v = u.flatten(), v.flatten()
-		tri = mtri.Triangulation(u, v)
-		vals = self.Bn.T.flatten()
-		colors = np.mean(vals[tri.triangles], axis=1)
-		tsurf=ax.plot_trisurf(vertex[:,0],vertex[:,1],vertex[:,2], triangles=tri.triangles,cmap='jet',shade=True, alpha=1.0)
-		tsurf.set_array(colors)
-		tsurf.autoscale()
-		pyplot.colorbar(tsurf,label='$B_n$ [T]',ax=ax)
-		if lplotnow: pyplot.show()
+		import vtk
+		# Handle optionals
+		lplotnow = True
+		if renderer or render_window: lplotnow=False
+		if not renderer: renderer = vtk.vtkRenderer()
+		if not render_window: 
+			render_window = vtk.vtkRenderWindow()
+			render_window.AddRenderer(renderer)
+			render_window_interactor = vtk.vtkRenderWindowInteractor()
+			render_window_interactor.SetRenderWindow(render_window)
+			render_window.SetSize(1024, 768)
+		# Define VTK elements
+		points = vtk.vtkPoints()
+		triangles = vtk.vtkCellArray()
+		polydata = vtk.vtkPolyData()
+		actor = vtk.vtkActor()
+		lut = self.vtkLUTHelper('jet')
+		# Generate Mesh (v,u) indexing not (u,v)
+		nu = self.Nteta # One short
+		nv = self.Nzeta
+		for v in range(nv):
+			for u in range(nu):
+				points.InsertNextPoint([self.xsurf[v,u],self.ysurf[v,u],self.zsurf[v,u]])
+				if (v == nv -1): continue
+				# Now do faces
+				i1 = u + v * nu
+				i2 = i1 + nu
+				i3 = i2 + 1
+				i4 = i1 + 1
+				if u == nu-1:
+					i3 = i1 + 1
+					i4 = i1 - nu + 1
+				triangle = vtk.vtkTriangle()
+				triangle.GetPointIds().SetId(0, i1)
+				triangle.GetPointIds().SetId(1, i2)
+				triangle.GetPointIds().SetId(2, i4)
+				triangles.InsertNextCell(triangle)
+				triangle = vtk.vtkTriangle()
+				triangle.GetPointIds().SetId(0, i2)
+				triangle.GetPointIds().SetId(1, i3)
+				triangle.GetPointIds().SetId(2, i4)
+				triangles.InsertNextCell(triangle)
+		polydata = vtk.vtkPolyData()
+		polydata.SetPoints(points)
+		polydata.SetPolys(triangles)
+		vals = self.Bn.flatten()
+		scalars = vtk.vtkFloatArray()
+		scalars.SetNumberOfComponents(1)
+		for value in vals:
+			scalars.InsertNextValue(value)
+		polydata.GetPointData().SetScalars(scalars)
+		# Create a scalar bar (color bar) actor
+		scalar_bar = vtk.vtkScalarBarActor()
+		scalar_bar.SetLookupTable(lut)
+		scalar_bar.SetTitle("")
+		scalar_bar.SetNumberOfLabels(5)
+		# Create a mapper and set the scalar range to the scalar values range
+		mapper = vtk.vtkPolyDataMapper()
+		mapper.SetInputData(polydata)
+		mapper.SetLookupTable(lut)
+		mapper.SetScalarRange(scalars.GetRange())
+		actor.SetMapper(mapper)
+		# Add actor to the scene
+		renderer.AddActor(actor)
+		# Render and interact
+		renderer.AddActor2D(scalar_bar)
+		renderer.SetBackground(0.1, 0.2, 0.3)
+		if lplotnow:
+			render_window.Render()
+			render_window_interactor.Start()
 
 	def plotPoincare(self,ax=None):
 		"""Plots the FOCUS Poincare Plot
