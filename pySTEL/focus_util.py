@@ -7,6 +7,7 @@ if __name__=="__main__":
 	from argparse import ArgumentParser
 	import numpy as np
 	import matplotlib.pyplot as pyplot
+	import vtk
 	from libstell.vmec import VMEC
 	from libstell.focus import FOCUS
 	from libstell.bnorm import BNORM
@@ -103,16 +104,24 @@ if __name__=="__main__":
 			focus_data.plotIota(ax4)
 			pyplot.show()
 		if args.lplot3d:
-			px = 1/pyplot.rcParams['figure.dpi']
-			fig=pyplot.figure(figsize=(1024*px,768*px))
-			ax1=fig.add_subplot(111,projection='3d')
-			focus_data.plotBN3D(ax1)
+			#px = 1/pyplot.rcParams['figure.dpi']
+			#fig=pyplot.figure(figsize=(1024*px,768*px))
+			#ax1=fig.add_subplot(111,projection='3d')
+			renderer = vtk.vtkRenderer()
+			render_window = vtk.vtkRenderWindow()
+			render_window.AddRenderer(renderer)
+			render_window_interactor = vtk.vtkRenderWindowInteractor()
+			render_window_interactor.SetRenderWindow(render_window)
+			render_window.SetSize(1024, 768)
+			focus_data.plotBN3D(renderer=renderer,render_window=render_window)
 			try:
 				coil_data.read_coils_file(args.focus_ext+'.coils')
-				coil_data.plotcoilsHalfFP(ax1)
+				coil_data.plotcoilsHalfFP(renderer=renderer,render_window=render_window)
 			except:
 				i=1
-			pyplot.show()
+			render_window.Render()
+			render_window_interactor.Start()
+			#pyplot.show()
 		if args.lplotcoildist:
 			coil_data.read_coils_file(args.focus_ext+'.coils')
 			coil_data.coilSurfDist(focus_data.xsurf.flatten(),\
