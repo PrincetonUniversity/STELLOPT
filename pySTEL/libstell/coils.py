@@ -82,6 +82,35 @@ class COILSET(LIBSTELL):
 			c = current[group==(i+1)]
 			self.groups.extend([COILGROUP(x,y,z,c,coilnames[i])])
 
+	def rescalecoils(self,npts_new):
+		"""Changes coil resolution
+
+		This routine changes the number of points defining the
+		coils by splineing to a new resolution.
+
+		Parameters
+		----------
+		npts_new : integer
+			Number of new points to spline to.
+		"""
+		import numpy as np
+		from scipy.interpolate import CubicSpline
+		npts_new_array = np.full(self.ngroups,npts_new,dtype=int)
+		for i in range(self.ngroups):
+			s_new = np.linspace(0.0,1.0,npts_new_array[i])
+			for j in range(self.groups[i].ncoils):
+				x = self.groups[i].coils[j].x
+				y = self.groups[i].coils[j].y
+				z = self.groups[i].coils[j].z
+				s = np.linspace(0.0,1.0,self.groups[i].coils[j].npts)
+				cx = CubicSpline(s,x)
+				cy = CubicSpline(s,y)
+				cz = CubicSpline(s,z)
+				self.groups[i].coils[j].x = cx(s_new)
+				self.groups[i].coils[j].y = cy(s_new)
+				self.groups[i].coils[j].z = cz(s_new)
+				self.groups[i].coils[j].npts = npts_new_array[i]
+
 	def plotcoils(self,renderer=None,render_window=None):
 		"""Plots a coilset in 3D using VTK
 
@@ -910,36 +939,5 @@ class COIL():
 
 if __name__=="__main__":
 	import sys
-	from argparse import ArgumentParser
-	parser = ArgumentParser(description= 
-		'''Provides class for accessing coils files also servers as a
-		   simple tool for assessing coils or coils files.''')
-	parser.add_argument("-c", "--coil", dest="coils_file",
-		help="Coils file for input", default = None)
-	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
-		help="Plot the coils file.", default = False)
-	parser.add_argument("-prz", "--plotRZ", dest="lplotRZ", action='store_true',
-		help="Plot each coil group in RZ.", default = False)
-	parser.add_argument("-b", "--bfield", dest="bxyz",
-		help="Output B field at x,y,z", default = None)
-	parser.add_argument("-a", "--afield", dest="axyz",
-		help="Output A field at x,y,z", default = None)	
-	parser.add_argument("-o", "--output", dest="loutput", action='store_true',
-		help="Output the coil", default = False)
-	args = parser.parse_args()
-	coils = COILSET()
-	if args.coils_file: 
-		coils.read_coils_file(args.coils_file)
-		if args.lplot: coils.plotcoils()
-		if args.lplotRZ: coils.plotcoilsRZ()
-		if args.loutput: coils.write_coils_file(args.coils_file+'_new')
-		if args.axyz:
-			x,y,z = args.axyz.split(',')
-			ax,ay,az = coils.coilvecpot(float(x),float(y),float(z))
-			print(f"Vector Potential ({x},{y},{z}) : {ax}, {ay}, {az} ")
-		if args.bxyz:
-			x,y,z = args.bxyz.split(',')
-			bx,by,bz = coils.coilbiot(float(x),float(y),float(z))
-			print(f"B-Field ({x},{y},{z}) : {bx}, {by}, {bz} [T]")
 	sys.exit(0)
 
