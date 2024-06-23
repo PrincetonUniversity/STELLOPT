@@ -212,7 +212,41 @@ class NESCOIL(FourierRep):
 		pyplot.colorbar(hmesh,label='$Pot$ [arb]',ax=ax)
 		if lplotnow: pyplot.show()
 
-	def plotsurfaces(self,renderer=None,render_window=None):
+	def plotsurfaces(self,plot3D=None):
+		"""Plots the NESCOIL Surfaces
+
+		This routine plots the NESCOIL current potential surface
+		and the plasma surface over a half field period.
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Generate VTK objects
+		theta = np.ndarray((self.nu,1))
+		zeta  = np.ndarray((self.nv,1))
+		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu)
+		for j in range(self.nv):  zeta[j]=np.pi*j/float(self.nv-1)
+		rp = self.cfunct(theta,zeta,self.rmnc_plasma.T,self.xm_plasma,self.xn_plasma)
+		zp = self.sfunct(theta,zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
+		rc = self.cfunct(theta,zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
+		zc = self.sfunct(theta,zeta,self.zmns_surface.T,self.xm_surface,self.xn_surface)
+		self.isotoro(rp,zp,zeta/self.np,-1,plot3D=plt,lclosev=False,color='red')
+		self.isotoro(rc,zc,zeta/self.np,-1,plot3D=plt,lclosev=False,color='green')
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plotsurfaces_old(self,renderer=None,render_window=None):
 		"""Plots the NESCOIL Surfaces
 
 		This routine plots the NESCOIL current potential surface

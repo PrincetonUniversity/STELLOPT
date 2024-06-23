@@ -109,7 +109,7 @@ class WALL(LIBSTELL):
 		ax.scatter(self.vertex[:,0],self.vertex[:,1],self.vertex[:,2],marker='.')
 		if lplotnow: pyplot.show()
 
-	def plot_wall_3D(self,wallcolor=None,renderer=None,render_window=None):
+	def plot_wall_3D(self,wallcolor=None,plot3D=None):
 		"""Plots a wall in 3D using VTK
 
 		This routine plots walls in 3D using VTK
@@ -118,74 +118,28 @@ class WALL(LIBSTELL):
 		----------
 		wallcolor : ndarray (optional)
 			Array of values to color code wall.
-		renderer : vtkRenderer (optional)
-			Renderer for plotting with VTK
-		render_window : vtkRnderWindow (optional)
-			Render window for plotting with VTK
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
 		"""
-		import numpy as np
-		import matplotlib.pyplot as pyplot
-		import vtk
-		from vtkmodules.vtkCommonColor import vtkNamedColors
+		from libstell.plot3D import PLOT3D
 		# Handle optionals
-		lplotnow = True
-		if renderer or render_window: lplotnow=False
-		if not renderer: renderer = vtk.vtkRenderer()
-		if not render_window: 
-			render_window = vtk.vtkRenderWindow()
-			render_window.AddRenderer(renderer)
-			render_window_interactor = vtk.vtkRenderWindowInteractor()
-			render_window_interactor.SetRenderWindow(render_window)
-			render_window.SetSize(1024, 768)
-		# Convert numpy arrays to VTK arrays
-		points = vtk.vtkPoints()
-		for vertex in self.vertex:
-			points.InsertNextPoint(vertex.tolist())
-		triangles = vtk.vtkCellArray()
-		for index in self.faces:
-			triangle = vtk.vtkTriangle()
-			triangle.GetPointIds().SetId(0, index[0])
-			triangle.GetPointIds().SetId(1, index[1])
-			triangle.GetPointIds().SetId(2, index[2])
-			triangles.InsertNextCell(triangle)
-		# Create a polydata object
-		polydata = vtk.vtkPolyData()
-		polydata.SetPoints(points)
-		polydata.SetPolys(triangles)
-		# Create an actor
-		actor = vtk.vtkActor()
-		# Add scalar values to the polydata (or make red)
-		scalars=None
-		if (wallcolor): 
-			vals = args[0][s[k],:,:].T.flatten()
-			scalars = vtk.vtkFloatArray()
-			scalars.SetNumberOfComponents(1)
-			for value in vals:
-				scalars.InsertNextValue(value)
-			polydata.GetPointData().SetScalars(scalars)
-			# Create a scalar bar (color bar) actor
-			scalar_bar = vtk.vtkScalarBarActor()
-			scalar_bar.SetLookupTable(lut)
-			scalar_bar.SetTitle("")
-			scalar_bar.SetNumberOfLabels(5)
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
 		else:
-			colors = vtkNamedColors()
-			actor.GetProperty().SetColor(0.5,0.5,0.5)
-		# Create a mapper and set the scalar range to the scalar values range
-		mapper = vtk.vtkPolyDataMapper()
-		mapper.SetInputData(polydata)
-		if scalars:
-			mapper.SetLookupTable(lut)
-			mapper.SetScalarRange(scalars.GetRange())
-		actor.SetMapper(mapper)
-		# Add actor to the scene
-		renderer.AddActor(actor)
-		# Render and interact
-		if (scalars): renderer.AddActor2D(scalar_bar)
-		renderer.SetBackground(0.1, 0.2, 0.3)
-		if lplotnow:
-			render_window.Render()
-			render_window_interactor.Start()
+			lplotnow = True
+			plt = PLOT3D()
+		# Generate VTK objects
+		[points, triangles]=plt.facemeshTo3Dmesh(self.vertex,self.faces)
+		# Generate Wall colors
+		scalar = None
+		if type(wallcolor) != type(None): 
+			scalar = plt.valuesToScalar(wallcolor)
+			plt.add3Dmesh(points,triangles,scalars=wallcolor)
+		else:
+			plt.add3Dmesh(points,triangles,color='gray')
+		# Render if requested
+		if lplotnow: plt.render()
 
 	def blenderWall(self):
 		"""Generates the lists Blender needs to render a wall
@@ -271,7 +225,4 @@ class WALL(LIBSTELL):
 
 if __name__=="__main__":
 	import sys
-	wall_data = WALL()
-	wall_data.read_wall('QSM.dat')
-	wall_data.plot_wall_3D()
 	sys.exit(0)
