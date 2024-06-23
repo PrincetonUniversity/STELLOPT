@@ -15,10 +15,10 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
 # VTK
-import vtk
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 #
 from libstell import vmec
+from libstell import plot3D
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -76,8 +76,9 @@ class MyApp(QMainWindow):
 		self.vtkWidget.Initialize()
 		self.vtkWidget.Start()
 		# Create a VTK renderer and add it to the render window
-		self.renderer = vtk.vtkRenderer()
-		self.vtkWidget.GetRenderWindow().AddRenderer(self.renderer)
+		self.plt = plot3D.PLOT3D(lwindow=False)
+		#self.renderer = vtk.vtkRenderer()
+		self.vtkWidget.GetRenderWindow().AddRenderer(self.plt.renderer)
 		self.vtkWidget.hide()
 		#self.canvas.draw()
 		# Callbacks		
@@ -339,8 +340,9 @@ class MyApp(QMainWindow):
 			elif (self.ui.ThreeD_button.isChecked()):
 				self.canvas.hide()
 				self.vtkWidget.show()
-				self.renderer.RemoveAllViewProps()
-				self.vmec_data.isotoro(self.r,self.z,self.zeta,self.s,val,renderer=self.renderer,render_window=self.vtkWidget.GetRenderWindow())
+				self.plt.renderer.RemoveAllViewProps()
+				self.vmec_data.isotoro(self.r[:,:-1,:-1],self.z[:,:-1,:-1],self.zeta[:-1],self.s,vals=val[:,:-1,:-1],plot3D=self.plt)
+				self.plt.colorbar()
 		self.canvas.draw()
 
 	def TransformVMEC(self):

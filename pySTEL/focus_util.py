@@ -12,6 +12,7 @@ if __name__=="__main__":
 	from libstell.focus import FOCUS
 	from libstell.bnorm import BNORM
 	from libstell.coils import COILSET
+	from libstell.plot3D import PLOT3D
 	parser = ArgumentParser(description= 
 		'''Provides class for plotting FOCUS simulation results.''')
 	parser.add_argument("-f", "--focus", dest="focus_ext",
@@ -107,20 +108,22 @@ if __name__=="__main__":
 			#px = 1/pyplot.rcParams['figure.dpi']
 			#fig=pyplot.figure(figsize=(1024*px,768*px))
 			#ax1=fig.add_subplot(111,projection='3d')
-			renderer = vtk.vtkRenderer()
-			render_window = vtk.vtkRenderWindow()
-			render_window.AddRenderer(renderer)
-			render_window_interactor = vtk.vtkRenderWindowInteractor()
-			render_window_interactor.SetRenderWindow(render_window)
-			render_window.SetSize(1024, 768)
-			focus_data.plotBN3D(renderer=renderer,render_window=render_window)
+			#renderer = vtk.vtkRenderer()
+			#render_window = vtk.vtkRenderWindow()
+			#render_window.AddRenderer(renderer)
+			#render_window_interactor = vtk.vtkRenderWindowInteractor()
+			#render_window_interactor.SetRenderWindow(render_window)
+			#render_window.SetSize(1024, 768)
+			plt3d = PLOT3D()
+			focus_data.plotBN3D(plt3d)
 			try:
 				coil_data.read_coils_file(args.focus_ext+'.coils')
-				coil_data.plotcoilsHalfFP(renderer=renderer,render_window=render_window)
+				coil_data.plotcoilsHalfFP(plt3d)
 			except:
 				i=1
-			render_window.Render()
-			render_window_interactor.Start()
+			plt3d.render()
+			#render_window.Render()
+			#render_window_interactor.Start()
 			#pyplot.show()
 		if args.lplotcoildist:
 			coil_data.read_coils_file(args.focus_ext+'.coils')

@@ -1431,33 +1431,6 @@ class FourierRep():
 	def __init__(self, parent=None):
 		test = None
 
-	def vtkLUTHelper(self,ctable='jet'):
-		"""Helper for VTK Lookup tables based on matplotlib
-
-		The routine helps the user create a VTK lookup table based
-		on the Matplotlib color tables.
-
-		Parameters
-		----------
-		ctable : string
-			Matplotlib colortable name
-		Returns
-		----------
-		lut : VTKLookupTable
-			VTK style lookup table class
-		"""
-		import vtk
-		from matplotlib import cm
-		lut = vtk.vtkLookupTable()
-		lut.SetNumberOfTableValues(256)
-		lut.Build()
-		# Use matplotlib to generate the jet colormap
-		jet = cm.get_cmap(ctable, 256)
-		for i in range(256):
-			rgba = jet(i / 255.0)
-			lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
-		return lut
-
 	def cfunct(self,theta,phi,fmnc,xm,xn):
 		"""Cos transformation
 
@@ -1546,7 +1519,8 @@ class FourierRep():
 		This routine plots a 3D surface using the VTK library when
 		passed a r [m], z [m], and phi [rad] arrays as produced by
 		the sfunct and cfunct functions. The user may supply a surface
-		to plot as an index or array of indices.
+		to plot as an index or array of indices. Pass svals=-1 if the
+		arrays only have one radial gridpoint to plot.
 
 		Parameters
 		----------
@@ -1558,17 +1532,32 @@ class FourierRep():
 			Ordered list of phi coordiantes [rad] (nv)
 		surface : int
 			Surface to generate in ns
-		val : ndarray (optional)
+		vals : ndarray (optional)
 			Ordered list of vertex values for coloring (ns,nu,nv)
-		renderer : vtkRenderer (optional)
-			Renderer for plotting with VTK
-		render_window : vtkRnderWindow (optional)
-			Render window for plotting with VTK
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		lcloseu : boolean (optional)
+			Close the grid in the poloidal direction. (default: True)
+		lclosev : boolean (optional)
+			Close the grid in the toroidal direction. (default: True)
+		lcolorbar : boolean (optional)
+			Turn the colorbar on (default: False)
+		color : string (optional)
+			Surface color name, overriden by vals (default: 'red')
 		"""
-		import vtk
 		import numpy as np
-		from matplotlib import cm
-		from vtkmodules.vtkCommonColor import vtkNamedColors
+		from libstell.plot3D import PLOT3D 
+		# Handle input arguments
+		plt  = kwargs.get('plot3D',None)
+		lcu  = kwargs.get('lcloseu',True)
+		lcv  = kwargs.get('lclosev',True)
+		vals = kwargs.get('vals',None)
+		lbar = kwargs.get('lcolorbar',False)
+		color = kwargs.get('color','red')
+		lrender = False
+		if not plt:
+			plt = PLOT3D()
+			lrender = True
 		# Figure out number of surfaces to plot
 		nr = np.size(svals)
 		if (nr == 1):
@@ -1577,75 +1566,31 @@ class FourierRep():
 			s= [svals]
 		else:
 			s=svals
-		# Create a renderer, render window, and interactor
-		test=len(kwargs)
-		cmap = kwargs.get('cmap','jet')
-		color_txt = kwargs.get('color','red')
-		renderer_local = kwargs.get('renderer',vtk.vtkRenderer())
-		render_window_local = kwargs.get('render_window',None)
-		if not render_window_local:
-			render_window_local = vtk.vtkRenderWindow()
-			render_window_local.AddRenderer(renderer_local)
-			render_window_interactor = vtk.vtkRenderWindowInteractor()
-			render_window_interactor.SetRenderWindow(render_window_local)
-			render_window.SetSize(1024, 768)
-		# Create a lookup table to map scalar values to colors
-		lut = self.vtkLUTHelper(cmap)
-		# Loop over values
+		# Setup x,y,z helpers
+		nu = np.size(r,1)
+		nv = np.size(r,2)
+		x_s = np.zeros((nu,nv))
+		y_s = np.zeros((nu,nv))
+		z_s = np.zeros((nu,nv))
+		# Loop over radial values
 		for k in range(nr):
-			[vertices,indices] = self.generateSurface(r,z,phi,surface=s[k])
-			# Convert numpy arrays to VTK arrays
-			points = vtk.vtkPoints()
-			for vertex in vertices:
-				points.InsertNextPoint(vertex.tolist())
-			triangles = vtk.vtkCellArray()
-			for index in indices:
-				triangle = vtk.vtkTriangle()
-				triangle.GetPointIds().SetId(0, index[0])
-				triangle.GetPointIds().SetId(1, index[1])
-				triangle.GetPointIds().SetId(2, index[2])
-				triangles.InsertNextCell(triangle)
-			# Create a polydata object
-			polydata = vtk.vtkPolyData()
-			polydata.SetPoints(points)
-			polydata.SetPolys(triangles)
-			# Create an actor
-			actor = vtk.vtkActor()
-			# Add scalar values to the polydata (or make red)
-			scalars=None
-			if (len(args)>0): 
-				vals = args[0][s[k],:,:].T.flatten()
-				scalars = vtk.vtkFloatArray()
-				scalars.SetNumberOfComponents(1)
-				for value in vals:
-					scalars.InsertNextValue(value)
-				polydata.GetPointData().SetScalars(scalars)
-				# Create a scalar bar (color bar) actor
-				scalar_bar = vtk.vtkScalarBarActor()
-				scalar_bar.SetLookupTable(lut)
-				scalar_bar.SetTitle("")
-				scalar_bar.SetNumberOfLabels(5)
+			# Generate Coords
+			x_s = r[s[k],:,:]*np.cos(np.broadcast_to(phi,(nv,nu))).T
+			y_s = r[s[k],:,:]*np.sin(np.broadcast_to(phi,(nv,nu))).T
+			z_s = z[s[k],:,:]
+			[points,triangles] = plt.torusvertexTo3Dmesh(x_s,y_s,z_s,lcloseu=lcu,lclosev=lcv)
+			# Handle Color
+			scalar = None
+			if type(vals) != type(None): 
+				scalar = plt.valuesToScalar(vals[s[k],:,:])
+				# Add to Render
+				plt.add3Dmesh(points,triangles,scalars=scalar,opacity=1.0/nr)
 			else:
-				colors = vtkNamedColors()
-				actor.GetProperty().SetColor(colors.GetColor3d(color_txt))
-			# Set the opacity (transparency) of the actor
-			if nr > 1:
-				actor.GetProperty().SetOpacity(1.0/float(nr))  # Set to a value between 0 (fully transparent) and 1 (fully opaque)
-			# Create a mapper and set the scalar range to the scalar values range
-			mapper = vtk.vtkPolyDataMapper()
-			mapper.SetInputData(polydata)
-			if scalars: 
-				mapper.SetLookupTable(lut)
-				mapper.SetScalarRange(scalars.GetRange())
-			actor.SetMapper(mapper)
-			# Add actor to the scene
-			renderer_local.AddActor(actor)
-		# Render and interact
-		if (len(args)>0): renderer_local.AddActor2D(scalar_bar)
-		renderer_local.SetBackground(0.1, 0.2, 0.3)  # Background color
-		if test == 0:
-			render_window_local.Render()
-			render_window_interactor.Start()
+				plt.add3Dmesh(points,triangles,color=color,opacity=1.0/nr)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lrender: plt.render()
 
 	def generateSurface(self,r,z,phi,surface=None):
 		"""Generates the vertex and indices arrays to render a surface
