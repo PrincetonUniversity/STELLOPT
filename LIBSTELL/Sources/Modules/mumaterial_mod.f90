@@ -1,4 +1,4 @@
-!-----------------------------------------------------------------------
+ !-----------------------------------------------------------------------
 !     Module:        mumaterial_mod
 !     Authors:       S. Lazerson (lazerson@pppl.gov), Björn Hamstra
 !     Date:          October 2023
@@ -459,7 +459,7 @@
       INTEGER, INTENT(inout), OPTIONAL :: comm_world, shar_comm, comm_master
       INTEGER :: shar_rank, master_rank, master_size, color, world_size
       LOGICAL :: lwork
-      INTEGER :: i, j, k, istat, i_tile, j_tile, maxNb
+      INTEGER :: i, j, k, istat, i_tile, j_tile
       INTEGER :: mstat(MPI_STATUS_SIZE)
       CHARACTER(LEN=6) :: strcount, splitcount
 
@@ -467,8 +467,10 @@
       LOGICAL, ALLOCATABLE :: mask(:)
       DOUBLE PRECISION :: Bx, By, Bz, mu0
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER :: N_store
-      INTEGER, DIMENSION(:,:), POINTER :: neighbors_rough, neighbors_fine, neighbors
-      INTEGER, ALLOCATABLE :: Nb(:)
+      INTEGER, DIMENSION(:,:), POINTER :: neighbors_rough, neighbors
+      INTEGER, DIMENSION(:,:), POINTER :: neighbors_mydom_rough, neighbors_mydom
+      INTEGER, ALLOCATABLE :: Nb(:), Nbmydom(:)
+      INTEGER :: maxNb, maxNbmydom
       DOUBLE PRECISION, ALLOCATABLE :: tet_cen_local(:,:), dist(:),  dx(:,:)
 
       DOUBLE PRECISION :: tol, delta, xmin, xmax, ymin, ymax, zmin, zmax, pad
@@ -771,6 +773,25 @@
       neighbors = neighbors_rough(1:maxNb, mystart:myend) 
       DEALLOCATE(neighbors_rough)
 
+      ALLOCATE(neighbors_mydom_rough(maxNb, mystart:myend),Nbmydom(mystart:myend))
+      Nbmydom = maxNb
+      DO i = mystart, myend
+        i_tile=1
+        DO j = 1, Nb(i)
+            k = FINDLOC(mydom, neighbors(j,i), DIM=1)
+            IF (k.NE.0) THEN
+              neighbors_mydom_rough(i_tile, i) = k
+              i_tile = i_tile + 1
+            END IF
+        END DO
+        Nbmydom(i) = i_tile-1
+      END DO
+      maxNbmydom = MAXVAL(Nbmydom)
+
+      ALLOCATE(neighbors_mydom(maxNbmydom,mystart:myend))
+      neighbors_mydom=neighbors_mydom_rough(1:maxNbmydom, mystart:myend) 
+      DEALLOCATE(neighbors_mydom_rough)
+
       IF (ldebugt) WRITE(6,'(3X,A13,I6,A12,I8,I8,A3,I6,I6,A1)') 'MUMAT_DEBUG: ', world_rank, ' NB RANGE: [', MINVAL(Nb), maxNb, '] [',MINLOC(Nb,1), MAXLOC(Nb,1) ,']'
 
 #if defined(MPI_OPT)
@@ -814,9 +835,9 @@
 #endif
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
       IF (lcomm) THEN
-        CALL mumaterial_iterate_magnetization_new(getBfld, domsize, mystart, myend, mydom, N_store, pdomsize, mypdom, maxNb, Nb, neighbors, shar_comm, comm_master, comm_world)
+        CALL mumaterial_iterate_magnetization_new(getBfld, domsize, mystart, myend, mydom, N_store, pdomsize, mypdom, maxNb, Nb, neighbors, maxNbmydom, Nbmydom, neighbors_mydom, shar_comm, comm_master, comm_world)
       ELSE
-        CALL mumaterial_iterate_magnetization_new(getBfld, domsize, mystart, myend, mydom, N_store, pdomsize, mypdom, maxNb, Nb, neighbors)
+        CALL mumaterial_iterate_magnetization_new(getBfld, domsize, mystart, myend, mydom, N_store, pdomsize, mypdom, maxNb, Nb, neighbors, maxNbmydom, Nbmydom, neighbors_mydom)
       END IF
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  End Iterations"
 
@@ -828,7 +849,8 @@
       RETURN
       END SUBROUTINE mumaterial_init_new
 
-      SUBROUTINE mumaterial_iterate_magnetization_new(getBfld, domsize, mystart, myend, mydom, N_store, pdomsize, mypdom, maxNb, Nb, neighbors, shar_comm, comm_master, comm_world)
+      SUBROUTINE mumaterial_iterate_magnetization_new(getBfld, domsize, mystart, myend, mydom, N_store, pdomsize, mypdom, maxNb, Nb, neighbors, &
+            maxNbmydom, Nbmydom, neighbors_mydom, shar_comm, comm_master, comm_world)
       !-----------------------------------------------------------------------
       ! mumaterial_iterate_magnetization: Iterates the magnetic field over all tiles, called by mumaterial_init
       !-----------------------------------------------------------------------
@@ -841,15 +863,16 @@
 #endif
       IMPLICIT NONE
       ! Input variables
-      INTEGER, INTENT(in) :: domsize, pdomsize, maxNb, mystart, myend
-      INTEGER, INTENT(in) :: mydom(domsize),mypdom(pdomsize),Nb(mystart:myend),neighbors(maxNb,mystart:myend)
+      INTEGER, INTENT(in) :: domsize, pdomsize, maxNb, maxNbmydom, mystart, myend
+      INTEGER, INTENT(in) :: mydom(domsize),mypdom(pdomsize)
+      INTEGER, INTENT(in) :: Nb(mystart:myend), neighbors(maxNb,mystart:myend)
+      INTEGER, INTENT(in) :: Nbmydom(mystart:myend), neighbors_mydom(maxNbmydom, mystart:myend)
       DOUBLE PRECISION, INTENT(in) :: N_store(3,3,maxNb,mystart:myend)
       INTEGER :: outmydom(ntet-domsize)
       ! MPI variables
       INTEGER, INTENT(inout), OPTIONAL :: shar_comm, comm_master, comm_world
-!     LOGICAL :: lcomm
 
-      INTEGER :: count, i, i_tile, j, j_tile, k_tile,  istat
+      INTEGER :: count, i, i_tile, j, j_tile, k, k_tile,  istat
       DOUBLE PRECISION, DIMENSION(:),   ALLOCATABLE :: chi
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_new
       DOUBLE PRECISION :: H(3), N(3,3), Bx, By, Bz, mu0
@@ -858,7 +881,7 @@
       ! Variables for iteration convergence
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, Mnorm_old
       DOUBLE PRECISION :: lambda, lambdaBlend, error, errorPrev
-      INTEGER          :: lambdaCount!, lastSign
+      INTEGER          :: lambdaCount, lastSync
 
       EXTERNAL:: getBfld
 
@@ -888,10 +911,10 @@
       lambda = lambdaStart
       lambdaCount = 0
       lambdaBlend = 4.0
-!      lastSign = 1
       chi = 0.0
       Mnorm = 1.0E-5
       error = 0.d0
+      lastSync = 0
 
       IF (lverb) THEN
         WRITE(6,*) ''
@@ -910,13 +933,31 @@
         DO i = mystart, myend
           i_tile = mydom(i)
           H = Happ(:,i)
-          DO j = 1, Nb(i) ! Get the field from all neighbors
+
+          ! Full field from neighbors 
+          DO j = 1, Nb(i)
             j_tile = neighbors(j,i)
             IF (j_tile.EQ.i_tile) THEN
               N = N_store(:,:,j,i)
               CYCLE
             END IF
             H = H + MATMUL(N_store(:,:,j,i), M(:,j_tile))
+          END DO
+
+          ! Dipole field from non-neighbors in domain
+          DO j = 1, neighbors_mydom(1,i)-1
+            j_tile = mydom(j)
+            CALL mumaterial_geth_dipole(tet_cen(:,j_tile),tet_cen(:,i_tile),M(:,j_tile),tet_vol(j_tile),H)
+          END DO
+          DO k = 2, Nbmydom(i)
+            DO j = neighbors_mydom(k-1,i)+1,neighbors_mydom(k,i)-1
+              j_tile = mydom(j)
+              CALL mumaterial_geth_dipole(tet_cen(:,j_tile),tet_cen(:,i_tile),M(:,j_tile),tet_vol(j_tile),H)
+            END DO
+          END DO
+          DO j = neighbors_mydom(Nbmydom(i),i)+1,domsize
+            j_tile = mydom(j)
+            CALL mumaterial_geth_dipole(tet_cen(:,j_tile),tet_cen(:,i_tile),M(:,j_tile),tet_vol(j_tile),H)
           END DO
           
           ! Determine field and magnetization at tile due to all other tiles and itself
@@ -1005,7 +1046,7 @@
          END DO
 
 #if defined(MPI_OPT)
-         ! Synchronise
+         ! Synchronise error
          IF (lcomm) THEN
             CALL MPI_BARRIER(comm_world, istat)
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_world, istat)
@@ -1014,37 +1055,28 @@
 
         ! Update lambda to prevent oscillations
         IF (errorPrev.NE.0.d0) THEN
-          !IF (SIGN(1.0,error/errorPrev-1.0).NE.lastSign) THEN
-          !IF ((SIGN(1.0,error/errorPrev-1.0).NE.lastSign).OR.(error.GE.errorPrev)) THEN
           IF (error.GE.errorPrev) THEN
             lambdaCount = lambdaCount + 1
             IF (lambdaCount.EQ.lambdaThresh) THEN
               lambda = lambda * lambdaFactor
               lambdaCount = 0
             END IF
-          !ELSE
-          !  lambdaCount = MAX(lambdaCount - 1, 0)
-!            IF (lambdaCount.LE.(-lambdaThresh)) THEN
-          !  IF (lambdaCount.LT.0) THEN
-          !    lambda = MIN(lambdaStart, lambda*((lambdaBlend-1.0)+1.0/lambdaFactor)/lambdaBlend)
-              !lambdaCount = 0
-          !    lambdaCount = lambdaThresh - 1
-          !  END IF
           END IF
-!          lastSign = SIGN(1.0, error/errorPrev-1.0)
         END IF
 
         count = count + 1        
         IF (lverb) WRITE(6,'(3X,I5,A2,E15.7,A2,E15.7,A2,E15.7,A2,I5)') count, '  ', error, '  ', maxErr, '  ', lambda, ' ', lambdaCount; CALL FLUSH(6)
+        
         WRITE(strcount, '(I0)') count
-        IF (ldosync) CALL mumaterial_syncM(M,ntet,domsize,outmydom,comm_master,shar_comm,istat)
         IF (ldebugm) CALL mumaterial_writedebug(M,ntet,'./M_' // TRIM(ADJUSTL(strcount)) // '.dat')
 
-        ! Exit if error lt threshold after a Happ sync or if hit maxiter
-        IF ((((MOD(count,syncint).EQ.1).OR.(syncInt.EQ.1)).AND.(error.LT.maxErr)).OR.(count.GE.maxIter)) EXIT
+        IF (count.GE.maxIter) EXIT
 
-        ! Update Happ from non-neighbors
-        IF (MOD(count,syncInt).EQ.0) THEN
+        IF (error.LT.maxErr) THEN
+          IF (lastSync.EQ.count-1) EXIT
+          ! Synchronize magnetization
+          IF (ldosync) CALL mumaterial_syncM(M,ntet,domsize,outmydom,comm_master,shar_comm,istat)
+          ! Update H-field from non-neighbors
           DO i = mystart, myend
             i_tile = mydom(i)
             CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
@@ -1061,7 +1093,10 @@
               CALL mumaterial_geth_dipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
             END DO
           END DO  
+          lastSync = count
         END IF
+
+
       END DO
       DEALLOCATE(M_new,chi,Mnorm,Mnorm_old)
 
