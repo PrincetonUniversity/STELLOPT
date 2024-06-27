@@ -13,7 +13,7 @@
       USE beams3d_runtime, ONLY: lfidasim, lfidasim_cyl, nbeams, pi2, &
                               EZSPLINE_ERR, MPI_BARRIER_ERR
       USE beams3d_grid, ONLY: raxis, phiaxis, zaxis, X4D, Y4D, S4D, &
-                              nr, nphi, nz,VOL_ARR
+                              nr, nphi, nz,VOL_ARR, win_VOL_ARR
       USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof4, ns_prof5, dist5d_prof, &
                                partvmax, dist5d_fida, h1_prof, h2_prof,&
@@ -24,6 +24,7 @@
       USE EZspline
       USE mpi_params !Used for call to write_fidasim
       USE mpi_inc
+      USE mpi_sharmem      
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
@@ -76,8 +77,12 @@
 
 
       ! Allocate VOL_ARR
-      IF (.NOT. ASSOCIATED(VOL_ARR)) THEN
-         ALLOCATE(VOL_ARR(ns_prof1, ns_prof2, ns_prof3))
+      IF (.NOT. ASSOCIATED(VOL_ARR)) THEN 
+#if defined(MPI_OPT)         
+      CALL mpialloc(VOL_ARR, ns_prof1, ns_prof2, ns_prof3, myid_sharmem, 0, MPI_COMM_LOCAL, win_VOL_ARR)
+#else
+      ALLOCATE(VOL_ARR(ns_prof1, ns_prof2, ns_prof3))
+#endif
          VOL_ARR=0.0
       END IF
 
@@ -148,8 +153,7 @@
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_REDUCE(MPI_IN_PLACE, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE, VOL_ARR, ns_prof1*ns_prof2*ns_prof3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_distnorm',ierr_mpi)
