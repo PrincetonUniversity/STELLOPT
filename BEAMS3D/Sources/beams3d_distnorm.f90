@@ -13,7 +13,7 @@
       USE beams3d_runtime, ONLY: lfidasim, lfidasim_cyl, nbeams, pi2, &
                               EZSPLINE_ERR, MPI_BARRIER_ERR
       USE beams3d_grid, ONLY: raxis, phiaxis, zaxis, X4D, Y4D, S4D, &
-                              nr, nphi, nz
+                              nr, nphi, nz,VOL_ARR
       USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof4, ns_prof5, dist5d_prof, &
                                partvmax, dist5d_fida, h1_prof, h2_prof,&
@@ -74,6 +74,13 @@
       zt = 0
       pt = 0
 
+
+      ! Allocate VOL_ARR
+      IF (.NOT. ASSOCIATED(VOL_ARR)) THEN
+         ALLOCATE(VOL_ARR(ns_prof1, ns_prof2, ns_prof3))
+         VOL_ARR=0.0
+      END IF
+
       ! Divide up work
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nvol, mystart, myend)
 
@@ -115,6 +122,7 @@
                    abs( (rt(3) - rt(2)) *(zt(4) - zt(2)) - (rt(4) - rt(2)) *(zt(3) - zt(2)))
 
          dvol = area*sum(rt)
+         VOL_ARR(i, j, k) = dvol/8.0
          dist5d_prof(:,i,j,k,:,:) = dist5d_prof(:,i,j,k,:,:)/dvol
       END DO
 
@@ -140,6 +148,8 @@
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_REDUCE(MPI_IN_PLACE, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_distnorm',ierr_mpi)
