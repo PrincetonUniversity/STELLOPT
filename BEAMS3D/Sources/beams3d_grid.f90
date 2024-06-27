@@ -70,8 +70,8 @@
       REAL(rprec), POINTER :: raxis_fida(:), zaxis_fida(:), phiaxis_fida(:), energy_fida(:), pitch_fida(:)
       REAL(rprec), POINTER :: wall_load(:,:), wall_shine(:,:)
       REAL(rprec), POINTER :: B_R(:,:,:),B_PHI(:,:,:), B_Z(:,:,:), MODB(:,:,:),&
-                                  TE(:,:,:), NE(:,:,:), TI(:,:,:), ZEFF_ARR(:,:,:), &
-                                  S_ARR(:,:,:), U_ARR(:,:,:), X_ARR(:,:,:), Y_ARR(:,:,:), POT_ARR(:,:,:)
+                                  TE(:,:,:), NE(:,:,:), TI(:,:,:), ZEFF_ARR(:,:,:), POT_ARR(:,:,:),&
+                                  VOL_ARR(:,:,:),S_ARR(:,:,:), U_ARR(:,:,:), X_ARR(:,:,:), Y_ARR(:,:,:)
       REAL(rprec), POINTER :: NI(:,:,:,:), BEAM_DENSITY(:,:,:,:), NEUTRONS_ARR(:,:,:,:)
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
                                                   NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET

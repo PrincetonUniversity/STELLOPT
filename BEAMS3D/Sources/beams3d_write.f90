@@ -15,7 +15,7 @@
 #endif
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-                                 zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
+                                 zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, VOL_ARR, &
                                  ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
                                  plasma_mass, plasma_Zmean, &
                                  B_kick_min, B_kick_max, freq_kick, &
@@ -372,6 +372,11 @@
                                       ATT='Distribution Function [part/(m^6/s^3)] (nbeam,nrho,npol,ntor,nvll,nvperp)',ATT_NAME='description') !its not volume normalized, so shouldnt the units be [part]?
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_prof',ier)
                END IF
+               IF (ASSOCIATED(VOL_ARR)) THEN
+                  CALL write_var_hdf5(fid,'VOL_ARR',ns_prof1,ns_prof2,ns_prof3,ier,DBLVAR=VOL_ARR,&
+                                      ATT='Distribution volume elements [m^3] (nrho,npol,ntor)',ATT_NAME='description') !its not volume normalized, so shouldnt the units be [part]?
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'VOL_ARR',ier)
+               END IF               
                IF (lbeam) THEN
                   CALL write_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through,&
                                    ATT='Total Beam Shine Through [%]',ATT_NAME='description')
