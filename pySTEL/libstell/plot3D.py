@@ -61,6 +61,24 @@ class PLOT3D():
 		self.render_window.AddRenderer(self.renderer)
 		self.render_window_interactor.SetRenderWindow(self.render_window)
 
+	def setLookupTable(self,lut):
+		"""Set the color lookupTable
+
+		The routine allows one to set the renderer lookupTable
+
+		Parameters
+		----------
+		lut : VTK LookupTable
+			Lookup Table object from VTK
+		"""
+		self.lookupTable = lut
+		actors = self.renderer.GetActors()
+		for actor in actors:
+			mapper = actor.GetMapper()
+			if hasattr(mapper,'LookupTable'):
+				mapper.SetLookupTable(lut)
+
+
 	def setBGcolor(self,r=_R_RGB_,g=_G_RGB_,b=_B_RGB_):
 		"""Set the background color for the render
 
@@ -350,7 +368,7 @@ class PLOT3D():
 		# Handle scalars or make red
 		if type(scalars) != type(None): 
 			polydata.GetPointData().SetScalars(scalars)
-			self.lookupTable = self.vtkLUTHelper(self.cmap)
+			if not self.lookupTable: self.lookupTable = self.vtkLUTHelper(self.cmap)
 			mapper.SetLookupTable(self.lookupTable)
 			mapper.SetScalarRange(scalars.GetRange())
 		else:
