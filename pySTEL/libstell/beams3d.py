@@ -147,6 +147,32 @@ class BEAMS3D():
 			Aminor = Aminor + np.mean(np.sqrt(x*x+y*y))
 		return Aminor/self.nphi
 
+	def calcRmajor(self):
+		"""Calculates the major radius
+
+		This routine calculates the major radius using the
+		normalized toroidal flux label (S).
+		
+		Returns
+		-------
+		Rmajor : float
+			Equilibrium major radius
+		"""
+		import numpy as np
+		from contourpy import contour_generator, LineType
+		Rmajor = 0
+		for k in range(self.nphi): 
+			S2D = np.squeeze(self.S_ARR[:,k,:])
+			S2D = np.where(S2D>1.2,1.2,S2D)
+			dex = np.argwhere(S2D == np.min(S2D)).flatten()
+			r0  = self.raxis[dex[0]]
+			z0  = self.zaxis[dex[1]]
+			cont_gen = contour_generator(x=self.raxis,y=self.zaxis,z=S2D, line_type=LineType.Separate)
+			lines = cont_gen.lines(1.0)
+			lines = lines[0]
+			Rmajor = Rmajor + np.mean(lines[:,0])
+		return Rmajor/self.nphi
+
 	def calcVolume(self,ns=None):
 		"""Calculates the differential volume
 
@@ -293,8 +319,8 @@ class BEAMS3D():
 		the radial grid (s), electrostatic scalar potential (V), and 
 		the radial derivative of the electrostatic scalar potential.
 		Note that Er = dV/ds * ds/dr
-		             = dV/ds * ds/drho * drho/dr
-		             = dV/ds * 2.0 * rho * (1.0/Aminor)
+					 = dV/ds * ds/drho * drho/dr
+					 = dV/ds * 2.0 * rho * (1.0/Aminor)
 			s = rho*rho -> ds/drho = 2 * rho
 			rho = r/Aminor -> drho/dr = 1.0 / Aminor 
 		
@@ -452,6 +478,65 @@ class BEAMS3D():
 			lost[b,:] = nlost
 
 		return time,nlost
+
+	def calcJrad(self,ns=None):
+		"""Calculates radial fast ion current
+
+		This routine calculates the radial fast ion current from the
+		initial birth profile and the steady-state fast ion density.
+
+		
+		Parameters
+		----------
+		ns : int (optional)
+			Number of radial gridpoints (default ns_prof1)
+
+		Returns
+		-------
+		rho : ndarray
+			Normalized minor radius array
+		jrad : ndarray
+			Radial current density [A/m^2]
+		"""
+		import numpy as np
+		# Setup rho on centered grid
+		if not ns:
+			ns = self.ns_prof1
+		edges = np.linspace(0.0,1.0,ns+1)
+		# Determine subset of particles for initial distribution
+		tdex = 1
+		if self.lbeam: tdex = 3
+		# Get plasma volume / area
+		[s,V,dVds] = self.calcVolume(ns=ns)
+		# Geta Aminor
+		Aminor = self.calcAminor()
+		area = np.broadcast_to(2*V/(Aminor*np.sqrt(s)),(self.nbeams,ns))
+		# Calculate the Thermalized and Lost particles
+		Itherm = np.zeros(self.nbeams,ns)
+		Ilost  = np.zeros(self.nbeams,ns)
+		for k in range(self.nbeams):
+			thermdex = np.argwhere((self.end_state==1 and self.Beam==k+1))
+			lostdex  = np.argwhere((self.end_state==2 and self.Beam==k+1))
+			for i in thermdex:
+				slines = self.S_lines[:,i]
+				s1     = slines[tdex]
+				temp   = np.argwhere(self.R_lines[:,i]>0)
+				j1     = temp[-1]
+				s2     = slines[j1]
+				j1     = max(sum(edges>s1),1)
+				j2     = min(sum(edges>s2),self.ns_prof1)
+				Itherm[k,j1:j2] = Itherm[k,j1:j2] + (self.Weight[i]*beam_data.charge[i]*sign(j2-j1))
+			for i in lostdex:
+				slines = self.S_lines[:,i]
+				s1     = slines[tdex]
+				j1     = max(sum(edges>s1),1) 
+				Ilost[k,j1:] = Ilost[k,j1:] + (self.Weight[i]*beam_data.charge[i])
+		# Calc losses
+		return (Itherm+Ilost)/area
+
+
+
+
 
 # BEASM3D Input Class
 class BEAMS3D_INPUT():
