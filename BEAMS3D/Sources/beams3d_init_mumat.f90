@@ -81,7 +81,7 @@
       ! Set parameters
       CALL MUMATERIAL_SETD(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
                            mumaterial_lamfactor, mumaterial_lamthresh, & 
-                           mumaterial_padfactor,mumaterial_syncinterval) 
+                           mumaterial_padfactor) 
 
       
 
@@ -143,7 +143,8 @@
 
       ! Initialize the magnetic calculation
       offset = 0.0
-      CALL MUMATERIAL_INIT_NEW(beams3d_BCART, MPI_COMM_BEAMS, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, offset)
+      !CALL MUMATERIAL_INIT_NEW(beams3d_BCART, MPI_COMM_BEAMS, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, offset)
+      CALL MUMATERIAL_INIT_NEW(beams3d_BCART, offset)
 
       ! Break up the Work
       IF (lverb) WRITE(6,*) 'Calculating range'
