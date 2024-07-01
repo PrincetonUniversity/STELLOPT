@@ -140,8 +140,7 @@ MODULE beams3d_runtime
                lboxsim, limas, lfieldlines, lfusion_tritium, lfusion_proton, &
                lfusion_He3, lbeamdensity, lmumat
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
-               ndt, ndt_max, duplicate_factor, mumaterial_niter, mumaterial_nneighbor, mumaterial_lamthresh, &
-               mumaterial_syncinterval
+               ndt, ndt_max, duplicate_factor, mumaterial_niter, mumaterial_nneighbor, mumaterial_lamthresh
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &
