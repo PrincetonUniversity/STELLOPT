@@ -8,6 +8,7 @@ if __name__=="__main__":
 	import matplotlib.pyplot as pyplot
 	from libstell.vmec import VMEC
 	from libstell.fieldlines import FIELDLINES
+	from libstell.plot3D import PLOT3D
 	import numpy as np
 	parser = ArgumentParser(description= 
 		'''Provides class for accessing fieldlines data also serves as a
@@ -16,6 +17,8 @@ if __name__=="__main__":
 		help="FIELDLINES file extension", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
 		help="Plot the fieldlines file.", default = False)
+	parser.add_argument("--plot3d", dest="k3d",
+		help="Plot a fieldline in 3D.", default = None, type=int)
 	parser.add_argument("-v", "--vmec", dest="vmec_ext", 
 		help="Add VMEC equilbrium to plot", default = None)
 	args = parser.parse_args()
@@ -46,4 +49,9 @@ if __name__=="__main__":
 				ax2.plot(r[j,:,1],z[j,:,1],'r')
 				ax3.plot(r[j,:,2],z[j,:,2],'r')
 			pyplot.show()
+		if args.k3d:
+			plt3d = PLOT3D()
+			field_data.plot_cloud(args.k3d,plot3D=plt3d,pointsize=0.1)
+			plt3d.render()
+
 	sys.exit(0)
