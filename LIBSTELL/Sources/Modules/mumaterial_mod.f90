@@ -930,9 +930,10 @@
       DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, Mnorm_old, dM, dMPrev, d2M, d2MPrev
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, MnormPrev, dM, dMPrev, d2M, d2MPrev
       DOUBLE PRECISION :: lambda, maxdM
-      INTEGER          :: lambdaCount
+      INTEGER          :: lambdaCount, maxd2MC
+      INTEGER, DIMENSION(:), ALLOCATABLE :: d2MCount
       LOGICAL          :: ldM
 
       EXTERNAL:: getBfld
@@ -941,9 +942,10 @@
       CHARACTER(LEN=20) :: filename
     
       ! Allocate helpers
-      ALLOCATE(M_new(3,mystart:myend),chi(mystart:myend),Mnorm(mystart:myend),Mnorm_old(mystart:myend))
+      ALLOCATE(M_new(3,mystart:myend),chi(mystart:myend),Mnorm(mystart:myend),MnormPrev(mystart:myend))
       ALLOCATE(dM(mystart:myend),dMPrev(mystart:myend))
       ALLOCATE(d2M(mystart:myend),d2MPrev(mystart:myend))
+      ALLOCATE(d2MCount(mystart:myend))
 
       count = 0
       lambda = lambdaStart
@@ -952,11 +954,12 @@
       Mnorm = 1.0E-5
       dM = 0.d0
       d2M = 0.d0
+      d2MCount = 0
       
 
       IF (lverb) THEN
         WRITE(6,*) ''
-        WRITE(6,*) '  Count       Max. Error            Error     LC           Lambda'
+        WRITE(6,*) '  Count     Max Error        Target        Lambda   LC  d2MC'
         WRITE(6,*) '============================================================================'
       END IF
 
@@ -966,13 +969,14 @@
       DO
         count = count + 1        
 
-        Mnorm_old = Mnorm
+        MnormPrev = Mnorm
         M_new = 0.0
         dMPrev = dM
         d2MPrev = d2M
         dM = 0.d0
         d2M = 0.d0
         maxdM = 0.d0
+        maxd2MC = 0
         ldM = .FALSE.
         
         DO i = mystart, myend ! Get the field and new magnetization for each tile
@@ -1085,16 +1089,28 @@
 
           M(:,i_tile) = M(:,i_tile) + lambda*(M_new(:,i) - M(:,i_tile))
           Mnorm(i) = NORM2(M(:,i_tile))
-          ! "Derivatives" for convergence checks
-          dM(i) = ABS((Mnorm(i) - Mnorm_old(i))/Mnorm_old(i))
-          IF (dMPrev(i).GT.1E-12) d2M(i) = (dM(i)-dMPrev(i))/dMPrev(i)
-          ! If the error increased AND it appears to continue to grow THEN dampen
-          IF ((dM(i).GT.dMPrev(i)) .AND. (d2M(i).GE.d2MPrev(i))) ldM = .TRUE.
-          maxdM = MAX(dM(i), maxdM) ! 
 
-!          dM = MAX(ABS( (Mnorm(i) - Mnorm_old(i))/Mnorm_old(i)) , dM)
-!          dM = MAX(     (Mnorm(i) - Mnorm_old(i))/Mnorm_old(i)  , dM)
- !         IF (count.EQ.0) dM = 0.d0
+          ! "Derivatives" for convergence checks
+          dM(i) = ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
+          IF (dMPrev(i).GT.1E-12) THEN
+            d2M(i) = ABS((dM(i)-dMPrev(i))/dMPrev(i))
+            IF ((d2M(i).GT.d2MPrev(i)).AND.(dM(i).GT.d2MPrev(i))) THEN 
+              d2MCount(i) = d2MCount(i)+1
+            ELSE
+              d2MCount(i) = 0
+            END IF
+          END IF
+          maxdM = MAX(dM(i), maxdM) 
+          maxd2MC = MAX(d2MCount(i), maxd2MC) 
+
+          ! Dampen evolution when Mnorm has increased AND the rate of increase
+          ! has itself increased for a couple of consecutive iters
+          IF ((Mnorm(i).GT.MnormPrev(i)) .AND. (dM(i).GT.dMPrev(i)) .AND. (d2MCount(i).GE.3)) THEN 
+            d2MCount(i) = 0
+            ldM = .TRUE.     
+          END IF     
+
+
          END DO
 
 #if defined(MPI_OPT)
@@ -1102,9 +1118,15 @@
          IF (lcomm) THEN
             CALL MPI_BARRIER(comm_world, ierr_mpi)
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, maxdM, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_world, ierr_mpi)
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE,maxd2MC,1, MPI_INTEGER,          MPI_MAX, comm_world, ierr_mpi)
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, ldM,   1, MPI_LOGICAL,          MPI_LOR, comm_world, ierr_mpi) 
          END IF
 #endif
+
+        IF (lverb) THEN 
+          WRITE(6,'(3X,I5,A2,E12.4,A2,E12.4,A2,E12.4,A2,I3,A2,I3)') count, '  ', maxdM, '  ', dMmax*lambda,  '  ', lambda, '  ', lambdaCount, '  ', maxd2MC
+          CALL FLUSH(6)
+        END IF
 
         ! Update lambda to prevent oscillations
         IF (count.NE.1) THEN
@@ -1117,10 +1139,7 @@
           END IF
         END IF
 
-        IF (lverb) THEN 
-            WRITE(6,'(3X,I5,A2,E15.7,A2,E15.7,A2,I3,A2,E15.7)') count, '  ', dMmax*lambda, '  ', maxdM, '  ', lambdaCount, ' ', lambda
-            CALL FLUSH(6)
-        END IF
+
 
         IF (ldebugm) THEN
             WRITE(strcount, '(I0)') count
@@ -1162,7 +1181,7 @@
 
 
       END DO
-      DEALLOCATE(M_new,chi,Mnorm,Mnorm_old,dM,dMPrev)
+      DEALLOCATE(M_new,chi,Mnorm,MnormPrev,dM,dMPrev,d2MCount)
 
       RETURN
       END SUBROUTINE mumaterial_iterate_magnetization_new
@@ -1423,7 +1442,7 @@
       Nb_temp = 0
       NbC = pdomsize
       
-      ALLOCATE(mask(pdomsize), dist(pdomsize), dx(3,pdomsize), tet_cen_pdom(3, pdomsize), idx(pdomsize))
+      ALLOCATE(mask(pdomsize), dist(pdomsize), dx(3,pdomsize), tet_cen_pdom(3, pdomsize))
       DO i = 1, pdomsize
         tet_cen_pdom(:,i) = tet_cen(:,mypdom(i))
       END DO
@@ -1435,54 +1454,54 @@
         dx(3,:) = tet_cen_pdom(3,:) - tet_cen(3,i_tile)
         dist = NORM2(dx,DIM=1)
         mask = .TRUE.
-        NbC(i) = COUNT(dist.LE.padFactor*tet_edge(i_tile))
-        DO j = 1, NbC(i)
-          k = MINLOC(dist,1,mask)
-          Nb_temp(j,i) = mypdom(k)
-          mask(k) = .FALSE.
+        !NbC(i) = COUNT(dist.LE.padFactor*tet_edge(i_tile))
+        mask = dist.LE.padFactor*tet_edge(i_tile)
+        NbC(i) = COUNT(mask)
+        j = 0
+        DO k = 1, pdomsize
+          IF (mask(k)) THEN
+            j = j + 1
+            Nb_temp(j,i) = mypdom(k)
+          END IF
         END DO
-
-        WHERE (Nb_temp(:,i).EQ.0) Nb_temp(:,i) = ntet+1
-        idx = 0
-        CALL SORT(pdomsize,Nb_temp(:,i),idx)
-
       END DO
 
       maxNbC = MAXVAL(NbC)
 
-      DEALLOCATE(mask,dist,dx,tet_cen_pdom,idx)
+      DEALLOCATE(mask,dist,dx,tet_cen_pdom)
 
       ALLOCATE(Nb(maxNbC,mystart:myend))
       Nb = Nb_temp(1:maxNbC,mystart:myend)
       DEALLOCATE(Nb_temp)
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ALLOCATE(Nb_domidx_temp(maxNbc, mystart:myend), NbC_dom(mystart:myend))
-      Nb_domidx_temp = 0
-      NbC_dom = maxNbC
-      ALLOCATE(idx(maxNbC))
-      DO i = mystart, myend
-        c=0
-        DO j = 1, NbC(i)
-            k = FINDLOC(mydom, Nb(j,i), DIM=1)
-            IF (k.NE.0) THEN
-              c = c + 1
-              Nb_domidx_temp(c, i) = k
-            END IF
-        END DO
-        NbC_dom(i) = c
+      ! No longer necessary
+      ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! ALLOCATE(Nb_domidx_temp(maxNbc, mystart:myend), NbC_dom(mystart:myend))
+      ! Nb_domidx_temp = 0
+      ! NbC_dom = maxNbC
+      ! ALLOCATE(idx(maxNbC))
+      ! DO i = mystart, myend
+      !   c=0
+      !   DO j = 1, NbC(i)
+      !       k = FINDLOC(mydom, Nb(j,i), DIM=1)
+      !       IF (k.NE.0) THEN
+      !         c = c + 1
+      !         Nb_domidx_temp(c, i) = k
+      !       END IF
+      !   END DO
+      !   NbC_dom(i) = c
 
-        WHERE(Nb_domidx_temp(:,i).EQ.0) Nb_domidx_temp(:,i) = ntet+1
-        idx = 0
-        CALL SORT(maxNbC,Nb_domidx_temp(:,i),idx)
+      !   WHERE(Nb_domidx_temp(:,i).EQ.0) Nb_domidx_temp(:,i) = ntet+1
+      !   idx = 0
+      !   CALL SORT(maxNbC,Nb_domidx_temp(:,i),idx)
 
-      END DO
+      ! END DO
 
-      DEALLOCATE(idx)
-      maxNbC_dom = MAXVAL(NbC_dom)
+      ! DEALLOCATE(idx)
+      ! maxNbC_dom = MAXVAL(NbC_dom)
 
-      ALLOCATE(Nb_domidx(maxNbC_dom,mystart:myend))
-      Nb_domidx=Nb_domidx_temp(1:maxNbC_dom, mystart:myend) 
-      DEALLOCATE(Nb_domidx_temp)
+      ! ALLOCATE(Nb_domidx(maxNbC_dom,mystart:myend))
+      ! Nb_domidx=Nb_domidx_temp(1:maxNbC_dom, mystart:myend) 
+      ! DEALLOCATE(Nb_domidx_temp)
 
       END SUBROUTINE mumaterial_getneighbours
 
