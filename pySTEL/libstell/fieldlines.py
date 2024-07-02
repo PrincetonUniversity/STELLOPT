@@ -169,6 +169,47 @@ class FIELDLINES():
 		ax.set_xlim(rmin,rmax)
 		if lplotnow: pyplot.show()
 
+	def plot_cloud(self,k,pointsize=0.01,color='red',plot3D=None):
+		"""Plots the FIELDILNES Poin in 3D
+
+		This routine plots the FIELDLINES poincare points in 3D
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		vertices = []
+		scalar   = []
+		for i in range(self.nsteps):
+			if (self.R_lines[i,k] > 0):
+				vertices.append([self.X_lines[i,k],self.Y_lines[i,k],self.Z_lines[i,k]])
+				scalar.append(self.B_lines[i,k])
+		vertices = np.array(vertices)
+		scalar = plt.valuesToScalar(np.array(scalar))
+		points = plt.vertexToPoints(vertices)
+		# Add to Render
+		if float(scalar.GetValueRange()[1]) > 0:
+			plt.add3Dpoints(points,scalars=scalar,pointsize=pointsize)
+			# Colorbar
+			plt.colorbar()
+		else:
+			plt.add3Dpoints(points,pointsize=pointsize)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
 # FIELDLINES Input Class
 class FIELDLINES_INPUT():
 	"""Class for working with FIELDLINES INPUT data
