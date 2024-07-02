@@ -11,9 +11,9 @@ from vtkmodules.vtkCommonColor import vtkNamedColors
 # Constants
 _WPIX_ = 1024
 _HPIX_ = 768
-_R_RGB_ = 0.1
-_G_RGB_ = 0.2
-_B_RGB_ = 0.3
+_R_RGB_ = 1.0
+_G_RGB_ = 1.0
+_B_RGB_ = 1.0
 _CMAP_  = 'jet'
 
 # VMEC Class
@@ -22,18 +22,29 @@ class PLOT3D():
 
 	"""
 	def __init__(self,lwindow=True):
+		import yaml
+		import os
+		from pathlib import Path
 		self.cmap = _CMAP_
 		self.renderer = vtk.vtkRenderer()
 		self.render_window = vtk.vtkRenderWindow()
 		self.scalar_bar = vtk.vtkScalarBarActor()
+		self.camera = vtk.vtkCamera()
 		self.lookupTable = None
+		self.colordex = 0
 		if lwindow:
 			self.render_window_interactor = vtk.vtkRenderWindowInteractor()
 			self.setRendererWindow(self.render_window)
 			self.render_window.SetSize(_WPIX_, _HPIX_)
 		else:
 			self.render_window_interactor = None
-
+		cfg_file=os.path.join(Path.home(),'.pystelrc')
+		if os.path.isfile(cfg_file):
+			with open(cfg_file, "r") as ymlfile:
+				cfg = yaml.safe_load(ymlfile)
+			if 'mycolors' in cfg.keys(): self.colororder = cfg['mycolors']
+		else:
+			self.colororder = ['red','green','blue','yellow','magenta','cyan','aqua']
 
 	def setRenderer(self,renderer):
 		"""Set the renderer
@@ -78,7 +89,6 @@ class PLOT3D():
 			if hasattr(mapper,'LookupTable'):
 				mapper.SetLookupTable(lut)
 
-
 	def setBGcolor(self,r=_R_RGB_,g=_G_RGB_,b=_B_RGB_):
 		"""Set the background color for the render
 
@@ -113,34 +123,48 @@ class PLOT3D():
 		lut : VTKLookupTable
 			VTK style lookup table class
 		"""
-		from matplotlib import cm
+		#from matplotlib import cm
+		import matplotlib
 		lut = vtk.vtkLookupTable()
 		lut.SetNumberOfTableValues(256)
 		lut.Build()
 		# Use matplotlib to generate the jet colormap
-		jet = cm.get_cmap(ctable, 256)
+		mlibmap = matplotlib.colormaps[ctable]
 		for i in range(256):
-			rgba = jet(i / 255.0)
+			rgba = mlibmap(i / 255.0)
 			lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
 		return lut
 
-	def vtkColor(self,j):
-		"""Helper to vary colors
+	def setActorColor(self,actor,color=None):
+		"""Set the color property of the actor
 
-		This routine returns a VTK color object based on a number.
-		This is done to mimic the behavior of changing colors when
-		plotting lines in matplotlib.
+		This routine helps set the color of an actor. It does so by
+		cycling through the colororder property of this class. If the
+		user passes a specific color then the named color is used.
 
 		Parameters
 		----------
-		j : int
-			Index into predefined colors
+		actor : VTK Actor Object
+			Actor to set color property of
+		color : str (optional)
+			Use the named color instead
 		"""
-		from vtkmodules.vtkCommonColor import vtkNamedColors
-		colors = vtkNamedColors()
-		color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
-		j = j % len(color_txt)
-		return colors.GetColor3d(color_txt[j])
+		cNamed = vtkNamedColors()
+		if not color:
+			ctemp = self.colororder[self.colordex]
+			print(ctemp)
+			self.colordex = self.colordex + 1
+			if self.colordex >= len(self.colororder):
+				self.colordex = 0
+			if type(ctemp) == type('str'):
+				vtkcolor = cNamed.GetColor3d(ctemp)
+			else:
+				vtkcolor = vtk.vtkColor3d(ctemp[0],ctemp[1],ctemp[2])
+		elif type(color) == type('str'):
+			vtkcolor = cNamed.GetColor3d(color)
+		else:
+			vtkcolor = cNamed.GetColor3d('red')
+		actor.GetProperty().SetColor(vtkcolor)
 
 	def setClim(self,cmin,cmax,llast=False):
 		"""Set the color limits for all actors
@@ -251,6 +275,28 @@ class PLOT3D():
 			scalars.InsertNextValue(value)
 		return scalars
 
+	def vertexToPoints(self,vertices):
+		"""Generate points objects from an array
+
+		This routine returns a vtkPoints object given a vertex array.
+
+		Parameters
+		----------
+		vertex : ndarray
+			Points to plot (npts,3)
+		Returns
+		-------
+		points : VTK Points object
+			Points object for 3D meshes.
+		"""
+		# Create objects
+		points = vtk.vtkPoints()
+		# Convert numpy arrays to VTK arrays
+		for vertex in vertices:
+			points.InsertNextPoint(vertex.tolist())
+		return points
+
+
 	def facemeshTo3Dmesh(self,vertices,indices):
 		"""Generate points and triangle objects from a facemesh
 
@@ -270,12 +316,11 @@ class PLOT3D():
 		triangle : VTK Cell Array object
 			Triangel object for 3D meshes.
 		"""
-		# Create objects
-		points = vtk.vtkPoints()
-		triangles = vtk.vtkCellArray()
 		# Convert numpy arrays to VTK arrays
-		for vertex in vertices:
-			points.InsertNextPoint(vertex.tolist())
+		points = self.vertexToPoints(vertices)
+		# Create objects
+		triangles = vtk.vtkCellArray()
+		# Calculate indices
 		for index in indices:
 			triangle = vtk.vtkTriangle()
 			triangle.GetPointIds().SetId(0, index[0])
@@ -284,7 +329,87 @@ class PLOT3D():
 			triangles.InsertNextCell(triangle)
 		return points,triangles
 
-	def add3Dline(self,points,scalars=None,linewidth=None,color='red'):
+	def tetrameshTo3DTetra(self,vertices,indices):
+		"""Generate points and tetrahedron objects from a tetramesh
+
+		This routine returns a vtkPoints object and vtkCellArray
+		given a vertex array and indicies array.
+
+		Parameters
+		----------
+		vertex : ndarray
+			Points to plot (npts,3)
+		indices : ndarray
+			Face list (nfaces,4)
+		Returns
+		-------
+		points : VTK Points object
+			Points object for 3D meshes.
+		tetra : VTK Cell Array object
+			Tetrahedron object for 3D meshes.
+		"""
+		# Convert numpy arrays to VTK arrays
+		points = self.vertexToPoints(vertices)
+		# Create objects
+		tetra = vtk.vtkCellArray()
+		# Convert numpy arrays to VTK arrays
+		for index in indices:
+			tet = vtk.vtkTetra()
+			tet.GetPointIds().SetId(0, index[0])
+			tet.GetPointIds().SetId(1, index[1])
+			tet.GetPointIds().SetId(2, index[2])
+			tet.GetPointIds().SetId(3, index[3])
+			tetra.InsertNextCell(tet)
+		return points,tetra
+
+	def add3Dpoints(self,points,pointsize=0.01,scalars=None,color=None):
+		"""Adds 3D point cloud to a render
+
+		This routine adds a point cloud using VTK where points is an object
+		as returned by vtk.vtkPoints().
+
+		Parameters
+		----------
+		points : VTK Points object
+			Points to plot
+		scalars : VTK FloatArray object (optional)
+			Color values to plot
+		pointsize : float (optional)
+			Point size (default=1)
+		color : string (optional)
+			Line color name, see VTK (scalars overrides)
+		"""
+		# Create actor,mapper,sphere,glyph
+		actor = vtk.vtkActor()
+		mapper = vtk.vtkPolyDataMapper()
+		sphere = vtk.vtkSphereSource()
+		glyph = vtk.vtkGlyph3D()
+		# Create a polydata object and add the points and the polyline to it
+		polydata = vtk.vtkPolyData()
+		polydata.SetPoints(points)
+		# Setup the mapper
+		mapper.SetInputData(polydata)
+		# Create the glyph
+		sphere.SetRadius(pointsize)
+		glyph.SetSourceConnection(sphere.GetOutputPort())
+		glyph.SetInputData(polydata)
+		glyph.SetColorModeToColorByScalar()
+		glyph.SetScaleModeToDataScalingOff()  # Disable scaling by scalar values
+		mapper.SetInputConnection(glyph.GetOutputPort())
+		# Handle scalars or use line color
+		if type(scalars) != type(None): 
+			polydata.GetPointData().SetScalars(scalars)
+			self.lookupTable = self.vtkLUTHelper(self.cmap)
+			mapper.SetLookupTable(self.lookupTable)
+			mapper.SetScalarRange(scalars.GetRange())
+		else:
+			self.setActorColor(actor,color)
+		# Set Mapper
+		actor.SetMapper(mapper)
+		# Add actor
+		self.renderer.AddActor(actor)
+
+	def add3Dline(self,points,scalars=None,linewidth=None,color=None):
 		"""Add a 3D line to a render
 
 		This routine adds a line using VTK where points is an object
@@ -326,8 +451,7 @@ class PLOT3D():
 			mapper.SetLookupTable(self.lookupTable)
 			mapper.SetScalarRange(scalars.GetRange())
 		else:
-			colors = vtkNamedColors()
-			actor.GetProperty().SetColor(colors.GetColor3d(color))
+			self.setActorColor(actor,color)
 		# Set line thickness
 		if linewidth: actor.GetProperty().SetLineWidth(linewidth)
 		# Set Mapper
@@ -335,7 +459,7 @@ class PLOT3D():
 		# Add actor
 		self.renderer.AddActor(actor)
 
-	def add3Dmesh(self,points,triangles,scalars=None,opacity=1.0,color='red'):
+	def add3Dmesh(self,points,triangles,scalars=None,opacity=1.0,color=None):
 		"""Add a 3D mesh to a render
 
 		This routine adds a mesh using VTK where points is an object
@@ -372,8 +496,7 @@ class PLOT3D():
 			mapper.SetLookupTable(self.lookupTable)
 			mapper.SetScalarRange(scalars.GetRange())
 		else:
-			colors = vtkNamedColors()
-			actor.GetProperty().SetColor(colors.GetColor3d(color))
+			self.setActorColor(actor,color)
 		# Set Opacity
 		actor.GetProperty().SetOpacity(opacity)
 		# Set Mapper
@@ -397,7 +520,31 @@ class PLOT3D():
 			self.scalar_bar.SetLookupTable(self.lookupTable)
 			self.scalar_bar.SetTitle(title)
 			self.scalar_bar.SetNumberOfLabels(5)
+			# Black on white background
+			self.scalar_bar.GetLabelTextProperty().SetColor(0,0,0)
+			self.scalar_bar.GetTitleTextProperty().SetColor(0,0,0)
 			self.renderer.AddActor2D(self.scalar_bar)
+
+	def setCamera(self,pos=None,focal=None,az=None,el=None):
+		"""Set the Camera Position
+
+		This routine sets the camera position using position and focal
+		point.
+
+		Parameters
+		----------
+		pos : tupple (optional)
+			Position of the camera (x,y,z)
+		focal : tupple (optional)
+			Focus point of the camera (x,y,z)
+		az : float (optional)
+			Azimuth about focal point (degrees)
+		"""
+		if pos: self.camera.SetPosition(pos[0], pos[1], pos[2])
+		if focal: self.camera.SetFocalPoint(pos[0], pos[1], pos[2])
+		if az: self.camera.Azimuth(az)
+		if el: self.camera.Elevation(el)
+		self.renderer.SetActiveCamera(self.camera)
 
 	def render(self):
 		"""Render the window
@@ -406,6 +553,51 @@ class PLOT3D():
 		"""
 		self.render_window.Render()
 		self.render_window_interactor.Start()
+
+	def saveImage(self,filename='vtkImage.png'):
+		"""Save VTK Render as image
+
+		This routine saves the current VTK render as an image based
+		on the filename provided.
+
+		Parameters
+		----------
+		filename : string (optional)
+			Name of file (bmp,jpg,pnm,ps,tiff,png are supported)
+		"""
+		from vtkmodules.vtkIOImage import vtkBMPWriter,vtkJPEGWriter,vtkPNGWriter,vtkPNMWriter,vtkPostScriptWriter,vtkTIFFWriter
+		from vtkmodules.vtkRenderingCore import vtkWindowToImageFilter
+		rbga = True
+		if '.bmp' in filename:
+			writer = vtkBMPWriter()
+		elif '.jpg' in filename:
+			writer = vtkJPEGWriter()
+		elif '.pnm' in filename:
+			writer = vtkPNMWriter()
+		elif '.ps' in filename:
+			if rgba:
+				rgba = False
+			writer = vtkPostScriptWriter()
+		elif '.tiff' in filename:
+			writer = vtkTIFFWriter()
+		elif '.png' in filename:
+			writer = vtkPNGWriter()
+		else:
+			print(f'Unsupported file extension: {filename}')
+			return
+		windowto_image_filter = vtkWindowToImageFilter()
+		windowto_image_filter.SetInput(self.render_window)
+		windowto_image_filter.SetScale(1)  # image quality
+		if rgba:
+			windowto_image_filter.SetInputBufferTypeToRGBA()
+		else:
+			windowto_image_filter.SetInputBufferTypeToRGB()
+			# Read from the front buffer.
+			windowto_image_filter.ReadFrontBufferOff()
+			windowto_image_filter.Update()
+		writer.SetFileName(filename)
+		writer.SetInputConnection(windowto_image_filter.GetOutputPort())
+		writer.Write()
 
 if __name__=="__main__":
 	import sys
