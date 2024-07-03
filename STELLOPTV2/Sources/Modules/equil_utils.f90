@@ -371,6 +371,9 @@
          CASE ('simple_peak')
             xp  = s_val**coefs(1)
             val = 4*xp - 4*xp*xp
+         CASE ('flat_rho')
+            xp = MIN(MAX(s_val,0.0),1.0)**0.5
+            val = coefs(1)*( (1.0-coefs(3))*(1.0-xp**coefs(2)) + coefs(3) )
          CASE DEFAULT
             PRINT *,"Error! Unknown profile type in subroutine eval_prof_stel:",type
             STOP
@@ -836,7 +839,7 @@
       profile_norm = 0.0_rprec
       SELECT CASE (prof_type)
          CASE ('two_power','two_power_hollow','two_power_offset','two_lorentz','gauss_trunc', &
-               'gauss_trunc_offset','sum_atan','pedestal','bump','hollow','hollow2','te_ratio','simple_peak')
+               'gauss_trunc_offset','sum_atan','pedestal','bump','hollow','hollow2','te_ratio','simple_peak','flat_rho')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
          CASE ('power_series','power_series_edge0','power_series_0_boundaries', &
                'power_series_rho','power_series_rho2')
@@ -883,7 +886,7 @@
 
         CALL tolower(profile_type)
         SELECT CASE (profile_type)
-        CASE ('simple_peak')
+        CASE ('simple_peak','flat_rho')
            profile_coefficients = profile_coefficients * 1.0 ! Can't scale by coefficients
         CASE ('power_series','spline','akima_spline','akima_spline_ip','power_series_0_boundaries')
            profile_coefficients = profile_coefficients * factor
@@ -1386,6 +1389,8 @@
       nc = ncoefs
       CALL tolower(ptype)
       SELECT CASE (ptype)
+         CASE('flat_rho')
+            nc = 3
          CASE('simple_peak')
             nc = 1
          CASE('two_power')
