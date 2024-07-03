@@ -15,6 +15,7 @@ _R_RGB_ = 1.0
 _G_RGB_ = 1.0
 _B_RGB_ = 1.0
 _CMAP_  = 'jet'
+_FONTSIZE_ = 24
 
 # VMEC Class
 class PLOT3D():
@@ -25,13 +26,14 @@ class PLOT3D():
 		import yaml
 		import os
 		from pathlib import Path
-		self.cmap = _CMAP_
+		self.cmap = None
 		self.renderer = vtk.vtkRenderer()
 		self.render_window = vtk.vtkRenderWindow()
 		self.scalar_bar = vtk.vtkScalarBarActor()
 		self.camera = vtk.vtkCamera()
 		self.lookupTable = None
 		self.colordex = 0
+		self.fontsize = _FONTSIZE_
 		if lwindow:
 			self.render_window_interactor = vtk.vtkRenderWindowInteractor()
 			self.setRendererWindow(self.render_window)
@@ -43,8 +45,11 @@ class PLOT3D():
 			with open(cfg_file, "r") as ymlfile:
 				cfg = yaml.safe_load(ymlfile)
 			if 'mycolors' in cfg.keys(): self.colororder = cfg['mycolors']
+			if 'cmaps' in cfg.keys(): self.cmap = cfg['cmaps']
+			if 'fontsize' in cfg.keys(): self.fontsize = cfg['fontsize']
 		else:
 			self.colororder = ['red','green','blue','yellow','magenta','cyan','aqua']
+
 
 	def setRenderer(self,renderer):
 		"""Set the renderer
@@ -108,7 +113,7 @@ class PLOT3D():
 		"""
 		self.renderer.SetBackground(r,g,b)
 
-	def vtkLUTHelper(self,ctable='jet'):
+	def vtkLUTHelper(self,ctable=None):
 		"""Helper for VTK Lookup tables based on matplotlib
 
 		The routine helps the user create a VTK lookup table based
@@ -126,6 +131,31 @@ class PLOT3D():
 		#from matplotlib import cm
 		import matplotlib
 		lut = vtk.vtkLookupTable()
+		# Check for custom colormaps
+		if self.cmap:
+			if ctable in list(self.cmap.keys()):
+				cmap = self.cmap[ctable]
+			else:
+				# Use first colormap
+				res = list(self.cmap.keys())[0]
+				cmap = self.cmap[res]
+			# Now construct
+			ncolors = len(cmap)
+			lut.SetNumberOfTableValues((ncolors-1)*256)
+			lut.Build()
+			k = 0
+			for i in range(ncolors-1):
+				c1 = cmap[i]
+				c2 = cmap[i+1]
+				for j in range(256):
+					r = (c2[0]-c1[0])*float(j)/255.0 + c1[0]
+					g = (c2[1]-c1[1])*float(j)/255.0 + c1[1]
+					b = (c2[2]-c1[2])*float(j)/255.0 + c1[2]
+					lut.SetTableValue(k,r,g,b,1.0)
+					k = k + 1
+			return lut
+		elif not ctable:
+			ctable = _CMAP_ # default from above
 		lut.SetNumberOfTableValues(256)
 		lut.Build()
 		# Use matplotlib to generate the jet colormap
@@ -152,7 +182,6 @@ class PLOT3D():
 		cNamed = vtkNamedColors()
 		if not color:
 			ctemp = self.colororder[self.colordex]
-			print(ctemp)
 			self.colordex = self.colordex + 1
 			if self.colordex >= len(self.colororder):
 				self.colordex = 0
@@ -517,12 +546,19 @@ class PLOT3D():
 			Colorbar title
 		"""
 		if show:
+			# Set Label Text
+			self.scalar_bar.GetLabelTextProperty().SetColor(0,0,0)
+			self.scalar_bar.GetLabelTextProperty().ShadowOff()
+			self.scalar_bar.GetLabelTextProperty().SetFontSize(self.fontsize)
+			# Set Titel Text
+			self.scalar_bar.GetTitleTextProperty().SetColor(0,0,0)
+			self.scalar_bar.GetTitleTextProperty().ShadowOff()
+			self.scalar_bar.GetTitleTextProperty().SetFontSize(self.fontsize)
+			self.scalar_bar.UnconstrainedFontSizeOn()
 			self.scalar_bar.SetLookupTable(self.lookupTable)
 			self.scalar_bar.SetTitle(title)
 			self.scalar_bar.SetNumberOfLabels(5)
-			# Black on white background
-			self.scalar_bar.GetLabelTextProperty().SetColor(0,0,0)
-			self.scalar_bar.GetTitleTextProperty().SetColor(0,0,0)
+			self.scalar_bar.SetBarRatio(0.25)
 			self.renderer.AddActor2D(self.scalar_bar)
 
 	def setCamera(self,pos=None,focal=None,az=None,el=None):
