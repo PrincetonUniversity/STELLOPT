@@ -55,8 +55,9 @@ class MyApp(QMainWindow):
 		self.nv2 = self.vmec_data.ntor*4
 		if self.nu < 128:
 			self.nu = 128
-		if self.nv < 64:
-			self.nv = 64
+		if self.nv2 < 64:
+			self.nv2 = 64
+			self.nv  = self.nv2*self.vmec_data.nfp
 		self.TransformVMEC()
 		self.s=0
 		self.u=0
@@ -342,7 +343,7 @@ class MyApp(QMainWindow):
 				self.vtkWidget.show()
 				self.plt.renderer.RemoveAllViewProps()
 				self.vmec_data.isotoro(self.r[:,:-1,:-1],self.z[:,:-1,:-1],self.zeta[:-1],self.s,vals=val[:,:-1,:-1],plot3D=self.plt)
-				self.plt.colorbar()
+				self.plt.colorbar(title=self.ui.PlotList.currentText())
 		self.canvas.draw()
 
 	def TransformVMEC(self):
