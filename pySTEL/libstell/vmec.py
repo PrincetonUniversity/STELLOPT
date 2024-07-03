@@ -299,40 +299,50 @@ class VMEC(FourierRep):
 			Z cosine harmonics of extrapolated surface
 		"""
 		import numpy as np
+		# Handle the surface to use
 		if surf:
 			k=surf-1
 		else:
 			k=self.ns-1
 		rho = np.sqrt(float(k)/(self.ns-1))
-		rmnc = self.rmnc[k,:]
-		zmns = self.zmns[k,:]
-		r0c = np.where(self.xm==0,self.rmnc[0,:],0)
-		z0s = np.where(self.xm==0,self.zmns[0,:],0)
-		rmnc = rmnc - r0c
-		zmns = zmns - z0s
-		if self.iasym==1:
-			rmns = self.rmns[k,:]
+		# Extract surface and remove axis component
+		rmnc = np.zeros((self.mnmax))
+		zmns = np.zeros((self.mnmax))
+		rmns = np.zeros((self.mnmax))
+		zmnc = np.zeros((self.mnmax))
+		for mn in range(self.mnmax):
+			if self.xm[mn]==0:
+				rmnc[mn] = self.rmnc[k,mn] - self.rmnc[0,mn]
+				zmns[mn] = self.zmns[k,mn] - self.zmns[0,mn]
+			else:
+				rmnc[mn] = self.rmnc[k,mn]
+				zmns[mn] = self.zmns[k,mn]
+		if self.iasym == 1:
 			zmnc = self.zmnc[k,:]
-			r0s = np.where(self.xm==0,self.rmns[0,:],0)
-			z0c = np.where(self.xm==0,self.zmnc[0,:],0)
-			rmns = rmns - r0s
-			zmnc = zmnc - z0c
+			rmns = self.rmns[k,:]
+			for mn in range(self.mnmax):
+				if self.xm[mn]==0:
+					zmnc[mn] = zmnc[mn] - self.zmnc[0,mn]
+					rmns[mn] = rmns[mn] - self.rmns[0,mn]
+		# Scale by a factor
 		scale = (self.aminor+dist)/self.aminor
 		scale = scale*scale
-		#scalemn = np.ones((self.mnmax))*scale
-		scalemn = np.where(self.xm%2==1, rho*scale, scale)
+		scalemn = np.squeeze(np.where(self.xm%2==1, rho*scale, scale))
 		rmnc = rmnc * scalemn
 		zmns = zmns * scalemn
-		rmnc = rmnc + r0c
-		zmns = zmns + z0s
-		if self.iasym == 1:
+		if iasym == 1:
+			zmnc = zmnc * scalemn
 			rmns = rmns * scalemn
-			zmnc = zmns * scalemn
-			rmns = rmns + r0s
-			zmnc = zmnc + z0c
-		else:
-			rmns = np.zeros((self.mnmax))
-			zmnc = np.zeros((self.mnmax))
+		# Add axis back in
+		for mn in range(self.mnmax):
+			if self.xm[mn]==0:
+				rmnc[mn] = rmnc[mn] + self.rmnc[0,mn]
+				zmns[mn] = zmns[mn] + self.zmns[0,mn]
+		if self.iasym == 1:
+			for mn in range(self.mnmax):
+				if self.xm[mn]==0:
+					zmnc[mn] = zmnc[mn] + self.zmnc[0,mn]
+					rmns[mn] = rmns[mn] + self.rmns[0,mn]
 		return rmnc, zmns, rmns, zmnc
 
 	def offsetCurve(self, R, Z, distance=0.1):
