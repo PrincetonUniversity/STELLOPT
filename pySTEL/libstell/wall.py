@@ -5,12 +5,12 @@ This library provides a python class for working with wall_data
 """
 
 # Libraries
-from libstell.libstell import LIBSTELL
+#from libstell.libstell import LIBSTELL
 
 # Constants
 
-# VMEC Class
-class WALL(LIBSTELL):
+# WALL Class
+class WALL():
 	"""Class for working with wall files
 
 	"""
@@ -222,6 +222,173 @@ class WALL(LIBSTELL):
 		self.nfaces  = nfaces
 		self.vertex = np.column_stack((x,y,z))
 		self.faces = faces
+
+# LINESEG Class
+class LINESEG():
+	"""Class for linesegment
+
+	"""
+	def __init__(self,R=None,phi=None,Z=None,RHat=None,ZHat=None,L=None):
+		self.Phi = phi
+		self.R   = R
+		self.Z   = Z
+		self.RHat = RHat
+		self.ZHat = Zhat
+		self.L    = L
+		if (RHat and ZHat):
+			norm = sqrt(RHat**2+ZHat**2)
+			self.RHat = RHat/norm
+			self.ZHat = ZHat/norm
+
+	def getEndpoints(self):
+		"""Return cartesian coordinates of the LINESEG
+
+		This routine returns the cartesian coordinates of the LINESEG
+		end points.
+
+		Returns
+		----------
+		points : list
+			The [2,x,y,z] coordiantes of the three vertices. [m]
+		"""
+		t1 = [self.R-0.5*self.L*self.ZHat,self.Z+0.5*self.L*self.RHat]
+		t2 = [self.R-0.5*self.L*self.ZHat,self.Z-0.5*self.L*self.RHat]
+		p1 = [t1[0]*cos(self.Phi),t1[0]*sin(self.Phi),t1[1]]
+		p2 = [t2[0]*cos(self.Phi),t2[0]*sin(self.Phi),t2[1]]
+		return [p1,p2]
+
+# WEDGE Class
+class WEDGE(LINESEG):
+	"""Class for wedge
+
+	"""
+	def __init__(self,R=None,phi=None,Z=None,RHat=None,ZHat=None,L=None,alpha=None):
+		super.__init__(R,phi,Z,RHat,ZHat,L)
+		self.alpha = alpha
+		if alpha:
+			self.sinah = sin(alpha*0.5)
+			self.cosah = cos(alpha*0.5)
+
+	def getEndpoints(self):
+		"""Return cartesian coordinates of the WEDGE
+
+		This routine returns the cartesian coordinates of the WEDGE
+		end points.
+
+		Returns
+		----------
+		points : list
+			The [3,x,y,z] coordiantes of the three vertices. [m]
+		"""
+		t1 = [self.R-self.L*self.sinah*self.ZHat,self.Z+self.L*self.sinah*self.RHat]
+		t2 = [self.R+self.L*self.cosah*self.RHat,self.Z+self.L*self.cosah*self.ZHat]
+		t3 = [self.R+self.L*self.sinah*self.ZHat,self.Z-self.L*self.sinah*self.RHat]
+		p1 = [t1[0]*cos(self.Phi),t1[0]*sin(self.Phi),t1[1]]
+		p2 = [t2[0]*cos(self.Phi),t2[0]*sin(self.Phi),t2[1]]
+		p3 = [t3[0]*cos(self.Phi),t3[0]*sin(self.Phi),t3[1]]
+		return [p1,p2,p3]
+
+# CIRCLE Class
+class CIRCLE(LINESEG):
+	"""Class for wedge
+
+	"""
+	def __init__(self,R=None,phi=None,Z=None,RHat=None,ZHat=None,L=None,N=None):
+		super.__init__(R,phi,Z,RHat,ZHat,L)
+		self.N = N
+
+	def getEndpoints(self):
+		"""Return cartesian coordinates of the CIRCLE
+
+		This routine returns the cartesian coordinates of the CIRCLE
+		end points. Note the circle does not close.
+
+		Returns
+		----------
+		outarr : list
+			The [n,x,y,z] coordiantes of the vertices. [m]
+		"""
+		import numpy as np
+		outarr = []
+		for k in range(self.N):
+			t1 = [self.R+self.L*cos(2*np.pi*k/self.N)*self.RHat,self.Z+self.L*sin(2*np.pi*k/self.N)*self.ZHat]
+			p1 = [t1[0]*cos(self.Phi),t1[0]*sin(self.Phi),t1[1]]
+			temp.append(t1)
+		return outarr
+
+# Parameterized wall model
+class PARAM_WALL():
+	"""Class for defining parameterized walls
+
+	"""
+	def __init__(self):
+		self.elements = None
+		pass
+
+	def getWall(self):
+		"""Return a wall using the elements
+
+		This routine computes the vertices and faces and returns a wall
+		object based on the elements. It is assumed that elements is a
+		list and each item of that list is another list of primitive
+		types (LINESEG,WEDGE,CIRCLE).
+
+		Returns
+		----------
+		wall : WALL class
+			Returns a wall object.
+		"""
+		import numpy as np
+		from datetime import datetime
+		out_wall = WALL()
+		out_wall.faces=[]
+		out_wall.vertex=[]
+		nvertex = 0
+		nfaces  = 0
+		k       = 1
+		for subset in self.elements:
+			# Append the vertex information
+			for item in subset:
+				p=item.getEndpoints()
+				for ps in p:
+					out_wall.vertex.append(ps)
+			# Determine how many points are in the shape
+			npoints = len(subset[0].getEndpoints())
+			# Determine number of toroidal elements
+			nelements = len(subset)
+			# Append the face information
+			for i in range(nelements-1):
+				for j in range(npoints-1):
+					faces = [k k+1 k+npoints]
+					out_wall.faces.append(faces)
+					faces = [k+1 k+npoints+1 k+npoints]
+					out_wall.faces.append(faces)
+					k = k + 1
+				# Close the circle
+				if npoints > 3:
+					faces = [k-1 k-npoints k+npoints-1]
+					out_wall.faces.append(faces)
+					faces = [k-npoints k k+npoints-1]
+		# Setup wall object
+		out_wall.nvertex = len(out_wall.vertex)
+		out_wall.nfaces  = len(out_wall.faces)
+		out_wall.vertex  = np.ndarray(out_wall.vertex)
+		out_wall.faces   = np.ndarray(out_wall.faces)
+		out_wall.name = f"Generated using simpilfied wall elements in Python."
+		out_wall.date = datetime.today().strftime('%Y-%m-%d')
+		return out_wall
+
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__=="__main__":
 	import sys
