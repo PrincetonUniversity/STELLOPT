@@ -89,8 +89,6 @@
       CHARACTER(LEN=256), PRIVATE :: machine_string
       CHARACTER(LEN=256), PRIVATE :: date
 
-      
-
       ! mesh variables
       INTEGER, PRIVATE  ::  ntet, nvertex
       DOUBLE PRECISION, POINTER, PRIVATE :: vertex(:,:), tet_cen(:,:), & 
@@ -135,38 +133,37 @@
       ! verbose and debug variables
       LOGICAL, PRIVATE                    :: lverb, ldebugm, ldebugs, ldebugt
 
-
 !------------------------------------------------------------------------------
 !     Subroutines
 !       Main flow
-!         mumaterial_setup:   Sets up MPI communicators (optional)
-!         mumaterial_load:    Loads magnetic material file and sets up MPI stuff
-!         mumaterial_setd:    Sets default values
-!         mumaterial_setverb: Sets standard verbosity
-!         mumaterial_info:    Prints information to screen
-!         mumaterial_init:    Initializes everything, calls iteration subroutine
-!         mumaterial_iterate_magnetization: Main calculation loop
+!         mumaterial_setup:     Sets up MPI communicators (optional)
+!         mumaterial_load:      Loads magnetic material file and sets up MPI stuff
+!         mumaterial_setd:      Sets default values
+!         mumaterial_setverb:   Sets standard verbosity
+!         mumaterial_info:      Prints information to screen
+!         mumaterial_init:      Initializes everything, calls iteration subroutine
+!         mumaterial_iterate_M: Main calculation loop
 !
 !       Helpers
-!         mumaterial_gettetvolume: Calculates volume of a tetrahedron
+!         mumaterial_gettetvolume:  Calculates volume of a tetrahedron
 !         mumaterial_getneighbours: Determines tetrahedron neighbours
-!         mumaterial_getN: Determines demagnetization tensor
+!         mumaterial_getN:          Determines demagnetization tensor
 !           mumaterial_getNxz: x-component 
 !           mumaterial_getNyz: y-component 
 !           mumaterial_getNzz: z-component
-!         mumaterial_cross: Cross product of two vectors
-!         mumaterial_getState: Interpolates function 
-!         mumaterial_gethdipole: Calculates dipole field at point from tet
+!         mumaterial_cross:         Cross product of two vectors
+!         mumaterial_getState:      Interpolates function 
+!         mumaterial_gethdipole:    Calculates dipole field at point from tet
 !
 !       MPI 
 !         mumaterial_split:            Divides domain amongst shar_mem nodes
 !         mumaterial_sync_array2d_dbl: Syncs any 2D,DBL array on shar_mem nodes
-!         mumaterial_syncM: Syncs (3,domsize) DBL array on shar_mem nodes
+!         mumaterial_syncM:       Syncs (3,domsize) DBL array on shar_mem nodes
 !         mumaterial_free:             Frees MPI memory
 !       Output
 !         mumaterial_output:  Output B-field and points to file
 !         mumaterial_getb:    Calculates magnetic field in space
-!             mumaterial_getb_scalar: Single point in space
+!             mumaterial_getb_scalar:      Single point in space
 !               mumaterial_getbmag_scalar: Excludes applied field
 !             mumaterial_getb_vector: Multiple points in space
 !
@@ -206,6 +203,7 @@
 ! param[in]: ldebugmaster: should be .TRUE. if thread has rank 0 in world comm
 ! param[in]: ldebugsubmaster: should be .TRUE. if thread had rank 0 in sharcomm
 ! param[in]: ldebugthread: should be .TRUE.
+! Set all to .FALSE. to disable debug output
 !------------------------------------------------------------------------------
       SUBROUTINE mumaterial_debug(ldebugmaster, ldebugsubmaster, ldebugthread)
 
@@ -332,6 +330,7 @@
       INTEGER, INTENT(inout), OPTIONAL :: comm_shar_in, comm_master_in, comm_world_in
       INTEGER :: iunit ,ik, i, j, nMH
 
+      ! Set lcomm
       lcomm = ((PRESENT(comm_shar_in).and.PRESENT(comm_master_in)).AND.PRESENT(comm_world_in))
       IF (lcomm) THEN
         comm_shar   = comm_shar_in
@@ -340,7 +339,7 @@
       END IF
 
       ! Default parameters for no MPI
-      shar_rank = 0; master_rank = 0; master_size = 0; world_size = 1
+      shar_rank = 0; master_rank = 0; master_size = 1; world_size = 1
       lismaster = .TRUE.; ldosync = .FALSE. 
 
       ! Set up MPI parameters properly now
@@ -362,6 +361,7 @@
 
       mu0 = 16.0D-7 * ATAN(1.d0)
 
+      ! Nullify pointers
       NULLIFY(vertex, tet, tet_cen, tet_vol, tet_edge, state_dex, state_type, &
               constant_mu, constant_mu_o, Mrem, M, Happ)
 
@@ -895,12 +895,13 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
       
-      CALL mumaterial_iterate_magnetization_new(getBfld, mystart, myend)
+      CALL mumaterial_iterate_M(getBfld, mystart, myend)
 
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  End Iterations"
 
       ! DEALLOCATE Helpers
-      DEALLOCATE(Nb, Nb_domidx, NbC, NbC_dom)
+      DEALLOCATE(Nb, NbC)
+      ! DEALLOCATE( Nb_domidx, NbC_dom)
       DEALLOCATE(N_store)
       DEALLOCATE(Happ)
 
@@ -908,11 +909,11 @@
       END SUBROUTINE mumaterial_init_new
 
 !-----------------------------------------------------------------------
-! mumaterial_iterate_magnetization: Iteration loop
+! mumaterial_iterate_M: Iteration loop
 !-----------------------------------------------------------------------
 ! param[in]: mystart, myend. range of tetrahedrons worked on by thread
 !-----------------------------------------------------------------------
-      SUBROUTINE mumaterial_iterate_magnetization_new(getBfld, mystart, myend)
+      SUBROUTINE mumaterial_iterate_M(getBfld, mystart, myend)
 
 #if defined(MPI_OPT)
       USE mpi
@@ -931,8 +932,8 @@
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, MnormPrev, dM, dMPrev, d2M, d2MPrev
-      DOUBLE PRECISION :: lambda, maxdM
-      INTEGER          :: lambdaCount, maxd2MC
+      DOUBLE PRECISION :: lambda, maxdM, maxdMPrev, lambdaIncrF, lambdaMax
+      INTEGER          :: lambdaCount, maxd2MC, lastldM, ldMCount
       INTEGER, DIMENSION(:), ALLOCATABLE :: d2MCount
       LOGICAL          :: ldM
 
@@ -955,7 +956,11 @@
       dM = 0.d0
       d2M = 0.d0
       d2MCount = 0
-      
+      lastldM = 0
+      ! hard-coded, but could always change later.
+!      ldMCount = 5
+!      lambdaIncrF = 1.05d0
+!      lambdaMax = 0.95d0
 
       IF (lverb) THEN
         WRITE(6,*) ''
@@ -975,6 +980,7 @@
         d2MPrev = d2M
         dM = 0.d0
         d2M = 0.d0
+        maxdMPrev = maxdM
         maxdM = 0.d0
         maxd2MC = 0
         ldM = .FALSE.
@@ -991,21 +997,6 @@
             END IF
             H = H + MATMUL(N_store(:,:,j,i), M(:,j_tile))
           END DO
-
-!          DO j = 1, Nb_domidx(1,i)-1 ! Dipole field from non-Nb in domain
-!            j_tile = mydom(j)
-!            CALL mumaterial_gethdipole(tet_cen(:,j_tile),tet_cen(:,i_tile),M(:,j_tile),tet_vol(j_tile),H)
-!          END DO
-!          DO k = 2, NbC_dom(i)
-!            DO j = Nb_domidx(k-1,i)+1,Nb_domidx(k,i)-1
-!              j_tile = mydom(j)
-!              CALL mumaterial_gethdipole(tet_cen(:,j_tile),tet_cen(:,i_tile),M(:,j_tile),tet_vol(j_tile),H)
-!            END DO
-!          END DO
-!          DO j = Nb_domidx(NbC_dom(i),i)+1,domsize
-!            j_tile = mydom(j)
-!            CALL mumaterial_gethdipole(tet_cen(:,j_tile),tet_cen(:,i_tile),M(:,j_tile),tet_vol(j_tile),H)
-!          END DO
           
           ! Determine field and magnetization at tile due to all other tiles and itself
           H_new = H
@@ -1109,22 +1100,23 @@
             d2MCount(i) = 0
             ldM = .TRUE.     
           END IF     
-
-
-         END DO
+        END DO
 
 #if defined(MPI_OPT)
-         ! Synchronise dM
-         IF (lcomm) THEN
-            CALL MPI_BARRIER(comm_world, ierr_mpi)
-            CALL MPI_ALLREDUCE(MPI_IN_PLACE, maxdM, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_world, ierr_mpi)
-            CALL MPI_ALLREDUCE(MPI_IN_PLACE,maxd2MC,1, MPI_INTEGER,          MPI_MAX, comm_world, ierr_mpi)
-            CALL MPI_ALLREDUCE(MPI_IN_PLACE, ldM,   1, MPI_LOGICAL,          MPI_LOR, comm_world, ierr_mpi) 
-         END IF
+        ! Synchronise dM
+        IF (lcomm) THEN
+          CALL MPI_BARRIER(comm_world, ierr_mpi)
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE, maxdM, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_world, ierr_mpi)
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE,maxd2MC,1, MPI_INTEGER,          MPI_MAX, comm_world, ierr_mpi)
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE, ldM,   1, MPI_LOGICAL,          MPI_LOR, comm_world, ierr_mpi) 
+        END IF
 #endif
+        IF (maxdM.LT.maxdMPrev) THEN
+          ldM = .FALSE.
+        END IF
 
         IF (lverb) THEN 
-          WRITE(6,'(3X,I5,A2,E12.4,A2,E12.4,A2,E12.4,A2,I3,A2,I3)') count, '  ', maxdM, '  ', dMmax*lambda,  '  ', lambda, '  ', lambdaCount, '  ', maxd2MC
+          WRITE(6,'(3X,I5,A2,E12.4,A2,E12.4,A2,E12.4,A2,I3,A2,I3)') count, '  ', maxdM, '  ', dMmax*lambdaStart,  '  ', lambda, '  ', lambdaCount, '  ', maxd2MC
           CALL FLUSH(6)
         END IF
 
@@ -1132,14 +1124,19 @@
         IF (count.NE.1) THEN
           IF (ldM) THEN
             lambdaCount = lambdaCount + 1
+!            lastldM = 0
             IF (lambdaCount.EQ.lambdaThresh) THEN
               lambda = lambda * lambdaFactor
               lambdaCount = 0
             END IF
+          ELSE
+            lambdaCount= MAX(lambdaCount-1,0)
+!            lastldM = lastldM+1
+!            IF ((lastldM.GT.0).AND.(MODULO(lastldM,ldMCount).EQ.0)) THEN
+!              lambda = MIN(lambda*lambdaIncrF,lambdaMax)
+!            END IF
           END IF
         END IF
-
-
 
         IF (ldebugm) THEN
             WRITE(strcount, '(I0)') count
@@ -1150,7 +1147,7 @@
           IF (lverb) WRITE(6,*) "  MUMAT:  Stopping - Exceeded maximum iterations"
           EXIT
         END IF
-        IF ( (maxdM.LT.dMmax*lambda) .AND.(count.GT.1)) THEN
+        IF ( (maxdM.LT.dMmax*lambdaStart) .AND.(count.GT.1)) THEN
           IF (lverb) WRITE(6,*) "  MUMAT:  Stopping - converged"
           EXIT
         END IF
@@ -1166,16 +1163,33 @@
           i_tile = mydom(i)
           CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
           Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
-          DO k_tile = 1,Nb(1,i)-1
-            CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
+        
+        ! Happ loop logic
+        ! ----------
+        ! Tetrahedron array e.g.  T=[1 2 ... 12407 12408]
+        ! Neighbor array 1  e.g. Nb=[6 48 3874 4838 6792 11240]
+        ! 
+        ! Want to iterate over all tetrahedrons in T that do not appear in Nb
+        ! IF statements for loop over ntet elements is slow so we do this instead
+        !
+        ! 1. Loop over elements before first neighbour
+        !     Nb(1)=6                         => loop over [1 2 3 4 5]
+        ! 2. For each pair of neighbours, loop over elements IN BETWEEN 
+        !     For j=2, Nb(j-1)=6,  Nb(j)=48   => loop over [7 8 ... 46 47]
+        !     For j=3, Nb(j-1)=48, Nb(j)=3874 => loop over [49 ... 3873] etc.
+        ! 3. Loop over elements after last neighbour
+        !     Nb(end)=11240                   => loop over [11241 ... 12408]
+
+          DO k_tile = 1,Nb(1,i)-1 
+              CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
           END DO
-          DO j = 2, NbC(i)
+          DO j = 2, NbC(i)                    
             DO k_tile = Nb(j-1,i)+1,Nb(j,i)-1
               CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
             END DO
           END DO
-          DO k_tile = Nb(NbC(i),i)+1,ntet
-            CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
+          DO k_tile = Nb(NbC(i),i)+1,ntet     
+              CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
           END DO
         END DO  
 
@@ -1184,7 +1198,7 @@
       DEALLOCATE(M_new,chi,Mnorm,MnormPrev,dM,dMPrev,d2MCount)
 
       RETURN
-      END SUBROUTINE mumaterial_iterate_magnetization_new
+      END SUBROUTINE mumaterial_iterate_M
 
 
       SUBROUTINE mumaterial_getN(v1, v2, v3, v4, pos, N)
@@ -1430,49 +1444,82 @@
 
       INTEGER, INTENT(in) :: mystart, myend
       INTEGER :: i, j, k, c, i_tile
-      DOUBLE PRECISION, ALLOCATABLE :: tet_cen_pdom(:,:), dist(:), dx(:,:)
+      DOUBLE PRECISION, ALLOCATABLE ::  dist(:), dx(:,:)
+      !DOUBLE PRECISION, ALLOCATABLE :: tet_cen_pdom(:,:)
       LOGICAL, ALLOCATABLE :: mask(:)
-      INTEGER, ALLOCATABLE :: idx(:)
-      INTEGER, ALLOCATABLE :: Nb_temp(:,:), Nb_domidx_temp(:,:)
+      !INTEGER, ALLOCATABLE :: idx(:)
+      !INTEGER, ALLOCATABLE :: Nb_temp(:,:), Nb_domidx_temp(:,:)
 
-      ALLOCATE(Nb_temp(pdomsize, mystart:myend))
-      ALLOCATE(NbC(mystart:myend))
+      !ALLOCATE(Nb_temp(pdomsize, mystart:myend))
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      Nb_temp = 0
-      NbC = pdomsize
+      !Nb_temp = 0
       
-      ALLOCATE(mask(pdomsize), dist(pdomsize), dx(3,pdomsize), tet_cen_pdom(3, pdomsize))
-      DO i = 1, pdomsize
-        tet_cen_pdom(:,i) = tet_cen(:,mypdom(i))
-      END DO
-
+      !ALLOCATE(mask(pdomsize), dist(pdomsize), dx(3,pdomsize),tet_cen_pdom(3, pdomsize))
+      !DO i = 1, pdomsize
+      !  tet_cen_pdom(:,i) = tet_cen(:,mypdom(i))
+      !END DO
+      ALLOCATE(NbC(mystart:myend),mask(ntet),dist(ntet),dx(3,ntet))
+      NbC = 0
+      
+      ! Get largest neighbor count for allocation first
       DO i = mystart, myend
         i_tile = mydom(i)
-        dx(1,:) = tet_cen_pdom(1,:) - tet_cen(1,i_tile)
-        dx(2,:) = tet_cen_pdom(2,:) - tet_cen(2,i_tile)
-        dx(3,:) = tet_cen_pdom(3,:) - tet_cen(3,i_tile)
+        dx(1,:) = tet_cen(1,:) - tet_cen(1,i_tile)
+        dx(2,:) = tet_cen(2,:) - tet_cen(2,i_tile)
+        dx(3,:) = tet_cen(3,:) - tet_cen(3,i_tile)
         dist = NORM2(dx,DIM=1)
-        mask = .TRUE.
-        !NbC(i) = COUNT(dist.LE.padFactor*tet_edge(i_tile))
-        mask = dist.LE.padFactor*tet_edge(i_tile)
-        NbC(i) = COUNT(mask)
-        j = 0
-        DO k = 1, pdomsize
-          IF (mask(k)) THEN
-            j = j + 1
-            Nb_temp(j,i) = mypdom(k)
-          END IF
-        END DO
+        NbC(i) = COUNT(dist.LE.padFactor*tet_edge)
       END DO
 
       maxNbC = MAXVAL(NbC)
-
-      DEALLOCATE(mask,dist,dx,tet_cen_pdom)
-
       ALLOCATE(Nb(maxNbC,mystart:myend))
-      Nb = Nb_temp(1:maxNbC,mystart:myend)
-      DEALLOCATE(Nb_temp)
+
+      ! Actual neighbour loop
+      DO i = mystart, myend
+        i_tile = mydom(i)
+        dx(1,:) = tet_cen(1,:) - tet_cen(1,i_tile)
+        dx(2,:) = tet_cen(2,:) - tet_cen(2,i_tile)
+        dx(3,:) = tet_cen(3,:) - tet_cen(3,i_tile)
+        dist = NORM2(dx,DIM=1)
+        mask = dist.LE.padFactor*tet_edge
+        j = 0
+        DO k = 1, ntet
+          IF (mask(k)) THEN
+            j = j + 1
+            Nb(j,i) = k
+          END IF
+        END DO
+      END DO
+      DEALLOCATE(mask,dist,dx)
+
+      ! In case the above needs to be changed
+      ! DO i = mystart, myend
+      !   i_tile = mydom(i)
+      !   dx(1,:) = tet_cen_pdom(1,:) - tet_cen(1,i_tile)
+      !   dx(2,:) = tet_cen_pdom(2,:) - tet_cen(2,i_tile)
+      !   dx(3,:) = tet_cen_pdom(3,:) - tet_cen(3,i_tile)
+      !   dist = NORM2(dx,DIM=1)
+      !   mask = .TRUE.
+      !   !NbC(i) = COUNT(dist.LE.padFactor*tet_edge(i_tile))
+      !   mask = dist.LE.padFactor*tet_edge(i_tile)
+      !   NbC(i) = COUNT(mask)
+      !   j = 0
+      !   DO k = 1, pdomsize
+      !     IF (mask(k)) THEN
+      !       j = j + 1
+      !       Nb_temp(j,i) = mypdom(k)
+      !     END IF
+      !   END DO
+      ! END DO
+
+      !maxNbC = MAXVAL(NbC)
+
+      !DEALLOCATE(tet_cen_pdom)
+
+      !ALLOCATE(Nb(maxNbC,mystart:myend))
+      !Nb = Nb_temp(1:maxNbC,mystart:myend)
+      !DEALLOCATE(Nb_temp)
       ! No longer necessary
       ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! ALLOCATE(Nb_domidx_temp(maxNbc, mystart:myend), NbC_dom(mystart:myend))
@@ -1860,13 +1907,14 @@
       END SUBROUTINE mumaterial_getbmag_scalar
 
 
-      SUBROUTINE mumaterial_getb_vector(x, y, z, B, getBfld)
+      SUBROUTINE mumaterial_getb_vector(x, y, z, B, getBfld, linclvac)
       !-----------------------------------------------------------------------
       ! mumaterial_getb_vector: Calculates total magnetic field at multiple points in space
       !-----------------------------------------------------------------------
       ! param[in]: x. x-coordinates of points at which to determine the magnetic field
       ! param[in]: y. y-coordinates of points at which to determine the magnetic field
       ! param[in]: z. z-coordinates of points at which to determine the magnetic field
+      ! param[in]: linclvac. Whether or not vacuum magnetic field should be included.
       ! param[out]: B.  B-field at required points [T]
       ! fcn           : getBfld. Function which returns the vacuum magnetic field
       !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
@@ -1883,26 +1931,36 @@
       INTEGER :: mystart, myend
       INTEGER :: i 
       INTEGER :: npoints
+      LOGICAL, OPTIONAL :: linclvac
+
+      IF (.NOT.(PRESENT(linclvac))) linclvac = .TRUE.
+
 
       npoints = size(x)
       mystart = 1; myend = npoints
 
 #if defined(MPI_OPT)
-         IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, npoints, mystart, myend)
+      IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, npoints, mystart, myend)
 #endif
 
       allocate(B_local(3,npoints),B(3,npoints))
       B_local = 0; B = 0
-
-      DO i = mystart, myend
-            CALL mumaterial_getb_scalar(x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i), getBfld)
-      END DO
+      
+      IF (linclvac) THEN
+        DO i = mystart, myend
+          CALL mumaterial_getb_scalar(   x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i), getBfld)
+        END DO
+      ELSE
+        DO i = mystart, myend
+          CALL mumaterial_getbmag_scalar(x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i))
+        END DO
+      END IF
     
 #if defined(MPI_OPT)
       IF (lcomm) THEN
         CALL MPI_REDUCE(B_local,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm_shar,ierr_mpi)
         IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE( MPI_IN_PLACE,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,comm_master,ierr_mpi)
-    END IF
+      END IF
 #endif
 
       deallocate(B_local)
@@ -1914,7 +1972,7 @@
 
 
 
-      SUBROUTINE mumaterial_output(path, x, y, z, getBfld)
+      SUBROUTINE mumaterial_output(path, x, y, z, getBfld, linclvac)
       !-----------------------------------------------------------------------
       ! mumaterial_output: Outputs B-field and points to text files
       !-----------------------------------------------------------------------
@@ -1922,6 +1980,7 @@
       ! param[in]: x. x-cooridinates of points at which to determine the magnetic field
       ! param[in]: y. y-cooridinates of points at which to determine the magnetic field
       ! param[in]: z. z-cooridinates of points at which to determine the magnetic field
+      ! param[in]: linclvac. Whether or not vacuum magnetic field should be included.
       ! fcn           : getBfld. Function which returns the vacuum magnetic field
       !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
       !-----------------------------------------------------------------------
@@ -1935,6 +1994,9 @@
       INTEGER :: i 
       INTEGER :: npoints
       DOUBLE PRECISION, ALLOCATABLE :: B(:,:)
+      LOGICAL, OPTIONAL :: linclvac
+
+      IF (.NOT.(PRESENT(linclvac))) linclvac = .TRUE.
 
       IF (lismaster) THEN
             npoints = size(x)
@@ -1946,7 +2008,7 @@
             CLOSE(13)
       END IF
 
-      CALL mumaterial_getb_vector(x, y, z, B, getBfld)
+      CALL mumaterial_getb_vector(x, y, z, B, getBfld, linclvac)
  
       IF (lismaster) THEN
             WRITE(6,*) "Outputting B-field"
