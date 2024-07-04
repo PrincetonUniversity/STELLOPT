@@ -330,7 +330,7 @@ class VMEC(FourierRep):
 		scalemn = np.squeeze(np.where(self.xm%2==1, rho*scale, scale))
 		rmnc = rmnc * scalemn
 		zmns = zmns * scalemn
-		if iasym == 1:
+		if self.iasym == 1:
 			zmnc = zmnc * scalemn
 			rmns = rmns * scalemn
 		# Add axis back in
