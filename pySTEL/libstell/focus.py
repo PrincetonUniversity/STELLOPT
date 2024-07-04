@@ -240,6 +240,41 @@ class FOCUS():
 		# Render if requested
 		if lplotnow: plt.render()
 
+	def plotLimiter3D(self,plot3D=None):
+		"""Plots the FOCUS Limiter surface in 3D
+
+		This routine plots the FOCUS code limiter surface in 3D
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Check to see if a limiter exists
+		if not hasattr(self,'xsurf_lim'):
+			return
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		[points,triangles] = plt.torusvertexTo3Dmesh(self.xsurf_lim.T,self.ysurf_lim.T,self.zsurf_lim.T,lcloseu=True,lclosev=False)
+		# Handle Bn
+		#scalar = plt.valuesToScalar(self.Bn.flatten())
+		# Add to Render
+		plt.add3Dmesh(points,triangles)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Colorbar
+		#plt.colorbar()
+		# Render if requested
+		if lplotnow: plt.render()
+
 	def plotPoincare(self,ax=None):
 		"""Plots the FOCUS Poincare Plot
 
