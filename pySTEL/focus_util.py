@@ -107,6 +107,7 @@ if __name__=="__main__":
 		if args.lplot3d:
 			plt3d = PLOT3D()
 			focus_data.plotBN3D(plt3d)
+			focus_data.plotLimiter3D(plt3d)
 			try:
 				coil_data.read_coils_file(args.focus_ext+'.coils')
 				coil_data.plotcoilsHalfFP(plt3d)
