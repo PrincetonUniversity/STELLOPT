@@ -21,7 +21,7 @@ if __name__=="__main__":
 		help="BNORM file extension", default = None)
 	parser.add_argument("--dist", dest="dist",
 		help="Distance in m to extrapolate.", default = 0.0, type=float)
-	parser.add_argument("--fitsurf", dest="lfitsurf",
+	parser.add_argument("--fitsurf", dest="lfitsurf", action='store_true',
 		help="Fit a surface (default is to extrapolate)", default = False)
 	parser.add_argument("--width", dest="width",
 		help="Island width in [m].", default = 0.1, type=float)
@@ -29,6 +29,8 @@ if __name__=="__main__":
 		help="Island poloidal mode.", default = 4, type=int)
 	parser.add_argument("-n","--nisland", dest="nisland",
 		help="Island toroidal mode.", default = 4, type=int)
+	parser.add_argument("--plot", dest="lplot", action='store_true',
+		help="Make a 2D plot.", default = False)
 	focus = FOCUS()
 	wout  = VMEC()
 	bnorm = BNORM()
@@ -52,7 +54,7 @@ if __name__=="__main__":
 		bmnc = np.array([0])
 		bmns = np.array([0])
 	# Write plasma boundary
-	focus.write_focus_plasma(wout.nfp,-np.squeeze(wout.xn)/wout.nfp,np.squeeze(wout.xm), 
+	focus.write_focus_plasma(wout.nfp,np.squeeze(wout.xm),-np.squeeze(wout.xn)/wout.nfp, 
 		np.squeeze(wout.rmnc[wout.ns-1,:]),np.squeeze(wout.zmns[wout.ns-1,:]),
 		xm_b = xm_b, xn_b = xn_b, bmnc = bmnc, bmns = bmns)
 	if (abs(args.dist) > 0):
@@ -66,7 +68,7 @@ if __name__=="__main__":
 		# Calculte Bmn from island width w=sqrt(R0*Bmn/(m*B0*iota))
 		Bnorm = np.squeeze(args.width**2 * args.misland * wout.b0 * wout.iotaf[-1] / wout.rmajor)
 		xm_b = np.array([args.misland])
-		xn_b = np.array([args.nisland])
+		xn_b = np.array([args.nisland])/wout.nfp
 		bmnc = np.array([0])
 		bmns = np.array([Bnorm])
 		print(f'    Surface Distance: {args.dist:5.3f} [m]')
@@ -76,6 +78,35 @@ if __name__=="__main__":
 		print(f'             VMEC B0: {wout.b0:5.3f} [T]')
 		print(f'     VMEC iota(edge): {np.squeeze(wout.iotaf[-1]):5.3f}')
 		print(f'         VMEC Rmajor: {wout.rmajor:5.3f} [m]')
-		focus.write_focus_plasma(wout.nfp,-np.squeeze(wout.xn)/wout.nfp,np.squeeze(wout.xm), 
+		focus.write_focus_plasma(wout.nfp,np.squeeze(wout.xm),-np.squeeze(wout.xn)/wout.nfp,
 			np.squeeze(rmnc),np.squeeze(zmns),
 			xm_b = xm_b, xn_b = xn_b, bmnc = bmnc, bmns = bmns, filename='limiter.boundary')
+	# plots
+	if args.lplot:
+		px = 1/pyplot.rcParams['figure.dpi']
+		fig=pyplot.figure(figsize=(1024*px,768*px))
+		ax=fig.add_subplot(111)
+		theta = np.ndarray((360,1))
+		zeta  = np.ndarray((3,1))
+		for j in range(360): theta[j]=2.0*np.pi*j/359.0
+		for j in range(3):   zeta[j]=     np.pi*j/2.0
+		r = wout.cfunct(theta,zeta,wout.rmnc,wout.xm,wout.xn/wout.nfp)
+		z = wout.sfunct(theta,zeta,wout.zmns,wout.xm,wout.xn/wout.nfp)
+		ax.plot(r[1,1,0],z[1,1,0],'+r')
+		ax.plot(r[1,1,1],z[1,1,1],'+g')
+		ax.plot(r[1,1,2],z[1,1,2],'+b')
+		j = wout.ns-1
+		ax.plot(r[j,:,0],z[j,:,0],'r')
+		ax.plot(r[j,:,1],z[j,:,1],'g')
+		ax.plot(r[j,:,2],z[j,:,2],'b')
+		ax.set_xlabel('R [m]')
+		ax.set_ylabel('Z [m]')
+		if abs(args.dist) > 0:
+			r2 = wout.cfunct(theta,zeta,np.broadcast_to(rmnc,(1,wout.mnmax)),wout.xm,wout.xn/wout.nfp)
+			z2 = wout.sfunct(theta,zeta,np.broadcast_to(zmns,(1,wout.mnmax)),wout.xm,wout.xn/wout.nfp)
+			j = 0
+			ax.plot(r2[j,:,0],z2[j,:,0],'--r')
+			ax.plot(r2[j,:,1],z2[j,:,1],'--g')
+			ax.plot(r2[j,:,2],z2[j,:,2],'--b')
+			ax.set_title(f'Extrapolated Surface ({abs(args.dist)/wout.aminor:4.2f} Aminor)')
+		pyplot.show()
