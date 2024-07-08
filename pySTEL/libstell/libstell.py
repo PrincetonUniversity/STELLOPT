@@ -1329,6 +1329,67 @@ class LIBSTELL():
 			temp.value = val
 		return
 
+	def vmec_getBcyl_wout(self,R,phi,Z):
+		"""Wrapper to the GetBcyl_WOUT function
+
+		This routine wrappers the GetBcyl_WOUT function found in
+		vmec_utils.  It takes R, phi, and Z as inputs and returns
+		the Br, Bphi, Bz, s, and u values at that point. A status flag
+		is also returned (info) which indicates
+			 0: successfully find s,u point
+			-1: did not converge
+			-3: sflux > 1, probably
+
+		Parameters
+		----------
+		R : real
+			Cylindical R coordinate [m].
+		phi : real
+			Cylindical phi coordinate [rad].
+		Z : real
+			Cylindical Z coordinate [m].
+		Returns
+		-------
+		br : real
+			Magnetic field in cylindrical R direction [T].
+		bphi : real
+			Magnetic field in cylindrical phi direction [T].
+		bz : real
+			Magnetic field in cylindrical Z direction [T].
+		s : real
+			Normalized toroidal flux coordinate [arb].
+		u : real
+			Poloidal angle coordinate (VMEC angle) [rad].
+		info: int
+			Status of inverse lookup.
+		"""
+		import ctypes as ct
+		module_name = self.s1+'vmec_utils_'+self.s2
+		getBcyl = getattr(self.libstell,module_name+'_getbcyl_wout'+self.s3)
+		getBcyl.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_int)]
+		getBcyl.restype=None
+		r_temp = ct.c_double(R)
+		phi_temp = ct.c_double(phi)
+		z_temp = ct.c_double(Z)
+		br_temp = ct.c_double(0)
+		bphi_temp = ct.c_double(0)
+		bz_temp = ct.c_double(0)
+		s_temp = ct.c_double(0)
+		u_temp = ct.c_double(0)
+		info_temp = ct.c_int(0)
+		getBcyl(ct.byref(r_temp),ct.byref(phi_temp),ct.byref(z_temp), \
+			ct.byref(br_temp),ct.byref(bphi_temp),ct.byref(bz_temp), \
+			ct.byref(s_temp),ct.byref(u_temp),ct.byref(info_temp))
+		Br = br_temp.value
+		Bphi = bphi_temp.value
+		Bz = bz_temp.value
+		s = s_temp.value
+		u = u_temp.value
+		info = info_temp.value
+		return Br,Bphi,Bz,s,u,info
+
 	def pcurr(self,s):
 		"""Wrapper to the PCURR function
 
