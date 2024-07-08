@@ -273,6 +273,43 @@ class VMEC(FourierRep):
 				curpol = 2.0*self.bsubvmnc[self.ns-1,mn]*np.pi/self.nfp 
 		return curpol
 
+	def getBcyl(self,R,phi,Z):
+		"""Wrapper to the GetBcyl_WOUT function
+
+		This routine wrappers the GetBcyl_WOUT function found in
+		vmec_utils.  It takes R, phi, and Z as inputs and returns
+		the Br, Bphi, Bz, s, and u values at that point.A status flag
+		is also returned (info) which indicates
+			 0: successfully find s,u point
+			-1: did not converge
+			-3: sflux > 1, probably
+
+		Parameters
+		----------
+		R : real
+			Cylindical R coordinate [m].
+		phi : real
+			Cylindical phi coordinate [rad].
+		Z : real
+			Cylindical Z coordinate [m].
+		Returns
+		-------
+		br : real
+			Magnetic field in cylindrical R direction [T].
+		bphi : real
+			Magnetic field in cylindrical phi direction [T].
+		bz : real
+			Magnetic field in cylindrical Z direction [T].
+		s : real
+			Normalized toroidal flux coordinate [arb].
+		u : real
+			Poloidal angle coordinate (VMEC angle) [rad].
+		info: int
+			Status of inverse lookup.
+		"""
+		return self.libStell.vmec_getBcyl_wout(R,phi,Z)
+
+
 	def extrapSurface(self,surf=None,dist=0.1):
 		"""Returns an extrapolated surface.
 		This routine extrapolates a surface a given distance using the
