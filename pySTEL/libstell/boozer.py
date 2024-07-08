@@ -76,7 +76,7 @@ class BOOZER(FourierRep):
 		pyplot.colorbar(hmesh,label='$log_{10}$[T]',ax=ax)
 		if lplotnow: pyplot.show()
 
-	def plotBsurf(self,sval,ax=None):
+	def plotBsurf(self,sval,ax=None,cmap='jet'):
 		"""Plots the boozer |B| on a surface
 
 		This routine plots the boozer |B| for a given
@@ -100,7 +100,7 @@ class BOOZER(FourierRep):
 		for j in range(360): theta[j]=2.0*np.pi*j/359.0
 		for j in range(256):  zeta[j]=2.0*np.pi*j/256.0
 		b = self.cfunct(theta,zeta,self.bmnc_b,self.ixm_b,self.ixn_b/self.nfp_b)
-		hmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(b[sval,:,:]),cmap='jet',shading='gouraud')
+		hmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(b[sval,:,:]),cmap=cmap,shading='gouraud')
 		ax.plot(zeta,zeta*self.iota_b[sval],'w')
 		ax.set_xlabel(r'Toroidal Angle ($\phi$) [rad]')
 		ax.set_ylabel(r'Poloidal Angle ($\theta$) [rad]')
