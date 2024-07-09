@@ -534,6 +534,51 @@ class BEAMS3D():
 		# Calc losses
 		return (Itherm+Ilost)/area
 
+	def plotorbit(self,markers=None,plot3D=None):
+		"""Plots traces of the orbits in 3D
+
+		This routine plots traces of the particle orbits in 3D.
+
+		Parameters
+		----------
+		markers : list (optional)
+			List of marker indices to plot (default: all)
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Handle markers
+		if type(markers) == type(None):
+			markers_in = np.linspace(0,self.nparticles-1)
+		else:
+			markers_in = markers
+		# Plot markers
+		for i in markers_in:
+			j = np.argwhere(np.squeeze(self.R_lines[i,:])>0)
+			k = j[-1][0]
+			points_array = np.zeros((k,3))
+			points_array[:,0] = self.X_lines[i,0:k]
+			points_array[:,1] = self.Y_lines[i,0:k]
+			points_array[:,2] = self.Z_lines[i,0:k]
+			# Convert numpy array to VTK points
+			points = vtk.vtkPoints()
+			for point in points_array:
+				points.InsertNextPoint(point)
+			plt.add3Dline(points,linewidth=2)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
 
 
 
