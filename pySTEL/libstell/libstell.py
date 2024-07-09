@@ -1329,6 +1329,64 @@ class LIBSTELL():
 			temp.value = val
 		return
 
+	def vmec_get_flxcoord(self,s,u,v):
+		"""Wrapper to the get_flxcoord function
+
+		This routine wrappers the get_flxcoord function found in
+		vmec_utils.  It takes s, u, and v as inputs and returns
+		the R, phi, Z, dRds, dZds, dRdu, and dZdu values at that
+		point.
+
+		Parameters
+		----------
+		s : real
+			Normalized toroidal flux (VMEC).
+		u : real
+			Poloidal angle [rad] (VMEC)
+		v : real
+			Toroidal angle [rad] [VMEC]
+
+		Returns
+		-------
+		R : real
+			Cylindical R coordinate [m].
+		phi : real
+			Cylindical phi coordinate [rad].
+		Z : real
+			Cylindical Z coordinate [m].
+		dRds : real
+			Derivative of R coordiante with respect to s (dR/ds)
+		dZds : real
+			Derivative of Z coordiante with respect to s (dZ/ds)
+		dRdu : real
+			Derivative of R coordiante with respect to u (dR/du)
+		dZdu : real
+			Derivative of Z coordiante with respect to u (dZ/du)
+		"""
+		import ctypes as ct
+		module_name = self.s1+'vmec_utils_'+self.s2
+		get_flxcoord = getattr(self.libstell,module_name+'_get_flxcoord_python'+self.s3)
+		get_flxcoord.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.c_long,ct.c_long]
+		get_flxcoord.restype=None
+		x1 = (ct.c_double*3)(0,0,0)
+		c_flx = (ct.c_double*3)(s,u,v)
+		rs = ct.c_double(0)
+		zs = ct.c_double(0)
+		ru = ct.c_double(0)
+		zu = ct.c_double(0)
+		get_flxcoord(x1,c_flx,\
+			ct.byref(rs),ct.byref(zs),ct.byref(ru),ct.byref(zu),len(x1),len(c_flx))
+		R = x1[0]
+		v = x1[1]
+		Z = x1[2]
+		rs1 = rs.value
+		zs1 = zs.value
+		ru1 = ru.value
+		zu1 = zu.value
+		return R,v,Z,rs1,zs1,ru1,zu1
+
 	def vmec_getBcyl_wout(self,R,phi,Z):
 		"""Wrapper to the GetBcyl_WOUT function
 

@@ -309,6 +309,42 @@ class VMEC(FourierRep):
 		"""
 		return self.libStell.vmec_getBcyl_wout(R,phi,Z)
 
+	def get_flxcoord(self,s,u,v):
+		"""Wrapper to the get_flxcoord function
+
+		This routine wrappers the get_flxcoord function found in
+		vmec_utils.  It takes s, u, and v as inputs and returns
+		the R, phi, Z, dRds, dZds, dRdu, and dZdu values at that
+		point.
+
+		Parameters
+		----------
+		s : real
+			Normalized toroidal flux (VMEC).
+		u : real
+			Poloidal angle [rad] (VMEC)
+		v : real
+			Toroidal angle [rad] [VMEC]
+
+		Returns
+		-------
+		R : real
+			Cylindical R coordinate [m].
+		phi : real
+			Cylindical phi coordinate [rad].
+		Z : real
+			Cylindical Z coordinate [m].
+		dRds : real
+			Derivative of R coordiante with respect to s (dR/ds)
+		dZds : real
+			Derivative of Z coordiante with respect to s (dZ/ds)
+		dRdu : real
+			Derivative of R coordiante with respect to u (dR/du)
+		dZdu : real
+			Derivative of Z coordiante with respect to u (dZ/du)
+		"""
+		return self.libStell.vmec_get_flxcoord(s,u,v)
+
 
 	def extrapSurface(self,surf=None,dist=0.1):
 		"""Returns an extrapolated surface.
