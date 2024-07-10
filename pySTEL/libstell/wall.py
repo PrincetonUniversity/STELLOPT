@@ -5,12 +5,12 @@ This library provides a python class for working with wall_data
 """
 
 # Libraries
-from libstell.libstell import LIBSTELL
+#from libstell.libstell import LIBSTELL
 
 # Constants
 
-# VMEC Class
-class WALL(LIBSTELL):
+# WALL Class
+class WALL():
 	"""Class for working with wall files
 
 	"""
@@ -53,20 +53,21 @@ class WALL(LIBSTELL):
 			i1 = 4
 		self.nvertex = int(n1)
 		self.nfaces  = int(n2)
-		self.vertex  = np.zeros((self.nvertex,3))
-		self.faces   = np.zeros((self.nfaces,3))
+		self.vertex  = np.zeros((self.nvertex,3), dtype=float)
+		self.faces   = np.zeros((self.nfaces,3), dtype=int)
 		for i in range(self.nvertex):
 			line = lines[i+i1].split()
-			self.vertex[0,i] = float(line[0])
-			self.vertex[1,i] = float(line[1])
-			self.vertex[2,i] = float(line[2])
+			#print(line)
+			self.vertex[i,0] = float(line[0])
+			self.vertex[i,1] = float(line[1])
+			self.vertex[i,2] = float(line[2])
 		i1 = i1 + self.nvertex
 		for i in range(self.nfaces):
 			line = lines[i+i1].split()
 			# note we convert to python indexing
-			self.faces[0,i] = int(line[0])-1
-			self.faces[1,i] = int(line[1])-1
-			self.faces[2,i] = int(line[2])-1
+			self.faces[i,0] = int(line[0])-1
+			self.faces[i,1] = int(line[1])-1
+			self.faces[i,2] = int(line[2])-1
 
 	def write_wall(self,filename):
 		"""Directly writes a wall file
@@ -108,23 +109,37 @@ class WALL(LIBSTELL):
 		ax.scatter(self.vertex[:,0],self.vertex[:,1],self.vertex[:,2],marker='.')
 		if lplotnow: pyplot.show()
 
-	def plot_wall_3D(self,*args,**kwargs):
-		import numpy as np
-		import matplotlib.pyplot as pyplot
-		import mpl_toolkits.mplot3d as mplot3d
-		import math as math
-		import matplotlib.tri as mtri
-		#fig=kwargs.pop('fig',pyplot.figure())
-		#ax=kwargs.pop('axes',fig.add_subplot(111,projection='3d'))
-		# Create the mesh
-		#vectors = np.zeros()
-		#wall_mesh = mesh.Mesh(np.zeros(self.faces.shape[0], dtype=mesh.Mesh.dtype))
-		#for i, f in enumerate(self.faces):
-		#	for j in range(3):
-		#		wall_mesh.vectors[i][j] = self.vertex[f[j],:]
-		#ax.add_collection3d(mplot3d.art3d.Poly3DCollection(wall_mesh.vectors))
-		#tsurf=ax.plot_trisurf(self.vertex[0,:],self.vertex[1,:],self.vertex[2,:], triangles=self.faces,color='red',shade='yes',linewidth=0.0,alpha=1)
-		#if len(kwargs) == 0: pyplot.show()
+	def plot_wall_3D(self,wallcolor=None,plot3D=None):
+		"""Plots a wall in 3D using VTK
+
+		This routine plots walls in 3D using VTK
+
+		Parameters
+		----------
+		wallcolor : ndarray (optional)
+			Array of values to color code wall.
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Generate VTK objects
+		[points, triangles]=plt.facemeshTo3Dmesh(self.vertex,self.faces)
+		# Generate Wall colors
+		scalar = None
+		if type(wallcolor) != type(None): 
+			scalar = plt.valuesToScalar(wallcolor)
+			plt.add3Dmesh(points,triangles,scalars=wallcolor)
+		else:
+			plt.add3Dmesh(points,triangles,color='gray')
+		# Render if requested
+		if lplotnow: plt.render()
 
 	def blenderWall(self):
 		"""Generates the lists Blender needs to render a wall
@@ -208,9 +223,173 @@ class WALL(LIBSTELL):
 		self.vertex = np.column_stack((x,y,z))
 		self.faces = faces
 
+# LINESEG Class
+class LINESEG():
+	"""Class for linesegment
+
+	"""
+	def __init__(self,R=None,phi=None,Z=None,RHat=None,ZHat=None,L=None):
+		self.Phi = phi
+		self.R   = R
+		self.Z   = Z
+		self.RHat = RHat
+		self.ZHat = Zhat
+		self.L    = L
+		if (RHat and ZHat):
+			norm = sqrt(RHat**2+ZHat**2)
+			self.RHat = RHat/norm
+			self.ZHat = ZHat/norm
+
+	def getEndpoints(self):
+		"""Return cartesian coordinates of the LINESEG
+
+		This routine returns the cartesian coordinates of the LINESEG
+		end points.
+
+		Returns
+		----------
+		points : list
+			The [2,x,y,z] coordiantes of the three vertices. [m]
+		"""
+		t1 = [self.R-0.5*self.L*self.ZHat,self.Z+0.5*self.L*self.RHat]
+		t2 = [self.R-0.5*self.L*self.ZHat,self.Z-0.5*self.L*self.RHat]
+		p1 = [t1[0]*cos(self.Phi),t1[0]*sin(self.Phi),t1[1]]
+		p2 = [t2[0]*cos(self.Phi),t2[0]*sin(self.Phi),t2[1]]
+		return [p1,p2]
+
+# WEDGE Class
+class WEDGE(LINESEG):
+	"""Class for wedge
+
+	"""
+	def __init__(self,R=None,phi=None,Z=None,RHat=None,ZHat=None,L=None,alpha=None):
+		super.__init__(R,phi,Z,RHat,ZHat,L)
+		self.alpha = alpha
+		if alpha:
+			self.sinah = sin(alpha*0.5)
+			self.cosah = cos(alpha*0.5)
+
+	def getEndpoints(self):
+		"""Return cartesian coordinates of the WEDGE
+
+		This routine returns the cartesian coordinates of the WEDGE
+		end points.
+
+		Returns
+		----------
+		points : list
+			The [3,x,y,z] coordiantes of the three vertices. [m]
+		"""
+		t1 = [self.R-self.L*self.sinah*self.ZHat,self.Z+self.L*self.sinah*self.RHat]
+		t2 = [self.R+self.L*self.cosah*self.RHat,self.Z+self.L*self.cosah*self.ZHat]
+		t3 = [self.R+self.L*self.sinah*self.ZHat,self.Z-self.L*self.sinah*self.RHat]
+		p1 = [t1[0]*cos(self.Phi),t1[0]*sin(self.Phi),t1[1]]
+		p2 = [t2[0]*cos(self.Phi),t2[0]*sin(self.Phi),t2[1]]
+		p3 = [t3[0]*cos(self.Phi),t3[0]*sin(self.Phi),t3[1]]
+		return [p1,p2,p3]
+
+# CIRCLE Class
+class CIRCLE(LINESEG):
+	"""Class for wedge
+
+	"""
+	def __init__(self,R=None,phi=None,Z=None,RHat=None,ZHat=None,L=None,N=None):
+		super.__init__(R,phi,Z,RHat,ZHat,L)
+		self.N = N
+
+	def getEndpoints(self):
+		"""Return cartesian coordinates of the CIRCLE
+
+		This routine returns the cartesian coordinates of the CIRCLE
+		end points. Note the circle does not close.
+
+		Returns
+		----------
+		outarr : list
+			The [n,x,y,z] coordiantes of the vertices. [m]
+		"""
+		import numpy as np
+		outarr = []
+		for k in range(self.N):
+			t1 = [self.R+self.L*cos(2*np.pi*k/self.N)*self.RHat,self.Z+self.L*sin(2*np.pi*k/self.N)*self.ZHat]
+			p1 = [t1[0]*cos(self.Phi),t1[0]*sin(self.Phi),t1[1]]
+			temp.append(t1)
+		return outarr
+
+# Parameterized wall model
+class PARAM_WALL():
+	"""Class for defining parameterized walls
+
+	"""
+	def __init__(self):
+		self.elements = None
+		pass
+
+	def getWall(self):
+		"""Return a wall using the elements
+
+		This routine computes the vertices and faces and returns a wall
+		object based on the elements. It is assumed that elements is a
+		list and each item of that list is another list of primitive
+		types (LINESEG,WEDGE,CIRCLE).
+
+		Returns
+		----------
+		wall : WALL class
+			Returns a wall object.
+		"""
+		import numpy as np
+		from datetime import datetime
+		out_wall = WALL()
+		out_wall.faces=[]
+		out_wall.vertex=[]
+		nvertex = 0
+		nfaces  = 0
+		k       = 1
+		for subset in self.elements:
+			# Append the vertex information
+			for item in subset:
+				p=item.getEndpoints()
+				for ps in p:
+					out_wall.vertex.append(ps)
+			# Determine how many points are in the shape
+			npoints = len(subset[0].getEndpoints())
+			# Determine number of toroidal elements
+			nelements = len(subset)
+			# Append the face information
+			for i in range(nelements-1):
+				for j in range(npoints-1):
+					faces = [k k+1 k+npoints]
+					out_wall.faces.append(faces)
+					faces = [k+1 k+npoints+1 k+npoints]
+					out_wall.faces.append(faces)
+					k = k + 1
+				# Close the circle
+				if npoints > 3:
+					faces = [k-1 k-npoints k+npoints-1]
+					out_wall.faces.append(faces)
+					faces = [k-npoints k k+npoints-1]
+		# Setup wall object
+		out_wall.nvertex = len(out_wall.vertex)
+		out_wall.nfaces  = len(out_wall.faces)
+		out_wall.vertex  = np.ndarray(out_wall.vertex)
+		out_wall.faces   = np.ndarray(out_wall.faces)
+		out_wall.name = f"Generated using simpilfied wall elements in Python."
+		out_wall.date = datetime.today().strftime('%Y-%m-%d')
+		return out_wall
+
+
+
+
+
+
+
+
+
+
+
+
+
 if __name__=="__main__":
 	import sys
-	wall_data = WALL()
-	wall_data.read_wall('QSM.dat')
-	wall_data.plot_wall_3D()
 	sys.exit(0)
