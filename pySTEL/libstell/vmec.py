@@ -273,6 +273,79 @@ class VMEC(FourierRep):
 				curpol = 2.0*self.bsubvmnc[self.ns-1,mn]*np.pi/self.nfp 
 		return curpol
 
+	def getBcyl(self,R,phi,Z):
+		"""Wrapper to the GetBcyl_WOUT function
+
+		This routine wrappers the GetBcyl_WOUT function found in
+		vmec_utils.  It takes R, phi, and Z as inputs and returns
+		the Br, Bphi, Bz, s, and u values at that point.A status flag
+		is also returned (info) which indicates
+			 0: successfully find s,u point
+			-1: did not converge
+			-3: sflux > 1, probably
+
+		Parameters
+		----------
+		R : real
+			Cylindical R coordinate [m].
+		phi : real
+			Cylindical phi coordinate [rad].
+		Z : real
+			Cylindical Z coordinate [m].
+		Returns
+		-------
+		br : real
+			Magnetic field in cylindrical R direction [T].
+		bphi : real
+			Magnetic field in cylindrical phi direction [T].
+		bz : real
+			Magnetic field in cylindrical Z direction [T].
+		s : real
+			Normalized toroidal flux coordinate [arb].
+		u : real
+			Poloidal angle coordinate (VMEC angle) [rad].
+		info: int
+			Status of inverse lookup.
+		"""
+		return self.libStell.vmec_getBcyl_wout(R,phi,Z)
+
+	def get_flxcoord(self,s,u,v):
+		"""Wrapper to the get_flxcoord function
+
+		This routine wrappers the get_flxcoord function found in
+		vmec_utils.  It takes s, u, and v as inputs and returns
+		the R, phi, Z, dRds, dZds, dRdu, and dZdu values at that
+		point.
+
+		Parameters
+		----------
+		s : real
+			Normalized toroidal flux (VMEC).
+		u : real
+			Poloidal angle [rad] (VMEC)
+		v : real
+			Toroidal angle [rad] [VMEC]
+
+		Returns
+		-------
+		R : real
+			Cylindical R coordinate [m].
+		phi : real
+			Cylindical phi coordinate [rad].
+		Z : real
+			Cylindical Z coordinate [m].
+		dRds : real
+			Derivative of R coordiante with respect to s (dR/ds)
+		dZds : real
+			Derivative of Z coordiante with respect to s (dZ/ds)
+		dRdu : real
+			Derivative of R coordiante with respect to u (dR/du)
+		dZdu : real
+			Derivative of Z coordiante with respect to u (dZ/du)
+		"""
+		return self.libStell.vmec_get_flxcoord(s,u,v)
+
+
 	def extrapSurface(self,surf=None,dist=0.1):
 		"""Returns an extrapolated surface.
 		This routine extrapolates a surface a given distance using the
@@ -299,40 +372,50 @@ class VMEC(FourierRep):
 			Z cosine harmonics of extrapolated surface
 		"""
 		import numpy as np
+		# Handle the surface to use
 		if surf:
 			k=surf-1
 		else:
 			k=self.ns-1
 		rho = np.sqrt(float(k)/(self.ns-1))
-		rmnc = self.rmnc[k,:]
-		zmns = self.zmns[k,:]
-		r0c = np.where(self.xm==0,self.rmnc[0,:],0)
-		z0s = np.where(self.xm==0,self.zmns[0,:],0)
-		rmnc = rmnc - r0c
-		zmns = zmns - z0s
-		if self.iasym==1:
-			rmns = self.rmns[k,:]
+		# Extract surface and remove axis component
+		rmnc = np.zeros((self.mnmax))
+		zmns = np.zeros((self.mnmax))
+		rmns = np.zeros((self.mnmax))
+		zmnc = np.zeros((self.mnmax))
+		for mn in range(self.mnmax):
+			if self.xm[mn]==0:
+				rmnc[mn] = self.rmnc[k,mn] - self.rmnc[0,mn]
+				zmns[mn] = self.zmns[k,mn] - self.zmns[0,mn]
+			else:
+				rmnc[mn] = self.rmnc[k,mn]
+				zmns[mn] = self.zmns[k,mn]
+		if self.iasym == 1:
 			zmnc = self.zmnc[k,:]
-			r0s = np.where(self.xm==0,self.rmns[0,:],0)
-			z0c = np.where(self.xm==0,self.zmnc[0,:],0)
-			rmns = rmns - r0s
-			zmnc = zmnc - z0c
+			rmns = self.rmns[k,:]
+			for mn in range(self.mnmax):
+				if self.xm[mn]==0:
+					zmnc[mn] = zmnc[mn] - self.zmnc[0,mn]
+					rmns[mn] = rmns[mn] - self.rmns[0,mn]
+		# Scale by a factor
 		scale = (self.aminor+dist)/self.aminor
 		scale = scale*scale
-		#scalemn = np.ones((self.mnmax))*scale
-		scalemn = np.where(self.xm%2==1, rho*scale, scale)
+		scalemn = np.squeeze(np.where(self.xm%2==1, rho*scale, scale))
 		rmnc = rmnc * scalemn
 		zmns = zmns * scalemn
-		rmnc = rmnc + r0c
-		zmns = zmns + z0s
 		if self.iasym == 1:
+			zmnc = zmnc * scalemn
 			rmns = rmns * scalemn
-			zmnc = zmns * scalemn
-			rmns = rmns + r0s
-			zmnc = zmnc + z0c
-		else:
-			rmns = np.zeros((self.mnmax))
-			zmnc = np.zeros((self.mnmax))
+		# Add axis back in
+		for mn in range(self.mnmax):
+			if self.xm[mn]==0:
+				rmnc[mn] = rmnc[mn] + self.rmnc[0,mn]
+				zmns[mn] = zmns[mn] + self.zmns[0,mn]
+		if self.iasym == 1:
+			for mn in range(self.mnmax):
+				if self.xm[mn]==0:
+					zmnc[mn] = zmnc[mn] + self.zmnc[0,mn]
+					rmns[mn] = rmns[mn] + self.rmns[0,mn]
 		return rmnc, zmns, rmns, zmnc
 
 	def offsetCurve(self, R, Z, distance=0.1):

@@ -1,90 +1,84 @@
 #######################################################################
-#            Define User Specific Output Paths
-#######################################################################
-  # Set a default directory if one has not already been defined.
-  STELLOPT_HOME ?= $(HOME)/bin
-
-
-#######################################################################
 #            Define Basic Utilities
 #######################################################################
-  # Temporaryily copy STELLOPT_HOME to MYHOME since MYHOME is currently
-  # used in all the makefiles.
-  MYHOME = $(STELLOPT_HOME)
-  
   SHELL = /bin/sh
   PWD1 = `pwd`
-  PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
-  COMPILE = gfortran
-  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none \
-                          -ffixed-line-length-none
-  LINK    = gfortran $(FLAGS) -o
-  LINK_AR = ar -ruvs
-  LINK_C  = gcc -Wl,-no_compact_unwind
+  MYHOME = /global/cfs/cdirs/m4505/sw/STELLOPT/bin
+  PRECOMP:= /lib/cpp -traditional -DLINUX
+  COMPILE = $(FC)
+  COMPILE_FREE = $(FC)
+  LINK    = $(FC) -Bstatic -o
+  LINK_AR = ar -ruv
+  LINK_C  = $(CC) -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
-  FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check
-  LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
-  FLAGS_R += -fallow-argument-mismatch
-  FLAGS_D += -fallow-argument-mismatch
+  FLAGS_R = -g -fbacktrace -dynamic -fallow-argument-mismatch -ffree-line-length-0
+  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace -Wextra \
+   -Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan \
+   -ffree-line-length-0 -dynamic -fallow-argument-mismatch 
+  LIBS    = 
 
-  
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90
-  MPI_COMPILE_FREE = mpif90 -ffree-form -ffree-line-length-none \
-                            -ffixed-line-length-none 
-  MPI_COMPILE_C = mpicc 
-  MPI_LINK = mpif90 -Wl,-no_compact_unwind
-  MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 2
+  MPI_COMPILE = $(MPIFC)
+  MPI_COMPILE_FREE = $(MPIFC)
+  MPI_COMPILE_C = $(MPICC)
+  MPI_LINK = $(FC)
+  MPI_RUN = srun
+  MPI_RUN_OPTS = -n 68 -c 4 --cpu_bind=cores
+  MPI_RUN_OPTS_SM = -n 68 -c 4 --cpu_bind=cores
+#  MPI_RUN_OPTS_MD = -n 544 -c 4 --cpu_bind=cores
+  MPI_RUN_OPTS_LG = -n 4352 -c 4 --cpu_bind=cores
 
 #######################################################################
 #            NAG Options
 #######################################################################
   LNAG = F
-  NAG_LIB = -L$(NAG_ROOT)/lib -lnag_nag
+  NAG_LIB =
 
 #######################################################################
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --fflags)
-  NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
-
-#######################################################################
-#            FFTW3 Options
-#######################################################################
-  LFFTW3 = T
-  FFTW3_INC = -I/opt/local/include
-  FFTW3_LIB = -L/opt/local/lib -lfftw3
+  #NETCDF_DIR = ## Will be set by module 
+  NETCDF_INC = -I$(NETCDF_DIR)/include
+  NETCDF_LIB = -L$(NETCDF_DIR)/lib -lnetcdff
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I/opt/local/include
-  HDF5_LIB = -L/opt/local/lib -lhdf5hl_fortran -lhdf5_hl \
-             -lhdf5_fortran -lhdf5 -lz -ldl -lm
+  PRECOMP+= -DHDF5_PAR
+  #HDF5_DIR = ## Will be set by module 
+  HDF5_INC = -I$(HDF5_DIR)/include 
+  HDF5_LIB = -L$(HDF5_DIR)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
+             -lhdf5hl_fortran -lpthread -lz -lm 
+
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
-  PGPLOT_INC = -I/opt/local/include
-  PGPLOT_LIB = -L/opt/local/lib -lpgplot -lX11
+  PGPLOT_INC =
+  PGPLOT_LIB = 
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
-  SILO_INC = -I/opt/local/include
-  SILO_LIB = -L/opt/local/lib -lsilo
+  SILO_INC = -I$(SILO_DIR)/include
+  SILO_LIB = -L$(SILO_DIR)/lib -lsilo
+
+#######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = F
+  FFTW3_INC = 
+  FFTW3_LIB = 
 
 #######################################################################
 #            DKES/NEO Options
@@ -100,10 +94,8 @@
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
   GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L/u/slazerso/src/GENE17_2016/external/pppl_cluster/futils/src -lfutils \
-             -L$(FFTWHOME)/lib -lfftw3 \
-             -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
-             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+             -L$(FFTW_DIR)/lib -lfftw3 -lfftw3f \
+             -L$(SLEPC_DIR)/lib -lslepc 
 
 #######################################################################
 #            COILOPT++ Options
@@ -112,13 +104,12 @@
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
-  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) 
 
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE = F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -127,23 +118,14 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS = F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
-  LIB_FADDEEVA = libfaddeeva64.a
-  TRAVIS_LIB = $(TRAVIS_DIR)lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)faddeeva_package/lib/$(LIB_FADDEEVA) \
-               $(TRAVIS_DIR)magconf/lib/$(LIB_MCONF) -lc++
-
-#######################################################################
-#            REGCOIL Options
-#######################################################################
-  LREGCOIL= F
-  REGCOIL_DIR = $(REGCOIL_PATH)
-  REGCOIL_INC = -I$(REGCOIL_DIR) 
-  LIB_REGCOIL = libregcoil.a
-  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+  TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
+               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+#  TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
+#               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
@@ -153,8 +135,16 @@
   SFINCS_DIR = $(SFINCS_PATH)
   SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS)
+
+#######################################################################
+#            REGCOIL Options
+#######################################################################
+  LREGCOIL= F
+  REGCOIL_DIR = $(REGCOIL_PATH)
+  REGCOIL_INC = -I$(REGCOIL_DIR) 
+  LIB_REGCOIL = libregcoil.a
+  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
 #            Available Energy Options
@@ -168,5 +158,5 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-
 LIB_SHARE = $(LIBS)
+
