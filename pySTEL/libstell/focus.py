@@ -162,11 +162,13 @@ class FOCUS():
 			ax = pyplot.axes()
 			lplotnow = True
 		plotlabels = [r'Time [s]',r'$\chi^2$',r"$|d \chi^2 / d {\bf X}|$",r"$f_{B_n}$",
-						r"$f_{B_{mn}}$",r"$f_{\Psi}$",r"isum",r"$f_L$",
+						r"$f_{B_{mn}}$",r"$f_{\Psi}$",r"f_{I~total}",r"$f_L$",
 						r"$f_{COIL-SURF}$",r"$f_{curv}$",r"$f_{COIL-COIL}$",
-						r"$f_{tors}$",r"$f_{nissin}$",r"$f_{B_{navg}}$",
-						r"$f_{Straight}$"]
-		for i in range(14):
+						r"$f_{Torsion}$",r"$f_{nissin}$",r"$f_{B_{navg}}$",
+						r"$f_{Straight}$",r"$f_{B_n}~Limiter$",r"$f_{B_{mn}~Limiter}$"]
+		nele = len(self.evolution)
+		print(nele)
+		for i in range(nele):
 			if i == 0: continue
 			if any(self.evolution[i] > 0): ax.semilogy(self.evolution[0],self.evolution[i],label=plotlabels[i])
 		ax.set_xlabel('Time [s]')
