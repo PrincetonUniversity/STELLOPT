@@ -1,4 +1,5 @@
 ObjectFiles = \
+read_nescoil_mod.o \
 stellopt_targets.o \
 stellopt_vars.o \
 stellopt_input_mod.o \

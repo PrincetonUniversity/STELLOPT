@@ -82,108 +82,165 @@ class COILSET(LIBSTELL):
 			c = current[group==(i+1)]
 			self.groups.extend([COILGROUP(x,y,z,c,coilnames[i])])
 
-	def plotcoils(self,ax=None,*args,**kwargs):
-		"""Plots a coilset in 3D
+	def rescalecoils(self,npts_new):
+		"""Changes coil resolution
 
-		This routine plots coils in 3D
+		This routine changes the number of points defining the
+		coils by splineing to a new resolution.
+
+		Parameters
+		----------
+		npts_new : integer
+			Number of new points to spline to.
 		"""
 		import numpy as np
-		import matplotlib.pyplot as pyplot
-		lplotnow = False
-		if not ax:
-			ax = pyplot.axes(projection='3d')
+		from scipy.interpolate import CubicSpline
+		npts_new_array = np.full(self.ngroups,npts_new,dtype=int)
+		for i in range(self.ngroups):
+			s_new = np.linspace(0.0,1.0,npts_new_array[i])
+			for j in range(self.groups[i].ncoils):
+				x = self.groups[i].coils[j].x
+				y = self.groups[i].coils[j].y
+				z = self.groups[i].coils[j].z
+				s = np.linspace(0.0,1.0,self.groups[i].coils[j].npts)
+				cx = CubicSpline(s,x)
+				cy = CubicSpline(s,y)
+				cz = CubicSpline(s,z)
+				self.groups[i].coils[j].x = cx(s_new)
+				self.groups[i].coils[j].y = cy(s_new)
+				self.groups[i].coils[j].z = cz(s_new)
+				self.groups[i].coils[j].npts = npts_new_array[i]
+
+	def plotcoils(self,plot3D=None):
+		"""Plots a coilset in 3D using VTK
+
+		This routine plots coils in 3D using VTK
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
 			lplotnow = True
-		c_temp = self.color_cycle[0]
+			plt = PLOT3D()
+		# Setup color array
+		color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
+		# Plot coils
 		for i in range(self.ngroups):
 			for j in range(self.groups[i].ncoils):
-				if j == 0:
-					ax.plot(self.groups[i].coils[j].x, \
-						   self.groups[i].coils[j].y, \
-						   self.groups[i].coils[j].z, c=c_temp, label=self.groups[i].name)
-				else:
-					ax.plot(self.groups[i].coils[j].x, \
-						   self.groups[i].coils[j].y, \
-						   self.groups[i].coils[j].z, c=c_temp)
-			self.color_cycle.rotate(1)
-			c_temp = self.color_cycle[0]
-		ax.set_xlim(self.xmin*1.05,self.xmax*1.05); ax.set_xlabel('X [m]')
-		ax.set_ylim(self.ymin*1.05,self.ymax*1.05); ax.set_ylabel('Y [m]')
-		ax.set_zlim(self.zmin*1.05,self.zmax*1.05); ax.set_zlabel('Z [m]')
-		ax.set_title('COILS')
-		ax.set_aspect('equal', adjustable='box')
-		pyplot.legend(loc="upper left")
-		if lplotnow: pyplot.show()
+				points_array = np.zeros((self.groups[i].coils[j].npts,3))
+				points_array[:,0] =self.groups[i].coils[j].x
+				points_array[:,1] =self.groups[i].coils[j].y
+				points_array[:,2] =self.groups[i].coils[j].z
+				# Convert numpy array to VTK points
+				points = vtk.vtkPoints()
+				for point in points_array:
+					points.InsertNextPoint(point)
+				# Add to render
+				plt.add3Dline(points,color=color_txt[i % len(color_txt)],linewidth=5)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
 
-	def plotcoilsHalfFP(self,ax=None,*args,**kwargs):
-		"""Plots a coilset for a half field period
+	def plotcoilsHalfFP(self,plot3D=None):
+		"""Plots a half field period of a coilset in 3D using VTK
 
-		This routine plots coils in 3D for a half field period.
-		Really it plots the first coil in each group.
+		This routine plots a half field period of a coilset in 3D using VTK
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
 		"""
 		import numpy as np
-		import matplotlib.pyplot as pyplot
-		import mpl_toolkits.mplot3d as mplot3d
-		lplotnow = False
-		if not ax:
-			ax = pyplot.axes(projection='3d')
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
 			lplotnow = True
-		c_temp = self.color_cycle[0]
+			plt = PLOT3D()
+		# Setup color array
+		color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
+		# Plot coils
 		for i in range(self.ngroups):
-			j = 0
-			ax.plot(self.groups[i].coils[j].x, \
-				   self.groups[i].coils[j].y, \
-				   self.groups[i].coils[j].z, c=c_temp, label=self.groups[i].name)
-			self.color_cycle.rotate(1)
-			c_temp = self.color_cycle[0]
-		ax.set_aspect('equal', adjustable='box')
-		pyplot.legend(loc="upper left")
-		if lplotnow: pyplot.show()
+			j=0
+			points_array = np.zeros((self.groups[i].coils[j].npts,3))
+			points_array[:,0] =self.groups[i].coils[j].x
+			points_array[:,1] =self.groups[i].coils[j].y
+			points_array[:,2] =self.groups[i].coils[j].z
+			# Convert numpy array to VTK points
+			points = vtk.vtkPoints()
+			for point in points_array:
+				points.InsertNextPoint(point)
+			# Add to render
+			plt.add3Dline(points,color=color_txt[i % len(color_txt)],linewidth=5)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
 
-	def plotcoilsDist(self,ax=None,*args,**kwargs):
-		"""Plots a coilset for a half field period
+	def plotcoilsDist(self,plot3D=None):
+		"""Plots a half field period of a coilset in 3D using VTK
 
-		This routine plots coils in 3D for a half field period.
-		Really it plots the first coil in each group.
+		This routine plots a half field period of a coilset in 3D using VTK
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
 		"""
 		import numpy as np
-		import matplotlib.pyplot as pyplot
-		from mpl_toolkits.mplot3d.art3d import Line3DCollection
-		lplotnow = False
-		if not ax:
-			ax = pyplot.axes(projection='3d')
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
 			lplotnow = True
-		c_temp = self.color_cycle[0]
-		xmin = 1E6; xmax = -1E6
-		ymin = 1E6; ymax = -1E6
-		zmin = 1E6; zmax = -1E6
-		vmin = 1E6; vmax = -1E6
+			plt = PLOT3D()
+		# Get the min and max values
+		cmin = 1E20; cmax=-1E20;
 		for i in range(self.ngroups):
 			j = 0
-			x = self.groups[i].coils[j].x
-			y = self.groups[i].coils[j].y
-			z = self.groups[i].coils[j].z
-			v = self.groups[i].coils[j].dist_surf
-			points = np.array([x,y,z]).transpose().reshape(-1,1,3)
-			segs = np.concatenate([points[:-1],points[1:]],axis=1)
-			lc = Line3DCollection(segs, cmap=pyplot.get_cmap('jet'))
-			lc.set_array(v)
-			h = ax.add_collection(lc)
-			xmin = min(x.min(),xmin)
-			xmax = max(x.max(),xmax)
-			ymin = min(y.min(),ymin)
-			ymax = max(y.max(),ymax)
-			zmin = min(z.min(),zmin)
-			zmax = max(z.max(),zmax)
-			vmin = min(v.min(),vmin)
-			vmax = max(v.max(),vmax)
-			print(v.min(),v.max(),vmin,vmax)
-		ax.axes.set_xlim3d(left=xmin, right=xmax) 
-		ax.axes.set_ylim3d(bottom=ymin, top=ymax) 
-		ax.axes.set_zlim3d(bottom=zmin, top=zmax) 
-		ax.set_aspect('equal', adjustable='box')
-		cbar = pyplot.colorbar(h,label='Distance [m]',ax=ax)
-		h.set_clim(vmin,vmax)
-		if lplotnow: pyplot.show()
+			cmin = min(cmin,min(self.groups[i].coils[j].dist_surf)) 
+			cmax = max(cmin,max(self.groups[i].coils[j].dist_surf)) 
+		# Plot coils
+		for i in range(self.ngroups):
+			j=0
+			points_array = np.zeros((self.groups[i].coils[j].npts,3))
+			points_array[:,0] =self.groups[i].coils[j].x
+			points_array[:,1] =self.groups[i].coils[j].y
+			points_array[:,2] =self.groups[i].coils[j].z
+			# Handle Color
+			vals = np.array(self.groups[i].coils[j].dist_surf, dtype=float)
+			scalar = plt.valuesToScalar(vals)
+			# Convert numpy array to VTK points
+			points = vtk.vtkPoints()
+			for point in points_array:
+				points.InsertNextPoint(point)
+			# Add to render
+			plt.add3Dline(points,scalars=scalar,linewidth=5)
+		# Set color limits
+		plt.setClim(cmin,cmax)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Colorbar
+		plt.colorbar(title='Distance [m]')
+		# Render if requested
+		if lplotnow: plt.render()
 
 	def plotcoilsRZ(self,*args,**kwargs):
 		"""Plots each coil in the RZ plot
@@ -231,14 +288,14 @@ class COILSET(LIBSTELL):
 		f.write(f"mirror NIL\n")
 		for i in range(self.ngroups):
 			for j in range(self.groups[i].ncoils):
-				offset = 0
-				if j == self.groups[i].ncoils-1: offset = 1
 				current = np.ones((self.groups[i].coils[j].npts))*self.groups[i].current
 				current[-1] = 0
-				for k in range(self.groups[i].coils[j].npts-offset):
+				npts_write = self.groups[i].coils[j].npts
+				if j == self.groups[i].ncoils-1: npts_write = npts_write-1
+				for k in range(npts_write-1):
 					f.write(f"{self.groups[i].coils[j].x[k]:.10E} {self.groups[i].coils[j].y[k]:.10E} {self.groups[i].coils[j].z[k]:.10E} {current[k]:.10E}\n")
-			k = self.groups[i].coils[j].npts-offset-1
-			f.write(f"{self.groups[i].coils[j].x[k]:.10E} {self.groups[i].coils[j].y[k]:.10E} {self.groups[i].coils[j].z[k]:.10E} {current[k]:.10E} {i+1} {self.groups[i].name}\n")
+				k = self.groups[i].coils[j].npts-1
+				f.write(f"{self.groups[i].coils[j].x[k]:.10E} {self.groups[i].coils[j].y[k]:.10E} {self.groups[i].coils[j].z[k]:.10E} {current[k]:.10E} {i+1} {self.groups[i].name}\n")
 		f.close()
 
 	def coilbiot(self,x,y,z,extcur=None):
@@ -403,11 +460,18 @@ class COILSET(LIBSTELL):
 			for j in range(self.groups[i].ncoils):
 				self.groups[i].coils[j].surfDist(xs,ys,zs)
 
-	def blenderCoil(self,dist=0.2):
+	def blenderCoil(self,dist=0.2,lfield_period=False):
 		"""Generates the lists Blender needs to render a coilset
 
 		This routine generates the verticies and faces lists which
 		Blender needs to render a coil.
+
+		Parameters
+		----------
+		dist : float
+			Finite build coil width [m]
+		lfield_period : boolean
+			Return coilset over one field period (default: False)
 
 		Returns
 		----------
@@ -422,7 +486,9 @@ class COILSET(LIBSTELL):
 		faces = []
 		l = int(0)
 		for i in range(self.ngroups):
-			for j in range(self.groups[i].ncoils):
+			ncoil_max = self.groups[i].ncoils
+			if (lfield_period): ncoil_max = 1
+			for j in range(ncoil_max):
 				xx,yy,zz = self.groups[i].coils[j].finiteBuildCoil(width=dist,height=dist)
 				for k in range(xx.shape[1]-1):
 					vertices.append((xx[0,k],yy[0,k],zz[0,k]))
@@ -446,13 +512,6 @@ class COILSET(LIBSTELL):
 				vertices.append((xx[2,-1],yy[2,-1],zz[2,-1]))
 				vertices.append((xx[3,-1],yy[3,-1],zz[3,-1]))
 				l = l + 4
-		# Last step
-		#vertices = []
-		#faces = []
-		#for i in range(self.nvertex):
-		#	vertices.append((self.vertex[i,0],self.vertex[i,1],self.vertex[i,2]))
-		#for i in range(self.nfaces):
-		#	faces.append((int(self.faces[i,0]),int(self.faces[i,1]),int(self.faces[i,2])))
 		return vertices,faces
 
 
@@ -792,36 +851,5 @@ class COIL():
 
 if __name__=="__main__":
 	import sys
-	from argparse import ArgumentParser
-	parser = ArgumentParser(description= 
-		'''Provides class for accessing coils files also servers as a
-		   simple tool for assessing coils or coils files.''')
-	parser.add_argument("-c", "--coil", dest="coils_file",
-		help="Coils file for input", default = None)
-	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
-		help="Plot the coils file.", default = False)
-	parser.add_argument("-prz", "--plotRZ", dest="lplotRZ", action='store_true',
-		help="Plot each coil group in RZ.", default = False)
-	parser.add_argument("-b", "--bfield", dest="bxyz",
-		help="Output B field at x,y,z", default = None)
-	parser.add_argument("-a", "--afield", dest="axyz",
-		help="Output A field at x,y,z", default = None)	
-	parser.add_argument("-o", "--output", dest="loutput", action='store_true',
-		help="Output the coil", default = False)
-	args = parser.parse_args()
-	coils = COILSET()
-	if args.coils_file: 
-		coils.read_coils_file(args.coils_file)
-		if args.lplot: coils.plotcoils()
-		if args.lplotRZ: coils.plotcoilsRZ()
-		if args.loutput: coils.write_coils_file(args.coils_file+'_new')
-		if args.axyz:
-			x,y,z = args.axyz.split(',')
-			ax,ay,az = coils.coilvecpot(float(x),float(y),float(z))
-			print(f"Vector Potential ({x},{y},{z}) : {ax}, {ay}, {az} ")
-		if args.bxyz:
-			x,y,z = args.bxyz.split(',')
-			bx,by,bz = coils.coilbiot(float(x),float(y),float(z))
-			print(f"B-Field ({x},{y},{z}) : {bx}, {by}, {bz} [T]")
 	sys.exit(0)
 

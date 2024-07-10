@@ -25,12 +25,15 @@ if __name__=="__main__":
 		help="Output A field at x,y,z", default = None)
 	parser.add_argument("--genwall", dest="wall_offset",
 		help="Generate a wall file based on offset in [m]", default = None)	
+	parser.add_argument("--new_pts", dest="new_pts",
+		help="Spline coils to new_pts number of points", default = None, type = int)
 	parser.add_argument("-o", "--output", dest="loutput", action='store_true',
 		help="Output the coil", default = False)
 	args = parser.parse_args()
 	coils = COILSET()
 	if args.coils_file: 
 		coils.read_coils_file(args.coils_file)
+		if args.new_pts: coils.rescalecoils(args.new_pts)
 		if args.lplot: coils.plotcoils()
 		if args.lplotRZ: coils.plotcoilsRZ()
 		if args.loutput: coils.write_coils_file(args.coils_file+'_new')
@@ -49,9 +52,14 @@ if __name__=="__main__":
 			wall.name = f"Offset from Coils file {args.wall_offset} {args.coils_file}"
 			print(wall.vertex.shape)
 			wall.write_wall('wall_test.dat')
-			px = 1/pyplot.rcParams['figure.dpi']
-			fig=pyplot.figure(figsize=(1024*px,768*px))
-			ax1=fig.add_subplot(111,projection='3d')
-			wall.plot_wall_cloud(ax=ax1)
-			coils.plotcoils(ax=ax1)
-			pyplot.show()
+			# VTK stuff
+			renderer = vtk.vtkRenderer()
+			render_window = vtk.vtkRenderWindow()
+			render_window.AddRenderer(renderer)
+			render_window_interactor = vtk.vtkRenderWindowInteractor()
+			render_window_interactor.SetRenderWindow(render_window)
+			render_window.SetSize(1024, 768)
+			wall.plot_wall_3D(renderer=renderer,render_window=render_window)
+			coil.plotcoils(renderer=renderer,render_window=render_window)
+			render_window.Render()
+			render_window_interactor.Start()
