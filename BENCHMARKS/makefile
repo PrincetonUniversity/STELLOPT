@@ -8,6 +8,7 @@
   BEAMS3D_TEST_DIR = BEAMS3D_TEST
   DIAGNO_TEST_DIR = DIAGNO_TEST
   FIELDLINES_TEST_DIR = FIELDLINES_TEST
+  NESCOIL_TEST_DIR = NESCOIL_TEST
   STELLOPT_TEST_DIR = STELLOPT_TEST
   THRIFT_TEST_DIR = THRIFT_TEST
   VMEC_TEST_DIR = VMEC_TEST
@@ -75,6 +76,12 @@ test_fieldlines:
 	$(MAKE) test_fieldlines_full
 	$(MAKE) test_fieldlines_coll
 	@echo "Tesing of FIELDLINES complete"
+	@echo ""
+
+test_nescoil:
+	@echo "Beginning testing of NESCOIL"
+	$(MAKE) test_nescoil_tf
+	@echo "Tesing of NESCOIL complete"
 	@echo ""
 
 test_stellopt:
@@ -258,6 +265,13 @@ test_fieldlines_coll: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
 test_fieldlines_coll_ef: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll_ef -coil coils.NCSX_nfp1 -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll_ef -vac -coil coils.NCSX_nfp1 -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
+	@echo ""
+
+test_nescoil_tf:
+	@cd $(NESCOIL_TEST_DIR); rm -f nescout.*; 
+	@echo $(MYHOME)/xnescoil nescin.TF_ONLY
+	@cd $(NESCOIL_TEST_DIR); $(MYHOME)/xnescoil nescin.TF_ONLY
+	@cd $(NESCOIL_TEST_DIR); ./compare.py --file TF_ONLY
 	@echo ""
 
 test_stellopt_lmdif:

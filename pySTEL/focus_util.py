@@ -7,10 +7,12 @@ if __name__=="__main__":
 	from argparse import ArgumentParser
 	import numpy as np
 	import matplotlib.pyplot as pyplot
+	import vtk
 	from libstell.vmec import VMEC
 	from libstell.focus import FOCUS
 	from libstell.bnorm import BNORM
 	from libstell.coils import COILSET
+	from libstell.plot3D import PLOT3D
 	parser = ArgumentParser(description= 
 		'''Provides class for plotting FOCUS simulation results.''')
 	parser.add_argument("-f", "--focus", dest="focus_ext",
@@ -103,24 +105,18 @@ if __name__=="__main__":
 			focus_data.plotIota(ax4)
 			pyplot.show()
 		if args.lplot3d:
-			px = 1/pyplot.rcParams['figure.dpi']
-			fig=pyplot.figure(figsize=(1024*px,768*px))
-			ax1=fig.add_subplot(111,projection='3d')
-			focus_data.plotBN3D(ax1)
+			plt3d = PLOT3D()
+			focus_data.plotBN3D(plt3d)
+			focus_data.plotLimiter3D(plt3d)
 			try:
 				coil_data.read_coils_file(args.focus_ext+'.coils')
-				coil_data.plotcoilsHalfFP(ax1)
+				coil_data.plotcoilsHalfFP(plt3d)
 			except:
 				i=1
-			pyplot.show()
+			plt3d.render()
 		if args.lplotcoildist:
-			px = 1/pyplot.rcParams['figure.dpi']
-			fig=pyplot.figure(figsize=(1024*px,768*px))
-			ax1=fig.add_subplot(111,projection='3d')
 			coil_data.read_coils_file(args.focus_ext+'.coils')
 			coil_data.coilSurfDist(focus_data.xsurf.flatten(),\
 					focus_data.ysurf.flatten(),\
 					focus_data.zsurf.flatten())
-			coil_data.plotcoilsDist(ax=ax1)
-			ax1.set_axis_off()
-			pyplot.show()
+			coil_data.plotcoilsDist()
