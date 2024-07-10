@@ -256,6 +256,49 @@ class VMEC(FourierRep):
 		S22 = np.trapz(S22, x=theta, axis=1)*scale_fact
 		return S11,S12,S21,S22
 
+	def getSpline(self,*args,**kwargs):
+		"""Returns a profile in the AUX_S/F form
+		This routine returns the pressure, current or rotational
+		transform profile in the form AUX form used by the VMEC input
+		spline routines.
+
+		Parameters
+		----------
+		ns : int (optional)
+			Number of gridpoints in toroidal flux to use (default ns<=100)
+		s : list (optional)
+			List of points in normalized toroidal flux to use
+		profile : string (optional)
+			Which field to use (presf, jcurv, iotaf; default: iotaf)
+		lprint : boolean (optional)
+			Print the arrays to the screen (default: False)
+		Returns
+		----------
+		aux_s : list
+			Array of normalized toroidal flux knots
+		aux_f : list
+			Array of pressure values [Pa]
+		"""
+		import numpy as np
+		ns_out  = kwargs.get('ns',min(self.ns,100))
+		aux_s  = kwargs.get('s',None)
+		f_type  = kwargs.get('profile','iotaf')
+		lprint  = kwargs.get('lprint',False)
+		if type(aux_s) is type(None):
+			aux_s = np.linspace(0,1,ns_out)
+		if len(aux_s) > 100:
+			print(' ERROR: number of toroidal points must be <=100')
+			return [],[]
+		s = np.linspace(0,1,self.ns)
+		f = getattr(self,f_type).flatten()
+		aux_f = np.interp(aux_s,s,f)
+		if lprint:
+			print(rf'  AUX_S = {aux_s}')
+			print(rf'  AUX_F = {aux_f}')
+		return aux_s,aux_f
+
+
+
 	def getCurrentPoloidal(self):
 		"""Returns the poloidal total current
 		This routine returns the total poloidal current as used by the
