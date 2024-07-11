@@ -359,16 +359,16 @@ class PARAM_WALL():
 			# Append the face information
 			for i in range(nelements-1):
 				for j in range(npoints-1):
-					faces = [k k+1 k+npoints]
+					faces = [k, k+1, k+npoints]
 					out_wall.faces.append(faces)
-					faces = [k+1 k+npoints+1 k+npoints]
+					faces = [k+1, k+npoints+1, k+npoints]
 					out_wall.faces.append(faces)
 					k = k + 1
 				# Close the circle
 				if npoints > 3:
-					faces = [k-1 k-npoints k+npoints-1]
+					faces = [k-1, k-npoints, k+npoints-1]
 					out_wall.faces.append(faces)
-					faces = [k-npoints k k+npoints-1]
+					faces = [k-npoints, k, k+npoints-1]
 		# Setup wall object
 		out_wall.nvertex = len(out_wall.vertex)
 		out_wall.nfaces  = len(out_wall.faces)
