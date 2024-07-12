@@ -1,11 +1,11 @@
-#This makefile goes in dirs Debug and Release (first level below BOOZ_XFORM)
+#This makefile goes in dirs Debug and Release (first level below VMEC2INDATA)
 include ../../make.inc
 FFILE   = '$*''.f'
 CFILE   = '$*''.c'
 F90FILE = '$*''.f90'
 SPATH   = ../Sources
 #Contains list of source files (.o) and dependencies
-DEPLIST = ../BOOZ_XFORM.dep
+DEPLIST = ../VMEC2INDATA.dep
 OBJLIST = ../ObjectList
 
 #Includes source files and dependency list
@@ -15,7 +15,7 @@ VPATH = $(SPATH)
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xbooz_xform:  $(LIB) $(ObjectFiles)
+xvmec2indata:  $(LIB) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 #Compile object files defined in OBJLIST.
 .f.o :
@@ -53,8 +53,8 @@ xbooz_xform:  $(LIB) $(ObjectFiles)
          echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). -c $<'; \
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
       fi
-      
-#Check that library files are current. 
+
+#Check that library files are current.
 $(LIB) :
 	@cd $(LIB_DIR); make $(TYPE)
 
