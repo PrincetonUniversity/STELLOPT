@@ -5,19 +5,17 @@ This library provides a python class for working with coils files
 """
 
 # Libraries
-from libstell.libstell import LIBSTELL
 
 # Constants
 
 # VMEC Class
-class COILSET(LIBSTELL):
+class COILSET():
 	"""Class for working with coils files
 
 	"""
 	def __init__(self):
 		from collections import deque
 		super().__init__()
-		self.libStell = LIBSTELL()
 		self.nfp = None
 		self.ngroups = None
 		self.groups = []
