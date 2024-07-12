@@ -5,19 +5,17 @@ This library provides a python class for working with coils files
 """
 
 # Libraries
-from libstell.libstell import LIBSTELL
 
 # Constants
 
 # VMEC Class
-class COILSET(LIBSTELL):
+class COILSET():
 	"""Class for working with coils files
 
 	"""
 	def __init__(self):
 		from collections import deque
 		super().__init__()
-		self.libStell = LIBSTELL()
 		self.nfp = None
 		self.ngroups = None
 		self.groups = []
@@ -103,9 +101,9 @@ class COILSET(LIBSTELL):
 				y = self.groups[i].coils[j].y
 				z = self.groups[i].coils[j].z
 				s = np.linspace(0.0,1.0,self.groups[i].coils[j].npts)
-				cx = CubicSpline(s,x)
-				cy = CubicSpline(s,y)
-				cz = CubicSpline(s,z)
+				cx = CubicSpline(s,x,bc_type='periodic')
+				cy = CubicSpline(s,y,bc_type='periodic')
+				cz = CubicSpline(s,z,bc_type='periodic')
 				self.groups[i].coils[j].x = cx(s_new)
 				self.groups[i].coils[j].y = cy(s_new)
 				self.groups[i].coils[j].z = cz(s_new)
@@ -507,10 +505,10 @@ class COILSET(LIBSTELL):
 					faces.append((l,l-3,l+1))
 					faces.append((l,l+1,l+4))
 					l=l+1
-				vertices.append((xx[0,-1],yy[0,-1],zz[0,-1]))
-				vertices.append((xx[1,-1],yy[1,-1],zz[1,-1]))
-				vertices.append((xx[2,-1],yy[2,-1],zz[2,-1]))
-				vertices.append((xx[3,-1],yy[3,-1],zz[3,-1]))
+				vertices.append((xx[0, 0],yy[0, 0],zz[0, 0]))
+				vertices.append((xx[1, 0],yy[1, 0],zz[1, 0]))
+				vertices.append((xx[2, 0],yy[2, 0],zz[2, 0]))
+				vertices.append((xx[3, 0],yy[3, 0],zz[3, 0]))
 				l = l + 4
 		return vertices,faces
 
@@ -705,11 +703,10 @@ class COIL():
 		"""
 		import numpy as np
 		from scipy import interpolate
-		t = np.linspace(0, 2 * np.pi, len(self.x), endpoint=True)
-		self.dt = 2 * np.pi / (len(self.x) - 1)
-		fx = interpolate.splrep(t, self.x, s=0, k=order)
-		fy = interpolate.splrep(t, self.y, s=0, k=order)
-		fz = interpolate.splrep(t, self.z, s=0, k=order)
+		t = np.linspace(0, 1.0, len(self.x), endpoint=True)
+		fx = interpolate.splrep(t, self.x, s=0, k=order, per=1)
+		fy = interpolate.splrep(t, self.y, s=0, k=order, per=1)
+		fz = interpolate.splrep(t, self.z, s=0, k=order, per=1)
 		self.xt = interpolate.splev(t, fx, der=1)
 		self.yt = interpolate.splev(t, fy, der=1)
 		self.zt = interpolate.splev(t, fz, der=1)
