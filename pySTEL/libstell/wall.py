@@ -5,7 +5,6 @@ This library provides a python class for working with wall_data
 """
 
 # Libraries
-#from libstell.libstell import LIBSTELL
 
 # Constants
 
