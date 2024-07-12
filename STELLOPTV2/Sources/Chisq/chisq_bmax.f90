@@ -20,8 +20,8 @@
 !
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      REAL(rprec), INTENT(in)    ::  target(nrad)
-      REAL(rprec), INTENT(in)    ::  sigma(nrad)
+      REAL(rprec), INTENT(in)    ::  target(nsd)
+      REAL(rprec), INTENT(in)    ::  sigma(nsd)
       INTEGER,     INTENT(in)    ::  niter
       INTEGER,     INTENT(inout) ::  iflag
       
@@ -48,7 +48,7 @@
          ALLOCATE(bmax(nu_b))
          ALLOCATE(modb_booz(nu_b,nv_b,ns_b))
          ALLOCATE(xu_booz(nu_b),xv_booz(nv_b))
-         FORALL(u=1:nu_b) xu_booz(u) = REAL(u-1)/REAL(2*(nu_b-1))                     !Fully around in theta
+         FORALL(u=1:nu_b) xu_booz(u) = REAL(u-1)/REAL(nu_b)
          FORALL(v=1:nv_b) xv_booz(v) = REAL(v-1)/REAL(nv_b)
          CALL mntouv(1,ns_b,mnboz_b,nu_b,nv_b,xu_booz,xv_booz,bmnc_b,&
                      ixm_b,ixn_b/nfp_b,modb_booz,0,1)
@@ -59,26 +59,27 @@
          ! Now evaluate
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
-            DO u = 1, nu_b
-               bmax(u) = MAXVAL(modb_booz(u,:,ik))
-            END DO
-            bmax_global = MAXVAL(bmax)
+            !DO u = 1, nu_b
+            !   bmax(u) = MAXVAL(modb_booz(u,:,ik))
+            !END DO
+            bmax_global = MAXVAL(MAXVAL(modb_booz(:,:,ik),2),1)
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
             vals(mtargets)    = bmax_global
-            IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,vals(mtargets),ik
+            IF (iflag == 1) WRITE(iunit_out,'(3(ES22.12E3),1X,I5)') targets(mtargets),sigmas(mtargets),vals(mtargets),ik
          END DO
          ! DEALLOCATE
          DEALLOCATE(modb_booz)
          DEALLOCATE(xu_booz,xv_booz)
          DEALLOCATE(bmax)
       ELSE
-         DO ik = 1, nrad
-            IF (sigma(ik) >= bigno) CYCLE
+         DO ik = 1, nsd
+            IF (sigma(ik) < bigno) THEN
                lbooz(ik) = .true.
                mtargets = mtargets + 1
                IF (niter == -2) target_dex(mtargets)=jtarget_bmax
+            END IF
          END DO
       END IF
       RETURN

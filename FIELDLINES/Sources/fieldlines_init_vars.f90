@@ -18,13 +18,16 @@
       mu0 = 16.0E-7 * ATAN(1.0)
       lverb    = .false.
       lvmec    = .false.
+      leqdsk = .false.
       lpies    = .false.
       lspec    = .false.
       lcoil    = .false.
+      lhint    = .false.
       lmgrid   = .false.
       lmu      = .false.
       lvessel  = .false.
       lvac     = .false.
+      lpres    = .false.
       lrestart = .false.
       laxis_i  = .false.
       ladvanced = .false.
@@ -40,12 +43,16 @@
       ledge_start = .false.
       lnescoil    = .false.
       lmodb       = .false.
+      lfield_start = .false.
       nruntype = runtype_old
       id_string     = ''
       coil_string   = ''
       mgrid_string  = ''
       vessel_string = ''
       restart_string = ''
+      eqdsk_string = ''
+      line_select = 96
+      ldex_default = 0
       
       RETURN
 !-----------------------------------------------------------------------

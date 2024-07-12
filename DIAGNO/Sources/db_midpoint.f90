@@ -42,7 +42,7 @@
          xvec(2)=yp
          xvec(3)=zp
          CALL bsc_b(coil_group(cg),xvec,bvec)
-         dflux_midpoint = bvec(1)*dx+bvec(2)*dy+bvec(3)*dz
+         db_midpoint = bvec(1)*dx+bvec(2)*dy+bvec(3)*dz
       ELSE
          ier = 1
          CALL bfield_vc(xp,yp,zp,bx,by,bz,ier)

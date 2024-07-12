@@ -1,15 +1,9 @@
 !-----------------------------------------------------------------------
 !     Module:        beams3d_follow
-!     Authors:       S. Lazerson (lazerson@pppl.gov), M. McMillan (matthew.mcmillan@my.wheaton.edu)
-!     Date:          06/20/2012
-!     Description:   This subroutine follows the particles through
-!                    the grid.  The general ODE which must be solved
-!                    can be written:
-!                        dX        
-!                       ----   = fpart(t,q,qdot)
-!                        dt        
-!                    where X=(R,phi,Z).  This allows particle trajectories
-!                    to be parametrized in terms of time.
+!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+!     Date:          10/19/2021
+!     Description:   This subroutine organizes running the particle
+!                    following parts of the code.
 !                    
 !-----------------------------------------------------------------------
 SUBROUTINE beams3d_follow
@@ -21,111 +15,53 @@ SUBROUTINE beams3d_follow
     USE beams3d_lines
     USE beams3d_grid, ONLY: tmin, tmax, delta_t, BR_spl, BZ_spl, BPHI_spl, &
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
-                            TE_spl, TI_spl, wall_load, wall_shine, &
-                            plasma_mass, plasma_Zavg, plasma_Zmean, therm_factor
+                            TE_spl, TI_spl, wall_load, wall_shine, rho_fullorbit, &
+                            plasma_mass, plasma_Zmean, therm_factor, &
+                            nr_fida, nphi_fida, nz_fida, nenergy_fida, &
+                            npitch_fida, BEAM_DENSITY
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE beams3d_write_par
     USE safe_open_mod, ONLY: safe_open
     USE wall_mod, ONLY: wall_free, ihit_array, nface
-!DEC$ IF DEFINED (MPI_OPT)
-    USE mpi
-!DEC$ ENDIF
+    USE mpi_inc
     !-----------------------------------------------------------------------
     !     Local Variables
     !          status       MPI stats indicator
-    !          mystart      Starting fieldline for each processor
-    !          mypace       Number of fieldlines each processor should follow
-    !          i            Dummy index
-    !          j            Dummy index
-    !          sender       Dummy index
-    !          ier          Error flag
-    !          l            Dummy index
-    !          neqs_nag     Number of ODEs to solve (not limited to NAG routines)
-    !          l2           Index helper
-    !          itol         LSODE tolerance flag
-    !          itask        LSODE flag (overshoot and interpolate)
-    !          istate       LSODE restart flag
     !-----------------------------------------------------------------------
     IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-    INTEGER :: status(MPI_STATUS_size) !mpi stuff
-    INTEGER :: mystart, mypace, i, j, sender
-    INTEGER,ALLOCATABLE :: mnum(:), moffsets(:)
     INTEGER :: MPI_COMM_LOCAL
-!DEC$ ENDIF
-    INTEGER :: ier, l, neqs_nag, l2, itol, itask, &
-               istate, iopt, lrw, liw, mf, out, iunit
-    INTEGER, ALLOCATABLE :: iwork(:), itemp(:,:)
+    INTEGER :: i, j, l, ier, mystart, mypace
+    INTEGER, ALLOCATABLE :: mnum(:), moffsets(:)
+    INTEGER, ALLOCATABLE :: itemp(:,:)
     REAL :: dist
-    REAL(rprec) :: tf_max, vel_max
-    DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
-    DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, t1_nag, &
-                        tol_nag, rtol
-    DOUBLE PRECISION :: atol(4), rwork(84)
-    DOUBLE PRECISION :: rkh_work(4, 2)
-    DOUBLE PRECISION :: qdot1(4)
-    CHARACTER*1 :: relab
+    REAL(rprec) :: tf_max, vel_max, weight_save
+    DOUBLE PRECISION :: tf_nag, t_nag
+    DOUBLE PRECISION, ALLOCATABLE :: q(:)
 
     DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
     DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
     DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
-
-    DOUBLE PRECISION, PARAMETER :: lendt_m = 0.05  ! Maximum length to travel before updating physics [m]
-    !-----------------------------------------------------------------------
-    !     External Functions
-    !          fpart_nag            RHS of ODE integrator (for NAG)    for BEAMS3D
-    !          D02CJF               NAG ODE Solver
-    !          D02CJW               NAG Dummy function
-    !          jacobian_lsode       Jacobian function (for LSODE, not currently utilized)
-    !-----------------------------------------------------------------------
-    EXTERNAL D02CJF, D02CJW, fpart_nag, D02CJX, out_beams3d_nag
-    EXTERNAL fpart_lsode, jacobian_lsode
-    EXTERNAL fpart_rkh68
     !-----------------------------------------------------------------------
     !     Begin Subroutine
     !-----------------------------------------------------------------------
-    ! Initializations
-    ier = 0
+
+    ! Calc max time to follow particles
     i = MAXLOC(ABS(t_end),1)
     tf_max = t_end(i)
-    dt_out = tf_max/npoinc
-    vel_max = MAXVAL(vll_start)
-    dt = SIGN(lendt_m/vel_max,tf_max)      ! Keep this here so we print out max(dt)
-    IF (ABS(dt) < 1E-9) dt = SIGN(1D-9,tf_max)  ! This is a limiter term for STELLOPT
-    nsteps = FLOOR(tf_max/dt)
-    tol_nag = follow_tol
-    neqs_nag = 4
-    relab = "M"
-    mf = 10
-    ! Do a quick check
-    IF (nsteps < npoinc) THEN
-        npoinc = nsteps
-    END IF
 
+    ! Calculate timestep for integration
+    vel_max = MAX(MAXVAL(ABS(vll_start)),1E6)
+    dt = SIGN(MAX(lendt_m/vel_max,1D-9),tf_max)
+
+    ! Calculate number of integration timesteps per output timestep
+    ndt_max = MAX(CEILING(tf_max/(dt*NPOINC)),1)
+
+    ! Adjust dt to match ndt_max  (note dt doesn't really matter)
+    dt = tf_max/(ndt_max*NPOINC)
+    
     ! Break up the work
-    mypace  = nparticles
-    mystart = 1
-    myend   = nparticles
-    IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-    ALLOCATE(mnum(nprocs_beams))
-    mnum = 0
-    DO
-       IF (SUM(mnum) == nparticles) EXIT
-       DO i = 1, nprocs_beams
-          mnum(i) = mnum(i) + 1
-          IF (SUM(mnum) == nparticles) EXIT
-       END DO
-       IF (SUM(mnum) == nparticles) EXIT
-    END DO
-    mypace  = mnum(myworkid+1)
-    IF (myworkid == 0) THEN
-       mystart = 1
-    ELSE
-       mystart = SUM(mnum(1:myworkid))+1
-    END IF
-    myend   = mystart+mypace-1
-    DEALLOCATE(mnum)
+    CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
 
     ! Save mystart and myend
     mystart_save = mystart
@@ -133,20 +69,18 @@ SUBROUTINE beams3d_follow
 
     IF (lhitonly) THEN
         npoinc = 2
-        dt_out = 0
     END IF
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
       IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
       ALLOCATE(mnum(nprocs_beams), moffsets(nprocs_beams))
       CALL MPI_ALLGATHER((myend-mystart+1)*(npoinc+1),1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_ALLGATHER((mystart-1)*(npoinc+1),1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
+#endif
 
     ! Deallocations
     IF (ALLOCATED(q)) DEALLOCATE(q)
-    IF (ALLOCATED(w)) DEALLOCATE(w)
     IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
     IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
     IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
@@ -154,309 +88,174 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(S_lines)) DEALLOCATE(S_lines)
     IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
     IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
+    IF (ALLOCATED(vr_lines)) DEALLOCATE(vr_lines)
+    IF (ALLOCATED(vphi_lines)) DEALLOCATE(vphi_lines)
+    IF (ALLOCATED(vz_lines)) DEALLOCATE(vz_lines)
     IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
     IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
-    
-    ! Output some stuff
-    IF (lverb) THEN
-       WRITE(6, '(A)') '----- FOLLOWING PARTICLE TRAJECTORIES -----'
-       WRITE(6, '(A,A)')          '      Method: ', TRIM(int_type)
-       WRITE(6, '(A,I9)')         '   Particles: ', nparticles
-       WRITE(6, '(A,I9,A,E11.4)') '       Steps: ', nsteps, '   Delta-t: ', dt
-       WRITE(6, '(A,I9,A,E11.4)') '      NPOINC: ', npoinc, '    dt_out: ', dt_out
-       SELECT CASE(TRIM(int_type))
-          CASE("NAG")
-             WRITE(6, '(A,E11.4,A,A1)') '         Tol: ', follow_tol, '  Type: ', relab
-          CASE("LSODE")
-             WRITE(6, '(A,E11.4,A,I2)') '         Tol: ', follow_tol, '  Type: ', mf
-       END SELECT
-       WRITE(6, '(5X,A,I3,A)', ADVANCE = 'no') 'Trajectory Calculation [', 0, ']%'
-       CALL FLUSH(6)
-    END IF
     ! Allocations
-    ALLOCATE(q(neqs_nag), STAT = ier)
+    ALLOCATE(q(4), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'Q', ier)
     ALLOCATE(R_lines(0:npoinc, mystart:myend), Z_lines(0:npoinc, mystart:myend), &
              PHI_lines(0:npoinc, mystart:myend), vll_lines(0:npoinc, mystart:myend), moment_lines(0:npoinc, mystart:myend), &
              neut_lines(0:npoinc, mystart:myend), S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), &
+             vr_lines(0:npoinc, mystart:myend), vphi_lines(0:npoinc, mystart:myend), vz_lines(0:npoinc, mystart:myend), &
               B_lines(0:npoinc, mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
+    ALLOCATE(t_last(mystart:myend), STAT = ier)
+    IF (ier /= 0) CALL handle_err(ALLOC_ERR, 't_last', ier)
+
+    ! Set lbeam to false if doing a box simulation
+    lbeam = (lbeam .and. (.not.lboxsim))
 
     ! Initializations
+    lbeam = (lbeam .and. (.not.lboxsim))
     R_lines = 0.0; Z_lines = 0.0; PHI_lines = -1.0
     vll_lines = 0.0; moment_lines = 0.0
     S_lines = 1.5; U_lines = 0.0; B_lines = -1.0
-    R_lines(0, mystart:myend) = R_start(mystart:myend)
-    Z_lines(0, mystart:myend) = Z_start(mystart:myend)
-    PHI_lines(0, mystart:myend) = phi_start(mystart:myend)
-    vll_lines(0, mystart:myend) = vll_start(mystart:myend)
+    t_last = 0.0
+    R_lines(0, mystart:myend)      = R_start(mystart:myend)
+    Z_lines(0, mystart:myend)      = Z_start(mystart:myend)
+    PHI_lines(0, mystart:myend)    = phi_start(mystart:myend)
+    vll_lines(0, mystart:myend)    = vll_start(mystart:myend)
     moment_lines(0, mystart:myend) = mu_start(mystart:myend)
-    neut_lines(0, mystart:myend) = .FALSE.
+    vr_lines(0, mystart:myend)     = vr_start(mystart:myend)
+    vphi_lines(0, mystart:myend)   = vphi_start(mystart:myend)
+    vz_lines(0, mystart:myend)     = vz_start(mystart:myend)
+    neut_lines(0, mystart:myend)   = .FALSE.
     IF (lbeam) neut_lines(0, mystart:myend) = .TRUE.
 
-    ! Follow Trajectories
-    IF (mystart <= nparticles) THEN
-        SELECT CASE (TRIM(int_type))
-            CASE ("NAG")
-!DEC$ IF DEFINED (NAG)
-                ALLOCATE(w(neqs_nag * 21 + 28), STAT = ier)
-                IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'W', ier)
-                DO l = mystart, myend
-                    ltherm = .false.
-                    lneut  = .false.
-                    q(1) = R_start(l)
-                    q(2) = phi_start(l)
-                    q(3) = Z_start(l)
-                    q(4) = vll_start(l)
-                    B_temp(:) = 1.0
-                    t_nag = 0.0
-                    tf_nag = 0.0
-                    mycharge = charge(l)
-                    myZ = Zatom(l)
-                    mymass = mass(l)
-                    moment = mu_start(l)
-                    myv_neut(:) = v_neut(:,myline)
-                    IF (lbeam) lneut = .TRUE.
-                    CALL out_beams3d_nag(tf_nag,q)
-                    IF (lbeam) THEN
-                       lcollision = .FALSE.
-                       ! Follow into plasma
-                       CALL beams3d_follow_neut(t_nag,q)
-                       mytdex = 1
-                       tf_nag = t_nag
-                       CALL out_beams3d_nag(tf_nag,q)
-                       IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
-                       ! Ionize
-                       CALL beams3d_ionize(tf_nag,q)
-                       mytdex = 2
-                       CALL out_beams3d_nag(tf_nag,q)
-                       IF (ldepo) CYCLE
-                       ltherm = .FALSE.
-                       lcollision = .TRUE.
-                       mytdex = 3
-                       tf_nag = tf_nag - dt  ! Because out advances t by dt
-                       dt_out = (t_end(l) - t_nag)/(npoinc-2) ! Adjust dt slightly to keep indexing correct.
-                    END IF
-                    DO ! Must do it this way becasue lbeam changes q(4) values
-                       CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
-                       IF (ier < 0) CALL handle_err(D02CJF_ERR, 'beams3d_follow', ier)
-                       CALL out_beams3d_nag(tf_nag,q)
-                       IF (tf_nag > t_end(l)) EXIT
-                    END DO
-                END DO
-!DEC$ ELSE
-                ier = -1
-                CALL handle_err(NAG_ERR, 'beams3d_follow', ier)
-!DEC$ ENDIF
-            CASE ("RKH68")
-                ier = 0
-                DO l = mystart, myend
-                    myline = l
-                    mytdex = 0
-                    ltherm = .false.
-                    lneut  = .false.
-                    q(1) = R_start(l)
-                    q(2) = phi_start(l)
-                    q(3) = Z_start(l)
-                    q(4) = vll_start(l)
-                    xlast = q(1)*cos(q(2))
-                    ylast = q(1)*sin(q(2))
-                    zlast = q(3)
-                    B_temp(:) = 1.0
-                    t_nag = 0.0
-                    tf_nag = 0.0
-                    mycharge = charge(l)
-                    myZ = Zatom(l)
-                    mymass = mass(l)
-                    mybeam = Beam(l)
-                    moment = mu_start(l)
-                    fact_crit = SQRT(2*e_charge/mymass)*(3*sqrt_pi*sqrt(mymass/electron_mass)*mymass/plasma_mass)**(1.0/3.0)
-                    myv_neut(:) = v_neut(:,myline)
-                    IF (lbeam) lneut = .TRUE.
-                    CALL out_beams3d_nag(tf_nag,q)
-                    IF (lbeam) THEN
-                       lcollision = .FALSE.
-                       ! Follow into plasma
-                       CALL beams3d_follow_neut(t_nag,q)
-                       mytdex = 1
-                       tf_nag = t_nag
-                       CALL out_beams3d_nag(tf_nag,q)
-                       IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
-                       ! Ionize
-                       CALL beams3d_ionize(tf_nag,q)
-                       mytdex = 2
-                       CALL out_beams3d_nag(tf_nag,q)
-                       IF (ldepo) CYCLE
-                       ltherm = .FALSE.
-                       lcollision = .TRUE.
-                       mytdex = 3
-                       tf_nag = tf_nag - dt  ! Because out advances t by dt
-                       dt_out = (t_end(l) - t_nag)/(npoinc-2) ! Adjust dt slightly to keep indexing correct.
-                       CALL FLUSH(6)
-                    END IF
-                    DO
-                        CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fpart_rkh68, rkh_work, iopt, ier)
-                        IF (ier < 0) CALL handle_err(RKH68_ERR, 'beams3d_follow', ier)
-                        q(1)=rkh_work(1,2)
-                        q(2)=rkh_work(2,2)
-                        q(3)=rkh_work(3,2)
-                        q(4)=rkh_work(4,2)
-                        t_nag = t_nag+dt
-                        tf_nag = tf_nag+dt
-                        CALL out_beams3d_nag(tf_nag,q)
-                        IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(t_end(l))) ) EXIT
-                    END DO
-                END DO
-            CASE ("LSODE","DLSODE")
-                ! Open a file
-                iunit = myworkid+400
-                ier = 0
-                IF (ldebug) THEN
-                   !CALL safe_open(iunit,ier,'lsode_err_'//TRIM(id_string),'replace','formatted')
-                   iunit = 6
-                   CALL xsetun(iunit)
-                   iunit = 1
-                   CALL xsetf(iunit)
-                ELSE
-                   iunit = 0
-                   CALL xsetf(iunit)
-                END IF
-                ! Allocate helpers
-                lrw = 20 + 16 * neqs_nag
-                liw = 20
-                ALLOCATE(w(lrw))
-                ALLOCATE(iwork(liw))
-                ier = 0
-                DO l = mystart, myend
-                    ! Setup LSODE parameters
-                    iopt = 0 ! No optional output
-                    w = 0; iwork = 0; itask = 1; istate = 1;
-                    itol = 2; rtol = follow_tol; atol(:) = follow_tol
-                    myline = l
-                    mytdex = 0
-                    ! Initialize the calculation
-                    ltherm = .false.
-                    lneut  = .false.
-                    q(1) = R_start(l)
-                    q(2) = phi_start(l)
-                    q(3) = Z_start(l)
-                    q(4) = vll_start(l)
-                    xlast = q(1)*cos(q(2))
-                    ylast = q(1)*sin(q(2))
-                    zlast = q(3)
-                    B_temp(:) = 1.0
-                    t_nag = 0.0
-                    tf_nag = 0.0
-                    mycharge = charge(l)
-                    myZ = Zatom(l)
-                    mymass = mass(l)
-                    mybeam = Beam(l)
-                    moment = mu_start(l)
-                    fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
-                    fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-                    !fact_crit = SQRT(2*e_charge/mymass)*(3*sqrt_pi*sqrt(mymass/electron_mass)*mymass/plasma_mass)**(1.0/3.0)
-                    fact_crit = SQRT(2*e_charge/mymass)*(1.5*sqrt_pi*sqrt(2*plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
-                    !fact_crit = SQRT(2*e_charge/mymass)*(0.75*sqrt_pi*electron_mass/plasma_mass)**(1.0/3.0)
-                    myv_neut(:) = v_neut(:,myline)
-                    IF (lbeam) lneut = .TRUE.
-                    CALL out_beams3d_nag(tf_nag,q)
-                    IF (lbeam) THEN
-                       lcollision = .FALSE.
-                       ! Follow into plasma
-                       CALL beams3d_follow_neut(t_nag,q)
-                       mytdex = 1
-                       tf_nag = t_nag
-                       CALL out_beams3d_nag(tf_nag,q)
-                       IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
-                       ! Ionize
-                       CALL beams3d_ionize(tf_nag,q)
-                       mytdex = 2
-                       CALL out_beams3d_nag(tf_nag,q)
-                       IF (ldepo) CYCLE
-                       ltherm = .FALSE.
-                       lcollision = .TRUE.
-                       mytdex = 3
-                       tf_nag = tf_nag - dt  ! Because out advances t by dt
-                       dt_out = (t_end(l) - t_nag)/(npoinc-2) ! Adjust dt slightly to keep indexing correct.
-                       CALL FLUSH(6)
-                    END IF
-                    DO
-                        IF (lcollision) istate = 1
-                        CALL FLUSH(6)
-                        CALL DLSODE(fpart_lsode, neqs_nag, q, t_nag, tf_nag, itol, rtol, atol, itask, istate, &
-                                   iopt, w, lrw, iwork, liw, jacobian_lsode, mf)
-                        IF ((istate == -3) .or. (istate == -4)) THEN
-                           ! BIG  DEBUG MESSAGE
-                           CALL FLUSH(6)
-                           WRITE(6,*) '------------------'
-                           WRITE(6,*) '     ',myworkid, l, myline,mf
-                           WRITE(6,*) '     ',myworkid, neqs_nag, t_nag, tf_nag
-                           WRITE(6,*) '     ',myworkid, q, moment
-                           WRITE(6,*) '     ',myworkid, itol, rtol, atol
-                           WRITE(6,*) '     ',myworkid, itask,istate,iopt
-                           WRITE(6,*) '     ',myworkid, w(5),w(6),w(7)
-                           WRITE(6,*) '     ',myworkid, iwork(5),iwork(6),iwork(7)
-                           WRITE(6,*) '     ',myworkid, w(11:14)
-                           WRITE(6,*) '     ',myworkid, iwork(11:18)
-                           WRITE(6,*) '------------------'
-                           CALL FLUSH(6)
-                           CALL handle_err(LSODE_ERR, 'beams3d_follow', istate)
-                        END IF
-                        iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
-                        CALL out_beams3d_nag(tf_nag,q)
-                        IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(t_end(l))) ) EXIT
-                    END DO
-                END DO
-                IF (ldebug) CLOSE(iunit)
-             CASE ('DEBUG')
-                DO l = 0, npoinc
-                   R_lines(l,mystart:myend) = REAL(l)
-                END DO
-                B_lines(0:npoinc,mystart:myend) = REAL(myworkid)
-        END SELECT
+    ! Some helpers
+    fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
+    fact_crit= SQRT(2.0*e_charge/electron_mass)*(0.75*sqrt_pi*electron_mass*plasma_Zmean/plasma_mass)**(1.0/3.0) ! Wesson pg 226 5.4.9
+    !fact_crit=fact_crit_pro*(plasma_Zmean/plasma_mass)**(1.0/3.0)
+    !fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick !old
+    !fact_kick = 2*freq_kick*E_kick
+
+    ! Handle the Beam defaults
+    IF (lbeam) THEN
+       ! Set VLL_START to Vtotal (may not need to do this)
+       vll_start(mystart:myend) = sqrt(  vr_start(mystart:myend) * vr_start(mystart:myend) &
+                                       + vphi_start(mystart:myend) * vphi_start(mystart:myend) &
+                                       + vz_start(mystart:myend) * vz_start(mystart:myend) )
     END IF
-      
-    IF (lverb) THEN
-       CALL backspace_out(6,36)
-       CALL FLUSH(6)
-       WRITE(6,'(36X)',ADVANCE='no')
-       CALL FLUSH(6)
-       CALL backspace_out(6,36)
-       WRITE(6,*)
-       CALL FLUSH(6)
-    END IF    
 
-    ! Check for crash
-    istate = 0
-    CALL handle_err(MPI_CHECK,'beams3d_follow',istate)
+    ! Initialize the particles
+    DO i = mystart, myend
+       lneut = lbeam
+       ltherm = .FALSE.
+       q(1) = R_start(i)
+       q(2) = phi_start(i)
+       q(3) = Z_start(i)
+       q(4) = vll_start(i)
+       xlast = q(1)*cos(q(2))
+       ylast = q(1)*sin(q(2))
+       zlast = q(3)
+       tf_nag = 0.0
+       mycharge = charge(i)
+       myZ = Zatom(i)
+       mymass = mass(i)
+	    E_by_v=mymass*0.5d-3/e_charge
+       mybeam = Beam(i)
+       moment = mu_start(i)
+       fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+       fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+       
+       ! Save the IC of the neutral
+       my_end = t_end(i)
+       myline = i
+       mytdex = 0
+       ndt_max = 1
+       ndt     = 0
+       CALL out_beams3d_nag(tf_nag,q)
+       t_last(i) = tf_nag-dt
+    END DO
 
-!       Deallocations
-    IF (ALLOCATED(q)) DEALLOCATE(q)
-    IF (ALLOCATED(w)) DEALLOCATE(w)
-    IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
+    ! Beam Deposition
+    IF (lbeam) THEN
+      IF (lverb) WRITE(6, '(A)') '----- FOLLOWING NEUTRAL TRAJECTORIES -----'
+       DO i = mystart, myend
+          lneut = lbeam
+          ltherm = .FALSE.
+          q(1) = R_start(i)
+          q(2) = phi_start(i)
+          q(3) = Z_start(i)
+          q(4) = vll_start(i)
+          xlast = q(1)*cos(q(2))
+          ylast = q(1)*sin(q(2))
+          zlast = q(3)
+          mycharge = charge(i)
+          myZ = Zatom(i)
+          mymass = mass(i)
+		    E_by_v=mymass*0.5d-3/e_charge
+          mybeam = Beam(i)
+          moment = mu_start(i)
+          my_end = t_end(i)
+          myline = i
+          mytdex = 1
+          fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+          fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+          
+          ! Define neutral trajectory
+          myv_neut(1) = vr_start(i)*cos(phi_start(i)) - vphi_start(i)*sin(phi_start(i))
+          myv_neut(2) = vr_start(i)*sin(phi_start(i)) + vphi_start(i)*cos(phi_start(i))
+          myv_neut(3) = vz_start(i)
+          ! This is a trick which works because V_neut hasn't changed
+          vr_lines(1:2,myline)   = vr_start(i)
+          vphi_lines(1:2,myline) = vphi_start(i)
+          vz_lines(1:2,myline)   = vz_start(i)
+          lcollision = .FALSE.
+          ! Inject Beam
+          tf_nag = 0.0
+          CALL beams3d_follow_neut(tf_nag,q)
+          ! Save the point to index 1 with weight set to 0
+          mytdex = 1; ndt=0; ndt_max = 1 ! Save the point
+          t_last(i) = tf_nag ! Save timestep after follow_neut
+          CALL out_beams3d_nag(tf_nag,q)
+          IF (tf_nag > t_end(i)) CYCLE
+          ! Step to gyrocenter
+          CALL beams3d_ionize(q)
+          ! Save to index 2
+          ! no weight becasue it just jumped to this point
+          mytdex = 2; ndt=0; ndt_max = 1 ! Save point
+          weight_save = weight(myline)
+          weight(myline) = 0
+          CALL out_beams3d_nag(tf_nag,q)
+          weight(myline) = weight_save
+       END DO
+    END IF
+
+    DEALLOCATE(q)
+
+    ! Calcualte Beam Density
+#if defined(MPI_OPT)
+    CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
+#endif
+    IF (lbeam .and. lbeamdensity) CALL beams3d_beam_density
+
+    ! Follow Trajectories
+    IF (.not.ldepo) THEN
+        CALL beams3d_follow_gc
+        IF (rho_fullorbit < 100) CALL beams3d_follow_fo
+    END IF
+
+    ! Fix U_lines
+    CALL beams3d_fix_poloidal
 
     ! First reduce the cumulative arrays over shared memory groups then allreduce between shared memeory groups
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
     IF (myid_sharmem == master) THEN
        CALL MPI_REDUCE(MPI_IN_PLACE,   end_state,     nparticles,          MPI_INTEGER, MPI_MAX, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       CALL MPI_REDUCE(MPI_IN_PLACE,      j_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       !CALL MPI_REDUCE(MPI_IN_PLACE,   dist_prof, nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       CALL MPI_REDUCE(MPI_IN_PLACE, dist2d_prof, nbeams*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
     ELSE
        CALL MPI_REDUCE(end_state,     end_state,     nparticles,          MPI_INTEGER, MPI_MAX, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(epower_prof, epower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ipower_prof, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ndot_prof,     ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       CALL MPI_REDUCE(j_prof,           j_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       !CALL MPI_REDUCE(dist_prof,     dist_prof, nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       CALL MPI_REDUCE(dist2d_prof, dist2d_prof, nbeams*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
     END IF
-!DEC$ ENDIF
 
-!DEC$ IF DEFINED (MPI_OPT)
     i = MPI_UNDEFINED
     IF (myid_sharmem == master) i = 0
     CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
@@ -465,9 +264,15 @@ SUBROUTINE beams3d_follow
        CALL MPI_ALLREDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-       CALL MPI_ALLREDUCE(MPI_IN_PLACE,      j_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-       !CALL MPI_ALLREDUCE(MPI_IN_PLACE,   dist_prof, nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-       CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist2d_prof, nbeams*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+       ! This only works becasue of how FORTRAN orders things.
+       DO l = 1, ns_prof5
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_prof(:,:,:,:,:,l), nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+       END DO
+       IF (lfidasim_cyl) THEN
+          DO l = 1, npitch_fida
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_fida(:,:,:,:,l), nr_fida*nphi_fida*nz_fida*nenergy_fida, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+          END DO
+       END IF
        IF (ASSOCIATED(ihit_array)) THEN
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
        END IF
@@ -477,31 +282,39 @@ SUBROUTINE beams3d_follow
        IF (ASSOCIATED(wall_shine)) THEN
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,wall_shine,nface*nbeams,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
        END IF
+       IF (ASSOCIATED(BEAM_DENSITY)) THEN
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE, BEAM_DENSITY, nbeams*nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+       END IF
        CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
     END IF
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
-!DEC$ ENDIF
 
-
-!DEC$ IF DEFINED (MPI_OPT)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'R_lines', DBLVAR=R_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'PHI_lines', DBLVAR=PHI_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'Z_lines', DBLVAR=Z_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'vll_lines', DBLVAR=vll_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend, 'moment_lines', DBLVAR=moment_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'S_lines', DBLVAR=S_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'U_lines', DBLVAR=U_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'B_lines', DBLVAR=B_lines)
-    ALLOCATE(itemp(0:npoinc,mystart:myend))
-    itemp = 0; WHERE(neut_lines) itemp=1;
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,   'neut_lines', INTVAR=itemp)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'R_lines', DBLVAR=R_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,    'PHI_lines', DBLVAR=PHI_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'Z_lines', DBLVAR=Z_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,    'vll_lines', DBLVAR=vll_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save, 'moment_lines', DBLVAR=moment_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,     'vr_lines', DBLVAR=vr_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'vphi_lines', DBLVAR=vphi_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,     'vz_lines', DBLVAR=vz_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'S_lines', DBLVAR=S_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'U_lines', DBLVAR=U_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'B_lines', DBLVAR=B_lines)
+    CALL beams3d_write1d_parhdf5(         1, nparticles, mystart_save, myend_save,      't_end',   DBLVAR=t_last,FILENAME='beams3d_'//TRIM(id_string))
+    ALLOCATE(itemp(0:npoinc,mystart_save:myend_save))
+    itemp = 0; WHERE(neut_lines) itemp=1
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'neut_lines', INTVAR=itemp)
     DEALLOCATE(itemp)
     IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
     IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
+#endif
 
-!DEC$ ENDIF
+    ! Adjust T_END back to values of T_last
+    t_end(mystart_save:myend_save) = t_last(mystart_save:myend_save)
+    IF (ALLOCATED(t_last)) DEALLOCATE(t_last)
+
     RETURN
     !-----------------------------------------------------------------------
     !     End Subroutine

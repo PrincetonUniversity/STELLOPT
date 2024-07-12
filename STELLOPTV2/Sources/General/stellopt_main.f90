@@ -30,6 +30,20 @@
       character*(arg_len)                          :: arg1
       character*(arg_len),allocatable,dimension(:) :: args
       character(256)                               :: tstr1,tstr2
+
+#if defined(GIT_VERSION_EXT)
+      CHARACTER(64), PARAMETER :: git_repository = GIT_REPO_EXT
+      CHARACTER(32), PARAMETER :: git_version = GIT_VERSION_EXT
+      CHARACTER(40), PARAMETER :: git_hash = GIT_HASH_EXT
+      CHARACTER(32), PARAMETER :: git_branch = GIT_BRANCH_EXT
+      CHARACTER(19), PARAMETER :: built_on = BUILT_ON_EXT
+#else
+      CHARACTER(64), PARAMETER :: git_repository = "not from a git repo"
+      CHARACTER(32), PARAMETER :: git_version = ""
+      CHARACTER(40), PARAMETER :: git_hash = ""
+      CHARACTER(32), PARAMETER :: git_branch = ""
+      CHARACTER(19), PARAMETER :: built_on = ""
+#endif
 !-----------------------------------------------------------------------
 !     Begin Program
 !-----------------------------------------------------------------------
@@ -73,6 +87,7 @@
          id_string=TRIM(id_string)
          id_string=ADJUSTL(id_string)
          id_string=TRIM(id_string)
+         id_tag=id_string
          ! Cycle through Arguments
          i=2
          DO WHILE (i <= numargs)
@@ -105,8 +120,9 @@
                   call GETCARG(i,args(i),numargs)
                   xvec_file = args(i)
                case ("-help","-h") ! Output Help message
-                  write(6,*)' STELLOPT Optimizer'
-                  write(6,*)' Usage: xstellopt input_file <options>'
+                  write(6,*)' STELLOPT Optimizer '
+                  WRITE(6,'(a,f5.2)') '  Version: ',STELLOPT_VERSION
+                  write(6,*)' Usage: xstelloptv2 input_file <options>'
                   write(6,*)'    <options>'
                   write(6,*)'     -restart          Restart a run from reset file'
                   write(6,*)'     -renorm           Renormalize sigmas'
@@ -117,37 +133,49 @@
                   write(6,*)'     -xvec_file file   X_VEC filename (OPT_TYPE: EVAL_XVEC)'
                   write(6,*)'     -help:            Output help message'
 !DEC$ IF DEFINED (MPI_OPT)
-                  CALL MPI_FINALIZE(ierr_mpi)   
-                  IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'stellot_main',ierr_mpi)
+                  call MPI_ABORT( MPI_COMM_STEL, master, ierr_mpi )
 !DEC$ ENDIF
             end select
             i = i + 1
          END DO
          DEALLOCATE(args)
-         WRITE(6,'(a,f5.2)') 'STELLOPT Version ',STELLOPT_VERSION
+         IF (lverb) THEN
+            WRITE(6,'(a,f5.2)') 'STELLOPT Version ',STELLOPT_VERSION
+            WRITE(6,'(A)')    '-----  GIT Repository  -----'
+            WRITE(6,'(A,A)')  '   Repository: ', TRIM(git_repository)
+            WRITE(6,'(A,A)')  '   Branch:     ', TRIM(git_branch)
+            WRITE(6,'(A,A)')  '   Version:    ', TRIM(git_version)
+            WRITE(6,'(A,A)')  '   Built-on:   ', TRIM(built_on)
+            WRITE(6,'(A,A)')  '   Hash:       ', TRIM(git_hash)
+            WRITE(6,'(A)')    '----------------------------'
+            WRITE(6,'(A)')    ''
+         END IF
       ELSE 
          lverb=.false.   ! Shutup the slaves
       END IF
       ! Broadcast variables
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BCAST(lrestart,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_1',ierr_mpi)
       CALL MPI_BCAST(lrenorm,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_2',ierr_mpi)
       CALL MPI_BCAST(ltriangulate,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_3',ierr_mpi)
       CALL MPI_BCAST(lauto_domain,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_4',ierr_mpi)
       CALL MPI_BCAST(pct_domain,1,MPI_REAL8, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_5',ierr_mpi)
       CALL MPI_BCAST(id_string,256,MPI_CHARACTER, master, MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_6',ierr_mpi)
+      CALL MPI_BCAST(id_tag,256,MPI_CHARACTER, master, MPI_COMM_STEL,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_7',ierr_mpi)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
       ! Initialize the Calculation
       CALL stellopt_init
 
+      ! The following commands will only be completed by master
       IF (myworkid == master .and. lrenorm) THEN
          ! Now do one run with renorm
          tstr1 = opt_type
@@ -170,7 +198,10 @@
          CALL MPI_FILE_OPEN(MPI_COMM_STEL, TRIM(id_string), &
                             MPI_MODE_RDONLY, MPI_INFO_NULL, key, ierr_mpi )
          CALL MPI_FILE_CLOSE(key,ier)
-         CALL read_stellopt_input(TRIM(id_string),ier,myid)
+         CALL init_stellopt_input
+         CALL read_stellopt_input(TRIM(id_string),ier)
+         CALL stellopt_read_cws
+         !CALL stellopt_write_header
 
          ! Now fix a couple things before we re-run the optimizer
          id_string = id_string(7:LEN(id_string))
@@ -178,18 +209,30 @@
       END IF
 
       IF (myworkid == master) THEN
+
          CALL stellopt_optimize
+
+!DEC$ IF DEFINED (MPI_OPT)
+         ! Only the master threads are part of MPI_COMM_STEL
+         ierr_mpi = 0
+         CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FREE_ERR,'stellopt_main: MPI_COMM_STEL',ierr_mpi)
+!DEC$ ENDIF
+
+         ! Get workers
          ltst  = .false.
          tstr1 = 'exit'
          tstr2 = ''
          CALL stellopt_paraexe(tstr1,tstr2,ltst)
+
       END IF
 
+      ! All procs (master and workers) will do this part
       ! Clean up
 !DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)
+      ierr_mpi = 0
       CALL MPI_FINALIZE(ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'stellot_main',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
       IF (lverb) WRITE(6,'(A)')'----- STELLOPT DONE -----'
      

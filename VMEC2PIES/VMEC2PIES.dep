@@ -1,0 +1,112 @@
+# Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
+
+pies_runtime.o:
+
+
+pies_main.o: \
+      pies_runtime.o \
+      pies_background.o
+      
+
+write_pies_input.o: \
+      pies_fieldlines.o \
+      pies_profile.o \
+      pies_realspace.o \
+      pies_runtime.o \
+      pies_background.o
+      
+
+pies_init.o: \
+      pies_runtime.o \
+      pies_input_mod.o
+      
+
+pies_init_input.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
+      pies_background.o \
+      pies_runtime.o \
+      pies_realspace.o \
+      pies_profile.o
+      
+
+pies_init_wout.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
+      pies_background.o \
+      pies_realspace.o \
+      pies_profile.o \
+      pies_runtime.o \
+      pies_fieldlines.o
+      
+
+pies_background.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+      
+
+pies_realspace.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+      
+
+pies_magco.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+      
+
+pies_fieldlines.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+      
+
+virtual_casing_mod.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+      
+
+virtual_casing.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      pies_runtime.o \
+      pies_realspace.o \
+      pies_background.o
+      
+
+mntouv.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+      
+
+linetomn.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      pies_fieldlines.o
+      
+
+mgrid_field.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mgrid_mod.o \
+      pies_runtime.o \
+      pies_realspace.o \
+      pies_background.o
+      
+
+uvtomn.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+      
+
+pies_input_mod.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      pies_runtime.o \
+      pies_realspace.o \
+      ../../LIBSTELL/$(LOCTYPE)/virtual_casing_mod.o \
+      pies_background.o
+      
+
+cyl2suv.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      pies_realspace.o
+      
+write_pies_coil.o : \
+      pies_runtime.o \
+      pies_background.o
+      
+toroidal_flux.o : \
+      pies_runtime.o 
+
+main.o : \
+      pies_runtime.o
+      

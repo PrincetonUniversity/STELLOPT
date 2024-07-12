@@ -81,7 +81,7 @@
             !PRINT *,ik,r_mse(ik),phi_mse(ik),z_mse(ik)
             CALL get_equil_s(r_mse(ik),phi_mse(ik),z_mse(ik),s_mse(ik),ier)
             ! Get B
-            Br = 0.0; Bphi = 0.0; Bz = 0.0
+            Br = 0.0; Bphi = 0.0; Bz = 0.0; ier = 0
             CALL get_equil_Bcyl(r_mse(ik),phi_mse(ik),z_mse(ik),Br,Bphi,Bz,ier)
             ! Calc VMEC MSE response
             IF (ier == 0) THEN

@@ -43,7 +43,6 @@
                   dex_beamj, dex_bootj, dex_am, dex_ac, &
                   dex_ah, dex_at
       INTEGER ::  ier,ik, iunit, dex
-      REAL(rprec), PARAMETER :: ec  = 1.60217653D-19
       REAL(rprec) :: emis_xics_temp, w3_xics_temp, phi_temp
       REAL(rprec), ALLOCATABLE :: ne_temp(:), zeff_temp(:), te_temp(:), ti_temp(:),&
                                   th_temp(:), beamj_temp(:), bootj_temp(:), dump_temp(:)

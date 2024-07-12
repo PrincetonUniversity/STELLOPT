@@ -5,9 +5,9 @@
   NSTEP = 200
   TCON0 =    1.000000000000E+000
   NS_ARRAY =     16   32   64   99
-  FTOL_ARRAY =   1.000000E-06  1.000000E-08  1.000000E-10  1.000000E-19
-  PRECON_TYPE = 'GMRES'
-  PREC2D_THRESHOLD =   1.000000E-12
+  FTOL_ARRAY =   1.000000E-06  1.000000E-08  1.000000E-10  1.000000E-12
+!  PRECON_TYPE = 'GMRES'
+!  PREC2D_THRESHOLD =   1.000000E-12
 !----- Grid Parameters -----
   LASYM = T
   NFP = 0001
@@ -18,7 +18,7 @@
 !----- Free Boundary Parameters -----
   LFREEB = T
   MGRID_FILE = '/p/pies/Lazerson/Sims/MGRIDS/mgrid_iter_15022013_fil_axi.nc'
-  MGRID_FILE = '/p/stellopt/MGRIDS/ITER/mgrid_iter_15022013_fil_axi.nc'
+  MGRID_FILE = '/Users/lazerson/Sims_Work/coils/ITER/mgrid_iter_15022013_fil_axi.nc'
   NZETA = 01
   EXTCUR(001) =   -5.421991604163E+003
   EXTCUR(002) =    1.686202953570E+004

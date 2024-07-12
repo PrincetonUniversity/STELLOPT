@@ -200,6 +200,7 @@
             PHI_END(i1:i2)   = phi_arr(2,iz)
          END DO
          NLINES = i2
+         CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
          CALL torlines_follow
          IF (myid == master) THEN
             DO ik = 1, NPOINC

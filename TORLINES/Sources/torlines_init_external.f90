@@ -45,6 +45,8 @@
       INTEGER :: sender
       INTEGER :: status(MPI_STATUS_SIZE)
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
+      INTEGER :: numprocs_local, mylocalid, mylocalmaster
+      INTEGER :: MPI_COMM_LOCAL
       !REAL(rprec), ALLOCATABLE :: buffer_mast(:,:,:),buffer_slav(:,:,:)
 !DEC$ ENDIF  
       INTEGER(KIND=BYTE_8) :: icount, chunk
@@ -56,8 +58,16 @@
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
+      ! Divide up Work
+      numprocs_local = 1; mylocalid = master
+#if defined(MPI_OPT)
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+#endif
+      mylocalmaster = master
       ! Handle lvac
-      ALLOCATE(brreal(1:k,1:nu,1:nv),bphireal(1:k,1:nu,1:nv),bzreal(1:k,1:nu,1:nv))
+      !ALLOCATE(brreal(1:nrho,1:nu,1:nv),bphireal(1:nrho,1:nu,1:nv),bzreal(1:nrho,1:nu,1:nv))
       s1 = vsurf+1
       IF (lvac .and. (lcoil .or. lmgrid)) s1 = 1
       brreal   = 0.0
@@ -67,33 +77,11 @@
       IF (lverb) THEN
          WRITE(6,'(A)')   '----- Vacuum Grid Info. -----'
          WRITE(6,'(A,I6)')'       Eq. Surface: ',vsurf
-         WRITE(6,'(A,I8)')'       Grid Points: ',nu*nv*(k-s1+1)
+         WRITE(6,'(A,I8)')'       Grid Points: ',nu*nv*(nrho-s1+1)
       END IF
 
       ! Break up the Work
-      chunk = FLOOR(REAL(k*nu*nv) / REAL(numprocs))
-      mystart = myid*chunk + 1
-      myend = mystart + chunk - 1
-
-      ! This section sets up the work so we can use ALLGATHERV
-!DEC$ IF DEFINED (MPI_OPT)
-      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-      ALLOCATE(mnum(numprocs), moffsets(numprocs))
-      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_FIELDLINES,ierr_mpi)
-      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_FIELDLINES,ierr_mpi)
-      i = 1
-      DO
-         IF ((moffsets(numprocs)+mnum(numprocs)-1) == k*nu*nv) EXIT
-         IF (i == numprocs) i = 1
-         mnum(i) = mnum(i) + 1
-         moffsets(i+1:numprocs) = moffsets(i+1:numprocs) + 1
-         i=i+1
-      END DO
-      mystart = moffsets(myid+1)
-      chunk  = mnum(myid+1)
-      myend   = mystart + chunk - 1
-!DEC$ ENDIF
+      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nrho*nu*nv, mystart, myend)
 
       ! Get vacuum fields
       IF (lcoil) THEN
@@ -138,15 +126,15 @@
             WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Vacuum Field Calculation [',0,']%'
             CALL FLUSH(6)
          END IF
-!DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
-!DEC$ ENDIF
+#endif
          DO i = mystart, myend
-            s = MOD(i-1,k) + 1
-            u = MOD(i-1,k*nu)
-            u = FLOOR(REAL(u) / REAL(k))+1
-            v = CEILING(REAL(i) / REAL(k*nu))
+            s = MOD(i-1,nrho) + 1
+            u = MOD(i-1,nrho*nu)
+            u = FLOOR(REAL(u) / REAL(nrho))+1
+            v = CEILING(REAL(i) / REAL(nrho*nu))
             IF (s < s1) CYCLE
             !u = MOD(s,k)
             !IF (u < s1 .and. u /= 0) CYCLE
@@ -167,7 +155,7 @@
             bphireal(s,u,v) = bphi_temp
             bzreal(s,u,v) = bz_temp
             breal(s,u,v)  = sqrt(br_temp*br_temp+bphi_temp*bphi_temp+bz_temp*bz_temp)
-            IF (lverb .and. (MOD(i,k) == 0)) THEN
+            IF (lverb .and. (MOD(i,nrho) == 0)) THEN
                CALL backspace_out(6,6)
                WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*i)/(myend-mystart+1)),']%'
                CALL FLUSH(6)
@@ -200,10 +188,10 @@
             CALL FLUSH(6)
          END IF
          DO i = mystart, myend
-            s = MOD(i-1,k) + 1
-            u = MOD(i-1,k*nu)
-            u = FLOOR(REAL(u) / REAL(k))+1
-            v = CEILING(REAL(i) / REAL(k*nu))
+            s = MOD(i-1,nrho) + 1
+            u = MOD(i-1,nrho*nu)
+            u = FLOOR(REAL(u) / REAL(nrho))+1
+            v = CEILING(REAL(i) / REAL(nrho*nu))
             IF (s < s1) CYCLE
             br = 0; bphi = 0; bz = 0
             r = rreal(s,u,v)
@@ -215,7 +203,7 @@
             bphireal(s,u,v) = bphi
             bzreal(s,u,v) = bz
             breal(s,u,v)  = sqrt(br*br+bphi*bphi+bz*bz)
-            IF (lverb .and. (MOD(i,k) == 0)) THEN
+            IF (lverb .and. (MOD(i,nrho) == 0)) THEN
                CALL backspace_out(6,6)
                WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*i)/(myend-mystart+1)),']%'
                CALL FLUSH(6)
@@ -234,10 +222,10 @@
             CALL FLUSH(6)
          END IF
          DO i = mystart, myend
-            s = MOD(i-1,k) + 1
-            u = MOD(i-1,k*nu)
-            u = FLOOR(REAL(u) / REAL(k))+1
-            v = CEILING(REAL(i) / REAL(k*nu))
+            s = MOD(i-1,nrho) + 1
+            u = MOD(i-1,nrho*nu)
+            u = FLOOR(REAL(u) / REAL(nrho))+1
+            v = CEILING(REAL(i) / REAL(nrho*nu))
             IF (s < s1) CYCLE
             phi = pi2*xv(v)/nfp
             x_vc = rreal(s,u,v)*cos(phi)
@@ -256,7 +244,7 @@
                bzreal(s,u,v) = bzreal(s,u,v) + bz_vc
                breal(s,u,v)  = sqrt(brreal(s,u,v)**2+bphireal(s,u,v)*2+bzreal(s,u,v)**2)
             END IF
-            IF (lverb .and. (MOD(i,k) == 0)) THEN
+            IF (lverb .and. (MOD(i,nrho) == 0)) THEN
                CALL backspace_out(6,6)
                WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*i)/(myend-mystart+1)),']%'
                CALL FLUSH(6)
@@ -267,39 +255,25 @@
 
       CALL read_wout_deallocate
 
-
-!DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'torlines_init_external',ierr_mpi)
-!       ! Adjust indexing to send 2D arrays
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        brreal,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_FIELDLINES,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        bphireal,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_FIELDLINES,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        bzreal,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_FIELDLINES,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        breal,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_FIELDLINES,ierr_mpi)
-       DEALLOCATE(mnum)
-       DEALLOCATE(moffsets)
-!DEC$ ENDIF
-
       ! Now we need to calculate the Bs,Bu,Bv compoments of the field
-      z = 1
-      CALL cyl2suv(s1,k,nu,nv,rreal(s1:k,:,:),brreal(s1:k,:,:),bphireal(s1:k,:,:),bzreal(s1:k,:,:),bsreal(s1:k,:,:),bureal(s1:k,:,:),bvreal(s1:k,:,:),z)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+      IF (myid_sharmem==master) THEN
+         z = 1
+         CALL cyl2suv(s1,nrho,nu,nv,rreal(s1:nrho,:,:), &
+                   brreal(s1:nrho,:,:), bphireal(s1:nrho,:,:), &
+                   bzreal(s1:nrho,:,:), bsreal(s1:nrho,:,:), &
+                   bureal(s1:nrho,:,:),bvreal(s1:nrho,:,:), z)
      
-      IF (lvac) THEN
-         bsreal(1,:,:) = 0.0
-         bureal(1,:,:) = 0.0
+         IF (lvac) THEN
+            bsreal(1,:,:) = 0.0
+            bureal(1,:,:) = 0.0
+         END IF
       END IF 
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       
       
       
-      DEALLOCATE(brreal,bphireal,bzreal)
+      !DEALLOCATE(brreal,bphireal,bzreal)
       
 !-----------------------------------------------------------------------
 !     End Subroutine

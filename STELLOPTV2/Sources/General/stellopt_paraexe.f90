@@ -19,6 +19,7 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE equil_vals, ONLY: kx_gene
+      USE equil_utils, ONLY: move_txtfile
       USE wall_mod, ONLY: wall_free
       USE mpi_params
       USE mpi_inc
@@ -35,7 +36,7 @@
                              misc_error_flag, successful_term_flag, &
                              restart_flag, readin_flag, timestep_flag, &
                              output_flag, cleanup_flag, reset_jacdt_flag
-      USE vmec_input, ONLY:  ns_array, lfreeb, write_indata_namelist
+      USE vmec_input, ONLY:  ns_array, lfreeb, write_indata_namelist, lnyquist
 !DEC$ IF DEFINED (GENE)
       USE gene_subroutine, ONLY: rungene
       USE par_in, ONLY: diagdir,file_extension, beta_gene => beta
@@ -56,27 +57,34 @@
             lread_input_beams => lread_input, lvmec_beams => lvmec, &
             lverb_beams => lverb, lbeam_beams => lbeam, &
             lpies_beams => lpies, lspec_beams => lspec, &
+            leqdsk_beams => leqdsk, eqdsk_string_beams => eqdsk_string, &
             lmgrid_beams => lmgrid, lascot_beams => lascot, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
-            lrestart_grid_beams => lrestart_grid, lrestart_particles_beams => lrestart_particles, &
+            lsuzuki_beams => lsuzuki, lrandomize_beams => lrandomize, &
+            lcontinue_grid_beams => lcontinue_grid, lrestart_particles_beams => lrestart_particles, &
             lbeam_simple_beams => lbeam_simple, &
             lplasma_only_beams => lplasma_only, lascot4_beams => lascot4, &
-            lbbnbi_beams => lbbnbi, &
+            lbbnbi_beams => lbbnbi, lascotfl_beams => lascotfl, &
             lcollision_beams => lcollision, lw7x_beams => lw7x, &
             coil_string_beams => coil_string, mgrid_string_beams => mgrid_string,&
             vessel_string_beams => vessel_string, restart_string_beams => restart_string, &
             lraw_beams => lraw, nbeams_beams => nbeams, &
-            lvac_beams => lvac, lhitonly, nparticles_start, &
+            lvac_beams => lvac, lhitonly, lboxsim_beams => lboxsim, nparticles_start, &
             vll_start_in, R_start_in, Z_start_in, PHI_start_in, mu_start_in, &
             mu_start_in, charge_in, mass_in, t_end_in, Zatom_in, &
             TE_AUX_S_BEAMS => TE_AUX_S, TE_AUX_F_BEAMS => TE_AUX_F, &
             NE_AUX_S_BEAMS => NE_AUX_S, NE_AUX_F_BEAMS => NE_AUX_F, &
-            TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, nprocs_beams
+            NI_AUX_S_BEAMS => NI_AUX_S, NI_AUX_F_BEAMS => NI_AUX_F, &
+            NI_AUX_Z_BEAMS => NI_AUX_Z, NI_AUX_M_BEAMS => NI_AUX_Z, &
+            NION_BEAMS => NION, &
+            TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, nprocs_beams, &
+            ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F, &
+            BEAMS3D_VERSION
       USE beams3d_lines, ONLY: nparticles_beams => nparticles, R_lines, Z_lines,&
             PHI_lines, vll_lines, moment_lines, neut_lines
       USE beams3d_grid, ONLY: nte, nne, nti, B_R, B_PHI, B_Z, raxis, zaxis, phiaxis,&
                               BR_spl, BZ_spl, BPHI_spl, MODB_spl, rmin, rmax, zmin, &
-                              zmax, phimin, phimax
+                              zmax, phimin, phimax, nzeff
       USE wall_mod, ONLY: wall_free
       USE beams3d_input_mod, ONLY: BCAST_BEAMS3D_INPUT
 !DEC$ ENDIF
@@ -110,7 +118,7 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      IF (ier_paraexe /= 0) RETURN
+      IF (TRIM(in_parameter_1) /= 'exit' .and. ier_paraexe /= 0) RETURN
       code_str = TRIM(in_parameter_1)
       file_str = TRIM(in_parameter_2)
       ierr_mpi = 0
@@ -169,6 +177,10 @@
                      iunit = 37; ier = 0
                      CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')
                      CALL write_indata_namelist(iunit,ier)
+                     IF (lcoil_geom) THEN
+                        CALL write_optimum_namelist(iunit,ier)
+                        IF (lfreeb) CALL write_mgrid_namelist(iunit,ier)
+                     ENDIF
                      CALL FLUSH(iunit)
                   END IF
                   ! Setup ICTRL Array
@@ -296,15 +308,17 @@
                lvmec_beams        = .TRUE.  ! Use VMEC Equilibria
                lpies_beams        = .FALSE.
                lspec_beams        = .FALSE.
+               leqdsk_beams       = .FALSE.
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
                lascot_beams       = .FALSE.
+               lascotfl_beams     = .FALSE.
                lascot4_beams      = .FALSE.
                lbbnbi_beams       = .FALSE.
                lraw_beams         = .FALSE.
                lvessel_beams      = .FALSE.
                lvac_beams         = .FALSE.
-               lrestart_grid_beams     = .FALSE.
+               lcontinue_grid_beams     = .FALSE.
                lrestart_particles_beams     = .FALSE.
                lbeam_simple_beams = .FALSE.
                lhitonly           = .TRUE. ! Set to true to smaller files.
@@ -314,11 +328,15 @@
                lread_input_beams  = .FALSE.
                lcollision_beams   = .FALSE.
                lw7x_beams   = .FALSE.
+               lrandomize_beams = .FALSE.
+               lsuzuki_beams = .FALSE.
+               lboxsim_beams = .FALSE.
                id_string_beams    = TRIM(file_str)
                coil_string_beams  = ''
                mgrid_string_beams = ''
                vessel_string_beams = ''
                restart_string_beams = ''
+               eqdsk_string_beams = ''
                IF (myworkid .eq. master) lverb_beams = lscreen
 
 
@@ -328,6 +346,7 @@
                CALL MPI_BCAST(nne,1,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(nte,1,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(nti,1,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(nzeff,1,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(nparticles_start,1,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(rmin,nte,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(rmax,nte,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
@@ -339,8 +358,16 @@
                CALL MPI_BCAST(TE_AUX_F_BEAMS,nte,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(NE_AUX_S_BEAMS,nne,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(NE_AUX_F_BEAMS,nne,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_S_BEAMS,nne,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_F_BEAMS,nne*NION_BEAMS,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_Z_BEAMS,NION_BEAMS,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_M_BEAMS,NION_BEAMS,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(TI_AUX_S_BEAMS,nti,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(TI_AUX_F_BEAMS,nti,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_S_BEAMS,nzeff,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_F_BEAMS,nzeff,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(ZEFF_AUX_S_BEAMS,nzeff,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(ZEFF_AUX_F_BEAMS,nzeff,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(R_start_in,nparticles_start,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(Z_start_in,nparticles_start,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(PHI_start_in,nparticles_start,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
@@ -393,6 +420,7 @@
             CASE('terpsichore')
                proc_string = file_str
                ier = 0
+               IF (lnyquist) STOP "To use TERPSICHORE, you have to use lnyquist=.f. in VMEC!"
                CALL stellopt_kink(lscreen,ier)
             CASE('booz_xform')
                proc_string = file_str
@@ -424,10 +452,18 @@
                ier = 0
                CALL stellopt_neo(lscreen,ier)
                ier_paraexe = ier
+            CASE('dkes')
+               proc_string = file_str
+               ier = 0
+               CALL stellopt_dkes(lscreen,ier)
+               ier_paraexe = ier
             CASE('write_mgrid')
                CALL stellopt_write_mgrid(MPI_COMM_MYWORLD,file_str,lscreen)
+            CASE('mango_init')
+               CALL stellopt_mango_init
+            CASE('mango_finalize')
+               CALL stellopt_mango_finalize
             CASE('exit')  ! we send this when we want to terminate the code (everyone leaves)
-               !PRINT *,'myid: ',myid,' exiting stellopt_paraexe'
                CALL MPI_COMM_FREE(MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: FREE',ierr_mpi)
                RETURN

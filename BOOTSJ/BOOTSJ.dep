@@ -1,0 +1,135 @@
+# Microsoft Developer Studio Generated Dependency File, included by BOOTSJ.mak
+
+al31.o: \
+      vmec0.o 
+      
+
+allocate_angles.o: \
+      parambs.o \
+      vmec0.o
+      
+
+allocate_radial.o: \
+      parambs.o \
+      vmec0.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o 
+      
+
+bongrid.o: \
+      parambs.o \
+      vmec0.o
+      
+
+bootsj.o: \
+      parambs.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      trig.o \
+      vmec0.o
+
+
+caprsh2.o: \
+      parambs.o \
+      vmec0.o
+
+
+datain.o: \
+      parambs.o \
+      vmec0.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/bootsj_input.o
+
+
+deallocate_all.o: \
+      parambs.o \
+      vmec0.o
+
+
+denmf.o: \
+      parambs.o \
+      vmec0.o
+
+
+doo_fft.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+
+
+driver.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      parambs.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o
+
+
+fraction.o: \
+      parambs.o \
+      vmec0.o
+
+
+grad.o: \
+      parambs.o \
+      vmec0.o
+
+
+othersums.o: \
+      parambs.o \
+      vmec0.o
+
+
+output.o: \
+      parambs.o \
+      vmec0.o
+
+
+parambs.o: \
+      ../../LIBSTELL/$(LOCTYPE)/bootsj_input.o \
+      vmec0.o
+
+
+positiv.o: \
+      parambs.o \
+      vmec0.o
+
+
+read_boozer.o: \
+      ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o \
+      parambs.o 
+
+
+reorganz.o: \
+      vmec0.o
+
+
+SIMPUN.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+
+
+smooth1.o: \
+      parambs.o \
+      vmec0.o
+
+
+sumit.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+
+
+temp.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+
+
+tok_fraction.o: \
+      parambs.o \
+      vmec0.o
+
+
+trig.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+
+
+vmec0.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+
+
+woflam.o: \
+      parambs.o \
+      vmec0.o
+      
+      

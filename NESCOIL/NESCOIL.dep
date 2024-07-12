@@ -1,0 +1,402 @@
+ab_matrix.o : \
+      Vmeshes.o \
+      NumParams.o \
+      Vvacuum3.o \
+      Vprecal1.o \
+      Vprecal3.o \
+      Vprecal6.o \
+      Vprecal7.o \
+      Vsurfac14.o \
+      Vsurfac13.o \
+      Vsurface2.o \
+      Vsurface3.o \
+      Vsurface7.o 
+
+accuracy.o : \
+      Vmeshes.o \
+      NumParams.o \
+      OutCtrl.o \
+      LoopCtrl.o \
+      Vvacuum3.o \
+      Vsurface9.o \
+      Vsurfac13.o \
+      Vbnorm.o \
+      Vcen.o \
+      Voptim1.o
+
+besurfcur.o : \
+      Vmeshes.o \
+      NumParams.o \
+      Vprecal1.o \
+      Vprecal4.o \
+      Vsurface1.o \
+      Vsurface7.o \
+      Vsurface8.o \
+      Vdiagno3.o \
+      Vvacuum3.o \
+      Vcen.o \
+      LoopCtrl.o
+
+bexter.o : \
+      Vmeshes.o \
+      NumParams.o \
+      Vprecal1.o \
+      Vvacuum3.o
+
+biowipre.o : \
+      Vmeshes.o \
+      Vsurfac13.o \
+      Vculine1.o \
+      Vbiopre.o
+
+bnfld.o : \
+      Vmeshes.o \
+      NumParams.o \
+      OutCtrl.o \
+      Vbnorm.o \
+      Vvacuum3.o \
+      Vprecal1.o \
+      Vprecal6.o \
+      Vprecal7.o \
+      Vsurfac13.o \
+      LoopCtrl.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o
+
+calc_percent_errs.o : \
+      Vmeshes.o
+
+fourier.o : \
+      Vmeshes.o \
+      NumParams.o \
+      Vfourier2.o \
+      Vsolver1.o
+
+LoopCtrl.o : \
+
+matrix.o : \
+      Vmeshes.o \
+      NumParams.o \
+      Vprecal1.o \
+      Vprecal4.o \
+      Vsurface1.o \
+      Vsurface7.o \
+      Vsurface8.o \
+      Vsurface9.o \
+      Vsurfac14.o \
+      LoopCtrl.o
+
+min_xerr_phimn.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      NumParams.o \
+      OutCtrl.o \
+      LoopCtrl.o \
+      Vvacuum2.o \
+      Vprecal1.o
+
+nescoil_cleanup.o : \
+      Vsurface1.o \
+      Vsurface2.o \
+      Vsurface3.o \
+      Vsurface4.o \
+      Vsurface5.o \
+      Vsurface6.o \
+      Vsurface7.o \
+      Vsurface8.o \
+      Vsurface9.o \
+      Vsurfac10.o \
+      Vsurfac11.o \
+      Vsurfac12.o \
+      Vsurfac13.o \
+      Vbiopre.o \
+      Vculine1.o \
+      Vprecal3.o \
+      Vprecal4.o \
+      Vprecal5.o \
+      Vprecal6.o \
+      Vprecal7.o \
+      Vprecal8.o \
+      Vprecal9.o \
+      Vprecal10.o \
+      Vdiagno2.o \
+      Vdiagno3.o \
+      Vvacuum1.o \
+      Vvacuum2.o \
+      Vvacuum4.o \
+      Vvacuum5.o \
+      Vvacuum6.o \
+      Vfourier2.o \
+      Vbnorm.o \
+      NumParams.o
+
+nescoil.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      Vvacuum2.o \
+      Vvacuum3.o \
+      Vprecal1.o \
+      Vbiopre.o \
+      Vculine1.o \
+      Vprecal4.o \
+      SvdCtrl.o \
+      LoopCtrl.o \
+      Vbnorm.o \
+      NumParams.o
+
+nescoil_help.o : \
+      NumParams.o
+
+nesopt.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+NumParams.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+OutCtrl.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+precal.o : \
+      ../../LIBSTELL/$(LOCTYPE)/fftfax.o \
+      ../../LIBSTELL/$(LOCTYPE)/cftfax.o \
+      Vmeshes.o \
+      NumParams.o \
+      LoopCtrl.o \
+      Vprecal1.o \
+      Vprecal2.o \
+      Vprecal3.o \
+      Vprecal4.o \
+      Vprecal5.o \
+      Vprecal6.o \
+      Vprecal7.o \
+      Vprecal8.o \
+      Vprecal9.o \
+      Vprecal10.o \
+      Vfourier2.o
+
+read_nescoil_input.o : \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      SvdCtrl.o \
+      OutCtrl.o \
+      LoopCtrl.o \
+      Vmeshes.o \
+      Vprecal1.o \
+      Vvacuum1.o \
+      Vvacuum2.o \
+      Vvacuum3.o \
+      Vprecal1.o \
+      Vvacuum4.o \
+      Vvacuum5.o \
+      Vvacuum6.o \
+      Vbnorm.o \
+      NumParams.o
+
+solver_nescoil.o : \
+      Vmeshes.o \
+      NumParams.o \
+      SvdCtrl.o \
+      OutCtrl.o \
+      LoopCtrl.o \
+      Vvacuum3.o \
+      Vprecal1.o \
+      Vprecal2.o \
+      Vprecal3.o \
+      Vsurface9.o \
+      Vsurfac13.o \
+      Vsurfac14.o \
+      Vsolver1.o \
+      Vdiagno2.o \
+      Vbnorm.o \
+      Vsurfcurdiag.o
+
+surface_coil.o : \
+      Vmeshes.o \
+      NumParams.o \
+      OutCtrl.o \
+      LoopCtrl.o \
+      Vvacuum3.o \
+      Vprecal1.o \
+      Vprecal5.o \
+      Vprecal6.o \
+      Vprecal7.o \
+      Vvacuum1.o \
+      Vsurface1.o \
+      Vsurface2.o \
+      Vsurface3.o \
+      Vsurface4.o \
+      Vsurface5.o \
+      Vsurface6.o \
+      Vsurface7.o \
+      Vsurface8.o \
+      Vsurface9.o
+
+surface_plas.o : \
+      Vmeshes.o \
+      NumParams.o \
+      OutCtrl.o \
+      LoopCtrl.o \
+      Vvacuum1.o \
+      Vvacuum2.o \
+      Vvacuum3.o \
+      Vprecal1.o \
+      Vprecal2.o \
+      Vprecal3.o \
+      Vprecal4.o \
+      Vprecal5.o \
+      Vprecal6.o \
+      Vprecal7.o \
+      Vprecal8.o \
+      Vprecal9.o \
+      Vprecal10.o \
+      Vsurface9.o \
+      Vsurfac10.o \
+      Vsurfac11.o \
+      Vsurfac12.o \
+      Vsurfac13.o
+
+surfcur_diag.o : \
+      Vmeshes.o \
+      NumParams.o \
+      OutCtrl.o \
+      LoopCtrl.o \
+      Vvacuum3.o \
+      Vprecal1.o \
+      Vprecal2.o \
+      Vprecal3.o \
+      Vprecal6.o \
+      Vprecal7.o \
+      Vsurface1.o \
+      Vsurface2.o \
+      Vsurface3.o \
+      Vsurface4.o \
+      Vsurface5.o \
+      Vsurface6.o \
+      Vsurface7.o \
+      Vdiagno2.o \
+      Vdiagno3.o \
+      Vsurfcurdiag.o
+
+SvdCtrl.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+Vbiopre.o : \
+      Vmeshes.o
+
+Vbnorm.o : \
+      Vmeshes.o
+
+Vcen.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+Vculine1.o : \
+      Vmeshes.o
+
+Vdiagno2.o : \
+      Vmeshes.o
+
+Vdiagno3.o : \
+      Vmeshes.o
+
+Vfourier2.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+Vmeshes.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+Voptim1.o : \
+      Vmeshes.o 
+
+Vprecal10.o : \
+      Vmeshes.o
+
+Vprecal1.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+Vprecal2.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+Vprecal3.o : \
+      Vmeshes.o
+
+Vprecal4.o : \
+      Vmeshes.o
+
+Vprecal5.o : \
+      Vmeshes.o
+
+Vprecal6.o : \
+      Vmeshes.o
+
+Vprecal7.o : \
+      Vmeshes.o
+
+Vprecal8.o : \
+      Vmeshes.o
+
+Vprecal9.o : \
+      Vmeshes.o
+
+Vsolver1.o : \
+      Vmeshes.o
+
+Vsurfac10.o : \
+      Vmeshes.o
+
+Vsurfac11.o : \
+      Vmeshes.o
+
+Vsurfac12.o : \
+      Vmeshes.o
+
+Vsurfac13.o : \
+      Vmeshes.o
+
+Vsurfac14.o : \
+      Vmeshes.o
+
+Vsurface1.o : \
+      Vmeshes.o
+
+Vsurface2.o : \
+      Vmeshes.o
+
+Vsurface3.o : \
+      Vmeshes.o
+
+Vsurface4.o : \
+      Vmeshes.o
+
+Vsurface5.o : \
+      Vmeshes.o
+
+Vsurface6.o : \
+      Vmeshes.o
+
+Vsurface7.o : \
+      Vmeshes.o
+
+Vsurface8.o : \
+      Vmeshes.o
+
+Vsurface9.o : \
+      Vmeshes.o
+
+Vsurfcurdiag.o : \
+      Vmeshes.o
+
+Vvacuum1.o : \
+      Vmeshes.o
+
+Vvacuum2.o : \
+      Vmeshes.o
+
+Vvacuum3.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+Vvacuum4.o : \
+      Vmeshes.o
+
+Vvacuum5.o : \
+      Vmeshes.o
+
+Vvacuum6.o : \
+      Vmeshes.o
+

@@ -14,10 +14,12 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star
-  FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -g -traceback
+  FLAGS_R = -I$(MKL_HOME)/include -O2 -assume noold_unit_star \
+            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip 
+  FLAGS_D = -I$(MKL_HOME)/include -O0 -assume noold_unit_star \
+            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip \
+            -check all,noarg_temp_created -ftrapuv -g -traceback
+
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
             -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
             -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
@@ -47,14 +49,17 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_HOME)/include 
-  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
-               -lnetcdf -lnetcdff 
+  NETCDF_INC = $(shell nc-config --fflags)
+  NETCDF_LIB = $(shell nc-config --flibs)
+#  NETCDF_INC = -I$(NETCDF_HOME)/include 
+#  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
+#               -lnetcdf -lnetcdff 
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
+  PRECOMP+= -DHDF5_PAR
   HDF5_INC = -I$(HDF5_HOME)/include 
   HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
              -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran 
@@ -64,7 +69,8 @@
 #######################################################################
   LFFTW3 = F
   FFTW3_INC = -I$(FFTW_HOME)/include
-  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f 
+  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
+              -Wl,-rpath,$(FFTW_HOME)/lib
 
 #######################################################################
 #             PGPLOT Options
@@ -96,10 +102,7 @@
   LIB_FUTILS = libfutils.a
   GENE_INC = -I$(GENE_DIR) \
              -I$(FUTILS_DIR)
-  GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
-             -L$(SLEPC_HOME)/lib -lslepc \
-             -L$(PETSC_HOME)/lib -lpetsc \
-             $(GENE_DIR)/$(LIB_GENE) \
+  GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
              $(FUTILS_DIR)/$(LIB_FUTILS)
 
 #######################################################################
@@ -134,13 +137,10 @@
 #            SFINCS Options
 #######################################################################
   LSFINCS = F
-  include ${PETSC_DIR}/lib/petsc/conf/variables
-  SFINCS_DIR = $(SFINCS_PATH)/fortran/version3
-  SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include
+  SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
 
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-        $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS)
 
 #######################################################################
 #            REGCOIL Options
@@ -150,6 +150,15 @@
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+
+#######################################################################
+#            Available Energy Options
+#######################################################################
+  LAEOPT= F
+  AEOPT_DIR = $(AEOPT_PATH)
+  AEOPT_INC = -I$(AEOPT_DIR) 
+  LIB_AEOPT = libtrapAE.a
+  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
 #            LIBSTELL Shared Options

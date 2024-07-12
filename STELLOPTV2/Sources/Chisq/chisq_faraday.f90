@@ -47,7 +47,7 @@
             x0(1)=r0_faraday(ik); x1(1)=r1_faraday(ik)
             x0(2)=phi0_faraday(ik); x1(2)=phi1_faraday(ik)
             x0(3)=z0_faraday(ik); x1(3)=z1_faraday(ik)
-            CALL line_int_faraday(x0,x1,faraday_val)
+            CALL line_int(fcn_faraday,x0,x1,faraday_val)
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)

@@ -27,14 +27,59 @@
 !     v2.50 01/31/20 - Added Heating, Deposition, and Dist FUNCTION
 !                    - Tested ASCOT4 and ASCOT5 interfaces
 !                    - Now output wall and shinethrough heat flux
+!     v2.70 06/09/20 - Converged on format of dV/drho factor
+!                    - ASCOT5 interface updated
+!                    - DIST5D implemented
+!     v2.80 09/24/20 - DIST5D Normalized to phase space volume
+!                    - J and dense now calculated in diagnostics
+!     v2.90 12/07/20 - Thermal fusion birth model
+!                    - T_END now outputs last timestep time.
+!     v2.95 02/16/21 - Added interface to eqdsk files.
+!     v3.00 07/14/21 - Radial distribution now in proper units m^-3
+!                    - HINT interface
+!                    - Use of accelerated wall model
+!     v3.50 08/13/21 - Support of mixed-species plasma (multi-ion)       
+!     v3.70 09/27/22 - Added FIDASIM interface
+!                    - Optional cylindrical grid for dist. func
+!                    - Fixed & Improved slowing down & p.a. scattering
+!                    - NUBEAM and LOCUST/NUBEAM coulomb log. formulations
+!     v4.00 10/14/22 - Full Orbit model implemented
+!                    - Particle duplication implemented
+!                    - Box Modeling implemented
+!                    - FIELDLINES Interface Added
+!     v4.05 08/25/23 - Fast Tritium only calculation added
+!     v4.07 01/11/24 - Added ability to specifiy weights in the input
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
-    !-----------------------------------------------------------------------
+    !-------------------------------------------------------------------
     !     Libraries
-    !-----------------------------------------------------------------------
+    !-------------------------------------------------------------------
     USE stel_kinds, ONLY: rprec
     USE mpi_params
     USE EZspline
+    USE beams3d_globals, ONLY: r_start_in, z_start_in, phi_start_in, &
+                              vll_start_in, mu_start_in, vr_start_in, &
+                              vphi_start_in, vz_start_in, t_end_in, &
+                              mass_in, charge_in, Zatom_in, weight_in, &
+                              NE_AUX_S, TE_AUX_S, NI_AUX_S, TI_AUX_S, &
+                              NE_AUX_F, TE_AUX_F, NI_AUX_F, TI_AUX_F, &
+                              ZEFF_AUX_S, POT_AUX_S, ZEFF_AUX_F, &
+                              POT_AUX_F, NI_AUX_M, NI_AUX_Z, &
+                              Adist_beams, Asize_beams, DIV_BEAMS, &
+                              DEX_BEAMS, R_BEAMS, Z_BEAMS, PHI_BEAMS, &
+                              E_BEAMS, MASS_BEAMS, CHARGE_BEAMS, &
+                              ZATOM_BEAMS, P_BEAMS, nparticles_start, &
+                              npoinc, follow_tol, int_type, ne_scale, &
+                              te_scale, ti_scale, zeff_scale, &
+                              fusion_scale, lendt_m, te_col_min, &
+                              duplicate_factor, ldebug, lbeam, &
+                              MAXBEAMS, lbeam, MAXBEAMS, nbeams, &
+                              pi2, NION, &
+                              MAXPROFLEN, MAXPARTICLES, lverb, &
+                              lbbnbi, lcollision, lfusion, &
+                              lrestart_particles, lfusion_alpha, &
+                              lfusion_He3, lfusion_proton, &
+                              lfusion_tritium, lkick, lgcsim, id_string
     !-----------------------------------------------------------------------
     !     Module Variables
     !          lverb         Logical to control screen output
@@ -101,33 +146,29 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: MPI_BCAST_ERR = 83
     INTEGER, PARAMETER :: MPI_FINE_ERR = 89
 
-    INTEGER, PARAMETER :: MAXPARTICLES = 2**18
-    INTEGER, PARAMETER :: MAXBEAMS = 32
-    INTEGER, PARAMETER :: MAXPROFLEN = 512
-
-    LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
-               lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
-               lbeam, lhitonly, lread_input, lplasma_only, lraw,&
-               ldepo, lbeam_simple, ldebug, lcollision, lw7x, &
-               lascot, lascot4, lbbnbi
-    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams
-    INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
+    DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
+    LOGICAL :: lvmec, lpies, lspec, lcoil, lmgrid, &
+               lvessel, lvac, lcontinue_grid, lneut, &
+               lhitonly, lread_input, lplasma_only, lraw, &
+               ldepo, lbeam_simple, lw7x, lsuzuki, &
+               lascot, lascot4, lfidasim, lfidasim_cyl, lsplit, &
+               lvessel_beam, lascotfl, lrandomize, leqdsk, lhint, &
+               lboxsim, limas, lfieldlines, lbeamdensity
+    INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
     INTEGER, ALLOCATABLE :: beam(:)
-    REAL(rprec) :: dt, follow_tol, pi, pi2, mu0, to3, dt_save, ne_scale, te_scale, ti_scale, zeff_scale
-    REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
-                                        charge_beams, Zatom_beams, P_beams
-    REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
-    REAL(rprec), DIMENSION(MAXPROFLEN) :: TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
-                                            POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F
-    REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
-                                            & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in
-    REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), v_neut(:,:), mu_start(:), &
-                                & mass(:), charge(:), Zatom(:), t_end(:), weight(:)
+    REAL(rprec) :: dt, pi, invpi2, mu0, to3, dt_save, rminor_norm
+    LOGICAL, ALLOCATABLE :: lgc2fo_start(:)
+    REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), mu_start(:), &
+                                & mass(:), charge(:), Zatom(:), t_end(:), weight(:), vr_start(:), vphi_start(:), vz_start(:)
     REAL(rprec), ALLOCATABLE :: extcur(:)
-    CHARACTER(256) :: id_string, mgrid_string, coil_string, &
-    vessel_string, int_type, restart_string, bbnbi_string
+    CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
+    CHARACTER(256) :: mgrid_string, coil_string, &
+                      vessel_string, restart_string, &
+                      continue_grid_string, bbnbi_string, &
+                      eqdsk_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.50
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.07 ! this is the full orbit test version
+
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination
@@ -136,9 +177,8 @@ CONTAINS
 
     SUBROUTINE handle_err(error_num, string_val, ierr)
         USE mpi_params
-!DEC$ IF DEFINED (MPI_OPT)
-        USE mpi
-!DEC$ ENDIF
+        USE mpi_inc
+        IMPLICIT NONE
         INTEGER, INTENT(in) :: error_num
         INTEGER, INTENT(in) :: ierr
         INTEGER, ALLOCATABLE :: error_array(:)
@@ -204,7 +244,7 @@ CONTAINS
         ELSEIF (error_num .eq. NAMELIST_READ_ERR) THEN
             WRITE(6, *) '  BEAMS3D ENCOUNTERED AN ERROR READING A NAMELIST'
             WRITE(6, *) '  ', TRIM(string_val)
-            WRITE(6, *) '  IERR:      ', ierr
+            WRITE(6, *) '  IERR:      ', ierr          
         ELSEIF (error_num .eq. D02CJF_ERR) THEN
             WRITE(6, *) '  BEAMS3D ENCOUNTERED A NAG ERROR (D02CJF)'
             WRITE(6, *) '     CALLING FUNCTION ', TRIM(string_val)
@@ -312,8 +352,7 @@ CONTAINS
             WRITE(6, *) '  ierr:   ', ierr
         END IF
         CALL FLUSH(6)
-!DEC$ IF DEFINED (MPI_OPT)
-        !WRITE(6,*) 'GOT HERE',TRIM(string_val),ierr; CALL FLUSH(6)
+#if defined(MPI_OPT)
         CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
         ALLOCATE(error_array(1:nprocs_beams))
         ierr_mpi = 0
@@ -323,18 +362,18 @@ CONTAINS
         IF (ANY(error_array .ne. 0)) CALL MPI_FINALIZE(ierr_mpi)
         DEALLOCATE(error_array)
         RETURN
-!DEC$ ELSE
+#else
         IF (error_num .eq. MPI_CHECK) RETURN
-!DEC$ ENDIF
+#endif
         PRINT *,myworkid,' calling STOP'
         CALL FLUSH(6)
         STOP
     END SUBROUTINE handle_err
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
     SUBROUTINE BEAMS3D_TRANSMIT_2DDBL(n1,n2,m1,m2,data_in,nproc,mnum,moffsets,id,root,COMM_local,ier)
     USE stel_kinds, ONLY: rprec
-    USE MPI
+    USE mpi_inc
     IMPLICIT NONE
     INTEGER, INTENT(in)           :: n1,n2,m1,m2,nproc,id,root,COMM_local
     INTEGER, INTENT(in)           :: mnum(nproc), moffsets(nproc)
@@ -392,7 +431,7 @@ CONTAINS
 
     SUBROUTINE BEAMS3D_TRANSMIT_2DLOG(n1,n2,m1,m2,data_in,nproc,mnum,moffsets,id,root,COMM_local,ier)
     USE stel_kinds, ONLY: rprec
-    USE mpi
+    USE mpi_inc
     IMPLICIT NONE
     INTEGER, INTENT(in)           :: n1,n2,m1,m2,nproc,id,root,COMM_local
     INTEGER, INTENT(in)           :: mnum(nproc), moffsets(nproc)
@@ -447,6 +486,6 @@ CONTAINS
     CALL MPI_BARRIER(COMM_local, ier)
     RETURN
     END SUBROUTINE BEAMS3D_TRANSMIT_2DLOG
-!DEC$ ENDIF
+#endif
 
 END MODULE beams3d_runtime

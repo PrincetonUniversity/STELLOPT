@@ -16,7 +16,7 @@
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE fieldlines_lines
       USE fieldlines_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-                                 zaxis, phiaxis
+                                 zaxis, phiaxis, PRES_G
       USE fieldlines_runtime, ONLY: id_string, npoinc, lverb, lvmec, &
                                     lpies, lspec, lcoil, lmgrid, lmu, &
                                     lvessel, lvac, laxis_i, handle_err,&
@@ -24,7 +24,8 @@
                                     HDF5_CLOSE_ERR, FIELDLINES_VERSION,&
                                     ladvanced, lbfield_only, lreverse,&
                                     lafield_only, lemc3, lmodb, &
-                                    MPI_BARRIER_ERR, iota0
+                                    MPI_BARRIER_ERR, iota0, lhint, lpres,&
+                                    leqdsk,eqdsk_string
       USE fieldlines_write_par
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -41,7 +42,7 @@
          IF (lverb) THEN
             WRITE(6,'(A)')  '----- WRITING DATA TO FILE -----'
          END IF
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
          WRITE(6,'(A)')  '   FILE: '//'fieldlines_'//TRIM(id_string)//'.h5'
          CALL open_hdf5('fieldlines_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
          IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'fieldlines_'//TRIM(id_string)//'.h5',ier)
@@ -54,6 +55,10 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lpies',ier)
          CALL write_scalar_hdf5(fid,'lspec',ier,BOOVAR=lspec,ATT='SPEC input',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lspec',ier)
+         CALL write_scalar_hdf5(fid,'leqdsk',ier,BOOVAR=leqdsk,ATT='EQDSK input',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'leqdsk',ier)
+         CALL write_scalar_hdf5(fid,'lhint',ier,BOOVAR=lhint,ATT='HINT input',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lhint',ier)
          CALL write_scalar_hdf5(fid,'lcoil',ier,BOOVAR=lcoil,ATT='Coil input',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lcoil',ier)
          CALL write_scalar_hdf5(fid,'lmgrid',ier,BOOVAR=lmgrid,ATT='MGRID input',ATT_NAME='description')
@@ -64,6 +69,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lvessel',ier)
          CALL write_scalar_hdf5(fid,'lvac',ier,BOOVAR=lvac,ATT='Vacuum calc',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lvac',ier)
+         CALL write_scalar_hdf5(fid,'lpres',ier,BOOVAR=lpres,ATT='Pressure output',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lpres',ier)
          CALL write_scalar_hdf5(fid,'laxis_i',ier,BOOVAR=laxis_i,ATT='Axis calc',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'laxis_i',ier)
          CALL write_scalar_hdf5(fid,'ladvanced',ier,BOOVAR=ladvanced,ATT='Advanced Grid Flag',ATT_NAME='description')
@@ -83,18 +90,15 @@
          IF (ASSOCIATED(vertex)) THEN
             CALL write_var_hdf5(fid,'wall_vertex',nvertex,3,ier,DBLVAR=vertex,ATT='Wall Verticies (x,y,z) [m]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_vertex',ier)
-            DEALLOCATE(vertex)
          END IF
          IF (ASSOCIATED(face)) THEN
             CALL write_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face,ATT='Wall Faces',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_faces',ier)
-            DEALLOCATE(face)
          END IF
          IF (ASSOCIATED(ihit_array)) THEN
             CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                       ATT='Wall Strikes',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
-            DEALLOCATE(ihit_array)
          END IF
          ! Here we output the grid
          IF (ladvanced) THEN
@@ -109,7 +113,7 @@
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'raxis',ier)
             CALL write_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis,ATT='Toroidal Axis [rad]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phiaxis',ier)
-            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [rad]',ATT_NAME='description')
+            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [m]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zaxis',ier)
             CALL write_var_hdf5(fid,'A_R',nr,nphi,nz,ier,DBLVAR=B_R,ATT='Radial Fieldline Eq. (AR)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'A_R',ier)
@@ -128,7 +132,7 @@
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'raxis',ier)
             CALL write_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis,ATT='Toroidal Axis [rad]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phiaxis',ier)
-            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [rad]',ATT_NAME='description')
+            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [m]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zaxis',ier)
             CALL write_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R,ATT='Radial Fieldline Eq. (BR)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_R',ier)
@@ -136,6 +140,10 @@
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_Z',ier)
             CALL write_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI,ATT='Toroidal Field (BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_PHI',ier)
+            IF (lpres) THEN
+               CALL write_var_hdf5(fid,'PRES',nr,nphi,nz,ier,DBLVAR=PRES_G,ATT='Plasma Pressure (PRES)',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'PRES',ier)
+            END IF
          ELSE
             CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
@@ -147,11 +155,11 @@
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'raxis',ier)
             CALL write_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis,ATT='Toroidal Axis [rad]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phiaxis',ier)
-            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [rad]',ATT_NAME='description')
+            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [m]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zaxis',ier)
-            CALL write_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R,ATT='Radial Fieldline Eq. (BR/BPHI)',ATT_NAME='description')
+            CALL write_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R,ATT='Radial Fieldline Eq. (R*BR/BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_R',ier)
-            CALL write_var_hdf5(fid,'B_Z',nr,nphi,nz,ier,DBLVAR=B_Z,ATT='Vertical Fieldline Eq. (BZ/BPHI)',ATT_NAME='description')
+            CALL write_var_hdf5(fid,'B_Z',nr,nphi,nz,ier,DBLVAR=B_Z,ATT='Vertical Fieldline Eq. (R*BZ/BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_Z',ier)
             CALL write_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI,ATT='Toroidal Field (BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_PHI',ier)
@@ -186,7 +194,7 @@
          CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Rhc_lines', DBLVAR=Rhc_lines)
          CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Zhc_lines', DBLVAR=Zhc_lines)
       END IF
-!DEC$ ELSE
+#else
       iunit = 100
       WRITE(6,'(A)')  '   FILE: '//'fieldlines_'//TRIM(id_string)//'.bin'
       CALL safe_open(iunit,ier,'fieldlines_'//TRIM(id_string)//'.bin','replace','unformatted')
@@ -213,7 +221,7 @@
       WRITE(iunit) B_Z
       WRITE(iunit) B_PHI
       CLOSE(iunit)
-!DEC$ ENDIF  
+#endif
 
 !-----------------------------------------------------------------------
 !     End Subroutine

@@ -1,0 +1,415 @@
+# Microsoft Developer Studio Generated Dependency File, included by COILOPT.mak
+
+boundary.o : \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o 
+      
+
+coils.o : \
+       coiltypes.o 
+      
+
+coiltypes.o : \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o 
+      
+
+times_stuff.o : \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o 
+      
+
+vcoilpts.o : \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o 
+      
+
+vwire.o : \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o 
+      
+
+coil_curvature.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+mod_coil_distance.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vf_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+plasma_mod_coil_distance.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+plasma_sad_coil_distance.o : \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+sad_coil_distance.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       ../../LIBSTELL/$(LOCTYPE)/vf_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+allocate_modular_coils.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+allocate_saddle_coils.o : \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+allocate_vf_coils.o : \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/vf_coils.o \
+       coils.o 
+      
+
+allocate_wires.o : \
+       ../../LIBSTELL/$(LOCTYPE)/biotsavart.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       vwire.o 
+      
+
+get_modes.o : \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o 
+      
+
+initialize_access.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       vwire.o 
+      
+
+initialize_opt.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/coilsnamin.o \
+       ../../LIBSTELL/$(LOCTYPE)/control_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/gade_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_surface.o \
+       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       ../../LIBSTELL/$(LOCTYPE)/system_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
+       boundary.o \
+       coils.o \
+       vname.o \
+       vwire.o 
+      
+
+normal_vector.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bnorm_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       boundary.o 
+      
+
+read_bcoils.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o 
+      
+
+read_bnorm_coefs.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bnorm_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+       boundary.o 
+      
+
+read_wout.o : \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
+       boundary.o \
+       vname.o 
+      
+
+b_error_mode.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bnorm_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       boundary.o 
+      
+
+b_error_spectrum.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bnorm_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       boundary.o 
+      
+
+clean_up.o : \
+       ../../LIBSTELL/$(LOCTYPE)/control_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/gade_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/system_mod.o \
+       vname.o 
+      
+
+coil_curve.o : \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o 
+      
+
+coilopt.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/biotsavart.o \
+       ../../LIBSTELL/$(LOCTYPE)/bnorm_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/control_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_surface.o \
+       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       ../../LIBSTELL/$(LOCTYPE)/vf_coils.o \
+       boundary.o \
+       coils.o \
+       vname.o \
+       vwire.o 
+      
+
+eval_modular_coils.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+eval_poloidal_currents.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       boundary.o 
+      
+
+eval_saddle_coils.o : \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_surface.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+eval_saddle_rz.o : \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_surface.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+eval_vf_coils.o : \
+       ../../LIBSTELL/$(LOCTYPE)/vf_coils.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+evaluate_access.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+evaluate_bg_field.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/biotsavart.o \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       ../../LIBSTELL/$(LOCTYPE)/vf_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+evaluate_bnorm.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bnorm_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       boundary.o 
+      
+
+evaluate_field_error.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/biotsavart.o \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       ../../LIBSTELL/$(LOCTYPE)/vf_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+evaluate_max_field.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/biotsavart.o \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       vwire.o 
+      
+
+load_modular_structures.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+load_saddle_structures.o : \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+load_vf_structures.o : \
+       ../../LIBSTELL/$(LOCTYPE)/vf_coils.o \
+       coils.o 
+      
+
+loadparams.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_surface.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vcoilpts.o \
+       ../../LIBSTELL/$(LOCTYPE)/vf_coils.o \
+       coils.o 
+      
+
+lsfun1.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/bnorm_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/control_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/gade_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vf_coils.o \
+       boundary.o \
+       times_stuff.o \
+       vname.o \
+       vwire.o 
+      
+
+modular_curve.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       coils.o \
+       vwire.o 
+      
+
+modular_surface.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o 
+      
+
+optimize.o : \
+       ../../LIBSTELL/$(LOCTYPE)/control_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       vname.o 
+      
+
+radial_ext.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o 
+      
+
+rz_surf.o : \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o 
+      
+
+save_for05.o : \
+       ../../LIBSTELL/$(LOCTYPE)/coilsnamin.o \
+       ../../LIBSTELL/$(LOCTYPE)/gade_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o 
+      
+
+speval.o : \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o 
+      
+
+spline_bkp_distance.o : \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o 
+      
+
+theta_f.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       coils.o \
+       vwire.o 
+      
+
+write_coils.o : \
+       ../../LIBSTELL/$(LOCTYPE)/bcoils_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       ../../LIBSTELL/$(LOCTYPE)/tf_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/vf_coils.o \
+       boundary.o \
+       coils.o \
+       coiltypes.o \
+       vname.o \
+       vwire.o 
+      
+
+write_surfaces.o : \
+       ../../LIBSTELL/$(LOCTYPE)/modular_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_coils.o \
+       ../../LIBSTELL/$(LOCTYPE)/saddle_surface.o \
+       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+       boundary.o \
+       vwire.o 
+      

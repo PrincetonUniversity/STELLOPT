@@ -1,4 +1,11 @@
 ObjectFiles = \
+stellopt_read_cws.o \
+stellopt_write_header.o \
+chisq_dkes_alpha.o \
+chisq_dkes_erdiff.o \
+chisq_line_visbrem.o \
+chisq_gamma_c.o \
+chisq_pressprime.o \
 stellopt_write_auxfiles.o \
 stellopt_write_eqfile.o \
 stellopt_write_inputfile.o \
@@ -85,6 +92,9 @@ chisq_coillen.o \
 chisq_coilsep.o \
 chisq_coilcrv.o \
 chisq_coilself.o \
+chisq_coiltorvar.o \
+chisq_coilrect.o \
+chisq_coilpoly.o \
 stellopt_neo.o \
 stellopt_fcn.o \
 stellopt_load_targets.o \
@@ -113,9 +123,7 @@ stellopt_dkes.o \
 stellopt_prof_refit.o \
 stellopt_travis.o \
 stellopt_load_equil.o \
-stellopt_vars.o \
 equil_utils.o \
-stellopt_input_mod.o \
 equil_vals.o \
 stellopt_runtime.o \
-stellopt_targets.o 
+stellopt_mango.o

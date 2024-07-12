@@ -11,7 +11,7 @@
       INTEGER, PARAMETER :: ns_default   = 31
       INTEGER :: nfp, ncurr, nsin, niter, nstep, nvacskip, mpol, ntor,
      1           ntheta, nzeta, mfilter_fbdy, nfilter_fbdy,
-     2           max_main_iterations, omp_num_threads
+     2           max_main_iterations, omp_num_threads, pre_niter
       INTEGER, DIMENSION(100) :: ns_array, niter_array
       INTEGER :: imse, isnodes, itse, ipnodes, iopt_raxis,
      1   imatch_phiedge, nflxs
@@ -71,6 +71,8 @@
       CHARACTER(len=120) :: arg1
       CHARACTER(len=100) :: input_extension
 
+      LOGICAL :: lnyquist = .TRUE.    !=false, suppress nyquist stuff; CZHU 2021.03.31
+
       NAMELIST /indata/ mgrid_file, time_slice, nfp, ncurr, nsin,
      1   niter, nstep, nvacskip, delt, ftol, gamma, am, ai, ac, aphi,
      1   pcurr_type, pmass_type, piota_type,
@@ -80,7 +82,7 @@
      1   pt_type, at_aux_s, at_aux_f,
      2   rbc, zbs, rbs, zbc, spres_ped, pres_scale, raxis_cc, zaxis_cs, 
      3   raxis_cs, zaxis_cc, mpol, ntor, ntheta, nzeta, mfilter_fbdy,
-     3   nfilter_fbdy, niter_array,
+     3   nfilter_fbdy, niter_array, pre_niter, 
      4   ns_array, ftol_array, tcon0, precon_type, prec2d_threshold,
      4   curtor, sigma_current, extcur, omp_num_threads,
      5   phiedge, psa, pfa, isa, ifa, imatch_phiedge, iopt_raxis, 
@@ -95,7 +97,8 @@
      E   loldout, lwouttxt, ldiagno, lfull3d1out, max_main_iterations,     ! J Geiger 2010-05-04
      D   lgiveup,fgiveup,                                                  ! M.Drevlak 2012-05-10
      E   lbsubs,                                                           ! 2014-01-12 See jxbforce
-     F   trip3d_file                                                       ! SAL - TRIP3D
+     F   trip3d_file,                                                      ! SAL - TRIP3D
+     G   lnyquist
 
       NAMELIST /mseprofile/ mseprof
 
@@ -104,6 +107,7 @@
       SUBROUTINE read_indata_namelist (iunit, istat)
       INTEGER, INTENT(IN) :: iunit
       INTEGER, INTENT(OUT) :: istat
+      ChARACTER(len=256) :: line
 
 !
 !     INITIALIZATIONS
@@ -116,6 +120,7 @@
       ntheta = 0;  nzeta = 0
       ns_array = 0;  ns_array(1) = ns_default
       niter_array = -1;
+      pre_niter = -1
       bloat = 1
       rbc = 0;  rbs = 0; zbs = 0; zbc = 0
       time_slice = 0
@@ -180,8 +185,17 @@
 !     BACKWARDS COMPATIBILITY
 !
       raxis = 0;  zaxis = 0
+
+      IF (iunit.eq.-327) RETURN
       
       READ (iunit, nml=indata, iostat=istat)
+
+      IF (istat /= 0) THEN
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         CALL FLUSH(6)
+      END IF
 
       IF (ALL(niter_array == -1)) niter_array = niter
       WHERE (raxis .ne. 0._dp) 
@@ -207,6 +221,34 @@
       READ (iunit, nml=mseprofile, iostat=istat)
 
       END SUBROUTINE read_mse_namelist
+
+      SUBROUTINE read_indata_namelist_byfile (filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      
+      iunit = 100
+      istat = 0
+      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      IF (istat .ne. 0) RETURN
+      CALL read_indata_namelist(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE read_indata_namelist_byfile
+
+      SUBROUTINE write_indata_namelist_byfile (filename)
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      
+      iunit = 100
+      istat = 0
+      OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
+      IF (istat .ne. 0) RETURN
+      CALL write_indata_namelist(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+      END SUBROUTINE write_indata_namelist_byfile
       
       SUBROUTINE write_indata_namelist (iunit, istat)
       IMPLICIT NONE
@@ -247,6 +289,7 @@
       WRITE (iunit,'(2x,3a)') "PRECON_TYPE = '", TRIM(precon_type),"'" 
       WRITE (iunit,'(2x,a,1p,e14.6)') "PREC2D_THRESHOLD = ", 
      1                                prec2d_threshold
+      WRITE(iunit,outint) 'PRE_NITER',pre_niter
       WRITE(iunit,'(A)') '!----- Grid Parameters -----'
       WRITE(iunit,outboo) 'LASYM',lasym
       WRITE(iunit,outint4) 'NFP',nfp
@@ -259,7 +302,7 @@
          WRITE(iunit,'(A)') '!----- RFP Parameters -----'
          WRITE(iunit,outboo) 'LRFP',lrfp
          WRITE (iunit,'(a,(1p,4ES22.12E3))') '  APHI = ',
-     1                                   (aphi(n-1), n=1,SIZE(aphi))
+     1                                   (aphi(n), n=1,SIZE(aphi))
       END IF
       WRITE(iunit,'(A)') '!----- Free Boundary Parameters -----'
       WRITE(iunit,outboo) 'LFREEB',lfreeb
@@ -360,6 +403,277 @@
       WRITE(iunit,'(A)') '/'
       RETURN
       END SUBROUTINE write_indata_namelist
+
+      SUBROUTINE bcast_indata_namelist(local_master,local_comm,iflag)
+      USE mpi_params
+      USE mpi_inc
+      IMPLICIT NONE
+      INTEGER,INTENT(IN) :: local_master
+      INTEGER,INTENT(INOUT) :: local_comm
+      INTEGER,INTENT(INOUT) :: iflag
+!DEC$ IF DEFINED (MPI_OPT)
+      iflag = 0
+      ! Logicals
+      CALL MPI_BCAST(lpofr,          1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lmac,           1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lfreeb,         1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lrecon,         1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(loldout,        1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(ledge_dump,     1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lasym,          1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lforbal,        1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lrfp,           1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lmovie,         1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lmove_axis,     1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lwouttxt,       1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(ldiagno,        1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lmoreiter,      1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lfull3d1out,    1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(l_v3fit,        1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lspectrum_dump, 1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(loptim,         1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lgiveup,        1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lbsubs,         1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BARRIER(local_comm,iflag)
+      ! Integers
+      CALL MPI_BCAST(nfp,                 1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(ncurr,               1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(nsin,                1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(niter,               1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(nstep,               1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(nvacskip,            1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(mpol,                1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(ntor,                1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(ntheta,              1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(nzeta,               1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(mfilter_fbdy,        1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(nfilter_fbdy,        1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(max_main_iterations, 1, MPI_INTEGER, local_master,
+     1               local_comm, iflag)
+      CALL MPI_BCAST(imse,                1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(isnodes,             1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(itse,                1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(ipnodes,             1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(iopt_raxis,          1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(imatch_phiedge,      1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(nflxs,               1, MPI_INTEGER, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BARRIER(local_comm,iflag)
+      ! Integer Arrays
+      CALL MPI_BCAST(ns_array,    100,              MPI_INTEGER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(niter_array, 100,              MPI_INTEGER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(nbfld,       nbsetsp,          MPI_INTEGER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(indxflx,     nfloops,          MPI_INTEGER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(indxbfld,    nbcoilsp*nbsetsp, MPI_INTEGER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BARRIER(local_comm,iflag)
+      ! Reals
+      CALL MPI_BCAST(time_slice,       1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(curtor,           1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(delt,             1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(ftol,             1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(tcon0,            1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(gamma,            1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(phiedge,          1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(phidiam,          1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(sigma_current,    1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(sigma_delphid,    1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(tensi,            1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(tensp,            1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(tensi2,           1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(fpolyi,           1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(presfac,          1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(mseangle_offset,  1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(pres_offset,      1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(mseangle_offsetm, 1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(spres_ped,        1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(bloat,            1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(pres_scale,       1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(prec2d_threshold, 1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(bcrit,            1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(fgiveup,          1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BARRIER(local_comm,iflag)
+      ! Real Arrays
+      CALL MPI_BCAST(rbc,         (2*ntord+1)*(mpol1d+1),
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(zbs,         (2*ntord+1)*(mpol1d+1),
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(rbs,         (2*ntord+1)*(mpol1d+1),
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(zbc,         (2*ntord+1)*(mpol1d+1),
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(am,          21, 
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(ai,          21, 
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(ac,          21,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(aphi,        20,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(ah,          21,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(at,          21,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(am_aux_s,    ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(am_aux_f,    ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(ac_aux_s,    ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(ac_aux_f,    ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(ai_aux_s,    ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(ai_aux_f,    ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(ah_aux_s,    ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(ah_aux_f,    ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(at_aux_s,    ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(at_aux_f,    ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(raxis,       ntord+1,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(zaxis,       ntord+1,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(raxis_cc,    ntord+1,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(raxis_cs,    ntord+1,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(zaxis_cc,    ntord+1,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(zaxis_cs,    ntord+1,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(ftol_array,  100,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(extcur,      nigroup,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(mseprof,     nmse,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(rthom,       ntse,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(datathom,    ntse,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(sigma_thom,  ntse,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(rstark,      nmse,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(datastark,   nmse,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(sigma_stark, nmse,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(dsiobt,      nfloops,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(sigma_flux,  nfloops,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(bbc,         nbcoilsp*nbsetsp,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(sigma_b,     nbcoilsp*nbsetsp,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(psa,         ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(pfa,         ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(isa,         ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BCAST(ifa,         ndatafmax,
+     1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
+      CALL MPI_BARRIER(local_comm,iflag)
+      ! Strings
+      CALL MPI_BCAST(pcurr_type,      20,  MPI_CHARACTER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(piota_type,      20,  MPI_CHARACTER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(pmass_type,      20,  MPI_CHARACTER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(pt_type,         20,  MPI_CHARACTER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(ph_type,         20,  MPI_CHARACTER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(mgrid_file,      200, MPI_CHARACTER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(trip3d_file,     200, MPI_CHARACTER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(precon_type,     10,  MPI_CHARACTER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(arg1,            120, MPI_CHARACTER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(input_extension, 100, MPI_CHARACTER, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BARRIER(local_comm,iflag)
+      IF (iflag /= 0) RETURN
+!DEC$ ENDIF
+      iflag = 0
+      RETURN
+      END SUBROUTINE bcast_indata_namelist
 
       END MODULE vmec_input
 

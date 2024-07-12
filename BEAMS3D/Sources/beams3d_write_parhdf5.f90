@@ -75,7 +75,7 @@
       offset(1) = 0
       offset(2) = mystart-1
 
-!DEC$ IF DEFINED (HDF5_PAR)
+#if defined(HDF5_PAR)
       ! Do this so we define the chunking correctly
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(2),1,MPI_INTEGER,MPI_MAX,MPI_COMM_BEAMS,ier)
 
@@ -139,7 +139,7 @@
       ! Close the fortran interface
       CALL h5close_f(ier)
 
-!DEC$ ELSE
+#else
 
       DO i = 0, nprocs_beams-1
          IF (myworkid == i) THEN
@@ -205,8 +205,7 @@
          IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_write_parhdf5',ierr_mpi)
          !IF (i == 1) STOP
       END DO
-
-!DEC$ ENDIF
+#endif
 
       ! Deallocate Helpers
       DEALLOCATE(dimsf,chunk_dims,counts,offset)
@@ -216,7 +215,7 @@
 !-----------------------------------------------------------------------
       END SUBROUTINE beams3d_write_parhdf5
 
-      SUBROUTINE beams3d_write1d_parhdf5(m1,m2,mystart,myend,var_name,INTVAR,FLTVAR,DBLVAR)
+      SUBROUTINE beams3d_write1d_parhdf5(m1,m2,mystart,myend,var_name,INTVAR,FLTVAR,DBLVAR,FILENAME)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -242,6 +241,7 @@
       INTEGER, INTENT(in),  OPTIONAL         :: INTVAR(mystart:myend)
       REAL, INTENT(in),  OPTIONAL            :: FLTVAR(mystart:myend)
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: DBLVAR(mystart:myend)
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: FILENAME
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -279,7 +279,7 @@
       counts(1) = 1
       offset(1) = mystart-1
 
-!DEC$ IF DEFINED (HDF5_PAR)
+#if defined(HDF5_PAR)
       ! Do this so we define the chunking correctly
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(1),1,MPI_INTEGER,MPI_MAX,MPI_COMM_BEAMS,ier)
       ier = 0
@@ -291,7 +291,11 @@
       CALL h5pset_fapl_mpio_f(fapl_id, MPI_COMM_BEAMS, info, ier)
       CALL h5pget_driver_f(fapl_id, driver_id, ier)
       ! Open file
-      CALL h5fopen_f('beams3d_ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
+      IF (PRESENT(FILENAME)) THEN
+         CALL h5fopen_f(TRIM(FILENAME)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
+      ELSE
+         CALL h5fopen_f('ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
+      END IF
 !!!!!!! Begin writing
 
 !      WRITE(6,*) myworkid,dimsf,chunk_dims,counts,offset; CALL FLUSH(6)
@@ -342,7 +346,7 @@
       ! Close the fortran interface
       CALL h5close_f(ier)
 
-!DEC$ ELSE
+#else
 
       DO i = 0, nprocs_beams-1
          IF (myworkid == i) THEN
@@ -355,7 +359,11 @@
             !PRINT *,'h5pcreate_f ',ier
 
             ! Open file
-            CALL h5fopen_f('beams3d_ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
+            IF (PRESENT(FILENAME)) THEN
+               CALL h5fopen_f(TRIM(FILENAME)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
+            ELSE
+               CALL h5fopen_f('ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
+            END IF
             !PRINT *,'h5fopen_f ',ier
 
             ! Open or create the dataset and get/create dataspace identifer
@@ -409,7 +417,7 @@
          !IF (i == 1) STOP
       END DO
 
-!DEC$ ENDIF
+#endif
 
       ! Deallocate Helpers
       DEALLOCATE(dimsf,chunk_dims,counts,offset)

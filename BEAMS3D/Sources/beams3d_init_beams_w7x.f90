@@ -12,7 +12,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
-      USE beams3d_lines, ONLY: nparticles
+      USE beams3d_lines, ONLY: nparticles, partvmax
       USE mpi_params
       USE mpi_inc
 
@@ -24,7 +24,7 @@
       IMPLICIT NONE
       INTEGER :: ier, i, j, k, k1, k2
 !      REAL(rprec)  :: br
-      REAL(rprec), ALLOCATABLE :: X(:,:), Y(:,:), block(:,:), Energy(:), X_start(:), Y_start(:)
+      REAL(rprec), ALLOCATABLE :: X(:,:), Y(:,:), block(:,:), Energy(:), X_start(:), Y_start(:), v_neut(:,:)
       REAL(rprec)              :: xbeam(2),ybeam(2),zbeam(2),dxbeam,dybeam,dzbeam,&
                                   dxbeam2,dybeam2,dzbeam2,dlbeam,dxbeam3,dybeam3,dzbeam3
       REAL(rprec)              :: magZ, magX, magV_neut, magV, xx(3), yy(3), zz(3)
@@ -44,7 +44,8 @@
       END IF
 
       ALLOCATE (X(nparticles_start, nbeams), Y(nparticles_start, nbeams), &
-                  & Energy(nparticles_start), block(nparticles_start, nbeams), STAT=ier )
+                  & Energy(nparticles_start), block(nparticles_start, nbeams), &
+                  v_neut(3,nparticles_start), STAT=ier )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'X, Y, weight', ier)
 
       IF (myworkid == master) THEN
@@ -61,18 +62,19 @@
          block = 1
       END IF
       nparticles = nparticles_start*nbeams
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nparticles,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
+#endif
       ALLOCATE( X_start(nparticles_start), Y_start(nparticles_start), STAT=ier   )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'X,Y_start etc.', ier)
       ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
-                & v_neut(3,nparticles), mass(nparticles), charge(nparticles), Zatom(nparticles), &
-                & mu_start(nparticles), t_end(nparticles), &
-                & beam(nparticles), weight(nparticles), STAT=ier   )
+                  vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
+                  mass(nparticles), charge(nparticles), Zatom(nparticles), &
+                  mu_start(nparticles), t_end(nparticles), &
+                  beam(nparticles), weight(nparticles), lgc2fo_start(nparticles), STAT=ier   )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R,phi,Z _start, etc.', ier)
-
+      lgc2fo_start(:) = .TRUE.
       ! Handle beam distrbution
       IF (myworkid == master) THEN
          k1 = 1; k2 = nparticles_start
@@ -89,6 +91,7 @@
             mass(k1:k2)         = mass_beams(i)
             charge(k1:k2)       = charge_beams(i)
             Zatom(k1:k2)        = Zatom_beams(i)
+            partvmax            = MAX(partvmax,SQRT(2*E_beams(i)/mass_beams(i)))
             ! Energy distribution
             CALL gauss_rand(nparticles_start, Energy)
             Energy = sqrt( (E_beams(i) + E_error*E_beams(i)*Energy)*(E_beams(i) + E_error*E_beams(i)*Energy) )
@@ -102,19 +105,19 @@
             dybeam          = ybeam(2)-ybeam(1)
             dzbeam          = zbeam(2)-zbeam(1)
             dlbeam          = SQRT(dxbeam*dxbeam+dybeam*dybeam+dzbeam*dzbeam)
-            IF (dlbeam == 0) dlbeam = 1
+            IF (dlbeam == 0.0) dlbeam = 1
             dxbeam = dxbeam/dlbeam; dybeam=dybeam/dlbeam; dzbeam=dzbeam/dlbeam
             dxbeam2         = dybeam ! normal direction dbeam x hat(z)
             dybeam2         = -dxbeam
             dzbeam2         = 0
             dlbeam          = SQRT(dxbeam2*dxbeam2+dybeam2*dybeam2) ! because dzbeam2=0
-            IF (dlbeam == 0) dlbeam = 1
+            IF (dlbeam == 0.0) dlbeam = 1
             dxbeam2 = dxbeam2/dlbeam; dybeam2=dybeam2/dlbeam; ! because dzbeam2=0
             dxbeam3         = dybeam2*dzbeam                  ! because dzbeam2=0
             dybeam3         =                - dxbeam2*dzbeam ! because dzbeam2=0
             dzbeam3         = dxbeam2*dybeam - dybeam2*dxbeam
             dlbeam          = SQRT(dxbeam3*dxbeam3+dybeam3*dybeam3+dzbeam3*dzbeam3)
-            IF (dlbeam == 0) dlbeam = 1
+            IF (dlbeam == 0.0) dlbeam = 1
             dxbeam3 = dxbeam3/dlbeam; dybeam3=dybeam3/dlbeam; dzbeam3=dzbeam3/dlbeam
             ! Starting Points
             X_start          = xbeam(1) + dxbeam2*X(:,i) + dxbeam3*Y(:,i)
@@ -124,17 +127,24 @@
             Z_start(k1:k2)   = zbeam(1) + dzbeam3*Y(:,i)                   ! because dzbeam2=0
             ! Starting Velocity
             vll_start(k1:k2) = SQRT(2*Energy/mass_beams(i))  ! speed E=0.5*mv^2
-            v_neut(1,k1:k2)  = dxbeam*vll_start(k1:k2)
-            v_neut(2,k1:k2)  = dybeam*vll_start(k1:k2)
-            v_neut(3,k1:k2)  = dzbeam*vll_start(k1:k2)
+            v_neut(1,:)  = dxbeam*vll_start(k1:k2)
+            v_neut(2,:)  = dybeam*vll_start(k1:k2)
+            v_neut(3,:)  = dzbeam*vll_start(k1:k2)
+            ! To cylindrical coords
+            vr_start(k1:k2)   =  v_neut(1,:)*COS(PHI_start(k1:k2)) + &
+                                 v_neut(2,:)*SIN(PHI_start(k1:k2))
+            vphi_start(k1:k2) = -v_neut(1,:)*SIN(PHI_start(k1:k2)) + &
+                                 v_neut(2,:)*COS(PHI_start(k1:k2))
+            vz_start(k1:k2)   =  v_neut(3,:)
             k1 = k2 + 1
             k2 = k2 + nparticles_start
          END DO
          WHERE(PHI_start < 0) PHI_start = PHI_start+pi2
       END IF
-      DEALLOCATE(X,Y,Energy,X_start,Y_start,block)
+      DEALLOCATE(X,Y,Energy,X_start,Y_start,block,v_neut)
       weight = weight/nparticles_start
-!DEC$ IF DEFINED (MPI_OPT)
+
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -147,8 +157,11 @@
       CALL MPI_BCAST(Z_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
+      CALL MPI_BCAST(vr_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vphi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vz_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(lgc2fo_start,nparticles,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+#endif
 
 
 !-----------------------------------------------------------------------

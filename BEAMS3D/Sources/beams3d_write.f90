@@ -10,20 +10,23 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
       USE ez_hdf5
-!DEC$ ENDIF  
+#endif
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
                                  ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
-                                 plasma_mass, plasma_Zavg, plasma_Zmean
+                                 plasma_mass, plasma_Zmean, &
+                                 B_kick_min, B_kick_max, freq_kick, &
+                                 E_kick, NI, beam_density, E_NEUTRONS, NEUTRONS_ARR
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
-                                    charge, Zatom, mass, ldepo, v_neut,lcollision
+                                    charge, Zatom, mass, ldepo, lcollision, lfusion, lboxsim, &
+                                    leqdsk, eqdsk_string, lhint, lhitonly, lkick, NION, pi2
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE mpi_params
@@ -33,19 +36,20 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       CHARACTER(*), INTENT(IN):: write_type
+   DOUBLE PRECISION, ALLOCATABLE :: rtemp(:)      
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-      INTEGER :: ier, iunit
+      INTEGER :: ier, iunit, i
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
       IF (myworkid == master) THEN
          SELECT CASE (TRIM(write_type))
             CASE('GRID_INIT')
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
                CALL write_scalar_hdf5(fid,'VERSION',ier,DBLVAR=BEAMS3D_VERSION,ATT='Version Number',ATT_NAME='description')
@@ -56,6 +60,10 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lpies',ier)
                CALL write_scalar_hdf5(fid,'lspec',ier,BOOVAR=lspec,ATT='SPEC input',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lspec',ier)
+               CALL write_scalar_hdf5(fid,'leqdsk',ier,BOOVAR=leqdsk,ATT='EQDSK input',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'leqdsk',ier)
+               CALL write_scalar_hdf5(fid,'lhint',ier,BOOVAR=lhint,ATT='HINT input',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lhint',ier)
                CALL write_scalar_hdf5(fid,'lcoil',ier,BOOVAR=lcoil,ATT='Coil input',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lcoil',ier)
                CALL write_scalar_hdf5(fid,'lmgrid',ier,BOOVAR=lmgrid,ATT='MGRID input',ATT_NAME='description')
@@ -70,10 +78,18 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lbeam_simple',ier)
                CALL write_scalar_hdf5(fid,'ldepo',ier,BOOVAR=ldepo,ATT='Only Deposition Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ldepo',ier)
+               CALL write_scalar_hdf5(fid,'lkick',ier,BOOVAR=lkick,ATT='Kick Model Flag',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lkick',ier)
                CALL write_scalar_hdf5(fid,'lcollision',ier,BOOVAR=lcollision,ATT='Collisionall Operators Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lcollision',ier)
                CALL write_scalar_hdf5(fid,'lascot',ier,BOOVAR=lascot,ATT='ASCOT5 Output Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lascot',ier)
+               CALL write_scalar_hdf5(fid,'lfusion',ier,BOOVAR=lfusion,ATT='Fusion Birth Model Flag',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lfusion',ier)
+               CALL write_scalar_hdf5(fid,'lboxsim',ier,BOOVAR=lboxsim,ATT='Neutral Beam Box Simulation Flag',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lboxsim',ier)
+               CALL write_scalar_hdf5(fid,'lhitonly',ier,BOOVAR=lhitonly,ATT='Flag for only saving wall hits',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lhitonly',ier)
                CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
                CALL write_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi,ATT='Number of Toroidal Gridpoints',ATT_NAME='description')
@@ -82,8 +98,6 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nz',ier)
                CALL write_scalar_hdf5(fid,'plasma_mass',ier,DBLVAR=plasma_mass,ATT='Plasma Mass [kg]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_mass',ier)
-               CALL write_scalar_hdf5(fid,'plasma_Zavg',ier,DBLVAR=plasma_Zavg,ATT='Plasma <Z>',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_Zavg',ier)
                CALL write_scalar_hdf5(fid,'plasma_Zmean',ier,DBLVAR=plasma_Zmean,ATT='Plasma [Z]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_Zmean',ier)
                CALL write_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis,ATT='Radial Axis [m]',ATT_NAME='description')
@@ -104,9 +118,10 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'U_ARR',ier)
                CALL write_var_hdf5(fid,'POT_ARR',nr,nphi,nz,ier,DBLVAR=POT_ARR,ATT='Electrostatic Potential [V]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'POT_ARR',ier)
-               CALL write_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight,ATT='Weight',&
-                                  ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Weight',ier)
+               IF (ALLOCATED(GFactor)) THEN
+                  CALL write_var_hdf5(fid,'GFactor',ns_prof1,ier,DBLVAR=GFactor,ATT='(1-l31)/Zeff',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'GFactor',ier)
+               END IF
                IF (ASSOCIATED(TE)) THEN
                   CALL write_var_hdf5(fid,'TE',nr,nphi,nz,ier,DBLVAR=TE,ATT='Electron Temperature [eV]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'TE',ier)
@@ -115,6 +130,10 @@
                   CALL write_var_hdf5(fid,'NE',nr,nphi,nz,ier,DBLVAR=NE,ATT='Electron Density [m^-3]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'NE',ier)
                END IF
+               IF (ASSOCIATED(NI)) THEN
+                  CALL write_var_hdf5(fid,'NI',nion,nr,nphi,nz,ier,DBLVAR=NI,ATT='Ion Densities [m^-3]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'NI',ier)
+               END IF
                IF (ASSOCIATED(TI)) THEN
                   CALL write_var_hdf5(fid,'TI',nr,nphi,nz,ier,DBLVAR=TI,ATT='Ion Temperature [eV]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'TI',ier)
@@ -122,18 +141,6 @@
                IF (ASSOCIATED(ZEFF_ARR)) THEN
                   CALL write_var_hdf5(fid,'ZEFF_ARR',nr,nphi,nz,ier,DBLVAR=ZEFF_ARR,ATT='Effective Ion Charge',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ZEFF_ARR',ier)
-               END IF
-               IF (ALLOCATED(beam)) THEN
-                  CALL write_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam,ATT='Beam Number',&
-                                      ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Beam',ier)
-               END IF
-               IF (lbeam) THEN
-                  CALL write_var_hdf5(fid,'V_NEUT',3,nparticles,ier,DBLVAR=V_NEUT,ATT='Neutral Velocity (Vx, Vy,Vz) [m/s]',&
-                                      ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'V_NEUT',ier)
-                  CALL write_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams,ATT='Beam Energy [J]',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_BEAMS',ier)
                END IF
                IF (ASSOCIATED(vertex)) THEN
                   CALL write_scalar_hdf5(fid,'nvertex',ier,INTVAR=nvertex,ATT='Number of Wall Vertices',ATT_NAME='description')
@@ -147,6 +154,16 @@
                   CALL write_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face,ATT='Wall Faces',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_faces',ier)
                END IF
+               IF (lkick) THEN
+                  CALL write_scalar_hdf5(fid,'B_kick_min',ier,DBLVAR=B_kick_min,ATT='|B|_min Kick Model [T]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_kick_min',ier)
+                  CALL write_scalar_hdf5(fid,'B_kick_max',ier,DBLVAR=B_kick_max,ATT='|B|_max Kick Model [T]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_kick_max',ier)
+                  CALL write_scalar_hdf5(fid,'freq_kick',ier,DBLVAR=freq_kick,ATT='Frequency Kick Model [Hz]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'freq_kick',ier)
+                  CALL write_scalar_hdf5(fid,'E_kick',ier,DBLVAR=E_kick,ATT='E-Field Kick Model [V/m]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_kick',ier)
+               END IF
             CASE('TRAJECTORY_PARTIAL')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
@@ -154,26 +171,32 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nparticles',ier)
                CALL write_scalar_hdf5(fid,'nbeams',ier,INTVAR=nbeams,ATT='Number of Beams',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nbeams',ier)
-               CALL write_scalar_hdf5(fid,'nsteps',ier,INTVAR=nsteps+1,ATT='Number of Steps Along Trajectory',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nsteps',ier)
                CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of steps per trajectory period',&
                                       ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)
-               CALL write_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end,ATT='Time at End of Trajectory [s]',&
-                                   ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'t_end',ier)
+               !CALL write_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end,ATT='Time at End of Trajectory [s]',&
+               !                    ATT_NAME='description')
+               !IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'t_end',ier)
                CALL write_var_hdf5(fid,'mass',nparticles,ier,DBLVAR=mass,ATT='Particle Mass [kg]',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'mass',ier)
                CALL write_var_hdf5(fid,'charge',nparticles,ier,DBLVAR=charge,ATT='Particle Charge [C]',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'charge',ier)
+               CALL write_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight,ATT='Weight',&
+                                  ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Weight',ier)
+               CALL write_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam,ATT='Beam Number',&
+                                      ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Beam',ier)
                CALL write_var_hdf5(fid,'Zatom',nparticles,ier,DBLVAR=Zatom,ATT='Particle Charge Number',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Zatom',ier)
-               CALL write_var_hdf5(fid,'end_state',nparticles,ier,INTVAR=end_state,ATT='0: Orbiting; 1: Thermalized; 2: Wall Strike; 3: Shine-through',&
+               CALL write_var_hdf5(fid,'end_state',nparticles,ier,INTVAR=end_state,ATT='0: Orbiting; 1: Thermalized; 2: Wall Strike; 3: Shine-through; 4: Port-Load',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'end_state',ier)
+               CALL write_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams,ATT='Beam Energy [J]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_BEAMS',ier)
                IF (ASSOCIATED(ihit_array)) THEN
                   CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                    ATT='Wall Strikes',ATT_NAME='description')
@@ -189,6 +212,11 @@
                                    ATT='Neutral Beam Shine-through [W/m^2]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_shine',ier)
                END IF
+               IF (ASSOCIATED(BEAM_DENSITY)) THEN
+                  CALL write_var_hdf5(fid,'beam_density',nbeams,nr,nphi,nz,ier,DBLVAR=beam_density,&
+                                   ATT='Neutral Beam Density [1/m^3]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'beam_density',ier)
+               END IF
             CASE('TRAJECTORY_FULL')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
@@ -196,8 +224,6 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nparticles',ier)
                CALL write_scalar_hdf5(fid,'nbeams',ier,INTVAR=nbeams,ATT='Number of Beams',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nbeams',ier)
-               CALL write_scalar_hdf5(fid,'nsteps',ier,INTVAR=nsteps+1,ATT='Number of Steps Along Trajectory',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nsteps',ier)
                CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of steps per trajectory period',&
                                       ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)
@@ -210,12 +236,20 @@
                CALL write_var_hdf5(fid,'charge',nparticles,ier,DBLVAR=charge,ATT='Particle Charge [C]',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'charge',ier)
+               CALL write_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight,ATT='Weight',&
+                                  ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Weight',ier)
+               CALL write_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam,ATT='Beam Number',&
+                                      ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Beam',ier)
                CALL write_var_hdf5(fid,'Zatom',nparticles,ier,DBLVAR=Zatom,ATT='Particle Charge Number',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Zatom',ier)
                CALL write_var_hdf5(fid,'end_state',nparticles,ier,INTVAR=end_state,ATT='0: Orbiting; 1: Thermalized; 2: Wall Strike; 3: Shienthrough',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'end_state',ier)
+               CALL write_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams,ATT='Beam Energy [J]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_BEAMS',ier)
                CALL write_var_hdf5(fid,'R_lines',npoinc+1,nparticles,ier,DBLVAR=R_lines,ATT='Cylindrical R of Trajectory [m]',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'R_lines',ier)
@@ -264,51 +298,103 @@
                CALL write_scalar_hdf5(fid,'partvmax',ier,DBLVAR=partvmax,&
                                       ATT='Maximum velocity of dist func [m/s]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'partvmax',ier)
-               IF (ALLOCATED(epower_prof)) THEN
-                     CALL write_scalar_hdf5(fid,'ns_prof1',ier,INTVAR=ns_prof1,&
-                                         ATT='Rho Grid Points [0,1]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof1',ier)
-                     CALL write_scalar_hdf5(fid,'ns_prof2',ier,INTVAR=ns_prof2,&
-                                         ATT='U Grid Points [0,2pi]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof2',ier)
-                     CALL write_scalar_hdf5(fid,'ns_prof3',ier,INTVAR=ns_prof3,&
-                                         ATT='V Grid Points [0,2pi/nfp]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof3',ier)
-                     CALL write_scalar_hdf5(fid,'ns_prof4',ier,INTVAR=ns_prof4,&
-                                         ATT='VLL Grid Points[-vmax,vmax]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof4',ier)
-                     CALL write_scalar_hdf5(fid,'ns_prof5',ier,INTVAR=ns_prof5,&
-                                         ATT='Vperp Grid Points [0, vmax]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof5',ier)
-                     CALL write_var_hdf5(fid,'ndot_prof',nbeams,ns_prof1,ier,DBLVAR=ndot_prof,&
-                                         ATT='Fast Ion Source [m^-3/s]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ndot_prof',ier)
-                     CALL write_var_hdf5(fid,'epower_prof',nbeams,ns_prof1,ier,DBLVAR=epower_prof,&
-                                         ATT='Electron Power Deposition [W*m^-3]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'epower_prof',ier)
-                     CALL write_var_hdf5(fid,'ipower_prof',nbeams,ns_prof1,ier,DBLVAR=ipower_prof,&
-                                         ATT='Ion Power Deposition [W*m^-3]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ipower_prof',ier)
-                     CALL write_var_hdf5(fid,'j_prof',nbeams,ns_prof1,ier,DBLVAR=j_prof,&
-                                         ATT='Total Beam Current Density [A*m^-2]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'J_prof',ier)
-                     !CALL write_var_hdf5(fid,'dist_prof',nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist_prof,&
-                     !                    ATT='Distribution Function [part/s]',ATT_NAME='description')
-                     !IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_prof',ier)
-                     CALL write_var_hdf5(fid,'dist2d_prof',nbeams,ns_prof4,ns_prof5,ier,DBLVAR=dist2d_prof,&
-                                         ATT='Distribution Function [part/s] (beam,vll,vperp)',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist2d_prof',ier)
+               CALL write_scalar_hdf5(fid,'ns_prof1',ier,INTVAR=ns_prof1,&
+                                   ATT='Rho Dist. Grid Points',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof1',ier)
+               CALL write_scalar_hdf5(fid,'ns_prof2',ier,INTVAR=ns_prof2,&
+                                   ATT='U (poloidal) Dist. Grid Points',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof2',ier)
+               CALL write_scalar_hdf5(fid,'ns_prof3',ier,INTVAR=ns_prof3,&
+                                   ATT='PHI (toroidal) Dist. Grid Points',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof3',ier)
+               CALL write_scalar_hdf5(fid,'ns_prof4',ier,INTVAR=ns_prof4,&
+                                   ATT='Parallel Velocity Dist. Grid Points',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof4',ier)
+               CALL write_scalar_hdf5(fid,'ns_prof5',ier,INTVAR=ns_prof5,&
+                                   ATT='Perpendicular Velocity Dist. Grid Points',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof5',ier)
+               ALLOCATE(rtemp(ns_prof1))
+               FORALL(i = 1:ns_prof1) rtemp(i) = (DBLE(i)-0.5)*h1_prof
+               CALL write_var_hdf5(fid,'dist_rhoaxis',ns_prof1,ier,DBLVAR=rtemp,&
+                  ATT='Dist. Func. Radial Grid (r/a)',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_rhoaxis',ier)
+               DEALLOCATE(rtemp)
+               ALLOCATE(rtemp(ns_prof2))
+               FORALL(i = 1:ns_prof2) rtemp(i) = (DBLE(i)-0.5)/ns_prof2*pi2
+               CALL write_var_hdf5(fid,'dist_uaxis',ns_prof2,ier,DBLVAR=rtemp,&
+                  ATT='Dist. Func. Poloidal Grid (U) [rad]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'uaxis',ier)
+               DEALLOCATE(rtemp)
+               ALLOCATE(rtemp(ns_prof3))
+               FORALL(i = 1:ns_prof3) rtemp(i) = (DBLE(i)-0.5)/ns_prof3*pi2
+               CALL write_var_hdf5(fid,'dist_paxis',ns_prof3,ier,DBLVAR=rtemp,&
+                  ATT='Dist. Func. Toridal Grid (phi) [rad]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'paxis',ier)
+               DEALLOCATE(rtemp)
+               ALLOCATE(rtemp(ns_prof4))
+               FORALL(i = 1:ns_prof4) rtemp(i) =  2*partvmax/(ns_prof4) * (DBLE(i)-0.5) - partvmax !partvmax* (2*(DBLE(i)-1)/ns_prof4-1)
+               CALL write_var_hdf5(fid,'dist_Vaxis',ns_prof4,ier,DBLVAR=rtemp,&
+                  ATT='Dist. Func. Para. Velocity Grid (v_para) [m/s]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vaxis',ier)
+               DEALLOCATE(rtemp)
+               ALLOCATE(rtemp(ns_prof5))
+               FORALL(i = 1:ns_prof5) rtemp(i) = (DBLE(i)-0.5)/ns_prof5*partvmax
+               CALL write_var_hdf5(fid,'dist_Waxis',ns_prof5,ier,DBLVAR=rtemp,&
+                  ATT='Dist. Func. Perp. Velocity Grid (v_perp) [m/s]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'waxis',ier)
+               IF (ASSOCIATED(ndot_prof)) THEN
+                  CALL write_var_hdf5(fid,'ndot_prof',nbeams,ns_prof1,ier,DBLVAR=ndot_prof,&
+                                      ATT='Fast Ion Source [m^-3/s]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ndot_prof',ier)
+               END IF
+               IF (ASSOCIATED(epower_prof)) THEN
+                  CALL write_var_hdf5(fid,'epower_prof',nbeams,ns_prof1,ier,DBLVAR=epower_prof,&
+                                      ATT='Electron Power Deposition [W*m^-3]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'epower_prof',ier)
+               END IF
+               IF (ASSOCIATED(ipower_prof)) THEN
+                  CALL write_var_hdf5(fid,'ipower_prof',nbeams,ns_prof1,ier,DBLVAR=ipower_prof,&
+                                      ATT='Ion Power Deposition [W*m^-3]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ipower_prof',ier)
+               END IF
+               IF (ASSOCIATED(j_prof)) THEN
+                  CALL write_var_hdf5(fid,'j_prof',nbeams,ns_prof1,ier,DBLVAR=j_prof,&
+                                      ATT='Total Beam Current Density [A*m^-2]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'j_prof',ier)
+               END IF
+               IF (ASSOCIATED(dense_prof)) THEN
+                  CALL write_var_hdf5(fid,'dense_prof',nbeams,ns_prof1,ier,DBLVAR=dense_prof,&
+                                      ATT='Fast Ion Density [m^-3]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dense_prof',ier)
+               END IF
+               IF (ASSOCIATED(dist5d_prof)) THEN
+                  CALL write_var_hdf5(fid,'dist_prof',nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist5d_prof,&
+                                      ATT='Distribution Function [part/(m^6/s^3)] (nbeam,nrho,npol,ntor,nvll,nvperp)',ATT_NAME='description') !its not volume normalized, so shouldnt the units be [part]?
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_prof',ier)
                END IF
                IF (lbeam) THEN
                   CALL write_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through,&
                                    ATT='Total Beam Shine Through [%]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Shinethrough',ier)
+                  CALL write_var_hdf5(fid,'Shineport',nbeams,ier,DBLVAR=shine_port,&
+                                   ATT='Loss to Port [%]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'shine_port',ier)
+               END IF
+               IF (ASSOCIATED(NEUTRONS_ARR)) THEN
+                  CALL write_var_hdf5(fid,'NEUTRON_RATE',2,nr,nphi,nz,ier,DBLVAR=NEUTRONS_ARR,&
+                                      ATT='Neutron Rate [m^-3]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'NEUTRONS_ARR',ier)
+               END IF
+               IF (ASSOCIATED(E_NEUTRONS)) THEN
+                  CALL write_var_hdf5(fid,'E_NEUTRONS',2,ier,DBLVAR=E_NEUTRONS,&
+                                      ATT='Neutron Energy [eV]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_NEUTRONS',ier)
                END IF
          END SELECT
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
       END IF
-!DEC$ ELSE
+#else
       WRITE(6,'(A)')  '   FILE: '//'beams3d_'//TRIM(id_string)//'.bin'
       CALL safe_open(iunit,ier,'beams3d_'//TRIM(id_string)//'.bin','replace','unformatted')
       WRITE(iunit,*) BEAMS3D_VERSION
@@ -344,7 +430,7 @@
       WRITE(iunit,*) B_Z
       WRITE(iunit,*) B_PHI
       CLOSE(iunit)
-!DEC$ ENDIF  
+#endif
 
       RETURN
 

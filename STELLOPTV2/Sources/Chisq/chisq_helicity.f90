@@ -35,13 +35,14 @@
 !-----------------------------------------------------------------------
       LOGICAL :: lsym
       INTEGER :: dex, ik, mn, n, m, k_heli, l_heli, num0, n1, n2, i_save
-      REAL(rprec) :: bnorm, bmax, bmn, rad_sigma, sj, val
+      REAL(rprec) :: bnorm, bmax, bmn, sj, val
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: rad_sigma
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0 ) RETURN
       IF (lasym) STOP 'ERROR: Helicity targeting requires lasym = .FALSE.'
-      dex = COUNT(sigma < bigno)*mnboz_b
+      dex = COUNT(ABS(sigma) < bigno)*mnboz_b
       l_heli = NINT(REAL(helicity))
       k_heli = NINT(AIMAG(helicity))
       IF (niter >= 0) THEN   
@@ -51,9 +52,11 @@
             WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VALS  BNORM  K  MBOZ  NBOZ'
             CALL FLUSH(iunit_out)
          END IF
+         ! Allocate radial weighting
+         ALLOCATE(rad_sigma(1:mnboz_b))
          ! Now calculate chi_sq
          DO ik = 1, nsd
-            IF (sigma(ik) >= bigno) CYCLE
+            IF (ABS(sigma(ik)) >= bigno) CYCLE
             bmax  = MAXVAL(ABS(bmnc_b(1:mnboz_b,ik)))
             sj = (real(ik,rprec) - 1.5_dp)/REAL((ns_b-1),rprec)            !!This is correct (SPH)
             bnorm = 0.0
@@ -96,12 +99,10 @@
 
             IF (sigma(ik) < 0.0) THEN
                rad_sigma = 1
-            ELSE IF (m < 3) THEN
-               rad_sigma = sj
-            ELSE IF (m == 3) THEN
-               rad_sigma = sj**1.5
             ELSE
                rad_sigma = sj*sj
+               WHERE(ixm_b<3) rad_sigma = sj
+               WHERE(ixm_b==3) rad_sigma = sj**1.5
             END IF
 
             vals(num0:mtargets) = vals(num0:mtargets)/bnorm
@@ -113,6 +114,7 @@
                END DO
             END IF
          END DO
+         DEALLOCATE(rad_sigma)
       ELSE
          ! Consistency check
          mboz = MAX(6*mpol, 2, mboz)             
@@ -120,7 +122,7 @@
          ! CALCULATE mnboz_b becasue we don't know it yet (setup_booz.f)
          mnboz_b = (2*nboz+1)*(mboz-1) + (nboz + 1)
          DO ik = 1, nsd
-            IF (sigma(ik) < bigno) THEN
+            IF (ABS(sigma(ik)) < bigno) THEN
                lbooz(ik) = .TRUE.
                DO mn = 1, mnboz_b
                   mtargets = mtargets + 1

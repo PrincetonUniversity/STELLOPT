@@ -18,6 +18,9 @@
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       USE beams3d_input_mod, ONLY: write_beams3d_namelist
 !DEC$ ENDIF
+!DEC$ IF DEFINED (AEOPT)
+      USE trapped_avail_energy_mod, ONLY: write_avail_energy_nml
+!DEC$ ENDIF
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -50,6 +53,7 @@
       CALL safe_open(iunit_out,ier,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
          SELECT CASE(TRIM(equil_type))
             CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
+               IF (lcoil_geom) mgrid_file = 'mgrid_'//TRIM(proc_string)//'.nc'
                CALL write_indata_namelist(iunit_out,ier)
             CASE('test')
          END SELECT
@@ -62,6 +66,10 @@
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
 !DEC$ ENDIF
+!DEC$ IF DEFINED (AEOPT)
+      IF (ANY(sigma_txport < bigno)) CALL write_avail_energy_nml(iunit_out,ier)
+!DEC$ ENDIF
+      IF (lcoil_geom) CALL write_mgrid_namelist(iunit_out,ier)
       WRITE(iunit_out,'(A)') '&END'
       CLOSE(iunit_out)
 

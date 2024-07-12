@@ -10,7 +10,7 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime
       USE stellopt_targets
-      USE equil_vals, ONLY: pres_spl, nrad, rho
+      USE equil_vals, ONLY: pres_spl, nrad, shat
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -38,7 +38,7 @@
       IF (niter >= 0) THEN
          pmin = 0.0
          ALLOCATE(p_temp(nrad))
-         CALL EZspline_interp(pres_spl,nrad,rho,p_temp,ier)
+         CALL EZspline_interp(pres_spl,nrad,shat,p_temp,ier)
          pmin = MINVAL(p_temp,DIM=1)
          DEALLOCATE(p_temp)
          mtargets = mtargets + 1
