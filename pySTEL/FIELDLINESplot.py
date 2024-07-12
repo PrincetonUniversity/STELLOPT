@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy
 from PyQt5.QtGui import QIcon
 # Matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
 from libstell import fieldlines
@@ -64,6 +65,7 @@ class MyApp(QMainWindow):
 		self.fig = Figure(figsize=(2,2),dpi=100)
 		self.ax = self.fig.add_subplot(111)
 		self.canvas = FigureCanvas(self.fig)
+		#self.toolbar = NavigationToolbar(self.canvas, self.canvas)
 		self.ui.plot_widget.addWidget(self.canvas)
 		#self.canvas.draw()
 		# Callbacks		
@@ -82,7 +84,7 @@ class MyApp(QMainWindow):
 		self.ui.savebutton.clicked.connect(self.plot_to_file)
 
 	def FileSelect(self,i):
-		self.fieldlines_data=read_fieldlines(self.ui.FileName.currentText())
+		self.fieldlines_data.read_fieldlines(self.ui.FileName.currentText())
 		#self.ui.PlotList.addItems(self.ui.plot_list)
 		self.nlines = self.fieldlines_data.nlines
 		self.npoinc = self.fieldlines_data.npoinc
