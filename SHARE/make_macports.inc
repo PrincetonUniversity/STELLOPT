@@ -14,32 +14,33 @@
   
   SHELL = /bin/sh
   PWD1 = `pwd`
-  PRECOMP:= cpp-mp-8 -traditional-cpp -E -P -C -DMACOSX
+  PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
-  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
+  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none \
+                          -ffixed-line-length-none
   LINK    = gfortran $(FLAGS) -o
   LINK_AR = ar -ruvs
-  LINK_C  = gcc -shared -Wl,-no_compact_unwind
+  LINK_C  = gcc -Wl,-no_compact_unwind
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all
-  LIBS    = -L/opt/local/lib -lopenblas 
-# Because scalapack is broken in macport for MPI4.0
-  LIBS += /Users/lazerson/Sims_Work/scalapack-2.0.2/libscalapack.a
+  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
+  FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check
+  LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
+  FLAGS_R += -fallow-argument-mismatch
+  FLAGS_D += -fallow-argument-mismatch
 
+  
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
   MPI_COMPILE = mpif90
-  MPI_COMPILE_FREE = mpif90 -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none
+  MPI_COMPILE_FREE = mpif90 -ffree-form -ffree-line-length-none \
+                            -ffixed-line-length-none 
   MPI_COMPILE_C = mpicc 
-  MPI_LINK = /opt/local/bin/mpif90
-  MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
+  MPI_LINK = mpif90 -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = -np 2
 
@@ -74,7 +75,7 @@
 #######################################################################
 #             PGPLOT Options
 #######################################################################
-  LPGPLOT = T
+  LPGPLOT = F
   PGPLOT_INC = -I/opt/local/include
   PGPLOT_LIB = -L/opt/local/lib -lpgplot -lX11
 
@@ -117,7 +118,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -126,12 +127,14 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
-  TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
+  LIB_FADDEEVA = libfaddeeva64.a
+  TRAVIS_LIB = $(TRAVIS_DIR)lib/$(LIB_TRAVIS) \
+               $(TRAVIS_DIR)faddeeva_package/lib/$(LIB_FADDEEVA) \
+               $(TRAVIS_DIR)magconf/lib/$(LIB_MCONF) -lc++
 
 #######################################################################
 #            REGCOIL Options
@@ -154,7 +157,16 @@
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 
 #######################################################################
+#            Available Energy Options
+#######################################################################
+  LAEOPT= F
+  AEOPT_DIR = $(AEOPT_PATH)
+  AEOPT_INC = -I$(AEOPT_DIR) 
+  LIB_AEOPT = libtrapAE.a
+  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
 
-LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread $(LIBS)
+LIB_SHARE = $(LIBS)

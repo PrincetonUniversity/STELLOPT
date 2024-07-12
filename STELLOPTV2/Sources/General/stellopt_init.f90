@@ -54,7 +54,10 @@
       ier = 0
 
       ! Read the OPTIMUM Namelist
-      CALL read_stellopt_input(TRIM(id_string),ier,myid)
+      CALL init_stellopt_input
+      CALL read_stellopt_input(TRIM(id_string),ier)
+      CALL stellopt_read_cws
+      CALL stellopt_write_header
       !CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
       !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
 
@@ -64,7 +67,8 @@
       ! Handle MPI and shared memory
       CALL stellopt_init_mpi
 
-      ! Send workers to the worker pool subroutine
+      ! Send workers to the worker pool subroutine stellopt_paraexe
+      ! The 'master' will continue on
       IF (myworkid .ne. master) THEN
          ltst  = .false.
          tstr1 = ''
@@ -98,6 +102,9 @@
                  STOP
               END IF
               CLOSE(iunit)
+              ! SFINCS namelist is parsed and updated from the original input file
+              !     on each iteration (variable 'id_tag' holds this string)
+              !     See stellopt_vboot.f90 and stellopt_sfincs.f90 
               CALL stellopt_paraexe(tstr1,tstr2,ltst)
          CASE('test')
               id_string = id_string(7:LEN(id_string))
@@ -202,10 +209,17 @@
                  END DO
               END DO
               ctrl_dofs = 3                 !x,y,z at each point
-              IF (lwindsurf) ctrl_dofs = 2  ! u,v  at each point
+              IF (ANY(lwindsurf)) ctrl_dofs = 2  ! u,v  at each point
               DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
-                 ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
-                 nknots = COUNT(coil_splinesx(n,:) >= 0.0) - 2
+                 nknots = COUNT(coil_splinesx(n,:) >= 0.0)
+                 IF (lwindsurf(coil_surf(n)).AND.(coil_type(n).eq.'A')) THEN
+                    lcoil_spline(n,1:3) = .FALSE.
+                    lcoil_spline(n,nknots-6:nknots-4) = .FALSE.
+                    if (lcoil_spline(n,nknots-7)) nvars = nvars - 1
+                 ELSE
+                    ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
+                    nknots = nknots - 2
+                 ENDIF
 
                  ! First ctrl of modular loses one dof (u or z).
                  IF ((coil_type(n).eq.'M').AND.lcoil_spline(n,1)) nvars = nvars - 1
@@ -256,7 +270,6 @@
       SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
               ! Set some defaults
-              phiedge_old = phiedge
               IF (ncurr /= 0 .and. ANY(lai_opt)) lai_opt(:) = .false.
               IF (ncurr /= 0 .and. ANY(lai_f_opt)) lai_f_opt(:) = .false.
               IF (ncurr /= 1 .and. lcurtor_opt) lcurtor_opt = .false.
@@ -1490,7 +1503,7 @@
                              coil_splinefz_max(n,m) = coil_splinefz(n,m) + ABS(pct_domain*coil_splinefz(n,m))
                           END IF
 
-                          IF ((m > 1).OR.(coil_type(n).NE.'M').OR.(.NOT.lwindsurf)) THEN !u0 fixed for mod on ws
+                          IF ((m > 1).OR.(coil_type(n).NE.'M').OR.(.NOT.lwindsurf(coil_surf(n)))) THEN !u0 fixed for mod on ws
                              nvar_in = nvar_in + 1
                              vars(nvar_in) = coil_splinefx(n,m)
                              vars_min(nvar_in) = coil_splinefx_min(n,m)
@@ -1501,18 +1514,21 @@
                              arr_dex(nvar_in,2) = m
                           END IF
 
-                          nvar_in = nvar_in + 1
-                          vars(nvar_in) = coil_splinefy(n,m)
-                          vars_min(nvar_in) = coil_splinefy_min(n,m)
-                          vars_max(nvar_in) = coil_splinefy_max(n,m)
-                          var_dex(nvar_in) = icoil_splinefy
-                          diag(nvar_in)    = dcoil_spline(n,m)
-                          arr_dex(nvar_in,1) = n
-                          arr_dex(nvar_in,2) = m
+                          ! v fixed for all-spline mod on ws @ pt n-4
+                          IF ((m.NE.nknots-5).OR.(coil_type(n).NE.'A').OR.(.NOT.lwindsurf(coil_surf(n)))) THEN
+                             nvar_in = nvar_in + 1
+                             vars(nvar_in) = coil_splinefy(n,m)
+                             vars_min(nvar_in) = coil_splinefy_min(n,m)
+                             vars_max(nvar_in) = coil_splinefy_max(n,m)
+                             var_dex(nvar_in) = icoil_splinefy
+                             diag(nvar_in)    = dcoil_spline(n,m)
+                             arr_dex(nvar_in,1) = n
+                             arr_dex(nvar_in,2) = m
+                          END IF
 
                           ! z gets ignored if winding surface is present;
                           !  z0 is held fixed for modular coils.
-                          IF ((.NOT.lwindsurf).AND.((m > 1).OR.(coil_type(n).NE.'M'))) THEN
+                          IF ((.NOT.lwindsurf(coil_surf(n))).AND.((m > 1).OR.(coil_type(n).NE.'M'))) THEN
                              nvar_in = nvar_in + 1
                              vars(nvar_in) = coil_splinefz(n,m)
                              vars_min(nvar_in) = coil_splinefz_min(n,m)
@@ -1664,7 +1680,12 @@
          CLOSE(iunit)
       END IF
       
-      
+      ! Save the initial axis shape, in case axis_init_option="input"
+      raxis_cc_initial = raxis_cc
+      zaxis_cc_initial = zaxis_cc
+      raxis_cs_initial = raxis_cs
+      zaxis_cs_initial = zaxis_cs
+
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)

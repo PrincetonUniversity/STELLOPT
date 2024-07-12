@@ -39,6 +39,7 @@
       LOGICAL :: lnyquist
       INTEGER :: ier, i, mn, u, v, nu2, nv2, mnmax_temp
       INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
+      DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: rmnc_temp(:,:),zmns_temp(:,:),&
                            bumnc_temp(:,:),bvmnc_temp(:,:),&
                            jumnc_temp(:,:),jvmnc_temp(:,:),&
@@ -115,11 +116,19 @@
                zmnc_temp(:,2) = zmnc(:,ns)
             END IF
          ENDIF
-         bumnc_temp(:,1) = (1.5*bsupumnc(:,ns) - 0.5*bsupumnc(:,ns-1))
-         bvmnc_temp(:,1) = (1.5*bsupvmnc(:,ns) - 0.5*bsupvmnc(:,ns-1))
+         ALLOCATE(mfact(mnmax_temp,2))
+         WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
+            mfact(:,1)= 1.5
+            mfact(:,2)=-0.5
+         ELSEWHERE
+            mfact(:,1)= 1.5*SQRT((ns-1.0)/(ns-1.5))
+            mfact(:,2)=-0.5*SQRT((ns-1.0)/(ns-2.5))
+         ENDWHERE
+         bumnc_temp(:,1) = mfact(:,1)*bsupumnc(:,ns) + mfact(:,2)*bsupumnc(:,ns-1)
+         bvmnc_temp(:,1) = mfact(:,1)*bsupvmnc(:,ns) + mfact(:,2)*bsupvmnc(:,ns-1)
          IF (lasym) THEN
-            bumns_temp(:,1) = 1.5*bsupumns(:,ns) - 0.5*bsupumns(:,ns-1)
-            bvmns_temp(:,1) = 1.5*bsupvmns(:,ns) - 0.5*bsupvmns(:,ns-1)
+            bumns_temp(:,1) = mfact(:,1)*bsupumns(:,ns) + mfact(:,2)*bsupumns(:,ns-1)
+            bvmns_temp(:,1) = mfact(:,1)*bsupvmns(:,ns) + mfact(:,2)*bsupvmns(:,ns-1)
             CALL init_virtual_casing(mnmax_temp,nu2,nv2,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
                                          RMNS=rmns_temp, ZMNC=zmnc_temp,&
@@ -132,15 +141,20 @@
                                          rmnc_temp,zmns_temp,nfp,&
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,COMM=MPI_COMM_DIAGNO)
          END IF
+         DEALLOCATE(mfact)
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
       ELSE   ! Initialize Volume Integral
          ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
          ALLOCATE(rmnc_temp(mnmax_temp,ns),zmns_temp(mnmax_temp,ns))
          ALLOCATE(jumnc_temp(mnmax_temp,ns),jvmnc_temp(mnmax_temp,ns))
+         xm_temp=0; xn_temp=0; rmnc_temp=0; zmns_temp=0;
+         jumnc_temp=0; jvmnc_temp=0
          IF (lasym) THEN
             ALLOCATE(rmns_temp(mnmax_temp,ns),zmnc_temp(mnmax_temp,ns))
             ALLOCATE(jumns_temp(mnmax_temp,ns),jvmns_temp(mnmax_temp,ns))
+            rmns_temp = 0; zmnc_temp=0
+            jumns_temp = 0; jvmns_temp=0
          END IF
          IF (lnyquist) THEN
             xm_temp = xm_nyq

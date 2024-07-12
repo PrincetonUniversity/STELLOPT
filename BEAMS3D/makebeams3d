@@ -5,7 +5,7 @@ CFILE   = '$*''.c'
 F90FILE = '$*''.f90'
 SPATH   = ../Sources
 #Contains list of source files (.o) and dependencies
-DEPLIST = BEAMS3D.dep
+DEPLIST = ../BEAMS3D.dep
 OBJLIST = ../ObjectList
 
 #Includes source files and dependency list
@@ -54,6 +54,10 @@ xbeams3d:  $(LIB) $(ObjectFiles)
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
       fi
       
+#Make the BEAMS3D library file
+libbeams3d.a : $(ObjectFiles)
+	ar -cruv libbeams3d.a $(ObjectFiles)
+
 #Check that library files are current. 
 $(LIB) :
 	@cd $(LIB_DIR); make $(TYPE)

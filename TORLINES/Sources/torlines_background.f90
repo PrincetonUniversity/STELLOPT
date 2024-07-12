@@ -46,18 +46,25 @@
 !          jvmns      Odd J^v Fourier Modes         
 !----------------------------------------------------------------------
       IMPLICIT NONE
+
+      REAL*8, parameter :: small = 1.e-10_ezspline_r8
       
       INTEGER ::  mnmax_m, nfp
       REAL(rprec) :: vc_adapt_tol, bound_separation, isgn
       REAL(rprec) :: u0, v0, dr_m, vb_ws, rb_ws, zb_ws, phimin, phimax, delta_phi
       INTEGER, ALLOCATABLE :: ixm_m(:), ixn_m(:)
-      REAL(rprec), ALLOCATABLE :: rho(:)
       REAL(rprec), ALLOCATABLE :: rmnc_m(:),zmns_m(:)
       REAL(rprec), ALLOCATABLE :: rmns_m(:),zmnc_m(:)
       INTEGER, ALLOCATABLE :: xm_sav(:), xn_sav(:)
       REAL(rprec), ALLOCATABLE :: rmnc_sav(:,:),zmns_sav(:,:)
       REAL(rprec), ALLOCATABLE :: rmns_sav(:,:),zmnc_sav(:,:)
       REAL(rprec), ALLOCATABLE :: bmnc_sav(:,:),bmns_sav(:,:)
+
+      INTEGER                  :: win_R4D, win_Z4D, win_BXSI4D, &
+                                  win_BETA4D, win_B4D, win_rho
+      REAL(rprec), POINTER :: rho(:)
+      REAL(rprec), DIMENSION(:,:,:,:), POINTER :: R4D, Z4D, BXSI4D, &
+                                                  BETA4D, B4D
       
       REAL(rprec)              :: thmx, phmx
       TYPE(EZspline3_r8)       :: beta_spl

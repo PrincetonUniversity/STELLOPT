@@ -68,17 +68,17 @@
 !...  EVALUATE AND STORE VMEC Fourier coefficients and
 !           their derivatives on RADIAL full mesh
 
-      ALLOCATE (lmnsf(mndim), bmncf(mndim), rmncpf(mndim),
-     1          zmnspf(mndim), lmnspf(mndim), bmncpf(mndim),
-     2          bsupvmncf(mndim), bsupumncf(mndim), stat=k)
+      ALLOCATE (lmnsf(mndim), bmncf(mndim_nyq), rmncpf(mndim),
+     1          zmnspf(mndim), lmnspf(mndim), bmncpf(mndim_nyq),
+     2          bsupvmncf(mndim_nyq), bsupumncf(mndim_nyq), stat=k)
       IF (k .ne. 0) STOP 'Allocation error 3 in get_ballooning_grate'
       lmnsf=0; bmncf=0; bsupvmncf=0; bsupumncf=0
       rmncpf=0; zmnspf=0; lmnspf=0; bmncpf=0
 
       IF (lasym_v) THEN                                                    ! 110909 RS = for ASYMMETRIC input
-        ALLOCATE (lmncf(mndim), bmnsf(mndim), rmnspf(mndim),
-     1            zmncpf(mndim), lmncpf(mndim), bmnspf(mndim),
-     2            bsupvmnsf(mndim), bsupumnsf(mndim), stat=k)
+        ALLOCATE (lmncf(mndim), bmnsf(mndim_nyq), rmnspf(mndim),
+     1            zmncpf(mndim), lmncpf(mndim), bmnspf(mndim_nyq),
+     2            bsupvmnsf(mndim_nyq), bsupumnsf(mndim_nyq), stat=k)
         IF (k .ne. 0) STOP 'Allocation error 4 in get_ballooning_grate'
         lmncf=0; bmnsf=0; bsupvmnsf=0; bsupumnsf=0
         rmnspf=0; zmncpf=0; lmncpf=0; bmnspf=0
@@ -96,12 +96,6 @@
 
          lmnsf(dinf1:dinfp) = 0.5_dp*(lmnsh(dinfp1:dinfpp)
      1    +lmnsh(dinf1:dinfp))
-         bmncf(dinf1:dinfp) = 0.5_dp*(bmnch(dinfp1:dinfpp)
-     1    +bmnch(dinf1:dinfp))
-         bsupvmncf(dinf1:dinfp) = 0.5_dp*(bsupvmnch(dinfp1:dinfpp)
-     1    +bsupvmnch(dinf1:dinfp))
-         bsupumncf(dinf1:dinfp) = 0.5_dp*(bsupumnch(dinfp1:dinfpp)
-     1    +bsupumnch(dinf1:dinfp))
 
 !...   VMEC Fourier coefficients radial derivatives on RADIAL full mesh
 
@@ -111,8 +105,6 @@
      1    -zmnsf(dinfm1:dinf))
          lmnspf(dinf1:dinfp) = ohs*(lmnsh(dinfp1:dinfpp)
      1    -lmnsh(dinf1:dinfp))
-         bmncpf(dinf1:dinfp) = ohs*(bmnch(dinfp1:dinfpp)
-     1    -bmnch(dinf1:dinfp))
 
          IF (lasym_v) THEN                                                 ! 110909 RS = for ASYMMETRIC input
 
@@ -120,12 +112,6 @@
 
            lmncf(dinf1:dinfp) = 0.5_dp*(lmnch(dinfp1:dinfpp)
      1      +lmnch(dinf1:dinfp))
-           bmnsf(dinf1:dinfp) = 0.5_dp*(bmnsh(dinfp1:dinfpp)
-     1      +bmnsh(dinf1:dinfp))
-           bsupvmnsf(dinf1:dinfp) = 0.5_dp*(bsupvmnsh(dinfp1:dinfpp)
-     1      +bsupvmnsh(dinf1:dinfp))
-           bsupumnsf(dinf1:dinfp) = 0.5_dp*(bsupumnsh(dinfp1:dinfpp)
-     1      +bsupumnsh(dinf1:dinfp))
 
 !...   VMEC Asymmetric Fourier coefficients radial derivatives on RADIAL full mesh
 
@@ -135,6 +121,46 @@
      1      -zmncf(dinfm1:dinf))
            lmncpf(dinf1:dinfp) = ohs*(lmnch(dinfp1:dinfpp)
      1      -lmnch(dinf1:dinfp))
+
+         ENDIF
+
+       ENDDO
+
+      DO kl = 1, nlist
+         dinf  = (list(kl)-1)*mnmax_vnyq
+         dinf1 = dinf+1
+         dinfp = dinf+mnmax_vnyq
+         dinfp1= dinfp+1
+         dinfpp= dinf+2*mnmax_vnyq
+         dinfm1= dinf-mnmax_vnyq+1
+
+!...   VMEC Fourier coefficients on RADIAL full mesh
+
+         bmncf(dinf1:dinfp) = 0.5_dp*(bmnch(dinfp1:dinfpp)
+     1    +bmnch(dinf1:dinfp))
+         bsupvmncf(dinf1:dinfp) = 0.5_dp*(bsupvmnch(dinfp1:dinfpp)
+     1    +bsupvmnch(dinf1:dinfp))
+         bsupumncf(dinf1:dinfp) = 0.5_dp*(bsupumnch(dinfp1:dinfpp)
+     1    +bsupumnch(dinf1:dinfp))
+
+!...   VMEC Fourier coefficients radial derivatives on RADIAL full mesh
+
+         bmncpf(dinf1:dinfp) = ohs*(bmnch(dinfp1:dinfpp)
+     1    -bmnch(dinf1:dinfp))
+
+         IF (lasym_v) THEN                                                 ! 110909 RS = for ASYMMETRIC input
+
+!...   VMEC Asymmetric Fourier coefficients on RADIAL full mesh
+
+           bmnsf(dinf1:dinfp) = 0.5_dp*(bmnsh(dinfp1:dinfpp)
+     1      +bmnsh(dinf1:dinfp))
+           bsupvmnsf(dinf1:dinfp) = 0.5_dp*(bsupvmnsh(dinfp1:dinfpp)
+     1      +bsupvmnsh(dinf1:dinfp))
+           bsupumnsf(dinf1:dinfp) = 0.5_dp*(bsupumnsh(dinfp1:dinfpp)
+     1      +bsupumnsh(dinf1:dinfp))
+
+!...   VMEC Asymmetric Fourier coefficients radial derivatives on RADIAL full mesh
+
            bmnspf(dinf1:dinfp) = ohs*(bmnsh(dinfp1:dinfpp)
      1      -bmnsh(dinf1:dinfp))
 

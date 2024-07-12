@@ -26,11 +26,13 @@
             mu_start_in, charge_in, mass_in, t_end_in, Zatom_in, &
             TE_AUX_S_BEAMS => TE_AUX_S, TE_AUX_F_BEAMS => TE_AUX_F, &
             NE_AUX_S_BEAMS => NE_AUX_S, NE_AUX_F_BEAMS => NE_AUX_F, &
+            NI_AUX_S_BEAMS => NI_AUX_S, NI_AUX_F_BEAMS => NI_AUX_F, &
             TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, &
+            NI_AUX_M_BEAMS => NI_AUX_M, NI_AUX_Z_BEAMS => NI_AUX_Z, &
             ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F, &
             BEAMS3D_VERSION, mass_beams, charge_beams
       USE beams3d_grid, ONLY: nte, nne, nti, nzeff, rmin, rmax, zmin, zmax, &
-                              phimin, phimax
+                              phimin, phimax, plasma_mass
       USE beams3d_lines, ONLY: end_state
 !DEC$ ENDIF
       USE mpi_params
@@ -75,7 +77,7 @@
       s_min = 1
       s_max = 0
       tf    = MAXVAL(t_end_in)
-      MASS_BEAMS(1) = mass_orbit ! do this to diagnostic routine outputs the correct number
+      MASS_BEAMS(1) = mass_orbit ! do this so diagnostic routine outputs the correct number
       CHARGE_BEAMS(1) = Z_orbit*1.602176565E-19
       DO ik = 1, nsd
          IF (sigma_orbit(ik) .ge. bigno) CYCLE
@@ -127,9 +129,10 @@
       nne = NBEAM_PROF; nte = NBEAM_PROF; nti = NBEAM_PROF; nzeff = NBEAM_PROF
       DO ik = 1, NBEAM_PROF
          s_val = DBLE(ik-1)/DBLE(NBEAM_PROF-1)
-         NE_AUX_S_BEAMS(ik) = s_val
-         TE_AUX_S_BEAMS(ik) = s_val
-         TI_AUX_S_BEAMS(ik) = s_val
+         NE_AUX_S_BEAMS(ik)   = s_val
+         TE_AUX_S_BEAMS(ik)   = s_val
+         NI_AUX_S_BEAMS(ik)   = s_val
+         TI_AUX_S_BEAMS(ik)   = s_val
          ZEFF_AUX_S_BEAMS(ik) = s_val
          CALL get_equil_ne(s_val,TRIM(ne_type),v_val,iflag)
          NE_AUX_F_BEAMS(ik) = v_val
@@ -140,14 +143,21 @@
          CALL get_equil_zeff(s_val,TRIM(zeff_type),v_val,iflag)
          IF (v_val < 1) v_val = 1
          ZEFF_AUX_F_BEAMS(ik) = v_val
+         ! Temp fix for NI
+         NI_AUX_S_BEAMS(ik) = s_val
+         NI_AUX_F_BEAMS(1,ik) = NE_AUX_F_BEAMS(ik)
+         NI_AUX_M_BEAMS(1) = plasma_mass
       END DO
+      NI_AUX_Z_BEAMS(1) = 1.0
+      NI_AUX_M_BEAMS(1) = 3.3435837724E-27 !50/50 DT plasma
 
       IF (lscreen) THEN
-         WRITE(6,'(A)') '----- Profile Initialization -----'
+         WRITE(6,'(A)') '----- Profile Initialization (not used) -----'
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Ne  = [',MINVAL(NE_AUX_F_BEAMS)/1E19,',',MAXVAL(NE_AUX_F_BEAMS)/1E19,'] 10^19 [m^-3];  Nne:   ',nne
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Te  = [',MINVAL(TE_AUX_F_BEAMS)/1000,',',MAXVAL(TE_AUX_F_BEAMS)/1000,'] [keV];  Nte:   ',nte
+         WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Ni  = [',MINVAL(NI_AUX_F_BEAMS)/1E19,',',MAXVAL(NI_AUX_F_BEAMS)/1E19,'] 10^19 [m^-3];  Nni:   ',nzeff
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Ti  = [',MINVAL(TI_AUX_F_BEAMS)/1000,',',MAXVAL(TI_AUX_F_BEAMS)/1000,'] [keV];  Nti:   ',nti
-         WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '  Zeff = [',MINVAL(ZEFF_AUX_F_BEAMS),',',MAXVAL(ZEFF_AUX_F_BEAMS),'] [keV];  Nti:   ',nzeff
+         WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '  Zeff = [',MINVAL(ZEFF_AUX_F_BEAMS),',',MAXVAL(ZEFF_AUX_F_BEAMS),'];      NZeff:   ',nzeff
          CALL FLUSH(6)
       END IF
 

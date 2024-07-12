@@ -143,6 +143,9 @@
       ! FARADAY ROTATION
       IF (ANY(sigma_faraday < bigno_ne)) &
          CALL chisq_faraday(target_faraday, sigma_faraday, ncnt,iflag)
+      ! VISUAL BREMSSTRAHLUNG
+      IF (ANY(sigma_visbrem_line < bigno)) &
+         CALL chisq_line_visbrem(target_visbrem_line, sigma_visbrem_line, ncnt,iflag)
          
       !------------- OTHER TARGETS -------------------
       !  ECE Reflectometry
@@ -153,6 +156,9 @@
       ! PRESSURE PROFILE
       IF (ANY(sigma_press < bigno)) &
          CALL chisq_press(target_press, sigma_press, ncnt,iflag)
+      ! PRESSURE GRADIENT PROFILE (dp/ds)
+      IF (ANY(sigma_pressprime < bigno)) &
+         CALL chisq_pressprime(target_pressprime, sigma_pressprime, ncnt,iflag)
       ! ELECTRON DENSITY
       IF (ANY(sigma_ne < bigno_ne)) &
          CALL chisq_ne(target_ne, sigma_ne, ncnt,iflag)
@@ -193,13 +199,27 @@
       !------------- COIL GEOMETRY TARGETS ---------------------
       ! Coil lengths
       IF (ANY(sigma_coillen < bigno)) &
-         CALL chisq_coillen(target_coillen, sigma_coillen, ncnt, iflag)
+         CALL chisq_coillen(target_coillen, sigma_coillen, &
+                            target_coilsegvar, sigma_coilsegvar, &
+                            ncnt, iflag)
+      ! Coil-coil separation
       IF (sigma_coilsep < bigno) &
          CALL chisq_coilsep(target_coilsep, sigma_coilsep, ncnt, iflag)
+      ! Max coil curvature
       IF (ANY(sigma_coilcrv < bigno)) &
          CALL chisq_coilcrv(target_coilcrv, sigma_coilcrv, ncnt, iflag)
+      ! Coil self-intersection
       IF (ANY(sigma_coilself < bigno)) &
          CALL chisq_coilself(target_coilself, sigma_coilself, ncnt, iflag)
+      ! Coil toroidal varation (non-planarity)
+      IF (ANY(sigma_coiltorvar < bigno)) &
+         CALL chisq_coiltorvar(target_coiltorvar, sigma_coiltorvar, ncnt, iflag)
+      ! Coil excursion outside prescribed box
+      IF (ANY(sigma_coilrect < bigno)) &
+           CALL chisq_coilrect(target_coilrect, sigma_coilrect, ncnt, iflag)
+      ! Coil incursion into proscribed polygon set
+      IF (ANY(sigma_coilpoly < bigno)) &
+           CALL chisq_coilpoly(target_coilpoly, sigma_coilpoly, ncnt, iflag)
 
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries
@@ -231,9 +251,15 @@
       ! NEO
       IF (ANY(sigma_neo < bigno)) &
          CALL chisq_neo(target_neo, sigma_neo, ncnt,iflag)
-      ! DKES
+      !!!!!!!! DKES Section only move as chunk !!!!!!!!!!!!!!!!!!!!!!!!
+      nruns_dkes = 0
       IF (ANY(sigma_dkes < bigno)) &
          CALL chisq_dkes(target_dkes, sigma_dkes, ncnt,iflag)
+      IF (ANY(sigma_dkes_erdiff < bigno)) &
+         CALL chisq_dkes_erdiff(target_dkes_erdiff, sigma_dkes_erdiff, ncnt,iflag)
+      IF (ANY(sigma_dkes_alpha < bigno)) &
+         CALL chisq_dkes_alpha(target_dkes_alpha, sigma_dkes_alpha, ncnt,iflag)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! TXPORT
       IF (ANY(sigma_txport < bigno)) &
          CALL chisq_txport(target_txport, sigma_txport, ncnt,iflag)
@@ -261,6 +287,9 @@
       END IF
       IF (sigma_curvature_p2 < bigno) &
          CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
+      ! GAMMA_C
+      IF (ANY(sigma_gamma_c < bigno)) &
+         CALL chisq_gamma_c(target_gamma_c, sigma_gamma_c, ncnt,iflag)
 
       ! Kink
       IF (ANY(sigma_kink < bigno)) &
@@ -273,7 +302,6 @@
       IF (mtargets .ne. m) THEN; iflag=-2; RETURN; END IF
       
       ! Calculate fvec
-      !PRINT *,m,mtargets,fvec
       fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
       RETURN
 !----------------------------------------------------------------------

@@ -84,8 +84,10 @@
       LOGICAL         :: lverb, ldone, lrestart, lasym, lfreeb, &
                          lcoil, lmgrid, lvmec, lpies, lspec, lvac,&
                          lvessel, lraw, lemc3, lauto, lvc_field
-      INTEGER         :: nextcur, npoinc, nruntype, num_hcp, vsurf, nexternal
-      REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc
+      INTEGER         :: nextcur, npoinc, nruntype, num_hcp, vsurf,&
+                         nexternal, nprocs_torlines
+      REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, &
+                         delta_hc, eps1, eps2, eps3
       REAL(rprec), DIMENSION(MAXLINES)     :: r_start, phi_start, &
                                               z_start, phi_end, &
                                               r_hc, z_hc, phi_hc
@@ -93,7 +95,7 @@
       CHARACTER(256)  :: id_string, mgrid_string, coil_string, &
                          vessel_string, int_type, restart_string
       
-      REAL(rprec), PARAMETER :: TORLINES_VERSION = 1.21
+      REAL(rprec), PARAMETER :: TORLINES_VERSION = 2.0
 !-----------------------------------------------------------------------
 !     Subroutines
 !          handle_error  Controls Program Termination

@@ -1,0 +1,22 @@
+name: build-test
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: zhucaoxiang/stellopt:compile
+    env:
+      MACHINE: docker
+      STELLOPT_PATH: ${{ github.workspace }}
+      OMPI_ALLOW_RUN_AS_ROOT: 1
+      OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+    steps:
+      - name: checkout sources
+        uses: actions/checkout@master
+      - name: compile
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2
+      - name: test
+        run: |
+          mpiexec ./bin/xstelloptv2 test -h

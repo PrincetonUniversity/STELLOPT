@@ -9,6 +9,7 @@
   FTOL_ARRAY  = 1.0E-30  1.0E-30  1.0E-30  1.0E-12
   PRECON_TYPE = 'none'
   PREC2D_THRESHOLD =   1.000000E-19
+  LNYQUIST = .F.
 !----- Grid Parameters -----
   LASYM = F
   NFP = 0003
@@ -137,7 +138,7 @@
 !         Requires STELLOPT to be linked to TERPSICHORE.
 !         Also requires the terpsichore_input file.
 !------------------------------------------------------------------------
-  MLMNB_KINK =   264  IVAC_KINK =    24
+  MLMNB_KINK =   458  IVAC_KINK =    24
   TARGET_KINK(001) =  -1.0  SIGMA_KINK(001) =   1.0   MLMNS_KINK(001) =   76
   TARGET_KINK(002) =  -1.0  SIGMA_KINK(002) =   1.0   MLMNS_KINK(002) =   91
 / 

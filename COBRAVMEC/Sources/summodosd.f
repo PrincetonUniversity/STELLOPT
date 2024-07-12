@@ -75,20 +75,12 @@
        rboo = 0; rs = 0; rze = 0; rth = 0; zs = 0; zze = 0
        zth = 0; lambdaze = 0; lambdas = 0; bsupze = 0; bsupth = 0
 
-       fourier: DO j = 1, mnmax_v                                            ! Fourier invert back to real space
+       fourier1: DO j = 1, mnmax_v                                            ! Fourier invert back to real space
 
          arg = xm_v(j)*thetang-zetang*xn_v(j)
          ccosi = COS(arg)
          ssine = SIN(arg)
          lj = mnmax_v*(nsurf-1)+j
-         bfield = bfield+bmncf(lj)*ccosi                                     !magnetic field magnitude
-         IF (lasym_v) bfield = bfield + bmnsf(lj)*ssine                      ! 110909 RS : Asymmetric input
-         bfields = bfields+bmncpf(lj)*ccosi                                  ! ..... radial derivative
-         IF (lasym_v) bfields = bfields + bmnspf(lj)*ssine                   ! 110909 RS : Asymmetric input
-         bfieldze = bfieldze+xn_v(j)*bmncf(lj)*ssine                         ! ..... zeta derivative
-         IF (lasym_v) bfieldze = bfieldze-xn_v(j)*bmnsf(lj)*ccosi            ! 110909 RS: Asymmetric input
-         bfieldth = bfieldth-xm_v(j)*bmncf(lj)*ssine                         ! ..... theta derivative
-         IF (lasym_v) bfieldth = bfieldth+xm_v(j)*bmnsf(lj)*ccosi            ! 110909 RS: Asymmetric input
          rboo = rboo+rmncf(lj)*ccosi                                         ! cylindrical R
          IF (lasym_v) rboo = rboo+rmnsf(lj)*ssine                            ! 110909 RS: Asymmetric input
          rth = rth-rmncf(lj)*xm_v(j)*ssine                                   ! ..... theta derivative
@@ -107,12 +99,29 @@
          IF (lasym_v) lambdas = lambdas+lmncpf(lj)*ccosi                     ! 110909 RS: Asymmetric input
          lambdaze = lambdaze-xn_v(j)*lmnsf(lj)*ccosi                         ! ..... zeta derivative
          IF (lasym_v) lambdaze = lambdaze+xn_v(j)*lmncf(lj)*ssine            ! 110909 RS: Asymmetric input
+
+       ENDDO fourier1
+
+       fourier2: DO j = 1, mnmax_vnyq                                            ! Fourier invert back to real space
+
+         arg = xm_vnyq(j)*thetang-zetang*xn_vnyq(j)
+         ccosi = COS(arg)
+         ssine = SIN(arg)
+         lj = mnmax_vnyq*(nsurf-1)+j
+         bfield = bfield+bmncf(lj)*ccosi                                     !magnetic field magnitude
+         IF (lasym_v) bfield = bfield + bmnsf(lj)*ssine                      ! 110909 RS : Asymmetric input
+         bfields = bfields+bmncpf(lj)*ccosi                                  ! ..... radial derivative
+         IF (lasym_v) bfields = bfields + bmnspf(lj)*ssine                   ! 110909 RS : Asymmetric input
+         bfieldze = bfieldze+xn_vnyq(j)*bmncf(lj)*ssine                         ! ..... zeta derivative
+         IF (lasym_v) bfieldze = bfieldze-xn_vnyq(j)*bmnsf(lj)*ccosi            ! 110909 RS: Asymmetric input
+         bfieldth = bfieldth-xm_vnyq(j)*bmncf(lj)*ssine                         ! ..... theta derivative
+         IF (lasym_v) bfieldth = bfieldth+xm_vnyq(j)*bmnsf(lj)*ccosi            ! 110909 RS: Asymmetric input
          bsupth= bsupth+ bsupumncf(lj)*ccosi                                 ! contravariant theta-comp. magnetic field
          IF (lasym_v) bsupth= bsupth+ bsupumnsf(lj)*ssine                    ! 110909 RS: Asymmetric input
          bsupze= bsupze+ bsupvmncf(lj)*ccosi                                 ! contravariant zeta-comp. magnetic field
          IF (lasym_v) bsupze= bsupze+ bsupvmnsf(lj)*ssine                    ! 110909 RS: Asymmetric input
 
-       ENDDO fourier
+       ENDDO fourier2
 
 !============
 !   END FOURIER INVERSION

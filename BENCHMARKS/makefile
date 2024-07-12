@@ -8,7 +8,9 @@
   BEAMS3D_TEST_DIR = BEAMS3D_TEST
   DIAGNO_TEST_DIR = DIAGNO_TEST
   FIELDLINES_TEST_DIR = FIELDLINES_TEST
+  NESCOIL_TEST_DIR = NESCOIL_TEST
   STELLOPT_TEST_DIR = STELLOPT_TEST
+  THRIFT_TEST_DIR = THRIFT_TEST
   VMEC_TEST_DIR = VMEC_TEST
 
 # We do the following to handle Testing on Large Systems
@@ -18,38 +20,28 @@
 
 .PHONY: test_vmec
 
-test_vmec:
-	@echo "Beginning testing of VMEC2000"
-	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1* wout*;
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
-	@cd $(VMEC_TEST_DIR) && ./compare_DSHAPE.py
-	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.SOLOVEV
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.SOLOVEV
-	@cd $(VMEC_TEST_DIR); ./compare_SOLOVEV.py
-	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.HELIOTRON
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.HELIOTRON
-	@cd $(VMEC_TEST_DIR); ./compare_HELIOTRON.py
-	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.ATF
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.ATF
-	@cd $(VMEC_TEST_DIR); ./compare_ATF.py
-	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.QAS
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.QAS
-	@cd $(VMEC_TEST_DIR); ./compare_QAS.py
-	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
-	@cd $(VMEC_TEST_DIR); ./compare_DIII-D.py
-	@echo "Tesing of VMEC2000 complete"
+test_beams3d:
+	@echo "Beginning testing of BEAMS3D"
+	$(MAKE) test_beams3d_basic
+	$(MAKE) test_beams3d_er
+	$(MAKE) test_beams3d_loss
+	$(MAKE) test_beams3d_slow
+	@if [ -n "$(ADASDIR)" ]; then \
+		if [ -d $(ADASDIR) ]; then \
+			$(MAKE) test_beams3d_depo_adas;\
+		fi; \
+	fi
+	$(MAKE) test_beams3d_dist
+	$(MAKE) test_beams3d_restart
+	$(MAKE) test_beams3d_eqdsk
+	$(MAKE) test_beams3d_fusion
+	$(MAKE) test_beams3d_multiion
+	@echo "Tesing of BEAMS3D complete"
 	@echo ""
 
 test_diagno:
 	@echo "Beginning testing of DIAGNO"
-	@cd $(DIAGNO_TEST_DIR); rm -f diagno_bench.* diagno_flux.* diagno_surf.* test_loops_b.* test_loops_j.*;
+	@cd $(DIAGNO_TEST_DIR); rm -f diagno_bench.* diagno_flux.* diagno_surf.* test_loops_b.* test_loops_j.*; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec bigtok -bench
 	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec bigtok
 	@cd $(DIAGNO_TEST_DIR); ./compare_bigtok.py
@@ -86,34 +78,10 @@ test_fieldlines:
 	@echo "Tesing of FIELDLINES complete"
 	@echo ""
 
-test_beams3d:
-	@echo "Beginning testing of BEAMS3D"
-	$(MAKE) test_beams3d_basic
-	$(MAKE) test_beams3d_er
-	$(MAKE) test_beams3d_slow
-	@echo "Tesing of BEAMS3D complete"
-	@echo ""
-
-test_beams3d_basic:
-	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt;
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS -plasma
-	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS -plasma
-	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS.py
-	@echo ""
-
-test_beams3d_er:
-	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt;
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_er -plasma
-	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_er -plasma
-	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_er.py
-	@echo ""
-	@echo ""
-
-test_beams3d_slow:
-	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt;
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
-	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
-	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_slow.py
+test_nescoil:
+	@echo "Beginning testing of NESCOIL"
+	$(MAKE) test_nescoil_tf
+	@echo "Tesing of NESCOIL complete"
 	@echo ""
 
 test_stellopt:
@@ -155,6 +123,157 @@ test_stellopt:
 	@echo "Tesing of STELLOPT complete"
 	@echo ""
 
+test_thrift:
+	@echo "Beginning testing of THRIFT"
+	$(MAKE) test_thrift_analytical
+	@echo "Tesing of THRIFT complete"
+	@echo ""
+
+test_vmec: 
+	@echo "Beginning testing of VMEC2000"
+	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1* wout*; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file DSHAPE
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.SOLOVEV
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.SOLOVEV
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file SOLOVEV
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.HELIOTRON
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.HELIOTRON
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file HELIOTRON
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.ATF
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.ATF
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file ATF
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.QAS
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.QAS
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file QAS
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file DIII-D
+	@echo "Tesing of VMEC2000 complete"
+
+test_beams3d_basic:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS -plasma
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS -plasma
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS
+	@echo ""
+
+test_beams3d_er:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_er -plasma
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_er -plasma
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_er
+	@echo ""
+	@echo ""
+
+test_beams3d_loss:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_loss -plasma
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_loss -plasma
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_loss
+	@echo ""
+
+test_beams3d_slow:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_slow
+	@echo ""
+
+test_beams3d_depo:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki -nobeamdensity
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki -nobeamdensity
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_depo
+	@echo ""
+
+test_beams3d_depo_adas:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo_adas -plasma -depo -nobeamdensity
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo_adas -plasma -depo -nobeamdensity
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_depo_adas
+	@echo ""
+
+beams3d_ORBITS.h5:
+	$(MAKE) test_beams3d_depo
+
+test_beams3d_restart: beams3d_ORBITS.h5
+	@cd $(BEAMS3D_TEST_DIR);
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_restart -plasma -restart beams3d_ORBITS_depo.h5
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_restart -plasma -restart beams3d_ORBITS_depo.h5
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_restart
+	@echo ""
+
+test_beams3d_dist:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_dist -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_dist -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_dist
+	@echo ""
+
+test_beams3d_fusion:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fusion -plasma -fusion -collisions -depo
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fusion -plasma -fusion -collisions -depo
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_fusion
+	@echo ""
+
+test_beams3d_eqdsk:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo -suzuki -nobeamdensity
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo -suzuki -nobeamdensity
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_eqdsk
+	@echo ""
+
+test_beams3d_multiion:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_multiion -plasma -depo -suzuki -nobeamdensity
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_multiion -plasma -depo -suzuki -nobeamdensity
+	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_multiion
+	@echo ""
+
+test_beams3d_fullorbit:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
+	#@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_fullorbit
+	@echo ""
+
+test_fieldlines_full:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1 -coil coils.NCSX -vac -full
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1 -vac -coil coils.NCSX -vac -full
+	@cd $(FIELDLINES_TEST_DIR); ./compare.py --file NCSX_s1
+	@echo ""
+
+test_fieldlines_backflow: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114 -backflow
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114 -backflow
+	@echo ""
+
+test_fieldlines_coll: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh_acc0.25v4.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh_acc0.25v4.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
+	@cd $(FIELDLINES_TEST_DIR); ./compare.py --file NCSX_s1_coll
+	@echo ""
+
+test_fieldlines_coll_ef: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll_ef -coil coils.NCSX_nfp1 -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll_ef -vac -coil coils.NCSX_nfp1 -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
+	@echo ""
+
+test_nescoil_tf:
+	@cd $(NESCOIL_TEST_DIR); rm -f nescout.*; 
+	@echo $(MYHOME)/xnescoil nescin.TF_ONLY
+	@cd $(NESCOIL_TEST_DIR); $(MYHOME)/xnescoil nescin.TF_ONLY
+	@cd $(NESCOIL_TEST_DIR); ./compare.py --file TF_ONLY
+	@echo ""
+
 test_stellopt_lmdif:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.LMDIF_TEST
 	@cd $(STELLOPT_TEST_DIR)/LMDIF_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.LMDIF_TEST; rm -f *_opt*
@@ -170,6 +289,7 @@ test_stellopt_gade:
 test_stellopt_basic:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC
 	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/BASIC && ./compare_BASIC.py
 	@echo ""
 
 test_stellopt_beams3d:
@@ -223,6 +343,11 @@ test_stellopt_gene:
 	@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.GENE; rm -f *_opt*
 	@echo ""
 
+test_stellopt_availenergy:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.AVAILENERGYOPT;
+	@cd $(STELLOPT_TEST_DIR)/AVAILENERGYOPT; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.AVAILENERGYOPT; rm -f *_opt*
+	@echo ""
+
 test_stellopt_sfincs:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;
 	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs; rm -f *_opt*
@@ -234,21 +359,19 @@ test_stellopt_terpsichore:
 	@echo ""
 
 test_stellopt_travis:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TRAVIS
-	@cd $(STELLOPT_TEST_DIR)/TRAVIS; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TRAVIS; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.TRAVIS
+	@cd $(STELLOPT_TEST_DIR)/TRAVIS; $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.TRAVIS; rm -f *_opt*
 	@cd $(STELLOPT_TEST_DIR)/TRAVIS && ./compare_TRAVIS.py
 	@echo ""
 
-test_fieldlines_full:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1 -coil coils.NCSX -vac -full
-	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1 -vac -coil coils.NCSX -vac -full
-	@cd $(FIELDLINES_TEST_DIR); ./compare_NCSX_s1.py
+test_thrift_analytical:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec analytical -prof profiles_analytical.h5
+	@cd $(THRIFT_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec analytical -prof profiles_analytical.h5
+	@cd $(THRIFT_TEST_DIR); ./test_THRIFT.py
 	@echo ""
 
-test_fieldlines_coll:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly
-	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly
-	@echo ""
+FIELDLINES_TEST/fieldlines_NCSX_s1.h5: 
+	@$(MAKE) test_fieldlines_full
 
 clean_test:
 	@cd $(VMEC_TEST_DIR); rm -f dcon* jxbout* mercier* threed1* parvmecinfo* wout*
@@ -269,6 +392,7 @@ clean_test:
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TOK_R0_RHO stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TRAVIS stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs stellopt_cleanup_dir
+	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/AVAILENERGYOPT stellopt_cleanup_dir
 
 stellopt_cleanup_dir:
 	@cd $(SUBDIR); rm -f answers* auto* beams3d* b_norm_eq_* b_norm_init_* b_norm_final_* bnorm.* boot_fit.* boozmn* checkpoint_* \
@@ -278,7 +402,7 @@ stellopt_cleanup_dir:
 		parvmecinfo* results* rhomn* RZ* stellopt.* tprof* wout* temp_input.* terpsichore_eq.* terpsichore_16.* \
 		terpsichore_17.* terpsichore_19.* terpsichore_22.* terpsichore_23.* threed1.* tv_out_* txport* xvec.* uv_* \
 		var_* vsp*
-
+	
 
 help:
 	@echo "TESTING OF STELLOPT BUILDS"
@@ -289,6 +413,7 @@ help:
 	@echo "      MPI_RUN_OPTS_MD: " $(MPI_RUN_OPTS_MD)
 	@echo "      MPI_RUN_OPTS_LG: " $(MPI_RUN_OPTS_LG)
 	@echo ""
+	@echo "      LAEOPT:          " $(LAEOPT)
 	@echo "      LCOILOPT:        " $(LCOILOPT)
 	@echo "      LGENE:           " $(LGENE)
 	@echo "      LREGCOIL:        " $(LREGCOIL)
@@ -297,9 +422,10 @@ help:
 	@echo "      LTRAVIS:         " $(LTRAVIS)
 	@echo ""
 	@echo "   COMMANDS"
-	@echo "      test_beams3d    Testing of BEAMS3D"
-	@echo "      test_diagno     Testing of DIAGNO"
-	@echo "      test_fieldlines Testing of FIELDLINES"
-	@echo "      test_stellopt   Testing of STELLOPT"
-	@echo "      test_vmec       Testing of VMEC"
+	@echo "      test_beams3d    Tesing of BEAMS3D"
+	@echo "      test_diagno     Tesing of DIAGNO"
+	@echo "      test_fieldlines Tesing of FIELDLINES"
+	@echo "      test_stellopt   Tesing of STELLOPT"
+	@echo "      test_thrift_atf Tesing of THRIFT (ATF Case)"
+	@echo "      test_vmec       Tesing of VMEC"
 	@echo "      clean_test      Remove files generated by tests"

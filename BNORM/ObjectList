@@ -4,7 +4,6 @@ Map_v.o \
 bnormal.o \
 bn_fouri.o \
 bn_read_vmecf90.o \
-FZERO.o \
 bn_vecpot.o \
 regint.o \
 neswrite.o \

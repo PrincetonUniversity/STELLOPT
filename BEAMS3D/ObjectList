@@ -1,7 +1,27 @@
 ObjectFiles = \
+beams3d_interface_mod.o \
+beams3d_beam_density.o \
+beams3d_duplicate_part.o \
+outpart_beams3d_nag.o \
+beams3d_follow.o \
+beams3d_follow_fo.o \
+beams3d_init_fieldlines.o \
+beams3d_init_continuegrid.o \
+beams3d_imas_module.o \
+fpart_nag.o \
+fpart_lsode.o \
+fpart_rkh68.o \
+beams3d_fix_poloidal.o \
+beams3d_distnorm.o \
+beams3d_init_hint.o \
+beams3d_init_eqdsk.o \
+beams3d_init_fusion.o \
+beams3d_volume.o \
+beams3d_randomize_particles.o \
 beams3d_init_beams_bbnbi.o \
 beams3d_write_ascoth4.o \
 beams3d_write_ascoth5.o \
+fidasim_input_mod.o \
 beams3d_write_parhdf5.o \
 beams3d_init_beams_w7x.o \
 beams3d_lines.o \
@@ -11,7 +31,8 @@ beams3d_init_mgrid.o \
 jacobian_lsode.o \
 beams3d_write.o \
 beams3d_diagnostics.o \
-fpart_nag.o \
+fgc_nag.o \
+fgc_eom.o \
 beams3d_main.o \
 beams3d_runtime.o \
 beams3d_physics_mod.o \
@@ -23,9 +44,8 @@ beams3d_init_coil.o \
 beams3d_init_vmec.o \
 beams3d_grid.o \
 backspace_out.o \
-beams3d_follow.o \
+beams3d_follow_gc.o \
 gauss_rand.o \
-beams3d_input_mod.o \
 beams3d_init_beams.o \
-fpart_rkh68.o \
-fpart_lsode.o 
+fgc_rkh68.o \
+fgc_lsode.o 

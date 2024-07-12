@@ -9,9 +9,9 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
       USE ez_hdf5
-!DEC$ ENDIF  
+#endif
       USE beams3d_lines
       USE beams3d_grid
       USE beams3d_runtime
@@ -37,7 +37,7 @@
       IF (lverb) THEN
          WRITE(6,'(A)')  '----- READING DATA FROM FILE -----'
       END IF
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
       IF (lverb) WRITE(6,'(A)')  '   FILE: '//'beams3d_'//TRIM(file_ext)//'.h5'
       CALL open_hdf5('beams3d_'//TRIM(file_ext)//'.h5',fid,ier,LCREATE=.false.)
       IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(file_ext)//'.h5',ier)
@@ -50,6 +50,8 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lpies',ier)
       CALL read_scalar_hdf5(fid,'lspec',ier,BOOVAR=lspec)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lspec',ier)
+      CALL read_scalar_hdf5(fid,'leqdsk',ier,BOOVAR=leqdsk)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'leqdsk',ier)
       CALL read_scalar_hdf5(fid,'lcoil',ier,BOOVAR=lcoil)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lcoil',ier)
       CALL read_scalar_hdf5(fid,'lmgrid',ier,BOOVAR=lmgrid)
@@ -64,21 +66,33 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ldepo',ier)
       CALL read_scalar_hdf5(fid,'lbeam',ier,BOOVAR=lbeam)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lbeam',ier)
+      CALL read_scalar_hdf5(fid,'lcollision',ier,BOOVAR=lcollision)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lcollision',ier)
+      CALL read_scalar_hdf5(fid,'lascot',ier,BOOVAR=lascot)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lascot',ier)
+      CALL read_scalar_hdf5(fid,'lfusion',ier,BOOVAR=lfusion)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lfusion',ier)
+      CALL read_scalar_hdf5(fid,'lhitonly',ier,BOOVAR=lhitonly)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lhitonly',ier)
       ! Trajectories
       CALL read_scalar_hdf5(fid,'nparticles',ier,INTVAR=nparticles)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nparticles',ier)
       CALL read_scalar_hdf5(fid,'nbeams',ier,INTVAR=nbeams)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nbeams',ier)
-      CALL read_scalar_hdf5(fid,'nsteps',ier,INTVAR=nsteps)
-      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nsteps',ier)
       CALL read_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'npoinc',ier)
+      CALL read_scalar_hdf5(fid,'nbeams',ier,INTVAR=nbeams)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nbeams',ier)
       IF (ALLOCATED(t_end)) DEALLOCATE(t_end)
       IF (ALLOCATED(mass)) DEALLOCATE(mass)
       IF (ALLOCATED(charge)) DEALLOCATE(charge)
       IF (ALLOCATED(Zatom)) DEALLOCATE(Zatom)
+      IF (ALLOCATED(Weight)) DEALLOCATE(Weight)
+      IF (ALLOCATED(Beam)) DEALLOCATE(Beam)
       IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
-      ALLOCATE(t_end(nparticles),mass(nparticles),charge(nparticles),Zatom(nparticles),end_state(nparticles))
+      ALLOCATE(t_end(nparticles),mass(nparticles),charge(nparticles), &
+               Zatom(nparticles),end_state(nparticles), Weight(nparticles), &
+               Beam(nparticles))
       CALL read_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'t_end',ier)
       CALL read_var_hdf5(fid,'mass',nparticles,ier,DBLVAR=mass)
@@ -97,8 +111,13 @@
       IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
       IF (ALLOCATED(S_lines)) DEALLOCATE(S_lines)
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
+      IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
+      IF (ALLOCATED(vr_lines)) DEALLOCATE(vr_lines)
+      IF (ALLOCATED(vphi_lines)) DEALLOCATE(vphi_lines)
+      IF (ALLOCATED(vz_lines)) DEALLOCATE(vz_lines)
       ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
-            vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles))
+            vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles),&
+            vr_lines(0:npoinc,nparticles),vphi_lines(0:npoinc,nparticles),vz_lines(0:npoinc,nparticles))
       ALLOCATE(S_lines(0:npoinc,nparticles),U_lines(0:npoinc,nparticles),B_lines(0:npoinc,nparticles))
       CALL read_var_hdf5(fid,'R_lines',npoinc+1,nparticles,ier,DBLVAR=R_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'R_lines',ier)
@@ -118,48 +137,50 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'U_lines',ier)
       CALL read_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_lines',ier)
+      CALL read_var_hdf5(fid,'vr_lines',npoinc+1,nparticles,ier,DBLVAR=vr_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vr_lines',ier)
+      CALL read_var_hdf5(fid,'vphi_lines',npoinc+1,nparticles,ier,DBLVAR=vphi_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vphi_lines',ier)
+      CALL read_var_hdf5(fid,'vz_lines',npoinc+1,nparticles,ier,DBLVAR=vz_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vz_lines',ier)
       ! Particle parameters
-      IF (ALLOCATED(weight)) DEALLOCATE(weight)
-      ALLOCATE(weight(nparticles))
       CALL read_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'weight',ier)
       IF (lbeam) THEN
          IF (ALLOCATED(beam)) DEALLOCATE(beam)
-         IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
          IF (ALLOCATED(shine_through)) DEALLOCATE(shine_through)
          ALLOCATE(shine_through(nbeams))
-         ALLOCATE(beam(nparticles),v_neut(3,nparticles))
+         ALLOCATE(beam(nparticles))
          CALL read_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'shine_through',ier)
          CALL read_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'beam',ier)
          CALL read_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'e_beams',ier)
-         CALL read_var_hdf5(fid,'V_NEUT',3,nparticles,ier,DBLVAR=v_neut)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'V_NEUT',ier)
          IF (.not. ldepo) THEN
-            IF (ALLOCATED(ndot_prof)) DEALLOCATE(ndot_prof)
-            IF (ALLOCATED(epower_prof)) DEALLOCATE(epower_prof)
-            IF (ALLOCATED(ipower_prof)) DEALLOCATE(ipower_prof)
-            IF (ALLOCATED(j_prof)) DEALLOCATE(j_prof)
-            !IF (ALLOCATED(dist_prof)) DEALLOCATE(dist_prof)
-            IF (ALLOCATED(dist2d_prof)) DEALLOCATE(dist2d_prof)
-            ALLOCATE(ndot_prof(nbeams,ns_prof1),epower_prof(nbeams,ns_prof1),&
-               ipower_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1))
-            !ALLOCATE(dist_prof(nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5))
-            ALLOCATE(dist2d_prof(nbeams,ns_prof4,ns_prof5))
-            CALL read_var_hdf5(fid, 'ndot_prof',   nbeams, ns_prof1, ier, DBLVAR=ndot_prof)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ndot_prof',ier)
-            CALL read_var_hdf5(fid, 'epower_prof', nbeams, ns_prof1, ier, DBLVAR=epower_prof)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'epower_prof',ier)
-            CALL read_var_hdf5(fid, 'ipower_prof', nbeams, ns_prof1, ier, DBLVAR=ipower_prof)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ipower_prof',ier)
-            CALL read_var_hdf5(fid, 'j_prof',      nbeams, ns_prof1, ier, DBLVAR=j_prof)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'j_prof',ier)
-            !CALL read_var_hdf5(fid, 'dist_prof',   nbeams, ns_prof1, ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist_prof)
-            !IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_prof',ier)
-            CALL read_var_hdf5(fid, 'dist2d_prof',   nbeams, ns_prof4, ns_prof5, ier, DBLVAR=dist2d_prof)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist2d_prof',ier)
+!            Need to discuss how this is used
+!            IF (ALLOCATED(ndot_prof)) DEALLOCATE(ndot_prof)
+!            IF (ALLOCATED(epower_prof)) DEALLOCATE(epower_prof)
+!            IF (ALLOCATED(ipower_prof)) DEALLOCATE(ipower_prof)
+!            IF (ALLOCATED(j_prof)) DEALLOCATE(j_prof)
+!            !IF (ALLOCATED(dist_prof)) DEALLOCATE(dist_prof)
+!            IF (ALLOCATED(dist2d_prof)) DEALLOCATE(dist2d_prof)
+!            ALLOCATE(ndot_prof(nbeams,ns_prof1),epower_prof(nbeams,ns_prof1),&
+!               ipower_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1))
+!            !ALLOCATE(dist_prof(nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5))
+!            ALLOCATE(dist2d_prof(nbeams,ns_prof4,ns_prof5))
+!            CALL read_var_hdf5(fid, 'ndot_prof',   nbeams, ns_prof1, ier, DBLVAR=ndot_prof)
+!            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ndot_prof',ier)
+!            CALL read_var_hdf5(fid, 'epower_prof', nbeams, ns_prof1, ier, DBLVAR=epower_prof)
+!            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'epower_prof',ier)
+!            CALL read_var_hdf5(fid, 'ipower_prof', nbeams, ns_prof1, ier, DBLVAR=ipower_prof)
+!            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ipower_prof',ier)
+!            CALL read_var_hdf5(fid, 'j_prof',      nbeams, ns_prof1, ier, DBLVAR=j_prof)
+!            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'j_prof',ier)
+!            !CALL read_var_hdf5(fid, 'dist_prof',   nbeams, ns_prof1, ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist_prof)
+!            !IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_prof',ier)
+!            CALL read_var_hdf5(fid, 'dist2d_prof',   nbeams, ns_prof4, ns_prof5, ier, DBLVAR=dist2d_prof)
+!            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist2d_prof',ier)
          END IF
       END IF
       ! Grid
@@ -227,10 +248,10 @@
       ! Close the file
       CALL close_hdf5(fid,ier)
       IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(file_ext)//'.h5',ier)
-
-!DEC$ ELSE
-
-!DEC$ ENDIF  
+#else
+      ! To be done
+      IF (lverb) WRITE(6,*) 'ERROR: Reading from non-HDF5 not implemented!'
+#endif
 
 !-----------------------------------------------------------------------
 !     End Subroutine

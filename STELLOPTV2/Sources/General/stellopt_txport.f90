@@ -27,12 +27,15 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE stellopt_targets
-      USE equil_vals
-      USE equil_utils
-      USE booz_persistent
-      USE read_boozer_mod
+!      USE equil_vals
+      USE equil_utils, shat_vmec=>shat
+!      USE booz_persistent
+!      USE read_boozer_mod
       USE EZspline_obj
       USE EZspline
+!DEC$ IF DEFINED (AEOPT)
+      USE trapped_avail_energy_mod
+!DEC$ ENDIF
 !DEC$ IF DEFINED (GENE)
       USE gene_subroutine, ONLY: rungene
       USE par_in, ONLY: diagdir,file_extension
@@ -441,6 +444,8 @@
                ! Calculated q_proxy     
                CALL tolower(txport_proxy)
                SELECT CASE(TRIM(txport_proxy))
+                  CASE('prox_g11')
+                     vqqprox = g11
                   CASE('prox1')
                      qqfac=(one+one/(rhsrkp*(one+(tau_s*slocav)**2)))
                      dkp  = rkp_p-rkp_cr
@@ -528,6 +533,15 @@
                         CALL EZspline_free(Bhat_spl,ier)
                         CALL EZspline_free(L2_spl,ier)
                      END DO
+                  CASE('availenergy')
+!DEC$ IF DEFINED (AEOPT)
+                     DO ialpha = 1, nalpha0_
+                        CALL compute_AE(maxPnt, g11(ialpha,:), g12(ialpha,:), g22(ialpha,:), Bhat(ialpha,:), &
+                                        abs_jac(ialpha,:), L1(ialpha,:), L2(ialpha,:), dBdt(ialpha,:), &
+                                        1, dpdx, q, shat, result)
+                        vqqprox(ialpha,:) = result/maxPnt
+                     END DO
+!DEC$ ENDIF
                   CASE('all')
                      ! prox1
                      qqfac=(one+one/(rhsrkp*(one+(tau_s*slocav)**2)))

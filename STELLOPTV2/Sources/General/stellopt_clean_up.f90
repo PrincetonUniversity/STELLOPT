@@ -110,7 +110,7 @@
                 IF (ANY(lcoil_spline(n,:))) THEN
                    WRITE(iunit_out,'(2X,A,2X,I5.5)') 'COIL', n
                          ik = coil_nctrl(n)
-                   IF (lwindsurf) THEN
+                   IF (lwindsurf(coil_surf(n))) THEN
                       WRITE(iunit_out,"(4X,'u =',4(2X,ES22.12E3))") (coil_splinefx(n,m), m = 1, ik)
                       WRITE(iunit_out,"(4X,'v =',4(2X,ES22.12E3))") (coil_splinefy(n,m), m = 1, ik)
                    ELSE

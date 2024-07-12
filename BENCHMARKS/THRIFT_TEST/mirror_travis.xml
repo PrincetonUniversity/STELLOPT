@@ -1,0 +1,116 @@
+<?xml version="1.0" ?>
+<mirror id="W7-X" description="ECRH mirror">
+  <!--mirror contains surfaces-->
+  <surface id = "1" name="WSZ01">
+    <!--surface contains polygons-->
+    <polygon unit = "mm" >
+      <!--polygon must be convex-->
+      <!--polygon is defined by vertexes; vertexes must be ordered-->
+      <vertex tolerance = "0.005">5622.698 -148.79 133.56</vertex>
+      <vertex tolerance = "0.005">5618.24 -51.94  132.88</vertex>
+      <vertex tolerance = "0.004">5624.06 -52.02  54.67</vertex>
+    </polygon>
+    <polygon unit = "mm" >
+      <vertex tolerance = "0.005">5622.698 -148.79 133.56</vertex>
+      <vertex tolerance = "0.004">5624.06 -52.02  54.67</vertex>
+      <vertex tolerance = "0.007">5623.44 -52.01  -63.03</vertex>
+      <vertex tolerance = "0.003">5621.56 -153.05 -68.68</vertex>
+      <vertex tolerance = "0.007">5622.63 -152.44 133.57</vertex>
+    </polygon>
+    <polygon unit = "mm" >
+      <vertex tolerance = "0.003">5621.56 -153.05 -68.68</vertex>
+      <vertex tolerance = "0.007">5623.44 -52.01  -63.03</vertex>
+      <vertex tolerance = "0.004">5608.76 -51.83  -153.73</vertex>
+    </polygon>
+    <polygon unit = "mm" >
+      <vertex tolerance = "0.003">5621.56 -153.05 -68.68</vertex>
+      <vertex tolerance = "0.004">5608.76 -51.83  -153.73</vertex>
+      <vertex tolerance = "0.003">5598.58 -153.41 -152.29</vertex>
+    </polygon>
+  </surface>
+  <surface id = "2" name="WSZ02">
+    <polygon unit = "mm" >
+      <vertex tolerance = "0.02 ">5557.099 -357.51 -146.45</vertex>
+      <vertex tolerance = "0.004">5580.63 -258.61 -147.48</vertex>
+      <vertex tolerance = "0.003">5590.54 -360.1  -57.59</vertex>
+    </polygon>
+    <polygon unit = "mm" >
+      <vertex tolerance = "0.004">5580.63 -258.61 -147.48</vertex>
+      <vertex tolerance = "0.003">5590.54 -360.1  -57.59</vertex>
+      <vertex tolerance = "0.006">5593.01 -360.27 -49.58</vertex>
+      <vertex tolerance = "0.004">5607.64 -258.93 -60.89</vertex>
+    </polygon>
+    <polygon unit = "mm" >
+      <vertex tolerance = "0.004">5607.64 -258.93 -60.89</vertex>
+      <vertex tolerance = "0.006">5593.01 -360.27 -49.58</vertex>
+      <vertex tolerance = "0.003">5606.12 -361.11 34.73</vertex>
+      <vertex tolerance = "0.003">5607.8  -258.94 -59.85</vertex>
+    </polygon>
+    <polygon unit = "mm" >
+      <vertex tolerance = "0.003">5607.8  -258.94 -59.85</vertex>
+      <vertex tolerance = "0.003">5606.12 -361.11 34.73</vertex>
+      <vertex tolerance = "0.003">5615.49 -316.82 123.29</vertex>
+      <vertex tolerance = "0.005">5614.41 -259.39 40.04</vertex>
+    </polygon>
+    <polygon unit = "mm" >
+      <vertex tolerance = "0.005">5614.41 -259.39 40.04</vertex>
+      <vertex tolerance = "0.003">5615.49 -316.82 123.29</vertex>
+      <vertex tolerance = "0.005">5620.6  -259.65 123.33</vertex>
+    </polygon>
+  </surface>
+
+  <surface id = "721" name = "WSZ01-72">
+    <polygon unit = "mm">
+      <vertex>1596  5393.48  -133.56</vertex>
+      <vertex>1686.73  5359.31  -132.88</vertex>
+      <vertex>1688.46  5364.87  -54.67</vertex>
+    </polygon>
+    <polygon unit = "mm">
+      <vertex>1596  5393.48  -133.56</vertex>
+      <vertex>1688.46  5364.87  -54.67</vertex>
+      <vertex>1688.27  5364.28  63.03</vertex>
+      <vertex>1591.6  5393.72  68.68</vertex>
+      <vertex>1592.51  5394.55  -133.57</vertex>
+    </polygon>
+    <polygon unit = "mm">
+      <vertex>1591.6  5393.72  68.68</vertex>
+      <vertex>1688.27  5364.28  63.03</vertex>
+      <vertex>1683.91  5350.26  153.73</vertex>
+    </polygon>
+    <polygon unit = "mm">
+      <vertex>1591.6  5393.72  68.68</vertex>
+      <vertex>1683.91  5350.26  153.73</vertex>
+      <vertex>1584.15  5371.97  152.29</vertex>
+    </polygon>
+  </surface>
+  <surface id = "722" name = "WSZ02-72">
+    <polygon unit = "mm">
+      <vertex>1377.23  5395.59  146.45</vertex>
+      <vertex>1478.56  5387.41  147.48</vertex>
+      <vertex>1385.1  5428.2  57.59</vertex>
+    </polygon>
+    <polygon unit = "mm">
+      <vertex>1478.56  5387.41  147.48</vertex>
+      <vertex>1385.1  5428.2  57.59</vertex>
+      <vertex>1385.7  5430.6  49.58</vertex>
+      <vertex>1486.6  5413.2  60.89</vertex>
+    </polygon>
+    <polygon unit = "mm">
+      <vertex>1486.6  5413.2  60.89</vertex>
+      <vertex>1385.7  5430.6  49.58</vertex>
+      <vertex>1388.95  5443.33  -34.73</vertex>
+      <vertex>1486.64  5413.35  59.85</vertex>
+    </polygon>
+    <polygon unit = "mm">
+      <vertex>1486.64  5413.35  59.85</vertex>
+      <vertex>1388.95  5443.33  -34.73</vertex>
+      <vertex>1433.97  5438.55  -123.29</vertex>
+      <vertex>1488.25  5419.78  -40.04</vertex>
+    </polygon>
+    <polygon unit = "mm">
+      <vertex>1488.25  5419.78  -40.04</vertex>
+      <vertex>1433.97  5438.55  -123.29</vertex>
+      <vertex>1489.92  5425.74  -123.33</vertex>
+    </polygon>
+  </surface>
+</mirror>

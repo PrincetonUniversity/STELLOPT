@@ -10,6 +10,9 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
+      USE beams3d_globals, ONLY: nparticles, ns_prof1, ns_prof2, &
+                                 ns_prof3, ns_prof4, ns_prof5, &
+                                 partvmax, rho_max_dist
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -22,23 +25,25 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL  ::  ltherm
-      INTEGER,PARAMETER  :: ns_prof1 = 128 !rho-Grid
-      INTEGER,PARAMETER  :: ns_prof2 = 16 !u-grid
-      INTEGER,PARAMETER  :: ns_prof3 = 16 !v-grid
-      INTEGER,PARAMETER  :: ns_prof4 = 64 !vll-grid
-      INTEGER,PARAMETER  :: ns_prof5 = 32 !vperp-grid
-      INTEGER  :: nparticles, nsteps, myline, mybeam, mytdex, myend, mystart_save,myend_save
+      INTEGER  :: nsh_prof4
+      INTEGER  :: nsteps, myline, mybeam, mytdex, myend, mystart_save, myend_save
+      INTEGER  :: win_epower, win_ipower, win_ndot, win_dense, win_jprof, win_dist5d, win_dist5d_fida
       REAL(rprec) :: xlast,ylast,zlast ! for storing position
-      REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), &
-                     B_temp(4), rand_prob, cum_prob, tau, next_t, &
-                     dt_out, partvmax, fact_crit, fact_pa, fact_vsound
+      REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), my_end, &
+                     myqm, rand_prob, cum_prob, tau, next_t, &
+                     fact_crit, fact_pa, fact_vsound, fact_kick, &
+                     fact_coul, fact_crit_pro, &
+                     partpmax, h1_prof, h2_prof, h3_prof, h4_prof, h5_prof, r_h, &
+                     z_h, p_h, e_h, pi_h, E_by_v
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
       INTEGER, ALLOCATABLE     :: end_state(:)
-      REAL(rprec), ALLOCATABLE :: shine_through(:)
-      REAL(rprec), ALLOCATABLE :: ndot_prof(:,:),epower_prof(:,:), &
-                                  ipower_prof(:,:),j_prof(:,:), dist2d_prof(:,:,:)
-!      REAL(rprec), ALLOCATABLE :: dist_prof(:,:,:,:,:,:)
+      REAL(rprec), ALLOCATABLE :: shine_through(:), shine_port(:), GFactor(:), t_last(:)
+      REAL(rprec), DIMENSION(:,:), POINTER :: ndot_prof(:,:),epower_prof(:,:), &
+                                  ipower_prof(:,:),j_prof(:,:), dense_prof(:,:)
+      REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_prof
+      REAL(rprec), DIMENSION(:,:,:,:,:), POINTER :: dist5d_fida
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),vll_lines(:,:),moment_lines(:,:),&
-                                  S_lines(:,:),U_lines(:,:),B_lines(:,:)
+                                  S_lines(:,:),U_lines(:,:),B_lines(:,:), &
+                                  vr_lines(:,:),vphi_lines(:,:),vz_lines(:,:)
 
       END MODULE beams3d_lines

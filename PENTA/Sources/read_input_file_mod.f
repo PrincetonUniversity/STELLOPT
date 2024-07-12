@@ -117,8 +117,8 @@ c
      2                          iota_vmec => iotaf, vp_vmec => vp,
      3                          Rmajor_vmec => Rmajor,
      4                          Aminor_vmec => Aminor,
-     5                          phi_vmec => phi, bmnc, mnmax, gmnc,
-     6                          xm, xn, ns_vmec => ns
+     5                          phi_vmec => phi, bmnc, mnmax_nyq, gmnc,
+     6                          xm_nyq, xn_nyq, ns_vmec => ns
       implicit none
       !dummy variables
       integer(iknd) :: js
@@ -171,8 +171,8 @@ c
          DO u = 1, 360
             theta = TWOPI*REAL(u-1)/359.
             bbf = 0.0; jacob_vmec = 0.0;
-            DO mn = 1, mnmax
-               arg = xm(mn)*theta - xn(mn)*zeta
+            DO mn = 1, mnmax_nyq
+               arg = xm_nyq(mn)*theta - xn_nyq(mn)*zeta
                cs_arg = cos(arg)
                jacob_vmec = jacob_vmec + gmnc(mn,js)*cs_arg
                bbf = bbf + bmnc(mn,js)*cs_arg

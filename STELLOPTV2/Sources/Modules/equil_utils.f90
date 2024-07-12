@@ -26,11 +26,14 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER     :: domain_flag, nfit_targs, nfit_coefs
-      REAL(rprec) :: R_target, PHI_target, Z_target, SUM_target
+      REAL(rprec) :: R_target, PHI_target, Z_target, SUM_target, visbrem_lambda
       REAL(rprec), ALLOCATABLE :: fit_targs(:,:), fit_coefs(:)
       CHARACTER(LEN=256) :: fit_type
       TYPE(EZspline1_r8) :: prof_spl,Bhat_spl,L2_spl
       DOUBLE PRECISION, PARAMETER :: delta_TEM = 0.9999
+      DOUBLE PRECISION, PARAMETER :: Ry = 2.1798723611035D-18 ! Rydberg Energy (J)
+      DOUBLE PRECISION, PARAMETER :: hc = 1.98644582D-25 ! hc [m^3kg/s^2]
+      DOUBLE PRECISION, PARAMETER :: ec = 1.60217662D-19 ! Electron Charge
       DOUBLE PRECISION :: lam_TEM
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -365,6 +368,12 @@
             xp  = s_val**coefs(3)
             x1  = 8*coefs(2)-2*coefs(1)
             val = (coefs(1)+x1*xp)*(xp-1)**2
+         CASE ('simple_peak')
+            xp  = s_val**coefs(1)
+            val = 4*xp - 4*xp*xp
+         CASE ('flat_rho')
+            xp = MIN(MAX(s_val,0.0),1.0)**0.5
+            val = coefs(1)*( (1.0-coefs(3))*(1.0-xp**coefs(2)) + coefs(3) )
          CASE DEFAULT
             PRINT *,"Error! Unknown profile type in subroutine eval_prof_stel:",type
             STOP
@@ -462,7 +471,7 @@
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,ne_opt(0:20),ier)
       END SELECT
-      val = val * ne_norm
+      val = MAX(val * ne_norm,0.0)
       RETURN
       END SUBROUTINE get_equil_ne
       
@@ -489,6 +498,7 @@
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,te_opt(0:20),ier)
       END SELECT
+      val = MAX(val,0.0)
       RETURN
       END SUBROUTINE get_equil_te
       
@@ -505,12 +515,13 @@
          CASE ('spline','akima_spline','akima_spline_ip')
             CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier,ti_spl)
          CASE ('te_ratio')
-            CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier,ti_spl)
+            CALL eval_prof_stel(s_val,'akima_spline',val,21,ti_opt(0:20),ier,ti_spl)
             CALL get_equil_te(s_val,te_type,val2,ier)
             val = val*val2 
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier)
       END SELECT
+      val = MAX(val,0.0)
       RETURN
       END SUBROUTINE get_equil_ti
       
@@ -521,7 +532,6 @@
       REAL(rprec), INTENT(inout)   ::  val
       INTEGER, INTENT(inout)     ::  ier
       INTEGER :: i
-      REAL(rprec), PARAMETER :: one = 1.0_rprec
       IF (ier < 0) RETURN
       CALL tolower(type)
       SELECT CASE (type)
@@ -530,6 +540,7 @@
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,20,emis_xics_f(1:20),ier)
       END SELECT
+      val = MAX(val,0.0)
       RETURN
       END SUBROUTINE get_equil_emis_xics
       
@@ -566,9 +577,8 @@
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_ne(s,TRIM(ne_type),fval,ier)
-      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_linene
 
@@ -578,9 +588,8 @@
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_te(s,TRIM(te_type),fval,ier)
-      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_linete
 
@@ -590,9 +599,8 @@
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_ti(s,TRIM(ti_type),fval,ier)
-      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_lineti
 
@@ -602,9 +610,9 @@
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_zeff(s,TRIM(zeff_type),fval,ier)
-      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      IF (s>1.0) fval = 0 ! Hack since zeff can't be less than 1.
+      fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_linezeff
 
@@ -614,9 +622,8 @@
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),fval,ier)
-      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics_bright
 
@@ -627,10 +634,9 @@
       REAL(rprec) :: f1, f2
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_ti(s,TRIM(ti_type),f1,ier)
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),f2,ier)
-      fval = MAX(f1*f2,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = f1*f2*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics
 
@@ -648,14 +654,12 @@
       REAL(rprec), PARAMETER :: c0 =  3.8707616355E+01  ! From Fitting
       REAL(rprec), PARAMETER :: temin =  100.0  ! The database ends here
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),w,ier)
-      w = MAX(w,0.0)
       CALL get_equil_te(s,TRIM(te_type),te,ier)
       te = MAX(te,temin)
       IF (te > temin) THEN
-      	te = LOG(te) ! interpolation in log of te
-      	fval = w*EXP((((c3*te)+c2)*te+c1)*te+c0)
+         te = LOG(te) ! interpolation in log of te
+         fval = w*EXP((((c3*te)+c2)*te+c1)*te+c0)
       ELSE
 !        fval = w*8.1262088954E-01*(EXP(te)).*1E-3
         fval = w*8.1262088954E-01*(te/temin)
@@ -675,10 +679,10 @@
       REAL(rprec) :: nhat(3), uperp(3),Rg(3),Zg(3)
       INTEGER, INTENT(inout) :: ier
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),bright,ier)
       CALL get_equil_phi(s,phi_type,phi_val,ier,phi_prime)
       CALL get_equil_RZ(s,u,v,Rt,Zt,ier,Rg,Zg)
+      !print *,s,u,v,bright,phi_val,phi_prime,Rg(3),Zg(3)
       !CALL get_equil_Bav(s,Bav,Bavsq,ier) !<B>,<B^2>
       !CALL get_equil_rho(s,rho,vp,grho,grho2,ier)
       ! To make these lines work we need to implement
@@ -707,125 +711,56 @@
       INTEGER, INTENT(inout) :: ier
       REAL(rprec) :: ne_val,te_val,zeff_val
       fval = 0
-      IF (s>1) RETURN
       CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
-      CALL get_equil_te(s,TRIM(ne_type),te_val,ier)
+      CALL get_equil_te(s,TRIM(te_type),te_val,ier)
       CALL get_equil_zeff(s,TRIM(ne_type),zeff_val,ier)
-      IF (abs(te_val) > 0) THEN
-         fval = zeff_val*ne_val*ne_val*sqrt(te_val)
-      ELSE
-         fval = 0
-      END IF
+      fval = zeff_val*ne_val*ne_val*sqrt(te_val)
       fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_sxr
-      
-      SUBROUTINE line_int_faraday(r1,r2,val)
+
+      SUBROUTINE fcn_faraday(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in)   :: r1(3), r2(3)
-      REAL(rprec), INTENT(out)  :: val
-      INTEGER     :: i, j, k, ier
-      REAL(rprec) :: x1, y1, z1, x2, y2, z2, dx, dy, dz, xp, yp, zp, int_fac
-      REAL(rprec) :: xp1, yp1, zp1, delf, delt, rp, phip,s, dx2, dy2, dz2
-      REAL(rprec) :: ne_val, bx, by, bz
-      INTEGER, PARAMETER ::  nsteps=50
-      INTEGER, PARAMETER :: nop=3
-      INTEGER, PARAMETER :: int_step=2
-      real(rprec), dimension(nop), parameter :: ci=(/1._rprec/6._rprec,2._rprec/3._rprec,1._rprec/6._rprec/)
-      phip = r1(2);
-      s    = r2(2);
-      !IF (phip < 0) phip = phip+2*pi
-      !IF (s < 0) s = s+2*pi
-      !phip = MOD(phip,pi2/nfp)*nfp
-      !s    = MOD(s,pi2/nfp)*nfp
-      ier = 0; ne_val = 0.0
-      x1 = r1(1)*cos(phip); x2 = r2(1)*cos(s)
-      y1 = r1(1)*sin(phip); y2 = r2(1)*sin(s)
-      z1 = r1(3);            z2 = r2(3);
-      dx = (x2-x1)/nsteps
-      dy = (y2-y1)/nsteps
-      dz = (z2-z1)/nsteps
-      s=0; phip=0
-      DO i = 1, nsteps ! Get first boundary point
-         xp = x1+dx*(i-1)
-         yp = y1+dy*(i-1)
-         zp = z1+dz*(i-1)
-         rp = sqrt(xp*xp+yp*yp)
-         phip = ATAN2(yp,xp)
-         IF (phip < 0) phip = phip+2*pi
-         CALL get_equil_s(rp,phip,zp,s,ier)
-         IF (s <= 1.0_rprec) THEN
-            x1 = xp-dx
-            y1 = yp-dy
-            z1 = zp-dz
-            EXIT
-         END IF
-      END DO
-      DO i = 1, nsteps ! Get second boundary point
-         xp = x2-dx*(i-1)
-         yp = y2-dy*(i-1)
-         zp = z2-dz*(i-1)
-         IF ((xp == x1) .and. (yp == y1) .and. (zp == z1)) THEN
-            val = 0.0_rprec
-            RETURN
-         END IF
-         rp = sqrt(xp*xp+yp*yp)
-         phip = ATAN2(yp,xp)
-         IF (phip < 0) phip = phip+2*pi
-         CALL get_equil_s(rp,phip,zp,s,ier)
-         IF (s <= 1.0_rprec) THEN
-            x2 = xp+dx
-            y2 = yp+dy
-            z2 = zp+dz
-            dx = (x2-x1)/nsteps
-            dy = (y2-y1)/nsteps
-            dz = (z2-z1)/nsteps
-            EXIT
-         END IF
-      END DO
-      val =0
-      delt = 1.0_rprec/REAL(nop-1)
-      int_fac = 1.0_rprec/REAL(int_step)
-      DO i = 1, nsteps
-         DO j = 1, int_step
-            xp = x1+dx*(i-1)+(j-1)*int_fac*dx
-            yp = y1+dy*(i-1)+(j-1)*int_fac*dy
-            zp = z1+dz*(i-1)+(j-1)*int_fac*dz
-            delf = 0.0_rprec
-            dx2 = x1+dx*(i-1)+(j)*int_fac*dx - xp
-            dy2 = y1+dy*(i-1)+(j)*int_fac*dy - yp
-            dz2 = z1+dz*(i-1)+(j)*int_fac*dz - zp
-            DO k = 1, nop
-               rp = sqrt(xp*xp+yp*yp)
-               phip = ATAN2(yp,xp)
-               IF (phip < 0) phip = phip+2*pi
-               CALL get_equil_s(rp,phip,zp,s,ier)
-               IF (s <= 1.0_rprec .and. s >= 0.0_rprec) THEN
-                  CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
-                  IF (ier /= 0) ne_val = 0.0_rprec
-                  CALL get_equil_B(rp,phip,zp,bx,by,bz,ier)
-                  IF (ier /= 0) THEN
-                     bx=0.0_rprec
-                     by=0.0_rprec
-                     bz=0.0_rprec
-                  END IF
-               ELSE
-                  ne_val = 0.0_rprec
-                  bx = 0.0_rprec
-                  by = 0.0_rprec
-                  bz = 0.0_rprec
-               END IF
-               !WRITE(27,*) rp, phip,zp,ne_val,s,delf
-               delf = delf + ci(k)*ne_val*ABS(bx*dx2+by*dy2+bz*dz2)
-               xp   = xp + k*dx2*delt
-               yp   = yp + k*dy2*delt
-               zp   = zp + k*dz2*delt
-            END DO
-            val = val + delf
-         END DO
-      END DO
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      INTEGER, INTENT(inout) :: ier
+      REAL(rprec) :: ne_val,br,bphi,bz,bx,by
+      fval = 0
+      CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
+      CALL get_equil_Bcylsuv(s,u,v,br,bphi,bz,ier)
+      bx = br*cos(v)-bphi*sin(v)
+      by = br*sin(v)+bphi*cos(v)
+      fval = ne_val*ABS(dx*bx+dy*by+dz*bz)
       RETURN
-      END SUBROUTINE line_int_faraday
+      END SUBROUTINE fcn_faraday
+
+      SUBROUTINE fcn_bremsstrahlung(s,u,v,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      INTEGER, INTENT(inout) :: ier
+      REAL(rprec) :: ne_val,te_val,ze_val,gauntff,g2,utemp
+      fval = 0
+      CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
+      CALL get_equil_Te(s,TRIM(te_type),te_val,ier)
+      CALL get_equil_zeff(s,TRIM(zeff_type),ze_val,ier)
+      IF (te_val > 10) THEN
+         te_val = te_val*ec ! eV to J
+         g2 = ze_val*ze_val*Ry/(te_val) !GAMMA^2=Z*Z*Ry/kT
+         utemp  = hc/(visbrem_lambda*te_val)
+         CALL GAUNT_FREEFREE(g2,utemp,gauntff)
+         ! OLD way
+         fval = gauntff*ne_val*ne_val*ze_val*EXP(-utemp) &
+                /(visbrem_lambda*visbrem_lambda*sqrt(te_val))
+         ! This factor is 8*pi*e^6*sqrt(2)/(3*(4*pi/(mu0*c^2))^3*me^3/2*c^2*sqrt(3*pi)) YUK
+         fval = fval*6.0647053688D-55*1D-10
+         !WRITE(327,*) s,ne_val,te_val,ze_val,gauntff,fval
+         fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
+      ELSE
+         fval = 0
+      END IF
+      RETURN
+      END SUBROUTINE fcn_bremsstrahlung
          
          
       SUBROUTINE mntouv(k1,k,mnmax,nu,nv,xu,xv,fmn,xm,xn,f,signs,calc_trig)
@@ -904,7 +839,7 @@
       profile_norm = 0.0_rprec
       SELECT CASE (prof_type)
          CASE ('two_power','two_power_hollow','two_power_offset','two_lorentz','gauss_trunc', &
-               'gauss_trunc_offset','sum_atan','pedestal','bump','hollow','hollow2')
+               'gauss_trunc_offset','sum_atan','pedestal','bump','hollow','hollow2','te_ratio','simple_peak','flat_rho')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
          CASE ('power_series','power_series_edge0','power_series_0_boundaries', &
                'power_series_rho','power_series_rho2')
@@ -951,6 +886,8 @@
 
         CALL tolower(profile_type)
         SELECT CASE (profile_type)
+        CASE ('simple_peak','flat_rho')
+           profile_coefficients = profile_coefficients * 1.0 ! Can't scale by coefficients
         CASE ('power_series','spline','akima_spline','akima_spline_ip','power_series_0_boundaries')
            profile_coefficients = profile_coefficients * factor
         CASE ('two_power','two_power_hollow')
@@ -988,34 +925,6 @@
             CALL eval_prof_spline(dex,beamj_aux_s(1:dex),beamj_aux_f(1:dex),s_val,val,ier)
          CASE DEFAULT
             CALL eval_prof_stel(s_val,beamj_type,val,21,beamj_aux_f(1:21),ier)
-!         CASE ('power_series')
-!            val = 0
-!            DO i = UBOUND(beamj_aux_f,DIM=1), LBOUND(beamj_aux_f,DIM=1), -1
-!               val = s_val*val + beamj_aux_f(i)
-!            END DO
-!         CASE ('two_power')
-!            val = 0
-!            val = beamj_aux_f(1) * (1.0 - s_val**beamj_aux_f(2))**beamj_aux_f(3)
-!         CASE ('gauss_trunc')
-!            val = 0
-!            DO i = 1, 10
-!               xp = s_val*glx(i)
-!               val = val + glw(i) * beamj_aux_f(1) * ( EXP(-(xp/beamj_aux_f(2))**2) &
-!                                                     -EXP(-(1/beamj_aux_f(2))**2))
-!            END DO
-!            val = val * s_val
-!         CASE('sum_atan')
-!            val = 0
-!            IF (s_val >= 1) THEN
-!               val = beamj_aux_f(1)+beamj_aux_f(2)+beamj_aux_f(6)+beamj_aux_f(10)+beamj_aux_f(14)+beamj_aux_f(18)
-!            ELSE
-!               val = beamj_aux_f(1) + &
-!                     (4/pi2) * ( beamj_aux_f(2) * ATAN(beamj_aux_f(3)*s_val**beamj_aux_f(4)/(1-s_val)**beamj_aux_f(5)) &
-!                                +beamj_aux_f(6) * ATAN(beamj_aux_f(7)*s_val**beamj_aux_f(8)/(1-s_val)**beamj_aux_f(9)) &
-!                                +beamj_aux_f(10) * ATAN(beamj_aux_f(11)*s_val**beamj_aux_f(12)/(1-s_val)**beamj_aux_f(13)) &
-!                                +beamj_aux_f(14) * ATAN(beamj_aux_f(15)*s_val**beamj_aux_f(16)/(1-s_val)**beamj_aux_f(17)) &
-!                                +beamj_aux_f(18) * ATAN(beamj_aux_f(19)*s_val**beamj_aux_f(20)/(1-s_val)**beamj_aux_f(21)))
-!            END IF
       END SELECT
       RETURN
       END SUBROUTINE get_equil_beamj
@@ -1054,46 +963,6 @@
             
          CASE DEFAULT
             CALL eval_prof_stel(s_val,bootj_type,val,21,bootj_aux_f(1:21),ier)
-!         CASE ('power_series')
-!            val = 0
-!            DO i = UBOUND(bootj_aux_f,DIM=1), LBOUND(bootj_aux_f,DIM=1), -1
-!               val = s_val*val + bootj_aux_f(i)
-!            END DO
-!         CASE ('bump')
-!            ! bootj_aux_f(1) : x0 center of bump
-!            ! bootj_aux_f(2) : height of bump
-!            ! bootj_aux_f(3) : height of bulk
-!            x0  = bootj_aux_f(1)
-!            x1  = 1.0_rprec-2*(1.0_rprec-x0)
-!            x2  = 1.0_rprec
-!            x3  = bootj_aux_f(3)
-!            h   = bootj_aux_f(2)/((x0-x1)*(x0-x2))
-!            val = 0
-!            if ((s_val > x1) .and. (s_val < 1.0_rprec)) val = h*(s_val-x1)*(s_val-x2)
-!            val = val + x3*s_val*(s_val-1)/(-0.25_rprec)
-!         CASE ('two_power')
-!            val = 0
-!            val = bootj_aux_f(1) * (1.0_rprec - s_val**bootj_aux_f(2))**bootj_aux_f(3)
-!         CASE ('gauss_trunc')
-!            val = 0
-!            DO i = 1, 10
-!               xp = s_val*glx(i)
-!               val = val + glw(i) * bootj_aux_f(1) * ( EXP(-(xp/bootj_aux_f(2))**2) &
-!                                                     -EXP(-(1/bootj_aux_f(2))**2))
-!            END DO
-!            val = val * s_val
-!         CASE('sum_atan')
-!            val = 0
-!            IF (s_val >= 1) THEN
-!               val = bootj_aux_f(1)+bootj_aux_f(2)+bootj_aux_f(6)+bootj_aux_f(10)+bootj_aux_f(14)+bootj_aux_f(18)
-!            ELSE
-!               val = bootj_aux_f(1) + &
-!                     (4/pi2) * ( bootj_aux_f(2) * ATAN(bootj_aux_f(3)*s_val**bootj_aux_f(4)/(1-s_val)**bootj_aux_f(5)) &
-!                                +bootj_aux_f(6) * ATAN(bootj_aux_f(7)*s_val**bootj_aux_f(8)/(1-s_val)**bootj_aux_f(9)) &
-!                                +bootj_aux_f(10) * ATAN(bootj_aux_f(11)*s_val**bootj_aux_f(12)/(1-s_val)**bootj_aux_f(13)) &
-!                                +bootj_aux_f(14) * ATAN(bootj_aux_f(15)*s_val**bootj_aux_f(16)/(1-s_val)**bootj_aux_f(17)) &
-!                                +bootj_aux_f(18) * ATAN(bootj_aux_f(19)*s_val**bootj_aux_f(20)/(1-s_val)**bootj_aux_f(21)))
-!            END IF
       END SELECT
       RETURN
       END SUBROUTINE get_equil_bootj
@@ -1520,6 +1389,10 @@
       nc = ncoefs
       CALL tolower(ptype)
       SELECT CASE (ptype)
+         CASE('flat_rho')
+            nc = 3
+         CASE('simple_peak')
+            nc = 1
          CASE('two_power')
             nc = 3
          CASE('two_power_hollow')

@@ -18,6 +18,7 @@
 !     Input/Output Variables
 !
 !-----------------------------------------------------------------------
+      IMPLICIT NONE
       REAL(rprec), INTENT(in)    ::  target
       REAL(rprec), INTENT(in)    ::  sigma
       INTEGER,     INTENT(in)    ::  niter
@@ -91,7 +92,7 @@
       ELSE
          IF (sigma < bigno) THEN
             mtargets = mtargets + 1
-            IF (niter == -2) target_dex(mtargets)=jtarget_kappa_box
+            IF (niter == -2) target_dex(mtargets)=jtarget_kappa_avg
          END IF
       END IF
       RETURN

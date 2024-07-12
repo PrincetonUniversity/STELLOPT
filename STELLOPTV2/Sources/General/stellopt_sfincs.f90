@@ -121,7 +121,7 @@
 
             color = radius_index_min ! This choice ensures that all procs handling the same radii get grouped into one MPI communicator.
             key = myworkid
-            CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, key, MPI_COMM_SFINCS, ierr_mpi)
+            CALL MPI_COMM_SPLIT(MPI_COMM_MYWORLD, color, key, MPI_COMM_SFINCS, ierr_mpi)
             CALL MPI_COMM_SIZE(MPI_COMM_SFINCS, numProcs_sfincs, ierr_mpi)
             CALL MPI_COMM_RANK(MPI_COMM_SFINCS, myRank_sfincs, ierr_mpi)
             WRITE (proc_assignments_string,fmt="(a,i5,a,i5,a,i4,a,i4,a,i5,a,i5,a)"),"Proc ",myRank_myWorld," of",numProcs_myWorld," in MPI_COMM_MYWORLD will handle radius",radius_index_min," to",radius_index_max," and has rank",myRank_sfincs," of",numProcs_sfincs," in MPI_COMM_SFINCS."
@@ -199,9 +199,9 @@
                   ! Copy the SFINCS input file into the new directory
                   unit_in = 11
                   unit_out = 12
-                  OPEN (unit=unit_in, file='input.'//TRIM(id_string),status='old',action='read',iostat=file_status)
+                  OPEN (unit=unit_in, file=TRIM(id_tag),status='old',action='read',iostat=file_status)
                   IF (file_status /= 0) THEN
-                     PRINT *,"Error opening stellopt input file input."//TRIM(id_string)
+                     PRINT *,"Error opening stellopt input file "//TRIM(id_tag)
                      PRINT *,"iostat=",file_status
                      STOP
                   END IF

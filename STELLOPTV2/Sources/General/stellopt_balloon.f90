@@ -13,12 +13,17 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE stellopt_targets, ONLY: sigma_balloon, balloon_theta, balloon_zeta
-      USE equil_vals, ONLY: balloon_grate, nrad
+      USE equil_vals, ONLY: balloon_grate, nrad, lasym
       ! COBRA LIBRARIES
-      USE readin_data, ONLY: lscreen_cobra=>lscreen
+      USE readin_data, ONLY: lscreen_cobra=>lscreen, list, hiota, &
+                                  hpres, hphip, lmnsh, lmnch, &
+                                  bsupumnsh, bsupumnch, &
+                                  bsupvmnch, bsupvmnsh, xm_v, &
+                                  xn_v,bmnch, bmnsh
       USE ballooning_data, ONLY: init_theta, init_zeta, l_geom_input, &
                                  l_tokamak_input, k_w, kth
-      USE fmesh_quantities, ONLY: radios
+      USE fmesh_quantities, ONLY: radios, rmncf, rmnsf, zmnsf, zmncf, &
+                                  mercierf
       ! VMEC
       
 !-----------------------------------------------------------------------
@@ -53,10 +58,11 @@
             ! First we need to initialize the COBRA variables
             ntheta = COUNT(balloon_theta >= 0.0)
             nzeta  = COUNT(balloon_zeta >= 0.0)
-            nlis   = COUNT(sigma_balloon < bigno)
+            nlis   = COUNT(sigma_balloon(2:nrad) < bigno)
             IF (.not. ALLOCATED(bsurf)) ALLOCATE(bsurf(nlis))
             j=1
-            DO ik = 1, SIZE(sigma_balloon,DIM=1)
+            DO ik = 2, nrad
+            !DO ik = 2, SIZE(sigma_balloon,DIM=1)
                IF (sigma_balloon(ik) < bigno) THEN
                   bsurf(j) = ik
                   j = j + 1
@@ -70,8 +76,8 @@
             CALL second0(t1)
             DO i = 1, ntheta
                DO j = 1, nzeta
-                  init_theta = balloon_theta(i)
-                  init_zeta  = balloon_zeta(j)
+                  init_theta = MOD(balloon_theta(i),360.0)
+                  init_zeta  = MOD(balloon_zeta(j),360.0)
                   CALL get_ballooning_grate(grate)
                   CALL second0(t2)
                   IF (lscreen) THEN
@@ -81,6 +87,11 @@
                   balloon_grate(:,i,j) = grate(:)
                END DO
             END DO
+            ! Deallocate
+            DEALLOCATE (grate, bsurf, radios)     
+            DEALLOCATE (hiota, hpres, hphip, rmncf, zmnsf, list, &
+                        lmnsh, bmnch, bsupumnch, bsupvmnch, mercierf, xn_v, xm_v)
+            IF (lasym) DEALLOCATE (rmnsf, zmncf, lmnch, bmnsh, bsupumnsh, bsupvmnsh)
          CASE('spec')
       END SELECT
       IF (lscreen) WRITE(6,'(a)') ' -------------------------  BALLOONING CALCULATION DONE  ---------------------'

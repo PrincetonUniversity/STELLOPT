@@ -2,7 +2,6 @@
       subroutine normal_vector(u, v)
       use stel_kinds
       USE torlines_background
-      USE torlines_realspace, ONLY: k, ik_sav
       USE torlines_runtime, ONLY: lvessel, vsurf
       USE wall_mod
       implicit none

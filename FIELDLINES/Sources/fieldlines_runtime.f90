@@ -37,7 +37,9 @@
 !                    - Wall strike points saved.
 !     v1.41 03/02/17 - Various edits for long runs
 !                    - Field construction improved for large machines
-!     v1.XX 09/22/17 - Store iota_axis in file.
+!     v1.75 10/30/20 - Store iota_axis in file.
+!                    - Added restarting from FIELDLINES run for FLD
+!     v1.80 02/27/21 - Added interface to HINT magnetic fields
 !-----------------------------------------------------------------------
       MODULE fieldlines_runtime
 !-----------------------------------------------------------------------
@@ -45,6 +47,10 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE EZspline
+      USE fieldlines_globals, ONLY: MAXLINES, lerror_field, npoinc, &
+         dphi, follow_tol, num_hcp, delta_hc, mu, errorfield_amp, &
+         errorfield_phase, r_start, phi_start, z_start, phi_end, r_hc, &
+         z_hc, phi_hc, int_type, lmu
 !-----------------------------------------------------------------------
 !     Module Variables
 !          lverb         Logical to control screen output
@@ -114,27 +120,26 @@
       INTEGER, PARAMETER ::  runtype_advanced  = 1
       INTEGER, PARAMETER ::  runtype_full      = 327
       INTEGER, PARAMETER ::  runtype_norun     = 328
+      INTEGER, PARAMETER ::  runtype_backflow  = 329
+      INTEGER, PARAMETER ::  runtype_gridgen   = 422
       
-      INTEGER, PARAMETER ::  MAXLINES   = 2**18
       INTEGER, PARAMETER ::  NLOCAL = 128  ! Number of local processors
       
       LOGICAL         :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
-                         lmu, lvessel, lvac, lrestart, laxis_i, &
+                         lvessel, lvac, lrestart, laxis_i, &
                          ladvanced, lauto, lplasma_only, lbfield_only,&
                          lreverse, lhitonly, lafield_only, lraw, lemc3, &
-                         lerror_field, lwall_trans, ledge_start, lnescoil,&
-                         lmodb
-      INTEGER         :: nextcur, npoinc, nruntype, num_hcp, nprocs_fieldlines
-      REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc, iota0
-      REAL(rprec), DIMENSION(MAXLINES)     :: r_start, phi_start, &
-                                              z_start, phi_end, &
-                                              r_hc, z_hc, phi_hc
+                         lwall_trans, ledge_start, lnescoil,&
+                         lmodb, lfield_start, lhint, leqdsk, lpres
+      INTEGER         :: nextcur, nruntype, &
+                         nprocs_fieldlines, line_select, ldex_default
+      REAL(rprec)     :: pi, pi2, mu0, iota0
       REAL(rprec), ALLOCATABLE :: extcur(:)
       CHARACTER(256)  :: id_string, mgrid_string, coil_string, &
-                         vessel_string, int_type, restart_string, &
-                         nescoil_string
+                         vessel_string, restart_string, &
+                         nescoil_string, eqdsk_string
       
-      REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.50
+      REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.80
 !-----------------------------------------------------------------------
 !     Subroutines
 !          handle_err  Controls Program Termination
@@ -281,19 +286,31 @@
             WRITE(6,*) '  FIELDLINES ENCOUNTERED AN HDF ERROR'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
             WRITE(6,*) '  IERR:      ',ierr
+      ELSEIF (error_num .eq. MPI_BARRIER_ERR) THEN
+         WRITE(6,*) '  FIELDLINES ENCOUNTERED AN MPI BARRIER ERROR'
+         WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+         WRITE(6,*) '  IERR:      ',ierr
+      ELSEIF (error_num .eq. MPI_BARRIER_ERR) THEN
+         WRITE(6,*) '  FIELDLINES ENCOUNTERED AN MPI BARRIER (FINE) ERROR'
+         WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+         WRITE(6,*) '  IERR:      ',ierr  
+      ELSEIF (error_num .eq. MPI_BCAST_ERR) THEN
+         WRITE(6,*) '  FIELDLINES ENCOUNTERED AN MPI BROADCAST ERROR'
+         WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+         WRITE(6,*) '  IERR:      ',ierr   
       ELSE
            WRITE(6,*) '  FIELDLINES ENCOUNTERED AN UNKNOWN ERROR'
            WRITE(6,*) '  STRING: ',TRIM(string_val)
            WRITE(6,*) '  ierr:   ',ierr
       END IF
       CALL FLUSH(6)
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_FINALIZE(ierr)   
-!DEC$ ENDIF
+#endif
       STOP
       END SUBROUTINE handle_err
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
     SUBROUTINE FIELDLINES_TRANSMIT_2DDBL(n1,n2,m1,m2,data_in,n1_gbl,n2_gbl,id,root,COMM_local,ier)
     USE stel_kinds, ONLY: rprec
     USE mpi
@@ -323,6 +340,6 @@
     CALL MPI_BARRIER(COMM_local, ier)
     RETURN
     END SUBROUTINE FIELDLINES_TRANSMIT_2DDBL
-!DEC$ ENDIF
+#endif
       
       END MODULE fieldlines_runtime
