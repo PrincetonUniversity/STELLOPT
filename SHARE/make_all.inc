@@ -4,6 +4,9 @@
 #   New means NEW not new version or new system.
 #######################################################################
 
+SHARED_EXT ?= .so
+STATIC_EXT ?= .a
+
 # Home bin specifies where the build scripts are located,
 # for example awk_cdir.awk.
 HOME_BIN = ../../
@@ -11,7 +14,7 @@ MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
 LIB_DIR = ../../LIBSTELL
-LIB = libstell.a
+LIB = libstell$(STATIC_EXT)
 
 # Handle third party code dependencies
 ifeq ($(LSFINCS),T)
@@ -31,34 +34,34 @@ LIMAS?=F
 ifeq ($(MAKECMDGOALS),xstelloptv2)
   PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2
   VMEC_DIR = ../../VMEC2000
-  LIB_VMEC= libvmec.a
+  LIB_VMEC= libvmec$(STATIC_EXT)
   MOD_PATH+= -I$(VMEC_DIR)/$(LOCTYPE)
   BEAMS3D_DIR = ../../BEAMS3D
-  LIB_BEAMS3D = libbeams3d.a
+  LIB_BEAMS3D = libbeams3d$(STATIC_EXT)
   MOD_PATH+= -I$(BEAMS3D_DIR)/$(LOCTYPE)
   BOOTSJ_DIR = ../../BOOTSJ
-  LIB_BOOTSJ = libbootsj.a
+  LIB_BOOTSJ = libbootsj$(STATIC_EXT)
   MOD_PATH+= -I$(BOOTSJ_DIR)/$(LOCTYPE)
   BNORM_DIR = ../../BNORM
-  LIB_BNORM = libbnorm.a
+  LIB_BNORM = libbnorm$(STATIC_EXT)
   MOD_PATH+= -I$(BNORM_DIR)/$(LOCTYPE)
   BOOZ_DIR = ../../BOOZ_XFORM
-  LIB_BOOZ= libbooz.a
+  LIB_BOOZ= libbooz$(STATIC_EXT)
   MOD_PATH+= -I$(BOOZ_DIR)/$(LOCTYPE)
   COBRA_DIR = ../../COBRAVMEC
-  LIB_COBRA = libcobra.a
+  LIB_COBRA = libcobra$(STATIC_EXT)
   MOD_PATH+= -I$(COBRA_DIR)/$(LOCTYPE)
   DIAGNO_DIR = ../../DIAGNO
-  LIB_DIAGNO= libdiagno.a
+  LIB_DIAGNO= libdiagno$(STATIC_EXT)
   MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
   FIELDLINES_DIR = ../../FIELDLINES
-  LIB_FIELDLINES = libfieldlines.a
+  LIB_FIELDLINES = libfieldlines$(STATIC_EXT)
   MOD_PATH+= -I$(FIELDLINES_DIR)/$(LOCTYPE)
   JINV_DIR = ../../J_INVARIANT
-  LIB_JINV = libjinv.a
+  LIB_JINV = libjinv$(STATIC_EXT)
   MOD_PATH+= -I$(JINV_DIR)/$(LOCTYPE)
   MGRID_DIR= ../../MAKEGRID
-  LIB_MGRID= libmakegrid.a
+  LIB_MGRID= libmakegrid$(STATIC_EXT)
   MOD_PATH+= -I$(MGRID_DIR)/$(LOCTYPE)
   LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
 	$(BEAMS3D_DIR)/$(LOCTYPE)/$(LIB_BEAMS3D) \
@@ -72,7 +75,7 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
   ifeq ($(LDKES),T)
     DKES_DIR = ../../DKES
-    LIB_DKES = libdkes.a
+    LIB_DKES = libdkes$(STATIC_EXT)
     MOD_PATH += -I$(DKES_DIR)/$(LOCTYPE)
     PRECOMP += -DDKES_OPT
     LIB_LINK += $(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES)
@@ -82,7 +85,7 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   endif
   ifeq ($(LNEO),T)
     NEO_DIR = ../../NEO
-    LIB_NEO = libneo.a
+    LIB_NEO = libneo$(STATIC_EXT)
     MOD_PATH += -I$(NEO_DIR)/$(LOCTYPE)
     PRECOMP += -DNEO_OPT
     LIB_LINK += $(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
@@ -93,16 +96,16 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 else ifeq ($(MAKECMDGOALS),xthrift)
   PRECOMP += -DSKS  -DSKS2
   VMEC_DIR = ../../VMEC2000
-  LIB_VMEC= libvmec.a
+  LIB_VMEC= libvmec$(STATIC_EXT)
   MOD_PATH+= -I$(VMEC_DIR)/$(LOCTYPE)
   BOOTSJ_DIR = ../../BOOTSJ
-  LIB_BOOTSJ = libbootsj.a
+  LIB_BOOTSJ = libbootsj$(STATIC_EXT)
   MOD_PATH+= -I$(BOOTSJ_DIR)/$(LOCTYPE)
   BOOZ_DIR = ../../BOOZ_XFORM
-  LIB_BOOZ= libbooz.a
+  LIB_BOOZ= libbooz$(STATIC_EXT)
   MOD_PATH+= -I$(BOOZ_DIR)/$(LOCTYPE)
   DIAGNO_DIR = ../../DIAGNO
-  LIB_DIAGNO= libdiagno.a
+  LIB_DIAGNO= libdiagno$(STATIC_EXT)
   MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
   LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
   $(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
@@ -287,7 +290,7 @@ ifeq ($(LIMAS),T)
 endif
 
 # This is hear because of MPI above resetting LINK
-ifeq ($(MAKECMDGOALS),libstell.a)
+ifeq ($(MAKECMDGOALS),libstell$(STATIC_EXT))
   LINK = $(LINK_AR)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
