@@ -1,6 +1,13 @@
 # This top level makefile is only used to setup the build directories.
 # In general this should not be called directly, instead use the
 # build_all script.
+#
+#  This top level makefile includes
+#      make.inc includes
+#           make_$(MACHINE).inc (from SHARE)  ... no external makefiles
+# and       make_all.inc        (from SHARE)
+#
+#
 
 include make.inc
 
