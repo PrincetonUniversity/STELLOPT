@@ -62,4 +62,4 @@ libstell.so : $(ObjectFiles)
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $< ; \
       fi
 clean:
-	- rm -f *.o *.mod *.a *.so 
+	- rm -f *.o *.mod *$(STATIC_EXT) *$(SHARED_EXT) 
