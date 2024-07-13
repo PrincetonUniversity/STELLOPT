@@ -15,6 +15,8 @@
 !      INTEGER, EXTERNAL :: system
 !      INTEGER :: system
 !      ireturn = system(TRIM(cmd))
+#elif defined(WIN64)
+      CALL SYSTEM(TRIM(cmd), ireturn)
 #elif defined(WIN32) || defined(SUNOS)
       INTEGER, EXTERNAL :: system
       ireturn = system(TRIM(cmd))
