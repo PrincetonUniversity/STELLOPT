@@ -5,7 +5,6 @@ This library provides a python class for working with wall_data
 """
 
 # Libraries
-#from libstell.libstell import LIBSTELL
 
 # Constants
 
@@ -38,11 +37,11 @@ class WALL():
 		lines = f.readlines()
 		f.close()
 		if  'MACHINE:' in lines[0]:
-			self.name = lines[0][8:]
+			self.name = lines[0][8:].strip()
 		else:
 			print("Bad Synatx line 1 in wall file")
 		if  'DATE:' in lines[1]:
-			self.date = lines[1][6:]
+			self.date = lines[1][6:].strip()
 		else:
 			print("Bad Synatx line 2 in wall file")
 		n1, n2 = lines[2].split()
@@ -89,6 +88,24 @@ class WALL():
 		for i in range(self.nfaces):
 			f.write(f"{int(self.faces[i,0])+1} {int(self.faces[i,1])+1} {int(self.faces[i,2])+1}\n")
 		f.close()
+
+	def write_wall_stl(self,filename):
+		"""Directly writes a wall STL file.
+
+		This routine writes a wall STL file from the class.
+
+		Parameters
+		----------
+		filename : str
+			Path to wall file.
+		"""
+		import numpy as np
+		from stl import mesh
+		wall_mesh = mesh.Mesh(np.zeros(self.nfaces, dtype=mesh.Mesh.dtype))
+		for i, f in enumerate(self.faces):
+			for j in range(3):
+				wall_mesh.vectors[i][j] = self.vertex[f[j],:]
+		wall_mesh.save(filename)
 
 	def plot_wall_cloud(self,ax=None):
 		"""Plots the vertices of the wall
@@ -183,7 +200,7 @@ class WALL():
 		x = np.zeros((nvertex))
 		y = np.zeros((nvertex))
 		z = np.zeros((nvertex))
-		faces  = np.zeros((nfaces,3))
+		faces  = np.zeros((nfaces,3),dtype=int)
 		# Do Vertices
 		k=0
 		for v in range(nphi):
@@ -222,6 +239,7 @@ class WALL():
 		self.nfaces  = nfaces
 		self.vertex = np.column_stack((x,y,z))
 		self.faces = faces
+		self.laccel = False
 
 # LINESEG Class
 class LINESEG():
@@ -359,16 +377,16 @@ class PARAM_WALL():
 			# Append the face information
 			for i in range(nelements-1):
 				for j in range(npoints-1):
-					faces = [k k+1 k+npoints]
+					faces = [k, k+1, k+npoints]
 					out_wall.faces.append(faces)
-					faces = [k+1 k+npoints+1 k+npoints]
+					faces = [k+1, k+npoints+1, k+npoints]
 					out_wall.faces.append(faces)
 					k = k + 1
 				# Close the circle
 				if npoints > 3:
-					faces = [k-1 k-npoints k+npoints-1]
+					faces = [k-1, k-npoints, k+npoints-1]
 					out_wall.faces.append(faces)
-					faces = [k-npoints k k+npoints-1]
+					faces = [k-npoints, k, k+npoints-1]
 		# Setup wall object
 		out_wall.nvertex = len(out_wall.vertex)
 		out_wall.nfaces  = len(out_wall.faces)
