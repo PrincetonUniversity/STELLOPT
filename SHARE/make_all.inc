@@ -4,8 +4,8 @@
 #   New means NEW not new version or new system.
 #######################################################################
 
-SHARED_EXT = .so
-STATIC_EXT = .a
+SHARED_EXT ?= .so
+STATIC_EXT ?= .a
 
 # Home bin specifies where the build scripts are located,
 # for example awk_cdir.awk.
