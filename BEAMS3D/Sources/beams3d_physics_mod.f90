@@ -332,6 +332,8 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
                slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+			   !slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
+			   !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
