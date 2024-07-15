@@ -625,7 +625,7 @@ class PLOT3D():
 		"""
 		from vtkmodules.vtkIOImage import vtkBMPWriter,vtkJPEGWriter,vtkPNGWriter,vtkPNMWriter,vtkPostScriptWriter,vtkTIFFWriter
 		from vtkmodules.vtkRenderingCore import vtkWindowToImageFilter
-		rbga = True
+		rgba = True
 		if '.bmp' in filename:
 			writer = vtkBMPWriter()
 		elif '.jpg' in filename:
@@ -646,6 +646,7 @@ class PLOT3D():
 		windowto_image_filter = vtkWindowToImageFilter()
 		windowto_image_filter.SetInput(self.render_window)
 		windowto_image_filter.SetScale(1)  # image quality
+		windowto_image_filter.Update()
 		if rgba:
 			windowto_image_filter.SetInputBufferTypeToRGBA()
 		else:
