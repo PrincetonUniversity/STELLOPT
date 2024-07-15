@@ -61,6 +61,11 @@ if __name__=="__main__":
         data['Deposition_B1E2'] = depo[1,:].flatten().tolist()
         data['Deposition_B2E1'] = depo[3,:].flatten().tolist()
         data['Deposition_B2E2'] = depo[4,:].flatten().tolist()
+        data['Deposition_B1E1'] = depo[0,:].flatten()
+        data['Deposition_B1E2'] = depo[1,:].flatten()
+        data['Deposition_B2E1'] = depo[3,:].flatten()
+        data['Deposition_B2E2'] = depo[4,:].flatten()
+        failtol = 25.0
     if run_name in ['ORBITS_restart']:
         data['LOSS_PCT'] = 100*sum(b3d.end_state==2)/b3d.nparticles
     if run_name in ['ORBITS_fusion']:
