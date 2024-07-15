@@ -32,7 +32,7 @@
       REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), my_end, &
                      myqm, rand_prob, cum_prob, tau, next_t, &
                      fact_crit, fact_pa, fact_vsound, fact_kick, &
-                     fact_coul, fact_crit_pro, &
+                     fact_coul, fact_crit_pro, fact_crit_legacy, &
                      partpmax, h1_prof, h2_prof, h3_prof, h4_prof, h5_prof, r_h, &
                      z_h, p_h, e_h, pi_h, E_by_v
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
