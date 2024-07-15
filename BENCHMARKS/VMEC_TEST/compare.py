@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import sys, os
-#import shelve
 import json
 from pathlib import Path
 from argparse import ArgumentParser
@@ -65,19 +64,6 @@ if __name__=="__main__":
         d = json.load(f)
         varlist = d[run_name]
         f.close()
-#    if args.lmake_db:
-#        my_file = Path(_BENCH_FILE_)
-#        if my_file.exists():
-#            shelf = shelve.open(_BENCH_FILE_, flag="a")
-#        else:
-#            shelf = shelve.open(_BENCH_FILE_, flag="c")
-#        shelf[run_name] = data
-#        shelf.close()
-#        print('  ADDED: '+run_name)
-#        sys.exit(0)
-#    else:
-#        shelf = shelve.open(_BENCH_FILE_, flag='r')
-#        varlist = shelf[run_name]
 
     print(f'VMEC VERSION: {vmec.version_:4.2f}')
     for temp in varlist:

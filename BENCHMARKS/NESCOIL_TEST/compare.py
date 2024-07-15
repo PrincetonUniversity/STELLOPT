@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import sys, os
-import shelve
+import json
 from pathlib import Path
 from argparse import ArgumentParser
 sys.path.insert(0, '../../pySTEL/')
 import numpy as np
-_BENCH_FILE_ = 'BENCH_DATA'
+_BENCH_FILE_ = 'BENCH_DATA.json'
 # This part changes
 from libstell.nescoil import NESCOIL
 from libstell.coils import COILSET
@@ -30,7 +30,11 @@ if __name__=="__main__":
 	failtol = 1.0
 	nesc = NESCOIL()
 	coil = COILSET()
-	nesc.read_nescout(f'nescout.{run_name}')
+	try:
+		nesc.read_nescout(f'nescout.{run_name}')
+	except:
+		print(f'  ERROR: Cannot find run {run_name}')
+		sys.exit(-1)
 	version_str = f'NESCOIL VERSION: 1.0'
 
 	# Extract values
@@ -62,24 +66,33 @@ if __name__=="__main__":
 		modb_nescoil = modb_nescoil.flatten()
 		modb_model = modb_model.flatten()
 		modb_coil = modb_coil.flatten()
-		data['ERROR_ADAPT'] = 100*abs(modb_nescoil_adapt-modb_model)/modb_model
-		data['ERROR_FINITE'] = 100*abs(modb_nescoil-modb_model)/modb_model
-		data['ERROR_COIL'] = 100*abs(modb_coil-modb_model)/modb_model
+		data['ERROR_ADAPT'] = (100*abs(modb_nescoil_adapt-modb_model)/modb_model).tolist()
+		data['ERROR_FINITE'] = (100*abs(modb_nescoil-modb_model)/modb_model).tolist()
+		data['ERROR_COIL'] = (100*abs(modb_coil-modb_model)/modb_model).tolist()
 
 	# Read or write to the database file.
 	if args.lmake_db:
+		data_out = {}
 		my_file = Path(_BENCH_FILE_)
 		if my_file.exists():
-			shelf = shelve.open(_BENCH_FILE_, flag="a")
-		else:
-			shelf = shelve.open(_BENCH_FILE_, flag="c")
-		shelf[run_name] = data
-		shelf.close()
+			f = open(_BENCH_FILE_,"r")
+			data_out = json.load(f)
+			f.close()
+		f = open(_BENCH_FILE_,"w")
+		data_out[run_name] = data
+		json.dump(data_out, f, ensure_ascii=False, indent=4)
+		f.close()
 		print('  ADDED: '+run_name)
 		sys.exit(0)
 	else:
-		shelf = shelve.open(_BENCH_FILE_, flag='r')
-		varlist = shelf[run_name]
+		f = open(_BENCH_FILE_,"r")
+		d = json.load(f)
+		f.close()
+		if run_name in d.keys():
+			varlist = d[run_name]
+		else:
+			print(f'  ERROR: Cannot find {run_name} in {_BENCH_FILE_}')
+			sys.exit(-1)
 
 	print(version_str)
 	print('=================')
@@ -93,11 +106,15 @@ if __name__=="__main__":
 				perct = 100*abs(act-cal)/act
 			print(f'  {temp} {cal:7.6f} {act:7.6f} {round(perct)}')
 		elif temp == 'wall_strikes':
+			act = np.array(act)
+			cal = np.array(cal)
 			cal = np.where(act==0,0,cal)
 			div = np.where(act==0,1,act)
 			perct = 100*sum(abs(act-cal)/div)
 			print(f'  {temp} {max(cal):7.6f} {max(act):7.6f} {round(perct)}')
 		else:
+			act = np.array(act)
+			cal = np.array(cal)
 			cal = np.where(act==0,0,cal)
 			div = np.where(act==0,1,act)
 			print(f'  Quantity: {temp} -- CODE -- REF. -- %')
