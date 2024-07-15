@@ -65,7 +65,7 @@ class MyApp(QMainWindow):
 		self.fig = Figure(figsize=(2,2),dpi=100)
 		self.ax = self.fig.add_subplot(111)
 		self.canvas = FigureCanvas(self.fig)
-		#self.toolbar = NavigationToolbar(self.canvas, self.canvas)
+		self.toolbar = NavigationToolbar(self.canvas, self.canvas)
 		self.ui.plot_widget.addWidget(self.canvas)
 		#self.canvas.draw()
 		# Callbacks		
