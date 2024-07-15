@@ -50,7 +50,6 @@ class PLOT3D():
 		else:
 			self.colororder = ['red','green','blue','yellow','magenta','cyan','aqua']
 
-
 	def setRenderer(self,renderer):
 		"""Set the renderer
 
@@ -218,6 +217,29 @@ class PLOT3D():
 			for actor in actors:
 				mapper = actor.GetMapper()
 				mapper.SetScalarRange(cmin,cmax)
+
+	def setCamera(self,pos=None,focus=None,camup=None,angle=None):
+		"""Set the camera properties
+
+		The routine allows the user to set the camera properties of a
+		VTK render.
+
+		Parameters
+		----------
+		pos : list (optional)
+			Set position of camera x,y,z
+		focus : list (optional)
+			Set focus of camera nx,ny,nz
+		camup : list (optional)
+			Set up-vector of camera ux,uy,uz
+		angle : float (optional)
+			Set the camera viewing angle. [deg]
+		"""
+		camera = self.renderer.GetActiveCamera()
+		if type(pos) is not type(None): camera.SetPosition(pos[0], pos[1], pos[2])  # Set Camera position
+		if type(focus) is not type(None): camera.SetFocalPoint(focus[0], focus[1], focus[2])  # Set Camera focal point
+		if type(camup) is not type(None): camera.SetViewUp(camup[0], camup[1], camup[2])  # Set Camera up vector
+		if type(angle) is not type(None): camera.SetViewAngle(angle)  # Set Camera viewing angle [deg]
 
 	def torusvertexTo3Dmesh(self,x,y,z,lcloseu=True,lclosev=True):
 		"""Generate points and triangle objects from x,y,z data for a torus
@@ -561,7 +583,7 @@ class PLOT3D():
 			self.scalar_bar.SetBarRatio(0.25)
 			self.renderer.AddActor2D(self.scalar_bar)
 
-	def setCamera(self,pos=None,focal=None,az=None,el=None):
+	def setCamera2(self,pos=None,focal=None,az=None,el=None):
 		"""Set the Camera Position
 
 		This routine sets the camera position using position and focal
