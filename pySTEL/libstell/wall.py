@@ -151,8 +151,11 @@ class WALL():
 		# Generate Wall colors
 		scalar = None
 		if type(wallcolor) != type(None): 
-			scalar = plt.valuesToScalar(wallcolor)
-			plt.add3Dmesh(points,triangles,scalars=wallcolor)
+			if isinstance(wallcolor, str):
+				plt.add3Dmesh(points,triangles,color=wallcolor)
+			else:
+				scalar = plt.valuesToScalar(wallcolor)
+				plt.add3Dmesh(points,triangles,scalars=wallcolor)
 		else:
 			plt.add3Dmesh(points,triangles,color='gray')
 		# Render if requested
@@ -247,6 +250,7 @@ class LINESEG():
 
 	"""
 	def __init__(self,R=None,phi=None,Z=None,RHat=None,ZHat=None,L=None):
+		from numpy import sqrt
 		self.Phi = phi
 		self.R   = R
 		self.Z   = Z
@@ -347,6 +351,25 @@ class PARAM_WALL():
 		self.elements = None
 		pass
 
+	def addElement(self,subset):
+		"""Add a subset to the elements
+
+		This routine appends a list of primative shapes to the
+		elements list
+
+		Parameters
+		----------
+		subset : list
+			A list of primatives
+		"""
+		# Sort by phi
+		subset.sort(key=lambda x: x.Phi, reverse=False)
+		# Add to elements
+		if type(self.elements) is type(None):
+			self.elements=[subset]
+		else:
+			self.elements.extend([subset])
+
 	def getWall(self):
 		"""Return a wall using the elements
 
@@ -394,6 +417,7 @@ class PARAM_WALL():
 					out_wall.faces.append(faces)
 					faces = [k-npoints, k, k+npoints-1]
 				k = k + 1 # skip endpoint
+			k = k + npoints # skip to next subset
 		# Setup wall object
 		out_wall.nvertex = len(out_wall.vertex)
 		out_wall.nfaces  = len(out_wall.faces)
