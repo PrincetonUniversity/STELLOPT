@@ -1,10 +1,10 @@
 !-----------------------------------------------------------------------
-!     Function:      outpart_beams3d_nag
+!     Function:      out_beams3d_part
 !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
 !     Date:          10/21/2021
 !     Description:   Save output from full orbit pushing.
 !-----------------------------------------------------------------------
-SUBROUTINE outpart_beams3d_nag(t, q)
+SUBROUTINE out_beams3d_part(t, q)
     !-----------------------------------------------------------------------
     !     Libraries
     !-----------------------------------------------------------------------
@@ -214,5 +214,5 @@ SUBROUTINE outpart_beams3d_nag(t, q)
     !-----------------------------------------------------------------------
     !     End Function
     !-----------------------------------------------------------------------
-END SUBROUTINE outpart_beams3d_nag
+END SUBROUTINE out_beams3d_part
 

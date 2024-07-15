@@ -128,6 +128,7 @@ SUBROUTINE beams3d_follow
     ! Some helpers
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
     fact_crit= SQRT(2.0*e_charge/electron_mass)*(0.75*sqrt_pi*electron_mass*plasma_Zmean/plasma_mass)**(1.0/3.0) ! Wesson pg 226 5.4.9
+    fact_crit_legacy = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0)
     !fact_crit=fact_crit_pro*(plasma_Zmean/plasma_mass)**(1.0/3.0)
     !fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick !old
     !fact_kick = 2*freq_kick*E_kick
@@ -167,7 +168,7 @@ SUBROUTINE beams3d_follow
        mytdex = 0
        ndt_max = 1
        ndt     = 0
-       CALL out_beams3d_nag(tf_nag,q)
+       CALL out_beams3d_gc(tf_nag,q)
        t_last(i) = tf_nag-dt
     END DO
 
@@ -211,7 +212,7 @@ SUBROUTINE beams3d_follow
           ! Save the point to index 1 with weight set to 0
           mytdex = 1; ndt=0; ndt_max = 1 ! Save the point
           t_last(i) = tf_nag ! Save timestep after follow_neut
-          CALL out_beams3d_nag(tf_nag,q)
+          CALL out_beams3d_gc(tf_nag,q)
           IF (tf_nag > t_end(i)) CYCLE
           ! Step to gyrocenter
           CALL beams3d_ionize(q)
@@ -220,7 +221,7 @@ SUBROUTINE beams3d_follow
           mytdex = 2; ndt=0; ndt_max = 1 ! Save point
           weight_save = weight(myline)
           weight(myline) = 0
-          CALL out_beams3d_nag(tf_nag,q)
+          CALL out_beams3d_gc(tf_nag,q)
           weight(myline) = weight_save
        END DO
     END IF

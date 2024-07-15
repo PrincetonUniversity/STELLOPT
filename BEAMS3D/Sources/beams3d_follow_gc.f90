@@ -62,12 +62,12 @@ SUBROUTINE beams3d_follow_gc
 
     !-----------------------------------------------------------------------
     !     External Functions
-    !          fgc_nag            RHS of ODE integrator (for NAG)    for BEAMS3D
+    !          fgc_eom            RHS of ODE integrator (for NAG)    for BEAMS3D
     !          D02CJF               NAG ODE Solver
     !          D02CJW               NAG Dummy function
     !          jacobian_lsode       Jacobian function (for LSODE, not currently utilized)
     !-----------------------------------------------------------------------
-    EXTERNAL D02CJF, D02CJW, fgc_nag, D02CJX, out_beams3d_nag
+    EXTERNAL D02CJF, D02CJW, fgc_eom, D02CJX, out_beams3d_gc
     EXTERNAL fgc_lsode, jacobian_lsode
     EXTERNAL fgc_rkh68
     !-----------------------------------------------------------------------
@@ -135,7 +135,7 @@ SUBROUTINE beams3d_follow_gc
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
-					E_by_v=mymass*0.5d-3/e_charge
+                    E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
                     ltherm = .false.
@@ -145,18 +145,18 @@ SUBROUTINE beams3d_follow_gc
                     fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-					
+
                     ! Now calc dt
                     CALL beams3d_calc_dt(1,q(1),q(2),q(3),dt)
                     tf_nag = t_nag+dt
                     ndt = 1
                     DO ! Must do it this way becasue lbeam changes q(4) values
 #if defined(NAG)
-                       CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fgc_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
+                       CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fgc_eom,tol_nag,relab,out_beams3d_gc,D02CJW,w,ier)
 #endif
                        IF (ier < 0) CALL handle_err(D02CJF_ERR, 'beams3d_follow', ier)
                        t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
-                       CALL out_beams3d_nag(tf_nag,q)
+                       CALL out_beams3d_gc(tf_nag,q)
                        IF (ABS(tf_nag) > ABS(my_end)) EXIT
                     END DO
                 END DO
@@ -212,7 +212,7 @@ SUBROUTINE beams3d_follow_gc
                         t_nag = t_nag+dt
                         tf_nag = tf_nag+dt
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
-                        CALL out_beams3d_nag(tf_nag,q)
+                        CALL out_beams3d_gc(tf_nag,q)
                         IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(my_end)) ) EXIT
                     END DO
                 END DO
@@ -301,7 +301,7 @@ SUBROUTINE beams3d_follow_gc
                         END IF
                         iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
-                        CALL out_beams3d_nag(tf_nag,q)
+                        CALL out_beams3d_gc(tf_nag,q)
                         IF ( (istate == -1) .or. (istate ==-2) &
                                             .or. (ABS(tf_nag) > ABS(my_end)) &
                                             .or. (rho_help > rho_fullorbit)) EXIT

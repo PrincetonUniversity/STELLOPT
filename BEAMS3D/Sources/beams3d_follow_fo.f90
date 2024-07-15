@@ -66,7 +66,7 @@ SUBROUTINE beams3d_follow_fo
     !          D02CJW               NAG Dummy function
     !          jacobian_lsode       Jacobian function (for LSODE, not currently utilized)
     !-----------------------------------------------------------------------
-    EXTERNAL D02CJF, D02CJW, fgc_nag, D02CJX, outfo_beams3d_nag
+    EXTERNAL D02CJF, D02CJW, fpart_eom, D02CJX, out_beams3d_part
     EXTERNAL fpart_lsode, jacobian_lsode
     EXTERNAL fpart_rkh68
     !-----------------------------------------------------------------------
@@ -156,11 +156,11 @@ SUBROUTINE beams3d_follow_fo
 					
                     DO ! Must do it this way becasue lbeam changes q(4) values
 #if defined(NAG)
-                       CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_nag,tol_nag,relab,outpart_beams3d_nag,D02CJW,w,ier)
+                       CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_eom,tol_nag,relab,out_beams3d_part,D02CJW,w,ier)
 #endif
                        IF (ier < 0) CALL handle_err(D02CJF_ERR, 'beams3d_follow', ier)
                        t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
-                       CALL outpart_beams3d_nag(tf_nag,q)
+                       CALL out_beams3d_part(tf_nag,q)
                        IF (ABS(tf_nag) > ABS(my_end)) EXIT
                     END DO
                 END DO
@@ -212,7 +212,7 @@ SUBROUTINE beams3d_follow_fo
                         t_nag = t_nag+dt
                         tf_nag = tf_nag+dt
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
-                        CALL outpart_beams3d_nag(tf_nag,q)
+                        CALL out_beams3d_part(tf_nag,q)
                         IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(my_end)) ) EXIT
                     END DO
                 END DO
@@ -307,7 +307,7 @@ SUBROUTINE beams3d_follow_fo
                         END IF
                         iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
-                        CALL outpart_beams3d_nag(tf_nag,q)
+                        CALL out_beams3d_part(tf_nag,q)
                         IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(my_end)) ) EXIT
                     END DO
                 END DO
