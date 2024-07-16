@@ -583,25 +583,22 @@ class PLOT3D():
 			self.scalar_bar.SetBarRatio(0.25)
 			self.renderer.AddActor2D(self.scalar_bar)
 
-	def setCamera2(self,pos=None,focal=None,az=None,el=None):
-		"""Set the Camera Position
+	def setView(self,az=None,el=None):
+		"""Set the view based on azimuth and elevation
 
 		This routine sets the camera position using position and focal
 		point.
 
 		Parameters
 		----------
-		pos : tupple (optional)
-			Position of the camera (x,y,z)
-		focal : tupple (optional)
-			Focus point of the camera (x,y,z)
 		az : float (optional)
 			Azimuth about focal point (degrees)
+		el : float (optional)
+			Elevation about focal point (degrees)
 		"""
-		if pos: self.camera.SetPosition(pos[0], pos[1], pos[2])
-		if focal: self.camera.SetFocalPoint(pos[0], pos[1], pos[2])
 		if az: self.camera.Azimuth(az)
 		if el: self.camera.Elevation(el)
+		self.camera.OrthogonalizeViewUp()
 		self.renderer.SetActiveCamera(self.camera)
 
 	def render(self):
