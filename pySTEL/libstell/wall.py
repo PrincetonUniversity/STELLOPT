@@ -37,6 +37,7 @@ class WALL():
 		import numpy as np
 		from stl import mesh
 		import re
+		from datetime import datetime
 		if '.stl' in filename:
 			mesh_data = mesh.Mesh.from_file(filename)
 			self.vertex = mesh_data.vectors.reshape((-1, 3))
@@ -45,7 +46,10 @@ class WALL():
 			string = byte_string.decode('utf-8')
 			match = re.search(r'\d{4}-\d{2}-\d{2}', string)
 			self.name  = string
-			self.date  = match.group()
+			if match: 
+				self.date  = match.group()
+			else:
+				self.date = datetime.today().strftime('%Y-%m-%d')
 			self.nvertex = self.vertex.shape[0]
 			self.nfaces = self.faces.shape[0]
 			return
