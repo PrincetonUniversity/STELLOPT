@@ -275,7 +275,7 @@ class LINESEG():
 		"""
 		from numpy import sin,cos
 		t1 = [self.R-0.5*self.L*self.ZHat,self.Z+0.5*self.L*self.RHat]
-		t2 = [self.R-0.5*self.L*self.ZHat,self.Z-0.5*self.L*self.RHat]
+		t2 = [self.R+0.5*self.L*self.ZHat,self.Z-0.5*self.L*self.RHat]
 		p1 = [t1[0]*cos(self.Phi),t1[0]*sin(self.Phi),t1[1]]
 		p2 = [t2[0]*cos(self.Phi),t2[0]*sin(self.Phi),t2[1]]
 		return [p1,p2]
