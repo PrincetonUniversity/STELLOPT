@@ -11,6 +11,8 @@
 
 include make.inc
 
+FLAG_CALLED_FROM_BUILD_ALL ?= false
+
 .PHONY: release debug clean_release clean_debug static_release shared_release
 
 release: pre_build
@@ -26,14 +28,14 @@ static_release: pre_build
 shared_release: pre_build
 
 pre_build:
-	ifneq ($(FLAG_CALLED_FROM_BUILD_ALL),true)
+ifeq "$(FLAG_CALLED_FROM_BUILD_ALL)" "false"
 	@echo 'To compile STELLOPT use the build_all script instead of calling make directly.'
 	@(exit 1)
-	endif
-	ifeq ($(wildcard $(MYHOME)),)
+endif
+ifeq ($(wildcard $(MYHOME)),)
 	@echo 'Creating STELLOPT output directory.'
 	mkdir -p $(MYHOME)
-	endif
+endif
 
 pystel:
 	@echo 'Building pySTEL'
@@ -59,9 +61,9 @@ test_make:
 #	@echo MGRID_DIR is $(MGRID_DIR)
 #	@echo DKES_DIR is $(DKES_DIR)
 #	@echo NEO_DIR is $(NEO_DIR)
-#	@echo GENE_DIR is $(GENE_DIR)
-#	@echo REGCOIL_DIR is $(REGCOIL_DIR)
-#	@echo SFINCS_DIR is $(SFINCS_DIR)
-#	@echo MANGO_DIR is $(MANGO_DIR)
+	@echo GENE_DIR is $(GENE_DIR)
+	@echo REGCOIL_DIR is $(REGCOIL_DIR)
+	@echo SFINCS_DIR is $(SFINCS_DIR)
+	@echo MANGO_DIR is $(MANGO_DIR)
 	@echo Compiler flags are $(LIBS)
 	@echo LIB_LINK is $(LIB_LINK)
