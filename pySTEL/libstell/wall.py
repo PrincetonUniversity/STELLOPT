@@ -127,6 +127,29 @@ class WALL():
 				wall_mesh.vectors[i][j] = self.vertex[f[j],:]
 		wall_mesh.save(filename)
 
+	def wallAdd(self,wall_in):
+		"""Add a wall to this wall
+
+		This routine adds a wall structure to this wall structure.
+
+		Parameters
+		----------
+		wall_in : WALL obj
+			Wall to add to this wall.
+		"""
+		import numpy as np
+		verts1 = self.vertex.tolist()
+		verts2 = wall_in.vertex.tolist()
+		verts1.extend(verts2)
+		faces1 = self.faces.tolist()
+		faces2 = (wall_in.faces+self.nvertex).tolist()
+		faces1.extend(faces2)
+		self.faces = np.array(faces1, dtype=int)
+		self.vertex = np.array(verts1)
+		self.nfaces = self.faces.shape[0]
+		self.nvertex = self.vertex.shape[0]
+
+
 	def plot_wall_cloud(self,ax=None):
 		"""Plots the vertices of the wall
 
