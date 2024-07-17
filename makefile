@@ -26,16 +26,22 @@ static_release: pre_build
 shared_release: pre_build
 
 pre_build:
-  ifneq ($(FLAG_CALLED_FROM_BUILD_ALL),true)
+	ifneq ($(FLAG_CALLED_FROM_BUILD_ALL),true)
 	@echo 'To compile STELLOPT use the build_all script instead of calling make directly.'
 	@(exit 1)
-  endif
-  ifeq ($(wildcard $(MYHOME)),)
+	endif
+	ifeq ($(wildcard $(MYHOME)),)
 	@echo 'Creating STELLOPT output directory.'
 	mkdir -p $(MYHOME)
-  endif
+	endif
 
+pystel:
+	@echo 'Building pySTEL'
+	@python3 -m pip install ./pySTEL --user
 
+libstell$(SHARED_EXT):
+	@cd LIBSTELL
+	@make shared_release
 
 test_make:
 	@echo MACHINE is $(MACHINE)

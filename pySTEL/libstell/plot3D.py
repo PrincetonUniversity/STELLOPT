@@ -50,7 +50,6 @@ class PLOT3D():
 		else:
 			self.colororder = ['red','green','blue','yellow','magenta','cyan','aqua']
 
-
 	def setRenderer(self,renderer):
 		"""Set the renderer
 
@@ -218,6 +217,29 @@ class PLOT3D():
 			for actor in actors:
 				mapper = actor.GetMapper()
 				mapper.SetScalarRange(cmin,cmax)
+
+	def setCamera(self,pos=None,focus=None,camup=None,angle=None):
+		"""Set the camera properties
+
+		The routine allows the user to set the camera properties of a
+		VTK render.
+
+		Parameters
+		----------
+		pos : list (optional)
+			Set position of camera x,y,z
+		focus : list (optional)
+			Set focus of camera nx,ny,nz
+		camup : list (optional)
+			Set up-vector of camera ux,uy,uz
+		angle : float (optional)
+			Set the camera viewing angle. [deg]
+		"""
+		camera = self.renderer.GetActiveCamera()
+		if type(pos) is not type(None): camera.SetPosition(pos[0], pos[1], pos[2])  # Set Camera position
+		if type(focus) is not type(None): camera.SetFocalPoint(focus[0], focus[1], focus[2])  # Set Camera focal point
+		if type(camup) is not type(None): camera.SetViewUp(camup[0], camup[1], camup[2])  # Set Camera up vector
+		if type(angle) is not type(None): camera.SetViewAngle(angle)  # Set Camera viewing angle [deg]
 
 	def torusvertexTo3Dmesh(self,x,y,z,lcloseu=True,lclosev=True):
 		"""Generate points and triangle objects from x,y,z data for a torus
@@ -561,25 +583,22 @@ class PLOT3D():
 			self.scalar_bar.SetBarRatio(0.25)
 			self.renderer.AddActor2D(self.scalar_bar)
 
-	def setCamera(self,pos=None,focal=None,az=None,el=None):
-		"""Set the Camera Position
+	def setView(self,az=None,el=None):
+		"""Set the view based on azimuth and elevation
 
 		This routine sets the camera position using position and focal
 		point.
 
 		Parameters
 		----------
-		pos : tupple (optional)
-			Position of the camera (x,y,z)
-		focal : tupple (optional)
-			Focus point of the camera (x,y,z)
 		az : float (optional)
 			Azimuth about focal point (degrees)
+		el : float (optional)
+			Elevation about focal point (degrees)
 		"""
-		if pos: self.camera.SetPosition(pos[0], pos[1], pos[2])
-		if focal: self.camera.SetFocalPoint(pos[0], pos[1], pos[2])
 		if az: self.camera.Azimuth(az)
 		if el: self.camera.Elevation(el)
+		self.camera.OrthogonalizeViewUp()
 		self.renderer.SetActiveCamera(self.camera)
 
 	def render(self):
@@ -603,7 +622,7 @@ class PLOT3D():
 		"""
 		from vtkmodules.vtkIOImage import vtkBMPWriter,vtkJPEGWriter,vtkPNGWriter,vtkPNMWriter,vtkPostScriptWriter,vtkTIFFWriter
 		from vtkmodules.vtkRenderingCore import vtkWindowToImageFilter
-		rbga = True
+		rgba = True
 		if '.bmp' in filename:
 			writer = vtkBMPWriter()
 		elif '.jpg' in filename:
@@ -624,6 +643,7 @@ class PLOT3D():
 		windowto_image_filter = vtkWindowToImageFilter()
 		windowto_image_filter.SetInput(self.render_window)
 		windowto_image_filter.SetScale(1)  # image quality
+		windowto_image_filter.Update()
 		if rgba:
 			windowto_image_filter.SetInputBufferTypeToRGBA()
 		else:
