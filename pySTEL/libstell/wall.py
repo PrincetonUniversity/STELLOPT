@@ -151,8 +151,11 @@ class WALL():
 		# Generate Wall colors
 		scalar = None
 		if type(wallcolor) != type(None): 
-			scalar = plt.valuesToScalar(wallcolor)
-			plt.add3Dmesh(points,triangles,scalars=wallcolor)
+			if isinstance(wallcolor, str):
+				plt.add3Dmesh(points,triangles,color=wallcolor)
+			else:
+				scalar = plt.valuesToScalar(wallcolor)
+				plt.add3Dmesh(points,triangles,scalars=wallcolor)
 		else:
 			plt.add3Dmesh(points,triangles,color='gray')
 		# Render if requested
@@ -247,11 +250,12 @@ class LINESEG():
 
 	"""
 	def __init__(self,R=None,phi=None,Z=None,RHat=None,ZHat=None,L=None):
+		from numpy import sqrt
 		self.Phi = phi
 		self.R   = R
 		self.Z   = Z
 		self.RHat = RHat
-		self.ZHat = Zhat
+		self.ZHat = ZHat
 		self.L    = L
 		if (RHat and ZHat):
 			norm = sqrt(RHat**2+ZHat**2)
@@ -269,6 +273,7 @@ class LINESEG():
 		points : list
 			The [2,x,y,z] coordiantes of the three vertices. [m]
 		"""
+		from numpy import sin,cos
 		t1 = [self.R-0.5*self.L*self.ZHat,self.Z+0.5*self.L*self.RHat]
 		t2 = [self.R-0.5*self.L*self.ZHat,self.Z-0.5*self.L*self.RHat]
 		p1 = [t1[0]*cos(self.Phi),t1[0]*sin(self.Phi),t1[1]]
@@ -281,7 +286,8 @@ class WEDGE(LINESEG):
 
 	"""
 	def __init__(self,R=None,phi=None,Z=None,RHat=None,ZHat=None,L=None,alpha=None):
-		super.__init__(R,phi,Z,RHat,ZHat,L)
+		from numpy import sin,cos
+		super().__init__(R,phi,Z,RHat,ZHat,L)
 		self.alpha = alpha
 		if alpha:
 			self.sinah = sin(alpha*0.5)
@@ -298,6 +304,7 @@ class WEDGE(LINESEG):
 		points : list
 			The [3,x,y,z] coordiantes of the three vertices. [m]
 		"""
+		from numpy import sin,cos
 		t1 = [self.R-self.L*self.sinah*self.ZHat,self.Z+self.L*self.sinah*self.RHat]
 		t2 = [self.R+self.L*self.cosah*self.RHat,self.Z+self.L*self.cosah*self.ZHat]
 		t3 = [self.R+self.L*self.sinah*self.ZHat,self.Z-self.L*self.sinah*self.RHat]
@@ -312,7 +319,8 @@ class CIRCLE(LINESEG):
 
 	"""
 	def __init__(self,R=None,phi=None,Z=None,RHat=None,ZHat=None,L=None,N=None):
-		super.__init__(R,phi,Z,RHat,ZHat,L)
+		from numpy import sin,cos
+		super().__init__(R,phi,Z,RHat,ZHat,L)
 		self.N = N
 
 	def getEndpoints(self):
@@ -343,13 +351,34 @@ class PARAM_WALL():
 		self.elements = None
 		pass
 
+	def addElement(self,subset):
+		"""Add a subset to the elements
+
+		This routine appends a list of primative shapes to the
+		elements list
+
+		Parameters
+		----------
+		subset : list
+			A list of primatives
+		"""
+		# Sort by phi
+		subset.sort(key=lambda x: x.Phi, reverse=False)
+		# Add to elements
+		if type(self.elements) is type(None):
+			self.elements=[subset]
+		else:
+			self.elements.extend([subset])
+
 	def getWall(self):
 		"""Return a wall using the elements
 
 		This routine computes the vertices and faces and returns a wall
-		object based on the elements. It is assumed that elements is a
-		list and each item of that list is another list of primitive
-		types (LINESEG,WEDGE,CIRCLE).
+		object based on the elements. Each item of elements is a list.
+		This subset list is composed of a group of similar shapes which
+		are toroidally linked. The notion being that these elements
+		define a toroidal shape. Thus each item of the subset must be
+		the same shape.
 
 		Returns
 		----------
@@ -363,7 +392,7 @@ class PARAM_WALL():
 		out_wall.vertex=[]
 		nvertex = 0
 		nfaces  = 0
-		k       = 1
+		k       = 0
 		for subset in self.elements:
 			# Append the vertex information
 			for item in subset:
@@ -387,11 +416,13 @@ class PARAM_WALL():
 					faces = [k-1, k-npoints, k+npoints-1]
 					out_wall.faces.append(faces)
 					faces = [k-npoints, k, k+npoints-1]
+				k = k + 1 # skip endpoint
+			k = k + npoints # skip to next subset
 		# Setup wall object
 		out_wall.nvertex = len(out_wall.vertex)
 		out_wall.nfaces  = len(out_wall.faces)
-		out_wall.vertex  = np.ndarray(out_wall.vertex)
-		out_wall.faces   = np.ndarray(out_wall.faces)
+		out_wall.vertex  = np.array(out_wall.vertex)
+		out_wall.faces   = np.array(out_wall.faces)
 		out_wall.name = f"Generated using simpilfied wall elements in Python."
 		out_wall.date = datetime.today().strftime('%Y-%m-%d')
 		return out_wall
