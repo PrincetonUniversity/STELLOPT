@@ -56,12 +56,12 @@ added at compile time.
     sudo port select --set pip3 pipYY
     # It is suggested to use pip3 to install the rest of your python packages
     pip3 install scipy h5py pyqt4 matplotlib
-    # If you use the matlabVMEC package then you need python3.10
-    # but dont need to set it as default
-    sudo port install python310
-    # The following are needed for GENE
-    #sudo port install petsc +gcc10 +openmpi +openblas -accelerate +metis +mumps +parmetis +suitesparse +superlu_dist +complex
-    #sudo port install slepc +gcc10 +openmpi +openblas +arpack -accelerate
+    # Other codes may need PETSC (SFINCS) and SLEPC (GENE) macports are broken but you can build yourself
+    # PETSC should needs to be built from source
+    # ./configure --download-sowing --with-openblas=1 --with-openblas-dir=/opt/local/
+    # make PETSC_DIR=<path_to_git_dir>/petsc PETSC_ARCH=arch-darwin-c-debug all
+    # export PETSC_DIR=<path_to_git_dir>/petsc
+    # export PETSC_ARCH=arch-darwin-c-debug
 
 4\. Now pull stellopt with the command 
 
