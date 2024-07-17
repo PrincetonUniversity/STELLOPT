@@ -25,7 +25,9 @@ class WALL():
 	def read_wall(self,filename):
 		"""Directly reads a wall file
 
-		This routine reads a wall file into the class.
+		This routine reads a wall file into the class. Note if the
+		file ends in STL then the numpy-stl routine is used to
+		read the file.
 
 		Parameters
 		----------
@@ -33,6 +35,20 @@ class WALL():
 			Path to wall file.
 		"""
 		import numpy as np
+		from stl import mesh
+		import re
+		if '.stl' in filename:
+			mesh_data = mesh.Mesh.from_file(filename)
+			self.vertex = mesh_data.vectors.reshape((-1, 3))
+			self.faces = np.arange(len(self.vertex)).reshape((-1, 3))
+			byte_string = mesh_data.name
+			string = byte_string.decode('utf-8')
+			match = re.search(r'\d{4}-\d{2}-\d{2}', string)
+			self.name  = string
+			self.date  = match.group()
+			self.nvertex = self.vertex.shape[0]
+			self.nfaces = self.faces.shape[0]
+			return
 		f = open(filename,'r')
 		lines = f.readlines()
 		f.close()
@@ -243,6 +259,25 @@ class WALL():
 		self.vertex = np.column_stack((x,y,z))
 		self.faces = faces
 		self.laccel = False
+
+	def writeSTL(self,filename='wall.stl'):
+		"""Outputs an STL object from wall object
+
+		This routine generates an stereolithography (STL) file from
+		the wall object.
+
+		Parameters
+		----------
+		filename : str (optional)
+			Filename for output file
+		"""
+		import numpy as np
+		from stl import mesh
+		stlobj = mesh.Mesh(np.zeros(self.faces.shape[0],dtype=mesh.Mesh.dtype))
+		for i, f in enumerate(self.faces):
+			for j in range(3):
+				stlobj.vectors[i][j] = self.vertex[f[j],:]
+		stlobj.save(filename)
 
 # LINESEG Class
 class LINESEG():
