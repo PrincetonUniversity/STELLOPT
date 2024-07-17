@@ -129,7 +129,22 @@ class MyApp(QMainWindow):
 			self.ui.rhoslider.setEnabled(0)
 			self.ui.uslider.setEnabled(0)
 			self.ui.vslider.setEnabled(0)
-		elif (i>8):
+		elif i == 9:
+			self.ui.poltor_button.setChecked(0)
+			self.ui.rho_button.setEnabled(0)
+			self.ui.pol_button.setEnabled(0)
+			self.ui.tor_button.setEnabled(1)
+			self.ui.flux_button.setEnabled(0)
+			self.ui.poltor_button.setEnabled(0)
+			self.ui.RZ_button.setEnabled(0)
+			self.ui.ThreeD_button.setEnabled(0)
+			self.ui.rhoslider.setEnabled(1)
+			self.ui.uslider.setEnabled(1)
+			self.ui.vslider.setEnabled(0)
+			self.ui.rhoslider.setMaximum(self.nlines-1)
+			self.ui.uslider.setMaximum(self.npoinc-1)
+			self.s=0; self.u=0; self.v=0;
+		elif (i>9):
 			self.ui.poltor_button.setChecked(1)
 			self.ui.rho_button.setEnabled(0)
 			self.ui.pol_button.setEnabled(0)
@@ -211,14 +226,18 @@ class MyApp(QMainWindow):
 			self.ax.set_title('Safety Factor')
 		elif (plot_name == 'Poincaré'):
 			k = self.u
+			i = self.s
 			rmin = np.amin(self.fieldlines_data.raxis)
 			rmax = np.amax(self.fieldlines_data.raxis)
 			self.ax.plot(self.fieldlines_data.R_lines[k:self.nsteps-1:self.npoinc,:],\
 				self.fieldlines_data.Z_lines[k:self.nsteps-1:self.npoinc,:],\
 				'.k',markersize=0.1)
+			self.ax.plot(self.fieldlines_data.R_lines[k:self.nsteps-1:self.npoinc,i],\
+				self.fieldlines_data.Z_lines[k:self.nsteps-1:self.npoinc,i],\
+				'.r',markersize=0.1)
 			self.ax.set_xlabel('R [m]')
 			self.ax.set_ylabel('Z [m]')
-			self.ax.set_title('Poincaré Plot')
+			self.ax.set_title(f'Poincaré Plot (k = {i})')
 			self.ax.set_aspect('equal')
 			self.ax.set_xlim(rmin,rmax)
 		elif (plot_name == 'Poincaré |B|'):
