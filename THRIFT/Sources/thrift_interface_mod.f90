@@ -58,7 +58,7 @@ MODULE THRIFT_INTERFACE_MOD
       ! Now we set some info
       CALL MPI_INFO_CREATE(mpi_info_thrift, ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_thrift, "IBM_largeblock_io", "true",    ierr_mpi)
-      CALL MPI_INFO_SET(mpi_info_thrift, "stripping_unit",    "1048576", ierr_mpi)
+      CALL MPI_INFO_SET(mpi_info_thrift, "striping_unit",     "1048576", ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_thrift, "romio_ds_read",     "disable", ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_thrift, "romio_ds_write",    "disable", ierr_mpi)
 #endif
