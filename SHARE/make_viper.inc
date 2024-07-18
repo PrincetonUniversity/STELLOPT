@@ -16,10 +16,10 @@
 #######################################################################
   FLAGS_R = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include \
             -O2 -assume noold_unit_star \
-            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip
+            -march=skylake-avx512 -qopt-zmm-usage=high -fp-model strict -ip
   FLAGS_D = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include \
             -O0 -assume noold_unit_star \
-            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip \
+            -march=skylake-avx512 -qopt-zmm-usage=high -fp-model strict -ip \
             -check all,noarg_temp_created -ftrapuv -g -traceback
   LIBS    =  ${MKLROOT}/lib/intel64/libmkl_blas95_lp64.a \
              ${MKLROOT}/lib/intel64/libmkl_lapack95_lp64.a \
@@ -38,10 +38,10 @@
   MPI_COMPILE_C = mpiifort
   MPI_LINK = mpiifort
   MPI_RUN  = srun
-  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=72 --time=0:30:00 -p express
-  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=72 --time=0:30:00 -p express
-  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=72 --time=0:30:00 -p express
-  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=72 --time=0:30:00 -p express
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=128 --time=0:30:00 -p express
+  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=128 --time=0:30:00 -p express
+  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=128 --time=0:30:00 -p express
+  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=128 --time=0:30:00 -p express
 
 #######################################################################
 #            NAG Options
@@ -53,8 +53,8 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --fflags)
-  NETCDF_LIB = $(shell nc-config --flibs)
+  NETCDF_INC = $(shell nf-config --fflags)
+  NETCDF_LIB = $(shell nf-config --flibs)
 
 #######################################################################
 #            HDF5 Options
