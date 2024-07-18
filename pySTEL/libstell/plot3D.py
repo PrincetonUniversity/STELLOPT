@@ -131,7 +131,24 @@ class PLOT3D():
 		import matplotlib
 		lut = vtk.vtkLookupTable()
 		# Check for custom colormaps
-		if self.cmap:
+		if not ctable:
+			ctable = _CMAP_ # default from above
+			lut.SetNumberOfTableValues(256)
+			lut.Build()
+			# Use matplotlib to generate the jet colormap
+			mlibmap = matplotlib.colormaps[ctable]
+			for i in range(256):
+				rgba = mlibmap(i / 255.0)
+				lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])	
+		elif ctable in list(matplotlib.colormaps.keys()):
+			lut.SetNumberOfTableValues(256)
+			lut.Build()
+			# Use matplotlib to generate the jet colormap
+			mlibmap = matplotlib.colormaps[ctable]
+			for i in range(256):
+				rgba = mlibmap(i / 255.0)
+				lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])	
+		elif type(self.cmap) is type(dict):
 			if ctable in list(self.cmap.keys()):
 				cmap = self.cmap[ctable]
 			else:
@@ -152,16 +169,6 @@ class PLOT3D():
 					b = (c2[2]-c1[2])*float(j)/255.0 + c1[2]
 					lut.SetTableValue(k,r,g,b,1.0)
 					k = k + 1
-			return lut
-		elif not ctable:
-			ctable = _CMAP_ # default from above
-		lut.SetNumberOfTableValues(256)
-		lut.Build()
-		# Use matplotlib to generate the jet colormap
-		mlibmap = matplotlib.colormaps[ctable]
-		for i in range(256):
-			rgba = mlibmap(i / 255.0)
-			lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
 		return lut
 
 	def setActorColor(self,actor,color=None):
@@ -543,7 +550,7 @@ class PLOT3D():
 		# Handle scalars or make red
 		if type(scalars) != type(None): 
 			polydata.GetPointData().SetScalars(scalars)
-			if not self.lookupTable: self.lookupTable = self.vtkLUTHelper(self.cmap)
+			if not self.lookupTable: self.lookupTable = self.vtkLUTHelper(color)
 			mapper.SetLookupTable(self.lookupTable)
 			mapper.SetScalarRange(scalars.GetRange())
 		else:
