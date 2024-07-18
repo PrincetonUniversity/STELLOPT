@@ -54,7 +54,7 @@ CONTAINS
       ! Now we set some info
       CALL MPI_INFO_CREATE(mpi_info_beams3d, ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_beams3d, "IBM_largeblock_io", "true",    ierr_mpi)
-      CALL MPI_INFO_SET(mpi_info_beams3d, "stripping_unit",    "1048576", ierr_mpi)
+      CALL MPI_INFO_SET(mpi_info_beams3d, "striping_unit",     "1048576", ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_beams3d, "romio_ds_read",     "disable", ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_beams3d, "romio_ds_write",    "disable", ierr_mpi)
 #endif
