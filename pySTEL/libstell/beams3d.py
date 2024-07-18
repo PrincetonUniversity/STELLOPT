@@ -77,6 +77,7 @@ class BEAMS3D():
 		self.X_lines = self.R_lines*np.cos(self.PHI_lines)
 		self.Y_lines = self.R_lines*np.sin(self.PHI_lines)
 		self.MODB    = np.sqrt(self.B_R**2 + self.B_PHI**2 + self.B_Z**2)
+		if hasattr(self,'wall_faces'): self.wall_faces = self.wall_faces - 1
 		return
 
 	def calcVperp(self):
@@ -579,9 +580,60 @@ class BEAMS3D():
 		# Render if requested
 		if lplotnow: plt.render()
 
+	def plot_heatflux(self,factor=1.0,colormap='hot',beams=None,load_type='heatflux',plot3D=None):
+		"""Plots the BEAMS3D wall heat flux
 
+		This makes a 3D plot of the first wall heat flux. The user
+		can specify the type of quantity plotted using load type
+			'heatflux'	: First wall heat flux
+			'shine'		: Shinethrough flux
+			'strikes' 	: Wall strikes
 
-
+		Parameters
+		----------
+		factor : float (optional)
+			Scaleing factor to apply (default: 1.0)
+		colormap : str (optional)
+			Color map to plot points (default: hot)
+		beams : list (optional)
+			List of beams to consider in plot (default: all)
+		load_type : str (optional)
+			Type of plot (default: heatflux)
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		if type(beams) is type(None):
+			beams_use = list(range(self.nbeams))
+		else:
+			beams_use = beams
+		# Which quantitity to plot
+		if load_type == 'heatflux':
+			val = np.sum(self.wall_load[:,beams_use],axis=1)
+		elif load_type == 'shine':
+			val = np.sum(self.wall_shine[:,beams_use],axis=1)
+		elif load_type == 'strikes':
+			val = np.sum(self.wall_strikes[:,beams_use],axis=1)
+		else:
+			print(f'ERROR: plot_heatflux load_type must be heatflux, shine, or strikes. load_type={load_type} ')
+			return
+		# Make points
+		points,triangles = plt.facemeshTo3Dmesh(self.wall_vertex.T,self.wall_faces.T)
+		scalar = plt.valuesToScalar(self.wall_load*factor)
+		# Add to Render
+		plt.add3Dmesh(points,triangles,scalars=scalar,opacity=1.0,color=colormap)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
 
 # BEASM3D Input Class
 class BEAMS3D_INPUT():

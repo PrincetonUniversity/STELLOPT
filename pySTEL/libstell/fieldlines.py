@@ -64,6 +64,7 @@ class FIELDLINES():
 		for i in range(self.nr):
 			self.B_R[i,:,:] = self.B_R[i,:,:]*self.B_PHI[i,:,:]/self.raxis[i]
 			self.B_Z[i,:,:] = self.B_Z[i,:,:]*self.B_PHI[i,:,:]/self.raxis[i]
+		if hasattr(self,'wall_faces'): self.wall_faces = self.wall_faces - 1
 
 	def calc_reff(self):
 		"""Calculates the effective radius
@@ -228,7 +229,7 @@ class FIELDLINES():
 			Plotting object to render to.
 		"""
 		import numpy as np
-		import vtk
+		#import vtk
 		from libstell.plot3D import PLOT3D
 		# Handle optionals
 		if plot3D: 
@@ -246,17 +247,43 @@ class FIELDLINES():
 			for j in range(self.nlines):
 				if (self.R_lines[i,j] > 0):
 					vertices.append([X[i,j],Y[i,j],self.Z_lines[i,j]])
-#					scalar.append(self.B_lines[i,j])
 		vertices = np.array(vertices)
 		scalar = plt.valuesToScalar(np.array(scalar))
 		points = plt.vertexToPoints(vertices)
-		# Add to Render
-#		if float(scalar.GetValueRange()[1]) > 0:
-#			plt.add3Dpoints(points,scalars=scalar,pointsize=pointsize)
-#			# Colorbar
-#			plt.colorbar()
-#		else:
 		plt.add3Dpoints(points,pointsize=pointsize,color=color)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plot_heatflux(self,factor=1.0,colormap='hot',plot3D=None):
+		"""Plots the BEAMS3D wall heat flux
+
+		This makes a 3D plot of the first wall heat flux.
+
+		Parameters
+		----------
+		factor : float (optional)
+			Scaleing factor to apply (default: 1.0)
+		colormap : str (optional)
+			Color map to plot points (default: hot)
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Make points
+
+		points,triangles = plt.facemeshTo3Dmesh(self.wall_vertex.T,self.wall_faces.T)
+		scalar = plt.valuesToScalar(self.wall_strikes*factor)
+		# Add to Render
+		plt.add3Dmesh(points,triangles,scalars=scalar,opacity=1.0,color=colormap)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested
