@@ -38,7 +38,7 @@
   MPI_COMPILE_C = mpicc.openmpi
   MPI_LINK = mpif90.openmpi
   MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 4
+  MPI_RUN_OPTS = --use-hwthread-cpus
 #  MPI_RUN_OPTS_SM = -np 16
 #  MPI_RUN_OPTS_MD = -np 64
 #  MPI_RUN_OPTS_LG = -np 256
@@ -53,8 +53,8 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --fflags)
-  NETCDF_LIB = $(shell nc-config --flibs)
+  NETCDF_INC = $(shell nf-config --fflags)
+  NETCDF_LIB = $(shell nf-config --flibs)
 
 #######################################################################
 #            NTCC Options
