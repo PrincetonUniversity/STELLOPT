@@ -53,14 +53,14 @@ Specific Compilation Issues
 
 [STELLOPT Compilation on the EUROfusion Gateway](STELLOPT Compilation on the EUROfusion Gateway)
 
-[Compiling on the MPCDF Clusters (Draco, Cobra, Raven)](STELLOPT Compilation on Hydra (RZG-MPG))
+[Compiling on the MPCDF Clusters (Raven, Viper)](STELLOPT Compilation on MPCDF)
 
 [Compiling at NERSC](STELLOPT Compilation at NERSC)
 
 [Compiling on the PPPL Cluster](STELLOPT Compilation at PPPL)
 
-[Compiling on a Redhat/CentOS (RPM) Machine](STELLOPT Compilation CentOS)
+[Compiling on a Redhat Machine](STELLOPT Compilation Redhat)
 
-[Compiling on an Ubuntu (Debian) Machine](STELLOPT Compilation Ubuntu)
+[Compiling on an Debian Machine](STELLOPT Compilation Debian)
 
 [Compiling on the ITER Cluster](STELLOPT Compilation at ITER)

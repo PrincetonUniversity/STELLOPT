@@ -15,23 +15,17 @@ Installation Steps
 2\. Use apt-get to install your packages. 
 
     sudo apt-get install git
+    sudo apt-get install gcc
     sudo apt-get install gfortran
     sudo apt-get install openmpi-bin
     sudo apt-get install libopenmpi-dev
-    sudo apt-get install gfortran
-    sudo apt-get install g++
+    sudo apt-get install libopenblas-dev
+    sudo apt-get install libscalapack-openmpi-dev
     sudo apt-get install libnetcdf-dev
     sudo apt-get install libnetcdff-dev
     sudo apt-get install libhdf5-openmpi-dev
     sudo apt-get install hdf5-tools
-    sudo apt-get install libblas-dev
-    sudo apt-get install liblapack-dev
-    sudo apt-get install python3
-    sudo apt-get install python3-numpy
-    sudo apt-get install python3-h5py
-    sudo apt-get install pgplot5
-    sudo apt-get install libncarg-dev
-    sudo apt-get install libscalapack-openmpi-dev
+    sudo apt-get install python3 pip
 
 3\. Setup your environment variables
 
@@ -41,5 +35,5 @@ Installation Steps
 
 General Notes
 -------------
-
+Some of the package names may change over time.
 
