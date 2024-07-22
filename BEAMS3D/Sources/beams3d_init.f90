@@ -365,9 +365,12 @@
          CALL mpialloc(ZEFF_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF_ARR)
          CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
          CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
+         CALL mpialloc(RHO_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_RHO_ARR)
          CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
          CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
          CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
+         CALL mpialloc(XRHO_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_XRHO_ARR)
+         CALL mpialloc(YRHO_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_YRHO_ARR)
          CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
          IF (lfidasim) THEN
             CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
@@ -381,8 +384,11 @@
             FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
             FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
             S_ARR = 1.5
+            RHO_ARR = 1.5
             X_ARR = 1.5
             Y_ARR = 1.5
+            XRHO_ARR = 1.5
+            YRHO_ARR = 1.5
             POT_ARR = 0
             NI = 0
             ! Setup grid helpers
@@ -569,12 +575,18 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:MODB_spl',ier)
          CALL EZspline_init(S_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
+         CALL EZspline_init(RHO_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:RHO_spl',ier)
          CALL EZspline_init(U_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:U_spl',ier)
          CALL EZspline_init(X_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:X_spl',ier)
          CALL EZspline_init(Y_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:Y_spl',ier)
+         CALL EZspline_init(XRHO_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:XRHO_spl',ier)
+         CALL EZspline_init(YRHO_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:YRHO_spl',ier)
          CALL EZspline_init(POT_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:POT_spl',ier)
          BR_spl%isHermite   = 1
@@ -597,6 +609,10 @@
          S_spl%x1 = raxis
          S_spl%x2 = phiaxis
          S_spl%x3 = zaxis
+         RHO_spl%isHermite = 1
+         RHO_spl%x1 = raxis
+         RHO_spl%x2 = phiaxis
+         RHO_spl%x3 = zaxis
          U_spl%isHermite = 1
          U_spl%x1 = raxis
          U_spl%x2 = phiaxis
@@ -609,6 +625,14 @@
          Y_spl%x1 = raxis
          Y_spl%x2 = phiaxis
          Y_spl%x3 = zaxis
+         XRHO_spl%isHermite = 1
+         XRHO_spl%x1 = raxis
+         XRHO_spl%x2 = phiaxis
+         XRHO_spl%x3 = zaxis
+         YRHO_spl%isHermite = 1
+         YRHO_spl%x1 = raxis
+         YRHO_spl%x2 = phiaxis
+         YRHO_spl%x3 = zaxis
          POT_spl%isHermite = 1
          POT_spl%x1 = raxis
          POT_spl%x2 = phiaxis
@@ -623,6 +647,8 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:MODB_spl',ier)
          CALL EZspline_setup(S_spl,S_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
+         CALL EZspline_setup(RHO_spl,RHO_ARR,ier,EXACT_DIM=.true.)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:RHO_spl',ier)
          CALL EZspline_setup(U_spl,U_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:U_spl',ier)
          CALL EZspline_setup(POT_spl,POT_ARR,ier,EXACT_DIM=.true.)
@@ -636,9 +662,12 @@
       CALL mpialloc(BZ4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BZ4D)
       CALL mpialloc(MODB4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB4D)
       CALL mpialloc(S4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S4D)
+      CALL mpialloc(RHO4D, 8, nr, nphi, nz, myid_sharmem, 0,  MPI_COMM_SHARMEM, win_RHO4D)
       CALL mpialloc(U4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U4D)
       CALL mpialloc(X4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X4D)
       CALL mpialloc(Y4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y4D)
+      CALL mpialloc(XRHO4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_XRHO4D)
+      CALL mpialloc(YRHO4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_YRHO4D)
       CALL mpialloc(POT4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT4D)
       ! Copy Spline info to shared memory and Free
       IF (myid_sharmem == master) THEN
@@ -647,26 +676,38 @@
          BZ4D = BZ_SPL%fspl
          MODB4D = MODB_SPL%fspl
          S4D = S_SPL%fspl
+         RHO4D = RHO_SPL%fspl
          U4D = U_SPL%fspl
          POT4D = POT_SPL%fspl
 
          X_ARR = S4D(1,:,:,:) * COS(U4D(1,:,:,:))
          Y_ARR = S4D(1,:,:,:) * SIN(U4D(1,:,:,:))
+         XRHO_ARR = RHO4D(1,:,:,:) * COS(U4D(1,:,:,:))
+         YRHO_ARR = RHO4D(1,:,:,:) * SIN(U4D(1,:,:,:))
          CALL EZspline_setup(X_spl,X_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:X_spl',ier)
          CALL EZspline_setup(Y_spl,Y_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:Y_spl',ier)
+         CALL EZspline_setup(XRHO_spl,XRHO_ARR,ier,EXACT_DIM=.true.)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:XRHO_spl',ier)
+         CALL EZspline_setup(YRHO_spl,YRHO_ARR,ier,EXACT_DIM=.true.)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:YRHO_spl',ier)
          X4D = X_SPL%fspl
          Y4D = Y_SPL%fspl
+         XRHO4D = XRHO_SPL%fspl
+         YRHO4D = YRHO_SPL%fspl
 
          CALL EZspline_free(BR_spl,ier)
          CALL EZspline_free(BPHI_spl,ier)
          CALL EZspline_free(BZ_spl,ier)
          CALL EZspline_free(MODB_spl,ier)
          CALL EZspline_free(S_spl,ier)
+         CALL EZspline_free(RHO_spl,ier)
          CALL EZspline_free(U_spl,ier)
          CALL EZspline_free(X_spl,ier)
          CALL EZspline_free(Y_spl,ier)
+         CALL EZspline_free(XRHO_spl,ier)
+         CALL EZspline_free(YRHO_spl,ier)
 
          CALL EZspline_free(POT_spl,ier)
       END IF
@@ -695,9 +736,12 @@
       CALL mpidealloc(B_Z,win_B_Z)
       CALL mpidealloc(MODB,win_MODB)
       CALL mpidealloc(S_ARR,win_S_ARR)
+      CALL mpidealloc(RHO_ARR,win_RHO_ARR)
       CALL mpidealloc(U_ARR,win_U_ARR)
       CALL mpidealloc(X_ARR,win_X_ARR)
       CALL mpidealloc(Y_ARR,win_Y_ARR)
+      CALL mpidealloc(XRHO_ARR,win_XRHO_ARR)
+      CALL mpidealloc(YRHO_ARR,win_YRHO_ARR)
       CALL mpidealloc(POT_ARR,win_POT_ARR)
       IF (.not. lvac) THEN
          CALL mpidealloc(TE,win_TE)

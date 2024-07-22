@@ -56,13 +56,15 @@
             xparam = (r1 - raxis(i)) * hri(i)
             yparam = (p1 - phiaxis(j)) * hpi(j)
             zparam = (z1 - zaxis(k)) * hzi(k)
+            ! Even taking X4D, Y4D to XRHO4D, YRHO4D it's still 
+            ! true that U = atan2(yrho / xrho)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            X4D(1,1,1,1),nr,nphi,nz)
+                            XRHO4D(1,1,1,1),nr,nphi,nz)
             xt = fval(1)/s1
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            Y4D(1,1,1,1),nr,nphi,nz)
+                            YRHO4D(1,1,1,1),nr,nphi,nz)
             yt = fval(1)/s1
             U_lines(mystep,myline) = ATAN2(yt,xt)
          END DO
