@@ -548,11 +548,13 @@ class PLOT3D():
 		# Link Mapper to polydata
 		mapper.SetInputData(polydata)
 		# Handle scalars or make red
-		if type(scalars) != type(None): 
-			polydata.GetPointData().SetScalars(scalars)
+		if type(scalars) != type(None):
+			scalars.SetName("FaceValues")
+			polydata.GetCellData().SetScalars(scalars)
 			if not self.lookupTable: self.lookupTable = self.vtkLUTHelper(color)
 			mapper.SetLookupTable(self.lookupTable)
 			mapper.SetScalarRange(scalars.GetRange())
+			mapper.SetScalarModeToUseCellData()
 		else:
 			self.setActorColor(actor,color)
 		# Set Opacity
