@@ -119,4 +119,4 @@ if __name__=="__main__":
 			coil_data.coilSurfDist(focus_data.xsurf.flatten(),\
 					focus_data.ysurf.flatten(),\
 					focus_data.zsurf.flatten())
-			coil_data.plotcoilsDist()
+			coil_data.plotcoilplasmaDist()
