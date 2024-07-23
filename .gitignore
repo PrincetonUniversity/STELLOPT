@@ -70,3 +70,4 @@ PB3D
 .vscode/
 .vs/
 LIBSTELL/.makefile.swp
+*.log

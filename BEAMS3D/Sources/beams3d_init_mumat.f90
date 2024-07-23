@@ -72,8 +72,8 @@
 
     ! Set mumaterial verbosity
       CALL mumaterial_setverb(lismaster)
-      !CALL mumaterial_debug(lismaster,lissubmaster,.TRUE.)
-      CALL mumaterial_debug(.FALSE.,.FALSE.,.FALSE.)
+      CALL mumaterial_debug(lismaster,lissubmaster,.TRUE.)
+      !CALL mumaterial_debug(.FALSE.,.FALSE.,.FALSE.)
 
       ! Read the mu materials file
       CALL MUMATERIAL_LOAD(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_BEAMS)
@@ -158,7 +158,6 @@
 
       ! Zero out non-work areas
       IF (lissubmaster) THEN
-        IF (lverb) WRITE(6,*) 'Zeroing out non-work areas'
          DO s = 1, ourstart-1
             i = MOD(s-1,nr)+1
             j = MOD(s-1,nr*nphi)
@@ -181,10 +180,11 @@
 
 #if defined(MPI_OPT)
       IF (lverb) WRITE(6,*) 'Waiting at barrier'
-      CALL MPI_BARRIER(MPI_COMM_MUSHARE,ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (lverb) WRITE(6,*) 'Passed barrier'
 #endif
       IF (lverb) WRITE(6,*) 'TEST'
+      CALL FLUSH(6)
       ! Start progress 
       IF (lverb) THEN
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Magnetic Field Calculation [',0,']%'
