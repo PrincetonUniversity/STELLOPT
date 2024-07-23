@@ -614,7 +614,7 @@ class BEAMS3D():
 		if type(beams) is type(None):
 			beams_use = list(range(self.nbeams))
 		else:
-			beams_use = beams
+			beams_use = [x - 1 for x in beams] 
 		# Which quantitity to plot
 		if load_type == 'heatflux':
 			val = np.sum(self.wall_load[:,beams_use],axis=1)
@@ -627,7 +627,7 @@ class BEAMS3D():
 			return
 		# Make points
 		points,triangles = plt.facemeshTo3Dmesh(self.wall_vertex.T,self.wall_faces.T)
-		scalar = plt.valuesToScalar(self.wall_load*factor)
+		scalar = plt.valuesToScalar(val*factor)
 		# Add to Render
 		plt.add3Dmesh(points,triangles,scalars=scalar,opacity=1.0,color=colormap)
 		# In case it isn't set by user.
