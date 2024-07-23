@@ -1116,7 +1116,7 @@
         END IF
 
         IF (lverb) THEN 
-          WRITE(6,'(3X,I5,A2,E12.4,A2,E12.4,A2,E12.4,A2,I3,A2,I3)') count, '  ', maxdM, '  ', dMmax*lambdaStart,  '  ', lambda, '  ', lambdaCount, '  ', maxd2MC
+          WRITE(6,'(3X,I5,A2,E12.4,A2,E12.4,A2,E12.4,A2,I3,A2,I3)') count, '  ', maxdM, '  ', dMmax*lambda,  '  ', lambda, '  ', lambdaCount, '  ', maxd2MC
           CALL FLUSH(6)
         END IF
 
@@ -1147,7 +1147,7 @@
           IF (lverb) WRITE(6,*) "  MUMAT:  Stopping - Exceeded maximum iterations"
           EXIT
         END IF
-        IF ( (maxdM.LT.dMmax*lambdaStart) .AND.(count.GT.1)) THEN
+        IF ( (maxdM.LT.dMmax*lambda) .AND.(count.GT.1)) THEN
           IF (lverb) WRITE(6,*) "  MUMAT:  Stopping - converged"
           EXIT
         END IF
@@ -1747,7 +1747,7 @@
       ! param[in]: fx. x-coordinates of function to be interpolated
       ! param[in]: fy. y-coordinates of function to be interpolated
       ! param[in]: x. x-coordinate of evaluation point
-      ! param[in]: y. y-coordinate of evaluation point
+      ! param[out]: y. y-coordinate of evaluation point
       !-----------------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(IN) :: fx(:), fy(:), x
@@ -1907,7 +1907,7 @@
       END SUBROUTINE mumaterial_getbmag_scalar
 
 
-      SUBROUTINE mumaterial_getb_vector(x, y, z, B, getBfld, linclvac)
+      SUBROUTINE mumaterial_getb_vector(x, y, z, B, getBfld)!, linclvac)
       !-----------------------------------------------------------------------
       ! mumaterial_getb_vector: Calculates total magnetic field at multiple points in space
       !-----------------------------------------------------------------------
@@ -1931,9 +1931,9 @@
       INTEGER :: mystart, myend
       INTEGER :: i 
       INTEGER :: npoints
-      LOGICAL, OPTIONAL :: linclvac
+!      LOGICAL, OPTIONAL :: linclvac
 
-      IF (.NOT.(PRESENT(linclvac))) linclvac = .TRUE.
+!      IF (.NOT.(PRESENT(linclvac))) linclvac = .TRUE.
 
 
       npoints = size(x)
@@ -1946,15 +1946,15 @@
       allocate(B_local(3,npoints),B(3,npoints))
       B_local = 0; B = 0
       
-      IF (linclvac) THEN
-        DO i = mystart, myend
-          CALL mumaterial_getb_scalar(   x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i), getBfld)
-        END DO
-      ELSE
-        DO i = mystart, myend
-          CALL mumaterial_getbmag_scalar(x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i))
-        END DO
-      END IF
+!     IF (linclvac) THEN
+      DO i = mystart, myend
+        CALL mumaterial_getb_scalar(   x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i), getBfld)
+      END DO
+!     ELSE
+!       DO i = mystart, myend
+!          CALL mumaterial_getbmag_scalar(x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i))
+!       END DO
+!      END IF
     
 #if defined(MPI_OPT)
       IF (lcomm) THEN
@@ -1972,7 +1972,7 @@
 
 
 
-      SUBROUTINE mumaterial_output(path, x, y, z, getBfld, linclvac)
+      SUBROUTINE mumaterial_output(path, x, y, z, getBfld)!, linclvac)
       !-----------------------------------------------------------------------
       ! mumaterial_output: Outputs B-field and points to text files
       !-----------------------------------------------------------------------
@@ -1994,29 +1994,29 @@
       INTEGER :: i 
       INTEGER :: npoints
       DOUBLE PRECISION, ALLOCATABLE :: B(:,:)
-      LOGICAL, OPTIONAL :: linclvac
+!      LOGICAL, OPTIONAL :: linclvac
 
-      IF (.NOT.(PRESENT(linclvac))) linclvac = .TRUE.
+!      IF (.NOT.(PRESENT(linclvac))) linclvac = .TRUE.
 
       IF (lismaster) THEN
-            npoints = size(x)
-            WRITE(6,*) "Outputting points"
-            OPEN(13, file='./points.dat')
-            DO i = 1, npoints
-                  WRITE(13, "(F15.7,A,F15.7,A,F15.7)") x(i), ',', y(i), ',', z(i)
-            END DO
-            CLOSE(13)
+        npoints = size(x)
+        WRITE(6,*) "Outputting points"
+        OPEN(13, file='./points.dat')
+        DO i = 1, npoints
+          WRITE(13, "(F15.7,A,F15.7,A,F15.7)") x(i), ',', y(i), ',', z(i)
+        END DO
+        CLOSE(13)
       END IF
 
-      CALL mumaterial_getb_vector(x, y, z, B, getBfld, linclvac)
+      CALL mumaterial_getb_vector(x, y, z, B, getBfld)!, linclvac)
  
       IF (lismaster) THEN
-            WRITE(6,*) "Outputting B-field"
-            OPEN(14, file='./B.dat')
-            DO i = 1, npoints
-                  WRITE(14, "(E15.7,A,E15.7,A,E15.7)") B(1,i), ',', B(2,i), ',', B(3,i)
-            END DO
-            CLOSE(14)
+        WRITE(6,*) "Outputting B-field"
+        OPEN(14, file='./B.dat')
+        DO i = 1, npoints
+          WRITE(14, "(E15.7,A,E15.7,A,E15.7)") B(1,i), ',', B(2,i), ',', B(3,i)
+        END DO
+        CLOSE(14)
       END IF
 
       RETURN
