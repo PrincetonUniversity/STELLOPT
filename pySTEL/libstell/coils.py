@@ -189,10 +189,11 @@ class COILSET():
 		# Render if requested
 		if lplotnow: plt.render()
 
-	def plotcoilsDist(self,plot3D=None):
-		"""Plots a half field period of a coilset in 3D using VTK
+	def plotcoilplasmaDist(self,plot3D=None):
+		"""Plots coil with coil-plasma distance
 
-		This routine plots a half field period of a coilset in 3D using VTK
+		This routine plots a half field period of a coilset in 3D using
+		VTK. The coil is color coded by the coil-plasma distance.
 
 		Parameters
 		----------
@@ -236,7 +237,59 @@ class COILSET():
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Colorbar
-		plt.colorbar(title='Distance [m]')
+		plt.colorbar(title='Distance (coil-plasma) [m]')
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plotcoilcoilDist(self,plot3D=None):
+		"""Plots coil with coil-coil distance
+
+		This routine plots a half field period of a coilset in 3D using
+		VTK. The coil is color coded by the minimum coil-coil distance.
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Get the min and max values
+		cmin = 1E20; cmax=-1E20;
+		for i in range(self.ngroups):
+			j = 0
+			cmin = min(cmin,min(self.groups[i].coils[j].dist_coil)) 
+			cmax = max(cmin,max(self.groups[i].coils[j].dist_coil)) 
+		# Plot coils
+		for i in range(self.ngroups):
+			j=0
+			points_array = np.zeros((self.groups[i].coils[j].npts,3))
+			points_array[:,0] =self.groups[i].coils[j].x
+			points_array[:,1] =self.groups[i].coils[j].y
+			points_array[:,2] =self.groups[i].coils[j].z
+			# Handle Color
+			vals = np.array(self.groups[i].coils[j].dist_coil, dtype=float)
+			scalar = plt.valuesToScalar(vals)
+			# Convert numpy array to VTK points
+			points = vtk.vtkPoints()
+			for point in points_array:
+				points.InsertNextPoint(point)
+			# Add to render
+			plt.add3Dline(points,scalars=scalar,linewidth=5)
+		# Set color limits
+		plt.setClim(cmin,cmax)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Colorbar
+		plt.colorbar(title='Distance (coil-coil) [m]')
 		# Render if requested
 		if lplotnow: plt.render()
 
@@ -457,7 +510,23 @@ class COILSET():
 			for j in range(self.groups[i].ncoils):
 				self.groups[i].coils[j].surfDist(xs,ys,zs)
 
-	def blenderCoil(self,dist=0.2,lfield_period=False):
+	def coilCoilDist(self):
+		"""Calculates coil-coil distance
+
+		This routine calculates the distance between a coil and
+		another coil. Values are stored in the coil atribute coil_coil.
+		"""
+		for i in range(self.ngroups):
+			for j in range(self.groups[i].ncoils):
+				for k in range(self.ngroups):
+					for l in range(self.groups[i].ncoils):
+						if (i == k) and (j == l): continue
+						xs = self.groups[k].coils[l].x
+						ys = self.groups[k].coils[l].y
+						zs = self.groups[k].coils[l].z
+						self.groups[i].coils[j].coilDist(xs,ys,zs)
+
+	def blenderCoil(self,width=0.2,height=0.2,lfield_period=False):
 		"""Generates the lists Blender needs to render a coilset
 
 		This routine generates the verticies and faces lists which
@@ -465,8 +534,10 @@ class COILSET():
 
 		Parameters
 		----------
-		dist : float
+		width : float
 			Finite build coil width [m]
+		height : float
+			Finite build coil height [m]
 		lfield_period : boolean
 			Return coilset over one field period (default: False)
 
@@ -486,7 +557,7 @@ class COILSET():
 			ncoil_max = self.groups[i].ncoils
 			if (lfield_period): ncoil_max = 1
 			for j in range(ncoil_max):
-				xx,yy,zz = self.groups[i].coils[j].finiteBuildCoil(width=dist,height=dist)
+				xx,yy,zz = self.groups[i].coils[j].finiteBuildCoil(width=width,height=height)
 				for k in range(xx.shape[1]-1):
 					vertices.append((xx[0,k],yy[0,k],zz[0,k]))
 					vertices.append((xx[1,k],yy[1,k],zz[1,k]))
@@ -510,9 +581,6 @@ class COILSET():
 				vertices.append((xx[3, 0],yy[3, 0],zz[3, 0]))
 				l = l + 4
 		return vertices,faces
-
-
-
 
 class COILGROUP():
 	"""Class which defines a coil group
@@ -555,6 +623,7 @@ class COIL():
 		self.yt = None
 		self.zt = None
 		self.dist_surf = None
+		self.dist_coil = None
 
 	def vecpot(self,x,y,z,current):
 		"""Calculates Vector potential
@@ -685,6 +754,41 @@ class COIL():
 		dz = zc - z
 		dl2 = dx*dx + dy * dy + dz * dz
 		self.dist_surf = np.sqrt(np.min(dl2,axis=1))
+		return
+
+	def coilDist(self,xs,ys,zs):
+		"""Calculates coil-coil distance
+
+		This routine calculates the distance between a coil and
+		another coil defined by points in cartesian coordiantes 
+		(x,y,z).
+
+		Parameters
+		----------
+		xs : ndarray
+			X points defining the other coil [m]
+		ys : ndarray
+			Y points defining the other coil [m]
+		zs : ndarray
+			Z points defining the other coil [m]
+		"""
+		import numpy as np
+		nsurf = len(xs)
+		xc = np.broadcast_to(self.x,(nsurf,self.npts)).T
+		yc = np.broadcast_to(self.y,(nsurf,self.npts)).T
+		zc = np.broadcast_to(self.z,(nsurf,self.npts)).T
+		x  = np.broadcast_to(xs,(self.npts,nsurf))
+		y  = np.broadcast_to(ys,(self.npts,nsurf))
+		z  = np.broadcast_to(zs,(self.npts,nsurf))
+		dx = xc - x
+		dy = yc - y
+		dz = zc - z
+		dl2 = dx*dx + dy * dy + dz * dz
+		if type(self.dist_coil) is type(None):
+			self.dist_coil = np.sqrt(np.min(dl2,axis=1))
+		else:
+			dist_coil = np.sqrt(np.min(dl2,axis=1))
+			self.dist_coil = np.minimum(self.dist_coil,dist_coil)
 		return
 
 	def spline_tangent(self, order=3, der=1):

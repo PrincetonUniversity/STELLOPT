@@ -19,6 +19,10 @@ if __name__=="__main__":
 		help="Plot the coils file.", default = False)
 	parser.add_argument("-prz", "--plotRZ", dest="lplotRZ", action='store_true',
 		help="Plot each coil group in RZ.", default = False)
+	parser.add_argument("--plotcoildist", dest="lplotcoildist", action='store_true',
+		help="Plot the coil-coil distance.", default = False)
+	parser.add_argument("--plotvolcoil", dest="heightwidth",
+		help="Plot volumetric coil of given width and height [m].", default = None)
 	parser.add_argument("-b", "--bfield", dest="bxyz",
 		help="Output B field at x,y,z", default = None)
 	parser.add_argument("-a", "--afield", dest="axyz",
@@ -36,6 +40,18 @@ if __name__=="__main__":
 		if args.new_pts: coils.rescalecoils(args.new_pts)
 		if args.lplot: coils.plotcoils()
 		if args.lplotRZ: coils.plotcoilsRZ()
+		if args.lplotcoildist:
+			coils.coilCoilDist()
+			coils.plotcoilcoilDist()
+		if args.heightwidth:
+			height,width = args.heightwidth.split(',')
+			[vertex,faces] = coils.blenderCoil(height=float(height),width=float(width),lfield_period=True)
+			vol_coil = WALL()
+			vol_coil.vertex = np.array(vertex)
+			vol_coil.faces = np.array(faces, dtype=int)
+			vol_coil.nfaces = vol_coil.faces.shape[0]
+			vol_coil.nvertex = vol_coil.vertex.shape[0]
+			vol_coil.plot_wall_3D()
 		if args.loutput: coils.write_coils_file(args.coils_file+'_new')
 		if args.axyz:
 			x,y,z = args.axyz.split(',')
