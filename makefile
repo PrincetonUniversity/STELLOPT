@@ -39,7 +39,8 @@ endif
 
 pystel:
 	@echo 'Building pySTEL'
-	@python3 -m pip install ./pySTEL --user
+	@cd pySTEL; python3 setup.py install --user
+#	@python3 -m pip install ./pySTEL --user
 
 libstell$(SHARED_EXT):
 	@cd LIBSTELL
