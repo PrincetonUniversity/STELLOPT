@@ -37,9 +37,9 @@ ifeq ($(wildcard $(MYHOME)),)
 	mkdir -p $(MYHOME)
 endif
 
-pystel:
+pystel: libstell$(SHARED_EXT)
 	@echo 'Building pySTEL'
-	@cd pySTEL; python3 -m pip install ./pySTEL --user
+	@cd pySTEL; python3 setup.py install --user
 
 libstell$(SHARED_EXT):
 	@cd LIBSTELL
