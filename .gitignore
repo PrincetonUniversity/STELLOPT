@@ -75,3 +75,5 @@ pySTEL/dist
 *.sublime-project
 *.sublime-workspace
 fort.*
+
+nohup.*
