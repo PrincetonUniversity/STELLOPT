@@ -629,7 +629,7 @@ class BEAMS3D():
 		points,triangles = plt.facemeshTo3Dmesh(self.wall_vertex.T,self.wall_faces.T)
 		scalar = plt.valuesToScalar(val*factor)
 		# Add to Render
-		plt.add3Dmesh(points,triangles,scalars=scalar,opacity=1.0,color=colormap)
+		plt.add3Dmesh(points,triangles,FaceScalars=scalar,opacity=1.0,color=colormap)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested

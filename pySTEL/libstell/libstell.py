@@ -1678,13 +1678,15 @@ class FourierRep():
 			plt = PLOT3D()
 			lrender = True
 		# Figure out number of surfaces to plot
-		nr = np.size(svals)
-		if (nr == 1):
-			if svals == 0: svals = 1
-			if svals == -1: svals = 0
-			s= [svals]
+		if type(svals) is list:
+			s = svals
 		else:
-			s=svals
+			# Aviod plotting axis
+			if svals == 0: svals = 1
+			# Flag for plotting single surface array
+			if r.shape[0] == 1: svals = 0
+			s= [svals]
+		nr = np.size(s)
 		# Setup x,y,z helpers
 		nu = np.size(r,1)
 		nv = np.size(r,2)
@@ -1699,7 +1701,6 @@ class FourierRep():
 			z_s = z[s[k],:,:]
 			[points,triangles] = plt.torusvertexTo3Dmesh(x_s,y_s,z_s,lcloseu=lcu,lclosev=lcv)
 			# Handle Color
-			scalar = None
 			if type(vals) != type(None): 
 				scalar = plt.valuesToScalar(vals[s[k],:,:])
 				# Add to Render

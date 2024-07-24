@@ -198,7 +198,7 @@ class WALL():
 				plt.add3Dmesh(points,triangles,color=wallcolor)
 			else:
 				scalar = plt.valuesToScalar(wallcolor)
-				plt.add3Dmesh(points,triangles,scalars=wallcolor)
+				plt.add3Dmesh(points,triangles,FaceScalars=wallcolor)
 		else:
 			plt.add3Dmesh(points,triangles,color='gray')
 		# Render if requested
