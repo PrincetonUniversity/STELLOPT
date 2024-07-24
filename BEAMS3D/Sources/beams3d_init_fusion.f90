@@ -217,7 +217,7 @@
                   beam(nparticles), weight(nparticles), &
                   vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
                   lgc2fo_start(nparticles))
-      CALL mpialloc(NEUTRONS_ARR, 2, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NEUTRONS)
+      CALL mpialloc(NEUTRONS_ARR, 2, nr1, nphi1, nz1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NEUTRONS)
       CALL mpialloc(E_NEUTRONS, 2, myid_sharmem, 0, MPI_COMM_SHARMEM, win_E_NEUTRONS)
       IF (myworkid == master) THEN
          NEUTRONS_ARR(1,1:nr1,1:nphi1,1:nz1) = rateDT
@@ -225,6 +225,20 @@
          E_NEUTRONS(1) = 14.06E6
          E_NEUTRONS(2) = 2.45E6
       END IF
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+#endif
+      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr1*nphi1*nz1, mystart, myend)
+      ! Add volume back into neutrons
+      DO s = mystart, myend
+         i = MOD(s-1,nr1)+1
+         j = MOD(s-1,nr1*nphi1)
+         j = FLOOR(REAL(j) / REAL(nr1))+1
+         k = CEILING(REAL(s) / REAL(nr1*nphi1))
+         ! We have the n/s but we need to add the volume back in (dV=rdrdpdz)
+         dV = (raxis(i)+0.5*hr(i))*hr(i)*hp(j)*hz(k)
+         NEUTRONS_ARR(:,i,j,k) = NEUTRONS_ARR(:,i,j,k)/dV
+      END DO
 
       ! We set this true because we assume all particles generated are gyrocenters. Should a
       ! particle have RHO > RHO_FO then we don't follow the GC and follow_fo takes care of
