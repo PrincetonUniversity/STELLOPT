@@ -130,25 +130,16 @@ class PLOT3D():
 		#from matplotlib import cm
 		import matplotlib
 		lut = vtk.vtkLookupTable()
-		# Check for custom colormaps
-		if not ctable:
-			ctable = _CMAP_ # default from above
+		# Check for custom colormaps	
+		if ctable in list(matplotlib.colormaps.keys()):
 			lut.SetNumberOfTableValues(256)
 			lut.Build()
 			# Use matplotlib to generate the jet colormap
 			mlibmap = matplotlib.colormaps[ctable]
 			for i in range(256):
 				rgba = mlibmap(i / 255.0)
-				lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])	
-		elif ctable in list(matplotlib.colormaps.keys()):
-			lut.SetNumberOfTableValues(256)
-			lut.Build()
-			# Use matplotlib to generate the jet colormap
-			mlibmap = matplotlib.colormaps[ctable]
-			for i in range(256):
-				rgba = mlibmap(i / 255.0)
-				lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])	
-		elif type(self.cmap) is type(dict):
+				lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
+		elif type(self.cmap) is dict:
 			if ctable in list(self.cmap.keys()):
 				cmap = self.cmap[ctable]
 			else:
@@ -169,6 +160,15 @@ class PLOT3D():
 					b = (c2[2]-c1[2])*float(j)/255.0 + c1[2]
 					lut.SetTableValue(k,r,g,b,1.0)
 					k = k + 1
+		else:
+			ctable = _CMAP_ # default from above
+			lut.SetNumberOfTableValues(256)
+			lut.Build()
+			# Use matplotlib to generate the jet colormap
+			mlibmap = matplotlib.colormaps[ctable]
+			for i in range(256):
+				rgba = mlibmap(i / 255.0)
+				lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
 		return lut
 
 	def setActorColor(self,actor,color=None):
@@ -517,7 +517,7 @@ class PLOT3D():
 		# Add actor
 		self.renderer.AddActor(actor)
 
-	def add3Dmesh(self,points,triangles,scalars=None,opacity=1.0,color=None):
+	def add3Dmesh(self,points,triangles,scalars=None,opacity=1.0,color=None,FaceScalars=None):
 		"""Add a 3D mesh to a render
 
 		This routine adds a mesh using VTK where points is an object
@@ -549,6 +549,11 @@ class PLOT3D():
 		mapper.SetInputData(polydata)
 		# Handle scalars or make red
 		if type(scalars) != type(None):
+			polydata.GetPointData().SetScalars(scalars)
+			if not self.lookupTable: self.lookupTable = self.vtkLUTHelper(color)
+			mapper.SetLookupTable(self.lookupTable)
+			mapper.SetScalarRange(scalars.GetRange())
+		elif type(FaceScalars) != type(None):
 			scalars.SetName("FaceValues")
 			polydata.GetCellData().SetScalars(scalars)
 			if not self.lookupTable: self.lookupTable = self.vtkLUTHelper(color)
