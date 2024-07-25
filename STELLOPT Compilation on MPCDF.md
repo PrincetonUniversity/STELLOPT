@@ -61,7 +61,14 @@ by the make.inc script. The IPP-HGW theory cluster
 requires the user to set the environment variable 
 MACHINE equal to 'theoryhgw'.
 
-For the benchmark tests you'll need python3
-packages.  It's best to install a copy of miniconda
-locally on your account and setup your packages
-from there (Raven and Viper). [miniconda downloads](https://docs.conda.io/en/latest/miniconda.html)
+There is an issue with Anaconda where it links against
+it's own libraries which are not the same as the system
+libraries. This doesn't affect the Fortran parts of the 
+code. The C-Types interface we use in Python to access
+routines in libstell.so is affected. The knock-on effect
+is that the benchmarks will fail with error messages
+about libssh.so. The fix is for the user to add
+export LD_PRELOAD=/usr/lib64/libcrypto.so.1.1:/usr/lib64/libssl.so.1.1
+to your .bashrc (or equivalent). This is an
+Anaconda/MPCDF issue, not realated to STELLOPT directly.
+
