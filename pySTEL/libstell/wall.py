@@ -149,6 +149,25 @@ class WALL():
 		self.nfaces = self.faces.shape[0]
 		self.nvertex = self.vertex.shape[0]
 
+	def wallClean(self):
+		"""Clean wall of zero area elements
+
+		This routine removes any zero area elements in the wall mesh.
+		"""
+		import numpy as np
+		i0 = self.faces[:,0]
+		i1 = self.faces[:,1]
+		i2 = self.faces[:,2]
+		V1 = self.vertex[i1,:]-self.vertex[i0,:]
+		V2 = self.vertex[i2,:]-self.vertex[i0,:]
+		N  = np.zeros((self.nfaces,3), dtype=float)
+		N[:,0]  = V1[:,1]*V2[:,2] - V1[:,2]*V2[:,1]
+		N[:,1]  = V1[:,2]*V2[:,0] - V1[:,0]*V2[:,2]
+		N[:,2]  = V1[:,0]*V2[:,1] - V1[:,1]*V2[:,0]
+		A = np.sum(N*N,axis=1)
+		mask = A<=0
+		print(f'Removing {np.sum(mask)} bad triangles.')
+		self.faces = np.delete(self.faces,mask,axis=0)
 
 	def plot_wall_cloud(self,ax=None):
 		"""Plots the vertices of the wall
