@@ -45,7 +45,8 @@ SUBROUTINE out_beams3d_part(t, q)
     INTEGER             :: ier, d1, d2, d3, d4, d5
     DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw,vperp, &
                                 br_temp, bphi_temp, bz_temp, &
-                                v_total, binv, vll_temp
+                                v_total, binv, vll_temp, &
+                                rho0
     DOUBLE PRECISION    :: q2(6),qdot(6), q4(4)
     ! For splines
     INTEGER :: i,j,k,l
@@ -78,16 +79,16 @@ SUBROUTINE out_beams3d_part(t, q)
        zparam = (q(3) - zaxis(k)) * hzi(k)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       X4D(1,1,1,1),nr,nphi,nz)
+                       XRHO4D(1,1,1,1),nr,nphi,nz)
        
        CALL R8HERM3FCN(ict,1,1,fval2,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       Y4D(1,1,1,1),nr,nphi,nz)
+                       YRHO4D(1,1,1,1),nr,nphi,nz)
 
-       y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
+       rho0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
        !z0 = fval(1)
        z0 = ATAN2(fval2(1),fval(1))
-       S_lines(mytdex, myline) = y0 
+       S_lines(mytdex, myline) = rho0*rho0
        U_lines(mytdex, myline) = z0
        
        ! Now We get Br, Bphi, Bz to calc B (and vll)
@@ -122,7 +123,7 @@ SUBROUTINE out_beams3d_part(t, q)
        ! Calc dist func bins
        x0    = MOD(q(2),pi2)
        IF (x0 < 0) x0 = x0 + pi2
-       d1 = MAX(MIN(CEILING(SQRT(y0)*h1_prof     ), ns_prof1), 1) ! Rho Bin
+       d1 = MAX(MIN(CEILING(rho0*h1_prof     ), ns_prof1), 1) ! Rho Bin
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
        d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
        d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*vll_temp), ns_prof4), 1) ! vll
