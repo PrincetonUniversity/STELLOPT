@@ -44,6 +44,7 @@ SUBROUTINE out_beams3d_gc(t, q)
     LOGICAL             :: lhit
     INTEGER             :: ier, d1, d2, d3, d4, d5, d1f
     DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw, vperp
+    DOUBLE PRECISION         :: rho0
     DOUBLE PRECISION    :: q2(4),qdot(4)
     ! For splines
     INTEGER :: i,j,k,l
@@ -78,12 +79,13 @@ SUBROUTINE out_beams3d_gc(t, q)
        zparam = (q(3) - zaxis(k)) * hzi(k)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       X4D(1,1,1,1),nr,nphi,nz)
+                       XRHO4D(1,1,1,1),nr,nphi,nz)
        CALL R8HERM3FCN(ict,1,1,fval2,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       Y4D(1,1,1,1),nr,nphi,nz)
-       y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
-       rho_help = sqrt(y0)
+                       YRHO4D(1,1,1,1),nr,nphi,nz)
+       rho0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
+       y0 = rho0 * rho0
+       rho_help = rho0
        z0 = ATAN2(fval2(1),fval(1))
        S_lines(mytdex, myline) = y0 
        U_lines(mytdex, myline) = z0
