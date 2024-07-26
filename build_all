@@ -64,6 +64,7 @@ do
 done
 
 # make a dynamic library
-cd LIBSTELL
-make shared_release
-cd ..
+make pystel
+#cd LIBSTELL
+#make shared_release
+#cd ..

@@ -42,8 +42,7 @@ pystel: libstell$(SHARED_EXT)
 	@cd pySTEL; python3 setup.py install --user
 
 libstell$(SHARED_EXT):
-	@cd LIBSTELL
-	@make shared_release
+	@cd LIBSTELL; make shared_release
 
 test_make:
 	@echo MACHINE is $(MACHINE)
