@@ -27,7 +27,7 @@ Raven
     module load netcdf-mpi/4.8.1
     module load hdf5-mpi
     module load fftw-mpi
-    module load anaconda/3/2020.02
+    module load anaconda/3/2021.11
 
 Viper
 -----
