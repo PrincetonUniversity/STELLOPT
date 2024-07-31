@@ -63,7 +63,7 @@ class FUSION():
 		sigma : real
 			Reaction rate [m^3/s]
 		"""
-		import math
+		import numpy as np
 		C = self.C_DICT[reaction]
 		BG = self.BG_DICT[reaction]
 		MRC2 = self.MRC2_DICT[reaction]
@@ -73,7 +73,7 @@ class FUSION():
 		zeta   = 1.0 - zeta
 		theta  = ti_kev / zeta
 		eta    = ( 0.25 * BG * BG / theta ) ** (1.0/3.0)
-		return 1.0E-6 * C[0] * theta * math.sqrt( eta / ( MRC2 * ti_kev * ti_kev * ti_kev ) ) * math.exp( -3 * eta )
+		return 1.0E-6 * C[0] * theta * np.sqrt( eta / ( MRC2 * ti_kev * ti_kev * ti_kev ) ) * np.exp( -3 * eta )
 
 
 if __name__=="__main__":
