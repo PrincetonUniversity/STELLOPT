@@ -58,7 +58,7 @@
                      win_S_ARR, win_U_ARR,win_X_ARR,win_Y_ARR, win_POT_ARR, win_BR4D, win_BPHI4D, &
                      win_RHO_ARR, win_XRHO_ARR, win_YRHO_ARR, &
                      win_BZ4D, win_MODB4D, win_TE4D, win_NE4D, win_TI4D, win_ZEFF4D, &
-                     win_S4D, win_U4D,  win_X4D, win_Y4D, win_POT4D, win_req_axis, win_zeq_axis, &
+                     win_U4D,  win_POT4D, win_req_axis, win_zeq_axis, &
                      win_RHO4D, win_XRHO4D, win_YRHO4D, &
                      win_wall_load, win_wall_shine, win_hr, win_hp, win_hz, &
                      win_hri, win_hpi, win_hzi, win_NI5D, win_NI, &
@@ -74,13 +74,13 @@
       REAL(rprec), POINTER :: B_R(:,:,:),B_PHI(:,:,:), B_Z(:,:,:), MODB(:,:,:),&
                                   TE(:,:,:), NE(:,:,:), TI(:,:,:), ZEFF_ARR(:,:,:), &
                                   RHO_ARR(:,:,:), XRHO_ARR(:,:,:), YRHO_ARR(:,:,:), &
-                                  S_ARR(:,:,:), U_ARR(:,:,:), X_ARR(:,:,:), Y_ARR(:,:,:), POT_ARR(:,:,:)
+                                  S_ARR(:,:,:), U_ARR(:,:,:), POT_ARR(:,:,:)
       REAL(rprec), POINTER :: NI(:,:,:,:), BEAM_DENSITY(:,:,:,:), NEUTRONS_ARR(:,:,:,:)
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
                                                   NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET
       REAL(rprec), DIMENSION(:,:,:,:), POINTER :: BR4D, BPHI4D, BZ4D, MODB4D, &
                                   TE4D, NE4D, TI4D, ZEFF4D, &
-                                  S4D, U4D, X4D, Y4D, POT4D, &
+                                  U4D, POT4D, &
                                   RHO4D, XRHO4D, YRHO4D
       REAL(rprec), DIMENSION(:,:,:,:,:), POINTER :: NI5D
       REAL*8 ::      eps1, eps2, eps3
@@ -89,7 +89,7 @@
       REAL*8, POINTER :: hri(:), hpi(:), hzi(:)
       TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl, MODB_spl, TE_spl, NE_spl, &
                             RHO_spl, XRHO_spl, YRHO_spl, &
-                            TI_spl, ZEFF_spl, S_spl, U_spl, X_spl, Y_spl, POT_spl
+                            TI_spl, ZEFF_spl, U_spl, X_spl, Y_spl, POT_spl
       TYPE(EZspline1_r8) :: TE_spl_s, NE_spl_s, TI_spl_S, ZEFF_spl_s, Vp_spl_s, POT_spl_s
       TYPE(EZspline1_r8), DIMENSION(4) :: NI_spl_s
 

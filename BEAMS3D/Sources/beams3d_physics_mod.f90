@@ -29,7 +29,7 @@ MODULE beams3d_physics_mod
                                ns_prof5, my_end, h1_prof, fact_crit_legacy
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
                               MODB_spl, MODB4D, &
-                              phimax, S4D, X4D, Y4D, TE4D, NE4D, TI4D, ZEFF4D, &
+                              phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
@@ -741,8 +741,6 @@ MODULE beams3d_physics_mod
                t = t + dt_local
                phi_temp = MODULO(q(2), phimax)
                IF (phi_temp < 0) phi_temp = phi_temp + phimax
-               !CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
-               !IF (ier==0) THEN
                IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
                    (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
                    (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
@@ -753,7 +751,6 @@ MODULE beams3d_physics_mod
                   yparam = (phi_temp - phiaxis(j)) * hpi(j)
                   zparam = (q(3) - zaxis(k)) * hzi(k)
                   rho_temp =1.5
-                  !CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                                   hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                                   RHO4D(1,1,1,1),nr,nphi,nz)
@@ -948,7 +945,6 @@ MODULE beams3d_physics_mod
             xparam = (rlocal(l) - raxis(i)) * hri(i)
             yparam = (plocal(l) - phiaxis(j)) * hpi(j)
             zparam = (zlocal(l) - zaxis(k)) * hzi(k)
-            !CALL EZspline_interp(S_spl,rlocal(l),plocal(l),zlocal(l),s_temp,ier)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             RHO4D(1,1,1,1),nr,nphi,nz)
@@ -2030,7 +2026,6 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION, INTENT(inout) :: r_out
          DOUBLE PRECISION, INTENT(inout) :: z_out
          DOUBLE PRECISION, INTENT(out) :: phi_out
-         !REAL(rprec), POINTER, DIMENSION(:,:,:,:), INTENT(inout) :: X4D, Y4D
 
          !--------------------------------------------------------------
          !     Local Variables
