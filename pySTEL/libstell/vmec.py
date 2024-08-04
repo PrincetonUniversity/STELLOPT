@@ -624,6 +624,7 @@ class VMEC(FourierRep):
 				dl2 = dr*dr + dz*dz
 				d = d + min(dl2)
 		return d
+		
 	def callbackF(self,intermediate_result):
 		print(f'ITER: {self.Nfeval} -- dval: {intermediate_result.fun}')
 		self.Nfeval += 1
