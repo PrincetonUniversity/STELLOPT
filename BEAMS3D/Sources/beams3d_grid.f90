@@ -89,7 +89,7 @@
       REAL*8, POINTER :: hri(:), hpi(:), hzi(:)
       TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl, MODB_spl, TE_spl, NE_spl, &
                             RHO_spl, XRHO_spl, YRHO_spl, &
-                            TI_spl, ZEFF_spl, U_spl, X_spl, Y_spl, POT_spl
+                            TI_spl, ZEFF_spl, U_spl, POT_spl
       TYPE(EZspline1_r8) :: TE_spl_s, NE_spl_s, TI_spl_S, ZEFF_spl_s, Vp_spl_s, POT_spl_s
       TYPE(EZspline1_r8), DIMENSION(4) :: NI_spl_s
 
