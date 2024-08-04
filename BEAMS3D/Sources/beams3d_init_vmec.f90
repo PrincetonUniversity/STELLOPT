@@ -22,7 +22,6 @@
                                  phimax, vc_adapt_tol, B_R, B_Z, B_PHI,&
                                  BR_spl, BZ_spl, TE_spl_s, NE_spl_s, TI_spl_s, &
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
-                                 RHO_ARR, &
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq, NI_spl_s, NI,&
@@ -331,7 +330,6 @@
          IF (ier == 0 .and. bphi /= 0) THEN ! We have field data
             ! Save Grid data
             S_ARR(i,j,k) = MAX(sflx,0.0)
-            RHO_ARR(i,j,k) = SQRT(S_ARR(i,j,k))
             IF (uflx<0)  uflx = uflx+pi2
             U_ARR(i,j,k) = uflx
             ! Handle equilibrium data
@@ -501,7 +499,6 @@
          END IF
          sflx = sflx*sflx*scaleup*scaleup
          S_ARR(i,j,k) = MAX(sflx,1.01)
-         RHO_ARR(i,j,k) = SQRT(S_ARR(i,j,k))
          IF (uflx<0)  uflx = uflx+pi2
          U_ARR(i,j,k) = uflx
       END DO
@@ -517,7 +514,6 @@
          IF (k==1 .or. k==nz) CYCLE
          S_ARR(i,j,k) = (MAX(S_ARR(i-1,j,k),S_ARR(i+1,j,k)) &
                   + MAX(S_ARR(i,j,k-1),S_ARR(i,j,k+1)))*0.5 
-         RHO_ARR(i,j,k) = SQRT(S_ARR(i,j,k))
       END DO
 
       ! Deallocations
