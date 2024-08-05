@@ -1753,6 +1753,34 @@ class FourierRep():
 			faces[i,2] = faces_list[i][2]
 		return vertex,faces
 
+	def surfaceSTL(self,r,z,phi,surface=None,filename='surface.stl'):
+		"""Outputs an STL file from a surface
+
+		This routine outputs an STL file for a given surface.
+
+		Parameters
+		----------
+		r : ndarray
+			Ordered list of R verticies [m] (ns,nu,nv)
+		z : ndarray
+			Ordered list of Z verticies [m] (ns,nu,nv)
+		phi : ndarray
+			Ordered list of phi coordiantes [rad] (nv)
+		surface : int (optional)
+			Surface to generate in ns (default: outermost)
+		filename : str (optional)
+			Filename for output file
+		"""
+		import numpy as np
+		from stl import mesh
+		vertex,faces = self.generateSurface(r,z,phi,surface)
+		nfaces = faces.shape[0]
+		wall_mesh = mesh.Mesh(np.zeros(nfaces, dtype=mesh.Mesh.dtype))
+		for i, f in enumerate(faces):
+			for j in range(3):
+				wall_mesh.vectors[i][j] = vertex[f[j],:]
+		wall_mesh.save(filename)
+
 	def blenderSurface(self,r,z,phi,surface=None):
 		"""Generates the lists Blender needs to render a flux surface
 
