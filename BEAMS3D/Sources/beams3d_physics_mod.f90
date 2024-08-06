@@ -694,7 +694,8 @@ MODULE beams3d_physics_mod
          LOGICAL          :: ltest
          INTEGER          :: ier, l, m,o
          DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
-                             s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp
+                             s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp,&
+							 rlim, zlim
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
          DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
@@ -728,7 +729,8 @@ MODULE beams3d_physics_mod
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
          qf(3) = q(3)
-		 
+		 rlim=MAX(q(1),rmax)
+		 zlim=MAX((ABS(q(3))),ABS(zmin),ABS(zmax))
          !--------------------------------------------------------------
          !     Initialize Ionization here
 		 !--------------------------------------------------------------
@@ -779,8 +781,8 @@ MODULE beams3d_physics_mod
                   s_temp = fval(1)
                   IF (s_temp < one) EXIT
                END IF
-               IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN !5*rmax seems arbitrary, could be in relation to q(1) (starting pos.)?
-			   
+              ! IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN !5*rmax seems arbitrary, could be in relation to q(1) (starting pos.)?
+			  IF ((q(1) >= rlim) .or. (ABS(q(3)) >= zlim)) THEN			   
 			   WRITE(6,*) o, l, s_temp, cum_prob, rand_prob
 			   WRITE(6,*) q, myv_neut
                   t = my_end+dt_local
