@@ -129,7 +129,7 @@ MODULE beams3d_physics_mod
       ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
          slow_par(1) = fact_crit*SQRT(te_in)*(coulomb_logi/coulomb_loge)**(1.0/3.0) !vcrit, the coulomb ratio is from Weiland (2018) eq.11
          slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here, tau_spit
-         slow_par(3) =zeff_in*fact_pa
+         slow_par(3) =Zeff_in*fact_pa
          RETURN
       END FUNCTION coll_op_nrl19_ie
 
@@ -239,7 +239,8 @@ MODULE beams3d_physics_mod
                           inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
                           vc3_tauinv, vbeta, zeff_temp,&
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
-                          sm,omega2,vrel2,bmax,bmincl,bminqu,bmin
+                          sm,omega2,vrel2,bmax,bmincl,bminqu,bmin,&
+						  zdelth,zrang
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          DOUBLE PRECISION :: slow_par(3), ni_temp(NION)
          ! For splines
@@ -331,9 +332,9 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-               slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+               !slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
 			   !slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
-			   !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+			   slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
@@ -385,12 +386,21 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
-           CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-           sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
-           zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
-           zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
+           !CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+           !sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
+           !zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
+           !zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+           !zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+		   !Flip gaussian at boundary to prevent accumulation around pitch=1
+		   !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
+		   !Pitch angle scattering according to NUBEAM
+		   sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
+		   CALL RANDOM_NUMBER(zeta)
+		   zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
+		   CALL RANDOM_NUMBER(zrang)
+		   zrang=zrang*pi2
+		   zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
            vll = zeta*speed
 
            !------------------------------------------------------------
@@ -682,7 +692,7 @@ MODULE beams3d_physics_mod
          !     Local variables
          !--------------------------------------------------------------
          LOGICAL          :: ltest
-         INTEGER          :: ier, l, m
+         INTEGER          :: ier, l, m,o
          DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
                              s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
@@ -718,6 +728,19 @@ MODULE beams3d_physics_mod
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
          qf(3) = q(3)
+		 
+         !--------------------------------------------------------------
+         !     Initialize Ionization here
+		 !--------------------------------------------------------------
+		 CALL RANDOM_NUMBER(rand_prob)
+         cum_prob = one
+
+
+         !--------------------------------------------------------------
+         !     Loop around deposition line calculation to allow
+		 !	   multi-pass (currently 3 passes max.)
+		 !--------------------------------------------------------------		 
+		 DO o = 1, 3
 
          !--------------------------------------------------------------
          !     Follow neutral into plasma using subgrid
@@ -756,7 +779,10 @@ MODULE beams3d_physics_mod
                   s_temp = fval(1)
                   IF (s_temp < one) EXIT
                END IF
-               IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN
+               IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN !5*rmax seems arbitrary, could be in relation to q(1) (starting pos.)?
+			   
+			   WRITE(6,*) o, l, s_temp, cum_prob, rand_prob
+			   WRITE(6,*) q, myv_neut
                   t = my_end+dt_local
                   RETURN
                END IF  ! We're outside the grid
@@ -919,8 +945,6 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Calculate Ionization
          !--------------------------------------------------------------
-         CALL RANDOM_NUMBER(rand_prob)
-         cum_prob = one
          dt_local = SQRT(SUM((qe-qs)*(qe-qs)))/((num_depo-1)*q(4))
          tau_inv = EXP(-dt_local*tau_inv)
          DO l = 2, num_depo-1
@@ -954,7 +978,11 @@ MODULE beams3d_physics_mod
             ylast = qf(2)
             zlast = qf(3)
             RETURN
+		 ELSE !If not deposited, move outside plasma (to s>1)
+			qf=qe + myv_neut*0.25/q(4) 
          END IF
+		 
+		 END DO
 
          !--------------------------------------------------------------
          !     Follow neutral to wall or domain (big steps fine)
