@@ -684,7 +684,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Local Parameters
          !--------------------------------------------------------------
-         INTEGER, PARAMETER :: num_depo = 256
+         INTEGER, PARAMETER :: num_depo = 1024
          DOUBLE PRECISION, PARAMETER :: dl = 5D-3
          DOUBLE PRECISION, PARAMETER :: stepsize(3)=(/0.25,0.05,0.01/)
 
@@ -729,8 +729,6 @@ MODULE beams3d_physics_mod
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
          qf(3) = q(3)
-		 rlim=MAX(q(1),rmax)
-		 zlim=MAX((ABS(q(3))),ABS(zmin),ABS(zmax))
          !--------------------------------------------------------------
          !     Initialize Ionization here
 		 !--------------------------------------------------------------
@@ -740,9 +738,9 @@ MODULE beams3d_physics_mod
 
          !--------------------------------------------------------------
          !     Loop around deposition line calculation to allow
-		 !	   multi-pass (currently 3 passes max.)
+		 !	   multi-pass (currently 2 passes max.)
 		 !--------------------------------------------------------------		 
-		 DO o = 1, 3
+		 DO o = 1, 2
 
          !--------------------------------------------------------------
          !     Follow neutral into plasma using subgrid
@@ -783,16 +781,17 @@ MODULE beams3d_physics_mod
                END IF
               ! IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN !5*rmax seems arbitrary, could be in relation to q(1) (starting pos.)?
 			  IF ((q(1) >= rlim) .or. (ABS(q(3)) >= zlim)) THEN			   
-			   WRITE(6,*) o, l, s_temp, cum_prob, rand_prob
-			   WRITE(6,*) q, myv_neut
-                  t = my_end+dt_local
-                  RETURN
-               END IF  ! We're outside the grid
+			    WRITE(6,*) o, phi_temp,s_temp, cum_prob, rand_prob
+			    WRITE(6,*) q, myv_neut
+				t = my_end+dt_local
+				end_state(myline) = 5 ! Debug
+                 EXIT !It can happen that we collided with the wall while getting here
+              END IF  ! We're outside the grid
             END DO
             ! Take a step back
             qf = qf - myv_neut*dt_local
             t  =  t - dt_local
-         END DO
+         END DO 
          qs=qf
 
          !--------------------------------------------------------------
@@ -804,9 +803,15 @@ MODULE beams3d_physics_mod
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
+			   IF (o .eq. 1) THEN !Port loss 
                end_state(myline) = 4
+			   ELSE !Shinethrough if particle went through plasma before
+			   end_state(myline) = 3
+			   END IF
                CALL uncount_wall_hit
                RETURN
+		    ELSEIF (end_state(myline) .eq. 5) THEN
+				RETURN
             END IF
          END IF
 
@@ -981,7 +986,7 @@ MODULE beams3d_physics_mod
             zlast = qf(3)
             RETURN
 		 ELSE !If not deposited, move outside plasma (to s>1)
-			qf=qe + myv_neut*0.25/q(4) 
+			qf=qe 		
          END IF
 		 
 		 END DO
