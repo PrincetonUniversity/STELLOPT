@@ -554,11 +554,11 @@ class PLOT3D():
 			mapper.SetLookupTable(self.lookupTable)
 			mapper.SetScalarRange(scalars.GetRange())
 		elif type(FaceScalars) != type(None):
-			scalars.SetName("FaceValues")
-			polydata.GetCellData().SetScalars(scalars)
+			FaceScalars.SetName("FaceValues")
+			polydata.GetCellData().SetScalars(FaceScalars)
 			if not self.lookupTable: self.lookupTable = self.vtkLUTHelper(color)
 			mapper.SetLookupTable(self.lookupTable)
-			mapper.SetScalarRange(scalars.GetRange())
+			mapper.SetScalarRange(FaceScalars.GetRange())
 			mapper.SetScalarModeToUseCellData()
 		else:
 			self.setActorColor(actor,color)
