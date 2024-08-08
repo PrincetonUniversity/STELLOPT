@@ -729,6 +729,8 @@ MODULE beams3d_physics_mod
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
          qf(3) = q(3)
+		 rlim=MAX(q(1),rmax)
+		 zlim=MAX(ABS(q(3)),ABS(zmin),ABS(zmax))
          !--------------------------------------------------------------
          !     Initialize Ionization here
 		 !--------------------------------------------------------------
@@ -779,10 +781,9 @@ MODULE beams3d_physics_mod
                   s_temp = fval(1)
                   IF (s_temp < one) EXIT
                END IF
-              ! IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN !5*rmax seems arbitrary, could be in relation to q(1) (starting pos.)?
 			  IF ((q(1) >= rlim) .or. (ABS(q(3)) >= zlim)) THEN			   
-			    WRITE(6,*) o, phi_temp,s_temp, cum_prob, rand_prob
-			    WRITE(6,*) q, myv_neut
+			    !WRITE(6,*) o, phi_temp,s_temp, cum_prob, rand_prob
+			    !WRITE(6,*) q, myv_neut
 				t = my_end+dt_local
 				end_state(myline) = 5 ! Debug
                  EXIT !It can happen that we collided with the wall while getting here
