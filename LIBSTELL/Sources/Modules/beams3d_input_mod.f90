@@ -60,7 +60,7 @@
 !                   field period.
 !-----------------------------------------------------------------------
       NAMELIST /beams3d_input/ nr, nphi, nz, rmin, rmax, zmin, zmax, &
-                               phimin, phimax, nparticles_start, &
+                               phimin, phimax, nparticles_start, num_depo,&
                                r_start_in, phi_start_in, z_start_in, &
                                vll_start_in, npoinc, follow_tol, &
                                t_end_in, mu_start_in, charge_in, &
@@ -110,6 +110,7 @@
       phimin =  0.0_rprec
       phimax =  pi2
       nparticles_start = 10
+      num_depo=256
 
       r_start_in    = -1.0
       z_start_in    = -1.0

@@ -333,9 +333,9 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-               !slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-			   !slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
-			   slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+               slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+			      !slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
+			      !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
@@ -387,21 +387,21 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
-           !CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-           !sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
-           !zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
-           !zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
+           CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+           sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
+           zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
+           zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           !zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
-		   !Flip gaussian at boundary to prevent accumulation around pitch=1
-		   !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
-		   !Pitch angle scattering according to NUBEAM
-		   sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
-		   CALL RANDOM_NUMBER(zeta)
-		   zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
-		   CALL RANDOM_NUMBER(zrang)
-		   zrang=zrang*pi2
-		   zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
+           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+           !Flip gaussian at boundary to prevent accumulation around pitch=1
+           !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
+           !Pitch angle scattering according to NUBEAM
+           !sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
+           !CALL RANDOM_NUMBER(zeta)
+           !zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
+           !CALL RANDOM_NUMBER(zrang)
+           !zrang=zrang*pi2
+           !zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
            vll = zeta*speed
 
            !------------------------------------------------------------
@@ -719,9 +719,9 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !Allocate
          ALLOCATE(rlocal(num_depo), plocal(num_depo), zlocal(num_depo),&
-         tilocal(num_depo), telocal(num_depo), nelocal(num_depo),&
-         zefflocal(num_depo),tau_inv(num_depo), energy(num_depo),&
-         sigvii(num_depo), sigvcx(num_depo), sigvei(num_depo))
+            tilocal(num_depo), telocal(num_depo), nelocal(num_depo),&
+            zefflocal(num_depo),tau_inv(num_depo), energy(num_depo),&
+            sigvii(num_depo), sigvcx(num_depo), sigvei(num_depo))
          ALLOCATE(nilocal(NION,num_depo))
 
          ! Energy is needed in keV so 0.5*m*v*v/(ec*1000)
@@ -736,20 +736,20 @@ MODULE beams3d_physics_mod
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
          qf(3) = q(3)
-		 rlim=MAX(q(1),rmax)
-		 zlim=MAX(ABS(q(3)),ABS(zmin),ABS(zmax))
+		   rlim=MAX(q(1),rmax)
+		   zlim=MAX(ABS(q(3)),ABS(zmin),ABS(zmax))
          !--------------------------------------------------------------
          !     Initialize Ionization here
-		 !--------------------------------------------------------------
-		 CALL RANDOM_NUMBER(rand_prob)
+		   !--------------------------------------------------------------
+		   CALL RANDOM_NUMBER(rand_prob)
          cum_prob = one
 
 
          !--------------------------------------------------------------
          !     Loop around deposition line calculation to allow
-		 !	   multi-pass (currently 2 passes max.)
-		 !--------------------------------------------------------------		 
-		 DO o = 1, 2
+         !	   multi-pass (currently 2 passes max.)
+         !--------------------------------------------------------------		 
+         DO o = 1, 2
 
          !--------------------------------------------------------------
          !     Follow neutral into plasma using subgrid
@@ -788,12 +788,12 @@ MODULE beams3d_physics_mod
                   s_temp = fval(1)
                   IF (s_temp < one) EXIT
                END IF
-			  IF ((q(1) >= rlim) .or. (ABS(q(3)) >= zlim)) THEN			   
-			    !WRITE(6,*) o, phi_temp,s_temp, cum_prob, rand_prob
-			    !WRITE(6,*) q, myv_neut
-				t = my_end+dt_local
-				end_state(myline) = 5 ! Debug
-                 EXIT !It can happen that we collided with the wall while getting here
+               IF ((q(1) >= rlim) .or. (ABS(q(3)) >= zlim)) THEN			   
+                  !WRITE(6,*) o, phi_temp,s_temp, cum_prob, rand_prob
+                  !WRITE(6,*) q, myv_neut
+                  t = my_end+dt_local
+                  end_state(myline) = 5 ! Debug
+                  EXIT !It can happen that we collided with the wall while getting here
               END IF  ! We're outside the grid
             END DO
             ! Take a step back
@@ -818,15 +818,15 @@ MODULE beams3d_physics_mod
 			   END IF
                CALL uncount_wall_hit
                DEALLOCATE(rlocal, plocal, zlocal,&
-               tilocal, telocal, nelocal,&
-               zefflocal,tau_inv, energy,&
-               sigvii, sigvcx, sigvei, nilocal)               
+                  tilocal, telocal, nelocal,&
+                  zefflocal,tau_inv, energy,&
+                  sigvii, sigvcx, sigvei, nilocal)               
                RETURN
 		    ELSEIF (end_state(myline) .eq. 5) THEN
             DEALLOCATE(rlocal, plocal, zlocal,&
-            tilocal, telocal, nelocal,&
-            zefflocal,tau_inv, energy,&
-            sigvii, sigvcx, sigvei, nilocal)            
+               tilocal, telocal, nelocal,&
+               zefflocal,tau_inv, energy,&
+               sigvii, sigvcx, sigvei, nilocal)            
 				RETURN
             END IF
          END IF
@@ -984,9 +984,9 @@ MODULE beams3d_physics_mod
                  (zlocal(l) <= zmin) .or. (zlocal(l) >= zmax) ) THEN 
                t = my_end + dt_local
                DEALLOCATE(rlocal, plocal, zlocal,&
-               tilocal, telocal, nelocal,&
-               zefflocal,tau_inv, energy,&
-               sigvii, sigvcx, sigvei, nilocal)               
+                  tilocal, telocal, nelocal,&
+                  zefflocal,tau_inv, energy,&
+                  sigvii, sigvcx, sigvei, nilocal)               
                RETURN
             END IF
             i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
@@ -1005,9 +1005,9 @@ MODULE beams3d_physics_mod
             ylast = qf(2)
             zlast = qf(3)
             DEALLOCATE(rlocal, plocal, zlocal,&
-            tilocal, telocal, nelocal,&
-            zefflocal,tau_inv, energy,&
-            sigvii, sigvcx, sigvei, nilocal)            
+               tilocal, telocal, nelocal,&
+               zefflocal,tau_inv, energy,&
+               sigvii, sigvcx, sigvei, nilocal)            
             RETURN
 		 ELSE !If not deposited, move outside plasma (to s>1)
 			qf=qe 		
@@ -1036,9 +1036,9 @@ MODULE beams3d_physics_mod
                t = my_end+dt_local
                CALL uncount_wall_hit
                DEALLOCATE(rlocal, plocal, zlocal,&
-               tilocal, telocal, nelocal,&
-               zefflocal,tau_inv, energy,&
-               sigvii, sigvcx, sigvei, nilocal)               
+                  tilocal, telocal, nelocal,&
+                  zefflocal,tau_inv, energy,&
+                  sigvii, sigvcx, sigvei, nilocal)               
                RETURN
             END IF
             !xlast = x0; ylast=y0; zlast=z0
@@ -1046,9 +1046,19 @@ MODULE beams3d_physics_mod
             q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
             q(2) = ATAN2(qf(2),qf(1))
             q(3) = qf(3)
-            IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN; t = my_end+dt_local; RETURN; END IF  ! We're outside the grid
+            IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN
+               t = my_end+dt_local
+               DEALLOCATE(rlocal, plocal, zlocal,&
+                  tilocal, telocal, nelocal,&
+                  zefflocal,tau_inv, energy,&
+                  sigvii, sigvcx, sigvei, nilocal)                   
+               RETURN
+            END IF  ! We're outside the grid
          END DO
-
+         DEALLOCATE(rlocal, plocal, zlocal,&
+            tilocal, telocal, nelocal,&
+            zefflocal,tau_inv, energy,&
+            sigvii, sigvcx, sigvei, nilocal)    
          RETURN
       END SUBROUTINE beams3d_follow_neut
 
