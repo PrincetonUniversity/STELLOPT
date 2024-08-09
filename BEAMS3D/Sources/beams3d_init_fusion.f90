@@ -12,7 +12,7 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
       USE beams3d_grid, ONLY: nr, nphi, nz, hr, hp, hz, raxis, zaxis, &
-                              phiaxis, S4D, U4D, dexionHe3, &
+                              phiaxis, RHO4D, U4D, dexionHe3, &
                               NEUTRONS_ARR, win_NEUTRONS, &
                               E_NEUTRONS, win_E_NEUTRONS
       USE beams3d_lines, ONLY: nparticles, partvmax
@@ -335,9 +335,9 @@
                ! Calc u = [0,2*pi]
                utemp = Z1_rand*pi2
                ! Calc sval =[0,1]
-               rtemp = ABS(X1_rand*X1_rand-roffset)
+               rtemp = ABS(X1_rand-roffset)
                ! Now we need to find the proper point
-               f2d = ((U4D(1,:,j,:)-utemp)**2)*((S4D(1,:,j,:)-rtemp)**2)
+               f2d = ((U4D(1,:,j,:)-utemp)**2)*((RHO4D(1,:,j,:)-rtemp)**2)
                minik = MINLOC(f2d)
                i = MIN(MAX(minik(1),2),nr1); k = MIN(MAX(minik(2),2),nz1)
                IF (l3d(i,j,k)) EXIT

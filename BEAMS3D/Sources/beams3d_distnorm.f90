@@ -12,7 +12,7 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime, ONLY: lfidasim, lfidasim_cyl, nbeams, pi2, &
                               EZSPLINE_ERR, MPI_BARRIER_ERR
-      USE beams3d_grid, ONLY: raxis, phiaxis, zaxis, X4D, Y4D, S4D, &
+      USE beams3d_grid, ONLY: raxis, phiaxis, zaxis, &
                               nr, nphi, nz
       USE beams3d_lines, ONLY: ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof4, ns_prof5, dist5d_prof, &

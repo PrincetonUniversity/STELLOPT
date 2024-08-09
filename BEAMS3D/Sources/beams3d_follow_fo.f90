@@ -19,11 +19,8 @@ SUBROUTINE beams3d_follow_fo
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime
     USE beams3d_lines
-    USE beams3d_grid, ONLY: tmin, tmax, delta_t, BR_spl, BZ_spl, BPHI_spl, &
-                            MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
-                            TE_spl, TI_spl, wall_load, wall_shine, &
-                            plasma_mass, plasma_Zmean, therm_factor, &
-                            rho_fullorbit
+    USE beams3d_grid, ONLY: plasma_mass, plasma_Zmean, &
+                            rho_fullorbit, rho_help, E_kick, freq_kick
     USE mpi_params ! MPI
     USE beams3d_write_par
     USE beams3d_physics_mod, ONLY: beams3d_gc2fo, beams3d_calc_dt

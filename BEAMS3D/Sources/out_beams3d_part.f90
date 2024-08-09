@@ -45,7 +45,8 @@ SUBROUTINE out_beams3d_part(t, q)
     INTEGER             :: ier, d1, d2, d3, d4, d5
     DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw,vperp, &
                                 br_temp, bphi_temp, bz_temp, &
-                                v_total, binv, vll_temp
+                                v_total, binv, vll_temp, &
+                                rho0
     DOUBLE PRECISION    :: q2(6),qdot(6), q4(4)
     ! For splines
     INTEGER :: i,j,k,l
@@ -65,7 +66,7 @@ SUBROUTINE out_beams3d_part(t, q)
     neut_lines(mytdex,myline)    = lneut
     x0 = MOD(q(2), phimax)
     IF (x0 < 0) x0 = x0 + phimax
-    y0 = 0  
+    rho_help = 0  
     ! If we're out of domain then don't worry about collisions
     IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
         (x0 >= phimin-eps2) .and. (x0 <= phimax+eps2) .and. &
@@ -78,18 +79,16 @@ SUBROUTINE out_beams3d_part(t, q)
        zparam = (q(3) - zaxis(k)) * hzi(k)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       X4D(1,1,1,1),nr,nphi,nz)
+                       XRHO4D(1,1,1,1),nr,nphi,nz)
        
        CALL R8HERM3FCN(ict,1,1,fval2,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       Y4D(1,1,1,1),nr,nphi,nz)
-
-       y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
-       !z0 = fval(1)
+                       YRHO4D(1,1,1,1),nr,nphi,nz)
+       y0 = fval(1)*fval(1)+fval2(1)*fval2(1) ! s = rho*rho
+       rho_help = SQRT(y0)
        z0 = ATAN2(fval2(1),fval(1))
        S_lines(mytdex, myline) = y0 
        U_lines(mytdex, myline) = z0
-       
        ! Now We get Br, Bphi, Bz to calc B (and vll)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -122,7 +121,7 @@ SUBROUTINE out_beams3d_part(t, q)
        ! Calc dist func bins
        x0    = MOD(q(2),pi2)
        IF (x0 < 0) x0 = x0 + pi2
-       d1 = MAX(MIN(CEILING(SQRT(y0)*h1_prof     ), ns_prof1), 1) ! Rho Bin
+       d1 = MAX(MIN(CEILING(rho_help*h1_prof     ), ns_prof1), 1) ! Rho Bin
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
        d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
        d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*vll_temp), ns_prof4), 1) ! vll
@@ -131,17 +130,15 @@ SUBROUTINE out_beams3d_part(t, q)
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
-          IF (lfidasim_cyl) THEN
-             !x0 = MOD(q(2), phimax_fida)
-             !IF (x0 < 0) x0 = x0 + phimax_fida
-            d1 = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
-            d2 = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
-            d3 = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
-            y0 = (q(4)**2+vperp**2)
-            d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h),1),nenergy_fida)
-            d5 = MIN(MAX(CEILING((q(4)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
-            dist5d_fida(d1,d3,d2,d4,d5) = dist5d_fida(d1,d3,d2,d4,d5) + xw
-          END IF
+       IF (lfidasim_cyl) THEN
+         d1 = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
+         d2 = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
+         d3 = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
+         y0 = (q(4)**2+vperp**2)
+         d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h),1),nenergy_fida)
+         d5 = MIN(MAX(CEILING((q(4)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
+         dist5d_fida(d1,d3,d2,d4,d5) = dist5d_fida(d1,d3,d2,d4,d5) + xw
+       END IF
        IF (lcollision) CALL beams3d_physics_fo(t,q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
@@ -153,7 +150,7 @@ SUBROUTINE out_beams3d_part(t, q)
        v_total = SUM(q(4:6)*q(4:6))
        vll_temp = SQRT(v_total) ! Vll=Vtotal
     END IF
-    IF (lvessel .and. mytdex > 0 .and. y0 > 0.5) THEN
+    IF (lvessel .and. mytdex > 0 .and. rho_help > 0.5) THEN
        lhit = .false.
        x0    = xlast
        y0    = ylast

@@ -62,14 +62,10 @@ SUBROUTINE out_beams3d_gc(t, q)
     neut_lines(mytdex,myline)     = lneut
     x0 = MOD(q(2), phimax)
     IF (x0 < 0) x0 = x0 + phimax
-    !CALL EZspline_isInDomain(S_spl,q(1),x0,q(3),ier)
     rho_help = 0  ! If we're out of domain then don't worry about collisions
-    !IF (ier==0) THEN
     IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
         (x0 >= phimin-eps2) .and. (x0 <= phimax+eps2) .and. &
         (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
-
-
        i = MIN(MAX(COUNT(raxis < q(1)),1),nr-1)
        j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
        k = MIN(MAX(COUNT(zaxis < q(3)),1),nz-1)
@@ -78,12 +74,12 @@ SUBROUTINE out_beams3d_gc(t, q)
        zparam = (q(3) - zaxis(k)) * hzi(k)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       X4D(1,1,1,1),nr,nphi,nz)
+                       XRHO4D(1,1,1,1),nr,nphi,nz)
        CALL R8HERM3FCN(ict,1,1,fval2,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       Y4D(1,1,1,1),nr,nphi,nz)
-       y0 = SQRT(fval(1)*fval(1) + fval2(1) * fval2(1))
-       rho_help = sqrt(y0)
+                       YRHO4D(1,1,1,1),nr,nphi,nz)
+       y0 = fval(1)*fval(1)+fval2(1)*fval2(1) ! s = rho*rho
+       rho_help = SQRT(y0)
        z0 = ATAN2(fval2(1),fval(1))
        S_lines(mytdex, myline) = y0 
        U_lines(mytdex, myline) = z0
