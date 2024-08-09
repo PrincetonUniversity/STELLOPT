@@ -36,7 +36,6 @@ MODULE beams3d_physics_mod
                               hr, hp, hz, hri, hpi, hzi, &
                               B_kick_min, B_kick_max, E_kick, freq_kick, &
                               plasma_mass, NI5D, BR4D, BZ4D, BPHI4D,plasma_Zmean
-      USE beams3d_globals, ONLY: num_depo
       USE EZspline_obj
       USE EZspline
       USE adas_mod_parallel
@@ -685,6 +684,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Local Parameters
          !--------------------------------------------------------------
+         INTEGER, PARAMETER :: num_depo = 256
          DOUBLE PRECISION, PARAMETER :: dl = 5D-3
          DOUBLE PRECISION, PARAMETER :: stepsize(3)=(/0.25,0.05,0.01/)
 
@@ -697,12 +697,12 @@ MODULE beams3d_physics_mod
                            s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp,&
 							      rlim, zlim
          DOUBLE PRECISION ::qf(3),qs(3),qe(3)
-         DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: rlocal, plocal, zlocal,&
-                           tilocal, telocal, nelocal,&
-                           zefflocal,&
-                           tau_inv, energy,&
-                           sigvii, sigvcx, sigvei
-         DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: nilocal
+         DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
+         DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
+         DOUBLE PRECISION :: zefflocal(num_depo)
+         DOUBLE PRECISION :: nilocal(NION,num_depo)
+         DOUBLE PRECISION :: tau_inv(num_depo), energy(num_depo)
+         DOUBLE PRECISION :: sigvii(num_depo), sigvcx(num_depo), sigvei(num_depo)
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -717,12 +717,6 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
-         !Allocate
-         ALLOCATE(rlocal(num_depo), plocal(num_depo), zlocal(num_depo),&
-            tilocal(num_depo), telocal(num_depo), nelocal(num_depo),&
-            zefflocal(num_depo),tau_inv(num_depo), energy(num_depo),&
-            sigvii(num_depo), sigvcx(num_depo), sigvei(num_depo))
-         ALLOCATE(nilocal(NION,num_depo))
 
          ! Energy is needed in keV so 0.5*m*v*v/(ec*1000)
 
@@ -816,17 +810,9 @@ MODULE beams3d_physics_mod
 			   ELSE !Shinethrough if particle went through plasma before
 			   end_state(myline) = 3
 			   END IF
-               CALL uncount_wall_hit
-               DEALLOCATE(rlocal, plocal, zlocal,&
-                  tilocal, telocal, nelocal,&
-                  zefflocal,tau_inv, energy,&
-                  sigvii, sigvcx, sigvei, nilocal)               
+               CALL uncount_wall_hit              
                RETURN
-		    ELSEIF (end_state(myline) .eq. 5) THEN
-            DEALLOCATE(rlocal, plocal, zlocal,&
-               tilocal, telocal, nelocal,&
-               zefflocal,tau_inv, energy,&
-               sigvii, sigvcx, sigvei, nilocal)            
+		    ELSEIF (end_state(myline) .eq. 5) THEN         
 				RETURN
             END IF
          END IF
@@ -982,11 +968,7 @@ MODULE beams3d_physics_mod
          IF (l < num_depo-1) THEN
             IF ( (rlocal(l) <= rmin) .or. (rlocal(l) >= rmax) .or. &
                  (zlocal(l) <= zmin) .or. (zlocal(l) >= zmax) ) THEN 
-               t = my_end + dt_local
-               DEALLOCATE(rlocal, plocal, zlocal,&
-                  tilocal, telocal, nelocal,&
-                  zefflocal,tau_inv, energy,&
-                  sigvii, sigvcx, sigvei, nilocal)               
+               t = my_end + dt_local             
                RETURN
             END IF
             i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
@@ -1003,11 +985,7 @@ MODULE beams3d_physics_mod
             lneut=.false.
             xlast = qf(1)
             ylast = qf(2)
-            zlast = qf(3)
-            DEALLOCATE(rlocal, plocal, zlocal,&
-               tilocal, telocal, nelocal,&
-               zefflocal,tau_inv, energy,&
-               sigvii, sigvcx, sigvei, nilocal)            
+            zlast = qf(3)         
             RETURN
 		 ELSE !If not deposited, move outside plasma (to s>1)
 			qf=qe 		
@@ -1034,11 +1012,7 @@ MODULE beams3d_physics_mod
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
                t = my_end+dt_local
-               CALL uncount_wall_hit
-               DEALLOCATE(rlocal, plocal, zlocal,&
-                  tilocal, telocal, nelocal,&
-                  zefflocal,tau_inv, energy,&
-                  sigvii, sigvcx, sigvei, nilocal)               
+               CALL uncount_wall_hit             
                RETURN
             END IF
             !xlast = x0; ylast=y0; zlast=z0
@@ -1047,18 +1021,10 @@ MODULE beams3d_physics_mod
             q(2) = ATAN2(qf(2),qf(1))
             q(3) = qf(3)
             IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN
-               t = my_end+dt_local
-               DEALLOCATE(rlocal, plocal, zlocal,&
-                  tilocal, telocal, nelocal,&
-                  zefflocal,tau_inv, energy,&
-                  sigvii, sigvcx, sigvei, nilocal)                   
+               t = my_end+dt_local                  
                RETURN
             END IF  ! We're outside the grid
-         END DO
-         DEALLOCATE(rlocal, plocal, zlocal,&
-            tilocal, telocal, nelocal,&
-            zefflocal,tau_inv, energy,&
-            sigvii, sigvcx, sigvei, nilocal)    
+         END DO    
          RETURN
       END SUBROUTINE beams3d_follow_neut
 

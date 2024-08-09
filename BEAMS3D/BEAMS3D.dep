@@ -276,7 +276,6 @@ beams3d_physics_mod.o: \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
       ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
-      ../../LIBSTELL/$(LOCTYPE)/beams3d_globals.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_grid.o

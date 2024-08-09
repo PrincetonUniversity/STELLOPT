@@ -23,7 +23,7 @@
       LOGICAL :: lverb, lcollision, lrestart_particles, ldebug, &
                  lfusion, lfusion_alpha, lfusion_He3, lfusion_proton, &
                  lfusion_tritium, lkick, lgcsim, lbeam, lbbnbi
-      INTEGER :: npoinc, nbeams, nparticles_start, num_depo,duplicate_factor
+      INTEGER :: npoinc, nbeams, nparticles_start,duplicate_factor
       INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
       REAL(rprec) :: follow_tol, pi2, ne_scale, te_scale, ti_scale, &
                      zeff_scale, fusion_scale, lendt_m, te_col_min, rho_max_dist
