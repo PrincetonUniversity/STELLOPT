@@ -20,7 +20,7 @@ MODULE fidasim_input_mod
       TE, TI, NE, npot, nte, nti, &
       POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
       BR4D, BPHI4D, BZ4D, &
-      hr, hp, hz, hri, hpi, hzi, S4D, U4D, &
+      hr, hp, hz, hri, hpi, hzi, U4D, &
       rmin, rmax,  phimin, phimax, &
       rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
       raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &

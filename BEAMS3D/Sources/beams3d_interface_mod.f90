@@ -76,10 +76,12 @@ CONTAINS
    IMPLICIT NONE
    ! Nullify pointers
    NULLIFY(raxis,phiaxis,zaxis,hr,hp,hz,hri,hpi,hzi,B_R,B_PHI,B_Z, &
-            MODB,TE,NE,TI,ZEFF_ARR,POT_ARR,S_ARR,U_ARR,X_ARR,Y_ARR,NI, &
+            MODB,TE,NE,TI,ZEFF_ARR,POT_ARR,S_ARR,U_ARR,NI, &
+            RHO_ARR,XRHO_ARR,YRHO_ARR, &
             raxis_fida,zaxis_fida,phiaxis_fida,energy_fida,pitch_fida, &
             req_axis,zeq_axis,TE4D,NE4D,TI4D,ZEFF4D,NI5D,BR4D,BPHI4D, &
-            BZ4D,MODB4D,S4D,U4D,X4D,Y4D,POT4D,dist5d_prof,dist5d_fida, &
+            BZ4D,MODB4D,U4D,POT4D,dist5d_prof,dist5d_fida, &
+            RHO4D,XRHO4D,YRHO4D, &
             BEAM_DENSITY,wall_load,wall_shine, ndot_prof, epower_prof, &
             ipower_prof,j_prof,dense_prof)
    END SUBROUTINE
