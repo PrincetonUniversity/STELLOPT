@@ -12,7 +12,7 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
       USE beams3d_grid, ONLY: nr, nphi, nz, hr, hp, hz, raxis, zaxis, &
-                              phiaxis, S4D, U4D, dexionHe3, &
+                              phiaxis, RHO4D, U4D, dexionHe3, &
                               NEUTRONS_ARR, win_NEUTRONS, &
                               E_NEUTRONS, win_E_NEUTRONS
       USE beams3d_lines, ONLY: nparticles, partvmax
@@ -35,7 +35,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL :: lfusion_DHe3
-      INTEGER :: s,i,j,k,k1,k2, nr1, nphi1, nz1, l
+      INTEGER :: s,i,j,k,k1,k2, nr1, nphi1, nz1, l, nfp
       INTEGER :: minik(2)
       INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: n3d
       REAL(rprec) :: maxrateDT, maxrateDDT, maxrateDDHe, maxrateDHe3, &
@@ -92,6 +92,7 @@
       nr1   = nr - 1
       nphi1 = nphi - 1
       nz1   = nz - 1
+      nfp = NINT(pi2/phiaxis(nphi))
      
       ! We need to first define the reaction rate over the grid
       CALL mpialloc(l3d,      nr1, nphi1, nz1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_l3d)
@@ -196,10 +197,26 @@
       ! Output reaction rate info
       IF (myworkid == master) THEN
          IF (lverb) THEN
-            IF (lfusion_alpha) WRITE(6, '(A,ES11.4,A)') '      max D + T -> He4   rate: ', maxrateDT,' [part/(m^3 s)]'
-            IF (lfusion_tritium .or. lfusion_proton) WRITE(6, '(A,ES11.4,A)') '      max D + D -> T + p rate: ', maxrateDDT,' [part/(m^3 s)]'
-            IF (lfusion_He3) WRITE(6, '(A,ES11.4,A)')  '      max D + D -> He3   rate: ', maxrateDDHe,' [part/(m^3 s)]'
-            IF (lfusion_DHe3) WRITE(6, '(A,ES11.4,A)') '      max D +He3-> He4 + p   rate: ', maxrateDHe3,' [part/(m^3 s)]'
+            IF (lfusion_alpha) THEN
+               WRITE(6, '(A,ES11.4,A)') '      max D + T -> He4   rate: ', maxrateDT,' [part/(m^3 s)]'
+               WRITE(6, '(A,F7.2,A)')   '          He4(3.52 MeV) Power: ', SUM(rateDT)*(3.52)*e_charge*nfp,' [MW]'
+               WRITE(6, '(A,F7.2,A)')   '           n(14.06 MeV) Power: ', SUM(rateDT)*(14.06)*e_charge*nfp,' [MW]'
+            END IF
+            IF (lfusion_tritium .or. lfusion_proton) THEN
+               WRITE(6, '(A,ES11.4,A)') '      max D + D -> T + p rate: ', maxrateDDT,' [part/(m^3 s)]'
+               WRITE(6, '(A,F7.2,A)')   '            T(1.01 MeV) Power: ', SUM(rateDDT)*(1.01)*e_charge*nfp,' [MW]'
+               WRITE(6, '(A,F7.2,A)')   '            p(3.02 MeV) Power: ', SUM(rateDDT)*(3.02)*e_charge*nfp,' [MW]'
+            END IF
+            IF (lfusion_He3) THEN
+               WRITE(6, '(A,ES11.4,A)') '      max D + D -> He3   rate: ', maxrateDDHe,' [part/(m^3 s)]'
+               WRITE(6, '(A,F7.2,A)')   '          He3(0.82 MeV) Power: ', SUM(rateDDHe)*(0.82)*e_charge*nfp,' [MW]'
+               WRITE(6, '(A,F7.2,A)')   '            n(2.45 MeV) Power: ', SUM(rateDDHe)*(2.45)*e_charge*nfp,' [MW]'
+            END IF
+            IF (lfusion_DHe3) THEN
+               WRITE(6, '(A,ES11.4,A)') '      max D + He3 -> He4 + p   rate: ', maxrateDHe3,' [part/(m^3 s)]'
+               WRITE(6, '(A,F7.2,A)')   '                 He4(3.6 MeV) Power: ', SUM(rateDHe3)*(3.60)*e_charge*nfp,' [MW]'
+               WRITE(6, '(A,F7.2,A)')   '                  p(14.7 MeV) Power: ', SUM(rateDHe3)*(14.7)*e_charge*nfp,' [MW]'
+            END IF
          END IF
       END IF
 
@@ -318,9 +335,9 @@
                ! Calc u = [0,2*pi]
                utemp = Z1_rand*pi2
                ! Calc sval =[0,1]
-               rtemp = ABS(X1_rand*X1_rand-roffset)
+               rtemp = ABS(X1_rand-roffset)
                ! Now we need to find the proper point
-               f2d = ((U4D(1,:,j,:)-utemp)**2)*((S4D(1,:,j,:)-rtemp)**2)
+               f2d = ((U4D(1,:,j,:)-utemp)**2)*((RHO4D(1,:,j,:)-rtemp)**2)
                minik = MINLOC(f2d)
                i = MIN(MAX(minik(1),2),nr1); k = MIN(MAX(minik(2),2),nz1)
                IF (l3d(i,j,k)) EXIT
