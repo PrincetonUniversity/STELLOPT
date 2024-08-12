@@ -130,7 +130,7 @@ MODULE beams3d_physics_mod
       ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
          slow_par(1) = fact_crit*SQRT(te_in)*(coulomb_logi/coulomb_loge)**(1.0/3.0) !vcrit, the coulomb ratio is from Weiland (2018) eq.11
          slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here, tau_spit
-         slow_par(3) =zeff_in*fact_pa
+         slow_par(3) =Zeff_in*fact_pa
          RETURN
       END FUNCTION coll_op_nrl19_ie
 
@@ -241,7 +241,8 @@ MODULE beams3d_physics_mod
                           rho_temp, &
                           vc3_tauinv, vbeta, zeff_temp,&
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
-                          sm,omega2,vrel2,bmax,bmincl,bminqu,bmin
+                          sm,omega2,vrel2,bmax,bmincl,bminqu,bmin,&
+						  zdelth,zrang
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          DOUBLE PRECISION :: slow_par(3), ni_temp(NION)
          ! For splines
@@ -334,8 +335,8 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
                slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-			   !slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
-			   !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+			      !slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
+			      !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
@@ -393,6 +394,15 @@ MODULE beams3d_physics_mod
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
            zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+           !Flip gaussian at boundary to prevent accumulation around pitch=1
+           !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
+           !Pitch angle scattering according to NUBEAM
+           !sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
+           !CALL RANDOM_NUMBER(zeta)
+           !zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
+           !CALL RANDOM_NUMBER(zrang)
+           !zrang=zrang*pi2
+           !zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
            vll = zeta*speed
 
            !------------------------------------------------------------
@@ -685,10 +695,10 @@ MODULE beams3d_physics_mod
          !     Local variables
          !--------------------------------------------------------------
          LOGICAL          :: ltest
-         INTEGER          :: ier, l, m
+         INTEGER          :: ier, l, m,o
          DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
                              s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp, &
-                             rho_temp
+                             rho_temp, rlim, zlim
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
          DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
@@ -710,6 +720,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
+
          ! Energy is needed in keV so 0.5*m*v*v/(ec*1000)
 
          ! This is the one that works for ADAS [kJ] E=0.5*m*v^2/1000
@@ -722,6 +733,20 @@ MODULE beams3d_physics_mod
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
          qf(3) = q(3)
+		   rlim=MAX(q(1),rmax)
+		   zlim=MAX(ABS(q(3)),ABS(zmin),ABS(zmax))
+         !--------------------------------------------------------------
+         !     Initialize Ionization here
+		   !--------------------------------------------------------------
+		   CALL RANDOM_NUMBER(rand_prob)
+         cum_prob = one
+
+
+         !--------------------------------------------------------------
+         !     Loop around deposition line calculation to allow
+         !	   multi-pass (currently 2 passes max.)
+         !--------------------------------------------------------------		 
+         DO o = 1, 2
 
          !--------------------------------------------------------------
          !     Follow neutral into plasma using subgrid
@@ -757,15 +782,18 @@ MODULE beams3d_physics_mod
                   rho_temp = fval(1)
                   IF (rho_temp < one) EXIT
                END IF
-               IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN
+               IF ((q(1) >= rlim) .or. (ABS(q(3)) >= zlim)) THEN			   
+                  !WRITE(6,*) o, phi_temp,s_temp, cum_prob, rand_prob
+                  !WRITE(6,*) q, myv_neut
                   t = my_end+dt_local
-                  RETURN
-               END IF  ! We're outside the grid
+                  end_state(myline) = 5 ! Debug
+                  EXIT !It can happen that we collided with the wall while getting here
+              END IF  ! We're outside the grid
             END DO
             ! Take a step back
             qf = qf - myv_neut*dt_local
             t  =  t - dt_local
-         END DO
+         END DO 
          qs=qf
 
          !--------------------------------------------------------------
@@ -777,9 +805,15 @@ MODULE beams3d_physics_mod
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
+			   IF (o .eq. 1) THEN !Port loss 
                end_state(myline) = 4
-               CALL uncount_wall_hit
+			   ELSE !Shinethrough if particle went through plasma before
+			   end_state(myline) = 3
+			   END IF
+               CALL uncount_wall_hit              
                RETURN
+		    ELSEIF (end_state(myline) .eq. 5) THEN         
+				RETURN
             END IF
          END IF
 
@@ -920,8 +954,6 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Calculate Ionization
          !--------------------------------------------------------------
-         CALL RANDOM_NUMBER(rand_prob)
-         cum_prob = one
          dt_local = SQRT(SUM((qe-qs)*(qe-qs)))/((num_depo-1)*q(4))
          tau_inv = EXP(-dt_local*tau_inv)
          DO l = 2, num_depo-1
@@ -936,7 +968,7 @@ MODULE beams3d_physics_mod
          IF (l < num_depo-1) THEN
             IF ( (rlocal(l) <= rmin) .or. (rlocal(l) >= rmax) .or. &
                  (zlocal(l) <= zmin) .or. (zlocal(l) >= zmax) ) THEN 
-               t = my_end + dt_local
+               t = my_end + dt_local             
                RETURN
             END IF
             i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
@@ -952,9 +984,13 @@ MODULE beams3d_physics_mod
             lneut=.false.
             xlast = qf(1)
             ylast = qf(2)
-            zlast = qf(3)
+            zlast = qf(3)         
             RETURN
+		 ELSE !If not deposited, move outside plasma (to s>1)
+			qf=qe 		
          END IF
+		 
+		 END DO
 
          !--------------------------------------------------------------
          !     Follow neutral to wall or domain (big steps fine)
@@ -975,7 +1011,7 @@ MODULE beams3d_physics_mod
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
                t = my_end+dt_local
-               CALL uncount_wall_hit
+               CALL uncount_wall_hit             
                RETURN
             END IF
             !xlast = x0; ylast=y0; zlast=z0
@@ -983,9 +1019,11 @@ MODULE beams3d_physics_mod
             q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
             q(2) = ATAN2(qf(2),qf(1))
             q(3) = qf(3)
-            IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN; t = my_end+dt_local; RETURN; END IF  ! We're outside the grid
-         END DO
-
+            IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN
+               t = my_end+dt_local                  
+               RETURN
+            END IF  ! We're outside the grid
+         END DO    
          RETURN
       END SUBROUTINE beams3d_follow_neut
 
