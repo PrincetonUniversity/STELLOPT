@@ -255,6 +255,8 @@ c
 c----------------------------------------------------------------------------
 c   This subroutine calculates the Pfirsh-Schlueter particle and heat
 c       fluxes.  These are returned in vectors arranged as [electron, I1, I2, ....]
+c   The Pfirsh-Schlueter particle flux is the one in 
+c        Eq. (39) of Sugama and Nishimura PoP 15, 042502 2008
 c   JL 7/2009
 c----------------------------------------------------------------------------
 c
