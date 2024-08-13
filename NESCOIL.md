@@ -182,4 +182,11 @@ that $$v$$ is define over one field period.
 
 ### Tutorials
 
-Put links to tutorial pages here.
+[NCSX NESCOIL Example](NESCOIL NCSX Example.md)
+[Solovev NESCOIL Example](NESCOIL Solovev Example.md)
+
+------------------------------------------------------------------------
+
+### References
+- [Merkel, P., Solution of stellarator boundary value problems with external currents, Nucl. Fusion 27 5 (1987) 867.](https://iopscience.iop.org/article/10.1088/0029-5515/27/5/018)
+- [Landreman, M., Boozer, A.H., Efficient magnetic fields for supporting toroidal plasmas, Phys. Plasmas 23 3 (2016) 032506.](http://aip.scitation.org/doi/10.1063/1.4943201)
