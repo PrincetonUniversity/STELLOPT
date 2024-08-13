@@ -79,6 +79,9 @@ c    returns them as the matrix L(species1,species2) where
 c    species1,2=[electrons, ion1, ion2, ...] and each L(s1,s2) is a 4x4
 c    matrix of friction coefficients: [ls1s2_11, -ls1s2_12; -ls1s2_21, -ls1s2_22].
 c     The total matrix lmat is thus num_species*2 square.
+c
+c    The clasical friction coefficients are defined in Eqs. (4.4) and (4.11-17)
+c      of HIRSHMAN and D.J. SIGMAR (1981) Nucl. Fusion 21 1079
 c   JL 7/2009
 c----------------------------------------------------------------------------
 c
