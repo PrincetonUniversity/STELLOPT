@@ -113,6 +113,7 @@ components.
 ### Tutorials
 
 [NCSX BNORM Example](BNORM NCSX Example.md)
+[Solovev BNORM Example](BNORM Solovev Example.md)
 
 ------------------------------------------------------------------------
 
