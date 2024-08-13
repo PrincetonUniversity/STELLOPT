@@ -112,9 +112,7 @@ components.
 
 ### Tutorials
 
-After running VMEC, simply call the code with the VMEC 'wout' file as
-it's input parameter as explained above. This should produce the
-'bnorm' and 'nescin' files.
+[NCSX BNORM Example](BNORM NCSX Example.md)
 
 ------------------------------------------------------------------------
 
