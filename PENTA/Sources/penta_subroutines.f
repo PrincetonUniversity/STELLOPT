@@ -196,6 +196,10 @@ c----------------------------------------------------------------------------
 c   This subroutine calculates the parallel, poloidal and toroidal (in 
 c     Boozer coordinates) flows.  These are returned in vectors arranged
 c     as [electron, I1, I2, ....]
+c    The terms B_uprl and B_qprl are computed using Eq. (35) of 
+c     Sugama & Nishimura 2022; take the last two rows of the system
+c     and invert it to solve for B_uprl and B_qprl as a function of 
+c     the bn fluxes
 c   JL 7/2009
 c----------------------------------------------------------------------------
 c
