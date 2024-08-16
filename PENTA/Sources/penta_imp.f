@@ -336,6 +336,9 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         Er_test_vals(ie)=Er_test
       
         !Form thermodynamic force vector (Xvec)
+	! Xvec = [X1_e, X2_e, X1_i1, X2_i1, X1_i2, X2_i2, ..., XE]
+ 	! where i1, i2, ... are the different ion species
+  	! XE = <BE_parallel>/sqrt(Bsq)
         call form_Xvec(Er_test,Z_ion,B_Eprl,num_ion_species,Xvec)
 
         !define thermal coefficients (L1,L2,L3,M1...)
