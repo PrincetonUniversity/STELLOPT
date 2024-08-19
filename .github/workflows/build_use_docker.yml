@@ -3,9 +3,9 @@ on: [push, pull_request]
 
 jobs:
   build:
-#    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 #    container: zhucaoxiang/stellopt:compile
-    runs-on: debian-latest
+#    runs-on: debian-latest
     container: lazerson/stellopt-compile:latest
     env:
       MACHINE: debian
