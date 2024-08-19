@@ -1,4 +1,4 @@
-# Shamelessly stolen from ASCOT4
+# Shamelessly adopted from ASCOT4
 MACHINE ?= $(shell uname -n | \
 	awk '/dion-ubuntu/{print "ubuntu"}\
 	     /Lazersons-Air/{print "macports"}\
@@ -13,7 +13,8 @@ MACHINE ?= $(shell uname -n | \
 	     /Matts-MacBook-Pro/{print "macports_landreman"}\
 	     /raven/{print "raven"}\
 	     /cobra/{print "cobra"}\
-	     /draco/{print "draco"}')
+	     /draco/{print "draco"}\
+	     /viper/{print "viper"}')
 
 ifneq ($(strip $(MACHINE)),)
 	include $(STELLOPT_PATH)/SHARE/make_$(MACHINE).inc

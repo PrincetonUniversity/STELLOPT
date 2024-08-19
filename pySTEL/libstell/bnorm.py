@@ -44,7 +44,7 @@ class BNORM(FourierRep):
 			(txt1,txt2,txt3) = line.split()
 			self.xm[mn] = int(txt1)
 			self.xn[mn] = int(txt2)
-			self.bnmnc[0,mn] = float(txt3)
+			self.bnmns[0,mn] = float(txt3)
 			mn = mn + 1
 
 	def plotBnmnSpectrum(self,ax=None):
@@ -72,7 +72,7 @@ class BNORM(FourierRep):
 		for mn in range(self.mnmax):
 			m = self.xm[mn]
 			n = int(self.xn[mn]) + nmax
-			bmn[m,n] = self.bmnc_b[1,mn]
+			bmn[m,n] = self.bnmns[1,mn]
 		#Plot
 		x = np.linspace(0,mmax,mmax+1)
 		y = np.linspace(-nmax,nmax,2*nmax+1)
@@ -103,7 +103,7 @@ class BNORM(FourierRep):
 		zeta  = np.ndarray((256,1))
 		for j in range(360): theta[j]=2.0*np.pi*j/359.0
 		for j in range(256):  zeta[j]=2.0*np.pi*j/256.0
-		b = self.cfunct(theta,zeta,self.bnmnc,self.xm,self.xn)
+		b = self.sfunct(theta,zeta,self.bnmns,self.xm,self.xn)
 		hmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(b[1,:,:]),cmap='jet',shading='gouraud')
 		ax.set_xlabel(r'Toroidal Angle ($\phi$) [rad]')
 		ax.set_ylabel(r'Poloidal Angle ($\theta$) [rad]')

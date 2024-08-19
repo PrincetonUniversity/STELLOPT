@@ -1333,4 +1333,34 @@ C-----------------------------------------------
 
       END SUBROUTINE get_flxcoord
 
+      SUBROUTINE get_flxcoord_python(x1, c_flx, rs, zs, ru, zu)
+      USE read_wout_mod, phi_wout=>phi, ns_w=>ns, ntor_w=>ntor,
+     1     mpol_w=>mpol, ntmax_w=>ntmax, lthreed_w=>lthreed,
+     2     lasym_w=>lasym
+      IMPLICIT NONE
+C-----------------------------------------------
+C   D u m m y   A r g u m e n t s
+C-----------------------------------------------
+      REAL(rprec), INTENT(out) :: x1(3)
+      REAL(rprec), INTENT(in)  :: c_flx(3)
+      REAL(rprec), INTENT(out) :: ru, zu, rs, zs
+C-----------------------------------------------
+C   L o c a l   V a r i a b l e s
+C-----------------------------------------------
+      INTEGER :: iflag
+C-----------------------------------------------
+      iflag = 0
+      CALL LoadRZL
+      ! becasue we call from outside VMEC only 
+      ! we only use the lscale=.False. branch of
+      ! the logic tree.  Also we use rzl_local
+      ! since that's what we need to pass.
+      CALL flx2cyl(rzl_local, c_flx, x1, ns_w, ntor_w, mpol_w, 
+     1              ntmax_w, lthreed_w, lasym_w, iflag,
+     2              RU=ru, ZU=zu, Rs=rs, Zs=zs)
+      RETURN
+      END SUBROUTINE get_flxcoord_python
+
+
+
       END MODULE vmec_utils

@@ -57,6 +57,7 @@ class FIELDLINES():
 				if temp in f:
 					setattr(self, temp, np.array(f[temp][:]))
 		# Make derived arrays
+		self.nfp     = round(2*np.pi/self.phiaxis[-1])
 		self.X_lines = self.R_lines*np.cos(self.PHI_lines)
 		self.Y_lines = self.R_lines*np.sin(self.PHI_lines)
 		# Fix B_R and B_Z
@@ -168,6 +169,98 @@ class FIELDLINES():
 		ax.set_aspect('equal')
 		ax.set_xlim(rmin,rmax)
 		if lplotnow: pyplot.show()
+
+	def plot_cloud(self,k,pointsize=0.01,color='red',plot3D=None):
+		"""Plots the FIELDILNES Poin in 3D
+
+		This routine plots the FIELDLINES poincare points in 3D
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		vertices = []
+		scalar   = []
+		for i in range(self.nsteps):
+			if (self.R_lines[i,k] > 0):
+				vertices.append([self.X_lines[i,k],self.Y_lines[i,k],self.Z_lines[i,k]])
+				scalar.append(self.B_lines[i,k])
+		vertices = np.array(vertices)
+		scalar = plt.valuesToScalar(np.array(scalar))
+		points = plt.vertexToPoints(vertices)
+		# Add to Render
+		if float(scalar.GetValueRange()[1]) > 0:
+			plt.add3Dpoints(points,scalars=scalar,pointsize=pointsize)
+			# Colorbar
+			plt.colorbar()
+		else:
+			plt.add3Dpoints(points,pointsize=pointsize)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plot_poincare3D(self,k=0,pointsize=0.01,color='red',plot3D=None):
+		"""Plots the FIELDILNES Poincare cross section in 3D
+
+		This routine makes a 3D Poincare plot.
+
+		Parameters
+		----------
+		k : int (optional)
+			Poincare cross section to plot (default: 0)
+		pointsize : float (optional)
+			Size of points (default: 0.01)
+		color : str (optional)
+			Color to plot points (default: red)
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		vertices = []
+		scalar   = []
+		P = np.mod(self.PHI_lines,self.phiaxis[-1])
+		X = self.R_lines * np.cos(P)
+		Y = self.R_lines * np.sin(P)
+		for i in range(k,self.nsteps,self.npoinc):
+			for j in range(self.nlines):
+				if (self.R_lines[i,j] > 0):
+					vertices.append([X[i,j],Y[i,j],self.Z_lines[i,j]])
+#					scalar.append(self.B_lines[i,j])
+		vertices = np.array(vertices)
+		scalar = plt.valuesToScalar(np.array(scalar))
+		points = plt.vertexToPoints(vertices)
+		# Add to Render
+#		if float(scalar.GetValueRange()[1]) > 0:
+#			plt.add3Dpoints(points,scalars=scalar,pointsize=pointsize)
+#			# Colorbar
+#			plt.colorbar()
+#		else:
+		plt.add3Dpoints(points,pointsize=pointsize,color=color)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
 
 # FIELDLINES Input Class
 class FIELDLINES_INPUT():

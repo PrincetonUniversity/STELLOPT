@@ -110,7 +110,7 @@ c.....Write plasma surface info to output if asked to do so
          write (inesc, 330) (i,i=0,ms1)
          write (inesc, 340)
          do k = -ns1, -1
-            write (inesc, 360) k, (cr1(i,0),i=0,ms1)
+            write (inesc, 360) k, (cr1(i,k),i=0,ms1)
          end do
          write (inesc, 360) k, (2*cr1(i,k),i=0,ms1)
          do k = 1, ns1
@@ -120,7 +120,7 @@ c.....Write plasma surface info to output if asked to do so
          write (inesc, 330) (i,i=0,ms1)
          write (inesc, 340)
          do k = -ns1, -1
-            write (inesc, 360) k, (cz1(i,0),i=0,ms1)
+            write (inesc, 360) k, (cz1(i,k),i=0,ms1)
          end do
          write (inesc, 360) k, (2*cz1(i,k),i=0,ms1)
          do k = 1, ns1
