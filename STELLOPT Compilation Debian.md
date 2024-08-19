@@ -1,8 +1,8 @@
-STELLOPT Compilation on Ubuntu
+STELLOPT Compilation on Debian
 ==============================
 
 This page details how to compile the STELLOPT family of codes on
-[Ubuntu](@http://www.ubuntu.com/). In order to do so you will need to
+[Debian](@https://www.debian.org/). In order to do so you will need to
 install [GNU based compilers](@http://gcc.gnu.org/) on your Linux
 machine. In principle this set of steps should work for any Linux based
 distribution which uses [Debian](@https://www.debian.org/) based package
@@ -11,7 +11,7 @@ management.
 Installation Steps
 -----
 
-1\. Verify that your version of Ubuntu is up to date.
+1\. Verify that your version of Debian is up to date.
 2\. Use apt-get to install your packages. 
 
     sudo apt-get install git
@@ -29,7 +29,7 @@ Installation Steps
 
 3\. Setup your environment variables
 
-    export MACHINE="ubuntu"
+    export MACHINE="debian"
     export STELLOPT_PATH=<path to repo directory>
 
 
