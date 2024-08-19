@@ -28,4 +28,4 @@ RUN cp -RP ${STELLOPT_PATH}/bin/* /usr/local/bin/
 #USER visitor
 
 # Set commands
-#CMD ["/bin/bash"]
+CMD ["/bin/bash"]
