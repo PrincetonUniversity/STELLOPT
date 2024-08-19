@@ -381,7 +381,7 @@ beams3d_write_parhdf5.o: \
 drkhvg.o:  
       
 
-fpart_nag.o: \
+fpart_eom.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       beams3d_grid.o \
@@ -401,7 +401,7 @@ fgc_eom.o: \
       beams3d_lines.o \
       beams3d_runtime.o
 
-fgc_nag.o: \
+fgc_eom.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       beams3d_grid.o \
@@ -423,7 +423,7 @@ jacobian_lsode.o: \
       beams3d_grid.o
 
 
-out_beams3d_nag.o: \
+out_beams3d_gc.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
@@ -434,7 +434,7 @@ out_beams3d_nag.o: \
       beams3d_physics_mod.o
 
 
-outpart_beams3d_nag.o: \
+out_beams3d_part.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \

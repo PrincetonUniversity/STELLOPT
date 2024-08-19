@@ -342,77 +342,75 @@
          CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
          CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
       END IF
-      !IF (lcontinue_grid) THEN
-         !CALL beams3d_init_restart                
-      !ELSE
-         ! Create the background grid
-         CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
-         CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
-         CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
-         CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
-         CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
-         CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
-         CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
-         CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
-         CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
-         CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
-         CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
-         CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
-         CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
-         CALL mpialloc(TE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE)
-         CALL mpialloc(NE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE)
-         CALL mpialloc(TI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI)
-         CALL mpialloc(ZEFF_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF_ARR)
-         CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
-         CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
-         CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
-         CALL mpialloc(X_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X_ARR)
-         CALL mpialloc(Y_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y_ARR)
-         CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
-         IF (lfidasim) THEN
-            CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
-            CALL mpialloc(phiaxis_fida, nphi_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis_fida)
-            CALL mpialloc(zaxis_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis_fida)
-            CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
-            CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
-         END IF
-         IF (myid_sharmem == 0) THEN
-            FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
-            FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
-            FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
-            S_ARR = 1.5
-            X_ARR = 1.5
-            Y_ARR = 1.5
-            POT_ARR = 0
-            NI = 0
-            ! Setup grid helpers
-            ! Note: All helpers are defined in terms of differences on half grid
-            !       so values are indexed from 1 to n-1.  Which we store at n
-            !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            !        hr(i) = raxis(i+1) - raxis(i)
-            !        hri    = one / hr
-            FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
-            FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
-            FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
-            hri = one / hr
-            hpi = one / hp
-            hzi = one / hz
-            ! Do this here so EQDSK vac RMP works.
-            B_R = 0
-            B_PHI = 0
-            B_Z = 0
-            MODB = 0
+      ! Create the background grid
+      CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
+      CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
+      CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
+      CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
+      CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
+      CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
+      CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
+      CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
+      CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
+      CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
+      CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
+      CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
+      CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
+      CALL mpialloc(TE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE)
+      CALL mpialloc(NE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE)
+      CALL mpialloc(TI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI)
+      CALL mpialloc(ZEFF_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF_ARR)
+      CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
+      CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
+      CALL mpialloc(RHO_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_RHO_ARR)
+      CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
+      CALL mpialloc(XRHO_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_XRHO_ARR)
+      CALL mpialloc(YRHO_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_YRHO_ARR)
+      CALL mpialloc(NI, NION, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI)
+      IF (lfidasim) THEN
+         CALL mpialloc(raxis_fida, nr_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_fida)
+         CALL mpialloc(phiaxis_fida, nphi_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis_fida)
+         CALL mpialloc(zaxis_fida, nz_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis_fida)
+         CALL mpialloc(energy_fida, nenergy_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_energy_fida)
+         CALL mpialloc(pitch_fida, npitch_fida, myid_sharmem, 0, MPI_COMM_SHARMEM, win_pitch_fida)
+      END IF
+      IF (myid_sharmem == 0) THEN
+         FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
+         FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
+         FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
+         S_ARR = 1.5
+         RHO_ARR = 1.5
+         XRHO_ARR = 1.5
+         YRHO_ARR = 1.5
+         POT_ARR = 0
+         NI = 0
+         ! Setup grid helpers
+         ! Note: All helpers are defined in terms of differences on half grid
+         !       so values are indexed from 1 to n-1.  Which we store at n
+         !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+         !        hr(i) = raxis(i+1) - raxis(i)
+         !        hri    = one / hr
+         FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
+         FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
+         FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
+         hri = one / hr
+         hpi = one / hp
+         hzi = one / hz
+         ! Do this here so EQDSK vac RMP works.
+         B_R = 0
+         B_PHI = 0
+         B_Z = 0
+         MODB = 0
 
-         END IF
-         CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
+      END IF
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
 
-         ! Put the vacuum field on the background grid
-         IF (lmgrid) THEN
-            CALL beams3d_init_mgrid
-         ELSE IF (lcoil) THEN
-            CALL beams3d_init_coil
-         END IF
-      !END IF
+      ! Put the vacuum field on the background grid
+      IF (lmgrid) THEN
+         CALL beams3d_init_mgrid
+      ELSE IF (lcoil) THEN
+         CALL beams3d_init_coil
+      END IF
 
       ! Put the plasma field on the background grid
       IF (lvmec .and. .not.lvac) THEN
@@ -552,8 +550,6 @@
       ! Construct MODB
       IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
 
-
-
       ! Construct Splines on shared memory master nodes
       IF (myid_sharmem == master) THEN
          bcs1=(/ 0, 0/)
@@ -567,16 +563,16 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BZ_spl',ier)
          CALL EZspline_init(MODB_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:MODB_spl',ier)
-         CALL EZspline_init(S_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
          CALL EZspline_init(U_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:U_spl',ier)
-         CALL EZspline_init(X_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:X_spl',ier)
-         CALL EZspline_init(Y_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:Y_spl',ier)
          CALL EZspline_init(POT_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:POT_spl',ier)
+         CALL EZspline_init(RHO_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:RHO_spl',ier)
+         CALL EZspline_init(XRHO_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:XRHO_spl',ier)
+         CALL EZspline_init(YRHO_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:YRHO_spl',ier)
          BR_spl%isHermite   = 1
          BR_spl%x1   = raxis
          BR_spl%x2   = phiaxis
@@ -593,26 +589,30 @@
          MODB_spl%x1 = raxis
          MODB_spl%x2 = phiaxis
          MODB_spl%x3 = zaxis
-         S_spl%isHermite = 1
-         S_spl%x1 = raxis
-         S_spl%x2 = phiaxis
-         S_spl%x3 = zaxis
          U_spl%isHermite = 1
          U_spl%x1 = raxis
          U_spl%x2 = phiaxis
          U_spl%x3 = zaxis
-         X_spl%isHermite = 1
-         X_spl%x1 = raxis
-         X_spl%x2 = phiaxis
-         X_spl%x3 = zaxis
-         Y_spl%isHermite = 1
-         Y_spl%x1 = raxis
-         Y_spl%x2 = phiaxis
-         Y_spl%x3 = zaxis
          POT_spl%isHermite = 1
          POT_spl%x1 = raxis
          POT_spl%x2 = phiaxis
          POT_spl%x3 = zaxis
+         RHO_spl%isHermite = 1
+         RHO_spl%x1 = raxis
+         RHO_spl%x2 = phiaxis
+         RHO_spl%x3 = zaxis
+         XRHO_spl%isHermite = 1
+         XRHO_spl%x1 = raxis
+         XRHO_spl%x2 = phiaxis
+         XRHO_spl%x3 = zaxis
+         YRHO_spl%isHermite = 1
+         YRHO_spl%x1 = raxis
+         YRHO_spl%x2 = phiaxis
+         YRHO_spl%x3 = zaxis
+         ! Make sure we setup RHO from S
+         RHO_ARR = SQRT(S_ARR)
+         XRHO_ARR = RHO_ARR * COS(U_ARR)
+         YRHO_ARR = RHO_ARR * SIN(U_ARR)
          CALL EZspline_setup(BR_spl,B_R,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BR_spl',ier)
          CALL EZspline_setup(BPHI_spl,B_PHI,ier,EXACT_DIM=.true.)
@@ -621,12 +621,16 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BZ_spl',ier)
          CALL EZspline_setup(MODB_spl,MODB,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:MODB_spl',ier)
-         CALL EZspline_setup(S_spl,S_ARR,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
          CALL EZspline_setup(U_spl,U_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:U_spl',ier)
          CALL EZspline_setup(POT_spl,POT_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:POT_spl',ier)
+         CALL EZspline_setup(RHO_spl,RHO_ARR,ier,EXACT_DIM=.true.)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:RHO_spl',ier)
+         CALL EZspline_setup(XRHO_spl,XRHO_ARR,ier,EXACT_DIM=.true.)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:XRHO_spl',ier)
+         CALL EZspline_setup(YRHO_spl,YRHO_ARR,ier,EXACT_DIM=.true.)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:YRHO_spl',ier)
 
       END IF
       ! Allocate Shared memory space
@@ -635,10 +639,10 @@
       CALL mpialloc(BPHI4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BPHI4D)
       CALL mpialloc(BZ4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BZ4D)
       CALL mpialloc(MODB4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB4D)
-      CALL mpialloc(S4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S4D)
+      CALL mpialloc(RHO4D, 8, nr, nphi, nz, myid_sharmem, 0,  MPI_COMM_SHARMEM, win_RHO4D)
       CALL mpialloc(U4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U4D)
-      CALL mpialloc(X4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_X4D)
-      CALL mpialloc(Y4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Y4D)
+      CALL mpialloc(XRHO4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_XRHO4D)
+      CALL mpialloc(YRHO4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_YRHO4D)
       CALL mpialloc(POT4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT4D)
       ! Copy Spline info to shared memory and Free
       IF (myid_sharmem == master) THEN
@@ -646,29 +650,20 @@
          BPHI4D = BPHI_SPL%fspl
          BZ4D = BZ_SPL%fspl
          MODB4D = MODB_SPL%fspl
-         S4D = S_SPL%fspl
          U4D = U_SPL%fspl
          POT4D = POT_SPL%fspl
-
-         X_ARR = S4D(1,:,:,:) * COS(U4D(1,:,:,:))
-         Y_ARR = S4D(1,:,:,:) * SIN(U4D(1,:,:,:))
-         CALL EZspline_setup(X_spl,X_ARR,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:X_spl',ier)
-         CALL EZspline_setup(Y_spl,Y_ARR,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:Y_spl',ier)
-         X4D = X_SPL%fspl
-         Y4D = Y_SPL%fspl
-
+         RHO4D = RHO_SPL%fspl
+         XRHO4D = XRHO_SPL%fspl
+         YRHO4D = YRHO_SPL%fspl
          CALL EZspline_free(BR_spl,ier)
          CALL EZspline_free(BPHI_spl,ier)
          CALL EZspline_free(BZ_spl,ier)
          CALL EZspline_free(MODB_spl,ier)
-         CALL EZspline_free(S_spl,ier)
          CALL EZspline_free(U_spl,ier)
-         CALL EZspline_free(X_spl,ier)
-         CALL EZspline_free(Y_spl,ier)
-
          CALL EZspline_free(POT_spl,ier)
+         CALL EZspline_free(RHO_spl,ier)
+         CALL EZspline_free(XRHO_spl,ier)
+         CALL EZspline_free(YRHO_spl,ier)
       END IF
       ! These are helpers for range
       eps1 = (rmax-rmin)*small
@@ -696,9 +691,10 @@
       CALL mpidealloc(MODB,win_MODB)
       CALL mpidealloc(S_ARR,win_S_ARR)
       CALL mpidealloc(U_ARR,win_U_ARR)
-      CALL mpidealloc(X_ARR,win_X_ARR)
-      CALL mpidealloc(Y_ARR,win_Y_ARR)
       CALL mpidealloc(POT_ARR,win_POT_ARR)
+      CALL mpidealloc(RHO_ARR,win_RHO_ARR)
+      CALL mpidealloc(XRHO_ARR,win_XRHO_ARR)
+      CALL mpidealloc(YRHO_ARR,win_YRHO_ARR)
       IF (.not. lvac) THEN
          CALL mpidealloc(TE,win_TE)
          CALL mpidealloc(NE,win_NE)

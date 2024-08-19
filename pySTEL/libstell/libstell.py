@@ -42,6 +42,25 @@ class LIBSTELL():
 		if self.s1=='___':
 			self.s1='__'
 
+	def vtkColor(self,j):
+		"""Helper to vary colors
+
+		This routine returns a VTK color object based on a number.
+		This is done to mimic the behavior of changing colors when
+		plotting lines in matplotlib.
+
+		Parameters
+		----------
+		j : int
+			Index into predefined colors
+		"""
+		from vtkmodules.vtkCommonColor import vtkNamedColors
+		colors = vtkNamedColors()
+		color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
+		j = j % len(color_txt)
+		return colors.GetColor3d(color_txt[j])
+
+
 	def safe_open(self,iunit,istat,filename,filestat,fileform,record_in=None,access_in='SEQUENTIAL',delim_in='APOSTROPHE'):
 		"""Wrapper to safe_open in safe_open_mod
 
@@ -428,7 +447,7 @@ class LIBSTELL():
 		realList.extend(['bprobe_turns','flux_turns','segrog_turns'])
 		realLen.extend([(2048,1),(512,1),(256,1)])
 		charList=['int_type','afield_points_file','bfield_points_file',\
-		        'bprobes_file','mirnov_file', 'seg_rog_file','flux_diag_file',\
+				'bprobes_file','mirnov_file', 'seg_rog_file','flux_diag_file',\
 				'bprobes_mut_file', 'mir_mut_file', 'rog_mut_file', 'flux_mut_file']
 		charLen=[(256,1)]*11
 		module_name = self.s1+'diagno_runtime_'+self.s2
@@ -526,6 +545,81 @@ class LIBSTELL():
 		write_fieldlines_input.argtypes = [ct.c_char_p, ct.c_long]
 		write_fieldlines_input.restype=None
 		write_fieldlines_input(filename.encode('UTF-8'),len(filename))
+
+	def read_nescoil_input(self,filename):
+		"""Reads a NESCOIL input file
+
+		This routine wrappers read_nescin function in
+		read_nescoil_mod.
+
+		Parameters
+		----------
+		filename : str
+			Path to input file.
+		Returns
+		-------
+		out_data : dict
+			Dictionary of items.
+		"""
+		import ctypes as ct
+		# We use an added routine as a helper
+		module_name = self.s1+'read_nescoil_mod_'+self.s2
+		read_nescin = getattr(self.libstell,module_name+'_read_nescin'+self.s3)
+		read_nescin.argtypes=[ct.c_char_p, ct.POINTER(ct.c_int), ct.c_long]
+		read_nescin.restype=None
+		ierr = ct.c_int(0)
+		read_nescin(filename.encode('UTF-8'), ct.byref(ierr), len(filename))
+		# Setup Arrays
+		out_data={}
+		# Get Scalars
+		booList  = ['lasym']
+		booLen   = [1]*len(booList)
+		intList  = ['nu', 'nv', 'nu1', 'nv1', 'mpol', 'ntor', 'mf', 'nf', 'md', 'nd', 'np', \
+					'ibex', 'mstrt', 'mstep', 'mkeep', 'mdspw', 'w_psurf', 'w_csurf', \
+					'w_bnuv', 'w_jsurf', 'w_xerr', 'w_svd', 'mnmax_plasma', \
+					'mnmax_surface', 'nmax', 'mnd', 'nuv', 'nuv1', 'nuvh', 'nuvh1']
+		intLen   = [1]*len(intList)
+		realList = ['iota_edge', 'phip_edge', 'curpol', 'cut', 'cup', 'curwt', 'trgwt','alp']
+		realLen = [1]*len(realList)
+		scalar_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen)
+		# Get 1D Int Arrays
+		intList= ['xm_plasma', 'xn_plasma','xm_surface', 'xn_surface']
+		intLen = [(scalar_data['mnmax_plasma'],1),(scalar_data['mnmax_plasma'],1),\
+			(scalar_data['mnmax_surface'],1),(scalar_data['mnmax_surface'],1)]
+		# Get 1D Real Arrays
+		realList = ['rmnc_plasma', 'zmns_plasma', 'rmns_plasma', \
+			'zmnc_plasma', 'lmnc_plasma', 'lmns_plasma' ]
+		realLen = [(scalar_data['mnmax_plasma'],1)]*len(realList)
+		realList.extend(['rmnc_surface', 'zmns_surface', 'rmns_surface', \
+			'zmnc_surface'])
+		realLen.extend([(scalar_data['mnmax_surface'],1)]*4)
+		array_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen)
+		# Return
+		return scalar_data | array_data
+
+	def write_nescoil_input(self,filename,out_dict=None):
+		"""Wrappers writing of the NESCOIL nescin file
+
+		This routine wrappers write_nescin in LIBSTELL
+
+		Parameters
+		----------
+		filename : str
+			Path to input file.
+		out_dict : dict (optional)
+			Dictionary of items to change.
+		"""
+		import ctypes as ct
+		module_name = self.s1+'read_nescoil_mod_'+self.s2
+		# Check if we want to update values
+		if out_dict:
+			for key in out_dict:
+				self.set_module_var(module_name,key,out_dict[key])
+		write_nescin = getattr(self.libstell,module_name+'_write_nescin'+self.s3)
+		write_nescin.argtypes = [ct.c_char_p, ct.POINTER(ct.c_int), ct.c_long]
+		write_nescin.restype=None
+		ierr = ct.c_int(0)
+		write_nescin(filename.encode('UTF-8'),ct.byref(ierr),len(filename))
 
 	def read_stellopt_input(self,filename):
 		"""Reads a STELLOPT OPTIMUM namelist
@@ -957,6 +1051,152 @@ class LIBSTELL():
 		# Return
 		return scalar_data | array_data
 
+	def read_nescout(self,file):
+		"""Reads a nescout file and returns a dictionary
+
+		This routine wrappers read_nescout in LIBSTELL and returns
+		a dictionary of values
+
+		Parameters
+		----------
+		file : str
+			Path to nescout file.
+		Returns
+		----------
+		vars : dict
+			Dictionary of module variables
+		"""
+		import ctypes as ct
+		module_name = self.s1+'read_nescoil_mod_'+self.s2
+		read_wout = getattr(self.libstell,module_name+'_read_nescout'+self.s3)
+		read_wout.argtypes=[ct.c_char_p, ct.POINTER(ct.c_int), ct.c_long]
+		read_wout.restype=None
+		ierr = ct.c_int(0)
+		read_wout(file.encode('UTF-8'), ct.byref(ierr), len(file))
+		if not (ierr.value == 0):
+			return None
+		# Setup Arrays
+		out_data={}
+		# Get Scalars
+		booList  = ['lasym']
+		booLen   = [1]*len(booList)
+		intList  = ['nu', 'nv', 'nu1', 'nv1', 'mpol', 'ntor', 'mf', 'nf', 'md', 'nd', 'np', \
+					'ibex', 'mstrt', 'mstep', 'mkeep', 'mdspw', 'w_psurf', 'w_csurf', \
+					'w_bnuv', 'w_jsurf', 'w_xerr', 'w_svd', 'mnmax_plasma', \
+					'mnmax_surface', 'nmax', 'mnd', 'nuv', 'nuv1', 'nuvh', 'nuvh1',\
+					'mnmax_pot']
+		intLen   = [1]*len(intList)
+		realList = ['iota_edge', 'phip_edge', 'curpol', 'cut', 'cup', 'curwt', 'trgwt','alp']
+		realLen = [1]*len(realList)
+		scalar_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen)
+		# Get 1D Int Arrays
+		intList= ['xm_plasma', 'xn_plasma','xm_surface', 'xn_surface', 'xm_pot', 'xn_pot']
+		intLen = [(scalar_data['mnmax_plasma'],1),(scalar_data['mnmax_plasma'],1),\
+			(scalar_data['mnmax_surface'],1),(scalar_data['mnmax_surface'],1),\
+			(scalar_data['mnmax_pot'],1),(scalar_data['mnmax_pot'],1)]
+		# Get 1D Real Arrays
+		realList = ['rmnc_plasma', 'zmns_plasma', 'rmns_plasma', \
+			'zmnc_plasma', 'lmnc_plasma', 'lmns_plasma' ]
+		realLen = [(scalar_data['mnmax_plasma'],1)]*len(realList)
+		realList.extend(['rmnc_surface', 'zmns_surface', 'rmns_surface', \
+			'zmnc_surface'])
+		realLen.extend([(scalar_data['mnmax_surface'],1)]*4)
+		realList.extend(['potmns_surface'])
+		realLen.extend([(scalar_data['mnmax_pot'],1)]*1)
+		if scalar_data['w_psurf'] > 1:
+			realList.extend(['x_plasma', 'y_plasma', 'z_plasma', 'r_plasma'])
+			realLen.extend([(scalar_data['nuvh1'],1)]*4)
+		if scalar_data['w_psurf'] > 2:
+			realList.extend(['dsur_plasma', 'nx_plasma', 'ny_plasma', 'nz_plasma'])
+			realLen.extend([(scalar_data['nuvh1'],1)]*4)
+		if scalar_data['w_psurf'] > 3:
+			realList.extend(['dxdu_plasma', 'dydu_plasma', 'dxdv_plasma', 'dydv_plasma'])
+			realLen.extend([(scalar_data['nuvh1'],1)]*4)
+		if scalar_data['w_bnuv'] > 0:
+			realList.extend(['db_normal', 'babs'])
+			realLen.extend([(scalar_data['nuvh1'],1)]*2)
+		if scalar_data['w_bnuv'] > 1:
+			realList.extend(['bn_plasma'])
+			realLen.extend([(scalar_data['nuvh1'],1)])
+		if scalar_data['w_csurf'] > 1:
+			realList.extend(['x_surface', 'y_surface', 'z_surface', 'r_surface'])
+			realLen.extend([(scalar_data['nuvh'],1)]*4)
+		if scalar_data['w_csurf'] > 2:
+			realList.extend(['dsur_surface','nx_surface', 'ny_surface', 'nz_surface'])
+			realLen.extend([(scalar_data['nuvh'],1)]*4)
+		if scalar_data['w_csurf'] > 3:
+			realList.extend(['xcur_surface', 'ycur_surface', 'zcur_surface'])
+			realLen.extend([(scalar_data['nuvh'],1)]*3)
+		array_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen)
+		# Return
+		return scalar_data | array_data
+
+	def nescout_bfield_init(self,nu=128,nv=128):
+		"""Initializes the magnetic field from a NESCOIL surface current
+
+		This routine evaluates the magnetic field at a point in space
+		from a NESCOIL surface current.
+
+		Parameters
+		----------
+		nu : int (optional)
+			Number of poloidal gridpoints (default: 128)
+		nv : int (optional)
+			Number of toroidal gridpoints (default: 128)
+		"""
+		import ctypes as ct
+		module_name = self.s1+'read_nescoil_mod_'+self.s2
+		# initialize values
+		bfield_init = getattr(self.libstell,module_name+'_nescoil_bfield_init_ctypes'+self.s3)
+		bfield_init.argtypes=[ct.POINTER(ct.c_int),ct.POINTER(ct.c_int)]
+		bfield_init.restype=None
+		nu_ctype = ct.c_int(nu)
+		nv_ctype = ct.c_int(nv)
+		bfield_init(nu_ctype,nv_ctype)
+
+	def nescout_bfield(self,x,y,z,istat=0):
+		"""Evaluates the magnetic field from a NESCOIL surface current
+
+		This routine evaluates the magnetic field at a point in space
+		from a NESCOIL surface current.
+
+		Parameters
+		----------
+		x : float
+			X point to evaluate [m]
+		y : float
+			Y point to evaluate [m]
+		z : float
+			Z point to evaluate [m]
+		istat : integer
+			Status optional (set to -327 to use explicit integration)
+		Returns
+		----------
+		bx : float
+			X-component of magnetic field [T]
+		by : float
+			Y-component of magnetic field [T]
+		bZ : float
+			Z-component of magnetic field [T]
+		"""
+		import ctypes as ct
+		module_name = self.s1+'read_nescoil_mod_'+self.s2
+		bfield = getattr(self.libstell,module_name+'_nescoil_bfield_adapt_dbl'+self.s3)
+		bfield.argtypes=[ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
+						 ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
+						 ct.POINTER(ct.c_int)]
+		bfield.restype=None
+		x_ctype = ct.c_double(x)
+		y_ctype = ct.c_double(y)
+		z_ctype = ct.c_double(z)
+		bx_ctype = ct.c_double(0.0)
+		by_ctype = ct.c_double(0.0)
+		bz_ctype = ct.c_double(0.0)
+		istat_ctype = ct.c_int(istat)
+		bfield(ct.byref(x_ctype),ct.byref(y_ctype),ct.byref(z_ctype),\
+				 ct.byref(bx_ctype),ct.byref(by_ctype),ct.byref(bz_ctype),ct.byref(istat_ctype))
+		return bx_ctype.value,by_ctype.value,bz_ctype.value
+
 	def get_module_vars(self,modName,booVar=None,booLen=None,\
 		intVar=None,intLen=None,realVar=None,realLen=None,\
 		charVar=None,charLen=None,\
@@ -1051,19 +1291,25 @@ class LIBSTELL():
 		elif type(val) == str:
 			n = len(val)
 			f = ct.c_char*n
-		elif type(val) in (np.ndarray,list):
+		elif type(val) == list:
 			if type(val[0]) == bool:
 				tt = ct.c_bool
-			elif type(val[0]) == np.bool_:
+			else:
+				print(f'   Unrecognized list type ({var}):',type(val[0]))
+				return
+			n = val.ndim
+			f = tt*val.size
+		elif type(val) == np.ndarray:
+			if val.dtype.type == np.bool_:
 				tt = ct.c_bool
-			elif type(val[0]) == np.int32:
+			elif val.dtype.type == np.int32:
 				tt = ct.c_int
-			elif type(val[0]) == np.int64:
+			elif val.dtype.type == np.int64:
 				tt = ct.c_int
-			elif type(val[0]) == np.float64:
+			elif val.dtype.type == np.float64:
 				tt = ct.c_double
 			else:
-				print(f'   Unrecognized type ({var}):',type(val[0]))
+				print(f'   Unrecognized ndarray type ({var}):',val.dtype.type)
 				return
 			n = val.ndim
 			f = tt*val.size
@@ -1082,6 +1328,125 @@ class LIBSTELL():
 		else:
 			temp.value = val
 		return
+
+	def vmec_get_flxcoord(self,s,u,v):
+		"""Wrapper to the get_flxcoord function
+
+		This routine wrappers the get_flxcoord function found in
+		vmec_utils.  It takes s, u, and v as inputs and returns
+		the R, phi, Z, dRds, dZds, dRdu, and dZdu values at that
+		point.
+
+		Parameters
+		----------
+		s : real
+			Normalized toroidal flux (VMEC).
+		u : real
+			Poloidal angle [rad] (VMEC)
+		v : real
+			Toroidal angle [rad] [VMEC]
+
+		Returns
+		-------
+		R : real
+			Cylindical R coordinate [m].
+		phi : real
+			Cylindical phi coordinate [rad].
+		Z : real
+			Cylindical Z coordinate [m].
+		dRds : real
+			Derivative of R coordiante with respect to s (dR/ds)
+		dZds : real
+			Derivative of Z coordiante with respect to s (dZ/ds)
+		dRdu : real
+			Derivative of R coordiante with respect to u (dR/du)
+		dZdu : real
+			Derivative of Z coordiante with respect to u (dZ/du)
+		"""
+		import ctypes as ct
+		module_name = self.s1+'vmec_utils_'+self.s2
+		get_flxcoord = getattr(self.libstell,module_name+'_get_flxcoord_python'+self.s3)
+		get_flxcoord.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.c_long,ct.c_long]
+		get_flxcoord.restype=None
+		x1 = (ct.c_double*3)(0,0,0)
+		c_flx = (ct.c_double*3)(s,u,v)
+		rs = ct.c_double(0)
+		zs = ct.c_double(0)
+		ru = ct.c_double(0)
+		zu = ct.c_double(0)
+		get_flxcoord(x1,c_flx,\
+			ct.byref(rs),ct.byref(zs),ct.byref(ru),ct.byref(zu),len(x1),len(c_flx))
+		R = x1[0]
+		v = x1[1]
+		Z = x1[2]
+		rs1 = rs.value
+		zs1 = zs.value
+		ru1 = ru.value
+		zu1 = zu.value
+		return R,v,Z,rs1,zs1,ru1,zu1
+
+	def vmec_getBcyl_wout(self,R,phi,Z):
+		"""Wrapper to the GetBcyl_WOUT function
+
+		This routine wrappers the GetBcyl_WOUT function found in
+		vmec_utils.  It takes R, phi, and Z as inputs and returns
+		the Br, Bphi, Bz, s, and u values at that point. A status flag
+		is also returned (info) which indicates
+			 0: successfully find s,u point
+			-1: did not converge
+			-3: sflux > 1, probably
+
+		Parameters
+		----------
+		R : real
+			Cylindical R coordinate [m].
+		phi : real
+			Cylindical phi coordinate [rad].
+		Z : real
+			Cylindical Z coordinate [m].
+		Returns
+		-------
+		br : real
+			Magnetic field in cylindrical R direction [T].
+		bphi : real
+			Magnetic field in cylindrical phi direction [T].
+		bz : real
+			Magnetic field in cylindrical Z direction [T].
+		s : real
+			Normalized toroidal flux coordinate [arb].
+		u : real
+			Poloidal angle coordinate (VMEC angle) [rad].
+		info: int
+			Status of inverse lookup.
+		"""
+		import ctypes as ct
+		module_name = self.s1+'vmec_utils_'+self.s2
+		getBcyl = getattr(self.libstell,module_name+'_getbcyl_wout'+self.s3)
+		getBcyl.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_int)]
+		getBcyl.restype=None
+		r_temp = ct.c_double(R)
+		phi_temp = ct.c_double(phi)
+		z_temp = ct.c_double(Z)
+		br_temp = ct.c_double(0)
+		bphi_temp = ct.c_double(0)
+		bz_temp = ct.c_double(0)
+		s_temp = ct.c_double(0)
+		u_temp = ct.c_double(0)
+		info_temp = ct.c_int(0)
+		getBcyl(ct.byref(r_temp),ct.byref(phi_temp),ct.byref(z_temp), \
+			ct.byref(br_temp),ct.byref(bphi_temp),ct.byref(bz_temp), \
+			ct.byref(s_temp),ct.byref(u_temp),ct.byref(info_temp))
+		Br = br_temp.value
+		Bphi = bphi_temp.value
+		Bz = bz_temp.value
+		s = s_temp.value
+		u = u_temp.value
+		info = info_temp.value
+		return Br,Bphi,Bz,s,u,info
 
 	def pcurr(self,s):
 		"""Wrapper to the PCURR function
@@ -1183,7 +1548,7 @@ class LIBSTELL():
 
 class FourierRep():
 	def __init__(self, parent=None):
-		self.test = None
+		test = None
 
 	def cfunct(self,theta,phi,fmnc,xm,xn):
 		"""Cos transformation
@@ -1266,59 +1631,126 @@ class FourierRep():
 			fmn = np.broadcast_to(fmnc[k,:],(lt,mn)).T
 			f[k,:,:]=np.matmul((fmn*sinmt).T, cosnz)+np.matmul((fmn*cosmt).T, sinnz)
 		return f
-		
-	def isotoro(self,r,z,zeta,svals,*args,**kwargs):
+
+	def isotoro(self,r,z,phi,svals,*args,**kwargs):
+		"""Plot a surface in 3D using VTK
+
+		This routine plots a 3D surface using the VTK library when
+		passed a r [m], z [m], and phi [rad] arrays as produced by
+		the sfunct and cfunct functions. The user may supply a surface
+		to plot as an index or array of indices. Pass svals=-1 if the
+		arrays only have one radial gridpoint to plot.
+
+		Parameters
+		----------
+		r : ndarray
+			Ordered list of R verticies [m] (ns,nu,nv)
+		z : ndarray
+			Ordered list of Z verticies [m] (ns,nu,nv)
+		phi : ndarray
+			Ordered list of phi coordiantes [rad] (nv)
+		surface : int
+			Surface to generate in ns
+		vals : ndarray (optional)
+			Ordered list of vertex values for coloring (ns,nu,nv)
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		lcloseu : boolean (optional)
+			Close the grid in the poloidal direction. (default: True)
+		lclosev : boolean (optional)
+			Close the grid in the toroidal direction. (default: True)
+		lcolorbar : boolean (optional)
+			Turn the colorbar on (default: False)
+		color : string (optional)
+			Surface color name, overriden by vals (default: 'red')
+		"""
 		import numpy as np
-		import matplotlib.pyplot as pyplot
-		import mpl_toolkits.mplot3d as mplot3d
-		import math as math
-		import matplotlib.tri as mtri
-		#from mayavi import mlab
+		from libstell.plot3D import PLOT3D 
+		# Handle input arguments
+		plt  = kwargs.get('plot3D',None)
+		lcu  = kwargs.get('lcloseu',True)
+		lcv  = kwargs.get('lclosev',True)
+		vals = kwargs.get('vals',None)
+		lbar = kwargs.get('lcolorbar',False)
+		color = kwargs.get('color','red')
+		lrender = False
+		if not plt:
+			plt = PLOT3D()
+			lrender = True
+		# Figure out number of surfaces to plot
 		nr = np.size(svals)
 		if (nr == 1):
+			if svals == 0: svals = 1
+			if svals == -1: svals = 0
 			s= [svals]
-			nr = 1
 		else:
 			s=svals
-		nt = np.size(r,1)
-		nz = np.size(r,2)
-		vertex = np.zeros((nt*nz,3,nr))
-		for k in range(0,nr):
-			ivertex = 0
-			ifaces = 0
-			for j in range(0,nz):
-				for i in range(0,nt):
-					vertex[ivertex,0,k]=r[s[k],i,j]*math.cos(zeta[j])
-					vertex[ivertex,1,k]=r[s[k],i,j]*math.sin(zeta[j])
-					vertex[ivertex,2,k]=z[s[k],i,j]
-					ivertex = ivertex + 1
-		u = np.linspace(0, 1, endpoint=True, num=nt)
-		v = np.linspace(0, 1, endpoint=True, num=nz)
-		u, v = np.meshgrid(u, v)
-		u, v = u.flatten(), v.flatten()
-		tri = mtri.Triangulation(u, v)
-		test=len(kwargs)
-		fig=kwargs.pop('fig',pyplot.figure())
-		h=kwargs.pop('axes',fig.add_subplot(111,projection='3d'))
-		for k in range(0,nr):
-			if (len(args)==0):
-				tsurf=h.plot_trisurf(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], triangles=tri.triangles,color='red',shade='yes',linewidth=0.0,alpha=1)
-				#tsurf=mlab.triangular_mesh(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], tri.triangless)
+		# Setup x,y,z helpers
+		nu = np.size(r,1)
+		nv = np.size(r,2)
+		x_s = np.zeros((nu,nv))
+		y_s = np.zeros((nu,nv))
+		z_s = np.zeros((nu,nv))
+		# Loop over radial values
+		for k in range(nr):
+			# Generate Coords
+			x_s = r[s[k],:,:]*np.cos(np.broadcast_to(phi,(nv,nu))).T
+			y_s = r[s[k],:,:]*np.sin(np.broadcast_to(phi,(nv,nu))).T
+			z_s = z[s[k],:,:]
+			[points,triangles] = plt.torusvertexTo3Dmesh(x_s,y_s,z_s,lcloseu=lcu,lclosev=lcv)
+			# Handle Color
+			scalar = None
+			if type(vals) != type(None): 
+				scalar = plt.valuesToScalar(vals[s[k],:,:])
+				# Add to Render
+				plt.add3Dmesh(points,triangles,scalars=scalar,opacity=1.0/nr)
 			else:
-				# Matplotlib way (SLOW)
-				vals = args[0][s[k],:,:].T.flatten()
-				colors = np.mean(vals[tri.triangles], axis=1)
-				tsurf=h.plot_trisurf(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], triangles=tri.triangles,cmap='jet',shade=False,linewidth=0.0,alpha=1)
-				tsurf.set_array(colors)
-				tsurf.autoscale()
-				#MAYAVI Way (need to figure out how to embed)
-				#h    = mlab.figure()
-				#vals = args[0][s[k],:,:].T.flatten()
-				#tsurf=mlab.triangular_mesh(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], tri.triangles, scalars=vals, colormap='jet',figure=h)
-				#print(type(tsurf))
-		if (test==0):
-			pyplot.show()
-		return h
+				plt.add3Dmesh(points,triangles,color=color,opacity=1.0/nr)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lrender: plt.render()
+
+	def generateSurface(self,r,z,phi,surface=None):
+		"""Generates the vertex and indices arrays to render a surface
+
+		This routine generates the verticies and faces lists which
+		are used by many routines to render a surface in 3D.
+
+		Parameters
+		----------
+		r : ndarray
+			Ordered list of R verticies [m] (ns,nu,nv)
+		z : ndarray
+			Ordered list of Z verticies [m] (ns,nu,nv)
+		phi : ndarray
+			Ordered list of phi coordiantes [rad] (nv)
+		surface : int (optional)
+			Surface to generate in ns (default: outermost)
+
+		Returns
+		----------
+		vertices : ndarray
+			Vertex values [m]
+		faces: ndarray
+			Indices defining triangles
+		"""
+		import numpy as np
+		[vertices_list,faces_list] = self.blenderSurface(r,z,phi,surface=surface)
+		ndex = len(vertices_list)
+		vertex = np.zeros((ndex,3))
+		for i in range(ndex):
+			vertex[i,0] = vertices_list[i][0]
+			vertex[i,1] = vertices_list[i][1]
+			vertex[i,2] = vertices_list[i][2]
+		# For indices we need to get it out of tupple format
+		ndex = len(faces_list)
+		faces = np.zeros((ndex,3),dtype=int)
+		for i in range(ndex):
+			faces[i,0] = faces_list[i][0]
+			faces[i,1] = faces_list[i][1]
+			faces[i,2] = faces_list[i][2]
+		return vertex,faces
 
 	def blenderSurface(self,r,z,phi,surface=None):
 		"""Generates the lists Blender needs to render a flux surface
@@ -1356,12 +1788,19 @@ class FourierRep():
 			k = r.shape[0]-1
 		nu = np.size(r,1)
 		nv = np.size(r,2)
+		# Handle only a partial period
+		if phi[nv-1]%(2.0*np.pi) == phi[0]:
+			nv = nv - 1
+			lseem = True
+		else:
+			lseem = False
 		# Loop and construct
 		for v in range(nv):
 			for u in range(nu):
 				x = r[k,u,v] * np.cos(phi[v])
 				y = r[k,u,v] * np.sin(phi[v])
 				vertices.append((x,y,z[k,u,v]))
+				if (v == nv -1) and (not lseem): continue
 				# Now do faces
 				i1 = u + v * nu
 				# Catch special case #1
@@ -1369,14 +1808,14 @@ class FourierRep():
 					i2 = i1 + nu
 					i3 = i1 + 1
 					i4 = i1 - nu + 1
-					if v == nv - 1:
+					if (v == nv - 1):
 						i2 = u
 						i3 = 0
 				elif u < nu-1:
 					i2 = i1 + nu
 					i3 = i1 + nu +1
 					i4 = i1 + 1
-					if v == nv -1:
+					if (v == nv -1):
 						i2 = u
 						i3 = u + 1
 				faces.append((i1,i2,i4))

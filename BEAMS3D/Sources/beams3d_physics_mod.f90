@@ -26,10 +26,11 @@ MODULE beams3d_physics_mod
                                end_state, fact_crit, fact_crit_pro, fact_pa, &
                                fact_vsound, fact_coul, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
-                               ns_prof5, my_end, h1_prof
+                               ns_prof5, my_end, h1_prof, fact_crit_legacy
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
                               MODB_spl, MODB4D, &
-                              phimax, S4D, X4D, Y4D, TE4D, NE4D, TI4D, ZEFF4D, &
+                              phimax, TE4D, NE4D, TI4D, ZEFF4D, &
+                              RHO4D, XRHO4D, YRHO4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
                               zaxis, U4D,nzeff, dexionT, dexionD, dexionHe3, &
@@ -89,10 +90,10 @@ MODULE beams3d_physics_mod
          IMPLICIT NONE
          DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
-         DOUBLE PRECISION :: ne_cm,coulomb_log,fact_crit_legacy
+         DOUBLE PRECISION :: ne_cm,coulomb_log
          ne_cm = ne_in * 1E-6
          coulomb_log = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
-         fact_crit_legacy = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0)
+         !fact_crit_legacy = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0)
          slow_par(1) = fact_crit_legacy*SQRT(te_in) 
          slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
          slow_par(3) =Zeff_in*fact_pa         
@@ -129,7 +130,7 @@ MODULE beams3d_physics_mod
       ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
          slow_par(1) = fact_crit*SQRT(te_in)*(coulomb_logi/coulomb_loge)**(1.0/3.0) !vcrit, the coulomb ratio is from Weiland (2018) eq.11
          slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here, tau_spit
-         slow_par(3) =zeff_in*fact_pa
+         slow_par(3) =Zeff_in*fact_pa
          RETURN
       END FUNCTION coll_op_nrl19_ie
 
@@ -237,9 +238,11 @@ MODULE beams3d_physics_mod
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
                           inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
+                          rho_temp, &
                           vc3_tauinv, vbeta, zeff_temp,&
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
-                          sm,omega2,vrel2,bmax,bmincl,bminqu,bmin
+                          sm,omega2,vrel2,bmax,bmincl,bminqu,bmin,&
+						  zdelth,zrang
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          DOUBLE PRECISION :: slow_par(3), ni_temp(NION)
          ! For splines
@@ -305,8 +308,8 @@ MODULE beams3d_physics_mod
             zeff_temp = max(fval(1),one)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            S4D(1,1,1,1),nr,nphi,nz)
-            s_temp = max(fval(1),zero)
+                            RHO4D(1,1,1,1),nr,nphi,nz)
+            rho_temp = max(fval(1),zero)
             DO l = 1, NION
                CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                   hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -331,26 +334,12 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-
-            slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-            vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
-            tau_spit_inv = one/slow_par(2)
-            vc3_tauinv = vcrit_cube*tau_spit_inv
-            !WRITE(6, *) 'NRL19: ',slow_par, vc3_tauinv*slow_par(3)
-            !slow_par = coll_op_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-            !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
-            !vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
-            !tau_spit_inv = one/slow_par(2)
-            !vc3_tauinv = vcrit_cube*tau_spit_inv
-            !WRITE(6, *) 'NUBEAM: ', slow_par , vc3_tauinv*slow_par(3)
-
-
-
-            ! vcrit_cube = v_crit*v_crit*v_crit
-
-               
-            ! tau_spit_inv = one/tau_spit
-            ! vc3_tauinv = vcrit_cube*tau_spit_inv
+               slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+			      !slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
+			      !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+               vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
+               tau_spit_inv = one/slow_par(2)
+               vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
 
             !-----------------------------------------------------------
@@ -387,7 +376,7 @@ MODULE beams3d_physics_mod
                q(4) = vll
                RETURN
             END IF
-            l = MAX(MIN(CEILING(SQRT(s_temp)*h1_prof),ns_prof1),1)
+            l = MAX(MIN(CEILING(rho_temp*h1_prof),ns_prof1),1)
             epower_prof(mybeam,l) = epower_prof(mybeam,l) + mymass*dve*dt*speed*weight(myline)
             ipower_prof(mybeam,l) = ipower_prof(mybeam,l) + mymass*dvi*dt*speed*weight(myline)
             vll = vfrac*vll
@@ -405,7 +394,15 @@ MODULE beams3d_physics_mod
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
            zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
-           !IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
+           !Flip gaussian at boundary to prevent accumulation around pitch=1
+           !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
+           !Pitch angle scattering according to NUBEAM
+           !sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
+           !CALL RANDOM_NUMBER(zeta)
+           !zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
+           !CALL RANDOM_NUMBER(zrang)
+           !zrang=zrang*pi2
+           !zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
            vll = zeta*speed
 
            !------------------------------------------------------------
@@ -465,6 +462,7 @@ MODULE beams3d_physics_mod
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
                           inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
+                          rho_temp, &
                           vc3_tauinv, vbeta, zeff_temp, br_temp, bphi_temp, bz_temp, vperp, &
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin, binv
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
@@ -527,8 +525,8 @@ MODULE beams3d_physics_mod
             zeff_temp = max(fval(1),one)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            S4D(1,1,1,1),nr,nphi,nz)
-            s_temp = max(fval(1),zero)
+                            RHO4D(1,1,1,1),nr,nphi,nz)
+            rho_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BR4D(1,1,1,1),nr,nphi,nz)
@@ -568,13 +566,7 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-
                slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-               !WRITE(6, *) 'NRL19: ', slow_par
-               !slow_par = coll_op_locust(ne_temp,te_temp,vbeta,Zeff_temp,modb,speed)
-               !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
-               !WRITE(6, *) 'NUBEAM: ', slow_par
-
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
@@ -617,7 +609,7 @@ MODULE beams3d_physics_mod
                q(6)   = q(6) + vll*bz_temp
                RETURN
             END IF
-            l = MAX(MIN(CEILING(SQRT(s_temp)*h1_prof),ns_prof1),1)
+            l = MAX(MIN(CEILING(rho_temp*h1_prof),ns_prof1),1)
             epower_prof(mybeam,l) = epower_prof(mybeam,l) + mymass*dve*dt*speed*weight(myline)
             ipower_prof(mybeam,l) = ipower_prof(mybeam,l) + mymass*dvi*dt*speed*weight(myline)
             vll = vfrac*vll
@@ -635,7 +627,6 @@ MODULE beams3d_physics_mod
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
            zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
-           !IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
            vll = zeta*speed
 
            !------------------------------------------------------------
@@ -704,9 +695,10 @@ MODULE beams3d_physics_mod
          !     Local variables
          !--------------------------------------------------------------
          LOGICAL          :: ltest
-         INTEGER          :: ier, l, m
+         INTEGER          :: ier, l, m,o
          DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
-                             s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp
+                             s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp, &
+                             rho_temp, rlim, zlim
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
          DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
@@ -728,6 +720,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
+
          ! Energy is needed in keV so 0.5*m*v*v/(ec*1000)
 
          ! This is the one that works for ADAS [kJ] E=0.5*m*v^2/1000
@@ -740,6 +733,20 @@ MODULE beams3d_physics_mod
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
          qf(3) = q(3)
+		   rlim=MAX(q(1),rmax)
+		   zlim=MAX(ABS(q(3)),ABS(zmin),ABS(zmax))
+         !--------------------------------------------------------------
+         !     Initialize Ionization here
+		   !--------------------------------------------------------------
+		   CALL RANDOM_NUMBER(rand_prob)
+         cum_prob = one
+
+
+         !--------------------------------------------------------------
+         !     Loop around deposition line calculation to allow
+         !	   multi-pass (currently 2 passes max.)
+         !--------------------------------------------------------------		 
+         DO o = 1, 2
 
          !--------------------------------------------------------------
          !     Follow neutral into plasma using subgrid
@@ -759,8 +766,6 @@ MODULE beams3d_physics_mod
                t = t + dt_local
                phi_temp = MODULO(q(2), phimax)
                IF (phi_temp < 0) phi_temp = phi_temp + phimax
-               !CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
-               !IF (ier==0) THEN
                IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
                    (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
                    (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
@@ -770,23 +775,25 @@ MODULE beams3d_physics_mod
                   xparam = (q(1) - raxis(i)) * hri(i)
                   yparam = (phi_temp - phiaxis(j)) * hpi(j)
                   zparam = (q(3) - zaxis(k)) * hzi(k)
-                  s_temp =1.5
-                  !CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
+                  rho_temp =1.5
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                                   hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                                  S4D(1,1,1,1),nr,nphi,nz)
-                  s_temp = fval(1)
-                  IF (s_temp < one) EXIT
+                                  RHO4D(1,1,1,1),nr,nphi,nz)
+                  rho_temp = fval(1)
+                  IF (rho_temp < one) EXIT
                END IF
-               IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN
+               IF ((q(1) >= rlim) .or. (ABS(q(3)) >= zlim)) THEN			   
+                  !WRITE(6,*) o, phi_temp,s_temp, cum_prob, rand_prob
+                  !WRITE(6,*) q, myv_neut
                   t = my_end+dt_local
-                  RETURN
-               END IF  ! We're outside the grid
+                  end_state(myline) = 5 ! Debug
+                  EXIT !It can happen that we collided with the wall while getting here
+              END IF  ! We're outside the grid
             END DO
             ! Take a step back
             qf = qf - myv_neut*dt_local
             t  =  t - dt_local
-         END DO
+         END DO 
          qs=qf
 
          !--------------------------------------------------------------
@@ -798,9 +805,15 @@ MODULE beams3d_physics_mod
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
+			   IF (o .eq. 1) THEN !Port loss 
                end_state(myline) = 4
-               CALL uncount_wall_hit
+			   ELSE !Shinethrough if particle went through plasma before
+			   end_state(myline) = 3
+			   END IF
+               CALL uncount_wall_hit              
                RETURN
+		    ELSEIF (end_state(myline) .eq. 5) THEN         
+				RETURN
             END IF
          END IF
 
@@ -832,9 +845,9 @@ MODULE beams3d_physics_mod
                   zparam = (q(3) - zaxis(k)) * hzi(k)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                                   hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                                  S4D(1,1,1,1),nr,nphi,nz)
-                  s_temp = fval(1)
-                  IF (s_temp > one) EXIT INNER
+                                  RHO4D(1,1,1,1),nr,nphi,nz)
+                  rho_temp = fval(1)
+                  IF (rho_temp > one) EXIT INNER
                ELSE
                   EXIT INNER
                END IF
@@ -941,8 +954,6 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Calculate Ionization
          !--------------------------------------------------------------
-         CALL RANDOM_NUMBER(rand_prob)
-         cum_prob = one
          dt_local = SQRT(SUM((qe-qs)*(qe-qs)))/((num_depo-1)*q(4))
          tau_inv = EXP(-dt_local*tau_inv)
          DO l = 2, num_depo-1
@@ -957,7 +968,7 @@ MODULE beams3d_physics_mod
          IF (l < num_depo-1) THEN
             IF ( (rlocal(l) <= rmin) .or. (rlocal(l) >= rmax) .or. &
                  (zlocal(l) <= zmin) .or. (zlocal(l) >= zmax) ) THEN 
-               t = my_end + dt_local
+               t = my_end + dt_local             
                RETURN
             END IF
             i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
@@ -966,17 +977,20 @@ MODULE beams3d_physics_mod
             xparam = (rlocal(l) - raxis(i)) * hri(i)
             yparam = (plocal(l) - phiaxis(j)) * hpi(j)
             zparam = (zlocal(l) - zaxis(k)) * hzi(k)
-            !CALL EZspline_interp(S_spl,rlocal(l),plocal(l),zlocal(l),s_temp,ier)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            S4D(1,1,1,1),nr,nphi,nz)
-            s_temp = fval(1)
+                            RHO4D(1,1,1,1),nr,nphi,nz)
+            rho_temp = fval(1)
             lneut=.false.
             xlast = qf(1)
             ylast = qf(2)
-            zlast = qf(3)
+            zlast = qf(3)         
             RETURN
+		 ELSE !If not deposited, move outside plasma (to s>1)
+			qf=qe 		
          END IF
+		 
+		 END DO
 
          !--------------------------------------------------------------
          !     Follow neutral to wall or domain (big steps fine)
@@ -997,7 +1011,7 @@ MODULE beams3d_physics_mod
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
                t = my_end+dt_local
-               CALL uncount_wall_hit
+               CALL uncount_wall_hit             
                RETURN
             END IF
             !xlast = x0; ylast=y0; zlast=z0
@@ -1005,9 +1019,11 @@ MODULE beams3d_physics_mod
             q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
             q(2) = ATAN2(qf(2),qf(1))
             q(3) = qf(3)
-            IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN; t = my_end+dt_local; RETURN; END IF  ! We're outside the grid
-         END DO
-
+            IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN
+               t = my_end+dt_local                  
+               RETURN
+            END IF  ! We're outside the grid
+         END DO    
          RETURN
       END SUBROUTINE beams3d_follow_neut
 
@@ -1909,6 +1925,7 @@ MODULE beams3d_physics_mod
          !        fval       Spline output array
          !--------------------------------------------------------------
          DOUBLE PRECISION :: r_temp, z_temp, phi_temp
+         DOUBLE PRECISION :: RHO
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -1941,8 +1958,9 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            S4D(1,1,1,1),nr,nphi,nz)
-            S = max(fval(1),zero)
+                            RHO4D(1,1,1,1),nr,nphi,nz)
+            RHO = max(fval(1),zero)
+            S = RHO*RHO
          END IF
 
          RETURN
@@ -1977,6 +1995,7 @@ MODULE beams3d_physics_mod
          !        fval       Spline output array
          !--------------------------------------------------------------
          DOUBLE PRECISION :: r_temp, z_temp, phi_temp
+         DOUBLE PRECISION :: RHO
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -2009,8 +2028,9 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            S4D(1,1,1,1),nr,nphi,nz)
-            S = max(fval(1),zero)
+                            RHO4D(1,1,1,1),nr,nphi,nz)
+            RHO = max(fval(1),zero)
+            S = RHO*RHO
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             U4D(1,1,1,1),nr,nphi,nz)
@@ -2044,7 +2064,6 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION, INTENT(inout) :: r_out
          DOUBLE PRECISION, INTENT(inout) :: z_out
          DOUBLE PRECISION, INTENT(out) :: phi_out
-         !REAL(rprec), POINTER, DIMENSION(:,:,:,:), INTENT(inout) :: X4D, Y4D
 
          !--------------------------------------------------------------
          !     Local Variables
@@ -2053,12 +2072,15 @@ MODULE beams3d_physics_mod
          INTEGER          :: n
          DOUBLE PRECISION :: s0, u0, residual, detJ, delR, delZ, fnorm, &
                              factor, x, y, x0, y0, x_term, y_term, dxdR, dxdZ, dydR, dydZ
+         DOUBLE PRECISION :: rho, rho0, xrho0, yrho0
+         DOUBLE PRECISION :: xrho_term, yrho_term
 
          ! For splines
          INTEGER :: i,j,k, ier
          REAL*8 :: xparam, yparam, zparam
          INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
          REAL*8 :: fvalx(1,4),fvaly(1,4) !(f,df/fR,df/dphi,dfdZ)
+         REAL*8 :: fvalxrho(1,4),fvalyrho(1,4) !(f,df/fR,df/dphi,dfdZ)
 
 
          !--------------------------------------------------------------
@@ -2077,9 +2099,12 @@ MODULE beams3d_physics_mod
 
          ! Adjust u
          u = MOD(u,pi2)
+         rho = sqrt(s)
 
          x0 = s * COS(u)
          y0 = s * SIN(U)
+         xrho0 = rho * COS(u)
+         yrho0 = rho * SIN(u)
 
          fnorm = MAX(x0*x0+y0*y0,1E-5)
          fnorm = 1./fnorm
@@ -2095,26 +2120,26 @@ MODULE beams3d_physics_mod
             xparam = (r_out - raxis(i)) * hri(i)
             zparam = (z_out - zaxis(k)) * hzi(k)
             ! Evaluate the Splines
-            CALL R8HERM3FCN(ict,1,1,fvalx,i,j,k,xparam,yparam,zparam,&
+            CALL R8HERM3FCN(ict,1,1,fvalxrho,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            X4D(1,1,1,1),nr,nphi,nz)
-            CALL R8HERM3FCN(ict,1,1,fvaly,i,j,k,xparam,yparam,zparam,&
+                            XRHO4D(1,1,1,1),nr,nphi,nz)
+            CALL R8HERM3FCN(ict,1,1,fvalyrho,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            Y4D(1,1,1,1),nr,nphi,nz)
+                            YRHO4D(1,1,1,1),nr,nphi,nz)
 
-            x_term   = x0 - fvalx(1,1)
-            y_term   = y0 - fvaly(1,1)
+            xrho_term   = xrho0 - fvalxrho(1,1)
+            yrho_term   = yrho0 - fvalyrho(1,1)
             
-            detJ = fvalx(1,2) * fvaly(1,4) - fvaly(1,2) * fvalx(1,4)
+            detJ = fvalxrho(1,2) * fvalyrho(1,4) - fvalyrho(1,2) * fvalxrho(1,4)
             detJ = MAX(detJ,0.0001) !Upper bound for step size as detJ enters in denominator
-            delR = -(-x_term*fvaly(1,4) + y_term*fvalx(1,4))/detJ
-            delZ = -( x_term*fvaly(1,2)  - y_term*fvalx(1,2))/detJ
+            delR = -(-xrho_term*fvalyrho(1,4) + yrho_term*fvalxrho(1,4))/detJ
+            delZ = -( xrho_term*fvalyrho(1,2) - yrho_term*fvalxrho(1,2))/detJ
 
             delR = MIN(MAX(delR,-hr(1)),hr(1))
             delZ = MIN(MAX(delZ,-hz(1)),hz(1))
 
-            residual = (x_term*x_term+y_term*y_term)*fnorm
-            !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual,tau,delR,delZ
+            residual = (xrho_term*xrho_term+yrho_term*yrho_term)*fnorm
+            !WRITE(6,*) '----- ',s,rho,u,s0,rho0,u0,r_out,z_out,residual,tau,delR,delZ
 
             IF (residual < 0.01) THEN !"Damping" of oscillation
                delR = delR*0.5

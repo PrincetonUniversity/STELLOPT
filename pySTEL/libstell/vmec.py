@@ -256,6 +256,49 @@ class VMEC(FourierRep):
 		S22 = np.trapz(S22, x=theta, axis=1)*scale_fact
 		return S11,S12,S21,S22
 
+	def getSpline(self,*args,**kwargs):
+		"""Returns a profile in the AUX_S/F form
+		This routine returns the pressure, current or rotational
+		transform profile in the form AUX form used by the VMEC input
+		spline routines.
+
+		Parameters
+		----------
+		ns : int (optional)
+			Number of gridpoints in toroidal flux to use (default ns<=100)
+		s : list (optional)
+			List of points in normalized toroidal flux to use
+		profile : string (optional)
+			Which field to use (presf, jcurv, iotaf; default: iotaf)
+		lprint : boolean (optional)
+			Print the arrays to the screen (default: False)
+		Returns
+		----------
+		aux_s : list
+			Array of normalized toroidal flux knots
+		aux_f : list
+			Array of pressure values [Pa]
+		"""
+		import numpy as np
+		ns_out  = kwargs.get('ns',min(self.ns,100))
+		aux_s  = kwargs.get('s',None)
+		f_type  = kwargs.get('profile','iotaf')
+		lprint  = kwargs.get('lprint',False)
+		if type(aux_s) is type(None):
+			aux_s = np.linspace(0,1,ns_out)
+		if len(aux_s) > 100:
+			print(' ERROR: number of toroidal points must be <=100')
+			return [],[]
+		s = np.linspace(0,1,self.ns)
+		f = getattr(self,f_type).flatten()
+		aux_f = np.interp(aux_s,s,f)
+		if lprint:
+			print(rf'  AUX_S = {aux_s}')
+			print(rf'  AUX_F = {aux_f}')
+		return aux_s,aux_f
+
+
+
 	def getCurrentPoloidal(self):
 		"""Returns the poloidal total current
 		This routine returns the total poloidal current as used by the
@@ -272,6 +315,79 @@ class VMEC(FourierRep):
 			if (self.xm_nyq[mn]==0 and self.xn_nyq[mn]==0):
 				curpol = 2.0*self.bsubvmnc[self.ns-1,mn]*np.pi/self.nfp 
 		return curpol
+
+	def getBcyl(self,R,phi,Z):
+		"""Wrapper to the GetBcyl_WOUT function
+
+		This routine wrappers the GetBcyl_WOUT function found in
+		vmec_utils.  It takes R, phi, and Z as inputs and returns
+		the Br, Bphi, Bz, s, and u values at that point.A status flag
+		is also returned (info) which indicates
+			 0: successfully find s,u point
+			-1: did not converge
+			-3: sflux > 1, probably
+
+		Parameters
+		----------
+		R : real
+			Cylindical R coordinate [m].
+		phi : real
+			Cylindical phi coordinate [rad].
+		Z : real
+			Cylindical Z coordinate [m].
+		Returns
+		-------
+		br : real
+			Magnetic field in cylindrical R direction [T].
+		bphi : real
+			Magnetic field in cylindrical phi direction [T].
+		bz : real
+			Magnetic field in cylindrical Z direction [T].
+		s : real
+			Normalized toroidal flux coordinate [arb].
+		u : real
+			Poloidal angle coordinate (VMEC angle) [rad].
+		info: int
+			Status of inverse lookup.
+		"""
+		return self.libStell.vmec_getBcyl_wout(R,phi,Z)
+
+	def get_flxcoord(self,s,u,v):
+		"""Wrapper to the get_flxcoord function
+
+		This routine wrappers the get_flxcoord function found in
+		vmec_utils.  It takes s, u, and v as inputs and returns
+		the R, phi, Z, dRds, dZds, dRdu, and dZdu values at that
+		point.
+
+		Parameters
+		----------
+		s : real
+			Normalized toroidal flux (VMEC).
+		u : real
+			Poloidal angle [rad] (VMEC)
+		v : real
+			Toroidal angle [rad] [VMEC]
+
+		Returns
+		-------
+		R : real
+			Cylindical R coordinate [m].
+		phi : real
+			Cylindical phi coordinate [rad].
+		Z : real
+			Cylindical Z coordinate [m].
+		dRds : real
+			Derivative of R coordiante with respect to s (dR/ds)
+		dZds : real
+			Derivative of Z coordiante with respect to s (dZ/ds)
+		dRdu : real
+			Derivative of R coordiante with respect to u (dR/du)
+		dZdu : real
+			Derivative of Z coordiante with respect to u (dZ/du)
+		"""
+		return self.libStell.vmec_get_flxcoord(s,u,v)
+
 
 	def extrapSurface(self,surf=None,dist=0.1):
 		"""Returns an extrapolated surface.
@@ -299,40 +415,50 @@ class VMEC(FourierRep):
 			Z cosine harmonics of extrapolated surface
 		"""
 		import numpy as np
+		# Handle the surface to use
 		if surf:
 			k=surf-1
 		else:
 			k=self.ns-1
 		rho = np.sqrt(float(k)/(self.ns-1))
-		rmnc = self.rmnc[k,:]
-		zmns = self.zmns[k,:]
-		r0c = np.where(self.xm==0,self.rmnc[0,:],0)
-		z0s = np.where(self.xm==0,self.zmns[0,:],0)
-		rmnc = rmnc - r0c
-		zmns = zmns - z0s
-		if self.iasym==1:
-			rmns = self.rmns[k,:]
+		# Extract surface and remove axis component
+		rmnc = np.zeros((self.mnmax))
+		zmns = np.zeros((self.mnmax))
+		rmns = np.zeros((self.mnmax))
+		zmnc = np.zeros((self.mnmax))
+		for mn in range(self.mnmax):
+			if self.xm[mn]==0:
+				rmnc[mn] = self.rmnc[k,mn] - self.rmnc[0,mn]
+				zmns[mn] = self.zmns[k,mn] - self.zmns[0,mn]
+			else:
+				rmnc[mn] = self.rmnc[k,mn]
+				zmns[mn] = self.zmns[k,mn]
+		if self.iasym == 1:
 			zmnc = self.zmnc[k,:]
-			r0s = np.where(self.xm==0,self.rmns[0,:],0)
-			z0c = np.where(self.xm==0,self.zmnc[0,:],0)
-			rmns = rmns - r0s
-			zmnc = zmnc - z0c
+			rmns = self.rmns[k,:]
+			for mn in range(self.mnmax):
+				if self.xm[mn]==0:
+					zmnc[mn] = zmnc[mn] - self.zmnc[0,mn]
+					rmns[mn] = rmns[mn] - self.rmns[0,mn]
+		# Scale by a factor
 		scale = (self.aminor+dist)/self.aminor
 		scale = scale*scale
-		#scalemn = np.ones((self.mnmax))*scale
-		scalemn = np.where(self.xm%2==1, rho*scale, scale)
+		scalemn = np.squeeze(np.where(self.xm%2==1, rho*scale, scale))
 		rmnc = rmnc * scalemn
 		zmns = zmns * scalemn
-		rmnc = rmnc + r0c
-		zmns = zmns + z0s
 		if self.iasym == 1:
+			zmnc = zmnc * scalemn
 			rmns = rmns * scalemn
-			zmnc = zmns * scalemn
-			rmns = rmns + r0s
-			zmnc = zmnc + z0c
-		else:
-			rmns = np.zeros((self.mnmax))
-			zmnc = np.zeros((self.mnmax))
+		# Add axis back in
+		for mn in range(self.mnmax):
+			if self.xm[mn]==0:
+				rmnc[mn] = rmnc[mn] + self.rmnc[0,mn]
+				zmns[mn] = zmns[mn] + self.zmns[0,mn]
+		if self.iasym == 1:
+			for mn in range(self.mnmax):
+				if self.xm[mn]==0:
+					zmnc[mn] = zmnc[mn] + self.zmnc[0,mn]
+					rmns[mn] = rmns[mn] + self.rmns[0,mn]
 		return rmnc, zmns, rmns, zmnc
 
 	def offsetCurve(self, R, Z, distance=0.1):

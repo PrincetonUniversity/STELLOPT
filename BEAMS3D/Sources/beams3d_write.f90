@@ -16,6 +16,7 @@
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
+                                 RHO_ARR, &
                                  ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
                                  plasma_mass, plasma_Zmean, &
                                  B_kick_min, B_kick_max, freq_kick, &
@@ -114,6 +115,8 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_PHI',ier)
                CALL write_var_hdf5(fid,'S_ARR',nr,nphi,nz,ier,DBLVAR=S_ARR,ATT='Normalized Toroidal Flux',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_ARR',ier)
+               CALL write_var_hdf5(fid,'RHO_ARR',nr,nphi,nz,ier,DBLVAR=RHO_ARR,ATT='Normalized Radius',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'RHO_ARR',ier)
                CALL write_var_hdf5(fid,'U_ARR',nr,nphi,nz,ier,DBLVAR=U_ARR,ATT='Equilibrium Poloidal Angle [rad]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'U_ARR',ier)
                CALL write_var_hdf5(fid,'POT_ARR',nr,nphi,nz,ier,DBLVAR=POT_ARR,ATT='Electrostatic Potential [V]',ATT_NAME='description')
@@ -381,8 +384,8 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'shine_port',ier)
                END IF
                IF (ASSOCIATED(NEUTRONS_ARR)) THEN
-                  CALL write_var_hdf5(fid,'NEUTRON_RATE',2,nr,nphi,nz,ier,DBLVAR=NEUTRONS_ARR,&
-                                      ATT='Neutron Rate [m^-3]',ATT_NAME='description')
+                  CALL write_var_hdf5(fid,'NEUTRON_RATE',2,nr-1,nphi-1,nz-1,ier,DBLVAR=NEUTRONS_ARR,&
+                                      ATT='Neutron Rate [neutrons/(m^3*s)]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'NEUTRONS_ARR',ier)
                END IF
                IF (ASSOCIATED(E_NEUTRONS)) THEN

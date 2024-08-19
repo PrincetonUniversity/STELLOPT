@@ -1,8 +1,17 @@
 # This top level makefile is only used to setup the build directories.
 # In general this should not be called directly, instead use the
 # build_all script.
+#
+#  This top level makefile includes
+#      make.inc includes
+#           make_$(MACHINE).inc (from SHARE)  ... no external makefiles
+# and       make_all.inc        (from SHARE)
+#
+#
 
 include make.inc
+
+FLAG_CALLED_FROM_BUILD_ALL ?= false
 
 .PHONY: release debug clean_release clean_debug static_release shared_release
 
@@ -19,16 +28,23 @@ static_release: pre_build
 shared_release: pre_build
 
 pre_build:
-  ifneq ($(FLAG_CALLED_FROM_BUILD_ALL),true)
+ifeq "$(FLAG_CALLED_FROM_BUILD_ALL)" "false"
 	@echo 'To compile STELLOPT use the build_all script instead of calling make directly.'
 	@(exit 1)
-  endif
-  ifeq ($(wildcard $(MYHOME)),)
+endif
+ifeq ($(wildcard $(MYHOME)),)
 	@echo 'Creating STELLOPT output directory.'
 	mkdir -p $(MYHOME)
-  endif
+endif
 
+pystel:
+	@echo 'Building pySTEL'
+	@cd pySTEL; python3 setup.py install --user
+#	@python3 -m pip install ./pySTEL --user
 
+libstell$(SHARED_EXT):
+	@cd LIBSTELL
+	@make shared_release
 
 test_make:
 	@echo MACHINE is $(MACHINE)
@@ -46,9 +62,9 @@ test_make:
 #	@echo MGRID_DIR is $(MGRID_DIR)
 #	@echo DKES_DIR is $(DKES_DIR)
 #	@echo NEO_DIR is $(NEO_DIR)
-#	@echo GENE_DIR is $(GENE_DIR)
-#	@echo REGCOIL_DIR is $(REGCOIL_DIR)
-#	@echo SFINCS_DIR is $(SFINCS_DIR)
-#	@echo MANGO_DIR is $(MANGO_DIR)
+	@echo GENE_DIR is $(GENE_DIR)
+	@echo REGCOIL_DIR is $(REGCOIL_DIR)
+	@echo SFINCS_DIR is $(SFINCS_DIR)
+	@echo MANGO_DIR is $(MANGO_DIR)
 	@echo Compiler flags are $(LIBS)
 	@echo LIB_LINK is $(LIB_LINK)
