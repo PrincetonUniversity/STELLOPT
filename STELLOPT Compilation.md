@@ -51,7 +51,13 @@ Specific Compilation Issues
 
 [Compiling on the CINECA Cluster (Marconi)](STELLOPT Compilation CINECA)
 
+[Compiling on an Debian Machine](STELLOPT Compilation Debian)
+
+[Compiling with Docker](STELLOPT Compilation Docker)
+
 [STELLOPT Compilation on the EUROfusion Gateway](STELLOPT Compilation on the EUROfusion Gateway)
+
+[Compiling on the ITER Cluster](STELLOPT Compilation at ITER)
 
 [Compiling on the MPCDF Clusters (Raven, Viper)](STELLOPT Compilation on MPCDF)
 
@@ -61,6 +67,3 @@ Specific Compilation Issues
 
 [Compiling on a Redhat Machine](STELLOPT Compilation Redhat)
 
-[Compiling on an Debian Machine](STELLOPT Compilation Debian)
-
-[Compiling on the ITER Cluster](STELLOPT Compilation at ITER)
