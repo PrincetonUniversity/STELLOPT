@@ -17,14 +17,15 @@ MODULE fidasim_input_mod
       nsh_prof4,  r_h, p_h, z_h, e_h, pi_h, h1_prof
    USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
       zaxis, phiaxis, POT_ARR, &
-      TE, TI, NE, npot, nte, nti, &
+      TE, TI, NE, npot, nte, nti, nvtor, &
       POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
-      BR4D, BPHI4D, BZ4D, &
+      BR4D, BPHI4D, BZ4D, VTOR4D,&
       hr, hp, hz, hri, hpi, hzi, U4D, &
       rmin, rmax,  phimin, phimax, &
       rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, &
       raxis_fida, zaxis_fida, phiaxis_fida, nr_fida, nphi_fida, nz_fida, &
-      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida,nne, nte, nti, nzeff
+      nenergy_fida, npitch_fida, energy_fida, pitch_fida, t_fida,&
+      nne, nte, nti, nzeff, nvtor
    USE beams3d_runtime
    ! , ONLY: id_string, nbeams, beam, lverb, handle_err, &
    !    HDF5_OPEN_ERR,HDF5_WRITE_ERR,HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, &

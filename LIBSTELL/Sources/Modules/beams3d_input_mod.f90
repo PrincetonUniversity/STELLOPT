@@ -73,9 +73,9 @@
                                TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
                                TI_AUX_F, POT_AUX_S, POT_AUX_F, &
                                NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
-                               ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
+                               ZEFF_AUX_S, ZEFF_AUX_F, VTOR_AUX_S, VTOR_AUX_F,&
                                ldebug, ne_scale, te_scale, ti_scale, &
-                               zeff_scale, &
+                               zeff_scale, P_beams, &
                                plasma_zavg, plasma_mass, plasma_Zmean, &
                                therm_factor, fusion_scale, &
                                nrho_dist, ntheta_dist, & 
@@ -318,6 +318,11 @@
             IF (POT_AUX_S(ik) >= 0.0) npot = npot+1
          END DO
          IF (npot > 0)  s_max_pot = POT_AUX_S(npot)
+         nvtor = 0
+         DO ik = 1, MAXPROFLEN
+            IF (VTOR_AUX_S(ik) >= 0.0) nvtor = nvtor+1
+         END DO
+         IF (nvtor > 0)  s_max_vtor = VTOR_AUX_S(nvtor)         
          ! Handle multiple ion species
          IF (ANY(NI_AUX_S >0)) THEN
             nzeff = 0

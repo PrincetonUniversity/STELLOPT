@@ -13,7 +13,7 @@
       USE EZspline
       USE beams3d_globals, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
                                  phimin, phimax, vc_adapt_tol, nte, &
-                                 nne, nti,nzeff, npot, plasma_mass, &
+                                 nne, nti,nzeff, nvtor,npot, plasma_mass, &
                                  plasma_Zmean, therm_factor, &
                                  B_kick_min, B_kick_max, freq_kick, &
                                  E_kick, rho_fullorbit, rmin_fida, &
@@ -23,7 +23,7 @@
                                  npitch_fida, &
                                  t_fida, dexionT, dexionD,dexionHe3, &
                                  s_max,s_max_te, s_max_ne,s_max_zeff,&
-                                 s_max_ti, s_max_pot
+                                 s_max_ti, s_max_pot,s_max_vtor
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -54,10 +54,10 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER  ::    win_raxis, win_phiaxis, win_zaxis, win_B_R, win_B_PHI, win_B_Z,&
-                     win_MODB, win_TE, win_NE, win_TI, win_ZEFF_ARR,&
+                     win_MODB, win_TE, win_NE, win_TI, win_ZEFF_ARR,win_VTOR_ARR,&
                      win_S_ARR, win_U_ARR,win_X_ARR,win_Y_ARR, win_POT_ARR, win_BR4D, win_BPHI4D, &
                      win_RHO_ARR, win_XRHO_ARR, win_YRHO_ARR, &
-                     win_BZ4D, win_MODB4D, win_TE4D, win_NE4D, win_TI4D, win_ZEFF4D, &
+                     win_BZ4D, win_MODB4D, win_TE4D, win_NE4D, win_TI4D, win_ZEFF4D,win_VTOR4D, &
                      win_U4D,  win_POT4D, win_req_axis, win_zeq_axis, &
                      win_RHO4D, win_XRHO4D, win_YRHO4D, &
                      win_wall_load, win_wall_shine, win_hr, win_hp, win_hz, &
@@ -72,14 +72,14 @@
       REAL(rprec), POINTER :: raxis_fida(:), zaxis_fida(:), phiaxis_fida(:), energy_fida(:), pitch_fida(:)
       REAL(rprec), POINTER :: wall_load(:,:), wall_shine(:,:)
       REAL(rprec), POINTER :: B_R(:,:,:),B_PHI(:,:,:), B_Z(:,:,:), MODB(:,:,:),&
-                                  TE(:,:,:), NE(:,:,:), TI(:,:,:), ZEFF_ARR(:,:,:), &
+                                  TE(:,:,:), NE(:,:,:), TI(:,:,:), ZEFF_ARR(:,:,:), VTOR_ARR(:,:,:), &
                                   RHO_ARR(:,:,:), XRHO_ARR(:,:,:), YRHO_ARR(:,:,:), &
                                   S_ARR(:,:,:), U_ARR(:,:,:), POT_ARR(:,:,:)
       REAL(rprec), POINTER :: NI(:,:,:,:), BEAM_DENSITY(:,:,:,:), NEUTRONS_ARR(:,:,:,:)
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
                                                   NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET
       REAL(rprec), DIMENSION(:,:,:,:), POINTER :: BR4D, BPHI4D, BZ4D, MODB4D, &
-                                  TE4D, NE4D, TI4D, ZEFF4D, &
+                                  TE4D, NE4D, TI4D, ZEFF4D, VTOR4D,&
                                   U4D, POT4D, &
                                   RHO4D, XRHO4D, YRHO4D
       REAL(rprec), DIMENSION(:,:,:,:,:), POINTER :: NI5D
@@ -89,8 +89,8 @@
       REAL*8, POINTER :: hri(:), hpi(:), hzi(:)
       TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl, MODB_spl, TE_spl, NE_spl, &
                             RHO_spl, XRHO_spl, YRHO_spl, &
-                            TI_spl, ZEFF_spl, U_spl, POT_spl
-      TYPE(EZspline1_r8) :: TE_spl_s, NE_spl_s, TI_spl_S, ZEFF_spl_s, Vp_spl_s, POT_spl_s
+                            TI_spl, ZEFF_spl, VTOR_spl, U_spl, POT_spl
+      TYPE(EZspline1_r8) :: TE_spl_s, NE_spl_s, TI_spl_S, ZEFF_spl_s, VTOR_spl_s,  Vp_spl_s, POT_spl_s
       TYPE(EZspline1_r8), DIMENSION(4) :: NI_spl_s
 
       END MODULE beams3d_grid

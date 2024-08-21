@@ -270,6 +270,17 @@
          IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A,F8.5)') '   Zeff = [', &
             MINVAL(ZEFF_AUX_F(1:nzeff)),',',MAXVAL(ZEFF_AUX_F(1:nzeff)),'];  NZEFF: ',nzeff, ';  S_MAX_ZEFF: ',s_max_zeff
          END IF
+         ! VTOR
+         IF (nvtor>0) THEN
+            CALL EZspline_init(VTOR_spl_s,nvtor,bcs1_s,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init7',ier)
+            VTOR_spl_s%isHermite   = 0
+            VTOR_spl_s%x1          = VTOR_AUX_S(1:nvtor)
+            CALL EZspline_setup(VTOR_spl_s,VTOR_AUX_F(1:nvtor),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init8',ier)
+         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A,F8.5)') '   VTOR = [', &
+            MINVAL(VTOR_AUX_F(1:nvtor)),',',MAXVAL(VTOR_AUX_F(1:nvtor)),'];  NVTOR: ',nvtor, ';  S_MAX_VTOR: ',s_max_vtor
+         END IF         
          ! POTENTIAL
          IF (npot>0) THEN
             CALL EZspline_init(POT_spl_s,npot,bcs1_s,ier)
@@ -360,6 +371,7 @@
       CALL mpialloc(NE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE)
       CALL mpialloc(TI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI)
       CALL mpialloc(ZEFF_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF_ARR)
+      CALL mpialloc(VTOR_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_VTOR_ARR)
       CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
       CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
       CALL mpialloc(RHO_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_RHO_ARR)
@@ -383,6 +395,7 @@
          XRHO_ARR = 1.5
          YRHO_ARR = 1.5
          POT_ARR = 0
+         VTOR_ARR = 0
          NI = 0
          ! Setup grid helpers
          ! Note: All helpers are defined in terms of differences on half grid
@@ -487,22 +500,28 @@
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TI',ier)
             CALL EZspline_init(ZEFF_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: ZEFF',ier)
+            CALL EZspline_init(VTOR_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: VTOR',ier)            
             TE_spl%isHermite   = 1
             NE_spl%isHermite   = 1
             TI_spl%isHermite   = 1
             ZEFF_spl%isHermite = 1
+            VTOR_spl%isHermite = 1
             TE_spl%x1   = raxis
             NE_spl%x1   = raxis
             TI_spl%x1   = raxis
             ZEFF_spl%x1 = raxis
+            VTOR_spl%x1 = raxis
             TE_spl%x2   = phiaxis
             NE_spl%x2   = phiaxis
             TI_spl%x2   = phiaxis
             ZEFF_spl%x2 = phiaxis
+            VTOR_spl%x2 = phiaxis
             TE_spl%x3   = zaxis
             NE_spl%x3   = zaxis
             TI_spl%x3   = zaxis
             ZEFF_spl%x3 = zaxis
+            VTOR_spl%x3 = zaxis
             CALL EZspline_setup(TE_spl,TE,ier,EXACT_DIM=.true.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TE',ier)
             CALL EZspline_setup(NE_spl,NE,ier,EXACT_DIM=.true.)
@@ -511,22 +530,27 @@
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TI',ier)
             CALL EZspline_setup(ZEFF_spl,ZEFF_ARR,ier,EXACT_DIM=.true.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: ZEFF_ARR',ier)
+            CALL EZspline_setup(VTOR_spl,VTOR_ARR,ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: VTOR_ARR',ier)            
          END IF
          ! Now allocate the 4D spline array (which is all we need)
          CALL mpialloc(TE4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE4D)
          CALL mpialloc(NE4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE4D)
          CALL mpialloc(TI4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI4D)
          CALL mpialloc(ZEFF4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF4D)
+         CALL mpialloc(VTOR4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_VTOR4D)
          ! Now have master copy data over and free the splines
          IF (myid_sharmem == master) THEN
             TE4D = TE_SPL%fspl
             NE4D = NE_SPL%fspl
             TI4D = TI_SPL%fspl
             ZEFF4D = ZEFF_SPL%fspl
+            VTOR4D = VTOR_SPL%fspl
             CALL EZspline_free(TE_spl,ier)
             CALL EZspline_free(NE_spl,ier)
             CALL EZspline_free(TI_spl,ier)
             CALL EZspline_free(ZEFF_spl,ier)
+            CALL EZspline_free(VTOR_spl,ier)
          END IF
          ! Handle the NI array separately (Use NE_spl since it should be free now)
          CALL mpialloc(NI5D, 8, nr, nphi, nz, NION, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI5D)
@@ -701,6 +725,7 @@
          CALL mpidealloc(NI,win_NI)
          CALL mpidealloc(TI,win_TI)
          CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
+         CALL mpidealloc(VTOR_ARR,win_VTOR_ARR)
       END IF
 
       ! DEALLOCATE Variables
@@ -709,6 +734,7 @@
          IF (nne > 0) CALL EZspline_free(NE_spl_s,ier)
          IF (nti > 0) CALL EZspline_free(TI_spl_s,ier)
          IF (npot > 0) CALL EZspline_free(POT_spl_s,ier)
+         IF (nvtor > 0) CALL EZspline_free(VTOR_spl_s,ier)
          IF (nzeff > 0) THEN
             CALL EZspline_free(ZEFF_spl_s,ier)
             DO i = 1, NION

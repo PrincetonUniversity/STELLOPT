@@ -33,7 +33,7 @@ MODULE beams3d_physics_mod
                               RHO4D, XRHO4D, YRHO4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
-                              zaxis, U4D,nzeff, dexionT, dexionD, dexionHe3, &
+                              zaxis, U4D,nzeff, nvtor, dexionT, dexionD, dexionHe3, &
                               hr, hp, hz, hri, hpi, hzi, &
                               B_kick_min, B_kick_max, E_kick, freq_kick, &
                               plasma_mass, NI5D, BR4D, BZ4D, BPHI4D,plasma_Zmean

@@ -23,9 +23,11 @@
                                  BR_spl, BZ_spl, TE_spl_s, NE_spl_s, TI_spl_s, &
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
+                                 nvtor, VTOR_ARR,VTOR_spl_s,&
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq, NI_spl_s, NI,&
-                                 s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
+                                 s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti,&
+                                 s_max_pot, s_max_vtor
       USE beams3d_lines, ONLY: GFactor, ns_prof1, h1_prof
       USE wall_mod, ONLY: wall_load_mn
       USE mpi_params
@@ -308,7 +310,7 @@
       uflx = 0.0
 
       IF (mylocalid == mylocalmaster) THEN
-         TE = 0; NE = 0; TI=0; S_ARR=scaleup*scaleup; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;
+         TE = 0; NE = 0; TI=0; S_ARR=scaleup*scaleup; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1; VTOR_ARR=0;
       END IF
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
@@ -348,6 +350,7 @@
                IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),NE(i,j,k),ier)
                IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),TI(i,j,k),ier)
                IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),POT_ARR(i,j,k),ier)
+               IF (nvtor > 0) CALL EZspline_interp(VTOR_spl_s,MIN(sflx,s_max_vtor),VTOR_ARR(i,j,k),ier)
                IF (nzeff > 0) THEN
                   CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),ZEFF_ARR(i,j,k),ier)
                   DO u=1, NION
