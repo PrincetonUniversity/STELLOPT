@@ -64,7 +64,8 @@ MODULE beams3d_runtime
                               NE_AUX_S, TE_AUX_S, NI_AUX_S, TI_AUX_S, &
                               NE_AUX_F, TE_AUX_F, NI_AUX_F, TI_AUX_F, &
                               ZEFF_AUX_S, POT_AUX_S, ZEFF_AUX_F, &
-                              POT_AUX_F, NI_AUX_M, NI_AUX_Z, &
+                              POT_AUX_F, VTOR_AUX_S, VTOR_AUX_F,&
+                              NI_AUX_M, NI_AUX_Z, &
                               Adist_beams, Asize_beams, DIV_BEAMS, &
                               DEX_BEAMS, R_BEAMS, Z_BEAMS, PHI_BEAMS, &
                               E_BEAMS, MASS_BEAMS, CHARGE_BEAMS, &

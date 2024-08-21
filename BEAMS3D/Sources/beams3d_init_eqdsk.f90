@@ -24,9 +24,10 @@
                                  BR_spl, BZ_spl, TE_spl_s, NE_spl_s, TI_spl_s, &
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
+                                 nvtor, VTOR_ARR,VTOR_spl_s,&
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq, NI_spl_s, NI,&
-                                 s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
+                                 s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot, s_max_vtor
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE wall_mod, ONLY: wall_load_seg
       USE mpi_params
@@ -45,7 +46,7 @@
       LOGICAL :: lcreate_wall, lverb_wall
       INTEGER :: ier, s, i, j, k, u
       REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
-                     tetemp,netemp,titemp,zetemp,pottemp, rsmax, rsmin,&
+                     tetemp,netemp,titemp,zetemp,pottemp, vtortemp,rsmax, rsmin,&
                      zsmax, zsmin,rhoflx, nitemp
 
 !-----------------------------------------------------------------------
@@ -152,7 +153,7 @@
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nz, mystart, myend)
 
       IF (mylocalid == mylocalmaster) THEN
-         TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;
+         TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;VTOR_ARR = 1;
       END IF
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
@@ -181,11 +182,12 @@
          U_ARR(i,:,k)=uflx
 
       IF (sflx <= s_max) THEN
-         tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0
+         tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0; vtortemp=0
          IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),tetemp,ier)
          IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),netemp,ier)
          IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),titemp,ier)
          IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),pottemp,ier)
+         IF (nvtor > 0) CALL EZspline_interp(VTOR_spl_s,MIN(sflx,s_max_vtor),vtortemp,ier)
          !IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
          IF (nzeff > 0) THEN
             CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),zetemp,ier)
@@ -195,7 +197,7 @@
             END DO
          END IF
             NE(i,:,k) = netemp; TE(i,:,k) = tetemp; TI(i,:,k) = titemp
-            POT_ARR(i,:,k) = pottemp; ZEFF_ARR(i,:,k) = zetemp
+            POT_ARR(i,:,k) = pottemp;  VTOR_ARR(i,:,k) = vtortemp; ZEFF_ARR(i,:,k) = zetemp
       ELSE
          pottemp = 0; sflx = 1
          IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)

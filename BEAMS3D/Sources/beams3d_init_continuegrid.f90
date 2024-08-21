@@ -17,9 +17,10 @@ SUBROUTINE beams3d_init_continuegrid
       BR_spl, BZ_spl, TE_spl_s, NE_spl_s, TI_spl_s, &
       nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
       U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
+      nvtor, VTOR_ARR,VTOR_spl_s,&
       ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
       phiedge_eq, reff_eq, NI_spl_s, NI,&
-      s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
+      s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot, s_max_vtor
    USE beams3d_lines, ONLY: GFactor, ns_prof1, h1_prof
    USE read_beams3d_mod, ONLY: get_beams3d_grid, get_beams3d_B, &
       read_beams3d_deallocate, &
@@ -40,7 +41,7 @@ SUBROUTINE beams3d_init_continuegrid
    LOGICAL :: lcreate_wall
    INTEGER :: ier, s, i, j, k, u
    REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
-      tetemp,netemp,titemp,zetemp,pottemp, rminor
+      tetemp,netemp,titemp,zetemp,pottemp, vtortemp, rminor
    INTEGER :: nrh,nzh,nph
    REAL(rprec) :: rmin_hint, rmax_hint, zmin_hint, zmax_hint, &
       pmax_hint, pres_max
@@ -86,7 +87,7 @@ SUBROUTINE beams3d_init_continuegrid
    CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
 
    IF (mylocalid == mylocalmaster) THEN
-      TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;
+      TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;VTOR_ARR = 1;
    END IF
 #if defined(MPI_OPT)
    CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
@@ -112,6 +113,7 @@ SUBROUTINE beams3d_init_continuegrid
          IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),netemp,ier)
          IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),titemp,ier)
          IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),pottemp,ier)
+         IF (nvtor > 0) CALL EZspline_interp(VTOR_spl_s,MIN(sflx,s_max_vtor),vtortemp,ier)
          IF (nzeff > 0) THEN
             CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),ZEFF_ARR(i,j,k),ier)
             DO u=1, NION
@@ -119,7 +121,7 @@ SUBROUTINE beams3d_init_continuegrid
             END DO
          END IF
          NE(i,j,k) = netemp; TE(i,j,k) = tetemp; TI(i,j,k) = titemp
-         POT_ARR(i,j,k) = pottemp
+         POT_ARR(i,j,k) = pottemp; VTOR_ARR(i,:,k) = vtortemp
       END IF
       IF (MOD(s,nr) == 0) THEN
          IF (lverb) THEN
