@@ -30,7 +30,7 @@ MODULE beams3d_physics_mod
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
                               MODB_spl, MODB4D, &
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
-                              RHO4D, XRHO4D, YRHO4D, &
+                              RHO4D, XRHO4D, YRHO4D, VTOR4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
                               zaxis, U4D,nzeff, nvtor, dexionT, dexionD, dexionHe3, &
@@ -701,7 +701,7 @@ MODULE beams3d_physics_mod
                              rho_temp, rlim, zlim
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
-         DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
+         DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo),vtorlocal(num_depo)
          DOUBLE PRECISION :: zefflocal(num_depo)
          DOUBLE PRECISION :: nilocal(NION,num_depo)
          DOUBLE PRECISION :: tau_inv(num_depo), energy(num_depo)
@@ -894,6 +894,10 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             NE4D(1,1,1,1),nr,nphi,nz)
             nelocal(l) = MAX(fval(1),zero)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            VTOR4D(1,1,1,1),nr,nphi,nz)
+            vtorlocal(l) = MAX(fval(1),zero)            
             DO m = 1, NION
                CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&

@@ -143,6 +143,7 @@
       s_max_ne = 0.0_rprec
       s_max_zeff = 0.0_rprec
       s_max_pot = 0.0_rprec
+      s_max_vtor = 0.0_rprec
       TE_AUX_S = -1
       TE_AUX_F = -1
       NE_AUX_S = -1
@@ -153,6 +154,8 @@
       ZEFF_AUX_F = -1
       POT_AUX_S = -1
       POT_AUX_F = -1
+      VTOR_AUX_S = -1
+      VTOR_AUX_F = -1      
       NI_AUX_S = -1
       NI_AUX_F = 0
       NI_AUX_Z = 0
