@@ -972,7 +972,7 @@ class LIBSTELL():
 		# Get 1D Real Arrays
 		realList = ['iotas','iotaf','presf','phipf','chipf','chi','phi','mass',\
 			'pres','beta_vol','phip','buco','bvco','vp','overr','jcuru',\
-			'jcurv','specw','jdotb','dmerc','dwell','dcurr','dgeod','equif']
+			'jcurv','specw','jdotb','dmerc','dwell','dcurr','dgeod','equif','bdotb']
 		realLen = [(scalar_data['ns'],1)]*len(realList)
 		realList.extend(['xm','xn','xm_nyq','xn_nyq'])
 		realLen.extend([(scalar_data['mnmax'],1)]*2)
