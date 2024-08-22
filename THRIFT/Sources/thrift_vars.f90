@@ -110,5 +110,13 @@ MODULE thrift_vars
     REAL(rprec), DIMENSION(nsys,3)     :: antennaposition_ecrh, &
                  targetposition_ecrh,rbeam_ecrh,rfocus_ecrh
 
+    ! For DKES
+    INTEGER, PARAMETER :: DKES_NS_MAX = 64
+    INTEGER, PARAMETER :: DKES_NSTAR_MAX = 32
+    INTEGER :: nruns_dkes
+    INTEGER, DIMENSION(:), POINTER :: DKES_rundex
+    INTEGER, DIMENSION(DKES_NS_MAX) :: DKES_K
+    REAL(rprec), DIMENSION(DKES_NSTAR_MAX) :: DKES_Erstar, DKES_Nustar
+
 
 END MODULE thrift_vars
