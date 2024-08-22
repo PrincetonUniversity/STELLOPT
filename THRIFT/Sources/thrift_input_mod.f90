@@ -35,7 +35,8 @@
                               targetposition_ecrh, rbeam_ecrh, &
                               rfocus_ecrh, nra_ecrh, nphi_ecrh, &
                               freq_ecrh, power_ecrh, &
-                              pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w
+                              pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w, &
+                              dkes_k, dkes_Erstar, dkes_Nustar
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -84,6 +85,10 @@
       rfocus_ecrh = 0
       nra_ecrh = 0
       nphi_ecrh = 8
+      ! DKES Vars
+      dkes_k = -1
+      dkes_Erstar = 1E10
+      dkes_Nustar = 1E10
       RETURN
       END SUBROUTINE init_thrift_input
       
@@ -115,7 +120,8 @@
       CALL tolower(bootstrap_type)
       CALL tolower(eccd_type)
       leccd = eccd_type .ne. ''
-      nsj = nrho;
+      nsj = nrho
+      nruns_dkes = COUNT(dkes_k>0)*COUNT(dkes_Erstar<1E10)*COUNT(dkes_Nustar<1E10)
       RETURN
       END SUBROUTINE read_thrift_input
 
@@ -150,6 +156,7 @@
       WRITE(iunit_out,outint) 'MBOZ',nboz
       WRITE(iunit_out,'(A)') '!---------- ECCD PARAMETERS ------------'
       WRITE(iunit_out,outstr) 'ECCD_TYPE',eccd_type
+      WRITE(iunit_out,'(A)') '!---------- DKES PARAMETERS ------------'
       WRITE(iunit_out,'(A)') '/'
       RETURN
       END SUBROUTINE write_thrift_namelist

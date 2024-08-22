@@ -111,6 +111,16 @@ else ifeq ($(MAKECMDGOALS),xthrift)
   $(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
   $(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
   $(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO)
+  ifeq ($(LDKES),T)
+    DKES_DIR = ../../DKES
+    LIB_DKES = libdkes$(STATIC_EXT)
+    MOD_PATH += -I$(DKES_DIR)/$(LOCTYPE)
+    PRECOMP += -DDKES_OPT
+    LIB_LINK += $(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES)
+  else
+    DKES_DIR = 
+    LIB_DKES = 
+  endif
   LGENE = F
   LCOILOPT = F
   LSFINCS = F

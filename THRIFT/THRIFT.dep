@@ -22,7 +22,25 @@ thrift_boozer.o : \
       $(BOOZ_DIR)/$(LOCTYPE)/booz_persistent.o \
       $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
-      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o
+
+thrift_dkes.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_input_mod.o \
+      thrift_profiles_mod.o \
+      thrift_equil.o \
+      thrift_funcs.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  \
+      $(LIB_DIR)/$(LOCTYPE)/bootsj_input.o \
+      $(DKES_DIR)/$(LOCTYPE)/vimatrix.o \
+      $(DKES_DIR)/$(LOCTYPE)/vnamecl2.o \
+      $(DKES_DIR)/$(LOCTYPE)/vcmain.o \
+      $(DKES_DIR)/$(LOCTYPE)/dkes_input.o \
+      $(DKES_DIR)/$(LOCTYPE)/dkes_realspace.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o 
 
 thrift_diagno.o : \
       thrift_runtime.o \

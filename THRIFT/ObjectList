@@ -1,4 +1,5 @@
 ObjectFiles = \
+thrift_dkes.o \
 thrift_diagno.o \
 thrift_run_diagnostics.o \
 thrift_run_nbcd.o \
