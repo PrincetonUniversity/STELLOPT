@@ -16,7 +16,7 @@
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
-                                 RHO_ARR, &
+                                 RHO_ARR, VTOR_ARR, &
                                  ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
                                  plasma_mass, plasma_Zmean, &
                                  B_kick_min, B_kick_max, freq_kick, &
@@ -145,6 +145,10 @@
                   CALL write_var_hdf5(fid,'ZEFF_ARR',nr,nphi,nz,ier,DBLVAR=ZEFF_ARR,ATT='Effective Ion Charge',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ZEFF_ARR',ier)
                END IF
+               IF (ASSOCIATED(VTOR_ARR)) THEN
+                  CALL write_var_hdf5(fid,'VTOR_ARR',nr,nphi,nz,ier,DBLVAR=VTOR_ARR,ATT='Toroidal rotation [m/s]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'VTOR_ARR',ier)
+               END IF               
                IF (ASSOCIATED(vertex)) THEN
                   CALL write_scalar_hdf5(fid,'nvertex',ier,INTVAR=nvertex,ATT='Number of Wall Vertices',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nvertex',ier)

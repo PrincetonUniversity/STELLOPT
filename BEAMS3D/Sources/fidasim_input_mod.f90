@@ -17,7 +17,7 @@ MODULE fidasim_input_mod
       nsh_prof4,  r_h, p_h, z_h, e_h, pi_h, h1_prof
    USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
       zaxis, phiaxis, POT_ARR, &
-      TE, TI, NE, npot, nte, nti, nvtor, &
+      TE, TI, NE, npot, nte, nti, &
       POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
       BR4D, BPHI4D, BZ4D, VTOR4D,&
       hr, hp, hz, hri, hpi, hzi, U4D, &
@@ -814,7 +814,7 @@ SUBROUTINE write_fidasim_equilibrium
         REAL*8 :: fvalE(1,3), fval(1), xparam, yparam, zparam
 
         DOUBLE PRECISION         :: x0, y0, z0, vol
-        DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
+        DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), rtemp5(:,:,:), r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
 
         CHARACTER(LEN=8) :: temp_str8
 
@@ -990,7 +990,7 @@ SUBROUTINE write_fidasim_equilibrium
         CALL h5dclose_f(temp_gid,ier)
         DEALLOCATE(mask)
 
-        !           PLASMA ROTATION/FLOW
+                !           PLASMA ROTATION/FLOW
         ALLOCATE(rtemp(nr_fida,nz_fida,nphi_fida))
         rtemp = 0.0
         CALL write_var_hdf5(qid_gid,'vr',nr_fida,nz_fida, nphi_fida,ier,DBLVAR=rtemp)
@@ -999,24 +999,27 @@ SUBROUTINE write_fidasim_equilibrium
         CALL write_att_hdf5(temp_gid,'description','Bulk plasma flow in the r-direction: Vr(r,z,phi)',ier)
         CALL write_att_hdf5(temp_gid,'units','cm/s',ier)
         CALL h5dclose_f(temp_gid,ier)
-        CALL write_var_hdf5(qid_gid,'vt',nr_fida,nz_fida, nphi_fida,ier,DBLVAR=rtemp)
-        IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vt',ier)
-        CALL h5dopen_f(qid_gid, 'vt', temp_gid, ier)
-        CALL write_att_hdf5(temp_gid,'description','Bulk plasma flow in the toroidal phi-direction: Vphi(r,z,phi)',ier)
-        CALL write_att_hdf5(temp_gid,'units','cm/s',ier)
-        CALL h5dclose_f(temp_gid,ier)
         CALL write_var_hdf5(qid_gid,'vz',nr_fida,nz_fida, nphi_fida,ier,DBLVAR=rtemp)
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vz',ier)
         CALL h5dopen_f(qid_gid, 'vz', temp_gid, ier)
         CALL write_att_hdf5(temp_gid,'description','Bulk plasma flow in the z-direction: Vz(r,z,phi)',ier)
         CALL write_att_hdf5(temp_gid,'units','cm/s',ier)
         CALL h5dclose_f(temp_gid,ier)
-        DEALLOCATE(rtemp)
 
-        ALLOCATE(rtemp(nr_fida,nz_fida, nphi_fida))
+
         ALLOCATE(rtemp2(nr_fida,nz_fida, nphi_fida))
         ALLOCATE(rtemp3(nr_fida,nz_fida, nphi_fida))
         ALLOCATE(rtemp4(nr_fida,nz_fida, nphi_fida))
+        IF (nvtor>0) THEN
+            ALLOCATE(rtemp5(nr_fida,nz_fida, nphi_fida))
+        ELSE
+            CALL write_var_hdf5(qid_gid,'vt',nr_fida,nz_fida, nphi_fida,ier,DBLVAR=rtemp)
+            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vt',ier)
+            CALL h5dopen_f(qid_gid, 'vt', temp_gid, ier)
+            CALL write_att_hdf5(temp_gid,'description','Bulk plasma flow in the toroidal phi-direction: Vphi(r,z,phi)',ier)
+            CALL write_att_hdf5(temp_gid,'units','cm/s',ier)
+            CALL h5dclose_f(temp_gid,ier)         
+        END IF
 
         DO l = 1,nr_fida
         DO n = 1,nz_fida
@@ -1048,10 +1051,26 @@ SUBROUTINE write_fidasim_equilibrium
                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                     ZEFF4D(1,1,1,1),nr,nphi,nz)
                 rtemp4(l,n,m) = max(fval(1),one)
-                !write(6,'(F8.3,F8.3,F8.3)') phiaxis_fida(m),phimax,MODULO(phiaxis_fida(m),phimax)
+                IF (nvtor>0) THEN
+                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                     VTOR4D(1,1,1,1),nr,nphi,nz)
+                  rtemp5(l,n,m) = max(fval(1),zero)        
+                END IF
             END DO
         END DO
         END DO
+
+
+        IF (nvtor>0) THEN
+         CALL write_var_hdf5(qid_gid,'vt',nr_fida,nz_fida, nphi_fida,ier,DBLVAR=rtemp5)
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vt',ier)
+         CALL h5dopen_f(qid_gid, 'vt', temp_gid, ier)
+         CALL write_att_hdf5(temp_gid,'description','Bulk plasma flow in the toroidal phi-direction: Vphi(r,z,phi)',ier)
+         CALL write_att_hdf5(temp_gid,'units','cm/s',ier)
+         CALL h5dclose_f(temp_gid,ier)
+        END IF
+        
 
         CALL write_var_hdf5(qid_gid,'te',nr_fida,nz_fida,nphi_fida, ier,DBLVAR=DBLE(rtemp/1000))
         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'te',ier)
@@ -1081,6 +1100,11 @@ SUBROUTINE write_fidasim_equilibrium
         CALL write_att_hdf5(temp_gid,'description','Effective Nuclear Charge: Zeff(r,z,phi)',ier)
         CALL h5dclose_f(temp_gid,ier)
 
+        DEALLOCATE(rtemp)
+        DEALLOCATE(rtemp2)
+        DEALLOCATE(rtemp3)
+        DEALLOCATE(rtemp4)
+        IF (nvtor>0) DEALLOCATE(rtemp5)
 
         !--------------------------------------------------------------
         !           Profiles
@@ -1127,12 +1151,7 @@ SUBROUTINE write_fidasim_equilibrium
         CALL write_att_hdf5(temp_gid,'description','Effective Charge',ier)
         CALL h5dclose_f(temp_gid,ier)
 
-
         CALL h5gclose_f(qid_gid2, ier)
-        DEALLOCATE(rtemp)
-        DEALLOCATE(rtemp2)
-        DEALLOCATE(rtemp3)
-        DEALLOCATE(rtemp4)
 
         CALL h5gclose_f(qid_gid, ier)
         ! Close file
