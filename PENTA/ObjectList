@@ -1,4 +1,5 @@
 ObjectFiles = \
+penta_main.o \
 penta_functions_mod.o \
 penta_modules.o \
 quanc8.o \
