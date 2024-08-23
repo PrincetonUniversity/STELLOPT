@@ -229,6 +229,8 @@ c
       allocate(nu_perp_ab(svtb))
 
       !loop over field species to get collision frequency
+      ! note that vtb is a vector with the thermal velocities of all species EXCEPT vta
+      ! therefore, size(vtb):=svtb=num_species-1
       do ispec=1,svtb
         ! Field species norm. energy and velocity
         xb=xa*(vta/vtb(ispec))
@@ -241,7 +243,7 @@ c
 
       !define collisionality
       nu_perp_a=nu_perp_aa + sum(nu_perp_ab)
-      cmul_K = nu_perp_a/va
+      cmul_K = nu_perp_a/va !need to divide by va since collisionality is divided by velocity (cmul=nu/v)
       deallocate(nu_perp_ab)
 
       !use log interp or linear
