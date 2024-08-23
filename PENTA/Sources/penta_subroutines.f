@@ -770,7 +770,8 @@ c     used to get the double precision error function, but if this
 c     is included in a library the function can be omitted.
 c   JL 7/2009
 c-----------------------------------------------------------------------
-c
+c     WHY does this function receive both xb and Kb if they are related
+c     with each other through a square root??
       subroutine calc_perp_coll_freq(va,xb,qa,qb,ma,nb,Kb,loglambda
      1  ,vta,Ka,nu_perp_a)
       use penta_kind_mod
