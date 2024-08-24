@@ -9,6 +9,7 @@
       use Er_roots_pass
       use io_unit_spec
       use parameter_pass
+      USE safe_open_mod
       implicit none
 
       logical,       parameter ::  input_is_Er = .true.       !If true, Er range is (V/cm) otherwise e<a>Er/kT_e
@@ -33,7 +34,7 @@
 
       integer(iknd) :: num_species, iroot, 
      1  num_ion_species, inv_err, nn_inv, j, ispec, tmp_ind, ie,
-     2 ispec1, ispec2, spec1_ind, spec2_ind, numargs
+     2 ispec1, ispec2, spec1_ind, spec2_ind, numargs, istat
 
       real(rknd) :: vth_e, loglambda, sigma_S, Er_test, U2,
      1 lX_sum1, lX_sum2, J_E_tot, J_E_cl, B_Eprl,
@@ -56,6 +57,8 @@
       character(1)  :: tb = char(9)
       character(100) :: arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, 
      1  arg9, format_tmp, str_num, fstatus, fpos
+
+      LOGICAL :: lexist
 
       namelist / ion_params / num_ion_species,Z_ion_init,miomp_init
 
@@ -80,9 +83,50 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       IF (PRESENT(B_Eprl_in)) B_Eprl= B_Eprl_in
      
       !Read namelist file for ion parameters
-      open(iu_nl,file="ion_params",status="old",form="formatted")
-      read(iu_nl,nml=ion_params)
+      INQUIRE(FILE='input.'//TRIM(run_ident),EXIST=lexist)
+      IF (lexist) THEN
+         CALL safe_open(iu_nl,istat,'input.'//TRIM(run_ident),'old',
+     1                  'formatted')
+      ELSE
+         CALL safe_open(iu_nl,istat,'ion_params','old','formatted')
+         WRITE(6,*) 
+     1     '   -Reading ion_params namelist from ion_params file'
+      END IF
+      READ(iu_nl,NML=ion_params,IOSTAT=istat)
+      IF (istat /= 0) THEN
+         CLOSE(iu_nl)
+!         IF (lverb) THEN
+!            WRITE(6,*) 
+!     1          '   -Could not find ion_params namelist in input.'//
+!     2          TRIM(run_ident)//' file'
+!            WRITE(6,*) 
+!     1 '   -Attempting to read ion_params namelist from ion_params file'
+!         END IF
+         iu_nl = 25
+         istat = 0
+         CALL safe_open(iu_nl,istat,'ion_params','old','formatted')
+         IF (istat /= 0) THEN
+            WRITE(6,*) '   -Could not open ion_params file'
+            !WRITE(6,*) '   -Dumping ion_params to screen'
+            stop
+         END IF
+         istat = 0
+         READ(iu_nl,NML=ion_params,IOSTAT=istat)
+         IF (istat /= 0) THEN
+            WRITE(6,*) 
+     1        '   -Could not read ion_params from ion_params file'
+            !WRITE(6,*) '   -Dumping ion_params to screen'
+            !CALL write_diagno_input(6,istat)
+            !backspace(iu_nl)
+            !read(iu_nl,fmt='(A)') line
+            !write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+            stop
+         END IF
       close(iu_nl)
+      END IF
+      !open(iu_nl,file="ion_params",status="old",form="formatted")
+      !read(iu_nl,nml=ion_params)
+      !close(iu_nl)
 
       !Get command line arguments
       !numargs = iargc()
