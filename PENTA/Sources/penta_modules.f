@@ -27,7 +27,8 @@ c   File I/O unit numbers
 c-----------------------------------------------------------------
 c
       module io_unit_spec
-      integer, parameter :: iu_nl=21, iu_vmec=22, iu_pprof=23, 
+      INTEGER :: iu_nl = 21
+      integer, parameter :: iu_vmec=22, iu_pprof=23, 
      1  iu_coeff=24, iu_Ufile=25, iu_flux_out=10, iu_pprof_out=11,
      2  iu_fvEr_out=12, iu_flows_out=13
       end module io_unit_spec
