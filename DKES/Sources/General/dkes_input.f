@@ -125,11 +125,17 @@ c  Read input data from "datain" namelist
       DO icount = 2, MIN(7,numargs)
          CALL getcarg(icount, arg1(icount), istat)
       END DO
-      IF (numargs .ge. 4) THEN
-         IF (numargs .eq. 4) arg1(5) = 'T'
-         CALL dkes_input_prepare (arg1, numargs, input_file, 1)
-         IF (arg1(5)(1:1).eq.'f' .or. arg1(5)(1:1).eq.'F')
-     1      lscreen = .false.
+      !IF (numargs .ge. 4) THEN
+      !   IF (numargs .eq. 4) arg1(5) = 'T'
+      !   CALL dkes_input_prepare (arg1, numargs, input_file, 1)
+      !   IF (arg1(5)(1:1).eq.'f' .or. arg1(5)(1:1).eq.'F')
+     1!      lscreen = .false.
+      
+      IF(numargs .ge. 2) THEN 
+         !this is for the case where a booz file and a surface are provided; the values of cmul, efiled are given in an external file
+         !for now this wxternal file is called 'cmul_efield_list.txt', but later we can actually give the name of the file as an input too
+         CALL dkes_input_prepare(arg1, numargs, input_file, 1)
+         lscreen = .true.
       ELSE IF (numargs .eq. 1) THEN
          input_file = TRIM(arg1(1))
       ELSE
