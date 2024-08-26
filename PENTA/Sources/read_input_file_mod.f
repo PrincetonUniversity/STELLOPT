@@ -70,8 +70,8 @@ c
       integer(iknd) :: js
       character(60) :: run_ident
       !local variables
-      integer(iknd) :: j, js_min, js_max
-	integer(iknd), dimension(:), allocatable :: js_vmec
+      integer(iknd) :: j, js_min, js_max 
+      integer(iknd), dimension(:), allocatable :: js_vmec
       real(rknd), dimension(:), allocatable :: r_vmec, roa_vmec
      1 ,chip_vmec, psip_vmec, btheta_vmec, bzeta_vmec, vp_vmec, bsq_vmec
      2 ,iota_vmec
@@ -125,7 +125,7 @@ c
       character(60) :: run_ident
       !local variables
       integer(iknd) :: j, js_min, js_max, ierr, u, v, mn
-	integer(iknd), dimension(:), allocatable :: js_vmec
+      integer(iknd), dimension(:), allocatable :: js_vmec
 !      real(rknd), dimension(:), allocatable :: r_vmec, roa_vmec
 !     1 ,chip_vmec, psip_vmec, btheta_vmec, bzeta_vmec, vp_vmec, bsq_vmec
 !     2 ,iota_vmec
@@ -282,6 +282,97 @@ c
       deallocate(spl_Te,ne_knot_array,spl_ne,ni_knot_array,spl_ni)
       deallocate(Ti_knot_array, spl_Ti)
       end subroutine read_pprof_file
+c
+c----------------------------------------------------------------------------
+c   Reads the file "plasma_profiles*.dat" and assigns plasma parameters for the
+c     current surface.  Variables are passed using module pprof_pass
+c----------------------------------------------------------------------------
+c
+      subroutine set_pprof(np_prof,nis,roa_prof,ne_prof,Te_prof,
+     1                     ni_local,Ti_local,roa_surf,arad)
+      use penta_kind_mod
+      use pprof_pass
+      use bspline
+      use io_unit_spec
+      implicit none
+      ! Input Parameters
+      INTEGER(iknd) :: np_prof
+      INTEGER(iknd) :: nis
+      REAL(rknd), DIMENSION(np_prof) :: roa_prof
+      REAL(rknd), DIMENSION(np_prof) :: ne_prof
+      REAL(rknd), DIMENSION(np_prof) :: Te_prof
+      REAL(rknd), DIMENSION(np_prof,nis) :: ni_local
+      REAL(rknd), DIMENSION(np_prof,nis) :: Ti_local
+      INTEGER(iknd) :: js
+      REAL(rknd) :: roa_surf
+      REAL(rknd) :: arad
+      integer(iknd) :: ispec, kord_prof
+      real(rknd), dimension(:), allocatable ::  
+     1 Te_knot_array, spl_Te,  ne_knot_array,
+     2 spl_ne, ni_knot_array, spl_ni, Ti_knot_array, spl_Ti
+
+      ! Some global helpers for ions (Not sure these are really needed)
+      IF (ALLOCATED(ni_prof)) DEALLOCATE(ni_prof)
+      IF (ALLOCATED(Ti_prof)) DEALLOCATE(Ti_prof)
+      ALLOCATE(ni_prof(np_prof,nis),Ti_prof(np_prof,nis))
+      ni_prof = ni_local
+      Ti_prof = Ti_local
+
+      !spline fit ne,Te,Ti,ni profiles and evaluate at r/a of current surface
+      kord_prof = 3 !spline order for profile fitting
+      allocate(ne_knot_array(np_prof+kord_prof),spl_ne(np_prof))
+      allocate(Te_knot_array(np_prof+kord_prof),spl_Te(np_prof))
+      allocate(ni_knot_array(np_prof+kord_prof),spl_ni(np_prof))
+      allocate(Ti_knot_array(np_prof+kord_prof),spl_Ti(np_prof))
+
+      !fit electron profiles
+      call dbsnak(np_prof,roa_prof,kord_prof,ne_knot_array)
+      call dbsnak(np_prof,roa_prof,kord_prof,Te_knot_array)   
+      call dbsint(np_prof,roa_prof,ne_prof,kord_prof,
+     1            ne_knot_array,spl_ne)
+      call dbsint(np_prof,roa_prof,te_prof,kord_prof,
+     1            Te_knot_array,spl_Te)
+    
+      !loop over ion species, fit profiles and assign values
+      do ispec=1,nis
+        call dbsnak(np_prof,roa_prof,kord_prof,ti_knot_array)
+        call dbsnak(np_prof,roa_prof,kord_prof,ni_knot_array)
+        call dbsint(np_prof,roa_prof,ni_prof(:,ispec),kord_prof,
+     1            ni_knot_array,spl_ni)
+        call dbsint(np_prof,roa_prof,Ti_prof(:,ispec),kord_prof,
+     1            Ti_knot_array,spl_ti)
+        !evaluate spline fit at r/a of the test surface
+        ni(ispec) = dbsval(roa_surf,kord_prof,ni_knot_array,np_prof,
+     1    spl_ni)
+        Ti(ispec) = dbsval(roa_surf,kord_prof,ti_knot_array,np_prof,
+     1    spl_ti)
+        !evaluate derivatives (d/dr) at r/a
+        dnidr(ispec) = dbsder(1,roa_surf,kord_prof,ni_knot_array,
+     1                   np_prof,spl_ni)/arad
+        dTidr(ispec) = dbsder(1,roa_surf,kord_prof,Ti_knot_array,
+     1                   np_prof,spl_Ti)/arad
+      enddo
+ 
+      !evaluate spline fit at r/a of the test surface for electrons
+      ne = dbsval(roa_surf,kord_prof,ne_knot_array,np_prof,spl_ne)
+      Te = dbsval(roa_surf,kord_prof,te_knot_array,np_prof,spl_te)
+      !evaluate derivatives (d/dr) at r/a for electrons
+      dnedr = dbsder(1,roa_surf,kord_prof,ne_knot_array,
+     1                   np_prof,spl_ne)/arad
+      dTedr = dbsder(1,roa_surf,kord_prof,Te_knot_array,
+     1                   np_prof,spl_Te)/arad
+      !convert units to mks
+      ne=ne*1.e18_rknd
+      ni=ni*1.e18_rknd
+      dnedr=dnedr*1.e18_rknd
+      dnidr=dnidr*1.e18_rknd
+
+      !deallocate variables
+      deallocate(Te_knot_array,spl_Te)
+      deallocate(ne_knot_array,spl_ne)
+      deallocate(ni_knot_array,spl_ni)
+      deallocate(Ti_knot_array, spl_Ti)
+      end subroutine set_pprof
 c
 c----------------------------------------------------------------------------
 c   Reads the file *star_lijs_*** files and assigns variables for passing
