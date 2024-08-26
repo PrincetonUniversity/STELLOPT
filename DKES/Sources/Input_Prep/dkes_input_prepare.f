@@ -381,24 +381,25 @@
       dkes_input_file = 'input_dkes.' // TRIM(extension) 
      1                                // TRIM(extension_mod)
       iunit = 15
-      CALL safe_open(iunit, istat, dkes_input_file, 'new',
+      CALL safe_open(iunit, istat, dkes_input_file, 'replace',
      1    'formatted')
       WRITE (iunit,'(1x,"&dkes_indata")')
       WRITE (iunit,'(1x,"nzperiod= ",i2,",")') nfp_b
       WRITE (iunit,'(1x,"lalpha= ",i3,",")') legendre_modes
       WRITE (iunit,'(1x,"nrun = ",i3,",")') npairs
       ! write the cmul array
-      WRITE(iunit, '(A)', advance='no') 'cmul = '
+      WRITE(iunit, '(A)', advance='no') ' cmul = '
       DO i = 1, npairs-1
-            WRITE(iunit, '(e12.4, A)', advance='no') cmul_list(i), ', '
+            WRITE(*, '(es12.6, A)') cmul_list(i)
+            WRITE(iunit, '(es12.6, A)', advance='no') cmul_list(i), ', '
       END DO
-      WRITE(iunit, '(e12.4, A)') cmul_list(npairs), ','
+      WRITE(iunit, '(e12.6, A)') cmul_list(npairs), ','
       ! write the efield array
-      WRITE(iunit, '(A)', advance='no') 'efield = '
+      WRITE(iunit, '(A)', advance='no') ' efield = '
       DO i = 1, npairs-1
-        WRITE(iunit, '(e12.4, A)', advance='no') efield_list(i), ', '
+        WRITE(iunit, '(e12.6, A)', advance='no') efield_list(i), ', '
       END DO
-      WRITE(iunit, '(e12.4, A)') efield_list(npairs), ','
+      WRITE(iunit, '(e12.6, A)') efield_list(npairs), ','
       !
       WRITE (iunit,'(1x,"mpolb = ",i2,",",2x,"ntorb = ",
      1     i2,",",2x,"ibbi = 1,")') mpolb, ntorb
