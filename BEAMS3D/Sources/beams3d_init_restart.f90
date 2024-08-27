@@ -31,7 +31,7 @@
       INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
       LOGICAL, DIMENSION(:), ALLOCATABLE :: lgc2fo_old
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2, start_dex
-      REAL(rprec) :: vpartmax, B_help, version_old, s_fullorbit
+      REAL(rprec) :: vpartmax, B_help, vtor_help, version_old, s_fullorbit
       REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
                                                 weight2
@@ -208,6 +208,11 @@
             q = (/R_start(k), phi_start(k), Z_start(k)/)
             CALL beams3d_MODB(q,B_help)
             mu_start(k) = mu_start(k)/B_help
+            IF (nvtor>0) THEN
+               CALL beams3d_VTOR(q,vtor_help)
+               vll_start(k)=vll_start(k)-vtor_help
+               vphi_start(k)=vphi_start(k)-vtor_help*SIGN(one,vll_start) !vtor is positive parallel to the magnetic field
+            END IF
             k = k + 1
          END DO
          DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, &
