@@ -720,15 +720,6 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
-
-         ! Energy is needed in keV so 0.5*m*v*v/(ec*1000)
-
-         ! This is the one that works for ADAS [kJ] E=0.5*m*v^2/1000
-         ! Vll = V_neut (doesn't change durring neutral integration)
-         ! energy in kJ
-         energy = half*mymass*q(4)*q(4)*1D-3
-         ! energy in keV (correct for Suzuki)
-         !energy = half*mymass*q(4)*q(4)*1D-3/e_charge 
          
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
@@ -908,6 +899,15 @@ MODULE beams3d_physics_mod
          tilocal = tilocal*1D-3
          telocal = telocal*1D-3
          tau_inv = zero
+
+         ! Energy is needed in keV so 0.5*m*v*v/(ec*1000)
+
+         ! This is the one that works for ADAS [kJ] E=0.5*m*v^2/1000
+         ! Vll = V_neut (doesn't change durring neutral integration)
+         ! energy in kJ
+         energy = half*mymass*q(4)*q(4)*1D-3
+         ! energy in keV (correct for Suzuki)
+         !energy = half*mymass*q(4)*q(4)*1D-3/e_charge          
          
          IF (lsuzuki) THEN
             !--------------------------------------------------------------
@@ -918,7 +918,9 @@ MODULE beams3d_physics_mod
             A_in = NINT(NI_AUX_M*inv_dalton)
             Z_in = NI_AUX_Z
             energy   = energy/(e_charge*mymass*inv_dalton) ! keV/amu
+           ! telocal=telocal+2.0D0/3.0D0*inv_Ae*energy !adjusted electron temperature from Pankin 2004
             DO l = 1, num_depo
+               IF (nvtor>0) energy(l)=energy(l) + 1.0D-3*(vtorlocal(l)*vtorlocal(l)+vtorlocal(l)*(COS(q(2))*myv_neut(2)-SIN(q(2))*myv_neut(1)))/(e_charge*inv_dalton)
                nelocal(l)  = MAX(MIN(nelocal(l),1E21),1E18)
                telocal(l)  = MAX(MIN(telocal(l),energy(l)*0.5),energy(l)*0.01)
                ni_in = MAX(MIN(nilocal(:,l),1E21),1E18)

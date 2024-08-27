@@ -103,7 +103,7 @@ SUBROUTINE out_beams3d_gc(t, q)
           d1 = MAX(MIN(CEILING(rho_help*h1_prof      ), ns_prof1), 1) ! Rho Bin
           d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
           d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-          d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)-vtor), ns_prof4), 1) ! vll
+          d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*(q(4)+vtor)), ns_prof4), 1) ! vll
           d5 = MAX(MIN(CEILING(vperp*h5_prof         ), ns_prof5), 1) ! Vperp
           xw = weight(myline)*dt
           !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
@@ -115,9 +115,9 @@ SUBROUTINE out_beams3d_gc(t, q)
             d1f = MIN(MAX(CEILING((q(1)-rmin_fida)*r_h),1),nr_fida)
             d2 = MIN(MAX(CEILING((x0-phimin_fida)*p_h),1),nphi_fida)
             d3 = MIN(MAX(CEILING((q(3)-zmin_fida)*z_h),1),nz_fida)
-            y0 = MAX(((q(4)-vtor)**2+vperp**2),1.0)
+            y0 = MAX(((q(4)+vtor)**2+vperp**2),1.0)
             d4 = MIN(MAX(CEILING((y0*E_by_v-emin_fida)*e_h),1),nenergy_fida)
-            d5 = MIN(MAX(CEILING(((q(4)-vtor)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
+            d5 = MIN(MAX(CEILING(((q(4)+vtor)/SQRT(y0)-pimin_fida)*pi_h),1),npitch_fida)
             dist5d_fida(d1f,d3,d2,d4,d5) = dist5d_fida(d1f,d3,d2,d4,d5) + xw
           END IF
           IF (lcollision) CALL beams3d_physics_gc(t,q)
