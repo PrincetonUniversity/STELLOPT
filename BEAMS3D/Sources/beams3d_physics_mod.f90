@@ -1836,7 +1836,7 @@ MODULE beams3d_physics_mod
       !     Date:          08/27/2024
       !     Description:   Returns vtor at a point in space
       !-----------------------------------------------------------------
-      SUBROUTINE beams3d_VTOR(q,B)
+      SUBROUTINE beams3d_VTOR(q,vtor)
          !--------------------------------------------------------------
          !     Input Parameters
          !          q            (q(1),q(2),q(3)) = (R,phi,Z)
@@ -1895,7 +1895,7 @@ MODULE beams3d_physics_mod
 
          RETURN
 
-      END SUBROUTINE beams3d_MODB
+      END SUBROUTINE beams3d_VTOR      
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_BCYL
