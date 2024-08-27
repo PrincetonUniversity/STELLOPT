@@ -334,9 +334,9 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-               slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+               !slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
 			      !slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
-			      !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+			      slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
@@ -393,7 +393,7 @@ MODULE beams3d_physics_mod
            zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+           zeta = MIN(MAX(zeta,-0.99999D+00),0.99999D+00)
            !Flip gaussian at boundary to prevent accumulation around pitch=1
            !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
            !Pitch angle scattering according to NUBEAM
@@ -566,7 +566,8 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
-               slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+               !slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+               slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
@@ -626,7 +627,7 @@ MODULE beams3d_physics_mod
            zeta_mean = zeta_o *(1.0D0 - speed_cube )  ! The new mean in the distribution.
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+           zeta = MIN(MAX(zeta,-0.99999D+00),0.99999D+00)
            vll = zeta*speed
 
            !------------------------------------------------------------
@@ -908,7 +909,7 @@ MODULE beams3d_physics_mod
          energy = half*mymass*q(4)*q(4)*1D-3
          ! energy in keV (correct for Suzuki)
          !energy = half*mymass*q(4)*q(4)*1D-3/e_charge          
-         
+
          IF (lsuzuki) THEN
             !--------------------------------------------------------------
             !     USE Suzuki to calcualte ionization rates
