@@ -73,7 +73,7 @@ c
       REAL(rknd), INTENT(OUT) :: U2
       !dummy variables
       !local varibles
-      integer(iknd) :: j, js_surf, num_pts, kord_prof
+      integer(iknd) :: kord_prof
       real(rknd), dimension(:), allocatable :: U2_knot_array, spl_U2
 
       !spline fit profile and evaluate at r/a of current surface
