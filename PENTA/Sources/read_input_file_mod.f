@@ -57,6 +57,40 @@ c
       end subroutine read_Utilde2_file
 c
 c----------------------------------------------------------------------------
+c   Sets the file "Utilde2_profile" and returns <U**2> for the run surface
+c----------------------------------------------------------------------------
+c
+      subroutine set_Utilde2_file(num_pts,roa_Utilde,U_tilde2,
+     1                            roa_test,U2)
+      use penta_kind_mod
+      use io_unit_spec
+      implicit none
+      ! Input parameters
+      INTEGER(iknd), INTENT(IN) :: num_pts
+      REAL(rknd), DIMENSION(num_pts), INTENT(IN) :: roa_Utilde
+      REAL(rknd), DIMENSION(num_pts), INTENT(IN) :: U_tilde2
+      REAL(rknd), INTENT(IN) :: roa_test
+      REAL(rknd), INTENT(OUT) :: U2
+      !dummy variables
+      !local varibles
+      integer(iknd) :: j, js_surf, num_pts, kord_prof
+      real(rknd), dimension(:), allocatable :: U2_knot_array, spl_U2
+
+      !spline fit profile and evaluate at r/a of current surface
+      kord_prof = 3 !spline order
+      allocate(U2_knot_array(num_pts+kord_prof))
+      allocate(spl_U2(num_pts))
+      call dbsnak(num_pts,roa_Utilde,kord_prof,U2_knot_array)
+      call dbsint(num_pts,roa_Utilde,U_tilde2,kord_prof,
+     1            U2_knot_array,spl_U2)
+      U2 = dbsval(roa_test,kord_prof,U2_knot_array,num_pts,
+     1    spl_U2)
+
+      !deallocate variables
+      deallocate(U2_knot_array,spl_U2)
+      end subroutine set_Utilde2_file
+c
+c----------------------------------------------------------------------------
 c   Reads the file "profile_data_***" and assigns VMEC variables, passed
 c     using module vmec_var_pass
 c----------------------------------------------------------------------------
@@ -108,7 +142,7 @@ c----------------------------------------------------------------------------
 c   Reads the wout file for vmec information (SAL 05/30/13)
 c----------------------------------------------------------------------------
 c
-      subroutine read_vmec_file_2(js,run_ident)
+      subroutine read_vmec_file_wout(js,run_ident)
       use vmec_var_pass
       use penta_kind_mod
       use io_unit_spec
@@ -118,7 +152,8 @@ c
      3                          Rmajor_vmec => Rmajor,
      4                          Aminor_vmec => Aminor,
      5                          phi_vmec => phi, bmnc, mnmax_nyq, gmnc,
-     6                          xm_nyq, xn_nyq, ns_vmec => ns
+     6                          xm_nyq, xn_nyq, ns_vmec => ns,
+     7                          lwout_opened
       implicit none
       !dummy variables
       integer(iknd) :: js
@@ -126,37 +161,23 @@ c
       !local variables
       integer(iknd) :: j, js_min, js_max, ierr, u, v, mn
       integer(iknd), dimension(:), allocatable :: js_vmec
-!      real(rknd), dimension(:), allocatable :: r_vmec, roa_vmec
-!     1 ,chip_vmec, psip_vmec, btheta_vmec, bzeta_vmec, vp_vmec, bsq_vmec
-!     2 ,iota_vmec
       REAL(rknd) :: TWOPI, top, bottom, theta, zeta, arg, cs_arg,
      1              jacob_vmec, bbf
       character(60) :: vmec_fname, ch_dum, tb = char(9)
+      INTEGER(iknd), PARAMETER :: nu_int = 360
+      INTEGER(iknd), PARAMETER :: nv_int = 360
 
+      ! Initializations
       TWOPI = 8*ATAN(1.0_rknd)
-      !Read VMEC profile data file 
-!      vmec_fname = "profile_data_" // run_ident
-!      open(unit=iu_vmec,file=vmec_fname,status="old")
-      CALL read_wout_file(TRIM(run_ident),ierr)
-      
-!      read(iu_vmec,*) js_min, js_max
-!      allocate(js_vmec(js_max),r_vmec(js_max),roa_vmec(js_max))
-!      allocate(chip_vmec(js_max),psip_vmec(js_max),btheta_vmec(js_max))
-!      allocate(bzeta_vmec(js_max),vp_vmec(js_max),bsq_vmec(js_max))
-!      allocate(iota_vmec(js_max))
-!      read(iu_vmec,*) arad, Rmajor
-!      read(iu_vmec,'(a10)') ch_dum
-!      do j = js_min,js_max
-!        read(iu_vmec,'(i4,9(a1,e15.7))') js_vmec(j),tb,r_vmec(j),tb,
-!     1  roa_vmec(j),tb,chip_vmec(j),tb,psip_vmec(j),tb,btheta_vmec(j),
-!     2    tb,bzeta_vmec(j),tb,vp_vmec(j),tb,bsq_vmec(j),tb,iota_vmec(j)
-!      end do
-!      close(iu_vmec)
+      top = 0.0
+      bottom = 0.0
+
+      !Read VMEC wout data file 
+      IF (.not. lwout_opened) CALL read_wout_file(TRIM(run_ident),ierr)
 
       ! Assign variables for the current surface
       chip = iota_vmec(js)*phipf_vmec(js);  !note this only works for non-RFP
-      psip = phipf_vmec(js)  
-      ! bsq = bsq_vmec(js)
+      psip = phipf_vmec(js)
       btheta = btheta_vmec(js); bzeta = bzeta_vmec(js)
       iota = iota_vmec(js);
       roa_surf = sqrt(phi_vmec(js)/phi_vmec(ns_vmec))
@@ -164,11 +185,12 @@ c
       vol_p = vp_vmec(js)
       Rmajor = Rmajor_vmec
       arad = Aminor_vmec
-      ! Now calc Bsq
+
+      ! Now calc <Bsq> = int(B*B*sqrt(g)/sqrt(g))
       bsq = 0.0
-      DO v = 1, 360
+      DO v = 1, nv_int
          zeta = TWOPI*REAL(v-1)/359.
-         DO u = 1, 360
+         DO u = 1, nu_int
             theta = TWOPI*REAL(u-1)/359.
             bbf = 0.0; jacob_vmec = 0.0;
             DO mn = 1, mnmax_nyq
@@ -182,10 +204,7 @@ c
          END DO
       END DO
       bsq = top/bottom
-      !deallocate variables
-!      deallocate(js_vmec, r_vmec, roa_vmec, chip_vmec, psip_vmec)
-!      deallocate(btheta_vmec, bzeta_vmec, vp_vmec, bsq_vmec,iota_vmec)
-      end subroutine read_vmec_file_2
+      end subroutine read_vmec_file_wout
 c
 c----------------------------------------------------------------------------
 c   Reads the file "plasma_profiles*.dat" and assigns plasma parameters for the
