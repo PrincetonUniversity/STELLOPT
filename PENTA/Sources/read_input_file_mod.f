@@ -465,5 +465,53 @@ c
       num_cm=size(cmul_ms); num_em=size(efield_ms)
       num_cn=size(cmul_ns); num_en=size(efield_ns)
       end subroutine read_lmn_star_files
+c
+c----------------------------------------------------------------------------
+c   Assigns variables for passing using module coeff_var_pass
+c----------------------------------------------------------------------------
+c
+      subroutine set_lmn_star_files(nc,ne,ifile,cmul_vec,efield_vec,
+     1                              coef2d)
+      use penta_kind_mod
+      use coeff_var_pass
+      use io_unit_spec
+      implicit none
+      ! Input parameters
+      INTEGER, INTENT(IN) :: nc
+      INTEGER, INTENT(IN) :: ne
+      INTEGER, INTENT(IN) :: ifile ! 1=L; 2=M; 3=N
+      REAL(rknd), DIMENSION(nc), INTENT(IN) :: cmul_vec
+      REAL(rknd), DIMENSION(ne), INTENT(IN) :: efield_vec
+      REAL(rknd), DIMENSION(nc,ne), INTENT(IN) :: coef2d
+
+      IF (ifile == 1) THEN
+         allocate(cmul_ls(nc))
+         allocate(efield_ls(ne))
+         allocate(coef2d_ls(nc,ne))
+         cmul_ls=cmul_vec
+         efield_ls=efield_vec
+         coef2d_ls=coef2d
+         num_cl=size(cmul_ls); num_el=size(efield_ls)
+      ELSEIF (ifile == 2) THEN
+         allocate(cmul_ms(nc))
+         allocate(efield_ms(ne))
+         allocate(coef2d_ms(nc,ne))
+         cmul_ms=cmul_vec
+         efield_ms=efield_vec
+         coef2d_ms=coef2d
+         num_cm=size(cmul_ms); num_em=size(efield_ms)
+      ELSEIF (ifile == 3) THEN
+         allocate(cmul_ns(nc))
+         allocate(efield_ns(ne))
+         allocate(coef2d_ns(nc,ne))
+         cmul_ns=cmul_vec
+         efield_ns=efield_vec
+         coef2d_ns=coef2d
+         num_cn=size(cmul_ns); num_en=size(efield_ns)
+      ELSE
+         WRITE(6,*) 'set_lmn_star_files: Unknown ifile=',ifile
+      END IF
+      RETURN
+      end subroutine set_lmn_star_files
 
       end module read_input_file_mod
