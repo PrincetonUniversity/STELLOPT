@@ -88,11 +88,16 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c   2024 Notes
 c    - Created PENTA_IMP_MAIN program and changed PENTA_IMP to a
 c      callable subroutine.
+c    - Can read wout files instead of profile_data_****
+c    - Routine to set profiles instead of reading plasma_profiles_****
+c    - Routine to set L/M/NIJ coefficients instead of reading them.
+c    - Routine to set Utilde2 value instead of reading from file.
 c
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     
       PROGRAM PENTA_MAIN
       use penta_kind_mod
+      USE read_wout_mod, ONLY: read_wout_deallocate
       IMPLICIT NONE
       integer(iknd) :: numargs, js, i_append
       real(rknd) :: Er_min, Er_max, B_Eprl
@@ -122,5 +127,9 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       ! Call subroutine
       CALL PENTA_IMP(coeff_ext, Er_min, Er_max, js, i_append, 
      1               run_ident, pprof_char, B_Eprl)
+
+      ! DEALLOCATE VMEC DATA
+      CALL read_wout_deallocate
+
       END PROGRAM PENTA_MAIN
 
