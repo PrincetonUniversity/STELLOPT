@@ -339,7 +339,6 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
         !write fluxes vs Er
         write(str_num,*) num_ion_species*2+3
-	!write(str_num,'(i)') num_ion_species*2+3
         format_tmp='(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))'
         write(iu_fvEr_out,format_tmp) roa_surf,Er_test/100._rknd,
      1      gamma_e(ie),gamma_i(:,ie),q_e(ie),q_i(:,ie)
@@ -430,7 +429,6 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
         !write fluxes to file "flux_vs_roa"
         write(str_num,*) 2*num_ion_species+5
-	 !write(str_num,'(i)') 2*num_ion_species+5
         format_tmp='(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))'
         write(iu_flux_out,format_tmp) roa_surf,Er_test/100._rknd,
      1    eaEr_o_kTe,gamma_e_ambi(iroot),q_e_ambi(iroot),
@@ -438,7 +436,6 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
         !write flows to file "flows_vs_roa"
         write(str_num,*) 4*num_ion_species+6
-	!write(str_num,'(i)') 4*num_ion_species+6
         format_tmp='(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))'
         write(iu_flows_out,format_tmp) roa_surf,Er_test/100._rknd,
      1    eaEr_o_kTe,B_uprle(iroot),B_uprli(:,iroot),B_qprle(iroot),
@@ -447,16 +444,13 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 
       !write output files
-      !"plasma_profiles_check"
-      !write(str_num,'(i)') 4*num_ion_species+5
-	write(str_num,*) 4*num_ion_species+5
+      write(str_num,*) 4*num_ion_species+5
       format_tmp='(' // trim(adjustl(str_num)) // '(" ",e15.7))'
       write(iu_pprof_out,format_tmp) roa_surf,Te,ne,dnedr,dTedr,
      1  Ti,ni,dnidr,dTidr
 
       !write to screen
-      !write(str_num,'(i)') num_roots
-	write(str_num,*) num_roots
+      write(str_num,*) num_roots
       format_tmp='(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.4))'
       write(*,format_tmp) roa_surf,er_roots/100._rknd
 
