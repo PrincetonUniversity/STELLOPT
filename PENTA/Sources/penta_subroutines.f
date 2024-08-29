@@ -668,7 +668,8 @@ c
         L1(ispec) = Lth(1);L2(ispec) = Lth(2);L3(ispec) = Lth(3)
 
         !integrate Ma
-        logopt=.true.      !use the log of the coefficient
+        logopt=.true.      !use the log of the coefficient; this is so because when loading mstar from file
+                           !the log of the coefficient was taken
         call energy_conv(num_cm,num_em,xt_cm,xt_em,c_splm,logopt,Mth,
      1    eminm, emaxm, cminm, cmaxm)
         M1(ispec) = Mth(1);M2(ispec) = Mth(2);M3(ispec) = Mth(3)
