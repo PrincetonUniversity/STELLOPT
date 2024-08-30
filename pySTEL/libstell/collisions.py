@@ -130,8 +130,8 @@ class COLLISIONS():
 		mu1 = mi1/self.MP
 		mu2 = mi2/self.MP
 		# No need to convert masses from kg to g
-		clog = (ni1_cm*Zi1*Zi1/ti1) + (ni2_cm*Zi2*Zi2/ti2)
-		clog = Zi1*Zi2*(mu1+mu2)*np.sqrt(clog)/(mu1*ti2+mu2*ti1)
+		clog = (ni1_cm*Z1*Z1/ti1) + (ni2_cm*Z2*Z2/ti2)
+		clog = Z1*Z2*(mu1+mu2)*np.sqrt(clog)/(mu1*ti2+mu2*ti1)
 		clog = 23 - np.log(clog)
 		return clog
 
