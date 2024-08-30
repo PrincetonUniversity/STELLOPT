@@ -69,7 +69,7 @@
       INTEGER, PARAMETER :: mpolbd = 100
       INTEGER, PARAMETER :: ntorbd = 100
       INTEGER, PARAMETER :: bigint = 2**16
-      INTEGER, PARAMETER :: krun = 100
+      INTEGER, PARAMETER :: krun = 200
 
       INTEGER :: mpol, ntor, lalpha, ipmb, meshtz, idisk,
      1   lfout, ifscl, nrun, nzperiod, mpolb, ntorb, ibbi
