@@ -13,6 +13,11 @@ read_input_file_mod.o : \
       bspline90_22.o \
       penta_modules.o \
       ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o
+
+
+penta_input_mod.o : \
+      penta_modules.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o
       
 
 penta_subroutines.o : \

@@ -1,4 +1,5 @@
 ObjectFiles = \
+penta_input_mod.o \
 penta_main.o \
 penta_functions_mod.o \
 penta_modules.o \
