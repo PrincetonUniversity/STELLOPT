@@ -307,42 +307,46 @@ class COLLISIONS():
   
 		return freq
 
-	def collisionfreq_PENTA(self,m1,Z1,v1,m2,Z2,T2,n2,clog):
+	def collisionfreq_PENTA(self,v1,m,Z,T,n,clog):
 		"""Computes the perpendicular collision frequency 
-  		of particle 1 inside thermal bath of species 2
+  		of particle 1 inside thermal bath of species [1,2,...,n]
 		as in the PENTA code
 
 		Parameters
 		----------
-		m1 : real
-			Particle #1 mass [kg]
-		Z1 : real
-			Particle #1 Charge number
 		v1 : real
 			Particle #1 Velocity [m/s]
-		m2 : real
-			Particle #2 mass [kg]
-		Z2 : real
-			Particle #2 Charge number
-		T2 : real
-			Particle #2 Temperature [eV]
-		n2 : real
-			Particle #2 Density [m^-3]
-		clog : real
-			Coulomb logarithm
+		m : list
+			Particles [#1,#2,...,#n] mass [kg]
+		Z : list
+			Particles [#1,#2,...,#n] Charge number
+		T : list
+			Particles [#1,#2,...,#n] Temperature [eV]
+		n : list
+			Particles [#1,#2,...,#n] Density [m^-3]
+		clog : list
+			Coulomb logarithm [lambda_11,lambda_12,...lambda_1n]
 		Returns
 		----------
-		freq : real
-			Collision frequency
+		freq : list
+			Collision frequency [nu_11,nu_12,...,nu_1n]
 		"""
      
 		import numpy as np
 		from scipy.special import erf
   
-		x = m2*v1*v1 / (2*EC*T2)
+		m1 = m[0]
+		Z1 = Z[0]
 
-		freq = Z1**2 * Z2**2 * EC**4 * clog * n2 / (m1**2 * v1**3 * 4*np.pi * EPS0**2)
-		freq = freq * ( (1-0.5/x)*erf(np.sqrt(x)) + np.exp(-x)/np.sqrt(x*np.pi) )
+		freq = []
+		for m2,Z2,T2,n2,clog2 in zip(m,Z,T,n,clog):
+  
+			x = m2*v1*v1 / (2*EC*T2)
+
+			nu = Z1**2 * Z2**2 * EC**4 * clog2 * n2 / (m1**2 * v1**3 * 4*np.pi * EPS0**2)
+			nu = nu * ( (1-0.5/x)*erf(np.sqrt(x)) + np.exp(-x)/np.sqrt(x*np.pi) )
+   
+			freq.append( nu )
   
 		return freq
 
