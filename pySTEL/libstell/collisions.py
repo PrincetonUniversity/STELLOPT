@@ -173,11 +173,11 @@ class COLLISIONS():
 		clog = 43-np.log(clog)
 		return clog
 
-	def collisionfreq(self,m1,Z1,T1,m2,Z2,n2,T2,clog):
+	def collisionfreq_thermal_equilibration(self,m1,Z1,T1,m2,Z2,n2,T2,clog):
 		"""Computes the collision frequency for two species
 
 		This routine calculates the collision frequency acording to the
-		NRL plasma formulary general deffinition.
+		NRL plasma formulary definition of Thermal Equilibration.
 
 		Parameters
 		----------
@@ -204,8 +204,8 @@ class COLLISIONS():
 		"""
 		import numpy as np
 		n2_cm = n2*1E-6
-		# factor of 1000 comes from sqrt(mass in kg to g)
-		freq = 1.8E-19*np.sqrt(m1*m2)*Z1*Z1*Z2*Z2*n2_cm*clog*1000
+		# factor of 10^(-3/2) comes from mass in kg to g
+		freq = 1.8E-19*np.sqrt(m1*m2)*Z1*Z1*Z2*Z2*n2_cm*clog*10**(-1.5)
 		freq = freq / (m1*T2+m2*T1)**1.5
 		return freq
 
