@@ -1,7 +1,7 @@
       module penta_functions_mod
-	use penta_kind_mod
-	implicit none
-	contains
+      use penta_kind_mod
+      implicit none
+      contains
 
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
