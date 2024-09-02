@@ -14,6 +14,7 @@ HBAR = 1.054571817E-34 # Planks reduced constant [J.s]
 DA = 1.66053906660E-27 # Dalton
 ME = 9.1093837E-31 # Electron mass [kg]
 C  = 299792458 # Speed of light [m/s]
+EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 
 # VMEC Class
 class COLLISIONS():
@@ -207,6 +208,184 @@ class COLLISIONS():
 		# factor of 10^(-3/2) comes from mass in kg to g
 		freq = 1.8E-19*np.sqrt(m1*m2)*Z1*Z1*Z2*Z2*n2_cm*clog*10**(-1.5)
 		freq = freq / (m1*T2+m2*T1)**1.5
+		return freq
+
+	def psi(self,x):
+		# psi function as defined in the NRL plasma formulary
+		from scipy.special import gammainc, gamma
+		from numpy import sqrt, pi
+  
+		return (2.0/sqrt(pi))*gammainc(3./2,x)*gamma(3./2)
+
+	def psip(self,x):
+		# derivative of psi function
+		from numpy import sqrt, pi, exp
+  
+		return (2.0/sqrt(pi)) * sqrt(x) * exp(-x)
+		
+	def collisionfreq_slowingdown(self,m1,Z1,v1,m2,Z2,T2,n2,clog):
+		"""Computes the slowing-down collision frequency of particle 1
+  		inside thermal bath of species 2
+		according to NRL plasma formulary
+
+		Parameters
+		----------
+		m1 : real
+			Particle #1 mass [kg]
+		Z1 : real
+			Particle #1 Charge number
+		v1 : real
+			Particle #1 Velocity [m/s]
+		m2 : real
+			Particle #2 mass [kg]
+		Z2 : real
+			Particle #2 Charge number
+		T2 : real
+			Particle #2 Temperature [eV]
+		n2 : real
+			Particle #2 Density [m^-3]
+		clog : real
+			Coulomb logarithm
+		Returns
+		----------
+		freq : real
+			Collision frequency
+		"""
+  
+		# Note that quantities are given in SI units. In order to recover the formula
+		# of the NRL formulary, which is in gaussian units, one only needs to
+		# make the substitution: eps0 --> 1/4pi
+     
+		import numpy as np
+		
+		x = m2*v1*v1 / (2*EC*T2)
+
+		freq = Z1**2 * Z2**2 * EC**4 * clog * n2 / (m1**2 * v1**3 * 4*np.pi * EPS0**2)
+		freq = freq * (1+m1/m2) * self.psi(x)
+
+		return freq
+
+	def collisionfreq_transverse(self,m1,Z1,v1,m2,Z2,T2,n2,clog):
+		"""Computes the transverse diffusion collision frequency 
+  		of particle 1 inside thermal bath of species 2
+		according to NRL plasma formulary
+
+		Parameters
+		----------
+		m1 : real
+			Particle #1 mass [kg]
+		Z1 : real
+			Particle #1 Charge number
+		v1 : real
+			Particle #1 Velocity [m/s]
+		m2 : real
+			Particle #2 mass [kg]
+		Z2 : real
+			Particle #2 Charge number
+		T2 : real
+			Particle #2 Temperature [eV]
+		n2 : real
+			Particle #2 Density [m^-3]
+		clog : real
+			Coulomb logarithm
+		Returns
+		----------
+		freq : real
+			Collision frequency
+		"""
+  
+		# Note that quantities are given in SI units. In order to recover the formula
+		# of the NRL formulary, which is in gaussian units, one only needs to
+		# make the substitution: eps0 --> 1/4pi
+     
+		import numpy as np
+  
+		x = m2*v1*v1 / (2*EC*T2)
+
+		freq = Z1**2 * Z2**2 * EC**4 * clog * n2 / (m1**2 * v1**3 * 4*np.pi * EPS0**2)
+		freq = freq * 2 * ( (1-0.5/x)*self.psi(x) + self.psip(x) )
+  
+		return freq
+
+	def collisionfreq_PENTA(self,m1,Z1,v1,m2,Z2,T2,n2,clog):
+		"""Computes the perpendicular collision frequency 
+  		of particle 1 inside thermal bath of species 2
+		as in the PENTA code
+
+		Parameters
+		----------
+		m1 : real
+			Particle #1 mass [kg]
+		Z1 : real
+			Particle #1 Charge number
+		v1 : real
+			Particle #1 Velocity [m/s]
+		m2 : real
+			Particle #2 mass [kg]
+		Z2 : real
+			Particle #2 Charge number
+		T2 : real
+			Particle #2 Temperature [eV]
+		n2 : real
+			Particle #2 Density [m^-3]
+		clog : real
+			Coulomb logarithm
+		Returns
+		----------
+		freq : real
+			Collision frequency
+		"""
+     
+		import numpy as np
+		from scipy.special import erf
+  
+		x = m2*v1*v1 / (2*EC*T2)
+
+		freq = Z1**2 * Z2**2 * EC**4 * clog * n2 / (m1**2 * v1**3 * 4*np.pi * EPS0**2)
+		freq = freq * ( (1-0.5/x)*erf(np.sqrt(x)) + np.exp(-x)/np.sqrt(x*np.pi) )
+  
+		return freq
+
+	def collisionfreq_energy(self,m1,Z1,v1,m2,Z2,T2,n2,clog):
+		"""Computes the energy loss collision frequency 
+  		of particle 1 inside thermal bath of species 2
+		according to NRL plasma formulary
+
+		Parameters
+		----------
+		m1 : real
+			Particle #1 mass [kg]
+		Z1 : real
+			Particle #1 Charge number
+		v1 : real
+			Particle #1 Velocity [m/s]
+		m2 : real
+			Particle #2 mass [kg]
+		Z2 : real
+			Particle #2 Charge number
+		T2 : real
+			Particle #2 Temperature [eV]
+		n2 : real
+			Particle #2 Density [m^-3]
+		clog : real
+			Coulomb logarithm
+		Returns
+		----------
+		freq : real
+			Collision frequency
+		"""
+  
+		# Note that quantities are given in SI units. In order to recover the formula
+		# of the NRL formulary, which is in gaussian units, one only needs to
+		# make the substitution: eps0 --> 1/4pi
+     
+		import numpy as np
+
+		x = m2*v1*v1 / (2*EC*T2)
+
+		freq = Z1**2 * Z2**2 * EC**4 * clog * n2 / (m1**2 * v1**3 * 4*np.pi * EPS0**2)
+		freq = freq * 2 * ( (m1/m2)*self.psi(x) - self.psip(x) )
+  
 		return freq
 
 	def tauspitzer(self,mi,Zi,ne,Te,clog):
