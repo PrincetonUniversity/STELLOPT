@@ -86,9 +86,9 @@ class DKES:
         import matplotlib.pyplot as pyplot
         
         var_names = {
-                'L11': '$D_{11}^*K^{3/2}~~[\text{m}^-1\text{T}^-2]$',
-                'L31': '$D_{31}^*K\,\,[units?]$',
-                'L33': '$D_{33}^*K^{1/2}\,\,[units?]$'
+                'L11': '$D_{11}^*K^{3/2}~~[m^{-1}~T^{-2}]$',
+                'L31': '$D_{31}^*K$',
+                'L33': '$D_{33}^*K^{1/2}~~[m~T^2]$'
                 }
     
         for plot_var in ['L11', 'L31', 'L33']:
@@ -104,22 +104,21 @@ class DKES:
             ax = fig.add_subplot(111)
             for i in range(self.nefield):
                 i1 = i*self.ncmul
-                i2 = i1 + self.ncmul - 1
-                # original way of doing it
+                i2 = i1 + self.ncmul
+                # plot without error bar
                 #ax.plot(self.cmul[i1:i2],yplot[i1:i2],marker='+',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
-                
+                # plot with error bar
                 [yerr_lower, yerr_upper] = self.compute_yerr(yplot[i1:i2],self.Lm[plot_var][i1:i2],self.Lp[plot_var][i1:i2])
-                #ax.errorbar(self.cmul[i1:i2],yplot[i1:i2],yerr=[yerr_lower,yerr_upper],marker='+',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=2.3,markersize=18)
                 ax.errorbar(self.cmul[i1:i2],yplot[i1:i2],yerr=[yerr_lower,yerr_upper],fmt='-o',label=rf'$E_s/v$={self.efield[i1]:3.1E}',capsize=5, elinewidth=2, markeredgewidth=2)
                     
             ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
-            ax.set_ylabel(r'{var_names[plot_var]}')
+            ax.set_ylabel(f'{var_names[plot_var]}')
             ax.set_xscale('log')
             if(plot_var=='L11' or plot_var=='L33'):
                 ax.set_yscale('log')
             if(plot_var=='L31'):
                 ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-            ax.set_title('GIGA_v120')
+            ax.set_title('r/a=??')
             ax.legend(fontsize=12)
             ax.grid()
     
@@ -165,7 +164,7 @@ class DKES:
         print('#############################################################################')
         
         ######  WARNING: as of now this assumes an hydrogen plasma, qa=e_charge  #####
-        print('\nWARNING: THIS ASSUMES AN HYDROGEN PLASMA, qa=echarge')
+        print('\nWARNING: THIS ASSUMES A PLASMA WITH Z=1, qa=echarge')
         
         # Read Pfirsch-Schluter flow from external file
         # To do later...
@@ -223,7 +222,7 @@ class DKES:
             ax = fig.add_subplot(111)
             for i in range(self.nefield):
                 i1 = i*self.ncmul
-                i2 = i1 + self.ncmul - 1
+                i2 = i1 + self.ncmul
                 ax.plot(self.cmul[i1:i2],yplot[i1:i2],marker='+',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
             ax.set_xlabel(r'$\nu/v [m^{-1}]$')
             ax.set_ylabel(f'PENTA {plot_var}')
@@ -263,18 +262,17 @@ class DKES:
     #def write_PENTA_coeffs_to_file(self)
     
     #### computes integrands assuming an hydrogen plasma!!!
-    def plot_PENTA_integrands_energy_conv(self,j):
+    def plot_PENTA_integrands_energy_conv(self,intj,plasma_class,rho):
         # This function computes the integrand of the energy convolution as in PENTA for each efield
         # and plots it as function of K
-        # Integrand = sqrt(K) * exp(-K) * (K-5/2)^{j-1} * [lstar,m,star,nstar] * K^{3/2}
+        # Integrand = sqrt(K) * exp(-K) * (K-5/2)^{intj-1} * [lstar,m,star,nstar] * K^{3/2}
         # This function requires computing collisionality nu_D
         # We also spline interpolate lstar,mstar and star as function of cmul for each efield
         
+        import matplotlib.pyplot as plt
+        
         print('\n ############################################################')
         print('############# COMPUTING INTEGRANDS AS IN PENTA #################')
-        print('############################################################')
-        print('##### WARNING !!! Assuming an hydrogen plasma!! ##################')
-        print('##### with n=10^20m^-3  ;  Te=Ti=15keV ##################')
         print('############################################################')
         
         Kmin = 1e-4      #PENTA default value
@@ -282,90 +280,104 @@ class DKES:
         numKsteps = 100  #PENTA default value
         K = np.linspace(Kmin,Kmax,numKsteps)
         
-        plasma_species = ['electrons', 'ions']
-        
-        DA = 1.66053906660E-27 # Dalton
-        ME = 9.1093837E-31 # Electron mass [kg]
-        MI = 1.008*DA
-        
-        n = [1e20, 1e20]
-        T = [15e3, 15e3]
-        m = [ME, MI]
-        Z = [-1, 1]
-        
-        # electrons
-        vthe = np.sqrt(2*EC*T[0]/m[0])
-        
-        nu_D_electrons = []
-        cmul_electrons = []
-        for k in K:
-            ve = vthe * np.sqrt(k)
-            nu_D = self.perp_coll_freq(n,m,Z,T,[ve,ve],0,0)
+        cmul = {}
+        for species in plasma_class.list_of_species:
+            cmul_temp = []
+            for k in K:
+                vth = plasma_class.get_thermal_speed(species,rho)
+                vparticle = vth * np.sqrt(k)
+                nu = plasma_class.get_collisionality(species,rho,vparticle)
+                cmul_temp.append( nu / vparticle )
             
-            #print(f'nu_D={nu_D}')
-            
-            nu_D_electrons.append( nu_D )
-            cmul_electrons.append( nu_D/ve )
-            
-        #k=1
-        k=1
-        ve = vthe * np.sqrt(k)
-        cmul_K_1 = self.perp_coll_freq(n,m,Z,T,[ve,ve],0,0) / ve
-        print(f'\nelectrons cmul(K=1) = {cmul_K_1}')
+            cmul[species] = cmul_temp
         
-        import matplotlib.pyplot as plt
-        # plot here cmul vs K
-        px = 1/plt.rcParams['figure.dpi']
-        plt.rc('font', size=18)
-        plt.rc('legend', fontsize=20)
-        fig, ax = plt.subplots(figsize=(1040*px,980*px))
-        ax.plot(K,cmul_electrons,'o-')
-        plt.plot(1,cmul_K_1,'ro',label='K=1')
-        ax.set_yscale('log')
-        ax.set_ylabel(r'$\nu_D/v~~[m^{-1}]$')
-        ax.set_xlabel(f'K')
-        ax.set_title('electrons')  
-        ax.legend()      
-        ax.grid()
-        #plt.show()
+        # plot here cmul vs K for all species
+        fig, ax = plt.subplots(figsize=(8,6))
+        for species in plasma_class.list_of_species:
+            plt.rc('font', size=18)
+            plt.plot(K,cmul[f'{species}'],'o-',label=f'{species}')
+            ax.set_yscale('log')
+            ax.set_ylabel(r'$\nu_D/v~~[m^{-1}]$')
+            ax.set_xlabel(f'K')
+            ax.legend()      
+            ax.grid()
+        plt.show()
+
         
+        # plot f_j(K)*K^(3/2)
+        fix_func = np.sqrt(K) * np.exp(-K) * (K-2.5)**(intj-1) * K**1.5
         
-        # ions
-        vthi = np.sqrt(2*EC*T[1]/m[1])
-        
-        nu_D_ions = []
-        cmul_ions = []
-        for k in K:
-            vi = vthi * np.sqrt(k)
-            nu_D = self.perp_coll_freq(n,m,Z,T,[vi,vi],1,0)
-            
-            #print(f'nu_D={nu_D}')
-            
-            nu_D_ions.append( nu_D )
-            cmul_ions.append( nu_D/vi )
-        
-        #k=1
-        k=1
-        vi = vthi * np.sqrt(k)
-        cmul_K_1 = self.perp_coll_freq(n,m,Z,T,[vi,vi],1,0) / vi
-        print(f'\nions cmul(K=1) = {cmul_K_1}')
-        
-        import matplotlib.pyplot as plt
-        # plot here cmul vs K
-        px = 1/plt.rcParams['figure.dpi']
-        plt.rc('font', size=18)
-        plt.rc('legend', fontsize=20)
-        fig, ax = plt.subplots(figsize=(1040*px,980*px))
-        ax.plot(K,cmul_ions,'o-')
-        plt.plot(1,cmul_K_1,'ro',label='K=1')
-        ax.set_yscale('log')
-        ax.set_ylabel(r'$\nu_D/v~~[m^{-1}]$')
-        ax.set_xlabel(f'K')
-        ax.set_title('ions')   
-        ax.grid()
-        ax.legend()     
+        fig, ax = plt.subplots(figsize=(8,6))
+        ax.plot(K,fix_func,'o-')
+        #ax.set_yscale('log')
+        ax.set_ylabel(r'$\sqrt{K}e^{-K}\left(K-5/2\right)^{j-1}\,K^{3/2}$')
+        ax.set_xlabel(f'K')   
+        ax.set_title(f'j={intj}')
+        ax.grid()    
         plt.show()
         
+        # # ok, let's make spline for lstar for each efield!
+        from scipy.interpolate import interp1d, splrep, BSpline
+        from matplotlib.ticker import FuncFormatter
+        
+        for i in range(self.nefield):
+            i1 = i*self.ncmul
+            i2 = i1 + self.ncmul
+            
+            efield = self.efield[i1]
+            
+            x = self.cmul[i1:i2]
+            y = self.lstar[i1:i2]
+            
+            # quadratic spline as in PENTA. Assuming log_interp = true
+            xlog = np.log(x)
+            lstar_interp1d = interp1d(xlog,y,kind='quadratic',bounds_error=False,fill_value=0.0)
+            #lstar_Bspline = splrep(x,y,s=len(x)+100,k=2)
+            
+            xspline = np.logspace(-5,2,100)
+            
+            fig, ax = plt.subplots(figsize=(8,6))
+            ax.plot(x,y,'ob')
+            ax.plot(xspline, lstar_interp1d(np.log(xspline)),'red')
+            #ax[0,0].plot(xspline, BSpline(*lstar_Bspline)(xspline,extrapolate=False),'green')
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            ax.set_ylabel(r'lstar')
+            ax.set_xlabel(f'cmul')   
+            ax.set_title(f'spline, Er/v={efield}')
+            ax.grid()    
+            #plt.show()
+            
+            # plot lstar and full integrand as a function of K for all species
+            # num_of_species = len(plasma_class.list_of_species)
+            # fig,ax = plt.subplots(num_of_species,2)
+            # plt.rc('font', size=16)
+            # for species, iss in zip(plasma_class.list_of_species,np.arange(num_of_species)):
+            #     ax[iss,0].plot(K,lstar_interp1d(np.log(cmul[species])),'ob-',label=f'Er/v={efield}')
+            #     ax[iss,0].set_ylabel(r'lstar')
+            #     ax[iss,0].set_xlabel(f'K')   
+            #     ax[iss,0].set_title(f'{species}')
+            #     ax[iss,0].grid()
+                
+            #     ax[iss,1].plot(K,lstar_interp1d(np.log(cmul[species]))*fix_func,'ob-') 
+            #     ax[iss,1].set_xlabel('K')
+            #     ax[iss,1].set_ylabel(r'$f_j(K)~l^*(K)~K^{3/2}$') 
+            #     ax[iss,1].set_title(f'{species}, Er/v={efield}')
+            #     ax[iss,1].grid()
+            # plt.tight_layout
+            # plt.show()
+            
+            # full integrand in the same plot
+            fig,ax = plt.subplots(figsize=(8,6))
+            for species in plasma_class.list_of_species:
+                ax.plot(K,lstar_interp1d(np.log(cmul[species]))*fix_func,'o-',label=f'{species}')       
+                ax.set_xlabel('K')
+                ax.set_ylabel(f'$f_{intj}(K)~l^*(K)~K^{3/2}$')
+                ax.set_title(f'Er/v={efield}')
+            plt.legend()
+            plt.show()
+        # when it comes to mstar don't forget to take the log as in PENTA !!!!!
+    
         
         
         
@@ -384,7 +396,7 @@ class DKES:
         number species_num, which refers to the index in the arrays of 
         the species we are computing the collision frequency
         
-        This is the collision frequency used in the pitch-angle scatering
+        This is the collision frequency of the pitch-angle scatering
         operator and is defined in 
         S. P. Hirshman and D. J. Sigmar, Nucl. Fusion 21, 1079 (1981)
 
@@ -437,7 +449,7 @@ class DKES:
             
             Hb = (1-0.5/(xb*xb))*erf(xb) + np.exp(-xb*xb)/(xb*np.sqrt(np.pi))
             
-            num = nb*(EC**4)*Za*Za**Zb*Zb*loglambda*Hb
+            num = nb*(EC**4)*Za*Za*Zb*Zb*loglambda*Hb
             den = ma*ma*va*va*va*4*np.pi*EPS0*EPS0
             
             nu_D = nu_D + num/den
