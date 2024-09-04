@@ -40,9 +40,9 @@ class PLASMA:
             'helium4'   : 2
         }
         
-        self.species_mass = []
-        self.species_charge = []
-        self.species_Zcharge = []
+        self.mass = {}
+        self.charge = {}
+        self.Zcharge = {}
         self.density = {}
         self.temperature = {}
         
@@ -69,50 +69,23 @@ class PLASMA:
         # Check if species are in database
         for species in species_list:
             if species not in self.species_database:
-                print(f"ERROR: Species {species} does not exist in the database. Please create your plasma manually. Leaving the program.")
+                print(f"ERROR: Species {species} does not exist in the database. Leaving the program.")
                 exit(1)  # Exit the program with a status code of 1 (indicating error)
                 
-    def give_mass_to_species(self,species_list,mass=None):
+    def give_mass_to_species(self,species_list):
         
-        # Ensure species_list is a list of strings
-        if isinstance(species_list, str):
-            species_list = [species_list]  # Convert single string to list
-        elif not isinstance(species_list, list) or not all(isinstance(item, str) for item in species_list):
-            raise ValueError("Species_list must be a string or a list of strings.")
-        
-        if mass is not None:
-            self.species_mass.append( mass )
-        else:
-            for species in species_list:
-                self.species_mass.append( self.mass_database[f'{species}'] )
+        for species in species_list:
+            self.mass[species]  = self.mass_database[f'{species}'] 
                 
     def give_charge_to_species(self,species_list,charge=None):
         
-        # Ensure species_list is a list of strings
-        if isinstance(species_list, str):
-            species_list = [species_list]  # Convert single string to list
-        elif not isinstance(species_list, list) or not all(isinstance(item, str) for item in species_list):
-            raise ValueError("Species_list must be a string or a list of strings.")
-        
-        if charge is not None:
-            self.species_charge.append( charge )
-        else:
-            for species in species_list:
-                self.species_charge.append( self.charge_database[f'{species}'] )
+        for species in species_list:
+            self.charge[species]  = self.charge_database[f'{species}']
     
     def give_Zcharge_to_species(self,species_list,Zcharge=None):
         
-        # Ensure species_list is a list of strings
-        if isinstance(species_list, str):
-            species_list = [species_list]  # Convert single string to list
-        elif not isinstance(species_list, list) or not all(isinstance(item, str) for item in species_list):
-            raise ValueError("Species_list must be a string or a list of strings.")
-        
-        if Zcharge is not None:
-            self.species_Zcharge.append( Zcharge )
-        else:
-            for species in species_list:
-                self.species_Zcharge.append( self.Zcharge_database[f'{species}'] ) 
+        for species in species_list:
+            self.Zcharge[species]  = self.Zcharge_database[f'{species}'] 
                 
     def set_density(self,species,n0,nedge,exponent):
         
@@ -176,38 +149,8 @@ class PLASMA:
         
         temp = Tedge + (T0-Tedge)*(1-rho**exponent)
         
-        return temp
-                    
-    def add_profile(self,species,profile_type,axis_val,edge_val,exponent):
-        # species is a string indicating which species
-        # profile_type indicates: 'density', 'temperature' or 'pressure'
-        
-        #check if species exist in list_of_species
-        if species not in self.list_of_species:
-            print(f"ERROR: Species {species} is not in the plasma.")
-            exit(1)
-            
-        self
-            
-        
-            
-                  
-        
-        
-    # TO FINISH
-    # for now can only add one species at a time, ie, species_name, mass and charge
-    # are not lists
-    # def add_species(self,species_name,mass,charge,Zcharge):
-        
-    #     if not isinstance(species_name, str):
-    #         print(f"ERROR: species_name must be a string. Leaving the program.")
-    #         exit(1) 
-    #     else:       
-    #         self.list_of_species.append( species_name )
-    #         self.give_mass_to_species(species_name,mass)
-    #         self.give_charge_to_species(species_name,charge)
-    #         self.give_Zcharge_to_species(species_name,Zcharge)
-     
+        return temp         
+           
     def print_plasma(self):
         print(f'Current species in plasma are: {", ".join(self.list_of_species)}')
 
