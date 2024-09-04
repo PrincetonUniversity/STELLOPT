@@ -8,6 +8,8 @@ EC = 1.602176634E-19 # Electron charge [C]
 DA = 1.66053906660E-27 # Dalton
 ME = 9.1093837E-31 # Electron mass [kg]
 
+import numpy as np
+
 class PLASMA:
     
     def __init__(self,list_of_species=None):
@@ -41,6 +43,8 @@ class PLASMA:
         self.species_mass = []
         self.species_charge = []
         self.species_Zcharge = []
+        self.density = {}
+        self.temperature = {}
         
         if list_of_species is not None:    
             self.check_species_exist(list_of_species)
@@ -108,7 +112,86 @@ class PLASMA:
             self.species_Zcharge.append( Zcharge )
         else:
             for species in species_list:
-                self.species_Zcharge.append( self.Zcharge_database[f'{species}'] )        
+                self.species_Zcharge.append( self.Zcharge_database[f'{species}'] ) 
+                
+    def set_density(self,species,n0,nedge,exponent):
+        
+        #check if species exist in list_of_species
+        if species not in self.list_of_species:
+            print(f"ERROR: Species {species} is not in the plasma.")
+            exit(1)
+            
+        # Check if species exists in the dictionary, if not, create an empty dictionary for it
+        if species not in self.density:
+            self.density[species] = {}
+        
+        # Set the value for the specific location
+        profile_info = ['n0','nedge','exponent']
+        profile_vals = [n0,nedge,exponent]
+        for info,val in zip(profile_info,profile_vals):
+            self.density[species][info] = val
+            
+        print(f'\nDensity profile of {species}: n[m-3] = {nedge} + {n0-nedge}*(1-rho^{exponent})')
+        
+    def set_temperature(self,species,T0,Tedge,exponent):
+        
+        #check if species exist in list_of_species
+        if species not in self.list_of_species:
+            print(f"ERROR: Species {species} is not in the plasma.")
+            exit(1)
+            
+        # Check if species exists in the dictionary, if not, create an empty dictionary for it
+        if species not in self.temperature:
+            self.temperature[species] = {}
+        
+        # Set the value for the specific location
+        profile_info = ['T0','Tedge','exponent']
+        profile_vals = [T0,Tedge,exponent]
+        for info,val in zip(profile_info,profile_vals):
+            self.temperature[species][info] = val
+            
+        print(f'\nTemperature profile of {species}: T[eV] = {Tedge} + {T0-Tedge}*(1-rho^{exponent})')
+    
+    def get_density(self,species,rho):
+        # rho can be a number or a list of numbers
+        
+        n0 = self.density[species]['n0']
+        nedge = self.density[species]['nedge']
+        exponent = self.density[species]['exponent']
+        
+        rho = np.array(rho)
+        
+        dens = nedge + (n0-nedge)*(1-rho**exponent)
+        
+        return dens
+    
+    def get_temperature(self,species,rho):
+        # rho can be a number or a list of numbers
+        
+        T0 = self.temperature[species]['T0']
+        Tedge = self.temperature[species]['Tedge']
+        exponent = self.temperature[species]['exponent']
+        
+        rho = np.array(rho)
+        
+        temp = Tedge + (T0-Tedge)*(1-rho**exponent)
+        
+        return temp
+                    
+    def add_profile(self,species,profile_type,axis_val,edge_val,exponent):
+        # species is a string indicating which species
+        # profile_type indicates: 'density', 'temperature' or 'pressure'
+        
+        #check if species exist in list_of_species
+        if species not in self.list_of_species:
+            print(f"ERROR: Species {species} is not in the plasma.")
+            exit(1)
+            
+        self
+            
+        
+            
+                  
         
         
     # TO FINISH
