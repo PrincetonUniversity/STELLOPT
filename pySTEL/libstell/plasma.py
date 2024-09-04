@@ -186,7 +186,7 @@ class PLASMA:
             vtest_a = np.atleast_1d(vtest) 
             
             #check vtest and rho are of the same size
-            if vtest_a.shape != rho.shape:
+            if vtest_a.shape != rho_a.shape:
                 print('ERROR: vtest must have the same dimension as rho')
                 exit(1)          
         else:
