@@ -168,32 +168,43 @@ class PLASMA:
         
         return vth
     
-    def get_collisionality(self,species,rho):
-        # computes collisionality of 'species' assuming v=vth
+    def get_collisionality(self,species,rho,vtest=None):
+        # computes collisionality of test particle of 'species' 
+        # in a termal bath of all the other species (including itself)
         # The function used is: PENTA collisionality
+        
+        # vtest and rho must have the same size
+        # if vtest is not provided, it is assumed that vtest=vth
         
         from collisions import COLLISIONS
 
         coll = COLLISIONS()
         
-        # if rho is not an array, convert
-        rho_a = np.atleast_1d(rho)
+        #if vtest is not given, assume thermal speed
+        if vtest is not None:
+            #check vtest and rho are of the same size
+            if len(vtest) != len(rho):
+                print('ERROR: vtest must have the same dimension as rho')
+                exit(1) 
+            
+            rho_a = np.atleast_1d(rho)    
+            vtest_a = np.atleast_1d(vtest)          
+        else:
+            rho_a = np.atleast_1d(rho) 
+            vtest_a = self.get_thermal_speed(species,rho_a)
         
         # collisionfreq_PENTA does not accept arrays
         # so need to make a loop in rho
         nu_D = []
-        for r in rho_a:
+        for r,vt in zip(rho_a,vtest_a):
             
             # arrays are organized as: first element corresponds to species we want the collisionality
-            # order of the others are arbitrary
+            # The order of the others are arbitrary
             
             m = np.array([self.mass[species]] + [self.mass[sp] for sp in self.list_of_species if sp != species])
             Z = np.array([self.Zcharge[species]] + [self.Zcharge[sp] for sp in self.list_of_species if sp != species])
             T = np.array([self.get_temperature(species,r)] + [self.get_temperature(sp,r) for sp in self.list_of_species if sp != species])
             n = np.array([self.get_density(species,r)] + [self.get_density(sp,r) for sp in self.list_of_species if sp != species])
-            
-            #compute thermal speed of 'species'
-            vth = np.sqrt(2*EC*T[0] / m[0])
             
             #compute loglambda as in PENTA
             Te = self.get_temperature('electrons',r)
@@ -204,7 +215,7 @@ class PLASMA:
                 loglambda = 23.4 - 1.15*np.log10(ne/1e6) + 3.45*np.log10(Te)
             clog = np.full(len(m),loglambda)
             
-            nu = np.sum( coll.collisionfreq_PENTA(vth,m,Z,T,n,clog) )
+            nu = np.sum( coll.collisionfreq_PENTA(vt,m,Z,T,n,clog) )
             
             nu_D.append( nu )
             
