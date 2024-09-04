@@ -182,13 +182,13 @@ class PLASMA:
         
         #if vtest is not given, assume thermal speed
         if vtest is not None:
-            #check vtest and rho are of the same size
-            if len(vtest) != len(rho):
-                print('ERROR: vtest must have the same dimension as rho')
-                exit(1) 
-            
             rho_a = np.atleast_1d(rho)    
-            vtest_a = np.atleast_1d(vtest)          
+            vtest_a = np.atleast_1d(vtest) 
+            
+            #check vtest and rho are of the same size
+            if vtest_a.shape != rho.shape:
+                print('ERROR: vtest must have the same dimension as rho')
+                exit(1)          
         else:
             rho_a = np.atleast_1d(rho) 
             vtest_a = self.get_thermal_speed(species,rho_a)
