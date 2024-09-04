@@ -128,6 +128,11 @@ class PLASMA:
     def get_density(self,species,rho):
         # rho can be a number or a list of numbers
         
+        #check if species exist in list_of_species
+        if species not in self.list_of_species:
+            print(f"ERROR: Species {species} is not in the plasma.")
+            exit(1)
+        
         n0 = self.density[species]['n0']
         nedge = self.density[species]['nedge']
         exponent = self.density[species]['exponent']
@@ -141,6 +146,11 @@ class PLASMA:
     def get_temperature(self,species,rho):
         # rho can be a number or a list of numbers
         
+        #check if species exist in list_of_species
+        if species not in self.list_of_species:
+            print(f"ERROR: Species {species} is not in the plasma.")
+            exit(1)
+        
         T0 = self.temperature[species]['T0']
         Tedge = self.temperature[species]['Tedge']
         exponent = self.temperature[species]['exponent']
@@ -149,7 +159,66 @@ class PLASMA:
         
         temp = Tedge + (T0-Tedge)*(1-rho**exponent)
         
-        return temp         
+        return temp
+    
+    def get_thermal_speed(self,species,rho):
+        
+        temp = self.get_temperature(species,rho)
+        vth = np.sqrt(2*EC*temp/self.mass[species])
+        
+        return vth
+    
+    def get_collisionality(self,species,rho):
+        # computes collisionality of 'species' assuming v=vth
+        # The function used is: PENTA collisionality
+        
+        from collisions import COLLISIONS
+
+        coll = COLLISIONS()
+        
+        # if rho is not an array, convert
+        rho_a = np.atleast_1d(rho)
+        
+        # collisionfreq_PENTA does not accept arrays
+        # so need to make a loop in rho
+        nu_D = []
+        for r in rho_a:
+            
+            # arrays are organized as: first element corresponds to species we want the collisionality
+            # order of the others are arbitrary
+            
+            m = np.array([self.mass[species]] + [self.mass[sp] for sp in self.list_of_species if sp != species])
+            Z = np.array([self.Zcharge[species]] + [self.Zcharge[sp] for sp in self.list_of_species if sp != species])
+            T = np.array([self.get_temperature(species,r)] + [self.get_temperature(sp,r) for sp in self.list_of_species if sp != species])
+            n = np.array([self.get_density(species,r)] + [self.get_density(sp,r) for sp in self.list_of_species if sp != species])
+            
+            #compute thermal speed of 'species'
+            vth = np.sqrt(2*EC*T[0] / m[0])
+            
+            #compute loglambda as in PENTA
+            Te = self.get_temperature('electrons',r)
+            ne = self.get_temperature('electrons',r)
+            if(Te>50):
+                loglambda = 25.3 - 1.15*np.log10(ne/1e6) + 2.3*np.log10(Te)
+            else:
+                loglambda = 23.4 - 1.15*np.log10(ne/1e6) + 3.45*np.log10(Te)
+            clog = np.full(len(m),loglambda)
+            
+            nu = np.sum( coll.collisionfreq_PENTA(vth,m,Z,T,n,clog) )
+            
+            nu_D.append( nu )
+            
+        # if the input rho was a scalar, then convert the result back to scalar
+        # otherwise return the nu_D array
+        
+        if( np.isscalar(rho) ):
+            return nu_D[0]
+        else:
+            return nu_D
+    
+    # # TO DO
+    # def check_quasi_neutrality(self,rho):
+    #     #checks if sum(n_i*Zi)=0        
            
     def print_plasma(self):
         print(f'Current species in plasma are: {", ".join(self.list_of_species)}')
