@@ -206,7 +206,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       !read input files
       !here change to read_vmec_file_2; this way no need to compute Bsq etc in a separate file
-      call read_vmec_file(js,run_ident)
+      call read_vmec_file_2(js,run_ident)
       call read_pprof_file(js,pprof_char,num_ion_species,roa_surf,arad)
       call read_lmn_star_files(coeff_ext)
       call read_Utilde2_file(roa_surf,U2)
