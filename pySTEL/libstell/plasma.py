@@ -229,7 +229,52 @@ class PLASMA:
     
     # # TO DO
     # def check_quasi_neutrality(self,rho):
-    #     #checks if sum(n_i*Zi)=0        
+    #     #checks if sum(n_i*Zi)=0
+    
+    def write_plasma_profiles_to_PENTA(self,rho,filename=None):
+        # first line: number of rhos
+        # from second line: 
+        # 1st column: rho=r/a
+        # 2nd column: ne (in units of 10^18 m^-3)
+        # 3rd column: Te (eV)
+        # 4th and 5th: Ti and ni of ion1
+        # 6th and 7th: Ti and ni of ion 2
+        # etc
+        # NOTICE it's not a mistake: for the electrons the order is n and T, while for the ions is T and n
+        
+        if filename is None:
+            filename = 'plasma_profiles.dat'
+        
+        fact = 1e18
+        
+        ne = self.get_density('electrons',rho) / fact
+        Te = self.get_temperature('electrons',rho)
+        
+        # now let's get the ion species in the order that appears in list_of_species
+        ion_species = [species for species in self.list_of_species if species != 'electrons']
+        
+        print(f'Ion species: {ion_species}')
+        
+        #Precompute ion densities and temperatures
+        ion_densities = {ion_s: self.get_density(ion_s, rho)/fact for ion_s in ion_species}
+        ion_temperatures = {ion_s: self.get_temperature(ion_s, rho) for ion_s in ion_species}
+        
+        with open(filename, 'w') as file:
+            # Write the size of rho as the first line
+            file.write(f'{rho.size}\n')
+            
+            # Write the data to the file
+            for i in range(rho.size):
+                # First column: electron density, second column: electron temperature
+                row_data = [rho[i], ne[i], Te[i]]
+                
+                # Append ion densities and temperatures
+                for ion_s in ion_species:
+                    row_data.extend([ion_temperatures[ion_s][i], ion_densities[ion_s][i]])
+                
+                # Write the row to the file, formatted as space-separated values
+                file.write(" ".join(map(str, row_data)) + '\n')
+        
            
     def print_plasma(self):
         print(f'Current species in plasma are: {", ".join(self.list_of_species)}')
