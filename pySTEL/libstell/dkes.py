@@ -12,8 +12,15 @@ EC = 1.602176634E-19 # Electron charge [C]
 # DKES Class
 class DKES:
     
-    def __init__(self, eps_rel=0.03):
+    def __init__(self, surface, eps_rel=0.03):
         self.eps_rel = eps_rel
+        
+        #check surface is an integer
+        if not isinstance(surface,int):
+            print('ERROR: surface must be an integer')
+            exit(1)
+        else:
+            self.surface = surface
         
     def read_DKES_results(self,filename):
         
@@ -41,6 +48,7 @@ class DKES:
             'L33' : self.L33p
         }
         
+        #assuming that data is regular:
         # get ncmul, nefield
         self.ncmul = np.sum(self.efield == self.efield[0])
         self.nefield = int(np.round(len(self.cmul)/self.ncmul,decimals=0))
@@ -154,7 +162,7 @@ class DKES:
         return [yerr_lower, yerr_upper]
             
             
-    def compute_PENTA_coeffs(self,wout_filename,surface):
+    def compute_PENTA_coeffs(self,wout_filename):
         # Computes PENTA input coefficients lstar, mstar and nstar
         # size of lstar, mstar, nstar is n_cmul x n_efield
         # Check DKES/PENTA documentation to see the definition of lstar, mstar, nstar
@@ -175,6 +183,23 @@ class DKES:
         ##########################################################
         ####### Read Bsq from VMEC wout file #####################
         # maybe there is a better way through libstell library?
+        self.get_Bsq(wout_filename)
+        # get r/a for the surface; this will be needed in plot_PENTA_integrands
+        self.get_roa(wout_filename)
+        
+        #compute PENTA lstar
+        aux = 1 - 1.5*self.cmul*self.L33/self.Bsq
+        self.lstar = self.L11 - (2./3.)*self.cmul*self.Usq + (1.5*self.cmul*self.L31*self.L31/self.Bsq)/aux
+        self.lstar = self.lstar / (EC*EC)
+        
+        #compute PENTA mstar
+        self.mstar = self.cmul*self.cmul*self.L33 / aux
+        
+        #compute PENTA nstar
+        self.nstar = self.cmul*self.L31 / aux
+        self.nstar = self.nstar / EC
+        
+    def get_Bsq(self,wout_filename):
         import netCDF4 as nc
         try:
             dataset = nc.Dataset(wout_filename, 'r')
@@ -191,20 +216,22 @@ class DKES:
         
         #get Bsq at the required surface
         # note the -1 because python starts in 0
-        self.Bsq = Bsq_full[surface-1]
+        self.Bsq = Bsq_full[self.surface-1]
         print(f'Bsq={self.Bsq}')
         
-        #compute PENTA lstar
-        aux = 1 - 1.5*self.cmul*self.L33/self.Bsq
-        self.lstar = self.L11 - (2./3.)*self.cmul*self.Usq + (1.5*self.cmul*self.L31*self.L31/self.Bsq)/aux
-        self.lstar = self.lstar / (EC*EC)
+    def get_roa(self,wout_filename):
+        import netCDF4 as nc
+        try:
+            dataset = nc.Dataset(wout_filename, 'r')
+            phi = dataset.variables['phi'][:]
+            dataset.close()
+        except:
+            print('\nERROR: Could not read wout file')
+            sys.exit(0)
+
+        self.roa = np.sqrt(phi[self.surface-1]/phi[-1])
         
-        #compute PENTA mstar
-        self.mstar = self.cmul*self.cmul*self.L33 / aux
-        
-        #compute PENTA nstar
-        self.nstar = self.cmul*self.L31 / aux
-        self.nstar = self.nstar / EC        
+        print(f'r/a = {self.roa}')
      
     def plot_PENTA_coeffs(self):
         # creates 3 graphs: lstar, mstar and nstar vs cmul (for each efield)
@@ -259,10 +286,75 @@ class DKES:
         temp[-1] = 2.0 * temp[-1] - 1.0 * temp[-2]
         return temp
     
-    #def write_PENTA_coeffs_to_file(self)
+    def write_PENTA_coeffs_to_files(self,where_to):
+        # name of the files are 'lstar_lijs_##' , 'mstar_lijs_##', 'nstar_lijs_##'
+        
+        #where_to save -- path should not have final /
+        
+        #checks that data is regular, i.e.: for each efield there are always the same cmul
+        # if data is regular the following arrays are computed:
+        # self.cmul_regular
+        # self.efield_regular
+        
+        self.check_data_is_regular(self.cmul,self.efield)
+        
+        for var in ['lstar', 'mstar', 'nstar']:
+            
+            filename = where_to + '/' + var + '_lijs_' + 'surface_' + f'{self.surface}'
+            y = getattr(self,var)
+
+            combined = np.concatenate((self.cmul_regular,self.efield_regular,y))
+            
+            #create file
+            with open(filename, 'w') as file:
+                file.write(f'{self.ncmul} {self.nefield}\n')
+                for value in combined:
+                    file.write(f'{value}\n')
+                
+
+                
+    def check_data_is_regular(self,cmul,efield):
+        # checks that data is regular, i.e.: for each efield there are always the same cmul
+        # if data is regular the following arrays are computed:
+        # self.cmul_regular
+        # self.efield_regular
+        
+        # Get the unique values and counts of efield
+        unique_efields, counts = np.unique(efield, return_counts=True)
+        
+        if not np.all(counts == counts[0]):
+            print('ERROR: Each cmul does not have the same number of efields. Cannot proceed...')
+            exit(1)
+        else:
+            N = counts[0]
+            expected_cmul = cmul[:N]  # First block of cmul
+              
+        if(N != self.ncmul):
+            print('Error: Disparity between counts and ncmul. Cannot proceed...')
+
+        # Check each block of cmul corresponding to each unique efield
+        for unique_value in unique_efields:
+            cmul_block = cmul[efield == unique_value]  # Extract cmul values for current efield
+            
+            # Check if the cmul block matches the expected pattern
+            if not np.array_equal(cmul_block, expected_cmul):
+                print('ERROR: data is not regular. cmul and efield are not meshgrid-like. Cannot proceed')
+                exit(1)
+            else:
+                self.efield_regular = unique_efields
+                self.cmul_regular   = expected_cmul
+                
+                
+                
+            
+            
+        
+        
+                
+                
+        
     
-    #### computes integrands assuming an hydrogen plasma!!!
-    def plot_PENTA_integrands_energy_conv(self,intj,plasma_class,rho):
+    def plot_PENTA_integrands_energy_conv(self,intj,plasma_class):
         # This function computes the integrand of the energy convolution as in PENTA for each efield
         # and plots it as function of K
         # Integrand = sqrt(K) * exp(-K) * (K-5/2)^{intj-1} * [lstar,m,star,nstar] * K^{3/2}
@@ -284,41 +376,44 @@ class DKES:
         for species in plasma_class.list_of_species:
             cmul_temp = []
             for k in K:
-                vth = plasma_class.get_thermal_speed(species,rho)
+                vth = plasma_class.get_thermal_speed(species,self.roa)
                 vparticle = vth * np.sqrt(k)
-                nu = plasma_class.get_collisionality(species,rho,vparticle)
+                nu = plasma_class.get_collisionality(species,self.roa,vparticle)
                 cmul_temp.append( nu / vparticle )
             
             cmul[species] = cmul_temp
         
         # plot here cmul vs K for all species
-        fig, ax = plt.subplots(figsize=(8,6))
+        cmul_min = np.min(self.cmul)
+        cmul_max = np.max(self.cmul)
+        fig, ax = plt.subplots(figsize=(13,11))
         for species in plasma_class.list_of_species:
             plt.rc('font', size=18)
             plt.plot(K,cmul[f'{species}'],'o-',label=f'{species}')
+            plt.plot(K,np.full_like(K,cmul_min),'-r',linewidth=2)
+            plt.plot(K,np.full_like(K,cmul_max),'-r')
             ax.set_yscale('log')
             ax.set_ylabel(r'$\nu_D/v~~[m^{-1}]$')
             ax.set_xlabel(f'K')
             ax.legend()      
             ax.grid()
-        plt.show()
+        #plt.show()
 
         
-        # plot f_j(K)*K^(3/2)
+        # f_j(K)*K^(3/2)
         fix_func = np.sqrt(K) * np.exp(-K) * (K-2.5)**(intj-1) * K**1.5
         
-        fig, ax = plt.subplots(figsize=(8,6))
-        ax.plot(K,fix_func,'o-')
-        #ax.set_yscale('log')
-        ax.set_ylabel(r'$\sqrt{K}e^{-K}\left(K-5/2\right)^{j-1}\,K^{3/2}$')
-        ax.set_xlabel(f'K')   
-        ax.set_title(f'j={intj}')
-        ax.grid()    
-        plt.show()
+        # fig, ax = plt.subplots(figsize=(8,6))
+        # ax.plot(K,fix_func,'o-')
+        # #ax.set_yscale('log')
+        # ax.set_ylabel(r'$\sqrt{K}e^{-K}\left(K-5/2\right)^{j-1}\,K^{3/2}$')
+        # ax.set_xlabel(f'K')   
+        # ax.set_title(f'j={intj}')
+        # ax.grid()    
+        # plt.show()
         
         # # ok, let's make spline for lstar for each efield!
-        from scipy.interpolate import interp1d, splrep, BSpline
-        from matplotlib.ticker import FuncFormatter
+        from scipy.interpolate import interp1d #, splrep, BSpline
         
         for i in range(self.nefield):
             i1 = i*self.ncmul
@@ -327,134 +422,179 @@ class DKES:
             efield = self.efield[i1]
             
             x = self.cmul[i1:i2]
-            y = self.lstar[i1:i2]
+            yl = self.lstar[i1:i2]
+            yn = self.nstar[i1:i2]
+            ylogm = np.log( self.mstar[i1:i2] )
             
             # quadratic spline as in PENTA. Assuming log_interp = true
             xlog = np.log(x)
-            lstar_interp1d = interp1d(xlog,y,kind='quadratic',bounds_error=False,fill_value=0.0)
-            #lstar_Bspline = splrep(x,y,s=len(x)+100,k=2)
+            lstar_interp1d = interp1d(xlog,yl,kind='quadratic',bounds_error=False,fill_value=0.0)
+            nstar_interp1d = interp1d(xlog,yn,kind='quadratic',bounds_error=False,fill_value=0.0)
+            logmstar_interp1d = interp1d(xlog,ylogm,kind='quadratic',bounds_error=False,fill_value=0.0)
             
-            xspline = np.logspace(-5,2,100)
+            xspline = np.logspace(np.log10(x[0]),np.log10(x[-1]),100)
             
-            fig, ax = plt.subplots(figsize=(8,6))
-            ax.plot(x,y,'ob')
-            ax.plot(xspline, lstar_interp1d(np.log(xspline)),'red')
-            #ax[0,0].plot(xspline, BSpline(*lstar_Bspline)(xspline,extrapolate=False),'green')
-            ax.set_yscale('log')
-            ax.set_xscale('log')
-            ax.set_ylabel(r'lstar')
-            ax.set_xlabel(f'cmul')   
-            ax.set_title(f'spline, Er/v={efield}')
-            ax.grid()    
-            #plt.show()
+            fig, ax = plt.subplots(1,3,figsize=(17,6))
+            ax[0].plot(x,yl,'ob')
+            ax[0].plot(xspline, lstar_interp1d(np.log(xspline)),'red',label='spline')
+            ax[0].set_yscale('log')
+            ax[0].set_xscale('log')
+            ax[0].set_ylabel(r'lstar')
+            ax[0].set_xlabel(f'cmul')   
+            ax[0].set_title(f'Er/v={efield}')
+            ax[0].grid()
+            ax[0].legend()
             
-            # plot lstar and full integrand as a function of K for all species
-            # num_of_species = len(plasma_class.list_of_species)
-            # fig,ax = plt.subplots(num_of_species,2)
-            # plt.rc('font', size=16)
-            # for species, iss in zip(plasma_class.list_of_species,np.arange(num_of_species)):
-            #     ax[iss,0].plot(K,lstar_interp1d(np.log(cmul[species])),'ob-',label=f'Er/v={efield}')
-            #     ax[iss,0].set_ylabel(r'lstar')
-            #     ax[iss,0].set_xlabel(f'K')   
-            #     ax[iss,0].set_title(f'{species}')
-            #     ax[iss,0].grid()
-                
-            #     ax[iss,1].plot(K,lstar_interp1d(np.log(cmul[species]))*fix_func,'ob-') 
-            #     ax[iss,1].set_xlabel('K')
-            #     ax[iss,1].set_ylabel(r'$f_j(K)~l^*(K)~K^{3/2}$') 
-            #     ax[iss,1].set_title(f'{species}, Er/v={efield}')
-            #     ax[iss,1].grid()
-            # plt.tight_layout
-            # plt.show()
+            ax[1].plot(x,yn,'ob')
+            ax[1].plot(xspline, nstar_interp1d(np.log(xspline)),'red',label='spline')
+            #ax.set_yscale('log')
+            ax[1].set_xscale('log')
+            ax[1].set_ylabel(r'nstar')
+            ax[1].set_xlabel(f'cmul')   
+            ax[1].set_title(f'Er/v={efield}')
+            ax[1].grid()   
+            #ax[1].legend()
             
-            # full integrand in the same plot
+            ax[2].plot(x,ylogm,'ob')
+            ax[2].plot(xspline, logmstar_interp1d(np.log(xspline)),'red',label='spline')
+            #ax.set_yscale('log')
+            ax[2].set_xscale('log')
+            ax[2].set_ylabel('ln(mstar)')
+            ax[2].set_xlabel(f'cmul')   
+            ax[2].set_title(f'Er/v={efield}')
+            ax[2].grid()   
+            #ax[1].legend()
+            
+            plt.tight_layout(pad=2)
+            
+            # full integrand of l*
             fig,ax = plt.subplots(figsize=(8,6))
             for species in plasma_class.list_of_species:
                 ax.plot(K,lstar_interp1d(np.log(cmul[species]))*fix_func,'o-',label=f'{species}')       
                 ax.set_xlabel('K')
-                ax.set_ylabel(f'$f_{intj}(K)~l^*(K)~K^{3/2}$')
+                ax.set_ylabel(fr'$f_{intj}(K)~l^*(K)~K^{{3/2}}$')
                 ax.set_title(f'Er/v={efield}')
             plt.legend()
+            
+            # full integrand of n*
+            fig,ax = plt.subplots(figsize=(10,6))
+            for species in plasma_class.list_of_species:
+                ax.plot(K,nstar_interp1d(np.log(cmul[species]))*fix_func,'o-',label=f'{species}')       
+                ax.set_xlabel('K')
+                ax.set_ylabel(f'$f_{intj}(K)~n^*(K)~K^{{3/2}}$')
+                ax.set_title(f'Er/v={efield}')
+            plt.legend()
+            
+            # full integrand of m*
+            fig,ax = plt.subplots(figsize=(10,6))
+            for species in plasma_class.list_of_species:
+                ax.plot(K,np.exp(logmstar_interp1d(np.log(cmul[species])))*fix_func,'o-',label=f'{species}')       
+                ax.set_xlabel('K')
+                ax.set_ylabel(f'$f_{intj}(K)~m^*(K)~K^{{3/2}}$')
+                ax.set_title(f'Er/v={efield}')
+                ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+            plt.legend()
             plt.show()
-        # when it comes to mstar don't forget to take the log as in PENTA !!!!!
+            
+            # fig, ax = plt.subplots(1,3,figsize=(17,6))
+            # for species in plasma_class.list_of_species:
+            #     ax[0].plot(K,lstar_interp1d(np.log(cmul[species]))*fix_func,'o-',label=f'{species}')       
+            #     ax[0].set_xlabel('K')
+            #     ax[0].set_ylabel(fr'$f_{intj}(K)~l^*(K)~K^{{3/2}}$')
+            #     ax[0].set_title(f'Er/v={efield}')
+            #     ax[0].grid()
+            #     #ax[0].legend()
+            # for species in plasma_class.list_of_species:
+            #     ax[1].plot(K,nstar_interp1d(np.log(cmul[species]))*fix_func,'o-',label=f'{species}')       
+            #     ax[1].set_xlabel('K')
+            #     ax[1].set_ylabel(f'$f_{intj}(K)~n^*(K)~K^{{3/2}}$')
+            #     ax[1].set_title(f'Er/v={efield}')
+            #     ax[1].grid()
+            # for species in plasma_class.list_of_species:
+            #     ax[2].plot(K,np.exp(logmstar_interp1d(np.log(cmul[species])))*fix_func,'o-',label=f'{species}')       
+            #     ax[2].set_xlabel('K')
+            #     ax[2].set_ylabel(f'$f_{intj}(K)~m^*(K)~K^{{3/2}}$')
+            #     ax[2].set_title(f'Er/v={efield}')
+            #     ax[2].grid()
+            #     ax[2].legend()
+            # plt.tight_layout(pad=2)
+            # plt.show()        
+        
+        
+        
+        
+        
+        
+        
     
-        
-        
-        
-        
-        
-        
-        
-        
-    
-    def perp_coll_freq(self,n,m,Z,T,v,species_num,electron_num):
-        """Calc perpendicular collision frequency of species species_num
+    # def perp_coll_freq(self,n,m,Z,T,v,species_num,electron_num):
+    #     """Calc perpendicular collision frequency of species species_num
 
-		This routine takes a 1D arrays of n,m,Z,T,v which contains the
-        density, mass, charge number, Temperature and velocity of all species
-        in a plasma. Then it computes nu_D of species indicated by the 
-        number species_num, which refers to the index in the arrays of 
-        the species we are computing the collision frequency
+	# 	This routine takes a 1D arrays of n,m,Z,T,v which contains the
+    #     density, mass, charge number, Temperature and velocity of all species
+    #     in a plasma. Then it computes nu_D of species indicated by the 
+    #     number species_num, which refers to the index in the arrays of 
+    #     the species we are computing the collision frequency
         
-        This is the collision frequency of the pitch-angle scatering
-        operator and is defined in 
-        S. P. Hirshman and D. J. Sigmar, Nucl. Fusion 21, 1079 (1981)
+    #     This is the collision frequency of the pitch-angle scatering
+    #     operator and is defined in 
+    #     S. P. Hirshman and D. J. Sigmar, Nucl. Fusion 21, 1079 (1981)
 
-		Parameters
-		----------
-		n : list
-			density in m^-3
-        m : list
-			mass in kg
-        Z : list
-			charge number; if electron, Z=-1
-        T : list
-			temperature in eV
-        v : list
-			velocity in m/s
-        species num : integer
-            identifies the species we want the collision freq of: nu_D_num_index
-        electron_num : integer
-            identifies the index of the electrons
+	# 	Parameters
+	# 	----------
+	# 	n : list
+	# 		density in m^-3
+    #     m : list
+	# 		mass in kg
+    #     Z : list
+	# 		charge number; if electron, Z=-1
+    #     T : list
+	# 		temperature in eV
+    #     v : list
+	# 		velocity in m/s
+    #     species num : integer
+    #         identifies the species we want the collision freq of: nu_D_num_index
+    #     electron_num : integer
+    #         identifies the index of the electrons
 		
-        Returns
-		----------
-		nu_D : real
-			Perpendicular collision frequency [s^-1]
-		"""
+    #     Returns
+	# 	----------
+	# 	nu_D : real
+	# 		Perpendicular collision frequency [s^-1]
+	# 	"""
   
-        from scipy.special import erf
+    #     from scipy.special import erf
         
-        EC = 1.602176634E-19 # Electron charge [C]
-        EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
+    #     EC = 1.602176634E-19 # Electron charge [C]
+    #     EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
           
-        Za = Z[species_num]
-        ma = m[species_num]
-        va = v[species_num]
+    #     Za = Z[species_num]
+    #     ma = m[species_num]
+    #     va = v[species_num]
         
-        ne = n[electron_num]
-        Te = T[electron_num]
+    #     ne = n[electron_num]
+    #     Te = T[electron_num]
         
-        #compute loglambda as in PENTA
-        if(Te>50):
-            loglambda = 25.3 - 1.15*np.log10(ne/1e6) + 2.3*np.log10(Te)
-        else:
-            loglambda = 23.4 - 1.15*np.log10(ne/1e6) + 3.45*np.log10(Te)
+    #     #compute loglambda as in PENTA
+    #     if(Te>50):
+    #         loglambda = 25.3 - 1.15*np.log10(ne/1e6) + 2.3*np.log10(Te)
+    #     else:
+    #         loglambda = 23.4 - 1.15*np.log10(ne/1e6) + 3.45*np.log10(Te)
         
-        nu_D = 0.0
-        for nb,mb,Zb,Tb,vb in zip(n,m,Z,T,v):
+    #     nu_D = 0.0
+    #     for nb,mb,Zb,Tb,vb in zip(n,m,Z,T,v):
             
-            vthb = np.sqrt(2*EC*Tb/mb)
-            xb = vb/vthb
+    #         vthb = np.sqrt(2*EC*Tb/mb)
+    #         xb = vb/vthb
             
-            Hb = (1-0.5/(xb*xb))*erf(xb) + np.exp(-xb*xb)/(xb*np.sqrt(np.pi))
+    #         Hb = (1-0.5/(xb*xb))*erf(xb) + np.exp(-xb*xb)/(xb*np.sqrt(np.pi))
             
-            num = nb*(EC**4)*Za*Za*Zb*Zb*loglambda*Hb
-            den = ma*ma*va*va*va*4*np.pi*EPS0*EPS0
+    #         num = nb*(EC**4)*Za*Za*Zb*Zb*loglambda*Hb
+    #         den = ma*ma*va*va*va*4*np.pi*EPS0*EPS0
             
-            nu_D = nu_D + num/den
+    #         nu_D = nu_D + num/den
             
-        return nu_D
+    #     return nu_D
             
             
         
