@@ -325,7 +325,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       !Loop over Er to get fluxes as a function of Er
       do ie=1,num_Er_test
-        !define test radial electric field in V/cm
+        !convert test radial electric field from V/cm to V/m
         Er_test=(Er_min+(real(ie,rknd)-1._rknd)
      1    *(Er_max-Er_min)/(num_Er_test-1._rknd))*100._rknd
         !check for Er=0, doesn't work for log interpolation
