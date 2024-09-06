@@ -1,0 +1,26 @@
+# Build with docker buildx build --tag dkes --file Dockerfile_single_code .
+# Your stellopt image which should match your tag
+FROM stellopt:latest
+LABEL description="STELLOPT build for a specific code"
+
+# Set what code you wish to compile
+ARG CODE="DKES"
+
+# Set Environment variables
+ARG MYHOME="/home/STELLOPT/bin"
+RUN echo Building ${CODE} for ${MACHINE}
+
+# Set the working directory
+WORKDIR $STELLOPT_PATH
+
+# Copy the local code modifications to STELLOPT
+COPY ${CODE} ${STELLOPT_PATH}
+
+# Compile STELLOPT
+RUN cd $STELLOPT_PATH  && ./build_all -j1 $CODE 2>&1 | tee log.build 
+
+# Copy all built executables onto global path
+RUN cp -RP ${STELLOPT_PATH}/bin/* /usr/local/bin/
+
+# Set commands
+CMD ["/bin/bash"]

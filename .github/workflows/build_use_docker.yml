@@ -4,10 +4,11 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: zhucaoxiang/stellopt:compile
+    container: lazerson/stellopt-compile:latest
     env:
-      MACHINE: docker
+      MACHINE: debian
       STELLOPT_PATH: ${{ github.workspace }}
+      MYHOME: ${{ github.workspace }}/bin
       OMPI_ALLOW_RUN_AS_ROOT: 1
       OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
     steps:

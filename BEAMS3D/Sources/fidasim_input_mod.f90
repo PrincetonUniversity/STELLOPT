@@ -549,6 +549,7 @@ SUBROUTINE write_fidasim_namelist(iunit_out, istat)
       WRITE(iunit_out,outint) 'NP_WGHT',np_wght
       WRITE(iunit_out,outint) 'NPHI_WGHT',nphi_wght
       WRITE(iunit_out,outint) 'NLAMBDA_WGHT',nlambda_wght
+      WRITE(iunit_out,outint) 'CALC_BIRTH',calc_birth
       WRITE(iunit_out,outint) 'CALC_BREMS',calc_brems
       WRITE(iunit_out,outint) 'CALC_COLD',calc_cold
       WRITE(iunit_out,outint) 'CALC_NEUTRON',calc_neutron
@@ -618,7 +619,7 @@ SUBROUTINE write_fidasim_geometry
    IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'src',ier)
    CALL h5dopen_f(qid_gid, 'src', temp_gid, ier)
    CALL write_att_hdf5(temp_gid,'units','cm',ier)
-   CALL write_att_hdf5(temp_gid,'description','Source of the neutral beam geometry',ier)
+   CALL write_att_hdf5(temp_gid,'description','Position of the source grid in machine coordinates',ier)
    CALL h5dclose_f(temp_gid,ier)
 
 
@@ -626,7 +627,7 @@ SUBROUTINE write_fidasim_geometry
    IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'axis',ier)
    CALL h5dopen_f(qid_gid, 'axis', temp_gid, ier)
    CALL write_att_hdf5(temp_gid,'units','-',ier)
-   CALL write_att_hdf5(temp_gid,'description','Position of the source grid in machine coordinates',ier)
+   CALL write_att_hdf5(temp_gid,'description','Axis of the beam centerline: Centerline(t) = src + axis*t ',ier)
    CALL h5dclose_f(temp_gid,ier)
 
    CALL write_var_hdf5(qid_gid,'widy',ier,DBLVAR=DBLE(widy))
@@ -689,35 +690,35 @@ SUBROUTINE write_fidasim_geometry
    CALL write_var_hdf5(qid_gid,'awidy',naperture,ier,DBLVAR=awidy)
    IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'awidy',ier)
    CALL h5dopen_f(qid_gid, 'awidy', temp_gid, ier)
-   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
    CALL write_att_hdf5(temp_gid,'description','Half-width of the aperture(s)',ier)
    CALL h5dclose_f(temp_gid,ier)
 
    CALL write_var_hdf5(qid_gid,'awidz',naperture,ier,DBLVAR=awidz)
    IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'awidz',ier)
    CALL h5dopen_f(qid_gid, 'awidz', temp_gid, ier)
-   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
    CALL write_att_hdf5(temp_gid,'description','Half-width of the aperture(s)',ier)
    CALL h5dclose_f(temp_gid,ier)
 
    CALL write_var_hdf5(qid_gid,'aoffy',naperture,ier,DBLVAR=aoffy)
    IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'aoffy',ier)
    CALL h5dopen_f(qid_gid, 'aoffy', temp_gid, ier)
-   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
    CALL write_att_hdf5(temp_gid,'description','Horizontal (y) offset of the aperture(s) relative to the +x aligned beam centerline',ier)
    CALL h5dclose_f(temp_gid,ier)
 
    CALL write_var_hdf5(qid_gid,'aoffz',naperture,ier,DBLVAR=aoffz)
    IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'aoffz',ier)
    CALL h5dopen_f(qid_gid, 'aoffz', temp_gid, ier)
-   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
    CALL write_att_hdf5(temp_gid,'description','Vertical (z) offset of the aperture(s) relative to the +x aligned beam centerline',ier)
    CALL h5dclose_f(temp_gid,ier)
 
    CALL write_var_hdf5(qid_gid,'adist',naperture,ier,DBLVAR=adist)
    IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'adist',ier)
    CALL h5dopen_f(qid_gid, 'adist', temp_gid, ier)
-   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
    CALL write_att_hdf5(temp_gid,'description','Distance from the center of the beam source grid to the aperture(s) plane',ier)
    CALL h5dclose_f(temp_gid,ier)
 
@@ -738,7 +739,7 @@ SUBROUTINE write_fidasim_geometry
    CALL write_var_hdf5(qid_gid,'adist',naperture,ier,DBLVAR=adist)
    IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'adist',ier)
    CALL h5dopen_f(qid_gid, 'adist', temp_gid, ier)
-   CALL write_att_hdf5(temp_gid,'units','-',ier)
+   CALL write_att_hdf5(temp_gid,'units','cm',ier)
    CALL write_att_hdf5(temp_gid,'description','Distance from the center of the beam source grid to the aperture(s) plane',ier)
    CALL h5dclose_f(temp_gid,ier)
 
