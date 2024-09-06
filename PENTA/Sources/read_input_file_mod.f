@@ -165,7 +165,10 @@ c
       Rmajor = Rmajor_vmec
       arad = Aminor_vmec
       ! Now calc Bsq
-      bsq = 0.0
+      ! Why not reading from VMEC bsq??
+      bsq = 0.0_rknd
+      top = 0.0_rknd
+      bottom = 0.0_rknd
       DO v = 1, 360
          zeta = TWOPI*REAL(v-1)/359.
          DO u = 1, 360
@@ -182,6 +185,7 @@ c
          END DO
       END DO
       bsq = top/bottom
+      write(*,'(a,g12.7)') ' Bsq=',bsq
       !deallocate variables
 !      deallocate(js_vmec, r_vmec, roa_vmec, chip_vmec, psip_vmec)
 !      deallocate(btheta_vmec, bzeta_vmec, vp_vmec, bsq_vmec,iota_vmec)
@@ -317,8 +321,8 @@ c
         fname=fchar//"star_lijs_"//coeff_ext
 
         !read file
-         open(unit=iu_coeff,file=fname,status='old')
-        read (iu_coeff, *) junk,junk    !wtov, dsdr no longer needed    
+        open(unit=iu_coeff,file=fname,status='old')
+        !read (iu_coeff, *) junk,junk    !wtov, dsdr no longer needed    
         read (iu_coeff, *) nc, ne       !number of cmul and efield vals 
         allocate(cmul_vec(nc),efield_vec(ne),coef2d(nc,ne))
         do i = 1, nc 
