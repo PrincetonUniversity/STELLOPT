@@ -518,7 +518,154 @@ class DKES:
             #     ax[2].grid()
             #     ax[2].legend()
             # plt.tight_layout(pad=2)
-            # plt.show()        
+            # plt.show()
+            
+    def plot_U2_estimate(self):
+        
+        import matplotlib.pyplot as plt
+        
+        #check what are the slopes of D11*K^3/2  for the smallest and largest electric field
+        j = 0
+        i1 = j*self.ncmul
+        i2 = i1 + self.ncmul
+        D11_Emin = self.L11[i1:i2]
+        cmul_fit = self.cmul[i1:i2]
+        
+        j = self.nefield-1
+        i1 = j*self.ncmul
+        i2 = i1 + self.ncmul
+        D11_Emax = self.L11[i1:i2]
+        
+        #take only the last 6 points of cmul for the fit
+        cmul_fit = cmul_fit[-6:]
+        D11_Emin = D11_Emin[-6:]
+        D11_Emax = D11_Emax[-6:]
+        
+        p_Emin = np.polyfit(np.log10(cmul_fit),np.log10(D11_Emin),1)
+        p_Emax = np.polyfit(np.log10(cmul_fit),np.log10(D11_Emax),1)
+        
+        x_fit = cmul_fit
+        Emin_fit = 10**p_Emin[1] * x_fit**p_Emin[0]
+        Emax_fit = 10**p_Emax[1] * x_fit**p_Emax[0]
+        
+        Emin_fit_plot = 10* 10**p_Emin[1] * x_fit**p_Emin[0] 
+        Emax_fit_plot = 10* 10**p_Emax[1] * x_fit**p_Emax[0]
+        
+        print(f'slope Emin={p_Emin[0]}')
+        print(f'slope Emax={p_Emax[0]}')
+        
+        fig=plt.figure(figsize=(11,8))
+        ax = fig.add_subplot(111)
+        for i in [0,self.nefield-1]:
+            i1 = i*self.ncmul
+            i2 = i1 + self.ncmul
+            # from plot_DKES_coefficients
+            [yerr_lower, yerr_upper] = self.compute_yerr(self.L11[i1:i2],self.Lm['L11'][i1:i2],self.Lp['L11'][i1:i2])
+            ax.errorbar(self.cmul[i1:i2],self.L11[i1:i2],yerr=[yerr_lower,yerr_upper],fmt='-o',label=rf'$E_s/v$={self.efield[i1]:3.1E}',capsize=5, elinewidth=2, markeredgewidth=2)
+            ax.plot(x_fit,Emin_fit_plot,'--r',linewidth=5)
+            ax.plot(x_fit,Emax_fit_plot,'--r',linewidth=5)
+                
+        ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
+        ax.set_ylabel(r'$D_{11}^*K^{3/2}~~[\text{m}^{-1}~\text{T}^{-2}]$')
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_title(r'$\left<U^2\right>=$'+f'{1.5*10**p_Emin[1]:.2e}'+' T'+'$^{-2}$')
+        ax.text(x_fit[-4],Emin_fit_plot[-2],f'slope={p_Emin[0]:.3f}')
+        ax.text(x_fit[-4],Emax_fit_plot[-2],f'slope={p_Emax[0]:.3f}')
+        ax.legend(fontsize=12)
+        ax.grid()
+        plt.show()   
+            
+    def write_U2_to_file(self,rho,filename=None):
+        print(f'\n ########### ASSUMING U2 IS CONSTANT: <U^2>={self.Usq} ##############')
+        
+        if filename is None:
+            filename = 'Utilde2_profile'
+            
+        with open(filename, 'w') as file:
+            # Write the size of rho as the first line
+            file.write(f'{rho.size}\n')
+            
+            # Write the data to the file
+            for i in range(rho.size):
+                row_data = [rho[i], self.Usq]
+
+                # Write the row to the file, formatted as space-separated values
+                file.write(" ".join(map(str, row_data)) + '\n')
+                
+    def read_PENTA_fluxes_vs_Er(self,plasma_class,folderpath=None):
+        #reads the file fluxes_vs_Er creatd by PENTA code
+        #folderpath should contain path to file without final '/'
+        # if not given, it is assumed we are already inside the folder
+        
+        import matplotlib.pyplot as plt
+        
+        print('\n#############################################################')
+        print('####################### PLOTTING FLUXES ######################')
+        print('########## ASSUMES ALL SPECIES HAVE SAME CHARGE #############')
+        print('#############################################################')
+        print('#############################################################')
+        
+        if folderpath is None:
+            filename = 'fluxes_vs_Er'
+        else:
+            filename = folderpath+'/fluxes_vs_Er'
+            
+        num_ions = plasma_class.num_ion_species
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+        gamma_e = penta[:,2]
+        
+        gamma_i = {}
+        j = 3
+        for ion in plasma_class.ion_species:
+            gamma_i[ion] = penta[:,j]
+            j+=1
+            
+        gamma_i_tot = sum(gamma_i[ion] for ion in plasma_class.ion_species)
+        
+        plt.rc('font', size=18)
+        fig=plt.figure(figsize=(11,8))
+        ax = fig.add_subplot(111)
+        ax.plot(Er,gamma_e,label='$\Gamma_e$')
+        ax.plot(Er,gamma_i_tot,label='$\Gamma_{i,tot}$')
+        for ion in plasma_class.ion_species:
+            ax.plot(Er,gamma_i[ion],'--',label=f'$\Gamma({ion})$')
+        ax.set_xlabel(r'Er [V/cm]')
+        ax.set_ylabel(r'$\Gamma~~[\text{m}^{-2}\,\text{s}^{-1}]$')
+        ax.set_title(f'r/a={roa[0]}')
+        ax.set_yscale('log')
+        ax.legend(fontsize=12)
+        ax.grid()
+        plt.legend()
+        #plt.show()
+        
+        plt.rc('font', size=18)
+        fig=plt.figure(figsize=(11,8))
+        ax = fig.add_subplot(111)
+        ax.plot(Er,gamma_e-gamma_i_tot,label='$\sum Z_j\Gamma_j$')
+        ax.set_xlabel(r'Er [V/cm]')
+        ax.set_ylabel(r'$\Gamma~~[\text{m}^{-2}\,\text{s}^{-1}]$')
+        ax.set_title(f'r/a={roa[0]}')
+        #ax.set_yscale('log')
+        ax.legend(fontsize=12)
+        ax.grid()
+        plt.legend()
+        plt.show()
+        
+        
+
+            
+        
+            
+        
+        
+        
+        
+        
         
         
         
