@@ -141,6 +141,7 @@ class LIBSTELL():
 			Path to wout file.
 		"""
 		import ctypes as ct
+		import numpy as np
 		# Get constants
 		module_name = self.s1+'vsvd0_'+self.s2
 		get_constant = getattr(self.libstell,module_name+'_getnigroup'+self.s3)
@@ -203,6 +204,11 @@ class LIBSTELL():
 		charList.extend(['mgrid_file','input_extension'])
 		charLen.extend([(200,1),(200,1)])
 		out_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
+		# Note we need to reshape the rbc/s zbs/c arrays.
+		out_data['rbc'] = np.reshape(out_data['rbc'],(mpol1d+1,2*ntord+1))
+		out_data['zbc'] = np.reshape(out_data['zbc'],(mpol1d+1,2*ntord+1))
+		out_data['rbs'] = np.reshape(out_data['rbs'],(mpol1d+1,2*ntord+1))
+		out_data['zbs'] = np.reshape(out_data['zbs'],(mpol1d+1,2*ntord+1))
 		return out_data
 
 	def write_indata(self,filename,out_dict=None):
