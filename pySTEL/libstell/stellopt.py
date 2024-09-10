@@ -160,6 +160,7 @@ class STELLOPT():
 		i = 0
 		temp_dict={}
 		self.niter = len([line for line in lines if 'ITER' in line])
+		iter_val = -1
 		while (i < len(lines)):
 			if 'VERSION' in lines[i]:
 				[temp,version_txt] = lines[i].split()
@@ -167,11 +168,48 @@ class STELLOPT():
 				i = i +1
 				continue
 			elif 'ITER' in lines[i]:
+				# Note this fixes issue where ITER is not necessarily
+				# sequential
 				[temp,iter_txt] = lines[i].split()
-				iter_val = int(iter_txt)
-				#print(f'-- ITERATION: {lines[i]}')
+				if 'ITER' not in temp_dict.keys():
+					temp_dict['ITER'] = np.zeros((self.niter,1))
+				iter_val = iter_val + 1
+				temp_dict['ITER'][iter_val] = int(iter_txt)
 				i = i +1
 				continue
+			elif 'TARGETS' in lines[i]:
+				[targ_name,nrow_txt,ncol_txt] = lines[i].split()
+				nrow = int(nrow_txt)
+				ncol = int(ncol_txt)
+				i1 = i + 2 # skip header
+				if 'TARGETS' not in temp_dict.keys():
+					temp_dict['TARGETS'] = np.zeros((self.niter,nrow))
+				for j in range(nrow):
+					temp_txt = lines[i1+j]
+					temp_dict['TARGETS'][iter_val,j] = float(temp_txt)
+				i = i + 2 + nrow - 1
+			elif 'SIGMAS' in lines[i]:
+				[targ_name,nrow_txt,ncol_txt] = lines[i].split()
+				nrow = int(nrow_txt)
+				ncol = int(ncol_txt)
+				i1 = i + 2 # skip header
+				if 'SIGMAS' not in temp_dict.keys():
+					temp_dict['SIGMAS'] = np.zeros((self.niter,nrow))
+				for j in range(nrow):
+					temp_txt = lines[i1+j]
+					temp_dict['SIGMAS'][iter_val,j] = float(temp_txt)
+				i = i + 2 + nrow - 1
+			elif 'VALS' in lines[i]:
+				[targ_name,nrow_txt,ncol_txt] = lines[i].split()
+				nrow = int(nrow_txt)
+				ncol = int(ncol_txt)
+				i1 = i + 2 # skip header
+				if 'VALS' not in temp_dict.keys():
+					temp_dict['VALS'] = np.zeros((self.niter,nrow))
+				for j in range(nrow):
+					temp_txt = lines[i1+j]
+					temp_dict['VALS'][iter_val,j] = float(temp_txt)
+				i = i + 2 + nrow - 1
 			if any(x in lines[i] for x in self.target_names):
 				[targ_name,nrow_txt,ncol_txt] = lines[i].split()
 				nrow = int(nrow_txt)
