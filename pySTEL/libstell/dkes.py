@@ -260,6 +260,7 @@ class DKES:
             if(plot_var=='nstar'):
                 ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
             ax.set_title(f'r/a={self.roa:.2f}')
+            ax.grid()
             ax.legend(fontsize=12)
      
         pyplot.show()
@@ -362,6 +363,9 @@ class DKES:
         Kmax = 10        #PENTA default value
         numKsteps = 100  #PENTA default value
         K = np.linspace(Kmin,Kmax,numKsteps)
+        #tK = np.linspace(Kmin,0.6,80)
+        #K = np.unique( np.concatenate( (K,tK) ) )
+        #K = np.sort(K)
         
         cmul = {}
         for species in plasma_class.list_of_species:
@@ -392,20 +396,11 @@ class DKES:
         #plt.show()
 
         
-        # f_j(K)*K^(3/2)
-        fix_func = np.sqrt(K) * np.exp(-K) * (K-2.5)**(intj-1) * K**1.5
-        
-        # fig, ax = plt.subplots(figsize=(8,6))
-        # ax.plot(K,fix_func,'o-')
-        # #ax.set_yscale('log')
-        # ax.set_ylabel(r'$\sqrt{K}e^{-K}\left(K-5/2\right)^{j-1}\,K^{3/2}$')
-        # ax.set_xlabel(f'K')   
-        # ax.set_title(f'j={intj}')
-        # ax.grid()    
-        # plt.show()
-        
-        # # ok, let's make spline for lstar for each efield!
+        # fix_func = f_j(K)*K^(3/2)
+        fix_func = self.get_fix_func(K,intj,make_plot=False)
+                
         from scipy.interpolate import interp1d #, splrep, BSpline
+        from scipy.integrate import trapezoid
         
         for i in range(self.nefield):
             i1 = i*self.ncmul
@@ -439,7 +434,6 @@ class DKES:
             
             ax[1].plot(x,yn,'ob')
             ax[1].plot(xspline, nstar_interp1d(np.log(xspline)),'red',label='spline')
-            #ax.set_yscale('log')
             ax[1].set_xscale('log')
             ax[1].set_ylabel(r'nstar')
             ax[1].set_xlabel(f'cmul')   
@@ -449,7 +443,6 @@ class DKES:
             
             ax[2].plot(x,ylogm,'ob')
             ax[2].plot(xspline, logmstar_interp1d(np.log(xspline)),'red',label='spline')
-            #ax.set_yscale('log')
             ax[2].set_xscale('log')
             ax[2].set_ylabel('ln(mstar)')
             ax[2].set_xlabel(f'cmul')   
@@ -511,6 +504,32 @@ class DKES:
             #     ax[2].legend()
             # plt.tight_layout(pad=2)
             # plt.show()
+            
+    def get_fix_func(self,K,intj,make_plot=False):
+        
+        import matplotlib.pyplot as plt
+        
+        fix_func = np.sqrt(K) * np.exp(-K) * (K-2.5)**(intj-1) * K**1.5
+        
+        if make_plot is True:
+            fig, ax = plt.subplots(figsize=(8,6))
+            ax.plot(K,fix_func,'o-')
+            #ax.set_yscale('log')
+            ax.set_ylabel(r'$\sqrt{K}e^{-K}\left(K-5/2\right)^{j-1}\,K^{3/2}$')
+            ax.set_xlabel(f'K')   
+            ax.set_title(f'j={intj}')
+            ax.grid()    
+            plt.show()
+        
+        return fix_func
+    
+    def get_energy_convulution(which_convolution,cmin=None,cmx=None,make_plot=False):
+        #which convolution is 'lstar', 'mstar' or 'nstar'
+        
+        #check which_convulution exist
+        
+        #check if self.integrands of 'which oncvultion; exist.. if not, compute
+        
             
     def plot_U2_estimate(self):
         
