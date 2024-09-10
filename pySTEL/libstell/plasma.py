@@ -7,12 +7,13 @@ import sys
 EC = 1.602176634E-19 # Electron charge [C]
 DA = 1.66053906660E-27 # Dalton
 ME = 9.1093837E-31 # Electron mass [kg]
+MP = 1.672621637E-27 # Proton mass [kg]
 
 import numpy as np
 
 class PLASMA:
     
-    def __init__(self,list_of_species=None):
+    def __init__(self,list_of_species):
         
         self.species_database = ['electrons','hydrogen','deuterium','tritium','helium3','helium4']
         self.mass_database = {
@@ -45,19 +46,18 @@ class PLASMA:
         self.Zcharge = {}
         self.density = {}
         self.temperature = {}
+       
+        self.check_species_exist(list_of_species)
+        self.list_of_species = list_of_species
         
-        if list_of_species is not None:    
-            self.check_species_exist(list_of_species)
-            self.list_of_species = list_of_species
-            
-            self.give_mass_to_species(list_of_species)
-            self.give_charge_to_species(list_of_species)
-            self.give_Zcharge_to_species(list_of_species)
-            
-            print(f'Plasma created with species: {", ".join(self.list_of_species)}')
-        else:
-            print('\nPlasma created without species. Please add species using the function add_species(...)')
-            self.list_of_species = []       
+        self.give_mass_to_species(list_of_species)
+        self.give_charge_to_species(list_of_species)
+        self.give_Zcharge_to_species(list_of_species)
+        
+        #create self.ion_species and self.num_ion_species
+        self.set_ion_species()
+        
+        print(f'Plasma created with species: {", ".join(self.list_of_species)}')      
     
     def check_species_exist(self, species_list):
         # Ensure species_list is a list of strings
@@ -231,6 +231,16 @@ class PLASMA:
     # def check_quasi_neutrality(self,rho):
     #     #checks if sum(n_i*Zi)=0
     
+    def set_ion_species(self):
+        
+        # ion species in the order that appears in list_of_species
+        self.ion_species = [species for species in self.list_of_species if species != 'electrons']
+        
+        print(f'Ion species: {self.ion_species}')
+        
+        self.num_ion_species = len(self.ion_species)
+        
+    
     def write_plasma_profiles_to_PENTA(self,rho,filename=None):
         # first line: number of rhos
         # from second line: 
@@ -250,14 +260,9 @@ class PLASMA:
         ne = self.get_density('electrons',rho) / fact
         Te = self.get_temperature('electrons',rho)
         
-        # now let's get the ion species in the order that appears in list_of_species
-        ion_species = [species for species in self.list_of_species if species != 'electrons']
-        
-        print(f'Ion species: {ion_species}')
-        
         #Precompute ion densities and temperatures
-        ion_densities = {ion_s: self.get_density(ion_s, rho)/fact for ion_s in ion_species}
-        ion_temperatures = {ion_s: self.get_temperature(ion_s, rho) for ion_s in ion_species}
+        ion_densities = {ion_s: self.get_density(ion_s, rho)/fact for ion_s in self.ion_species}
+        ion_temperatures = {ion_s: self.get_temperature(ion_s, rho) for ion_s in self.ion_species}
         
         with open(filename, 'w') as file:
             # Write the size of rho as the first line
@@ -269,11 +274,36 @@ class PLASMA:
                 row_data = [rho[i], ne[i], Te[i]]
                 
                 # Append ion densities and temperatures
-                for ion_s in ion_species:
+                for ion_s in self.ion_species:
                     row_data.extend([ion_temperatures[ion_s][i], ion_densities[ion_s][i]])
                 
                 # Write the row to the file, formatted as space-separated values
                 file.write(" ".join(map(str, row_data)) + '\n')
+                
+    def write_PENTA_namelist(self,filename=None):
+        
+        if filename is None:
+            filename = 'ion_params'
+
+        #mass of ion to proton mass
+        miomp = {}
+        for ion in self.ion_species:
+            miomp[ion] = self.mass[ion] / MP
+            
+        with open(filename, 'w') as file:
+            # write NAMELIST header
+            file.write('&ion_params\n')
+            # write number of species
+            file.write(f'num_ion_species={self.num_ion_species}\n')
+            # write Zcharge
+            Zcharge = [self.Zcharge[ion] for ion in self.ion_species]
+            file.write('Z_ion_init=' + ','.join(f'{z:.6f}d0' for z in Zcharge)+ ',\n')
+            # write mass
+            mass = [miomp[ion] for ion in self.ion_species]
+            file.write('miomp_init=' + ','.join(f'{m:.6f}d0' for m in mass) + ',\n')
+            # close NAMELIST
+            file.write('&end\n')
+            
         
            
     def print_plasma(self):
