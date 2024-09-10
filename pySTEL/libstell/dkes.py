@@ -60,6 +60,7 @@ class DKES:
         self.L11  = 0.5*(self.L11m+self.L11p)
         self.L31  = 0.5*(self.L31m+self.L31p)
         self.L33  = 0.5*(self.L33m+self.L33p)
+        #these last coeffs are the Dij* in the documentation
         
     def check_convergence(self):
     
@@ -166,7 +167,7 @@ class DKES:
         # Computes PENTA input coefficients lstar, mstar and nstar
         # size of lstar, mstar, nstar is n_cmul x n_efield
         # Check DKES/PENTA documentation to see the definition of lstar, mstar, nstar
-        # In the documentation, D_ij^* corresponds to self Lvar, which are the species-independent DKES coefficientes
+        # In the documentation, D_ij^* corresponds to self.Lij, which are the species-independent DKES coefficientes
         print('\n#############################################################################')
         print('###################   Computing PENTA coefficients  #########################')
         print('#############################################################################')
@@ -178,7 +179,7 @@ class DKES:
         # To do later...
         print('\nFailed to read Pfirsch-Schluter flow, <U^2>, from external file')
         print('Assuming <U^2>=0\n')
-        self.Usq = 0
+        self.Usq = 0.0
         
         ##########################################################
         ####### Read Bsq from VMEC wout file #####################
@@ -258,7 +259,7 @@ class DKES:
                 ax.set_yscale('log')
             if(plot_var=='nstar'):
                 ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-            ax.set_title('GIGA (V120)')
+            ax.set_title(f'r/a={self.roa:.2f}')
             ax.legend(fontsize=12)
      
         pyplot.show()
@@ -309,7 +310,7 @@ class DKES:
             with open(filename, 'w') as file:
                 file.write(f'{self.ncmul} {self.nefield}\n')
                 for value in combined:
-                    file.write(f'{value}\n')
+                    file.write(f'{value:.10e}\n')
                 
 
                 
@@ -343,16 +344,6 @@ class DKES:
             else:
                 self.efield_regular = unique_efields
                 self.cmul_regular   = expected_cmul
-                
-                
-                
-            
-            
-        
-        
-                
-                
-        
     
     def plot_PENTA_integrands_energy_conv(self,intj,plasma_class):
         # This function computes the integrand of the energy convolution as in PENTA for each efield
@@ -395,6 +386,7 @@ class DKES:
             ax.set_yscale('log')
             ax.set_ylabel(r'$\nu_D/v~~[m^{-1}]$')
             ax.set_xlabel(f'K')
+            ax.set_title(f'r/a={self.roa:.2f}')
             ax.legend()      
             ax.grid()
         #plt.show()
