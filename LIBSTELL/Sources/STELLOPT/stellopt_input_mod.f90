@@ -14,7 +14,7 @@
       USE stellopt_globals, ONLY: axis_init_option, cr_strategy, &
          epsfcn, factor, ftol, gtol, lcentered_differences, lkeep_mins, &
          lrefit, mode, noptimizers, npopulation, opt_type, refit_param, &
-         rho_exp, xtol, bigno, lcoil_geom, lno_restart, ltriangulate
+         rho_exp, xtol, bigno, lcoil_geom, lno_restart, ltriangulate, nfunc_max
       USE stellopt_vars
       USE stellopt_targets
       USE safe_open_mod, ONLY: safe_open
