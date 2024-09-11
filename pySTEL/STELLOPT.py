@@ -42,9 +42,11 @@ class MyApp(QMainWindow):
 		self.optimum   = stellopt.STELLOPT_INPUT()
 		self.stel_data = stellopt.STELLOPT()
 		# Set default values
+		self.indata.read_indata('')
 		#self.optimum.read_input('nofile')
 		self.ui.tabMain.setTabEnabled(0,False)
-		self.ui.tabMain.setTabEnabled(2,False)
+		#self.ui.tabMain.setTabEnabled(2,False)
+		#self.ui.tabStelVars.setTabEnabled(3,False)
 
 
 		# Setup Defaults
@@ -99,6 +101,7 @@ class MyApp(QMainWindow):
 		self.ui.TableNsArray.cellChanged.connect(self.NSArrays)
 		self.ui.ButtonWriteIndata.clicked.connect(self.WriteIndata)
 		# Callbacks (STELLOPT Tab)
+		self.ui.ButtonLoadOptimum.clicked.connect(self.LoadOptimum)
 		self.ui.ComboBoxOPTtype.currentIndexChanged.connect(self.UpdateOPTtype)
 		self.ui.TableOPTtype.cellChanged.connect(self.OPTArrays)
 		self.ui.tabStelVars.currentChanged.connect(self.StelVarsTab)
@@ -184,6 +187,7 @@ class MyApp(QMainWindow):
 			self.ui.TableNsArray.setItem(2,num, QTableWidgetItem(str(ftol_array[num])))
 		self.ui.TableNsArray.show()
 		self.UpdateArrays()
+		#self.ui.tabStelVars.setTabEnabled(3,True)
 
 	def WriteIndata(self):
 		# Handles loading an indata file.
@@ -207,7 +211,7 @@ class MyApp(QMainWindow):
 		setattr(self.indata,'curtor',float(self.ui.TextCurtor.text()))
 		setattr(self.indata,'mgrid_file',self.ui.TextMgridFile.text())
 		# Update NCURR
-		dex = self.ui.ComboBoxNcurr.CurrentIndex()
+		dex = self.ui.ComboBoxNcurr.currentIndex()
 		setattr(self.indata,'ncurr',int(dex))
 		# Now write the file
 		self.indata.write_indata(filename[0])
@@ -455,26 +459,50 @@ class MyApp(QMainWindow):
 			self.ax.plot(x[x>=0],y[x>=0],'o')
 		self.canvas.draw()
 
+	def LoadOptimum(self):
+		# Handles loading an indata file.
+		w = QWidget()
+		w.resize(320, 240)
+		w.setWindowTitle("Hello World!")
+		filename = QFileDialog.getOpenFileName(w, 'Open File', '.')
+		w.destroy
+		# Now read the file
+		self.optimum.read_input(filename[0])
+		self.indata.read_indata(filename[0])
+		# Now update the UI
+		if self.optimum.global_data.opt_type == 'one_iter':
+			self.ui.ComboBoxOPTtype.setCurrentIndex(0)
+		elif self.optimum.global_data.opt_type == 'lmdif':
+			self.ui.ComboBoxOPTtype.setCurrentIndex(1)
+		elif self.optimum.global_data.opt_type == 'lmdif_bounded':
+			self.ui.ComboBoxOPTtype.setCurrentIndex(2)
+		elif self.optimum.global_data.opt_type == 'gade':
+			self.ui.ComboBoxOPTtype.setCurrentIndex(3)
+		elif self.optimum.global_data.opt_type == 'pso':
+			self.ui.ComboBoxOPTtype.setCurrentIndex(4)
+		self.UpdateOPTtype()
+		self.UpdateOPTVarsScalar()
+
 	def UpdateOPTtype(self):
 		self.ui.TableOPTtype.blockSignals(True)
 		# Determine type of Optimization
 		self.optimum.global_data.opt_type = self.ui.ComboBoxOPTtype.currentText()
-		self.optimum.global_data.opt_type = self.optimum.opt_type.upper()
-		if self.optimum.global_data.opt_type == 'one_iter':
+		#self.optimum.global_data.opt_type = self.optimum.opt_type.upper()
+		if self.optimum.global_data.opt_type == 'ONE_ITER':
 			fields = ['noptimizers']
 			self.ui.TableOPTtype.setRowCount(1)
-		elif self.optimum.global_data.opt_type in ['lmdif','lmdif_bounded']:
+		elif self.optimum.global_data.opt_type in ['LMDIF','LMDIF_BOUNDED']:
 			self.ui.TableOPTtype.setRowCount(8)
 			fields = ['nfunc_max','ftol','xtol','gtol','epsfcn','factor','mode','noptimizers']
-		elif self.optimum.global_data.opt_type == 'gade':
+		elif self.optimum.global_data.opt_type == 'GADE':
 			self.ui.TableOPTtype.setRowCount(6)
 			fields = ['nfunc_max','factor','cr_strategy','mode','npopulation','noptimizers']
-		elif self.optimum.global_data.opt_type == 'pso':
+		elif self.optimum.global_data.opt_type == 'PSO':
 			self.ui.TableOPTtype.setRowCount(6)
 			fields = ['nfunc_max','factor','cr_strategy','mode','npopulation','noptimizers']
 		self.ui.TableOPTtype.setVerticalHeaderLabels(fields)
 		for i,item in enumerate(fields):
-			val = getattr(self.optimum.global_data,item)
+			val = str(getattr(self.optimum.global_data,item))
 		#	val = str(self.optimum[item])
 			self.ui.TableOPTtype.setItem(i,0, QTableWidgetItem(val))
 		self.ui.TableOPTtype.blockSignals(False)
@@ -517,8 +545,10 @@ class MyApp(QMainWindow):
 		self.ui.TableOPTVarsScalar.blockSignals(True)
 		#Update the Scalar Table
 		for i,item in enumerate(['phiedge','pres_scale','curtor']):
-			lstate = getattr(self.optimum.var_data,'l'+item+'_opt')
+			self.ui.TableOPTVarsScalar.setVerticalHeaderItem(i,QTableWidgetItem(item))
 			vstate = getattr(self.indata,item)
+			if item == 'pres_scale': item = 'pscale'
+			lstate = getattr(self.optimum.var_data,'l'+item+'_opt')
 			dstate = getattr(self.optimum.var_data,'d'+item+'_opt')
 			minstate = getattr(self.optimum.var_data,item+'_min')
 			maxstate = getattr(self.optimum.var_data,item+'_max')
@@ -541,6 +571,7 @@ class MyApp(QMainWindow):
 		col = self.ui.TableOPTVarsScalar.currentColumn()
 		row = self.ui.TableOPTVarsScalar.currentRow()
 		field = self.ui.TableOPTVarsScalar.verticalHeaderItem(row).text()
+		if field == 'pres_scale': field='pscale'
 		# Column determins value
 		field = field.lower()
 		if col == 0:
@@ -568,12 +599,12 @@ class MyApp(QMainWindow):
 		# Figure out which array to deal with
 		data_name = self.ui.comboBoxStelVarsProfType.currentText()
 		if data_name == 'Pressure (AM)':
-			field = 'AM'
+			field = 'am'
 		elif data_name == 'Current (AC)':
-			field = 'AC'
+			field = 'ac'
 		elif data_name == 'Iota (AI)':
-			field = 'AI'
-		if field in ['AM','AC','AI']:
+			field = 'ai'
+		if field in ['am','ac','ai']:
 			nrows = 11;
 		self.ui.TableOPTVarsProf.setRowCount(nrows)
 		lstate = getattr(self.optimum.var_data,'l'+field+'_opt')
@@ -702,76 +733,88 @@ class MyApp(QMainWindow):
 		# Figure out which array to deal with
 		data_name = self.ui.comboBoxStelVarsBoundType.currentText()
 		if data_name == 'VMEC':
+			mmin = 0
+			mmax = self.indata.mpol-1
+			nmin = -self.indata.ntor
+			nmax = self.indata.ntor
 			field1 = 'bound'
 			field2 = 'bound'
 			field3 = 'bound'
 			field4 = 'bound'
-			nrows = (2*self.indata.ntor+1)*(self.indata.mpol-1)+self.indata.ntor+1
-			xm = np.ndarray((nrows,1))
-			xn = np.ndarray((nrows,1))
-			i=0
-			for n in range(0,self.indata.ntor+1):
-				xm[i] = 0
-				xn[i] = n
-				i=i+1
-			for m in range(1,self.indata.mpol):
-				for n in range(-self.indata.ntor,self.indata.ntor+1):
-					if not(n<0 and m<1):
-						xm[i] = m
-						xn[i] = n
-						i=i+1
+			msize = self.optimum.var_data.lbound_opt.shape[0]
+			nsize = self.optimum.var_data.lbound_opt.shape[1]
+			noffset = round((nsize-1)/2)
+			moffset = 0
+			self.ui.TableOPTVarsBound.setColumnCount(4)
+			self.ui.TableOPTVarsBound.setHorizontalHeaderItem(0,QTableWidgetItem('Optimized'))
+			self.ui.TableOPTVarsBound.setHorizontalHeaderItem(1,QTableWidgetItem('DValue'))
+			self.ui.TableOPTVarsBound.setHorizontalHeaderItem(2,QTableWidgetItem('Minimum'))
+			self.ui.TableOPTVarsBound.setHorizontalHeaderItem(3,QTableWidgetItem('Maximum'))
 		elif data_name == 'Hirshman-Breslau':
+			mmin = 0
+			mmax = self.indata.mpol-1
+			nmin = -self.indata.ntor
+			nmax = self.indata.ntor
 			field1 = 'rho'
 			field2 = 'rho'
 			field3 = 'bound'
 			field4 = 'bound'
-			nrows = (2*self.indata.ntor+1)*(self.indata.mpol-1)+self.indata.ntor+1
-			xm = np.ndarray((nrows,1))
-			xn = np.ndarray((nrows,1))
-			i=0
-			for n in range(0,self.indata.ntor+1):
-				xm[i] = 0
-				xn[i] = n
-				i=i+1
-			for m in range(1,self.indata.mpol):
-				for n in range(-self.indata.ntor,self.indata.ntor+1):
-					if not(n<0 and m<1):
-						xm[i] = m
-						xn[i] = n
-						i=i+1
+			msize = self.optimum.var_data.lrho_opt.shape[0]
+			nsize = self.optimum.var_data.lrho_opt.shape[1]
+			noffset = round((nsize-1)/2)
+			moffset = 0
 		elif data_name == 'Garabedian':
+			mmin = -self.indata.mpol+1
+			mmax = self.indata.mpol-1
+			nmin = -self.indata.ntor
+			nmax = self.indata.ntor
 			field1 = 'deltamn'
 			field2 = 'deltamn'
 			field3 = 'delta'
 			field4 = 'delta'
-			nrows = (2*self.indata.mpol+1)*(2*self.indata.ntor+1)
-			xm = np.ndarray((nrows,1))
-			xn = np.ndarray((nrows,1))
-			i=0
-			for m in range(-self.indata.mpol,self.indata.mpol+1):
-				for n in range(-self.indata.ntor,self.indata.ntor+1):
-						xm[i] = m
-						xn[i] = n
-						i=i+1
-		self.ui.TableOPTVarsBound.setRowCount(nrows)
+			msize = self.optimum.var_data.ldeltamn_opt.shape[0]
+			nsize = self.optimum.var_data.ldeltamn_opt.shape[1]
+			noffset = round((nsize-1)/2)
+			moffset = round((msize-1)/2)
+		# Get var data
 		lstate = getattr(self.optimum.var_data,'l'+field1+'_opt')
 		dstate = getattr(self.optimum.var_data,'d'+field2+'_opt')
 		minstate = getattr(self.optimum.var_data,field3+'_min')
 		maxstate = getattr(self.optimum.var_data,field4+'_max')
-		for i in range(nrows):
-			m = int(xm[i])
-			n = int(xn[i])
-			dex1 = n+101
-			dex2 = m
-			head_string = '('+str(n)+','+str(m)+')'
+		xm    = []
+		xn    = []
+		ltemp = []
+		dtemp = []
+		mintemp = []
+		maxtemp = []
+		print(lstate[:,101])
+		# Create list of values with (n,m) as row headers
+		for j in range(msize):
+			for i in range(nsize):
+				ng = i - noffset
+				mg = j - moffset
+				if ng >= nmin and ng <= nmax and \
+					mg >= mmin and mg <= mmax:
+					xm.append(mg)
+					xn.append(ng)
+					ltemp.append(lstate[j,i])
+					dtemp.append(dstate[j,i])
+					mintemp.append(minstate[j,i])
+					maxtemp.append(maxstate[j,i])
+		# Setup the Array
+		j = len(xm)
+		self.ui.TableOPTVarsBound.setRowCount(j)
+		for i in range(j):
+			head_string = '('+str(xn[i])+','+str(xm[i])+')'
 			self.ui.TableOPTVarsBound.setVerticalHeaderItem(i,QTableWidgetItem(head_string))
-			if lstate[dex1][dex2]:
+			print(ltemp[i])
+			if ltemp[i]:
 				self.ui.TableOPTVarsBound.setItem(i,0,QTableWidgetItem('T'))
 			else:
 				self.ui.TableOPTVarsBound.setItem(i,0,QTableWidgetItem('F'))
-			self.ui.TableOPTVarsBound.setItem(i,2,QTableWidgetItem(str(dstate[dex1][dex2])))
-			self.ui.TableOPTVarsBound.setItem(i,3,QTableWidgetItem(str(minstate[dex1][dex2])))
-			self.ui.TableOPTVarsBound.setItem(i,4,QTableWidgetItem(str(maxstate[dex1][dex2])))
+			self.ui.TableOPTVarsBound.setItem(i,1,QTableWidgetItem(str(dtemp[i])))
+			self.ui.TableOPTVarsBound.setItem(i,2,QTableWidgetItem(str(mintemp[i])))
+			self.ui.TableOPTVarsBound.setItem(i,3,QTableWidgetItem(str(maxtemp[i])))
 		self.ui.TableOPTVarsBound.blockSignals(False)
 
 	def OPTVarsBound(self):
