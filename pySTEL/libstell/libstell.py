@@ -643,6 +643,7 @@ class LIBSTELL():
 			Dictionary of items.
 		"""
 		import ctypes as ct
+		import numpy as np
 		# A few constants defined in globals
 		module_name = self.s1+'vsvd0_'+self.s2
 		get_constant = getattr(self.libstell,module_name+'_getnigroup'+self.s3)
@@ -694,7 +695,7 @@ class LIBSTELL():
 		module_name = self.s1+'stellopt_globals_'+self.s2
 		booList=['lcentered_differences', 'lkeep_mins', 'lrefit', 'lcoil_geom', 'lno_restart', 'ltriangulate']
 		booLen=[1]*len(booList)
-		intList=['cr_strategy', 'npopulation', 'noptimizers', 'mode', 'rho_exp']
+		intList=['nfunc_max','cr_strategy', 'npopulation', 'noptimizers', 'mode', 'rho_exp']
 		intLen=[1]*len(intList)
 		realList=['ftol', 'xtol', 'gtol', 'epsfcn', 'factor', 'refit_param']
 		realLen=[1]*len(realList)
@@ -724,7 +725,7 @@ class LIBSTELL():
 		booList.extend(['lregcoil_rcws_rbound_c_opt','lregcoil_rcws_rbound_s_opt',\
 			'lregcoil_rcws_zbound_c_opt','lregcoil_rcws_zbound_s_opt'])
 		booLen.extend([(65,65)]*4)
-		intList=['nfunc_max', 'regcoil_nlambda', 'regcoil_num_field_periods', \
+		intList=['regcoil_nlambda', 'regcoil_num_field_periods', \
 			'sfincs_min_procs', 'vboot_max_iterations']
 		booList.extend(['lrosenbrock_x_opt'])
 		booLen.extend([(20,1)])
@@ -899,6 +900,16 @@ class LIBSTELL():
 		charList=['magdiag_coil', 'vessel_string', 'txport_proxy', 'vessel_ece', 'mirror_ece', 'targettype_ece', 'antennatype_ece']
 		charLen=[(256,1)]*7
 		target_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
+		var_data['lbound_opt'] = np.reshape(var_data['lbound_opt'],(mpol1d+1,2*ntord+1))
+		var_data['dbound_opt'] = np.reshape(var_data['dbound_opt'],(mpol1d+1,2*ntord+1))
+		var_data['bound_min'] = np.reshape(var_data['bound_min'],(mpol1d+1,2*ntord+1))
+		var_data['bound_max'] = np.reshape(var_data['bound_max'],(mpol1d+1,2*ntord+1))
+		var_data['lrho_opt'] = np.reshape(var_data['lrho_opt'],(mpol1d+1,2*ntord+1))
+		var_data['drho_opt'] = np.reshape(var_data['drho_opt'],(mpol1d+1,2*ntord+1))
+		var_data['ldeltamn_opt'] = np.reshape(var_data['ldeltamn_opt'],(2*mpol1d+1,2*ntord+1))
+		var_data['ddeltamn_opt'] = np.reshape(var_data['ddeltamn_opt'],(2*mpol1d+1,2*ntord+1))
+		var_data['delta_min'] = np.reshape(var_data['delta_min'],(2*mpol1d+1,2*ntord+1))
+		var_data['delta_max'] = np.reshape(var_data['delta_max'],(2*mpol1d+1,2*ntord+1))
 		return global_data, var_data, target_data
 
 	def write_stellopt_input(self,filename,global_dict=None,var_dict=None,target_dict=None):
