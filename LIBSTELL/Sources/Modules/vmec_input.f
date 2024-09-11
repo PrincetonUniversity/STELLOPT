@@ -296,7 +296,7 @@
       WRITE(iunit,outint4) 'MPOL',mpol
       WRITE(iunit,outint4) 'NTOR',ntor
       WRITE(iunit,outflt) 'PHIEDGE',phiedge
-      WRITE(iunit,outint4) 'NTHETA',ntheta
+      IF (ntheta >0 ) WRITE(iunit,outint4) 'NTHETA',ntheta
       WRITE(iunit,outint4) 'NZETA',nzeta
       IF (lrfp) THEN
          WRITE(iunit,'(A)') '!----- RFP Parameters -----'
