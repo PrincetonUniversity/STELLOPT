@@ -102,8 +102,6 @@ class DKES:
     
         for plot_var in ['L11', 'L31', 'L33']:
             
-            print(f'Plotting {plot_var}')
-            
             yplot = getattr(self,plot_var)
                 
             px = 1/pyplot.rcParams['figure.dpi']
@@ -345,8 +343,41 @@ class DKES:
             else:
                 self.efield_regular = unique_efields
                 self.cmul_regular   = expected_cmul
+                
+    def set_cmul_species(self,K,make_plot=False):
+        
+        import matplotlib.pyplot as plt
+        
+        self.cmul_species = {}
+        for species in self.plasma_class.list_of_species:
+            cmul_temp = []
+            for k in K:
+                vth = self.plasma_class.get_thermal_speed(species,self.roa)
+                vparticle = vth * np.sqrt(k)
+                nu = self.plasma_class.get_collisionality(species,self.roa,vparticle)
+                cmul_temp.append( nu / vparticle )
+            
+            self.cmul_species[species] = np.array(cmul_temp)
+        
+        if make_plot==True:
+            # plot here cmul vs K for all species
+            cmul_min = np.min(self.cmul)
+            cmul_max = np.max(self.cmul)
+            fig, ax = plt.subplots(figsize=(13,11))
+            for species in self.plasma_class.list_of_species:
+                plt.rc('font', size=18)
+                plt.plot(K,self.cmul_species[f'{species}'],'o-',label=f'{species}')
+                plt.plot(K,np.full_like(K,cmul_min),'-r',linewidth=2)
+                plt.plot(K,np.full_like(K,cmul_max),'-r')
+                ax.set_yscale('log')
+                ax.set_ylabel(r'$\nu_D/v~~[m^{-1}]$')
+                ax.set_xlabel(f'K')
+                ax.set_title(f'r/a={self.roa:.2f}')
+                ax.legend()      
+                ax.grid()
+            plt.show()
     
-    def plot_PENTA_integrands_energy_conv(self,intj,plasma_class):
+    def set_PENTA_integrands_energy_conv(self,intj,plasma_class,make_plots=True):
         # This function computes the integrand of the energy convolution as in PENTA for each efield
         # and plots it as function of K
         # Integrand = sqrt(K) * exp(-K) * (K-5/2)^{intj-1} * [lstar,m,star,nstar] * K^{3/2}
@@ -355,10 +386,6 @@ class DKES:
         
         import matplotlib.pyplot as plt
         
-        print('\n ############################################################')
-        print('############# COMPUTING INTEGRANDS AS IN PENTA #################')
-        print('############################################################')
-        
         Kmin = 1e-4      #PENTA default value
         Kmax = 10        #PENTA default value
         numKsteps = 100  #PENTA default value
@@ -366,144 +393,20 @@ class DKES:
         #tK = np.linspace(Kmin,0.6,80)
         #K = np.unique( np.concatenate( (K,tK) ) )
         #K = np.sort(K)
+        self.K = K
         
-        cmul = {}
-        for species in plasma_class.list_of_species:
-            cmul_temp = []
-            for k in K:
-                vth = plasma_class.get_thermal_speed(species,self.roa)
-                vparticle = vth * np.sqrt(k)
-                nu = plasma_class.get_collisionality(species,self.roa,vparticle)
-                cmul_temp.append( nu / vparticle )
-            
-            cmul[species] = cmul_temp
+        self.plasma_class = plasma_class
         
-        # plot here cmul vs K for all species
-        cmul_min = np.min(self.cmul)
-        cmul_max = np.max(self.cmul)
-        fig, ax = plt.subplots(figsize=(13,11))
-        for species in plasma_class.list_of_species:
-            plt.rc('font', size=18)
-            plt.plot(K,cmul[f'{species}'],'o-',label=f'{species}')
-            plt.plot(K,np.full_like(K,cmul_min),'-r',linewidth=2)
-            plt.plot(K,np.full_like(K,cmul_max),'-r')
-            ax.set_yscale('log')
-            ax.set_ylabel(r'$\nu_D/v~~[m^{-1}]$')
-            ax.set_xlabel(f'K')
-            ax.set_title(f'r/a={self.roa:.2f}')
-            ax.legend()      
-            ax.grid()
-        #plt.show()
-
+        # Computes dicitionary of arrays self.cmul_species. 
+        # Contains cmul for each species for array K
+        self.set_cmul_species(K,make_plot=make_plots)
         
-        # fix_func = f_j(K)*K^(3/2)
-        fix_func = self.get_fix_func(K,intj,make_plot=False)
-                
-        from scipy.interpolate import interp1d #, splrep, BSpline
-        from scipy.integrate import trapezoid
-        
-        for i in range(self.nefield):
-            i1 = i*self.ncmul
-            i2 = i1 + self.ncmul
+        # Set integrands = l/m/n-star * fix func
+        # this creates dictionary of arrays: self.lstar_integrand, self.nstar_integrand, self.mstar_integrand
+        # for instance, self.lstar_integrand['electrons'][3] gives the arrays of integrand (as function of K) 
+        # for l* for electrons for the 4th (3+1) electric field 
+        self.set_integrands(intj,K,make_plot=make_plots)  
             
-            efield = self.efield[i1]
-            
-            x = self.cmul[i1:i2]
-            yl = self.lstar[i1:i2]
-            yn = self.nstar[i1:i2]
-            ylogm = np.log( self.mstar[i1:i2] )
-            
-            # quadratic spline as in PENTA. Assuming log_interp = true
-            xlog = np.log(x)
-            lstar_interp1d = interp1d(xlog,yl,kind='quadratic',bounds_error=False,fill_value=0.0)
-            nstar_interp1d = interp1d(xlog,yn,kind='quadratic',bounds_error=False,fill_value=0.0)
-            logmstar_interp1d = interp1d(xlog,ylogm,kind='quadratic',bounds_error=False,fill_value=0.0)
-            
-            xspline = np.logspace(np.log10(x[0]),np.log10(x[-1]),100)
-            
-            fig, ax = plt.subplots(1,3,figsize=(17,6))
-            ax[0].plot(x,yl,'ob')
-            ax[0].plot(xspline, lstar_interp1d(np.log(xspline)),'red',label='spline')
-            ax[0].set_yscale('log')
-            ax[0].set_xscale('log')
-            ax[0].set_ylabel(r'lstar')
-            ax[0].set_xlabel(f'cmul')   
-            ax[0].set_title(f'Er/v={efield}')
-            ax[0].grid()
-            ax[0].legend()
-            
-            ax[1].plot(x,yn,'ob')
-            ax[1].plot(xspline, nstar_interp1d(np.log(xspline)),'red',label='spline')
-            ax[1].set_xscale('log')
-            ax[1].set_ylabel(r'nstar')
-            ax[1].set_xlabel(f'cmul')   
-            ax[1].set_title(f'Er/v={efield}')
-            ax[1].grid()   
-            #ax[1].legend()
-            
-            ax[2].plot(x,ylogm,'ob')
-            ax[2].plot(xspline, logmstar_interp1d(np.log(xspline)),'red',label='spline')
-            ax[2].set_xscale('log')
-            ax[2].set_ylabel('ln(mstar)')
-            ax[2].set_xlabel(f'cmul')   
-            ax[2].set_title(f'Er/v={efield}')
-            ax[2].grid()   
-            #ax[1].legend()
-            
-            plt.tight_layout(pad=2)
-            
-            # full integrand of l*
-            fig,ax = plt.subplots(figsize=(8,6))
-            for species in plasma_class.list_of_species:
-                ax.plot(K,lstar_interp1d(np.log(cmul[species]))*fix_func,'o-',label=f'{species}')       
-                ax.set_xlabel('K')
-                ax.set_ylabel(fr'$f_{intj}(K)~l^*(K)~K^{{3/2}}$')
-                ax.set_title(f'Er/v={efield}')
-            plt.legend()
-            
-            # full integrand of n*
-            fig,ax = plt.subplots(figsize=(10,6))
-            for species in plasma_class.list_of_species:
-                ax.plot(K,nstar_interp1d(np.log(cmul[species]))*fix_func,'o-',label=f'{species}')       
-                ax.set_xlabel('K')
-                ax.set_ylabel(f'$f_{intj}(K)~n^*(K)~K^{{3/2}}$')
-                ax.set_title(f'Er/v={efield}')
-            plt.legend()
-            
-            # full integrand of m*
-            fig,ax = plt.subplots(figsize=(10,6))
-            for species in plasma_class.list_of_species:
-                ax.plot(K,np.exp(logmstar_interp1d(np.log(cmul[species])))*fix_func,'o-',label=f'{species}')       
-                ax.set_xlabel('K')
-                ax.set_ylabel(f'$f_{intj}(K)~m^*(K)~K^{{3/2}}$')
-                ax.set_title(f'Er/v={efield}')
-                ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-            plt.legend()
-            plt.show()
-            
-            # fig, ax = plt.subplots(1,3,figsize=(17,6))
-            # for species in plasma_class.list_of_species:
-            #     ax[0].plot(K,lstar_interp1d(np.log(cmul[species]))*fix_func,'o-',label=f'{species}')       
-            #     ax[0].set_xlabel('K')
-            #     ax[0].set_ylabel(fr'$f_{intj}(K)~l^*(K)~K^{{3/2}}$')
-            #     ax[0].set_title(f'Er/v={efield}')
-            #     ax[0].grid()
-            #     #ax[0].legend()
-            # for species in plasma_class.list_of_species:
-            #     ax[1].plot(K,nstar_interp1d(np.log(cmul[species]))*fix_func,'o-',label=f'{species}')       
-            #     ax[1].set_xlabel('K')
-            #     ax[1].set_ylabel(f'$f_{intj}(K)~n^*(K)~K^{{3/2}}$')
-            #     ax[1].set_title(f'Er/v={efield}')
-            #     ax[1].grid()
-            # for species in plasma_class.list_of_species:
-            #     ax[2].plot(K,np.exp(logmstar_interp1d(np.log(cmul[species])))*fix_func,'o-',label=f'{species}')       
-            #     ax[2].set_xlabel('K')
-            #     ax[2].set_ylabel(f'$f_{intj}(K)~m^*(K)~K^{{3/2}}$')
-            #     ax[2].set_title(f'Er/v={efield}')
-            #     ax[2].grid()
-            #     ax[2].legend()
-            # plt.tight_layout(pad=2)
-            # plt.show()
             
     def get_fix_func(self,K,intj,make_plot=False):
         
@@ -521,14 +424,230 @@ class DKES:
             ax.grid()    
             plt.show()
         
-        return fix_func
+        return fix_func        
+        
+                
+    def set_integrands(self,intj,K,make_plot=False):
+        
+        from scipy.interpolate import interp1d
+        import matplotlib.pyplot as plt
+        from collections import defaultdict
+        
+        print('\n ############################################################')
+        print('############# COMPUTING INTEGRANDS AS IN PENTA #################')
+        print('############################################################')
+        
+        # fix_func = f_j(K)*K^(3/2)
+        fix_func = self.get_fix_func(K,intj,make_plot=False)
+        
+        # create dicionaries of lists
+        self.lstar_integrand = defaultdict(list)
+        self.mstar_integrand = defaultdict(list)
+        self.nstar_integrand = defaultdict(list)
+        
+        for i in range(self.nefield):
+            i1 = i*self.ncmul
+            i2 = i1 + self.ncmul
+            
+            efield = self.efield[i1]
+            
+            x = self.cmul[i1:i2]
+            yl = self.lstar[i1:i2]
+            yn = self.nstar[i1:i2]
+            ylogm = np.log( self.mstar[i1:i2] )
+            
+            # quadratic spline as in PENTA. Assuming log_interp = true
+            xlog = np.log(x)
+            lstar_interp = interp1d(xlog,yl,kind='quadratic',bounds_error=False,fill_value=0.0)
+            nstar_interp = interp1d(xlog,yn,kind='quadratic',bounds_error=False,fill_value=0.0)
+            logmstar_interp = interp1d(xlog,ylogm,kind='quadratic',bounds_error=False,fill_value=0.0)
+            #this function is used to multiply exp(logmstar_interp1d), otherwise exp(0)=1 is taken outside the interpolating region
+            filter_logmstar = interp1d(xlog,np.ones_like(xlog),bounds_error=False,fill_value=0.0)
+            
+            xspline = np.logspace(np.log10(x[0]),np.log10(x[-1]),100)
+            
+            fig, ax = plt.subplots(1,3,figsize=(17,6))
+            ax[0].plot(x,yl,'ob')
+            ax[0].plot(xspline, lstar_interp(np.log(xspline)),'red',label='spline')
+            ax[0].set_yscale('log')
+            ax[0].set_xscale('log')
+            ax[0].set_ylabel(r'lstar')
+            ax[0].set_xlabel(f'cmul')   
+            ax[0].set_title(f'Er/v={efield}')
+            ax[0].grid()
+            ax[0].legend()
+            
+            ax[1].plot(x,yn,'ob')
+            ax[1].plot(xspline, nstar_interp(np.log(xspline)),'red',label='spline')
+            ax[1].set_xscale('log')
+            ax[1].set_ylabel(r'nstar')
+            ax[1].set_xlabel(f'cmul')   
+            ax[1].set_title(f'Er/v={efield}')
+            ax[1].grid()   
+            #ax[1].legend()
+            
+            ax[2].plot(x,ylogm,'ob')
+            ax[2].plot(xspline, logmstar_interp(np.log(xspline)),'red',label='spline')
+            ax[2].set_xscale('log')
+            ax[2].set_ylabel('ln(mstar)')
+            ax[2].set_xlabel(f'cmul')   
+            ax[2].set_title(f'Er/v={efield}')
+            ax[2].grid()   
+            #ax[1].legend()
+            
+            plt.tight_layout(pad=2)
+            
+            # full integrand of l*
+            fig,ax = plt.subplots(figsize=(8,6))
+            for species in self.plasma_class.list_of_species:
+                integrand = lstar_interp(np.log(self.cmul_species[species]))*fix_func
+                integral = self.get_integral(integrand,K)
+                
+                #save integrand
+                self.lstar_integrand[species].append( integrand )
+                
+                #plot
+                ax.plot(K,integrand,'o-',label=f'{species}, {integral:.3e}')       
+                ax.set_xlabel('K')
+                ax.set_ylabel(fr'$f_{intj}(K)~l^*(K)~K^{{3/2}}$')
+                ax.set_title(f'Er/v={efield}')
+                ax.grid()
+            plt.legend()
+                      
+            # full integrand of n*
+            fig,ax = plt.subplots(figsize=(10,6))
+            for species in self.plasma_class.list_of_species:
+                integrand = nstar_interp(np.log(self.cmul_species[species]))*fix_func
+                integral = self.get_integral(integrand,K)
+                
+                #save integrand
+                self.nstar_integrand[species].append( integrand )                
+                
+                #plot
+                ax.plot(K,integrand,'o-',label=f'{species}, {integral:.3e}')       
+                ax.set_xlabel('K')
+                ax.set_ylabel(f'$f_{intj}(K)~n^*(K)~K^{{3/2}}$')
+                ax.set_title(f'Er/v={efield}')
+                ax.grid()
+            plt.legend()
+            
+            # full integrand of m*
+            fig,ax = plt.subplots(figsize=(10,6))
+            for species in self.plasma_class.list_of_species:
+                integrand = np.exp(logmstar_interp(np.log(self.cmul_species[species])))*filter_logmstar(np.log(self.cmul_species[species]))*fix_func
+                integral = self.get_integral(integrand,K)
+                
+                #save integrand
+                self.mstar_integrand[species].append( integrand )
+                
+                #plot
+                ax.plot(K,integrand,'o-',label=f'{species}, {integral:.3e}')       
+                ax.set_xlabel('K')
+                ax.set_ylabel(f'$f_{intj}(K)~m^*(K)~K^{{3/2}}$')
+                ax.set_title(f'Er/v={efield}')
+                ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+                ax.grid()
+            plt.legend()
+            if make_plot:
+                plt.show()
+            else:
+                plt.close('all')
+            
+    def get_integral(self,y,x,xmin=None,xmax=None,make_plot=False,plot_title=None):
+        # this function computes the trapezoid integral of y=y(x)
+        # if xmin or xmax are provided, the limits of the integral are changed
+        # an error is raised if xmin or xmax fall outside the domain defined by x
+        # if the array x does not contain xmin or xmax exactly, then the closest value is considered
+        
+        import matplotlib.pyplot as plt
+        from scipy.integrate import trapezoid
+        
+        # Check if xmin and xmax are within the domain of x
+        if xmin is not None and (xmin < x.min() or xmin > x.max()):
+            raise ValueError(f"xmin ({xmin}) is outside the domain of x.")
+        if xmax is not None and (xmax < x.min() or xmax > x.max()):
+            raise ValueError(f"xmax ({xmax}) is outside the domain of x.")
+
+        # If xmin or xmax are provided, adjust the limits
+        if xmin is not None:
+            xmin_index = np.argmin(np.abs(x - xmin))  # Find closest value to xmin in x
+        else:
+            xmin_index = 0  # If xmin is None, start from the beginning
+
+        if xmax is not None:
+            xmax_index = np.argmin(np.abs(x - xmax))  # Find closest value to xmax in x
+        else:
+            xmax_index = len(x) - 1  # If xmax is None, go to the end
+
+        # Perform the trapezoidal integration
+        x_selected = x[xmin_index:xmax_index+1]
+        y_selected = y[xmin_index:xmax_index+1]
+        integral = trapezoid(y_selected, x_selected)
+        
+        integral_exact = trapezoid(y,x)
+        rel_error = np.abs(integral_exact-integral) / integral_exact
+
+        # Optionally plot the function
+        if make_plot:
+            plt.rc('font', size=16)
+            fig=plt.figure(figsize=(10,8))
+            plt.plot(x, y, '.-')
+            plt.fill_between(x_selected, y_selected, alpha=0.3, label=f'rel. error={rel_error*100:.1f}%')
+            plt.xlabel('x')
+            plt.legend()
+            if plot_title is not None:
+                plt.title(plot_title)
+            plt.show()
+
+        return integral
     
-    def get_energy_convulution(which_convolution,cmin=None,cmx=None,make_plot=False):
-        #which convolution is 'lstar', 'mstar' or 'nstar'
+    def compute_energy_convolution(self,which_convol, cmin, cmax):
+        #which_convol should be 'lstar', 'mstar or nstar'
         
-        #check which_convulution exist
+        convol_type = ['lstar','mstar','nstar']
         
-        #check if self.integrands of 'which oncvultion; exist.. if not, compute
+        if which_convol not in convol_type:
+            print(f'ERROR: which_convol should take one of the following: {convol_type}')
+            exit(1)
+            
+        #check if integrand exist
+        if not hasattr(self,which_convol+'_integrand'):
+            print('ERROR: integrand does not exist! Need to set it up first!!')
+            exit(1)
+        else:
+            integrand = getattr(self,which_convol+'_integrand')
+            
+        #check if cmin and cmax are inside the cmul domain
+        if cmin>cmax or cmin<np.min(self.cmul) or cmax>np.max(self.cmul):
+            print('ERROR: limits of integral not correct. Cannot proceed')
+            exit(1)
+            
+        #loop in field
+        for i in range(self.nefield):
+            i1 = i*self.ncmul
+            #i2 = i1 + self.ncmul
+            
+            efield = self.efield[i1]
+          
+            for species in self.plasma_class.list_of_species:
+                
+                # compute Kmin and Kmax according to cmin and cmax
+                # we take the values in self.cmul closest to cmin and cmax
+                cmin_index = np.argmin(np.abs(self.cmul_species[species] - cmin))
+                cmax_index = np.argmin(np.abs(self.cmul_species[species] - cmax))
+            
+                Kmin = self.K[np.min([cmin_index,cmax_index])]
+                Kmax = self.K[np.max([cmin_index,cmax_index])]
+                
+                self.get_integral(integrand[species][i],self.K,xmin=Kmin,xmax=Kmax,make_plot=True,plot_title=which_convol+f', {species}, Er/v={efield}')
+
+            
+        
+        
+        
+        
+            
+    
         
             
     def plot_U2_estimate(self):
