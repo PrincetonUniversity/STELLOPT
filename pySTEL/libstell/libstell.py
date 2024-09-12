@@ -1261,8 +1261,9 @@ class LIBSTELL():
 				if booLen[i]==1:
 					out_data[temp]=ct.c_bool.in_dll(self.libstell,modName+'_'+temp+self.s3).value
 				else:
-					if ldefined_size_arrays : ftemp=ct.c_bool*prod(booLen[i])
-					out_data[temp]=npct.as_array(ftemp.in_dll(self.libstell,modName+'_'+temp+self.s3),booLen[i])
+					# This works because fortran has 4 byte sized booleans
+					if ldefined_size_arrays : ftemp=ct.c_int*prod(booLen[i])
+					out_data[temp]=npct.as_array(ftemp.in_dll(self.libstell,modName+'_'+temp+self.s3),booLen[i])>0
 		# Integers
 		if intVar:
 			ftemp = ct.POINTER(ct.c_int)
