@@ -108,8 +108,6 @@ class STELLOPT():
 		f.close()
 		return np.array(s),np.array(ne),np.array(te),np.array(ti),np.array(zeff),np.array(p)
 
-
-
 	def read_stellopt_varlabels(self,filename='var_labels'):
 		"""Reads a STELLOPT var_labels output file
 
@@ -142,6 +140,30 @@ class STELLOPT():
 		self.varnames = varnames
 		self.var = var
 		self.targetnames = targetnames
+
+	def read_stellopt_jacobian(self,filename):
+		"""Reads a STELLOPT jacobian output file
+
+		This routine reads the STELLOPT jacobian output file.
+
+		Parameters
+		----------
+		file : str
+			Path to jacobian file.
+		"""
+		import numpy as np
+		import re
+		f = open(filename,'r')
+		content = f.read()
+		f.close()
+		numbers = re.findall(r'-?\d+\.?\d*(?:[eE][+-]?\d+)?', content)
+		numbers = [float(num) for num in numbers]
+		mtargets  = int(numbers[0])
+		nvars     = int(numbers[1])
+		jac       = numbers[2:]
+		jac2d       = np.reshape(jac,(nvars,mtargets)).T
+		self.jac2d  = jac2d
+
 
 	def read_stellopt_output(self,filename):
 		"""Reads a STELLOPT output file
