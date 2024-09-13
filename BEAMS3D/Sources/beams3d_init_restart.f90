@@ -15,7 +15,7 @@
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_lines
-      USE beams3d_physics_mod, ONLY: beams3d_MODB
+      USE beams3d_physics_mod, ONLY: beams3d_MODB,beams3d_VTOR
 #if defined(LHDF5)
       USE ez_hdf5
 #endif
@@ -211,7 +211,7 @@
             IF (nvtor>0) THEN
                CALL beams3d_VTOR(q,vtor_help)
                vll_start(k)=vll_start(k)-vtor_help
-               vphi_start(k)=vphi_start(k)-vtor_help*SIGN(one,vll_start) !vtor is positive parallel to the magnetic field
+               vphi_start(k)=vphi_start(k)-vtor_help*SIGN(one,vll_start(k)) !vtor is positive parallel to the magnetic field
             END IF
             k = k + 1
          END DO
