@@ -1000,82 +1000,87 @@
           
           ! Determine field and magnetization at tile due to all other tiles and itself
           H_new = H
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           SELECT CASE (state_type(state_dex(i_tile)))
-              CASE (1) ! Hard magnet
-                Mrem_norm = NORM2(Mrem(:,state_dex(i_tile)))
-                u_ea = Mrem(:,state_dex(i_tile))/Mrem_norm ! Easy axis assumed parallel to remanent magnetization
-                IF (u_ea(2)/=0 .OR. u_ea(3)/=0) THEN      ! Cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
-                    u_oa_1 = [0.d0, u_ea(3), -u_ea(2)]
-                    u_oa_2 = [-u_ea(2)*u_ea(2) - u_ea(3)*u_ea(3), u_ea(1)*u_ea(2), u_ea(1)*u_ea(3)]
-                ELSE                                      ! Cross product of u_ea with [0, 1, 0] and cross product of u_ea with cross product
-                    u_oa_1 = [-u_ea(3), 0.d0, u_ea(1)]
-                    u_oa_2 = [u_ea(1)*u_ea(2), -u_ea(1)*u_ea(1) - u_ea(3)*u_ea(3), u_ea(2)*u_ea(3)]
+            CASE (1) ! Hard magnet
+              Mrem_norm = NORM2(Mrem(:,state_dex(i_tile)))
+              u_ea = Mrem(:,state_dex(i_tile))/Mrem_norm ! Easy axis assumed parallel to remanent magnetization
+              IF (u_ea(2)/=0 .OR. u_ea(3)/=0) THEN      ! Cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
+                  u_oa_1 = [0.d0, u_ea(3), -u_ea(2)]
+                  u_oa_2 = [-u_ea(2)*u_ea(2) - u_ea(3)*u_ea(3), u_ea(1)*u_ea(2), u_ea(1)*u_ea(3)]
+              ELSE                                      ! Cross product of u_ea with [0, 1, 0] and cross product of u_ea with cross product
+                  u_oa_1 = [-u_ea(3), 0.d0, u_ea(1)]
+                  u_oa_2 = [u_ea(1)*u_ea(2), -u_ea(1)*u_ea(1) - u_ea(3)*u_ea(3), u_ea(2)*u_ea(3)]
+              END IF
+
+              ! Normalize unit vectors
+              u_oa_1 = u_oa_1/NORM2(u_oa_1)
+              u_oa_2 = u_oa_2/NORM2(u_oa_2)
+                  
+              lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 1/constant_mu_o(state_dex(i_tile)), 0.5)
+              DO
+                  H_old = H_new
+                  ! Determine magnetization taking into account easy axis
+                  M_tmp = (Mrem_norm + (constant_mu(state_dex(i_tile))   - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
+                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
+                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
+
+                  H_new = H + MATMUL(N, M_tmp)
+                  H_new = H_old + lambda_s * (H_new - H_old)
+
+                  IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
+                    M_new(:,i) = (Mrem_norm + (constant_mu(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
+                                                  + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
+                                                  + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
+                    EXIT
+                  END IF
+              END DO
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            CASE (2) ! Soft magnet using state function
+              DO
+                H_old = H_new
+                Hnorm = NORM2(H_new)
+                IF (Hnorm .ne. 0) THEN
+                  CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
+                  M_tmp = M_tmp_norm * H_new / Hnorm
+                  lambda_s = MIN(Hnorm/M_tmp_norm, 0.5)
+                ELSE
+                  M_tmp = 0
+                  M_tmp_norm = 0
+                  lambda_s = 0.5
                 END IF
+                H_new = H + MATMUL(N, M_tmp)
+                H_new = H_old + lambda_s * (H_new - H_old)
 
-                ! Normalize unit vectors
-                u_oa_1 = u_oa_1/NORM2(u_oa_1)
-                u_oa_2 = u_oa_2/NORM2(u_oa_2)
-                    
-                lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 1/constant_mu_o(state_dex(i_tile)), 0.5)
-                DO
-                    H_old = H_new
-                    ! Determine magnetization taking into account easy axis
-                    M_tmp = (Mrem_norm + (constant_mu(state_dex(i_tile))   - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
-                                      + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
-                                      + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
-
-                    H_new = H + MATMUL(N, M_tmp)
-                    H_new = H_old + lambda_s * (H_new - H_old)
-
-                    IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
-                      M_new(:,i) = (Mrem_norm + (constant_mu(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
-                                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
-                                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
-                      EXIT
-                    END IF
-                END DO
-              CASE (2) ! Soft magnet using state function
-                DO
-                    H_old = H_new
-                    Hnorm = NORM2(H_new)
-                    IF (Hnorm .ne. 0) THEN
-                      CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
-                      M_tmp = M_tmp_norm * H_new / Hnorm
-                    ELSE
-                      M_tmp = 0
-                      M_tmp_norm = 0
-                    END IF
-                    lambda_s = MIN(Hnorm/M_tmp_norm, 0.5)
-                    H_new = H + MATMUL(N, M_tmp)
-                    H_new = H_old + lambda_s * (H_new - H_old)
-
-                    IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
-                      Hnorm = NORM2(H_new)
-                      IF (Hnorm .ne. 0) THEN
-                          CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
-                          M_new(:,i) = M_tmp_norm * H_new / Hnorm
-                          chi(i) = M_tmp_norm / Hnorm
-                      ELSE
-                          M_new(:,i) = 0
-                          chi(i) = 0
-                      END IF
-                      EXIT
-                    END IF
-                END DO
-              CASE (3) ! Soft magnet using constant permeability
-                lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 0.5)
-                DO
-                    H_old = H_new
-                    H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N, H_new)
-                    H_new = H_old + lambda_s * (H_new - H_old)
-                    IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
-                      M_new(:,i) = (constant_mu(state_dex(i_tile)) - 1) * H_new
-                      EXIT
-                    END IF
-                END DO
-              CASE DEFAULT
-                WRITE(6,*) "Unknown magnet type: ", state_type(state_dex(i_tile))
-                STOP
+                IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
+                  Hnorm = NORM2(H_new)
+                  IF (Hnorm .ne. 0) THEN
+                    CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
+                    M_new(:,i) = M_tmp_norm * H_new / Hnorm
+                    chi(i) = M_tmp_norm / Hnorm
+                  ELSE
+                    M_new(:,i) = 0
+                    chi(i) = 0
+                  END IF
+                  EXIT
+                END IF
+              END DO
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            CASE (3) ! Soft magnet using constant permeability
+              lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 0.5)
+              DO
+                  H_old = H_new
+                  H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N, H_new)
+                  H_new = H_old + lambda_s * (H_new - H_old)
+                  IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
+                    M_new(:,i) = (constant_mu(state_dex(i_tile)) - 1) * H_new
+                    EXIT
+                  END IF
+              END DO
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            CASE DEFAULT
+              WRITE(6,*) "Unknown magnet type: ", state_type(state_dex(i_tile))
+              STOP
           END SELECT
 
           M(:,i_tile) = M(:,i_tile) + lambda*(M_new(:,i) - M(:,i_tile))

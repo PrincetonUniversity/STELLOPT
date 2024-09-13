@@ -72,8 +72,8 @@
 
     ! Set mumaterial verbosity
       CALL mumaterial_setverb(lismaster)
-      CALL mumaterial_debug(lismaster,lissubmaster,.TRUE.)
-      !CALL mumaterial_debug(.FALSE.,.FALSE.,.FALSE.)
+      !CALL mumaterial_debug(lismaster,lissubmaster,.TRUE.)
+      CALL mumaterial_debug(.FALSE.,.FALSE.,.FALSE.)
 
       ! Read the mu materials file
       CALL MUMATERIAL_LOAD(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_BEAMS)
@@ -147,14 +147,11 @@
       CALL MUMATERIAL_INIT_NEW(beams3d_BCART, offset)
 
       ! Break up the Work
-      IF (lverb) WRITE(6,*) 'Calculating range'
       CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nr*nphi*nz, mystart, myend)
 
       ! Find largest mystart in local
-      IF (lverb) WRITE(6,*) 'Calculating ourstart and ourend'
       CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_MUSHARE, ierr_mpi)
       CALL MPI_ALLREDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, MPI_COMM_MUSHARE, ierr_mpi)
-      IF (lverb) WRITE(6,*) 'Range calculated'
 
       ! Zero out non-work areas
       IF (lissubmaster) THEN
@@ -163,33 +160,31 @@
             j = MOD(s-1,nr*nphi)
             j = FLOOR(REAL(j) / REAL(nr))+1
             k = CEILING(REAL(s) / REAL(nr*nphi))
-            B_R(i,j,k) = 0.0
+            B_R(i,j,k)   = 0.0
             B_PHI(i,j,k) = 0.0
-            B_Z(i,j,k) = 0.0
+            B_Z(i,j,k)   = 0.0
          END DO
          DO s = ourend+1, nr*nphi*nz
             i = MOD(s-1,nr)+1
             j = MOD(s-1,nr*nphi)
             j = FLOOR(REAL(j) / REAL(nr))+1
             k = CEILING(REAL(s) / REAL(nr*nphi))
-            B_R(i,j,k) = 0.0
+            B_R(i,j,k)   = 0.0
             B_PHI(i,j,k) = 0.0
-            B_Z(i,j,k) = 0.0
+            B_Z(i,j,k)   = 0.0
          END DO
       END IF
 
 #if defined(MPI_OPT)
-      IF (lverb) WRITE(6,*) 'Waiting at barrier'
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-      IF (lverb) WRITE(6,*) 'Passed barrier'
 #endif
-      IF (lverb) WRITE(6,*) 'TEST'
+      IF (lverb) WRITE(6,*) 'Starting magnetic field calculation'
       CALL FLUSH(6)
       ! Start progress 
       IF (lverb) THEN
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Magnetic Field Calculation [',0,']%'
+         CALL FLUSH(6)
       END IF
-      CALL FLUSH(6)
       
       ! Get the fields
       DO s = mystart, myend
@@ -203,12 +198,12 @@
          x_temp    = raxis(i)*cos(phiaxis(j))
          y_temp    = raxis(i)*sin(phiaxis(j))
          z_temp    = zaxis(k)
-         CALL mumaterial_getbmag_scalar(x_temp,y_temp, z_temp, bx_temp, by_temp, bz_temp)
+         CALL mumaterial_getbmag_scalar(x_temp, y_temp, z_temp, bx_temp, by_temp, bz_temp)
          br_temp   = bx_temp*cos(phiaxis(j)) + by_temp*sin(phiaxis(j))
          bphi_temp = by_temp*cos(phiaxis(j)) - bx_temp*sin(phiaxis(j))
-         B_R(i,j,k)   = B_R(i,j,k)   + br_temp
-         B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_temp
-         B_Z(i,j,k)   = B_Z(i,j,k)   + bz_temp
+         B_R(i,j,k)   =  br_temp   + B_R(i,j,k) 
+         B_PHI(i,j,k) =  bphi_temp + B_PHI(i,j,k)
+         B_Z(i,j,k)   =  bz_temp   + B_Z(i,j,k) 
          IF (lverb .and. (MOD(s,nr) == 0)) THEN
             CALL backspace_out(6,6)
             WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
