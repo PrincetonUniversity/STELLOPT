@@ -457,7 +457,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         u_thetai(:,iroot)=u_theta(2:num_species)
 
         !calculate total parallel electric current
-        J_E_tot_parts=dens*charges*B_uprl*dsqrt(Bsq)
+        J_E_tot_parts=dens*charges*B_uprl/dsqrt(Bsq)
         J_E_tot=sum(J_E_tot_parts)
 
         !calculate Bootstrap current
