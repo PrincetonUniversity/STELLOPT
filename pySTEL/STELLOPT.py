@@ -145,7 +145,7 @@ class MyApp(QMainWindow):
 		# Handles loading an indata file.
 		w = QWidget()
 		w.resize(320, 240)
-		w.setWindowTitle("Hello World!")
+		w.setWindowTitle("Load VMEC INDATA")
 		filename = QFileDialog.getOpenFileName(w, 'Open File', '.')
 		w.destroy
 		# Now read the file
@@ -193,7 +193,7 @@ class MyApp(QMainWindow):
 		# Handles loading an indata file.
 		w = QWidget()
 		w.resize(320, 240)
-		w.setWindowTitle("Hello World!")
+		w.setWindowTitle("Save VMEC INDATA")
 		filename = QFileDialog.getSaveFileName(w, 'Open File', '.')
 		w.destroy
 		# Update the module with all the not-updated values
@@ -516,7 +516,6 @@ class MyApp(QMainWindow):
 		col = self.ui.TableOPTtype.currentColumn()
 		row = self.ui.TableOPTtype.currentRow()
 		field = self.ui.TableOPTtype.verticalHeaderItem(row).text()
-		print(field)
 		if field == 'opt_type':
 			self.optimum.global_data.opt_type=item.text()
 		elif field in ['noptimizers','nfunc_max','mode','cr_strategy','npopulation']:
@@ -530,7 +529,6 @@ class MyApp(QMainWindow):
 		# Handles updates to the tabs
 		# Get page index
 		item = self.ui.tabStelVars.currentIndex()
-		print(item)
 		if item == 0:
 			self.UpdateOPTVarsScalar()
 		elif item == 1:
@@ -591,7 +589,6 @@ class MyApp(QMainWindow):
 		elif col == 4:
 			field = field+'_max'
 			val = float(item.text())
-		print(field, val)
 		setattr(self.optimum.var_data,field,val)
 
 	def UpdateOPTVarsProf(self):
@@ -628,7 +625,6 @@ class MyApp(QMainWindow):
 		# Handles changes in Profile table
 		# Get the current profile
 		data_name = self.ui.comboBoxStelVarsProfType.currentText()
-		print(data_name)
 		if data_name == 'Pressure (AM)':
 			field = 'AM'
 		elif data_name == 'Current (AC)':
@@ -660,7 +656,6 @@ class MyApp(QMainWindow):
 		elif col == 4:
 			field = field+'_max'
 			val = float(item.text())
-		print(field, val)
 		temp = getattr(self.optimum.var_data,field)
 		temp[row] = val
 		setattr(self.optimum.var_data,field,temp)
@@ -723,7 +718,6 @@ class MyApp(QMainWindow):
 		elif col == 4:
 			field = field+'_max'
 			val = float(item.text())
-		print(field, val)
 		temp = getattr(self.optimum.var_data,field)
 		temp[row] = val
 		setattr(self.optimum.var_data,field,temp)
@@ -787,7 +781,6 @@ class MyApp(QMainWindow):
 		dtemp = []
 		mintemp = []
 		maxtemp = []
-		print(lstate[:,101])
 		# Create list of values with (n,m) as row headers
 		for j in range(msize):
 			for i in range(nsize):
@@ -807,7 +800,6 @@ class MyApp(QMainWindow):
 		for i in range(j):
 			head_string = '('+str(xn[i])+','+str(xm[i])+')'
 			self.ui.TableOPTVarsBound.setVerticalHeaderItem(i,QTableWidgetItem(head_string))
-			print(ltemp[i])
 			if ltemp[i]:
 				self.ui.TableOPTVarsBound.setItem(i,0,QTableWidgetItem('T'))
 			else:
@@ -858,7 +850,6 @@ class MyApp(QMainWindow):
 		elif col == 4:
 			field = field4+'_max'
 			val = float(item.text())
-		print(field, val)
 		temp = getattr(self.optimum.var_data,field)
 		temp[dex1,dex2] = val
 		setattr(self.optimum.var_data,field,temp)
@@ -867,11 +858,10 @@ class MyApp(QMainWindow):
 		# Handles loading an stellopt file.
 		w = QWidget()
 		w.resize(320, 240)
-		w.setWindowTitle("Hello World!")
+		w.setWindowTitle("Load STELLOPT Output")
 		filename = QFileDialog.getOpenFileName(w, 'Open File', '.','STELLOPT (stellopt.*)')
 		w.destroy
 		# Read the file
-		print(filename)
 		self.stel_data.read_stellopt_output(filename[0])
 		self.optplot_list = ['ASPECT','BETA','CURTOR','EXTCUR','SEPARATRIX',\
 					'PHIEDGE','RBTOR','R0','Z0','VOLUME','WP','KAPPA',\
@@ -953,6 +943,7 @@ class MyApp(QMainWindow):
 		# Handle plotting of 
 		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
 		self.fig2.clf()
+		niter = len(self.stel_data.ITER)
 		#self.fig.delaxes(self.ax)
 		#self.ax2 = self.fig2.add_subplot(111)
 		self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
@@ -998,47 +989,107 @@ class MyApp(QMainWindow):
 			self.ax2.set_title(plot_name+' Chi-Sqaured')
 			#self.ax2.set_yscale('log',basey=10)
 		elif (plot_name == 'BALLOON_evolution'):
-			self.ax2.plot(self.stel_data.BALLOON_K.T,self.stel_data.BALLOON_BALLOON_GRATE.T,'o',fillstyle='none')
+			x = self.stel_data.BALLOON_K
+			y = self.stel_data.BALLOON_BALLOON_GRATE
+			t = self.stel_data.BALLOON_TARGET
+			d = self.stel_data.BALLOON_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Growth Rate')
 			self.ax2.set_title('COBRA Ballooning Stability (<0 Stable)')
+			self.ax2.legend()
 		elif (plot_name == 'TXPORT_evolution'):
-			self.ax2.plot(self.stel_data.TXPORT_S.T,self.stel_data.TXPORT_EQUIL.T,'o',fillstyle='none')
+			x = self.stel_data.TXPORT_S
+			y = self.stel_data.TXPORT_EQUIL
+			t = self.stel_data.TXPORT_TARGET
+			d = self.stel_data.TXPORT_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
 			self.ax2.set_xlabel('Normalized Flux')
 			self.ax2.set_ylabel('Proxy Function')
 			self.ax2.set_title('Turbulent Transport Proxy')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'ORBIT_evolution'):
-			self.ax2.plot(self.stel_data.ORBIT_S.T,self.stel_data.ORBIT_EQUIL.T,'o',fillstyle='none')
+			x = self.stel_data.ORBIT_S
+			y = self.stel_data.ORBIT_EQUIL
+			t = self.stel_data.ORBIT_TARGET
+			d = self.stel_data.ORBIT_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
 			self.ax2.set_xlabel('Normalized Flux')
 			self.ax2.set_ylabel('Orbit Losses')
 			self.ax2.set_title('Gyro Particle Losses')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'NEO_evolution'):
-			self.ax2.plot(self.stel_data.NEO_K.T,self.stel_data.NEO_EPS_EFF32.T,'o',fillstyle='none')
+			x = self.stel_data.NEO_K
+			y = self.stel_data.NEO_EPS_EFF32
+			t = self.stel_data.NEO_TARGET
+			d = self.stel_data.NEO_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Epsilon Effective')
 			self.ax2.set_title('Neoclassical Helical Ripple (NEO)')
 		elif (plot_name == 'HELICITY_FULL_evolution'):
-			self.ax2.plot(self.stel_data.HELICITY_FULL_VAL.T,'o',fillstyle='none')
+			x = self.stel_data.HELICITY_FULL_K
+			y = self.stel_data.HELICITY_FULL_VAL
+			t = self.stel_data.HELICITY_FULL_TARGET
+			d = self.stel_data.HELICITY_FULL_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
 			self.ax2.set_ylabel('Helicity')
 			self.ax2.set_title('Boozer Spectrum Helicity')
 		elif (plot_name == 'MAGWELL_evolution'):
-			self.ax2.plot(self.stel_data.MAGWELL_K.T,self.stel_data.MAGWELL_MAGWELL.T,'o',fillstyle='none')
+			x = self.stel_data.MAGWELL_K
+			y = self.stel_data.MAGWELL_MAGWELL
+			t = self.stel_data.MAGWELL_TARGET
+			d = self.stel_data.MAGWELL_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Magnetic Well')
 			self.ax2.set_title('Magnetic Well Evolution  (>0 Well)')
 		elif (plot_name == 'CURVATURE_P2'):
+			#x = self.stel_data.TXPORT_S
+			#y = self.stel_data.CURVATURE_P2_P2
+			#self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			#for i in range(1,niter-1,1):
+			#	self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			#self.ax2.plot(x[niter-1,:],self.y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
 			self.ax2.plot(self.stel_data.CURVATURE_P2_P2.T,'o',fillstyle='none')
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Magnetic Well')
 			self.ax2.set_title('Magnetic Well Evolution')
 		elif (plot_name == 'B_PROBE_evolution'):
 			n=self.stel_data['B_PROBE_target'].shape
-			x = np.ndarray((n[1],1))
-			for j in range(n[1]): x[j]=j+1
-			self.ax2.errorbar(x,self.stel_data.B_PROBE_TARGET.T,self.stel_data.B_PROBE_SIGMA.T,marker='o',fillstyle='none')
-			self.ax2.plot(x,self.stel_data['BPROBES_equil'].T,fillstyle='none')
+			x = np.ndarray((niter,n[1]))
+			y = self.stel_data.BPROBES_equil
+			t = self.stel_data.BPROBES_TARGET
+			d = self.stel_data.BPROBES_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
 			self.ax2.set_xlabel('B-Probe')
 			self.ax2.set_ylabel('Signal')
 			self.ax2.set_title('B-Probe Reconstruction')
