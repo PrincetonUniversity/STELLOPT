@@ -205,7 +205,6 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       allocate(u_theta(num_species),u_zeta(num_species))
 
       !read input files
-      !here change to read_vmec_file_2; this way no need to compute Bsq etc in a separate file
       call read_vmec_file_2(js,run_ident)
       call read_pprof_file(js,pprof_char,num_ion_species,roa_surf,arad)
       call read_lmn_star_files(coeff_ext)
