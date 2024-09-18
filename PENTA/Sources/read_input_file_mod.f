@@ -85,7 +85,7 @@ c
       allocate(chip_vmec(js_max),psip_vmec(js_max),btheta_vmec(js_max))
       allocate(bzeta_vmec(js_max),vp_vmec(js_max),bsq_vmec(js_max))
       allocate(iota_vmec(js_max))
-      read(iu_vmec,*) arad, Rmajor
+      read(iu_vmec,*) arad
       read(iu_vmec,'(a10)') ch_dum
       do j = js_min,js_max
         read(iu_vmec,'(i4,9(a1,e15.7))') js_vmec(j),tb,r_vmec(j),tb,
@@ -115,7 +115,7 @@ c
       use read_wout_mod, ONLY:  read_wout_file, phipf_vmec => phipf,
      1                          btheta_vmec => buco, bzeta_vmec => bvco,
      2                          iota_vmec => iotaf, vp_vmec => vp,
-     3                          Rmajor_vmec => Rmajor,
+     3                          iota_vmec => iotaf, vp_vmec => vp,
      4                          Aminor_vmec => Aminor,
      5                          phi_vmec => phi, bmnc, mnmax_nyq, gmnc,
      6                          xm_nyq, xn_nyq, ns_vmec => ns

@@ -100,7 +100,7 @@ c
       module vmec_var_pass
       use penta_kind_mod
       implicit none
-      real(rknd) :: arad, Rmajor, r_surf, roa_surf, chip
+      real(rknd) :: arad, r_surf, roa_surf, chip
      1 ,psip, btheta, bzeta, vp, bsq, iota, vol_p
       end module vmec_var_pass
 c
