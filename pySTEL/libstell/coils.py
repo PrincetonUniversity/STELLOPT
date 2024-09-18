@@ -847,7 +847,7 @@ class COIL():
 		n = self.npts
 		# calculate the tangent
 		if self.xt is None:
-			self.spline_tangent()
+			self.spline_tangent(order=1)
 		xt = self.xt
 		yt = self.yt
 		zt = self.zt
@@ -862,6 +862,20 @@ class COIL():
 			[center_x,center_y,center_z]=self.geomCenter()
 			xn = self.x - center_x
 			yn = self.y - center_y
+			zn = self.z - center_z
+			nt = xn * xt + yn * yt + zn * zt
+			xn = xn - nt * xt
+			yn = yn - nt * yt
+			zn = zn - nt * zt
+		if frame == "centroid_cyl":
+			# use the geometry center but define in cylindrical coords
+			[center_x,center_y,center_z]=self.geomCenter()
+			phi = np.arctan2(self.y,self.x)
+			r  = np.sqrt(self.x**2+self.y**2)
+			center_r = np.sqrt(center_x**2+center_y**2)
+			rn = r - center_r
+			xn = rn*np.cos(phi)
+			yn = rn*np.sin(phi)
 			zn = self.z - center_z
 			nt = xn * xt + yn * yt + zn * zt
 			xn = xn - nt * xt
@@ -948,6 +962,47 @@ class COIL():
 		yy = np.array([y1, y2, y3, y4, y1])
 		zz = np.array([z1, z2, z3, z4, z1])
 		return xx, yy, zz
+
+	def curveBuildCoil(self,nsegments=6):
+		"""Builds a coil fitting curved segments.
+
+		This routine builds a coil via a set of segmented curves.
+		To do this the code calculates the coil curvature and
+		divides the existing coil into N curves where the endpoints
+		of each curve coincide with a maximum in curvature. Each
+		sector is fit to the original coils segments. The new coil
+		x,y,z is returned.
+
+		Parameters
+		----------
+		nsegments : int (optional)
+			Number of coil segments(default: 6)
+
+		Returns
+		----------
+		x : ndarry
+			X-coordiantes [m]
+		y : ndarry
+			Y-coordiantes [m]
+		z : ndarry
+			Z-coordiantes [m]
+		"""
+		# First calculate the coil curvature
+		self.spline_tangent(der=2)
+		xn = self.xa
+		yn = self.ya
+		zn = self.za
+		kappa = np.sqrt(xn**2+yn**2+zn**2)
+		# Now determine points of maximum curvature
+		# Loop over segments
+		for k in range(nsegments):
+			# Define starting/ending points
+			# Define points to fit
+			# Estimate initial guess
+			# Fit curve
+			# Add to total curve
+			print('test')
+
 
 if __name__=="__main__":
 	import sys
