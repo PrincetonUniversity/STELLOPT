@@ -71,7 +71,7 @@ c
       character(60) :: run_ident
       !local variables
       integer(iknd) :: j, js_min, js_max
-	integer(iknd), dimension(:), allocatable :: js_vmec
+	    integer(iknd), dimension(:), allocatable :: js_vmec
       real(rknd), dimension(:), allocatable :: r_vmec, roa_vmec
      1 ,chip_vmec, psip_vmec, btheta_vmec, bzeta_vmec, vp_vmec, bsq_vmec
      2 ,iota_vmec
@@ -113,83 +113,89 @@ c
       use penta_kind_mod
       use io_unit_spec
       use read_wout_mod, ONLY:  read_wout_file, phipf_vmec => phipf,
-     1                          btheta_vmec => buco, bzeta_vmec => bvco,
-     2                          iota_vmec => iotaf, vp_vmec => vp,
-     3                          iota_vmec => iotaf, vp_vmec => vp,
-     4                          Aminor_vmec => Aminor,
-     5                          phi_vmec => phi, bmnc, mnmax_nyq, gmnc,
-     6                          xm_nyq, xn_nyq, ns_vmec => ns
+     1                          chipf_vmec => chipf,
+     2                          btheta_vmec => buco, 
+     3                          bzeta_vmec => bvco,
+     4                          iota_vmec => iotaf, vp_vmec => vp,
+     5                          bsq_vmec => bdotb,
+     6                          Aminor_vmec => Aminor,
+     7                          phi_vmec => phi, ns_vmec => ns
       implicit none
       !dummy variables
       integer(iknd) :: js
       character(60) :: run_ident
       !local variables
       integer(iknd) :: j, js_min, js_max, ierr, u, v, mn
-	integer(iknd), dimension(:), allocatable :: js_vmec
-!      real(rknd), dimension(:), allocatable :: r_vmec, roa_vmec
-!     1 ,chip_vmec, psip_vmec, btheta_vmec, bzeta_vmec, vp_vmec, bsq_vmec
-!     2 ,iota_vmec
-      REAL(rknd) :: TWOPI, top, bottom, theta, zeta, arg, cs_arg,
-     1              jacob_vmec, bbf
-      character(60) :: vmec_fname, ch_dum, tb = char(9)
+	    integer(iknd), dimension(:), allocatable :: js_vmec
+      REAL(rknd) :: TWOPI
 
       TWOPI = 8*ATAN(1.0_rknd)
-      !Read VMEC profile data file 
-!      vmec_fname = "profile_data_" // run_ident
-!      open(unit=iu_vmec,file=vmec_fname,status="old")
+
       CALL read_wout_file(TRIM(run_ident),ierr)
       
-!      read(iu_vmec,*) js_min, js_max
-!      allocate(js_vmec(js_max),r_vmec(js_max),roa_vmec(js_max))
-!      allocate(chip_vmec(js_max),psip_vmec(js_max),btheta_vmec(js_max))
-!      allocate(bzeta_vmec(js_max),vp_vmec(js_max),bsq_vmec(js_max))
-!      allocate(iota_vmec(js_max))
-!      read(iu_vmec,*) arad, Rmajor
-!      read(iu_vmec,'(a10)') ch_dum
-!      do j = js_min,js_max
-!        read(iu_vmec,'(i4,9(a1,e15.7))') js_vmec(j),tb,r_vmec(j),tb,
-!     1  roa_vmec(j),tb,chip_vmec(j),tb,psip_vmec(j),tb,btheta_vmec(j),
-!     2    tb,bzeta_vmec(j),tb,vp_vmec(j),tb,bsq_vmec(j),tb,iota_vmec(j)
-!      end do
-!      close(iu_vmec)
+      ! Assign variables for the current surface js
 
-      ! Assign variables for the current surface
-      chip = iota_vmec(js)*phipf_vmec(js);  !note this only works for non-RFP
-      psip = phipf_vmec(js)  
-      ! bsq = bsq_vmec(js)
-      btheta = btheta_vmec(js); bzeta = bzeta_vmec(js)
-      iota = iota_vmec(js);
+      !Full grid quantities
+      chip = chipf_vmec(js)
+      psip = phipf_vmec(js)
+      iota = iota_vmec(js)
+      bsq  = bsq_vmec(js)
+
+      ! Definition of radial variable: r/a=sqrt(s)
       roa_surf = sqrt(phi_vmec(js)/phi_vmec(ns_vmec))
+
       r_surf   = Aminor_vmec*roa_surf
-      vol_p = vp_vmec(js)
-      Rmajor = Rmajor_vmec
       arad = Aminor_vmec
-      ! Now calc Bsq
-      ! Why not reading from VMEC bsq??
-      bsq = 0.0_rknd
-      top = 0.0_rknd
-      bottom = 0.0_rknd
-      DO v = 1, 360
-         zeta = TWOPI*REAL(v-1)/359.
-         DO u = 1, 360
-            theta = TWOPI*REAL(u-1)/359.
-            bbf = 0.0; jacob_vmec = 0.0;
-            DO mn = 1, mnmax_nyq
-               arg = xm_nyq(mn)*theta - xn_nyq(mn)*zeta
-               cs_arg = cos(arg)
-               jacob_vmec = jacob_vmec + gmnc(mn,js)*cs_arg
-               bbf = bbf + bmnc(mn,js)*cs_arg
-            END DO
-            top = top + jacob_vmec*bbf*bbf
-            bottom = bottom + jacob_vmec
-         END DO
-      END DO
-      bsq = top/bottom
-      write(*,'(a,g12.7)') ' Bsq=',bsq
-      !deallocate variables
-!      deallocate(js_vmec, r_vmec, roa_vmec, chip_vmec, psip_vmec)
-!      deallocate(btheta_vmec, bzeta_vmec, vp_vmec, bsq_vmec,iota_vmec)
+      
+      ! Half grid quantities are converted to full grid
+      IF (js .eq. ns_vmec) THEN
+        btheta = 2.0_rknd*btheta_vmec(ns_vmec) - btheta_vmec(ns_vmec-1)
+        bzeta =  2.0_rknd*bzeta_vmec(ns_vmec)  - bzeta_vmec(ns_vmec-1)
+        vol_p =  2.0_rknd*vp_vmec(ns_vmec)  - vp_vmec(ns_vmec-1)
+      ELSEIF (js .eq. 1) THEN
+        btheta = 1.5_rknd*btheta_vmec(2) - 0.5_rknd*btheta_vmec(3)
+        bzeta = 1.5_rknd*bzeta_vmec(2) - 0.5_rknd*bzeta_vmec(3)
+        vol_p = 1.5_rknd*vp_vmec(2) - 0.5_rknd*vp_vmec(3)
+      ELSE 
+        btheta = 0.5_rknd * (btheta_vmec(js+1) + btheta_vmec(js))
+        bzeta =  0.5_rknd * (bzeta_vmec(js+1)  + bzeta_vmec(js))
+        vol_p =  0.5_rknd * (vp_vmec(js+1) + vp_vmec(js))
+      ENDIF 
+
+      ! Note that vp from VMEC comes normalized by 4pi^2
+      ! Therefore we need to denormalize it
+      vol_p = TWOPI*TWOPI*vol_p
+
+      ! vp_vmec is ~dV/ds, but what we want is dVdr=dVds*dsdr
+      ! Since PENTA uses r/a=sqrt(s), then dVdr=dVds*2*r/a^2 
+      vol_p = vol_p * 2.0_rknd*r_surf/arad**2
+
+      !Same for psip and chip: need to convert d/ds to d/dr
+      psip = psip * 2.0_rknd*r_surf/arad**2
+      chip = chip * 2.0_rknd*r_surf/arad**2
+
+      !psip and chip are used to compute flows in calculate_flows(...)
+      !In this routine, it is assumed that psip and chip are normalized by 2pi
+      !So need to do it here:
+      psip = psip / TWOPI
+      chip = chip / TWOPI
+
+      !Print
+      write(*,*) '##################################'
+      write(*,*) '##### GEOMETRICAL QUANTITIES: ####'
+      write(*,*) '##################################'
+      write(*,'(a,g0)') ' Bsq=',bsq
+      write(*,'(a,g0)') ' psip/2pi=',psip
+      write(*,'(a,g0)') ' chip/2pi=',chip
+      write(*,'(a,g0)') ' psip/2pi=',psip
+      write(*,'(a,g0)') ' dVdr=',vol_p
+      write(*,'(a,g0)') ' btheta=',btheta
+      write(*,'(a,g0)') ' bzeta=',bzeta
+      write(*,*) '##################################'
+      write(*,*) '##################################'
+      
       end subroutine read_vmec_file_2
+
 c
 c----------------------------------------------------------------------------
 c   Reads the file "plasma_profiles*.dat" and assigns plasma parameters for the
