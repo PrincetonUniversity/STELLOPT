@@ -615,6 +615,19 @@ class PLOT3D():
 		self.camera.OrthogonalizeViewUp()
 		self.renderer.SetActiveCamera(self.camera)
 
+	def setZoom(self,zoom=None):
+		"""Set the view zoom
+
+		This routine sets the camera zoom using a factor.
+
+		Parameters
+		----------
+		zoom : float (optional)
+			Zoom factor (degrees)
+		"""
+		if zoom: self.camera.Zoom(zoom)
+		self.renderer.SetActiveCamera(self.camera)
+
 	def render(self):
 		"""Render the window
 
