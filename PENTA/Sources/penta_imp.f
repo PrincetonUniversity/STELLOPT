@@ -302,6 +302,13 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        loglambda = 23.4_rknd - 1.15_rknd*dlog10(ne/1.e6_rknd) + 
      1    3.45_rknd*dlog10(Te)
       endif
+
+      !print thermal speeds
+      write(*,*) '##################################'
+      write(*,*) '##### Thermal Speeds: ####'
+      write(*,'(a,g0)') ' vth_e[m/s] =',vth_e
+      print *, ' vth_i[m/s] =',vth_i
+      write(*,*) '##################################'
     
       !assign arrays of parameters for all species
       charges=elem_charge*[-1._rknd,Z_ion]
