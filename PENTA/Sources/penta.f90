@@ -236,6 +236,7 @@ Use io_unit_spec, Only :             &
 Use read_input_file_mod, Only :      &
   ! Imported Subroutines
   read_vmec_file,                    & ! Reads VMEC data file
+  read_vmec_file_2,                  & ! Reads VMEC data from wout file
   read_pprof_file,                   & ! Reads plasma profile data file
   read_dkes_star_files,              & ! Reads DKES data files
   read_Utilde2_file,                 & ! Reads Utilde2 file (<U**2> data)
@@ -497,7 +498,7 @@ If ( output_QoT_vs_Er .EQV. .true. ) Then
 Endif
 
 ! Read input files
-Call read_vmec_file(js,run_ident)
+Call read_vmec_file_2(js,run_ident)
 Call read_pprof_file(pprof_char,num_ion_species,roa_surf,arad,kord_pprof)
 Call read_dkes_star_files(coeff_ext,Add_Spitzer_to_D33,Bsq)
 If (use_beam) Then
