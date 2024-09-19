@@ -181,6 +181,101 @@ Contains
 
   EndSubroutine read_vmec_file
 
+  !---------------------------------------------------------------------------
+  !+ Reads the VMEC data from wout file (A.Coelho and S.Lazerson, 09/2024)
+  !---------------------------------------------------------------------------
+    Subroutine read_vmec_file_2(js,run_ident)
+    use vmec_var_pass
+    use penta_kind_mod
+    use io_unit_spec
+    use read_wout_mod, ONLY:  read_wout_file, phipf_vmec => phipf,&
+                              chipf_vmec => chipf,&
+                              btheta_vmec => buco, &
+                              bzeta_vmec => bvco,&
+                              vp_vmec => vp,&
+                              bsq_vmec => bdotb,&
+                              Aminor_vmec => Aminor,&
+                              phi_vmec => phi, &
+                              ns_vmec => ns
+    implicit none
+    !dummy variables
+    integer(iknd) :: js
+    character(60) :: run_ident
+    !local variables
+    integer(iknd) :: j, js_min, js_max, ierr, u, v, mn
+    integer(iknd), dimension(:), allocatable :: js_vmec
+    REAL(rknd) :: TWOPI
+
+    TWOPI = 8*ATAN(1.0_rknd)
+
+    CALL read_wout_file(TRIM(run_ident),ierr)
+    
+    ! Assign variables for the current surface js
+
+    !Full grid quantities
+    chip = chipf_vmec(js)
+    psip = phipf_vmec(js)
+    bsq  = bsq_vmec(js)
+
+    ! Definition of radial variable: r/a=sqrt(s)
+    roa_surf = sqrt(phi_vmec(js)/phi_vmec(ns_vmec))
+
+    r_surf   = Aminor_vmec*roa_surf
+    arad = Aminor_vmec
+    
+    ! Half grid quantities are converted to full grid
+    IF (js .eq. ns_vmec) THEN
+      btheta = 2.0_rknd*btheta_vmec(ns_vmec) - btheta_vmec(ns_vmec-1)
+      bzeta =  2.0_rknd*bzeta_vmec(ns_vmec)  - bzeta_vmec(ns_vmec-1)
+      vol_p =  2.0_rknd*vp_vmec(ns_vmec)  - vp_vmec(ns_vmec-1)
+    ELSEIF (js .eq. 1) THEN
+      btheta = 1.5_rknd*btheta_vmec(2) - 0.5_rknd*btheta_vmec(3)
+      bzeta = 1.5_rknd*bzeta_vmec(2) - 0.5_rknd*bzeta_vmec(3)
+      vol_p = 1.5_rknd*vp_vmec(2) - 0.5_rknd*vp_vmec(3)
+    ELSE 
+      btheta = 0.5_rknd * (btheta_vmec(js+1) + btheta_vmec(js))
+      bzeta =  0.5_rknd * (bzeta_vmec(js+1)  + bzeta_vmec(js))
+      vol_p =  0.5_rknd * (vp_vmec(js+1) + vp_vmec(js))
+    ENDIF 
+
+    ! Note that vp from VMEC comes normalized by 4pi^2
+    ! Therefore we need to denormalize it
+    vol_p = TWOPI*TWOPI*vol_p
+
+    ! vp_vmec is ~dV/ds, but what we want is dVdr=dVds*dsdr
+    ! Since PENTA uses r/a=sqrt(s), then dVdr=dVds*2*r/a^2 
+    vol_p = vol_p * 2.0_rknd*r_surf/arad**2
+
+    !Same for psip and chip: need to convert d/ds to d/dr
+    psip = psip * 2.0_rknd*r_surf/arad**2
+    chip = chip * 2.0_rknd*r_surf/arad**2
+
+    !psip and chip are used to compute flows in calculate_flows(...)
+    !In this routine, it is assumed that psip and chip are normalized by 2pi
+    !So need to do it here:
+    psip = psip / TWOPI
+    chip = chip / TWOPI
+
+    ! For the SN formulation this is the think to do, but not for the the other formulations...
+    b0 = dsqrt(bsq)
+
+    !Print
+    write(*,*) '##################################'
+    write(*,*) '##### GEOMETRICAL QUANTITIES: ####'
+    write(*,*) '##################################'
+    write(*,'(a,g0)') ' Bsq=',bsq
+    write(*,'(a,g0)') ' NOTE!!! USING B0=sqrt(Bsq)=',b0
+    write(*,'(a,g0)') ' psip/2pi=',psip
+    write(*,'(a,g0)') ' chip/2pi=',chip
+    write(*,'(a,g0)') ' psip/2pi=',psip
+    write(*,'(a,g0)') ' dVdr=',vol_p
+    write(*,'(a,g0)') ' btheta=',btheta
+    write(*,'(a,g0)') ' bzeta=',bzeta
+    write(*,*) '##################################'
+    write(*,*) '##################################'
+    
+  Endsubroutine read_vmec_file_2
+
 
   !---------------------------------------------------------------------------
   !+ Reads the plasma profile data from the plasma_profiles_xxx.dat file
