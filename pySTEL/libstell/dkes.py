@@ -387,8 +387,8 @@ class DKES:
         import matplotlib.pyplot as plt
         
         Kmin = 1e-4      #PENTA default value
-        Kmax = 10        #PENTA default value
-        numKsteps = 100  #PENTA default value
+        Kmax = 20        #PENTA default value
+        numKsteps = 2000  #PENTA default value
         K = np.linspace(Kmin,Kmax,numKsteps)
         #tK = np.linspace(Kmin,0.6,80)
         #K = np.unique( np.concatenate( (K,tK) ) )
@@ -640,16 +640,7 @@ class DKES:
                 Kmax = self.K[np.max([cmin_index,cmax_index])]
                 
                 self.get_integral(integrand[species][i],self.K,xmin=Kmin,xmax=Kmax,make_plot=True,plot_title=which_convol+f', {species}, Er/v={efield}')
-
-            
-        
-        
-        
-        
-            
-    
-        
-            
+                       
     def plot_U2_estimate(self):
         
         import matplotlib.pyplot as plt
@@ -766,7 +757,7 @@ class DKES:
             ax.plot(Er,gamma_i[ion],'--',label=f'$\Gamma({ion})$')
         ax.set_xlabel(r'Er [V/cm]')
         ax.set_ylabel(r'$\Gamma~~[\text{m}^{-2}\,\text{s}^{-1}]$')
-        ax.set_title(f'r/a={roa[0]}')
+        ax.set_title(f'r/a={roa[0]:.2f}')
         ax.set_yscale('log')
         ax.legend(fontsize=12)
         ax.grid()
@@ -779,7 +770,7 @@ class DKES:
         ax.plot(Er,gamma_e-gamma_i_tot,label='$\sum Z_j\Gamma_j$')
         ax.set_xlabel(r'Er [V/cm]')
         ax.set_ylabel(r'$\Gamma~~[\text{m}^{-2}\,\text{s}^{-1}]$')
-        ax.set_title(f'r/a={roa[0]}')
+        ax.set_title(f'r/a={roa[0]:.2f}')
         #ax.set_yscale('log')
         ax.legend(fontsize=12)
         ax.grid()

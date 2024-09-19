@@ -302,9 +302,7 @@ class PLASMA:
             mass = [miomp[ion] for ion in self.ion_species]
             file.write('miomp_init=' + ','.join(f'{m:.6f}d0' for m in mass) + ',\n')
             # close NAMELIST
-            file.write('&end\n')
-            
-        
+            file.write('&end\n')         
            
     def print_plasma(self):
         print(f'Current species in plasma are: {", ".join(self.list_of_species)}')
