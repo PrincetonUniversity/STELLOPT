@@ -272,7 +272,7 @@ class MyApp(QMainWindow):
 			self.ax.set_ylabel('<j^v> [kA/m^2]')
 			self.ax.set_title('Flux surface Averaged j^v')
 		elif (plot_name == '<B.B>'):
-			self.ax.plot(self.nflux,self.vmec_data.bdotb/1000)
+			self.ax.plot(self.nflux,self.vmec_data.bdotb)
 			self.ax.set_xlabel('Normalized Flux')
 			self.ax.set_ylabel('<B.B> [T^2]')
 			self.ax.set_title('Flux surface Averaged B.B')
