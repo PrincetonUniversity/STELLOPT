@@ -286,6 +286,35 @@ class DKES:
         temp[-1] = 2.0 * temp[-1] - 1.0 * temp[-2]
         return temp
     
+    def write_PENTA3_coeffs_to_files(self,where_to):
+        # name of the files are 'D11_star_##' , 'D13_star_##', 'D33_star_##'
+        
+        #where_to save -- path should not have final /
+        
+        #checks that data is regular, i.e.: for each efield there are always the same cmul
+        # if data is regular the following arrays are computed:
+        # self.cmul_regular
+        # self.efield_regular
+        
+        self.check_data_is_regular(self.cmul,self.efield)
+        
+        var_name = { 'L11' : 'D11_star',
+                     'L31' : 'D13_star',
+                     'L33' : 'D33_star'}
+        
+        for var in ['L11', 'L31', 'L33']:
+            
+            filename = where_to + '/' + var_name[var] + '_surface_' + f'{self.surface}'
+            y = getattr(self,var)
+
+            combined = np.concatenate((self.cmul_regular,self.efield_regular,y))
+            
+            #create file
+            with open(filename, 'w') as file:
+                file.write(f'{self.ncmul} {self.nefield}\n')
+                for value in combined:
+                    file.write(f'{value:.10e}\n')
+    
     def write_PENTA_coeffs_to_files(self,where_to):
         # name of the files are 'lstar_lijs_##' , 'mstar_lijs_##', 'nstar_lijs_##'
         
