@@ -376,6 +376,62 @@ class DKES:
                 ax.legend()      
                 ax.grid()
             plt.show()
+            
+    def plot_Erv_K_species(self,Er_V_cm,plasma_class,K=None,Er_v_resonance=None):
+        #makes plot of Er/v as a function of K for all species
+        # Er_V_cm is in V/cm and it can wether be an array or a double
+        
+        import matplotlib.pyplot as plt
+        
+        #if K is not given, check if self.K exists
+        if K is None:
+            try:
+                K = self.K
+            except:
+                print('ERROR!! K should be provided or defined before...')
+                exit()
+                
+        # if Er_V_cm is a scalar, convert it to array
+        if np.isscalar(Er_V_cm):
+            Er_V_cm = np.array([Er_V_cm])
+        else:
+            Er_V_cm = np.array(Er_V_cm)              
+        
+        # convert Er to SI and take absolute value
+        Er_V_m = np.abs(Er_V_cm * 100)
+        
+        for Er in Er_V_m:
+            efield_min = np.min(self.efield)
+            efield_max = np.max(self.efield)
+            plt.rc('font', size=18)
+            fig=plt.figure(figsize=(11,8))
+            ax = fig.add_subplot(111)
+            for species in plasma_class.list_of_species:
+                
+                #get thermal speed of species
+                vth = plasma_class.get_thermal_speed(species,self.roa)
+                Er_over_v = Er / (vth*np.sqrt(K))
+                
+                ax.plot(K,Er_over_v ,'o-',label=f'{species}',markersize=1) 
+                ax.set_yscale('log')
+                ax.set_ylabel(r'|Er/v|')
+                ax.set_xlabel(f'K')
+                ax.set_title(f'r/a={self.roa:.2f}, |Er|={Er/100} V/cm')      
+                ax.grid()
+            ax.plot(K,np.full_like(K,efield_min),'-r',linewidth=3,label='DKES lim')
+            ax.plot(K,np.full_like(K,efield_max),'-r',linewidth=3)
+            if Er_v_resonance is not None:
+                ax.plot(K,np.full_like(K,Er_v_resonance),'--r',linewidth=3,label='Er/v res')
+            plt.legend()
+            plt.show()
+            
+            
+                
+        
+        
+        
+        
+        
     
     def set_PENTA_integrands_energy_conv(self,intj,plasma_class,make_plots=True):
         # This function computes the integrand of the energy convolution as in PENTA for each efield
@@ -758,7 +814,7 @@ class DKES:
         ax.set_xlabel(r'Er [V/cm]')
         ax.set_ylabel(r'$\Gamma~~[\text{m}^{-2}\,\text{s}^{-1}]$')
         ax.set_title(f'r/a={roa[0]:.2f}')
-        ax.set_yscale('log')
+        #ax.set_yscale('log')
         ax.legend(fontsize=12)
         ax.grid()
         plt.legend()
