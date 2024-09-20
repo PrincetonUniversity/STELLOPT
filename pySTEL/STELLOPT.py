@@ -11,6 +11,7 @@ from PyQt5 import uic, QtGui, QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy, QWidget, QFileDialog, QTableWidgetItem
 from PyQt5.QtGui import QIcon
 # Matplotlib
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
@@ -85,6 +86,8 @@ class MyApp(QMainWindow):
 		self.ax2 = self.fig2.add_subplot(111)
 		self.canvas2 = FigureCanvas(self.fig2)
 		self.ui.OPTplot_box.addWidget(self.canvas2)
+		self.toolbar = NavigationToolbar(self.canvas2, self)
+		self.ui.OPTplot_box.addWidget(self.toolbar)
 		# Setup STELLOPT Pannels
 		#self.UpdateOPTtype()
 		#self.UpdateOPTVarsScalar()
@@ -955,15 +958,16 @@ class MyApp(QMainWindow):
 			self.ax2.set_title('Chi-Sqaured')
 			#self.ax2.set_yscale('log')
 			for name in self.optplot_list:
-				if name+'_chisq' in vars(self.stel_data).keys():
-					chisq_temp = self.stel_data[name+'_chisq']
+				if name+'_CHISQ' in vars(self.stel_data).keys():
+					chisq_temp = getattr(self.stel_data,name+'_CHISQ')
+					#chisq_temp = self.stel_data[name+'_chisq']
 					n = chisq_temp.shape;
 					if (len(chisq_temp.shape) == 1):
-						if n[0] > len(self.stel_data['ITER']):
+						if n[0] > len(self.stel_data.ITER):
 							chisq_temp = np.sum(chisq_temp,axis=0)
 					elif len(chisq_temp.shape) > 1:
 						chisq_temp = np.sum(chisq_temp,axis=1)
-					self.ax2.plot(self.stel_data['ITER'],chisq_temp,'o',fillstyle='none',label=name)
+					self.ax2.plot(self.stel_data.ITER,chisq_temp,'o',fillstyle='none',label=name)
 			self.ax2.legend()
 		elif (plot_name in self.optplot_list):
 			f = getattr(self.stel_data,plot_name+'_CHISQ')
@@ -1004,7 +1008,7 @@ class MyApp(QMainWindow):
 			self.ax2.legend()
 		elif (plot_name == 'TXPORT_evolution'):
 			x = self.stel_data.TXPORT_S
-			y = self.stel_data.TXPORT_EQUIL
+			y = self.stel_data.TXPORT_VAL
 			t = self.stel_data.TXPORT_TARGET
 			d = self.stel_data.TXPORT_SIGMA
 			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
