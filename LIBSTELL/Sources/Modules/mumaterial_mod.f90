@@ -99,6 +99,7 @@
       INTEGER, POINTER, PRIVATE :: state_dex(:), state_type(:)
       DOUBLE PRECISION, POINTER, PRIVATE :: constant_mu(:), constant_mu_o(:)
       DOUBLE PRECISION, POINTER, PRIVATE :: M(:,:), Happ(:,:), Mrem(:,:)
+      DOUBLE PRECISION, POINTER, PRIVATE :: Happ_shar(:,:)
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER, PRIVATE :: N_store
       DOUBLE PRECISION, PRIVATE :: mu0
       INTEGER, PRIVATE :: nstate
@@ -238,7 +239,7 @@
       IF (ASSOCIATED(M))             CALL free_mpi_array2d_dbl(win_M,M,.TRUE.)
       ! TODO: Remove once allocated locally (Make sure code works beforehand)
       IF (ASSOCIATED(Mrem))          CALL free_mpi_array2d_dbl(win_Mrem,Mrem,.TRUE.)
-!      IF (ASSOCIATED(Happ_shar))     CALL free_mpi_array2d_dbl(win_Happ,Happ_shar,.TRUE.)
+      IF (ASSOCIATED(Happ_shar))     CALL free_mpi_array2d_dbl(win_Happ,Happ_shar,.TRUE.)
 
       DO ik = 1, nstate
          IF (ALLOCATED(stateFunction(ik)%H)) DEALLOCATE(stateFunction(ik)%H)
@@ -364,6 +365,7 @@
       ! Nullify pointers
       NULLIFY(vertex, tet, tet_cen, tet_vol, tet_edge, state_dex, state_type, &
               constant_mu, constant_mu_o, Mrem, M, Happ)
+      NULLIFY(Happ_shar)
 
       ! open file, return if fails
       iunit = 327; istat = 0
@@ -400,7 +402,7 @@
         CALL mpialloc_1d_dbl(constant_mu_o,nstate,shar_rank,0,comm_shar,win_constant_mu_o)
         CALL mpialloc_2d_dbl(M,            3,ntet,shar_rank,0,comm_shar,win_m)
         CALL mpialloc_2d_dbl(Mrem,3,ntet,         shar_rank,0,comm_shar,win_Mrem)  ! TODO: Allocate locally
-!       CALL mpialloc_2d_dbl(Happ_shar,    3,ntet,shar_rank,0,comm_shar,win_Happ)
+        CALL mpialloc_2d_dbl(Happ_shar,    3,ntet,shar_rank,0,comm_shar,win_Happ)
         ALLOCATE(stateFunction(nstate))
       ELSE
 #endif
@@ -410,6 +412,7 @@
                   tet_cen(3,ntet),tet_vol(ntet),tet_edge(ntet),M(3,ntet), &
                   constant_mu_o(nstate),Mrem(3,ntet),stateFunction(nstate), &
                   STAT=istat)
+          ALLOCATE(Happ_shar(3,ntet))
 #if defined(MPI_OPT)
       END IF
 #endif
@@ -859,6 +862,7 @@
       NULLIFY(Happ)
       ALLOCATE(Happ(3,mystart:myend))
       Happ(:,:) = 0.0
+      Happ_shar(:,:) = 0.0
       M(:,:) = 0.0
       DO i = mystart, myend
         i_tile = mydom(i)
@@ -933,9 +937,10 @@
 
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, MnormPrev, dM, dMPrev, d2M, d2MPrev
       DOUBLE PRECISION :: lambda, maxdM, maxdMPrev, lambdaIncrF, lambdaMax
-      INTEGER          :: lambdaCount, maxd2MC, lastldM, ldMCount
+      DOUBLE PRECISION :: mBox, mBoxPrev, dmBox, dmBoxPrev
+      INTEGER          :: lambdaCount, maxd2MC, ldMCount
       INTEGER, DIMENSION(:), ALLOCATABLE :: d2MCount
-      LOGICAL          :: ldM
+      LOGICAL          :: ldone, lboxdone, lalldone
 
       EXTERNAL:: getBfld
 
@@ -953,10 +958,12 @@
       lambdaCount = 0
       chi = 0.0
       Mnorm = 1.0E-5
-      dM = 0.d0
-      d2M = 0.d0
-      d2MCount = 0
-      lastldM = 0
+      lboxdone = .FALSE.
+      lalldone = .FALSE.
+      ldone = .FALSE.
+!      dM = 0.d0
+!      d2M = 0.d0
+!      d2MCount = 0
       ! hard-coded, but could always change later.
 !      ldMCount = 5
 !      lambdaIncrF = 1.05d0
@@ -973,231 +980,253 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       DO
         count = count + 1        
+        !IF (.NOT.lboxdone) THEN
 
-        MnormPrev = Mnorm
-        M_new = 0.0
-        dMPrev = dM
-        d2MPrev = d2M
-        dM = 0.d0
-        d2M = 0.d0
-        maxdMPrev = maxdM
-        maxdM = 0.d0
-        maxd2MC = 0
-        ldM = .FALSE.
-        
-        DO i = mystart, myend ! Get the field and new magnetization for each tile
-          i_tile = mydom(i)
-          H = Happ(:,i)
-
-          DO j = 1, NbC(i)  ! Full field if neighbour
-            j_tile = Nb(j,i)
-            IF (j_tile.EQ.i_tile) THEN
-              N = N_store(:,:,j,i)
-              CYCLE
-            END IF
-            H = H + MATMUL(N_store(:,:,j,i), M(:,j_tile))
-          END DO
-          
-          ! Determine field and magnetization at tile due to all other tiles and itself
-          H_new = H
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          SELECT CASE (state_type(state_dex(i_tile)))
-            CASE (1) ! Hard magnet
-              Mrem_norm = NORM2(Mrem(:,state_dex(i_tile)))
-              u_ea = Mrem(:,state_dex(i_tile))/Mrem_norm ! Easy axis assumed parallel to remanent magnetization
-              IF (u_ea(2)/=0 .OR. u_ea(3)/=0) THEN      ! Cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
-                  u_oa_1 = [0.d0, u_ea(3), -u_ea(2)]
-                  u_oa_2 = [-u_ea(2)*u_ea(2) - u_ea(3)*u_ea(3), u_ea(1)*u_ea(2), u_ea(1)*u_ea(3)]
-              ELSE                                      ! Cross product of u_ea with [0, 1, 0] and cross product of u_ea with cross product
-                  u_oa_1 = [-u_ea(3), 0.d0, u_ea(1)]
-                  u_oa_2 = [u_ea(1)*u_ea(2), -u_ea(1)*u_ea(1) - u_ea(3)*u_ea(3), u_ea(2)*u_ea(3)]
+!        MnormPrev = Mnorm
+          M_new = 0.0
+!        dMPrev = dM
+!        d2MPrev = d2M
+!        dM = 0.d0
+!        d2M = 0.d0
+!        maxdMPrev = maxdM
+!        maxdM = 0.d0
+          mBoxPrev = mBox
+          mBox = 0.d0
+          dmBoxPrev = maxdM
+          dmBox = 0.d0
+!        maxd2MC = 0
+!        ldM = .FALSE.
+          DO i = mystart, myend ! Get the field and new magnetization for each tile
+            i_tile = mydom(i)
+            H = Happ(:,i)
+            Happ_shar(:,i) = Happ(:,i)
+            DO j = 1, NbC(i)  ! Full field if neighbour
+              j_tile = Nb(j,i)
+              IF (j_tile.EQ.i_tile) THEN
+                N = N_store(:,:,j,i)
+                CYCLE
               END IF
+              H = H + MATMUL(N_store(:,:,j,i), M(:,j_tile))
+            END DO
+            
+            ! Determine field and magnetization at tile due to all other tiles and itself
+            H_new = H
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            SELECT CASE (state_type(state_dex(i_tile)))
+              CASE (1) ! Hard magnet
+                Mrem_norm = NORM2(Mrem(:,state_dex(i_tile)))
+                u_ea = Mrem(:,state_dex(i_tile))/Mrem_norm ! Easy axis assumed parallel to remanent magnetization
+                IF (u_ea(2)/=0 .OR. u_ea(3)/=0) THEN      ! Cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
+                    u_oa_1 = [0.d0, u_ea(3), -u_ea(2)]
+                    u_oa_2 = [-u_ea(2)*u_ea(2) - u_ea(3)*u_ea(3), u_ea(1)*u_ea(2), u_ea(1)*u_ea(3)]
+                ELSE                                      ! Cross product of u_ea with [0, 1, 0] and cross product of u_ea with cross product
+                    u_oa_1 = [-u_ea(3), 0.d0, u_ea(1)]
+                    u_oa_2 = [u_ea(1)*u_ea(2), -u_ea(1)*u_ea(1) - u_ea(3)*u_ea(3), u_ea(2)*u_ea(3)]
+                END IF
 
-              ! Normalize unit vectors
-              u_oa_1 = u_oa_1/NORM2(u_oa_1)
-              u_oa_2 = u_oa_2/NORM2(u_oa_2)
-                  
-              lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 1/constant_mu_o(state_dex(i_tile)), 0.5)
-              DO
+                ! Normalize unit vectors
+                u_oa_1 = u_oa_1/NORM2(u_oa_1)
+                u_oa_2 = u_oa_2/NORM2(u_oa_2)
+                    
+                lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 1/constant_mu_o(state_dex(i_tile)), 0.5)
+                DO
+                    H_old = H_new
+                    ! Determine magnetization taking into account easy axis
+                    M_tmp = (Mrem_norm + (constant_mu(state_dex(i_tile))   - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
+                                      + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
+                                      + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
+
+                    H_new = H + MATMUL(N, M_tmp)
+                    H_new = H_old + lambda_s * (H_new - H_old)
+
+                    IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
+                      M_new(:,i) = (Mrem_norm + (constant_mu(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
+                                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
+                                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
+                      EXIT
+                    END IF
+                END DO
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              CASE (2) ! Soft magnet using state function
+                DO
                   H_old = H_new
-                  ! Determine magnetization taking into account easy axis
-                  M_tmp = (Mrem_norm + (constant_mu(state_dex(i_tile))   - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
-                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
-                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
-
+                  Hnorm = NORM2(H_new)
+                  IF (Hnorm .ne. 0) THEN
+                    CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
+                    M_tmp = M_tmp_norm * H_new / Hnorm
+                    lambda_s = MIN(Hnorm/M_tmp_norm, 0.5)
+                  ELSE
+                    M_tmp = 0
+                    M_tmp_norm = 0
+                    lambda_s = 0.5
+                  END IF
                   H_new = H + MATMUL(N, M_tmp)
                   H_new = H_old + lambda_s * (H_new - H_old)
 
                   IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
-                    M_new(:,i) = (Mrem_norm + (constant_mu(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
-                                                  + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
-                                                  + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
+                    Hnorm = NORM2(H_new)
+                    IF (Hnorm .ne. 0) THEN
+                      CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
+                      M_new(:,i) = M_tmp_norm * H_new / Hnorm
+                      chi(i) = M_tmp_norm / Hnorm
+                    ELSE
+                      M_new(:,i) = 0
+                      chi(i) = 0
+                    END IF
                     EXIT
                   END IF
-              END DO
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            CASE (2) ! Soft magnet using state function
-              DO
-                H_old = H_new
-                Hnorm = NORM2(H_new)
-                IF (Hnorm .ne. 0) THEN
-                  CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
-                  M_tmp = M_tmp_norm * H_new / Hnorm
-                  lambda_s = MIN(Hnorm/M_tmp_norm, 0.5)
-                ELSE
-                  M_tmp = 0
-                  M_tmp_norm = 0
-                  lambda_s = 0.5
-                END IF
-                H_new = H + MATMUL(N, M_tmp)
-                H_new = H_old + lambda_s * (H_new - H_old)
+                END DO
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              CASE (3) ! Soft magnet using constant permeability
+                lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 0.5)
+                DO
+                    H_old = H_new
+                    H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N, H_new)
+                    H_new = H_old + lambda_s * (H_new - H_old)
+                    IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
+                      M_new(:,i) = (constant_mu(state_dex(i_tile)) - 1) * H_new
+                      EXIT
+                    END IF
+                END DO
+              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              CASE DEFAULT
+                WRITE(6,*) "Unknown magnet type: ", state_type(state_dex(i_tile))
+                STOP
+            END SELECT
 
-                IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
-                  Hnorm = NORM2(H_new)
-                  IF (Hnorm .ne. 0) THEN
-                    CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
-                    M_new(:,i) = M_tmp_norm * H_new / Hnorm
-                    chi(i) = M_tmp_norm / Hnorm
-                  ELSE
-                    M_new(:,i) = 0
-                    chi(i) = 0
-                  END IF
-                  EXIT
-                END IF
-              END DO
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            CASE (3) ! Soft magnet using constant permeability
-              lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 0.5)
-              DO
-                  H_old = H_new
-                  H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N, H_new)
-                  H_new = H_old + lambda_s * (H_new - H_old)
-                  IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
-                    M_new(:,i) = (constant_mu(state_dex(i_tile)) - 1) * H_new
-                    EXIT
-                  END IF
-              END DO
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            CASE DEFAULT
-              WRITE(6,*) "Unknown magnet type: ", state_type(state_dex(i_tile))
-              STOP
-          END SELECT
+            M(:,i_tile) = M(:,i_tile) + lambda*(M_new(:,i) - M(:,i_tile))
+            Mnorm(i) = NORM2(M(:,i_tile))
+            mBox = mBox + Mnorm(i)
 
-          M(:,i_tile) = M(:,i_tile) + lambda*(M_new(:,i) - M(:,i_tile))
-          Mnorm(i) = NORM2(M(:,i_tile))
+            ! "Derivatives" for convergence checks
+            !dM(i) = ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
+            !maxdM = MAX(dM(i), maxdM) 
 
-          ! "Derivatives" for convergence checks
-          dM(i) = ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
-          IF (dMPrev(i).GT.1E-12) THEN
-            d2M(i) = ABS((dM(i)-dMPrev(i))/dMPrev(i))
-            IF ((d2M(i).GT.d2MPrev(i)).AND.(dM(i).GT.d2MPrev(i))) THEN 
-              d2MCount(i) = d2MCount(i)+1
-            ELSE
-              d2MCount(i) = 0
-            END IF
-          END IF
-          maxdM = MAX(dM(i), maxdM) 
-          maxd2MC = MAX(d2MCount(i), maxd2MC) 
+            ! Dampen evolution when Mnorm has increased AND the rate of increase
+            ! has itself increased for a couple of consecutive iters
+            !IF ((Mnorm(i).GT.MnormPrev(i)) .AND. (dM(i).GT.dMPrev(i))) THEN 
+            !  ldM = .TRUE.     
+            !END IF     
+          END DO
 
-          ! Dampen evolution when Mnorm has increased AND the rate of increase
-          ! has itself increased for a couple of consecutive iters
-          IF ((Mnorm(i).GT.MnormPrev(i)) .AND. (dM(i).GT.dMPrev(i)) .AND. (d2MCount(i).GE.3)) THEN 
-            d2MCount(i) = 0
-            ldM = .TRUE.     
-          END IF     
-        END DO
 
+        !END IF
+
+!#if defined(MPI_OPT)
+!        ! Synchronise dM
+!        IF (lcomm) THEN
+!          CALL MPI_BARRIER(comm_world, ierr_mpi)
+!          CALL MPI_ALLREDUCE(MPI_IN_PLACE, maxdM, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_world, ierr_mpi)
+!          CALL MPI_ALLREDUCE(MPI_IN_PLACE, ldM,   1, MPI_LOGICAL,          MPI_LOR, comm_world, ierr_mpi) 
+!        END IF
+!#endif
+!        IF (maxdM.LT.maxdMPrev) THEN
+!          ldM = .FALSE.
+!        END IF
+        !IF (.NOT. lboxdone) THEN
 #if defined(MPI_OPT)
-        ! Synchronise dM
-        IF (lcomm) THEN
-          CALL MPI_BARRIER(comm_world, ierr_mpi)
-          CALL MPI_ALLREDUCE(MPI_IN_PLACE, maxdM, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_world, ierr_mpi)
-          CALL MPI_ALLREDUCE(MPI_IN_PLACE,maxd2MC,1, MPI_INTEGER,          MPI_MAX, comm_world, ierr_mpi)
-          CALL MPI_ALLREDUCE(MPI_IN_PLACE, ldM,   1, MPI_LOGICAL,          MPI_LOR, comm_world, ierr_mpi) 
-        END IF
+          IF (lcomm) THEN
+            CALL MPI_BARRIER(comm_shar, ierr_mpi)
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, mBox, 1, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi)
+          END IF
 #endif
-        IF (maxdM.LT.maxdMPrev) THEN
-          ldM = .FALSE.
-        END IF
+          dmBox = ABS(mBox-mBoxPrev)/mBoxPrev
+        !END IF
 
         IF (lverb) THEN 
-          WRITE(6,'(3X,I5,A2,E12.4,A2,E12.4,A2,E12.4,A2,I3,A2,I3)') count, '  ', maxdM, '  ', dMmax*lambda,  '  ', lambda, '  ', lambdaCount, '  ', maxd2MC
+ !         WRITE(6,'(3X,I5,A2,E12.4,A2,E12.4,A2,E12.4,A2,I3,A2,I3)') count, '  ', maxdM, '  ', dMmax*lambda,  '  ', lambda, '  ', lambdaCount, '  ', maxd2MC
+          WRITE(6,'(3X,I5,A2,E12.4,A2,E12.4,A2,E12.4)') count, '  ', dmBox, '  ', dMmax*lambda,  '  ', lambda
           CALL FLUSH(6)
         END IF
 
         ! Update lambda to prevent oscillations
-        IF (count.NE.1) THEN
-          IF (ldM) THEN
-            lambdaCount = lambdaCount + 1
-!            lastldM = 0
-            IF (lambdaCount.EQ.lambdaThresh) THEN
-              lambda = lambda * lambdaFactor
-              lambdaCount = 0
+        IF (.NOT. lboxdone) THEN
+          IF (count.NE.1) THEN
+            IF (dmBox.GT.dmBoxPrev) THEN
+              lambdaCount = lambdaCount + 1
+              IF (lambdaCount.EQ.lambdaThresh) THEN
+                lambda = lambda * lambdaFactor
+                lambdaCount = 0
+              END IF
+            ELSE
+              lambdaCount= MAX(lambdaCount-1,0)
             END IF
-          ELSE
-            lambdaCount= MAX(lambdaCount-1,0)
-!            lastldM = lastldM+1
-!            IF ((lastldM.GT.0).AND.(MODULO(lastldM,ldMCount).EQ.0)) THEN
-!              lambda = MIN(lambda*lambdaIncrF,lambdaMax)
-!            END IF
           END IF
         END IF
 
         IF (ldebugm) THEN
             WRITE(strcount, '(I0)') count
             CALL mumaterial_writedebug(M,3,ntet,'./M_' // TRIM(ADJUSTL(strcount)) // '.dat')
+            CALL mumaterial_writedebug(Happ_shar,3,ntet,'./Happ_' // TRIM(ADJUSTL(strcount)) // '.dat')
         END IF
 
-        IF (count.GE.maxIter) THEN
-          IF (lverb) WRITE(6,*) "  MUMAT:  Stopping - Exceeded maximum iterations"
-          EXIT
-        END IF
-        IF ( (maxdM.LT.dMmax*lambda) .AND.(count.GT.1)) THEN
-          IF (lverb) WRITE(6,*) "  MUMAT:  Stopping - converged"
-          EXIT
-        END IF
-        IF (lambda.LT.1E-4) THEN
-          IF (lverb) WRITE(6,*) "  MUMAT:  Stopping - lambda < 1e-4"
-          EXIT
+        IF (.NOT. ldone) THEN
+          IF (count.GE.maxIter) THEN
+            IF (lverb) WRITE(6,*) "  MUMAT:  Stopping - Exceeded maximum iterations"
+            IF (ldebugs) WRITE(6,'(A16,I3,A39)') '  DEBUG: MASTER ', color,' Stopping - Exceeded maximum iterations'; FLUSH(6)
+            ldone = .TRUE.
+          END IF
+          IF ( (dmBox.LT.dMmax*lambda) .AND.(count.GT.1)) THEN
+            IF (lverb) WRITE(6,*) "  MUMAT:  Stopping - converged"
+            IF (ldebugs) WRITE(6,'(A16,I3,A21)') '  DEBUG: MASTER ', color,' Stopping - converged'; FLUSH(6)
+            ldone = .TRUE.
+          END IF
+          IF (lambda.LT.1E-4) THEN
+            IF (lverb) WRITE(6,*) "  MUMAT:  Stopping - lambda < 1e-4"
+            IF (ldebugs) WRITE(6,'(A16,I3,A25)') '  DEBUG: MASTER ', color,' Stopping - lambda < 1e-4'; FLUSH(6)
+            ldone = .TRUE.
+          END IF
         END IF
 
         ! Synchronize magnetization
         IF (ldosync) CALL mumaterial_syncM(M,ntet,outmydom)
+        IF (ldosync) CALL mumaterial_syncM(Happ_shar,ntet,outmydom)
+
+        ! Is everyone done?
+        CALL MPI_ALLREDUCE(ldone,    lboxdone,   1, MPI_LOGICAL, MPI_LAND, comm_shar,  ierr_mpi) 
+        CALL MPI_ALLREDUCE(lboxdone, lalldone,   1, MPI_LOGICAL, MPI_LAND, comm_world, ierr_mpi) 
+        IF (lalldone) EXIT
+
         ! Update H-field from non-Nb
-        DO i = mystart, myend
-          i_tile = mydom(i)
-          CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
-          Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
-        
-        ! Happ loop logic
-        ! ----------
-        ! Tetrahedron array e.g.  T=[1 2 ... 12407 12408]
-        ! Neighbor array 1  e.g. Nb=[6 48 3874 4838 6792 11240]
-        ! 
-        ! Want to iterate over all tetrahedrons in T that do not appear in Nb
-        ! IF statements for loop over ntet elements is slow so we do this instead
-        !
-        ! 1. Loop over elements before first neighbour
-        !     Nb(1)=6                         => loop over [1 2 3 4 5]
-        ! 2. For each pair of neighbours, loop over elements IN BETWEEN 
-        !     For j=2, Nb(j-1)=6,  Nb(j)=48   => loop over [7 8 ... 46 47]
-        !     For j=3, Nb(j-1)=48, Nb(j)=3874 => loop over [49 ... 3873] etc.
-        ! 3. Loop over elements after last neighbour
-        !     Nb(end)=11240                   => loop over [11241 ... 12408]
+        !IF (.NOT. lboxdone) THEN
+          DO i = mystart, myend
+            i_tile = mydom(i)
+            CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
+            Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
+          
+          ! Happ loop logic
+          ! ----------
+          ! Tetrahedron array e.g.  T=[1 2 ... 12407 12408]
+          ! Neighbor array 1  e.g. Nb=[6 48 3874 4838 6792 11240]
+          ! 
+          ! Want to iterate over all tetrahedrons in T that do not appear in Nb
+          ! IF statements for loop over ntet elements is slow so we do this instead
+          !
+          ! 1. Loop over elements before first neighbour
+          !     Nb(1)=6                         => loop over [1 2 3 4 5]
+          ! 2. For each pair of neighbours, loop over elements IN BETWEEN 
+          !     For j=2, Nb(j-1)=6,  Nb(j)=48   => loop over [7 8 ... 46 47]
+          !     For j=3, Nb(j-1)=48, Nb(j)=3874 => loop over [49 ... 3873] etc.
+          ! 3. Loop over elements after last neighbour
+          !     Nb(end)=11240                   => loop over [11241 ... 12408]
 
-          DO k_tile = 1,Nb(1,i)-1 
-              CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
-          END DO
-          DO j = 2, NbC(i)                    
-            DO k_tile = Nb(j-1,i)+1,Nb(j,i)-1
-              CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
+            DO k_tile = 1,Nb(1,i)-1 
+                CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
             END DO
-          END DO
-          DO k_tile = Nb(NbC(i),i)+1,ntet     
-              CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
-          END DO
-        END DO  
+            DO j = 2, NbC(i)                    
+              DO k_tile = Nb(j-1,i)+1,Nb(j,i)-1
+                CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
+              END DO
+            END DO
+            DO k_tile = Nb(NbC(i),i)+1,ntet     
+                CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
+            END DO
+          END DO  
+        !END IF
 
+#if defined(MPI_OPT)
+        IF (lcomm) CALL MPI_BARRIER(comm_world, ierr_mpi)
+#endif 
 
       END DO
       DEALLOCATE(M_new,chi,Mnorm,MnormPrev,dM,dMPrev,d2MCount)
