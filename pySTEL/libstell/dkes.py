@@ -12,7 +12,7 @@ EC = 1.602176634E-19 # Electron charge [C]
 # DKES Class
 class DKES:
     
-    def __init__(self, surface, eps_rel=0.03):
+    def __init__(self, surface, wout_file, eps_rel=0.03):
         self.eps_rel = eps_rel
         
         #check surface is an integer
@@ -21,6 +21,9 @@ class DKES:
             exit(1)
         else:
             self.surface = surface
+            
+        #read wout file and get self.Bsq and self.roa
+        self.get_VMEC_quantities(wout_file)
         
     def read_DKES_results(self,filename):
         
@@ -57,10 +60,18 @@ class DKES:
         self.check_convergence()
         
         #Take average of coefficients
-        self.L11  = 0.5*(self.L11m+self.L11p)
-        self.L31  = 0.5*(self.L31m+self.L31p)
-        self.L33  = 0.5*(self.L33m+self.L33p)
-        #these last coeffs are the Dij* in the documentation
+        L11  = 0.5*(self.L11m+self.L11p)
+        L31  = 0.5*(self.L31m+self.L31p)
+        L33  = 0.5*(self.L33m+self.L33p)
+        
+        #compute Dij_star correcting D13 and D33 with the B factors (see J.Lore documentation on PENTA)
+        self.D11_star = L11
+        self.D31_star = L31 * np.sqrt(self.B0)
+        self.D33_star = L33 * self.B0
+        
+        #according to J. Lore documentation and also C. Beidler...
+        # this is also what is done internally in PENTA
+        self.D13_star = -self.D31_star
         
     def check_convergence(self):
     
@@ -95,12 +106,12 @@ class DKES:
         import matplotlib.pyplot as pyplot
         
         var_names = {
-                'L11': '$D_{11}^*K^{3/2}~~[m^{-1}~T^{-2}]$',
-                'L31': '$D_{31}^*K$',
-                'L33': '$D_{33}^*K^{1/2}~~[m~T^2]$'
+                'D11_star': '$D_{11}^*~~[m^{-1}~T^{-2}]$',
+                'D31_star': '$D_{31}^*$',
+                'D33_star': '$D_{33}^*~~[m~T^2]$'
                 }
     
-        for plot_var in ['L11', 'L31', 'L33']:
+        for plot_var in ['D11_star', 'D31_star', 'D33_star']:
             
             yplot = getattr(self,plot_var)
                 
@@ -121,11 +132,11 @@ class DKES:
             ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
             ax.set_ylabel(f'{var_names[plot_var]}')
             ax.set_xscale('log')
-            if(plot_var=='L11' or plot_var=='L33'):
+            if(plot_var=='D11_star' or plot_var=='D33_star'):
                 ax.set_yscale('log')
-            if(plot_var=='L31'):
+            if(plot_var=='D31_star'):
                 ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-            ax.set_title('r/a=??')
+            ax.set_title(f'r/a={self.roa:.2f}')
             ax.legend(fontsize=12)
             ax.grid()
     
@@ -161,14 +172,44 @@ class DKES:
         return [yerr_lower, yerr_upper]
             
             
-    def compute_PENTA_coeffs(self,wout_filename):
+    # def compute_PENTA_coeffs(self,wout_filename):
+    #     # Computes PENTA input coefficients lstar, mstar and nstar
+    #     # size of lstar, mstar, nstar is n_cmul x n_efield
+    #     # Check DKES/PENTA documentation to see the definition of lstar, mstar, nstar
+    #     # In the documentation, D_ij^* corresponds to self.Lij, which are the species-independent DKES coefficientes
+    #     print('\n#############################################################################')
+    #     print('###################   Computing PENTA coefficients  #########################')
+    #     print('#############################################################################')
+        
+    #     ######  WARNING: as of now this assumes an hydrogen plasma, qa=e_charge  #####
+    #     print('\nWARNING: THIS ASSUMES A PLASMA WITH Z=1, qa=echarge')
+        
+    #     # Read Pfirsch-Schluter flow from external file
+    #     # To do later...
+    #     print('\nFailed to read Pfirsch-Schluter flow, <U^2>, from external file')
+    #     print('Assuming <U^2>=0\n')
+    #     self.Usq = 0.0
+        
+    #     #compute PENTA lstar
+    #     aux = 1 - 1.5*self.cmul*self.L33/self.Bsq
+    #     self.lstar = self.L11 - (2./3.)*self.cmul*self.Usq + (1.5*self.cmul*self.L31*self.L31/self.Bsq)/aux
+    #     self.lstar = self.lstar / (EC*EC)
+        
+    #     #compute PENTA mstar
+    #     self.mstar = self.cmul*self.cmul*self.L33 / aux
+        
+    #     #compute PENTA nstar
+    #     self.nstar = self.cmul*self.L31 / aux
+    #     self.nstar = self.nstar / EC
+    
+    def compute_PENTA1_coeffs(self):
         # Computes PENTA input coefficients lstar, mstar and nstar
         # size of lstar, mstar, nstar is n_cmul x n_efield
         # Check DKES/PENTA documentation to see the definition of lstar, mstar, nstar
         # In the documentation, D_ij^* corresponds to self.Lij, which are the species-independent DKES coefficientes
         print('\n#############################################################################')
-        print('###################   Computing PENTA coefficients  #########################')
-        print('#############################################################################')
+        print('###################   Computing coefficients for PENTA1/v2.0 ##################')
+        print('###############################################################################')
         
         ######  WARNING: as of now this assumes an hydrogen plasma, qa=e_charge  #####
         print('\nWARNING: THIS ASSUMES A PLASMA WITH Z=1, qa=echarge')
@@ -179,60 +220,43 @@ class DKES:
         print('Assuming <U^2>=0\n')
         self.Usq = 0.0
         
-        ##########################################################
-        ####### Read Bsq from VMEC wout file #####################
-        # maybe there is a better way through libstell library?
-        self.get_Bsq(wout_filename)
-        # get r/a for the surface; this will be needed in plot_PENTA_integrands
-        self.get_roa(wout_filename)
-        
         #compute PENTA lstar
-        aux = 1 - 1.5*self.cmul*self.L33/self.Bsq
-        self.lstar = self.L11 - (2./3.)*self.cmul*self.Usq + (1.5*self.cmul*self.L31*self.L31/self.Bsq)/aux
+        self.lstar = self.D11_star - (2./3.)*self.cmul*self.Usq + self.D31_star*self.D31_star/self.D33_star
         self.lstar = self.lstar / (EC*EC)
         
         #compute PENTA mstar
-        self.mstar = self.cmul*self.cmul*self.L33 / aux
+        self.mstar = (2./3.)*self.Bsq*( (2./3.)*self.Bsq/self.D33_star - self.cmul )
         
         #compute PENTA nstar
-        self.nstar = self.cmul*self.L31 / aux
+        self.nstar = (2./3.)*self.Bsq*self.D13_star/self.D33_star
         self.nstar = self.nstar / EC
+    
+    def get_VMEC_quantities(self,wout_file):
         
-    def get_Bsq(self,wout_filename):
+        ##########################################################
         import netCDF4 as nc
         try:
-            dataset = nc.Dataset(wout_filename, 'r')
-            Bsq_half = dataset.variables['bdotb'][:]
-            dataset.close()
-        except:
-            print('\nERROR: Could not read wout file')
-            sys.exit(0)
-        ##########################################################
-        ##########################################################
-        
-        #interpolate Bsq from half to full grid
-        Bsq_full = self.h2f(Bsq_half)
-        
-        #get Bsq at the required surface
-        # note the -1 because python starts in 0
-        self.Bsq = Bsq_full[self.surface-1]
-        print(f'Bsq={self.Bsq}')
-        
-    def get_roa(self,wout_filename):
-        import netCDF4 as nc
-        try:
-            dataset = nc.Dataset(wout_filename, 'r')
+            dataset = nc.Dataset(wout_file, 'r')
+            Bsq = dataset.variables['bdotb'][:]
             phi = dataset.variables['phi'][:]
+            bmnc = dataset.variables['bmnc'][:]
             dataset.close()
         except:
             print('\nERROR: Could not read wout file')
             sys.exit(0)
-
-        self.roa = np.sqrt(phi[self.surface-1]/phi[-1])
+        ##########################################################
         
-        print(f'r/a = {self.roa}')
+        self.Bsq = Bsq[self.surface-1]
+        self.roa = np.sqrt(phi[self.surface-1]/phi[-1])
+        # <|B|> = B00
+        self.B0 = bmnc[self.surface-1,0]
+        
+        print(f'r/a = sqrt(PHI/PHIEDGE) = {self.roa}')
+        print(f'Bsq = {self.Bsq}')
+        print(f'B0 = {self.B0}')
+        
      
-    def plot_PENTA_coeffs(self):
+    def plot_PENTA1_coeffs(self):
         # creates 3 graphs: lstar, mstar and nstar vs cmul (for each efield)
         
         import matplotlib.pyplot as pyplot
@@ -298,13 +322,9 @@ class DKES:
         
         self.check_data_is_regular(self.cmul,self.efield)
         
-        var_name = { 'L11' : 'D11_star',
-                     'L31' : 'D13_star',
-                     'L33' : 'D33_star'}
-        
-        for var in ['L11', 'L31', 'L33']:
+        for var in ['D11_star', 'D31_star', 'D33_star']:
             
-            filename = where_to + '/' + var_name[var] + '_surface_' + f'{self.surface}'
+            filename = where_to + '/' + var + '_surface_' + f'{self.surface}'
             y = getattr(self,var)
 
             combined = np.concatenate((self.cmul_regular,self.efield_regular,y))
@@ -315,7 +335,7 @@ class DKES:
                 for value in combined:
                     file.write(f'{value:.10e}\n')
     
-    def write_PENTA_coeffs_to_files(self,where_to):
+    def write_PENTA1_coeffs_to_files(self,where_to):
         # name of the files are 'lstar_lijs_##' , 'mstar_lijs_##', 'nstar_lijs_##'
         
         #where_to save -- path should not have final /
@@ -338,9 +358,7 @@ class DKES:
             with open(filename, 'w') as file:
                 file.write(f'{self.ncmul} {self.nefield}\n')
                 for value in combined:
-                    file.write(f'{value:.10e}\n')
-                
-
+                    file.write(f'{value:.10e}\n')            
                 
     def check_data_is_regular(self,cmul,efield):
         # checks that data is regular, i.e.: for each efield there are always the same cmul
@@ -453,16 +471,8 @@ class DKES:
                 ax.plot(K,np.full_like(K,Er_v_resonance),'--r',linewidth=3,label='Er/v res')
             plt.legend()
             plt.show()
-            
-            
-                
-        
-        
-        
-        
-        
     
-    def set_PENTA_integrands_energy_conv(self,intj,plasma_class,make_plots=True):
+    def set_PENTA1_integrands_energy_conv(self,intj,plasma_class,make_plots=True):
         # This function computes the integrand of the energy convolution as in PENTA for each efield
         # and plots it as function of K
         # Integrand = sqrt(K) * exp(-K) * (K-5/2)^{intj-1} * [lstar,m,star,nstar] * K^{3/2}
@@ -734,13 +744,13 @@ class DKES:
         j = 0
         i1 = j*self.ncmul
         i2 = i1 + self.ncmul
-        D11_Emin = self.L11[i1:i2]
+        D11_Emin = self.D11_star[i1:i2]
         cmul_fit = self.cmul[i1:i2]
         
         j = self.nefield-1
         i1 = j*self.ncmul
         i2 = i1 + self.ncmul
-        D11_Emax = self.L11[i1:i2]
+        D11_Emax = self.D11_star[i1:i2]
         
         #take only the last 6 points of cmul for the fit
         cmul_fit = cmul_fit[-6:]
