@@ -310,9 +310,6 @@ class DKES:
         temp[-1] = 2.0 * temp[-1] - 1.0 * temp[-2]
         return temp
     
-<<<<<<< HEAD
-    def write_PENTA_coeffs_to_files(self,where_to):
-=======
     def write_PENTA3_coeffs_to_files(self,where_to):
         # name of the files are 'D11_star_##' , 'D13_star_##', 'D33_star_##'
         
@@ -339,7 +336,6 @@ class DKES:
                     file.write(f'{value:.10e}\n')
     
     def write_PENTA1_coeffs_to_files(self,where_to):
->>>>>>> f717edeb (pySTEL: modify dkes class; rename coeffs to make them more clear)
         # name of the files are 'lstar_lijs_##' , 'mstar_lijs_##', 'nstar_lijs_##'
         
         #where_to save -- path should not have final /
