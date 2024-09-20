@@ -35,7 +35,7 @@ class GIST():
 		i = 0
 		temp_dict={}
 		while (i < len(lines)):
-			if '!so, alpha0' in lines[i]:
+			if '!s0, alpha0' in lines[i]:
 				[txt1,txt2,txteq,s0_txt,alpha0_txt] = lines[i].split()
 				self.s0 = float(s0_txt)
 				self.alpha0 = float(alpha0_txt)
@@ -68,13 +68,13 @@ class GIST():
 				self.L2      = np.zeros(self.gridpoints)
 				self.L1      = np.zeros(self.gridpoints)
 				self.dBdt    = np.zeros(self.gridpoints)
-				for j in range(temp_dict['gridpoints']):
+				for j in range(self.gridpoints):
 					k = i0 + j
-					txt        = lines[k].split
+					txt        = lines[k].split()
 					self.g11[j]     = float(txt[0])
 					self.g12[j]     = float(txt[1])
 					self.g22[j]     = float(txt[2])
-					self.gBhat[j]   = float(txt[3])
+					self.Bhat[j]   = float(txt[3])
 					self.abs_jac[j] = float(txt[4])
 					self.L2[j]      = float(txt[5])
 					self.L1[j]      = float(txt[6])
@@ -211,7 +211,7 @@ class GIST():
 		bmin = min(self.Bhat)
 		b0   = 0.5*(bmin+bmax)
 		bamp = 0.5*(bmax-bmin)
-		vqqprox = self.kp1*(self.Bhat-b0)/amp
+		vqqprox = self.kp1*(self.Bhat-b0)/bamp
 		return vqqprox
 
 	def calcProxTEMBounce(self):
@@ -226,7 +226,7 @@ class GIST():
 		"""
 		import numpy as np
 		from scipy.interpolate import CubicSpline
-		from scipy.interpolate import quad
+		from scipy.integrate import quad
 		bmax = max(self.Bhat)
 		bmin = min(self.Bhat)
 		x = np.linspace(0.0,1.0,self.gridpoints)
@@ -234,10 +234,9 @@ class GIST():
 		self.L2_spl = CubicSpline(x,self.L2)
 		A = 1.0 / bmax
 		B = 1.0 / bmin
-		f1 = lambda x,a: self.TEMsubfunc_Bounce(x,a)
-		f2 = lambda x: quad(f1,0.0,np.pi*2,args=(x,))
-		#f2 = lambda x: self.TEMfunc_Bounce(x)
-		return -quad(f2,A,B)
+		f = lambda x: self.TEMfunc_Bounce(x)
+		y,yerr = quad(f,A,B,epsabs=1.0E-9, epsrel=1.0E-3)
+		return -y
 
 	def TEMfunc_Bounce(self,lam_TEM):
 		"""TEMBounce proxy function (may not need)
@@ -250,11 +249,12 @@ class GIST():
 			The TEMBounce proxy function
 		"""
 		import numpy as np
-		from scipy.interpolate import quad
+		from scipy.integrate import quad
 		f = lambda x,a: self.TEMsubfunc_Bounce(x,a)
 		A = 0.0
 		B = np.pi*2
-		return quad(f,A,B,args=(lam_TEM,))
+		y,yerr = quad(f,A,B,args=(lam_TEM,),epsabs=1.0E-9, epsrel=1.0E-3)
+		return y
 
 	def TEMsubfunc_Bounce(self,x,lam_TEM):
 		"""TEMBounce proxy subfunction
@@ -266,6 +266,7 @@ class GIST():
 		val : float
 			The TEMBounce proxy subfunction
 		"""
+		import numpy as np
 		val = 0.0
 		B0 = self.Bhat_spl(x)
 		if (0.9999/lam_TEM - B0) >= 0:
@@ -285,7 +286,7 @@ class GIST():
 		"""
 		import numpy as np
 		from scipy.interpolate import CubicSpline
-		from scipy.interpolate import quad
+		from scipy.integrate import quad
 		bmax = max(self.Bhat)
 		bmin = min(self.Bhat)
 		x = np.linspace(0.0,1.0,self.gridpoints)
@@ -293,10 +294,9 @@ class GIST():
 		self.L2_spl = CubicSpline(x,self.L2)
 		A = 1.0 / bmax
 		B = 1.0 / bmin
-		f1 = lambda x,a: self.TEMsubfunc_Bounce(x,a)
-		f2 = lambda x: quad(f1,0.0,np.pi*2,args=(x,))
-		#f2 = lambda x: self.TEMfunc_Bounce(x)
-		return -quad(f2,A,B)
+		f = lambda x: self.TEMfunc_Tau(x)
+		y,yerr = quad(f,A,B,epsabs=1.0E-9, epsrel=1.0E-3)
+		return -y
 
 	def TEMsubfunc_Tau(self,x,lam_TEM):
 		"""TEMTau proxy subfunction
@@ -308,6 +308,7 @@ class GIST():
 		val : float
 			The TEMTau proxy subfunction
 		"""
+		import numpy as np
 		val = 0.0
 		B0 = self.Bhat_spl(x)
 		if (0.9999/lam_TEM - B0) >= 0:
@@ -325,16 +326,16 @@ class GIST():
 			The TEMTau proxy function
 		"""
 		import numpy as np
-		from scipy.interpolate import quad
+		from scipy.integrate import quad
 		f = lambda x,a: self.TEMsubfunc_Tau(x,a)
 		A = 0.0
 		B = np.pi*2
-		val_w = quad(f,A,B,args=(lam_TEM,))
+		val_w, val_werr = quad(f,A,B,args=(lam_TEM,))
 		if val_w == 0.0:
 			return 0.0
 		A = 0.0
 		B = np.pi*2
-		val_t = quad(f,A,B,args=(lam_TEM,))
+		val_t,val_terr = quad(f,A,B,args=(lam_TEM,))
 		return val_w/val_t
 
 # Main routine
