@@ -992,7 +992,7 @@
 !        maxdM = 0.d0
           mBoxPrev = mBox
           mBox = 0.d0
-          dmBoxPrev = maxdM
+          dmBoxPrev = dmBox
           dmBox = 0.d0
 !        maxd2MC = 0
 !        ldM = .FALSE.
@@ -1096,7 +1096,7 @@
 
             M(:,i_tile) = M(:,i_tile) + lambda*(M_new(:,i) - M(:,i_tile))
             Mnorm(i) = NORM2(M(:,i_tile))
-            mBox = mBox + Mnorm(i)
+            mBox = mBox + Mnorm(i)*tet_vol(i_tile)
 
             ! "Derivatives" for convergence checks
             !dM(i) = ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
