@@ -660,8 +660,8 @@
 #endif
       IF (ldebugm) THEN
         CALL mumaterial_writedebug(tet_cen, 3, ntet, 'tet_cen.dat')
-        CALL mumaterial_writedebug(tet_vol, 1, ntet, 'tet_cen.dat')
-        CALL mumaterial_writedebug(tet_edge,1, ntet, 'tet_cen.dat')
+        CALL mumaterial_writedebug(tet_vol, 1, ntet, 'tet_vol.dat')
+        CALL mumaterial_writedebug(tet_edge,1, ntet, 'tet_edge.dat')
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
