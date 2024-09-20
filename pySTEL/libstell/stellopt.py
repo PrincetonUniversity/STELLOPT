@@ -12,7 +12,7 @@ from libstell.libstell import LIBSTELL
 
 # STELLOPT Class
 class STELLOPT():
-	"""Class for working with BOOTSJ data
+	"""Class for working with STELLOPT data
 
 	"""
 	def __init__(self):
@@ -163,7 +163,6 @@ class STELLOPT():
 		jac       = numbers[2:]
 		jac2d       = np.reshape(jac,(nvars,mtargets)).T
 		self.jac2d  = jac2d
-
 
 	def read_stellopt_output(self,filename):
 		"""Reads a STELLOPT output file
