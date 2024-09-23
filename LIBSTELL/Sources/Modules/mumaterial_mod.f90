@@ -986,7 +986,7 @@
         convergedtot = 0.0
        
         DO i = mystart, myend ! Get the field and new magnetization for each tile
-
+            ldone(i) = .FALSE.
 !          IF (ldone(i)) THEN
 !            CYCLE
 !          END IF
@@ -1100,7 +1100,7 @@
 
           ! Dampen evolution when Mnorm has increased AND the rate of increase
           ! has itself increased for a couple of consecutive iters
-          IF ((Mnorm(i).GT.MnormPrev(i)) .AND. (dM(i).GT.dMPrev(i))) THEN 
+          IF (dM(i).GT.dMPrev(i)) THEN 
             lambdaCount = lambdaCount + 1
             IF (lambdaCount.EQ.lambdaThresh) THEN
                 lambda(i) = lambda(i) * lambdaFactor
