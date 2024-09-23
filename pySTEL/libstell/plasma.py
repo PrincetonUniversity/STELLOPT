@@ -241,7 +241,7 @@ class PLASMA:
         self.num_ion_species = len(self.ion_species)
         
     
-    def write_plasma_profiles_to_PENTA(self,rho,filename=None):
+    def write_plasma_profiles_to_PENTA1(self,rho,filename=None):
         # first line: number of rhos
         # from second line: 
         # 1st column: rho=r/a
@@ -279,7 +279,46 @@ class PLASMA:
                 
                 # Write the row to the file, formatted as space-separated values
                 file.write(" ".join(map(str, row_data)) + '\n')
+    
+    def write_plasma_profiles_to_PENTA3(self,rho,filename=None):
+        # first line: number of rhos
+        # from second line: 
+        # 1st column: rho=r/a
+        # 2nd column: ne (in units of 10^18 m^-3)
+        # 3rd column: Te (eV)
+        # 4th and 5th: ni and Ti of ion1
+        # 6th and 7th: ni and Ti of ion 2
+        # etc
+        
+        if filename is None:
+            filename = 'plasma_profiles.dat'
+        
+        fact = 1e18
+        
+        ne = self.get_density('electrons',rho) / fact
+        Te = self.get_temperature('electrons',rho)
+        
+        #Precompute ion densities and temperatures
+        ion_densities = {ion_s: self.get_density(ion_s, rho)/fact for ion_s in self.ion_species}
+        ion_temperatures = {ion_s: self.get_temperature(ion_s, rho) for ion_s in self.ion_species}
+        
+        with open(filename, 'w') as file:
+            # Write the size of rho as the first line
+            file.write(f'{rho.size}\n')
+            
+            # Write the data to the file
+            for i in range(rho.size):
+                # First column: electron density, second column: electron temperature
+                row_data = [rho[i], ne[i], Te[i]]
                 
+                # Append ion densities and temperatures
+                for ion_s in self.ion_species:
+                    row_data.extend([ion_densities[ion_s][i],ion_temperatures[ion_s][i]])
+                
+                # Write the row to the file, formatted as space-separated values
+                file.write(" ".join(map(str, row_data)) + '\n')
+                
+                           
     def write_PENTA_namelist(self,filename=None):
         
         if filename is None:
