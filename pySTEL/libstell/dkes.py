@@ -221,8 +221,10 @@ class DKES:
         self.Usq = 0.0
         
         #compute PENTA lstar
-        self.lstar = self.D11_star - (2./3.)*self.cmul*self.Usq + self.D31_star*self.D31_star/self.D33_star
-        self.lstar = self.lstar / (EC*EC)
+        self.lstar_1 = self.D11_star / (EC*EC)
+        self.lstar_2 = - (2./3.)*self.cmul*self.Usq / (EC*EC)
+        self.lstar_3 = (self.D31_star*self.D31_star/self.D33_star) / (EC*EC)
+        self.lstar = self.lstar_1 + self.lstar_2 + self.lstar_3
         
         #compute PENTA mstar
         self.mstar = (2./3.)*self.Bsq*( (2./3.)*self.Bsq/self.D33_star - self.cmul )
@@ -264,6 +266,11 @@ class DKES:
         for plot_var in ['lstar', 'mstar', 'nstar']:
             
             yplot = getattr(self,plot_var)
+            
+            if plot_var=='lstar':
+                yplot1 = getattr(self,plot_var+'_1')
+                yplot2 = getattr(self,plot_var+'_2')
+                yplot3 = getattr(self,plot_var+'_3')
                 
             px = 1/pyplot.rcParams['figure.dpi']
             pyplot.rc('font', size=24)
@@ -274,6 +281,11 @@ class DKES:
                 i1 = i*self.ncmul
                 i2 = i1 + self.ncmul
                 ax.plot(self.cmul[i1:i2],yplot[i1:i2],marker='+',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
+                if plot_var=='lstar' and i==1:
+                    ax.plot(self.cmul[i1:i2],yplot1[i1:i2],'--',label='D11*',linewidth=4)
+                    ax.plot(self.cmul[i1:i2],yplot2[i1:i2],'--',label='U2*',linewidth=4)
+                    ax.plot(self.cmul[i1:i2],yplot3[i1:i2],'--',label='(D31*)^2/D33*',linewidth=4)
+                    
             ax.set_xlabel(r'$\nu/v [m^{-1}]$')
             ax.set_ylabel(f'PENTA {plot_var}')
             ax.set_xscale('log')
@@ -322,7 +334,7 @@ class DKES:
         
         self.check_data_is_regular(self.cmul,self.efield)
         
-        for var in ['D11_star', 'D31_star', 'D33_star']:
+        for var in ['D11_star', 'D13_star', 'D33_star']:
             
             filename = where_to + '/' + var + '_surface_' + f'{self.surface}'
             y = getattr(self,var)
@@ -853,23 +865,23 @@ class DKES:
         ax.set_xlabel(r'Er [V/cm]')
         ax.set_ylabel(r'$\Gamma~~[\text{m}^{-2}\,\text{s}^{-1}]$')
         ax.set_title(f'r/a={roa[0]:.2f}')
-        #ax.set_yscale('log')
+        ax.set_yscale('log')
         ax.legend(fontsize=12)
         ax.grid()
         plt.legend()
-        #plt.show()
         
-        plt.rc('font', size=18)
-        fig=plt.figure(figsize=(11,8))
-        ax = fig.add_subplot(111)
-        ax.plot(Er,gamma_e-gamma_i_tot,label='$\sum Z_j\Gamma_j$')
-        ax.set_xlabel(r'Er [V/cm]')
-        ax.set_ylabel(r'$\Gamma~~[\text{m}^{-2}\,\text{s}^{-1}]$')
-        ax.set_title(f'r/a={roa[0]:.2f}')
-        #ax.set_yscale('log')
-        ax.legend(fontsize=12)
-        ax.grid()
-        plt.legend()
+        # plt.rc('font', size=18)
+        # fig=plt.figure(figsize=(11,8))
+        # ax = fig.add_subplot(111)
+        # ax.plot(Er,gamma_e-gamma_i_tot,label='$\sum Z_j\Gamma_j$')
+        # ax.set_xlabel(r'Er [V/cm]')
+        # ax.set_ylabel(r'$\Gamma~~[\text{m}^{-2}\,\text{s}^{-1}]$')
+        # ax.set_title(f'r/a={roa[0]:.2f}')
+        # #ax.set_yscale('log')
+        # ax.legend(fontsize=12)
+        # ax.grid()
+        # plt.legend()
+        
         plt.show()
         
         
