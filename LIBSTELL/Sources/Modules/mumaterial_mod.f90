@@ -488,7 +488,7 @@
       CLOSE(iunit)
 
       ! set default values
-      CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 10, 1.d0, 99.0)
+      CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 10, 1.d0, 99.d0)
 
       RETURN
 
