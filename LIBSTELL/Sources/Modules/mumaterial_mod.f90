@@ -990,7 +990,9 @@
         
        
         DO i = mystart, myend ! Get the field and new magnetization for each tile
-            ldone(i) = .FALSE.
+            IF (count.LT.maxIter) THEN
+                ldone(i) = .FALSE.
+            END IF
 !          IF (ldone(i)) THEN
 !            CYCLE
 !          END IF
