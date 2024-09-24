@@ -81,7 +81,7 @@
       ! Set parameters
       CALL MUMATERIAL_SETD(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
                            mumaterial_lamfactor, mumaterial_lamthresh, & 
-                           mumaterial_padfactor) 
+                           mumaterial_padfactor, mumaterial_convcheck) 
 
       
 

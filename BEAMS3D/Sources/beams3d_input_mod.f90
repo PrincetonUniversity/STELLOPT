@@ -104,7 +104,8 @@
                                npitch_fida, t_fida, &
                                mumaterial_tol, mumaterial_niter, &
                                mumaterial_lambda, mumaterial_lamfactor, &
-                               mumaterial_lamthresh, mumaterial_padfactor 
+                               mumaterial_lamthresh, mumaterial_padfactor, &
+                               mumaterial_convcheck
       
 !-----------------------------------------------------------------------
 !     Subroutines

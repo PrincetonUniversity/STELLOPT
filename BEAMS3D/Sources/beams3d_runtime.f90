@@ -146,7 +146,7 @@ MODULE beams3d_runtime
     REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &
                    ne_scale, te_scale, ti_scale, zeff_scale, fusion_scale, &
                    lendt_m, te_col_min, rminor_norm, mumaterial_tol, mumaterial_lambda, mumaterial_lamfactor, &
-                   mumaterial_padfactor
+                   mumaterial_padfactor, mumaterial_convcheck
     REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
                                         charge_beams, Zatom_beams, P_beams
     REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
