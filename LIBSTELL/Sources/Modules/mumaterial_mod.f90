@@ -105,7 +105,7 @@
       TYPE(stateFunctionType), PRIVATE, ALLOCATABLE :: stateFunction(:)
 
       ! user settings variables
-      DOUBLE PRECISION, PRIVATE :: dMmax, padFactor, lambdaStart, lambdaFactor
+      DOUBLE PRECISION, PRIVATE :: dMmax, padFactor, lambdaStart, lambdaFactor, convCheck
       INTEGER, PRIVATE          :: lambdaThresh, maxIter
 
       ! neighbour variables
@@ -290,12 +290,13 @@
 ! param[in]: laF. lambdaFactor: multiplicative factor for lambda
 ! param[in]: laT. lambdaThresh: amount of dM>0 before lambda is multiplied
 ! param[in]: padF. padFactor: factor for sphere around tets for neighbours
+! param[in]: cc. convCheck: Stop when this percentage of elemnts has converged
 !------------------------------------------------------------------------------
-      SUBROUTINE mumaterial_setd(mE, mI, la, laF, laT, padF)
+      SUBROUTINE mumaterial_setd(mE, mI, la, laF, laT, padF, cc)
  
       IMPLICIT NONE
 
-      DOUBLE PRECISION, INTENT(in) :: mE, la, laF, padF
+      DOUBLE PRECISION, INTENT(in) :: mE, la, laF, padF, cc
       INTEGER, INTENT(in) :: mI, laT
 
       dMmax = mE
@@ -304,6 +305,7 @@
       lambdaFactor = laF
       lambdaThresh = laT
       padFactor = padF
+      convCheck = cc
 
       RETURN
 
@@ -519,6 +521,7 @@
       WRITE(iunit,'(3X,A,EN12.3)') 'Lambda start : ',lambdaStart
       WRITE(iunit,'(3X,A,EN12.3)') 'Lambda fact. : ',lambdaFactor
       WRITE(iunit,'(3X,A,I7)')     'Lambda thrsh.: ',lambdaThresh
+      WRITE(iunit,'(3X,A,EN12.3)') 'Converged at : ',convCheck
       DO i = 1, nstate
         WRITE(iunit,'(6X,A,I3)') 'State Fuction ',i
         IF (state_type(i)==1) THEN
@@ -966,8 +969,8 @@
 
       IF (lverb) THEN
         WRITE(6,*) ''
-        WRITE(6,*) '  Count  %Done  Badindex         Error        Target        Lambda '
-        WRITE(6,*) '============================================================================'
+        WRITE(6,*) '  Count  %Done     Index         Mnorm          Diff        Target        Lamda'
+        WRITE(6,*) '==============================================================================='
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -984,6 +987,7 @@
         maxi = mystart
         convergedproc = 0.0
         convergedtot = 0.0
+        
        
         DO i = mystart, myend ! Get the field and new magnetization for each tile
             ldone(i) = .FALSE.
@@ -1100,7 +1104,7 @@
 
           ! Dampen evolution when Mnorm has increased AND the rate of increase
           ! has itself increased for a couple of consecutive iters
-          IF (dM(i).GT.dMPrev(i)) THEN 
+          IF ((dM(i).GT.dMPrev(i)).AND.(Mnorm(i).GT.MnormPrev(i))) THEN 
             lambdaCount = lambdaCount + 1
             IF (lambdaCount.EQ.lambdaThresh) THEN
                 lambda(i) = lambda(i) * lambdaFactor
@@ -1121,7 +1125,7 @@
           END IF
           
           IF (ldone(i)) THEN
-            convergedproc = convergedproc + 1.0
+            convergedproc = convergedproc + tet_vol(i_tile)
           END IF
         END DO
         lprocdone = ALL(ldone)
@@ -1147,19 +1151,23 @@
             CALL MPI_BARRIER(comm_world, ierr_mpi)
 #endif
         ELSE
+            lboxdone = lprocdone
             lalldone = lboxdone
             maxlambda = lambda(maxi)
             maxtile = mydom(maxi)
+            convergedtot = convergedproc
         END IF
 
-        convergedperc = FLOOR(convergedtot*100/ntet)
+        convergedperc = FLOOR(convergedtot*100/SUM(tet_vol))
+        lalldone = (convergedperc.GE.convCheck)
+
+        IF (ldosync) CALL mumaterial_syncM(M,ntet,outmydom)
 
         IF (lverb) THEN 
-          WRITE(6,'(3X,I5,A2,I5,A2,I8,A2,E12.4,A2,E12.4,A2,E12.4,A2,E12.4)') count, '  ', convergedperc, '  ', maxtile,'  ', maxdMall, '  ', dMmax*maxlambda,  '  ', maxlambda
+          WRITE(6,'(3X,I5,A2,I5,A2,I8,A2,E12.4,A2,E12.4,A2,E12.4,A2,E12.4,A2,E12.4)') count, '  ', convergedperc, '  ', maxtile,'  ', NORM2(M(:,maxtile)),'  ', maxdMall, '  ', dMmax*maxlambda,  '  ', maxlambda
           CALL FLUSH(6)
         END IF
 
-        IF (ldosync) CALL mumaterial_syncM(M,ntet,outmydom)
 
         IF (ldebugm) THEN
             WRITE(strcount, '(I0)') count
