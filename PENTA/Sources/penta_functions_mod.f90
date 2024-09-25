@@ -1828,7 +1828,7 @@ EndFunction calc_fluxes_SN
 Function calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
      masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,      &
      cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord, &
-     keord,Avec,lmat)                                                    &
+     keord,Avec,lmat,sigma_par,sigma_par_Spitzer)                                                    &
 Result(Flows)
 !
 ! Description: 
@@ -1920,11 +1920,13 @@ Integer(iknd), Intent(in)  :: keord
 Real(rknd),    Intent(in)  :: Avec(num_species*3)
 Real(rknd),    Intent(in)  :: lmat(num_species*(Smax+1),num_species*(Smax+1))
 Real(rknd)                 :: Flows(num_species*(Smax+1))
+Real(rknd),  Intent(inout) :: sigma_par,sigma_par_Spitzer
 
 ! Local scalars
 Integer(iknd) ::  ispec1, jval, ind_A, ind_RHS, kval, & ! Loop indices
    ind1_LHS1,   &
-   ind1_LHS2, ind2_LHS2, ispec2
+   ind1_LHS2, ind2_LHS2, ispec2, &
+   ind1, ind2
 Integer(iknd) ::  I               ! Index used for array constructors
 Integer(iknd) ::  nu_exp          ! Exponent on collision freq. for conv.
 Integer(iknd) :: inv_err          ! Error flag for inversion
@@ -1936,6 +1938,7 @@ Real(rknd)    ::  K_exp           ! Exponent on K for convolution (ignoring
 Real(rknd)    ::  RHS_1,RHS_2     ! RHS elements of flow equation
 
 Real(rknd)    ::  LHS_tmp1        ! LHS elements of flow eq.
+Real(rknd)    :: flow_species, fact_species, Z, N_Z, ln_e ! aux values to compute conductivity
 
 ! Local arrays 
 Integer(iknd) :: ikeep(num_species-1)   ! Used to index species 'b' in arrays
@@ -2058,6 +2061,30 @@ If ( inv_err /= 0 ) Then
 EndIf
 
 Flows = Matmul(flow_mat_inv,RHS)
+
+!Compute total parallel conductivity
+sigma_par = 0.0_rknd
+
+Do ispec1 = 1,num_species
+  ind1 = (ispec1 - 1)*(Smax+1)+1 ! idx corresponding to j=0 of species ispec
+
+  ! compute flow of species ispec1 by looping over all species
+  flow_species = 0.0_rknd
+  Do ispec2 = 1,num_species
+    fact_species = 3*charges(ispec2)**2 * dens(ispec2) / (masses(ispec2)**2 * vths(ispec2)**3)
+    !pick column of flow_mat_inv that corresponds to j=0 of each species
+    ind2 = (ispec2 - 1)*(Smax+1)+1
+    flow_species = flow_species + flow_mat_inv(ind1,ind2)*fact_species
+  EndDo
+
+  sigma_par = sigma_par + dens(ispec1)*charges(ispec1)*flow_species
+EndDo
+
+Z = maxval(abs(charges/charges(1)))
+N_Z = 0.58 + 0.74 / (0.76+Z)
+ln_e = 31.3 - log(dsqrt(dens(1))/temps(1))
+!sigma_Spitzer as given by O. Sauter et al PoP 6 (1999)
+sigma_par_spitzer = 19012.0_rknd * Temps(1)**1.5_rknd / (Z*N_Z*ln_e)
 
 EndFunction calc_flows_SN
 

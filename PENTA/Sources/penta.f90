@@ -232,7 +232,8 @@ Use io_unit_spec, Only :             &
   iu_flows_out,                      & ! flows vs r/a i/o unit #
   iu_flowvEr_out,                    & ! flows vs Er i/o unit #
   iu_Jprl_out,                       & ! Parallel current den vs r/a i/o unit #
-  iu_contraflows_out                   ! Contravariant flows vs roa
+  iu_contraflows_out,                & ! Contravariant flows vs roa
+  iu_sigmas_out                        ! sigma_par and sigma_par_Spitzer vs roa
 Use read_input_file_mod, Only :      &
   ! Imported Subroutines
   read_vmec_file,                    & ! Reads VMEC data file
@@ -350,6 +351,7 @@ Real(rknd)    :: min_Er           ! Min value of Er_test_vals
 Real(rknd)    :: eaEr_o_kTe       ! Normalized Er (used as output)
 Real(rknd) ::  cmin,            & ! Coefficient axes limits
   cmax, emin, emax
+Real(rknd)    :: sigma_par=0.0_rknd, sigma_par_Spitzer=0.0_rknd !Parallel conductivities
 
 ! Local variables (array)
 Character(Len=100) ::           & ! Command line args
@@ -386,7 +388,9 @@ Real(rknd), Allocatable ::      &
   Gamma_e_vs_Er(:),             & ! Electron particle flux vs Er
   QoT_e_vs_Er(:),               & ! Electron Energy flux vs Er
   Er_test_vals(:),              & ! Er values used in ambipolar search
-  Jprl_ambi(:)                    ! Parallel current density (roots)    
+  Jprl_ambi(:),                 & ! Parallel current density (roots)
+  sigma_par_ambi(:),            & ! Parallel conductivity for ambipolar electric field 
+  sigma_par_Spitzer_ambi(:)       ! Spitzer parallel conductivity for ambipolar electric field   
 
 ! Local allocatable arrays (2D)
 Real(rknd), Allocatable ::      &
@@ -636,6 +640,11 @@ Open(unit=iu_Jprl_out,file="Jprl_vs_roa",  &
 Open(unit=iu_contraflows_out,file="ucontra_vs_roa",  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
 
+If ( Method == 'SN') Then
+  Open(unit=iu_sigmas_out, file="sigmas_vs_roa",  &
+    position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
+Endif
+
 If ( output_QoT_vs_Er .EQV. .true. ) Then
   Open(unit=iu_QoTvEr_out, file="QoTs_vs_Er",  &
     position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
@@ -661,6 +670,11 @@ If ( i_append == 0 ) Then
   Write(iu_contraflows_out,'("*",/,"r/a    Er [V/cm]    e<a>Er/kTe    ",  &
     & "<ue^pol_contra> [1/s]     <ue^tor_contra> [1/s]       ",  &
     & " <ui^pol_contra> [1/s]     <ui^tor_contra> [1/s]")')
+  ! Sigmas vs r/a
+    If(Method == 'SN') then
+    Write(iu_sigmas_out,'("*",/,"r/a   Er[V/cm]    sigma_par [1/Ohm.m]    ",  &
+    & " sigma_par_Spitzer [1/Ohm.m]")')
+    Endif
 EndIf
 
 ! Legend for fluxes vs Er is written for each surface
@@ -805,7 +819,7 @@ Do ie = 1,num_Er_test
       Flows = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
          masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
          cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord,  &
-         keord,Avec,lmat)                                                
+         keord,Avec,lmat,sigma_par,sigma_par_Spitzer)                                                
       Gammas = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
         masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
         emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,        &
@@ -879,6 +893,8 @@ Allocate(Flows_ambi((Smax+1)*num_species,num_roots)) ! Parallel flow moments
 Allocate(Gammas_ambi(num_species,num_roots))         ! Rad. particle fluxes
 Allocate(QoTs_ambi(num_species,num_roots))           ! Rad. energy fluxes
 Allocate(Jprl_ambi(num_roots))                       ! Parallel current density
+Allocate(sigma_par_ambi(num_roots))                  ! Parallel conductivity
+Allocate(sigma_par_Spitzer_ambi(num_roots))          ! Spitzer Parallel conductivity
 Allocate(Jprl_parts(num_species,num_roots))          ! Par. curr. dens. per spec.
 Allocate(upol(num_species,num_roots))                ! fsa contra pol flow
 Allocate(utor(num_species,num_roots))                ! fsa contra tor flow
@@ -934,7 +950,7 @@ Do iroot = 1_iknd, num_roots
       Flows_ambi(:,iroot) = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,&
          vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,    &
          log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,  &
-         num_e,kcord,keord,Avec,lmat)                                                
+         num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer)                                                
       ! Calculate array of radial particle fluxes
       Gammas_ambi(:,iroot) = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,   &
         dens,vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,   &
@@ -946,7 +962,10 @@ Do iroot = 1_iknd, num_roots
         vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
         log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
         Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
-        lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap)  
+        lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap)
+
+        sigma_par_ambi(iroot) = sigma_par
+        sigma_par_Spitzer_ambi(iroot) = sigma_par_Spitzer
 
     Case ('DKES')
 
@@ -1024,6 +1043,13 @@ Do iroot = 1_iknd, num_roots
     roa_surf,Er_test/100._rknd,eaEr_o_kTe,upol(1,iroot),utor(1,iroot),         &
     upol(2:num_species,iroot),utor(2:num_species,iroot)
 
+  ! Write sigmas to file "sigmas_vs_roa"
+  If( Method == 'SN') then
+    Write(str_num,*) 3
+    Write(iu_sigmas_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+      roa_surf,Er_test/100._rknd,sigma_par_ambi(iroot),sigma_par_Spitzer_ambi(iroot)
+  Endif
+
 EndDo ! Ambipolar root loop
 
 ! Write plasma profile information to "plasma_profiles_check"
@@ -1071,6 +1097,7 @@ Deallocate(QoTs_ambi)
 Deallocate(Flows_ambi)
 Deallocate(Er_test_vals)  ! Er to loop over
 Deallocate(Jprl_ambi,Jprl_parts) ! Parallel current densities
+Deallocate(sigma_par_ambi,sigma_par_Spitzer_ambi) ! Paarllel conductivities
 Deallocate(utor,upol) ! Contravariant fsa flows
 
 ! Close output files
