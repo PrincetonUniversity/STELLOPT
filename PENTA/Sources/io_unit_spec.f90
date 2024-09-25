@@ -35,6 +35,7 @@ Module io_unit_spec
     iu_flowvEr_out=14,    &   ! Parallel flows vs Er (output)
     iu_Jprl_out=15,       &   ! Parallel current density vs r/a (output)
     iu_contraflows_out=16,&   ! Contravariant flows vs roa 
-    iu_QoTvEr_out=17          ! Energy fluxes vs Er (output)
+    iu_QoTvEr_out=17,     &   ! Energy fluxes vs Er (output)
+    iu_sigmas_out=18          ! Parallel conductivities (output) 
 End module io_unit_spec
 !- End of header -------------------------------------------------------------
