@@ -60,14 +60,14 @@ class DKES:
         self.check_convergence()
         
         #Take average of coefficients
-        L11  = 0.5*(self.L11m+self.L11p)
-        L31  = 0.5*(self.L31m+self.L31p)
-        L33  = 0.5*(self.L33m+self.L33p)
+        self.L11  = 0.5*(self.L11m+self.L11p)
+        self.L31  = 0.5*(self.L31m+self.L31p)
+        self.L33  = 0.5*(self.L33m+self.L33p)
         
-        #compute Dij_star correcting D13 and D33 with the B factors (see J.Lore documentation on PENTA)
-        self.D11_star = L11
-        self.D31_star = L31 * np.sqrt(self.B0)
-        self.D33_star = L33 * self.B0
+        #compute Dij_star, correcting D13 and D33 with the B factors (see J.Lore documentation on PENTA)
+        self.D11_star = self.L11
+        self.D31_star = self.L31 * np.sqrt(self.Bsq)
+        self.D33_star = self.L33 * self.Bsq
         
         #according to J. Lore documentation and also C. Beidler...
         # this is also what is done internally in PENTA
@@ -106,12 +106,12 @@ class DKES:
         import matplotlib.pyplot as pyplot
         
         var_names = {
-                'D11_star': '$D_{11}^*~~[m^{-1}~T^{-2}]$',
-                'D31_star': '$D_{31}^*$',
-                'D33_star': '$D_{33}^*~~[m~T^2]$'
+                'L11': '$D_{11}^*~~[m^{-1}~T^{-2}]$',
+                'L31': '$D_{31}^*$',
+                'L33': '$D_{33}^*~~[m~T^2]$'
                 }
-    
-        for plot_var in ['D11_star', 'D31_star', 'D33_star']:
+        
+        for plot_var in ['L11', 'L31', 'L33']:
             
             yplot = getattr(self,plot_var)
                 
@@ -132,14 +132,66 @@ class DKES:
             ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
             ax.set_ylabel(f'{var_names[plot_var]}')
             ax.set_xscale('log')
-            if(plot_var=='D11_star' or plot_var=='D33_star'):
+            if(plot_var=='L11' or plot_var=='L33'):
                 ax.set_yscale('log')
-            if(plot_var=='D31_star'):
+            if(plot_var=='L31'):
                 ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
             ax.set_title(f'r/a={self.roa:.2f}')
             ax.legend(fontsize=12)
             ax.grid()
     
+        pyplot.show()
+        
+    def plot_L33_test(self):
+        
+        import matplotlib.pyplot as pyplot
+                
+        px = 1/pyplot.rcParams['figure.dpi']
+        pyplot.rc('font', size=20)
+        #pyplot.rc('legend', fontsize=24)
+        fig=pyplot.figure(figsize=(1024*px,768*px))
+        ax = fig.add_subplot(111)
+        for i in range(self.nefield):
+            i1 = i*self.ncmul
+            i2 = i1 + self.ncmul
+            ax.plot(self.cmul[i1:i2],self.L33m[i1:i2],marker='.',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
+            ax.plot(self.cmul[i1:i2],self.L33p[i1:i2],marker='.',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
+                
+        ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
+        ax.set_ylabel(f'L33')
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_title(f'r/a={self.roa:.2f}')
+        ax.legend(fontsize=12)
+        ax.grid()
+        pyplot.show()
+        
+        
+        
+    def plot_Er_resonance(self,Er_v_resonance=None):
+        # make plot of D11* as function of Er/v for each cmul
+        
+        import matplotlib.pyplot as pyplot
+        
+        px = 1/pyplot.rcParams['figure.dpi']
+        pyplot.rc('font', size=20)
+        fig=pyplot.figure(figsize=(1024*px,768*px))
+        ax = fig.add_subplot(111)
+        
+        yplot = self.D11_star
+        
+        for i1 in range(self.ncmul):
+            ax.plot(self.efield[i1::self.ncmul],yplot[i1::self.ncmul],marker='+',label=rf'$\nu/v$={self.cmul[i1]:3.1E}',linewidth=4,markersize=18)
+            ax.set_xlabel(r'$E_r/v$')
+            ax.set_ylabel(r'$D_{11}^*$')
+            ax.set_xscale('log')
+            ax.set_yscale('log')
+            ax.legend(fontsize=12)
+            ax.grid(True)
+            ax.set_title(f'r/a={self.roa:.2f}')
+        if Er_v_resonance is not None:
+                ax.vlines(Er_v_resonance,np.min(yplot),np.max(yplot),'r','dashed',linewidth=3,label='Er/v res')
+        pyplot.legend()
         pyplot.show()
         
     def compute_yerr(self,y,ym,yp):
@@ -471,7 +523,7 @@ class DKES:
                 vth = plasma_class.get_thermal_speed(species,self.roa)
                 Er_over_v = Er / (vth*np.sqrt(K))
                 
-                ax.plot(K,Er_over_v ,'o-',label=f'{species}',markersize=1) 
+                ax.plot(K,Er_over_v ,'.',label=f'{species}',markersize=2.5) 
                 ax.set_yscale('log')
                 ax.set_ylabel(r'|Er/v|')
                 ax.set_xlabel(f'K')
@@ -494,12 +546,11 @@ class DKES:
         import matplotlib.pyplot as plt
         
         Kmin = 1e-4      #PENTA default value
-        Kmax = 20        #PENTA default value
-        numKsteps = 2000  #PENTA default value
-        K = np.linspace(Kmin,Kmax,numKsteps)
-        #tK = np.linspace(Kmin,0.6,80)
-        #K = np.unique( np.concatenate( (K,tK) ) )
-        #K = np.sort(K)
+        Kmax = 10        #PENTA default value
+        numKsteps = 1000  #PENTA default value
+        K_PENTA1 = np.linspace(Kmin,Kmax,numKsteps)
+        # K in PENTA 3
+        K = 10**np.linspace(np.log10(Kmin),np.log10(Kmax),numKsteps)
         self.K = K
         
         self.plasma_class = plasma_class
@@ -858,10 +909,10 @@ class DKES:
         plt.rc('font', size=18)
         fig=plt.figure(figsize=(11,8))
         ax = fig.add_subplot(111)
-        ax.plot(Er,gamma_e,label='$\Gamma_e$')
-        ax.plot(Er,gamma_i_tot,label='$\Gamma_{i,tot}$')
+        ax.plot(Er,gamma_e,label=r'$\Gamma_e$')
+        ax.plot(Er,gamma_i_tot,label=r'$\Gamma_{i,tot}$')
         for ion in plasma_class.ion_species:
-            ax.plot(Er,gamma_i[ion],'--',label=f'$\Gamma({ion})$')
+            ax.plot(Er,gamma_i[ion],'--',label=rf'$\Gamma({ion})$')
         ax.set_xlabel(r'Er [V/cm]')
         ax.set_ylabel(r'$\Gamma~~[\text{m}^{-2}\,\text{s}^{-1}]$')
         ax.set_title(f'r/a={roa[0]:.2f}')
