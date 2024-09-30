@@ -250,8 +250,8 @@ Contains
     psip = psip * 2.0_rknd*r_surf/arad**2
     chip = chip * 2.0_rknd*r_surf/arad**2
 
-    !psip and chip are used to compute flows in calculate_flows(...)
-    !In this routine, it is assumed that psip and chip are normalized by 2pi
+    !psip and chip are used to compute flows in theta and zeta direction (see penta.f90)
+    !It is assumed that psip and chip are normalized by 2pi
     !So need to do it here:
     psip = psip / TWOPI
     chip = chip / TWOPI

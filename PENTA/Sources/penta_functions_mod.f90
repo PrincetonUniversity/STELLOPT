@@ -379,7 +379,7 @@ EndFunction calc_fluxes_DKES
 Function calc_flows_DKES(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
      masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,        &
      cmin,cmax,emin,emax,xt_c,xt_e,Dspl_D31,Dspl_logD33,num_c,num_e,       &
-     kcord,keord,Avec)                                                     &
+     kcord,keord,Avec,J_BS)                                                     &
 Result(Flows)
 !
 ! Description: 
@@ -427,6 +427,8 @@ Result(Flows)
 !
 ! Modules used:
 Use penta_kind_mod                  ! Import rknd, iknd specifications
+Use vmec_var_pass, Only : &
+Bsq
 
 Implicit None
 
@@ -459,7 +461,9 @@ Integer(iknd), Intent(in)  :: num_e
 Integer(iknd), Intent(in)  :: kcord
 Integer(iknd), Intent(in)  :: keord
 Real(rknd),    Intent(in)  :: Avec(num_species*3)
-Real(rknd)                 :: Flows(num_species*(Smax+1))
+Real(rknd),  Intent(inout) :: J_BS
+Real(rknd)                 :: Flows(num_species*(Smax+1)), &
+  Flows_BS(num_species*(Smax+1))
 
 ! Local scalars
 Integer(iknd) ::  ispec1, jval, ind_A, ind_RHS ! Loop indices
@@ -478,7 +482,8 @@ Real(rknd)    ::  RHS_1,RHS_2,  & ! RHS elements of flow equation
 Integer(iknd) :: ikeep(num_species-1)   ! Used to index species 'b' in arrays
 Real(rknd)    :: qb(num_species-1),  &  ! Paremeters for species 'b' /= 'a'
   nb(num_species-1), vtb(num_species-1) 
-Real(rknd)   :: RHS(num_species*(Smax+1)) ! 1D array for RHS of eq. sys
+Real(rknd)   :: RHS(num_species*(Smax+1)), & ! 1D array for RHS of eq. sys
+  RHS_BS(num_species*(Smax+1))
 
 ! Local parameters                 
 Integer(iknd), Parameter ::  &
@@ -553,11 +558,16 @@ Do ispec1 = 1_iknd,num_species
     ind_RHS = (ispec1 - 1)*(Smax+1)+jval+1
     RHS(ind_RHS) = - RHS_1*Avec(ind_A) - RHS_2*Avec(ind_A+1) &
       - RHS_3*Avec(ind_A+2)
+    RHS_BS(ind_RHS) = - RHS_1*Avec(ind_A) - RHS_2*Avec(ind_A+1)
 
   EndDo ! jval loop
 EndDo ! Primary species loop
 
 Flows = RHS
+Flows_BS = RHS_BS
+
+!compute BS current
+J_BS = sum( dens*charges*Sqrt(Bsq)*Flows_BS(1:(num_species-1)*(Smax+1)+1:Smax+1) )
 
 EndFunction calc_flows_DKES
 
@@ -1828,7 +1838,7 @@ EndFunction calc_fluxes_SN
 Function calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
      masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,      &
      cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord, &
-     keord,Avec,lmat,sigma_par,sigma_par_Spitzer)                                                    &
+     keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS)                                                    &
 Result(Flows)
 !
 ! Description: 
@@ -1886,6 +1896,8 @@ Gamma_aux,       &
 ifactorial,      &
 idelta,          &
 FINDInv,inversion_lu                             ! Subroutine to invert square matrix QQ
+Use vmec_var_pass, Only : &
+Bsq
 
 Implicit None
 
@@ -1919,8 +1931,8 @@ Integer(iknd), Intent(in)  :: kcord
 Integer(iknd), Intent(in)  :: keord
 Real(rknd),    Intent(in)  :: Avec(num_species*3)
 Real(rknd),    Intent(in)  :: lmat(num_species*(Smax+1),num_species*(Smax+1))
-Real(rknd)                 :: Flows(num_species*(Smax+1))
-Real(rknd),  Intent(inout) :: sigma_par,sigma_par_Spitzer
+Real(rknd)                 :: Flows(num_species*(Smax+1)),Flows_BS(num_species*(Smax+1))
+Real(rknd),  Intent(inout) :: sigma_par,sigma_par_Spitzer,J_BS
 
 ! Local scalars
 Integer(iknd) ::  ispec1, jval, ind_A, ind_RHS, kval, & ! Loop indices
@@ -1948,7 +1960,7 @@ Real(rknd)    ::  &                     ! 2D arrays for the LHS of equation sys
   LHS_mat_1(num_species*(Smax+1),num_species*(Smax+1)), &
   flow_mat(num_species*(Smax+1),num_species*(Smax+1)),  & ! Flow matrix
   flow_mat_inv(num_species*(Smax+1),num_species*(Smax+1)) ! Inverted flow matrix
-Real(rknd)   :: RHS(num_species*(Smax+1)) ! 1D array for RHS of eq. sys
+Real(rknd)   :: RHS(num_species*(Smax+1)), RHS_BS(num_species*(Smax+1)) ! 1D array for RHS of eq. sys
 
 ! Local parameters                 
 Integer(iknd), Parameter ::  &
@@ -2012,7 +2024,8 @@ Do ispec1 = 1_iknd,num_species
     ind_A = (ispec1 - 1)*3 + 1
     ind_RHS = (ispec1 - 1)*(Smax+1)+jval+1
     RHS(ind_RHS) = -RHS_1*Avec(ind_A) - RHS_2*Avec(ind_A+1) &
-      + idelta(jval,0_iknd)*THREEHALF*qa*na*Avec(ind_A+2)/(ma*vta*B0) 
+      + idelta(jval,0_iknd)*THREEHALF*qa*na*Avec(ind_A+2)/(ma*vta*B0)
+    RHS_BS(ind_RHS) = -RHS_1*Avec(ind_A) - RHS_2*Avec(ind_A+1)
 
     ! Loop over primary Sonine index (k)
     Do kval = 0_iknd, Smax
@@ -2061,6 +2074,10 @@ If ( inv_err /= 0 ) Then
 EndIf
 
 Flows = Matmul(flow_mat_inv,RHS)
+Flows_BS = Matmul(flow_mat_inv,RHS_BS)
+
+!compute BS current
+J_BS = sum( dens*charges*Sqrt(Bsq)*Flows_BS(1:(num_species-1)*(Smax+1)+1:Smax+1) )
 
 !Compute total parallel conductivity
 sigma_par = 0.0_rknd
@@ -2491,7 +2508,7 @@ Function calc_flows_T(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
      masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,     &
      cmin,cmax,emin,emax,xt_c,xt_e,Dspl_D31,     &
      Dspl_logD33,num_c,num_e,kcord,   &
-     keord,Avec,Bsq,lmat)                                               &
+     keord,Avec,Bsq,lmat,J_BS)                                               &
 Result(Flows)
 !
 ! Description: 
@@ -2556,7 +2573,9 @@ Integer(iknd), Intent(in)  :: keord
 Real(rknd),    Intent(in)  :: Avec(num_species*3)
 Real(rknd),    Intent(in)  :: Bsq
 Real(rknd),    Intent(in)  :: lmat(num_species*(Smax+1),num_species*(Smax+1))
-Real(rknd)                 :: Flows(num_species*(Smax+1))
+Real(rknd),  Intent(inout) :: J_BS
+Real(rknd)                 :: Flows(num_species*(Smax+1)), &
+  Flows_BS(num_species*(Smax+1))
 
 ! Local scalars
 Integer(iknd) ::  ispec1, jval, ind_A, ind_RHS, kval, & ! Loop indices
@@ -2585,7 +2604,8 @@ Real(rknd)    ::  &                     ! 2D arrays for the LHS of equation sys
   LHS_mat_2(num_species*(Smax+1),num_species*(Smax+1)), &  
   flow_mat(num_species*(Smax+1),num_species*(Smax+1)),  & ! Flow matrix
   flow_mat_inv(num_species*(Smax+1),num_species*(Smax+1)) ! Inverted flow matrix
-Real(rknd)   :: RHS(num_species*(Smax+1)) ! 1D array for RHS of eq. sys
+Real(rknd)   :: RHS(num_species*(Smax+1)), &! 1D array for RHS of eq. sys
+  RHS_BS(num_species*(Smax+1))
 
 ! Local parameters                 
 Integer(iknd), Parameter ::  &
@@ -2663,6 +2683,7 @@ Do ispec1 = 1_iknd,num_species
     ind_RHS = (ispec1 - 1)*(Smax+1)+jval+1
     RHS(ind_RHS) = - RHS_1*Avec(ind_A) - RHS_2*Avec(ind_A+1) &
       + RHS_3*Avec(ind_A+2)
+    RHS_BS(ind_RHS) = - RHS_1*Avec(ind_A) - RHS_2*Avec(ind_A+1)
 
     ! Loop over primary Sonine index (k)
     Do kval = 0_iknd, Smax
@@ -2741,6 +2762,10 @@ If ( inv_err /= 0 ) Then
 EndIf
 
 Flows = Matmul(flow_mat_inv,RHS)
+Flows_BS = Matmul(flow_mat_inv,RHS_BS)
+
+!compute BS current
+J_BS = sum( dens*charges*Sqrt(Bsq)*Flows_BS(1:(num_species-1)*(Smax+1)+1:Smax+1) )
 
 EndFunction calc_flows_T
 
