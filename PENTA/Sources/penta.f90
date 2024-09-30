@@ -352,7 +352,7 @@ Real(rknd)    :: eaEr_o_kTe       ! Normalized Er (used as output)
 Real(rknd) ::  cmin,            & ! Coefficient axes limits
   cmax, emin, emax
 Real(rknd)    :: sigma_par=0.0_rknd, sigma_par_Spitzer=0.0_rknd !Parallel conductivities
-
+Real(rknd)    :: J_BS=0.0_rknd
 ! Local variables (array)
 Character(Len=100) ::           & ! Command line args
   arg1, arg2, arg3, arg4,       & 
@@ -390,7 +390,8 @@ Real(rknd), Allocatable ::      &
   Er_test_vals(:),              & ! Er values used in ambipolar search
   Jprl_ambi(:),                 & ! Parallel current density (roots)
   sigma_par_ambi(:),            & ! Parallel conductivity for ambipolar electric field 
-  sigma_par_Spitzer_ambi(:)       ! Spitzer parallel conductivity for ambipolar electric field   
+  sigma_par_Spitzer_ambi(:),    & ! Spitzer parallel conductivity for ambipolar electric field
+  J_BS_ambi(:)                    ! Bootstrap current density for ambipolar electric field
 
 ! Local allocatable arrays (2D)
 Real(rknd), Allocatable ::      &
@@ -666,7 +667,7 @@ If ( i_append == 0 ) Then
     & "dnedr [m**-4]   dTedr [eV/m]  Ti [eV]   ni [m**-3]     ",  &
     & "dnidr [m**-4]   dTidr [eV/m]")')
   Write(iu_Jprl_out,'("*",/,"r/a    Er [V/cm]    e<a>Er/kTe    ",  &
-    & "Jprl_e [A/m**2]    Jprli [A/m**2]    Jprl [A/m**2]")')
+    & "Jprl_e [A/m**2]    Jprli [A/m**2]    Jprl [A/m**2]    J_BS [A/m**2]")')
   Write(iu_contraflows_out,'("*",/,"r/a    Er [V/cm]    e<a>Er/kTe    ",  &
     & "<ue^pol_contra> [1/s]     <ue^tor_contra> [1/s]       ",  &
     & " <ui^pol_contra> [1/s]     <ui^tor_contra> [1/s]")')
@@ -675,14 +676,13 @@ If ( i_append == 0 ) Then
     Write(iu_sigmas_out,'("*",/,"r/a   Er[V/cm]    sigma_par [1/Ohm.m]    ",  &
     & " sigma_par_Spitzer [1/Ohm.m]")')
     Endif
+  ! Legend for fluxes vs Er 
+    Write(iu_fvEr_out,'("*",/,"r/a   Er[V/cm]   Gamma_e [m**-2s**-1] ",&
+    & "   Gamma_i [m**-2s**-1]")')
+  ! Legend for flows vs Er
+    Write(iu_flowvEr_out,'("*",/,"r/a   Er[V/cm]  ", &
+    & "    <B*u_||ke>/<B**2> [m/sT]  <B*u_||ki>/<B**2> [m/sT]")')
 EndIf
-
-! Legend for fluxes vs Er is written for each surface
-Write(iu_fvEr_out,'("*",/,"r/a   Er[V/cm]   Gamma_e [m**-2s**-1] ",&
-  & "   Gamma_i [m**-2s**-1]")')
-! Legend for flows vs Er is written for each surface
-Write(iu_flowvEr_out,'("*",/,"r/a   Er[V/cm]  ", &
-  & "    <B*u_||ke>/<B**2> [m/sT]  <B*u_||ki>/<B**2> [m/sT]")')
 
 ! Calculate thermal velocities 
 vth_i = Dsqrt(2._rknd*Ti*elem_charge/ion_mass)
@@ -803,7 +803,7 @@ Do ie = 1,num_Er_test
       Flows = calc_flows_T(num_species,Smax,abs_Er,Temps,dens,vths,charges,   &
         masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,   &
         cmax,emin,emax,xt_c,xt_e,Dspl_D31,Dspl_logD33,num_c,num_e,kcord,      &
-        keord,Avec,Bsq,lmat)
+        keord,Avec,Bsq,lmat,J_BS)
       Gammas = calc_fluxes_MBT(num_species,Smax,abs_Er,Temps,dens,vths,       &
         charges,masses,dTdrs,dndrs,loglambda,use_quanc8,Kmin,Kmax,numKsteps,  &
         log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,        &
@@ -819,7 +819,7 @@ Do ie = 1,num_Er_test
       Flows = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
          masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
          cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord,  &
-         keord,Avec,lmat,sigma_par,sigma_par_Spitzer)                                                
+         keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS)                                                
       Gammas = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
         masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
         emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,        &
@@ -836,7 +836,7 @@ Do ie = 1,num_Er_test
       Flows = calc_flows_DKES(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
          masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,  &
          cmax,emin,emax,xt_c,xt_e,Dspl_D31,Dspl_logD33,num_c,num_e,kcord,     &
-         keord,Avec)
+         keord,Avec,J_BS)
       Gammas = calc_fluxes_DKES(num_species,abs_Er,Temps,dens,vths,charges,   &
         masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
         emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,     &
@@ -893,6 +893,7 @@ Allocate(Flows_ambi((Smax+1)*num_species,num_roots)) ! Parallel flow moments
 Allocate(Gammas_ambi(num_species,num_roots))         ! Rad. particle fluxes
 Allocate(QoTs_ambi(num_species,num_roots))           ! Rad. energy fluxes
 Allocate(Jprl_ambi(num_roots))                       ! Parallel current density
+Allocate(J_BS_ambi(num_roots))                       ! BS current density
 Allocate(sigma_par_ambi(num_roots))                  ! Parallel conductivity
 Allocate(sigma_par_Spitzer_ambi(num_roots))          ! Spitzer Parallel conductivity
 Allocate(Jprl_parts(num_species,num_roots))          ! Par. curr. dens. per spec.
@@ -930,7 +931,7 @@ Do iroot = 1_iknd, num_roots
       Flows_ambi(:,iroot) = calc_flows_T(num_species,Smax,abs_Er,Temps,dens, &
         vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,     &
         log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_D31,Dspl_logD33,num_c, &
-        num_e,kcord,keord,Avec,Bsq,lmat)
+        num_e,kcord,keord,Avec,Bsq,lmat,J_BS)
       ! Calculate array of radial particle fluxes
       Gammas_ambi(:,iroot) = calc_fluxes_MBT(num_species,Smax,abs_Er,Temps,  &
         dens,vths,charges,masses,dTdrs,dndrs,loglambda,use_quanc8,Kmin,Kmax, &
@@ -942,7 +943,9 @@ Do iroot = 1_iknd, num_roots
         vths,charges,masses,dTdrs,dndrs,loglambda,use_quanc8,Kmin,Kmax,      &
         numKsteps,log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,      &
         Dspl_D31,Dspl_Dex,num_c,num_e,kcord,keord,Avec,lmat,                 &
-        Flows_ambi(:,iroot),U2,B0,flux_cap)   
+        Flows_ambi(:,iroot),U2,B0,flux_cap)
+
+      J_BS_ambi(iroot) = J_BS
 
     Case ('SN')
       ! Calculate array of parallel flow moments
@@ -950,7 +953,7 @@ Do iroot = 1_iknd, num_roots
       Flows_ambi(:,iroot) = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,&
          vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,    &
          log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,  &
-         num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer)                                                
+         num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS)                                                
       ! Calculate array of radial particle fluxes
       Gammas_ambi(:,iroot) = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,   &
         dens,vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,   &
@@ -964,8 +967,9 @@ Do iroot = 1_iknd, num_roots
         Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
         lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap)
 
-        sigma_par_ambi(iroot) = sigma_par
-        sigma_par_Spitzer_ambi(iroot) = sigma_par_Spitzer
+      sigma_par_ambi(iroot) = sigma_par
+      sigma_par_Spitzer_ambi(iroot) = sigma_par_Spitzer
+      J_BS_ambi(iroot) = J_BS
 
     Case ('DKES')
 
@@ -973,7 +977,7 @@ Do iroot = 1_iknd, num_roots
       Flows_ambi(:,iroot) = calc_flows_DKES(num_species,Smax,abs_Er,Temps,   &
         dens,vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,&
         log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_D31,Dspl_logD33,num_c, &
-        num_e,kcord,keord,Avec)
+        num_e,kcord,keord,Avec,J_BS)
       ! Calculate array of radial particle fluxes
       Gammas_ambi(:,iroot) = calc_fluxes_DKES(num_species,abs_Er,Temps,dens, &
         vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
@@ -983,7 +987,9 @@ Do iroot = 1_iknd, num_roots
       QoTs_ambi(:,iroot) = calc_QoTs_DKES(num_species,abs_Er,Temps,dens,     &
         vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
         log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,num_c, &
-        num_e,kcord,keord,Avec,B0)  
+        num_e,kcord,keord,Avec,B0)
+      
+      J_BS_ambi(iroot) = J_BS  
         
 
     Case Default
@@ -1033,9 +1039,9 @@ Do iroot = 1_iknd, num_roots
     roa_surf,Er_test/100._rknd,eaEr_o_kTe,Flows_ambi(:,iroot)
 
   ! Write current densities to file "Jprl_vs_roa"
-  Write(str_num,*) num_species + 3
+  Write(str_num,*) num_species + 4 
   Write(iu_Jprl_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))')  & 
-    roa_surf,Er_test/100._rknd,eaEr_o_kTe,Jprl_parts(:,iroot),Jprl_ambi(iroot)
+    roa_surf,Er_test/100._rknd,eaEr_o_kTe,Jprl_parts(:,iroot),Jprl_ambi(iroot),J_BS_ambi(iroot)
 
   ! Write contravariant flows to file "ucontra_vs_roa"
   Write(str_num,*) 2*num_species + 2
@@ -1096,7 +1102,7 @@ Deallocate(Gammas_ambi)   ! Ambipolar quantities
 Deallocate(QoTs_ambi)
 Deallocate(Flows_ambi)
 Deallocate(Er_test_vals)  ! Er to loop over
-Deallocate(Jprl_ambi,Jprl_parts) ! Parallel current densities
+Deallocate(Jprl_ambi,Jprl_parts,J_BS_ambi) ! Parallel current densities
 Deallocate(sigma_par_ambi,sigma_par_Spitzer_ambi) ! Paarllel conductivities
 Deallocate(utor,upol) ! Contravariant fsa flows
 
