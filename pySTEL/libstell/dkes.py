@@ -66,8 +66,8 @@ class DKES:
         
         #compute Dij_star correcting D13 and D33 with the B factors (see J.Lore documentation on PENTA)
         self.D11_star = L11
-        self.D31_star = L31 * np.sqrt(self.B0)
-        self.D33_star = L33 * self.B0
+        self.D31_star = L31 * np.sqrt(self.Bsq)
+        self.D33_star = L33 * self.Bsq
         
         #according to J. Lore documentation and also C. Beidler...
         # this is also what is done internally in PENTA
