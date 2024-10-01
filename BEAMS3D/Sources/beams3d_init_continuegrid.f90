@@ -99,19 +99,23 @@ SUBROUTINE beams3d_init_continuegrid
       sflx = 0.0
 
       ! Bfield
-      CALL get_beams3d_gridB(i,j,k,brtemp,bptemp,bztemp,sflx,uflx)
+      CALL get_beams3d_gridB(i,j,k,brtemp,bptemp,bztemp,sflx,uflx,pottemp)
       B_R(i,j,k) = brtemp
       B_PHI(i,j,k) = bptemp
       B_Z(i,j,k) = bztemp
       S_ARR(i,j,k) = sflx
       U_ARR(i,j,k) = uflx
+      POT_ARR(i,j,k) = pottemp
 
       IF (sflx < s_max) THEN
          tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0
          IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),tetemp,ier)
          IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),netemp,ier)
          IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),titemp,ier)
-         IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),pottemp,ier)
+         IF (npot > 0) THEN
+             CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),pottemp,ier)
+             POT_ARR(i,j,k) = pottemp
+         END IF
          IF (nzeff > 0) THEN
             CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),ZEFF_ARR(i,j,k),ier)
             DO u=1, NION
@@ -119,7 +123,7 @@ SUBROUTINE beams3d_init_continuegrid
             END DO
          END IF
          NE(i,j,k) = netemp; TE(i,j,k) = tetemp; TI(i,j,k) = titemp
-         POT_ARR(i,j,k) = pottemp
+         
       END IF
       IF (MOD(s,nr) == 0) THEN
          IF (lverb) THEN

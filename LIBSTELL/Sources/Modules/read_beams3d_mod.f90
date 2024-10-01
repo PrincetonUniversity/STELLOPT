@@ -34,11 +34,11 @@ MODULE read_beams3d_mod
    REAL(DTYPE), DIMENSION(:,:), POINTER, PRIVATE :: &
       R_lines, PHI_lines, Z_lines, rminor_lines, X_lines, Y_lines
    REAL(DTYPE), DIMENSION(:,:,:), POINTER, PRIVATE :: &
-      BR3D, BPHI3D, BZ3D, X3D, Y3D, Rminor3D, U3D, S3D
+      BR3D, BPHI3D, BZ3D, X3D, Y3D, Rminor3D, U3D, S3D, POT3D
    INTEGER :: win_raxis, win_phiaxis, win_zaxis, &
       win_BR3D, win_BPHI3D, win_BZ3D, win_U3D, win_S3D,&
       win_rminor_lines, &
-      win_X3D, win_Y3D, win_Rminor3D, &
+      win_X3D, win_Y3D, win_Rminor3D, win_POT3D,&
       win_RMAGAXIS, win_ZMAGAXIS, &
       win_R_1D, win_PHI_1D, win_Z_1D, win_rminor_1D, win_X_1D, win_Y_1D
 
@@ -73,6 +73,11 @@ CONTAINS
       CALL MPI_COMM_RANK(comm_read, mylocalid, istat)
       CALL MPI_COMM_SIZE(comm_read, nlocal, istat)
 #endif
+
+! Nullify pointers
+NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
+   X_1D, Y_1D, R_lines, PHI_lines, Z_lines, rminor_lines, X_lines, Y_lines,&
+   BR3D, BPHI3D, BZ3D, X3D, Y3D, Rminor3D, U3D, S3D, POT3D)
 
       ! Check for the file
       INQUIRE(FILE=TRIM(filename),EXIST=lexist)
@@ -111,6 +116,7 @@ CONTAINS
       CALL mpialloc(BZ3D,   nr, nphi, nz, mylocalid, master, comm_read, win_BZ3D)
       CALL mpialloc(U3D, nr, nphi, nz, mylocalid, master, comm_read, win_U3D)
       CALL mpialloc(S3D,   nr, nphi, nz, mylocalid, master, comm_read, win_S3D)
+      CALL mpialloc(POT3D,   nr, nphi, nz, mylocalid, master, comm_read, win_POT3D)
 
       ! Read Arrays and close file
 #if defined(LHDF5)
@@ -123,6 +129,8 @@ CONTAINS
          CALL read_var_hdf5(fid, 'B_Z',     nr, nphi, nz, istat, DBLVAR=BZ3D)
          CALL read_var_hdf5(fid, 'S_ARR',     nr, nphi, nz, istat, DBLVAR=S3D)
          CALL read_var_hdf5(fid, 'U_ARR',   nr, nphi, nz, istat, DBLVAR=U3D)
+         CALL read_var_hdf5(fid, 'POT_ARR',   nr, nphi, nz, istat, DBLVAR=POT3D)
+         IF (istat /= 0) POT3D = 0
          CALL close_hdf5(fid,istat)
       END IF
 #endif
@@ -283,11 +291,11 @@ CONTAINS
       RETURN
    END SUBROUTINE get_beams3d_B
 
-   SUBROUTINE get_beams3d_gridB(i,j,k,br,bp,bz,rho,theta)
+   SUBROUTINE get_beams3d_gridB(i,j,k,br,bp,bz,rho,theta,pot)
       IMPLICIT NONE
       INTEGER, INTENT(in) :: i,j,k
       REAL(rprec), INTENT(out) :: br, bp, bz
-      REAL(rprec), INTENT(out), OPTIONAL :: rho, theta
+      REAL(rprec), INTENT(out), OPTIONAL :: rho, theta, pot
       br = 0; bp = 0; bz=0
       IF (i>nr .or. j>nphi .or. k>nz) RETURN
       bp = BPHI3D(i,j,k)
@@ -299,6 +307,9 @@ CONTAINS
       IF (PRESENT(theta)) THEN
          theta = U3D(i,j,k)
       END IF
+      IF (PRESENT(pot)) THEN
+         pot = POT3D(i,j,k)
+      END IF      
       RETURN
    END SUBROUTINE get_beams3d_gridB
 
@@ -316,6 +327,7 @@ CONTAINS
       IF (ASSOCIATED(Y3D))          CALL mpidealloc(Y3D,          win_Y3D)
       IF (ASSOCIATED(S3D))          CALL mpidealloc(S3D,          win_S3D)
       IF (ASSOCIATED(U3D))          CALL mpidealloc(U3D,          win_U3D)
+      IF (ASSOCIATED(POT3D))          CALL mpidealloc(POT3D,      win_POT3D)
       IF (ASSOCIATED(Rminor3D))     CALL mpidealloc(Rminor3D,     win_Rminor3D)
 
       ! The 2D arrays are just pointers while the 1D arrays are the actual data
