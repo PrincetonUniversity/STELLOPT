@@ -1727,6 +1727,83 @@ class DKES:
             #check Erov provided is within the limits
             if(Erov>np.max(efield) or Erov<np.min(efield)):
                 print(f'ERROR: Erov={Erov} is out of the DKES data range: [{np.min(efield)},{np.max(efield)}]')
+                
+    def plot_PENTA1_Er_vs_roa(self,folder_path=None,plot=True):
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from collections import defaultdict
+        
+        if folder_path is None:
+            filename = 'flows_vs_roa'
+        else:
+            filename = folder_path+'/flows_vs_roa'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+        
+        #separate different roots
+        # Initialize dictionaries to store the separated values
+        roa_ion_root = []
+        roa_unstable_root = []
+        roa_electron_root = []
+        Er_ion_root = []
+        Er_unstable_root = []
+        Er_electron_root = []
+
+        # Create a dictionary to group all Er values by corresponding roa
+        roa_to_Er = defaultdict(list)
+
+        # Group Er values by roa
+        for r, e in zip(roa, Er):
+            roa_to_Er[r].append(e)
+
+        # Iterate over the grouped roa values
+        for r, er_values in roa_to_Er.items():
+            # Sort the corresponding Er values for each roa
+            sorted_er = sorted(er_values)
+            
+            if len(sorted_er) == 1:
+                # If only one value of roa, assign it to ion root
+                roa_ion_root.append(r)
+                Er_ion_root.append(sorted_er[0])
+            
+            # elif len(sorted_er) == 2:
+            #     print(f'ERROR: HOW COME YOU HAVE TWO ROOTS AT r/a={r} ???')
+            #     exit()
+            
+            elif len(sorted_er) == 3:
+                # If three Er values exist, assign smallest to ion root, middle to unstable root, and largest to electron root
+                roa_ion_root.append(r)
+                Er_ion_root.append(sorted_er[0])
+                roa_unstable_root.append(r)
+                Er_unstable_root.append(sorted_er[1])
+                roa_electron_root.append(r)
+                Er_electron_root.append(sorted_er[2])
+
+        # Convert results to numpy arrays (optional, if you need them as arrays)
+        roa_ion_root = np.array(roa_ion_root)
+        Er_ion_root = np.array(Er_ion_root)
+        roa_unstable_root = np.array(roa_unstable_root)
+        Er_unstable_root = np.array(Er_unstable_root)
+        roa_electron_root = np.array(roa_electron_root)
+        Er_electron_root = np.array(Er_electron_root)
+        
+        plt.rc('font', size=18)
+        fig=plt.figure(figsize=(11,8))
+        ax = fig.add_subplot(111)
+        ax.plot(roa_ion_root,Er_ion_root,'.-',label='ion root')
+        ax.plot(roa_unstable_root,Er_unstable_root,'.-',label='unstable root')
+        ax.plot(roa_electron_root,Er_electron_root,'.-',label='electron root')
+        ax.set_ylabel(r'Er [V/cm]')
+        ax.set_xlabel(r'r/a')
+        ax.legend(fontsize=12)
+        ax.grid()
+        plt.legend()
+        if plot:
+            plt.show()
   
 # Main routine
 if __name__=="__main__":
