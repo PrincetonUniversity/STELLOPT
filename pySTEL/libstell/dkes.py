@@ -145,6 +145,36 @@ class DKES:
     def plot_L33_test(self):
         
         import matplotlib.pyplot as pyplot
+        
+        L33 = 0.5*(self.L33m+self.L33p)
+        
+        L33_Spitzer = (2/3)/self.cmul - L33
+        print(L33_Spitzer)
+        
+        #check what are the slopes of D11*K^3/2  for the smallest and largest electric field
+        j = 0
+        i1 = j*self.ncmul
+        i2 = i1 + self.ncmul
+        L33_fit = L33[i1:i2]
+        cmul_fit = self.cmul[i1:i2]
+        
+        #fit to L33p
+        #take only the last 6 points of cmul for the fit
+        cmul_fit = cmul_fit[-6:]
+        L33_fit = L33_fit[-6:]
+        L33_Spitzer_fit = L33_Spitzer[-6:]
+        
+        p_L33 = np.polyfit(np.log10(cmul_fit),np.log10(L33_fit),1)
+        p_L33_Spitzer = np.polyfit(np.log10(cmul_fit),np.log10(L33_Spitzer_fit),1)
+        
+        x_fit = cmul_fit
+        #Emin_fit = 10**p_L33[1] * x_fit**p_L33[0]
+        
+        L33_fit_plot = 10* 10**p_L33[1] * x_fit**p_L33[0] 
+        L33_Spitzer_fit_plot = 10* 10**p_L33_Spitzer[1] * x_fit**p_L33_Spitzer[0] 
+        
+        print(f'slope L33={p_L33[0]}')
+        print(f'slope L33_Spitzer={p_L33_Spitzer[0]}')
                 
         px = 1/pyplot.rcParams['figure.dpi']
         pyplot.rc('font', size=20)
@@ -154,8 +184,11 @@ class DKES:
         for i in range(self.nefield):
             i1 = i*self.ncmul
             i2 = i1 + self.ncmul
-            ax.plot(self.cmul[i1:i2],self.L33m[i1:i2],marker='.',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
-            ax.plot(self.cmul[i1:i2],self.L33p[i1:i2],marker='.',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
+            ax.plot(self.cmul[i1:i2],self.L33m[i1:i2],marker='.',label=rf'L33m',linewidth=4,markersize=18)
+            ax.plot(self.cmul[i1:i2],self.L33p[i1:i2],marker='.',label=rf'L33p',linewidth=4,markersize=18)
+            ax.plot(self.cmul[i1:i2],L33_Spitzer[i1:i2],marker='.',label=rf'L33_with_Spitzer',linewidth=4,markersize=18)
+            ax.plot(x_fit,L33_fit_plot,'--r',linewidth=5)
+            ax.plot(x_fit,L33_Spitzer_fit_plot,'--r',linewidth=5)
                 
         ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
         ax.set_ylabel(f'L33')
@@ -294,6 +327,7 @@ class DKES:
             Bsq = dataset.variables['bdotb'][:]
             phi = dataset.variables['phi'][:]
             bmnc = dataset.variables['bmnc'][:]
+            self.aspect_ratio = dataset.variables['aspect'][:]
             dataset.close()
         except:
             print('\nERROR: Could not read wout file')
@@ -308,6 +342,7 @@ class DKES:
         print(f'r/a = sqrt(PHI/PHIEDGE) = {self.roa}')
         print(f'Bsq = {self.Bsq}')
         print(f'B0 = {self.B0}')
+        print(f'R/a = {self.aspect_ratio}')
         
      
     def plot_PENTA1_coeffs(self):
@@ -872,7 +907,79 @@ class DKES:
                 # Write the row to the file, formatted as space-separated values
                 file.write(" ".join(map(str, row_data)) + '\n')
                 
-    def read_PENTA_fluxes_vs_Er(self,plasma_class,folderpath=None):
+    def plot_PENTA_fluxes_vs_Er(self,roa_user,Z_ions=None,folder_path=None,plot=True):
+        #reads the file fluxes_vs_Er creatd by PENTA code
+        #folderpath should contain path to file without final '/'
+        # if not given, it is assumed we are already inside the folder
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from collections import defaultdict
+        
+        if folder_path is None:
+            filename = 'fluxes_vs_Er'
+        else:
+            filename = folder_path+'/fluxes_vs_Er'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+        gamma_e = penta[:,2]
+        
+        num_ion_species = len(penta[0,:]) - 3
+        
+        if Z_ions is not None:
+            if( len(Z_ions) is not num_ion_species):
+                print(f'ERROR: There are {num_ion_species} species, but only provided Zcharge of {len(Z_ions)} !!')
+                exit(0)    
+        else:
+            print('########## ASSUMING ALL IONS HAVE Z=1 #############')
+            Z_ions = np.ones(num_ion_species)            
+        
+        gamma_i_tot = np.sum(penta[:,3:]*Z_ions,axis=1)
+        
+        Er_dict = defaultdict(list)
+        Gamma_e_dict = defaultdict(list)
+        Gamma_i_dict = defaultdict(list)
+        
+        for r,er,ge,gi in zip(roa,Er,gamma_e,gamma_i_tot):
+            Er_dict[r].append(er)
+            Gamma_e_dict[r].append(ge)
+            Gamma_i_dict[r].append(gi)
+
+        roa_non_repeated = np.unique(roa)
+        
+        #conver roa_user to array in case it is not yet
+        roa_user = np.array(roa_user)
+        
+        for r_user in roa_user:
+            
+            #check that roa_user is inside the limits
+            #if yes, plot the closest to roa
+            if(r_user <= np.min(roa) or r_user>= np.max(roa)):
+                print(f'ERROR!! The provided roa={r_user} is outside the interval of PENTA data: [{np.min(roa)},{np.max(roa)}]')
+                exit(0)        
+            else:
+                roa_closest = roa_non_repeated[ np.argmin(np.abs(roa_non_repeated-r_user)) ]
+            
+            plt.rc('font', size=16)
+            fig=plt.figure(figsize=(8,6))
+            ax = fig.add_subplot(111)
+            ax.plot(Er_dict[roa_closest],Gamma_e_dict[roa_closest],label=r'$\Gamma_e$')
+            ax.plot(Er_dict[roa_closest],Gamma_i_dict[roa_closest],label=r'$\Sigma~Z_i\Gamma_i$')
+            ax.set_xlabel(r'Er [V/cm]')
+            ax.set_ylabel(r'$\Gamma~~[\text{m}^{-2}\,\text{s}^{-1}]$')
+            ax.set_title(f'r/a={roa_closest}')
+            ax.set_yscale('log')
+            ax.legend(fontsize=12)
+            ax.grid()
+            plt.legend()
+        if plot:
+            plt.show()
+        
+                
+    def read_PENTA1_fluxes_vs_Er(self,plasma_class,folderpath=None):
         #reads the file fluxes_vs_Er creatd by PENTA code
         #folderpath should contain path to file without final '/'
         # if not given, it is assumed we are already inside the folder
@@ -934,106 +1041,692 @@ class DKES:
         # plt.legend()
         
         plt.show()
-        
-        
-
-            
-        
-            
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
     
-    # def perp_coll_freq(self,n,m,Z,T,v,species_num,electron_num):
-    #     """Calc perpendicular collision frequency of species species_num
+    def plot_PENTA_Er_vs_roa(self,folder_path=None,plot=True):
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from collections import defaultdict
+        
+        if folder_path is None:
+            filename = 'Jprl_vs_roa'
+        else:
+            filename = folder_path+'/Jprl_vs_roa'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+        
+        #separate different roots
+        # Initialize dictionaries to store the separated values
+        roa_ion_root = []
+        roa_unstable_root = []
+        roa_electron_root = []
+        Er_ion_root = []
+        Er_unstable_root = []
+        Er_electron_root = []
 
-	# 	This routine takes a 1D arrays of n,m,Z,T,v which contains the
-    #     density, mass, charge number, Temperature and velocity of all species
-    #     in a plasma. Then it computes nu_D of species indicated by the 
-    #     number species_num, which refers to the index in the arrays of 
-    #     the species we are computing the collision frequency
-        
-    #     This is the collision frequency of the pitch-angle scatering
-    #     operator and is defined in 
-    #     S. P. Hirshman and D. J. Sigmar, Nucl. Fusion 21, 1079 (1981)
+        # Create a dictionary to group all Er values by corresponding roa
+        roa_to_Er = defaultdict(list)
 
-	# 	Parameters
-	# 	----------
-	# 	n : list
-	# 		density in m^-3
-    #     m : list
-	# 		mass in kg
-    #     Z : list
-	# 		charge number; if electron, Z=-1
-    #     T : list
-	# 		temperature in eV
-    #     v : list
-	# 		velocity in m/s
-    #     species num : integer
-    #         identifies the species we want the collision freq of: nu_D_num_index
-    #     electron_num : integer
-    #         identifies the index of the electrons
-		
-    #     Returns
-	# 	----------
-	# 	nu_D : real
-	# 		Perpendicular collision frequency [s^-1]
-	# 	"""
-  
-    #     from scipy.special import erf
-        
-    #     EC = 1.602176634E-19 # Electron charge [C]
-    #     EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
-          
-    #     Za = Z[species_num]
-    #     ma = m[species_num]
-    #     va = v[species_num]
-        
-    #     ne = n[electron_num]
-    #     Te = T[electron_num]
-        
-    #     #compute loglambda as in PENTA
-    #     if(Te>50):
-    #         loglambda = 25.3 - 1.15*np.log10(ne/1e6) + 2.3*np.log10(Te)
-    #     else:
-    #         loglambda = 23.4 - 1.15*np.log10(ne/1e6) + 3.45*np.log10(Te)
-        
-    #     nu_D = 0.0
-    #     for nb,mb,Zb,Tb,vb in zip(n,m,Z,T,v):
-            
-    #         vthb = np.sqrt(2*EC*Tb/mb)
-    #         xb = vb/vthb
-            
-    #         Hb = (1-0.5/(xb*xb))*erf(xb) + np.exp(-xb*xb)/(xb*np.sqrt(np.pi))
-            
-    #         num = nb*(EC**4)*Za*Za*Zb*Zb*loglambda*Hb
-    #         den = ma*ma*va*va*va*4*np.pi*EPS0*EPS0
-            
-    #         nu_D = nu_D + num/den
-            
-    #     return nu_D
-            
-            
-        
-        
-        
-        
-        
+        # Group Er values by roa
+        for r, e in zip(roa, Er):
+            roa_to_Er[r].append(e)
 
-      
+        # Iterate over the grouped roa values
+        for r, er_values in roa_to_Er.items():
+            # Sort the corresponding Er values for each roa
+            sorted_er = sorted(er_values)
+            
+            if len(sorted_er) == 1:
+                # If only one value of roa, assign it to ion root
+                roa_ion_root.append(r)
+                Er_ion_root.append(sorted_er[0])
+            
+            elif len(sorted_er) == 2:
+                print(f'ERROR: HOW COME YOU HAVE TWO ROOTS AT r/a={r} ???')
+                exit()
+            
+            elif len(sorted_er) == 3:
+                # If three Er values exist, assign smallest to ion root, middle to unstable root, and largest to electron root
+                roa_ion_root.append(r)
+                Er_ion_root.append(sorted_er[0])
+                roa_unstable_root.append(r)
+                Er_unstable_root.append(sorted_er[1])
+                roa_electron_root.append(r)
+                Er_electron_root.append(sorted_er[2])
 
-     
+        # Convert results to numpy arrays (optional, if you need them as arrays)
+        roa_ion_root = np.array(roa_ion_root)
+        Er_ion_root = np.array(Er_ion_root)
+        roa_unstable_root = np.array(roa_unstable_root)
+        Er_unstable_root = np.array(Er_unstable_root)
+        roa_electron_root = np.array(roa_electron_root)
+        Er_electron_root = np.array(Er_electron_root)
+        
+        plt.rc('font', size=18)
+        fig=plt.figure(figsize=(11,8))
+        ax = fig.add_subplot(111)
+        ax.plot(roa_ion_root,Er_ion_root,'.-',label='ion root')
+        ax.plot(roa_unstable_root,Er_unstable_root,'.-',label='unstable root')
+        ax.plot(roa_electron_root,Er_electron_root,'.-',label='electron root')
+        ax.set_ylabel(r'Er [V/cm]')
+        ax.set_xlabel(r'r/a')
+        ax.legend(fontsize=12)
+        ax.grid()
+        plt.legend()
+        if plot:
+            plt.show()
+        
+    def plot_PENTA_fluxes_vs_roa(self,folder_path=None,plot=True):
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from itertools import groupby
+        
+        if folder_path is None:
+            filename = 'fluxes_vs_roa'
+        else:
+            filename = folder_path+'/fluxes_vs_roa'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        #non-repetead roa
+        roa_unique = np.unique(roa)
+        # group different roa
+        roa_group = groupby(roa)
+        
+        num_ion_species = int(len(penta[0,5:])/2)
+        
+        species_list = ['e'] + [f'i{j}' for j in range(1, num_ion_species + 1)]        
+        
+        gamma = penta[:,np.r_[3,5:(5+num_ion_species)]]
+        
+        #number of roots per roa
+        num_roots = [len(list(group)) for _, group in groupby(roa)]
+        
+        #check
+        if(len(num_roots) is not len(roa_unique)):
+            print('ERROR: there is a problem...')
+            exit(0)
 
+        plt.rc('font', size=18)
+        fig=plt.figure(figsize=(11,8))
+        ax = fig.add_subplot(111)
+        #loop in species
+        for js,s in enumerate(species_list):
+            gamma_species = gamma[:,js]
+            
+            gamma_electron_root = []
+            gamma_ion_root = []
+            
+            roa_electron_root = []
+            roa_ion_root = []
+            
+            #divide diferent roots (discard unstable one)
+            i=0
+            for _, group in groupby(roa):
+                num_roots = len( list(group) )
+                
+                if(num_roots == 2):
+                    raise ValueError(f"How come you have 2 roots??")
+                elif(num_roots == 1):
+                    gamma_ion_root.append(gamma_species[i])
+                    roa_ion_root.append(roa[i])
+                elif(num_roots ==3):
+                    gamma_ion_root.append(gamma_species[i])
+                    roa_ion_root.append(roa[i])
+                    gamma_electron_root.append(gamma_species[i+2])
+                    roa_electron_root.append(roa[i+2])
+                else:
+                    raise ValueError(f"How come you have {num_roots} roots ??")   
+                i += num_roots
+            
+            ax.plot(roa_ion_root,gamma_ion_root,'.-',label=species_list[js]+', i-root')
+            ax.plot(roa_electron_root,gamma_electron_root,'.-',label=species_list[js]+', e-root')
+        ax.set_ylabel(r'$\Gamma~[m^{-2}s^{-1}]$')
+        ax.set_xlabel(r'r/a')
+        ax.legend(fontsize=12)
+        ax.set_title('ambipolar particle fluxes')
+        ax.grid()
+        plt.legend()
+        if plot:
+            plt.show()
+        
+    def plot_plasma_profiles_check(self,folder_path=None,plot=True):
+        # plots plasma profiles as in plasma_profiles_check file provided by PENTA
+        # this checks if splines of profiles and their dervatives were done correctly
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        
+        if folder_path is None:
+            filename = 'plasma_profiles_check'
+        else:
+            filename = folder_path+'/plasma_profiles_check'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        
+        num_ion_species = int(len(penta[0,5:])/4)
+        
+        species_list = ['e'] + [f'i{j}' for j in range(1, num_ion_species + 1)]
+        
+        #densities: electrons, i1, i2, ...
+        densities = penta[:,np.r_[2,(5+num_ion_species):(5+2*num_ion_species)]]
+        
+        #temperatures: electrons, i1, i2, ...
+        temperatures = penta[:,np.r_[1,5:(5+num_ion_species)]]
+        
+        #grad_densitites: electrons, i1, i2, ...
+        grad_densitites = penta[:,np.r_[3,(5+2*num_ion_species):(5+3*num_ion_species)]]
+        
+        #grad_tempratures: electrons, i1, i2, ...
+        grad_temperatures = penta[:,np.r_[4,(5+3*num_ion_species):(5+4*num_ion_species)]]
+        
+        plt.rc('font', size=18)
+        fig, ax = plt.subplots(2,2,figsize=(19,12))
+        for k,s in enumerate(species_list): ax[0,0].plot(roa,densities[:,k],label=s)
+        ax[0,0].set_ylabel(r'$n~~[m^{-3}]$')
+        for k,s in enumerate(species_list): ax[0,1].plot(roa,temperatures[:,k]/1000,label=s)
+        ax[0,1].set_ylabel(r'$T$  [keV]')
+        for k,s in enumerate(species_list): ax[1,0].plot(roa,grad_densitites[:,k],label=s)
+        ax[1,0].set_ylabel(r'$dn/dr~~[m^{-4}]$')
+        for k,s in enumerate(species_list): ax[1,1].plot(roa,grad_temperatures[:,k]/1000,label=s)
+        ax[1,1].set_ylabel(r'$dT/dr$  [keV/m]')
+        
+        ax[1,0].set_xlabel(r'r/a')
+        ax[1,1].set_xlabel(r'r/a')
+        
+        for a in ax.flat:
+            a.grid(True)
+            a.legend()
+            #a.legend(fontsize=12)
+        if plot:
+            plt.show()
+        
+    def plot_PENTA_parallel_currents(self,folder_path=None,plot=True):
+        # plots parallel current of each species, total parallel current and BS current
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from itertools import groupby
+        
+        if folder_path is None:
+            filename = 'Jprl_vs_roa'
+        else:
+            filename = folder_path+'/Jprl_vs_roa'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        
+        num_ion_species = int(len(penta[0,4:])) - 2
+        
+        species_list = ['e'] + [f'i{j}' for j in range(1, num_ion_species + 1)]
+        
+        J = penta[:,np.r_[3,4:(4+num_ion_species)]]
+        J_total = penta[:,4+num_ion_species]
+        J_BS = penta[:,-1]
+        
+        plt.rc('font', size=18)
+        fig=plt.figure(figsize=(11,8))
+        ax = fig.add_subplot(111)
+        #loop in species
+        for js,s in enumerate(species_list):
+            J_species = J[:,js]
+            
+            J_electron_root = []
+            J_ion_root = []
+            
+            roa_electron_root = []
+            roa_ion_root = []
+            
+            #divide diferent roots (discard unstable one)
+            i=0
+            for _, group in groupby(roa):
+                num_roots = len( list(group) )
+                
+                if(num_roots == 2):
+                    raise ValueError(f"How come you have 2 roots??")
+                elif(num_roots == 1):
+                    J_ion_root.append(J_species[i])
+                    roa_ion_root.append(roa[i])
+                elif(num_roots ==3):
+                    J_ion_root.append(J_species[i])
+                    roa_ion_root.append(roa[i])
+                    J_electron_root.append(J_species[i+2])
+                    roa_electron_root.append(roa[i+2])
+                else:
+                    raise ValueError(f"How come you have {num_roots} roots ??")   
+                i += num_roots
+            
+            ax.plot(roa_ion_root,np.array(J_ion_root)/1000,'.-',label=s+', i-root')
+            ax.plot(roa_electron_root,np.array(J_electron_root)/1000,'.-',label=s+', e-root')
+        ax.set_ylabel(r'$J_{\parallel}~[kA~m^{-2}]$')
+        ax.set_xlabel(r'r/a')
+        ax.legend(fontsize=12)
+        ax.grid()
+        plt.legend()
+        if plot:
+            plt.show()
+        
+    def plot_PENTA_sigmas(self,folder_path=None,plot=True):
+        # plots parallel conducitivity as given by PENTA (when ran in 'SN' mode)
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        
+        if folder_path is None:
+            filename = 'sigmas_vs_roa'
+        else:
+            filename = folder_path+'/sigmas_vs_roa'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        sigma_par = penta[:,2]
+        sigma_par_Spitzer = penta[:,3]
+        
+        sigma_par_Spitzer_NEO = sigma_par_Spitzer*(1-np.sqrt(self.roa/self.aspect_ratio))**2
+        
+        plt.rc('font', size=18)
+        fig=plt.figure(figsize=(11,8))
+        ax = fig.add_subplot(111)
+        ax.plot(roa,sigma_par,label='PENTA')
+        ax.plot(roa,sigma_par_Spitzer,label='Spitzer')
+        ax.plot(roa,sigma_par_Spitzer_NEO,'--',label='Spitzer-NEO')
+        ax.set_ylabel(r'$\sigma_{\parallel}~~[\Omega^{-1}~m^{-1}]$')
+        ax.set_xlabel(r'r/a')
+        ax.grid()
+        plt.legend()
+        
+        plt.rc('font', size=18)
+        fig=plt.figure(figsize=(11,8))
+        ax = fig.add_subplot(111)
+        ax.plot(roa,1/sigma_par,label='PENTA')
+        ax.plot(roa,1/sigma_par_Spitzer,label='Spitzer')
+        ax.plot(roa,1/sigma_par_Spitzer_NEO,'--',label='Spitzer-NEO')
+        ax.set_ylabel(r'$\eta_{\parallel}~~[\Omega~m]$')
+        ax.set_xlabel(r'r/a')
+        ax.set_yscale('log')
+        ax.grid()
+        plt.legend()
+        
+        if plot:
+            plt.show()
+            
+    def plot_PENTA_Lcoeffs_vs_roa_ambi(self,folder_path=None,plot=True):
+        #plots L11,L12 and L13 for each species if PENTA3 was run in DKES mode
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from itertools import groupby
+        
+        if folder_path is None:
+            filename = 'thermalCoeffs_vs_roa'
+        else:
+            filename = folder_path+'/thermalCoeffs_vs_roa'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        
+        num_ion_species = int(len(penta[0,2:])/3) - 1
+        
+        species_list = ['e'] + [f'i{j}' for j in range(1, num_ion_species + 1)]        
+        
+        L11 = penta[:,np.r_[2:(3+num_ion_species)]] 
+        L12 = penta[:,np.r_[(3+num_ion_species):(4+2*num_ion_species)]]
+        L13 = penta[:,np.r_[(4+2*num_ion_species):(5+3*num_ion_species)]]
 
+        plt.rc('font', size=18)
+        fig11, ax11 = plt.subplots(1,1,figsize=(10,7))
+        fig12, ax12 = plt.subplots(1,1,figsize=(10,7))
+        fig13, ax13 = plt.subplots(1,1,figsize=(10,7))
+
+        #loop in species
+        for js,s in enumerate(species_list):
+            L11_species = L11[:,js]
+            L12_species = L12[:,js]
+            L13_species = L13[:,js]
+            
+            L11_electron_root = []
+            L11_ion_root = []
+            
+            L12_electron_root = []
+            L12_ion_root = []
+            
+            L13_electron_root = []
+            L13_ion_root = []
+            
+            roa_electron_root = []
+            roa_ion_root = []
+            
+            #divide diferent roots (discard unstable one)
+            i=0
+            for _, group in groupby(roa):
+                num_roots = len( list(group) )
+                
+                if(num_roots == 2):
+                    raise ValueError(f"How come you have 2 roots??")
+                elif(num_roots == 1):
+                    L11_ion_root.append(L11_species[i])
+                    L12_ion_root.append(L11_species[i])
+                    L13_ion_root.append(L11_species[i])
+                    roa_ion_root.append(roa[i])
+                elif(num_roots ==3):
+                    # ion root
+                    L11_ion_root.append(L11_species[i])
+                    L12_ion_root.append(L12_species[i])
+                    L13_ion_root.append(L13_species[i])
+                    roa_ion_root.append(roa[i])
+                    
+                    # electron root
+                    L11_electron_root.append(L11_species[i+2])
+                    L12_electron_root.append(L12_species[i+2])
+                    L13_electron_root.append(L13_species[i+2])
+                    roa_electron_root.append(roa[i+2])
+                else:
+                    raise ValueError(f"How come you have {num_roots} roots ??")   
+                i += num_roots
+            
+            # plot L11
+            ax11.plot(roa_ion_root,L11_ion_root,'.-',label=species_list[js]+', i-root')
+            ax11.plot(roa_electron_root,L11_electron_root,'.-',label=species_list[js]+', e-root')
+            ax11.set_title(r'$L_{11}$')
+            # plot L12
+            ax12.plot(roa_ion_root,L12_ion_root,'.-',label=species_list[js]+', i-root')
+            ax12.plot(roa_electron_root,L12_electron_root,'.-',label=species_list[js]+', e-root')
+            ax12.set_title(r'$L_{12}$')
+            # plot L13
+            ax13.plot(roa_ion_root,L13_ion_root,'.-',label=species_list[js]+', i-root')
+            ax13.plot(roa_electron_root,L13_electron_root,'.-',label=species_list[js]+', e-root')
+            ax13.set_title(r'$L_{13}$')
+        ax11.set_xlabel(r'r/a')
+        ax12.set_xlabel(r'r/a')
+        ax13.set_xlabel(r'r/a')
+        #ax.legend(fontsize=12)
+        ax11.grid()
+        ax12.grid()
+        ax13.grid()
+        plt.legend()
+        if plot:
+            plt.show()
+            
+    def plot_PENTA_Lcoeffs_vs_Er(self,roa_user,folder_path=None,plot=True):
+        #reads the file thermalCoeffs_vs_Er creatd by PENTA code 
+        # when ran in DKES mode
+        #folderpath should contain path to file without final '/'
+        # if not given, it is assumed we are already inside the folder
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from collections import defaultdict
+        
+        if folder_path is None:
+            filename = 'thermalCoeffs_vs_Er'
+        else:
+            filename = folder_path+'/thermalCoeffs_vs_Er'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+        
+        num_ion_species = int(len(penta[0,2:])/3) - 1
+        
+        species_list = ['e'] + [f'i{j}' for j in range(1, num_ion_species + 1)]        
+        
+        L11_electrons = penta[:,2]
+        L12_electrons = penta[:,3+num_ion_species]
+        L13_electrons = penta[:,4+2*num_ion_species]
+        
+        Er_dict = defaultdict(list)
+        L11_dict = defaultdict(list)
+        L12_dict = defaultdict(list)
+        L13_dict = defaultdict(list)
+        
+        for r,er,l11,l12,l13 in zip(roa,Er,L11_electrons,L12_electrons,L13_electrons):
+            Er_dict[r].append(er)
+            L11_dict[r].append(l11)
+            L12_dict[r].append(l12)
+            L13_dict[r].append(l13)
+
+        roa_non_repeated = np.unique(roa)
+        
+        #convert roa_user to array in case it is not yet
+        roa_user = np.array(roa_user)
+        
+        for r_user in roa_user:
+            
+            #check that roa_user is inside the limits
+            #if yes, plot the closest to roa
+            if(r_user <= np.min(roa) or r_user>= np.max(roa)):
+                print(f'ERROR!! The provided roa={r_user} is outside the interval of PENTA data: [{np.min(roa)},{np.max(roa)}]')
+                exit(0)        
+            else:
+                roa_closest = roa_non_repeated[ np.argmin(np.abs(roa_non_repeated-r_user)) ]
+            
+            plt.rc('font', size=16)
+            fig=plt.figure(figsize=(8,6))
+            ax = fig.add_subplot(111)
+            ax.plot(Er_dict[roa_closest],L11_dict[roa_closest],label=r'L11, e')
+            ax.plot(Er_dict[roa_closest],L12_dict[roa_closest],label=r'L12, e')
+            ax.plot(Er_dict[roa_closest],L13_dict[roa_closest],label=r'L13, e')
+            ax.set_xlabel(r'Er [V/cm]')
+            ax.set_title(f'r/a={roa_closest}')
+            #ax.set_yscale('log')
+            ax.legend(fontsize=12)
+            ax.grid()
+            plt.legend()
+        if plot:
+            plt.show()
+            
+    def plot_PENTA_Lcoeff_vs_Er(self,which_coeff,which_species: int,roa_user,folder_path=None,plot=True):
+        #reads the file thermalCoeffs_vs_Er creatd by PENTA code 
+        # when ran in DKES mode
+        #folderpath should contain path to file without final '/'
+        # if not given, it is assumed we are already inside the folder
+        # Lcoeff should be 'L11','L12' or 'L13'
+        # which_species should be an integer: 0 for electrons, 1 for ion1, 2 for ion2, ...
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from collections import defaultdict
+        
+        if folder_path is None:
+            filename = 'thermalCoeffs_vs_Er'
+        else:
+            filename = folder_path+'/thermalCoeffs_vs_Er'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+        
+        num_ion_species = int(len(penta[0,2:])/3) - 1
+        
+        species_list = ['e'] + [f'i{j}' for j in range(1, num_ion_species + 1)] 
+        
+        try:
+            print(f'Plotting {which_coeff} coefficient for species {species_list[which_species]}')  
+        except:
+            print('ERROR: THE GIVEN SPECIES DOES NOT EXIST !!')
+            exit(0)
+        
+        if(which_coeff=='L11'):
+            L = penta[:,2+which_species]   
+        elif(which_coeff=='L12'):
+            L = penta[:,3+num_ion_species+which_species]
+        elif(which_coeff=='L13'):
+            L = penta[:,4+2*num_ion_species+which_species]
+        else:
+            print(f'ERROR!! The coefficient type must be L11, L12 or L13. Instead you provided {which_coeff}')
+            exit(0)
+                    
+        Er_dict = defaultdict(list)
+        L_dict = defaultdict(list)
+        
+        for r,er,l in zip(roa,Er,L):
+            Er_dict[r].append(er)
+            L_dict[r].append(l)
+
+        roa_non_repeated = np.unique(roa)
+        
+        #convert roa_user to array in case it is not yet
+        roa_user = np.array(roa_user)
+        
+        plt.rc('font', size=16)
+        fig=plt.figure(figsize=(8,6))
+        ax = fig.add_subplot(111)
+        for r_user in roa_user:
+            
+            #check that roa_user is inside the limits
+            #if yes, plot the closest to roa
+            if(r_user <= np.min(roa) or r_user>= np.max(roa)):
+                print(f'ERROR!! The provided roa={r_user} is outside the interval of PENTA data: [{np.min(roa)},{np.max(roa)}]')
+                exit(0)        
+            else:
+                roa_closest = roa_non_repeated[ np.argmin(np.abs(roa_non_repeated-r_user)) ]
+            
+            ax.plot(Er_dict[roa_closest],L_dict[roa_closest],label=f'r/a={roa_closest}')
+            ax.set_xlabel(r'Er [V/cm]')
+            ax.set_title(f'{which_coeff} of {species_list[which_species]}')
+            #ax.set_yscale('log')
+            ax.legend(fontsize=12)
+            ax.grid()
+            plt.legend()
+        if plot:
+            plt.show()
+            
+    def plot_PENTA_Lcoeff_vs_roa(self,which_coeff,which_species: int,Er_user,folder_path=None,plot=True):
+        # plots PENTA Lcoeff as a afunction of r/a for a given Er=Er_user. Er_user can be an array
+        # Er_user should come in V/cm
+        # folder_path is the folder that contains tha thermlCoeffs_vs_Er file
+        # note that this is not plotting the 'ambipolar coefficient', i.e., the coefficient at the Er
+        # set b ambipolarity; here, instead, we choose at which Er we want to plot
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from collections import defaultdict
+        
+        if folder_path is None:
+            filename = 'thermalCoeffs_vs_Er'
+        else:
+            filename = folder_path+'/thermalCoeffs_vs_Er'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+        
+        num_ion_species = int(len(penta[0,2:])/3) - 1
+        
+        species_list = ['e'] + [f'i{j}' for j in range(1, num_ion_species + 1)] 
+        
+        try:
+            print(f'Plotting {which_coeff} coefficient for species {species_list[which_species]}')  
+        except:
+            print('ERROR: THE GIVEN SPECIES DOES NOT EXIST !!')
+            exit(0)
+        
+        if(which_coeff=='L11'):
+            L = penta[:,2+which_species]   
+        elif(which_coeff=='L12'):
+            L = penta[:,3+num_ion_species+which_species]
+        elif(which_coeff=='L13'):
+            L = penta[:,4+2*num_ion_species+which_species]
+        else:
+            print(f'ERROR!! The coefficient type must be L11, L12 or L13. Instead you provided {which_coeff}')
+            exit(0)
+                    
+        L_dict = defaultdict(list)
+        
+        for r,er,l in zip(roa,Er,L):
+            L_dict[r,er].append(l)
+
+        roa_unique = np.unique(roa)
+        Er_unique = np.unique(Er)
+        
+        #convert roa_user to array in case it is not yet
+        Er_user = np.array(Er_user)
+        
+        plt.rc('font', size=16)
+        fig=plt.figure(figsize=(8,6))
+        ax = fig.add_subplot(111)   
+        
+        for E_user in Er_user:
+            
+            #check that roa_user is inside the limits
+            #if yes, plot the closest to roa
+            if(E_user <= np.min(Er) or E_user>= np.max(Er)):
+                print(f'ERROR!! The provided Er={Er_user} is outside the interval of PENTA data: [{np.min(Er)},{np.max(Er)}]')
+                exit(0)        
+            else:
+                Er_closest = Er_unique[ np.argmin(np.abs(Er_unique-E_user)) ]
+                
+            L_plot = [l for r in roa_unique for l in L_dict[(r,Er_closest)]]
+            
+            ax.plot(roa_unique,L_plot,'.-',label=f'Er={Er_closest} V/cm')
+            ax.set_xlabel(r'r/a')
+            ax.set_title(f'{which_coeff} of {species_list[which_species]}')
+            #ax.set_yscale('log')
+            ax.legend(fontsize=12)
+            ax.grid()
+            plt.legend()
+        if plot:
+            plt.show()
+    
+    
+    #need to finish this routine...
+    def plot_DKES_coeff_vs_roa(self,which_coeff,which_roa,Erov,folder_path):
+        # plots one of the DKES coeff as a function of r/a for the given Er/v
+        # folder_path should be the path to the folder inside which there are the folders surface_#
+        
+        import os
+        import re
+        
+        filename_list = []
+        
+        # Loop through each folder in the folder_path
+        for folder_name in os.listdir(folder_path):
+            folder_full_path = os.path.join(folder_path, folder_name)
+            
+            # Check if it's a directory and if there is a matching "results.*" file inside
+            if os.path.isdir(folder_full_path):
+                for file_name in os.listdir(folder_full_path):
+                    # Match folders like "surface_k" and files like "results.*" in one regex
+                    if re.match(r'^surface_\d+/results\..*$', f"{folder_name}/{file_name}"):
+                        filename_list.append(os.path.join(folder_full_path, file_name))
+                        
+        print(len(filename_list))
+        
+        for filename in filename_list:
+            
+            dkes = np.loadtxt(filename,skiprows=2)
+            
+            cmul = dkes[:,0]
+            efield = dkes[:,1]
+            if(which_coeff=='L11'):
+                Lm = dkes[:,4]
+                Lp = dkes[:,5]
+            elif(which_coeff=='L31'):
+                Lm = dkes[:,6]
+                Lp = dkes[:,7]
+            elif(which_coeff=='L33'):
+                Lm = dkes[:,8]
+                Lp = dkes[:,9]
+            else:
+                print(f'ERROR!! The coefficient type must be L11, L31 or L33. Instead you provided {which_coeff}')
+                exit(0)
+                
+            #check Erov provided is within the limits
+            if(Erov>np.max(efield) or Erov<np.min(efield)):
+                print(f'ERROR: Erov={Erov} is out of the DKES data range: [{np.min(efield)},{np.max(efield)}]')
   
 # Main routine
 if __name__=="__main__":
