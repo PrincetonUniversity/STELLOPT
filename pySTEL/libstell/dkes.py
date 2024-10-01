@@ -305,17 +305,17 @@ class DKES:
         print('Assuming <U^2>=0\n')
         self.Usq = 0.0
         
+        aux = 1 - 1.5*self.cmul*self.D33_star/self.Bsq
+        
         #compute PENTA lstar
-        self.lstar_1 = self.D11_star / (EC*EC)
-        self.lstar_2 = - (2./3.)*self.cmul*self.Usq / (EC*EC)
-        self.lstar_3 = (self.D31_star*self.D31_star/self.D33_star) / (EC*EC)
-        self.lstar = self.lstar_1 + self.lstar_2 + self.lstar_3
+        self.lstar = self.D11_star - (2./3.)*self.cmul*self.Usq + (1.5*self.cmul*self.D13_star*self.D13_star/self.Bsq)/aux
+        self.lstar = self.lstar / (EC*EC)
         
         #compute PENTA mstar
-        self.mstar = (2./3.)*self.Bsq*( (2./3.)*self.Bsq/self.D33_star - self.cmul )
-        
+        self.mstar = self.cmul*self.cmul*self.D33_star / aux
+
         #compute PENTA nstar
-        self.nstar = (2./3.)*self.Bsq*self.D13_star/self.D33_star
+        self.nstar = self.cmul*self.D13_star / aux
         self.nstar = self.nstar / EC
     
     def get_VMEC_quantities(self,wout_file):
