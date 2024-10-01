@@ -199,7 +199,7 @@ EndFunction calc_QoTs_DKES
 Function calc_fluxes_DKES(num_species,abs_Er,Temps,dens,vths,charges,  &
      masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
      cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,num_c,num_e,   &
-     kcord,keord,Avec,B0)                                              &
+     kcord,keord,Avec,B0,DKES_L11,DKES_L12,DKES_L13)                                              &
 Result(Gammas)
 !
 ! Description: 
@@ -278,6 +278,9 @@ Integer(iknd), Intent(in)  :: keord
 Real(rknd),    Intent(in)  :: Avec(num_species*3)
 Real(rknd),    Intent(in)  :: B0
 Real(rknd)                 :: Gammas(num_species)
+Real(rknd),    Intent(inout)  :: DKES_L11(num_species)
+Real(rknd),    Intent(inout)  :: DKES_L12(num_species)
+Real(rknd),    Intent(inout)  :: DKES_L13(num_species)
 
 ! Local Scalars
 Integer(iknd) :: ispec1,ind_A     ! Loop indices
@@ -368,6 +371,10 @@ Do ispec1 = 1_iknd, num_species
   ! Calculate flux due to direct energy convolution of DKES coefficients
   ind_A = (ispec1-1)*3+1
   Gammas(ispec1) = - L11*Avec(ind_A) - L12*Avec(ind_A+1) + L13*Avec(ind_A+2)
+
+  DKES_L11(ispec1) = L11
+  DKES_L12(ispec1) = L12
+  DKES_L13(ispec1) = L13
 
 EndDo ! Species 1 loop
 
