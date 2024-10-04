@@ -159,12 +159,6 @@
       INTEGER :: iunit, js, iloc, n_norm, i, j, k, ierr, istat, maxl(1)
       REAL(rprec) btheta, bzeta, iota_local, psip, chip, twopi
       REAL(rprec) phi_edge, cmul, efield, bmn_test
-      ! Reading from file
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: cmul_list, efield_list
-      INTEGER :: ios, npairs !npairs is the number of (cmul,efiled) pairs in the external file
-      CHARACTER*(120) :: cmul_efield_filename
-      CHARACTER*(120) :: line_read  
-      !f
       INTEGER, DIMENSION(mhi,nhi,3) :: nplus, nmins
       INTEGER, DIMENSION(2*nhi,mhi) :: mns_out = 0
       INTEGER, DIMENSION(2*nhi) :: n_out = 0
@@ -194,56 +188,16 @@
 
       CALL second0(time_begin)
 
-      IF (numargs < 2) STOP 'Require at least 2 command line arguments!'
-
-      !Read (cmul,efield) pairs from external file
-      cmul_efield_filename = 'cmul_efield_list.txt'
-      npairs = 0
-
-      ! Open the file to count the number of lines
-      iunit = 10
-      !OPEN(UNIT=iunit, FILE=cmul_efield_filename, STATUS='old', ACTION='READ', IOSTAT=ios)
-      CALL safe_open(iunit,ios,cmul_efield_filename,'old','formatted')
-
-      ! Check if file opened successfully
-      IF (ios /= 0) THEN
-        PRINT *, 'Error opening file: ', cmul_efield_filename
-        STOP
-      ENDIF
-
-       ! Count the number of lines in the file
-      DO
-        READ(iunit, '(A)', iostat=ios) line_read
-        IF (ios /= 0) EXIT
-        npairs = npairs + 1
-      END DO
-
-      ! Allocate arrays based on the number of lines
-      ALLOCATE(cmul_list(npairs), efield_list(npairs))
-
-      ! Rewind the file to read the data
-      REWIND(iunit)
-
-      ! Read data from the file into arrays
-      DO i = 1, npairs
-        READ(iunit, *, iostat=ios) cmul_list(i), efield_list(i)
-        IF (ios /= 0) THEN
-            PRINT *, 'Error reading data on line ', i
-            EXIT
-        ENDIF
-      END DO
-
-      ! Close the file
-      CLOSE(iunit)
+      IF (numargs < 4) STOP 'Require at least 4 command line arguments!'
 
       READ (arg(2),*) js
-      !READ (arg(3),*) cmul
-      !READ (arg(4),*) efield
-      !IF (numargs>4 .and. (arg(5)(1:1).eq.'f' .or. arg(5)(1:1).eq.'F'))
-      !1   lscreen = .false.
-      IF (numargs > 2) READ (arg(3), *) extension_mod
-      IF (numargs > 3) READ (arg(4), *) coupling_order
-      IF (numargs > 4) READ (arg(5), *) legendre_modes
+      READ (arg(3),*) cmul
+      READ (arg(4),*) efield
+      IF (numargs>4 .and. (arg(5)(1:1).eq.'f' .or. arg(5)(1:1).eq.'F'))
+     1   lscreen = .false.
+      IF (numargs > 5) READ (arg(6), *) extension_mod
+      IF (numargs > 6) READ (arg(7), *) coupling_order
+      IF (numargs > 7) READ (arg(8), *) legendre_modes
 
       index_dat = INDEX(arg(1),'.')
       index_end = LEN_TRIM(arg(1))
@@ -267,12 +221,7 @@
          PRINT *
          WRITE(*,'(" js = ",i4,", No. Bmn-s = ", i4)') js, 
      1         MIN(max_bmns,mnboz_b)
-         !WRITE(*,'(" cmul = ",f10.6,", efield = ",f10.6)')cmul,efield
-         PRINT *, 'cmul   efield'
-         DO i = 1, npairs
-            !WRITE(*, 'cmul(',i,') = ',cmul_list(i),' efield(',i,') = ', efield_list(i))
-            PRINT *, cmul_list(i), '  ', efield_list(i)
-         END DO
+         WRITE(*,'(" cmul = ",f10.6,", efield = ",f10.6)')cmul,efield
          WRITE(*,'(" coupling order = ",i2,
      1    ", Legendre modes = ",i4)') coupling_order,legendre_modes
          PRINT *
@@ -385,22 +334,10 @@
      1    'formatted')
       WRITE (iunit,'(1x,"&dkes_indata")')
       WRITE (iunit,'(1x,"nzperiod= ",i2,",")') nfp_b
-      WRITE (iunit,'(1x,"lalpha= ",i3,",")') legendre_modes
-      WRITE (iunit,'(1x,"nrun = ",i3,",")') npairs
-      ! write the cmul array
-      WRITE(iunit, '(A)', advance='no') ' cmul = '
-      DO i = 1, npairs-1
-            WRITE(*, '(es12.6, A)') cmul_list(i)
-            WRITE(iunit, '(es12.6, A)', advance='no') cmul_list(i), ', '
-      END DO
-      WRITE(iunit, '(e12.6, A)') cmul_list(npairs), ','
-      ! write the efield array
-      WRITE(iunit, '(A)', advance='no') ' efield = '
-      DO i = 1, npairs-1
-        WRITE(iunit, '(e12.6, A)', advance='no') efield_list(i), ', '
-      END DO
-      WRITE(iunit, '(e12.6, A)') efield_list(npairs), ','
-      !
+      WRITE (iunit,'(1x,"lalpha= ",i3,", nrun = 1,")') legendre_modes
+      WRITE (iunit,'(1x,"cmul = ",e12.4,",")') cmul
+!      WRITE (iunit,'(1x,"efield = ",f7.4,",")') efield
+      WRITE (iunit,'(1x,"efield = ",e12.4,",")') efield
       WRITE (iunit,'(1x,"mpolb = ",i2,",",2x,"ntorb = ",
      1     i2,",",2x,"ibbi = 1,")') mpolb, ntorb
       WRITE (iunit,'(1x,"chip = ",f7.4,",","  psip = ",f7.4,",")')
@@ -773,8 +710,6 @@
      >   stat=istat)
       DEALLOCATE(m_ordered, n_ordered, stat=istat)
       DEALLOCATE(nsurf, stat=istat)
-
-      DEALLOCATE(cmul_list,efield_list)
 
       IF (dealloc .ne. 0) CALL read_boozer_deallocate
       IF (dealloc .ne. 0) CALL read_wout_deallocate
