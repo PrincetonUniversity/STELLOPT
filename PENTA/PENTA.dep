@@ -1,35 +1,58 @@
 # Microsoft Developer Studio Generated Dependency File, included by DKES.mak
 
-penta_imp.o : \
+bspline.o :
+
+coeff_var_pass.o : \
+      penta_kind_mod.o
+
+penta.o : \
+      penta_kind_mod.o \
+      io_unit_spec.o \
       read_input_file_mod.o \
-      penta_modules.o \
-      penta_subroutines.o 
-      
-
-read_input_file_mod.o : \
-      bspline90_22.o \
-      penta_modules.o \
-      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o
-      
-
-penta_subroutines.o : \
-      bspline90_22.o \
-      penta_modules.o \
-      penta_functions_mod.o
-      
-
-bspline90_22.o : 
-      
-
-penta_modules.o : 
-      
+      vmec_var_pass.o \
+      pprof_pass.o \
+      coeff_var_pass.o \
+      phys_const.o \
+      penta_functions_mod.o \
+      penta_math_routines_mod.o \
+      penta_subroutines.o
 
 penta_functions_mod.o : \
-      bspline90_22.o \
-      penta_modules.o 
-      
+      penta_kind_mod.o \
+      phys_const.o \
+      penta_math_routines_mod.o \
+      bspline.o \
+
+penta_kind_mod.o : 
+
+penta_math_routines_mod.o : \
+      penta_kind_mod.o
+
+penta_subroutines.o : \
+      penta_kind_mod.o \
+      phys_const.o \
+      penta_functions_mod.o \
+      pprof_pass.o \
+      vmec_var_pass.o \
+      bspline.o 
+
+phys_const.o : \
+      penta_kind_mod.o
+
+pprof_pass.o : \
+      penta_kind_mod.o
 
 quanc8.o : 
 
+read_input_file_mod.o : \
+      penta_kind_mod.o \
+      io_unit_spec.o \
+      pprof_pass.o \
+      bspline.o \
+      vmec_var_pass.o \
+      coeff_var_pass.o
 
+
+vmec_var_pass.o  : \
+      penta_kind_mod.o
 
