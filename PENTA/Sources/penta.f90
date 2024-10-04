@@ -233,9 +233,7 @@ Use io_unit_spec, Only :             &
   iu_flowvEr_out,                    & ! flows vs Er i/o unit #
   iu_Jprl_out,                       & ! Parallel current den vs r/a i/o unit #
   iu_contraflows_out,                & ! Contravariant flows vs roa
-  iu_sigmas_out,                     & ! sigma_par and sigma_par_Spitzer vs roa
-  iu_TCvEr_out,                      &
-  iu_TC_out
+  iu_sigmas_out                        ! sigma_par and sigma_par_Spitzer vs roa
 Use read_input_file_mod, Only :      &
   ! Imported Subroutines
   read_vmec_file,                    & ! Reads VMEC data file
@@ -355,7 +353,6 @@ Real(rknd) ::  cmin,            & ! Coefficient axes limits
   cmax, emin, emax
 Real(rknd)    :: sigma_par=0.0_rknd, sigma_par_Spitzer=0.0_rknd !Parallel conductivities
 Real(rknd)    :: J_BS=0.0_rknd
-
 ! Local variables (array)
 Character(Len=100) ::           & ! Command line args
   arg1, arg2, arg3, arg4,       & 
@@ -394,8 +391,7 @@ Real(rknd), Allocatable ::      &
   Jprl_ambi(:),                 & ! Parallel current density (roots)
   sigma_par_ambi(:),            & ! Parallel conductivity for ambipolar electric field 
   sigma_par_Spitzer_ambi(:),    & ! Spitzer parallel conductivity for ambipolar electric field
-  J_BS_ambi(:), &                    ! Bootstrap current density for ambipolar electric field
-  DKES_L11(:),DKES_L12(:),DKES_L13(:)
+  J_BS_ambi(:)                    ! Bootstrap current density for ambipolar electric field
 
 ! Local allocatable arrays (2D)
 Real(rknd), Allocatable ::      &
@@ -410,11 +406,7 @@ Real(rknd), Allocatable ::      &
   Dspl_logD33(:,:),             &
   cmesh(:,:),                   & ! Repeated 2D array of cmul
   Gamma_i_vs_Er(:,:),           & ! Ion particle flux vs Er
-  QoT_i_vs_Er(:,:), &                ! Ion Energy flux vs Er
-  DKES_L11_ambi(:,:), &
-  DKES_L12_ambi(:,:), &
-  DKES_L13_ambi(:,:)
-
+  QoT_i_vs_Er(:,:)                ! Ion Energy flux vs Er
 Real(rknd), Allocatable ::      & 
   Flows_ambi(:,:),              & ! Parallel flow moments (j*species,roots)
   Gammas_ambi(:,:),             & ! Radial particle fluxes (species,roots)
@@ -509,11 +501,6 @@ If ( output_QoT_vs_Er .EQV. .true. ) Then
   Allocate(QoT_i_vs_Er(num_Er_test,num_ion_species))       ! Ion flux vs Er
   Allocate(QoT_e_vs_Er(num_Er_test))                       ! Electron flux vs Er
 Endif
-If( Method=='DKES') then
-  Allocate(DKES_L11(num_species))
-  Allocate(DKES_L12(num_species))
-  Allocate(DKES_L13(num_species))
-EndIf
 
 ! Read input files
 Call read_vmec_file_2(js,run_ident)
@@ -659,13 +646,6 @@ If ( Method == 'SN') Then
     position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
 Endif
 
-If ( Method == 'DKES' ) Then
-  Open(unit=iu_TCvEr_out, file="thermalCoeffs_vs_Er",  &
-  position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-  Open(unit=iu_TC_out, file="thermalCoeffs_vs_roa", &
-  position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-EndIf
-
 If ( output_QoT_vs_Er .EQV. .true. ) Then
   Open(unit=iu_QoTvEr_out, file="QoTs_vs_Er",  &
     position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
@@ -702,14 +682,6 @@ If ( i_append == 0 ) Then
   ! Legend for flows vs Er
     Write(iu_flowvEr_out,'("*",/,"r/a   Er[V/cm]  ", &
     & "    <B*u_||ke>/<B**2> [m/sT]  <B*u_||ki>/<B**2> [m/sT]")')
-    
-    If(Method == 'DKES') then
-      ! Legend for thermal_coeffs vs Er 
-    Write(iu_TCvEr_out,'("*",/,"r/a   Er[V/cm]   L11_e ",&
-    & "   L11_i   L12_e   L12_i   L13_e   L13_i")')
-    Write(iu_TC_out,'("*",/,"r/a   Er[V/cm]   L11_e ",&
-    & "   L11_i   L12_e   L12_i   L13_e   L13_i")')
-    EndIf
 EndIf
 
 ! Calculate thermal velocities 
@@ -868,7 +840,7 @@ Do ie = 1,num_Er_test
       Gammas = calc_fluxes_DKES(num_species,abs_Er,Temps,dens,vths,charges,   &
         masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
         emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,     &
-        Avec,B0,DKES_L11,DKES_L12,DKES_L13)   
+        Avec,B0)   
       If ( output_QoT_vs_Er .EQV. .true. ) Then
         QoTs = calc_QoTs_DKES(num_species,abs_Er,Temps,dens,vths,charges,     &
           masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
@@ -901,12 +873,6 @@ Do ie = 1,num_Er_test
   Write(iu_flowvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
     roa_surf,Er_test/100._rknd,Flows
 
-  If( Method=='DKES') then
-    Write(str_num,*) 3*num_ion_species + 4  ! Convert num to string
-    Write(iu_TCvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-      roa_surf,Er_test/100._rknd,DKES_L11(:),DKES_L12(:),DKES_L13(:)
-  EndIf
-
 Enddo !efield loop
 
 
@@ -933,12 +899,6 @@ Allocate(sigma_par_Spitzer_ambi(num_roots))          ! Spitzer Parallel conducti
 Allocate(Jprl_parts(num_species,num_roots))          ! Par. curr. dens. per spec.
 Allocate(upol(num_species,num_roots))                ! fsa contra pol flow
 Allocate(utor(num_species,num_roots))                ! fsa contra tor flow
-
-If(Method == 'DKES') then
-  Allocate(DKES_L11_ambi(num_species,num_roots))
-  Allocate(DKES_L12_ambi(num_species,num_roots))
-  Allocate(DKES_L13_ambi(num_species,num_roots))
-EndIf
 
 ! Evaluate fluxes and flows at the ambipolar Er
 Do iroot = 1_iknd, num_roots
@@ -1022,7 +982,7 @@ Do iroot = 1_iknd, num_roots
       Gammas_ambi(:,iroot) = calc_fluxes_DKES(num_species,abs_Er,Temps,dens, &
         vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
         log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,num_c, &
-        num_e,kcord,keord,Avec,B0,DKES_L11,DKES_L12,DKES_L13)  
+        num_e,kcord,keord,Avec,B0)  
       ! Calculate array of radial energy fluxes
       QoTs_ambi(:,iroot) = calc_QoTs_DKES(num_species,abs_Er,Temps,dens,     &
         vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
@@ -1030,10 +990,6 @@ Do iroot = 1_iknd, num_roots
         num_e,kcord,keord,Avec,B0)
       
       J_BS_ambi(iroot) = J_BS  
-
-      DKES_L11_ambi(:,iroot) = DKES_L11
-      DKES_L12_ambi(:,iroot) = DKES_L12
-      DKES_L13_ambi(:,iroot) = DKES_L13
         
 
     Case Default
@@ -1100,13 +1056,6 @@ Do iroot = 1_iknd, num_roots
       roa_surf,Er_test/100._rknd,sigma_par_ambi(iroot),sigma_par_Spitzer_ambi(iroot)
   Endif
 
-  If(Method == 'DKES') then
-    Write(str_num,*) 3*num_species + 1
-    Write(iu_TC_out,'(f7.3,' // Trim(Adjustl(str_num)) // '(" ",e15.7))') &
-    roa_surf,Er_test/100._rknd,DKES_L11_ambi(:,iroot), &
-    DKES_L12_ambi(:,iroot), DKES_L13_ambi(:,iroot)
-  EndIf
-
 EndDo ! Ambipolar root loop
 
 ! Write plasma profile information to "plasma_profiles_check"
@@ -1157,11 +1106,6 @@ Deallocate(Jprl_ambi,Jprl_parts,J_BS_ambi) ! Parallel current densities
 Deallocate(sigma_par_ambi,sigma_par_Spitzer_ambi) ! Paarllel conductivities
 Deallocate(utor,upol) ! Contravariant fsa flows
 
-If( Method=='DKES') then
-  Deallocate(DKES_L11,DKES_L12,DKES_L13)
-  Deallocate(DKES_L11_ambi,DKES_L12_ambi,DKES_L13_ambi)
-EndIf
-
 ! Close output files
 Close(iu_flux_out)
 Close(iu_pprof_out)
@@ -1171,8 +1115,6 @@ Close(iu_flows_out)
 Close(iu_flowvEr_out)
 Close(iu_Jprl_out)
 Close(iu_contraflows_out)
-If( Method=='SN') Close(iu_sigmas_out)
-If( Method=='DKES') Close(iu_TCvEr_out)
 
 End program penta3
 
