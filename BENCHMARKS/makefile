@@ -9,6 +9,7 @@
   DIAGNO_TEST_DIR = DIAGNO_TEST
   FIELDLINES_TEST_DIR = FIELDLINES_TEST
   NESCOIL_TEST_DIR = NESCOIL_TEST
+  PENTA_TEST_DIR = PENTA_TEST
   STELLOPT_TEST_DIR = STELLOPT_TEST
   THRIFT_TEST_DIR = THRIFT_TEST
   VMEC_TEST_DIR = VMEC_TEST
@@ -82,6 +83,12 @@ test_nescoil:
 	@echo "Beginning testing of NESCOIL"
 	$(MAKE) test_nescoil_tf
 	@echo "Tesing of NESCOIL complete"
+	@echo ""
+
+test_penta:
+	@echo "Beginning testing of PENTA"
+	$(MAKE) test_penta_lore
+	@echo "Tesing of PENTA complete"
 	@echo ""
 
 test_stellopt:
@@ -274,6 +281,12 @@ test_nescoil_tf:
 	@cd $(NESCOIL_TEST_DIR); ./compare.py --file TF_ONLY
 	@echo ""
 
+test_penta_lore:
+	@cd $(PENTA_TEST_DIR); rm -f Jprl_vs_roa flows* fluxes* plasma_profiles_check ucontra*; 
+	@echo $(MYHOME)/xpenta qhs1T_s20 -100 100 20 0 qhs1T a 0. 2
+	@cd $(PENTA_TEST_DIR); $(MYHOME)/xpenta qhs1T_s20 -100 100 20 0 qhs1T a 0. 2
+	@echo ""
+
 test_stellopt_lmdif:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.LMDIF_TEST
 	@cd $(STELLOPT_TEST_DIR)/LMDIF_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.LMDIF_TEST; rm -f *_opt*
@@ -425,6 +438,7 @@ help:
 	@echo "      test_beams3d    Tesing of BEAMS3D"
 	@echo "      test_diagno     Tesing of DIAGNO"
 	@echo "      test_fieldlines Tesing of FIELDLINES"
+	@echo "      test_PENTA      Tesing of PENTA"
 	@echo "      test_stellopt   Tesing of STELLOPT"
 	@echo "      test_thrift_atf Tesing of THRIFT (ATF Case)"
 	@echo "      test_vmec       Tesing of VMEC"
