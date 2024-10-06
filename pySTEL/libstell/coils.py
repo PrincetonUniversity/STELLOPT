@@ -526,6 +526,72 @@ class COILSET():
 						zs = self.groups[k].coils[l].z
 						self.groups[i].coils[j].coilDist(xs,ys,zs)
 
+	def singleToMultiFilament(self,width=0.2,height=0.2, nwidth=4, nheight=4, lskip=None):
+		"""Generates a multi-filament coil from a single filament coil set
+
+		This routine utilizes the finiteBuildCoil routine to generate a
+		multi-filament model for a coil. It returns a coil object. The
+		coil width, height, and number of filaments can be specified in
+		each dimmension.
+
+		Parameters
+		----------
+		width : float
+			Finite build coil width [m]
+		height : float
+			Finite build coil height [m]
+		nwidth : int
+			Number of coils in the width direction.
+		nheight : int
+			Number of coils in height direction.
+
+		Returns
+		----------
+		mulit_coil : Object
+			CoilGroup Object of the multi-filament coil
+		"""
+		import numpy as np
+		# Loop over coils
+		vertices = []
+		faces = []
+		l = int(0)
+		mcoil = COILSET()
+		mcoil.nfp = self.nfp
+		mcoil.xmin = self.xmin; mcoil.xmax = self.xmax
+		mcoil.ymin = self.ymin; mcoil.ymax = self.ymax
+		mcoil.zmin = self.zmin; mcoil.zmax = self.zmax
+		mcoil.ngroups = self.ngroups
+		for i in range(self.ngroups):
+			#cgroup = COILGROUP()
+			ncoil_max = self.groups[i].ncoils
+			#if (lfield_period): ncoil_max = 1
+			xc = []; yc = []; zc = []; cc = []
+			current = self.groups[i].current
+			coilname = self.groups[i].name
+			for j in range(ncoil_max):
+				# Generate bounding boxes
+				xx,yy,zz = self.groups[i].coils[j].finiteBuildCoil(width=width,height=height)
+				# Get vectors
+				Nwx = np.squeeze(xx[1,:] - xx[0,:])
+				Nwy = np.squeeze(yy[1,:] - yy[0,:])
+				Nwz = np.squeeze(zz[1,:] - zz[0,:])
+				Nhx = np.squeeze(xx[2,:] - xx[0,:])
+				Nhy = np.squeeze(yy[2,:] - yy[0,:])
+				Nhz = np.squeeze(zz[2,:] - zz[0,:])
+				x0  = np.squeeze(xx[0,:]); y0 = np.squeeze(yy[0,:]); z0 = np.squeeze(zz[0,:])
+				c0  = np.ones((self.groups[i].coils[j].npts)) * current
+				c0[-1] = 0.0
+				for l in range(nwidth):
+					for m in range(nheight):
+						xx = x0 + l*Nwx/(nwidth-1) + m*Nhx/(nheight-1)
+						yy = y0 + l*Nwy/(nwidth-1) + m*Nhy/(nheight-1)
+						zz = z0 + l*Nwz/(nwidth-1) + m*Nhz/(nheight-1)
+						xc.extend(xx); yc.extend(yy); zc.extend(zz); cc.extend(c0)
+			mcoil.groups.extend([COILGROUP(np.array(xc),np.array(yc),np.array(zc),np.array(cc),coilname)])
+		return mcoil
+
+
+
 	def blenderCoil(self,width=0.2,height=0.2,lfield_period=False):
 		"""Generates the lists Blender needs to render a coilset
 
