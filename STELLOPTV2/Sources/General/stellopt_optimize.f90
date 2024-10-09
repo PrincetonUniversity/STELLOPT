@@ -314,8 +314,8 @@
          ier=-500
          CALL stellopt_fcn(mtargets,nvars,vars,fvec,ier,nfev)
       END IF
-      IF (myid == master) THEN
 !DEC$ IF DEFINED (STELZIP)
+      IF (myid == master) THEN
          ! Remove the *_opt* files
          WRITE(6,*) ' Cleaning up _opt files'; CALL FLUSH(6); ier = 0; ierr_mpi = 0; cmdtxt=''
          CALL EXECUTE_COMMAND_LINE("rm -rf *_opt*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
