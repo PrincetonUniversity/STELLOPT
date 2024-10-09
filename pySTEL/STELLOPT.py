@@ -435,10 +435,12 @@ class MyApp(QMainWindow):
 					rmns[0,mn] = self.indata.rbs[j,i2]
 					zmnc[0,mn] = self.indata.zbc[j,i2]
 					mn = mn + 1
-			theta = np.ndarray((nu,1))
-			zeta = np.ndarray((nv,1))
-			for j in range(nu): theta[j]=2*pi*j/(nu-1)
-			for j in range(nv): zeta[j]=pi*j/(nv*self.indata.nfp)
+			theta = np.linspace([0],[np.pi*2],nu)
+			zeta  = np.linspace([0],[np.pi/self.indata.nfp],nv)
+			#theta = np.ndarray((nu,1))
+			#zeta = np.ndarray((nv,1))
+			#for j in range(nu): theta[j]=2*pi*j/(nu-1)
+			#for j in range(nv): zeta[j]=pi*j/(nv*self.indata.nfp)
 			r=FOURIER_REP.cfunct(theta,zeta,rmnc,xm,xn)
 			z=FOURIER_REP.sfunct(theta,zeta,zmns,xm,xn)
 			#self.ax = self.fig.add_subplot(111,projection='3d')
