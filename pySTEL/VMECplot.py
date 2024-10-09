@@ -38,8 +38,8 @@ class MyApp(QMainWindow):
 		self.setStyleSheet("background-color: white;");
 		self.statusBar().showMessage('Ready')
 		self.ui.plot_list = ['Summary','-----1D-----','Iota','q','Pressure',\
-		'<Buco>','<Bvco>','<jcuru>','<jcurv>','<j.B>',  '-----3D------','|B|','sqrt(g)',\
-		'B^u','B^v','B_s','B_u','B_v','j^u','j^v', 'jll', 'j.B','---Special---','LPK']
+		'<Buco>','<Bvco>','<jcuru>','<jcurv>','<B.B>','<j.B>',  '-----3D------','|B|','sqrt(g)',\
+		'B^u','B^v','B_s','B_u','B_v','j^u','j^v', 'jll', 'j.B','---Special---','LPK','Mercier']
 		files = sorted(os.listdir('.'))
 		for name in files:
 			if(name[0:4]=='wout'):
@@ -271,11 +271,26 @@ class MyApp(QMainWindow):
 			self.ax.set_xlabel('Normalized Flux')
 			self.ax.set_ylabel('<j^v> [kA/m^2]')
 			self.ax.set_title('Flux surface Averaged j^v')
+		elif (plot_name == '<B.B>'):
+			self.ax.plot(self.nflux,self.vmec_data.bdotb)
+			self.ax.set_xlabel('Normalized Flux')
+			self.ax.set_ylabel('<B.B> [T^2]')
+			self.ax.set_title('Flux surface Averaged B.B')
 		elif (plot_name == '<j.B>'):
 			self.ax.plot(self.nflux,self.vmec_data.jdotb/1000)
 			self.ax.set_xlabel('Normalized Flux')
 			self.ax.set_ylabel('<j.B> [T*kA/m^2]')
 			self.ax.set_title('Flux surface Averaged j.B')
+		elif (plot_name == 'Mercier'):
+			self.ax.plot(self.nflux[1:],self.vmec_data.dmerc[1:],label=r'$D_{Mercier}$ (Total)')
+			self.ax.plot(self.nflux[1:],self.vmec_data.dshear[1:],':',label=r'$D_{Shear}$')
+			self.ax.plot(self.nflux[1:],self.vmec_data.dwell[1:],':',label=r'$D_{Well}$')
+			self.ax.plot(self.nflux[1:],self.vmec_data.dcurr[1:],':',label=r'$D_{Current}$')
+			self.ax.plot(self.nflux[1:],self.vmec_data.dgeod[1:],':',label=r'$D_{Geo. Curvature}$')
+			self.ax.set_xlabel('Normalized Flux')
+			self.ax.set_ylabel('[Arb]')
+			self.ax.set_title('Mercier Stability (>0 Stable)')
+			self.ax.legend()
 		elif (plot_name == 'LPK'):
 			self.ax.plot(self.r[self.ns-1,:,0],self.z[self.ns-1,:,0],color='red')
 			self.ax.plot(self.r[0,0,0],self.z[0,0,0],'+',color='red')
