@@ -229,7 +229,11 @@
       iunit = 100
       istat = 0
       OPEN(unit=iunit, file=TRIM(filename), iostat=istat)
-      IF (istat .ne. 0) RETURN
+      IF (istat .ne. 0) THEN
+         iunit = -327; istat = 0
+         CALL read_indata_namelist(iunit,istat)
+         RETURN
+      END IF
       CALL read_indata_namelist(iunit,istat)
       CLOSE(iunit)
 
