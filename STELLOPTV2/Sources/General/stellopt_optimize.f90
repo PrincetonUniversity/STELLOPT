@@ -33,6 +33,7 @@
       REAL(rprec), ALLOCATABLE ::  fjac(:,:)
       LOGICAL :: used_mango_algorithm
       REAL(rprec), EXTERNAL :: enorm
+      CHARACTER(200) :: cmdtxt = ""
       EXTERNAL stellopt_fcn
       
 !----------------------------------------------------------------------
@@ -313,6 +314,21 @@
          ier=-500
          CALL stellopt_fcn(mtargets,nvars,vars,fvec,ier,nfev)
       END IF
+      IF (myid == master) THEN
+!DEC$ IF DEFINED (STELZIP)
+         ! Remove the *_opt* files
+         WRITE(6,*) ' Cleaning up _opt files'; CALL FLUSH(6); ier = 0; ierr_mpi = 0; cmdtxt=''
+         CALL EXECUTE_COMMAND_LINE("rm -rf *_opt*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+         WRITE(6,*) ' rm: EXITSTAT=',ier,' CMDSTAT=',ierr_mpi; CALL FLUSH(6)
+         WRITE(6,*) '     MESSAGE: ',TRIM(cmdtxt); CALL FLUSH(6)
+         ! Zip up the results
+         WRITE(6,*) ' Zipping files'; CALL FLUSH(6); ier = 0; ierr_mpi = 0; cmdtxt=''
+         CALL EXECUTE_COMMAND_LINE("zip -r stellopt_files.zip *",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+         WRITE(6,*) ' zip: EXITSTAT=',ier,' CMDSTAT=',ierr_mpi; CALL FLUSH(6)
+         WRITE(6,*) '     MESSAGE: ',TRIM(cmdtxt); CALL FLUSH(6)
+         ier = 0; ierr_mpi=0
+      END IF
+!DEC$ ENDIF
       IF (ALLOCATED(fvec)) DEALLOCATE(fvec)
 
 !DEC$ IF DEFINED (MPI_OPT)
