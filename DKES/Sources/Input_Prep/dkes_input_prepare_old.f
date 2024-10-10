@@ -1,4 +1,4 @@
-      SUBROUTINE dkes_input_prepare (arg, numargs, dkes_input_file, 
+      SUBROUTINE dkes_input_prepare_old(arg, numargs, dkes_input_file, 
      1                               dealloc)
 !
 !   This code prepares an input file for DKES based on data
@@ -714,4 +714,4 @@
       IF (dealloc .ne. 0) CALL read_boozer_deallocate
       IF (dealloc .ne. 0) CALL read_wout_deallocate
 
-      END SUBROUTINE dkes_input_prepare
+      END SUBROUTINE dkes_input_prepare_old
