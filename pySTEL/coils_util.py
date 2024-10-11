@@ -96,7 +96,7 @@ if __name__=="__main__":
 			mnmax = xn.shape[0]
 			f.write(f'# n m Rbc Rbs Zbc Zbs\n')
 			for mn in range(mnmax):
-				f.write(f'{int(xn[mn,0])}, {int(xm[mn,0])}, {rmnc[0,mn]:10.9e}, {0.0:10.9e}, {0.0:10.9e} {zmns[0,mn]:10.9e}\n')
+				f.write(f'{int(xn[mn,0])}, {int(xm[mn,0])}, {rmnc[0,mn]:10.9e}, {0.0:10.9e}, {0.0:10.9e}, {zmns[0,mn]:10.9e}\n')
 			f.close()
 			r = FR.cfunct(theta,phi,rmnc,xm,xn)
 			z = FR.sfunct(theta,phi,zmns,xm,xn)
