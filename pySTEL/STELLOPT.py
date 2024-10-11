@@ -904,6 +904,10 @@ class MyApp(QMainWindow):
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution_R')
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution_Z')
+		if 'DKES_TARGET' in vars(self.stel_data).keys():
+			self.ui.ComboBoxOPTplot_type.addItem('DKES_L11')
+			self.ui.ComboBoxOPTplot_type.addItem('DKES_L31')
+			self.ui.ComboBoxOPTplot_type.addItem('DKES_L33')
 		# Handle Wout Comparrison Plots
 		self.workdir,ext = filename[0].split('stellopt.',1)
 		files = os.listdir(self.workdir)
@@ -917,6 +921,7 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Iota')
 			self.ui.ComboBoxOPTplot_type.addItem('q-prof')
 			self.ui.ComboBoxOPTplot_type.addItem('<j*B>')
+			self.ui.ComboBoxOPTplot_type.addItem('Mercier')
 			wout_files = sorted([k for k in files if 'wout' in k])
 			self.wout_files = sorted([k for k in wout_files if '_opt' not in k])
 		# Handle Kinetic Profiles
@@ -1049,6 +1054,57 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Epsilon Effective')
 			self.ax2.set_title('Neoclassical Helical Ripple (NEO)')
+		elif ('DKES_L' in plot_name):
+			# Get L type
+			if plot_name == 'DKES_L11':
+				Lm = self.stel_data.DKES_L11m
+				Lp = self.stel_data.DKES_L11p
+				txt_type = 'L11'
+			elif plot_name == 'DKES_L31':
+				Lm = self.stel_data.DKES_L31m
+				Lp = self.stel_data.DKES_L31p
+				txt_type = 'L31'
+			elif plot_name == 'DKES_L33':
+				Lm = self.stel_data.DKES_L33m
+				Lp = self.stel_data.DKES_L33p
+				txt_type = 'L33'
+			# We need to sort stuff out
+			s  = self.stel_data.DKES_S
+			er = self.stel_data.DKES_ER
+			nu = self.stel_data.DKES_NU
+			s_list  = np.unique(s)
+			er_list = np.unique(er)
+			nu_list = np.unique(nu)
+			ns  = len(s_list)
+			ner = len(er_list)
+			nnu = len(nu_list)
+			s3d  = np.zeros((ns,ner,nnu))
+			er3d = np.zeros((ns,ner,nnu))
+			nu3d = np.zeros((ns,ner,nnu))
+			Lval  = np.zeros((ns,ner,nnu,2))
+			for i in range(ns):
+				for j in range(ner):
+					for k in range(nnu):
+						sdex = s == s_list[i]
+						edex = er == er_list[j]
+						ndex = nu == nu_list[k]
+						dex = np.logical_and(sdex,edex)
+						dex = np.logical_and(dex,ndex)
+						s3d[i,j,k] = np.squeeze(s[dex])
+						er3d[i,j,k] = np.squeeze(er[dex])
+						nu3d[i,j,k] = np.squeeze(nu[dex])
+						Lval[i,j,k,0] = np.squeeze(Lm[dex])
+						Lval[i,j,k,1] = np.squeeze(Lp[dex])
+			for i in range(ns):
+				for j in range(ner):
+					x = np.squeeze(nu3d[i,j,:])
+					ym = np.squeeze(Lval[i,j,:,0])
+					yp = np.squeeze(Lval[i,j,:,1])
+					self.ax2.fill_between(x,ym,yp,alpha=0.2)
+			self.ax2.set_xlabel('Collisionality nu*')
+			self.ax2.set_ylabel(txt_type)
+			self.ax2.set_title("DKES Coefficient "+txt_type)
+			self.ax2.set_yscale('log')
 		elif (plot_name == 'HELICITY_FULL_evolution'):
 			x = self.stel_data.HELICITY_FULL_K
 			y = self.stel_data.HELICITY_FULL_VAL
@@ -1406,7 +1462,7 @@ class MyApp(QMainWindow):
 				dl = n[1]
 				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
 				for l in range(dl):
-					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+					self.ax2.plot(x[:,l],e[:,l],'o',fillstyle='none',color=_plt.cm.brg(l/max(dl-1,1.0)))
 			else:
 				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
 				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
@@ -1787,6 +1843,22 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('<j.B>')
 			self.ax2.set_title('VMEC <j.B> Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Mercier'):
+			vmec_data = vmec.VMEC()
+			l=0
+			dl = len(self.wout_files)-1
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data.read_wout(self.workdir+string)
+					ns = vmec_data.ns
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,vmec_data.dmerc,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('[Arb]')
+			self.ax2.set_title('Mercier Stability (>0 Stable)')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Flux0'):
 			vmec_data = vmec.VMEC()
