@@ -70,7 +70,7 @@ class FUSION():
 		tauiss04 : real
 			Confinement time [s]
 		"""
-		return 0.134*a**2.28*R**0.64*P**-0.64*navg**0.54*B0**0.84*iota**0.41
+		return 0.134*a**2.28*R**0.64*P**-0.61*navg**0.54*B0**0.84*iota**0.41
 
 	def nsudo(self,P,B,a,R):
 		"""Sudo Density Limit
@@ -82,7 +82,7 @@ class FUSION():
 		Parameters
 		----------
 		P : real
-			Total Power [MW]
+			Total Power [W]
 		B : real
 			Average magnetic field [T]
 		a : real
