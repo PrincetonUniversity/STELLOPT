@@ -615,12 +615,15 @@ class COILSET():
 		zmns : ndarray
 			Z sin(m*th+n*phi) harmonics [m]
 		"""
+		from libstell.plot3D import PLOT3D
+		from libstell.libstell import FourierRep
 		import numpy as np
 		from scipy.optimize import minimize
+		from pathlib import Path
 		# Setup initial condition
 		self.Nfeval = 0
-		mmax = 8; nmax = 1
-		nu = max(mmax*4,32); nv = max(nmax*2,16)
+		mmax = 2; nmax = 4
+		nu = max(mmax*4,32); nv = max(nmax*2,32)
 		# First extract points
 		xt = []
 		yt = []
@@ -653,7 +656,7 @@ class COILSET():
 		phi   = np.linspace([0],[np.pi/self.nfp],nv)
 		theta = theta[0:-1]
 		xm = []; xn = []
-		m=0; mn10 = 0; mn20 = 0; mn21 = 0; mn21m=0;
+		m=0; mn10 = 0; mn20 = 0; mn21 = 0; mn21m=0; mn01 = 0;
 		for n in range(0,nmax+1):
 			xm.append(m)
 			xn.append(n)
@@ -665,6 +668,8 @@ class COILSET():
 				xn.append(n)
 				if (m==1 and n==0):
 					mn10 = l
+				if (m==0 and n==1):
+					mn01 = l
 				if (m==2 and n==0):
 					mn20 = l
 				if (m==2 and n==1):
@@ -675,38 +680,79 @@ class COILSET():
 		xm = np.array(xm,ndmin=2).T
 		xn = np.array(xn,ndmin=2).T*self.nfp
 		mn00 = 0
-		fit_factor=1.0+np.squeeze(xm)
+		#fit_factor = 1.0*(np.squeeze(xm)+abs(np.squeeze(xn)))
+		fit_factor = 1.0*(np.squeeze(xm))
+		fit_factor[fit_factor<1.0] = 1.0
 		# Set options
 		opts = (nu,nv,xm,xn,theta,phi,rt,zt,fit_factor,mn00)
 		# Set initial condition
-		#print(mn10,xn[mn10],xm[mn10])
 		rmnc_temp = np.zeros((1,mnmax))
 		zmns_temp = np.zeros((1,mnmax))
-		#rmnc_temp[0,mn00] = np.mean(rt)+2.0
-		#rmnc_temp[0,mn10] = (max(rt)-min(rt))*0.25
-		#zmns_temp[0,mn10] = -max(zt)*0.5
+		# Estimate from coils
+		#rmnc_temp[0,:] = 1.0E-3
+		#zmns_temp[0,:] = -1.0E-3
 		rmnc_temp[0,mn00] = np.mean(rt)
-		rmnc_temp[0,mn10] = (max(rt)-min(rt))*0.75
-		rmnc_temp[0,mn20] = rmnc_temp[0,mn10]*0.2
-		rmnc_temp[0,mn21] = rmnc_temp[0,mn20]*0.5
-		rmnc_temp[0,mn21m] = rmnc_temp[0,mn20]*0.5
-		zmns_temp[0,mn10] = -max(zt)*1.25
-		rmnc_temp = rmnc_temp[0,:] * fit_factor
-		zmns_temp = zmns_temp[0,:] * fit_factor
+		rmnc_temp[0,mn10] = (max(rt)-min(rt))*0.2
+		#rmnc_temp[0,mn20] = rmnc_temp[0,mn10]*0.3
+		#rmnc_temp[0,mn21] = rmnc_temp[0,mn20]*0.33
+		#rmnc_temp[0,mn21m] = rmnc_temp[0,mn20]*0.33
+		zmns_temp[0,mn10] = -max(zt)*1.0
+		# Check for previous run
+		my_file = Path("./coil_surf_harmonics.csv")
+		if my_file.is_file():
+			f = open("./coil_surf_harmonics.csv",'r')
+			lines = f.readlines()
+			f.close()
+			for line in lines:
+				if '#' in line: continue
+				n_txt,m_txt,rbc_txt,rbs_txt,zbc_txt,zbs_txt = line.split(',')
+				n = int(n_txt); m = int(m_txt)
+				l = 0
+				for l in range(mnmax):
+					if (xn[l,0] == n) and (xm[l,0] == m):
+							rmnc_temp[0,l] = float(rbc_txt)
+							zmns_temp[0,l] = float(zbs_txt)
+			for l in range(mnmax):
+				print(f'{xn[l,0]} {xm[l,0]} {rmnc_temp[0,l]} {zmns_temp[0,l]}')
+			if False:
+				rmnc_temp = rmnc_temp*1.05
+				zmns_temp = zmns_temp*0.95
+		# Apply factor and remove Z00
+		rmnc_temp = np.sign(rmnc_temp[0,:])*np.power(abs(rmnc_temp[0,:]),fit_factor)
+		zmns_temp = np.sign(zmns_temp[0,:])*np.power(abs(zmns_temp[0,:]),fit_factor)
 		zmns_temp = np.delete(zmns_temp,mn00)
 		x0 = np.concatenate((np.squeeze(rmnc_temp),np.squeeze(zmns_temp)))
 		#print(x0)
 		# Call fit function
-		res = minimize(self.surf_fit_func, x0, method='CG',
-               args=opts, options={'disp': True,'maxiter':20},
-               callback=self.surf_fit_callbackF,tol=1.0E-1)
-		xf = res.x
-		#xf = x0
+		if True:
+			res = minimize(self.surf_fit_func, x0, method='CG',
+					args=opts, options={'disp': True,'maxiter':100},
+					callback=self.surf_fit_callbackF,tol=1.0E-1)
+			xf = res.x
+		else:
+			xf = x0
 		i1 = 0; i2 = i1+mnmax
-		rmnc = np.broadcast_to(xf[i1:i2],(1,mnmax))/fit_factor
+		rmnc = np.broadcast_to(xf[i1:i2],(1,mnmax))
+		rmnc = np.sign(rmnc)*np.power(abs(rmnc),1.0/fit_factor)
+		#rmnc = np.broadcast_to(xf[i1:i2],(1,mnmax))**(1.0/fit_factor)
 		i1 = i2; i2 = i1+mnmax-1
 		xtemp = xf[i1:i2]
-		zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))/fit_factor
+		#zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))**(1.0/fit_factor)
+		zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))
+		zmns = np.sign(zmns)*np.power(abs(zmns),1.0/fit_factor)
+		#
+		plt3d = PLOT3D()
+		print('  Fitting Surface')
+		theta = np.linspace([0],[np.pi*2],64)
+		phi   = np.linspace([0],[np.pi*2],64)/self.nfp
+		FR = FourierRep()
+		r = FR.cfunct(theta,phi,rmnc,xm,xn)
+		z = FR.sfunct(theta,phi,zmns,xm,xn)
+		FR.isotoro(r,z,phi,0,plot3D=plt3d,lclosev=False)
+		vertices = np.array([xt,yt,zt]).T
+		points = plt3d.vertexToPoints(vertices)
+		plt3d.add3Dpoints(points,pointsize=0.1)
+		plt3d.render()
 		return xm,xn,rmnc,zmns
 
 	def surf_fit_func(self,x,*args):
@@ -725,10 +771,14 @@ class COILSET():
 		mn00 = args[9]
 		mnmax = xm.shape[0]
 		i1 = 0; i2 = i1+mnmax
-		rmnc = np.broadcast_to(x[i1:i2],(1,mnmax))/fit_factor
+		#rmnc = np.broadcast_to(x[i1:i2],(1,mnmax))**(1.0/fit_factor)
+		rmnc = np.broadcast_to(x[i1:i2],(1,mnmax))
+		rmnc = np.sign(rmnc)*np.power(abs(rmnc),1.0/fit_factor)
 		i1 = i2; i2 = i1+mnmax-1
 		xtemp = x[i1:i2]
-		zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))/fit_factor
+		#zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))**(1.0/fit_factor)
+		zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))
+		zmns = np.sign(zmns)*np.power(abs(zmns),1.0/fit_factor)
 		r = FR.cfunct(theta,phi,rmnc,xm,xn)
 		z = FR.sfunct(theta,phi,zmns,xm,xn)
 		d = 0
@@ -737,7 +787,7 @@ class COILSET():
 				dr = boundr - np.squeeze(r[0,u,v])
 				dz = boundz - np.squeeze(z[0,u,v])
 				dl2 = dr*dr + dz*dz
-				dl2[dl2<0.04] = 0.04
+				#dl2[dl2<0.001] = 100.0
 				d = d + min(dl2)
 		#print(d)
 		return d
