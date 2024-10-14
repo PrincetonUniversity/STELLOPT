@@ -963,9 +963,6 @@
       Mnorm = 1.0E-5
       dM = 0.d0
       ldone = .FALSE.
-      lprocdone = .FALSE.
-      lboxdone = .FALSE.
-      lalldone = .FALSE.
 
       IF (lverb) THEN
         WRITE(6,*) ''
@@ -1099,7 +1096,7 @@
 
           ! "Derivatives" for convergence checks
           dM(i) = ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
-          IF (dM(i) .GT. maxdM) THEN
+          IF ((dM(i) .GT. maxdM).OR.ISNAN(Mnorm(i))) THEN
             maxdM = dM(i)
             maxi = i
           END IF
@@ -1130,12 +1127,9 @@
             convergedproc = convergedproc + tet_vol(i_tile)
           END IF
         END DO
-        lprocdone = ALL(ldone)
 
         IF (lcomm) THEN
 #if defined(MPI_OPT)
-            CALL MPI_ALLREDUCE(lprocdone, lboxdone,          1, MPI_LOGICAL, MPI_LAND, comm_shar,  ierr_mpi) 
-            CALL MPI_ALLREDUCE(lboxdone,   lalldone,         1, MPI_LOGICAL, MPI_LAND, comm_world, ierr_mpi) 
             CALL MPI_ALLREDUCE(convergedproc, convergedtot,  1, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi) 
             CALL MPI_ALLREDUCE(maxdM,             maxdMall,  1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_world, ierr_mpi) 
             IF (maxdM.EQ.maxdMall) THEN
@@ -1153,8 +1147,6 @@
             CALL MPI_BARRIER(comm_world, ierr_mpi)
 #endif
         ELSE
-            lboxdone = lprocdone
-            lalldone = lboxdone
             maxlambda = lambda(maxi)
             maxtile = mydom(maxi)
             convergedtot = convergedproc
