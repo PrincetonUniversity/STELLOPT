@@ -527,6 +527,7 @@
             WRITE(iunit_out,vecvar2) 'Z_BEAMS',n,2,z_beams(n,2)
          END DO
       ELSE
+         WRITE(iunit_out,"(A,I2.2)") '!---- Markers'
          n = COUNT(r_start_in > 0)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'R_START_IN',(r_start_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'Z_START_IN',(z_start_in(ik), ik=1,n)
@@ -538,7 +539,7 @@
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'ZATOM_IN',(zatom_in(ik), ik=1,n)
          IF (ANY(weight_in /= 1)) WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'WEIGHT_IN',(weight_in(ik), ik=1,n)
          n = COUNT(t_end_in > -1)
-         WRITE(iunit_out,"(2X,A,1X,'=',I0,'*',ES22.12E3)") 'T_END_IN',n,MAXVAL(t_end_in)
+         WRITE(iunit_out,"(2X,A,1X,'=',I6,'*',ES19.12E3)") 'T_END_IN',n,MAXVAL(t_end_in)
       END IF
       WRITE(iunit_out,'(A)') '/'
 
