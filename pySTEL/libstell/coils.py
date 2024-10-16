@@ -622,7 +622,7 @@ class COILSET():
 		from pathlib import Path
 		# Setup initial condition
 		self.Nfeval = 0
-		mmax = 2; nmax = 4
+		mmax = 1; nmax = 3
 		nu = max(mmax*4,32); nv = max(nmax*2,32)
 		# First extract points
 		xt = []
@@ -681,7 +681,7 @@ class COILSET():
 		xn = np.array(xn,ndmin=2).T*self.nfp
 		mn00 = 0
 		#fit_factor = 1.0*(np.squeeze(xm)+abs(np.squeeze(xn)))
-		fit_factor = 1.0*(np.squeeze(xm))
+		#fit_factor = 1.0*(np.squeeze(xm)+1.0)
 		fit_factor[fit_factor<1.0] = 1.0
 		# Set options
 		opts = (nu,nv,xm,xn,theta,phi,rt,zt,fit_factor,mn00)
@@ -718,8 +718,10 @@ class COILSET():
 				rmnc_temp = rmnc_temp*1.05
 				zmns_temp = zmns_temp*0.95
 		# Apply factor and remove Z00
-		rmnc_temp = np.sign(rmnc_temp[0,:])*np.power(abs(rmnc_temp[0,:]),fit_factor)
-		zmns_temp = np.sign(zmns_temp[0,:])*np.power(abs(zmns_temp[0,:]),fit_factor)
+		rmnc_temp = rmnc_temp*fit_factor
+		zmns_temp = zmns_temp*fit_factor
+		#rmnc_temp = np.sign(rmnc_temp[0,:])*np.power(abs(rmnc_temp[0,:]),fit_factor)
+		#zmns_temp = np.sign(zmns_temp[0,:])*np.power(abs(zmns_temp[0,:]),fit_factor)
 		zmns_temp = np.delete(zmns_temp,mn00)
 		x0 = np.concatenate((np.squeeze(rmnc_temp),np.squeeze(zmns_temp)))
 		#print(x0)
@@ -733,13 +735,14 @@ class COILSET():
 			xf = x0
 		i1 = 0; i2 = i1+mnmax
 		rmnc = np.broadcast_to(xf[i1:i2],(1,mnmax))
-		rmnc = np.sign(rmnc)*np.power(abs(rmnc),1.0/fit_factor)
-		#rmnc = np.broadcast_to(xf[i1:i2],(1,mnmax))**(1.0/fit_factor)
+		rmnc = rmnc/fit_factor
+		#rmnc = np.sign(rmnc)*np.power(abs(rmnc),1.0/fit_factor)
 		i1 = i2; i2 = i1+mnmax-1
 		xtemp = xf[i1:i2]
 		#zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))**(1.0/fit_factor)
 		zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))
-		zmns = np.sign(zmns)*np.power(abs(zmns),1.0/fit_factor)
+		zmns = zmns/fit_factor
+		#zmns = np.sign(zmns)*np.power(abs(zmns),1.0/fit_factor)
 		#
 		plt3d = PLOT3D()
 		print('  Fitting Surface')
@@ -773,12 +776,14 @@ class COILSET():
 		i1 = 0; i2 = i1+mnmax
 		#rmnc = np.broadcast_to(x[i1:i2],(1,mnmax))**(1.0/fit_factor)
 		rmnc = np.broadcast_to(x[i1:i2],(1,mnmax))
-		rmnc = np.sign(rmnc)*np.power(abs(rmnc),1.0/fit_factor)
+		rmnc = rmnc/fit_factor
+		#rmnc = np.sign(rmnc)*np.power(abs(rmnc),1.0/fit_factor)
 		i1 = i2; i2 = i1+mnmax-1
 		xtemp = x[i1:i2]
 		#zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))**(1.0/fit_factor)
 		zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))
-		zmns = np.sign(zmns)*np.power(abs(zmns),1.0/fit_factor)
+		zmns = zmns/fit_factor
+		#zmns = np.sign(zmns)*np.power(abs(zmns),1.0/fit_factor)
 		r = FR.cfunct(theta,phi,rmnc,xm,xn)
 		z = FR.sfunct(theta,phi,zmns,xm,xn)
 		d = 0
