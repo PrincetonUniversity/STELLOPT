@@ -201,16 +201,25 @@ class POPCON:
             rhs = self.RHS[idx]
             
             f_zero = lambda x: x - Eth/self.tauiss04(x+Palpha)[idx] - rhs
-            
+        
             # tt = np.linspace(0,185e6,1000)
             # plt.plot(tt,f_zero(tt),'.-')
             # plt.title(f'n_avg={self.n_avg[0]},   T_avg={self.T_avg[0]}')
             # plt.grid()
             # plt.show()
             
-            Pext = fsolve(f_zero,10E6)
+            temp,infodict,ierr,msg = fsolve(f_zero,10E6,full_output=True)
             
-            P_ext[idx] = Pext[0]
+            # as in Samuel's script
+            # f_zero = lambda x: Eth/(x-rhs) - self.tauiss04(x+Palpha)[idx]
+            # temp,infodict,ierr,msg = fsolve(f_zero,2*self.PB[idx],full_output=True)
+            
+            if ierr==1:
+                P_ext[idx] = temp[0] #max(temp[0],0.0)
+            else:
+                P_ext[idx] = -10000.0
+   
+            # P_ext[idx] = Pext[0]
             
         self.P_ext = P_ext    
         
@@ -254,7 +263,7 @@ class POPCON:
         #ax.scatter(1.02, 0.075, s=320, marker='*', color='blue', zorder=3)
         
         # fig, ax = plt.subplots(figsize=(11,8))
-        # cntrf=ax.pcolor(Tk.transpose(),n20.transpose(),(n_max_20-n0_20).transpose(),cmap='seismic')#,levels=50)
+        # cntrf=ax.pcolor(Tk.transpose(),n20.transpose(),self.P_alpha.transpose()/1e6,cmap='hot_r')#,levels=50)
         # fig.colorbar(cntrf)
         
         plt.show()
