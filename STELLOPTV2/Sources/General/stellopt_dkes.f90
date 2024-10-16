@@ -182,7 +182,7 @@
          WRITE(temp_str,'(i3.3)') ik
          arg1(6) = '_s' // TRIM(temp_str)
          ier_phi = 0 ! We don't read the boozmn or wout file we've done that already
-         CALL dkes_input_prepare(arg1,6,dkes_input_file,ier_phi)
+         CALL dkes_input_prepare_old(arg1,6,dkes_input_file,ier_phi)
          output_file= 'dkesout.' // TRIM(proc_string) // '_s' // TRIM(temp_str)
          opt_file= 'opt_dkes.' // TRIM(proc_string) // '_s' // TRIM(temp_str)       !DAS 2/21/2000  !Probably won't need
          summary_file = 'results.' // TRIM(proc_string) //'_s' // TRIM(temp_str) !record file addition
