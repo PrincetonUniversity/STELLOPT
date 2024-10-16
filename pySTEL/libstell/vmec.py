@@ -624,6 +624,7 @@ class VMEC(FourierRep):
 				dl2 = dr*dr + dz*dz
 				d = d + min(dl2)
 		return d
+		
 	def callbackF(self,intermediate_result):
 		print(f'ITER: {self.Nfeval} -- dval: {intermediate_result.fun}')
 		self.Nfeval += 1
@@ -696,6 +697,57 @@ class VMEC_INDATA():
 		#del out_dict['libStell']
 		#print(d(self))
 		self.libStell.write_indata(filename,out_dict)
+
+	def pmass(self,x):
+		"""Wrapper to the PMASS function
+
+		This routine wrappers the PMASS function which
+		returns the mass(s) pressure function.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of mass(s)
+		"""
+		return self.libStell.pmass(x)
+
+	def piota(self,x):
+		"""Wrapper to the PIOTA function
+
+		This routine wrappers the PIOTA function which
+		returns the iota(s) function.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of iota
+		"""
+		return self.libStell.piota(x)
+
+	def pcurr(self,x):
+		"""Wrapper to the PCURR function
+
+		This routine wrappers the PCURR function which
+		returns the current profile.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of current profile
+		"""
+		return self.libStell.pcurr(x)
 
 
 
