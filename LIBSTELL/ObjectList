@@ -1,4 +1,5 @@
 ObjectFiles = \
+thrift_globals.o \
 read_nescoil_mod.o \
 stellopt_targets.o \
 stellopt_vars.o \
