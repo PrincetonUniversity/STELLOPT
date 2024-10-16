@@ -559,7 +559,7 @@ class BEAMS3D():
 			plt = PLOT3D()
 		# Handle markers
 		if type(markers) == type(None):
-			markers_in = np.linspace(0,self.nparticles-1)
+			markers_in = np.linspace(0,self.nparticles-1,dtype=int)
 		else:
 			markers_in = markers
 		# Plot markers
