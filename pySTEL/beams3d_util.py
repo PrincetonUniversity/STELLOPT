@@ -18,6 +18,8 @@ if __name__=="__main__":
 		help="Add VMEC equilbrium to plot", default = None)
 	parser.add_argument("--plotheat", dest="lplotheat", action='store_true',
 		help="Plot the wall heatflux.", default = False)
+	parser.add_argument("--plotorbits", dest="lplotorbits", action='store_true',
+		help="Plot the 3D orbits.", default = False)
 	parser.add_argument("--plotshine", dest="lplotshine", action='store_true',
 		help="Plot the wall shinethrough.", default = False)
 	parser.add_argument("--plottransport", dest="lplottrans", action='store_true',
@@ -33,6 +35,12 @@ if __name__=="__main__":
 			beam_data.plot_heatflux(beams=args.beams,load_type='heatflux',colormap='hot',plot3D=plt3d)
 			plt3d.setClim(0,10E6)
 			plt3d.colorbar(title=rf'Q [W/$m^2$]')
+			plt3d.render()
+		if args.lplotorbits:
+			plt3d = PLOT3D()
+			beam_data.plotorbit(plot3D=plt3d)
+			#plt3d.setClim(0,10E6)
+			#plt3d.colorbar(title=rf'Q [W/$m^2$]')
 			plt3d.render()
 		if args.lplotshine:
 			plt3d = PLOT3D()

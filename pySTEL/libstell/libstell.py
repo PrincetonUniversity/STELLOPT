@@ -344,15 +344,17 @@ class LIBSTELL():
 		init_beams3d_input.argtypes = None
 		init_beams3d_input.restype = None
 		init_beams3d_input()
-		# We use an added routine as a helper
-		module_name = self.s1+'beams3d_input_mod_'+self.s2
-		read_beams3d_input = getattr(self.libstell,module_name+'_read_beams3d_input'+self.s3)
-		read_beams3d_input.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
-		read_beams3d_input.restype = None
-		istat = ct.c_int(0)
-		read_beams3d_input(filename.encode('UTF-8'),ct.byref(istat),len(filename))
-		if not (istat.value == 0):
-			return None
+		# Only read a file if we didn't pass an empty string.
+		if filename != '':
+			# We use an added routine as a helper
+			module_name = self.s1+'beams3d_input_mod_'+self.s2
+			read_beams3d_input = getattr(self.libstell,module_name+'_read_beams3d_input'+self.s3)
+			read_beams3d_input.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
+			read_beams3d_input.restype = None
+			istat = ct.c_int(0)
+			read_beams3d_input(filename.encode('UTF-8'),ct.byref(istat),len(filename))
+			if not (istat.value == 0):
+				return None
 		# Get vars
 		intList=['nr','nphi','nz','nparticles_start','npoinc', \
 				'duplicate_factor', 'ns_prof1','ns_prof2', \
