@@ -1,7 +1,6 @@
 thrift_bootsj.o : \
       thrift_runtime.o \
       thrift_vars.o \
-      thrift_input_mod.o \
       thrift_profiles_mod.o \
       thrift_equil.o \
       thrift_funcs.o \
@@ -27,7 +26,6 @@ thrift_boozer.o : \
 thrift_dkes.o : \
       thrift_runtime.o \
       thrift_vars.o \
-      thrift_input_mod.o \
       thrift_profiles_mod.o \
       thrift_equil.o \
       thrift_funcs.o \
@@ -78,7 +76,6 @@ thrift_evolve.o : \
 
 thrift_init.o : \
       thrift_runtime.o \
-      thrift_input_mod.o \
       thrift_vars.o \
       thrift_profiles_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
@@ -88,15 +85,8 @@ thrift_init.o : \
 
 thrift_init_mpisubgroup.o : \
       thrift_runtime.o \
-      thrift_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
-      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
-
-thrift_input_mod.o : \
-      thrift_runtime.o \
-      thrift_vars.o \
-      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
       $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
 
 thrift_interface_mod.o : \
@@ -139,7 +129,6 @@ thrift_main.o : \
 
 thrift_paraexe.o : \
       thrift_runtime.o \
-      thrift_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
       $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
@@ -166,6 +155,7 @@ thrift_reinit_vmec.o : \
 
 thrift_runtime.o : \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/thrift_globals.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
 
@@ -200,7 +190,6 @@ thrift_run_nbcd.o : \
 
 thrift_travis.o : \
       thrift_runtime.o \
-      thrift_input_mod.o \
       thrift_vars.o \
       thrift_equil.o \
       thrift_profiles_mod.o \
@@ -210,6 +199,7 @@ thrift_travis.o : \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o
 
 thrift_vars.o : \
+      $(LIB_DIR)/$(LOCTYPE)/thrift_globals.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
 
 thrift_write.o : \
