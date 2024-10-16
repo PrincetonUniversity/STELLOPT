@@ -11,8 +11,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE thrift_vars
-      USE thrift_runtime
+      USE thrift_globals
       USE safe_open_mod
 
 !-----------------------------------------------------------------------
@@ -107,16 +106,23 @@
          INQUIRE(FILE=TRIM(filename),EXIST=lexist)
          IF (.not.lexist) stop 'Could not find input file'
          CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
-         IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'thrift_input in: '//TRIM(filename),istat)
+         IF (istat /= 0) THEN
+            WRITE(6,'(A)') 'ERROR opening file: ',TRIM(filename)
+            CALL FLUSH(6)
+            STOP
+         END IF
          READ(iunit,NML=thrift_input,IOSTAT=istat)
          IF (istat /= 0) THEN
+            WRITE(6,'(A)') 'ERROR reading namelist THRIFT_INPUT from file: ',TRIM(filename)
             backspace(iunit)
             read(iunit,fmt='(A)') line
             write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-            CALL handle_err(NAMELIST_READ_ERR,'thrift_input in: '//TRIM(filename),istat)
+            CALL FLUSH(6)
+            STOP
          END IF
          CLOSE(iunit)
       END IF
+      
       CALL tolower(bootstrap_type)
       CALL tolower(eccd_type)
       leccd = eccd_type .ne. ''

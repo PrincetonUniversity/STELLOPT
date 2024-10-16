@@ -17,8 +17,8 @@
       IMPLICIT NONE
 
       ! Moved from thrift_vars
-      LOGICAL ::  lverbj
-      INTEGER ::  nrho, ntimesteps, n_eq, npicard
+      LOGICAL ::  lverbj, leccd, lnbcd, lohmic
+      INTEGER ::  nrho, ntimesteps, n_eq, npicard, nsj
       REAL(rprec) :: tstart, tend, jtol, picard_factor, boot_factor
 
       ! Moved from thrift_vars (For ECCD in general)
