@@ -21,7 +21,7 @@ Module io_unit_spec
 
   Implicit none
   
-  Integer, parameter ::   &
+  Integer ::   &
     iu_nl=21,             &   ! Ion parameter namelist file (input)
     iu_vmec=22,           &   ! VMEC data file (input)
     iu_pprof=23,          &   ! Plasma profile file (input)
