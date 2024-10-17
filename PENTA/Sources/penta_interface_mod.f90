@@ -114,6 +114,43 @@ MODULE PENTA_INTERFACE_MOD
       RETURN
    END SUBROUTINE read_penta_ion_params_namelist
 
+   SUBROUTINE write_ion_params_nml(iunit)
+      IMPLICIT NONE
+      INTEGER(iknd), INTENT(inout) :: iunit
+      CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
+      INTEGER(iknd) :: k
+      WRITE(iunit,'(A)') '&ION_PARAMS'
+      WRITE(iunit,'(A)') '----------------------------------------------------------------'
+      WRITE(iunit,outint) 'NUM_ION_SPECIES',num_ion_species
+      WRITE(iunit,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'Z_ION_INIT',(Z_ion_init(k), k=1,num_ion_species)
+      WRITE(iunit,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'MIOMP_INIT',(miomp_init(k), k=1,num_ion_species)
+      WRITE(iunit,'(A)') '/\n'
+   END SUBROUTINE write_ion_params_nml
+
+   SUBROUTINE write_ion_params_namelist_byfile(filename)
+      USE safe_open_mod
+      IMPLICIT NONE
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER(iknd) :: iunit, istat
+      LOGICAL :: lexists
+      
+      iunit = 100
+      istat = 0
+      INQUIRE(FILE=TRIM(filename),exist=lexists)
+      IF (lexists) THEN
+         CALL safe_open(iunit,istat,TRIM(filename),'old','formatted', access_in='append')
+         !OPEN(unit=iunit, file=TRIM(filename),iostat=istat, status="old", position="append")
+      ELSE
+         CALL safe_open(iunit,istat,TRIM(filename),'replace','formatted')
+         !OPEN(unit=iunit, file=TRIM(filename),iostat=istat, status="new")
+      END IF
+      IF (istat .ne. 0) RETURN
+      CALL write_ion_params_nml(iunit)
+      CLOSE(iunit)
+
+      RETURN
+   END SUBROUTINE write_ion_params_namelist_byfile
+
    SUBROUTINE read_penta_run_params_namelist(filename,istat)
       USE safe_open_mod
       IMPLICIT NONE
@@ -143,6 +180,60 @@ MODULE PENTA_INTERFACE_MOD
       CLOSE(iunit)
       RETURN
    END SUBROUTINE read_penta_run_params_namelist
+
+   SUBROUTINE write_run_params_nml(iunit)
+      IMPLICIT NONE
+      INTEGER(iknd), INTENT(inout) :: iunit
+      CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
+      CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
+      CHARACTER(LEN=*), PARAMETER :: outdbl  = "(2X,A,1X,'=',1X,ES22.14)"
+      CHARACTER(LEN=*), PARAMETER :: outstr  = "(2X,A,1X,'=',1X,'''',A,'''')"
+      INTEGER(iknd) :: k
+      WRITE(iunit,'(A)') '&RUN_PARAMS'
+      WRITE(iunit,outboo) 'INPUT_IS_ER',input_is_er
+      WRITE(iunit,outboo) 'LOG_INTERP',log_interp
+      WRITE(iunit,outboo) 'USE_QUANC8',use_quanc8
+      WRITE(iunit,outboo) 'READ_U2_FILE',read_U2_file
+      WRITE(iunit,outboo) 'ADD_SPITZER_TO_D33',Add_Spitzer_to_D33
+      WRITE(iunit,outboo) 'FLUX_CAP',flux_cap
+      WRITE(iunit,outboo) 'OUTPUT_QOT_VS_ER',output_QoT_vs_Er
+      WRITE(iunit,outboo) 'USE_BEAM',use_beam
+      WRITE(iunit,outint) 'NUM_ER_TEST',num_Er_test
+      WRITE(iunit,outint) 'NUMKSTEPS',numksteps
+      WRITE(iunit,outint) 'KORD_PPROF',kord_pprof
+      WRITE(iunit,outint) 'KEORD',keord
+      WRITE(iunit,outint) 'KCORD',kcord
+      WRITE(iunit,outdbl) 'KMIN',kmin
+      WRITE(iunit,outdbl) 'KMAX',kmax
+      WRITE(iunit,outdbl) 'EPSABS',epsabs
+      WRITE(iunit,outdbl) 'EPSREL',epsrel
+      WRITE(iunit,outstr) 'METHOD',method
+      WRITE(iunit,'(A)') '/\n'
+   END SUBROUTINE write_run_params_nml
+
+   SUBROUTINE write_run_params_namelist_byfile(filename)
+      USE safe_open_mod
+      IMPLICIT NONE
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER(iknd) :: iunit, istat
+      LOGICAL :: lexists
+      
+      iunit = 100
+      istat = 0
+      INQUIRE(FILE=TRIM(filename),exist=lexists)
+      IF (lexists) THEN
+         CALL safe_open(iunit,istat,TRIM(filename),'old','formatted', access_in='append')
+         !OPEN(unit=iunit, file=TRIM(filename),iostat=istat, status="old", position="append")
+      ELSE
+         CALL safe_open(iunit,istat,TRIM(filename),'replace','formatted')
+         !OPEN(unit=iunit, file=TRIM(filename),iostat=istat, status="new")
+      END IF
+      IF (istat .ne. 0) RETURN
+      CALL write_run_params_nml(iunit)
+      CLOSE(iunit)
+
+      RETURN
+   END SUBROUTINE write_run_params_namelist_byfile
 
    SUBROUTINE penta_init_commandline
       IMPLICIT NONE
