@@ -490,11 +490,13 @@ MODULE PENTA_INTERFACE_MOD
       RETURN
    END SUBROUTINE penta_screen_info
 
-   SUBROUTINE penta_open_output
+   SUBROUTINE penta_open_output(file_ext)
       USE safe_open_mod
       USE io_unit_spec
       IMPLICIT NONE
+      CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: file_ext
       INTEGER :: istat
+      CHARACTER(LEN=256) :: local_ext
       istat = 0
       ! Set write status
       IF (i_append == 0) THEN
@@ -508,35 +510,41 @@ MODULE PENTA_INTERFACE_MOD
          CALL FLUSH(6)
          STOP 'Error: Exiting, i_append error in penta.f90'
       END IF
+      ! Create local extension
+      IF (PRESENT(file_ext)) THEN
+         local_ext = "."//TRIM(file_ext)
+      ELSE
+         local_ext = ''
+      END IF
       ! Open files
       !Open(unit=iu_flux_out, file="fluxes_vs_roa", position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-      CALL safe_open(iu_flux_out, istat, "fluxes_vs_roa", &
+      CALL safe_open(iu_flux_out, istat, "fluxes_vs_roa"//TRIM(local_ext), &
          Trim(Adjustl(fstatus)), 'formatted',&
          access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_pprof_out, istat, "plasma_profiles_check", &
+      CALL safe_open(iu_pprof_out, istat, "plasma_profiles_check"//TRIM(local_ext), &
          Trim(Adjustl(fstatus)), 'formatted',&
          access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_fvEr_out, istat, "fluxes_vs_Er", &
+      CALL safe_open(iu_fvEr_out, istat, "fluxes_vs_Er"//TRIM(local_ext), &
          Trim(Adjustl(fstatus)), 'formatted',&
          access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_flows_out, istat, "flows_vs_roa", &
+      CALL safe_open(iu_flows_out, istat, "flows_vs_roa"//TRIM(local_ext), &
          Trim(Adjustl(fstatus)), 'formatted',&
          access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_flowvEr_out, istat, "flows_vs_Er", &
+      CALL safe_open(iu_flowvEr_out, istat, "flows_vs_Er"//TRIM(local_ext), &
          Trim(Adjustl(fstatus)), 'formatted',&
          access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_Jprl_out, istat, "Jprl_vs_roa", &
+      CALL safe_open(iu_Jprl_out, istat, "Jprl_vs_roa"//TRIM(local_ext), &
          Trim(Adjustl(fstatus)), 'formatted',&
          access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_contraflows_out, istat, "ucontra_vs_roa", &
+      CALL safe_open(iu_contraflows_out, istat, "ucontra_vs_roa"//TRIM(local_ext), &
          Trim(Adjustl(fstatus)), 'formatted',&
          access_in=Trim(Adjustl(fpos)))
       IF (method == 'SN') &
-         CALL safe_open(iu_sigmas_out, istat, "sigmas_vs_roa", &
+         CALL safe_open(iu_sigmas_out, istat, "sigmas_vs_roa"//TRIM(local_ext), &
             Trim(Adjustl(fstatus)), 'formatted',&
             access_in=Trim(Adjustl(fpos)))
       IF (output_QoT_vs_Er) THEN
-         CALL safe_open(iu_QoTvEr_out, istat, "QoTs_vs_Er", &
+         CALL safe_open(iu_QoTvEr_out, istat, "QoTs_vs_Er"//TRIM(local_ext), &
             Trim(Adjustl(fstatus)), 'formatted',&
             access_in=Trim(Adjustl(fpos)))
          Write(iu_QoTvEr_out,'("*",/,"r/a   Er[V/cm]   Q_e/T_e [m**-2s**-1] ",&
