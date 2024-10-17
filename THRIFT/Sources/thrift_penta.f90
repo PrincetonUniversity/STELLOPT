@@ -50,7 +50,7 @@
             Er_min = -250.0
             Er_max =  250.0
             js     =  DKES_K(k)
-            i_append = 0
+            i_append = 1
             B_Eprl = 0.0
             Smax   = 1
             coeff_ext = ''
@@ -61,7 +61,7 @@
             CALL PENTA_SCREEN_INFO
             CALL PENTA_ALLOCATE_DKESCOEFF
             CALL PENTA_FIT_DXX_COEF
-            CALL PENTA_OPEN_OUTPUT
+            CALL PENTA_OPEN_OUTPUT(proc_string)
             CALL PENTA_FIT_RAD_TRANS
             ! Now the basic steps
             CALL PENTA_RUN_2_EFIELD
