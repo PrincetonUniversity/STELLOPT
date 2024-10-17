@@ -133,7 +133,7 @@ MODULE PENTA_INTERFACE_MOD
       END IF
       READ(iunit,NML=run_params,IOSTAT=istat)
       IF (istat /= 0) THEN
-         WRITE(6,'(A)') 'ERROR reading PENTA ion_params namelist from file: ',TRIM(filename)
+         WRITE(6,'(A)') 'ERROR reading PENTA run_params namelist from file: ',TRIM(filename)
          backspace(iunit)
          read(iunit,fmt='(A)') line
          write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
@@ -280,7 +280,6 @@ MODULE PENTA_INTERFACE_MOD
       USE coeff_var_pass, ONLY: D11_mat, cmul, num_c
       USE phys_const, ONLY: p_mass, elem_charge, e_mass
       USE read_input_file_mod
-      USE PENTA_subroutines, ONLY : define_friction_coeffs
       IMPLICIT NONE
       CALL read_vmec_file_2(js,run_ident)
       CALL read_pprof_file(pprof_char,num_ion_species,roa_surf,arad,kord_pprof)
@@ -298,7 +297,7 @@ MODULE PENTA_INTERFACE_MOD
          U2=1.5d0*D11_mat(num_c,1)/cmul(num_c);
       ENDIF
       ! Change Er test range to V/cm if necessary
-      IF ( input_is_Er) THEN
+      IF ( .not. input_is_Er) THEN
          Er_min = Er_min * Te / arad
          Er_max = Er_max * Te / arad
       ENDIF
@@ -322,9 +321,6 @@ MODULE PENTA_INTERFACE_MOD
       vths=(/vth_e,vth_i/)
       dTdrs=(/dTedr,dTidr/)
       dndrs=(/dnedr,dnidr/)
-      ! Define matrix of friction coefficients (lmat)
-      Call define_friction_coeffs(masses,charges,vths,Temps,dens,loglambda, &
-                            num_species,Smax,lmat)
       RETURN
    END SUBROUTINE penta_read_input_files
 
@@ -412,7 +408,7 @@ MODULE PENTA_INTERFACE_MOD
       ! Set write status
       IF (i_append == 0) THEN
          fstatus = "unknown"
-         fpos = "asis"
+         fpos = "SEQUENTIAL"
       ELSEIF (i_append == 1) THEN
          fstatus = "old"
          fpos = "append"
@@ -490,8 +486,11 @@ MODULE PENTA_INTERFACE_MOD
    SUBROUTINE penta_fit_rad_trans
       USE coeff_var_pass
       USE vmec_var_pass
-      USE PENTA_subroutines, ONLY : fit_coeffs
+      USE PENTA_subroutines, ONLY : fit_coeffs, define_friction_coeffs
       IMPLICIT NONE
+      ! Define matrix of friction coefficients (lmat)
+      Call define_friction_coeffs(masses,charges,vths,Temps,dens,loglambda, &
+                            num_species,Smax,lmat)
       ! Fit radial transport coefficients specific to different methods
       SELECT CASE (Method)
          CASE ('T', 'MBT')
@@ -537,6 +536,7 @@ MODULE PENTA_INTERFACE_MOD
    SUBROUTINE penta_run_1_init
       IMPLICIT NONE
       INTEGER :: istat
+      CALL init_penta_input
       istat = 0
       CALL read_penta_ion_params_namelist('ion_params',istat)
       istat = 0
