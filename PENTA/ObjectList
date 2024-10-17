@@ -1,4 +1,5 @@
 ObjectFiles = \
+penta_interface_mod.o \
 bspline.o \
 coeff_var_pass.o \
 io_unit_spec.o \
