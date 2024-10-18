@@ -82,6 +82,17 @@ MODULE PENTA_INTERFACE_MOD
       RETURN
    END SUBROUTINE init_penta_input
 
+   SUBROUTINE penta_set_ion_params(num_ion_in, Z_ion_in, miomp_in)
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: num_ion_in
+      REAL(rknd), DIMENSION(NUM_ION_MAX), INTENT(in) ::  Z_ion_in
+      REAL(rknd), DIMENSION(NUM_ION_MAX), INTENT(in) ::  miomp_in
+      num_ion_species = num_ion_in
+      Z_ion_init = Z_ion_in
+      miomp_init = miomp_in
+      RETURN
+   END SUBROUTINE penta_set_ion_params
+
    SUBROUTINE read_penta_ion_params_namelist(filename,istat)
       USE safe_open_mod
       IMPLICIT NONE
@@ -264,6 +275,29 @@ MODULE PENTA_INTERFACE_MOD
       RETURN
    END SUBROUTINE penta_init_commandline
 
+   SUBROUTINE penta_set_commandline(Er_min_in,Er_max_in,js_in,i_append_in,B_Eprl_in,Smax_in,ext_in,run_in,pprof_in)
+      IMPLICIT NONE
+      REAL(rknd), INTENT(IN) :: Er_min_in
+      REAL(rknd), INTENT(IN) :: Er_max_in
+      INTEGER(iknd), INTENT(IN) :: js_in
+      INTEGER(iknd), INTENT(IN) :: i_append_in
+      REAL(rknd), INTENT(IN) :: B_Eprl_in
+      REAL(rknd), INTENT(IN) :: Smax_in
+      CHARACTER(LEN=*), INTENT(IN) :: ext_in
+      CHARACTER(LEN=*), INTENT(IN) :: run_in
+      CHARACTER(LEN=*), INTENT(IN) :: pprof_in
+      Er_min   = Er_min_in
+      Er_max   = Er_max_in
+      js       = js_in
+      i_append = i_append_in
+      B_Eprl   = B_Eprl_in
+      Smax     = Smax_in
+      coeff_ext  = TRIM(ADJUSTL(ext_in))
+      run_ident  = TRIM(ADJUSTL(run_in))
+      pprof_char = TRIM(ADJUSTL(pprof_in))
+      RETURN
+   END SUBROUTINE penta_set_commandline
+
    SUBROUTINE penta_allocate_species
       USE pprof_pass, ONLY: ni, Ti, dnidr, dTidr
       IMPLICIT NONE
@@ -414,6 +448,53 @@ MODULE PENTA_INTERFACE_MOD
       dndrs=(/dnedr,dnidr/)
       RETURN
    END SUBROUTINE penta_read_input_files
+
+   SUBROUTINE penta_set_eq_data(rho,A_in,R_in,V_in,chip_in,phip_in,iota_in,bth_in,bz_in,Bsq_in,B0_in)
+      USE vmec_var_pass
+      IMPLICIT NONE
+      REAL(rknd), INTENT(IN) :: rho
+      REAL(rknd), INTENT(IN) :: A_in
+      REAL(rknd), INTENT(IN) :: R_in
+      REAL(rknd), INTENT(IN) :: V_in
+      REAL(rknd), INTENT(IN) :: chip_in
+      REAL(rknd), INTENT(IN) :: phip_in
+      REAL(rknd), INTENT(IN) :: iota_in
+      REAL(rknd), INTENT(IN) :: bth_in
+      REAL(rknd), INTENT(IN) :: bze_in
+      REAL(rknd), INTENT(IN) :: Bsq_in
+      REAL(rknd), INTENT(IN) :: B0_in
+      REAL(rknd) :: TWOPI
+      TWOPI = 8*ATAN(1.0_rknd)
+      roa_surf = rho
+      arad = A_in
+      Rmajor = R_in
+      r_surf = roa_surf*arad
+      chip = chip_in
+      psip = phip_in
+      iota = iota_in
+      btheta = bth_in
+      bzeta = bze_in
+      Bsq = Bsq_in
+      vol_p = V_in
+      B0 = B0_in
+      ! Note that vp from VMEC comes normalized by 4pi^2
+      ! Therefore we need to denormalize it
+      vol_p = TWOPI*TWOPI*vol_p
+      ! vp_vmec is ~dV/ds, but what we want is dVdr=dVds*dsdr
+      ! Since PENTA uses r/a=sqrt(s), then dVdr=dVds*2*r/a^2 
+      vol_p = vol_p * 2.0_rknd*r_surf/arad**2
+      !Same for psip and chip: need to convert d/ds to d/dr
+      psip = psip * 2.0_rknd*r_surf/arad**2
+      chip = chip * 2.0_rknd*r_surf/arad**2
+      !psip and chip are used to compute flows in theta and zeta direction (see penta.f90)
+      !It is assumed that psip and chip are normalized by 2pi
+      !So need to do it here:
+      psip = psip / TWOPI
+      chip = chip / TWOPI
+      ! For the SN formulation this is the think to do, but not for the the other formulations...
+      b0 = dsqrt(bsq)
+      RETURN
+   END SUBROUTINE penta_set_eq_data
 
    SUBROUTINE penta_fit_DXX_coef
       USE coeff_var_pass
