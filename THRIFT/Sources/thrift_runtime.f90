@@ -78,6 +78,10 @@ MODULE thrift_runtime
     CHARACTER(256) :: id_string, prof_string, &
                       nbcd_type, proc_string, magdiag_coil
 
+    LOGICAL, DIMENSION(MAXPROFLEN) :: lneed_boozer
+    REAL(rprec), DIMENSION(:,:,:), POINTER :: DKES_D11, DKES_D31, DKES_D33
+    INTEGER :: win_dkes_d11, win_dkes_d31, win_dkes_d33
+
     REAL(rprec), PARAMETER :: THRIFT_VERSION = 0.50 
     !-------------------------------------------------------------------
     !     Subroutines
