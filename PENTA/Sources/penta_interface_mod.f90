@@ -399,27 +399,36 @@ MODULE PENTA_INTERFACE_MOD
       RETURN
    END SUBROUTINE penta_deallocate_dkescoeff
 
-   SUBROUTINE penta_read_input_files
+   SUBROUTINE penta_read_input_files(lvmec,lpprof,ldkes,lbeam,lU2)
       USE vmec_var_pass, ONLY: roa_surf, arad, Bsq
       USE pprof_pass
       USE coeff_var_pass, ONLY: D11_mat, cmul, num_c
       USE phys_const, ONLY: p_mass, elem_charge, e_mass
       USE read_input_file_mod
       IMPLICIT NONE
-      CALL read_vmec_file_2(js,run_ident)
-      CALL read_pprof_file(pprof_char,num_ion_species,roa_surf,arad,kord_pprof)
-      CALL read_dkes_star_files(coeff_ext,Add_Spitzer_to_D33,Bsq)
-      IF (use_beam) THEN
-         CALL read_beam_file(roa_surf,kord_pprof)
-      ELSE
-         beam_force = 0._rknd
+      LOGICAL, INTENT(IN) :: lvmec
+      LOGICAL, INTENT(IN) :: lpprof
+      LOGICAL, INTENT(IN) :: ldkes
+      LOGICAL, INTENT(IN) :: lbeam
+      LOGICAL, INTENT(IN) :: lU2
+      IF (lvmec) CALL read_vmec_file_2(js,run_ident)
+      IF (lpprof) CALL read_pprof_file(pprof_char,num_ion_species,roa_surf,arad,kord_pprof)
+      IF (ldkes) CALL read_dkes_star_files(coeff_ext,Add_Spitzer_to_D33,Bsq)
+      IF (lbeam) THEN
+         IF (use_beam) THEN
+            CALL read_beam_file(roa_surf,kord_pprof)
+         ELSE
+            beam_force = 0._rknd
+         ENDIF
       ENDIF
       ! Optionally read file containing <U**2> info.  Else this is 
       ! calculated from the D11* coefficient at high nu/v and Er=0.
-      IF ( read_U2_file ) THEN
-         CALL read_Utilde2_file(roa_surf,U2,kord_pprof)
-      ELSE
-         U2=1.5d0*D11_mat(num_c,1)/cmul(num_c);
+      IF (lU2) THEN
+         IF ( read_U2_file) THEN
+            CALL read_Utilde2_file(roa_surf,U2,kord_pprof)
+         ELSE
+            U2=1.5d0*D11_mat(num_c,1)/cmul(num_c);
+         ENDIF
       ENDIF
       ! Change Er test range to V/cm if necessary
       IF ( .not. input_is_Er) THEN
@@ -449,7 +458,7 @@ MODULE PENTA_INTERFACE_MOD
       RETURN
    END SUBROUTINE penta_read_input_files
 
-   SUBROUTINE penta_set_eq_data(rho,A_in,R_in,V_in,chip_in,phip_in,iota_in,bth_in,bz_in,Bsq_in,B0_in)
+   SUBROUTINE penta_set_eq_data(rho,A_in,R_in,V_in,chip_in,phip_in,iota_in,bth_in,bze_in,Bsq_in)
       USE vmec_var_pass
       IMPLICIT NONE
       REAL(rknd), INTENT(IN) :: rho
@@ -462,7 +471,6 @@ MODULE PENTA_INTERFACE_MOD
       REAL(rknd), INTENT(IN) :: bth_in
       REAL(rknd), INTENT(IN) :: bze_in
       REAL(rknd), INTENT(IN) :: Bsq_in
-      REAL(rknd), INTENT(IN) :: B0_in
       REAL(rknd) :: TWOPI
       TWOPI = 8*ATAN(1.0_rknd)
       roa_surf = rho
@@ -476,7 +484,6 @@ MODULE PENTA_INTERFACE_MOD
       bzeta = bze_in
       Bsq = Bsq_in
       vol_p = V_in
-      B0 = B0_in
       ! Note that vp from VMEC comes normalized by 4pi^2
       ! Therefore we need to denormalize it
       vol_p = TWOPI*TWOPI*vol_p
@@ -492,9 +499,93 @@ MODULE PENTA_INTERFACE_MOD
       psip = psip / TWOPI
       chip = chip / TWOPI
       ! For the SN formulation this is the think to do, but not for the the other formulations...
-      b0 = dsqrt(bsq)
+      b0 = dsqrt(Bsq)
       RETURN
    END SUBROUTINE penta_set_eq_data
+
+   SUBROUTINE penta_set_pprof(ne_in,dnedr_in,te_in,dtedr_in,ni_in,dnidr_in,ti_in,dtidr_in)
+      USE pprof_pass
+      IMPLICIT NONE
+      REAL(rknd), INTENT(IN) :: ne_in
+      REAL(rknd), INTENT(IN) :: dnedr_in
+      REAL(rknd), INTENT(IN) :: te_in
+      REAL(rknd), INTENT(IN) :: dtedr_in
+      REAL(rknd), DIMENSION(num_ion_species), INTENT(IN) :: ni_in
+      REAL(rknd), DIMENSION(num_ion_species), INTENT(IN) :: dnidr_in
+      REAL(rknd), DIMENSION(num_ion_species), INTENT(IN) :: ti_in
+      REAL(rknd), DIMENSION(num_ion_species), INTENT(IN) :: dtidr_in
+      ne    = ne_in
+      dnedr = dnedr_in
+      te    = te_in
+      dtedr = dtedr_in
+      ni    = ni_in
+      dnidr = dnidr_in
+      ti    = ni_in
+      dtidr = dnidr_in
+      RETURN
+   END SUBROUTINE penta_set_pprof
+
+   SUBROUTINE penta_set_DKES_star(nc,ne,cmul_in,efield_in,D11_in,D13_in,D33_in)
+      USE vmec_var_pass, ONLY: Bsq
+      USE coeff_var_pass
+      IMPLICIT NONE
+      INTEGER(iknd), INTENT(in) :: nc,ne
+      REAL(rknd), DIMENSION(nc), INTENT(IN) :: cmul_in
+      REAL(rknd), DIMENSION(ne), INTENT(IN) :: efield_in
+      REAL(rknd), DIMENSION(nc,ne), INTENT(IN) :: D11_in
+      REAL(rknd), DIMENSION(nc,ne), INTENT(IN) :: D13_in
+      REAL(rknd), DIMENSION(nc,ne), INTENT(IN) :: D33_in
+      INTEGER :: je, ic
+      REAL(rknd) :: D33_Spitzer
+      num_c = nc
+      num_e = ne
+      IF (ALLOCATED(cmul)) DEALLOCATE(cmul)
+      IF (ALLOCATED(efield)) DEALLOCATE(efield)
+      IF (ALLOCATED(D11_mat)) DEALLOCATE(D11_mat)
+      IF (ALLOCATED(D13_mat)) DEALLOCATE(D13_mat)
+      IF (ALLOCATED(D31_mat)) DEALLOCATE(D31_mat)
+      IF (ALLOCATED(D33_mat)) DEALLOCATE(D33_mat)
+      ALLOCATE(cmul(num_c))
+      ALLOCATE(efield(num_e))
+      ALLOCATE(D11_mat(num_c,num_e))
+      ALLOCATE(D13_mat(num_c,num_e))
+      ALLOCATE(D31_mat(num_c,num_e))
+      ALLOCATE(D33_mat(num_c,num_e))
+      cmul = cmul_in
+      efield = efield_in
+      D11_mat = D11_in
+      D13_mat = D13_in
+      D33_mat = D33_in
+      ! Create D31 using Onsager symmetry
+      D31_mat = -D13_mat
+      IF (Add_Spitzer_to_D33) THEN
+         DO je = 1, num_e
+            DO ic = 1, num_c
+               ! Calculate D33* Spitzer = (2/3)*<B**2>/cmul
+               D33_Spitzer = (2._rknd/3._rknd)*Bsq/cmul(ic)
+               ! Calculate D33*(Physical)=D33*(Spitzer)-D33*
+               D33_mat(ic,je) = D33_Spitzer - D33_mat(ic,je)
+            ENDDO
+         ENDDO
+      END IF
+   END SUBROUTINE penta_set_DKES_star
+
+   SUBROUTINE penta_set_beam(beam_force_in)
+      Use pprof_pass, ONLY: beam_force
+      IMPLICIT NONE
+      REAL(rknd), INTENT(IN) :: beam_force_in
+      beam_force = beam_force_in
+      RETURN
+   END SUBROUTINE penta_set_beam
+
+   SUBROUTINE penta_set_U2(U2_in)
+      USE coeff_var_pass, ONLY: D11_mat,cmul,num_c
+      IMPLICIT NONE
+      REAL(rknd), INTENT(IN), OPTIONAL :: U2_in
+      U2=1.5d0*D11_mat(num_c,1)/cmul(num_c)
+      IF (PRESENT(U2_in)) U2 = U2_in
+      RETURN
+   END SUBROUTINE penta_set_U2
 
    SUBROUTINE penta_fit_DXX_coef
       USE coeff_var_pass
@@ -723,7 +814,7 @@ MODULE PENTA_INTERFACE_MOD
       CALL read_penta_run_params_namelist('run_params',istat)
       CALL penta_init_commandline
       CALL penta_allocate_species
-      CALL penta_read_input_files
+      CALL penta_read_input_files(.TRUE.,.TRUE.,.TRUE.,.TRUE.,.TRUE.)
       CALL penta_screen_info
       CALL penta_allocate_dkescoeff
       CALL penta_fit_DXX_coef
