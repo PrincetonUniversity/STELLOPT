@@ -135,6 +135,16 @@ thrift_paraexe.o : \
       $(VMEC_DIR)/$(LOCTYPE)/parallel_vmec_module.o \
       $(VMEC_DIR)/$(LOCTYPE)/vmec_params.o
 
+thrift_penta.o : \
+      thrift_runtime.o \
+      thrift_vars.o \
+      thrift_profiles_mod.o \
+      thrift_equil.o \
+      thrift_funcs.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  \
+      $(PENTA_DIR)/$(LOCTYPE)/penta_interface_mod.o
+
 thrift_profiles_mod.o : \
       thrift_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
