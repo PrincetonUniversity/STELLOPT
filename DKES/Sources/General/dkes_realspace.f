@@ -27,6 +27,7 @@ C-----------------------------------------------
      1   DKES_L11p, DKES_L33p, DKES_L31p,
      2   DKES_L11m, DKES_L33m, DKES_L31m,
      3   DKES_scal11, DKES_scal33, DKES_scal31
+      INTEGER :: DKES_NK, DKES_NC, DKES_NE                              
 
       CONTAINS
 
