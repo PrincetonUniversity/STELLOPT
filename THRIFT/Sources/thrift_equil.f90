@@ -17,8 +17,8 @@ MODULE thrift_equil
     !          el0     Elongation
     !        iota0     Rotational Transform on axis
     !     iota_spl     Spline of iota profile
-    !     phip_spl     Spline of dphi/ds
-    !       vp_spl     Spline of dV/ds
+    !     phip_spl     Spline of dphi/drho
+    !       vp_spl     Spline of dV/dphi
     !-------------------------------------------------------------------
     IMPLICIT NONE
 
