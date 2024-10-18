@@ -27,7 +27,8 @@ MODULE thrift_equil
 
     ! Spline helpers
     INTEGER :: bcs1(2)
-    TYPE(EZspline1_r8) :: iota_spl, phip_spl, vp_spl
+    TYPE(EZspline1_r8) :: iota_spl, phip_spl, vp_spl, bu_spl, bv_spl, &
+                            bsq_spl
 
 
 END MODULE thrift_equil
