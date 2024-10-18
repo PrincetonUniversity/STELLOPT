@@ -17,7 +17,6 @@
 !         i           Loop index
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      REAL(rprec), PARAMETER :: amu = 1.66053906660D-27
       INTEGER :: i
       REAL(rprec) :: mass, NBI_A, NBI_E, NBI_Z, NBI_alpha, NBI_theta, NBI_Pdense ! probably should be inputs
       REAL(rprec) :: ne, Te, Ti, Zeff, InvAspect, G, NBI_V, rho, timenow, jopb
