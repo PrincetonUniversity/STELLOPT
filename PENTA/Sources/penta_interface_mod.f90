@@ -282,7 +282,7 @@ MODULE PENTA_INTERFACE_MOD
       INTEGER(iknd), INTENT(IN) :: js_in
       INTEGER(iknd), INTENT(IN) :: i_append_in
       REAL(rknd), INTENT(IN) :: B_Eprl_in
-      REAL(rknd), INTENT(IN) :: Smax_in
+      INTEGER(iknd), INTENT(IN) :: Smax_in
       CHARACTER(LEN=*), INTENT(IN) :: ext_in
       CHARACTER(LEN=*), INTENT(IN) :: run_in
       CHARACTER(LEN=*), INTENT(IN) :: pprof_in
