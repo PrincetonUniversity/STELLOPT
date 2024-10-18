@@ -28,8 +28,11 @@
 !-----------------------------------------------------------------------
 !     Local Variables
 !-----------------------------------------------------------------------
-      INTEGER :: ns_dkes, k
-      REAL(rprec) :: s
+      INTEGER :: ns_dkes, k, ier, j, i, ncstar, nestar
+      REAL(rprec) :: s, rho, iota, phip, chip, btheta, bzeta, bsq, vp, &
+                        te, ne, dtedrho, dnedrho
+      REAL(rprec), DIMENSION(num_ion_species) :: ni,ti, dtidrho, dnidrho
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: D11, D13, D33
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !-----------------------------------------------------------------------
@@ -46,18 +49,52 @@
          ! Break up work
          CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD,1,ns_dkes,mystart,myend)
          DO k = mystart,myend
-            ! This part mimics penta_run_1 but without reading the namelists
-            Er_min = -250.0
-            Er_max =  250.0
-            js     =  DKES_K(k)
-            i_append = 1
-            B_Eprl = 0.0
-            Smax   = 1
-            coeff_ext = ''
-            run_ident = ''
-            pprof_char = ''
+            ! Calc some information
+            s = DKES_K(k)/ns_equil ! <- Need to see if we have this number
+            rho = sqrt(s)
+            ier = 0
+            CALL EZSpline_interp(iota_spl, rho, iota, ier)
+            ier = 0
+            CALL EZSpline_interp(phip_spl, rho, phip, ier)
+            ! PENTA wants d/ds note that this won't work if rho=0
+            phip = 0.5*phip/rho
+            chip = iota * phip
+            ier = 0
+            CALL EZSpline_interp(bu_spl, rho, btheta, ier)
+            ier = 0
+            CALL EZSpline_interp(bv_spl, rho, bzeta, ier)
+            ier = 0
+            CALL EZSpline_interp(bsq_spl, rho, bsq, ier)
+            ier = 0
+            CALL EZSpline_interp(vp_spl, rho, vp, ier)
+            ! Vp = dV/dPHI need dVds with VMEC normalization
+            vp = vp * phip /(pi2*pi2)
+            ! Profiles
+            CALL get_prof_te(rho, THRIFT_T(mytimestep), te)
+            CALL get_prof_ne(rho, THRIFT_T(mytimestep), ne)
+            CALL get_prof_teprime(rho, THRIFT_T(mytimestep), dtedrho)
+            CALL get_prof_neprime(rho, THRIFT_T(mytimestep), dnedrho)
+            DO j = 1, num_ion_species
+               CALL get_prof_ti(rho, THRIFT_T(mytimestep), j, ti(j))
+               CALL get_prof_ni(rho, THRIFT_T(mytimestep), j, ni(j))
+               CALL get_prof_tiprime(rho, THRIFT_T(mytimestep), j, dtidrho(j))
+               CALL get_prof_niprime(rho, THRIFT_T(mytimestep), j, dnidrho(j))
+            ! DKES Data
+            ncstar = COUNT(DKES_NUSTAR < 1E10)
+            nestar = COUNT(DKES_ERSTAR < 1E10)
+
+            ! PENTA
+            CALL PENTA_SET_ION_PARAMS(nion_prof, Zatom_prof, mass_prof/AMU)
+            CALL PENTA_SET_COMMANDLINE(-250.0,250.0,DKES_K(k),1,0.0,1,'','','')
             CALL PENTA_ALLOCATE_SPECIES
-            CALL PENTA_READ_INPUT_FILES
+            CALL PENTA_SET_EQ_DATA(rho,eq_Aminor,eq_Rmajor,vp,chip,phip,iota,btheta,bzeta,bsq)
+            CALL PENTA_SET_PPROF(ne,dnedrho,te,dtedrho,ni,dnidrho,ti,dtidrho)
+            !SUBROUTINE penta_set_DKES_star(nc,ne,cmul_in,efield_in,D11_in,D13_in,D33_in)
+            CALL PENTA_SET_DKES_STAR(ncstar,nestar,DKES_NUSTAR(1:ncstar),DKES_ERSTAR(1:nestar), &
+               D11,D13,D33)
+            CALL PENTA_SET_BEAM(0.0) ! Zero becasue we don't read
+            CALL PENTA_SET_U2() ! Leave blank for default value
+            CALL PENTA_READ_INPUT_FILES(.FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
             CALL PENTA_SCREEN_INFO
             CALL PENTA_ALLOCATE_DKESCOEFF
             CALL PENTA_FIT_DXX_COEF
