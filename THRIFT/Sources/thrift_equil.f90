@@ -23,7 +23,7 @@ MODULE thrift_equil
     IMPLICIT NONE
 
     REAL(rprec) :: bt0, el0, iota0, eq_beta, eq_Aminor, eq_Rmajor, &
-                   eq_phiedge, eq_volume
+                   eq_phiedge, eq_volume, ns_eq
 
     ! Spline helpers
     INTEGER :: bcs1(2)
