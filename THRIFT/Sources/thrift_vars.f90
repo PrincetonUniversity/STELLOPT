@@ -85,6 +85,7 @@ MODULE thrift_vars
                  THRIFT_J,THRIFT_I,THRIFT_UGRID, &
                  THRIFT_JPLASMA, THRIFT_IPLASMA, &
                  THRIFT_JBOOT,   THRIFT_IBOOT,   &
+                 THRIFT_EPARB,                   &
                  THRIFT_JECCD,   THRIFT_IECCD,   &
                  THRIFT_JNBCD,   THRIFT_INBCD,   &
                  THRIFT_JOHMIC,  THRIFT_IOHMIC,  &
