@@ -62,6 +62,7 @@ MODULE thrift_vars
              win_thrift_j,win_thrift_i,win_thrift_ugrid, &
              win_thrift_jplasma, win_thrift_iplasma, &
              win_thrift_jboot,   win_thrift_iboot,   &
+             win_thrift_eparb,                       &
              win_thrift_jeccd,   win_thrift_ieccd,   &
              win_thrift_jnbcd,   win_thrift_inbcd,   &
              win_thrift_johmic,  win_thrift_iohmic,  &
@@ -84,6 +85,7 @@ MODULE thrift_vars
                  THRIFT_J,THRIFT_I,THRIFT_UGRID, &
                  THRIFT_JPLASMA, THRIFT_IPLASMA, &
                  THRIFT_JBOOT,   THRIFT_IBOOT,   &
+                 THRIFT_EPARB,                   &
                  THRIFT_JECCD,   THRIFT_IECCD,   &
                  THRIFT_JNBCD,   THRIFT_INBCD,   &
                  THRIFT_JOHMIC,  THRIFT_IOHMIC,  &

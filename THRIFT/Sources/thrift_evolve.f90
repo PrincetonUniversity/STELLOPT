@@ -51,6 +51,8 @@
                            THRIFT_COEFF_BP = 0; THRIFT_COEFF_CP = 0; THRIFT_COEFF_DP = 0
       THRIFT_ALPHA1   = 0; THRIFT_ALPHA2   = 0; THRIFT_ALPHA3   = 0; THRIFT_ALPHA4   = 0
       THRIFT_MATLD    = 0; THRIFT_MATMD    = 0; THRIFT_MATUD    = 0; THRIFT_MATRHS   = 0
+      ! Initialize electric field variable
+      THRIFT_EPARB    = 0
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nsj), jold(nsj))
@@ -159,6 +161,8 @@
             ! Calculate iota
             IF (lverbj) WRITE(6,*) "Calculating iota"
             CALL calc_iota
+            ! Calculate <E.B>
+            THRIFT_EPARB(:,mytimestep) = THRIFT_ETAPARA(:,mytimestep) * THRIFT_JPLASMA(:,mytimestep) * THRIFT_BAV(:,mytimestep)
 
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN
