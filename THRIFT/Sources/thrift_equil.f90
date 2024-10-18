@@ -21,9 +21,9 @@ MODULE thrift_equil
     !       vp_spl     Spline of dV/dphi
     !-------------------------------------------------------------------
     IMPLICIT NONE
-
+    INTEGER :: ns_eq
     REAL(rprec) :: bt0, el0, iota0, eq_beta, eq_Aminor, eq_Rmajor, &
-                   eq_phiedge, eq_volume, ns_eq
+                   eq_phiedge, eq_volume
 
     ! Spline helpers
     INTEGER :: bcs1(2)

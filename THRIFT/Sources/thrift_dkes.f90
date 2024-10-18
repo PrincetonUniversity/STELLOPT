@@ -17,6 +17,7 @@
       USE thrift_funcs
       USE mpi_params
       USE mpi_inc
+      USE mpi_sharmem
       USE read_wout_mod, ONLY: read_wout_file, read_wout_deallocate
       USE read_boozer_mod, ONLY: bcast_boozer_vars
       ! DKES LIBRARIES
@@ -84,6 +85,9 @@
          DKES_scal11=0.0; DKES_scal33=0.0; DKES_scal31=0.0
          l = 1
          ! Allocate Helper arrays to loop over dkes runs
+         DKES_NK = COUNT(DKES_K>0)
+         DKES_NC = COUNT(DKES_Nustar<1E10)
+         DKES_NE = COUNT(DKES_Erstar<1E10)
          ALLOCATE(ik_dkes(nruns_dkes),Earr_dkes(nruns_dkes),nuarr_dkes(nruns_dkes))
          IF (myworkid == master) THEN
             DO k = 1, DKES_NS_MAX
@@ -288,6 +292,24 @@
          IF (lscreen) WRITE(6,'(a)') ' -----------------  DKES CALCULATION (DONE) ----------------'
          IF (myworkid .ne. master) CALL read_wout_deallocate
 
+         ! Sort out the DKES runs for later use
+         IF (ASSOCIATED(DKES_D11)) CALL mpidealloc(DKES_D11,win_dkes_d11)
+         IF (ASSOCIATED(DKES_D31)) CALL mpidealloc(DKES_D31,win_dkes_d31)
+         IF (ASSOCIATED(DKES_D33)) CALL mpidealloc(DKES_D33,win_dkes_d33)
+         CALL mpialloc(DKES_D11, DKES_NK, DKES_NC, DKES_NE, myid_sharmem, 0, MPI_COMM_MYWORLD, win_dkes_d11)
+         CALL mpialloc(DKES_D31, DKES_NK, DKES_NC, DKES_NE, myid_sharmem, 0, MPI_COMM_MYWORLD, win_dkes_d31)
+         CALL mpialloc(DKES_D33, DKES_NK, DKES_NC, DKES_NE, myid_sharmem, 0, MPI_COMM_MYWORLD, win_dkes_d33)
+         IF (myworkid .eq. master) THEN
+            DO l = 1, nruns_dkes
+               i = MOD(l-1,DKES_NK)+1
+               j = MOD(l-1,DKES_NK*DKES_NE)
+               j = FLOOR(REAL(j) / REAL(DKES_NK))+1
+               k = CEILING(REAL(l) / REAL(DKES_NK*DKES_NE))
+               DKES_D11(i,j,k) = (DKES_L11p(l) + DKES_L11m(l))*0.5
+               DKES_D31(i,j,k) = (DKES_L31p(l) + DKES_L31m(l))*0.5
+               DKES_D33(i,j,k) = (DKES_L33p(l) + DKES_L33m(l))*0.5
+            END DO
+         END IF
       END IF
       IF (lscreen) WRITE(6,'(a)') ' -------------------  DKES NEOCLASSICAL CALCULATION DONE  ---------------------'
       RETURN

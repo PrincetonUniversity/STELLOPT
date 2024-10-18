@@ -13,7 +13,9 @@
       USE thrift_input_mod
       USE thrift_vars
       USE thrift_profiles_mod
-      USE diagno_input_mod, ONLY: read_diagno_input
+      USE diagno_input_mod, ONLY:   read_diagno_input
+      USE penta_interface_mod, ONLY:   init_penta_input, &
+                                       read_penta_run_params_namelist
       USE safe_open_mod
       USE mpi_params
       USE mpi_inc
@@ -60,8 +62,6 @@
          WRITE(6,'(A11,F8.4)') '   TSTART: ', tstart
          WRITE(6,'(A11,F8.4)') '   TEND:   ', tend
       END IF
-
-      ! Create the worker pool
 
       ! Grid allocations
       CALL mpialloc(THRIFT_RHO,       nrho,    myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rho)
@@ -142,6 +142,16 @@
                STOP
             END IF
             CLOSE(iunit)
+         CASE('dkespenta')
+            ier = 0
+            CALL init_penta_input
+            CALL read_penta_run_params_namelist('input.'//TRIM(id_string),ier)
+            IF (ier < 0 .and. myid == master) THEN
+               WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+               WRITE(6,*) '  RUN_PARAMS Namelist not found     '
+               WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               STOP
+            END IF
          CASE('sfincs')
       END SELECT
 

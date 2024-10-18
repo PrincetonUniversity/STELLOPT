@@ -27,7 +27,8 @@
 !-----------------------------------------------------------------------
 !     Local Variables
 !-----------------------------------------------------------------------
-      INTEGER :: ns_dkes, k, ier, j, i, ncstar, nestar, mystart, myend
+      INTEGER :: ns_dkes, k, ier, j, i, ncstar, nestar, mystart, myend, &
+                 mysurf
       REAL(rprec) :: s, rho, iota, phip, chip, btheta, bzeta, bsq, vp, &
                         te, ne, dtedrho, dnedrho
       REAL(rprec), DIMENSION(num_ion_species) :: ni,ti, dtidrho, dnidrho
@@ -48,7 +49,8 @@
          CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD,1,ns_dkes,mystart,myend)
          DO k = mystart,myend
             ! Calc some information
-            s = DKES_K(k)/ns_eq
+            mysurf = DKES_K(k)
+            s = DBLE(mysurf)/DBLE(ns_eq)
             rho = sqrt(s)
             ier = 0
             CALL EZSpline_interp(iota_spl, rho, iota, ier)
@@ -88,9 +90,9 @@
             CALL PENTA_ALLOCATE_SPECIES
             CALL PENTA_SET_EQ_DATA(rho,eq_Aminor,eq_Rmajor,vp,chip,phip,iota,btheta,bzeta,bsq)
             CALL PENTA_SET_PPROF(ne,dnedrho,te,dtedrho,ni,dnidrho,ti,dtidrho)
-            !SUBROUTINE penta_set_DKES_star(nc,ne,cmul_in,efield_in,D11_in,D13_in,D33_in)
+            ! Check here we have D31 from DKES but need D13 in PENTA
             CALL PENTA_SET_DKES_STAR(ncstar,nestar,DKES_NUSTAR(1:ncstar),DKES_ERSTAR(1:nestar), &
-               D11,D13,D33)
+               DKES_D11(mysurf,:,:),DKES_D31(mysurf,:,:),DKES_D33(mysurf,:,:))
             CALL PENTA_SET_BEAM(0.0_rprec) ! Zero becasue we don't read
             CALL PENTA_SET_U2() ! Leave blank for default value
             CALL PENTA_READ_INPUT_FILES(.FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
