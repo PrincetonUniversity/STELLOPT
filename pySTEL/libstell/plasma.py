@@ -168,6 +168,30 @@ class PLASMA:
         
         return vth
     
+    def get_averaged_profile(self,species,which_profile,dVdrho):
+        # which profile is either 'density' or 'temperature'
+        # dVdrho is a function
+        
+        from scipy.integrate import trapezoid
+        
+        rho = np.linspace(0,1,100)
+        
+        if(which_profile=='density'):
+            profile = self.get_density(species,rho)
+        elif(which_profile=='temperature'):
+            profile = self.get_temperature(species,rho)
+        else:
+            print(f'ERROR: profile is either "density" or "temperature". Cannot be {which_profile}')
+            exit(0)
+            
+        volume = trapezoid(dVdrho(rho),rho)
+        
+        avg_profile = trapezoid(profile * dVdrho(rho), rho) / volume
+        
+        return avg_profile
+        
+        
+    
     def get_collisionality(self,species,rho,vtest=None):
         # computes collisionality of test particle of 'species' 
         # in a termal bath of all the other species (including itself)
@@ -227,9 +251,19 @@ class PLASMA:
         else:
             return nu_D
     
-    # # TO DO
-    # def check_quasi_neutrality(self,rho):
-    #     #checks if sum(n_i*Zi)=0
+    def check_quasi_neutrality(self):
+        #checks if sum(n_j*Z_j)=0
+        
+        rho = np.linspace(0,1,100)
+        
+        nZ = 0.0
+        for species in self.list_of_species:
+            nZ += self.get_density(species,rho)*self.Zcharge[species]
+        
+        #normalize
+        nZ = nZ / self.get_density('electrons',rho)   
+          
+        print(f'\nsum(n_jZ_j)/ne (rho) = {nZ}')       
     
     def set_ion_species(self):
         
@@ -345,6 +379,74 @@ class PLASMA:
            
     def print_plasma(self):
         print(f'Current species in plasma are: {", ".join(self.list_of_species)}')
+        
+    def write_THRIFT_profiles(self,time_array,filename=None):
+        # generates a profiles file for THRIFT
+        # assumes that profiles are constant in time and writes the electron 
+        # and ions density (m^-3) and temperature (eV) profiles
+        # saved in the plasma class at all times given in time_array
+        
+        # parts of this routine copied from STELLOPT/BENCHMARKS/THRIFT_TEST/make_profiles.py
+        
+        import h5py
+        
+        if filename is None:
+            filename = 'profiles.h5'
+            
+        rho = np.linspace(0,1,100)
+            
+        nrho = len(rho)
+        nt   = len(time_array)
+        
+        if(nt < 4):
+            print('PLEASE GIVE time_array with more times (>3)')
+            exit(0)
+            
+        nZ   = self.num_ion_species
+        
+        Zcharge_ions = np.array( [self.Zcharge[ion] for ion in self.ion_species], dtype=float )
+        mass_ions    = [self.mass[ion] for ion in self.ion_species]
+        
+        # print(f'Zcharge_ions={Zcharge_ions}')
+        # print(f'mass_ions={mass_ions}')
+        
+        # ne
+        ne = np.array( self.get_density('electrons',rho) )
+        ne = np.tile(ne, (nt,1)).T
+        
+        # Te
+        Te = np.array( self.get_temperature('electrons',rho) )
+        Te = np.tile(Te, (nt,1)).T
+        
+        # ni
+        
+        ni = np.array( [self.get_density(ion,rho) for ion in self.ion_species] )
+        ni = np.tile(ni[:,:,np.newaxis], (1,1,nt)).reshape((nrho,nt,self.num_ion_species))
+        
+        # Ti
+        
+        Ti = np.array( [self.get_temperature(ion,rho) for ion in self.ion_species] )
+        Ti = np.tile(Ti[:,:,np.newaxis], (1,1,nt)).reshape((nrho,nt,self.num_ion_species))
+        
+        hf = h5py.File(filename, 'w')
+        
+        hf.create_dataset('nrho', data=nrho)
+        hf.create_dataset('nt', data=nt)
+        hf.create_dataset('nion', data=nZ)
+        hf.create_dataset('raxis_prof', data=rho)
+        hf.create_dataset('taxis_prof', data=time_array)
+        hf.create_dataset('Z_prof', data=Zcharge_ions)
+        hf.create_dataset('mass_prof', data=mass_ions)
+        hf.create_dataset('ne_prof', data=ne)
+        hf.create_dataset('te_prof', data=Te)
+        hf.create_dataset('ni_prof', data=ni)
+        hf.create_dataset('ti_prof', data=Ti)
+        
+        hf.close()
+        
+        
+        
+        
 
 
 # Main routine
