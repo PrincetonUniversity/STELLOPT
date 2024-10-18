@@ -297,8 +297,6 @@ class VMEC(FourierRep):
 			print(rf'  AUX_F = {aux_f}')
 		return aux_s,aux_f
 
-
-
 	def getCurrentPoloidal(self):
 		"""Returns the poloidal total current
 		This routine returns the total poloidal current as used by the
@@ -387,7 +385,6 @@ class VMEC(FourierRep):
 			Derivative of Z coordiante with respect to u (dZ/du)
 		"""
 		return self.libStell.vmec_get_flxcoord(s,u,v)
-
 
 	def extrapSurface(self,surf=None,dist=0.1):
 		"""Returns an extrapolated surface.
