@@ -290,6 +290,7 @@ class MyApp(QMainWindow):
 			self.ax.set_xlabel('Normalized Flux')
 			self.ax.set_ylabel('[Arb]')
 			self.ax.set_title('Mercier Stability (>0 Stable)')
+			self.ax.set_ylim(-0.1,0.1)
 			self.ax.legend()
 		elif (plot_name == 'LPK'):
 			self.ax.plot(self.r[self.ns-1,:,0],self.z[self.ns-1,:,0],color='red')

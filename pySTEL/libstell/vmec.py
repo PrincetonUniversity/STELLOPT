@@ -297,8 +297,6 @@ class VMEC(FourierRep):
 			print(rf'  AUX_F = {aux_f}')
 		return aux_s,aux_f
 
-
-
 	def getCurrentPoloidal(self):
 		"""Returns the poloidal total current
 		This routine returns the total poloidal current as used by the
@@ -387,7 +385,6 @@ class VMEC(FourierRep):
 			Derivative of Z coordiante with respect to u (dZ/du)
 		"""
 		return self.libStell.vmec_get_flxcoord(s,u,v)
-
 
 	def extrapSurface(self,surf=None,dist=0.1):
 		"""Returns an extrapolated surface.
@@ -624,6 +621,7 @@ class VMEC(FourierRep):
 				dl2 = dr*dr + dz*dz
 				d = d + min(dl2)
 		return d
+		
 	def callbackF(self,intermediate_result):
 		print(f'ITER: {self.Nfeval} -- dval: {intermediate_result.fun}')
 		self.Nfeval += 1
@@ -696,6 +694,57 @@ class VMEC_INDATA():
 		#del out_dict['libStell']
 		#print(d(self))
 		self.libStell.write_indata(filename,out_dict)
+
+	def pmass(self,x):
+		"""Wrapper to the PMASS function
+
+		This routine wrappers the PMASS function which
+		returns the mass(s) pressure function.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of mass(s)
+		"""
+		return self.libStell.pmass(x)
+
+	def piota(self,x):
+		"""Wrapper to the PIOTA function
+
+		This routine wrappers the PIOTA function which
+		returns the iota(s) function.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of iota
+		"""
+		return self.libStell.piota(x)
+
+	def pcurr(self,x):
+		"""Wrapper to the PCURR function
+
+		This routine wrappers the PCURR function which
+		returns the current profile.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of current profile
+		"""
+		return self.libStell.pcurr(x)
 
 
 

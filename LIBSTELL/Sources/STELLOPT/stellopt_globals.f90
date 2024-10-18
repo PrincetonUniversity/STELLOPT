@@ -20,6 +20,7 @@
       REAL(rprec), PARAMETER :: bigno = 1.0E+10
       LOGICAL :: lcentered_differences, lkeep_mins, lrefit, lcoil_geom, lno_restart, ltriangulate
       INTEGER :: cr_strategy, npopulation, noptimizers, mode, rho_exp
+      INTEGER  ::  nfunc_max
       REAL(rprec)  :: ftol, xtol, gtol, epsfcn, factor, refit_param
       CHARACTER(256)           :: opt_type, axis_init_option
       
