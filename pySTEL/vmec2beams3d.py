@@ -55,7 +55,9 @@ if __name__=="__main__":
 		r_start_in = []; z_start_in = []; phi_start_in = []
 		vll_start_in = []; mu_start_in = []
 		for k in sdex:
-			(l,m)=np.where(b[k,:,:] == np.min(b[k,:,:]))
+			temp=np.argwhere(b[k,:,:] == np.min(b[k,:,:]))
+			l = temp[0][0]
+			m = temp[0][1]
 			r_temp = r[k,l,m]
 			z_temp = z[k,l,m]
 			b_temp = b[k,l,m]
