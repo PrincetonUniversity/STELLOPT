@@ -446,7 +446,7 @@ class BEAMS3D():
 
 		return rho,births
 
-	def calcLoss(self,ns=None):
+	def calcLoss(self):
 		"""Calculates the losses as a function of time
 
 		This routine calcualtes the cumulative losses as a function of
@@ -466,19 +466,21 @@ class BEAMS3D():
 		time_ns  = np.linspace(0,0.999E-6,1000)
 		time_mus = np.linspace(1E-6,0.999E-3,1000)
 		time_ms  = np.linspace(1E-3,1,1000)
-		time     = np.append([time_ns,time_mus,time_ms])
+		time     = np.append(time_ns,[time_mus,time_ms])
 
 		# Calc losses
 		loss = np.zeros((self.nbeams,len(time)))
 		for b in range(self.nbeams):
-			lostdex = np.nonzero(self.end_state==2 and self.Beam == b)
+			ldex1 = self.end_state==2
+			ldex2 = self.Beam == (b+1)
+			lostdex = ldex1 & ldex2
 			t = self.t_end[lostdex]
-			w = self.Weight[lostdext]
+			w = self.Weight[lostdex]
 			[counts,_] = np.histogram(t,bins=time,weights=w)
 			nlost  = np.cumsum(counts)
-			lost[b,:] = nlost
+			loss[b,1:] = nlost
 
-		return time,nlost
+		return time,loss
 
 	def calcJrad(self,ns=None):
 		"""Calculates radial fast ion current
