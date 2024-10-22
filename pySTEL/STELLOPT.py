@@ -1118,7 +1118,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Helicity')
 			self.ax2.set_title('Boozer Spectrum Helicity')
 		elif (plot_name == 'MAGWELL_evolution'):
-			x = self.stel_data.MAGWELL_K
+			x = self.stel_data.MAGWELL_k
 			y = self.stel_data.MAGWELL_MAGWELL
 			t = self.stel_data.MAGWELL_TARGET
 			d = self.stel_data.MAGWELL_SIGMA
