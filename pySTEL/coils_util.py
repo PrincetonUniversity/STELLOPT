@@ -12,6 +12,7 @@ if __name__=="__main__":
 	import matplotlib.pyplot as pyplot
 	import numpy as np
 	from datetime import datetime
+	from stl import mesh
 	parser = ArgumentParser(description= 
 		'''Provides class for accessing coils files also serves as a
 		   simple tool for assessing coils or coils files.''')
@@ -37,6 +38,8 @@ if __name__=="__main__":
 		help="Fit a surface to a coil.", default = False)
 	parser.add_argument("-o", "--output", dest="loutput", action='store_true',
 		help="Output the coil", default = False)
+	parser.add_argument("--stl", dest="heightwidth_stl",
+		help="Generate STL of coil of given width and height [m].", default = None)
 	args = parser.parse_args()
 	coils = COILSET()
 	if args.coils_file: 
@@ -56,6 +59,19 @@ if __name__=="__main__":
 			vol_coil.nfaces = vol_coil.faces.shape[0]
 			vol_coil.nvertex = vol_coil.vertex.shape[0]
 			vol_coil.plot_wall_3D()
+		if args.heightwidth_stl:
+			height,width = args.heightwidth_stl.split(',')
+			[vertex,faces] = coils.blenderCoil(height=float(height),width=float(width),lfield_period=False)
+			vertex = np.array(vertex)
+			faces  = np.array(faces, dtype=int)
+			print(vertex.shape)
+			print(faces.shape)
+			nfaces = faces.shape[0]
+			wall_mesh = mesh.Mesh(np.zeros(nfaces, dtype=mesh.Mesh.dtype))
+			for i, f in enumerate(faces):
+				for j in range(3):
+					wall_mesh.vectors[i][j] = vertex[f[j],:]
+			wall_mesh.save(args.coils_file+'.stl')
 		if args.loutput: coils.write_coils_file(args.coils_file+'_new')
 		if args.axyz:
 			x,y,z = args.axyz.split(',')
