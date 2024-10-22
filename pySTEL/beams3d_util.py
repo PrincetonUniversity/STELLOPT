@@ -16,6 +16,8 @@ if __name__=="__main__":
 		help="BEAMS3D file extension", default = None)
 	parser.add_argument("-v", "--vmec", dest="vmec_ext", 
 		help="Add VMEC equilbrium to plot", default = None)
+	parser.add_argument("--plotloss", dest="lplotloss", action='store_true',
+		help="Plot the loss rate.", default = False)
 	parser.add_argument("--plotheat", dest="lplotheat", action='store_true',
 		help="Plot the wall heatflux.", default = False)
 	parser.add_argument("--plotorbits", dest="lplotorbits", action='store_true',
@@ -30,6 +32,19 @@ if __name__=="__main__":
 	beam_data = BEAMS3D()
 	if args.beams3d_ext:
 		beam_data.read_beams3d('beams3d_'+args.beams3d_ext+'.h5')
+		if args.lplotloss:
+			time,nlost=beam_data.calcLoss()
+			px = 1/pyplot.rcParams['figure.dpi']
+			fig=pyplot.figure(figsize=(1024*px,768*px))
+			ax=fig.add_subplot(111)
+			for i in range(beam_data.nbeams):
+				ax.plot(time,100.*nlost[i,:]/beam_data.nparticles,label=rf'Beam {int(i+1)}')
+			ax.set_xscale('log')
+			ax.set_xlabel('Time [s]')
+			ax.set_ylabel('Particles Lost [%]')
+			ax.set_title('Particle Loss Evolution')
+			ax.legend()
+			pyplot.show()
 		if args.lplotheat:
 			plt3d = PLOT3D()
 			beam_data.plot_heatflux(beams=args.beams,load_type='heatflux',colormap='hot',plot3D=plt3d)
