@@ -191,7 +191,7 @@ class BEAMS3D():
 			dex = np.argwhere(S2D == np.min(S2D)).flatten()
 			r0  = self.raxis[dex[0]]
 			z0  = self.zaxis[dex[1]]
-			cont_gen = contour_generator(x=self.raxis,y=self.zaxis,z=S2D, line_type=LineType.Separate)
+			cont_gen = contour_generator(x=self.raxis,y=self.zaxis,z=S2D.T, line_type=LineType.Separate)
 			lines = cont_gen.lines(1.0)
 			lines = lines[0]
 			Rmajor = Rmajor + np.mean(lines[:,0])
@@ -229,7 +229,7 @@ class BEAMS3D():
 
 		area = dr*dz
 		vol  = self.raxis*dp*area
-		vol2d = np.broadcast_to(vol,(self.nr,self.nz))
+		vol2d = np.broadcast_to(vol,(self.nz,self.nr)).T
 		dV = np.zeros((self.nr,self.nphi,self.nz))
 		for j in range(self.nphi-1):
 			grid = np.squeeze(self.S_ARR[:,j,:])
