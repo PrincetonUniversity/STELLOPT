@@ -163,7 +163,7 @@ class BEAMS3D():
 			dex = np.argwhere(S2D == np.min(S2D)).flatten()
 			r0  = self.raxis[dex[0]]
 			z0  = self.zaxis[dex[1]]
-			cont_gen = contour_generator(x=self.raxis,y=self.zaxis,z=S2D, line_type=LineType.Separate)
+			cont_gen = contour_generator(x=self.raxis,y=self.zaxis,z=S2D.T, line_type=LineType.Separate)
 			lines = cont_gen.lines(1.0)
 			lines = lines[0]
 			x   = lines[:,0] - r0
