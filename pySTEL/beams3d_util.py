@@ -38,7 +38,9 @@ if __name__=="__main__":
 			fig=pyplot.figure(figsize=(1024*px,768*px))
 			ax=fig.add_subplot(111)
 			for i in range(beam_data.nbeams):
-				ax.plot(time,100.*nlost[i,:]/beam_data.nparticles,label=rf'Beam {int(i+1)}')
+				dex = beam_data.Beam == (i+1)
+				npart = np.sum(beam_data.Weight[dex])
+				ax.plot(time,100.*nlost[i,:]/npart,label=rf'Beam {int(i+1)}')
 			ax.set_xscale('log')
 			ax.set_xlabel('Time [s]')
 			ax.set_ylabel('Particles Lost [%]')
