@@ -355,6 +355,7 @@
                          target_Jstar, sigma_Jstar, NumJstar,&
                          target_helicity, sigma_helicity, helicity,&
                          target_helicity_old, sigma_helicity_old, &
+                         target_quasiiso, sigma_quasiiso, &
                          target_resjac, sigma_resjac, xm_resjac, xn_resjac,&
                          target_separatrix, sigma_separatrix, &
                          r_separatrix, z_separatrix, phi_separatrix, &
@@ -917,6 +918,8 @@
       helicity           = CMPLX(0.0,0.0)
       target_helicity_old(:) = 0.0
       sigma_helicity_old(:)  = bigno
+      target_quasiiso(:) = 0.0
+      sigma_quasiiso(:)  = bigno
       target_resjac(:)  = 0.0
       sigma_resjac(:)   = bigno
       xn_resjac(:)      = 0
@@ -1095,6 +1098,7 @@
       target_dkes(1)      = 0.0;  sigma_dkes(1)      = bigno
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
+      target_quasiiso(1)  = 0.0;  sigma_quasiiso(1)  = bigno
       target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
       target_dkes_Erdiff(1) = 0.0; sigma_dkes_Erdiff(1) = bigno
       target_dkes_alpha(1) = 0.0; sigma_dkes_alpha(1) = bigno
@@ -1687,6 +1691,20 @@
             IF (sigma_helicity_old(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_HELICITY_OLD(',ik,') = ',target_helicity_old(ik), &
                           'SIGMA_HELICITY_OLD(',ik,') = ',sigma_helicity_old(ik)
+         END DO
+      END IF
+      IF (ANY(sigma_quasiiso < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          BOOZER QUASI-ISODYNAMIC METRIC'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_quasiiso,DIM=1)
+            IF(sigma_quasiiso(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_quasiiso(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_QUASIISO(',ik,') = ',target_quasiiso(ik), &
+                          'SIGMA_QUASIISO(',ik,') = ',sigma_quasiiso(ik)
          END DO
       END IF
       IF (ANY(sigma_resjac < bigno)) THEN
