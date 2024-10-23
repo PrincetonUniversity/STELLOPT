@@ -304,10 +304,10 @@ class BEAMS3D():
 		zeff_temp = ZEFF_FLAT[IA]
 
 		# Extract Ion density
-		nni = np.size(self.NI,3)
+		nni = np.size(self.NI,0)
 		ni_temp = np.zeros((nni,len(IA)))
 		for i in range(nni):
-			NI_FLAT = self.NI[:,:,:,i].flatten()
+			NI_FLAT = self.NI[i,:,:,:].flatten()
 			ni_temp[i,:] = NI_FLAT[IA]
 
 		# Make Mirror
