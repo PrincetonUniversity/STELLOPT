@@ -458,8 +458,9 @@ class BEAMS3D():
 		births    = np.zeros((self.nbeams,ns))
 		rho_lines = np.sqrt(self.S_lines)
 		for b in range(self.nbeams):
-			dexb = np.nonzero(self.Beam == b+1)
-			rho_temp = rho_lines[dexb,dex_start]
+			#dexb = np.nonzero(self.Beam == (b+1))
+			dexb = self.Beam == (b+1)
+			rho_temp = rho_lines[dex_start,dexb]
 			for i in range(ns):
 				w_temp = self.Weight[dexb]
 				w_temp = np.where(rho_temp >= edges[i],w_temp,0.0)
