@@ -55,24 +55,47 @@ class BEAMS3D():
 						 'E_kick', 'partvmax']:
 				if temp in f:
 					setattr(self, temp, float(f[temp][0]))
-			# Arrays
-			for temp in ['raxis', 'phiaxis', 'zaxis', 'B_R', \
-						 'B_PHI', 'B_Z', 'S_ARR', 'U_ARR', 'POT_ARR', \
-						 'GFactor', 'TE', 'NE', 'NI', 'TI', \
-						 'ZEFF_ARR', 'wall_vertex', 'wall_faces', \
+			# Arrays (1D)
+			for temp in ['raxis', 'phiaxis', 'zaxis', \
 						 'mass', 'charge', 'Weight', 'Beam', 'Zatom', \
 						 'end_state', 'Energy', 'wall_strikes', \
-						 'wall_load', 'wall_shine', 'beam_density', \
-						 't_end', 'R_lines', 'Z_lines', 'PHI_lines', \
-						 'vll_lines', 'neut_lines', 'moment_lines', \
-						 'S_lines', 'U_lines', 'B_lines', \
+						 'GFactor', 't_end',  \
+						 'wall_strikes', \
 						 'dist_rhoaxis', 'dist_uaxis', 'dist_paxis', \
-						 'dist_Vaxis', 'dist_Waxis', 'ndot_prof', \
-						 'epower_prof', 'ipower_prof', 'j_prof', \
-						 'dense_prof', 'dist_prof', 'Shinethrough', \
-						 'Shineport', 'NEUTRON_RATE', 'E_NEUTRONS']:
+						 'dist_Vaxis', 'dist_Waxis', 'Shinethrough', \
+						 'Shineport', 'Energy']:
 				if temp in f:
 					setattr(self, temp, np.array(f[temp][:]))
+			# Arrays (2D)
+			for temp in ['wall_vertex', 'wall_faces', \
+						 'wall_load', 'wall_shine', 'beam_density', \
+						 'R_lines', 'Z_lines', 'PHI_lines', \
+						 'vll_lines', 'neut_lines', 'moment_lines', \
+						 'S_lines', 'U_lines', 'B_lines', \
+						 'ndot_prof', \
+						 'epower_prof', 'ipower_prof', 'j_prof', \
+						 'dense_prof', 'E_NEUTRONS']:
+				if temp in f:
+					array = np.transpose(f[temp][:],(1,0))
+					setattr(self, temp, np.array(array))
+			# Arrays (3D)
+			for temp in ['B_R', \
+						 'B_PHI', 'B_Z', 'S_ARR', 'U_ARR', 'POT_ARR', \
+						 'TE', 'NE', 'TI', \
+						 'ZEFF_ARR']:
+				if temp in f:
+					array = np.transpose(f[temp][:],(2,1,0))
+					setattr(self, temp, np.array(array))
+			# Arrays (4D)
+			for temp in ['NEUTRON_RATE','beam_density', 'NI']:
+				if temp in f:
+					array = np.transpose(f[temp][:],(3,2,1,0))
+					setattr(self, temp, np.array(array))
+			# Arrays (6D)
+			for temp in ['NEUTRON_RATE','beam_density']:
+				if temp in f:
+					array = np.transpose(f[temp][:],(5,4,3,2,1,0))
+					setattr(self, temp, np.array(array))
 		# Make derived arrays
 		self.X_lines = self.R_lines*np.cos(self.PHI_lines)
 		self.Y_lines = self.R_lines*np.sin(self.PHI_lines)
