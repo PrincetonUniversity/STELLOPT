@@ -189,10 +189,11 @@ class COILSET():
 		# Render if requested
 		if lplotnow: plt.render()
 
-	def plotcoilsDist(self,plot3D=None):
-		"""Plots a half field period of a coilset in 3D using VTK
+	def plotcoilplasmaDist(self,plot3D=None):
+		"""Plots coil with coil-plasma distance
 
-		This routine plots a half field period of a coilset in 3D using VTK
+		This routine plots a half field period of a coilset in 3D using
+		VTK. The coil is color coded by the coil-plasma distance.
 
 		Parameters
 		----------
@@ -236,7 +237,59 @@ class COILSET():
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Colorbar
-		plt.colorbar(title='Distance [m]')
+		plt.colorbar(title='Distance (coil-plasma) [m]')
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plotcoilcoilDist(self,plot3D=None):
+		"""Plots coil with coil-coil distance
+
+		This routine plots a half field period of a coilset in 3D using
+		VTK. The coil is color coded by the minimum coil-coil distance.
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Get the min and max values
+		cmin = 1E20; cmax=-1E20;
+		for i in range(self.ngroups):
+			j = 0
+			cmin = min(cmin,min(self.groups[i].coils[j].dist_coil)) 
+			cmax = max(cmin,max(self.groups[i].coils[j].dist_coil)) 
+		# Plot coils
+		for i in range(self.ngroups):
+			j=0
+			points_array = np.zeros((self.groups[i].coils[j].npts,3))
+			points_array[:,0] =self.groups[i].coils[j].x
+			points_array[:,1] =self.groups[i].coils[j].y
+			points_array[:,2] =self.groups[i].coils[j].z
+			# Handle Color
+			vals = np.array(self.groups[i].coils[j].dist_coil, dtype=float)
+			scalar = plt.valuesToScalar(vals)
+			# Convert numpy array to VTK points
+			points = vtk.vtkPoints()
+			for point in points_array:
+				points.InsertNextPoint(point)
+			# Add to render
+			plt.add3Dline(points,scalars=scalar,linewidth=5)
+		# Set color limits
+		plt.setClim(cmin,cmax)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Colorbar
+		plt.colorbar(title='Distance (coil-coil) [m]')
 		# Render if requested
 		if lplotnow: plt.render()
 
@@ -457,7 +510,298 @@ class COILSET():
 			for j in range(self.groups[i].ncoils):
 				self.groups[i].coils[j].surfDist(xs,ys,zs)
 
-	def blenderCoil(self,dist=0.2,lfield_period=False):
+	def coilCoilDist(self):
+		"""Calculates coil-coil distance
+
+		This routine calculates the distance between a coil and
+		another coil. Values are stored in the coil atribute coil_coil.
+		"""
+		for i in range(self.ngroups):
+			for j in range(self.groups[i].ncoils):
+				for k in range(self.ngroups):
+					for l in range(self.groups[i].ncoils):
+						if (i == k) and (j == l): continue
+						xs = self.groups[k].coils[l].x
+						ys = self.groups[k].coils[l].y
+						zs = self.groups[k].coils[l].z
+						self.groups[i].coils[j].coilDist(xs,ys,zs)
+
+	def singleToMultiFilament(self,width=0.2,height=0.2, nwidth=4, nheight=4, lskip=None):
+		"""Generates a multi-filament coil from a single filament coil set
+
+		This routine utilizes the finiteBuildCoil routine to generate a
+		multi-filament model for a coil. It returns a coil object. The
+		coil width, height, and number of filaments can be specified in
+		each dimmension.
+
+		Parameters
+		----------
+		width : float
+			Finite build coil width [m]
+		height : float
+			Finite build coil height [m]
+		nwidth : int
+			Number of coils in the width direction.
+		nheight : int
+			Number of coils in height direction.
+		lskip : list
+			List of coil groups to skip
+
+		Returns
+		----------
+		mulit_coil : Object
+			CoilGroup Object of the multi-filament coil
+		"""
+		import numpy as np
+		# Check lskip
+		if type(lskip) is type(None):
+			lskip_array = [False] * self.ngroups
+		else:
+			lskip_array = lskip
+		# Loop over coils
+		vertices = []
+		faces = []
+		l = int(0)
+		mcoil = COILSET()
+		mcoil.nfp = self.nfp
+		mcoil.xmin = self.xmin; mcoil.xmax = self.xmax
+		mcoil.ymin = self.ymin; mcoil.ymax = self.ymax
+		mcoil.zmin = self.zmin; mcoil.zmax = self.zmax
+		mcoil.ngroups = self.ngroups
+		for i in range(self.ngroups):
+			if lskip_array[i]:
+				mcoil.groups.extend(self.groups[i])
+			else:
+				ncoil_max = self.groups[i].ncoils
+				xc = []; yc = []; zc = []; cc = []
+				current = self.groups[i].current
+				coilname = self.groups[i].name
+				for j in range(ncoil_max):
+					# Generate bounding boxes
+					xx,yy,zz = self.groups[i].coils[j].finiteBuildCoil(width=width,height=height)
+					# Get vectors
+					Nwx = np.squeeze(xx[1,:] - xx[0,:])
+					Nwy = np.squeeze(yy[1,:] - yy[0,:])
+					Nwz = np.squeeze(zz[1,:] - zz[0,:])
+					Nhx = np.squeeze(xx[2,:] - xx[0,:])
+					Nhy = np.squeeze(yy[2,:] - yy[0,:])
+					Nhz = np.squeeze(zz[2,:] - zz[0,:])
+					x0  = np.squeeze(xx[0,:]); y0 = np.squeeze(yy[0,:]); z0 = np.squeeze(zz[0,:])
+					c0  = np.ones((self.groups[i].coils[j].npts)) * current
+					c0[-1] = 0.0
+					for l in range(nwidth):
+						for m in range(nheight):
+							xx = x0 + l*Nwx/(nwidth-1) + m*Nhx/(nheight-1)
+							yy = y0 + l*Nwy/(nwidth-1) + m*Nhy/(nheight-1)
+							zz = z0 + l*Nwz/(nwidth-1) + m*Nhz/(nheight-1)
+							xc.extend(xx); yc.extend(yy); zc.extend(zz); cc.extend(c0)
+				mcoil.groups.extend([COILGROUP(np.array(xc),np.array(yc),np.array(zc),np.array(cc),coilname)])
+		return mcoil
+
+	def fitSurface(self):
+		"""Returns best fit surface to coil set
+
+		This routine returns the fourier harmonics which are a best fit
+		to a point cloud generated from the coil set.
+
+		Returns
+		----------
+		xm : ndarray
+			Poloidal mode array
+		xn : ndarray
+			Toroidal mode array
+		rmnc : ndarray
+			R cos(m*th+n*phi) harmonics [m]
+		zmns : ndarray
+			Z sin(m*th+n*phi) harmonics [m]
+		"""
+		from libstell.plot3D import PLOT3D
+		from libstell.libstell import FourierRep
+		import numpy as np
+		from scipy.optimize import minimize
+		from pathlib import Path
+		# Setup initial condition
+		self.Nfeval = 0
+		mmax = 1; nmax = 3
+		nu = max(mmax*4,32); nv = max(nmax*2,32)
+		# First extract points
+		xt = []
+		yt = []
+		zt = []
+		for i in range(self.ngroups):
+			for j in range(self.groups[i].ncoils):
+				xc = self.groups[i].coils[j].x
+				yc = self.groups[i].coils[j].y
+				zc = self.groups[i].coils[j].z
+				xt.extend(xc)
+				yt.extend(yc)
+				zt.extend(zc)
+		xt = np.array(xt)
+		yt = np.array(yt)
+		zt = np.array(zt)
+		# Only one field period (and stellsym)
+		pt = np.arctan2(yt,xt)
+		xt = xt[pt>=0.0]
+		yt = yt[pt>=0.0]
+		zt = zt[pt>=0.0]
+		pt = np.arctan2(yt,xt)
+		xt = xt[pt<=np.pi/self.nfp]
+		yt = yt[pt<=np.pi/self.nfp]
+		zt = zt[pt<=np.pi/self.nfp]
+		pt = np.arctan2(yt,xt)
+		rt = np.sqrt(xt*xt+yt*yt)
+		theta = np.ndarray((nu,1))
+		phi   = np.ndarray((nv,1))
+		theta = np.linspace([0],[np.pi*2],nu+1)
+		phi   = np.linspace([0],[np.pi/self.nfp],nv)
+		theta = theta[0:-1]
+		xm = []; xn = []
+		m=0; mn10 = 0; mn20 = 0; mn21 = 0; mn21m=0; mn01 = 0;
+		for n in range(0,nmax+1):
+			xm.append(m)
+			xn.append(n)
+		l = nmax
+		for m in range(1,mmax+1):
+			for n in range(-nmax,nmax+1):
+				l = l + 1
+				xm.append(m)
+				xn.append(n)
+				if (m==1 and n==0):
+					mn10 = l
+				if (m==0 and n==1):
+					mn01 = l
+				if (m==2 and n==0):
+					mn20 = l
+				if (m==2 and n==1):
+					mn21 = l
+				if (m==2 and n==-1):
+					mn21m = l
+		mnmax = len(xm)
+		xm = np.array(xm,ndmin=2).T
+		xn = np.array(xn,ndmin=2).T*self.nfp
+		mn00 = 0
+		#fit_factor = 1.0*(np.squeeze(xm)+abs(np.squeeze(xn)))
+		#fit_factor = 1.0*(np.squeeze(xm)+1.0)
+		fit_factor[fit_factor<1.0] = 1.0
+		# Set options
+		opts = (nu,nv,xm,xn,theta,phi,rt,zt,fit_factor,mn00)
+		# Set initial condition
+		rmnc_temp = np.zeros((1,mnmax))
+		zmns_temp = np.zeros((1,mnmax))
+		# Estimate from coils
+		#rmnc_temp[0,:] = 1.0E-3
+		#zmns_temp[0,:] = -1.0E-3
+		rmnc_temp[0,mn00] = np.mean(rt)
+		rmnc_temp[0,mn10] = (max(rt)-min(rt))*0.2
+		#rmnc_temp[0,mn20] = rmnc_temp[0,mn10]*0.3
+		#rmnc_temp[0,mn21] = rmnc_temp[0,mn20]*0.33
+		#rmnc_temp[0,mn21m] = rmnc_temp[0,mn20]*0.33
+		zmns_temp[0,mn10] = -max(zt)*1.0
+		# Check for previous run
+		my_file = Path("./coil_surf_harmonics.csv")
+		if my_file.is_file():
+			f = open("./coil_surf_harmonics.csv",'r')
+			lines = f.readlines()
+			f.close()
+			for line in lines:
+				if '#' in line: continue
+				n_txt,m_txt,rbc_txt,rbs_txt,zbc_txt,zbs_txt = line.split(',')
+				n = int(n_txt); m = int(m_txt)
+				l = 0
+				for l in range(mnmax):
+					if (xn[l,0] == n) and (xm[l,0] == m):
+							rmnc_temp[0,l] = float(rbc_txt)
+							zmns_temp[0,l] = float(zbs_txt)
+			for l in range(mnmax):
+				print(f'{xn[l,0]} {xm[l,0]} {rmnc_temp[0,l]} {zmns_temp[0,l]}')
+			if False:
+				rmnc_temp = rmnc_temp*1.05
+				zmns_temp = zmns_temp*0.95
+		# Apply factor and remove Z00
+		rmnc_temp = rmnc_temp*fit_factor
+		zmns_temp = zmns_temp*fit_factor
+		#rmnc_temp = np.sign(rmnc_temp[0,:])*np.power(abs(rmnc_temp[0,:]),fit_factor)
+		#zmns_temp = np.sign(zmns_temp[0,:])*np.power(abs(zmns_temp[0,:]),fit_factor)
+		zmns_temp = np.delete(zmns_temp,mn00)
+		x0 = np.concatenate((np.squeeze(rmnc_temp),np.squeeze(zmns_temp)))
+		#print(x0)
+		# Call fit function
+		if True:
+			res = minimize(self.surf_fit_func, x0, method='CG',
+					args=opts, options={'disp': True,'maxiter':100},
+					callback=self.surf_fit_callbackF,tol=1.0E-1)
+			xf = res.x
+		else:
+			xf = x0
+		i1 = 0; i2 = i1+mnmax
+		rmnc = np.broadcast_to(xf[i1:i2],(1,mnmax))
+		rmnc = rmnc/fit_factor
+		#rmnc = np.sign(rmnc)*np.power(abs(rmnc),1.0/fit_factor)
+		i1 = i2; i2 = i1+mnmax-1
+		xtemp = xf[i1:i2]
+		#zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))**(1.0/fit_factor)
+		zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))
+		zmns = zmns/fit_factor
+		#zmns = np.sign(zmns)*np.power(abs(zmns),1.0/fit_factor)
+		#
+		plt3d = PLOT3D()
+		print('  Fitting Surface')
+		theta = np.linspace([0],[np.pi*2],64)
+		phi   = np.linspace([0],[np.pi*2],64)/self.nfp
+		FR = FourierRep()
+		r = FR.cfunct(theta,phi,rmnc,xm,xn)
+		z = FR.sfunct(theta,phi,zmns,xm,xn)
+		FR.isotoro(r,z,phi,0,plot3D=plt3d,lclosev=False)
+		vertices = np.array([xt,yt,zt]).T
+		points = plt3d.vertexToPoints(vertices)
+		plt3d.add3Dpoints(points,pointsize=0.1)
+		plt3d.render()
+		return xm,xn,rmnc,zmns
+
+	def surf_fit_func(self,x,*args):
+		import numpy as np
+		from libstell.libstell import FourierRep
+		FR = FourierRep()
+		nu = args[0]
+		nv = args[1]
+		xm = args[2]
+		xn = args[3]
+		theta = args[4]
+		phi = args[5]
+		boundr = args[6]
+		boundz = args[7]
+		fit_factor = args[8]
+		mn00 = args[9]
+		mnmax = xm.shape[0]
+		i1 = 0; i2 = i1+mnmax
+		#rmnc = np.broadcast_to(x[i1:i2],(1,mnmax))**(1.0/fit_factor)
+		rmnc = np.broadcast_to(x[i1:i2],(1,mnmax))
+		rmnc = rmnc/fit_factor
+		#rmnc = np.sign(rmnc)*np.power(abs(rmnc),1.0/fit_factor)
+		i1 = i2; i2 = i1+mnmax-1
+		xtemp = x[i1:i2]
+		#zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))**(1.0/fit_factor)
+		zmns = np.broadcast_to(np.insert(xtemp,mn00,0.0),(1,mnmax))
+		zmns = zmns/fit_factor
+		#zmns = np.sign(zmns)*np.power(abs(zmns),1.0/fit_factor)
+		r = FR.cfunct(theta,phi,rmnc,xm,xn)
+		z = FR.sfunct(theta,phi,zmns,xm,xn)
+		d = 0
+		for u in range(nu):
+			for v in range(nv):
+				dr = boundr - np.squeeze(r[0,u,v])
+				dz = boundz - np.squeeze(z[0,u,v])
+				dl2 = dr*dr + dz*dz
+				#dl2[dl2<0.001] = 100.0
+				d = d + min(dl2)
+		#print(d)
+		return d
+		
+	def surf_fit_callbackF(self,intermediate_result):
+		print(f'ITER: {self.Nfeval} -- dval: {intermediate_result.fun}')
+		self.Nfeval += 1
+
+	def blenderCoil(self,width=0.2,height=0.2,lfield_period=False):
 		"""Generates the lists Blender needs to render a coilset
 
 		This routine generates the verticies and faces lists which
@@ -465,8 +809,10 @@ class COILSET():
 
 		Parameters
 		----------
-		dist : float
+		width : float
 			Finite build coil width [m]
+		height : float
+			Finite build coil height [m]
 		lfield_period : boolean
 			Return coilset over one field period (default: False)
 
@@ -486,7 +832,7 @@ class COILSET():
 			ncoil_max = self.groups[i].ncoils
 			if (lfield_period): ncoil_max = 1
 			for j in range(ncoil_max):
-				xx,yy,zz = self.groups[i].coils[j].finiteBuildCoil(width=dist,height=dist)
+				xx,yy,zz = self.groups[i].coils[j].finiteBuildCoil(width=width,height=height)
 				for k in range(xx.shape[1]-1):
 					vertices.append((xx[0,k],yy[0,k],zz[0,k]))
 					vertices.append((xx[1,k],yy[1,k],zz[1,k]))
@@ -510,9 +856,6 @@ class COILSET():
 				vertices.append((xx[3, 0],yy[3, 0],zz[3, 0]))
 				l = l + 4
 		return vertices,faces
-
-
-
 
 class COILGROUP():
 	"""Class which defines a coil group
@@ -555,6 +898,7 @@ class COIL():
 		self.yt = None
 		self.zt = None
 		self.dist_surf = None
+		self.dist_coil = None
 
 	def vecpot(self,x,y,z,current):
 		"""Calculates Vector potential
@@ -687,6 +1031,41 @@ class COIL():
 		self.dist_surf = np.sqrt(np.min(dl2,axis=1))
 		return
 
+	def coilDist(self,xs,ys,zs):
+		"""Calculates coil-coil distance
+
+		This routine calculates the distance between a coil and
+		another coil defined by points in cartesian coordiantes 
+		(x,y,z).
+
+		Parameters
+		----------
+		xs : ndarray
+			X points defining the other coil [m]
+		ys : ndarray
+			Y points defining the other coil [m]
+		zs : ndarray
+			Z points defining the other coil [m]
+		"""
+		import numpy as np
+		nsurf = len(xs)
+		xc = np.broadcast_to(self.x,(nsurf,self.npts)).T
+		yc = np.broadcast_to(self.y,(nsurf,self.npts)).T
+		zc = np.broadcast_to(self.z,(nsurf,self.npts)).T
+		x  = np.broadcast_to(xs,(self.npts,nsurf))
+		y  = np.broadcast_to(ys,(self.npts,nsurf))
+		z  = np.broadcast_to(zs,(self.npts,nsurf))
+		dx = xc - x
+		dy = yc - y
+		dz = zc - z
+		dl2 = dx*dx + dy * dy + dz * dz
+		if type(self.dist_coil) is type(None):
+			self.dist_coil = np.sqrt(np.min(dl2,axis=1))
+		else:
+			dist_coil = np.sqrt(np.min(dl2,axis=1))
+			self.dist_coil = np.minimum(self.dist_coil,dist_coil)
+		return
+
 	def spline_tangent(self, order=3, der=1):
 		"""Calculate the tangent of coil using spline interpolation
 
@@ -743,7 +1122,7 @@ class COIL():
 		n = self.npts
 		# calculate the tangent
 		if self.xt is None:
-			self.spline_tangent()
+			self.spline_tangent(order=1)
 		xt = self.xt
 		yt = self.yt
 		zt = self.zt
@@ -758,6 +1137,20 @@ class COIL():
 			[center_x,center_y,center_z]=self.geomCenter()
 			xn = self.x - center_x
 			yn = self.y - center_y
+			zn = self.z - center_z
+			nt = xn * xt + yn * yt + zn * zt
+			xn = xn - nt * xt
+			yn = yn - nt * yt
+			zn = zn - nt * zt
+		if frame == "centroid_cyl":
+			# use the geometry center but define in cylindrical coords
+			[center_x,center_y,center_z]=self.geomCenter()
+			phi = np.arctan2(self.y,self.x)
+			r  = np.sqrt(self.x**2+self.y**2)
+			center_r = np.sqrt(center_x**2+center_y**2)
+			rn = r - center_r
+			xn = rn*np.cos(phi)
+			yn = rn*np.sin(phi)
 			zn = self.z - center_z
 			nt = xn * xt + yn * yt + zn * zt
 			xn = xn - nt * xt
@@ -844,6 +1237,47 @@ class COIL():
 		yy = np.array([y1, y2, y3, y4, y1])
 		zz = np.array([z1, z2, z3, z4, z1])
 		return xx, yy, zz
+
+	def curveBuildCoil(self,nsegments=6):
+		"""Builds a coil fitting curved segments.
+
+		This routine builds a coil via a set of segmented curves.
+		To do this the code calculates the coil curvature and
+		divides the existing coil into N curves where the endpoints
+		of each curve coincide with a maximum in curvature. Each
+		sector is fit to the original coils segments. The new coil
+		x,y,z is returned.
+
+		Parameters
+		----------
+		nsegments : int (optional)
+			Number of coil segments(default: 6)
+
+		Returns
+		----------
+		x : ndarry
+			X-coordiantes [m]
+		y : ndarry
+			Y-coordiantes [m]
+		z : ndarry
+			Z-coordiantes [m]
+		"""
+		# First calculate the coil curvature
+		self.spline_tangent(der=2)
+		xn = self.xa
+		yn = self.ya
+		zn = self.za
+		kappa = np.sqrt(xn**2+yn**2+zn**2)
+		# Now determine points of maximum curvature
+		# Loop over segments
+		for k in range(nsegments):
+			# Define starting/ending points
+			# Define points to fit
+			# Estimate initial guess
+			# Fit curve
+			# Add to total curve
+			print('test')
+
 
 if __name__=="__main__":
 	import sys

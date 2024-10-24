@@ -91,7 +91,6 @@
       LOGICAL, DIMENSION(nigroup,maxcoilctrl)        ::  lcoil_spline
       INTEGER, DIMENSION(nigroup)                    ::  coil_nctrl
       LOGICAL, DIMENSION(maxwindsurf)                ::  lwindsurf
-      INTEGER  ::  nfunc_max
       REAL(rprec)     ::  dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                           dpscale_opt, dmix_ece_opt, dxval_opt, dyval_opt, &
                           dregcoil_winding_surface_separation_opt, &
