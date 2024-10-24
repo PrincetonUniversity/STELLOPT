@@ -146,6 +146,8 @@
                WHERE(sigma_magwell<bigno) sigma_magwell = sigma_magwell/temp
             CASE(jtarget_helicity)
                WHERE(ABS(sigma_helicity)<bigno) sigma_helicity = sigma_helicity/temp
+            CASE(jtarget_quasiiso)
+               WHERE(sigma_quasiiso<bigno) sigma_quasiiso = sigma_quasiiso/temp
             CASE(jtarget_txport)
                WHERE(ABS(sigma_txport)<bigno) sigma_txport = sigma_txport/temp
             CASE DEFAULT
