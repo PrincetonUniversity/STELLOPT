@@ -52,6 +52,7 @@
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
       REAL(rprec) :: stemp, utemp, rtemp, ztemp, phitemp
+	  LOGICAL :: ldepo_old
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -117,6 +118,7 @@
          phimin = 0
          CALL get_fieldlines_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
       ELSE IF (lcontinue_grid .and. lread_input) THEN
+		 !ldepo_old=ldepo
          CALL read_beams3d_input('input.'//TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE:     input.' // TRIM(id_string)
          IF (lverb) WRITE(6,'(A)') '   RESTART GRID FILE: ' // TRIM(continue_grid_string)
@@ -137,7 +139,7 @@
 #endif
 
       ! Handle particle restarting
-      IF (lrestart_particles .or. lcontinue_grid) THEN
+      IF (lrestart_particles) THEN
         ldepo = .false.
         lbbnbi = .false.
         lbeam = .false.

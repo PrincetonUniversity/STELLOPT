@@ -15,7 +15,7 @@
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_lines
-      USE beams3d_physics_mod, ONLY: beams3d_MODB,beams3d_VTOR
+      USE beams3d_physics_mod, ONLY: beams3d_MODB, beams3d_VTOR
 #if defined(LHDF5)
       USE ez_hdf5
 #endif

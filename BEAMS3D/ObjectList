@@ -32,6 +32,7 @@ jacobian_lsode.o \
 beams3d_write.o \
 beams3d_diagnostics.o \
 fgc_eom.o \
+fgc_old.o \
 beams3d_main.o \
 beams3d_runtime.o \
 beams3d_physics_mod.o \

@@ -25,7 +25,7 @@ SUBROUTINE beams3d_follow_gc
                             nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida,raxis
     USE mpi_params ! MPI
     USE beams3d_write_par
-    USE beams3d_physics_mod, ONLY: beams3d_calc_dt
+    USE beams3d_physics_mod, ONLY: beams3d_calc_dt, beams3d_lab_to_plasma,beams3d_plasma_to_lab
     USE safe_open_mod, ONLY: safe_open
     USE mpi_inc
     !-----------------------------------------------------------------------
@@ -154,7 +154,9 @@ SUBROUTINE beams3d_follow_gc
 #endif
                        IF (ier < 0) CALL handle_err(D02CJF_ERR, 'beams3d_follow', ier)
                        t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
+					   CALL beams3d_lab_to_plasma(q)
                        CALL out_beams3d_gc(tf_nag,q)
+					   CALL beams3d_plasma_to_lab(q)
                        IF (ABS(tf_nag) > ABS(my_end)) EXIT
                     END DO
                 END DO
