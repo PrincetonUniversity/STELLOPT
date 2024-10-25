@@ -2414,7 +2414,7 @@ MODULE beams3d_physics_mod
          vtor = zero
 
          ! Check that we're inside the domain then proceed
-         IF (nvtor>0 .and. (r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
             i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
@@ -2428,7 +2428,7 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             VTOR4d(1,1,1,1),nr,nphi,nz)
             vtor = max(fval(1),zero)
-			q(4)=q(4)+vtor
+			q(4)=q(4)-vtor
          ELSE
             RETURN
          END IF
@@ -2481,7 +2481,7 @@ MODULE beams3d_physics_mod
          vtor = zero
 
          ! Check that we're inside the domain then proceed
-         IF (nvtor>0 .and. (r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
             i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
@@ -2495,7 +2495,7 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             VTOR4d(1,1,1,1),nr,nphi,nz)
             vtor = max(fval(1),zero)
-			q(4)=q(4)-vtor
+			q(4)=q(4)+vtor
          ELSE
             RETURN
          END IF

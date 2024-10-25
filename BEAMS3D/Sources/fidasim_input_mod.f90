@@ -16,7 +16,7 @@ MODULE fidasim_input_mod
       h2_prof, h3_prof, h4_prof, h5_prof, &
       nsh_prof4,  r_h, p_h, z_h, e_h, pi_h, h1_prof
    USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-      zaxis, phiaxis, POT_ARR, &
+      zaxis, phiaxis, POT_ARR, VTOR_ARR, &
       TE, TI, NE, npot, nte, nti, &
       POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
       BR4D, BPHI4D, BZ4D, VTOR4D,&
@@ -1056,7 +1056,7 @@ SUBROUTINE write_fidasim_equilibrium
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                      hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                      VTOR4D(1,1,1,1),nr,nphi,nz)
-                  rtemp5(l,n,m) = max(fval(1),zero)        
+                  rtemp5(l,n,m) = fval(1)!max(fval(1),zero)        
                 END IF
             END DO
         END DO
@@ -1064,7 +1064,7 @@ SUBROUTINE write_fidasim_equilibrium
 
 
         IF (nvtor>0) THEN
-         CALL write_var_hdf5(qid_gid,'vt',nr_fida,nz_fida, nphi_fida,ier,DBLVAR=rtemp5)
+         CALL write_var_hdf5(qid_gid,'vt',nr_fida,nz_fida, nphi_fida,ier,DBLVAR=rtemp5*100)
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vt',ier)
          CALL h5dopen_f(qid_gid, 'vt', temp_gid, ier)
          CALL write_att_hdf5(temp_gid,'description','Bulk plasma flow in the toroidal phi-direction: Vphi(r,z,phi)',ier)
