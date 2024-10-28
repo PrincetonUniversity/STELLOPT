@@ -45,7 +45,8 @@
       ! Moved from thrift_runtime
       INTEGER :: nparallel_runs, mboz, nboz
       CHARACTER(256) :: bootstrap_type, eccd_type, vessel_ecrh, &
-                        mirror_ecrh, targettype_ecrh, antennatype_ecrh
+                        mirror_ecrh, targettype_ecrh, antennatype_ecrh, &
+                        etapar_type
 
 
 

@@ -15,7 +15,7 @@ MODULE thrift_runtime
     USE thrift_globals, ONLY:   nparallel_runs, mboz, nboz, &
                                 bootstrap_type, eccd_type, vessel_ecrh, &
                                 mirror_ecrh, targettype_ecrh, &
-                                antennatype_ecrh
+                                antennatype_ecrh, etapar_type
     USE mpi_params
     USE EZspline
     !-------------------------------------------------------------------

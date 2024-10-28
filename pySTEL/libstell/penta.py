@@ -678,7 +678,7 @@ class PENTA:
         from libstell.vmec import VMEC
         import matplotlib.pyplot as plt
         from scipy.integrate import trapezoid, cumulative_simpson
-        from scipy.interpolate import UnivariateSpline, splrep, BSpline, splev
+        from scipy.interpolate import UnivariateSpline, CubicSpline
         from scipy.signal import savgol_filter
         from scipy.optimize import curve_fit, minimize
         
@@ -687,14 +687,14 @@ class PENTA:
             def constrained_polynomial(coeffs, x):
                 # Construct the polynomial with constraints:
                 # P(x) = x * (c0 + c1 * x + c2 * x^2 + ...)
-                return x * np.polyval(coeffs, x)
+                return x**2 * np.polyval(coeffs, x)
             
             # Objective function to minimize (residuals between data and model)
             def objective_function(coeffs):
                 return np.sum((constrained_polynomial(coeffs, x) - y)**2)
             
             # Initial guess for the polynomial coefficients (deg_fit - 1 because of the constraints)
-            initial_guess = np.ones(deg_fit)
+            initial_guess = np.ones(deg_fit-2)
             
             # Constraint: P(1) = I_tot
             def constraint(coeffs):
@@ -709,13 +709,13 @@ class PENTA:
             return optimized_coeffs
         
         def constrained_polynomial(coeffs, x):
-            # Polynomial P(x) = x * (c0 + c1 * x + c2 * x^2 + ...)
+            # Polynomial P(x) = x^2 * (c0 + c1 * x + c2 * x^2 + ...)
             return x * np.polyval(coeffs, x)
 
         
         plt.rc('font', size=18)
         _, ax = plt.subplots(figsize=(11,8))
-        _, ax2 = plt.subplots(figsize=(11,8))
+        # _, ax2 = plt.subplots(figsize=(11,8))
         _, ax3 = plt.subplots(figsize=(11,8))
         
         if which_root is ('ion_root' or 'electron_root'):
@@ -724,6 +724,11 @@ class PENTA:
         else:
             print('ERROR: which_root can only be ion_root OR electron_root')
             exit(0)
+            
+            
+        ##### remove point if it's very far from the others... ####
+        JBS = JBS[1:]
+        roa = roa[1:]
         
         roa_VMEC = np.sqrt(VMEC_class.phi / VMEC_class.phi[-1])
         roa_VMEC = roa_VMEC.flatten()
@@ -763,29 +768,33 @@ class PENTA:
             tor_avg_surface_area[j] = np.mean(area)
             
         dAdrho_spline = UnivariateSpline(roa,tor_avg_surface_area,k=2).derivative()
-            
-        IBS = cumulative_simpson(JBS*dAdrho_spline(roa),x=roa,initial=0)
+        
+        roa_cumulative_simpson = roa[1:]
+        IBS = cumulative_simpson(JBS*dAdrho_spline(roa),x=roa)#,initial=0)
         
         # IBS_spline = splrep(roa,IBS,s=1000)
-        degree = 6
-        IBS_fit = np.polyfit(roa,IBS,deg=degree)
+        degree = 7
+        IBS_fit = np.polyfit(roa_cumulative_simpson,IBS,deg=degree)
         IBS_fit = np.poly1d(IBS_fit)
         
         # Fit with constrains
-        IBS_fit2 = polynomial_fit_with_constraints(roa, IBS, degree)
-        IBS_fit2 = constrained_polynomial(IBS_fit2,roa)
+        IBS_fit2_coeffs = polynomial_fit_with_constraints(roa_cumulative_simpson, IBS, degree)
+        IBS_fit2_coeffs = np.concatenate((IBS_fit2_coeffs,np.array([0,0])))
+        IBS_fit2 = np.poly1d(IBS_fit2_coeffs)
         
-        ax2.plot(roa,dAdrho_spline(roa),'.-',label=r'$d\left<A\right>_{\phi}/d\rho$')
-        ax2.plot(roa,2*np.pi*roa*VMEC_class.aminor**2,'-',label=r'$2\pi a^2\rho$')
-        ax2.set_xlabel(r'$\rho=$r/a')
-        ax2.set_ylabel(r'$dA/d\rho$')
-        ax2.legend()
-        ax2.grid()
+        roa_plot = np.linspace(0,1,200)
         
-        ax3.plot(roa,IBS/1e3,'.-',label='PENTA data integrated')
+        # ax2.plot(roa,dAdrho_spline(roa),'.-',label=r'$d\left<A\right>_{\phi}/d\rho$')
+        # ax2.plot(roa,2*np.pi*roa*VMEC_class.aminor**2,'-',label=r'$2\pi a^2\rho$')
+        # ax2.set_xlabel(r'$\rho=$r/a')
+        # ax2.set_ylabel(r'$dA/d\rho$')
+        # ax2.legend()
+        # ax2.grid()
+        
+        ax3.plot(roa_cumulative_simpson,IBS/1e3,'.-',label='PENTA data integrated')
         #ax3.plot(roa,BSpline(*IBS_spline)(roa)/1e3,'-')
-        ax3.plot(roa,IBS_fit(roa)/1e3,'-',label=f'polyfit order {degree}')
-        #ax3.plot(roa,IBS_fit2/1e3,'-',label=f'polyfit order {degree} w/ constrains')
+        ax3.plot(roa_plot,IBS_fit(roa_plot)/1e3,'-',label=f'polyfit order {degree}')
+        ax3.plot(roa_plot,IBS_fit2(roa_plot)/1e3,'-',label=f'polyfit order {degree} w/ constrains')
         ax3.set_ylabel(r'$\left<I_{BS}\right>~[kA]$')
         ax3.set_xlabel(r'r/a')
         ax3.grid()
@@ -794,14 +803,14 @@ class PENTA:
         
         # JBS_smooth = IBS_spline.derivative()(roa) / dAdrho_spline(roa)
         # JBS_smooth = splev(roa,IBS_spline,der=1) / dAdrho_spline(roa)
-        JBS_smooth = np.polyder(IBS_fit,m=1)(roa) / dAdrho_spline(roa)
-        #JBS_smooth3 = np.polyder(IBS_fit2,m=1)(roa) / dAdrho_spline(roa)
+        JBS_smooth = np.polyder(IBS_fit,m=1)(roa_plot) / dAdrho_spline(roa_plot)
+        JBS_smooth3 = np.polyder(IBS_fit2,m=1)(roa_plot) / dAdrho_spline(roa_plot)
         
         JBS_smooth2 = savgol_filter(JBS,51,3)
         
         ax.plot(roa,JBS/1e3,'.-',label='PENTA data')
-        ax.plot(roa,JBS_smooth/1e3,label='from I_BS')
-        #ax.plot(roa,JBS_smooth3/1e3,label='from I_BS constrains')
+        #ax.plot(roa_plot,JBS_smooth/1e3,label='from I_BS')
+        ax.plot(roa_plot,JBS_smooth3/1e3,label='from I_BS constrains')
         ax.plot(roa,JBS_smooth2/1e3,'-',linewidth=3,label='savgol filter')
         ax.set_ylabel(r'$\left<J_{BS}\right>~[kA~m^{-2}]$')
         ax.set_xlabel(r'r/a')
@@ -812,6 +821,122 @@ class PENTA:
         ax.set_title('BS Current Density')
         
         plt.show() 
+        
+        # compute values of dI/ds for VMEC input using the savgol profile
+        s_VMEC = np.linspace(0,1,50)
+        
+        # extend to roa=0
+        roa = np.concatenate(([0.0],roa))
+        JBS_smooth2 = np.concatenate(([JBS_smooth2[0]],JBS_smooth2))
+        
+        print(roa.shape)
+        print(JBS_smooth2.shape)
+        
+        cs = CubicSpline(roa, JBS_smooth2,extrapolate=True,bc_type=((1, 0.0), 'natural'))
+        a_VMEC = VMEC_class.aminor
+        dIds = cs(np.sqrt(s_VMEC)) * np.pi*a_VMEC*a_VMEC
+        
+        #divide by max val and set total current
+        dIds = dIds / np.max(dIds)
+        total_current = IBS_fit2(1.0)
+                
+        print('NCURR = 1')
+        print(f'CURTOR = {total_current}')
+        print("PCURR_TYPE = 'cubic_spline_Ip' ")
+        print(f'AC_AUX_S = {s_VMEC}')
+        print(f'AC_AUX_F = {dIds}')
+        
+    def get_JBS_smooth(self,rho,which_root):
+        # applies savgol filter to JBS[which_root] 
+        # completes the space between rho=0 and first point with a line
+        
+        import matplotlib.pyplot as plt
+        from scipy.signal import savgol_filter
+        from scipy.interpolate import CubicSpline, Akima1DInterpolator
+        
+        if which_root is ('ion_root' or 'electron_root'):
+            JBS = np.array( self.JBS[which_root] )
+            roa = np.array( self.roa[which_root] )
+        else:
+            print('ERROR: which_root can only be ion_root OR electron_root')
+            exit(0)
+
+        ##### remove point very far from the others... ####
+        ##### this is a bit ad-hoc...
+        JBS = JBS[1:]
+        roa = roa[1:]
+        
+        roa_copy = roa
+        
+        ### apply filter
+        JBS_smooth = savgol_filter(JBS,51,3)
+        
+        # extend to roa=0
+        roa = np.concatenate(([0.0],roa))
+        JBS_smooth = np.concatenate(([JBS_smooth[0]],JBS_smooth))
+        
+        cs = CubicSpline(roa, JBS_smooth,extrapolate=True,bc_type=((1, 0.0), 'natural'))
+        
+        ### make plot just to check everything's fine
+        plt.rc('font', size=18)
+        _,ax = plt.subplots(figsize=(11,8))
+        ax.plot(roa_copy,JBS,'.-',label='data from PENTA')
+        ax.plot(roa,JBS_smooth,'.-',label='savgol + extend at r=0')
+        ax.plot(rho,cs(rho),'.-',label='cubic spline of previous')
+        ax.set_ylabel(r'$\left<J_{BS}\right>~[A~m^{-2}]$')
+        ax.set_xlabel(r'r/a')
+        ax.set_title('Smooth JBS')
+        #ax.legend(fontsize=12)
+        ax.grid()
+        plt.legend()
+        plt.show()
+        
+        return cs(rho)
+    
+    def get_etapar_smooth(self,rho):
+        
+        import matplotlib.pyplot as plt
+        from scipy.interpolate import CubicSpline, Akima1DInterpolator
+        
+        filename = self.folder_path+'/sigmas_vs_roa'
+        
+        try: 
+            penta = np.loadtxt(filename,skiprows=2)
+        except:
+            print('Could not read file sigma_vs_roa. Probably PENTA was not run in "DKES" mode...?')
+            exit(1)
+        
+        roa = penta[:,0]
+        sigma_par = penta[:,2]
+        
+        etapar = 1 / sigma_par
+        
+        # extend to roa=0
+        roa = np.concatenate(([0.0],roa))
+        etapar = np.concatenate(([etapar[0]],etapar))
+        
+        cs = CubicSpline(roa, etapar,extrapolate=True,bc_type=((1, 0.0), 'natural'))
+        # cs = Akima1DInterpolator(roa,sigma_par)
+        
+  
+        ### make plot just to check everything's fine
+        _,ax = plt.subplots(figsize=(11,8))
+        ax.plot(roa,etapar,'.-')
+        ax.plot(rho,cs(rho),'.-')
+        ax.set_ylabel(r'$\eta_{\parallel}~~[\Omega~m]$')
+        ax.set_xlabel(r'r/a')
+        ax.set_yscale('log')
+        ax.grid()
+        
+        plt.show()
+        
+        return cs(rho)
+        
+        
+        
+        
+        
+        
 
 # Main routine
 if __name__=="__main__":
