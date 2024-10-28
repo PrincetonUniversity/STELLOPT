@@ -42,6 +42,8 @@
          integral_A, integral_B
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: J_I, J_C
 
+      LOGICAL, PARAMETER :: lwrite_out = .False.
+
 
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -65,62 +67,60 @@
             ! Loop over inital values of theta0
             J_C = 0.0; J_I = 0.0
             DO i = 1, ntheta0
-               ! Calculate the distance to follow a field line
+               ! Calculate the initial distance to follow a field line
                deltaphi = pi2/iota0
                modb = 0.0
                modbs = 0.0
                theta0 = pi2*(i-1)/ntheta0
-               !theta0 = 0.0
                DO l = 1, nalpha
                   phi = deltaphi*(l-1)/(nalpha-1)
                   theta = theta0 + iota0*phi
                   DO mn = 1, mnboz_b
-                     !PRINT *,ik,mn,bmnc_b(mn,ik),ixm_b(mn),theta,ixn_b(mn),phi,nfp_b
                      modb(l) = modb(l)+bmnc_b(mn,ik)*COS(DBLE(ixm_b(mn))*theta+DBLE(ixn_b(mn))*phi/nfp_b)
                   END DO
                END DO
-               !WRITE(290+i,*) modb; CALL FLUSH(290+i)
-               ! Find min/max values
+               IF (lwrite_out) WRITE(320,*) modb
+               ! Find min/max modB values
                lmin = MINLOC(modb,DIM=1)
                lmax = MAXLOC(modb,DIM=1)
+               ! Recalculate length of fieldline
                phimin = deltaphi*(lmin-1)/(nalpha-1)
                phimax = deltaphi*(lmax-1)/(nalpha-1)
-               deltaphi = ABS(phimax-phimin)*2.0
+               deltaphi = ABS(phimax-phimin)
                ! Now recalculate modb centered around lmin
                modb = 0
                DO l = 1, nalpha
-                  phi = deltaphi*(l-lmin-1)/(nalpha-1) - deltaphi/2
+                  phi = phimin-deltaphi + 2*deltaphi*(l-1)/(nalpha-1)
+                  !phi = deltaphi*(l-lmin-1)/(nalpha-1) - deltaphi/2
                   theta = theta0 + iota0*phi
                   DO mn = 1, mnboz_b
-                     !PRINT *,ik,mn,bmnc_b(mn,ik),ixm_b(mn),theta,ixn_b(mn),phi,nfp_b
                      modb(l) = modb(l)+bmnc_b(mn,ik)*COS(DBLE(ixm_b(mn))*theta+DBLE(ixn_b(mn))*phi/nfp_b)
                   END DO
                END DO
+               IF (lwrite_out) WRITE(321,*) modb
                ! Sort the arrays
-               lh = FLOOR(nalpha*0.5)+1
-               PRINT *,lh,lmin
-               !WRITE(300+i,*) modb; CALL FLUSH(300+i)
-               modb = CSHIFT(modb,lmin-lh) !BOOSH
-               !WRITE(310+i,*) modb; CALL FLUSH(310+i)
+               !lh = FLOOR(nalpha*0.5)+1
+               !modb = CSHIFT(modb,lmin-lh) !BOOSH
+               lh = MINLOC(modb,DIM=1)
                ! Squash the array
                modbs = modb
+               DO l = lh, 1, -1
+                  IF (modbs(l)<modbs(l+1)) modbs(l) = modbs(l+1)
+               END DO
                DO l = lh,nalpha
                   IF (modbs(l)<modbs(l-1)) modbs(l) = modbs(l-1)
                END DO
-               DO l = 1, lh
-                  IF (modbs(l)<modbs(l+1)) modbs(l) = modbs(l+1)
-               END DO
-               !WRITE(320+i,*) modbs; CALL FLUSH(320+i)
+               IF (lwrite_out) WRITE(322,*) modbs
                ! Stretch the array
                Bmin = MINVAL(modb)
                Bmax = MAXVAL(modb)
-               !PRINT *,Bmin,Bmax
                DO l = 1, lh
                   modbs(l) = Bmin + (Bmax-Bmin)*(modbs(l)-Bmin)/(modbs(1)-Bmin)
                END DO
                DO l = lh, nalpha
                   modbs(l) = Bmin + (Bmax-Bmin)*(modbs(l)-Bmin)/(modbs(nalpha)-Bmin)
                END DO
+               IF (lwrite_out) WRITE(323,*) modbs
                !WRITE(330+i,*) modbs; CALL FLUSH(330+i)
                ! We need dl (missing B.grad(phi) term)
                dl = modb*deltaphi/(nalpha-1)
@@ -132,25 +132,24 @@
                   lambda = 1.0/Bmir
                   i1 = COUNT(modbs(1:lh)>Bmir) + 1
                   i2 = COUNT(modbs(lh:nalpha)<Bmir) + lh - 1
-                  print *, nlambda,i1,i2,Bmin,Bmir,Bmax
+                  IF (lwrite_out) print *, nlambda,i1,i2,Bmin,Bmir,Bmax
                   i1 = MAX(i1,1); i2 = MIN(i2,nalpha)
                   integral_A = 1.0 - lambda * modb
-                  !WRITE(400+m,*) integral_A; CALL FLUSH(400+m)
                   integral_A = SIGN(1.0_rprec,integral_A)*SQRT(ABS(integral_A))*dl
-                  !WRITE(410+m,*) integral_A; CALL FLUSH(410+m)
+                  IF (lwrite_out) WRITE(324,*) integral_A
                   integral_B = 1.0 - lambda * modbs
-                  !WRITE(420+m,*) integral_B; CALL FLUSH(420+m)
                   integral_B = SQRT(integral_B)*dl
-                  !WRITE(430+m,*) integral_B; CALL FLUSH(430+m)
-                  PRINT *,'A :',integral_A(i1:i2)
-                  PRINT *,'B :',integral_B(i1:i2)
+                  IF (lwrite_out) WRITE(325,*) integral_B
+                  IF (lwrite_out) PRINT *,'A :',integral_A(i1:i2)
+                  IF (lwrite_out) PRINT *,'B :',integral_B(i1:i2)
                   J_I(m,i) = SUM(integral_A(i1:i2))
                   J_C(m,i) = SUM(integral_B(i1:i2))
                END DO
             END DO
-            WRITE(500,*) J_I
-            WRITE(501,*) J_C
+            IF (lwrite_out) WRITE(326,*) J_I
+            IF (lwrite_out) WRITE(327,*) J_C
             ! Construct fuctional value
+            ftemp = 0.0_rprec
             DO m = 1, nlambda
                DO i1 = 1, ntheta0
                   DO i2 = 1, ntheta0
