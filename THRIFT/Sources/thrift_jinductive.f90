@@ -33,11 +33,20 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !======================================================================
-      ! If mytimestep = 1 ITOT=0 and continue to next iteration
-      IF (mytimestep==1) THEN
+      ! If mytimestep = 1 and not reading from restart, then ITOT=0 and continue to next iteration
+      IF (mytimestep==1 .and. restart_from_file .eqv. .false.) THEN
             THRIFT_JPLASMA(:,mytimestep) = -THRIFT_JSOURCE(:,mytimestep)
             THRIFT_IPLASMA(:,mytimestep) = -THRIFT_ISOURCE(:,mytimestep)
             THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
+            RETURN 
+      END IF
+
+      ! If mytimestep = 1 and am reading from restart, then set the following:
+      IF (mytimestep==1 .and. restart_from_file .eqv. .true.) THEN
+            THRIFT_JPLASMA(:,mytimestep) = JPLASMA_RESTART
+            THRIFT_IPLASMA(:,mytimestep) = IPLASMA_RESTART
+            THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
+            THRIFT_UGRID(:,mytimestep) = UGRID_RESTART
             RETURN 
       END IF
 
