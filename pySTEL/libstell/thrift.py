@@ -63,6 +63,13 @@ class THRIFT():
                 if temp in f:
                     setattr(self, temp, np.array(f[temp][:]))
                     
+        self.units_dictionary = {}
+        for current in ['THRIFT_I','THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IPLASMA','THRIFT_ISOURCE']:
+            self.units_dictionary[current] = r'[A]'
+        for current_density in ['THRIFT_J','THRIFT_JBOOT','THRIFT_JECCD','THRIFT_JNBCD','THRIFT_JOHMIC','THRIFT_JPLASMA','THRIFT_JSOURCE']:
+            self.units_dictionary[current_density] = r'[A/m$^2]$'
+        self.units_dictionary['THRIFT_ETAPARA'] = r'$[\Omega\,$m]'
+                    
     def plot_vars_in_time(self,*vars,time_array=[0,1/4,1/2,3/4,1]):
         # plots var as a funciton of roa at different times
         # time_array is in fractions of t_end
@@ -82,11 +89,15 @@ class THRIFT():
             _, ax = plt.subplots(figsize=(11,8))
             for it,time in enumerate(times):
                 ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s')
-                ax.set_xlabel('r/a')
-                ax.set_ylabel('')
+                ax.set_xlabel('r/a') 
                 ax.set_title(var)   
             ax.grid()    
             ax.legend()
+            try:
+                ax.set_ylabel(self.units_dictionary[var])
+            except:
+                ax.set_ylabel('')
+            # ax.set_yscale('log')
             plt.show()
             
     def check_var_shape(self,var, nt, nrho):
@@ -102,6 +113,37 @@ class THRIFT():
         else:
             print(f"{var} is not a numpy array.")
             exit(0)
+            
+    def plot_vars_vs_iota(self,*vars,time_array=[0,1/4,1/2,3/4,1]):
+        # plots var as a funciton of iota at different times
+        # time_array is in fractions of t_end
+        # vars is any variable of the type THRIFT_## with dimension (ntimesteps,nssize)
+        
+        for var in vars:
+            plot_var = getattr(self,var)
+            # check dimension of var is (ntimesteps,nssize)
+            self.check_var_shape(plot_var,self.ntimesteps,self.nssize)
+            t_end = self.THRIFT_T[-1]
+            times = np.array(time_array)*t_end
+            
+            idx = [np.argmin(np.abs(self.THRIFT_T-t)) for t in times]
+            times = self.THRIFT_T[idx]
+            plot_var = plot_var[idx,:]
+            
+            iota = self.THRIFT_IOTA[idx,:]
+            
+            _, ax = plt.subplots(figsize=(11,8))
+            for it,time in enumerate(times): 
+                ax.plot(iota[it,:],plot_var[it,:],label=f't={time}s')
+                ax.set_xlabel('iota') 
+                ax.set_title(var)   
+            ax.grid()    
+            ax.legend()
+            try:
+                ax.set_ylabel(self.units_dictionary[var])
+            except:
+                ax.set_ylabel('')
+            plt.show()
 
             
     # def compare_J(self,time_array=[0,1/4,1/2,3/4,1]):

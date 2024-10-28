@@ -35,7 +35,8 @@
                               targetposition_ecrh, rbeam_ecrh, &
                               rfocus_ecrh, nra_ecrh, nphi_ecrh, &
                               freq_ecrh, power_ecrh, &
-                              pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w
+                              pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w, &
+                              etapar_type
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -47,6 +48,7 @@
       SUBROUTINE init_thrift_input
       IMPLICIT NONE
       bootstrap_type     = 'bootsj'
+      etapar_type        = 'sauter'
       eccd_type          = ''
       nparallel_runs     = 1
       mboz               = 32
@@ -113,6 +115,7 @@
          CLOSE(iunit)
       END IF
       CALL tolower(bootstrap_type)
+      CALL tolower(etapar_type)
       CALL tolower(eccd_type)
       leccd = eccd_type .ne. ''
       nsj = nrho;
@@ -137,6 +140,7 @@
       WRITE(iunit_out,'(A)') '!---------- GENERAL PARAMETERS ------------'
       WRITE(iunit_out,outint) 'NPARALLEL_RUNS',nparallel_runs
       WRITE(iunit_out,outstr) 'BOOTSTRAP_TYPE',bootstrap_type
+      WRITE(iunit_out,outstr) 'ETAPAR_TYPE',etapar_type
       WRITE(iunit_out,outflt) 'JTOL',jtol
       WRITE(iunit_out,outint) 'NPICARD',npicard
       WRITE(iunit_out,outflt) 'PICARD_FACTOR',picard_factor

@@ -20,7 +20,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: i, ier
-      REAL(rprec) :: epsilon, pp1, pm1, ds
+      REAL(rprec) :: epsilon, pp1, pm1, ds, rho, s
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::  j_temp
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -51,6 +51,14 @@
          CASE ('bootsj')
             CALL thrift_paraexe('booz_xform',proc_string,lscreen_subcodes)
             CALL thrift_paraexe('bootsj',proc_string,lscreen_subcodes)
+
+         CASE('read_from_file')
+            DO i = 1, nsj
+               s = THRIFT_S(i)
+               rho = SQRT(s)
+               CALL get_prof_JBS(rho,THRIFT_T(mytimestep),THRIFT_JBOOT(i,mytimestep))
+            END DO
+
          CASE ('sfincs')
       END SELECT
 
