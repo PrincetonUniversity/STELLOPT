@@ -52,14 +52,22 @@ SUBROUTINE update_vars()
         THRIFT_VP(i,mytimestep) = THRIFT_PHIEDGE(mytimestep)*temp
         InvAspect = THRIFT_AMINOR(i,mytimestep)/THRIFT_RMAJOR(i,mytimestep)
         q = ABS(1.0/q) ! iota -> q
-        ! eta breaks at rho=1(s=1) so look one gridpoint back
-        !CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
-        CALL get_prof_etaneo_sauter(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime, &
-            ftrap,q,THRIFT_RMAJOR(i,mytimestep),InvAspect,&
-            THRIFT_ETAPARA(i,mytimestep))
-        !PRINT *,rho,ftrap,q,THRIFT_RMAJOR(i,mytimestep),InvAspect,THRIFT_ETAPARA(i,mytimestep)
+        
+        ! Compute eta_par
+        IF(etapar_type == 'sauter') THEN
+            ! eta breaks at rho=1(s=1) so look one gridpoint back
+            CALL get_prof_etaneo_sauter(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime, &
+                ftrap,q,THRIFT_RMAJOR(i,mytimestep),InvAspect,&
+                THRIFT_ETAPARA(i,mytimestep))
+        ELSEIF(etapar_type == 'classic') THEN
+            ! eta breaks at rho=1(s=1) so look one gridpoint back
+            CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
+        ELSEIF(etapar_type == 'read_from_file') THEN
+            CALL get_prof_eta(rho,mytime,THRIFT_ETAPARA(i,mytimestep))
+        ENDIF
+        
         CALL get_prof_p(rho, mytime, THRIFT_P(i,mytimestep))
-     END DO
+    END DO
      THRIFT_S11 = ABS(THRIFT_S11)
 
      ! Handle NaN

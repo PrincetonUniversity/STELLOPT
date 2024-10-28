@@ -75,7 +75,7 @@ MODULE thrift_runtime
                       eccd_type, nbcd_type, &
                       proc_string, vessel_ecrh, mirror_ecrh, &
                       targettype_ecrh, antennatype_ecrh, &
-                      magdiag_coil
+                      magdiag_coil, etapar_type
 
     REAL(rprec), PARAMETER :: THRIFT_VERSION = 0.50 
     !-----------------------------------------------------------------------
