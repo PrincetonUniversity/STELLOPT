@@ -69,8 +69,8 @@
                deltaphi = pi2/iota0
                modb = 0.0
                modbs = 0.0
-               !theta0 = pi2*i/(ntheta0-1)
-               theta0 = 0.0
+               theta0 = pi2*(i-1)/ntheta0
+               !theta0 = 0.0
                DO l = 1, nalpha
                   phi = deltaphi*(l-1)/(nalpha-1)
                   theta = theta0 + iota0*phi
