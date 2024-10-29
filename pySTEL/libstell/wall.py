@@ -168,6 +168,7 @@ class WALL():
 		mask = A<=0
 		print(f'Removing {np.sum(mask)} bad triangles.')
 		self.faces = np.delete(self.faces,mask,axis=0)
+		self.nfaces = self.faces.shape[0]
 
 	def plot_wall_cloud(self,ax=None):
 		"""Plots the vertices of the wall
