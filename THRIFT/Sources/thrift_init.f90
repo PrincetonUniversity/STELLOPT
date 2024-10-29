@@ -160,7 +160,10 @@
       ! Read restart file
       IF (restart_from_file) THEN
          UGRID_RESTART = 0.0
-         IF (lverb) WRITE(6,'(A)') '----- Reading Restart File -----'
+         IF (lverb) THEN 
+            WRITE(6,'(A)') '----- Reading Restart File -----'
+            WRITE(6,'(A)')  '   FILE: '//TRIM(restart_filename)
+         END IF
          ! Read file 
          IF (myid_sharmem == master) THEN
             CALL open_hdf5(TRIM(restart_filename),fid,ier,LCREATE=.false.)
@@ -185,8 +188,18 @@
             CALL read_var_hdf5(fid,'THRIFT_T',ntimesteps_restart,ier,DBLVAR=temp1d)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_T',ier)
             tend_restart = temp1d(ntimesteps_restart)
-            ! compute tstart. When restart is .true., tstart from namelist is obsolete
-            tstart = tend_restart + (tend - tend_restart)/(ntimesteps)
+
+            IF(lverb) WRITE(6,'(A17,F8.4)') '   TEND_RESTART: ', tend_restart
+
+            ! Check tstart > tend_restart
+            IF(tstart < tend_restart) THEN 
+               WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+               WRITE(6,*) '          tstart < tend_resart  '
+               WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               STOP
+            ENDIF
+
+            dt_first_iter = tstart - tend_restart
 
             CALL read_var_hdf5(fid,'THRIFT_UGRID',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_UGRID',ier)

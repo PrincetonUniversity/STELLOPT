@@ -44,8 +44,8 @@
       ! If mytimestep = 1 and am reading from restart, then set the following:
       IF (mytimestep==1 .and. restart_from_file) THEN
             THRIFT_UGRID(:,mytimestep) = UGRID_RESTART
-            prevtimestep = 1 
-            dt = THRIFT_T(2)-THRIFT_T(1) ! dt = delta t this iter
+            prevtimestep = 1 !this is a trick in order to use UGRID_RESTART as the array of the previous iter
+            dt = dt_first_iter
       ELSE 
             prevtimestep = mytimestep-1   ! previous time step index
             dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
