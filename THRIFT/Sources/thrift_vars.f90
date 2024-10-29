@@ -37,8 +37,6 @@ MODULE thrift_vars
     !          THRIFT_IXXXXX    Total enclosed bootstrap/driven currents 
     !
     !     Restart variables
-    !          JPLASMA_RESTART  Restart Jplasma
-    !          IPLASMA_RESTART  Restart Iplasma
     !          UGRID_RESTART    Restart Ugrid
     !
     !     Profile variables
@@ -83,11 +81,11 @@ MODULE thrift_vars
              win_thrift_alpha1,  win_thrift_alpha2,   win_thrift_alpha3,   win_thrift_alpha4,   &
              win_thrift_matld,   win_thrift_matmd,    win_thrift_matud,    win_thrift_matrhs,   &
              win_thrift_bvav,                                                                   &
-             win_thrift_jplasma_restart, win_thrift_iplasma_restart, win_thrift_ugrid_restart                                
+             win_thrift_ugrid_restart                                
     REAL(rprec) :: tstart, tend, jtol, picard_factor, boot_factor
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), THRIFT_PHIEDGE(:), &
                                           THRIFT_S(:),   THRIFT_SNOB(:),  THRIFT_T(:),         &
-                                          JPLASMA_RESTART(:), IPLASMA_RESTART(:), UGRID_RESTART(:)
+                                          UGRID_RESTART(:)
     REAL(rprec), DIMENSION(:,:), POINTER :: &
                  THRIFT_J,THRIFT_I,THRIFT_UGRID, &
                  THRIFT_JPLASMA, THRIFT_IPLASMA, &

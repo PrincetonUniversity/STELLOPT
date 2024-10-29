@@ -135,8 +135,6 @@
       CALL mpialloc(THRIFT_MATRHS,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matrhs)   
       
       ! Restart arrays
-      CALL mpialloc(JPLASMA_RESTART, nsj, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_jplasma_restart)
-      CALL mpialloc(IPLASMA_RESTART, nsj, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_iplasma_restart)
       CALL mpialloc(UGRID_RESTART,   nsj, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_ugrid_restart)
 
       ! Read the Bootstrap input
@@ -161,6 +159,8 @@
 
       ! Read restart file
       IF (restart_from_file) THEN
+         UGRID_RESTART = 0.0
+         IF (lverb) WRITE(6,'(A)') '----- Reading Restart File -----'
          ! Read file 
          IF (myid_sharmem == master) THEN
             CALL open_hdf5(TRIM(restart_filename),fid,ier,LCREATE=.false.)
@@ -180,25 +180,21 @@
                STOP
             ENDIF
 
-            ALLOCATE(temp2d(ntimesteps_restart,ns_restart),temp1d(ntimesteps_restart))
+            ALLOCATE(temp2d(ns_restart,ntimesteps_restart),temp1d(ntimesteps_restart))
 
             CALL read_var_hdf5(fid,'THRIFT_T',ntimesteps_restart,ier,DBLVAR=temp1d)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_T',ier)
             tend_restart = temp1d(ntimesteps_restart)
-            ! compute tstart. When restart is .true., tstart is set to tend_restart
-            tstart = tend_restart !+ (tend - tend_restart)/ntimesteps
+            ! compute tstart. When restart is .true., tstart from namelist is obsolete
+            tstart = tend_restart + (tend - tend_restart)/(ntimesteps)
 
-            CALL read_var_hdf5(fid,'THRIFT_JPLASMA',ntimesteps_restart,ns_restart,ier,DBLVAR=temp2d)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_JPLASMA',ier)
-            JPLASMA_RESTART = temp2d(ntimesteps_restart,:)
-
-            CALL read_var_hdf5(fid,'THRIFT_IPLASMA',ntimesteps_restart,ns_restart,ier,DBLVAR=temp2d)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_IPLASMA',ier)
-            IPLASMA_RESTART = temp2d(ntimesteps_restart,:)
-
-            CALL read_var_hdf5(fid,'THRIFT_UGRID',ntimesteps_restart,ns_restart,ier,DBLVAR=temp2d)
+            CALL read_var_hdf5(fid,'THRIFT_UGRID',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_UGRID',ier)
-            UGRID_RESTART = temp2d(ntimesteps_restart,:)
+            UGRID_RESTART = temp2d(:,ntimesteps_restart)
+
+            !Close the HDF5 file
+            CALL close_hdf5(fid,ier)
+            IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,TRIM(restart_filename),ier)
 
             DEALLOCATE(temp2d,temp1d)
 
