@@ -927,8 +927,7 @@
 
       INTEGER, INTENT(in) :: mystart, myend
 
-      INTEGER :: count, i, i_tile, j, j_tile, k, k_tile, maxi, maxtile
-      DOUBLE PRECISION, DIMENSION(:),   ALLOCATABLE :: chi
+      INTEGER :: count, i, i_tile, j, j_tile, k, k_tile, maxi, maxtile, iterH, maxiterH
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_new
       DOUBLE PRECISION :: H(3), N(3,3), Bx, By, Bz
       DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm
@@ -937,7 +936,7 @@
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, MnormPrev, dM, dMPrev, lambda
       DOUBLE PRECISION ::  maxdM, maxdMall, maxlambda
       INTEGER          :: lambdaCount
-      LOGICAL          :: lalldone, lboxdone, lprocdone
+      LOGICAL          :: lalldone, lboxdone, lprocdone, lbreakiterH
       LOGICAL, DIMENSION(:), ALLOCATABLE :: ldone
 
       DOUBLE PRECISION :: convergedproc, convergedtot
@@ -950,7 +949,7 @@
       CHARACTER(LEN=20) :: filename
     
       ! Allocate helpers
-      ALLOCATE(M_new(3,mystart:myend),chi(mystart:myend),Mnorm(mystart:myend),MnormPrev(mystart:myend))
+      ALLOCATE(M_new(3,mystart:myend),Mnorm(mystart:myend),MnormPrev(mystart:myend))
       ALLOCATE(dM(mystart:myend),dMPrev(mystart:myend))
       ALLOCATE(lambda(mystart:myend))
       ALLOCATE(ldone(mystart:myend))
@@ -959,10 +958,10 @@
       lambda = lambdaStart
       maxlambda = lambdaStart
       lambdaCount = 0
-      chi = 0.0
       Mnorm = 1.0E-5
       dM = 0.d0
       ldone = .FALSE.
+      maxiterH = 1000
 
       IF (lverb) THEN
         WRITE(6,*) ''
@@ -985,15 +984,8 @@
         convergedproc = 0.0
         convergedtot = 0.0
         
-       
         DO i = mystart, myend ! Get the field and new magnetization for each tile
-            IF (count.LT.maxIter) THEN
-                ldone(i) = .FALSE.
-            END IF
-!          IF (ldone(i)) THEN
-!            CYCLE
-!          END IF
-
+          IF (count.LT.maxIter) ldone(i) = .FALSE.
           i_tile = mydom(i)
           H = Happ(:,i)
 
@@ -1005,10 +997,12 @@
             END IF
             H = H + MATMUL(N_store(:,:,j,i), M(:,j_tile))
           END DO
-          
+         
           ! Determine field and magnetization at tile due to all other tiles and itself
           H_new = H
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          iterH = 0
+          lbreakiterH = .FALSE.
           SELECT CASE (state_type(state_dex(i_tile)))
             CASE (1) ! Hard magnet
               Mrem_norm = NORM2(Mrem(:,state_dex(i_tile)))
@@ -1027,73 +1021,63 @@
                   
               lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 1/constant_mu_o(state_dex(i_tile)), 0.5)
               DO
-                  H_old = H_new
-                  ! Determine magnetization taking into account easy axis
-                  M_tmp = (Mrem_norm + (constant_mu(state_dex(i_tile))   - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
-                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
-                                    + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
-
-                  H_new = H + MATMUL(N, M_tmp)
-                  H_new = H_old + lambda_s * (H_new - H_old)
-
-                  IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
-                    M_new(:,i) = (Mrem_norm + (constant_mu(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_ea)) * u_ea &
-                                                  + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
-                                                  + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
-                    EXIT
-                  END IF
+                iterH = iterH + 1
+                H_old = H_new
+                ! Determine magnetization taking into account easy axis
+                M_new(:,i) = (Mrem_norm + (constant_mu(  state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_ea )) * u_ea &
+                                        + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
+                                        + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
+                H_new = H + MATMUL(N, M_new(:,i))
+                H_new = H_old + lambda_s * (H_new - H_old)
+                IF (lbreakiterH) EXIT
+                IF (iterH.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile
+                ! If converged or exceeded maxiter, stop on next iter (calculates M one last time)
+                IF ((MAXVAL(ABS((H_new-H_old)/H_old)).lt.dMmax*lambda_s).or.(iterH.GT.maxIterH)) lbreakiterH = .TRUE. 
               END DO
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             CASE (2) ! Soft magnet using state function
               DO
+                iterH = iterH + 1
                 H_old = H_new
                 Hnorm = NORM2(H_new)
                 IF (Hnorm .ne. 0) THEN
                   CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
-                  M_tmp = M_tmp_norm * H_new / Hnorm
+                  M_new(:,i) = M_tmp_norm * H_new / Hnorm
                   lambda_s = MIN(Hnorm/M_tmp_norm, 0.5)
                 ELSE
-                  M_tmp = 0
+                  M_new(:,i) = 0
                   M_tmp_norm = 0
                   lambda_s = 0.5
                 END IF
-                H_new = H + MATMUL(N, M_tmp)
+                IF (lbreakiterH) EXIT 
+                H_new = H + MATMUL(N, M_new(:,i))
                 H_new = H_old + lambda_s * (H_new - H_old)
-
-                IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
-                  Hnorm = NORM2(H_new)
-                  IF (Hnorm .ne. 0) THEN
-                    CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
-                    M_new(:,i) = M_tmp_norm * H_new / Hnorm
-                    chi(i) = M_tmp_norm / Hnorm
-                  ELSE
-                    M_new(:,i) = 0
-                    chi(i) = 0
-                  END IF
-                  EXIT
-                END IF
+                ! If converged or exceeded maxiter, stop on next iter (calculates M one last time)
+                IF (iterH.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile
+                IF ((MAXVAL(ABS((H_new-H_old)/H_old)).lt.dMmax*lambda_s).or.(iterH.GT.maxIterH)) lbreakiterH = .TRUE. 
               END DO
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             CASE (3) ! Soft magnet using constant permeability
               lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 0.5)
               DO
+                  iterH = iterH + 1
                   H_old = H_new
                   H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N, H_new)
                   H_new = H_old + lambda_s * (H_new - H_old)
-                  IF (MAXVAL(ABS((H_new - H_old)/H_old)) .lt. dMmax*lambda_s) THEN
+                  IF (iterH.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile
+                  IF ((MAXVAL(ABS((H_new - H_old)/H_old)).lt.dMmax*lambda_s).or.(iterH.GT.maxiterH)) THEN
                     M_new(:,i) = (constant_mu(state_dex(i_tile)) - 1) * H_new
                     EXIT
                   END IF
               END DO
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             CASE DEFAULT
-              WRITE(6,*) "Unknown magnet type: ", state_type(state_dex(i_tile))
+              WRITE(6,*) "  Unknown magnet type: ", state_type(state_dex(i_tile))
               STOP
           END SELECT
 
           M(:,i_tile) = M(:,i_tile) + lambda(i)*(M_new(:,i) - M(:,i_tile))
           Mnorm(i) = NORM2(M(:,i_tile))
-
           ! "Derivatives" for convergence checks
           dM(i) = ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
           IF ((dM(i) .GT. maxdM).OR.ISNAN(Mnorm(i))) THEN
@@ -1113,16 +1097,12 @@
             lambdaCount= MAX(lambdaCount-1,0)
           END IF
           
-          IF ((dM(i).LT.dMmax*lambda(i)) .AND. (count.GT.1)) THEN
-            ldone(i) = .TRUE.
+          IF (((dM(i).LT.dMmax*lambda(i)).AND.(count.GT.1)) &   ! if converged
+             .OR.(lambda(i).LT.1E-5) &                          ! or lambda too smll
+             .OR. (count.GE.maxIter)) THEN                      ! or exceed maxiter
+                ldone(i) = .TRUE.                               ! then this tile is done
           END IF
-          IF (lambda(i).LT.1E-5) THEN
-            ldone(i) = .TRUE.
-          END IF
-          IF (count.GE.maxIter) THEN
-            ldone(i) = .TRUE.
-          END IF
-          
+
           IF (ldone(i)) THEN
             convergedproc = convergedproc + tet_vol(i_tile)
           END IF
@@ -1132,7 +1112,7 @@
 #if defined(MPI_OPT)
             CALL MPI_ALLREDUCE(convergedproc, convergedtot,  1, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi) 
             CALL MPI_ALLREDUCE(maxdM,             maxdMall,  1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_world, ierr_mpi) 
-            IF (maxdM.EQ.maxdMall) THEN
+            IF (maxdM.EQ.maxdMall) THEN ! master needs to know for displaying
                 IF (lismaster) THEN
                     maxlambda = lambda(maxi)
                     maxtile = mydom(maxi)
@@ -1162,32 +1142,21 @@
           CALL FLUSH(6)
         END IF
 
-
         IF (ldebugm) THEN
             WRITE(strcount, '(I0)') count
             CALL mumaterial_writedebug(M,3,ntet,'./M_' // TRIM(ADJUSTL(strcount)) // '.dat')
         END IF
 
-
         IF (lalldone) THEN
             IF (lverb) WRITE(6,*) "  MUMAT:  Stopping"
             EXIT
         END IF
-        ! Synchronize magnetization
         ! Update H-field from non-Nb
-        DO i = mystart, myend
-          i_tile = mydom(i)
-          CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
-          Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
-        
-        ! Happ loop logic
         ! ----------
-        ! Tetrahedron array e.g.  T=[1 2 ... 12407 12408]
-        ! Neighbor array 1  e.g. Nb=[6 48 3874 4838 6792 11240]
-        ! 
         ! Want to iterate over all tetrahedrons in T that do not appear in Nb
         ! IF statements for loop over ntet elements is slow so we do this instead
-        !
+        ! Tetrahedron array e.g.  T=[1 2 ... 12407 12408]
+        ! Neighbor array 1  e.g. Nb=[6 48 3874 4838 6792 11240]
         ! 1. Loop over elements before first neighbour
         !     Nb(1)=6                         => loop over [1 2 3 4 5]
         ! 2. For each pair of neighbours, loop over elements IN BETWEEN 
@@ -1195,7 +1164,12 @@
         !     For j=3, Nb(j-1)=48, Nb(j)=3874 => loop over [49 ... 3873] etc.
         ! 3. Loop over elements after last neighbour
         !     Nb(end)=11240                   => loop over [11241 ... 12408]
-
+        
+        DO i = mystart, myend
+          i_tile = mydom(i)
+          CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
+          Happ(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
+      
           DO k_tile = 1,Nb(1,i)-1 
               CALL mumaterial_gethdipole(tet_cen(:,k_tile),tet_cen(:,i_tile),M(:,k_tile),tet_vol(k_tile),Happ(:,i))
           END DO
@@ -1211,7 +1185,7 @@
 
 
       END DO
-      DEALLOCATE(M_new,chi,Mnorm,MnormPrev,dM,dMPrev)
+      DEALLOCATE(M_new,Mnorm,MnormPrev,dM,dMPrev)
 
       RETURN
       END SUBROUTINE mumaterial_iterate_M
@@ -1286,7 +1260,6 @@
 
             DO j = 1, 3
                   v(:,j) = MATMUL(Pinv, (v(:,j) - D))
-
                   IF (ABS(r(j)) .lt. 1.0d-20) THEN ! make sure position is not too close to x, y or z = 0
                         r(j) = SIGN(1.0d-20, r(j))
                   END IF
@@ -1297,6 +1270,7 @@
             N_loc(1,3) = mumaterial_getNxz(r, v(1,1), v(2,2)) - mumaterial_getNxz(r, v(1,3), v(2,2))
             N_loc(2,3) = mumaterial_getNyz(r, v(1,1), v(2,2)) - mumaterial_getNyz(r, v(1,3), v(2,2))
             N_loc(3,3) = mumaterial_getNzz(r, v(1,1), v(2,2)) - mumaterial_getNzz(r, v(1,3), v(2,2))
+            IF ((ISNAN(N_loc(1,3)).or.ISNAN(N_loc(2,3))).or.ISNAN(N_loc(3,3))) WRITE(6,*) " MUMAT found a NaN in N_loc."
 
             N = N + MATMUL(MATMUL(P, N_loc), Pinv)
       END DO
@@ -1326,7 +1300,7 @@
             IMPLICIT NONE
             DOUBLE PRECISION :: F
             DOUBLE PRECISION, INTENT(IN) :: r(3), yp, l, h
-
+                  
                   F = h / sqrt(h*h + l*l) * ATANH((l*l - l*r(1) + h*r(2) - h*yp*(1 + l*l/h/h)) / &
                         sqrt((h*h + l*l) * (r(1)*r(1) - 2*r(1)*l + l*l + r(2)*r(2) - 2*(l*l - l*r(1) + h*r(2))*yp/h + &
                         yp*yp*(1 + l*l/h/h) + r(3)*r(3))))
@@ -1336,12 +1310,10 @@
 
             FUNCTION G(r, yp)
             IMPLICIT NONE
-            DOUBLE PRECISION :: G
+            DOUBLE PRECISION :: G, rt
             DOUBLE PRECISION, INTENT(IN) :: r(3), yp
-
-                  G = ATANH((r(2) - yp) / sqrt(r(1)*r(1) + r(2)*r(2) - 2*r(2)*yp + yp*yp + r(3)*r(3)))
-
-                  ! todo: check G is finite?
+                  rt = r(3)+1.0E-6 ! Fix singularity
+                  G = ATANH((r(2) - yp) / sqrt(r(1)*r(1) + r(2)*r(2) - 2*r(2)*yp + yp*yp + rt*rt))
 
             RETURN
             END FUNCTION G
@@ -1379,13 +1351,11 @@
 
             FUNCTION Lfunc(r, xp)
             IMPLICIT NONE
-            DOUBLE PRECISION :: Lfunc
+            DOUBLE PRECISION :: Lfunc, rt
             DOUBLE PRECISION, INTENT(IN) :: r(3), xp
-
-                  Lfunc = ATANH((r(1) - xp) / sqrt(r(1)*r(1) - 2*r(1)*xp + xp*xp + r(2)*r(2) + r(3)*r(3)))
-
-                  ! todo: check Lfunc is finite?
-
+                  rt = r(3)+1.0E-6 ! Fix singularity
+                  Lfunc = ATANH((r(1) - xp) / sqrt(r(1)*r(1) - 2*r(1)*xp + xp*xp + r(2)*r(2) + rt*rt))
+                  
             RETURN
             END FUNCTION Lfunc
 
