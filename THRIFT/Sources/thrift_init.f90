@@ -158,7 +158,7 @@
       CALL read_thrift_profh5(TRIM(prof_string))
 
       ! Read restart file
-      IF (restart_from_file) THEN
+      IF (lrestart_from_file) THEN
          UGRID_RESTART = 0.0
          IF (lverb) THEN 
             WRITE(6,'(A)') '----- Reading Restart File -----'

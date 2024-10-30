@@ -36,7 +36,7 @@
                               rfocus_ecrh, nra_ecrh, nphi_ecrh, &
                               freq_ecrh, power_ecrh, &
                               pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w, &
-                              etapar_type, restart_from_file, restart_filename
+                              etapar_type
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -47,8 +47,6 @@
 
       SUBROUTINE init_thrift_input
       IMPLICIT NONE
-      restart_from_file  = .FALSE.
-      restart_filename   = 'restart_THRIFT.h5'
       bootstrap_type     = 'bootsj'
       etapar_type        = 'sauter'
       eccd_type          = ''
@@ -142,8 +140,6 @@
       WRITE(iunit_out,'(A)') '&THRIFT_INPUT'
       WRITE(iunit_out,'(A)') '!---------- GENERAL PARAMETERS ------------'
       WRITE(iunit_out,outint) 'NPARALLEL_RUNS',nparallel_runs
-      WRITE(iunit_out,outint) 'RESTART_FROM_FILE',restart_from_file
-      WRITE(iunit_out,outint) 'RESTART_FILENAME',restart_filename
       WRITE(iunit_out,outstr) 'BOOTSTRAP_TYPE',bootstrap_type
       WRITE(iunit_out,outstr) 'ETAPAR_TYPE',etapar_type
       WRITE(iunit_out,outflt) 'JTOL',jtol

@@ -136,7 +136,9 @@ MODULE THRIFT_INTERFACE_MOD
         limas = .false.
         lverb = .true.
         lvmec = .false.
+        lrestart_from_file = .false.
         id_string = ''
+        restart_filename = ''
 
         ! First Handle the input arguments
         CALL GETCARG(1, arg1, numargs)
@@ -156,14 +158,19 @@ MODULE THRIFT_INTERFACE_MOD
                 i = i + 1
                 lvmec = .true.
                 CALL GETCARG(i, prof_string, numargs)
+            case ("-restart")
+                i = i + 1
+                lrestart_from_file = .true.
+                CALL GETCARG(i, restart_filename, numargs)
             case ("-diagno")
                 ldiagno = .true.
             case ("-help", "-h") ! Output Help message
-                write(6, *) ' Beam MC Code'
+                write(6, *) ' THRIFT Current Evolution Code'
                 write(6, *) ' Usage: xthrift <options>'
                 write(6, *) '    <options>'
                 write(6, *) '     -vmec ext:     VMEC input/wout extension'
                 write(6, *) '     -prof file:    Profile file'
+                write(6, *) '     -restart file: Previous run file'
                 write(6, *) '     -diagno:       Compute Magnetic Diagnostic Response'
                 write(6, *) '     -noverb:       Supress all screen output'
                 write(6, *) '     -help:         Output help message'
