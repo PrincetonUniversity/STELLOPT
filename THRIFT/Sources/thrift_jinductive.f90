@@ -34,7 +34,7 @@
 !     BEGIN SUBROUTINE
 !======================================================================
       ! If mytimestep = 1 and not reading from restart, then ITOT=0 and continue to next iteration
-      IF (mytimestep==1 .and. .not. restart_from_file) THEN
+      IF (mytimestep==1 .and. .not. lrestart_from_file) THEN
             THRIFT_JPLASMA(:,mytimestep) = -THRIFT_JSOURCE(:,mytimestep)
             THRIFT_IPLASMA(:,mytimestep) = -THRIFT_ISOURCE(:,mytimestep)
             THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
@@ -42,7 +42,7 @@
       END IF
 
       ! If mytimestep = 1 and am reading from restart, then set the following:
-      IF (mytimestep==1 .and. restart_from_file) THEN
+      IF (mytimestep==1 .and. lrestart_from_file) THEN
             THRIFT_UGRID(:,mytimestep) = UGRID_RESTART
             prevtimestep = 1 !this is a trick in order to use UGRID_RESTART as the array of the previous iter
             dt = dt_first_iter
