@@ -58,7 +58,7 @@
       ntimesteps         = 32
       n_eq               = 99
       npicard            = 5
-      tstart             = 0.1
+      tstart             = 0.0
       tend               = 1.0
       jtol               = 0.01
       picard_factor      = 0.5

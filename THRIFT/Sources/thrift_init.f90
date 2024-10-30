@@ -18,6 +18,9 @@
       USE mpi_params
       USE mpi_inc
       USE mpi_sharmem
+#if defined(LHDF5)
+      USE ez_hdf5
+#endif
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -26,9 +29,11 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL        :: ltst
-      INTEGER        :: ier, i, iunit
+      INTEGER        :: ier, i, iunit, ntimesteps_restart, ns_restart
       CHARACTER(256) :: tstr1,tstr2
-      REAL(rprec)    :: dt
+      REAL(rprec)    :: dt, tend_restart
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: temp2d
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: temp1d
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -127,8 +132,11 @@
       CALL mpialloc(THRIFT_MATLD,    nsj-1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matld)
       CALL mpialloc(THRIFT_MATMD,      nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matmd)
       CALL mpialloc(THRIFT_MATUD,    nsj-1, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matud)
-      CALL mpialloc(THRIFT_MATRHS,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matrhs)       
+      CALL mpialloc(THRIFT_MATRHS,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_matrhs)   
       
+      ! Restart arrays
+      CALL mpialloc(UGRID_RESTART,   nsj, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_ugrid_restart)
+
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
       SELECT CASE (TRIM(bootstrap_type))
@@ -149,8 +157,74 @@
       ! Now setup the profiles
       CALL read_thrift_profh5(TRIM(prof_string))
 
+      ! Read restart file
+      IF (lrestart_from_file) THEN
+         UGRID_RESTART = 0.0
+         IF (lverb) THEN 
+            WRITE(6,'(A)') '----- Reading Restart File -----'
+            WRITE(6,'(A)')  '   FILE: '//TRIM(restart_filename)
+         END IF
+         ! Read file 
+         IF (myid_sharmem == master) THEN
+            CALL open_hdf5(TRIM(restart_filename),fid,ier,LCREATE=.false.)
+            IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(restart_filename),ier)
+
+            CALL read_scalar_hdf5(fid,'ntimesteps',ier,INTVAR=ntimesteps_restart)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ntimesteps',ier)
+
+            CALL read_scalar_hdf5(fid,'nssize',ier,INTVAR=ns_restart)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nssize',ier)
+
+            !Check that ns_restart is equal to current ns
+            IF(ns_restart /= nsj) THEN
+               WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+               WRITE(6,*) '  ns_restart different from nsj '
+               WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               STOP
+            ENDIF
+
+            ALLOCATE(temp2d(ns_restart,ntimesteps_restart),temp1d(ntimesteps_restart))
+
+            CALL read_var_hdf5(fid,'THRIFT_T',ntimesteps_restart,ier,DBLVAR=temp1d)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_T',ier)
+            tend_restart = temp1d(ntimesteps_restart)
+
+            IF(lverb) WRITE(6,'(A17,F8.4)') '   TEND_RESTART: ', tend_restart
+
+            ! Check tstart > tend_restart
+            IF(tstart < tend_restart) THEN 
+               WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+               WRITE(6,*) '          tstart < tend_resart  '
+               WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               STOP
+            ENDIF
+
+            dt_first_iter = tstart - tend_restart
+
+            CALL read_var_hdf5(fid,'THRIFT_UGRID',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_UGRID',ier)
+            UGRID_RESTART = temp2d(:,ntimesteps_restart)
+
+            !Close the HDF5 file
+            CALL close_hdf5(fid,ier)
+            IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,TRIM(restart_filename),ier)
+
+            DEALLOCATE(temp2d,temp1d)
+
+         END IF
+      END IF
+
+      ! Check that tend > tstart
+      IF(tend < tstart .and. lverb) THEN 
+         WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+         WRITE(6,*) '          tend < tstart         '
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         STOP
+      ENDIF
+      
       ! Define grids
       dt = (tend-tstart)/(ntimesteps-1)
+
       IF (myid_sharmem == master) THEN
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho) ! (half) rho grid
         FORALL(i = 1:nsj)  THRIFT_S(i)   = DBLE(i-1)/DBLE(nsj-1)  ! (full)  s  grid
