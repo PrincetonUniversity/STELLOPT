@@ -154,7 +154,9 @@ MODULE THRIFT_INTERFACE_MOD
         limas = .false.
         lverb = .true.
         lvmec = .false.
+        lrestart_from_file = .false.
         id_string = ''
+        restart_filename = ''
 
         ! First Handle the input arguments
         CALL GETCARG(1, arg1, numargs)
@@ -174,14 +176,19 @@ MODULE THRIFT_INTERFACE_MOD
                 i = i + 1
                 lvmec = .true.
                 CALL GETCARG(i, prof_string, numargs)
+            case ("-restart")
+                i = i + 1
+                lrestart_from_file = .true.
+                CALL GETCARG(i, restart_filename, numargs)
             case ("-diagno")
                 ldiagno = .true.
             case ("-help", "-h") ! Output Help message
-                write(6, *) ' Beam MC Code'
+                write(6, *) ' THRIFT Current Evolution Code'
                 write(6, *) ' Usage: xthrift <options>'
                 write(6, *) '    <options>'
                 write(6, *) '     -vmec ext:     VMEC input/wout extension'
                 write(6, *) '     -prof file:    Profile file'
+                write(6, *) '     -restart file: Previous run file'
                 write(6, *) '     -diagno:       Compute Magnetic Diagnostic Response'
                 write(6, *) '     -noverb:       Supress all screen output'
                 write(6, *) '     -help:         Output help message'
@@ -196,9 +203,13 @@ MODULE THRIFT_INTERFACE_MOD
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
       CALL MPI_BCAST(prof_string, 256, MPI_CHARACTER, master, MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
+      CALL MPI_BCAST(restart_filename, 256, MPI_CHARACTER, master, MPI_COMM_THRIFT, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
       CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
       CALL MPI_BCAST(limas, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
+      CALL MPI_BCAST(lrestart_from_file, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
 #endif
       RETURN

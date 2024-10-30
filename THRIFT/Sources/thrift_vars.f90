@@ -44,6 +44,9 @@ MODULE thrift_vars
     !          THRIFT_IPLASMA   Total enclosed induced current  
     !          THRIFT_IXXXXX    Total enclosed bootstrap/driven currents 
     !
+    !     Restart variables
+    !          UGRID_RESTART    Restart Ugrid
+    !
     !     Profile variables
     !          THRIFT_ETAPARA   Parallel electrical resistivity
     !          THRIFT_PPRIME    Radial pressure gradient
@@ -84,9 +87,11 @@ MODULE thrift_vars
                                  win_thrift_coeff_bp, win_thrift_coeff_cp, win_thrift_coeff_dp, &
              win_thrift_alpha1,  win_thrift_alpha2,   win_thrift_alpha3,   win_thrift_alpha4,   &
              win_thrift_matld,   win_thrift_matmd,    win_thrift_matud,    win_thrift_matrhs,   &
-             win_thrift_bvav
+             win_thrift_bvav,    win_thrift_ugrid_restart                
+    REAL(rprec) :: dt_first_iter
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), THRIFT_PHIEDGE(:), &
-                                          THRIFT_S(:),   THRIFT_SNOB(:),  THRIFT_T(:)
+                                          THRIFT_S(:),   THRIFT_SNOB(:),  THRIFT_T(:),         &
+                                          UGRID_RESTART(:)
     REAL(rprec), DIMENSION(:,:), POINTER :: &
                  THRIFT_J,THRIFT_I,THRIFT_UGRID, &
                  THRIFT_JPLASMA, THRIFT_IPLASMA, &
@@ -103,7 +108,8 @@ MODULE thrift_vars
                                  THRIFT_COEFF_BP,THRIFT_COEFF_CP,THRIFT_COEFF_DP,&
                  THRIFT_ALPHA1,  THRIFT_ALPHA2,  THRIFT_ALPHA3,  THRIFT_ALPHA4,  &
                  THRIFT_MATLD,   THRIFT_MATMD,   THRIFT_MATUD,   THRIFT_MATRHS,  &
-                 THRIFT_BVAV
+                 THRIFT_BVAV                                                  
+                 
 
 
 END MODULE thrift_vars
