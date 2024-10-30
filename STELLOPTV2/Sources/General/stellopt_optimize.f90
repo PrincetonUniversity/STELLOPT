@@ -23,7 +23,7 @@
 !----------------------------------------------------------------------
       IMPLICIT NONE
       !LOGICAL ::  lrestart
-      LOGICAL ::  lfile_exists, lskip_min, ldeleteopt
+      LOGICAL ::  lfile_exists, lskip_min, ldeleteopt, lsocleanup
       INTEGER ::  ier, iunit,nvar_in, nprint, info, ldfjac,nfev,&
                   iunit_restart, nfev_save, npop, ndiv, i
       INTEGER, ALLOCATABLE :: ipvt(:)
@@ -146,6 +146,7 @@
       ! DEFAULT
       lskip_min = .false.
       ldeleteopt = .TRUE.
+      lsocleanup = .TRUE.
 
       ! Do runs
       SELECT CASE(TRIM(opt_type))
@@ -205,6 +206,7 @@
             call stellopt_fcn(mtargets, nvars, vars, fvec, info, nfev)
          CASE('one_iter_norm')
             ldeleteopt = .FALSE.
+            lsocleanup = .FALSE.
             ALLOCATE(fvec(mtargets))
             fvec     = 0.0
             info     = FLAG_SINGLETASK
@@ -323,7 +325,7 @@
          CALL stellopt_fcn(mtargets,nvars,vars,fvec,ier,nfev)
       END IF
 !DEC$ IF DEFINED (STELZIP)
-      IF (myid == master) THEN
+      IF (myid == master .and. lsocleanup) THEN
          IF (ldeleteopt) THEN
             ! Remove the *_opt* files
             WRITE(6,*) ' Cleaning up _opt files'; CALL FLUSH(6); ier = 0; ierr_mpi = 0; cmdtxt=''
