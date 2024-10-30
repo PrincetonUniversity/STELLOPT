@@ -185,9 +185,13 @@ MODULE THRIFT_INTERFACE_MOD
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
       CALL MPI_BCAST(prof_string, 256, MPI_CHARACTER, master, MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
+      CALL MPI_BCAST(restart_filename, 256, MPI_CHARACTER, master, MPI_COMM_THRIFT, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
       CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
       CALL MPI_BCAST(limas, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
+      CALL MPI_BCAST(lrestart_from_file, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
 #endif
       RETURN

@@ -117,7 +117,6 @@
       CALL tolower(bootstrap_type)
       CALL tolower(etapar_type)
       CALL tolower(eccd_type)
-      CALL tolower(restart_filename)
       leccd = eccd_type .ne. ''
       nsj = nrho;
       RETURN
