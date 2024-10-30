@@ -212,11 +212,6 @@
             DEALLOCATE(temp2d,temp1d)
 
          END IF
-
-         ! Bcast tstart
-         CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
-         CALL MPI_BCAST(tstart,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_SHARMEM,ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'set tstart',ierr_mpi)
       END IF
 
       ! Check that tend > tstart
