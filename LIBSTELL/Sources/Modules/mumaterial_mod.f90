@@ -961,7 +961,7 @@
       Mnorm = 1.0E-5
       dM = 0.d0
       ldone = .FALSE.
-      maxiterH = 1000
+      maxiterH = maxiter
 
       IF (lverb) THEN
         WRITE(6,*) ''
