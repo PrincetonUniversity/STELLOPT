@@ -67,7 +67,7 @@ MODULE thrift_runtime
     DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
     DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 
-    LOGICAL :: lverb, lvmec, lread_input, limas
+    LOGICAL :: lverb, lvmec, lread_input, limas, lrestart_from_file
     INTEGER :: nprocs_thrift, nparallel_runs, mboz, nboz, ier_paraexe, &
                mytimestep, nsubsteps
     REAL(rprec) :: pi, pi2, invpi2, mu0, to3
@@ -75,7 +75,7 @@ MODULE thrift_runtime
                       eccd_type, nbcd_type, &
                       proc_string, vessel_ecrh, mirror_ecrh, &
                       targettype_ecrh, antennatype_ecrh, &
-                      magdiag_coil, etapar_type
+                      magdiag_coil, etapar_type, restart_filename
 
     REAL(rprec), PARAMETER :: THRIFT_VERSION = 0.50 
     !-----------------------------------------------------------------------

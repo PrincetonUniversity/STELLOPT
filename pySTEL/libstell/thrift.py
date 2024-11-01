@@ -58,8 +58,8 @@ class THRIFT():
 				'THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IOTA','THRIFT_IPLASMA','THRIFT_ISOURCE',\
 				'THRIFT_J','THRIFT_JBOOT','THRIFT_JECCD','THRIFT_JNBCD','THRIFT_JOHMIC','THRIFT_JPLASMA','THRIFT_JSOURCE',\
 				'THRIFT_MATLD','THRIFT_MATMD','THRIFT_MATRHS','THRIFT_MATUD','THRIFT_P','THRIFT_PHIEDGE','THRIFT_PPRIME',\
-				'THRIFT_RHO','THRIFT_RHOFULL','THRIFT_RMAJOR','THRIFT_S','THRIFT_S11','THRIFT_S12','THRIFT_SNOB','THRIFT_T','\
-				THRIFT_UGRID','THRIFT_VP']:
+				'THRIFT_RHO','THRIFT_RHOFULL','THRIFT_RMAJOR','THRIFT_S','THRIFT_S11','THRIFT_S12','THRIFT_SNOB','THRIFT_T',\
+				'THRIFT_UGRID','THRIFT_VP']:
                 if temp in f:
                     setattr(self, temp, np.array(f[temp][:]))
                     
@@ -113,6 +113,23 @@ class THRIFT():
         else:
             print(f"{var} is not a numpy array.")
             exit(0)
+            
+    def get_vars(self,var,time=0.0):
+        # return an array with var(roa) at t=time
+        # var is any variable of the type THRIFT_## with dimension (ntimesteps,nssize)
+        
+        plot_var = getattr(self,var)
+        
+        idx = np.argmin(np.abs(self.THRIFT_T-time))
+        
+        real_time = self.THRIFT_T[idx]
+        
+        print(f'Returning variable {var} at t={real_time}s')
+        
+        return plot_var[idx,:]
+        
+        
+        
             
     def plot_vars_vs_iota(self,*vars,time_array=[0,1/4,1/2,3/4,1]):
         # plots var as a funciton of iota at different times
