@@ -14,5 +14,5 @@ setup(name='pySTEL',
 	scripts = ['VMECplot.py','FIELDLINESplot.py','vmec_util.py',\
 		'boozer_util.py','coils_util.py','fieldlines_util.py'],
 	install_requires=['numpy','matplotlib','PyQt5','scipy', \
-		'contourpy','vtk','numpy-stl']
+		'contourpy','vtk','numpy-stl','gmsh']
 	)

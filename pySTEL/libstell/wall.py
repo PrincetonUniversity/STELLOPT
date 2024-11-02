@@ -326,6 +326,73 @@ class WALL():
 				stlobj.vectors[i][j] = self.vertex[f[j],:]
 		stlobj.save(filename)
 
+	def refineWall(self,dlmin=0.001,dlmax=0.10,info=1):
+		"""Remeshes a wall using GMSH
+
+		This routine remeshes a wall using GMSH based on a minimum
+		and maximum grid size. Screen output can be controled via the
+		infor parameter:
+			0: No screen output
+			1: Errors only (default)
+			2: Errors and warnings
+			3: Info, Errors and warnings
+
+		Parameters
+		----------
+		dlmin : float (optional)
+			Minimum mesh size [m] (default=0.001)
+		dlmax : float (optional)
+			Maximum mesh size [m] (default=0.100)
+		info : int (optional)
+			GMSH screen output (default=1)
+		"""
+		import numpy as np
+		import gmsh
+		gmsh.initialize()
+		gmsh.option.setNumber("General.Terminal", 1)
+		gmsh.model.add("custom_mesh")
+		# Step 1: Add vertices (need to recode here)
+		node_tags = []
+		for i in range(self.nvertex):
+			tag = gmsh.model.geo.addPoint(self.vertex[i,0],self.vertex[i,1],self.vertex[i,2])
+			node_tags.append(tag)
+		# Step 2: Add faces as triangles
+		for i in range(self.nfaces):
+			v1, v2, v3 = self.faces[i,:] + 1 # GMSH uses 1 based indexing
+			l1 = gmsh.model.geo.addLine(node_tags[v1 - 1], node_tags[v2 - 1])
+			l2 = gmsh.model.geo.addLine(node_tags[v2 - 1], node_tags[v3 - 1])
+			l3 = gmsh.model.geo.addLine(node_tags[v3 - 1], node_tags[v1 - 1])
+			loop = gmsh.model.geo.addCurveLoop([l1, l2, l3])
+			gmsh.model.geo.addPlaneSurface([loop])
+		# Step 3: Set Mesh min/max lengths
+		gmsh.option.setNumber("Mesh.CharacteristicLengthMin", dlmin)
+		gmsh.option.setNumber("Mesh.CharacteristicLengthMax", dlmax)
+		# Step 4: Synchronize and mesh
+		gmsh.model.geo.synchronize()
+		gmsh.model.mesh.generate(2)
+		# Step 5: get mesh
+		node_tags, node_coords, _ = gmsh.model.mesh.getNodes()
+		vertices = [(node_coords[i], node_coords[i+1], node_coords[i+2]) for i in range(0, len(node_coords), 3)]
+		# Get all faces (triangles) in the mesh
+		faces = []
+		for dim, tag in gmsh.model.getEntities(2):  # Dimension 2 entities are surfaces
+			element_types, element_tags, node_tags = gmsh.model.mesh.getElements(dim, tag)
+			for elem_type, elems, nodes in zip(element_types, element_tags, node_tags):
+				if elem_type == 2:  # '2' corresponds to triangular elements
+					# Gmsh returns a flat list of node indices for triangles
+					for i in range(0, len(nodes), 3):
+						faces.append((nodes[i], nodes[i+1], nodes[i+2]))
+		# Check
+		print(rf"  Vertices remeshed from {self.nvertex} to {np.array(vertices).shape}")
+		print(rf"  Faces remeshed from {self.nfaces} to {np.array(faces).shape}")
+		# Store new mesh
+		self.vertex = np.array(vertices)
+		self.faces  = np.array(faces)-1
+		self.nvertex = self.vertex.shape[0]
+		self.nfaces = self.faces.shape[0]
+
+
+
 # LINESEG Class
 class LINESEG():
 	"""Class for linesegment
