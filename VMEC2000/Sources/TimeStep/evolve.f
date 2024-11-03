@@ -243,7 +243,7 @@ C-----------------------------------------------
       SUBROUTINE TimeStepControl(ier_flag, PARVMEC)
       USE vmec_main, ONLY: res0, res1, fsq, fsqr, fsqz, fsql,
      &                     irst, iter1, iter2, delt0r, dp
-      USE vmec_params, ONLY: ns4
+      USE vmec_params, ONLY: ns4, time_control_flag
       USE vparams, ONLY: c1pm2
       USE vmec_input, ONLY: nstep
       USE precon2d, ONLY: ictrl_prec2d
@@ -258,6 +258,7 @@ C-----------------------------------------------
       INTEGER  :: ier_flag
       LOGICAL, INTENT(IN) :: PARVMEC
 
+      ier_flag = 0
       fsq0 = fsqr+fsqz+fsql
       IF (iter2.EQ.iter1 .OR. res0.EQ.-1) THEN
          res0 = fsq
@@ -295,7 +296,8 @@ C-----------------------------------------------
             CALL funct3d(.FALSE., ier_flag)
          END IF
          IF (irst .NE. 1 .and. irst .NE. 4) THEN
-            STOP 'Logic error in TimeStepControl!'
+            ier_flag = time_control_flag
+            !STOP 'Logic error in TimeStepControl!'
          END IF
       END IF
 
