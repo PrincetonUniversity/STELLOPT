@@ -383,8 +383,8 @@ class WALL():
 					for i in range(0, len(nodes), 3):
 						faces.append((nodes[i], nodes[i+1], nodes[i+2]))
 		# Check
-		print(rf"  Vertices remeshed from {self.nvertex} to {np.array(vertices).shape}")
-		print(rf"  Faces remeshed from {self.nfaces} to {np.array(faces).shape}")
+		print(rf"  Vertices remeshed from {self.nvertex} to {np.array(vertices).shape[0]}")
+		print(rf"  Faces remeshed from {self.nfaces} to {np.array(faces).shape[0]}")
 		# Store new mesh
 		self.vertex = np.array(vertices)
 		self.faces  = np.array(faces)-1
