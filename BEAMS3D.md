@@ -171,15 +171,15 @@ The second points (X,2) defines the beamline from that origin.
 
 ### Execution
 
-The BEASM3D code is controlled through a combination of command-line
+The BEAMS3D code is controlled through a combination of command-line
 inputs and an input namelist. The input namelist must be in the
 equilibrium input file. That file must also contain the VMEC INDATA
-namelist (although only the EXTCUR array will be used). The BEASM3D code
+namelist (although only the EXTCUR array will be used). The BEAMS3D code
 is run from the command line taking an equilibrium input file as a
 necessary argument. This input file must have the INDATA (for EXTCUR)
-and BEASM3D\_INPUT namelists in it.
+and BEAMS3D\_INPUT namelists in it.
 
-    BEASM3D -vmec <VMEC FILE> -coil <COIL FILE> -mgrid <MGRID FILE> -vessel <VESSEL FILE> -vac -full -noverb -help
+    BEAMS3D -vmec <VMEC FILE> -coil <COIL FILE> -mgrid <MGRID FILE> -vessel <VESSEL FILE> -vac -full -noverb -help
 
 | Argument | Default | Description |
 |:------------- |:-------------:|:----- |
@@ -384,7 +384,7 @@ bins by VLL the particles at each NPOINC time step.
 ### References
 
 -   [McMillan, M. and Lazerson, S.A. \"BEAMS3D: Neutral beam injection model.\" Plasma Phys. and Control. Fusion 56, 095019 (2014)](https://doi.org/10.1088/0741-3335/56/9/095019)
--   [Lazerson, S.A. et al. \"Validation of the BEASM3D neutral beam deposition model on Wendelstein 7-X\" Nuclear Fusion 60, 706020 (2020)](https://doi.org/10.1088/1741-4326/ab8e61)
+-   [Lazerson, S.A. et al. \"Validation of the BEAMS3D neutral beam deposition model on Wendelstein 7-X\" Nuclear Fusion 60, 706020 (2020)](https://doi.org/10.1088/1741-4326/ab8e61)
 -   [Lazerson, S.A. et al. \"Modeling and measurement of energetic particle slowing down on Wendelstein 7-X\" Nuclear Fusion 61, 096006 (2021)](https://doi.org/10.1088/1741-4326/ac0771)
 -   [Lazerson, S.A., LeViness, A. and Lyon, J. \"Simulating fusion alpha heating in a stellarator reactor\" Plasma Phys. Control. Fusion 63, 125033 (2021) ](https://doi.org/10.1088/1361-6587/ac35ee)
 -   [Kulla, D. et al. \"Placement of a fast ion loss detector array for neutral beam injected particles in Wendelstein 7-X\" Plasma Phys. Control. Fusion (accepted) (2022) ](https://doi.org/10.1088/1361-6587/ac43f1)
