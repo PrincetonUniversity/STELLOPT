@@ -141,6 +141,7 @@ class LIBSTELL():
 			Path to wout file.
 		"""
 		import ctypes as ct
+		import numpy as np
 		# Get constants
 		module_name = self.s1+'vsvd0_'+self.s2
 		get_constant = getattr(self.libstell,module_name+'_getnigroup'+self.s3)
@@ -203,6 +204,11 @@ class LIBSTELL():
 		charList.extend(['mgrid_file','input_extension'])
 		charLen.extend([(200,1),(200,1)])
 		out_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
+		# Note we need to reshape the rbc/s zbs/c arrays.
+		out_data['rbc'] = np.reshape(out_data['rbc'],(mpol1d+1,2*ntord+1))
+		out_data['zbc'] = np.reshape(out_data['zbc'],(mpol1d+1,2*ntord+1))
+		out_data['rbs'] = np.reshape(out_data['rbs'],(mpol1d+1,2*ntord+1))
+		out_data['zbs'] = np.reshape(out_data['zbs'],(mpol1d+1,2*ntord+1))
 		return out_data
 
 	def write_indata(self,filename,out_dict=None):
@@ -338,15 +344,17 @@ class LIBSTELL():
 		init_beams3d_input.argtypes = None
 		init_beams3d_input.restype = None
 		init_beams3d_input()
-		# We use an added routine as a helper
-		module_name = self.s1+'beams3d_input_mod_'+self.s2
-		read_beams3d_input = getattr(self.libstell,module_name+'_read_beams3d_input'+self.s3)
-		read_beams3d_input.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
-		read_beams3d_input.restype = None
-		istat = ct.c_int(0)
-		read_beams3d_input(filename.encode('UTF-8'),ct.byref(istat),len(filename))
-		if not (istat.value == 0):
-			return None
+		# Only read a file if we didn't pass an empty string.
+		if filename != '':
+			# We use an added routine as a helper
+			module_name = self.s1+'beams3d_input_mod_'+self.s2
+			read_beams3d_input = getattr(self.libstell,module_name+'_read_beams3d_input'+self.s3)
+			read_beams3d_input.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
+			read_beams3d_input.restype = None
+			istat = ct.c_int(0)
+			read_beams3d_input(filename.encode('UTF-8'),ct.byref(istat),len(filename))
+			if not (istat.value == 0):
+				return None
 		# Get vars
 		intList=['nr','nphi','nz','nparticles_start','npoinc', \
 				'duplicate_factor', 'ns_prof1','ns_prof2', \
@@ -637,6 +645,7 @@ class LIBSTELL():
 			Dictionary of items.
 		"""
 		import ctypes as ct
+		import numpy as np
 		# A few constants defined in globals
 		module_name = self.s1+'vsvd0_'+self.s2
 		get_constant = getattr(self.libstell,module_name+'_getnigroup'+self.s3)
@@ -688,7 +697,7 @@ class LIBSTELL():
 		module_name = self.s1+'stellopt_globals_'+self.s2
 		booList=['lcentered_differences', 'lkeep_mins', 'lrefit', 'lcoil_geom', 'lno_restart', 'ltriangulate']
 		booLen=[1]*len(booList)
-		intList=['cr_strategy', 'npopulation', 'noptimizers', 'mode', 'rho_exp']
+		intList=['nfunc_max','cr_strategy', 'npopulation', 'noptimizers', 'mode', 'rho_exp']
 		intLen=[1]*len(intList)
 		realList=['ftol', 'xtol', 'gtol', 'epsfcn', 'factor', 'refit_param']
 		realLen=[1]*len(realList)
@@ -718,7 +727,7 @@ class LIBSTELL():
 		booList.extend(['lregcoil_rcws_rbound_c_opt','lregcoil_rcws_rbound_s_opt',\
 			'lregcoil_rcws_zbound_c_opt','lregcoil_rcws_zbound_s_opt'])
 		booLen.extend([(65,65)]*4)
-		intList=['nfunc_max', 'regcoil_nlambda', 'regcoil_num_field_periods', \
+		intList=['regcoil_nlambda', 'regcoil_num_field_periods', \
 			'sfincs_min_procs', 'vboot_max_iterations']
 		booList.extend(['lrosenbrock_x_opt'])
 		booLen.extend([(20,1)])
@@ -893,6 +902,16 @@ class LIBSTELL():
 		charList=['magdiag_coil', 'vessel_string', 'txport_proxy', 'vessel_ece', 'mirror_ece', 'targettype_ece', 'antennatype_ece']
 		charLen=[(256,1)]*7
 		target_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
+		var_data['lbound_opt'] = np.reshape(var_data['lbound_opt'],(mpol1d+1,2*ntord+1))
+		var_data['dbound_opt'] = np.reshape(var_data['dbound_opt'],(mpol1d+1,2*ntord+1))
+		var_data['bound_min'] = np.reshape(var_data['bound_min'],(mpol1d+1,2*ntord+1))
+		var_data['bound_max'] = np.reshape(var_data['bound_max'],(mpol1d+1,2*ntord+1))
+		var_data['lrho_opt'] = np.reshape(var_data['lrho_opt'],(mpol1d+1,2*ntord+1))
+		var_data['drho_opt'] = np.reshape(var_data['drho_opt'],(mpol1d+1,2*ntord+1))
+		var_data['ldeltamn_opt'] = np.reshape(var_data['ldeltamn_opt'],(2*mpol1d+1,2*ntord+1))
+		var_data['ddeltamn_opt'] = np.reshape(var_data['ddeltamn_opt'],(2*mpol1d+1,2*ntord+1))
+		var_data['delta_min'] = np.reshape(var_data['delta_min'],(2*mpol1d+1,2*ntord+1))
+		var_data['delta_max'] = np.reshape(var_data['delta_max'],(2*mpol1d+1,2*ntord+1))
 		return global_data, var_data, target_data
 
 	def write_stellopt_input(self,filename,global_dict=None,var_dict=None,target_dict=None):
@@ -1247,8 +1266,9 @@ class LIBSTELL():
 				if booLen[i]==1:
 					out_data[temp]=ct.c_bool.in_dll(self.libstell,modName+'_'+temp+self.s3).value
 				else:
-					if ldefined_size_arrays : ftemp=ct.c_bool*prod(booLen[i])
-					out_data[temp]=npct.as_array(ftemp.in_dll(self.libstell,modName+'_'+temp+self.s3),booLen[i])
+					# This works because fortran has 4 byte sized booleans
+					if ldefined_size_arrays : ftemp=ct.c_int*prod(booLen[i])
+					out_data[temp]=npct.as_array(ftemp.in_dll(self.libstell,modName+'_'+temp+self.s3),booLen[i])>0
 		# Integers
 		if intVar:
 			ftemp = ct.POINTER(ct.c_int)
@@ -1681,13 +1701,15 @@ class FourierRep():
 			plt = PLOT3D()
 			lrender = True
 		# Figure out number of surfaces to plot
-		nr = np.size(svals)
-		if (nr == 1):
-			if svals == 0: svals = 1
-			if svals == -1: svals = 0
-			s= [svals]
+		if type(svals) is list:
+			s = svals
 		else:
-			s=svals
+			# Aviod plotting axis
+			if svals == 0: svals = 1
+			# Flag for plotting single surface array
+			if r.shape[0] == 1: svals = 0
+			s= [svals]
+		nr = np.size(s)
 		# Setup x,y,z helpers
 		nu = np.size(r,1)
 		nv = np.size(r,2)
@@ -1702,7 +1724,6 @@ class FourierRep():
 			z_s = z[s[k],:,:]
 			[points,triangles] = plt.torusvertexTo3Dmesh(x_s,y_s,z_s,lcloseu=lcu,lclosev=lcv)
 			# Handle Color
-			scalar = None
 			if type(vals) != type(None): 
 				scalar = plt.valuesToScalar(vals[s[k],:,:])
 				# Add to Render
@@ -1754,6 +1775,34 @@ class FourierRep():
 			faces[i,1] = faces_list[i][1]
 			faces[i,2] = faces_list[i][2]
 		return vertex,faces
+
+	def surfaceSTL(self,r,z,phi,surface=None,filename='surface.stl'):
+		"""Outputs an STL file from a surface
+
+		This routine outputs an STL file for a given surface.
+
+		Parameters
+		----------
+		r : ndarray
+			Ordered list of R verticies [m] (ns,nu,nv)
+		z : ndarray
+			Ordered list of Z verticies [m] (ns,nu,nv)
+		phi : ndarray
+			Ordered list of phi coordiantes [rad] (nv)
+		surface : int (optional)
+			Surface to generate in ns (default: outermost)
+		filename : str (optional)
+			Filename for output file
+		"""
+		import numpy as np
+		from stl import mesh
+		vertex,faces = self.generateSurface(r,z,phi,surface)
+		nfaces = faces.shape[0]
+		wall_mesh = mesh.Mesh(np.zeros(nfaces, dtype=mesh.Mesh.dtype))
+		for i, f in enumerate(faces):
+			for j in range(3):
+				wall_mesh.vectors[i][j] = vertex[f[j],:]
+		wall_mesh.save(filename)
 
 	def blenderSurface(self,r,z,phi,surface=None):
 		"""Generates the lists Blender needs to render a flux surface

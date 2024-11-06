@@ -37,34 +37,39 @@ ifeq ($(wildcard $(MYHOME)),)
 	mkdir -p $(MYHOME)
 endif
 
-pystel:
+pystel: libstell$(SHARED_EXT)
 	@echo 'Building pySTEL'
 	@cd pySTEL; python3 setup.py install --user
-#	@python3 -m pip install ./pySTEL --user
 
 libstell$(SHARED_EXT):
-	@cd LIBSTELL
-	@make shared_release
+	@cd LIBSTELL; make shared_release
 
 test_make:
+	@echo 'Directories and flags for build.'
+	@echo '--------------------------------'
 	@echo MACHINE is $(MACHINE)
 	@echo STELLOPT_HOME is $(STELLOPT_HOME)
 	@echo STELLOPT_PATH is $(STELLOPT_PATH)
-#	@echo VMEC_DIR is $(VMEC_DIR)
-#	@echo BEAMS3D_DIR is $(BEAMS3D_DIR)
-#	@echo BOOTSJ_DIR is $(BOOTSJ_DIR)
-#	@echo BNORM_DIR is $(BNORM_DIR)
-#	@echo BOOZ_DIR is $(BOOZ_DIR)
-#	@echo COBRA_DIR is $(COBRA_DIR)
-#	@echo DIANGO_DIR is $(DIANGO_DIR)
-#	@echo FIELDLINES_DIR is $(FIELDLINES_DIR)
-#	@echo JINV_DIR is $(JINV_DIR)
-#	@echo MGRID_DIR is $(MGRID_DIR)
-#	@echo DKES_DIR is $(DKES_DIR)
-#	@echo NEO_DIR is $(NEO_DIR)
-	@echo GENE_DIR is $(GENE_DIR)
-	@echo REGCOIL_DIR is $(REGCOIL_DIR)
-	@echo SFINCS_DIR is $(SFINCS_DIR)
-	@echo MANGO_DIR is $(MANGO_DIR)
-	@echo Compiler flags are $(LIBS)
-	@echo LIB_LINK is $(LIB_LINK)
+	@echo '--------------------------------'
+	@echo " LAEOPT:          " $(LAEOPT) " DIR " $(AEOPT_DIR)
+	@echo " LCOILOPT:        " $(LCOILOPT) " DIR "  $(COILOPTPP_DIR)
+	@echo " LGENE:           " $(LGENE) " DIR " $(GENE_DIR)
+	@echo " LMANGO:          " $(LMANGO) " DIR " $(MANGO_DIR)
+	@echo " LREGCOIL:        " $(LREGCOIL) " DIR " $(REGCOIL_DIR)
+	@echo " LSINFCS:         " $(LSFINCS) " DIR " $(SFINCS_DIR)
+	@echo " LTERPSICHORE:    " $(LTERPSICHORE) " DIR " $(TERPSICHORE_DIR)
+	@echo " LTRAVIS:         " $(LTRAVIS) " DIR " $(TRAVIS_DIR)
+	@echo '--------------------------------'
+	@echo Precompiler flags are $(PRECOMP)
+	@echo '--------------------------------'
+	@echo Compiler $(COMPILE)
+	@echo Compiler Free $(COMPILE_FREE)
+	@echo Compiler modules are $(MOD1_PATH)
+	@echo Compiler release flags are $(FLAGS_R)
+	@echo Compiler debug flags are $(FLAGS_D)
+	@echo '--------------------------------'
+	@echo Linker is $(LINK)
+	@echo Linker flags are $(LIB_LINK)
+	@echo '--------------------------------'
+	@echo `python --version` `which python`
+	@echo '--------------------------------'
