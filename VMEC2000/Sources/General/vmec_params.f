@@ -25,7 +25,8 @@ C-----------------------------------------------
      7                      bsub_bad_js1_flag=12,
      8                      r01_bad_value_flag=13,
      9                      arz_bad_value_flag=14,
-     1                      imas_read_flag=15
+     1                      time_control_flag=15,
+     2                      imas_read_flag=16
       INTEGER, PARAMETER :: restart_flag=1, readin_flag=2,
      1                      timestep_flag=4,output_flag=8, 
      2                      cleanup_flag=16, reset_jacdt_flag=32,
