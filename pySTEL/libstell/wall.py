@@ -25,7 +25,9 @@ class WALL():
 	def read_wall(self,filename):
 		"""Directly reads a wall file
 
-		This routine reads a wall file into the class.
+		This routine reads a wall file into the class. Note if the
+		file ends in STL then the numpy-stl routine is used to
+		read the file.
 
 		Parameters
 		----------
@@ -33,6 +35,24 @@ class WALL():
 			Path to wall file.
 		"""
 		import numpy as np
+		from stl import mesh
+		import re
+		from datetime import datetime
+		if '.stl' in filename:
+			mesh_data = mesh.Mesh.from_file(filename)
+			self.vertex = mesh_data.vectors.reshape((-1, 3))
+			self.faces = np.arange(len(self.vertex)).reshape((-1, 3))
+			byte_string = mesh_data.name
+			string = byte_string.decode('utf-8')
+			match = re.search(r'\d{4}-\d{2}-\d{2}', string)
+			self.name  = string
+			if match: 
+				self.date  = match.group()
+			else:
+				self.date = datetime.today().strftime('%Y-%m-%d')
+			self.nvertex = self.vertex.shape[0]
+			self.nfaces = self.faces.shape[0]
+			return
 		f = open(filename,'r')
 		lines = f.readlines()
 		f.close()
@@ -107,6 +127,49 @@ class WALL():
 				wall_mesh.vectors[i][j] = self.vertex[f[j],:]
 		wall_mesh.save(filename)
 
+	def wallAdd(self,wall_in):
+		"""Add a wall to this wall
+
+		This routine adds a wall structure to this wall structure.
+
+		Parameters
+		----------
+		wall_in : WALL obj
+			Wall to add to this wall.
+		"""
+		import numpy as np
+		verts1 = self.vertex.tolist()
+		verts2 = wall_in.vertex.tolist()
+		verts1.extend(verts2)
+		faces1 = self.faces.tolist()
+		faces2 = (wall_in.faces+self.nvertex).tolist()
+		faces1.extend(faces2)
+		self.faces = np.array(faces1, dtype=int)
+		self.vertex = np.array(verts1)
+		self.nfaces = self.faces.shape[0]
+		self.nvertex = self.vertex.shape[0]
+
+	def wallClean(self):
+		"""Clean wall of zero area elements
+
+		This routine removes any zero area elements in the wall mesh.
+		"""
+		import numpy as np
+		i0 = self.faces[:,0]
+		i1 = self.faces[:,1]
+		i2 = self.faces[:,2]
+		V1 = self.vertex[i1,:]-self.vertex[i0,:]
+		V2 = self.vertex[i2,:]-self.vertex[i0,:]
+		N  = np.zeros((self.nfaces,3), dtype=float)
+		N[:,0]  = V1[:,1]*V2[:,2] - V1[:,2]*V2[:,1]
+		N[:,1]  = V1[:,2]*V2[:,0] - V1[:,0]*V2[:,2]
+		N[:,2]  = V1[:,0]*V2[:,1] - V1[:,1]*V2[:,0]
+		A = np.sum(N*N,axis=1)
+		mask = A<=0
+		print(f'Removing {np.sum(mask)} bad triangles.')
+		self.faces = np.delete(self.faces,mask,axis=0)
+		self.nfaces = self.faces.shape[0]
+
 	def plot_wall_cloud(self,ax=None):
 		"""Plots the vertices of the wall
 
@@ -155,7 +218,7 @@ class WALL():
 				plt.add3Dmesh(points,triangles,color=wallcolor)
 			else:
 				scalar = plt.valuesToScalar(wallcolor)
-				plt.add3Dmesh(points,triangles,scalars=wallcolor)
+				plt.add3Dmesh(points,triangles,FaceScalars=wallcolor)
 		else:
 			plt.add3Dmesh(points,triangles,color='gray')
 		# Render if requested
@@ -244,6 +307,92 @@ class WALL():
 		self.faces = faces
 		self.laccel = False
 
+	def writeSTL(self,filename='wall.stl'):
+		"""Outputs an STL object from wall object
+
+		This routine generates an stereolithography (STL) file from
+		the wall object.
+
+		Parameters
+		----------
+		filename : str (optional)
+			Filename for output file
+		"""
+		import numpy as np
+		from stl import mesh
+		stlobj = mesh.Mesh(np.zeros(self.faces.shape[0],dtype=mesh.Mesh.dtype))
+		for i, f in enumerate(self.faces):
+			for j in range(3):
+				stlobj.vectors[i][j] = self.vertex[f[j],:]
+		stlobj.save(filename)
+
+	def refineWall(self,dlmin=0.001,dlmax=0.10,info=1):
+		"""Remeshes a wall using GMSH
+
+		This routine remeshes a wall using GMSH based on a minimum
+		and maximum grid size. Screen output can be controled via the
+		infor parameter:
+			0: No screen output
+			1: Errors only (default)
+			2: Errors and warnings
+			3: Info, Errors and warnings
+
+		Parameters
+		----------
+		dlmin : float (optional)
+			Minimum mesh size [m] (default=0.001)
+		dlmax : float (optional)
+			Maximum mesh size [m] (default=0.100)
+		info : int (optional)
+			GMSH screen output (default=1)
+		"""
+		import numpy as np
+		import gmsh
+		gmsh.initialize()
+		gmsh.option.setNumber("General.Terminal", 1)
+		gmsh.model.add("custom_mesh")
+		# Step 1: Add vertices (need to recode here)
+		node_tags = []
+		for i in range(self.nvertex):
+			tag = gmsh.model.geo.addPoint(self.vertex[i,0],self.vertex[i,1],self.vertex[i,2])
+			node_tags.append(tag)
+		# Step 2: Add faces as triangles
+		for i in range(self.nfaces):
+			v1, v2, v3 = self.faces[i,:] + 1 # GMSH uses 1 based indexing
+			l1 = gmsh.model.geo.addLine(node_tags[v1 - 1], node_tags[v2 - 1])
+			l2 = gmsh.model.geo.addLine(node_tags[v2 - 1], node_tags[v3 - 1])
+			l3 = gmsh.model.geo.addLine(node_tags[v3 - 1], node_tags[v1 - 1])
+			loop = gmsh.model.geo.addCurveLoop([l1, l2, l3])
+			gmsh.model.geo.addPlaneSurface([loop])
+		# Step 3: Set Mesh min/max lengths
+		gmsh.option.setNumber("Mesh.CharacteristicLengthMin", dlmin)
+		gmsh.option.setNumber("Mesh.CharacteristicLengthMax", dlmax)
+		# Step 4: Synchronize and mesh
+		gmsh.model.geo.synchronize()
+		gmsh.model.mesh.generate(2)
+		# Step 5: get mesh
+		node_tags, node_coords, _ = gmsh.model.mesh.getNodes()
+		vertices = [(node_coords[i], node_coords[i+1], node_coords[i+2]) for i in range(0, len(node_coords), 3)]
+		# Get all faces (triangles) in the mesh
+		faces = []
+		for dim, tag in gmsh.model.getEntities(2):  # Dimension 2 entities are surfaces
+			element_types, element_tags, node_tags = gmsh.model.mesh.getElements(dim, tag)
+			for elem_type, elems, nodes in zip(element_types, element_tags, node_tags):
+				if elem_type == 2:  # '2' corresponds to triangular elements
+					# Gmsh returns a flat list of node indices for triangles
+					for i in range(0, len(nodes), 3):
+						faces.append((nodes[i], nodes[i+1], nodes[i+2]))
+		# Check
+		print(rf"  Vertices remeshed from {self.nvertex} to {np.array(vertices).shape[0]}")
+		print(rf"  Faces remeshed from {self.nfaces} to {np.array(faces).shape[0]}")
+		# Store new mesh
+		self.vertex = np.array(vertices)
+		self.faces  = np.array(faces)-1
+		self.nvertex = self.vertex.shape[0]
+		self.nfaces = self.faces.shape[0]
+
+
+
 # LINESEG Class
 class LINESEG():
 	"""Class for linesegment
@@ -275,7 +424,7 @@ class LINESEG():
 		"""
 		from numpy import sin,cos
 		t1 = [self.R-0.5*self.L*self.ZHat,self.Z+0.5*self.L*self.RHat]
-		t2 = [self.R-0.5*self.L*self.ZHat,self.Z-0.5*self.L*self.RHat]
+		t2 = [self.R+0.5*self.L*self.ZHat,self.Z-0.5*self.L*self.RHat]
 		p1 = [t1[0]*cos(self.Phi),t1[0]*sin(self.Phi),t1[1]]
 		p2 = [t2[0]*cos(self.Phi),t2[0]*sin(self.Phi),t2[1]]
 		return [p1,p2]

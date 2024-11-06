@@ -48,14 +48,24 @@ class FIELDLINES():
 			for temp in ['VERSION','iota0']:
 				if temp in f:
 					setattr(self, temp, float(f[temp][0]))
-			# Arrays
-			for temp in ['phiaxis', 'raxis', 'zaxis', 'B_lines', \
-				'PHI_lines', 'R_lines', 'Z_lines', 'B_PHI', 'B_R', \
-				'B_Z','wall_vertex', 'wall_faces', 'wall_strikes', \
-				'A_R', 'A_PHI', 'A_Z', 'L_lines', 'Rhc_lines',  \
-				'Zhc_lines']:
+			# Arrays (1D)
+			for temp in ['raxis', 'phiaxis', 'zaxis', \
+						 'wall_strikes','L_lines']:
 				if temp in f:
 					setattr(self, temp, np.array(f[temp][:]))
+			# Arrays (2D)
+			for temp in ['wall_vertex', 'wall_faces', \
+						 'R_lines', 'Z_lines', 'PHI_lines', \
+						 'B_lines', 'Rhc_lines', 'Zhc_lines']:
+				if temp in f:
+					array = np.transpose(f[temp][:],(1,0))
+					setattr(self, temp, np.array(array))
+			# Arrays (3D)
+			for temp in ['B_R', 'B_PHI', 'B_Z', \
+						 'A_R', 'A_PHI', 'A_Z']:
+				if temp in f:
+					array = np.transpose(f[temp][:],(2,1,0))
+					setattr(self, temp, np.array(array))
 		# Make derived arrays
 		self.nfp     = round(2*np.pi/self.phiaxis[-1])
 		self.X_lines = self.R_lines*np.cos(self.PHI_lines)
@@ -64,6 +74,7 @@ class FIELDLINES():
 		for i in range(self.nr):
 			self.B_R[i,:,:] = self.B_R[i,:,:]*self.B_PHI[i,:,:]/self.raxis[i]
 			self.B_Z[i,:,:] = self.B_Z[i,:,:]*self.B_PHI[i,:,:]/self.raxis[i]
+		if hasattr(self,'wall_faces'): self.wall_faces = self.wall_faces - 1
 
 	def calc_reff(self):
 		"""Calculates the effective radius
@@ -80,15 +91,15 @@ class FIELDLINES():
 		x = self.R_lines
 		y = self.Z_lines
 		for i in range(self.nsteps):
-			x[i,:] = x[i,:] - x[i,0]
-			y[i,:] = y[i,:] - y[i,0]
+			x[:,i] = x[:,i] - x[0,i]
+			y[:,i] = y[:,i] - y[0,i]
 		theta = np.arctan2(y,x)
 		theta  = np.arctan2(y,x)
-		dtheta = np.diff(theta,axis=0)
+		dtheta = np.diff(theta,axis=1)
 		dtheta = np.where(dtheta<-np.pi,dtheta+2*np.pi,dtheta)
 		dtheta = np.where(dtheta>np.pi,dtheta-2*np.pi,dtheta)
-		theta  = np.cumsum(dtheta,axis=0)
-		reff   = np.mean(np.sqrt(x*x+y*y),axis=0)
+		theta  = np.cumsum(dtheta,axis=1)
+		reff   = np.mean(np.sqrt(x*x+y*y),axis=1)
 		return reff
 
 	def calc_iota(self):
@@ -111,18 +122,18 @@ class FIELDLINES():
 		x = self.R_lines
 		y = self.Z_lines
 		for i in range(self.nsteps):
-			x[i,:] = x[i,:] - x[i,0]
-			y[i,:] = y[i,:] - y[i,0]
+			x[:,i] = x[:,i] - x[0,i]
+			y[:,i] = y[:,i] - y[0,i]
 		theta  = np.arctan2(y,x)
-		dtheta = np.diff(theta,axis=0)
+		dtheta = np.diff(theta,axis=1)
 		dtheta = np.where(dtheta<-np.pi,dtheta+2*np.pi,dtheta)
 		dtheta = np.where(dtheta>np.pi,dtheta-2*np.pi,dtheta)
-		theta  = np.cumsum(dtheta,axis=0)
-		reff       = np.mean(np.sqrt(x*x+y*y),axis=0)
+		theta  = np.cumsum(dtheta,axis=1)
+		reff       = np.mean(np.sqrt(x*x+y*y),axis=1)
 		iota       = np.zeros((self.nlines))
 		iota_err   = np.zeros((self.nlines))
 		for i in range(self.nlines):
-			p, residuals, rank, singular_values, rcond = np.polyfit(self.PHI_lines[0:self.nsteps-1,i],theta[:,i],1,full=True)
+			p, residuals, rank, singular_values, rcond = np.polyfit(self.PHI_lines[i,0:self.nsteps-1],theta[i,:],1,full=True)
 			iota[i] = p[0]
 			iota_err[i] = np.sqrt(residuals)
 		iota[0] = 2.0 * iota[1] - iota[2]
@@ -156,10 +167,10 @@ class FIELDLINES():
 		k = int(self.npoinc*phi/self.phiaxis[-1])
 		rmin = np.amin(self.raxis)
 		rmax = np.amax(self.raxis)
-		x = self.R_lines[k:self.nsteps-1:self.npoinc,0:self.nlines:nskip]
-		y = self.Z_lines[k:self.nsteps-1:self.npoinc,0:self.nlines:nskip]
+		x = self.R_lines[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc]
+		y = self.Z_lines[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc]
 		if lcdata:
-			c = color_data[k:self.nsteps-1:self.npoinc,0:self.nlines:nskip]
+			c = color_data[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc]
 			ax.scatter(x,y,s=0.1,c=c,marker='.')
 		else:
 			ax.plot(x,y,'.k',markersize=0.1)
@@ -193,9 +204,9 @@ class FIELDLINES():
 		vertices = []
 		scalar   = []
 		for i in range(self.nsteps):
-			if (self.R_lines[i,k] > 0):
-				vertices.append([self.X_lines[i,k],self.Y_lines[i,k],self.Z_lines[i,k]])
-				scalar.append(self.B_lines[i,k])
+			if (self.R_lines[k,i] > 0):
+				vertices.append([self.X_lines[k,i],self.Y_lines[k,i],self.Z_lines[k,i]])
+				scalar.append(self.B_lines[k,i])
 		vertices = np.array(vertices)
 		scalar = plt.valuesToScalar(np.array(scalar))
 		points = plt.vertexToPoints(vertices)
@@ -228,7 +239,7 @@ class FIELDLINES():
 			Plotting object to render to.
 		"""
 		import numpy as np
-		import vtk
+		#import vtk
 		from libstell.plot3D import PLOT3D
 		# Handle optionals
 		if plot3D: 
@@ -244,19 +255,45 @@ class FIELDLINES():
 		Y = self.R_lines * np.sin(P)
 		for i in range(k,self.nsteps,self.npoinc):
 			for j in range(self.nlines):
-				if (self.R_lines[i,j] > 0):
-					vertices.append([X[i,j],Y[i,j],self.Z_lines[i,j]])
-#					scalar.append(self.B_lines[i,j])
+				if (self.R_lines[j,i] > 0):
+					vertices.append([X[j,i],Y[j,i],self.Z_lines[j,i]])
 		vertices = np.array(vertices)
 		scalar = plt.valuesToScalar(np.array(scalar))
 		points = plt.vertexToPoints(vertices)
-		# Add to Render
-#		if float(scalar.GetValueRange()[1]) > 0:
-#			plt.add3Dpoints(points,scalars=scalar,pointsize=pointsize)
-#			# Colorbar
-#			plt.colorbar()
-#		else:
 		plt.add3Dpoints(points,pointsize=pointsize,color=color)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plot_heatflux(self,factor=1.0,colormap='hot',plot3D=None):
+		"""Plots the BEAMS3D wall heat flux
+
+		This makes a 3D plot of the first wall heat flux.
+
+		Parameters
+		----------
+		factor : float (optional)
+			Scaleing factor to apply (default: 1.0)
+		colormap : str (optional)
+			Color map to plot points (default: hot)
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Make points
+
+		points,triangles = plt.facemeshTo3Dmesh(self.wall_vertex,self.wall_faces)
+		scalar = plt.valuesToScalar(self.wall_strikes*factor)
+		# Add to Render
+		plt.add3Dmesh(points,triangles,FaceScalars=scalar,opacity=1.0,color=colormap)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested

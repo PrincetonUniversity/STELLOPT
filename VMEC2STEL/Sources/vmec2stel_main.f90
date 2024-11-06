@@ -37,14 +37,15 @@
                                 lac, lam, lai, lphiedge, lpscale, lcurtor, lkappa, &
                                 lwell, lcurvature, lfieldlines, &
                                 ltxport, ltxport_tem, ltxport_ae, ldkes_erdiff, &
-                                lquasiiso
+                                lquasiiso, lgamma_c
       INTEGER                :: m,n,ns,j
       REAL(rprec)            :: bound_min, bound_max, var, var_min, var_max, &
-                                temp, rho_exp,r1t,r2t,z1t, delta, filter_harm, pi2
+                                temp, rho_exp,r1t,r2t,z1t, delta, filter_harm, pi2, &
+                                cosmn, sinmn
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  deltamn
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  rhobc
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       :: rbc_temp,zbs_temp
-      REAL(rprec), DIMENSION(nu,nv)                       :: rreal,zreal
+      REAL(rprec), DIMENSION(nu,nv)                       :: rreal,zreal,rureal
       character(arg_len)     :: id_string, var_name
       
       ! Define output
@@ -107,6 +108,7 @@
       lkappa = .FALSE.
       lwell  = .FALSE.
       lcurvature = .FALSE.
+      lgamma_c = .FALSE.
       loutput_harm = .FALSE.
       lquasiiso = .FALSE.
       bound_min = -1.0
@@ -265,6 +267,8 @@
             CASE ("-qi")
                lquasiiso= .TRUE.
                lneed_booz = .TRUE.
+            CASE ("-gamma_c")
+               lgamma_c= .TRUE.
             CASE ("-help","-h")
                WRITE(6,'(a,f5.2)') 'VMEC2STEL Version ',VMEC2STEL_VERSION
                WRITE(6,*) ' STELLOPTV2 Input Generation Utility'
@@ -311,6 +315,7 @@
                WRITE(6,*) '   -vaciota          Vacuum Iota (-S12/S11)'
                WRITE(6,*) '   -magwell          Magnetic Well Target'
                WRITE(6,*) '   -curvature        Curvature Kurtosis Target'
+               WRITE(6,*) '   -gamma_c          Gamma_c metric'
                WRITE(6,*) '   -orbit            Orbit (BEAMS3D) Target'
                WRITE(6,*) '   -help             This help message'
                STOP
@@ -400,13 +405,14 @@
          ! Handle lfreeb=.true. default
          IF (ALL(extcur==0) .and. lfreeb) lfreeb = .FALSE.
          ! Fourier Transform rbc zbs
-         rreal = 0; zreal=0;
+         rreal = 0; zreal=0; rureal = 0
          DO i = 1, nu
             DO j = 1, nv
                DO m = 0, mpol-1
                   DO n = -ntor,ntor
-                     rreal(i,j) = rreal(i,j) + rbc(n,m)*cos(pi2*(m*DBLE(i-1)/(nu-1)-n*DBLE(j-1)/(nv-1)))
-                     zreal(i,j) = zreal(i,j) + zbs(n,m)*sin(pi2*(m*DBLE(i-1)/(nu-1)-n*DBLE(j-1)/(nv-1)))
+                     rreal(i,j)  =  rreal(i,j) + rbc(n,m)*cos(pi2*(m*DBLE(i-1)/(nu-1)-n*DBLE(j-1)/(nv-1)))
+                     zreal(i,j)  =  zreal(i,j) + zbs(n,m)*sin(pi2*(m*DBLE(i-1)/(nu-1)-n*DBLE(j-1)/(nv-1)))
+                     rureal(i,j) = rureal(i,j) - rbc(n,m)*sin(pi2*(m*DBLE(i-1)/(nu-1)-n*DBLE(j-1)/(nv-1)))*pi2*m
                   END DO
                END DO
             END DO
@@ -897,10 +903,19 @@
          END IF
       END IF
       IF (lbasic) THEN
+         ! Calc volume
+         temp = 0
+         DO i = 1, NU
+            DO j = 1, NV
+               temp = temp + rreal(i,j)*zreal(i,j)*rureal(i,j)
+            END DO
+         END DO
+         temp = ABS(temp)*pi2/((NU-1)*(NV-1))
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
          WRITE(6,'(A)')'!          PLASMA PROPERTIES'
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_ASPECT  = ',rbc(0,0)/rbc(0,1),'SIGMA_ASPECT = ',0.001
+         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_B0      = ',6.0,'SIGMA_B0 = ',0.01
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_BETA    = ',0.05,'SIGMA_BETA = ',0.001
          WRITE(6,'(2X,A,ES10.1,2X,A,ES10.1)') 'TARGET_CURTOR  = ',curtor,'SIGMA_CURTOR = ',0.01*curtor
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_PHIEDGE = ',phiedge,'SIGMA_PHIEDGE = ',0.01*phiedge
@@ -908,7 +923,7 @@
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_R0      = ',raxis_cc(0),'SIGMA_R0 = ',0.01*raxis_cc(0)
          IF (lasym) &
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_Z0      = ',zaxis_cs(0),'SIGMA_Z0 = ',0.01*raxis_cs(0)
-         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_VOLUME  = ',1.0,'SIGMA_VOLUME = ',0.01
+         WRITE(6,'(2X,A,F8.2,2X,A,ES10.1)') 'TARGET_VOLUME  = ',temp,'SIGMA_VOLUME = ',0.01
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_WP      = ',1.0,'SIGMA_WP = ',0.01
       END IF
       IF (lkappa) THEN
@@ -1053,7 +1068,7 @@
          WRITE(6,'(2X,A)') 'NZ_TXPORT = 128'
          WRITE(6,'(2X,A)') 'NALPHA_TXPORT = 1'
          WRITE(6,'(2X,A)') 'ALPHA_START_TXPORT = 0.0'
-         WRITE(6,'(2X,A,ES10.8)') 'ALPHA_END_TXPORT = ', pi2/(2*nfp)
+         WRITE(6,'(2X,A,F10.8)') 'ALPHA_END_TXPORT = ', pi2/(2*nfp)
          DO i = 2, ns
             WRITE(6,target3) 'TARGET_TXPORT',i,0.0,'SIGMA_TXPORT',i,1.0,'S_TXPORT',i,REAL(i)/REAL(ns)
          END DO
@@ -1083,6 +1098,12 @@
          WRITE(6,'(A)')'!       Curvature Kurtosis at Boundary'
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_CURVATURE = ',0.0,'SIGMA_CURVATURE = ',1.00
+      END IF
+      IF (lgamma_c) THEN
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       Gamma_c orbit metric'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_GAMMA_C(1:',ns,') = ',ns,'*0.0  SIGMA_GAMMA_C(1:',ns,') = ',ns,'*1.0'
       END IF
       ! END OPTIMUM Namelist
       WRITE(6,'(A)') '/'

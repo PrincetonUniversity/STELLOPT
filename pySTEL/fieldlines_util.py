@@ -11,8 +11,7 @@ if __name__=="__main__":
 	from libstell.plot3D import PLOT3D
 	import numpy as np
 	parser = ArgumentParser(description= 
-		'''Provides class for accessing fieldlines data also serves as a
-		   simple tool for assessing fieldlines output.''')
+		'''Provides a tool for accessing fieldlines data.''')
 	parser.add_argument("-f", "--fieldlines", dest="fieldlines_ext",
 		help="FIELDLINES file extension", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
@@ -21,6 +20,8 @@ if __name__=="__main__":
 		help="Plot a fieldline in 3D.", default = None, type=int)
 	parser.add_argument("-v", "--vmec", dest="vmec_ext", 
 		help="Add VMEC equilbrium to plot", default = None)
+	parser.add_argument("--plotheat", dest="heatfactor",
+		help="Plot the heatflux scaled to a total power in [W]", default = None, type=float)
 	args = parser.parse_args()
 	field_data = FIELDLINES()
 	if args.fieldlines_ext:
@@ -53,5 +54,10 @@ if __name__=="__main__":
 			plt3d = PLOT3D()
 			field_data.plot_cloud(args.k3d,plot3D=plt3d,pointsize=0.1)
 			plt3d.render()
-
+		if args.heatfactor:
+			plt3d = PLOT3D()
+			fact = args.heatfactor/field_data.nlines
+			field_data.plot_heatflux(factor=args.heatfactor/field_data.nlines,colormap='hot',plot3D=plt3d)
+			plt3d.colorbar(title=rf'Q [W/$m^2$]')
+			plt3d.render()
 	sys.exit(0)

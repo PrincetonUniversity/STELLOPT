@@ -29,6 +29,7 @@ done
 echo "Begin building STELLOPT with option: $MAKE_OPTION with $NUM_PROCS CPUs."
 # Call the toplevel makfile to setup the output directories.
 make $MAKE_OPTION
+make test_make
 
 shift $((OPTIND-1))
 [ "${1:-}" = "--" ] && shift
@@ -64,6 +65,7 @@ do
 done
 
 # make a dynamic library
-cd LIBSTELL
-make shared_release
-cd ..
+make pystel
+#cd LIBSTELL
+#make shared_release
+#cd ..
