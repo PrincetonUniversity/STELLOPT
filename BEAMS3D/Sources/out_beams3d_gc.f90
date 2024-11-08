@@ -43,7 +43,7 @@ SUBROUTINE out_beams3d_gc(t, q)
     !-----------------------------------------------------------------------
     LOGICAL             :: lhit
     INTEGER             :: ier, d1, d2, d3, d4, d5, d1f
-    DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw, vperp,vtor
+    DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw, vperp,omeg
     DOUBLE PRECISION    :: q2(4),qdot(4)
     ! For splines
     INTEGER :: i,j,k,l

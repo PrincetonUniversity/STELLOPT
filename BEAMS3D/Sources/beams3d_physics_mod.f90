@@ -28,7 +28,7 @@ MODULE beams3d_physics_mod
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5, my_end, h1_prof, fact_crit_legacy
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
-                              MODB_spl, MODB4D, VTOR4D, nvtor,&
+                              MODB_spl, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
@@ -257,7 +257,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
       
          ier      = 0
-		 IF (nvtor>0) CALL beams3d_lab_to_plasma(q)
+		 IF (nomeg>0) CALL beams3d_lab_to_plasma(q)
          ! Setup position in a vll arrays
          r_temp   = q(1)
          phi_temp = MODULO(q(2), phimax)
@@ -435,7 +435,7 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            moment = half*mymass*(speed*speed - vll*vll)/modb
            q(4) = vll
-			IF (nvtor>0) CALL beams3d_plasma_to_lab(q)
+			IF (nomeg>0) CALL beams3d_plasma_to_lab(q)
          END IF
 
          RETURN
@@ -1833,12 +1833,12 @@ MODULE beams3d_physics_mod
       END SUBROUTINE beams3d_MODB
 	  
       !-----------------------------------------------------------------
-      !     Function:      beams3d_VTOR
+      !     Function:      beams3d_OMEG
       !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
       !     Date:          09/30/2020
       !     Description:   Returns |B| at a point in space
       !-----------------------------------------------------------------
-      SUBROUTINE beams3d_VTOR(q,vtor)
+      SUBROUTINE beams3d_OMEG(q,omeg)
          !--------------------------------------------------------------
          !     Input Parameters
          !          q            (q(1),q(2),q(3)) = (R,phi,Z)
@@ -1846,7 +1846,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION, INTENT(inout) :: q(3)
-         DOUBLE PRECISION, INTENT(out) :: vtor
+         DOUBLE PRECISION, INTENT(out) :: omeg
 
          !--------------------------------------------------------------
          !     Local Variables
@@ -1874,7 +1874,7 @@ MODULE beams3d_physics_mod
          z_temp   = q(3)
 
          ! Initialize values
-         vtor = zero
+         omeg = zero
 
          ! Check that we're inside the domain then proceed
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
@@ -1889,15 +1889,15 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            VTOR4D(1,1,1,1),nr,nphi,nz)
-            vtor = max(fval(1),zero)
+                            OMEG4D(1,1,1,1),nr,nphi,nz)
+            omeg = max(fval(1),zero)
          ELSE
             RETURN
          END IF
 
          RETURN
 
-      END SUBROUTINE beams3d_VTOR
+      END SUBROUTINE beams3d_OMEG
 	  
       !-----------------------------------------------------------------
       !     Function:      beams3d_BCYL
@@ -2393,7 +2393,7 @@ MODULE beams3d_physics_mod
          !        ict        Spline output control
          !        fval       Spline output array
          !--------------------------------------------------------------
-         DOUBLE PRECISION :: r_temp, z_temp, phi_temp,vtor,btmp,rho_g
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp,omeg,btmp,rho_g
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -2413,7 +2413,7 @@ MODULE beams3d_physics_mod
          z_temp   = q(3)
 
          ! Initialize values
-         vtor = zero
+         omeg = zero
 
          ! Check that we're inside the domain then proceed
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
@@ -2428,9 +2428,9 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            VTOR4D(1,1,1,1),nr,nphi,nz)
-            !vtor = max(fval(1),zero)
-			q(4)=q(4)-vtor
+                            OMEG4D(1,1,1,1),nr,nphi,nz)
+            !omeg = max(fval(1),zero)
+			q(4)=q(4)-omeg*r_temp
          ELSE
             RETURN
          END IF
@@ -2462,7 +2462,7 @@ MODULE beams3d_physics_mod
          !        ict        Spline output control
          !        fval       Spline output array
          !--------------------------------------------------------------
-         DOUBLE PRECISION :: r_temp, z_temp, phi_temp,vtor
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp,omeg
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -2480,7 +2480,7 @@ MODULE beams3d_physics_mod
          z_temp   = q(3)
 
          ! Initialize values
-         vtor = zero
+         omeg = zero
 
          ! Check that we're inside the domain then proceed
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
@@ -2495,10 +2495,10 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            VTOR4d(1,1,1,1),nr,nphi,nz)
-            !vtor = max(fval(1),zero)
+                            OMEG4d(1,1,1,1),nr,nphi,nz)
+            !omeg = max(fval(1),zero)
 			!q=q2
-			q(4)=q(4)+vtor
+			q(4)=q(4)+omeg*r_temp
          ELSE
             RETURN
          END IF

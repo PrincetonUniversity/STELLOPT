@@ -15,7 +15,7 @@
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_lines
-      USE beams3d_physics_mod, ONLY: beams3d_MODB, beams3d_VTOR
+      USE beams3d_physics_mod, ONLY: beams3d_MODB, beams3d_OMEG
 #if defined(LHDF5)
       USE ez_hdf5
 #endif
@@ -31,7 +31,7 @@
       INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
       LOGICAL, DIMENSION(:), ALLOCATABLE :: lgc2fo_old
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2, start_dex
-      REAL(rprec) :: vpartmax, B_help, vtor_help, version_old, s_fullorbit
+      REAL(rprec) :: vpartmax, B_help, omeg_help, version_old, s_fullorbit
       REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
                                                 weight2
@@ -208,10 +208,10 @@
             q = (/R_start(k), phi_start(k), Z_start(k)/)
             CALL beams3d_MODB(q,B_help)
             mu_start(k) = mu_start(k)/B_help
-            IF (nvtor>0) THEN
-               CALL beams3d_VTOR(q,vtor_help)
-               vll_start(k)=vll_start(k)-vtor_help
-               vphi_start(k)=vphi_start(k)-vtor_help*SIGN(one,vll_start(k)) !vtor is positive parallel to the magnetic field
+            IF (nomeg>0) THEN
+               CALL beams3d_OMEG(q,omeg_help)
+               vll_start(k)=vll_start(k)-omeg_help
+               vphi_start(k)=vphi_start(k)-omeg_help*SIGN(one,vll_start(k)) !omeg is positive parallel to the magnetic field
             END IF
             k = k + 1
          END DO

@@ -192,7 +192,7 @@
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,6,'# ion Znum'
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') NINT(plasma_mass*inv_amu),12,'# ion Anum'
                WRITE(iunit,'(2X,I4,2X,I4,2X,I4,2X,A)') 1,1,1,'# OBSOLETE VALUES. PUT 1'
-               WRITE(iunit,'(A)') 'RHO (pol)     Te (eV)         Ne (1/m3)       Vtor_I (rad/s)  Ti1 (eV)        Ni1 (1/m3)      Ni2 (1/m3) ...'
+               WRITE(iunit,'(A)') 'RHO (pol)     Te (eV)         Ne (1/m3)       Omeg_I (rad/s)  Ti1 (eV)        Ni1 (1/m3)      Ni2 (1/m3) ...'
                DO i = 1, nr
                   dbl_temp = (rtemp(i,5,1)-1)/6.0 ! Frac nH=frac*nC;   Zeff*ni=nH+6*nC=(1+6*frac)*nH = ne; nH = ne/(1*6*frac)
                   WRITE(iunit,'(7(2X,ES18.10))') rtemp(i,1,1),rtemp(i,2,1),rtemp(i,3,1),-999.0,rtemp(i,4,1),&
