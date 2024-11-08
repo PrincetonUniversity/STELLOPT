@@ -163,7 +163,7 @@ C-----------------------------------------------
       INTEGER :: js, istat1=0, irst0, OFU
       REAL(dp), DIMENSION(:), POINTER :: lu, lv
       REAL(dp), ALLOCATABLE :: br_out(:), bz_out(:)
-      CHARACTER(LEN=*), PARAMETER, DIMENSION(0:15) :: werror = (/
+      CHARACTER(LEN=*), PARAMETER, DIMENSION(0:16) :: werror = (/
      &   'EXECUTION TERMINATED NORMALLY                            ', ! norm_term_flag
      &   'INITIAL JACOBIAN CHANGED SIGN (IMPROVE INITIAL GUESS)    ', ! bad_jacobian_flag
      &   'FORCE RESIDUALS EXCEED FTOL: MORE ITERATIONS REQUIRED    ', ! more_iter_flag
@@ -178,8 +178,9 @@ C-----------------------------------------------
      &   'SUCCESSFUL VMEC CONVERGENCE                              ', ! successful_term_flag
      &   'BSUBU OR BSUBV JS=1 COMPONENT NON-ZERO                   ', ! bsub_bad_js1_flag
      &   'RMNC N=0, M=1 IS ZERO                                    ', ! r01_bad_value_flag
-     &   'ARNORM OR AZNORM EQUAL ZERO IN BCOVAR                    ',  ! arz_bad_value_flag
-     &   'LOGIC ERROR IN TIMESTEPCONTROL (IRST/=1 and 4)           '  ! time_control_flag
+     &   'ARNORM OR AZNORM EQUAL ZERO IN BCOVAR                    ', ! arz_bad_value_flag
+     &   'LOGIC ERROR IN TIMESTEPCONTROL (IRST/=1 and 4)           ', ! time_control_flag
+     &   'THE EQUILIBRIUM BOUNDARY FAILED TO CONVERGE              '  ! really_bad_flag
      &   /)
       CHARACTER(LEN=*), PARAMETER ::
      &    Warning = " Error deallocating global memory FILEOUT"
