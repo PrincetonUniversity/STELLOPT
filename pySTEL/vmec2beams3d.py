@@ -19,8 +19,9 @@ if __name__=="__main__":
 	beams3d_input.read_input('')
 	E = 3.5E6*EC
 	M = 4.002603*DA
-	npitch = 16
-	vllov = np.linspace(0.01,0.5,npitch)
+	npitch = 8
+	temp = np.linspace(0.01,0.5,npitch)
+	vllov = np.append(-vllov[-1:0:-1],vllov)
 	if args.vmec_ext:
 		vmec_data = VMEC()
 		vmec_data.read_wout(args.vmec_ext)
