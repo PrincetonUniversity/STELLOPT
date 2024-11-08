@@ -411,16 +411,16 @@ class VMEC(FourierRep):
 			Poloidal coordinate of field line [rad]
 		"""
 		import numpy as np
-		cosnp = np.cos(self.xn*phi)
-		sinnp = np.sin(self.xn*phi)
+		cosnp = np.squeeze(np.cos(self.xn*phi))
+		sinnp = np.squeeze(np.sin(self.xn*phi))
 		dth = 1.0
 		n1 = 0
 		th = thetastar
 		th1 = th
 		lumnc = self.lmns*np.tile(self.xm,self.ns).T
 		while abs(dth) >= SEARCH_TOL and n1 < 500:
-			cosmt = np.cos(self.xm*th)
-			sinmt = np.sin(self.xm*th)
+			cosmt = np.squeeze(np.cos(self.xm*th))
+			sinmt = np.squeeze(np.sin(self.xm*th))
 			lam = np.sum(self.lmns[s,:]*(sinmt*cosnp+cosmt*sinnp))
 			lamu = np.sum(lumnc[s,:]*(cosmt*cosnp-sinmt*sinnp))
 			dth = -(th + lam - th1)/(1.0+lamu)
