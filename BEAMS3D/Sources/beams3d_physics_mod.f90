@@ -45,7 +45,7 @@ MODULE beams3d_physics_mod
       !-----------------------------------------------------------------
       !     Module PARAMETERS
       !-----------------------------------------------------------------
-
+	  DOUBLE PRECISION    :: q2(4)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
       DOUBLE PRECISION, PRIVATE, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
@@ -257,7 +257,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
       
          ier      = 0
-
+		 IF (nvtor>0) CALL beams3d_lab_to_plasma(q)
          ! Setup position in a vll arrays
          r_temp   = q(1)
          phi_temp = MODULO(q(2), phimax)
@@ -326,7 +326,7 @@ MODULE beams3d_physics_mod
             !te_cube = te_temp * te_temp * te_temp
             inv_mymass = one/mymass
             v_s = fact_vsound*sqrt(ti_temp)
-            speed = sqrt( vll*vll + 2*moment*modb*inv_mymass ) !+ sign(real(80000),vll)
+            speed = sqrt( vll*vll + 2*moment*modb*inv_mymass )
             vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)
 
             !-----------------------------------------------------------
@@ -335,8 +335,8 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
                !slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-			      !slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
-			      slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+			    !slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
+			    slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
@@ -396,21 +396,21 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            speed_cube = vc3_tauinv*slow_par(3)*dt/(newspeed*newspeed*newspeed) ! redefine as inverse
            zeta_o = vll/newspeed   ! Record the current pitch.
-           CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-           sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
-           zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
-           zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
+           !CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+           !sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
+           !zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
+           !zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+           !zeta = MIN(MAX(zeta,-0.99999D+00),0.99999D+00)
            !Flip gaussian at boundary to prevent accumulation around pitch=1
            !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
            !Pitch angle scattering according to NUBEAM
-           !sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
-           !CALL RANDOM_NUMBER(zeta)
-           !zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
-           !CALL RANDOM_NUMBER(zrang)
-           !zrang=zrang*pi2
-           !zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
+           sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
+           CALL RANDOM_NUMBER(zeta)
+           zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
+           CALL RANDOM_NUMBER(zrang)
+           zrang=zrang*pi2
+           zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
            vll = zeta*speed
 
            !------------------------------------------------------------
@@ -425,17 +425,17 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Kick Model Scattering (new Energy, vll constant)
            !------------------------------------------------------------
-           IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
-              zeta_o = vll/speed   ! Record the current pitch.
-              speed = speed*SQRT(one + fact_kick*modb*(1-zeta_o*zeta_o)*dt/SQRT(ne_temp))
-           END IF
+           !IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
+           !   zeta_o = vll/speed   ! Record the current pitch.
+           !   speed = speed*SQRT(one + fact_kick*modb*(1-zeta_o*zeta_o)*dt/SQRT(ne_temp))
+           !END IF
 
            !------------------------------------------------------------
            !  Final Moment and vll update (return q(4))
            !------------------------------------------------------------
            moment = half*mymass*(speed*speed - vll*vll)/modb
            q(4) = vll
-
+			IF (nvtor>0) CALL beams3d_plasma_to_lab(q)
          END IF
 
          RETURN
@@ -2393,7 +2393,7 @@ MODULE beams3d_physics_mod
          !        ict        Spline output control
          !        fval       Spline output array
          !--------------------------------------------------------------
-         DOUBLE PRECISION :: r_temp, z_temp, phi_temp,vtor
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp,vtor,btmp,rho_g
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -2403,7 +2403,9 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
-
+		 !q2=q
+		 !!CALL beams3d_neutralize_gc(q)
+		 !lneut=.FALSE.
          ! Setup position in a vll arrays
          r_temp   = q(1)
          phi_temp = MODULO(q(2), phimax)
@@ -2426,8 +2428,8 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            VTOR4d(1,1,1,1),nr,nphi,nz)
-            vtor = max(fval(1),zero)
+                            VTOR4D(1,1,1,1),nr,nphi,nz)
+            !vtor = max(fval(1),zero)
 			q(4)=q(4)-vtor
          ELSE
             RETURN
@@ -2494,7 +2496,8 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             VTOR4d(1,1,1,1),nr,nphi,nz)
-            vtor = max(fval(1),zero)
+            !vtor = max(fval(1),zero)
+			!q=q2
 			q(4)=q(4)+vtor
          ELSE
             RETURN
