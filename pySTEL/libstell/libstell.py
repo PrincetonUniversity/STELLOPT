@@ -1672,7 +1672,7 @@ class FourierRep():
 			Ordered list of Z verticies [m] (ns,nu,nv)
 		phi : ndarray
 			Ordered list of phi coordiantes [rad] (nv)
-		surface : int
+		svals : int
 			Surface to generate in ns
 		vals : ndarray (optional)
 			Ordered list of vertex values for coloring (ns,nu,nv)
@@ -1878,10 +1878,4 @@ class FourierRep():
 # Main routine
 if __name__=="__main__":
 	import sys
-	temp = LIBSTELL()
-	val=temp.read_indata('input.ORBITS')
-	temp.set_module_var('vmec_input','mpol',12)
-	temp.set_module_var('vmec_input','niter_array',[1,2,3,4,5])
-	temp.write_indata('input.test')
-	#wout=temp.read_wout('wout_W7X_AIM_n04_e30_i15_8SH2_slow.nc')
 	sys.exit(0)
