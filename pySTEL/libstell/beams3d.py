@@ -590,12 +590,12 @@ class BEAMS3D():
 			markers_in = markers
 		# Plot markers
 		for i in markers_in:
-			j = np.argwhere(np.squeeze(self.R_lines[i,:])>0)
+			j = np.argwhere(np.squeeze(self.R_lines[:,i])>0)
 			k = j[-1][0]
 			points_array = np.zeros((k,3))
-			points_array[:,0] = self.X_lines[i,0:k]
-			points_array[:,1] = self.Y_lines[i,0:k]
-			points_array[:,2] = self.Z_lines[i,0:k]
+			points_array[:,0] = self.X_lines[0:k,i]
+			points_array[:,1] = self.Y_lines[0:k,i]
+			points_array[:,2] = self.Z_lines[0:k,i]
 			# Convert numpy array to VTK points
 			points = vtk.vtkPoints()
 			for point in points_array:
