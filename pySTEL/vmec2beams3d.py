@@ -21,7 +21,8 @@ if __name__=="__main__":
 	M = 4.002603*DA
 	npitch = 8
 	temp = np.linspace(0.01,0.5,npitch)
-	vllov = np.append(-temp[-1:0:-1],temp)
+	vllov = np.append(-temp[-1::-1],temp)
+	npitch = vllov.shape[0]
 	if args.vmec_ext:
 		vmec_data = VMEC()
 		vmec_data.read_wout(args.vmec_ext)
