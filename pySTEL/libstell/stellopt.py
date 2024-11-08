@@ -195,7 +195,10 @@ class STELLOPT():
 				if 'ITER' not in temp_dict.keys():
 					temp_dict['ITER'] = np.zeros((self.niter,1))
 				iter_val = iter_val + 1
-				temp_dict['ITER'][iter_val] = int(iter_txt)
+				if iter_txt == 'MIN':
+					temp_dict['ITER'][iter_val] = temp_dict['ITER'][iter_val]+1
+				else:
+					temp_dict['ITER'][iter_val] = int(iter_txt)
 				i = i +1
 				continue
 			elif 'TARGETS' in lines[i]:
