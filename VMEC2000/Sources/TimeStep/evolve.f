@@ -1,7 +1,7 @@
       SUBROUTINE evolve(time_step, ier_flag, liter_flag, lscreen)
       USE vmec_main
       USE vmec_params, ONLY: bad_jacobian_flag, successful_term_flag,
-     &                       norm_term_flag
+     &                       norm_term_flag, time_control_flag
       USE xstuff
       USE precon2d, ONLY: ictrl_prec2d, l_comp_prec2D, 
      &                    compute_blocks_par, compute_blocks
@@ -122,6 +122,13 @@ C-----------------------------------------------
             xcdot = 0
          END IF
       END IF
+!
+!     CHECK NS_RESLTN
+!
+      IF (NS_RESLTN > num_grids) THEN
+         ier_flag = time_control_flag
+         RETURN
+      ENDIF
 
 !
 !     COMPUTE MHD FORCES
