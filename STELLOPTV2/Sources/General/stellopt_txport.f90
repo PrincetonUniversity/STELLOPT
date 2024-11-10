@@ -61,7 +61,7 @@
 !        ier         Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
-      LOGICAL :: file_test_eig,file_test_omega, lscreen_gene
+      LOGICAL :: file_test_eig,file_test_omega, lscreen_gene, lfirst_pass
       INTEGER :: maxPnt, nalpha0_, ialpha, i, iunit, ik, pol_turns_gene, &
                  iunit_curv, irtmx, irt, iunit_eigen, nu, nv, spawn_procs, &
                  spawn_root, spawn_info, spawn_comm, spawn_intercomm, ier
@@ -128,6 +128,7 @@
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       abserr = 1.0E-9
+      lfirst_pass = .TRUE.
 !DEC$ IF DEFINED (TXPORT_OPT)
       IF (lscreen) WRITE(6,'(a)') ' --------------------  TURBULENT TRANSPORT CALC  ----------------------'
       CALL FLUSH(6)
@@ -721,7 +722,7 @@
                END SELECT
                WHERE (vqqprox /= vqqprox) vqqprox = bigno
                txport_q(ik,:,:) = vqqprox(:,:)
-               IF (lscreen .and. (ik==1)) WRITE(6,'(A)') '     s    alpha0   iota    shear    Bref    Lref  Q_turb'
+               IF (lscreen .and. lfirst_pass) WRITE(6,'(A)') '     s    alpha0   iota    shear    Bref    Lref  Q_turb'
                IF (lscreen) WRITE(6,'(7(F8.4))')  s,alpha_start_txport,ABS(iot),shat,Ba,a,SUM(SUM(vqqprox,DIM=2)/maxPnt,DIM=1)/nalpha0_
                WRITE(iunit,'(1pe14.6)') SUM(SUM(vqqprox,DIM=2)/maxPnt,DIM=1)/nalpha0_
                DO i = 1, maxPnt
@@ -729,6 +730,7 @@
                END DO
                CLOSE(iunit)
                CALL FLUSH(6)
+               lfirst_pass = .FALSE.
             END DO
             DEALLOCATE(phi0_gl,g11,g12,g22,Bhat,abs_jac,L2,L1,dBdt,kp1)
             DEALLOCATE(temp_arr,tout_arr)
