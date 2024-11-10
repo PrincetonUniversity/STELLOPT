@@ -102,7 +102,7 @@
                !lh = FLOOR(nalpha*0.5)+1
                !modb = CSHIFT(modb,lmin-lh) !BOOSH
                lh = MINLOC(modb,DIM=1)
-               lh = MIN(MAX(lh,1),nalpha)
+               lh = MIN(MAX(lh,2),nalpha-1)
                ! Squash the array
                modbs = modb
                DO l = lh, 1, -1
