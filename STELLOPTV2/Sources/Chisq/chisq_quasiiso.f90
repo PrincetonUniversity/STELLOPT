@@ -15,8 +15,9 @@
       USE stellopt_runtime
       USE stellopt_targets
       USE equil_utils, ONLY: get_equil_iota
-      USE read_boozer_mod
+      USE read_boozer_mod, ONLY: bmnc_b, ixn_b, ixm_b, mnboz_b, ns_b, nfp_b
       USE vmec_input, ONLY: mpol, ntor
+!      USE stel_kinds, ONLY: rprec
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -179,10 +180,8 @@
          DO ik = 1, nsd
             IF (ABS(sigma(ik)) < bigno) THEN
                lbooz(ik) = .TRUE.
-               DO mn = 1, mnboz_b
-                  mtargets = mtargets + 1
-                  IF (niter == -2) target_dex(mtargets) = jtarget_quasiiso
-               END DO
+               mtargets = mtargets + 1
+               IF (niter == -2) target_dex(mtargets) = jtarget_quasiiso
             END IF
          END DO
       END IF
