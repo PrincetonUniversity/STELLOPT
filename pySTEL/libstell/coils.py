@@ -322,6 +322,38 @@ class COILSET():
 			self.color_cycle.rotate(1)
 			c_temp = self.color_cycle[0]
 
+	def scalecoilsRZ(self,dist):
+		"""Rescales the coils about their centroid
+
+		This routine rescales a coil about its centroid by pushing the
+		coil radially outwards by an amount dist.
+
+		Parameters
+		----------
+		dist : float
+			Distance to push coil.
+		"""
+		for i in range(self.ngroups):
+			for j in range(self.groups[i].ncoils):
+				x = self.groups[i].coils[j].x
+				y = self.groups[i].coils[j].y
+				z = self.groups[i].coils[j].z
+				r = np.sqrt(x*x+y*y)
+				r0 = np.mean(r)
+				z0 = np.mean(z)
+				r1 = r - r0
+				z1 = z - z0
+				rho = np.sqrt(r1*r1+z1*z1)
+				#theta = np.arctan2(z1,r1)
+				rho2 = rho + factor
+				r2 = r0 + rho2 * r1 / rho
+				z2 = z0 + rho2 * z1 / rho
+				x2 = r2 * x / r
+				y2 = r2 * y / r
+				self.groups[i].coils[j].x = x2
+				self.groups[i].coils[j].y = y2
+				self.groups[i].coils[j].z = z2
+
 	def write_coils_file(self,filename):
 		"""Writes a coils file
 
@@ -856,6 +888,35 @@ class COILSET():
 				vertices.append((xx[3, 0],yy[3, 0],zz[3, 0]))
 				l = l + 4
 		return vertices,faces
+
+	def write_coils_STL(self,filename='coil.stl',width=0.2,height=0.2,lfield_period=False):
+		"""Writes a coils file to an STL as a solid coil
+
+		This routine creates a solid coil and then writes it out as a
+		STL file.
+
+		Parameters
+		----------
+		filename : str
+			Path to coils file.
+		width : float
+			Finite build coil width [m]
+		height : float
+			Finite build coil height [m]
+		lfield_period : boolean
+			Return coilset over one field period (default: False)
+		"""
+		from stl import mesh
+		[vertex,faces] = self.blenderCoil(height=float(height),
+			width=float(width),lfield_period=lfield_period)
+		vertex = np.array(vertex)
+		faces  = np.array(faces, dtype=int)
+		nfaces = faces.shape[0]
+		coil_mesh = mesh.Mesh(np.zeros(nfaces, dtype=mesh.Mesh.dtype))
+		for i, f in enumerate(faces):
+			for j in range(3):
+				coil_mesh.vectors[i][j] = vertex[f[j],:]
+		coil_mesh.save(filename)	
 
 class COILGROUP():
 	"""Class which defines a coil group
