@@ -164,6 +164,44 @@ class STELLOPT():
 		jac2d       = np.reshape(jac,(nvars,mtargets)).T
 		self.jac2d  = jac2d
 
+	def read_stellopt_xvec(self,filename='xvec.dat'):
+		"""Reads a STELLOPT xvec output file
+
+		This routine reads the STELLOPT xvec output file.
+
+		Parameters
+		----------
+		file : str
+			Path to xvec.dat file. (default: 'xvec.dat')
+		"""
+		import numpy as np
+		import re
+		f = open(filename,'r')
+		content = f.readlines()
+		f.close()
+		nlines = len(content)
+		str1,str2 = content[0].split()
+		nx = int(str1)
+		xvec = []
+		fvec = []
+		n = 1
+		while n < nlines:
+			i = 0
+			temp_list = []
+			while i < nx:
+				temp_txt = content[n].split()
+				i = i + len(temp_txt)
+				for item in temp_txt:
+					temp_list.extend([float(item)])
+				n = n + 1
+			xvec.extend([temp_list])
+			print(content[n])
+			fvec.extend([float(content[n])])
+			n=n+2 # skip reading nx and iter
+		self.xvec = np.array(xvec)
+		self.fvec = np.array(fvec)
+		return
+
 	def read_stellopt_output(self,filename):
 		"""Reads a STELLOPT output file
 
