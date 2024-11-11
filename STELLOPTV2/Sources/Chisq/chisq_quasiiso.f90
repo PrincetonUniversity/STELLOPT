@@ -98,27 +98,31 @@
                   END DO
                END DO
                IF (lwrite_out) WRITE(321,*) modb
-               ! Sort the arrays
-               !lh = FLOOR(nalpha*0.5)+1
-               !modb = CSHIFT(modb,lmin-lh) !BOOSH
-               lh = MINLOC(modb,DIM=1)
-               lh = MIN(MAX(lh,2),nalpha-1)
+               ! Find the Bmin and half point
+               lh = FLOOR(nalpha*0.5)+1
+               lmin = MINLOC(modb,DIM=1)
+               lmin = MIN(MAX(lmin,2),nalpha-1)
+               ! Now shift lmin to the middle
+               modb = CSHIFT(modb,lmin-lh) !BOOSH
+               ! Now recalc lh as lmin
+               lmin = MINLOC(modb,DIM=1)
+               lmin = MIN(MAX(lmin,2),nalpha-1)
                ! Squash the array
                modbs = modb
-               DO l = lh, 1, -1
+               DO l = lmin, 1, -1
                   IF (modbs(l)<modbs(l+1)) modbs(l) = modbs(l+1)
                END DO
-               DO l = lh,nalpha
+               DO l = lmin,nalpha
                   IF (modbs(l)<modbs(l-1)) modbs(l) = modbs(l-1)
                END DO
                IF (lwrite_out) WRITE(322,*) modbs
                ! Stretch the array
                Bmin = MINVAL(modb)
                Bmax = MAXVAL(modb)
-               DO l = 1, lh
+               DO l = 1, lmin
                   modbs(l) = Bmin + (Bmax-Bmin)*(modbs(l)-Bmin)/(modbs(1)-Bmin)
                END DO
-               DO l = lh, nalpha
+               DO l = lmin, nalpha
                   modbs(l) = Bmin + (Bmax-Bmin)*(modbs(l)-Bmin)/(modbs(nalpha)-Bmin)
                END DO
                IF (lwrite_out) WRITE(323,*) modbs
@@ -131,8 +135,8 @@
                DO m = 1, nlambda
                   Bmir = Bmin+0.9*(Bmax-Bmin)*DBLE(m)/DBLE(nlambda)
                   lambda = 1.0/Bmir
-                  i1 = COUNT(modbs(1:lh)>Bmir) + 1
-                  i2 = COUNT(modbs(lh:nalpha)<Bmir) + lh - 1
+                  i1 = COUNT(modbs(1:lmin)>Bmir) + 1
+                  i2 = COUNT(modbs(lmin:nalpha)<Bmir) + lmin - 1
                   IF (lwrite_out) print *, nlambda,i1,i2,Bmin,Bmir,Bmax
                   i1 = MAX(i1,1); i2 = MIN(i2,nalpha)
                   integral_A = 1.0 - lambda * modb
