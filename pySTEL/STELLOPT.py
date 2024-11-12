@@ -1131,8 +1131,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Magnetic Well')
 			self.ax2.set_title('Magnetic Well Evolution  (>0 Well)')
 		elif (plot_name == 'QUASIISO_evolution'):
-			x = self.stel_data.QUASIISO_k
-			y = self.stel_data.QUASIISO_MAGWELL
+			x = self.stel_data.QUASIISO_K
+			y = self.stel_data.QUASIISO_VAL
 			t = self.stel_data.QUASIISO_TARGET
 			d = self.stel_data.QUASIISO_SIGMA
 			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
