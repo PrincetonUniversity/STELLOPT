@@ -233,7 +233,19 @@
       ENDIF
       
       ! Define grids
-      dt = (tend-tstart)/(ntimesteps-1)
+      IF( ntimesteps==1 ) THEN 
+         dt = 0.0_rprec
+      ELSE IF( ntimesteps > 1) THEN 
+         dt = (tend-tstart)/(ntimesteps-1)
+      ELSE
+         IF(lverb) THEN
+            WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+            WRITE(6,*) '          ntimesteps < 1        '
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            STOP
+         END IF
+      END IF
+
 
       IF (myid_sharmem == master) THEN
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho) ! (half) rho grid
