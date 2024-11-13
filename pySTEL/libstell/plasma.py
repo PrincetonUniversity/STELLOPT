@@ -457,15 +457,15 @@ class PLASMA:
         Te = np.tile(Te, (nt,1)).T
         
         # ni
-        
         ni = np.array( [self.get_density(ion,rho) for ion in self.ion_species] )
-        ni = np.tile(ni[:,:,np.newaxis], (1,1,nt)).reshape((nrho,nt,self.num_ion_species))
+        ni = np.repeat(ni[:,:,np.newaxis], nt, axis=2)
+        ni = np.transpose(ni, axes=[1,2,0])
         
         # Ti
-        
         Ti = np.array( [self.get_temperature(ion,rho) for ion in self.ion_species] )
-        Ti = np.tile(Ti[:,:,np.newaxis], (1,1,nt)).reshape((nrho,nt,self.num_ion_species))
-        
+        Ti = np.repeat(Ti[:,:,np.newaxis], nt, axis=2)
+        Ti = np.transpose(Ti, axes=[1,2,0])
+
         hf = h5py.File(filename, 'w')
         
         hf.create_dataset('nrho', data=nrho)
@@ -663,10 +663,11 @@ class PLASMA:
             file_content = f"""! Input file for SFINCS version 3.
 
 &general
+RHSmode = 1
 ambipolarSolve = .true. !.false.
-Er_min = -10
-Er_max = 10
-NEr_ambipolarSolve = 10
+!Er_min = -10
+!Er_max = 10
+!NEr_ambipolarSolve = 10
 /
 
 &geometryParameters
@@ -677,7 +678,7 @@ rN_wish = {roa}
 inputRadialCoordinateForGradients = 3   !the radial coordinate of the gradients given in species parameters is rN=sqrt(PHI/PHIEDGE)
 
 VMECRadialOption = 1  !get the nearest available flux surface from VMEC HALF grid 
-equilibriumFile = "wout_GIGA_v120.nc"
+equilibriumFile = "wout_beta_2.nc"
 min_Bmn_to_load = 1e-4
 /
 
@@ -710,9 +711,9 @@ magneticDriftScheme = 1  ! this includes poloidal and toroidal magnetic drifts
 
 &resolutionParameters
 Ntheta = 23 ! needs to be an odd number
-Nzeta = 121 ! needs to be an odd number and at low collisionality might be needeed to be of the order 100 to converge
+Nzeta = 91 ! needs to be an odd number and at low collisionality might be needeed to be of the order 100 to converge
 
-Nxi = 100
+Nxi = 70
 Nx = 6
 solverTolerance = 1d-6
 /
