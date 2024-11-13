@@ -1160,6 +1160,17 @@ MODULE PENTA_INTERFACE_MOD
       ! DEALLOCATE
       CALL penta_deallocate_species
       CALL penta_deallocate_dkescoeff
+
+      ! Close files
+      ! Close output files
+      Close(iu_flux_out)
+      Close(iu_pprof_out)
+      Close(iu_fvEr_out)
+      Close(iu_QoTvEr_out)
+      Close(iu_flows_out)
+      Close(iu_flowvEr_out)
+      Close(iu_Jprl_out)
+      Close(iu_contraflows_out)
    END SUBROUTINE penta_run_4_cleanup
 
 
