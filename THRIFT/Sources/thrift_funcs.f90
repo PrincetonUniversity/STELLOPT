@@ -188,7 +188,7 @@ SUBROUTINE print_calc_vars()
     WRITE(6,*)'   S  VPRIME     BAV   BSQAV        S11    ETAPARA     PPRIME'
     WRITE(6,*)''
     DO i = 1, nsj
-        WRITE(6,'(F5.3,3(1X,F7.3),3(1X,ES10.3))') &
+        WRITE(6,'(F5.3,1(1X,ES10.3),2(1X,F7.3),3(1X,ES10.3))') &
             THRIFT_S(i),THRIFT_VP(i,mytimestep),THRIFT_BAV(i,mytimestep),THRIFT_BSQAV(i,mytimestep), &
             THRIFT_S11(i,mytimestep),THRIFT_ETAPARA(i,mytimestep),THRIFT_PPRIME(i,mytimestep)
     END DO
