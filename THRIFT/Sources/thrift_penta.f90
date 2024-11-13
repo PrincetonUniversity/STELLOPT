@@ -137,10 +137,7 @@
          DO k = mystart,myend
             ! PENTA
             CALL PENTA_SET_ION_PARAMS(nion_prof, DBLE(Zatom_prof), Matom_prof/p_mass)
-
-            !!! WE NEED TO CHANGE THE EPARB --- it needs to interact with THRIFT...!!!
-            !!! ALSO: IS THIS -250:250 OK?? I PROPOSE TO MOVE THIS TO THE INPUT...
-            CALL PENTA_SET_COMMANDLINE(-250.0_rprec,250.0_rprec,DKES_K(k),1,EparB(k),1,'','','')
+            CALL PENTA_SET_COMMANDLINE(Er_min_Vcm,Er_max_Vcm,DKES_K(k),1,EparB(k),1,'','','')
             CALL PENTA_ALLOCATE_SPECIES
             CALL PENTA_SET_EQ_DATA(rho_k(k),eq_Aminor,eq_Rmajor,vp(k),chip(k),phip(k),iota(k),btheta(k),bzeta(k),bsq(k))
             CALL PENTA_SET_PPROF(ne(k),dnedrho(k)/eq_Aminor,te(k),dtedrho(k)/eq_Aminor,ni(k,:),dnidrho(k,:)/eq_Aminor,ti(k,:),dtidrho(k,:)/eq_Aminor)

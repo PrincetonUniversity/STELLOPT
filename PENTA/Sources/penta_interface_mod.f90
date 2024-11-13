@@ -26,7 +26,7 @@ MODULE PENTA_INTERFACE_MOD
       iocheck, ie, ind_X, ind_A, ispec1, min_ind, iroot, num_roots
    REAL(rknd) ::  Kmin, Kmax, epsabs, epsrel, Er_min, Er_max, B_Eprl, &
       U2, vth_e, loglambda, Er_test, abs_Er, min_Er, eaEr_o_kTe, cmin, &
-      cmax, emin, emax, sigma_par, sigma_par_Spitzer, J_BS
+      cmax, emin, emax, sigma_par, sigma_par_Spitzer, J_BS, Er_min_Vcm, Er_max_Vcm
    REAL(rknd), DIMENSION(NUM_ION_MAX) ::  Z_ion_init, miomp_init
    REAL(rknd), DIMENSION(NUM_ROOTS_MAX) ::  Er_roots
    REAL(rknd), DIMENSION(:), ALLOCATABLE :: ion_mass, Z_ion, vth_i, &
@@ -49,7 +49,7 @@ MODULE PENTA_INTERFACE_MOD
    NAMELIST /run_params/ input_is_Er, log_interp, use_quanc8, &
       read_U2_file, Add_Spitzer_to_D33, num_Er_test, numKsteps, &
       kord_pprof, keord, kcord, Kmin, Kmax, epsabs, epsrel, Method, &
-      flux_cap, output_QoT_vs_Er, use_beam
+      flux_cap, output_QoT_vs_Er, use_beam, Er_min_Vcm, Er_max_Vcm
 
 !-----------------------------------------------------------------------
 !     SUBROUTINES
@@ -79,6 +79,8 @@ MODULE PENTA_INTERFACE_MOD
       sigma_par_Spitzer    = 0.0E+0_rknd
       J_BS                 = 0.0E+0_rknd
       method               = 'DKES'
+      Er_min_Vcm           = -250.0_rknd
+      Er_max_Vcm           =  250.0_rknd
       RETURN
    END SUBROUTINE init_penta_input
 
