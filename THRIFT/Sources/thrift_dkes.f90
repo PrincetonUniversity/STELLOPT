@@ -262,8 +262,9 @@
             CLOSE(unit=ioout)
             CLOSE(unit=ioout_opt)
             lfirst_pass = .FALSE.
-            CALL second0(etime)
+            IF(lscreen) WRITE(*, '(I0, A, I0, A, I0, A)') k, ' in [', mystart, ',', myend, '] completed'
          END DO
+         CALL second0(etime)
          PRINT *, 'I took ', etime-stime,'s.'
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!! Parallel Work block Done

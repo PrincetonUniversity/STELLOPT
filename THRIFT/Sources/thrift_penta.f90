@@ -42,6 +42,8 @@
 !-----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       IF (lscreen) WRITE(6,'(a)') ' --------------------  NEOCLASSICAL BOOTSTRAP USING PENTA  -------------------'
+      IF (lscreen) WRITE(6,'(A)') " <r>/<a>","   Er root(s) (V/cm)"
+
       IF (lvmec) THEN
          ierr_mpi = 0
          ! PENTA is parallelized over radial surfaces in this routine.
