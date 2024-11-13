@@ -1151,11 +1151,11 @@ MODULE PENTA_INTERFACE_MOD
       ! QQ write file with number of roots per surface!
 
       ! Write screen output
-      IF (lscreen) THEN
+      !IF (lscreen) THEN
          write(str_num,*) num_roots
          write(*,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.4))') & 
          roa_surf,er_roots(1:num_roots)/100._rknd
-      END IF
+      !END IF
 
       ! DEALLOCATE
       CALL penta_deallocate_species
