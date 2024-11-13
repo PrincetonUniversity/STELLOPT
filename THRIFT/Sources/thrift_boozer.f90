@@ -62,6 +62,10 @@
          CALL MPI_BCAST(mboz_xboozer,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(nboz_xboozer,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(ns_vmec,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+
+         !New -- introduced in order to have lsurf_boz calculated by master outside this routine (AC)
+         IF (myworkid /= master) ALLOCATE(lsurf_boz(ns_vmec))
+         CALL MPI_BCAST(lsurf_boz,ns_vmec,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
 #endif
          ! We need to setup the lsurf_boz array (this in now calculated outside this routine)
          !IF (ALLOCATED(lsurf_boz)) DEALLOCATE(lsurf_boz)
@@ -229,8 +233,11 @@
          IF (ALLOCATED(beta_b)) DEALLOCATE(beta_b); ALLOCATE(beta_b(ns_b)); beta_b=0
          IF (ALLOCATED(buco_b)) DEALLOCATE(buco_b); ALLOCATE(buco_b(ns_b)); buco_b=0
          IF (ALLOCATED(bvco_b)) DEALLOCATE(bvco_b); ALLOCATE(bvco_b(ns_b)); bvco_b=0
-         idx_b = 0
-         idx_b(2:ns_b) = 1
+         ! idx_b = 0
+         ! idx_b(2:ns_b) = 1
+         !NEW (comment lines above and introduce MERGE below) AC, 11/2024
+         idx_b = MERGE(1,0,lsurf_boz)
+         !
          iota_b = hiota
          pres_b = pres
          phip_b = phip

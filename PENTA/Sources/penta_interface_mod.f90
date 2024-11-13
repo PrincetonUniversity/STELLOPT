@@ -90,9 +90,12 @@ MODULE PENTA_INTERFACE_MOD
       num_ion_species = num_ion_in
       Z_ion_init = Z_ion_in
       miomp_init = miomp_in
+      ! Electrons + ions  (added here because the function where this used to be defined [read_ion_params_namelist] is no longer called) AC 11/2024
+      num_species = num_ion_species + 1_iknd
       RETURN
    END SUBROUTINE penta_set_ion_params
 
+   !! This subroutine is not called since in THRIFT we read the ions data from the h5 file
    SUBROUTINE read_penta_ion_params_namelist(filename,istat)
       USE safe_open_mod
       IMPLICIT NONE
@@ -378,6 +381,17 @@ MODULE PENTA_INTERFACE_MOD
       IF (ALLOCATED(Er_test_vals)) DEALLOCATE(Er_test_vals)
       IF (ALLOCATED(QoT_i_vs_Er)) DEALLOCATE(QoT_i_vs_Er)
       IF (ALLOCATED(QoT_e_vs_Er)) DEALLOCATE(QoT_e_vs_Er)
+      IF (ALLOCATED(Gammas_ambi)) DEALLOCATE(Gammas_ambi)
+      IF (ALLOCATED(QoTs_ambi)) DEALLOCATE(QoTs_ambi)
+      IF (ALLOCATED(Flows_ambi)) DEALLOCATE(Flows_ambi)
+      IF (ALLOCATED(Jprl_ambi)) DEALLOCATE(Jprl_ambi)
+      IF (ALLOCATED(Jprl_parts)) DEALLOCATE(Jprl_parts)
+      IF (ALLOCATED(J_BS_ambi)) DEALLOCATE(J_BS_ambi)
+      IF (ALLOCATED(sigma_par_ambi)) DEALLOCATE(sigma_par_ambi)
+      IF (ALLOCATED(sigma_par_Spitzer_ambi)) DEALLOCATE(sigma_par_Spitzer_ambi)
+      IF (ALLOCATED(utor)) DEALLOCATE(utor)
+      IF (ALLOCATED(upol)) DEALLOCATE(upol)
+
       RETURN
    END SUBROUTINE penta_deallocate_species
 
@@ -520,8 +534,8 @@ MODULE PENTA_INTERFACE_MOD
       dtedr = dtedr_in
       ni    = ni_in
       dnidr = dnidr_in
-      ti    = ni_in
-      dtidr = dnidr_in
+      ti    = ti_in
+      dtidr = dtidr_in
       RETURN
    END SUBROUTINE penta_set_pprof
 

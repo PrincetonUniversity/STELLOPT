@@ -45,8 +45,8 @@
       INTEGER, DIMENSION(:), ALLOCATABLE :: ik_dkes
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Earr_dkes, nuarr_dkes
       REAL(rprec), DIMENSION(:), POINTER :: f0p1, f0p2, f0m1, f0m2
-      REAL(rprec) :: tcpu0, tcpu1, tcpui, tcput, tcpu, tcpua, dkes_efield,&
-                     phi_temp
+      REAL(rprec) :: tcpu0, tcpu1, tcpui, tcput, tcpu, tcpua, &
+                     phi_temp, stime, etime
       CHARACTER :: tb*1           
       CHARACTER*50 :: arg1(6)       
       INTEGER :: numargs, iodata, iout_opt, idata, iout
@@ -120,21 +120,22 @@
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! Note there are multile file write statements which can
          ! probably be removed so we only write what we need for PENTA
+         CALL second0(stime)
          DO k = mystart,myend
             ! Setup input
             arg1(1) = TRIM(proc_string)
             WRITE(arg1(2),'(i3)') ik_dkes(k)
             WRITE(arg1(3),'(e20.10)') nuarr_dkes(k)
-            WRITE(arg1(4),'(e20.10)') dkes_efield
+            WRITE(arg1(4),'(e20.10)') Earr_dkes(k) !dkes_efield
             arg1(5) = 'F'
             IF (lscreen .and. lfirst_pass) arg1(5) = 'T'
             WRITE(temp_str,'(i3.3)') k
-            arg1(6) = '_s' // TRIM(temp_str)
+            arg1(6) = '_k' // TRIM(temp_str)
             ier_phi = 0 ! We don't read the boozmn or wout file we've done that already
-            CALL dkes_input_prepare(arg1,6,dkes_input_file,ier_phi)
-            output_file= 'dkesout.' // TRIM(proc_string) // '_s' // TRIM(temp_str)
-            opt_file= 'opt_dkes.' // TRIM(proc_string) // '_s' // TRIM(temp_str)       !DAS 2/21/2000  !Probably won't need
-            summary_file = 'results.' // TRIM(proc_string) //'_s' // TRIM(temp_str) !record file addition
+            CALL dkes_input_prepare_old(arg1,6,dkes_input_file,ier_phi)
+            output_file= 'dkesout.' // TRIM(proc_string) // '_k' // TRIM(temp_str)
+            opt_file= 'opt_dkes.' // TRIM(proc_string) // '_k' // TRIM(temp_str)       !DAS 2/21/2000  !Probably won't need
+            summary_file = 'results.' // TRIM(proc_string) //'_k' // TRIM(temp_str) !record file addition
             !  OPEN INPUT AND OUTPUT FILES FOR READING (AND WRITING OUTPUT)
             idata    = 7
             iout     = 30
@@ -244,11 +245,11 @@
                        g31m, g13m, crs1m, crs3m)
                ENDIF
                ! This is a trick to get the arrays corretly sorted
-               DKES_rad_dex = i
+               DKES_rad_dex = k !i ---> I think w/ 'i' is completely wrong!!
                IF (.not. lfirst_pass) lscreen_dkes = .FALSE.
                CALL dkes_printout (f0p1, f0m1, f0p2, f0m2, srces0)
-               DKES_rad_dex = ik_dkes(i)
-               ! End trick
+               DKES_rad_dex = ik_dkes(k) !ik_dkes(i)  -- same here !!!
+               ! End trickMPI_O
                CALL second0 (tcpu1); tcpu = tcpu1 - tcpu0; tcpu0 = tcpu1; tcput = tcput + tcpu; tcpua = tcput/i
                WRITE (ioout, 1100) tcpu
                CLOSE(unit=itab_out)
@@ -261,7 +262,9 @@
             CLOSE(unit=ioout)
             CLOSE(unit=ioout_opt)
             lfirst_pass = .FALSE.
+            CALL second0(etime)
          END DO
+         PRINT *, 'I took ', etime-stime,'s.'
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!! Parallel Work block Done
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -289,7 +292,7 @@
             CALL MPI_REDUCE(DKES_scal31,  DKES_scal31, nruns_dkes, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          END IF
 #endif
-         IF (lscreen) WRITE(6,'(a)') ' -----------------  DKES CALCULATION (DONE) ----------------'
+         !IF (lscreen) WRITE(6,'(a)') ' -----------------  DKES CALCULATION (DONE) ----------------'
          IF (myworkid .ne. master) CALL read_wout_deallocate
 
          ! Sort out the DKES runs for later use
@@ -299,16 +302,11 @@
          CALL mpialloc(DKES_D11, DKES_NK, DKES_NC, DKES_NE, myid_sharmem, 0, MPI_COMM_MYWORLD, win_dkes_d11)
          CALL mpialloc(DKES_D31, DKES_NK, DKES_NC, DKES_NE, myid_sharmem, 0, MPI_COMM_MYWORLD, win_dkes_d31)
          CALL mpialloc(DKES_D33, DKES_NK, DKES_NC, DKES_NE, myid_sharmem, 0, MPI_COMM_MYWORLD, win_dkes_d33)
+
          IF (myworkid .eq. master) THEN
-            DO l = 1, nruns_dkes
-               i = MOD(l-1,DKES_NK)+1
-               j = MOD(l-1,DKES_NK*DKES_NE)
-               j = FLOOR(REAL(j) / REAL(DKES_NK))+1
-               k = CEILING(REAL(l) / REAL(DKES_NK*DKES_NE))
-               DKES_D11(i,j,k) = (DKES_L11p(l) + DKES_L11m(l))*0.5
-               DKES_D31(i,j,k) = (DKES_L31p(l) + DKES_L31m(l))*0.5
-               DKES_D33(i,j,k) = (DKES_L33p(l) + DKES_L33m(l))*0.5
-            END DO
+            DKES_D11 = RESHAPE( (DKES_L11p + DKES_L11m)*0.5, shape=(/DKES_NK, DKES_NC, DKES_NE/), order=(/2,3,1/) )
+            DKES_D31 = RESHAPE( (DKES_L31p + DKES_L31m)*0.5, shape=(/DKES_NK, DKES_NC, DKES_NE/), order=(/2,3,1/) )
+            DKES_D33 = RESHAPE( (DKES_L33p + DKES_L33m)*0.5, shape=(/DKES_NK, DKES_NC, DKES_NE/), order=(/2,3,1/) )
          END IF
       END IF
       IF (lscreen) WRITE(6,'(a)') ' -------------------  DKES NEOCLASSICAL CALCULATION DONE  ---------------------'

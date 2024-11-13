@@ -64,6 +64,11 @@ SUBROUTINE update_vars()
             CALL get_prof_etapara(MIN(rho,SQRT(THRIFT_S(nsj-1))),mytime,THRIFT_ETAPARA(i,mytimestep))
         ELSEIF(etapar_type == 'read_from_file') THEN
             CALL get_prof_eta(rho,mytime,THRIFT_ETAPARA(i,mytimestep))
+        ELSEIF(etapar_type == 'dkespenta') THEN
+            IF(bootstrap_type /= 'dkespenta') THEN
+                STOP 'NOT POSSIBLE YET TO COMPUTE etapar FROM dkespenta WITHOUT BOOTSTRAP ALSO FROM dkespenta'
+            END IF
+            ! etapar will be computed when bootstrap code is called after update_vars
         ENDIF
         
         CALL get_prof_p(rho, mytime, THRIFT_P(i,mytimestep))
