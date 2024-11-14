@@ -77,6 +77,7 @@ MODULE THRIFT_INTERFACE_MOD
 
       SUBROUTINE thrift_cleanup
       IMPLICIT NONE
+      INTEGER :: ier
       CHARACTER(200) :: cmdtxt = ""
       ! Clean up
       ierr_mpi = 0
