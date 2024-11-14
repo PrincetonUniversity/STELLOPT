@@ -124,12 +124,12 @@
          DO k = mystart,myend
             ! Setup input
             arg1(1) = TRIM(proc_string)
-            WRITE(arg1(2),'(i3)') ik_dkes(k)
+            WRITE(arg1(2),'(i4)') ik_dkes(k)
             WRITE(arg1(3),'(e20.10)') nuarr_dkes(k)
             WRITE(arg1(4),'(e20.10)') Earr_dkes(k) !dkes_efield
             arg1(5) = 'F'
             IF (lscreen .and. lfirst_pass) arg1(5) = 'T'
-            WRITE(temp_str,'(i3.3)') k
+            WRITE(temp_str,'(i4.4)') k
             arg1(6) = '_k' // TRIM(temp_str)
             ier_phi = 0 ! We don't read the boozmn or wout file we've done that already
             CALL dkes_input_prepare_old(arg1,6,dkes_input_file,ier_phi)
@@ -265,7 +265,7 @@
             IF(lscreen) WRITE(*, '(I0, A, I0, A, I0, A)') k, ' in [', mystart, ',', myend, '] completed'
          END DO
          CALL second0(etime)
-         PRINT *, 'I took ', etime-stime,'s.'
+         WRITE(*, '(A, I0, A, F8.2, A, I0, A)') 'Processor ', myworkid, ' took ', etime-stime,'s to compute ', myend-mystart+1, ' DKES coefficients.'
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!! Parallel Work block Done
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

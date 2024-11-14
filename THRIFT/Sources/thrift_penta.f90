@@ -42,7 +42,7 @@
 !-----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       IF (lscreen) WRITE(6,'(a)') ' --------------------  NEOCLASSICAL BOOTSTRAP USING PENTA  -------------------'
-      IF (lscreen) WRITE(6,'(A)') " <r>/<a>","   Er root(s) (V/cm)"
+      IF (lscreen) Write(*,*) " <r>/<a>","   Er root(s) (V/cm)"
 
       IF (lvmec) THEN
          ierr_mpi = 0
@@ -174,6 +174,7 @@
          ELSE 
             CALL MPI_REDUCE(JBS_PENTA,JBS_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_REDUCE(etapar_PENTA,etapar_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL FLUSH(6)
             DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
             DEALLOCATE(te,ne,dtedrho,dnedrho)
             DEALLOCATE(ni,ti,dtidrho,dnidrho)
