@@ -77,8 +77,26 @@ MODULE THRIFT_INTERFACE_MOD
 
       SUBROUTINE thrift_cleanup
       IMPLICIT NONE
+      CHARACTER(200) :: cmdtxt = ""
       ! Clean up
       ierr_mpi = 0
+      ! Remove files and cleanup directory
+!DEC$ IF DEFINED (STELZIP)
+      IF (myid == master) THEN
+      ! Remove the *_opt* files
+         WRITE(6,*) ' Cleaning up files'; CALL FLUSH(6); ier = 0; ierr_mpi = 0; cmdtxt=''
+         CALL EXECUTE_COMMAND_LINE("rm -rf dcon* jxbout* mercier*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+         WRITE(6,*) ' rm: EXITSTAT=',ier,' CMDSTAT=',ierr_mpi; CALL FLUSH(6)
+         WRITE(6,*) '     MESSAGE: ',TRIM(cmdtxt); CALL FLUSH(6)
+         ! Zip up the results
+         WRITE(6,*) ' Zipping files'; CALL FLUSH(6); ier = 0; ierr_mpi = 0; cmdtxt=''
+         CALL EXECUTE_COMMAND_LINE("zip -r thrift_files.zip *",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+         WRITE(6,*) ' zip: EXITSTAT=',ier,' CMDSTAT=',ierr_mpi; CALL FLUSH(6)
+         WRITE(6,*) '     MESSAGE: ',TRIM(cmdtxt); CALL FLUSH(6)
+         ier = 0; ierr_mpi=0
+      END IF
+!DEC$ ENDIF
+
       !CALL thrift_free(MPI_COMM_SHARMEM)
 #if defined(MPI_OPT)
       !CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
