@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pySTEL"
+dynamic = ["version"]
+description = "Python library for interfacing with STELLOPT"
+readme = "README.md"
+authors = [
+    { name = "Samuel A. Lazerson", email = "lazersos@gmail.com" },
+]
+dependencies = [
+    "contourpy",
+    "gmsh",
+    "matplotlib",
+    "numpy",
+    "numpy-stl",
+    "pyqt5",
+    "pyvtk",
+    "scipy",
+    "vtk",
+    "pyyaml"
+]
+
+[project.urls]
+Homepage = "https://github.com/PrincetonUniversity/STELLOPT"
+

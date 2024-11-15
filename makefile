@@ -39,8 +39,8 @@ endif
 
 pystel: libstell$(SHARED_EXT)
 	@echo 'Building pySTEL'
-	@cd pySTEL; python3 setup.py install --user
-
+	@cd pySTEL; pip install .
+	
 libstell$(SHARED_EXT):
 	@cd LIBSTELL; make shared_release
 
