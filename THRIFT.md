@@ -325,7 +325,7 @@ TBD
 
 ### References
 
--   [van Ham, L. \"THRIFT THESIS\" TU/e (2023)]()
+-   [van Ham, L. \"THRIFT THESIS\" TU/e (2023)](https://research.tue.nl/en/studentTheses/prediction-of-current-evolution-in-w7-x-plasmas)
 -   [Strand, P.I. and Houlberg, W.A. \"Magnetic flux evolution in highly shpaed plasmas\" Physics of Plasmas 8, 2782 (2001)](http://dx.doi.org/10.1063/1.1366618)
 -   [Strand, P.I. and Houlberg, W.A. \"Solution techniques for magnetic flux evolution in toroidal plasmas.\" Fusion Techno. 39, 1091-1095](https://doi.org/10.13182/FST01-A11963389)
 
