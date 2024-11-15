@@ -10,6 +10,14 @@ MODULE thrift_vars
     !     Libraries
     !-------------------------------------------------------------------
     USE stel_kinds, ONLY: rprec
+    USE thrift_globals, ONLY: lverbj, nrho, ntimesteps, n_eq, npicard, &
+        tstart, tend, jtol, picard_factor, boot_factor, ntime_ecrh, &
+        pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w, nsys, nra_ecrh, &
+        nphi_ecrh, wmode_ecrh, freq_ecrh, power_ecrh, &
+        antennaposition_ecrh, targetposition_ecrh, rbeam_ecrh, &
+        rfocus_ecrh, DKES_NS_MAX, DKES_NSTAR_MAX, nruns_dkes, &
+        DKES_rundex, DKES_K, dkes_Erstar, dkes_Nustar, nsj, leccd, &
+        lnbcd, lohmic
     !-------------------------------------------------------------------
     !     Module Variables
     !          leccd            Calc Elec. Cyclo. Current Drive
@@ -59,10 +67,9 @@ MODULE thrift_vars
     !-------------------------------------------------------------------
     IMPLICIT NONE
 
-    LOGICAL :: leccd, lnbcd, lohmic, ldiagno, lscreen_subcodes, lverbj
+    LOGICAL :: ldiagno, lscreen_subcodes
     LOGICAL, DIMENSION(:), ALLOCATABLE :: lbooz
-    INTEGER :: ntimesteps, nrho, nsj,  npicard, n_eq,&
-             win_thrift_j,win_thrift_i,win_thrift_ugrid, &
+    INTEGER :: win_thrift_j,win_thrift_i,win_thrift_ugrid, &
              win_thrift_jplasma, win_thrift_iplasma, &
              win_thrift_jboot,   win_thrift_iboot,   &
              win_thrift_eparb,                       &
@@ -80,9 +87,8 @@ MODULE thrift_vars
                                  win_thrift_coeff_bp, win_thrift_coeff_cp, win_thrift_coeff_dp, &
              win_thrift_alpha1,  win_thrift_alpha2,   win_thrift_alpha3,   win_thrift_alpha4,   &
              win_thrift_matld,   win_thrift_matmd,    win_thrift_matud,    win_thrift_matrhs,   &
-             win_thrift_bvav,                                                                   &
-             win_thrift_ugrid_restart                                
-    REAL(rprec) :: tstart, tend, jtol, picard_factor, boot_factor, dt_first_iter
+             win_thrift_bvav,    win_thrift_ugrid_restart                
+    REAL(rprec) :: dt_first_iter
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), THRIFT_PHIEDGE(:), &
                                           THRIFT_S(:),   THRIFT_SNOB(:),  THRIFT_T(:),         &
                                           UGRID_RESTART(:)
@@ -104,19 +110,6 @@ MODULE thrift_vars
                  THRIFT_MATLD,   THRIFT_MATMD,   THRIFT_MATUD,   THRIFT_MATRHS,  &
                  THRIFT_BVAV                                                  
                  
-
-    ! For ECCD in general
-    INTEGER, PARAMETER :: ntime_ecrh = 200
-    REAL(rprec), DIMENSION(ntime_ecrh) :: PECRH_AUX_T, PECRH_AUX_F
-    REAL(rprec) :: ecrh_rc, ecrh_w
-
-    ! For TRAVIS
-    INTEGER, PARAMETER :: nsys   = 16
-    INTEGER :: nra_ecrh, nphi_ecrh
-    INTEGER, DIMENSION(nsys)     :: wmode_ecrh
-    REAL(rprec), DIMENSION(nsys) :: freq_ecrh, power_ecrh
-    REAL(rprec), DIMENSION(nsys,3)     :: antennaposition_ecrh, &
-                 targetposition_ecrh,rbeam_ecrh,rfocus_ecrh
 
 
 END MODULE thrift_vars

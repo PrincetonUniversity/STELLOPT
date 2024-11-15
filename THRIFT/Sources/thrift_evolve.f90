@@ -99,6 +99,7 @@
             CALL update_vars
 
             ! Calculate Bootstrap
+            IF (lverbj) WRITE(6,*) "Running Bootstrap code"
             CALL thrift_run_bootstrap
             THRIFT_JBOOT(:,mytimestep) = boot_factor*THRIFT_JBOOT(:,mytimestep)
 

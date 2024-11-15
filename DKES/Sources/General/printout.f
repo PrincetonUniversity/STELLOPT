@@ -145,7 +145,6 @@ c  output arrays if DKES_rad_dex set.  DKES_rad_dex is set to 0
 c  in the main DKES routine, only the STELLOPT routine changes this
 c  and allocates these arrays
       IF (ALLOCATED(DKES_L11p) .and. (DKES_rad_dex > 0)) THEN
-!         PRINT *,'got here0'
          DKES_L11p(DKES_rad_dex) = L11p
          DKES_L33p(DKES_rad_dex) = L33p
          DKES_L31p(DKES_rad_dex) = L31p
@@ -155,7 +154,6 @@ c  and allocates these arrays
          DKES_scal11(DKES_rad_dex) = scal11
          DKES_scal33(DKES_rad_dex) = scal33
          DKES_scal31(DKES_rad_dex) = scal13
-!         PRINT *,'got here1'
       END IF
 
 c  output results summary
