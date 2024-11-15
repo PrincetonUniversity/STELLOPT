@@ -394,6 +394,9 @@
             IF (r_start_in(ik) >= 0.0) nparticles = nparticles + 1
          END DO
 
+         ! Assume three is one population if dex_beams is not set.
+         IF (MAXVAL(Dex_beams) < 0) FORALL(ik=1:MAXBEAMS) Dex_beams(ik) = 1
+
 #if !defined(NAG)
       IF (int_type=='NAG') THEN
          int_type = 'LSODE'
