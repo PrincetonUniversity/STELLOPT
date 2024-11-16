@@ -20,7 +20,8 @@ dependencies = [
     "pyvtk",
     "scipy",
     "vtk",
-    "pyyaml"
+    "pyyaml",
+    "h5py"
 ]
 
 [project.urls]
