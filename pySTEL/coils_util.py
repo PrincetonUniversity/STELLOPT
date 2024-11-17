@@ -121,4 +121,5 @@ if __name__=="__main__":
 			z = FR.sfunct(theta,phi,zmns,xm,xn)
 			FR.isotoro(r,z,phi,0,plot3D=plt3d,lclosev=False)
 			plt3d.render()
+	sys.exit(0)
 

@@ -83,6 +83,7 @@ if __name__=="__main__":
 		beams3d_input.t_end_in     = np.ones(len(r_start_in))*100E-3
 		beams3d_input.nparticles_start = len(r_start_in)
 		beams3d_input.write_input('input.'+args.vmec_ext)
+	sys.exit(0)
 
 
 

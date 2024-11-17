@@ -133,4 +133,5 @@ if __name__ == "__main__":
 				       "{:20.10e}".format(0.0) + '   ' + \
 				       "{:20.10e}".format(vmec_data.zmns[k-1,i])
 				print(temp)
+	sys.exit(0)
 
