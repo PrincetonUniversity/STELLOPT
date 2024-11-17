@@ -52,6 +52,14 @@ beams3d_input_mod.o: \
 beams3d_globals.o :  \
       stel_kinds.o 
 
+thrift_globals.o : \
+      stel_kinds.o
+
+thrift_input_mod.o: \
+      stel_kinds.o \
+      safe_open_mod.o \
+      thrift_globals.o 
+
 diagno_runtime.o :  \
       ezspline.o \
       stel_kinds.o 
