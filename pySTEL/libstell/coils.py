@@ -916,7 +916,17 @@ class COILSET():
 		for i, f in enumerate(faces):
 			for j in range(3):
 				coil_mesh.vectors[i][j] = vertex[f[j],:]
-		coil_mesh.save(filename)	
+		coil_mesh.save(filename)
+
+	def write_Gourdon_coils(self):
+		"""Write Gourdon style coils files
+
+		This routine writes Gourdon style coils files as used in the
+		Gourdon fieldline tracer and codes such as EMC3-LITE.
+		"""
+		for i in range(self.ngroups):
+			nfp = max(min(self.groups[i].ncoils/2,self.nfp),1)
+			self.groups[i].coils[0].writeGourdonCoil(filename=self.groups[i].name,nfp=nfp)
 
 class COILGROUP():
 	"""Class which defines a coil group
@@ -1338,6 +1348,50 @@ class COIL():
 			# Fit curve
 			# Add to total curve
 			print('test')
+
+	def writeGourdonCoil(self,filename,nfp):
+		"""Write a single coil in Gourdon Format
+
+		This routine outputs the single coil into a text file which
+		the Gourdon field line tracer can use. This format is also
+		required for the EMC3-LITE code. For coils with multiple
+		field periodicity we need to write both the coil and it's
+		stellarator symmetric variant.
+
+		Parameters
+		----------
+		filename : string
+			Name of file to output coil into
+		nfp : int
+			Periodicity of the coil system
+		"""
+		import numpy as np
+		filename_out = filename
+		if nfp > 1:
+			filename_out = 'hm11_'+filename
+		else:
+			filename_out = filename
+		# First write the first field period coil
+		f = open(filename_out,'w')
+		f.write(f"{self.npts} {int(nfp)}\n")
+		for i in range(self.npts):
+			f.write(f"{self.x[i]:.10E} {self.y[i]:.10E} {self.z[i]:.10E}\n")
+		f.close()
+		# Create the half field period mirror coil
+		if nfp > 1:
+			filename_out = 'hm10_'+filename
+			f = open(filename_out,'w')
+			f.write(f"{self.npts} {int(nfp)}\n")
+			r = np.sqrt(self.x*self.x+self.y*self.y)
+			p = -np.arctan2(self.y,self.x)
+			x = r * np.cos(p)
+			y = r * np.sin(p)
+			z = -self.z
+			# Since we flip z we flip order of the points
+			for i in range(self.npts-1,-1,-1):
+				f.write(f"{x[i]:.10E} {y[i]:.10E} {z[i]:.10E}\n")
+			f.close()
+
 
 
 if __name__=="__main__":
