@@ -27,9 +27,18 @@
 #######################################################################
   FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
   FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check
-  LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
+  LIBS    = -L/usr/lib -L/opt/local/lib -lscalapack -framework Accelerate
   FLAGS_R += -fallow-argument-mismatch
   FLAGS_D += -fallow-argument-mismatch
+
+#######################################################################
+#            Check for Accelerate Framework/OpenBLAS
+#######################################################################
+ifneq ("$(wildcard /opt/local/lib/libopenblas*)","")
+    LIBS += -L/opt/local/lib -lopenblas
+else
+    LIBS += -framework Accelerate
+endif
 
   
 #######################################################################

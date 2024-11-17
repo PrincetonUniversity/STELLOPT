@@ -73,6 +73,9 @@ residue_dkes.o : \
 
 vcmain.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+
+
+vimatrix.o : 
       
 
 vnamecl2.o : \
@@ -88,7 +91,7 @@ wrout.o : \
       dkes_input.o \
       dkes_realspace.o \
       vnamecl2.o 
-      
+
 
 dkes_input_prepare.o : \
       ../../LIBSTELL/$(LOCTYPE)/date_and_computer.o \

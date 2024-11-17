@@ -26,6 +26,8 @@ MODULE thrift_profiles_mod
     INTEGER :: win_raxis_prof, win_taxis_prof, win_NE3D, win_TE3D, &
                win_NI4D, win_TI4D, win_hr, win_ht, win_hri, win_hti, &
                win_Matom_prof, win_Zatom_prof, win_P3D, win_JBS3D, win_eta3D
+               
+    REAL(rprec), PARAMETER :: AMU = 1.66053906892D-27
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         NONE
