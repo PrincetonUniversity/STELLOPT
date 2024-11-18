@@ -877,7 +877,7 @@ class MyApp(QMainWindow):
 					'HELICITY','HELICITY_FULL',\
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
-					'CURVATURE_KERT','CURVATURE_P2']
+					'CURVATURE_KERT','CURVATURE_P2','QUASIISO']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
 		# Handle Chisquared plots
@@ -894,7 +894,7 @@ class MyApp(QMainWindow):
 					'S11','S12','S21','S22','MAGWELL','VACIOTA',\
 					'CURVATURE_KERT','CURVATURE_P2',\
 					'ECEREFLECT','SXR','IOTA','PRESS','PRESSPRIME'\
-					'VISBREMLINE']:
+					'VISBREMLINE','QUASIISO']:
 			for item in vars(self.stel_data).keys():
 				if (name+'_TARGET' == item):
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
@@ -1130,6 +1130,19 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Magnetic Well')
 			self.ax2.set_title('Magnetic Well Evolution  (>0 Well)')
+		elif (plot_name == 'QUASIISO_evolution'):
+			x = self.stel_data.QUASIISO_K
+			y = self.stel_data.QUASIISO_VAL
+			t = self.stel_data.QUASIISO_TARGET
+			d = self.stel_data.QUASIISO_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
+			self.ax2.set_xlabel('Radial Grid')
+			self.ax2.set_ylabel('QI Metric')
+			self.ax2.set_title('Quasi-isodynamic Metric')
 		elif (plot_name == 'CURVATURE_P2'):
 			#x = self.stel_data.TXPORT_S
 			#y = self.stel_data.CURVATURE_P2_P2

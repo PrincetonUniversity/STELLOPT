@@ -33,7 +33,7 @@ class STELLOPT():
 			'NEO', 'DKES', 'DKES_ERDIFF', 'DKES_ALPHA', 'TXPORT',      \
 			'ORBIT', 'HELICITY', 'HELICITY_FULL', 'JSTAR', 'RESJAC',   \
 			'COIL_BNORM', 'REGCOIL_CHI2_B', 'CURVATURE_P2', 'GAMMA_C', \
-			'KINK']
+			'KINK', 'QUASIISO']
 
 	def read_stellopt_map(self,filename='map.dat'):
 		"""Reads a STELLOPT MAP output file
