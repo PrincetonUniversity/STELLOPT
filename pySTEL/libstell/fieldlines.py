@@ -222,7 +222,7 @@ class FIELDLINES():
 		# Render if requested
 		if lplotnow: plt.render()
 
-	def plot_poincare3D(self,k=0,pointsize=0.01,color='red',plot3D=None):
+	def plot_poincare3D(self,k=0,pointsize=0.01,color='red',skip=1,plot3D=None):
 		"""Plots the FIELDILNES Poincare cross section in 3D
 
 		This routine makes a 3D Poincare plot.
@@ -235,6 +235,8 @@ class FIELDLINES():
 			Size of points (default: 0.01)
 		color : str (optional)
 			Color to plot points (default: red)
+		skip : int (optional)
+			Number of fieldlines to skip in plot (default: 1)
 		plot3D : plot3D object (optional)
 			Plotting object to render to.
 		"""
@@ -254,7 +256,7 @@ class FIELDLINES():
 		X = self.R_lines * np.cos(P)
 		Y = self.R_lines * np.sin(P)
 		for i in range(k,self.nsteps,self.npoinc):
-			for j in range(self.nlines):
+			for j in range(0,self.nlines,int(skip)):
 				if (self.R_lines[j,i] > 0):
 					vertices.append([X[j,i],Y[j,i],self.Z_lines[j,i]])
 		vertices = np.array(vertices)
