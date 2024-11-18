@@ -19,6 +19,7 @@ from mpl_toolkits import mplot3d
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 #
 from libstell import vmec
+from libstell import boozer
 from libstell import stellopt
 from libstell import plot3D
 
@@ -924,6 +925,15 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Mercier')
 			wout_files = sorted([k for k in files if 'wout' in k])
 			self.wout_files = sorted([k for k in wout_files if '_opt' not in k])
+		# Handle Boozer Transformation
+		if any('boozmn' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Boozer Coordinates -----')
+			self.ui.ComboBoxOPTplot_type.addItem('|B|_MAX')
+			self.ui.ComboBoxOPTplot_type.addItem('QAS_ERROR')
+			self.ui.ComboBoxOPTplot_type.addItem('QPS_ERROR')
+			self.ui.ComboBoxOPTplot_type.addItem('QHS_ERROR')
+			booz_files = sorted([k for k in files if 'boozmn' in k])
+			self.booz_files = sorted([k for k in booz_files if '_opt' not in k])
 		# Handle Kinetic Profiles
 		if any('tprof.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Kinetics -----')
@@ -1924,6 +1934,69 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Z [m]')
 			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
 			self.ax2.set_aspect('equal')
+		elif (plot_name == '|B|_MAX'):
+			booz_data = boozer.BOOZER()
+			l=0
+			dl = len(self.booz_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.booz_files:
+				if 'boozmn' in string:
+					booz_data.read_boozer(self.workdir+string)
+					disp('NOT DONE!')
+		elif (plot_name == 'QAS_ERROR'):
+			booz_data = boozer.BOOZER()
+			l=0
+			dl = len(self.booz_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.booz_files:
+				if 'boozmn' in string:
+					booz_data.read_boozer(self.workdir+string)
+					error = booz_data.calcQuasiError(0,1)
+					s = np.squeeze(booz_data.phi_b)
+					s = s/s[-1]
+					self.ax2.plot(s,error*100.0,'o',color=_plt.cm.brg(l/dl))
+					l = l + 1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Error [%]')
+			self.ax2.set_title('Quasi-Axisymmetry Error')
+			self.ax2.set_ylim((0,100))
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'QPS_ERROR'):
+			booz_data = boozer.BOOZER()
+			l=0
+			dl = len(self.booz_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.booz_files:
+				if 'boozmn' in string:
+					booz_data.read_boozer(self.workdir+string)
+					error = booz_data.calcQuasiError(1,0)
+					s = np.squeeze(booz_data.phi_b)
+					s = s/s[-1]
+					self.ax2.plot(s,error*100.0,'o',color=_plt.cm.brg(l/dl))
+					l = l + 1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Error [%]')
+			self.ax2.set_title('Quasi-Poloidal Symmetry Error')
+			self.ax2.set_ylim((0,100))
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'QHS_ERROR'):
+			booz_data = boozer.BOOZER()
+			l=0
+			dl = len(self.booz_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.booz_files:
+				if 'boozmn' in string:
+					booz_data.read_boozer(self.workdir+string)
+					error = booz_data.calcQuasiError(1,1)
+					s = np.squeeze(booz_data.phi_b)
+					s = s/s[-1]
+					self.ax2.plot(s,error*100.0,'o',color=_plt.cm.brg(l/dl))
+					l = l + 1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Error [%]')
+			self.ax2.set_title('Quasi-Helical Symmetry Error')
+			self.ax2.set_ylim((0,100))
+			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Electron Temperature'):
 			l=0
 			dl = len(self.tprof_files)-1
