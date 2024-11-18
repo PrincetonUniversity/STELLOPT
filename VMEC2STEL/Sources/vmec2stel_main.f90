@@ -37,7 +37,7 @@
                                 lac, lam, lai, lphiedge, lpscale, lcurtor, lkappa, &
                                 lwell, lcurvature, lfieldlines, &
                                 ltxport, ltxport_tem, ltxport_ae, ldkes_erdiff, &
-                                lgamma_c
+                                lquasiiso, lgamma_c
       INTEGER                :: m,n,ns,j
       REAL(rprec)            :: bound_min, bound_max, var, var_min, var_max, &
                                 temp, rho_exp,r1t,r2t,z1t, delta, filter_harm, pi2, &
@@ -110,6 +110,7 @@
       lcurvature = .FALSE.
       lgamma_c = .FALSE.
       loutput_harm = .FALSE.
+      lquasiiso = .FALSE.
       bound_min = -1.0
       bound_max = 2.0
       filter_harm = 0
@@ -263,6 +264,9 @@
                lwell= .TRUE.
             CASE ("-curvature")
                lcurvature= .TRUE.
+            CASE ("-qi")
+               lquasiiso= .TRUE.
+               lneed_booz = .TRUE.
             CASE ("-gamma_c")
                lgamma_c= .TRUE.
             CASE ("-help","-h")
@@ -295,6 +299,7 @@
                WRITE(6,*) '   -qas              QAS Target'
                WRITE(6,*) '   -qps              QPS Target'
                WRITE(6,*) '   -helical          Helical Target'
+               WRITE(6,*) '   -qi               Quasi-Isodynamic Target'
                WRITE(6,*) '   -balloon          Ballooning Target'
                WRITE(6,*) '   -neo              Neoclassical (NEO) Target'
                WRITE(6,*) '   -dkes             Neoclassical (DKES) Target'
@@ -972,6 +977,12 @@
          IF (lqps) WRITE(6,'(2X,A)') 'HELICITY = (0,1)'
          IF (lhelical) WRITE(6,'(2X,A)') 'HELICITY = (2,1)'
          WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_HELICITY(1:',ns,') = ',ns,'*0.0  SIGMA_HELICITY(1:',ns,') = ',ns,'*-1.0'
+      END IF
+      IF (lquasiiso) THEN
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       Quasi-Isodnamic Target (10.1103/PRXEnergy.3.023010)'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_QUASIISO(1:',ns,') = ',ns,'*0.0  SIGMA_QUASIISO(1:',ns,') = ',ns,'*1.0'
       END IF
       IF (lballoon) THEN
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
