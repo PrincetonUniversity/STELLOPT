@@ -906,6 +906,7 @@ class COILSET():
 		lfield_period : boolean
 			Return coilset over one field period (default: False)
 		"""
+		import numpy as np
 		from stl import mesh
 		[vertex,faces] = self.blenderCoil(height=float(height),
 			width=float(width),lfield_period=lfield_period)
