@@ -14,6 +14,8 @@ if __name__=="__main__":
 		'''Utility for generating a BEAMS3D input namelist.''')
 	parser.add_argument("-v", "--vmec", dest="vmec_ext",
 		help="VMEC file extension", default = None)
+	parser.add_argument("--fullorbit", dest="lfullorbit", action='store_true',
+		help="Create Gyro Orbit (full orbit) run.", default = None)
 	args = parser.parse_args()
 	beams3d_input = BEAMS3D_INPUT()
 	beams3d_input.read_input('')
@@ -56,6 +58,7 @@ if __name__=="__main__":
 		b = vmec_data.cfunct(theta,phi,vmec_data.bmnc,vmec_data.xm_nyq,vmec_data.xn_nyq)
 		r_start_in = []; z_start_in = []; phi_start_in = []
 		vll_start_in = []; mu_start_in = []
+		vr_start_in = []; vphi_start_in = []; vz_start_in = []
 		for k in sdex:
 			temp=np.argwhere(b[k,:,:] == np.min(b[k,:,:]))
 			l = temp[0][0]
@@ -66,13 +69,63 @@ if __name__=="__main__":
 			p_temp = phi[m]
 			v_temp = np.sqrt(2.0*E/M)
 			vll_temp = v_temp*vllov
-			mu_temp  = 0.5*(v_temp*v_temp-vll_temp*vll_temp)*M/b_temp
-			r_start_in.extend([r_temp]*npitch)
-			z_start_in.extend([z_temp]*npitch)
-			phi_start_in.extend([p_temp]*npitch)
+			vperp_temp = np.sqrt(v_temp*v_temp-vll_temp*vll_temp)
+			mu_temp  = 0.5*vperp_temp*vperp_temp*M/b_temp
+			if args.lfullorbit:
+				for vperp in vperp_temp:
+					r_temp = np.squeeze(r[k,l,m])
+					z_temp = np.squeeze(z[k,l,m])
+					p_temp = np.squeeze(phi[m])
+					rg = M*vperp/(2.0*EC*b_temp)
+					br,bphi,bz,s,u,info = vmec_data.getBcyl(r_temp,p_temp,z_temp)
+					bx = br * np.cos(p_temp) - bphi * np.sin(p_temp)
+					by = br * np.sin(p_temp) + bphi * np.cos(p_temp)
+					bx = np.squeeze(bx / b_temp)
+					by = np.squeeze(by / b_temp)
+					bz = np.squeeze(bz / b_temp)
+					bpx = -bx * bz * rg
+					bpy = -by * bz * rg
+					bpz =  (bx * bx + by * by) * rg
+					rot_matrix = np.zeros((3,3))
+					# theta = 0 solution
+					rot_matrix[0,0] = 1.0 
+					rot_matrix[0,1] = -bz
+					rot_matrix[0,2] =  by
+					rot_matrix[1,0] =  bz
+					rot_matrix[1,1] = 1.0
+					rot_matrix[1,2] = -bx
+					rot_matrix[2,0] = -by
+					rot_matrix[2,1] =  bx
+					rot_matrix[2,2] = 1.0
+					x_temp = np.matmul(rot_matrix,[bpx,bpy,bpz])
+					xg = by*x_temp[2]-bz*x_temp[1]
+					yg = bz*x_temp[0]-bx*x_temp[2]
+					zg = bx*x_temp[1]-by*x_temp[0]
+					rg = 1.0/(xg*xg+yg*yg+zg*zg)
+					x_temp[0] = x_temp[0] + r_temp * np.cos(p_temp)
+					x_temp[1] = x_temp[1] + r_temp * np.sin(p_temp)
+					x_temp[2] = x_temp[2] + z_temp
+					r_temp = np.sqrt(x_temp[0] * x_temp[0] + x_temp[1] * x_temp[1])
+					p_temp = np.arctan2(x_temp[1],x_temp[0])
+					z_temp = x_temp[2]
+					vx_temp = vll_temp*bx + vperp_temp * xg * rg
+					vy_temp = vll_temp*by + vperp_temp * yg * rg
+					vz_temp = vll_temp*bz + vperp_temp * zg * rg
+					vr_temp   = vx_temp*np.cos(p_temp) + vy_temp * np.sin(p_temp)
+					vphi_temp =-vx_temp*np.sin(p_temp) + vy_temp * np.cos(p_temp)
+					vr_start_in.extend([vr_temp])
+					vphi_start_in.extend([vphi_temp])
+					vz_start_in.extend([vz_temp])
+					r_start_in.extend([r_temp])
+					z_start_in.extend([z_temp])
+					phi_start_in.extend([p_temp])
+			else:
+				r_start_in.extend([r_temp]*npitch)
+				z_start_in.extend([z_temp]*npitch)
+				phi_start_in.extend([p_temp]*npitch)
 			vll_start_in.extend([vll_temp])
 			mu_start_in.extend([mu_temp])
-		beams3d_input.r_start_in   = np.array(r_start_in[:]).flatten()
+		beams3d_input.r_start_in   = np.array(r_start_in).flatten()
 		beams3d_input.z_start_in   = np.array(z_start_in).flatten()
 		beams3d_input.phi_start_in = np.array(phi_start_in).flatten()
 		beams3d_input.vll_start_in = np.array(vll_start_in).flatten()
@@ -82,6 +135,11 @@ if __name__=="__main__":
 		beams3d_input.zatom_in     = np.ones(len(r_start_in))*2.0
 		beams3d_input.t_end_in     = np.ones(len(r_start_in))*100E-3
 		beams3d_input.nparticles_start = len(r_start_in)
+		if args.lfullorbit:
+			beams3d_input.rho_fullorbit = 0.0
+			beams3d_input.vr_start_in   = np.array(vr_start_in[:]).flatten()
+			beams3d_input.vphi_start_in   = np.array(vphi_start_in[:]).flatten()
+			beams3d_input.vz_start_in   = np.array(vz_start_in[:]).flatten()
 		beams3d_input.write_input('input.'+args.vmec_ext)
 	sys.exit(0)
 
