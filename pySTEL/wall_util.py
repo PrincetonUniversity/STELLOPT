@@ -41,7 +41,6 @@ if __name__=="__main__":
 		if args.refine[0]: 
 			wall.refineWall(args.refine[0],args.refine[1])
 			fileout=fileout.replace('.dat','_refine.dat')
-		print(fileout)
 		# Plots go here
 		if args.lplot: wall.plot_wall_3D()
 		# Outputting to other grids goes here.
