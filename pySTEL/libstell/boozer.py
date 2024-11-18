@@ -108,6 +108,40 @@ class BOOZER(FourierRep):
 		pyplot.colorbar(hmesh,label='[T]',ax=ax)
 		if lplotnow: pyplot.show()
 
+	def calcQuaiError(self,m,n):
+		"""Calculates the quasi-symmetry error for each surface
+
+		This routine computes the quasi-symmetry error for each
+		surface in the datastructure for which the boozer
+		transformation has been performed. For QAS error (m=1,n=0),
+		for QPS error (m=0,n=1), for helical symmetry error both
+		m and n should be finite.
+
+		Parameters
+		----------
+		m : int
+			Poloidal spectrum symmetry
+		n : int
+			Toroidal spectrum symmetry
+		"""
+		from copy import deepcopy
+		import numpy as np
+		error = np.zeros((self.ns_b))
+		if m == 0:
+			maskdex = self.ixn_b == 0
+		elif n==0:
+			maskdex = self.ixm_b == 0
+		else:
+			maskdex = (self.ixm_b == m) & (self.ixn_b == n)
+		maskdex = np.squeeze(maskdex)
+		bmnc = deepcopy(self.bmnc_b)
+		b00  = self.bmnc_b[:,0]
+		bmnc[:,maskdex] = 0.0
+		for i in range(self.ns_b):
+			if b00[i] == 0: continue
+			error[i] = np.sqrt(np.sum(bmnc[i,:]*bmnc[i,:]))/b00[i]
+		return error
+
 
 
 # Main routine
