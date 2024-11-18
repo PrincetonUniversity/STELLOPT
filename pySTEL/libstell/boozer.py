@@ -108,7 +108,7 @@ class BOOZER(FourierRep):
 		pyplot.colorbar(hmesh,label='[T]',ax=ax)
 		if lplotnow: pyplot.show()
 
-	def calcQuaiError(self,m,n):
+	def calcQuasiError(self,m,n):
 		"""Calculates the quasi-symmetry error for each surface
 
 		This routine computes the quasi-symmetry error for each
