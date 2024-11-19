@@ -140,7 +140,7 @@ if __name__=="__main__":
 			beams3d_input.vr_start_in   = np.array(vr_start_in[:]).flatten()
 			beams3d_input.vphi_start_in   = np.array(vphi_start_in[:]).flatten()
 			beams3d_input.vz_start_in   = np.array(vz_start_in[:]).flatten()
-		beams3d_input.write_input('input.'+args.vmec_ext)
+		beams3d_input.write_input('input_test.'+args.vmec_ext)
 	sys.exit(0)
 
 
