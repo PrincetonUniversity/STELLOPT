@@ -184,6 +184,7 @@ MODULE beams3d_physics_mod
          bminqu=1.9121d-8*(myA+inv_Ae)/(inv_Ae*myA*sqrt(vrel2))
          bmin=max(bmincl,bminqu)
          coulomb_loge=log(bmax/bmin) !only last coulomb log is saved
+         coulomb_loge = max(coulomb_loge,one)
          zi2_ai=zero
          zi2=zero
 
@@ -198,7 +199,6 @@ MODULE beams3d_physics_mod
             zi2 = zi2+ni_in(i) *NI_AUX_Z(i)**2 * coulomb_log
             !WRITE(6,*) coulomb_log, coulomb_loge
          end do
-         coulomb_loge = max(coulomb_loge,one)
          coulomb_log = max(coulomb_log,one)
       
          zi2_ai=zi2_ai/(ne_in*coulomb_loge)
@@ -238,7 +238,7 @@ MODULE beams3d_physics_mod
          INTEGER        :: ier
          DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
-                          reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
+                          reduction, dve,dvi,ddve,ddvi, tau_spit, v_crit, coulomb_log, te_cube, &
                           inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
                           rho_temp, &
                           vc3_tauinv, vbeta, zeff_temp,&
@@ -259,12 +259,16 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
       
          ier      = 0
+         CALL beams3d_MODB(q,modb)
 	   	 IF (nomeg>0) CALL beams3d_lab_to_plasma(q)
+          qtemp=q
+          CALL beams3d_neutralize_gc(qtemp)
+          lneut=.false.              
          ! Setup position in a vll arrays
-         r_temp   = q(1)
-         phi_temp = MODULO(q(2), phimax)
+         r_temp   = qtemp(1)
+         phi_temp = MODULO(qtemp(2), phimax)
          IF (phi_temp < 0) phi_temp = phi_temp + phimax
-         z_temp   = q(3)
+         z_temp   = qtemp(3)
          vll      = q(4)
 
          ! Initialize values
@@ -279,6 +283,7 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
+           
 !         IF (ier == 0) THEN
             ! Get the gridpoint info (this is possible since all grids are the same)
             i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
@@ -288,10 +293,10 @@ MODULE beams3d_physics_mod
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
             ! Evaluate the Splines
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            MODB4D(1,1,1,1),nr,nphi,nz)
-            modb = fval(1)
+            ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            !                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+            !                 MODB4D(1,1,1,1),nr,nphi,nz)
+            ! modb = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TE4D(1,1,1,1),nr,nphi,nz)
@@ -327,7 +332,7 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             !te_cube = te_temp * te_temp * te_temp
             inv_mymass = one/mymass
-            v_s = fact_vsound*sqrt(ti_temp)
+            v_s = fact_vsound*sqrt(max(ti_temp,te_temp)) !nubeam thermalizes on electron temperature, so we'll do it too
             speed = sqrt( vll*vll + 2*moment*modb*inv_mymass )
             vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)
 
@@ -342,6 +347,9 @@ MODULE beams3d_physics_mod
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
+            ELSE !Dont evaluate collisions
+               IF (nomeg>0) CALL beams3d_plasma_to_lab(q)
+               RETURN
             END IF
 
             !------------------------------------------------------------
@@ -349,12 +357,12 @@ MODULE beams3d_physics_mod
 			   !------------------------------------------------------------
             speed_cube = (speed*speed*speed)
             CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-            dve=ABS(2*e_charge*dt*te_temp*inv_mymass*tau_spit_inv)
-            dvi=ABS(2*e_charge*dt*(ti_temp*vcrit_cube*inv_mymass/speed_cube)*tau_spit_inv)
-            sigma = sqrt( dve+dvi) ! The standard deviation.
+            ddve=ABS(2*e_charge*dt*te_temp*inv_mymass*tau_spit_inv)
+            ddvi=ABS(2*e_charge*dt*(ti_temp*vcrit_cube*inv_mymass/speed_cube)*tau_spit_inv)
+            sigma = sqrt( ddve+ddvi) ! The standard deviation.
             !!sigma = sqrt( ABS(2*e_charge*dt*(te_temp*myv0+ti_temp*vcrit_cube)*tau_spit_inv*inv_mymass/myv0) ) ! The standard deviation.
-            dve=zeta*dve/sigma
-            dvi=zeta*dvi/sigma
+            ddve=zeta*ddve/sigma
+            ddvi=zeta*ddvi/sigma
             !speed = speed+sigma*zeta  
             !-----------------------------------------------------------
             !  Viscouse Velocity Reduction
@@ -366,10 +374,12 @@ MODULE beams3d_physics_mod
             !     newspeed  New total speed
             !     vfrac     Ratio between new and old speed (helper) 
             !-----------------------------------------------------------
-            dve   = speed*tau_spit_inv!*(1-2*te_temp*inv_mymass*e_charge/speed**2.0)+dve
-            dvi   = vc3_tauinv/(speed*speed)!*(1+ti_temp*inv_mymass*e_charge/speed**2.0)+dvi
+            dve   = speed*tau_spit_inv*(1-2*te_temp*inv_mymass*e_charge/speed**2.0)
+            dvi   = vc3_tauinv/(speed*speed)*(1+ti_temp*inv_mymass*e_charge/speed**2.0)
             reduction = dve + dvi
-            newspeed = speed - reduction*dt
+            newspeed = speed - reduction*dt+sigma*zeta
+            dve=dve+ddve
+            dvi=dvi+ddvi
             vfrac = newspeed/speed
 
             !-----------------------------------------------------------
@@ -409,24 +419,25 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
+            !         slow_par(3) =zi2/zi2_ai/myA
            speed_cube = vc3_tauinv*slow_par(3)*dt/(newspeed*newspeed*newspeed) ! redefine as inverse
            zeta_o = vll/newspeed   ! Record the current pitch.
-           zeta_o=zeta_o-zeta_o*speed_cube
-           !CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-           !sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
-           !zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
-           !zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
-           !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           !zeta = MIN(MAX(zeta,-0.99999D+00),0.99999D+00)
-           !Flip gaussian at boundary to prevent accumulation around pitch=1
+           !zeta_o=zeta_o-zeta_o*speed_cube
+           CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+           sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
+           zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
+           zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
+           !!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
+           zeta = MIN(MAX(zeta,-0.99999D+00),0.99999D+00)
+           !!Flip gaussian at boundary to prevent accumulation around pitch=1
            !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
            !Pitch angle scattering according to NUBEAM
-           sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
-           CALL RANDOM_NUMBER(zeta)
-           zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
-           CALL RANDOM_NUMBER(zrang)
-           zrang=zrang*pi2
-           zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
+         !   sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
+         !   CALL RANDOM_NUMBER(zeta)
+         !   zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
+         !   CALL RANDOM_NUMBER(zrang)
+         !   zrang=zrang*pi2
+         !   zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
            vll = zeta*speed
 
      
@@ -453,8 +464,8 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            moment = half*mymass*(speed*speed - vll*vll)/modb
            q(4) = vll
-			IF (nomeg>0) CALL beams3d_plasma_to_lab(q)
          END IF
+         IF (nomeg>0) CALL beams3d_plasma_to_lab(q)
 
          RETURN
 
@@ -1142,65 +1153,73 @@ MODULE beams3d_physics_mod
          vy = q(4)*sin(q(2))+q(5)*cos(q(2))
          vz = q(6)
 
+         ! Check that we're inside the domain then proceed
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+             (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+             (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN   
 
-         ! Eval Spline
-         i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-         k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
-         xparam = (r_temp - raxis(i)) * hri(i)
-         yparam = (phi_temp - phiaxis(j)) * hpi(j)
-         zparam = (z_temp - zaxis(k)) * hzi(k)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BR4D(1,1,1,1),nr,nphi,nz)
-         br_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BPHI4D(1,1,1,1),nr,nphi,nz)
-         bp_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BZ4D(1,1,1,1),nr,nphi,nz)
-         bz_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         MODB4D(1,1,1,1),nr,nphi,nz)
-         modb_temp = fval(1)
-         bx_temp = br_temp*cos(q(2))-bp_temp*sin(q(2))
-         by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
-         binv = one/modb_temp
+            ! Eval Spline
+            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            xparam = (r_temp - raxis(i)) * hri(i)
+            yparam = (phi_temp - phiaxis(j)) * hpi(j)
+            zparam = (z_temp - zaxis(k)) * hzi(k)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                           hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                           BR4D(1,1,1,1),nr,nphi,nz)
+            br_temp = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                           hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                           BPHI4D(1,1,1,1),nr,nphi,nz)
+            bp_temp = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                           hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                           BZ4D(1,1,1,1),nr,nphi,nz)
+            bz_temp = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                           hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                           MODB4D(1,1,1,1),nr,nphi,nz)
+            modb_temp = fval(1)
+            bx_temp = br_temp*cos(q(2))-bp_temp*sin(q(2))
+            by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
+            binv = one/modb_temp
 
-         ! First calculate vll and vperp
-         vll = ( vx * bx_temp + &
-                  vy * by_temp + &
-                  vz * bz_temp  ) * binv
-         vperp = SQRT(ABS(vx*vx+vy*vy+vz*vz - vll*vll))
+            ! First calculate vll and vperp
+            vll = ( vx * bx_temp + &
+                     vy * by_temp + &
+                     vz * bz_temp  ) * binv
+            vperp = SQRT(ABS(vx*vx+vy*vy+vz*vz - vll*vll))
 
-         ! F_em = q v x B
-         ! rho is F_em norm
-         rho(1) = vy*bz_temp - vz*by_temp
-         rho(2) = vz*bx_temp - vx*bz_temp
-         rho(3) = vx*by_temp - vy*bx_temp
-         IF (mycharge < 0) rho = -rho
-         rho = rho / SQRT(SUM(rho*rho))
+            ! F_em = q v x B
+            ! rho is F_em norm
+            rho(1) = vy*bz_temp - vz*by_temp
+            rho(2) = vz*bx_temp - vx*bz_temp
+            rho(3) = vx*by_temp - vy*bx_temp
+            IF (mycharge < 0) rho = -rho
+            rho = rho / SQRT(SUM(rho*rho))
 
-         ! Now calculate the gyroradius
-         !    rg = m * vperp / (q * B)
-         !    vperp = sqrt(v.v-vll*vll)
-         rho   = rho*mymass*vperp*binv/mycharge !Rg
-         x     = x + rho(1)
-         y     = y + rho(2)
-         q(3)  = q(3)+rho(3)
-         q(1)  = SQRT(x*x+y*y)
-         q(2)  = ATAN2(y,x)
-         q(4)  = vll
-         q(5)  = 0
-         q(6)  = 0
+            ! Now calculate the gyroradius
+            !    rg = m * vperp / (q * B)
+            !    vperp = sqrt(v.v-vll*vll)
+            rho   = rho*mymass*vperp*binv/mycharge !Rg
+            x     = x + rho(1)
+            y     = y + rho(2)
+            q(3)  = q(3)+rho(3)
+            q(1)  = SQRT(x*x+y*y)
+            q(2)  = ATAN2(y,x)
+            q(4)  = vll
+            q(5)  = 0
+            q(6)  = 0
 
-         ! Now calculate magnetic moment
-         !    mu = m*vperp^2/(2*B)=m*(v.v-vll.vll)/(2*B)
-         moment = 0.5*mymass*vperp*vperp*binv
-         moment = MAX(moment,10*TINY(moment))
+            ! Now calculate magnetic moment
+            !    mu = m*vperp^2/(2*B)=m*(v.v-vll.vll)/(2*B)
+            moment = 0.5*mymass*vperp*vperp*binv
+            moment = MAX(moment,10*TINY(moment))
+         ELSE
+            RETURN
+         END IF
+
 
          RETURN
 
@@ -1300,83 +1319,91 @@ MODULE beams3d_physics_mod
          moment_temp = q(5)
 
          ! Eval Spline
-         i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-         k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
-         xparam = (r_temp - raxis(i)) * hri(i)
-         yparam = (phi_temp - phiaxis(j)) * hpi(j)
-         zparam = (z_temp - zaxis(k)) * hzi(k)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BR4D(1,1,1,1),nr,nphi,nz)
-         br_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BPHI4D(1,1,1,1),nr,nphi,nz)
-         bp_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         BZ4D(1,1,1,1),nr,nphi,nz)
-         bz_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                         MODB4D(1,1,1,1),nr,nphi,nz)
-         modb_temp = fval(1)
-         bx_temp = br_temp*cos(q(2))-bp_temp*sin(q(2))
-         by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
-         binv = one/modb_temp
-         bx_temp = bx_temp*binv
-         by_temp = by_temp*binv
-         bz_temp = bz_temp*binv
 
-         ! First we calc the gyroradius
-         vperp = SQRT(2.*modb_temp*moment_temp/mymass)
-         rg    = mymass*vperp/(mycharge*modb_temp)
+         ! Check that we're inside the domain then proceed
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+             (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+             (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN         
+            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            xparam = (r_temp - raxis(i)) * hri(i)
+            yparam = (phi_temp - phiaxis(j)) * hpi(j)
+            zparam = (z_temp - zaxis(k)) * hzi(k)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                           hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                           BR4D(1,1,1,1),nr,nphi,nz)
+            br_temp = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                           hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                           BPHI4D(1,1,1,1),nr,nphi,nz)
+            bp_temp = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                           hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                           BZ4D(1,1,1,1),nr,nphi,nz)
+            bz_temp = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                           hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                           MODB4D(1,1,1,1),nr,nphi,nz)
+            modb_temp = fval(1)
+            bx_temp = br_temp*cos(q(2))-bp_temp*sin(q(2))
+            by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
+            binv = one/modb_temp
+            bx_temp = bx_temp*binv
+            by_temp = by_temp*binv
+            bz_temp = bz_temp*binv
 
-         ! Create the perpendicular vector
-         ! (BxZ)xB
-         xg = -bx_temp*bz_temp*rg
-         yg = -bz_temp*by_temp*rg
-         zg = (by_temp*by_temp+bx_temp*bx_temp)*rg
+            ! First we calc the gyroradius
+            vperp = SQRT(2.*modb_temp*moment_temp/mymass)
+            rg    = mymass*vperp/(mycharge*modb_temp)
 
-         ! Now make the rotation matrix
-         !https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
-         CALL RANDOM_NUMBER(theta)
-         theta = (theta-0.5)*pi2
-         rot_matrix(1,1) = cos(theta)+bx_temp*bx_temp*(1-cos(theta))
-         rot_matrix(1,2) = bx_temp*by_temp*(1-cos(theta))-bz_temp*sin(theta)
-         rot_matrix(1,3) = bx_temp*bz_temp*(1-cos(theta))+by_temp*sin(theta)
-         rot_matrix(2,1) = by_temp*bx_temp*(1-cos(theta))+bz_temp*sin(theta)
-         rot_matrix(2,2) = cos(theta)+by_temp*by_temp*(1-cos(theta))
-         rot_matrix(2,3) = by_temp*bz_temp*(1-cos(theta))-bx_temp*sin(theta)
-         rot_matrix(3,1) = bz_temp*bx_temp*(1-cos(theta))-by_temp*sin(theta)
-         rot_matrix(3,2) = bz_temp*by_temp*(1-cos(theta))+bx_temp*sin(theta)
-         rot_matrix(3,3) = cos(theta)+bz_temp*bz_temp*(1-cos(theta))
+            ! Create the perpendicular vector
+            ! (BxZ)xB
+            xg = -bx_temp*bz_temp*rg
+            yg = -bz_temp*by_temp*rg
+            zg = (by_temp*by_temp+bx_temp*bx_temp)*rg
 
-         ! Rotate
-         q(1:3) =  MATMUL(rot_matrix,(/xg,yg,zg/))
+            ! Now make the rotation matrix
+            !https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
+            CALL RANDOM_NUMBER(theta)
+            theta = (theta-0.5)*pi2
+            rot_matrix(1,1) = cos(theta)+bx_temp*bx_temp*(1-cos(theta))
+            rot_matrix(1,2) = bx_temp*by_temp*(1-cos(theta))-bz_temp*sin(theta)
+            rot_matrix(1,3) = bx_temp*bz_temp*(1-cos(theta))+by_temp*sin(theta)
+            rot_matrix(2,1) = by_temp*bx_temp*(1-cos(theta))+bz_temp*sin(theta)
+            rot_matrix(2,2) = cos(theta)+by_temp*by_temp*(1-cos(theta))
+            rot_matrix(2,3) = by_temp*bz_temp*(1-cos(theta))-bx_temp*sin(theta)
+            rot_matrix(3,1) = bz_temp*bx_temp*(1-cos(theta))-by_temp*sin(theta)
+            rot_matrix(3,2) = bz_temp*by_temp*(1-cos(theta))+bx_temp*sin(theta)
+            rot_matrix(3,3) = cos(theta)+bz_temp*bz_temp*(1-cos(theta))
 
-         ! Make rg the perp vector
-         xg = by_temp*q(3)-bz_temp*q(2)
-         yg = bz_temp*q(1)-bx_temp*q(3)
-         zg = bx_temp*q(2)-by_temp*q(1)
-         rg = one/sqrt(xg*xg+yg*yg+zg*zg)
+            ! Rotate
+            q(1:3) =  MATMUL(rot_matrix,(/xg,yg,zg/))
 
-         ! Translate
-         q(1:3) = q(1:3) + (/r_temp*cos(phi2_temp),r_temp*sin(phi2_temp),z_temp/)
+            ! Make rg the perp vector
+            xg = by_temp*q(3)-bz_temp*q(2)
+            yg = bz_temp*q(1)-bx_temp*q(3)
+            zg = bx_temp*q(2)-by_temp*q(1)
+            rg = one/sqrt(xg*xg+yg*yg+zg*zg)
 
-         ! Get into R,phi
-         r_temp = sqrt(q(1)*q(1)+q(2)*q(2))
-         phi_temp = atan2(q(2),q(1))
-         q(1) = r_temp
-         q(2) = phi_temp
+            ! Translate
+            q(1:3) = q(1:3) + (/r_temp*cos(phi2_temp),r_temp*sin(phi2_temp),z_temp/)
 
-         ! Now handle the velocity
-         vx = vll_temp*bx_temp + vperp*xg*rg
-         vy = vll_temp*by_temp + vperp*yg*rg
-         q(6) = vll_temp*bz_temp + vperp*zg*rg
-         q(4) = vx*cos(phi_temp) + vy*sin(phi_temp)
-         q(5) =-vx*sin(phi_temp) + vy*cos(phi_temp)
+            ! Get into R,phi
+            r_temp = sqrt(q(1)*q(1)+q(2)*q(2))
+            phi_temp = atan2(q(2),q(1))
+            q(1) = r_temp
+            q(2) = phi_temp
+
+            ! Now handle the velocity
+            vx = vll_temp*bx_temp + vperp*xg*rg
+            vy = vll_temp*by_temp + vperp*yg*rg
+            q(6) = vll_temp*bz_temp + vperp*zg*rg
+            q(4) = vx*cos(phi_temp) + vy*sin(phi_temp)
+            q(5) =-vx*sin(phi_temp) + vy*cos(phi_temp)
+         ELSE
+            return
+         end if
 
          RETURN
 
@@ -2421,12 +2448,6 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
-         !qtemp=q
-         !q2(1:4) = q(1:4)
-       !q2(5) = moment
-       !q2(6) = zero
-       !CALL beams3d_gc2fo(q2)
-       !q(1:3)=q2(1:3)
          ! Setup position in a vll arrays
          r_temp   = q(1)
          phi_temp = MODULO(q(2), phimax)
@@ -2518,10 +2539,7 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             OMEG4d(1,1,1,1),nr,nphi,nz)
             omeg = fval(1)
-			!q=q2
 			q(4)=q(4)+omeg*r_temp
-         !CALL beams3d_part2gc(q2)
-         !q=qtemp
          ELSE
             RETURN
          END IF
