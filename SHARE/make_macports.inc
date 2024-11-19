@@ -25,7 +25,7 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
+  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check -march=native
   FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check
   LIBS    = -L/usr/lib -L/opt/local/lib -lscalapack -framework Accelerate
   FLAGS_R += -fallow-argument-mismatch
