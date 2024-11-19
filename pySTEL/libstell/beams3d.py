@@ -561,7 +561,7 @@ class BEAMS3D():
 		# Calc losses
 		return (Itherm+Ilost)/area
 
-	def plotorbit(self,markers=None,plot3D=None):
+	def plotorbit(self,markers=None,color=None,plot3D=None):
 		"""Plots traces of the orbits in 3D
 
 		This routine plots traces of the particle orbits in 3D.
@@ -570,6 +570,8 @@ class BEAMS3D():
 		----------
 		markers : list (optional)
 			List of marker indices to plot (default: all)
+		color : string (optional)
+			Line color name, see VTK (scalars overrides)
 		plot3D : plot3D object (optional)
 			Plotting object to render to.
 		"""
@@ -600,7 +602,7 @@ class BEAMS3D():
 			points = vtk.vtkPoints()
 			for point in points_array:
 				points.InsertNextPoint(point)
-			plt.add3Dline(points,linewidth=2)
+			plt.add3Dline(points,linewidth=2,color=color)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested
