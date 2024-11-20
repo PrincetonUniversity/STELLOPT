@@ -35,7 +35,7 @@
                         te, ne, dtedrho, dnedrho, EparB, JBS_PENTA, etapar_PENTA, rho_temp, J_temp, eta_temp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: ni,ti, dtidrho, dnidrho
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: D11, D13, D33
-      TYPE(EZspline1_r8) :: J_spl, eta_spl
+      TYPE(EZspline1_r8) :: EparB_spl, J_spl, eta_spl
       INTEGER :: bcs0(2)
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -62,6 +62,17 @@
          JBS_PENTA = 0.0; etapar_PENTA = 0.0
 
          IF (myworkid == master) THEN
+            
+            ! EparB Spline
+            bcs1=(/ 0, 0/)
+            CALL EZspline_init(EparB_spl,nsj,bcs1,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_penta: eparb',ier)
+            EparB_spl%isHermite   = 0
+            EparB_spl%x1 = SQRT(THRIFT_S)
+            CALL EZspline_setup(EparB_spl,THRIFT_EPARB(:,mytimestep),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_penta: eparb',ier)
+            !
+
             DO k = 1, ns_dkes
                   mysurf = DKES_K(k)
                   s = DBLE(mysurf-1) / DBLE(ns_eq-1)
@@ -99,14 +110,14 @@
                         CALL get_prof_tiprime(rho, THRIFT_T(mytimestep), j, dtidrho(k,j))
                         CALL get_prof_niprime(rho, THRIFT_T(mytimestep), j, dnidrho(k,j))
                   END DO
-
-                  !EparB
-                  EparB(k) = 0.0_rprec !! temporary... cannot do THRIFT_EPARB(mysurf,mytimestep) since this is defined in thrift grid, not vmec... interpolation?
+                  
+                  ! EparB
+                  ier = 0
+                  CALL EZSpline_interp(EparB_spl, rho, EparB(k), ier)
             END DO
-
-
-            ! print *, 'master_thrift_penta: dkes_d11', DKES_D11
+            CALL EZspline_free(EparB_spl,ier)
          END IF
+         
 #if defined(MPI_OPT)
          CALL MPI_BCAST(rho_k,ns_dkes,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(iota,ns_dkes,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
