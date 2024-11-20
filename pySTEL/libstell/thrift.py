@@ -34,7 +34,7 @@ class THRIFT():
 		"""
 
         import h5py
-        import numpy as np
+        # import numpy as np
 
 		#read file
         with h5py.File(file,'r') as f:
@@ -127,6 +127,64 @@ class THRIFT():
         print(f'Returning variable {var} at t={real_time}s')
         
         return plot_var[idx,:]
+    
+
+    def plot_plasma_profile(self,plasma_file):
+        
+        import h5py
+        
+        hf = h5py.File(plasma_file, 'r')
+
+        #read taxis and raxis
+        nt = np.array( hf['nt'] )
+        raxis = np.array( hf['raxis_prof'][:] )
+        taxis = np.array( hf['taxis_prof'][:] )
+        
+        ne = np.array( hf['ne_prof'][:] )
+        Te = np.array( hf['te_prof'][:] )
+        
+        ni = np.array( hf['ni_prof'][:] )
+        Ti = np.array( hf['ti_prof'][:] )
+        
+        nion = np.int64( hf['nion'] )
+        
+        hf.close()
+        
+        _, ax_n = plt.subplots(figsize=(11,8))
+        _, ax_T = plt.subplots(figsize=(11,8))    
+        
+        ax_n.plot(raxis,ne)
+        ax_n.set_xlabel('r/a') 
+        ax_n.set_title('ne')   
+        ax_n.grid()   
+        
+        ax_T.plot(raxis,Te)
+        ax_T.set_xlabel('r/a') 
+        ax_T.set_title('Te')   
+        ax_T.grid()  
+        
+        plt.show()
+        
+        _, ax_n = plt.subplots(figsize=(11,8))
+        _, ax_T = plt.subplots(figsize=(11,8))
+        
+        for i in range(nion):
+            
+            ax_n.plot(raxis,ni[:,:,i])
+            ax_n.set_xlabel('r/a') 
+            ax_n.set_title(f'ni, ion={i+1}')   
+            ax_n.grid()
+            
+            ax_T.plot(raxis,Ti[:,:,i])
+            ax_T.set_xlabel('r/a') 
+            ax_T.set_title(f'Ti, ion={i+1}')   
+            ax_T.grid()
+            
+            plt.show()
+            
+        
+        
+        
         
         
         
