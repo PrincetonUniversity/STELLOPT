@@ -157,7 +157,7 @@
          irun_setup_booz = 0
          CALL boozer_coords(ik,irun_setup_booz)
          IF (myend<=ik) mystart = myend + 1 ! we did it
-         IF (myworkid /= master .and. mystart <= myend) THEN
+         IF (myworkid /= master) THEN
             rmncb = 0
             zmnsb = 0
             pmnsb = 0
@@ -170,7 +170,7 @@
                gmnsb = 0
                bmnsb = 0
             END IF
-            irun_setup_booz = COUNT(lsurf_boz(1:mystart-1))
+            IF(mystart <= myend) irun_setup_booz = COUNT(lsurf_boz(1:mystart-1))
          ELSE
             mystart = ik+1
          END IF
