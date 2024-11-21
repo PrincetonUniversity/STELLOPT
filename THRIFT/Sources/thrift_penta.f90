@@ -173,7 +173,7 @@
             JBS_PENTA(k) = J_BS_ambi(root_max_Er)
             etapar_PENTA(k) = sigma_par_ambi(root_max_Er)
 
-            CALL PENTA_RUN_4_CLEANUP
+            CALL PENTA_RUN_4_CLEANUP(lscreen)
          END DO
 
          !! Bootstrap interpolation onto THRIFT grid
