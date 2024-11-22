@@ -68,15 +68,16 @@ SUBROUTINE beams3d_init_continuegrid
       betatot = 0
       CALL get_beams3d_grid(nrh,nzh,nph,rmin_hint,rmax_hint,zmin_hint,zmax_hint,pmax_hint)
       WRITE(6,'(A)')               '----- beams3d Information -----'
-      WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin_hint,',',rmax_hint,'];  NR:   ',nrh
-      WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',0.0,',',pmax_hint,'];  NPHI: ',nph
-      WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin_hint,',',zmax_hint,'];  NZ:   ',nzh
+      WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin_hint,',',rmax_hint,'];  NR:   ',nr
+      WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',0.0,',',pmax_hint,'];  NPHI: ',nphi
+      WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin_hint,',',zmax_hint,'];  NZ:   ',nz
    END IF
 
-   ! Calculate the axis values
-   DO s = 1, nphi
-      CALL get_beams3d_magaxis(phiaxis(s),req_axis(s),zeq_axis(s))
-   END DO
+   ! ! Calculate the axis values
+   ! DO s = 1, nphi
+   !    !WRITE(6,'(I4, F8.5,F8.5,F8.5)') s,phiaxis(s),req_axis(s),zeq_axis(s)
+   !    CALL get_beams3d_magaxis(phiaxis(s),req_axis(s),zeq_axis(s))
+   ! END DO
 
 
    IF (lverb) THEN
@@ -92,8 +93,10 @@ SUBROUTINE beams3d_init_continuegrid
    END IF
    ALLOCATE(nitemp(NION))
 #if defined(MPI_OPT)
+
    CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
+
    DO s = mystart, myend
       i = MOD(s-1,nr)+1
       j = MOD(s-1,nr*nphi)
