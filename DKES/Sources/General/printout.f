@@ -1,4 +1,4 @@
-      SUBROUTINE dkes_printout(fz1p, fz1m, fz3p, fz3m, srces)
+      SUBROUTINE dkes_printout(fz1p, fz1m, fz3p, fz3m, srces, lprint)
 
 c  This subroutine calculates the diffusion coefficients, parallel
 c  viscous stress, and banana-plateau flux, and writes them to dkesout.
@@ -30,6 +30,7 @@ C-----------------------------------------------
       REAL(rprec), DIMENSION(mpnt,0:lalpha), INTENT(in) :: 
      &             fz1p, fz1m, fz3p, fz3m
       REAL(rprec), DIMENSION(mpnt,4,2,2), INTENT(in)    :: srces
+      LOGICAL, INTENT(IN), OPTIONAL :: lprint
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
@@ -158,59 +159,63 @@ c  and allocates these arrays
 
 c  output results summary
 
-      WRITE (ioout, 10) '+', L11p, L33p, L13p, L31p, g31min,
-     1                 '-', L11m, L33m, L13m, L31m, g31max,
-     2                 scal11, scal33, scal13,
-     2                 stress1, bpflux1, g33s,
-     3                 'F(1,-)', rsd1m, crs1m, rs11m, rs13m,
-     4                 'F(1,+)', rsd1p, crs1p, rs11p, rs13p,
-     5                 'F(3,-)', rsd3m, crs3m, rs33m, rs31m,
-     6                 'F(3,+)', rsd3p, crs3p, rs33p, rs31p
-      CALL FLUSH(ioout)
+      ! Check if the optional argument is present
+      IF ( (present(lprint) .and. lprint) .or. not present(lprint)) THEN
 
- 10   FORMAT(/1x,'NEOCLASSICAL TRANSPORT MATRIX ELEMENTS: ',
-     1     /1x,'DIJ(Eq.36,K=1) = LIJ * [(MKS FACT) * (Ti SCALE)]',
-     1      2x,' NOTE: L33(paper) = <B^2>*[L33(Spitzer) - L33]',
-     1   //,6x,'PARITY',10x,'L11',12x,'L33',12x,'L13',12x,'L31',7x,
-     2      'L13(min/max)',/,1x,131('-'),/,2(9x,a,3x,5(3x,1pe12.4),/),
-     3      4x,'MKS FACT.',3(3x,1pe12.4),/,
-     4      4x,'Ti SCALE',8x,'TI**1.5',8x,'TI**0.5',8x,'TI**1.0',
-     3      //,4x,'PARALLEL',7x,'BAN-PLAT',10x,'L33'/,
-     4      6x,'STRESS',9x,'FLUX',9x,'(SPITZER)',/,
-     5      1pe12.4,4x,1pe12.4,3x,1pe12.4///,1x,
-     5      'EQUATION RESIDUALS (L = KINETIC EQUATION OPERATOR)'//,
-     6      3x,' F(I,+/-)',7x,'KIN. EQ.',4x,'PART. CONSERV.',3x,
-     7      'RES(FI,LI)',5x,'RES(FJ,LI)',/,
-     8      18x,'{L[FI]**2}',20x,'{FI,L[FI]}',5x,'{FJ,L[FI]}',/,
-     9      1x,131('-'),/,4(5x,a,2x,4(3x,1pe12.4)/)/)
+            WRITE (ioout, 10) '+', L11p, L33p, L13p, L31p, g31min,
+         1                 '-', L11m, L33m, L13m, L31m, g31max,
+         2                 scal11, scal33, scal13,
+         2                 stress1, bpflux1, g33s,
+         3                 'F(1,-)', rsd1m, crs1m, rs11m, rs13m,
+         4                 'F(1,+)', rsd1p, crs1p, rs11p, rs13p,
+         5                 'F(3,-)', rsd3m, crs3m, rs33m, rs31m,
+         6                 'F(3,+)', rsd3p, crs3p, rs33p, rs31p
+            CALL FLUSH(ioout)
 
-!
-!     WRITE SUMMARY OPT_FILE FOR USE BY OPTIMIZER
-!
-      WRITE(ioout_opt,'(3(2x,e24.13))') L11p, L33p, L31p
-      WRITE(ioout_opt,'(3(2x,e24.13))') L11m, L33m, L31m
-      WRITE(ioout_opt,'(3(2x,e24.13))') scal11, scal33, scal13
-      CALL FLUSH(ioout_opt)
+         10   FORMAT(/1x,'NEOCLASSICAL TRANSPORT MATRIX ELEMENTS: ',
+            1     /1x,'DIJ(Eq.36,K=1) = LIJ * [(MKS FACT) * (Ti SCALE)]',
+            1      2x,' NOTE: L33(paper) = <B^2>*[L33(Spitzer) - L33]',
+            1   //,6x,'PARITY',10x,'L11',12x,'L33',12x,'L13',12x,'L31',7x,
+            2      'L13(min/max)',/,1x,131('-'),/,2(9x,a,3x,5(3x,1pe12.4),/),
+            3      4x,'MKS FACT.',3(3x,1pe12.4),/,
+            4      4x,'Ti SCALE',8x,'TI**1.5',8x,'TI**0.5',8x,'TI**1.0',
+            3      //,4x,'PARALLEL',7x,'BAN-PLAT',10x,'L33'/,
+            4      6x,'STRESS',9x,'FLUX',9x,'(SPITZER)',/,
+            5      1pe12.4,4x,1pe12.4,3x,1pe12.4///,1x,
+            5      'EQUATION RESIDUALS (L = KINETIC EQUATION OPERATOR)'//,
+            6      3x,' F(I,+/-)',7x,'KIN. EQ.',4x,'PART. CONSERV.',3x,
+            7      'RES(FI,LI)',5x,'RES(FJ,LI)',/,
+            8      18x,'{L[FI]**2}',20x,'{FI,L[FI]}',5x,'{FJ,L[FI]}',/,
+            9      1x,131('-'),/,4(5x,a,2x,4(3x,1pe12.4)/)/)
 
-      !CLOSE(unit=ioout_opt)
+      !
+      !     WRITE SUMMARY OPT_FILE FOR USE BY OPTIMIZER
+      !
+            WRITE(ioout_opt,'(3(2x,e24.13))') L11p, L33p, L31p
+            WRITE(ioout_opt,'(3(2x,e24.13))') L11m, L33m, L31m
+            WRITE(ioout_opt,'(3(2x,e24.13))') scal11, scal33, scal13
+            CALL FLUSH(ioout_opt)
+
+         !CLOSE(unit=ioout_opt)
 
 c      Generate output for DKES parameter study file            !record file addition
 c
 c      Find maximim abs(residual):
 c
-       rsds(1)=rsd1m;rsds(2)=crs1m;rsds(3)=rs11m;rsds(4)=rs13m    !record file addition
-       rsds(5)=rsd1p;rsds(6)=crs1p;rsds(7)=rs11p;rsds(8)=rs13p    !record file addition
-       rsds(9)=rsd3m;rsds(10)=crs3m;rsds(11)=rs33m;rsds(12)=rs31m !record file addition
-       rsds(13)=rsd3p;rsds(14)=crs3p;rsds(15)=rs33p;rsds(16)=rs31p!record file addition
-       DO ir=1,16                                                 !record file addition
-        rsds(ir) = abs(rsds(ir))                                  !record file addition
-       END DO                                                     !record file addition
-       rsds_max = maxval(rsds)                                    !record file addition
+         rsds(1)=rsd1m;rsds(2)=crs1m;rsds(3)=rs11m;rsds(4)=rs13m    !record file addition
+         rsds(5)=rsd1p;rsds(6)=crs1p;rsds(7)=rs11p;rsds(8)=rs13p    !record file addition
+         rsds(9)=rsd3m;rsds(10)=crs3m;rsds(11)=rs33m;rsds(12)=rs31m !record file addition
+         rsds(13)=rsd3p;rsds(14)=crs3p;rsds(15)=rs33p;rsds(16)=rs31p!record file addition
+         DO ir=1,16                                                 !record file addition
+         rsds(ir) = abs(rsds(ir))                                  !record file addition
+         END DO                                                     !record file addition
+         rsds_max = maxval(rsds)                                    !record file addition
 
-       WRITE(itab_out,99) cmul1,tb,efield1,tb,weov,tb,wtov,tb,L11m,!record file addition
-     >  tb,L11p,tb,L31m,tb,L31p,tb,L33m,tb,L33p,tb,scal11,tb,      !record file addition
-     >  scal13,tb,scal33,tb,rsds_max,tb,chip,tb,psip,              !record file addition
-     >  tb,btheta,tb,bzeta,tb,vp                                   !record file addition
-   99 FORMAT(18(e12.5,a1),e12.5)                                   !record file addition
-      !CLOSE(unit=itab_out)                                         !record file addition
+         WRITE(itab_out,99) cmul1,tb,efield1,tb,weov,tb,wtov,tb,L11m,!record file addition
+      >  tb,L11p,tb,L31m,tb,L31p,tb,L33m,tb,L33p,tb,scal11,tb,      !record file addition
+      >  scal13,tb,scal33,tb,rsds_max,tb,chip,tb,psip,              !record file addition
+      >  tb,btheta,tb,bzeta,tb,vp                                   !record file addition
+      99 FORMAT(18(e12.5,a1),e12.5)                                   !record file addition
+         !CLOSE(unit=itab_out)                                         !record file addition
+      END IF
       END SUBROUTINE dkes_printout
