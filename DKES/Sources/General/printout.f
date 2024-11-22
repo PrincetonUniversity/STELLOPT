@@ -160,7 +160,7 @@ c  and allocates these arrays
 c  output results summary
 
       ! Check if the optional argument is present
-      IF ( (present(lprint) .and. lprint) .or. not present(lprint)) THEN
+      IF ( (present(lprint) .and. lprint) .or. .not. present(lprint)) THEN
 
             WRITE (ioout, 10) '+', L11p, L33p, L13p, L31p, g31min,
          1                 '-', L11m, L33m, L13m, L31m, g31max,
