@@ -232,6 +232,7 @@
             WRITE(*, '(A33, F6.1, A)') '   TOTAL time in thrift_evolve: ', (etime_total-stime_total) / 60.0, ' min'
             WRITE(6,*)'==============================================================================='
             WRITE(6,*) ' '
+            CALL FLUSH(6)
       END IF
 
       ! Deallocate helpers
