@@ -214,11 +214,11 @@
                      mpolb = min (abs(mpolb-1), mmax)
                   ELSE 
                      IF (ntorb > ntorbd) THEN
-                        WRITE (ioout, 45) ntorb, ntorbd
+                        ! WRITE (ioout, 45) ntorb, ntorbd
                         STOP ' ntorb > ntorbd in DKES input'
                      END IF
                      IF (mpolb < 2) THEN
-                        WRITE (ioout, 20) mpolb
+                        ! WRITE (ioout, 20) mpolb
                         STOP ' mpolb < 2 in DKES input'
                      ENDIF
                   END IF
