@@ -171,7 +171,7 @@
             ! This because whenever there are 2 stable roots, a rule of thumb is to pick the one with largest Er
             root_max_Er = MAXLOC(Er_roots(1:num_roots),1)
             JBS_PENTA(k) = J_BS_ambi(root_max_Er)
-            etapar_PENTA(k) = sigma_par_ambi(root_max_Er)
+            etapar_PENTA(k) = 1.0_rprec / sigma_par_ambi(root_max_Er)
 
             CALL PENTA_RUN_4_CLEANUP(lscreen)
          END DO
