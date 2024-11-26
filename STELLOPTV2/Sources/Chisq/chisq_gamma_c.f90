@@ -147,9 +147,9 @@
 
             ! Convert radial gradients from d/drho to d/ds
             ! s = rho^2; ds/drho = 2*rho
-            gradB(3) = 0.5*gradB(3)/rho(i)
-            gradR(3) = 0.5*gradR(3)/rho(i)
-            gradZ(3) = 0.5*gradZ(3)/rho(i)
+            gradB(3) = 0.5*gradB(3)/rho(ik)
+            gradR(3) = 0.5*gradR(3)/rho(ik)
+            gradZ(3) = 0.5*gradZ(3)/rho(ik)
 
             ! Calc grad(s) (copied from txport)
             esubs(1) = gradR(3)
@@ -174,8 +174,8 @@
             eu = eu/sqrtg
             ev = ev/sqrtg
             gradS = es * phiedge
-            grad_psi_norm(j) = sqrt(grad_psi(1)*grad_psi(1) + grad_psi(2)*grad_psi(2) & 
-                                  & + grad_psi(3)*grad_psi(3))/pi2
+            grad_psi_norm(j) = sqrt(gradS(1)*gradS(1) + gradS(2)*gradS(2) & 
+                                  & + gradS(3)*gradS(3))/pi2
 
             ! dB/dpsi
             dBdpsi(j) = gradB(3)*pi2/psi_a !This has been verified with ROSE
