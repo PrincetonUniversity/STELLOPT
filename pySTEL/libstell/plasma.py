@@ -484,6 +484,33 @@ class PLASMA:
         
         print(f'{filename} created with success!')
         
+    def plot_nustar(self,R0=1.0,iota=1.0):
+        # plots nu_star = (nu(vth)/vth)*() as a function of 
+        
+        import matplotlib.pyplot as plt
+        
+        plt.rc('font', size=18)
+        
+        roa = np.linspace(0,1,100)
+        
+        _, ax = plt.subplots(figsize=(11,8))
+
+        for species in self.list_of_species:
+            vth = self.get_thermal_speed(species,roa)
+            nu = self.get_collisionality(species,roa,vtest=vth)
+            
+            nu_star = (nu/vth)*(R0/iota) 
+            
+            ax.plot(roa,nu_star,'-',label=f'{species}')
+        
+        ax.grid()
+        ax.set_xlabel('r/a')
+        ax.set_ylabel(r'$\nu^*$')
+        ax.set_yscale('log')
+        ax.set_title(r'plasma collisionality $\nu^*=(\nu/v_{th})(R_0/\iota)$')
+        plt.legend()
+        plt.show()
+        
     def get_pressure_polynomial_coefficients(self,deg_fit=10):
         # this computes the AM coefficients and the PRES_SCALE scalar for a VMEC input
         # assuming that PMASS_TYPE = 'power_series'
@@ -540,75 +567,7 @@ class PLASMA:
         print(f'AM_AUX_S = {s_VMEC}')
         print(f'AM_AUX_F = {pres}')
         
-        return AM,PRES_SCALE
-
-        
-    def print_SFINCS_namelist(self,roa):
-        # prints in the command line physics and species parameters namelist of for SFINCS
-        
-        n_species = np.array( [self.get_density(species,rho=roa) for species in self.list_of_species] )
-        T_species = np.array( [self.get_temperature(species,rho=roa) for species in self.list_of_species] )
-        m_species = np.array( [self.mass[species] for species in self.list_of_species] )
-        Z_species = np.array( [self.Zcharge[species] for species in self.list_of_species] )
-        
-        nder_species = np.array( [self.get_density_der(species,rho=roa) for species in self.list_of_species] )
-        Tder_species = np.array( [self.get_temperature_der(species,rho=roa) for species in self.list_of_species] )
-
-        ## reference values
-        nBar = np.max(n_species) # pick largest value. must be in m^-3
-        mBar = MP # must be in kg 
-        TBar = np.max(T_species) # must be in eV
-        
-        vBar = np.sqrt(2*TBar*EC/mBar)
-        
-        print(f'nBar = {nBar}')
-        print(f'vBar = {vBar}')
-        
-        # mandatory values -- these values (BBar=1 and RBar=1) are mandatory when mag field is read from VMEC wout file (see SFINCS documentation)
-        BBar = 1.0
-        RBar = 1.0
-        
-        # print(f'jbs.B = {-1.2e-4*EC*nBar*vBar*BBar}')
-        
-        # compute loglambda as in PENTA
-        Te = self.get_temperature('electrons',rho=roa)
-        ne = self.get_density('electrons',rho=roa)
-        if(Te>50):
-            loglambda = 25.3 - 1.15*np.log10(ne/1e6) + 2.3*np.log10(Te)
-        else:
-            loglambda = 23.4 - 1.15*np.log10(ne/1e6) + 3.45*np.log10(Te)
-        
-        nuHat = 4*np.sqrt(2*np.pi)*nBar*EC**4*loglambda / ( 3*(4*np.pi*EPS0)**2 * np.sqrt(mBar) * (EC*TBar)**1.5 )
-        
-        # compute physics parameters
-        Delta = mBar*vBar / (EC*BBar*RBar)
-        alpha = 1.0
-        nu_n = nuHat * RBar/vBar
-        
-        mHats = m_species/mBar
-        nHats = n_species/nBar
-        THats = T_species/TBar
-        dNHatdrNs = nder_species/nBar
-        dTHatdrNs = Tder_species/TBar
-        
-        # print output
-        
-        print('&speciesParameters')
-        print(f"Zs = {' '.join(map(str, Z_species))}")
-        print(f"mHats = {' '.join(map(str, mHats))}")
-        print(f"nHats = {' '.join(map(str, nHats))}")
-        print(f"THats = {' '.join(map(str, THats))}")
-        print(f"dNHatdrNs = {' '.join(map(str, dNHatdrNs))}")
-        print(f"dTHatdrNs = {' '.join(map(str, dTHatdrNs))}")
-        print('/')
-
-        print('&physicsParameters')
-        print(f'Delta = {Delta}')
-        print(f'alpha = {alpha}')
-        print(f'nu_n = {nu_n}')
-
-        print('dont forget the rest of the parameters...')
-        
+        return AM,PRES_SCALE       
         
     def print_SFINCS_list_namelist(self,roa_list,folder_path):
         # saves input.namlist inside folder_path/surface_k
@@ -731,15 +690,14 @@ solverTolerance = 1d-6
 """
             
              # Define the file path
-            file_path = os.path.join(folder_path+'/'+folder_name, 'input.namelist')
+            file_path = os.path.join(folder_path+'/'+folder_name, f'input.namelist_{k+1}')
             
             # Write the content to the file
             with open(file_path, 'w') as f:
                 f.write(file_content)
 
             print(f"Created {file_path}")
-        
-
+            
 # Main routine
 if __name__=="__main__":
 	import sys

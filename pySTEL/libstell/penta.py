@@ -593,6 +593,8 @@ class PENTA:
         
         import matplotlib.pyplot as plt
         
+        plt.rcParams['axes.prop_cycle'] = plt.cycler(color=['#5faf30','#1D2258','#004817','#a1cdc8'])
+        
         roa_list = []
         Er_list = []
         Jprl_total_list = []
@@ -615,30 +617,30 @@ class PENTA:
             J_BS_list.append(J_BS)
             Gamma_list.append(Gamma)
             
-        plt.rc('font', size=18)
+        plt.rc('font', size=24)
     
         # Plot roa vs Er
-        plt.figure(figsize=(11, 8))
+        plt.figure(figsize=(12, 9))
         for i, roa in enumerate(roa_list):
             if i==2:
                 plt.plot(roa, Er_list[i], label=list_of_legends[i], linestyle = '-')
             else:
                 plt.plot(roa, Er_list[i], label=list_of_legends[i], marker='o')
-        plt.xlabel('r/a')
+        plt.xlabel(r'$r/a$')
         plt.ylabel(r'$E_r~~[V/cm]$')
-        #plt.title('r/a vs Er')
+        plt.title('Electric Field')
         plt.legend()
         plt.grid(True)
         #plt.show()
 
         # Plot roa vs Jprl_total
-        plt.figure(figsize=(11, 8))
+        plt.figure(figsize=(12, 9))
         for i, roa in enumerate(roa_list):
             if i==2:
                 plt.plot(roa, Jprl_total_list[i]/1e3, label=list_of_legends[i], linestyle = '-')
             else:
                 plt.plot(roa, Jprl_total_list[i]/1e3, label=list_of_legends[i], marker='o')
-        plt.xlabel('r/a')
+        plt.xlabel(r'$r/a$')
         plt.ylabel(r'$J_{\parallel}~~[kA/m^2]$')
         #plt.title('r/a vs Jprl_total')
         plt.legend()
@@ -646,28 +648,30 @@ class PENTA:
         #plt.show()
 
         # Plot roa vs J_BS
-        plt.figure(figsize=(11, 8))
+        plt.figure(figsize=(12, 9))
         for i, roa in enumerate(roa_list):
             if i==2:
                 plt.plot(roa, J_BS_list[i]/1e3, label=list_of_legends[i], linestyle = '-')
             else:
                 plt.plot(roa, J_BS_list[i]/1e3, label=list_of_legends[i], marker='o')
-        plt.xlabel('r/a')
+        plt.xlabel(r'$r/a$')
         plt.ylabel(r'$J_{BS}~~[kA/m^2]$')
-        #plt.title('r/a vs J_BS')
+        plt.title('Bootstrap Current')
         plt.legend()
         plt.grid(True)
         #plt.show()
+        plt.savefig('destination_path.eps', format='eps')
         
         # Plot roa vs Gamma
-        plt.figure(figsize=(11, 8))
+        plt.figure(figsize=(12, 9))
         for i, roa in enumerate(roa_list):
             if i==2:
-                plt.plot(roa, Gamma_list[i], label=list_of_legends[i], linestyle = '-')
+                plt.plot(roa, Gamma_list[i]/1e17, label=list_of_legends[i], linestyle = '-')
             else:
-                plt.plot(roa, Gamma_list[i], label=list_of_legends[i], marker='o')
-        plt.xlabel('r/a')
-        plt.ylabel(r'$\Gamma~~[m^{-2}~s^{-1}]$')
+                plt.plot(roa, Gamma_list[i]/1e17, label=list_of_legends[i], marker='o')
+        plt.xlabel(r'$r/a$')
+        plt.ylabel(r'$\Gamma~~[\times~10^{17}~m^{-2}~s^{-1}]$')
+        plt.title('Neoclassical Fluxes')
         plt.legend()
         plt.grid(True)
         plt.show()

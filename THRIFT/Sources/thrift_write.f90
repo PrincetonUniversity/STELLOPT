@@ -128,6 +128,8 @@
          ! Electric Field
          CALL write_var_hdf5(fid,'THRIFT_EPARB',nsj,ntimesteps,ier,DBLVAR=THRIFT_EPARB,ATT='<E.B> [V.T/m] (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_EPARB',ier)
+         CALL write_var_hdf5(fid,'THRIFT_ER',nsj,ntimesteps,ier,DBLVAR=THRIFT_ER,ATT='Er [V/m] (s-space)',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ER',ier)
          ! ABCD
          CALL write_var_hdf5(fid,'THRIFT_COEFF_A',nsj,ntimesteps,ier,DBLVAR=THRIFT_COEFF_A,ATT='Coefficient A (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_A',ier)
