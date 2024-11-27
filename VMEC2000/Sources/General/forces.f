@@ -1,3 +1,10 @@
+!-------------------------------------------------------------------------------
+!>  @brief Compute variation in the forces.
+!>
+!>  The variation in the forces is defined as:
+!>
+!>    d/ds(dZ/du)
+!-------------------------------------------------------------------------------
       SUBROUTINE forces_par
       USE vmec_main, p5 => cp5
       USE realspace
@@ -40,7 +47,7 @@ C-----------------------------------------------
       DO l = nsmin, nsmax      
          guus(:,l) = pguu(:,l)*pshalf(:,l)
          guvs(:,l) = pguv(:,l)*pshalf(:,l)
-         gvvs(:,l) = pgvv(:,l)* pshalf(:,l)
+         gvvs(:,l) = pgvv(:,l)*pshalf(:,l)
 
          parmn_e(:,l) = ohs*zu12(:,l)*lu_e(:,l)
          pazmn_e(:,l) =-ohs*ru12(:,l)*lu_e(:,l)

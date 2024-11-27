@@ -15,6 +15,9 @@ C-----------------------------------------------
       REAL(dp), ALLOCATABLE :: grpmn(:), green(:), gstore(:)
       REAL(dp), ALLOCATABLE :: greenp(:,:)
       REAL(dp) :: ton, toff, tonscal
+
+      integer :: info
+
 C-----------------------------------------------
       CALL second0(tonscal)
 
@@ -63,19 +66,19 @@ C-----------------------------------------------
          PRIMED: DO ip = nuv3min, nuv3max
             istore = 1 + MOD(ip-nuv3min,istore_max)
 !
-!        COMPUTE DIFFERENCE BETWEEN THE EXACT AND ANALYTIC GREENS FUNCTION AND GRADIENT 
+!        COMPUTE DIFFERENCE BETWEEN THE EXACT AND ANALYTIC GREENS FUNCTION AND GRADIENT
 !        [FIRST TERMS IN EQ.(2.14, 2.16)].
 !
 !        BECAUSE OF THE LARGE SIZES INVOLVED (nuv3*nuv3), THIS IS DONE HERE BY STORING
 !        THESE QUANTITIES - FOR ALL VALUES OF THE UNPRIMED U,V COORDINATE MESH - ON A
-!        LIMITED SUBSET (ISTORE_max) OF PRIMED MESH VALUES (INDEXED BY ISTORE~IP), 
+!        LIMITED SUBSET (ISTORE_max) OF PRIMED MESH VALUES (INDEXED BY ISTORE~IP),
 !        THE FOURIER TRANSFORM OVER THE PRIMED MESH IS "BUILT-UP" BY MULTIPLE CALLS TO FOURP
-!        WITHIN THIS LOOP. 
+!        WITHIN THIS LOOP.
 !
             CALL greenf (green, greenp(1,istore), ip)
 
 
-!        PERFORM INTEGRAL (SUM) OVER PRIMED MESH OF NON-SINGULAR SOURCE TERM 
+!        PERFORM INTEGRAL (SUM) OVER PRIMED MESH OF NON-SINGULAR SOURCE TERM
 !        [(h-hsing)(u,v,u',v') == bexni(ip)*green(u,v; ip) in Eq. 2.16]
 !        AND STORE IT - FOR UNPRIMED MESH VALUES - IN GSTORE
 
@@ -105,9 +108,13 @@ C-----------------------------------------------
 !        COMPUTE FOURIER INTEGRAL OF GRADIENT (GRPMN) OVER PRIMED MESH IN EQ. 2.14
 !        AND SOURCE (GSTORE) OVER UNPRIMED MESH IN EQ. 2.16
 !
-         CALL fouri (grpmn, gstore, amatrix, amatsav, bvec, 
+         CALL fouri (grpmn, gstore, amatrix, amatsav, bvec,
      &               bvecsav, ndim)
          DEALLOCATE (green, greenp, gstore)
+
+         info = 0
+         CALL dgetrf(mnpd2, mnpd2, amatsav, mnpd2, ipiv, info)
+         IF (info .ne. 0) PRINT *, ' dgetrf error in scalpot'
 
       END IF
 
