@@ -4,7 +4,7 @@
 !    FUNCTION pmass
 !  (JDH 2010-03-30)
 !******************************************************************************
-      
+
       FUNCTION pcurr (xx)
 !  Function to compute the current profile
 
@@ -15,16 +15,19 @@
 !  bloat            used to expand the current profile
 !  pcurr_type       character, specifies the parameterization of the profile
 !                     | - X for parametrization of I-prime(s), _ for I(s)
+!    sum_cossq_s      X    Sum of cos**2-waves - I-prime
+!    sum_cossq_sqrts  X    Sum of cos**2-waves with respect to sqrt(s) - I-prime
+!    sum_cossq_s_free X    Sum of cos**2-waves up to 7, free position and width - I-prime
 !    gauss_trunc      X    Truncated Gaussian - I-prime
 !    two_power        X    Two powers - ac(0) * (1 - s ** ac(1)) ** ac(2)
 !    two_power_gs     X    Two powers with gaussian peaks -
 !                          ac(0) * ((1 - s ** ac(1)) ** ac(2))*(1 + Sum[ac(i)*Exp(-(s - ac(i+1))/ac(i+2)) ** 2])
 !    sum_atan         _    sum of arctangents
 !    power_series_I   _    Power series for I(s) (NOT default)
-!    Akima_spline_Ip  X    Akima spline for I-prime(s) 
-!    Akima_spline_I   _    Akima spline for I(s) 
-!    cubic_spline_Ip  X    cubic spline for I-prime(s) 
-!    cubic_spline_I   _    cubic spline for I(s) 
+!    Akima_spline_Ip  X    Akima spline for I-prime(s)
+!    Akima_spline_I   _    Akima spline for I(s)
+!    cubic_spline_Ip  X    cubic spline for I-prime(s)
+!    cubic_spline_I   _    cubic spline for I(s)
 !    pedestal         _    Pedestal profile
 !    rational         _    Rational function (ratio of polynomials)
 !    line_segment_Ip  X    Line segments for I-prime(s)
@@ -47,7 +50,7 @@
 !  Note that the profile that is parameterized is often I-prime, whereas
 !  I(x) (= Integral_from_0_to_x I-prime(s) ds) is the function that pcurr
 !  returns. For the default case of a power series, the integral can be
-!  computed analytically. For other cases, a numerical quadrature is done, 
+!  computed analytically. For other cases, a numerical quadrature is done,
 !  using a 10-point Gauss-Legendre quadrature.
       USE stel_kinds
       USE stel_constants, ONLY: zero, one, pi
@@ -55,25 +58,41 @@
       USE line_segment
       USE functions
       IMPLICIT NONE
-! ac assumed to be dimensioned (0:n), with n >= 20 
+! ac assumed to be dimensioned (0:n), with n >= 20
 !-----------------------------------------------
       INTEGER     :: i, ioff, iflag
       REAL(rprec) :: xx, pcurr, x, xp, temp_num, temp_denom
       CHARACTER(len=20) :: pcurr_type_lc
-      
+
       INTEGER, PARAMETER          :: gln = 10
       INTEGER                     :: gli
-      REAL(rprec), DIMENSION(gln), PARAMETER :: glx = (/                       &
-     &   0.01304673574141414, 0.06746831665550774, 0.1602952158504878,         &
-     &   0.2833023029353764, 0.4255628305091844, 0.5744371694908156,           &
-     &   0.7166976970646236, 0.8397047841495122, 0.9325316833444923,           &
-     &   0.9869532642585859 /)
-      REAL(rprec), DIMENSION(gln), PARAMETER :: glw = (/                       &
-     &   0.03333567215434407, 0.0747256745752903, 0.1095431812579910,          &
-     &   0.1346333596549982, 0.1477621123573764, 0.1477621123573764,           &
-     &   0.1346333596549982, 0.1095431812579910, 0.0747256745752903,           &
-     &   0.03333567215434407 /)
+      REAL(rprec), DIMENSION(gln), PARAMETER :: glx = (/
+     &   0.01304673574141414_rprec,
+     &   0.06746831665550774_rprec,
+     &   0.1602952158504878_rprec,
+     &   0.2833023029353764_rprec,
+     &   0.4255628305091844_rprec,
+     &   0.5744371694908156_rprec,
+     &   0.7166976970646236_rprec,
+     &   0.8397047841495122_rprec,
+     &   0.9325316833444923_rprec,
+     &   0.9869532642585859_rprec /)
+      REAL(rprec), DIMENSION(gln), PARAMETER :: glw = (/
+     &   0.03333567215434407_rprec,
+     &   0.0747256745752903_rprec,
+     &   0.1095431812579910_rprec,
+     &   0.1346333596549982_rprec,
+     &   0.1477621123573764_rprec,
+     &   0.1477621123573764_rprec,
+     &   0.1346333596549982_rprec,
+     &   0.1095431812579910_rprec,
+     &   0.0747256745752903_rprec,
+     &   0.03333567215434407_rprec /)
       REAL(rprec) :: g1,g2,g3,g4,a8,a12
+      REAL(rprec), dimension(21) :: xi, bsta, bend, wd
+      REAL(rprec) :: sqx,delx,delxsq,pisq
+      INTEGER :: ni
+      INTEGER :: ncssq
 
 !-----------------------------------------------
 !
@@ -91,7 +110,228 @@
       pcurr_type_lc = pcurr_type
       CALL tolower(pcurr_type_lc)
       SELECT CASE(TRIM(pcurr_type_lc))
-      
+
+      CASE ('sum_cossq_s')
+! 20180218, Joachim Geiger
+! The idea was to use the combination of cos**2-waves located at
+! different radial locations to build up a current density in a
+! hopefully quite flexible way. Since the current is needed, the
+! integration is done analytically.
+!  Sum of ncssq cos**2 terms put at different radial locations
+!  and with a windowing around the maxima as current density:
+!  ac(0) holds ncssq
+!     ac(1)*(H(x)-H(x-dx))*(cos(pi*(x-xi(1))/(2*dx))**2
+!    +ac(2)*(H(x-(xi(2)-dx))-H(x-(xi(2)+dx)))*cos(pi*(x-xi(2))/(2*dx))**2
+!    + ...
+!    +ac(ncssq)*(H(x-(xi(ncssq)-dx))-H(x-(xi(ncssq))))*cos(pi*(x-xi(ncssq))/(2*dx))**2
+!  windowing is done with the Heavyside-functions producing the
+!  Boxcar Function: H(x-a)-H(x-b) is, for a<b, 1 for a<x<b and zero otherwise.
+!  use of variables:
+!     half of interval width : dx=1/(ncssq-1.0)   .
+!     location of ith: xi=(i-1)*dx = (i-1)/(ncssq-1)
+!     example: ncssq=5, dx=1/4.0=0.25, locations:0.0, 0.25, 0.5, ...
+!     interval for first  wave:  0.00 to 0.25, maximum at 0.00
+!     interval for second wave:  0.00 to 0.50, maximum at 0.25
+!     interval for third  wave:  0.25 to 0.75, maximum at 0.50
+!     interval for fourth wave:  0.50 to 1.00, maximum at 0.75
+!     interval for fifth  wave:  0.75 to 1.00, maximum at 1.00
+!  Analytic integration results in a sum of sine-functions with
+!  linear increases:
+!  int(x(i)-dy to x) cos(pi*(t-xi(i))/(2*dx))**2 dx =
+!       =0.5*(x-(x(i)-dx)+(dx/pi)*sin(pi(x-x(i))/dx))
+!  For the very first part integration start at mid-interval,
+!  i.e. x=0, x(i)=0:
+!  int(0 to x) cos(pi*(t)/(2*dx))**2 dx =
+!       =0.5*(x+(dx/pi)*sin(pi(x)/dx))
+!  When adding up fully integrated intervals the first needs
+!  also to be accounted for differently.
+!
+      ncssq=int(ac(0))
+      if (ncssq .lt. 1 .or. ncssq .gt. 20) then
+        write(6,*) "Number of coeff.s for sum_cos_sq :",
+     &             "1<= sum_cos_sq <= 21!"
+        stop 'Check input!'
+      endif
+      delx=1.0_dp/(ncssq-1.0_dp)
+      bsta = 2.0_dp
+      bend = 2.0_dp
+      do i=1,ncssq
+        xi(i)=(i-1)*delx               ! location of maximum curr. dens.
+        bsta(i)=max(0.0_dp,xi(i)-delx) ! interval start of curr.dens.part
+        bend(i)=min(xi(i)+delx,1.0_dp) ! interval end of curr.dens.part
+      enddo
+      ni=1           ! first interval initially.
+      do i=1,ncssq   ! check the interval of x in ( bsta(i) : bend(i) ]
+        if( x .le. bend(i) .and. x .gt. bsta(i))then
+          ni=i
+        endif
+      enddo
+      pcurr=0.0
+      do i=1,ni
+        if( x .gt. bsta(i) .and. x .le. bend(i) ) then
+          if(i .eq. 1) then   ! the first has no linear term.
+            pcurr=pcurr + 0.5*ac(i)*(x+                                        &
+     &          delx*sin(pi*(x-xi(i))/delx)/pi)
+          else
+            pcurr=pcurr + 0.5*ac(i)*(x-xi(i)+delx+                             &
+     &          delx*sin(pi*(x-xi(i))/delx)/pi)
+          endif
+        else
+          if(i .eq. 1) then   !the first is only a half interval
+            pcurr=pcurr+0.5*ac(i)*delx
+          else
+            pcurr=pcurr+ac(i)*delx
+          endif
+        endif
+      enddo
+
+      CASE ('sum_cossq_sqrts')
+! 20180219, Joachim Geiger
+! This is the implementation for using sqrt(s) as coordinate.
+! The same idea as for sum_cos_sq.
+! The analytical integration give different integrals.
+!  Sum of ncssq cos**2 terms put at different radial locations
+!  and with a windowing around the maxima as current density:
+!  ac(0) holds ncssq
+!     ac(1)*(H(x)-H(x-dx))*(cos(pi*(x-xi(1))/(2*dx))**2
+!    +ac(2)*(H(x-(xi(2)-dx))-H(x-(xi(2)+dx)))*cos(pi*(x-xi(2))/(2*dx))**2
+!    + ...
+!    +ac(ncssq)*(H(x-(xi(ncssq)-dx))-H(x-(xi(ncssq))))*cos(pi*(x-xi(ncssq))/(2*dx))**2
+!  windowing is done with the Heavyside-functions producing the
+!  Boxcar Function: H(x-a)-H(x-b) is, for a<b, 1 for a<x<b and zero otherwise.
+!  use of variables:
+!     half of interval width : dx=1/(ncssq-1.0)   .
+!     location of ith: xi=(i-1)*dx = (i-1)/(ncssq-1)
+!     example: ncssq=5, dx=1/4.0=0.25, locations:0.0, 0.25, 0.5, ...
+!       Note the locations are with respect to sqrt(s), the s-value is given in brackets
+!     interval for first  wave:  0.00 to 0.25, maximum at 0.00  (0.0)
+!     interval for second wave:  0.00 to 0.50, maximum at 0.25  (0.0625)
+!     interval for third  wave:  0.25 to 0.75, maximum at 0.50  (0.25)
+!     interval for fourth wave:  0.50 to 1.00, maximum at 0.75  (0.5625)
+!     interval for fifth  wave:  0.75 to 1.00, maximum at 1.00  (1.0)
+!  Analytic integration now wrt sqrt(s)=x results in a more complicated sum of
+!  sine-functions and cosine-functions with and a linear increase:
+!  int(x(i)-dy to x) cos(pi*(t-xi(i))/(2*dx))**2 x dx =
+!       =  0.25*(x-(x(i))+dx**2/(2*pi**2)+
+!        + (dx/(2*pi))*x*sin(pi(x-x(i))/dx)) +
+!        + (dx**2/(2*pi**2))*x*cos(pi(x-x(i))/dx))
+!  For the very first part integration start at mid-interval,
+!  i.e. x=0, x(i)=0:
+!  int(0 to x) cos(pi*(t)/(2*dx))**2 x dx =
+!       =0.25*x+(dx/(2*pi)) * x  * sin(pi(x)/dx)
+!              +(dx**2/(2*pi**2))*(cos(pi(x)/dx)-1)
+!  When adding up fully integrated intervals the first needs
+!  also to be accounted for differently.
+!
+      ncssq=int(ac(0))
+      if (ncssq .lt. 1 .or. ncssq .gt. 20) then
+        write(6,*) "Number of coeff.s for sum_cos_sq :",
+     &             "1<= sum_cos_sq <= 21!"
+        stop 'Check input!'
+      endif
+      sqx=sqrt(x)
+      delx=1.0_dp/(ncssq-1.0_dp)
+      delxsq=delx*delx
+      pisq=pi*pi
+      bsta = 2.0_dp
+      bend = 2.0_dp
+      do i=1,ncssq
+        xi(i)=(i-1)*delx               ! location of maximum curr. dens.
+        bsta(i)=max(0.0_dp,xi(i)-delx) ! interval start of curr.dens.part
+        bend(i)=min(xi(i)+delx,1.0_dp) ! interval end of curr.dens.part
+      enddo
+      ni=1           ! first interval initially.
+      do i=1,ncssq   ! check the interval of x in ( bsta(i) : bend(i) ]
+        if( sqx .le. bend(i) .and. sqx .gt. bsta(i))then
+          ni=i
+        endif
+      enddo
+      pcurr=0.0
+      do i=1,ni
+        if( sqx .gt. bsta(i) .and. sqx .le. bend(i) ) then
+          if(i .eq. 1) then   ! the first has no linear term.
+            pcurr=pcurr + ac(i)*(0.25_dp*x+                                    &
+     &          (delx/(2*pi)*sqx*sin(pi*sqx/delx))+                            &
+     &          delxsq/(2*pisq)*(cos(pi*sqx/delx)-1.0_dp))
+          else
+            pcurr=pcurr + ac(i)*(0.25_dp*x+                                    &
+     &          delx/(2*pi)*sqx*sin(pi*(sqx-xi(i))/delx)+                      &
+     &          delxsq/(2*pisq)*cos(pi*(sqx-xi(i))/delx)-                      &
+     &          0.25_dp*bsta(i)**2 + delxsq/(2*pisq))
+          endif
+        else
+          if(i .eq. 1) then   !the first is only a half interval
+!           if(x .gt. 0.0_dp )
+!    &          pcurr=pcurr+ac(i)*(0.25_dp-1/pisq)*delxsq
+            pcurr=pcurr+ac(i)*(0.25_dp-1/pisq)*delxsq
+          else
+            pcurr=pcurr+ac(i)*delx*xi(i)
+          endif
+        endif
+      enddo
+
+      CASE ('sum_cossq_s_free')
+! 20180628, Joachim Geiger
+! The idea was to use the combination of cos**2-waves located at
+! different radial locations to build up a current density in a
+! hopefully quite flexible way. Since the current is needed, the
+! integration is done analytically.
+! This implementation allows a free positioning of up to seven
+! waves with individual periodicity length. This means broad and
+! small ones can be combined. The waves have not to fit fully or
+! with one half into the s-range from 0 to 1. This is the reason
+! that no version with sqrt(s) is used.
+! Every three coefficients hold the amplitude, the max-location
+! and the width, i.e. min. to min. distance:
+! AC(0+3*i) = amplitude
+! AC(1+3*i) = location
+! AC(2+3*i) = width
+! with i=0 to 6, the index thus runs from 0 to 20!
+!  Sum of ncssq=7 cos**2 terms put at different radial locations
+!  and with a windowing around the maxima as current density:
+!  ac(0) holds ncssq
+!     ac(0)*(H(x-(ac(1)-ac(2)/2.))-H(x-(ac(1)+ac(2)/2.)))*cos(pi*(x-ac(1))/(ac(2)))**2
+!    +ac(3)*(H(x-(ac(4)-ac(5)/2.))-H(x-(ac(4)+ac(5)/2.)))*cos(pi*(x-ac(4))/(ac(5)))**2
+!    + ...
+!    +ac(18)*(H(x-(ac(19)-ac(20)/2.))-H(x-(ac(19)+ac(20)/2.)))*cos(pi*(x-ac(19))/(ac(20)))**2
+!  windowing is done with the Heavyside-functions producing the
+!  Boxcar Function: H(x-a)-H(x-b) is, for a<b, 1 for a<x<b and zero otherwise.
+!
+      ncssq=7
+      bsta = 2.0_dp
+      bend = 2.0_dp
+      xi = 0.0_dp                       ! initialize to a finite value
+      wd = 1.0_dp                       ! initialize to a finite value
+      do i=1,ncssq
+        xi(i)=ac(1+3*(i-1))             ! location of maximum curr. dens.
+        wd(i)=ac(2+3*(i-1))             ! half width of interval
+!       bsta(i)=max(0.0_dp,xi(i)-wd(i)) ! interval start of curr.dens.part
+!       bend(i)=min(xi(i)+wd(i),1.0_dp) ! interval end of curr.dens.part
+        bsta(i)=max(0.0_dp,xi(i)-wd(i)) ! interval start of curr.dens.part
+        bend(i)=min(xi(i)+wd(i),1.0_dp) ! interval end of curr.dens.part
+      enddo
+!     write(6,*) xi(1:ncssq)
+!     write(6,*) wd(1:ncssq)
+!     write(6,*) bsta(1:ncssq)
+!     write(6,*) bend(1:ncssq)
+
+      pcurr=0.0
+      do i=1,ncssq
+        if(ac(3*(i-1)) .ne. 0.0_dp)then     ! do only if the amplitude contributes
+          if(x .gt. bsta(i) .and. x .le. bend(i))then
+            pcurr = pcurr + ac(3*(i-1))*0.5*( (x-bsta(i))                    &
+     &            + wd(i)/pi*( sin(pi*(  x    -xi(i))/wd(i) ) -            &
+     &                         sin(pi*(bsta(i)-xi(i))/wd(i) ) ) )
+          elseif(x .gt. bend(i))then
+            pcurr = pcurr + ac(3*(i-1))*0.5*((bend(i)-bsta(i))                    &
+     &            + wd(i)/pi*( sin(pi*(bend(i)-xi(i))/wd(i) ) -            &
+     &                         sin(pi*(bsta(i)-xi(i))/wd(i) ) ) )
+          endif
+        endif
+      enddo
+!      write(6,*)x,pcurr
+!     stop "Test"
+
       CASE ('gauss_trunc')
 !  Truncated Gaussian
 !  I-prime(s) = ac(0) * (exp(-(s/ac(1))**2) - exp(-(1/ac(1))**2)
@@ -102,32 +342,27 @@
      &         - exp(-(1 / ac(1)) ** 2))
          END DO
          pcurr = pcurr * x     ! correct for x interval
-         
+
       CASE ('two_power')
 !  Two power profile
 !  I-prime(s) = [1 - s**ac(0)]**ac(1)            !! Old as of 2010-05-26
 !  I-prime(s) = ac(0) * [1 - s**ac(1)]**ac(2)    !! Current as of 2010-05-26
 !  Gauss-Legendre Quadrature to get I(s)
-         !DO gli = 1,gln
-         !   xp = x * glx(gli)
-         !   pcurr = pcurr + glw(gli) * two_power(xp, ac)
-         !END DO
-         !pcurr = pcurr * x     ! correct for x interval
          DO gli = 1,gln
             xp = x * glx(gli)
-            pcurr = pcurr + glw(gli) * ac(0) * ((1-xp**ac(1))**ac(2))
+            pcurr = pcurr + glw(gli) * two_power(xp, ac)
          END DO
          pcurr = pcurr * x     ! correct for x interval
 
-!      CASE ('two_power_gs')
-!!  Two power with Gaussian peak profile
-!!  I-prime(s) = ac(0) * [1 - s**ac(1)]**ac(2) * (1 + Sum[ac(i)*Exp(-(s - ac(i+1))/ac(i+2)) ** 2])
-!!  Gauss-Legendre Quadrature to get I(s)
-!         DO gli = 1,gln
-!            xp = x * glx(gli)
-!            pcurr = pcurr + glw(gli) * two_power_gs(xp, ac)
-!         END DO
-!         pcurr = pcurr * x     ! correct for x interval
+      CASE ('two_power_gs')
+!  Two power with Gaussian peak profile
+!  I-prime(s) = ac(0) * [1 - s**ac(1)]**ac(2) * (1 + Sum[ac(i)*Exp(-(s - ac(i+1))/ac(i+2)) ** 2])
+!  Gauss-Legendre Quadrature to get I(s)
+         DO gli = 1,gln
+            xp = x * glx(gli)
+            pcurr = pcurr + glw(gli) * two_power_gs(xp, ac)
+         END DO
+         pcurr = pcurr * x     ! correct for x interval
 
       CASE('sum_atan')
 !  I(s)  - not I-prime(s)
@@ -136,7 +371,7 @@
 !     &         ac(5) * (2/pi) * atan(ac(6)*x**ac(7)/(1-x)**ac(8)) +            &
 !     &         ac(9) * (2/pi) * atan(ac(10)*x**ac(11)/(1-x)**ac(12)) +         &
 !     &         ac(13) * (2/pi) * atan(ac(14)*x**ac(15)/(1-x)**ac(16)) +        &
-!     &         ac(17) * (2/pi) * atan(ac(18)*x**ac(19)/(1-x)**ac(20)) 
+!     &         ac(17) * (2/pi) * atan(ac(18)*x**ac(19)/(1-x)**ac(20))
       IF (x .ge. one) THEN
          pcurr = ac(0) + ac(1) + ac(5) + ac(9) + ac(13) + ac(17)
       ELSE
@@ -157,7 +392,7 @@
        DO i = UBOUND(ac,1), ioff, -1
         pcurr = (pcurr + ac(i))*x
        END DO
-       
+
       CASE('Akima_spline_I','akima_spline_i') ! former ipcurr=11
 !  I(s) with Akima splines
 !  Akima-spline for current profile
@@ -253,21 +488,21 @@
 
          a8 =MAX(ac(i+8),0.01_dp)
          a12=MAX(ac(i+12),0.01_dp)
-      
+
          g1= (x-ac(i+7))/a8
          g3= (-ac(i+7))/a8
          g2= (x-ac(i+11))/a12
-         g4= (-ac(i+11))/a12      
+         g4= (-ac(i+11))/a12
          pcurr = pcurr + ac(i+4) * ac(i+0) *
      1 ( TANH( 2*ac(i+2)/ac(i+3) )
      2  -TANH( 2*(ac(i+2)-SQRT(x))/ac(i+3) ) )
      3  +ac(i+5)*( TANH(g1) - TANH(g3) )
      4  +ac(i+9)*( TANH(g2) - TANH(g4) )
 
-      
-      CASE('rational') ! 
+
+      CASE('rational') !
 !  I(s)  - not I-prime(s). No need for Gaussian quadrature.
-!  Ratio of polynomials. 
+!  Ratio of polynomials.
 !  Numerator coefficients: ac(LBOUND) - ac(9)
 !  Denominator coefficients: ac(10) - ac(UBOUND(ac,1))
          temp_num = zero
@@ -283,31 +518,31 @@
          ELSE
             pcurr = HUGE(pcurr)
          ENDIF
-      
+
       CASE('line_segment_Ip', 'line_segment_ip')
-!!  I(s) from I-prime(s)-values. Integrated line segments to determine the plasma
-!!  current.
+!  I(s) from I-prime(s)-values. Integrated line segments to determine the plasma
+!  current.
          i = minloc(ac_aux_s(2:),dim=1)
          CALL line_seg_int(x,pcurr,ac_aux_s,ac_aux_f,i)
-      
+
       CASE('line_segment_I', 'line_segment_i')
-!!  I(s) values. Linearly interpolated line segments to determine the plasma
-!!  current.
+!  I(s) values. Linearly interpolated line segments to determine the plasma
+!  current.
          i = minloc(ac_aux_s(2:),dim=1)
          CALL line_seg(x,pcurr,ac_aux_s,ac_aux_f,i)
 
       CASE DEFAULT
 !  Power series
-!  I-prime(s) = Sum(i,0,-)[ac(i) * s ** i] 
+!  I-prime(s) = Sum(i,0,-)[ac(i) * s ** i]
 !  Analytic integration to get I(s)
          DO i = UBOUND(ac,1), ioff, -1
             pcurr = x*pcurr + ac(i)/(i-ioff+1)
          END DO
          IF (TRIM(pcurr_type_lc) .ne. 'power_series') THEN
-            WRITE(*,*) 'Unrecognized pcurr_type:', pcurr_type 
+            WRITE(*,*) 'Unrecognized pcurr_type:', pcurr_type
             WRITE(*,*) ' *** CHECK YOUR INPUT ***'
             WRITE(*,*) 'Changing pcurr_type from ''',                          &
-     &         TRIM(pcurr_type), '''to ''power_series''.' 
+     &         TRIM(pcurr_type), '''to ''power_series''.'
             pcurr_type = 'power_series'
          END IF
          pcurr = x*pcurr
@@ -316,7 +551,7 @@
       END FUNCTION pcurr
 
 !******************************************************************************
-      
+
       FUNCTION piota (x)
 !  Function to compute the iota/q profile.
 
@@ -326,7 +561,7 @@
 !  ai_aux_f         Auxiliary array f, function-values used for splines
 !  piota_type       character, specifies the parameterization of the profile
 !    sum_atan        Sum of atan functions plus offset.
-!    Akima_spline      Akima spline 
+!    Akima_spline      Akima spline
 !    cubic_spline      cubic spline
 !    rational          rational (ratio of polynomials)
 !    nice_quadratic    quadratic with rerranged coefficients.
@@ -348,10 +583,11 @@
       USE vmec_input, ONLY: ai, piota_type, ai_aux_s, ai_aux_f, lRFP
       USE line_segment
       IMPLICIT NONE
-! ai assumed to be dimensioned (0:n), with n >= 20 
+! ai assumed to be dimensioned (0:n), with n >= 20
 !-----------------------------------------------
       INTEGER     :: i, iflag, ioff
-      REAL(rprec) :: x, piota, temp_num, temp_denom
+      REAL(rprec), INTENT(IN) :: x
+      REAL(rprec) :: piota, temp_num, temp_denom
       CHARACTER(len=20) :: piota_type_lc
 !-----------------------------------------------
       piota = 0
@@ -362,14 +598,14 @@
       CALL tolower(piota_type_lc)
       SELECT CASE(TRIM(piota_type_lc))
 
-      CASE('sum_atan') 
+      CASE('sum_atan')
 !  Sum atan functions mapped to  [0:1], with an ai(0) offset
 !       piota = ai(0) +                                                         &
 !     &         ai(1) * (2/pi) * atan(ai(2)*x**ai(3)/(1-x)**ai(4)) +            &
 !     &         ai(5) * (2/pi) * atan(ai(6)*x**ai(7)/(1-x)**ai(8)) +            &
 !     &         ai(9) * (2/pi) * atan(ai(10)*x**ai(11)/(1-x)**ai(12)) +         &
 !     &         ai(13) * (2/pi) * atan(ai(14)*x**ai(15)/(1-x)**ai(16)) +        &
-!     &         ai(17) * (2/pi) * atan(ai(18)*x**ai(19)/(1-x)**ai(20)) 
+!     &         ai(17) * (2/pi) * atan(ai(18)*x**ai(19)/(1-x)**ai(20))
       IF (x .ge. one) THEN
          piota = ai(0) + ai(1) + ai(5) + ai(9) + ai(13) + ai(17)
       ELSE
@@ -380,7 +616,7 @@
      &                 ai(13) * atan(ai(14)*x**ai(15)/(1-x)**ai(16)) +         &
      &                 ai(17) * atan(ai(18)*x**ai(19)/(1-x)**ai(20)))
       ENDIF
-     
+
       CASE('Akima_spline','akima_spline') ! former ipiota=11
 ! Akima-spline   (iogrid + siogrid)
 !        i = minloc(siogrid(2:ndatafmax),dim=1)  ! this is where zeros are again
@@ -390,7 +626,7 @@
         call spline_akima(x,piota,ai_aux_s,ai_aux_f,i,iflag)
         if(iflag < 0)                                                          &
      &       stop'piota: outside value from spline_akima requested'
-     
+
       CASE('cubic_spline') ! former ipiota=13
 ! cubic-spline   (iogrid + siogrid)
 !        i = minloc(siogrid(2:ndatafmax),dim=1)  ! this is where zeros are again
@@ -408,8 +644,8 @@
           endif
         endif
 
-      CASE('rational') ! 
-!  Ratio of polynomials. 
+      CASE('rational') !
+!  Ratio of polynomials.
 !  Numerator coefficients: ai(LBOUND) - ai(9)
 !  Denominator coefficients: ai(10) - ai(UBOUND)
          temp_num = zero
@@ -426,7 +662,7 @@
             piota = HUGE(piota)
          ENDIF
 
-      CASE('nice_quadratic') ! 
+      CASE('nice_quadratic') !
 !  Quadratic with slightly rearranged coefficients.
 !    iota(s) = a0(1-s) + a1 s + 4 a2 s (1 - s)
 !       a0 is the iota value at s = 0
@@ -437,20 +673,20 @@
      &      x * (one - x)
 
       CASE('line_segment')
-!!  Linearly interpolated line segments to determine the iotabar profile.
+!  Linearly interpolated line segments to determine the iotabar profile.
          i = minloc(ai_aux_s(2:),dim=1)
          CALL line_seg(x,piota,ai_aux_s,ai_aux_f,i)
-            
+
       CASE default
 !  Power Series is the default
          DO i = UBOUND(ai,1), LBOUND(ai,1), -1
             piota = x*piota + ai(i)
          END DO
          IF (TRIM(piota_type_lc) .ne. 'power_series') THEN
-            WRITE(*,*) 'Unrecognized piota_type:', piota_type 
+            WRITE(*,*) 'Unrecognized piota_type:', piota_type
             WRITE(*,*) ' *** CHECK YOUR INPUT ***'
             WRITE(*,*) 'Changing piota_type from ''',                          &
-     &         TRIM(piota_type), '''to ''power_series''.' 
+     &         TRIM(piota_type), '''to ''power_series''.'
             piota_type = 'power_series'
          END IF
       END SELECT
@@ -459,7 +695,7 @@
 !     RFP/TOKAMAK: ai are coefficients of q_safety, NOT iota
          IF (piota .ne. zero) THEN
             piota = one / piota
-         ELSE 
+         ELSE
             piota = HUGE(piota)
          END IF
       END IF
@@ -520,7 +756,7 @@
       pmass_type_lc = pmass_type
       CALL tolower(pmass_type_lc)
       SELECT CASE(TRIM(pmass_type_lc))
-      
+
       CASE ('gauss_trunc')
 !  Truncated Gaussian
 !  p(s) = am(0) * (exp(-(s/am(1))**2) - exp(-(1/am(1))**2)
@@ -530,17 +766,16 @@
 !  c =  (1 - exp(-(1/am(1))**2)     ! so that p(0) = am(0).
          pmass = (am(0)/(one - exp(-(one / am(1)) ** 2))) *                    &
      &      (exp(-(x / am(1)) ** 2) - exp(-(one / am(1)) ** 2))
-     
+
       CASE ('two_power')
 !  Two power profile
 !  p(s) = [1 - s**am(0)]**am(1)          !! Old as of 2010-05-26
 !  p(s) = am(0) * [1 - s**am(1)]**am(2)  !! Current as of 2010-05-26
-         pmass = am(0) * ((one-x**am(1))**am(2))
-         !pmass = two_power(x, am)
+         pmass = two_power(x, am)
 
-!      CASE ('two_power_gs')
-!!  Two power profile with guassian peaks.
-!         pmass = two_power_gs(x, am)
+      CASE ('two_power_gs')
+!  Two power profile with guassian peaks.
+         pmass = two_power_gs(x, am)
 
       CASE ('two_Lorentz','two_lorentz') ! former ipmass=1
        pmass = am(0)*(am(1)*(one/(one+(  x/am(2)**2)**am(3))**am(4)            &
@@ -549,7 +784,7 @@
      &          (one-am(1))*(one/(one+(  x/am(5)**2)**am(6))**am(7)            &
      &                      -one/(one+(one/am(5)**2)**am(6))**am(7))/          &
      &                  (one-one/(one+(one/am(5)**2)**am(6))**am(7)))          &
-         
+
       CASE ('Akima_spline','akima_spline') ! former ipmass=11
 !        i = minloc(smagrid(2:ndatafmax),dim=1)  ! this is where zeros are again
         i = minloc(am_aux_s(2:),dim=1)  ! this is where zeros are again
@@ -597,7 +832,7 @@
      2  -TANH( 2*(am(i+2)-1._dp)  /am(i+3) ) )
 
       CASE('rational') !
-!  Ratio of polynomials. 
+!  Ratio of polynomials.
 !  Numerator coefficients: am(LBOUND) - am(9)
 !  Denominator coefficients: am(10) - am(UBOUND)
          temp_num = zero
