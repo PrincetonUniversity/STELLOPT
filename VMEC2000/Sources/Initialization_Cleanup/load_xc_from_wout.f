@@ -8,7 +8,7 @@
       USE vmec_dim, ONLY: mpol1
       USE vparams, ONLY: one, zero, rprec
       USE vmec_input, ONLY: lasym
-      USE vmec_main, ONLY: lthreed, p5 => cp5, sp, sm, phipf
+      USE vmec_main, ONLY: lthreed, p5 => cp5, phipf, hs
       USE parallel_include_module, ONLY: rank
       IMPLICIT NONE
 C-----------------------------------------------
@@ -24,6 +24,7 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: ierr, mn, m, n, n1, js
       REAL(rprec) :: t1, t2
+      REAL(rprec), ALLOCATABLE :: sm_local(:),sp_local(:)
       REAL(rprec), ALLOCATABLE :: temp(:,:)
 C-----------------------------------------------
 
@@ -119,9 +120,24 @@ C-----------------------------------------------
 !     CONVERT lambda TO INTERNAL FULL MESH REPRESENTATION
 !
 !     START ITERATION AT JS=1
+!     SM AND SP ARRAYS NEED TO BE MADE LOCALY SO THEY EXIST OVER THE 
+!     WHOLE DOMAIN
 !
+      ALLOCATE(sm_local(ns),sp_local(0:ns)) ! See allocate_ns
+
+      DO js = 2, ns
+         t1 = hs*ABS(js-1.5_rprec)
+         t2 = hs*ABS(js-2.5_rprec)
+         sm_local(js) = SQRT(t1)/SQRT(hs*ABS(js-1))
+         sp_local(js) = SQRT(t2)/SQRT(hs*ABS(js-1))
+      END DO
+
+      sm_local(1) = zero
+      sp_local(0) = zero
+      sp_local(1) = sm_local(2)
+
       lmn(1,:,0,:) = lmn(2,:,0,:)
-      lmn(1,:,1,:) = 2*lmn(2,:,1,:)/(sm(2) + sp(1))
+      lmn(1,:,1,:) = 2*lmn(2,:,1,:)/(sm_local(2) + sp_local(1))
       lmn(1,:,2:,:) = 0
       
       DO m = 0, mpol1, 2
@@ -133,13 +149,15 @@ C-----------------------------------------------
       DO m = 1, mpol1, 2
          DO js = 2, ns
             lmn(js,:,m,:) = (2*lmn(js,:,m,:) 
-     1                    - sp(js-1)*lmn(js-1,:,m,:))/sm(js)
+     1                    - sp_local(js-1)*lmn(js-1,:,m,:))/sm_local(js)
          END DO
       END DO
 
       DO js = 2, ns
          lmn(js,:,:,:) = phipf(js)*lmn(js,:,:,:)
       END DO
+
+      DEALLOCATE(sm_local,sp_local)
 
       CALL read_wout_deallocate
 
