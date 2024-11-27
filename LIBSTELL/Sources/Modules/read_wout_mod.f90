@@ -93,6 +93,7 @@
         vn_bsupumns_sur = 'bsupumns_sur',                               &
         vn_bsupvmns_sur = 'bsupvmns_sur',                               &
         vn_rbc = 'rbc', vn_zbs = 'zbs', vn_rbs = 'rbs', vn_zbc = 'zbc', &
+        vn_mnyq = 'mnyq', vn_nnyq = 'nnyq',                             &
 
         vn_wpar = 'wpar', vn_pparmnc = 'pparmnc', vn_ppermnc ='ppermnc',&
         vn_hotdmnc = 'hotdmnc', vn_pbprmnc = 'pbprmnc',                 &
@@ -225,6 +226,8 @@
         ln_zbs = 'Initial boundary Z sin(mu-nv) coefficients',          &
         ln_rbs = 'Initial boundary R sin(mu-nv) coefficients',          &
         ln_zbc = 'Initial boundary Z cos(mu-nv) coefficients',          &
+        ln_mnyq = 'Poloidal modes (Nyquist)',                           &
+        ln_nnyq = 'Toroidal modes (Nyquist)',                           &
 
         ln_wpar = 'Energy',                                             &
         ln_pparmnc = 'cosmn compoents of hot part. para. pressure',     &

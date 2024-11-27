@@ -21,6 +21,7 @@ C-----------------------------------------------
      2   zub, zvb, bexu, bexv, bexn, auu, auv, avv, snr, snv, snz, drv,
      3   guu_b, guv_b, gvv_b, rzb2, rcosuv, rsinuv,
      5   bredge, bpedge, bzedge
+      INTEGER, ALLOCATABLE :: ipiv(:)
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: raxis_nestor, 
      1                                          zaxis_nestor
       REAL(rprec) :: bsubvvac, pi2,
