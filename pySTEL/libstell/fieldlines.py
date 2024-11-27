@@ -146,10 +146,10 @@ class FIELDLINES():
 		A number of fieldlines to skip can also be provided (nskip).
 		The user may also provide an axes (ax) to plot to.
 
-		Returns
+		Parameters
 		----------
 		phi : float
-			Toroidal angle to plot. [radians]
+			Toroidal index to plot. [radians]
 		nskip : int (optional)
 			Number of fieldlines to skip.
 		ax : axes (optional)
@@ -312,6 +312,43 @@ class FIELDLINES():
 		plt.setBGcolor()
 		# Render if requested
 		if lplotnow: plt.render()
+
+	def write_asc(self,phi,nskip=1,filename='fieldlines_poincare.asc'):
+		"""Writes Poincare points to an ASC file
+
+		This routine writes the Poincare data into an ASC file for
+		reading into CAD software (FreeCAD). ASC files are just
+		ASCII files with the points written in x,y,z format. Output is
+		in mm.
+
+		Parameters
+		----------
+		phi : list
+			Toroidal index to output. [radians]
+		nskip : int (optional)
+			Number of fieldlines to skip.
+		filename: str
+			Filename to output to (default: fieldlines_poincare.asc)
+		"""
+		import numpy as np
+		f = open(filename,'w')
+		if max(phi) <= self.nfp:
+			phi_temp = np.mod(self.PHI_lines,self.phiaxis[-1])
+			x_temp = self.R_lines*np.cos(phi_temp)
+			y_temp = self.R_lines*np.sin(phi_temp)
+		else:
+			x_temp = self.X_lines
+			y_temp = self.Y_lines
+		for phi_temp in phi:
+			k = int(self.npoinc*phi_temp/self.phiaxis[-1])
+			rmin = np.amin(self.raxis)
+			rmax = np.amax(self.raxis)
+			x = 1000.*x_temp[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
+			y = 1000.*y_temp[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
+			z = 1000.*self.Z_lines[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
+			for i,x0 in enumerate(x):
+				f.write(f"{x0:10.3f} {y[i]:10.3f} {z[i]:10.3f}\n")
+		f.close()
 
 	def plot_heatflux(self,factor=1.0,colormap='hot',plot3D=None):
 		"""Plots the BEAMS3D wall heat flux
