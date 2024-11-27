@@ -111,7 +111,8 @@
       CALL mpialloc(THRIFT_VP,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_vp)      
       CALL mpialloc(THRIFT_BVAV,   nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_bvav)     
       ! Electric field
-      CALL mpialloc(THRIFT_EPARB,  nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_eparb) 
+      CALL mpialloc(THRIFT_EPARB,  nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_eparb)
+      CALL mpialloc(THRIFT_ER,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_er) 
 
       ! ABCD
       CALL mpialloc(THRIFT_COEFF_A, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_coeff_a)

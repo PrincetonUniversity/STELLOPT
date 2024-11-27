@@ -170,7 +170,7 @@
                gmnsb = 0
                bmnsb = 0
             END IF
-            irun_setup_booz = COUNT(lsurf_boz(1:mystart-1))
+            IF(mystart <= myend) irun_setup_booz = COUNT(lsurf_boz(1:mystart-1))
          ELSE
             mystart = ik+1
          END IF
