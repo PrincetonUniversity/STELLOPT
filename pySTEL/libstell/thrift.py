@@ -34,7 +34,7 @@ class THRIFT():
 		"""
 
         import h5py
-        import numpy as np
+        # import numpy as np
 
 		#read file
         with h5py.File(file,'r') as f:
@@ -54,7 +54,7 @@ class THRIFT():
             # Arrays                
             for temp in ['THRIFT_ALPHA1','THRIFT_ALPHA2','THRIFT_ALPHA3','THRIFT_ALPHA4','THRIFT_AMINOR',\
        			'THRIFT_BAV','THRIFT_BSQAV','THRIFT_BVAV','THRIFT_COEFF_A','THRIFT_COEFF_B','THRIFT_COEFF_BP',\
-				'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_EPARB','THRIFT_ETAPARA','THRIFT_I',\
+				'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_EPARB','THRIFT_ER','THRIFT_ETAPARA','THRIFT_I',\
 				'THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IOTA','THRIFT_IPLASMA','THRIFT_ISOURCE',\
 				'THRIFT_J','THRIFT_JBOOT','THRIFT_JECCD','THRIFT_JNBCD','THRIFT_JOHMIC','THRIFT_JPLASMA','THRIFT_JSOURCE',\
 				'THRIFT_MATLD','THRIFT_MATMD','THRIFT_MATRHS','THRIFT_MATUD','THRIFT_P','THRIFT_PHIEDGE','THRIFT_PPRIME',\
@@ -69,6 +69,7 @@ class THRIFT():
         for current_density in ['THRIFT_J','THRIFT_JBOOT','THRIFT_JECCD','THRIFT_JNBCD','THRIFT_JOHMIC','THRIFT_JPLASMA','THRIFT_JSOURCE']:
             self.units_dictionary[current_density] = r'[A/m$^2]$'
         self.units_dictionary['THRIFT_ETAPARA'] = r'$[\Omega\,$m]'
+        self.units_dictionary['THRIFT_ER'] = r'$[V/$m]'
                     
     def plot_vars_in_time(self,*vars,time_array=[0,1/4,1/2,3/4,1]):
         # plots var as a funciton of roa at different times
@@ -127,6 +128,64 @@ class THRIFT():
         print(f'Returning variable {var} at t={real_time}s')
         
         return plot_var[idx,:]
+    
+
+    def plot_plasma_profile(self,plasma_file):
+        
+        import h5py
+        
+        hf = h5py.File(plasma_file, 'r')
+
+        #read taxis and raxis
+        nt = np.array( hf['nt'] )
+        raxis = np.array( hf['raxis_prof'][:] )
+        taxis = np.array( hf['taxis_prof'][:] )
+        
+        ne = np.array( hf['ne_prof'][:] )
+        Te = np.array( hf['te_prof'][:] )
+        
+        ni = np.array( hf['ni_prof'][:] )
+        Ti = np.array( hf['ti_prof'][:] )
+        
+        nion = np.int64( hf['nion'] )
+        
+        hf.close()
+        
+        _, ax_n = plt.subplots(figsize=(11,8))
+        _, ax_T = plt.subplots(figsize=(11,8))    
+        
+        ax_n.plot(raxis,ne)
+        ax_n.set_xlabel('r/a') 
+        ax_n.set_title('ne')   
+        ax_n.grid()   
+        
+        ax_T.plot(raxis,Te)
+        ax_T.set_xlabel('r/a') 
+        ax_T.set_title('Te')   
+        ax_T.grid()  
+        
+        plt.show()
+        
+        _, ax_n = plt.subplots(figsize=(11,8))
+        _, ax_T = plt.subplots(figsize=(11,8))
+        
+        for i in range(nion):
+            
+            ax_n.plot(raxis,ni[:,:,i])
+            ax_n.set_xlabel('r/a') 
+            ax_n.set_title(f'ni, ion={i+1}')   
+            ax_n.grid()
+            
+            ax_T.plot(raxis,Ti[:,:,i])
+            ax_T.set_xlabel('r/a') 
+            ax_T.set_title(f'Ti, ion={i+1}')   
+            ax_T.grid()
+            
+            plt.show()
+            
+        
+        
+        
         
         
         
