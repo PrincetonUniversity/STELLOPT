@@ -63,7 +63,7 @@
 
       
       real(rprec), DIMENSION(3) :: gradR, gradZ, gradB
-      real(rprec), DIMENSION(3) :: grad_psi
+      !real(rprec), DIMENSION(3) :: grad_psi
       REAL(rprec), DIMENSION(3) :: esubs, esubu, esubv
       REAL(rprec), DIMENSION(3) :: es, eu, ev
       real(rprec), DIMENSION(3) :: dxyzdu, dxyzdv, dxyzds
@@ -307,8 +307,8 @@
             !write(*,*) 'e_z', e_z
             !write(*,*) 'e_phi', e_phi
 
-            dpsidr = dot_product(grad_psi, e_r)
-            dpsidz = dot_product(grad_psi, e_z)
+            dpsidr = dot_product(gradS, e_r)
+            dpsidz = dot_product(gradS, e_z)
             !B_zeta = dot_product(Bxyz, e_phi)
 
             !Note that e_theta_norm is negative iff Bphi is negative
@@ -324,7 +324,7 @@
             bdotgradb = 0.0_rprec
             kappa_g(j) = 0.0_rprec
             binormal(j,:) = 0.0_rprec
-            CALL cross_product(grad_psi/grad_psi_norm(j)/pi2, Bxyz/modB(j), binormal(j,:))
+            CALL cross_product(gradS/grad_psi_norm(j)/pi2, Bxyz/modB(j), binormal(j,:))
             !write (*,*) 'tangential', Bxyz/modB(j)
             !write (*,*) 'normal',grad_psi(j,:)/grad_psi_norm(j)
             !write (*,*) 'nxb',binormal(j,:)
@@ -375,7 +375,7 @@
 
             !dvdB_t1 is the first term in the brackets of dVdb
             ! = iota' ( grad_psi cross b_hat) dot grad_zeta
-            CALL cross_product(grad_psi, Bxyz, grad_psi_x_b)
+            CALL cross_product(gradS, Bxyz, grad_psi_x_b)
             dVdb_t1(j) = iotap*dot_product(grad_psi_x_b, grad_zeta)/modB(j)
 
             !Get B^v and derivatives
