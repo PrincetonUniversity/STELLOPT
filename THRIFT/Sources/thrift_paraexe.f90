@@ -127,6 +127,8 @@
                   ! Setup reset_string
                   reset_string =''
                   lhit = .FALSE.
+                  INQUIRE(FILE='wout_reset_file.nc',EXIST=lhit)
+                  IF (lhit) reset_string ='wout_reset_file.nc'
                   NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
                   CALL runvmec(ictrl,file_str,lscreen_local,MPI_COMM_MYWORLD,reset_string)
                   CALL FinalizeSurfaceComm(NS_COMM)
