@@ -28,7 +28,7 @@
          ! Run VMEC
          CALL thrift_paraexe('paravmec_run',proc_string,lscreen_subcodes)
          ! Write out the reset file
-         CALL thrift_paraexe('paravmec_write',reset_string,.FALSE.)
+         IF (lvmec_reset) CALL thrift_paraexe('paravmec_write',reset_string,.FALSE.)
          ! Read the VMEC output
          CALL read_wout_deallocate; ier = 0
          CALL read_wout_file(TRIM(proc_string),ier)
