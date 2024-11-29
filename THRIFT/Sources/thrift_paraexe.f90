@@ -9,7 +9,7 @@
 !                    rather, they sit around waiting for work from
 !                    their master.
 !-----------------------------------------------------------------------
-      SUBROUTINE thrift_paraexe(in_parameter_1,in_parameter_2,lscreen_local)
+      RECURSIVE SUBROUTINE thrift_paraexe(in_parameter_1,in_parameter_2,lscreen_local)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -38,7 +38,7 @@
 !     Subroutine Parameters
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      CHARACTER(LEN=*), INTENT(inout)    :: in_parameter_1
+      CHARACTER(LEN=*), INTENT(in)    :: in_parameter_1
       CHARACTER(LEN=*), INTENT(inout)    :: in_parameter_2
       LOGICAL, INTENT(inout)        :: lscreen_local
       
@@ -147,6 +147,13 @@
                   ELSE
                      IF (myid_sharmem == master) CLOSE(UNIT=iunit)
                      ier = -1
+                     ! Try a full run if there is a failure
+                     IF (lvmec_reset .and. (mytimestep > 1) .and. (myid_sharmem == master)) THEN
+                        lvmec_reset = .FALSE.
+                        CALL thrift_paraexe('paravmec_run',proc_string,lscreen_local)
+                        lvmec_reset = .TRUE.
+                        ier = ier_paraexe
+                     END IF
                   END IF
                END IF
                in_parameter_2 = TRIM(file_str)
