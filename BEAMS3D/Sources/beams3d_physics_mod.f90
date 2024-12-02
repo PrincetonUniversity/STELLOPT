@@ -28,7 +28,7 @@ MODULE beams3d_physics_mod
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5, my_end, h1_prof, fact_crit_legacy
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
-                              MODB_spl, MODB4D, &
+                              MODB_spl, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
@@ -257,7 +257,8 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
       
          ier      = 0
-
+         CALL beams3d_MODB(q,modb)
+	   	 IF (nomeg>0) CALL beams3d_lab_to_plasma(q)
          ! Setup position in a vll arrays
          r_temp   = q(1)
          phi_temp = MODULO(q(2), phimax)
@@ -340,6 +341,9 @@ MODULE beams3d_physics_mod
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
+            ELSE !Dont evaluate collisions
+               IF (nomeg>0) CALL beams3d_plasma_to_lab(q)
+               RETURN
             END IF
 
             !-----------------------------------------------------------
@@ -429,6 +433,7 @@ MODULE beams3d_physics_mod
            q(4) = vll
 
          END IF
+         IF (nomeg>0) CALL beams3d_plasma_to_lab(q)
 
          RETURN
 
@@ -2295,5 +2300,137 @@ MODULE beams3d_physics_mod
          RETURN
 
       END SUBROUTINE beams3d_calc_dt
+	  
+	  !-----------------------------------------------------------------
+      !     Function:      beams3d_lab_to_plasma
+      !     Authors:       D. Kulla (david.kulla@ipp.mpg.de)
+      !     Date:          10/24/2024
+      !     Description:   Transforms GC to plasma (rotating) frame
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_lab_to_plasma(q)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          q            (q(1),q(2),q(3),q(4)) = (R,phi,Z,vll)
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: q(4)
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        r_temp     Helpers (r,phi,z)
+         !        i,j,k      Spline Grid indicies
+         !        xparam     Spline subgrid factor [0,1] (yparam,zparam)
+         !        ict        Spline output control
+         !        fval       Spline output array
+         !--------------------------------------------------------------
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp,omeg,btmp,rho_g
+         ! For splines
+         INTEGER :: i,j,k
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         REAL*8 :: fval(1)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+         ! Setup position in a vll arrays
+         r_temp   = q(1)
+         phi_temp = MODULO(q(2), phimax)
+         IF (phi_temp < 0) phi_temp = phi_temp + phimax
+         z_temp   = q(3)
+
+         ! Initialize values
+         omeg = zero
+
+         ! Check that we're inside the domain then proceed
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+             (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+             (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
+            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            xparam = (r_temp - raxis(i)) * hri(i)
+            yparam = (phi_temp - phiaxis(j)) * hpi(j)
+            zparam = (z_temp - zaxis(k)) * hzi(k)
+            ! Evaluate the Splines
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            OMEG4D(1,1,1,1),nr,nphi,nz)
+            omeg = fval(1)
+			q(4)=q(4)-omeg*r_temp
+         ELSE
+            RETURN
+         END IF
+
+         RETURN
+
+      END SUBROUTINE beams3d_lab_to_plasma
+	  
+	  
+	  !-----------------------------------------------------------------
+      !     Function:      beams3d_plasma_to_lab
+      !     Authors:       D. Kulla (david.kulla@ipp.mpg.de)
+      !     Date:          10/24/2024
+      !     Description:   Transforms GC to lab (non-rotating) frame
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_plasma_to_lab(q)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          q            (q(1),q(2),q(3),q(4)) = (R,phi,Z,vll)
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: q(4)
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        r_temp     Helpers (r,phi,z)
+         !        i,j,k      Spline Grid indicies
+         !        xparam     Spline subgrid factor [0,1] (yparam,zparam)
+         !        ict        Spline output control
+         !        fval       Spline output array
+         !--------------------------------------------------------------
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp,omeg
+         ! For splines
+         INTEGER :: i,j,k
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         REAL*8 :: fval(1)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+
+         ! Setup position in a vll arrays
+         r_temp   = q(1)
+         phi_temp = MODULO(q(2), phimax)
+         IF (phi_temp < 0) phi_temp = phi_temp + phimax
+         z_temp   = q(3)
+
+         ! Initialize values
+         omeg = zero
+
+         ! Check that we're inside the domain then proceed
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+             (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+             (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
+            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            xparam = (r_temp - raxis(i)) * hri(i)
+            yparam = (phi_temp - phiaxis(j)) * hpi(j)
+            zparam = (z_temp - zaxis(k)) * hzi(k)
+            ! Evaluate the Splines
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            OMEG4d(1,1,1,1),nr,nphi,nz)
+            omeg = fval(1)
+			q(4)=q(4)+omeg*r_temp
+         ELSE
+            RETURN
+         END IF
+
+         RETURN
+
+      END SUBROUTINE beams3d_plasma_to_lab  
 
 END MODULE beams3d_physics_mod
