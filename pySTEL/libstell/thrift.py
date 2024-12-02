@@ -11,6 +11,10 @@ import matplotlib.pyplot as plt
 import h5py
 
 plt.rc('font', size=18)
+default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+custom_colors = ['#5faf30', '#1D2258', '#004817', '#a1cdc8']
+plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors+default_colors)
+plt.rcParams['lines.linewidth'] = 2.5
 # plt.rcParams['axes.prop_cycle'] = plt.cycler(color=['#5faf30','#1D2258','#004817','#a1cdc8'])
 
 # Constants
@@ -246,6 +250,61 @@ class THRIFT():
             
             plt.show()
             
+    def plot_plasma_current_decay(self):
+        # plots total plasma current as a function of time
+        # estimates decay time?
+        
+        Iplasma = self.THRIFT_IPLASMA[:,-1]
+        t = self.THRIFT_T
+        
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(t,Iplasma)
+        ax.set_xlabel('t [s]') 
+        ax.set_title('Total Plasma Current')   
+        ax.grid()    
+        # ax.legend()
+        ax.set_ylabel('[A]')
+        # plt.show()
+        
+        _, ax = plt.subplots(figsize=(13,8))
+        ax.plot(t,np.abs(Iplasma))
+        ax.set_xlabel('t [s]')    
+        ax.grid()    
+        ax.set_ylabel('[A]')
+        ax.set_yscale('log')
+        # plt.show()
+        
+        t_fit = t[t>20]
+        I_fit = np.abs(Iplasma[t>20])
+        
+        p1,p0 = np.polyfit(t_fit,np.log(I_fit),1)
+        
+        tau = -1/p1
+        
+        ax.plot(t_fit,np.exp(p0+p1*t_fit),'--',label=r'$\tau_{\text{fit}}=$'+f'{tau:.1f}s')
+        ax.legend()
+        # plt.show()
+        
+        mu0 = 1.256e-6
+        R0 = np.mean(self.THRIFT_RMAJOR)
+        a  = np.mean(self.THRIFT_AMINOR[:,-1])
+
+        Lext = mu0*R0*(np.log(8*R0/a)-2.0)
+        
+        A = np.pi*a*a
+        L = 2*np.pi*R0
+        
+        integrated_cond = np.trapz(1/self.THRIFT_ETAPARA[-1,:],self.THRIFT_S)
+        Rohm = (L/A) * 1/integrated_cond
+        
+        tau_LR = Lext / Rohm
+        
+        # ax.text(60,4e3,r'$\tau_{L/R}=$'+f'{tau_LR:.1f}s')
+        ax.set_title('|Total Plasma Current|, '+r'$\tau_{L/R}=$'+f'{tau_LR:.1f}s')
+        plt.show()
+        
+        print(tau_LR)
+        
     def plot_vars_vs_iota(self,*vars,time_array=[0,1/4,1/2,3/4,1]):
         # plots var as a funciton of iota at different times
         # time_array is in fractions of t_end
