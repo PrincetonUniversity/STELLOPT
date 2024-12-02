@@ -237,7 +237,7 @@ MODULE beams3d_physics_mod
          INTEGER        :: ier
          DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
-                          reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
+                          reduction, dve,dvi,ddve,ddvi, tau_spit, v_crit, coulomb_log, te_cube, &
                           inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
                           rho_temp, &
                           vc3_tauinv, vbeta, zeff_temp,&
@@ -343,6 +343,18 @@ MODULE beams3d_physics_mod
                vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
 
+            !------------------------------------------------------------
+			   !  Velocity diffusion 
+			   !------------------------------------------------------------
+            speed_cube = (speed*speed*speed)
+            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+            ddve=ABS(2*e_charge*dt*te_temp*inv_mymass*tau_spit_inv)
+            ddvi=ABS(2*e_charge*dt*(ti_temp*vcrit_cube*inv_mymass/speed_cube)*tau_spit_inv)
+            sigma = sqrt( ddve+ddvi) ! The standard deviation.
+            !!sigma = sqrt( ABS(2*e_charge*dt*(te_temp*myv0+ti_temp*vcrit_cube)*tau_spit_inv*inv_mymass/myv0) ) ! The standard deviation.
+            ddve=zeta*ddve/sigma
+            ddvi=zeta*ddvi/sigma
+            !speed = speed+sigma*zeta  
             !-----------------------------------------------------------
             !  Viscouse Velocity Reduction
             !     v_s       Local Sound Speed
@@ -353,10 +365,12 @@ MODULE beams3d_physics_mod
             !     newspeed  New total speed
             !     vfrac     Ratio between new and old speed (helper) 
             !-----------------------------------------------------------
-            dve   = speed*tau_spit_inv
-            dvi   = vc3_tauinv/(speed*speed)
+            dve   = speed*tau_spit_inv*(1-2*te_temp*inv_mymass*e_charge/speed**2.0)
+            dvi   = vc3_tauinv/(speed*speed)*(1+ti_temp*inv_mymass*e_charge/speed**2.0)
             reduction = dve + dvi
-            newspeed = speed - reduction*dt
+            newspeed = speed - reduction*dt+sigma*zeta
+            dve=dve+ddve
+            dvi=dvi+ddvi
             vfrac = newspeed/speed
 
             !-----------------------------------------------------------
@@ -394,7 +408,7 @@ MODULE beams3d_physics_mod
            zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+           zeta = MIN(MAX(zeta,-0.99999D+00),0.99999D+00)
            !Flip gaussian at boundary to prevent accumulation around pitch=1
            !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
            !Pitch angle scattering according to NUBEAM
