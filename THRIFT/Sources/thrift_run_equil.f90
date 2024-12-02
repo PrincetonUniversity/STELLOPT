@@ -19,7 +19,6 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: ier
-      CHARACTER(256), PARAMETER :: reset_string = 'reset_file'
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -27,8 +26,11 @@
       IF (lvmec) THEN
          ! Run VMEC
          CALL thrift_paraexe('paravmec_run',proc_string,lscreen_subcodes)
-         ! Write out the reset file
-         IF (lvmec_reset) CALL thrift_paraexe('paravmec_write',reset_string,.FALSE.)
+         ! Check for error
+         IF (ier_paraexe /= 0) THEN
+            WRITE(6,'(A,I4)') '!!!!!  VMEC RUNTIME ERROR DETECTED IER = ',ier_paraexe
+            RETURN
+         END IF
          ! Read the VMEC output
          CALL read_wout_deallocate; ier = 0
          CALL read_wout_file(TRIM(proc_string),ier)
