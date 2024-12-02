@@ -703,7 +703,7 @@ MODULE beams3d_physics_mod
          INTEGER          :: ier, l, m,o
          DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
                              s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp, &
-                             rho_temp, rlim, zlim
+                             rho_temp, rlim, zlim,vtor
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
          DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
@@ -731,7 +731,9 @@ MODULE beams3d_physics_mod
          ! This is the one that works for ADAS [kJ] E=0.5*m*v^2/1000
          ! Vll = V_neut (doesn't change durring neutral integration)
          ! energy in kJ
-         energy = half*mymass*q(4)*q(4)*1D-3
+         vtor=0
+         IF(nomeg>0) CALL beams3d_vtor(q,vtor)
+         energy = 1D-3*half*mymass*(q(4)-vtor)**2
          ! energy in keV (correct for Suzuki)
          !energy = half*mymass*q(4)*q(4)*1D-3/e_charge 
          
@@ -1828,6 +1830,72 @@ MODULE beams3d_physics_mod
          RETURN
 
       END SUBROUTINE beams3d_MODB
+
+	  
+      !-----------------------------------------------------------------
+      !     Function:      beams3d_VTOR
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          09/30/2020
+      !     Description:   Returns VTOR (OMEGA*R) at a point in space
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_VTOR(q,vtor)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          q            (q(1),q(2),q(3)) = (R,phi,Z)
+         !          reactrate    Reaction rate (part/(m^3*s))
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: q(3)
+         DOUBLE PRECISION, INTENT(out) :: vtor
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        r_temp     Helpers (r,phi,z)
+         !        i,j,k      Spline Grid indicies
+         !        xparam     Spline subgrid factor [0,1] (yparam,zparam)
+         !        ict        Spline output control
+         !        fval       Spline output array
+         !--------------------------------------------------------------
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp
+         ! For splines
+         INTEGER :: i,j,k
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         REAL*8 :: fval(1)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+
+         ! Setup position in a vll arrays
+         r_temp   = q(1)
+         phi_temp = MODULO(q(2), phimax)
+         IF (phi_temp < 0) phi_temp = phi_temp + phimax
+         z_temp   = q(3)
+
+         ! Initialize values
+         vtor = zero
+
+         ! Check that we're inside the domain then proceed
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+             (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+             (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
+            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            xparam = (r_temp - raxis(i)) * hri(i)
+            yparam = (phi_temp - phiaxis(j)) * hpi(j)
+            zparam = (z_temp - zaxis(k)) * hzi(k)
+            ! Evaluate the Splines
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            OMEG4D(1,1,1,1),nr,nphi,nz)
+            vtor = fval(1)*r_temp
+         ELSE
+            RETURN
+         END IF
+         RETURN
+      END SUBROUTINE beams3d_VTOR      
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_BCYL
