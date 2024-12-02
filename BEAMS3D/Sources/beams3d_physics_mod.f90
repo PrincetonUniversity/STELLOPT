@@ -45,7 +45,7 @@ MODULE beams3d_physics_mod
       !-----------------------------------------------------------------
       !     Module PARAMETERS
       !-----------------------------------------------------------------
-
+	  DOUBLE PRECISION    :: q2(6), qtemp(4)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
       DOUBLE PRECISION, PRIVATE, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
@@ -257,12 +257,15 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
       
          ier      = 0
-
+         CALL beams3d_MODB(q,modb)
+          qtemp=q
+          CALL beams3d_neutralize_gc(qtemp)
+          lneut=.false.              
          ! Setup position in a vll arrays
-         r_temp   = q(1)
-         phi_temp = MODULO(q(2), phimax)
+         r_temp   = qtemp(1)
+         phi_temp = MODULO(qtemp(2), phimax)
          IF (phi_temp < 0) phi_temp = phi_temp + phimax
-         z_temp   = q(3)
+         z_temp   = qtemp(3)
          vll      = q(4)
 
          ! Initialize values
@@ -286,10 +289,10 @@ MODULE beams3d_physics_mod
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
             ! Evaluate the Splines
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            MODB4D(1,1,1,1),nr,nphi,nz)
-            modb = fval(1)
+            ! CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            !                 hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+            !                 MODB4D(1,1,1,1),nr,nphi,nz)
+            ! modb = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TE4D(1,1,1,1),nr,nphi,nz)
