@@ -14,7 +14,9 @@ import numpy as np
 
 class PLASMA:
     
-    def __init__(self,list_of_species):
+    def __init__(self,list_of_species,lverb=False):
+        
+        self.lverb = lverb
         
         self.species_database = ['electrons','hydrogen','deuterium','tritium','helium3','helium4']
         self.mass_database = {
@@ -58,7 +60,7 @@ class PLASMA:
         #create self.ion_species and self.num_ion_species
         self.set_ion_species()
         
-        print(f'Plasma created with species: {", ".join(self.list_of_species)}')      
+        if(lverb): print(f'Plasma created with species: {", ".join(self.list_of_species)}')      
     
     def check_species_exist(self, species_list):
         # Ensure species_list is a list of strings
@@ -105,7 +107,7 @@ class PLASMA:
         for info,val in zip(profile_info,profile_vals):
             self.density[species][info] = val
             
-        print(f'\nDensity profile of {species}: n[m-3] = {nedge} + {n0-nedge}*(1-rho^{exponent})')
+        if(self.lverb): print(f'\nDensity profile of {species}: n[m-3] = {nedge} + {n0-nedge}*(1-rho^{exponent})')
         
     def set_temperature(self,species,T0,Tedge,exponent):
         
@@ -124,7 +126,7 @@ class PLASMA:
         for info,val in zip(profile_info,profile_vals):
             self.temperature[species][info] = val
             
-        print(f'\nTemperature profile of {species}: T[eV] = {Tedge} + {T0-Tedge}*(1-rho^{exponent})')
+        if(self.lverb): print(f'\nTemperature profile of {species}: T[eV] = {Tedge} + {T0-Tedge}*(1-rho^{exponent})')
     
     def get_density(self,species,rho):
         # rho can be a number or a list of numbers
@@ -307,7 +309,7 @@ class PLASMA:
         # ion species in the order that appears in list_of_species
         self.ion_species = [species for species in self.list_of_species if species != 'electrons']
         
-        print(f'Ion species: {self.ion_species}')
+        if(self.lverb): print(f'Ion species: {self.ion_species}')
         
         self.num_ion_species = len(self.ion_species)
         
