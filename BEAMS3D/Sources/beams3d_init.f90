@@ -270,6 +270,17 @@
          IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A,F8.5)') '   Zeff = [', &
             MINVAL(ZEFF_AUX_F(1:nzeff)),',',MAXVAL(ZEFF_AUX_F(1:nzeff)),'];  NZEFF: ',nzeff, ';  S_MAX_ZEFF: ',s_max_zeff
          END IF
+         ! OMEG
+         IF (nomeg>0) THEN
+            CALL EZspline_init(OMEG_spl_s,nomeg,bcs1_s,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init7',ier)
+            OMEG_spl_s%isHermite   = 0
+            OMEG_spl_s%x1          = OMEG_AUX_S(1:nomeg)
+            CALL EZspline_setup(OMEG_spl_s,OMEG_AUX_F(1:nomeg),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init8',ier)
+         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A,F8.5)') '   OMEG = [', &
+            MINVAL(OMEG_AUX_F(1:nomeg))*1E-3,',',MAXVAL(OMEG_AUX_F(1:nomeg))*1E-3,'] E3 rad/s;  NOMEG: ',nomeg, ';  S_MAX_OMEG: ',s_max_omeg
+         END IF
          ! POTENTIAL
          IF (npot>0) THEN
             CALL EZspline_init(POT_spl_s,npot,bcs1_s,ier)
