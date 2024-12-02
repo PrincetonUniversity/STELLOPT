@@ -190,7 +190,7 @@
 
             ! Print progress
             IF (lverb) THEN
-                  WRITE(progress_str,'(1X,F6.3,1X,I2,1X,F5.2,3(1X,ES11.3))') &
+                  WRITE(progress_str,'(1X,F7.3,1X,I2,1X,F5.2,3(1X,ES11.3))') &
                   THRIFT_T(mytimestep),nsubsteps,eq_beta*100,THRIFT_I(nsj,mytimestep),&
                   THRIFT_IPLASMA(nsj,mytimestep), THRIFT_IBOOT(nsj,mytimestep)
                   IF (leccd) THEN
