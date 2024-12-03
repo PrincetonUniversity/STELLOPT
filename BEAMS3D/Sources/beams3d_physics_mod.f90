@@ -379,7 +379,7 @@ MODULE beams3d_physics_mod
                vfrac = newspeed/speed
                vll = vfrac*vll
                moment = vfrac*vfrac*moment
-               q(4) = vll + omega_temp*r_temp
+               q(4) = vll + omeg_temp*r_temp
                RETURN
             END IF
             l = MAX(MIN(CEILING(rho_temp*h1_prof),ns_prof1),1)
@@ -432,7 +432,7 @@ MODULE beams3d_physics_mod
            !  Final Moment and vll update (return q(4))
            !------------------------------------------------------------
            moment = half*mymass*(speed*speed - vll*vll)/modb
-           q(4) = q(4) + omega_temp*r_temp
+           q(4) = q(4) + omeg_temp*r_temp
 
          END IF
 
@@ -1775,7 +1775,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Input Parameters
          !          q            (q(1),q(2),q(3)) = (R,phi,Z)
-         !          reactrate    Reaction rate (part/(m^3*s))
+         !          B            Magnetic field magnitude ([T])
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION, INTENT(inout) :: q(3)
@@ -1835,15 +1835,15 @@ MODULE beams3d_physics_mod
 	  
       !-----------------------------------------------------------------
       !     Function:      beams3d_VTOR
-      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
-      !     Date:          09/30/2020
+      !     Authors:       D. Kulla (david.kulla@ipp.mpg.de)
+      !     Date:          03/12/2024
       !     Description:   Returns VTOR (OMEGA*R) at a point in space
       !-----------------------------------------------------------------
       SUBROUTINE beams3d_VTOR(q,vtor)
          !--------------------------------------------------------------
          !     Input Parameters
          !          q            (q(1),q(2),q(3)) = (R,phi,Z)
-         !          reactrate    Reaction rate (part/(m^3*s))
+         !          vtor         Toroidal rotation ([m/s])
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION, INTENT(inout) :: q(3)
