@@ -21,7 +21,8 @@ dependencies = [
     "scipy",
     "vtk",
     "pyyaml",
-    "h5py"
+    "h5py",
+    "meshcut"
 ]
 
 [project.urls]
