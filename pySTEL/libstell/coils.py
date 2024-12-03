@@ -889,27 +889,37 @@ class COILSET():
 				l = l + 4
 		return vertices,faces
 
-	def write_coils_STL(self,filename='coil.stl',width=0.2,height=0.2,lfield_period=False):
+	def write_coils_STL(self,filename='coil.stl',width=0.2,height=0.2,lfield_period=False,thickness=0.0):
 		"""Writes a coils file to an STL as a solid coil
 
 		This routine creates a solid coil and then writes it out as a
-		STL file.
+		STL file. The lfield_period option allows the user to specify
+		that only one field period of the model should be output.
+		If the thickness option is set, then two models will be
+		generated with one being a shell around the actual coil. In
+		this case width and height are the total case size and the
+		coil itself has a width and height with the thickness
+		subtracted.
 
 		Parameters
 		----------
-		filename : str
-			Path to coils file.
-		width : float
-			Finite build coil width [m]
-		height : float
-			Finite build coil height [m]
-		lfield_period : boolean
+		filename : str (optional)
+			Path to coils file. (default: coils.stl)
+		width : float (optional)
+			Finite build coil width [m] (default: 0.2)
+		height : float (optional)
+			Finite build coil height [m] (default: 0.2)
+		lfield_period : boolean (optional)
 			Return coilset over one field period (default: False)
+		thickness : float (optional)
+			Coil thickness for shell model (default: 0.0)
 		"""
 		import numpy as np
 		from stl import mesh
-		[vertex,faces] = self.blenderCoil(height=float(height),
-			width=float(width),lfield_period=lfield_period)
+		coil_width  = float(width)  - float(thickness)
+		coil_height = float(height) - float(thickness)
+		[vertex,faces] = self.blenderCoil(height=coil_height,
+			width=coil_width,lfield_period=lfield_period)
 		vertex = np.array(vertex)
 		faces  = np.array(faces, dtype=int)
 		nfaces = faces.shape[0]
@@ -918,6 +928,23 @@ class COILSET():
 			for j in range(3):
 				coil_mesh.vectors[i][j] = vertex[f[j],:]
 		coil_mesh.save(filename)
+		if thickness > 0.0:
+			[vertex_case,faces_case] = self.blenderCoil(height=float(height),
+				width=float(width),lfield_period=lfield_period)
+			vertex_case = np.array(vertex_case)
+			faces = faces + vertex_case.shape[0]
+			faces_case  = np.array(faces_case, dtype=int)
+			print(vertex_case.shape,vertex.shape)
+			vertex_case = np.concatenate((vertex_case,vertex),axis=0)
+			faces_case = np.concatenate((faces_case,faces),axis=0)
+			nfaces_case = faces_case.shape[0]
+			coil_mesh = mesh.Mesh(np.zeros(nfaces_case, dtype=mesh.Mesh.dtype))
+			for i, f in enumerate(faces_case):
+				for j in range(3):
+					coil_mesh.vectors[i][j] = vertex_case[f[j],:]
+			coil_mesh.save('coilcase_'+filename)
+
+
 
 	def write_Gourdon_coils(self):
 		"""Write Gourdon style coils files
