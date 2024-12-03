@@ -762,10 +762,21 @@
          charge = charge_in(1:nparticles)
          mu_start = mu_start_in(1:nparticles)
          t_end = t_end_in(1:nparticles)
-         beam  = 1
-         nbeams = 1
-         charge_beams(1) = charge_in(1)
-         mass_beams(1)   = mass_in(1)
+         IF (nparticles <= MAXBEAMS) THEN
+            beam(1:nparticles)  = Dex_beams(1:nparticles)
+            charge_beams(1:nparticles) = charge(1:nparticles)
+            mass_beams(1:nparticles) = mass(1:nparticles)
+         ELSE
+            beam(1:MAXBEAMS)  = Dex_beams(1:MAXBEAMS)
+            beam(MAXBEAMS+1:nparticles)  = Dex_beams(MAXBEAMS)
+            charge_beams(1:MAXBEAMS) = charge(1:MAXBEAMS)
+            charge_beams(1:nparticles) = charge(MAXBEAMS)
+            mass_beams(1:MAXBEAMS) = mass(1:MAXBEAMS)
+            mass_beams(1:nparticles) = mass(MAXBEAMS)
+         END IF
+         nbeams = MAXVAL(beam)
+         !charge_beams(1) = charge_in(1)
+         !mass_beams(1)   = mass_in(1)
          lgc2fo_start = .FALSE.
          WHERE ((vr_start == 0) .and. (vphi_start == 0) .and. (vz_start == 0))
             lgc2fo_start = .TRUE.
@@ -857,9 +868,9 @@
 
 
       IF (lfidasim) THEN
-         FORALL(i = 1:nr_fida) raxis_fida(i) = (i-1)*(rmax_fida-rmin_fida)/(nr_fida) + rmin_fida !Lower grid edges
-         FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-1)*(zmax_fida-zmin_fida)/(nz_fida) + zmin_fida
-         FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-1)*(phimax_fida-phimin_fida)/(nphi_fida) + phimin_fida
+         FORALL(i = 1:nr_fida) raxis_fida(i) = (i-0.5)/r_h + rmin_fida !Centered grid as expected by FIDASIM
+         FORALL(i = 1:nz_fida) zaxis_fida(i) = (i-0.5)/z_h+ zmin_fida
+         FORALL(i = 1:nphi_fida) phiaxis_fida(i) = (i-0.5)/p_h + phimin_fida
          FORALL(i = 1:nenergy_fida) energy_fida(i) = REAL(i-0.5) / REAL(nenergy_fida) * 0.5 * MAXVAL(mass) * partvmax * partvmax /1.60217662E-19 / 1000.0
          FORALL(i = 1:npitch_fida) pitch_fida(i) = REAL(i-0.5) / REAL(npitch_fida) * 2.0 - 1.0
          IF (nenergy_fida .eq. 1) THEN

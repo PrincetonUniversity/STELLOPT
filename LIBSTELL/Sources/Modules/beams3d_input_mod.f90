@@ -394,6 +394,9 @@
             IF (r_start_in(ik) >= 0.0) nparticles = nparticles + 1
          END DO
 
+         ! Assume three is one population if dex_beams is not set.
+         IF (MAXVAL(Dex_beams) < 0) FORALL(ik=1:MAXBEAMS) Dex_beams(ik) = 1
+
 #if !defined(NAG)
       IF (int_type=='NAG') THEN
          int_type = 'LSODE'
@@ -534,12 +537,19 @@
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'PHI_START_IN',(phi_start_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'VLL_START_IN',(vll_start_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'MU_START_IN',(mu_start_in(ik), ik=1,n)
+         IF (rho_fullorbit < 1E10) WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'VR_START_IN',(vr_start_in(ik), ik=1,n)
+         IF (rho_fullorbit < 1E10) WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'VPHI_START_IN',(vphi_start_in(ik), ik=1,n)
+         IF (rho_fullorbit < 1E10) WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'VZ_START_IN',(vz_start_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'MASS_IN',(mass_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'CHARGE_IN',(charge_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'ZATOM_IN',(zatom_in(ik), ik=1,n)
          IF (ANY(weight_in /= 1)) WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'WEIGHT_IN',(weight_in(ik), ik=1,n)
          n = COUNT(t_end_in > -1)
          WRITE(iunit_out,"(2X,A,1X,'=',I6,'*',ES19.12E3)") 'T_END_IN',n,MAXVAL(t_end_in)
+         IF (MAXVAL(dex_beams)>0) THEN
+            n = COUNT(dex_beams>0)
+            WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'DEX_BEAMS',(dex_beams(ik), ik=1,NION)
+         END IF
       END IF
       WRITE(iunit_out,'(A)') '/'
 
