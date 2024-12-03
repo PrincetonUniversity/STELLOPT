@@ -127,6 +127,43 @@ class WALL():
 				wall_mesh.vectors[i][j] = self.vertex[f[j],:]
 		wall_mesh.save(filename)
 
+	def write_wall_kisslinger(self,filename,nphi,nfp=1):
+		"""Creates a wall file in Kisslinger format
+
+		This routine makes use of the meshcut library to produce
+		a Kisslinger format wall from the existing wall.
+		"""
+		import meshcut
+		import numpy as np
+		npts = 128
+		plane_orig = (0.0,0.0,0.0)
+		phiarr = np.linspace(0,np.pi*2/nfp,int(nphi))
+		sout = np.linspace(0.0,1.0,npts)
+		f = open(filename,'w')
+		f.write(self.name+"\n")
+		rshift = 0.0
+		zshift = 0.0
+		# Note not sure what last two values in kisslinger format are
+		f.write(f"{int(nphi)} {int(npts)} {int(nfp)} {rshift} {zshift} 1.00 4\n")
+		for phi in phiarr:
+			f.write(f"{180.0*phi/np.pi}\n")
+			nx = -np.sin(phi)
+			ny = np.cos(phi)
+			plane_normal = (nx,ny,0.0)
+			mesh = meshcut.cross_section(self.vertex,self.faces, \
+				plane_orig=plane_orig,plane_normal=plane_normal)
+			submesh = mesh[0]
+			submesh = np.concatenate((submesh,[submesh[0,:]]))
+			s = np.linspace(0.0,1.0,submesh.shape[0])
+			x = np.interp(sout,s,submesh[:,0])
+			y = np.interp(sout,s,submesh[:,1])
+			z = np.interp(sout,s,submesh[:,2])
+			x[-1] = x[0]
+			y[-1] = y[0]
+			z[-1] = z[0]
+			for i in range(npts):
+				f.write(f"{x[i]*100.0} {y[i]*100.0} {z[i]*100.0}\n")
+
 	def wallAdd(self,wall_in):
 		"""Add a wall to this wall
 
