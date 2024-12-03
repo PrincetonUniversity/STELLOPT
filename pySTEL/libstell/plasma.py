@@ -9,6 +9,7 @@ DA = 1.66053906660E-27 # Dalton
 ME = 9.1093837E-31 # Electron mass [kg]
 MP = 1.672621637E-27 # Proton mass [kg]
 EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
+MU0 = 1.25663706143E-6  # Vacuum permeability [N/A^2]
 
 import numpy as np
 
@@ -210,7 +211,7 @@ class PLASMA:
         return vth
     
     def get_averaged_profile(self,species,which_profile,dVdrho):
-        # which profile is either 'density' or 'temperature'
+        # which profile is either 'density', 'temperature' or 'pressure'
         # dVdrho is a function
         
         from scipy.integrate import trapezoid
@@ -221,6 +222,8 @@ class PLASMA:
             profile = self.get_density(species,rho)
         elif(which_profile=='temperature'):
             profile = self.get_temperature(species,rho)
+        elif(which_profile=='pressure'):
+            profile = self.get_density(species,rho)*self.get_temperature(species,rho)*EC   #Pascal (SI) units
         else:
             print(f'ERROR: profile is either "density" or "temperature". Cannot be {which_profile}')
             exit(0)
@@ -313,6 +316,18 @@ class PLASMA:
         
         self.num_ion_species = len(self.ion_species)
         
+    def get_plasma_total_beta(self,B,dVdrho):
+        # calculates plasma beta=total_pressure/ (B^2/2mu0)
+        
+        total_avg_pressure = 0.0
+        for species in self.list_of_species:
+            total_avg_pressure += self.get_averaged_profile(species,'pressure',dVdrho)
+        
+        betatot = total_avg_pressure / (B*B/(2*MU0))
+        
+        # print(f'betatot={betatot*100:.2f}%')
+        
+        return betatot    
     
     def write_plasma_profiles_to_PENTA1(self,rho,filename=None):
         # first line: number of rhos
