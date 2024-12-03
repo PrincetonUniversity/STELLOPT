@@ -138,7 +138,7 @@ test_thrift:
 
 test_vmec: 
 	@echo "Beginning testing of VMEC2000"
-	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1* wout*; 
+	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1*; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
 	@cd $(VMEC_TEST_DIR) && ./compare.py --file DSHAPE
@@ -162,6 +162,10 @@ test_vmec:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
 	@cd $(VMEC_TEST_DIR) && ./compare.py --file DIII-D
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D_reset reset=wout_reset.nc
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D_reset reset=wout_reset.nc
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file DIII-D_reset
 	@echo "Tesing of VMEC2000 complete"
 
 test_beams3d_basic:
