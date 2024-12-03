@@ -146,10 +146,10 @@ class FIELDLINES():
 		A number of fieldlines to skip can also be provided (nskip).
 		The user may also provide an axes (ax) to plot to.
 
-		Returns
+		Parameters
 		----------
 		phi : float
-			Toroidal angle to plot. [radians]
+			Toroidal index to plot. [radians]
 		nskip : int (optional)
 			Number of fieldlines to skip.
 		ax : axes (optional)
@@ -222,7 +222,7 @@ class FIELDLINES():
 		# Render if requested
 		if lplotnow: plt.render()
 
-	def plot_poincare3D(self,k=0,pointsize=0.01,color='red',plot3D=None):
+	def plot_poincare3D(self,k=0,pointsize=0.01,color='red',skip=1,plot3D=None):
 		"""Plots the FIELDILNES Poincare cross section in 3D
 
 		This routine makes a 3D Poincare plot.
@@ -235,6 +235,8 @@ class FIELDLINES():
 			Size of points (default: 0.01)
 		color : str (optional)
 			Color to plot points (default: red)
+		skip : int (optional)
+			Number of fieldlines to skip in plot (default: 1)
 		plot3D : plot3D object (optional)
 			Plotting object to render to.
 		"""
@@ -254,7 +256,7 @@ class FIELDLINES():
 		X = self.R_lines * np.cos(P)
 		Y = self.R_lines * np.sin(P)
 		for i in range(k,self.nsteps,self.npoinc):
-			for j in range(self.nlines):
+			for j in range(0,self.nlines,int(skip)):
 				if (self.R_lines[j,i] > 0):
 					vertices.append([X[j,i],Y[j,i],self.Z_lines[j,i]])
 		vertices = np.array(vertices)
@@ -265,6 +267,88 @@ class FIELDLINES():
 		plt.setBGcolor()
 		# Render if requested
 		if lplotnow: plt.render()
+		
+	def plot_orbit(self,markers=None,plot3D=None,color='red'):
+		"""Plots 3D trace of fieldlines
+
+		This routine plots traces of the fieldline orbits in 3D.
+
+		Parameters
+		----------
+		markers : list (optional)
+			List of marker indices to plot (default: all)
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Handle markers
+		if type(markers) == type(None):
+			markers_in = np.linspace(0,self.nparticles-1,dtype=int)
+		else:
+			markers_in = markers
+		# Plot markers
+		for i in markers_in:
+			j = np.argwhere(np.squeeze(self.R_lines[i,:])>0)
+			k = j[-1][0]
+			points_array = np.zeros((k,3))
+			points_array[:,0] = self.X_lines[i,0:k]
+			points_array[:,1] = self.Y_lines[i,0:k]
+			points_array[:,2] = self.Z_lines[i,0:k]
+			# Convert numpy array to VTK points
+			points = vtk.vtkPoints()
+			for point in points_array:
+				points.InsertNextPoint(point)
+			plt.add3Dline(points,linewidth=2,color=color)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def write_asc(self,phi,nskip=1,filename='fieldlines_poincare.asc'):
+		"""Writes Poincare points to an ASC file
+
+		This routine writes the Poincare data into an ASC file for
+		reading into CAD software (FreeCAD). ASC files are just
+		ASCII files with the points written in x,y,z format. Output is
+		in mm.
+
+		Parameters
+		----------
+		phi : list
+			Toroidal index to output. [radians]
+		nskip : int (optional)
+			Number of fieldlines to skip.
+		filename: str
+			Filename to output to (default: fieldlines_poincare.asc)
+		"""
+		import numpy as np
+		f = open(filename,'w')
+		if max(phi) <= self.nfp:
+			phi_temp = np.mod(self.PHI_lines,self.phiaxis[-1])
+			x_temp = self.R_lines*np.cos(phi_temp)
+			y_temp = self.R_lines*np.sin(phi_temp)
+		else:
+			x_temp = self.X_lines
+			y_temp = self.Y_lines
+		for phi_temp in phi:
+			k = int(self.npoinc*phi_temp/self.phiaxis[-1])
+			rmin = np.amin(self.raxis)
+			rmax = np.amax(self.raxis)
+			x = 1000.*x_temp[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
+			y = 1000.*y_temp[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
+			z = 1000.*self.Z_lines[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
+			for i,x0 in enumerate(x):
+				f.write(f"{x0:10.3f} {y[i]:10.3f} {z[i]:10.3f}\n")
+		f.close()
 
 	def plot_heatflux(self,factor=1.0,colormap='hot',plot3D=None):
 		"""Plots the BEAMS3D wall heat flux

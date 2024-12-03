@@ -110,3 +110,4 @@ if __name__=="__main__":
 			ax.plot(r2[j,:,2],z2[j,:,2],'--b')
 			ax.set_title(f'Extrapolated Surface ({abs(args.dist)/wout.aminor:4.2f} Aminor)')
 		pyplot.show()
+	sys.exit(0)
