@@ -120,3 +120,4 @@ if __name__=="__main__":
 					focus_data.ysurf.flatten(),\
 					focus_data.zsurf.flatten())
 			coil_data.plotcoilplasmaDist()
+	sys.exit(0)

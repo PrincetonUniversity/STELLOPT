@@ -63,7 +63,7 @@
 
       
       real(rprec), DIMENSION(3) :: gradR, gradZ, gradB
-      real(rprec), DIMENSION(3) :: grad_psi
+      !real(rprec), DIMENSION(3) :: grad_psi
       REAL(rprec), DIMENSION(3) :: esubs, esubu, esubv
       REAL(rprec), DIMENSION(3) :: es, eu, ev
       real(rprec), DIMENSION(3) :: dxyzdu, dxyzdv, dxyzds
@@ -147,9 +147,9 @@
 
             ! Convert radial gradients from d/drho to d/ds
             ! s = rho^2; ds/drho = 2*rho
-            gradB(3) = 0.5*gradB(3)/rho(i)
-            gradR(3) = 0.5*gradR(3)/rho(i)
-            gradZ(3) = 0.5*gradZ(3)/rho(i)
+            gradB(3) = 0.5*gradB(3)/rho(ik)
+            gradR(3) = 0.5*gradR(3)/rho(ik)
+            gradZ(3) = 0.5*gradZ(3)/rho(ik)
 
             ! Calc grad(s) (copied from txport)
             esubs(1) = gradR(3)
@@ -174,8 +174,8 @@
             eu = eu/sqrtg
             ev = ev/sqrtg
             gradS = es * phiedge
-            grad_psi_norm(j) = sqrt(grad_psi(1)*grad_psi(1) + grad_psi(2)*grad_psi(2) & 
-                                  & + grad_psi(3)*grad_psi(3))/pi2
+            grad_psi_norm(j) = sqrt(gradS(1)*gradS(1) + gradS(2)*gradS(2) & 
+                                  & + gradS(3)*gradS(3))/pi2
 
             ! dB/dpsi
             dBdpsi(j) = gradB(3)*pi2/psi_a !This has been verified with ROSE
@@ -307,8 +307,8 @@
             !write(*,*) 'e_z', e_z
             !write(*,*) 'e_phi', e_phi
 
-            dpsidr = dot_product(grad_psi, e_r)
-            dpsidz = dot_product(grad_psi, e_z)
+            dpsidr = dot_product(gradS, e_r)
+            dpsidz = dot_product(gradS, e_z)
             !B_zeta = dot_product(Bxyz, e_phi)
 
             !Note that e_theta_norm is negative iff Bphi is negative
@@ -324,7 +324,7 @@
             bdotgradb = 0.0_rprec
             kappa_g(j) = 0.0_rprec
             binormal(j,:) = 0.0_rprec
-            CALL cross_product(grad_psi/grad_psi_norm(j)/pi2, Bxyz/modB(j), binormal(j,:))
+            CALL cross_product(gradS/grad_psi_norm(j)/pi2, Bxyz/modB(j), binormal(j,:))
             !write (*,*) 'tangential', Bxyz/modB(j)
             !write (*,*) 'normal',grad_psi(j,:)/grad_psi_norm(j)
             !write (*,*) 'nxb',binormal(j,:)
@@ -375,7 +375,7 @@
 
             !dvdB_t1 is the first term in the brackets of dVdb
             ! = iota' ( grad_psi cross b_hat) dot grad_zeta
-            CALL cross_product(grad_psi, Bxyz, grad_psi_x_b)
+            CALL cross_product(gradS, Bxyz, grad_psi_x_b)
             dVdb_t1(j) = iotap*dot_product(grad_psi_x_b, grad_zeta)/modB(j)
 
             !Get B^v and derivatives
