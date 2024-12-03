@@ -1100,11 +1100,12 @@ MODULE PENTA_INTERFACE_MOD
       RETURN
    END SUBROUTINE penta_run_3_ambipolar
 
-   SUBROUTINE penta_run_4_cleanup
+   SUBROUTINE penta_run_4_cleanup(lscreen)
       USE io_unit_spec
       USE pprof_pass
       USE vmec_var_pass
       IMPLICIT NONE
+      LOGICAL, INTENT(IN) :: lscreen
       ! First write output files
       ! Loop over ambipolar Er for writing output files
       Do iroot = 1_iknd, num_roots
@@ -1151,11 +1152,11 @@ MODULE PENTA_INTERFACE_MOD
       ! QQ write file with number of roots per surface!
 
       ! Write screen output
-      !IF (lscreen) THEN
+      IF (lscreen) THEN
          write(str_num,*) num_roots
          write(*,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.4))') & 
          roa_surf,er_roots(1:num_roots)/100._rknd
-      !END IF
+      END IF
 
       ! DEALLOCATE
       CALL penta_deallocate_species
