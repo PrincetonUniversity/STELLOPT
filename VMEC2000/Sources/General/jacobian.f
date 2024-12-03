@@ -1,3 +1,13 @@
+!-------------------------------------------------------------------------------
+!>  @brief Compute quantities need to compute the jacobian.
+!>
+!>  The jacobian is defined by:
+!>
+!>    sqrt(g) = R(dZ/ds*dR/du - dR/ds*dZ/du)
+!>
+!>  Radial derivatives naturally fall on the half mesh so these quantities
+!>  become half mesh values.
+!-------------------------------------------------------------------------------
       SUBROUTINE jacobian_par
       USE vmec_input, ONLY: nzeta
       USE vmec_main, ONLY: ohs, nrzt, irst, nznt, iter2
@@ -31,9 +41,11 @@ C-----------------------------------------------
       irst = 1
 
       DO i = nsmin, nsmax
+!  drdu on the half mesh.
          pru12(:,i) = p5*(pru(:,i,meven) + pru(:,i-1,meven) +
      &                    pshalf(:,i)*(pru(:,i,modd) +
      &                                 pru(:,i-1,modd)))
+!  dzds on the half mesh.
          pzs(:,i)   = ohs*(pz1(:,i,meven) - pz1(:,i-1,meven) +
      &                     pshalf(:,i)*(pz1(:,i,modd) -
      &                                  pz1(:,i-1,modd)))
@@ -43,15 +55,15 @@ C-----------------------------------------------
      &                       (pru(:,i,meven)*pz1(:,i,modd) +
      &                        pru(:,i-1,meven)*pz1(:,i-1,modd)) /
      &                       pshalf(:,i))
-      END DO
-
-      DO i = nsmin, nsmax
+!  dzdu on the half mesh.
          pzu12(:,i) = p5*(pzu(:,i,meven) + pzu(:,i-1,meven) +
      &                    pshalf(:,i)*(pzu(:,i,modd) +
      &                                 pzu(:,i-1,modd)))
+!  drds on the half mesh.
          prs(:,i)   = ohs*(pr1(:,i,meven) - pr1(:,i-1,meven) +
      &                     pshalf(:,i)*(pr1(:,i,modd) -
      &                                  pr1(:,i-1,modd)))
+!  R on the half mesh.
          pr12(:,i)  = p5*(pr1(:,i,meven) + pr1(:,i-1,meven) +
      &                    pshalf(:,i)*(pr1(:,i,modd) +
      &                                 pr1(:,i-1,modd)))

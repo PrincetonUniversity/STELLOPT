@@ -149,6 +149,11 @@ C-----------------------------------------------
      &                     RUNVMEC_COMM_WORLD, MPI_ERR)
             CALL MPI_Bcast(lamscale, 1, MPI_REAL8, 0,
      &                     RUNVMEC_COMM_WORLD, MPI_ERR)
+            js = SIZE(rmn_bdy, 1)*SIZE(rmn_bdy, 2)*SIZE(rmn_bdy, 3)
+            CALL MPI_Bcast(rmn_bdy, js, MPI_REAL8, 0,                          &
+     &                     RUNVMEC_COMM_WORLD, MPI_ERR)
+            CALL MPI_Bcast(zmn_bdy, js, MPI_REAL8, 0,                          &
+     &                     RUNVMEC_COMM_WORLD, MPI_ERR)
 
             nsmin = t1lglob; nsmax = t1rglob
             DO js = nsmin, nsmax

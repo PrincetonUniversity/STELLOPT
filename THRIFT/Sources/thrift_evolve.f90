@@ -24,6 +24,7 @@
       CHARACTER(len = 16)     :: temp1_str, temp2_str
       CHARACTER(len = 79)     :: header_str,progress_str
       CHARACTER(len = 79)     :: temp_prog_str
+      CHARACTER(256), PARAMETER :: reset_string = 'reset_file'
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -67,6 +68,7 @@
       
       ! Loop over timesteps
       DO mytimestep = 1, ntimesteps
+         IF (ier_paraexe /=0) EXIT
 
          ! Setup the profiles
          IF (lverbj) WRITE(6,*) "Updating equilibrium pressure"
@@ -100,6 +102,7 @@
             CALL thrift_run_equil
             CALL second0(etime)
             time_vmec = time_vmec + (etime-stime)
+            IF (ier_paraexe /=0) EXIT
 
             ! Update equilibrium/profile variables
             IF (lverbj) WRITE(6,*) "Updating equilibrium current"
@@ -217,6 +220,9 @@
             lfirst_sub_pass = .FALSE.
 
          END DO
+
+         !Try only writing the RESET file if successful
+         IF (lvmec .and. lvmec_reset) CALL thrift_paraexe('paravmec_write',reset_string,.FALSE.)
 
       END DO
 

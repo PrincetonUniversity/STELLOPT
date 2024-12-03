@@ -82,7 +82,9 @@ C-----------------------------------------------
       rmncc => rzl_array(:,:,:,rcc)
       zmnsc => rzl_array(:,:,:,zsc+ntmax) 
       IF (lasym) THEN
-         rmaga => rzl_array(1,:,0,rcs)
+         IF (lthreed) THEN
+            rmaga => rzl_array(1,:,0,rcs)
+         END IF
          zmaga => rzl_array(1,:,0,zcc+ntmax)
       END IF
 
@@ -299,6 +301,9 @@ C-----------------------------------------------
 !     b poloidals (cylindrical estimates)
 !
 !      rcen = p5*(router + rinner)               !geometric center
+      rcen = 1.0 !  MRC: Zero this for now so it has an initalized value.
+                 !       Eventuall we should figure out the correct value for
+                 !       this.
       n = 0
       n1 = n + 1
       rcenin = DOT_PRODUCT(rmncc(ns,n1,:mpol1+1:2),
@@ -571,8 +576,13 @@ C-----------------------------------------------
          tz = t1
          IF (.NOT.lthreed) tz = 0
          IF (lasym) THEN
-             WRITE (nthreed, 820) n, t1*rmags(n1),
-     1          tz*zmags(n1), tz*rmaga(n1), t1*zmaga(n1)
+            IF (lthreed) THEN
+                WRITE (nthreed, 820) n, t1*rmags(n1),
+     1             tz*zmags(n1), tz*rmaga(n1), t1*zmaga(n1)
+            ELSE
+                WRITE (nthreed, 820) n, t1*rmags(n1),
+     1             tz*zmags(n1), 0.0, t1*zmaga(n1)
+            END IF
          ELSE
              WRITE (nthreed, 820) n, t1*rmags(n1),
      1          tz*zmags(n1)
@@ -635,7 +645,7 @@ C-----------------------------------------------
       er = sigr1 + sigz1
       rlao = volume_p/(twopi*cross_area_p)       !LAO, NUCL.FUS.25(1985)1421
       flao = rshaf/rlao
-!      fgeo = rshaf/rcen
+      fgeo = rshaf/rcen
 
       smaleli = factor*sumbpol
       vvc_smaleli = smaleli ! Save result for v3fit.
