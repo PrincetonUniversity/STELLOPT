@@ -237,7 +237,7 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
-                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
+                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, bphi_temp, s_temp, &
                           rho_temp, omeg_temp,&
                           vc3_tauinv, vbeta, zeff_temp,&
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
@@ -291,6 +291,10 @@ MODULE beams3d_physics_mod
             modb = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            BPHI4D(1,1,1,1),nr,nphi,nz)
+            modb = fval(1)            
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TE4D(1,1,1,1),nr,nphi,nz)
             te_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
@@ -326,7 +330,7 @@ MODULE beams3d_physics_mod
             !     v_s       Local Sound Speed
             !     speed     Total particle speed
             !-----------------------------------------------------------
-            vll = vll - omeg_temp*r_temp
+            vll = vll - omeg_temp*r_temp*bphi_temp/modb
             inv_mymass = one/mymass
             v_s = fact_vsound*sqrt(ti_temp)
             speed = sqrt( vll*vll + 2*moment*modb*inv_mymass ) !+ sign(real(80000),vll)
@@ -378,7 +382,7 @@ MODULE beams3d_physics_mod
                vfrac = newspeed/speed
                vll = vfrac*vll
                moment = vfrac*vfrac*moment
-               q(4) = vll + omeg_temp*r_temp
+               q(4) = vll + omeg_temp*r_temp*bphi_temp/modb
                RETURN
             END IF
             l = MAX(MIN(CEILING(rho_temp*h1_prof),ns_prof1),1)
@@ -431,7 +435,7 @@ MODULE beams3d_physics_mod
            !  Final Moment and vll update (return q(4))
            !------------------------------------------------------------
            moment = half*mymass*(speed*speed - vll*vll)/modb
-           q(4) = vll + omeg_temp*r_temp
+           q(4) = vll + omeg_temp*r_temp*bphi_temp/modb
 
          END IF
 
@@ -564,10 +568,10 @@ MODULE beams3d_physics_mod
             v_s = fact_vsound*sqrt(ti_temp)
             speed = sqrt(SUM(q(4:6)*q(4:6)))
             vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)
-            vll = (q(4)*br_temp+q(5)*bphi_temp+q(6)*bz_temp)  - omeg_temp*r_temp
+            vll = (q(4)*br_temp+q(5)*bphi_temp+q(6)*bz_temp) 
             ! Make q vperp from this point forward
             q(4) = q(4) - vll*br_temp
-            q(5) = q(5) - vll*bphi_temp
+            q(5) = q(5) - vll*bphi_temp - omeg_temp*r_temp
             q(6) = q(6) - vll*bz_temp
 
             !-----------------------------------------------------------
@@ -614,7 +618,7 @@ MODULE beams3d_physics_mod
                moment = vfrac*vfrac*moment
                q(4:6) = q(4:6)*vfrac
                q(4)   = q(4) + vll*br_temp
-               q(5)   = q(5) + vll*bphi_temp
+               q(5)   = q(5) + vll*bphi_temp + omeg_temp*r_temp
                q(6)   = q(6) + vll*bz_temp
                RETURN
             END IF
@@ -656,7 +660,7 @@ MODULE beams3d_physics_mod
            vperp = SQRT(SUM(q(4:6)*q(4:6)))
            q(4:6) = q(4:6)*sqrt(speed*speed-vll*vll)/vperp
            q(4) = q(4) + vll*br_temp
-           q(5) = q(5) + vll*bphi_temp
+           q(5) = q(5) + vll*bphi_temp + omeg_temp*r_temp
            q(6) = q(6) + vll*bz_temp
 
 
