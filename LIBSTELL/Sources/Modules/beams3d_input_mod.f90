@@ -155,7 +155,7 @@
       POT_AUX_S = -1
       POT_AUX_F = -1
       OMEG_AUX_S = -1
-      OMEG_AUX_F = -1      
+      OMEG_AUX_F = 0      
       NI_AUX_S = -1
       NI_AUX_F = 0
       NI_AUX_Z = 0
@@ -507,6 +507,11 @@
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ZEFF_AUX_S',(zeff_aux_s(n), n=1,ik)
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ZEFF_AUX_F',(zeff_aux_f(n), n=1,ik)
       END IF
+      ik = COUNT(omeg_aux_s >= 0)
+      IF (ik > 0) THEN
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'OMEG_AUX_S',(omeg_aux_s(n), n=1,ik)
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'OMEG_AUX_F',(omeg_aux_f(n), n=1,ik)
+      END IF      
       ik = COUNT(pot_aux_s >= 0)
       IF (ik > 0) THEN
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'POT_AUX_S',(pot_aux_s(n), n=1,ik)

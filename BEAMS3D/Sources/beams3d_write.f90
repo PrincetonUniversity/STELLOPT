@@ -146,7 +146,7 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ZEFF_ARR',ier)
                END IF
                IF (ASSOCIATED(OMEG_ARR)) THEN
-                  CALL write_var_hdf5(fid,'OMEG_ARR',nr,nphi,nz,ier,DBLVAR=OMEG_ARR,ATT='Toroidal rotation [m/s]',ATT_NAME='description')
+                  CALL write_var_hdf5(fid,'OMEG_ARR',nr,nphi,nz,ier,DBLVAR=OMEG_ARR,ATT='Toroidal rotation [rad/s]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'OMEG_ARR',ier)
                END IF               
                IF (ASSOCIATED(vertex)) THEN
