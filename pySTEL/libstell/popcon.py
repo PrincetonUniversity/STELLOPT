@@ -12,14 +12,15 @@ EC = 1.602176634E-19 # Electron charge [C]
 class POPCON:
     
     def __init__(self, B, a, R, iota, plasma_classes, popcon_title = 'POPCON'):
-        # navg is an array given in units of m^-3
-        # Tavg_array is an array in units of eV
+        # plasma classes is a 2d list of classes
         
         from scipy import integrate
         
         self.plasma_list = plasma_classes      
         
         self.popcon_title = popcon_title
+        
+        self.B = B
         
         # Differential volume. This works well for large aspect-ratio; not so good otherwise
         self.dVdrho = lambda rho: 4*np.pi*np.pi*R*rho*a*a
@@ -246,7 +247,7 @@ class POPCON:
         ax.contour(Tk.transpose(),n20.transpose(),P_fusion_GW.transpose(),levels=[3.0],linestyles='solid',colors='red')
         ax.clabel(cntr, inline=True, fontsize=17)
         
-        fig.colorbar(cntrf,label='P_ext [MW]')
+        fig.colorbar(cntrf,label='Heating Power [MW]')
         ax.set_xlabel(r'$\left<T_e\right>$ [keV]')
         ax.set_ylabel(r'$\left<n_e\right>$ (x10$^{20}$ m$^{-3}$)')
         ax.set_title(f'{self.popcon_title}')
@@ -265,21 +266,32 @@ class POPCON:
         ix_cordey,iy_cordey = self.get_cordey_path()
         Tk_cordey = Tk[ix_cordey,iy_cordey]
         n20_cordey = n20[ix_cordey,iy_cordey]
-        print(Tk_cordey)
-        print(n20_cordey)
-        ax.plot(Tk_cordey,n20_cordey,'.-',linewidth=2.5)
+        ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
+        
+        ix_cordey,iy_cordey = self.get_cordey_path(idx_y_start=10)
+        Tk_cordey = Tk[ix_cordey,iy_cordey]
+        n20_cordey = n20[ix_cordey,iy_cordey]
+        ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
+        
+        ix_cordey,iy_cordey = self.get_cordey_path(idx_y_start=5)
+        Tk_cordey = Tk[ix_cordey,iy_cordey]
+        n20_cordey = n20[ix_cordey,iy_cordey]
+        ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
         
         plt.show()
         
-    def get_cordey_path(self):
+        # plots along cordey path
+        self.plots_along_cordey_path(ix_cordey,iy_cordey)
+        
+    def get_cordey_path(self,idx_x_start=0,idx_y_start=0):
         
         # sets negative values of P_ext to 0
         P = self.P_ext.clip(min=0) 
         
-        cordey_idx_x = [0]
-        cordey_idx_y = [0]
+        cordey_idx_x = [idx_x_start]
+        cordey_idx_y = [idx_y_start]
         
-        p_cordey = P[0,0]
+        p_cordey = P[idx_x_start,idx_y_start]
         while(p_cordey>0):
             i = cordey_idx_x[-1]
             j = cordey_idx_y[-1]
@@ -289,7 +301,7 @@ class POPCON:
                 p2 = P[i+1,j]
                 p3 = P[i+1,j+1]
             except:
-                # this catches out of bounds, which means leaving the popcon when out of the limits
+                # this catches out of bounds, which means cordey path reached the limits of the popcon
                 break
             
             if(p1<=p2 and p1<=p3):
@@ -306,35 +318,66 @@ class POPCON:
                 exit(0)
                 
             p_cordey = P[cordey_idx_x[-1],cordey_idx_y[-1]]
+            
+        self.cordey_idx_x = cordey_idx_x
+        self.cordey_idx_y = cordey_idx_y
         
         return cordey_idx_x,cordey_idx_y
+    
+    def plots_along_cordey_path(self,cordey_idx_x,cordey_idx_y):
+        
+        import matplotlib.pyplot as plt
+        
+        plt.rc('font', size=18)
+        default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        custom_colors = ['#5faf30', '#1D2258', '#004817', '#a1cdc8']
+        plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors+default_colors)
+        plt.rcParams['lines.linewidth'] = 2.5
+        
+        beta_cordey = np.zeros_like(cordey_idx_x,dtype=float)
+        power_cordey = np.zeros_like(cordey_idx_x,dtype=float)
+        
+        k = 0
+        for ix,iy in zip(cordey_idx_x,cordey_idx_y):
+            beta_cordey[k] = self.plasma_list[ix,iy].get_plasma_total_beta(self.B,self.dVdrho)
+            power_cordey[k] = self.P_ext[ix,iy]
+            k += 1
             
-        
-        
-        
-        
-        
-        
-        
-        
+        MRHP = np.max(power_cordey) / 1E6
             
+        # _, ax = plt.subplots(figsize=(11,8))
+        # ax.plot(beta_cordey*100,'.-')
+        # ax.set_title('betatot along Cordey path')
+        # ax.set_ylabel(r'$\beta~(\%)$')
+        # ax.set_xlabel('Cordey steps')
+        # ax.grid()
+        
+        # _, ax = plt.subplots(figsize=(11,8))
+        # ax.plot(power_cordey/1E6,'.-',label=f'MRHP={MRHP:.1f} MW')
+        # ax.set_title('External Power along Cordey path')
+        # ax.set_ylabel(r'P [MW]')
+        # ax.set_xlabel('Cordey steps')
+        # ax.grid()
+        # ax.legend()
+        # plt.show()
+        
+        # two plots in the same figure
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(beta_cordey*100,'.-',label=r'$\beta$',color='#5faf30')
+        ax.set_title('Cordey path')
+        ax.set_ylabel(r'$\beta~(\%)$')
+        ax.set_xlabel('Cordey steps')
+        ax.grid()
+        ax.text(5,beta_cordey[5]*100+0.05,r'$\beta$',color='#5faf30',size=25)
+        
+        ax2 = ax.twinx() 
+        ax2.plot(power_cordey/1E6,'.-',color='#1D2258',label=f'MRHP={MRHP:.1f} MW')
+        ax2.set_ylabel(r'Heating Power [MW]')
+        ax2.legend(loc='lower right')
+        ax2.text(5,power_cordey[5]/1E6+0.3,r'$P$',color='#1D2258',size=25)
+
+        plt.show()
             
-
-        
-        
-        
-        
-            
-        
-        
-        
-        
-        
-        
-
-
-
-
 # Main routine
 if __name__=="__main__":
 	import sys
