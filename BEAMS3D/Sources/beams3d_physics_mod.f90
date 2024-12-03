@@ -431,7 +431,7 @@ MODULE beams3d_physics_mod
            !  Final Moment and vll update (return q(4))
            !------------------------------------------------------------
            moment = half*mymass*(speed*speed - vll*vll)/modb
-           q(4) = q(4) + omeg_temp*r_temp
+           q(4) = vll + omeg_temp*r_temp
 
          END IF
 
