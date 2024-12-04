@@ -68,7 +68,7 @@ class BEAMS3D():
 					setattr(self, temp, np.array(f[temp][:]))
 			# Arrays (2D)
 			for temp in ['wall_vertex', 'wall_faces', \
-						 'wall_load', 'wall_shine', 'beam_density', \
+						 'wall_load', 'wall_shine', \
 						 'R_lines', 'Z_lines', 'PHI_lines', \
 						 'vll_lines', 'neut_lines', 'moment_lines', \
 						 'S_lines', 'U_lines', 'B_lines', \
@@ -92,7 +92,7 @@ class BEAMS3D():
 					array = np.transpose(f[temp][:],(3,2,1,0))
 					setattr(self, temp, np.array(array))
 			# Arrays (6D)
-			for temp in ['NEUTRON_RATE','beam_density']:
+			for temp in ['dist_prof']:
 				if temp in f:
 					array = np.transpose(f[temp][:],(5,4,3,2,1,0))
 					setattr(self, temp, np.array(array))
