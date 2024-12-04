@@ -715,7 +715,7 @@ MODULE beams3d_physics_mod
          !     Local Parameters
          !--------------------------------------------------------------
          INTEGER, PARAMETER :: num_depo = 256
-         INTEGER, PARAMETER :: max_beam_pass = 1
+         INTEGER, PARAMETER :: max_beam_pass = 2
          DOUBLE PRECISION, PARAMETER :: dl = 5D-3
          DOUBLE PRECISION, PARAMETER :: stepsize(3)=(/0.25,0.05,0.01/)
 
@@ -777,7 +777,11 @@ MODULE beams3d_physics_mod
          !	   multi-pass (currently 2 passes max.)
          !--------------------------------------------------------------		 
          DO nbeampass = 1, max_beam_pass
-
+            ! If plasma_only then only do one pass
+            IF (lplasma_only .and. nbeampass > 1) THEN
+               end_state(myline) = 3         
+               RETURN
+            END IF
             !--------------------------------------------------------------
             !     Follow neutral into plasma using subgrid
             !--------------------------------------------------------------
@@ -835,15 +839,15 @@ MODULE beams3d_physics_mod
                   q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                   q(2) = ATAN2(qf(2),qf(1))
                   q(3) = qf(3)
-   			   IF (nbeampass .eq. 1) THEN !Port loss 
-                  end_state(myline) = 4
-   			   ELSE !Shinethrough if particle went through plasma before
-               end_state(myline) = 3
-   			   END IF
+   			      IF (nbeampass .eq. 1) THEN !Port loss 
+                     end_state(myline) = 4
+   			      ELSE !Shinethrough if particle went through plasma before
+                     end_state(myline) = 3
+   			      END IF
                   CALL uncount_wall_hit              
                   RETURN
-   		    ELSEIF (end_state(myline) .eq. 5) THEN         
-               RETURN
+   		      ELSEIF (end_state(myline) .eq. 5) THEN         
+                  RETURN
                END IF
             END IF
 
