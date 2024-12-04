@@ -183,7 +183,13 @@
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
          IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
          IF (.not.lgcsim) WRITE(6,'(A)') '   FULL ORIBT SIMULATION!'
-         IF (lcollision) WRITE(6,'(A)') '   COLLISION OPERATOR ON!'
+#if defined(B3D_COLLOP_NRL19IE)
+         IF (lcollision) WRITE(6,'(A)') '   NRL2019IE COLLISION OPERATOR ON!'
+#elif defined(B3D_COLLOP_NUBEAM)
+         IF (lcollision) WRITE(6,'(A)') '   NUBEAM COLLISION OPERATOR ON!'
+#else
+         IF (lcollision) WRITE(6,'(A)') '   NRL2019 COLLISION OPERATOR ON!'
+#endif
          IF (lkick) WRITE(6,'(A)') '   KICK MODEL ON!'
          IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
@@ -796,9 +802,7 @@
             beam(1:MAXBEAMS)  = Dex_beams(1:MAXBEAMS)
             beam(MAXBEAMS+1:nparticles)  = Dex_beams(MAXBEAMS)
             charge_beams(1:MAXBEAMS) = charge(1:MAXBEAMS)
-            charge_beams(1:nparticles) = charge(MAXBEAMS)
             mass_beams(1:MAXBEAMS) = mass(1:MAXBEAMS)
-            mass_beams(1:nparticles) = mass(MAXBEAMS)
          END IF
          nbeams = MAXVAL(beam)
          !charge_beams(1) = charge_in(1)
