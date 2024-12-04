@@ -19,6 +19,7 @@ from mpl_toolkits import mplot3d
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 #
 from libstell import vmec
+from libstell import boozer
 from libstell import stellopt
 from libstell import plot3D
 
@@ -874,10 +875,10 @@ class MyApp(QMainWindow):
 					'NE','NELINE','TE','TELINE','TI','TILINE','ZEFFLINE',\
 					'XICS','XICS_BRIGHT','XICS_W3','XICS_V','SXR','VPHI','VACIOTA',\
 					'IOTA','BALLOON','BOOTSTRAP','DKES','DKES_ERDIFF','DKES_ALPHA',\
-					'HELICITY','HELICITY_FULL',\
+					'HELICITY','HELICITY_FULL','QUASIISO','GAMMA_C', \
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
-					'CURVATURE_KERT','CURVATURE_P2','QUASIISO']
+					'CURVATURE_KERT','CURVATURE_P2']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
 		# Handle Chisquared plots
@@ -894,7 +895,7 @@ class MyApp(QMainWindow):
 					'S11','S12','S21','S22','MAGWELL','VACIOTA',\
 					'CURVATURE_KERT','CURVATURE_P2',\
 					'ECEREFLECT','SXR','IOTA','PRESS','PRESSPRIME'\
-					'VISBREMLINE','QUASIISO']:
+					'VISBREMLINE','QUASIISO','GAMMA_C']:
 			for item in vars(self.stel_data).keys():
 				if (name+'_TARGET' == item):
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
@@ -924,6 +925,15 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Mercier')
 			wout_files = sorted([k for k in files if 'wout' in k])
 			self.wout_files = sorted([k for k in wout_files if '_opt' not in k])
+		# Handle Boozer Transformation
+		if any('boozmn' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Boozer Coordinates -----')
+			self.ui.ComboBoxOPTplot_type.addItem('|B|_MAX')
+			self.ui.ComboBoxOPTplot_type.addItem('QAS_ERROR')
+			self.ui.ComboBoxOPTplot_type.addItem('QPS_ERROR')
+			self.ui.ComboBoxOPTplot_type.addItem('QHS_ERROR')
+			booz_files = sorted([k for k in files if 'boozmn' in k])
+			self.booz_files = sorted([k for k in booz_files if '_opt' not in k])
 		# Handle Kinetic Profiles
 		if any('tprof.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Kinetics -----')
@@ -1027,6 +1037,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Proxy Function')
 			self.ax2.set_title('Turbulent Transport Proxy')
 			self.ax2.set_xlim((0,1))
+			self.ax2.legend()
 		elif (plot_name == 'ORBIT_evolution'):
 			x = self.stel_data.ORBIT_S
 			y = self.stel_data.ORBIT_EQUIL
@@ -1041,6 +1052,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Orbit Losses')
 			self.ax2.set_title('Gyro Particle Losses')
 			self.ax2.set_xlim((0,1))
+			self.ax2.legend()
 		elif (plot_name == 'NEO_evolution'):
 			x = self.stel_data.NEO_K
 			y = self.stel_data.NEO_EPS_EFF32
@@ -1054,6 +1066,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Epsilon Effective')
 			self.ax2.set_title('Neoclassical Helical Ripple (NEO)')
+			self.ax2.legend()
 		elif ('DKES_L' in plot_name):
 			# Get L type
 			if plot_name == 'DKES_L11':
@@ -1117,6 +1130,7 @@ class MyApp(QMainWindow):
 			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
 			self.ax2.set_ylabel('Helicity')
 			self.ax2.set_title('Boozer Spectrum Helicity')
+			self.ax2.legend()
 		elif (plot_name == 'MAGWELL_evolution'):
 			x = self.stel_data.MAGWELL_k
 			y = self.stel_data.MAGWELL_MAGWELL
@@ -1130,6 +1144,21 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Magnetic Well')
 			self.ax2.set_title('Magnetic Well Evolution  (>0 Well)')
+			self.ax2.legend()
+		elif (plot_name == 'GAMMA_C_evolution'):
+			x = self.stel_data.GAMMA_C_K
+			y = self.stel_data.GAMMA_C_VAL
+			t = self.stel_data.GAMMA_C_TARGET
+			d = self.stel_data.GAMMA_C_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
+			self.ax2.set_xlabel('Radial Grid')
+			self.ax2.set_ylabel(rf'$\Gamma_C$ Metric')
+			self.ax2.set_title(rf'Fast Ion Confinement Metric ($\Gamma_C$)')
+			self.ax2.legend()
 		elif (plot_name == 'QUASIISO_evolution'):
 			x = self.stel_data.QUASIISO_K
 			y = self.stel_data.QUASIISO_VAL
@@ -1143,6 +1172,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('QI Metric')
 			self.ax2.set_title('Quasi-isodynamic Metric')
+			self.ax2.legend()
 		elif (plot_name == 'CURVATURE_P2'):
 			#x = self.stel_data.TXPORT_S
 			#y = self.stel_data.CURVATURE_P2_P2
@@ -1168,6 +1198,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('B-Probe')
 			self.ax2.set_ylabel('Signal')
 			self.ax2.set_title('B-Probe Reconstruction')
+			self.ax2.legend()
 		elif (plot_name == 'FLUXLOOPS_evolution'):
 			n=self.stel_data.FLUXLOOPS_TARGET.shape
 			y = self.stel_data.FLUXLOOPS_TARGET.T
@@ -1190,6 +1221,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Fluxloop')
 			self.ax2.set_ylabel('Signal')
 			self.ax2.set_title('Fluxloop Reconstruction')
+			self.ax2.legend()
 		elif (plot_name == 'SEGROG_evolution'):
 			n=self.stel_data.SEGROG_TARGET.shape
 			y = self.stel_data.SEGROG_TARGET.T
@@ -1924,6 +1956,69 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Z [m]')
 			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
 			self.ax2.set_aspect('equal')
+		elif (plot_name == '|B|_MAX'):
+			booz_data = boozer.BOOZER()
+			l=0
+			dl = len(self.booz_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.booz_files:
+				if 'boozmn' in string:
+					booz_data.read_boozer(self.workdir+string)
+					disp('NOT DONE!')
+		elif (plot_name == 'QAS_ERROR'):
+			booz_data = boozer.BOOZER()
+			l=0
+			dl = len(self.booz_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.booz_files:
+				if 'boozmn' in string:
+					booz_data.read_boozer(self.workdir+string)
+					error = booz_data.calcQuasiError(0,1)
+					s = np.squeeze(booz_data.phi_b)
+					s = s/s[-1]
+					self.ax2.plot(s,error*100.0,'o',color=_plt.cm.brg(l/dl))
+					l = l + 1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Error [%]')
+			self.ax2.set_title('Quasi-Axisymmetry Error')
+			self.ax2.set_ylim((0,100))
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'QPS_ERROR'):
+			booz_data = boozer.BOOZER()
+			l=0
+			dl = len(self.booz_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.booz_files:
+				if 'boozmn' in string:
+					booz_data.read_boozer(self.workdir+string)
+					error = booz_data.calcQuasiError(1,0)
+					s = np.squeeze(booz_data.phi_b)
+					s = s/s[-1]
+					self.ax2.plot(s,error*100.0,'o',color=_plt.cm.brg(l/dl))
+					l = l + 1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Error [%]')
+			self.ax2.set_title('Quasi-Poloidal Symmetry Error')
+			self.ax2.set_ylim((0,100))
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'QHS_ERROR'):
+			booz_data = boozer.BOOZER()
+			l=0
+			dl = len(self.booz_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.booz_files:
+				if 'boozmn' in string:
+					booz_data.read_boozer(self.workdir+string)
+					error = booz_data.calcQuasiError(1,1)
+					s = np.squeeze(booz_data.phi_b)
+					s = s/s[-1]
+					self.ax2.plot(s,error*100.0,'o',color=_plt.cm.brg(l/dl))
+					l = l + 1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Error [%]')
+			self.ax2.set_title('Quasi-Helical Symmetry Error')
+			self.ax2.set_ylim((0,100))
+			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Electron Temperature'):
 			l=0
 			dl = len(self.tprof_files)-1

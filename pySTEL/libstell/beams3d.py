@@ -561,7 +561,7 @@ class BEAMS3D():
 		# Calc losses
 		return (Itherm+Ilost)/area
 
-	def plotorbit(self,markers=None,plot3D=None):
+	def plotorbit(self,markers=None,color=None,plot3D=None):
 		"""Plots traces of the orbits in 3D
 
 		This routine plots traces of the particle orbits in 3D.
@@ -570,6 +570,8 @@ class BEAMS3D():
 		----------
 		markers : list (optional)
 			List of marker indices to plot (default: all)
+		color : string (optional)
+			Line color name, see VTK (scalars overrides)
 		plot3D : plot3D object (optional)
 			Plotting object to render to.
 		"""
@@ -590,17 +592,17 @@ class BEAMS3D():
 			markers_in = markers
 		# Plot markers
 		for i in markers_in:
-			j = np.argwhere(np.squeeze(self.R_lines[i,:])>0)
+			j = np.argwhere(np.squeeze(self.R_lines[:,i])>0)
 			k = j[-1][0]
 			points_array = np.zeros((k,3))
-			points_array[:,0] = self.X_lines[i,0:k]
-			points_array[:,1] = self.Y_lines[i,0:k]
-			points_array[:,2] = self.Z_lines[i,0:k]
+			points_array[:,0] = self.X_lines[0:k,i]
+			points_array[:,1] = self.Y_lines[0:k,i]
+			points_array[:,2] = self.Z_lines[0:k,i]
 			# Convert numpy array to VTK points
 			points = vtk.vtkPoints()
 			for point in points_array:
 				points.InsertNextPoint(point)
-			plt.add3Dline(points,linewidth=2)
+			plt.add3Dline(points,linewidth=2,color=color)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested

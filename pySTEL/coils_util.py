@@ -38,6 +38,8 @@ if __name__=="__main__":
 		help="Fit a surface to a coil.", default = False)
 	parser.add_argument("-o", "--output", dest="loutput", action='store_true',
 		help="Output the coil", default = False)
+	parser.add_argument("--gourdon", dest="lgourdon", action='store_true',
+		help="Output the coils in Gourdon format.", default = False)
 	parser.add_argument("--stl", dest="heightwidth_stl",
 		help="Generate STL of coil of given width and height [m].", default = None)
 	args = parser.parse_args()
@@ -73,6 +75,7 @@ if __name__=="__main__":
 					wall_mesh.vectors[i][j] = vertex[f[j],:]
 			wall_mesh.save(args.coils_file+'.stl')
 		if args.loutput: coils.write_coils_file(args.coils_file+'_new')
+		if args.lgourdon: coils.write_Gourdon_coils()
 		if args.axyz:
 			x,y,z = args.axyz.split(',')
 			ax,ay,az = coils.coilvecpot(float(x),float(y),float(z))
@@ -118,4 +121,5 @@ if __name__=="__main__":
 			z = FR.sfunct(theta,phi,zmns,xm,xn)
 			FR.isotoro(r,z,phi,0,plot3D=plt3d,lclosev=False)
 			plt3d.render()
+	sys.exit(0)
 
