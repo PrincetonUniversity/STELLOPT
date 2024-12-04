@@ -238,7 +238,7 @@ MODULE beams3d_physics_mod
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
                           inv_mymass, speed_cube, vcrit_cube, vfrac, modb, bphi_temp, s_temp, &
-                          rho_temp, omeg_temp, binv,&
+                          rho_temp, omeg_temp, binv, vrot_para, vrot_perp, &
                           vc3_tauinv, vbeta, zeff_temp,&
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin,&
@@ -286,6 +286,7 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             MODB4D(1,1,1,1),nr,nphi,nz)
             modb = fval(1)
+            binv = one/modb
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BPHI4D(1,1,1,1),nr,nphi,nz)
@@ -320,18 +321,24 @@ MODULE beams3d_physics_mod
                   NI5D(1,1,1,1,l),nr,nphi,nz)
                ni_temp(l) = max(fval(1),zero) !Set to one to prevent NaN Zeff later on
             END DO
-            
+
+            !-----------------------------------------------------------
+            !  Apply toroidal rotation
+            !     vrot_para: Parallel rotation velocity [m/s]
+            !     vrot_perp: Perpendicular rotation velocity [m/s]
+            !-----------------------------------------------------------
+            inv_mymass = one/mymass
+            vrot_para = omeg_temp*r_temp*bphi_temp*binv
+            vrot_perp = SQRT(omeg_temp*omeg_temp*r_temp*r_temp - vrot_para*vrot_para)
+            vll       = vll - vrot_para
+            speed     = SQRT(vll*vll + 2*moment*modb*inv_mymass - vrot_perp*vrot_perp)
 
             !-----------------------------------------------------------
             !  Helpers
             !     v_s       Local Sound Speed
             !     speed     Total particle speed
             !-----------------------------------------------------------
-            binv = one/modb
-            vll = vll - omeg_temp*r_temp*bphi_temp*binv
-            inv_mymass = one/mymass
             v_s = fact_vsound*sqrt(ti_temp)
-            speed = sqrt( vll*vll + 2*moment*modb*inv_mymass ) !+ sign(real(80000),vll)
             vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)
 
             !-----------------------------------------------------------
@@ -383,8 +390,8 @@ MODULE beams3d_physics_mod
                ltherm = .true.
                vfrac = newspeed/speed
                vll = vfrac*vll
-               moment = vfrac*vfrac*moment
-               q(4) = vll + omeg_temp*r_temp*bphi_temp*binv
+               moment = half*mymass*(newspeed*newspeed - vll*vll + vrot_perp*vrot_perp)*binv
+               q(4) = vll + vrot_para
                RETURN
             END IF
             l = MAX(MIN(CEILING(rho_temp*h1_prof),ns_prof1),1)
@@ -394,51 +401,50 @@ MODULE beams3d_physics_mod
             moment = vfrac*vfrac*moment
             speed = newspeed
 
-           !------------------------------------------------------------
-           !  Pitch Angle Scattering
-           !------------------------------------------------------------
-           speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
-           zeta_o = vll/speed   ! Record the current pitch.
-           CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-           sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
-           zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
-           zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
-           !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
-           !Flip gaussian at boundary to prevent accumulation around pitch=1
-           !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
-           !Pitch angle scattering according to NUBEAM
-           !sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
-           !CALL RANDOM_NUMBER(zeta)
-           !zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
-           !CALL RANDOM_NUMBER(zrang)
-           !zrang=zrang*pi2
-           !zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
-           vll = zeta*speed
+            !------------------------------------------------------------
+            !  Pitch Angle Scattering
+            !------------------------------------------------------------
+            speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
+            zeta_o = vll/speed   ! Record the current pitch.
+            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+            sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
+            zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
+            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
+            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
+            zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+            !Flip gaussian at boundary to prevent accumulation around pitch=1
+            !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
+            !Pitch angle scattering according to NUBEAM
+            !sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
+            !CALL RANDOM_NUMBER(zeta)
+            !zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
+            !CALL RANDOM_NUMBER(zrang)
+            !zrang=zrang*pi2
+            !zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
+            vll = zeta*speed
 
-           !------------------------------------------------------------
-           !  Kick Model Scattering (old)
-           !------------------------------------------------------------
-           !IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
-           !   zeta_o = vll/speed   ! Record the current pitch.
-           !   zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)/(modb*modb)
-           !   vll = zeta*speed
-           !END IF
+            !------------------------------------------------------------
+            !  Kick Model Scattering (old)
+            !------------------------------------------------------------
+            !IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
+            !   zeta_o = vll/speed   ! Record the current pitch.
+            !   zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)/(modb*modb)
+            !   vll = zeta*speed
+            !END IF
 
-           !------------------------------------------------------------
-           !  Kick Model Scattering (new Energy, vll constant)
-           !------------------------------------------------------------
-           IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
+            !------------------------------------------------------------
+            !  Kick Model Scattering (new Energy, vll constant)
+            !------------------------------------------------------------
+            IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
               zeta_o = vll/speed   ! Record the current pitch.
               speed = speed*SQRT(one + fact_kick*modb*(1-zeta_o*zeta_o)*dt/SQRT(ne_temp))
-           END IF
+            END IF
 
-           !------------------------------------------------------------
-           !  Final Moment and vll update (return q(4))
-           !------------------------------------------------------------
-           moment = half*mymass*(speed*speed - vll*vll)*binv
-           q(4) = vll + omeg_temp*r_temp*bphi_temp*binv
-
+            !------------------------------------------------------------
+            !  Final Moment and vll update (return q(4))
+            !------------------------------------------------------------
+            moment = half*mymass*(speed*speed - vll*vll + vrot_perp*vrot_perp)*binv
+            q(4) = vll + vrot_para
          END IF
 
          RETURN
@@ -553,11 +559,16 @@ MODULE beams3d_physics_mod
             bz_temp = fval(1)
 
             !-----------------------------------------------------------
+            !  Apply toroidal rotation
+            !     Assumption is that only toroidal rotation
+            !-----------------------------------------------------------
+            q(5) = q(5) - omeg_temp*r_temp
+
+            !-----------------------------------------------------------
             !  Helpers
             !     v_s       Local Sound Speed
             !     speed     Total particle speed
             !-----------------------------------------------------------
-            q(5) = q(5) - omeg_temp*r_temp
             modb = sqrt(br_temp*br_temp+bphi_temp*bphi_temp+bz_temp*bz_temp)
             binv = one/modb
             br_temp = br_temp*binv
@@ -635,37 +646,37 @@ MODULE beams3d_physics_mod
             q(4:6) = q(4:6)*vfrac
             speed = newspeed
 
-           !------------------------------------------------------------
-           !  Pitch Angle Scattering
-           !------------------------------------------------------------
-           speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
-           zeta_o = vll/speed   ! Record the current pitch.
-           CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-           sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
-           zeta_mean = zeta_o *(1.0D0 - speed_cube )  ! The new mean in the distribution.
-           zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
-           !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
-           vll = zeta*speed
+            !------------------------------------------------------------
+            !  Pitch Angle Scattering
+            !------------------------------------------------------------
+            speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
+            zeta_o = vll/speed   ! Record the current pitch.
+            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
+            zeta_mean = zeta_o *(1.0D0 - speed_cube )  ! The new mean in the distribution.
+            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
+            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
+            zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+            vll = zeta*speed
 
-           !------------------------------------------------------------
-           !  Kick Model Scattering
-           !------------------------------------------------------------
-           IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
+            !------------------------------------------------------------
+            !  Kick Model Scattering
+            !------------------------------------------------------------
+            IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
               zeta_o = vll/speed   ! Record the current pitch.
               zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)*binv*binv
               vll = zeta*speed
-           END IF
+            END IF
 
-           !------------------------------------------------------------
-           !  Now update velocity
-           !------------------------------------------------------------
-           q(4) = q(4) + vll*br_temp
-           q(5) = q(5) + vll*bphi_temp + omeg_temp*r_temp
-           q(6) = q(6) + vll*bz_temp
-           vll = (q(4)*br_temp+q(5)*bphi_temp+q(6)*bz_temp)
-           speed = sqrt(SUM(q(4:6)*q(4:6)))
-           moment = half*(speed*speed-vll*vll)*mymass*binv
+            !------------------------------------------------------------
+            !  Now update velocity
+            !------------------------------------------------------------
+            q(4) = q(4) + vll*br_temp
+            q(5) = q(5) + vll*bphi_temp + omeg_temp*r_temp
+            q(6) = q(6) + vll*bz_temp
+            vll = (q(4)*br_temp+q(5)*bphi_temp+q(6)*bz_temp)
+            speed = SQRT(SUM(q(4:6)*q(4:6)))
+            moment = half*(speed*speed-vll*vll)*mymass*binv
          END IF
 
          RETURN
@@ -704,7 +715,7 @@ MODULE beams3d_physics_mod
          !     Local Parameters
          !--------------------------------------------------------------
          INTEGER, PARAMETER :: num_depo = 256
-         INTEGER, PARAMETER :: max_beam_pass = 2
+         INTEGER, PARAMETER :: max_beam_pass = 1
          DOUBLE PRECISION, PARAMETER :: dl = 5D-3
          DOUBLE PRECISION, PARAMETER :: stepsize(3)=(/0.25,0.05,0.01/)
 
