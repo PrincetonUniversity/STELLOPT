@@ -243,7 +243,7 @@ MODULE beams3d_physics_mod
                           vc3_tauinv, vbeta, zeff_temp,&
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin,&
-						  zdelth,zrang
+                          zdelth,zrang
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          DOUBLE PRECISION :: slow_par(3), ni_temp(NION)
          ! For splines
@@ -344,17 +344,18 @@ MODULE beams3d_physics_mod
             END IF
 
             !------------------------------------------------------------
-			   !  Velocity diffusion 
-			   !------------------------------------------------------------
+            !  Velocity diffusion 
+            !------------------------------------------------------------
+            ddve = zero; ddvi = zero
+#if defined(B3D_VEL_DIFFUSION)
             speed_cube = (speed*speed*speed)
             CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
             ddve=ABS(2*e_charge*dt*te_temp*inv_mymass*tau_spit_inv)
             ddvi=ABS(2*e_charge*dt*(ti_temp*vcrit_cube*inv_mymass/speed_cube)*tau_spit_inv)
             sigma = sqrt( ddve+ddvi) ! The standard deviation.
-            !!sigma = sqrt( ABS(2*e_charge*dt*(te_temp*myv0+ti_temp*vcrit_cube)*tau_spit_inv*inv_mymass/myv0) ) ! The standard deviation.
             ddve=zeta*ddve/sigma
             ddvi=zeta*ddvi/sigma
-            !speed = speed+sigma*zeta  
+#endif
             !-----------------------------------------------------------
             !  Viscouse Velocity Reduction
             !     v_s       Local Sound Speed
