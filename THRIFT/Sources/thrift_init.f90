@@ -67,6 +67,7 @@
          WRITE(6,'(A11,I5)') '   NT:     ', ntimesteps
          WRITE(6,'(A11,F8.4)') '   TSTART: ', tstart
          WRITE(6,'(A11,F8.4)') '   TEND:   ', tend
+         IF (lvmec_reset) WRITE(6,'(A)') '   VMEC RESET FEATURE ON.'
       END IF
 
       ! Grid allocations

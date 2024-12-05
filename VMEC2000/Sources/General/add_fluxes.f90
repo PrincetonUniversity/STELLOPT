@@ -37,8 +37,8 @@
         top = icurv(js)
         bot = 0
         DO j=1,nznt
-          top = top - pwint(j,js)*(pguu(j,js)*bsupu(j,js) &
-            + pguv(j,js)*bsupv(j,js))
+          top = top - pwint(j,js)*(  pguu(j,js)*bsupu(j,js) &
+                                   + pguv(j,js)*bsupv(j,js))
           bot = bot + pwint(j,js)*overg(j,js)*pguu(j,js)
         END DO
         IF (bot.ne.zero) chips(js) = top/bot
