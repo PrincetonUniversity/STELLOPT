@@ -190,6 +190,9 @@
 #else
          IF (lcollision) WRITE(6,'(A)') '   NRL2019 COLLISION OPERATOR ON!'
 #endif
+#if defined(B3D_VEL_DIFFUSION)
+         IF (lcollision) WRITE(6,'(A)') '   VELOCITY DIFFUSION OPERATOR ON!'
+#endif         
          IF (lkick) WRITE(6,'(A)') '   KICK MODEL ON!'
          IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
