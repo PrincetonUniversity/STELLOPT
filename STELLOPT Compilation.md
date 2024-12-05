@@ -31,6 +31,25 @@ should be:
 
 To build a specific subcode enter the directory of the code and issue the command `make clean_release` to rebuild the whole code with optimization flags, `make clean_debug` to build the whole code for debugging, `make release` to only build files which have changed, `make debug` to only build files which have changed with debugging on, or `make` which aliases to `make release`.
 
+Precompiler Flags
+-----------------
+
+Certain features of codes are controled via precompiler flags which are not by default turned on.  The following is a list of precompiler flags one can add to their `SHARE/make_machine.inc` file by adding lines such as `  PRECOMP+= -DHDF5_PAR`
+
+- `-DNETCDF`:   NetCDF output (VMEC2000, MAKEGRID)
+- `-DLHDF5`:     HDF5 output (FIELDLINES, BEAMS3D)
+- `-DHDF5_PAR`: Parallel HDF5 routines (FIELDLINES, BEAMS3D)
+- `-DNAG`:     NAG Algorithms (FIELDLINES, BEAMS3D)
+- `-DIMAS`:     IMAS Interface (VMEC2000, BEAMS3D)
+- `-D_ANIMEC`:  Anisotropic VMEC (VMEC2000)
+- `-D_FLOW`:  Toroidal flow VMEC (VMEC2000)
+- `-DCHI_FORCE`:  Alternative VMEC forces (VMEC2000)
+- `-DB3D_COLLOP_NRL19IE`:  Ion/Electron NRL19 Collision operator (BEAMS3D)
+- `-DB3D_COLLOP_NUBEAM`:  NUBEAM Collision operator (BEAMS3D)
+- `-DB3D_VEL_DIFFUSION`:  Velocity diffusion (BEAMS3D)
+
+There are others which are control via the presence of secondary codes, only the above should be manually set and only if you know what you are doing.
+
 Development Workflow
 --------------------
 
