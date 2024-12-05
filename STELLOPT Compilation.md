@@ -34,7 +34,7 @@ To build a specific subcode enter the directory of the code and issue the comman
 Precompiler Flags
 -----------------
 
-Certain features of codes are controled via precompiler flags which are not by default turned on.  The following is a list of precompiler flags one can add to their `SHARE/make_machine.inc` file by adding lines such as `  PRECOMP+= -DHDF5_PAR`
+Certain features of codes are controled via precompiler flags which are not by default turned on.  The following is a list of precompiler flags one can add to their `SHARE/make_machine.inc` file by adding lines such as `PRECOMP+= -DHDF5_PAR`
 
 - `-DNETCDF`:   NetCDF output (VMEC2000, MAKEGRID)
 - `-DLHDF5`:     HDF5 output (FIELDLINES, BEAMS3D)
