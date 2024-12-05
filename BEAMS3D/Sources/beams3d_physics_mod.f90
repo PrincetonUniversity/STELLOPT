@@ -28,7 +28,7 @@ MODULE beams3d_physics_mod
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5, my_end, h1_prof, fact_crit_legacy
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
-                              MODB_spl, MODB4D, &
+                              MODB_spl, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
@@ -237,12 +237,12 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
-                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
-                          rho_temp, &
+                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, bphi_temp, s_temp, &
+                          rho_temp, omeg_temp, binv, vrot_para, vrot_perp, &
                           vc3_tauinv, vbeta, zeff_temp,&
                           !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin,&
-						  zdelth,zrang
+                          zdelth,zrang
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          DOUBLE PRECISION :: slow_par(3), ni_temp(NION)
          ! For splines
@@ -257,7 +257,6 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
       
          ier      = 0
-
          ! Setup position in a vll arrays
          r_temp   = q(1)
          phi_temp = MODULO(q(2), phimax)
@@ -267,18 +266,15 @@ MODULE beams3d_physics_mod
 
          ! Initialize values
          te_temp  = 0; ne_temp  = 0; ti_temp  = 0; zeff_temp=1;
-         speed = 0; reduction = 0
+         speed = 0; reduction = 0; modb=0;bphi_temp=0;omeg_temp=0;
 
          tau_spit_inv = 0.0; v_crit   = 0.0; coulomb_log = 15
          tau_inv = 10.0; vcrit_cube = 0.0; vc3_tauinv = 0
 
          ! Check that we're inside the domain then proceed
-         !CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-!         IF (ier == 0) THEN
-            ! Get the gridpoint info (this is possible since all grids are the same)
             i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
             j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
             k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
@@ -290,6 +286,11 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             MODB4D(1,1,1,1),nr,nphi,nz)
             modb = fval(1)
+            binv = one/modb
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            BPHI4D(1,1,1,1),nr,nphi,nz)
+            bphi_temp = fval(1)            
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TE4D(1,1,1,1),nr,nphi,nz)
@@ -310,23 +311,34 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             RHO4D(1,1,1,1),nr,nphi,nz)
             rho_temp = max(fval(1),zero)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            OMEG4D(1,1,1,1),nr,nphi,nz)
+            omeg_temp = fval(1)       
             DO l = 1, NION
                CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                   hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                   NI5D(1,1,1,1,l),nr,nphi,nz)
                ni_temp(l) = max(fval(1),zero) !Set to one to prevent NaN Zeff later on
             END DO
-            
+
+            !-----------------------------------------------------------
+            !  Apply toroidal rotation
+            !     vrot_para: Parallel rotation velocity [m/s]
+            !     vrot_perp: Perpendicular rotation velocity [m/s]
+            !-----------------------------------------------------------
+            inv_mymass = one/mymass
+            vrot_para = omeg_temp*r_temp*bphi_temp*binv
+            vrot_perp = SQRT(omeg_temp*omeg_temp*r_temp*r_temp - vrot_para*vrot_para)
+            vll       = vll - vrot_para
+            speed     = SQRT(vll*vll + 2*moment*modb*inv_mymass - vrot_perp*vrot_perp)
 
             !-----------------------------------------------------------
             !  Helpers
             !     v_s       Local Sound Speed
             !     speed     Total particle speed
             !-----------------------------------------------------------
-            !te_cube = te_temp * te_temp * te_temp
-            inv_mymass = one/mymass
             v_s = fact_vsound*sqrt(ti_temp)
-            speed = sqrt( vll*vll + 2*moment*modb*inv_mymass ) !+ sign(real(80000),vll)
             vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)
 
             !-----------------------------------------------------------
@@ -334,12 +346,19 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
+#if defined(B3D_COLLOP_NRL19IE)
+               slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
+#elif defined(B3D_COLLOP_NUBEAM)
+               slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+#else
                slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
-			      !slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
-			      !slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+#endif
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
+            ELSE !Dont evaluate collisions
+               q(4) = vll + vrot_para
+               RETURN
             END IF
 
             !-----------------------------------------------------------
@@ -372,8 +391,8 @@ MODULE beams3d_physics_mod
                ltherm = .true.
                vfrac = newspeed/speed
                vll = vfrac*vll
-               moment = vfrac*vfrac*moment
-               q(4) = vll
+               moment = half*mymass*(newspeed*newspeed - vll*vll + vrot_perp*vrot_perp)*binv
+               q(4) = vll + vrot_para
                RETURN
             END IF
             l = MAX(MIN(CEILING(rho_temp*h1_prof),ns_prof1),1)
@@ -383,51 +402,50 @@ MODULE beams3d_physics_mod
             moment = vfrac*vfrac*moment
             speed = newspeed
 
-           !------------------------------------------------------------
-           !  Pitch Angle Scattering
-           !------------------------------------------------------------
-           speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
-           zeta_o = vll/speed   ! Record the current pitch.
-           CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-           sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
-           zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
-           zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
-           !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
-           !Flip gaussian at boundary to prevent accumulation around pitch=1
-           !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
-           !Pitch angle scattering according to NUBEAM
-           !sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
-           !CALL RANDOM_NUMBER(zeta)
-           !zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
-           !CALL RANDOM_NUMBER(zrang)
-           !zrang=zrang*pi2
-           !zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
-           vll = zeta*speed
+            !------------------------------------------------------------
+            !  Pitch Angle Scattering
+            !------------------------------------------------------------
+            speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
+            zeta_o = vll/speed   ! Record the current pitch.
+            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+            sigma = sqrt( ABS((one-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
+            zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
+            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
+            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
+            zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+            !Flip gaussian at boundary to prevent accumulation around pitch=1
+            !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
+            !Pitch angle scattering according to NUBEAM
+            !sigma = sqrt(one-zeta_o*zeta_o) ! The standard deviation.
+            !CALL RANDOM_NUMBER(zeta)
+            !zdelth=SQRT(-2.0D+00*speed_cube*LOG(zeta))
+            !CALL RANDOM_NUMBER(zrang)
+            !zrang=zrang*pi2
+            !zeta=SIN(zdelth)*cos(zrang)*sigma+COS(zdelth)*zeta_o
+            vll = zeta*speed
 
-           !------------------------------------------------------------
-           !  Kick Model Scattering (old)
-           !------------------------------------------------------------
-           !IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
-           !   zeta_o = vll/speed   ! Record the current pitch.
-           !   zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)/(modb*modb)
-           !   vll = zeta*speed
-           !END IF
+            !------------------------------------------------------------
+            !  Kick Model Scattering (old)
+            !------------------------------------------------------------
+            !IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
+            !   zeta_o = vll/speed   ! Record the current pitch.
+            !   zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)/(modb*modb)
+            !   vll = zeta*speed
+            !END IF
 
-           !------------------------------------------------------------
-           !  Kick Model Scattering (new Energy, vll constant)
-           !------------------------------------------------------------
-           IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
+            !------------------------------------------------------------
+            !  Kick Model Scattering (new Energy, vll constant)
+            !------------------------------------------------------------
+            IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
               zeta_o = vll/speed   ! Record the current pitch.
               speed = speed*SQRT(one + fact_kick*modb*(1-zeta_o*zeta_o)*dt/SQRT(ne_temp))
-           END IF
+            END IF
 
-           !------------------------------------------------------------
-           !  Final Moment and vll update (return q(4))
-           !------------------------------------------------------------
-           moment = half*mymass*(speed*speed - vll*vll)/modb
-           q(4) = vll
-
+            !------------------------------------------------------------
+            !  Final Moment and vll update (return q(4))
+            !------------------------------------------------------------
+            moment = half*mymass*(speed*speed - vll*vll + vrot_perp*vrot_perp)*binv
+            q(4) = vll + vrot_para
          END IF
 
          RETURN
@@ -462,7 +480,7 @@ MODULE beams3d_physics_mod
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
                           inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
-                          rho_temp, &
+                          rho_temp, omeg_temp,&
                           vc3_tauinv, vbeta, zeff_temp, br_temp, bphi_temp, bz_temp, vperp, &
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin, binv
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
@@ -494,12 +512,9 @@ MODULE beams3d_physics_mod
          tau_inv = 10.0; vcrit_cube = 0.0; vc3_tauinv = 0
 
          ! Check that we're inside the domain then proceed
-         !CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-!         IF (ier == 0) THEN
-            ! Get the gridpoint info (this is possible since all grids are the same)
             i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
             j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
             k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
@@ -530,6 +545,10 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BR4D(1,1,1,1),nr,nphi,nz)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            OMEG4D(1,1,1,1),nr,nphi,nz)
+            omeg_temp = fval(1)                              
             br_temp = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -539,6 +558,12 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BZ4D(1,1,1,1),nr,nphi,nz)
             bz_temp = fval(1)
+
+            !-----------------------------------------------------------
+            !  Apply toroidal rotation
+            !     Assumption is that only toroidal rotation
+            !-----------------------------------------------------------
+            q(5) = q(5) - omeg_temp*r_temp
 
             !-----------------------------------------------------------
             !  Helpers
@@ -555,7 +580,7 @@ MODULE beams3d_physics_mod
             v_s = fact_vsound*sqrt(ti_temp)
             speed = sqrt(SUM(q(4:6)*q(4:6)))
             vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)
-            vll = (q(4)*br_temp+q(5)*bphi_temp+q(6)*bz_temp)
+            vll = (q(4)*br_temp+q(5)*bphi_temp+q(6)*bz_temp) 
             ! Make q vperp from this point forward
             q(4) = q(4) - vll*br_temp
             q(5) = q(5) - vll*bphi_temp
@@ -566,10 +591,21 @@ MODULE beams3d_physics_mod
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
             IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
+#if defined(B3D_COLLOP_NRL19IE)
+               slow_par = coll_op_nrl19_ie(ne_temp,te_temp,vbeta,Zeff_temp)
+#elif defined(B3D_COLLOP_NUBEAM)
+               slow_par = coll_op_nubeam(ne_temp,ni_temp,te_temp,ti_temp,vbeta,Zeff_temp,modb,speed)
+#else
                slow_par = coll_op_nrl19(ne_temp,te_temp,vbeta,Zeff_temp)
+#endif
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
+            ELSE 
+               q(4)   = q(4) + vll*br_temp
+               q(5)   = q(5) + vll*bphi_temp + omeg_temp*r_temp
+               q(6)   = q(6) + vll*bz_temp
+               RETURN
             END IF
 
             !-----------------------------------------------------------
@@ -601,11 +637,11 @@ MODULE beams3d_physics_mod
                newspeed = speed - reduction*dt
                ltherm = .true.
                vfrac = newspeed/speed
-               vll = vfrac*vll
-               moment = vfrac*vfrac*moment
+               vll    =    vfrac*vll
                q(4:6) = q(4:6)*vfrac
+               moment = half*(q(4)*q(4)+q(5)*q(5)+q(6)*q(6))*mymass*binv
                q(4)   = q(4) + vll*br_temp
-               q(5)   = q(5) + vll*bphi_temp
+               q(5)   = q(5) + vll*bphi_temp + omeg_temp*r_temp
                q(6)   = q(6) + vll*bz_temp
                RETURN
             END IF
@@ -616,40 +652,37 @@ MODULE beams3d_physics_mod
             q(4:6) = q(4:6)*vfrac
             speed = newspeed
 
-           !------------------------------------------------------------
-           !  Pitch Angle Scattering
-           !------------------------------------------------------------
-           speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
-           zeta_o = vll/speed   ! Record the current pitch.
-           CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-           sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
-           zeta_mean = zeta_o *(1.0D0 - speed_cube )  ! The new mean in the distribution.
-           zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
-           !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
-           vll = zeta*speed
+            !------------------------------------------------------------
+            !  Pitch Angle Scattering
+            !------------------------------------------------------------
+            speed_cube = vc3_tauinv*slow_par(3)*dt/(speed*speed*speed) ! redefine as inverse
+            zeta_o = vll/speed   ! Record the current pitch.
+            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
+            zeta_mean = zeta_o *(1.0D0 - speed_cube )  ! The new mean in the distribution.
+            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
+            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
+            zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+            vll = zeta*speed
 
-           !------------------------------------------------------------
-           !  Kick Model Scattering
-           !------------------------------------------------------------
-           IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
+            !------------------------------------------------------------
+            !  Kick Model Scattering
+            !------------------------------------------------------------
+            IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
               zeta_o = vll/speed   ! Record the current pitch.
               zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)*binv*binv
               vll = zeta*speed
-           END IF
+            END IF
 
-           !------------------------------------------------------------
-           !  Now update velocity
-           !------------------------------------------------------------
-           moment = half*mymass*(speed*speed - vll*vll)*binv
-           ! Normalize Vperp
-           vperp = SQRT(SUM(q(4:6)*q(4:6)))
-           q(4:6) = q(4:6)*sqrt(speed*speed-vll*vll)/vperp
-           q(4) = q(4) + vll*br_temp
-           q(5) = q(5) + vll*bphi_temp
-           q(6) = q(6) + vll*bz_temp
-
-
+            !------------------------------------------------------------
+            !  Now update velocity
+            !------------------------------------------------------------
+            q(4) = q(4) + vll*br_temp
+            q(5) = q(5) + vll*bphi_temp + omeg_temp*r_temp
+            q(6) = q(6) + vll*bz_temp
+            vll = (q(4)*br_temp+q(5)*bphi_temp+q(6)*bz_temp)
+            speed = SQRT(SUM(q(4:6)*q(4:6)))
+            moment = half*(speed*speed-vll*vll)*mymass*binv
          END IF
 
          RETURN
@@ -688,6 +721,7 @@ MODULE beams3d_physics_mod
          !     Local Parameters
          !--------------------------------------------------------------
          INTEGER, PARAMETER :: num_depo = 256
+         INTEGER, PARAMETER :: max_beam_pass = 2
          DOUBLE PRECISION, PARAMETER :: dl = 5D-3
          DOUBLE PRECISION, PARAMETER :: stepsize(3)=(/0.25,0.05,0.01/)
 
@@ -695,10 +729,10 @@ MODULE beams3d_physics_mod
          !     Local variables
          !--------------------------------------------------------------
          LOGICAL          :: ltest
-         INTEGER          :: ier, l, m,o
+         INTEGER          :: ier, l, m, nbeampass
          DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
                              s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp, &
-                             rho_temp, rlim, zlim
+                             rho_temp, rlim, zlim,vtor
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
          DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
@@ -721,276 +755,280 @@ MODULE beams3d_physics_mod
          !     Begin Subroutine
          !--------------------------------------------------------------
 
-         ! Energy is needed in keV so 0.5*m*v*v/(ec*1000)
 
-         ! This is the one that works for ADAS [kJ] E=0.5*m*v^2/1000
-         ! Vll = V_neut (doesn't change durring neutral integration)
-         ! energy in kJ
-         energy = half*mymass*q(4)*q(4)*1D-3
-         ! energy in keV (correct for Suzuki)
-         !energy = half*mymass*q(4)*q(4)*1D-3/e_charge 
+         !--------------------------------------------------------------
+         !     Energy
+         !       Suzuki Model: keV/amu
+         !       ADAS Model: keV/amu
+         !       E(eV) = 0.5*m*v^2/e_c
+         !       E(eV/amu) = E(eV) / (m/m_Dalton)
+         !--------------------------------------------------------------
+         vtor=0
+         IF(nomeg>0) CALL beams3d_vtor(q,vtor)
+         energy = (1D-3*half*(q(4)-vtor)**2)/(e_charge*inv_dalton)
          
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
          qf(3) = q(3)
-		   rlim=MAX(q(1),rmax)
-		   zlim=MAX(ABS(q(3)),ABS(zmin),ABS(zmax))
+         rlim=MAX(q(1),rmax)
+         zlim=MAX(ABS(q(3)),ABS(zmin),ABS(zmax))
          !--------------------------------------------------------------
          !     Initialize Ionization here
-		   !--------------------------------------------------------------
-		   CALL RANDOM_NUMBER(rand_prob)
+         !--------------------------------------------------------------
+         CALL RANDOM_NUMBER(rand_prob)
          cum_prob = one
-
 
          !--------------------------------------------------------------
          !     Loop around deposition line calculation to allow
          !	   multi-pass (currently 2 passes max.)
          !--------------------------------------------------------------		 
-         DO o = 1, 2
-
-         !--------------------------------------------------------------
-         !     Follow neutral into plasma using subgrid
-         !--------------------------------------------------------------
-         end_state(myline) = 3 ! It's a neutral for now
-         xlast = qf(1)
-         ylast = qf(2)
-         zlast = qf(3)
-         x0 = qf(1); y0 = qf(2); z0 = qf(3)
-         DO l = 1, 3
-            dt_local = stepsize(l)/q(4)
-            DO
-               qf = qf + myv_neut*dt_local
-               q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
-               q(2) = ATAN2(qf(2),qf(1))
-               q(3) = qf(3)
-               t = t + dt_local
-               phi_temp = MODULO(q(2), phimax)
-               IF (phi_temp < 0) phi_temp = phi_temp + phimax
-               IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
-                   (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
-                   (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
-                  i = MIN(MAX(COUNT(raxis < q(1)),1),nr-1)
-                  j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-                  k = MIN(MAX(COUNT(zaxis < q(3)),1),nz-1)
-                  xparam = (q(1) - raxis(i)) * hri(i)
-                  yparam = (phi_temp - phiaxis(j)) * hpi(j)
-                  zparam = (q(3) - zaxis(k)) * hzi(k)
-                  rho_temp =1.5
-                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                                  hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                                  RHO4D(1,1,1,1),nr,nphi,nz)
-                  rho_temp = fval(1)
-                  IF (rho_temp < one) EXIT
-               END IF
-               IF ((q(1) >= rlim) .or. (ABS(q(3)) >= zlim)) THEN			   
-                  !WRITE(6,*) o, phi_temp,s_temp, cum_prob, rand_prob
-                  !WRITE(6,*) q, myv_neut
-                  t = my_end+dt_local
-                  end_state(myline) = 5 ! Debug
-                  EXIT !It can happen that we collided with the wall while getting here
-              END IF  ! We're outside the grid
-            END DO
-            ! Take a step back
-            qf = qf - myv_neut*dt_local
-            t  =  t - dt_local
-         END DO 
-         qs=qf
-
-         !--------------------------------------------------------------
-         !     Check to see if we hit the wall
-         !--------------------------------------------------------------
-         IF (lvessel_beam) THEN
-            CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
-            IF (ltest) THEN
-               q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
-               q(2) = ATAN2(qf(2),qf(1))
-               q(3) = qf(3)
-			   IF (o .eq. 1) THEN !Port loss 
-               end_state(myline) = 4
-			   ELSE !Shinethrough if particle went through plasma before
-			   end_state(myline) = 3
-			   END IF
-               CALL uncount_wall_hit              
-               RETURN
-		    ELSEIF (end_state(myline) .eq. 5) THEN         
-				RETURN
-            END IF
-         END IF
-
-         xlast = qf(1)
-         ylast = qf(2)
-         zlast = qf(3)
-
-         !--------------------------------------------------------------
-         !     Follow particle track out of plasma
-         !--------------------------------------------------------------
-         OUTER: DO l = 1, 3
-            dt_local = stepsize(l)/q(4)
-            INNER: DO
-               qf = qf + myv_neut*dt_local
-               q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
-               q(2) = ATAN2(qf(2),qf(1))
-               q(3) = qf(3)
-               phi_temp = MODULO(q(2), phimax)
-               IF (phi_temp < 0) phi_temp = phi_temp + phimax
-               ! Assume we're in grid and only want to bug out if we're outside the grid
-               IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
-                   (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
-                   (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
-                  i = MIN(MAX(COUNT(raxis < q(1)),1),nr-1)
-                  j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-                  k = MIN(MAX(COUNT(zaxis < q(3)),1),nz-1)
-                  xparam = (q(1) - raxis(i)) * hri(i)
-                  yparam = (phi_temp - phiaxis(j)) * hpi(j)
-                  zparam = (q(3) - zaxis(k)) * hzi(k)
-                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                                  hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                                  RHO4D(1,1,1,1),nr,nphi,nz)
-                  rho_temp = fval(1)
-                  IF (rho_temp > one) EXIT INNER
-               ELSE
-                  EXIT INNER
-               END IF
-            END DO INNER
-            ! Take a step back
-            qf = qf - myv_neut*dt_local
-         END DO OUTER
-         qe=qf + myv_neut*dt_local
-
-
-         !--------------------------------------------------------------
-         !     Setup deposition arrays
-         !--------------------------------------------------------------
-         rlocal(1) = SQRT(qs(1)*qs(1)+qs(2)*qs(2))
-         plocal(1) = ATAN2(qs(2),qs(1))
-         zlocal(1) = qs(3)
-         rlocal(num_depo) = SQRT(qe(1)*qe(1)+qe(2)*qe(2))
-         plocal(num_depo) = ATAN2(qe(2),qe(1))
-         zlocal(num_depo) = qe(3)
-         DO i = 2, num_depo-1
-            qf = (i-1)*(qe-qs)/(REAL(num_depo-1)) + qs
-            rlocal(i) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
-            plocal(i) = atan2(qf(2),qf(1))
-            zlocal(i) = qf(3)
-         END DO
-         plocal = MODULO(plocal, phimax) ! Dont need to check for negative then
-         ! Compute temp/density along path
-         DO l = 1, num_depo
-            i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < plocal(l)),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < zlocal(l)),1),nz-1)
-            xparam = (rlocal(l) - raxis(i)) * hri(i)
-            yparam = (plocal(l) - phiaxis(j)) * hpi(j)
-            zparam = (zlocal(l) - zaxis(k)) * hzi(k)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            TI4D(1,1,1,1),nr,nphi,nz)
-            tilocal(l) = MAX(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            TE4D(1,1,1,1),nr,nphi,nz)
-            telocal(l) = MAX(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NE4D(1,1,1,1),nr,nphi,nz)
-            nelocal(l) = MAX(fval(1),zero)
-            DO m = 1, NION
-               CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NI5D(1,1,1,1,m),nr,nphi,nz)
-            nilocal(m,l) = MAX(fval(1),one) !Set to one to prevent NaN Zeff later on
-            END DO
-         END DO
-         tilocal = tilocal*1D-3
-         telocal = telocal*1D-3
-         tau_inv = zero
-         
-         IF (lsuzuki) THEN
-            !--------------------------------------------------------------
-            !     USE Suzuki to calcualte ionization rates
-            !     Note: 10^18<ne<10^21
-            !           E(keV/amu)/100 < Te < E(keV/amu)/2
-            !--------------------------------------------------------------
-            A_in = NINT(NI_AUX_M*inv_dalton)
-            Z_in = NI_AUX_Z
-            energy   = energy/(e_charge*mymass*inv_dalton) ! keV/amu
-            DO l = 1, num_depo
-               nelocal(l)  = MAX(MIN(nelocal(l),1E21),1E18)
-               telocal(l)  = MAX(MIN(telocal(l),energy(l)*0.5),energy(l)*0.01)
-               ni_in = MAX(MIN(nilocal(:,l),1E21),1E18)
-               CALL suzuki_sigma(NION,energy(l),nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
-            END DO
-            tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4 !cm^2 to m^2 for sigma
-         ELSE
-            A_in = NINT(NI_AUX_M*inv_dalton)
-            !--------------------------------------------------------------
-            !     USE ADAS to calcualte ionization rates
-            !--------------------------------------------------------------
-            ! Arguments to btsigv(irtype,beamchrg,eabeam,tatarg,n,izbeam,iztarg,btsigv, istat )hatom_btsigv.f90
-            ! irtype 1:CX, 2:II
-            ! beamchrg 1:neutral, 2:ion
-            ! eabeam beam energy in keV/nucleon
-            ! tatarg target energy in keV/nucleon
-            ! n array size
-            ! izbeam  Beam Z (always int)
-            ! iztarg  Target Z (can be real)
-            ! btsigv  cross section
-            DO m = 1, NION
-                CALL adas_btsigv(2,1,energy,tilocal,num_depo,myZ,A_in(m),sigvii,ier)  ! Ion Impact ionization cross-section term.
-                CALL adas_btsigv(1,1,energy,tilocal,num_depo,myZ,A_in(m),sigvcx,ier)  ! Charge Exchange ionization cross-section term.
-                tau_inv = tau_inv + (sigvii+sigvcx)*nilocal(m,:)
-            END DO
-            ! Arguments to sigvte(zneut,tevec,n1,sigv_adas,istat)
-            ! zneut charge (=1)
-            ! tevec electron temperature [keV]
-            ! n1 array size
-            ! This formula comes from the ADAS description of how to use the functions. (M. Gorelenkova)
-            ! factor here is mp/me (assumes ion) Source NUBEAM: getsigs_adas.f, line 43
-            telocal = telocal + to3*mpome*energy
-            CALL adas_sigvte_ioniz(myZ,telocal,num_depo,sigvei,ier)        ! Electron Impact ionization cross-section term.
-            tau_inv = tau_inv + sigvei*nelocal
-         END IF
-
-         !--------------------------------------------------------------
-         !     Calculate Ionization
-         !--------------------------------------------------------------
-         dt_local = SQRT(SUM((qe-qs)*(qe-qs)))/((num_depo-1)*q(4))
-         tau_inv = EXP(-dt_local*tau_inv)
-         DO l = 2, num_depo-1
-            cum_prob = cum_prob*tau_inv(l)
-            IF (cum_prob < rand_prob) EXIT
-         END DO
-         qf = qs + myv_neut*dt_local*(l-1)
-         t  =  t + dt_local*(l-1)
-         q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
-         q(2) = ATAN2(qf(2),qf(1))
-         q(3) = qf(3)
-         IF (l < num_depo-1) THEN
-            IF ( (rlocal(l) <= rmin) .or. (rlocal(l) >= rmax) .or. &
-                 (zlocal(l) <= zmin) .or. (zlocal(l) >= zmax) ) THEN 
-               t = my_end + dt_local             
+         DO nbeampass = 1, max_beam_pass
+            ! If plasma_only then only do one pass
+            IF (lplasma_only .and. nbeampass > 1) THEN
+               end_state(myline) = 3         
                RETURN
             END IF
-            i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < plocal(l)),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < zlocal(l)),1),nz-1)
-            xparam = (rlocal(l) - raxis(i)) * hri(i)
-            yparam = (plocal(l) - phiaxis(j)) * hpi(j)
-            zparam = (zlocal(l) - zaxis(k)) * hzi(k)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            RHO4D(1,1,1,1),nr,nphi,nz)
-            rho_temp = fval(1)
-            lneut=.false.
+            !--------------------------------------------------------------
+            !     Follow neutral into plasma using subgrid
+            !--------------------------------------------------------------
+            end_state(myline) = 3 ! It's a neutral for now
             xlast = qf(1)
             ylast = qf(2)
-            zlast = qf(3)         
-            RETURN
-		 ELSE !If not deposited, move outside plasma (to s>1)
-			qf=qe 		
-         END IF
-		 
-		 END DO
+            zlast = qf(3)
+            x0 = qf(1); y0 = qf(2); z0 = qf(3)
+            DO l = 1, 3
+               dt_local = stepsize(l)/q(4)
+               DO
+                  qf = qf + myv_neut*dt_local
+                  q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
+                  q(2) = ATAN2(qf(2),qf(1))
+                  q(3) = qf(3)
+                  t = t + dt_local
+                  phi_temp = MODULO(q(2), phimax)
+                  IF (phi_temp < 0) phi_temp = phi_temp + phimax
+                  IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
+                      (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+                      (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
+                     i = MIN(MAX(COUNT(raxis < q(1)),1),nr-1)
+                     j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+                     k = MIN(MAX(COUNT(zaxis < q(3)),1),nz-1)
+                     xparam = (q(1) - raxis(i)) * hri(i)
+                     yparam = (phi_temp - phiaxis(j)) * hpi(j)
+                     zparam = (q(3) - zaxis(k)) * hzi(k)
+                     rho_temp =1.5
+                     CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                                     RHO4D(1,1,1,1),nr,nphi,nz)
+                     rho_temp = fval(1)
+                     IF (rho_temp < one) EXIT
+                  END IF
+                  IF ((q(1) >= rlim) .or. (ABS(q(3)) >= zlim)) THEN
+                     !WRITE(6,*) o, phi_temp,s_temp, cum_prob, rand_prob
+                     !WRITE(6,*) q, myv_neut
+                     t = my_end+dt_local
+                     end_state(myline) = 5 ! Debug
+                     EXIT !It can happen that we collided with the wall while getting here
+                 END IF  ! We're outside the grid
+               END DO
+               ! Take a step back
+               qf = qf - myv_neut*dt_local
+               t  =  t - dt_local
+            END DO 
+            qs=qf
+
+            !--------------------------------------------------------------
+            !     Check to see if we hit the wall
+            !--------------------------------------------------------------
+            IF (lvessel_beam) THEN
+               CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
+               IF (ltest) THEN
+                  q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
+                  q(2) = ATAN2(qf(2),qf(1))
+                  q(3) = qf(3)
+   			      IF (nbeampass .eq. 1) THEN !Port loss 
+                     end_state(myline) = 4
+   			      ELSE !Shinethrough if particle went through plasma before
+                     end_state(myline) = 3
+   			      END IF
+                  CALL uncount_wall_hit              
+                  RETURN
+   		      ELSEIF (end_state(myline) .eq. 5) THEN         
+                  RETURN
+               END IF
+            END IF
+
+            xlast = qf(1)
+            ylast = qf(2)
+            zlast = qf(3)
+
+            !--------------------------------------------------------------
+            !     Follow particle track out of plasma
+            !--------------------------------------------------------------
+            OUTER: DO l = 1, 3
+               dt_local = stepsize(l)/q(4)
+               INNER: DO
+                  qf = qf + myv_neut*dt_local
+                  q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
+                  q(2) = ATAN2(qf(2),qf(1))
+                  q(3) = qf(3)
+                  phi_temp = MODULO(q(2), phimax)
+                  IF (phi_temp < 0) phi_temp = phi_temp + phimax
+                  ! Assume we're in grid and only want to bug out if we're outside the grid
+                  IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
+                      (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+                      (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
+                     i = MIN(MAX(COUNT(raxis < q(1)),1),nr-1)
+                     j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+                     k = MIN(MAX(COUNT(zaxis < q(3)),1),nz-1)
+                     xparam = (q(1) - raxis(i)) * hri(i)
+                     yparam = (phi_temp - phiaxis(j)) * hpi(j)
+                     zparam = (q(3) - zaxis(k)) * hzi(k)
+                     CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                                     RHO4D(1,1,1,1),nr,nphi,nz)
+                     rho_temp = fval(1)
+                     IF (rho_temp > one) EXIT INNER
+                  ELSE
+                     EXIT INNER
+                  END IF
+               END DO INNER
+               ! Take a step back
+               qf = qf - myv_neut*dt_local
+            END DO OUTER
+            qe=qf + myv_neut*dt_local
+
+
+            !--------------------------------------------------------------
+            !     Setup deposition arrays
+            !--------------------------------------------------------------
+            rlocal(1) = SQRT(qs(1)*qs(1)+qs(2)*qs(2))
+            plocal(1) = ATAN2(qs(2),qs(1))
+            zlocal(1) = qs(3)
+            rlocal(num_depo) = SQRT(qe(1)*qe(1)+qe(2)*qe(2))
+            plocal(num_depo) = ATAN2(qe(2),qe(1))
+            zlocal(num_depo) = qe(3)
+            DO i = 2, num_depo-1
+               qf = (i-1)*(qe-qs)/(REAL(num_depo-1)) + qs
+               rlocal(i) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
+               plocal(i) = atan2(qf(2),qf(1))
+               zlocal(i) = qf(3)
+            END DO
+            plocal = MODULO(plocal, phimax) ! Dont need to check for negative then
+            ! Compute temp/density along path
+            DO l = 1, num_depo
+               i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
+               j = MIN(MAX(COUNT(phiaxis < plocal(l)),1),nphi-1)
+               k = MIN(MAX(COUNT(zaxis < zlocal(l)),1),nz-1)
+               xparam = (rlocal(l) - raxis(i)) * hri(i)
+               yparam = (plocal(l) - phiaxis(j)) * hpi(j)
+               zparam = (zlocal(l) - zaxis(k)) * hzi(k)
+               CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                               hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                               TI4D(1,1,1,1),nr,nphi,nz)
+               tilocal(l) = MAX(fval(1),zero)
+               CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                               hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                               TE4D(1,1,1,1),nr,nphi,nz)
+               telocal(l) = MAX(fval(1),zero)
+               CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                               hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                               NE4D(1,1,1,1),nr,nphi,nz)
+               nelocal(l) = MAX(fval(1),zero)
+               DO m = 1, NION
+                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                               hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                               NI5D(1,1,1,1,m),nr,nphi,nz)
+               nilocal(m,l) = MAX(fval(1),one) !Set to one to prevent NaN Zeff later on
+               END DO
+            END DO
+            tilocal = tilocal*1D-3
+            telocal = telocal*1D-3
+            tau_inv = zero
+            
+            IF (lsuzuki) THEN
+               !--------------------------------------------------------------
+               !     USE Suzuki to calcualte ionization rates
+               !     Note: 10^18<ne<10^21
+               !           E(keV/amu)/100 < Te < E(keV/amu)/2
+               !--------------------------------------------------------------
+               A_in = NINT(NI_AUX_M*inv_dalton)
+               Z_in = NI_AUX_Z
+               DO l = 1, num_depo
+                  nelocal(l)  = MAX(MIN(nelocal(l),1E21),1E18)
+                  telocal(l)  = MAX(MIN(telocal(l),energy(l)*0.5),energy(l)*0.01)
+                  ni_in = MAX(MIN(nilocal(:,l),1E21),1E18)
+                  CALL suzuki_sigma(NION,energy(l),nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
+               END DO
+               tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4 !cm^2 to m^2 for sigma
+            ELSE
+               A_in = NINT(NI_AUX_M*inv_dalton)
+               !--------------------------------------------------------------
+               !     USE ADAS to calcualte ionization rates
+               !--------------------------------------------------------------
+               ! Arguments to btsigv(irtype,beamchrg,eabeam,tatarg,n,izbeam,iztarg,btsigv, istat )hatom_btsigv.f90
+               ! irtype 1:CX, 2:II
+               ! beamchrg 1:neutral, 2:ion
+               ! eabeam beam energy in keV/nucleon
+               ! tatarg target energy in keV/nucleon
+               ! n array size
+               ! izbeam  Beam Z (always int)
+               ! iztarg  Target Z (can be real)
+               ! btsigv  cross section
+               DO m = 1, NION
+                   CALL adas_btsigv(2,1,energy,tilocal,num_depo,myZ,A_in(m),sigvii,ier)  ! Ion Impact ionization cross-section term.
+                   CALL adas_btsigv(1,1,energy,tilocal,num_depo,myZ,A_in(m),sigvcx,ier)  ! Charge Exchange ionization cross-section term.
+                   tau_inv = tau_inv + (sigvii+sigvcx)*nilocal(m,:)
+               END DO
+               ! Arguments to sigvte(zneut,tevec,n1,sigv_adas,istat)
+               ! zneut charge (=1)
+               ! tevec electron temperature [keV]
+               ! n1 array size
+               ! This formula comes from the ADAS description of how to use the functions. (M. Gorelenkova)
+               ! factor here is mp/me (assumes ion) Source NUBEAM: getsigs_adas.f, line 43
+               telocal = telocal + to3*mpome*energy
+               CALL adas_sigvte_ioniz(myZ,telocal,num_depo,sigvei,ier)        ! Electron Impact ionization cross-section term.
+               tau_inv = tau_inv + sigvei*nelocal
+            END IF
+
+            !--------------------------------------------------------------
+            !     Calculate Ionization
+            !--------------------------------------------------------------
+            dt_local = SQRT(SUM((qe-qs)*(qe-qs)))/((num_depo-1)*q(4))
+            tau_inv = EXP(-dt_local*tau_inv)
+            DO l = 2, num_depo-1
+               cum_prob = cum_prob*tau_inv(l)
+               IF (cum_prob < rand_prob) EXIT
+            END DO
+            qf = qs + myv_neut*dt_local*(l-1)
+            t  =  t + dt_local*(l-1)
+            q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
+            q(2) = ATAN2(qf(2),qf(1))
+            q(3) = qf(3)
+            IF (l < num_depo-1) THEN
+               IF ( (rlocal(l) <= rmin) .or. (rlocal(l) >= rmax) .or. &
+                    (zlocal(l) <= zmin) .or. (zlocal(l) >= zmax) ) THEN 
+                  t = my_end + dt_local             
+                  RETURN
+               END IF
+               i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
+               j = MIN(MAX(COUNT(phiaxis < plocal(l)),1),nphi-1)
+               k = MIN(MAX(COUNT(zaxis < zlocal(l)),1),nz-1)
+               xparam = (rlocal(l) - raxis(i)) * hri(i)
+               yparam = (plocal(l) - phiaxis(j)) * hpi(j)
+               zparam = (zlocal(l) - zaxis(k)) * hzi(k)
+               CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                               hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                               RHO4D(1,1,1,1),nr,nphi,nz)
+               rho_temp = fval(1)
+               lneut=.false.
+               xlast = qf(1)
+               ylast = qf(2)
+               zlast = qf(3)         
+               RETURN
+            ELSE !If not deposited, move outside plasma (to s>1)
+               qf=qe
+            END IF
+         END DO
 
          !--------------------------------------------------------------
          !     Follow neutral to wall or domain (big steps fine)
@@ -1767,7 +1805,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Input Parameters
          !          q            (q(1),q(2),q(3)) = (R,phi,Z)
-         !          reactrate    Reaction rate (part/(m^3*s))
+         !          B            Magnetic field magnitude ([T])
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION, INTENT(inout) :: q(3)
@@ -1823,6 +1861,72 @@ MODULE beams3d_physics_mod
          RETURN
 
       END SUBROUTINE beams3d_MODB
+
+	  
+      !-----------------------------------------------------------------
+      !     Function:      beams3d_VTOR
+      !     Authors:       D. Kulla (david.kulla@ipp.mpg.de)
+      !     Date:          03/12/2024
+      !     Description:   Returns VTOR (OMEGA*R) at a point in space
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_VTOR(q,vtor)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          q            (q(1),q(2),q(3)) = (R,phi,Z)
+         !          vtor         Toroidal rotation ([m/s])
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: q(3)
+         DOUBLE PRECISION, INTENT(out) :: vtor
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        r_temp     Helpers (r,phi,z)
+         !        i,j,k      Spline Grid indicies
+         !        xparam     Spline subgrid factor [0,1] (yparam,zparam)
+         !        ict        Spline output control
+         !        fval       Spline output array
+         !--------------------------------------------------------------
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp
+         ! For splines
+         INTEGER :: i,j,k
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         REAL*8 :: fval(1)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+
+         ! Setup position in a vll arrays
+         r_temp   = q(1)
+         phi_temp = MODULO(q(2), phimax)
+         IF (phi_temp < 0) phi_temp = phi_temp + phimax
+         z_temp   = q(3)
+
+         ! Initialize values
+         vtor = zero
+
+         ! Check that we're inside the domain then proceed
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+             (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+             (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
+            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            xparam = (r_temp - raxis(i)) * hri(i)
+            yparam = (phi_temp - phiaxis(j)) * hpi(j)
+            zparam = (z_temp - zaxis(k)) * hzi(k)
+            ! Evaluate the Splines
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            OMEG4D(1,1,1,1),nr,nphi,nz)
+            vtor = fval(1)*r_temp
+         ELSE
+            RETURN
+         END IF
+         RETURN
+      END SUBROUTINE beams3d_VTOR      
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_BCYL
@@ -2295,5 +2399,5 @@ MODULE beams3d_physics_mod
          RETURN
 
       END SUBROUTINE beams3d_calc_dt
-
+	  
 END MODULE beams3d_physics_mod

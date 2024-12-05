@@ -73,9 +73,9 @@
                                TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
                                TI_AUX_F, POT_AUX_S, POT_AUX_F, &
                                NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
-                               ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
+                               ZEFF_AUX_S, ZEFF_AUX_F, OMEG_AUX_S, OMEG_AUX_F,&
                                ldebug, ne_scale, te_scale, ti_scale, &
-                               zeff_scale, &
+                               zeff_scale, P_beams, &
                                plasma_zavg, plasma_mass, plasma_Zmean, &
                                therm_factor, fusion_scale, &
                                nrho_dist, ntheta_dist, & 
@@ -143,6 +143,7 @@
       s_max_ne = 0.0_rprec
       s_max_zeff = 0.0_rprec
       s_max_pot = 0.0_rprec
+      s_max_omeg = 0.0_rprec
       TE_AUX_S = -1
       TE_AUX_F = -1
       NE_AUX_S = -1
@@ -153,6 +154,8 @@
       ZEFF_AUX_F = -1
       POT_AUX_S = -1
       POT_AUX_F = -1
+      OMEG_AUX_S = -1
+      OMEG_AUX_F = 0      
       NI_AUX_S = -1
       NI_AUX_F = 0
       NI_AUX_Z = 0
@@ -318,6 +321,11 @@
             IF (POT_AUX_S(ik) >= 0.0) npot = npot+1
          END DO
          IF (npot > 0)  s_max_pot = POT_AUX_S(npot)
+         nomeg = 0
+         DO ik = 1, MAXPROFLEN
+            IF (OMEG_AUX_S(ik) >= 0.0) nomeg = nomeg+1
+         END DO
+         IF (nomeg > 0)  s_max_omeg = OMEG_AUX_S(nomeg)         
          ! Handle multiple ion species
          IF (ANY(NI_AUX_S >0)) THEN
             nzeff = 0
@@ -502,6 +510,11 @@
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ZEFF_AUX_S',(zeff_aux_s(n), n=1,ik)
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ZEFF_AUX_F',(zeff_aux_f(n), n=1,ik)
       END IF
+      ik = COUNT(omeg_aux_s >= 0)
+      IF (ik > 0) THEN
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'OMEG_AUX_S',(omeg_aux_s(n), n=1,ik)
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'OMEG_AUX_F',(omeg_aux_f(n), n=1,ik)
+      END IF      
       ik = COUNT(pot_aux_s >= 0)
       IF (ik > 0) THEN
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'POT_AUX_S',(pot_aux_s(n), n=1,ik)

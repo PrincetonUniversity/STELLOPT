@@ -183,7 +183,13 @@
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
          IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
          IF (.not.lgcsim) WRITE(6,'(A)') '   FULL ORIBT SIMULATION!'
-         IF (lcollision) WRITE(6,'(A)') '   COLLISION OPERATOR ON!'
+#if defined(B3D_COLLOP_NRL19IE)
+         IF (lcollision) WRITE(6,'(A)') '   NRL2019IE COLLISION OPERATOR ON!'
+#elif defined(B3D_COLLOP_NUBEAM)
+         IF (lcollision) WRITE(6,'(A)') '   NUBEAM COLLISION OPERATOR ON!'
+#else
+         IF (lcollision) WRITE(6,'(A)') '   NRL2019 COLLISION OPERATOR ON!'
+#endif
          IF (lkick) WRITE(6,'(A)') '   KICK MODEL ON!'
          IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
@@ -269,6 +275,17 @@
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init8',ier)
          IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A,F8.5)') '   Zeff = [', &
             MINVAL(ZEFF_AUX_F(1:nzeff)),',',MAXVAL(ZEFF_AUX_F(1:nzeff)),'];  NZEFF: ',nzeff, ';  S_MAX_ZEFF: ',s_max_zeff
+         END IF
+         ! OMEG
+         IF (nomeg>0) THEN
+            CALL EZspline_init(OMEG_spl_s,nomeg,bcs1_s,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init7',ier)
+            OMEG_spl_s%isHermite   = 0
+            OMEG_spl_s%x1          = OMEG_AUX_S(1:nomeg)
+            CALL EZspline_setup(OMEG_spl_s,OMEG_AUX_F(1:nomeg),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init8',ier)
+         IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A,F8.5)') '   OMEG = [', &
+            MINVAL(OMEG_AUX_F(1:nomeg))*1E-3,',',MAXVAL(OMEG_AUX_F(1:nomeg))*1E-3,'] E3 rad/s;  NOMEG: ',nomeg, ';  S_MAX_OMEG: ',s_max_omeg
          END IF
          ! POTENTIAL
          IF (npot>0) THEN
@@ -360,6 +377,7 @@
       CALL mpialloc(NE, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE)
       CALL mpialloc(TI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI)
       CALL mpialloc(ZEFF_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF_ARR)
+      CALL mpialloc(OMEG_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_OMEG_ARR)
       CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
       CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
       CALL mpialloc(RHO_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_RHO_ARR)
@@ -383,6 +401,7 @@
          XRHO_ARR = 1.5
          YRHO_ARR = 1.5
          POT_ARR = 0
+         OMEG_ARR = 0
          NI = 0
          ! Setup grid helpers
          ! Note: All helpers are defined in terms of differences on half grid
@@ -487,22 +506,28 @@
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TI',ier)
             CALL EZspline_init(ZEFF_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: ZEFF',ier)
+            CALL EZspline_init(OMEG_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: OMEG',ier)            
             TE_spl%isHermite   = 1
             NE_spl%isHermite   = 1
             TI_spl%isHermite   = 1
             ZEFF_spl%isHermite = 1
+            OMEG_spl%isHermite = 1
             TE_spl%x1   = raxis
             NE_spl%x1   = raxis
             TI_spl%x1   = raxis
             ZEFF_spl%x1 = raxis
+            OMEG_spl%x1 = raxis
             TE_spl%x2   = phiaxis
             NE_spl%x2   = phiaxis
             TI_spl%x2   = phiaxis
             ZEFF_spl%x2 = phiaxis
+            OMEG_spl%x2 = phiaxis
             TE_spl%x3   = zaxis
             NE_spl%x3   = zaxis
             TI_spl%x3   = zaxis
             ZEFF_spl%x3 = zaxis
+            OMEG_spl%x3 = zaxis
             CALL EZspline_setup(TE_spl,TE,ier,EXACT_DIM=.true.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TE',ier)
             CALL EZspline_setup(NE_spl,NE,ier,EXACT_DIM=.true.)
@@ -511,22 +536,27 @@
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TI',ier)
             CALL EZspline_setup(ZEFF_spl,ZEFF_ARR,ier,EXACT_DIM=.true.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: ZEFF_ARR',ier)
+            CALL EZspline_setup(OMEG_spl,OMEG_ARR,ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: OMEG_ARR',ier)            
          END IF
          ! Now allocate the 4D spline array (which is all we need)
          CALL mpialloc(TE4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE4D)
          CALL mpialloc(NE4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE4D)
          CALL mpialloc(TI4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI4D)
          CALL mpialloc(ZEFF4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF4D)
+         CALL mpialloc(OMEG4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_OMEG4D)
          ! Now have master copy data over and free the splines
          IF (myid_sharmem == master) THEN
             TE4D = TE_SPL%fspl
             NE4D = NE_SPL%fspl
             TI4D = TI_SPL%fspl
             ZEFF4D = ZEFF_SPL%fspl
+            OMEG4D = OMEG_SPL%fspl
             CALL EZspline_free(TE_spl,ier)
             CALL EZspline_free(NE_spl,ier)
             CALL EZspline_free(TI_spl,ier)
             CALL EZspline_free(ZEFF_spl,ier)
+            CALL EZspline_free(OMEG_spl,ier)
          END IF
          ! Handle the NI array separately (Use NE_spl since it should be free now)
          CALL mpialloc(NI5D, 8, nr, nphi, nz, NION, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI5D)
@@ -701,6 +731,7 @@
          CALL mpidealloc(NI,win_NI)
          CALL mpidealloc(TI,win_TI)
          CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
+         CALL mpidealloc(OMEG_ARR,win_OMEG_ARR)
       END IF
 
       ! DEALLOCATE Variables
@@ -709,6 +740,7 @@
          IF (nne > 0) CALL EZspline_free(NE_spl_s,ier)
          IF (nti > 0) CALL EZspline_free(TI_spl_s,ier)
          IF (npot > 0) CALL EZspline_free(POT_spl_s,ier)
+         IF (nomeg > 0) CALL EZspline_free(OMEG_spl_s,ier)
          IF (nzeff > 0) THEN
             CALL EZspline_free(ZEFF_spl_s,ier)
             DO i = 1, NION
@@ -770,9 +802,7 @@
             beam(1:MAXBEAMS)  = Dex_beams(1:MAXBEAMS)
             beam(MAXBEAMS+1:nparticles)  = Dex_beams(MAXBEAMS)
             charge_beams(1:MAXBEAMS) = charge(1:MAXBEAMS)
-            charge_beams(1:nparticles) = charge(MAXBEAMS)
             mass_beams(1:MAXBEAMS) = mass(1:MAXBEAMS)
-            mass_beams(1:nparticles) = mass(MAXBEAMS)
          END IF
          nbeams = MAXVAL(beam)
          !charge_beams(1) = charge_in(1)
