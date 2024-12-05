@@ -478,7 +478,6 @@
       WRITE(iunit_out,outflt) 'TE_SCALE',TE_SCALE
       WRITE(iunit_out,outflt) 'TI_SCALE',TI_SCALE
       WRITE(iunit_out,outflt) 'ZEFF_SCALE',ZEFF_SCALE
-      WRITE(iunit_out,outflt) 'THERM_FACTOR',therm_factor
       ik = COUNT(ne_aux_s >= 0)
       IF (ik > 0) THEN
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NE_AUX_S',(ne_aux_s(n), n=1,ik)
@@ -561,7 +560,7 @@
          WRITE(iunit_out,"(2X,A,1X,'=',I6,'*',ES19.12E3)") 'T_END_IN',n,MAXVAL(t_end_in)
          IF (MAXVAL(dex_beams)>0) THEN
             n = COUNT(dex_beams>0)
-            WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'DEX_BEAMS',(dex_beams(ik), ik=1,NION)
+            WRITE(iunit_out,"(2X,A,1X,'=',4(1X,I3.3))") 'DEX_BEAMS',(dex_beams(ik), ik=1,n)
          END IF
       END IF
       WRITE(iunit_out,'(A)') '/'

@@ -162,34 +162,36 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION :: sm, omega2, vrel2,vrel2_part,bmincl,bminqu,bmax,bmin,coulomb_log, coulomb_loge, zi2_ai, zi2,myA
          ! Same formulation as NUBEAM internal calculation (r8_coulog.f90), different Units than usual: 
          !Z is in elementary charge, A is in amu, energy and temperature in keV.
-         vrel2_part=speed_in**2/e_charge/(mymass*inv_dalton*inv_dalton)
+         vrel2_part=speed_in**2/e_charge/inv_dalton
          sm=zero
          do i=1,COUNT(NI_AUX_Z>0)
             myA = NI_AUX_M(i)*inv_dalton
-            omega2=1.74d0*NI_AUX_Z(i)**2/(myA)*ni_in(i) & !assume ni=ne (should be changed for multi-ion plasmas)
+            omega2=1.74d0*NI_AUX_Z(i)**2/(myA)*ni_in(i) & 
                   +9.18d15*NI_AUX_Z(i)**2/(myA)**2*modb**2
             vrel2=9.58d7*(ti_in/(myA) + vrel2_part) !Assume same ti for all species
             sm=sm+omega2/vrel2
          end do
          myA = mymass*inv_dalton
 
-         !Electrons A_e=1836.1
+         !Electrons A_e=1/1836.1
          omega2=1.74d0*1836.1*ne_in &
                 +9.18d15*1836.1**2*modb**2
-         vrel2=9.58d7*(te_in*1836.1d0 + vrel2_part) !Assume same ti for all species
+         vrel2=9.58d7*(te_in*1836.1 + vrel2_part)
          sm=sm+omega2/vrel2
          bmax=sqrt(one/sm)
+         vrel2=9.58d7*(3.0*te_in*1836.1 + vrel2_part) !Different vrel for bmin calc                 
          bmincl=0.13793d0*abs(mycharge/e_charge)*(inv_Ae+myA)/(inv_Ae*myA*vrel2)
          bminqu=1.9121d-8*(myA+inv_Ae)/(inv_Ae*myA*sqrt(vrel2))
          bmin=max(bmincl,bminqu)
          coulomb_loge=log(bmax/bmin) !only last coulomb log is saved
+         coulomb_loge = max(coulomb_loge,one)
          zi2_ai=zero
          zi2=zero
 
          do i=1,COUNT(NI_AUX_Z>0)
             vrel2=9.58d7*(3.0*ti_in/(NI_AUX_M(i)*inv_dalton) +  vrel2_part) !Assume same ti for all species
-            bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/myA/vrel2
-            bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/(NI_AUX_M(i))/myA/sqrt(vrel2)
+            bmincl=0.13793d0*abs(NI_AUX_Z(i)*mycharge/e_charge)*(NI_AUX_M(i)+mymass)/NI_AUX_M(i)/myA/vrel2
+            bminqu=1.9121d-8*(NI_AUX_M(i)+mymass)/NI_AUX_M(i)/myA/sqrt(vrel2)
             bmin=max(bmincl,bminqu)
             coulomb_log=log(bmax/bmin) !only last coulomb log is saved - TODO: implement for multi-species
             coulomb_log = max(coulomb_log,one)
@@ -197,7 +199,6 @@ MODULE beams3d_physics_mod
             zi2 = zi2+ni_in(i) *NI_AUX_Z(i)**2 * coulomb_log
             !WRITE(6,*) coulomb_log, coulomb_loge
          end do
-         coulomb_loge = max(coulomb_loge,one)
          coulomb_log = max(coulomb_log,one)
       
          zi2_ai=zi2_ai/(ne_in*coulomb_loge)
@@ -236,11 +237,10 @@ MODULE beams3d_physics_mod
          INTEGER        :: ier
          DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
-                          reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
+                          reduction, dve,dvi,ddve,ddvi, tau_spit, v_crit, coulomb_log, te_cube, &
                           inv_mymass, speed_cube, vcrit_cube, vfrac, modb, bphi_temp, s_temp, &
                           rho_temp, omeg_temp, binv, vrot_para, vrot_perp, &
                           vc3_tauinv, vbeta, zeff_temp,&
-                          !omega_p2, Omega_p, bmax, mu_ip, u_ip2, bmin_c, bmin_q, bmin
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin,&
                           zdelth,zrang
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
@@ -361,6 +361,19 @@ MODULE beams3d_physics_mod
                RETURN
             END IF
 
+            !------------------------------------------------------------
+            !  Velocity diffusion 
+            !------------------------------------------------------------
+            ddve = zero; ddvi = zero
+#if defined(B3D_VEL_DIFFUSION)
+            speed_cube = (speed*speed*speed)
+            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+            ddve=ABS(2*e_charge*dt*te_temp*inv_mymass*tau_spit_inv)
+            ddvi=ABS(2*e_charge*dt*(ti_temp*vcrit_cube*inv_mymass/speed_cube)*tau_spit_inv)
+            sigma = sqrt( ddve+ddvi) ! The standard deviation.
+            ddve=zeta*ddve/sigma
+            ddvi=zeta*ddvi/sigma
+#endif
             !-----------------------------------------------------------
             !  Viscouse Velocity Reduction
             !     v_s       Local Sound Speed
@@ -371,10 +384,12 @@ MODULE beams3d_physics_mod
             !     newspeed  New total speed
             !     vfrac     Ratio between new and old speed (helper) 
             !-----------------------------------------------------------
-            dve   = speed*tau_spit_inv
-            dvi   = vc3_tauinv/(speed*speed)
+            dve   = speed*tau_spit_inv*(1-2*te_temp*inv_mymass*e_charge/speed**2.0)
+            dvi   = vc3_tauinv/(speed*speed)*(1+ti_temp*inv_mymass*e_charge/speed**2.0)
             reduction = dve + dvi
-            newspeed = speed - reduction*dt
+            newspeed = speed - reduction*dt+sigma*zeta
+            dve=dve+ddve
+            dvi=dvi+ddvi
             vfrac = newspeed/speed
 
             !-----------------------------------------------------------
@@ -401,7 +416,6 @@ MODULE beams3d_physics_mod
             vll = vfrac*vll
             moment = vfrac*vfrac*moment
             speed = newspeed
-
             !------------------------------------------------------------
             !  Pitch Angle Scattering
             !------------------------------------------------------------
