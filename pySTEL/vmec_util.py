@@ -18,6 +18,8 @@ if __name__=="__main__":
 		help="Plot the VMEC file.", default = False)
 	parser.add_argument("-b", "--boozer", dest="lbooz", action='store_true',
 		help="Output the in_booz file.", default = False)
+	parser.add_argument("--stl", dest="lstl", action='store_true',
+		help="Output STL file of VMEC boundary", default = False)
 	args = parser.parse_args()
 	vmec_wout = VMEC()
 	vmec_input = VMEC_INDATA()
@@ -91,7 +93,6 @@ if __name__=="__main__":
 			ax.text(0.02,0.05,rf'NCURR: {vmec_input.ncurr}', horizontalalignment='left',\
 				verticalalignment='center', transform=ax.transAxes)
 			pyplot.show()
-			
 		# Do wout file plot
 		if (args.lplot and loutput):
 			px = 1/pyplot.rcParams['figure.dpi']
@@ -167,4 +168,11 @@ if __name__=="__main__":
 			ax.set_title("|B| at mid radius")
 			fig.colorbar(h,label='[T]')
 			pyplot.show()
+		# Output an STL file
+		if (loutput and args.lstl):
+			theta = np.linspace([0],[np.pi*2],512)
+			phi   = np.linspace([0],[np.pi*2],512)
+			r = vmec_wout.cfunct(theta,phi,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn)
+			z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
+			vmec_wout.surfaceSTL(r,z,phi,filename='plasma_'+args.vmec_ext+'.stl')
 	sys.exit(0)

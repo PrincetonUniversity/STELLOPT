@@ -9,6 +9,7 @@
   DIAGNO_TEST_DIR = DIAGNO_TEST
   FIELDLINES_TEST_DIR = FIELDLINES_TEST
   NESCOIL_TEST_DIR = NESCOIL_TEST
+  PENTA_TEST_DIR = PENTA_TEST
   STELLOPT_TEST_DIR = STELLOPT_TEST
   THRIFT_TEST_DIR = THRIFT_TEST
   VMEC_TEST_DIR = VMEC_TEST
@@ -84,6 +85,12 @@ test_nescoil:
 	@echo "Tesing of NESCOIL complete"
 	@echo ""
 
+test_penta:
+	@echo "Beginning testing of PENTA"
+	$(MAKE) test_penta_lore
+	@echo "Tesing of PENTA complete"
+	@echo ""
+
 test_stellopt:
 	@echo "Beginning testing of STELLOPT"
 	$(MAKE) test_stellopt_lmdif
@@ -131,7 +138,7 @@ test_thrift:
 
 test_vmec: 
 	@echo "Beginning testing of VMEC2000"
-	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1* wout*; 
+	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1*; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
 	@cd $(VMEC_TEST_DIR) && ./compare.py --file DSHAPE
@@ -155,6 +162,10 @@ test_vmec:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
 	@cd $(VMEC_TEST_DIR) && ./compare.py --file DIII-D
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D_reset reset=wout_reset.nc
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D_reset reset=wout_reset.nc
+	@cd $(VMEC_TEST_DIR) && ./compare.py --file DIII-D_reset
 	@echo "Tesing of VMEC2000 complete"
 
 test_beams3d_basic:
@@ -272,6 +283,12 @@ test_nescoil_tf:
 	@echo $(MYHOME)/xnescoil nescin.TF_ONLY
 	@cd $(NESCOIL_TEST_DIR); $(MYHOME)/xnescoil nescin.TF_ONLY
 	@cd $(NESCOIL_TEST_DIR); ./compare.py --file TF_ONLY
+	@echo ""
+
+test_penta_lore:
+	@cd $(PENTA_TEST_DIR); rm -f Jprl_vs_roa flows* fluxes* plasma_profiles_check ucontra*; 
+	@echo $(MYHOME)/xpenta qhs1T_s20 -100 100 20 0 qhs1T a 0. 2
+	@cd $(PENTA_TEST_DIR); $(MYHOME)/xpenta qhs1T_s20 -100 100 20 0 qhs1T a 0. 2
 	@echo ""
 
 test_stellopt_lmdif:
@@ -425,6 +442,7 @@ help:
 	@echo "      test_beams3d    Tesing of BEAMS3D"
 	@echo "      test_diagno     Tesing of DIAGNO"
 	@echo "      test_fieldlines Tesing of FIELDLINES"
+	@echo "      test_PENTA      Tesing of PENTA"
 	@echo "      test_stellopt   Tesing of STELLOPT"
 	@echo "      test_thrift_atf Tesing of THRIFT (ATF Case)"
 	@echo "      test_vmec       Tesing of VMEC"

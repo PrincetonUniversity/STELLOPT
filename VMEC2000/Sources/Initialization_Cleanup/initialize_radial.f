@@ -118,6 +118,7 @@ C-----------------------------------------------
      &                             ntor, mpol1, ns, reset_file_name)
             IF (PARVMEC) THEN
                CALL Serial2Parallel4X(xc,pxc)
+               CALL Gather4XArray(pxc)
             END IF
          END IF
       END IF

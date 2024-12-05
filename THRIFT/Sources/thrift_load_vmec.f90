@@ -184,6 +184,7 @@
       ! Helpers
       b0 = RBtor0/Rmajor
       iota0 = iotaf(1)
+      ns_eq = ns
 
       ! We want dV/dPhi = dV/ds*ds/dPhi = dV/ds / (dPhi/ds)
       !     Note that Vp is missing a factor of 4*pi*pi
@@ -229,6 +230,36 @@
       FORALL (k=1:ns) vp_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns-1))
       CALL EZspline_setup(vp_spl,vp,iflag,EXACT_DIM=.true.)
       IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: vp',iflag)
+
+      ! BU
+      bcs1=(/ 0, 0/)
+      IF (EZspline_allocated(bu_spl)) CALL EZspline_free(bu_spl,iflag)
+      CALL EZspline_init(bu_spl,ns,bcs1,iflag)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: bu',iflag)
+      bu_spl%isHermite   = 0
+      FORALL (k=1:ns) bu_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns-1))
+      CALL EZspline_setup(bu_spl,buco,iflag,EXACT_DIM=.true.)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: bu',iflag)
+
+      ! BV
+      bcs1=(/ 0, 0/)
+      IF (EZspline_allocated(bv_spl)) CALL EZspline_free(bv_spl,iflag)
+      CALL EZspline_init(bv_spl,ns,bcs1,iflag)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: bv',iflag)
+      bv_spl%isHermite   = 0
+      FORALL (k=1:ns) bv_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns-1))
+      CALL EZspline_setup(bv_spl,bvco,iflag,EXACT_DIM=.true.)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: bv',iflag)
+
+      ! BSQ
+      bcs1=(/ 0, 0/)
+      IF (EZspline_allocated(bsq_spl)) CALL EZspline_free(bsq_spl,iflag)
+      CALL EZspline_init(bsq_spl,ns,bcs1,iflag)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: bsq',iflag)
+      bsq_spl%isHermite   = 0
+      FORALL (k=1:ns) bsq_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns-1))
+      CALL EZspline_setup(bsq_spl,bdotb,iflag,EXACT_DIM=.true.)
+      IF (iflag /=0) CALL handle_err(EZSPLINE_ERR,'thrift_load_vmec: bsq',iflag)
 
 
       RETURN

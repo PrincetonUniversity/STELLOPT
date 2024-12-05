@@ -157,6 +157,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_magwell, sigma_magwell
       REAL(rprec), DIMENSION(nsd)   ::  target_helicity, sigma_helicity
       REAL(rprec), DIMENSION(nsd)   ::  target_helicity_old, sigma_helicity_old
+      REAL(rprec), DIMENSION(nsd)   ::  target_quasiiso, sigma_quasiiso
       COMPLEX                       ::  helicity
       REAL(rprec), DIMENSION(nsd)   ::  target_resjac, sigma_resjac, &
                                         xm_resjac, xn_resjac
@@ -273,6 +274,7 @@
       INTEGER, PARAMETER :: jtarget_neo        = 603
       INTEGER, PARAMETER :: jtarget_Jstar      = 604
       INTEGER, PARAMETER :: jtarget_helicity   = 605
+      INTEGER, PARAMETER :: jtarget_quasiiso   = 6051
       INTEGER, PARAMETER :: jtarget_resjac     = 606
       INTEGER, PARAMETER :: jtarget_txport     = 607
       INTEGER, PARAMETER :: jtarget_dkes       = 608
@@ -417,6 +419,8 @@
             WRITE(iunit, out_format) 'Trapped Particle J*'
          CASE(jtarget_helicity)
             WRITE(iunit, out_format) 'Boozer Spectrum Helicity'
+         CASE(jtarget_quasiiso)
+            WRITE(iunit, out_format) 'Boozer Quasi-isodynamic metric'
          CASE(jtarget_txport)
             WRITE(iunit, out_format) 'Turbulent Transport'
          CASE(jtarget_orbit)

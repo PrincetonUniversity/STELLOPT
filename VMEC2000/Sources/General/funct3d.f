@@ -48,7 +48,7 @@ C-----------------------------------------------
 
 
 !     CONVERT ODD M TO 1/SQRT(S) INTERNAL REPRESENTATION
-      ACTIVE1: IF (lactive) THEN 
+      ACTIVE1: IF (lactive) THEN
          IF (ictrl_prec2d .EQ. 3) THEN
             CALL SAXPBYLASTNTYPE(one, pxc, one, pxcdot, pgc)
             CALL SAXLASTNTYPE(pgc, pscalxc, pgc)
@@ -101,7 +101,7 @@ C-----------------------------------------------
             prcon(:,l,0) = prcon(:,l,0) + prcon(:,l,1)*psqrts(:,l)
             pzcon(:,l,0) = pzcon(:,l,0) + pzcon(:,l,1)*psqrts(:,l)
             pru0(:,l) = pru(:,l,0) + pru(:,l,1)*psqrts(:,l)
-            pzu0(:,l) = pzu(:,l,0) +  pzu(:,l,1)*psqrts(:,l)
+            pzu0(:,l) = pzu(:,l,0) + pzu(:,l,1)*psqrts(:,l)
          END DO
 
 !     COMPUTE RCON0, ZCON0 FOR FIXED BOUNDARY BY SCALING EDGE VALUES
@@ -430,9 +430,9 @@ C-----------------------------------------------
 #endif
 
 !     Force new initial axis guess IF ALLOWED (l_moveaxis=T)
-      IF (lmove_axis                  .and.
-     &    iter2               .eq  .1 .and.
-     &    (fsqr + fsqz +fsql) .gt. 1.E2_dp) THEN
+      IF (lmove_axis                   .and.
+     &    iter2                .eq  .1 .and.
+     &    (fsqr + fsqz + fsql) .gt. 1.E2_dp) THEN
          irst = 4
       END IF
 

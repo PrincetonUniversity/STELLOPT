@@ -9,6 +9,7 @@ equilibrium data.
 from libstell.libstell import LIBSTELL, FourierRep
 
 # Constants
+SEARCH_TOL = 1.0E-12
 
 # VMEC Class
 class VMEC(FourierRep):
@@ -297,8 +298,6 @@ class VMEC(FourierRep):
 			print(rf'  AUX_F = {aux_f}')
 		return aux_s,aux_f
 
-
-
 	def getCurrentPoloidal(self):
 		"""Returns the poloidal total current
 		This routine returns the total poloidal current as used by the
@@ -387,6 +386,49 @@ class VMEC(FourierRep):
 			Derivative of Z coordiante with respect to u (dZ/du)
 		"""
 		return self.libStell.vmec_get_flxcoord(s,u,v)
+
+	def getTheta(self,s,thetastar,phi):
+		"""Returns VMEC theta coordaintes given theta-star
+
+		This routine returns the poloidal theta coordinate given the 
+		VMEC theta-star coordinate.  Theta-start is the VMEC poloidal
+		coordinate and theta is the poloidal coordiante of the field
+		line where.
+		theta-star = theta + lambda(s,theta,phi)
+
+		Parameters
+		----------
+		s : int
+			VMEC radial grid point
+		thetastar : real
+			VMEC poloidal coordiante [rad]
+		phi : real
+			VMEC toroidal coordiante [rad]
+
+		Returns
+		----------
+		theta : real
+			Poloidal coordinate of field line [rad]
+		"""
+		import numpy as np
+		cosnp = np.squeeze(np.cos(self.xn*phi))
+		sinnp = np.squeeze(np.sin(self.xn*phi))
+		dth = 1.0
+		n1 = 0
+		th = thetastar
+		th1 = th
+		lumnc = self.lmns*np.tile(self.xm,self.ns).T
+		while abs(dth) >= SEARCH_TOL and n1 < 500:
+			cosmt = np.squeeze(np.cos(self.xm*th))
+			sinmt = np.squeeze(np.sin(self.xm*th))
+			lam = np.sum(self.lmns[s,:]*(sinmt*cosnp+cosmt*sinnp))
+			lamu = np.sum(lumnc[s,:]*(cosmt*cosnp-sinmt*sinnp))
+			dth = -(th + lam - th1)/(1.0+lamu)
+			n1 = n1 + 1
+			th = th + 0.5 *dth
+		return th
+
+
 
 
 	def extrapSurface(self,surf=None,dist=0.1):
@@ -624,6 +666,7 @@ class VMEC(FourierRep):
 				dl2 = dr*dr + dz*dz
 				d = d + min(dl2)
 		return d
+		
 	def callbackF(self,intermediate_result):
 		print(f'ITER: {self.Nfeval} -- dval: {intermediate_result.fun}')
 		self.Nfeval += 1
@@ -696,6 +739,57 @@ class VMEC_INDATA():
 		#del out_dict['libStell']
 		#print(d(self))
 		self.libStell.write_indata(filename,out_dict)
+
+	def pmass(self,x):
+		"""Wrapper to the PMASS function
+
+		This routine wrappers the PMASS function which
+		returns the mass(s) pressure function.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of mass(s)
+		"""
+		return self.libStell.pmass(x)
+
+	def piota(self,x):
+		"""Wrapper to the PIOTA function
+
+		This routine wrappers the PIOTA function which
+		returns the iota(s) function.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of iota
+		"""
+		return self.libStell.piota(x)
+
+	def pcurr(self,x):
+		"""Wrapper to the PCURR function
+
+		This routine wrappers the PCURR function which
+		returns the current profile.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of current profile
+		"""
+		return self.libStell.pcurr(x)
 
 
 

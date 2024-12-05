@@ -39,12 +39,14 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      ! Count values
-      ik   = COUNT(sigma < bigno)
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'DKES_ERDIFF ',ik,25
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  S  NU  ERp ERm '&
+      ! Print Header
+      IF (iflag == 1) THEN
+         ik   = COUNT(target_dex == jtarget_dkes_erdiff)
+         WRITE(iunit_out,'(A,2(2X,I3.3))') 'DKES_ERDIFF ',ik,25
+         WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  S  NU  ERp ERm '&
                 // ' L11p+  L11m+  L33p+  L33m+  L31p+  L31m+  SCAL11+  SCAL33+  SCAL31+'& 
                 // ' L11p-  L11m-  L33p-  L33m-  L31p-  L31m-  SCAL11-  SCAL33-  SCAL31-'
+      END IF
       IF (niter >= 0) THEN
          ik = COUNT(DKES_rundex < 2)
          DO ii = 1, nsd

@@ -19,11 +19,12 @@
       IMPLICIT NONE
       LOGICAL :: lfirst_pass, lfirst_sub_pass
       INTEGER :: i, ier
-      REAL(rprec) :: alpha, rho, s
+      REAL(rprec) :: alpha, rho, s, stime, etime, time_vmec, time_bootstrap, stime_total, etime_total
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
       CHARACTER(len = 16)     :: temp1_str, temp2_str
       CHARACTER(len = 79)     :: header_str,progress_str
       CHARACTER(len = 79)     :: temp_prog_str
+      CHARACTER(256), PARAMETER :: reset_string = 'reset_file'
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -51,6 +52,12 @@
                            THRIFT_COEFF_BP = 0; THRIFT_COEFF_CP = 0; THRIFT_COEFF_DP = 0
       THRIFT_ALPHA1   = 0; THRIFT_ALPHA2   = 0; THRIFT_ALPHA3   = 0; THRIFT_ALPHA4   = 0
       THRIFT_MATLD    = 0; THRIFT_MATMD    = 0; THRIFT_MATUD    = 0; THRIFT_MATRHS   = 0
+      ! Initialize electric field variable
+      THRIFT_EPARB    = 0; THRIFT_ER = 0
+
+      ! Initialize timers
+      time_vmec = 0; time_bootstrap = 0
+      CALL second0(stime_total)
 
       ! Allocate the convergence helper
       ALLOCATE(deltaj(nsj), jold(nsj))
@@ -61,6 +68,7 @@
       
       ! Loop over timesteps
       DO mytimestep = 1, ntimesteps
+         IF (ier_paraexe /=0) EXIT
 
          ! Setup the profiles
          IF (lverbj) WRITE(6,*) "Updating equilibrium pressure"
@@ -90,15 +98,22 @@
 
             ! Run equilibrium
             IF (lverbj) WRITE(6,*) "Running equilibrium"
+            CALL second0(stime)
             CALL thrift_run_equil
+            CALL second0(etime)
+            time_vmec = time_vmec + (etime-stime)
+            IF (ier_paraexe /=0) EXIT
 
             ! Update equilibrium/profile variables
             IF (lverbj) WRITE(6,*) "Updating equilibrium current"
             CALL update_vars
 
             ! Calculate Bootstrap
+            IF (lverbj) WRITE(6,*) "Running Bootstrap code"
+            CALL second0(stime)
             CALL thrift_run_bootstrap
-            THRIFT_JBOOT(:,mytimestep) = boot_factor*THRIFT_JBOOT(:,mytimestep)
+            CALL second0(etime)
+            time_bootstrap = time_bootstrap + (etime-stime)
 
             ! Calculate Current Drive
             IF (leccd)  CALL thrift_run_ECCD
@@ -159,6 +174,8 @@
             ! Calculate iota
             IF (lverbj) WRITE(6,*) "Calculating iota"
             CALL calc_iota
+            ! Calculate <E.B>
+            THRIFT_EPARB(:,mytimestep) = THRIFT_ETAPARA(:,mytimestep) * THRIFT_JPLASMA(:,mytimestep) * THRIFT_BAV(:,mytimestep)
 
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN
@@ -204,7 +221,25 @@
 
          END DO
 
+         !Try only writing the RESET file if successful
+         IF (lvmec .and. lvmec_reset) CALL thrift_paraexe('paravmec_write',reset_string,.FALSE.)
+
       END DO
+
+      CALL second0(etime_total)
+
+      ! Print timers
+      IF(lverb) THEN
+            WRITE(6,*)'==============================================================================='
+            WRITE(6,*) ' '
+            WRITE(*, '(A)') ' ----------------------------------  TIMERS  ----------------------------------'
+            WRITE(*, '(A33, F6.1, A)') '  Time spent in VMEC: ', time_vmec / 60.0, ' min'
+            WRITE(*, '(A33, F6.1, A)') '  Time spent in Bootstrap codes: ', time_bootstrap / 60.0, ' min'
+            WRITE(*, '(A33, F6.1, A)') '   TOTAL time in thrift_evolve: ', (etime_total-stime_total) / 60.0, ' min'
+            WRITE(6,*)'==============================================================================='
+            WRITE(6,*) ' '
+            CALL FLUSH(6)
+      END IF
 
       ! Deallocate helpers
       DEALLOCATE(deltaj,jold)

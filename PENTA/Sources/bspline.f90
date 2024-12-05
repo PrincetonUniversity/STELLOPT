@@ -822,7 +822,6 @@ contains
     real(kind=dbl), dimension(max(nx,ny))                   :: work2
     real(kind=dbl), dimension(max((2*kx-1)*nx,(2*ky-1)*ny)) :: work3
 
-
     call spli2d(xvec,ldf,xydata,xknot,nx,kx,ny,work2,work3,work1)
     call spli2d(yvec,ny, work1, yknot,ny,ky,nx,work2,work3,bcoef)
 
@@ -2219,7 +2218,7 @@ contains
     real(kind=dbl), intent(in)               :: x
     real(kind=dbl), dimension(n), intent(in) :: xx
 
-    integer, intent(out)                     :: jlo
+    integer, intent(inout)                     :: jlo
 
     integer :: max, null, jhi, jm, inc
 

@@ -119,7 +119,7 @@
          END IF
          READ(iunit,NML=fieldlines_input,IOSTAT=istat)
          IF (istat /= 0) THEN
-            WRITE(6,'(A)') 'ERROR reading namelist BEAMS3D_INPUT from file: ',TRIM(filename)
+            WRITE(6,'(A)') 'ERROR reading namelist FIELDLINES_INPUT from file: ',TRIM(filename)
             backspace(iunit)
             read(iunit,fmt='(A)') line
             write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)

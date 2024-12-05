@@ -11,8 +11,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE thrift_vars
-      USE thrift_runtime
+      USE thrift_globals
       USE safe_open_mod
 
 !-----------------------------------------------------------------------
@@ -35,7 +34,9 @@
                               targetposition_ecrh, rbeam_ecrh, &
                               rfocus_ecrh, nra_ecrh, nphi_ecrh, &
                               freq_ecrh, power_ecrh, &
-                              pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w
+                              pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w, &
+                              dkes_k, dkes_Erstar, dkes_Nustar, &
+                              etapar_type
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -47,6 +48,7 @@
       SUBROUTINE init_thrift_input
       IMPLICIT NONE
       bootstrap_type     = 'bootsj'
+      etapar_type        = 'sauter'
       eccd_type          = ''
       nparallel_runs     = 1
       mboz               = 32
@@ -56,7 +58,7 @@
       ntimesteps         = 32
       n_eq               = 99
       npicard            = 5
-      tstart             = 0.1
+      tstart             = 0.0
       tend               = 1.0
       jtol               = 0.01
       picard_factor      = 0.5
@@ -84,6 +86,10 @@
       rfocus_ecrh = 0
       nra_ecrh = 0
       nphi_ecrh = 8
+      ! DKES Vars
+      dkes_k = -1
+      dkes_Erstar = 1E10
+      dkes_Nustar = 1E10
       RETURN
       END SUBROUTINE init_thrift_input
       
@@ -102,20 +108,29 @@
          INQUIRE(FILE=TRIM(filename),EXIST=lexist)
          IF (.not.lexist) stop 'Could not find input file'
          CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
-         IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'thrift_input in: '//TRIM(filename),istat)
+         IF (istat /= 0) THEN
+            WRITE(6,'(A)') 'ERROR opening file: ',TRIM(filename)
+            CALL FLUSH(6)
+            STOP
+         END IF
          READ(iunit,NML=thrift_input,IOSTAT=istat)
          IF (istat /= 0) THEN
+            WRITE(6,'(A)') 'ERROR reading namelist THRIFT_INPUT from file: ',TRIM(filename)
             backspace(iunit)
             read(iunit,fmt='(A)') line
             write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-            CALL handle_err(NAMELIST_READ_ERR,'thrift_input in: '//TRIM(filename),istat)
+            CALL FLUSH(6)
+            STOP
          END IF
          CLOSE(iunit)
       END IF
+      
       CALL tolower(bootstrap_type)
+      CALL tolower(etapar_type)
       CALL tolower(eccd_type)
       leccd = eccd_type .ne. ''
-      nsj = nrho;
+      nsj = nrho
+      nruns_dkes = COUNT(dkes_k>0)*COUNT(dkes_Erstar<1E10)*COUNT(dkes_Nustar<1E10)
       RETURN
       END SUBROUTINE read_thrift_input
 
@@ -137,6 +152,7 @@
       WRITE(iunit_out,'(A)') '!---------- GENERAL PARAMETERS ------------'
       WRITE(iunit_out,outint) 'NPARALLEL_RUNS',nparallel_runs
       WRITE(iunit_out,outstr) 'BOOTSTRAP_TYPE',bootstrap_type
+      WRITE(iunit_out,outstr) 'ETAPAR_TYPE',etapar_type
       WRITE(iunit_out,outflt) 'JTOL',jtol
       WRITE(iunit_out,outint) 'NPICARD',npicard
       WRITE(iunit_out,outflt) 'PICARD_FACTOR',picard_factor
@@ -150,6 +166,7 @@
       WRITE(iunit_out,outint) 'MBOZ',nboz
       WRITE(iunit_out,'(A)') '!---------- ECCD PARAMETERS ------------'
       WRITE(iunit_out,outstr) 'ECCD_TYPE',eccd_type
+      WRITE(iunit_out,'(A)') '!---------- DKES PARAMETERS ------------'
       WRITE(iunit_out,'(A)') '/'
       RETURN
       END SUBROUTINE write_thrift_namelist
