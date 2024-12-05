@@ -357,6 +357,7 @@ MODULE beams3d_physics_mod
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
             ELSE !Dont evaluate collisions
+               q(4) = vll + vrot_para
                RETURN
             END IF
 
@@ -600,6 +601,11 @@ MODULE beams3d_physics_mod
                vcrit_cube = slow_par(1)*slow_par(1)*slow_par(1)
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
+            ELSE 
+               q(4)   = q(4) + vll*br_temp
+               q(5)   = q(5) + vll*bphi_temp + omeg_temp*r_temp
+               q(6)   = q(6) + vll*bz_temp
+               RETURN
             END IF
 
             !-----------------------------------------------------------
