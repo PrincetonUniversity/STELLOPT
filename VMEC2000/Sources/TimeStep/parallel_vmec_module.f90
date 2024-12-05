@@ -294,7 +294,6 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
     
     INTEGER, ALLOCATABLE, DIMENSION(:) :: localpart
     INTEGER                            :: i, smallpart, largepart
-    INTEGER, SAVE                      :: lastns
 
     smallpart = par_ns/nranks; largepart = smallpart
     IF(MOD(par_ns,nranks) .GT. 0) largepart = largepart + 1
@@ -403,6 +402,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
     IF (ALLOCATED(blkdisp))      DEALLOCATE(blkdisp)
     IF (ALLOCATED(nsrcounts))    DEALLOCATE(nsrcounts)
     IF (ALLOCATED(nsdisp))       DEALLOCATE(nsdisp)
+    NS_RESLTN = 0
 #endif
     END SUBROUTINE FinalizeSurfaceComm
   !--------------------------------------------------------------------------
