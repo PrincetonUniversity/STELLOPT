@@ -82,7 +82,7 @@ C-----------------------------------------------
 
       nsmin = MAX(2, t1lglob)
       nsmax = t1rglob
-      DO i = nsmin, nsmax
+      DO i = 2, ns
          si = hs*(i - c1p5)
          tf = MIN(one, torflux(si))
          IF (lRFP) THEN
@@ -98,7 +98,6 @@ C-----------------------------------------------
 !     Compute lamscale factor for "normalizing" lambda (needed for scaling hessian)
 !     DO IT THIS WAY (rather than ALLREDUCE) FOR PROCESSOR INDEPENDENCE
 !
-      CALL Gather1XArray(phips)
       phipstotal = SUM(phips(2:ns)**2)
       lamscale = SQRT(hs*phipstotal)
 
@@ -110,7 +109,7 @@ C-----------------------------------------------
       nsmin = t1lglob
       nsmax = t1rglob
 
-      DO i = nsmin, nsmax
+      DO i = 1, ns
          si = hs*(i - 1)
          tf = MIN(one, torflux(si))
          IF (lRFP) THEN
@@ -133,16 +132,17 @@ C-----------------------------------------------
       
       nsmin = MAX(2, t1lglob)
       nsmax = t1rglob
-      icurv(nsmin:nsmax) = Itor*icurv(nsmin:nsmax)
+      !icurv(nsmin:nsmax) = Itor*icurv(nsmin:nsmax)
+      icurv = Itor*icurv
 
 !
 !     POSSIBLE PRESSURE PEDESTAL FOR S >= SPRES_PED
 !
       spres_ped = ABS(spres_ped)
       IF (.not.lrecon) THEN
-         nsmin = MAX(2,t1lglob)
-         nsmax = t1rglob
-         DO i = nsmin, nsmax
+         !nsmin = MAX(2,t1lglob)
+         !nsmax = t1rglob
+         DO i = 2, ns
             si = hs*(i - c1p5)
 
 !         NORMALIZE mass so dV/dPHI (or dV/dPSI) in pressure to mass relation
@@ -169,12 +169,10 @@ C-----------------------------------------------
          END DO
 
       ELSE
-         nsmin = t1lglob
-         nsmax = t1rglob
-         iotas(nsmin:nsmax) = 0
-         iotaf(nsmin:nsmax) = 0
-         mass (nsmin:nsmax) = 0
-         presf(nsmin:nsmax) = 0
+         iotas = 0
+         iotaf = 0
+         mass  = 0
+         presf = 0
       END IF
 
 
@@ -192,12 +190,20 @@ C-----------------------------------------------
       DO i = nsmin, nsmax
          si = hs*ABS(i - 1.5_dp)
          pshalf(:,i) = SQRT(si)
+         shalf(i:nrzt:ns) = SQRT(si)
          si = hs*(i - 1)
          psqrts(:,i) = SQRT(si)
+         sqrts(i:nrzt:ns) = SQRT(si)
          bdamp(i) = 2*pdamp*(1 - si)
       END DO
 
       psqrts(:,ns) = 1     !!Avoid round-off
+
+      sqrts(ns:nrzt:ns) = 1     !!Avoid round-off
+      shalf(nrzt + 1) = 1
+      sqrts(nrzt + 1) = 1
+      CALL Gather1XArray(shalf)
+      CALL Gather1XArray(sqrts)
 
       nsmin = MAX(2, t1lglob)
       nsmax = t1rglob
