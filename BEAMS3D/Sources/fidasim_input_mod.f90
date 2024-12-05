@@ -812,7 +812,7 @@ SUBROUTINE write_fidasim_equilibrium
         INTEGER(HID_T) ::  qid_gid2
         INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask
 
-        REAL*8 :: fvalE(1,3), fval(1), xparam, yparam, zparam, bsign
+        REAL*8 :: fvalE(1,3), fval(1), xparam, yparam, zparam
 
         DOUBLE PRECISION         :: x0, y0, z0, vol
         DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), rtemp2(:,:,:), rtemp3(:,:,:), rtemp4(:,:,:), rtemp5(:,:,:), r1dtemp(:), r2dtemp(:,:), r4dtemp(:,:,:,:)
@@ -871,7 +871,6 @@ SUBROUTINE write_fidasim_equilibrium
                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                     BPHI4D(1,1,1,1),nr,nphi,nz)
                 rtemp2(l,n,m) = fval(1)
-				bsign=sign(one,fval(1))!TODO:make this more stable
                 CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                     hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                     BZ4D(1,1,1,1),nr,nphi,nz)
@@ -1057,7 +1056,7 @@ SUBROUTINE write_fidasim_equilibrium
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                      hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                      OMEG4D(1,1,1,1),nr,nphi,nz)
-                  rtemp5(l,n,m) = fval(1)*bsign*raxis_fida(l)!max(fval(1),zero)        
+                  rtemp5(l,n,m) = fval(1)*raxis_fida(l)  
                 END IF
             END DO
         END DO
