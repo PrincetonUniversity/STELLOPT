@@ -326,13 +326,7 @@ MODULE PENTA_INTERFACE_MOD
       ALLOCATE(Flows((Smax+1)*num_species))                      ! Prl flow moments
       ALLOCATE(Gammas(num_species))                              ! Rad fluxes
       ALLOCATE(QoTs(num_species))                                ! Rad energy fluxes
-      ALLOCATE(Gamma_i_vs_Er(num_Er_test,num_ion_species))       ! Ion flux vs Er
-      ALLOCATE(Gamma_e_vs_Er(num_Er_test))                       ! Electron flux vs Er
-      ALLOCATE(Er_test_vals(num_Er_test))                        ! Er to loop over
-      IF ( output_QoT_vs_Er ) THEN
-        ALLOCATE(QoT_i_vs_Er(num_Er_test,num_ion_species))       ! Ion flux vs Er
-        ALLOCATE(QoT_e_vs_Er(num_Er_test))                       ! Electron flux vs Er
-      ENDIF
+      
       RETURN
    END SUBROUTINE penta_allocate_species
 
@@ -396,6 +390,29 @@ MODULE PENTA_INTERFACE_MOD
 
       RETURN
    END SUBROUTINE penta_deallocate_species
+
+   SUBROUTINE penta_allocate_fluxes_vs_Er
+
+      IF(ALLOCATED(Gamma_i_vs_er)) DEALLOCATE(Gamma_i_vs_er)
+      ALLOCATE(Gamma_i_vs_Er(num_Er_test,num_ion_species))       ! Ion flux vs Er
+
+      IF(ALLOCATED(Gamma_e_vs_Er)) DEALLOCATE(Gamma_e_vs_Er)
+      ALLOCATE(Gamma_e_vs_Er(num_Er_test))                       ! Electron flux vs Er
+
+      IF(ALLOCATED(Er_test_vals)) DEALLOCATE(Er_test_vals)
+      ALLOCATE(Er_test_vals(num_Er_test))                        ! Er to loop over
+
+      IF ( output_QoT_vs_Er ) THEN
+         IF(ALLOCATED(QoT_i_vs_Er)) DEALLOCATE(QoT_i_vs_Er)
+         ALLOCATE(QoT_i_vs_Er(num_Er_test,num_ion_species))       ! Ion flux vs Er
+
+         IF(ALLOCATED(QoT_e_vs_Er)) DEALLOCATE(QoT_e_vs_Er)
+         ALLOCATE(QoT_e_vs_Er(num_Er_test))                       ! Electron flux vs Er
+      ENDIF
+
+      RETURN
+
+   END SUBROUTINE penta_allocate_fluxes_vs_Er
 
    SUBROUTINE penta_deallocate_dkescoeff
       IMPLICIT NONE
@@ -849,6 +866,9 @@ MODULE PENTA_INTERFACE_MOD
       USE penta_functions_mod
       USE PENTA_subroutines, ONLY: form_xvec
       IMPLICIT NONE
+
+      Call penta_allocate_fluxes_vs_Er
+
       ! Define array of Er values to test [V/m]
       Er_test_vals = rlinspace(Er_min,Er_max,num_Er_test)*100._rknd
 
@@ -965,20 +985,58 @@ MODULE PENTA_INTERFACE_MOD
       RETURN
    END SUBROUTINE penta_run_2_efield
 
-   SUBROUTINE penta_run_3_ambipolar
-      USE vmec_var_pass
-      USE phys_const
-      USE coeff_var_pass
-      USE penta_functions_mod
-      USE PENTA_subroutines, ONLY: form_xvec, find_Er_roots
+   SUBROUTINE penta_run_3_find_roots
+      USE PENTA_subroutines, ONLY: find_Er_roots
       IMPLICIT NONE
+      INTEGER :: flag_roots
+      INTEGER(iknd) :: additional_roots
       ! Check for only one Er test value -- this is then used to evaluate the ambipolar fluxes QQ
       !If ( num_Er_test  == 1 ) Then
       !  Er_roots = Er_test_vals
 
-      ! Find the ambipolar root(s) from gamma_e = sum(Z*gamma_i)
-      Call find_Er_roots(gamma_e_vs_Er,gamma_i_vs_Er,Er_test_vals,Z_ion, &
-         num_Er_test,num_ion_species,Er_roots,num_roots)
+      additional_roots = 100
+      flag_roots = 100 ! value larger than zero to enter the while loop
+
+      DO WHILE(flag_roots>0)
+
+         ! Find the ambipolar root(s) from gamma_e = sum(Z*gamma_i)
+         Call find_Er_roots(gamma_e_vs_Er,gamma_i_vs_Er,Er_test_vals,Z_ion, &
+            num_Er_test,num_ion_species,Er_roots,num_roots,flag_roots)
+         
+         If( flag_roots==1 ) THEN
+            ! case where Er_min, Er_max must change
+            Er_min = Er_min - 50.0_rknd
+            Er_max = Er_max + 50.0_rknd
+            num_Er_test = num_Er_test + additional_roots
+            WRITE(6,'(A,F7.2,A,F7.2,A,F7.2,A,F7.2,A)') '[Er_min,Er_max] changed from [', Er_min+50.0_rknd, ',', Er_max-50.0_rknd, &
+                                 '] to [', Er_min, ',', Er_max, ']'
+            WRITE(6,'(A,I4,A,I4)') 'num_Er_test increased from ', num_Er_test-additional_roots, ' to ', num_Er_test
+            WRITE(6,'(A)') ' '
+            CALL PENTA_RUN_2_EFIELD
+         Elseif( flag_roots==2 ) THEN
+            ! case where numEr must increase
+            num_Er_test = num_Er_test + additional_roots
+            WRITE(6,'(A,I4,A,I4)') 'num_Er_test increased from ', num_Er_test-additional_roots, ' to ', num_Er_test
+            CALL PENTA_RUN_2_EFIELD
+         EndIf
+      
+      END DO
+
+      ! Set Er_Vcm to the new values so that in the next call to penta_interface_mod these values will be used and not the ones
+      ! defined in the namelist
+      Er_min_Vcm = Er_min
+      Er_max_Vcm = Er_max
+
+      RETURN
+   END SUBROUTINE penta_run_3_find_roots
+
+   SUBROUTINE penta_run_4_ambipolar
+      USE vmec_var_pass
+      USE phys_const
+      USE coeff_var_pass
+      USE penta_functions_mod
+      USE PENTA_subroutines, ONLY: form_xvec
+      IMPLICIT NONE
 
       ! Allocate arrays according to number of ambipolar roots
       Allocate(Flows_ambi((Smax+1)*num_species,num_roots)) ! Parallel flow moments
@@ -1098,7 +1156,7 @@ MODULE PENTA_INTERFACE_MOD
 
       END DO ! Ambipolar root loop
       RETURN
-   END SUBROUTINE penta_run_3_ambipolar
+   END SUBROUTINE penta_run_4_ambipolar
 
    SUBROUTINE penta_run_4_cleanup(lscreen)
       USE io_unit_spec
