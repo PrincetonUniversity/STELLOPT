@@ -307,7 +307,7 @@
             END DO
          END IF
          CALL second0(etime)
-         WRITE(*, '(A, I0, A, F8.2, A, I0, A)') 'Processor ', myworkid, ' took ', etime-stime,'s'
+         IF(lscreen) WRITE(*, '(A, I0, A, F8.2, A, I0, A)') 'Processor ', myworkid, ' took ', etime-stime,'s'
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!! Parallel Work block Done
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
