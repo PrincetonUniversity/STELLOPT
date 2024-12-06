@@ -165,7 +165,8 @@
             CALL PENTA_FIT_RAD_TRANS
             ! Now the basic steps
             CALL PENTA_RUN_2_EFIELD
-            CALL PENTA_RUN_3_AMBIPOLAR
+            CALL PENTA_RUN_3_FIND_ROOTS
+            CALL PENTA_RUN_4_AMBIPOLAR
 
             ! Save JBS corresponding to the root that has the largest Er
             ! This because whenever there are 2 stable roots, a rule of thumb is to pick the one with largest Er
