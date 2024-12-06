@@ -208,6 +208,12 @@ class THRIFT():
         raxis = np.array( hf['raxis_prof'][:] )
         taxis = np.array( hf['taxis_prof'][:] )
         
+        # select some t's for plotting
+        num_values = 1000
+        step = max(1, len(taxis) // num_values)
+        selected_indices = np.arange(0, len(taxis), step)[:num_values]
+        t_selected = taxis[selected_indices]
+        
         ne = np.array( hf['ne_prof'][:] )
         Te = np.array( hf['te_prof'][:] )
         
@@ -221,38 +227,38 @@ class THRIFT():
         _, ax_n = plt.subplots(figsize=(11,8))
         _, ax_T = plt.subplots(figsize=(11,8))    
         
-        ax_n.plot(raxis,ne)
+        ax_n.plot(raxis,ne[:,selected_indices]/1e20)
         ax_n.set_xlabel('r/a') 
-        ax_n.set_title('ne')   
+        ax_n.set_title('ne [1E20 m^-3]')   
         ax_n.grid()   
         
-        ax_T.plot(raxis,Te)
+        ax_T.plot(raxis,Te[:,selected_indices]/1e3)
         ax_T.set_xlabel('r/a') 
-        ax_T.set_title('Te')   
+        ax_T.set_title('Te [keV]')   
         ax_T.grid()  
         
         plt.show()
-        
-        _, ax_n = plt.subplots(figsize=(11,8))
-        _, ax_T = plt.subplots(figsize=(11,8))
-        
+
         for i in range(nion):
             
-            ax_n.plot(raxis,ni[:,:,i])
+            _, ax_n = plt.subplots(figsize=(11,8))
+            _, ax_T = plt.subplots(figsize=(11,8))
+            
+            ax_n.plot(raxis,ni[:,selected_indices,i]/1e20)
             ax_n.set_xlabel('r/a') 
-            ax_n.set_title(f'ni, ion={i+1}')   
+            ax_n.set_title(f'ni [1E20 m^-3], ion={i+1}')   
             ax_n.grid()
             
-            ax_T.plot(raxis,Ti[:,:,i])
+            ax_T.plot(raxis,Ti[:,selected_indices,i]/1e3)
             ax_T.set_xlabel('r/a') 
-            ax_T.set_title(f'Ti, ion={i+1}')   
+            ax_T.set_title(f'Ti [keV], ion={i+1}')   
             ax_T.grid()
             
             plt.show()
             
     def plot_plasma_current_decay(self):
         # plots total plasma current as a function of time
-        # estimates decay time?
+        # estimates decay time with LR circuit eqvalent time-scale
         
         Iplasma = self.THRIFT_IPLASMA[:,-1]
         t = self.THRIFT_T
@@ -302,8 +308,6 @@ class THRIFT():
         # ax.text(60,4e3,r'$\tau_{L/R}=$'+f'{tau_LR:.1f}s')
         ax.set_title('|Total Plasma Current|, '+r'$\tau_{L/R}=$'+f'{tau_LR:.1f}s')
         plt.show()
-        
-        print(tau_LR)
         
     def plot_vars_vs_iota(self,*vars,time_array=[0,1/4,1/2,3/4,1]):
         # plots var as a funciton of iota at different times
