@@ -501,7 +501,7 @@ class PLASMA:
         
         print(f'{filename} created with success!')
         
-    def plot_nustar(self,R0=1.0,iota=1.0):
+    def plot_nustar(self,R0=1.0,iota=1.0,make_plot=True):
         # plots nu_star = (nu(vth)/vth)*() as a function of 
         
         import matplotlib.pyplot as plt
@@ -526,7 +526,12 @@ class PLASMA:
         ax.set_yscale('log')
         ax.set_title(r'plasma collisionality $\nu^*=(\nu/v_{th})(R_0/\iota)$')
         plt.legend()
-        plt.show()
+        if(make_plot):
+            plt.show()
+        else:
+            plt.close()
+        
+        return nu_star
         
     def get_pressure_polynomial_coefficients(self,deg_fit=10):
         # this computes the AM coefficients and the PRES_SCALE scalar for a VMEC input
