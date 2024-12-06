@@ -11,7 +11,7 @@ EC = 1.602176634E-19 # Electron charge [C]
 # popcon Class
 class POPCON:
     
-    def __init__(self, B, a, R, iota, plasma_classes, popcon_title = 'POPCON'):
+    def __init__(self, B, a, R, iota, plasma_classes, popcon_title = 'POPCON', make_plot=True):
         # plasma classes is a 2d list of classes
         
         from scipy import integrate
@@ -21,6 +21,10 @@ class POPCON:
         self.popcon_title = popcon_title
         
         self.B = B
+        self.R = R
+        self.iota = iota
+        
+        self.make_plot = make_plot
         
         # Differential volume. This works well for large aspect-ratio; not so good otherwise
         self.dVdrho = lambda rho: 4*np.pi*np.pi*R*rho*a*a
@@ -251,42 +255,57 @@ class POPCON:
         ax.set_xlabel(r'$\left<T_e\right>$ [keV]')
         ax.set_ylabel(r'$\left<n_e\right>$ (x10$^{20}$ m$^{-3}$)')
         ax.set_title(f'{self.popcon_title}')
-        ax.text(6.75, 1.05, r'$P_{\text{fusion}}=3$GW', color='red', fontsize=16)
+        ax.text(5.5, 2.1, r'$P_{\text{fusion}}=3$GW', color='red', fontsize=16)
         
         # overlay Sudo limit
         n_max_20 = self.sudo_max(P_MW*1e6 + self.P_alpha) / 1e20
         #get peak values for all points in the plot
         n0_20 = [[plasma.get_density('electrons', 0.0)/1e20 for plasma in row] for row in self.plasma_list]
         ax.contour(Tk.transpose(),n20.transpose(),(n_max_20-n0_20).transpose(),levels=[0.0],linestyles='solid',colors='green')
-        ax.text(6.5, 1.7, r'$n_0/n_{\text{Sudo}}=1.25$', color='green', fontsize=16)
+        ax.text(6.5, 1.75, r'$n_0/n_{\text{Sudo}}=1.25$', color='green', fontsize=16)
         
         # plot star
         #ax.scatter(1.02, 0.075, s=320, marker='*', color='blue', zorder=3)
         
-        ix_cordey,iy_cordey = self.get_cordey_path()
-        Tk_cordey = Tk[ix_cordey,iy_cordey]
-        n20_cordey = n20[ix_cordey,iy_cordey]
-        ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
+        # ix_cordey,iy_cordey = self.get_cordey_path()
+        # Tk_cordey = Tk[ix_cordey,iy_cordey]
+        # n20_cordey = n20[ix_cordey,iy_cordey]
+        # ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
         
-        ix_cordey,iy_cordey = self.get_cordey_path(idx_y_start=10)
-        Tk_cordey = Tk[ix_cordey,iy_cordey]
-        n20_cordey = n20[ix_cordey,iy_cordey]
-        ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
+        # ix_cordey,iy_cordey = self.get_cordey_path(n20_start=0.40,Tk_start=1.0)
+        # Tk_cordey = Tk[ix_cordey,iy_cordey]
+        # n20_cordey = n20[ix_cordey,iy_cordey]
+        # ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
         
-        ix_cordey,iy_cordey = self.get_cordey_path(idx_y_start=5)
-        Tk_cordey = Tk[ix_cordey,iy_cordey]
-        n20_cordey = n20[ix_cordey,iy_cordey]
-        ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
+        # ix_cordey,iy_cordey = self.get_cordey_path(n20_start=0.25,Tk_start=0.6)
+        # Tk_cordey = Tk[ix_cordey,iy_cordey]
+        # n20_cordey = n20[ix_cordey,iy_cordey]
+        # ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
         
-        plt.show()
+        # ix_cordey,iy_cordey = self.get_cordey_path_manual(n20_points=[0.25,0.25,0.65],Tk_points=[0.0,5.4,5.4])
+        # Tk_cordey = Tk[ix_cordey,iy_cordey]
+        # n20_cordey = n20[ix_cordey,iy_cordey]
+        # ax.plot(Tk_cordey,n20_cordey,'--',linewidth=5,color='red')
         
-        # plots along cordey path
-        self.plots_along_cordey_path(ix_cordey,iy_cordey)
+        if(self.make_plot): plt.show()
         
-    def get_cordey_path(self,idx_x_start=0,idx_y_start=0):
+        # # plots along cordey path
+        # self.plots_along_cordey_path(ix_cordey,iy_cordey)
+        
+    def get_cordey_path(self,n20_start=0,Tk_start=0):
         
         # sets negative values of P_ext to 0
         P = self.P_ext.clip(min=0) 
+        
+        # get idx_x_start and idx_y_start by looking at the closest values existing in n and T to the given starting values
+        n20 = self.n_avg / 1e20
+        Tk  = self.T_avg / 1e3
+        
+        density_diff = np.abs(n20-n20_start)
+        temperature_diff = np.abs(Tk-Tk_start)
+        total_diff = density_diff + temperature_diff
+        
+        idx_x_start, idx_y_start = np.unravel_index(np.argmin(total_diff), total_diff.shape)
         
         cordey_idx_x = [idx_x_start]
         cordey_idx_y = [idx_y_start]
@@ -324,6 +343,36 @@ class POPCON:
         
         return cordey_idx_x,cordey_idx_y
     
+    def get_cordey_path_manual(self,n20_points,Tk_points):
+        # creates a Cordey path along the (n20,Tk) points.
+        
+        # sets negative values of P_ext to 0
+        P = self.P_ext.clip(min=0) 
+        
+        # get idx_x_start and idx_y_start by looking at the closest values existing in n and T to the given starting values
+        n20 = self.n_avg / 1e20
+        Tk  = self.T_avg / 1e3
+        
+        # checks n20_points and Tk_points have the same shape
+        if(len(n20_points) != len(Tk_points)):
+            print('ERROR: n20 and Tk arrays must have the same shape!')
+            exit(0)
+            
+        cordey_idx_x = []
+        cordey_idx_y = []
+        for n20_path,Tk_path in zip(n20_points,Tk_points):     
+        
+            density_diff = np.abs(n20-n20_path)
+            temperature_diff = np.abs(Tk-Tk_path)
+            total_diff = density_diff + temperature_diff
+        
+            idx_x, idx_y = np.unravel_index(np.argmin(total_diff), total_diff.shape)
+        
+            cordey_idx_x.append(idx_x)
+            cordey_idx_y.append(idx_y)
+            
+        return cordey_idx_x,cordey_idx_y
+    
     def plots_along_cordey_path(self,cordey_idx_x,cordey_idx_y):
         
         import matplotlib.pyplot as plt
@@ -336,11 +385,29 @@ class POPCON:
         
         beta_cordey = np.zeros_like(cordey_idx_x,dtype=float)
         power_cordey = np.zeros_like(cordey_idx_x,dtype=float)
+        navg_cordey = np.zeros_like(cordey_idx_x,dtype=float)
+        Tavg_cordey = np.zeros_like(cordey_idx_x,dtype=float)
+        
+        nustar_min = np.zeros_like(cordey_idx_x,dtype=float)
+        nustar_max = np.zeros_like(cordey_idx_x,dtype=float)
+        
+        n0_cordey = np.zeros_like(cordey_idx_x,dtype=float)
+        T0_cordey = np.zeros_like(cordey_idx_x,dtype=float)
         
         k = 0
         for ix,iy in zip(cordey_idx_x,cordey_idx_y):
             beta_cordey[k] = self.plasma_list[ix,iy].get_plasma_total_beta(self.B,self.dVdrho)
             power_cordey[k] = self.P_ext[ix,iy]
+            navg_cordey[k] = self.n_avg[ix,iy]
+            Tavg_cordey[k] = self.T_avg[ix,iy]
+            
+            n0_cordey[k] = self.plasma_list[ix,iy].get_density('electrons',rho=0.0)
+            T0_cordey[k] = self.plasma_list[ix,iy].get_temperature('electrons',rho=0.0)
+            
+            nustar = self.plasma_list[ix,iy].plot_nustar(R0=self.R,iota=self.iota,make_plot=False)
+            nustar_min[k] = np.min(nustar)
+            nustar_max[k] = np.max(nustar)
+            
             k += 1
             
         MRHP = np.max(power_cordey) / 1E6
@@ -368,16 +435,132 @@ class POPCON:
         ax.set_ylabel(r'$\beta~(\%)$')
         ax.set_xlabel('Cordey steps')
         ax.grid()
-        ax.text(5,beta_cordey[5]*100+0.05,r'$\beta$',color='#5faf30',size=25)
+        # ax.text(5,beta_cordey[5]*100+0.05,r'$\beta$',color='#5faf30',size=25)
         
         ax2 = ax.twinx() 
         ax2.plot(power_cordey/1E6,'.-',color='#1D2258',label=f'MRHP={MRHP:.1f} MW')
         ax2.set_ylabel(r'Heating Power [MW]')
         ax2.legend(loc='lower right')
-        ax2.text(5,power_cordey[5]/1E6+0.3,r'$P$',color='#1D2258',size=25)
+        # ax2.text(5,power_cordey[5]/1E6+0.3,r'$P$',color='#1D2258',size=25)
 
-        plt.show()
+        # plt.show()
+        
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(navg_cordey/1e20,'.-',label=r'$\left<n\right>$',color='#5faf30')
+        ax.set_title('Cordey path')
+        ax.set_xlabel('Cordey steps')
+        ax.grid()
+        ax.set_ylabel(r'$\left<n_e\right>$ (x10$^{20}$ m$^{-3}$)')
+        ax.legend(loc='best')
+        
+        ax2 = ax.twinx() 
+        ax2.plot(Tavg_cordey/1e3,'.-',color='#1D2258',label=r'$\left<T\right>$')
+        ax2.legend(loc='lower right')
+        ax2.set_ylabel(r'$\left<T_e\right>$ [keV]')
+        # ax2.grid()
+        ax2.legend(loc='upper right')
+        
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(nustar_min,'.-',color='#1D2258',label=r'$\nu^*_{\text{min}}$')
+        ax.plot(nustar_max,'.-',color='#5faf30',label=r'$\nu^*_{\text{max}}$')
+        ax.grid()
+        ax.set_xlabel('Cordey Steps')
+        ax.set_yscale('log')
+        ax.set_title(r'Collisionality, $\nu^*=(\nu/v_{th})(R_0/\iota)$')
+        ax.legend()
+        
+        # plt.show()
+        
+        #####################################################
+        #####################################################
+        
+        tau_n = 5; #s
+        tau_T = 1; #s
+        Sn = 10*6.6E18 #m-3/s
+        
+        time = [0.0]
+        navg_t = [navg_cordey[0]] # density temporal array
+        Tavg_t = [Tavg_cordey[0]] # temperature temporal array
+        
+        n0_t = [n0_cordey[0]]
+        T0_t = [T0_cordey[0]]
+        
+        for i in range(1,len(navg_cordey+1)):
             
+            dt = np.min([tau_n/10,tau_T/10])
+            
+            ntemp = navg_cordey[i-1]
+            Ttemp = Tavg_cordey[i-1]
+            t0 = time[-1]
+            
+            n0temp = n0_cordey[i-1]
+            T0temp = T0_cordey[i-1]
+            
+            # print(Ttemp)
+            # print(Tavg_cordey[i])
+            # print( np.abs((Ttemp-Tavg_cordey[i])/Ttemp))
+            
+            #while(ntemp<0.95*navg_cordey[i] or Ttemp<0.95*Tavg_cordey[i]):
+            while(np.abs((ntemp-navg_cordey[i])/ntemp)>0.01 or np.abs((Ttemp-Tavg_cordey[i])/Ttemp)>0.01):
+
+                t = time[-1]+dt
+                
+                time.append(t)
+                
+                ntemp = navg_cordey[i] + (navg_cordey[i-1]-navg_cordey[i])*np.exp(-(t-t0)/tau_n)
+                navg_t.append(ntemp)
+                
+                Ttemp = Tavg_cordey[i] + (Tavg_cordey[i-1]-Tavg_cordey[i])*np.exp(-(t-t0)/tau_T)
+                Tavg_t.append(Ttemp)
+                
+                n0temp = n0_cordey[i] + (n0_cordey[i-1]-n0_cordey[i])*np.exp(-(t-t0)/tau_n)
+                n0_t.append(n0temp)
+                
+                T0temp = T0_cordey[i] + (T0_cordey[i-1]-T0_cordey[i])*np.exp(-(t-t0)/tau_T)
+                T0_t.append(T0temp) 
+   
+        
+        # print(f'Sn={navg_cordey[i]/tau_n}')
+        # print(f'ST={Tavg_cordey[i]/tau_T}')
+        
+                
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(time, np.array(Tavg_t)/1e3,'.-',color='#1D2258',label=r'$\left<T\right>$')
+        ax.grid()
+        ax.set_ylabel(r'$\left<T_e\right>$ [keV]')
+        ax.set_xlabel('t [s]')
+        ax.legend(loc='upper left')
+        
+        ax2 = ax.twinx() 
+        ax2.plot(time, np.array(navg_t)/1e20,'.-',label=r'$\left<n\right>$',color='#5faf30')
+        ax2.legend(loc='lower right')
+        ax2.set_ylabel(r'$\left<n_e\right>$ (x10$^{20}$ m$^{-3}$)')
+        # ax2.grid()
+        ax2.legend(loc='lower right')
+        ax2.set_title('Cordey path')
+        
+        
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(time, np.array(T0_t)/1e3,'.-',color='#1D2258',label=r'$T_0$')
+        ax.grid()
+        ax.set_ylabel(r'$T_0$ [keV]')
+        ax.set_xlabel('t [s]')
+        ax.legend(loc='upper left')
+        
+        ax2 = ax.twinx() 
+        ax2.plot(time, np.array(n0_t)/1e20,'.-',label=r'$n_0$',color='#5faf30')
+        ax2.legend(loc='lower right')
+        ax2.set_ylabel(r'$n_0$ (x10$^{20}$ m$^{-3}$)')
+        # ax2.grid()
+        ax2.legend(loc='lower right')
+        ax2.set_title('Cordey path')
+        
+        
+        # plt.legend()
+        plt.show()
+        
+        return time, n0_t, T0_t,
+        
 # Main routine
 if __name__=="__main__":
 	import sys
