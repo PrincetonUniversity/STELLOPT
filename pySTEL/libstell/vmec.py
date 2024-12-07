@@ -131,16 +131,34 @@ class VMEC(FourierRep):
 		jll = (bu*ju+bv*jv)/(g*b)
 		return jll
 
+	def calc_magwell(self):
+		"""Compute Magnetic Well vs Hill
+		This routine computes the magnetic well according to the
+		formula in:
+		https://fusion.gat.com/pubs-ext/ComPlasmaPhys/A22135.pdf
+		which is essentially
+				 V * ( 2 * mu0 * p'/V' + d<B^2>/drho)
+			W =  ------------------------------------
+			                <B^2>
+
+		Returns
+		----------
+		W : ndarray
+			Well (W>0) / Hill (W<0) Stability Parameter
+		"""
+		import numpy as np
+		p = np.squeeze(self.presf)
+		vp = np.squeeze(self.vp)
+		V  = np.cumsum(vp)*4*np.pi*np.pi/self.ns
+		Bsqav = np.squeeze(self.bdotb)
+		pp = np.gradient(p)
+		dBsqav = np.gradient(Bsqav)
+		return V * ( 8E-7 * np.pi * pp / vp + dBsqav)/Bsqav
+
 	def calc_grad_rhosq(self):
 		"""Compute <|grad(rho)|^2> 
 		This routine flux surface average of |grad(rho)|^2 
 
-		Parameters
-		----------
-		theta : ndarray
-			Polidal angle grid [rad]
-		phi : ndarray
-			Toroidal angle grid [rad]
 		Returns
 		----------
 		avgrho2 : ndarray
