@@ -30,7 +30,8 @@ class NESCOIL(FourierRep):
 		file : str
 			Path to nescin file.
 		"""
-		nescin_dict = self.libStell.read_nescoil_input(filename)
+		import copy
+		nescin_dict = copy.deepcopy(self.libStell.read_nescoil_input(filename))
 		for key in nescin_dict:
 			setattr(self, key, nescin_dict[key])
 
@@ -57,7 +58,8 @@ class NESCOIL(FourierRep):
 		file : str
 			Path to nescout file.
 		"""
-		nescout_dict = self.libStell.read_nescout(filename)
+		import copy
+		nescout_dict = copy.deepcopy(self.libStell.read_nescout(filename))
 		for key in nescout_dict:
 			setattr(self, key, nescout_dict[key])
 
