@@ -32,7 +32,8 @@ class BOOZER(FourierRep):
 			Path to wout file.
 		"""
 		import numpy as np
-		boozmn_dict = self.libStell.read_boozer(filename)
+		import copy
+		boozmn_dict = copy.deepcopy(self.libStell.read_boozer(filename))
 		for key in boozmn_dict:
 			setattr(self, key, boozmn_dict[key])
 		self.mboz_b = int(max(np.squeeze(self.ixm_b)))

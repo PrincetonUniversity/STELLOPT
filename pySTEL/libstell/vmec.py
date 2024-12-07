@@ -33,7 +33,8 @@ class VMEC(FourierRep):
 			Path to wout file.
 		"""
 		import numpy as np
-		wout_dict = self.libStell.read_wout(filename)
+		import copy
+		wout_dict = copy.deepcopy(self.libStell.read_wout(filename))
 		for key in wout_dict:
 			setattr(self, key, wout_dict[key])
 		# (mu-nv) -> (mu+nv)
