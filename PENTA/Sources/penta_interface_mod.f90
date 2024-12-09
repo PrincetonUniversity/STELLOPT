@@ -1158,7 +1158,7 @@ MODULE PENTA_INTERFACE_MOD
       RETURN
    END SUBROUTINE penta_run_4_ambipolar
 
-   SUBROUTINE penta_run_4_cleanup(lscreen)
+   SUBROUTINE penta_run_5_cleanup(lscreen)
       USE io_unit_spec
       USE pprof_pass
       USE vmec_var_pass
