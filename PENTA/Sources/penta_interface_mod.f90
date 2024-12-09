@@ -20,7 +20,7 @@ MODULE PENTA_INTERFACE_MOD
    INTEGER(iknd), PARAMETER :: NUM_ION_MAX = 20_iknd
 
    LOGICAL ::  input_is_Er, log_interp, use_quanc8, read_U2_file, &
-      flux_cap, output_QoT_vs_Er, Add_Spitzer_to_D33, use_beam
+      flux_cap, output_QoT_vs_Er, Add_Spitzer_to_D33, use_beam, save_all_ambipolar_roots
    INTEGER(iknd) ::  num_Er_test, numKsteps, kord_pprof, keord, kcord, &
       numargs, js, i_append, num_species, num_ion_species, Smax, &
       iocheck, ie, ind_X, ind_A, ispec1, min_ind, iroot, num_roots
@@ -49,7 +49,8 @@ MODULE PENTA_INTERFACE_MOD
    NAMELIST /run_params/ input_is_Er, log_interp, use_quanc8, &
       read_U2_file, Add_Spitzer_to_D33, num_Er_test, numKsteps, &
       kord_pprof, keord, kcord, Kmin, Kmax, epsabs, epsrel, Method, &
-      flux_cap, output_QoT_vs_Er, use_beam, Er_min_Vcm, Er_max_Vcm
+      flux_cap, output_QoT_vs_Er, use_beam, Er_min_Vcm, Er_max_Vcm, &
+      save_all_ambipolar_roots
 
 !-----------------------------------------------------------------------
 !     SUBROUTINES
@@ -81,6 +82,7 @@ MODULE PENTA_INTERFACE_MOD
       method               = 'DKES'
       Er_min_Vcm           = -250.0_rknd
       Er_max_Vcm           =  250.0_rknd
+      save_all_ambipolar_roots = .FALSE.
       RETURN
    END SUBROUTINE init_penta_input
 
@@ -704,17 +706,18 @@ MODULE PENTA_INTERFACE_MOD
       CHARACTER(LEN=256) :: local_ext
       istat = 0
       ! Set write status
-      IF (i_append == 0) THEN
+      ! IF (i_append == 0) THEN
          fstatus = "unknown"
          fpos = "SEQUENTIAL"
-      ELSEIF (i_append == 1) THEN
-         fstatus = "old"
-         fpos = "append"
-      ELSE
-         Write(6,'(A)') 'PENTA: Bad value for i_append (0 or 1 expected)'
-         CALL FLUSH(6)
-         STOP 'Error: Exiting, i_append error in penta.f90'
-      END IF
+      ! ELSEIF (i_append == 1) THEN
+      !    fstatus = "old"
+      !    fpos = "append"
+      ! ELSE
+      !    Write(6,'(A)') 'PENTA: Bad value for i_append (0 or 1 expected)'
+      !    CALL FLUSH(6)
+      !    STOP 'Error: Exiting, i_append error in penta.f90'
+      ! END IF
+
       ! Create local extension
       IF (PRESENT(file_ext)) THEN
          local_ext = "."//TRIM(file_ext)
@@ -723,67 +726,75 @@ MODULE PENTA_INTERFACE_MOD
       END IF
       ! Open files
       !Open(unit=iu_flux_out, file="fluxes_vs_roa", position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-      CALL safe_open(iu_flux_out, istat, "fluxes_vs_roa"//TRIM(local_ext), &
-         Trim(Adjustl(fstatus)), 'formatted',&
-         access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_pprof_out, istat, "plasma_profiles_check"//TRIM(local_ext), &
-         Trim(Adjustl(fstatus)), 'formatted',&
-         access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_fvEr_out, istat, "fluxes_vs_Er"//TRIM(local_ext), &
-         Trim(Adjustl(fstatus)), 'formatted',&
-         access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_flows_out, istat, "flows_vs_roa"//TRIM(local_ext), &
-         Trim(Adjustl(fstatus)), 'formatted',&
-         access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_flowvEr_out, istat, "flows_vs_Er"//TRIM(local_ext), &
-         Trim(Adjustl(fstatus)), 'formatted',&
-         access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_Jprl_out, istat, "Jprl_vs_roa"//TRIM(local_ext), &
-         Trim(Adjustl(fstatus)), 'formatted',&
-         access_in=Trim(Adjustl(fpos)))
-      CALL safe_open(iu_contraflows_out, istat, "ucontra_vs_roa"//TRIM(local_ext), &
-         Trim(Adjustl(fstatus)), 'formatted',&
-         access_in=Trim(Adjustl(fpos)))
-      IF (method == 'SN') &
-         CALL safe_open(iu_sigmas_out, istat, "sigmas_vs_roa"//TRIM(local_ext), &
+
+      IF(save_all_ambipolar_roots) THEN
+         CALL safe_open(iu_flux_out, istat, "fluxes_vs_roa"//TRIM(local_ext), &
             Trim(Adjustl(fstatus)), 'formatted',&
             access_in=Trim(Adjustl(fpos)))
-      IF (output_QoT_vs_Er) THEN
-         CALL safe_open(iu_QoTvEr_out, istat, "QoTs_vs_Er"//TRIM(local_ext), &
-            Trim(Adjustl(fstatus)), 'formatted',&
-            access_in=Trim(Adjustl(fpos)))
-         Write(iu_QoTvEr_out,'("*",/,"r/a   Er[V/cm]   Q_e/T_e [m**-2s**-1] ",&
-                               "   Q_i/T_i [m**-2s**-1]")')
       END IF
+
+      ! CALL safe_open(iu_pprof_out, istat, "plasma_profiles_check"//TRIM(local_ext), &
+      !    Trim(Adjustl(fstatus)), 'formatted',&
+      !    access_in=Trim(Adjustl(fpos)))
+      ! CALL safe_open(iu_fvEr_out, istat, "fluxes_vs_Er"//TRIM(local_ext), &
+      !    Trim(Adjustl(fstatus)), 'formatted',&
+      !    access_in=Trim(Adjustl(fpos)))
+      ! CALL safe_open(iu_flows_out, istat, "flows_vs_roa"//TRIM(local_ext), &
+      !    Trim(Adjustl(fstatus)), 'formatted',&
+      !    access_in=Trim(Adjustl(fpos)))
+      ! CALL safe_open(iu_flowvEr_out, istat, "flows_vs_Er"//TRIM(local_ext), &
+      !    Trim(Adjustl(fstatus)), 'formatted',&
+      !    access_in=Trim(Adjustl(fpos)))
+      ! CALL safe_open(iu_Jprl_out, istat, "Jprl_vs_roa"//TRIM(local_ext), &
+      !    Trim(Adjustl(fstatus)), 'formatted',&
+      !    access_in=Trim(Adjustl(fpos)))
+      ! CALL safe_open(iu_contraflows_out, istat, "ucontra_vs_roa"//TRIM(local_ext), &
+      !    Trim(Adjustl(fstatus)), 'formatted',&
+      !    access_in=Trim(Adjustl(fpos)))
+      ! IF (method == 'SN') &
+      !    CALL safe_open(iu_sigmas_out, istat, "sigmas_vs_roa"//TRIM(local_ext), &
+      !       Trim(Adjustl(fstatus)), 'formatted',&
+      !       access_in=Trim(Adjustl(fpos)))
+      ! IF (output_QoT_vs_Er) THEN
+      !    CALL safe_open(iu_QoTvEr_out, istat, "QoTs_vs_Er"//TRIM(local_ext), &
+      !       Trim(Adjustl(fstatus)), 'formatted',&
+      !       access_in=Trim(Adjustl(fpos)))
+      !    Write(iu_QoTvEr_out,'("*",/,"r/a   Er[V/cm]   Q_e/T_e [m**-2s**-1] ",&
+      !                          "   Q_i/T_i [m**-2s**-1]")')
+      ! END IF
+
+
       ! WRITE Headers
-      IF (i_append == 0) THEN
-         ! Fluxes vs r/a
-         Write(iu_flux_out,'("*",/,"r/a    Er[V/cm]    e<a>Er/kTe    ",  &
-            "Gamma_e [m**-2s**-1]   Q_e/T_e [m**-2s**-1]     ",         &
-            "Gamma_i [m**-2s**-1]   Q_i/T_i [m**-2s**-1]")')
-         ! Flows vs r/a
-         Write(iu_flows_out,'("*",/,"r/a   Er[V/cm]    e<a>Er/kTe    ",  &
-            " <B*u_||ke>/<B**2> [m/sT]   <B*u_||ki>/<B**2> [m/sT]")')
-         ! Plasma profile check
-         Write(iu_pprof_out,'("*",/,"r/a    Te [eV]   ne [m**-3]     ",  & 
-            "dnedr [m**-4]   dTedr [eV/m]  Ti [eV]   ni [m**-3]     ",  &
-            "dnidr [m**-4]   dTidr [eV/m]")')
-         Write(iu_Jprl_out,'("*",/,"r/a    Er [V/cm]    e<a>Er/kTe    ",  &
-            "Jprl_e [A/m**2]    Jprli [A/m**2]    Jprl [A/m**2]    J_BS [A/m**2]")')
-         Write(iu_contraflows_out,'("*",/,"r/a    Er [V/cm]    e<a>Er/kTe    ",  &
-            "<ue^pol_contra> [1/s]     <ue^tor_contra> [1/s]       ",  &
-            " <ui^pol_contra> [1/s]     <ui^tor_contra> [1/s]")')
-         ! Sigmas vs r/a
-         IF (Method == 'SN') &
-            Write(iu_sigmas_out,'("*",/,"r/a   Er[V/cm]    sigma_par [1/Ohm.m]    ",  &
-               " sigma_par_Spitzer [1/Ohm.m]")')
-         ! Legend for fluxes vs Er 
-         Write(iu_fvEr_out,'("*",/,"r/a   Er[V/cm]   Gamma_e [m**-2s**-1] ",&
-            "   Gamma_i [m**-2s**-1]")')
-         ! Legend for flows vs Er
-         Write(iu_flowvEr_out,'("*",/,"r/a   Er[V/cm]  ", &
-            "    <B*u_||ke>/<B**2> [m/sT]  <B*u_||ki>/<B**2> [m/sT]")')
-      END IF
+      ! IF (i_append == 0) THEN
+      !    ! Fluxes vs r/a
+      !    Write(iu_flux_out,'("*",/,"r/a    Er[V/cm]    e<a>Er/kTe    ",  &
+      !       "Gamma_e [m**-2s**-1]   Q_e/T_e [m**-2s**-1]     ",         &
+      !       "Gamma_i [m**-2s**-1]   Q_i/T_i [m**-2s**-1]")')
+         
+         ! ! Flows vs r/a
+         ! Write(iu_flows_out,'("*",/,"r/a   Er[V/cm]    e<a>Er/kTe    ",  &
+         !    " <B*u_||ke>/<B**2> [m/sT]   <B*u_||ki>/<B**2> [m/sT]")')
+         ! ! Plasma profile check
+         ! Write(iu_pprof_out,'("*",/,"r/a    Te [eV]   ne [m**-3]     ",  & 
+         !    "dnedr [m**-4]   dTedr [eV/m]  Ti [eV]   ni [m**-3]     ",  &
+         !    "dnidr [m**-4]   dTidr [eV/m]")')
+         ! Write(iu_Jprl_out,'("*",/,"r/a    Er [V/cm]    e<a>Er/kTe    ",  &
+         !    "Jprl_e [A/m**2]    Jprli [A/m**2]    Jprl [A/m**2]    J_BS [A/m**2]")')
+         ! Write(iu_contraflows_out,'("*",/,"r/a    Er [V/cm]    e<a>Er/kTe    ",  &
+         !    "<ue^pol_contra> [1/s]     <ue^tor_contra> [1/s]       ",  &
+         !    " <ui^pol_contra> [1/s]     <ui^tor_contra> [1/s]")')
+         ! ! Sigmas vs r/a
+         ! IF (Method == 'SN') &
+         !    Write(iu_sigmas_out,'("*",/,"r/a   Er[V/cm]    sigma_par [1/Ohm.m]    ",  &
+         !       " sigma_par_Spitzer [1/Ohm.m]")')
+         ! ! Legend for fluxes vs Er 
+         ! Write(iu_fvEr_out,'("*",/,"r/a   Er[V/cm]   Gamma_e [m**-2s**-1] ",&
+         !    "   Gamma_i [m**-2s**-1]")')
+         ! ! Legend for flows vs Er
+         ! Write(iu_flowvEr_out,'("*",/,"r/a   Er[V/cm]  ", &
+         !    "    <B*u_||ke>/<B**2> [m/sT]  <B*u_||ki>/<B**2> [m/sT]")')
+      !END IF
+
       RETURN
    END SUBROUTINE penta_open_output
 
@@ -1178,34 +1189,34 @@ MODULE PENTA_INTERFACE_MOD
           QoTs_ambi(1,iroot),Gammas_ambi(2:num_species,iroot),  &
           QoTs_ambi(2:num_species,iroot)
 
-         ! Write flows to file "flows_vs_roa"
-         Write(str_num,*) (Smax+1)*num_species + 2
-         Write(iu_flows_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-          roa_surf,Er_test/100._rknd,eaEr_o_kTe,Flows_ambi(:,iroot)
+      !    ! Write flows to file "flows_vs_roa"
+      !    Write(str_num,*) (Smax+1)*num_species + 2
+      !    Write(iu_flows_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+      !     roa_surf,Er_test/100._rknd,eaEr_o_kTe,Flows_ambi(:,iroot)
 
-         ! Write current densities to file "Jprl_vs_roa"
-         Write(str_num,*) num_species + 4 
-         Write(iu_Jprl_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))')  & 
-          roa_surf,Er_test/100._rknd,eaEr_o_kTe,Jprl_parts(:,iroot),Jprl_ambi(iroot),J_BS_ambi(iroot)
+      !    ! Write current densities to file "Jprl_vs_roa"
+      !    Write(str_num,*) num_species + 4 
+      !    Write(iu_Jprl_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))')  & 
+      !     roa_surf,Er_test/100._rknd,eaEr_o_kTe,Jprl_parts(:,iroot),Jprl_ambi(iroot),J_BS_ambi(iroot)
 
-         ! Write contravariant flows to file "ucontra_vs_roa"
-         Write(str_num,*) 2*num_species + 2
-         Write(iu_contraflows_out,'(f7.3,' // trim(adjustl(str_num))//'(" ",e15.7))') & 
-          roa_surf,Er_test/100._rknd,eaEr_o_kTe,upol(1,iroot),utor(1,iroot),         &
-          upol(2:num_species,iroot),utor(2:num_species,iroot)
+      !    ! Write contravariant flows to file "ucontra_vs_roa"
+      !    Write(str_num,*) 2*num_species + 2
+      !    Write(iu_contraflows_out,'(f7.3,' // trim(adjustl(str_num))//'(" ",e15.7))') & 
+      !     roa_surf,Er_test/100._rknd,eaEr_o_kTe,upol(1,iroot),utor(1,iroot),         &
+      !     upol(2:num_species,iroot),utor(2:num_species,iroot)
 
-         ! Write sigmas to file "sigmas_vs_roa"
-         If( Method == 'SN') then
-          Write(str_num,*) 3
-          Write(iu_sigmas_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-            roa_surf,Er_test/100._rknd,sigma_par_ambi(iroot),sigma_par_Spitzer_ambi(iroot)
-         Endif
+      !    ! Write sigmas to file "sigmas_vs_roa"
+      !    If( Method == 'SN') then
+      !     Write(str_num,*) 3
+      !     Write(iu_sigmas_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+      !       roa_surf,Er_test/100._rknd,sigma_par_ambi(iroot),sigma_par_Spitzer_ambi(iroot)
+      !    Endif
       EndDo ! Ambipolar root loop
 
-      ! Write plasma profile information to "plasma_profiles_check"
-      Write(str_num,*) 4*num_species
-      Write(iu_pprof_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') & 
-        roa_surf,Te,ne,dnedr,dTedr,Ti,ni,dnidr,dTidr
+      ! ! Write plasma profile information to "plasma_profiles_check"
+      ! Write(str_num,*) 4*num_species
+      ! Write(iu_pprof_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') & 
+      !   roa_surf,Te,ne,dnedr,dTedr,Ti,ni,dnidr,dTidr
 
       ! QQ write file with number of roots per surface!
 
@@ -1223,14 +1234,72 @@ MODULE PENTA_INTERFACE_MOD
       ! Close files
       ! Close output files
       Close(iu_flux_out)
-      Close(iu_pprof_out)
-      Close(iu_fvEr_out)
-      Close(iu_QoTvEr_out)
-      Close(iu_flows_out)
-      Close(iu_flowvEr_out)
-      Close(iu_Jprl_out)
-      Close(iu_contraflows_out)
+      ! Close(iu_pprof_out)
+      ! Close(iu_fvEr_out)
+      ! Close(iu_QoTvEr_out)
+      ! Close(iu_flows_out)
+      ! Close(iu_flowvEr_out)
+      ! Close(iu_Jprl_out)
+      ! Close(iu_contraflows_out)
    END SUBROUTINE penta_run_5_cleanup
+
+   SUBROUTINE penta_run_6_merge_files(ns_dkes,proc_string)
+
+      USE safe_open_mod
+
+      IMPLICIT NONE
+      INTEGER :: ierr, iunit_merged, iunit_read, k
+      INTEGER, INTENT(IN) :: ns_dkes
+      CHARACTER(LEN=256), INTENT(IN) :: proc_string
+      CHARACTER(LEN=64) :: temp_str
+      CHARACTER(LEN=256) :: input_filename, output_filename, line
+      iunit_merged = 25
+      iunit_read = 35
+
+      output_filename = 'ambipolar_roots_fluxes.' // TRIM(proc_string)
+
+      !open merged file
+      CALL safe_open(iunit_merged, ierr, output_filename, "replace", 'formatted')
+      if (ierr /= 0) then
+         print *, "Error opening output file ambipolar_roots_fluxes"
+         stop
+      end if
+
+      !write header of merged file
+      Write(iunit_merged,'("*",/,"r/a    Er[V/cm]    e<a>Er/kTe    ",  &
+            "Gamma_e [m**-2s**-1]   Q_e/T_e [m**-2s**-1]     ",         &
+            "Gamma_i [m**-2s**-1]   Q_i/T_i [m**-2s**-1]")')
+
+      !Loop through files
+      Do k=1,ns_dkes
+
+         WRITE(temp_str,'(i4.4)') k
+         input_filename = "fluxes_vs_roa." // TRIM(proc_string) // '_k' // TRIM(temp_str)
+
+        ! Open the input file for reading
+        CALL safe_open(iunit_read, ierr, input_filename, 'old', 'formatted')
+        if (ierr /= 0) then
+            print *, "ERROR opening input file:", input_filename
+            cycle
+        end if
+      
+         ! Read all lines from the input file and append to the output file
+         do
+            read(iunit_read, "(A)", iostat=ierr) line
+            if (ierr /= 0) exit  ! Exit loop on end-of-file or error
+            write(iunit_merged, "(A)") trim(line)
+         end do
+
+         ! close and delete k files
+         close(iunit_read, status='delete', iostat=ierr)
+         if (ierr /= 0) STOP 'Error closing/deleting k file'
+
+      End Do
+
+      close(iunit_merged)
+
+
+   END SUBROUTINE penta_run_6_merge_files
 
 
 
