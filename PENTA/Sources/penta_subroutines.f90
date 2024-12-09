@@ -12,7 +12,7 @@ Contains
 !+ Finds the ambipolar Er roots from Sum(gamma_s * q_s) = 0
 !-----------------------------------------------------------------------------
 Subroutine find_Er_roots(gamma_e,gamma_i,Er_test_vals,Z_ion, &
-  num_Er_test,num_ion_species,Er_roots,num_roots)
+  num_Er_test,num_ion_species,Er_roots,num_roots,flag_roots)
 !
 ! Description: 
 !  This subroutine QQ
@@ -56,6 +56,7 @@ Integer(iknd), Intent(in)  :: num_Er_test
 Integer(iknd), Intent(in)  :: num_ion_species
 Real(rknd),    Intent(out) :: Er_roots(:) 
 Integer(iknd), Intent(out) :: num_roots 
+integer(iknd), Intent(out), optional :: flag_roots
 
 ! Local scalars
 Real(rknd)    :: a_test,b_test  ! Used for checking for zero crossing
@@ -99,7 +100,13 @@ EndDo
 ! Check for zero or even number of roots
 If ( num_roots == 0_iknd ) Then
   Write(*,*) 'No roots found in search range'
-  Stop 'Error from find_Er_roots: Please modify the Er search range'
+  If (Present(flag_roots)) Then
+    flag_roots=1
+    !Stop 'Error from find_Er_roots: Please modify the Er search range'
+    Return
+  Else
+    Stop 'Error from find_Er_roots: Please modify the Er search range'
+  EndIf
 ElseIf ( Mod(num_roots,2_iknd) == 0_iknd) Then
   Write(*,*) 'Even number of roots found, choosing first root only.'
   num_roots = 1_iknd
@@ -129,7 +136,12 @@ Do iroot=1,num_roots
       Write(*,*) 'Distance between roots too small for ', &
         'interpolation.  Increase num_Er_test.'
       Write(*,*) I_roots
-      Stop 'Exiting from find_Er_roots'
+      If( Present(flag_roots)) THEN
+        flag_roots = 2
+        Return
+      Else
+        Stop 'Exiting from find_Er_roots'
+      EndIf
     EndIf
   EndIf
 
@@ -145,6 +157,8 @@ EndDo
 
 ! Deallocate variables
 Deallocate(I_roots,diff_qg,Er_fit)
+
+If (Present(flag_roots)) flag_roots=0
 
 EndSubroutine find_Er_roots
 
