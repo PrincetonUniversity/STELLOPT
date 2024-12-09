@@ -923,6 +923,7 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('q-prof')
 			self.ui.ComboBoxOPTplot_type.addItem('<j*B>')
 			self.ui.ComboBoxOPTplot_type.addItem('Mercier')
+			self.ui.ComboBoxOPTplot_type.addItem('Magwell')
 			wout_files = sorted([k for k in files if 'wout' in k])
 			self.wout_files = sorted([k for k in wout_files if '_opt' not in k])
 		# Handle Boozer Transformation
@@ -1904,6 +1905,21 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('[Arb]')
 			self.ax2.set_title('Mercier Stability (>0 Stable)')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Magwell'):
+			vmec_data = vmec.VMEC()
+			l=0
+			dl = len(self.wout_files)-1
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data.read_wout(self.workdir+string)
+					magwell = vmec_data.calc_magwell()
+					nflux = np.linspace(0.0,1.0,vmec_data.ns)
+					self.ax2.plot(nflux,magwell,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('W')
+			self.ax2.set_title('Magnetic Well/Hill Stability (>0 Well)')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Flux0'):
 			vmec_data = vmec.VMEC()
