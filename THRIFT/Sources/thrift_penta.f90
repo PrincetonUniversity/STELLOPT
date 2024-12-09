@@ -175,7 +175,7 @@
             etapar_PENTA(k) = 1.0_rprec / sigma_par_ambi(root_max_Er)
             Er_PENTA(k) = MAXVAL(Er_roots(1:num_roots),1)
 
-            CALL PENTA_RUN_4_CLEANUP(lscreen)
+            CALL PENTA_RUN_5_CLEANUP(lscreen)
          END DO
 
 
