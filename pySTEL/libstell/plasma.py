@@ -90,6 +90,26 @@ class PLASMA:
         
         for species in species_list:
             self.Zcharge[species]  = self.Zcharge_database[f'{species}'] 
+            
+    def add_species_to_plasma(self,species):
+        #adds a new species to the plasma
+        
+        # Chech if species is a string
+        if not isinstance(species, str):
+            raise ValueError("species must be a string")
+        
+        self.check_species_exist(species)
+        
+        self.list_of_species.append(species)
+        
+        self.give_mass_to_species(self.list_of_species)
+        self.give_charge_to_species(self.list_of_species)
+        self.give_Zcharge_to_species(self.list_of_species)
+        
+        #create self.ion_species and self.num_ion_species
+        self.set_ion_species()
+                
+        if(self.lverb): print(f'Plasma updated and now has species: {", ".join(self.list_of_species)}')  
                 
     def set_density(self,species,n0,nedge,exponent):
         
