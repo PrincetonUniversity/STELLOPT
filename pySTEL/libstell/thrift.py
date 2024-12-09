@@ -8,8 +8,14 @@ THRIFT data.
 # Libraries
 import numpy as np
 import matplotlib.pyplot as plt
+import h5py
 
 plt.rc('font', size=18)
+default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+custom_colors = ['#5faf30', '#1D2258', '#004817', '#a1cdc8']
+plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors+default_colors)
+plt.rcParams['lines.linewidth'] = 2.5
+# plt.rcParams['axes.prop_cycle'] = plt.cycler(color=['#5faf30','#1D2258','#004817','#a1cdc8'])
 
 # Constants
 
@@ -21,48 +27,98 @@ class THRIFT():
     def __init__(self):
         test = 0
         
-    def read_thrift(self,file):
-        """Reads a THRIFT HDF5 file
+    def read_thrift(self,*files):
+        """Reads THRIFT HDF5 files
 
 		This routine reads and initilizes the THRIFT
-		class with variable information from an HDF5 file.
+		class with variable information from one or more HDF5 files.
 
 		Parameters
 		----------
-		file : str
-		Path to HDF5 file.
+		files : str
+		Path to HDF5 files.
 		"""
+        
+        # checks order of time is correct
+        self.check_time_order(*files)
+        
+        # set integers attributes
+        self.set_integers_attribute(*files)
+        
+        # set arrays attributes
+        self.set_arrays_attribute(*files) 
+        
+        # set units of quantities
+        self.set_units()       
+    
+    def check_time_order(self,*files):
 
-        import h5py
-        # import numpy as np
+        time = []
+        
+        for file in files:
+            with h5py.File(file,'r') as f:
+                time.append( f['THRIFT_T'][:] )
+        time = np.concatenate(time)
+        
+        #check ordering
+        if(not np.all(np.diff(time) > 0) ):
+            print('ERROR: the given THRIFT output files are not in the correct order...')
+            exit(0)
+            
+    def set_integers_attribute(self,*files):
+        # checks that nssize didn't change among different ouput files
+        # computes the total number of ntimesteps
+        
+        npicard = []
+        nssize = []
+        ntimesteps = []
+        
+        for file in files: 
+            with h5py.File(file,'r') as f:
+                npicard.append(np.int64(f['npicard'][0]))
+                nssize.append(np.int64(f['nssize'][0]))
+                ntimesteps.append(np.int64(f['ntimesteps'][0]))
 
-		#read file
+        if(not np.all(nssize==nssize[0])):
+            print('ERROR: nssize changes bewteen output files!')
+            exit(0)
+            
+        setattr(self,'ntimesteps',np.sum(ntimesteps))
+        setattr(self,'nssize',nssize[0])
+        setattr(self,'npicard',npicard)
+            
+    def set_arrays_attribute(self,*files):
+        
+        for file in files: 
+            with h5py.File(file,'r') as f:
+                # Arrays
+                for temp in ['THRIFT_ALPHA1','THRIFT_ALPHA2','THRIFT_ALPHA3','THRIFT_ALPHA4','THRIFT_AMINOR',\
+       			    'THRIFT_BAV','THRIFT_BSQAV','THRIFT_BVAV','THRIFT_COEFF_A','THRIFT_COEFF_B','THRIFT_COEFF_BP',\
+				    'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_EPARB','THRIFT_ER','THRIFT_ETAPARA','THRIFT_I',\
+				    'THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IOTA','THRIFT_IPLASMA','THRIFT_ISOURCE',\
+				    'THRIFT_J','THRIFT_JBOOT','THRIFT_JECCD','THRIFT_JNBCD','THRIFT_JOHMIC','THRIFT_JPLASMA','THRIFT_JSOURCE',\
+				    'THRIFT_MATLD','THRIFT_MATMD','THRIFT_MATRHS','THRIFT_MATUD','THRIFT_P','THRIFT_PHIEDGE','THRIFT_PPRIME',\
+				    'THRIFT_RMAJOR','THRIFT_S11','THRIFT_S12','THRIFT_T', 'THRIFT_UGRID','THRIFT_VP']:
+                    if temp in f:
+                        # Get the data from the file
+                        data = np.array(f[temp][:])
+
+                        # Check if the attribute exists; if not, initialize it
+                        if not hasattr(self, temp):
+                            setattr(self, temp, data)
+                        else:
+                            # Concatenate the new data to the existing attribute
+                            existing_data = getattr(self, temp)
+                            setattr(self, temp, np.concatenate((existing_data, data)))
+                        
+        # set THRIFT_S array (no concatenation needed); in set_integers_attribute already checkwd nssize is the same for ALL files
         with h5py.File(file,'r') as f:
-            # Logicals
-            for temp in ['leccd','lohmic','lvmec','lnbcd']:
-                if temp in f:
-                    setattr(self, temp, np.int64(f[temp][0])==1)
-            # Integers
-            for temp in ['npicard','nrho','nssize','ntimesteps']:
-                if temp in f:
-                    setattr(self, temp, np.int64(f[temp][0]))
-            # Floats
-            for temp in ['VERSION','jtol','picard_factor']:
-                if temp in f:
-                    a = 1
-                    setattr(self,temp, float(f[temp][0]))
-            # Arrays                
-            for temp in ['THRIFT_ALPHA1','THRIFT_ALPHA2','THRIFT_ALPHA3','THRIFT_ALPHA4','THRIFT_AMINOR',\
-       			'THRIFT_BAV','THRIFT_BSQAV','THRIFT_BVAV','THRIFT_COEFF_A','THRIFT_COEFF_B','THRIFT_COEFF_BP',\
-				'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_EPARB','THRIFT_ER','THRIFT_ETAPARA','THRIFT_I',\
-				'THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IOTA','THRIFT_IPLASMA','THRIFT_ISOURCE',\
-				'THRIFT_J','THRIFT_JBOOT','THRIFT_JECCD','THRIFT_JNBCD','THRIFT_JOHMIC','THRIFT_JPLASMA','THRIFT_JSOURCE',\
-				'THRIFT_MATLD','THRIFT_MATMD','THRIFT_MATRHS','THRIFT_MATUD','THRIFT_P','THRIFT_PHIEDGE','THRIFT_PPRIME',\
-				'THRIFT_RHO','THRIFT_RHOFULL','THRIFT_RMAJOR','THRIFT_S','THRIFT_S11','THRIFT_S12','THRIFT_SNOB','THRIFT_T',\
-				'THRIFT_UGRID','THRIFT_VP']:
-                if temp in f:
-                    setattr(self, temp, np.array(f[temp][:]))
-                    
+            setattr(self, 'THRIFT_S', np.array(f['THRIFT_S'][:]))
+            setattr(self, 'THRIFT_SNOB', np.array(f['THRIFT_SNOB'][:]))
+                        
+    def set_units(self):
+        # sets units of different variables (useful when plotting)
+        
         self.units_dictionary = {}
         for current in ['THRIFT_I','THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IPLASMA','THRIFT_ISOURCE']:
             self.units_dictionary[current] = r'[A]'
@@ -70,26 +126,37 @@ class THRIFT():
             self.units_dictionary[current_density] = r'[A/m$^2]$'
         self.units_dictionary['THRIFT_ETAPARA'] = r'$[\Omega\,$m]'
         self.units_dictionary['THRIFT_ER'] = r'$[V/$m]'
+        
                     
-    def plot_vars_in_time(self,*vars,time_array=[0,1/4,1/2,3/4,1]):
+    def plot_vars_in_time(self,*vars,time_slice=None,time_array=None):
         # plots var as a funciton of roa at different times
-        # time_array is in fractions of t_end
+        # the times can be given as time_slices (fractions of t_end)
+        # or as time_array
+        # if both given, time_slice prevails
         # vars is any variable of the type THRIFT_## with dimension (ntimesteps,nssize)
+        
+        if( (time_array is None) or (time_slice is not None and time_array is not None)):
+            t_end = self.THRIFT_T[-1]
+            time_slice = [0,1/4,1/2,3/4,1]
+            times = np.array(time_slice)*t_end
+        else:
+            times = time_array
         
         for var in vars:
             plot_var = getattr(self,var)
             # check dimension of var is (ntimesteps,nssize)
-            self.check_var_shape(plot_var,self.ntimesteps,self.nssize)
-            t_end = self.THRIFT_T[-1]
-            times = np.array(time_array)*t_end
-            
+            # self.check_var_shape(plot_var,self.ntimesteps,self.nssize)
+
             idx = [np.argmin(np.abs(self.THRIFT_T-t)) for t in times]
             times = self.THRIFT_T[idx]
             plot_var = plot_var[idx,:]
             
             _, ax = plt.subplots(figsize=(11,8))
             for it,time in enumerate(times):
-                ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s')
+                try:
+                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s')
+                except:
+                    ax.plot(np.sqrt(self.THRIFT_SNOB),plot_var[it,:],label=f't={time}s')
                 ax.set_xlabel('r/a') 
                 ax.set_title(var)   
             ax.grid()    
@@ -141,6 +208,12 @@ class THRIFT():
         raxis = np.array( hf['raxis_prof'][:] )
         taxis = np.array( hf['taxis_prof'][:] )
         
+        # select some t's for plotting
+        num_values = 1000
+        step = max(1, len(taxis) // num_values)
+        selected_indices = np.arange(0, len(taxis), step)[:num_values]
+        t_selected = taxis[selected_indices]
+        
         ne = np.array( hf['ne_prof'][:] )
         Te = np.array( hf['te_prof'][:] )
         
@@ -154,42 +227,88 @@ class THRIFT():
         _, ax_n = plt.subplots(figsize=(11,8))
         _, ax_T = plt.subplots(figsize=(11,8))    
         
-        ax_n.plot(raxis,ne)
+        ax_n.plot(raxis,ne[:,selected_indices]/1e20)
         ax_n.set_xlabel('r/a') 
-        ax_n.set_title('ne')   
+        ax_n.set_title('ne [1E20 m^-3]')   
         ax_n.grid()   
         
-        ax_T.plot(raxis,Te)
+        ax_T.plot(raxis,Te[:,selected_indices]/1e3)
         ax_T.set_xlabel('r/a') 
-        ax_T.set_title('Te')   
+        ax_T.set_title('Te [keV]')   
         ax_T.grid()  
         
         plt.show()
-        
-        _, ax_n = plt.subplots(figsize=(11,8))
-        _, ax_T = plt.subplots(figsize=(11,8))
-        
+
         for i in range(nion):
             
-            ax_n.plot(raxis,ni[:,:,i])
+            _, ax_n = plt.subplots(figsize=(11,8))
+            _, ax_T = plt.subplots(figsize=(11,8))
+            
+            ax_n.plot(raxis,ni[:,selected_indices,i]/1e20)
             ax_n.set_xlabel('r/a') 
-            ax_n.set_title(f'ni, ion={i+1}')   
+            ax_n.set_title(f'ni [1E20 m^-3], ion={i+1}')   
             ax_n.grid()
             
-            ax_T.plot(raxis,Ti[:,:,i])
+            ax_T.plot(raxis,Ti[:,selected_indices,i]/1e3)
             ax_T.set_xlabel('r/a') 
-            ax_T.set_title(f'Ti, ion={i+1}')   
+            ax_T.set_title(f'Ti [keV], ion={i+1}')   
             ax_T.grid()
             
             plt.show()
             
+    def plot_plasma_current_decay(self):
+        # plots total plasma current as a function of time
+        # estimates decay time with LR circuit eqvalent time-scale
         
+        Iplasma = self.THRIFT_IPLASMA[:,-1]
+        t = self.THRIFT_T
         
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(t,Iplasma)
+        ax.set_xlabel('t [s]') 
+        ax.set_title('Total Plasma Current')   
+        ax.grid()    
+        # ax.legend()
+        ax.set_ylabel('[A]')
+        # plt.show()
         
+        _, ax = plt.subplots(figsize=(13,8))
+        ax.plot(t,np.abs(Iplasma))
+        ax.set_xlabel('t [s]')    
+        ax.grid()    
+        ax.set_ylabel('[A]')
+        ax.set_yscale('log')
+        # plt.show()
         
+        t_fit = t[t>20]
+        I_fit = np.abs(Iplasma[t>20])
         
+        p1,p0 = np.polyfit(t_fit,np.log(I_fit),1)
         
-            
+        tau = -1/p1
+        
+        ax.plot(t_fit,np.exp(p0+p1*t_fit),'--',label=r'$\tau_{\text{fit}}=$'+f'{tau:.1f}s')
+        ax.legend()
+        # plt.show()
+        
+        mu0 = 1.256e-6
+        R0 = np.mean(self.THRIFT_RMAJOR)
+        a  = np.mean(self.THRIFT_AMINOR[:,-1])
+
+        Lext = mu0*R0*(np.log(8*R0/a)-2.0)
+        
+        A = np.pi*a*a
+        L = 2*np.pi*R0
+        
+        integrated_cond = np.trapz(1/self.THRIFT_ETAPARA[-1,:],self.THRIFT_S)
+        Rohm = (L/A) * 1/integrated_cond
+        
+        tau_LR = Lext / Rohm
+        
+        # ax.text(60,4e3,r'$\tau_{L/R}=$'+f'{tau_LR:.1f}s')
+        ax.set_title('|Total Plasma Current|, '+r'$\tau_{L/R}=$'+f'{tau_LR:.1f}s')
+        plt.show()
+        
     def plot_vars_vs_iota(self,*vars,time_array=[0,1/4,1/2,3/4,1]):
         # plots var as a funciton of iota at different times
         # time_array is in fractions of t_end
@@ -221,41 +340,6 @@ class THRIFT():
                 ax.set_ylabel('')
             plt.show()
 
-            
-    # def compare_J(self,time_array=[0,1/4,1/2,3/4,1]):
-        
-    #     J1 = getattr(self,'THRIFT_J')
-    #     J2B = getattr(self,'THRIFT_JDOTB')
-    #     B = getattr(self,'THRIFT_BAV')
-    #     J2 = J2B/B
-        
-    #     t_end = self.THRIFT_T[-1]
-    #     times = np.array(time_array)*t_end
-        
-    #     idx = [np.argmin(np.abs(self.THRIFT_T-t)) for t in times]
-    #     times = self.THRIFT_T[idx]
-        
-    #     J1 = J1[idx,:]
-    #     J2 = J2[idx,:]
-        
-    #     print(np.max(J1-J2))
-        
-    #     _, ax = plt.subplots(figsize=(11,8))
-        
-    #     for it,time in enumerate(times):
-    #         ax.plot(np.sqrt(self.THRIFT_S),J1[it,:],'-',label=f't={time}s')
-    #         ax.plot(np.sqrt(self.THRIFT_S),J2[it,:],'.',label=f't={time}s')
-            
-    #     ax.set_xlabel('r/a')
-    #     ax.set_ylabel('')
-    #     #ax.set_title(var)   
-    #     ax.grid()    
-    #     ax.legend()
-    #     plt.show()
-        
-        
-        
-        
 # # THRIFT Input Class
 # class THRIFT_INPUT():
 
