@@ -37,6 +37,7 @@
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: D11, D13, D33
       TYPE(EZspline1_r8) :: EparB_spl, J_spl, eta_spl, Er_spl
       INTEGER :: bcs0(2)
+      CHARACTER(LEN=32) :: temp_str
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !-----------------------------------------------------------------------
@@ -161,7 +162,8 @@
             CALL PENTA_SCREEN_INFO
             CALL PENTA_ALLOCATE_DKESCOEFF
             CALL PENTA_FIT_DXX_COEF
-            CALL PENTA_OPEN_OUTPUT(proc_string)
+            WRITE(temp_str,'(i4.4)') k
+            CALL PENTA_OPEN_OUTPUT(TRIM(proc_string) // '_k' // TRIM(temp_str))
             CALL PENTA_FIT_RAD_TRANS
             ! Now the basic steps
             CALL PENTA_RUN_2_EFIELD
@@ -200,6 +202,8 @@
 #endif
          
          IF (myworkid == master) THEN
+
+            IF(save_all_ambipolar_roots) CALL PENTA_RUN_6_MERGE_FILES(ns_dkes,proc_string)
 
             ! Interpolate JBS_PENTA, etapar_PENTA and Er_PENTA at rho=0 and rho=1
             ALLOCATE(J_temp(ns_dkes+2),eta_temp(ns_dkes+2),Er_temp(ns_dkes+2),rho_temp(ns_dkes+2))
