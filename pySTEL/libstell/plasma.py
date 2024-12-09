@@ -9,12 +9,15 @@ DA = 1.66053906660E-27 # Dalton
 ME = 9.1093837E-31 # Electron mass [kg]
 MP = 1.672621637E-27 # Proton mass [kg]
 EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
+MU0 = 1.25663706143E-6  # Vacuum permeability [N/A^2]
 
 import numpy as np
 
 class PLASMA:
     
-    def __init__(self,list_of_species):
+    def __init__(self,list_of_species,lverb=False):
+        
+        self.lverb = lverb
         
         self.species_database = ['electrons','hydrogen','deuterium','tritium','helium3','helium4']
         self.mass_database = {
@@ -58,7 +61,7 @@ class PLASMA:
         #create self.ion_species and self.num_ion_species
         self.set_ion_species()
         
-        print(f'Plasma created with species: {", ".join(self.list_of_species)}')      
+        if(lverb): print(f'Plasma created with species: {", ".join(self.list_of_species)}')      
     
     def check_species_exist(self, species_list):
         # Ensure species_list is a list of strings
@@ -87,6 +90,26 @@ class PLASMA:
         
         for species in species_list:
             self.Zcharge[species]  = self.Zcharge_database[f'{species}'] 
+            
+    def add_species_to_plasma(self,species):
+        #adds a new species to the plasma
+        
+        # Chech if species is a string
+        if not isinstance(species, str):
+            raise ValueError("species must be a string")
+        
+        self.check_species_exist(species)
+        
+        self.list_of_species.append(species)
+        
+        self.give_mass_to_species(self.list_of_species)
+        self.give_charge_to_species(self.list_of_species)
+        self.give_Zcharge_to_species(self.list_of_species)
+        
+        #create self.ion_species and self.num_ion_species
+        self.set_ion_species()
+                
+        if(self.lverb): print(f'Plasma updated and now has species: {", ".join(self.list_of_species)}')  
                 
     def set_density(self,species,n0,nedge,exponent):
         
@@ -105,7 +128,7 @@ class PLASMA:
         for info,val in zip(profile_info,profile_vals):
             self.density[species][info] = val
             
-        print(f'\nDensity profile of {species}: n[m-3] = {nedge} + {n0-nedge}*(1-rho^{exponent})')
+        if(self.lverb): print(f'\nDensity profile of {species}: n[m-3] = {nedge} + {n0-nedge}*(1-rho^{exponent})')
         
     def set_temperature(self,species,T0,Tedge,exponent):
         
@@ -124,7 +147,7 @@ class PLASMA:
         for info,val in zip(profile_info,profile_vals):
             self.temperature[species][info] = val
             
-        print(f'\nTemperature profile of {species}: T[eV] = {Tedge} + {T0-Tedge}*(1-rho^{exponent})')
+        if(self.lverb): print(f'\nTemperature profile of {species}: T[eV] = {Tedge} + {T0-Tedge}*(1-rho^{exponent})')
     
     def get_density(self,species,rho):
         # rho can be a number or a list of numbers
@@ -208,7 +231,7 @@ class PLASMA:
         return vth
     
     def get_averaged_profile(self,species,which_profile,dVdrho):
-        # which profile is either 'density' or 'temperature'
+        # which profile is either 'density', 'temperature' or 'pressure'
         # dVdrho is a function
         
         from scipy.integrate import trapezoid
@@ -219,6 +242,8 @@ class PLASMA:
             profile = self.get_density(species,rho)
         elif(which_profile=='temperature'):
             profile = self.get_temperature(species,rho)
+        elif(which_profile=='pressure'):
+            profile = self.get_density(species,rho)*self.get_temperature(species,rho)*EC   #Pascal (SI) units
         else:
             print(f'ERROR: profile is either "density" or "temperature". Cannot be {which_profile}')
             exit(0)
@@ -307,10 +332,22 @@ class PLASMA:
         # ion species in the order that appears in list_of_species
         self.ion_species = [species for species in self.list_of_species if species != 'electrons']
         
-        print(f'Ion species: {self.ion_species}')
+        if(self.lverb): print(f'Ion species: {self.ion_species}')
         
         self.num_ion_species = len(self.ion_species)
         
+    def get_plasma_total_beta(self,B,dVdrho):
+        # calculates plasma beta=total_pressure/ (B^2/2mu0)
+        
+        total_avg_pressure = 0.0
+        for species in self.list_of_species:
+            total_avg_pressure += self.get_averaged_profile(species,'pressure',dVdrho)
+        
+        betatot = total_avg_pressure / (B*B/(2*MU0))
+        
+        # print(f'betatot={betatot*100:.2f}%')
+        
+        return betatot    
     
     def write_plasma_profiles_to_PENTA1(self,rho,filename=None):
         # first line: number of rhos
@@ -484,7 +521,7 @@ class PLASMA:
         
         print(f'{filename} created with success!')
         
-    def plot_nustar(self,R0=1.0,iota=1.0):
+    def plot_nustar(self,R0=1.0,iota=1.0,make_plot=True):
         # plots nu_star = (nu(vth)/vth)*() as a function of 
         
         import matplotlib.pyplot as plt
@@ -509,7 +546,12 @@ class PLASMA:
         ax.set_yscale('log')
         ax.set_title(r'plasma collisionality $\nu^*=(\nu/v_{th})(R_0/\iota)$')
         plt.legend()
-        plt.show()
+        if(make_plot):
+            plt.show()
+        else:
+            plt.close()
+        
+        return nu_star
         
     def get_pressure_polynomial_coefficients(self,deg_fit=10):
         # this computes the AM coefficients and the PRES_SCALE scalar for a VMEC input
