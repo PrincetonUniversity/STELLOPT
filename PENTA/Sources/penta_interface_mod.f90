@@ -1230,7 +1230,7 @@ MODULE PENTA_INTERFACE_MOD
       Close(iu_flowvEr_out)
       Close(iu_Jprl_out)
       Close(iu_contraflows_out)
-   END SUBROUTINE penta_run_4_cleanup
+   END SUBROUTINE penta_run_5_cleanup
 
 
 
