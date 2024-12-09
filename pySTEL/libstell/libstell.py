@@ -1346,6 +1346,15 @@ class LIBSTELL():
 			if n==1:
 				for i,col in enumerate(val):
 					temp[i] = val[i]
+			elif n==2:
+				k = 0
+				for i,col in enumerate(val):
+					for j,row in enumerate(col):
+						temp[k] = val[i][j]
+						k = k + 1
+				#print(modName+'_'+var+self.s3)
+				#print(n)
+				#print(val)
 		elif type(val) == str:
 			temp.value = val.encode('UTF-8')
 		else:
