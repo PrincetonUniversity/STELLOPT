@@ -267,6 +267,7 @@ MODULE beams3d_physics_mod
          ! Initialize values
          te_temp  = 0; ne_temp  = 0; ti_temp  = 0; zeff_temp=1;
          speed = 0; reduction = 0; modb=0;bphi_temp=0;omeg_temp=0;
+         vrot_para=0;vrot_perp=0;binv=0
 
          tau_spit_inv = 0.0; v_crit   = 0.0; coulomb_log = 15
          tau_inv = 10.0; vcrit_cube = 0.0; vc3_tauinv = 0
@@ -285,7 +286,7 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             MODB4D(1,1,1,1),nr,nphi,nz)
-            modb = fval(1)
+            modb = max(fval(1),zero)
             binv = one/modb
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -329,9 +330,9 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             inv_mymass = one/mymass
             vrot_para = omeg_temp*r_temp*bphi_temp*binv
-            vrot_perp = SQRT(omeg_temp*omeg_temp*r_temp*r_temp - vrot_para*vrot_para)
+            vrot_perp = SQRT(max(omeg_temp*omeg_temp*r_temp*r_temp - vrot_para*vrot_para,zero))
             vll       = vll - vrot_para
-            speed     = SQRT(vll*vll + 2*moment*modb*inv_mymass - vrot_perp*vrot_perp)
+            speed     = SQRT(max(vll*vll + 2*moment*modb*inv_mymass - vrot_perp*vrot_perp,zero))
 
             !-----------------------------------------------------------
             !  Helpers
@@ -386,12 +387,11 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             dve   = speed*tau_spit_inv*(1-2*te_temp*inv_mymass*e_charge/speed**2.0)
             dvi   = vc3_tauinv/(speed*speed)*(1+ti_temp*inv_mymass*e_charge/speed**2.0)
-            reduction = dve + dvi
-            newspeed = speed - reduction*dt+sigma*zeta
+            reduction = (dve + dvi)*dt-sigma*zeta
+            newspeed = speed - reduction
             dve=dve+ddve
             dvi=dvi+ddvi
             vfrac = newspeed/speed
-
             !-----------------------------------------------------------
             !  Thermalize particle or adjust vll and moment
             !  Fowler et al. NF 1990 30 (6) 997--1010
@@ -406,10 +406,10 @@ MODULE beams3d_physics_mod
                ltherm = .true.
                vfrac = newspeed/speed
                vll = vfrac*vll
-               moment = half*mymass*(newspeed*newspeed - vll*vll + vrot_perp*vrot_perp)*binv
+               moment = max(half*mymass*(newspeed*newspeed - vll*vll + vrot_perp*vrot_perp)*binv,zero)
                q(4) = vll + vrot_para
                RETURN
-            END IF
+            END IF           
             l = MAX(MIN(CEILING(rho_temp*h1_prof),ns_prof1),1)
             epower_prof(mybeam,l) = epower_prof(mybeam,l) + mymass*dve*dt*speed*weight(myline)
             ipower_prof(mybeam,l) = ipower_prof(mybeam,l) + mymass*dvi*dt*speed*weight(myline)
@@ -426,7 +426,7 @@ MODULE beams3d_physics_mod
             zeta_mean = zeta_o *(one - speed_cube )  ! The new mean in the distribution.
             zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
             !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-            zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+            zeta = MIN(MAX(zeta,-0.99999D+00),0.99999D+00)
             !Flip gaussian at boundary to prevent accumulation around pitch=1
             !zeta=zeta-SIGN(one,zeta)*MAX((ABS(zeta)-0.999D+00),zero)
             !Pitch angle scattering according to NUBEAM
