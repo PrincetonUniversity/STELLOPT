@@ -195,7 +195,7 @@ class STELLOPT():
 					temp_list.extend([float(item)])
 				n = n + 1
 			xvec.extend([temp_list])
-			print(content[n])
+			#print(content[n])
 			fvec.extend([float(content[n])])
 			n=n+2 # skip reading nx and iter
 		self.xvec = np.array(xvec)
