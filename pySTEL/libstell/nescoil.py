@@ -181,6 +181,7 @@ class NESCOIL(FourierRep):
 		ax.set_ylabel('Poloidal angle [rad]')
 		ax.set_title(r'NESCOIL $\Phi$ Potential')
 		pyplot.colorbar(hmesh,label='$Pot$ [arb]',ax=ax)
+		if lplotnow: pyplot.show()
 
 	def plottotalpotential(self,ax=None):
 		"""Plots the NESCOIL Total Potential
