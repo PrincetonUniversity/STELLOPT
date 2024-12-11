@@ -320,6 +320,54 @@ class STELLOPT():
 				chisq = (targ-val)/sigma
 				setattr(self,targ_name+'_CHISQ',chisq*chisq)
 
+	def plot_stellopt_jacobian(self,target='all',ax=None):
+		"""Plot the Jacobian for a given target
+
+		This routine plots the jacobian for a given STELLOPT target.
+		If no target is given then it plots a color contour map
+		of the whole jacobian.
+
+		Parameters
+		----------
+		target : str
+			Quantity to plot (default: all)
+		ax : axes (optional)
+			Matplotlib axes object to plot to.
+		"""
+		import numpy as np
+		import matplotlib.pyplot as plt
+		if not hasattr(self, 'targetnames'):
+			self.read_stellopt_varlabels()
+		if not hasattr(self,'jac2d'):
+			print(' Must read jacobian first')
+			return
+		# Handle the axes
+		lplotnow = False
+		if not ax:
+			ax = plt.axes()
+			lplotnow = True
+		if target == 'all':
+			hmesh=ax.pcolormesh(np.squeeze(self.jac2d.T),cmap='jet')
+			ax.set_xlabel('Targets (F)')
+			ax.set_ylabel('Variables (X)')
+			plt.colorbar(hmesh,label='df/dx',ax=ax)
+		else:
+			# Find indices of target names
+			dex = [n for n,s in enumerate(self.targetnames) if target.upper() in s.upper()]
+			if dex == []:
+				return
+			ax.plot(np.arange(len(self.var)),self.jac2d[dex,:].T)
+			ax.set_xticks(np.arange(len(self.var)), labels=self.var, fontsize=9)
+			ax.set_ylabel('DF/DX',fontsize=24)
+			ax.set_xlabel('X',fontsize=24)
+			ax.set_title(rf'STELLOPT Jacobian {target}')
+			plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+			plt.yscale('symlog',linthresh=1.0E-4)
+		# plot if axes not passed
+		if lplotnow: plt.show()
+
+
+
 # STELLOPT Input Class
 class STELLOPT_INPUT():
 	"""Class for working with STELLOPT INPUT data
