@@ -30,14 +30,14 @@
 !-----------------------------------------------------------------------
       INTEGER :: ns_dkes, k, ier, j, i, ncstar, nestar, mystart, myend, &
                  mysurf, root_max_Er
-      REAL(rprec) :: s, rho
+      REAL(rprec) :: s, rho, mytime
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_k, iota, phip, chip, btheta, bzeta, bsq, vp, &
                         te, ne, dtedrho, dnedrho, EparB, JBS_PENTA, etapar_PENTA, Er_PENTA, rho_temp, J_temp, eta_temp, Er_temp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: ni,ti, dtidrho, dnidrho
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: D11, D13, D33
       TYPE(EZspline1_r8) :: EparB_spl, J_spl, eta_spl, Er_spl
       INTEGER :: bcs0(2)
-      CHARACTER(LEN=32) :: temp_str
+      CHARACTER(LEN=32) :: temp_str, temp1_str
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !-----------------------------------------------------------------------
@@ -63,6 +63,8 @@
          JBS_PENTA = 0.0; etapar_PENTA = 0.0; Er_PENTA = 0.0
 
          IF (myworkid == master) THEN
+
+            mytime = THRIFT_T(mytimestep)
             
             ! EparB Spline
             bcs1=(/ 0, 0/)
@@ -139,6 +141,9 @@
          ! VMEC quantities
          CALL MPI_BCAST(eq_Aminor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(eq_Rmajor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+         ! THRIFT quantities
+         CALL MPI_BCAST(mytime,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(mytimestep,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          
 #endif
       
@@ -162,8 +167,10 @@
             CALL PENTA_SCREEN_INFO
             CALL PENTA_ALLOCATE_DKESCOEFF
             CALL PENTA_FIT_DXX_COEF
+
             WRITE(temp_str,'(i4.4)') k
-            CALL PENTA_OPEN_OUTPUT(TRIM(proc_string) // '_k' // TRIM(temp_str))
+            WRITE(temp1_str,'(i3.3)') mytimestep
+            CALL PENTA_OPEN_OUTPUT(TRIM(temp1_str) // '_k' // TRIM(temp_str))
             CALL PENTA_FIT_RAD_TRANS
             ! Now the basic steps
             CALL PENTA_RUN_2_EFIELD
@@ -203,7 +210,7 @@
          
          IF (myworkid == master) THEN
 
-            IF(save_all_ambipolar_roots) CALL PENTA_RUN_6_MERGE_FILES(ns_dkes,proc_string)
+            IF(save_all_ambipolar_roots) CALL PENTA_RUN_6_MERGE_FILES(ns_dkes,temp1_str,mytime)
 
             ! Interpolate JBS_PENTA, etapar_PENTA and Er_PENTA at rho=0 and rho=1
             ALLOCATE(J_temp(ns_dkes+2),eta_temp(ns_dkes+2),Er_temp(ns_dkes+2),rho_temp(ns_dkes+2))

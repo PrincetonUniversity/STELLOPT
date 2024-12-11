@@ -1243,20 +1243,21 @@ MODULE PENTA_INTERFACE_MOD
       ! Close(iu_contraflows_out)
    END SUBROUTINE penta_run_5_cleanup
 
-   SUBROUTINE penta_run_6_merge_files(ns_dkes,proc_string)
+   SUBROUTINE penta_run_6_merge_files(ns_dkes,proc_string,mytime)
 
       USE safe_open_mod
 
       IMPLICIT NONE
       INTEGER :: ierr, iunit_merged, iunit_read, k
       INTEGER, INTENT(IN) :: ns_dkes
-      CHARACTER(LEN=256), INTENT(IN) :: proc_string
-      CHARACTER(LEN=64) :: temp_str
+      REAL(rknd), INTENT(IN) :: mytime
+      CHARACTER(LEN=32), INTENT(IN) :: proc_string
+      CHARACTER(LEN=32) :: temp_str
       CHARACTER(LEN=256) :: input_filename, output_filename, line
       iunit_merged = 25
       iunit_read = 35
 
-      output_filename = 'ambipolar_roots_fluxes.' // TRIM(proc_string)
+      output_filename = 'ambipolar_roots.' // TRIM(proc_string)
 
       !open merged file
       CALL safe_open(iunit_merged, ierr, output_filename, "replace", 'formatted')
@@ -1266,7 +1267,9 @@ MODULE PENTA_INTERFACE_MOD
       end if
 
       !write header of merged file
-      Write(iunit_merged,'("*",/,"r/a    Er[V/cm]    e<a>Er/kTe    ",  &
+      Write(iunit_merged,'("*",/,"t [s]")')
+      Write(iunit_merged,'(f7.3)') mytime
+      Write(iunit_merged,'("r/a    Er[V/cm]    e<a>Er/kTe    ",  &
             "Gamma_e [m**-2s**-1]   Q_e/T_e [m**-2s**-1]     ",         &
             "Gamma_i [m**-2s**-1]   Q_i/T_i [m**-2s**-1]")')
 
