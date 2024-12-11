@@ -929,6 +929,8 @@ class COILSET():
 				coil_mesh.vectors[i][j] = vertex[f[j],:]
 		coil_mesh.save(filename)
 		if thickness > 0.0:
+			# Reverse order of inner face to get proper surface normals
+			faces = faces[:,[2,1,0]]
 			[vertex_case,faces_case] = self.blenderCoil(height=float(height),
 				width=float(width),lfield_period=lfield_period)
 			vertex_case = np.array(vertex_case)
