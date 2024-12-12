@@ -20,7 +20,8 @@ MODULE PENTA_INTERFACE_MOD
    INTEGER(iknd), PARAMETER :: NUM_ION_MAX = 20_iknd
 
    LOGICAL ::  input_is_Er, log_interp, use_quanc8, read_U2_file, &
-      flux_cap, output_QoT_vs_Er, Add_Spitzer_to_D33, use_beam, save_all_ambipolar_roots
+      flux_cap, output_QoT_vs_Er, Add_Spitzer_to_D33, use_beam, &
+      save_all_ambipolar_roots, save_fluxes_vs_Er
    INTEGER(iknd) ::  num_Er_test, numKsteps, kord_pprof, keord, kcord, &
       numargs, js, i_append, num_species, num_ion_species, Smax, &
       iocheck, ie, ind_X, ind_A, ispec1, min_ind, iroot, num_roots
@@ -50,7 +51,7 @@ MODULE PENTA_INTERFACE_MOD
       read_U2_file, Add_Spitzer_to_D33, num_Er_test, numKsteps, &
       kord_pprof, keord, kcord, Kmin, Kmax, epsabs, epsrel, Method, &
       flux_cap, output_QoT_vs_Er, use_beam, Er_min_Vcm, Er_max_Vcm, &
-      save_all_ambipolar_roots
+      save_all_ambipolar_roots, save_fluxes_vs_Er
 
 !-----------------------------------------------------------------------
 !     SUBROUTINES
@@ -83,6 +84,7 @@ MODULE PENTA_INTERFACE_MOD
       Er_min_Vcm           = -250.0_rknd
       Er_max_Vcm           =  250.0_rknd
       save_all_ambipolar_roots = .FALSE.
+      save_fluxes_vs_Er = .FALSE.
       RETURN
    END SUBROUTINE init_penta_input
 
@@ -733,6 +735,13 @@ MODULE PENTA_INTERFACE_MOD
             access_in=Trim(Adjustl(fpos)))
       END IF
 
+      IF(save_fluxes_vs_Er) THEN
+         CALL safe_open(iu_fvEr_out, istat, "fluxes_vs_Er"//TRIM(local_ext), &
+            Trim(Adjustl(fstatus)), 'formatted',&
+            access_in=Trim(Adjustl(fpos)))
+      END IF
+
+
       ! CALL safe_open(iu_pprof_out, istat, "plasma_profiles_check"//TRIM(local_ext), &
       !    Trim(Adjustl(fstatus)), 'formatted',&
       !    access_in=Trim(Adjustl(fpos)))
@@ -980,17 +989,17 @@ MODULE PENTA_INTERFACE_MOD
          Write(iu_fvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
             roa_surf,Er_test/100._rknd,Gamma_e_vs_Er(ie),Gamma_i_vs_Er(ie,:)
 
-         If ( output_QoT_vs_Er .EQV. .true. ) Then
-            QoT_e_vs_Er(ie)   = QoTs(1)
-            QoT_i_vs_Er(ie,:) = QoTs(2:num_species)
-            Write(iu_QoTvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-               roa_surf,Er_test/100._rknd,QoT_e_vs_Er(ie),QoT_i_vs_Er(ie,:)
-         Endif
+         ! If ( output_QoT_vs_Er .EQV. .true. ) Then
+         !    QoT_e_vs_Er(ie)   = QoTs(1)
+         !    QoT_i_vs_Er(ie,:) = QoTs(2:num_species)
+         !    Write(iu_QoTvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+         !       roa_surf,Er_test/100._rknd,QoT_e_vs_Er(ie),QoT_i_vs_Er(ie,:)
+         ! Endif
 
-         ! Write flows vs Er
-         Write(str_num,*) (Smax+1)*num_species + 2  ! Convert num to string
-         Write(iu_flowvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-          roa_surf,Er_test/100._rknd,Flows
+         ! ! Write flows vs Er
+         ! Write(str_num,*) (Smax+1)*num_species + 2  ! Convert num to string
+         ! Write(iu_flowvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+         !  roa_surf,Er_test/100._rknd,Flows
 
       Enddo !efield loop
       RETURN
@@ -1183,11 +1192,13 @@ MODULE PENTA_INTERFACE_MOD
          eaEr_o_kTe = arad*Er_test/Te
 
          ! Write fluxes to file "fluxes_vs_roa"
-         Write(str_num,*) 2*num_species + 2
-         Write(iu_flux_out,'(f7.3,' // Trim(Adjustl(str_num)) // '(" ",e15.7))') &
-          roa_surf,Er_test/100._rknd,eaEr_o_kTe,Gammas_ambi(1,iroot),  &
-          QoTs_ambi(1,iroot),Gammas_ambi(2:num_species,iroot),  &
-          QoTs_ambi(2:num_species,iroot)
+         IF(save_all_ambipolar_roots) THEN
+            Write(str_num,*) 2*num_species + 2
+            Write(iu_flux_out,'(f7.3,' // Trim(Adjustl(str_num)) // '(" ",e15.7))') &
+            roa_surf,Er_test/100._rknd,J_BS_ambi(iroot),Gammas_ambi(1,iroot),  &
+            QoTs_ambi(1,iroot),Gammas_ambi(2:num_species,iroot),  &
+            QoTs_ambi(2:num_species,iroot)
+         ENDIF
 
       !    ! Write flows to file "flows_vs_roa"
       !    Write(str_num,*) (Smax+1)*num_species + 2
@@ -1231,11 +1242,11 @@ MODULE PENTA_INTERFACE_MOD
       CALL penta_deallocate_species
       CALL penta_deallocate_dkescoeff
 
-      ! Close files
+      ! Close files (MAYBE SHOULD PUT AN if TO CHECK WHETHER THE FILES WERE OPEN? OR NOT NEEDED?)
       ! Close output files
       Close(iu_flux_out)
       ! Close(iu_pprof_out)
-      ! Close(iu_fvEr_out)
+      Close(iu_fvEr_out)
       ! Close(iu_QoTvEr_out)
       ! Close(iu_flows_out)
       ! Close(iu_flowvEr_out)
@@ -1243,7 +1254,7 @@ MODULE PENTA_INTERFACE_MOD
       ! Close(iu_contraflows_out)
    END SUBROUTINE penta_run_5_cleanup
 
-   SUBROUTINE penta_run_6_merge_files(ns_dkes,proc_string,mytime)
+   SUBROUTINE penta_merge_ambipolar_files(ns_dkes,proc_string,mytime)
 
       USE safe_open_mod
 
@@ -1269,7 +1280,7 @@ MODULE PENTA_INTERFACE_MOD
       !write header of merged file
       Write(iunit_merged,'("*",/,"t [s]")')
       Write(iunit_merged,'(f7.3)') mytime
-      Write(iunit_merged,'("r/a    Er[V/cm]    e<a>Er/kTe    ",  &
+      Write(iunit_merged,'("r/a    Er[V/cm]    J_BS [Am**-2]    ",  &
             "Gamma_e [m**-2s**-1]   Q_e/T_e [m**-2s**-1]     ",         &
             "Gamma_i [m**-2s**-1]   Q_i/T_i [m**-2s**-1]")')
 
@@ -1302,7 +1313,66 @@ MODULE PENTA_INTERFACE_MOD
       close(iunit_merged)
 
 
-   END SUBROUTINE penta_run_6_merge_files
+   END SUBROUTINE penta_merge_ambipolar_files
+
+   SUBROUTINE penta_merge_fluxes_vs_Er_files(ns_dkes,proc_string,mytime)
+
+      USE safe_open_mod
+
+      IMPLICIT NONE
+      INTEGER :: ierr, iunit_merged, iunit_read, k
+      INTEGER, INTENT(IN) :: ns_dkes
+      REAL(rknd), INTENT(IN) :: mytime
+      CHARACTER(LEN=32), INTENT(IN) :: proc_string
+      CHARACTER(LEN=32) :: temp_str
+      CHARACTER(LEN=256) :: input_filename, output_filename, line
+      iunit_merged = 25
+      iunit_read = 35
+
+      output_filename = 'fluxes_vs_Er.' // TRIM(proc_string)
+
+      !open merged file
+      CALL safe_open(iunit_merged, ierr, output_filename, "replace", 'formatted')
+      if (ierr /= 0) then
+         print *, "Error opening output file fluxes_vs_Er"
+         stop
+      end if
+
+      !write header of merged file
+      Write(iunit_merged,'("*",/,"t [s]")')
+      Write(iunit_merged,'(f7.3)') mytime
+      Write(iunit_merged,'("*",/,"r/a   Er[V/cm]   Gamma_e [m**-2s**-1] ",&
+             "   Gamma_i [m**-2s**-1]")')
+
+      !Loop through files
+      Do k=1,ns_dkes
+
+         WRITE(temp_str,'(i4.4)') k
+         input_filename = "fluxes_vs_Er." // TRIM(proc_string) // '_k' // TRIM(temp_str)
+
+         ! Open the input file for reading
+         CALL safe_open(iunit_read, ierr, input_filename, 'old', 'formatted')
+         if (ierr /= 0) then
+            print *, "ERROR opening input file:", input_filename
+            cycle
+         end if
+      
+         ! Read all lines from the input file and append to the output file
+         do
+            read(iunit_read, "(A)", iostat=ierr) line
+            if (ierr /= 0) exit  ! Exit loop on end-of-file or error
+            write(iunit_merged, "(A)") trim(line)
+         end do
+
+         ! close and delete k files
+         close(iunit_read, status='delete', iostat=ierr)
+         if (ierr /= 0) STOP 'Error closing/deleting k file'
+
+      End Do
+
+      close(iunit_merged)
+
+   END SUBROUTINE penta_merge_fluxes_vs_Er_files
 
 
 

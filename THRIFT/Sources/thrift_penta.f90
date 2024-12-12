@@ -210,7 +210,8 @@
          
          IF (myworkid == master) THEN
 
-            IF(save_all_ambipolar_roots) CALL PENTA_RUN_6_MERGE_FILES(ns_dkes,temp1_str,mytime)
+            IF(save_all_ambipolar_roots) CALL PENTA_MERGE_AMBIPOLAR_FILES(ns_dkes,temp1_str,mytime)
+            IF(save_fluxes_vs_Er) CALL PENTA_MERGE_FLUXES_VS_ER_FILES(ns_dkes,temp1_str,mytime)
 
             ! Interpolate JBS_PENTA, etapar_PENTA and Er_PENTA at rho=0 and rho=1
             ALLOCATE(J_temp(ns_dkes+2),eta_temp(ns_dkes+2),Er_temp(ns_dkes+2),rho_temp(ns_dkes+2))
