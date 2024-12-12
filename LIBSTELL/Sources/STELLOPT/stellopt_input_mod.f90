@@ -1102,6 +1102,7 @@
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
       target_quasiiso(1)  = 0.0;  sigma_quasiiso(1)  = bigno
+      target_gamma_c(1)   = 0.0;  sigma_gamma_c(1)   = bigno
       target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
       target_dkes_Erdiff(1) = 0.0; sigma_dkes_Erdiff(1) = bigno
       target_dkes_alpha(1) = 0.0; sigma_dkes_alpha(1) = bigno
