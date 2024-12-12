@@ -613,6 +613,136 @@ class PARAM_WALL():
 		out_wall.date = datetime.today().strftime('%Y-%m-%d')
 		return out_wall
 
+# SOLID WALL MODEL
+class SOLIDWALL():
+	"""Class for defining parameterized solid walls like in parastell
+
+	"""
+	def __init__(self,radial_build_dict,poloidal_angles,toroidal_angles):
+		self.radial_build_dict = radial_build_dict
+		self.poloidal_angles = poloidal_angles
+		self.toroidal_angles = toroidal_angles
+		self.nfp = int(360.0/max(toroidal_angles))
+
+	def setInitialSurface(self,r,z,nr,nz):
+		"""Define the inital R,Z surface
+
+		This routine is used to define the initial surface in terms of
+		R, Z, n_R, and n_Z where each quantity has the dimension of the
+		poloidal and toroidal angles.
+
+		Parameters
+		----------
+		r : array
+			Cylindrical R values of surface (npoloidal,ntoroidal)
+		z : array
+			Cylindrical Z values of surface (npoloidal,ntoroidal)
+		nr : array
+			Cylindrical R normal values of surface (npoloidal,ntoroidal)
+		nz : array
+			Cylindrical Z normal values of surface (npoloidal,ntoroidal)
+		"""
+		self.r = r
+		self.z = z
+		self.nr = nr
+		self.nz = nz
+
+	def generateWalls(self,npol=360,ntor=90):
+		"""Creates the solid walls
+
+		The routine creates the solid walls with an output grid
+		resolution equal to that of the npol and ntor values.
+		This routine produces both wall.dat files and wall.stl
+		files for each layer.
+
+		Parameters
+		----------
+		npol : int
+			Number of poloidal points to use for wall generation
+		ntor : int
+			Number of toroidla points to use for wall generation
+		"""
+		import numpy as np
+		from scipy.interpolate import make_interp_spline
+		from copy import deepcopy
+		from datetime import datetime
+		# Define output arrays
+		poloidal_angles_out = np.linspace(0.0,360.0,npol)
+		toroidal_angles_out = np.linspace(0.0,max(self.toroidal_angles),ntor)
+		# Surface helpers
+		nradial = len(self.radial_build_dict)+1
+		ntheta  = len(self.poloidal_angles)
+		nphi    = len(self.toroidal_angles)
+		# Construct layers
+		R_shells        = np.zeros(nradial,ntheta,nphi)
+		Z_shells        = np.zeros(nradial,ntheta,nphi)
+		total_thickness = np.zeros(nradial,ntheta,nphi)
+		R_shells[0,:,:] = self.r
+		Z_shells[0,:,:] = self.z
+		i = 1
+		for name,properties in self.radial_build_dict.items():
+			print(f'Working on: {name}')
+			thick = properties['thickness_matrix']
+			total_thickness = total_thickness + thick
+			R_shells[i,:,:] = R_shells[0,:,:] + total_thickness*nr
+			Z_shells[i,:,:] = Z_shells[0,:,:] + total_thickness*nz
+			i = i + 1
+		# Spline over the poloidal direction
+		ntheta_out = len(poloidal_angles_out)
+		Rp_shells        = np.zeros(nradial,ntheta_out,nphi)
+		Zp_shells        = np.zeros(nradial,ntheta_out,nphi)
+		for k in range(nradial):
+			for v in range(nphi):
+				splr = make_interp_spline(np.squeeze(self.poloidal_angles), np.squeeze(R_shells[k,:,v]), k=2, bc_type='periodic')
+				splz = make_interp_spline(np.squeeze(self.poloidal_angles), np.squeeze(Z_shells[k,:,v]), k=2, bc_type='periodic')
+				Rp_shells[k,:,v] = splr(poloidal_angles_out)
+				Zp_shells[k,:,v] = splz(poloidal_angles_out)
+		# Spline over the toroidal direction
+		nphi_out = len(toroidal_angles_out)
+		Rpt_shells = np.zeros(nradial,ntheta_out,nphi_out)
+		Zpt_shells = np.zeros(nradial,ntheta_out,nphi_out)
+		for k in range(nradial):
+			for u in range(ntheta_out):
+				splr = make_interp_spline(np.squeeze(self.toroidal_angles), np.squeeze(Rp_shells[k,u,:]), k=2, bc_type='periodic')
+				splz = make_interp_spline(np.squeeze(self.toroidal_angles), np.squeeze(Zp_shells[k,u,:]), k=2, bc_type='periodic')
+				Rpt_shells[k,u,:] = splr(toroidal_angles_out)
+				Zpt_shells[k,u,:] = splz(toroidal_angles_out)
+		# Create a geometry helper for completing the torus
+		phirad = np.tile(np.deg2rad(toroidal_angles_out),(nradial,ntheta_out,1))
+		xtarr  = Rpt_shells*np.cos(phirad)
+		ytarr  = Rpt_shells*np.sin(phirad)
+		ztarr  = Zpt_shells
+		# Extend to full torus
+		xarr = xtarr; yarr = ytarr; zarr=ztarr
+		for v in range(1,self.nfp):
+			cop = np.cos(v*2.0*np.pi/self.nfp)
+			sip = np.sin(v*2.0*np.pi/self.nfp)
+			xarr = np.append(xarr,xtarr*cop-ytarr*sip,2)
+			yarr = np.append(yarr,ytarr*cop+xtarr*sip,2)
+			zarr = np.append(zarr,ztarr,2)
+		# Adjust ordering (s,th,ph) -> (s,ph,th)
+		xarr = np.swapaxes(xarr,1,2)
+		yarr = np.swapaxes(yarr,1,2)
+		zarr = np.swapaxes(zarr,1,2)
+		# Now generate the shells as walls
+		shells=[]
+		for k in range(nradial):
+			shells.append(WALL())
+			shells[k].genWallfromOrdered(np.array([xarr[k,:,:],yarr[k,:,:],zarr[k,:,:]]))
+			shells[k].wallClean()
+		# Now generate the soild wall from the shell models
+		names = list(self.radial_build_dict.keys())
+		for k in range(1,nradial):
+			wall_out = WALL()
+			wall_out = deepcopy(shells[k-1])
+			wall_out.faces = shells[k-1].faces[:,[2,1,0]] # flips normal direction for inner layer
+			wall_outer = deepcopy(shells[k])
+			wall_out.wallAdd(wall_outer)
+			wall_out.name = names[k-1] + "Generated by pySTEL SOLIDWALL"
+			wall_out.date = datetime.today().strftime('%Y-%m-%d')
+			wall_out.write_wall(names[k-1]+'.dat')
+			wall_out.writeSTL(names[k-1]+'.stl')
+
 if __name__=="__main__":
 	import sys
 	sys.exit(0)
