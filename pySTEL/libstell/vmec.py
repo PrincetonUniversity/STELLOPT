@@ -133,6 +133,7 @@ class VMEC(FourierRep):
 
 	def calc_magwell(self):
 		"""Compute Magnetic Well vs Hill
+
 		This routine computes the magnetic well according to the
 		formula in:
 		https://fusion.gat.com/pubs-ext/ComPlasmaPhys/A22135.pdf
@@ -157,6 +158,7 @@ class VMEC(FourierRep):
 
 	def calc_grad_rhosq(self):
 		"""Compute <|grad(rho)|^2> 
+
 		This routine flux surface average of |grad(rho)|^2 
 
 		Returns
@@ -208,6 +210,7 @@ class VMEC(FourierRep):
 
 	def calc_susceptance(self):
 		"""Compute susceptance matrix elements 
+
 		This routine calculates the susceptance matrix elements
 		S11, S12, S21, S22.
 
@@ -276,8 +279,47 @@ class VMEC(FourierRep):
 		S22 = np.trapz(S22, x=theta, axis=1)*scale_fact
 		return S11,S12,S21,S22
 
+	def calcNormals2D(self,theta,phi,ns=None):
+		"""Returns the 2D surface normals over a domain
+		
+		This routine calculates the 2D outward directed normals for a
+		given surface.  Here the normals always lie in the a plane
+		of constant toroidal angle.
+
+		Parameters
+		----------
+		theta : list
+			Poloidal angles at which to evaluate normals [rad]
+		phi  : list
+			Toroidal angles at which to evaluate normals [rad]
+		s    : int
+			Radial index at which to evaluate normals (default: ns)
+
+		Returns
+		----------
+		nr : ndarray
+			Cylindical radial surface normal (normalized)
+		nz : numpy array
+			Cylindrical vertical surface normal (normalized)
+		"""
+		import numpy as np
+		if type(ns) is type(None):
+			ns = self.ns-1
+		r = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
+		z = self.sfunct(theta,phi,self.zmns,self.xm,self.xn)
+		rumns = -self.rmnc*np.tile(self.xm,(1,self.ns)).T
+		zumnc =  self.zmns*np.tile(self.xm,(1,self.ns)).T
+		ru = self.sfunct(theta,phi,rumns,self.xm,self.xn)
+		zu = self.cfunct(theta,phi,zumnc,self.xm,self.xn)
+		nr =  r[ns,:,:]*zu[ns,:,:]
+		nz = -r[ns,:,:]*ru[ns,:,:]
+		n  = np.sqrt(nr*nr+nz*nz)
+		return nr/n, nz/n
+
+
 	def getSpline(self,*args,**kwargs):
 		"""Returns a profile in the AUX_S/F form
+
 		This routine returns the pressure, current or rotational
 		transform profile in the form AUX form used by the VMEC input
 		spline routines.
