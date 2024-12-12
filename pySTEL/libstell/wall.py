@@ -674,9 +674,9 @@ class SOLIDWALL():
 		ntheta  = len(self.poloidal_angles)
 		nphi    = len(self.toroidal_angles)
 		# Construct layers
-		R_shells        = np.zeros(nradial,ntheta,nphi)
-		Z_shells        = np.zeros(nradial,ntheta,nphi)
-		total_thickness = np.zeros(nradial,ntheta,nphi)
+		R_shells        = np.zeros((nradial,ntheta,nphi))
+		Z_shells        = np.zeros((nradial,ntheta,nphi))
+		total_thickness = np.zeros((ntheta,nphi))
 		R_shells[0,:,:] = self.r
 		Z_shells[0,:,:] = self.z
 		i = 1
@@ -684,13 +684,13 @@ class SOLIDWALL():
 			print(f'Working on: {name}')
 			thick = properties['thickness_matrix']
 			total_thickness = total_thickness + thick
-			R_shells[i,:,:] = R_shells[0,:,:] + total_thickness*nr
-			Z_shells[i,:,:] = Z_shells[0,:,:] + total_thickness*nz
+			R_shells[i,:,:] = R_shells[0,:,:] + total_thickness*self.nr
+			Z_shells[i,:,:] = Z_shells[0,:,:] + total_thickness*self.nz
 			i = i + 1
 		# Spline over the poloidal direction
 		ntheta_out = len(poloidal_angles_out)
-		Rp_shells        = np.zeros(nradial,ntheta_out,nphi)
-		Zp_shells        = np.zeros(nradial,ntheta_out,nphi)
+		Rp_shells        = np.zeros((nradial,ntheta_out,nphi))
+		Zp_shells        = np.zeros((nradial,ntheta_out,nphi))
 		for k in range(nradial):
 			for v in range(nphi):
 				splr = make_interp_spline(np.squeeze(self.poloidal_angles), np.squeeze(R_shells[k,:,v]), k=2, bc_type='periodic')
@@ -699,8 +699,8 @@ class SOLIDWALL():
 				Zp_shells[k,:,v] = splz(poloidal_angles_out)
 		# Spline over the toroidal direction
 		nphi_out = len(toroidal_angles_out)
-		Rpt_shells = np.zeros(nradial,ntheta_out,nphi_out)
-		Zpt_shells = np.zeros(nradial,ntheta_out,nphi_out)
+		Rpt_shells = np.zeros((nradial,ntheta_out,nphi_out))
+		Zpt_shells = np.zeros((nradial,ntheta_out,nphi_out))
 		for k in range(nradial):
 			for u in range(ntheta_out):
 				splr = make_interp_spline(np.squeeze(self.toroidal_angles), np.squeeze(Rp_shells[k,u,:]), k=2, bc_type='periodic')
