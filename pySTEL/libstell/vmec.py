@@ -447,9 +447,6 @@ class VMEC(FourierRep):
 			th = th + 0.5 *dth
 		return th
 
-
-
-
 	def extrapSurface(self,surf=None,dist=0.1):
 		"""Returns an extrapolated surface.
 		This routine extrapolates a surface a given distance using the
