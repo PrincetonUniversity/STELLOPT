@@ -386,8 +386,8 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             dve   = speed*tau_spit_inv*(1-2*te_temp*inv_mymass*e_charge/speed**2.0)
             dvi   = vc3_tauinv/(speed*speed)*(1+ti_temp*inv_mymass*e_charge/speed**2.0)
-            reduction = dve + dvi
-            newspeed = speed - reduction*dt+sigma*zeta
+            reduction = (dve + dvi)*dt+sigma*zeta
+            newspeed = speed - reduction
             dve=dve+ddve
             dvi=dvi+ddvi
             vfrac = newspeed/speed
