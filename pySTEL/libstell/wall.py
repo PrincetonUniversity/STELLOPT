@@ -613,18 +613,6 @@ class PARAM_WALL():
 		out_wall.date = datetime.today().strftime('%Y-%m-%d')
 		return out_wall
 
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__=="__main__":
 	import sys
 	sys.exit(0)
