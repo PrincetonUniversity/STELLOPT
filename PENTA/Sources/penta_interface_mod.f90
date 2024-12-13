@@ -39,6 +39,7 @@ MODULE PENTA_INTERFACE_MOD
       Dspl_D31, Dspl_D33, Dspl_Dex, Dspl_Dua, Dspl_Drat, Dspl_Drat2, &
       Dspl_logD11, Dspl_logD33, cmesh, gamma_i_vs_er, QoT_i_vs_Er, &
       Flows_ambi, gammas_ambi, QoTs_ambi, Jprl_parts, upol, utor
+   LOGICAL, DIMENSION(:), ALLOCATABLE :: root_type
    CHARACTER(LEN=10) :: Method
    CHARACTER(LEN=100) :: arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, &
       arg9, coeff_ext, run_ident, pprof_char, fpos, fstatus, str_num
@@ -391,6 +392,7 @@ MODULE PENTA_INTERFACE_MOD
       IF (ALLOCATED(sigma_par_Spitzer_ambi)) DEALLOCATE(sigma_par_Spitzer_ambi)
       IF (ALLOCATED(utor)) DEALLOCATE(utor)
       IF (ALLOCATED(upol)) DEALLOCATE(upol)
+      IF (ALLOCATED(root_type)) DEALLOCATE(root_type)
 
       RETURN
    END SUBROUTINE penta_deallocate_species
@@ -1194,10 +1196,10 @@ MODULE PENTA_INTERFACE_MOD
          ! Write fluxes to file "fluxes_vs_roa"
          IF(save_all_ambipolar_roots) THEN
             Write(str_num,*) 2*num_species + 2
-            Write(iu_flux_out,'(f7.3,' // Trim(Adjustl(str_num)) // '(" ",e15.7))') &
+            Write(iu_flux_out,'(f7.3,' // Trim(Adjustl(str_num)) // '(" ",e15.7),' // 'i4)') &
             roa_surf,Er_test/100._rknd,J_BS_ambi(iroot),Gammas_ambi(1,iroot),  &
             QoTs_ambi(1,iroot),Gammas_ambi(2:num_species,iroot),  &
-            QoTs_ambi(2:num_species,iroot)
+            QoTs_ambi(2:num_species,iroot), merge(1_iknd,0_iknd, root_type(iroot))
          ENDIF
 
       !    ! Write flows to file "flows_vs_roa"
@@ -1282,7 +1284,7 @@ MODULE PENTA_INTERFACE_MOD
       Write(iunit_merged,'(f7.3)') mytime
       Write(iunit_merged,'("r/a    Er[V/cm]    J_BS [Am**-2]    ",  &
             "Gamma_e [m**-2s**-1]   Q_e/T_e [m**-2s**-1]     ",         &
-            "Gamma_i [m**-2s**-1]   Q_i/T_i [m**-2s**-1]")')
+            "Gamma_i [m**-2s**-1]   Q_i/T_i [m**-2s**-1]   root_type")')
 
       !Loop through files
       Do k=1,ns_dkes
@@ -1373,6 +1375,71 @@ MODULE PENTA_INTERFACE_MOD
       close(iunit_merged)
 
    END SUBROUTINE penta_merge_fluxes_vs_Er_files
+
+   SUBROUTINE root_analysis
+      ! using the Maxwell construction criterium, whenever num_roots>1, determines which of them will settle
+      ! (see eg. Turkin et al. PoP 18, 022505, 2011)
+      ! The array root_type indicates if the ambipolar root is set or not with .TRUE. or .FALSE.
+
+      IMPLICIT NONE
+
+      INTEGER(iknd) :: i, j, idx_ion_root, idx_electron_root, one, zero
+      REAL(rknd), DIMENSION(num_Er_test) :: Jr
+      REAL(rknd) :: temp_sum, electron_root, ion_root, integral
+
+      Do i=1, num_Er_test
+         temp_sum = 0.0
+         Do j=1, num_ion_species
+            temp_sum = temp_sum + Z_ion(j)*Gamma_i_vs_Er(i,j)
+         End Do
+         Jr(i) = temp_sum - Gamma_e_vs_Er(i)
+      End Do
+
+      IF(ALLOCATED(root_type)) DEALLOCATE(root_type)
+      ALLOCATE(root_type(num_roots))
+
+      root_type = .FALSE.
+
+      IF( num_roots ==1 ) THEN
+         root_type(1) = .TRUE.
+      ELSE IF(num_roots==3) THEN
+         electron_root = MAXVAL(Er_roots(1:num_roots),1)
+         ion_root = MINVAL(Er_roots(1:num_roots),1)
+         ! Find the index in Er_test_vals closest to electron_root and ion_root
+         idx_electron_root = MINLOC( ABS(Er_test_vals-electron_root), 1 )
+         idx_ion_root = MINLOC( ABS(Er_test_vals-ion_root), 1 )
+         ! Compute integrals
+         integral = SUM( Jr(idx_ion_root:idx_electron_root)*(Er_test_vals(2)-Er_test_vals(1)) )
+         ! Set root type
+         IF(integral>0) THEN
+            root_type(1) = .TRUE.
+         ELSE
+            root_type(3) = .TRUE.
+         ENDIF
+         !
+      ELSE IF(num_roots==5) THEN
+         electron_root = MAXVAL(Er_roots(1:num_roots),1)
+         ion_root = MINVAL(Er_roots(1:num_roots),1)
+         ! Find the index in Er_test_vals closest to electron_root and ion_root
+         idx_electron_root = MINLOC( ABS(Er_test_vals-electron_root), 1 )
+         idx_ion_root = MINLOC( ABS(Er_test_vals-ion_root), 1 )
+         ! Compute integrals
+         integral = SUM( Jr(idx_ion_root:idx_electron_root)*(Er_test_vals(2)-Er_test_vals(1)) )
+         ! Set root type
+         IF(integral>0) THEN
+            root_type(1) = .TRUE.
+         ELSE
+            root_type(5) = .TRUE.
+         ENDIF
+         !
+
+      ELSE
+         STOP 'ERROR: number of roots different than 1,3 or 5... how is it possible??'
+      END IF
+
+
+
+   END SUBROUTINE root_analysis
 
 
 

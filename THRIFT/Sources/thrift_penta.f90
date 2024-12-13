@@ -179,12 +179,28 @@
 
             ! Save JBS corresponding to the root that has the largest Er
             ! This because whenever there are 2 stable roots, a rule of thumb is to pick the one with largest Er
-            root_max_Er = MAXLOC(Er_roots(1:num_roots),1)
-            JBS_PENTA(k) = J_BS_ambi(root_max_Er)
-            etapar_PENTA(k) = 1.0_rprec / sigma_par_ambi(root_max_Er)
-            Er_PENTA(k) = MAXVAL(Er_roots(1:num_roots),1)
-
+            ! root_max_Er = MAXLOC(Er_roots(1:num_roots),1)
+            ! JBS_PENTA(k) = J_BS_ambi(root_max_Er)
+            ! etapar_PENTA(k) = 1.0_rprec / sigma_par_ambi(root_max_Er)
+            ! Er_PENTA(k) = MAXVAL(Er_roots(1:num_roots),1)
+            
+            ! The call to ROOT_ANALYSIS sets the array 'root_type' which decides which root will settle according to 
+            ! Maxwell construction criterium (see eg. Turkin et al. PoP 18, 022505, 2011)
+            ! This criterium substitutes the above (now commented) lines where the selected root corresponded to
+            ! the largest Er
+            CALL ROOT_ANALYSIS
+            ! Using root_type, pick the ambipolar root that will be saved by THRIFT
+            DO i=1,num_roots
+                  IF(root_type(i)) THEN
+                        JBS_PENTA(k) = J_BS_ambi(i)
+                        etapar_PENTA(k) = 1.0_rprec / sigma_par_ambi(i)
+                        Er_PENTA(k) = Er_roots(i)
+                        EXIT
+                  ENDIF
+            END DO
+                        
             CALL PENTA_RUN_5_CLEANUP(lscreen)
+
          END DO
 
 
