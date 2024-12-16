@@ -394,19 +394,26 @@ class POPCON:
         n0_cordey = np.zeros_like(cordey_idx_x,dtype=float)
         T0_cordey = np.zeros_like(cordey_idx_x,dtype=float)
         
+        alphafrac_cordey = np.zeros_like(cordey_idx_x,dtype=float)
+        
         k = 0
         for ix,iy in zip(cordey_idx_x,cordey_idx_y):
             beta_cordey[k] = self.plasma_list[ix,iy].get_plasma_total_beta(self.B,self.dVdrho)
-            power_cordey[k] = self.P_ext[ix,iy]
+            power_cordey[k] = self.P_ext[ix,iy].clip(min=0)
             navg_cordey[k] = self.n_avg[ix,iy]
             Tavg_cordey[k] = self.T_avg[ix,iy]
             
-            n0_cordey[k] = self.plasma_list[ix,iy].get_density('electrons',rho=0.0)
-            T0_cordey[k] = self.plasma_list[ix,iy].get_temperature('electrons',rho=0.0)
+            n0_cordey[k] = self.plasma_list[ix,iy].get_density('deuterium',rho=0.0)
+            T0_cordey[k] = self.plasma_list[ix,iy].get_temperature('deuterium',rho=0.0)
             
             nustar = self.plasma_list[ix,iy].plot_nustar(R0=self.R,iota=self.iota,make_plot=False)
             nustar_min[k] = np.min(nustar)
             nustar_max[k] = np.max(nustar)
+            
+            try:
+                alphafrac_cordey[k] = np.max( self.plasma_list[ix,iy].get_density('helium4',rho=np.linspace(0,1,100)) / self.plasma_list[ix,iy].get_density('electrons',rho=np.linspace(0,1,100)) )
+            except:
+                alphafrac_cordey[k] = 0.0
             
             k += 1
             
@@ -468,6 +475,13 @@ class POPCON:
         ax.set_yscale('log')
         ax.set_title(r'Collisionality, $\nu^*=(\nu/v_{th})(R_0/\iota)$')
         ax.legend()
+        
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(alphafrac_cordey*100,'.-',label=r'$f_{\alpha}$',color='#5faf30')
+        ax.set_title('Cordey path')
+        ax.set_ylabel(r'$\alpha~\text{fraction}~(\%)$')
+        ax.set_xlabel('Cordey steps')
+        ax.grid()
         
         # plt.show()
         
