@@ -623,6 +623,7 @@ class SOLIDWALL():
 		self.poloidal_angles = poloidal_angles
 		self.toroidal_angles = toroidal_angles
 		self.nfp = int(360.0/max(toroidal_angles))
+		self.spline_order = 3
 
 	def setInitialSurface(self,r,z,nr,nz):
 		"""Define the inital R,Z surface
@@ -646,6 +647,70 @@ class SOLIDWALL():
 		self.z = z
 		self.nr = nr
 		self.nz = nz
+
+	def plotWalls2D(self,phi=0.0,ax=None):
+		"""Plot 2D cuts of the wall
+
+		This routine is used to define the initial surface in terms of
+		R, Z, n_R, and n_Z where each quantity has the dimension of the
+		poloidal and toroidal angles.
+
+		Parameters
+		----------
+		phi : float
+			Toroidal angle to plot
+		"""
+		import numpy as np
+		import matplotlib.pyplot as plt
+		from scipy.interpolate import make_interp_spline
+
+		lplotnow = False
+		if not ax:
+			ax = plt.axes()
+			lplotnow = True
+		# Helpers
+		nradial = len(self.radial_build_dict)+1
+		ntheta  = len(self.poloidal_angles)
+		nphi    = len(self.toroidal_angles)
+		ntheta_out   = 90
+		theta_plot   = np.linspace(0.0,360.0,ntheta_out)
+		# Generate the shells
+		total_thickness = np.zeros((ntheta,nphi))
+		R_shells        = np.zeros((nradial,ntheta,nphi))
+		Z_shells        = np.zeros((nradial,ntheta,nphi))
+		R_shells[0,:,:] = self.r
+		Z_shells[0,:,:] = self.z
+		i = 1
+		for name,properties in self.radial_build_dict.items():
+			print(f'Working on: {name}')
+			thick = properties['thickness_matrix']
+			total_thickness = total_thickness + thick
+			R_shells[i,:,:] = self.r + total_thickness*self.nr
+			Z_shells[i,:,:] = self.z + total_thickness*self.nz
+			i = i + 1
+		# Force periodic
+		R_shells[:,-1,:] = R_shells[:,0,:]
+		R_shells[:,:,-1] = R_shells[:,:,0]
+		Z_shells[:,-1,:] = Z_shells[:,0,:]
+		Z_shells[:,:,-1] = Z_shells[:,:,0]
+		Rspl=make_interp_spline(np.squeeze(self.toroidal_angles), R_shells, k=self.spline_order, bc_type='periodic',axis=2)
+		Zspl=make_interp_spline(np.squeeze(self.toroidal_angles), Z_shells, k=self.spline_order, bc_type='periodic',axis=2)
+		Rtmp = Rspl(phi)
+		Ztmp = Zspl(phi)
+		Rspl=make_interp_spline(np.squeeze(self.poloidal_angles), Rtmp, k=self.spline_order, bc_type='periodic',axis=1)
+		Zspl=make_interp_spline(np.squeeze(self.poloidal_angles), Ztmp, k=self.spline_order, bc_type='periodic',axis=1)
+		Rplt = Rspl(theta_plot)
+		Zplt = Zspl(theta_plot)
+		names = list(self.radial_build_dict.keys())
+		for i in range(nradial-1,0,-1):
+			ax.fill(Rplt[i,:],Zplt[i,:],label=names[i-1])
+		ax.fill(Rplt[0,:],Zplt[0,:],'r',label='plasma')
+		ax.legend()
+		ax.axis('equal')
+		ax.set_xlabel('R [m]')
+		ax.set_ylabel('Z [m]')
+		ax.set_title(rf'Wall Layers ($\phi={np.rad2deg(phi)}$)')
+		if lplotnow: plt.show()
 
 	def generateWalls(self,npol=360,ntor=90):
 		"""Creates the solid walls
@@ -687,28 +752,23 @@ class SOLIDWALL():
 			R_shells[i,:,:] = R_shells[0,:,:] + total_thickness*self.nr
 			Z_shells[i,:,:] = Z_shells[0,:,:] + total_thickness*self.nz
 			i = i + 1
+		# Force periodic
+		R_shells[:,-1,:] = R_shells[:,0,:]
+		R_shells[:,:,-1] = R_shells[:,:,0]
+		Z_shells[:,-1,:] = Z_shells[:,0,:]
+		Z_shells[:,:,-1] = Z_shells[:,:,0]
 		# Spline over the poloidal direction
-		ntheta_out = len(poloidal_angles_out)
-		Rp_shells        = np.zeros((nradial,ntheta_out,nphi))
-		Zp_shells        = np.zeros((nradial,ntheta_out,nphi))
-		for k in range(nradial):
-			for v in range(nphi):
-				splr = make_interp_spline(np.squeeze(self.poloidal_angles), np.squeeze(R_shells[k,:,v]), k=2, bc_type='periodic')
-				splz = make_interp_spline(np.squeeze(self.poloidal_angles), np.squeeze(Z_shells[k,:,v]), k=2, bc_type='periodic')
-				Rp_shells[k,:,v] = splr(poloidal_angles_out)
-				Zp_shells[k,:,v] = splz(poloidal_angles_out)
+		splr = make_interp_spline(np.squeeze(self.poloidal_angles), R_shells, k=self.spline_order, bc_type='periodic',axis=1)
+		splz = make_interp_spline(np.squeeze(self.poloidal_angles), Z_shells, k=self.spline_order, bc_type='periodic',axis=1)
+		Rp_shells = splr(poloidal_angles_out)
+		Zp_shells = splz(poloidal_angles_out)
 		# Spline over the toroidal direction
-		nphi_out = len(toroidal_angles_out)
-		Rpt_shells = np.zeros((nradial,ntheta_out,nphi_out))
-		Zpt_shells = np.zeros((nradial,ntheta_out,nphi_out))
-		for k in range(nradial):
-			for u in range(ntheta_out):
-				splr = make_interp_spline(np.squeeze(self.toroidal_angles), np.squeeze(Rp_shells[k,u,:]), k=2, bc_type='periodic')
-				splz = make_interp_spline(np.squeeze(self.toroidal_angles), np.squeeze(Zp_shells[k,u,:]), k=2, bc_type='periodic')
-				Rpt_shells[k,u,:] = splr(toroidal_angles_out)
-				Zpt_shells[k,u,:] = splz(toroidal_angles_out)
+		splr = make_interp_spline(np.squeeze(self.toroidal_angles), Rp_shells, k=self.spline_order, bc_type='periodic',axis=2)
+		splz = make_interp_spline(np.squeeze(self.toroidal_angles), Zp_shells, k=self.spline_order, bc_type='periodic',axis=2)
+		Rpt_shells = splr(toroidal_angles_out)
+		Zpt_shells = splz(toroidal_angles_out)
 		# Create a geometry helper for completing the torus
-		phirad = np.tile(np.deg2rad(toroidal_angles_out),(nradial,ntheta_out,1))
+		phirad = np.tile(np.deg2rad(toroidal_angles_out),(nradial,npol,1))
 		xtarr  = Rpt_shells*np.cos(phirad)
 		ytarr  = Rpt_shells*np.sin(phirad)
 		ztarr  = Zpt_shells
