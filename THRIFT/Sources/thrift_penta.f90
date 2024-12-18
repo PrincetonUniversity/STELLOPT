@@ -29,13 +29,14 @@
 !     Local Variables
 !-----------------------------------------------------------------------
       INTEGER :: ns_dkes, k, ier, j, i, ncstar, nestar, mystart, myend, &
-                 mysurf, root_max_Er
+                 mysurf, root_max_Er, jspecies
       REAL(rprec) :: s, rho, mytime
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_k, iota, phip, chip, btheta, bzeta, bsq, vp, &
                         te, ne, dtedrho, dnedrho, EparB, JBS_PENTA, etapar_PENTA, Er_PENTA, rho_temp, J_temp, eta_temp, Er_temp
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: GNEO_PENTA, QNEO_PENTA, GNEO_temp, QNEO_temp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: ni,ti, dtidrho, dnidrho
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: D11, D13, D33
-      TYPE(EZspline1_r8) :: EparB_spl, J_spl, eta_spl, Er_spl
+      TYPE(EZspline1_r8) :: EparB_spl, J_spl, eta_spl, Er_spl, GNEO_spl, QNEO_spl
       INTEGER :: bcs0(2)
       CHARACTER(LEN=32) :: temp_str, temp1_str
 !-----------------------------------------------------------------------
@@ -59,8 +60,10 @@
          ALLOCATE(te(ns_dkes),ne(ns_dkes),dtedrho(ns_dkes),dnedrho(ns_dkes))
          ALLOCATE(ni(ns_dkes,nion_prof),ti(ns_dkes,nion_prof),dtidrho(ns_dkes,nion_prof),dnidrho(ns_dkes,nion_prof))
          ALLOCATE(JBS_PENTA(ns_dkes),etapar_PENTA(ns_dkes),Er_PENTA(ns_dkes))
+         ALLOCATE(GNEO_PENTA(nion_prof+1,ns_dkes),QNEO_PENTA(nion_prof+1,ns_dkes))
 
          JBS_PENTA = 0.0; etapar_PENTA = 0.0; Er_PENTA = 0.0
+         GNEO_PENTA = 0.0; QNEO_PENTA = 0.0
 
          IF (myworkid == master) THEN
 
@@ -195,6 +198,9 @@
                         JBS_PENTA(k) = J_BS_ambi(i)
                         etapar_PENTA(k) = 1.0_rprec / sigma_par_ambi(i)
                         Er_PENTA(k) = Er_roots(i)
+                        ! NEO fluxes
+                        GNEO_PENTA(:,k) = Gammas_ambi(:,i)
+                        QNEO_PENTA(:,k) = QoTs_ambi(:,i) * Temps
                         EXIT
                   ENDIF
             END DO
@@ -211,15 +217,19 @@
             CALL MPI_REDUCE(MPI_IN_PLACE,JBS_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_REDUCE(MPI_IN_PLACE,etapar_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_REDUCE(MPI_IN_PLACE,Er_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE,GNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE,QNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
          ELSE 
             CALL MPI_REDUCE(JBS_PENTA,JBS_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_REDUCE(etapar_PENTA,etapar_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_REDUCE(Er_PENTA,Er_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(GNEO_PENTA,GNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(QNEO_PENTA,QNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL FLUSH(6)
             DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
             DEALLOCATE(te,ne,dtedrho,dnedrho)
             DEALLOCATE(ni,ti,dtidrho,dnidrho)
-            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA)
+            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA)
             RETURN
          ENDIF
 #endif
@@ -231,6 +241,7 @@
 
             ! Interpolate JBS_PENTA, etapar_PENTA and Er_PENTA at rho=0 and rho=1
             ALLOCATE(J_temp(ns_dkes+2),eta_temp(ns_dkes+2),Er_temp(ns_dkes+2),rho_temp(ns_dkes+2))
+            ALLOCATE(GNEO_temp(nion_prof+1,ns_dkes+2),QNEO_temp(nion_prof+1,ns_dkes+2))
             rho_temp(1)        = 0.0
             rho_temp(2:ns_dkes+1) = rho_k
             rho_temp(ns_dkes+2)   = 1.0
@@ -246,6 +257,15 @@
             Er_temp(2:ns_dkes+1)   = Er_PENTA
             Er_temp(1)             = Er_temp(2) - (Er_temp(3)-Er_temp(2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
             Er_temp(ns_dkes+2)     = Er_PENTA(ns_dkes-1) + (Er_PENTA(ns_dkes)-Er_PENTA(ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+            !
+            GNEO_temp(:,2:ns_dkes+1) = GNEO_PENTA
+            GNEO_temp(:,1)           = GNEO_temp(:,2) - (GNEO_temp(:,3)-GNEO_temp(:,2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
+            GNEO_temp(:,ns_dkes+2)   = GNEO_PENTA(:,ns_dkes-1) + (GNEO_PENTA(:,ns_dkes)-GNEO_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+            !
+            QNEO_temp(:,2:ns_dkes+1) = QNEO_PENTA
+            QNEO_temp(:,1)           = QNEO_temp(:,2) - (QNEO_temp(:,3)-QNEO_temp(:,2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
+            QNEO_temp(:,ns_dkes+2)   = QNEO_PENTA(:,ns_dkes-1) + (QNEO_PENTA(:,ns_dkes)-QNEO_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+
             ! Splines
             bcs0=(/ 0, 0/)
             !JBS
@@ -264,7 +284,7 @@
             Er_spl%isHermite = 0
             CALL EZspline_setup(Er_spl,Er_temp,ier,EXACT_DIM=.true.)
             !
-            DEALLOCATE(J_temp,eta_temp,Er_temp,rho_temp)
+            DEALLOCATE(J_temp,eta_temp,Er_temp)
 
             ! Calculate J_BS, etapara and Er in THRFIT GRID
             DO i = 1, nsj
@@ -277,10 +297,37 @@
             CALL EZspline_free(eta_spl,ier)
             CALL EZspline_free(Er_spl,ier)
 
+            ! Spline of GNEO and QNEO; computation at THRIFT GRID
+            DO jspecies=1,(nion_prof+1)
+                  !GNEO
+                  CALL EZspline_init(GNEO_spl,ns_dkes+2,bcs0,ier)
+                  GNEO_spl%x1        = rho_temp
+                  GNEO_spl%isHermite = 0
+                  CALL EZspline_setup(GNEO_spl,GNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                  !QNEO
+                  CALL EZspline_init(QNEO_spl,ns_dkes+2,bcs0,ier)
+                  QNEO_spl%x1        = rho_temp
+                  QNEO_spl%isHermite = 0
+                  CALL EZspline_setup(QNEO_spl,QNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                  
+                  ! Compute at THRIFT GRID
+                  DO i = 1, nsj
+                        rho = SQRT( THRIFT_S(i) )
+                        CALL EZspline_interp(GNEO_spl,rho,THRIFT_GNEO(jspecies,i,mytimestep),ier)
+                        CALL EZspline_interp(QNEO_spl,rho,THRIFT_QNEO(jspecies,i,mytimestep),ier)
+                  END DO
+
+                  ! Deallocate splines
+                  CALL EZspline_free(GNEO_spl,ier)
+                  CALL EZspline_free(QNEO_spl,ier)
+            END DO
+
+            DEALLOCATE(GNEO_temp,QNEO_temp,rho_temp)
+
             DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
             DEALLOCATE(te,ne,dtedrho,dnedrho)
             DEALLOCATE(ni,ti,dtidrho,dnidrho)
-            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA)
+            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA)
             
          END IF
 

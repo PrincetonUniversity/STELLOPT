@@ -171,6 +171,10 @@
       ! Now setup the profiles
       CALL read_thrift_profh5(TRIM(prof_string))
 
+      ! Allocate particle and heat fluxes (do it here because nion_prof only now available)
+      CALL mpialloc(THRIFT_GNEO,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_gneo) 
+      CALL mpialloc(THRIFT_QNEO,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_qneo)
+
       ! Read restart file
       IF (lrestart_from_file) THEN
          UGRID_RESTART = 0.0
