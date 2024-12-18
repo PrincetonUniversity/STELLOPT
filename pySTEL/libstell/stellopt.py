@@ -346,18 +346,24 @@ class STELLOPT():
 		if not ax:
 			ax = plt.axes()
 			lplotnow = True
+		# Helpers
+		x_var = np.arange(len(self.var))
+		y_target = np.arange(len(self.targetnames))
 		if target == 'all':
-			hmesh=ax.pcolormesh(np.squeeze(self.jac2d.T),cmap='jet')
+			x_var 
+			hmesh=ax.pcolormesh(x_var,y_target,np.squeeze(self.jac2d),cmap='jet')
+			ax.set_xticks(x_var, labels=self.var, fontsize=9)
+			plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
 			ax.set_xlabel('Targets (F)')
 			ax.set_ylabel('Variables (X)')
-			plt.colorbar(hmesh,label='df/dx',ax=ax)
+			plt.colorbar(hmesh,label='DF/DX',ax=ax)
 		else:
 			# Find indices of target names
 			dex = [n for n,s in enumerate(self.targetnames) if target.upper() in s.upper()]
 			if dex == []:
 				return
-			ax.plot(np.arange(len(self.var)),self.jac2d[dex,:].T)
-			ax.set_xticks(np.arange(len(self.var)), labels=self.var, fontsize=9)
+			ax.plot(x_var,self.jac2d[dex,:].T)
+			ax.set_xticks(x_var, labels=self.var, fontsize=9)
 			ax.set_ylabel('DF/DX',fontsize=24)
 			ax.set_xlabel('X',fontsize=24)
 			ax.set_title(rf'STELLOPT Jacobian {target}')
