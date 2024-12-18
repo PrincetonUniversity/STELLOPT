@@ -40,6 +40,9 @@ MODULE beams3d_physics_mod
       USE EZspline_obj
       USE EZspline
       USE adas_mod_parallel
+      USE collision_operators, ONLY: COULOMB_LOG_NRL_COUNTERSTREAM,&
+                                     V_CRITICAL, V_CRITICAL_WEILAND, &
+                                     TAU_SPITZER
       USE mpi_params 
 
       !-----------------------------------------------------------------
@@ -91,12 +94,10 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
          DOUBLE PRECISION :: ne_cm,coulomb_log
-         ne_cm = ne_in * 1E-6
-         coulomb_log = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
-         !fact_crit_legacy = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0)
-         slow_par(1) = fact_crit_legacy*SQRT(te_in) 
-         slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
-         slow_par(3) =Zeff_in*fact_pa         
+         coulomb_log = COULOMB_LOG_NRL_COUNTERSTREAM(ne_in,te_in,vbeta_in,Zeff_in)
+         slow_par(1) = V_CRITICAL(te_in)
+         slow_par(2) = TAU_SPITZER(mymass,ne_in,te_in,myZ,coulomb_log)
+         slow_par(3) = Zeff_in*fact_pa  
       END FUNCTION coll_op_nrl19
 
       !-----------------------------------------------------------------
@@ -123,14 +124,11 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
          DOUBLE PRECISION :: ne_cm, coulomb_loge, coulomb_logi
-         ne_cm = ne_in * 1E-6
-         coulomb_logi = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
-         coulomb_loge=log(1.09d11 * te_in/Zeff_in/sqrt(ne_cm))
-      !WRITE(6,*) coulomb_loge, coulomb_logi
-      ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-         slow_par(1) = fact_crit*SQRT(te_in)*(coulomb_logi/coulomb_loge)**(1.0/3.0) !vcrit, the coulomb ratio is from Weiland (2018) eq.11
-         slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here, tau_spit
-         slow_par(3) =Zeff_in*fact_pa
+         coulomb_logi = COULOMB_LOG_NRL_COUNTERSTREAM(ne_in,te_in,vbeta_in,Zeff_in)
+         coulomb_loge = log(1.09d11 * te_in/Zeff_in/sqrt(ne_cm))
+         slow_par(1) = V_CRITICAL_WEILAND(te_in,coulomb_logi,coulomb_loge)
+         slow_par(2) = TAU_SPITZER(mymass,ne_in,te_in,myZ,coulomb_loge)
+         slow_par(3) = Zeff_in*fact_pa  
          RETURN
       END FUNCTION coll_op_nrl19_ie
 
