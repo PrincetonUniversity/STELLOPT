@@ -1,5 +1,7 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
 
+collision_operators.o : 
+
 read_nescoil_mod.o : \
       safe_open_mod.o \
       stel_kinds.o \
@@ -7,7 +9,6 @@ read_nescoil_mod.o : \
       ezspline_obj.o \
       mpi_sharmem.o \
       mpi_inc.o
-
 
 stellopt_globals.o : \
       stel_kinds.o 
