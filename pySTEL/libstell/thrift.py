@@ -94,11 +94,11 @@ class THRIFT():
                 # Arrays
                 for temp in ['THRIFT_ALPHA1','THRIFT_ALPHA2','THRIFT_ALPHA3','THRIFT_ALPHA4','THRIFT_AMINOR',\
        			    'THRIFT_BAV','THRIFT_BETATOT','THRIFT_BSQAV','THRIFT_BVAV','THRIFT_COEFF_A','THRIFT_COEFF_B','THRIFT_COEFF_BP',\
-				    'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_EPARB','THRIFT_ER','THRIFT_ETAPARA','THRIFT_I',\
-				    'THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IOTA','THRIFT_IPLASMA','THRIFT_ISOURCE',\
+				    'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_EPARB','THRIFT_ER','THRIFT_ETAPARA','THRIFT_GNEO',\
+                    'THRIFT_I','THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IOTA','THRIFT_IPLASMA','THRIFT_ISOURCE',\
 				    'THRIFT_J','THRIFT_JBOOT','THRIFT_JECCD','THRIFT_JNBCD','THRIFT_JOHMIC','THRIFT_JPLASMA','THRIFT_JSOURCE',\
 				    'THRIFT_MATLD','THRIFT_MATMD','THRIFT_MATRHS','THRIFT_MATUD','THRIFT_P','THRIFT_PHIEDGE','THRIFT_PPRIME',\
-				    'THRIFT_RMAJOR','THRIFT_S11','THRIFT_S12','THRIFT_T', 'THRIFT_UGRID','THRIFT_VP']:
+				    'THRIFT_QNEO','THRIFT_RMAJOR','THRIFT_S11','THRIFT_S12','THRIFT_T', 'THRIFT_UGRID','THRIFT_VP']:
                     if temp in f:
                         # Get the data from the file
                         data = np.array(f[temp][:])
@@ -126,8 +126,9 @@ class THRIFT():
             self.units_dictionary[current_density] = r'[A/m$^2]$'
         self.units_dictionary['THRIFT_ETAPARA'] = r'$[\Omega\,$m]'
         self.units_dictionary['THRIFT_ER'] = r'$[V/$m]'
-        
-                    
+        self.units_dictionary['THRIFT_GNEO'] = r'[m$^{-2}s$^{-1}$]'
+        self.units_dictionary['THRIFT_QNEO'] = r'[$\text{eV}~\text{m}^{-2}s$^{-1}$]'
+             
     def plot_vars_in_time(self,*vars,time_slice=None,time_array=None):
         # plots var as a funciton of roa at different times
         # the times can be given as time_slices (fractions of t_end)
@@ -145,7 +146,7 @@ class THRIFT():
         for var in vars:
             plot_var = getattr(self,var)
             # check dimension of var is (ntimesteps,nssize)
-            # self.check_var_shape(plot_var,self.ntimesteps,self.nssize)
+            self.check_var_shape(plot_var,self.ntimesteps,self.nssize)
 
             idx = [np.argmin(np.abs(self.THRIFT_T-t)) for t in times]
             times = self.THRIFT_T[idx]
@@ -194,8 +195,13 @@ class THRIFT():
         
         print(f'Returning variable {var} at t={real_time}s')
         
-        return plot_var[idx,:]
-    
+        if(plot_var.ndim == 2):
+            return plot_var[idx,:]
+        elif( plot_var.ndim ==3):
+            return plot_var[idx,:,:]
+        else:
+            print('ERROR: What are you trying to get?!')
+            exit(0)
 
     def plot_plasma_profile(self,plasma_file):
         
@@ -357,6 +363,8 @@ class THRIFT():
             Er = penta[:,1]
             JBS = penta[:,2]
             
+            Gamma_e = penta[:,3]
+            
             # self.roa = defaultdict(list)
             # self.Er = defaultdict(list)
             
@@ -364,8 +372,9 @@ class THRIFT():
             roa_all = []
             Er_all = []
             JBS_all = []
+            Gamma_e_all = []
             
-            paired  = zip(roa,Er,JBS)
+            paired  = zip(roa,Er,JBS,Gamma_e)
             
             # Group by the first element (roa)
             for _, group in groupby(paired, key=lambda x: x[0]):
@@ -377,6 +386,7 @@ class THRIFT():
                 roa_all.append( [x[0] for x in group_list])  # Extract the roa part of the group
                 Er_all.append(  [x[1] for x in group_list])  # Extract the other_array part of the group
                 JBS_all.append(  [x[2] for x in group_list])  # Extract the other_array part of the group
+                Gamma_e_all.append(  [x[3] for x in group_list])  # Extract the other_array part of the group
             
             # plots    
             _, ax = plt.subplots(figsize=(11,8))
@@ -412,6 +422,23 @@ class THRIFT():
             
             ax.set_xlabel('r/a')
             ax.set_ylabel(r'$J_{BS}~[A/m^2]$')
+            ax.set_title(f't={time}s')
+            
+            #Fluxes plot
+            _, ax = plt.subplots(figsize=(11,8))
+
+            # Plot each root
+            for j in range(max(num_roots)):
+                x = []  # roa values
+                y = []  # gamma_e values
+                for k, (r_vals, ge_vals) in enumerate(zip(roa_all, Gamma_e_all)):
+                    if j < len(ge_vals):  # Only include if the j-th value exists in Er[k]
+                        x.append(r_vals[0])  
+                        y.append(ge_vals[j])
+                plt.plot(x, y, marker='o')  # Plot the j-th curve
+  
+            ax.set_xlabel('r/a')
+            ax.set_ylabel(r'$\Gamma_e~[m^{-2}~s^{-1}]$')
             ax.set_title(f't={time}s')
             
         if(make_plot): plt.show()
@@ -510,6 +537,7 @@ class THRIFT():
             ax.plot(Er_dict[roa_unique[4]],Gi_dict[k][roa_unique[4]],'.-',label=f'Gamma_i_{k}')
         ax.set_xlabel('Er [V/cm]')
         ax.set_ylabel(r'$\Gamma$')
+        ax.set_yscale('symlog',linthresh=0.1)
         ax.set_title(f'r/a={roa_unique[4]}')
         ax.grid()
         plt.legend()
