@@ -38,6 +38,7 @@ SUBROUTINE update_vars()
     ! Grab vars from profiles
     mytime = THRIFT_T(mytimestep)
     THRIFT_PHIEDGE(mytimestep) = eq_phiedge    
+    THRIFT_BETATOT(mytimestep) = eq_beta
     DO i = 1, nsj
         s = THRIFT_S(i)
         rho = SQRT(s)

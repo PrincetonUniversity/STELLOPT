@@ -65,6 +65,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_T',ier)
          CALL write_var_hdf5(fid,'THRIFT_PHIEDGE',ntimesteps,ier,DBLVAR=THRIFT_PHIEDGE,ATT='Toroidal magnetic flux at plasma edge [Wb] (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PHIEDGE',ier)
+         CALL write_var_hdf5(fid,'THRIFT_BETATOT',ntimesteps,ier,DBLVAR=THRIFT_BETATOT,ATT='Total Plasma Beta',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_BETATOT',ier)
          ! 2D Floats
          ! Current densities
          nfg = nrho+2

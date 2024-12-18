@@ -46,7 +46,8 @@
       ! Initialize magnetic variables
       THRIFT_S11      = 0; THRIFT_S12      = 0; THRIFT_IOTA     = 0
       THRIFT_BAV      = 0; THRIFT_BSQAV    = 0; THRIFT_PHIEDGE  = 0
-      THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0; THRIFT_VP       = 0      
+      THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0; THRIFT_VP       = 0  
+      THRIFT_BETATOT  = 0    
       ! Initialize coefficients
       THRIFT_COEFF_A  = 0; THRIFT_COEFF_B  = 0; THRIFT_COEFF_C  = 0; THRIFT_COEFF_D  = 0
                            THRIFT_COEFF_BP = 0; THRIFT_COEFF_CP = 0; THRIFT_COEFF_DP = 0
