@@ -240,7 +240,7 @@ MODULE beams3d_physics_mod
                           rho_temp, omeg_temp, binv, vrot_para, vrot_perp, &
                           vc3_tauinv, vbeta, zeff_temp,&
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin,&
-                          zdelth,zrang
+                          zdelth,zrang, factor_ion, factor_electron, speed2inv
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          DOUBLE PRECISION :: slow_par(3), ni_temp(NION)
          ! For splines
@@ -362,7 +362,8 @@ MODULE beams3d_physics_mod
             !------------------------------------------------------------
             !  Velocity diffusion 
             !------------------------------------------------------------
-            ddve = zero; ddvi = zero
+            ddve = zero; ddvi = zero; sigma = zero; zeta = zero;
+            factor_ion = one; factor_electron = one
 #if defined(B3D_VEL_DIFFUSION)
             speed_cube = (speed*speed*speed)
             CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
@@ -371,6 +372,9 @@ MODULE beams3d_physics_mod
             sigma = sqrt( ddve+ddvi) ! The standard deviation.
             ddve=zeta*ddve/sigma
             ddvi=zeta*ddvi/sigma
+            speed2inv = 1.0/(speed*speed)
+            factor_electron = ( 1.0 - 2.0*te_temp*inv_mymass*e_charge*speed2inv)
+            factor_ion      = ( 1.0 +     ti_temp*inv_mymass*e_charge*speed2inv)
 #endif
             !-----------------------------------------------------------
             !  Viscouse Velocity Reduction
@@ -382,8 +386,8 @@ MODULE beams3d_physics_mod
             !     newspeed  New total speed
             !     vfrac     Ratio between new and old speed (helper) 
             !-----------------------------------------------------------
-            dve   = speed*tau_spit_inv*(1-2*te_temp*inv_mymass*e_charge/speed**2.0)
-            dvi   = vc3_tauinv/(speed*speed)*(1+ti_temp*inv_mymass*e_charge/speed**2.0)
+            dve   = factor_electron*speed*tau_spit_inv
+            dvi   = factor_ion*vc3_tauinv/(speed*speed)
             reduction = dve + dvi
             newspeed = speed - reduction*dt+sigma*zeta
             dve=dve+ddve
