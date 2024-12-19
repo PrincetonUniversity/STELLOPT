@@ -54,9 +54,11 @@
       THRIFT_ALPHA1   = 0; THRIFT_ALPHA2   = 0; THRIFT_ALPHA3   = 0; THRIFT_ALPHA4   = 0
       THRIFT_MATLD    = 0; THRIFT_MATMD    = 0; THRIFT_MATUD    = 0; THRIFT_MATRHS   = 0
       ! Initialize electric field variable
-      THRIFT_EPARB    = 0; THRIFT_ER = 0
+      THRIFT_EPARB    = 0; THRIFT_ER       = 0
       ! Initialize fluxes
-      THRIFT_GNEO     = 0; THRIFT_QNEO = 0
+      THRIFT_GNEO     = 0; THRIFT_QNEO     = 0
+      ! Initialize densities, temperatures and pressures
+      THRIFT_DENS     = 0; THRIFT_TEMP     = 0; THRIFT_PRESS      = 0
 
       ! Initialize timers
       time_vmec = 0; time_bootstrap = 0

@@ -171,7 +171,14 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_GNEO',ier)
          CALL write_var_hdf5(fid,'THRIFT_QNEO',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_QNEO,ATT='Neoclassical heat flux [eV m^-2 s^-2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_QNEO',ier)
-                  
+         ! Density, temperature and pressure
+         CALL write_var_hdf5(fid,'THRIFT_DENS',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_DENS,ATT='Density of each species [m^-3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_DENS',ier)
+         CALL write_var_hdf5(fid,'THRIFT_TEMP',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_TEMP,ATT='Temperature of each species [eV]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_TEMP',ier)
+         CALL write_var_hdf5(fid,'THRIFT_PRESS',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_PRESS,ATT='Pressure of each species [Pa]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PRESS',ier)
+          
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'thrift_'//TRIM(id_string)//'.h5',ier)
 #else
