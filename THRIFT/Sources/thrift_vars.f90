@@ -87,8 +87,9 @@ MODULE thrift_vars
                                  win_thrift_coeff_bp, win_thrift_coeff_cp, win_thrift_coeff_dp, &
              win_thrift_alpha1,  win_thrift_alpha2,   win_thrift_alpha3,   win_thrift_alpha4,   &
              win_thrift_matld,   win_thrift_matmd,    win_thrift_matud,    win_thrift_matrhs,   &
-             win_thrift_bvav,    win_thrift_ugrid_restart, win_thrift_betatot,                  &
-             win_thrift_gneo,    win_thrift_qneo             
+             win_thrift_bvav,    win_thrift_ugrid_restart,                 win_thrift_betatot,  &
+             win_thrift_gneo,    win_thrift_qneo,                                               &
+             win_thrift_dens,    win_thrift_temp,     win_thrift_press           
     REAL(rprec) :: dt_first_iter
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), THRIFT_PHIEDGE(:), &
                                           THRIFT_S(:),   THRIFT_SNOB(:),  THRIFT_T(:),         &
@@ -110,7 +111,7 @@ MODULE thrift_vars
                  THRIFT_ALPHA1,  THRIFT_ALPHA2,  THRIFT_ALPHA3,  THRIFT_ALPHA4,  &
                  THRIFT_MATLD,   THRIFT_MATMD,   THRIFT_MATUD,   THRIFT_MATRHS,  &
                  THRIFT_BVAV
-    REAL(rprec), DIMENSION(:,:,:), POINTER :: THRIFT_GNEO, THRIFT_QNEO                                                 
+    REAL(rprec), DIMENSION(:,:,:), POINTER :: THRIFT_GNEO, THRIFT_QNEO, THRIFT_DENS, THRIFT_TEMP, THRIFT_PRESS                                                 
                  
 
 
