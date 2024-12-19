@@ -240,7 +240,7 @@ MODULE beams3d_physics_mod
                           rho_temp, omeg_temp, binv, vrot_para, vrot_perp, &
                           vc3_tauinv, vbeta, zeff_temp,&
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin,&
-                          zdelth,zrang, factor_ion, factor_electron, speed2inv
+                          zdelth,zrang, factor_ion, factor_electron, speed3inv, speed2inv
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          DOUBLE PRECISION :: slow_par(3), ni_temp(NION)
          ! For splines
@@ -324,6 +324,7 @@ MODULE beams3d_physics_mod
             !  Apply toroidal rotation
             !     vrot_para: Parallel rotation velocity [m/s]
             !     vrot_perp: Perpendicular rotation velocity [m/s]
+            !     speed      Total particle speed [m/s]
             !-----------------------------------------------------------
             inv_mymass = one/mymass
             vrot_para = omeg_temp*r_temp*bphi_temp*binv
@@ -361,25 +362,30 @@ MODULE beams3d_physics_mod
 
             !------------------------------------------------------------
             !  Velocity diffusion 
+            !   https://doi.org/10.1103/PhysRev.107.1
+            !   https://doi.org/10.1063/1.1694943
+            !   https://doi.org/10.1016/0021-9991(81)90111-X
+            !   https://doi.org/10.1016/j.cpc.2014.01.014
+            !     speed3inv    v**-3 [m^3/s^3]
+            !     speed2inv    v**-2 [m^3/s^3]
+            !     ddve
             !------------------------------------------------------------
             ddve = zero; ddvi = zero; sigma = zero; zeta = zero;
             factor_ion = one; factor_electron = one
 #if defined(B3D_VEL_DIFFUSION)
-            speed_cube = (speed*speed*speed)
-            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+            speed3inv = 1.0/(speed*speed*speed)
+            speed2inv = speed*speed3inv
             ddve=ABS(2*e_charge*dt*te_temp*inv_mymass*tau_spit_inv)
-            ddvi=ABS(2*e_charge*dt*(ti_temp*vcrit_cube*inv_mymass/speed_cube)*tau_spit_inv)
+            ddvi=ABS(2*e_charge*dt*ti_temp*vcrit_cube*inv_mymass*speed3inv*tau_spit_inv)
+            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
             sigma = sqrt( ddve+ddvi) ! The standard deviation.
             ddve=zeta*ddve/sigma
             ddvi=zeta*ddvi/sigma
-            speed2inv = 1.0/(speed*speed)
             factor_electron = ( 1.0 - 2.0*te_temp*inv_mymass*e_charge*speed2inv)
             factor_ion      = ( 1.0 +     ti_temp*inv_mymass*e_charge*speed2inv)
 #endif
             !-----------------------------------------------------------
             !  Viscouse Velocity Reduction
-            !     v_s       Local Sound Speed
-            !     speed     Total particle speed
             !     dve       Speed change due to electron slowing down 
             !     dvi       Speed change due to ion slowing down 
             !     reduction Total change in speed
