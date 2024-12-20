@@ -226,7 +226,7 @@
          ! Update values
          fnorm_array = SQRT(SUM(fvec_array*fvec_array,DIM=1))
          lnew_global = .false.
-         iproc_min = -1
+         !iproc_min = -1
          DO  i=1, NP
             ! Local
             IF (fnorm_array(i) < fnorm_personal(i)) THEN
@@ -287,7 +287,7 @@
             x_array(:,i) = x_array(:,i) + vel
 
             ! Kick minimum particle
-            IF (i==iproc_min) THEN
+            IF (i==iproc_min .and. lnew_global) THEN
                DO j = 1, n
                   CALL random_number(rand_C1)
                   x_array(j,i)=XCmin(j)+rand_C1*(XCmax(j)-XCmin(j))
