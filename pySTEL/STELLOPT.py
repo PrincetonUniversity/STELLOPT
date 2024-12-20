@@ -6,6 +6,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as _plt
 import numpy as np                    #For Arrays
 from math import pi
+import glob
 #QT5
 from PyQt5 import uic, QtGui, QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy, QWidget, QFileDialog, QTableWidgetItem
@@ -118,6 +119,8 @@ class MyApp(QMainWindow):
 		# Callbacks (OPT_plot Tab)
 		self.ui.ButtonLoadSTELLOPT.clicked.connect(self.LoadSTELLOPT)
 		self.ui.ComboBoxOPTplot_type.currentIndexChanged.connect(self.UpdateOptplot)
+		self.ui.ComboBoxOPTplot_iter.activated.connect(self.UpdateIterFile)
+		self.ui.ComboBoxOPTplot_surf.activated.connect(self.UpdateBoozerSpec)
 		self.ui.ButtonPlotSTELLOPT.clicked.connect(self.PlotSTELLOPT)
 
 	def UpdateMpol(self):
@@ -867,6 +870,8 @@ class MyApp(QMainWindow):
 		w.setWindowTitle("Load STELLOPT Output")
 		filename = QFileDialog.getOpenFileName(w, 'Open File', '.','STELLOPT (stellopt.*)')
 		w.destroy
+		# Helper for other files:
+		self.workdir,ext = filename[0].split('stellopt.',1)
 		# Read the file
 		self.stel_data.read_stellopt_output(filename[0])
 		self.optplot_list = ['ASPECT','BETA','CURTOR','EXTCUR','SEPARATRIX',\
@@ -886,6 +891,10 @@ class MyApp(QMainWindow):
 			for item in vars(self.stel_data).keys():
 				if (name+'_TARGET' == item):
 					self.ui.ComboBoxOPTplot_type.addItem(name)
+		# Jacobian
+		files = os.listdir(self.workdir)
+		if any('jacobian.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('Jacobian')
 		# Handle Special Plots
 		self.ui.ComboBoxOPTplot_type.addItem('-----SPECIAL-----')
 		for name in ['BALLOON','KINK','ORBIT','NEO','HELICITY','HELICITY_FULL',\
@@ -910,7 +919,6 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L31')
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L33')
 		# Handle Wout Comparrison Plots
-		self.workdir,ext = filename[0].split('stellopt.',1)
 		files = os.listdir(self.workdir)
 		if any('wout' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- VMEC -----')
@@ -923,11 +931,14 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('q-prof')
 			self.ui.ComboBoxOPTplot_type.addItem('<j*B>')
 			self.ui.ComboBoxOPTplot_type.addItem('Mercier')
+			self.ui.ComboBoxOPTplot_type.addItem('Magwell')
 			wout_files = sorted([k for k in files if 'wout' in k])
 			self.wout_files = sorted([k for k in wout_files if '_opt' not in k])
 		# Handle Boozer Transformation
 		if any('boozmn' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Boozer Coordinates -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Boozer Spectrum')
+			self.ui.ComboBoxOPTplot_type.addItem('Boozer |B|')
 			self.ui.ComboBoxOPTplot_type.addItem('|B|_MAX')
 			self.ui.ComboBoxOPTplot_type.addItem('QAS_ERROR')
 			self.ui.ComboBoxOPTplot_type.addItem('QPS_ERROR')
@@ -958,14 +969,46 @@ class MyApp(QMainWindow):
 			jprof_files = sorted([k for k in files if 'tprof.' in k])
 			self.jprof_files = sorted([k for k in jprof_files if '_opt' not in k])
 		
+	def UpdateIterFile(self):
+		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
+		test_file = self.ui.ComboBoxOPTplot_iter.currentText()
+		if test_file:
+			print(rf'iter file: {test_file}')
+			if plot_name == 'Jacobian':
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.stel_data.read_stellopt_jacobian(test_file)
+				self.stel_data.read_stellopt_varlabels()
+				self.stel_data.plot_stellopt_jacobian(target='all',ax=self.ax2)
+				self.canvas2.draw()
+			elif plot_name in ['Boozer Spectrum','Boozer |B|']:
+				self.ui.ComboBoxOPTplot_surf.clear()
+				self.booz_data = boozer.BOOZER()
+				self.booz_data.read_boozer(test_file)
+				idx = np.flatnonzero(self.booz_data.idx_b)
+				for k in idx:
+					self.ui.ComboBoxOPTplot_surf.addItem(str(k+1))
+				self.UpdateBoozerSpec()
+
+	def UpdateBoozerSpec(self):
+		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
+		plot_k = int(self.ui.ComboBoxOPTplot_surf.currentText())
+		self.fig2.clf()
+		self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+		print(rf'plot_k = {plot_k}')
+		if plot_name == 'Boozer Spectrum':
+			self.booz_data.plotBmnSpectrum(plot_k-1,ax=self.ax2)
+		elif plot_name == 'Boozer |B|':
+			self.booz_data.plotBsurf(plot_k-1,ax=self.ax2)
+		self.canvas2.draw()
 
 	def UpdateOptplot(self):
 		# Handle plotting of 
 		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
+		self.ui.ComboBoxOPTplot_iter.clear()
+		self.ui.ComboBoxOPTplot_surf.clear()
 		self.fig2.clf()
 		niter = len(self.stel_data.ITER)
-		#self.fig.delaxes(self.ax)
-		#self.ax2 = self.fig2.add_subplot(111)
 		self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
 		if (plot_name == 'Chi-Squared'):
 			chisq = ((self.stel_data.TARGETS - self.stel_data.VALS)/self.stel_data.SIGMAS)**2
@@ -973,11 +1016,9 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Iteration')
 			self.ax2.set_ylabel('Chi-Squared')
 			self.ax2.set_title('Chi-Sqaured')
-			#self.ax2.set_yscale('log')
 			for name in self.optplot_list:
 				if name+'_CHISQ' in vars(self.stel_data).keys():
 					chisq_temp = getattr(self.stel_data,name+'_CHISQ')
-					#chisq_temp = self.stel_data[name+'_chisq']
 					n = chisq_temp.shape;
 					if (len(chisq_temp.shape) == 1):
 						if n[0] > len(self.stel_data.ITER):
@@ -1791,6 +1832,21 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Channel')
 			self.ax2.set_ylabel('Signal [Arb.]')
 			self.ax2.set_title('XICS Velocity Reconstruction')
+		elif (plot_name == 'Jacobian'):
+			file_list = sorted(glob.glob("jacobian.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
+		elif (plot_name == 'Boozer Spectrum'):
+			file_list = sorted(glob.glob("boozmn*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
+		elif (plot_name == 'Boozer |B|'):
+			file_list = sorted(glob.glob("boozmn*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
 		elif (plot_name == 'Pressure'):
 			vmec_data = vmec.VMEC()
 			l=0
@@ -1904,6 +1960,21 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('[Arb]')
 			self.ax2.set_title('Mercier Stability (>0 Stable)')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Magwell'):
+			vmec_data = vmec.VMEC()
+			l=0
+			dl = len(self.wout_files)-1
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data.read_wout(self.workdir+string)
+					magwell = vmec_data.calc_magwell()
+					nflux = np.linspace(0.0,1.0,vmec_data.ns)
+					self.ax2.plot(nflux,magwell,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('W')
+			self.ax2.set_title('Magnetic Well/Hill Stability (>0 Well)')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Flux0'):
 			vmec_data = vmec.VMEC()
