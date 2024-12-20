@@ -1398,8 +1398,9 @@ class LIBSTELL():
 		import ctypes as ct
 		module_name = self.s1+'vmec_utils_'+self.s2
 		get_flxcoord = getattr(self.libstell,module_name+'_get_flxcoord_python'+self.s3)
-		get_flxcoord.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),
+		get_flxcoord.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
 			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
 			ct.c_long,ct.c_long]
 		get_flxcoord.restype=None
 		x1 = (ct.c_double*3)(0,0,0)
@@ -1408,8 +1409,10 @@ class LIBSTELL():
 		zs = ct.c_double(0)
 		ru = ct.c_double(0)
 		zu = ct.c_double(0)
+		rv = ct.c_double(0)
+		zv = ct.c_double(0)
 		get_flxcoord(x1,c_flx,\
-			ct.byref(rs),ct.byref(zs),ct.byref(ru),ct.byref(zu),len(x1),len(c_flx))
+			ct.byref(rs),ct.byref(zs),ct.byref(ru),ct.byref(zu),ct.byref(rv),ct.byref(zv),len(x1),len(c_flx))
 		R = x1[0]
 		v = x1[1]
 		Z = x1[2]
@@ -1417,7 +1420,9 @@ class LIBSTELL():
 		zs1 = zs.value
 		ru1 = ru.value
 		zu1 = zu.value
-		return R,v,Z,rs1,zs1,ru1,zu1
+		rv1 = rv.value
+		zv1 = zv.value
+		return R,v,Z,rs1,zs1,ru1,zu1,rv1,zv1
 
 	def vmec_getBcyl_wout(self,R,phi,Z):
 		"""Wrapper to the GetBcyl_WOUT function
