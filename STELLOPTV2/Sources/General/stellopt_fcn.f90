@@ -398,6 +398,8 @@
             CASE('spec')
             CASE('test')
                !Do Nothing
+               iflag = 0
+               ier_paraexe = 0
          END SELECT
          ! Check profiles for negative values of pressure
          dex = MINLOC(am_aux_s(2:),DIM=1)
