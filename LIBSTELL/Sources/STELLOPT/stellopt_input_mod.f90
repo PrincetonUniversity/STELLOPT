@@ -411,7 +411,8 @@
                          target_gamma_c, sigma_gamma_c, &
                          lRosenbrock_X_opt, dRosenbrock_X_opt, &
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
-                         target_Rosenbrock_F, sigma_Rosenbrock_F
+                         target_Rosenbrock_F, sigma_Rosenbrock_F, &
+                         target_Rosenbrock2D, sigma_Rosenbrock2D
        
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -549,6 +550,8 @@
       Rosenbrock_X_max(1:ROSENBROCK_DIM)  = bigno
       target_Rosenbrock_F(1:ROSENBROCK_DIM) = 0
       sigma_Rosenbrock_F(1:ROSENBROCK_DIM)  = bigno
+      target_Rosenbrock2D = 0.0
+      sigma_Rosenbrock2D = bigno
 
       IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
@@ -1099,6 +1102,7 @@
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
       target_quasiiso(1)  = 0.0;  sigma_quasiiso(1)  = bigno
+      target_gamma_c(1)   = 0.0;  sigma_gamma_c(1)   = bigno
       target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
       target_dkes_Erdiff(1) = 0.0; sigma_dkes_Erdiff(1) = bigno
       target_dkes_alpha(1) = 0.0; sigma_dkes_alpha(1) = bigno
@@ -2585,6 +2589,13 @@
             END DO
          END DO
       END IF
+      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+      WRITE(iunit,'(A)') '!         Rosenbrock 2D TEST FUNCTION' 
+      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+      IF (sigma_Rosenbrock2D < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_ROSENBROCK2D',target_Rosenbrock2D
+         WRITE(iunit,outflt) 'sigma_ROSENBROCK2D',sigma_Rosenbrock2D
+      END IF 
       WRITE(iunit,'(A)') '/'
 
       RETURN

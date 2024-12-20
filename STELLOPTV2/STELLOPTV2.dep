@@ -169,6 +169,13 @@ chisq_rosenbrock.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o
 
       
+chisq_rosenbrock2d.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o
+
+      
 chisq_rbtor.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
