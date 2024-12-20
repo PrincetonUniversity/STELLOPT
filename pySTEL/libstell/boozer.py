@@ -32,7 +32,8 @@ class BOOZER(FourierRep):
 			Path to wout file.
 		"""
 		import numpy as np
-		boozmn_dict = self.libStell.read_boozer(filename)
+		import copy
+		boozmn_dict = copy.deepcopy(self.libStell.read_boozer(filename))
 		for key in boozmn_dict:
 			setattr(self, key, boozmn_dict[key])
 		self.mboz_b = int(max(np.squeeze(self.ixm_b)))
@@ -95,10 +96,8 @@ class BOOZER(FourierRep):
 		if not ax:
 			ax = pyplot.axes()
 			lplotnow = True
-		theta = np.ndarray((360,1))
-		zeta  = np.ndarray((256,1))
-		for j in range(360): theta[j]=2.0*np.pi*j/359.0
-		for j in range(256):  zeta[j]=2.0*np.pi*j/256.0
+		theta = np.linspace([0],[np.pi*2.0],360)
+		zeta  = np.linspace([0],[np.pi*2.0],256)
 		b = self.cfunct(theta,zeta,self.bmnc_b,self.ixm_b,self.ixn_b/self.nfp_b)
 		hmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(b[sval,:,:]),cmap=cmap,shading='gouraud')
 		ax.plot(zeta,zeta*self.iota_b[sval],'w')
