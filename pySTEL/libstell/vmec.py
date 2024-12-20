@@ -361,6 +361,7 @@ class VMEC(FourierRep):
 
 	def getCurrentPoloidal(self):
 		"""Returns the poloidal total current
+
 		This routine returns the total poloidal current as used by the
 		BNORM code.
 
@@ -375,6 +376,91 @@ class VMEC(FourierRep):
 			if (self.xm_nyq[mn]==0 and self.xn_nyq[mn]==0):
 				curpol = 2.0*self.bsubvmnc[self.ns-1,mn]*np.pi/self.nfp 
 		return curpol
+
+	def getiota(self,s):
+		"""Returns the rotational transform
+
+		This routine returns the rotational transform given a value
+		of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		iota : float
+			Rotational Transform [arb]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = self.iotaf
+		return np.interp(s,x,f)
+
+	def getiotaprime(self,s):
+		"""Returns the derivative of the rotational transform
+
+		This routine returns the derivative of the rotational 
+		transform given a value of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		iotap : float
+			Rotational Transform Derivative diota/ds [arb]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = np.diff(self.iotaf,prepend=0)*(self.ns-1)
+		return np.interp(s,x,f)
+
+	def getpressure(self,s):
+		"""Returns the pressure
+
+		This routine returns the pressure given a value
+		of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		pressure : float
+			Pressure [Pa]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = self.presf
+		return np.interp(s,x,f)
+
+	def getpressureprime(self,s):
+		"""Returns the derivative of the pressure profile
+
+		This routine returns the derivative of the pressure 
+		profile given a value of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		iotap : float
+			Rotational Transform Derivative diota/ds [arb]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = np.diff(self.presf,prepend=0)*(self.ns-1)
+		return np.interp(s,x,f)
+
 
 	def getBcyl(self,R,phi,Z):
 		"""Wrapper to the GetBcyl_WOUT function
@@ -445,6 +531,10 @@ class VMEC(FourierRep):
 			Derivative of R coordiante with respect to u (dR/du)
 		dZdu : real
 			Derivative of Z coordiante with respect to u (dZ/du)
+		dRdv : real
+			Derivative of R coordiante with respect to v (dR/dv)
+		dZdv : real
+			Derivative of Z coordiante with respect to v (dZ/dv)
 		"""
 		return self.libStell.vmec_get_flxcoord(s,u,v)
 
