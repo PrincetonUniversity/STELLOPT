@@ -1333,7 +1333,7 @@ C-----------------------------------------------
 
       END SUBROUTINE get_flxcoord
 
-      SUBROUTINE get_flxcoord_python(x1, c_flx, rs, zs, ru, zu)
+      SUBROUTINE get_flxcoord_python(x1, c_flx, rs, zs, ru, zu, rv, zv)
       USE read_wout_mod, phi_wout=>phi, ns_w=>ns, ntor_w=>ntor,
      1     mpol_w=>mpol, ntmax_w=>ntmax, lthreed_w=>lthreed,
      2     lasym_w=>lasym
@@ -1343,7 +1343,7 @@ C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       REAL(rprec), INTENT(out) :: x1(3)
       REAL(rprec), INTENT(in)  :: c_flx(3)
-      REAL(rprec), INTENT(out) :: ru, zu, rs, zs
+      REAL(rprec), INTENT(out) :: ru, zu, rs, zs, rv, zv
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -1357,7 +1357,7 @@ C-----------------------------------------------
       ! since that's what we need to pass.
       CALL flx2cyl(rzl_local, c_flx, x1, ns_w, ntor_w, mpol_w, 
      1              ntmax_w, lthreed_w, lasym_w, iflag,
-     2              RU=ru, ZU=zu, Rs=rs, Zs=zs)
+     2              RU=ru, ZU=zu, Rs=rs, Zs=zs, Rv=rv, Zv=zv)
       RETURN
       END SUBROUTINE get_flxcoord_python
 
