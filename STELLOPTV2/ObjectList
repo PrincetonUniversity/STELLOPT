@@ -1,4 +1,5 @@
 ObjectFiles = \
+chisq_rosenbrock2d.o \
 chisq_quasiiso.o \
 stellopt_read_cws.o \
 stellopt_write_header.o \

@@ -409,7 +409,7 @@
             END IF
             IF( strategy == 5) THEN
                a5 = a1
-               DO WHILE (ANY(a4==a1))
+               DO WHILE (ANY(a5==a1))
                   DO i =1, NP
                      CALL random_number(rand_C1)
                      IF (a5(i) == a1(i)) a5(i) = 1 + rand_C1*(NP-1)
