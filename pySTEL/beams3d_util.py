@@ -28,6 +28,8 @@ if __name__=="__main__":
 		help="Plot the transport quantities.", default = False)
 	parser.add_argument('--beams', nargs='+', dest="beams",
 		help="List of beams to include.", default = None, type=int)
+	parser.add_argument("--plotwall", dest="lplotwall", action='store_true',
+		help="Plot the wall data if orbit plots.", default = False)
 	args = parser.parse_args()
 	beam_data = BEAMS3D()
 	if args.beams3d_ext:
@@ -56,8 +58,7 @@ if __name__=="__main__":
 		if args.lplotorbits:
 			plt3d = PLOT3D()
 			beam_data.plotorbit(plot3D=plt3d)
-			#plt3d.setClim(0,10E6)
-			#plt3d.colorbar(title=rf'Q [W/$m^2$]')
+			if args.lplotwall: beam_data.plot_heatflux(load_type='none',plot3D=plt3d)
 			plt3d.render()
 		if args.lplotshine:
 			plt3d = PLOT3D()
