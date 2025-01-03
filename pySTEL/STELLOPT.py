@@ -21,6 +21,7 @@ from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 #
 from libstell import vmec
 from libstell import boozer
+from libstell import gist
 from libstell import stellopt
 from libstell import plot3D
 
@@ -122,6 +123,8 @@ class MyApp(QMainWindow):
 		self.ui.ComboBoxOPTplot_iter.activated.connect(self.UpdateIterFile)
 		self.ui.ComboBoxOPTplot_surf.activated.connect(self.UpdateBoozerSpec)
 		self.ui.ButtonPlotSTELLOPT.clicked.connect(self.PlotSTELLOPT)
+		# For plots
+		self.gist_plots = ['g11','g12','g22','|Jac|','Bhat','L1','L2','dBdt','Local Shear']
 
 	def UpdateMpol(self):
 		strtmp = self.ui.TextMpol.text()
@@ -968,6 +971,13 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Total Current Profile')
 			jprof_files = sorted([k for k in files if 'tprof.' in k])
 			self.jprof_files = sorted([k for k in jprof_files if '_opt' not in k])
+		# Handle GIST gyrokinetic input files
+		if any('gist_' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- GIST Inputs -----')
+			for name in self.gist_plots:
+				self.ui.ComboBoxOPTplot_type.addItem(name)
+			gist_files = sorted([k for k in files if 'gist_' in k])
+			self.gist_files = sorted([k for k in gist_files if '_opt' not in k])
 		
 	def UpdateIterFile(self):
 		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
@@ -989,6 +999,12 @@ class MyApp(QMainWindow):
 				for k in idx:
 					self.ui.ComboBoxOPTplot_surf.addItem(str(k+1))
 				self.UpdateBoozerSpec()
+			elif plot_name in self.gist_files:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.ui.ComboBoxOPTplot_surf.clear()
+				self.gist_data = gist.GIST()
+				self.gist_data.read_gist(test_file)
 
 	def UpdateBoozerSpec(self):
 		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
@@ -2209,6 +2225,152 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Current Density [kA/m^-2]')
 			self.ax2.set_title('Total Current Profile')
 			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'g11'):
+			gist_data = gist.GIST()
+			l=0
+			dl = len(self.gist_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.gist_files:
+				if 'gist' in string:
+					gist_data.read_gist(self.workdir+string)
+					maxpnt = gist_data.gridpoints
+					zeta   = np.linspace(-np.pi,np.pi,maxpnt)
+					self.ax2.plot(zeta,gist_data.g11,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Fieldline Coordinate')
+			self.ax2.set_ylabel('g_{11}')
+			self.ax2.set_title('GIST g_{11} Metric')
+			self.ax2.set_xlim((-np.pi,np.pi))
+		elif (plot_name == 'g12'):
+			gist_data = gist.GIST()
+			l=0
+			dl = len(self.gist_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.gist_files:
+				if 'gist' in string:
+					gist_data.read_gist(self.workdir+string)
+					maxpnt = gist_data.gridpoints
+					zeta   = np.linspace(-np.pi,np.pi,maxpnt)
+					self.ax2.plot(zeta,gist_data.g12,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Fieldline Coordinate')
+			self.ax2.set_ylabel('g_{12}')
+			self.ax2.set_title('GIST g_{12} Metric')
+			self.ax2.set_xlim((-np.pi,np.pi))
+		elif (plot_name == 'g22'):
+			gist_data = gist.GIST()
+			l=0
+			dl = len(self.gist_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.gist_files:
+				if 'gist' in string:
+					gist_data.read_gist(self.workdir+string)
+					maxpnt = gist_data.gridpoints
+					zeta   = np.linspace(-np.pi,np.pi,maxpnt)
+					self.ax2.plot(zeta,gist_data.g22,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Fieldline Coordinate')
+			self.ax2.set_ylabel('g_{22}')
+			self.ax2.set_title('GIST g_{22} Metric')
+			self.ax2.set_xlim((-np.pi,np.pi))
+		elif (plot_name == 'Bhat'):
+			gist_data = gist.GIST()
+			l=0
+			dl = len(self.gist_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.gist_files:
+				if 'gist' in string:
+					gist_data.read_gist(self.workdir+string)
+					maxpnt = gist_data.gridpoints
+					zeta   = np.linspace(-np.pi,np.pi,maxpnt)
+					self.ax2.plot(zeta,gist_data.Bhat,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Fieldline Coordinate')
+			self.ax2.set_ylabel('B-hat')
+			self.ax2.set_title(rf'GIST B-hat')
+			self.ax2.set_xlim((-np.pi,np.pi))
+		elif (plot_name == '|Jac|'):
+			gist_data = gist.GIST()
+			l=0
+			dl = len(self.gist_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.gist_files:
+				if 'gist' in string:
+					gist_data.read_gist(self.workdir+string)
+					maxpnt = gist_data.gridpoints
+					zeta   = np.linspace(-np.pi,np.pi,maxpnt)
+					self.ax2.plot(zeta,gist_data.abs_jac,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Fieldline Coordinate')
+			self.ax2.set_ylabel('|Jac|')
+			self.ax2.set_title(rf'GIST |Jac|')
+			self.ax2.set_xlim((-np.pi,np.pi))
+		elif (plot_name == 'L1'):
+			gist_data = gist.GIST()
+			l=0
+			dl = len(self.gist_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.gist_files:
+				if 'gist' in string:
+					gist_data.read_gist(self.workdir+string)
+					maxpnt = gist_data.gridpoints
+					zeta   = np.linspace(-np.pi,np.pi,maxpnt)
+					self.ax2.plot(zeta,gist_data.L1,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Fieldline Coordinate')
+			self.ax2.set_ylabel('L1')
+			self.ax2.set_title(rf'GIST L1')
+			self.ax2.set_xlim((-np.pi,np.pi))
+		elif (plot_name == 'L2'):
+			gist_data = gist.GIST()
+			l=0
+			dl = len(self.gist_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.gist_files:
+				if 'gist' in string:
+					gist_data.read_gist(self.workdir+string)
+					maxpnt = gist_data.gridpoints
+					zeta   = np.linspace(-np.pi,np.pi,maxpnt)
+					self.ax2.plot(zeta,gist_data.L2,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Fieldline Coordinate')
+			self.ax2.set_ylabel('L2')
+			self.ax2.set_title(rf'GIST L2')
+			self.ax2.set_xlim((-np.pi,np.pi))
+		elif (plot_name == 'dBdt'):
+			gist_data = gist.GIST()
+			l=0
+			dl = len(self.gist_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.gist_files:
+				if 'gist' in string:
+					gist_data.read_gist(self.workdir+string)
+					maxpnt = gist_data.gridpoints
+					zeta   = np.linspace(-np.pi,np.pi,maxpnt)
+					self.ax2.plot(zeta,gist_data.dBdt,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Fieldline Coordinate')
+			self.ax2.set_ylabel(rf'$dB/d\theta$')
+			self.ax2.set_title(rf'GIST $dB/d\theta$')
+			self.ax2.set_xlim((-np.pi,np.pi))
+		elif (plot_name == 'Local Shear'):
+			gist_data = gist.GIST()
+			l=0
+			dl = len(self.gist_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.gist_files:
+				if 'gist' in string:
+					gist_data.read_gist(self.workdir+string)
+					maxpnt = gist_data.gridpoints
+					zeta   = np.linspace(-np.pi,np.pi,maxpnt)
+					temp   = gist_data.g12/gist_data.g11
+					sloc   = np.gradient(temp,zeta)
+					self.ax2.plot(zeta,sloc,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Fieldline Coordinate')
+			self.ax2.set_ylabel('Local Shear')
+			self.ax2.set_title('GIST Local Shear')
+			self.ax2.set_xlim((-np.pi,np.pi))
 		self.canvas2.draw()
 
 	def PlotSTELLOPT(self,i):
