@@ -364,7 +364,7 @@ MODULE beams3d_physics_mod
             !------------------------------------------------------------
             !  Velocity diffusion 
             !------------------------------------------------------------
-            ddve = zero; ddvi = zero
+            ddve = zero; ddvi = zero; sigma = zero; zeta = zero
 #if defined(B3D_VEL_DIFFUSION)
             speed_cube = (speed*speed*speed)
             CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
