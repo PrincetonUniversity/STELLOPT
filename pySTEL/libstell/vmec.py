@@ -395,7 +395,7 @@ class VMEC(FourierRep):
 		"""
 		import numpy as np
 		x = np.linspace(0,1,self.ns)
-		f = self.iotaf
+		f = np.squeeze(self.iotaf)
 		return np.interp(s,x,f)
 
 	def getiotaprime(self,s):
@@ -416,7 +416,7 @@ class VMEC(FourierRep):
 		"""
 		import numpy as np
 		x = np.linspace(0,1,self.ns)
-		f = np.diff(self.iotaf,prepend=0)*(self.ns-1)
+		f = np.diff(np.squeeze(self.iotaf),prepend=0)*(self.ns-1)
 		return np.interp(s,x,f)
 
 	def getpressure(self,s):
@@ -437,7 +437,7 @@ class VMEC(FourierRep):
 		"""
 		import numpy as np
 		x = np.linspace(0,1,self.ns)
-		f = self.presf
+		f = np.squeeze(self.presf)
 		return np.interp(s,x,f)
 
 	def getpressureprime(self,s):
@@ -458,7 +458,7 @@ class VMEC(FourierRep):
 		"""
 		import numpy as np
 		x = np.linspace(0,1,self.ns)
-		f = np.diff(self.presf,prepend=0)*(self.ns-1)
+		f = np.diff(np.squeeze(self.presf),prepend=0)*(self.ns-1)
 		return np.interp(s,x,f)
 
 
@@ -549,8 +549,8 @@ class VMEC(FourierRep):
 
 		Parameters
 		----------
-		s : int
-			VMEC radial grid point
+		s : real
+			VMEC radial coordinate [0,1]
 		thetastar : real
 			VMEC poloidal coordiante [rad]
 		phi : real
@@ -562,18 +562,25 @@ class VMEC(FourierRep):
 			Poloidal coordinate of field line [rad]
 		"""
 		import numpy as np
-		cosnp = np.squeeze(np.cos(self.xn*phi))
-		sinnp = np.squeeze(np.sin(self.xn*phi))
+		from scipy import interpolate
+		ph = np.mod(phi,np.pi*2)
+		cosnp = np.squeeze(np.cos(self.xn*ph))
+		sinnp = np.squeeze(np.sin(self.xn*ph))
 		dth = 1.0
 		n1 = 0
-		th = thetastar
+		th = np.mod(thetastar,np.pi*2)
 		th1 = th
-		lumnc = self.lmns*np.tile(self.xm,self.ns).T
+		# interpolate in s
+		x = np.linspace(0,1,self.ns)
+		f = interpolate.interp1d(x, self.lmns, axis=0)
+		lmns = f(s)
+		f = interpolate.interp1d(x, self.lmns*np.tile(self.xm,self.ns).T, axis=0)
+		lumnc = f(s)
 		while abs(dth) >= SEARCH_TOL and n1 < 500:
 			cosmt = np.squeeze(np.cos(self.xm*th))
 			sinmt = np.squeeze(np.sin(self.xm*th))
-			lam = np.sum(self.lmns[s,:]*(sinmt*cosnp+cosmt*sinnp))
-			lamu = np.sum(lumnc[s,:]*(cosmt*cosnp-sinmt*sinnp))
+			lam = np.sum(lmns*(sinmt*cosnp+cosmt*sinnp))
+			lamu = np.sum(lumnc*(cosmt*cosnp-sinmt*sinnp))
 			dth = -(th + lam - th1)/(1.0+lamu)
 			n1 = n1 + 1
 			th = th + 0.5 *dth
