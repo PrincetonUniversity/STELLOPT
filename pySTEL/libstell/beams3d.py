@@ -117,7 +117,8 @@ class BEAMS3D():
 		Vperp : float
 			Perpendicular velocity [m/s]
 		"""
-		mass2D = np.broadcast_to(self.mass,(self.nsteps+1,self.nparticles))
+		import numpy as np
+		mass2D = np.broadcast_to(self.mass,(self.npoinc+1,self.nparticles))
 		vperp  = np.sqrt(2.0*self.moment_lines*self.B_lines/mass2D)
 		vperp  = np.where(self.B_lines < 0,0,vperp)
 		return vperp
