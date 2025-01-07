@@ -91,6 +91,8 @@ class GIST():
 
 		"""
 		import numpy as np
+		from scipy import interpolate
+		SEARCH_TOL = 1.0E-12
 		self.s0 = s
 		self.alpha0 = alpha
 		self.Rmajor = vmec_data.rmajor
@@ -123,8 +125,10 @@ class GIST():
 		for u in range(maxpnt):
 			zeta = alpha + q*(theta[u]-0.0)
 			zeta = np.mod(zeta,np.pi*2)
+			# Compute thetastar (really theta)
 			thetastar = vmec_data.getTheta(s,theta[u],zeta)
 			thetastar = np.mod(thetastar,np.pi*2)
+			# Now compute the Jacobian elements
 			R,phi,Z,dRds,dZds,dRdu,dZdu,dRdv,dZdv = vmec_data.get_flxcoord(s,thetastar,zeta)
 			# Calc covariant vectors
 			esubs = [dRds,0.0,dZds]
@@ -142,13 +146,16 @@ class GIST():
 			ev = np.array([esubs[1]*esubu[2]-esubs[2]*esubu[1],
 						   esubs[2]*esubu[0]-esubs[0]*esubu[2],
 						   esubs[0]*esubu[1]-esubs[1]*esubu[0]])/sqrtg
+			# NOTE THESE are on the half grid in VMEC
+			# WE NEED TO MODIFY VMEC.PY to properly interpolate to full grid
+			# OR DO THIS HERE
+			print("==========SEE H2F ISSUE=================")
 			# Calc Grad(B)
 			th_arr = np.array([[thetastar]])
 			ze_arr = np.array([[zeta]])
 			b = vmec_data.cfunct(th_arr,ze_arr,vmec_data.bmnc,vmec_data.xm_nyq,vmec_data.xn_nyq)
 			bumns = -vmec_data.bmnc*np.tile(vmec_data.xm_nyq,(1,vmec_data.ns)).T
 			bvmns =  vmec_data.bmnc*np.tile(vmec_data.xn_nyq,(1,vmec_data.ns)).T
-			m = np.tile(vmec_data.xm_nyq,[1,vmec_data.ns])
 			x = np.linspace(0,1,vmec_data.ns)
 			f = np.squeeze(np.diff(b,prepend=0)*(vmec_data.ns-1))
 			modb = np.interp(s,x,np.squeeze(b))
@@ -168,9 +175,10 @@ class GIST():
 			lu = np.interp(s,x,np.squeeze(f))
 			f = vmec_data.cfunct(th_arr,ze_arr,lvmnc,vmec_data.xm,vmec_data.xn)
 			lv = np.interp(s,x,np.squeeze(f))
+			print(ls,lu,lv)
 			eu = eu + ls*es + lu*eu + lv*ev
 			# Calc metric elments
-			gradA = thetastar*qprime*es + q*eu - ev
+			gradA = theta[u]*qprime*es + q*eu - ev
 			wrk = np.squeeze(np.array([es[1]*gradA[2]-es[2]*gradA[1],
 						   es[2]*gradA[0]-es[0]*gradA[2],
 						   es[0]*gradA[1]-es[1]*gradA[0]]))
@@ -203,7 +211,7 @@ class GIST():
 			self.dBdt[u] = np.sum(gradB*et)
 			c     = iota*iota*self.Aminor**4
 			self.L1[u] = q/np.sqrt(s)*(dBda + c*(gss*gat-gsa*gst)*self.dBdt[u]/(4*self.Bhat[u]**2))
-			self.L2[u] = 2*np.sqrt(s)*(dBds + c*(gaa*gst-gsa*gat)*self.dBdt[u]/(4*self.Bhat[u]**2))
+			self.L2[u] = 2.0*np.sqrt(s)*(dBds + c*(gaa*gst-gsa*gat)*self.dBdt[u]/(4*self.Bhat[u]**2))
 		self.kp1 = self.L2 - self.dpdx/2.0/self.Bhat
 
 	def calcProxG11(self):
