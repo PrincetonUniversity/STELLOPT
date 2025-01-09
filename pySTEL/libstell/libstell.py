@@ -234,6 +234,28 @@ class LIBSTELL():
 		write_indata_namelist.restype=None
 		write_indata_namelist(filename.encode('UTF-8'),len(filename))
 
+	def indataVolume(self):
+		"""Wrapper to the INDATA_VOLUME subroutine
+
+		This routine wrappers the INDATA_VOLUME subroutine
+		which calcualtes the plasma volume for a given INDATA
+		boundary deffinition.
+
+		Returns
+		-------
+		Volume : real
+			Total volume of plasma [m^3]
+		"""
+		import ctypes as ct
+		# Load Libraries
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_volume = getattr(self.libstell,module_name+'_indata_volume'+self.s3)
+		indata_volume.argtypes = [ct.POINTER(ct.c_double)]
+		indata_volume.restype  = None
+		volume = ct.c_double(0.0)
+		indata_volume(ct.byref(volume))
+		return volume.value
+
 	def read_bootin(self,filename):
 		"""Reads a BOOTSJ BOOTIN namelist
 

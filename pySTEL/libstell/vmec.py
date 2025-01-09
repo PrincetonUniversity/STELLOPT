@@ -946,6 +946,19 @@ class VMEC_INDATA():
 		"""
 		return self.libStell.pcurr(x)
 
+	def calcVolume(self):
+		"""Calculate total volume
+
+		The routine computes the total volume based on the boundary
+		shape.
+
+		Returns
+		-------
+		volume : real
+			Total equilibrium volume [m^3]
+		"""
+		return self.libStell.indataVolume()
+
 
 
 # Main routine
