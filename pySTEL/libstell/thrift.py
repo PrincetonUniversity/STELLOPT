@@ -98,7 +98,8 @@ class THRIFT():
                     'THRIFT_I','THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IOTA','THRIFT_IPLASMA','THRIFT_ISOURCE',\
 				    'THRIFT_J','THRIFT_JBOOT','THRIFT_JECCD','THRIFT_JNBCD','THRIFT_JOHMIC','THRIFT_JPLASMA','THRIFT_JSOURCE',\
 				    'THRIFT_MATLD','THRIFT_MATMD','THRIFT_MATRHS','THRIFT_MATUD','THRIFT_P','THRIFT_PHIEDGE','THRIFT_PPRIME',\
-				    'THRIFT_QNEO','THRIFT_RMAJOR','THRIFT_S11','THRIFT_S12','THRIFT_T', 'THRIFT_UGRID','THRIFT_VP']:
+				    'THRIFT_QNEO','THRIFT_RMAJOR','THRIFT_S11','THRIFT_S12','THRIFT_T', 'THRIFT_UGRID','THRIFT_VP',\
+                    'THRIFT_DENS', 'THRIFT_TEMP', 'THRIFT_PRESS']:
                     if temp in f:
                         # Get the data from the file
                         data = np.array(f[temp][:])
@@ -155,7 +156,8 @@ class THRIFT():
             _, ax = plt.subplots(figsize=(11,8))
             for it,time in enumerate(times):
                 try:
-                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s')
+                    # ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s')
+                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s'+r', $\beta=$'+f'{self.THRIFT_BETATOT[idx[it]]*100:.2f}%')   
                 except:
                     ax.plot(np.sqrt(self.THRIFT_SNOB),plot_var[it,:],label=f't={time}s')
                 ax.set_xlabel('r/a') 
@@ -184,18 +186,23 @@ class THRIFT():
             exit(0)
             
     def get_vars(self,var,time=0.0):
-        # return an array with var(roa) at t=time
+        # return an array with var(roa) at t=time; time can be an array
         # var is any variable of the type THRIFT_## with dimension (ntimesteps,nssize)
         
         plot_var = getattr(self,var)
         
-        idx = np.argmin(np.abs(self.THRIFT_T-time))
+        time = np.array(time)
+        
+        idx = [np.argmin(np.abs(self.THRIFT_T-t)) for t in time]
+        #idx = np.argmin(np.abs(self.THRIFT_T-time))
         
         real_time = self.THRIFT_T[idx]
         
         print(f'Returning variable {var} at t={real_time}s')
         
-        if(plot_var.ndim == 2):
+        if(plot_var.ndim == 1):
+            return plot_var[idx]
+        elif(plot_var.ndim == 2):
             return plot_var[idx,:]
         elif( plot_var.ndim ==3):
             return plot_var[idx,:,:]
