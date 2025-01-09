@@ -682,7 +682,7 @@
 
       SUBROUTINE INDATA_VOLUME(volume)
       IMPLICIT NONE
-      REAL(rprec),INTENT(OUT) :: volume
+      DOUBLE PRECISION,INTENT(INOUT) :: volume
       INTEGER :: m, n, u, v, nu1, nv1
       INTEGER, PARAMETER :: nu = 256
       INTEGER, PARAMETER :: nv = 256
@@ -692,9 +692,10 @@
       volume = zero; rreal = zero; zreal = zero; rureal = zero
       DO n = -ntord,ntord
          DO m = 0,mpol1d
+            IF (rbc(n,m) == zero .and. zbs(n,m) == zero) CYCLE
             DO u = 1, nu
                DO v = 1, nv
-                  arg1 = (m*DBLE(u/nu1)-n*DBLE(v/nv1))*twopi
+                  arg1 = (m*DBLE(u-1)/nu1-n*DBLE(v-1)/nv1)*twopi
                   tcos = COS(arg1)
                   tsin = SIN(arg1)
                   rreal(u,v)  = rreal(u,v) + rbc(n,m) * tcos
@@ -705,7 +706,25 @@
             END DO
          END DO
       END DO
-      volume = nfp*twopi*SUM(rreal*zreal*rureal)/(nu1*nu1)
+      IF (lasym) THEN
+         DO n = -ntord,ntord
+            DO m = 0,mpol1d
+               IF (rbs(n,m) == zero .and. zbc(n,m) == zero) CYCLE
+               DO u = 1, nu
+                  DO v = 1, nv
+                     arg1 = (m*DBLE(u-1)/nu1-n*DBLE(v-1)/nv1)*twopi
+                     tcos = COS(arg1)
+                     tsin = SIN(arg1)
+                     rreal(u,v)  = rreal(u,v) + rbs(n,m) * tsin
+                     zreal(u,v)  = zreal(u,v) + zbc(n,m) * tcos
+                     rureal(u,v) = rureal(u,v) 
+     1                             + m * rbs(n,m) * tcos * twopi
+                  END DO
+               END DO
+            END DO
+         END DO
+      END IF
+      volume = ABS(twopi*SUM(rreal*zreal*rureal)/DBLE(nu1*nv1))
       RETURN
 
       END SUBROUTINE INDATA_VOLUME
