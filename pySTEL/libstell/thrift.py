@@ -93,12 +93,13 @@ class THRIFT():
             with h5py.File(file,'r') as f:
                 # Arrays
                 for temp in ['THRIFT_ALPHA1','THRIFT_ALPHA2','THRIFT_ALPHA3','THRIFT_ALPHA4','THRIFT_AMINOR',\
-       			    'THRIFT_BAV','THRIFT_BSQAV','THRIFT_BVAV','THRIFT_COEFF_A','THRIFT_COEFF_B','THRIFT_COEFF_BP',\
-				    'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_EPARB','THRIFT_ER','THRIFT_ETAPARA','THRIFT_I',\
-				    'THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IOTA','THRIFT_IPLASMA','THRIFT_ISOURCE',\
+       			    'THRIFT_BAV','THRIFT_BETATOT','THRIFT_BSQAV','THRIFT_BVAV','THRIFT_COEFF_A','THRIFT_COEFF_B','THRIFT_COEFF_BP',\
+				    'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_EPARB','THRIFT_ER','THRIFT_ETAPARA','THRIFT_GNEO',\
+                    'THRIFT_I','THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IOTA','THRIFT_IPLASMA','THRIFT_ISOURCE',\
 				    'THRIFT_J','THRIFT_JBOOT','THRIFT_JECCD','THRIFT_JNBCD','THRIFT_JOHMIC','THRIFT_JPLASMA','THRIFT_JSOURCE',\
 				    'THRIFT_MATLD','THRIFT_MATMD','THRIFT_MATRHS','THRIFT_MATUD','THRIFT_P','THRIFT_PHIEDGE','THRIFT_PPRIME',\
-				    'THRIFT_RMAJOR','THRIFT_S11','THRIFT_S12','THRIFT_T', 'THRIFT_UGRID','THRIFT_VP']:
+				    'THRIFT_QNEO','THRIFT_RMAJOR','THRIFT_S11','THRIFT_S12','THRIFT_T', 'THRIFT_UGRID','THRIFT_VP',\
+                    'THRIFT_DENS', 'THRIFT_TEMP', 'THRIFT_PRESS']:
                     if temp in f:
                         # Get the data from the file
                         data = np.array(f[temp][:])
@@ -111,7 +112,7 @@ class THRIFT():
                             existing_data = getattr(self, temp)
                             setattr(self, temp, np.concatenate((existing_data, data)))
                         
-        # set THRIFT_S array (no concatenation needed); in set_integers_attribute already checkwd nssize is the same for ALL files
+        # set THRIFT_S array (no concatenation needed); in set_integers_attribute already checked nssize is the same for ALL files
         with h5py.File(file,'r') as f:
             setattr(self, 'THRIFT_S', np.array(f['THRIFT_S'][:]))
             setattr(self, 'THRIFT_SNOB', np.array(f['THRIFT_SNOB'][:]))
@@ -126,8 +127,9 @@ class THRIFT():
             self.units_dictionary[current_density] = r'[A/m$^2]$'
         self.units_dictionary['THRIFT_ETAPARA'] = r'$[\Omega\,$m]'
         self.units_dictionary['THRIFT_ER'] = r'$[V/$m]'
-        
-                    
+        self.units_dictionary['THRIFT_GNEO'] = r'[m$^{-2}s$^{-1}$]'
+        self.units_dictionary['THRIFT_QNEO'] = r'[$\text{eV}~\text{m}^{-2}s$^{-1}$]'
+             
     def plot_vars_in_time(self,*vars,time_slice=None,time_array=None):
         # plots var as a funciton of roa at different times
         # the times can be given as time_slices (fractions of t_end)
@@ -140,12 +142,12 @@ class THRIFT():
             time_slice = [0,1/4,1/2,3/4,1]
             times = np.array(time_slice)*t_end
         else:
-            times = time_array
+            times = np.atleast_1d(time_array)
         
         for var in vars:
             plot_var = getattr(self,var)
             # check dimension of var is (ntimesteps,nssize)
-            # self.check_var_shape(plot_var,self.ntimesteps,self.nssize)
+            self.check_var_shape(plot_var,self.ntimesteps,self.nssize)
 
             idx = [np.argmin(np.abs(self.THRIFT_T-t)) for t in times]
             times = self.THRIFT_T[idx]
@@ -154,7 +156,8 @@ class THRIFT():
             _, ax = plt.subplots(figsize=(11,8))
             for it,time in enumerate(times):
                 try:
-                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s')
+                    # ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s')
+                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s'+r', $\beta=$'+f'{self.THRIFT_BETATOT[idx[it]]*100:.2f}%')   
                 except:
                     ax.plot(np.sqrt(self.THRIFT_SNOB),plot_var[it,:],label=f't={time}s')
                 ax.set_xlabel('r/a') 
@@ -183,19 +186,29 @@ class THRIFT():
             exit(0)
             
     def get_vars(self,var,time=0.0):
-        # return an array with var(roa) at t=time
+        # return an array with var(roa) at t=time; time can be an array
         # var is any variable of the type THRIFT_## with dimension (ntimesteps,nssize)
         
         plot_var = getattr(self,var)
         
-        idx = np.argmin(np.abs(self.THRIFT_T-time))
+        time = np.atleast_1d(time)
+        
+        idx = [np.argmin(np.abs(self.THRIFT_T-t)) for t in time]
+        #idx = np.argmin(np.abs(self.THRIFT_T-time))
         
         real_time = self.THRIFT_T[idx]
         
         print(f'Returning variable {var} at t={real_time}s')
         
-        return plot_var[idx,:]
-    
+        if(plot_var.ndim == 1):
+            return plot_var[idx]
+        elif(plot_var.ndim == 2):
+            return plot_var[idx,:]
+        elif( plot_var.ndim ==3):
+            return plot_var[idx,:,:]
+        else:
+            print('ERROR: What are you trying to get?!')
+            exit(0)
 
     def plot_plasma_profile(self,plasma_file):
         
@@ -256,7 +269,7 @@ class THRIFT():
             
             plt.show()
             
-    def plot_plasma_current_decay(self):
+    def plot_plasma_current_decay(self,tstart=20.0):
         # plots total plasma current as a function of time
         # estimates decay time with LR circuit eqvalent time-scale
         
@@ -280,8 +293,8 @@ class THRIFT():
         ax.set_yscale('log')
         # plt.show()
         
-        t_fit = t[t>20]
-        I_fit = np.abs(Iplasma[t>20])
+        t_fit = t[t>tstart]
+        I_fit = np.abs(Iplasma[t>tstart])
         
         p1,p0 = np.polyfit(t_fit,np.log(I_fit),1)
         
@@ -339,6 +352,212 @@ class THRIFT():
             except:
                 ax.set_ylabel('')
             plt.show()
+            
+    def plot_all_ambipolar_roots(self,*ambipolar_files,make_plot=True):
+        # plots all roots of the electric field 
+        # each file correspond to a different instant of time
+        
+        from itertools import groupby
+        from collections import defaultdict
+
+        for file in ambipolar_files:
+
+            time = np.loadtxt(file,skiprows=2,max_rows=1)
+            
+            penta = np.loadtxt(file,skiprows=4)
+        
+            roa = penta[:,0]
+            Er = penta[:,1]
+            JBS = penta[:,2]
+            
+            Gamma_e = penta[:,3]
+            
+            # self.roa = defaultdict(list)
+            # self.Er = defaultdict(list)
+            
+            num_roots = []
+            roa_all = []
+            Er_all = []
+            JBS_all = []
+            Gamma_e_all = []
+            
+            paired  = zip(roa,Er,JBS,Gamma_e)
+            
+            # Group by the first element (roa)
+            for _, group in groupby(paired, key=lambda x: x[0]):
+                
+                group_list = list(group)  # Convert the group to a list
+                
+                num_roots.append(len(group_list))
+                
+                roa_all.append( [x[0] for x in group_list])  # Extract the roa part of the group
+                Er_all.append(  [x[1] for x in group_list])  # Extract the other_array part of the group
+                JBS_all.append(  [x[2] for x in group_list])  # Extract the other_array part of the group
+                Gamma_e_all.append(  [x[3] for x in group_list])  # Extract the other_array part of the group
+            
+            # plots    
+            _, ax = plt.subplots(figsize=(11,8))
+
+            # Plot each root
+            for j in range(max(num_roots)):
+                x = []  # roa values
+                y = []  # Er values
+                for k, (r_vals, er_vals) in enumerate(zip(roa_all, Er_all)):
+                    if j < len(er_vals):  # Only include if the j-th value exists in Er[k]
+                        x.append(r_vals[0])  
+                        y.append(er_vals[j])
+                plt.plot(x, y, marker='o')  # Plot the j-th curve
+
+            
+            ax.set_xlabel('r/a')
+            ax.set_ylabel(r'$E_r$ [V/cm]')
+            ax.set_title(f't={time}s')
+            
+            #JBS plot
+            _, ax = plt.subplots(figsize=(11,8))
+
+            # Plot each root
+            for j in range(max(num_roots)):
+                x = []  # roa values
+                y = []  # JBS values
+                for k, (r_vals, jbs_vals) in enumerate(zip(roa_all, JBS_all)):
+                    if j < len(jbs_vals):  # Only include if the j-th value exists in Er[k]
+                        x.append(r_vals[0])  
+                        y.append(jbs_vals[j])
+                plt.plot(x, y, marker='o')  # Plot the j-th curve
+
+            
+            ax.set_xlabel('r/a')
+            ax.set_ylabel(r'$J_{BS}~[A/m^2]$')
+            ax.set_title(f't={time}s')
+            
+            #Fluxes plot
+            _, ax = plt.subplots(figsize=(11,8))
+
+            # Plot each root
+            for j in range(max(num_roots)):
+                x = []  # roa values
+                y = []  # gamma_e values
+                for k, (r_vals, ge_vals) in enumerate(zip(roa_all, Gamma_e_all)):
+                    if j < len(ge_vals):  # Only include if the j-th value exists in Er[k]
+                        x.append(r_vals[0])  
+                        y.append(ge_vals[j])
+                plt.plot(x, y, marker='o')  # Plot the j-th curve
+  
+            ax.set_xlabel('r/a')
+            ax.set_ylabel(r'$\Gamma_e~[m^{-2}~s^{-1}]$')
+            ax.set_title(f't={time}s')
+            
+        if(make_plot): plt.show()
+        
+    def Maxwell_construction(self,fluxes_vs_Er_file,Zions):
+        # plots fluxes*Z as function of Er
+        
+        import matplotlib.pyplot as plt
+        from collections import defaultdict
+        
+        time = np.loadtxt(fluxes_vs_Er_file,skiprows=2,max_rows=1)
+            
+        penta = np.loadtxt(fluxes_vs_Er_file,skiprows=5)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+        gamma_e = penta[:,2]      
+        
+        #check dimension of Zion equals that of file 
+        if (len(penta[0,3:]) != len(Zions) ):
+            print('ERROR: length of Zions does not match file size')
+            exit(0)
+            
+        gamma_i_tot = np.sum(penta[:,3:]*Zions,axis=1)
+        
+        gamma_i = penta[:,3:]
+        
+        Jr = gamma_i_tot - gamma_e
+        
+        Er_dict = defaultdict(list)
+        Jr_dict = defaultdict(list)
+        Ge_dict = defaultdict(list)
+        Gi_dict = defaultdict(lambda: defaultdict(list))
+        
+        for r,er,jr,ge in zip(roa,Er,Jr,gamma_e):
+            Er_dict[r].append(er)
+            Jr_dict[r].append(jr)
+            Ge_dict[r].append(ge)
+        
+        for k,_ in enumerate(Zions):
+            for r, gi in zip(roa,gamma_i[:,k]):
+                Gi_dict[k][r].append(gi)
+        
+        roa_unique = np.unique(roa)
+        # check size of dictionaries correspond to size of roa_unique
+        if( (len(roa_unique) != len(Er_dict)) or (len(roa_unique) != len(Jr_dict)) ):
+            print('ERROR" Sizes of roa_unique and of dictionaries should match...')
+            exit(0)
+              
+        Er_ambipolar = []
+            
+        # set the ambipolar root for each r/a using Maxwell construction criterium
+        for roa in roa_unique:
+            sign_changes = np.diff(np.sign(Jr_dict[roa])) != 0
+            change_indices = np.where(sign_changes)[0]
+            num_sign_changes = len(change_indices)
+            
+            if(num_sign_changes==1):
+                Er_val = Er_dict[roa][change_indices[0]]
+            elif( num_sign_changes>1):
+                # integrate between first and last root
+                first_change = change_indices[0]
+                last_change = change_indices[-1]
+                integral = np.trapz(Jr_dict[roa][first_change:last_change+1],Er_dict[roa][first_change:last_change+1])
+                if(integral>0):
+                    Er_val = Er_dict[roa][change_indices[0]]
+                else:
+                    Er_val = Er_dict[roa][change_indices[-1]]  
+            else:
+                print('ERROR: THis else should not be possible....')
+                exit(0)
+            
+            Er_ambipolar.append(Er_val)
+        
+        Er_ambipolar = np.array(Er_ambipolar)
+            
+        # plot
+        # _, ax = plt.subplots(figsize=(11,8))
+        plt.plot(roa_unique,Er_ambipolar,label='Maxwell')
+        # plt.set_xlabel('r/a')
+        # plt.set_ylabel(r'$E_r$ [V/cm]')
+        # plt.set_title(f't={time}s')
+        plt.legend()
+        plt.show()
+        
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(Er_dict[roa_unique[4]],Jr_dict[roa_unique[4]],'.-')
+        ax.set_xlabel('Er [V/cm]')
+        ax.set_ylabel(r'$\Sigma Z_i\Gamma_i-\Gamma_e$')
+        ax.set_title(f'r/a={roa_unique[4]}')
+        ax.grid()
+        
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(Er_dict[roa_unique[4]],Ge_dict[roa_unique[4]],'.-',label='Gamma_e')
+        for k,_ in enumerate(Zions):
+            ax.plot(Er_dict[roa_unique[4]],Gi_dict[k][roa_unique[4]],'.-',label=f'Gamma_i_{k}')
+        ax.set_xlabel('Er [V/cm]')
+        ax.set_ylabel(r'$\Gamma$')
+        ax.set_yscale('symlog',linthresh=0.1)
+        ax.set_title(f'r/a={roa_unique[4]}')
+        ax.grid()
+        plt.legend()
+        
+        plt.show()
+            
+        
+
+            
+        
+            
+        
+        
 
 # # THRIFT Input Class
 # class THRIFT_INPUT():

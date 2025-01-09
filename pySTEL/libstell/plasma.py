@@ -106,12 +106,17 @@ class PLASMA:
         self.give_charge_to_species(self.list_of_species)
         self.give_Zcharge_to_species(self.list_of_species)
         
-        #create self.ion_species and self.num_ion_species
+        #update ion species
         self.set_ion_species()
                 
         if(self.lverb): print(f'Plasma updated and now has species: {", ".join(self.list_of_species)}')  
                 
-    def set_density(self,species,n0,nedge,exponent):
+    def set_density(self,species,profile_type,n0=None,nedge=None,exponent=None,interpolating_func=None,rho_vals=None,n_vals=None):
+        # profile_type can be 'polynomial' or 'interp'
+        # if 'polynomial', then 'n0', 'nedge' and 'exponent' are required
+        # if 'interp', then 'interpolating_func' OR 'rho_vals' and 'n_vals' are required
+        
+        from scipy.interpolate import CubicSpline
         
         #check if species exist in list_of_species
         if species not in self.list_of_species:
@@ -121,16 +126,44 @@ class PLASMA:
         # Check if species exists in the dictionary, if not, create an empty dictionary for it
         if species not in self.density:
             self.density[species] = {}
-        
-        # Set the value for the specific location
-        profile_info = ['n0','nedge','exponent']
-        profile_vals = [n0,nedge,exponent]
+            
+        # Set profile type
+        match profile_type:
+            case 'polynomial':
+                if(n0 is None or nedge is None or exponent is None):
+                    print('ERROR: profile_type is polynomial and n0, nedge or exponent not provided')
+                    exit(0)
+                else:
+                    rho = np.linspace(0,1,100)
+                    interpolating_func = CubicSpline(rho,n0+(nedge-n0)*rho**exponent)
+                                    
+            case 'interp':
+                if(interpolating_func is None and (rho_vals is None or n_vals is None)):
+                    print('ERROR: profile_type is interp and interpolating_func OR rho_vals and n_vals not provided')
+                    exit(0)
+                # construct interpolating function from rho_vals and n_vals
+                if(interpolating_func is None):
+                    # check rho_vals are in the range [0,1]
+                    if( np.any((rho_vals<0) | (rho_vals>1))):
+                        print('ERROR: rho_vals must be in the domain [0,1]')
+                        exit(0)
+                    interpolating_func = CubicSpline(rho_vals,n_vals)
+                    
+            case _:
+                print(f'ERROR: profile_type is either polynomial or interp. Cannot be {profile_type}')
+                exit(0)
+                
+        profile_info = ['profile_type','interpolating_func']
+        profile_vals = [profile_type,interpolating_func]
         for info,val in zip(profile_info,profile_vals):
             self.density[species][info] = val
-            
-        if(self.lverb): print(f'\nDensity profile of {species}: n[m-3] = {nedge} + {n0-nedge}*(1-rho^{exponent})')
+                           
+    def set_temperature(self,species,profile_type,T0=None,Tedge=None,exponent=None,interpolating_func=None,rho_vals=None,T_vals=None):
+        # profile_type can be 'polynomial' or 'interp'
+        # if 'polynomial', then 'T0', 'Tedge' and 'exponent' are required
+        # if 'interp', then 'interpolating_func' OR 'rho_vals' and 'T_vals' are required
         
-    def set_temperature(self,species,T0,Tedge,exponent):
+        from scipy.interpolate import CubicSpline
         
         #check if species exist in list_of_species
         if species not in self.list_of_species:
@@ -140,30 +173,57 @@ class PLASMA:
         # Check if species exists in the dictionary, if not, create an empty dictionary for it
         if species not in self.temperature:
             self.temperature[species] = {}
-        
-        # Set the value for the specific location
-        profile_info = ['T0','Tedge','exponent']
-        profile_vals = [T0,Tedge,exponent]
+            
+        # Set profile type
+        match profile_type:
+            case 'polynomial':
+                if(T0 is None or Tedge is None or exponent is None):
+                    print('ERROR: profile_type is polynomial and T0, Tedge or exponent not provided')
+                    exit(0)
+                else:
+                    rho = np.linspace(0,1,100)
+                    interpolating_func = CubicSpline(rho,T0+(Tedge-T0)*rho**exponent)
+                                    
+            case 'interp':
+                if(interpolating_func is None and (rho_vals is None or T_vals is None)):
+                    print('ERROR: profile_type is interp and interpolating_func OR rho_vals and T_vals not provided')
+                    exit(0)
+                # construct interpolating function from rho_vals and T_vals
+                if(interpolating_func is None):
+                    # check rho_vals are in the range [0,1]
+                    if( np.any((rho_vals<0) | (rho_vals>1))):
+                        print('ERROR: rho_vals must be in the domain [0,1]')
+                        exit(0)
+                    interpolating_func = CubicSpline(rho_vals,T_vals)
+                    
+            case _:
+                print(f'ERROR: profile_type is either polynomial or interp. Cannot be {profile_type}')
+                exit(0)
+                
+        profile_info = ['profile_type','interpolating_func']
+        profile_vals = [profile_type,interpolating_func]
         for info,val in zip(profile_info,profile_vals):
             self.temperature[species][info] = val
-            
-        if(self.lverb): print(f'\nTemperature profile of {species}: T[eV] = {Tedge} + {T0-Tedge}*(1-rho^{exponent})')
     
     def get_density(self,species,rho):
         # rho can be a number or a list of numbers
         
-        #check if species exist in list_of_species
+        # check if species exist in list_of_species
         if species not in self.list_of_species:
             print(f"ERROR: Species {species} is not in the plasma.")
             exit(1)
-        
-        n0 = self.density[species]['n0']
-        nedge = self.density[species]['nedge']
-        exponent = self.density[species]['exponent']
-        
+            
+        # check if density of species has been set
+        if(species not in self.density):
+            print('ERROR" density of {species} has not been set yet')
+            exit(0)
+            
+        # make sure rho is an array
         rho = np.array(rho)
         
-        dens = nedge + (n0-nedge)*(1-rho**exponent)
+        dens_interp = self.density[species]['interpolating_func']
+        
+        dens = dens_interp(rho)
         
         return dens
     
@@ -176,31 +236,39 @@ class PLASMA:
             print(f"ERROR: Species {species} is not in the plasma.")
             exit(1)
         
-        n0 = self.density[species]['n0']
-        nedge = self.density[species]['nedge']
-        exponent = self.density[species]['exponent']
-        
+        # check if density of species has been set
+        if(species not in self.density):
+            print('ERROR" density of {species} has not been set yet')
+            exit(0)
+            
+        # make sure rho is an array
         rho = np.array(rho)
         
-        dens_der = (n0-nedge)*(-exponent*rho**(exponent-1))
+        dens_der_interp = self.density[species]['interpolating_func']
+        
+        dens_der = dens_der_interp(rho,1)
         
         return dens_der
     
     def get_temperature(self,species,rho):
         # rho can be a number or a list of numbers
         
-        #check if species exist in list_of_species
+        # check if species exist in list_of_species
         if species not in self.list_of_species:
             print(f"ERROR: Species {species} is not in the plasma.")
             exit(1)
-        
-        T0 = self.temperature[species]['T0']
-        Tedge = self.temperature[species]['Tedge']
-        exponent = self.temperature[species]['exponent']
-        
+            
+        # check if temperature of species has been set
+        if(species not in self.temperature):
+            print('ERROR" temperatureof {species} has not been set yet')
+            exit(0)
+            
+        # make sure rho is an array
         rho = np.array(rho)
         
-        temp = Tedge + (T0-Tedge)*(1-rho**exponent)
+        temp_interp = self.temperature[species]['interpolating_func']
+        
+        temp = temp_interp(rho)
         
         return temp
     
@@ -213,13 +281,17 @@ class PLASMA:
             print(f"ERROR: Species {species} is not in the plasma.")
             exit(1)
         
-        T0 = self.temperature[species]['T0']
-        Tedge = self.temperature[species]['Tedge']
-        exponent = self.temperature[species]['exponent']
-        
+        # check if density of species has been set
+        if(species not in self.temperature):
+            print('ERROR: temperature of {species} has not been set yet')
+            exit(0)
+            
+        # make sure rho is an array
         rho = np.array(rho)
         
-        temp_der = (T0-Tedge)*(-exponent*rho**(exponent-1))
+        temp_der_interp = self.temperature[species]['interpolating_func']
+        
+        temp_der = temp_der_interp(rho,1)
         
         return temp_der
     
@@ -552,6 +624,48 @@ class PLASMA:
             plt.close()
         
         return nu_star
+    
+    def plot_density(self,*species):
+        # plots density profile
+        
+        import matplotlib.pyplot as plt
+        
+        rho = np.linspace(0,1,100)
+
+        _, ax = plt.subplots(figsize=(11,8))
+        for s in species:
+            #check if species exist in list_of_species
+            if s not in self.list_of_species:
+                print(f"ERROR: Species {species} is not in the plasma.")
+                exit(1)
+            ax.plot(rho,self.get_density(s,rho)/1E20,'.-',label=f'{s}')
+        ax.set_xlabel('r/a')
+        ax.set_ylabel(r'$n~(\times 10^{20})~\text{m}^{-3}$')
+        ax.set_title(f'density')
+        ax.grid()
+        plt.legend()
+        plt.show()
+        
+    def plot_temperature(self,*species):
+        # plots temperature profile
+        
+        import matplotlib.pyplot as plt
+        
+        rho = np.linspace(0,1,100)
+
+        _, ax = plt.subplots(figsize=(11,8))
+        for s in species:
+            #check if species exist in list_of_species
+            if s not in self.list_of_species:
+                print(f"ERROR: Species {species} is not in the plasma.")
+                exit(1)
+            ax.plot(rho,self.get_temperature(s,rho)/1E3,'.-',label=f'{s}')
+        ax.set_xlabel('r/a')
+        ax.set_ylabel('T [keV]')
+        ax.set_title(f'temperature')
+        ax.grid()
+        plt.legend()
+        plt.show()
         
     def get_pressure_polynomial_coefficients(self,deg_fit=10):
         # this computes the AM coefficients and the PRES_SCALE scalar for a VMEC input
