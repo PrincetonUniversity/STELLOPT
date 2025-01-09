@@ -726,8 +726,40 @@
       END IF
       volume = ABS(twopi*SUM(rreal*zreal*rureal)/DBLE(nu1*nv1))
       RETURN
-
       END SUBROUTINE INDATA_VOLUME
+
+      SUBROUTINE INIT_AXIS_MEAN
+      IMPLICIT NONE
+      INTEGER :: n
+      raxis = zero; zaxis = zero
+      DO n = 0, ntord
+            raxis_cc(n) = rbc(n, 0)
+            zaxis_cc(n) = zbc(n, 0)
+            raxis_cs(n) = rbs(n, 0)
+            zaxis_cs(n) = zbs(n, 0)
+      END DO
+      RETURN
+      END SUBROUTINE INIT_AXIS_MEAN
+
+      SUBROUTINE INIT_AXIS_MIDPOINT
+      IMPLICIT NONE
+      INTEGER :: n, m
+      CALL INIT_AXIS_MEAN
+      DO m = 2, mpol1d, 2 ! Add even-m modes for m>0
+         ! Handle the n=0 modes:
+         raxis_cc(0) = raxis_cc(0) + rbc(0, m)
+         zaxis_cc(0) = zaxis_cc(0) + zbc(0, m)
+         ! No need to include the sin(n*phi) modes for n=0 here.
+         ! Handle the n.ne.0 modes:
+         DO n = 1, ntord
+            raxis_cc(n) = raxis_cc(n) + rbc(n, m) + rbc(-n, m)
+            zaxis_cc(n) = zaxis_cc(n) + zbc(n, m) + zbc(-n, m)
+            raxis_cs(n) = raxis_cs(n) + rbs(n, m) - rbs(-n, m)
+            zaxis_cs(n) = zaxis_cs(n) + zbs(n, m) - zbs(-n, m)
+         END DO
+      END DO
+      RETURN
+      END SUBROUTINE INIT_AXIS_MIDPOINT
 
       END MODULE vmec_input
 
