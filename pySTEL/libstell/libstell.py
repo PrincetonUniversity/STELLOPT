@@ -256,6 +256,64 @@ class LIBSTELL():
 		indata_volume(ct.byref(volume))
 		return volume.value
 
+	def indataInitAxisMean(self):
+		"""Wrapper to the InitAxisMean subroutine
+
+		This routine wrappers the INIT_AXIS_MEAN subroutine
+		which initilizes the axis guess from the boundary coefficients
+
+		Returns
+		-------
+		out_data: dict
+			Dictionary of axis harmonics
+		"""
+		import ctypes as ct
+		# Get constant
+		module_name = self.s1+'vparams_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getndatafmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ndatafmax = get_constant()
+		# Load Libraries and initialize axis
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_init_axis = getattr(self.libstell,module_name+'_init_axis_mean'+self.s3)
+		indata_init_axis.argtypes = None
+		indata_init_axis.restype  = None
+		indata_init_axis()
+		realLen =[(ndatafmax,1)]*6
+		realList=['raxis','zaxis','raxis_cc','raxis_cs','zaxis_cc','zaxis_cs']
+		out_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		return out_data
+
+	def indataInitAxisMidpoint(self):
+		"""Wrapper to the InitAxisMidpoint subroutine
+
+		This routine wrappers the INIT_AXIS_MIDPOINT subroutine
+		which initilizes the axis guess from the boundary coefficients
+
+		Returns
+		-------
+		out_data: dict
+			Dictionary of axis harmonics
+		"""
+		import ctypes as ct
+		# Get constant
+		module_name = self.s1+'vparams_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getndatafmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ndatafmax = get_constant()
+		# Load Libraries and initialize axis
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_init_axis = getattr(self.libstell,module_name+'_init_axis_midpoint'+self.s3)
+		indata_init_axis.argtypes = None
+		indata_init_axis.restype  = None
+		indata_init_axis()
+		realLen =[(ndatafmax,1)]*6
+		realList=['raxis','zaxis','raxis_cc','raxis_cs','zaxis_cc','zaxis_cs']
+		out_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		return out_data
+
 	def read_bootin(self,filename):
 		"""Reads a BOOTSJ BOOTIN namelist
 

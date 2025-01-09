@@ -959,6 +959,28 @@ class VMEC_INDATA():
 		"""
 		return self.libStell.indataVolume()
 
+	def initAxisMean(self):
+		"""Initiazlize the axis using a mean method
+
+		The routine initializes the axis using a mean method.
+
+		"""
+		rzaxis_dict = self.libStell.indataInitAxisMean()
+		for key in rzaxis_dict:
+			setattr(self, key, rzaxis_dict[key])
+		return 
+
+	def initAxisMidpoint(self):
+		"""Initiazlize the axis using a midpoint method
+
+		The routine initializes the axis using a midpoint method.
+
+		"""
+		rzaxis_dict = self.libStell.indataInitAxisMidpoint()
+		for key in rzaxis_dict:
+			setattr(self, key, rzaxis_dict[key])
+		return 
+
 
 
 # Main routine
