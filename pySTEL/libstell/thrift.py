@@ -191,7 +191,7 @@ class THRIFT():
         
         plot_var = getattr(self,var)
         
-        time = np.array(time)
+        time = np.atleast_1d(time)
         
         idx = [np.argmin(np.abs(self.THRIFT_T-t)) for t in time]
         #idx = np.argmin(np.abs(self.THRIFT_T-time))
