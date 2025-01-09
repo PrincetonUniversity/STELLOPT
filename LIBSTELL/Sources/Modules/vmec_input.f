@@ -1,5 +1,6 @@
       MODULE vmec_input
       USE vparams, ONLY: rprec, dp, mpol1d, ntord, ndatafmax
+      USE stel_constants, ONLY: zero,twopi
       USE vsvd0
       IMPLICIT NONE
 !-----------------------------------------------
@@ -678,6 +679,36 @@
       iflag = 0
       RETURN
       END SUBROUTINE bcast_indata_namelist
+
+      SUBROUTINE INDATA_VOLUME(volume)
+      IMPLICIT NONE
+      REAL(rprec),INTENT(OUT) :: volume
+      INTEGER :: m, n, u, v, nu1, nv1
+      INTEGER, PARAMETER :: nu = 256
+      INTEGER, PARAMETER :: nv = 256
+      REAL(rprec) :: tcos, tsin, arg1
+      REAL(rprec), DIMENSION(nu,nv) :: rreal, zreal, rureal
+      nu1 = nu - 1; nv1 = nv - 1
+      volume = zero; rreal = zero; zreal = zero; rureal = zero
+      DO n = -ntord,ntord
+         DO m = 0,mpol1d
+            DO u = 1, nu
+               DO v = 1, nv
+                  arg1 = (m*DBLE(u/nu1)-n*DBLE(v/nv1))*twopi
+                  tcos = COS(arg1)
+                  tsin = SIN(arg1)
+                  rreal(u,v)  = rreal(u,v) + rbc(n,m) * tcos
+                  zreal(u,v)  = zreal(u,v) + zbs(n,m) * tsin
+                  rureal(u,v) = rureal(u,v) 
+     1                          - m * rbc(n,m) * tsin * twopi
+               END DO
+            END DO
+         END DO
+      END DO
+      volume = nfp*twopi*SUM(rreal*zreal*rureal)/(nu1*nu1)
+      RETURN
+
+      END SUBROUTINE INDATA_VOLUME
 
       END MODULE vmec_input
 
