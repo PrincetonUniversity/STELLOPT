@@ -110,7 +110,9 @@
       CALL mpialloc(THRIFT_AMINOR, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_aminor)     
       CALL mpialloc(THRIFT_RMAJOR, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_rmajor)  
       CALL mpialloc(THRIFT_VP,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_vp)      
-      CALL mpialloc(THRIFT_BVAV,   nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_bvav)     
+      CALL mpialloc(THRIFT_BVAV,   nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_bvav)   
+      CALL mpialloc(THRIFT_BETATOT,   ntimesteps,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_betatot)
+
       ! Electric field
       CALL mpialloc(THRIFT_EPARB,  nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_eparb)
       CALL mpialloc(THRIFT_ER,     nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_er) 
@@ -168,6 +170,14 @@
 
       ! Now setup the profiles
       CALL read_thrift_profh5(TRIM(prof_string))
+
+      ! Allocate particle and heat fluxes (do it here because nion_prof only now available)
+      CALL mpialloc(THRIFT_GNEO,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_gneo) 
+      CALL mpialloc(THRIFT_QNEO,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_qneo)
+      ! Allocate densities, temperatures and pressures
+      CALL mpialloc(THRIFT_DENS,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dens)
+      CALL mpialloc(THRIFT_TEMP,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_temp)
+      CALL mpialloc(THRIFT_PRESS,  nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_press) 
 
       ! Read restart file
       IF (lrestart_from_file) THEN

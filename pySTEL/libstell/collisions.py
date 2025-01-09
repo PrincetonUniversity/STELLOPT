@@ -438,6 +438,66 @@ class COLLISIONS():
 		import numpy as np
 		return (0.75*np.sqrt(np.pi*mp/self.ME))**(1.0/3.0) * np.sqrt(2*EC*Te/mp)
 
+	def collisionalHeatExchange(self,n1,T1,m1,Z1,n2,T2,m2,Z2):
+		"""Computes the collisional energy exchange rate between two
+  		thermalized species (ie., their dist functions are Maxwellians)
+        with zero relative flow velocity
+        
+        References:
+        Eq. (51) in https://scipub.euro-fusion.org/wp-content/uploads/2014/11/EFDR07001.pdf
+        OR
+        Eq. (52) in https://courses.physics.ucsd.edu/2009/Fall/physics218a/Collisional%20Transport.pdf
+        
+        Parameters
+		----------
+		n1 : real
+			Species #1 Density [m^-3]
+  		T1 : real
+			Species #1 Temperature [eV]
+   		m1 : real
+			Species #1 Mass [kg]
+		Z1 : real
+			Species #1 Charge number
+		n2 : real
+			Species #2 Density [m^-3]
+  		T2 : real
+			Species #2 Temperature [eV]
+   		m2 : real
+			Species #2 Mass [kg]
+		Z2 : real
+			Species #2 Charge number
+		Returns
+		----------
+		W_s1_s2 : real
+			Collisional thermal energy exchange rate [W/m^3]
+		"""
+		import numpy as np
+
+		# get Coulomb logarithm
+		if(Z1>0 and Z2>0):
+			clog = self.coullog_ii(m1,Z1,n1,T1,m2,Z2,n2,T2)
+		elif(Z1>0 and Z2<0):
+			clog = self.coullog_ei(n2,T2,m1,Z1,n1,T1)
+		elif(Z1<0 and Z2>0):
+			clog = self.coullog_ei(n1,T1,m2,Z2,n2,T2)
+		else:
+			# print('Heat exchange between electrons and electrons is 0')
+			return 0.0
+
+		gamma = (Z1*Z2*EC*EC)**2 * clog / (8*np.pi*EPS0**2)
+  
+		vth_s1_sqr = 2*EC*T1/m1
+		vth_s2_sqr = 2*EC*T2/m2
+
+		num = gamma * n1 * n2 * (T2-T1)
+		den = m1 * m2 * (vth_s1_sqr + vth_s2_sqr)**1.5
+  
+		W_s1_s2 = (8/np.sqrt(np.pi)) * num / den  # eV / (s.m^3)
+
+		W_s1_s2 = W_s1_s2 * EC  # W/m^3
+  
+		return W_s1_s2    
+ 
 if __name__=="__main__":
 	import sys
 	sys.exit(0)
