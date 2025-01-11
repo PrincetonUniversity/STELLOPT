@@ -925,7 +925,7 @@ class VMEC_INDATA():
 		changes made to the class.
 		"""
 		out_dict = vars(self)
-		self.libStell.update_indata(out_dict)
+		self.libStell.update_module('vmec_input_',out_dict)
 
 	def write_indata(self,filename):
 		"""Writes INDATA namelist to a file

@@ -211,6 +211,23 @@ class LIBSTELL():
 		out_data['zbs'] = np.reshape(out_data['zbs'],(mpol1d+1,2*ntord+1))
 		return out_data
 
+	def update_indata(self,out_dict):
+		"""Updates the Fortran memory with the indata dictionary
+
+		This routine updates the memory on the Fortran side with any
+		modifications made to the supplied dictionary.
+
+		Parameters
+		----------
+		out_dict : dict
+			Dictionary of items to change.
+		"""
+		import ctypes as ct
+		module_name = self.s1+'vmec_input_'+self.s2
+		# Check if we want to update values
+		for key in out_dict:
+			self.set_module_var(module_name,key,out_dict[key])
+
 	def write_indata(self,filename,out_dict=None):
 		"""Wrappers writing of the VMEC INDATA namelist
 
@@ -224,11 +241,11 @@ class LIBSTELL():
 			Dictionary of items to change.
 		"""
 		import ctypes as ct
-		module_name = self.s1+'vmec_input_'+self.s2
 		# Check if we want to update values
 		if out_dict:
-			for key in out_dict:
-				self.set_module_var(module_name,key,out_dict[key])
+			self.update_indata(out_dict)
+		# Write the indata namelist
+		module_name = self.s1+'vmec_input_'+self.s2
 		write_indata_namelist = getattr(self.libstell,module_name+'_write_indata_namelist_byfile'+self.s3)
 		write_indata_namelist.argtypes = [ct.c_char_p,ct.c_long]
 		write_indata_namelist.restype=None
