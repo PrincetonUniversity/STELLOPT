@@ -47,26 +47,26 @@ class VMEC(FourierRep):
 		self.overr = self.h2f(self.overr)
 		self.specw = self.h2f(self.specw)
 		for mn in range(self.mnmax):
-			self.lmns[:,mn] = self.h2f(self.lmns[:,mn])
+			self.lmns[:,mn] = self.h2fmn(self.lmns[:,mn],self.xm[mn])
 		for mn in range(self.mnmax_nyq):
-			self.bmnc[:,mn] = self.h2f(self.bmnc[:,mn])
-			self.gmnc[:,mn] = self.h2f(self.gmnc[:,mn])
-			self.bsupumnc[:,mn] = self.h2f(self.bsupumnc[:,mn])
-			self.bsupvmnc[:,mn] = self.h2f(self.bsupvmnc[:,mn])
-			self.bsubsmns[:,mn] = self.h2f(self.bsubsmns[:,mn])
-			self.bsubumnc[:,mn] = self.h2f(self.bsubumnc[:,mn])
-			self.bsubvmnc[:,mn] = self.h2f(self.bsubvmnc[:,mn])
+			self.bmnc[:,mn] = self.h2fmn(self.bmnc[:,mn],self.xm_nyq[mn])
+			self.gmnc[:,mn] = self.h2fmn(self.gmnc[:,mn],self.xm_nyq[mn])
+			self.bsupumnc[:,mn] = self.h2fmn(self.bsupumnc[:,mn],self.xm_nyq[mn])
+			self.bsupvmnc[:,mn] = self.h2fmn(self.bsupvmnc[:,mn],self.xm_nyq[mn])
+			self.bsubsmns[:,mn] = self.h2fmn(self.bsubsmns[:,mn],self.xm_nyq[mn])
+			self.bsubumnc[:,mn] = self.h2fmn(self.bsubumnc[:,mn],self.xm_nyq[mn])
+			self.bsubvmnc[:,mn] = self.h2fmn(self.bsubvmnc[:,mn],self.xm_nyq[mn])
 		if self.iasym==1:
 			for mn in range(self.mnmax):
-				self.lmnc[:,mn] = self.h2f(self.lmnc[:,mn])
+				self.lmnc[:,mn] = self.h2fmn(self.lmnc[:,mn],self.xm[mn])
 			for mn in range(self.mnmax_nyq):
-				self.bmns[:,mn] = self.h2f(self.bmns[:,mn])
-				self.gmns[:,mn] = self.h2f(self.gmns[:,mn])
-				self.bsupumns[:,mn] = self.h2f(self.bsupumns[:,mn])
-				self.bsupvmns[:,mn] = self.h2f(self.bsupvmns[:,mn])
-				self.bsubsmnc[:,mn] = self.h2f(self.bsubsmnc[:,mn])
-				self.bsubumns[:,mn] = self.h2f(self.bsubumns[:,mn])
-				self.bsubvmns[:,mn] = self.h2f(self.bsubvmns[:,mn])
+				self.bmns[:,mn] = self.h2fmn(self.bmns[:,mn],self.xm_nyq[mn])
+				self.gmns[:,mn] = self.h2fmn(self.gmns[:,mn],self.xm_nyq[mn])
+				self.bsupumns[:,mn] = self.h2fmn(self.bsupumns[:,mn],self.xm_nyq[mn])
+				self.bsupvmns[:,mn] = self.h2fmn(self.bsupvmns[:,mn],self.xm_nyq[mn])
+				self.bsubsmnc[:,mn] = self.h2fmn(self.bsubsmnc[:,mn],self.xm_nyq[mn])
+				self.bsubumns[:,mn] = self.h2fmn(self.bsubumns[:,mn],self.xm_nyq[mn])
+				self.bsubvmns[:,mn] = self.h2fmn(self.bsubvmns[:,mn],self.xm_nyq[mn])
 		# Calc Eplasma
 		self.eplasma = 1.5*4*np.pi*np.pi*sum( self.vp * self.presf ) / self.ns
 		# Get mn00
@@ -74,7 +74,6 @@ class VMEC(FourierRep):
 		for mn in range(self.mnmax):
 			if self.xm[mn]==0 and self.xn[mn]==0:
 				self.mn00 = mn
-
 
 	def h2f(self,var_half):
 		"""Half to full grid
@@ -96,6 +95,45 @@ class VMEC(FourierRep):
 		temp[0] = 1.5 * temp[1] - 0.5 * temp[2]
 		temp[1:-1] = 0.5 * (temp[1:-1] + temp[2:])
 		temp[-1] = 2.0 * temp[-1] - 1.0 * temp[-2]
+		return temp
+
+	def h2fmn(self,var_half,mmode):
+		"""Half to full grid with Fourier interpolation
+
+		This routine takes a 1D field and interpolates it from the half
+		to the full grid taking care of even and odd mode parity. For 
+		an ns sized array we assumes that the first index [0]=0 and 
+		is just a placeholder.
+
+		Parameters
+		----------
+		var_half : list
+			Variable on half grid
+		mmode : int
+			Poloidal mode number
+		Returns
+		----------
+		var_full : list
+			Variable on full grid
+		"""
+		import numpy as np
+		temp = var_half.copy()
+		if np.mod(mmode,2) == 1:
+			#factlo = 0.5*SQRT((k-1.0)/(k-1.5)) #orig
+			#facthi = 0.5*SQRT((k-1.0)/(k-0.5)) #orig
+			factlo = 0.5*np.sqrt(np.linspace(0,self.ns-1.0,self.ns)/np.linspace(-0.5,self.ns-1.5,self.ns))
+			facthi = 0.5*np.sqrt(np.linspace(0,self.ns-1.0,self.ns)/np.linspace( 0.5,self.ns-0.5,self.ns))
+			temp[1:-1] = factlo[1:-1]*temp[1:-1] + facthi[2:]*temp[2:]
+			factlo = 2.0*np.sqrt((self.ns-1)/(self.ns-1.5))
+			facthi =-1.0*np.sqrt((self.ns-1)/(self.ns-2.0))
+			temp[-1] = factlo*temp[-1]+facthi*temp[-2]
+			temp[0] = 0.0
+		else:
+			temp[1:-1] = 0.5*(temp[1:-1] + temp[2:])
+			# Do ns
+			temp[-1] = 2.0*temp[-1]-temp[-2]
+			# Do 1
+			temp[0] = 2.0*temp[1]-temp[2]
 		return temp
 
 	def calc_jll(self, theta, phi ):
@@ -879,6 +917,15 @@ class VMEC_INDATA():
 			setattr(self, key, indata_dict[key])
 		# generate helpers
 		#print(self.rbc.shape)
+
+	def update_indata(self):
+		"""Update indata on the Fortran side of memory
+
+		This routine updates the fortran side of memory with any
+		changes made to the class.
+		"""
+		out_dict = vars(self)
+		self.libStell.update_indata(out_dict)
 
 	def write_indata(self,filename):
 		"""Writes INDATA namelist to a file
