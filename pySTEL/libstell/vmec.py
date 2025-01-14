@@ -33,7 +33,8 @@ class VMEC(FourierRep):
 			Path to wout file.
 		"""
 		import numpy as np
-		wout_dict = self.libStell.read_wout(filename)
+		import copy
+		wout_dict = copy.deepcopy(self.libStell.read_wout(filename))
 		for key in wout_dict:
 			setattr(self, key, wout_dict[key])
 		# (mu-nv) -> (mu+nv)
@@ -130,16 +131,36 @@ class VMEC(FourierRep):
 		jll = (bu*ju+bv*jv)/(g*b)
 		return jll
 
+	def calc_magwell(self):
+		"""Compute Magnetic Well vs Hill
+
+		This routine computes the magnetic well according to the
+		formula in:
+		https://fusion.gat.com/pubs-ext/ComPlasmaPhys/A22135.pdf
+		which is essentially
+				 V * ( 2 * mu0 * p'/V' + d<B^2>/drho)
+			W =  ------------------------------------
+			                <B^2>
+
+		Returns
+		----------
+		W : ndarray
+			Well (W>0) / Hill (W<0) Stability Parameter
+		"""
+		import numpy as np
+		p = np.squeeze(self.presf)
+		vp = np.squeeze(self.vp)
+		V  = np.cumsum(vp)*4*np.pi*np.pi/self.ns
+		Bsqav = np.squeeze(self.bdotb)
+		pp = np.gradient(p)
+		dBsqav = np.gradient(Bsqav)
+		return V * ( 8E-7 * np.pi * pp / vp + dBsqav)/Bsqav
+
 	def calc_grad_rhosq(self):
 		"""Compute <|grad(rho)|^2> 
+
 		This routine flux surface average of |grad(rho)|^2 
 
-		Parameters
-		----------
-		theta : ndarray
-			Polidal angle grid [rad]
-		phi : ndarray
-			Toroidal angle grid [rad]
 		Returns
 		----------
 		avgrho2 : ndarray
@@ -189,6 +210,7 @@ class VMEC(FourierRep):
 
 	def calc_susceptance(self):
 		"""Compute susceptance matrix elements 
+
 		This routine calculates the susceptance matrix elements
 		S11, S12, S21, S22.
 
@@ -257,8 +279,47 @@ class VMEC(FourierRep):
 		S22 = np.trapz(S22, x=theta, axis=1)*scale_fact
 		return S11,S12,S21,S22
 
+	def calcNormals2D(self,theta,phi,ns=None):
+		"""Returns the 2D surface normals over a domain
+		
+		This routine calculates the 2D outward directed normals for a
+		given surface.  Here the normals always lie in the a plane
+		of constant toroidal angle.
+
+		Parameters
+		----------
+		theta : list
+			Poloidal angles at which to evaluate normals [rad]
+		phi  : list
+			Toroidal angles at which to evaluate normals [rad]
+		s    : int
+			Radial index at which to evaluate normals (default: ns)
+
+		Returns
+		----------
+		nr : ndarray
+			Cylindical radial surface normal (normalized)
+		nz : numpy array
+			Cylindrical vertical surface normal (normalized)
+		"""
+		import numpy as np
+		if type(ns) is type(None):
+			ns = self.ns-1
+		r = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
+		z = self.sfunct(theta,phi,self.zmns,self.xm,self.xn)
+		rumns = -self.rmnc*np.tile(self.xm,(1,self.ns)).T
+		zumnc =  self.zmns*np.tile(self.xm,(1,self.ns)).T
+		ru = self.sfunct(theta,phi,rumns,self.xm,self.xn)
+		zu = self.cfunct(theta,phi,zumnc,self.xm,self.xn)
+		nr =  r[ns,:,:]*zu[ns,:,:]
+		nz = -r[ns,:,:]*ru[ns,:,:]
+		n  = np.sqrt(nr*nr+nz*nz)
+		return nr/n, nz/n
+
+
 	def getSpline(self,*args,**kwargs):
 		"""Returns a profile in the AUX_S/F form
+
 		This routine returns the pressure, current or rotational
 		transform profile in the form AUX form used by the VMEC input
 		spline routines.
@@ -300,6 +361,7 @@ class VMEC(FourierRep):
 
 	def getCurrentPoloidal(self):
 		"""Returns the poloidal total current
+
 		This routine returns the total poloidal current as used by the
 		BNORM code.
 
@@ -314,6 +376,91 @@ class VMEC(FourierRep):
 			if (self.xm_nyq[mn]==0 and self.xn_nyq[mn]==0):
 				curpol = 2.0*self.bsubvmnc[self.ns-1,mn]*np.pi/self.nfp 
 		return curpol
+
+	def getiota(self,s):
+		"""Returns the rotational transform
+
+		This routine returns the rotational transform given a value
+		of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		iota : float
+			Rotational Transform [arb]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = self.iotaf
+		return np.interp(s,x,f)
+
+	def getiotaprime(self,s):
+		"""Returns the derivative of the rotational transform
+
+		This routine returns the derivative of the rotational 
+		transform given a value of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		iotap : float
+			Rotational Transform Derivative diota/ds [arb]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = np.diff(self.iotaf,prepend=0)*(self.ns-1)
+		return np.interp(s,x,f)
+
+	def getpressure(self,s):
+		"""Returns the pressure
+
+		This routine returns the pressure given a value
+		of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		pressure : float
+			Pressure [Pa]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = self.presf
+		return np.interp(s,x,f)
+
+	def getpressureprime(self,s):
+		"""Returns the derivative of the pressure profile
+
+		This routine returns the derivative of the pressure 
+		profile given a value of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		iotap : float
+			Rotational Transform Derivative diota/ds [arb]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = np.diff(self.presf,prepend=0)*(self.ns-1)
+		return np.interp(s,x,f)
+
 
 	def getBcyl(self,R,phi,Z):
 		"""Wrapper to the GetBcyl_WOUT function
@@ -384,6 +531,10 @@ class VMEC(FourierRep):
 			Derivative of R coordiante with respect to u (dR/du)
 		dZdu : real
 			Derivative of Z coordiante with respect to u (dZ/du)
+		dRdv : real
+			Derivative of R coordiante with respect to v (dR/dv)
+		dZdv : real
+			Derivative of Z coordiante with respect to v (dZ/dv)
 		"""
 		return self.libStell.vmec_get_flxcoord(s,u,v)
 
@@ -427,9 +578,6 @@ class VMEC(FourierRep):
 			n1 = n1 + 1
 			th = th + 0.5 *dth
 		return th
-
-
-
 
 	def extrapSurface(self,surf=None,dist=0.1):
 		"""Returns an extrapolated surface.

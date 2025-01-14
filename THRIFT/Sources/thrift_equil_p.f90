@@ -20,7 +20,7 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: i
+      INTEGER :: i, j
       REAL(rprec) :: s_val, rho_val, p_val
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -39,6 +39,19 @@
            AM_AUX_F(i) = p_val
          END DO
       END IF
+
+      ! Save profiles in the THRIFT_## arrays
+      DO i = 1,nsj
+            rho_val = SQRT( THRIFT_S(i) )
+            CALL get_prof_te(rho_val, THRIFT_T(mytimestep), THRIFT_TEMP(1,i,mytimestep))
+            CALL get_prof_ne(rho_val, THRIFT_T(mytimestep), THRIFT_DENS(1,i,mytimestep))
+            THRIFT_PRESS(1,i,mytimestep) = THRIFT_DENS(1,i,mytimestep) * THRIFT_TEMP(1,i,mytimestep) * e_charge
+            DO j = 1, nion_prof
+                  CALL get_prof_ti(rho_val, THRIFT_T(mytimestep), j, THRIFT_TEMP(j+1,i,mytimestep))
+                  CALL get_prof_ni(rho_val, THRIFT_T(mytimestep), j, THRIFT_DENS(j+1,i,mytimestep))
+                  THRIFT_PRESS(j+1,i,mytimestep) = THRIFT_DENS(j+1,i,mytimestep) * THRIFT_TEMP(j+1,i,mytimestep) * e_charge
+            END DO
+      END DO
 
       RETURN
 !----------------------------------------------------------------------
