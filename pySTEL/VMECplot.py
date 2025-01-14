@@ -39,7 +39,8 @@ class MyApp(QMainWindow):
 		self.statusBar().showMessage('Ready')
 		self.ui.plot_list = ['Summary','-----1D-----','Iota','q','Pressure',\
 		'<Buco>','<Bvco>','<jcuru>','<jcurv>','<B.B>','<j.B>',  '-----3D------','|B|','sqrt(g)',\
-		'B^u','B^v','B_s','B_u','B_v','j^u','j^v', 'jll', 'j.B','---Special---','LPK','Mercier']
+		'B^u','B^v','B_s','B_u','B_v','j^u','j^v', 'jll', 'j.B','---Special---','LPK','Mercier',\
+		'Magwell']
 		files = sorted(os.listdir('.'))
 		for name in files:
 			if(name[0:4]=='wout'):
@@ -291,6 +292,14 @@ class MyApp(QMainWindow):
 			self.ax.set_ylabel('[Arb]')
 			self.ax.set_title('Mercier Stability (>0 Stable)')
 			self.ax.set_ylim(-0.1,0.1)
+			self.ax.legend()
+		elif (plot_name == 'Magwell'):
+			magwell = self.vmec_data.calc_magwell()
+			self.ax.plot(self.nflux,magwell)
+			self.ax.set_xlabel('Normalized Flux')
+			self.ax.set_ylabel('W')
+			self.ax.set_title('Magnetic Well/Hill (>0 Well)')
+			#self.ax.set_ylim(-0.1,0.1)
 			self.ax.legend()
 		elif (plot_name == 'LPK'):
 			self.ax.plot(self.r[self.ns-1,:,0],self.z[self.ns-1,:,0],color='red')

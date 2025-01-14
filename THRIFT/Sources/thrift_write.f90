@@ -10,6 +10,7 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
+      USE thrift_profiles_mod, ONLY : nion_prof
 #if defined(LHDF5)
       USE ez_hdf5
 #endif
@@ -65,6 +66,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_T',ier)
          CALL write_var_hdf5(fid,'THRIFT_PHIEDGE',ntimesteps,ier,DBLVAR=THRIFT_PHIEDGE,ATT='Toroidal magnetic flux at plasma edge [Wb] (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PHIEDGE',ier)
+         CALL write_var_hdf5(fid,'THRIFT_BETATOT',ntimesteps,ier,DBLVAR=THRIFT_BETATOT,ATT='Total Plasma Beta',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_BETATOT',ier)
          ! 2D Floats
          ! Current densities
          nfg = nrho+2
@@ -163,7 +166,19 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATUD',ier)
          CALL write_var_hdf5(fid,'THRIFT_MATRHS',nsj,ntimesteps,ier,DBLVAR=THRIFT_MATRHS,ATT='Matrix equation RHS',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATRHS',ier)
-                  
+         ! Fluxes
+         CALL write_var_hdf5(fid,'THRIFT_GNEO',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_GNEO,ATT='Neoclassical particle flux [m^-2 s^-2]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_GNEO',ier)
+         CALL write_var_hdf5(fid,'THRIFT_QNEO',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_QNEO,ATT='Neoclassical heat flux [eV m^-2 s^-2]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_QNEO',ier)
+         ! Density, temperature and pressure
+         CALL write_var_hdf5(fid,'THRIFT_DENS',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_DENS,ATT='Density of each species [m^-3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_DENS',ier)
+         CALL write_var_hdf5(fid,'THRIFT_TEMP',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_TEMP,ATT='Temperature of each species [eV]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_TEMP',ier)
+         CALL write_var_hdf5(fid,'THRIFT_PRESS',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_PRESS,ATT='Pressure of each species [Pa]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PRESS',ier)
+          
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'thrift_'//TRIM(id_string)//'.h5',ier)
 #else

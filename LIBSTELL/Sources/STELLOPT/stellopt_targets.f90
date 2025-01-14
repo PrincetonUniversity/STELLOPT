@@ -84,6 +84,7 @@
       REAL(rprec) ::  target_kappa_avg, sigma_kappa_avg
       REAL(rprec) ::  target_x, sigma_x
       REAL(rprec) ::  target_y, sigma_y
+      REAL(rprec) ::  target_rosenbrock2d, sigma_rosenbrock2d
       REAL(rprec), DIMENSION(rosenbrock_dim) ::  target_Rosenbrock_F, &
                                                  sigma_Rosenbrock_F
       REAL(rprec), PARAMETER ::  bigno_ne = 1.0E27
@@ -297,6 +298,7 @@
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
       INTEGER, PARAMETER :: jtarget_Rosenbrock_F   = 902
+      INTEGER, PARAMETER :: jtarget_Rosenbrock2D   = 903
       
 
       CONTAINS
@@ -313,6 +315,8 @@
             WRITE(iunit, out_format) 'Y'
          CASE(jtarget_Rosenbrock_F)
             WRITE(iunit, out_format) 'Rosenbrock Test Function'
+         CASE(jtarget_Rosenbrock2D)
+            WRITE(iunit, out_format) 'Rosenbrock (2D) Test Function'
          CASE(jtarget_aspect)
             WRITE(iunit, out_format) 'Aspect Ratio'
          CASE(jtarget_aspect_max)

@@ -82,6 +82,120 @@ class GIST():
 				self.kp1 = self.L2 - self.dpdx/2.0/self.Bhat
 			i = i + 1
 
+	def calcGist(self,alpha,maxpnt,vmec_data,s):
+		"""Compute the GIST quantities from inputs
+
+		This routine computes the various GIST quantities based on a 
+		set of user inputs. It mimics the behavior of the STELLOPT
+		stellopt_txport code.
+
+		"""
+		import numpy as np
+		self.s0 = s
+		self.alpha0 = alpha
+		self.Rmajor = vmec_data.Rmajor
+		self.Aminor = vmec_data.Aminor
+		Ba = ABS(vmec_data.phi[-1]/(np.pi*vmec_data.Aminor*vmec_data.Aminor))
+		iota = vmec_data.getiota(s)
+		iotap = vmec_data.getiotaprime(s)
+		pressp = vmec_data.getpressureprime(s)
+		mu0 = 4E-7*np.pi
+		q = 1.0/iota
+		qprime = -iota*q*q
+		shat   = 2*s/q*qprime
+		dpdx   = -4.0*np.sqrt(s)/Ba**2 * pressp*mu0
+		theta = np.linspace(-np.pi,np.pi,maxpnt)
+		self.dpdx = dpdx
+		self.q0   = q
+		self.shat = shat
+		self.gridpoints = maxpnt
+		self.n_pol = 1
+		self.g11     = np.zeros(self.gridpoints)
+		self.g12     = np.zeros(self.gridpoints)
+		self.g22     = np.zeros(self.gridpoints)
+		self.Bhat    = np.zeros(self.gridpoints)
+		self.abs_jac = np.zeros(self.gridpoints)
+		self.L2      = np.zeros(self.gridpoints)
+		self.L1      = np.zeros(self.gridpoints)
+		self.dBdt    = np.zeros(self.gridpoints)
+		for u in range(maxpnt):
+			zeta = alpha + q*(theta[u]-0.0)
+			thetastar = vmec_data.getTheta(s,theta[u],zeta)
+			R,phi,Z,dRds,dZds,dRdu,dZdu,dRdv,dZdv = vmec_data.get_flxcoord(s,thetastar,zeta)
+			# Calc covariant vectors
+			esubs = [dRds,0.0,dZds]
+			esubu = [dRdu,0.0,dZdu]
+			esubv = [dRdv*vmec_data.nfp,R,dZdv*vmec_data.nfp]
+			# Calc Jacobian
+			sqrtg = R*(dRdu*dZds-dRds*dZdu)
+			# Calc contravaiant vectors
+			es = np.array([esubu[1]*esubv[2]-esubu[2]*esubv[1],
+						   esubu[2]*esubv[0]-esubu[0]*esubv[2],
+			    		   esubu[0]*esubv[1]-esubu[1]*esubv[0]])/sqrtg
+			eu = np.array([esubv[1]*esubs[2]-esubv[2]*esubs[1],
+						   esubv[2]*esubs[0]-esubv[0]*esubs[2],
+						   esubv[0]*esubs[1]-esubv[1]*esubs[0]])/sqrtg
+			ev = np.array([esubs[1]*esubu[2]-esubs[2]*esubu[1],
+						   esubs[2]*esubu[0]-esubs[0]*esubu[2],
+						   esubs[0]*esubu[1]-esubs[1]*esubu[0]])/sqrtg
+			# Calc Grad(B)
+			b = vmec_data.cfunct([thetastar],[zeta],vmec_data.bmnc,vmec_data.xm_nyq,vmec_data.xn_nyq)
+			bumns = -vmec_data.bmnc*np.tile(vmec_data.xm_nyq,(1,vmec_data.ns)).T
+			bvmns =  vmec_data.bmnc*np.tile(vmec_data.xn_nyq,(1,vmec_data.ns)).T
+			m = np.tile(vmec_data.xm_nyq,[1,vmec_data.ns])
+			x = np.linspace(0,1,vmec_data.ns)
+			f = np.diff(b,prepend=0)*(self.ns-1)
+			modb = np.interp(s,x,b)
+			bs = np.interp(s,x,f)
+			bu = vmec_data.sfunct([thetastar],[zeta],bumns,vmec_data.xm_nyq,vmec_data.xn_nyq)
+			bv = vmec_data.sfunct([thetastar],[zeta],bvmns,vmec_data.xm_nyq,vmec_data.xn_nyq)
+			gradb = bs*es + bu*eu + bv*ev
+			# Adjust eu to include lambda factor
+			lam = vmec_data.cfunct([thetastar],[zeta],vmec_data.bmnc,vmec_data.xm_nyq,vmec_data.xn_nyq)
+			lumns = -vmec_data.lmnc*np.tile(vmec_data.xm,(1,vmec_data.ns)).T
+			lvmns =  vmec_data.lmnc*np.tile(vmec_data.xn,(1,vmec_data.ns)).T
+			x = np.linspace(0,1,vmec_data.ns)
+			f = np.diff(lam,prepend=0)*(self.ns-1)
+			ls = np.interp(s,x,f)
+			lu = vmec_data.sfunct([thetastar],[zeta],lumns,vmec_data.xm,vmec_data.xn)
+			lv = vmec_data.sfunct([thetastar],[zeta],lvmns,vmec_data.xm,vmec_data.xn)
+			eu = eu + ls*es + lu*eu + lv*ev
+			# Calc metric elments
+			gradA = thetastar*qprime*es + q*eu - ev
+			jac1 = 1.0/np.array([es[1]*gradA[2]-es[2]*gradA[1],
+						   es[2]*gradA[0]-es[0]*gradA[2],
+						   es[0]*gradA[1]-es[1]*gradA[0]])
+			gss = np.sum(es*es)
+			gsa = np.sum(es*gradA)
+			gst = np.sum(es*eu)
+			gaa = np.sum(gradA*gradA)
+			gat = np.sum(gradA*eu)
+			alpha = q*thetaStar - v
+			# Now output the values
+			self.Bhat[u] = modb/Ba
+			self.g11[u]  = gss*self.Aminor*self.Aminor*0.25/s
+			self.g12[u]  = gsa*self.Aminor*self.Aminor*iota*0.5
+			self.g22[u] = (self.Bhat[u]*self.Bhat[u] + self.g12[u]*self.g12[u])/self.g11[u]
+			self.abs_jac[u] = ABS(jac1*2*q/self.Aminor**3)
+			# Reuse some variables (order matters)
+			ea = np.array([eu[1]*es[2]-eu[2]*es[1],
+						   eu[2]*es[0]-eu[0]*es[2],
+						   eu[0]*es[1]-eu[1]*es[0]])*jac1
+			et = np.array([es[1]*gradA[2]-es[2]*gradA[1],
+						   es[2]*gradA[0]-es[0]*gradA[2],
+						   es[0]*gradA[1]-es[1]*gradA[0]])*jac1
+			es = np.array([gradA[1]*eu[2]-gradA[2]*eu[1],
+						   gradA[2]*eu[0]-gradA[0]*eu[2],
+						   gradA[0]*eu[1]-gradA[1]*eu[0]])*jac1
+			gradB = gradB/Ba
+			dBds  = np.sum(gradB,es)
+			dBda  = np.sum(gradB,ea)
+			self.dBdt[u] = np.sum(gradB,et)
+			c     = iota*iota*self.Aminor**4
+			self.L1[u] = q/np.sqrt(s)*(dBda + c*(gss*gat-gsa*gst)*self.dBdt[u]/(4*self.Bhat[u]**2))
+			self.L2[u] = 2*np.sqrt(s)*(dBds + c*(gaa*gst-gsa*gat)*self.dBdt[u]/(4*self.Bhat[u]**2))
+		self.kp1 = self.L2 - self.dpdx/2.0/self.Bhat
+
 	def calcProxG11(self):
 		"""Computes the G11 proxy
 
