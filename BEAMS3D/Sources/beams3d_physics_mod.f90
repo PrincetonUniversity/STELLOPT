@@ -395,10 +395,10 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             dve   = factor_electron*speed*tau_spit_inv
             dvi   = factor_ion*vc3_tauinv/(speed*speed)
-            reduction = dve + dvi
-            newspeed = speed - reduction*dt+sigma*zeta
             dve=dve+ddve
             dvi=dvi+ddvi
+            reduction = (dve + dvi)*dt+sigma*zeta
+            newspeed = speed - reduction            
             vfrac = newspeed/speed
             !-----------------------------------------------------------
             !  Thermalize particle or adjust vll and moment
