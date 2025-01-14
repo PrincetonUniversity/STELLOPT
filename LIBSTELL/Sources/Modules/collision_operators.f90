@@ -56,12 +56,9 @@
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION, INTENT(in) :: z_plasma,mass_plasma
-         fact_crit = SQRT( 2.0 * electron_charge )
-         ! WESSON PG 226 5.4.9
-         fact_crit_weiland = fact_crit/sqrt(electron_mass) * ( 0.75 * sqrt_pi * &
-                            electron_mass * z_plasma / mass_plasma) ** (1.0/3.0)
-         fact_crit = fact_crit/sqrt(mass_plasma) * ( 0.75 * sqrt_pi * &
+         fact_crit = SQRT( 2.0 * electron_charge /mass_plasma) * ( 0.75 * sqrt_pi * &
                             SQRT( mass_plasma / electron_mass ) )**(1.0/3.0)
+         fact_crit_weiland=fact_crit*z_plasma** (1.0/3.0) ! WESSON PG 226 5.4.9
          RETURN
       END SUBROUTINE SET_CRIT_FACTOR
 
