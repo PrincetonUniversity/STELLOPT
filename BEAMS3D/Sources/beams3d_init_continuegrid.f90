@@ -41,7 +41,7 @@ SUBROUTINE beams3d_init_continuegrid
    LOGICAL :: lcreate_wall
    INTEGER :: ier, s, i, j, k, u
    REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
-      tetemp,netemp,titemp,zetemp,pottemp, omegtemp, rminor
+      tetemp,netemp,nitemp,titemp,zetemp,pottemp,omegtemp, rminor
    INTEGER :: nrh,nzh,nph
    REAL(rprec) :: rmin_hint, rmax_hint, zmin_hint, zmax_hint, &
       pmax_hint, pres_max
@@ -98,22 +98,34 @@ SUBROUTINE beams3d_init_continuegrid
       j = FLOOR(REAL(j) / REAL(nr))+1
       k = CEILING(REAL(s) / REAL(nr*nphi))
       sflx = 0.0
-
+      tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0;nitemp=0
       ! Bfield
-      CALL get_beams3d_gridB(i,j,k,brtemp,bptemp,bztemp,sflx,uflx,pottemp)
+      CALL get_beams3d_gridB(i,j,k,brtemp,bptemp,bztemp,sflx,uflx,&
+         pottemp, tetemp,netemp,titemp,nitemp,zetemp)
       B_R(i,j,k) = brtemp
       B_PHI(i,j,k) = bptemp
       B_Z(i,j,k) = bztemp
       S_ARR(i,j,k) = sflx
       U_ARR(i,j,k) = uflx
       POT_ARR(i,j,k) = pottemp
+      TE(i,j,k) = tetemp
+      NE(i,j,k) = netemp
+      TI(i,j,k) = titemp
 
       IF (sflx < s_max) THEN
-         tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0;omegtemp=0
-         IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),tetemp,ier)
-         IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),netemp,ier)
-         IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),titemp,ier)
-         IF (nomeg > 0) CALL EZspline_interp(OMEG_spl_s,MIN(sflx,s_max_omeg),omegtemp,ier)
+         IF (nte > 0) THEN
+            CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),tetemp,ier)
+            TE(i,j,k) = tetemp
+        END IF
+         
+         IF (nne > 0) THEN
+            CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),netemp,ier)
+            NE(i,j,k) = netemp
+         END IF               
+         IF (nti > 0) THEN
+            CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),titemp,ier)
+            TI(i,j,k) = titemp
+         END IF            
          IF (npot > 0) THEN
              CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),pottemp,ier)
              POT_ARR(i,j,k) = pottemp
@@ -124,8 +136,7 @@ SUBROUTINE beams3d_init_continuegrid
                CALL EZspline_interp(NI_spl_s(u),MIN(sflx,s_max_zeff),NI(u,i,j,k),ier)
             END DO
          END IF
-         NE(i,j,k) = netemp; TE(i,j,k) = tetemp; TI(i,j,k) = titemp
-         OMEG_ARR(i,:,k) = omegtemp
+         
       END IF
       IF (MOD(s,nr) == 0) THEN
          IF (lverb) THEN

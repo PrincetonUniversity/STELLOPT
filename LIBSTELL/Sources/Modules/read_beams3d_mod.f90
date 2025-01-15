@@ -34,7 +34,8 @@ MODULE read_beams3d_mod
    REAL(DTYPE), DIMENSION(:,:), POINTER, PRIVATE :: &
       R_lines, PHI_lines, Z_lines, rminor_lines, X_lines, Y_lines
    REAL(DTYPE), DIMENSION(:,:,:), POINTER, PRIVATE :: &
-      BR3D, BPHI3D, BZ3D, X3D, Y3D, Rminor3D, U3D, S3D, POT3D
+      BR3D, BPHI3D, BZ3D, X3D, Y3D, Rminor3D, U3D, S3D,&
+      POT3D, TE3D, TI3D, ZEFF3D, NE3D
    INTEGER :: win_raxis, win_phiaxis, win_zaxis, &
       win_BR3D, win_BPHI3D, win_BZ3D, win_U3D, win_S3D,&
       win_rminor_lines, &
@@ -117,6 +118,9 @@ NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
       CALL mpialloc(U3D, nr, nphi, nz, mylocalid, master, comm_read, win_U3D)
       CALL mpialloc(S3D,   nr, nphi, nz, mylocalid, master, comm_read, win_S3D)
       CALL mpialloc(POT3D,   nr, nphi, nz, mylocalid, master, comm_read, win_POT3D)
+      CALL mpialloc(TE3D,   nr, nphi, nz, mylocalid, master, comm_read, win_POT3D)
+      CALL mpialloc(TI3D,   nr, nphi, nz, mylocalid, master, comm_read, win_POT3D)
+      CALL mpialloc(NE3D,   nr, nphi, nz, mylocalid, master, comm_read, win_POT3D)
 
       ! Read Arrays and close file
 #if defined(LHDF5)
@@ -132,6 +136,18 @@ NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
          CALL read_var_hdf5(fid, 'POT_ARR',   nr, nphi, nz, istat, DBLVAR=POT3D)
          IF (istat /= 0) POT3D = 0
          CALL close_hdf5(fid,istat)
+         CALL read_var_hdf5(fid, 'ZEFF_ARR',   nr, nphi, nz, istat, DBLVAR=ZEFF3D)
+         IF (istat /= 0) ZEFF3D = 0
+         CALL close_hdf5(fid,istat)         
+         CALL read_var_hdf5(fid, 'NE',   nr, nphi, nz, istat, DBLVAR=NE3D)
+         IF (istat /= 0) NE3D = 0
+         CALL close_hdf5(fid,istat)
+         CALL read_var_hdf5(fid, 'TE',   nr, nphi, nz, istat, DBLVAR=TE3D)
+         IF (istat /= 0) TE3D = 0
+         CALL close_hdf5(fid,istat)   
+         CALL read_var_hdf5(fid, 'TI',   nr, nphi, nz, istat, DBLVAR=TI3D)
+         IF (istat /= 0) TI3D = 0
+         CALL close_hdf5(fid,istat)                          
       END IF
 #endif
 #if defined(MPI_OPT)
@@ -291,11 +307,11 @@ NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
       RETURN
    END SUBROUTINE get_beams3d_B
 
-   SUBROUTINE get_beams3d_gridB(i,j,k,br,bp,bz,rho,theta,pot)
+   SUBROUTINE get_beams3d_gridB(i,j,k,br,bp,bz,rho,theta,pot, te,ne,ti,ni,zeff)
       IMPLICIT NONE
       INTEGER, INTENT(in) :: i,j,k
       REAL(rprec), INTENT(out) :: br, bp, bz
-      REAL(rprec), INTENT(out), OPTIONAL :: rho, theta, pot
+      REAL(rprec), INTENT(out), OPTIONAL :: rho, theta, pot, te,ne,ti,ni,zeff
       br = 0; bp = 0; bz=0
       IF (i>nr .or. j>nphi .or. k>nz) RETURN
       bp = BPHI3D(i,j,k)
@@ -309,7 +325,22 @@ NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
       END IF
       IF (PRESENT(pot)) THEN
          pot = POT3D(i,j,k)
-      END IF      
+      END IF    
+      IF (PRESENT(te)) THEN
+         te = TE3D(i,j,k)
+      END IF 
+      IF (PRESENT(ne)) THEN
+         ne = NE3D(i,j,k)
+      END IF  
+      IF (PRESENT(ti)) THEN
+         ti = POT3D(i,j,k)
+      END IF  
+      IF (PRESENT(ni)) THEN
+         ni = NE3D(i,j,k) !Assume ni=ne for now
+      END IF     
+      IF (PRESENT(zeff)) THEN
+         zeff = ZEFF3D(i,j,k)
+      END IF                           
       RETURN
    END SUBROUTINE get_beams3d_gridB
 
