@@ -41,7 +41,8 @@ SUBROUTINE beams3d_init_continuegrid
    LOGICAL :: lcreate_wall
    INTEGER :: ier, s, i, j, k, u
    REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
-      tetemp,netemp,nitemp,titemp,zetemp,pottemp,omegtemp, rminor
+      tetemp,netemp,titemp,zetemp,pottemp, omegtemp, rminor
+   REAL(rprec), DIMENSION(:), ALLOCATABLE :: nitemp
    INTEGER :: nrh,nzh,nph
    REAL(rprec) :: rmin_hint, rmax_hint, zmin_hint, zmax_hint, &
       pmax_hint, pres_max
@@ -89,6 +90,7 @@ SUBROUTINE beams3d_init_continuegrid
    IF (mylocalid == mylocalmaster) THEN
       TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;OMEG_ARR = 0;
    END IF
+   ALLOCATE(nitemp(NION))
 #if defined(MPI_OPT)
    CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
@@ -111,6 +113,9 @@ SUBROUTINE beams3d_init_continuegrid
       TE(i,j,k) = tetemp
       NE(i,j,k) = netemp
       TI(i,j,k) = titemp
+      ZEFF_ARR(i,j,k) = zetemp
+      NI(:,i,j,k) = nitemp
+      
       
 
       IF (sflx < s_max) THEN
@@ -147,6 +152,7 @@ SUBROUTINE beams3d_init_continuegrid
          END IF
       END IF
    END DO
+   DEALLOCATE(nitemp)
 
 #if defined(MPI_OPT)
    CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
