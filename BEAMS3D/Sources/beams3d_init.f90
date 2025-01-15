@@ -137,7 +137,7 @@
 #endif
 
       ! Handle particle restarting
-      IF (lrestart_particles .or. lcontinue_grid) THEN
+      IF (lrestart_particles) THEN
         ldepo = .false.
         lbbnbi = .false.
         lbeam = .false.
