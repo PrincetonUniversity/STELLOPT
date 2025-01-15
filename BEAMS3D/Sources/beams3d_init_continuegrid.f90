@@ -98,7 +98,7 @@ SUBROUTINE beams3d_init_continuegrid
       j = FLOOR(REAL(j) / REAL(nr))+1
       k = CEILING(REAL(s) / REAL(nr*nphi))
       sflx = 0.0
-      tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=1;nitemp=0
+      tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=1;nitemp=0;omegtemp=0
       ! Bfield
       CALL get_beams3d_gridB(i,j,k,brtemp,bptemp,bztemp,sflx,uflx,&
          pottemp, tetemp,netemp,titemp,nitemp,zetemp)
