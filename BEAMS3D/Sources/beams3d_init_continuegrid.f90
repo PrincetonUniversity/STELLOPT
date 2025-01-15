@@ -113,7 +113,6 @@ SUBROUTINE beams3d_init_continuegrid
          IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),tetemp,ier)
          IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),netemp,ier)
          IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),titemp,ier)
-         IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),pottemp,ier)
          IF (nomeg > 0) CALL EZspline_interp(OMEG_spl_s,MIN(sflx,s_max_omeg),omegtemp,ier)
          IF (npot > 0) THEN
              CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),pottemp,ier)
