@@ -357,7 +357,7 @@ MODULE beams3d_physics_mod
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
             ELSE !Dont evaluate collisions
-               q(4) = vll + vrot_para
+               !q(4) = vll + vrot_para
                RETURN
             END IF
 
@@ -395,10 +395,10 @@ MODULE beams3d_physics_mod
             !-----------------------------------------------------------
             dve   = factor_electron*speed*tau_spit_inv
             dvi   = factor_ion*vc3_tauinv/(speed*speed)
+            reduction = (dve + dvi)*dt+sigma*zeta
+            newspeed = speed - reduction                
             dve=dve+ddve
             dvi=dvi+ddvi
-            reduction = (dve + dvi)*dt+sigma*zeta
-            newspeed = speed - reduction            
             vfrac = newspeed/speed
             !-----------------------------------------------------------
             !  Thermalize particle or adjust vll and moment
