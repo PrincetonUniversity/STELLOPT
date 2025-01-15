@@ -1,5 +1,6 @@
       MODULE vmec_input
       USE vparams, ONLY: rprec, dp, mpol1d, ntord, ndatafmax
+      USE stel_constants, ONLY: zero,twopi
       USE vsvd0
       IMPLICIT NONE
 !-----------------------------------------------
@@ -71,7 +72,7 @@
       CHARACTER(len=120) :: arg1
       CHARACTER(len=100) :: input_extension
 
-      REAL(rprec) :: Tvolume ! SAL Total volume targeting
+      REAL(rprec) :: tvolume
 
       LOGICAL :: lnyquist = .TRUE.    !=false, suppress nyquist stuff; CZHU 2021.03.31
 
@@ -111,6 +112,7 @@
       INTEGER, INTENT(IN) :: iunit
       INTEGER, INTENT(OUT) :: istat
       ChARACTER(len=256) :: line
+      REAL(rprec) :: temp_volume
 
 !
 !     INITIALIZATIONS
@@ -183,8 +185,8 @@
       ac_aux_s(:) = -1
       ai_aux_s(:) = -1
 
-!     Rescaling Parameters
-      tvolume = -1 ! No rescale if volume <= 0
+!     Rescaling parameters
+      tvolume = -1
       
 
 !
@@ -366,7 +368,7 @@
       WRITE(iunit,outint) 'NCURR',ncurr
       WRITE (iunit, '(2x,3a)') "PIOTA_TYPE = '",TRIM(piota_type),"'"
       WRITE (iunit,'(a,(1p,4e22.14))') '  AI = ',(ai(n-1), n=1,SIZE(ai))
-      i	= minloc(ai_aux_s(2:),DIM=1)
+      i = minloc(ai_aux_s(2:),DIM=1)
       IF (i > 4) THEN
          WRITE (iunit,'(a,(1p,4ES22.12E3))') '  AI_AUX_S = ', 
      1         (ai_aux_s(n), n=1,i)
@@ -376,7 +378,7 @@
       WRITE (iunit, '(2x,3a)') "PCURR_TYPE = '",TRIM(pcurr_type),"'"
       WRITE (iunit,'(a,(1p,4ES22.12E3))')
      1 '  AC = ',(ac(n-1), n=1,SIZE(ac))
-      i	= minloc(ac_aux_s(2:),DIM=1)
+      i = minloc(ac_aux_s(2:),DIM=1)
       IF (i > 4) THEN
          WRITE (iunit,'(a,(1p,4ES22.12E3))') '  AC_AUX_S = ', 
      1         (ac_aux_s(n), n=1,i)
@@ -395,6 +397,7 @@
       WRITE (iunit,'(a,(1p,4ES22.12E3))') 
      1     '  ZAXIS_CS = ',(zaxis_cs(n), n=0,ntor)
       WRITE(iunit,'(A)') '!----- Boundary Parameters -----'
+      IF (tvolume > 0) WRITE(iunit,outexp) 'TVOLUME',tvolume
       DO m = 0, mpol - 1
          DO n = -ntor, ntor
             IF ((rbc(n,m).ne.0) .or. (zbs(n,m).ne.0)) THEN
@@ -568,6 +571,8 @@
      1               local_master, local_comm, iflag)
       CALL MPI_BCAST(fgiveup,          1, MPI_DOUBLE_PRECISION, 
      1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(tvolume,          1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
       CALL MPI_BARRIER(local_comm,iflag)
       ! Real Arrays
       CALL MPI_BCAST(rbc,         (2*ntord+1)*(mpol1d+1),
@@ -684,6 +689,88 @@
       iflag = 0
       RETURN
       END SUBROUTINE bcast_indata_namelist
+
+      SUBROUTINE INDATA_VOLUME(volume)
+      IMPLICIT NONE
+      DOUBLE PRECISION,INTENT(INOUT) :: volume
+      INTEGER :: m, n, u, v, nu1, nv1
+      INTEGER, PARAMETER :: nu = 256
+      INTEGER, PARAMETER :: nv = 256
+      REAL(rprec) :: tcos, tsin, arg1
+      REAL(rprec), DIMENSION(nu,nv) :: rreal, zreal, rureal
+      !nu1 = nu - 1; nv1 = nv - 1
+      nu1 = nu; nv1 = nv
+      volume = zero; rreal = zero; zreal = zero; rureal = zero
+      DO n = -ntord,ntord
+         DO m = 0,mpol1d
+            IF (rbc(n,m) == zero .and. zbs(n,m) == zero) CYCLE
+            DO u = 1, nu
+               DO v = 1, nv
+                  arg1 = (m*DBLE(u-1)/nu1-n*DBLE(v-1)/nv1)*twopi
+                  tcos = COS(arg1)
+                  tsin = SIN(arg1)
+                  rreal(u,v)  = rreal(u,v) + rbc(n,m) * tcos
+                  zreal(u,v)  = zreal(u,v) + zbs(n,m) * tsin
+                  rureal(u,v) = rureal(u,v) 
+     1                          - m * rbc(n,m) * tsin * twopi
+               END DO
+            END DO
+         END DO
+      END DO
+      IF (lasym) THEN
+         DO n = -ntord,ntord
+            DO m = 0,mpol1d
+               IF (rbs(n,m) == zero .and. zbc(n,m) == zero) CYCLE
+               DO u = 1, nu
+                  DO v = 1, nv
+                     arg1 = (m*DBLE(u-1)/nu1-n*DBLE(v-1)/nv1)*twopi
+                     tcos = COS(arg1)
+                     tsin = SIN(arg1)
+                     rreal(u,v)  = rreal(u,v) + rbs(n,m) * tsin
+                     zreal(u,v)  = zreal(u,v) + zbc(n,m) * tcos
+                     rureal(u,v) = rureal(u,v) 
+     1                             + m * rbs(n,m) * tcos * twopi
+                  END DO
+               END DO
+            END DO
+         END DO
+      END IF
+      volume = ABS(twopi*SUM(rreal*zreal*rureal)/DBLE(nu1*nv1))
+      RETURN
+      END SUBROUTINE INDATA_VOLUME
+
+      SUBROUTINE INIT_AXIS_MEAN
+      IMPLICIT NONE
+      INTEGER :: n
+      raxis = zero; zaxis = zero
+      DO n = 0, ntord
+            raxis_cc(n) = rbc(n, 0)
+            zaxis_cc(n) = zbc(n, 0)
+            raxis_cs(n) = rbs(n, 0)
+            zaxis_cs(n) = zbs(n, 0)
+      END DO
+      RETURN
+      END SUBROUTINE INIT_AXIS_MEAN
+
+      SUBROUTINE INIT_AXIS_MIDPOINT
+      IMPLICIT NONE
+      INTEGER :: n, m
+      CALL INIT_AXIS_MEAN
+      DO m = 2, mpol1d, 2 ! Add even-m modes for m>0
+         ! Handle the n=0 modes:
+         raxis_cc(0) = raxis_cc(0) + rbc(0, m)
+         zaxis_cc(0) = zaxis_cc(0) + zbc(0, m)
+         ! No need to include the sin(n*phi) modes for n=0 here.
+         ! Handle the n.ne.0 modes:
+         DO n = 1, ntord
+            raxis_cc(n) = raxis_cc(n) + rbc(n, m) + rbc(-n, m)
+            zaxis_cc(n) = zaxis_cc(n) + zbc(n, m) + zbc(-n, m)
+            raxis_cs(n) = raxis_cs(n) + rbs(n, m) - rbs(-n, m)
+            zaxis_cs(n) = zaxis_cs(n) + zbs(n, m) - zbs(-n, m)
+         END DO
+      END DO
+      RETURN
+      END SUBROUTINE INIT_AXIS_MIDPOINT
 
       END MODULE vmec_input
 
