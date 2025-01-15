@@ -1,5 +1,6 @@
       SUBROUTINE readin(input_file, iseq_count, ier_flag, lscreen)
       USE vmec_main
+      USE vmec_input
       USE vmec_params
       USE vacmod
       USE vspline
@@ -263,7 +264,19 @@ C-----------------------------------------------
       IF (ier_flag .NE. norm_term_flag) RETURN
 
       IF (tensi2 .EQ. zero ) tensi2 = tensi
-
+!
+!     Rescale the equilibria if asked
+!
+      IF (tvolume .gt. 0.0) THEN
+         CALL INDATA_VOLUME(rtest)
+         rbc = rbc * (tvolume / rtest) ** (1.0/3.0)
+         zbs = zbs * (tvolume / rtest) ** (1.0/3.0)
+         IF (lasym) THEN
+            rbs = rbs * (tvolume / rtest) ** (1.0/3.0)
+            zbc = zbc * (tvolume / rtest) ** (1.0/3.0)
+         END IF
+         CALL INIT_AXIS_MIDPOINT
+      END IF
 !
 !     Open output files here, print out heading to threed1 file
 !
