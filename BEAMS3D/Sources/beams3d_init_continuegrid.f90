@@ -98,7 +98,7 @@ SUBROUTINE beams3d_init_continuegrid
       j = FLOOR(REAL(j) / REAL(nr))+1
       k = CEILING(REAL(s) / REAL(nr*nphi))
       sflx = 0.0
-      tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0;nitemp=0
+      tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=1;nitemp=0
       ! Bfield
       CALL get_beams3d_gridB(i,j,k,brtemp,bptemp,bztemp,sflx,uflx,&
          pottemp, tetemp,netemp,titemp,nitemp,zetemp)
@@ -111,6 +111,7 @@ SUBROUTINE beams3d_init_continuegrid
       TE(i,j,k) = tetemp
       NE(i,j,k) = netemp
       TI(i,j,k) = titemp
+      
 
       IF (sflx < s_max) THEN
          IF (nte > 0) THEN

@@ -39,7 +39,8 @@ MODULE read_beams3d_mod
    INTEGER :: win_raxis, win_phiaxis, win_zaxis, &
       win_BR3D, win_BPHI3D, win_BZ3D, win_U3D, win_S3D,&
       win_rminor_lines, &
-      win_X3D, win_Y3D, win_Rminor3D, win_POT3D,&
+      win_X3D, win_Y3D, win_Rminor3D, win_POT3D,win_TE3D,win_TI3D,&
+      win_NE3D,win_ZEFF3D,&
       win_RMAGAXIS, win_ZMAGAXIS, &
       win_R_1D, win_PHI_1D, win_Z_1D, win_rminor_1D, win_X_1D, win_Y_1D
 
@@ -78,7 +79,7 @@ CONTAINS
 ! Nullify pointers
 NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
    X_1D, Y_1D, R_lines, PHI_lines, Z_lines, rminor_lines, X_lines, Y_lines,&
-   BR3D, BPHI3D, BZ3D, X3D, Y3D, Rminor3D, U3D, S3D, POT3D)
+   BR3D, BPHI3D, BZ3D, X3D, Y3D, Rminor3D, U3D, S3D, POT3D,TE3D,NE3D,TI3D,ZEFF3D)
 
       ! Check for the file
       INQUIRE(FILE=TRIM(filename),EXIST=lexist)
@@ -118,9 +119,10 @@ NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
       CALL mpialloc(U3D, nr, nphi, nz, mylocalid, master, comm_read, win_U3D)
       CALL mpialloc(S3D,   nr, nphi, nz, mylocalid, master, comm_read, win_S3D)
       CALL mpialloc(POT3D,   nr, nphi, nz, mylocalid, master, comm_read, win_POT3D)
-      CALL mpialloc(TE3D,   nr, nphi, nz, mylocalid, master, comm_read, win_POT3D)
-      CALL mpialloc(TI3D,   nr, nphi, nz, mylocalid, master, comm_read, win_POT3D)
-      CALL mpialloc(NE3D,   nr, nphi, nz, mylocalid, master, comm_read, win_POT3D)
+      CALL mpialloc(TE3D,   nr, nphi, nz, mylocalid, master, comm_read, win_TE3D)
+      CALL mpialloc(TI3D,   nr, nphi, nz, mylocalid, master, comm_read, win_TI3D)
+      CALL mpialloc(NE3D,   nr, nphi, nz, mylocalid, master, comm_read, win_NE3D)
+      CALL mpialloc(ZEFF3D,   nr, nphi, nz, mylocalid, master, comm_read, win_ZEFF3D)
 
       ! Read Arrays and close file
 #if defined(LHDF5)
@@ -135,16 +137,12 @@ NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
          CALL read_var_hdf5(fid, 'U_ARR',   nr, nphi, nz, istat, DBLVAR=U3D)
          CALL read_var_hdf5(fid, 'POT_ARR',   nr, nphi, nz, istat, DBLVAR=POT3D)
          IF (istat /= 0) POT3D = 0
-         CALL close_hdf5(fid,istat)
          CALL read_var_hdf5(fid, 'ZEFF_ARR',   nr, nphi, nz, istat, DBLVAR=ZEFF3D)
-         IF (istat /= 0) ZEFF3D = 0
-         CALL close_hdf5(fid,istat)         
+         IF (istat /= 0) ZEFF3D = 0      
          CALL read_var_hdf5(fid, 'NE',   nr, nphi, nz, istat, DBLVAR=NE3D)
          IF (istat /= 0) NE3D = 0
-         CALL close_hdf5(fid,istat)
          CALL read_var_hdf5(fid, 'TE',   nr, nphi, nz, istat, DBLVAR=TE3D)
-         IF (istat /= 0) TE3D = 0
-         CALL close_hdf5(fid,istat)   
+         IF (istat /= 0) TE3D = 0 
          CALL read_var_hdf5(fid, 'TI',   nr, nphi, nz, istat, DBLVAR=TI3D)
          IF (istat /= 0) TI3D = 0
          CALL close_hdf5(fid,istat)                          
@@ -312,7 +310,7 @@ NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
       INTEGER, INTENT(in) :: i,j,k
       REAL(rprec), INTENT(out) :: br, bp, bz
       REAL(rprec), INTENT(out), OPTIONAL :: rho, theta, pot, te,ne,ti,ni,zeff
-      br = 0; bp = 0; bz=0
+      br = 0; bp = 0; bz=0;te=0;ne=0;ti=0;ni=0;zeff=1
       IF (i>nr .or. j>nphi .or. k>nz) RETURN
       bp = BPHI3D(i,j,k)
       br = BR3D(i,j,k)
@@ -333,7 +331,7 @@ NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
          ne = NE3D(i,j,k)
       END IF  
       IF (PRESENT(ti)) THEN
-         ti = POT3D(i,j,k)
+         ti = TI3D(i,j,k)
       END IF  
       IF (PRESENT(ni)) THEN
          ni = NE3D(i,j,k) !Assume ni=ne for now
@@ -359,6 +357,10 @@ NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
       IF (ASSOCIATED(S3D))          CALL mpidealloc(S3D,          win_S3D)
       IF (ASSOCIATED(U3D))          CALL mpidealloc(U3D,          win_U3D)
       IF (ASSOCIATED(POT3D))          CALL mpidealloc(POT3D,      win_POT3D)
+      IF (ASSOCIATED(TE3D))          CALL mpidealloc(TE3D,      win_TE3D)
+      IF (ASSOCIATED(NE3D))          CALL mpidealloc(NE3D,      win_NE3D)
+      IF (ASSOCIATED(TI3D))          CALL mpidealloc(TI3D,      win_TI3D)
+      IF (ASSOCIATED(ZEFF3D))          CALL mpidealloc(ZEFF3D,      win_ZEFF3D)
       IF (ASSOCIATED(Rminor3D))     CALL mpidealloc(Rminor3D,     win_Rminor3D)
 
       ! The 2D arrays are just pointers while the 1D arrays are the actual data
