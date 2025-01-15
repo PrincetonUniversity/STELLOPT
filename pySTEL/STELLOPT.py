@@ -1305,7 +1305,7 @@ class MyApp(QMainWindow):
 			n=self.stel_data.ECEREFLECT_TARGET.shape
 			y = self.stel_data.ECEREFLECT_TARGET.T
 			s = self.stel_data.ECEREFLECT_SIGMA.T
-			e = self.stel_data.ECEREFLECT_EQUIL.T
+			e = self.stel_data.ECEREFLECT_VAL.T
 			dl = n[0]
 			if (len(n)==0):
 				# Single Time slice Single point
