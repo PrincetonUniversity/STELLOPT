@@ -71,6 +71,8 @@
       CHARACTER(len=120) :: arg1
       CHARACTER(len=100) :: input_extension
 
+      REAL(rprec) :: Tvolume ! SAL Total volume targeting
+
       LOGICAL :: lnyquist = .TRUE.    !=false, suppress nyquist stuff; CZHU 2021.03.31
 
       NAMELIST /indata/ mgrid_file, time_slice, nfp, ncurr, nsin,
@@ -98,7 +100,8 @@
      D   lgiveup,fgiveup,                                                  ! M.Drevlak 2012-05-10
      E   lbsubs,                                                           ! 2014-01-12 See jxbforce
      F   trip3d_file,                                                      ! SAL - TRIP3D
-     G   lnyquist
+     G   lnyquist,
+     H   tvolume
 
       NAMELIST /mseprofile/ mseprof
 
@@ -179,6 +182,9 @@
       am_aux_s(:) = -1
       ac_aux_s(:) = -1
       ai_aux_s(:) = -1
+
+!     Rescaling Parameters
+      tvolume = -1 ! No rescale if volume <= 0
       
 
 !
