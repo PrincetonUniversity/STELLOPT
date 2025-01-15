@@ -183,42 +183,52 @@ class PRESSURE_SOLVER:
             Nt = int( 1+(tend-tstart)/dt )
             time = np.linspace(tstart,tend,Nt)
             
-        # Initialize density ad pressure using initial_profile
+        print(' ')
+        print( ' ***********************')
+        print(f' *  tstart = {tstart:5.2f}s    *')
+        print(f' *  tend = {tend:5.2f}s      *')
+        print(f' *  dt = {dt:5.2f}s        *')
+        print(f' *  drho = {drho:5.2f}       *')
+        print( ' ***********************')
+            
+        # Initialize density and pressure using initial_profile
         press = {}
         dens = {}
         self.P = {}
         delta_p = {}
+        self.all_sources = defaultdict(lambda: defaultdict(list))
         for species in self.list_of_species:
             press[species] = self.initial_profile[species](rho)
             dens[species] = self.plasma.get_density(species,rho)
             
             self.P[species] = np.zeros((Nt,Nr))
             self.P[species][0,:] = press[species]
-            
         
+        print(' ')
+        header_str = '  TIME [s]     NSUB      PE_AXIS [MPa]     SE_AXIS [MW/m^3]    PI1_AXIS [MPa]    SI1_AXIS [MW/m^3]    MAX(dp/p_old)'  
+        print(header_str)
+        print('  '+'='*len(header_str))
+        # print info from t=0
+        # print(f'  {time[0]:<13.2f} {'1':<10} {self.P['electrons'][0,0]/1E6:<18.2E} {self.P['deuterium'][0,0]/1E6:<18.2E} {0.0:<13.2E}')
         
-        ### LOOP IN TIME ###
-        
+        ### LOOP IN TIME STARTING AT t=tstart+dt ###
+        p_old = 1E3*np.ones(Nr) # so on loop 1 we don't divide by zero
         for it,t in enumerate(time[1:],start=1):
-            
-            print(f'Time={t}s')
-            
+
             ### SUBCYCLE
             delta_p_all = 10*tolerance
             subiter=1
             while(delta_p_all > tolerance or subiter<max_subiter):
-                
-                print(f'     Subiter={subiter}')
             
                 # sets temperature in plasma class from density and pressure for ALL species
                 for species in self.list_of_species:
                     self.set_temperature(species,rho,dens[species],press[species])
-                
-                #solver    
-                for species in self.list_of_species:
                     
-                    # call PENTA3 and compute interpolating functions self.Er_interp, self.Gamma_interp[species] and self.Q_interp[species]
-                    self.call_PENTA3()
+                # call PENTA3 and compute interpolating functions self.Er_interp, self.Gamma_interp[species] and self.Q_interp[species]
+                self.call_PENTA3()
+                
+                #solver for each species (this can be parallelized... numba??)   
+                for species in self.list_of_species:
                     
                     # compute sources on grid (1D-array)
                     total_sources = self.get_sources(species,rho)  # W/m^3
@@ -244,20 +254,20 @@ class PRESSURE_SOLVER:
                     if (self.bnd_cnds[species]['axis']['type'] == 'Neu' and self.bnd_cnds[species]['axis']['val'] != 0):
                         print('Neumann value != 0 on axis is NOT possible !!')
                         exit(0)
-                        
-                    p_new = press[species]
-                    p_old = self.P[species][it,:] 
-                    print(f'p_old={p_old}')
-                    print(f'p_new={p_new}')
-                    print(np.where( p_old!=0, np.abs((p_new-p_old)/p_old), 0 ))
-                    delta_p[species] = np.max( np.where( p_old>1E-14, np.abs((p_new-p_old)/p_old), 0 ) )
-                        
+
+                    delta_p[species] = np.max( np.where( p_old>1E-10, np.abs((press[species]-p_old)/p_old), 0 ) )
+                    
+                    p_old = press[species]
                     self.P[species][it,:] = press[species]
                     
                 delta_p_all = np.max([np.max(value) for value in delta_p.values()])
+                
+                info_str = f'  {t:<13.2f}{subiter:<10}{self.P['electrons'][it,0]/1E6:<18.2E}{self.all_sources['electrons'][-1,0]/1E6:<20.2E}{self.P['deuterium'][it,0]/1E6:<18.2E}{self.all_sources['deuterium'][-1,0]/1E6:<21.2E}{delta_p_all:<13.2E}'
+                print(info_str)
+                
                 subiter += 1
                 
-                
+                        
 
     def get_sources(self,species: str,rho_grid):
         # returns 1D-array of same size as rho_grid
@@ -275,7 +285,9 @@ class PRESSURE_SOLVER:
         
         total_source = np.zeros(len(rho_grid))
         
-        for source_type in self.sources[species]:          
+        for source_type in self.sources[species]:
+            
+            aux_source = np.zeros(len(rho_grid))         
             match source_type:
                 case 'Bremsstrahlung':
                     for ir,rho in enumerate(rho_grid):
@@ -284,10 +296,11 @@ class PRESSURE_SOLVER:
                             ni = self.plasma.get_density(ion,rho)
                             ne = self.plasma.get_density('electrons',rho)
                             Te = self.plasma.get_temperature('electrons',rho)
-                            total_source[ir] -= fusion.BremsstrahlungPower(zi,ni,ne,Te)
+                            
+                            aux_source[ir] -= fusion.BremsstrahlungPower(zi,ni,ne,Te)
                 
                 case 'external':
-                    total_source += self.sources[species]['external']['interp_func'](rho_grid)
+                    aux_source = self.sources[species]['external']['interp_func'](rho_grid)
                     
                 case 'Coll_Heat_Exchange':
                     collisions = COLLISIONS()
@@ -302,7 +315,7 @@ class PRESSURE_SOLVER:
                             m2 = self.plasma.mass[species2]
                             Z2 = self.plasma.Zcharge[species2]
                             
-                            total_source[ir] += collisions.collisionalHeatExchange(n1,T1,m1,Z1,n2,T2,m2,Z2)
+                            aux_source[ir] += collisions.collisionalHeatExchange(n1,T1,m1,Z1,n2,T2,m2,Z2)
                             
                 case 'alpha_heating':
                     nD = self.plasma.get_density('deuterium', rho_grid)
@@ -314,14 +327,22 @@ class PRESSURE_SOLVER:
                     
                     S_alpha = nD * nT * sigmav *  fusion.E_DT_He # W/m^3
                     
-                    total_source += S_alpha
+                    fraction_alpha_heating = self.sources[species]['alpha_heating']['fraction_alpha_heating']
+                    
+                    aux_source = S_alpha * fraction_alpha_heating
                     
                 case 'Er':
-                    total_source += self.plasma.charge[species]*self.Er_interp(rho_grid)*self.Gamma_interp[species](rho_grid)
+                    aux_source = self.plasma.charge[species]*self.Er_interp(rho_grid)*self.Gamma_interp[species](rho_grid)
 
                 case _:
                     print(f'ERROR: Source type {source_type} not defined....')
                     exit(0)
+                    
+            total_source += aux_source
+            
+            #save in dictionary for bookeeping
+            self.all_sources[species][source_type].append(aux_source)
+                    
                     
         return total_source
                     
@@ -340,7 +361,7 @@ class PRESSURE_SOLVER:
         div_flux = np.zeros(len(rho_grid))
         
         # r=0
-        div_flux[0] = 0.0
+        div_flux[0] = 2*Q(drho) / dr
         
         for ir,rho in enumerate(rho_grid[1:-1],start=1):
             
@@ -395,7 +416,7 @@ class PRESSURE_SOLVER:
         wout_path = self.wout_path
         EparB = 0.0
 
-        #Sonine (Laguerre) polynomials; if Smax=1, then should recover results of PENTA1
+        #Sonine (Laguerre) polynomials
         Smax = 1
 
         surfaces = self.fluxes_info['dkespenta']['surfaces']
@@ -415,7 +436,6 @@ class PRESSURE_SOLVER:
             extension_star_files = f'surface_{isurface}'
 
             call_penta3 = f'~/bin/xpenta {extension_star_files} {Er_min_V_cm} {Er_max_V_cm} {isurface} {type_of_write} {wout_path} {plasma_profiles_extension} {EparB} {Smax}'
-            # print(call_penta3)
             
             result = subprocess.run(call_penta3, shell=True, check=True, text=True, capture_output=True)
             # print(result.stdout)
