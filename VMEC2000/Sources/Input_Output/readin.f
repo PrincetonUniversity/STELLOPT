@@ -269,12 +269,29 @@ C-----------------------------------------------
 !
       IF (tvolume .gt. 0.0) THEN
          CALL INDATA_VOLUME(rtest)
-         rbc = rbc * (tvolume / rtest) ** (1.0/3.0)
-         zbs = zbs * (tvolume / rtest) ** (1.0/3.0)
-         IF (lasym) THEN
-            rbs = rbs * (tvolume / rtest) ** (1.0/3.0)
-            zbc = zbc * (tvolume / rtest) ** (1.0/3.0)
-         END IF
+         IF (lvolume_rfix) THEN
+            raxis_cc = rbc(0:ntord,0)
+            zaxis_cs = zbs(0:ntord,0)
+            rbc = rbc * (tvolume / rtest) ** (1.0/2.0)
+            zbs = zbs * (tvolume / rtest) ** (1.0/2.0)
+            rbc(0:ntord,0) = raxis_cc(0:ntord)
+            zbs(0:ntord,0) = zaxis_cs(0:ntord)
+            IF (lasym) THEN
+               raxis_cs = rbs(0:ntord,0)
+               zaxis_cc = zbc(0:ntord,0)
+               rbs = rbs * (tvolume / rtest) ** (1.0/2.0)
+               zbc = zbc * (tvolume / rtest) ** (1.0/2.0)
+               rbs(0:ntord,0) = raxis_cs(0:ntord)
+               zbc(0:ntord,0) = zaxis_cc(0:ntord)
+            END IF
+         ELSE
+            rbc = rbc * (tvolume / rtest) ** (1.0/3.0)
+            zbs = zbs * (tvolume / rtest) ** (1.0/3.0)
+            IF (lasym) THEN
+               rbs = rbs * (tvolume / rtest) ** (1.0/3.0)
+               zbc = zbc * (tvolume / rtest) ** (1.0/3.0)
+            END IF
+         ENDIF
          CALL INIT_AXIS_MIDPOINT
       END IF
 !

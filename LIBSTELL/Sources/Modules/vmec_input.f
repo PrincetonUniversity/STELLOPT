@@ -72,6 +72,7 @@
       CHARACTER(len=120) :: arg1
       CHARACTER(len=100) :: input_extension
 
+      LOGICAL :: lvolume_rfix
       REAL(rprec) :: tvolume
 
       LOGICAL :: lnyquist = .TRUE.    !=false, suppress nyquist stuff; CZHU 2021.03.31
@@ -102,7 +103,7 @@
      E   lbsubs,                                                           ! 2014-01-12 See jxbforce
      F   trip3d_file,                                                      ! SAL - TRIP3D
      G   lnyquist,
-     H   tvolume
+     H   tvolume, lvolume_rfix
 
       NAMELIST /mseprofile/ mseprof
 
@@ -187,6 +188,7 @@
 
 !     Rescaling parameters
       tvolume = -1
+      lvolume_rfix = .false.
       
 
 !
@@ -397,7 +399,10 @@
       WRITE (iunit,'(a,(1p,4ES22.12E3))') 
      1     '  ZAXIS_CS = ',(zaxis_cs(n), n=0,ntor)
       WRITE(iunit,'(A)') '!----- Boundary Parameters -----'
-      IF (tvolume > 0) WRITE(iunit,outexp) 'TVOLUME',tvolume
+      IF (tvolume > 0) THEN
+         WRITE(iunit,outexp) 'TVOLUME',tvolume
+         WRITE(iunit,outboo) 'LVOLUME_RFIX',lvolume_rfix
+      END IF
       DO m = 0, mpol - 1
          DO n = -ntor, ntor
             IF ((rbc(n,m).ne.0) .or. (zbs(n,m).ne.0)) THEN
@@ -466,6 +471,8 @@
       CALL MPI_BCAST(lgiveup,        1, MPI_LOGICAL, local_master, 
      1               local_comm, iflag)
       CALL MPI_BCAST(lbsubs,         1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lvolume_rfix,   1, MPI_LOGICAL, local_master, 
      1               local_comm, iflag)
       CALL MPI_BARRIER(local_comm,iflag)
       ! Integers
