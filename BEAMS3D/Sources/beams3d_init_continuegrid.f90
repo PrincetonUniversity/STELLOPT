@@ -139,6 +139,10 @@ SUBROUTINE beams3d_init_continuegrid
              CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),pottemp,ier)
              POT_ARR(i,j,k) = pottemp
          END IF
+         IF (nomeg > 0) THEN
+            CALL EZspline_interp(OMEG_spl_s,MIN(sflx,s_max_omeg),omegtemp,ier)      
+            OMEG_ARR(i,:,k) = omegtemp
+         END IF
          IF (nzeff > 0) THEN
             CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),ZEFF_ARR(i,j,k),ier)
             DO u=1, NION
