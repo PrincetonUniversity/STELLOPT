@@ -146,20 +146,17 @@ class GIST():
 			ev = np.array([esubs[1]*esubu[2]-esubs[2]*esubu[1],
 						   esubs[2]*esubu[0]-esubs[0]*esubu[2],
 						   esubs[0]*esubu[1]-esubs[1]*esubu[0]])/sqrtg
-			# NOTE THESE are on the half grid in VMEC
-			# WE NEED TO MODIFY VMEC.PY to properly interpolate to full grid
-			# OR DO THIS HERE
-			print("==========SEE H2F ISSUE=================")
 			# Calc Grad(B)
 			th_arr = np.array([[thetastar]])
 			ze_arr = np.array([[zeta]])
+			print(s,thetastar,zeta)
 			b = vmec_data.cfunct(th_arr,ze_arr,vmec_data.bmnc,vmec_data.xm_nyq,vmec_data.xn_nyq)
 			bumns = -vmec_data.bmnc*np.tile(vmec_data.xm_nyq,(1,vmec_data.ns)).T
 			bvmns =  vmec_data.bmnc*np.tile(vmec_data.xn_nyq,(1,vmec_data.ns)).T
 			x = np.linspace(0,1,vmec_data.ns)
-			f = np.squeeze(np.diff(b,prepend=0)*(vmec_data.ns-1))
+			f = np.squeeze(np.diff(b,prepend=0))/np.diff(x,prepend=1)
 			modb = np.interp(s,x,np.squeeze(b))
-			bs = np.interp(s,x,f)
+			bs = np.interp(s,x,f)*2.0*np.sqrt(s)
 			f = vmec_data.sfunct(th_arr,ze_arr,bumns,vmec_data.xm_nyq,vmec_data.xn_nyq)
 			bu = np.interp(s,x,np.squeeze(f))
 			f = vmec_data.sfunct(th_arr,ze_arr,bvmns,vmec_data.xm_nyq,vmec_data.xn_nyq)
@@ -169,13 +166,12 @@ class GIST():
 			lam = vmec_data.sfunct(th_arr,ze_arr,vmec_data.lmns,vmec_data.xm,vmec_data.xn)
 			lumnc =  vmec_data.lmns*np.tile(vmec_data.xm,(1,vmec_data.ns)).T
 			lvmnc = -vmec_data.lmns*np.tile(vmec_data.xn,(1,vmec_data.ns)).T
-			f = np.squeeze(np.diff(lam,prepend=0)*(vmec_data.ns-1))
-			ls = np.interp(s,x,f)
+			f = np.squeeze(np.diff(lam,prepend=0))/np.diff(x,prepend=1)
+			ls = np.interp(s,x,f)*2.0*np.sqrt(s)
 			f = vmec_data.cfunct(th_arr,ze_arr,lumnc,vmec_data.xm,vmec_data.xn)
 			lu = np.interp(s,x,np.squeeze(f))
 			f = vmec_data.cfunct(th_arr,ze_arr,lvmnc,vmec_data.xm,vmec_data.xn)
 			lv = np.interp(s,x,np.squeeze(f))
-			print(ls,lu,lv)
 			eu = eu + ls*es + lu*eu + lv*ev
 			# Calc metric elments
 			gradA = theta[u]*qprime*es + q*eu - ev
