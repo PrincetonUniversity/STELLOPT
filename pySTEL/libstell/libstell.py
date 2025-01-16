@@ -274,6 +274,28 @@ class LIBSTELL():
 		indata_volume(ct.byref(volume))
 		return volume.value
 
+	def indataArea(self):
+		"""Wrapper to the INDATA_AREA subroutine
+
+		This routine wrappers the INDATA_AREA subroutine
+		which calcualtes the plasma area for a given INDATA
+		boundary deffinition.
+
+		Returns
+		-------
+		Area : real
+			Total average cross sectional area [m^2]
+		"""
+		import ctypes as ct
+		# Load Libraries
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_area = getattr(self.libstell,module_name+'_indata_area'+self.s3)
+		indata_area.argtypes = [ct.POINTER(ct.c_double)]
+		indata_area.restype  = None
+		area = ct.c_double(0.0)
+		indata_area(ct.byref(area))
+		return area.value
+
 	def indataInitAxisMean(self):
 		"""Wrapper to the InitAxisMean subroutine
 
