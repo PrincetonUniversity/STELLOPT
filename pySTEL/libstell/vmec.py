@@ -1006,6 +1006,19 @@ class VMEC_INDATA():
 		"""
 		return self.libStell.indataVolume()
 
+	def calcArea(self):
+		"""Calculate cross sectional area
+
+		The routine computes the cross sectional area based on the 
+		boundary shape.
+
+		Returns
+		-------
+		area : real
+			Average cross sectional area [m^2]
+		"""
+		return self.libStell.indataArea()
+
 	def initAxisMean(self):
 		"""Initiazlize the axis using a mean method
 
