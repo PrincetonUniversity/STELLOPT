@@ -25,7 +25,8 @@ C-----------------------------------------------
      &   NonZeroLen
       REAL(dp), DIMENSION(:,:), POINTER ::
      &  rbcc, rbss, rbcs, rbsc, zbcs, zbsc, zbcc, zbss
-      REAL(dp) :: rtest, ztest, tzc, trc, delta
+      REAL(dp) :: rtest, ztest, tzc, trc, delta, AVolume, AArea, TArea,
+     &            AR00
       REAL(dp), ALLOCATABLE :: temp(:)
       CHARACTER(LEN=100) :: line, line2
       CHARACTER(LEN=1)   :: ch1, ch2
@@ -268,28 +269,31 @@ C-----------------------------------------------
 !     Rescale the equilibria if asked
 !
       IF (tvolume .gt. 0.0) THEN
-         CALL INDATA_VOLUME(rtest)
+         CALL INDATA_VOLUME(AVolume)
          IF (lvolume_rfix) THEN
+            CALL INDATA_AREA(AArea)
+            AR00 = AVolume/(twopi * AArea)
+            TArea = TVolume/(twopi * AR00)
             raxis_cc = rbc(0:ntord,0)
             zaxis_cs = zbs(0:ntord,0)
-            rbc = rbc * (tvolume / rtest) ** (1.0/2.0)
-            zbs = zbs * (tvolume / rtest) ** (1.0/2.0)
+            rbc = rbc * (Tarea / Aarea) ** (1.0/2.0)
+            zbs = zbs * (Tarea / Aarea) ** (1.0/2.0)
             rbc(0:ntord,0) = raxis_cc(0:ntord)
             zbs(0:ntord,0) = zaxis_cs(0:ntord)
             IF (lasym) THEN
                raxis_cs = rbs(0:ntord,0)
                zaxis_cc = zbc(0:ntord,0)
-               rbs = rbs * (tvolume / rtest) ** (1.0/2.0)
-               zbc = zbc * (tvolume / rtest) ** (1.0/2.0)
+               rbs = rbs * (Tarea / Aarea) ** (1.0/2.0)
+               zbc = zbc * (Tarea / Aarea) ** (1.0/2.0)
                rbs(0:ntord,0) = raxis_cs(0:ntord)
                zbc(0:ntord,0) = zaxis_cc(0:ntord)
             END IF
          ELSE
-            rbc = rbc * (tvolume / rtest) ** (1.0/3.0)
-            zbs = zbs * (tvolume / rtest) ** (1.0/3.0)
+            rbc = rbc * (tvolume / AVolume) ** (1.0/3.0)
+            zbs = zbs * (tvolume / AVolume) ** (1.0/3.0)
             IF (lasym) THEN
-               rbs = rbs * (tvolume / rtest) ** (1.0/3.0)
-               zbc = zbc * (tvolume / rtest) ** (1.0/3.0)
+               rbs = rbs * (tvolume / AVolume) ** (1.0/3.0)
+               zbc = zbc * (tvolume / AVolume) ** (1.0/3.0)
             END IF
          ENDIF
          CALL INIT_AXIS_MIDPOINT
@@ -420,14 +424,17 @@ C-----------------------------------------------
      &   ns_array(1),nstep,nvacskip,
      &   ftol_array(multi_ns_grid),tcon0,lasym,lforbal,lmove_axis,
      &   lconm1,mfilter_fbdy,nfilter_fbdy,lfull3d1out,
-     &   max_main_iterations,lgiveup,fgiveup                                         ! M Drevlak 20130114
+     &   max_main_iterations,lgiveup,fgiveup,                                         ! M Drevlak 20130114
+     &   tvolume,lvolume_rfix
  110  FORMAT(' RUN CONTROL PARAMETERS:',/,1x,23('-'),/,
      &  '  ncurr  niter   nsin  nstep  nvacskip      ftol     tcon0',
      &  '    lasym  lforbal lmove_axis lconm1',/,
      &     4i7,i10,1p,2e10.2,4L9,/,
      &  '  mfilter_fbdy nfilter_fbdy lfull3d1out max_main_iterations', ! J Geiger 20120203
-     &  ' lgiveup fgiveup',/,               ! M Drevlak 20130114
-     &     2(6x,i7),L12,10x,i10,L8,e9.1,/)  ! M Drevlak 20130114
+     &  ' lgiveup fgiveup',               ! M Drevlak 20130114
+     &  '   tvolume lvolume_rfix',/,
+     &     2(6x,i7),L12,10x,i10,L8,e9.1,    ! M Drevlak 20130114
+     &     e10.2, L13 /)  ! S Lazerson 20250116
 
          WRITE (nthreed,120) precon_type, prec2d_threshold
  120  FORMAT(' PRECONDITIONER CONTROL PARAMETERS:',/,1x,34('-'),/,

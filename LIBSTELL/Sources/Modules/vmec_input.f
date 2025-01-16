@@ -700,20 +700,18 @@
       SUBROUTINE INDATA_VOLUME(volume)
       IMPLICIT NONE
       DOUBLE PRECISION,INTENT(INOUT) :: volume
-      INTEGER :: m, n, u, v, nu1, nv1
+      INTEGER :: m, n, u, v
       INTEGER, PARAMETER :: nu = 256
       INTEGER, PARAMETER :: nv = 256
       REAL(rprec) :: tcos, tsin, arg1
       REAL(rprec), DIMENSION(nu,nv) :: rreal, zreal, rureal
-      !nu1 = nu - 1; nv1 = nv - 1
-      nu1 = nu; nv1 = nv
       volume = zero; rreal = zero; zreal = zero; rureal = zero
       DO n = -ntord,ntord
          DO m = 0,mpol1d
             IF (rbc(n,m) == zero .and. zbs(n,m) == zero) CYCLE
             DO u = 1, nu
                DO v = 1, nv
-                  arg1 = (m*DBLE(u-1)/nu1-n*DBLE(v-1)/nv1)*twopi
+                  arg1 = (m*DBLE(u-1)/nu-n*DBLE(v-1)/nv)*twopi
                   tcos = COS(arg1)
                   tsin = SIN(arg1)
                   rreal(u,v)  = rreal(u,v) + rbc(n,m) * tcos
@@ -730,7 +728,7 @@
                IF (rbs(n,m) == zero .and. zbc(n,m) == zero) CYCLE
                DO u = 1, nu
                   DO v = 1, nv
-                     arg1 = (m*DBLE(u-1)/nu1-n*DBLE(v-1)/nv1)*twopi
+                     arg1 = (m*DBLE(u-1)/nu-n*DBLE(v-1)/nv)*twopi
                      tcos = COS(arg1)
                      tsin = SIN(arg1)
                      rreal(u,v)  = rreal(u,v) + rbs(n,m) * tsin
@@ -742,9 +740,54 @@
             END DO
          END DO
       END IF
-      volume = ABS(twopi*SUM(rreal*zreal*rureal)/DBLE(nu1*nv1))
+      volume = ABS(twopi*SUM(rreal*zreal*rureal)/DBLE(nu*nv))
       RETURN
       END SUBROUTINE INDATA_VOLUME
+
+      SUBROUTINE INDATA_AREA(area)
+      IMPLICIT NONE
+      DOUBLE PRECISION,INTENT(INOUT) :: area
+      INTEGER :: m, n, u, v
+      INTEGER, PARAMETER :: nu = 256
+      INTEGER, PARAMETER :: nv = 256
+      REAL(rprec) :: tcos, tsin, arg1
+      REAL(rprec), DIMENSION(nu,nv) :: zreal, rureal
+      area = zero; zreal = zero; rureal = zero
+      DO n = -ntord,ntord
+         DO m = 0,mpol1d
+            IF (rbc(n,m) == zero .and. zbs(n,m) == zero) CYCLE
+            DO u = 1, nu
+               DO v = 1, nv
+                  arg1 = (m*DBLE(u-1)/nu-n*DBLE(v-1)/nv)*twopi
+                  tcos = COS(arg1)
+                  tsin = SIN(arg1)
+                  zreal(u,v)  = zreal(u,v) + zbs(n,m) * tsin
+                  rureal(u,v) = rureal(u,v) 
+     1                          - m * rbc(n,m) * tsin * twopi
+               END DO
+            END DO
+         END DO
+      END DO
+      IF (lasym) THEN
+         DO n = -ntord,ntord
+            DO m = 0,mpol1d
+               IF (rbs(n,m) == zero .and. zbc(n,m) == zero) CYCLE
+               DO u = 1, nu
+                  DO v = 1, nv
+                     arg1 = (m*DBLE(u-1)/nu-n*DBLE(v-1)/nv)*twopi
+                     tcos = COS(arg1)
+                     tsin = SIN(arg1)
+                     zreal(u,v)  = zreal(u,v) + zbc(n,m) * tcos
+                     rureal(u,v) = rureal(u,v) 
+     1                             + m * rbs(n,m) * tcos * twopi
+                  END DO
+               END DO
+            END DO
+         END DO
+      END IF
+      area = ABS(SUM(zreal*rureal)/DBLE(nu*nv))
+      RETURN
+      END SUBROUTINE INDATA_AREA
 
       SUBROUTINE INIT_AXIS_MEAN
       IMPLICIT NONE
