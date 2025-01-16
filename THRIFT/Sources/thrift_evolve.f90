@@ -46,14 +46,19 @@
       ! Initialize magnetic variables
       THRIFT_S11      = 0; THRIFT_S12      = 0; THRIFT_IOTA     = 0
       THRIFT_BAV      = 0; THRIFT_BSQAV    = 0; THRIFT_PHIEDGE  = 0
-      THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0; THRIFT_VP       = 0      
+      THRIFT_AMINOR   = 0; THRIFT_RMAJOR   = 0; THRIFT_VP       = 0  
+      THRIFT_BETATOT  = 0    
       ! Initialize coefficients
       THRIFT_COEFF_A  = 0; THRIFT_COEFF_B  = 0; THRIFT_COEFF_C  = 0; THRIFT_COEFF_D  = 0
                            THRIFT_COEFF_BP = 0; THRIFT_COEFF_CP = 0; THRIFT_COEFF_DP = 0
       THRIFT_ALPHA1   = 0; THRIFT_ALPHA2   = 0; THRIFT_ALPHA3   = 0; THRIFT_ALPHA4   = 0
       THRIFT_MATLD    = 0; THRIFT_MATMD    = 0; THRIFT_MATUD    = 0; THRIFT_MATRHS   = 0
       ! Initialize electric field variable
-      THRIFT_EPARB    = 0; THRIFT_ER = 0
+      THRIFT_EPARB    = 0; THRIFT_ER       = 0
+      ! Initialize fluxes
+      THRIFT_GNEO     = 0; THRIFT_QNEO     = 0
+      ! Initialize densities, temperatures and pressures
+      THRIFT_DENS     = 0; THRIFT_TEMP     = 0; THRIFT_PRESS      = 0
 
       ! Initialize timers
       time_vmec = 0; time_bootstrap = 0

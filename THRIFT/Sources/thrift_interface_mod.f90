@@ -91,9 +91,9 @@ MODULE THRIFT_INTERFACE_MOD
          WRITE(6,*) '     MESSAGE: ',TRIM(cmdtxt); CALL FLUSH(6)
 !DEC$ IF DEFINED (STELZIP)
          ! Zip up the results and clean
-         CALL EXECUTE_COMMAND_LINE("rm -rf dcon* jxbout* mercier* dkesout* fort.* wout* temp_input*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+         CALL EXECUTE_COMMAND_LINE("rm -rf dcon* jxbout* mercier* dkesout* fort.* temp_input*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
          WRITE(6,*) ' Zipping files'; CALL FLUSH(6); ier = 0; ierr_mpi = 0; cmdtxt=''
-         CALL EXECUTE_COMMAND_LINE("zip -r thrift_files.zip thrift_*.h5 ambipolar*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+         CALL EXECUTE_COMMAND_LINE("zip -r thrift_files.zip thrift_*.h5 ambipolar* fluxes_vs_Er* wout*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
          WRITE(6,*) ' zip: EXITSTAT=',ier,' CMDSTAT=',ierr_mpi; CALL FLUSH(6)
          WRITE(6,*) '     MESSAGE: ',TRIM(cmdtxt); CALL FLUSH(6)
          CALL EXECUTE_COMMAND_LINE("rm -rf wout* temp_input*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
