@@ -10,7 +10,7 @@ import sys
 EC = 1.602176634E-19 # Electron charge [C]
 
 # PENTA Class
-class PRESSURE_SOLVER:
+class PRESSURE_SOLVER_EXPLICIT:
     
     def __init__(self, plasma_class):
         
@@ -69,36 +69,46 @@ class PRESSURE_SOLVER:
         # create interpolating function
         self.initial_profile[species] = CubicSpline(rho_vals,profile_vals)
         
-    def set_VMEC_equilibrium(self,wout_path=None):
+    def set_equilibrium(self,type: str,wout_path=None,aminor=None):
         
         from libstell.vmec import VMEC
         from scipy.interpolate import CubicSpline
         
-        if(wout_path is None):
-            print('ASSUMING CYLINDRICAL COORDINATES: dVdr=r (EXCLUDES ALREADY 2pi*R0*2pi)')
-            self.dVdr = lambda r: r 
-        else:
-            self.wout_path = wout_path
-            # get dVdr from file; use VMEC class
-            vmec_out = VMEC()
-            vmec_out.read_wout(wout_path)
+        match type:
+            case 'VMEC':
+               if(wout_path is None):
+                   print('ERROR: For a VMEC equilibrium, wout_path must be given!')
+                   exit(0)
+               else:
+                    self.wout_path = wout_path
+                    # get dVdr from file; use VMEC class
+                    vmec_out = VMEC()
+                    vmec_out.read_wout(wout_path)
+                    
+                    # 4pi^2*dVds -- vmec.py already does h2f, so vprime is in full grid
+                    vp = vmec_out.vp[:].flatten()
+                    
+                    self.aminor = vmec_out.aminor
+                    
+                    roa = np.sqrt(vmec_out.phi / vmec_out.phi[-1])
+                    roa = roa.flatten()
+                    
+                    #dVdr analytic = dVds * 2\rho / a
+                    dVdr_analytic = (2*np.pi)**2 * vp * 2.*roa / self.aminor
+                    
+                    self.dVdr = CubicSpline(roa,dVdr_analytic)   
+            case 'cylindrical':
+                if(aminor is None):
+                    print('ERROR: For a cylindrical equilibrium, aminor must be given')
+                    exit(0)
+                else:
+                    self.aminor=aminor
+                    self.dVdr = lambda rho: rho*aminor 
             
-            # 4pi^2*dVds -- vmec.py already does h2f, so vprime is in full grid
-            vp = vmec_out.vp[:].flatten()
-            
-            self.a_VMEC = vmec_out.aminor
-            
-            roa = np.sqrt(vmec_out.phi / vmec_out.phi[-1])
-            roa = roa.flatten()
-            
-            #dVdr analytic = dVds * 2\rho / a
-            dVdr_analytic = (2*np.pi)**2 * vp * 2.*roa / self.a_VMEC
-            
-            self.dVdr = CubicSpline(roa,dVdr_analytic)
-            
-    def set_source(self,species,source_type, rho_vals=None, source_vals=None, fraction_alpha_heating=None):
+    def set_source(self,species,source_type, rho_vals=None, source_vals=None, fraction_alpha_heating=None, cte_source=None):
         # electrons: 'Bremsstrahlung', 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
-        # ionts: 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
+        # ions: 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
+        # 'constant' is for benchmarking
         
         from scipy.interpolate import CubicSpline
         
@@ -129,7 +139,13 @@ class PRESSURE_SOLVER:
                     print('ERROR: fraction_alpha_heating is needed. Usually ~80% electrons, 20% ions')
                     exit(0)
                 else:
-                    self.sources[species][source_type] = {'fraction_alpha_heating': fraction_alpha_heating} 
+                    self.sources[species][source_type] = {'fraction_alpha_heating': fraction_alpha_heating}
+            case 'constant':
+                if(cte_source is None):
+                    print('ERROR: cte_source is needed in order to generate a constant source.')
+                    exit(0)
+                else:
+                    self.sources[species][source_type] = {'cte_source' : cte_source}
             case _:
                 print(f'ERROR: Source type {source_type} is NOT possible')
                 exit(0)
@@ -155,6 +171,8 @@ class PRESSURE_SOLVER:
                 if(D_coeff is None):
                     print('ERROR: D_coeff must be provided!')
                     exit(0)
+                self.fluxes_info['type'] = type
+                self.fluxes_info[type]['D_coeff'] = D_coeff
                 
     def set_temperature(self,species,rho,density,pressure):
         # from density (m^-3) and pressure (Pa), sets temperature (eV) in plasma class
@@ -175,20 +193,25 @@ class PRESSURE_SOLVER:
         drho = rho[1]-rho[0]
         
         # Initialize time
-        ## check Nt=1+(tend-tstart)/dt is an integer
-        if( (tend-tstart)%dt != 0 ):
-            print('ERROR: (tend-tstart)%dt != 0')
+        # check Nt=1+(tend-tstart)/dt is an integer
+        if( ((tend-tstart)/dt)%1 != 0 ):
+            print(f'ERROR: dt not compatible with tstart and tend -- {((tend-tstart)/dt)}')
             exit(0)
         else:
             Nt = int( 1+(tend-tstart)/dt )
             time = np.linspace(tstart,tend,Nt)
             
+        # save grids in class
+        self.time = time
+        self.rho_grid = rho
+            
         print(' ')
         print( ' ***********************')
         print(f' *  tstart = {tstart:5.2f}s    *')
-        print(f' *  tend = {tend:5.2f}s      *')
-        print(f' *  dt = {dt:5.2f}s        *')
-        print(f' *  drho = {drho:5.2f}       *')
+        print(f' *  tend   = {tend:5.2f}s    *')
+        print(f' *  dt     = {dt:5.2f}s    *')
+        print(f' *  Nt     = {Nt:3}       *')
+        print(f' *  drho   = {drho:5.2f}     *')
         print( ' ***********************')
             
         # Initialize density and pressure using initial_profile
@@ -196,48 +219,64 @@ class PRESSURE_SOLVER:
         dens = {}
         self.P = {}
         delta_p = {}
-        self.all_sources = defaultdict(lambda: defaultdict(list))
+        p_old = {}
+        self.total_sources = {}
+        self.all_sources = {}
         for species in self.list_of_species:
             press[species] = self.initial_profile[species](rho)
             dens[species] = self.plasma.get_density(species,rho)
             
             self.P[species] = np.zeros((Nt,Nr))
             self.P[species][0,:] = press[species]
-        
+            
+            self.total_sources[species] = np.zeros((Nt,Nr))
+            
+            p_old[species] = 1E3*np.ones(Nr) # so on loop 1 we don't divide by zero
+            
+            # Initialize arrays for each source_type in the specified species
+            self.all_sources[species] = {}
+            for source_type in self.sources[species].keys():
+                self.all_sources[species][source_type] = np.zeros((Nt, Nr))
+                
         print(' ')
         header_str = '  TIME [s]     NSUB      PE_AXIS [MPa]     SE_AXIS [MW/m^3]    PI1_AXIS [MPa]    SI1_AXIS [MW/m^3]    MAX(dp/p_old)'  
         print(header_str)
         print('  '+'='*len(header_str))
-        # print info from t=0
-        # print(f'  {time[0]:<13.2f} {'1':<10} {self.P['electrons'][0,0]/1E6:<18.2E} {self.P['deuterium'][0,0]/1E6:<18.2E} {0.0:<13.2E}')
+        
+        # self.update_at_start()
         
         ### LOOP IN TIME STARTING AT t=tstart+dt ###
-        p_old = 1E3*np.ones(Nr) # so on loop 1 we don't divide by zero
         for it,t in enumerate(time[1:],start=1):
 
             ### SUBCYCLE
             delta_p_all = 10*tolerance
             subiter=1
-            while(delta_p_all > tolerance or subiter<max_subiter):
+            while(delta_p_all > tolerance and subiter<max_subiter):
             
                 # sets temperature in plasma class from density and pressure for ALL species
                 for species in self.list_of_species:
                     self.set_temperature(species,rho,dens[species],press[species])
                     
                 # call PENTA3 and compute interpolating functions self.Er_interp, self.Gamma_interp[species] and self.Q_interp[species]
-                self.call_PENTA3()
+                if(self.fluxes_info['type']=='dkespenta'):
+                    self.call_PENTA3()
+                elif(self.fluxes_info['type']=='diffusive'):
+                    self.compute_diffusive_flux(it)
+                else:
+                    print('ERROR: Not available other type of flux...')
+                    exit(0)
                 
-                #solver for each species (this can be parallelized... numba??)   
+                #solver for each species
                 for species in self.list_of_species:
                     
                     # compute sources on grid (1D-array)
-                    total_sources = self.get_sources(species,rho)  # W/m^3
+                    self.total_sources[species][it,:] = self.get_sources(species,rho,it)  # W/m^3
                     
                     # compute divergence-of-heat-flux term
                     div_flux = self.get_div_flux(species,rho) # J/ (m^3.s)
                     
                     # time evolution (don't forget 3/2 term)
-                    press[species] = self.P[species][it-1,:] + (2./3)*dt*(-div_flux+total_sources)
+                    press[species] = self.P[species][it-1,:] + (2./3)*dt*(-div_flux+self.total_sources[species][it,:])
                     
                     ### NEED TO THINK : BOUNDARY CONDITIONS before OR after TIME EVOLUTION?
                     ### OR EVEN: before AND after ???!!!
@@ -255,23 +294,31 @@ class PRESSURE_SOLVER:
                         print('Neumann value != 0 on axis is NOT possible !!')
                         exit(0)
 
-                    delta_p[species] = np.max( np.where( p_old>1E-10, np.abs((press[species]-p_old)/p_old), 0 ) )
+                    delta_p[species] = np.max( np.where( p_old[species]>1E-10, np.abs((press[species]-p_old[species])/p_old[species]), 0 ) )
                     
-                    p_old = press[species]
+                    p_old[species] = press[species]
                     self.P[species][it,:] = press[species]
                     
                 delta_p_all = np.max([np.max(value) for value in delta_p.values()])
                 
-                info_str = f'  {t:<13.2f}{subiter:<10}{self.P['electrons'][it,0]/1E6:<18.2E}{self.all_sources['electrons'][-1,0]/1E6:<20.2E}{self.P['deuterium'][it,0]/1E6:<18.2E}{self.all_sources['deuterium'][-1,0]/1E6:<21.2E}{delta_p_all:<13.2E}'
+                info_str = f'  {t:<13.2f}{subiter:<10}{self.P['electrons'][it,0]/1E6:<18.2E}{self.total_sources['electrons'][it,0]/1E6:<20.2E}{self.P['deuterium'][it,0]/1E6:<18.2E}{self.total_sources['deuterium'][it,0]/1E6:<21.2E}{delta_p_all:<13.2E}'
                 print(info_str)
+                
+                self.check_NaNs_and_neg_values(it)
                 
                 subiter += 1
                 
+                # if(subiter==3): 
+                #     print(p_old-press[species])
+                #     print(delta_p.values())
+                #     return
+                
                         
 
-    def get_sources(self,species: str,rho_grid):
+    def get_sources(self,species: str,rho_grid, it):
         # returns 1D-array of same size as rho_grid
         # computes sources using info in self.sources[species]
+        # 'it' necessary to save in self.all_sources
         
         from libstell.fusion import FUSION
         from collisions import COLLISIONS
@@ -333,6 +380,9 @@ class PRESSURE_SOLVER:
                     
                 case 'Er':
                     aux_source = self.plasma.charge[species]*self.Er_interp(rho_grid)*self.Gamma_interp[species](rho_grid)
+                    
+                case 'constant':
+                    aux_source = self.sources[species]['constant']['cte_source']
 
                 case _:
                     print(f'ERROR: Source type {source_type} not defined....')
@@ -341,22 +391,21 @@ class PRESSURE_SOLVER:
             total_source += aux_source
             
             #save in dictionary for bookeeping
-            self.all_sources[species][source_type].append(aux_source)
+            self.all_sources[species][source_type][it,:] = aux_source
                     
                     
         return total_source
                     
     def get_div_flux(self,species: str,rho_grid):
         # returns 1D-array of same size as rho_grid
-        # computes div of heat flux term using self.QoT_interp[species] and self.dVdr
-        # uses a 2nd order central finite difference scheme (where fluxes are conserved)
+        # computes div of Q using 2nd order central finite difference scheme (where fluxes are conserved)
         
         drho = rho_grid[1]-rho_grid[0]
-        dr = self.a_VMEC * drho
+        dr = self.aminor * drho
+        Vp = self.dVdr
+        a = self.aminor
         
         Q = self.Q_interp[species]
-        Vp = self.dVdr
-        a = self.a_VMEC
         
         div_flux = np.zeros(len(rho_grid))
         
@@ -465,6 +514,52 @@ class PRESSURE_SOLVER:
             # [Q] = J/(m^2*s)
             Q = PENTA_class.QoT_Maxw[species] * self.plasma.get_temperature(species,PENTA_class.roa_unique) * EC
             self.Q_interp[species] = CubicSpline(PENTA_class.roa_unique,Q) # [self.Q] = J/(m^2*s)
+            
+    def compute_diffusive_flux(self,it):
+        # computes an interpolating function for Q=-D*dp/dr
+        
+        from scipy.interpolate import CubicSpline
+        
+        D = self.fluxes_info['diffusive']['D_coeff']
+        
+        self.Q_interp = {}
+        
+        for species in self.list_of_species:
+            DP = CubicSpline(self.rho_grid,-D*self.P[species][it,:]/self.aminor) #divides by aminor to go from rho to r
+            self.Q_interp[species] = DP.derivative()
+            
+    def update_at_start(self):
+        
+        # sets temperature in plasma class from density and pressure for ALL species
+        for species in self.list_of_species:
+            self.set_temperature(species,self.rho_grid,self.plasma.get_density(species,self.rho_grid),self.P[species][0,:])
+            
+        self.call_PENTA3()
+            
+        ##
+        for species in self.list_of_species:
+            self.total_sources[species][0,:] = self.get_sources(species,self.rho_grid,0)  # W/m^3
+        
+        # print info from t=0
+        info_str = f'  {0.0:<13.2f}{1:<10}{self.P['electrons'][0,0]/1E6:<18.2E}{self.total_sources['electrons'][0,0]/1E6:<20.2E}{self.P['deuterium'][0,0]/1E6:<18.2E}{self.total_sources['deuterium'][0,0]/1E6:<21.2E}{0.0:<13.2E}'
+        print(info_str)
+        
+    def check_NaNs_and_neg_values(self,it):
+        # checks if self.P[species][:,:] has NaNs or negative values
+        # if a NaN is found, program is aborted
+        # if negative value is found, a warning is yield and the neg value substituted by a very small number
+        
+        for species in self.list_of_species:
+            
+            # look for NaNs
+            if np.any(np.isnan(self.P[species][it,:])):
+                print('ERROR: Pressure has NaN values !! ')
+                exit(1)
+                
+            # look for neg values
+        
+    
+        
             
 # Main routine
 if __name__=="__main__":
