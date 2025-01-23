@@ -148,9 +148,9 @@ class NESCOIL(FourierRep):
 		nu = len(theta)
 		nv = len(zeta)
 		for j in range(nu): pot[0,j,:] = pot[0,j,:] - self.cut*0.5*theta[j]/np.pi
-		for j in range(nv): 
-			v = zeta[j]/(np.pi*2)
-			pot[0,:,j] = pot[0,:,j] - self.cup*v
+		for j in range(nv): pot[0,:,j] = pot[0,:,j] - self.cup*0.5*zeta[j]/np.pi
+		#	v = zeta[j]/(np.pi*2)
+		#	pot[0,:,j] = pot[0,:,j] - self.cup*v
 		return pot
 
 
@@ -314,6 +314,8 @@ class NESCOIL(FourierRep):
 		coils.xmin = 1E9; coils.xmax=-1E9
 		coils.ymin = 1E9; coils.ymax=-1E9
 		coils.zmin = 1E9; coils.zmax=-1E9
+		# Compute total current
+		Ipol = self.curpol*self.np/(4.0E-7*np.pi)
 		# First generate potential to determine contours
 		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
 		zeta  = np.reshape( np.linspace(0,np.pi,self.nv),(self.nv,1))
@@ -361,11 +363,15 @@ class NESCOIL(FourierRep):
 				nzeta  = ze*self.xn_surface[mn]
 				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
 				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
+			# Check and adjust coil convention
+			if (z[1]-z[0]) > 0:
+				r = r[::-1]
+				z = z[::-1]
 			# Convert to XYZ and make current/group
 			ph = ze/float(self.np)
 			x = r * np.cos(ph)
 			y = r * np.sin(ph)
-			c = np.ones((npts))*self.curpol/(np.pi*4E-7*ncoils_per_halfperiod*2)
+			c = np.ones((npts))*Ipol/(self.np*ncoils_per_halfperiod*2)
 			g = np.ones((npts))*(k+1)
 			c[-1] = 0.0
 			# Create stellarator symmetric coil
@@ -393,6 +399,124 @@ class NESCOIL(FourierRep):
 			coils.zmax = np.maximum(coils.zmax,np.max(z))
 			# Now create group
 			coil_name=f'MOD{k+1}'
+			coils.groups.extend([COILGROUP(x,y,z,c,coil_name)])
+		# Return a coil object
+		return coils
+
+	def cutcoils_helical(self,nhelical_coils,lplot=False):
+		"""Cut coils from the NESCOIL potential
+
+		This routine cuts coils from the NESCOIL potential.
+		It allows the user to specify the number of coils per half 
+		period.
+
+		Parameters
+		----------
+		nhelical_coils : integer
+			Number of helical coils (suggest 2)
+		lplot : boolean (optional)
+			Plot the potential and potential lines. (default: False)
+		"""
+		import numpy as np
+		from libstell.coils import COILSET, COILGROUP, COIL
+		from contourpy import contour_generator, LineType
+		import matplotlib.pyplot as pyplot
+		# Generate coilset
+		coils = COILSET()
+		print('!!!!!!!!!!!!!!!!!!!!!!')
+		print('!!  NOT IMPLEMENTED !!')
+		print('!!!!!!!!!!!!!!!!!!!!!!')
+		return coils
+		coils.nfp = self.np
+		coils.ngroups = nhelical_coils
+		coils.xmin = 1E9; coils.xmax=-1E9
+		coils.ymin = 1E9; coils.ymax=-1E9
+		coils.zmin = 1E9; coils.zmax=-1E9
+		# First generate potential to determine contours
+		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
+		zeta  = np.reshape( np.linspace(0,np.pi,self.nv),(self.nv,1))
+		pot = self.generateTotalPotential(theta,zeta)
+		cont_vals = np.zeros((nhelical_coils))
+		for k in range(nhelical_coils):
+			v = 0
+			u = round(float(k)*self.nu/(nhelical_coils))
+			cont_vals[k] = pot[0,u,v]
+		# Now calculate a larger potential map so coils can span periods
+		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
+		zeta_min = 0.0
+		zeta_max = np.pi
+		zeta  = np.reshape( np.linspace(zeta_min,zeta_max,self.nv),(self.nv,1))
+		pot = self.generateTotalPotential(theta,zeta)
+		# Now generate contours
+		potmin = np.min(pot)
+		potmax = np.max(pot)
+		delta  = 2*(potmax-potmin)/float(2*nhelical_coils+1.5)
+		cont_gen = contour_generator(x=np.squeeze(zeta),y=np.squeeze(theta),z=np.squeeze(pot), line_type=LineType.Separate)
+		# Make plot if requested
+		if lplot:
+			px = 1/pyplot.rcParams['figure.dpi']
+			fig=pyplot.figure(figsize=(1024*px,768*px))
+			ax=fig.add_subplot(111)
+			hmesh=ax.contourf(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),extend='both',cmap='Greens')
+			ax.contour(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),colors='black')
+			ax.set_xlabel('Toroidal angle [rad]')
+			ax.set_ylabel('Poloidal angle [rad]')
+			ax.set_title(r'NESCOIL Coil Cutting')
+			pyplot.colorbar(hmesh,label=r'Potential $\Phi$ [arb]',ax=ax)
+			pyplot.show()
+		# Now loop over contours
+		for k in range(nhelical_coils):
+			level = cont_gen.lines(cont_vals[k])
+			th = np.array([]); ze = np.array([])
+			th_save = np.array([]); ze_save = np.array([])
+			th0 = 0; ze0 = 0;
+			for temp in level:
+				th = np.append(th,temp[:-1,1]+th0)
+				ze = np.append(ze,temp[:-1,0]+ze0)
+				th_save = np.append(th_save,temp[:-1,1]+th0)
+				ze_save = np.append(ze_save,temp[:-1,0]+ze0)
+				th0 = th[-1]
+				ze0 = ze[-1]
+			if True:
+				px = 1/pyplot.rcParams['figure.dpi']
+				fig=pyplot.figure(figsize=(1024*px,768*px))
+				ax=fig.add_subplot(111)
+				ax.plot(th,ze)
+				ax.set_xlim(0,2*np.pi)
+				ax.set_ylim(0,2*np.pi)
+				#hmesh=ax.contourf(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),extend='both',cmap='Greens')
+				#ax.contour(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),colors='black')
+				ax.set_xlabel('Toroidal angle [rad]')
+				ax.set_ylabel('Poloidal angle [rad]')
+				ax.set_title(r'NESCOIL Coil Cutting')
+				#pyplot.colorbar(hmesh,label=r'Potential $\Phi$ [arb]',ax=ax)
+				pyplot.show()
+
+			# Now we need to extend the coil over the whole torus
+			th0 = th[0]; ze0 = ze[0]
+			thf = th[-1]; zef = ze[-1]
+			for i in range(0,self.np):
+				th_temp = th_save[:-1] + th[-1]
+				ze_temp = ze_save[:-1] + ze[-1]
+				th = np.append(th,th_temp)
+				ze = np.append(ze,ze_temp)
+			# Fourier transform the coil
+			npts = len(th)
+			r = np.zeros((npts)); z = np.zeros((npts))
+			for mn in range(self.mnmax_surface):
+				mtheta = th*self.xm_surface[mn]
+				nzeta  = ze*self.xn_surface[mn]
+				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
+				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
+			# Convert to XYZ and make current/group
+			ph = ze/float(self.np)
+			x = r * np.cos(ph)
+			y = r * np.sin(ph)
+			c = np.ones((npts))*self.curpol/(np.pi*4E-7*nhelical_coils*2)
+			g = np.ones((npts))*(k+1)
+			c[-1] = 0.0
+			# Now create group
+			coil_name=f'HEL{k+1}'
 			coils.groups.extend([COILGROUP(x,y,z,c,coil_name)])
 		# Return a coil object
 		return coils
