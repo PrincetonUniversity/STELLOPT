@@ -27,6 +27,7 @@ MODULE read_beams3d_mod
    INTEGER, PARAMETER, PRIVATE :: DTYPE =  SELECTED_REAL_KIND(15)
    INTEGER ::  nr, nz, nphi, nlines, nsteps
    DOUBLE PRECISION, PRIVATE, PARAMETER :: one           = 1.0D0 ! 1.0
+   DOUBLE PRECISION, PRIVATE, PARAMETER :: zero           = 0.0D0 ! 0.0
    DOUBLE PRECISION, PRIVATE :: pi2, dr, dp, dz
    REAL(DTYPE), DIMENSION(:), POINTER, PRIVATE :: raxis, zaxis, phiaxis, &
       RMAGAXIS, ZMAGAXIS
