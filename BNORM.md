@@ -32,6 +32,24 @@ called to handle contribution to the vector potential by the point x.
 The curl of this vector potential then provides the normal component of
 the magnetic field on the VMEC surface.
 
+The code utlizes a normalization for total poloidal current CURPOL which
+is
+
+\$$ I_{pol}=\frac{2\pi B_v\left(0,0\right)}{N_{per}}. $$
+
+This normalization arrises from the deffinition of a wire and the
+vector identities. The field of a wire is:
+
+\$$ B_{wire}=\frac{\mu_0 I_{pol}}{2\pi R} $$
+
+and the deffinition of the toroidla field is:
+
+\$$ B_\phi = RB^v = R \frac{B_v}{R^2} = \frac{B_v}{R} $$
+
+Combining these deffinitions gives:
+
+\$$ I_{pol} = \frac{2\pi B_v}{\mu_0} = \frac{CURPOL N_{per}}{\mu_0} $$
+
 ------------------------------------------------------------------------
 
 ### Compilation
