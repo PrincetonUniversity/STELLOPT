@@ -88,13 +88,13 @@ The code can take one optional parameter, the coil separation in generalized
 units.
 
 ```shell
-xbrnom wout.test 0.3 >& bnorm_log.test &
+xbnorm wout.test 0.3 >& bnorm_log.test &
 ```
 
 You can also run BNORM with customized resolutions, like
 
 ```shell
-xbrnom wout.test 0.3 128 128 16 8 8 8 >& bnorm_log.test &
+xbnorm wout.test 0.3 128 128 16 8 8 8 >& bnorm_log.test &
 ```
 Especially when the default Fourier resolutions are not large
 enough. `mf>=MPOL-1` and `nf>=NTOR` should be satisfied.
