@@ -584,8 +584,8 @@
          ! BEGIN SUBROUTINE
          WRITE(iunit,'(A)')                    '----- NESCOIL Current Surface -----'
          WRITE(iunit,'(A,ES11.4,A)')           '   Surface Area: ',surf_area,' [m]'
-         WRITE(iunit,'(A,ES11.4,A)')           '   Poloidal Current: ',curpol*np*cup,' [A]'
-         WRITE(iunit,'(A,ES11.4,A)')           '   Toroidal Current: ',curpol*np*cut,' [A]'
+         WRITE(iunit,'(A,ES11.4,A)')           '   Poloidal Current: ',curpol*np*cup/(2E-7*pi2),' [A]'
+         WRITE(iunit,'(A,ES11.4,A)')           '   Toroidal Current: ',curpol*np*cut,' [A]' ! Not correct
          CALL FLUSH(iunit)
       END SUBROUTINE nescoil_info
 
