@@ -42,7 +42,7 @@ vector identities. The field of a wire is:
 
 \$$ B_{wire}=\frac{\mu_0 I_{pol}}{2\pi R} $$
 
-and the deffinition of the toroidla field is:
+and the deffinition of the toroidal field is:
 
 \$$ B_\phi = RB^v = R \frac{B_v}{R^2} = \frac{B_v}{R} $$
 
