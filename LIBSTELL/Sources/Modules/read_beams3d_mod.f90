@@ -139,17 +139,17 @@ NULLIFY(raxis,phiaxis,zaxis,RMAGAXIS, ZMAGAXIS, R_1D, PHI_1D, Z_1D, rminor_1D, &
          CALL read_var_hdf5(fid, 'S_ARR',     nr, nphi, nz, istat, DBLVAR=S3D)
          CALL read_var_hdf5(fid, 'U_ARR',   nr, nphi, nz, istat, DBLVAR=U3D)
          CALL read_var_hdf5(fid, 'POT_ARR',   nr, nphi, nz, istat, DBLVAR=POT3D)
-         IF (istat /= 0) POT3D = 0
+         IF (istat /= 0) POT3D = zero
          CALL read_var_hdf5(fid, 'ZEFF_ARR',   nr, nphi, nz, istat, DBLVAR=ZEFF3D)
-         IF (istat /= 0) ZEFF3D = 0      
+         IF (istat /= 0) ZEFF3D = one      
          CALL read_var_hdf5(fid, 'NE',   nr, nphi, nz, istat, DBLVAR=NE3D)
-         IF (istat /= 0) NE3D = 0
+         IF (istat /= 0) NE3D = zero
          CALL read_var_hdf5(fid, 'TE',   nr, nphi, nz, istat, DBLVAR=TE3D)
-         IF (istat /= 0) TE3D = 0 
+         IF (istat /= 0) TE3D = zero 
          CALL read_var_hdf5(fid, 'TI',   nr, nphi, nz, istat, DBLVAR=TI3D)
-         IF (istat /= 0) TI3D = 0
+         IF (istat /= 0) TI3D = zero
          CALL read_var_hdf5(fid, 'NI',   NION, nr, nphi, nz, istat, DBLVAR=NI4D)
-         IF (istat /= 0) NI4D = 0         
+         IF (istat /= 0) NI4D = zero         
          CALL close_hdf5(fid,istat)                          
       END IF
 #endif
