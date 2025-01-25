@@ -149,8 +149,6 @@ class NESCOIL(FourierRep):
 		nv = len(zeta)
 		for j in range(nu): pot[0,j,:] = pot[0,j,:] - self.cut*0.5*theta[j]/np.pi
 		for j in range(nv): pot[0,:,j] = pot[0,:,j] - self.cup*0.5*zeta[j]/np.pi
-		#	v = zeta[j]/(np.pi*2)
-		#	pot[0,:,j] = pot[0,:,j] - self.cup*v
 		return pot
 
 
@@ -175,7 +173,6 @@ class NESCOIL(FourierRep):
 		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu-1)
 		for j in range(self.nv):  zeta[j]=    np.pi*j/float(self.nv-1)
 		pot = self.generatePotential(theta,zeta)
-		#pot = self.sfunct(theta,zeta,self.potmns_surface.T,self.xm_pot,self.xn_pot)
 		hmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot[0,:,:]),cmap='jet',shading='gouraud')
 		ax.set_xlabel('Toroidal angle [rad]')
 		ax.set_ylabel('Poloidal angle [rad]')
