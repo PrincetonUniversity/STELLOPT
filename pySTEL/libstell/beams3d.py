@@ -74,7 +74,7 @@ class BEAMS3D():
 						 'S_lines', 'U_lines', 'B_lines', \
 						 'ndot_prof', \
 						 'epower_prof', 'ipower_prof', 'j_prof', \
-						 'dense_prof']:
+						 'dense_prof','vr_lines','vphi_lines','vz_lines']:
 				if temp in f:
 					array = np.transpose(f[temp][:],(1,0))
 					setattr(self, temp, np.array(array))
@@ -101,6 +101,9 @@ class BEAMS3D():
 		self.Y_lines = self.R_lines*np.sin(self.PHI_lines)
 		self.MODB    = np.sqrt(self.B_R**2 + self.B_PHI**2 + self.B_Z**2)
 		if hasattr(self,'wall_faces'): self.wall_faces = self.wall_faces - 1
+		if hasattr(self,'vr_lines'):
+			self.vx_lines = self.vr_lines * np.cos(self.PHI_lines) - self.vphi_lines * np.sin(self.PHI_lines)
+			self.vy_lines = self.vr_lines * np.sin(self.PHI_lines) + self.vphi_lines * np.cos(self.PHI_lines)
 		return
 
 	def calcVperp(self):
@@ -114,7 +117,8 @@ class BEAMS3D():
 		Vperp : float
 			Perpendicular velocity [m/s]
 		"""
-		mass2D = np.broadcast_to(self.mass,(self.nsteps+1,self.nparticles))
+		import numpy as np
+		mass2D = np.broadcast_to(self.mass,(self.npoinc+1,self.nparticles))
 		vperp  = np.sqrt(2.0*self.moment_lines*self.B_lines/mass2D)
 		vperp  = np.where(self.B_lines < 0,0,vperp)
 		return vperp
@@ -616,6 +620,7 @@ class BEAMS3D():
 			'heatflux'	: First wall heat flux
 			'shine'		: Shinethrough flux
 			'strikes' 	: Wall strikes
+			'none'	 	: Just plot the wall
 
 		Parameters
 		----------
@@ -649,12 +654,14 @@ class BEAMS3D():
 		elif load_type == 'shine':
 			val = np.sum(self.wall_shine[:,beams_use],axis=1)
 		elif load_type == 'strikes':
-			val = np.sum(self.wall_strikes[:,beams_use],axis=1)
+			val = self.wall_strikes[:]
+		elif load_type == 'none':
+			val = np.ones_like(self.wall_strikes)
 		else:
 			print(f'ERROR: plot_heatflux load_type must be heatflux, shine, or strikes. load_type={load_type} ')
 			return
 		# Make points
-		points,triangles = plt.facemeshTo3Dmesh(self.wall_vertex.T,self.wall_faces.T)
+		points,triangles = plt.facemeshTo3Dmesh(self.wall_vertex,self.wall_faces)
 		scalar = plt.valuesToScalar(val*factor)
 		# Add to Render
 		plt.add3Dmesh(points,triangles,FaceScalars=scalar,opacity=1.0,color=colormap)

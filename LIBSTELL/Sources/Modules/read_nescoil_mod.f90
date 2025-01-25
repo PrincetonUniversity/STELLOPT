@@ -584,8 +584,8 @@
          ! BEGIN SUBROUTINE
          WRITE(iunit,'(A)')                    '----- NESCOIL Current Surface -----'
          WRITE(iunit,'(A,ES11.4,A)')           '   Surface Area: ',surf_area,' [m]'
-         WRITE(iunit,'(A,ES11.4,A)')           '   Poloidal Current: ',curpol*np*cup,' [A]'
-         WRITE(iunit,'(A,ES11.4,A)')           '   Toroidal Current: ',curpol*np*cut,' [A]'
+         WRITE(iunit,'(A,ES11.4,A)')           '   Poloidal Current: ',curpol*np*cup/(2E-7*pi2),' [A]'
+         WRITE(iunit,'(A,ES11.4,A)')           '   Toroidal Current: ',curpol*np*cut,' [A]' ! Not correct
          CALL FLUSH(iunit)
       END SUBROUTINE nescoil_info
 
@@ -611,8 +611,7 @@
                xreal(:,:), yreal(:,:), rureal(:,:), rvreal(:,:),  &
                zureal(:,:), zvreal(:,:), sxreal(:,:),             &
                syreal(:,:), szreal(:,:), potu(:,:), potv(:,:),    &
-               potr(:,:), potp(:,:), potz(:,:), potx(:,:),        &
-               poty(:,:), sn(:,:)
+               potx(:,:), poty(:,:), potz(:,:), sn(:,:)
          TYPE(EZspline2_r8)   :: f_spl
          INTEGER, PARAMETER, DIMENSION(2) :: bcs1 = (/-1,-1/)
          INTEGER, PARAMETER, DIMENSION(2) :: bcs2 = (/-1,-1/)
@@ -629,11 +628,10 @@
          u1 = nu_local-1
          v1 = nvp - 1
          ! These normalizations were checked against the surface area
-         norm   = DBLE(np) / DBLE(u1*v1)
-         norm_fsub = DBLE(np) / (pi2*pi2)
-         ! But it should depend on curpol
-         norm   = norm * curpol
-         norm_fsub = norm_fsub * curpol
+         !     Ip = NFP*CURPOL/MU0
+         !     Ip/NFP = CURPOL/MU0 
+         norm   = DBLE(np*curpol) / DBLE(u1*v1)
+         norm_fsub = DBLE(np*curpol) / (pi2*pi2)
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
          x1_min = 0; x2_min = 0
@@ -703,18 +701,17 @@
                      szreal(nu_local,nv_local), &
                      potu(nu_local,nv_local), &
                      potv(nu_local,nv_local), &
-                     potr(nu_local,nv_local), &
-                     potp(nu_local,nv_local), &
-                     potz(nu_local,nv_local), &
                      potx(nu_local,nv_local), &
                      poty(nu_local,nv_local), &
+                     potz(nu_local,nv_local), &
                      sn(nu_local,nv_local))
             ALLOCATE(fmn_temp(mnmax_surface))
             FORALL(u=1:nu_local) xu(u) = DBLE(u-1)/DBLE(nu_local-1)
             FORALL(v=1:nv_local) xv(v) = DBLE(v-1)/DBLE(nv_local-1)
             rreal = zero; rureal = zero; rvreal = zero
             zreal = zero; zureal = zero; zvreal = zero
-            potu = zero; potv = zero
+            potu = -cut; potv = -cup;
+            potx = zero; poty = zero; potz = zero
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,            &
                               rmnc_surface,xm_surface,xn_surface,  &
                               rreal,0,1)
@@ -731,9 +728,9 @@
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,fmn_temp,xm_surface,xn_surface,zvreal,0,0)
             DEALLOCATE(fmn_temp)
             ALLOCATE(fmn_temp(mnmax_pot))
-            fmn_temp =  potmns_surface*xm_pot
+            fmn_temp =  potmns_surface*xm_pot*pi2
             CALL mntouv_local(mnmax_pot,nu_local,nv_local,xu,xv,fmn_temp,xm_pot,xn_pot,potu,0,1)
-            fmn_temp =  potmns_surface*xn_pot
+            fmn_temp =  potmns_surface*xn_pot*pi2
             CALL mntouv_local(mnmax_pot,nu_local,nv_local,xu,xv,fmn_temp,xm_pot,xn_pot,potv,0,0)
             DEALLOCATE(xu,xv,fmn_temp)
 
@@ -742,18 +739,26 @@
             rvreal = pi2*rvreal
             zureal = pi2*zureal
             zvreal = pi2*zvreal
-            potu   = pi2*potu
-            potv   = pi2*potv
+            !potu   = pi2*potu
+            !potv   = pi2*potv
 
             ! Add secular pieces
-            potu = potu - cut
-            potv = potv - cup
+            !potu = potu - cut
+            !potv = potv - cup 
+
+            !==========================================================
+            !         CURVILINEAR COORDIANTES
+            !    x=fx(u,v); y=fy(u,v); z=fz(u,v)
+            !    h_u = |dr/du|; h_v = |dr/dv|
+            !    grad(f) = 1/h_u * df/du * e_u + 1/h_v * df/dv * e_v
+            !    e_u = dr/du; e_v = dr/dv
+            !==========================================================
 
             ! Calculate surface coords and normals
             ALLOCATE(xu(nv_local),xv(nv_local),yu(nv_local),yv(nv_local), &
                cop(nv_local),sip(nv_local),hu(nv_local),hv(nv_local))
-            FORALL(v=1:nv_local) cop(v) = COS(alp*DBLE(v-1)/DBLE(nv_local-1))
-            FORALL(v=1:nv_local) sip(v) = SIN(alp*DBLE(v-1)/DBLE(nv_local-1))
+            FORALL(v=1:nv_local) cop(v) = DCOS(alp*DBLE(v-1)/DBLE(nv_local-1))
+            FORALL(v=1:nv_local) sip(v) = DSIN(alp*DBLE(v-1)/DBLE(nv_local-1))
             DO u = 1, nu_local
                X3D(1,u,1:nv_local) = rreal(u,:)*cop
                Y3D(1,u,1:nv_local) = rreal(u,:)*sip
@@ -781,8 +786,9 @@
             u = nu_local - 1
             v = nv_local - 1
             surf_area = np*SUM(SQRT( sxreal(1:u,1:v)**2+syreal(1:u,1:v)**2+szreal(1:u,1:v)**2))/(u*v)
+            !WRITE(*,*) surf_area
             DEALLOCATE(xu,xv,yu,yv,cop,sip,hu,hv)
-            DEALLOCATE(sxreal,syreal,szreal,rureal,rvreal,zureal,zvreal,potu,potv,potr,potp,potz,potx,poty,sn)
+            DEALLOCATE(sxreal,syreal,szreal,rureal,rvreal,zureal,zvreal,potu,potv,potx,poty,potz,sn)
 
             ! Now extend to more field periods
             ALLOCATE(cop(np),sip(np))

@@ -20,6 +20,15 @@ if __name__=="__main__":
 		help="Output the in_booz file.", default = False)
 	parser.add_argument("--stl", dest="lstl", action='store_true',
 		help="Output STL file of VMEC boundary", default = False)
+	parser.add_argument("--scale_volume", dest="new_vol",
+		help="Write indata with volume rescaled to new_vol m^3", 
+		default = 0.0, type=float)
+	parser.add_argument("--scale_volume_Rfix", dest="new_vol_rfix",
+		help="Write indata with volume rescaled to new_vol [m^3] holding axis fixed.", 
+		default = 0.0, type=float)
+	parser.add_argument("--scale_B0", dest="new_B0",
+		help="Write indata with Baxis rescaled to new_B0 [T]", 
+		default = 0.0, type=float)
 	args = parser.parse_args()
 	vmec_wout = VMEC()
 	vmec_input = VMEC_INDATA()
@@ -38,6 +47,37 @@ if __name__=="__main__":
 		except:
 			print(f'Could not file input file: wout_{args.vmec_ext}.nc or wout.{args.vmec_ext}')
 		if not (linput or loutput): sys.exit(-1)
+		# Write rescaled indata
+		if (linput and (args.new_vol != 0.0 or args.new_vol_rfix != 0.0 or args.new_B0 != 0.0)):
+			eq_vol = vmec_input.calcVolume()
+			if args.new_vol != 0.0:
+				factor = args.new_vol/eq_vol
+				factor = factor**(1.0/3.0)
+				vmec_input.rbc = vmec_input.rbc*factor
+				vmec_input.zbs = vmec_input.zbs*factor
+			elif args.new_vol_rfix != 0.0:
+				raxis_save = vmec_input.rbc[0,:]
+				zaxis_save = vmec_input.zbs[0,:]
+				factor = args.new_vol_rfix/eq_vol
+				factor = factor**(1.0/2.0)
+				vmec_input.rbc = vmec_input.rbc*factor
+				vmec_input.zbs = vmec_input.zbs*factor
+				vmec_input.rbc[0,:] = raxis_save
+				vmec_input.zbs[0,:] = zaxis_save
+			if args.new_B0 != 0.0:
+				if args.new_vol != 0.0: eq_vol = args.new_vol
+				if args.new_vol_rfix != 0.0: eq_vol = args.new_vol_rfix
+				vmec_input.initAxisMidpoint()
+				R00 = np.sum(vmec_input.raxis_cc)
+				eq_area = eq_vol/(np.pi*2*R00)
+				Aminor = np.sqrt(eq_area/np.pi)
+				Bavg = vmec_input.phiedge/eq_area
+				# Note mu0 and 2*pi is ommited from the next two lines since they cancels out
+				I = Bavg*2.0*Aminor/(np.log((R00+Aminor)/(R00-Aminor)))
+				Baxis = I/R00
+				Bfact = args.new_B0/Baxis
+				vmec_input.phiedge = float(vmec_input.phiedge*Bfact)
+			vmec_input.write_indata('input.'+args.vmec_ext+'_rescale')
 		# Write in_booz file
 		if (loutput and args.lbooz):
 			filename = 'in_booz.'+args.vmec_ext
