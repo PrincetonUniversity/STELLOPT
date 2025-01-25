@@ -101,6 +101,9 @@ class COILSET():
 				y = self.groups[i].coils[j].y
 				z = self.groups[i].coils[j].z
 				s = np.linspace(0.0,1.0,self.groups[i].coils[j].npts)
+				x[-1] = x[0]
+				y[-1] = y[0]
+				z[-1] = z[0]
 				cx = CubicSpline(s,x,bc_type='periodic')
 				cy = CubicSpline(s,y,bc_type='periodic')
 				cz = CubicSpline(s,z,bc_type='periodic')
@@ -378,6 +381,7 @@ class COILSET():
 					f.write(f"{self.groups[i].coils[j].x[k]:.10E} {self.groups[i].coils[j].y[k]:.10E} {self.groups[i].coils[j].z[k]:.10E} {current[k]:.10E}\n")
 				k = self.groups[i].coils[j].npts-1
 				f.write(f"{self.groups[i].coils[j].x[k]:.10E} {self.groups[i].coils[j].y[k]:.10E} {self.groups[i].coils[j].z[k]:.10E} {current[k]:.10E} {i+1} {self.groups[i].name}\n")
+		f.write(f"end\n")
 		f.close()
 
 	def coilbiot(self,x,y,z,extcur=None):

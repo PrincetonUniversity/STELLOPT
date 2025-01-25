@@ -252,7 +252,11 @@ class FIELDLINES():
 			plt = PLOT3D()
 		vertices = []
 		scalar   = []
+		# Adjust phi
 		P = np.mod(self.PHI_lines,self.phiaxis[-1])
+		N = np.floor(self.PHI_lines[0,k]/self.phiaxis[-1])
+		P = P + N*self.phiaxis[-1]
+		# Create the X/Y arrays
 		X = self.R_lines * np.cos(P)
 		Y = self.R_lines * np.sin(P)
 		for i in range(k,self.nsteps,self.npoinc):

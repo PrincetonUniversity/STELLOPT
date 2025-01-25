@@ -131,7 +131,8 @@ class WALL():
 		"""Creates a wall file in Kisslinger format
 
 		This routine makes use of the meshcut library to produce
-		a Kisslinger format wall from the existing wall.
+		a Kisslinger format wall from the existing wall. Such a format
+		is also used by TRAVIS.
 		"""
 		import meshcut
 		import numpy as np
@@ -140,7 +141,7 @@ class WALL():
 		phiarr = np.linspace(0,np.pi*2/nfp,int(nphi))
 		sout = np.linspace(0.0,1.0,npts)
 		f = open(filename,'w')
-		f.write(self.name+"\n")
+		f.write(self.name+" <This_is_the_vessel_file>\n")
 		rshift = 0.0
 		zshift = 0.0
 		# Note not sure what last two values in kisslinger format are
