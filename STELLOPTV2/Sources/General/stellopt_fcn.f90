@@ -205,36 +205,38 @@
          ! but we don't need to do anything here.
       CASE("mean")
          ! Set initial axis shape to be the m=0 mode of the boundary shape.
-         DO nf = 0, ntord
-            raxis_cc(nf) = rbc(nf, 0)
-            zaxis_cc(nf) = zbc(nf, 0)
-            raxis_cs(nf) = rbs(nf, 0)
-            zaxis_cs(nf) = zbs(nf, 0)
-         END DO
+         CALL INIT_AXIS_MEAN
+         !DO nf = 0, ntord
+         !   raxis_cc(nf) = rbc(nf, 0)
+         !   zaxis_cc(nf) = zbc(nf, 0)
+         !   raxis_cs(nf) = rbs(nf, 0)
+         !   zaxis_cs(nf) = zbs(nf, 0)
+         !END DO
       CASE("midpoint")
          ! Set the initial axis shape to be, at each phi, the mean of the (theta=0) and (theta=pi) points
          ! of the boundary. This approach may be a more accurate estimate than axis_init_option='mean'
          ! for configurations with a strongly concave bean shape like W7-X.
-         DO nf = 0, ntord ! Handle the m=0 modes.
-            raxis_cc(nf) = rbc(nf, 0)
-            zaxis_cc(nf) = zbc(nf, 0)
-            raxis_cs(nf) = rbs(nf, 0)
-            zaxis_cs(nf) = zbs(nf, 0)
-         END DO
-         DO mf = 2, mpol1d, 2 ! Add even-m modes for m>0
-            ! Handle the n=0 modes:
-            nf=0
-            raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf)
-            zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf)
-            ! No need to include the sin(n*phi) modes for n=0 here.
-            ! Handle the n.ne.0 modes:
-            DO nf = 1, ntord
-               raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf) + rbc(-nf, mf)
-               zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf) + zbc(-nf, mf)
-               raxis_cs(nf) = raxis_cs(nf) + rbs(nf, mf) - rbs(-nf, mf)
-               zaxis_cs(nf) = zaxis_cs(nf) + zbs(nf, mf) - zbs(-nf, mf)
-            END DO
-         END DO
+         CALL INIT_AXIS_MIDPOINT
+         !DO nf = 0, ntord ! Handle the m=0 modes.
+         !   raxis_cc(nf) = rbc(nf, 0)
+         !   zaxis_cc(nf) = zbc(nf, 0)
+         !   raxis_cs(nf) = rbs(nf, 0)
+         !   zaxis_cs(nf) = zbs(nf, 0)
+         !END DO
+         !DO mf = 2, mpol1d, 2 ! Add even-m modes for m>0
+         !   ! Handle the n=0 modes:
+         !   nf=0
+         !   raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf)
+         !   zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf)
+         !   ! No need to include the sin(n*phi) modes for n=0 here.
+         !   ! Handle the n.ne.0 modes:
+         !   DO nf = 1, ntord
+         !      raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf) + rbc(-nf, mf)
+         !      zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf) + zbc(-nf, mf)
+         !      raxis_cs(nf) = raxis_cs(nf) + rbs(nf, mf) - rbs(-nf, mf)
+         !      zaxis_cs(nf) = zaxis_cs(nf) + zbs(nf, mf) - zbs(-nf, mf)
+         !   END DO
+         !END DO
       CASE("input")
          ! Reset the axis shape to the shape specified in the input file
          raxis_cc = raxis_cc_initial
