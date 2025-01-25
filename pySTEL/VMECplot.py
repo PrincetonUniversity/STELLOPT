@@ -105,10 +105,11 @@ class MyApp(QMainWindow):
 		self.nu = self.vmec_data.mpol
 		self.nv = self.vmec_data.ntor*4*self.vmec_data.nfp
 		self.nv2 = self.vmec_data.ntor*4
-		if self.nu < 32:
-			self.nu = 32
-		if self.nv < 16:
-			self.nv = 16
+		if self.nu < 128:
+			self.nu = 128
+		if self.nv2 < 64:
+			self.nv2 = 64
+			self.nv  = self.nv2*self.vmec_data.nfp
 		self.TransformVMEC()
 		self.s=0
 		self.u=0
