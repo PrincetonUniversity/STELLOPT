@@ -12,7 +12,7 @@ EC = 1.602176634E-19 # Electron charge [C]
 # PENTA Class
 class PENTA:
     
-    def __init__(self, folder_path, plasma=None, Zions=None):
+    def __init__(self, folder_path, plasma=None, Zions=None, lverb=True):
         #folder_path is a path to the folder containnig the following PENTA3 results files:
         # - flows_vs_Er
         # - flows_vs_roa
@@ -22,7 +22,7 @@ class PENTA:
         # - contra_vs_roa
         # - sigmas_vs_roa
         
-        print('\nPENTA class being created...')
+        if(lverb): print('\nPENTA class being created...')
         
         self.folder_path = folder_path
         
@@ -33,25 +33,25 @@ class PENTA:
         elif(plasma is not None and Zions is not None):
             print('Both plasma class and Zions provided. Considering plasma class and discarding Zions array')
             self.list_of_species = plasma.list_of_species
-            print(f'List of species: {self.list_of_species}')
+            if(lverb): print(f'List of species: {self.list_of_species}')
             self.Zions = [plasma.Zcharge[species] for species in self.list_of_species]
             #remove electrons
             self.Zions = self.Zions[1:]
             print(f'Zions={self.Zions}')
         elif(plasma is not None and Zions is None):
             self.list_of_species = plasma.list_of_species
-            print(f'List of species: {self.list_of_species}')
+            if(lverb): print(f'List of species: {self.list_of_species}')
             self.Zions = [plasma.Zcharge[species] for species in self.list_of_species]
             #remove electrons
             self.Zions = self.Zions[1:]
-            print(f'Zions={self.Zions}')
+            if(lverb): print(f'Zions={self.Zions}')
         elif(plasma is None and Zions is not None):
             #check if size of Zions is compatible with number of ions in results files
             self.check_size_Zions(Zions)
             self.list_of_species = ['e'] + [f'i{k}' for k in range(1,len(Zions)+1)]
-            print(f'List of species: {self.list_of_species}')
+            if(lverb): print(f'List of species: {self.list_of_species}')
             self.Zions = Zions
-            print(f'Zions={self.Zions}')
+            if(lverb): print(f'Zions={self.Zions}')
             
         #sets the arrays self.roa_unique and self.Er_search
         self.set_independent_variables()
@@ -64,9 +64,14 @@ class PENTA:
         # - self.uprl[species,root]
         # - self.Jprl[species,root]
         # - self.Gamma[species,root]
+        # - self.QoT[species,root]
         # species is one of the species in self.list_of_species and root should be 
         # 'ion_root', 'electron_root' or 'unstable_root'
         self.set_fluxes_flows_by_root()
+        
+        # Sets the dictionary self.root_Maxwell[roa] = 'ion_roots' or 'electron_root'
+        # using Maxwell construction criterium
+        self.set_Maxwell_root()
             
             
     def check_size_Zions(self,Zions):
@@ -90,18 +95,17 @@ class PENTA:
             
         penta = np.loadtxt(filename,skiprows=2) 
         
-        self.roa_unique = np.unique(penta[:,0])
-        self.Er_search = np.unique(penta[1,:])
-        
+        self.Er_search = np.unique(penta[1,:])          
+       
         filename = self.folder_path + '/flows_vs_roa'
             
         penta = np.loadtxt(filename,skiprows=2)
         
+        self.roa_unique = np.unique(penta[:,0])
+        
         number_flows_per_species = len(penta[0,3:]) / len(self.list_of_species)
         
         self.Smax = int(number_flows_per_species - 1)
-        
-        print(f'Smax={self.Smax}')
         
     def set_variables_by_root(self):
         # sets the dictionaries self.##[root], self.##[root]], self.##[root]],
@@ -123,10 +127,12 @@ class PENTA:
         self.Er = defaultdict(list)
         self.Jprl_total = defaultdict(list)
         self.JBS = defaultdict(list)
+        self.num_roots = []
 
         i=0
         for _, group in groupby(roa):
             num_roots = len( list(group) )
+            self.num_roots.append(num_roots)
             
             if(num_roots == 1):
                 self.roa['ion_root'].append(roa[i])
@@ -159,10 +165,10 @@ class PENTA:
                 print(f"How come you have {num_roots} roots ??")
                 exit(0)   
 
-            i += num_roots        
+            i += num_roots    
   
     def set_fluxes_flows_by_root(self):
-        # sets the dictionaries self.uprl[species,root], self.Jprl[species,root] and self.Gamma[species,root]
+        # sets the dictionaries self.uprl[species,root], self.Jprl[species,root], self.Gamma[species,root] and self.QoT[species,root]
         # they dictionaries return arrays
         # species is one of the species in self.list_of_species and root should be 'ion_root', 'electron_root' or 'unstable_root'
         
@@ -180,14 +186,16 @@ class PENTA:
         penta = np.loadtxt(filename,skiprows=2)
         Jprl_penta = penta[:,3:(3+len(self.list_of_species))]
         
-        #get particle fluxes for all species
+        #get fluxes for all species
         filename = self.folder_path + '/fluxes_vs_roa'
         penta = np.loadtxt(filename,skiprows=2)
         Gamma_penta = penta[:,np.r_[3,5:(5+len(self.Zions))]]
+        QoT_penta = penta[:,np.r_[4,(5+len(self.Zions)):]]
         
         self.uprl = defaultdict(list)
         self.Jprl = defaultdict(list)
         self.Gamma = defaultdict(list)
+        self.QoT = defaultdict(list)
         
         for k,species in enumerate(self.list_of_species):
         
@@ -199,6 +207,7 @@ class PENTA:
                     self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
                     self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
                     self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
+                    self.QoT[species,'ion_root'].append(QoT_penta[i,k])
                 elif(num_roots ==3 or num_roots>3):
                 
                     if(num_roots>3):
@@ -208,20 +217,85 @@ class PENTA:
                     self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
                     self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
                     self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
+                    self.QoT[species,'ion_root'].append(QoT_penta[i,k])
                     # unstable root
                     self.uprl[species,'unstable_root'].append(uprl0_penta[i+1,k])
                     self.Jprl[species,'unstable_root'].append(Jprl_penta[i+1,k])
                     self.Gamma[species,'unstable_root'].append(Gamma_penta[i+1,k])
+                    self.QoT[species,'unstable_root'].append(QoT_penta[i+1,k])
                     # electron root
                     self.uprl[species,'electron_root'].append(uprl0_penta[i+2,k])
                     self.Jprl[species,'electron_root'].append(Jprl_penta[i+2,k])
                     self.Gamma[species,'electron_root'].append(Gamma_penta[i+2,k])
+                    self.QoT[species,'electron_root'].append(QoT_penta[i+2,k])
                 elif(num_roots ==2):
                     raise ValueError(f"How come you have 2 roots ??") 
                 else:
                     print(f"How come you have {num_roots} roots ??")
                     exit(0)    
                 i += num_roots
+                
+    def set_Maxwell_root(self):
+        # sets the dictionary self.root_Maxwell
+        # Of all the ambipolar roots, defines which one will settle using Maxwell criterium
+        
+        from collections import defaultdict
+        
+        filename = self.folder_path + '/fluxes_vs_Er'
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+        gamma_e = penta[:,2]       
+        gamma_i_tot = np.sum(penta[:,3:]*self.Zions,axis=1)
+        
+        Jr = gamma_i_tot - gamma_e
+        
+        self.root_Maxwell = {}
+        self.Er_Maxw = []
+        self.JBS_Maxw = []
+        self.Gamma_Maxw = defaultdict(list)
+        self.QoT_Maxw = defaultdict(list)
+        
+        for k,rho in enumerate(self.roa_unique):
+            num_roots = self.num_roots[k]
+            
+            if(num_roots==1):
+                root_type = 'ion_root'
+                self.root_Maxwell[rho] = 'ion_root'
+                idx_Maxw = np.abs(self.roa['ion_root']-rho).argmin()
+            elif(num_roots>=3):
+                # compute integral(Jr.dEr) between electron and ion roots
+                ie = np.abs(self.roa['electron_root']-rho).argmin()
+                electron_root = self.Er['electron_root'][ie]
+                #
+                ii = np.abs(self.roa['ion_root']-rho).argmin()
+                ion_root = self.Er['ion_root'][ii]
+                # find Er closest to electron and ion roots
+                idx_e = np.abs(Er - electron_root).argmin()
+                idx_i = np.abs(Er - ion_root).argmin()
+                # Slice the arrays for the specified range
+                Er_slice = Er[idx_e:idx_i+1]
+                Jr_slice = Jr[idx_e:idx_i+1]
+                # Perform the integration using np.trapz
+                integral = np.trapz(Jr_slice, Er_slice)
+                # Decide root
+                if(integral>0):
+                    self.root_Maxwell[rho] = 'ion_root'
+                    root_type = 'ion_root'
+                    idx_Maxw = ii
+                else:
+                    self.root_Maxwell[rho] = 'electron_root'
+                    root_type = 'electron_root'
+                    idx_Maxw = ie
+                    
+            # Now save in Maxwell arrays
+            self.Er_Maxw.append(self.Er[root_type][idx_Maxw])
+            self.JBS_Maxw.append(self.JBS[root_type][idx_Maxw])
+            for species in self.list_of_species:
+                self.Gamma_Maxw[species].append(self.Gamma[species,root_type][idx_Maxw])                  
+                self.QoT_Maxw[species].append(self.QoT[species,root_type][idx_Maxw])
                 
     def plot_Er_vs_roa(self,which_root='all',plot=True):
         # plots ambipolar Er vs roa
@@ -418,7 +492,9 @@ class PENTA:
         
         roa = penta[:,0]
         Er = penta[:,1]
-        gamma_e = penta[:,2]       
+        gamma_e = penta[:,2]  
+        
+        roa_unique = np.unique(roa)     
         
         gamma_i_tot = np.sum(penta[:,3:]*self.Zions,axis=1)
         
@@ -442,7 +518,7 @@ class PENTA:
                 print(f'ERROR!! The provided roa={r_user} is outside the interval of PENTA data: [{np.min(roa)},{np.max(roa)}]')
                 exit(0)        
             else:
-                roa_closest = self.roa_unique[ np.argmin(np.abs(self.roa_unique-r_user)) ]
+                roa_closest = roa_unique[ np.argmin(np.abs(roa_unique-r_user)) ]
             
             plt.rc('font', size=16)
             fig=plt.figure(figsize=(8,6))
