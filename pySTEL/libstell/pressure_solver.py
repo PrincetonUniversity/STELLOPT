@@ -117,6 +117,12 @@ class PRESSURE_SOLVER:
                     exit(0)
                 else:
                     self.sources[species][source_type] = {}
+            case 'Bremsstrahlung_alphas':
+                if(species != 'electrons'): 
+                    print('ERROR: Bremsstrahlung is only source for electrons')
+                    exit(0)
+                else:
+                    self.sources[species][source_type] = {}
             case 'external_gaussian':
                 if((total_power is None) or (sigma_rho is None)):
                     print('ERROR: Need to provide total_power [W] and sigma_rho for gaussian external source')
@@ -261,6 +267,11 @@ class PRESSURE_SOLVER:
             self.all_sources[species] = {}
             for source_type in self.sources[species].keys():
                 self.all_sources[species][source_type] = np.zeros((Nt, Nr))
+                
+        if('Bremsstrahlung_alphas' in self.sources['electrons']):
+            self.Nalphas_fast = np.zeros((Nt,Nr))
+            self.Nalphas_thermal = np.zeros((Nt,Nr))
+            
         ####################################################################################
                 
         print(' ')
@@ -365,6 +376,29 @@ class PRESSURE_SOLVER:
                             
                     #save in dictionary for bookeeping
                     self.all_sources[species][source_type][it,:] = aux_source
+                    
+                case 'Bremsstrahlung_alphas':
+                    aux_source = np.zeros(len(rho_grid))
+                    for ir,rho in enumerate(rho_grid):
+                        ne = self.plasma.get_density('electrons',rho)
+                        Te = self.plasma.get_temperature('electrons',rho)
+                        Z_alpha = 2
+                        tau_alpha = 0.5 # 500ms
+                        tau_palpha = 5  # 5s
+                        nD = self.plasma.get_density('deuterium',rho)
+                        nT = self.plasma.get_density('tritium',rho)
+                        Ti = 0.5* ( self.plasma.get_temperature('deuterium', rho) + self.plasma.get_temperature('tritium', rho) )
+                        sigmav = fusion.sigmaBH(Ti,'DT') # m^3/s
+                        
+                        # ideally here it should be of current time iteration, previous subiteration... TO DO LATER...
+                        # ESSENTIALLY I need to update it w/ previous iter whe going to 1st subiter...
+                        self.Nalphas_fast[it,ir] = (self.Nalphas_fast[it-1,ir] + self.dt*nD*nT*sigmav) / (1+self.dt/tau_alpha)
+                        self.Nalphas_thermal[it,ir] = (self.Nalphas_thermal[it,ir] + (self.dt/tau_alpha)*self.Nalphas_fast[it,ir]) / (1+self.dt/tau_palpha)
+                        
+                        aux_source[ir] -= fusion.BremsstrahlungPower(Z_alpha,self.Nalphas_thermal[it,ir],ne,Te)
+                        
+                    #save in dictionary for bookeeping
+                    self.all_sources[species][source_type][it,:] = aux_source 
                 
                 case 'external_gaussian':
                     r0 = 0.0
