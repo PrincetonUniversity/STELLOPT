@@ -769,8 +769,8 @@ If ((log_interp .EQV. .true. ) .AND. ( Dabs(min_Er) <= elem_charge ))  Then
   Else
     Er_test_vals(min_ind) = Er_test_vals(min_ind + 1)/2._rknd
   EndIf
-  Write(*,'(a,i4,a,f10.3)') 'Cannot use Er=0 with log_interp, using Er(',  &
-     min_ind, ') = ', Er_test_vals(min_ind)
+  ! Write(*,'(a,i4,a,f10.3)') 'Cannot use Er=0 with log_interp, using Er(',  &
+  !    min_ind, ') = ', Er_test_vals(min_ind)
 EndIf
 
 ! Loop over Er to get fluxes as a function of Er
