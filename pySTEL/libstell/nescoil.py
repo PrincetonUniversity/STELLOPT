@@ -319,13 +319,13 @@ class NESCOIL(FourierRep):
 		pot = self.generateTotalPotential(theta,zeta)
 		cont_vals = np.zeros((ncoils_per_halfperiod))
 		for k in range(ncoils_per_halfperiod):
-			u = 0
+			u = round(0.5*self.nu)
 			v = round((k+0.5)*self.nv/(ncoils_per_halfperiod))
 			cont_vals[k] = pot[0,u,v]
 		# Now calculate a larger potential map so coils can span periods
 		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
-		zeta_min = (-1.0/ncoils_per_halfperiod)*np.pi
-		zeta_max = (1.0+1.0/ncoils_per_halfperiod)*np.pi
+		zeta_min = (-2.0/ncoils_per_halfperiod)*np.pi
+		zeta_max = (1.0+2.0/ncoils_per_halfperiod)*np.pi
 		zeta  = np.reshape( np.linspace(zeta_min,zeta_max,self.nv),(self.nv,1))
 		pot = self.generateTotalPotential(theta,zeta)
 		# Now generate contours
@@ -352,6 +352,10 @@ class NESCOIL(FourierRep):
 			for temp in level:
 				th = np.append(th,temp[:,1])
 				ze = np.append(ze,temp[:,0])
+			# Wrap the coil so that poitive current is positive field (counterclockwise from top)
+			if (th[1]-th[0] > 0):
+				th = th[::-1]
+				ph = ph[::-1]
 			# Fourier transform the coil
 			npts = len(th)
 			r = np.zeros((npts)); z = np.zeros((npts))
@@ -360,10 +364,6 @@ class NESCOIL(FourierRep):
 				nzeta  = ze*self.xn_surface[mn]
 				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
 				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
-			# Check and adjust coil convention
-			if (z[1]-z[0]) > 0:
-				r = r[::-1]
-				z = z[::-1]
 			# Convert to XYZ and make current/group
 			ph = ze/float(self.np)
 			x = r * np.cos(ph)
