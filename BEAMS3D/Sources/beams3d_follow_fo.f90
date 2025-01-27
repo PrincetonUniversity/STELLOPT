@@ -25,6 +25,7 @@ SUBROUTINE beams3d_follow_fo
     USE beams3d_write_par
     USE beams3d_physics_mod, ONLY: beams3d_gc2fo, beams3d_calc_dt
     USE safe_open_mod, ONLY: safe_open
+    USE collision_operators, ONLY: SET_COULOMB_FACTOR
     USE mpi_inc
     !-----------------------------------------------------------------------
     !     Local Variables
@@ -149,8 +150,7 @@ SUBROUTINE beams3d_follow_fo
                     lneut  = .false.
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
-                    fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-					
+                    CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
                     DO ! Must do it this way becasue lbeam changes q(4) values
 #if defined(NAG)
                        CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_eom,tol_nag,relab,out_beams3d_part,D02CJW,w,ier)
@@ -195,8 +195,7 @@ SUBROUTINE beams3d_follow_fo
                     lneut  = .false.
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
-                    fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-					
+                    CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
                     ! Setup DRKHVG parameters
                     iopt = 0 
                     DO
@@ -252,8 +251,7 @@ SUBROUTINE beams3d_follow_fo
                     lneut  = .false.
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
-                    fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-					
+                    CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
                     ! Now handle Coordinate conversion
                     IF (lbeam .and. mytdex == 3) mytdex = 2 ! BEAM -> FO Run
                     IF (lboxsim)  mytdex = 1
