@@ -1242,6 +1242,7 @@ vf_coils.o : \
       
 
 vmec_input.o : \
+      stel_constants.o \
       vparams.o \
       vsvd0.o 
       

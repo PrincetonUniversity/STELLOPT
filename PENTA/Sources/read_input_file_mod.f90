@@ -260,19 +260,19 @@ Contains
     b0 = dsqrt(bsq)
 
     !Print
-    write(*,*) '##################################'
-    write(*,*) '##### GEOMETRICAL QUANTITIES: ####'
-    write(*,*) '##################################'
-    write(*,'(a,g0)') ' Bsq=',bsq
-    write(*,'(a,g0)') ' NOTE!!! USING B0=sqrt(Bsq)=',b0
-    write(*,'(a,g0)') ' psip/2pi=',psip
-    write(*,'(a,g0)') ' chip/2pi=',chip
-    write(*,'(a,g0)') ' psip/2pi=',psip
-    write(*,'(a,g0)') ' dVdr=',vol_p
-    write(*,'(a,g0)') ' btheta=',btheta
-    write(*,'(a,g0)') ' bzeta=',bzeta
-    write(*,*) '##################################'
-    write(*,*) '##################################'
+    ! write(*,*) '##################################'
+    ! write(*,*) '##### GEOMETRICAL QUANTITIES: ####'
+    ! write(*,*) '##################################'
+    ! write(*,'(a,g0)') ' Bsq=',bsq
+    ! write(*,'(a,g0)') ' NOTE!!! USING B0=sqrt(Bsq)=',b0
+    ! write(*,'(a,g0)') ' psip/2pi=',psip
+    ! write(*,'(a,g0)') ' chip/2pi=',chip
+    ! write(*,'(a,g0)') ' psip/2pi=',psip
+    ! write(*,'(a,g0)') ' dVdr=',vol_p
+    ! write(*,'(a,g0)') ' btheta=',btheta
+    ! write(*,'(a,g0)') ' bzeta=',bzeta
+    ! write(*,*) '##################################'
+    ! write(*,*) '##################################'
     
   Endsubroutine read_vmec_file_2
 

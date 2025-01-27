@@ -41,14 +41,15 @@
 !        ier         Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
-      INTEGER :: i, j, k, l, istat, neqs, ier_phi, mystart, myend
+      INTEGER :: i, j, k, l, istat, neqs, ier_phi, mystart, myend, iu_dkes_coeffs
       INTEGER, DIMENSION(:), ALLOCATABLE :: ik_dkes
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Earr_dkes, nuarr_dkes
       REAL(rprec), DIMENSION(:), POINTER :: f0p1, f0p2, f0m1, f0m2
       REAL(rprec) :: tcpu0, tcpu1, tcpui, tcput, tcpu, tcpua, &
-                     phi_temp, stime, etime
+                     phi_temp, stime, etime, &
+                     dkes_d11_save, dkes_d31_save, dkes_d33_save
       CHARACTER :: tb*1           
-      CHARACTER*50 :: arg1(6)       
+      CHARACTER*50 :: arg1(6)  
       INTEGER :: numargs, iodata, iout_opt, idata, iout
       INTEGER :: m, n ! nmax, mmax (revmoed due to conflict with dkes_realspace
       CHARACTER :: output_file*64, opt_file*64, dkes_input_file*64, temp_str*64
@@ -350,6 +351,29 @@
             DKES_D11 = RESHAPE( (DKES_L11p + DKES_L11m)*0.5, shape=(/DKES_NK, DKES_NC, DKES_NE/), order=(/2,3,1/) )
             DKES_D31 = RESHAPE( (DKES_L31p + DKES_L31m)*0.5, shape=(/DKES_NK, DKES_NC, DKES_NE/), order=(/2,3,1/) )
             DKES_D33 = RESHAPE( (DKES_L33p + DKES_L33m)*0.5, shape=(/DKES_NK, DKES_NC, DKES_NE/), order=(/2,3,1/) )
+
+            IF(save_DKES_coeffs) THEN
+               ! Open file
+               WRITE(temp_str,'(i3.3)') mytimestep
+               CALL safe_open(iu_dkes_coeffs, istat, "DKES_coeffs."//TRIM(temp_str), &
+               Trim(Adjustl('unknown')), 'formatted')
+
+               ! Write header
+               WRITE(iu_dkes_coeffs, '(A)') "dkes_k  Er_v           nu_v           D11            D31            D33"
+
+               ! Write data row by row
+               DO l=1,nruns_dkes
+                  dkes_d11_save = (DKES_L11p(l) + DKES_L11m(l))*0.5
+                  dkes_d31_save = (DKES_L31p(l) + DKES_L31m(l))*0.5
+                  dkes_d33_save = (DKES_L33p(l) + DKES_L33m(l))*0.5
+                  WRITE(iu_dkes_coeffs, '(I6, 5E15.7)') ik_dkes(l), Earr_dkes(l), nuarr_dkes(l), dkes_d11_save, dkes_d31_save, dkes_d33_save
+               END DO
+
+               ! Close file
+               CLOSE(iu_dkes_coeffs, iostat=ier)
+               IF (ier /= 0) STOP 'Error closing dkes_coeffs file'              
+            ENDIF
+
          END IF
       END IF
       IF (lscreen) WRITE(6,'(a)') ' -------------------  DKES NEOCLASSICAL CALCULATION DONE  ---------------------'

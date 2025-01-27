@@ -211,6 +211,24 @@ class LIBSTELL():
 		out_data['zbs'] = np.reshape(out_data['zbs'],(mpol1d+1,2*ntord+1))
 		return out_data
 
+	def update_module(self,module_name,out_dict):
+		"""Updates the Fortran memory with dictionary
+
+		This routine updates the memory on the Fortran side with any
+		modifications made to the supplied dictionary.
+
+		Parameters
+		----------
+		module_name : str
+			Name of module to update memory
+		out_dict : dict
+			Dictionary of items to change.
+		"""
+		import ctypes as ct
+		# Check if we want to update values
+		for key in out_dict:
+			self.set_module_var(self.s1+module_name+self.s2,key,out_dict[key])
+
 	def write_indata(self,filename,out_dict=None):
 		"""Wrappers writing of the VMEC INDATA namelist
 
@@ -227,12 +245,114 @@ class LIBSTELL():
 		module_name = self.s1+'vmec_input_'+self.s2
 		# Check if we want to update values
 		if out_dict:
-			for key in out_dict:
-				self.set_module_var(module_name,key,out_dict[key])
+			self.update_module('vmec_input_',out_dict)
+		# Write the indata namelist
 		write_indata_namelist = getattr(self.libstell,module_name+'_write_indata_namelist_byfile'+self.s3)
 		write_indata_namelist.argtypes = [ct.c_char_p,ct.c_long]
 		write_indata_namelist.restype=None
 		write_indata_namelist(filename.encode('UTF-8'),len(filename))
+
+	def indataVolume(self):
+		"""Wrapper to the INDATA_VOLUME subroutine
+
+		This routine wrappers the INDATA_VOLUME subroutine
+		which calcualtes the plasma volume for a given INDATA
+		boundary deffinition.
+
+		Returns
+		-------
+		Volume : real
+			Total volume of plasma [m^3]
+		"""
+		import ctypes as ct
+		# Load Libraries
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_volume = getattr(self.libstell,module_name+'_indata_volume'+self.s3)
+		indata_volume.argtypes = [ct.POINTER(ct.c_double)]
+		indata_volume.restype  = None
+		volume = ct.c_double(0.0)
+		indata_volume(ct.byref(volume))
+		return volume.value
+
+	def indataArea(self):
+		"""Wrapper to the INDATA_AREA subroutine
+
+		This routine wrappers the INDATA_AREA subroutine
+		which calcualtes the plasma area for a given INDATA
+		boundary deffinition.
+
+		Returns
+		-------
+		Area : real
+			Total average cross sectional area [m^2]
+		"""
+		import ctypes as ct
+		# Load Libraries
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_area = getattr(self.libstell,module_name+'_indata_area'+self.s3)
+		indata_area.argtypes = [ct.POINTER(ct.c_double)]
+		indata_area.restype  = None
+		area = ct.c_double(0.0)
+		indata_area(ct.byref(area))
+		return area.value
+
+	def indataInitAxisMean(self):
+		"""Wrapper to the InitAxisMean subroutine
+
+		This routine wrappers the INIT_AXIS_MEAN subroutine
+		which initilizes the axis guess from the boundary coefficients
+
+		Returns
+		-------
+		out_data: dict
+			Dictionary of axis harmonics
+		"""
+		import ctypes as ct
+		# Get constant
+		module_name = self.s1+'vparams_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getndatafmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ndatafmax = get_constant()
+		# Load Libraries and initialize axis
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_init_axis = getattr(self.libstell,module_name+'_init_axis_mean'+self.s3)
+		indata_init_axis.argtypes = None
+		indata_init_axis.restype  = None
+		indata_init_axis()
+		realLen =[(ndatafmax,1)]*6
+		realList=['raxis','zaxis','raxis_cc','raxis_cs','zaxis_cc','zaxis_cs']
+		out_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		return out_data
+
+	def indataInitAxisMidpoint(self):
+		"""Wrapper to the InitAxisMidpoint subroutine
+
+		This routine wrappers the INIT_AXIS_MIDPOINT subroutine
+		which initilizes the axis guess from the boundary coefficients
+
+		Returns
+		-------
+		out_data: dict
+			Dictionary of axis harmonics
+		"""
+		import ctypes as ct
+		# Get constant
+		module_name = self.s1+'vparams_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getndatafmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ndatafmax = get_constant()
+		# Load Libraries and initialize axis
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_init_axis = getattr(self.libstell,module_name+'_init_axis_midpoint'+self.s3)
+		indata_init_axis.argtypes = None
+		indata_init_axis.restype  = None
+		indata_init_axis()
+		realLen =[(ndatafmax,1)]*6
+		realList=['raxis','zaxis','raxis_cc','raxis_cs','zaxis_cc','zaxis_cs']
+		out_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		return out_data
 
 	def read_bootin(self,filename):
 		"""Reads a BOOTSJ BOOTIN namelist

@@ -556,8 +556,14 @@
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'CHARGE_IN',(charge_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'ZATOM_IN',(zatom_in(ik), ik=1,n)
          IF (ANY(weight_in /= 1)) WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'WEIGHT_IN',(weight_in(ik), ik=1,n)
-         n = COUNT(t_end_in > -1)
-         WRITE(iunit_out,"(2X,A,1X,'=',I6,'*',ES19.12E3)") 'T_END_IN',n,MAXVAL(t_end_in)
+         ! Handle possible negative T_END_IN
+         IF (MAXVAL(t_end_in) > 0.0) THEN
+            n = COUNT(t_end_in > 0.0)
+            WRITE(iunit_out,"(2X,A,1X,'=',I6,'*',ES19.12E3)") 'T_END_IN',n,MAXVAL(t_end_in)
+         ELSE
+            n = COUNT(t_end_in < 0.0)
+            WRITE(iunit_out,"(2X,A,1X,'=',I6,'*',ES19.11E3)") 'T_END_IN',n,MINVAL(t_end_in)
+         END IF
          IF (MAXVAL(dex_beams)>0) THEN
             n = COUNT(dex_beams>0)
             WRITE(iunit_out,"(2X,A,1X,'=',4(1X,I3.3))") 'DEX_BEAMS',(dex_beams(ik), ik=1,n)
