@@ -41,6 +41,7 @@
       INTEGER, DIMENSION(:), POINTER :: DKES_rundex
       INTEGER, DIMENSION(DKES_NS_MAX) :: DKES_K
       REAL(rprec), DIMENSION(DKES_NSTAR_MAX) :: DKES_Erstar, DKES_Nustar
+      LOGICAL :: save_DKES_coeffs
 
       ! Moved from thrift_runtime
       INTEGER :: nparallel_runs, mboz, nboz
