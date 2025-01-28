@@ -84,6 +84,7 @@ beams3d_follow.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/collision_operators.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       beams3d_runtime.o \
       beams3d_lines.o \
@@ -96,6 +97,7 @@ beams3d_follow.o: \
 beams3d_follow_gc.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/collision_operators.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       beams3d_runtime.o \
       beams3d_lines.o \
@@ -107,6 +109,7 @@ beams3d_follow_gc.o: \
 beams3d_follow_fo.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/collision_operators.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       beams3d_runtime.o \
       beams3d_lines.o \
@@ -276,6 +279,7 @@ beams3d_physics_mod.o: \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
       ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
+      ../../LIBSTELL/$(LOCTYPE)/collision_operators.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_grid.o
