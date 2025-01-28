@@ -40,6 +40,9 @@ MODULE beams3d_physics_mod
       USE EZspline_obj
       USE EZspline
       USE adas_mod_parallel
+      USE collision_operators, ONLY: COULOMB_LOG_NRL_COUNTERSTREAM,&
+                                     V_CRITICAL, V_CRITICAL_WEILAND, &
+                                     TAU_SPITZER
       USE mpi_params 
 
       !-----------------------------------------------------------------
@@ -91,12 +94,10 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
          DOUBLE PRECISION :: ne_cm,coulomb_log
-         ne_cm = ne_in * 1E-6
-         coulomb_log = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
-         !fact_crit_legacy = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0)
-         slow_par(1) = fact_crit_legacy*SQRT(te_in) 
-         slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here, tau_spit
-         slow_par(3) =Zeff_in*fact_pa         
+         coulomb_log = COULOMB_LOG_NRL_COUNTERSTREAM(ne_in,te_in,vbeta_in,Zeff_in)
+         slow_par(1) = V_CRITICAL(te_in)
+         slow_par(2) = TAU_SPITZER(mymass,ne_in,te_in,myZ,coulomb_log)
+         slow_par(3) = Zeff_in*fact_pa  
       END FUNCTION coll_op_nrl19
 
       !-----------------------------------------------------------------
@@ -123,14 +124,11 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
          DOUBLE PRECISION :: ne_cm, coulomb_loge, coulomb_logi
-         ne_cm = ne_in * 1E-6
-         coulomb_logi = 43 - log(Zeff_in*fact_coul*sqrt(ne_cm/te_in)/(vbeta_in*vbeta_in))
-         coulomb_loge=log(1.09d11 * te_in/Zeff_in/sqrt(ne_cm))
-      !WRITE(6,*) coulomb_loge, coulomb_logi
-      ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-         slow_par(1) = fact_crit*SQRT(te_in)*(coulomb_logi/coulomb_loge)**(1.0/3.0) !vcrit, the coulomb ratio is from Weiland (2018) eq.11
-         slow_par(2) = 3.777183D41*mymass*SQRT(te_in*te_in*te_in)/(ne_in*myZ*myZ*coulomb_loge)  ! note ne should be in m^-3 here, tau_spit
-         slow_par(3) =Zeff_in*fact_pa
+         coulomb_logi = COULOMB_LOG_NRL_COUNTERSTREAM(ne_in,te_in,vbeta_in,Zeff_in)
+         coulomb_loge = log(1.09d11 * te_in/Zeff_in/sqrt(ne_cm))
+         slow_par(1) = V_CRITICAL_WEILAND(te_in,coulomb_logi,coulomb_loge)
+         slow_par(2) = TAU_SPITZER(mymass,ne_in,te_in,myZ,coulomb_loge)
+         slow_par(3) = Zeff_in*fact_pa  
          RETURN
       END FUNCTION coll_op_nrl19_ie
 
@@ -242,7 +240,7 @@ MODULE beams3d_physics_mod
                           rho_temp, omeg_temp, binv, vrot_para, vrot_perp, &
                           vc3_tauinv, vbeta, zeff_temp,&
                           sm,omega2,vrel2,bmax,bmincl,bminqu,bmin,&
-                          zdelth,zrang
+                          zdelth,zrang, factor_ion, factor_electron, speed3inv, speed2inv
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          DOUBLE PRECISION :: slow_par(3), ni_temp(NION)
          ! For splines
@@ -327,6 +325,7 @@ MODULE beams3d_physics_mod
             !  Apply toroidal rotation
             !     vrot_para: Parallel rotation velocity [m/s]
             !     vrot_perp: Perpendicular rotation velocity [m/s]
+            !     speed      Total particle speed [m/s]
             !-----------------------------------------------------------
             inv_mymass = one/mymass
             vrot_para = omeg_temp*r_temp*bphi_temp*binv
@@ -358,37 +357,46 @@ MODULE beams3d_physics_mod
                tau_spit_inv = one/slow_par(2)
                vc3_tauinv = vcrit_cube*tau_spit_inv
             ELSE !Dont evaluate collisions
-               q(4) = vll + vrot_para
+               !q(4) = vll + vrot_para
                RETURN
             END IF
 
             !------------------------------------------------------------
             !  Velocity diffusion 
+            !   https://doi.org/10.1103/PhysRev.107.1
+            !   https://doi.org/10.1063/1.1694943
+            !   https://doi.org/10.1016/0021-9991(81)90111-X
+            !   https://doi.org/10.1016/j.cpc.2014.01.014
+            !     speed3inv    v**-3 [m^3/s^3]
+            !     speed2inv    v**-2 [m^3/s^3]
+            !     ddve
             !------------------------------------------------------------
-            ddve = zero; ddvi = zero; sigma = zero; zeta = zero
+            ddve = zero; ddvi = zero; sigma = zero; zeta = zero;
+            factor_ion = one; factor_electron = one
 #if defined(B3D_VEL_DIFFUSION)
-            speed_cube = (speed*speed*speed)
-            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+            speed3inv = 1.0/(speed*speed*speed)
+            speed2inv = speed*speed3inv
             ddve=ABS(2*e_charge*dt*te_temp*inv_mymass*tau_spit_inv)
-            ddvi=ABS(2*e_charge*dt*(ti_temp*vcrit_cube*inv_mymass/speed_cube)*tau_spit_inv)
+            ddvi=ABS(2*e_charge*dt*ti_temp*vcrit_cube*inv_mymass*speed3inv*tau_spit_inv)
+            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
             sigma = sqrt( ddve+ddvi) ! The standard deviation.
             ddve=zeta*ddve/sigma
             ddvi=zeta*ddvi/sigma
+            factor_electron = ( 1.0 - 2.0*te_temp*inv_mymass*e_charge*speed2inv)
+            factor_ion      = ( 1.0 +     ti_temp*inv_mymass*e_charge*speed2inv)
 #endif
             !-----------------------------------------------------------
             !  Viscouse Velocity Reduction
-            !     v_s       Local Sound Speed
-            !     speed     Total particle speed
             !     dve       Speed change due to electron slowing down 
             !     dvi       Speed change due to ion slowing down 
             !     reduction Total change in speed
             !     newspeed  New total speed
             !     vfrac     Ratio between new and old speed (helper) 
             !-----------------------------------------------------------
-            dve   = speed*tau_spit_inv*(1-2*te_temp*inv_mymass*e_charge/speed**2.0)
-            dvi   = vc3_tauinv/(speed*speed)*(1+ti_temp*inv_mymass*e_charge/speed**2.0)
+            dve   = factor_electron*speed*tau_spit_inv
+            dvi   = factor_ion*vc3_tauinv/(speed*speed)
             reduction = (dve + dvi)*dt+sigma*zeta
-            newspeed = speed - reduction
+            newspeed = speed - reduction                
             dve=dve+ddve
             dvi=dvi+ddvi
             vfrac = newspeed/speed

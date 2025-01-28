@@ -36,7 +36,7 @@
                               freq_ecrh, power_ecrh, &
                               pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w, &
                               dkes_k, dkes_Erstar, dkes_Nustar, &
-                              etapar_type
+                              etapar_type, save_DKES_coeffs
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -90,6 +90,7 @@
       dkes_k = -1
       dkes_Erstar = 1E10
       dkes_Nustar = 1E10
+      save_DKES_coeffs = .FALSE.
       RETURN
       END SUBROUTINE init_thrift_input
       

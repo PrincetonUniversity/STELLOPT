@@ -260,7 +260,7 @@ class PLASMA:
             
         # check if temperature of species has been set
         if(species not in self.temperature):
-            print('ERROR" temperatureof {species} has not been set yet')
+            print('ERROR" temperature of {species} has not been set yet')
             exit(0)
             
         # make sure rho is an array
@@ -460,7 +460,7 @@ class PLASMA:
                 # Write the row to the file, formatted as space-separated values
                 file.write(" ".join(map(str, row_data)) + '\n')
     
-    def write_plasma_profiles_to_PENTA3(self,rho,filename=None):
+    def write_plasma_profiles_to_PENTA3(self,rho=np.linspace(0,1,200),filename=None):
         # first line: number of rhos
         # from second line: 
         # 1st column: rho=r/a
