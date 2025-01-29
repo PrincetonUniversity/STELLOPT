@@ -1015,6 +1015,7 @@
          CALL MPI_WIN_FENCE(0,win_fn,istat)
          CALL MPI_WIN_FREE(win_fn,istat)
          IF (ASSOCIATED(FN)) NULLIFY(FN)
+         CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
          CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
          CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
          CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
