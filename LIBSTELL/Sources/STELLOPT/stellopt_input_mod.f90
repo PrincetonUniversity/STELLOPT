@@ -241,7 +241,7 @@
                          lth_f_opt, lphi_s_opt, lphi_f_opt, &
                          lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, lmode_opt, &
                          lne_opt, lte_opt, lti_opt, lth_opt, lzeff_opt, &
-                         lah_f_opt, lat_f_opt, lcoil_spline, lemis_xics_f_opt, &
+                         lah_f_opt, lat_f_opt, lcoil_spline, lemis_xics_f_opt, lemis_xmcts_f_opt, &
                          windsurfname, fixedcoilname, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                          dpscale_opt, dmix_ece_opt, dxics_v0_opt, &
@@ -254,7 +254,7 @@
                          drho_opt, ddeltamn_opt, &
                          dne_opt, dte_opt, dti_opt, dth_opt, dzeff_opt, &
                          dah_f_opt, dat_f_opt, daxis_opt, &
-                         dcoil_spline, demis_xics_f_opt, &
+                         dcoil_spline, demis_xics_f_opt, demis_xmcts_f_opt, &
                          ne_aux_s, te_aux_s, ti_aux_s, th_aux_s, phi_aux_s,&
                          beamj_aux_s, bootj_aux_s, zeff_aux_s, &
                          ne_aux_f, te_aux_f, ti_aux_f, th_aux_f, phi_aux_f,&
@@ -273,6 +273,8 @@
                          ah_f_max, at_f_max, &
                          emis_xics_s, emis_xics_f, emis_xics_type,&
                          emis_xics_f_min, emis_xics_f_max, &
+                         emis_xmcts_s, emis_xmcts_f, emis_xmcts_type,&
+                         emis_xmcts_f_min, emis_xmcts_f_max, &
                          raxis_min, raxis_max, &
                          zaxis_min, zaxis_max, &
                          rbc_min, rbc_max, zbs_min, zbs_max, &
@@ -325,6 +327,8 @@
                          target_xics, sigma_xics, r0_xics, phi0_xics, z0_xics,&
                          r1_xics, phi1_xics, z1_xics, target_xics_bright, sigma_xics_bright, &
                          target_xics_w3, sigma_xics_w3, target_xics_v, sigma_xics_v, &
+                         target_xmcts_bright, sigma_xmcts_bright, &
+                         r0_xmcts, phi0_xmcts, z0_xmcts, r1_xmcts, phi1_xmcts, z1_xmcts, etendu_xmcts, &
                          target_vphi, sigma_vphi, r_vphi, z_vphi, phi_vphi, s_vphi, qm_ratio,&
                          target_iota, sigma_iota, r_iota, z_iota, phi_iota, s_iota,&
                          target_vaciota, sigma_vaciota, r_vaciota, z_vaciota, phi_vaciota, s_vaciota,&
@@ -477,6 +481,7 @@
       lah_f_opt(:)        = .FALSE.
       lat_f_opt(:)        = .FALSE.
       lemis_xics_f_opt(:) = .FALSE.
+      lemis_xmcts_f_opt(:) = .FALSE.
       lbound_opt(:,:)     = .FALSE.
       lrho_opt(:,:)       = .FALSE.
       ldeltamn_opt(:,:)   = .FALSE.
@@ -521,6 +526,7 @@
       dat_f_opt(:)    = -1.0
       daxis_opt(:)    = -1.0
       demis_xics_f_opt(:) = -1.0
+      demis_xmcts_f_opt(:) = -1.0
       dbound_opt(:,:)   = -1.0
       drho_opt(:,:)     = -1.0
       ddeltamn_opt(:,:) = -1.0
@@ -590,6 +596,7 @@
       beamj_f_min     = -bigno;  beamj_f_max     = bigno
       bootj_f_min     = -bigno;  bootj_f_max     = bigno
       emis_xics_f_min = -bigno;  emis_xics_f_max = bigno
+      emis_xmcts_f_min = -bigno;  emis_xmcts_f_max = bigno
       coil_splinefx_min       = -bigno;  coil_splinefx_max       = bigno
       coil_splinefy_min       = -bigno;  coil_splinefy_max       = bigno
       coil_splinefz_min       = -bigno;  coil_splinefz_max       = bigno
@@ -623,6 +630,7 @@
       bootj_type      = 'power_series'
       bootcalc_type   = 'bootsj'
       emis_xics_type  = 'power_series'
+      emis_xmcts_type  = 'power_series'
       ne_opt(0:20)       = 0.0
       zeff_opt(0:20)     = 0.0
       te_opt(0:20)       = 0.0
@@ -662,6 +670,8 @@
       xics_v0          = 0.0
       emis_xics_s(1:3) = (/0.0,0.50,1.0/)
       emis_xics_f(:)   = 0.0
+      emis_xmcts_s(1:3) = (/0.0,0.50,1.0/)
+      emis_xmcts_f(:)   = 0.0
       coil_splinesx(:,:) = -1
       coil_splinesy(:,:) = -1
       coil_splinesz(:,:) = -1
@@ -825,6 +835,15 @@
       r1_xics(:)            = 0.0
       phi1_xics(:)          = 0.0
       z1_xics(:)            = 0.0
+      target_xmcts_bright(:) = 0.0
+      sigma_xmcts_bright(:)  = bigno
+      r0_xmcts(:)            = 0.0
+      phi0_xmcts(:)          = 0.0
+      z0_xmcts(:)            = 0.0
+      r1_xmcts(:)            = 0.0
+      phi1_xmcts(:)          = 0.0
+      z1_xmcts(:)            = 0.0
+      etendu_xmcts(:)        = 0.0
       target_ti(:)     = 0.0
       sigma_ti(:)     = bigno
       r_ti(:)         = 0.0
@@ -1238,6 +1257,8 @@
       CALL write_stel_lvar_vec(iunit,lbootj_f_opt,bootj_f_min,bootj_f_max,dbootj_f_opt,'BOOTJ_F',1,ndatafmax)
 
       CALL write_stel_lvar_vec(iunit,lemis_xics_f_opt,emis_xics_f_min,emis_xics_f_max,demis_xics_f_opt,'EMIS_XICS_F',1,ndatafmax)
+
+      CALL write_stel_lvar_vec(iunit,lemis_xmcts_f_opt,emis_xmcts_f_min,emis_xmcts_f_max,demis_xmcts_f_opt,'EMIS_XMCTS_F',1,ndatafmax)
       
       IF (ANY(laxis_opt)) THEN
          DO n = LBOUND(laxis_opt,DIM=1), UBOUND(laxis_opt,DIM=1)
@@ -1449,6 +1470,13 @@
          WRITE(iunit,outstr) 'EMIS_XICS_TYPE',TRIM(emis_xics_type)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'EMIS_XICS_S',(emis_xics_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'EMIS_XICS_F',(emis_xics_f(n), n=1,ik)
+      END IF
+      ! Emissivities (xmcts)
+      ik = MINLOC(emis_xmcts_s(2:),DIM=1)
+      IF (ik > 2) THEN
+         WRITE(iunit,outstr) 'EMIS_XMCTS_TYPE',TRIM(emis_xmcts_type)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'EMIS_XMCTS_S',(emis_xmcts_s(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'EMIS_XMCTS_F',(emis_xmcts_f(n), n=1,ik)
       END IF
       ! E-static potential
       ik = find_last_nonzero(phi_aux_s)
@@ -2314,6 +2342,28 @@
                WRITE(iunit,"(2(4X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'TARGET_XICS_V(',ik,')',target_xics_v(ik),&
                   'SIGMA_XICS_V(',ik,')',sigma_xics_v(ik)
+         END DO
+      END IF
+      IF (ANY(sigma_xmcts_bright < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          XMCTS Signal Optimization'
+         WRITE(iunit,'(A)') '!              BRIGHT:  Line integrated emissivity'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_xmcts_bright,DIM=1)
+            IF (sigma_xmcts_bright(ik) < bigno ) &
+                WRITE(iunit,"(7(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
+                  'R0_XMCTS(',ik,')',r0_xmcts(ik),&
+                  'PHI0_XMCTS(',ik,')',phi0_xmcts(ik),&
+                  'Z0_XMCTS(',ik,')',z0_xmcts(ik),&
+                  'R1_XMCTS(',ik,')',r1_xmcts(ik),&
+                  'PHI1_XMCTS(',ik,')',phi1_xmcts(ik),&
+                  'Z1_XMCTS(',ik,')',z1_xmcts(ik),&
+                  'ETENDU_XMCTS(',ik,')',etendu_xmcts(ik)
+            IF (sigma_xmcts_bright(ik) < bigno) THEN
+               WRITE(iunit,"(4(4X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
+                  'TARGET_XMCTS_BRIGHT(',ik,')',target_xmcts_bright(ik),&
+                  'SIGMA_XMCTS_BRIGHT(',ik,')',sigma_xmcts_bright(ik)
+            END IF
          END DO
       END IF
       IF (ANY(sigma_te < bigno)) THEN

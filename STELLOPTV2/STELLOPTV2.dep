@@ -363,6 +363,12 @@ chisq_xics_v.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       equil_utils.o 
+
+      
+chisq_xmcts_bright.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_utils.o 
       
 
 chisq_faraday.o : \

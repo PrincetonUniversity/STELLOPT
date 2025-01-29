@@ -369,6 +369,8 @@
       IF (dex > 2) CALL setup_prof_spline(ah_spl,dex,ah_aux_s(1:dex),ah_aux_f(1:dex),ier)
       dex = MINLOC(emis_xics_s(2:),DIM=1)
       IF (dex > 2) CALL setup_prof_spline(emis_xics_spl,dex,emis_xics_s(1:dex),emis_xics_f(1:dex),ier)
+      dex = MINLOC(emis_xmcts_s(2:),DIM=1)
+      IF (dex > 2) CALL setup_prof_spline(emis_xmcts_spl,dex,emis_xmcts_s(1:dex),emis_xmcts_f(1:dex),ier)
 
       ! Screen output
       IF (lscreen) THEN

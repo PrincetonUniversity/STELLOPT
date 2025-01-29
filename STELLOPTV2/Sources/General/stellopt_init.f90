@@ -157,6 +157,7 @@
               IF (ANY(lth_f_opt)) nvars = nvars + count_vars(lth_f_opt,th_aux_f,th_type)
               IF (ANY(lzeff_f_opt)) nvars = nvars + count_vars(lzeff_f_opt,zeff_aux_f,zeff_type)
               IF (ANY(lemis_xics_f_opt)) nvars = nvars + count_vars(lemis_xics_f_opt,emis_xics_f,emis_xics_type)
+              IF (ANY(lemis_xmcts_f_opt)) nvars = nvars + count_vars(lemis_xmcts_f_opt,emis_xmcts_f,emis_xmcts_type)
               IF (ANY(lphi_f_opt)) nvars = nvars + count_vars(lphi_f_opt,phi_aux_f,phi_type)
               IF (ANY(lbeamj_f_opt)) nvars = nvars + count_vars(lbeamj_f_opt,beamj_aux_f,beamj_type)
               IF (ANY(lbootj_f_opt)) nvars = nvars + count_vars(lbootj_f_opt,bootj_aux_f,bootj_type)
@@ -990,6 +991,35 @@
                     END IF
                  END DO
               END IF
+              IF (ANY(lemis_xmcts_f_opt)) THEN
+               norm = profile_norm(emis_xmcts_f,emis_xmcts_type)
+               IF (norm /=0) THEN
+                  nvar_in = nvar_in + 1
+                  vars(nvar_in) = norm
+                  vars_min(nvar_in) = norm - abs(norm_fac*norm)
+                  vars_max(nvar_in) = norm + abs(norm_fac*norm)
+                  var_dex(nvar_in) = iemis_xmcts_f
+                  diag(nvar_in)    = 1.0_rprec
+                  arr_dex(nvar_in,2) = norm_dex
+               ELSE
+                  norm = 1
+               END IF
+               DO i = LBOUND(lemis_xmcts_f_opt,DIM=1), UBOUND(lemis_xmcts_f_opt,DIM=1)
+                  IF (lemis_xmcts_f_opt(i)) THEN
+                     IF (lauto_domain) THEN
+                        emis_xmcts_f_min(i) = emis_xmcts_f(i) - ABS(pct_domain*emis_xmcts_f(i))
+                        emis_xmcts_f_max(i) = emis_xmcts_f(i) + ABS(pct_domain*emis_xmcts_f(i))
+                     END IF
+                     nvar_in = nvar_in + 1
+                     vars(nvar_in) = emis_xmcts_f(i)/norm
+                     vars_min(nvar_in) = emis_xmcts_f_min(i)/norm
+                     vars_max(nvar_in) = emis_xmcts_f_max(i)/norm
+                     var_dex(nvar_in) = iemis_xmcts_f
+                     diag(nvar_in)    = demis_xmcts_f_opt(i)
+                     arr_dex(nvar_in,1) = i
+                  END IF
+               END DO
+            END IF
               IF (ANY(lai_s_opt)) THEN
                  DO i = LBOUND(lai_s_opt,DIM=1), UBOUND(lai_s_opt,DIM=1)
                     IF (lai_s_opt(i)) THEN

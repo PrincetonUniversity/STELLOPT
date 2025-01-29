@@ -53,7 +53,7 @@
       INTEGER ::  vctrl_array(5)
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
-                     norm_phi, norm_zeff, norm_emis_xics, &
+                     norm_phi, norm_zeff, norm_emis_xics, norm_emis_xmcts, &
                      norm_beamj, norm_bootj, temp
       INTEGER, PARAMETER     :: max_refit = 2
       REAL(rprec), PARAMETER :: ec  = 1.60217653D-19
@@ -68,7 +68,7 @@
       norm_aphi = 1; norm_am = 1; norm_ac = 1; norm_ai = 1
       norm_ah   = 1; norm_at = 1; norm_phi = 1; norm_zeff = 1
       norm_ne   = 1; norm_te = 1; norm_ti  = 1; norm_th = 1
-      norm_beamj = 1; norm_bootj = 1; norm_emis_xics = 1
+      norm_beamj = 1; norm_bootj = 1; norm_emis_xics = 1; norm_emis_xmcts = 1
 
 
       ! Save variables
@@ -98,6 +98,7 @@
          IF (var_dex(nvar_in) == ibeamj_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_beamj = x(nvar_in)
          IF (var_dex(nvar_in) == ibootj_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_bootj = x(nvar_in)
          IF (var_dex(nvar_in) == iemis_xics_f .and. arr_dex(nvar_in,2) == norm_dex) norm_emis_xics = x(nvar_in)
+         IF (var_dex(nvar_in) == iemis_xmcts_f .and. arr_dex(nvar_in,2) == norm_dex) norm_emis_xmcts = x(nvar_in)
       END DO
 
       ! Unpack array (minus RBC/ZBS/RBS/ZBC)
@@ -144,6 +145,7 @@
          IF (var_dex(nvar_in) == iah_aux_f) ah_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iat_aux_f) at_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iemis_xics_f) emis_xics_f(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iemis_xmcts_f) emis_xmcts_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iraxis_cc) raxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == izaxis_cs) zaxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iraxis_cs) raxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
@@ -278,6 +280,7 @@
       WHERE(lbootj_f_opt)  bootj_aux_f = bootj_aux_f * norm_bootj
       WHERE(lbeamj_f_opt)  beamj_aux_f = beamj_aux_f * norm_beamj
       WHERE(lemis_xics_f_opt) emis_xics_f = emis_xics_f * norm_emis_xics
+      WHERE(lemis_xmcts_f_opt) emis_xmcts_f = emis_xmcts_f * norm_emis_xmcts
 
       ! Handle cleanup
       IF (iflag < -2) THEN
@@ -314,6 +317,7 @@
          WHERE(lbootj_f_opt)  bootj_aux_f = bootj_aux_f / norm_bootj
          WHERE(lbeamj_f_opt)  beamj_aux_f = beamj_aux_f / norm_beamj
          WHERE(lemis_xics_f_opt) emis_xics_f = emis_xics_f / norm_emis_xics
+         WHERE(lemis_xmcts_f_opt) emis_xmcts_f = emis_xmcts_f / norm_emis_xmcts
          RETURN
       END IF
 
@@ -413,7 +417,6 @@
          ! functions should handle iflag by returning immediately if
          ! iflag is set to a negative number upon entry.
          CALL stellopt_load_equil(lscreen,iflag)
-
          ! Calls to secondary codes
          proc_string_old = proc_string ! So we can find the DIAGNO files
          IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
@@ -481,15 +484,16 @@
            CALL stellopt_regcoil_chi2_b(lscreen, iflag)
          end if
 !DEC$ ENDIF
-
          ! Now we load target values if an error was found then
          ! exagerate the fvec values so that those directions are not
          ! searched this levenberg step
          IF (iflag == 0) THEN
+            WRITE(6,*)  '-------------------------  LOADING TARGET VALUES  -----------------------'
             CALL stellopt_load_targets(m,fvec,iflag,ncnt)
             WHERE(ABS(fvec) > bigno) fvec = bigno
             ier_paraexe = 0
          ELSE
+            WRITE(6,*)  '-------------------------  NOT LOADING TARGET VALUES  -----------------------'
             IF (lscreen) RETURN ! Make sure we can do at least the initial integration
             fvec(1:m) = 10*SQRT(bigno/m)
             iflag = 0 ! Because we wish to continue
@@ -521,6 +525,7 @@
       WHERE(lbootj_f_opt)  bootj_aux_f = bootj_aux_f / norm_bootj
       WHERE(lbeamj_f_opt)  beamj_aux_f = beamj_aux_f / norm_beamj
       WHERE(lemis_xics_f_opt) emis_xics_f = emis_xics_f / norm_emis_xics
+      WHERE(lemis_xmcts_f_opt) emis_xmcts_f = emis_xmcts_f / norm_emis_xmcts
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE

@@ -58,6 +58,7 @@
       END DO
       ! For each ID renormalize
       DO i = 1, nuniq
+
          temp = 0
          DO j = 1, mtargets
             IF (iddex(i)==target_dex(j)) THEN
@@ -124,6 +125,8 @@
                WHERE(sigma_xics_w3<bigno) sigma_xics_w3 = sigma_xics_w3/temp
             CASE(jtarget_xics_v)
                WHERE(sigma_xics_v<bigno) sigma_xics_v = sigma_xics_v/temp
+            CASE(jtarget_xmcts_bright)
+               WHERE(sigma_xmcts_bright<bigno) sigma_xmcts_bright = sigma_xmcts_bright/temp
             CASE(jtarget_mse)
                WHERE(sigma_mse<bigno) sigma_mse = sigma_mse/temp
             CASE(jtarget_faraday)

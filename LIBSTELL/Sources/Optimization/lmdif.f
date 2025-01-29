@@ -4,7 +4,7 @@
       USE stel_kinds
       USE lmpar_mod, fjac_mod=>fjac, ldfjac_mod=>ldfjac,
      1   ipvt_mod=>ipvt, qtf_mod=>qtf, diag_mod=>diag
-!DEC$ IF DEFINED (MPI_OPT)
+!DEC$ IF DEFINED (MPI_OPT) (flag_singletask = -1)
       USE fdjac_mod, ONLY: flip,flag_singletask,flag_cleanup,
      1                     fdjac2_mp_queue, jac_order, jac_count,
      2                     ix_min, h_order, flag_cleanup_lev,
@@ -373,8 +373,8 @@ c     Get mpi parameters
 
 !     evaluate the function at the starting point and calculate its norm.
       IF (myid .eq. master) THEN
-         iflag = flag_singletask
-         if (nfev .ne. 0) iflag = 0
+         iflag = flag_singletask ! =-1
+         if (nfev .ne. 0) iflag = 0 ! nfev - number of function evaluations, should be 0 in the beginning
          CALL fcn (m, n, x, fvec, iflag, nfev)
          IF (iflag .ne. 0) THEN
             WRITE(6,*) "FIRST RUN FAILS!  IMPROVE INPUT!"

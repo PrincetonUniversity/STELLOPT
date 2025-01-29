@@ -23,6 +23,18 @@
       USE xstuff
       USE mpi_inc
       IMPLICIT NONE
+      INTERFACE
+         SUBROUTINE initialize_radial(nsval, ns_old, delt0,
+     &                                lscreen, reset_file_name)
+            USE vmec_main
+            IMPLICIT NONE
+            INTEGER, INTENT(in) :: nsval
+            INTEGER, INTENT(inout) :: ns_old
+            CHARACTER(LEN=*), OPTIONAL :: reset_file_name
+            LOGICAL, INTENT(in) :: lscreen
+            REAL(rprec), INTENT(out) :: delt0
+         END SUBROUTINE initialize_radial
+      END INTERFACE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
@@ -51,7 +63,6 @@ C-----------------------------------------------
       INTEGER                        :: blklength, grid_id, i, js,
      &                                  nsmin, nsmax
       CHARACTER(LEN=20)              :: fname
-
 C-----------------------------------------------
 !
 !     ictrl_flag = ictrl_array(1)
@@ -101,19 +112,6 @@ C-----------------------------------------------
 !     iseq_count=ictrl_array(5)
 !                  specifies a unique sequence label for identifying output files in a sequential vmec run
 C-----------------------------------------------
-      INTERFACE
-         SUBROUTINE initialize_radial(nsval, ns_old, delt0,
-     &                                lscreen, reset_file_name)
-         USE vmec_main
-         IMPLICIT NONE
-         INTEGER, INTENT(in) :: nsval
-         INTEGER, INTENT(inout) :: ns_old
-         CHARACTER(LEN=*), OPTIONAL :: reset_file_name
-         LOGICAL, INTENT(in) :: lscreen
-         REAL(rprec), INTENT(out) :: delt0
-         END SUBROUTINE initialize_radial
-      END INTERFACE
-
       RUNVMEC_PASS = RUNVMEC_PASS + 1
       CALL second0(rvton)
       CALL MyEnvVariables
@@ -206,23 +204,22 @@ C-----------------------------------------------
       END IF
 
       IF (IAND(ictrl_flag, readin_flag) .NE. 0) THEN
-!
 !        READ INPUT FILE (INDATA NAMELIST), MGRID_FILE (VACUUM FIELD DATA)
-!
+!         
          CALL vsetup (iseq_count)
-
          CALL readin (input_file, iseq_count, ier_flag, lscreen)
          max_grid_size = ns_array(multi_ns_grid)
 
          IF (ier_flag .NE. 0) GOTO 1000
-!
+            !WRITE(6,*) "COMPUTE NS-INVARIANT ARRAYS"
 !        COMPUTE NS-INVARIANT ARRAYS
 !
          CALL fixaray
       END IF
-
+!      
       IF (limas) THEN
-!
+         !PRINT *, "is limas"
+         !WRITE(6,*) "is limas"
 !        IMAS PROVIDES DATA
 !
 !         CALL vsetup (iseq_count)
@@ -240,8 +237,9 @@ C-----------------------------------------------
 
 !      IF(lfreeb) CALL SetVacuumCommunicator(nuv, nuv3, max_grid_size)
 
-      IF (lreset) THEN
-!
+      IF (lreset) THEN ! yes we enter here
+         !PRINT *, "is lreset"
+         !WRITE(6,*) "is lreset"
 !        COMPUTE INITIAL SOLUTION ON COARSE GRID
 !        IF PREVIOUS SEQUENCE DID NOT CONVERGE WELL
 !
@@ -261,14 +259,15 @@ C-----------------------------------------------
      &       ' fsqr, fsqz = Preconditioned Force Residuals',/,
      &       1x,23('-'),/, ' BEGIN FORCE ITERATIONS',/,1x,23('-'),/)
 
-      IF (ALL(ns_array .eq. 0) .and. ns_index .le. 0) THEN
+      IF (ALL(ns_array .eq. 0) .and. ns_index .le. 0) THEN !false
          ier_flag = ns_error_flag
          GOTO 1000
       END IF
 
       jacob_off = 0
 
-      IF (IAND(ictrl_flag, timestep_flag) .EQ. 0) GOTO 1000
+      !WRITE(6,*) "ask for IAND(ictrl_flag, timestep_flag)", ier_flag
+      IF (IAND(ictrl_flag, timestep_flag) .EQ. 0) GOTO 1000 !false
 
       IF(lfreeb) CALL SetVacuumCommunicator(nuv, nuv3, max_grid_size) !SAL 070719
 
@@ -280,6 +279,7 @@ C-----------------------------------------------
 
       num_grids = multi_ns_grid
       IF(.NOT.ALLOCATED(grid_procs)) THEN
+         WRITE(6,*) ".NOT.ALLOCATED(grid_procs)"
          ALLOCATE(grid_procs(num_grids))
          ALLOCATE(grid_size(num_grids))
          ALLOCATE(grid_time(num_grids))
@@ -302,7 +302,7 @@ C-----------------------------------------------
             nsval = 3; ivac = -1
             ftolv = 1.e-4_dp
          ELSE IF (ns_index .gt. 0) THEN
-            IF (ns_index .gt. SIZE(ns_array)) THEN
+            IF (ns_index .gt. SIZE(ns_array)) THEN !false
                ier_flag = ns_error_flag
                RETURN
             END IF
@@ -362,7 +362,9 @@ C-----------------------------------------------
             niter = numsteps + iter2 - 1
          END IF
 
-         CALL eqsolve (ier_flag, lscreen)
+         !WRITE(6,*) "Calling eqsolve", ier_flag
+         CALL eqsolve (ier_flag, lscreen) ! expect error in here
+         !WRITE(6,*) "Left eqsolve", ier_flag
 
          IF (numsteps .GT. 0) THEN
             niter = niter_store

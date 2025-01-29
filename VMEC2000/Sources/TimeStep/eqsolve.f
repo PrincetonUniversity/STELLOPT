@@ -19,6 +19,7 @@
 !-----------------------------------------------
       INTEGER :: ier_flag
       LOGICAL :: lscreen
+      INTEGER :: myflag
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
@@ -83,7 +84,8 @@ C-----------------------------------------------
 
 !
 !     FORCE ITERATION LOOP
-!
+! 
+      myflag = ier_flag
       iter_loop: DO WHILE (liter_flag)
 !
 !     ADVANCE FOURIER AMPLITUDES OF R, Z, AND LAMBDA
@@ -100,6 +102,8 @@ C-----------------------------------------------
                END IF
                IF (rank.EQ.0) WRITE (*,51)
             END IF
+            
+      myflag = ier_flag
 
    50 FORMAT(' INITIAL JACOBIAN CHANGED SIGN!')
    51 FORMAT(' TRYING TO IMPROVE INITIAL MAGNETIC AXIS GUESS')

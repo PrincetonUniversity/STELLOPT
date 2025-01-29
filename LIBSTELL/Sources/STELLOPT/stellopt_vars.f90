@@ -81,7 +81,7 @@
                                 lne_f_opt, lte_f_opt,&
                                 lti_f_opt, lth_f_opt,&
                                 lphi_s_opt, lphi_f_opt,&
-                                lzeff_f_opt, lemis_xics_f_opt, &
+                                lzeff_f_opt, lemis_xics_f_opt, lemis_xmcts_f_opt, &
                                 lbootj_f_opt, lbeamj_f_opt, &
                                 lah_f_opt, lat_f_opt
       LOGICAL, DIMENSION(0:ntord)                ::  laxis_opt
@@ -155,7 +155,7 @@
                                             ti_aux_s, th_aux_s, &
                                             zeff_aux_s, &
                                             phi_aux_s, beamj_aux_s,&
-                                            bootj_aux_s, sfincs_s, emis_xics_s
+                                            bootj_aux_s, sfincs_s, emis_xics_s, emis_xmcts_s
       INTEGER                           ::  sfincs_min_procs
       CHARACTER(256)  ::  sfincs_Er_option
       REAL(rprec)                       ::  vboot_tolerance
@@ -166,7 +166,7 @@
                                             ti_aux_f, th_aux_f,&
                                             zeff_aux_f, &
                                             phi_aux_f, beamj_aux_f, &
-                                            bootj_aux_f, emis_xics_f 
+                                            bootj_aux_f, emis_xics_f, emis_xmcts_f 
       REAL(rprec), DIMENSION(ndatafmax) ::  dam_s_opt, dam_f_opt, &
                                             dac_s_opt, dac_f_opt, &
                                             dai_s_opt, dai_f_opt, &
@@ -176,19 +176,19 @@
                                             dzeff_f_opt, &
                                             dbeamj_f_opt, dbootj_f_opt,&
                                             dat_f_opt, dah_f_opt, &
-                                            demis_xics_f_opt
+                                            demis_xics_f_opt, demis_xmcts_f_opt
       REAL(rprec), DIMENSION(ndatafmax) ::  am_f_min, ac_f_min, &
                                             ai_f_min, phi_f_min, &
                                             ne_f_min, te_f_min, &
                                             ti_f_min, th_f_min, &
-                                            zeff_f_min, emis_xics_f_min, &
+                                            zeff_f_min, emis_xics_f_min, emis_xmcts_f_min, &
                                             beamj_f_min, bootj_f_min, &
                                             ah_f_min, at_f_min
       REAL(rprec), DIMENSION(ndatafmax) ::  am_f_max, ac_f_max, &
                                             ai_f_max, phi_f_max, &
                                             ne_f_max, te_f_max, &
                                             ti_f_max, th_f_max, &
-                                            zeff_f_max,  emis_xics_f_max, &
+                                            zeff_f_max,  emis_xics_f_max, emis_xmcts_f_max,&
                                             beamj_f_max, bootj_f_max,&
                                             ah_f_max, at_f_max
       REAL(rprec), DIMENSION(0:ntord)                     ::  daxis_opt
@@ -218,7 +218,7 @@
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max
 
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
-                          beamj_type, bootj_type, zeff_type, emis_xics_type, &
+                          beamj_type, bootj_type, zeff_type, emis_xics_type, emis_xmcts_type,&
                           fixedcoilname, &
                           regcoil_nescin_filename, bootcalc_type, phi_type
       CHARACTER(256), DIMENSION(maxwindsurf) :: windsurfname
@@ -271,6 +271,7 @@
       INTEGER, PARAMETER ::  ibeamj_aux_f = 521
       INTEGER, PARAMETER ::  ibootj_aux_f = 522
       INTEGER, PARAMETER ::  iemis_xics_f = 531
+      INTEGER, PARAMETER ::  iemis_xmcts_f = 532
       INTEGER, PARAMETER ::  iai_aux_s  = 43
       INTEGER, PARAMETER ::  iai_aux_f  = 53
       INTEGER, PARAMETER ::  iphi_aux_s = 44
@@ -432,6 +433,12 @@
                WRITE(iunit,out_format) 'EMIS_XICS_F:  XICS Emissivity Profile Coef (normalization)'
             ELSE
                WRITE(iunit,out_format_1D) 'EMIS_XICS_F(',var_dex1,'):  XICS Emissivity Profile Coef'
+            END IF
+         CASE(iemis_xmcts_f)
+            IF (var_dex2 == norm_dex) THEN
+               WRITE(iunit,out_format) 'EMIS_xmcts_F:  xmcts Emissivity Profile Coef (normalization)'
+            ELSE
+               WRITE(iunit,out_format_1D) 'EMIS_xmcts_F(',var_dex1,'):  xmcts Emissivity Profile Coef'
             END IF
          CASE(iai_aux_s)
             WRITE(iunit,out_format_1D) 'AI_AUX_S(',var_dex1,'):  Iota Profile Knot Location'

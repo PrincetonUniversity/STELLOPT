@@ -137,6 +137,9 @@
       ! XICS V
       IF (ANY(sigma_xics_v < bigno)) &
          CALL chisq_xics_v(target_xics_v, sigma_xics_v, ncnt,iflag)
+      ! XMCTS Brightness
+      IF (ANY(sigma_xmcts_bright < bigno)) &
+         CALL chisq_xmcts_bright(target_xmcts_bright, sigma_xmcts_bright, ncnt,iflag)
       ! SOFT X-RAYS
       IF (ANY(sigma_sxr < bigno)) &
          CALL chisq_sxr(target_sxr, sigma_sxr, ncnt,iflag)

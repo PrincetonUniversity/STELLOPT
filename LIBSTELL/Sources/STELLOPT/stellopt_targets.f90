@@ -119,6 +119,10 @@
                                         target_xics_v,sigma_xics_v, &
                                         r0_xics, phi0_xics, z0_xics, &
                                         r1_xics, phi1_xics, z1_xics
+      REAL(rprec), DIMENSION(nprof) ::  target_xmcts_bright,sigma_xmcts_bright, &
+                                        r0_xmcts, phi0_xmcts, z0_xmcts, &
+                                        r1_xmcts, phi1_xmcts, z1_xmcts, &
+                                        etendu_xmcts
       REAL(rprec), DIMENSION(nprof) ::  target_faraday,sigma_faraday, &
                                         r0_faraday, phi0_faraday, z0_faraday, &
                                         r1_faraday, phi1_faraday, z1_faraday
@@ -260,6 +264,7 @@
       INTEGER, PARAMETER :: jtarget_faraday    = 402
       INTEGER, PARAMETER :: jtarget_sxr        = 403
       INTEGER, PARAMETER :: jtarget_ece        = 404
+      INTEGER, PARAMETER :: jtarget_xmcts_bright= 405
       INTEGER, PARAMETER :: jtarget_bprobe     = 501
       INTEGER, PARAMETER :: jtarget_segrog     = 502
       INTEGER, PARAMETER :: jtarget_fluxloop   = 503
@@ -399,6 +404,8 @@
             WRITE(iunit, out_format) 'Soft X-Ray'
          CASE(jtarget_ece)
             WRITE(iunit, out_format) 'ECE Reflectometry Diagnostic'
+         CASE(jtarget_xmcts_bright)
+            WRITE(iunit, out_format) 'XMCTS Brightness'
          CASE(jtarget_bprobe)
             WRITE(iunit, out_format) 'Magnetic Field Probe'
          CASE(jtarget_fluxloop)

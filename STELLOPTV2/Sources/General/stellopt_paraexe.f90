@@ -118,7 +118,11 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      IF (TRIM(in_parameter_1) /= 'exit' .and. ier_paraexe /= 0) RETURN
+      !IF (TRIM(in_parameter_1) /= 'exit' .and. ier_paraexe /= 0) RETURN
+      IF (TRIM(in_parameter_1) /= 'exit' .and. ier_paraexe /= 0) THEN
+         WRITE(6,*) "Exiting function: condition met (in_parameter_1 /= 'exit' and ier_paraexe /= 0)"
+         RETURN
+      END IF
       code_str = TRIM(in_parameter_1)
       file_str = TRIM(in_parameter_2)
       ierr_mpi = 0

@@ -543,6 +543,25 @@
       val = MAX(val,0.0)
       RETURN
       END SUBROUTINE get_equil_emis_xics
+
+      SUBROUTINE get_equil_emis_xmcts(s_val,type,val,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) ::  s_val
+      CHARACTER(LEN=*), INTENT(in)   :: type
+      REAL(rprec), INTENT(inout)   ::  val
+      INTEGER, INTENT(inout)     ::  ier
+      INTEGER :: i
+      IF (ier < 0) RETURN
+      CALL tolower(type)
+      SELECT CASE (type)
+         CASE ('spline','akima_spline','akima_spline_ip')
+            CALL eval_prof_stel(s_val,type,val,20,emis_xmcts_f(1:20),ier,emis_xmcts_spl)
+         CASE DEFAULT
+            CALL eval_prof_stel(s_val,type,val,20,emis_xmcts_f(1:20),ier)
+      END SELECT
+      val = MAX(val,0.0)
+      RETURN
+      END SUBROUTINE get_equil_emis_xmcts
       
       SUBROUTINE get_equil_zeff(s_val,type,val,ier)
       IMPLICIT NONE
@@ -626,6 +645,17 @@
       fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics_bright
+
+      SUBROUTINE fcn_xmcts_bright(s,u,v,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      INTEGER, INTENT(inout) :: ier
+      fval = 0
+      CALL get_equil_emis_xmcts(s,TRIM(emis_xmcts_type),fval,ier)
+      fval = fval*SQRT(dx*dx+dy*dy+dz*dz)
+      RETURN
+      END SUBROUTINE fcn_xmcts_bright
 
       SUBROUTINE fcn_xics(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
@@ -718,6 +748,8 @@
       fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_sxr
+
+      
 
       SUBROUTINE fcn_faraday(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
