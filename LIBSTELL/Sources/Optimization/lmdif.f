@@ -4,7 +4,7 @@
       USE stel_kinds
       USE lmpar_mod, fjac_mod=>fjac, ldfjac_mod=>ldfjac,
      1   ipvt_mod=>ipvt, qtf_mod=>qtf, diag_mod=>diag
-!DEC$ IF DEFINED (MPI_OPT) (flag_singletask = -1)
+!DEC$ IF DEFINED (MPI_OPT)
       USE fdjac_mod, ONLY: flip,flag_singletask,flag_cleanup,
      1                     fdjac2_mp_queue, jac_order, jac_count,
      2                     ix_min, h_order, flag_cleanup_lev,
