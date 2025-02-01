@@ -286,7 +286,7 @@ class NESCOIL(FourierRep):
 			render_window.Render()
 			render_window_interactor.Start()
 
-	def cutcoils(self,ncoils_per_halfperiod,lplot=False):
+	def cutcoils(self,ncoils_per_halfperiod,npts=128,lplot=False):
 		"""Cut coils from the NESCOIL potential
 
 		This routine cuts coils from the NESCOIL potential.
@@ -297,6 +297,8 @@ class NESCOIL(FourierRep):
 		----------
 		ncoils_per_halfperiod : integer
 			Number of coils per half period (suggest 5)
+		npts : int
+			Number of points in coil (default: 128)
 		lplot : boolean (optional)
 			Plot the potential and potential lines. (default: False)
 		"""
@@ -356,25 +358,26 @@ class NESCOIL(FourierRep):
 			if (th[1]-th[0] > 0):
 				th = th[::-1]
 				ph = ph[::-1]
+			# Now we need to interpolate the coil onto the interval [0,2*pi] in theta.
+			th_out = np.linspace(0,2.0*np.pi,npts)
+			ph_out = np.interp(th_out,th,ph,period=np.pi*2.0)
 			# Fourier transform the coil
-			npts = len(th)
 			r = np.zeros((npts)); z = np.zeros((npts))
 			for mn in range(self.mnmax_surface):
-				mtheta = th*self.xm_surface[mn]
-				nzeta  = ze*self.xn_surface[mn]
+				mtheta = th_out*self.xm_surface[mn]
+				nzeta  = ph_out*self.xn_surface[mn]
 				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
 				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
 			# Convert to XYZ and make current/group
-			ph = ze/float(self.np)
-			x = r * np.cos(ph)
-			y = r * np.sin(ph)
+			x = r * np.cos(ph_out)
+			y = r * np.sin(ph_out)
 			c = np.ones((npts))*Ipol/(self.np*ncoils_per_halfperiod*2)
 			g = np.ones((npts))*(k+1)
 			c[-1] = 0.0
 			# Create stellarator symmetric coil
-			ph = (2.0*np.pi - ze)/self.np
-			xo = np.append(x,r[::-1]*np.cos(ph[::-1]))
-			yo = np.append(y,r[::-1]*np.sin(ph[::-1]))
+			phn = (2.0*np.pi - ph_out)/self.np
+			xo = np.append(x,r[::-1]*np.cos(phn[::-1]))
+			yo = np.append(y,r[::-1]*np.sin(phn[::-1]))
 			zo = np.append(z,-z[::-1])
 			co = np.append(c,c)
 			go = np.append(g,g)
