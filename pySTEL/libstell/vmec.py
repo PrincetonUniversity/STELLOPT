@@ -601,7 +601,7 @@ class VMEC(FourierRep):
 		"""
 		import numpy as np
 		from scipy import interpolate
-		ph = np.mod(phi,np.pi*2)
+		ph = np.mod(phi,np.pi*2.0)
 		cosnp = np.squeeze(np.cos(self.xn*ph))
 		sinnp = np.squeeze(np.sin(self.xn*ph))
 		dth = 1.0
