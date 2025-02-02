@@ -48,7 +48,7 @@ if __name__=="__main__":
 			bmnc = None;	bmns = None
 			if args.bnorm_ext:
 				bnorm = BNORM()
-				bnorm.read_bnorm(bnorm_filename)
+				bnorm.read_bnorm(args.bnorm_ext)
 				curpol = wout.getCurrentPoloidal()
 				xn_b = -bnorm.xn
 				xm_b =  bnorm.xm

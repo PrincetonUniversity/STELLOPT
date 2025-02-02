@@ -232,9 +232,12 @@ class FOCUS():
 			plt = PLOT3D()
 		[points,triangles] = plt.torusvertexTo3Dmesh(self.xsurf.T,self.ysurf.T,self.zsurf.T,lcloseu=True,lclosev=False)
 		# Handle Bn
-		scalar = plt.valuesToScalar(self.Bn.flatten())
-		# Add to Render
-		plt.add3Dmesh(points,triangles,scalars=scalar)
+		if hasattr(self,'Bn'):
+			scalar = plt.valuesToScalar(self.Bn.flatten())
+			# Add to Render
+			plt.add3Dmesh(points,triangles,scalars=scalar)
+		else:
+			plt.add3Dmesh(points,triangles)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Colorbar
