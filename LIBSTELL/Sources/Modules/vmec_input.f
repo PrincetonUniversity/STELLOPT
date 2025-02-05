@@ -789,6 +789,43 @@
       RETURN
       END SUBROUTINE INDATA_AREA
 
+      SUBROUTINE RESCALE_BOUNDARY
+      IMPLICIT NONE
+      REAL(rprec) :: AVolume, AArea, AR00, TArea
+      IF (tvolume .gt. 0.0) THEN
+         CALL INDATA_VOLUME(AVolume)
+         IF (lvolume_rfix) THEN
+            CALL INDATA_AREA(AArea)
+            AR00 = AVolume/(twopi * AArea)
+            TArea = TVolume/(twopi * AR00)
+            raxis_cc = rbc(0:ntord,0)
+            zaxis_cs = zbs(0:ntord,0)
+            rbc = rbc * (Tarea / Aarea) ** (1.0/2.0)
+            zbs = zbs * (Tarea / Aarea) ** (1.0/2.0)
+            rbc(0:ntord,0) = raxis_cc(0:ntord)
+            zbs(0:ntord,0) = zaxis_cs(0:ntord)
+            IF (lasym) THEN
+               raxis_cs = rbs(0:ntord,0)
+               zaxis_cc = zbc(0:ntord,0)
+               rbs = rbs * (Tarea / Aarea) ** (1.0/2.0)
+               zbc = zbc * (Tarea / Aarea) ** (1.0/2.0)
+               rbs(0:ntord,0) = raxis_cs(0:ntord)
+               zbc(0:ntord,0) = zaxis_cc(0:ntord)
+            END IF
+         ELSE
+            rbc = rbc * (tvolume / AVolume) ** (1.0/3.0)
+            zbs = zbs * (tvolume / AVolume) ** (1.0/3.0)
+            IF (lasym) THEN
+               rbs = rbs * (tvolume / AVolume) ** (1.0/3.0)
+               zbc = zbc * (tvolume / AVolume) ** (1.0/3.0)
+            END IF
+         ENDIF
+         CALL INIT_AXIS_MIDPOINT
+      END IF
+      RETURN
+      END SUBROUTINE RESCALE_BOUNDARY
+
+
       SUBROUTINE INIT_AXIS_MEAN
       IMPLICIT NONE
       INTEGER :: n
