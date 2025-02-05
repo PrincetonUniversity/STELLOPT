@@ -15,7 +15,7 @@ include $(DEPLIST)
 include $(OBJLIST)
 
 .SUFFIXES :
-.SUFFIXES : .f .f90 .o
+.SUFFIXES : .f .f90 .o .c
 
 libstell.a : $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles)
@@ -61,5 +61,9 @@ libstell.so : $(ObjectFiles)
          echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). $(INC_PATH) -c $<'; \
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $< ; \
       fi
+
+.c.o : 
+	$(MPI_COMPILE_C) -c $<
+
 clean:
 	- rm -f *.o *.mod *$(STATIC_EXT) *$(SHARED_EXT) 
