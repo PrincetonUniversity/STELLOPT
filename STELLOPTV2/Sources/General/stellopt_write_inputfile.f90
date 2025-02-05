@@ -54,6 +54,7 @@
          SELECT CASE(TRIM(equil_type))
             CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
                IF (lcoil_geom) mgrid_file = 'mgrid_'//TRIM(proc_string)//'.nc'
+               CALL RESCALE_BOUNDARY ! Necssary for output file to have correct RBC/ZBS
                CALL write_indata_namelist(iunit_out,ier)
             CASE('test')
          END SELECT
