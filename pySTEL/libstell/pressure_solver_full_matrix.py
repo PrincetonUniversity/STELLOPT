@@ -11,7 +11,7 @@ EC = 1.602176634E-19 # Electron charge [C]
 EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 
 # PENTA Class
-class PRESSURE_SOLVER:
+class PRESSURE_SOLVER_FULL_MATRIX:
     
     def __init__(self, plasma_class):
         
@@ -96,8 +96,8 @@ class PRESSURE_SOLVER:
                 else:
                     self.aminor=aminor
                     self.dVdr = lambda rho: 4*np.pi*np.pi*Rmajor*aminor  * rho
-            
-    def set_source(self,species,source_type, total_power=None, sigma_rho=None, fraction_alpha_heating=None, cte_source=None, interpolant_2D=None, time_dependent_factor=None, tau_alphas=None, tau_palphas=None):
+
+    def set_source(self,species,source_type, total_power=None, sigma_rho=None, fraction_alpha_heating=None, cte_source=None, interpolant_2D=None, time_dependent_factor=None, tau_alphas=None, tau_palphas=None, Tion_threshold=None, lambda_function_2D=None):
         # electrons: 'Bremsstrahlung', 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
         # ions: 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
         # 'constant' is for benchmarking
@@ -122,7 +122,7 @@ class PRESSURE_SOLVER:
                     print('ERROR: Bremsstrahlung is only source for electrons')
                     exit(0)
                 if( (tau_alphas is None) or (tau_palphas is None)):
-                    print('ERROR: tau_alphas and tau_alphas must be given (in seconds)')
+                    print('ERROR: tau_alphas and tau_palphas must be given (in seconds)')
                     exit(0)
                 else:
                     self.sources[species][source_type] = {'tau_alphas': tau_alphas, 'tau_palphas' : tau_palphas}
@@ -131,7 +131,7 @@ class PRESSURE_SOLVER:
                     print('ERROR: Need to provide total_power [W] and sigma_rho for gaussian external source')
                     exit(1) 
                 else:
-                    self.sources[species][source_type] = {'total_power' : total_power, 'sigma_rho' : sigma_rho }
+                    self.sources[species][source_type] = {'total_power' : total_power, 'sigma_rho' : sigma_rho, 'Tion_threshold' : Tion_threshold }
             case 'time_dependent_gaussian':
                 if((total_power is None) or (sigma_rho is None) or (time_dependent_factor is None)):
                     print('ERROR: Need to provide total_power [W], sigma_rho and a time depenedent factof for time-dependent gaussian')
@@ -163,15 +163,26 @@ class PRESSURE_SOLVER:
                     print('ERROR" interoplating function must have 2 args: time and space')
                     exit(0)
                 else:
-                    self.sources[species][source_type] = {'interpolant_2D' : interpolant_2D}                
+                    self.sources[species][source_type] = {'interpolant_2D' : interpolant_2D}
+            case 'lambda_2D':
+                if(lambda_function_2D is None):
+                    print('ERROR: A 2D (r,t) lambda funcion must be provided!')
+                    exit(0)        
+                # check it's a lambda function with two arguments
+                num_args = len(inspect.signature(lambda_function_2D).parameters)
+                if( not callable(lambda_function_2D) or num_args!=2 ):     
+                    print('A lambda function with two arguments, (r,t), must be given')
+                    exit(0)
+                else:
+                    self.sources[species][source_type] = {'lambda_function_2D' : lambda_function_2D}
             case _:
                 print(f'ERROR: Source type {source_type} is NOT possible')
                 exit(0)
                 
-    def set_fluxes(self,type: str,dkes_folder=None,surfaces=None,D_coeff=None):
+    def set_fluxes(self,type: str,dkes_folder=None,surfaces=None,chi=None):
         # sets type of fluxes
         # OPTION1: type='dkespenta'; dkes_folder and surfaces(list of integers) must be provided
-        # OPTION2: type='diffusive'; D_coeff must be provided (diffusion coefficient)
+        # OPTION2: type='diffusive'; Dn and chi must be provided (partical and heat collisional diffusion coefficients)
             
         match type:
             case 'dkespenta':
@@ -185,12 +196,12 @@ class PRESSURE_SOLVER:
                 self.fluxes_info[type]['surfaces'] = surfaces
                 
             case 'diffusive':
-                #checks that D_coeff is provided
-                if(D_coeff is None):
-                    print('ERROR: D_coeff must be provided!')
+                #checks that diffusion coefficients are provided
+                if(chi is None):
+                    print('ERROR: chi must be provided!')
                     exit(0)
                 self.fluxes_info['type'] = type
-                self.fluxes_info[type]['D_coeff'] = D_coeff
+                self.fluxes_info[type]['chi'] = chi
                 
     def set_temperature(self,species,rho,density,pressure):
         # from density (m^-3) and pressure (Pa), sets temperature (eV) in plasma class
@@ -236,24 +247,25 @@ class PRESSURE_SOLVER:
         print(f' *  drho   = {drho:5.2f}     *')
         print( ' ***********************')
             
-        ################## INITIALIZE DICTIONARIES ########################################
-        press = {}
+        ################## INITIALIZE VARIABLES ########################################
+        press = []
         dens = {}
         self.P = {}
         self.T = {}
         self.Q = {}
-        delta_p = {}
-        p_old = {}
         self.D_interp = {}
         self.total_sources_explicit = {}
         self.all_sources = {}
+        self.ECRH_off = False
         for species in self.list_of_species:
-            press[species] = self.initial_profile[species](rho)
+            p_init = self.initial_profile[species](rho)
             dens[species] = self.plasma.get_density(species,rho)
-            self.set_temperature(species,rho,dens[species],press[species])
+            self.set_temperature(species,rho,dens[species],p_init)
             
             self.P[species] = np.zeros((Nt,Nr))
-            self.P[species][0,:] = press[species]
+            self.P[species][0,:] = p_init
+            
+            press.append(p_init)
             
             self.T[species] = np.zeros((Nt,Nr))
             self.T[species][0,:] = self.plasma.get_temperature(species,rho)
@@ -263,8 +275,7 @@ class PRESSURE_SOLVER:
             self.D_interp[species] = [None]*Nt
                         
             self.total_sources_explicit[species] = np.zeros((Nt,Nr))
-            
-            p_old[species] = 1E3*np.ones(Nr) # so on loop 1 we don't divide by zero in delta_p
+        
             
             # Initialize arrays for each source_type in the specified species
             self.all_sources[species] = {}
@@ -275,6 +286,9 @@ class PRESSURE_SOLVER:
             self.Nalphas_fast = np.zeros((Nt,Nr))
             self.Nalphas_thermal = np.zeros((Nt,Nr))
             
+        p_old = 1E3*np.ones(Nr*len(self.list_of_species)) # so on loop 1 we don't divide by zero in delta_p
+        press = np.concatenate(press)
+            
         ####################################################################################
                 
         print(' ')
@@ -283,28 +297,28 @@ class PRESSURE_SOLVER:
         print('  '+'='*len(header_str))
         
         # Compute sources at t=0.0 and print info
-        self.update_at_start()
+        # self.update_at_start()
         
         ### LOOP IN TIME STARTING AT t=tstart+dt ###
         for it,t in enumerate(time[1:],start=1):
 
             ### SUBCYCLE
-            delta_p_all = 10*tolerance
+            delta_p = 10*tolerance
             subiter=1
-            while(delta_p_all > tolerance and subiter<max_subiter):
+            while(delta_p > tolerance and subiter<max_subiter):
             
                 # sets temperature in plasma class from density and pressure for ALL species
+                k=0
                 for species in self.list_of_species:
-                    self.set_temperature(species,rho,dens[species],press[species])
                     
-                    # l-1
-                    self.P[species][it,:] = press[species]
+                    self.P[species][it,:] = press[k:(k+Nr)]
+                    
+                    self.set_temperature(species,rho,dens[species],self.P[species][it,:])
                     self.T[species][it,:] = self.plasma.get_temperature(species,rho) # this is only for bookeeping
                     
-                # if(t>15 and subiter==1):
-                #     return
+                    k = k+Nr
                     
-                # call PENTA3 and compute interpolating functions self.Er_interp, self.Gamma_interp[species] and self.Q_interp[species]
+
                 if(self.fluxes_info['type']=='dkespenta'):
                     self.call_PENTA3()
                 elif(self.fluxes_info['type']=='diffusive'):
@@ -315,32 +329,23 @@ class PRESSURE_SOLVER:
                 
                 #solver for each species
                 for species in self.list_of_species:
-                    
-                    
-                    # compute sources on grid (1D-array)
-                    # THIS MEANS THAT WHEN COMPUTES SOURCES OF 2nd SPECIES, ALREADY HAS TEMP OF 1ST? NO BECAUSE TEMP IS ONLY UPDATE AFERWARDS
                     self.total_sources_explicit[species][it,:] = self.get_sources_explicit(species,rho,it)  # W/m^3
-                    
-                    RHS_vector = self.get_RHS_vector(species,it)
-                    
-                    LHS_matrix = self.get_LHS_tridig_matrix(species,it)
-                    
-                    # solve system
-                    press[species] = self.solve_tridiagonal_system(LHS_matrix,RHS_vector)
-                    
-                    # self.check_NaNs_and_neg_values(species,it)
-                    # TEMP: TREAT NEG VALUES
-                    # eps = 1E-10
-                    # press[species] = np.where(press[species] < 0, eps, press[species])
-
-                    delta_p[species] = np.max( np.where( p_old[species]>1E-10, np.abs((press[species]-p_old[species])/p_old[species]), 0 ) )
-                    
-                    p_old[species] = press[species]
-                    # self.P[species][it,:] = press[species] ---> I moved this to the beginning of the loop
-                    
-                delta_p_all = np.max([np.max(value) for value in delta_p.values()])
+                                        
+                RHS_vector = self.get_RHS_vector(it)
+                LHS_matrix = self.get_LHS_matrix(it)
                 
-                info_str = f'  {t:<13.2f}{subiter:<10}{self.T['electrons'][it,0]/1E3:<18.3f}{self.total_sources_explicit['electrons'][it,0]/1E6:<20.2E}{self.T['deuterium'][it,0]/1E3:<18.3f}{self.total_sources_explicit['deuterium'][it,0]/1E6:<21.2E}{delta_p_all:<13.2E}'
+                # solve system
+                press = self.solve_sparse_system(LHS_matrix,RHS_vector)
+                
+                #PICARD FACTOR
+                # fpicard = 0.75
+                # press = press*fpicard + (1-fpicard)*p_old
+            
+                delta_p = np.max( np.where( p_old>1E-10, np.abs((press-p_old)/p_old), 0 ) )
+                
+                p_old = press
+                
+                info_str = f'  {t:<13.2f}{subiter:<10}{self.T['electrons'][it,0]/1E3:<18.3f}{self.total_sources_explicit['electrons'][it,0]/1E6:<20.2E}{self.T['deuterium'][it,0]/1E3:<18.3f}{self.total_sources_explicit['deuterium'][it,0]/1E6:<21.2E}{delta_p:<13.2E}'
                 print(info_str)
                 
                 subiter += 1
@@ -416,7 +421,12 @@ class PRESSURE_SOLVER:
                     #
                     aux_source = cte * np.exp(-(r-r0)**2/sigma_r**2)
                     
-                    # if(self.T['deuterium'][it-1,0] > 12E3): aux_source = 0.0
+                    Tion_threshold = self.sources[species]['external_gaussian']['Tion_threshold']
+                    if(Tion_threshold is not None):
+                        Tion = (self.T['deuterium'][it-1,0]+self.T['tritium'][it-1,0])/2
+                        if(Tion > Tion_threshold or self.ECRH_off):
+                            aux_source = 0.0
+                            # self.ECRH_off = True
                     
                     #save in dictionary for bookeeping
                     self.all_sources[species][source_type][it,:] = aux_source
@@ -445,16 +455,16 @@ class PRESSURE_SOLVER:
                     
                 case 'Coll_Heat_Exchange':
                     
-                    W_explicit,W_implicit = self.get_collisionalHeatExchange(species,it)
+                    # W_explicit,W_implicit = self.get_collisionalHeatExchange(species,it)
                     
-                    W_bookeeping = np.sum(W_explicit,axis=0) + np.sum(W_implicit,axis=0)*self.P[species][it,:]
+                    # W_bookeeping = np.sum(W_explicit,axis=0) + np.sum(W_implicit,axis=0)*self.P[species][it,:]
 
-                    sum_W_explicit = np.sum(W_explicit,axis=0)
+                    # sum_W_explicit = np.sum(W_explicit,axis=0)
                             
-                    aux_source = sum_W_explicit
+                    aux_source = 0.0 #sum_W_explicit
                     
                     #save in dictionary for bookeeping
-                    self.all_sources[species][source_type][it,:] = W_bookeeping
+                    self.all_sources[species][source_type][it,:] = 0.0 #W_bookeeping
                             
                 case 'alpha_heating':
                     nD = self.plasma.get_density('deuterium', rho_grid)
@@ -468,7 +478,11 @@ class PRESSURE_SOLVER:
                     
                     fraction_alpha_heating = self.sources[species]['alpha_heating']['fraction_alpha_heating']
                     
-                    aux_source = S_alpha * fraction_alpha_heating
+                    TD = self.plasma.get_temperature('deuterium', rho_grid)
+                    TT = self.plasma.get_temperature('tritium', rho_grid)
+                    aux_source = fraction_alpha_heating * fusion.alphaPower(nD,nT,TD,TT)
+                    
+                    # aux_source = S_alpha * fraction_alpha_heating
                     
                     #save in dictionary for bookeeping
                     self.all_sources[species][source_type][it,:] = aux_source
@@ -492,6 +506,14 @@ class PRESSURE_SOLVER:
                     
                     #save in dictionary for bookeeping
                     self.all_sources[species][source_type][it,:] = aux_source
+                    
+                case 'lambda_2D':
+                    lambda_function_2D = self.sources[species][source_type]['lambda_function_2D'] #func(r,t)
+                    
+                    aux_source = np.zeros(len(rho_grid))
+                    for ir,rho in enumerate(self.rho_grid):
+                        aux_source[ir] = lambda_function_2D(rho*self.aminor,self.time[it])
+                    
 
                 case _:
                     print(f'ERROR: Source type {source_type} not defined....')
@@ -502,128 +524,143 @@ class PRESSURE_SOLVER:
                     
         return total_source_explicit
     
-    def get_LHS_tridig_matrix(self,species,it):
-        # returns a 3xNr array containing diagonal,lower and upper arrays of LHS matrix
+    def get_LHS_matrix(self,it):
+        # returns
         
         from scipy.interpolate import CubicSpline
-        # from scipy.linalg import eigvals
+        from scipy.sparse import diags, block_diag, csr_matrix
+        # from scipy.sparse.linalg import eigs
         
         drho = self.rho_grid[1]-self.rho_grid[0]
         dr = self.aminor * drho
         Vp = self.dVdr
         a = self.aminor
+        Nr = self.Nr
+        num_species = len(self.list_of_species)
         
-        Q = self.Q_interp[species]
+        DIFF = {}
         
-        self.Q[species][it,:] = Q(self.rho_grid)  # this is for bookeeping
+        for species in self.list_of_species:
         
-        # get interpolating function for dpdr (at l-1)
-        p_interp_over_a = CubicSpline(self.rho_grid,self.P[species][it,:]/a) #divides by aminor to go from rho to r
-        dpdr = p_interp_over_a.derivative()
-        
-        # compute D_interp (interpolating function)
-        D = np.zeros(self.Nr)
-        
-        # dP = self.P[species][it,1]-self.P[species][it,0]
-        # if(np.abs(dP)<1E-15):
-        #     D[0] = 0.0
-        # else:
-        #     D[0] = -self.theta * Q(drho) * dr * 0.5  / dP
-        
-        D[1:] = np.where(dpdr(self.rho_grid[1:])!=0, 
-                        -self.theta * Q(self.rho_grid[1:]) / dpdr(self.rho_grid[1:]),
-                        0.0)
-        D[0] = 2*D[1] - D[2]
-        D_interp = CubicSpline(self.rho_grid,D)
-        
-        #bookeping
-        self.D_interp[species][it] = D_interp
-        # print(self.D_interp[it])
-        
-        # compute c_interp (interpolating function)
-        c = np.zeros(self.Nr)
-        c[0] = 0
-        c[1:] = (1-self.theta) * Q(self.rho_grid[1:]) / (p_interp_over_a(self.rho_grid[1:])*a)
-        c_interp = CubicSpline(self.rho_grid,c)
-        
-        dt_fact = (2./3.)*self.dt
-        
-        # CHECK IF COLL HEAT EXCHANGE IS SET; IF YES, THEN SHOULD ADD THE IMPICIT TERM HERE
-        sources_implicit_facts = np.zeros(self.Nr)
-        if 'Coll_Heat_Exchange' in self.sources[species]:
-            _, implicit_heat_exchange = self.get_collisionalHeatExchange(species,it)
-            sources_implicit_facts -= dt_fact*np.sum(implicit_heat_exchange,axis=0)
-        
-        ############################################
-        ############### COMPUTE LHS ################
-        ############################################
-        lower = np.zeros(self.Nr-1)
-        main = np.zeros(self.Nr)
-        upper = np.zeros(self.Nr-1)
-        
-        ## r=0
-        main[0] = 1.0 + dt_fact*( 4*D[0]/dr**2 + 2*c[1]/dr ) + sources_implicit_facts[0]
-        upper[0] = -4*dt_fact*D[0]/dr**2
-        
-        ## 0<r<a
-        for ir,rho in enumerate(self.rho_grid[1:-1],start=1):
+            Q = self.Q_interp[species]
             
-            rplus = rho + drho/2
-            rminus = rho - drho/2
+            self.Q[species][it,:] = Q(self.rho_grid)  # this is for bookeeping
             
-            VDplus = Vp(rplus)*D_interp(rplus) / (Vp(rho)*dr**2)
-            VDminus = Vp(rminus)*D_interp(rminus) / (Vp(rho)*dr**2)
+            # get interpolating function for dpdr (at l-1)
+            p_interp_over_a = CubicSpline(self.rho_grid,self.P[species][it,:]/a) #divides by aminor to go from rho to r
+            dpdr = p_interp_over_a.derivative()
             
-            cplus  = c_interp(rho+drho)*Vp(rho+drho) / (2*Vp(rho)*dr)
-            cminus = c_interp(rho-drho)*Vp(rho-drho) / (2*Vp(rho)*dr)
+            # compute D_interp (interpolating function)
+            D = np.zeros(self.Nr)
             
-            main[ir] = 1.0 + dt_fact*(VDplus+VDminus) + sources_implicit_facts[ir]
-            upper[ir] = dt_fact*(-VDplus+cplus)
-            lower[ir-1] = dt_fact*(-VDminus-cminus)
+            D[1:] = np.where(dpdr(self.rho_grid[1:])!=0, 
+                            -self.theta * Q(self.rho_grid[1:]) / dpdr(self.rho_grid[1:]),
+                            0.0)
+            D[0] = 2*D[1] - D[2]
+            D_interp = CubicSpline(self.rho_grid,D)
+            
+            #bookeping
+            self.D_interp[species][it] = D_interp
+            
+            # compute c_interp (interpolating function)
+            c = np.zeros(self.Nr)
+            c[0] = 0
+            c[1:] = (1-self.theta) * Q(self.rho_grid[1:]) / (p_interp_over_a(self.rho_grid[1:])*a)
+            c_interp = CubicSpline(self.rho_grid,c)
+            
+            dt_fact = (2./3.)*self.dt
+            
+            ############################################
+            ############### COMPUTE LHS ################
+            ############################################
+            lower = np.zeros(self.Nr-1)
+            main = np.zeros(self.Nr)
+            upper = np.zeros(self.Nr-1)
+            
+            ## r=0
+            main[0] = 1.0 + dt_fact*( 4*D[0]/dr**2 + 2*c[1]/dr )
+            upper[0] = -4*dt_fact*D[0]/dr**2
+            
+            ## 0<r<a
+            for ir,rho in enumerate(self.rho_grid[1:-1],start=1):
+                
+                rplus = rho + drho/2
+                rminus = rho - drho/2
+                
+                VDplus = Vp(rplus)*D_interp(rplus) / (Vp(rho)*dr**2)
+                VDminus = Vp(rminus)*D_interp(rminus) / (Vp(rho)*dr**2)
+                
+                cplus  = c_interp(rho+drho)*Vp(rho+drho) / (2*Vp(rho)*dr)
+                cminus = c_interp(rho-drho)*Vp(rho-drho) / (2*Vp(rho)*dr)
+                
+                main[ir] = 1.0 + dt_fact*(VDplus+VDminus)
+                upper[ir] = dt_fact*(-VDplus+cplus)
+                lower[ir-1] = dt_fact*(-VDminus-cminus)
+                
+                ### UPWIND SCHEME FOR ADVECTION ###
+                # cplus  = c_interp(rho+drho)*Vp(rho+drho) / (Vp(rho)*dr)
+                # cminus = c_interp(rho-drho)*Vp(rho-drho) / (Vp(rho)*dr)
+                
+                # main[ir] = 1.0 + dt_fact*(VDplus+VDminus+cplus)
+                # upper[ir] = dt_fact*(-VDplus)
+                # lower[ir-1] = dt_fact*(-VDminus-cminus)
 
-        ## r=1
-        main[-1] = 1.0
-        lower[-1] = 0.0
+            ## r=1
+            main[-1] = 1.0
+            lower[-1] = 0.0
+            
+            ####
+            DIFF[species] = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")
+            
         
-        ####
-        LHS = np.zeros((3,self.Nr))
-        LHS[0,1:] = upper
-        LHS[1,:] = main
-        LHS[2,:-1] = lower
-        
-        
-        
-        # tridiag_matrix = np.zeros((self.Nr, self.Nr))
-        # np.fill_diagonal(tridiag_matrix, main)  # Main diagonal
-        # np.fill_diagonal(tridiag_matrix[1:], lower)  # Lower diagonal
-        # np.fill_diagonal(tridiag_matrix[:, 1:], upper)  # Upper diagonal
+        DIFF_list = [DIFF[species] for species in self.list_of_species]
 
-        # # Compute eigenvalues of the full matrix
-        # eigenvalues = eigvals(tridiag_matrix)
-
-        # # Compute eigenvalues of the inverse
-        # eigenvalues_inverse = 1 / eigenvalues
+        # Construct the block diagonal sparse matrix
+        LHS = block_diag(DIFF_list, format="csr")
+            
+        # Add implicit terms from sources
+        sources_implicit = np.zeros((Nr*num_species,Nr*num_species))
         
-        # print(f'lambdas = {eigenvalues_inverse}')
-
-
+        if 'Coll_Heat_Exchange' in self.sources['electrons']:
+            sources_implicit -= dt_fact*self.get_collisionalHeatExchange()
+            
+        # if 'alpha_heating' in self.sources['electrons']:
+        #     sources_implicit -= dt_fact*self.get_alpha_heating()
+            
+        sources_implicit = csr_matrix(sources_implicit)
+        LHS = LHS + sources_implicit
+        
         
         return LHS
         
-    def get_RHS_vector(self,species,it):
         
-        g = self.P[species][it-1,:] + (2./3)*self.dt*self.total_sources_explicit[species][it,:]
+    def get_RHS_vector(self,it):
         
-        # apply edge Dirichlet boundary condition
-        g[-1] = self.edge_bnd_cnd[species]
+        g_all = []
+        for species in self.list_of_species:
         
-        return g
+            g = self.P[species][it-1,:] + (2./3)*self.dt*self.total_sources_explicit[species][it,:]
+        
+            # apply edge Dirichlet boundary condition
+            g[-1] = self.edge_bnd_cnd[species]
+            
+            g_all.append(g)
+            
+        g_all = np.concatenate(g_all)
+        
+        return g_all
     
-    def solve_tridiagonal_system(self,matrix,vect):
+    def solve_sparse_system(self,matrix,vect):
         
-        from scipy.linalg import solve_banded
+        from scipy.sparse.linalg import spsolve
+        import matplotlib.pyplot as plt
         
-        sol = solve_banded((1,1),matrix,vect)
+        # # plot matrix
+        # plt.figure(figsize=(6, 6))
+        # plt.spy(matrix, markersize=5, color="black")
+        # plt.show()
+        
+        sol = spsolve(matrix,vect)
         
         return sol
                                               
@@ -719,17 +756,38 @@ class PRESSURE_SOLVER:
             self.Q_interp[species] = CubicSpline(PENTA_class.roa_unique,Q) # [self.Q] = J/(m^2*s)
             
     def compute_diffusive_flux(self,it):
-        # computes an interpolating function for Q=-D*dp/dr
+        # computes an interpolating function for Q=-n*chi*dT/dr -T*Dn*dn/dr
         
         from scipy.interpolate import CubicSpline
+        import matplotlib.pyplot as plt
         
-        D = self.fluxes_info['diffusive']['D_coeff']
+        chi = self.fluxes_info['diffusive']['chi']
         
         self.Q_interp = {}
         
+        r_grid = self.rho_grid * self.aminor
+        
         for species in self.list_of_species:
-            DP = CubicSpline(self.rho_grid,-D*self.P[species][it,:]/self.aminor) #divides by aminor to go from rho to r
-            self.Q_interp[species] = DP.derivative()
+            # T_r = CubicSpline(r_grid,self.T[species][it,:])
+            # dTdr = T_r.derivative()
+            
+            p_r = CubicSpline(r_grid,self.P[species][it,:])
+            dpdr = p_r.derivative()
+            
+            # n_r = self.plasma.get_density(species,self.rho_grid)
+            # dndr = self.plasma.get_density_der(species,self.rho_grid) / self.aminor
+            
+            # dTdr = dpdr(r_grid)/(EC*n_r) - (T_r(r_grid)/n_r)*dndr
+            
+            # Q = -EC*n_r*chi*dTdr
+            Q = -chi*dpdr(r_grid)
+            
+            self.Q_interp[species] = CubicSpline(self.rho_grid,Q)
+
+            
+            # DP = CubicSpline(self.rho_grid,-chi*self.P[species][it,:]/self.aminor) #divides by aminor to go from rho to r
+            # Q = DP.derivative()
+            # self.Q_interp[species] = Q           
             
     def update_at_start(self):
            
@@ -761,64 +819,177 @@ class PRESSURE_SOLVER:
         eps = 1E-10
         self.P[species][it, :] = np.where(self.P[species][it, :] < 0, eps, self.P[species][it, :])
         
-    def get_collisionalHeatExchange(self,species,it):
+    def get_collisionalHeatExchange(self):
         # returns 2 arrays: the explicit part of W_s1_s2 and the implicit fact of W_s1_s2
-
+        
         from collisions import COLLISIONS
+        from scipy import sparse
         
         coll = COLLISIONS()
         
         num_species = len(self.list_of_species)
         clog = np.zeros(self.Nr)
         
-        W_s1_s2_explicit = np.zeros((num_species,self.Nr))
-        W_s1_s2_implicit = np.zeros((num_species,self.Nr))
+        W_s1_s2 = np.zeros((num_species,self.Nr,num_species,self.Nr))
+        aux_B = np.zeros((num_species,self.Nr,num_species,self.Nr))
 
-        # for is1,species1 in enumerate(self.list_of_species):
-        
-        species1 = species
-        m1 = self.plasma.mass[species1]
-        Z1 = self.plasma.Zcharge[species1]
-        n1 = self.plasma.get_density(species1,self.rho_grid)
-        T1 = self.plasma.get_temperature(species1,self.rho_grid)
-        
-        for is2,species2 in enumerate(self.list_of_species):
-            
-            m2 = self.plasma.mass[species2]
-            Z2 = self.plasma.Zcharge[species2]
-            n2 = self.plasma.get_density(species2,self.rho_grid)
-            T2 = self.plasma.get_temperature(species2,self.rho_grid)
-            
-            # get Coulomb logarithm
-            for ir in range(self.Nr):
-                if(Z1>0 and Z2>0):
-                    clog[ir] = coll.coullog_ii(m1,Z1,n1[ir],T1[ir],m2,Z2,n2[ir],T2[ir])
-                elif(Z1>0 and Z2<0):
-                    clog[ir] = coll.coullog_ei(n2[ir],T2[ir],m1,Z1,n1[ir],T1[ir])
-                elif(Z1<0 and Z2>0):
-                    clog[ir] = coll.coullog_ei(n1[ir],T1[ir],m2,Z2,n2[ir],T2[ir])
+        for ir1,r1 in enumerate(self.rho_grid):
+            for ir2,r2 in enumerate(self.rho_grid):
+                if(ir1 != ir2):
+                    W_s1_s2[is1,ir1,is2,ir2] = 0.0
                 else:
-                    clog[ir] = 0.0
+                    for is1,species1 in enumerate(self.list_of_species):
 
-            gamma = (Z1*Z2*EC*EC)**2 * clog / (8*np.pi*EPS0**2)
+                        m1 = self.plasma.mass[species1]
+                        Z1 = self.plasma.Zcharge[species1]
+                        n1 = self.plasma.get_density(species1,r1)
+                        T1 = self.plasma.get_temperature(species1,r1)
+                        
+                        for is2,species2 in enumerate(self.list_of_species):
+                            
+                            m2 = self.plasma.mass[species2]
+                            Z2 = self.plasma.Zcharge[species2]
+                            n2 = self.plasma.get_density(species2,r2)
+                            T2 = self.plasma.get_temperature(species2,r2)
+                            
+                            # get Coulomb logarithm
+                            # for ir in range(self.Nr):
+                            if(Z1>0 and Z2>0):
+                                clog = coll.coullog_ii(m1,Z1,n1,T1,m2,Z2,n2,T2)
+                            elif(Z1>0 and Z2<0):
+                                clog = coll.coullog_ei(n2,T2,m1,Z1,n1,T1)
+                            elif(Z1<0 and Z2>0):
+                                clog = coll.coullog_ei(n1,T1,m2,Z2,n2,T2)
+                            else:
+                                clog = 0.0
 
-            vth_s1_sqr = 2*EC*T1/m1
-            vth_s2_sqr = 2*EC*T2/m2
+                            const = (8/np.sqrt(np.pi))*(Z1*Z2*EC*EC)**2 * clog / (8*np.pi*EPS0**2)
 
-            num_explicit_part = gamma * n1 * n2 * T2
-            num_implicit_fact = -gamma * n2
-            den = m1 * m2 * (vth_s1_sqr + vth_s2_sqr)**1.5
+                            vth_s1_sqr = 2*EC*T1/m1
+                            vth_s2_sqr = 2*EC*T2/m2
+                            
+                            den = m1 * m2 * (vth_s1_sqr + vth_s2_sqr)**1.5
+                            
+                            gamma = const / den
+
+                            W_s1_s2[is1,ir1,is2,ir2] = gamma*n1  
+                            # W_s1_s2[is1,ir1,is2,ir2] = 1.29
+                            
+                            aux_B[is1,ir1,is2,ir2] = gamma*n2
+                            # aux_B[is1,ir1,is2,ir2] = 1.29
+
+        # Add aux_B matrix
+        for is1,_ in enumerate(self.list_of_species):
+            for ir in range(self.Nr):
+                W_s1_s2[is1,ir,is1,ir] -= np.sum(aux_B[is1,ir,:,ir])
+        
+        # print(aux_B[:,0,:,0])      
+        # print(W_s1_s2[:,0,:,0])                  
+        
+        W_out = np.zeros((num_species*self.Nr,num_species*self.Nr))
+        
+        j=0
+        for is1 in range(num_species):
+            for ir1 in range(self.Nr):
+                p=0
+                for is2 in range(num_species):
+                    for ir2 in range(self.Nr):
+                        W_out[j,p] = W_s1_s2[is1,ir1,is2,ir2]
+                        p=p+1
+                j = j+1
+                
+        W_out = sparse.csr_matrix(W_out)
+
+        # print(W_out)
+                
+
+        return W_out
     
-            explicit_term_W_s1_s2 = (8/np.sqrt(np.pi)) * num_explicit_part / den  # eV / (s.m^3)
-            explicit_term_W_s1_s2 = explicit_term_W_s1_s2 * EC  # W/m^3
+    
+    def get_alpha_heating(self):
+        
+        from libstell.fusion import FUSION
+        import scipy.sparse as sp
+        
+        fusion = FUSION()
+        E_alpha = fusion.E_DT_He
+        
+        # make sure deuterium and tritium are the 2nd and 3rd species, otherwise returned matrix is wrong
+        if( self.list_of_species[1] != 'deuterium' or self.list_of_species[2] != 'tritium'):
+            print('ERROR" deuterium and tritium MUST BE the 2nd and 3rd species, respectively')
+            exit(0)
             
-            implicit_fact_W_s1_s2 = (8/np.sqrt(np.pi)) * num_implicit_fact / den
-            # implicit_fact_W_s1_s2 = implicit_fact_W_s1_s2 *EC -- NEED TO REMOVE *EC from implicit
+        Ns = len(self.list_of_species)
+        
+        D_diagonal = np.zeros((Ns,self.Nr))
+        T_diagonal = np.zeros((Ns,self.Nr))
+        
+        for iss,species in enumerate(self.list_of_species):
             
-            W_s1_s2_explicit[is2,:] = explicit_term_W_s1_s2   # 1.29*EC*(n2*self.T[species2][it-1,:])
-            W_s1_s2_implicit[is2,:] = implicit_fact_W_s1_s2   # -1.29 #
-  
-        return W_s1_s2_explicit,W_s1_s2_implicit
+            fraction_alpha_heating = self.sources[species]['alpha_heating']['fraction_alpha_heating']
+            
+            for ir,rho in enumerate(self.rho_grid):
+
+                nD = self.plasma.get_density('deuterium', rho)
+                nT = self.plasma.get_density('tritium', rho)
+            
+                Ti = 0.5* ( self.plasma.get_temperature('deuterium', rho) + self.plasma.get_temperature('tritium', rho) )
+            
+                sigmav_prime = self.my_sigmaBH(Ti)
+                
+                D_diagonal[iss,ir] = fraction_alpha_heating * (E_alpha/EC) * sigmav_prime * nT * 0.5
+                T_diagonal[iss,ir] = fraction_alpha_heating * (E_alpha/EC) * sigmav_prime * nD * 0.5
+        
+        # assemble everything in a sparse matrix
+        blocks = blocks = [[sp.csr_matrix((self.Nr, self.Nr)) for _ in range(Ns)] for _ in range(Ns)]
+        
+        for iss in range(Ns):
+            diag_D = sp.diags(D_diagonal[iss, :])  # Create diagonal matrix from D_diagonal[i,:]
+            diag_T = sp.diags(T_diagonal[iss, :])  # Create diagonal matrix from T_diagonal[i,:]
+            
+            blocks[iss][1] = diag_D  # Place D_diagonal matrix in 2nd block column
+            blocks[iss][2] = diag_T  # Place T_diagonal matrix in 3rd block column
+      
+        S_alpha = sp.bmat(blocks, format="csr")
+        
+        #check S_alpha has the expected dimensions of (NsxNr,NsxNr)
+        expected_shape = (Ns * self.Nr, Ns * self.Nr)
+        assert S_alpha.shape == expected_shape, f"Error: Matrix shape is {S_alpha.shape}, while expected is {expected_shape}"
+        
+        # import matplotlib.pyplot as plt
+        
+        # # plot matrix
+        # plt.figure(figsize=(6, 6))
+        # plt.spy(S_alpha, markersize=5, color="black")
+        # plt.show()
+        
+        return S_alpha
+                
+                
+
+        
+    def my_sigmaBH(self, ti_eV):
+        # adappted from sigmaBH in fusion class
+        
+        from libstell.fusion import FUSION
+        
+        fusion = FUSION()
+        
+        reaction='DT'
+        C = fusion.C_DICT[reaction]
+        BG = fusion.BG_DICT[reaction]
+        MRC2 = fusion.MRC2_DICT[reaction]
+        
+        ti_kev = ti_eV * 1E-3
+        zeta   = ( ( ( C[5] * ti_kev ) + C[3] ) * ti_kev + C[1] ) * ti_kev
+        zeta   = zeta / ( ( ( ( C[6] * ti_kev ) + C[4] ) * ti_kev + C[2] ) * ti_kev + 1.0 )
+        zeta   = 1.0 - zeta
+        theta  = ti_kev / zeta
+        eta    = ( 0.25 * BG * BG / theta ) ** (1.0/3.0)
+        
+        result = 1.0E-6 * C[0] * theta * np.sqrt( eta / ( MRC2 * ti_kev * ti_kev * ti_kev ) ) * np.exp( -3 * eta )
+        
+        return 1E-3*result / ti_kev
         
             
 # Main routine
@@ -829,4 +1000,4 @@ if __name__=="__main__":
         
         
             
-        
+         

@@ -11,7 +11,7 @@ EC = 1.602176634E-19 # Electron charge [C]
 EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 
 # PENTA Class
-class PRESSURE_SOLVER:
+class PRESSURE_SOLVER_SS:
     
     def __init__(self, plasma_class):
         
@@ -316,9 +316,10 @@ class PRESSURE_SOLVER:
                 #solver for each species
                 for species in self.list_of_species:
                     
+                    # # l-1
+                    # self.P[species][it,:] = press[species] 
                     
                     # compute sources on grid (1D-array)
-                    # THIS MEANS THAT WHEN COMPUTES SOURCES OF 2nd SPECIES, ALREADY HAS TEMP OF 1ST? NO BECAUSE TEMP IS ONLY UPDATE AFERWARDS
                     self.total_sources_explicit[species][it,:] = self.get_sources_explicit(species,rho,it)  # W/m^3
                     
                     RHS_vector = self.get_RHS_vector(species,it)
@@ -506,7 +507,7 @@ class PRESSURE_SOLVER:
         # returns a 3xNr array containing diagonal,lower and upper arrays of LHS matrix
         
         from scipy.interpolate import CubicSpline
-        # from scipy.linalg import eigvals
+        from scipy.linalg import eigvals
         
         drho = self.rho_grid[1]-self.rho_grid[0]
         dr = self.aminor * drho
@@ -534,7 +535,8 @@ class PRESSURE_SOLVER:
                         -self.theta * Q(self.rho_grid[1:]) / dpdr(self.rho_grid[1:]),
                         0.0)
         D[0] = 2*D[1] - D[2]
-        D_interp = CubicSpline(self.rho_grid,D)
+        D_interp = lambda rho: 1.5 #CubicSpline(self.rho_grid,D)
+        D[0] = 1.5
         
         #bookeping
         self.D_interp[species][it] = D_interp
@@ -562,7 +564,8 @@ class PRESSURE_SOLVER:
         upper = np.zeros(self.Nr-1)
         
         ## r=0
-        main[0] = 1.0 + dt_fact*( 4*D[0]/dr**2 + 2*c[1]/dr ) + sources_implicit_facts[0]
+        # main[0] = 1.0 + dt_fact*( 4*D[0]/dr**2 + 2*c[1]/dr ) + sources_implicit_facts[0]
+        main[0] = dt_fact*( 4*D[0]/dr**2 + 2*c[1]/dr ) + sources_implicit_facts[0]
         upper[0] = -4*dt_fact*D[0]/dr**2
         
         ## 0<r<a
@@ -577,7 +580,8 @@ class PRESSURE_SOLVER:
             cplus  = c_interp(rho+drho)*Vp(rho+drho) / (2*Vp(rho)*dr)
             cminus = c_interp(rho-drho)*Vp(rho-drho) / (2*Vp(rho)*dr)
             
-            main[ir] = 1.0 + dt_fact*(VDplus+VDminus) + sources_implicit_facts[ir]
+            # main[ir] = 1.0 + dt_fact*(VDplus+VDminus) + sources_implicit_facts[ir]
+            main[ir] = dt_fact*(VDplus+VDminus) + sources_implicit_facts[ir]
             upper[ir] = dt_fact*(-VDplus+cplus)
             lower[ir-1] = dt_fact*(-VDminus-cminus)
 
@@ -590,6 +594,8 @@ class PRESSURE_SOLVER:
         LHS[0,1:] = upper
         LHS[1,:] = main
         LHS[2,:-1] = lower
+        
+        print(main)
         
         
         
@@ -612,7 +618,8 @@ class PRESSURE_SOLVER:
         
     def get_RHS_vector(self,species,it):
         
-        g = self.P[species][it-1,:] + (2./3)*self.dt*self.total_sources_explicit[species][it,:]
+        # g = self.P[species][it-1,:] + (2./3)*self.dt*self.total_sources_explicit[species][it,:]
+        g = (2./3)*self.dt*self.total_sources_explicit[species][it,:]
         
         # apply edge Dirichlet boundary condition
         g[-1] = self.edge_bnd_cnd[species]
@@ -813,10 +820,12 @@ class PRESSURE_SOLVER:
             explicit_term_W_s1_s2 = explicit_term_W_s1_s2 * EC  # W/m^3
             
             implicit_fact_W_s1_s2 = (8/np.sqrt(np.pi)) * num_implicit_fact / den
-            # implicit_fact_W_s1_s2 = implicit_fact_W_s1_s2 *EC -- NEED TO REMOVE *EC from implicit
+            implicit_fact_W_s1_s2 = implicit_fact_W_s1_s2 # *EC -- NEED TO REMOVE *EC from implicit
             
-            W_s1_s2_explicit[is2,:] = explicit_term_W_s1_s2   # 1.29*EC*(n2*self.T[species2][it-1,:])
-            W_s1_s2_implicit[is2,:] = implicit_fact_W_s1_s2   # -1.29 #
+            W_s1_s2_explicit[is2,:] = 1.29*EC*(n2*self.T[species2][it-1,:])   #explicit_term_W_s1_s2
+            W_s1_s2_implicit[is2,:] =   -1.29 #implicit_fact_W_s1_s2
+            
+        # print(f'coll_HEAT={np.sum(W_s1_s2_explicit,axis=0)}')
   
         return W_s1_s2_explicit,W_s1_s2_implicit
         
