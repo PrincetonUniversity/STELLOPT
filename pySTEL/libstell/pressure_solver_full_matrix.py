@@ -5,6 +5,7 @@ equations
 
 import numpy as np
 import sys
+import matplotlib.pyplot as plt
 
 # Constants
 EC = 1.602176634E-19 # Electron charge [C]
@@ -235,6 +236,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         self.Nt = Nt
         self.dt = dt
         self.rho_grid = rho
+        self.drho = drho
         self.Nr = Nr
         self.theta = theta
             
@@ -254,6 +256,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         self.T = {}
         self.Q = {}
         self.D_interp = {}
+        self.c_interp = {}
         self.total_sources_explicit = {}
         self.all_sources = {}
         self.ECRH_off = False
@@ -273,10 +276,10 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             self.Q[species] = np.zeros((Nt,Nr))
             
             self.D_interp[species] = [None]*Nt
+            self.c_interp[species] = [None]*Nt
                         
             self.total_sources_explicit[species] = np.zeros((Nt,Nr))
-        
-            
+
             # Initialize arrays for each source_type in the specified species
             self.all_sources[species] = {}
             for source_type in self.sources[species].keys():
@@ -301,12 +304,13 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         
         ### LOOP IN TIME STARTING AT t=tstart+dt ###
         for it,t in enumerate(time[1:],start=1):
-
+            self.it = it
+            
             ### SUBCYCLE
             delta_p = 10*tolerance
             subiter=1
             while(delta_p > tolerance and subiter<max_subiter):
-            
+                self.subiter = subiter
                 # sets temperature in plasma class from density and pressure for ALL species
                 k=0
                 for species in self.list_of_species:
@@ -316,11 +320,11 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                     self.set_temperature(species,rho,dens[species],self.P[species][it,:])
                     self.T[species][it,:] = self.plasma.get_temperature(species,rho) # this is only for bookeeping
                     
-                    k = k+Nr
-                    
+                    k = k+Nr   
 
+                # compute D_interp and c_interp
                 if(self.fluxes_info['type']=='dkespenta'):
-                    self.call_PENTA3()
+                    self.call_PENTA3(it)
                 elif(self.fluxes_info['type']=='diffusive'):
                     self.compute_diffusive_flux(it)
                 else:
@@ -333,7 +337,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                                         
                 RHS_vector = self.get_RHS_vector(it)
                 LHS_matrix = self.get_LHS_matrix(it)
-                
+
                 # solve system
                 press = self.solve_sparse_system(LHS_matrix,RHS_vector)
                 
@@ -470,11 +474,11 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                     nD = self.plasma.get_density('deuterium', rho_grid)
                     nT = self.plasma.get_density('tritium', rho_grid)
                     
-                    Ti = 0.5* ( self.plasma.get_temperature('deuterium', rho_grid) + self.plasma.get_temperature('tritium', rho_grid) )
+                    # Ti = 0.5* ( self.plasma.get_temperature('deuterium', rho_grid) + self.plasma.get_temperature('tritium', rho_grid) )
                     
-                    sigmav = [fusion.sigmaBH(ti,'DT') for ti in Ti]
+                    # sigmav = [fusion.sigmaBH(ti,'DT') for ti in Ti]
                     
-                    S_alpha = nD * nT * sigmav *  fusion.E_DT_He # W/m^3
+                    # S_alpha = nD * nT * sigmav *  fusion.E_DT_He # W/m^3
                     
                     fraction_alpha_heating = self.sources[species]['alpha_heating']['fraction_alpha_heating']
                     
@@ -512,8 +516,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                     
                     aux_source = np.zeros(len(rho_grid))
                     for ir,rho in enumerate(self.rho_grid):
-                        aux_source[ir] = lambda_function_2D(rho*self.aminor,self.time[it])
-                    
+                        aux_source[ir] = lambda_function_2D(rho*self.aminor,self.time[it])   
 
                 case _:
                     print(f'ERROR: Source type {source_type} not defined....')
@@ -541,32 +544,9 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         DIFF = {}
         
         for species in self.list_of_species:
-        
-            Q = self.Q_interp[species]
             
-            self.Q[species][it,:] = Q(self.rho_grid)  # this is for bookeeping
-            
-            # get interpolating function for dpdr (at l-1)
-            p_interp_over_a = CubicSpline(self.rho_grid,self.P[species][it,:]/a) #divides by aminor to go from rho to r
-            dpdr = p_interp_over_a.derivative()
-            
-            # compute D_interp (interpolating function)
-            D = np.zeros(self.Nr)
-            
-            D[1:] = np.where(dpdr(self.rho_grid[1:])!=0, 
-                            -self.theta * Q(self.rho_grid[1:]) / dpdr(self.rho_grid[1:]),
-                            0.0)
-            D[0] = 2*D[1] - D[2]
-            D_interp = CubicSpline(self.rho_grid,D)
-            
-            #bookeping
-            self.D_interp[species][it] = D_interp
-            
-            # compute c_interp (interpolating function)
-            c = np.zeros(self.Nr)
-            c[0] = 0
-            c[1:] = (1-self.theta) * Q(self.rho_grid[1:]) / (p_interp_over_a(self.rho_grid[1:])*a)
-            c_interp = CubicSpline(self.rho_grid,c)
+            D_interp = self.D_interp[species][it]
+            c_interp = self.c_interp[species][it]
             
             dt_fact = (2./3.)*self.dt
             
@@ -578,8 +558,8 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             upper = np.zeros(self.Nr-1)
             
             ## r=0
-            main[0] = 1.0 + dt_fact*( 4*D[0]/dr**2 + 2*c[1]/dr )
-            upper[0] = -4*dt_fact*D[0]/dr**2
+            main[0] = 1.0 + dt_fact*( 4*D_interp(0)/dr**2 + 2*c_interp(drho)/dr )
+            upper[0] = -4*dt_fact*D_interp(0)/dr**2
             
             ## 0<r<a
             for ir,rho in enumerate(self.rho_grid[1:-1],start=1):
@@ -610,8 +590,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             lower[-1] = 0.0
             
             ####
-            DIFF[species] = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")
-            
+            DIFF[species] = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")    
         
         DIFF_list = [DIFF[species] for species in self.list_of_species]
 
@@ -624,13 +603,9 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         if 'Coll_Heat_Exchange' in self.sources['electrons']:
             sources_implicit -= dt_fact*self.get_collisionalHeatExchange()
             
-        # if 'alpha_heating' in self.sources['electrons']:
-        #     sources_implicit -= dt_fact*self.get_alpha_heating()
-            
         sources_implicit = csr_matrix(sources_implicit)
         LHS = LHS + sources_implicit
-        
-        
+                
         return LHS
         
         
@@ -686,56 +661,48 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             print('ERROR: set_fluxes must be called before running!!')
             exit(1)
             
-    def call_PENTA3(self):
-        
+    def call_PENTA3(self,it):
         import subprocess
-        
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+        import functools
         plasma_profiles_extension = 'transp_solver'
         
         # create plasma input
         self.plasma.write_plasma_profiles_to_PENTA3(filename='plasma_profiles_'+plasma_profiles_extension+'.dat')
         self.plasma.write_PENTA_namelist()
-        
-        # Er_min in V/cm
-        Er_min_V_cm = -300
-        # Er_max in V/cm
-        Er_max_V_cm = 300
-
-        wout_path = self.wout_path
-        EparB = 0.0
-
-        #Sonine (Laguerre) polynomials
-        Smax = 1
 
         surfaces = self.fluxes_info['dkespenta']['surfaces']
-
-        #loop in surfaces
-        for isurface in surfaces:
-            
-            if(isurface==surfaces[0]):
-                type_of_write = 0
-            else:
-                type_of_write = 1
-                
-            # copy coeffs files
-            dkes_coeffs_path = self.fluxes_info['dkespenta']['dkes_folder']
-            subprocess.run(f'cp {dkes_coeffs_path}/*surface_{isurface} .',shell=True, check=True, text=True, capture_output=True)
-                
-            extension_star_files = f'surface_{isurface}'
-
-            call_penta3 = f'~/bin/xpenta {extension_star_files} {Er_min_V_cm} {Er_max_V_cm} {isurface} {type_of_write} {wout_path} {plasma_profiles_extension} {EparB} {Smax}'
-            
-            result = subprocess.run(call_penta3, shell=True, check=True, text=True, capture_output=True)
-            # print(result.stdout)
-            # if(result.stderr):
-            #     print(result.stderr)
-            
-        self.get_PENTA3_results()
         
-    def get_PENTA3_results(self):
-        # creates interpolating functions for Er, Gamma_r[species] and QoT[species]
+        dkes_coeffs_path = self.fluxes_info['dkespenta']['dkes_folder']
+        
+        time_sec = []
+        with ProcessPoolExecutor() as executor:
+            futures = [executor.submit(process_surfaces, surface, self.wout_path, dkes_coeffs_path) for surface in surfaces]
+
+            for future in as_completed(futures):
+                elapsed_seconds = future.result()
+                time_sec.append(elapsed_seconds)
+                # print(f'Surface processed in {elapsed_seconds:.2f} seconds')
+
+        print(f'Total time: {np.max(time_sec):.1f}s')
+            
+        # delete files not needed
+        remove = 'rm ucontra* sigmas* plasma_profiles_check*'
+        result = subprocess.run(remove, shell=True, check=True, text=True, capture_output=True)
+        
+        #
+        merge_and_delete('fluxes_vs_roa_surface*','fluxes_vs_roa')
+        merge_and_delete('fluxes_vs_Er_surface*','fluxes_vs_Er')
+        merge_and_delete('flows_vs_roa_surface*','flows_vs_roa')
+        merge_and_delete('Jprl_vs_roa_surface*','Jprl_vs_roa')
+            
+        self.get_PENTA3_results(it)
+        
+    def get_PENTA3_results(self,it):
+        # creates interpolating functions for Er, Gamma_r[species], Q[species], D_interp[species] and c_interp[species]
         
         import sys
+        import subprocess
         from scipy.interpolate import CubicSpline
         sys.path.insert(1,'/home/antonio/STELLOPT/pySTEL/libstell')
         from penta import PENTA
@@ -749,11 +716,65 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         self.Q_interp = {}
         
         for species in self.list_of_species:
-            self.Gamma_interp[species] = CubicSpline(PENTA_class.roa_unique,PENTA_class.Gamma_Maxw[species])
             
-            # [Q] = J/(m^2*s)
-            Q = PENTA_class.QoT_Maxw[species] * self.plasma.get_temperature(species,PENTA_class.roa_unique) * EC
-            self.Q_interp[species] = CubicSpline(PENTA_class.roa_unique,Q) # [self.Q] = J/(m^2*s)
+            rho_extended = np.concatenate([[0.0],PENTA_class.roa_unique])
+            
+            ## Include Gamma(r=0) = 0
+            Gamma_extended = np.concatenate(([0.0],PENTA_class.Gamma_Maxw[species]))
+            self.Gamma_interp[species] = CubicSpline(rho_extended,Gamma_extended,extrapolate=True,bc_type='natural')
+            
+            Q = PENTA_class.QoT_Maxw[species] * self.plasma.get_temperature(species,PENTA_class.roa_unique) * EC # [Q] = J/(m^2*s)
+            
+            # dndr_penta = self.plasma.get_density_der(species,PENTA_class.roa_unique) / self.aminor
+            # dTdr_penta = self.plasma.get_temperature_der(species,PENTA_class.roa_unique) / self.aminor
+            # n_penta = self.plasma.get_density(species,PENTA_class.roa_unique)
+            # T_penta = self.plasma.get_temperature(species,PENTA_class.roa_unique)
+            # p_penta_axis = EC * self.plasma.get_density(species,0.0)*self.plasma.get_temperature(species,0.0)
+            # p_penta_dr =   EC * self.plasma.get_density(species,PENTA_class.roa_unique[0])*self.plasma.get_temperature(species,PENTA_class.roa_unique[0])
+            # dpdr_penta = EC * (n_penta*dTdr_penta + T_penta*dndr_penta)
+            
+            dpdr = self.plasma.get_pressure_der(species,PENTA_class.roa_unique) / self.aminor
+            press = self.plasma.get_pressure(species,PENTA_class.roa_unique)
+            press_axis = self.plasma.get_pressure(species,0.0)
+            dr_large = PENTA_class.roa_unique[0]*self.aminor
+            press_dr_large = self.plasma.get_pressure(species,PENTA_class.roa_unique[0])
+            
+            D_penta = np.where(dpdr!=0, 
+                            -self.theta * Q / dpdr,
+                            0.0)
+            
+            # COMPUTES D_axis assuming Q and dp/dr are zero on the axis (this is a formula resulting from Cauchy rule!)
+            if(np.abs(press_dr_large-press_axis) > 1E-14):
+                D_axis = -self.theta*0.5* (Q[0]/dr_large) / ((press_dr_large-press_axis)/dr_large**2)
+            else:
+                # linear interpolation
+                print(' !!! ENTERING in linear interpolation')
+                D_axis =  D_penta[0] - PENTA_class.roa_unique[0]*(D_penta[1]-D_penta[0])/(PENTA_class.roa_unique[1]-PENTA_class.roa_unique[0])
+            
+            D_extended = np.concatenate([[D_axis],D_penta])
+            
+            self.D_interp[species][it] = CubicSpline(rho_extended,D_extended,extrapolate=True,bc_type='natural')
+            
+            c_penta = (1-self.theta) * Q / press
+            c_axis = 0.0
+            c_extended = np.concatenate([[c_axis],c_penta])
+            
+            self.c_interp[species][it] = CubicSpline(rho_extended,c_extended)
+            
+            # This is for bookeeping (it's not used in the calculations)
+            Q_extended = np.concatenate(([0.0],Q)) # Include Q(r=0) = 0
+            self.Q_interp[species] = CubicSpline(rho_extended,Q_extended,extrapolate=True,bc_type='natural')
+            
+            ## rename file names for bookeeping
+            # it_subiter = f'{it:03}_{self.subiter:03}'
+            # rename = 'mv fluxes_vs_roa fluxes_vs_roa_'+it_subiter
+            # result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
+            # rename = 'mv fluxes_vs_Er fluxes_vs_Er_'+it_subiter
+            # result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
+            # rename = 'mv flows_vs_roa flows_vs_roa_'+it_subiter
+            # result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
+            # rename = 'mv Jprl_vs_roa Jprl_vs_roa_'+it_subiter
+            # result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
             
     def compute_diffusive_flux(self,it):
         # computes an interpolating function for Q=-n*chi*dT/dr -T*Dn*dn/dr
@@ -768,26 +789,29 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         r_grid = self.rho_grid * self.aminor
         
         for species in self.list_of_species:
-            # T_r = CubicSpline(r_grid,self.T[species][it,:])
-            # dTdr = T_r.derivative()
             
             p_r = CubicSpline(r_grid,self.P[species][it,:])
             dpdr = p_r.derivative()
             
-            # n_r = self.plasma.get_density(species,self.rho_grid)
-            # dndr = self.plasma.get_density_der(species,self.rho_grid) / self.aminor
-            
-            # dTdr = dpdr(r_grid)/(EC*n_r) - (T_r(r_grid)/n_r)*dndr
-            
-            # Q = -EC*n_r*chi*dTdr
             Q = -chi*dpdr(r_grid)
             
-            self.Q_interp[species] = CubicSpline(self.rho_grid,Q)
-
+            D = np.zeros(self.Nr)
             
-            # DP = CubicSpline(self.rho_grid,-chi*self.P[species][it,:]/self.aminor) #divides by aminor to go from rho to r
-            # Q = DP.derivative()
-            # self.Q_interp[species] = Q           
+            D[1:] = np.where(dpdr(r_grid[1:])!=0, 
+                            -self.theta * Q[1:] / dpdr(r_grid[1:]),
+                            0.0)
+            D[0] = 2*D[1] - D[2]
+
+            self.D_interp[species][it] = CubicSpline(self.rho_grid,D,bc_type='natural',extrapolate=True)
+            
+            c = np.zeros(self.Nr)
+            c[0] = 0
+            c[1:] = (1-self.theta) * Q[1:] / p_r(r_grid[1:])
+            
+            self.c_interp[species][it] = CubicSpline(self.rho_grid,c,bc_type='natural',extrapolate=True)
+            
+            # this is for bookeeping
+            self.Q_interp[species] = CubicSpline(self.rho_grid,Q)
             
     def update_at_start(self):
            
@@ -964,9 +988,6 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         # plt.show()
         
         return S_alpha
-                
-                
-
         
     def my_sigmaBH(self, ti_eV):
         # adappted from sigmaBH in fusion class
@@ -990,6 +1011,81 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         result = 1.0E-6 * C[0] * theta * np.sqrt( eta / ( MRC2 * ti_kev * ti_kev * ti_kev ) ) * np.exp( -3 * eta )
         
         return 1E-3*result / ti_kev
+    
+def process_surfaces(surface,wout_path,dkes_coeffs_path):
+    import time
+    import subprocess
+    
+    start_time = time.time()
+    
+    type_of_write = 0
+    Er_min_V_cm = -300
+    Er_max_V_cm = 300
+
+    # wout_path = solver_class.wout_path
+    EparB = 0.0
+
+    #Sonine (Laguerre) polynomials
+    Smax = 1
+    
+    plasma_profiles_extension = 'transp_solver'
+    
+    # copy coeffs files
+    subprocess.run(f'cp {dkes_coeffs_path}/*surface_{surface} .',shell=True, check=True, text=True, capture_output=True)
+    
+    extension_output_files = f'_surface_{surface}'
+        
+    extension_star_files = f'surface_{surface}'
+
+    call_penta3 = f'~/bin/xpenta {extension_star_files} {Er_min_V_cm} {Er_max_V_cm} {surface} {type_of_write} {wout_path} {plasma_profiles_extension} {EparB} {Smax} {extension_output_files}'
+    
+    result = subprocess.run(call_penta3, shell=True, check=True, text=True, capture_output=True)
+    # print(result.stdout)
+    if(result.stderr):
+        print(result.stderr)
+        
+    end_time = time.time()
+    elapsed_time = (end_time - start_time)
+    return elapsed_time
+        
+def merge_and_delete(pattern, output_filename):
+    """
+    Merges files matching the given pattern into a single file and deletes the originals.
+    
+    Parameters:
+    pattern (str): The pattern to match files (e.g., 'fluxes_vs_roa_surface_*').
+    output_filename (str): The name of the output file.
+    """
+    import os
+    import re
+    import glob
+    
+    def extract_number(filename):
+        match = re.search(r'_(\d+)$', filename)  # Extract number at the end
+        return int(match.group(1)) if match else float('inf')
+
+    # Find and sort matching files
+    file_list = glob.glob(pattern)
+    file_list.sort(key=extract_number)
+
+    if not file_list:
+        print(f"No files found matching pattern: {pattern}")
+        return
+
+    header_written = False
+    with open(output_filename, 'w') as outfile:
+        for filename in file_list:
+            with open(filename, 'r') as infile:
+                lines = infile.readlines()
+                if not header_written:
+                    outfile.write(lines[0])  # Write header
+                    outfile.write(lines[1])
+                    header_written = True
+                outfile.writelines(lines[2:])  # Write data
+
+    # Delete original files
+    for filename in file_list:
+        os.remove(filename)
         
             
 # Main routine
