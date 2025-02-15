@@ -251,6 +251,9 @@
       ! Boostrap
       IF (ANY(sigma_bootstrap < bigno)) &
          CALL chisq_bootstrap(target_bootstrap, sigma_bootstrap, ncnt,iflag)
+      ! B10B11
+      IF (ANY(sigma_b10b11 < bigno)) &
+         CALL chisq_b10b11(target_b10b11, sigma_b10b11, ncnt,iflag)
       ! NEO
       IF (ANY(sigma_neo < bigno)) &
          CALL chisq_neo(target_neo, sigma_neo, ncnt,iflag)
