@@ -153,6 +153,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_jdotb, sigma_jdotb
       REAL(rprec), DIMENSION(nsd)   ::  target_balloon, sigma_balloon
       REAL(rprec), DIMENSION(nsd)   ::  target_bootstrap, sigma_bootstrap
+      REAL(rprec), DIMENSION(nsd)   ::  target_b10b11, sigma_b10b11
       REAL(rprec), DIMENSION(nsd)   ::  target_neo, sigma_neo
       REAL(rprec), DIMENSION(nsd)   ::  target_Jstar, sigma_Jstar
       REAL(rprec), DIMENSION(nsd)   ::  target_magwell, sigma_magwell
@@ -272,6 +273,7 @@
       INTEGER, PARAMETER :: jtarget_balloon    = 601
       INTEGER, PARAMETER :: jtarget_kink       = 6011
       INTEGER, PARAMETER :: jtarget_bootstrap  = 602
+      INTEGER, PARAMETER :: jtarget_b10b11     = 6021
       INTEGER, PARAMETER :: jtarget_neo        = 603
       INTEGER, PARAMETER :: jtarget_Jstar      = 604
       INTEGER, PARAMETER :: jtarget_helicity   = 605
@@ -417,6 +419,8 @@
             WRITE(iunit, out_format) 'Kink Stability'
          CASE(jtarget_bootstrap)
             WRITE(iunit, out_format) 'Bootstrap Current'
+         CASE(jtarget_b10b11)
+            WRITE(iunit, out_format) 'B10/B11 (Bootstrap Proxy)'
          CASE(jtarget_neo)
             WRITE(iunit, out_format) 'Neoclassical Transport'
          CASE(jtarget_Jstar)
