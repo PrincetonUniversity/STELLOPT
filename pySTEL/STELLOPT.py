@@ -883,7 +883,7 @@ class MyApp(QMainWindow):
 					'NE','NELINE','TE','TELINE','TI','TILINE','ZEFFLINE',\
 					'XICS','XICS_BRIGHT','XICS_W3','XICS_V','SXR','VPHI','VACIOTA',\
 					'IOTA','BALLOON','BOOTSTRAP','DKES','DKES_ERDIFF','DKES_ALPHA',\
-					'HELICITY','HELICITY_FULL','QUASIISO','GAMMA_C', \
+					'B10B11','HELICITY','HELICITY_FULL','QUASIISO','GAMMA_C', \
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
 					'CURVATURE_KERT','CURVATURE_P2']
@@ -901,7 +901,7 @@ class MyApp(QMainWindow):
 		# Handle Special Plots
 		self.ui.ComboBoxOPTplot_type.addItem('-----SPECIAL-----')
 		for name in ['BALLOON','KINK','ORBIT','NEO','HELICITY','HELICITY_FULL',\
-					'TXPORT','B_PROBES','FLUXLOOPS','SEGROG',\
+					'B10B11','BOOTSTRAP','TXPORT','B_PROBES','FLUXLOOPS','SEGROG',\
 					'NELINE','TELINE','TILINE','ZEFFLINE',\
 					'XICS','XICS_BRIGHT','XICS_W3','XICS_V',\
 					'S11','S12','S21','S22','MAGWELL','VACIOTA',\
@@ -942,6 +942,7 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Boozer Coordinates -----')
 			self.ui.ComboBoxOPTplot_type.addItem('Boozer Spectrum')
 			self.ui.ComboBoxOPTplot_type.addItem('Boozer |B|')
+			self.ui.ComboBoxOPTplot_type.addItem('B10/B11')
 			self.ui.ComboBoxOPTplot_type.addItem('|B|_MAX')
 			self.ui.ComboBoxOPTplot_type.addItem('QAS_ERROR')
 			self.ui.ComboBoxOPTplot_type.addItem('QPS_ERROR')
@@ -1123,6 +1124,20 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Epsilon Effective')
 			self.ax2.set_title('Neoclassical Helical Ripple (NEO)')
+			self.ax2.legend()
+		elif (plot_name == 'BOOTSTRAP_evolution'):
+			x = self.stel_data.BOOTSTRAP_RHO # actually flux
+			y = self.stel_data.BOOTSTRAP_VAL #
+			t = self.stel_data.BOOTSTRAP_TARGET
+			d = self.stel_data.BOOTSTRAP_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
+			self.ax2.set_xlabel('Radial Grid')
+			self.ax2.set_ylabel('Bootstrap Current')
+			self.ax2.set_title('Bootstrap Current (BOOTSJ)')
 			self.ax2.legend()
 		elif ('DKES_L' in plot_name):
 			# Get L type
