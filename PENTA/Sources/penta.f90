@@ -43,6 +43,7 @@
 !     Since the summation is from 0 to Smax the number of terms used is
 !     Smax+1.  This affects the number of parallel flow moments calculated and
 !     output.
+! 10 files_name -- name that is appended to the output files
 !
 !  Input files:
 !
@@ -357,13 +358,14 @@ Real(rknd)    :: J_BS=0.0_rknd
 Character(Len=100) ::           & ! Command line args
   arg1, arg2, arg3, arg4,       & 
   arg5, arg6, arg7, arg8,       &
-  arg9  
+  arg9, arg10  
 Character(Len=100) :: coeff_ext   ! Identifier for DKES coeff. data files
 Character(Len=100) :: run_ident   ! Identifier for VMEC data file
 Character(Len=20)  :: pprof_char  ! Identifier for plasma profile file
 Character(Len=100) :: fpos        ! Status for writing to files (position)
 Character(Len=100) :: fstatus     ! Status for writing to files
 character(Len=100) :: str_num     ! Used for converting numbers to strings
+Character(Len=100) :: files_name  ! Used to append a name to the output files
 Real(rknd)         ::           &
   Z_ion_init(num_ion_max),      & ! Ion charge numbers
   miomp_init(num_ion_max)         ! Ion mass ratios
@@ -451,7 +453,7 @@ Close(iu_nl)
 
 ! Get command line arguments
 numargs=command_argument_count()
-If ( numargs /= 9 ) Then
+If ( numargs /= 9 .and. numargs /= 10) Then
   Write(*,*) 'Incorrect number of input arguments, see penta.f90 for details'
   Stop 'Exiting: Input arguments error in penta.f90'
 Endif
@@ -464,6 +466,7 @@ Call Getarg(6, arg6)
 Call Getarg(7, arg7)
 Call Getarg(8, arg8)
 Call Getarg(9, arg9)
+Call Getarg(10, arg10)
 
 ! Store command line args
 coeff_ext = Trim(Adjustl(arg1))
@@ -475,6 +478,7 @@ run_ident = Trim(Adjustl(arg6))
 pprof_char = Trim(Adjustl(arg7))
 Read(arg8,*) B_Eprl
 Read(arg9,*) Smax
+files_name = Trim(Adjustl(arg10))
   
 ! Allocate variables according to number of ion species defined
 num_species = num_ion_species + 1_iknd
@@ -626,28 +630,28 @@ Else
 EndIf
 
 ! Open output files
-Open(unit=iu_flux_out, file="fluxes_vs_roa", &
+Open(unit=iu_flux_out, file="fluxes_vs_roa"//files_name, &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_pprof_out, file="plasma_profiles_check",  &
+Open(unit=iu_pprof_out, file="plasma_profiles_check"//files_name,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_fvEr_out, file="fluxes_vs_Er",  &
+Open(unit=iu_fvEr_out, file="fluxes_vs_Er"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_flows_out, file="flows_vs_roa",  &
+Open(unit=iu_flows_out, file="flows_vs_roa"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_flowvEr_out, file="flows_vs_Er",  &
+Open(unit=iu_flowvEr_out, file="flows_vs_Er"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_Jprl_out,file="Jprl_vs_roa",  &
+Open(unit=iu_Jprl_out,file="Jprl_vs_roa"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_contraflows_out,file="ucontra_vs_roa",  &
+Open(unit=iu_contraflows_out,file="ucontra_vs_roa"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
 
 If ( Method == 'SN') Then
-  Open(unit=iu_sigmas_out, file="sigmas_vs_roa",  &
+  Open(unit=iu_sigmas_out, file="sigmas_vs_roa"//files_name ,  &
     position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
 Endif
 
 If ( output_QoT_vs_Er .EQV. .true. ) Then
-  Open(unit=iu_QoTvEr_out, file="QoTs_vs_Er",  &
+  Open(unit=iu_QoTvEr_out, file="QoTs_vs_Er"//files_name ,  &
     position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
   Write(iu_QoTvEr_out,'("*",/,"r/a   Er[V/cm]   Q_e/T_e [m**-2s**-1] ",&
     & "   Q_i/T_i [m**-2s**-1]")')
