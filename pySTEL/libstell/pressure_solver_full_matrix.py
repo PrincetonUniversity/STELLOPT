@@ -236,6 +236,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         self.Nt = Nt
         self.dt = dt
         self.rho_grid = rho
+        self.r_grid = rho * self.aminor
         self.drho = drho
         self.Nr = Nr
         self.theta = theta
@@ -683,14 +684,12 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 elapsed_seconds = future.result()
                 time_sec.append(elapsed_seconds)
                 # print(f'Surface processed in {elapsed_seconds:.2f} seconds')
-
-        print(f'Total time: {np.max(time_sec):.1f}s')
             
         # delete files not needed
-        remove = 'rm ucontra* sigmas* plasma_profiles_check*'
-        result = subprocess.run(remove, shell=True, check=True, text=True, capture_output=True)
+        remove = 'rm ucontra* sigmas* flows_vs_Er* plasma_profiles*'
+        subprocess.run(remove, shell=True, check=True, text=True, capture_output=True)
         
-        #
+        # merge _surface_# files into single file
         merge_and_delete('fluxes_vs_roa_surface*','fluxes_vs_roa')
         merge_and_delete('fluxes_vs_Er_surface*','fluxes_vs_Er')
         merge_and_delete('flows_vs_roa_surface*','flows_vs_roa')
@@ -725,14 +724,6 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             
             Q = PENTA_class.QoT_Maxw[species] * self.plasma.get_temperature(species,PENTA_class.roa_unique) * EC # [Q] = J/(m^2*s)
             
-            # dndr_penta = self.plasma.get_density_der(species,PENTA_class.roa_unique) / self.aminor
-            # dTdr_penta = self.plasma.get_temperature_der(species,PENTA_class.roa_unique) / self.aminor
-            # n_penta = self.plasma.get_density(species,PENTA_class.roa_unique)
-            # T_penta = self.plasma.get_temperature(species,PENTA_class.roa_unique)
-            # p_penta_axis = EC * self.plasma.get_density(species,0.0)*self.plasma.get_temperature(species,0.0)
-            # p_penta_dr =   EC * self.plasma.get_density(species,PENTA_class.roa_unique[0])*self.plasma.get_temperature(species,PENTA_class.roa_unique[0])
-            # dpdr_penta = EC * (n_penta*dTdr_penta + T_penta*dndr_penta)
-            
             dpdr = self.plasma.get_pressure_der(species,PENTA_class.roa_unique) / self.aminor
             press = self.plasma.get_pressure(species,PENTA_class.roa_unique)
             press_axis = self.plasma.get_pressure(species,0.0)
@@ -764,17 +755,17 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             # This is for bookeeping (it's not used in the calculations)
             Q_extended = np.concatenate(([0.0],Q)) # Include Q(r=0) = 0
             self.Q_interp[species] = CubicSpline(rho_extended,Q_extended,extrapolate=True,bc_type='natural')
-            
-            ## rename file names for bookeeping
-            # it_subiter = f'{it:03}_{self.subiter:03}'
-            # rename = 'mv fluxes_vs_roa fluxes_vs_roa_'+it_subiter
-            # result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
-            # rename = 'mv fluxes_vs_Er fluxes_vs_Er_'+it_subiter
-            # result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
-            # rename = 'mv flows_vs_roa flows_vs_roa_'+it_subiter
-            # result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
-            # rename = 'mv Jprl_vs_roa Jprl_vs_roa_'+it_subiter
-            # result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
+        
+        ## rename file names for bookeeping
+        it_subiter = f'{it:03}'
+        rename = 'mv fluxes_vs_roa fluxes_vs_roa_'+it_subiter
+        result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
+        rename = 'mv fluxes_vs_Er fluxes_vs_Er_'+it_subiter
+        result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
+        rename = 'mv flows_vs_roa flows_vs_roa_'+it_subiter
+        result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
+        rename = 'mv Jprl_vs_roa Jprl_vs_roa_'+it_subiter
+        result = subprocess.run(rename, shell=True, check=True, text=True, capture_output=True)
             
     def compute_diffusive_flux(self,it):
         # computes an interpolating function for Q=-n*chi*dT/dr -T*Dn*dn/dr
