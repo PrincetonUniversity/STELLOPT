@@ -352,6 +352,7 @@
                          delta_min, delta_max, &
                          target_balloon, sigma_balloon, balloon_theta, balloon_zeta,&
                          target_bootstrap,sigma_bootstrap, target_neo, sigma_neo,&
+                         target_b10b11, sigma_b10b11, &
                          target_Jstar, sigma_Jstar, NumJstar,&
                          target_helicity, sigma_helicity, helicity,&
                          target_helicity_old, sigma_helicity_old, &
@@ -911,6 +912,8 @@
       balloon_zeta(:) = -1.0
       target_bootstrap(:) = 0.0
       sigma_bootstrap(:) = bigno
+      target_b10b11(:) = 0.0
+      sigma_b10b11(:) = bigno
       target_neo(:)   = 0.0
       sigma_neo(:)    = bigno
       target_Jstar(:) = 0.0
@@ -1097,6 +1100,7 @@
       lbooz(1) = .FALSE.
       target_balloon(1)   = 0.0;  sigma_balloon(1)   = bigno
       target_bootstrap(1) = 0.0;  sigma_bootstrap(1) = bigno
+      target_b10b11(1)    = 0.0;  sigma_b10b11(1)    = bigno
       target_neo(1)       = 0.0;  sigma_neo(1)       = bigno
       target_dkes(1)      = 0.0;  sigma_dkes(1)      = bigno
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
@@ -1757,6 +1761,20 @@
            IF (sigma_bootstrap(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_BOOTSTRAP(',ik,') = ',target_bootstrap(ik), &
                           'SIGMA_BOOTSTRAP(',ik,') = ',sigma_bootstrap(ik)
+         END DO
+      END IF
+      IF (ANY(sigma_b10b11 < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          B10/B11 (BOOTSTRAP PROXY)'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_b10b11,DIM=1)
+            IF(sigma_b10b11(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+           IF (sigma_b10b11(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_B10B11(',ik,') = ',target_b10b11(ik), &
+                          'SIGMA_B10B11(',ik,') = ',sigma_b10b11(ik)
          END DO
       END IF
       IF (ANY(sigma_neo < bigno)) THEN
