@@ -148,6 +148,8 @@
                WHERE(sigma_magwell<bigno) sigma_magwell = sigma_magwell/temp
             CASE(jtarget_bootstrap)
                WHERE(sigma_bootstrap<bigno) sigma_bootstrap = sigma_bootstrap/temp
+            CASE(jtarget_b10b11)
+               WHERE(sigma_b10b11<bigno) sigma_b10b11 = sigma_b10b11/temp
             CASE(jtarget_helicity)
                WHERE(ABS(sigma_helicity)<bigno) sigma_helicity = sigma_helicity/temp
             CASE(jtarget_quasiiso)
