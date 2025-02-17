@@ -207,7 +207,7 @@ c     end record file addition
 
 !  calculate and output diffusion coefficients
 
-         CALL dkes_printout (f0p1, f0m1, f0p2, f0m2, srces0)
+         CALL dkes_printout (f0p1, f0m1, f0p2, f0m2, srces0, .TRUE.)
 
 !  timing and check remaining run time
 
