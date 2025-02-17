@@ -157,7 +157,7 @@ class THRIFT():
             for it,time in enumerate(times):
                 try:
                     # ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s')
-                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s'+r', $\beta=$'+f'{self.THRIFT_BETATOT[idx[it]]*100:.2f}%')   
+                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time:.1f}s'+r', $\beta=$'+f'{self.THRIFT_BETATOT[idx[it]]*100:.2f}%')   
                 except:
                     ax.plot(np.sqrt(self.THRIFT_SNOB),plot_var[it,:],label=f't={time}s')
                 ax.set_xlabel('r/a') 

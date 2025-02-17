@@ -12,19 +12,24 @@ EC = 1.602176634E-19 # Electron charge [C]
 # PENTA Class
 class PENTA:
     
-    def __init__(self, folder_path, plasma=None, Zions=None, lverb=True):
+    def __init__(self, folder_path='.',files_suffix=None, plasma=None, Zions=None, lverb=True):
         #folder_path is a path to the folder containnig the following PENTA3 results files:
-        # - flows_vs_Er
-        # - flows_vs_roa
-        # - fluxes_vs_Er
-        # - fluxes_vs_roa
-        # - Jprl_vs_roa
-        # - contra_vs_roa
-        # - sigmas_vs_roa
+        # - flows_vs_Er_{files_suffix} 
+        # - flows_vs_roa_{files_suffix}
+        # - fluxes_vs_Er_{files_suffix}
+        # - fluxes_vs_roa_{files_suffix}
+        # - Jprl_vs_roa_{files_suffix}
+        # - contra_vs_roa_{files_suffix}
+        # - sigmas_vs_roa_{files_suffix}
         
         if(lverb): print('\nPENTA class being created...')
         
         self.folder_path = folder_path
+        
+        if (files_suffix is not None):
+            self.files_suffix = '_' + files_suffix
+        else:
+            self.files_suffix = ''
         
         #check if a plasma class is given. If not check if Zions is given
         if plasma is None and Zions is None:
@@ -77,7 +82,7 @@ class PENTA:
     def check_size_Zions(self,Zions):
         #checks if len(Zions) is the same as the number of ions in the file fluxes_vs_Er
         
-        filename = self.folder_path + '/fluxes_vs_Er'
+        filename = self.folder_path + '/fluxes_vs_Er' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2)        
         num_ion_species = len(penta[0,:]) - 3
@@ -91,13 +96,13 @@ class PENTA:
         # and sets the integer self.Smax
         # note that Er_search is in V/cm
         
-        filename = self.folder_path + '/fluxes_vs_Er'
+        filename = self.folder_path + '/fluxes_vs_Er' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2) 
         
         self.Er_search = np.unique(penta[1,:])          
        
-        filename = self.folder_path + '/flows_vs_roa'
+        filename = self.folder_path + '/flows_vs_roa' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2)
         
@@ -114,7 +119,7 @@ class PENTA:
         from itertools import groupby
         from collections import defaultdict
         
-        filename = self.folder_path + '/Jprl_vs_roa'
+        filename = self.folder_path + '/Jprl_vs_roa' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2)
         
@@ -139,11 +144,11 @@ class PENTA:
                 self.Er['ion_root'].append(Er[i])
                 self.Jprl_total['ion_root'].append(Jprl_total[i])
                 self.JBS['ion_root'].append(JBS[i])
-            elif(num_roots ==3 or num_roots>3):
+            elif(num_roots == 3):
                 
-                if(num_roots>3):
-                    print(f"How come you have {num_roots} roots ??")   
-                    print('Considering first root --> ion root; second_root --> unstable; 3rd root --> electron_root;discard the others')
+                # if(num_roots>3):
+                #     print(f"How come you have {num_roots} roots ??")   
+                #     print('Considering first root --> ion root; second_root --> unstable; 3rd root --> electron_root;discard the others')
                 # ion root
                 self.roa['ion_root'].append(roa[i])
                 self.Er['ion_root'].append(Er[i])
@@ -159,7 +164,40 @@ class PENTA:
                 self.Er['electron_root'].append(Er[i+2])
                 self.Jprl_total['electron_root'].append(Jprl_total[i+2])
                 self.JBS['electron_root'].append(JBS[i+2])
-            elif(num_roots ==2):
+            elif(num_roots == 5):
+                list_Er = Er[i:i+num_roots]
+                # ion root is the one right before Er=0
+                # electrons root is two roots after Er=0
+                # the others we consider UNSTABLE
+                ## TO BED DONE...
+                
+                
+                self.roa['ion_root'].append(roa[i])
+                self.Er['ion_root'].append(Er[i])
+                self.Jprl_total['ion_root'].append(Jprl_total[i])
+                self.JBS['ion_root'].append(JBS[i])
+                # unstable root
+                self.roa['unstable_root'].append(roa[i+1])
+                self.Er['unstable_root'].append(Er[i+1])
+                self.Jprl_total['unstable_root'].append(Jprl_total[i+1])
+                self.JBS['unstable_root'].append(JBS[i+1])
+                # electron root
+                self.roa['electron_root'].append(roa[i+2])
+                self.Er['electron_root'].append(Er[i+2])
+                self.Jprl_total['electron_root'].append(Jprl_total[i+2])
+                self.JBS['electron_root'].append(JBS[i+2])
+                # unstable root 2
+                self.roa['unstable_root_2'].append(roa[i+3])
+                self.Er['unstable_root_2'].append(Er[i+3])
+                self.Jprl_total['unstable_root_2'].append(Jprl_total[i+3])
+                self.JBS['unstable_root_2'].append(JBS[i+3])
+                # extra root
+                self.roa['extra_stable_root'].append(roa[i+4])
+                self.Er['extra_stable_root'].append(Er[i+4])
+                self.Jprl_total['extra_stable_root'].append(Jprl_total[i+4])
+                self.JBS['extra_stable_root'].append(JBS[i+4])
+                
+            elif(num_roots == 2):
                 raise ValueError(f"How come you have 2 roots ??") 
             else:
                 print(f"How come you have {num_roots} roots ??")
@@ -176,21 +214,21 @@ class PENTA:
         from collections import defaultdict
         
         #get uprl0 flows for all species
-        filename = self.folder_path + '/flows_vs_roa'   
+        filename = self.folder_path + '/flows_vs_roa' + self.files_suffix
         penta = np.loadtxt(filename,skiprows=2)
         roa = penta[:,0]
         uprl0_penta = penta[:,3:-1:(self.Smax+1)]
         
         #get Jprl flows for all species
-        filename = self.folder_path + '/Jprl_vs_roa'   
+        filename = self.folder_path + '/Jprl_vs_roa' + self.files_suffix   
         penta = np.loadtxt(filename,skiprows=2)
         Jprl_penta = penta[:,3:(3+len(self.list_of_species))]
         
         #get fluxes for all species
-        filename = self.folder_path + '/fluxes_vs_roa'
+        filename = self.folder_path + '/fluxes_vs_roa' + self.files_suffix
         penta = np.loadtxt(filename,skiprows=2)
         Gamma_penta = penta[:,np.r_[3,5:(5+len(self.Zions))]]
-        QoT_penta = penta[:,np.r_[4,(5+len(self.Zions)):]]
+        QoT_penta = penta[:,np.r_[4,(5+len(self.Zions)):(5+2*len(self.Zions))]]
         
         self.uprl = defaultdict(list)
         self.Jprl = defaultdict(list)
@@ -208,11 +246,11 @@ class PENTA:
                     self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
                     self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
                     self.QoT[species,'ion_root'].append(QoT_penta[i,k])
-                elif(num_roots ==3 or num_roots>3):
+                elif(num_roots ==3):
                 
-                    if(num_roots>3):
-                        print(f"How come you have {num_roots} roots ??")   
-                        print('Considering first root --> ion root; second_root --> unstable; 3rd root --> electron_root;discard the others')
+                    # if(num_roots>3):
+                    #     print(f"How come you have {num_roots} roots ??")   
+                    #     print('Considering first root --> ion root; second_root --> unstable; 3rd root --> electron_root;discard the others')
                     # ion root
                     self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
                     self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
@@ -228,6 +266,32 @@ class PENTA:
                     self.Jprl[species,'electron_root'].append(Jprl_penta[i+2,k])
                     self.Gamma[species,'electron_root'].append(Gamma_penta[i+2,k])
                     self.QoT[species,'electron_root'].append(QoT_penta[i+2,k])
+                elif(num_roots ==5):
+                    # ion root
+                    self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
+                    self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
+                    self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
+                    self.QoT[species,'ion_root'].append(QoT_penta[i,k])
+                    # unstable root
+                    self.uprl[species,'unstable_root'].append(uprl0_penta[i+1,k])
+                    self.Jprl[species,'unstable_root'].append(Jprl_penta[i+1,k])
+                    self.Gamma[species,'unstable_root'].append(Gamma_penta[i+1,k])
+                    self.QoT[species,'unstable_root'].append(QoT_penta[i+1,k])
+                    # electron root
+                    self.uprl[species,'electron_root'].append(uprl0_penta[i+2,k])
+                    self.Jprl[species,'electron_root'].append(Jprl_penta[i+2,k])
+                    self.Gamma[species,'electron_root'].append(Gamma_penta[i+2,k])
+                    self.QoT[species,'electron_root'].append(QoT_penta[i+2,k])
+                    # unstable root 2
+                    self.uprl[species,'unstable_root_2'].append(uprl0_penta[i+3,k])
+                    self.Jprl[species,'unstable_root_2'].append(Jprl_penta[i+3,k])
+                    self.Gamma[species,'unstable_root_2'].append(Gamma_penta[i+3,k])
+                    self.QoT[species,'unstable_root_2'].append(QoT_penta[i+3,k])
+                    # extra root
+                    self.uprl[species,'extra_stable_root'].append(uprl0_penta[i+4,k])
+                    self.Jprl[species,'extra_stable_root'].append(Jprl_penta[i+4,k])
+                    self.Gamma[species,'extra_stable_root'].append(Gamma_penta[i+4,k])
+                    self.QoT[species,'extra_stable_root'].append(QoT_penta[i+4,k])
                 elif(num_roots ==2):
                     raise ValueError(f"How come you have 2 roots ??") 
                 else:
@@ -241,7 +305,7 @@ class PENTA:
         
         from collections import defaultdict
         
-        filename = self.folder_path + '/fluxes_vs_Er'
+        filename = self.folder_path + '/fluxes_vs_Er' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2)
         
@@ -299,7 +363,7 @@ class PENTA:
                 
     def plot_Er_vs_roa(self,which_root='all',plot=True):
         # plots ambipolar Er vs roa
-        # which_root is: 'ion_root', 'unstable_root', 'electron_root' or 'all'
+        # which_root is: 'ion_root', 'unstable_root', 'electron_root', 'all' or 'stable_roots'
         # if 'all', plots all roots in the same figure
         
         import matplotlib.pyplot as plt
@@ -313,6 +377,22 @@ class PENTA:
             ax.plot(self.roa['ion_root'],self.Er['ion_root'],'.-',label='ion_root')
             ax.plot(self.roa['unstable_root'],self.Er['unstable_root'],'.-',label='unstable_root')
             ax.plot(self.roa['electron_root'],self.Er['electron_root'],'.-',label='electron_root')
+            try:
+                ax.plot(self.roa['unstable_root_2'],self.Er['unstable_root_2'],'.-',label='unstable_root')
+            except:
+                pass
+            try:
+                ax.plot(self.roa['extra_stable_root'],self.Er['extra_stable_root'],'.-',label='extra_stable_root')
+            except:
+                pass
+        elif which_root == 'stable_roots':
+            ax.plot(self.roa['ion_root'],self.Er['ion_root'],'.-',label='ion_root')
+            ax.plot(self.roa['electron_root'],self.Er['electron_root'],'.-',label='electron_root')
+            try:
+                ax.plot(self.roa['extra_stable_root'],self.Er['extra_stable_root'],'.-',label='extra_stable_root')
+            except:
+                pass
+            
         else:
             print('ERROR: which_root can only be ion_root, electron_root, unstable_root or all')
             exit(0)
@@ -371,7 +451,7 @@ class PENTA:
             
     def plot_Gamma_vs_roa(self,which_root='all',which_species='all',plot=True):
         # plots ambipolar particle flux vs roa
-        # which_root is: 'ion_root', 'unstable_root', 'electron_root' or 'all'
+        # which_root is: 'ion_root', 'unstable_root', 'electron_root', 'all' or 'stable_roots'
         # if 'all', plots all roots in the same figure
         # which_species is any species in self.list_of_species
         
@@ -380,7 +460,8 @@ class PENTA:
         if which_species == 'all': 
             plotting_species = self.list_of_species
         elif which_species not in self.list_of_species: 
-            print(f'Error: species {which_species} is not valid. Pick species from: {self.list_of_species}')
+            print(f'ERROR: species {which_species} is not valid. Pick species from: {self.list_of_species}')
+            exit(0)
         else: 
             plotting_species = [which_species]
         
@@ -394,8 +475,23 @@ class PENTA:
                 ax.plot(self.roa['ion_root'],self.Gamma[species,'ion_root'],'.-',label='ion_root'+', '+species)
                 ax.plot(self.roa['unstable_root'],self.Gamma[species,'unstable_root'],'.-',label='unstable_root'+', '+species)
                 ax.plot(self.roa['electron_root'],self.Gamma[species,'electron_root'],'.-',label='electron_root'+', '+species)
+                try:
+                    ax.plot(self.roa['unstable_root_2'],self.Gamma[species,'unstable_root_2'],'.-',label='unstable_root')
+                except:
+                    pass
+                try:
+                    ax.plot(self.roa['extra_stable_root'],self.Gamma[species,'extra_stable_root'],'.-',label='extra_stable_root')
+                except:
+                    pass
+            elif which_root == 'stable_roots':
+                ax.plot(self.roa['ion_root'],self.Gamma[species,'ion_root'],'.-',label='ion_root'+', '+species)
+                ax.plot(self.roa['electron_root'],self.Gamma[species,'electron_root'],'.-',label='electron_root'+', '+species)
+                try:
+                    ax.plot(self.roa['extra_stable_root'],self.Gamma[species,'extra_stable_root'],'.-',label='extra_stable_root')
+                except:
+                    pass
             else:
-                print('ERROR: which_root can only be ion_root, electron_root, unstable_root or all')
+                print('ERROR: which_root can only be ion_root, electron_root, unstable_root, all or stable_roots')
                 exit(0)
                     
         ax.set_ylabel(r'$\Gamma~[m^{-2}s^{-1}]$')
@@ -486,7 +582,7 @@ class PENTA:
         import matplotlib.pyplot as plt
         from collections import defaultdict
         
-        filename = self.folder_path + '/fluxes_vs_Er'
+        filename = self.folder_path + '/fluxes_vs_Er' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2)
         
@@ -521,8 +617,7 @@ class PENTA:
                 roa_closest = roa_unique[ np.argmin(np.abs(roa_unique-r_user)) ]
             
             plt.rc('font', size=16)
-            fig=plt.figure(figsize=(8,6))
-            ax = fig.add_subplot(111)
+            _, ax = plt.subplots(figsize=(11,8))
             ax.plot(Er_dict[roa_closest],Gamma_e_dict[roa_closest],label=r'$\Gamma_e$')
             ax.plot(Er_dict[roa_closest],Gamma_i_dict[roa_closest],label=r'$\Sigma~Z_i\Gamma_i$')
             ax.set_xlabel(r'Er [V/cm]')
@@ -532,6 +627,17 @@ class PENTA:
             ax.legend(fontsize=12)
             ax.grid()
             plt.legend()
+            ##
+            # Jr = np.array(Gamma_i_dict[roa_closest]) - np.array(Gamma_e_dict[roa_closest])
+            # _, ax = plt.subplots(figsize=(11,8))
+            # ax.plot(Er_dict[roa_closest],Jr)
+            # ax.set_xlabel(r'Er [V/cm]')
+            # ax.set_ylabel(r'$\Sigma~Z_i\Gamma_i$ - \Gamma_e')
+            # ax.set_title(f'current, r/a={roa_closest}')
+            # # ax.set_yscale('log')
+            # ax.legend(fontsize=12)
+            # ax.grid()
+            # # plt.legend()
         if plot:
             plt.show()
             
@@ -542,7 +648,7 @@ class PENTA:
         import matplotlib.pyplot as plt
         import numpy as np
         
-        filename = self.folder_path+'/plasma_profiles_check'
+        filename = self.folder_path + '/plasma_profiles_check' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2)
         
@@ -585,6 +691,60 @@ class PENTA:
         if plot:
             plt.show()
             
+    def plot_plasma_profiles(self,species,which_profile,filename=None,plot=True):
+        # plots plasma profiles in a more selective way than the function above
+        # which profile is 'density', 'temperature', 'density_der' or 'temperature_der'
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        
+        if(filename is None):
+            filename = self.folder_path+'/plasma_profiles_check'+self.files_suffix
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        
+        num_ion_species = len(self.Zions)
+        
+        # check species is in self.list_of_species
+        if(species not in self.list_of_species): 
+            print(f'ERROR: species {species} is not valid. Pick species from: {self.list_of_species}')
+            exit(0)
+                
+        species_id = self.list_of_species.index(species)
+        
+        match which_profile:
+            case 'density':
+                #densities: electrons, i1, i2, ...
+                densities = penta[:,np.r_[2,(5+num_ion_species):(5+2*num_ion_species)]]
+                plot_var = densities[:,species_id]
+            case 'temperature':
+                #temperatures: electrons, i1, i2, ...
+                temperatures = penta[:,np.r_[1,5:(5+num_ion_species)]]
+                plot_var = temperatures[:,species_id]
+            case 'density_der':
+                #grad_densitites: electrons, i1, i2, ...
+                grad_densitites = penta[:,np.r_[3,(5+2*num_ion_species):(5+3*num_ion_species)]]
+                plot_var = grad_densitites[:,species_id]
+            case 'temperature_der':
+                #grad_tempratures: electrons, i1, i2, ...
+                grad_temperatures = penta[:,np.r_[4,(5+3*num_ion_species):(5+4*num_ion_species)]]
+                plot_var = grad_temperatures[:,species_id]
+            case _:
+                print('ERROR: which_profile must be density, temperature, density_der or tempreature_der !!')
+                exit(0)
+        
+        plt.rc('font', size=16)
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(roa,plot_var,label=species)
+        ax.set_xlabel(r'r/a')
+        ax.grid()
+        ax.set_title(f'{which_profile}')
+        
+        plt.legend()
+        plt.show()
+            
     def plot_conductivity(self,aspect_ratio=None,plot=True):
         # plots parallel conducitivity as given by PENTA (when ran in 'SN' mode)
         # if aspect_ratio is given, spitzer-NEO is computed
@@ -592,7 +752,7 @@ class PENTA:
         import matplotlib.pyplot as plt
         import numpy as np
         
-        filename = self.folder_path+'/sigmas_vs_roa'
+        filename = self.folder_path+'/sigmas_vs_roa'+self.files_suffix
         
         try: 
             penta = np.loadtxt(filename,skiprows=2)
@@ -978,7 +1138,7 @@ class PENTA:
         import matplotlib.pyplot as plt
         from scipy.interpolate import CubicSpline, Akima1DInterpolator
         
-        filename = self.folder_path+'/sigmas_vs_roa'
+        filename = self.folder_path+'/sigmas_vs_roa'+self.files_suffix
         
         try: 
             penta = np.loadtxt(filename,skiprows=2)
