@@ -272,6 +272,35 @@ class PLASMA:
         
         return temp
     
+    def get_pressure(self,species,rho):
+        # rho can be a number or a list of numbers
+        # returns pressure in SI [J.m^-3]
+        
+        # check if species exist in list_of_species
+        if species not in self.list_of_species:
+            print(f"ERROR: Species {species} is not in the plasma.")
+            exit(1)
+            
+        # check if density of species has been set
+        if(species not in self.density):
+            print('ERROR" density of {species} has not been set yet')
+            exit(0)
+            
+        # check if temperature of species has been set
+        if(species not in self.temperature):
+            print('ERROR" temperature of {species} has not been set yet')
+            exit(0)
+            
+        # make sure rho is an array
+        rho = np.array(rho)
+        
+        dens_interp = self.density[species]['interpolating_func']
+        temp_interp = self.temperature[species]['interpolating_func']
+        
+        pressure = dens_interp(rho) * temp_interp(rho) * EC
+        
+        return pressure
+    
     def get_temperature_der(self,species,rho):
         # get derivative of temperature, dT/drho
         # rho can be a number or a list of numbers
@@ -294,6 +323,38 @@ class PLASMA:
         temp_der = temp_der_interp(rho,1)
         
         return temp_der
+    
+    def get_pressure_der(self,species,rho):
+        # rho can be a number or a list of numbers
+        # pressure is in SI [J.m^-3]
+        
+        # check if species exist in list_of_species
+        if species not in self.list_of_species:
+            print(f"ERROR: Species {species} is not in the plasma.")
+            exit(1)
+            
+        # check if density of species has been set
+        if(species not in self.density):
+            print('ERROR" density of {species} has not been set yet')
+            exit(0)
+            
+        # check if temperature of species has been set
+        if(species not in self.temperature):
+            print('ERROR" temperature of {species} has not been set yet')
+            exit(0)
+            
+        # make sure rho is an array
+        rho = np.array(rho)
+        
+        dens_interp = self.density[species]['interpolating_func']
+        temp_interp = self.temperature[species]['interpolating_func']
+        
+        temp_der = temp_interp(rho,1)
+        dens_der = dens_interp(rho,1)
+        
+        press_der = dens_interp(rho)*temp_der +  dens_der*temp_interp(rho)
+        
+        return press_der*EC
     
     def get_thermal_speed(self,species,rho):
         
@@ -667,6 +728,33 @@ class PLASMA:
         plt.legend()
         plt.show()
         
+    def plot_gyroBohm_diffusivity(self,B,aminor):
+        # plots gyro-Bohm diffusivity = ... for all ions in the plasma
+        
+        import matplotlib.pyplot as plt
+        
+        rho = np.linspace(0,1,100)
+        
+        _, ax = plt.subplots(figsize=(11,8))
+        for species in self.ion_species:
+            
+            mi = self.mass[species]
+            qi = self.charge[species]
+            
+            Te = self.get_temperature('electrons',rho)
+            
+            chi_gB = (EC*Te/mi)**1.5 * mi*mi / (qi**2 * B**2) / aminor
+            
+            ax.plot(rho,chi_gB,label=species,linewidth=4)
+        
+        ax.set_xlabel('r/a')
+        ax.set_ylabel(r'$\chi_{\mathrm{gB}}$ [m$^2/$s]')
+        ax.set_title(f'gyro-Bohm diffusivity  |  B={B}T, a={aminor}m')
+        ax.grid()
+        plt.legend()
+        plt.show()
+                        
+        
     def get_pressure_polynomial_coefficients(self,deg_fit=10):
         # this computes the AM coefficients and the PRES_SCALE scalar for a VMEC input
         # assuming that PMASS_TYPE = 'power_series'
@@ -725,7 +813,7 @@ class PLASMA:
         
         return AM,PRES_SCALE       
         
-    def print_SFINCS_list_namelist(self,roa_list,folder_path):
+    def print_SFINCS_list_namelist(self,roa_list,folder_path,wout_file):
         # saves input.namlist inside folder_path/surface_k
         
         import os
@@ -743,8 +831,8 @@ class PLASMA:
         
         for k,roa in enumerate(roa_list):
             
-            folder_name = f'surface_{k+1}'  # Folders will be surface_1, surface_2, etc.
-            os.makedirs(folder_path+'/'+folder_name, exist_ok=True)
+            # folder_name = f'surface_{k+1}'  # Folders will be surface_1, surface_2, etc.
+            # os.makedirs(folder_path+'/'+folder_name, exist_ok=True)
         
             n_species = np.array( [self.get_density(species,rho=roa) for species in self.list_of_species] )
             T_species = np.array( [self.get_temperature(species,rho=roa) for species in self.list_of_species] )
@@ -793,7 +881,7 @@ rN_wish = {roa}
 inputRadialCoordinateForGradients = 3   !the radial coordinate of the gradients given in species parameters is rN=sqrt(PHI/PHIEDGE)
 
 VMECRadialOption = 1  !get the nearest available flux surface from VMEC HALF grid 
-equilibriumFile = "wout_beta_2.nc"
+equilibriumFile = "{wout_file}"
 min_Bmn_to_load = 1e-4
 /
 
@@ -825,8 +913,8 @@ magneticDriftScheme = 1  ! this includes poloidal and toroidal magnetic drifts
 /
 
 &resolutionParameters
-Ntheta = 23 ! needs to be an odd number
-Nzeta = 91 ! needs to be an odd number and at low collisionality might be needeed to be of the order 100 to converge
+Ntheta = 33 ! needs to be an odd number
+Nzeta = 101 ! needs to be an odd number and at low collisionality might be needeed to be of the order 100 to converge
 
 Nxi = 70
 Nx = 6
@@ -846,7 +934,7 @@ solverTolerance = 1d-6
 """
             
              # Define the file path
-            file_path = os.path.join(folder_path+'/'+folder_name, f'input.namelist_{k+1}')
+            file_path = os.path.join(folder_path+'/'+f'input.namelist_{k+1}')
             
             # Write the content to the file
             with open(file_path, 'w') as f:
