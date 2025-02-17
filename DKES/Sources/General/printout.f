@@ -30,7 +30,7 @@ C-----------------------------------------------
       REAL(rprec), DIMENSION(mpnt,0:lalpha), INTENT(in) :: 
      &             fz1p, fz1m, fz3p, fz3m
       REAL(rprec), DIMENSION(mpnt,4,2,2), INTENT(in)    :: srces
-      LOGICAL, INTENT(IN), OPTIONAL :: lprint
+      LOGICAL, INTENT(IN) :: lprint
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
