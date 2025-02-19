@@ -102,6 +102,33 @@ class BOOTSJ():
 			self.betar[i]    = float(line[17])
 			self.ajBbs[i]    = float(line[18])
 		self.Itotal = np.trapz(self.dibs,self.rhoar)*1.0E6
+
+	def calc_Itotal(self,order=6):
+		"""Computes the total current
+
+		This routine computes the total current density from the dibs
+		and rhoar arrays.  Note that rhoar is actually s.
+		"""
+		import numpy as np
+		from scipy import integrate
+		self.Ibs = integrate.cumulative_trapezoid( \
+			self.dibs,self.rhoar, initial=0)
+		# Note we fit in rho no s (rhoar is s)
+		rho = np.sqrt(self.rhoar)
+		x = np.append(-rho[::-1],rho)
+		y = np.append(self.Ibs[::-1],self.Ibs)
+		z = np.polyfit(x,y,order)
+		# Set I(0) = 0.0
+		z[-1] = 0.0
+		# Set I(1.0) = Itotal
+		z = self.Itotal*z/np.sum(z)
+		# Save the fit
+		p = np.poly1d(z)
+		self.Ibs_fit = p(np.sqrt(self.rhoar))
+		# Compute the dI/ds = dI/drho/(2*rho) from the fit.
+		dz = z[0:-1]
+		dp = np.poly1d(dz)
+		self.dibs_fit = 0.5*dp(np.sqrt(self.rhoar))/rho
 		
 
 if __name__=="__main__":
