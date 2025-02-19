@@ -255,7 +255,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         dens = {}
         self.P = {}
         self.T = {}
-        self.Q = {}
+        self.Q_interp = {}
         self.D_interp = {}
         self.c_interp = {}
         self.total_sources_explicit = {}
@@ -274,10 +274,9 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             self.T[species] = np.zeros((Nt,Nr))
             self.T[species][0,:] = self.plasma.get_temperature(species,rho)
             
-            self.Q[species] = np.zeros((Nt,Nr))
-            
             self.D_interp[species] = [None]*Nt
             self.c_interp[species] = [None]*Nt
+            self.Q_interp[species] = [None]*Nt
                         
             self.total_sources_explicit[species] = np.zeros((Nt,Nr))
 
@@ -287,12 +286,15 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 self.all_sources[species][source_type] = np.zeros((Nt, Nr))
                 
         if('Bremsstrahlung_alphas' in self.sources['electrons']):
+            if(tstart>0):
+                print('ERROR: Can only use Bremsstrahlung_alphas when tstart=0 because Nalphas from previous iter does not exist...')
+                exit(0)
             self.Nalphas_fast = np.zeros((Nt,Nr))
             self.Nalphas_thermal = np.zeros((Nt,Nr))
             
-        p_old = 1E3*np.ones(Nr*len(self.list_of_species)) # so on loop 1 we don't divide by zero in delta_p
         press = np.concatenate(press)
-            
+        p_old = press # 1E3*np.ones(Nr*len(self.list_of_species)) # so on loop 1 we don't divide by zero in delta_p
+        
         ####################################################################################
                 
         print(' ')
@@ -300,8 +302,23 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         print(header_str)
         print('  '+'='*len(header_str))
         
-        # Compute sources at t=0.0 and print info
-        # self.update_at_start()
+        ###############################################################################
+        #####################  t = tstart #############################################
+        ###############################################################################
+        # sets temperature in plasma class from density and pressure for ALL species
+        k=0
+        for species in self.list_of_species:
+            
+            self.P[species][0,:] = press[k:(k+Nr)]
+            
+            self.set_temperature(species,rho,dens[species],self.P[species][0,:])
+            self.T[species][0,:] = self.plasma.get_temperature(species,rho) # this is only for bookeeping
+            k = k+Nr
+        info_str = f'  {tstart:<13.2f}{1:<10}{self.T['electrons'][0,0]/1E3:<18.3f}{'---':<20}{self.T['deuterium'][0,0]/1E3:<18.3f}{'---':<21}{0.0:<13.2E}'
+        print(info_str)
+        ###############################################################################
+        ###############################################################################
+        ###############################################################################
         
         ### LOOP IN TIME STARTING AT t=tstart+dt ###
         for it,t in enumerate(time[1:],start=1):
@@ -310,18 +327,8 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             ### SUBCYCLE
             delta_p = 10*tolerance
             subiter=1
-            while(delta_p > tolerance and subiter<max_subiter):
-                self.subiter = subiter
-                # sets temperature in plasma class from density and pressure for ALL species
-                k=0
-                for species in self.list_of_species:
-                    
-                    self.P[species][it,:] = press[k:(k+Nr)]
-                    
-                    self.set_temperature(species,rho,dens[species],self.P[species][it,:])
-                    self.T[species][it,:] = self.plasma.get_temperature(species,rho) # this is only for bookeeping
-                    
-                    k = k+Nr   
+            while(delta_p > tolerance and subiter<=max_subiter):
+                self.subiter = subiter   
 
                 # compute D_interp and c_interp
                 if(self.fluxes_info['type']=='dkespenta'):
@@ -345,6 +352,16 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 #PICARD FACTOR
                 # fpicard = 0.75
                 # press = press*fpicard + (1-fpicard)*p_old
+                
+                # sets temperature in plasma class from density and pressure for ALL species
+                k=0
+                for species in self.list_of_species:
+                    
+                    self.P[species][it,:] = press[k:(k+Nr)]
+                    
+                    self.set_temperature(species,rho,dens[species],self.P[species][it,:])
+                    self.T[species][it,:] = self.plasma.get_temperature(species,rho) # this is only for bookeeping
+                    k = k+Nr
             
                 delta_p = np.max( np.where( p_old>1E-10, np.abs((press-p_old)/p_old), 0 ) )
                 
@@ -712,7 +729,6 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         self.Er_interp = CubicSpline(PENTA_class.roa_unique,PENTA_class.Er_Maxw)
         
         self.Gamma_interp = {}
-        self.Q_interp = {}
         
         for species in self.list_of_species:
             
@@ -754,7 +770,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             
             # This is for bookeeping (it's not used in the calculations)
             Q_extended = np.concatenate(([0.0],Q)) # Include Q(r=0) = 0
-            self.Q_interp[species] = CubicSpline(rho_extended,Q_extended,extrapolate=True,bc_type='natural')
+            self.Q_interp[species][it] = CubicSpline(rho_extended,Q_extended,extrapolate=True,bc_type='natural')
         
         ## rename file names for bookeeping
         it_subiter = f'{it:03}'
@@ -774,8 +790,6 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         import matplotlib.pyplot as plt
         
         chi = self.fluxes_info['diffusive']['chi']
-        
-        self.Q_interp = {}
         
         r_grid = self.rho_grid * self.aminor
         
@@ -802,37 +816,22 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             self.c_interp[species][it] = CubicSpline(self.rho_grid,c,bc_type='natural',extrapolate=True)
             
             # this is for bookeeping
-            self.Q_interp[species] = CubicSpline(self.rho_grid,Q)
+            self.Q_interp[species][it] = CubicSpline(self.rho_grid,Q)
             
     def update_at_start(self):
            
-        if(self.fluxes_info['type']=='dkespenta'):
-            self.call_PENTA3()
+        # if(self.fluxes_info['type']=='dkespenta'):
+        #     self.call_PENTA3()
             
-        if(self.fluxes_info['type']=='diffusive'):
-            self.compute_diffusive_flux(it=0)
+        # if(self.fluxes_info['type']=='diffusive'):
+        #     self.compute_diffusive_flux(it=0)
             
         for species in self.list_of_species:
             self.total_sources_explicit[species][0,:] = self.get_sources_explicit(species,self.rho_grid,0)  # W/m^3
-            self.Q[species][0,:] = self.Q_interp[species](self.rho_grid)
         
         # print info for t=t_starts
         info_str = f'  {self.time[0]:<13.2f}{1:<10}{self.T['electrons'][0,0]/1E3:<18.3f}{self.total_sources_explicit['electrons'][0,0]/1E6:<20.2E}{self.T['deuterium'][0,0]/1E3:<18.3f}{self.total_sources_explicit['deuterium'][0,0]/1E6:<21.2E}{0.0:<13.2E}'
         print(info_str)
-        
-    def check_NaNs_and_neg_values(self,species,it):
-        # checks if self.P[species][:,:] has NaNs or negative values
-        # if a NaN is found, program is aborted
-        # if negative value is found, a warning is yield and the neg value substituted by a very small number
-        
-        # look for NaNs
-        if np.any(np.isnan(self.P[species][it,:])):
-            print('ERROR: Pressure has NaN values !! ')
-            exit(1)
-                
-        # look for neg values
-        eps = 1E-10
-        self.P[species][it, :] = np.where(self.P[species][it, :] < 0, eps, self.P[species][it, :])
         
     def get_collisionalHeatExchange(self):
         # returns 2 arrays: the explicit part of W_s1_s2 and the implicit fact of W_s1_s2
