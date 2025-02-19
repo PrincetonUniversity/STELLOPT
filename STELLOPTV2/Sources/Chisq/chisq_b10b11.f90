@@ -28,32 +28,45 @@
       
 !-----------------------------------------------------------------------
 !     Local Variables
-!
+!        lfound   Logical indicating that all harmonic indexes are found
+!        ik       Radial index helper
+!        mn       Harmonic index helper
+!        bXX      B(m,n) values
 !-----------------------------------------------------------------------
-      INTEGER :: ik, mn
-      REAL(rprec) :: b00,b01,b11,b10
+      LOGICAL :: lfound
+      INTEGER :: ik, mn, mn00, mn01, mn11, mn10
+      REAL(rprec) :: b00, b01, b11, b10
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       ik   = COUNT(sigma < bigno)
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'B10B11 ',ik,7
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  B00  B01  B10  B11'
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'B10B11 ',ik,8
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  B00  B01  B10  B11  K'
       IF (niter >= 0) THEN
+         ! First get the indices on the mn grid
+         mn00 = -1; mn01 = -1; mn10 = -1; mn11 = -1; lfound = .FALSE.
+         DO mn = 1, mnboz_b
+            IF ((ixn_b(mn)/nfp_b == 0) .and. (ixm_b(mn) == 0)) mn00 = mn
+            IF ((ixn_b(mn)/nfp_b == 1) .and. (ixm_b(mn) == 0)) mn01 = mn
+            IF ((ixn_b(mn)/nfp_b == 0) .and. (ixm_b(mn) == 1)) mn10 = mn
+            IF ((ixn_b(mn)/nfp_b == 1) .and. (ixm_b(mn) == 1)) mn11 = mn
+         END DO
+         IF ((mn00 > 0) .or. (mn01 > 0) .or. (mn10 > 0) .or. (mn11 > 0)) lfound = .TRUE.
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
             b00 = 0.0; b10 = 0.0; b01 = 0.0; b11 = 1.0
-            DO mn = 1, mnboz_b
-               IF ((ixn_b(mn)/nfp_b == 0) .and. (ixm_b(mn) == 0)) b00 = bmnc_b(mn,ik)
-               IF ((ixn_b(mn)/nfp_b == 1) .and. (ixm_b(mn) == 0)) b01 = bmnc_b(mn,ik)
-               IF ((ixn_b(mn)/nfp_b == 0) .and. (ixm_b(mn) == 1)) b10 = bmnc_b(mn,ik)
-               IF ((ixn_b(mn)/nfp_b == 1) .and. (ixm_b(mn) == 1)) b11 = bmnc_b(mn,ik)
-            END DO
+            IF (lfound) THEN
+               b00 = bmnc_b(mn00,ik)
+               b01 = bmnc_b(mn01,ik)
+               b10 = bmnc_b(mn10,ik)
+               b11 = bmnc_b(mn11,ik)
+            END IF
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
-            vals(mtargets) = b10/b11
-            IF (iflag == 1) WRITE(iunit_out,'(7ES22.12E3)') target(ik),sigmas(mtargets),vals(mtargets),b00,b01,b10,b11
+            vals(mtargets) = ABS(b10/b11) ! The ABS is becasue I don't care about the sign. (SAL)
+            IF (iflag == 1) WRITE(iunit_out,'(7ES22.12E3,2X,I3.3)') target(ik),sigmas(mtargets),vals(mtargets),b00,b01,b10,b11,ik
          END DO
       ELSE
          ! Consistency check
