@@ -943,7 +943,6 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Boozer Spectrum')
 			self.ui.ComboBoxOPTplot_type.addItem('Boozer |B|')
 			self.ui.ComboBoxOPTplot_type.addItem('B10/B11')
-			self.ui.ComboBoxOPTplot_type.addItem('|B|_MAX')
 			self.ui.ComboBoxOPTplot_type.addItem('QAS_ERROR')
 			self.ui.ComboBoxOPTplot_type.addItem('QPS_ERROR')
 			self.ui.ComboBoxOPTplot_type.addItem('QHS_ERROR')
@@ -992,7 +991,7 @@ class MyApp(QMainWindow):
 				self.stel_data.read_stellopt_varlabels()
 				self.stel_data.plot_stellopt_jacobian(target='all',ax=self.ax2)
 				self.canvas2.draw()
-			elif plot_name in ['Boozer Spectrum','Boozer |B|','B10/B11']:
+			elif plot_name in ['Boozer Spectrum','Boozer |B|']:
 				self.ui.ComboBoxOPTplot_surf.clear()
 				self.booz_data = boozer.BOOZER()
 				self.booz_data.read_boozer(test_file)
@@ -1016,8 +1015,6 @@ class MyApp(QMainWindow):
 		if plot_name == 'Boozer Spectrum':
 			self.booz_data.plotBmnSpectrum(plot_k-1,ax=self.ax2)
 		elif plot_name == 'Boozer |B|':
-			self.booz_data.plotBsurf(plot_k-1,ax=self.ax2)
-		elif plot_name == 'B10/B11':
 			self.booz_data.plotBsurf(plot_k-1,ax=self.ax2)
 		self.canvas2.draw()
 
@@ -1895,10 +1892,6 @@ class MyApp(QMainWindow):
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
 			self.UpdateIterFile()
 		elif (plot_name == 'B10/B11'):
-			#file_list = sorted(glob.glob("boozmn*"))
-			#for item in file_list:
-			#	self.ui.ComboBoxOPTplot_iter.addItem(item)
-			#self.UpdateIterFile()
 			booz_data = boozer.BOOZER()
 			l=0
 			dl = len(self.booz_files)-1
@@ -2095,15 +2088,6 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Z [m]')
 			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
 			self.ax2.set_aspect('equal')
-		elif (plot_name == '|B|_MAX'):
-			booz_data = boozer.BOOZER()
-			l=0
-			dl = len(self.booz_files)-1
-			if dl == 0 : dl = 1 
-			for string in self.booz_files:
-				if 'boozmn' in string:
-					booz_data.read_boozer(self.workdir+string)
-					print('NOT DONE!')
 		elif (plot_name == 'QAS_ERROR'):
 			booz_data = boozer.BOOZER()
 			l=0
