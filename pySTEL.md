@@ -85,7 +85,7 @@ Command line help text is provided for each code via the `--help` command line o
 ### Calling libraries from Python
 
 After installation the user can call the tools using the classes. For example:
-
+```python
     import numpy as np
     from libstell.vmec import VMEC
     from libstell.plot3D import PLOT3D
@@ -106,6 +106,7 @@ After installation the user can call the tools using the classes. For example:
     plt3d.setCamera(pos=[rmax*np.cos(phi),rmax*np.sin(phi),rmax*np.sin(alpha)],focus=[0,0,0],camup=[0,np.sin(beta),np.cos(beta)])
     plt3d.render()
     plt3d.saveImage('example.png')
+```
 
 Here we read VMEC data, plot it using VTK, and save the plot to a file. It should be noted that VTK saves the last state of the window so one may reposition the 3D plot as they like. When the window is closed the file is then saved.
 
