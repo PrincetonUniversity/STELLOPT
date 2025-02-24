@@ -50,7 +50,11 @@ and provide content through the discussions on each page.
 
 [NMORPH](NMORPH)
 
+[PENTA](PENTA)
+
 [PIES](PIES)
+
+[pySTEL](pySTEL)
 
 [SPEC](https://princetonuniversity.github.io/SPEC/)
 
