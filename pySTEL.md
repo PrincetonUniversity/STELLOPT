@@ -1,7 +1,8 @@
+{% include head.html %}
+
 pySTEL
 ======
 
-\<\<toc\>\>
 ![VMECplot python QT5 GUI.](images/VMECplot_python.jpg)
 
 A Python class and utilites for interacting with the STELLOPT family
@@ -21,44 +22,44 @@ is perforemd with [VTK](https://vtk.org/) package. [QT5](https://www.qt.io/) pro
 framework for the Graphical user iterface tools.
 
  * Utilities (call with `--help` for more information)
-  * VMECplot - A GUI for reading and plotting VMEC equilibrium `wout` files.
-  * STELLOPT - A GUI for plotting STELLOPT stellarator optimization output files. It includes panes for read/writing the VMEC `INDATA` and `OPTIMUM` namelists.
-  * beams3d_util.py - A command line utility for plotting [BEAMS3D](BEAMS3D) data.
-  * bootsj_util.py - A command line utility for plotting [BOOTSJ](BOOTSJ) data.
-  * boozer_util.py - A command line utility for plotting [BOOZ_XFORM](BOOZ_XFORM) data.
-  * coil_util.py - A command line utility for manipulation and plotting of coils files.
-  * fieldlines_util.py - A command line utility for ploting [FIELDLINES](FIELDLINES) data.
-  * focus_util.py - A command line utility for working with the [FOCUS](https://github.com/PrincetonUniversity/FOCUS) code. *FOCUS is not part of STELLOPT.*
-  * gist_util.py - A command line utility for working with [GIST]() files.
-  * nescoil_util.py - A command line utility for working with [NESCOIL](NESCOIL) files.
-  * make_mesh.py - A command line utility for 2D and 3D meshing using [gmsh]()
-  * vmec_util.py - A command line utility for working with [VMEC](VMEC) files.
-  * wall_util.py - A command line utility for working with wall data.
+   * VMECplot - A GUI for reading and plotting VMEC equilibrium `wout` files.
+   * STELLOPT - A GUI for plotting STELLOPT stellarator optimization output files. It includes panes for read/writing the VMEC `INDATA` and `OPTIMUM` namelists.
+   * beams3d_util.py - A command line utility for plotting [BEAMS3D](BEAMS3D) data.
+   * bootsj_util.py - A command line utility for plotting [BOOTSJ](BOOTSJ) data.
+   * boozer_util.py - A command line utility for plotting [BOOZ_XFORM](BOOZ_XFORM) data.
+   * coil_util.py - A command line utility for manipulation and plotting of coils files.
+   * fieldlines_util.py - A command line utility for ploting [FIELDLINES](FIELDLINES) data.
+   * focus_util.py - A command line utility for working with the [FOCUS](https://github.com/PrincetonUniversity/FOCUS) code. *FOCUS is not part of STELLOPT.*
+   * gist_util.py - A command line utility for working with [GIST](https://www.ipp.mpg.de/3444998/pax_gyrokin_turbulenzsimul) files.
+   * nescoil_util.py - A command line utility for working with [NESCOIL](NESCOIL) files.
+   * make_mesh.py - A command line utility for 2D and 3D meshing using [gmsh]()
+   * vmec_util.py - A command line utility for working with [VMEC](VMEC) files.
+   * wall_util.py - A command line utility for working with wall data.
  * Helper utilities
-  * vmec2beams3d.py - A command line utility for generating [BEAMS3D](BEAMS3D) inputs from [VMEC](VMEC) outputs.
-  * vmec2focus.py - A command line utility for generating [FOCUS](https://github.com/PrincetonUniversity/FOCUS) inputs from [VMEC](VMEC) outputs.
-  * stellopt_renorm.py - Computes renormalized sigma values from a [STELLOPT](STELLOPT) run.
+   * vmec2beams3d.py - A command line utility for generating [BEAMS3D](BEAMS3D) inputs from [VMEC](VMEC) outputs.
+   * vmec2focus.py - A command line utility for generating [FOCUS](https://github.com/PrincetonUniversity/FOCUS) inputs from [VMEC](VMEC) outputs.
+   * stellopt_renorm.py - Computes renormalized sigma values from a [STELLOPT](STELLOPT) run.
  * Classes (found in the `libstell` subdirectory)
-  * beams3d.py - Class for [BEAMS3D](BEAMS3D) inputs/outputs
-  * bnorm.py - Class for [BNORM](BNORM) inputs/outputs
-  * bootsj.py - Class for [BOOTSJ](BOOTSJ) inputs/outputs
-  * coils.py - Class for coils files.
-  * collisions.py - Class for plasma collisional operators.
-  * diagno.py - Class for [DIAGNO](DIAGNO) inputs/outputs
-  * dkes.py - Class for [DKES](DKES) inputs/outputs
-  * fieldlines.py - Class for [FIELDLINES](FIELDLINES) inputs/outputs
-  * focus.py - Class for [FOCUS](https://github.com/PrincetonUniversity/FOCUS) inputs/outputs
-  * fusion.py - Class for plasma fusion cross sections.
-  * gist.py - Class for dealing with GIST data, generating GIST data, and calculating some turbulent transport proxies.
-  * libstell.py - Main class for interfacing with `LIBSTELL`.
-  * nescoil.py - Class for [NESCOIL](NESCOIL) inputs/outputs
-  * penta.py - Class for [PENTA](PENTA) inputs/outputs
-  * plot3D.py - Class for 3D plotting which wrappers [VTK](https://vtk.org/) calls.
-  * popcon.py - Class for generating 0D POPCON plots.
-  * stellopt.py - Class for [STELLOPT](STELLOPT) inputs/outputs
-  * thrift.py - Class for [THRIFT](THRIFT) inputs/outputs
-  * vmec.py - Class for [VMEC](VMEC) inputs/outputs
-  * wall.py - Class for dealing with wall files.
+   * beams3d.py - Class for [BEAMS3D](BEAMS3D) inputs/outputs
+   * bnorm.py - Class for [BNORM](BNORM) inputs/outputs
+   * bootsj.py - Class for [BOOTSJ](BOOTSJ) inputs/outputs
+   * coils.py - Class for coils files.
+   * collisions.py - Class for plasma collisional operators.
+   * diagno.py - Class for [DIAGNO](DIAGNO) inputs/outputs
+   * dkes.py - Class for [DKES](DKES) inputs/outputs
+   * fieldlines.py - Class for [FIELDLINES](FIELDLINES) inputs/outputs
+   * focus.py - Class for [FOCUS](https://github.com/PrincetonUniversity/FOCUS) inputs/outputs
+   * fusion.py - Class for plasma fusion cross sections.
+   * gist.py - Class for dealing with GIST data, generating GIST data, and calculating some turbulent transport proxies.
+   * libstell.py - Main class for interfacing with `LIBSTELL`.
+   * nescoil.py - Class for [NESCOIL](NESCOIL) inputs/outputs
+   * penta.py - Class for [PENTA](PENTA) inputs/outputs
+   * plot3D.py - Class for 3D plotting which wrappers [VTK](https://vtk.org/) calls.
+   * popcon.py - Class for generating 0D POPCON plots.
+   * stellopt.py - Class for [STELLOPT](STELLOPT) inputs/outputs
+   * thrift.py - Class for [THRIFT](THRIFT) inputs/outputs
+   * vmec.py - Class for [VMEC](VMEC) inputs/outputs
+   * wall.py - Class for dealing with wall files.
 
 
 ------------------------------------------------------------------------
