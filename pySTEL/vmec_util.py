@@ -18,6 +18,8 @@ if __name__=="__main__":
 		help="Plot the VMEC file.", default = False)
 	parser.add_argument("-b", "--boozer", dest="lbooz", action='store_true',
 		help="Output the in_booz file.", default = False)
+	parser.add_argument("--print_spectrum", dest="lspectrum", action='store_true',
+		help="Output the edge VMEC spectrum as RBC/ZBS.", default = False)
 	parser.add_argument("--stl", dest="lstl", action='store_true',
 		help="Output STL file of VMEC boundary", default = False)
 	parser.add_argument("--scale_volume", dest="new_vol",
@@ -215,4 +217,33 @@ if __name__=="__main__":
 			r = vmec_wout.cfunct(theta,phi,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn)
 			z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
 			vmec_wout.surfaceSTL(r,z,phi,filename='plasma_'+args.vmec_ext+'.stl')
+		if (loutput and args.lspectrum):
+			print('!----- Axis Parameters -----')
+			raxis_cc =np.trim_zeros(vmec_wout.rmnc[0,:])
+			zaxis_cs =np.trim_zeros(vmec_wout.zmns[0,:])
+			out_str=''.join(f'{x:20.12E}' for x in raxis_cc)
+			print('  RAXIS_CC = '+out_str)
+			out_str=''.join(f'{x:20.12E}' for x in zaxis_cs)
+			print('  ZAXIS_CS = '+out_str)
+			if vmec_wout.lasym:
+				raxis_cs =np.trim_zeros(vmec_wout.rmns[0,:])
+				zaxis_cc =np.trim_zeros(vmec_wout.zmnc[0,:])
+				out_str=''.join(f'{x:20.12E}' for x in raxis_cs)
+				print('    RAXIS_CS = '+out_str)
+				out_str=''.join(f'{x:20.12E}' for x in zaxis_cc)
+				print('    ZAXIS_CC = '+out_str)
+			print('!----- Boundary Parameters -----')
+			for mn in range(vmec_wout.mnmax):
+				n = -int(vmec_wout.xn[mn][0]/vmec_wout.nfp)
+				m = int(vmec_wout.xm[mn][0])
+				k = int(vmec_wout.ns-1)
+				rbc = vmec_wout.rmnc[k,mn]
+				zbs = vmec_wout.zmns[k,mn]
+				if (rbc != 0.0 or zbs != 0.0):
+					print(f'  RBC({n:3d},{m:3d}) = {rbc:20.12E}  ZBS({n:3d},{m:3d}) = {zbs:20.12e}')
+				if (vmec_wout.lasym):
+					rbs = vmec_wout.rmns[k,mn]
+					zbc = vmec_wout.zmnc[k,mn]
+					print(f'    RBS({n:3d},{m:3d}) = {rbs:20.12E}  ZBC({n:3d},{m:3d}) = {zbc:20.12e}')
+
 	sys.exit(0)
