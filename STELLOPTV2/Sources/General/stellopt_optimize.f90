@@ -72,7 +72,6 @@
                WRITE(6,*) '    FILE:     ',TRIM(xvec_file)
             CASE('one_iter','single','eval','single_iter')
                WRITE(6,*) '    OPTIMIZER: SINGLE_ITERATION'
-               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
             CASE('one_iter_norm')
                WRITE(6,*) '    OPTIMIZER: SINGLE_ITERATION FOR NORMALIZTION'
             CASE('gade')
@@ -140,7 +139,6 @@
             ! there is no need to print a warning here, since the next select case block
             ! will catch it.
          END SELECT
-         IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
       END IF
 
       ! DEFAULT
