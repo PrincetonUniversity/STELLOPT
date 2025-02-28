@@ -569,25 +569,34 @@ class PLOT3D():
 		# Add actor to the scene
 		self.renderer.AddActor(actor)
 
-	def colorbar(self,show=True,title=""):
+	def colorbar(self,show=True,title="",whitetext=False):
 		"""Add a colorbar to a render
 
-		This routine adds a colorbar to the render.
+		This routine adds a colorbar to the render. Text in black,
+		set whitetext=True to print in white.
 
 		Parameters
 		----------
 		show : logical (optional)
 			Show the colorbar (default: True)
-		title : string
-			Colorbar title
+		title : string (optional)
+			Colorbar title (default: "")
+		whitetext : logical (optional)
+			Text in white (default: False)
 		"""
 		if show:
 			# Set Label Text
-			self.scalar_bar.GetLabelTextProperty().SetColor(0,0,0)
+			if whitetext:
+				self.scalar_bar.GetLabelTextProperty().SetColor(1,1,1)
+			else:
+				self.scalar_bar.GetLabelTextProperty().SetColor(0,0,0)
 			self.scalar_bar.GetLabelTextProperty().ShadowOff()
 			self.scalar_bar.GetLabelTextProperty().SetFontSize(self.fontsize)
 			# Set Titel Text
-			self.scalar_bar.GetTitleTextProperty().SetColor(0,0,0)
+			if whitetext:
+				self.scalar_bar.GetTitleTextProperty().SetColor(1,1,1)
+			else:
+				self.scalar_bar.GetTitleTextProperty().SetColor(0,0,0)
 			self.scalar_bar.GetTitleTextProperty().ShadowOff()
 			self.scalar_bar.GetTitleTextProperty().SetFontSize(self.fontsize)
 			self.scalar_bar.UnconstrainedFontSizeOn()
