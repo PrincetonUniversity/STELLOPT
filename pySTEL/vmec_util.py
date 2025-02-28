@@ -134,6 +134,50 @@ if __name__=="__main__":
 				verticalalignment='center', transform=ax.transAxes)
 			ax.text(0.02,0.05,rf'NCURR: {vmec_input.ncurr}', horizontalalignment='left',\
 				verticalalignment='center', transform=ax.transAxes)
+			# Make an LPK plot
+			ax=fig.add_subplot(223)
+			msize = vmec_input.rbc.shape[0]
+			nsize = vmec_input.rbc.shape[1]
+			nmax  = (nsize-1)/2
+			xm=[]; xn=[]; rmnc=[]; zmns = []
+			for n1 in range(nsize):
+				for m1 in range(msize):
+					n = n1 - nmax
+					if (vmec_input.rbc[m1,n1]==0) and (vmec_input.zbs[m1,n1]==0): continue
+					xm.extend([m1])
+					xn.extend([-n])
+					rmnc.extend([vmec_input.rbc[m1,n1]])
+					zmns.extend([vmec_input.zbs[m1,n1]])
+			xm = np.array([xm]).T
+			xn = np.array([xn]).T
+			rmnc = np.array([rmnc])
+			zmns = np.array([zmns])
+			if vmec_input.lasym:
+				rmns = []; zmnc = []
+				for n1 in range(nsize):
+					for m1 in range(msize):
+						n = n1 - nmax
+						if (vmec_input.rbs[m1,n1]==0) and (vmec_input.zbc[m1,n1]==0): continue
+						rmns.extend([vmec_input.rbs[m1,n1]])
+						zmnc.extend([vmec_input.zbc[m1,n1]])
+				rmns = np.array([rmns])
+				zmnc = np.array([zmnc])
+			theta = np.linspace([0],[2*np.pi],360)
+			zeta  = np.linspace([0],[2*np.pi],5)
+			zeta  = zeta[0:3]
+			r     = vmec_wout.cfunct(theta,zeta,rmnc,xm,xn)
+			z     = vmec_wout.sfunct(theta,zeta,zmns,xm,xn)
+			if vmec_input.lasym:
+				r = r + vmec_wout.sfunct(theta,zeta,rmns,xm,xn)
+				z = z + vmec_wout.cfunct(theta,zeta,zmnc,xm,xn)
+			ax.plot(r[0,:,0],z[0,:,0],'r')
+			ax.plot(r[0,:,1],z[0,:,1],'g')
+			ax.plot(r[0,:,2],z[0,:,2],'b')
+			ax.set_aspect('equal', adjustable='box')
+			ax.text(0.02,0.05,rf'NFP: {vmec_input.nfp}', horizontalalignment='left',\
+				verticalalignment='center', transform=ax.transAxes)
+			ax.text(0.02,0.12,rf'VOLUME: {vmec_input.calcVolume():.2f} m^3', horizontalalignment='left',\
+				verticalalignment='center', transform=ax.transAxes)
 			pyplot.show()
 		# Do wout file plot
 		if (args.lplot and loutput):
@@ -142,7 +186,7 @@ if __name__=="__main__":
 			ax=fig.add_subplot(221)
 			pyplot.subplots_adjust(hspace=0.4,wspace=0.3)
 			ax.plot(np.linspace(0.0,1.0,vmec_wout.ns),vmec_wout.presf/1E3,'k')
-			ax.text(0.02,0.47,rf'$B_0$={vmec_wout.b0:4.3f} [T]', horizontalalignment='left',\
+			ax.text(0.02,0.47,rf'$<B_0>$={vmec_wout.b0:4.3f} [T]', horizontalalignment='left',\
 				verticalalignment='center', transform=ax.transAxes)
 			ax.text(0.02,0.40,rf'$R/a$={vmec_wout.aspect:4.3f}', horizontalalignment='left',\
 				verticalalignment='center', transform=ax.transAxes)
