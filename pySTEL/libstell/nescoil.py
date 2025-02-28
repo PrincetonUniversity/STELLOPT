@@ -321,7 +321,7 @@ class NESCOIL(FourierRep):
 		pot = self.generateTotalPotential(theta,zeta)
 		cont_vals = np.zeros((ncoils_per_halfperiod))
 		for k in range(ncoils_per_halfperiod):
-			u = round(0.5*self.nu)
+			u = round(0.0*self.nu)
 			v = round((k+0.5)*self.nv/(ncoils_per_halfperiod))
 			cont_vals[k] = pot[0,u,v]
 		# Now calculate a larger potential map so coils can span periods
@@ -357,15 +357,17 @@ class NESCOIL(FourierRep):
 			# Wrap the coil so that poitive current is positive field (counterclockwise from top)
 			if (th[1]-th[0] > 0):
 				th = th[::-1]
-				ph = ph[::-1]
+				ze = ze[::-1]
 			# Now we need to interpolate the coil onto the interval [0,2*pi] in theta.
-			th_out = np.linspace(0,2.0*np.pi,npts)
-			ph_out = np.interp(th_out,th,ph,period=np.pi*2.0)
+			l_in   = np.linspace(0.0,1.0,len(th))
+			l_out  = np.linspace(0.0,1.0,npts)
+			th_out = np.interp(l_out,l_in,th)
+			ph_out = np.interp(l_out,l_in,ze)/self.np
 			# Fourier transform the coil
 			r = np.zeros((npts)); z = np.zeros((npts))
 			for mn in range(self.mnmax_surface):
 				mtheta = th_out*self.xm_surface[mn]
-				nzeta  = ph_out*self.xn_surface[mn]
+				nzeta  = ph_out*self.xn_surface[mn]*self.np
 				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
 				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
 			# Convert to XYZ and make current/group
@@ -375,7 +377,7 @@ class NESCOIL(FourierRep):
 			g = np.ones((npts))*(k+1)
 			c[-1] = 0.0
 			# Create stellarator symmetric coil
-			phn = (2.0*np.pi - ph_out)/self.np
+			phn = (2.0*np.pi/self.np - ph_out)
 			xo = np.append(x,r[::-1]*np.cos(phn[::-1]))
 			yo = np.append(y,r[::-1]*np.sin(phn[::-1]))
 			zo = np.append(z,-z[::-1])
