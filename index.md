@@ -60,6 +60,8 @@ and provide content through the discussions on each page.
 
 [SFINCS](SFINCS)
 
+[STELLGAP](STELLGAP)
+
 [STELLOPT](STELLOPT)
 
 [TERPSICHORE](TERPSICHORE)
