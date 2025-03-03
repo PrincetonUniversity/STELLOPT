@@ -11,7 +11,9 @@ These codes are used to calculate shear Alfven continua for 3D configurations, b
 
 The Alfvén continuum equation for 3D stellarator equilibira in low
 plasma beta, incompressible limite is written:
+
 $$\mu_0\rho\omega^2\frac{|\nabla\psi|^2}{B^2}E_\psi+\vec{B}\cdot\nabla\left[\frac{|\nabla\psi|^2}{B^2}\left(\vec{B}\cdot\nabla\right)E_\psi\right]=0$$
+
 The STELLGAP code reformulates this equation in terms of a eigenvalue
 equation which is sovled using the Lapack routine [DGGEV](https://netlib.org/lapack/explore-html-3.6.1/d9/d8e/group__double_g_eeigen_gab3b93851a33e592f5705fdcbc876c186.html) routine.
 
@@ -203,4 +205,5 @@ TBD
 
 ### References
 
--   [D. A. Spong, R. Sanchez, A. Weller, "Shear Alfvén continua in stellarators," Phys. Plasmas 10 (2003) 3217–3224.](https://doi.org/10.1063/1.1590316)
+ - [D. A. Spong, R. Sanchez, A. Weller, "Shear Alfvén continua in stellarators," Phys. Plasmas 10 (2003) 3217–3224.](https://doi.org/10.1063/1.1590316)
+ - [A.G. Ghiozzi et al., "Modeling of frequency-sweeping Alfvén modes in the TJ-II stellarator," Nucl. Fusion 64 036005 (2004)](https://doi.org/10.1088/1741-4326/ad1c93)
