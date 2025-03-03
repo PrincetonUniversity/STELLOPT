@@ -1,8 +1,6 @@
 STELLGAP
 ======
 
-\<\<toc\>\>
-
 Stellgap calculates the shear Alfvén gap structure for 3D configurations (stellarators, RFPs, 3D tokamaks)
 
 These codes are used to calculate shear Alfven continua for 3D configurations, both with and without sound wave coupling effects. The associated paper is D. A. Spong, R. Sanchez, A. Weller, "Shear Alfvén continua in stellarators," Phys. Plasmas 10 (2003) 3217–3224.
@@ -11,7 +9,24 @@ These codes are used to calculate shear Alfven continua for 3D configurations, b
 
 ### Theory
 
-Theory of the STELLGAP code.
+The Alfvén continuum equation for 3D stellarator equilibira in low
+plasma beta, incompressible limite is written:
+$$\mu_0\rho\omega^2\frac{|\nabla\Psi|^2}{B^2}E_\Psi+\vec{B}\cdot\nabla\left{\frac{|\nabla\Psi|^2}{B^2}\left(\vec{B}\cdot\nabla\right)E_\Psi\right}$$
+The STELLGAP code reformulates this equation in terms of a eigenvalue
+equation which is sovled using the Lapack routine [DGGEV](https://netlib.org/lapack/explore-html-3.6.1/d9/d8e/group__double_g_eeigen_gab3b93851a33e592f5705fdcbc876c186.html) routine.
+
+The following table provides a list of Alfvén couplings which are of
+interest to 3D equilibria.
+
+| Abbreviation | Name | $\delta_m$ | $\delta_n$ |
+| :---: | :---: | :---: | :---: |
+| GAE | Global Alfvén eigenmode | 0 | 0 |
+| TAE | Toroidal Alfvén eigenmode | ±1 | 0 |
+| EAE | Elliptical Alfvén eigenmode | ±2 | 0 |
+| NAE | Noncircular Alfvén eigenmode | >2 | 0 |
+| MAE | Mirror Alfvén eigenmode | 0 | ±1, ±2, ... |
+| HAE | Helical Alfvén eigenmode | >0 | ±1, ±2, ... | 
+
 
 ------------------------------------------------------------------------
 
@@ -117,13 +132,16 @@ N ML MU
  * `NFP`: number of field periods
  * `NTHETA`: Number of poloidal grid points (see surface_area_elements)
  * `NZETA`: Number of toroidal grid points (see surface_area_elements)
- * `MODE_FAMILY`: Toroidal mode number about which the eigenfunctions are built.
+ * `MODE_FAMILY`: Toroidal mode number about which the eigenfunctions are built (not utilized by code)
  * `NMODES`: Number of toroidal modes used (should be multiple of NFP)
  * `N`: Toroidal mode number
  * `ML`: Starting Poloidal mode number
  * `MU`: Ending Poloidal mode number
 
-The `MODE_FAMILY` works as a positive offset for the toroidal modes.
+The choice of toroidal mode numbers to investigate should follow the
+mode coupleing paradigm. Specically `N=n0+NFP*k` and `N=n0-NPF*k`. For
+example, and `n0=1` modes for an NFP=5 device would be -11,-9,-6,-4,4,6,9,11 
+where both postive and negative `n0` are accounted for.
 
 ------------------------------------------------------------------------
 
