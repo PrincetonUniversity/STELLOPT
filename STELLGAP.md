@@ -3,7 +3,7 @@ STELLGAP
 
 Stellgap calculates the shear Alfvén gap structure for 3D configurations (stellarators, RFPs, 3D tokamaks)
 
-These codes are used to calculate shear Alfven continua for 3D configurations, both with and without sound wave coupling effects. The associated paper is D. A. Spong, R. Sanchez, A. Weller, "Shear Alfvén continua in stellarators," Phys. Plasmas 10 (2003) 3217–3224.
+These codes are used to calculate shear Alfven continua for 3D configurations, both with and without sound wave coupling effects. The associated paper is [D. A. Spong, R. Sanchez, A. Weller, "Shear Alfvén continua in stellarators," Phys. Plasmas 10 (2003) 3217–3224.](https://doi.org/10.1063/1.1590316)
 
 ------------------------------------------------------------------------
 
@@ -198,3 +198,9 @@ is computed as the real part of the square root of omega2.
 ### Tutorials
 
 TBD
+
+------------------------------------------------------------------------
+
+### References
+
+-   [D. A. Spong, R. Sanchez, A. Weller, "Shear Alfvén continua in stellarators," Phys. Plasmas 10 (2003) 3217–3224.](https://doi.org/10.1063/1.1590316)
