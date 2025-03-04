@@ -480,7 +480,59 @@ class PLASMA:
         
         # print(f'betatot={betatot*100:.2f}%')
         
-        return betatot    
+        return betatot 
+    
+    def get_plasma_beta_averaged(self,VMEC_class):
+        
+        Bsq = VMEC_class.bdotb.flatten()
+        vp = VMEC_class.vp[:].flatten()
+        roa = np.sqrt(VMEC_class.phi / VMEC_class.phi[-1])
+        roa = roa.flatten()
+        
+        dVdrho = (2*np.pi)**2 * vp * 2.*roa
+        
+        total_press = 0.0
+        for species in self.list_of_species:
+            total_press += self.get_density(species,roa)*self.get_temperature(species,roa)*EC   #Pascal (SI) units
+        
+        volume = np.trapz(dVdrho,roa)
+        beta_avg = np.trapz(total_press/Bsq * dVdrho,roa) / volume
+        
+        beta_averaged = 2*MU0 * beta_avg
+        
+        return beta_averaged  
+    
+    def get_Spitzer_resistivity(self,rho=None,make_plot=False):
+        
+        import matplotlib.pyplot as plt
+        
+        if(rho is None):
+            rho = np.linspace(0,1,100)
+        
+        Te = self.get_temperature('electrons',rho)
+        ne = self.get_density('electrons',rho)
+        
+        log_lambda_e = 31.3 - np.log(np.sqrt(ne)/Te)
+        
+        Z = np.max([self.Zcharge[species] for species in self.list_of_species])
+        
+        N_Z = 0.58 + 0.74/(0.76+Z)
+        
+        # from Sauter PoP 6 (1999)
+        sigma_Spitzer = 1.9012E4 * Te**1.5 / (Z*N_Z*log_lambda_e)
+        eta_Spitzer = 1 / sigma_Spitzer
+        
+        if make_plot:
+            plt.rc('font', size=18)
+            _, ax = plt.subplots(figsize=(11,8))
+            ax.plot(rho,eta_Spitzer)
+            ax.set_xlabel('r/a')
+            ax.set_ylabel(r'$\eta_{\parallel}~[\Omega\,$m]')
+            ax.set_title('Spitzer Resistivity')
+            ax.grid()
+            plt.show()
+        
+        return eta_Spitzer      
     
     def write_plasma_profiles_to_PENTA1(self,rho,filename=None):
         # first line: number of rhos
@@ -728,31 +780,34 @@ class PLASMA:
         plt.legend()
         plt.show()
         
-    def plot_gyroBohm_diffusivity(self,B,aminor):
+    def get_gyroBohm_diffusivity(self,species,B,aminor,rho=None,make_plot=False):
         # plots gyro-Bohm diffusivity = ... for all ions in the plasma
         
         import matplotlib.pyplot as plt
         
-        rho = np.linspace(0,1,100)
+        if(rho is None):
+            rho = np.linspace(0,1,100)
+            
+        mi = self.mass[species]
+        qi = self.charge[species]
         
-        _, ax = plt.subplots(figsize=(11,8))
-        for species in self.ion_species:
-            
-            mi = self.mass[species]
-            qi = self.charge[species]
-            
-            Te = self.get_temperature('electrons',rho)
-            
-            chi_gB = (EC*Te/mi)**1.5 * mi*mi / (qi**2 * B**2) / aminor
-            
+        # Te = self.get_temperature('electrons',rho)
+        Ti = self.get_temperature(species,rho)
+        
+        # chi_gB = (EC*Te/mi)**1.5 * mi*mi / (qi**2 * B**2) / aminor
+        chi_gB = (EC*Ti/mi)**1.5 * mi*mi / (qi**2 * B**2) / aminor
+        
+        if(make_plot):
+            _, ax = plt.subplots(figsize=(11,8))
             ax.plot(rho,chi_gB,label=species,linewidth=4)
+            ax.set_xlabel('r/a')
+            ax.set_ylabel(r'$\chi_{\mathrm{gB}}$ [m$^2/$s]')
+            ax.set_title(f'{species} gyro-Bohm diffusivity  |  B={B}T, a={aminor}m')
+            ax.grid()
+            plt.legend()
+            plt.show()
         
-        ax.set_xlabel('r/a')
-        ax.set_ylabel(r'$\chi_{\mathrm{gB}}$ [m$^2/$s]')
-        ax.set_title(f'gyro-Bohm diffusivity  |  B={B}T, a={aminor}m')
-        ax.grid()
-        plt.legend()
-        plt.show()
+        return chi_gB
                         
         
     def get_pressure_polynomial_coefficients(self,deg_fit=10):
