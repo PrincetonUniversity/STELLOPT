@@ -1,4 +1,5 @@
 ObjectFiles = \
+chisq_totalbootstrap.o \
 chisq_b10b11.o \
 chisq_rosenbrock2d.o \
 chisq_quasiiso.o \

@@ -427,7 +427,7 @@
             iflag = ier_paraexe
          END IF
          ctemp_str = 'bootsj'
-         IF (ANY(sigma_bootstrap < bigno) .and. (iflag>=0)) THEN
+         IF ((ANY(sigma_bootstrap < bigno) .or. (sigma_totalbootstrap < bigno)) .and. (iflag>=0)) THEN
             CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
             iflag = ier_paraexe
          END IF
