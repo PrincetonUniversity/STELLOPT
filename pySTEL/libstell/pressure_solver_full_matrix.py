@@ -89,7 +89,9 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                     #dVdr analytic = dVds * 2\rho / a
                     dVdr_analytic = (2*np.pi)**2 * vp * 2.*roa / self.aminor
                     
-                    self.dVdr = CubicSpline(roa,dVdr_analytic)   
+                    self.dVdr = CubicSpline(roa,dVdr_analytic)
+                    
+                    self.B = np.sqrt(np.squeeze(vmec_out.bdotb)[0])   
             case 'cylindrical':
                 if(aminor is None or Rmajor is None):
                     print('ERROR: For a cylindrical equilibrium, Rmajor and aminor must be given')
@@ -180,7 +182,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 print(f'ERROR: Source type {source_type} is NOT possible')
                 exit(0)
                 
-    def set_fluxes(self, type: str,dkes_folder=None,surfaces=None,chi=None,chi_base=None,aLT_critical=None,alpha=None):
+    def set_fluxes(self, type: str,dkes_folder=None,surfaces=None,chi=None,chi_base=None,aLT_critical=None,alpha=None,stiffness=None,chi_electrons=None):
         # sets type of fluxes
         # OPTION1: type='dkespenta'; dkes_folder and surfaces(list of integers) must be provided
         # OPTION2: type='diffusive'; Dn and chi must be provided (partical and heat collisional diffusion coefficients)
@@ -205,13 +207,15 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 self.fluxes_info[type]['chi'] = chi
                 
             case 'beurskens':
-                if( (chi_base is None) or (aLT_critical is None) or (alpha is None) ):
-                    print('ERROR: chi_base, aLT_critical and alpha must be given!')
+                if( (chi_base is None) or (aLT_critical is None) or (alpha is None) or (stiffness is None) or (chi_electrons is None) ):
+                    print('ERROR: chi_base, aLT_critical, alpha, stiffness and chi_electrons must be given!')
                     exit(0)
                 self.fluxes_info['type'] = type
                 self.fluxes_info[type]['chi_base'] = chi_base
                 self.fluxes_info[type]['aLT_critical'] = aLT_critical
                 self.fluxes_info[type]['alpha'] = alpha
+                self.fluxes_info[type]['stiffness'] = stiffness
+                self.fluxes_info[type]['chi_electrons'] = chi_electrons
                 
             case 'aLT':
                 if(chi_base is None):
@@ -848,7 +852,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             # this is for bookeeping
             self.Q_interp[species][it] = CubicSpline(self.rho_grid,Q)
             
-    def compute_beurskens_flux(self,it):
+    def compute_beurskens_flux_OLD(self,it):
         # uses model in [ref...]
         from scipy.interpolate import CubicSpline
         import matplotlib.pyplot as plt
@@ -857,6 +861,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         chi_base = self.fluxes_info['beurskens']['chi_base']
         aLT_critical = self.fluxes_info['beurskens']['aLT_critical']
         alpha = self.fluxes_info['beurskens']['alpha']
+        stiffness = self.fluxes_info['beurskens']['stiffness']
         
         chi = {}
         
@@ -872,16 +877,16 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             T_r = CubicSpline(r_grid,T_ion)
             dTdr = T_r.derivative()
             
-            # a_LT = self.aminor * np.abs( dTdr(self.r_grid) / T_r(self.r_grid) )
+            a_LT = self.aminor * dTdr(self.r_grid) / T_r(self.r_grid)
+            a_LT_filtered = savgol_filter(a_LT,51,3)
             
-            a_LT_temp = self.aminor * dTdr(self.r_grid) / T_r(self.r_grid)
+            a_LT_filtered = np.where(a_LT_filtered > 0, 0, -a_LT_filtered)
+            # a_LT_non_filtered = np.where(a_LT > 0, 0, -a_LT)
             
-            a_LT_temp = np.where(a_LT_temp > 0, 0, -a_LT_temp)
-            a_LT_temp_filtered = savgol_filter(a_LT_temp,51,3)
             
-            X = a_LT_temp_filtered - aLT_critical
+            X = a_LT_filtered - aLT_critical
             
-            chi_turb = X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
+            chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
             
             B = 5 # T
             
@@ -932,6 +937,117 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             # this is for bookeeping
             self.Q_interp[species][it] = CubicSpline(self.rho_grid,Q)
             
+    def compute_beurskens_flux(self,it):
+        # uses model in [ref...]
+        from scipy.interpolate import CubicSpline, UnivariateSpline, PchipInterpolator
+        import matplotlib.pyplot as plt
+        from scipy.signal import savgol_filter
+        
+        chi_base = self.fluxes_info['beurskens']['chi_base']
+        chi_electrons = self.fluxes_info['beurskens']['chi_electrons']
+        aLT_critical = self.fluxes_info['beurskens']['aLT_critical']
+        alpha = self.fluxes_info['beurskens']['alpha']
+        stiffness = self.fluxes_info['beurskens']['stiffness']
+        
+        chi = {}
+        
+        ## electrons
+        chi['electrons'] = chi_electrons
+        
+        r_grid = self.r_grid
+        
+        # jump_func = lambda alpha,x: 0.5*(np.tanh(alpha*x)+1)
+        
+        ## IONS
+        for ion in self.plasma.ion_species:
+            T_ion = self.T[ion][it,:]
+            T_electrons = self.T['electrons'][it,:]
+            
+            T_r = CubicSpline(r_grid,T_ion)
+            # dTdr_non_filtered = T_r.derivative()
+            
+            # dTdr = savgol_filter(T_ion,10,2,deriv=1,delta=self.dr)
+            
+            # dTdr_finite_diffs = self.get_my_derivative(self.r_grid,T_ion)
+            # dTdr_finite_diffs[0] = 0.0
+            
+            T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
+            dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
+            dTdr_polyfit = dTdr_polyfit(r_grid)
+            
+            dTdr = dTdr_polyfit  #dTdr_non_filtered(r_grid)
+            
+            # a_LT = self.aminor * dTdr(self.r_grid) / T_r(self.r_grid)
+            a_LT = self.aminor * dTdr / T_ion
+            
+            a_LT_filtered = -a_LT #savgol_filter(a_LT,50,2)
+            # a_LT_filtered = np.where(a_LT_filtered > 0, 0, -a_LT_filtered)
+            
+            
+            X = a_LT_filtered - aLT_critical
+            
+            chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
+            
+            B = self.B ## currently, this is only defined when using a VMEC equilibrium
+            
+            chi_gB = self.plasma.get_gyroBohm_diffusivity(ion,B,self.aminor,self.rho_grid)
+            
+            chi_turb = chi_gB * chi_turb
+            
+            chi[ion] = chi_base + chi_turb
+        # plt.plot(self.rho_grid,a_LT,label=f'{ion}')
+        # plt.plot(self.rho_grid,dTdr(self.r_grid),'--')
+        # plt.plot(self.rho_grid,-a_LT,'-')
+        # plt.plot(self.rho_grid,a_LT_filtered,'--')
+        
+
+        for species in self.list_of_species:   
+            p_r = CubicSpline(r_grid,self.P[species][it,:])
+            dpdr = p_r.derivative()
+            
+            Q = -chi[species] * dpdr(r_grid)
+            
+            D = np.zeros(self.Nr)
+            
+            D[1:] = np.where(dpdr(r_grid[1:])!=0, 
+                            -self.theta * Q[1:] / dpdr(r_grid[1:]),
+                            0.0)
+            
+            
+            # if(np.abs(self.P[species][it,1]-self.P[species][it,0]) > 1E-14):
+            #     D[0] = -self.theta*0.5*Q[0]*self.dr / (self.P[species][it,1]-self.P[species][it,0])
+            # else:
+            #     # linear interpolation
+            #     print('linear interpolation!')
+            D[0] = 2*D[1] - D[2]
+            if D[0]<0:
+                D[0] = 0.0
+                
+            ## filter and clamp D
+            # D_filtered = savgol_filter(D,10,1)
+            # D_filtered_and_clamped = np.where(D_filtered<0.03,0.03,D_filtered)
+            
+            self.D_interp[species][it] = CubicSpline(self.rho_grid,D,bc_type='natural',extrapolate=True)
+            # self.D_interp[species][it] = CubicSpline(self.rho_grid,D_filtered_and_clamped,bc_type='natural',extrapolate=True)
+            
+            c = np.zeros(self.Nr)
+            c[0] = 0
+            c[1:] = (1-self.theta) * Q[1:] / p_r(r_grid[1:])
+            
+            self.c_interp[species][it] = CubicSpline(self.rho_grid,c,bc_type='natural',extrapolate=True)
+            
+            # this is for bookeeping
+            self.Q_interp[species][it] = CubicSpline(self.rho_grid,Q)
+            
+    def get_my_derivative(self,x,y):
+        
+        dydx = np.zeros_like(y)
+        
+        dydx[0] = (y[1]-y[0]) / (x[1]-x[0])
+        dydx[1:-1] = (y[2:]-y[0:-2]) / (x[2:]-x[0:-2])
+        dydx[-1] = (y[-1]-y[-2]) / (x[-1]-x[-2])
+        
+        return dydx
         
     def compute_aLT_flux(self,it):
         # uses model in [ref...]
@@ -954,13 +1070,13 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             T_r = CubicSpline(r_grid,T_ion)
             dTdr = T_r.derivative()
 
-            a_LT_temp = self.aminor * dTdr(self.r_grid) / T_r(self.r_grid)
+            a_LT = self.aminor * dTdr(self.r_grid) / T_r(self.r_grid)
+            a_LT_filtered = savgol_filter(a_LT,50,3)
             
-            a_LT_temp_filtered = savgol_filter(a_LT_temp,51,3)
-            
-            a_LT_temp_filtered = np.where(a_LT_temp_filtered > 0, 0, -a_LT_temp)
+            a_LT_filtered = np.where(a_LT_filtered > 0, 0, -a_LT_filtered)
+            a_LT_non_filtered = np.where(a_LT > 0, 0, -a_LT)
 
-            chi_turb = 0.2*a_LT_temp_filtered
+            chi_turb = 0.2*a_LT_filtered
             
             ### new ###
             # neg_indices = np.where(chi_turb < 0)[0]
@@ -977,8 +1093,8 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             chi[ion] = chi_base + chi_turb
         # plt.plot(self.rho_grid,a_LT,label=f'{ion}')
         # plt.plot(self.rho_grid,dTdr(self.r_grid),'--')
-        plt.plot(self.rho_grid,-a_LT_temp,'-')
-        plt.plot(self.rho_grid,a_LT_temp_filtered,'--')
+        # plt.plot(self.rho_grid,-a_LT_temp,'-')
+        # plt.plot(self.rho_grid,a_LT_temp_filtered,'--')
             
         for species in self.list_of_species:   
             p_r = CubicSpline(r_grid,self.P[species][it,:])
