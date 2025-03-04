@@ -210,9 +210,23 @@ chisq_curvature.o : \
 chisq_bootstrap.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       equil_utils.o \
-      $(BOOTSJ_DIR)/$(LOCTYPE)/parambs.o \
-      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
+      equil_vals.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/bootsj_input.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(BOOTSJ_DIR)/$(LOCTYPE)/parambs.o 
+      
+
+chisq_totalbootstrap.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/bootsj_input.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
+      $(BOOTSJ_DIR)/$(LOCTYPE)/parambs.o
       
 
 chisq_txport.o : \
