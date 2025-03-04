@@ -14,17 +14,36 @@ EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 # PENTA Class
 class PRESSURE_SOLVER_FULL_MATRIX:
     
-    def __init__(self, plasma_class):
+    def __init__(self, plasma_class, density_functions_dict=None):
+        # density_function must be as a function of (t,rho)
+        # if density_functions_dict is given, it means n is not fixed in time
+        # density_functions_dict is a dictionary of n(t,rho) functions for each
         
         from collections import defaultdict
         
         self.list_of_species = plasma_class.list_of_species
         
-        # Check density profiles exist for all species
-        for species in self.list_of_species:
-            if(species not in plasma_class.density):
-                print('ERROR" density of {species} has not been set yet')
-                exit(0)
+        if(density_functions_dict is not None):
+            # make check on the dictionary
+            self.check_density_function(density_functions_dict)
+            
+            # if density_function is given, density should not be set in plasma class
+            for species in self.list_of_species:
+                if(species in plasma_class.density):
+                    print(f'ERROR" density of {species} SHOULD NOT BE SET! OTHERWISE, DO NOT GIVE density_function')
+                    exit(0)
+            
+            self.external_density_given = True
+            self.density_funcs = density_functions_dict
+            
+        else:
+            # Check density profiles exist for all species
+            for species in self.list_of_species:
+                if(species not in plasma_class.density):
+                    print(f'ERROR: density of {species} has not been set yet')
+                    exit(0)
+            
+            self.external_density_given = False
                 
         self.plasma = plasma_class
                 
@@ -35,6 +54,32 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         self.fluxes_info = defaultdict(lambda: defaultdict(dict))
                 
         print(f'Solvers for pressure of {self.list_of_species} INITIALIZED!')
+        
+    def check_density_function(self,density_functions_dict):
+        from inspect import signature
+        
+        # Check if it's a dictionary
+        if not isinstance(density_functions_dict, dict):
+            raise TypeError("density_functions_dict must be a dictionary")
+    
+        # Check that all keys are in species_list
+        invalid_keys = set(density_functions_dict.keys()) - set(self.list_of_species)
+        if invalid_keys:
+            raise ValueError(f"Invalid species in dictionary: {invalid_keys}")
+        
+        # Check that all species are present in the dictionary
+        missing_keys = set(self.list_of_species) - set(density_functions_dict.keys())
+        if missing_keys:
+            raise ValueError(f"Missing species in dictionary: {missing_keys}")
+
+        # Check that all values are functions that accept exactly 2 arguments
+        for species, func in density_functions_dict.items():
+            if not callable(func):
+                raise TypeError(f"density_functions_dict[{species}] is not a function")
+
+        # sig = signature(func)
+        # if len(sig.parameters) != 2:
+        #     raise TypeError(f"density_functions_dict[{species}] must accept exactly 2 arguments")
                 
     def set_edge_boundary_condition(self,species: str,val: float):
         
@@ -225,9 +270,20 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 self.fluxes_info[type]['chi_base'] = chi_base
                 
                 
-    def set_temperature(self,species,rho,density,pressure):
-        # from density (m^-3) and pressure (Pa), sets temperature (eV) in plasma class
+    def set_density_and_temperature(self,species,pressure,it):
+        # from pressure (Pa), sets temperature (eV) in plasma class
+        # sets density (m^-3) in plasma class as well
         
+        rho = self.rho_grid
+        
+        if(self.external_density_given):
+            dens_func = self.density_funcs[species]
+            density = dens_func(t=self.time[it],rho=rho)
+            # print(density)
+            self.plasma.set_density(species,'interp',rho_vals=rho,n_vals=density)    
+        else:
+            density = self.plasma.get_density(species,rho)
+            
         temperature =  pressure / (EC*density) # eV
         
         self.plasma.set_temperature(species,'interp',rho_vals=rho,T_vals=temperature) 
@@ -274,7 +330,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             
         ################## INITIALIZE VARIABLES ########################################
         press = []
-        self.dens = {}
+        self.N = {}
         self.P = {}
         self.T = {}
         self.Q_interp = {}
@@ -285,8 +341,8 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         self.ECRH_off = False
         for species in self.list_of_species:
             p_init = self.initial_profile[species](rho)
-            self.dens[species] = self.plasma.get_density(species,rho)
-            self.set_temperature(species,rho,self.dens[species],p_init)
+            
+            self.set_density_and_temperature(species,p_init,it=0)
             
             self.P[species] = np.zeros((Nt,Nr))
             self.P[species][0,:] = p_init
@@ -295,6 +351,9 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             
             self.T[species] = np.zeros((Nt,Nr))
             self.T[species][0,:] = self.plasma.get_temperature(species,rho)
+            
+            self.N[species] = np.zeros((Nt,Nr))
+            self.N[species][0,:] = self.plasma.get_density(species,rho)
             
             self.D_interp[species] = [None]*Nt
             self.c_interp[species] = [None]*Nt
@@ -380,8 +439,10 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             
             self.P[species][it,:] = press[k:(k+Nr)]
             
-            self.set_temperature(species,self.rho_grid,self.dens[species],self.P[species][it,:])
+            self.set_density_and_temperature(species,self.P[species][it,:],it)
             self.T[species][it,:] = self.plasma.get_temperature(species,self.rho_grid)
+            self.N[species][it,:] = self.plasma.get_density(species,self.rho_grid)
+            
             k = k+Nr     
                         
     def get_sources_explicit(self,species: str,rho_grid, it):
