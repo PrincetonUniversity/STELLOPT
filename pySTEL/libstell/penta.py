@@ -61,6 +61,9 @@ class PENTA:
         #sets the arrays self.roa_unique and self.Er_search
         self.set_independent_variables()
         
+        # set the type of rooa for almbipolar roots in the output files
+        self.set_root_type()
+        
         # sets the dictionaries self.##[root], self.##[root]], self.##[root]],
         # with ## being: roa, Er, Jprl_total, J_BS
         self.set_variables_by_root()
@@ -112,6 +115,64 @@ class PENTA:
         
         self.Smax = int(number_flows_per_species - 1)
         
+    def set_root_type(self):
+        # at each roa, for each ambipolar solution sets the type of root: 
+        # if 1 root:  'ion_root'
+        # if 3 roots: 'ion_root', 'electron_root', 'unstable_root'
+        # if 5 roots: 'ion_root', 'electron_root', 'unstable_root', 'unstable_root2', 'extra_stable_root'
+        # else: gives error (probably gonna need to generalize for 7 roots since sometimes this also appears...
+        # even root: gives error
+        
+        from itertools import groupby
+        from collections import defaultdict
+        
+        filename = self.folder_path + '/Jprl_vs_roa' + self.files_suffix
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+              
+        # these are the different options available so far        
+        self.target_keys = ['ion_root', 'electron_root', 'unstable_root', 'extra_stable_root', 'unstable_root2']
+        
+        self.root_type = []
+        self.num_roots = []
+
+        i=0
+        for _, group in groupby(roa):
+            num_roots = len( list(group) )
+            self.num_roots.append(num_roots)
+            
+            if(num_roots == 1):
+                self.root_type.append(['ion_root'])
+            elif(num_roots == 3):
+                self.root_type.append( ['ion_root','unstable_root','electron_root'] )
+            elif(num_roots == 5): # and (num_roots-1)%2==0):
+                # two possibilities:
+                possibility_1 = ['extra_stable_root','unstable_root2','ion_root','unstable_root','electron_root']
+                possibility_2 = ['ion_root','unstable_root','electron_root','unstable_root2','extra_stabe_root']
+                
+                list_Er = Er[i:i+num_roots]
+                idx_closest_to_zero = np.argmin(np.abs(list_Er-0.0))
+                Er_closest_to_zero = list_Er[idx_closest_to_zero]
+                
+                A = Er_closest_to_zero > 0
+                B = idx_closest_to_zero >= 2
+                
+                if( (A and B) or (not A  and B) ):
+                    self.root_type.append(possibility_1)
+                else:
+                    self.root_type.append(possibility_2)
+            else:
+                print(f"How come you have {num_roots} roots ??")
+                exit(0)
+                
+            i += num_roots 
+            
+        # flatten list of lists
+        self.root_type = np.concatenate(self.root_type) #[element for sublist in self.root_type for element in sublist]
+        
     def set_variables_by_root(self):
         # sets the dictionaries self.##[root], self.##[root]], self.##[root]],
         # with ## being: roa, Er, Jprl_total, J_BS
@@ -132,78 +193,85 @@ class PENTA:
         self.Er = defaultdict(list)
         self.Jprl_total = defaultdict(list)
         self.JBS = defaultdict(list)
-        self.num_roots = []
+        
+        target_keys = self.target_keys
+        
+        for target in target_keys:
+            self.roa[target] = roa[self.root_type == target]
+            self.Er[target] = Er[self.root_type == target]
+            self.Jprl_total[target] = Jprl_total[self.root_type == target]
+            self.JBS[target] = JBS[self.root_type == target]
 
-        i=0
-        for _, group in groupby(roa):
-            num_roots = len( list(group) )
-            self.num_roots.append(num_roots)
+        # i=0
+        # for _, group in groupby(roa):
+        #     num_roots = len( list(group) )
+        #     self.num_roots.append(num_roots)
             
-            if(num_roots == 1):
-                self.roa['ion_root'].append(roa[i])
-                self.Er['ion_root'].append(Er[i])
-                self.Jprl_total['ion_root'].append(Jprl_total[i])
-                self.JBS['ion_root'].append(JBS[i])
-            elif(num_roots == 3):
+        #     if(num_roots == 1):
+        #         self.roa['ion_root'].append(roa[i])
+        #         self.Er['ion_root'].append(Er[i])
+        #         self.Jprl_total['ion_root'].append(Jprl_total[i])
+        #         self.JBS['ion_root'].append(JBS[i])
+        #     elif(num_roots == 3):
                 
-                # if(num_roots>3):
-                #     print(f"How come you have {num_roots} roots ??")   
-                #     print('Considering first root --> ion root; second_root --> unstable; 3rd root --> electron_root;discard the others')
-                # ion root
-                self.roa['ion_root'].append(roa[i])
-                self.Er['ion_root'].append(Er[i])
-                self.Jprl_total['ion_root'].append(Jprl_total[i])
-                self.JBS['ion_root'].append(JBS[i])
-                # unstable root
-                self.roa['unstable_root'].append(roa[i+1])
-                self.Er['unstable_root'].append(Er[i+1])
-                self.Jprl_total['unstable_root'].append(Jprl_total[i+1])
-                self.JBS['unstable_root'].append(JBS[i+1])
-                # electron root
-                self.roa['electron_root'].append(roa[i+2])
-                self.Er['electron_root'].append(Er[i+2])
-                self.Jprl_total['electron_root'].append(Jprl_total[i+2])
-                self.JBS['electron_root'].append(JBS[i+2])
-            elif(num_roots == 5):
-                list_Er = Er[i:i+num_roots]
-                # ion root is the one right before Er=0
-                # electrons root is two roots after Er=0
-                # the others we consider UNSTABLE
-                ## TO BED DONE...
+        #         # if(num_roots>3):
+        #         #     print(f"How come you have {num_roots} roots ??")   
+        #         #     print('Considering first root --> ion root; second_root --> unstable; 3rd root --> electron_root;discard the others')
+        #         # ion root
+        #         self.roa['ion_root'].append(roa[i])
+        #         self.Er['ion_root'].append(Er[i])
+        #         self.Jprl_total['ion_root'].append(Jprl_total[i])
+        #         self.JBS['ion_root'].append(JBS[i])
+        #         # unstable root
+        #         self.roa['unstable_root'].append(roa[i+1])
+        #         self.Er['unstable_root'].append(Er[i+1])
+        #         self.Jprl_total['unstable_root'].append(Jprl_total[i+1])
+        #         self.JBS['unstable_root'].append(JBS[i+1])
+        #         # electron root
+        #         self.roa['electron_root'].append(roa[i+2])
+        #         self.Er['electron_root'].append(Er[i+2])
+        #         self.Jprl_total['electron_root'].append(Jprl_total[i+2])
+        #         self.JBS['electron_root'].append(JBS[i+2])
+        #     elif(num_roots == 5):
+        #         list_Er = Er[i:i+num_roots]
+        #         # ion root is the one right before Er=0
+        #         # electrons root is two roots after Er=0
+        #         # the others we consider UNSTABLE
+        #         ## TO BED DONE...
                 
                 
-                self.roa['ion_root'].append(roa[i])
-                self.Er['ion_root'].append(Er[i])
-                self.Jprl_total['ion_root'].append(Jprl_total[i])
-                self.JBS['ion_root'].append(JBS[i])
-                # unstable root
-                self.roa['unstable_root'].append(roa[i+1])
-                self.Er['unstable_root'].append(Er[i+1])
-                self.Jprl_total['unstable_root'].append(Jprl_total[i+1])
-                self.JBS['unstable_root'].append(JBS[i+1])
-                # electron root
-                self.roa['electron_root'].append(roa[i+2])
-                self.Er['electron_root'].append(Er[i+2])
-                self.Jprl_total['electron_root'].append(Jprl_total[i+2])
-                self.JBS['electron_root'].append(JBS[i+2])
-                # unstable root 2
-                self.roa['unstable_root_2'].append(roa[i+3])
-                self.Er['unstable_root_2'].append(Er[i+3])
-                self.Jprl_total['unstable_root_2'].append(Jprl_total[i+3])
-                self.JBS['unstable_root_2'].append(JBS[i+3])
-                # extra root
-                self.roa['extra_stable_root'].append(roa[i+4])
-                self.Er['extra_stable_root'].append(Er[i+4])
-                self.Jprl_total['extra_stable_root'].append(Jprl_total[i+4])
-                self.JBS['extra_stable_root'].append(JBS[i+4])
+        #         self.roa['ion_root'].append(roa[i])
+        #         self.Er['ion_root'].append(Er[i])
+        #         self.Jprl_total['ion_root'].append(Jprl_total[i])
+        #         self.JBS['ion_root'].append(JBS[i])
+        #         # unstable root
+        #         self.roa['unstable_root'].append(roa[i+1])
+        #         self.Er['unstable_root'].append(Er[i+1])
+        #         self.Jprl_total['unstable_root'].append(Jprl_total[i+1])
+        #         self.JBS['unstable_root'].append(JBS[i+1])
+        #         # electron root
+        #         self.roa['electron_root'].append(roa[i+2])
+        #         self.Er['electron_root'].append(Er[i+2])
+        #         self.Jprl_total['electron_root'].append(Jprl_total[i+2])
+        #         self.JBS['electron_root'].append(JBS[i+2])
+        #         # unstable root 2
+        #         self.roa['unstable_root_2'].append(roa[i+3])
+        #         self.Er['unstable_root_2'].append(Er[i+3])
+        #         self.Jprl_total['unstable_root_2'].append(Jprl_total[i+3])
+        #         self.JBS['unstable_root_2'].append(JBS[i+3])
+        #         # extra root
+        #         self.roa['extra_stable_root'].append(roa[i+4])
+        #         self.Er['extra_stable_root'].append(Er[i+4])
+        #         self.Jprl_total['extra_stable_root'].append(Jprl_total[i+4])
+        #         self.JBS['extra_stable_root'].append(JBS[i+4])
                 
-            elif(num_roots == 2):
-                raise ValueError(f"How come you have 2 roots ??") 
-            else:
-                print(f"How come you have {num_roots} roots ??")
-                exit(0)   
+        #     elif(num_roots == 2):
+        #         raise ValueError(f"How come you have 2 roots ??") 
+        #     else:
+        #         print(f"How come you have {num_roots} roots ??")
+        #         exit(0)   
 
-            i += num_roots    
+        #     i += num_roots    
   
     def set_fluxes_flows_by_root(self):
         # sets the dictionaries self.uprl[species,root], self.Jprl[species,root], self.Gamma[species,root] and self.QoT[species,root]
@@ -236,68 +304,74 @@ class PENTA:
         self.QoT = defaultdict(list)
         
         for k,species in enumerate(self.list_of_species):
+            
+            for target in self.target_keys:
+                self.uprl[species,target] = uprl0_penta[self.root_type == target,k]
+                self.Jprl[species,target] = Jprl_penta[self.root_type == target,k]
+                self.Gamma[species,target] = Gamma_penta[self.root_type == target,k]
+                self.QoT[species,target] = QoT_penta[self.root_type == target,k]
         
-            i=0
-            for _, group in groupby(roa):
-                num_roots = len( list(group) )
+            # i=0
+            # for _, group in groupby(roa):
+            #     num_roots = len( list(group) )
                 
-                if(num_roots == 1):
-                    self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
-                    self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
-                    self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
-                    self.QoT[species,'ion_root'].append(QoT_penta[i,k])
-                elif(num_roots ==3):
+            #     if(num_roots == 1):
+            #         self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
+            #         self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
+            #         self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
+            #         self.QoT[species,'ion_root'].append(QoT_penta[i,k])
+            #     elif(num_roots ==3):
                 
-                    # if(num_roots>3):
-                    #     print(f"How come you have {num_roots} roots ??")   
-                    #     print('Considering first root --> ion root; second_root --> unstable; 3rd root --> electron_root;discard the others')
-                    # ion root
-                    self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
-                    self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
-                    self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
-                    self.QoT[species,'ion_root'].append(QoT_penta[i,k])
-                    # unstable root
-                    self.uprl[species,'unstable_root'].append(uprl0_penta[i+1,k])
-                    self.Jprl[species,'unstable_root'].append(Jprl_penta[i+1,k])
-                    self.Gamma[species,'unstable_root'].append(Gamma_penta[i+1,k])
-                    self.QoT[species,'unstable_root'].append(QoT_penta[i+1,k])
-                    # electron root
-                    self.uprl[species,'electron_root'].append(uprl0_penta[i+2,k])
-                    self.Jprl[species,'electron_root'].append(Jprl_penta[i+2,k])
-                    self.Gamma[species,'electron_root'].append(Gamma_penta[i+2,k])
-                    self.QoT[species,'electron_root'].append(QoT_penta[i+2,k])
-                elif(num_roots ==5):
-                    # ion root
-                    self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
-                    self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
-                    self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
-                    self.QoT[species,'ion_root'].append(QoT_penta[i,k])
-                    # unstable root
-                    self.uprl[species,'unstable_root'].append(uprl0_penta[i+1,k])
-                    self.Jprl[species,'unstable_root'].append(Jprl_penta[i+1,k])
-                    self.Gamma[species,'unstable_root'].append(Gamma_penta[i+1,k])
-                    self.QoT[species,'unstable_root'].append(QoT_penta[i+1,k])
-                    # electron root
-                    self.uprl[species,'electron_root'].append(uprl0_penta[i+2,k])
-                    self.Jprl[species,'electron_root'].append(Jprl_penta[i+2,k])
-                    self.Gamma[species,'electron_root'].append(Gamma_penta[i+2,k])
-                    self.QoT[species,'electron_root'].append(QoT_penta[i+2,k])
-                    # unstable root 2
-                    self.uprl[species,'unstable_root_2'].append(uprl0_penta[i+3,k])
-                    self.Jprl[species,'unstable_root_2'].append(Jprl_penta[i+3,k])
-                    self.Gamma[species,'unstable_root_2'].append(Gamma_penta[i+3,k])
-                    self.QoT[species,'unstable_root_2'].append(QoT_penta[i+3,k])
-                    # extra root
-                    self.uprl[species,'extra_stable_root'].append(uprl0_penta[i+4,k])
-                    self.Jprl[species,'extra_stable_root'].append(Jprl_penta[i+4,k])
-                    self.Gamma[species,'extra_stable_root'].append(Gamma_penta[i+4,k])
-                    self.QoT[species,'extra_stable_root'].append(QoT_penta[i+4,k])
-                elif(num_roots ==2):
-                    raise ValueError(f"How come you have 2 roots ??") 
-                else:
-                    print(f"How come you have {num_roots} roots ??")
-                    exit(0)    
-                i += num_roots
+            #         # if(num_roots>3):
+            #         #     print(f"How come you have {num_roots} roots ??")   
+            #         #     print('Considering first root --> ion root; second_root --> unstable; 3rd root --> electron_root;discard the others')
+            #         # ion root
+            #         self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
+            #         self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
+            #         self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
+            #         self.QoT[species,'ion_root'].append(QoT_penta[i,k])
+            #         # unstable root
+            #         self.uprl[species,'unstable_root'].append(uprl0_penta[i+1,k])
+            #         self.Jprl[species,'unstable_root'].append(Jprl_penta[i+1,k])
+            #         self.Gamma[species,'unstable_root'].append(Gamma_penta[i+1,k])
+            #         self.QoT[species,'unstable_root'].append(QoT_penta[i+1,k])
+            #         # electron root
+            #         self.uprl[species,'electron_root'].append(uprl0_penta[i+2,k])
+            #         self.Jprl[species,'electron_root'].append(Jprl_penta[i+2,k])
+            #         self.Gamma[species,'electron_root'].append(Gamma_penta[i+2,k])
+            #         self.QoT[species,'electron_root'].append(QoT_penta[i+2,k])
+            #     elif(num_roots ==5):
+            #         # ion root
+            #         self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
+            #         self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
+            #         self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
+            #         self.QoT[species,'ion_root'].append(QoT_penta[i,k])
+            #         # unstable root
+            #         self.uprl[species,'unstable_root'].append(uprl0_penta[i+1,k])
+            #         self.Jprl[species,'unstable_root'].append(Jprl_penta[i+1,k])
+            #         self.Gamma[species,'unstable_root'].append(Gamma_penta[i+1,k])
+            #         self.QoT[species,'unstable_root'].append(QoT_penta[i+1,k])
+            #         # electron root
+            #         self.uprl[species,'electron_root'].append(uprl0_penta[i+2,k])
+            #         self.Jprl[species,'electron_root'].append(Jprl_penta[i+2,k])
+            #         self.Gamma[species,'electron_root'].append(Gamma_penta[i+2,k])
+            #         self.QoT[species,'electron_root'].append(QoT_penta[i+2,k])
+            #         # unstable root 2
+            #         self.uprl[species,'unstable_root_2'].append(uprl0_penta[i+3,k])
+            #         self.Jprl[species,'unstable_root_2'].append(Jprl_penta[i+3,k])
+            #         self.Gamma[species,'unstable_root_2'].append(Gamma_penta[i+3,k])
+            #         self.QoT[species,'unstable_root_2'].append(QoT_penta[i+3,k])
+            #         # extra root
+            #         self.uprl[species,'extra_stable_root'].append(uprl0_penta[i+4,k])
+            #         self.Jprl[species,'extra_stable_root'].append(Jprl_penta[i+4,k])
+            #         self.Gamma[species,'extra_stable_root'].append(Gamma_penta[i+4,k])
+            #         self.QoT[species,'extra_stable_root'].append(QoT_penta[i+4,k])
+            #     elif(num_roots ==2):
+            #         raise ValueError(f"How come you have 2 roots ??") 
+            #     else:
+            #         print(f"How come you have {num_roots} roots ??")
+            #         exit(0)    
+            #     i += num_roots
                 
     def set_Maxwell_root(self):
         # sets the dictionary self.root_Maxwell
@@ -1033,8 +1107,8 @@ class PENTA:
         
         ax3.plot(roa_cumulative_simpson,IBS/1e3,'.-',label='PENTA data integrated')
         #ax3.plot(roa,BSpline(*IBS_spline)(roa)/1e3,'-')
-        ax3.plot(roa_plot,IBS_fit(roa_plot)/1e3,'-',label=f'polyfit order {degree}')
-        ax3.plot(roa_plot,IBS_fit2(roa_plot)/1e3,'-',label=f'polyfit order {degree} w/ constrains')
+        # ax3.plot(roa_plot,IBS_fit(roa_plot)/1e3,'-',label=f'polyfit order {degree}')
+        # ax3.plot(roa_plot,IBS_fit2(roa_plot)/1e3,'-',label=f'polyfit order {degree} w/ constrains')
         ax3.set_ylabel(r'$\left<I_{BS}\right>~[kA]$')
         ax3.set_xlabel(r'r/a')
         ax3.grid()
@@ -1046,45 +1120,45 @@ class PENTA:
         JBS_smooth = np.polyder(IBS_fit,m=1)(roa_plot) / dAdrho_spline(roa_plot)
         JBS_smooth3 = np.polyder(IBS_fit2,m=1)(roa_plot) / dAdrho_spline(roa_plot)
         
-        JBS_smooth2 = savgol_filter(JBS,51,3)
+        # JBS_smooth2 = savgol_filter(JBS,51,3)
         
-        ax.plot(roa,JBS/1e3,'.-',label='PENTA data')
-        #ax.plot(roa_plot,JBS_smooth/1e3,label='from I_BS')
-        ax.plot(roa_plot,JBS_smooth3/1e3,label='from I_BS constrains')
-        ax.plot(roa,JBS_smooth2/1e3,'-',linewidth=3,label='savgol filter')
-        ax.set_ylabel(r'$\left<J_{BS}\right>~[kA~m^{-2}]$')
-        ax.set_xlabel(r'r/a')
-        #ax.set_title('ambipolar parallel currents')
-        ax.legend(fontsize=12)
-        ax.grid()
-        ax.legend()
-        ax.set_title('BS Current Density')
+        # ax.plot(roa,JBS/1e3,'.-',label='PENTA data')
+        # #ax.plot(roa_plot,JBS_smooth/1e3,label='from I_BS')
+        # ax.plot(roa_plot,JBS_smooth3/1e3,label='from I_BS constrains')
+        # ax.plot(roa,JBS_smooth2/1e3,'-',linewidth=3,label='savgol filter')
+        # ax.set_ylabel(r'$\left<J_{BS}\right>~[kA~m^{-2}]$')
+        # ax.set_xlabel(r'r/a')
+        # #ax.set_title('ambipolar parallel currents')
+        # ax.legend(fontsize=12)
+        # ax.grid()
+        # ax.legend()
+        # ax.set_title('BS Current Density')
         
         plt.show() 
         
-        # compute values of dI/ds for VMEC input using the savgol profile
-        s_VMEC = np.linspace(0,1,50)
+        # # compute values of dI/ds for VMEC input using the savgol profile
+        # s_VMEC = np.linspace(0,1,50)
         
-        # extend to roa=0
-        roa = np.concatenate(([0.0],roa))
-        JBS_smooth2 = np.concatenate(([JBS_smooth2[0]],JBS_smooth2))
+        # # extend to roa=0
+        # roa = np.concatenate(([0.0],roa))
+        # JBS_smooth2 = np.concatenate(([JBS_smooth2[0]],JBS_smooth2))
         
-        print(roa.shape)
-        print(JBS_smooth2.shape)
+        # print(roa.shape)
+        # print(JBS_smooth2.shape)
         
-        cs = CubicSpline(roa, JBS_smooth2,extrapolate=True,bc_type=((1, 0.0), 'natural'))
-        a_VMEC = VMEC_class.aminor
-        dIds = cs(np.sqrt(s_VMEC)) * np.pi*a_VMEC*a_VMEC
+        # cs = CubicSpline(roa, JBS_smooth2,extrapolate=True,bc_type=((1, 0.0), 'natural'))
+        # a_VMEC = VMEC_class.aminor
+        # dIds = cs(np.sqrt(s_VMEC)) * np.pi*a_VMEC*a_VMEC
         
-        #divide by max val and set total current
-        dIds = dIds / np.max(dIds)
-        total_current = IBS_fit2(1.0)
+        # #divide by max val and set total current
+        # dIds = dIds / np.max(dIds)
+        # total_current = IBS_fit2(1.0)
                 
-        print('NCURR = 1')
-        print(f'CURTOR = {total_current}')
-        print("PCURR_TYPE = 'cubic_spline_Ip' ")
-        print(f'AC_AUX_S = {s_VMEC}')
-        print(f'AC_AUX_F = {dIds}')
+        # print('NCURR = 1')
+        # print(f'CURTOR = {total_current}')
+        # print("PCURR_TYPE = 'cubic_spline_Ip' ")
+        # print(f'AC_AUX_S = {s_VMEC}')
+        # print(f'AC_AUX_F = {dIds}')
         
     def get_JBS_smooth(self,rho,which_root):
         # applies savgol filter to JBS[which_root] 
