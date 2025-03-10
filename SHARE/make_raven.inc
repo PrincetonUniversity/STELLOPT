@@ -4,7 +4,7 @@
   SHELL = /bin/sh
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
-  PRECOMP:= fpp -C -P -DLINUX
+  PRECOMP:= fpp -C -P -DLINUX #-DB3D_COLLOP_NUBEAM -DB3D_VEL_DIFFUSION
   COMPILE = ifort
   COMPILE_FREE = ifort
   LINK    = ifort -Bstatic -o
@@ -127,7 +127,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a

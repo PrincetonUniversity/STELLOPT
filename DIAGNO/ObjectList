@@ -1,11 +1,10 @@
 ObjectFiles = \
 dflux_simpson.o \
+diagno_afield.o \
 diagno_bfield.o \
 db_bode.o \
 dflux_midpoint.o \
-diagno_input_mod.o \
 diagno_mirnov.o \
-diagno_runtime.o \
 diagno_rogowski_new.o \
 diagno_init_spec.o \
 db_simpson.o \

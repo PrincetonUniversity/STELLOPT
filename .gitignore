@@ -1,11 +1,11 @@
 *~
 *#
-
 *.o
 *.mod
 *.a
 *.so
 *.zip
+*.egg-info
 .DS*
 *.dSYM
 ._*
@@ -19,6 +19,7 @@ CMakeLists.txt
 BENCHMARKS/STELLOPT_TEST/*/*
 BENCHMARKS/BEAMS3D_TEST/*
 BENCHMARKS/THRIFT_TEST/*
+BENCHMARKS/PENTA_TEST/*
 core*
 update*
 COILGEOM
@@ -71,3 +72,10 @@ PB3D
 .vs/
 LIBSTELL/.makefile.swp
 *.log
+pySTEL/build
+pySTEL/dist
+
+*.sublime-project
+*.sublime-workspace
+fort.*
+nohup.*

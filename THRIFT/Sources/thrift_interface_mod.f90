@@ -58,7 +58,7 @@ MODULE THRIFT_INTERFACE_MOD
       ! Now we set some info
       CALL MPI_INFO_CREATE(mpi_info_thrift, ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_thrift, "IBM_largeblock_io", "true",    ierr_mpi)
-      CALL MPI_INFO_SET(mpi_info_thrift, "stripping_unit",    "1048576", ierr_mpi)
+      CALL MPI_INFO_SET(mpi_info_thrift, "striping_unit",     "1048576", ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_thrift, "romio_ds_read",     "disable", ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_thrift, "romio_ds_write",    "disable", ierr_mpi)
 #endif
@@ -77,8 +77,33 @@ MODULE THRIFT_INTERFACE_MOD
 
       SUBROUTINE thrift_cleanup
       IMPLICIT NONE
+      INTEGER :: ier
+      CHARACTER(200) :: cmdtxt = ""
       ! Clean up
       ierr_mpi = 0
+      ! Remove files and cleanup directory
+
+      IF (myid == master) THEN
+      ! Remove the *_opt* files
+         WRITE(6,*) ' Cleaning up files'; CALL FLUSH(6); ier = 0; ierr_mpi = 0; cmdtxt=''
+         CALL EXECUTE_COMMAND_LINE("rm -rf dcon* jxbout* mercier* dkesout* fort.*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+         WRITE(6,*) ' rm: EXITSTAT=',ier,' CMDSTAT=',ierr_mpi; CALL FLUSH(6)
+         WRITE(6,*) '     MESSAGE: ',TRIM(cmdtxt); CALL FLUSH(6)
+!DEC$ IF DEFINED (STELZIP)
+         ! Zip up the results and clean
+         CALL EXECUTE_COMMAND_LINE("rm -rf dcon* jxbout* mercier* dkesout* fort.* temp_input*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+         WRITE(6,*) ' Zipping files'; CALL FLUSH(6); ier = 0; ierr_mpi = 0; cmdtxt=''
+         CALL EXECUTE_COMMAND_LINE("zip -r thrift_files.zip thrift_*.h5 ambipolar* fluxes_vs_Er* wout*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+         WRITE(6,*) ' zip: EXITSTAT=',ier,' CMDSTAT=',ierr_mpi; CALL FLUSH(6)
+         WRITE(6,*) '     MESSAGE: ',TRIM(cmdtxt); CALL FLUSH(6)
+         CALL EXECUTE_COMMAND_LINE("rm -rf wout* temp_input*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+         WRITE(6,*) ' rm: EXITSTAT=',ier,' CMDSTAT=',ierr_mpi; CALL FLUSH(6)
+         WRITE(6,*) '     MESSAGE: ',TRIM(cmdtxt); CALL FLUSH(6)
+         ier = 0; ierr_mpi=0
+!DEC$ ENDIF
+      END IF
+
+
       !CALL thrift_free(MPI_COMM_SHARMEM)
 #if defined(MPI_OPT)
       !CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
@@ -136,7 +161,9 @@ MODULE THRIFT_INTERFACE_MOD
         limas = .false.
         lverb = .true.
         lvmec = .false.
+        lrestart_from_file = .false.
         id_string = ''
+        restart_filename = ''
 
         ! First Handle the input arguments
         CALL GETCARG(1, arg1, numargs)
@@ -156,15 +183,23 @@ MODULE THRIFT_INTERFACE_MOD
                 i = i + 1
                 lvmec = .true.
                 CALL GETCARG(i, prof_string, numargs)
+            case ("-restart")
+                i = i + 1
+                lrestart_from_file = .true.
+                CALL GETCARG(i, restart_filename, numargs)
+            case ("-vmec_reset")
+                lvmec_reset = .true.
             case ("-diagno")
                 ldiagno = .true.
             case ("-help", "-h") ! Output Help message
-                write(6, *) ' Beam MC Code'
+                write(6, *) ' THRIFT Current Evolution Code'
                 write(6, *) ' Usage: xthrift <options>'
                 write(6, *) '    <options>'
                 write(6, *) '     -vmec ext:     VMEC input/wout extension'
                 write(6, *) '     -prof file:    Profile file'
+                write(6, *) '     -restart file: Previous run file'
                 write(6, *) '     -diagno:       Compute Magnetic Diagnostic Response'
+                write(6, *) '     -vmec_reset:   Use VMECs reset capability'
                 write(6, *) '     -noverb:       Supress all screen output'
                 write(6, *) '     -help:         Output help message'
             end select
@@ -175,13 +210,19 @@ MODULE THRIFT_INTERFACE_MOD
     ! Broadcast variables
 #if defined(MPI_OPT)
       CALL MPI_BCAST(id_string, 256, MPI_CHARACTER, master, MPI_COMM_THRIFT, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_init_commandline id_string', ierr_mpi)
       CALL MPI_BCAST(prof_string, 256, MPI_CHARACTER, master, MPI_COMM_THRIFT, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_init_commandline prof_string', ierr_mpi)
+      CALL MPI_BCAST(restart_filename, 256, MPI_CHARACTER, master, MPI_COMM_THRIFT, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_init_commandline restart_filename', ierr_mpi)
       CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_init_commandline lvmec', ierr_mpi)
       CALL MPI_BCAST(limas, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_main', ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_init_commandline limas', ierr_mpi)
+      CALL MPI_BCAST(lvmec_reset, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_init_commandline lvmec_reset', ierr_mpi)
+      CALL MPI_BCAST(lrestart_from_file, 1, MPI_LOGICAL, master, MPI_COMM_THRIFT, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'thrift_init_commandline lrestart_from_file', ierr_mpi)
 #endif
       RETURN
       END SUBROUTINE thrift_init_commandline

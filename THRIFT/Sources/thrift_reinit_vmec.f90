@@ -35,6 +35,19 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+      ! Default some stuff again
+      !PRINT *,wdot(1:10)
+      dcon = 0_dp; currv = 0_dp; aspect= 0_dp; hs = 0_dp; ohs = 0_dp
+      voli = 0_dp; signiota = 0_dp; rc0mse = 0_dp; r00 = 0_dp
+      r0scale = 1_dp; z00 = 0_dp; dkappa = 0_dp; fsqsum0 = 0_dp
+      pressum0 = 0_dp; fnorm = 0_dp; fsqr=1_dp; fsqz=1_dp; fsql=1_dp
+      fnorm1 = 0_dp; fnorml = 0_dp; fsqr1 = 0_dp; fsqz1 = 0_dp
+      fsql1 = 0_dp; fsq = 1_dp; fedge = 0_dp; wb = 0_dp; wp = 0_dp 
+      r00b = 0_dp; z00b = 0_dp; fz00_edge = 0_dp; lamscale = 0_dp
+      ftolv = 1_dp; otav  = 0_dp; alphaR = 0_dp; alphaZ = 0_dp
+      rbtor  = 0_dp; rbtor0 = 0_dp; ctor   = 0_dp; delbsq = 1_dp
+      res0   =-1_dp; res1   = 0_dp; delt0r = 1_dp; otau(:) = 0_dp
+      fsqt(:) = 0_dp; wdot(:) = 0_dp; iterc = 1
       ier_flag_init = 0
 !     Adjust vaccum grid file
       IF (lfreeb) THEN

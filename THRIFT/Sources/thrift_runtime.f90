@@ -8,16 +8,20 @@
 !     v0.00 11/XX/22 - Generally used to track major version information
 !-----------------------------------------------------------------------
 MODULE thrift_runtime
-    !-----------------------------------------------------------------------
+    !-------------------------------------------------------------------
     !     Libraries
-    !-----------------------------------------------------------------------
+    !-------------------------------------------------------------------
     USE stel_kinds, ONLY: rprec
+    USE thrift_globals, ONLY:   nparallel_runs, mboz, nboz, &
+                                bootstrap_type, eccd_type, vessel_ecrh, &
+                                mirror_ecrh, targettype_ecrh, &
+                                antennatype_ecrh, etapar_type
     USE mpi_params
     USE EZspline
-    !-----------------------------------------------------------------------
+    !-------------------------------------------------------------------
     !     Module Variables
     !          lverb         Logical to control screen output
-    !----------------------------------------------------------------------
+    !-------------------------------------------------------------------
     IMPLICIT NONE
 
     INTEGER, PARAMETER :: MPI_CHECK = 0
@@ -67,21 +71,22 @@ MODULE thrift_runtime
     DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
     DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 
-    LOGICAL :: lverb, lvmec, lread_input, limas
-    INTEGER :: nprocs_thrift, nparallel_runs, mboz, nboz, ier_paraexe, &
-               mytimestep, nsubsteps
+    LOGICAL :: lverb, lvmec, lread_input, limas, lrestart_from_file, &
+               lvmec_reset
+    INTEGER :: nprocs_thrift, ier_paraexe, mytimestep, nsubsteps
     REAL(rprec) :: pi, pi2, invpi2, mu0, to3
-    CHARACTER(256) :: id_string, prof_string, bootstrap_type, &
-                      eccd_type, nbcd_type, &
-                      proc_string, vessel_ecrh, mirror_ecrh, &
-                      targettype_ecrh, antennatype_ecrh, &
-                      magdiag_coil
+    CHARACTER(256) :: id_string, prof_string, &
+                      nbcd_type, proc_string, magdiag_coil, restart_filename
+
+    LOGICAL, DIMENSION(MAXPROFLEN) :: lneed_boozer
+    REAL(rprec), DIMENSION(:,:,:), POINTER :: DKES_D11, DKES_D31, DKES_D33
+    INTEGER :: win_dkes_d11, win_dkes_d31, win_dkes_d33
 
     REAL(rprec), PARAMETER :: THRIFT_VERSION = 0.50 
-    !-----------------------------------------------------------------------
+    !-------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination
-    !-----------------------------------------------------------------------
+    !-------------------------------------------------------------------
 CONTAINS
 
     SUBROUTINE handle_err(error_num, string_val, ierr)

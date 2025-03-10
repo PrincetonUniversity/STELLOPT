@@ -15,7 +15,7 @@ VPATH = $(SPATH)
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xthrift: $(LIB) $(LIB_VMEC) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_DIAGNO) $(ObjectFiles)
+xthrift: $(LIB) $(LIB_VMEC) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_PENTA) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR 
 #	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC) 
@@ -28,6 +28,9 @@ ifdef BOOZ_DIR
 endif
 ifdef DIAGNO_DIR
 	@rm $(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO)
+endif
+ifdef PENTA_DIR
+	@rm $(PENTA_DIR)/$(LOCTYPE)/$(LIB_PENTA)
 endif
 
 #Compile object files defined in OBJLIST.
@@ -89,3 +92,11 @@ $(LIB_BOOZ) :
 #Construct diagno library. 
 $(LIB_DIAGNO) :
 	@cd $(DIAGNO_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_DIAGNO) *.o
+   
+#Construct DKES library. 
+$(LIB_DKES) :
+	@cd $(DKES_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_DKES) *.o
+   
+#Construct PENTA library. 
+$(LIB_PENTA) :
+	@cd $(PENTA_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_PENTA) *.o

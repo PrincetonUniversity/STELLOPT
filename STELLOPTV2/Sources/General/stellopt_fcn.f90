@@ -205,36 +205,38 @@
          ! but we don't need to do anything here.
       CASE("mean")
          ! Set initial axis shape to be the m=0 mode of the boundary shape.
-         DO nf = 0, ntord
-            raxis_cc(nf) = rbc(nf, 0)
-            zaxis_cc(nf) = zbc(nf, 0)
-            raxis_cs(nf) = rbs(nf, 0)
-            zaxis_cs(nf) = zbs(nf, 0)
-         END DO
+         CALL INIT_AXIS_MEAN
+         !DO nf = 0, ntord
+         !   raxis_cc(nf) = rbc(nf, 0)
+         !   zaxis_cc(nf) = zbc(nf, 0)
+         !   raxis_cs(nf) = rbs(nf, 0)
+         !   zaxis_cs(nf) = zbs(nf, 0)
+         !END DO
       CASE("midpoint")
          ! Set the initial axis shape to be, at each phi, the mean of the (theta=0) and (theta=pi) points
          ! of the boundary. This approach may be a more accurate estimate than axis_init_option='mean'
          ! for configurations with a strongly concave bean shape like W7-X.
-         DO nf = 0, ntord ! Handle the m=0 modes.
-            raxis_cc(nf) = rbc(nf, 0)
-            zaxis_cc(nf) = zbc(nf, 0)
-            raxis_cs(nf) = rbs(nf, 0)
-            zaxis_cs(nf) = zbs(nf, 0)
-         END DO
-         DO mf = 2, mpol1d, 2 ! Add even-m modes for m>0
-            ! Handle the n=0 modes:
-            nf=0
-            raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf)
-            zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf)
-            ! No need to include the sin(n*phi) modes for n=0 here.
-            ! Handle the n.ne.0 modes:
-            DO nf = 1, ntord
-               raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf) + rbc(-nf, mf)
-               zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf) + zbc(-nf, mf)
-               raxis_cs(nf) = raxis_cs(nf) + rbs(nf, mf) - rbs(-nf, mf)
-               zaxis_cs(nf) = zaxis_cs(nf) + zbs(nf, mf) - zbs(-nf, mf)
-            END DO
-         END DO
+         CALL INIT_AXIS_MIDPOINT
+         !DO nf = 0, ntord ! Handle the m=0 modes.
+         !   raxis_cc(nf) = rbc(nf, 0)
+         !   zaxis_cc(nf) = zbc(nf, 0)
+         !   raxis_cs(nf) = rbs(nf, 0)
+         !   zaxis_cs(nf) = zbs(nf, 0)
+         !END DO
+         !DO mf = 2, mpol1d, 2 ! Add even-m modes for m>0
+         !   ! Handle the n=0 modes:
+         !   nf=0
+         !   raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf)
+         !   zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf)
+         !   ! No need to include the sin(n*phi) modes for n=0 here.
+         !   ! Handle the n.ne.0 modes:
+         !   DO nf = 1, ntord
+         !      raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf) + rbc(-nf, mf)
+         !      zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf) + zbc(-nf, mf)
+         !      raxis_cs(nf) = raxis_cs(nf) + rbs(nf, mf) - rbs(-nf, mf)
+         !      zaxis_cs(nf) = zaxis_cs(nf) + zbs(nf, mf) - zbs(-nf, mf)
+         !   END DO
+         !END DO
       CASE("input")
          ! Reset the axis shape to the shape specified in the input file
          raxis_cc = raxis_cc_initial
@@ -398,12 +400,14 @@
             CASE('spec')
             CASE('test')
                !Do Nothing
+               iflag = 0
+               ier_paraexe = 0
          END SELECT
          ! Check profiles for negative values of pressure
          dex = MINLOC(am_aux_s(2:),DIM=1)
          IF (dex > 2) THEN
             IF (ANY(am_aux_f(1:dex) < 0)) iflag = -55
-            IF (ALL(am_aux_f(1:dex) == 0)) iflag = -55
+            !IF (ALL(am_aux_f(1:dex) == 0)) iflag = -55
          END IF
          IF (pres_scale < 0) iflag = -55
          ! Now call any functions necessary to read or load the
@@ -418,24 +422,45 @@
          proc_string_old = proc_string ! So we can find the DIAGNO files
          IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
          ctemp_str = 'booz_xform'
-         IF (ANY(lbooz) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(lbooz) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
          ctemp_str = 'bootsj'
-         IF (ANY(sigma_bootstrap < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(sigma_bootstrap < bigno) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
          ctemp_str = 'diagno'
-         IF (lneed_magdiag .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (lneed_magdiag .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
          ctemp_str = 'neo'
-         IF (ANY(sigma_neo < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(sigma_neo < bigno) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ IF DEFINED (TERPSICHORE)
          ctemp_str = 'terpsichore'
-         IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TRAVIS)
          ctemp_str = 'travis'
-         IF (ANY(sigma_ece < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(sigma_ece < bigno) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
          ctemp_str = 'dkes'
-         IF ((ANY(sigma_dkes < bigno).or.ANY(sigma_dkes_erdiff < bigno).or.ANY(sigma_dkes_alpha < bigno)) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF ((ANY(sigma_dkes < bigno).or.ANY(sigma_dkes_erdiff < bigno).or.ANY(sigma_dkes_alpha < bigno)) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ ENDIF
 
          ! NOTE ALL parallel secondary codes go here
@@ -447,7 +472,10 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (COILOPTPP)
          ctemp_str = 'coilopt++'
-         IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
          ! JCS: skipping parallelization for now 

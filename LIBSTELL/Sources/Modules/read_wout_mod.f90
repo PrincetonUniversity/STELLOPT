@@ -93,6 +93,7 @@
         vn_bsupumns_sur = 'bsupumns_sur',                               &
         vn_bsupvmns_sur = 'bsupvmns_sur',                               &
         vn_rbc = 'rbc', vn_zbs = 'zbs', vn_rbs = 'rbs', vn_zbc = 'zbc', &
+        vn_mnyq = 'mnyq', vn_nnyq = 'nnyq',                             &
 
         vn_wpar = 'wpar', vn_pparmnc = 'pparmnc', vn_ppermnc ='ppermnc',&
         vn_hotdmnc = 'hotdmnc', vn_pbprmnc = 'pbprmnc',                 &
@@ -114,7 +115,8 @@
       CHARACTER(LEN=*), PARAMETER :: ln_version = 'VMEC Version',       &
         ln_extension = 'Input file extension', ln_mgrid = 'MGRID file', &
         ln_magen = 'Magnetic Energy', ln_therm = 'Thermal Energy',      &
-        ln_gam = 'Gamma', ln_maxr = 'Maximum R', ln_minr = 'Minimum R', &
+        ln_gam = 'Adiabatic Index', ln_maxr = 'Maximum R',              &
+        ln_minr = 'Minimum R',                                          &
         ln_maxz = 'Maximum Z', ln_fp = 'Field Periods',                 &
         ln_radnod = 'Radial nodes', ln_polmod = 'Poloidal modes',       &
         ln_tormod = 'Toroidal modes', ln_maxmod = 'Fourier modes',      &
@@ -125,7 +127,8 @@
         ln_xmpot = 'Vacuum potential poloidal modes',                   &
         ln_xnpot = 'Vacuum potential toroidal modes',                   &
         ln_maxit = 'Max iterations', ln_actit = 'Actual iterations',    &
-        ln_asym = 'Asymmetry', ln_recon = 'Reconstruction',             &
+        ln_asym = 'Non-stellarator symmetry',                           &
+        ln_recon = 'Reconstruction',                                    &
         ln_free = 'Free boundary',                                      &
         ln_error = 'Error flag', ln_aspect = 'Aspect ratio',            &
         ln_beta = 'Total beta', ln_pbeta = 'Poloidal beta',             &
@@ -138,42 +141,47 @@
         ln_mse = 'Number of MSE points',                                &
         ln_thom = 'Number of Thompson scattering points',               &
         ln_am = 'Specification parameters for mass(s)',                 &
-        ln_ac = 'Specification parameters for <J>(s)',                  &
+        ln_ac = 'Specification parameters for dI/ds(s)',                &
         ln_ai = 'Specification parameters for iota(s)',                 &
         ln_pmass_type = 'Profile type specifier for mass(s)',           &
-        ln_pcurr_type = 'Profile type specifier for <J>(s)',            &
+        ln_pcurr_type = 'Profile type specifier for dI/ds(s)',          &
         ln_piota_type = 'Profile type specifier for iota(s)',           &
-        ln_am_aux_s = 'Auxiliary-s parameters for mass(s)',             &
-        ln_am_aux_f = 'Auxiliary-f parameters for mass(s)',             &
-        ln_ac_aux_s = 'Auxiliary-s parameters for <J>(s)',              &
-        ln_ac_aux_f = 'Auxiliary-f parameters for <J>(s)',              &
-        ln_ai_aux_s = 'Auxiliary-s parameters for iota(s)',             &
-        ln_ai_aux_f = 'Auxiliary-f parameters for iota(s)',             &
+        ln_am_aux_s = 'Radial knots in s for mass(s)',                  &
+        ln_am_aux_f = 'Values at knots for mass(s)',                    &
+        ln_ac_aux_s = 'Radial knots in s for dI/ds(s)',                 &
+        ln_ac_aux_f = 'Values at knots for dI/ds(s)',                   &
+        ln_ai_aux_s = 'Radial knots in s for iota(s)',                  &
+        ln_ai_aux_f = 'Values at knots for iota(s)',                    &
         ln_pmod = 'Poloidal mode numbers',                              &
         ln_tmod = 'Toroidal mode numbers',                              &
         ln_pmod_nyq = 'Poloidal mode numbers (Nyquist)',                &
         ln_tmod_nyq = 'Toroidal mode numbers (Nyquist)',                &
         ln_racc = 'raxis (cosnv)', ln_racs = 'raxis (sinnv)',           &
         ln_zacs = 'zaxis (sinnv)', ln_zacc = 'zaxis (cosnv)',           &
-        ln_iotaf = 'iota on full mesh',                                 &
-        ln_qfact = 'q-factor on full mesh',                             &
+        ln_iotaf = 'Rotational Transform (iota) on full mesh',          &
+        ln_qfact = 'Safety-factor (q) on full mesh',                    &
 
-        ln_presf = 'pressure on full mesh',                             &
-        ln_phi = 'Toroidal flux on full mesh',                          &
+        ln_presf = 'Pressure on full mesh [Pa]',                        &
+        ln_phi = 'Toroidal flux on full mesh [Wb]',                     &
         ln_phipf = 'd(phi)/ds: Toroidal flux deriv on full mesh',       &
-        ln_chi = 'Poloidal flux on full mesh',                          &
+        ln_chi = 'Poloidal flux on full mesh [Wb]',                     &
 
         ln_chipf = 'd(chi)/ds: Poroidal flux deriv on full mesh',       &
 
-        ln_jcuru = 'j dot gradu full',                                  &
-        ln_jcurv = 'j dot gradv full', ln_iotah = 'iota half',          &
-        ln_mass = 'mass half', ln_presh = 'pressure half',              &
-        ln_betah = 'beta half', ln_buco = 'bsubu half',                 &
-        ln_bvco = 'bsubv half', ln_vp = 'volume deriv half',            &
-        ln_specw = 'Spectral width half',                               &
-        ln_phip = 'tor flux deriv over 2pi half',                       &
-        ln_jdotb = 'J dot B', ln_bgrv = 'B dot grad v',                 &
-        ln_bdotb = 'B dot B',                                           &
+        ln_jcuru = '<j dot gradu> on full mesh',                        &
+        ln_jcurv = '<j dot gradv> on full mesh',                        &
+        ln_iotah = 'Rotational transform (iota) on half mesh',          &
+        ln_mass = 'Mass on half mesh',                                  & 
+        ln_presh = 'Pressure half mesh [Pa]',                           &
+        ln_betah = 'Surface averaged plasma beta on half mesh',         &
+        ln_buco = '<B_u> on half mesh',                                 &
+        ln_bvco = '<B_v> on half mesh half',                            &
+        ln_vp = 'Differential volume (dV/ds)/(4*pi*pi) on half mesh',   &
+        ln_specw = 'Spectral width on half mesh',                       &
+        ln_phip = 'Toroidal flux deriv dPhi/ds on half mesh',           &
+        ln_jdotb = '<J dot B>', ln_bgrv = '<B dot grad v>',             &
+        ln_bdotb = '<B dot B>',                                         &
+        ln_overr = '<1/R>',                                             &
         ln_merc = 'Mercier criterion', ln_mshear = 'Shear Mercier',     &
         ln_mwell = 'Well Mercier', ln_mcurr = 'Current Mercier',        &
         ln_mgeo = 'Geodesic Mercier', ln_equif='Average force balance', &
@@ -194,12 +202,13 @@
         ln_bsubvmnc = 'cosmn covariant v-component of B, half mesh',    &
         ln_bsubsmns = 'sinmn covariant s-component of B, half mesh',    &
 
-        ln_bsubumnc_sur = 'cosmn bsubu of B, surface',                  &
-        ln_bsubvmnc_sur = 'cosmn bsubv of B, surface',                  &
-        ln_bsupumnc_sur = 'cosmn bsupu of B, surface',                  &
-        ln_bsupvmnc_sur = 'cosmn bsupv of B, surface',                  &
+        ln_bsubumnc_sur = 'cosmn covaiant u-component of B, surface',   &
+        ln_bsubvmnc_sur = 'cosmn covaiant v-component of B, surface',   &
+        ln_bsupumnc_sur = 'cosmn contravariant u-component of B, surface', &
+        ln_bsupvmnc_sur = 'cosmn contravariant v-component of B, surface', &
 
-        ln_bsupumnc = 'BSUPUmnc half', ln_bsupvmnc = 'BSUPVmnc half',   & 
+        ln_bsupumnc = 'cosmn contravariant u-component of B, half mesh', &
+        ln_bsupvmnc = 'cosmn contravariant v-component of B, half mesh', & 
 
         ln_rmns = 'sinmn component of cylindrical R, full mesh',        &
         ln_zmnc = 'cosmn component of cylindrical Z, full mesh',        &
@@ -215,16 +224,20 @@
         ln_currvmnc = 'cosmn covariant v-component of J, full mesh',    &
         ln_currvmns = 'sinmn covariant v-component of J, full mesh',    &
 
-        ln_bsubumns_sur = 'sinmn bsubu of B, surface',                  &
-        ln_bsubvmns_sur = 'sinmn bsubv of B, surface',                  &
-        ln_bsupumns_sur = 'sinmn bsupu of B, surface',                  &
-        ln_bsupvmns_sur = 'sinmn bsupv of B, surface',                  &
+        ln_bsubumns_sur = 'sinmn covaiant u-component of B, surface',   &
+        ln_bsubvmns_sur = 'sinmn covaiant v-component of B, surface',   &
+        ln_bsupumns_sur = 'sinmn contravariant u-component of B, surface', &
+        ln_bsupvmns_sur = 'sinmn contravariant v-component of B, surface', &
 
-        ln_bsupumns = 'BSUPUmns half', ln_bsupvmns = 'BSUPVmns half',   &
+
+        ln_bsupumns = 'sinmn contravariant u-component of B, half mesh', &
+        ln_bsupvmns = 'sinmn contravariant v-component of B, half mesh', & 
         ln_rbc = 'Initial boundary R cos(mu-nv) coefficients',          &
         ln_zbs = 'Initial boundary Z sin(mu-nv) coefficients',          &
         ln_rbs = 'Initial boundary R sin(mu-nv) coefficients',          &
         ln_zbc = 'Initial boundary Z cos(mu-nv) coefficients',          &
+        ln_mnyq = 'Poloidal modes (Nyquist)',                           &
+        ln_nnyq = 'Toroidal modes (Nyquist)',                           &
 
         ln_wpar = 'Energy',                                             &
         ln_pparmnc = 'cosmn compoents of hot part. para. pressure',     &
@@ -563,7 +576,7 @@
         currumnc(mnmax_nyq,ns),                                         &
         iotas(ns), mass(ns), pres(ns), beta_vol(ns), phip(ns),          &
         buco(ns), bvco(ns), phi(ns), iotaf(ns), presf(ns), phipf(ns),   &
-        chipf(ns),                                                      &
+        chipf(ns), qfact(ns),                                           &
         vp(ns), overr(ns), jcuru(ns), jcurv(ns), specw(ns), Dmerc(ns),  &
         Dshear(ns), Dwell(ns), Dcurr(ns), Dgeod(ns), equif(ns),         &
         raxis(0:ntor,2), zaxis(0:ntor,2), jdotb(ns), bdotb(ns),         &
@@ -826,6 +839,9 @@
       END IF
 
       chipf = iotaf*phipf
+
+      qfact=HUGE(qfact)
+      WHERE (iotaf(1:ns) .NE. 0) qfact=1.0/iotaf(1:ns)
 !
 !     CONVERT FROM INTERNAL UNITS TO PHYSICAL UNITS IF NEEDED
 !

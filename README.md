@@ -16,9 +16,24 @@ Once you configure the environment variables, you can begin to compile the code 
 By default, it will compile all the codes in the folder with the option `clean_release`.
 You can customize the script by providing additional commandline arguments, like `./build_all -o release -j 4 STELLOPTV2`. To check the options, type `./build_all -h`.
 
-There is also a Docker image available for use at https://hub.docker.com/r/zhucaoxiang/stellopt.
-
 For more information, please view [STELLOPT compilation](https://princetonuniversity.github.io/STELLOPT/STELLOPT%20Compilation).
+
+# DOCKER IMAGE
+We provide a Dockerfile for building a STELLOPT image based on `debian:latest`. This is essentially the same base image we use for running our workflows.  There is also a very old Docker image available at:
+https://hub.docker.com/r/zhucaoxiang/stellopt.
+
+# CITING CODE
+```
+@misc{ doecode_12551,
+title = {STELLOPT},
+author = {Lazerson, Samuel and Schmitt, John and Zhu, Caoxiang and Breslau, Joshua and STELLOPT Developers, All},
+abstractNote = {The STELLOPT code is designed to optimize 3D MHD equilibria to a set of target physics parameters encompassing stellarator design and 3D equilibrium reconstructions.},
+url = {https://doi.org/10.11578/dc.20180627.6},
+howpublished = {[Computer Software] \url{https://doi.org/10.11578/dc.20180627.6}},
+year = {2020},
+month = {may}
+}
+```
 
 # EDITING CODE
 Once a working copy is developed for your computer, you are welcome 
@@ -33,16 +48,16 @@ GitHub actions will be triggered by each push and pull-request. The code will be
 
 # UTILITIES
 A Python interface using CTYPES is also included but it requires a
-static shared build of LIBSTELL.  This is still a highly experimental
-option. You can find the python scripts at `./pySTEL`.
+static shared build of LIBSTELL. We essentially attempt to provide a
+class for each code, and a separate utility to call for easy file manipulation
+and plotting. 2D plotting in handled by Matplotlib while 3D is handled by VTK.
+We provide a wrapper class for VTK to ease integration. You can find the python scripts at `./pySTEL`.
 
 There are also some other plotting packages developed by group members.
 Here are some examples.
 
   - [matlabVMEC](https://github.com/lazersos/matlabVMEC): MATLAB packages for various codes.
   - [coilpy](https://github.com/zhucaoxiang/CoilPy): Python package for toroidal Fourier surface, coils, FOCUS and STELLOPT.
-
-If you are willing to share your code, please add your contributions here.
 
 # REPORT BUGS
 If you find any bugs or have any suggestions, please submit an issue 

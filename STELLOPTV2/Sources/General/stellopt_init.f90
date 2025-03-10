@@ -54,9 +54,13 @@
       ier = 0
 
       ! Read the OPTIMUM Namelist
-      CALL read_stellopt_input(TRIM(id_string),ier,myid)
-      !CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
-      !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
+      CALL init_stellopt_input
+      CALL read_stellopt_input(TRIM(id_string),ier)
+      CALL stellopt_read_cws
+      CALL stellopt_write_header
+
+      ! Handle a one_iter_run
+      IF (loneiter) opt_type = 'one_iter'
 
       ! Handle coil geometry
       IF (lcoil_geom) CALL namelist_input_makegrid(id_string)
@@ -267,7 +271,6 @@
       SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
               ! Set some defaults
-              phiedge_old = phiedge
               IF (ncurr /= 0 .and. ANY(lai_opt)) lai_opt(:) = .false.
               IF (ncurr /= 0 .and. ANY(lai_f_opt)) lai_f_opt(:) = .false.
               IF (ncurr /= 1 .and. lcurtor_opt) lcurtor_opt = .false.

@@ -1,22 +1,27 @@
-FROM zhucaoxiang/stellopt:compile
-MAINTAINER Caoxiang Zhu <czhu@pppl.gov> & STELLOPT developers
+# Build with docker buildx build --tag libstell .
+# Debian image of install
+FROM lazerson/stellopt-compile:latest
+LABEL version="1.0"
+LABEL description="Docker build of LIBSTELL and intitial file copy."
 
-WORKDIR /home/STELLOPT
-
-COPY . /home/STELLOPT
-# Compile STELLOPT
-ENV MACHINE="docker"
+# Set Environment variables
+ARG CODE="LIBSTELL"
+ARG MYHOME="/home/STELLOPT/bin"
+ENV MACHINE="debian"
 ENV STELLOPT_PATH=/home/STELLOPT
-RUN echo $STELLOPT_PATH
-RUN cd $STELLOPT_PATH  && ./build_all -j4 2>&1 | tee log.build 
-RUN chmod -R 777 ${STELLOPT_PATH}/BENCHMARKS
+RUN echo Building ${CODE} for ${MACHINE} in Docker
+
+# Set the working directory
+WORKDIR $STELLOPT_PATH
+
+# Copy the entire local directory to the container
+COPY . $STELLOPT_PATH
+
+# Compile STELLOPT
+RUN cd $STELLOPT_PATH  && ./build_all -j1 $CODE 2>&1 | tee log.build
+
+# Copy all built executables onto global path
 RUN cp -RP ${STELLOPT_PATH}/bin/* /usr/local/bin/
 
-# add user
-RUN apt-get -y install sudo
-RUN useradd visitor && echo "visitor:visitor" | chpasswd && adduser visitor sudo
-WORKDIR /home/visitor
-USER visitor
-
-# Set commands
+# If you run this 
 CMD ["/bin/bash"]
