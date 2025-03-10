@@ -1,6 +1,6 @@
       SUBROUTINE fixaray
       USE vmec_main, p5 => cp5
-      USE vmec_params, ONLY: jmin2, mscale, nscale, 
+      USE vmec_params, ONLY: jmin2, mscale, nscale,
      &                       mnyq, nnyq, signgs
 #ifdef _HBANGLE
       USE angle_constraints, ONLY: init_multipliers
@@ -15,7 +15,7 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER  :: i, m, j, n, mn, mn1, nmin0, istat1, istat2
       INTEGER  :: mnyq0, nnyq0
-      REAL(dp) :: argi, arg, argj, dnorm, tfixon, tfixoff
+      REAL(dp) :: argi, arg, argj, dnorm, dnorm3, tfixon, tfixoff
 C-----------------------------------------------
 !
 !     INDEX OF LOCAL VARIABLES
@@ -27,11 +27,11 @@ C-----------------------------------------------
 !
 !    COMPUTE TRIGONOMETRIC FUNCTION ARRAYS
 !    NOTE: ARRAYS ALLOCATED HERE ARE GLOBAL AND ARE DEALLOCATED IN FILEOUT
-!    NOTE: NEED 2 X NYQUIST FOR FAST HESSIAN CALCULATIONS 
+!    NOTE: NEED 2 X NYQUIST FOR FAST HESSIAN CALCULATIONS
 !
       mnyq0  = ntheta1/2
       nnyq0  = nzeta/2
- 
+
       mnyq = MAX(0, 2*mnyq0, 2*mpol1)
       nnyq = MAX(0, 2*nnyq0, 2*ntor)
 
@@ -56,12 +56,48 @@ C-----------------------------------------------
          STOP 'allocation error in fixaray: istat2'
       END IF
 
-      dnorm = one/(nzeta*(ntheta2 - 1))
-      IF (lasym) THEN
-         dnorm = one/(nzeta*ntheta3)     !Fix, SPH012314
-      END IF
+      ! dnorm is the normalization factor for Fourier integrals
+      ! on the reduced poloidal interval [0, pi].
+      !
+      ! All forward Fourier transforms in VMEC are performed as follows:
+      ! 1. Decompose the function to be transformed into
+      !    an even-parity contribution and an odd-parity contribution (symforce).
+      ! 2. Fourier-transform the two definite-parity contributions
+      !    separately over the reduced poloidal interval [0, pi] (tomnsp*).
+      !
+      ! Inverse Fourier transforms are performed as follows:
+      ! 1. Inverse-Fourier-transform the even-parity and odd-parity
+      !    contributions separately (totzsp*)
+      !    into the reduced poloidal interval [0, pi].
+      ! 2. Combine the definite-parity contributions into
+      !    the full poloidal interval [0, 2 pi[ (symrzl).
+      !
+      ! In the symmetric case, only contributions with that parity
+      ! which a given quantity has under the assumption of symmetry,
+      ! are transformed. This allows to skip the sym* routines
+      ! in the symmetric case.
+      dnorm  = one/(nzeta*(ntheta2 - 1))
 
-      mscale(0) = 1;  nscale(0) = 1                      
+      ! dnorm3 is the normalization factor for the surface-averaging integrals.
+      ! These integrals are always performed in realspace
+      ! and thus, they need to adapt to the number of poloidal grid points.
+      ! In the asymmetric case, there are ntheta1 grid points spanning [0, 2 pi[.
+      ! In the  symmetric case, there are ntheta2 grid points spanning [0,   pi].
+      !
+      ! In the asymmetric case, the integral is performed
+      ! over the full period of the poloidal interval.
+      ! Thus, the trapezoidal rule applied here does not need
+      ! the factors of 1/2 at the endpoints.
+      ! In the symmetric case, the integral is performed
+      ! over the reduced poloidal interval, which is not a periodic domain anymore.
+      ! Thus, the factors 1/2 have to be taken into account at the endpoints.
+      if (lasym) then
+         dnorm3 = one/(nzeta*ntheta1)
+      else
+         dnorm3 = one/(nzeta*(ntheta2 - 1))
+      end if
+
+      mscale(0) = 1;  nscale(0) = 1
 !     mscale(0) = osqrt2;  nscale(0) = osqrt2    !versions < 6.9, incorrectly used osqrt2
 
       mscale(1:mnyq) = mscale(0)/osqrt2
@@ -75,17 +111,36 @@ C-----------------------------------------------
          argi = twopi*(i - 1)/ntheta1
          DO m = 0, mnyq
             arg = argi*m
-            cosmu(i,m) = COS(arg)*mscale(m)
-            sinmu(i,m) = SIN(arg)*mscale(m)
+
+!  Special case the Pi angle.
+            IF (i .eq. ntheta2) THEN
+                IF (MOD(m, 2) .eq. 0) THEN
+                   cosmu(i,m) = mscale(m)
+                ELSE
+                   cosmu(i,m) = -mscale(m)
+                END IF
+                sinmu(i,m) = 0
+            ELSE IF (i .gt. ntheta2) THEN
+!  Force symmetry for angles indices over ntheta2
+                cosmu(i,m) = cosmu(2*ntheta2 - i,m)
+                sinmu(i,m) = -sinmu(2*ntheta2 - i,m)
+            ELSE
+                cosmu(i,m) = COS(arg)*mscale(m)
+                sinmu(i,m) = SIN(arg)*mscale(m)
+            END IF
+
             cosmui(i,m) = dnorm*cosmu(i,m)
-            cosmui3(i,m) = cosmui(i,m)          !Use this if integration over FULL 1,ntheta3 interval 
             sinmui(i,m) = dnorm*sinmu(i,m)
             IF (i.EQ.1 .OR. i.EQ.ntheta2) THEN
                cosmui(i,m) = cosmui(i,m)/2
             END IF
-            IF (ntheta2 .EQ. ntheta3) THEN
-               cosmui3(i,m) = cosmui(i,m)
-            END IF
+
+            ! Use this if integration over FULL 1,ntheta3 interval
+            cosmui3(i,m) = dnorm3*cosmu(i,m)
+            if (.not.lasym .and. (i.EQ.1 .OR. i.EQ.ntheta2)) then
+               cosmui3(i,m) = cosmui3(i,m)/2
+            end if
+
             cosmum(i,m) = cosmu(i,m)*(m)
             sinmum(i,m) = -sinmu(i,m)*(m)
             cosmumi(i,m) = cosmui(i,m)*(m)
@@ -97,7 +152,7 @@ C-----------------------------------------------
       DO j = 1, nzeta
          argj = twopi*(j - 1)/nzeta
          DO n = 0, nnyq
-            arg = argj*(n)
+            arg = argj*n
             cosnv(j,n) = COS(arg)*nscale(n)
             sinnv(j,n) = SIN(arg)*nscale(n)
             cosnvn(j,n) = cosnv(j,n)*(n*nfp)

@@ -24,7 +24,7 @@
       IMPLICIT NONE
       INTEGER :: i, j, prevtimestep, ier
       INTEGER :: bcs0(2)
-      REAL(rprec) :: rho,s,ds,dt,mytime,temp,Lext,rmaj,amin
+      REAL(rprec) :: rho,s,ds,dt,temp,Lext,rmaj,amin
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::j_temp,&
                      A_temp,B_temp,C_temp,D_temp,&
                      BP_temp, CP_temp, DP_temp,temp_arr,  &
@@ -33,19 +33,25 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !======================================================================
-      ! If mytimestep = 1 ITOT=0 and continue to next iteration
-      IF (mytimestep==1) THEN
+      ! If mytimestep = 1 and not reading from restart, then ITOT=0 and continue to next iteration
+      IF (mytimestep==1 .and. .not. lrestart_from_file) THEN
             THRIFT_JPLASMA(:,mytimestep) = -THRIFT_JSOURCE(:,mytimestep)
             THRIFT_IPLASMA(:,mytimestep) = -THRIFT_ISOURCE(:,mytimestep)
             THRIFT_I(:,mytimestep) = THRIFT_IPLASMA(:,mytimestep)+THRIFT_ISOURCE(:,mytimestep)
             RETURN 
       END IF
 
-      ! Time variables
-      prevtimestep = mytimestep-1   ! previous time step index
-      dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
-      mytime = THRIFT_T(mytimestep)
- 
+      ! If mytimestep = 1 and am reading from restart, then set the following:
+      IF (mytimestep==1 .and. lrestart_from_file) THEN
+            THRIFT_UGRID(:,mytimestep) = UGRID_RESTART
+            prevtimestep = 1 !this is a trick in order to use UGRID_RESTART as the array of the previous iter
+            dt = dt_first_iter
+      ELSE 
+            prevtimestep = mytimestep-1   ! previous time step index
+            dt = THRIFT_T(mytimestep)-THRIFT_T(prevtimestep) ! dt = delta t this iter
+      END IF
+
+
       ! If at zero beta, copy previous value of JPLASMA and skip
       IF (eq_beta == 0) THEN
          IF (mytimestep /= 1) THEN

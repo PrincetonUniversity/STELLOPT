@@ -16,5 +16,6 @@ header.o \
 vimatrix.o \
 rddisk.o \
 dkes_input_prepare.o \
+dkes_input_prepare_old.o \
 SORTI.o \
 filit.o 

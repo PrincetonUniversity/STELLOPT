@@ -270,7 +270,7 @@
                bmns_temp(:,k) = mfact(:,1)*bmns_vmec(:,k)+mfact(:,2)*bmns_vmec(:,k-1)
                bsupumns_temp(:,k) = mfact(:,1)*bsupumns_vmec(:,k)+mfact(:,2)*bsupumns_vmec(:,k-1)
                bsupvmns_temp(:,k) = mfact(:,1)*bsupvmns_vmec(:,k)+mfact(:,2)*bsupvmns_vmec(:,k-1)
-            
+            END IF            
             !   Third extrapolate to axis This is the Samantha Lazerson bugfix 2023.01.29
             k = 1
             WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
@@ -291,7 +291,6 @@
                bmns_temp(:,k) = mfact(:,1)*bmns_vmec(:,k+1)+mfact(:,2)*bmns_vmec(:,k+2)
                bsupumns_temp(:,k) = mfact(:,1)*bsupumns_vmec(:,k+1)+mfact(:,2)*bsupumns_vmec(:,k+2)
                bsupvmns_temp(:,k) = mfact(:,1)*bsupvmns_vmec(:,k+1)+mfact(:,2)*bsupvmns_vmec(:,k+2)
-            END IF
             END IF
             DEALLOCATE(mfact)
 
@@ -378,10 +377,10 @@
          WRITE(6,'(A,F7.3,A)') '                    ',betap,'  (poloidal)'
          WRITE(6,'(A,F7.3,A)') '                    ',betat,'  (toroidal)'
          WRITE(6,'(A,E20.12)') '  TORIDAL CURRENT:  ',curtor
-         WRITE(6,'(A,F7.3)')   '     TORIDAL FLUX:  ',phiedge
-         WRITE(6,'(A,F7.3)')   '           VOLUME:  ',volume    
-         WRITE(6,'(A,F7.3)')   '     MAJOR RADIUS:  ',rmajor
-         WRITE(6,'(A,F7.3)')   '     MINOR RADIUS:  ',aminor
+         WRITE(6,'(A,F9.3)')   '     TORIDAL FLUX:  ',phiedge
+         WRITE(6,'(A,F9.3)')   '           VOLUME:  ',volume    
+         WRITE(6,'(A,F9.3)')   '     MAJOR RADIUS:  ',rmajor
+         WRITE(6,'(A,F9.3)')   '     MINOR RADIUS:  ',aminor
          WRITE(6,'(A,F7.3)')   '       AXIS FIELD:  ',Baxis
          WRITE(6,'(A,E20.12)')   '    STORED ENERGY:  ',wp
          CALL FLUSH(6)

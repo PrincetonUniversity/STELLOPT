@@ -2,9 +2,8 @@
 ! J. Breslau 8/18/17
 MODULE windingsurface
   USE stel_kinds, ONLY : rprec
+  USE stellopt_runtime, ONLY: maxwindsurf
   IMPLICIT NONE
-
-  INTEGER, PARAMETER :: maxwindsurf=32
 
   TYPE vsurf
      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: rctab, zstab

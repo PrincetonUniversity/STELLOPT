@@ -13,9 +13,7 @@ SUBROUTINE beams3d_follow
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime
     USE beams3d_lines
-    USE beams3d_grid, ONLY: tmin, tmax, delta_t, BR_spl, BZ_spl, BPHI_spl, &
-                            MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
-                            TE_spl, TI_spl, wall_load, wall_shine, rho_fullorbit, &
+    USE beams3d_grid, ONLY: tmin, tmax, delta_t, wall_load, wall_shine, rho_fullorbit, &
                             plasma_mass, plasma_Zmean, therm_factor, &
                             nr_fida, nphi_fida, nz_fida, nenergy_fida, &
                             npitch_fida, BEAM_DENSITY
@@ -24,6 +22,7 @@ SUBROUTINE beams3d_follow
     USE beams3d_write_par
     USE safe_open_mod, ONLY: safe_open
     USE wall_mod, ONLY: wall_free, ihit_array, nface
+    USE collision_operators, ONLY: SET_CRIT_FACTOR, SET_COULOMB_FACTOR
     USE mpi_inc
     !-----------------------------------------------------------------------
     !     Local Variables
@@ -127,9 +126,7 @@ SUBROUTINE beams3d_follow
 
     ! Some helpers
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
-    fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
-    !fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick !old
-    !fact_kick = 2*freq_kick*E_kick
+    CALL SET_CRIT_FACTOR(plasma_Zmean,plasma_mass)
 
     ! Handle the Beam defaults
     IF (lbeam) THEN
@@ -154,17 +151,18 @@ SUBROUTINE beams3d_follow
        mycharge = charge(i)
        myZ = Zatom(i)
        mymass = mass(i)
+       E_by_v=mymass*0.5d-3/e_charge
        mybeam = Beam(i)
        moment = mu_start(i)
        fact_pa   = plasma_mass/(mymass*plasma_Zmean)
-       fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+       CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
        ! Save the IC of the neutral
        my_end = t_end(i)
        myline = i
        mytdex = 0
        ndt_max = 1
        ndt     = 0
-       CALL out_beams3d_nag(tf_nag,q)
+       CALL out_beams3d_gc(tf_nag,q)
        t_last(i) = tf_nag-dt
     END DO
 
@@ -184,13 +182,14 @@ SUBROUTINE beams3d_follow
           mycharge = charge(i)
           myZ = Zatom(i)
           mymass = mass(i)
+          E_by_v=mymass*0.5d-3/e_charge
           mybeam = Beam(i)
           moment = mu_start(i)
           my_end = t_end(i)
           myline = i
           mytdex = 1
           fact_pa   = plasma_mass/(mymass*plasma_Zmean)
-          fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+          CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
           ! Define neutral trajectory
           myv_neut(1) = vr_start(i)*cos(phi_start(i)) - vphi_start(i)*sin(phi_start(i))
           myv_neut(2) = vr_start(i)*sin(phi_start(i)) + vphi_start(i)*cos(phi_start(i))
@@ -206,7 +205,7 @@ SUBROUTINE beams3d_follow
           ! Save the point to index 1 with weight set to 0
           mytdex = 1; ndt=0; ndt_max = 1 ! Save the point
           t_last(i) = tf_nag ! Save timestep after follow_neut
-          CALL out_beams3d_nag(tf_nag,q)
+          CALL out_beams3d_gc(tf_nag,q)
           IF (tf_nag > t_end(i)) CYCLE
           ! Step to gyrocenter
           CALL beams3d_ionize(q)
@@ -215,7 +214,7 @@ SUBROUTINE beams3d_follow
           mytdex = 2; ndt=0; ndt_max = 1 ! Save point
           weight_save = weight(myline)
           weight(myline) = 0
-          CALL out_beams3d_nag(tf_nag,q)
+          CALL out_beams3d_gc(tf_nag,q)
           weight(myline) = weight_save
        END DO
     END IF

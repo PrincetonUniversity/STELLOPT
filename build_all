@@ -29,13 +29,14 @@ done
 echo "Begin building STELLOPT with option: $MAKE_OPTION with $NUM_PROCS CPUs."
 # Call the toplevel makfile to setup the output directories.
 make $MAKE_OPTION
+make test_make
 
 shift $((OPTIND-1))
 [ "${1:-}" = "--" ] && shift
 
 # Loop through all the available codes and make the ones specified on the
 # command line.  If no codes were specified, then make all of them.
-for CODE in LIBSTELL ANIMEC BCYCLIC BEAMS3D BOOTSJ BNORM BOOZ_XFORM COBRAVMEC COILOPT DESCUR DESCUR_PLOT DIAGNO DKES FIELDLINES J_INVARIANT MAKEGRID NEO NESCOIL PENTA THRIFT TORLINES VMEC2000 VMEC2PIES VMEC2SPEC VMEC2STEL VMEC2V690 VMEC2XGC THRIFT STELLOPTV2 WALL_ACCELERATE
+for CODE in LIBSTELL ANIMEC BCYCLIC BEAMS3D BOOTSJ BNORM BOOZ_XFORM COBRAVMEC COILOPT DESCUR DESCUR_PLOT DIAGNO DKES FIELDLINES J_INVARIANT MAKEGRID NEO NESCOIL PENTA TORLINES VMEC2000 VMEC2PIES VMEC2SPEC VMEC2STEL VMEC2V690 VMEC2XGC THRIFT STELLOPTV2 WALL_ACCELERATE
 do
   match=0
 
@@ -64,6 +65,4 @@ do
 done
 
 # make a dynamic library
-cd LIBSTELL
-make shared_release
-cd ..
+#make pystel

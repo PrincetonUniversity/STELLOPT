@@ -336,7 +336,7 @@
                WRITE(6,'(2X,A,F10.4,A)') 'NI0  =',densi(1),'x10^20 [m^-3]'
                IF (l_boot_all) WRITE(6,'(2X,A)') '<FULL CURRENT CALCULATTION>'
                WRITE(6,'(A)') '-------------------------------------------'
-               WRITE(6,'(A)') '   dex      rho      Te[keV]     Ti[keV]       Ne           Ni        BETA       J_BOOT     TOK_FRAC'
+               WRITE(6,'(A)') '   dex  flux(s)      Te[keV]     Ti[keV]       Ne           Ni        BETA       J_BOOT     TOK_FRAC'
                CALL FLUSH(6)             
             END IF
             bsnorm =0; capr = 0; caps = 0; ftrapped =0; h2 =0;

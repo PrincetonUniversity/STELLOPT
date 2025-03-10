@@ -37,8 +37,8 @@
 !>  @param[out]   zv1       Real space dZ/dv.
 !>  @param[out]   lu1       Real space dlambda/du.
 !>  @param[out]   lv1       Real space dlambda/dv.
-!>  @param[out]   rcn1      Unknown R quantity.
-!>  @param[out]   zcn1      Unknown Z quantity.
+!>  @param[out]   rcn1      Constraint on R.
+!>  @param[out]   zcn1      Constraint on Z.
 !>  @param[out]   ier_flag  Status of the transform. Takes the value of
 !>                          @ref r01_bad_value_flag if rmnc(0,1) is zero.
 !>
@@ -277,8 +277,8 @@
 !>  @param[out]   zv1       Real space dZ/dv.
 !>  @param[out]   lu1       Real space dlambda/du.
 !>  @param[out]   lv1       Real space dlambda/dv.
-!>  @param[out]   rcn1      Unknown R quantity.
-!>  @param[out]   zcn1      Unknown Z quantity.
+!>  @param[out]   rcn1      Constraint on R.
+!>  @param[out]   zcn1      Constraint on Z.
 !>  @param[out]   ier_flag  Status of the transform. Takes the value of
 !>                          @ref r01_bad_value_flag if rmnc(0,1) is zero.
 !>

@@ -1,5 +1,6 @@
       SUBROUTINE readin(input_file, iseq_count, ier_flag, lscreen)
       USE vmec_main
+      USE vmec_input
       USE vmec_params
       USE vacmod
       USE vspline
@@ -43,10 +44,10 @@ C-----------------------------------------------
 !       STACKING ORDER DEPENDS ON LASYM AND LTHREED. EACH COMPONENT XCC, XSS, XSC, XCS
 !       HAS SIZE = mns. (PHIFAC, MSE TAKE UP 1 INDEX EACH AT END OF ARRAY)
 !
-!         LTHREED=F,      LTHREED=F,      LTHREED=T,      LTHREED=T 
+!         LTHREED=F,      LTHREED=F,      LTHREED=T,      LTHREED=T
 !         LASYM=F         LASYM=T         LASYM=F         LASYM=T
 !
-!          rmncc           rmncc           rmncc           rmncc           
+!          rmncc           rmncc           rmncc           rmncc
 !          zmnsc           rmnsc           rmnss           rmnss
 !          lmnsc           zmnsc           zmnsc           rmnsc
 !                          zmncc           zmncs           rmncs
@@ -69,7 +70,7 @@ C-----------------------------------------------
 !                in MKS units [NWT/M**2]
 !                Interpretation changes with pmass_type
 !          ac:   expansion coefficients for the normalized (pcurr(s=1) = 1)
-!                radial derivative of the flux-averaged toroidal current density 
+!                radial derivative of the flux-averaged toroidal current density
 !                (power series in s) used when ncurr=1
 !                Interpretation changes with pcurr_type
 !    ai_aux_s:   Auxiliary array for iota profile. Used for splines, s values
@@ -109,7 +110,7 @@ C-----------------------------------------------
 !   Convergence control parameters
 !  ftol_array:   array of value of residual(s) at which each multigrid
 !                iteration ends
-! niter_array:   array of number of iterations (used to terminate run) at 
+! niter_array:   array of number of iterations (used to terminate run) at
 !                each multigrid iteration
 !       nstep:   number of timesteps between printouts on screen
 !    nvacskip:   iterations skipped between full update of vacuum solution
@@ -127,7 +128,7 @@ C-----------------------------------------------
 !  mgrid_file:   full path for vacuum Green''s function data
 !  pcurr_type:   Specifies parameterization type of pcurr function
 !                  'power_series' - I'(s)=Sum[ ac(j) s ** j] - Default
-!                  'gauss_trunc'  - I'(s)=ac(0) (exp(-(s/ac(1)) ** 2) - 
+!                  'gauss_trunc'  - I'(s)=ac(0) (exp(-(s/ac(1)) ** 2) -
 !                                                exp(-(1/ac(1)) ** 2))
 !                   others - see function pcurr
 !  piota_type:   Specifies parameterization type of piota function
@@ -135,7 +136,7 @@ C-----------------------------------------------
 !                   others - see function piota
 !  pmass_type:   Specifies parameterization type of pmass function
 !                  'power_series' - p(s)=Sum[ am(j) s ** j] - Default
-!                  'gauss_trunc'  - p(s)=am(0) (exp(-(s/am(1)) ** 2) - 
+!                  'gauss_trunc'  - p(s)=am(0) (exp(-(s/am(1)) ** 2) -
 !                                                exp(-(1/am(1)) ** 2))
 !                   others - see function pmass
 
@@ -263,7 +264,10 @@ C-----------------------------------------------
       IF (ier_flag .NE. norm_term_flag) RETURN
 
       IF (tensi2 .EQ. zero ) tensi2 = tensi
-
+!
+!     Rescale the equilibria if asked
+!
+      CALL RESCALE_BOUNDARY
 !
 !     Open output files here, print out heading to threed1 file
 !
@@ -390,14 +394,17 @@ C-----------------------------------------------
      &   ns_array(1),nstep,nvacskip,
      &   ftol_array(multi_ns_grid),tcon0,lasym,lforbal,lmove_axis,
      &   lconm1,mfilter_fbdy,nfilter_fbdy,lfull3d1out,
-     &   max_main_iterations,lgiveup,fgiveup                                         ! M Drevlak 20130114
+     &   max_main_iterations,lgiveup,fgiveup,                                         ! M Drevlak 20130114
+     &   tvolume,lvolume_rfix
  110  FORMAT(' RUN CONTROL PARAMETERS:',/,1x,23('-'),/,
      &  '  ncurr  niter   nsin  nstep  nvacskip      ftol     tcon0',
      &  '    lasym  lforbal lmove_axis lconm1',/,
      &     4i7,i10,1p,2e10.2,4L9,/,
      &  '  mfilter_fbdy nfilter_fbdy lfull3d1out max_main_iterations', ! J Geiger 20120203
-     &  ' lgiveup fgiveup',/,               ! M Drevlak 20130114
-     &     2(6x,i7),L12,10x,i10,L8,e9.1,/)  ! M Drevlak 20130114
+     &  ' lgiveup fgiveup',               ! M Drevlak 20130114
+     &  '   tvolume lvolume_rfix',/,
+     &     2(6x,i7),L12,10x,i10,L8,e9.1,    ! M Drevlak 20130114
+     &     e10.2, L13 /)  ! S Lazerson 20250116
 
          WRITE (nthreed,120) precon_type, prec2d_threshold
  120  FORMAT(' PRECONDITIONER CONTROL PARAMETERS:',/,1x,34('-'),/,
@@ -463,7 +470,7 @@ C-----------------------------------------------
             ELSE
                WRITE (nthreed,140)
             END IF
-!  Print out ai array          
+!  Print out ai array
 !          WRITE(nthreed,135)(ai(i-1),i=1, SIZE(ai))
             WRITE(nthreed,143) TRIM(piota_type)
             SELECT CASE(TRIM(piota_type))
@@ -605,13 +612,12 @@ C-----------------------------------------------
       ioff = LBOUND(rbcc,1)
       joff = LBOUND(rbcc,2)
 
-
       DO m=0, mpol1
          mj = m + joff
-         IF (lfreeb .and. 
+         IF (lfreeb .and.
      &       (mfilter_fbdy.gt.1 .and. m.gt.mfilter_fbdy)) CYCLE
          DO n = -ntor, ntor
-            IF (lfreeb .and. 
+            IF (lfreeb .and.
      &         (nfilter_fbdy.gt.0 .and. ABS(n).gt.nfilter_fbdy)) CYCLE
             ni = ABS(n) + ioff
             IF (n .eq. 0) THEN
@@ -671,7 +677,7 @@ C-----------------------------------------------
 !
 !     CONVERT TO INTERNAL FORM FOR (CONSTRAINED) m=1 MODES
 !     INTERNALLY, FOR m=1: XC(rss) = .5(RSS+ZCS), XC(zcs) = .5(RSS-ZCS)
-!     WITH XC(zcs) -> 0 FOR POLAR CONSTRAINT 
+!     WITH XC(zcs) -> 0 FOR POLAR CONSTRAINT
 !     (see convert_sym, convert_asym in totzsp_mod file)
 !
 
@@ -691,7 +697,7 @@ C-----------------------------------------------
          END IF
          IF (ALLOCATED(temp)) DEALLOCATE (temp)
       END IF
-      
+
 !
 !     PARSE TYPE OF PRECONDITIONER
 !
@@ -702,22 +708,22 @@ C-----------------------------------------------
 
 !     ALL THE FOLLOWING USE THE FULL 2D BLOCK-TRI PRECONDITIONER
 !     BUT DIFFER IN THE WAY TIME-EVOLUTION IS HANDLED
-      SELECT CASE (ch1) 
+      SELECT CASE (ch1)
          CASE ('c', 'C')
 !conjugate gradient
-            IF (ch2 == 'g' .or. ch2 == 'G') itype_precon = 1
+            IF (ch2 == 'g' .or. ch2 == 'G') itype_precon = 1  ! 'cg'
             LPRECOND = .TRUE.
          CASE ('g', 'G')
 !gmres or gmresr
-            IF (ch2 == 'm' .or. ch2 == 'M') itype_precon = 2
-            IF (LEN_TRIM(precon_type) == 6) itype_precon = 3
+            IF (ch2 == 'm' .or. ch2 == 'M') itype_precon = 2 ! 'gm'
+            IF (LEN_TRIM(precon_type) == 6) itype_precon = 3 ! 'gmresr'
             LPRECOND = .TRUE.
          CASE ('t', 'T')
 !transpose free qmr
-            IF (ch2 == 'f' .or. ch2 == 'F') itype_precon = 4
+            IF (ch2 == 'f' .or. ch2 == 'F') itype_precon = 4 ! 'tf'
             LPRECOND = .TRUE.
       END SELECT
-      
+
 
       iresidue = -1
 
