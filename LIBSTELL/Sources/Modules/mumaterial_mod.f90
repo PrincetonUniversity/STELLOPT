@@ -928,6 +928,7 @@
       INTEGER, INTENT(in) :: mystart, myend
 
       INTEGER :: count, i, i_tile, j, j_tile, k, k_tile, maxi, maxtile, iterH, maxiterH
+      INTEGER :: stype
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_new
       DOUBLE PRECISION :: H(3), N(3,3), Bx, By, Bz
       DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm
@@ -1003,7 +1004,8 @@
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           iterH = 0
           lbreakiterH = .FALSE.
-          SELECT CASE (state_type(state_dex(i_tile)))
+          stype = state_type(state_dex(i_tile))
+          SELECT CASE (stype)
             CASE (1) ! Hard magnet
               Mrem_norm = NORM2(Mrem(:,state_dex(i_tile)))
               u_ea = Mrem(:,state_dex(i_tile))/Mrem_norm ! Easy axis assumed parallel to remanent magnetization
@@ -1072,7 +1074,7 @@
               END DO
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             CASE DEFAULT
-              WRITE(6,*) "  Unknown magnet type: ", state_type(state_dex(i_tile))
+              WRITE(6,*) "  Unknown magnet type: ", stype
               STOP
           END SELECT
 
@@ -1080,7 +1082,7 @@
           Mnorm(i) = NORM2(M(:,i_tile))
           ! "Derivatives" for convergence checks
           dM(i) = ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
-          IF ((dM(i) .GT. maxdM).OR.ISNAN(Mnorm(i))) THEN
+          IF ((dM(i).GT.maxdM).OR.ISNAN(Mnorm(i))) THEN
             maxdM = dM(i)
             maxi = i
           END IF
@@ -1132,13 +1134,13 @@
             convergedtot = convergedproc
         END IF
 
-        convergedperc = FLOOR(convergedtot*100/SUM(tet_vol))
+        convergedperc = NINT(convergedtot*100/SUM(tet_vol))
         lalldone = (convergedperc.GE.convCheck)
 
         IF (ldosync) CALL mumaterial_syncM(M,ntet,outmydom)
 
         IF (lverb) THEN 
-          WRITE(6,'(3X,I5,A2,I5,A2,I8,A2,E12.4,A2,E12.4,A2,E12.4,A2,E12.4,A2,E12.4)') count, '  ', convergedperc, '  ', maxtile,'  ', NORM2(M(:,maxtile)),'  ', maxdMall, '  ', dMmax*maxlambda,  '  ', maxlambda
+          WRITE(6,'(3X,I6,A2,I5,A2,I8,A2,E12.4,A2,E12.4,A2,E12.4,A2,E12.4,A2,E12.4)') count, '  ', convergedperc, '  ', maxtile,'  ', NORM2(M(:,maxtile)),'  ', maxdMall, '  ', dMmax*maxlambda,  '  ', maxlambda
           CALL FLUSH(6)
         END IF
 
@@ -1233,7 +1235,8 @@
             END IF
 
             ! Ensure normal vector is pointing in the right direction
-            IF (DOT_PRODUCT(mumaterial_cross(v(:,1) - v(:,3), v(:,2) - v(:,3)), v(:,4) - v(:,2)) .gt. 0) THEN ! normal vector of triangle is pointing towards v4, so v1 and v3 need to be interchanged
+            IF (DOT_PRODUCT(mumaterial_cross(v(:,1) - v(:,3), v(:,2) - v(:,3)), v(:,4) - v(:,2)) .gt. 0) THEN 
+                ! normal vector of triangle is pointing towards v4, so v1 and v3 need to be interchanged
                   v_temp = v(:,1)
                   v(:,1) = v(:,3)
                   v(:,3) = v_temp
@@ -1266,12 +1269,16 @@
             END DO
 
             N_loc = 0.d0
+            r(3) = r(3) + 1E-6;
 
             N_loc(1,3) = mumaterial_getNxz(r, v(1,1), v(2,2)) - mumaterial_getNxz(r, v(1,3), v(2,2))
             N_loc(2,3) = mumaterial_getNyz(r, v(1,1), v(2,2)) - mumaterial_getNyz(r, v(1,3), v(2,2))
             N_loc(3,3) = mumaterial_getNzz(r, v(1,1), v(2,2)) - mumaterial_getNzz(r, v(1,3), v(2,2))
-            IF ((ISNAN(N_loc(1,3)).or.ISNAN(N_loc(2,3))).or.ISNAN(N_loc(3,3))) WRITE(6,*) " MUMAT found a NaN in N_loc."
-
+            IF ((ISNAN(N_loc(1,3)).or.ISNAN(N_loc(2,3))).or.ISNAN(N_loc(3,3))) THEN 
+                  IF (ISNAN(N_loc(1,3))) WRITE(6,*) " MUMAT found a NaN in N_loc (X)."
+                  IF (ISNAN(N_loc(2,3))) WRITE(6,*) " MUMAT found a NaN in N_loc (Y)."
+                  IF (ISNAN(N_loc(3,3))) WRITE(6,*) " MUMAT found a NaN in N_loc (Z)."
+            END IF
             N = N + MATMUL(MATMUL(P, N_loc), Pinv)
       END DO
 
@@ -1288,10 +1295,10 @@
       !-----------------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION :: mumaterial_getNxz
-      DOUBLE PRECISION, INTENT(IN) :: r(3), l, h
+      DOUBLE PRECISION, INTENT(IN) :: r(3), l, h     
 
             mumaterial_getNxz = -1.d0/(16.d0*ATAN(1.d0)) * (F(r,h,l,h) - F(r,0.d0,l,h) - (G(r,h) - G(r,0.d0)))
-
+            IF (ISNAN(mumaterial_getNxz)) WRITE(6,*) 'NXZ IS NAN'
             RETURN
 
       CONTAINS
@@ -1312,9 +1319,17 @@
             IMPLICIT NONE
             DOUBLE PRECISION :: G, rt
             DOUBLE PRECISION, INTENT(IN) :: r(3), yp
-                  rt = r(3)+1.0E-6 ! Fix singularity
+                  
+            rt = r(3)
+            DO 
                   G = ATANH((r(2) - yp) / sqrt(r(1)*r(1) + r(2)*r(2) - 2*r(2)*yp + yp*yp + rt*rt))
-
+                  IF (ISNAN(G)) THEN
+                        rt = rt + 1E-6
+                  ELSE
+                        EXIT
+                  END IF
+            END DO
+                  
             RETURN
             END FUNCTION G
       END FUNCTION mumaterial_getNxz
@@ -1332,7 +1347,7 @@
       DOUBLE PRECISION, INTENT(IN) :: r(3), l, h
 
             mumaterial_getNyz = -1.d0/(16.d0*ATAN(1.d0)) * (K(r,l,l,h) - K(r,0.d0,l,h) - (Lfunc(r,l) - Lfunc(r,0.d0)))
-
+            IF (ISNAN(mumaterial_getNyz)) WRITE(6,*) 'NYZ IS NAN'
             RETURN
 
       CONTAINS
@@ -1353,10 +1368,18 @@
             IMPLICIT NONE
             DOUBLE PRECISION :: Lfunc, rt
             DOUBLE PRECISION, INTENT(IN) :: r(3), xp
-                  rt = r(3)+1.0E-6 ! Fix singularity
+            
+            rt = r(3)
+            DO
                   Lfunc = ATANH((r(1) - xp) / sqrt(r(1)*r(1) - 2*r(1)*xp + xp*xp + r(2)*r(2) + rt*rt))
-                  
+                  IF (ISNAN(Lfunc)) THEN
+                        rt = rt + 1E-6
+                  ELSE
+                        EXIT
+                  END IF
+            END DO
             RETURN
+            
             END FUNCTION Lfunc
 
       END FUNCTION mumaterial_getNyz
@@ -1372,7 +1395,7 @@
       IMPLICIT NONE
       DOUBLE PRECISION :: mumaterial_getNzz
       DOUBLE PRECiSION, INTENT(IN) :: r(3), l, h
-
+            
             mumaterial_getNzz = -1.d0/(16.d0*ATAN(1.d0)) * (P(r,l,l,h) - P(r,0.d0,l,h) - (Q(r,l) - Q(r,0.d0)))
 
             RETURN
