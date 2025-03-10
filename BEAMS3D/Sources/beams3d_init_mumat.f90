@@ -4,12 +4,9 @@
 !     Date:          09/26/2012
 !     Description:   This subroutine reads a soft iron or permanent
 !                    magnet file, calculates the magnetic response
-!                    using the MAGTENSE library, and adds the resultant
+!                    using the MUMAT library, and adds the resultant
 !                    magnetic field to our total magnetic field.
-!                    https://www.magtense.org/
 !-----------------------------------------------------------------------
-#if defined(MAGTENSE)
-#endif
       SUBROUTINE beams3d_init_mumat
 !-----------------------------------------------------------------------
 !     Libraries

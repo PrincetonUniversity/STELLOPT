@@ -838,11 +838,11 @@ MODULE beams3d_physics_mod
                   end_state(myline) = 5 ! Debug
                   EXIT !It can happen that we collided with the wall while getting here
                END IF  ! We're outside the grid
-            END DO
+            END DO INNER_A
             ! Take a step back
             qf = qf - myv_neut*dt_local
             t  =  t - dt_local
-         END DO 
+         END DO OUTER_A
          qs=qf
 
          !--------------------------------------------------------------
@@ -1867,7 +1867,7 @@ MODULE beams3d_physics_mod
 
       END SUBROUTINE beams3d_MODB
 
-	  
+    
       !-----------------------------------------------------------------
       !     Function:      beams3d_VTOR
       !     Authors:       D. Kulla (david.kulla@ipp.mpg.de)

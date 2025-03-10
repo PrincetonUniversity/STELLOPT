@@ -81,7 +81,11 @@ MODULE beams3d_runtime
                               lbbnbi, lcollision, lfusion, &
                               lrestart_particles, lfusion_alpha, &
                               lfusion_He3, lfusion_proton, &
-                              lfusion_tritium, lkick, lgcsim, id_string
+                              lfusion_tritium, lkick, lgcsim, id_string, &
+                              mumaterial_niter, mumaterial_nneighbor, &
+                              mumaterial_lamthresh, mumaterial_tol, &
+                              mumaterial_lambda, mumaterial_lamfactor, &
+                              mumaterial_padfactor, mumaterial_convcheck
     !-----------------------------------------------------------------------
     !     Module Variables
     !          lverb         Logical to control screen output
@@ -155,7 +159,7 @@ MODULE beams3d_runtime
                ldepo, lbeam_simple, lw7x, lsuzuki, &
                lascot, lascot4, lfidasim, lfidasim_cyl, lsplit, &
                lvessel_beam, lascotfl, lrandomize, leqdsk, lhint, &
-               lboxsim, limas, lfieldlines, lbeamdensity
+               lboxsim, limas, lfieldlines, lbeamdensity, lmumat
     INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, pi, invpi2, mu0, to3, dt_save, rminor_norm
