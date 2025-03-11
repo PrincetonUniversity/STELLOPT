@@ -5,21 +5,21 @@
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
   PRECOMP:= fpp -C -P -DLINUX #-DB3D_COLLOP_NUBEAM -DB3D_VEL_DIFFUSION
-  COMPILE = ifort
-  COMPILE_FREE = ifort
-  LINK    = ifort -Bstatic -o
+  COMPILE = ifx
+  COMPILE_FREE = ifx
+  LINK    = ifx -Bstatic -o
   LINK_AR = ar -ruv
-  LINK_C  = icc -shared -Wl,-z-defs
+  LINK_C  = icx -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include \
             -O2 -assume noold_unit_star \
-            -march=skylake-avx512 -qopt-zmm-usage=high -fp-model strict -ip
+            -march=skylake-avx512 -qopt-zmm-usage=high -fp-model strict
   FLAGS_D = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include \
             -O0 -assume noold_unit_star \
-            -march=skylake-avx512 -qopt-zmm-usage=high -fp-model strict -ip \
+            -march=skylake-avx512 -qopt-zmm-usage=high -fp-model strict \
             -check all,noarg_temp_created -ftrapuv -g -traceback
   LIBS    =  ${MKLROOT}/lib/intel64/libmkl_blas95_lp64.a \
              ${MKLROOT}/lib/intel64/libmkl_lapack95_lp64.a \
@@ -33,10 +33,10 @@
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpiifort
-  MPI_COMPILE_FREE = mpiifort
-  MPI_COMPILE_C = mpiifort
-  MPI_LINK = mpiifort
+  MPI_COMPILE = mpiifx
+  MPI_COMPILE_FREE = mpiifx
+  MPI_COMPILE_C = mpiifx
+  MPI_LINK = mpiifx
   MPI_RUN  = srun
   MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=128 --time=0:30:00 -p express
   MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=128 --time=0:30:00 -p express
