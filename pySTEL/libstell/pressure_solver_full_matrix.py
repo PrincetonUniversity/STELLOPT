@@ -696,6 +696,20 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             
         sources_implicit = csr_matrix(sources_implicit)
         LHS = LHS + sources_implicit
+        
+        # impose Dirichlet boundary condition
+        LHS = LHS.tolil()
+        for s in range(1, num_species + 1):  # s starts at 1, up to num_species
+            row_idx = s * Nr - 1  # Compute the correct row index
+
+            # Set the entire row to zero
+            LHS.rows[row_idx] = []  # Clear all column indices in that row
+            LHS.data[row_idx] = []  # Clear all values in that row
+
+            # Set the diagonal element to 1
+            LHS[row_idx, row_idx] = 1
+        
+        LHS = LHS.tocsr()
                 
         return LHS
         
