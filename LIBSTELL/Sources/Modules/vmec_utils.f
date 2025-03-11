@@ -53,7 +53,7 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: fmin_acceptable = 1.E-12_dp
+      REAL(rprec), PARAMETER :: fmin_acceptable = 1.E-8_dp
       INTEGER     :: nfe, info_loc
       REAL(rprec) :: r_cyl(3), c_flx(3), fmin
       REAL(rprec) :: Ru1, Zu1, Rv1, Zv1, Rs1, Zs1, g1
