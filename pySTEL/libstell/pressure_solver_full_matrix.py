@@ -261,15 +261,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 self.fluxes_info[type]['alpha'] = alpha
                 self.fluxes_info[type]['stiffness'] = stiffness
                 self.fluxes_info[type]['chi_electrons'] = chi_electrons
-                
-            case 'aLT':
-                if(chi_base is None):
-                    print('ERROR: need to provide chi_base')
-                    exit(0)
-                self.fluxes_info['type'] = type
-                self.fluxes_info[type]['chi_base'] = chi_base
-                
-                
+                    
     def set_density_and_temperature(self,species,pressure,it):
         # from pressure (Pa), sets temperature (eV) in plasma class
         # sets density (m^-3) in plasma class as well
@@ -424,7 +416,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 
                 p_old = press
                 
-                info_str = f'  {t:<13.2f}{subiter:<10}{self.T['electrons'][it,0]/1E3:<18.3f}{self.total_sources_explicit['electrons'][it,0]/1E6:<20.2E}{self.T['deuterium'][it,0]/1E3:<18.3f}{self.total_sources_explicit['deuterium'][it,0]/1E6:<21.2E}{delta_p:<13.2E}'
+                info_str = f'  {t:<13.3f}{subiter:<10}{self.T['electrons'][it,0]/1E3:<18.3f}{self.total_sources_explicit['electrons'][it,0]/1E6:<20.2E}{self.T['deuterium'][it,0]/1E3:<18.3f}{self.total_sources_explicit['deuterium'][it,0]/1E6:<21.2E}{delta_p:<13.2E}'
                 print(info_str)
                 
                 subiter += 1
@@ -676,7 +668,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 # upper[ir] = dt_fact*(-VDplus)
                 # lower[ir-1] = dt_fact*(-VDminus-cminus)
 
-            ## r=1
+            ## r=1  -- this can now be removed since Dirichlet BC/s are imposed at the end of this routine
             main[-1] = 1.0
             lower[-1] = 0.0
             
@@ -775,8 +767,6 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             self.compute_diffusive_flux(it)
         elif(self.fluxes_info['type']=='beurskens'):
             self.compute_beurskens_flux(it)
-        elif(self.fluxes_info['type']=='aLT'):
-            self.compute_aLT_flux(it)
         else:
             print('ERROR: Not available other type of flux...')
             exit(0)
@@ -906,9 +896,8 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             n_r = self.plasma.get_density(species,self.rho_grid)
             dndr = self.plasma.get_density_der(species,self.rho_grid) / self.aminor
             
-            Q = -chi*dpdr(r_grid) 
-            # Q = -chi * n_r * dTdr(r_grid) * EC
-            
+            Q = -chi * dpdr(r_grid) # + p_r(r_grid)*(chi/n_r)*dndr
+
             D = np.zeros(self.Nr)
             
             D[1:] = np.where(dpdr(r_grid[1:])!=0, 
@@ -946,8 +935,6 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         
         r_grid = self.r_grid
         
-        # jump_func = lambda alpha,x: 0.5*(np.tanh(alpha*x)+1)
-        
         ## IONS
         for ion in self.plasma.ion_species:
             T_ion = self.T[ion][it,:]
@@ -957,9 +944,6 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             # dTdr_non_filtered = T_r.derivative()
             
             # dTdr = savgol_filter(T_ion,10,2,deriv=1,delta=self.dr)
-            
-            # dTdr_finite_diffs = self.get_my_derivative(self.r_grid,T_ion)
-            # dTdr_finite_diffs[0] = 0.0
             
             T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
             dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
@@ -972,7 +956,6 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             
             a_LT_filtered = -a_LT #savgol_filter(a_LT,50,2)
             # a_LT_filtered = np.where(a_LT_filtered > 0, 0, -a_LT_filtered)
-            
             
             X = a_LT_filtered - aLT_critical
             
@@ -995,7 +978,10 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             p_r = CubicSpline(r_grid,self.P[species][it,:])
             dpdr = p_r.derivative()
             
-            Q = -chi[species] * dpdr(r_grid)
+            n_r = self.plasma.get_density(species,self.rho_grid)
+            dndr = self.plasma.get_density_der(species,self.rho_grid) / self.aminor
+            
+            Q = -chi[species] * dpdr(r_grid)  #+  p_r(r_grid)*(chi[species]/n_r)*dndr
             
             D = np.zeros(self.Nr)
             
@@ -1003,22 +989,12 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                             -self.theta * Q[1:] / dpdr(r_grid[1:]),
                             0.0)
             
-            
-            # if(np.abs(self.P[species][it,1]-self.P[species][it,0]) > 1E-14):
-            #     D[0] = -self.theta*0.5*Q[0]*self.dr / (self.P[species][it,1]-self.P[species][it,0])
-            # else:
-            #     # linear interpolation
-            #     print('linear interpolation!')
             D[0] = 2*D[1] - D[2]
             if D[0]<0:
                 D[0] = 0.0
-                
-            ## filter and clamp D
-            # D_filtered = savgol_filter(D,10,1)
-            # D_filtered_and_clamped = np.where(D_filtered<0.03,0.03,D_filtered)
+            # D[D<0] = 0.0
             
             self.D_interp[species][it] = CubicSpline(self.rho_grid,D,bc_type='natural',extrapolate=True)
-            # self.D_interp[species][it] = CubicSpline(self.rho_grid,D_filtered_and_clamped,bc_type='natural',extrapolate=True)
             
             c = np.zeros(self.Nr)
             c[0] = 0
@@ -1028,32 +1004,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             
             # this is for bookeeping
             self.Q_interp[species][it] = CubicSpline(self.rho_grid,Q)
-            
-    def get_my_derivative(self,x,y):
-        
-        dydx = np.zeros_like(y)
-        
-        dydx[0] = (y[1]-y[0]) / (x[1]-x[0])
-        dydx[1:-1] = (y[2:]-y[0:-2]) / (x[2:]-x[0:-2])
-        dydx[-1] = (y[-1]-y[-2]) / (x[-1]-x[-2])
-        
-        return dydx
               
-    def update_at_start(self):
-           
-        # if(self.fluxes_info['type']=='dkespenta'):
-        #     self.call_PENTA3()
-            
-        # if(self.fluxes_info['type']=='diffusive'):
-        #     self.compute_diffusive_flux(it=0)
-            
-        for species in self.list_of_species:
-            self.total_sources_explicit[species][0,:] = self.get_sources_explicit(species,self.rho_grid,0)  # W/m^3
-        
-        # print info for t=t_starts
-        info_str = f'  {self.time[0]:<13.2f}{1:<10}{self.T['electrons'][0,0]/1E3:<18.3f}{self.total_sources_explicit['electrons'][0,0]/1E6:<20.2E}{self.T['deuterium'][0,0]/1E3:<18.3f}{self.total_sources_explicit['deuterium'][0,0]/1E6:<21.2E}{0.0:<13.2E}'
-        print(info_str)
-        
     def get_collisionalHeatExchange(self):
         # returns 2 arrays: the explicit part of W_s1_s2 and the implicit fact of W_s1_s2
         
