@@ -415,7 +415,7 @@ fgc_eom.o: \
       beams3d_lines.o \
       beams3d_runtime.o
 
-fgc_eom.o: \
+fgc_old.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       beams3d_grid.o \
