@@ -182,6 +182,7 @@
          IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
          IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
+         IF (lmgrid) WRITE(6,'(A)')    '   MUMAT: ' // TRIM(mumat_string)
          IF (.not.lgcsim) WRITE(6,'(A)') '   FULL ORIBT SIMULATION!'
 #if defined(B3D_COLLOP_NRL19IE)
          IF (lcollision) WRITE(6,'(A)') '   NRL2019IE COLLISION OPERATOR ON!'
@@ -423,7 +424,6 @@
          B_PHI = 0
          B_Z = 0
          MODB = 0
-
       END IF
       CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
 
@@ -462,6 +462,7 @@
       END IF
 
       ! Adjust magnetic field for magnetic material
+      IF (lmumat) CALL beams3d_init_mumat
 
       ! Adjust the torodial distribution function grid
       ns_prof3 = MAX(ns_prof3,8*NINT(pi2/phimax)) ! Min 8 per field period
@@ -815,6 +816,8 @@
             lgc2fo_start = .TRUE.
          END WHERE
       END IF
+
+      IF (lboxsim) lgc2fo_start(:)=.FALSE.
       
       ! Duplicate particles if requested
       IF (duplicate_factor > 1) CALL beams3d_duplicate_part

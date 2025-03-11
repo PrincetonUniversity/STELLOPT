@@ -49,6 +49,7 @@
 !                    - FIELDLINES Interface Added
 !     v4.05 08/25/23 - Fast Tritium only calculation added
 !     v4.07 01/11/24 - Added ability to specifiy weights in the input
+!     v4.10 01/12/24 - Mu material interface added.
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-------------------------------------------------------------------
@@ -80,7 +81,11 @@ MODULE beams3d_runtime
                               lbbnbi, lcollision, lfusion, &
                               lrestart_particles, lfusion_alpha, &
                               lfusion_He3, lfusion_proton, &
-                              lfusion_tritium, lkick, lgcsim, id_string
+                              lfusion_tritium, lkick, lgcsim, id_string, &
+                              mumaterial_niter, mumaterial_nneighbor, &
+                              mumaterial_lamthresh, mumaterial_tol, &
+                              mumaterial_lambda, mumaterial_lamfactor, &
+                              mumaterial_padfactor, mumaterial_convcheck
     !-----------------------------------------------------------------------
     !     Module Variables
     !          lverb         Logical to control screen output
@@ -154,7 +159,7 @@ MODULE beams3d_runtime
                ldepo, lbeam_simple, lw7x, lsuzuki, &
                lascot, lascot4, lfidasim, lfidasim_cyl, lsplit, &
                lvessel_beam, lascotfl, lrandomize, leqdsk, lhint, &
-               lboxsim, limas, lfieldlines, lbeamdensity
+               lboxsim, limas, lfieldlines, lbeamdensity, lmumat
     INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, pi, invpi2, mu0, to3, dt_save, rminor_norm
@@ -166,9 +171,9 @@ MODULE beams3d_runtime
     CHARACTER(256) :: mgrid_string, coil_string, &
                       vessel_string, restart_string, &
                       continue_grid_string, bbnbi_string, &
-                      eqdsk_string
+                      eqdsk_string, mumat_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.07 ! this is the full orbit test version
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.10 ! this is the full orbit test version
 
     !-----------------------------------------------------------------------
     !     Subroutines

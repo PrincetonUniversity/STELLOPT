@@ -1,7 +1,7 @@
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
-  SHELL = /bin/zsh
+  SHELL ?= /bin/zsh
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
   PRECOMP:= /usr/bin/cpp -traditional -DLINUX
