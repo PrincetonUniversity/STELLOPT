@@ -23,10 +23,13 @@
       LOGICAL :: lverb, lcollision, lrestart_particles, ldebug, &
                  lfusion, lfusion_alpha, lfusion_He3, lfusion_proton, &
                  lfusion_tritium, lkick, lgcsim, lbeam, lbbnbi
-      INTEGER :: npoinc, nbeams, nparticles_start,duplicate_factor
+      INTEGER :: npoinc, nbeams, nparticles_start,duplicate_factor, &
+                 mumaterial_niter, mumaterial_nneighbor, mumaterial_lamthresh
       INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
       REAL(rprec) :: follow_tol, pi2, ne_scale, te_scale, ti_scale, &
-                     zeff_scale, fusion_scale, lendt_m, te_col_min, rho_max_dist
+                     zeff_scale, fusion_scale, lendt_m, te_col_min, rho_max_dist, &
+                     mumaterial_tol, mumaterial_lambda, mumaterial_lamfactor, &
+                     mumaterial_padfactor, mumaterial_convcheck
       REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
                                         charge_beams, Zatom_beams, P_beams
       REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
