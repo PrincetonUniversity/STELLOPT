@@ -1104,7 +1104,7 @@ class LIBSTELL():
 		realList = ['wb','wp','gamma','pfac','rmax_surf','rmin_surf','zmax_surf',\
 			'aspect','betatot','betapol','betator','betaxis','b0','version_',\
 			'ionlarmor','volavgb','fsql','fsqr','fsqz','ftolv','aminor','rmajor',\
-			'volume','rbtor','rbtor0','itor','machsq']
+			'volume','rbtor','rbtor0','itor','machsq','itfsq','niter']
 		realLen = [1]*len(realList)
 		scalar_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen)
 		ns = scalar_data['ns']
@@ -1338,6 +1338,78 @@ class LIBSTELL():
 		bfield(ct.byref(x_ctype),ct.byref(y_ctype),ct.byref(z_ctype),\
 				 ct.byref(bx_ctype),ct.byref(by_ctype),ct.byref(bz_ctype),ct.byref(istat_ctype))
 		return bx_ctype.value,by_ctype.value,bz_ctype.value
+
+	def read_mgrid(self,file,extcur,nv,nfp):
+		"""Reads a makegrid file and returns a dictionary
+
+		This routine wrappers read_mgrid in LIBSTELL and returns
+		a dictionary of values
+
+		Parameters
+		----------
+		file : str
+			Path to makegrid file.
+		extcur : extcur
+			List of external currents ([A] or scale factor)
+		nv : int
+			Number of toroidal planes
+		nfp : int
+			Field periodicty
+		Returns
+		----------
+		vars : dict
+			Dictionary of module variables
+		"""
+		import ctypes as ct
+		# Get constants
+		module_name = self.s1+'vsvd0_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getnigroup'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		nigroup = get_constant()
+		# Now get data
+		module_name = self.s1+'mgrid_mod_'+self.s2
+		read_mgrid = getattr(self.libstell,module_name+'_read_mgrid_python'+self.s3)
+		read_mgrid.argtypes=[ct.c_char_p, ct.POINTER(ct.c_double), \
+		ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.c_long, \
+		ct.c_long]
+		read_mgrid.restype=None
+		nv_in = ct.c_int(nv)
+		nfp_in = ct.c_int(nfp)
+		extcur_c = (ct.c_double * len(extcur))(*extcur)
+		read_mgrid(file.encode('UTF-8'), extcur_c, ct.byref(nv_in), ct.byref(nfp_in), len(file), len(extcur))
+		# Setup Arrays
+		out_data={}
+		# Get Scalars
+		intList  = ['nr0b','np0b','nfper0','nz0b','nobd','nobser','nextcur','nbfldn',\
+			'nbsets','nbcoilsn','nbvac', 'nbcoil_max', 'nlim', 'nlim_max', 'nsets', \
+			'nrgrid','nzgrid']
+		intLen   = [1]*len(intList)
+		realList = ['rminb', 'zminb', 'rmaxb', 'zmaxb', 'delrb', 'delzb',\
+			'rx1', 'rx2', 'zy1', 'zy2', 'condif']
+		realLen = [1]*len(realList)
+		scalar_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen)
+		nr = scalar_data['nr0b']
+		np = scalar_data['np0b']
+		nz = scalar_data['nz0b']
+		nc = scalar_data['nextcur']
+		nbvac = nr*nz*nv
+		# Get 1D Real Arrays
+		realList = ['raw_coil_current']
+		realLen = [(nc,1)]*len(realList)
+		# Add 2D Arrays
+		realList.extend(['bvac'])
+		realLen.extend([(nbvac,3)])
+		# Add 3D Arrays
+		realList.extend(['brvac','bzvac','bpvac'])
+		realLen.extend([(nr,nz,np)]*3)
+		array_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		# Try reading strings
+		charVar=['mgrid_path','curlabel','mgrid_mode','tokid']
+		charLen=[(300,1),(30,nc),(1,1),(30,1)]
+		string_data = self.get_module_vars(module_name,charVar=charVar,charLen=charLen,ldefined_size_arrays=True)
+		# Return
+		return scalar_data | array_data | string_data
 
 	def get_module_vars(self,modName,booVar=None,booLen=None,\
 		intVar=None,intLen=None,realVar=None,realLen=None,\
@@ -1820,6 +1892,8 @@ class FourierRep():
 			Turn the colorbar on (default: False)
 		color : string (optional)
 			Surface color name, overriden by vals (default: 'red')
+		alpha : float (optional)
+			Face alpha in range [0.0,1.0] (default: 1/nr)
 		"""
 		import numpy as np
 		from libstell.plot3D import PLOT3D 
@@ -1830,6 +1904,7 @@ class FourierRep():
 		vals = kwargs.get('vals',None)
 		lbar = kwargs.get('lcolorbar',False)
 		color = kwargs.get('color','red')
+		alpha = kwargs.get('alpha',None)
 		lrender = False
 		if not plt:
 			plt = PLOT3D()
@@ -1844,6 +1919,11 @@ class FourierRep():
 			if r.shape[0] == 1: svals = 0
 			s= [svals]
 		nr = np.size(s)
+		# Handle alpha
+		if not alpha:
+			alpha_3D = 1.0/nr
+		else:
+			alpha_3D = alpha
 		# Setup x,y,z helpers
 		nu = np.size(r,1)
 		nv = np.size(r,2)
@@ -1861,9 +1941,9 @@ class FourierRep():
 			if type(vals) != type(None): 
 				scalar = plt.valuesToScalar(vals[s[k],:,:])
 				# Add to Render
-				plt.add3Dmesh(points,triangles,scalars=scalar,opacity=1.0/nr)
+				plt.add3Dmesh(points,triangles,scalars=scalar,opacity=alpha_3D)
 			else:
-				plt.add3Dmesh(points,triangles,color=color,opacity=1.0/nr)
+				plt.add3Dmesh(points,triangles,color=color,opacity=alpha_3D)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested
