@@ -227,7 +227,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 print(f'ERROR: Source type {source_type} is NOT possible')
                 exit(0)
                 
-    def set_fluxes(self, type: str,dkes_folder=None,surfaces=None,chi=None,chi_base=None,aLT_critical=None,alpha=None,stiffness=None,chi_electrons=None):
+    def set_fluxes(self, type: str,dkes_folder=None,surfaces=None,theta=None,chi=None,chi_base=None,aLT_critical=None,alpha=None,stiffness=None,chi_electrons=None):
         # sets type of fluxes
         # OPTION1: type='dkespenta'; dkes_folder and surfaces(list of integers) must be provided
         # OPTION2: type='diffusive'; Dn and chi must be provided (partical and heat collisional diffusion coefficients)
@@ -235,13 +235,14 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         match type:
             case 'dkespenta':
                 #checks that dkes_folder and surfaces are provided
-                if((dkes_folder is None) or (surfaces is None)):
-                    print('ERROR: dkes_folder and surfaces must be provided!!')
+                if((dkes_folder is None) or (surfaces is None) or (theta is None)):
+                    print('ERROR: dkes_folder, surfaces and theta must be provided!!')
                     exit(0)
                     
                 self.fluxes_info['type'] = type
                 self.fluxes_info[type]['dkes_folder'] = dkes_folder
                 self.fluxes_info[type]['surfaces'] = surfaces
+                self.fluxes_info[type]['theta'] = theta
                 
             case 'diffusive':
                 #checks that diffusion coefficients are provided
@@ -280,7 +281,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         
         self.plasma.set_temperature(species,'interp',rho_vals=rho,T_vals=temperature) 
                  
-    def run(self,Nr,dt,tstart,tend,theta=1.0,tolerance=1E-2,max_subiter=12):
+    def run(self,Nr,dt,tstart,tend,tolerance=1E-2,max_subiter=12):
         
         from collections import defaultdict
         
@@ -309,7 +310,6 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         self.drho = drho
         self.dr = drho * self.aminor
         self.Nr = Nr
-        self.theta = theta
             
         print(' ')
         print( ' ***********************')
@@ -327,6 +327,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         self.T = {}
         self.Q_interp = {}
         self.D_interp = {}
+        self.D_keep = defaultdict(lambda: defaultdict(list))
         self.c_interp = {}
         self.total_sources_explicit = {}
         self.all_sources = {}
@@ -375,7 +376,10 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         print(header_str)
         print('  '+'='*len(header_str))
         
-        # info at t=t_start
+        # t=t_start
+        self.call_fluxes(it=0)
+        for species in self.list_of_species:
+                self.total_sources_explicit[species][0,:] = self.get_sources_explicit(species,rho,it=0)
         info_str = f'  {tstart:<13.2f}{1:<10}{self.T['electrons'][0,0]/1E3:<18.3f}{'---':<20}{self.T['deuterium'][0,0]/1E3:<18.3f}{'---':<21}{0.0:<13.2E}'
         print(info_str)
         
@@ -814,6 +818,8 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         from scipy.interpolate import CubicSpline
         sys.path.insert(1,'/home/antonio/STELLOPT/pySTEL/libstell')
         from penta import PENTA
+        
+        theta = self.fluxes_info['dkespenta']['theta']
 
         PENTA_class = PENTA(folder_path='.', plasma=self.plasma, lverb=False)
         
@@ -839,12 +845,12 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             press_dr_large = self.plasma.get_pressure(species,PENTA_class.roa_unique[0])
             
             D_penta = np.where(dpdr!=0, 
-                            -self.theta * Q / dpdr,
+                            -theta * Q / dpdr,
                             0.0)
             
             # COMPUTES D_axis assuming Q and dp/dr are zero on the axis (this is a formula resulting from Cauchy rule!)
             if(np.abs(press_dr_large-press_axis) > 1E-14):
-                D_axis = -self.theta*0.5* (Q[0]/dr_large) / ((press_dr_large-press_axis)/dr_large**2)
+                D_axis = -theta*0.5* (Q[0]/dr_large) / ((press_dr_large-press_axis)/dr_large**2)
             else:
                 # linear interpolation
                 print(' !!! ENTERING in linear interpolation')
@@ -854,7 +860,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             
             self.D_interp[species][it] = CubicSpline(rho_extended,D_extended,extrapolate=True,bc_type='natural')
             
-            c_penta = (1-self.theta) * Q / press
+            c_penta = (1-theta) * Q / press
             c_axis = 0.0
             c_extended = np.concatenate([[c_axis],c_penta])
             
@@ -890,30 +896,20 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             p_r = CubicSpline(r_grid,self.P[species][it,:])
             dpdr = p_r.derivative()
             
-            T_r = CubicSpline(r_grid,self.T[species][it,:])
-            dTdr = T_r.derivative()
-            
             n_r = self.plasma.get_density(species,self.rho_grid)
             dndr = self.plasma.get_density_der(species,self.rho_grid) / self.aminor
             
-            Q = -chi * dpdr(r_grid) # + p_r(r_grid)*(chi/n_r)*dndr
-
-            D = np.zeros(self.Nr)
-            
-            D[1:] = np.where(dpdr(r_grid[1:])!=0, 
-                            -self.theta * Q[1:] / dpdr(r_grid[1:]),
-                            0.0)
-            D[0] = 2*D[1] - D[2]
+            D = chi * np.ones(self.Nr)
 
             self.D_interp[species][it] = CubicSpline(self.rho_grid,D,bc_type='natural',extrapolate=True)
             
-            c = np.zeros(self.Nr)
-            c[0] = 0
-            c[1:] = (1-self.theta) * Q[1:] / p_r(r_grid[1:])
+            c = (chi/n_r)*dndr
+            c[0] = 0.0
             
             self.c_interp[species][it] = CubicSpline(self.rho_grid,c,bc_type='natural',extrapolate=True)
             
             # this is for bookeeping
+            Q = -chi * dpdr(r_grid) + p_r(r_grid)*(chi/n_r)*dndr
             self.Q_interp[species][it] = CubicSpline(self.rho_grid,Q)
             
     def compute_beurskens_flux(self,it):
@@ -931,7 +927,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         chi = {}
         
         ## electrons
-        chi['electrons'] = chi_electrons
+        chi['electrons'] = chi_electrons * np.ones(self.Nr)
         
         r_grid = self.r_grid
         
@@ -941,68 +937,58 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             T_electrons = self.T['electrons'][it,:]
             
             T_r = CubicSpline(r_grid,T_ion)
-            # dTdr_non_filtered = T_r.derivative()
-            
-            # dTdr = savgol_filter(T_ion,10,2,deriv=1,delta=self.dr)
+            dTdr_non_filtered = T_r.derivative()
             
             T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
             dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
             dTdr_polyfit = dTdr_polyfit(r_grid)
             
-            dTdr = dTdr_polyfit  #dTdr_non_filtered(r_grid)
+            dTdr = dTdr_polyfit  
+            # dTdr = dTdr_non_filtered(r_grid)
             
-            # a_LT = self.aminor * dTdr(self.r_grid) / T_r(self.r_grid)
             a_LT = self.aminor * dTdr / T_ion
             
-            a_LT_filtered = -a_LT #savgol_filter(a_LT,50,2)
-            # a_LT_filtered = np.where(a_LT_filtered > 0, 0, -a_LT_filtered)
+            a_LT_filtered = -a_LT
             
             X = a_LT_filtered - aLT_critical
             
             chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
             
             B = self.B ## currently, this is only defined when using a VMEC equilibrium
-            
             chi_gB = self.plasma.get_gyroBohm_diffusivity(ion,B,self.aminor,self.rho_grid)
             
             chi_turb = chi_gB * chi_turb
             
             chi[ion] = chi_base + chi_turb
-        # plt.plot(self.rho_grid,a_LT,label=f'{ion}')
-        # plt.plot(self.rho_grid,dTdr(self.r_grid),'--')
-        # plt.plot(self.rho_grid,-a_LT,'-')
-        # plt.plot(self.rho_grid,a_LT_filtered,'--')
         
-
-        for species in self.list_of_species:   
+        for species in self.list_of_species:
+            
             p_r = CubicSpline(r_grid,self.P[species][it,:])
             dpdr = p_r.derivative()
             
             n_r = self.plasma.get_density(species,self.rho_grid)
             dndr = self.plasma.get_density_der(species,self.rho_grid) / self.aminor
             
-            Q = -chi[species] * dpdr(r_grid)  #+  p_r(r_grid)*(chi[species]/n_r)*dndr
+            D = chi[species]
             
-            D = np.zeros(self.Nr)
+            # save D of ALL subiter
+            self.D_keep[species][it].append(np.array(D))
             
-            D[1:] = np.where(dpdr(r_grid[1:])!=0, 
-                            -self.theta * Q[1:] / dpdr(r_grid[1:]),
-                            0.0)
-            
-            D[0] = 2*D[1] - D[2]
-            if D[0]<0:
-                D[0] = 0.0
-            # D[D<0] = 0.0
-            
+            # average to smooth-out eventual oscillations
+            D_avg = np.mean(np.array(self.D_keep[species][it]), axis=0)
+            D = D_avg
+
             self.D_interp[species][it] = CubicSpline(self.rho_grid,D,bc_type='natural',extrapolate=True)
             
-            c = np.zeros(self.Nr)
-            c[0] = 0
-            c[1:] = (1-self.theta) * Q[1:] / p_r(r_grid[1:])
+            c = (chi[species]/n_r)*dndr
+            c[0] = 0.0
+            
+            # should we average 'c' ??
             
             self.c_interp[species][it] = CubicSpline(self.rho_grid,c,bc_type='natural',extrapolate=True)
             
             # this is for bookeeping
+            Q = -chi[species] * dpdr(r_grid) + p_r(r_grid)*(chi[species]/n_r)*dndr
             self.Q_interp[species][it] = CubicSpline(self.rho_grid,Q)
               
     def get_collisionalHeatExchange(self):
