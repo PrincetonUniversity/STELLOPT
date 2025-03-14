@@ -1,7 +1,6 @@
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
-
   SHELL = /bin/bash
   PWD1 = `pwd`
   #compiladores=intel   # cambiar para compilar con gnu
@@ -9,20 +8,18 @@
  # MYHOME = $(PWD)/../x$(compiladores)
 	
   MYHOME = $(PATH_STELLOPT_EXE)
-
+  #FC=mpiifort
   PRECOMP:= /lib/cpp -P -traditional -DLINUX
-  COMPILE = $(FC)
+  export COMPILE = $(FC)
   ifeq ($(compiladores),intel)
   	COMPILE_FREE = $(FC) -stand f95 -ip  
-  	OPENBLAS_HOME = /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openblas-0.3.6-bwopn5fpda3kcxclpyto2sqybautaofg/
   endif 
   ifeq ($(compiladores),gnu)
   	COMPILE_FREE = $(FC) -stand f95 -ip  -ffree-form -ffree-line-length-none -ffixed-line-length-none 
- 	OPENBLAS_HOME = /mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/openblas-0.3.3-5qt5gvtw2ctxm7m6jzmmepr6lnxfjbxz/
   endif
-  mpiExe=`which mpif90`
-  mpiBin=`dirname $mpiExe`
-  MPI_HOME=`dirname $mpiBin`
+  #  mpiExe=`which mpiifort`  #mpif90`
+  #mpiBin=`dirname $mpiExe`
+  #export MPI_HOME=`dirname $mpiExe`   #$mpiBin`
 #
   LINK    = ld -lc $(FLAGS) -o
   LINK_AR = ar -ruv
@@ -43,11 +40,10 @@
 #######################################################################
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
   #FLAGS_R = -g -O2 -fexternal-blas -fbacktrace -I/usr/include 
-  FLAGS_R = -g -O2   -I/usr/include \
-            -I$(OPENBLAS_HOME)/include/ -I$(MPI_HOME)/include 
+  FLAGS_R = -g -O2   -I/usr/include -I$(OPENBLAS_HOME)/include/ #-I$(MPI_HOME)/include 
 
   #FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -I/usr/include
-  FLAGS_D = -g -O0 -check all -WB   -I/usr/include -I$(OPENBLAS_HOME)/include/ -I$(MPI_HOME)/include 
+  FLAGS_D = -g -O0 -check all -WB  -I/usr/include -I$(OPENBLAS_HOME)/include/ -I$(MPI_HOME)/include 
 
 	#-I/usr/include -Wextra .fcheck-all\
    #-Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan\
@@ -60,24 +56,26 @@
 	LIBS +=  -lgfortran 
   endif
 
-#-L/lib64/openmpi/lib -lmpiblacs /lib64/libopenblas.so.0 \
- #           /lib64/openmpi/lib/libscalapack.so.2
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90
+
+  #MPI_COMPILE = mpiifort #mpif90
   ifeq ($(compiladores),gnu)
+  	MPI_LINK = mpif90
+  	MPI_COMPILE =  mpif90
   	MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
   endif
   ifeq ($(compiladores),intel)
-	MPI_COMPILE_FREE = mpif90
+	MPI_COMPILE = mpiifort
+	MPI_COMPILE_FREE = mpiifort
+  	MPI_LINK = mpiifort
   endif
   MPI_COMPILE_C = mpicc
-  MPI_LINK = mpif90
-  MPI_RUN = mpiexec
+  MPI_RUN = mpirun #mpiexec
   MPI_RUN_OPTS = -np 4
 #  MPI_RUN_OPTS_SM = -np 16
 #  MPI_RUN_OPTS_MD = -np 64
@@ -110,14 +108,8 @@
 #######################################################################
   LHDF5 = T
   HDF5_INC = -I$(HDF5_HOME)/include -DH5_USE_16_API
-  HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lz -ldl -lm -Wl,-rpath,-z -L$(PGPLOT_DIR) -lpgplot -L$(PNG_DIR)/lib -I$(PNG_DIR)/include -lpng
-# -Wl,-rpath -Wl,-z,relro
-#/usr/lib64/openmpi/lib \
-#              /usr/lib64/openmpi/lib/libhdf5hl_fortran.so \
-#              /usr/lib64/openmpi/lib/libhdf5_hl.so \
-#              /usr/lib64/openmpi/lib/libhdf5_fortran.so \
-#              /usr/lib64/openmpi/lib/libhdf5.so \
-#              -Wl,-z,relro -lhdf5_fortran -lhdf5 -lz -lsz -lz -ldl -lm -Wl,-rpath -Wl,/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/gcc-8.2.0/openmpi-3.1.3-roaqnl35m7f57g7tluunnp6bdxomkfrg/lib
+  HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lz -ldl -lm -Wl,-rpath,-z 
+  #-L$(PGPLOT_DIR) -lpgplot -L$(PNG_DIR)/lib -I$(PNG_DIR)/include -lpng
 
 #######################################################################
 #             PGPLOT Options
@@ -129,8 +121,8 @@
 #             SILO Options
 #######################################################################
   LSILO = T
-  SILO_INC = 
-  SILO_LIB = 
+  SILO_INC = -I$(SILO_HOME)/include
+  SILO_LIB = -L$(SILO_HOME)/lib
 
 #######################################################################
 #            DKES/NEO Options
@@ -143,6 +135,7 @@
 #######################################################################
   LKNOSOS = T
   KNOSOS_LIB = -lfftw3  
+  #FFTW_HOME=
 
 #######################################################################
 #            STELLA Options
