@@ -33,25 +33,31 @@ indicate unstable modes.
 
 ------------------------------------------------------------------------
 
+### Compilation
 
-The TERPSICHORE code is compiled using a set of makefiles. The primary
-makefile will create an executable for running TERPSICHORE. There is
-also a makefile for producing an equilibrium interpretation code which
-converts VMEC wout text files into a text file TERPSICHORE can read
-(`fort.18`). The code must be recompiled if equilibrium variables change
-(this is not true if STELLOPT is used to call TERPSICHORE).
+The TERPSICHORE code is compiled using a makefile. Before compiling a
+code the user must choose the following set of variables and set them
+in the `tpr_modules_sp.f` file.
 
-The modules.f file has a few variables worth checking.
+- `NI` Number of VMEC surfaces NS-1
+- `IVAC` Number of vacuum surfaces. NS/4 is a good choice
+- `NVI=NI+IVAC` Total number of radial grid points
+- `MLMNV` The number of equilibrium modes.
+- `MLMNB` The number of Boozer modes (first table in input file).
+- `MLMNS` The number of stability modes (second table in input file).
+- `NJ` Number of poloidal gridpoints used by the code. 
+- `NK` Number of toroidal gridpoints to use. 
+- `NJK=NJ*NK` Total number of flux surface gridpoints
+- `MMAXDF=2*MMAX` where MMAX is the maximum ABS(M) value in the talbes
+- `NMAXDF=2*NMAX` where NMAX is the maximum ABS(N) value in the tables
+- `ND=NI+IVAC`
+- `ND1=ND+1`
+- `MD=MLMNS`
+- `MDY=MLMNS`
+- `NA=2*MLMNS*(NI+IVAC)+MLMNS`
 
-- `NI = NS-1`
-- `MLMNV>= LMNV = (2*MPOL-1)*NTOR + MPOL` (i.e. the number of VMEC modes)
-- `NJ >= 3*MM` (MM is defined in the ft5tpr file, Max Boozer M mode) 
-- `NK >= 3*max(N_boozer)` 
-- `MLMNB >= LMNB = MM *(NMAX-NMIN+1)` (MM, NMIN, and
-NMAX are in the ft5tpr) 
-- `MLMNS >= MMS*(NSMAX-NSMIN+1)` (MMS is max(M) in
-the stability table, and NSMAX and NSMIN are the min and max n of the
-stability table)
+The [pySTEL] utility `terpsichore_util.py` can be used for auto-generating
+these numbers from a given VMEC equilibrium.
 
 ------------------------------------------------------------------------
 
@@ -59,7 +65,7 @@ stability table)
 
 The TERPSICHORE code is controlled by an input file which is passed to
 it via unit 15 (STELLOPT requires this file to be named
-terpsichore_input):
+terpsichore_input_XX):
 
                    ARIE3n1
     C
@@ -98,8 +104,8 @@ terpsichore_input):
                1           1           0           2
     C
     C    PVAC        PARFAC      QONAX        QN         DSVAC       QVAC    NOWALL
-      1.2500e+00  0.0000e-00  0.6500e-00  0.0000e-00  1.0000e-00  1.2500e+00     -1
-
+      1.2500e+00  0.0000e-00  0.6500e-00  0.0000e-00  1.0000e-00  1.2500e+00     -2
+    C
     C    AWALL       EWALL       DWALL       GWALL       DRWAL       DZWAL   NPWALL
       2.8000e+00  1.8000e+00  5.0000e-01  0.0000e-00  0.0000e-00  0.0000e-00      0
     C
@@ -198,38 +204,59 @@ The following table explains each of these variables [Wiki_TERPS.pdf](docs/Wiki_
 | IGREEN | Intended for Green's function solution in vacuum (not implemented) |
 | MPINT | The stability mode table is shifted in m by MPINIT. The table usually goes from 0 to 55, with MPIINIT=20 it goes from 20 to 75. |
 
+The equilibrium data is supplied to TERPSICHORE via the fort.18 file.
+This file can be generated a few different ways. A python utility is
+provided in [pySTEL](pySTEL) `terpsichore_util.py` which can be used to
+generate both the equilibrium file and the `terpsichore_input_XX` files
+to be passed to the code.  It can be invoked by
+
+    > tpersichore_util.py --vmec VMEC_EXT --input
+
+Note that there appears to be some issue with VMEC's run with `LNYQUIST=T`
+so please generate your wout files with `LNYQUIST=F`, which is not the
+default VMEC2000 behavior. Also note that this utility will autogenerate
+the varialbe list which should be copied and pasted into `tpr_modules_ap.f`.
+Only one mode family should be uncommented and the code recompiled for
+each run with a different mode family.
+
 ------------------------------------------------------------------------
 
 ### Execution
 
-The TERPSICHORE code is executed by calling the tpr_ap.x executable
-from the command line. TERPSICHORE requires that the fort.18 contain the
-equilibirum data as calculated by the conversion routine. Here is an
-example call to TERPSICHORE:
+The TERPSICHORE code requires two files to run.
+ * An equilibrium file named `fort.18`
+ * An input file passed on the command line via standard in
+The call to TERPSICHORE should look like:
 
-    > ./tpr_ap.x < terpsichore_input
+    > xtpr < terpsichore_input_00
 
 ------------------------------------------------------------------------
 
 ### Output Data Format
 
-The data is output into four files by unit number. The fort.16 file
-contains the primary output of the code. The fort.17 file contains the
-equilibrium coefficients. The fort.22 file contains information about
-the perturbation modes. The fort.23 file is a binary file containing the
-growth rate information.
+The data is output into four files by unit number. 
+ 1. fort.16 is a log file similar to the screen output but expanded in scope.
+ 2. fort.17 contains the R and Z values of the input equilibrium grid.
+ 3. fort.19 contains the plasma boundary and wall harmonics.
+ 4. fort.22 contains some of the runtime variables.
+ 5. fort.23 is a binary file continaing the output dataset.
 
 ------------------------------------------------------------------------
 
 ### Visualization
 
-Explain how to visualize the data.
+The output files are all text save the `fort.23` file. The [pySTEL](pySTEL)
+library can be used for visualizing the data. To do this the user must
+compile the TERPSICHORE shared library from the TERPSICHORE source
+directory. This is accomplished by `make libterpsichore.so`. Once this
+is done and `TERPSICHORE_PATH` is defined the library can be used for
+reading and plotting the data of the `fort.23` file.
 
 ------------------------------------------------------------------------
 
 ### Tutorials
 
-[TERPSICHORE NCSX Tutorial](Tutorial TERPSICHORE NCSX)
+[TERPSICHORE NCSX Tutorial](Tutorial TERPSICHORE NCSX) - old
 
 ### References
 
