@@ -33,6 +33,7 @@ framework for the Graphical user iterface tools.
    * gist_util.py - A command line utility for working with [GIST](https://www.ipp.mpg.de/3444998/pax_gyrokin_turbulenzsimul) files.
    * nescoil_util.py - A command line utility for working with [NESCOIL](NESCOIL) files.
    * make_mesh.py - A command line utility for 2D and 3D meshing using [gmsh]()
+   * terpsichore_util.py - A command line utility for generating inputs and plotting [TERPSICHORE](TERPSICHORE) data.
    * vmec_util.py - A command line utility for working with [VMEC](VMEC) files.
    * wall_util.py - A command line utility for working with wall data.
  * Helper utilities
@@ -57,6 +58,7 @@ framework for the Graphical user iterface tools.
    * plot3D.py - Class for 3D plotting which wrappers [VTK](https://vtk.org/) calls.
    * popcon.py - Class for generating 0D POPCON plots.
    * stellopt.py - Class for [STELLOPT](STELLOPT) inputs/outputs
+   * terpsichore.py - Class for [TERPSICHORE](TERPSICHORE) inputs/outputs
    * thrift.py - Class for [THRIFT](THRIFT) inputs/outputs
    * vmec.py - Class for [VMEC](VMEC) inputs/outputs
    * wall.py - Class for dealing with wall files.

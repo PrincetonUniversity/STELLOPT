@@ -56,7 +56,7 @@ in the `tpr_modules_sp.f` file.
 - `MDY=MLMNS`
 - `NA=2*MLMNS*(NI+IVAC)+MLMNS`
 
-The [pySTEL] utility `terpsichore_util.py` can be used for auto-generating
+The [pySTEL](pySTEL) utility `terpsichore_util.py` can be used for auto-generating
 these numbers from a given VMEC equilibrium.
 
 ------------------------------------------------------------------------
@@ -226,6 +226,7 @@ each run with a different mode family.
 The TERPSICHORE code requires two files to run.
  * An equilibrium file named `fort.18`
  * An input file passed on the command line via standard in
+
 The call to TERPSICHORE should look like:
 
     > xtpr < terpsichore_input_00
