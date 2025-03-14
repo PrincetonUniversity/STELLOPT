@@ -70,10 +70,14 @@ class VMEC(FourierRep):
 		# Calc Eplasma
 		self.eplasma = 1.5*4*np.pi*np.pi*sum( self.vp * self.presf ) / self.ns
 		# Get mn00
-		self.mn00 = None
+		self.mn00 = None; self.mn01 = None; self.mn10 = None
 		for mn in range(self.mnmax):
 			if self.xm[mn]==0 and self.xn[mn]==0:
 				self.mn00 = mn
+			if self.xm[mn]==0 and self.xn[mn]==self.nfp:
+				self.mn01 = mn
+			if self.xm[mn]==1 and self.xn[mn]==0:
+				self.mn10 = mn
 
 	def h2f(self,var_half):
 		"""Half to full grid
