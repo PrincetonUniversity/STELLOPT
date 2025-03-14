@@ -13,9 +13,9 @@ namelist.
 
     xvmec2000 ncsx_c09r00_fixed
 
-## Generate the equilibrium file using [pySTEL]
+## Generate the equilibrium file using [pySTEL](pySTEL)
 
-If you have not done install [pySTEL] by issuing the command `make pystel`
+If you have not done install [pySTEL](pySTEL) by issuing the command `make pystel`
 from the STELLOPT directory.
 
 To generate the input and equilibrium files along with the `tpr_modules_ap.f`
