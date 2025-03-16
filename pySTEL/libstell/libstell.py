@@ -1371,13 +1371,14 @@ class LIBSTELL():
 		module_name = self.s1+'mgrid_mod_'+self.s2
 		read_mgrid = getattr(self.libstell,module_name+'_read_mgrid_python'+self.s3)
 		read_mgrid.argtypes=[ct.c_char_p, ct.POINTER(ct.c_double), \
-		ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.c_long, \
+		ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.c_long, \
 		ct.c_long]
 		read_mgrid.restype=None
 		nv_in = ct.c_int(nv)
 		nfp_in = ct.c_int(nfp)
+		nextcur_in = ct.c_int(len(extcur))
 		extcur_c = (ct.c_double * len(extcur))(*extcur)
-		read_mgrid(file.encode('UTF-8'), extcur_c, ct.byref(nv_in), ct.byref(nfp_in), len(file), len(extcur))
+		read_mgrid(file.encode('UTF-8'), extcur_c, ct.byref(nv_in), ct.byref(nfp_in), ct.byref(nextcur_in), len(file), len(extcur))
 		# Setup Arrays
 		out_data={}
 		# Get Scalars
@@ -1402,11 +1403,13 @@ class LIBSTELL():
 		realLen.extend([(nbvac,3)])
 		# Add 3D Arrays
 		realList.extend(['brvac','bzvac','bpvac'])
-		realLen.extend([(nr,nz,np)]*3)
-		array_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		realLen.extend([(np,nz,nr)]*3)
+		array_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen)
 		# Try reading strings
-		charVar=['mgrid_path','curlabel','mgrid_mode','tokid']
-		charLen=[(300,1),(30,nc),(1,1),(30,1)]
+		#charVar=['mgrid_path','curlabel','mgrid_mode','tokid']
+		#charLen=[(300,1),(30,nc),(1,1),(30,1)]
+		charVar=['mgrid_path','mgrid_mode','tokid']
+		charLen=[(300,1),(1,1),(30,1)]
 		string_data = self.get_module_vars(module_name,charVar=charVar,charLen=charLen,ldefined_size_arrays=True)
 		# Return
 		return scalar_data | array_data | string_data
