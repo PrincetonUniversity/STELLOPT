@@ -85,66 +85,113 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = F
-  GENE_INC = 
-  GENE_DIR = 
-  LIB_GENE = 
+ifneq ("$(wildcard $(GENE_PATH))","")
+  LGENE = T
+  GENE_INC = -I$(GENE_PATH)
+  GENE_DIR = $(GENE_PATH)
+  LIB_GENE = libgene.a
   GENE_LIB = 
+else
+  LGENE = F
+endif
 
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
+ifneq ("$(wildcard $(COILOPT_PATH))","")
+  LCOILOPT = T
+  COILOPT_INC = -I$(COILOPT_PATH)
+  COILOPTPP_DIR = $(COILOPT_PATH)
+  LIB_COILOPTPP = libcoilopt++.a
+  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
+                -L$(GSLHOME)/lib/x86_64-linux-gnu -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+else
   LCOILOPT = F
-  COILOPT_INC = 
-  COILOPTPP_DIR = 
-  LIB_COILOPTPP = 
-  COILOPT_LIB = 
+endif
 
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+ifneq ("$(wildcard $(TERPSICHORE_PATH))","")
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
   TERPSICHORE_LIB = $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
+else
+  LTERPSICHORE = F
+endif
 
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+ifneq ("$(wildcard $(TRAVIS_PATH))","")
+  LTRAVIS = T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
-  TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
-
-#######################################################################
-#            SFINCS Options
-#######################################################################
-  LSFINCS = F
-  SFINCS_DIR = 
-  SFINCS_INC = 
-  LIB_SFINCS = 
-  SFINCS_LIB = 
+  LIB_FADDEEVA = libfaddeeva64.a
+  TRAVIS_LIB = $(TRAVIS_DIR)lib/$(LIB_TRAVIS) \
+               $(TRAVIS_DIR)faddeeva_package/lib/$(LIB_FADDEEVA) \
+               $(TRAVIS_DIR)magconf/lib/$(LIB_MCONF) -lc++
+else
+  LTRAVIS = F
+endif
 
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= F
+ifneq ("$(wildcard $(REGCOIL_PATH))","")
+  LREGCOIL= T
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+else
+  LREGCOIL = F
+endif
+
+#######################################################################
+#            SFINCS Options
+#######################################################################
+ifneq ("$(wildcard $(SFINCS_PATH))","")
+  LSFINCS = T
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+else
+  LSFINCS = F
+endif
 
 #######################################################################
 #            Available Energy Options
 #######################################################################
-  LAEOPT= F
+ifneq ("$(wildcard $(AEOPT_PATH))","")
+  LAEOPT = T
   AEOPT_DIR = $(AEOPT_PATH)
   AEOPT_INC = -I$(AEOPT_DIR) 
   LIB_AEOPT = libtrapAE.a
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
+else
+  LAEOPT = F
+endif
+
+#######################################################################
+#            MANGO Options
+#######################################################################
+ifneq ("$(wildcard $(MANGO_PATH))","")
+  LMANGO = T
+  MANGO_DIR = $(MANGO_PATH)
+# Any flags specified on the next 2 lines will be added to the
+# MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS lines as defined in
+# $(MANGO_DIR)/lib/mangoMakeVariables
+  MANGO_INC = 
+  MANGO_LIB = 
+else
+  LMANGO = F
+endif
 
 #######################################################################
 #            LIBSTELL Shared Options
