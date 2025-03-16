@@ -139,6 +139,7 @@ else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
 else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
 else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
 else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
+else ifeq ($(MAKECMDGOALS),test_make)
 else
   LGENE = F
   LCOILOPT = F
