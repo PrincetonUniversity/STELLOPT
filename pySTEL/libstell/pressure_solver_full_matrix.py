@@ -508,41 +508,37 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         total_source_explicit = np.zeros(len(rho_grid))
         
         for source_type in self.sources[species]:
+            
+            aux_source = 0.0
                      
             match source_type:
                 case 'Bremsstrahlung':
-                    aux_source = np.zeros(len(rho_grid))
-                    for ir,rho in enumerate(rho_grid):
-                        for ion in self.plasma.ion_species:
-                            zi = self.plasma.Zcharge[ion]
-                            ni = self.plasma.get_density(ion,rho)
-                            ne = self.plasma.get_density('electrons',rho)
-                            Te = self.plasma.get_temperature('electrons',rho)
-                            
-                            aux_source[ir] -= fusion.BremsstrahlungPower(zi,ni,ne,Te)
+                    for ion in self.plasma.ion_species:
+                        zi = self.plasma.Zcharge[ion]
+                        ni = self.plasma.get_density(ion,rho_grid)
+                        ne = self.plasma.get_density('electrons',rho_grid)
+                        Te = self.plasma.get_temperature('electrons',rho_grid)
+                        
+                        aux_source -= fusion.BremsstrahlungPower(zi,ni,ne,Te)
                             
                     #save in dictionary for bookeeping
                     self.all_sources[species][source_type][it,:] = aux_source
                     
                 case 'Bremsstrahlung_alphas':
-                    aux_source = np.zeros(len(rho_grid))
-                    for ir,rho in enumerate(rho_grid):
-                        ne = self.plasma.get_density('electrons',rho)
-                        Te = self.plasma.get_temperature('electrons',rho)
-                        Z_alpha = 2
-                        tau_alpha = self.sources['electrons']['Bremsstrahlung_alphas']['tau_alphas']
-                        tau_palpha = self.sources['electrons']['Bremsstrahlung_alphas']['tau_palphas']
-                        nD = self.plasma.get_density('deuterium',rho)
-                        nT = self.plasma.get_density('tritium',rho)
-                        Ti = 0.5* ( self.plasma.get_temperature('deuterium', rho) + self.plasma.get_temperature('tritium', rho) )
-                        sigmav = fusion.sigmaBH(Ti,'DT') # m^3/s
-                        
-                        # ideally here it should be of current time iteration, previous subiteration... TO DO LATER...
-                        # ESSENTIALLY I need to update it w/ previous iter whe going to 1st subiter...
-                        self.Nalphas_fast[it,ir] = (self.Nalphas_fast[it-1,ir] + self.dt*nD*nT*sigmav) / (1+self.dt/tau_alpha)
-                        self.Nalphas_thermal[it,ir] = (self.Nalphas_thermal[it,ir] + (self.dt/tau_alpha)*self.Nalphas_fast[it,ir]) / (1+self.dt/tau_palpha)
-                        
-                        aux_source[ir] -= fusion.BremsstrahlungPower(Z_alpha,self.Nalphas_thermal[it,ir],ne,Te)
+                    ne = self.plasma.get_density('electrons',rho_grid)
+                    Te = self.plasma.get_temperature('electrons',rho_grid)
+                    Z_alpha = 2
+                    tau_alpha = self.sources['electrons']['Bremsstrahlung_alphas']['tau_alphas']
+                    tau_palpha = self.sources['electrons']['Bremsstrahlung_alphas']['tau_palphas']
+                    nD = self.plasma.get_density('deuterium',rho_grid)
+                    nT = self.plasma.get_density('tritium',rho_grid)
+                    Ti = 0.5* ( self.plasma.get_temperature('deuterium', rho_grid) + self.plasma.get_temperature('tritium', rho_grid) )
+                    sigmav = fusion.sigmaBH(Ti,'DT') # m^3/s
+                    
+                    self.Nalphas_fast[it,:] = (self.Nalphas_fast[it-1,:] + self.dt*nD*nT*sigmav) / (1+self.dt/tau_alpha)
+                    self.Nalphas_thermal[it,:] = (self.Nalphas_thermal[it,:] + (self.dt/tau_alpha)*self.Nalphas_fast[it,:]) / (1+self.dt/tau_palpha)
+                    
+                    aux_source -= fusion.BremsstrahlungPower(Z_alpha,self.Nalphas_thermal[it,:],ne,Te)
                         
                     #save in dictionary for bookeeping
                     self.all_sources[species][source_type][it,:] = aux_source 
@@ -663,7 +659,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                     
         return total_source_explicit
     
-    def get_LHS_matrix(self,it):
+    def get_LHS_matrix_non_optimized(self,it):
         # returns
         
         from scipy.interpolate import CubicSpline
@@ -769,6 +765,92 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 
         return LHS
     
+    def get_LHS_matrix(self,it):
+        # returns
+        
+        from scipy.interpolate import CubicSpline
+        from scipy.sparse import diags, block_diag, csr_matrix
+        # from scipy.sparse.linalg import eigs
+        
+        drho = self.drho
+        dr = self.aminor * drho
+        Vp = self.dVdr
+        Nr = self.Nr
+        num_species = len(self.list_of_species)
+        
+        DIFF = {}
+        
+        start_time = perf_counter()
+        for species in self.list_of_species:
+            
+            D_interp = self.D_interp[species][it]
+            c_interp = self.c_interp[species][it]
+            
+            dt_fact = (2./3.)*self.dt
+            
+            ############################################
+            ############### COMPUTE LHS ################
+            ############################################
+            lower = np.zeros(self.Nr-1)
+            main = np.zeros(self.Nr)
+            upper = np.zeros(self.Nr-1)
+            
+            ## 0<r<a
+            rhos = self.rho_grid
+            rplus = rhos + drho/2
+            rminus = rhos - drho/2
+            
+            VDplus = Vp(rplus)*D_interp(rplus) / (Vp(rhos)*dr**2)
+            VDminus = Vp(rminus)*D_interp(rminus) / (Vp(rhos)*dr**2)
+                
+            cplus  = c_interp(rhos+drho)*Vp(rhos+drho) / (2*Vp(rhos)*dr)
+            cminus = c_interp(rhos-drho)*Vp(rhos-drho) / (2*Vp(rhos)*dr)
+            
+            main[1:] = 1.0 + dt_fact*(VDplus[1:] + VDminus[1:])
+            upper = dt_fact*(-VDplus[:-1] + cplus[:-1])
+            lower = dt_fact*(-VDminus[1:] - cminus[1:])
+            
+            ## r=0
+            main[0] = 1.0 + dt_fact*( 4*D_interp(0)/dr**2 + 2*c_interp(drho)/dr )
+            upper[0] = -4*dt_fact*D_interp(0)/dr**2
+            
+            DIFF[species] = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")    
+        
+        DIFF_list = [DIFF[species] for species in self.list_of_species]
+
+        # Construct the block diagonal sparse matrix
+        LHS = block_diag(DIFF_list, format="csr")
+        
+        end_time = perf_counter()
+        self.time_diffusion_matrix_build += end_time-start_time
+            
+        # Add implicit terms from sources
+        sources_implicit = np.zeros((Nr*num_species,Nr*num_species))
+        
+        start_time = perf_counter()
+        if 'Coll_Heat_Exchange' in self.sources['electrons']:
+            sources_implicit -= dt_fact*self.get_collisionalHeatExchange()
+        end_time = perf_counter()
+        self.time_get_collisionalHeatExchange += end_time-start_time
+            
+        sources_implicit = csr_matrix(sources_implicit)
+        LHS = LHS + sources_implicit
+        
+        # impose Dirichlet boundary condition
+        start_time = perf_counter()
+        LHS = LHS.tolil()
+        for s in range(1, num_species + 1):  # s starts at 1, up to num_species
+            row_idx = s * Nr - 1  # Compute the correct row index
+
+            # Set the entire row to zero
+            LHS.rows[row_idx] = []  # Clear all column indices in that row
+            LHS.data[row_idx] = []  # Clear all values in that row
+
+            # Set the diagonal element to 1
+            LHS[row_idx, row_idx] = 1
+        
+        LHS = LHS.tocsr()
+        
         end_time = perf_counter()
         self.time_set_LHS_boundary_conditions += end_time-start_time
                 
@@ -1056,8 +1138,8 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             Q = -chi[species] * dpdr(r_grid) + p_r(r_grid)*(chi[species]/n_r)*dndr
             self.Q_interp[species][it] = CubicSpline(self.rho_grid,Q)
               
-    def get_collisionalHeatExchange(self):
-        # returns 2 arrays: the explicit part of W_s1_s2 and the implicit fact of W_s1_s2
+    def get_collisionalHeatExchange_non_optimized(self):
+        # returns collisional heat exchange to use as implicit operator
         
         from collisions import COLLISIONS
         from scipy import sparse
@@ -1118,10 +1200,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         # Add aux_B matrix
         for is1,_ in enumerate(self.list_of_species):
             for ir in range(self.Nr):
-                W_s1_s2[is1,ir,is1,ir] -= np.sum(aux_B[is1,ir,:,ir])
-        
-        # print(aux_B[:,0,:,0])      
-        # print(W_s1_s2[:,0,:,0])                  
+                W_s1_s2[is1,ir,is1,ir] -= np.sum(aux_B[is1,ir,:,ir])                 
         
         W_out = np.zeros((num_species*self.Nr,num_species*self.Nr))
         
@@ -1137,8 +1216,140 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 
         W_out = sparse.csr_matrix(W_out)
 
-        # print(W_out)
+        return W_out
+    
+    def get_collisionalHeatExchange(self):
+        # returns collisional heat exchange to use as implicit operator
+        
+        from collisions import COLLISIONS
+        from scipy import sparse
+        
+        coll = COLLISIONS()
+        
+        num_species = len(self.list_of_species)
+        Nr = self.Nr
+        
+        clog = np.zeros(self.Nr)
+        
+        W_s1_s2 = np.zeros((num_species,num_species,self.Nr))
+        aux_B = np.zeros((num_species,num_species,self.Nr))
+
+        rho_grid = self.rho_grid
+        
+    #     N1 = np.zeros((num_species,num_species,Nr))
+    #     T1 = np.zeros((num_species,num_species,Nr))
+    #     M1 = np.zeros((num_species,num_species,Nr))
+    #     Z1 = np.zeros((num_species,num_species,Nr))
+        
+    #     for is1,species1 in enumerate(self.list_of_species):
+    #         N1[is1,:,:] = self.plasma.get_density(species1,rho_grid)
+    #         T1[is1,:,:] = self.plasma.get_temperature(species1,rho_grid)
+    #         M1[is1,:,:] = self.plasma.mass[species1]
+    #         Z1[is1,:,:] = self.plasma.Zcharge[species1]
+            
+    #     N2 = np.transpose(N1,axes=(1,0,2))
+    #     T2 = np.transpose(T1,axes=(1,0,2))
+    #     M2 = np.transpose(M1,axes=(1,0,2))
+    #     Z2 = np.transpose(Z1,axes=(1,0,2))
+        
+    #    # Create a 3D matrix for 'clog' with the same shape as Z1 and Z2
+    #     clog = np.zeros_like(Z1, dtype=float)  # This creates an array with the same shape as Z1, initialized to zero.
+
+    #     # Define conditions
+    #     condition_1 = (Z1 > 0) & (Z2 > 0)  # Z1 > 0 and Z2 > 0
+    #     condition_2 = (Z1 > 0) & (Z2 < 0)  # Z1 > 0 and Z2 < 0
+    #     condition_3 = (Z1 < 0) & (Z2 > 0)  # Z1 < 0 and Z2 > 0
+
+    #     # Apply conditions using np.where and vectorize the operations
+
+    #     clog = np.where(
+    #         condition_1,
+    #         coll.coullog_ii(M1, Z1, Z1, T1, M2, Z2, N2, T2),  # When Z1 > 0 and Z2 > 0
+    #         np.where(
+    #             condition_2,
+    #             coll.coullog_ei(N2, T2, M1, Z1, N1, T1),  # When Z1 > 0 and Z2 < 0
+    #             np.where(
+    #                 condition_3,
+    #                 coll.coullog_ei(N1, T1, N2, Z2, N2, T2),  # When Z1 < 0 and Z2 > 0
+    #                 0.0  # Else case
+    #             )
+    #         )
+    #     )
+        
+    #     const = (8/np.sqrt(np.pi))*(Z1*Z2*EC*EC)**2 * clog / (8*np.pi*EPS0**2)
+
+    #     vth_s1_sqr = 2*EC*T1/M1
+    #     vth_s2_sqr = 2*EC*T2/M2
                 
+    #     den = M1 * M2 * (vth_s1_sqr + vth_s2_sqr)**1.5
+                
+    #     gamma = const / den
+
+    #     W_s1_s2 = gamma*N1  
+    #     aux_B = gamma*N2
+        
+        for is1,species1 in enumerate(self.list_of_species):
+
+            m1 = self.plasma.mass[species1]
+            Z1 = self.plasma.Zcharge[species1]
+            n1 = self.plasma.get_density(species1,rho_grid)
+            T1 = self.plasma.get_temperature(species1,rho_grid)
+            
+            for is2,species2 in enumerate(self.list_of_species):
+                
+                m2 = self.plasma.mass[species2]
+                Z2 = self.plasma.Zcharge[species2]
+                n2 = self.plasma.get_density(species2,rho_grid)
+                T2 = self.plasma.get_temperature(species2,rho_grid)
+                
+                # get Coulomb logarithm
+                # for ir in range(self.Nr):
+                if(Z1>0 and Z2>0):
+                    clog = coll.coullog_ii(m1,Z1,n1,T1,m2,Z2,n2,T2)
+                elif(Z1>0 and Z2<0):
+                    clog = coll.coullog_ei(n2,T2,m1,Z1,n1,T1)
+                elif(Z1<0 and Z2>0):
+                    clog = coll.coullog_ei(n1,T1,m2,Z2,n2,T2)
+                else:
+                    clog = 0.0
+
+                const = (8/np.sqrt(np.pi))*(Z1*Z2*EC*EC)**2 * clog / (8*np.pi*EPS0**2)
+
+                vth_s1_sqr = 2*EC*T1/m1
+                vth_s2_sqr = 2*EC*T2/m2
+                
+                den = m1 * m2 * (vth_s1_sqr + vth_s2_sqr)**1.5
+                
+                gamma = const / den
+
+                W_s1_s2[is1,is2,:] = gamma*n1  
+                # W_s1_s2[is1,ir1,is2,ir2] = 1.29
+                
+                aux_B[is1,is2,:] = gamma*n2
+                # aux_B[is1,ir1,is2,ir2] = 1.29
+
+        # Add aux_B matrix
+        # for is1,_ in enumerate(self.list_of_species):
+        #     for ir in range(self.Nr):
+        #         W_s1_s2[is1,is1,ir] -= np.sum(aux_B[is1,:,ir])
+        W_s1_s2[np.arange(num_species), np.arange(num_species), :] -= np.sum(aux_B, axis=1)
+
+        
+        # W_out = W_s1_s2.reshape(num_species * self.Nr, num_species * self.Nr)         
+        W_out = np.zeros((num_species*self.Nr,num_species*self.Nr))
+        
+        j=0
+        for is1 in range(num_species):
+            for ir1 in range(self.Nr):
+                p=0
+                for is2 in range(num_species):
+                    for ir2 in range(self.Nr):
+                        if(ir1==ir2):
+                            W_out[j,p] = W_s1_s2[is1,is2,ir2]  
+                        p=p+1
+                j = j+1
+                
+        W_out = sparse.csr_matrix(W_out)
 
         return W_out
     
