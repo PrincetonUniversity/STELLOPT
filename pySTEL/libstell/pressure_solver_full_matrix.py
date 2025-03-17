@@ -11,7 +11,6 @@ from time import perf_counter
 EC = 1.602176634E-19 # Electron charge [C]
 EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 
-# PENTA Class
 class PRESSURE_SOLVER_FULL_MATRIX:
     
     def __init__(self, plasma_class, density_functions_dict=None):
@@ -368,7 +367,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             self.Nalphas_thermal = np.zeros((Nt,Nr))
             
         press = np.concatenate(press)
-        p_old = press # 1E3*np.ones(Nr*len(self.list_of_species)) # so on loop 1 we don't divide by zero in delta_p
+        p_old = press
         
         ####################################################################################
                 
@@ -889,7 +888,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                                               
     def make_checks(self):
         
-        # check VMEC equilibrium exists
+        # check equilibrium exists
         if(not hasattr(self,'dVdr')):
             print('ERROR: dVdr MUST BE SET!!')
             exit(1)
