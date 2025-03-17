@@ -87,7 +87,7 @@ class TERPSICHORE(FourierRep):
 			f.write(f' {vmec.iotas[k,0]:22.14E}{vmec.mass[k,0]:22.14E}{rmu0*vmec.pres[k,0]:22.14E}{-vmec.phip[k,0]:22.14E}{vmec.vp[k,0]:22.14E}\n')
 		f.close()
 
-	def create_input(self,vmec,n=0):
+	def create_input(self,vmec,n=0,npertmax=3):
 		"""Computes TERPSICHORE input from VMEC data
 
 		This routine takes a VMEC output data class and toroidal mode
@@ -99,29 +99,31 @@ class TERPSICHORE(FourierRep):
 			VMEC class containting wout information
 		n : integer (optional)
 			Toroidal mode number (default = 1.0)
+		npertmax : integer (optional)
+			Number of NFPs to go left and right of n (default = 3)
 		"""
 		import numpy as np
 		rmu0 = np.pi*4E-7
 		# Compute some helpers
-		qn = 0.0
-		mm_max = 36
-		#mm = 36
-		nmin = -16
-		nmax = 16
-		mm = 32
-		#mm = int(np.min(np.max(vmec.xm)))
-		#nmin =  int(np.min(vmec.xn)/vmec.nfp)
-		#nmax =  int(np.max(vmec.xn)/vmec.nfp)
-		mms = 55
-		npertmax = 2 #Number of NFP's to go left and right of n
-		nsmin = -n - npertmax*vmec.nfp
-		nsmax =  n + npertmax*vmec.nfp
-		nj = 128; nk = 64
+		qn = 0.0; mm_max = 36; mms = 55
 		ni = vmec.ns-1
 		ivac = round(vmec.ns/4)
+		# Compute max m and n in Boozer transformation
+		mm = int(2**np.ceil(np.log2(2*np.max(vmec.xm))))
+		mm = min(mm,mm_max)
+		nmax = int(2**np.ceil(np.log2(2*np.max(vmec.xn/vmec.nfp))))
+		nmin = -nmax
+		# Compute max m and n in Stability calculation
+		nsmin = -n - npertmax*vmec.nfp
+		nsmax =  n + npertmax*vmec.nfp
 		# Check n
 		nmin = int(min(nsmin,nmin))
 		nmax = int(max(nsmax,nmax))
+		# Compute number of realspace points to use
+		nj = int(2**np.ceil(3*np.log2(mm*2)))
+		nk = int(2**np.ceil(3*np.log2(nmax*2)))
+		nj = max(nj,64)
+		nk = max(nk,32)
 		# Create Boozer mode matrix
 		lfrz = np.zeros((mm_max+1,nmax-nmin+1),dtype=int)
 		for n2 in range(nmin,nmax+1):
@@ -132,15 +134,15 @@ class TERPSICHORE(FourierRep):
 		mlmnb = np.count_nonzero(lfrz)
 		# Create Stability mode matrix
 		lfrs = np.zeros((mms+1,nsmax-nsmin+1),dtype=int)
-		for j in range(-2,3):
+		for j in range(-npertmax,npertmax+1):
 			n0 = 1
 			ntemp = n+j*vmec.nfp
 			if ntemp > 0: n0 = 0
-			for m in range(n0,mm+1): lfrs[m,ntemp-nsmin] = 1
+			for m in range(n0,mms+1): lfrs[m,ntemp-nsmin] = 1
 			n0 = 1
 			ntemp =-n+j*vmec.nfp
 			if ntemp > 0: n0 = 0
-			for m in range(n0,mm+1): lfrs[m,ntemp-nsmin] = 1
+			for m in range(n0,mms+1): lfrs[m,ntemp-nsmin] = 1
 		mlmns = np.count_nonzero(lfrs)
 		# First create the namelist data
 		# Create an input file
