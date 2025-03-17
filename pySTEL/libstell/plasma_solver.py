@@ -16,7 +16,7 @@ EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 
 class PLASMA_SOLVER:
     
-    def __init__(self, list_of_species, tau_fast_alphas=None, tau_thermal_alphas=None):
+    def __init__(self, list_of_species, tau_fast_alphas=None, tau_thermal_alphas=None, constrain_ne=False, constrain_nT=False):
         
         from collections import defaultdict
         
@@ -32,13 +32,24 @@ class PLASMA_SOLVER:
         self.plasma = PLASMA(list_of_species)
 
         # in case taus are provided, will solve alphas density using a simple model
-        # this influences ne (and alphas Bremsstrahlung)
         if((tau_fast_alphas is None) or (tau_thermal_alphas is None)):
-            self.solving_alphas_density = False
+            self.solve_alphas_density = False
         else:
-            self.solving_alphas_density = True
+            self.solve_alphas_density = True
             self.tau_fast_alphas = tau_fast_alphas
             self.tau_thermal_alphas = tau_thermal_alphas
+            
+        if(constrain_ne):
+            # if True, ne is computed from quasi-neutrality
+            self.constrain_ne = True
+        else:
+            self.constrain_ne = False
+            
+        if(constrain_nT):
+            # if True, nT is assumed to be equal to nD
+            self.constrain_nT = True
+        else:
+            self.constrain_nT = False
             
         # initialize dictionaries
         self.edge_density_BC = {}
@@ -48,17 +59,14 @@ class PLASMA_SOLVER:
         self.initial_pressure = {}
         
         self.energy_sources = defaultdict(lambda: defaultdict(dict))
-        self.density_sources = defaultdict(lambda: defaultdict(dict))
+        self.particle_sources = defaultdict(lambda: defaultdict(dict))
         
         self.heat_fluxes_info = defaultdict(lambda: defaultdict(dict))
         self.particle_fluxes_info = defaultdict(lambda: defaultdict(dict))
         
         
         print(f'Solvers for pressure of {self.list_of_species} INITIALIZED!')
-        print(f'SOLVING FOR ALPHAS DENSITY: {self.solving_alphas_density}')
-        
-            
-
+        print(f'SOLVING FOR ALPHAS DENSITY: {self.solve_alphas_density}')
     
     def set_edge_boundary_condition(self,field: str,species: str,val: float):
         # set edge boundary Dirichlet boundary condition
@@ -206,7 +214,7 @@ class PLASMA_SOLVER:
                 print(f'ERROR: Source type {source_type} is NOT possible')
                 exit(0)
                 
-    def set_density_source(self,species,source_type, Smax=None, rho_0=None, sigma_rho=None, cte_source=None, time_dependent_factor=None):
+    def set_particle_source(self,species,source_type, Smax=None, rho_0=None, sigma_rho=None, cte_source=None, time_dependent_factor=None):
         
         # check species exist in list_of_species
         if species not in self.list_of_species:
@@ -215,27 +223,27 @@ class PLASMA_SOLVER:
         match source_type:
             case 'external_gaussian':
                 if((Smax is None) or (sigma_rho is None) or (rho_0 is None)):
-                    print('ERROR: Need to provide Smax [part/m^3], rho_0 and sigma_rho for gaussian external source')
+                    print('ERROR: Need to provide Smax [part/(m^3*s)], rho_0 and sigma_rho for gaussian external source')
                     exit(1) 
                 else:
-                    self.density_sources[species][source_type] = {'Smax' : Smax, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho}
+                    self.particle_sources[species][source_type] = {'Smax' : Smax, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho}
             #
             case 'time_dependent_gaussian':
                 if((Smax is None) or (rho_0 is None) or (sigma_rho is None) or (time_dependent_factor is None)):
-                    print('ERROR: Need to provide Smax [par/m^3], rho_0, sigma_rho and a time depenedent factof for time-dependent gaussian')
+                    print('ERROR: Need to provide Smax [par/(m^3*s)], rho_0, sigma_rho and a time depenedent factof for time-dependent gaussian')
                     exit(1) 
                 else:
-                    self.density_sources[species][source_type] = {'Smax' : Smax, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
+                    self.particle_sources[species][source_type] = {'Smax' : Smax, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
             #
             case 'alpha_generation':
-                self.density_sources[species][source_type] = {}
+                self.particle_sources[species][source_type] = {}
             #
             case 'constant':
                 if(cte_source is None):
                     print('ERROR: cte_source is needed in order to generate a constant source.')
                     exit(0)
                 else:
-                    self.density_sources[species][source_type] = {'cte_source' : cte_source}
+                    self.particle_sources[species][source_type] = {'cte_source' : cte_source}
             #
             case _:
                 print(f'ERROR: Source type {source_type} is NOT possible')
@@ -300,9 +308,801 @@ class PLASMA_SOLVER:
                     print('ERROR: Dn must be provided!')
                     exit(0)
                 self.particle_fluxes_info['type'] = type
-                self.particle_fluxes_info[type]['chi'] = Dn
+                self.particle_fluxes_info[type]['Dn'] = Dn
+                
+    def run(self,Nr,dt,tstart,tend,tolerance=1E-2,max_subiter=12):
         
-    # def check_boundary_conditions(self):
-    #     #Checks ALL BCs are set and that these are consistent with initial profiles
+        from collections import defaultdict
         
-    #     ## THIS FROUTINE SHOULD BE CALLED INSIDE 'RUN'
+        # Check everything is set and ready to proceed with the run
+        self.make_checks()
+        
+        # Initialize rho grid
+        rho = np.linspace(0,1,Nr)
+        drho = rho[1]-rho[0]
+
+        # Initialize time grid
+        Nt = round( 1+(tend-tstart)/dt )
+        time = np.linspace(tstart,tend,Nt)
+            
+        # save grids in class
+        self.time = time
+        self.tstart = tstart
+        self.tend = tend
+        self.Nt = Nt
+        self.dt = dt
+        self.rho_grid = rho
+        self.r_grid = rho * self.aminor
+        self.drho = drho
+        self.dr = drho * self.aminor
+        self.Nr = Nr
+        self.print_grid_details()
+        
+        # initialize self.## variables
+        self.initialize_variables()
+        
+        # set fields at t=tstart
+        fields_old = self.set_fields_tstart()
+    
+       ### LOOP IN TIME STARTING AT t=tstart+dt ###
+        for it,t in enumerate(time[1:],start=1):
+            self.it = it
+            
+            # the first subiter corresponds to the last time iteration
+            for species in self.list_of_species:
+                self.N[species][it,:] = self.N[species][it-1,:]
+                self.T[species][it,:] = self.T[species][it-1,:]
+                self.P[species][it,:] = self.P[species][it-1,:]
+                if(self.solve_alphas_density):
+                    self.N['alphas_fast'][it,:] = self.N['alphas_fast'][it-1,:]
+                    self.N['alphas_thermal'][it,:] = self.N['alphas_thermal'][it-1,:]        
+            
+            ### SUBCYCLE
+            delta_p = 10*tolerance
+            subiter=1
+            while(delta_p > tolerance and subiter<=max_subiter):
+                self.subiter = subiter  
+
+                # compute fluxes and diffusion coefficients
+                self.call_fluxes(it)
+                
+                # set explicit sources
+                for species in self.list_of_species:
+                    self.set_explicit_energy_sources(species,it)
+                    self.set_explicit_particle_sources(species,it)
+                    
+                # solve
+                dens = self.solve_density_equations(it) # self.N[species][it,:] are updated inside this function
+                press = self.solve_pressure_equations(it) # self.P[species][it,:] and self.T[species][it,:] are updated inside this function
+                
+                fields = np.concatenate((dens,press))
+                delta_p = np.max( np.where( fields_old>1E-10, np.abs((fields-fields_old)/fields_old), 0 ) )
+                
+                fields_old = fields
+                
+                ion_info = self.plasma.ion_species[0]
+                info_str = f'  {t:<13.3f}{subiter:<10}{self.T['electrons'][it,0]/1E3:<18.3f}{self.N['electrons'][it,0]:<20.2E}{self.T[ion_info][it,0]/1E3:<18.3f}{self.N[ion_info][it,0]:<20.2E}{delta_p:<13.2E}'
+                print(info_str)
+                
+                subiter += 1
+        
+    def make_checks(self):
+        
+        # check equilibrium exists
+        if(not hasattr(self,'dVdr')):
+            print('ERROR: dVdr MUST BE SET!!')
+            exit(1)
+        
+        for species in self.list_of_species:
+            
+            # check boundary conditions are set
+            if (species not in self.edge_density_BC or species not in self.edge_pressure_BC):
+                raise KeyError(f"Missing edge boundary condition for species: {species}")
+            
+            # check initial profiles are set
+            if (species not in self.initial_density or species not in self.initial_pressure):
+                raise KeyError(f"Missing initial profile for species: {species}")
+            
+            # check consistency between boundary conditions and initial profiles
+            if( np.abs(self.initial_density[species](1)-self.edge_density_BC[species]) > 1E-10 ):
+                raise ValueError(f'Edge density BC not consistent w/ initial density profile')
+            if( np.abs(self.initial_pressure[species](1)-self.edge_pressure_BC[species]) > 1E-10 ):
+                raise ValueError(f'Edge pressure/temperature BC not consistent w/ initial density profile')
+            
+        # check fluxes info is set
+        if(not hasattr(self,'heat_fluxes_info')):
+            print('ERROR: set_heat_fluxes must be called before running!!')
+            exit(1)
+        if(not hasattr(self,'particle_fluxes_info')):
+            print('ERROR: set_particle_fluxes must be called before running!!')
+            exit(1)
+            
+    def print_grid_details(self):
+        
+        print(' ')
+        print( ' ***********************')
+        print(f' *  tstart = {self.tstart:5.2f}s    *')
+        print(f' *  tend   = {self.tend:5.2f}s    *')
+        print(f' *  dt     = {self.dt:5.2f}s    *')
+        print(f' *  Nt     = {self.Nt:3}       *')
+        print(f' *  drho   = {self.drho:5.2f}     *')
+        print( ' ***********************')
+        
+        print(' ')
+        header_str = '  TIME [s]     NSUB      TE_AXIS [keV]     NE_AXIS [m^-3]    TI_AXIS [keV]    NI_AXIS [m^-3]    MAX(dp/p_old)'  
+        print(header_str)
+        print('  '+'='*len(header_str))
+        
+    def initialize_variables(self):
+        
+        from collections import defaultdict
+        
+        self.N = {}
+        self.P = {}
+        self.T = {}
+        #
+        self.Q = {}
+        self.Dp = {}
+        self.Dp_keep = defaultdict(lambda: defaultdict(list))
+        self.cp = {}
+        #
+        self.Gamma = {}
+        self.Dn = {}
+        #
+        self.explicit_energy_sources = {}
+        self.explicit_particle_sources = {}
+        
+        Nr = self.Nr
+        Nt = self.Nt
+
+        for species in self.list_of_species:
+            
+            self.P[species] = np.zeros((Nt,Nr))   
+            self.T[species] = np.zeros((Nt,Nr)) 
+            self.N[species] = np.zeros((Nt,Nr))
+            
+            self.Dp[species] = np.zeros((Nt,Nr)) 
+            self.cp[species] = np.zeros((Nt,Nr)) 
+            self.Q[species] = np.zeros((Nt,Nr)) 
+            self.Gamma[species] = np.zeros((Nt,Nr)) 
+            self.Dn[species] = np.zeros((Nt,Nr)) 
+            
+            self.explicit_energy_sources[species] = {}
+            for source_type in self.energy_sources[species].keys():
+                self.explicit_energy_sources[species][source_type] = np.zeros((Nt,Nr))
+            self.explicit_particle_sources[species] = {}
+            for source_type in self.particle_sources[species].keys():
+                self.explicit_particle_sources[species][source_type] = np.zeros((Nt,Nr))
+            
+        if(self.solve_alphas_density):
+            self.N['alphas_fast'] = np.zeros((Nt,Nr))
+            self.N['alphas_thermal'] = np.zeros((Nt,Nr))
+            
+    def set_fields_tstart(self):
+        
+        rho_grid = self.rho_grid
+        
+        for species in self.list_of_species:
+        
+            self.P[species][0,:] = self.initial_pressure[species](rho_grid)     
+            self.N[species][0,:] = self.initial_density[species](rho_grid)
+               
+            self.T[species][0,:] = self.P[species][0,:] / (EC*self.N[species][0,:])
+        
+        # N_alphas are set to ZERO at t=tstart
+        # might want to change this in the future...
+        if(self.solve_alphas_density):
+            self.N['alphas_fast'][0,:] = 0.0
+            self.N['alphas_thermal'][0,:] = 0.0
+            
+        # set sources at t=0
+        for species in self.list_of_species:
+                self.set_explicit_energy_sources(species,it=0)
+                self.set_explicit_particle_sources(species,it=0)
+        
+        # set fluxes at t=0
+        self.call_fluxes(it=0)  
+        
+        # return array with (dens,press) at t=tstart
+        all_fields = []
+        for species in self.list_of_species:
+            all_fields.append(self.N[species][0,:])
+        for species in self.list_of_species:
+            all_fields.append(self.P[species][0,:])
+        
+        return np.concatenate(all_fields)
+                
+    def call_fluxes(self,it):
+        
+        # compute Dn_interp
+        if(self.particle_fluxes_info['type']=='diffusive'):
+            self.compute_diffusive_particle_flux(it)
+        else:
+            raise ValueError('ERROR: Not available other type of particle flux...')
+        
+        # compute D_interp and c_interp
+        if(self.heat_fluxes_info['type']=='diffusive'):
+            self.compute_diffusive_heat_flux(it)
+        elif(self.heat_fluxes_info['type']=='beurskens'):
+            self.compute_beurskens_heat_flux(it)
+        else:
+            raise ValueError('ERROR: Not available other type of heat flux...')
+        
+    def set_explicit_energy_sources(self,species: str, it):
+        # returns 1D-array of same size as rho_grid
+        # computes sources using info in self.heat_sources[species]
+        
+        from libstell.fusion import FUSION
+        
+        fusion = FUSION()
+          
+        # total_explicit_energy_source = np.zeros(len(rho_grid))
+        
+        for source_type in self.energy_sources[species]:
+            
+            aux_source = 0.0
+                 
+            match source_type:
+                case 'Bremsstrahlung':
+                    ne = self.N['electrons'][it,:]
+                    Te = self.T['electrons'][it,:]
+                    for ion in self.plasma.ion_species:
+                        zi = self.plasma.Zcharge[ion]
+                        ni = self.N[ion][it,:]
+
+                        aux_source -= fusion.BremsstrahlungPower(zi,ni,ne,Te)
+                        
+                    if(self.solve_alphas_density):
+                        ni = self.N['alphas_thermal'][it,:]
+                        aux_source -= fusion.BremsstrahlungPower(2,ni,ne,Te)
+                        
+                case 'external_gaussian':
+                    r0 = 0.0
+                    sigma_rho = self.energy_sources[species]['external_gaussian']['sigma_rho']
+                    sigma_r = sigma_rho*self.aminor
+                    r = self.rho_grid * self.aminor
+                    P_IN = self.energy_sources[species]['external_gaussian']['total_power']
+                    #
+                    integrand = np.exp(-(r-r0)**2/sigma_r**2) * self.dVdr(self.rho_grid)
+                    integrand = integrand.flatten()
+                    #
+                    cte = P_IN / np.trapz(integrand,r)
+                    #
+                    aux_source = cte * np.exp(-(r-r0)**2/sigma_r**2)
+                    
+                case 'time_dependent_gaussian':
+                    r0 = 0.0
+                    sigma_rho = self.energy_sources[species]['time_dependent_gaussian']['sigma_rho']
+                    sigma_r = sigma_rho*self.aminor
+                    r = self.rho_grid * self.aminor
+                    P_IN = self.energy_sources[species]['time_dependent_gaussian']['total_power']
+                    #
+                    integrand = np.exp(-(r-r0)**2/sigma_r**2) * self.dVdr(self.rho_grid)
+                    integrand = integrand.flatten()
+                    #
+                    cte = P_IN / np.trapz(integrand,r)
+                    #
+                    time_fact = self.energy_sources[species]['time_dependent_gaussian']['time_factor']
+                    t = self.time[it]
+                    aux_source = cte * np.exp(-(r-r0)**2/sigma_r**2) * time_fact(t)
+                    
+                case 'Coll_Heat_Exchange':
+                    # this source is fully implicit
+                    aux_source = 0.0
+                            
+                case 'alpha_heating':
+                    nD = self.N['deuterium'][it,:]
+                    nT = self.N['tritium'][it,:]
+
+                    fraction_alpha_heating = self.energy_sources[species]['alpha_heating']['fraction_alpha_heating']
+                    
+                    TD = self.T['deuterium'][it,:]
+                    TT = self.T['tritium'][it,:]
+                    aux_source = fraction_alpha_heating * fusion.alphaPower(nD,nT,TD,TT)
+                    
+                case 'Er':
+                    # aux_source = self.plasma.charge[species]*self.Er_interp(rho_grid)*self.Gamma_interp[species](rho_grid)
+                    raise ValueError('This is still not fully available... need to check its implementation.')
+                      
+                case 'constant':
+                    aux_source = self.energy_sources[species]['constant']['cte_source']
+
+                case _:
+                    print(f'ERROR: Source type {source_type} not defined....')
+                    exit(0)
+                    
+            self.explicit_energy_sources[species][source_type][it,:] = aux_source
+    
+    def set_explicit_particle_sources(self,species: str, it):
+        # returns 1D-array of same size as rho_grid
+        # computes sources using info in self.particle_sources[species]
+        
+        from libstell.fusion import FUSION
+        
+        fusion = FUSION()
+        
+        rho_grid = self.rho_grid
+          
+        # total_explicit_particle_source = np.zeros(len(rho_grid))
+        
+        for source_type in self.particle_sources[species]:
+            
+            aux_source = 0.0
+                     
+            match source_type:
+                case 'external_gaussian':
+                    rho_0 = self.particle_sources[species]['external_gaussian']['rho_0']
+                    sigma_rho = self.particle_sources[species]['external_gaussian']['sigma_rho']
+                    Smax = self.particle_sources[species]['external_gaussian']['Smax']
+                    
+                    aux_source = Smax * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    
+                case 'time_dependent_gaussian':
+                    rho_0 = self.particle_sources[species]['external_gaussian']['rho_0']
+                    sigma_rho = self.particle_sources[species]['external_gaussian']['sigma_rho']
+                    Smax = self.particle_sources[species]['external_gaussian']['Smax']
+                    time_fact = self.particle_sources[species]['time_dependent_gaussian']['time_factor']
+                    
+                    t = self.time[it]
+                    aux_source = time_fact(t) * Smax * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    
+                case 'alpha_generation':
+                    nD = self.N['deuterium'][it,:]
+                    nT = self.N['tritium'][it,:]
+                    
+                    TD = self.T['deuterium'][it,:]
+                    TT = self.T['tritium'][it,:]
+                    
+                    sigmav = fusion.sigmaBH(0.5*(TD+TT),'DT')
+                    aux_source = - nD*nT*sigmav # particles/(s*m^3)
+                    
+                case 'constant':
+                    aux_source = self.particle_sources[species]['constant']['cte_source']
+                    
+            # bookeeping
+            self.explicit_particle_sources[species][source_type][it,:] = aux_source
+            
+    def compute_diffusive_heat_flux(self,it):
+        # computes an interpolating function for D and c
+        
+        from scipy.interpolate import CubicSpline
+        
+        r_grid = self.r_grid
+        
+        for species in self.list_of_species:
+            
+            chi = self.heat_fluxes_info['diffusive']['chi']
+            
+            p_r = CubicSpline(r_grid,self.P[species][it,:])
+            dpdr = p_r.derivative()
+            
+            n_r = CubicSpline(r_grid,self.N[species][it,:])
+            dndr = n_r.derivative()
+            
+            n_r = self.N[species][it,:]
+            dndr = dndr(r_grid)
+            
+            self.Dp[species][it,:] = chi
+            
+            c = (chi/n_r)*dndr + 2.5*self.Gamma[species][it,:]/n_r
+            c[0] = 0.0
+            
+            self.cp[species][it,:] = c
+            
+            # this is for bookeeping
+            self.Q[species][it,:] = -chi * dpdr(r_grid) + p_r(r_grid)*( (chi/n_r)*dndr + 2.5*self.Gamma[species][it,:]/n_r)
+            
+    def compute_diffusive_particle_flux(self,it):
+        # computes an interpolating function for Dn
+        
+        from scipy.interpolate import CubicSpline
+        
+        r_grid = self.r_grid
+        
+        for species in self.list_of_species:
+            
+            Dn = self.particle_fluxes_info['diffusive']['Dn']
+            
+            n_r = CubicSpline(r_grid,self.N[species][it,:])
+            dndr = n_r.derivative()
+            
+            self.Dn[species][it,:] = Dn
+            
+            # this is for bookeeping
+            self.Gamma[species][it,:] = -Dn * dndr(r_grid)
+            
+    def compute_beurskens_heat_flux(self,it):
+        # uses model in [ref...]
+        from scipy.interpolate import CubicSpline
+        
+        chi_base = self.heat_fluxes_info['beurskens']['chi_base']
+        chi_electrons = self.heat_fluxes_info['beurskens']['chi_electrons']
+        aLT_critical = self.heat_fluxes_info['beurskens']['aLT_critical']
+        alpha = self.heat_fluxes_info['beurskens']['alpha']
+        stiffness = self.heat_fluxes_info['beurskens']['stiffness']
+        
+        chi = {}
+        
+        ## electrons
+        chi['electrons'] = chi_electrons * np.ones(self.Nr)
+        
+        r_grid = self.r_grid
+        
+        ## IONS
+        for ion in self.plasma.ion_species:
+            T_ion = self.T[ion][it,:]
+            T_electrons = self.T['electrons'][it,:]
+            
+            T_r = CubicSpline(r_grid,T_ion)
+            dTdr_non_filtered = T_r.derivative()
+            
+            T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
+            dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
+            dTdr_polyfit = dTdr_polyfit(r_grid)
+            
+            dTdr = dTdr_polyfit  
+            # dTdr = dTdr_non_filtered(r_grid)
+            
+            a_LT = self.aminor * dTdr / T_ion
+            
+            a_LT_filtered = -a_LT
+            
+            X = a_LT_filtered - aLT_critical
+            
+            chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
+            
+            B = self.B ## currently, this is only defined when using a VMEC equilibrium
+            
+            mi = self.plasma.mass[ion]
+            qi = self.plasma.charge[ion]
+    
+            chi_gB = (EC*T_ion/mi)**1.5 * mi*mi / (qi**2 * B**2) / self.aminor
+            
+            chi_turb = chi_gB * chi_turb
+            
+            chi[ion] = chi_base + chi_turb
+        
+        for species in self.list_of_species:
+            
+            p_r = CubicSpline(r_grid,self.P[species][it,:])
+            dpdr = p_r.derivative()
+            
+            n_r = CubicSpline(r_grid,self.N[species][it,:])
+            dndr = n_r.derivative()
+            
+            n_r = self.N[species][it,:]
+            dndr = dndr(r_grid)
+            
+            D = chi[species]
+            
+            # save D of ALL subiter
+            self.Dp_keep[species][it].append(np.array(D))
+            
+            # average to smooth-out eventual oscillations
+            D_avg = np.mean(np.array(self.Dp_keep[species][it]), axis=0)
+            D = D_avg
+
+            self.Dp[species][it,:] = D
+            
+            c = (chi[species]/n_r)*dndr + 2.5*self.Gamma[species][it,:]/n_r
+            c[0] = 0.0
+            
+            # should we also average 'c' ??
+            
+            self.cp[species][it,:] = c
+            
+            # this is for bookeeping
+            self.Q[species][it,:] = -chi[species] * dpdr(r_grid) + p_r(r_grid)*( (chi[species]/n_r)*dndr + 2.5*self.Gamma[species][it,:]/n_r)
+            
+    def solve_density_equations(self,it):
+        
+        from libstell.fusion import FUSION
+        
+        fusion = FUSION()
+        
+        for species in self.list_of_species:
+                   
+            if(species=='tritium' and self.constrain_nT):
+                continue
+            
+            if(species=='electrons' and self.constrain_ne):
+                continue
+            
+            RHS_vector = self.N[species][it-1,:] + self.dt*self.get_explicit_particle_sources(species,it)
+            # apply BC
+            RHS_vector[-1] = self.edge_density_BC[species]
+            
+            # get LHS matrix
+            LHS_matrix = self.get_LHS_density(species,it)
+            
+            # solve system
+            self.N[species][it,:] = self.solve_sparse_system(LHS_matrix,RHS_vector)
+            
+        if(self.constrain_nT):
+            self.N['tritium'][it,:] = self.N['deuterium'][it,:]   
+            
+        if(self.solve_alphas_density):
+            nD = self.N['deuterium'][it,:]
+            nT = self.N['tritium'][it,:]
+            TD = self.T['deuterium'][it,:]
+            TT = self.T['tritium'][it,:]
+            sigmav = fusion.sigmaBH(0.5*(TD+TT),'DT')
+            #
+            self.N['alphas_fast'][it,:] = (self.N['alphas_fast'][it-1,:] + self.dt*nD*nT*sigmav) / (1+self.dt/self.tau_fast_alphas)
+            self.N['alphas_thermal'][it,:] = (self.N['alphas_thermal'][it-1,:] + self.dt/self.tau_thermal_alphas) / (1+self.dt/self.tau_fast_alphas)
+        
+        if(self.constrain_ne):
+            self.N['electrons'][it,:] = 0.0
+            for ion in self.plasma.ion_species:
+                self.N['electrons'][it,:] += self.N[ion][it,:] * self.plasma.Zcharge[ion]
+                
+            if(self.solve_alphas_density):
+                self.N['electrons'][it,:] += 2*self.N['alphas_fast'][it,:] + 2*self.N['alphas_thermal'][it,:]     
+        
+        dens = []
+        for species in self.list_of_species:
+            dens.append(self.N[species][it,:])
+            
+        return np.concatenate(dens)
+    
+    def solve_pressure_equations(self,it):
+        
+        RHS_vector = []
+        for species in self.list_of_species:
+        
+            g = self.P[species][it-1,:] + (2./3)*self.dt*self.get_explicit_energy_sources(species,it)
+            # apply edge Dirichlet BC
+            g[-1] = self.edge_pressure_BC[species]
+            
+            RHS_vector.append(g)
+            
+        RHS_vector = np.concatenate(RHS_vector)
+        
+        LHS_matrix = self.get_LHS_pressure(it)
+        
+        press = self.solve_sparse_system(LHS_matrix,RHS_vector)
+        
+        # update self.P and self.T
+        Nr = self.Nr
+        k=0
+        for species in self.list_of_species:
+            
+            self.P[species][it,:] = press[k:(k+Nr)]
+            self.T[species][it,:] = self.P[species][it,:] / (EC*self.N[species][it,:])
+            
+            k = k+Nr
+            
+        return press
+          
+    def get_explicit_particle_sources(self,species,it):
+        
+        explicit_source = 0.0
+        for source_type in self.explicit_particle_sources[species]:
+            explicit_source += self.explicit_particle_sources[species][source_type][it,:]
+            
+        return explicit_source
+    
+    def get_explicit_energy_sources(self,species,it):
+        
+        explicit_source = 0.0
+        for source_type in self.explicit_energy_sources[species]:
+            explicit_source += self.explicit_energy_sources[species][source_type][it,:]
+            
+        return explicit_source
+    
+    def get_LHS_density(self,species,it):
+        
+        from scipy.interpolate import CubicSpline
+        from scipy.sparse import diags
+        
+        drho = self.drho
+        dr = self.dr
+        Vp = self.dVdr
+        Nr = self.Nr
+        dt = self.dt
+        
+        Dn = self.Dn[species][it,:]
+        Dn_interp = CubicSpline(self.rho_grid,Dn,bc_type='natural',extrapolate=True)
+          
+        ############################################
+        ############### COMPUTE LHS ################
+        ############################################
+        lower = np.zeros(Nr-1)
+        main = np.zeros(Nr)
+        upper = np.zeros(Nr-1)
+        
+        ## 0<r<a
+        rhos = self.rho_grid
+        rplus = rhos + drho/2
+        rminus = rhos - drho/2
+        
+        VDplus = Vp(rplus)*Dn_interp(rplus) / (Vp(rhos)*dr**2)
+        VDminus = Vp(rminus)*Dn_interp(rminus) / (Vp(rhos)*dr**2)
+        
+        main[1:] = 1.0 + dt*(VDplus[1:] + VDminus[1:])
+        upper = dt*(-VDplus[:-1])
+        lower = dt*(-VDminus[1:])
+        
+        ## r=0
+        main[0] = 1.0 + dt*4*Dn_interp(0)/dr**2
+        upper[0] = -4*dt*Dn_interp(0)/dr**2
+                
+        ## r=a
+        main[-1] = 1.0
+        lower[-1] = 0.0
+        
+        ####
+        LHS = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")    
+       
+        return LHS
+    
+    def get_LHS_pressure(self,it):
+        
+        from scipy.interpolate import CubicSpline
+        from scipy.sparse import diags, block_diag, csr_matrix
+        
+        drho = self.drho
+        dr = self.aminor * drho
+        Vp = self.dVdr
+        Nr = self.Nr
+        num_species = len(self.list_of_species)
+        
+        DIFF = {}
+        
+        for species in self.list_of_species:
+            
+            Dp = self.Dp[species][it,:]
+            Dp_interp = CubicSpline(self.rho_grid,Dp,bc_type='natural',extrapolate=True)
+            
+            cp = self.cp[species][it,:]
+            cp_interp = CubicSpline(self.rho_grid,cp,bc_type='natural',extrapolate=True)
+ 
+            dt_fact = (2./3.)*self.dt
+            
+            ############################################
+            ############### COMPUTE LHS ################
+            ############################################
+            lower = np.zeros(self.Nr-1)
+            main = np.zeros(self.Nr)
+            upper = np.zeros(self.Nr-1)
+            
+            ## 0<r<a
+            rhos = self.rho_grid
+            rplus = rhos + drho/2
+            rminus = rhos - drho/2
+            
+            VDplus = Vp(rplus)*Dp_interp(rplus) / (Vp(rhos)*dr**2)
+            VDminus = Vp(rminus)*Dp_interp(rminus) / (Vp(rhos)*dr**2)
+                
+            cplus  = cp_interp(rhos+drho)*Vp(rhos+drho) / (2*Vp(rhos)*dr)
+            cminus = cp_interp(rhos-drho)*Vp(rhos-drho) / (2*Vp(rhos)*dr)
+            
+            main[1:] = 1.0 + dt_fact*(VDplus[1:] + VDminus[1:])
+            upper = dt_fact*(-VDplus[:-1] + cplus[:-1])
+            lower = dt_fact*(-VDminus[1:] - cminus[1:])
+            
+            ## r=0
+            main[0] = 1.0 + dt_fact*( 4*Dp_interp(0)/dr**2 + 2*cp_interp(drho)/dr )
+            upper[0] = -4*dt_fact*Dp_interp(0)/dr**2
+            
+            DIFF[species] = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")    
+        
+        DIFF_list = [DIFF[species] for species in self.list_of_species]
+
+        # Construct the block diagonal sparse matrix
+        LHS = block_diag(DIFF_list, format="csr")
+            
+        # Add implicit terms from sources
+        sources_implicit = np.zeros((Nr*num_species,Nr*num_species))
+        
+        if 'Coll_Heat_Exchange' in self.energy_sources['electrons']:
+            sources_implicit -= dt_fact*self.get_collisionalHeatExchange(it)
+            
+        sources_implicit = csr_matrix(sources_implicit)
+        LHS = LHS + sources_implicit
+        
+        # impose Dirichlet boundary condition
+        LHS = LHS.tolil()
+        for s in range(1, num_species + 1):  # s starts at 1, up to num_species
+            row_idx = s * Nr - 1  # Compute the correct row index
+
+            # Set the entire row to zero
+            LHS.rows[row_idx] = []  # Clear all column indices in that row
+            LHS.data[row_idx] = []  # Clear all values in that row
+
+            # Set the diagonal element to 1
+            LHS[row_idx, row_idx] = 1
+        
+        LHS = LHS.tocsr()
+                
+        return LHS
+    
+    def solve_sparse_system(self,matrix,vect):
+        
+        from scipy.sparse.linalg import spsolve
+        
+        #import matplotlib.pyplot as plt
+        # # plot matrix
+        # plt.figure(figsize=(6, 6))
+        # plt.spy(matrix, markersize=5, color="black")
+        # plt.show()
+        
+        sol = spsolve(matrix,vect)
+        
+        return sol
+    
+    def get_collisionalHeatExchange(self,it):
+        # returns collisional heat exchange to use as implicit operator
+        
+        from collisions import COLLISIONS
+        from scipy import sparse
+        
+        coll = COLLISIONS()
+        
+        num_species = len(self.list_of_species)
+        
+        clog = np.zeros(self.Nr)
+        
+        W_s1_s2 = np.zeros((num_species,num_species,self.Nr))
+        aux_B = np.zeros((num_species,num_species,self.Nr))
+        
+        for is1,species1 in enumerate(self.list_of_species):
+
+            m1 = self.plasma.mass[species1]
+            Z1 = self.plasma.Zcharge[species1]
+            n1 = self.N[species1][it,:]
+            T1 = self.T[species1][it,:]
+            
+            for is2,species2 in enumerate(self.list_of_species):
+                
+                m2 = self.plasma.mass[species2]
+                Z2 = self.plasma.Zcharge[species2]
+                n2 = self.N[species2][it,:]
+                T2 = self.T[species2][it,:]
+                
+                # get Coulomb logarithm
+                # for ir in range(self.Nr):
+                if(Z1>0 and Z2>0):
+                    clog = coll.coullog_ii(m1,Z1,n1,T1,m2,Z2,n2,T2)
+                elif(Z1>0 and Z2<0):
+                    clog = coll.coullog_ei(n2,T2,m1,Z1,n1,T1)
+                elif(Z1<0 and Z2>0):
+                    clog = coll.coullog_ei(n1,T1,m2,Z2,n2,T2)
+                else:
+                    clog = 0.0
+
+                const = (8/np.sqrt(np.pi))*(Z1*Z2*EC*EC)**2 * clog / (8*np.pi*EPS0**2)
+
+                vth_s1_sqr = 2*EC*T1/m1
+                vth_s2_sqr = 2*EC*T2/m2
+                
+                den = m1 * m2 * (vth_s1_sqr + vth_s2_sqr)**1.5
+                
+                gamma = const / den
+
+                W_s1_s2[is1,is2,:] = gamma*n1  
+                
+                aux_B[is1,is2,:] = gamma*n2
+
+        # Add aux_B matrix
+        W_s1_s2[np.arange(num_species), np.arange(num_species), :] -= np.sum(aux_B, axis=1)
+
+        # W_out matrix
+        W_out = np.zeros((num_species*self.Nr,num_species*self.Nr))
+        
+        j=0
+        for is1 in range(num_species):
+            for ir1 in range(self.Nr):
+                p=0
+                for is2 in range(num_species):
+                    for ir2 in range(self.Nr):
+                        if(ir1==ir2):
+                            W_out[j,p] = W_s1_s2[is1,is2,ir2]  
+                        p=p+1
+                j = j+1
+                
+        W_out = sparse.csr_matrix(W_out)
+
+        return W_out
+                
+        
