@@ -5,7 +5,7 @@ equations
 
 import numpy as np
 import sys
-import matplotlib.pyplot as plt
+from time import perf_counter
 
 # Constants
 EC = 1.602176634E-19 # Electron charge [C]
@@ -322,6 +322,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             
         ################## INITIALIZE VARIABLES ########################################
         press = []
+        self.nsubiter = np.zeros(Nt)
         self.N = {}
         self.P = {}
         self.T = {}
@@ -377,44 +378,76 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         print('  '+'='*len(header_str))
         
         # t=t_start
+        self.nsubiter[0] = 1
         self.call_fluxes(it=0)
         for species in self.list_of_species:
                 self.total_sources_explicit[species][0,:] = self.get_sources_explicit(species,rho,it=0)
         info_str = f'  {tstart:<13.2f}{1:<10}{self.T['electrons'][0,0]/1E3:<18.3f}{'---':<20}{self.T['deuterium'][0,0]/1E3:<18.3f}{'---':<21}{0.0:<13.2E}'
         print(info_str)
         
+        time_update_pressure_temperature = 0.0
+        time_call_fluxes = 0.0
+        time_get_sources_explicit = 0.0
+        time_get_RHS_vector = 0.0
+        time_get_LHS_matrix = 0.0
+        self.time_get_collisionalHeatExchange = 0.0
+        self.time_diffusion_matrix_build = 0.0
+        self.time_set_LHS_boundary_conditions = 0.0
+        time_solve_sparse_system = 0.0  
         
         ### LOOP IN TIME STARTING AT t=tstart+dt ###
         for it,t in enumerate(time[1:],start=1):
             self.it = it
             
             # the first subiter corresponds to the last time iteration
-            self.update_pressure_temperature(it,press) 
+            start_time = perf_counter()
+            self.update_pressure_temperature(it,press)
+            end_time = perf_counter()
+            time_update_pressure_temperature += end_time-start_time
             
             ### SUBCYCLE
             delta_p = 10*tolerance
             subiter=1
             while(delta_p > tolerance and subiter<=max_subiter):
-                self.subiter = subiter  
+                self.nsubiter[it] += 1  
 
                 # compute self.D_interp and self.c_interp
+                start_time = perf_counter()
                 self.call_fluxes(it)
+                end_time = perf_counter()
+                time_call_fluxes += end_time-start_time
                 
                 # get explicit sources
+                start_time = perf_counter()
                 for species in self.list_of_species:
                     self.total_sources_explicit[species][it,:] = self.get_sources_explicit(species,rho,it)  # W/m^3
-                                        
+                end_time = perf_counter()
+                time_get_sources_explicit += end_time-start_time
+                
+                start_time = perf_counter()                      
                 RHS_vector = self.get_RHS_vector(it)
+                end_time = perf_counter()
+                time_get_RHS_vector += end_time-start_time
+                #
+                start_time = perf_counter()                      
                 LHS_matrix = self.get_LHS_matrix(it)
-
+                end_time = perf_counter()
+                time_get_LHS_matrix += end_time-start_time
+                
                 # solve system
+                start_time = perf_counter()
                 press = self.solve_sparse_system(LHS_matrix,RHS_vector)
+                end_time = perf_counter()
+                time_solve_sparse_system += end_time-start_time
                 
                 #PICARD FACTOR
                 # fpicard = 0.75
                 # press = press*fpicard + (1-fpicard)*p_old
                 
+                start_time = perf_counter()
                 self.update_pressure_temperature(it,press) 
+                end_time = perf_counter()
+                time_update_pressure_temperature += end_time-start_time
             
                 delta_p = np.max( np.where( p_old>1E-10, np.abs((press-p_old)/p_old), 0 ) )
                 
@@ -425,6 +458,22 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 
                 subiter += 1
                 
+        ### print TIMINGS ####
+        print(f' ')
+        print(f'***** TIMINGS *****')
+        total_time = time_update_pressure_temperature+time_call_fluxes+time_get_sources_explicit+time_get_RHS_vector+time_get_LHS_matrix+time_solve_sparse_system
+        print(f'time_update_pressure_temperature = {time_update_pressure_temperature:.1f}s [{time_update_pressure_temperature/total_time*100:.1f}%]')
+        print(f'time_call_fluxes = {time_call_fluxes:.1f}s [{time_call_fluxes/total_time*100:.1f}%]')
+        print(f'time_get_sources_explicit = {time_get_sources_explicit:.1f}s [{time_get_sources_explicit/total_time*100:.1f}%]')
+        print(f'time_get_RHS_vector = {time_get_RHS_vector:.1f}s [{time_get_RHS_vector/total_time*100:.1f}%]')
+        print(f'time_get_LHS_matrix = {time_get_LHS_matrix:.1f}s [{time_get_LHS_matrix/total_time*100:.1f}%]')
+        print(f'    time_get_collisionalHeatExchange = {self.time_get_collisionalHeatExchange:.1f}s [{self.time_get_collisionalHeatExchange/total_time*100:.1f}%]')
+        print(f'    time_diffusion_matrix_build = {self.time_diffusion_matrix_build:.1f}s [{self.time_diffusion_matrix_build/total_time*100:.1f}%]')
+        print(f'    time_set_LHS_boundary_conditions = {self.time_set_LHS_boundary_conditions:.1f}s [{self.time_set_LHS_boundary_conditions/total_time*100:.1f}%]')
+        print(f'time_solve_sparse_system = {time_solve_sparse_system:.1f}s [{time_solve_sparse_system/total_time*100:.1f}%]')
+        print(f'TOTAL TIME = {total_time/60:.2f}min')
+        print(f' ')
+
     def update_pressure_temperature(self,it,press):
         # updates self.P and self.T
         
@@ -630,6 +679,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         
         DIFF = {}
         
+        start_time = perf_counter()
         for species in self.list_of_species:
             
             D_interp = self.D_interp[species][it]
@@ -683,17 +733,24 @@ class PRESSURE_SOLVER_FULL_MATRIX:
 
         # Construct the block diagonal sparse matrix
         LHS = block_diag(DIFF_list, format="csr")
+        
+        end_time = perf_counter()
+        self.time_diffusion_matrix_build += end_time-start_time
             
         # Add implicit terms from sources
         sources_implicit = np.zeros((Nr*num_species,Nr*num_species))
         
+        start_time = perf_counter()
         if 'Coll_Heat_Exchange' in self.sources['electrons']:
             sources_implicit -= dt_fact*self.get_collisionalHeatExchange()
+        end_time = perf_counter()
+        self.time_get_collisionalHeatExchange += end_time-start_time
             
         sources_implicit = csr_matrix(sources_implicit)
         LHS = LHS + sources_implicit
         
         # impose Dirichlet boundary condition
+        start_time = perf_counter()
         LHS = LHS.tolil()
         for s in range(1, num_species + 1):  # s starts at 1, up to num_species
             row_idx = s * Nr - 1  # Compute the correct row index
@@ -706,6 +763,14 @@ class PRESSURE_SOLVER_FULL_MATRIX:
             LHS[row_idx, row_idx] = 1
         
         LHS = LHS.tocsr()
+        
+        end_time = perf_counter()
+        self.time_set_LHS_boundary_conditions += end_time-start_time
+                
+        return LHS
+    
+        end_time = perf_counter()
+        self.time_set_LHS_boundary_conditions += end_time-start_time
                 
         return LHS
         
