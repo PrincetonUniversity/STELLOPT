@@ -305,6 +305,7 @@
                          target_kappa, sigma_kappa, phi_kappa, &
                          target_kappa_box, sigma_kappa_box, phi_kappa_box, &
                          target_kappa_avg, sigma_kappa_avg, &
+                         target_totalbootstrap, sigma_totalbootstrap, &
                          target_magwell, sigma_magwell, &
                          target_press, sigma_press, r_press, z_press, phi_press, s_press,&
                          target_pressprime, sigma_pressprime, r_pressprime, z_pressprime, phi_pressprime, s_pressprime,&
@@ -733,6 +734,8 @@
       phi_kappa_box    = 0.0
       target_kappa_avg = 0.0
       sigma_kappa_avg  = bigno
+      target_totalbootstrap = 0.0
+      sigma_totalbootstrap  = bigno
       target_kink(:)  = 0.0
       sigma_kink(:)   = bigno
       mlmnb_kink      = 264
@@ -1583,6 +1586,10 @@
       IF (sigma_curvature_P2 < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
          WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
+      END IF  
+      IF (sigma_totalbootstrap < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_TOTALBOOTSTRAP',target_totalbootstrap
+         WRITE(iunit,outflt) 'SIGMA_TOTALBOOTSTRAP',sigma_totalbootstrap
       END IF          
       IF ((ANY(sigma_coillen < bigno)).OR.(ANY(sigma_coilsegvar < bigno)).OR.&
            (ANY(sigma_coilcrv < bigno)).OR.(sigma_coilsep < bigno).OR.&
