@@ -35,7 +35,14 @@ if __name__=="__main__":
 			ax2.plot(bootsj_data.rhoar,bootsj_data.dibs)
 			ax2.set_xlabel('Norm. Toroidal Flux (s)')
 			ax2.set_ylabel(rf'dI/ds [A]')
-			ax2.text(0.02,0.05,rf'I = {bootsj_data.Itotal*1.0E-6:4.3f} [MA]', horizontalalignment='left',\
-				verticalalignment='center', transform=ax2.transAxes)
+			if abs(bootsj_data.Itotal) > 1.0E6:
+				ax2.text(0.02,0.05,rf'I = {bootsj_data.Itotal*1.0E-6:4.3f} [MA]', horizontalalignment='left',\
+					verticalalignment='center', transform=ax2.transAxes)
+			elif abs(bootsj_data.Itotal) > 1.0E3:
+				ax2.text(0.02,0.05,rf'I = {bootsj_data.Itotal*1.0E-3:4.3f} [kA]', horizontalalignment='left',\
+					verticalalignment='center', transform=ax2.transAxes)
+			else:
+				ax2.text(0.02,0.05,rf'I = {bootsj_data.Itotal:4.3f} [A]', horizontalalignment='left',\
+					verticalalignment='center', transform=ax2.transAxes)
 			pyplot.show()
 	sys.exit(0)
