@@ -24,6 +24,7 @@ from libstell import boozer
 from libstell import gist
 from libstell import stellopt
 from libstell import plot3D
+from libstell import bootsj
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -886,7 +887,7 @@ class MyApp(QMainWindow):
 					'B10B11','HELICITY','HELICITY_FULL','QUASIISO','GAMMA_C', \
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
-					'CURVATURE_KERT','CURVATURE_P2']
+					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
 		# Handle Chisquared plots
@@ -970,7 +971,7 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Profile')
 			self.ui.ComboBoxOPTplot_type.addItem('Beam Profile')
 			self.ui.ComboBoxOPTplot_type.addItem('Total Current Profile')
-			jprof_files = sorted([k for k in files if 'tprof.' in k])
+			jprof_files = sorted([k for k in files if 'jprof.' in k])
 			self.jprof_files = sorted([k for k in jprof_files if '_opt' not in k])
 		# Handle GIST gyrokinetic input files
 		if any('gist_' in mystring for mystring in files):
@@ -979,6 +980,12 @@ class MyApp(QMainWindow):
 				self.ui.ComboBoxOPTplot_type.addItem(name)
 			gist_files = sorted([k for k in files if 'gist_' in k])
 			self.gist_files = sorted([k for k in gist_files if '_opt' not in k])
+		# Handle Current Density Profiles
+		if any('answers_plot.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Bootstrap Current -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current')
+			bootsj_files = sorted([k for k in files if 'answers_plot.' in k])
+			self.bootsj_files = sorted([k for k in bootsj_files if '_opt' not in k])
 		
 	def UpdateIterFile(self):
 		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
@@ -2240,6 +2247,20 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Current Density [kA/m^-2]')
 			self.ax2.set_title('Total Current Profile')
 			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Bootstrap Current'):
+			bootsj_data = bootsj.BOOTSJ()
+			l = 0
+			dl = len(self.bootsj_files)-1
+			if dl == 0: dl = 1
+			for string in self.bootsj_files:
+				if 'answers_plot.' in string:
+					bootsj_data.read_answers_plot(self.workdir+string)
+					self.ax2.plot(bootsj_data.rhoar,bootsj_data.dibs,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm. Toroidal Flux (s)')
+			self.ax2.set_ylabel('dI/ds [A]')
+			self.ax2.set_title('BOOTSJ Bootstrap Current')
+			self.ax2.set_xlim((0.0,1.0))
 		elif (plot_name == 'g11'):
 			gist_data = gist.GIST()
 			l=0
