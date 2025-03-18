@@ -1619,7 +1619,7 @@
                END DO
             END DO
             delta = sqrt(delta)
-            WRITE(6,'(A,F7.2,A)')'   == Accuracy of conversion = ',100*(1-delta),'%  =='
+            WRITE(6,'(A,F7.2,A)')'    == Accuracy of conversion = ',100*(1-delta),'%  =='
             iunit = 12; ier = 0
             CALL safe_open(iunit,ier,'rhomn.txt','unknown','formatted')
             DO m = LBOUND(lrho_opt,2), UBOUND(lrho_opt,2)
@@ -1642,7 +1642,7 @@
                END DO
             END DO
             delta = sqrt(delta)
-            WRITE(6,'(A,F7.2,A)')'   == Accuracy of conversion = ',100*(1-delta),'%  =='
+            WRITE(6,'(A,F7.2,A)')'    == Accuracy of conversion = ',100*(1-delta),'%  =='
             iunit = 12; ier = 0
             CALL safe_open(iunit,ier,'deltamn.txt','unknown','formatted')
             DO m = LBOUND(ldeltamn_opt,2), UBOUND(ldeltamn_opt,2)
@@ -1663,7 +1663,9 @@
          WRITE(6,*) '   =================='
          WRITE(6,*) '   Number of Parameters: ',nvars
          WRITE(6,*) '   Number of Targets:    ',mtargets
-         IF (lno_restart) WRITE(6,*) '   !!!! EQUILIBRIUM RESTARTING NOT UTILIZED !!!!'
+         IF (lno_restart)  WRITE(6,*) '   Equilibrium calculation does not use restart feature.'
+         IF (lauto_domain) WRITE(6,'(A,I2.2,A)') '   Variable bounds computed using auto domain',FLOOR(pct_domain*100),'%'
+         WRITE(6,*) '   =================='
       END IF
 
       IF (myid == master) THEN

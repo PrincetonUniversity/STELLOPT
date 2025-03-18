@@ -807,9 +807,9 @@ MODULE beams3d_physics_mod
          ylast = qf(2)
          zlast = qf(3)
          x0 = qf(1); y0 = qf(2); z0 = qf(3)
-         DO l = 1, 3
+         OUTER_A: DO l = 1, 3
             dt_local = stepsize(l)/q(4)
-            DO
+            INNER_A: DO
                qf = qf + myv_neut*dt_local
                q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
@@ -838,11 +838,11 @@ MODULE beams3d_physics_mod
                   end_state(myline) = 5 ! Debug
                   EXIT !It can happen that we collided with the wall while getting here
                END IF  ! We're outside the grid
-            END DO
+            END DO INNER_A
             ! Take a step back
             qf = qf - myv_neut*dt_local
             t  =  t - dt_local
-         END DO 
+         END DO OUTER_A
          qs=qf
 
          !--------------------------------------------------------------
@@ -856,6 +856,9 @@ MODULE beams3d_physics_mod
                q(3) = qf(3)
                end_state(myline) = 4
                CALL uncount_wall_hit              
+               RETURN
+            ELSE IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN
+               t = my_end+dt_local
                RETURN
             END IF
          END IF
@@ -1864,7 +1867,7 @@ MODULE beams3d_physics_mod
 
       END SUBROUTINE beams3d_MODB
 
-	  
+    
       !-----------------------------------------------------------------
       !     Function:      beams3d_VTOR
       !     Authors:       D. Kulla (david.kulla@ipp.mpg.de)
@@ -2004,6 +2007,48 @@ MODULE beams3d_physics_mod
          RETURN
 
       END SUBROUTINE beams3d_BCYL
+
+      !-----------------------------------------------------------------
+      !     Function:      beams3d_BCART
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          09/26/2023
+      !     Description:   Returns Bx, By, Bz
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_BCART(x,y,z,Bx,By,Bz)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !         r, phi, z     Cylindrical coordiantes
+         !     Output Parameters
+         !         Br, Bphi, Bz  Magnetic field components
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(IN) :: x, y, z
+         DOUBLE PRECISION, INTENT(OUT) :: Bx, By, Bz
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        phi_temp     Helpers (r,phi,z)
+         !--------------------------------------------------------------
+         DOUBLE PRECISION :: r_temp, phi_temp, Br_temp, Bphi_temp
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+
+         ! Cartesian coordiantes to cylindrical
+         r_temp = sqrt(x*x+y*y)
+         phi_temp = atan2(y,x)
+
+         ! Call cylindrical routine
+         CALL beams3d_BCYL(r_temp,phi_temp,z,Br_temp,Bphi_temp,Bz)
+
+         ! Cyl vectors to cartesian
+         Bx = Br_temp*cos(phi_temp)-Bphi_temp*sin(phi_temp)
+         By = Br_temp*sin(phi_temp)+Bphi_temp*cos(phi_temp)
+
+         RETURN
+
+      END SUBROUTINE beams3d_BCART
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_SFLX
