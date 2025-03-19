@@ -645,9 +645,10 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 case 'lambda_2D':
                     lambda_function_2D = self.sources[species][source_type]['lambda_function_2D'] #func(r,t)
                     
-                    aux_source = np.zeros(len(rho_grid))
-                    for ir,rho in enumerate(self.rho_grid):
-                        aux_source[ir] = lambda_function_2D(rho*self.aminor,self.time[it])   
+                    aux_source = [lambda_function_2D(r,self.time[it]) for r in self.r_grid]
+                    # aux_source = np.zeros(len(rho_grid))
+                    # for ir,rho in enumerate(self.rho_grid):
+                    #     aux_source[ir] = lambda_function_2D(rho*self.aminor,self.time[it])   
 
                 case _:
                     print(f'ERROR: Source type {source_type} not defined....')
