@@ -155,7 +155,7 @@ class PLASMA_SOLVER:
                     self.aminor=aminor
                     self.dVdr = lambda rho: 4*np.pi*np.pi*Rmajor*aminor  * rho
                     
-    def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None):
+    def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
         # electrons: 'Bremsstrahlung', 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
         # ions: 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
         # 'constant' is for benchmarking
@@ -210,11 +210,25 @@ class PLASMA_SOLVER:
                 else:
                     self.energy_sources[species][source_type] = {'cte_source' : cte_source}
             #
+            case 'lambda_2D':
+                if(lambda_function_2D is None):
+                    print('ERROR: A 2D (r,t) lambda funcion must be provided!')
+                    exit(0)        
+                # check it's a lambda function with two arguments
+                num_args = len(inspect.signature(lambda_function_2D).parameters)
+                if( not callable(lambda_function_2D) or num_args!=2 ):     
+                    print('A lambda function with two arguments, (r,t), must be given')
+                    exit(0)
+                else:
+                    self.energy_sources[species][source_type] = {'lambda_function_2D' : lambda_function_2D}
+            #
             case _:
                 print(f'ERROR: Source type {source_type} is NOT possible')
                 exit(0)
                 
-    def set_particle_source(self,species,source_type, Smax=None, rho_0=None, sigma_rho=None, cte_source=None, time_dependent_factor=None):
+    def set_particle_source(self,species,source_type, Smax=None, rho_0=None, sigma_rho=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
+        
+        import inspect
         
         # check species exist in list_of_species
         if species not in self.list_of_species:
@@ -244,6 +258,18 @@ class PLASMA_SOLVER:
                     exit(0)
                 else:
                     self.particle_sources[species][source_type] = {'cte_source' : cte_source}
+            #
+            case 'lambda_2D':
+                if(lambda_function_2D is None):
+                    print('ERROR: A 2D (r,t) lambda funcion must be provided!')
+                    exit(0)        
+                # check it's a lambda function with two arguments
+                num_args = len(inspect.signature(lambda_function_2D).parameters)
+                if( not callable(lambda_function_2D) or num_args!=2 ):     
+                    print('A lambda function with two arguments, (r,t), must be given')
+                    exit(0)
+                else:
+                    self.particle_sources[species][source_type] = {'lambda_function_2D' : lambda_function_2D}
             #
             case _:
                 print(f'ERROR: Source type {source_type} is NOT possible')
@@ -600,6 +626,11 @@ class PLASMA_SOLVER:
                     TT = self.T['tritium'][it,:]
                     aux_source = fraction_alpha_heating * fusion.alphaPower(nD,nT,TD,TT)
                     
+                case 'lambda_2D':
+                    lambda_function_2D = self.energy_sources[species][source_type]['lambda_function_2D'] #func(r,t)
+                    #
+                    aux_source = [lambda_function_2D(r,self.time[it]) for r in self.r_grid]
+                    
                 case 'Er':
                     # aux_source = self.plasma.charge[species]*self.Er_interp(rho_grid)*self.Gamma_interp[species](rho_grid)
                     raise ValueError('This is still not fully available... need to check its implementation.')
@@ -610,9 +641,9 @@ class PLASMA_SOLVER:
                 case _:
                     print(f'ERROR: Source type {source_type} not defined....')
                     exit(0)
-                    
+                   
             self.explicit_energy_sources[species][source_type][it,:] = aux_source
-    
+
     def set_explicit_particle_sources(self,species: str, it):
         # returns 1D-array of same size as rho_grid
         # computes sources using info in self.particle_sources[species]
@@ -658,6 +689,11 @@ class PLASMA_SOLVER:
                     
                 case 'constant':
                     aux_source = self.particle_sources[species]['constant']['cte_source']
+                    
+                case 'lambda_2D':
+                    lambda_function_2D = self.particle_sources[species][source_type]['lambda_function_2D'] #func(r,t)
+                    #
+                    aux_source = [lambda_function_2D(r,self.time[it]) for r in self.r_grid]
                     
             # bookeeping
             self.explicit_particle_sources[species][source_type][it,:] = aux_source
