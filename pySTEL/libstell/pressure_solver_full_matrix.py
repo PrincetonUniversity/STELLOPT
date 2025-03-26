@@ -106,7 +106,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         # create interpolating function
         self.initial_profile[species] = CubicSpline(rho_vals,profile_vals)
         
-    def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None):
+    def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None,B=None):
         
         from libstell.vmec import VMEC
         from scipy.interpolate import CubicSpline
@@ -143,8 +143,10 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 else:
                     self.aminor=aminor
                     self.dVdr = lambda rho: 4*np.pi*np.pi*Rmajor*aminor  * rho
+                    if(B is not None):
+                        self.B = B
 
-    def set_source(self,species,source_type, total_power=None, sigma_rho=None, fraction_alpha_heating=None, cte_source=None, interpolant_2D=None, time_dependent_factor=None, tau_alphas=None, tau_palphas=None, Tion_threshold=None, lambda_function_2D=None):
+    def set_source(self,species,source_type, total_power=None, sigma_rho=None, rho_0=None, fraction_alpha_heating=None, cte_source=None, interpolant_2D=None, time_dependent_factor=None, tau_alphas=None, tau_palphas=None, lambda_function_2D=None):
         # electrons: 'Bremsstrahlung', 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
         # ions: 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
         # 'constant' is for benchmarking
@@ -174,17 +176,17 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 else:
                     self.sources[species][source_type] = {'tau_alphas': tau_alphas, 'tau_palphas' : tau_palphas}
             case 'external_gaussian':
-                if((total_power is None) or (sigma_rho is None)):
-                    print('ERROR: Need to provide total_power [W] and sigma_rho for gaussian external source')
+                if((total_power is None) or (sigma_rho is None) or (rho_0 is None)):
+                    print('ERROR: Need to provide total_power [W], sigma_rho and rho_0 for gaussian external source')
                     exit(1) 
                 else:
-                    self.sources[species][source_type] = {'total_power' : total_power, 'sigma_rho' : sigma_rho, 'Tion_threshold' : Tion_threshold }
+                    self.sources[species][source_type] = {'total_power' : total_power, 'sigma_rho' : sigma_rho, 'rho_0' : rho_0}
             case 'time_dependent_gaussian':
-                if((total_power is None) or (sigma_rho is None) or (time_dependent_factor is None)):
-                    print('ERROR: Need to provide total_power [W], sigma_rho and a time depenedent factof for time-dependent gaussian')
+                if((total_power is None) or (sigma_rho is None) or (rho_0 is None) or (time_dependent_factor is None)):
+                    print('ERROR: Need to provide total_power [W], sigma_rho, rho_0 and a time depenedent factor for time-dependent gaussian')
                     exit(1) 
                 else:
-                    self.sources[species][source_type] = {'total_power' : total_power, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
+                    self.sources[species][source_type] = {'total_power' : total_power, 'sigma_rho' : sigma_rho, 'rho_0' : rho_0, 'time_factor': time_dependent_factor }
             case 'Coll_Heat_Exchange':
                 self.sources[species][source_type] = {}
             case 'Er':
@@ -381,7 +383,8 @@ class PRESSURE_SOLVER_FULL_MATRIX:
         self.call_fluxes(it=0)
         for species in self.list_of_species:
                 self.total_sources_explicit[species][0,:] = self.get_sources_explicit(species,rho,it=0)
-        info_str = f'  {tstart:<13.2f}{1:<10}{self.T['electrons'][0,0]/1E3:<18.3f}{'---':<20}{self.T['deuterium'][0,0]/1E3:<18.3f}{'---':<21}{0.0:<13.2E}'
+        ion1 = self.plasma.ion_species[0]
+        info_str = f'  {tstart:<13.2f}{1:<10}{self.T['electrons'][0,0]/1E3:<18.3f}{'---':<20}{self.T[ion1][0,0]/1E3:<18.3f}{'---':<21}{0.0:<13.2E}'
         print(info_str)
         
         time_update_pressure_temperature = 0.0
@@ -452,7 +455,7 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                 
                 p_old = press
                 
-                info_str = f'  {t:<13.3f}{subiter:<10}{self.T['electrons'][it,0]/1E3:<18.3f}{self.total_sources_explicit['electrons'][it,0]/1E6:<20.2E}{self.T['deuterium'][it,0]/1E3:<18.3f}{self.total_sources_explicit['deuterium'][it,0]/1E6:<21.2E}{delta_p:<13.2E}'
+                info_str = f'  {t:<13.3f}{subiter:<10}{self.T['electrons'][it,0]/1E3:<18.3f}{self.total_sources_explicit['electrons'][it,0]/1E6:<20.2E}{self.T[ion1][it,0]/1E3:<18.3f}{self.total_sources_explicit[ion1][it,0]/1E6:<21.2E}{delta_p:<13.2E}'
                 print(info_str)
                 
                 subiter += 1
@@ -543,7 +546,8 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                     self.all_sources[species][source_type][it,:] = aux_source 
                 
                 case 'external_gaussian':
-                    r0 = 0.0
+                    rho_0 = self.sources[species]['external_gaussian']['rho_0']
+                    r0 = rho_0 * self.aminor
                     sigma_rho = self.sources[species]['external_gaussian']['sigma_rho']
                     sigma_r = sigma_rho*self.aminor
                     r = self.rho_grid * self.aminor
@@ -556,18 +560,12 @@ class PRESSURE_SOLVER_FULL_MATRIX:
                     #
                     aux_source = cte * np.exp(-(r-r0)**2/sigma_r**2)
                     
-                    Tion_threshold = self.sources[species]['external_gaussian']['Tion_threshold']
-                    if(Tion_threshold is not None):
-                        Tion = (self.T['deuterium'][it-1,0]+self.T['tritium'][it-1,0])/2
-                        if(Tion > Tion_threshold or self.ECRH_off):
-                            aux_source = 0.0
-                            # self.ECRH_off = True
-                    
                     #save in dictionary for bookeeping
                     self.all_sources[species][source_type][it,:] = aux_source
                     
                 case 'time_dependent_gaussian':
-                    r0 = 0.0
+                    rho_0 = self.sources[species]['time_dependent_gaussian']['rho_0']
+                    r0 = rho_0 * self.aminor
                     sigma_rho = self.sources[species]['time_dependent_gaussian']['sigma_rho']
                     sigma_r = sigma_rho*self.aminor
                     r = self.rho_grid * self.aminor
