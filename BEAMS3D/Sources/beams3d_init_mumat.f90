@@ -145,7 +145,7 @@
       eps3 = (zmax-zmin)*small
 
       ! Initialize the magnetic calculation
-      IF (NOT(lmumat_skipiter)) THEN
+      IF (.NOT.(lmumat_skipiter)) THEN
             offset = 0.0
             CALL MUMATERIAL_INIT_NEW(beams3d_BCART, offset)
       END IF
