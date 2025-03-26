@@ -141,7 +141,7 @@
          map_file = 'map_hypers.dat'
          istat = 0
          CALL safe_open(iunit,istat,TRIM(map_file),'new','formatted')
-         WRITE(iunit,'(4(2X,i6))') m,n,ntot+1
+         WRITE(iunit,'(4(2X,i8))') m,n,ntot+1
          DO i = 0, ntot
             WRITE(iunit,'(1p,4ES22.12E3)') (x_global(j,i), j=1,n)
          END DO
