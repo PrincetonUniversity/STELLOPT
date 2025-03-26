@@ -450,6 +450,8 @@ class THRIFT():
             
         if(make_plot): plt.show()
         
+        return roa_all, Er_all, JBS_all, Gamma_e_all
+        
     def Maxwell_construction(self,fluxes_vs_Er_file,Zions):
         # plots fluxes*Z as function of Er
         
