@@ -242,13 +242,15 @@ if __name__=="__main__":
 			ax.text(0.02,0.05,rf'NFP: {vmec_wout.nfp}', horizontalalignment='left',\
 				verticalalignment='center', transform=ax.transAxes)
 			ax=fig.add_subplot(224)
-			theta = np.ndarray((256,1))
-			zeta  = np.ndarray((256,1))
-			for j in range(256): theta[j]=2.0*np.pi*j/255.0
-			for j in range(256):  zeta[j]=2.0*np.pi*j/255.0
+			#theta = np.ndarray((256,1))
+			#zeta  = np.ndarray((256,1))
+			#for j in range(256): theta[j]=2.0*np.pi*j/255.0
+			#for j in range(256):  zeta[j]=2.0*np.pi*j/255.0
+			theta = np.linspace([0],[2.0*np.pi],256)
+			zeta  = np.linspace([0],[2.0*np.pi],256)
 			b = vmec_wout.cfunct(theta,zeta,vmec_wout.bmnc,vmec_wout.xm_nyq,vmec_wout.xn_nyq/vmec_wout.nfp)
 			j = int(vmec_wout.ns/4)
-			h=ax.pcolormesh(np.squeeze(b[j,:,:]),cmap='jet',shading='gouraud')
+			h=ax.pcolormesh(theta,zeta,np.squeeze(b[j,:,:]),cmap='jet',shading='gouraud')
 			ax.set_xlabel(r"$\zeta [rad]$")
 			ax.set_ylabel(r"$\theta_{VMEC}$ [rad]")
 			ax.set_title("|B| at mid radius")
