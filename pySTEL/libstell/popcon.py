@@ -11,7 +11,7 @@ EC = 1.602176634E-19 # Electron charge [C]
 # popcon Class
 class POPCON:
     
-    def __init__(self, B, a, R, iota, plasma_classes, popcon_title = 'POPCON', make_plot=True):
+    def __init__(self, B, a, R, iota, plasma_classes, iss04_fact=1.0, popcon_title = 'POPCON', make_plot=True):
         # plasma classes is a 2d list of classes
         
         from scipy import integrate
@@ -36,7 +36,7 @@ class POPCON:
         self.T_avg = self.get_averaged_temperature()
         
         # set tauiss04
-        self.tauiss04 = lambda P: 0.134*a**2.28*R**0.64*(P/1e6)**-0.61*(self.n_avg/1e19)**0.54*B**0.84*iota**0.41
+        self.tauiss04 = lambda P: iss04_fact*0.134*a**2.28*R**0.64*(P/1e6)**-0.61*(self.n_avg/1e19)**0.54*B**0.84*iota**0.41
         
         # set Sudo limit (this will be used only for plotting)
         self.sudo_max = lambda P: 1.25*0.25E20*np.sqrt(P*B/(a*a*R*1e6))

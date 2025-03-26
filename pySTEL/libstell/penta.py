@@ -452,7 +452,7 @@ class PENTA:
             ax.plot(self.roa['unstable_root'],self.Er['unstable_root'],'.-',label='unstable_root')
             ax.plot(self.roa['electron_root'],self.Er['electron_root'],'.-',label='electron_root')
             try:
-                ax.plot(self.roa['unstable_root_2'],self.Er['unstable_root_2'],'.-',label='unstable_root')
+                ax.plot(self.roa['unstable_root2'],self.Er['unstable_root2'],'.-',label='unstable_root')
             except:
                 pass
             try:
@@ -543,14 +543,14 @@ class PENTA:
         fig, ax = plt.subplots(figsize=(11,8))
         for species in plotting_species:
         
-            if which_root == ('ion_root' or 'electron_root' or 'unstable_root'):
+            if which_root in ('ion_root','electron_root', 'unstable_root'):
                 ax.plot(self.roa[which_root],self.Gamma[species,which_root],'.-',label=which_root+', '+species)
             elif which_root == 'all':
                 ax.plot(self.roa['ion_root'],self.Gamma[species,'ion_root'],'.-',label='ion_root'+', '+species)
                 ax.plot(self.roa['unstable_root'],self.Gamma[species,'unstable_root'],'.-',label='unstable_root'+', '+species)
                 ax.plot(self.roa['electron_root'],self.Gamma[species,'electron_root'],'.-',label='electron_root'+', '+species)
                 try:
-                    ax.plot(self.roa['unstable_root_2'],self.Gamma[species,'unstable_root_2'],'.-',label='unstable_root')
+                    ax.plot(self.roa['unstable_root2'],self.Gamma[species,'unstable_root2'],'.-',label='unstable_root')
                 except:
                     pass
                 try:
