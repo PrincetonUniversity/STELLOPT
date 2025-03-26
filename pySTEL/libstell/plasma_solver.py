@@ -156,12 +156,11 @@ class PLASMA_SOLVER:
                     self.aminor=aminor
                     self.dVdr = lambda rho: 4*np.pi*np.pi*Rmajor*aminor  * rho
                     
-    def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
+    def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, rho_0=None, fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
         # electrons: 'Bremsstrahlung', 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
         # ions: 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
         # 'constant' is for benchmarking
-        
-        from scipy.interpolate import CubicSpline
+
         import inspect
         
         # check species exist in list_of_species
@@ -178,18 +177,18 @@ class PLASMA_SOLVER:
                     self.energy_sources[species][source_type] = {}
             #
             case 'external_gaussian':
-                if((total_power is None) or (sigma_rho is None)):
-                    print('ERROR: Need to provide total_power [W] and sigma_rho for gaussian external source')
+                if((total_power is None) or (sigma_rho is None) or (rho_0 is None)):
+                    print('ERROR: Need to provide total_power [W], sigma_rho and rho_0 for gaussian external source')
                     exit(1) 
                 else:
-                    self.energy_sources[species][source_type] = {'total_power' : total_power, 'sigma_rho' : sigma_rho}
+                    self.energy_sources[species][source_type] = {'total_power' : total_power, 'sigma_rho' : sigma_rho, 'rho_0' : rho_0}
             #
             case 'time_dependent_gaussian':
-                if((total_power is None) or (sigma_rho is None) or (time_dependent_factor is None)):
-                    print('ERROR: Need to provide total_power [W], sigma_rho and a time depenedent factof for time-dependent gaussian')
+                if((total_power is None) or (sigma_rho is None) or (time_dependent_factor is None) or (rho_0 is None)):
+                    print('ERROR: Need to provide total_power [W], sigma_rho, rho_0 and a time depenedent factor for time-dependent gaussian')
                     exit(1) 
                 else:
-                    self.energy_sources[species][source_type] = {'total_power' : total_power, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
+                    self.energy_sources[species][source_type] = {'total_power' : total_power, 'sigma_rho' : sigma_rho, 'rho_0' : rho_0, 'time_factor': time_dependent_factor }
             #
             case 'Coll_Heat_Exchange':
                 self.energy_sources[species][source_type] = {}
@@ -227,7 +226,7 @@ class PLASMA_SOLVER:
                 print(f'ERROR: Source type {source_type} is NOT possible')
                 exit(0)
                 
-    def set_particle_source(self,species,source_type, Smax=None, rho_0=None, sigma_rho=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
+    def set_particle_source(self,species,source_type, injected_particles_per_sec=None, rho_0=None, sigma_rho=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
         
         import inspect
         
@@ -237,18 +236,18 @@ class PLASMA_SOLVER:
          
         match source_type:
             case 'external_gaussian':
-                if((Smax is None) or (sigma_rho is None) or (rho_0 is None)):
+                if((injected_particles_per_sec is None) or (sigma_rho is None) or (rho_0 is None)):
                     print('ERROR: Need to provide Smax [part/(m^3*s)], rho_0 and sigma_rho for gaussian external source')
                     exit(1) 
                 else:
-                    self.particle_sources[species][source_type] = {'Smax' : Smax, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho}
+                    self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho}
             #
             case 'time_dependent_gaussian':
-                if((Smax is None) or (rho_0 is None) or (sigma_rho is None) or (time_dependent_factor is None)):
+                if((injected_particles_per_sec is None) or (rho_0 is None) or (sigma_rho is None) or (time_dependent_factor is None)):
                     print('ERROR: Need to provide Smax [par/(m^3*s)], rho_0, sigma_rho and a time depenedent factof for time-dependent gaussian')
                     exit(1) 
                 else:
-                    self.particle_sources[species][source_type] = {'Smax' : Smax, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
+                    self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
             #
             case 'alpha_generation':
                 self.particle_sources[species][source_type] = {}
@@ -598,7 +597,8 @@ class PLASMA_SOLVER:
                         aux_source -= fusion.BremsstrahlungPower(2,ni,ne,Te)
                         
                 case 'external_gaussian':
-                    r0 = 0.0
+                    rho_0 = self.energy_sources[species]['external_gaussian']['rho_0']
+                    r0 = rho_0 * self.aminor
                     sigma_rho = self.energy_sources[species]['external_gaussian']['sigma_rho']
                     sigma_r = sigma_rho*self.aminor
                     r = self.rho_grid * self.aminor
@@ -612,7 +612,8 @@ class PLASMA_SOLVER:
                     aux_source = cte * np.exp(-(r-r0)**2/sigma_r**2)
                     
                 case 'time_dependent_gaussian':
-                    r0 = 0.0
+                    rho_0 = self.energy_sources[species]['time_dependent_gaussian']['rho_0']
+                    r0 = rho_0 * self.aminor
                     sigma_rho = self.energy_sources[species]['time_dependent_gaussian']['sigma_rho']
                     sigma_r = sigma_rho*self.aminor
                     r = self.rho_grid * self.aminor
@@ -679,18 +680,28 @@ class PLASMA_SOLVER:
                 case 'external_gaussian':
                     rho_0 = self.particle_sources[species]['external_gaussian']['rho_0']
                     sigma_rho = self.particle_sources[species]['external_gaussian']['sigma_rho']
-                    Smax = self.particle_sources[species]['external_gaussian']['Smax']
-                    
-                    aux_source = Smax * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    injected_particles_per_sec = self.particle_sources[species]['external_gaussian']['injected_particles_per_sec']
+                    #
+                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
+                    integrand = integrand.flatten()
+                    #
+                    cte = injected_particles_per_sec / np.trapz(integrand,self.r_grid)
+                    #
+                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
                     
                 case 'time_dependent_gaussian':
-                    rho_0 = self.particle_sources[species]['external_gaussian']['rho_0']
-                    sigma_rho = self.particle_sources[species]['external_gaussian']['sigma_rho']
-                    Smax = self.particle_sources[species]['external_gaussian']['Smax']
+                    rho_0 = self.particle_sources[species]['time_dependent_gaussian']['rho_0']
+                    sigma_rho = self.particle_sources[species]['time_dependent_gaussian']['sigma_rho']
+                    injected_particles_per_sec = self.particle_sources[species]['time_dependent_gaussian']['injected_particles_per_sec']
                     time_fact = self.particle_sources[species]['time_dependent_gaussian']['time_factor']
-                    
+                    #
+                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
+                    integrand = integrand.flatten()
+                    #
+                    cte = injected_particles_per_sec / np.trapz(integrand,self.r_grid)
+                    #
                     t = self.time[it]
-                    aux_source = time_fact(t) * Smax * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    aux_source = time_fact(t) * cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
                     
                 case 'alpha_generation':
                     nD = self.N['deuterium'][it,:]
