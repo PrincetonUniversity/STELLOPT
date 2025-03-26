@@ -153,6 +153,9 @@ CONTAINS
          lcoil = .false.
          lmgrid = .false.
          lmumat = .false.
+         lmumat_readmag = .false.
+         lmumat_skipiter = .false.
+         lmumat_writemagfile = .false.
          lvessel = .false.
          lvac = .false.
          lrestart_grid = .false.
@@ -259,10 +262,21 @@ CONTAINS
                 i = i + 1
                 lvessel = .true.
                 CALL GETCARG(i, vessel_string, numargs)
+            ! MUMAT-specific flags
             case ("-mumat")
                 i = i + 1
                 lmumat = .true.
                 CALL GETCARG(i, mumat_string, numargs)
+            case ("-mumat_magfile")
+                i = i + 1
+                lmumat_readmag = .true.
+                CALL GETCARG(i, mumat_magfile, numargs)
+            case ("-mumat_skipiter")
+                i = i + 1
+                lmumat_skipiter = .true.
+            case ("-mumat_writemagfile")
+                i = i + 1
+                lmumat_writemagfile = .true.
             case ("-beamlet")
                 i = i + 1
                 lbbnbi = .true.
@@ -367,6 +381,8 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(mumat_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+      CALL MPI_BCAST(mumat_magfile, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lpies, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -388,6 +404,12 @@ CONTAINS
       CALL MPI_BCAST(lvac, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lmumat, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+      CALL MPI_BCAST(lmumat_readmag, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+      CALL MPI_BCAST(lmumat_skipiter, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+      CALL MPI_BCAST(lmumat_writemagfile, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lfidasim, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)

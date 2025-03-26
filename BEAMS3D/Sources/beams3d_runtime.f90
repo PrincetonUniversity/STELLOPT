@@ -138,7 +138,7 @@ MODULE beams3d_runtime
                lascot, lascot4, lbbnbi, lfidasim, lfidasim_cyl, lsplit, lvessel_beam, lascotfl, lrandomize, &
                lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim, &
                lboxsim, limas, lfieldlines, lfusion_tritium, lfusion_proton, &
-               lfusion_He3, lbeamdensity, lmumat
+               lfusion_He3, lbeamdensity, lmumat, lmumat_readmag, lmumat_skipiter, lmumat_writemagfile
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, &
                ndt, ndt_max, duplicate_factor, mumaterial_niter, mumaterial_nneighbor, mumaterial_lamthresh
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
@@ -165,7 +165,7 @@ MODULE beams3d_runtime
     REAL(rprec), ALLOCATABLE :: extcur(:)
     CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
-    vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string, mumat_string
+    vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string, mumat_string, mumat_magfile
 
     REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.10 ! this is the full orbit test version
 

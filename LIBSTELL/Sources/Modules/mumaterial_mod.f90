@@ -42,10 +42,8 @@
 !         COMM_size:   Number of threads in communicator COMM
 !         
 !         mydom:    Collection of tetrahedrons worked on by comm_shar
-!         mypdom:   mydom with extra tetrahedrons included (see padFactor)
 !         outmydom: Collection of tetrahedrons NOT worked on by comm_shar
 !         domsize:  Size of mydom
-!         pdomsize: Size of mypdom
 !         win_OBJ:  MPI shared memory window for OBJ
 !
 !       Neighbours
@@ -127,8 +125,8 @@
                           win_constant_mu, win_m, win_Mrem, &
                           win_Happ, win_constant_mu_o
       ! box division variables
-      INTEGER, DIMENSION(:), ALLOCATABLE, PRIVATE :: mydom,   mypdom,  outmydom
-      INTEGER, PRIVATE                            :: domsize, pdomsize,odomsize
+      INTEGER, DIMENSION(:), ALLOCATABLE, PRIVATE :: mydom,  outmydom
+      INTEGER, PRIVATE                            :: domsize,odomsize
 
       ! verbose and debug variables
       LOGICAL, PRIVATE                    :: lverb, ldebugm, ldebugs, ldebugt
@@ -416,6 +414,7 @@
       END IF
 #endif
       IF (istat/=0) RETURN
+      M(:,:) = 0.0
 
       ! read in the mesh
       IF (lismaster) THEN
@@ -498,14 +497,19 @@
 ! mumaterial_info: Prints info to iunit
 !------------------------------------------------------------------------------
 ! param[in]: iunit. Unit number to print to
+! param[in]: lnoiter: Whether to do mumat iterations
 !------------------------------------------------------------------------------
-      SUBROUTINE mumaterial_info(iunit)
+      SUBROUTINE mumaterial_info(iunit, lnoiter)
 
       IMPLICIT NONE
 
       INTEGER, INTENT(IN) :: iunit
+      LOGICAL, INTENT(IN) :: lnoiter
       INTEGER :: i,k
 
+      IF (lnoiter) THEN
+            WRITE(iunit,'(A)') '  SKIPPING MUMAT ITERATIONS'
+      ELSE 
       WRITE(iunit,'(A)')           ' ---------- MUMAT MPI ----------'
       WRITE(iunit,'(3X,A,I7)')     'MPI Nodes    : ',master_size
       WRITE(iunit,'(3X,A,I7)')     'MPI Threads  : ',world_size
@@ -542,6 +546,7 @@
           WRITE(iunit,'(9X,A,I3)') 'Type: UNKNOWN (ERROR) state_type=',state_type(i)
         END IF
       END DO
+      END IF
 
       END SUBROUTINE mumaterial_info
 
@@ -688,11 +693,6 @@
           mydom(i) = i
         END DO
         domsize = SIZE(mydom)
-        IF (.NOT.(ldosync)) THEN
-          ALLOCATE(mypdom(domsize))
-          mypdom = mydom
-          pdomsize = domsize
-        END IF
       END IF
 
 #if defined(MPI_OPT)   
@@ -786,57 +786,18 @@
             outmydom(i) = i_tile
           END IF
         END DO
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! Create padded domains
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        xmin = tet_cen(1,mydom(1)); xmax = xmin
-        ymin = tet_cen(2,mydom(1)); ymax = ymin
-        zmin = tet_cen(3,mydom(1)); zmax = zmin
-        pad = 0
-
-        DO i = 2, domsize
-          xmin = MIN(tet_cen(1,mydom(i)),xmin); xmax = MAX(tet_cen(1,mydom(i)),xmax)
-          ymin = MIN(tet_cen(2,mydom(i)),ymin); ymax = MAX(tet_cen(2,mydom(i)),ymax)
-          zmin = MIN(tet_cen(3,mydom(i)),zmin); zmax = MAX(tet_cen(3,mydom(i)),zmax)
-          pad = MAX(padFactor*tet_edge(mydom(i)),pad)
-        END DO
-  
-        ALLOCATE(tdom(ntet))
-        pdomsize = 0
-        DO i = 1, ntet
-          IF (((tet_cen(1,i)>=xmin-pad).AND.(tet_cen(1,i)<=xmax+pad)) .AND. &
-              ((tet_cen(2,i)>=ymin-pad).AND.(tet_cen(2,i)<=ymax+pad)) .AND. & 
-              ((tet_cen(3,i)>=zmin-pad).AND.(tet_cen(3,i)<=zmax+pad))) THEN
-                pdomsize = pdomsize + 1
-                tdom(pdomsize) = i
-          END IF
-        END DO
-        ALLOCATE(mypdom(pdomsize))
-        mypdom = tdom(1:pdomsize)
-        DEALLOCATE(tdom)
-
-        IF (ldebugs) THEN
-          OPEN(color, file='./mypdom_' // TRIM(ADJUSTL(strcount)) // '.dat')
-          DO i = 1, pdomsize
-            WRITE(color, "(I8)") mypdom(i)
-          END DO
-          CLOSE(color)
-        END IF
       END IF
 
       IF (ldebugs) WRITE(6,'(A22,I3,A19,I8,A1)') '  MUMAT_DEBUG: MASTER ', color,' broadcasting box [', domsize, ']'; FLUSH(6)
       CALL MPI_Bcast(domsize,    1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
-      CALL MPI_Bcast(pdomsize,   1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       
       IF (shar_rank.NE.0) THEN
         ALLOCATE(mydom(domsize))
-        ALLOCATE(mypdom(pdomsize))
         odomsize = ntet-domsize
         ALLOCATE(outmydom(odomsize))
       END IF
       
       CALL MPI_Bcast(mydom,   domsize,  MPI_INTEGER, 0, comm_shar, ierr_mpi)
-      CALL MPI_Bcast(mypdom,  pdomsize, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_Bcast(outmydom,odomsize, MPI_INTEGER, 0, comm_shar, ierr_mpi)
 !      IF (shar_rank.EQ.1) WRITE(6,'(A37,I8,A1)') '  MUMAT_DEBUG: SUBJECT received box [', domsize, ']'; FLUSH(6)
       CALL MPI_Bcast(ourstart, 1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
@@ -862,7 +823,6 @@
       NULLIFY(Happ)
       ALLOCATE(Happ(3,mystart:myend))
       Happ(:,:) = 0.0
-      M(:,:) = 0.0
       DO i = mystart, myend
         i_tile = mydom(i)
         CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
@@ -1454,20 +1414,10 @@
       INTEGER, INTENT(in) :: mystart, myend
       INTEGER :: i, j, k, c, i_tile
       DOUBLE PRECISION, ALLOCATABLE ::  dist(:), dx(:,:)
-      !DOUBLE PRECISION, ALLOCATABLE :: tet_cen_pdom(:,:)
       LOGICAL, ALLOCATABLE :: mask(:)
-      !INTEGER, ALLOCATABLE :: idx(:)
-      !INTEGER, ALLOCATABLE :: Nb_temp(:,:), Nb_domidx_temp(:,:)
-
-      !ALLOCATE(Nb_temp(pdomsize, mystart:myend))
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !Nb_temp = 0
-      
-      !ALLOCATE(mask(pdomsize), dist(pdomsize), dx(3,pdomsize),tet_cen_pdom(3, pdomsize))
-      !DO i = 1, pdomsize
-      !  tet_cen_pdom(:,i) = tet_cen(:,mypdom(i))
-      !END DO
+
       ALLOCATE(NbC(mystart:myend),mask(ntet),dist(ntet),dx(3,ntet))
       NbC = 0
       
@@ -1978,8 +1928,60 @@
       END SUBROUTINE mumaterial_getb_vector
 
 
+      SUBROUTINE mumaterial_readmag(filename)
+
+#if defined(MPI_OPT)
+      USE mpi
+      USE mpi_params
+#endif
+           
+      IMPLICIT NONE
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: i, istat, iunit
 
 
+      IF (lismaster) THEN
+            WRITE(6,'(A)')           ' -------- MUMAT MAGFILE --------'
+            WRITE(6,'(3X,A,A)')     'FILENAME     : ',filename
+            ! open file, return if fails
+            iunit = 327; istat = 0
+            CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
+            IF (istat/= 0) THEN
+                  WRITE(6,*) "ISSUE READING MAG"
+                  RETURN
+            END IF
+            DO i = 1, ntet
+                  READ(iunit, *) M(1,i),M(2,i),M(3,i)
+            END DO
+            CLOSE(iunit)
+      END IF    
+      ! Broadcast
+#if defined(MPI_OPT)
+      IF ((lcomm).AND.(shar_rank.EQ.0)) THEN
+            CALL MPI_Bcast(M,3*ntet,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+      END IF
+#endif
+      END SUBROUTINE
+
+
+      SUBROUTINE mumaterial_writemag()
+      !-----------------------------------------------------------------------
+      ! mumaterial_writemag: Outputs magnetization to text file
+      !-----------------------------------------------------------------------
+      IMPLICIT NONE
+
+      INTEGER :: i
+
+      IF (lismaster) THEN
+            WRITE(6,*) "Outputting magnetization"
+            OPEN(13, file='./mumat_mag.dat')
+            DO i = 1, ntet
+                  WRITE(13, "(E15.7,A,E15.7,A,E15.7)") M(1,i),' ',M(2,i),' ',M(3,i)
+            END DO
+            CLOSE(13)
+      END IF
+
+      END SUBROUTINE
 
       SUBROUTINE mumaterial_output(path, x, y, z, getBfld)!, linclvac)
       !-----------------------------------------------------------------------
