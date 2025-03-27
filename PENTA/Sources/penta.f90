@@ -234,7 +234,8 @@ Use io_unit_spec, Only :             &
   iu_flowvEr_out,                    & ! flows vs Er i/o unit #
   iu_Jprl_out,                       & ! Parallel current den vs r/a i/o unit #
   iu_contraflows_out,                & ! Contravariant flows vs roa
-  iu_sigmas_out                        ! sigma_par and sigma_par_Spitzer vs roa
+  iu_sigmas_out,                     & ! sigma_par and sigma_par_Spitzer vs roa
+  iu_particleTranspCoeffs_out       ! Particle transport coefficients vs roa
 Use read_input_file_mod, Only :      &
   ! Imported Subroutines
   read_vmec_file,                    & ! Reads VMEC data file
@@ -419,6 +420,11 @@ Real(rknd), Allocatable ::      &
 
 Real(rknd) :: Er_roots(num_roots_max)   ! The maximum number of roots allowed
 
+Real(rknd), Allocatable :: L_n(:,:), L_T(:,:), L_Er(:,:)
+! Local allocatable arrays (3D)
+Real(rknd), Allocatable :: L_A1(:,:,:), L_A2(:,:,:), L_A3(:,:,:)
+Real(rknd), Allocatable :: L_n_ambi(:,:,:), L_T_ambi(:,:,:), L_Er_ambi(:,:,:)
+
 ! Namelist files
 Namelist / ion_params / num_ion_species, Z_ion_init, miomp_init
 Namelist / run_params / input_is_Er, log_interp, use_quanc8, read_U2_file, &
@@ -505,6 +511,12 @@ If ( output_QoT_vs_Er .EQV. .true. ) Then
   Allocate(QoT_i_vs_Er(num_Er_test,num_ion_species))       ! Ion flux vs Er
   Allocate(QoT_e_vs_Er(num_Er_test))                       ! Electron flux vs Er
 Endif
+Allocate(L_A1(num_species,num_species,Smax+1))
+Allocate(L_A2(num_species,num_species,Smax+1))
+Allocate(L_A3(num_species,num_species,Smax+1))
+Allocate(L_n(num_species,num_species))
+Allocate(L_T(num_species,num_species))
+Allocate(L_Er(num_species,num_species))
 
 ! Read input files
 Call read_vmec_file_2(js,run_ident)
@@ -644,6 +656,8 @@ Open(unit=iu_Jprl_out,file="Jprl_vs_roa"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
 Open(unit=iu_contraflows_out,file="ucontra_vs_roa"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
+Open(unit=iu_particleTranspCoeffs_out,file="particleTransportCoeffs_vs_roa"//files_name ,  &
+  position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
 
 If ( Method == 'SN') Then
   Open(unit=iu_sigmas_out, file="sigmas_vs_roa"//files_name ,  &
@@ -686,6 +700,9 @@ If ( i_append == 0 ) Then
   ! Legend for flows vs Er
     Write(iu_flowvEr_out,'("*",/,"r/a   Er[V/cm]  ", &
     & "    <B*u_||ke>/<B**2> [m/sT]  <B*u_||ki>/<B**2> [m/sT]")')
+  ! Legend for transport coeffs vs roa
+    Write(iu_particleTranspCoeffs_out,'("*",/,"r/a   L_n (Ns x Ns)      ",&
+    & "   L_T (NsxNs)       L_Er (NsxNs)")')
 EndIf
 
 ! Calculate thermal velocities 
@@ -823,12 +840,12 @@ Do ie = 1,num_Er_test
       Flows = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
          masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
          cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord,  &
-         keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS)                                                
+         keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3)                                                
       Gammas = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
         masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
         emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,        &
         Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,        &
-        dndrs,flux_cap)  
+        dndrs,flux_cap,L_A1,L_A2,L_A3,L_n,L_T,L_Er)  
       If ( output_QoT_vs_Er .EQV. .true. ) Then
         QoTs = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
           masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
@@ -903,6 +920,9 @@ Allocate(sigma_par_Spitzer_ambi(num_roots))          ! Spitzer Parallel conducti
 Allocate(Jprl_parts(num_species,num_roots))          ! Par. curr. dens. per spec.
 Allocate(upol(num_species,num_roots))                ! fsa contra pol flow
 Allocate(utor(num_species,num_roots))                ! fsa contra tor flow
+Allocate(L_n_ambi(num_roots,num_species,num_species))
+Allocate(L_T_ambi(num_roots,num_species,num_species))
+Allocate(L_Er_ambi(num_roots,num_species,num_species))
 
 ! Evaluate fluxes and flows at the ambipolar Er
 Do iroot = 1_iknd, num_roots
@@ -957,13 +977,14 @@ Do iroot = 1_iknd, num_roots
       Flows_ambi(:,iroot) = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,&
          vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,    &
          log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,  &
-         num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS)                                                
+         num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3)                                                
       ! Calculate array of radial particle fluxes
       Gammas_ambi(:,iroot) = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,   &
         dens,vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,   &
         log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
         Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
-        lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap)  
+        lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
+        L_n,L_T,L_Er)  
       ! Calculate array of radial energy fluxes
       QoTs_ambi(:,iroot) = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,  &
         vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
@@ -974,6 +995,9 @@ Do iroot = 1_iknd, num_roots
       sigma_par_ambi(iroot) = sigma_par
       sigma_par_Spitzer_ambi(iroot) = sigma_par_Spitzer
       J_BS_ambi(iroot) = J_BS
+      L_n_ambi(iroot,:,:) = L_n
+      L_T_ambi(iroot,:,:) = L_T
+      L_Er_ambi(iroot,:,:) = L_Er
 
     Case ('DKES')
 
@@ -1060,6 +1084,13 @@ Do iroot = 1_iknd, num_roots
       roa_surf,Er_test/100._rknd,sigma_par_ambi(iroot),sigma_par_Spitzer_ambi(iroot)
   Endif
 
+  ! Write particle transport coefficients to file "particleTransportCoeffs_vs_roa"
+  Write(str_num,*) 3*num_species*num_species
+  Write(iu_particleTranspCoeffs_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+    roa_surf,L_n_ambi(iroot,:,:),L_T_ambi(iroot,:,:),L_Er_ambi(iroot,:,:)
+
+
+
 EndDo ! Ambipolar root loop
 
 ! Write plasma profile information to "plasma_profiles_check"
@@ -1109,6 +1140,8 @@ Deallocate(Er_test_vals)  ! Er to loop over
 Deallocate(Jprl_ambi,Jprl_parts,J_BS_ambi) ! Parallel current densities
 Deallocate(sigma_par_ambi,sigma_par_Spitzer_ambi) ! Paarllel conductivities
 Deallocate(utor,upol) ! Contravariant fsa flows
+Deallocate(L_A1,L_A2,L_A3)
+Deallocate(L_n,L_T,L_Er)
 
 ! Close output files
 Close(iu_flux_out)
@@ -1119,6 +1152,7 @@ Close(iu_flows_out)
 Close(iu_flowvEr_out)
 Close(iu_Jprl_out)
 Close(iu_contraflows_out)
+Close(iu_particleTranspCoeffs_out)
 
 End program penta3
 

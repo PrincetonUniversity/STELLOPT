@@ -39,6 +39,8 @@ MODULE PENTA_INTERFACE_MOD
       Dspl_D31, Dspl_D33, Dspl_Dex, Dspl_Dua, Dspl_Drat, Dspl_Drat2, &
       Dspl_logD11, Dspl_logD33, cmesh, gamma_i_vs_er, QoT_i_vs_Er, &
       Flows_ambi, gammas_ambi, QoTs_ambi, Jprl_parts, upol, utor
+   REAL(rknd), DIMENSION(:,:,:), ALLOCATABLE :: L_A1, L_A2, L_A3
+   REAL(rknd), DIMENSION(:,:), ALLOCATABLE :: Ltot_A1, Ltot_A2, Ltot_A3
    LOGICAL, DIMENSION(:), ALLOCATABLE :: root_type
    CHARACTER(LEN=10) :: Method
    CHARACTER(LEN=100) :: arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, &
@@ -331,6 +333,14 @@ MODULE PENTA_INTERFACE_MOD
       ALLOCATE(Flows((Smax+1)*num_species))                      ! Prl flow moments
       ALLOCATE(Gammas(num_species))                              ! Rad fluxes
       ALLOCATE(QoTs(num_species))                                ! Rad energy fluxes
+
+      ALLOCATE(L_A1(num_species,num_species,Smax+1))
+      ALLOCATE(L_A2(num_species,num_species,Smax+1))
+      ALLOCATE(L_A3(num_species,num_species,Smax+1))
+
+      ALLOCATE(Ltot_A1(num_species,num_species))
+      ALLOCATE(Ltot_A2(num_species,num_species))
+      ALLOCATE(Ltot_A3(num_species,num_species))
       
       RETURN
    END SUBROUTINE penta_allocate_species
@@ -393,6 +403,12 @@ MODULE PENTA_INTERFACE_MOD
       IF (ALLOCATED(utor)) DEALLOCATE(utor)
       IF (ALLOCATED(upol)) DEALLOCATE(upol)
       IF (ALLOCATED(root_type)) DEALLOCATE(root_type)
+      IF (ALLOCATED(L_A1)) DEALLOCATE(L_A1)
+      IF (ALLOCATED(L_A2)) DEALLOCATE(L_A2)
+      IF (ALLOCATED(L_A3)) DEALLOCATE(L_A3)
+      IF (ALLOCATED(Ltot_A1)) DEALLOCATE(Ltot_A1)
+      IF (ALLOCATED(Ltot_A2)) DEALLOCATE(Ltot_A2)
+      IF (ALLOCATED(Ltot_A3)) DEALLOCATE(Ltot_A3)
 
       RETURN
    END SUBROUTINE penta_deallocate_species
@@ -949,12 +965,12 @@ MODULE PENTA_INTERFACE_MOD
                Flows = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
                   masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
                   cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord,  &
-                  keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS)                                                
+                  keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3)                                                
                Gammas = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
                  masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
                  emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,        &
                  Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,        &
-                 dndrs,flux_cap)  
+                 dndrs,flux_cap,L_A1,L_A2,L_A3,Ltot_A1,Ltot_A2,Ltot_A3)  
                If ( output_QoT_vs_Er .EQV. .true. ) Then
                   QoTs = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
                      masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
@@ -1122,13 +1138,14 @@ MODULE PENTA_INTERFACE_MOD
                Flows_ambi(:,iroot) = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,&
                   vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,    &
                   log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,  &
-                  num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS)                                                
+                  num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3)                                                
                ! Calculate array of radial particle fluxes
                Gammas_ambi(:,iroot) = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,   &
                  dens,vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,   &
                  log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
                  Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
-                 lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap)  
+                 lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
+                 Ltot_A1,Ltot_A2,Ltot_A3)  
                ! Calculate array of radial energy fluxes
                QoTs_ambi(:,iroot) = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,  &
                  vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
