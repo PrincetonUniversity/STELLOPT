@@ -233,7 +233,7 @@
          WRITE(6,'(A)') '------- Outputing to map_plane.dat --------'
          CALL FLUSH(6)
          CALL safe_open(iunit,ierr,TRIM(map_file),'new','formatted')
-         WRITE(iunit,'(4(2X,i6))') m,n,ndiv,num_search
+         WRITE(iunit,'(4(2X,i8))') m,n,ndiv,num_search
          DO i = 1, num_search
             WRITE(iunit,'(1p,4ES22.12E3)') (grid(i,j), j=1,n)
          END DO
