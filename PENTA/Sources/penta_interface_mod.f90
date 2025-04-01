@@ -40,7 +40,10 @@ MODULE PENTA_INTERFACE_MOD
       Dspl_logD11, Dspl_logD33, cmesh, gamma_i_vs_er, QoT_i_vs_Er, &
       Flows_ambi, gammas_ambi, QoTs_ambi, Jprl_parts, upol, utor
    REAL(rknd), DIMENSION(:,:,:), ALLOCATABLE :: L_A1, L_A2, L_A3
-   REAL(rknd), DIMENSION(:,:), ALLOCATABLE :: Ltot_A1, Ltot_A2, Ltot_A3
+   REAL(rknd), DIMENSION(:,:), ALLOCATABLE :: L_n, L_T, L_Er
+   REAL(rknd), DIMENSION(:,:), ALLOCATABLE :: R_n, R_T, R_Er
+   REAL(rknd), DIMENSION(:,:,:), ALLOCATABLE :: L_n_ambi, L_T_ambi, L_Er_ambi
+   REAL(rknd), DIMENSION(:,:,:), ALLOCATABLE :: R_n_ambi, R_T_ambi, R_Er_ambi
    LOGICAL, DIMENSION(:), ALLOCATABLE :: root_type
    CHARACTER(LEN=10) :: Method
    CHARACTER(LEN=100) :: arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, &
@@ -338,9 +341,13 @@ MODULE PENTA_INTERFACE_MOD
       ALLOCATE(L_A2(num_species,num_species,Smax+1))
       ALLOCATE(L_A3(num_species,num_species,Smax+1))
 
-      ALLOCATE(Ltot_A1(num_species,num_species))
-      ALLOCATE(Ltot_A2(num_species,num_species))
-      ALLOCATE(Ltot_A3(num_species,num_species))
+      ALLOCATE(L_n(num_species,num_species))
+      ALLOCATE(L_T(num_species,num_species))
+      ALLOCATE(L_Er(num_species,num_species))
+
+      ALLOCATE(R_n(num_species,num_species))
+      ALLOCATE(R_T(num_species,num_species))
+      ALLOCATE(R_Er(num_species,num_species))
       
       RETURN
    END SUBROUTINE penta_allocate_species
@@ -406,9 +413,19 @@ MODULE PENTA_INTERFACE_MOD
       IF (ALLOCATED(L_A1)) DEALLOCATE(L_A1)
       IF (ALLOCATED(L_A2)) DEALLOCATE(L_A2)
       IF (ALLOCATED(L_A3)) DEALLOCATE(L_A3)
-      IF (ALLOCATED(Ltot_A1)) DEALLOCATE(Ltot_A1)
-      IF (ALLOCATED(Ltot_A2)) DEALLOCATE(Ltot_A2)
-      IF (ALLOCATED(Ltot_A3)) DEALLOCATE(Ltot_A3)
+      IF (ALLOCATED(L_n)) DEALLOCATE(L_n)
+      IF (ALLOCATED(L_T)) DEALLOCATE(L_T)
+      IF (ALLOCATED(L_Er)) DEALLOCATE(L_Er)
+      IF (ALLOCATED(R_n)) DEALLOCATE(R_n)
+      IF (ALLOCATED(R_T)) DEALLOCATE(R_T)
+      IF (ALLOCATED(R_Er)) DEALLOCATE(R_Er)
+      !
+      IF (ALLOCATED(L_n_ambi)) DEALLOCATE(L_n_ambi)
+      IF (ALLOCATED(L_T_ambi)) DEALLOCATE(L_T_ambi)
+      IF (ALLOCATED(L_Er_ambi)) DEALLOCATE(L_Er_ambi)
+      IF (ALLOCATED(R_n_ambi)) DEALLOCATE(R_n_ambi)
+      IF (ALLOCATED(R_T_ambi)) DEALLOCATE(R_T_ambi)
+      IF (ALLOCATED(R_Er_ambi)) DEALLOCATE(R_Er_ambi)
 
       RETURN
    END SUBROUTINE penta_deallocate_species
@@ -970,13 +987,13 @@ MODULE PENTA_INTERFACE_MOD
                  masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
                  emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,        &
                  Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,        &
-                 dndrs,flux_cap,L_A1,L_A2,L_A3,Ltot_A1,Ltot_A2,Ltot_A3)  
+                 dndrs,flux_cap,L_A1,L_A2,L_A3,L_n,L_T,L_Er)  
                If ( output_QoT_vs_Er .EQV. .true. ) Then
                   QoTs = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
                      masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
                      cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11, &
                      Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,      &
-                     dndrs,flux_cap)  
+                     dndrs,flux_cap,L_A1,L_A2,L_A3,R_n,R_T,R_Er)  
                Endif    
             Case ('DKES')
                Flows = calc_flows_DKES(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
@@ -1087,6 +1104,12 @@ MODULE PENTA_INTERFACE_MOD
       Allocate(Jprl_parts(num_species,num_roots))          ! Par. curr. dens. per spec.
       Allocate(upol(num_species,num_roots))                ! fsa contra pol flow
       Allocate(utor(num_species,num_roots))                ! fsa contra tor flow
+      Allocate(L_n_ambi(num_roots,num_species,num_species))
+      Allocate(L_T_ambi(num_roots,num_species,num_species))
+      Allocate(L_Er_ambi(num_roots,num_species,num_species))
+      Allocate(R_n_ambi(num_roots,num_species,num_species))
+      Allocate(R_T_ambi(num_roots,num_species,num_species))
+      Allocate(R_Er_ambi(num_roots,num_species,num_species))
 
       ! Evaluate fluxes and flows at the ambipolar Er
       Do iroot = 1_iknd, num_roots
@@ -1145,17 +1168,26 @@ MODULE PENTA_INTERFACE_MOD
                  log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
                  Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
                  lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
-                 Ltot_A1,Ltot_A2,Ltot_A3)  
+                 L_n,L_T,L_Er)  
                ! Calculate array of radial energy fluxes
                QoTs_ambi(:,iroot) = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,  &
                  vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
                  log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
                  Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
-                 lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap)
+                 lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
+                 R_n,R_T,R_Er)
 
                sigma_par_ambi(iroot) = sigma_par
                sigma_par_Spitzer_ambi(iroot) = sigma_par_Spitzer
                J_BS_ambi(iroot) = J_BS
+               !
+               L_n_ambi(iroot,:,:) = L_n
+               L_T_ambi(iroot,:,:) = L_T
+               L_Er_ambi(iroot,:,:) = L_Er
+               !
+               R_n_ambi(iroot,:,:) = R_n
+               R_T_ambi(iroot,:,:) = R_T
+               R_Er_ambi(iroot,:,:) = R_Er
             Case ('DKES')
                ! Calculate array of parallel flow moments 
                Flows_ambi(:,iroot) = calc_flows_DKES(num_species,Smax,abs_Er,Temps,   &

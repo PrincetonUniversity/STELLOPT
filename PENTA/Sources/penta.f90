@@ -235,7 +235,8 @@ Use io_unit_spec, Only :             &
   iu_Jprl_out,                       & ! Parallel current den vs r/a i/o unit #
   iu_contraflows_out,                & ! Contravariant flows vs roa
   iu_sigmas_out,                     & ! sigma_par and sigma_par_Spitzer vs roa
-  iu_particleTranspCoeffs_out       ! Particle transport coefficients vs roa
+  iu_particleTranspCoeffs_out,       & ! Particle transport coefficients vs roa
+  iu_heatTranspCoeffs_out             ! Heat transport coefficients vs roa
 Use read_input_file_mod, Only :      &
   ! Imported Subroutines
   read_vmec_file,                    & ! Reads VMEC data file
@@ -421,9 +422,11 @@ Real(rknd), Allocatable ::      &
 Real(rknd) :: Er_roots(num_roots_max)   ! The maximum number of roots allowed
 
 Real(rknd), Allocatable :: L_n(:,:), L_T(:,:), L_Er(:,:)
+Real(rknd), Allocatable :: R_n(:,:), R_T(:,:), R_Er(:,:)
 ! Local allocatable arrays (3D)
 Real(rknd), Allocatable :: L_A1(:,:,:), L_A2(:,:,:), L_A3(:,:,:)
 Real(rknd), Allocatable :: L_n_ambi(:,:,:), L_T_ambi(:,:,:), L_Er_ambi(:,:,:)
+Real(rknd), Allocatable :: R_n_ambi(:,:,:), R_T_ambi(:,:,:), R_Er_ambi(:,:,:)
 
 ! Namelist files
 Namelist / ion_params / num_ion_species, Z_ion_init, miomp_init
@@ -517,6 +520,9 @@ Allocate(L_A3(num_species,num_species,Smax+1))
 Allocate(L_n(num_species,num_species))
 Allocate(L_T(num_species,num_species))
 Allocate(L_Er(num_species,num_species))
+Allocate(R_n(num_species,num_species))
+Allocate(R_T(num_species,num_species))
+Allocate(R_Er(num_species,num_species))
 
 ! Read input files
 Call read_vmec_file_2(js,run_ident)
@@ -658,6 +664,8 @@ Open(unit=iu_contraflows_out,file="ucontra_vs_roa"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
 Open(unit=iu_particleTranspCoeffs_out,file="particleTransportCoeffs_vs_roa"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
+  Open(unit=iu_heatTranspCoeffs_out,file="heatTransportCoeffs_vs_roa"//files_name ,  &
+  position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
 
 If ( Method == 'SN') Then
   Open(unit=iu_sigmas_out, file="sigmas_vs_roa"//files_name ,  &
@@ -700,9 +708,12 @@ If ( i_append == 0 ) Then
   ! Legend for flows vs Er
     Write(iu_flowvEr_out,'("*",/,"r/a   Er[V/cm]  ", &
     & "    <B*u_||ke>/<B**2> [m/sT]  <B*u_||ki>/<B**2> [m/sT]")')
-  ! Legend for transport coeffs vs roa
+  ! Legend for particle transport coeffs vs roa
     Write(iu_particleTranspCoeffs_out,'("*",/,"r/a   L_n (Ns x Ns)      ",&
     & "   L_T (NsxNs)       L_Er (NsxNs)")')
+  ! Legend for heat transport coeffs vs roa
+    Write(iu_heatTranspCoeffs_out,'("*",/,"r/a   R_n (Ns x Ns)      ",&
+    & "   R_T (NsxNs)       R_Er (NsxNs)")')
 EndIf
 
 ! Calculate thermal velocities 
@@ -851,7 +862,7 @@ Do ie = 1,num_Er_test
           masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
           cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11, &
           Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,      &
-          dndrs,flux_cap)  
+          dndrs,flux_cap,L_A1,L_A2,L_A3,R_n,R_T,R_Er)  
       Endif    
     Case ('DKES')
       Flows = calc_flows_DKES(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
@@ -923,6 +934,9 @@ Allocate(utor(num_species,num_roots))                ! fsa contra tor flow
 Allocate(L_n_ambi(num_roots,num_species,num_species))
 Allocate(L_T_ambi(num_roots,num_species,num_species))
 Allocate(L_Er_ambi(num_roots,num_species,num_species))
+Allocate(R_n_ambi(num_roots,num_species,num_species))
+Allocate(R_T_ambi(num_roots,num_species,num_species))
+Allocate(R_Er_ambi(num_roots,num_species,num_species))
 
 ! Evaluate fluxes and flows at the ambipolar Er
 Do iroot = 1_iknd, num_roots
@@ -990,14 +1004,21 @@ Do iroot = 1_iknd, num_roots
         vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
         log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
         Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
-        lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap)
+        lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
+        R_n,R_T,R_Er)
 
       sigma_par_ambi(iroot) = sigma_par
       sigma_par_Spitzer_ambi(iroot) = sigma_par_Spitzer
       J_BS_ambi(iroot) = J_BS
+      !
       L_n_ambi(iroot,:,:) = L_n
       L_T_ambi(iroot,:,:) = L_T
       L_Er_ambi(iroot,:,:) = L_Er
+      !
+      !
+      R_n_ambi(iroot,:,:) = R_n
+      R_T_ambi(iroot,:,:) = R_T
+      R_Er_ambi(iroot,:,:) = R_Er
 
     Case ('DKES')
 
@@ -1089,6 +1110,10 @@ Do iroot = 1_iknd, num_roots
   Write(iu_particleTranspCoeffs_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
     roa_surf,L_n_ambi(iroot,:,:),L_T_ambi(iroot,:,:),L_Er_ambi(iroot,:,:)
 
+  ! Write heat transport coefficients to file "heatTransportCoeffs_vs_roa"
+  Write(str_num,*) 3*num_species*num_species
+  Write(iu_heatTranspCoeffs_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+      roa_surf,R_n_ambi(iroot,:,:),R_T_ambi(iroot,:,:),R_Er_ambi(iroot,:,:)
 
 
 EndDo ! Ambipolar root loop
@@ -1142,6 +1167,9 @@ Deallocate(sigma_par_ambi,sigma_par_Spitzer_ambi) ! Paarllel conductivities
 Deallocate(utor,upol) ! Contravariant fsa flows
 Deallocate(L_A1,L_A2,L_A3)
 Deallocate(L_n,L_T,L_Er)
+Deallocate(R_n,R_T,R_Er)
+Deallocate(L_n_ambi,L_T_ambi,L_Er_ambi)
+Deallocate(R_n_ambi,R_T_ambi,R_Er_ambi)
 
 ! Close output files
 Close(iu_flux_out)
@@ -1153,6 +1181,7 @@ Close(iu_flowvEr_out)
 Close(iu_Jprl_out)
 Close(iu_contraflows_out)
 Close(iu_particleTranspCoeffs_out)
+Close(iu_heatTranspCoeffs_out)
 
 End program penta3
 
