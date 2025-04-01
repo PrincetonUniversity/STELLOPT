@@ -64,8 +64,7 @@ class PLASMA_SOLVER:
         
         self.heat_fluxes_info = defaultdict(lambda: defaultdict(dict))
         self.particle_fluxes_info = defaultdict(lambda: defaultdict(dict))
-        
-        
+
         print(f'Solvers for pressure of {self.list_of_species} INITIALIZED!')
         print(f'SOLVING FOR ALPHAS DENSITY: {self.solve_alphas_density}')
     
@@ -302,7 +301,7 @@ class PLASMA_SOLVER:
                 
             case 'beurskens':
                 if( (chi_base is None) or (aLT_critical is None) or (alpha is None) or (stiffness is None) or (chi_electrons is None) or (convective_fact is None)):
-                    print('ERROR: chi_base, aLT_critical, alpha, stiffness and chi_electrons must be given!')
+                    print('ERROR: chi_base, aLT_critical, alpha, stiffness, chi_electrons and convective_fact must be given!')
                     exit(0)
                 self.heat_fluxes_info['type'] = type
                 self.heat_fluxes_info[type]['chi_base'] = chi_base
@@ -336,7 +335,7 @@ class PLASMA_SOLVER:
                 self.particle_fluxes_info['type'] = type
                 self.particle_fluxes_info[type]['Dn'] = Dn
                 
-    def run(self,Nr,dt,tstart,tend,tolerance=1E-2,max_subiter=12):
+    def run(self,Nr,dt,tstart,tend,tolerance=1E-2,max_subiter=12,output_filename=None):
         
         from collections import defaultdict
         
@@ -412,6 +411,9 @@ class PLASMA_SOLVER:
                 
                 subiter += 1
         
+        if(output_filename is not None):
+            self.call_save_output(output_filename)      
+        
     def make_checks(self):
         
         # check equilibrium exists
@@ -474,6 +476,7 @@ class PLASMA_SOLVER:
         #
         self.Gamma = {}
         self.Dn = {}
+        self.cn = {}
         #
         self.Q_NEO = {}
         self.Gamma_NEO = {}
@@ -495,6 +498,7 @@ class PLASMA_SOLVER:
             self.Q[species] = np.zeros((Nt,Nr)) 
             self.Gamma[species] = np.zeros((Nt,Nr)) 
             self.Dn[species] = np.zeros((Nt,Nr)) 
+            self.cn[species] = np.zeros((Nt,Nr)) 
             self.Q_NEO[species] = np.zeros((Nt,Nr)) 
             self.Gamma_NEO[species] = np.zeros((Nt,Nr)) 
             
@@ -772,6 +776,8 @@ class PLASMA_SOLVER:
             
             self.Dn[species][it,:] = Dn
             
+            self.cn[species][it,:] = 0.0
+                        
             # this is used in heat flux
             self.Gamma[species][it,:] = -Dn * dndr(r_grid)
             
@@ -864,17 +870,18 @@ class PLASMA_SOLVER:
         
         from scipy.interpolate import CubicSpline, Akima1DInterpolator
         
-        theta = self.particle_fluxes_info['dkespenta']['theta']
+        root = 'ion_root'
 
         PENTA_class = PENTA(folder_path='.', plasma=self.plasma, lverb=False)
         
-        for species in self.list_of_species:
+        for sp,species in enumerate(self.list_of_species):
             
             # Gamma = np.array( PENTA_class.Gamma_Maxw[species] )
-            Gamma = np.array( PENTA_class.Gamma[species,'ion_root'] )
+            Gamma = np.array( PENTA_class.Gamma[species,root] )
+            roa_PENTA = PENTA_class.roa[root]
             
             ## Include Gamma(r=0) = 0
-            rho_extended = np.concatenate([[0.0],PENTA_class.roa_unique])
+            rho_extended = np.concatenate([[0.0],roa_PENTA])
             Gamma_extended = np.concatenate(([0.0],Gamma))
             # Gamma_interp = CubicSpline(rho_extended,Gamma_extended,extrapolate=True,bc_type='natural')
             Gamma_interp = Akima1DInterpolator(rho_extended,Gamma_extended,method='makima')
@@ -886,32 +893,42 @@ class PLASMA_SOLVER:
             # plt.plot(PENTA_class.roa_unique,Gamma,'.')
             # plt.show()
             
-            # Compute Dn
-            n_r = CubicSpline(self.r_grid,self.N[species][it,:])
-            dndr = n_r.derivative()
-            dndr = dndr(PENTA_class.roa_unique*self.aminor)
+            # Compute Dn and cn
+            PENTA_class.set_plasma_solver_transport_coeffs()
+            Dn = PENTA_class.Dn[species,root][:,sp] # the sp index picks the self diffusion coeff, Dn_aa
+            cn = PENTA_class.cn[species,root][:]
             
-            Dn_penta = np.where(dndr!=0, 
-                            -theta * Gamma / dndr,
-                            0.0)
+            # n_r = CubicSpline(self.r_grid,self.N[species][it,:])
+            # dndr = n_r.derivative()
+            # dndr = dndr(PENTA_class.roa_unique*self.aminor)
             
-            # COMPUTES D_axis assuming Q and dp/dr are zero on the axis (this is a formula resulting from Cauchy rule!)
-            dr_large = PENTA_class.roa_unique[0]*self.aminor
-            n_axis = self.N[species][it,0]
-            n_dr_large = n_r(dr_large)
-            if(np.abs(n_dr_large-n_axis) > 1E-14):
-                D_axis = -theta*0.5* (Gamma[0]/dr_large) / ((n_dr_large - n_axis)/dr_large**2)
-            else:
-                # linear interpolation
-                print(' !!! ENTERING in linear interpolation')
-                D_axis =  Dn_penta[0] - PENTA_class.roa_unique[0]*(Dn_penta[1]-Dn_penta[0])/(PENTA_class.roa_unique[1]-PENTA_class.roa_unique[0])
+            # Dn_penta = np.where(dndr!=0, 
+            #                 -theta * Gamma / dndr,
+            #                 0.0)
             
-            D_extended = np.concatenate([[D_axis],Dn_penta])
+            # # COMPUTES D_axis assuming Q and dp/dr are zero on the axis (this is a formula resulting from Cauchy rule!)
+            # dr_large = PENTA_class.roa_unique[0]*self.aminor
+            # n_axis = self.N[species][it,0]
+            # n_dr_large = n_r(dr_large)
+            # if(np.abs(n_dr_large-n_axis) > 1E-14):
+            #     D_axis = -theta*0.5* (Gamma[0]/dr_large) / ((n_dr_large - n_axis)/dr_large**2)
+            # else:
+            #     # linear interpolation
+            #     print(' !!! ENTERING in linear interpolation')
+            #     D_axis =  Dn_penta[0] - PENTA_class.roa_unique[0]*(Dn_penta[1]-Dn_penta[0])/(PENTA_class.roa_unique[1]-PENTA_class.roa_unique[0])
+            
+            # D_extended = np.concatenate([[D_axis],Dn_penta])
             # Dn = CubicSpline(rho_extended,D_extended,extrapolate=True,bc_type='natural')
-            Dn = Akima1DInterpolator(rho_extended,D_extended,method='makima')
+            # Dn = Akima1DInterpolator(rho_extended,D_extended,method='makima')
+            
+            Dn = Akima1DInterpolator(roa_PENTA,Dn,method='makima')
             Dn.extrapolate = True
+            #
+            cn = Akima1DInterpolator(roa_PENTA,cn,method='makima')
+            cn.extrapolate = True
             
             self.Dn[species][it,:] = Dn(self.rho_grid)
+            self.cn[species][it,:] = cn(self.rho_grid)
             
             
     def solve_density_equations(self,it):
@@ -1023,6 +1040,10 @@ class PLASMA_SOLVER:
         
         Dn = self.Dn[species][it,:]
         Dn_interp = CubicSpline(self.rho_grid,Dn,bc_type='natural',extrapolate=True)
+        
+        cn = self.cn[species][it,:]
+        cn_interp = CubicSpline(self.rho_grid,cn,bc_type='natural',extrapolate=True)
+        
           
         ############################################
         ############### COMPUTE LHS ################
@@ -1039,12 +1060,15 @@ class PLASMA_SOLVER:
         VDplus = Vp(rplus)*Dn_interp(rplus) / (Vp(rhos)*dr**2)
         VDminus = Vp(rminus)*Dn_interp(rminus) / (Vp(rhos)*dr**2)
         
+        cplus  = cn_interp(rhos+drho)*Vp(rhos+drho) / (2*Vp(rhos)*dr)
+        cminus = cn_interp(rhos-drho)*Vp(rhos-drho) / (2*Vp(rhos)*dr)
+        
         main[1:] = 1.0 + dt*(VDplus[1:] + VDminus[1:])
-        upper = dt*(-VDplus[:-1])
-        lower = dt*(-VDminus[1:])
+        upper = dt*(-VDplus[:-1] + cplus[:-1])
+        lower = dt*(-VDminus[1:] - cminus[1:])
         
         ## r=0
-        main[0] = 1.0 + dt*4*Dn_interp(0)/dr**2
+        main[0] = 1.0 + dt*4*Dn_interp(0)/dr**2 + dt*2*cn_interp(drho)/dr
         upper[0] = -4*dt*Dn_interp(0)/dr**2
                 
         ## r=a
@@ -1255,7 +1279,7 @@ class PLASMA_SOLVER:
                 # print(f'Surface processed in {elapsed_seconds:.2f} seconds')
             
         # delete files not needed
-        remove = 'rm ucontra* sigmas* flows_vs_Er* plasma_profiles*'
+        remove = 'rm ucontra* sigmas* flows_vs_Er*'
         subprocess.run(remove, shell=True, check=True, text=True, capture_output=True)
         
         # merge _surface_# files into single file
@@ -1263,6 +1287,39 @@ class PLASMA_SOLVER:
         merge_and_delete('fluxes_vs_Er_surface*','fluxes_vs_Er')
         merge_and_delete('flows_vs_roa_surface*','flows_vs_roa')
         merge_and_delete('Jprl_vs_roa_surface*','Jprl_vs_roa')
+        merge_and_delete('particleTransportCoeffs_vs_roa_surface*','particleTransportCoeffs_vs_roa')
+        merge_and_delete('heatTransportCoeffs_vs_roa_surface*','heatTransportCoeffs_vs_roa')
+        merge_and_delete('plasma_profiles_check_surface*','plasma_profiles_check')
+        
+    def call_save_output(self,output_filename):
+        # saves in joblib file
+        from types import SimpleNamespace
+        from pathlib import Path
+        import joblib
+        
+        # check if extension of output_filename is .joblib; if not, add
+        output_filename = str(Path(output_filename).with_suffix(".joblib"))
+        
+        # save the class (cannot save solver directly cause it contains lambda functions...)
+        saved_class = SimpleNamespace()
+        saved_class.rho_grid = self.rho_grid
+        saved_class.r_grid = self.r_grid
+        saved_class.time = self.time
+        saved_class.P = self.P
+        saved_class.T = self.T
+        saved_class.Dn = self.Dn
+        saved_class.cn = self.cn
+        saved_class.Dp = self.Dp
+        saved_class.cp = self.cp
+        saved_class.Nt = self.Nt
+        saved_class.Q = self.Q
+        saved_class.Gamma_NEO = self.Gamma_NEO
+        saved_class.dVdr = self.dVdr
+        saved_class.explicit_energy_sources = self.explicit_energy_sources
+        saved_class.explicit_particle_sources = self.explicit_particle_sources
+        saved_class.list_of_species = self.list_of_species
+
+        joblib.dump(saved_class, output_filename)
         
 def process_surfaces(surface,wout_path):
     import time
