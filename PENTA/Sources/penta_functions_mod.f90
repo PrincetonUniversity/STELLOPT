@@ -578,7 +578,7 @@ Function calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,      &
      masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,       &
      cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,    &
      Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,      &
-     dndrs,flux_cap)                                                        &
+     dndrs,flux_cap,L_A1,L_A2,L_A3,R_n,R_T,R_Er)                                                        &
 Result(QoTs)
 !
 ! Description: 
@@ -676,6 +676,12 @@ Real(rknd),    Intent(in)  :: dTdrs(num_species)
 Real(rknd),    Intent(in)  :: dndrs(num_species)
 Logical,       Intent(in)  :: flux_cap
 Real(rknd)                 :: QoTs(num_species)
+Real(rknd),    Intent(in)  :: L_A1(num_species,num_species,Smax+1)
+Real(rknd),    Intent(in)  :: L_A2(num_species,num_species,Smax+1)
+Real(rknd),    Intent(in)  :: L_A3(num_species,num_species,Smax+1)
+Real(rknd),    Intent(out)  :: R_n(num_species,num_species)
+Real(rknd),    Intent(out)  :: R_T(num_species,num_species)
+Real(rknd),    Intent(out)  :: R_Er(num_species,num_species)
 
 ! Local Scalars
 Integer(iknd) :: ispec1,kval,   & ! Loop indices
@@ -710,6 +716,7 @@ Real(rknd)    :: qb(num_species-1),  &  ! Paremeters for species 'b' /= 'a'
 Real(rknd)    :: QoT_PS(num_species)
 Real(rknd)    :: mono_QoT(num_species)
 Real(rknd)    :: QoT_Ua(num_species)
+Real(rknd)    :: n_spec2, T_spec2, q_spec2
 
 ! Local parameters                 
 Integer(iknd), Parameter ::  &
@@ -728,6 +735,11 @@ THREE     = 3._rknd,  &
 FIVE      = 5._rknd
 
 !- End of header -------------------------------------------------------------
+
+R_n = 0.0_rknd
+R_T = 0.0_rknd
+R_Er = 0.0_rknd
+
 Do ispec1 = 1_iknd, num_species
 
   ! Assign species 'a' parameters
@@ -833,6 +845,10 @@ Do ispec1 = 1_iknd, num_species
     QoT_PS_std = QoT_PS_std + C_PS1*(FIVEHALF*lab11- lab21) - &
       C_PS2*(FIVEHALF*lab12 - lab22)
 
+    ! Add PS contibutions to transport coefficients
+    R_n(ispec1,ispec2) = (U2/qa) * elem_charge*T_beta/(q_beta*n_beta)*(FIVEHALF*lab11- lab21)
+    R_T(ispec1,ispec2) = (U2/qa) * (FIVEHALF*lab11- lab21 -FIVEHALF*lab12+lab22)/q_beta
+
   EndDo
 
 
@@ -855,6 +871,11 @@ Do ispec1 = 1_iknd, num_species
       num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.true.,.false.)
     QoT_PS_flow = (2._rknd/3._rknd)*(ma*Ta*elem_charge/qa)*(I_1*Avec(ind_A) + I_2*Avec(ind_A+1))
     QoT_PS(ispec1)   = (U2/qa) * (QoT_PS_std + QoT_PS_flow)
+
+    ! Add PS contibutions to transport coefficients
+    R_n(ispec1,ispec1) = R_n(ispec1,ispec1) + (U2/qa)*(2._rknd/3._rknd)*(ma*Ta*elem_charge/qa)*I_1/na
+    R_T(ispec1,ispec1) = R_T(ispec1,ispec1) - (U2/qa)*(ma/qa)*I_1 + (U2/qa)*(2._rknd/3._rknd)*(ma/qa)*I_2
+    R_Er(ispec1,ispec1) = R_Er(ispec1,ispec1) - (U2/qa)*(2._rknd/3._rknd)*(ma/qa)*I_1*qa
   Endif
 
 
@@ -864,6 +885,25 @@ Do ispec1 = 1_iknd, num_species
 
   ! Total QoT
   QoTs(ispec1)   = QoT_Ua(ispec1) +mono_QoT(ispec1)+QoT_PS(ispec1)
+
+  ! Add mono-flux contribution to transport coefficients
+  R_n(ispec1,ispec1) = R_n(ispec1,ispec1) - L21/na
+  R_T(ispec1,ispec1) = R_T(ispec1,ispec1) + (THREEHALF*L21-L22) / (elem_charge*Ta)
+  R_Er(ispec1,ispec1) = R_Er(ispec1,ispec1) + (L21*qa) / (elem_charge*Ta)
+
+  ! Add Ua contribution to transport coefficients
+  Do ispec2 = 1,num_species
+    n_spec2 = dens(ispec2)
+    q_spec2 = charges(ispec2)
+    T_spec2 = Temps(ispec2)
+    R_n(ispec1,ispec2) = R_n(ispec1,ispec2) - Sum(Na_2k*L_A1(ispec1,ispec2,:))/n_spec2
+    !
+    R_T(ispec1,ispec2) = R_T(ispec1,ispec2) +  &
+                        THREEHALF*Sum(Na_2k*L_A1(ispec1,ispec2,:))/(elem_charge*T_spec2) - &
+                        Sum(Na_2k*L_A2(ispec1,ispec2,:))/(elem_charge*T_spec2)
+    !
+    R_Er(ispec1,ispec2) = R_Er(ispec1,ispec2) + Sum(Na_2k*L_A1(ispec1,ispec2,:))*q_spec2/(elem_charge*T_spec2)
+  EndDo
 
 EndDo ! Species 1 loop
 
@@ -1659,14 +1699,14 @@ Real(rknd),    Intent(out)  :: L_Er(num_species,num_species)
 Integer(iknd) :: ispec1,kval,   & ! Loop indices
   ispec2,lmat_ind1,        &
   lmat_ind2,          &
-  flow_ind1,ind_A 
+  flow_ind1,ind_A
 Integer(iknd) ::  i               ! Index used for array constructors
 Integer(iknd) ::  nu_exp          ! Exponent on collision freq. for conv.
 Real(rknd)    :: dn_betadr,     & ! Species beta parameters (for PS flux)
   dT_betadr,n_beta,T_beta,      &
   q_beta     
 Real(rknd)    ::                & ! Primary species (a) paramaters 
-  ma, Ta, vta, qa, na     
+  ma, Ta, vta, qa, na   
 Real(rknd)    :: L11,L12  ! Thermal diffusion coefficients
 Real(rknd)    :: L11_1, L11_2          ! Thermal diffusion coefficients
 Real(rknd)    :: L12_1, L12_2          ! Thermal diffusion coefficients
@@ -1687,6 +1727,7 @@ Real(rknd)    :: qb(num_species-1),  &  ! Paremeters for species 'b' /= 'a'
 Real(rknd)    :: Gamma_PS(num_species)
 Real(rknd)    :: mono_flux(num_species)
 Real(rknd)    :: flux_Ua(num_species)
+Real(rknd)    :: n_spec2, T_spec2, q_spec2
 
 ! Local parameters                 
 Integer(iknd), Parameter ::  &
@@ -1809,6 +1850,7 @@ Do ispec1 = 1_iknd, num_species
 
     Gamma_PS_std = Gamma_PS_std + C_PS1*lab11 - C_PS2*lab12
 
+    ! Add PS contibutions to transport coefficients
     L_n(ispec1,ispec2) = (U2/qa) * elem_charge*T_beta/(q_beta*n_beta)*lab11
     L_T(ispec1,ispec2) = (U2/qa) * (lab11-lab12)/q_beta
 
@@ -1835,31 +1877,37 @@ Do ispec1 = 1_iknd, num_species
     Gamma_PS_flow = (2._rknd/3._rknd)*(ma*Ta*elem_charge/qa)*(I_0*Avec(ind_A) + I_1*Avec(ind_A+1))
     Gamma_PS(ispec1)   = (U2/qa) * (Gamma_PS_std + Gamma_PS_flow)
 
+    ! Add PS contibutions to transport coefficients
     L_n(ispec1,ispec1) = L_n(ispec1,ispec1) + (U2/qa)*(2._rknd/3._rknd)*(ma*Ta*elem_charge/qa)*I_0/na
     L_T(ispec1,ispec1) = L_T(ispec1,ispec1) - (U2/qa)*(ma/qa)*I_0 + (U2/qa)*(2._rknd/3._rknd)*(ma/qa)*I_1
     L_Er(ispec1,ispec1) = L_Er(ispec1,ispec1) - (U2/qa)*(2._rknd/3._rknd)*(ma/qa)*I_0*qa
   Endif
 
   flow_ind1 = (ispec1-1)*(Smax+1)+1
+
   mono_flux(ispec1) = - L11*Avec(ind_A) - L12*Avec(ind_A+1)
   flux_Ua(ispec1) = -Sum(Na_1k*Flows(flow_ind1:flow_ind1+Smax))
 
   ! Total flux
-  Gammas(ispec1) = flux_Ua(ispec1)+mono_flux(ispec1)+gamma_PS(ispec1)
+  Gammas(ispec1) = flux_Ua(ispec1) + mono_flux(ispec1) + gamma_PS(ispec1)
 
-  ! Compute transport coefficients
+  ! Add mono-flux contribution to transport coefficients
   L_n(ispec1,ispec1) = L_n(ispec1,ispec1) - L11/na
-  L_T(ispec1,ispec1) = L_T(ispec1,ispec1) + (THREEHALF*L11*L12) / (elem_charge*Ta)
+  L_T(ispec1,ispec1) = L_T(ispec1,ispec1) + (THREEHALF*L11-L12) / (elem_charge*Ta)
   L_Er(ispec1,ispec1) = L_Er(ispec1,ispec1) + (L11*qa) / (elem_charge*Ta)
 
+  ! Add Ua contribution to transport coefficients
   Do ispec2 = 1,num_species
-    L_n(ispec1,ispec2) = L_n(ispec1,ispec2) - Sum(Na_1k*L_A1(ispec1,ispec2,:))/na
+    n_spec2 = dens(ispec2)
+    q_spec2 = charges(ispec2)
+    T_spec2 = Temps(ispec2)
+    L_n(ispec1,ispec2) = L_n(ispec1,ispec2) - Sum(Na_1k*L_A1(ispec1,ispec2,:))/n_spec2
     !
     L_T(ispec1,ispec2) = L_T(ispec1,ispec2) +  &
-                        THREEHALF*Sum(Na_1k*L_A1(ispec1,ispec2,:))/(elem_charge*Ta) - &
-                        Sum(Na_1k*L_A2(ispec1,ispec2,:))/(elem_charge*Ta)
+                        THREEHALF*Sum(Na_1k*L_A1(ispec1,ispec2,:))/(elem_charge*T_spec2) - &
+                        Sum(Na_1k*L_A2(ispec1,ispec2,:))/(elem_charge*T_spec2)
     !
-    L_Er(ispec1,ispec2) = L_Er(ispec1,ispec2) + Sum(Na_1k*L_A1(ispec1,ispec2,:))*qa/(elem_charge*Ta)
+    L_Er(ispec1,ispec2) = L_Er(ispec1,ispec2) + Sum(Na_1k*L_A1(ispec1,ispec2,:))*q_spec2/(elem_charge*T_spec2)
   EndDo
 
 EndDo ! Species 1 loop
@@ -1977,7 +2025,7 @@ Real(rknd),  Intent(inout) :: L_A3(num_species,num_species,Smax+1)
 Integer(iknd) ::  ispec1, jval, ind_A, ind_RHS, kval, & ! Loop indices
    ind1_LHS1,   &
    ind1_LHS2, ind2_LHS2, ispec2, &
-   ind1, ind2, jval1, jval2
+   ind1, ind2, jval1, jval2, k
 Integer(iknd) ::  I               ! Index used for array constructors
 Integer(iknd) ::  nu_exp          ! Exponent on collision freq. for conv.
 Integer(iknd) :: inv_err          ! Error flag for inversion
@@ -2002,7 +2050,7 @@ Real(rknd)    ::  &                     ! 2D arrays for the LHS of equation sys
 Real(rknd)   :: RHS(num_species*(Smax+1)), RHS_BS(num_species*(Smax+1)) ! 1D array for RHS of eq. sys
 
 Real(rknd)   :: R1(num_species*(Smax+1)), R2(num_species*(Smax+1)), & ! Used to compute transport coeffs
-  R3(num_species*(Smax+1))
+  R3(num_species*(Smax+1)), my_flow
 
 
 ! Local parameters                 
@@ -2180,8 +2228,31 @@ Do ispec1 = 1_iknd,num_species
   EndDo
 EndDo
 
-      
+! ! Check I can reconstruct RHS
+! k=1
+! Do ispec1=1_iknd,num_species
+!   Do jval=1_iknd,Smax+1
+!     ind_A = (ispec1 - 1)*3 + 1
+!     PRINT *, 'DIFF=', RHS(k) - (R1(k)*Avec(ind_A) + R2(k)*Avec(ind_A+1) + R3(k)*Avec(ind_A+2))
+!     k = k+1
+!   EndDo
+! EndDo
 
+! ! Check Flows can be recomputed with L_A1, L_A2, L_A3    
+! k = 1
+! Do ispec1 = 1_iknd,num_species
+!   Do jval = 1_iknd,Smax+1
+
+!     my_flow = 0.0_rknd
+!     Do ispec2 = 1_iknd,num_species
+!       ind_A = (ispec2 - 1)*3 + 1
+!       my_flow = my_flow + L_A1(ispec1,ispec2,jval)*Avec(ind_A) + L_A2(ispec1,ispec2,jval)*Avec(ind_A+1) + L_A3(ispec1,ispec2,jval)*Avec(ind_A+2)
+!     EndDo
+
+!     PRINT *, 'DIFF=', Flows(k) - my_flow
+!     k = k+1
+!   EndDo
+! EndDo
 
 
 EndFunction calc_flows_SN
