@@ -355,9 +355,10 @@ class NESCOIL(FourierRep):
 				th = np.append(th,temp[:,1])
 				ze = np.append(ze,temp[:,0])
 			# Wrap the coil so that poitive current is positive field (counterclockwise from top)
-			if (th[1]-th[0] > 0):
+			if (th[16]-th[0] > 0):
 				th = th[::-1]
 				ze = ze[::-1]
+				print(rf'Flipping coil {k}')
 			# Now we need to interpolate the coil onto the interval [0,2*pi] in theta.
 			l_in   = np.linspace(0.0,1.0,len(th))
 			l_out  = np.linspace(0.0,1.0,npts)
