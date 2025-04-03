@@ -78,8 +78,9 @@ class DKES:
         self.D31_star = self.L31 * np.sqrt(self.Bsq)
         self.D33_star = self.L33 * self.Bsq
         
-        #according to J. Lore documentation and also C. Beidler...
-        # this is also what is done internally in PENTA
+        # according to J. Lore documentation and also C. Beidler
+        # this is also what is done internally in PENTA 
+        # (this sign basically sets sign of JBS, and calculations agree w/ SFINCS, so this should be correct!)
         self.D13_star = -self.D31_star
         
     def check_convergence(self):
