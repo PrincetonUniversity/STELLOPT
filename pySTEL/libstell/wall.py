@@ -263,7 +263,7 @@ class WALL():
 		mesh = meshcut.cross_section(self.vertex,self.faces, \
 				plane_orig=plane_orig,plane_normal=plane_normal)
 		for submesh in mesh:
-			R = submesh[:,0]
+			R = np.sqrt(submesh[:,0]**2+submesh[:,1]**2)
 			Z = submesh[:,2]
 			if all(R > 0.0):
 				ax.plot(R,Z,'k')
