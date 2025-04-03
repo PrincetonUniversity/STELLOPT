@@ -36,6 +36,8 @@ Module io_unit_spec
     iu_Jprl_out=15,       &   ! Parallel current density vs r/a (output)
     iu_contraflows_out=16,&   ! Contravariant flows vs roa 
     iu_QoTvEr_out=17,     &   ! Energy fluxes vs Er (output)
-    iu_sigmas_out=18          ! Parallel conductivities (output) 
+    iu_sigmas_out=18,     &   ! Parallel conductivities (output) 
+    iu_particleTranspCoeffs_out=19, & ! Particle Transport coefficients (output)
+    iu_heatTranspCoeffs_out=20 ! Particle Transport coefficients (output)
 End module io_unit_spec
 !- End of header -------------------------------------------------------------

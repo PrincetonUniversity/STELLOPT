@@ -86,14 +86,40 @@ class COLLISIONS():
 		ne_cm = ne*1E-6
 		mu = mi/self.MP
 		# No need to convert masses from kg to g
-		if ti/mi < (te/self.ME):
-			if (te < (10 * Z * Z)):
-				clog = 23 - np.log(np.sqrt(ne_cm)*Z*te**(-1.5))
-			else:
-				clog = 24 - np.log(np.sqrt(ne_cm)/te)
-		else:
-			mu = (self.ME*mi)/(self.ME+mi)
-			clog  = 16 - np.log(mu*Z*Z*np.sqrt(ni)*ti**-1.5)
+  
+		# if ti/mi < (te/self.ME):
+		# 	if (te < (10 * Z * Z)):
+		# 		clog = 23 - np.log(np.sqrt(ne_cm)*Z*te**(-1.5))
+		# 	else:
+		# 		clog = 24 - np.log(np.sqrt(ne_cm)/te)
+		# else:
+		# 	mu = (self.ME*mi)/(self.ME+mi)
+		# 	clog  = 16 - np.log(mu*Z*Z*np.sqrt(ni)*ti**-1.5)
+  
+		# Convert to numpy arrays if they aren't already
+		ti = np.asarray(ti)
+		te = np.asarray(te)
+		ni = np.asarray(ni)
+		ne = np.asarray(ne)
+  
+  		# Condition: ti/mi < te/self.ME
+		condition = (ti / mi) < (te / self.ME)
+
+		# Compute mu for cases where the condition is False
+		mu = (self.ME * mi) / (self.ME + mi)
+  
+		# Compute clog based on condition
+		clog = np.where(
+			condition,
+			np.where(
+				te < (10 * Z * Z),
+				23 - np.log(np.sqrt(ne_cm) * Z * te**(-1.5)),  # First nested condition
+				24 - np.log(np.sqrt(ne_cm) / te)  # Second nested condition
+			),
+			16 - np.log(mu * Z * Z * np.sqrt(ni) * ti**-1.5)  # Else case
+		)
+  
+  
 		return clog
 
 	def coullog_ii(self,mi1,Z1,ni1,ti1,mi2,Z2,ni2,ti2):
