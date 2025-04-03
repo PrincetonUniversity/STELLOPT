@@ -200,7 +200,7 @@ Contains
     implicit none
     !dummy variables
     integer(iknd) :: js
-    character(60) :: run_ident
+    character(100) :: run_ident
     !local variables
     integer(iknd) :: j, js_min, js_max, ierr, u, v, mn
     integer(iknd), dimension(:), allocatable :: js_vmec
