@@ -11,7 +11,7 @@ from time import perf_counter
 EC = 1.602176634E-19 # Electron charge [C]
 EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 
-class PRESSURE_SOLVER_FULL_MATRIX:
+class PRESSURE_SOLVER:
     
     def __init__(self, plasma_class, density_functions_dict=None):
         # density_function must be as a function of (t,rho)
