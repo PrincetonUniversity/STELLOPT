@@ -361,9 +361,12 @@ class THRIFT():
         from collections import defaultdict
 
         for file in ambipolar_files:
-
-            time = np.loadtxt(file,skiprows=2,max_rows=1)
             
+            try:
+                time = np.loadtxt(file,skiprows=2,max_rows=1)
+            except:
+                time = -1
+                
             penta = np.loadtxt(file,skiprows=4)
         
             roa = penta[:,0]
