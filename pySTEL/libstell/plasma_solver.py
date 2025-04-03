@@ -117,6 +117,42 @@ class PLASMA_SOLVER:
         else:
             raise ValueError('field is not valid...')
         
+    def read_restart_file(self,restart_filepath):
+        # reads a restart .joblib file and sets initial profiles & BC's according to last itertion in file
+        import joblib
+        from pathlib import Path
+        
+        # Convert to Path object
+        file_path = Path(restart_filepath)
+
+        # Check the extension
+        if file_path.suffix != ".joblib":
+            raise ValueError(f"Error: The file '{restart_filepath}' does not have a .joblib extension.")
+        
+        restart_solver = joblib.load(restart_filepath)
+        
+        # check list_of_species in file are the same as those in this run
+        if (restart_solver.list_of_species != self.list_of_species):
+            raise ValueError('Species in restart file different from species in current solver!')
+        
+        # Set initial conditions and BC's of all species
+        for species in self.list_of_species:
+            
+            self.set_initial_profile('density', species, rho_vals=restart_solver.rho_grid, profile_vals=restart_solver.N[species][-1,:])
+            self.set_initial_profile('temperature', species, rho_vals=restart_solver.rho_grid, profile_vals=restart_solver.T[species][-1,:])
+            
+            self.set_edge_boundary_condition('density', species, restart_solver.N[species][-1,-1])
+            self.set_edge_boundary_condition('temperature', species, restart_solver.T[species][-1,-1]) 
+            
+        # Get alphas density 
+        if(self.solve_alphas_density):
+            # check restart_solver has alphas
+            if 'alphas_fast' not in restart_solver.N or 'alphas_thermal' not in restart_solver.N:
+                raise ValueError('restart file does not have alphas density! Yet you want to solve with alphas...')
+            else:
+                self.alphas_fast_density_restart    = restart_solver.N['alphas_fast'][-1,:]
+                self.alphas_thermal_density_restart = restart_solver.N['alphas_thermal'][-1,:]
+              
     def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None):
         
         from libstell.vmec import VMEC
