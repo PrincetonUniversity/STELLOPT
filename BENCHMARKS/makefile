@@ -442,7 +442,7 @@ help:
 	@echo "      test_beams3d    Tesing of BEAMS3D"
 	@echo "      test_diagno     Tesing of DIAGNO"
 	@echo "      test_fieldlines Tesing of FIELDLINES"
-	@echo "      test_PENTA      Tesing of PENTA"
+	@echo "      test_penta      Tesing of PENTA"
 	@echo "      test_stellopt   Tesing of STELLOPT"
 	@echo "      test_thrift_atf Tesing of THRIFT (ATF Case)"
 	@echo "      test_vmec       Tesing of VMEC"
