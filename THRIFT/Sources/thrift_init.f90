@@ -16,6 +16,7 @@
       USE diagno_input_mod, ONLY:   read_diagno_input
       USE penta_interface_mod, ONLY:   init_penta_input, &
                                        read_penta_run_params_namelist
+      USE thrift_plasma_solver_mod, ONLY: read_external_plasma_sources
       USE safe_open_mod
       USE mpi_params
       USE mpi_inc
@@ -168,8 +169,12 @@
          CASE('sfincs')
       END SELECT
 
-      ! Now setup the profiles
-      CALL read_thrift_profh5(TRIM(prof_string))
+      ! Now setup the profiles (plasma profiles if not solving plasma eqs; external source profiles if solving plasma eqs.)
+      IF(solve_plasma_equations) THEN
+         CALL read_external_plasma_sources(TRIM(prof_string))
+      ELSE
+         CALL read_thrift_profh5(TRIM(prof_string))
+      ENDIF
 
       ! Allocate particle and heat fluxes (do it here because nion_prof only now available)
       CALL mpialloc(THRIFT_GNEO,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_gneo) 
@@ -227,6 +232,12 @@
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_UGRID',ier)
             UGRID_RESTART = temp2d(:,ntimesteps_restart)
 
+            ! Read density of all species at last time step
+            ! TBD ...
+
+            ! Read temperature of all species at last time step
+            ! TBD ...
+
             !Close the HDF5 file
             CALL close_hdf5(fid,ier)
             IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,TRIM(restart_filename),ier)
@@ -258,6 +269,13 @@
          END IF
       END IF
 
+      ! Check dt_plasma_solver
+      IF( solve_plasma_equations .AND. (dt_plasma_solver .GT. dt) ) THEN
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+         WRITE(6,*) '   dt_plasma_solver < dt_THRIFT        '
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         STOP
+      END IF
 
       IF (myid_sharmem == master) THEN
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho) ! (half) rho grid

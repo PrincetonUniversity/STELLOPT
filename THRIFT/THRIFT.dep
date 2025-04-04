@@ -147,6 +147,9 @@ thrift_penta.o : \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o  \
       $(PENTA_DIR)/$(LOCTYPE)/penta_interface_mod.o
 
+thrift_plasma_solver_mod.o : \
+      thrift_runtime.o
+
 thrift_profiles_mod.o : \
       thrift_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \

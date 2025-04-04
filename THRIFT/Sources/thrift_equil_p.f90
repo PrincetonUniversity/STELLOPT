@@ -15,6 +15,8 @@
                             ah_aux_s, ah_aux_f, at_aux_s, at_aux_f, &
                             pmass_type, pcurr_type, ph_type, pt_type, &
                             pres_scale
+      USE thrift_globals, ONLY: solve_plasma_equations
+      USE thrift_plasma_solver_mod, ONLY: evolve_plasma_equations
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -25,6 +27,18 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+
+
+      IF(solve_plasma_equations) CALL evolve_plasma_equations
+      ! The subroutine 'evolve_plasma_equations' evolves density and pressure from the previous THRIFT time step until
+      ! the current THRIFT time step
+      ! The routine MUST update the splines NE3D, NI3D, TI3D, P3D with the data from the new time step
+      ! It is done like this because get_prof_ne, get_prof_ti, etc, are called EVERYWHERE throughout the code, so 
+      ! I  THINK THE BEST AT THIS POINT IS TO CONSTRUCT THE SPLINES NE3D, NI3D, TE3D, TI3D and P3D at every THRIFT time step
+      ! I'm just a bit afraid this might compromise speed of the code, but it is a choice between restructuring the whole code and performence...
+      ! 
+      ! 
+      ! And then the following lines are run, independently if profiles are read from file or evolved:
 
       IF (lvmec) THEN
          PMASS_TYPE = 'akima_spline'
