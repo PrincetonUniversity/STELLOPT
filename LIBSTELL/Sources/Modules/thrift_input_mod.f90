@@ -39,7 +39,7 @@
                               etapar_type, save_DKES_coeffs, &
                               solve_plasma_equations, &
                               dt_plasma_solver, Nr_plasma_solver, &
-                              max_subiter_plasma_solver, &
+                              max_subiter_plasma_solver, tol_plasma_solver, &
                               beurskens_ions, &
                               D_dens, c_dens, D_press, c_press
       
@@ -101,6 +101,7 @@
       dt_plasma_solver = 1E-2
       Nr_plasma_solver = 101
       max_subiter_plasma_solver = 50
+      tol_plasma_solver = 1E-4
       beurskens_ions = .FALSE.
       D_dens = 0.0
       c_dens = 0.0
