@@ -40,7 +40,7 @@
                               solve_plasma_equations, &
                               dt_plasma_solver, Nr_plasma_solver, &
                               max_subiter_plasma_solver, tol_plasma_solver, &
-                              beurskens_ions, &
+                              beurskens_ions, add_NEO, &
                               D_dens, c_dens, D_press, c_press
       
 !-----------------------------------------------------------------------
@@ -103,6 +103,7 @@
       max_subiter_plasma_solver = 50
       tol_plasma_solver = 1E-4
       beurskens_ions = .FALSE.
+      add_NEO = .TRUE.
       D_dens = 0.0
       c_dens = 0.0
       D_press = 0.0
