@@ -82,6 +82,165 @@ class FOCUS():
 				if temp in f:
 					setattr(self, temp, np.array(f[temp][:]))
 
+	def read_focus_focus(self,filename):
+		"""Reads a .focus file
+
+		This routine reads the .focus files containg the various representations
+		of coils and magnetic field sources.
+
+		Parameters
+		----------
+		file : str
+			Path to .focus file.
+		"""
+		import numpy as np
+		f = open(filename,'r')
+		lines = f.readlines()
+		f.close()
+		cline = 1
+		ncoils = int(lines[cline])
+		self.ncoils = ncoils
+		self.coil_type = np.zeros((ncoils),dtype=int)
+		self.symmetry_type = np.zeros((ncoils),dtype=int)
+		self.name = []
+		self.nseg = np.zeros((ncoils),dtype=int)
+		self.current = np.zeros((ncoils))
+		self.ifree = np.zeros((ncoils),dtype=int)
+		self.length = np.zeros((ncoils))
+		self.lfree = np.zeros((ncoils),dtype=int)
+		self.lz = np.zeros((ncoils),dtype=int)
+		self.target_length = np.zeros((ncoils))
+		self.ncoef = np.zeros((ncoils),dtype=int)
+		self.bz = np.zeros((ncoils))
+		self.coef1x = []
+		self.coef2x = []
+		self.coef1y = []
+		self.coef2y = []
+		self.coef1z = []
+		self.coef2z = []
+		self.knots = []
+		for i in range(ncoils):
+			cline = cline + 3
+			(ctype_txt,symm_txt,name_txt) = lines[cline].split()
+			self.coil_type[i] = int(ctype_txt)
+			self.symmetry_type[i] = int(symm_txt)
+			self.name.append(name_txt)
+			if self.coil_type[i] == 1: # Fourier
+				cline = cline + 2
+				(nseg_txt,current_txt,ifree_txt,length_txt,lfree_txt,target_length_txt) = lines[cline].split()
+				self.nseg[i] = int(nseg_txt)
+				self.ifree[i] = int(ifree_txt)
+				self.lfree[i] = int(lfree_txt)
+				self.current[i] = float(current_txt)
+				self.length[i] = float(length_txt)
+				self.target_length[i] = float(target_length_txt)
+				cline = cline + 2
+				self.ncoef[i] = int(lines[cline])
+				cline = cline + 2
+				self.coef1x.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef2x.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef1y.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef2y.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef1z.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef2z.append([float(s) for s in lines[cline].split()])
+			elif self.coil_type[i] == 2: # Magnet
+				cline = cline + 2
+				(lc_txt,ox_txt,oy_txt,oz_txt,ic_txt,I_txt,mt_txt,mp_txt) = lines[cline].split()
+				print('WARNING: Permanent Magnets not implemented')
+			elif self.coil_type[i] == 3: # Background Btor, Bz
+				cline = cline + 2
+				(ifree_txt,current_txt,lz_txt,bz_txt) = lines[cline].split()
+				self.ifree[i] = int(ifree_txt)
+				self.current[i] = float(current_txt)
+				self.lz[i] = int(lz_txt)
+				self.bz[i] = float(bz_txt)
+			elif self.coil_type[i] == 5: # Spline
+				cline = cline + 2
+				(nseg_txt,current_txt,ifree_txt,length_txt,lfree_txt,target_length_txt) = lines[cline].split()
+				self.nseg[i] = int(nseg_txt)
+				self.ifree[i] = int(ifree_txt)
+				self.lfree[i] = int(lfree_txt)
+				self.current[i] = float(current_txt)
+				self.length[i] = float(length_txt)
+				self.target_length[i] = float(target_length_txt)
+				cline = cline + 2
+				self.ncoef[i] = int(lines[cline])
+				cline = cline + 2
+				self.knots.append([float(s) for s in lines[cline].split()])
+				cline = cline + 2
+				self.coef1x.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef1y.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef1z.append([float(s) for s in lines[cline].split()])
+			else:
+				print(rf'Unkown coil type {self.coil_type[i]}, {self.name[i]}')
+		return
+
+	def write_focus_focus(self,filename='new.focus'):
+		"""Writes a .focus source deffinition file
+
+		This routine writes the .focus magnetic field source deffinition
+		file.
+
+		Parameters
+		----------
+		filename : string (optional)
+			Source deffinition file name (default: new.focus)
+		"""
+		f=open(filename,'w')
+		f.write(f" # Total number of coils\n")
+		f.write(f"        {self.ncoils:6d}\n")
+		for i in range(self.ncoils):
+			f.write(f" #----------------- {i+1:d} ---------------------------\n")
+			f.write(f" #coil_type   coil_symm  coil_name\n")
+			f.write(f"   {self.coil_type[i]:3d}    {self.symmetry_type[i]:3d}    {self.name[i]}\n")
+			if self.coil_type[i] == 1:
+				f.write(f" #Nseg        current         Ifree         Length         Lfree  target_length\n")
+				f.write(f"  {self.nseg[i]:4d}{self.current[i]:23.15E}   {self.ifree[i]:3d}{self.length[i]:23.15E}   {self.lfree[i]:3d}{self.target_length[i]:23.15E}\n")
+				f.write(f' #NFcoil\n')
+				f.write(f'  {self.ncoef[i]:3d}\n')
+				f.write(f' #Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs)\n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1x[i][j]:23.15E}")
+				for j in range(self.ncoef[i]): f.write(f"{self.coef2x[i][j]:23.15E}")
+				f.write('\n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1y[i][j]:23.15E}")
+				for j in range(self.ncoef[i]): f.write(f"{self.coef2y[i][j]:23.15E}")
+				f.write('\n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1z[i][j]:23.15E}")
+				for j in range(self.ncoef[i]): f.write(f"{self.coef2z[i][j]:23.15E}")
+				f.write('\n')
+			elif self.coil_type[i] ==2:
+				f.write(f' #  Lc  ox   oy   oz  Ic  I  mt  mp (note yet implemented in python interface)\n')
+				f.write(f'   1   0.0  0.0  0.0  1 1.0E6  0.0  0.0\n')
+			elif self.coil_type[i] == 3:
+				f.write(f' # Ic     I    Lc  Bz  (Ic control I; Lc control Bz)\n')
+				f.write(f'  {self.ifree[i]}  {self.current[i]:21.15E}  {self.lz[i]}  {self.bz[i]:21.15E}\n')
+			elif self.coil_type[i] == 5:
+				f.write(f' #NS          current         Ifree         Length         Lfree  target_length\n')
+				f.write(f"  {self.nseg[i]:4d}{self.current[i]:23.15E}   {self.ifree[i]:3d}{self.length[i]:23.15E}   {self.lfree[i]:3d}{self.target_length[i]:23.15E}\n")
+				f.write(f' #NCP\n')
+				f.write(f'  {self.ncoef[i]:3d}\n')
+				f.write(f' #Vector of knots\n')
+				for j in range(self.ncoef[i]+4): f.write(f"{self.knots[i][j]:23.15E}")
+				f.write(f'\n #Control Points Coordinates for coils ( x; y; z)  \n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1x[i][j]:23.15E}")
+				f.write('\n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1y[i][j]:23.15E}")
+				f.write('\n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1z[i][j]:23.15E}")
+				f.write('\n')
+			else:
+				print(rf'Unkown coil type {self.ctype[i]}, {self.name[i]}')
+		f.close()
+		return
+
+
 	def write_focus_plasma(self,nfp,xm,xn,rmnc,zmns,rmns=None,zmnc=None,xm_b=None,\
 		xn_b=None,bmnc=None,bmns=None,filename='plasma.boundary'):
 		"""Writes a focus boundary file
