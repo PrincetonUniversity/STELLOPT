@@ -378,7 +378,8 @@ class NESCOIL(FourierRep):
 			g = np.ones((npts))*(k+1)
 			c[-1] = 0.0
 			# Create stellarator symmetric coil
-			phn = (2.0*np.pi/self.np - ph_out)
+			#phn = (2.0*np.pi/self.np - ph_out)
+			phn = -ph_out
 			xo = np.append(x,r[::-1]*np.cos(phn[::-1]))
 			yo = np.append(y,r[::-1]*np.sin(phn[::-1]))
 			zo = np.append(z,-z[::-1])
