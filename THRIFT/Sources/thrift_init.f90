@@ -16,7 +16,8 @@
       USE diagno_input_mod, ONLY:   read_diagno_input
       USE penta_interface_mod, ONLY:   init_penta_input, &
                                        read_penta_run_params_namelist
-      USE thrift_plasma_solver_mod, ONLY: read_external_plasma_sources
+      USE thrift_plasma_solver_mod, ONLY: initialize_plasma_solver, Nt_total_plasma_solver, &
+      dt_plasma_solver, time_plasma_grid, N_plasma_steps_per_THRIFT_step
       USE safe_open_mod
       USE mpi_params
       USE mpi_inc
@@ -169,9 +170,46 @@
          CASE('sfincs')
       END SELECT
 
+      ! Check that tend > tstart
+      IF(tend < tstart .and. lverb) THEN 
+         WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+         WRITE(6,*) '          tend < tstart         '
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         STOP
+      ENDIF
+      
+      ! Define grids
+      IF( ntimesteps==1 ) THEN 
+         dt = 0.0_rprec
+      ELSE IF( ntimesteps > 1) THEN 
+         dt = (tend-tstart)/(ntimesteps-1)
+      ELSE
+         IF(lverb) THEN
+            WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+            WRITE(6,*) '          ntimesteps < 1        '
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            STOP
+         END IF
+      END IF
+
+      ! Check dt_plasma_solver and ajust it
+      IF( solve_plasma_equations .AND. (dt_plasma_solver .GT. dt) ) THEN
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+         WRITE(6,*) '   dt_plasma_solver < dt_THRIFT        '
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         STOP
+      ELSE
+         Nt_total_plasma_solver = 1 + (ntimesteps-1)*NINT(dt/dt_plasma_solver)
+         dt_plasma_solver = dt / NINT(dt/dt_plasma_solver)
+         IF(lverb) PRINT *, 'dt_plasma_solver adjusted to ', dt_plasma_solver
+         N_plasma_steps_per_THRIFT_step = NINT(dt/dt_plasma_solver)
+         ALLOCATE(time_plasma_grid(Nt_total_plasma_solver))
+         FORALL(i = 1:Nt_total_plasma_solver) time_plasma_grid(i) = tstart + (i-1)*dt_plasma_solver
+      END IF
+
       ! Now setup the profiles (plasma profiles if not solving plasma eqs; external source profiles if solving plasma eqs.)
       IF(solve_plasma_equations) THEN
-         CALL read_external_plasma_sources(TRIM(prof_string))
+         CALL initialize_plasma_solver((TRIM(prof_string))) 
       ELSE
          CALL read_thrift_profh5(TRIM(prof_string))
       ENDIF
@@ -247,35 +285,6 @@
          END IF
       END IF
 
-      ! Check that tend > tstart
-      IF(tend < tstart .and. lverb) THEN 
-         WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
-         WRITE(6,*) '          tend < tstart         '
-         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-         STOP
-      ENDIF
-      
-      ! Define grids
-      IF( ntimesteps==1 ) THEN 
-         dt = 0.0_rprec
-      ELSE IF( ntimesteps > 1) THEN 
-         dt = (tend-tstart)/(ntimesteps-1)
-      ELSE
-         IF(lverb) THEN
-            WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
-            WRITE(6,*) '          ntimesteps < 1        '
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            STOP
-         END IF
-      END IF
-
-      ! Check dt_plasma_solver
-      IF( solve_plasma_equations .AND. (dt_plasma_solver .GT. dt) ) THEN
-         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
-         WRITE(6,*) '   dt_plasma_solver < dt_THRIFT        '
-         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-         STOP
-      END IF
 
       IF (myid_sharmem == master) THEN
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho) ! (half) rho grid
