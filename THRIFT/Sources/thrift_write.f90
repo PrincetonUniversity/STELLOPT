@@ -11,6 +11,8 @@
       USE thrift_runtime
       USE thrift_vars
       USE thrift_profiles_mod, ONLY : nion_prof
+      USE thrift_plasma_solver_mod, ONLY : ilogplasma
+      USE thrift_globals, ONLY: solve_plasma_equations
 #if defined(LHDF5)
       USE ez_hdf5
 #endif
@@ -213,6 +215,9 @@
          WRITE(iunit,*) THRIFT_ISOURCE
          CLOSE(iunit)
 #endif
+
+      ! Close plasma_solver_log in case it was open
+      IF(solve_plasma_equations) CLOSE(unit=ilogplasma)
       END IF
 
       RETURN
