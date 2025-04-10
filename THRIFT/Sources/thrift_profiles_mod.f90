@@ -47,7 +47,7 @@ MODULE thrift_profiles_mod
       PUBLIC  :: read_thrift_profh5, get_prof_ne, get_prof_te, &
                  get_prof_ni, get_prof_ti, get_prof_p, get_prof_JBS, &
                  get_prof_eta, free_profiles
-      PRIVATE :: setup_grids
+      ! PRIVATE :: setup_grids
       CONTAINS
 
       SUBROUTINE read_thrift_profh5(filename)
