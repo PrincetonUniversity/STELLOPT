@@ -148,10 +148,16 @@ thrift_penta.o : \
       $(PENTA_DIR)/$(LOCTYPE)/penta_interface_mod.o
 
 thrift_plasma_solver_mod.o : \
-      thrift_runtime.o
+      thrift_runtime.o \
+      thrift_profiles_mod.o \
+      thrift_vars.o \
+      thrift_equil.o \
+      $(LIB_DIR)/$(LOCTYPE)/thrift_globals.o \
 
 thrift_profiles_mod.o : \
       thrift_runtime.o \
+      thrift_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/thrift_globals.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
       $(LIB_DIR)/$(LOCTYPE)/ezspline.o \
       $(LIB_DIR)/$(LOCTYPE)/ezspline_obj.o \
