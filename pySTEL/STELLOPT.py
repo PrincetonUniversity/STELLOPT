@@ -982,7 +982,8 @@ class MyApp(QMainWindow):
 		# Handle Current Density Profiles
 		if any('answers_plot.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Bootstrap Current -----')
-			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current Density')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current Total')
 			bootsj_files = sorted([k for k in files if 'answers_plot.' in k])
 			self.bootsj_files = sorted([k for k in bootsj_files if '_opt' not in k])
 		
@@ -2268,7 +2269,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Current Density [kA/m^-2]')
 			self.ax2.set_title('Total Current Profile')
 			self.ax2.set_xlim((0,1))
-		elif (plot_name == 'Bootstrap Current'):
+		elif (plot_name == 'Bootstrap Current Density'):
 			bootsj_data = bootsj.BOOTSJ()
 			l = 0
 			dl = len(self.bootsj_files)-1
@@ -2280,8 +2281,21 @@ class MyApp(QMainWindow):
 					l=l+1
 			self.ax2.set_xlabel('Norm. Toroidal Flux (s)')
 			self.ax2.set_ylabel('dI/ds [A]')
-			self.ax2.set_title('BOOTSJ Bootstrap Current')
+			self.ax2.set_title('BOOTSJ Bootstrap Current Density')
 			self.ax2.set_xlim((0.0,1.0))
+		elif (plot_name == 'Bootstrap Current Total'):
+			bootsj_data = bootsj.BOOTSJ()
+			l = 0
+			dl = len(self.bootsj_files)-1
+			if dl == 0: dl = 1
+			boot_total = []
+			for string in self.bootsj_files:
+				if 'answers_plot.' in string:
+					bootsj_data.read_answers_plot(self.workdir+string)
+					boot_total.append(float(bootsj_data.Itotal))
+			self.ax2.plot(self.stel_data.ITER[:-1],np.array(boot_total)/1000.,'o')
+			self.ax2.set_ylabel('I [kA]')
+			self.ax2.set_title('BOOTSJ Total Bootstrap Current')
 		elif (plot_name == 'g11'):
 			gist_data = gist.GIST()
 			l=0
