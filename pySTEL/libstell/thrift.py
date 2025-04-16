@@ -555,33 +555,206 @@ class THRIFT():
         plt.legend()
         
         plt.show()
+        
+# THRIFT Class
+class THRIFT_plasma_solver():
+    """" Class for working with plasma solver implemented in THRIFT
+    
+    """
+    
+    def __init__(self, plasma=None, list_of_species=None):
+        
+        import sys 
+        sys.path.insert(1,'/home/antonio/STELLOPT/pySTEL/libstell')
+        from plasma import PLASMA
+        
+        # should give plasma OR list_of_species. If both, plasma prevails
+        if plasma is None and list_of_species is None:
+            print('Could not create class: Need to provide a plasma class or a list with name of species')
+            exit(1)
+        elif plasma is None and list_of_species is not None:
+            self.plasma_class = PLASMA(list_of_species=list_of_species)
+        else:
+            self.plasma_class = plasma
+        
+    def read_thrift_plasma_solver(self,file):
+        """Reads plasma_solver THRIFT HDF5 file
+
+		Parameters
+		----------
+		file : str
+		Path to HDF5 files.
+		"""
+        import h5py
+
+        with h5py.File(file,'r') as f:
+                self.Nt = f['Nt_plasma_grid']
+                self.Nr = f['Nr_plasma_grid']
+                #
+                self.time_grid = f['time_plasma_grid'][:]
+                self.rho_grid  = f['rho_plasma_grid'][:]
+                #
+                self.plasma_N = f['plasma_N'][:,:,:]
+                self.plasma_T = f['plasma_T'][:,:,:]
+                self.plasma_P = f['plasma_P'][:,:,:]
+                #
+                Zions = np.array( f['Zions'][:], dtype=int)
+                     
+                # check if Zions coincides with that in plasma class
+                Zcharge = np.array( [self.plasma_class.Zcharge[ion] for ion in self.plasma_class.ion_species], dtype=int )
+                if not np.array_equal(Zions, Zcharge):
+                    raise ValueError("Zcharge from file does not match that of plasma class!")
+                
+                # transpose plasma_N and plasma_T
+                self.plasma_N = np.transpose(self.plasma_N, axes=[2,1,0])
+                self.plasma_T = np.transpose(self.plasma_T, axes=[2,1,0])
+                self.plasma_P = np.transpose(self.plasma_P, axes=[2,1,0])
+                
+    def create_input_sources_file(self,filename,nt,nrho,tfin):
+        # creates 
+        
+        Zcharge_ions = np.array( [self.plasma_class.Zcharge[ion] for ion in self.plasma_class.ion_species], dtype=int )
+        mass_ions    = [self.plasma_class.mass[ion] for ion in self.plasma_class.ion_species]
+        nZ   = self.plasma_class.num_ion_species
+        
+        self.rho_grid_source = np.linspace(0,1,nrho)
+        self.t_grid_source = np.linspace(0,tfin,nt)
+        
+        SE_out = np.zeros((nrho,nt,nZ+1))
+        Sn_out = np.zeros((nrho,nt,nZ+1))
+
+        hf = h5py.File(filename, 'w')
+                    
+        hf.create_dataset('nrho', data=nrho)
+        hf.create_dataset('nt', data=nt)
+        #
+        hf.create_dataset('nion', data=nZ)
+        #
+        hf.create_dataset('raxis_source', data=self.rho_grid_source)
+        hf.create_dataset('taxis_source', data=self.t_grid_source)
+        #
+        hf.create_dataset('Z_prof', data=Zcharge_ions)
+        hf.create_dataset('mass_prof', data=mass_ions)
+        #
+        hf.create_dataset('S_energy', data=SE_out)
+        hf.create_dataset('S_particle', data=Sn_out)
+        #
+        hf.close()
+        
+    def add_energy_source_to_input_file(self,filename,which_species,source_type,dVdrho=None,total_power=None,sigma_rho=None,rho_0=None,time_dependent_factor=None,cte_source=None):
+        
+        from scipy.integrate import quad
+        
+        try:
+            species_id = self.plasma_class.list_of_species.index(which_species) 
+        except:
+            raise ValueError(f'{which_species} not possible!')
+        
+        match source_type:
+            case 'external_gaussian':
+                if((total_power is None) or (sigma_rho is None) or (rho_0 is None) or (dVdrho is None)):
+                    print('ERROR: Need to provide total_power [W], dVdrho, sigma_rho and rho_0 for gaussian external source')
+                    exit(1) 
+                else:
+                    # integrand = lambda rho: np.exp(-(rho-rho_0)**2/sigma_rho**2) * dVdrho(rho)
+                    # #
+                    # cte = total_power / quad(integrand,0,1)[0]
+                    # #
+                    # source = lambda t,rho: cte * np.exp(-(rho-rho_0)**2/sigma_rho**2)
+                    integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
+                    integrand = integrand.flatten()
+                    #
+                    cte = total_power / np.trapz(integrand,self.rho_grid_source)
+                    #
+                    source = lambda t: cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
+            
+            case 'time_dependent_gaussian':
+                if((total_power is None) or (sigma_rho is None) or (rho_0 is None) or (dVdrho is None) or (time_dependent_factor is None)):
+                    print('ERROR: Need to provide total_power [W], time_Dependent_factor, dVdrho, sigma_rho and rho_0 for gaussian external source')
+                    exit(1) 
+                else:
+                    integrand = lambda rho: np.exp(-(rho-rho_0)**2/sigma_rho**2) * dVdrho(rho)
+                    #
+                    cte = total_power / quad(integrand,0,1)[0]
+                    #
+                    source = lambda t,rho: cte * time_dependent_factor(t) * np.exp(-(rho-rho_0)**2/sigma_rho**2)
+                    
+            case 'constant':
+                if(cte_source is None):
+                    print('ERROR: cte_source is needed in order to generate a constant source.')
+                    exit(0)
+                else:
+                    source = lambda t,rho: cte_source
+                    
+            case _:
+                print(f'ERROR: Source type {source_type} is NOT possible')
+                exit(0)
+            
+        # add source to which_species without changing the others           
+        with h5py.File(filename, 'r+') as f:
+            dset = f['S_energy']
+            for it,t in enumerate(self.t_grid_source): 
+                dset[:,it,species_id] = source(t)#,self.rho_grid_source)
+                
+    def add_particle_source_to_input_file(self,filename,which_species,source_type,dVdrho=None,injected_particles_per_sec=None,sigma_rho=None,rho_0=None,time_dependent_factor=None,cte_source=None):
+        
+        from scipy.integrate import quad
+        
+        try:
+            species_id = self.plasma_class.list_of_species.index(which_species) 
+        except:
+            raise ValueError(f'{which_species} not possible!')
+            
+        match source_type:
+            case 'external_gaussian':
+                if((injected_particles_per_sec is None) or (sigma_rho is None) or (rho_0 is None) or (dVdrho is None)):
+                    print('ERROR: Need to provide injected_particles_per_sec, dVdrho, sigma_rho and rho_0 for gaussian external source')
+                    exit(1) 
+                else:
+                    # integrand = lambda rho: np.exp(-(rho-rho_0)**2/sigma_rho**2) * dVdrho(rho)
+                    # #
+                    # cte = injected_particles_per_sec / quad(integrand,0,1)[0]
+                    # #
+                    # source = lambda t,rho: cte * np.exp(-(rho-rho_0)**2/sigma_rho**2)
+                    
+                    integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
+                    integrand = integrand.flatten()
+                    #
+                    cte = injected_particles_per_sec / np.trapz(integrand,self.rho_grid_source)
+                    #
+                    source = lambda t: cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
+            
+            case 'time_dependent_gaussian':
+                if((injected_particles_per_sec is None) or (sigma_rho is None) or (rho_0 is None) or (dVdrho is None) or (time_dependent_factor is None)):
+                    print('ERROR: Need to provide injected_particles_per_sec, time_Dependent_factor, dVdrho, sigma_rho and rho_0 for gaussian external source')
+                    exit(1) 
+                else:
+                    integrand = lambda rho: np.exp(-(rho-rho_0)**2/sigma_rho**2) * dVdrho(rho)
+                    #
+                    cte = injected_particles_per_sec / quad(integrand,0,1)[0]
+                    #
+                    source = lambda t,rho: cte * time_dependent_factor(t) * np.exp(-(rho-rho_0)**2/sigma_rho**2)
+                    
+            case 'constant':
+                if(cte_source is None):
+                    print('ERROR: cte_source is needed in order to generate a constant source.')
+                    exit(0)
+                else:
+                    source = lambda t,rho: cte_source
+                    
+            case _:
+                print(f'ERROR: Source type {source_type} is NOT possible')
+                exit(0)
+                
+        # add source to which_species without changing the others           
+        with h5py.File(filename, 'r+') as f:
+            dset = f['S_particle']
+            for it,t in enumerate(self.t_grid_source): 
+                dset[:,it,species_id] = source(t) #,self.rho_grid_source)
+            
+                   
             
         
-
-            
-        
-            
-        
-        
-
-# # THRIFT Input Class
-# class THRIFT_INPUT():
-
-# 	def __init__(self, parent=None):
-# 		self.libStell = LIBSTELL()
-
-# 	def read_input(self,filename):
-		
-# 		# Not yet implemented
-# 		#indata_dict = self.libStell.read_thrift_input(filename)
-# 		#for key in indata_dict:
-# 		#	setattr(self, key, indata_dict[key])
-
-# 	def write_input(self,filename):
-		
-# 		# Not yet implemented
-# 		#out_dict = vars(self)
-# 		#self.libStell.write_thrift_input(filename,out_dict)
 
 # Main routine
 if __name__=="__main__":
