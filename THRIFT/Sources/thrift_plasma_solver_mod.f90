@@ -902,6 +902,88 @@ MODULE thrift_plasma_solver_mod
         RETURN
     END SUBROUTINE solve_sparse_nontridiag_system
 
+    SUBROUTINE get_collisional_heat_exchange_matrix(LHS_heat_exchange_matrix)
+        USE collision_operators
+        IMPLICIT NONE
+        REAL(rprec), DIMENSION(:,:), INTENT(INOUT) :: LHS_heat_exchange_matrix
+        REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: W_s1_s2, aux_B
+        INTEGER :: is1, is2, Z1, Z2, j, p
+        REAL(rprec) :: m1,n1,T1,m2,n2,T2,clog,const,vth_s1_sqr,vth_s2_sqr
+        REAL(rprec) :: den, gamma
+
+        LHS_heat_exchange_matrix = 0.0_rprec
+
+        ALLOCATE(W_s1_s2(num_species,num_species,Nr_plasma_solver))
+        ALLOCATE(aux_B(num_species,num_species,Nr_plasma_solver))
+
+        DO is1=1,num_species
+            m1 = mass_all(is1)
+            Z1 = Z_all(is1)
+
+            DO is2=1,num_species
+                m2 = mass_all(is2)
+                Z2 = Z_all(is2)
+
+                DO ir=1,Nr_plasma_solver  
+                    n1 = plasma_N(is1,ir)
+                    T1 = plasma_T(is1,ir)
+                    !
+                    n2 = plasma_N(is2,ir)
+                    T2 = plasma_T(is2,ir)
+
+                    ! get Coulomb logarithm
+                    IF (Z1>0 and Z2>0) THEN
+                        clog = COULOMB_LOG_NRL_II(m1,Z1,n1,T1,m2,Z2,n2,T2)
+                    ELSE IF (Z1>0 and Z2<0) THEN
+                        clog = COULOMB_LOG_NRL_IE(n2,T2,m1,Z1,n1,T1)
+                    ELSE IF (Z1<0 and Z2>0) THEN
+                        clog = COULOMB_LOG_NRL_IE(n1,T1,m2,Z2,n2,T2)
+                    ELSE
+                        clog = 0.0
+                    END IF
+
+                    const = (8/SQRT(pi))*(Z1*Z2*e_charge*e_charge)**2 * clog / (8*pi*EPS0**2)
+
+                    vth_s1_sqr = 2*EC*T1/m1
+                    vth_s2_sqr = 2*EC*T2/m2
+                    
+                    den = m1 * m2 * (vth_s1_sqr + vth_s2_sqr)**1.5_rprec
+                    
+                    gamma = const / den
+
+                    W_s1_s2(is1,is2,ir) = gamma*n1   
+                    aux_B(is1,is2,ir) = gamma*n2
+                END DO
+            END DO
+        END DO
+
+        ! Add aux_B matrix
+        DO is1=1,num_species
+            DO ir=1,Nr_plasma_solver
+                W_s1_s2(is1,is1,ir) = W_s1_s2(is1,is1,ir) - SUM(aux_B,axis=2)
+            END DO
+        END DO
+        
+        ! Fill LHS matrix
+        j=1
+        DO is1=1,num_species
+            DO ir1=1,Nr_plasma_solver
+                p=1
+                DO is2=1,num_species
+                    DO ir2=1,Nr_plasma_solver
+                        ! Note the minus sign; this is to have it LHS
+                        IF(ir1 .EQ. ir2) LHS_heat_exchange_matrix(j,p) = -W_s1_s2(is1,is2,ir2)
+                        p = p+1
+                    END DO
+                END DO
+                j = j+1
+            END DO
+        END DO
+
+        DEALLOCATE(W_s1_s2,aux_B)
+        RETURN
+    END SUBROUTINE get_collisional_heat_exchange_matrix
+
     SUBROUTINE write_header_plasma_solver_logfile
 
         IMPLICIT NONE
