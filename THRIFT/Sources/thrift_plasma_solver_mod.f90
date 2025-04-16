@@ -498,14 +498,95 @@ MODULE thrift_plasma_solver_mod
     SUBROUTINE get_LHS_pressure(LHS_pressure)
         IMPLICIT NONE
         REAL(rprec), DIMENSION(:,:), INTENT(INOUT) :: LHS_pressure
-        INTEGER :: ir
+        INTEGER :: ier, ir, Nr, ispecies, kk, row
+        REAL(rprec) :: dt_fact, dr, dr2, Dp_turb, cp_turb, rho
+        REAL(rprec) :: Vp_plus, Vp_minus, VDplus, VDminus, cplus, cminus, Dp_plus, Dp_minus
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Dp, cp, Vp
 
         LHS_pressure = 0.0_rprec
 
-        ! temporary to test density solver
-        DO ir=1,Nr_plasma_solver*num_species
-            LHS_pressure(ir,ir) = one
+        Nr = Nr_plasma_solver
+
+        dr = dr_plasma_solver
+        dr2 = dr*dr
+        dt_fact = (2.0_rprec/3.0_rprec)*dt_plasma_solver
+
+        ALLOCATE(Dp(Nr),cp(Nr),Vp(Nr))
+
+        ! Vp = dV/dr
+        DO ir=1,Nr
+            rho = rho_plasma_grid(ir)
+            ier = 0
+            ! CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
+            ! Vp(ir) = 2.0_rprec * rho * THRIFT_PHIEDGE(mytimestep-1) * temp / eq_Aminor
+            Vp(ir) = 4.0_rprec * pi * pi * 20.0_rprec * rho * eq_Aminor
         END DO
+
+        kk = 1
+        DO ispecies=1,num_species
+
+            Dp_turb = Dp_all(ispecies)
+            cp_turb = cp_all(ispecies)
+
+            IF(add_NEO) THEN
+                STOP 'Not implemented yet...'
+                !D_NEO = ... ! read from spline made in thrift_penta
+                !Dp = D_NEO + Dp_turb
+                !cp = c_NEO + cp_turb
+            ! IF(beurskens_model) ...
+            ELSE
+                Dp = Dp_turb
+                cp = cp_turb
+            END IF
+
+            ! r=0
+            ! main_diag(1) = one + dt*4.0_rprec*Dp(1)/dr2 + 2.0_rprec*dt*cp(1)/dr
+            LHS_pressure(kk,kk) = one + dt_fact*4.0_rprec*Dp(1)/dr2 + 2.0_rprec*dt_fact*cp(1)/dr
+            ! upper_diag(1) = -4.0_rprec*dt*Dp(1)/dr2
+            LHS_pressure(kk,kk+1) = -4.0_rprec*dt_fact*Dp(1)/dr2
+            kk = kk+1
+
+            ! 0<r<a
+            DO ir=2,Nr-1
+                Vp_plus  = ( Vp(ir)+Vp(ir+1) ) / 2.0_rprec
+                Vp_minus = ( Vp(ir)+Vp(ir-1) ) / 2.0_rprec
+
+                Dp_plus  = ( Dp(ir)+Dp(ir+1) ) / 2.0_rprec
+                Dp_minus = ( Dp(ir)+Dp(ir-1) ) / 2.0_rprec
+
+                VDplus  = Vp_plus*Dp_plus / (Vp(ir)*dr2)
+                VDminus = Vp_minus*Dp_minus / (Vp(ir)*dr2)
+
+                cplus  = cp(ir+1)*Vp(ir+1) / (2*Vp(ir)*dr)
+                cminus = cp(ir-1)*Vp(ir-1) / (2*Vp(ir)*dr)
+
+                ! main_diag(ir) = one + dt*(VDplus + VDminus)
+                LHS_pressure(kk,kk) = one + dt_fact*(VDplus + VDminus)
+                ! upper_diag(ir) = dt*(-VDplus + cplus)
+                LHS_pressure(kk,kk+1) = dt_fact*(-VDplus + cplus)
+                ! lower_diag(ir-1) = dt*(-VDminus - cminus)
+                LHS_pressure(kk,kk-1) = dt_fact*(-VDminus - cminus)
+
+                kk = kk+1
+            END DO
+
+            ! r=a (do not set yet BC's)
+            kk = kk+1
+        END DO
+
+        ! Add collisional heat exchange
+        ! ....
+
+        ! Impose Dirichlet Boundary Conditions
+        DO ispecies=1,num_species
+            row = ispecies * Nr
+            ! Set the whole row to 0.0
+            LHS_pressure(row,:) = 0.0_rprec
+            ! Set diagonal entry to 1.0
+            LHS_pressure(row,row) = one
+        END DO
+
+        DEALLOCATE(Dp,cp,Vp)
 
         RETURN
     END SUBROUTINE
