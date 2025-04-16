@@ -108,7 +108,7 @@
       FUNCTION COULOMB_LOG_NRL_IEC(mass,Z,ni,ti) RESULT(result)
          !--------------------------------------------------------------
          !           For Te < Ti*me/mi
-         !   Z       Ion mass [kg]
+         !   mass    Ion mass [kg]
          !   Z       Ion charge number [e]
          !   NI      Ion Density [m^-3]
          !   TI      Ion Temperature [eV]
@@ -120,6 +120,31 @@
          result = 16.0 - LOG( SQRT( ni * 1.0E-6 ) * Ti**(-1.5) * Z * Z * mass * inv_dalton)
          RETURN
       END FUNCTION COULOMB_LOG_NRL_IEC
+
+      FUNCTION COULOMB_LOG_NRL_IE(ne,te,mi,Z,ni,ti) RESULT(result)
+         !--------------------------------------------------------------
+         !   NE      Electron density [m^-3]
+         !   TE      Electron temperature [eV]
+         !   MI      Ion mass [kg]
+         !   Z       Ion Charge number [-]
+         !   NI      Ion density [m^-3]
+         !   TI      Ion temperature [eV]
+         !   RESULT  Coulomb Logarithm Thermal ion-electron
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(in) :: ne,te,mi,Z,ni,ti
+         DOUBLE PRECISION :: result
+         IF (ti/mi < (te/electron_mass)) THEN
+            IF (te < (10 * Z * Z)) THEN
+               result = COULOMB_LOG_NRL_IEA(Z,ne,te)
+            ELSE
+               result = COULOMB_LOG_NRL_IEB(ne,te)
+            END IF
+         ELSE
+            result = COULOMB_LOG_NRL_IEC(mi,Z,ni,ti)
+         END IF
+         RETURN
+      END FUNCTION COULOMB_LOG_NRL_IE
 
       FUNCTION COULOMB_LOG_NRL_II(mass1,z1,ni1,ti1,mass2,z2,ni2,ti2) RESULT(result)
          !--------------------------------------------------------------
@@ -138,8 +163,8 @@
          DOUBLE PRECISION, INTENT(in) :: mass2,z2,ni2,ti2
          DOUBLE PRECISION :: result
          result = 23.0 - LOG( ( z1 * z2 * ( mass1 + mass2 ) ) * &
-                    ( ni1 * z1 * z1 / ti1 + ni2 * z2 * z2 / ti2) * &
-                    1.0E-6 / ( mass1 * ti2 + mass2 * ti1 ) )
+                    SQRT( ni1 * z1 * z1 / ti1 + ni2 * z2 * z2 / ti2) * &
+                    SQRT(1.0E-6) / ( mass1 * ti2 + mass2 * ti1 ) )
          RETURN
       END FUNCTION COULOMB_LOG_NRL_II
 
