@@ -150,10 +150,9 @@ MODULE thrift_plasma_solver_mod
 
                 ! Run PENTA if NEO fluxes are to be added
                 IF(add_NEO) THEN
-                    
+                    STOP 'NOT implemented yet!'
                     ! ier = 0
                     ! CALL thrift_penta(.FALSE.,ier)
-                    
                     ! PROBABLY MORE CORRECT TO DO THIS ??
                     CALL thrift_paraexe('penta',proc_string,lscreen_subcodes)
 
@@ -188,12 +187,8 @@ MODULE thrift_plasma_solver_mod
                 pressure_total_old = pressure_total
                 ne_old = plasma_N(1,:)
 
-                ! update splines if add_NEO or beurskens
-                IF(add_NEO .OR. beurskens_ions) THEN
-                    STOP 'THIS IS NOT DONE YET... NEET TO UPDATE SPLINES TO USE PENTA PROPERLY; BEURSKENS FOR THE PROPER FIT OF dTd/dr I guess?'
-                    CALL update_splines
-                    ! measure time of updating splines at every subiter... measure its impact
-                END IF
+                ! update splines
+                CALL update_splines
 
                 ! write to plasma solver logfile
                 CALL write_to_plasma_solver_logfile(time_plasma_grid(mytimestep_plasma_solver),subiter, &
@@ -208,9 +203,6 @@ MODULE thrift_plasma_solver_mod
             t_current = t_current + dt_plasma_solver
             mytimestep_plasma_solver = mytimestep_plasma_solver + 1
         END DO
-
-
-        CALL update_splines()
 
         ! Deallocate local arrays
         DEALLOCATE(pressure_total)
@@ -540,6 +532,23 @@ MODULE thrift_plasma_solver_mod
                 Dp = Dp_turb
                 cp = cp_turb
             END IF
+
+            ! Add convection due to density gradient
+            t_val = time_plasma_grid(mytimestep_plasma_solver)
+            DO ir=1,Nr
+                rho = rho_plasma_grid(ir)
+                n = plasma_N(ispecies,ir)
+                ! get dn/drho
+                IF(ispecies .EQ. 1) THEN
+                    CALL get_prof_neprime(rho,t_val,dndr)
+                ELSE
+                    CALL get_prof_niprime(rho,t_val,ispecies-1,dndr)
+                END IF
+                dndr = dndr / eq_Aminor
+                cp(ir) = cp(ir) + (chi_all(ispecies)/n)*dndr
+            END DO
+            ! convection is zero at axis
+            cp(1) = 0.0_rprec
 
             ! r=0
             ! main_diag(1) = one + dt*4.0_rprec*Dp(1)/dr2 + 2.0_rprec*dt*cp(1)/dr
