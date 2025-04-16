@@ -10,8 +10,8 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
-      USE thrift_profiles_mod, ONLY : nion_prof
-      USE thrift_plasma_solver_mod, ONLY : ilogplasma
+      USE thrift_profiles_mod, ONLY : nion_prof, Zatom_prof
+      USE thrift_plasma_solver_mod
       USE thrift_globals, ONLY: solve_plasma_equations
 #if defined(LHDF5)
       USE ez_hdf5
@@ -215,10 +215,40 @@
          WRITE(iunit,*) THRIFT_ISOURCE
          CLOSE(iunit)
 #endif
-
-      ! Close plasma_solver_log in case it was open
-      IF(solve_plasma_equations) CLOSE(unit=ilogplasma)
       END IF
+
+      
+      IF(solve_plasma_equations .AND. myworkid == master) THEN
+#if defined(LHDF5)
+         ! Open file
+         CALL open_hdf5('plasma_solver_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
+         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)
+         ! Integers
+         CALL write_scalar_hdf5(fid,'Nt_plasma_grid',ier,INTVAR=Nt_total_plasma_solver,ATT='Number of Time Steps Plasma Solver',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Nt plasma grid',ier)
+         CALL write_scalar_hdf5(fid,'Nr_plasma_grid',ier,INTVAR=Nr_plasma_solver,ATT='Number of Radial Gridpoints Plasma Solver',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Nr plasma grid',ier)
+         ! Grids
+         CALL write_var_hdf5(fid,'time_plasma_grid',Nt_total_plasma_solver,ier,DBLVAR=time_plasma_grid,ATT='Time grid [s]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'time_plasma_grid',ier)
+         CALL write_var_hdf5(fid,'rho_plasma_grid',Nr_plasma_solver,ier,DBLVAR=rho_plasma_grid,ATT='Rho grid [-]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'rho_plasma_grid',ier)
+         ! Arrays
+         CALL write_var_hdf5(fid,'Zions',nion_prof,ier,INTVAR=Zatom_prof,ATT='Ions charge number [-]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Zions',ier)
+         CALL write_var_hdf5(fid,'plasma_N',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=plasma_N_keep,ATT='Density of each species [m^-3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_N',ier)
+         CALL write_var_hdf5(fid,'plasma_T',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=plasma_T_keep,ATT='Temperature of each species [eV]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_T',ier)
+         CALL write_var_hdf5(fid,'plasma_P',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=plasma_P_keep,ATT='Pressure of each species [Pa]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_P',ier)
+         ! Close file
+         CALL close_hdf5(fid,ier)
+         IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)
+#endif  
+         ! Close plasma_solver.log file
+         CLOSE(unit=ilogplasma)
+      END IF 
 
       RETURN
 !----------------------------------------------------------------------
