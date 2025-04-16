@@ -43,6 +43,8 @@ MODULE beams3d_physics_mod
       USE collision_operators, ONLY: COULOMB_LOG_NRL_COUNTERSTREAM,&
                                      V_CRITICAL, V_CRITICAL_WEILAND, &
                                      TAU_SPITZER
+      USE fusion_mod, ONLY: DT_CROSS_SECTION, DD_CROSS_SECTION, &
+                            DDHe3_CROSS_SECTION, DHe3_CROSS_SECTION
       USE mpi_params 
 
       !-----------------------------------------------------------------
@@ -1439,16 +1441,6 @@ MODULE beams3d_physics_mod
          REAL*8 :: fval(1)
 
          !--------------------------------------------------------------
-         !     Local Parameters
-         !--------------------------------------------------------------
-         INTEGER, PARAMETER :: mrc2 = 1124656
-         DOUBLE PRECISION, PARAMETER :: BG = 34.3827
-         DOUBLE PRECISION, DIMENSION(7), PARAMETER :: &
-                CARR = (/ 1.17302E-09,  1.51361E-02,  7.51886E-02, &
-                          4.60643E-03,  1.35000E-02, -1.06750E-04, &
-                          1.36600E-05/)
-
-         !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
 
@@ -1489,15 +1481,7 @@ MODULE beams3d_physics_mod
             RETURN
          END IF
          IF (ti_temp <= zero) RETURN ! Get out if ti small
-         ti_temp = ti_temp*1E-3 ! to keV
-         zeta =  one - ((((CARR(6)*ti_temp)+CARR(4))*ti_temp+CARR(2))*ti_temp)/ &
-                       ((((CARR(7)*ti_temp)+CARR(5))*ti_temp+CARR(3))*ti_temp+one)
-         theta = ti_temp/zeta
-         eta   = (BG*BG/(4*theta))**(one/3.0)
-
-         reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
-
-         reactrate = reactrate*nd_temp*nt_temp
+         reactrate = DT_CROSS_SECTION(ti_temp)*nd_temp*nt_temp
          RETURN
 
       END SUBROUTINE beams3d_DTRATE
@@ -1542,16 +1526,6 @@ MODULE beams3d_physics_mod
          REAL*8 :: fval(1)
 
          !--------------------------------------------------------------
-         !     Local Parameters
-         !--------------------------------------------------------------
-         INTEGER, PARAMETER :: mrc2 = 937814
-         DOUBLE PRECISION, PARAMETER :: BG = 31.3970
-         DOUBLE PRECISION, DIMENSION(7), PARAMETER :: &
-                CARR = (/ 5.65718E-12,  3.41267E-03,  1.99167E-03, &
-                          0.00000E+00,  1.05060E-05,  0.00000E+00, &
-                          0.00000E-00/)
-
-         !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
 
@@ -1588,15 +1562,8 @@ MODULE beams3d_physics_mod
             RETURN
          END IF
          IF (ti_temp <= zero) RETURN ! Get out if ti small
-         ti_temp = ti_temp*1E-3 ! to keV
-         zeta =  one - ((((CARR(6)*ti_temp)+CARR(4))*ti_temp+CARR(2))*ti_temp)/ &
-                       ((((CARR(7)*ti_temp)+CARR(5))*ti_temp+CARR(3))*ti_temp+one)
-         theta = ti_temp/zeta
-         eta   = (BG*BG/(4*theta))**(one/3.0)
 
-         reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
-
-         reactrate = reactrate*nd_temp*nd_temp*0.5
+         reactrate = DD_CROSS_SECTION(ti_temp)*nd_temp*nd_temp*0.5
 
          RETURN
 
@@ -1641,16 +1608,6 @@ MODULE beams3d_physics_mod
          REAL*8 :: fval(1)
 
          !--------------------------------------------------------------
-         !     Local Parameters
-         !--------------------------------------------------------------
-         INTEGER, PARAMETER :: mrc2 = 937814
-         DOUBLE PRECISION, PARAMETER :: BG = 31.3970
-         DOUBLE PRECISION, DIMENSION(7), PARAMETER :: &
-                CARR = (/ 5.43360E-12,  5.85778E-03,  7.68222E-03, &
-                          0.00000E+00, -2.96400E-06,  0.00000E+00, &
-                          0.00000E+00/)
-
-         !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
 
@@ -1686,15 +1643,8 @@ MODULE beams3d_physics_mod
             RETURN
          END IF
          IF (ti_temp <= zero) RETURN ! Get out if ti small
-         ti_temp = ti_temp*1E-3 ! to keV
-         zeta =  one - ((((CARR(6)*ti_temp)+CARR(4))*ti_temp+CARR(2))*ti_temp)/ &
-                       ((((CARR(7)*ti_temp)+CARR(5))*ti_temp+CARR(3))*ti_temp+one)
-         theta = ti_temp/zeta
-         eta   = (BG*BG/(4*theta))**(one/3.0)
 
-         reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
-
-         reactrate = reactrate*nd_temp*nd_temp*0.5
+         reactrate = DDHe3_CROSS_SECTION(ti_temp)*nd_temp*nd_temp*0.5
          RETURN
 
       END SUBROUTINE beams3d_DDHe3RATE
@@ -1738,16 +1688,6 @@ MODULE beams3d_physics_mod
          REAL*8 :: fval(1)
 
          !--------------------------------------------------------------
-         !     Local Parameters
-         !--------------------------------------------------------------
-         INTEGER, PARAMETER :: mrc2 = 1124572
-         DOUBLE PRECISION, PARAMETER :: BG = 68.7508
-         DOUBLE PRECISION, DIMENSION(7), PARAMETER :: &
-                CARR = (/ 5.51036E-10,  6.41918E-03, -2.02896E-03, &
-                         -1.91080E-05,  1.35776E-04,  0.00000E+00, &
-                          0.00000E+00/)
-
-         !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
 
@@ -1787,15 +1727,8 @@ MODULE beams3d_physics_mod
             RETURN
          END IF
          IF (ti_temp <= zero) RETURN ! Get out if ti small
-         ti_temp = ti_temp*1E-3 ! to keV
-         zeta =  one - ((((CARR(6)*ti_temp)+CARR(4))*ti_temp+CARR(2))*ti_temp)/ &
-                       ((((CARR(7)*ti_temp)+CARR(5))*ti_temp+CARR(3))*ti_temp+one)
-         theta = ti_temp/zeta
-         eta   = (BG*BG/(4*theta))**(one/3.0)
 
-         reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
-
-         reactrate = reactrate*nd_temp*nHe3_temp
+         reactrate = DHe3_CROSS_SECTION(ti_temp)*nd_temp*nHe3_temp
          RETURN
 
       END SUBROUTINE beams3d_DHe3RATE
