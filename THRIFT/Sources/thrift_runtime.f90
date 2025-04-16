@@ -69,7 +69,7 @@ MODULE thrift_runtime
 
     DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
     DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
-    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+    REAL(rprec), PARAMETER :: e_charge           = 1.602176634E-19_rprec !e_c
 
     LOGICAL :: lverb, lvmec, lread_input, limas, lrestart_from_file, &
                lvmec_reset
