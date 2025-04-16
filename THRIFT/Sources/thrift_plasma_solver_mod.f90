@@ -496,12 +496,14 @@ MODULE thrift_plasma_solver_mod
     END SUBROUTINE get_RHS_density_ions
 
     SUBROUTINE get_LHS_pressure(LHS_pressure)
+        USE fusion_mod
         IMPLICIT NONE
         REAL(rprec), DIMENSION(:,:), INTENT(INOUT) :: LHS_pressure
         INTEGER :: ier, ir, Nr, ispecies, kk, row
         REAL(rprec) :: dt_fact, dr, dr2, Dp_turb, cp_turb, rho
         REAL(rprec) :: Vp_plus, Vp_minus, VDplus, VDminus, cplus, cminus, Dp_plus, Dp_minus
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: Dp, cp, Vp
+        REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: LHS_coll_heat_exchange
 
         LHS_pressure = 0.0_rprec
 
@@ -511,7 +513,7 @@ MODULE thrift_plasma_solver_mod
         dr2 = dr*dr
         dt_fact = (2.0_rprec/3.0_rprec)*dt_plasma_solver
 
-        ALLOCATE(Dp(Nr),cp(Nr),Vp(Nr))
+        ALLOCATE(Dp(Nr),cp(Nr),Vp(Nr),LHS_coll_heat_exchange(Nr*num_species,Nr*num_species))
 
         ! Vp = dV/dr
         DO ir=1,Nr
@@ -575,7 +577,8 @@ MODULE thrift_plasma_solver_mod
         END DO
 
         ! Add collisional heat exchange
-        ! ....
+        CALL get_collisional_heat_exchange_matrix(LHS_coll_heat_exchange)
+        LHS_pressure = LHS_pressure + dt_fact*LHS_coll_heat_exchange
 
         ! Impose Dirichlet Boundary Conditions
         DO ispecies=1,num_species
@@ -586,7 +589,7 @@ MODULE thrift_plasma_solver_mod
             LHS_pressure(row,row) = one
         END DO
 
-        DEALLOCATE(Dp,cp,Vp)
+        DEALLOCATE(Dp,cp,Vp,LHS_coll_heat_exchange)
 
         RETURN
     END SUBROUTINE
@@ -906,15 +909,22 @@ MODULE thrift_plasma_solver_mod
         USE collision_operators
         IMPLICIT NONE
         REAL(rprec), DIMENSION(:,:), INTENT(INOUT) :: LHS_heat_exchange_matrix
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass_all, Z_all
         REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: W_s1_s2, aux_B
-        INTEGER :: is1, is2, Z1, Z2, j, p
+        INTEGER :: is1, is2, j, p, ir1, ir2, ir
         REAL(rprec) :: m1,n1,T1,m2,n2,T2,clog,const,vth_s1_sqr,vth_s2_sqr
-        REAL(rprec) :: den, gamma
+        REAL(rprec) :: den, gamma, Z1, Z2
 
         LHS_heat_exchange_matrix = 0.0_rprec
 
         ALLOCATE(W_s1_s2(num_species,num_species,Nr_plasma_solver))
         ALLOCATE(aux_B(num_species,num_species,Nr_plasma_solver))
+        ALLOCATE(mass_all(num_species),Z_all(num_species))
+
+        mass_all(1) = electron_mass
+        mass_all(2:) = Matom_prof
+        Z_all(1) = -1.0_rprec
+        Z_all(2:) = REAL(Zatom_prof, kind=rprec) ! need to be reals, because clog functions only accept reals
 
         DO is1=1,num_species
             m1 = mass_all(is1)
@@ -932,11 +942,11 @@ MODULE thrift_plasma_solver_mod
                     T2 = plasma_T(is2,ir)
 
                     ! get Coulomb logarithm
-                    IF (Z1>0 and Z2>0) THEN
+                    IF (Z1>0 .AND. Z2>0) THEN
                         clog = COULOMB_LOG_NRL_II(m1,Z1,n1,T1,m2,Z2,n2,T2)
-                    ELSE IF (Z1>0 and Z2<0) THEN
+                    ELSE IF (Z1>0 .AND. Z2<0) THEN
                         clog = COULOMB_LOG_NRL_IE(n2,T2,m1,Z1,n1,T1)
-                    ELSE IF (Z1<0 and Z2>0) THEN
+                    ELSE IF (Z1<0 .AND. Z2>0) THEN
                         clog = COULOMB_LOG_NRL_IE(n1,T1,m2,Z2,n2,T2)
                     ELSE
                         clog = 0.0
@@ -944,8 +954,8 @@ MODULE thrift_plasma_solver_mod
 
                     const = (8/SQRT(pi))*(Z1*Z2*e_charge*e_charge)**2 * clog / (8*pi*EPS0**2)
 
-                    vth_s1_sqr = 2*EC*T1/m1
-                    vth_s2_sqr = 2*EC*T2/m2
+                    vth_s1_sqr = 2*e_charge*T1/m1
+                    vth_s2_sqr = 2*e_charge*T2/m2
                     
                     den = m1 * m2 * (vth_s1_sqr + vth_s2_sqr)**1.5_rprec
                     
@@ -960,7 +970,7 @@ MODULE thrift_plasma_solver_mod
         ! Add aux_B matrix
         DO is1=1,num_species
             DO ir=1,Nr_plasma_solver
-                W_s1_s2(is1,is1,ir) = W_s1_s2(is1,is1,ir) - SUM(aux_B,axis=2)
+                W_s1_s2(is1,is1,ir) = W_s1_s2(is1,is1,ir) - SUM(aux_B(is1,:,ir))
             END DO
         END DO
         
@@ -980,7 +990,7 @@ MODULE thrift_plasma_solver_mod
             END DO
         END DO
 
-        DEALLOCATE(W_s1_s2,aux_B)
+        DEALLOCATE(W_s1_s2,aux_B,mass_all,Z_all)
         RETURN
     END SUBROUTINE get_collisional_heat_exchange_matrix
 
