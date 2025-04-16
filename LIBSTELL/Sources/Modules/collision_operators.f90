@@ -108,7 +108,7 @@
       FUNCTION COULOMB_LOG_NRL_IEC(mass,Z,ni,ti) RESULT(result)
          !--------------------------------------------------------------
          !           For Te < Ti*me/mi
-         !   Z       Ion mass [kg]
+         !   mass    Ion mass [kg]
          !   Z       Ion charge number [e]
          !   NI      Ion Density [m^-3]
          !   TI      Ion Temperature [eV]
