@@ -507,7 +507,7 @@
       ik = COUNT(ni_aux_s >= 0)
       IF (ik > 0) THEN
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NI_AUX_M',(ni_aux_m(n), n=1,NION)
-         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,I0))") 'NI_AUX_Z',(ni_aux_z(n), n=1,NION)
+         WRITE(iunit_out,"(2X,A,1X,'=',6(1X,I0))") 'NI_AUX_Z',(ni_aux_z(n), n=1,NION)
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NI_AUX_S',(ni_aux_s(n), n=1,ik)
          DO n = 1, NION
             IF (ANY(NI_AUX_F(n,:)>0)) THEN
