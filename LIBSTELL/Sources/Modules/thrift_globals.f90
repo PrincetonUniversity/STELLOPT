@@ -54,7 +54,7 @@
       INTEGER, PARAMETER :: nions_max = 6
       REAL(rprec) :: dt_plasma_solver, tol_plasma_solver
       INTEGER :: max_subiter_plasma_solver, Nr_plasma_solver
-      REAL(rprec), DIMENSION(nions_max+1) :: Dp_all, cp_all
+      REAL(rprec), DIMENSION(nions_max+1) :: chi_all, cp_all
       REAL(rprec), DIMENSION(nions_max) :: Dn_ions, cn_ions
 
       CONTAINS

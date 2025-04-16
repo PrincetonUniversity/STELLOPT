@@ -525,7 +525,7 @@ MODULE thrift_plasma_solver_mod
         kk = 1
         DO ispecies=1,num_species
 
-            Dp_turb = Dp_all(ispecies)
+            Dp_turb = chi_all(ispecies)
             cp_turb = cp_all(ispecies)
 
             IF(add_NEO) THEN
