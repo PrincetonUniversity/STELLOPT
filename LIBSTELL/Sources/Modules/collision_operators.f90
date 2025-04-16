@@ -138,8 +138,8 @@
          DOUBLE PRECISION, INTENT(in) :: mass2,z2,ni2,ti2
          DOUBLE PRECISION :: result
          result = 23.0 - LOG( ( z1 * z2 * ( mass1 + mass2 ) ) * &
-                    ( ni1 * z1 * z1 / ti1 + ni2 * z2 * z2 / ti2) * &
-                    1.0E-6 / ( mass1 * ti2 + mass2 * ti1 ) )
+                    SQRT( ni1 * z1 * z1 / ti1 + ni2 * z2 * z2 / ti2) * &
+                    SQRT(1.0E-6) / ( mass1 * ti2 + mass2 * ti1 ) )
          RETURN
       END FUNCTION COULOMB_LOG_NRL_II
 
