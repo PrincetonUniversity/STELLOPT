@@ -595,28 +595,63 @@ MODULE thrift_plasma_solver_mod
     END SUBROUTINE
 
     SUBROUTINE get_RHS_pressure(RHS_pressure)
+        USE fusion_mod, ONLY : BREMSSTRAHLUNG_POWER, ALPHA_POWER
         IMPLICIT NONE
         REAL(rprec), DIMENSION(:), INTENT(INOUT) :: RHS_pressure
-        INTEGER :: Nr, ir, iion, offset
+        INTEGER :: Nr, ir, iion, offset, Zi
         REAL(rprec) :: rho, t, t_prev, explicit_source, n_previous, T_previous, p_previous
+        REAL(rprec) :: ni, ne, Te, nD, nT, TD, TT
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: SB, S_alpha
 
         Nr = Nr_plasma_solver
 
         t = time_plasma_grid(mytimestep_plasma_solver)
         t_prev = time_plasma_grid(mytimestep_plasma_solver-1)
 
+        ALLOCATE(SB(Nr),S_alpha(Nr))
+
+        ! Bremsstrahlung power
+        SB = 0.0_rprec
+        DO iion=1,nion_prof
+            Zi = Zatom_prof(iion)
+            DO ir=1,Nr_plasma_solver
+                ni = plasma_N(1+iion,ir)
+                ne = plasma_N(1,ir)
+                Te = plasma_T(1,ir)
+                SB(ir) = SB(ir) + BREMSSTRAHLUNG_POWER(Zi,ni,ne,Te)
+            END DO
+        END DO
+
+        ! Alpha power 
+        ! Deuterium and Tritium must be in 2nd and 3rd positions
+        ! otherwise alpha power is set to zero
+        S_alpha = 0.0_rprec
+        IF (nion_prof>1) THEN
+            IF( (Zatom_prof(1) .EQ. 1) .AND. (Zatom_prof(2) .EQ. 1)) THEN
+                DO ir=1,Nr
+                    nD = plasma_N(2,ir)
+                    nT = plasma_N(3,ir)
+                    TD = plasma_T(2,ir)
+                    TT = plasma_T(3,ir)
+                    S_alpha(ir) = ALPHA_POWER(nD,nT,TD,TT)
+                END DO
+            END IF
+        END IF
+
         ! Electrons
         DO ir=1,Nr
             rho = rho_plasma_grid(ir)
+            ! Add external source
             CALL get_S_energy(rho,t,1,explicit_source)
-            n_previous = plasma_N_keep(1,mytimestep_plasma_solver-1,ir) !CALL get_prof_ne(rho,t_prev,n_previous)
-            T_previous = plasma_T_keep(1,mytimestep_plasma_solver-1,ir) !CALL get_prof_Te(rho,t_prev,T_previous)
-            p_previous = n_previous * T_previous * e_charge
+            ! Add Bremsstrahlung
+            explicit_source = explicit_source - SB(ir)
+            ! Add alpha power
+            explicit_source = explicit_source + S_alpha(ir)*0.8_rprec
+            !
+            n_previous = plasma_N_keep(1,mytimestep_plasma_solver-1,ir)
+            T_previous = plasma_T_keep(1,mytimestep_plasma_solver-1,ir)
+            p_previous = plasma_P_keep(1,mytimestep_plasma_solver-1,ir) !n_previous * T_previous * e_charge
             RHS_pressure(ir) = p_previous + (2.0_rprec/3.0_rprec)*dt_plasma_solver*explicit_source
-            !Add Bremsstrahlung ...
-            ! ... TBD
-            ! Add alpha power ... ! ... detect which one is nD and nT with Zatom !...
-            ! ... TBD
         END DO
         ! Boundary condition
         RHS_pressure(Nr) = plasma_P(1,Nr)
@@ -626,18 +661,21 @@ MODULE thrift_plasma_solver_mod
             offset = Nr*iion
             DO ir=1,Nr-1
                 rho = rho_plasma_grid(ir)
+                ! Add external source
                 CALL get_S_energy(rho,t,1+iion,explicit_source)
+                ! Add alpha power
+                IF(Zatom_prof(iion) .EQ. 1) explicit_source = explicit_source + S_alpha(ir)*0.1_rprec
                 !
-                n_previous = plasma_N_keep(1+iion,mytimestep_plasma_solver-1,ir) !CALL get_prof_ni(rho,t_prev,iion,n_previous)
-                T_previous = plasma_T_keep(1+iion,mytimestep_plasma_solver-1,ir) !CALL get_prof_Ti(rho,t_prev,iion,T_previous)
+                n_previous = plasma_N_keep(1+iion,mytimestep_plasma_solver-1,ir) 
+                T_previous = plasma_T_keep(1+iion,mytimestep_plasma_solver-1,ir)
                 p_previous = n_previous * T_previous * e_charge
                 RHS_pressure(offset+ir) = p_previous + (2.0_rprec/3.0_rprec)*dt_plasma_solver*explicit_source
-                ! Add alpha power ... ! ... detect which one is nD and nT with Zatom !...
-            ! ... TBD 
             END DO
             ! Boundary condition
             RHS_pressure(offset+Nr) = plasma_P(1+iion,Nr)
         END DO
+
+        DEALLOCATE(SB,S_alpha)
 
         RETURN
     END SUBROUTINE get_RHS_pressure
