@@ -1,5 +1,7 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
 
+fusion_mod.o : 
+
 collision_operators.o : 
 
 read_nescoil_mod.o : \
