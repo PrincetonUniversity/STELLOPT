@@ -84,6 +84,7 @@ if __name__=="__main__":
 			x,y,z = args.bxyz.split(',')
 			bx,by,bz = coils.coilbiot(float(x),float(y),float(z))
 			print(f"B-Field ({x},{y},{z}) : {bx}, {by}, {bz} [T]")
+			print(f"    |B| ({x},{y},{z}) : {np.sqrt(bx**2+by**2+bz**2)} [T]")
 		if args.wall_offset:
 			vertex = coils.coiloffset(float(args.wall_offset))
 			wall = WALL()
