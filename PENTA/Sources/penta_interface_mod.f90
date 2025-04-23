@@ -69,7 +69,7 @@ MODULE PENTA_INTERFACE_MOD
       input_is_Er          = .TRUE.
       log_interp           = .TRUE.
       use_quanc8           = .FALSE.
-      read_U2_file         = .TRUE.
+      read_U2_file         = .FALSE.
       flux_cap             = .TRUE.
       output_QoT_vs_Er     = .FALSE.
       Add_Spitzer_to_D33   = .TRUE.
@@ -86,7 +86,7 @@ MODULE PENTA_INTERFACE_MOD
       sigma_par            = 0.0E+0_rknd
       sigma_par_Spitzer    = 0.0E+0_rknd
       J_BS                 = 0.0E+0_rknd
-      method               = 'DKES'
+      method               = 'SN'
       Er_min_Vcm           = -250.0_rknd
       Er_max_Vcm           =  250.0_rknd
       save_all_ambipolar_roots = .FALSE.
