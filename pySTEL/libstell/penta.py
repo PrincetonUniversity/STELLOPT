@@ -444,144 +444,10 @@ class PENTA:
                     self.Rn[species,target] = Rn[self.root_type == target,sp,:]
                     self.RT[species,target] = RT[self.root_type == target,sp,:]
                     self.REr[species,target] = REr[self.root_type == target,sp,:]
-                    
-    def set_plasma_solver_transport_coeffs_OLD(self,plasma_profiles_filename=None,make_plot=False):
-        # sets the dictionaries self.Dnn[species,root], self.Dnp[species,root] for particle flux
-        # and the dictionaries self.??? and self.??? for heat flux
-        
-        import matplotlib.pyplot as plt
-        from collections import defaultdict
-        
-        if(plasma_profiles_filename is None):
-            plasma_profiles_filename = self.folder_path+'/plasma_profiles_check'+self.files_suffix
-         
-        self.Dn = defaultdict(list)
-        self.Dp = defaultdict(list)
-        self.DEr = defaultdict(list)
-        
-        self.Kn = defaultdict(list)
-        self.Kp = defaultdict(list)
-        self.KEr = defaultdict(list)
-           
-    
-        # Load density and temperature gradients
-        profiles = np.loadtxt(plasma_profiles_filename,skiprows=2)
-        
-        num_ion_species = len(self.Zions)
-        
-        roa_profiles = profiles[:,0]
-        
-        
-        for root in self.available_roots:
-            
-            # Find the indices of the closest values in roa_profiles
-            indices = np.abs(roa_profiles[:, None] - self.roa[root]).argmin(axis=0)
-                        
-            col_indices = np.r_[2,(5+num_ion_species):(5+2*num_ion_species)]
-            n = profiles[np.ix_(indices,col_indices)]
-            #
-            col_indices = np.r_[1,5:(5+num_ion_species)]
-            eT = profiles[np.ix_(indices,col_indices)] * EC
-            #
-            col_indices = np.r_[3,(5+2*num_ion_species):(5+3*num_ion_species)]
-            dndr = profiles[np.ix_(indices,col_indices)] 
-            #
-            col_indices = np.r_[4,(5+3*num_ion_species):(5+4*num_ion_species)]
-            deTdr = profiles[np.ix_(indices,col_indices)] * EC
-            #
-            p = n*eT
-            dpdr = n*deTdr + eT*dndr
-            
-            # sets coefficients
-            for sp,species in enumerate(self.list_of_species):
-                self.Dn[species,root] = -self.Ln[species,root] + (p/n**2)*self.LT[species,root]
-                self.Dp[species,root] = -self.LT[species,root]/n
-                
-                self.Kn[species,root] = eT[:,sp][:, np.newaxis]  * (-self.Rn[species,root] + (p/n**2)*self.RT[species,root])
-                self.Kp[species,root] = -eT[:,sp][:, np.newaxis]  * self.RT[species,root]/n
-                
-                #Check coefficients are >=0
-                if(np.any(self.Dn[species,root]) < 0):
-                    print('WARNING: there is a negative Dn coefficient')
-                if(np.any(self.Dp[species,root]) < 0):
-                    print('WARNING: there is a negative Dp coefficient')
-                if(np.any(self.Kn[species,root]) < 0):
-                    print('WARNING: there is a negative Kn coefficient')
-                if(np.any(self.Kp[species,root]) < 0):
-                    print('WARNING: there is a negative Kp coefficient')
-            
-                # Electric field coeffs, DEr and KEr
-                self.DEr[species,root] = np.sum(self.LEr[species,root],axis=1)
-                self.KEr[species,root] = eT[:,sp] * np.sum(self.REr[species,root],axis=1)
-            
-            # make plots for each species
-            if(make_plot):
-                ## PARTICLE FLUXES
-                for species_plot in self.list_of_species:
-                    idx = self.list_of_species.index(species_plot)                                
-                    
-                    particle_flux_dndr_a = -self.Dn[species_plot,root][:,idx]*dndr[:,idx]
-                    particle_flux_dpdr_a = -self.Dp[species_plot,root][:,idx]*dpdr[:,idx]
-                    particle_flux_Er = self.DEr[species_plot,root]*self.Er[root]*100
-                    particle_flux_others = 0.0
-                    for species_b in self.list_of_species:
-                        if species_b==species_plot:
-                            continue
-                        idx_b = self.list_of_species.index(species_b) 
-                        particle_flux_others += -self.Dn[species_plot,root][:,idx_b]*dndr[:,idx_b] -self.Dp[species_plot,root][:,idx_b]*dpdr[:,idx_b]
-                
-                    particle_flux_control = particle_flux_dndr_a + particle_flux_dpdr_a + particle_flux_Er + particle_flux_others
-                    rel_error = np.max( np.abs(particle_flux_control-self.Gamma[species_plot,root]) / np.abs(self.Gamma[species_plot,root]) )
-                    plt.rc('font', size=16)
-                    _, ax = plt.subplots(figsize=(11,8))
-                    ax.plot(self.roa[root],self.Gamma[species_plot,root],'--',color='k',linewidth=4,label='PENTA flux')
-                    ax.plot(self.roa[root],particle_flux_control,'.',color='red',markersize=8,label=f'rel error={rel_error:.1E}')
-                    ax.plot(self.roa[root],particle_flux_dndr_a,'-',label='dna/dr')
-                    ax.plot(self.roa[root],particle_flux_dpdr_a,'-',label='dpa/dr')
-                    ax.plot(self.roa[root],particle_flux_Er,'-',label='Er')
-                    ax.plot(self.roa[root],particle_flux_others,'-',label='others')
-                    ax.set_xlabel('r/a')
-                    ax.set_ylabel(r'particle flux $\Gamma$ [m$^{-2}\,\mathrm{s}^{-1}$]')
-                    ax.grid()
-                    ax.set_title(f'species={species_plot}, root={root}')
-                    plt.legend()
-                plt.show()  
-                  
-                ## HEAT FLUXES
-                for species_plot in self.list_of_species:
-                    idx = self.list_of_species.index(species_plot)                                
-                    
-                    heat_flux_dndr_a = -self.Kn[species_plot,root][:,idx]*dndr[:,idx]
-                    heat_flux_dpdr_a = -self.Kp[species_plot,root][:,idx]*dpdr[:,idx]
-                    heat_flux_Er = self.KEr[species_plot,root]*self.Er[root]*100
-                    heat_flux_others = 0.0
-                    for species_b in self.list_of_species:
-                        if species_b==species_plot:
-                            continue
-                        idx_b = self.list_of_species.index(species_b) 
-                        heat_flux_others += -self.Kn[species_plot,root][:,idx_b]*dndr[:,idx_b] - self.Kp[species_plot,root][:,idx_b]*dpdr[:,idx_b]
-                        
-                    heat_flux_control = heat_flux_dndr_a + heat_flux_dpdr_a + heat_flux_Er + heat_flux_others
-                    penta_heat_flux = self.QoT[species_plot,root]*eT[:,idx]
-                    rel_error = np.max(np.abs(penta_heat_flux-heat_flux_control)/np.abs(penta_heat_flux))
-                    plt.rc('font', size=16)
-                    _, ax = plt.subplots(figsize=(11,8))
-                    ax.plot(self.roa[root],penta_heat_flux,'--',color='k',linewidth=4,label='PENTA flux')
-                    ax.plot(self.roa[root],heat_flux_control,'.',color='red',markersize=8,label=f'rel error={rel_error:.1E}')
-                    ax.plot(self.roa[root],heat_flux_dndr_a,'-',label='dna/dr')
-                    ax.plot(self.roa[root],heat_flux_dpdr_a,'-',label='dpa/dr')
-                    ax.plot(self.roa[root],heat_flux_Er,'-',label='Er')
-                    ax.plot(self.roa[root],heat_flux_others,'-',label='others')
-                    ax.set_xlabel('r/a')
-                    ax.set_ylabel(r'heat flux $Q$ [W/m$^{2}$]')
-                    ax.grid()
-                    ax.set_title(f'species={species_plot}, root={root}')
-                    plt.legend()
-                plt.show()
                 
     def set_plasma_solver_transport_coeffs(self,plasma_profiles_filename=None,make_plot=False):
         # sets the dictionaries self.Dn[species,root], self.cn[species,root] for particle flux
-        # and the dictionaries self.??? and self.??? for heat flux
+        #  and the dictionaries self.Dp[species,root], self.cp[species,root] for heat flux
         
         import matplotlib.pyplot as plt
         from collections import defaultdict
@@ -595,7 +461,6 @@ class PENTA:
         self.Dp = defaultdict(list)
         self.cp = defaultdict(list)
            
-    
         # Load density and temperature gradients
         profiles = np.loadtxt(plasma_profiles_filename,skiprows=2)
         
