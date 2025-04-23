@@ -28,7 +28,8 @@ MODULE thrift_plasma_solver_mod
     win_raxis_source, win_taxis_source, win_r_plasma_grid
     REAL(rprec), DIMENSION(:,:), ALLOCATABLE, PRIVATE :: plasma_N, plasma_T, plasma_P
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep
-    INTEGER, PRIVATE :: mytimestep_plasma_solver
+    REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: Dn_NEO, cn_NEO, Dp_NEO, cp_NEO
+    INTEGER :: mytimestep_plasma_solver
     INTEGER :: N_plasma_steps_per_THRIFT_step, Nt_total_plasma_solver
     !           
     !REAL(rprec), PARAMETER ::
@@ -67,6 +68,10 @@ MODULE thrift_plasma_solver_mod
         IF( .NOT. ALLOCATED(plasma_P)) ALLOCATE(plasma_P(num_species,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(plasma_N_keep)) ALLOCATE(plasma_N_keep(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(plasma_T_keep)) ALLOCATE(plasma_T_keep(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(Dn_NEO)) ALLOCATE(Dn_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(cn_NEO)) ALLOCATE(cn_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(Dp_NEO)) ALLOCATE(Dp_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(cp_NEO)) ALLOCATE(cp_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         ! Local arrays
         IF( .NOT. ALLOCATED(pressure_total)) ALLOCATE(pressure_total(num_species*Nr_plasma_solver))
         IF( .NOT. ALLOCATED(pressure_total_old)) ALLOCATE(pressure_total_old(num_species*Nr_plasma_solver))
@@ -101,6 +106,12 @@ MODULE thrift_plasma_solver_mod
             plasma_T_keep(1,mytimestep_plasma_solver,1), plasma_N_keep(1,mytimestep_plasma_solver,1), &
             plasma_T_keep(2,mytimestep_plasma_solver,1), plasma_N_keep(2,mytimestep_plasma_solver,1), &
             0.0_rprec,0.0_rprec)
+
+            ! Set NEO coeffs to zero
+            Dn_NEO = 0.0_rprec
+            cn_NEO = 0.0_rprec
+            Dp_NEO = 0.0_rprec
+            cp_NEO = 0.0_rprec
 
             ! Update splines and exit routine
             CALL update_splines
