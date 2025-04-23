@@ -673,18 +673,19 @@ class THRIFT_plasma_solver():
                     print('ERROR: Need to provide total_power [W], time_Dependent_factor, dVdrho, sigma_rho and rho_0 for gaussian external source')
                     exit(1) 
                 else:
-                    integrand = lambda rho: np.exp(-(rho-rho_0)**2/sigma_rho**2) * dVdrho(rho)
+                    integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
+                    integrand = integrand.flatten()
                     #
-                    cte = total_power / quad(integrand,0,1)[0]
+                    cte = total_power / np.trapz(integrand,self.rho_grid_source)
                     #
-                    source = lambda t,rho: cte * time_dependent_factor(t) * np.exp(-(rho-rho_0)**2/sigma_rho**2)
+                    source = lambda t: time_dependent_factor(t) * cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
                     
             case 'constant':
                 if(cte_source is None):
                     print('ERROR: cte_source is needed in order to generate a constant source.')
                     exit(0)
                 else:
-                    source = lambda t,rho: cte_source
+                    source = lambda t: cte_source
                     
             case _:
                 print(f'ERROR: Source type {source_type} is NOT possible')
@@ -729,18 +730,19 @@ class THRIFT_plasma_solver():
                     print('ERROR: Need to provide injected_particles_per_sec, time_Dependent_factor, dVdrho, sigma_rho and rho_0 for gaussian external source')
                     exit(1) 
                 else:
-                    integrand = lambda rho: np.exp(-(rho-rho_0)**2/sigma_rho**2) * dVdrho(rho)
+                    integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
+                    integrand = integrand.flatten()
                     #
-                    cte = injected_particles_per_sec / quad(integrand,0,1)[0]
+                    cte = injected_particles_per_sec / np.trapz(integrand,self.rho_grid_source)
                     #
-                    source = lambda t,rho: cte * time_dependent_factor(t) * np.exp(-(rho-rho_0)**2/sigma_rho**2)
+                    source = lambda t: time_dependent_factor(t) * cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
                     
             case 'constant':
                 if(cte_source is None):
                     print('ERROR: cte_source is needed in order to generate a constant source.')
                     exit(0)
                 else:
-                    source = lambda t,rho: cte_source
+                    source = lambda t: cte_source
                     
             case _:
                 print(f'ERROR: Source type {source_type} is NOT possible')
@@ -753,9 +755,6 @@ class THRIFT_plasma_solver():
                 dset[:,it,species_id] = source(t) #,self.rho_grid_source)
             
                    
-            
-        
-
 # Main routine
 if __name__=="__main__":
 	import sys
