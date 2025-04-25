@@ -245,7 +245,7 @@ MODULE thrift_plasma_solver_mod
 #endif
         IMPLICIT NONE
         CHARACTER(*), INTENT(in) :: filename
-        INTEGER :: i, ier
+        INTEGER :: i, ier, ispecies
         INTEGER :: bcs0(2)
         TYPE(EZspline2_r8) :: temp_spl2d
         REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: S_energy, S_particle
@@ -477,18 +477,17 @@ MODULE thrift_plasma_solver_mod
         INTEGER, INTENT(IN) :: iion
         REAL(rprec), DIMENSION(:), INTENT(INOUT) :: RHS_density
         INTEGER :: Nr, ir, ispecies
-        REAL(rprec) :: rho, t, t_prev, explicit_source, ni_previous
+        REAL(rprec) :: rho, t, explicit_source, ni_previous
 
         Nr = Nr_plasma_solver
         ispecies = 1 + iion
         t = time_plasma_grid(mytimestep_plasma_solver)
-        t_prev = time_plasma_grid(mytimestep_plasma_solver-1)
 
         DO ir=1,Nr
             rho = rho_plasma_grid(ir)
             CALL get_S_particle(rho,t,ispecies,explicit_source)
             !
-            ni_previous = plasma_N_keep(ispecies,mytimestep_plasma_solver-1,ir) !CALL get_prof_ni(rho,t_prev,iion,ni_previous)
+            ni_previous = plasma_N_keep(ispecies,mytimestep_plasma_solver-1,ir)
             RHS_density(ir) = ni_previous + dt_plasma_solver*explicit_source
         END DO
 
@@ -503,7 +502,7 @@ MODULE thrift_plasma_solver_mod
         IMPLICIT NONE
         REAL(rprec), DIMENSION(:,:), INTENT(INOUT) :: LHS_pressure
         INTEGER :: ier, ir, Nr, ispecies, kk, row
-        REAL(rprec) :: dt_fact, dr, dr2, Dp_turb, cp_turb, rho
+        REAL(rprec) :: dt_fact, dr, dr2, Dp_turb, cp_turb, rho, n, dndr, t_val
         REAL(rprec) :: Vp_plus, Vp_minus, VDplus, VDminus, cplus, cminus, Dp_plus, Dp_minus
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: Dp, cp, Vp
         REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: LHS_coll_heat_exchange
