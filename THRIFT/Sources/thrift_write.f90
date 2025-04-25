@@ -240,8 +240,6 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_N',ier)
          CALL write_var_hdf5(fid,'plasma_T',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=plasma_T_keep,ATT='Temperature of each species [eV]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_T',ier)
-         CALL write_var_hdf5(fid,'plasma_P',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=plasma_P_keep,ATT='Pressure of each species [Pa]',ATT_NAME='description')
-         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_P',ier)
          CALL write_var_hdf5(fid,'Dn_NEO',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Dn_NEO,ATT='Dn NEO particle diffusion coeff. [m^2/s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Dn_NEO',ier)
          CALL write_var_hdf5(fid,'cn_NEO',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=cn_NEO,ATT='cn NEO particle convective velocity [m/s]',ATT_NAME='description')

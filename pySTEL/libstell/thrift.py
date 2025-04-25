@@ -596,7 +596,6 @@ class THRIFT_plasma_solver():
                 #
                 self.plasma_N = f['plasma_N'][:,:,:]
                 self.plasma_T = f['plasma_T'][:,:,:]
-                self.plasma_P = f['plasma_P'][:,:,:]
                 #
                 Zions = np.array( f['Zions'][:], dtype=int)
                      
@@ -608,7 +607,6 @@ class THRIFT_plasma_solver():
                 # transpose plasma_N and plasma_T
                 self.plasma_N = np.transpose(self.plasma_N, axes=[2,1,0])
                 self.plasma_T = np.transpose(self.plasma_T, axes=[2,1,0])
-                self.plasma_P = np.transpose(self.plasma_P, axes=[2,1,0])
                 
     def create_input_sources_file(self,filename,nt,nrho,tfin):
         # creates 
