@@ -31,8 +31,8 @@ MODULE thrift_plasma_solver_mod
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: Dn_NEO, cn_NEO, Dp_NEO, cp_NEO
     INTEGER :: mytimestep_plasma_solver
     INTEGER :: N_plasma_steps_per_THRIFT_step, Nt_total_plasma_solver
-    !           
-    !REAL(rprec), PARAMETER ::
+    TYPE(EZspline1_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: N_splines, T_splines
+    TYPE(EZspline1_r8), PRIVATE :: P_spline
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         NONE
@@ -359,8 +359,8 @@ MODULE thrift_plasma_solver_mod
         CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
 
         IF (lverb) WRITE(6,*) 'Allocating Splines for plasma solver...'
-
-        nrho_prof = SIZE(rho_plasma_grid) 
+        
+        nrho_prof = Nr_plasma_solver
         nt_prof = Nt_total_plasma_solver
 
         ! Broadcast the helpers
@@ -369,20 +369,38 @@ MODULE thrift_plasma_solver_mod
         CALL MPI_BCAST(nt_prof,1,MPI_INTEGER,master,MPI_COMM_SHARMEM,ierr_mpi)
         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'read_thrift_profh5: nt_prof',ierr_mpi)
         
-        ! Allocate the shared memory objects
+        ! ! Allocate the shared memory objects
         CALL mpialloc(raxis_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_prof)
         CALL mpialloc(taxis_prof, nt_prof,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_taxis_prof)
 
-        CALL mpialloc(NE3D, 4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE3D)
-        CALL mpialloc(TE3D, 4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE3D)
-        CALL mpialloc(P3D,  4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_P3D)
-        CALL mpialloc(NI4D, 4, nt_prof, nrho_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI4D)
-        CALL mpialloc(TI4D, 4, nt_prof, nrho_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI4D)
-
         raxis_prof = rho_plasma_grid
-        taxis_prof = time_plasma_grid ! Be careful, not defined yet; need to move this somewhere else!
+        taxis_prof = time_plasma_grid
 
-        CALL setup_grids
+        ALLOCATE(N_splines(num_species))
+        ALLOCATE(T_splines(num_species))
+        
+        CALL mpialloc(NE_spl, 2, Nr_plasma_solver, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE_spl)
+        CALL mpialloc(TE_spl, 2, Nr_plasma_solver, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE_spl)
+        CALL mpialloc(NI_spl, 2, Nr_plasma_solver, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI_spl)
+        CALL mpialloc(TI_spl, 2, Nr_plasma_solver, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI_spl)
+        CALL mpialloc(P_spl, 2, Nr_plasma_solver, myid_sharmem, 0, MPI_COMM_SHARMEM, win_P_spl)
+
+        ! Initialize splines
+        DO ispecies=1,num_species
+            CALL EZspline_init(N_splines(ispecies),Nr_plasma_solver,bcs0,ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: N_splines',ier)
+            N_splines(ispecies)%x1        = rho_plasma_grid
+            N_splines(ispecies)%isHermite = 1
+            !
+            CALL EZspline_init(T_splines(ispecies),Nr_plasma_solver,bcs0,ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: T_splines',ier)
+            T_splines(ispecies)%x1        = rho_plasma_grid
+            T_splines(ispecies)%isHermite = 1
+        END DO
+        CALL EZspline_init(P_spline,Nr_plasma_solver,bcs0,ier)
+        IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: plasma splines',ier)
+        P_spline%x1 = rho_plasma_grid
+        P_spline%isHermite = 1
 
         IF (lverb) WRITE(6,*) 'Splines Allocated!'
 
@@ -706,84 +724,35 @@ MODULE thrift_plasma_solver_mod
         USE EZspline_obj
         IMPLICIT NONE
         INTEGER :: ispecies, i, ier, it
-        REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_spline, plasma_T_spline
-        REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: plasma_P_spline
-        REAL(rprec), DIMENSION(:), ALLOCATABLE :: taxis
-        INTEGER :: bcs0(2)
-        TYPE(EZspline2_r8) :: temp_spl2d
-        bcs0=(/ 0, 0/)
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: press
 
-        ! Prepare data to update splies
-        ALLOCATE(plasma_N_spline(num_species,nt_prof,nrho_prof))
-        ALLOCATE(plasma_T_spline(num_species,nt_prof,nrho_prof))
-        ALLOCATE(plasma_P_spline(nt_prof,nrho_prof))
-
-        plasma_N_spline = plasma_N_keep 
-        plasma_T_spline = plasma_T_keep 
-        ! To make sure the spline doesn't mess-up if later asking value at t = current_time + eps
-        ! we set all the fields at t>current_time equal to current_time
-        DO it = mytimestep_plasma_solver+1, Nt_total_plasma_solver
-            plasma_N_spline(:,it,:) = plasma_N
-            plasma_T_spline(:,it,:) = plasma_T
-        END DO
-        
-        plasma_P_spline = SUM(plasma_N_spline*plasma_T_spline*e_charge,dim=1)
-
-        ! Create splines and re-write NE3D, TE3D, NI4D, TI4D and P3D
         ! NE
-        CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
-        temp_spl2d%x1          = taxis_prof
-        temp_spl2d%x2          = raxis_prof
-        temp_spl2d%isHermite   = 1
-        CALL EZspline_setup(temp_spl2d,plasma_N_spline(1,:,:),ier,EXACT_DIM=.true.)
-        NE3D = temp_spl2d%fspl
-        CALL EZspline_free(temp_spl2d,ier)
+        CALL EZspline_setup(N_splines(1),plasma_N(1,:),ier,EXACT_DIM=.true.)
+        NE_spl = N_splines(1)%fspl
 
         ! TE
-        CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
-        temp_spl2d%x1          = taxis_prof
-        temp_spl2d%x2          = raxis_prof
-        temp_spl2d%isHermite   = 1
-        CALL EZspline_setup(temp_spl2d,plasma_T_spline(1,:,:),ier,EXACT_DIM=.true.)
-        TE3D = temp_spl2d%fspl
-        CALL EZspline_free(temp_spl2d,ier)
+        CALL EZspline_setup(T_splines(1),plasma_T(1,:),ier,EXACT_DIM=.true.)
+        TE_spl = T_splines(1)%fspl
 
         ! NI
         DO i = 1, nion_prof
-            CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
-            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: ni_prof',ier)
-            temp_spl2d%x1          = taxis_prof
-            temp_spl2d%x2          = raxis_prof
-            temp_spl2d%isHermite   = 1
-            CALL EZspline_setup(temp_spl2d,plasma_N_spline(1+i,:,:),ier,EXACT_DIM=.true.)
-            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: ni_prof',ier)
-            NI4D(:,:,:,i) = temp_spl2d%fspl
-            CALL EZspline_free(temp_spl2d,ier)
+            CALL EZspline_setup(N_splines(1+i),plasma_N(1+i,:),ier,EXACT_DIM=.true.)
+            NI_spl(:,:,i) = N_splines(1+i)%fspl
         END DO
 
         ! TI
         DO i = 1, nion_prof
-           CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
-           IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: ti_prof',ier)
-           temp_spl2d%x1          = taxis_prof
-           temp_spl2d%x2          = raxis_prof
-           temp_spl2d%isHermite   = 1
-           CALL EZspline_setup(temp_spl2d,plasma_T_spline(1+i,:,:),ier,EXACT_DIM=.true.)
-           IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: ti_prof',ier)
-           TI4D(:,:,:,i) = temp_spl2d%fspl
-           CALL EZspline_free(temp_spl2d,ier)
+            CALL EZspline_setup(T_splines(1+i),plasma_T(1+i,:),ier,EXACT_DIM=.true.)
+            TI_spl(:,:,i) = T_splines(1+i)%fspl
         END DO
 
         ! P
-        CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
-        temp_spl2d%x1          = taxis_prof
-        temp_spl2d%x2          = raxis_prof
-        temp_spl2d%isHermite   = 1
-        CALL EZspline_setup(temp_spl2d,plasma_P_spline,ier,EXACT_DIM=.true.)
-        P3D = temp_spl2d%fspl
-        CALL EZspline_free(temp_spl2d,ier)
+        ALLOCATE(press(Nr_plasma_solver))
+        press = SUM(plasma_N*plasma_T*e_charge,dim=1)
+        CALL EZspline_setup(P_spline,press,ier,EXACT_DIM=.true.)
+        P_spl = P_spline%fspl
+        DEALLOCATE(press)
 
-        DEALLOCATE(plasma_N_spline,plasma_T_spline,plasma_P_spline)
         RETURN
 
     END SUBROUTINE update_splines
