@@ -22,12 +22,10 @@ MODULE thrift_plasma_solver_mod
     IMPLICIT NONE
     REAL(rprec) :: drho_plasma_solver, dr_plasma_solver
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_plasma_grid, r_plasma_grid, time_plasma_grid
-    REAL(rprec), DIMENSioN(:), POINTER :: raxis_source, taxis_source
-    REAL(rprec), DIMENSION(:,:,:,:), POINTER :: SE4D, Sn4D
-    INTEGER :: ilogplasma, win_SE4D, win_Sn4D, win_rho_plasma_grid, num_species, nt_source, nrho_source, &
-    win_raxis_source, win_taxis_source, win_r_plasma_grid
+    INTEGER :: ilogplasma, num_species
     REAL(rprec), DIMENSION(:,:), ALLOCATABLE, PRIVATE :: plasma_N, plasma_T, plasma_P
-    REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep
+    REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep, &
+                                                  S_energy_ext, S_particle_ext
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: Dn_NEO, cn_NEO, Dp_NEO, cp_NEO
     INTEGER :: mytimestep_plasma_solver
     INTEGER :: N_plasma_steps_per_THRIFT_step, Nt_total_plasma_solver
@@ -232,11 +230,10 @@ MODULE thrift_plasma_solver_mod
 
     END SUBROUTINE evolve_plasma_equations
 
-
     SUBROUTINE initialize_plasma_solver(filename)
-        ! sets external sources from external file; sets nion_prof, Zatom_prof, Matom_prof;
-        ! and sets rho_plasma_grid and r_plasma_grid from Nr_plasma_solver
-        ! and  allocates Nx3D, Tx3D, P3D
+        ! Sets external sources from external file; sets nion_prof, Zatom_prof, Matom_prof;
+        ! Sets rho_plasma_grid and r_plasma_grid from Nr_plasma_solver
+        ! Initializes splines of plasma fields
         USE mpi_inc
         USE mpi_params
         USE mpi_sharmem
@@ -247,18 +244,28 @@ MODULE thrift_plasma_solver_mod
 #endif
         IMPLICIT NONE
         CHARACTER(*), INTENT(in) :: filename
-        INTEGER :: i, ier, ispecies
+        INTEGER :: i, ier, ispecies, nrho_source, nt_source
         INTEGER :: bcs0(2)
         TYPE(EZspline2_r8) :: temp_spl2d
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: raxis_source, taxis_source
         REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: S_energy, S_particle
         bcs0=(/ 0, 0/)
         ierr_mpi = 0
+
+        ! Plasma spatial grid (rho and r)
+        ALLOCATE(rho_plasma_grid(Nr_plasma_solver))
+        ALLOCATE(r_plasma_grid(Nr_plasma_solver))
+        !
+        FORALL(i = 1:Nr_plasma_solver)  rho_plasma_grid(i)  = DBLE(i-1)/DBLE(Nr_plasma_solver-1)
+        !
+        drho_plasma_solver = rho_plasma_grid(2) - rho_plasma_grid(1)
 
         IF (lverb) THEN
             WRITE(6,'(A)')  '----- Reading Sources File -----'
             WRITE(6,'(A)')  '   FILE: '//TRIM(filename)
         END IF
 
+        ! Sources only need to be known by the master, who will be working the plasma_solver
         IF (myid_sharmem == master) THEN
             CALL open_hdf5(TRIM(filename),fid,ier,LCREATE=.false.)
             IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(filename),ier)
@@ -271,51 +278,31 @@ MODULE thrift_plasma_solver_mod
             
             CALL read_scalar_hdf5(fid,'nion',ier,INTVAR=nion_prof)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nion_prof',ier)
-        END IF
 
-        CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
+            IF(nion_prof .GT. nions_max) STOP 'Number of ions larger that nions_max'
+            num_species = nion_prof + 1
 
-        ! Broadcast nrho_source, nt_source, nion_prof
-        CALL MPI_BCAST(nrho_source,1,MPI_INTEGER,master,MPI_COMM_SHARMEM,ierr_mpi)
-        IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'read_thrift_profh5: nrho_source',ierr_mpi)
-        CALL MPI_BCAST(nt_source,1,MPI_INTEGER,master,MPI_COMM_SHARMEM,ierr_mpi)
-        IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'read_thrift_profh5: nt_source',ierr_mpi)
-        CALL MPI_BCAST(nion_prof,1,MPI_INTEGER,master,MPI_COMM_SHARMEM,ierr_mpi)
-        IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'bcasting: nion_prof',ierr_mpi)
+            ALLOCATE(raxis_source(nrho_source))
+            ALLOCATE(taxis_source(nt_source))
 
-        IF(nion_prof .GT. nions_max) STOP 'Number of ions larger that nions_max'
-
-        num_species = nion_prof + 1
-
-        ! Allocate the shared memory objects
-        CALL mpialloc(raxis_source, nrho_source, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_source)
-        CALL mpialloc(taxis_source, nt_source,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_taxis_source)
-        CALL mpialloc(Zatom_prof, nion_prof,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_Zatom_prof)
-        CALL mpialloc(Matom_prof, nion_prof,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_Matom_prof)
-        CALL mpialloc(SE4D, 4, nt_source, nrho_source, num_species, myid_sharmem, 0, MPI_COMM_SHARMEM, win_SE4D)
-        CALL mpialloc(Sn4D, 4, nt_source, nrho_source, num_species, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Sn4D)
-
-        IF (myid_sharmem == master) THEN
-            ! Read 
-            CALL read_var_hdf5(fid,'Z_prof',nion_prof,ier,INTVAR=Zatom_prof)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Zatom_prof',ier)
-            CALL read_var_hdf5(fid,'mass_prof',nion_prof,ier,DBLVAR=Matom_prof)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Matom_prof',ier)
-
-            ! Get the axis arrays
             CALL read_var_hdf5(fid,'raxis_source',nrho_source,ier,DBLVAR=raxis_source)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'raxis_source',ier)
+
             CALL read_var_hdf5(fid,'taxis_source',nt_source,ier,DBLVAR=taxis_source)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'taxis_source',ier)
 
+            ! Check taxis_source covers whole range of time_plasma_grid
+            IF(taxis_source(1) > time_plasma_grid(1) .OR. taxis_source(nt_source) < time_plasma_grid(Nt_total_plasma_solver)) THEN
+                STOP 'ERROR: taxis_source does not cover the whole plasma simulation time range'
+            END IF
+
             ALLOCATE(S_energy(num_species,nt_source,nrho_source),S_particle(num_species,nt_source,nrho_source))
 
-            !
             CALL read_var_hdf5(fid,'S_energy',num_species,nt_source,nrho_source,ier,DBLVAR=S_energy)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_energy',ier)
+
             CALL read_var_hdf5(fid,'S_particle',num_species,nt_source,nrho_source,ier,DBLVAR=S_particle)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_particle',ier)
-
             !
             DO i = 1,num_species
                 ! Energy Source
@@ -326,8 +313,13 @@ MODULE thrift_plasma_solver_mod
                 temp_spl2d%isHermite   = 1
                 CALL EZspline_setup(temp_spl2d,S_energy(i,:,:),ier,EXACT_DIM=.true.)
                 IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: S_energy',ier)
-                SE4D(:,:,:,i) = temp_spl2d%fspl
+
+                ! Save external energy source at plasma grid to be used later
+                IF( .NOT. ALLOCATED(S_energy_ext)) ALLOCATE(S_energy_ext(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+                CALL EZspline_interp(temp_spl2d,Nt_total_plasma_solver,Nr_plasma_solver,time_plasma_grid,rho_plasma_grid,S_energy_ext(i,:,:),ier)
+                IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'interpolating: S_energy',ier) 
                 CALL EZspline_free(temp_spl2d,ier)
+
                 ! Particle Source
                 CALL EZspline_init(temp_spl2d,nt_source,nrho_source,bcs0,bcs0,ier)
                 IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: S_particle',ier)
@@ -336,25 +328,40 @@ MODULE thrift_plasma_solver_mod
                 temp_spl2d%isHermite   = 1
                 CALL EZspline_setup(temp_spl2d,S_particle(i,:,:),ier,EXACT_DIM=.true.)
                 IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: S_particle',ier)
-                Sn4D(:,:,:,i) = temp_spl2d%fspl
+
+                ! Save external particle source at plasma grid to be used later
+                IF( .NOT. ALLOCATED(S_particle_ext)) ALLOCATE(S_particle_ext(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+                CALL EZspline_interp(temp_spl2d,Nt_total_plasma_solver,Nr_plasma_solver,time_plasma_grid,rho_plasma_grid,S_particle_ext(i,:,:),ier)
+                IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'interpolating: S_particle',ier) 
                 CALL EZspline_free(temp_spl2d,ier)
             END DO
 
-            DEALLOCATE(S_energy,S_particle)
+            DEALLOCATE(raxis_source,taxis_source,S_energy,S_particle)   
+        END IF
+
+        ! Broadcast nrho_source, nt_source, nion_prof
+        CALL MPI_BCAST(nrho_source,1,MPI_INTEGER,master,MPI_COMM_SHARMEM,ierr_mpi)
+        IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'read_thrift_profh5: nrho_source',ierr_mpi)
+        CALL MPI_BCAST(nt_source,1,MPI_INTEGER,master,MPI_COMM_SHARMEM,ierr_mpi)
+        IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'read_thrift_profh5: nt_source',ierr_mpi)
+        CALL MPI_BCAST(nion_prof,1,MPI_INTEGER,master,MPI_COMM_SHARMEM,ierr_mpi)
+        IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'bcasting: nion_prof',ierr_mpi)
+
+        ! Allocate the shared memory objects
+        CALL mpialloc(Zatom_prof, nion_prof,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_Zatom_prof)
+        CALL mpialloc(Matom_prof, nion_prof,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_Matom_prof)
+
+        IF (myid_sharmem == master) THEN
+            CALL read_var_hdf5(fid,'Z_prof',nion_prof,ier,INTVAR=Zatom_prof)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Zatom_prof',ier)
+
+            CALL read_var_hdf5(fid,'mass_prof',nion_prof,ier,DBLVAR=Matom_prof)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Matom_prof',ier)
 
             ! Close the HDF5 file
             CALL close_hdf5(fid,ier)
             IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,TRIM(filename),ier)
-
         END IF
-
-        ! Plasma spatial grid (rho and r)
-        ALLOCATE(rho_plasma_grid(Nr_plasma_solver))
-        ALLOCATE(r_plasma_grid(Nr_plasma_solver))
-        !
-        FORALL(i = 1:Nr_plasma_solver)  rho_plasma_grid(i)  = DBLE(i-1)/DBLE(Nr_plasma_solver-1)
-        !
-        drho_plasma_solver = rho_plasma_grid(2) - rho_plasma_grid(1)
 
         CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
 
@@ -501,13 +508,15 @@ MODULE thrift_plasma_solver_mod
         ispecies = 1 + iion
         t = time_plasma_grid(mytimestep_plasma_solver)
 
-        DO ir=1,Nr
-            rho = rho_plasma_grid(ir)
-            CALL get_S_particle(rho,t,ispecies,explicit_source)
-            !
-            ni_previous = plasma_N_keep(ispecies,mytimestep_plasma_solver-1,ir)
-            RHS_density(ir) = ni_previous + dt_plasma_solver*explicit_source
-        END DO
+        ! DO ir=1,Nr
+        !     rho = rho_plasma_grid(ir)
+        !     CALL get_S_particle(rho,t,ispecies,explicit_source)
+        !     ! explicit_source = S_particle_ext(1+iion,mytimestep_plasma_solver,ir)
+        !     !
+        !     ni_previous = plasma_N_keep(ispecies,mytimestep_plasma_solver-1,ir)
+        !     RHS_density(ir) = ni_previous + dt_plasma_solver*explicit_source
+        ! END DO
+        RHS_density = plasma_N_keep(ispecies,mytimestep_plasma_solver-1,:) + dt_plasma_solver*S_particle_ext(1+iion,mytimestep_plasma_solver,:)
 
         ! Boundary condition
         RHS_density(Nr) = plasma_N(ispecies,Nr)
@@ -637,14 +646,13 @@ MODULE thrift_plasma_solver_mod
         IMPLICIT NONE
         REAL(rprec), DIMENSION(:), INTENT(INOUT) :: RHS_pressure
         INTEGER :: Nr, ir, iion, offset, Zi
-        REAL(rprec) :: rho, t, t_prev, explicit_source, n_previous, T_previous, p_previous
+        REAL(rprec) :: rho, t, explicit_source, n_previous, T_previous, p_previous
         REAL(rprec) :: ni, ne, Te, nD, nT, TD, TT
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: SB, S_alpha
 
         Nr = Nr_plasma_solver
 
         t = time_plasma_grid(mytimestep_plasma_solver)
-        t_prev = time_plasma_grid(mytimestep_plasma_solver-1)
 
         ALLOCATE(SB(Nr),S_alpha(Nr))
 
@@ -680,7 +688,7 @@ MODULE thrift_plasma_solver_mod
         DO ir=1,Nr
             rho = rho_plasma_grid(ir)
             ! Add external source
-            CALL get_S_energy(rho,t,1,explicit_source)
+            explicit_source = S_energy_ext(1,mytimestep_plasma_solver,ir)
             ! Add Bremsstrahlung
             explicit_source = explicit_source - SB(ir)
             ! Add alpha power
@@ -688,7 +696,7 @@ MODULE thrift_plasma_solver_mod
             !
             n_previous = plasma_N_keep(1,mytimestep_plasma_solver-1,ir)
             T_previous = plasma_T_keep(1,mytimestep_plasma_solver-1,ir)
-            p_previous = plasma_P_keep(1,mytimestep_plasma_solver-1,ir) !n_previous * T_previous * e_charge
+            p_previous = n_previous * T_previous * e_charge
             RHS_pressure(ir) = p_previous + (2.0_rprec/3.0_rprec)*dt_plasma_solver*explicit_source
         END DO
         ! Boundary condition
@@ -700,7 +708,7 @@ MODULE thrift_plasma_solver_mod
             DO ir=1,Nr-1
                 rho = rho_plasma_grid(ir)
                 ! Add external source
-                CALL get_S_energy(rho,t,1+iion,explicit_source)
+                explicit_source = S_energy_ext(1+iion,mytimestep_plasma_solver,ir)
                 ! Add alpha power
                 IF(Zatom_prof(iion) .EQ. 1) explicit_source = explicit_source + S_alpha(ir)*0.1_rprec
                 !
@@ -763,99 +771,6 @@ MODULE thrift_plasma_solver_mod
 
         plasma_P = RESHAPE(press_total, SHAPE=(/num_species,Nr_plasma_solver/), ORDER=(/2,1/))
         plasma_T = plasma_P / (plasma_N * e_charge)
-        RETURN
-    END SUBROUTINE
-
-    SUBROUTINE get_S_energy(rho_val,t_val,ispecies,val)
-        USE EZspline_type
-        IMPLICIT NONE
-        REAL(rprec), INTENT(IN) :: rho_val, t_val
-        REAL(rprec), INTENT(out) :: val
-        INTEGER, INTENT(IN) :: ispecies
-        REAL(rprec) :: rhomin_source, rhomax_source, tmin_source, tmax_source, eps1_source, eps2_source, t
-        REAL(rprec), DIMENSION(:), ALLOCATABLE :: hr_source, ht_source, hri_source, hti_source
-        INTEGER :: i, j
-        REAL*8, parameter :: small = 1.e-10_ezspline_r8
-        INTEGER, parameter :: ict(4)=(/1,0,0,0/)
-        REAL*8  :: xparam, yparam
-        REAL*8 :: fval(1)
-
-        ALLOCATE(hr_source(nrho_source),ht_source(nt_source),hri_source(nrho_source),hti_source(nt_source))
-
-        FORALL(i = 1:nrho_source-1) hr_source(i) = raxis_source(i+1) - raxis_source(i)
-        FORALL(i = 1:nt_source-1)   ht_source(i) = taxis_source(i+1) - taxis_source(i)
-        hri_source = one / hr_source
-        hti_source = one / ht_source
-        rhomin_source = MINVAL(raxis_source)
-        rhomax_source = MAXVAL(raxis_source)
-        tmin_source = MINVAL(taxis_source)
-        tmax_source = MAXVAL(taxis_source)
-        eps1_source = (rhomax_source-rhomin_source)*small
-        eps2_source = (tmax_source-tmin_source)*small
-
-        t = MIN(t_val,tmax_source)
-        IF ((rho_val >= rhomin_source-eps1_source) .and. (rho_val <= rhomax_source+eps1_source) .and. &
-         (t   >= tmin_source-eps2_source)   .and. (t   <= tmax_source+eps2_source)) THEN
-            i = MIN(MAX(COUNT(taxis_source < t),1),nt_source-1)
-            j = MIN(MAX(COUNT(raxis_source < rho_val),1),nrho_source-1)
-            xparam = (t - taxis_source(i)) * hti_source(i)
-            yparam = (rho_val   - raxis_source(j)) * hri_source(j)
-            CALL R8HERM2FCN(ict,1,1,fval,i,j,xparam,yparam,&
-                            ht_source(i),hti_source(i),hr_source(j),hri_source(j),&
-                            SE4D(1,1,1,ispecies),nt_source,nrho_source)
-            val = fval(1)
-        ELSE
-            STOP 'Why asking for energy sources outside domain?...'
-        END IF
-
-        DEALLOCATE(hr_source,ht_source,hri_source,hti_source)
-
-        RETURN
-    END SUBROUTINE
-
-    SUBROUTINE get_S_particle(rho_val,t_val,ispecies,val)
-        USE EZspline_type
-        IMPLICIT NONE
-        REAL(rprec), INTENT(IN) :: rho_val, t_val
-        REAL(rprec), INTENT(out) :: val
-        INTEGER, INTENT(IN) :: ispecies
-        REAL(rprec) :: rhomin_source, rhomax_source, tmin_source, tmax_source, eps1_source, eps2_source, t
-        REAL(rprec), DIMENSION(:), ALLOCATABLE :: hr_source, ht_source, hri_source, hti_source
-        INTEGER :: i, j
-        REAL*8, parameter :: small = 1.e-10_ezspline_r8
-        INTEGER, parameter :: ict(4)=(/1,0,0,0/)
-        REAL*8  :: xparam, yparam
-        REAL*8 :: fval(1)
-
-        ALLOCATE(hr_source(nrho_source),ht_source(nt_source),hri_source(nrho_source),hti_source(nt_source))
-
-        FORALL(i = 1:nrho_source-1) hr_source(i) = raxis_source(i+1) - raxis_source(i)
-        FORALL(i = 1:nt_source-1)   ht_source(i) = taxis_source(i+1) - taxis_source(i)
-        hri_source = one / hr_source
-        hti_source = one / ht_source
-        rhomin_source = MINVAL(raxis_source)
-        rhomax_source = MAXVAL(raxis_source)
-        tmin_source = MINVAL(taxis_source)
-        tmax_source = MAXVAL(taxis_source)
-        eps1_source = (rhomax_source-rhomin_source)*small
-        eps2_source = (tmax_source-tmin_source)*small
-
-        t = MIN(t_val,tmax_source)
-        IF ((rho_val >= rhomin_source-eps1_source) .and. (rho_val <= rhomax_source+eps1_source) .and. &
-         (t   >= tmin_source-eps2_source)   .and. (t   <= tmax_source+eps2_source)) THEN
-            i = MIN(MAX(COUNT(taxis_source < t),1),nt_source-1)
-            j = MIN(MAX(COUNT(raxis_source < rho_val),1),nrho_source-1)
-            xparam = (t - taxis_source(i)) * hti_source(i)
-            yparam = (rho_val   - raxis_source(j)) * hri_source(j)
-            CALL R8HERM2FCN(ict,1,1,fval,i,j,xparam,yparam,&
-                            ht_source(i),hti_source(i),hr_source(j),hri_source(j),&
-                            Sn4D(1,1,1,ispecies),nt_source,nrho_source)
-            val = fval(1)
-        ELSE
-            STOP 'Why asking for energy sources outside domain?...'
-        END IF
-
-        DEALLOCATE(hr_source,ht_source,hri_source,hti_source)
         RETURN
     END SUBROUTINE
 
@@ -1048,6 +963,5 @@ MODULE thrift_plasma_solver_mod
         WRITE(ilogplasma,'(A)') TRIM(progress_str)
 
     END SUBROUTINE write_to_plasma_solver_logfile
-
 
 END MODULE thrift_plasma_solver_mod
