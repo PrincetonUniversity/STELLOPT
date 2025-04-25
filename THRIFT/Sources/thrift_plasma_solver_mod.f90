@@ -414,7 +414,7 @@ MODULE thrift_plasma_solver_mod
         upper_diag = 0.0_rprec
 
         Dn_turb = Dn_ions(iion)
-        cn_turb = cn_ions(iion)
+        cn_turb = 0.0_rprec
 
         ALLOCATE(Dn(Nr),cn(Nr),Vp(Nr))
 
@@ -530,7 +530,7 @@ MODULE thrift_plasma_solver_mod
         DO ispecies=1,num_species
 
             Dp_turb = chi_all(ispecies)
-            cp_turb = cp_all(ispecies)
+            cp_turb = 0.0_rprec
 
             IF(add_NEO) THEN
                 STOP 'Not implemented yet...'

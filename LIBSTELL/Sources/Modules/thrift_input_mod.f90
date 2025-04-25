@@ -41,7 +41,7 @@
                               dt_plasma_solver, Nr_plasma_solver, &
                               max_subiter_plasma_solver, tol_plasma_solver, &
                               beurskens_ions, add_NEO, &
-                              Dn_ions, cn_ions, chi_all, cp_all
+                              Dn_ions, chi_all
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -105,9 +105,7 @@
       beurskens_ions = .FALSE.
       add_NEO = .TRUE.
       Dn_ions = 0.0
-      cn_ions = 0.0
       chi_all = 0.0
-      cp_all = 0.0
       RETURN
       END SUBROUTINE init_thrift_input
       
