@@ -928,16 +928,14 @@ MODULE thrift_plasma_solver_mod
         INTEGER :: ier
         ier = 0
         CALL DGTSV(Nr_plasma_solver, 1, lower_diag, main_diag, upper_diag, RHS_vec, Nr_plasma_solver, ier)
-        IF(ier/=0) STOP 'ERROR ON DENSITY SOLVER SOLUTION'
+        IF(ier/=0) CALL handle_err(THRIFT_SOLVER_ERR,'Density_Solver',mytimestep_plasma_solver)
         result = RHS_vec
-        ! Check result has non NaNs
+        ! Check if result has NaNs
         IF(ANY(ISNAN(result))) THEN
-            PRINT *, 'results=', result
-            STOP 'NaN values found on density. Exiting program...'
+            CALL handle_err(THRIFT_NAN_ERR,'Density_Solver',mytimestep_plasma_solver)
         END IF
         ! Look for negative values
         IF (ANY(result < 0.0)) THEN
-            PRINT *, 'results=', result
             STOP 'Negative values found on density. Exiting program...'
         END IF
         RETURN
@@ -955,10 +953,14 @@ MODULE thrift_plasma_solver_mod
         ALLOCATE(ipiv(mat_size))
         ! MIGHT WANT TO CHANGE THE WAY IPIV IS COMPUTED (USING SAMUEL ROUTINE)
         CALL DGESV(mat_size,1,LHS_matrix,mat_size,ipiv,RHS_vec,mat_size,ier)
-        IF(ier/=0) STOP 'ERROR ON DENSITY SOLVER SOLUTION'
+        IF(ier/=0) CALL handle_err(THRIFT_SOLVER_ERR,'Pressure_Solver',mytimestep_plasma_solver)
         result = RHS_vec
-        ! Check result has non NaNs
-        IF(ANY(ISNAN(result))) STOP 'NaN values found on pressure. Exiting program...'
+        ! Check if result has NaNs
+        IF(ANY(ISNAN(result))) CALL handle_err(THRIFT_NAN_ERR,'Pressure_Solver',mytimestep_plasma_solver)
+        ! Look for negative values
+        IF (ANY(result < 0.0)) THEN
+            STOP 'Negative values found on density. Exiting program...'
+        END IF
         DEALLOCATE(ipiv)
         RETURN
     END SUBROUTINE solve_sparse_nontridiag_system

@@ -61,6 +61,7 @@ MODULE thrift_runtime
     INTEGER, PARAMETER :: MPI_BCAST_ERR = 83
     INTEGER, PARAMETER :: MPI_FINE_ERR = 89
     INTEGER, PARAMETER :: THRIFT_NAN_ERR = 9
+    INTEGER, PARAMETER :: THRIFT_SOLVER_ERR = 91
 
     INTEGER, PARAMETER :: MAXPARTICLES = 2**18
     INTEGER, PARAMETER :: MAXBEAMS = 32
@@ -263,6 +264,10 @@ CONTAINS
         ELSEIF (error_num .eq. THRIFT_NAN_ERR) THEN
             WRITE(6, *) '  NAN IN THRIFT EVOLUTION VARS'
             WRITE(6, *) '  VAR:   ', TRIM(string_val)
+            WRITE(6, *) '  TIMESTEP:      ', ierr
+        ELSEIF(error_num .eq. THRIFT_SOLVER_ERR) THEN
+            WRITE(6, *) '  ERROR IN LINEAR SOLVER'
+            WRITE(6, *) '  SYSTEM:   ', TRIM(string_val)
             WRITE(6, *) '  TIMESTEP:      ', ierr
         ELSEIF (error_num .eq. MPI_CHECK) THEN
         ELSE
