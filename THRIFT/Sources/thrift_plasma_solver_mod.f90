@@ -107,7 +107,9 @@ MODULE thrift_plasma_solver_mod
             plasma_T_keep(2,mytimestep_plasma_solver,1), plasma_N_keep(2,mytimestep_plasma_solver,1), &
             0.0_rprec,0.0_rprec)
 
-            ! Set NEO coeffs to zero
+            ! Check add_NEO is true iif BOOTSTRAP_TYPE = 'bootsj'
+            IF(add_NEO .AND. (bootstrap_type .NE. 'dkespenta')) STOP 'ERROR: add_NEO can only be TRUE if BOOTSTRAP_TYPE = dkespenta'
+            ! Set NEO arrays to zero (they will updated at each time step if add_NEO=T)
             Dn_NEO = 0.0_rprec
             cn_NEO = 0.0_rprec
             Dp_NEO = 0.0_rprec
@@ -419,10 +421,8 @@ MODULE thrift_plasma_solver_mod
         ALLOCATE(Dn(Nr),cn(Nr),Vp(Nr))
 
         IF(add_NEO) THEN
-            STOP 'Not implemented yet...'
-            !D_NEO = ... ! read from spline made in thrift_penta
-            !Dn = D_NEO + Dn_turb
-            !cn = c_NEO + cn_turb
+            Dn = Dn_NEO(1+iion,mytimestep_plasma_solver,:) + Dn_turb
+            cn = cn_NEO(1+iion,mytimestep_plasma_solver,:) + cn_turb
         ELSE
             Dn = Dn_turb
             cn = cn_turb
@@ -533,14 +533,15 @@ MODULE thrift_plasma_solver_mod
             cp_turb = 0.0_rprec
 
             IF(add_NEO) THEN
-                STOP 'Not implemented yet...'
-                !D_NEO = ... ! read from spline made in thrift_penta
-                !Dp = D_NEO + Dp_turb
-                !cp = c_NEO + cp_turb
-            ! IF(beurskens_model) ...
+                Dp = Dp_NEO(ispecies,mytimestep_plasma_solver,:) + Dp_turb
+                cp = cp_NEO(ispecies,mytimestep_plasma_solver,:) + cp_turb
             ELSE
                 Dp = Dp_turb
                 cp = cp_turb
+            END IF
+
+            IF(beurskens_ions) THEN
+                STOP 'NOT IMPLEMENTED YET!'
             END IF
 
             ! Add convection due to density gradient
