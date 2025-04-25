@@ -81,7 +81,6 @@ MODULE thrift_plasma_solver_mod
         IF( .NOT. ALLOCATED(LHS_pressure)) ALLOCATE(LHS_pressure(Nr_plasma_solver*num_species,Nr_plasma_solver*num_species))
         IF( .NOT. ALLOCATED(RHS_pressure)) ALLOCATE(RHS_pressure(Nr_plasma_solver*num_species))
 
-
         IF(mytimestep .eq. 1) THEN
 
             mytimestep_plasma_solver = 1
@@ -589,9 +588,9 @@ MODULE thrift_plasma_solver_mod
             cp(1) = 0.0_rprec
 
             ! r=0
-            ! main_diag(1) = one + dt*4.0_rprec*Dp(1)/dr2 + 2.0_rprec*dt*cp(1)/dr
+            ! main_diag
             LHS_pressure(kk,kk) = one + dt_fact*4.0_rprec*Dp(1)/dr2 + 2.0_rprec*dt_fact*cp(1)/dr
-            ! upper_diag(1) = -4.0_rprec*dt*Dp(1)/dr2
+            ! upper_diag
             LHS_pressure(kk,kk+1) = -4.0_rprec*dt_fact*Dp(1)/dr2
             kk = kk+1
 
@@ -609,17 +608,17 @@ MODULE thrift_plasma_solver_mod
                 cplus  = cp(ir+1)*Vp(ir+1) / (2*Vp(ir)*dr)
                 cminus = cp(ir-1)*Vp(ir-1) / (2*Vp(ir)*dr)
 
-                ! main_diag(ir) = one + dt*(VDplus + VDminus)
+                ! main_diag
                 LHS_pressure(kk,kk) = one + dt_fact*(VDplus + VDminus)
-                ! upper_diag(ir) = dt*(-VDplus + cplus)
+                ! upper_diag
                 LHS_pressure(kk,kk+1) = dt_fact*(-VDplus + cplus)
-                ! lower_diag(ir-1) = dt*(-VDminus - cminus)
+                ! lower_diag(
                 LHS_pressure(kk,kk-1) = dt_fact*(-VDminus - cminus)
 
                 kk = kk+1
             END DO
 
-            ! r=a (do not set yet BC's)
+            ! r=a (skip; do not set yet BC's)
             kk = kk+1
         END DO
 
@@ -627,7 +626,7 @@ MODULE thrift_plasma_solver_mod
         CALL get_collisional_heat_exchange_matrix(LHS_coll_heat_exchange)
         LHS_pressure = LHS_pressure + dt_fact*LHS_coll_heat_exchange
 
-        ! Impose Dirichlet Boundary Conditions
+        ! Impose Dirichlet Boundary Conditions at r=a
         DO ispecies=1,num_species
             row = ispecies * Nr
             ! Set the whole row to 0.0
