@@ -331,7 +331,7 @@
          j = MOD(s-1,nr*nphi)
          j = FLOOR(REAL(j) / REAL(nr))+1
          k = CEILING(REAL(s) / REAL(nr*nphi))
-         if (sflx > 1.0) sflx = 0.9
+         sflx = MAX(0.001,MIN(0.999,sflx))
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
          ! GetBcyl will return ier = 0,-1,or-3
@@ -341,6 +341,7 @@
          ! Try again
          IF (ier .eq. -1) THEN
             sflx = MIN(sflx - 0.01,0.99)
+            uflx = uflx-0.1
             CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                         br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
          END IF
@@ -359,7 +360,6 @@
                B_R(i,j,k)   = br
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
-               !sflx = 1.5 ! Assume s=1 for lplasma_only
             END IF
          END IF
          lsmooth(s) = (ier < 0) .and. (i > 1) .and. (i < nr) .and. (k > 1) .and. (k < nz)
@@ -390,12 +390,14 @@
          j = FLOOR(REAL(j) / REAL(nr))+1
          k = CEILING(REAL(s) / REAL(nr*nphi))
          if (.not. lsmooth(s)) CYCLE
+         ! Try a really good guess for S and U
          sflx =   S_ARR(i+1,j  ,k  ) + S_ARR(i-1,j  ,k  ) &
                 + S_ARR(i  ,j  ,k+1) + S_ARR(i  ,j  ,k-1)
          uflx =   U_ARR(i+1,j  ,k  ) + U_ARR(i-1,j  ,k  ) &
                 + U_ARR(i  ,j  ,k+1) + U_ARR(i  ,j  ,k-1)
          sflx = MIN(sflx*0.25,0.99)
          uflx = uflx*0.25
+         sflx = MAX(0.001,MIN(0.999,sflx))
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
          ! GetBcyl will return ier = 0,-1,or-3
@@ -413,13 +415,29 @@
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
             END IF
-         ELSE IF (.not. luse_vc) THEN
-            B_R(i,j,k)   =   B_R(i+1,j  ,k  ) + B_R(i-1,j  ,k  ) &
-                           + B_R(i  ,j  ,k+1) + B_R(i  ,j  ,k-1)
-            B_PHI(i,j,k) =   B_PHI(i+1,j  ,k  ) + B_PHI(i-1,j  ,k  ) &
-                           + B_PHI(i  ,j  ,k+1) + B_PHI(i  ,j  ,k-1)
-            B_Z(i,j,k)   =   B_Z(i+1,j  ,k  ) + B_Z(i-1,j  ,k  ) &
-                           + B_Z(i  ,j  ,k+1) + B_Z(i  ,j  ,k-1)
+         ELSE IF (ier == -1) THEN
+            ! PRINT *,">>>> USING APPROXIMATE SOLUTION >>>>>",i,j,k,sflx,uflx,br,bphi,bz,ier
+            ! ! Save Grid data
+            ! S_ARR(i,j,k) = MAX(sflx,0.0)
+            ! IF (uflx<0)  uflx = uflx+pi2
+            ! U_ARR(i,j,k) = uflx
+            ! ! Handle equilibrium data
+            ! IF (sflx <=1.0) THEN ! Inside equilibrium
+            !    B_R(i,j,k)   = br
+            !    B_PHI(i,j,k) = bphi
+            !    B_Z(i,j,k)   = bz
+            ! END IF
+            ! We average because using the returned fields introduces spikes.
+            S_ARR(i,j,k) =   (S_ARR(i+1,j  ,k  ) + S_ARR(i-1,j  ,k  ) &
+                            + S_ARR(i  ,j  ,k+1) + S_ARR(i  ,j  ,k-1))*0.25
+            U_ARR(i,j,k) =   (U_ARR(i+1,j  ,k  ) + U_ARR(i-1,j  ,k  ) &
+                           + U_ARR(i  ,j  ,k+1) + U_ARR(i  ,j  ,k-1))*0.25
+            B_R(i,j,k)   =   (B_R(i+1,j  ,k  ) + B_R(i-1,j  ,k  ) &
+                           + B_R(i  ,j  ,k+1) + B_R(i  ,j  ,k-1))*0.25
+            B_PHI(i,j,k) =   (B_PHI(i+1,j  ,k  ) + B_PHI(i-1,j  ,k  ) &
+                           + B_PHI(i  ,j  ,k+1) + B_PHI(i  ,j  ,k-1))*0.25
+            B_Z(i,j,k)   =   (B_Z(i+1,j  ,k  ) + B_Z(i-1,j  ,k  ) &
+                           + B_Z(i  ,j  ,k+1) + B_Z(i  ,j  ,k-1))*0.25
          END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
