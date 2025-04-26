@@ -90,11 +90,13 @@ C-----------------------------------------------
       CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w, 
      1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin, 
      2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1, RS=Rs1, ZS=Zs1)
-
-      IF (info_loc.eq.-1 .and. (fmin .le. fmin_acceptable)) info_loc = 0
-
+!
+!     If info == 0 then the point is found
+!     If info == -1 then the tollerance was not achieved
+!     If info < -1 then most likely the point is outside the eq.
+!
       IF (PRESENT(info)) info = info_loc
-      IF (info_loc .ne. 0) RETURN
+      IF (info_loc .lt. -1) RETURN
 
       Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
 
@@ -1105,7 +1107,6 @@ C-----------------------------------------------
          END IF
 
          fmin0 = MIN(fmin, fmin0)
-!        PRINT *,' ITRY = ', itry+1,' FMIN = ', fmin
             
       END DO
          
@@ -1122,7 +1123,7 @@ C-----------------------------------------------
 !
       IF ((PRESENT(ru) .or. PRESENT(zu) .or. 
      1     PRESENT(rv) .or. PRESENT(zv) .or.
-     2     PRESENT(rs) .or. PRESENT(zs)) .and. info.eq.0) THEN
+     2     PRESENT(rs) .or. PRESENT(zs)) .and. info.ge.-1) THEN
          IF (lscale) THEN
             CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc, 
      1         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, 
