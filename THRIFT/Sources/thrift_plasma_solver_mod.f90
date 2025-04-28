@@ -428,7 +428,7 @@ MODULE thrift_plasma_solver_mod
         IMPLICIT NONE
         INTEGER, INTENT(IN) :: iion
         REAL(rprec), DIMENSION(:), INTENT(INOUT) :: lower_diag, main_diag, upper_diag
-        REAL(rprec) :: Dn_turb, cn_turb, dr, dr2, dt, rho, temp
+        REAL(rprec) :: Dn_turb, cn_turb, dr, dr2, dt, rho
         REAL(rprec) :: Vp_plus, Vp_minus, VDplus, VDminus, cplus, cminus, Dn_plus, Dn_minus
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: Dn, cn, Vp
         INTEGER :: ir, ier, Nr
@@ -457,12 +457,10 @@ MODULE thrift_plasma_solver_mod
         dt = dt_plasma_solver
 
         ! Vp = dV/dr
-        DO ir=1,Nr
-            rho = rho_plasma_grid(ir)
-            ier = 0
-            CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
-            Vp(ir) = 2.0_rprec * rho * THRIFT_PHIEDGE(mytimestep-1) * temp / eq_Aminor
-        END Do
+        CALL EZspline_interp(vp_spl,Nr,rho_plasma_grid,Vp,ier)
+        Vp = Vp * 2.0_rprec * rho_plasma_grid * THRIFT_PHIEDGE(mytimestep-1) / eq_Aminor
+        ! TESTING:
+        ! Vp = 4.0_rprec * pi * pi * 20.0_rprec * rho_plasma_grid * eq_Aminor
 
         ! r=0
         main_diag(1) = one + dt*4.0_rprec*Dn(1)/dr2 + 2.0_rprec*dt*cn(1)/dr
@@ -544,13 +542,10 @@ MODULE thrift_plasma_solver_mod
         ALLOCATE(Dp(Nr),cp(Nr),Vp(Nr),LHS_coll_heat_exchange(Nr*num_species,Nr*num_species))
 
         ! Vp = dV/dr
-        DO ir=1,Nr
-            rho = rho_plasma_grid(ir)
-            ier = 0
-            ! CALL EZspline_interp(vp_spl, rho, temp, ier) ! temp = dV/dPhi
-            ! Vp(ir) = 2.0_rprec * rho * THRIFT_PHIEDGE(mytimestep-1) * temp / eq_Aminor
-            Vp(ir) = 4.0_rprec * pi * pi * 20.0_rprec * rho * eq_Aminor
-        END DO
+        CALL EZspline_interp(vp_spl,Nr,rho_plasma_grid,Vp,ier)
+        Vp = Vp * 2.0_rprec * rho_plasma_grid * THRIFT_PHIEDGE(mytimestep-1) / eq_Aminor
+        ! TESTING:
+        ! Vp = 4.0_rprec * pi * pi * 20.0_rprec * rho_plasma_grid * eq_Aminor      
 
         kk = 1
         DO ispecies=1,num_species
