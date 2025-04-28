@@ -311,12 +311,10 @@
             DEALLOCATE(J_temp,eta_temp,Er_temp)
 
             ! Calculate J_BS, etapara and Er in THRFIT GRID
-            DO i = 1, nsj
-                  rho = SQRT( THRIFT_S(i) )
-                  CALL EZspline_interp(J_spl,rho,THRIFT_JBOOT(i,mytimestep),ier)
-                  IF( etapar_type == 'dkespenta') CALL EZspline_interp(eta_spl,rho,THRIFT_ETAPARA(i,mytimestep),ier)
-                  CALL EZspline_interp(Er_spl,rho,THRIFT_ER(i,mytimestep),ier)
-            END DO
+            CALL EZspline_interp(J_spl,nsj,SQRT(THRIFT_S),THRIFT_JBOOT(:,mytimestep),ier)
+            CALL EZspline_interp(Er_spl,nsj,SQRT(THRIFT_S),THRIFT_ER(:,mytimestep),ier)
+            IF( etapar_type == 'dkespenta') CALL EZspline_interp(eta_spl,nsj,SQRT(THRIFT_S),THRIFT_ETAPARA(:,mytimestep),ier)
+
             CALL EZspline_free(J_spl,ier)
             CALL EZspline_free(eta_spl,ier)
             CALL EZspline_free(Er_spl,ier)
@@ -335,11 +333,8 @@
                   CALL EZspline_setup(QNEO_spl,QNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
                   
                   ! Compute at THRIFT GRID
-                  DO i = 1, nsj
-                        rho = SQRT( THRIFT_S(i) )
-                        CALL EZspline_interp(GNEO_spl,rho,THRIFT_GNEO(jspecies,i,mytimestep),ier)
-                        CALL EZspline_interp(QNEO_spl,rho,THRIFT_QNEO(jspecies,i,mytimestep),ier)
-                  END DO
+                  CALL EZspline_interp(GNEO_spl,nsj,SQRT(THRIFT_S),THRIFT_GNEO(jspecies,:,mytimestep),ier)
+                  CALL EZspline_interp(QNEO_spl,nsj,SQRT(THRIFT_S),THRIFT_QNEO(jspecies,:,mytimestep),ier)
 
                   ! Deallocate splines
                   CALL EZspline_free(GNEO_spl,ier)
@@ -392,13 +387,10 @@
                         CALL EZspline_setup(cp_spl,cp_temp(jspecies,:),ier,EXACT_DIM=.true.)
                         
                         ! Compute at plasma solver grid
-                        DO i=1,Nr_plasma_solver
-                              rho = rho_plasma_grid(i)
-                              CALL EZspline_interp(Dn_spl,rho,Dn_NEO(jspecies,mytimestep_plasma_solver,i),ier)
-                              CALL EZspline_interp(cn_spl,rho,cn_NEO(jspecies,mytimestep_plasma_solver,i),ier)
-                              CALL EZspline_interp(Dp_spl,rho,Dp_NEO(jspecies,mytimestep_plasma_solver,i),ier)
-                              CALL EZspline_interp(cp_spl,rho,cp_NEO(jspecies,mytimestep_plasma_solver,i),ier)
-                        END DO
+                        CALL EZspline_interp(Dn_spl,Nr_plasma_solver,rho_plasma_grid,Dn_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                        CALL EZspline_interp(cn_spl,Nr_plasma_solver,rho_plasma_grid,cn_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                        CALL EZspline_interp(Dp_spl,Nr_plasma_solver,rho_plasma_grid,Dp_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                        CALL EZspline_interp(cp_spl,Nr_plasma_solver,rho_plasma_grid,cp_NEO(jspecies,mytimestep_plasma_solver,:),ier)
 
                         ! Deallocate splines
                         CALL EZspline_free(Dn_spl,ier)
