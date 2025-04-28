@@ -20,6 +20,8 @@
             -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip \
             -check all,noarg_temp_created -ftrapuv -g -traceback
 
+  FLAGS_R = $(FLAGS_D)
+
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
             -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
             -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \

@@ -23,7 +23,7 @@
                                  npitch_fida, &
                                  t_fida, dexionT, dexionD,dexionHe3, &
                                  s_max,s_max_te, s_max_ne,s_max_zeff,&
-                                 s_max_ti, s_max_pot,s_max_omeg
+                                 s_max_ti, s_max_pot,s_max_omeg, NION
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -91,6 +91,6 @@
                             RHO_spl, XRHO_spl, YRHO_spl, &
                             TI_spl, ZEFF_spl, OMEG_spl, U_spl, POT_spl
       TYPE(EZspline1_r8) :: TE_spl_s, NE_spl_s, TI_spl_S, ZEFF_spl_s, OMEG_spl_s,  Vp_spl_s, POT_spl_s
-      TYPE(EZspline1_r8), DIMENSION(4) :: NI_spl_s
+      TYPE(EZspline1_r8), DIMENSION(NION) :: NI_spl_s
 
       END MODULE beams3d_grid

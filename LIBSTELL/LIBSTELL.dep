@@ -1,5 +1,7 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
 
+fusion_mod.o : 
+
 collision_operators.o : 
 
 read_nescoil_mod.o : \
@@ -1243,6 +1245,7 @@ vf_coils.o : \
       
 
 vmec_input.o : \
+      stel_constants.o \
       vparams.o \
       vsvd0.o 
       
@@ -1358,6 +1361,7 @@ wall_mod.o : \
 
 
 mumaterial_mod.o : \
+      mpi_params.o \
       safe_open_mod.o 
       
 

@@ -109,7 +109,10 @@
       ! PRESSURE (MIN)
       IF (sigma_pmin < bigno)  &
          CALL chisq_pmin(target_pmin,sigma_pmin,ncnt,iflag)
-         
+      ! TOTAL_BOOTSTRAP
+      IF (sigma_totalbootstrap < bigno)  &
+         CALL chisq_totalbootstrap(target_totalbootstrap,sigma_totalbootstrap,ncnt,iflag)
+
       !------------- ARRAY TARGETS ----------------------------
       ! EXTERNAL CURRENTS
       IF (ANY(sigma_extcur < bigno))  &
@@ -251,6 +254,9 @@
       ! Boostrap
       IF (ANY(sigma_bootstrap < bigno)) &
          CALL chisq_bootstrap(target_bootstrap, sigma_bootstrap, ncnt,iflag)
+      ! B10B11
+      IF (ANY(sigma_b10b11 < bigno)) &
+         CALL chisq_b10b11(target_b10b11, sigma_b10b11, ncnt,iflag)
       ! NEO
       IF (ANY(sigma_neo < bigno)) &
          CALL chisq_neo(target_neo, sigma_neo, ncnt,iflag)

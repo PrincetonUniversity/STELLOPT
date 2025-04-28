@@ -1,5 +1,6 @@
       SUBROUTINE readin(input_file, iseq_count, ier_flag, lscreen)
       USE vmec_main
+      USE vmec_input
       USE vmec_params
       USE vacmod
       USE vspline
@@ -263,7 +264,10 @@ C-----------------------------------------------
       IF (ier_flag .NE. norm_term_flag) RETURN
 
       IF (tensi2 .EQ. zero ) tensi2 = tensi
-
+!
+!     Rescale the equilibria if asked
+!
+      CALL RESCALE_BOUNDARY
 !
 !     Open output files here, print out heading to threed1 file
 !
@@ -390,14 +394,17 @@ C-----------------------------------------------
      &   ns_array(1),nstep,nvacskip,
      &   ftol_array(multi_ns_grid),tcon0,lasym,lforbal,lmove_axis,
      &   lconm1,mfilter_fbdy,nfilter_fbdy,lfull3d1out,
-     &   max_main_iterations,lgiveup,fgiveup                                         ! M Drevlak 20130114
+     &   max_main_iterations,lgiveup,fgiveup,                                         ! M Drevlak 20130114
+     &   tvolume,lvolume_rfix
  110  FORMAT(' RUN CONTROL PARAMETERS:',/,1x,23('-'),/,
      &  '  ncurr  niter   nsin  nstep  nvacskip      ftol     tcon0',
      &  '    lasym  lforbal lmove_axis lconm1',/,
      &     4i7,i10,1p,2e10.2,4L9,/,
      &  '  mfilter_fbdy nfilter_fbdy lfull3d1out max_main_iterations', ! J Geiger 20120203
-     &  ' lgiveup fgiveup',/,               ! M Drevlak 20130114
-     &     2(6x,i7),L12,10x,i10,L8,e9.1,/)  ! M Drevlak 20130114
+     &  ' lgiveup fgiveup',               ! M Drevlak 20130114
+     &  '   tvolume lvolume_rfix',/,
+     &     2(6x,i7),L12,10x,i10,L8,e9.1,    ! M Drevlak 20130114
+     &     e10.2, L13 /)  ! S Lazerson 20250116
 
          WRITE (nthreed,120) precon_type, prec2d_threshold
  120  FORMAT(' PRECONDITIONER CONTROL PARAMETERS:',/,1x,34('-'),/,

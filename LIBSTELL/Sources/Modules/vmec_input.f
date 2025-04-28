@@ -1,5 +1,6 @@
       MODULE vmec_input
       USE vparams, ONLY: rprec, dp, mpol1d, ntord, ndatafmax
+      USE stel_constants, ONLY: zero,twopi
       USE vsvd0
       IMPLICIT NONE
 !-----------------------------------------------
@@ -71,6 +72,9 @@
       CHARACTER(len=120) :: arg1
       CHARACTER(len=100) :: input_extension
 
+      LOGICAL :: lvolume_rfix
+      REAL(rprec) :: tvolume
+
       LOGICAL :: lnyquist = .TRUE.    !=false, suppress nyquist stuff; CZHU 2021.03.31
 
       NAMELIST /indata/ mgrid_file, time_slice, nfp, ncurr, nsin,
@@ -98,7 +102,8 @@
      D   lgiveup,fgiveup,                                                  ! M.Drevlak 2012-05-10
      E   lbsubs,                                                           ! 2014-01-12 See jxbforce
      F   trip3d_file,                                                      ! SAL - TRIP3D
-     G   lnyquist
+     G   lnyquist,
+     H   tvolume, lvolume_rfix
 
       NAMELIST /mseprofile/ mseprof
 
@@ -108,6 +113,7 @@
       INTEGER, INTENT(IN) :: iunit
       INTEGER, INTENT(OUT) :: istat
       ChARACTER(len=256) :: line
+      REAL(rprec) :: temp_volume
 
 !
 !     INITIALIZATIONS
@@ -179,6 +185,10 @@
       am_aux_s(:) = -1
       ac_aux_s(:) = -1
       ai_aux_s(:) = -1
+
+!     Rescaling parameters
+      tvolume = -1
+      lvolume_rfix = .false.
       
 
 !
@@ -360,7 +370,7 @@
       WRITE(iunit,outint) 'NCURR',ncurr
       WRITE (iunit, '(2x,3a)') "PIOTA_TYPE = '",TRIM(piota_type),"'"
       WRITE (iunit,'(a,(1p,4e22.14))') '  AI = ',(ai(n-1), n=1,SIZE(ai))
-      i	= minloc(ai_aux_s(2:),DIM=1)
+      i = minloc(ai_aux_s(2:),DIM=1)
       IF (i > 4) THEN
          WRITE (iunit,'(a,(1p,4ES22.12E3))') '  AI_AUX_S = ', 
      1         (ai_aux_s(n), n=1,i)
@@ -370,7 +380,7 @@
       WRITE (iunit, '(2x,3a)') "PCURR_TYPE = '",TRIM(pcurr_type),"'"
       WRITE (iunit,'(a,(1p,4ES22.12E3))')
      1 '  AC = ',(ac(n-1), n=1,SIZE(ac))
-      i	= minloc(ac_aux_s(2:),DIM=1)
+      i = minloc(ac_aux_s(2:),DIM=1)
       IF (i > 4) THEN
          WRITE (iunit,'(a,(1p,4ES22.12E3))') '  AC_AUX_S = ', 
      1         (ac_aux_s(n), n=1,i)
@@ -389,6 +399,10 @@
       WRITE (iunit,'(a,(1p,4ES22.12E3))') 
      1     '  ZAXIS_CS = ',(zaxis_cs(n), n=0,ntor)
       WRITE(iunit,'(A)') '!----- Boundary Parameters -----'
+      IF (tvolume > 0) THEN
+         WRITE(iunit,outexp) 'TVOLUME',tvolume
+         WRITE(iunit,outboo) 'LVOLUME_RFIX',lvolume_rfix
+      END IF
       DO m = 0, mpol - 1
          DO n = -ntor, ntor
             IF ((rbc(n,m).ne.0) .or. (zbs(n,m).ne.0)) THEN
@@ -457,6 +471,8 @@
       CALL MPI_BCAST(lgiveup,        1, MPI_LOGICAL, local_master, 
      1               local_comm, iflag)
       CALL MPI_BCAST(lbsubs,         1, MPI_LOGICAL, local_master, 
+     1               local_comm, iflag)
+      CALL MPI_BCAST(lvolume_rfix,   1, MPI_LOGICAL, local_master, 
      1               local_comm, iflag)
       CALL MPI_BARRIER(local_comm,iflag)
       ! Integers
@@ -561,6 +577,8 @@
       CALL MPI_BCAST(bcrit,            1, MPI_DOUBLE_PRECISION, 
      1               local_master, local_comm, iflag)
       CALL MPI_BCAST(fgiveup,          1, MPI_DOUBLE_PRECISION, 
+     1               local_master, local_comm, iflag)
+      CALL MPI_BCAST(tvolume,          1, MPI_DOUBLE_PRECISION, 
      1               local_master, local_comm, iflag)
       CALL MPI_BARRIER(local_comm,iflag)
       ! Real Arrays
@@ -678,6 +696,168 @@
       iflag = 0
       RETURN
       END SUBROUTINE bcast_indata_namelist
+
+      SUBROUTINE INDATA_VOLUME(volume)
+      IMPLICIT NONE
+      DOUBLE PRECISION,INTENT(INOUT) :: volume
+      INTEGER :: m, n, u, v
+      INTEGER, PARAMETER :: nu = 256
+      INTEGER, PARAMETER :: nv = 256
+      REAL(rprec) :: tcos, tsin, arg1
+      REAL(rprec), DIMENSION(nu,nv) :: rreal, zreal, rureal
+      volume = zero; rreal = zero; zreal = zero; rureal = zero
+      DO n = -ntord,ntord
+         DO m = 0,mpol1d
+            IF (rbc(n,m) == zero .and. zbs(n,m) == zero) CYCLE
+            DO u = 1, nu
+               DO v = 1, nv
+                  arg1 = (m*DBLE(u-1)/nu-n*DBLE(v-1)/nv)*twopi
+                  tcos = COS(arg1)
+                  tsin = SIN(arg1)
+                  rreal(u,v)  = rreal(u,v) + rbc(n,m) * tcos
+                  zreal(u,v)  = zreal(u,v) + zbs(n,m) * tsin
+                  rureal(u,v) = rureal(u,v) 
+     1                          - m * rbc(n,m) * tsin * twopi
+               END DO
+            END DO
+         END DO
+      END DO
+      IF (lasym) THEN
+         DO n = -ntord,ntord
+            DO m = 0,mpol1d
+               IF (rbs(n,m) == zero .and. zbc(n,m) == zero) CYCLE
+               DO u = 1, nu
+                  DO v = 1, nv
+                     arg1 = (m*DBLE(u-1)/nu-n*DBLE(v-1)/nv)*twopi
+                     tcos = COS(arg1)
+                     tsin = SIN(arg1)
+                     rreal(u,v)  = rreal(u,v) + rbs(n,m) * tsin
+                     zreal(u,v)  = zreal(u,v) + zbc(n,m) * tcos
+                     rureal(u,v) = rureal(u,v) 
+     1                             + m * rbs(n,m) * tcos * twopi
+                  END DO
+               END DO
+            END DO
+         END DO
+      END IF
+      volume = ABS(twopi*SUM(rreal*zreal*rureal)/DBLE(nu*nv))
+      RETURN
+      END SUBROUTINE INDATA_VOLUME
+
+      SUBROUTINE INDATA_AREA(area)
+      IMPLICIT NONE
+      DOUBLE PRECISION,INTENT(INOUT) :: area
+      INTEGER :: m, n, u, v
+      INTEGER, PARAMETER :: nu = 256
+      INTEGER, PARAMETER :: nv = 256
+      REAL(rprec) :: tcos, tsin, arg1
+      REAL(rprec), DIMENSION(nu,nv) :: zreal, rureal
+      area = zero; zreal = zero; rureal = zero
+      DO n = -ntord,ntord
+         DO m = 0,mpol1d
+            IF (rbc(n,m) == zero .and. zbs(n,m) == zero) CYCLE
+            DO u = 1, nu
+               DO v = 1, nv
+                  arg1 = (m*DBLE(u-1)/nu-n*DBLE(v-1)/nv)*twopi
+                  tcos = COS(arg1)
+                  tsin = SIN(arg1)
+                  zreal(u,v)  = zreal(u,v) + zbs(n,m) * tsin
+                  rureal(u,v) = rureal(u,v) 
+     1                          - m * rbc(n,m) * tsin * twopi
+               END DO
+            END DO
+         END DO
+      END DO
+      IF (lasym) THEN
+         DO n = -ntord,ntord
+            DO m = 0,mpol1d
+               IF (rbs(n,m) == zero .and. zbc(n,m) == zero) CYCLE
+               DO u = 1, nu
+                  DO v = 1, nv
+                     arg1 = (m*DBLE(u-1)/nu-n*DBLE(v-1)/nv)*twopi
+                     tcos = COS(arg1)
+                     tsin = SIN(arg1)
+                     zreal(u,v)  = zreal(u,v) + zbc(n,m) * tcos
+                     rureal(u,v) = rureal(u,v) 
+     1                             + m * rbs(n,m) * tcos * twopi
+                  END DO
+               END DO
+            END DO
+         END DO
+      END IF
+      area = ABS(SUM(zreal*rureal)/DBLE(nu*nv))
+      RETURN
+      END SUBROUTINE INDATA_AREA
+
+      SUBROUTINE RESCALE_BOUNDARY
+      IMPLICIT NONE
+      REAL(rprec) :: AVolume, AArea, AR00, TArea
+      IF (tvolume .gt. 0.0) THEN
+         CALL INDATA_VOLUME(AVolume)
+         IF (lvolume_rfix) THEN
+            CALL INDATA_AREA(AArea)
+            AR00 = AVolume/(twopi * AArea)
+            TArea = TVolume/(twopi * AR00)
+            raxis_cc = rbc(0:ntord,0)
+            zaxis_cs = zbs(0:ntord,0)
+            rbc = rbc * (Tarea / Aarea) ** (1.0/2.0)
+            zbs = zbs * (Tarea / Aarea) ** (1.0/2.0)
+            rbc(0:ntord,0) = raxis_cc(0:ntord)
+            zbs(0:ntord,0) = zaxis_cs(0:ntord)
+            IF (lasym) THEN
+               raxis_cs = rbs(0:ntord,0)
+               zaxis_cc = zbc(0:ntord,0)
+               rbs = rbs * (Tarea / Aarea) ** (1.0/2.0)
+               zbc = zbc * (Tarea / Aarea) ** (1.0/2.0)
+               rbs(0:ntord,0) = raxis_cs(0:ntord)
+               zbc(0:ntord,0) = zaxis_cc(0:ntord)
+            END IF
+         ELSE
+            rbc = rbc * (tvolume / AVolume) ** (1.0/3.0)
+            zbs = zbs * (tvolume / AVolume) ** (1.0/3.0)
+            IF (lasym) THEN
+               rbs = rbs * (tvolume / AVolume) ** (1.0/3.0)
+               zbc = zbc * (tvolume / AVolume) ** (1.0/3.0)
+            END IF
+         ENDIF
+         CALL INIT_AXIS_MIDPOINT
+      END IF
+      RETURN
+      END SUBROUTINE RESCALE_BOUNDARY
+
+
+      SUBROUTINE INIT_AXIS_MEAN
+      IMPLICIT NONE
+      INTEGER :: n
+      raxis = zero; zaxis = zero
+      DO n = 0, ntord
+            raxis_cc(n) = rbc(n, 0)
+            zaxis_cc(n) = zbc(n, 0)
+            raxis_cs(n) = rbs(n, 0)
+            zaxis_cs(n) = zbs(n, 0)
+      END DO
+      RETURN
+      END SUBROUTINE INIT_AXIS_MEAN
+
+      SUBROUTINE INIT_AXIS_MIDPOINT
+      IMPLICIT NONE
+      INTEGER :: n, m
+      CALL INIT_AXIS_MEAN
+      DO m = 2, mpol1d, 2 ! Add even-m modes for m>0
+         ! Handle the n=0 modes:
+         raxis_cc(0) = raxis_cc(0) + rbc(0, m)
+         zaxis_cc(0) = zaxis_cc(0) + zbc(0, m)
+         ! No need to include the sin(n*phi) modes for n=0 here.
+         ! Handle the n.ne.0 modes:
+         DO n = 1, ntord
+            raxis_cc(n) = raxis_cc(n) + rbc(n, m) + rbc(-n, m)
+            zaxis_cc(n) = zaxis_cc(n) + zbc(n, m) + zbc(-n, m)
+            raxis_cs(n) = raxis_cs(n) + rbs(n, m) - rbs(-n, m)
+            zaxis_cs(n) = zaxis_cs(n) + zbs(n, m) - zbs(-n, m)
+         END DO
+      END DO
+      RETURN
+      END SUBROUTINE INIT_AXIS_MIDPOINT
 
       END MODULE vmec_input
 

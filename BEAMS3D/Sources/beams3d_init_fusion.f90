@@ -84,7 +84,7 @@
       CALL init_random_seed
       IF (lverb) THEN
          WRITE(6, '(A)') '----- INITIALIZING FUSION REACTIONS -----'
-         WRITE(6, '(A,I6)') '      nparticles_start: ', nparticles_start
+         WRITE(6, '(A,I8)') '      nparticles_start: ', nparticles_start
          CALL FLUSH(6)
       END IF
 

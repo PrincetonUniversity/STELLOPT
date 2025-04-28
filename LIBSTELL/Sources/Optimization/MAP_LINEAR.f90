@@ -186,7 +186,7 @@
       IF (myid .eq. master) THEN
          map_file = 'map_linear.dat'
          CALL safe_open(iunit,ierr,TRIM(map_file),'new','formatted')
-         WRITE(iunit,'(4(2X,i6))') m,n,num_search
+         WRITE(iunit,'(4(2X,i8))') m,n,num_search
          DO i = 1, num_search
             WRITE(iunit,'(1p,4ES22.12E3)') (grid(i,j), j=1,n)
          END DO

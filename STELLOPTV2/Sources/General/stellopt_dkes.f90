@@ -298,7 +298,7 @@
             ! This is a trick to get the arrays corretly sorted
             DKES_rad_dex = ik
             IF (.not. lfirst_pass) lscreen_dkes = .FALSE.
-            CALL dkes_printout (f0p1, f0m1, f0p2, f0m2, srces0)
+            CALL dkes_printout (f0p1, f0m1, f0p2, f0m2, srces0, .TRUE.)
             DKES_rad_dex = ik_dkes(ik)
             ! End trick
             CALL second0 (tcpu1); tcpu = tcpu1 - tcpu0; tcpu0 = tcpu1; tcput = tcput + tcpu; tcpua = tcput/irun

@@ -305,6 +305,7 @@
                          target_kappa, sigma_kappa, phi_kappa, &
                          target_kappa_box, sigma_kappa_box, phi_kappa_box, &
                          target_kappa_avg, sigma_kappa_avg, &
+                         target_totalbootstrap, sigma_totalbootstrap, &
                          target_magwell, sigma_magwell, &
                          target_press, sigma_press, r_press, z_press, phi_press, s_press,&
                          target_pressprime, sigma_pressprime, r_pressprime, z_pressprime, phi_pressprime, s_pressprime,&
@@ -352,6 +353,7 @@
                          delta_min, delta_max, &
                          target_balloon, sigma_balloon, balloon_theta, balloon_zeta,&
                          target_bootstrap,sigma_bootstrap, target_neo, sigma_neo,&
+                         target_b10b11, sigma_b10b11, &
                          target_Jstar, sigma_Jstar, NumJstar,&
                          target_helicity, sigma_helicity, helicity,&
                          target_helicity_old, sigma_helicity_old, &
@@ -732,6 +734,8 @@
       phi_kappa_box    = 0.0
       target_kappa_avg = 0.0
       sigma_kappa_avg  = bigno
+      target_totalbootstrap = 0.0
+      sigma_totalbootstrap  = bigno
       target_kink(:)  = 0.0
       sigma_kink(:)   = bigno
       mlmnb_kink      = 264
@@ -911,6 +915,8 @@
       balloon_zeta(:) = -1.0
       target_bootstrap(:) = 0.0
       sigma_bootstrap(:) = bigno
+      target_b10b11(:) = 0.0
+      sigma_b10b11(:) = bigno
       target_neo(:)   = 0.0
       sigma_neo(:)    = bigno
       target_Jstar(:) = 0.0
@@ -1097,6 +1103,7 @@
       lbooz(1) = .FALSE.
       target_balloon(1)   = 0.0;  sigma_balloon(1)   = bigno
       target_bootstrap(1) = 0.0;  sigma_bootstrap(1) = bigno
+      target_b10b11(1)    = 0.0;  sigma_b10b11(1)    = bigno
       target_neo(1)       = 0.0;  sigma_neo(1)       = bigno
       target_dkes(1)      = 0.0;  sigma_dkes(1)      = bigno
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
@@ -1579,6 +1586,10 @@
       IF (sigma_curvature_P2 < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
          WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
+      END IF  
+      IF (sigma_totalbootstrap < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_TOTALBOOTSTRAP',target_totalbootstrap
+         WRITE(iunit,outflt) 'SIGMA_TOTALBOOTSTRAP',sigma_totalbootstrap
       END IF          
       IF ((ANY(sigma_coillen < bigno)).OR.(ANY(sigma_coilsegvar < bigno)).OR.&
            (ANY(sigma_coilcrv < bigno)).OR.(sigma_coilsep < bigno).OR.&
@@ -1757,6 +1768,20 @@
            IF (sigma_bootstrap(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_BOOTSTRAP(',ik,') = ',target_bootstrap(ik), &
                           'SIGMA_BOOTSTRAP(',ik,') = ',sigma_bootstrap(ik)
+         END DO
+      END IF
+      IF (ANY(sigma_b10b11 < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          B10/B11 (BOOTSTRAP PROXY)'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_b10b11,DIM=1)
+            IF(sigma_b10b11(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+           IF (sigma_b10b11(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_B10B11(',ik,') = ',target_b10b11(ik), &
+                          'SIGMA_B10B11(',ik,') = ',sigma_b10b11(ik)
          END DO
       END IF
       IF (ANY(sigma_neo < bigno)) THEN

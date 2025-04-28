@@ -54,12 +54,13 @@
          SELECT CASE(TRIM(equil_type))
             CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
                IF (lcoil_geom) mgrid_file = 'mgrid_'//TRIM(proc_string)//'.nc'
+               CALL RESCALE_BOUNDARY ! Necssary for output file to have correct RBC/ZBS
                CALL write_indata_namelist(iunit_out,ier)
             CASE('test')
          END SELECT
       CALL write_optimum_namelist(iunit_out,ier)
       IF (lneed_magdiag) CALL write_diagno_input(iunit_out,ier)
-      IF (ANY(sigma_bootstrap < bigno)) CALL write_bootsj_input(iunit_out,ier)
+      IF (ANY(sigma_bootstrap < bigno) .or. (sigma_totalbootstrap < bigno)) CALL write_bootsj_input(iunit_out,ier)
 !DEC$ IF DEFINED (NEO_OPT)
       IF (ANY(sigma_neo < bigno)) CALL write_neoin_namelist(iunit_out,ier)
 !DEC$ ENDIF

@@ -69,12 +69,13 @@ SFINCS
 PB3D
 
 .vscode/
+.vs/
 LIBSTELL/.makefile.swp
+*.log
 pySTEL/build
 pySTEL/dist
 
 *.sublime-project
 *.sublime-workspace
 fort.*
-
 nohup.*

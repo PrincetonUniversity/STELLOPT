@@ -88,7 +88,11 @@
                                rmin_fida, rmax_fida, zmin_fida, &
                                zmax_fida,phimin_fida, phimax_fida, &
                                nr_fida, nphi_fida, nz_fida, nenergy_fida, &
-                               npitch_fida, t_fida
+                               npitch_fida, t_fida, &
+                               mumaterial_tol, mumaterial_niter, &
+                               mumaterial_lambda, mumaterial_lamfactor, &
+                               mumaterial_lamthresh, mumaterial_padfactor, &
+                               mumaterial_convcheck
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -211,6 +215,13 @@
       nenergy_fida = 0
       npitch_fida = 0
       t_fida = 0.0
+
+      !MUMATERIAL Defaults
+      mumaterial_tol = 1.0D-5
+      mumaterial_niter = 100
+      mumaterial_lambda = 0.7
+      mumaterial_lamfactor = 0.75
+      mumaterial_nneighbor = 100
       RETURN
       END SUBROUTINE init_beams3d_input
       
@@ -556,8 +567,14 @@
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'CHARGE_IN',(charge_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'ZATOM_IN',(zatom_in(ik), ik=1,n)
          IF (ANY(weight_in /= 1)) WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'WEIGHT_IN',(weight_in(ik), ik=1,n)
-         n = COUNT(t_end_in > -1)
-         WRITE(iunit_out,"(2X,A,1X,'=',I6,'*',ES19.12E3)") 'T_END_IN',n,MAXVAL(t_end_in)
+         ! Handle possible negative T_END_IN
+         IF (MAXVAL(t_end_in) > 0.0) THEN
+            n = COUNT(t_end_in > 0.0)
+            WRITE(iunit_out,"(2X,A,1X,'=',I6,'*',ES19.12E3)") 'T_END_IN',n,MAXVAL(t_end_in)
+         ELSE
+            n = COUNT(t_end_in < 0.0)
+            WRITE(iunit_out,"(2X,A,1X,'=',I6,'*',ES19.11E3)") 'T_END_IN',n,MINVAL(t_end_in)
+         END IF
          IF (MAXVAL(dex_beams)>0) THEN
             n = COUNT(dex_beams>0)
             WRITE(iunit_out,"(2X,A,1X,'=',4(1X,I3.3))") 'DEX_BEAMS',(dex_beams(ik), ik=1,n)
@@ -678,6 +695,11 @@
       CALL MPI_BCAST(follow_tol,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(int_type, 256, MPI_CHARACTER, local_master, comm,istat)
 
+      CALL MPI_BCAST(mumaterial_niter,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(mumaterial_nneighbor,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(mumaterial_tol,1,MPI_REAL8, local_master, comm,istat)
+      CALL MPI_BCAST(mumaterial_lambda,1,MPI_REAL8, local_master, comm,istat)
+      CALL MPI_BCAST(mumaterial_lamfactor,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(E_kick,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(freq_kick,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(B_kick_min,1,MPI_REAL8, local_master, comm,istat)

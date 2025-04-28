@@ -157,7 +157,7 @@ class THRIFT():
             for it,time in enumerate(times):
                 try:
                     # ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s')
-                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s'+r', $\beta=$'+f'{self.THRIFT_BETATOT[idx[it]]*100:.2f}%')   
+                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time:.1f}s'+r', $\beta=$'+f'{self.THRIFT_BETATOT[idx[it]]*100:.2f}%')   
                 except:
                     ax.plot(np.sqrt(self.THRIFT_SNOB),plot_var[it,:],label=f't={time}s')
                 ax.set_xlabel('r/a') 
@@ -361,9 +361,12 @@ class THRIFT():
         from collections import defaultdict
 
         for file in ambipolar_files:
-
-            time = np.loadtxt(file,skiprows=2,max_rows=1)
             
+            try:
+                time = np.loadtxt(file,skiprows=2,max_rows=1)
+            except:
+                time = -1
+                
             penta = np.loadtxt(file,skiprows=4)
         
             roa = penta[:,0]
@@ -449,6 +452,8 @@ class THRIFT():
             ax.set_title(f't={time}s')
             
         if(make_plot): plt.show()
+        
+        return roa_all, Er_all, JBS_all, Gamma_e_all
         
     def Maxwell_construction(self,fluxes_vs_Er_file,Zions):
         # plots fluxes*Z as function of Er

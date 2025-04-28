@@ -166,6 +166,32 @@ class FUSION():
         
 		return SB     
 
+	def alphaPower(self,n_D,n_T,T_D,T_T):
+		"""Computes the alpha power-density
+
+		Parameters
+  		----------
+		n_D : real
+		Deuterium density [m^-3]
+		n_T : real
+		Tritium density [m^-3]
+		T_D : real
+  		Deuterium temperature [eV]
+		T_T : real
+		Tritium temperature [eV]
+  		Returns
+  		----------
+		S_alpha : real
+		Alpha power density [W/m^3]
+		"""
+
+		Ti = 0.5 * (T_D+T_T)
+		sigmav = self.sigmaBH(Ti,'DT') # m^3/s
+		E_alpha = self.E_DT_He   # J
+		S_alpha = n_D * n_T * sigmav * E_alpha # W/m^3
+		
+		return S_alpha
+
 if __name__=="__main__":
 	import sys
 	temp = FUSION()
