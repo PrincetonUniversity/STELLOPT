@@ -14,6 +14,11 @@ MODULE thrift_plasma_solver_mod
     USE thrift_profiles_mod
     USE thrift_globals
     USE thrift_vars
+    USE EZspline
+    USE EZspline_obj
+#if defined(LHDF5)
+    USE ez_hdf5
+#endif
     USE thrift_equil, ONLY : eq_Aminor, vp_spl
     !-------------------------------------------------------------------
     !     Module Variables
