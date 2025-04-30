@@ -18,7 +18,8 @@
       USE mpi_params
       USE mpi_inc
       USE thrift_plasma_solver_mod, ONLY: Dn_NEO,cn_NEO,Dp_NEO,cp_NEO,&
-      rho_plasma_grid,Nr_plasma_solver,mytimestep_plasma_solver
+      rho_plasma_grid,Nr_plasma_solver,mytimestep_plasma_solver,&
+      G_NEO_complet,Q_NEO_complet,Nt_total_plasma_solver
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !        lscreen       Screen output
