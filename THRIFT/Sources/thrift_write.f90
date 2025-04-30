@@ -248,6 +248,11 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Dp_NEO',ier)
          CALL write_var_hdf5(fid,'cp_NEO',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=cp_NEO,ATT='cp NEO heat convective velocity [m/s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'cp_NEO',ier)
+         !! Neo fluxes (complete versions)
+         CALL write_var_hdf5(fid,'G_NEO_complet',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=G_NEO_complet,ATT='G NEO [m^-2 s^-1]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'G_NEO_complet',ier)
+         CALL write_var_hdf5(fid,'Q_NEO_complet',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Q_NEO_complet,ATT='Q NEO [W/m^2]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Q_NEO_complet',ier)
          ! Close file
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)

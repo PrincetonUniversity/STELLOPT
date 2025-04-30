@@ -324,17 +324,23 @@
                   !GNEO
                   CALL EZspline_init(GNEO_spl,ns_dkes+2,bcs0,ier)
                   GNEO_spl%x1        = rho_temp
-                  GNEO_spl%isHermite = 0
+                  GNEO_spl%isHermite = 1
                   CALL EZspline_setup(GNEO_spl,GNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
                   !QNEO
                   CALL EZspline_init(QNEO_spl,ns_dkes+2,bcs0,ier)
                   QNEO_spl%x1        = rho_temp
-                  QNEO_spl%isHermite = 0
+                  QNEO_spl%isHermite = 1
                   CALL EZspline_setup(QNEO_spl,QNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
                   
                   ! Compute at THRIFT GRID
                   CALL EZspline_interp(GNEO_spl,nsj,SQRT(THRIFT_S),THRIFT_GNEO(jspecies,:,mytimestep),ier)
                   CALL EZspline_interp(QNEO_spl,nsj,SQRT(THRIFT_S),THRIFT_QNEO(jspecies,:,mytimestep),ier)
+
+                  !! Save 
+                  IF(.NOT. mytimestep_plasma_solver > Nt_total_plasma_solver) THEN
+                        CALL EZspline_interp(GNEO_spl,Nr_plasma_solver,rho_plasma_grid,G_NEO_complet(jspecies,mytimestep_plasma_solver,:),ier)
+                        CALL EZspline_interp(QNEO_spl,Nr_plasma_solver,rho_plasma_grid,Q_NEO_complet(jspecies,mytimestep_plasma_solver,:),ier)
+                  END IF
 
                   ! Deallocate splines
                   CALL EZspline_free(GNEO_spl,ier)

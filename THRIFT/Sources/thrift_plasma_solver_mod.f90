@@ -32,6 +32,7 @@ MODULE thrift_plasma_solver_mod
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep, &
                                                   S_energy_ext, S_particle_ext
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: Dn_NEO, cn_NEO, Dp_NEO, cp_NEO
+    REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: G_NEO_complet, Q_NEO_complet
     INTEGER :: mytimestep_plasma_solver
     INTEGER :: N_plasma_steps_per_THRIFT_step, Nt_total_plasma_solver
     TYPE(EZspline1_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: N_splines, T_splines
@@ -75,6 +76,10 @@ MODULE thrift_plasma_solver_mod
         IF( .NOT. ALLOCATED(cn_NEO)) ALLOCATE(cn_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(Dp_NEO)) ALLOCATE(Dp_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(cp_NEO)) ALLOCATE(cp_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        ! These arrays are filled in thrift_penta with the total NEO fluxes. They include the inter-species diffusion coeffs
+        ! which are neglected when computing the Dn_NEO and cn_NEO coeffs used by the transport solver
+        IF( .NOT. ALLOCATED(G_NEO_complet)) ALLOCATE(G_NEO_complet(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(Q_NEO_complet)) ALLOCATE(Q_NEO_complet(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         ! Local arrays
         IF( .NOT. ALLOCATED(pressure_total)) ALLOCATE(pressure_total(num_species*Nr_plasma_solver))
         IF( .NOT. ALLOCATED(pressure_total_old)) ALLOCATE(pressure_total_old(num_species*Nr_plasma_solver))
@@ -116,6 +121,10 @@ MODULE thrift_plasma_solver_mod
             cn_NEO = 0.0_rprec
             Dp_NEO = 0.0_rprec
             cp_NEO = 0.0_rprec
+
+            ! 
+            G_NEO_complet = 0.0_rprec
+            Q_NEO_complet = 0.0_rprec
 
             ! Update splines and exit routine
             CALL update_splines
