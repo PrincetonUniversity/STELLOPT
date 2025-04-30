@@ -116,7 +116,9 @@ MODULE thrift_plasma_solver_mod
             0.0_rprec,0.0_rprec)
 
             ! Check add_NEO is true iif BOOTSTRAP_TYPE = 'bootsj'
-            IF(add_NEO .AND. (bootstrap_type .NE. 'dkespenta')) STOP 'ERROR: add_NEO can only be TRUE if BOOTSTRAP_TYPE = dkespenta'
+            IF(add_NEO .AND. (bootstrap_type .NE. 'dkespenta')) THEN
+                STOP 'ERROR: add_NEO can only be TRUE if BOOTSTRAP_TYPE = dkespenta, otherwise DKES coeffs are not being evaluated...'
+            END IF
             ! Set NEO arrays to zero (they will updated at each time step if add_NEO=T)
             Dn_NEO = 0.0_rprec
             cn_NEO = 0.0_rprec
@@ -171,12 +173,7 @@ MODULE thrift_plasma_solver_mod
 
                 ! Run PENTA if NEO fluxes are to be added
                 IF(add_NEO) THEN
-                    STOP 'NOT implemented yet!'
-                    ! ier = 0
-                    ! CALL thrift_penta(.FALSE.,ier)
-                    ! PROBABLY MORE CORRECT TO DO THIS ??
                     CALL thrift_paraexe('penta',proc_string,lscreen_subcodes)
-
                     IF (ier /= 0) STOP 'Error running PENTA inside plasma solver'
                 END IF
   
