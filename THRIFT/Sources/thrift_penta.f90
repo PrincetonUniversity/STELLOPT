@@ -394,10 +394,12 @@
                         CALL EZspline_setup(cp_spl,cp_temp(jspecies,:),ier,EXACT_DIM=.true.)
                         
                         ! Compute at plasma solver grid
+                        IF(.NOT. mytimestep_plasma_solver > Nt_total_plasma_solver) THEN
                         CALL EZspline_interp(Dn_spl,Nr_plasma_solver,rho_plasma_grid,Dn_NEO(jspecies,mytimestep_plasma_solver,:),ier)
                         CALL EZspline_interp(cn_spl,Nr_plasma_solver,rho_plasma_grid,cn_NEO(jspecies,mytimestep_plasma_solver,:),ier)
                         CALL EZspline_interp(Dp_spl,Nr_plasma_solver,rho_plasma_grid,Dp_NEO(jspecies,mytimestep_plasma_solver,:),ier)
                         CALL EZspline_interp(cp_spl,Nr_plasma_solver,rho_plasma_grid,cp_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                        END IF
 
                         ! Deallocate splines
                         CALL EZspline_free(Dn_spl,ier)
