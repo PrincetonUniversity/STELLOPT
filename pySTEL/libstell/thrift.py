@@ -128,7 +128,7 @@ class THRIFT():
         self.units_dictionary['THRIFT_ETAPARA'] = r'$[\Omega\,$m]'
         self.units_dictionary['THRIFT_ER'] = r'$[V/$m]'
         self.units_dictionary['THRIFT_GNEO'] = r'[m$^{-2}s$^{-1}$]'
-        self.units_dictionary['THRIFT_QNEO'] = r'[$\text{eV}~\text{m}^{-2}s$^{-1}$]'
+        self.units_dictionary['THRIFT_QNEO'] = r'[$\text{W}~\text{m}^{-2}$]'
              
     def plot_vars_in_time(self,*vars,time_slice=None,time_array=None):
         # plots var as a funciton of roa at different times

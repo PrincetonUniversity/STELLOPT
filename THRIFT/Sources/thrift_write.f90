@@ -169,9 +169,9 @@
          CALL write_var_hdf5(fid,'THRIFT_MATRHS',nsj,ntimesteps,ier,DBLVAR=THRIFT_MATRHS,ATT='Matrix equation RHS',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATRHS',ier)
          ! Fluxes
-         CALL write_var_hdf5(fid,'THRIFT_GNEO',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_GNEO,ATT='Neoclassical particle flux [m^-2 s^-2]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_GNEO',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_GNEO,ATT='Neoclassical particle flux [m^-2 s^-1]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_GNEO',ier)
-         CALL write_var_hdf5(fid,'THRIFT_QNEO',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_QNEO,ATT='Neoclassical heat flux [eV m^-2 s^-2]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_QNEO',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_QNEO,ATT='Neoclassical heat flux [W m^-2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_QNEO',ier)
          ! Density, temperature and pressure
          CALL write_var_hdf5(fid,'THRIFT_DENS',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_DENS,ATT='Density of each species [m^-3]',ATT_NAME='description')

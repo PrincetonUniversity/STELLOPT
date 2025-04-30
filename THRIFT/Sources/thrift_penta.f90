@@ -209,7 +209,7 @@
                         Er_PENTA(k) = Er_roots(i)
                         ! NEO fluxes
                         GNEO_PENTA(:,k) = Gammas_ambi(:,i)
-                        QNEO_PENTA(:,k) = QoTs_ambi(:,i) * Temps
+                        QNEO_PENTA(:,k) = QoTs_ambi(:,i) * Temps * e_charge
                         ! NEO particle transport coefficients
                         Dn_PENTA(:,k) = (/ (-L_n_ambi(i,j,j), j=1,nion_prof+1) /)
                         cn_PENTA(:,k) = MATMUL(L_T_ambi(i,:,:),e_charge*dTdrs) / dens + Er_PENTA(k)*SUM(L_Er_ambi(i,:,:),dim=2) / dens
