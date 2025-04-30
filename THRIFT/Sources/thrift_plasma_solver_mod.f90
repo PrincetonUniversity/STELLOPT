@@ -26,7 +26,8 @@ MODULE thrift_plasma_solver_mod
     !-------------------------------------------------------------------
     IMPLICIT NONE
     REAL(rprec) :: drho_plasma_solver, dr_plasma_solver
-    REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_plasma_grid, r_plasma_grid, time_plasma_grid
+    REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_plasma_grid, time_plasma_grid
+    REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: r_plasma_grid
     INTEGER :: ilogplasma, num_species
     REAL(rprec), DIMENSION(:,:), ALLOCATABLE, PRIVATE :: plasma_N, plasma_T, plasma_P
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep, &
@@ -132,9 +133,10 @@ MODULE thrift_plasma_solver_mod
             mytimestep_plasma_solver = mytimestep_plasma_solver + 1
             RETURN
         ENDIF
+
+        CALL second0(stime)
         
-        r_plasma_grid = rho_plasma_grid * eq_Aminor
-        dr_plasma_solver = r_plasma_grid(2) - r_plasma_grid(1)
+        dr_plasma_solver = drho_plasma_solver * eq_Aminor
 
         !
         t_old = THRIFT_T(mytimestep-1)
@@ -159,12 +161,7 @@ MODULE thrift_plasma_solver_mod
         t_current = t_old
         DO plasma_iteration = 1,N_plasma_steps_per_THRIFT_step
 
-            ! IN PYTHON WE MAKE THIS UPDATE HERE; BUT IN HERE I DON'T THINK WE NED IT
-            ! CAUSE WE ARE NOT GOING TO SAVE IT; 
-            ! IN CASE WANTS TO SAVE IT, HERE IS THE GOOD PLACE TO DO IT!
-            !the first subiter corresponds to the last time step []
-            ! plasma_N = 
-            ! plasma_P =
+            r_plasma_grid(mytimestep_plasma_solver,:) = rho_plasma_grid * eq_Aminor
 
             ! SUBCYCLE
             delta_p = 10*tol_plasma_solver
@@ -267,7 +264,7 @@ MODULE thrift_plasma_solver_mod
 
         ! Plasma spatial grid (rho and r)
         ALLOCATE(rho_plasma_grid(Nr_plasma_solver))
-        ALLOCATE(r_plasma_grid(Nr_plasma_solver))
+        ALLOCATE(r_plasma_grid(Nt_total_plasma_solver,Nr_plasma_solver))
         !
         FORALL(i = 1:Nr_plasma_solver)  rho_plasma_grid(i)  = DBLE(i-1)/DBLE(Nr_plasma_solver-1)
         !

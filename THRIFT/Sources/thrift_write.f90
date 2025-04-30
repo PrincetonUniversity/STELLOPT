@@ -233,6 +233,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'time_plasma_grid',ier)
          CALL write_var_hdf5(fid,'rho_plasma_grid',Nr_plasma_solver,ier,DBLVAR=rho_plasma_grid,ATT='Rho grid [-]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'rho_plasma_grid',ier)
+         CALL write_var_hdf5(fid,'r_plasma_grid',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=r_plasma_grid,ATT='r-grid [-]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'r_plasma_grid',ier)
          ! Arrays
          CALL write_var_hdf5(fid,'Zions',nion_prof,ier,INTVAR=Zatom_prof,ATT='Ions charge number [-]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Zions',ier)
