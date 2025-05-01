@@ -193,7 +193,7 @@
       END IF
 
       ! Check dt_plasma_solver and ajust it
-      IF( solve_plasma_equations .AND. (dt_plasma_solver .GT. dt) ) THEN
+      IF( solve_plasma_equations .AND. (dt_plasma_solver .GT. dt) .AND. ntimesteps > 1) THEN
          WRITE(6,*) '!!!!!!!!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
          WRITE(6,*) '   dt_plasma_solver < dt_THRIFT        '
          WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
