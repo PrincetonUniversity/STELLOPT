@@ -134,8 +134,6 @@ MODULE thrift_plasma_solver_mod
 
             RETURN
         ENDIF
-
-        CALL second0(stime)
         
         dr_plasma_solver = drho_plasma_solver * eq_Aminor
 
