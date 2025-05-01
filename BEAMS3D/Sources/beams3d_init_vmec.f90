@@ -52,8 +52,6 @@
                            bumnc_temp(:,:),bvmnc_temp(:,:),&
                            rmns_temp(:,:),zmnc_temp(:,:),&
                            bumns_temp(:,:),bvmns_temp(:,:)
-      INTEGER, PARAMETER :: scaleup=2
-      LOGICAL, ALLOCATABLE, DIMENSION(:) :: lsmooth
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -186,7 +184,7 @@
          i = 120
          j = 180
          lverb_wall=.false.
-         IF (lverb) WRITE(6,'(A)')        '   CREATING WALL FROM HARMONICS'
+         IF (lverb) WRITE(6,'(A)')        '   GENERATING WALL FROM BOUNDARY HARMONICS'
          IF (lasym) THEN
             CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)), &
                DBLE(xm),-DBLE(xn),mnmax,i,j,lverb_wall,MPI_COMM_LOCAL, &
@@ -298,38 +296,46 @@
       
       IF (lverb) THEN
          IF (luse_vc) CALL virtual_casing_info(6)
-         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field Calculation [',0,']%'
          CALL FLUSH(6)
       END IF
       
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
-      ALLOCATE(lsmooth(mystart:myend))
-      lsmooth = .false.
-      
-      uflx = 0.0
 
+      ! Initialize the grids
       IF (mylocalid == mylocalmaster) THEN
-         TE = 0; NE = 0; TI=0; S_ARR=scaleup*scaleup; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1; OMEG_ARR=0;
+         IF (.not. luse_vc) THEN
+            B_R = 0.0; B_PHI=1.0; B_Z=0.0
+         END IF
+         TE = 0; NE = 0; TI=0; S_ARR=4.0; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1; OMEG_ARR=0;
       END IF
+
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! Perform the lookup of VMEC B-field and S,U grid data
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      IF (lverb) THEN
+         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field Lookup [',0,']%'
+      END IF
+      CALL FLUSH(6)
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
          j = MOD(s-1,nr*nphi)
          j = FLOOR(REAL(j) / REAL(nr))+1
          k = CEILING(REAL(s) / REAL(nr*nphi))
-         sflx = 0.0
-         ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
-         ! however, if cyl2flx fails to converge then s may be
-         ! greater than 1 but cyl2flux will not throw the -3 code.
-         ! In this case GetBcyl returns br,bphi,bz = 0.  So
-         ! bphi == 0 or ier ==-3 indicate that a point is
-         ! outside the VMEC domain.
+         sflx = MAX(0.001,MIN(0.999,sflx))
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
-         IF (ier == 0 .and. bphi /= 0) THEN ! We have field data
+         !PRINT *,i,j,k,raxis_g(i),phiaxis(j),zaxis_g(k), br, bphi, bz, sflx,uflx,ier
+         ! GetBcyl will return ier = 0,-1,or-3
+         !   0 : Success
+         !  -1 : Success but at reduced tolerance
+         !  -3 : Failure (no B returned)
+         ! If sucessfull save the data
+         IF (ier .eq. 0) THEN
             ! Save Grid data
             S_ARR(i,j,k) = MAX(sflx,0.0)
             IF (uflx<0)  uflx = uflx+pi2
@@ -339,35 +345,152 @@
                B_R(i,j,k)   = br
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
-            ELSE IF (.not. luse_vc) THEN  ! Overwrite data outside
+            ELSE IF (.not. luse_vc) THEN  ! Overwrite data outside if not VC
                B_R(i,j,k)   = br
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
-               sflx = 1.5 ! Assume s=1 for lplasma_only
             END IF
-            IF (sflx <= s_max) THEN
-               IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),TE(i,j,k),ier)
-               IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),NE(i,j,k),ier)
-               IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),TI(i,j,k),ier)
-               IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),POT_ARR(i,j,k),ier)
-               IF (nomeg > 0) CALL EZspline_interp(OMEG_spl_s,MIN(sflx,s_max_omeg),OMEG_ARR(i,j,k),ier)
-               IF (nzeff > 0) THEN
-                  CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),ZEFF_ARR(i,j,k),ier)
-                  DO u=1, NION
-                     CALL EZspline_interp(NI_spl_s(u),MIN(sflx,s_max_zeff),NI(u,i,j,k),ier)
-                  END DO
-               END IF
-            ELSE
-               br = 1
-               IF (npot > 0) CALL EZspline_interp(POT_spl_s,br,POT_ARR(i,j,k),ier)
-            END IF
-         ELSE IF (.not. luse_vc) THEN
-            B_R(i,j,k)   = 0
-            B_PHI(i,j,k) = 1
-            B_Z(i,j,k)   = 0
+         ELSE IF (ier == -1) THEN
+            S_ARR(i,j,k) = -1
          END IF
-         ! Virtual Casing
-         IF (luse_vc .and. sflx > 1) THEN
+         IF (MOD(s,nr) == 0) THEN
+            IF (lverb) THEN
+               CALL backspace_out(6,6)
+               WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
+            END IF
+         END IF
+         CALL FLUSH(6)
+      END DO
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+#endif
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! Perform the 2nd Pass only inside domain
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      IF (lverb) THEN
+         WRITE(6,*)
+         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field 2nd Pass [',0,']%'
+      END IF
+      CALL FLUSH(6)
+      DO s = mystart, myend
+         i = MOD(s-1,nr)+1
+         j = MOD(s-1,nr*nphi)
+         j = FLOOR(REAL(j) / REAL(nr))+1
+         k = CEILING(REAL(s) / REAL(nr*nphi))
+         ! First update progress
+         IF (MOD(s,nr) == 0) THEN
+            IF (lverb) THEN
+               CALL backspace_out(6,6)
+               WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
+            END IF
+         END IF
+         CALL FLUSH(6)
+         ! Don't do edge points
+         IF ((i==1) .or. (i==nr) .or. (k==1) .or. (k==nz)) CYCLE
+         ! Now do the problematic parts
+         IF (S_ARR(i,j,k) < 0.0) THEN
+            sflx = 0; uflx = 0; br = 0; bphi = 0; bz = 0; u = 0
+            IF (S_ARR(i+1,j  ,k  )>=0.0) THEN
+               sflx = sflx + S_ARR(i+1,j  ,k  )
+               uflx = uflx + U_ARR(i+1,j  ,k  )
+               br   = br   +   B_R(i+1,j  ,k  )
+               bphi = bphi + B_PHI(i+1,j  ,k  )
+               bz   = bz   +   B_Z(i+1,j  ,k  )
+               u = u + 1
+            ENDIF
+            IF (S_ARR(i-1,j  ,k  )>=0.0) THEN
+               sflx = sflx + S_ARR(i-1,j  ,k  )
+               uflx = uflx + U_ARR(i-1,j  ,k  )
+               br   = br   +   B_R(i-1,j  ,k  )
+               bphi = bphi + B_PHI(i-1,j  ,k  )
+               bz   = bz   +   B_Z(i-1,j  ,k  )
+               u = u + 1
+            ENDIF
+            IF (S_ARR(i  ,j  ,k+1)>=0.0) THEN
+               sflx = sflx + S_ARR(i  ,j  ,k+1)
+               uflx = uflx + U_ARR(i  ,j  ,k+1)
+               br   = br   +   B_R(i  ,j  ,k+1)
+               bphi = bphi + B_PHI(i  ,j  ,k+1)
+               bz   = bz   +   B_Z(i  ,j  ,k+1)
+               u = u + 1
+            ENDIF
+            IF (S_ARR(i  ,j  ,k-1)>=0.0) THEN
+               sflx = sflx + S_ARR(i  ,j  ,k-1)
+               uflx = uflx + U_ARR(i  ,j  ,k-1)
+               br   = br   +   B_R(i  ,j  ,k-1)
+               bphi = bphi + B_PHI(i  ,j  ,k-1)
+               bz   = bz   +   B_Z(i  ,j  ,k-1)
+               u = u + 1
+            ENDIF
+            S_ARR(i,j,k) = sflx/DBLE(u)
+            U_ARR(i,j,k) = uflx/DBLE(u)
+            B_R(i,j,k)   =   br/DBLE(u)
+            B_PHI(i,j,k) = bphi/DBLE(u)
+            B_Z(i,j,k)   =   bz/DBLE(u)
+         ENDIF
+         CALL FLUSH(6)
+      END DO
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! Evaluate the profile quantities on the background grid
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      IF (lverb) THEN
+         WRITE(6,*)
+         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Profile Lookup [',0,']%'
+      END IF
+      CALL FLUSH(6)
+      DO s = mystart, myend
+         i = MOD(s-1,nr)+1
+         j = MOD(s-1,nr*nphi)
+         j = FLOOR(REAL(j) / REAL(nr))+1
+         k = CEILING(REAL(s) / REAL(nr*nphi))
+         sflx = S_ARR(i,j,k)
+         sflx = MAX(sflx,0.0)
+         ! Do the potential everwhere
+         IF (npot > 0) CALL EZspline_interp(POT_spl_s,MIN(sflx,s_max_pot),POT_ARR(i,j,k),ier)
+         IF (sflx <= s_max) THEN
+            IF (nte > 0) CALL EZspline_interp(TE_spl_s,MIN(sflx,s_max_te),TE(i,j,k),ier)
+            IF (nne > 0) CALL EZspline_interp(NE_spl_s,MIN(sflx,s_max_ne),NE(i,j,k),ier)
+            IF (nti > 0) CALL EZspline_interp(TI_spl_s,MIN(sflx,s_max_ti),TI(i,j,k),ier)
+            IF (nomeg > 0) CALL EZspline_interp(OMEG_spl_s,MIN(sflx,s_max_omeg),OMEG_ARR(i,j,k),ier)
+            IF (nzeff > 0) THEN
+               CALL EZspline_interp(ZEFF_spl_s,MIN(sflx,s_max_zeff),ZEFF_ARR(i,j,k),ier)
+               DO u=1, NION
+                  CALL EZspline_interp(NI_spl_s(u),MIN(sflx,s_max_zeff),NI(u,i,j,k),ier)
+               END DO
+            END IF
+         END IF
+         IF (MOD(s,nr) == 0) THEN
+            IF (lverb) THEN
+               CALL backspace_out(6,6)
+               WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
+            END IF
+         END IF
+         CALL FLUSH(6)
+      END DO
+
+      ! Fix ZEFF
+      IF (mylocalid == mylocalmaster) WHERE(ZEFF_ARR < 1) ZEFF_ARR = 1
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! Virtual casing if requested.
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      IF (luse_vc) THEN
+         IF (lverb) THEN
+            WRITE(6,*)
+            WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Virtual Casing [',0,']%'
+         END IF
+         CALL FLUSH(6)
+         DO s = mystart, myend
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)
+            j = FLOOR(REAL(j) / REAL(nr))+1
+            k = CEILING(REAL(s) / REAL(nr*nphi))
+            sflx = S_ARR(i,j,k)
+            sflx = MAX(sflx,0.0)
+            IF (sflx <= 1.0) CYCLE
             xaxis_vc = raxis_g(i)*cos(phiaxis(j))
             yaxis_vc = raxis_g(i)*sin(phiaxis(j))
             zaxis_vc = zaxis_g(k)
@@ -384,22 +507,15 @@
             ELSE IF (ier > 1) THEN ! Only report real errors not failure to find tolerance errors
                WRITE(6,*) myworkid,mylocalid,i,j,k,ier
             END IF
-         !ELSE
-            ! This is an error code check
-            !PRINT *,'ERROR in GetBcyl Detected'
-            !PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
-            !print *,'br,bphi,bz,myworkid',br,bphi,bz,mylocalid
-            !CALL FLUSH(6)
-            !stop 'ERROR in GetBcyl'
-         END IF
-         IF (MOD(s,nr) == 0) THEN
-            IF (lverb) THEN
-               CALL backspace_out(6,6)
-               WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
-               CALL FLUSH(6)
+            IF (MOD(s,nr) == 0) THEN
+               IF (lverb) THEN
+                  CALL backspace_out(6,6)
+                  WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
+                  CALL FLUSH(6)
+               END IF
             END IF
-         END IF
-      END DO
+         END DO
+      END IF
       
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
@@ -414,110 +530,11 @@
          ALLOCATE(Gfactor(ns_prof1))
          DO s = 1, ns_prof1
             sflx = MIN(REAL(s-0.5)/h1_prof,1.0)
-            !sflx = REAL(s-1 + 0.5)/ns_prof1 ! Half grid rho
             sflx = sflx*sflx
             CALL EZspline_interp(ZEFF_spl_s,sflx,uflx,ier)
-            ! sflx=s uflx=Zeff
             CALL vmec_ohkawa(sflx,uflx,Gfactor(s)) ! (1-l31)/Zeff
          END DO
       ENDIF
-
-      ! Expand the VMEC geometric grid for s>1
-      ALLOCATE(rmnc_temp(mnmax,ns*scaleup),zmns_temp(mnmax,ns*scaleup))
-      rmnc_temp(:,1:ns) = rmnc(:,1:ns)
-      zmns_temp(:,1:ns) = zmns(:,1:ns)
-      nv = ntor + 1
-      DO s = 2,ns ! Remove magnetic axis from geometric axis
-         rmnc_temp(1:nv,s) = rmnc_temp(1:nv,s) - rmnc(1:nv,1)
-         zmns_temp(1:nv,s) = zmns_temp(1:nv,s) - zmns(1:nv,1)
-      END DO
-      DO s = ns+1,ns*scaleup
-         sflx = REAL(s)/REAL(ns)
-         uflx = SQRT(REAL(s)/REAL(ns*scaleup))
-         WHERE (MOD(NINT(xm),2)==1)
-            rmnc_temp(:,s) = rmnc_temp(:,ns)*sflx**1.5
-            zmns_temp(:,s) = zmns_temp(:,ns)*sflx**1.5
-         ELSEWHERE
-            rmnc_temp(:,s) = rmnc_temp(:,ns)*sflx
-            zmns_temp(:,s) = zmns_temp(:,ns)*sflx
-         END WHERE
-      END DO
-      DO s = 2,ns*scaleup ! Add magnetic axis from geometric axis
-         rmnc_temp(1:nv,s) = rmnc_temp(1:nv,s) + rmnc(1:nv,1)
-         zmns_temp(1:nv,s) = zmns_temp(1:nv,s) + zmns(1:nv,1)
-      END DO
-      IF (lasym) THEN
-         ALLOCATE(rmns_temp(mnmax,ns*scaleup),zmnc_temp(mnmax,ns*scaleup))
-         rmns_temp(:,1:ns) = rmns(:,1:ns)
-         zmnc_temp(:,1:ns) = zmnc(:,1:ns)
-         DO s = 2,ns ! Remove magnetic axis from geometric axis
-            rmns_temp(1:nv,s) = rmns_temp(1:nv,s) - rmns(1:nv,1)
-            zmnc_temp(1:nv,s) = zmnc_temp(1:nv,s) - zmnc(1:nv,1)
-         END DO
-         DO s = ns+1,ns*scaleup
-            sflx = REAL(s)/REAL(ns)
-            uflx = SQRT(REAL(s)/REAL(ns*scaleup))
-            WHERE (MOD(NINT(xm),2)==1)
-               rmns_temp(:,s) = rmns_temp(:,ns)*sflx**1.5
-               zmnc_temp(:,s) = zmnc_temp(:,ns)*sflx**1.5
-            ELSEWHERE
-               rmns_temp(:,s) = rmns_temp(:,ns)*sflx
-               zmnc_temp(:,s) = zmnc_temp(:,ns)*sflx
-            END WHERE
-         END DO
-         DO s = 2,ns*scaleup ! Add magnetic axis from geometric axis
-            rmns_temp(1:nv,s) = rmns_temp(1:nv,s) + rmns(1:nv,1)
-            zmnc_temp(1:nv,s) = zmnc_temp(1:nv,s) + zmnc(1:nv,1)
-         END DO
-      END IF
-      DEALLOCATE(iotaf,phipf,rmnc,zmns,lmns,bsupumnc,bsupvmnc)
-      ns = ns*scaleup
-      ALLOCATE(iotaf(1:ns),phipf(1:ns))
-      ALLOCATE(rmnc(1:mnmax,1:ns),zmns(1:mnmax,1:ns), &
-         lmns(1:mnmax,1:ns), &
-         bsupumnc(1:mnmax_nyq,1:ns),bsupvmnc(1:mnmax_nyq,1:ns))
-      rmnc=rmnc_temp; zmns=zmns_temp; bsupumnc=0; bsupvmnc=0; lmns=0
-      DEALLOCATE(rmnc_temp,zmns_temp,rzl_local)
-      IF (lasym) THEN
-         DEALLOCATE(rmns,zmnc,lmnc,bsupumns,bsupvmns)
-         ALLOCATE(rmns(1:mnmax,1:ns),zmnc(1:mnmax,1:ns), &
-            lmnc(1:mnmax,1:ns), &
-            bsupumns(1:mnmax_nyq,1:ns),bsupvmns(1:mnmax_nyq,1:ns))
-         rmns=rmns_temp; zmnc=zmnc_temp; bsupumns=0; bsupvmns=0; lmnc=0
-         DEALLOCATE(rmns_temp,zmnc_temp)
-      END IF
-      DO s = mystart, myend ! Now fill in grid
-         i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
-         sflx = 0.0
-         IF (S_ARR(i,j,k)<=1.0) CYCLE
-         CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
-                      br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
-         ! note that s in now rho since we grid different in the outer region
-         IF (ier .ne. 0) THEN
-            lsmooth(s) = .true.
-            CYCLE
-         END IF
-         sflx = sflx*sflx*scaleup*scaleup
-         S_ARR(i,j,k) = MAX(sflx,1.01)
-         IF (uflx<0)  uflx = uflx+pi2
-         U_ARR(i,j,k) = uflx
-      END DO
-
-      ! Smooth
-      DO s = mystart, myend ! Now fill in grid
-         IF (.not.lsmooth(s)) CYCLE
-         i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
-         IF (i==1 .or. i==nr) CYCLE
-         IF (k==1 .or. k==nz) CYCLE
-         S_ARR(i,j,k) = (MAX(S_ARR(i-1,j,k),S_ARR(i+1,j,k)) &
-                  + MAX(S_ARR(i,j,k-1),S_ARR(i,j,k+1)))*0.5 
-      END DO
 
       ! Deallocations
       IF (myworkid == master) THEN
@@ -530,20 +547,11 @@
          IF (lasym) DEALLOCATE(rmns,zmnc,lmnc,bsupumns,bsupvmns)
          DEALLOCATE(rzl_local)
       END IF
-      DEALLOCATE(lsmooth)
       
       IF (lverb) THEN
-         CALL backspace_out(6,36)
-         CALL FLUSH(6)
-         WRITE(6,'(36X)',ADVANCE='no')
-         CALL FLUSH(6)
-         CALL backspace_out(6,36)
          WRITE(6,*)
          CALL FLUSH(6)
       END IF    
-
-      ! Fix ZEFF
-      IF (mylocalid == mylocalmaster) WHERE(ZEFF_ARR < 1) ZEFF_ARR = 1
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
