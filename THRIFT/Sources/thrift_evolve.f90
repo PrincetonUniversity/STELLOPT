@@ -19,7 +19,8 @@
       IMPLICIT NONE
       LOGICAL :: lfirst_pass, lfirst_sub_pass
       INTEGER :: i, ier
-      REAL(rprec) :: alpha, rho, s, stime, etime, time_vmec, time_bootstrap, stime_total, etime_total
+      REAL(rprec) :: alpha, rho, s, stime, etime, time_vmec, time_bootstrap, &
+      time_pressure, stime_total, etime_total
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
       CHARACTER(len = 16)     :: temp1_str, temp2_str
       CHARACTER(len = 79)     :: header_str,progress_str
@@ -61,7 +62,7 @@
       THRIFT_DENS     = 0; THRIFT_TEMP     = 0; THRIFT_PRESS      = 0
 
       ! Initialize timers
-      time_vmec = 0; time_bootstrap = 0
+      time_vmec = 0; time_bootstrap = 0; time_pressure = 0
       CALL second0(stime_total)
 
       ! Allocate the convergence helper
@@ -77,7 +78,10 @@
 
          ! Setup the profiles
          IF (lverbj) WRITE(6,*) "Updating equilibrium pressure"
+         CALL second0(stime)
          CALL thrift_equil_p
+         CALL second0(etime)
+         time_pressure = time_pressure + (etime-stime)
 
          ! Converge Source Currents
          deltaj = 10*jtol; nsubsteps = 0; eq_beta = 1E-9
@@ -239,6 +243,7 @@
             WRITE(6,*) ' '
             WRITE(*, '(A)') ' ----------------------------------  TIMERS  ----------------------------------'
             WRITE(*, '(A33, F6.1, A)') '  Time spent in VMEC: ', time_vmec / 60.0, ' min'
+            WRITE(*, '(A33, F6.1, A)') '  Time spent in Pressure Update: ', time_pressure / 60.0, ' min'
             WRITE(*, '(A33, F6.1, A)') '  Time spent in Bootstrap codes: ', time_bootstrap / 60.0, ' min'
             WRITE(*, '(A33, F6.1, A)') '   TOTAL time in thrift_evolve: ', (etime_total-stime_total) / 60.0, ' min'
             WRITE(6,*)'==============================================================================='
