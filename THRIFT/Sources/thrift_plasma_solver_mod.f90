@@ -132,7 +132,6 @@ MODULE thrift_plasma_solver_mod
             ! Update splines and exit routine
             CALL update_splines
 
-            mytimestep_plasma_solver = mytimestep_plasma_solver + 1
             RETURN
         ENDIF
 
@@ -145,10 +144,10 @@ MODULE thrift_plasma_solver_mod
         t_new = THRIFT_T(mytimestep)
 
         ! Fill in plasma_N, plasma_P and plasma_T with previous time step
-        plasma_N(:,:) = plasma_N_keep(:,mytimestep_plasma_solver-1,:)
-        plasma_T(:,:) = plasma_T_keep(:,mytimestep_plasma_solver-1,:)
+        ! NOTE mytimestep_plasma_solver has not yet advanced
+        plasma_N(:,:) = plasma_N_keep(:,mytimestep_plasma_solver,:)
+        plasma_T(:,:) = plasma_T_keep(:,mytimestep_plasma_solver,:)
         plasma_P = plasma_N * plasma_T * e_charge
-
         ! Flatten plasma_P into plasma_total_old
         idx=1
         DO ispecies=1,num_species
@@ -163,6 +162,7 @@ MODULE thrift_plasma_solver_mod
         t_current = t_old
         DO plasma_iteration = 1,N_plasma_steps_per_THRIFT_step
 
+            mytimestep_plasma_solver = mytimestep_plasma_solver + 1
             r_plasma_grid(mytimestep_plasma_solver,:) = rho_plasma_grid * eq_Aminor
 
             ! SUBCYCLE
@@ -219,7 +219,6 @@ MODULE thrift_plasma_solver_mod
             END DO
 
             t_current = t_current + dt_plasma_solver
-            mytimestep_plasma_solver = mytimestep_plasma_solver + 1
         END DO
 
         ! Deallocate local arrays
