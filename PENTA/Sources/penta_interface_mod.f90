@@ -1058,6 +1058,7 @@ MODULE PENTA_INTERFACE_MOD
 
       IF (myworkid == master) THEN
          PRINT *, 'Gamma_e_vs_Er = ', Gamma_e_vs_Er
+         CALL FLUSH(6)
          ! Find the ambipolar root(s) from gamma_e = sum(Z*gamma_i)
          Call find_Er_roots(gamma_e_vs_Er,gamma_i_vs_Er,Er_test_vals,Z_ion, &
          num_Er_test,num_ion_species,Er_roots,num_roots,flag_roots)
