@@ -576,6 +576,8 @@ class THRIFT_plasma_solver():
             self.plasma_class = PLASMA(list_of_species=list_of_species)
         else:
             self.plasma_class = plasma
+            
+        self.list_of_species = list_of_species
         
     def read_thrift_plasma_solver(self,file):
         """Reads plasma_solver THRIFT HDF5 file
@@ -593,20 +595,38 @@ class THRIFT_plasma_solver():
                 #
                 self.time_grid = f['time_plasma_grid'][:]
                 self.rho_grid  = f['rho_plasma_grid'][:]
+                self.r_grid  = f['r_plasma_grid'][:,:]
                 #
                 self.plasma_N = f['plasma_N'][:,:,:]
                 self.plasma_T = f['plasma_T'][:,:,:]
                 #
                 Zions = np.array( f['Zions'][:], dtype=int)
+                #
+                self.Dn_NEO = f['Dn_NEO'][:,:,:]
+                self.cn_NEO = f['cn_NEO'][:,:,:]
+                self.Dp_NEO = f['Dp_NEO'][:,:,:]
+                self.cp_NEO = f['cp_NEO'][:,:,:]
+                #
+                self.G_NEO = f['G_NEO_complet'][:,:,:]
+                self.Q_NEO = f['Q_NEO_complet'][:,:,:]
                      
                 # check if Zions coincides with that in plasma class
                 Zcharge = np.array( [self.plasma_class.Zcharge[ion] for ion in self.plasma_class.ion_species], dtype=int )
                 if not np.array_equal(Zions, Zcharge):
                     raise ValueError("Zcharge from file does not match that of plasma class!")
                 
-                # transpose plasma_N and plasma_T
+                # transpose
+                self.r_grid = self.r_grid.T
+                #
                 self.plasma_N = np.transpose(self.plasma_N, axes=[2,1,0])
                 self.plasma_T = np.transpose(self.plasma_T, axes=[2,1,0])
+                self.Dn_NEO = np.transpose(self.Dn_NEO, axes=[2,1,0])
+                self.cn_NEO = np.transpose(self.cn_NEO, axes=[2,1,0])
+                self.Dp_NEO = np.transpose(self.Dp_NEO, axes=[2,1,0])
+                self.cp_NEO = np.transpose(self.cp_NEO, axes=[2,1,0])
+                #
+                self.G_NEO = np.transpose(self.G_NEO, axes=[2,1,0])
+                self.Q_NEO = np.transpose(self.Q_NEO, axes=[2,1,0])            
                 
     def create_input_sources_file(self,filename,nt,nrho,tfin):
         # creates 
