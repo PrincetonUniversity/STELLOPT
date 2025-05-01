@@ -160,6 +160,8 @@ MODULE thrift_plasma_solver_mod
         t_current = t_old
         DO plasma_iteration = 1,N_plasma_steps_per_THRIFT_step
 
+            PRINT *, 'mytimestep_plasma_solver=',mytimestep_plasma_solver
+
             mytimestep_plasma_solver = mytimestep_plasma_solver + 1
             r_plasma_grid(mytimestep_plasma_solver,:) = rho_plasma_grid * eq_Aminor
 

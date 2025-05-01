@@ -911,6 +911,190 @@ MODULE PENTA_INTERFACE_MOD
       RETURN
    END SUBROUTINE penta_run_1_init
 
+   SUBROUTINE penta_run_2_efield_3_find_roots
+      USE vmec_var_pass
+      USE pprof_pass
+      USE phys_const
+      USE io_unit_spec
+      USE coeff_var_pass
+      USE penta_math_routines_mod, ONLY: rlinspace
+      USE penta_functions_mod
+      USE PENTA_subroutines, ONLY: form_xvec
+      USE PENTA_subroutines, ONLY: find_Er_roots
+      USE mpi_params
+      USE mpi_inc
+      IMPLICIT NONE
+      INTEGER :: mystart,myend
+      INTEGER :: flag_roots
+      INTEGER(iknd) :: additional_roots
+
+      additional_roots = 100
+      flag_roots = 100 ! value larger than zero to enter the while loop
+
+      DO WHILE(flag_roots>0)
+
+         Call penta_allocate_fluxes_vs_Er
+
+         ! Define array of Er values to test [V/m]
+         Er_test_vals = rlinspace(Er_min,Er_max,num_Er_test)*100._rknd
+
+         ! Check for Er=0, doesn't work for log interpolation
+         min_Er = Minval(Dabs(Er_test_vals),DIM=1) 
+         If ((log_interp .EQV. .true. ) .AND. ( Dabs(min_Er) <= elem_charge ))  Then
+            min_ind = Minloc(Dabs(Er_test_vals),DIM=1)
+            If ( min_ind == Num_Er_test ) Then 
+               Er_test_vals(min_ind) = Er_test_vals(min_ind - 1)/2._rknd
+            Else
+               Er_test_vals(min_ind) = Er_test_vals(min_ind + 1)/2._rknd
+            EndIf
+            ! Write(*,'(a,i4,a,f10.3)') 'Cannot use Er=0 with log_interp, using Er(',  &
+               ! min_ind, ') = ', Er_test_vals(min_ind)
+         EndIf
+         
+         ! Loop over Er to get fluxes as a function of Er
+         CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD,1,num_Er_test,mystart,myend)
+
+         Gamma_e_vs_Er = 0.0
+         Gamma_i_vs_Er = 0.0
+
+         Do ie = mystart,myend !1,num_Er_test
+            Er_test = Er_test_vals(ie)
+            abs_Er = Abs(Er_test)
+   
+            ! Form thermodynamic force vector (Xvec)
+            Call form_Xvec(Er_test,Z_ion,B_Eprl,num_ion_species,Xvec)
+   
+            ! Form alternate thermodynamic force vector (Avec)
+            Do ispec1 = 1,num_species
+               ind_X = (ispec1-1)*2 + 1
+               ind_A = (ispec1-1)*3 + 1
+   
+               Avec(ind_A)   = -Xvec(ind_X) / (Temps(ispec1)*elem_charge) &
+                  - 2.5_rknd*dTdrs(ispec1)/Temps(ispec1)
+               Avec(ind_A+1)   = -Xvec(ind_X+1) / (Temps(ispec1)*elem_charge)
+               Avec(ind_A+2)   = Xvec(num_species*2+1)*charges(ispec1) &
+                  * B0/(Temps(ispec1)*elem_charge*Sqrt(Bsq)) + &
+                  beam_force/(Temps(ispec1)*elem_charge*dens(ispec1))
+            Enddo
+   
+            ! Select the appropriate algorithm and calculate the flows and fluxes
+            SELECT CASE (Method)
+               Case ('T', 'MBT')
+                  ! Calculate array of parallel flow moments
+                  Flows = calc_flows_T(num_species,Smax,abs_Er,Temps,dens,vths,charges,   &
+                    masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,   &
+                    cmax,emin,emax,xt_c,xt_e,Dspl_D31,Dspl_logD33,num_c,num_e,kcord,      &
+                    keord,Avec,Bsq,lmat,J_BS)
+                  Gammas = calc_fluxes_MBT(num_species,Smax,abs_Er,Temps,dens,vths,       &
+                    charges,masses,dTdrs,dndrs,loglambda,use_quanc8,Kmin,Kmax,numKsteps,  &
+                    log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,        &
+                    Dspl_Dex,num_c,num_e,kcord,keord,Avec,lmat,Flows,U2,B0,flux_cap)   
+                  If ( output_QoT_vs_Er .EQV. .true. ) Then
+                     QoTs = calc_QoTs_MBT(num_species,Smax,abs_Er,Temps,dens,vths,charges, &
+                      masses,dTdrs,dndrs,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
+                      log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,      &
+                      Dspl_Dex,num_c,num_e,kcord,keord,Avec,lmat,Flows,U2,B0,flux_cap)   
+                  Endif    
+               Case ('SN')                    
+                  Flows = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
+                     masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
+                     cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord,  &
+                     keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3)                                                
+                  Gammas = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
+                    masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
+                    emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,        &
+                    Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,        &
+                    dndrs,flux_cap,L_A1,L_A2,L_A3,L_n,L_T,L_Er)  
+                  If ( output_QoT_vs_Er .EQV. .true. ) Then
+                     QoTs = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
+                        masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
+                        cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11, &
+                        Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,      &
+                        dndrs,flux_cap,L_A1,L_A2,L_A3,R_n,R_T,R_Er)  
+                  Endif    
+               Case ('DKES')
+                  Flows = calc_flows_DKES(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
+                     masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,  &
+                     cmax,emin,emax,xt_c,xt_e,Dspl_D31,Dspl_logD33,num_c,num_e,kcord,     &
+                     keord,Avec,J_BS)
+                  Gammas = calc_fluxes_DKES(num_species,abs_Er,Temps,dens,vths,charges,   &
+                     masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
+                     emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,     &
+                     Avec,B0)   
+                  If ( output_QoT_vs_Er .EQV. .true. ) Then
+                     QoTs = calc_QoTs_DKES(num_species,abs_Er,Temps,dens,vths,charges,     &
+                        masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
+                        cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,    &
+                        keord,Avec,B0)  
+                  Endif
+               Case Default
+                  Write(6,'(3a)') ' Error: ''', Trim(Adjustl(Method)), &
+                 ''' is not a valid Method'
+                  Stop 'Error: Exiting, method select error in penta.f90 (3)'
+            END SELECT
+   
+            Gamma_e_vs_Er(ie)   = Gammas(1)
+            Gamma_i_vs_Er(ie,:) = Gammas(2:num_species)
+   
+            ! Write fluxes vs Er
+            Write(str_num,*) num_ion_species + 2  ! Convert num to string
+            Write(iu_fvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+               roa_surf,Er_test/100._rknd,Gamma_e_vs_Er(ie),Gamma_i_vs_Er(ie,:)
+
+         Enddo !efield loop
+   
+   
+#if defined(MPI_OPT)
+         CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+         IF (myworkid == master) THEN
+            CALL MPI_REDUCE(MPI_IN_PLACE,Gamma_e_vs_Er,num_Er_test,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE,Gamma_i_vs_Er,num_Er_test*num_ion_species,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+         ELSE
+            CALL MPI_REDUCE(Gamma_e_vs_Er,Gamma_e_vs_Er,num_Er_test,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(Gamma_i_vs_Er,Gamma_i_vs_Er,num_Er_test*num_ion_species,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL FLUSH(6)
+         END IF
+#endif
+
+      IF (myworkid == master) THEN
+         PRINT *, 'Gamma_e_vs_Er = ', Gamma_e_vs_Er
+         ! Find the ambipolar root(s) from gamma_e = sum(Z*gamma_i)
+         Call find_Er_roots(gamma_e_vs_Er,gamma_i_vs_Er,Er_test_vals,Z_ion, &
+         num_Er_test,num_ion_species,Er_roots,num_roots,flag_roots)
+      END IF
+
+      CALL MPI_BCAST(flag_roots, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+
+      If( flag_roots==1 ) THEN
+         ! case where Er_min, Er_max must change
+         Er_min = Er_min - 50.0_rknd
+         Er_max = Er_max + 50.0_rknd
+         num_Er_test = num_Er_test + additional_roots
+         WRITE(6,'(A,F7.2,A,F7.2,A,F7.2,A,F7.2,A)') '[Er_min,Er_max] changed from [', Er_min+50.0_rknd, ',', Er_max-50.0_rknd, &
+                              '] to [', Er_min, ',', Er_max, ']'
+         WRITE(6,'(A,I4,A,I4)') 'num_Er_test increased from ', num_Er_test-additional_roots, ' to ', num_Er_test
+         WRITE(6,'(A)') ' '
+         ! CALL PENTA_RUN_2_EFIELD
+      Elseif( flag_roots==2 ) THEN
+         ! case where numEr must increase
+         num_Er_test = num_Er_test + additional_roots
+         WRITE(6,'(A,I4,A,I4)') 'num_Er_test increased from ', num_Er_test-additional_roots, ' to ', num_Er_test
+         ! CALL PENTA_RUN_2_EFIELD
+      EndIf
+
+
+      ! Set Er_Vcm to the new values so that in the next call to penta_interface_mod these values will be used and not the ones
+      ! defined in the namelist
+      !!!!!! BE CAREFUL HERE CAUSE ALL THREADS MUST KNOW ABOUT THIS !!!!!!!
+      Er_min_Vcm = Er_min
+      Er_max_Vcm = Er_max
+
+      END DO
+
+
+
+   END SUBROUTINE penta_run_2_efield_3_find_roots
+
    SUBROUTINE penta_run_2_efield
       USE vmec_var_pass
       USE pprof_pass
@@ -920,8 +1104,10 @@ MODULE PENTA_INTERFACE_MOD
       USE penta_math_routines_mod, ONLY: rlinspace
       USE penta_functions_mod
       USE PENTA_subroutines, ONLY: form_xvec
+      USE mpi_params
+      USE mpi_inc
       IMPLICIT NONE
-
+      INTEGER :: mystart,myend
       Call penta_allocate_fluxes_vs_Er
 
       ! Define array of Er values to test [V/m]
@@ -939,8 +1125,16 @@ MODULE PENTA_INTERFACE_MOD
          ! Write(*,'(a,i4,a,f10.3)') 'Cannot use Er=0 with log_interp, using Er(',  &
             ! min_ind, ') = ', Er_test_vals(min_ind)
       EndIf
+      
       ! Loop over Er to get fluxes as a function of Er
-      Do ie = 1,num_Er_test
+      CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD,1,num_Er_test,mystart,myend)
+
+      Gamma_e_vs_Er = 0.0
+      Gamma_i_vs_Er = 0.0
+
+      PRINT *, 'I will start my loop from ie=',mystart,' to ie=',myend
+
+      Do ie = mystart,myend !1,num_Er_test
          Er_test = Er_test_vals(ie)
          abs_Er = Abs(Er_test)
 
@@ -1037,6 +1231,20 @@ MODULE PENTA_INTERFACE_MOD
          !  roa_surf,Er_test/100._rknd,Flows
 
       Enddo !efield loop
+
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      IF (myworkid == master) THEN
+         CALL MPI_REDUCE(MPI_IN_PLACE,Gamma_e_vs_Er,num_Er_test,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,Gamma_i_vs_Er,num_Er_test*num_ion_species,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+      ELSE
+         CALL MPI_REDUCE(Gamma_e_vs_Er,Gamma_e_vs_Er,num_Er_test,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_REDUCE(Gamma_i_vs_Er,Gamma_i_vs_Er,num_Er_test*num_ion_species,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL FLUSH(6)
+      END IF
+#endif
+
       RETURN
    END SUBROUTINE penta_run_2_efield
 
@@ -1079,6 +1287,7 @@ MODULE PENTA_INTERFACE_MOD
 
       ! Set Er_Vcm to the new values so that in the next call to penta_interface_mod these values will be used and not the ones
       ! defined in the namelist
+      !!!!!! BE CAREFUL HERE CAUSE ALL THREADS MUST KNOW ABOUT THIS !!!!!!!
       Er_min_Vcm = Er_min
       Er_max_Vcm = Er_max
 

@@ -33,7 +33,7 @@
 !-----------------------------------------------------------------------
       INTEGER :: ns_dkes, k, ier, j, i, ncstar, nestar, mystart, myend, &
                  mysurf, root_max_Er, jspecies
-      REAL(rprec) :: s, rho, mytime
+      REAL(rprec) :: s, rho, mytime, stime, etime, st, et
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_k, iota, phip, chip, btheta, bzeta, bsq, vp, &
                         te, ne, dtedrho, dnedrho, EparB, JBS_PENTA, etapar_PENTA, Er_PENTA, rho_temp, J_temp, eta_temp, Er_temp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: GNEO_PENTA, QNEO_PENTA, GNEO_temp, QNEO_temp
@@ -52,6 +52,8 @@
       IF (lscreen) WRITE(6,'(a)') ' --------------------  NEOCLASSICAL BOOTSTRAP USING PENTA  -------------------'
       IF (lscreen) Write(*,*) " <r>/<a>","   Er root(s) (V/cm)"
 
+      CALL second0(stime)
+
       IF (lvmec) THEN
          ierr_mpi = 0
          ! PENTA is parallelized over radial surfaces in this routine.
@@ -60,22 +62,23 @@
             IF ((DKES_K(k) > 0)) ns_dkes = ns_dkes+1
          END DO
          ! Break up work
-         CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD,1,ns_dkes,mystart,myend)
+      !    CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD,1,ns_dkes,mystart,myend)
 
          ALLOCATE(rho_k(ns_dkes),iota(ns_dkes),phip(ns_dkes),chip(ns_dkes),btheta(ns_dkes),bzeta(ns_dkes),bsq(ns_dkes),vp(ns_dkes),EparB(ns_dkes))
          ALLOCATE(te(ns_dkes),ne(ns_dkes),dtedrho(ns_dkes),dnedrho(ns_dkes))
          ALLOCATE(ni(ns_dkes,nion_prof),ti(ns_dkes,nion_prof),dtidrho(ns_dkes,nion_prof),dnidrho(ns_dkes,nion_prof))
-         ALLOCATE(JBS_PENTA(ns_dkes),etapar_PENTA(ns_dkes),Er_PENTA(ns_dkes))
-         ALLOCATE(GNEO_PENTA(nion_prof+1,ns_dkes),QNEO_PENTA(nion_prof+1,ns_dkes))
-         ALLOCATE(Dn_PENTA(nion_prof+1,ns_dkes),cn_PENTA(nion_prof+1,ns_dkes))
-         ALLOCATE(Dp_PENTA(nion_prof+1,ns_dkes),cp_PENTA(nion_prof+1,ns_dkes))
-
-         JBS_PENTA = 0.0; etapar_PENTA = 0.0; Er_PENTA = 0.0
-         GNEO_PENTA = 0.0; QNEO_PENTA = 0.0
-         Dn_PENTA = 0.0; cn_PENTA = 0.0
-         Dp_PENTA = 0.0; cp_PENTA = 0.0
-
+         
          IF (myworkid == master) THEN
+
+            ALLOCATE(JBS_PENTA(ns_dkes),etapar_PENTA(ns_dkes),Er_PENTA(ns_dkes))
+            ALLOCATE(GNEO_PENTA(nion_prof+1,ns_dkes),QNEO_PENTA(nion_prof+1,ns_dkes))
+            ALLOCATE(Dn_PENTA(nion_prof+1,ns_dkes),cn_PENTA(nion_prof+1,ns_dkes))
+            ALLOCATE(Dp_PENTA(nion_prof+1,ns_dkes),cp_PENTA(nion_prof+1,ns_dkes))
+
+            JBS_PENTA = 0.0; etapar_PENTA = 0.0; Er_PENTA = 0.0
+            GNEO_PENTA = 0.0; QNEO_PENTA = 0.0
+            Dn_PENTA = 0.0; cn_PENTA = 0.0
+            Dp_PENTA = 0.0; cp_PENTA = 0.0
 
             mytime = THRIFT_T(mytimestep)
             
@@ -156,6 +159,8 @@
          CALL MPI_BCAST(eq_Rmajor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          ! THRIFT quantities
          CALL MPI_BCAST(mytime,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+
+         !! NEED TO CHANGE THIS TO INT, NO??? ALSO, DO WE REALLY NEED TO BROADCAST IT???
          CALL MPI_BCAST(mytimestep,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          
 #endif
@@ -164,7 +169,7 @@
          ncstar = COUNT(DKES_NUSTAR < 1E10)
          nestar = COUNT(DKES_ERSTAR < 1E10)
 
-         DO k = mystart,myend
+         DO k = 1,ns_dkes !mystart,myend
             ! PENTA
             CALL PENTA_SET_ION_PARAMS(nion_prof, DBLE(Zatom_prof), Matom_prof/p_mass)
             CALL PENTA_SET_COMMANDLINE(Er_min_Vcm,Er_max_Vcm,DKES_K(k),1,EparB(k),1,'','','')
@@ -185,79 +190,93 @@
             WRITE(temp1_str,'(i3.3)') mytimestep
             CALL PENTA_OPEN_OUTPUT(TRIM(temp1_str) // '_k' // TRIM(temp_str))
             CALL PENTA_FIT_RAD_TRANS
-            ! Now the basic steps
-            CALL PENTA_RUN_2_EFIELD
-            CALL PENTA_RUN_3_FIND_ROOTS
-            CALL PENTA_RUN_4_AMBIPOLAR
 
-            ! Save JBS corresponding to the root that has the largest Er
-            ! This because whenever there are 2 stable roots, a rule of thumb is to pick the one with largest Er
-            ! root_max_Er = MAXLOC(Er_roots(1:num_roots),1)
-            ! JBS_PENTA(k) = J_BS_ambi(root_max_Er)
-            ! etapar_PENTA(k) = 1.0_rprec / sigma_par_ambi(root_max_Er)
-            ! Er_PENTA(k) = MAXVAL(Er_roots(1:num_roots),1)
-            
-            ! The call to ROOT_ANALYSIS sets the array 'root_type' which decides which root will settle according to 
-            ! Maxwell construction criterium (see eg. Turkin et al. PoP 18, 022505, 2011)
-            ! This criterium substitutes the above (now commented) lines where the selected root corresponded to
-            ! the largest Er
-            CALL ROOT_ANALYSIS
-            ! Using root_type, pick the ambipolar root that will be saved by THRIFT
-            DO i=1,num_roots
-                  IF(root_type(i)) THEN
-                        JBS_PENTA(k) = J_BS_ambi(i)
-                        etapar_PENTA(k) = 1.0_rprec / sigma_par_ambi(i)
-                        Er_PENTA(k) = Er_roots(i)
-                        ! NEO fluxes
-                        GNEO_PENTA(:,k) = Gammas_ambi(:,i)
-                        QNEO_PENTA(:,k) = QoTs_ambi(:,i) * Temps * e_charge
-                        ! NEO particle transport coefficients
-                        Dn_PENTA(:,k) = (/ (-L_n_ambi(i,j,j), j=1,nion_prof+1) /)
-                        cn_PENTA(:,k) = MATMUL(L_T_ambi(i,:,:),e_charge*dTdrs) / dens + Er_PENTA(k)*SUM(L_Er_ambi(i,:,:),dim=2) / dens
-                        ! NEO heat transport coefficients
-                        Dp_PENTA(:,k) = (/ (-R_T_ambi(i,j,j), j=1,nion_prof+1) /) * e_charge*Temps / dens 
-                        cp_PENTA(:,k) = MATMUL(R_n_ambi(i,:,:),dndrs)/dens - MATMUL(R_T_ambi(i,:,:),(e_charge*Temps/dens)*dndrs)/dens &
-                                      + Er_PENTA(k)*SUM(R_Er_ambi(i,:,:),dim=2) / dens
-                        EXIT
-                  ENDIF
-            END DO
-                        
+            CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+
+            ! Now the basic steps
+            ! CALL PENTA_RUN_2_EFIELD
+            CALL second0(st)
+            CALL PENTA_RUN_2_EFIELD_3_FIND_ROOTS
+            CALL second0(et)
+            IF (myworkid == master) PRINT *, 'time in penta2+penta3=',et-st,'s'
+
+            CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+
+            IF (myworkid == master) THEN
+                  ! CALL PENTA_RUN_3_FIND_ROOTS
+                  CALL PENTA_RUN_4_AMBIPOLAR
+
+                  ! Save JBS corresponding to the root that has the largest Er
+                  ! This because whenever there are 2 stable roots, a rule of thumb is to pick the one with largest Er
+                  ! root_max_Er = MAXLOC(Er_roots(1:num_roots),1)
+                  ! JBS_PENTA(k) = J_BS_ambi(root_max_Er)
+                  ! etapar_PENTA(k) = 1.0_rprec / sigma_par_ambi(root_max_Er)
+                  ! Er_PENTA(k) = MAXVAL(Er_roots(1:num_roots),1)
+                  
+                  ! The call to ROOT_ANALYSIS sets the array 'root_type' which decides which root will settle according to 
+                  ! Maxwell construction criterium (see eg. Turkin et al. PoP 18, 022505, 2011)
+                  ! This criterium substitutes the above (now commented) lines where the selected root corresponded to
+                  ! the largest Er
+                  CALL ROOT_ANALYSIS
+                  ! Using root_type, pick the ambipolar root that will be saved by THRIFT
+                  DO i=1,num_roots
+                        IF(root_type(i)) THEN
+                              JBS_PENTA(k) = J_BS_ambi(i)
+                              etapar_PENTA(k) = 1.0_rprec / sigma_par_ambi(i)
+                              Er_PENTA(k) = Er_roots(i)
+                              ! NEO fluxes
+                              GNEO_PENTA(:,k) = Gammas_ambi(:,i)
+                              QNEO_PENTA(:,k) = QoTs_ambi(:,i) * Temps * e_charge
+                              ! NEO particle transport coefficients
+                              Dn_PENTA(:,k) = (/ (-L_n_ambi(i,j,j), j=1,nion_prof+1) /)
+                              cn_PENTA(:,k) = MATMUL(L_T_ambi(i,:,:),e_charge*dTdrs) / dens + Er_PENTA(k)*SUM(L_Er_ambi(i,:,:),dim=2) / dens
+                              ! NEO heat transport coefficients
+                              Dp_PENTA(:,k) = (/ (-R_T_ambi(i,j,j), j=1,nion_prof+1) /) * e_charge*Temps / dens 
+                              cp_PENTA(:,k) = MATMUL(R_n_ambi(i,:,:),dndrs)/dens - MATMUL(R_T_ambi(i,:,:),(e_charge*Temps/dens)*dndrs)/dens &
+                                          + Er_PENTA(k)*SUM(R_Er_ambi(i,:,:),dim=2) / dens
+                              EXIT
+                        ENDIF
+                  END DO
+            END IF
+
+            CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
             CALL PENTA_RUN_5_CLEANUP(lscreen)
+
 
          END DO
 
 
          !! Bootstrap interpolation onto THRIFT grid
-#if defined(MPI_OPT)
-         CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
-         IF (myworkid == master) THEN
-            CALL MPI_REDUCE(MPI_IN_PLACE,JBS_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE,etapar_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE,Er_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE,GNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE,QNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE,Dn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE,cn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE,Dp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE,cp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-         ELSE 
-            CALL MPI_REDUCE(JBS_PENTA,JBS_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(etapar_PENTA,etapar_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(Er_PENTA,Er_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(GNEO_PENTA,GNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(QNEO_PENTA,QNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(Dn_PENTA,Dn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(cn_PENTA,cn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(Dp_PENTA,Dp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL MPI_REDUCE(cp_PENTA,cp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-            CALL FLUSH(6)
-            DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
-            DEALLOCATE(te,ne,dtedrho,dnedrho)
-            DEALLOCATE(ni,ti,dtidrho,dnidrho)
-            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA,Dn_PENTA,cn_PENTA,Dp_PENTA,cp_PENTA)
-            RETURN
-         ENDIF
-#endif
+! #if defined(MPI_OPT)
+!          CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+!          IF (myworkid == master) THEN
+!             CALL MPI_REDUCE(MPI_IN_PLACE,JBS_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(MPI_IN_PLACE,etapar_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(MPI_IN_PLACE,Er_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(MPI_IN_PLACE,GNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(MPI_IN_PLACE,QNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(MPI_IN_PLACE,Dn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(MPI_IN_PLACE,cn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(MPI_IN_PLACE,Dp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(MPI_IN_PLACE,cp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!          ELSE 
+!             CALL MPI_REDUCE(JBS_PENTA,JBS_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(etapar_PENTA,etapar_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(Er_PENTA,Er_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(GNEO_PENTA,GNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(QNEO_PENTA,QNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(Dn_PENTA,Dn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(cn_PENTA,cn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(Dp_PENTA,Dp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL MPI_REDUCE(cp_PENTA,cp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+!             CALL FLUSH(6)
+!             DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
+!             DEALLOCATE(te,ne,dtedrho,dnedrho)
+!             DEALLOCATE(ni,ti,dtidrho,dnidrho)
+!             DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA,Dn_PENTA,cn_PENTA,Dp_PENTA,cp_PENTA)
+!             RETURN
+!          ENDIF
+! #endif
          
          IF (myworkid == master) THEN
 
@@ -415,10 +434,18 @@
             DEALLOCATE(ni,ti,dtidrho,dnidrho)
             DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA)
             DEALLOCATE(Dn_PENTA,cn_PENTA,Dp_PENTA,cp_PENTA)
+
+         ELSE !other threads
+            DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
+            DEALLOCATE(te,ne,dtedrho,dnedrho)
+            DEALLOCATE(ni,ti,dtidrho,dnidrho)
+            RETURN
                         
          END IF
 
       ENDIF
+      CALL second0(etime)
+      PRINT *, 'myworkid=', myworkid, '  time in PENTA: ', etime-stime, 's'
       IF (lscreen) WRITE(6,'(a)') ' -------------------  NEOCLASSICAL BOOTSTRAP CALCULATION DONE  ---------------------'
       RETURN
 !-----------------------------------------------------------------------
