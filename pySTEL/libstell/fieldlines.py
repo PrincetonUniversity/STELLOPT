@@ -74,6 +74,7 @@ class FIELDLINES():
 		for i in range(self.nr):
 			self.B_R[i,:,:] = self.B_R[i,:,:]*self.B_PHI[i,:,:]/self.raxis[i]
 			self.B_Z[i,:,:] = self.B_Z[i,:,:]*self.B_PHI[i,:,:]/self.raxis[i]
+		# Adjust wall faces to python indexing
 		if hasattr(self,'wall_faces'): self.wall_faces = self.wall_faces - 1
 
 	def calc_reff(self):
@@ -174,6 +175,14 @@ class FIELDLINES():
 			ax.scatter(x,y,s=0.1,c=c,marker='.')
 		else:
 			ax.plot(x,y,'.k',markersize=0.1)
+		# Add the hc
+		if hasattr(self,'Rhc_lines'):
+			nlines_hc = self.Rhc_lines.shape[0]
+			nsteps_hc = self.Rhc_lines.shape[1]
+			x = self.Rhc_lines[0:nlines_hc,k:nsteps_hc-1:self.npoinc]
+			y = self.Zhc_lines[0:nlines_hc,k:nsteps_hc-1:self.npoinc]
+			ax.plot(x,y,'.r',markersize=0.1)
+			ax.plot(self.Rhc_lines[0,k],self.Zhc_lines[0,k],'+r')
 		ax.set_xlabel('R [m]')
 		ax.set_ylabel('Z [m]')
 		ax.set_title(rf'FIELDLINES $\phi$ = {np.rad2deg(phi):3.1f}')
