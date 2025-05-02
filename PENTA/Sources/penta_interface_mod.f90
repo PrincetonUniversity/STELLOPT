@@ -1426,23 +1426,23 @@ MODULE PENTA_INTERFACE_MOD
    END SUBROUTINE penta_merge_fluxes_vs_Er_files
 
    SUBROUTINE root_analysis
-      ! using the Maxwell construction criterium, whenever num_roots>1, determines which of them will settle
-      ! (see eg. Turkin et al. PoP 18, 022505, 2011)
       ! The array root_type indicates if the ambipolar root is set or not with .TRUE. or .FALSE.
 
       IMPLICIT NONE
 
-      INTEGER(iknd) :: i, j, idx_ion_root, idx_electron_root, one, zero
+      INTEGER(iknd) :: i, j, idx_ion_root, idx_electron_root, one, zero, idx_closest_to_zero
       REAL(rknd), DIMENSION(num_Er_test) :: Jr
-      REAL(rknd) :: temp_sum, electron_root, ion_root, integral
+      REAL(rknd) :: temp_sum, electron_root, ion_root, integral, Er_closest_to_zero
+      LOGICAL :: cond_A, cond_B
 
-      Do i=1, num_Er_test
-         temp_sum = 0.0
-         Do j=1, num_ion_species
-            temp_sum = temp_sum + Z_ion(j)*Gamma_i_vs_Er(i,j)
-         End Do
-         Jr(i) = temp_sum - Gamma_e_vs_Er(i)
-      End Do
+      ! DEPRECATED: Maxwell construction criterium
+      ! Do i=1, num_Er_test
+      !    temp_sum = 0.0
+      !    Do j=1, num_ion_species
+      !       temp_sum = temp_sum + Z_ion(j)*Gamma_i_vs_Er(i,j)
+      !    End Do
+      !    Jr(i) = temp_sum - Gamma_e_vs_Er(i)
+      ! End Do
 
       IF(ALLOCATED(root_type)) DEALLOCATE(root_type)
       ALLOCATE(root_type(num_roots))
@@ -1452,35 +1452,56 @@ MODULE PENTA_INTERFACE_MOD
       IF( num_roots ==1 ) THEN
          root_type(1) = .TRUE.
       ELSE IF(num_roots==3) THEN
-         electron_root = MAXVAL(Er_roots(1:num_roots),1)
-         ion_root = MINVAL(Er_roots(1:num_roots),1)
-         ! Find the index in Er_test_vals closest to electron_root and ion_root
-         idx_electron_root = MINLOC( ABS(Er_test_vals-electron_root), 1 )
-         idx_ion_root = MINLOC( ABS(Er_test_vals-ion_root), 1 )
-         ! Compute integrals
-         integral = SUM( Jr(idx_ion_root:idx_electron_root)*(Er_test_vals(2)-Er_test_vals(1)) )
-         ! Set root type
-         IF(integral>0) THEN
-            root_type(1) = .TRUE.
-         ELSE
-            root_type(3) = .TRUE.
-         ENDIF
-         !
+         ! pick root that corresponds to lowest Er (ion root)
+         root_type(1) = .TRUE. !Er_roots are ordered
+
+         ! ! DEPRECATED: Maxwell construction criterium
+         ! electron_root = MAXVAL(Er_roots(1:num_roots),1)
+         ! ion_root = MINVAL(Er_roots(1:num_roots),1)
+         ! ! Find the index in Er_test_vals closest to electron_root and ion_root
+         ! idx_electron_root = MINLOC( ABS(Er_test_vals-electron_root), 1 )
+         ! idx_ion_root = MINLOC( ABS(Er_test_vals-ion_root), 1 )
+         ! ! Compute integrals
+         ! integral = SUM( Jr(idx_ion_root:idx_electron_root)*(Er_test_vals(2)-Er_test_vals(1)) )
+         ! ! Set root type
+         ! IF(integral>0) THEN
+         !    root_type(1) = .TRUE.
+         ! ELSE
+         !    root_type(3) = .TRUE.
+         ! ENDIF
+         
       ELSE IF(num_roots==5) THEN
-         electron_root = MAXVAL(Er_roots(1:num_roots),1)
-         ion_root = MINVAL(Er_roots(1:num_roots),1)
-         ! Find the index in Er_test_vals closest to electron_root and ion_root
-         idx_electron_root = MINLOC( ABS(Er_test_vals-electron_root), 1 )
-         idx_ion_root = MINLOC( ABS(Er_test_vals-ion_root), 1 )
-         ! Compute integrals
-         integral = SUM( Jr(idx_ion_root:idx_electron_root)*(Er_test_vals(2)-Er_test_vals(1)) )
-         ! Set root type
-         IF(integral>0) THEN
-            root_type(1) = .TRUE.
-         ELSE
-            root_type(5) = .TRUE.
-         ENDIF
+         ! There are 2 possibilities:
+         ! possibility_1 = ['extra_stable_root','unstable_root2','ion_root','unstable_root','electron_root']
+         ! possibility_2 = ['ion_root','unstable_root','electron_root','unstable_root2','extra_stabe_root']
          !
+         ! Use criterium: ion_root is the negative root closest to Er=0
+         idx_closest_to_zero = MINLOC( ABS(Er_roots), 1 ) 
+         Er_closest_to_zero = Er_roots(idx_closest_to_zero)
+
+         cond_A = Er_closest_to_zero > 0
+         cond_B = idx_closest_to_zero >= 3 !2
+                
+         IF( (cond_A .AND. cond_B) .OR. (.NOT. cond_A  .AND. cond_B) ) THEN
+            root_type(3) = .TRUE. !possibility_1
+         ELSE
+            root_type(1) = .TRUE. !possibility_2
+         END IF
+
+         ! ! DEPRECATED: Maxwell construction criterium
+         ! electron_root = MAXVAL(Er_roots(1:num_roots),1)
+         ! ion_root = MINVAL(Er_roots(1:num_roots),1)
+         ! ! Find the index in Er_test_vals closest to electron_root and ion_root
+         ! idx_electron_root = MINLOC( ABS(Er_test_vals-electron_root), 1 )
+         ! idx_ion_root = MINLOC( ABS(Er_test_vals-ion_root), 1 )
+         ! ! Compute integrals
+         ! integral = SUM( Jr(idx_ion_root:idx_electron_root)*(Er_test_vals(2)-Er_test_vals(1)) )
+         ! ! Set root type
+         ! IF(integral>0) THEN
+         !    root_type(1) = .TRUE.
+         ! ELSE
+         !    root_type(5) = .TRUE.
+         ! ENDIF
 
       ELSE
          STOP 'ERROR: number of roots different than 1,3 or 5... how is it possible??'
