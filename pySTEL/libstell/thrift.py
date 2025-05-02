@@ -536,25 +536,27 @@ class THRIFT():
         plt.legend()
         plt.show()
         
-        _, ax = plt.subplots(figsize=(11,8))
-        ax.plot(Er_dict[roa_unique[4]],Jr_dict[roa_unique[4]],'.-')
-        ax.set_xlabel('Er [V/cm]')
-        ax.set_ylabel(r'$\Sigma Z_i\Gamma_i-\Gamma_e$')
-        ax.set_title(f'r/a={roa_unique[4]}')
-        ax.grid()
+        for ROA in roa_unique:
         
-        _, ax = plt.subplots(figsize=(11,8))
-        ax.plot(Er_dict[roa_unique[4]],Ge_dict[roa_unique[4]],'.-',label='Gamma_e')
-        for k,_ in enumerate(Zions):
-            ax.plot(Er_dict[roa_unique[4]],Gi_dict[k][roa_unique[4]],'.-',label=f'Gamma_i_{k}')
-        ax.set_xlabel('Er [V/cm]')
-        ax.set_ylabel(r'$\Gamma$')
-        ax.set_yscale('symlog',linthresh=0.1)
-        ax.set_title(f'r/a={roa_unique[4]}')
-        ax.grid()
-        plt.legend()
-        
-        plt.show()
+            _, ax = plt.subplots(figsize=(11,8))
+            ax.plot(Er_dict[ROA],Jr_dict[ROA],'.-')
+            ax.set_xlabel('Er [V/cm]')
+            ax.set_ylabel(r'$\Sigma Z_i\Gamma_i-\Gamma_e$')
+            ax.set_title(f'r/a={ROA}')
+            ax.grid()
+            
+            _, ax = plt.subplots(figsize=(11,8))
+            ax.plot(Er_dict[ROA],Ge_dict[ROA],'.-',label='Gamma_e')
+            for k,_ in enumerate(Zions):
+                ax.plot(Er_dict[ROA],Gi_dict[k][ROA],'.-',label=f'Gamma_i_{k}')
+            ax.set_xlabel('Er [V/cm]')
+            ax.set_ylabel(r'$\Gamma$')
+            ax.set_yscale('symlog',linthresh=0.1)
+            ax.set_title(f'r/a={ROA}')
+            ax.grid()
+            plt.legend()
+            
+            plt.show()
         
 # THRIFT Class
 class THRIFT_plasma_solver():
