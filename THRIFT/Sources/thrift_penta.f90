@@ -179,18 +179,10 @@
             CALL PENTA_RUN_2_EFIELD
             CALL PENTA_RUN_3_FIND_ROOTS
             CALL PENTA_RUN_4_AMBIPOLAR
-
-            ! Save JBS corresponding to the root that has the largest Er
-            ! This because whenever there are 2 stable roots, a rule of thumb is to pick the one with largest Er
-            ! root_max_Er = MAXLOC(Er_roots(1:num_roots),1)
-            ! JBS_PENTA(k) = J_BS_ambi(root_max_Er)
-            ! etapar_PENTA(k) = 1.0_rprec / sigma_par_ambi(root_max_Er)
-            ! Er_PENTA(k) = MAXVAL(Er_roots(1:num_roots),1)
-            
-            ! The call to ROOT_ANALYSIS sets the array 'root_type' which decides which root will settle according to 
-            ! Maxwell construction criterium (see eg. Turkin et al. PoP 18, 022505, 2011)
-            ! This criterium substitutes the above (now commented) lines where the selected root corresponded to
-            ! the largest Er
+          
+            ! The call to ROOT_ANALYSIS sets the array 'root_type' which decides which root to pick
+            ! The criterium is to pick the 'ion_root' whenever there are 3 or 5 roots
+            ! If num_roots = even or num_roots > 5, the code gives an error
             CALL ROOT_ANALYSIS
             ! Using root_type, pick the ambipolar root that will be saved by THRIFT
             DO i=1,num_roots
