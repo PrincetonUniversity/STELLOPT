@@ -296,17 +296,17 @@
             !JBS
             CALL EZspline_init(J_spl,ns_dkes+2,bcs0,ier)
             J_spl%x1        = rho_temp
-            J_spl%isHermite = 0
+            J_spl%isHermite = 1
             CALL EZspline_setup(J_spl,J_temp,ier,EXACT_DIM=.true.)
             !etapar
             CALL EZspline_init(eta_spl,ns_dkes+2,bcs0,ier)
             eta_spl%x1        = rho_temp
-            eta_spl%isHermite = 0
+            eta_spl%isHermite = 1
             CALL EZspline_setup(eta_spl,eta_temp,ier,EXACT_DIM=.true.)
             !Er
             CALL EZspline_init(Er_spl,ns_dkes+2,bcs0,ier)
             Er_spl%x1        = rho_temp
-            Er_spl%isHermite = 0
+            Er_spl%isHermite = 1
             CALL EZspline_setup(Er_spl,Er_temp,ier,EXACT_DIM=.true.)
             !
             DEALLOCATE(J_temp,eta_temp,Er_temp)
