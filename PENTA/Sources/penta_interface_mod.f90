@@ -1008,7 +1008,9 @@ MODULE PENTA_INTERFACE_MOD
          num_Er_test,num_ion_species,Er_roots,num_roots,flag_roots)
       END IF
 
+#if defined(MPI_OPT)
       CALL MPI_BCAST(flag_roots, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+#endif
 
       If( flag_roots==1 ) THEN
          ! case where Er_min, Er_max must change

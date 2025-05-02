@@ -185,10 +185,11 @@
             CALL PENTA_OPEN_OUTPUT(TRIM(temp1_str) // '_k' // TRIM(temp_str))
             CALL PENTA_FIT_RAD_TRANS
 
-            CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+            ! CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
             CALL PENTA_RUN_2_EFIELD_3_FIND_ROOTS
+#if defined(MPI_OPT)
             CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
-
+#endif
             IF (myworkid == master) THEN
                   CALL PENTA_RUN_4_AMBIPOLAR
 
@@ -225,7 +226,7 @@
                   END DO
             END IF
 
-            CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+            ! CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
             CALL PENTA_RUN_5_CLEANUP(lscreen)
 
 
