@@ -33,7 +33,7 @@
 !-----------------------------------------------------------------------
       INTEGER :: ns_dkes, k, ier, j, i, ncstar, nestar, mystart, myend, &
                  mysurf, root_max_Er, jspecies
-      REAL(rprec) :: s, rho, mytime, stime, etime, st, et
+      REAL(rprec) :: s, rho, mytime
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_k, iota, phip, chip, btheta, bzeta, bsq, vp, &
                         te, ne, dtedrho, dnedrho, EparB, JBS_PENTA, etapar_PENTA, Er_PENTA, rho_temp, J_temp, eta_temp, Er_temp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: GNEO_PENTA, QNEO_PENTA, GNEO_temp, QNEO_temp
@@ -52,8 +52,6 @@
       IF (lscreen) WRITE(6,'(a)') ' --------------------  NEOCLASSICAL BOOTSTRAP USING PENTA  -------------------'
       IF (lscreen) Write(*,*) " <r>/<a>","   Er root(s) (V/cm)"
 
-      CALL second0(stime)
-
       IF (lvmec) THEN
          ierr_mpi = 0
          ! PENTA is parallelized over radial surfaces in this routine.
@@ -61,8 +59,6 @@
          DO k = 1, DKES_NS_MAX
             IF ((DKES_K(k) > 0)) ns_dkes = ns_dkes+1
          END DO
-         ! Break up work
-      !    CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD,1,ns_dkes,mystart,myend)
 
          ALLOCATE(rho_k(ns_dkes),iota(ns_dkes),phip(ns_dkes),chip(ns_dkes),btheta(ns_dkes),bzeta(ns_dkes),bsq(ns_dkes),vp(ns_dkes),EparB(ns_dkes))
          ALLOCATE(te(ns_dkes),ne(ns_dkes),dtedrho(ns_dkes),dnedrho(ns_dkes))
@@ -159,8 +155,6 @@
          CALL MPI_BCAST(eq_Rmajor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          ! THRIFT quantities
          CALL MPI_BCAST(mytime,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-
-         !! NEED TO CHANGE THIS TO INT, NO??? ALSO, DO WE REALLY NEED TO BROADCAST IT???
          CALL MPI_BCAST(mytimestep,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          
 #endif
@@ -192,18 +186,10 @@
             CALL PENTA_FIT_RAD_TRANS
 
             CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
-
-            ! Now the basic steps
-            ! CALL PENTA_RUN_2_EFIELD
-            CALL second0(st)
             CALL PENTA_RUN_2_EFIELD_3_FIND_ROOTS
-            CALL second0(et)
-            IF (myworkid == master) PRINT *, 'time in penta2+penta3=',et-st,'s'
-
             CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
 
             IF (myworkid == master) THEN
-                  ! CALL PENTA_RUN_3_FIND_ROOTS
                   CALL PENTA_RUN_4_AMBIPOLAR
 
                   ! Save JBS corresponding to the root that has the largest Er
@@ -244,39 +230,6 @@
 
 
          END DO
-
-
-         !! Bootstrap interpolation onto THRIFT grid
-! #if defined(MPI_OPT)
-!          CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
-!          IF (myworkid == master) THEN
-!             CALL MPI_REDUCE(MPI_IN_PLACE,JBS_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(MPI_IN_PLACE,etapar_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(MPI_IN_PLACE,Er_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(MPI_IN_PLACE,GNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(MPI_IN_PLACE,QNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(MPI_IN_PLACE,Dn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(MPI_IN_PLACE,cn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(MPI_IN_PLACE,Dp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(MPI_IN_PLACE,cp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!          ELSE 
-!             CALL MPI_REDUCE(JBS_PENTA,JBS_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(etapar_PENTA,etapar_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(Er_PENTA,Er_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(GNEO_PENTA,GNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(QNEO_PENTA,QNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(Dn_PENTA,Dn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(cn_PENTA,cn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(Dp_PENTA,Dp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL MPI_REDUCE(cp_PENTA,cp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-!             CALL FLUSH(6)
-!             DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
-!             DEALLOCATE(te,ne,dtedrho,dnedrho)
-!             DEALLOCATE(ni,ti,dtidrho,dnidrho)
-!             DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA,Dn_PENTA,cn_PENTA,Dp_PENTA,cp_PENTA)
-!             RETURN
-!          ENDIF
-! #endif
          
          IF (myworkid == master) THEN
 
@@ -444,8 +397,6 @@
          END IF
 
       ENDIF
-      CALL second0(etime)
-      PRINT *, 'myworkid=', myworkid, '  time in PENTA: ', etime-stime, 's'
       IF (lscreen) WRITE(6,'(a)') ' -------------------  NEOCLASSICAL BOOTSTRAP CALCULATION DONE  ---------------------'
       RETURN
 !-----------------------------------------------------------------------
