@@ -182,7 +182,7 @@
 
             WRITE(temp_str,'(i4.4)') k
             WRITE(temp1_str,'(i3.3)') mytimestep
-            CALL PENTA_OPEN_OUTPUT(TRIM(temp1_str) // '_k' // TRIM(temp_str))
+            IF (myworkid == master) CALL PENTA_OPEN_OUTPUT(TRIM(temp1_str) // '_k' // TRIM(temp_str))
             CALL PENTA_FIT_RAD_TRANS
 
             ! CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)

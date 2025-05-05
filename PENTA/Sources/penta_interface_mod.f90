@@ -761,9 +761,8 @@ MODULE PENTA_INTERFACE_MOD
       ELSE
          local_ext = ''
       END IF
+      
       ! Open files
-      !Open(unit=iu_flux_out, file="fluxes_vs_roa", position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-
       IF(save_all_ambipolar_roots) THEN
          CALL safe_open(iu_flux_out, istat, "fluxes_vs_roa"//TRIM(local_ext), &
             Trim(Adjustl(fstatus)), 'formatted',&
@@ -973,11 +972,6 @@ MODULE PENTA_INTERFACE_MOD
    
             Gamma_e_vs_Er(ie)   = Gammas(1)
             Gamma_i_vs_Er(ie,:) = Gammas(2:num_species)
-   
-            ! Write fluxes vs Er
-            Write(str_num,*) num_ion_species + 2  ! Convert num to string
-            Write(iu_fvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-               roa_surf,Er_test/100._rknd,Gamma_e_vs_Er(ie),Gamma_i_vs_Er(ie,:)
 
          Enddo !efield loop
    
@@ -998,9 +992,11 @@ MODULE PENTA_INTERFACE_MOD
 
          ! Write fluxes vs Er
          IF(save_fluxes_vs_Er) THEN
-            Write(str_num,*) num_ion_species + 2  ! Convert num to string
-            Write(iu_fvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-               roa_surf,Er_test/100._rknd,Gamma_e_vs_Er(ie),Gamma_i_vs_Er(ie,:)
+            DO ie=1,num_Er_test
+               Write(str_num,*) num_ion_species + 2  ! Convert num to string
+               Write(iu_fvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+                  roa_surf,Er_test_vals(ie)/100._rknd,Gamma_e_vs_Er(ie),Gamma_i_vs_Er(ie,:)
+            END DO
          END IF
 
          ! Find the ambipolar root(s) from gamma_e = sum(Z*gamma_i)
@@ -1221,8 +1217,8 @@ MODULE PENTA_INTERFACE_MOD
       CALL penta_deallocate_dkescoeff
 
       ! Close files in case they were opened
-      Close(iu_flux_out)
-      Close(iu_fvEr_out)
+      IF(myworkid == master) Close(iu_flux_out)
+      IF(myworkid == master) Close(iu_fvEr_out)
    END SUBROUTINE penta_run_5_cleanup
 
    SUBROUTINE penta_merge_ambipolar_files(ns_dkes,proc_string,mytime)
