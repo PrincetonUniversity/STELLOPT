@@ -63,7 +63,7 @@ MODULE thrift_plasma_solver_mod
 
         IMPLICIT NONE
         INTEGER :: istat, i, idx, irho, j, ispecies, ier, plasma_iteration
-        REAL(rprec) :: t_current, t_old, t_new, rho, delta_p, delta_n
+        REAL(rprec) :: rho, delta_p, delta_n
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: pressure_total, pressure_total_old, ne_old
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: RHS_density, lower_diag, upper_diag, main_diag, RHS_pressure
         real(rprec), DIMENSION(:,:), ALLOCATABLE :: LHS_pressure
@@ -143,10 +143,6 @@ MODULE thrift_plasma_solver_mod
         
         dr_plasma_solver = drho_plasma_solver * eq_Aminor
 
-        !
-        t_old = THRIFT_T(mytimestep-1)
-        t_new = THRIFT_T(mytimestep)
-
         ! Fill in plasma_N, plasma_P and plasma_T with previous time step
         ! NOTE mytimestep_plasma_solver has not yet advanced
         plasma_N(:,:) = plasma_N_keep(:,mytimestep_plasma_solver,:)
@@ -163,7 +159,6 @@ MODULE thrift_plasma_solver_mod
         ! ne_old from previous time step
         ne_old = plasma_N(1,:)
 
-        t_current = t_old
         DO plasma_iteration = 1,N_plasma_steps_per_THRIFT_step
 
             mytimestep_plasma_solver = mytimestep_plasma_solver + 1
@@ -221,8 +216,6 @@ MODULE thrift_plasma_solver_mod
                 subiter = subiter+1
 
             END DO
-
-            t_current = t_current + dt_plasma_solver
         END DO
 
         ! Deallocate local arrays
