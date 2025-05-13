@@ -36,19 +36,16 @@ if __name__=="__main__":
 			pyplot.subplots_adjust(hspace=0.1,wspace=0.15)
 			phi0 = 0
 			field_data.plot_poincare(phi0,6,ax=ax1)
-			phi1 = field_data.phiaxis[int(field_data.nphi/4)]
+			phi1 = field_data.PHI_lines[0,int(np.round(field_data.npoinc/4))]
 			field_data.plot_poincare(phi1,6,ax=ax2)
-			phi2 = field_data.phiaxis[int(field_data.nphi/2)]
+			phi2 = field_data.PHI_lines[0,int(np.round(field_data.npoinc/2))]
 			field_data.plot_poincare(phi2,6,ax=ax3)
 			if args.vmec_ext:
 				vmec_wout = VMEC()
 				vmec_wout.read_wout(args.vmec_ext)
 				theta = np.ndarray((360,1))
-				phi  = np.ndarray((3,1))
 				for j in range(360): theta[j]=2.0*np.pi*j/359.0
 				phi = np.array([[phi0],[phi1],[phi2]])
-				print(phi.shape,theta.shape)
-				#for j in range(3):   zeta[j]=     np.pi*j/2.0
 				r = vmec_wout.cfunct(theta,phi,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn)
 				z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
 				j = vmec_wout.ns-1

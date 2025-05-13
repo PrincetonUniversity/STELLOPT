@@ -165,7 +165,7 @@ class FIELDLINES():
 			lplotnow = True
 		if color_data is not None:
 			lcdata = True
-		k = int(self.npoinc*phi/self.phiaxis[-1])
+		k = int(np.round(self.npoinc*phi/self.phiaxis[-1]))
 		rmin = np.amin(self.raxis)
 		rmax = np.amax(self.raxis)
 		x = self.R_lines[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc]
@@ -185,7 +185,7 @@ class FIELDLINES():
 			ax.plot(self.Rhc_lines[0,k],self.Zhc_lines[0,k],'+r')
 		ax.set_xlabel('R [m]')
 		ax.set_ylabel('Z [m]')
-		ax.set_title(rf'FIELDLINES $\phi$ = {np.rad2deg(phi):3.1f}')
+		ax.set_title(rf'FIELDLINES $\phi$ = {np.rad2deg(self.PHI_lines[0,k]):3.1f}')
 		ax.set_aspect('equal')
 		ax.set_xlim(rmin,rmax)
 		if lplotnow: pyplot.show()
