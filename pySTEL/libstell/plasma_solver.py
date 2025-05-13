@@ -5,7 +5,7 @@ and pressure transport equations
 
 import numpy as np
 import sys
-import matplotlib.pyplot as plt
+from time import perf_counter
 sys.path.insert(1,'/home/antonio/STELLOPT/pySTEL/libstell')
 
 from plasma import PLASMA
@@ -153,7 +153,7 @@ class PLASMA_SOLVER:
                 self.alphas_fast_density_restart    = restart_solver.N['alphas_fast'][-1,:]
                 self.alphas_thermal_density_restart = restart_solver.N['alphas_thermal'][-1,:]
               
-    def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None):
+    def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None,B=None):
         
         from libstell.vmec import VMEC
         from scipy.interpolate import CubicSpline
@@ -173,6 +173,7 @@ class PLASMA_SOLVER:
                     vp = vmec_out.vp[:].flatten()
                     
                     self.aminor = vmec_out.aminor
+                    self.Rmajor = vmec_out.rmajor
                     
                     roa = np.sqrt(vmec_out.phi / vmec_out.phi[-1])
                     roa = roa.flatten()
@@ -184,12 +185,16 @@ class PLASMA_SOLVER:
                     
                     self.B = np.sqrt(np.squeeze(vmec_out.bdotb)[0])   
             case 'cylindrical':
-                if(aminor is None or Rmajor is None):
-                    print('ERROR: For a cylindrical equilibrium, Rmajor and aminor must be given')
+                if(aminor is None or Rmajor is None or B is None):
+                    print('ERROR: For a cylindrical equilibrium, Rmajor, aminor and B must be given')
                     exit(0)
                 else:
-                    self.aminor=aminor
-                    self.dVdr = lambda rho: 4*np.pi*np.pi*Rmajor*aminor  * rho
+                    self.aminor = aminor
+                    self.Rmajor = Rmajor
+                    dVdr = lambda rho: 4*np.pi*np.pi*Rmajor*aminor  * rho
+                    rho = np.linspace(0,1,100)
+                    self.dVdr = CubicSpline(rho,dVdr(rho))
+                    self.B = B
                     
     def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, rho_0=None, fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
         # electrons: 'Bremsstrahlung', 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
@@ -416,7 +421,8 @@ class PLASMA_SOLVER:
         # set fields at t=tstart
         fields_old = self.set_fields_tstart()
     
-       ### LOOP IN TIME STARTING AT t=tstart+dt ###
+        start_time = perf_counter() 
+        ### LOOP IN TIME STARTING AT t=tstart+dt ###
         for it,t in enumerate(time[1:],start=1):
             self.it = it
             
@@ -459,7 +465,10 @@ class PLASMA_SOLVER:
                 subiter += 1
         
         if(output_filename is not None):
-            self.call_save_output(output_filename)      
+            self.call_save_output(output_filename)  
+            
+        end_time = perf_counter()   
+        print(f'Plasma Solver took {(end_time-start_time)/60:.2f}min to run.')  
         
     def make_checks(self):
         
@@ -875,7 +884,7 @@ class PLASMA_SOLVER:
             
             chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
             
-            B = self.B ## currently, this is only defined when using a VMEC equilibrium
+            B = self.B
             
             mi = self.plasma.mass[ion]
             qi = self.plasma.charge[ion]
@@ -1534,6 +1543,9 @@ class PLASMA_SOLVER:
         saved_class.Gamma_NEO = self.Gamma_NEO
         saved_class.Gamma_turb = self.Gamma_turb
         saved_class.dVdr = self.dVdr
+        saved_class.aminor = self.aminor
+        saved_class.Rmajor = self.Rmajor
+        saved_class.B = self.B
         saved_class.explicit_energy_sources = self.explicit_energy_sources
         saved_class.explicit_particle_sources = self.explicit_particle_sources
         saved_class.list_of_species = self.list_of_species
