@@ -19,7 +19,7 @@ MODULE thrift_plasma_solver_mod
 #if defined(LHDF5)
     USE ez_hdf5
 #endif
-    USE thrift_equil, ONLY : eq_Aminor, vp_spl
+    USE thrift_equil, ONLY : eq_Aminor, vp_spl, bsq_spl
     !-------------------------------------------------------------------
     !     Module Variables
     !          lverb         Logical to control screen output
@@ -33,11 +33,13 @@ MODULE thrift_plasma_solver_mod
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep, &
                                                   S_energy_ext, S_particle_ext
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: Dn_NEO, cn_NEO, Dp_NEO, cp_NEO
+    REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: Dp_total, cp_total
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: G_NEO_complet, Q_NEO_complet
     INTEGER :: mytimestep_plasma_solver
     INTEGER :: N_plasma_steps_per_THRIFT_step, Nt_total_plasma_solver
     TYPE(EZspline1_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: N_splines, T_splines
     TYPE(EZspline1_r8), PRIVATE :: P_spline
+    INTEGER, PRIVATE :: subiter
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         NONE
@@ -60,7 +62,7 @@ MODULE thrift_plasma_solver_mod
     SUBROUTINE evolve_plasma_equations
 
         IMPLICIT NONE
-        INTEGER :: istat, subiter, i, idx, irho, j, ispecies, ier, plasma_iteration
+        INTEGER :: istat, i, idx, irho, j, ispecies, ier, plasma_iteration
         REAL(rprec) :: t_current, t_old, t_new, rho, delta_p, delta_n
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: pressure_total, pressure_total_old, ne_old
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: RHS_density, lower_diag, upper_diag, main_diag, RHS_pressure
@@ -77,6 +79,8 @@ MODULE thrift_plasma_solver_mod
         IF( .NOT. ALLOCATED(cn_NEO)) ALLOCATE(cn_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(Dp_NEO)) ALLOCATE(Dp_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(cp_NEO)) ALLOCATE(cp_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(Dp_total)) ALLOCATE(Dp_total(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(cp_total)) ALLOCATE(cp_total(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         ! These arrays are filled in thrift_penta with the total NEO fluxes. They include the inter-species diffusion coeffs
         ! which are neglected when computing the Dn_NEO and cn_NEO coeffs used by the transport solver
         IF( .NOT. ALLOCATED(G_NEO_complet)) ALLOCATE(G_NEO_complet(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
@@ -124,7 +128,9 @@ MODULE thrift_plasma_solver_mod
             cn_NEO = 0.0_rprec
             Dp_NEO = 0.0_rprec
             cp_NEO = 0.0_rprec
-
+            !
+            Dp_total = 0.0_rprec
+            cp_total = 0.0_rprec
             ! 
             G_NEO_complet = 0.0_rprec
             Q_NEO_complet = 0.0_rprec
@@ -531,9 +537,9 @@ MODULE thrift_plasma_solver_mod
         IMPLICIT NONE
         REAL(rprec), DIMENSION(:,:), INTENT(INOUT) :: LHS_pressure
         INTEGER :: ier, ir, Nr, ispecies, kk, row
-        REAL(rprec) :: dt_fact, dr, dr2, Dp_turb, cp_turb, rho, n, dndr, t_val
+        REAL(rprec) :: dt_fact, dr, dr2, Dp_turb, cp_turb
         REAL(rprec) :: Vp_plus, Vp_minus, VDplus, VDminus, cplus, cminus, Dp_plus, Dp_minus
-        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Dp, cp, Vp
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Dp, cp, Vp, chi_beurskens, dndr
         REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: LHS_coll_heat_exchange
 
         LHS_pressure = 0.0_rprec
@@ -544,7 +550,8 @@ MODULE thrift_plasma_solver_mod
         dr2 = dr*dr
         dt_fact = (2.0_rprec/3.0_rprec)*dt_plasma_solver
 
-        ALLOCATE(Dp(Nr),cp(Nr),Vp(Nr),LHS_coll_heat_exchange(Nr*num_species,Nr*num_species))
+        ALLOCATE(Dp(Nr),cp(Nr),Vp(Nr),dndr(Nr),chi_beurskens(Nr))
+        ALLOCATE(LHS_coll_heat_exchange(Nr*num_species,Nr*num_species))
 
         ! Vp = dV/dr
         CALL EZspline_interp(vp_spl,Nr,rho_plasma_grid,Vp,ier)
@@ -566,26 +573,28 @@ MODULE thrift_plasma_solver_mod
                 cp = cp_turb
             END IF
 
-            IF(beurskens_ions) THEN
-                STOP 'NOT IMPLEMENTED YET!'
+            IF(beurskens_ions .AND. ispecies>1) THEN
+                CALL get_beurskens_ions_chi(ispecies-1,chi_beurskens)
+                Dp = Dp + chi_beurskens
             END IF
 
-            ! Add convection due to density gradient
-            t_val = time_plasma_grid(mytimestep_plasma_solver)
-            DO ir=1,Nr
-                rho = rho_plasma_grid(ir)
-                n = plasma_N(ispecies,ir)
-                ! get dn/drho
-                IF(ispecies .EQ. 1) THEN
-                    CALL get_prof_neprime(rho,t_val,dndr)
-                ELSE
-                    CALL get_prof_niprime(rho,t_val,ispecies-1,dndr)
-                END IF
-                dndr = dndr / eq_Aminor
-                cp(ir) = cp(ir) + (chi_all(ispecies)/n)*dndr
-            END DO
+            ! Add convection (turbulence) due to density gradient
+            CALL EZspline_derivative1_array_r8(N_splines(ispecies), 1, Nr,rho_plasma_grid,dndr,ier)
+            IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'interpolating: N_splines',ier)
+            dndr = dndr / eq_Aminor
+            !
+            cp = cp + chi_all(ispecies)*dndr / plasma_N(ispecies,:)
+            !
+            IF(beurskens_ions .AND. ispecies>1) cp = cp + chi_beurskens*dndr / plasma_N(ispecies,:)
             ! convection is zero at axis
             cp(1) = 0.0_rprec
+
+            ! Make average of Dp with previous subiterations for stabilization
+            Dp = (Dp + Dp_total(ispecies,mytimestep_plasma_solver,:)*(subiter-1)) / subiter
+
+            ! Update Dp_total and cp_total
+            Dp_total(ispecies,mytimestep_plasma_solver,:) = Dp
+            cp_total(ispecies,mytimestep_plasma_solver,:) = cp
 
             ! r=0
             ! main_diag
@@ -635,7 +644,7 @@ MODULE thrift_plasma_solver_mod
             LHS_pressure(row,row) = one
         END DO
 
-        DEALLOCATE(Dp,cp,Vp,LHS_coll_heat_exchange)
+        DEALLOCATE(Dp,cp,Vp,LHS_coll_heat_exchange,dndr,chi_beurskens)
 
         RETURN
     END SUBROUTINE
@@ -936,6 +945,107 @@ MODULE thrift_plasma_solver_mod
         DEALLOCATE(W_s1_s2,aux_B,mass_all,Z_all)
         RETURN
     END SUBROUTINE get_collisional_heat_exchange_matrix
+
+    SUBROUTINE get_beurskens_ions_chi(iion,chi_beurskens)
+        !--------------------------------------------------------------
+        !--------------------------------------------------------------
+        REAL(rprec) :: mi,qi,B
+        REAL(rprec), PARAMETER :: stiffness=0.7, alpha=1.0, aLT_critical=1.5
+        INTEGER, INTENT(IN) :: iion
+        INTEGER :: ier,Nr
+        REAL(rprec), INTENT(INOUT), DIMENSION(:) :: chi_beurskens
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Bsq,chi_gB,dTidrho,X,H,Te,Ti
+
+        mi = Matom_prof(iion)
+        qi = e_charge * Zatom_prof(iion)
+
+        Nr = Nr_plasma_solver
+
+        ALLOCATE(Bsq(Nr),chi_gB(Nr),dTidrho(Nr),X(Nr),H(Nr),Te(Nr),Ti(Nr))
+
+        CALL EZspline_interp(bsq_spl,Nr,rho_plasma_grid,Bsq,ier)
+
+        Te = plasma_T(1,:)
+        Ti = plasma_T(1+iion,:)
+
+        !chi gyroBohm (for the scaling)
+        chi_gB = (e_charge*Ti/mi)**1.5 * mi*mi / (qi**2 * Bsq) / eq_Aminor
+        
+        ! dimensionless Beurskens model
+        ! CALL EZspline_derivative1_array_r8(T_splines(1+iion), 1, Nr,rho_plasma_grid,dTidrho,ier)
+        ! IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'interpolating: T_splines',ier) 
+        CALL polyfit_derivative(rho_plasma_grid,Ti,Nr,12,dTidrho)
+        !
+        X = - dTidrho / Ti
+        X = X - aLT_critical
+        ! Heaviside
+        H = MERGE(1.0_rprec,0.0_rprec, X>=0_rprec)
+        
+        ! chi_beurskens = chi_gB * stiffness * X * H(X) * (Te/Ti)**alpha
+        chi_beurskens = chi_gB * stiffness * X * H * (Te/Ti)**alpha
+
+        DEALLOCATE(Bsq,chi_gB,dTidrho,X,H,Te,Ti)
+        
+        RETURN
+
+    END SUBROUTINE get_beurskens_ions_chi
+
+    SUBROUTINE polyfit_derivative(r, y, N, deg, dy)
+        IMPLICIT NONE
+      
+        INTEGER, INTENT(IN) :: N, deg
+        REAL(rprec), INTENT(IN) :: r(N), y(N)
+        REAL(rprec), INTENT(OUT) :: dy(N)
+        REAL(rprec), ALLOCATABLE :: A(:,:), b(:), coeff(:), dcoeff(:), work(:)
+        INTEGER :: lda, ldb, nrhs, lwork, info, i, j
+      
+        lda = N
+        nrhs = 1
+        ldb = MAX(N, deg+1)
+        lwork = -1  ! Workspace query
+      
+        ! Allocate matrices
+        ALLOCATE(A(N,deg+1), b(ldb), coeff(deg+1), dcoeff(deg), work(1))
+      
+        ! Construct Vandermonde matrix and RHS
+        DO i = 1, N
+          A(i,1) = 1.0_rprec
+          DO j = 2, deg+1
+            A(i,j) = A(i,j-1) * r(i)
+          END DO
+          b(i) = y(i)
+        END DO
+      
+        ! Workspace query
+        CALL DGELS('N', N, deg+1, nrhs, A, lda, b, ldb, work, lwork, info)
+        lwork = INT(work(1))
+        DEALLOCATE(work)
+        ALLOCATE(work(lwork))
+      
+        ! Actual DGELS solve
+        CALL DGELS('N', N, deg+1, nrhs, A, lda, b, ldb, work, lwork, info)
+        IF (info /= 0) THEN
+          PRINT *, 'DGELS failed with info =', info
+          STOP
+        END IF
+      
+        coeff = b(1:deg+1)
+      
+        ! Compute derivative coefficients
+        DO i = 1, deg
+          dcoeff(i) = REAL(i, rprec) * coeff(i+1)
+        END DO
+      
+        ! Evaluate derivative at input points
+        dy = 0.0_rprec
+        DO j = 1, N
+          DO i = 1, deg
+            dy(j) = dy(j) + dcoeff(i) * r(j)**(i-1)
+          END DO
+        END DO
+      
+        DEALLOCATE(A, b, coeff, dcoeff, work)
+      END SUBROUTINE polyfit_derivative
 
     SUBROUTINE write_header_plasma_solver_logfile
 
