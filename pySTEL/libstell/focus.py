@@ -362,11 +362,82 @@ class FOCUS():
 		f.write(f'#plasma boundary\n')
 		f.write(f'# n m Rbc Rbs Zbc Zbs\n')
 		for mn in range(mnmax):
-			f.write(f'{int(xn[mn])} {int(xm[mn])} {rmnc[mn]:10.9e} {rmns[mn]:10.9e} {zmnc[mn]:10.9e} {zmns[mn]:10.9e} {pmnc[mn]:10.9e} {pmns[mn]:10.9e}\n')
+			f.write(f'{int(xn[mn]):5d} {int(xm[mn]):5d} {rmnc[mn]:10.9e} {rmns[mn]:10.9e} {zmnc[mn]:10.9e} {zmns[mn]:10.9e} {pmnc[mn]:10.9e} {pmns[mn]:10.9e}\n')
 		f.write(f'#Bn harmonics\n')
 		f.write(f'# n m bnc bns\n')
 		for mn in range(mnmax_b):
-			f.write(f'{int(xn_b[mn]):d} {int(xm_b[mn]):d} {bmnc[mn]:10.9e} {bmns[mn]:10.9e}\n')
+			f.write(f'{int(xn_b[mn]):5d} {int(xm_b[mn]):5d} {bmnc[mn]:10.9e} {bmns[mn]:10.9e}\n')
+		f.close()
+
+	def write_focus_harmonics(self,tol,nfp,xm,xn,rmnc,zmns,pmns,rmns=None,zmnc=None,pmnc=None,xm_b=None,\
+		xn_b=None,bmnc=None,bmns=None,filename='target.harmonics'):
+		"""Writes a focus boundary file
+
+		This routine writes the FOCUS plasma boundary file.
+
+		Parameters
+		----------
+		tol : float
+			Tolerance for boundary Harmonics targeting
+		nfp : int
+			Field periodicity
+		xm : ndarray
+			Poloidal mode array
+		xn : ndarray
+			Toroidal mode array
+		rmnc : ndarray
+			R cosine boundary harmonics
+		zmns : ndarray
+			Z sine boundary harmonics
+		pmns : ndarray
+			P sine toridal angle harmonics
+		rmns : ndarray (optional)
+			R sine boundary harmonics
+		zmnc : ndarray (optional)
+			Z cosine boundary harmonics
+		pmnc : ndarray
+			P cosine toridal angle harmonics
+		xm_b : ndarray (optional)
+			Poloidal mode array (B-normal)
+		xn_b : ndarray (optional)
+			Toroidal mode array (B-normal)
+		bmnc : ndarray (optional)
+			B-normal cosine boundary harmonics
+		bmns : ndarray (optional)
+			B-normal sine boundary harmonics
+		filename : string (optional)
+			Boundary file name (default: target.harmonics)
+		"""
+		import numpy as np
+		mnmax = len(xm)
+		mnmax_b = 1
+		if (type(xm_b) is not type(None)) and \
+		   (type(xn_b) is not type(None)) and \
+		   ((type(bmns) is not type(None)) or \
+		   	(type(bmnc) is not type(None))):
+			mnmax_b = len(xm_b)
+		else:
+			xm_b = [0]
+			xn_b = [0]
+			bmnc = [0]
+			bmns = [0]
+		if not (rmns and zmnc and pmnc):
+			rmns = np.zeros((mnmax))
+			zmnc = np.zeros((mnmax))
+			pmnc = np.zeros((mnmax))
+		xm_out = []
+		xn_out = []
+		for mn in range(mnmax):
+			if (abs(rmnc[mn])>=tol) or ((abs(zmns[mn])>=tol)) or (abs(rmns[mn])>=tol) or (abs(zmnc[mn])>=tol) or ((abs(pmnc[mn])>=tol)) or ((abs(pmns[mn])>=tol)):
+				xm_out.append(xm[mn])
+				xn_out.append(xn[mn])
+		nharm = len(xm_out)
+		f=open(filename,'w')
+		f.write(f'# Number of Harmonics\n')
+		f.write(f'{int(nharm)}\n')
+		f.write(f'# N,M,BMNC,BMNS,Weight\n')
+		for mn in range(nharm):
+			f.write(f'{int(xn_out[mn]):5d} {int(xm_out[mn]):5d} {0.0:10.2f} {0.0:10.2f} {1.0:10.2f}\n')
 		f.close()
 
 	def plotConvergence(self,ax=None):

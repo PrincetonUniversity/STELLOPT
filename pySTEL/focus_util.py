@@ -34,6 +34,8 @@ if __name__=="__main__":
 		help="Generate plasma.boundary VMEC or Boozer.", default = False)
 	parser.add_argument("--limiter_dist", dest="lim_dist",
 		help="Generate limiter.boundary at offset distance of lim_dist.", default = None)
+	parser.add_argument("--genharm", dest="genharm_tol", type=float,
+		help="Create a target hamonics file at fixed tolerance.", default = -1)
 	focus_data = FOCUS()
 	coil_data=COILSET()
 	args = parser.parse_args()
@@ -115,6 +117,8 @@ if __name__=="__main__":
 				zmnc = boozer.zmnc_b[k,:]
 				pmnc = boozer.pmnc_b[k,:]
 			focus_data.write_focus_plasma_booz(boozer.nfp_b,xm,xn,rmnc,zmns,pmns,rmns=rmns,zmnc=zmnc,pmnc=pmnc,xm_b=xm_b,xn_b=xn_b,bmnc=bnmnc,bmns=bnmns,filename='plasma.boundary')
+			if args.genharm_tol > 0.0:
+				focus_data.write_focus_harmonics(args.genharm_tol,boozer.nfp_b,xm,xn,rmnc,zmns,pmns,rmns=rmns,zmnc=zmnc,pmnc=pmnc,xm_b=xm_b,xn_b=xn_b,bmnc=bnmnc,bmns=bnmns,filename='target.harmonics')
 	# Stuff that requires a focus run
 	if args.focus_ext:
 		try:
