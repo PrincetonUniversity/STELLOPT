@@ -1,4 +1,12 @@
 #######################################################################
+#            Based on debian
+#######################################################################
+  CURRENT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+  include $(CURRENT_DIR)/make_debian.inc
+
+############### Modifications should go below here#####################
+
+#######################################################################
 #            Define User Specific Output Paths
 #######################################################################
 # Set a default directory if one has not already been defined.
@@ -184,6 +192,21 @@ GENE_HOME =
   AEOPT_INC = -I$(AEOPT_DIR) 
   LIB_AEOPT = libtrapAE.a
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
+
+#######################################################################
+#            MANGO Options
+#######################################################################
+ifneq ("$(wildcard $(MANGO_PATH))","")
+  LMANGO = T
+  MANGO_DIR = $(MANGO_PATH)
+# Any flags specified on the next 2 lines will be added to the
+# MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS lines as defined in
+# $(MANGO_DIR)/lib/mangoMakeVariables
+  MANGO_INC = 
+  MANGO_LIB = 
+else
+  LMANGO = F
+endif
 
 #######################################################################
 #            LIBSTELL Shared Options

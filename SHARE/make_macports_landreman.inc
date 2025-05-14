@@ -174,16 +174,17 @@ SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
 #######################################################################
 #            MANGO Options
 #######################################################################
-
-#LMANGO = F
-LMANGO = T
-
-MANGO_DIR = /Users/mattland/mango
-
-# If LMANGO=T, any flags specified in the next 2 lines will be added to MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS respectively
-# as defined in $(MANGO_DIR)/lib/mangoMakeVariables
-MANGO_INC=
-MANGO_LIB=
+ifneq ("$(wildcard $(MANGO_PATH))","")
+  LMANGO = T
+  MANGO_DIR = $(MANGO_PATH)
+# Any flags specified on the next 2 lines will be added to the
+# MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS lines as defined in
+# $(MANGO_DIR)/lib/mangoMakeVariables
+  MANGO_INC = 
+  MANGO_LIB = 
+else
+  LMANGO = F
+endif
 
 #######################################################################
 #            REGCOIL Options
