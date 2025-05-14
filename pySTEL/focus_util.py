@@ -67,6 +67,8 @@ if __name__=="__main__":
 				bnmnc = curpol*bnorm.bnmnc[0,:]
 				bnmns = curpol*bnorm.bnmns[0,:]
 			focus_data.write_focus_plasma(wout.nfp,xm,xn,rmnc,zmns,rmns=rmns,zmnc=zmnc,xm_b=xm_b,xn_b=xn_b,bmnc=bnmnc,bmns=bnmns,filename='plasma.boundary')
+			if args.genharm_tol > 0.0:
+				focus_data.write_focus_harmonics(args.genharm_tol,wout.nfp_b,xm,xn,rmnc,zmns,rmns=rmns,zmnc=zmnc,xm_b=xm_b,xn_b=xn_b,bmnc=bnmnc,bmns=bnmns,filename='target.harmonics')
 			if args.lim_dist:
 				[rmnc,zmns,rmns,zmnc]=wout.fitSurface(dist=-dist)
 				focus_data.write_focus_plasma(wout.nfp,xm,xn,rmnc,zmns,rmns=rmns,zmnc=zmnc,filename='limiter.boundary')

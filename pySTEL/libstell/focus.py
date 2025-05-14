@@ -369,7 +369,7 @@ class FOCUS():
 			f.write(f'{int(xn_b[mn]):5d} {int(xm_b[mn]):5d} {bmnc[mn]:10.9e} {bmns[mn]:10.9e}\n')
 		f.close()
 
-	def write_focus_harmonics(self,tol,nfp,xm,xn,rmnc,zmns,pmns,rmns=None,zmnc=None,pmnc=None,xm_b=None,\
+	def write_focus_harmonics(self,tol,nfp,xm,xn,rmnc,zmns,pmns=None,rmns=None,zmnc=None,pmnc=None,xm_b=None,\
 		xn_b=None,bmnc=None,bmns=None,filename='target.harmonics'):
 		"""Writes a focus boundary file
 
@@ -421,6 +421,8 @@ class FOCUS():
 			xn_b = [0]
 			bmnc = [0]
 			bmns = [0]
+		if not (pmns):
+			pmns = np.zeros((mnmax))
 		if not (rmns and zmnc and pmnc):
 			rmns = np.zeros((mnmax))
 			zmnc = np.zeros((mnmax))
@@ -432,12 +434,14 @@ class FOCUS():
 				xm_out.append(xm[mn])
 				xn_out.append(xn[mn])
 		nharm = len(xm_out)
+		weight = float(abs(xn_out)+abs(xm_out))/float(abs(xm_out*xn_out))
+		weight = np.where(weight==0,1.0,weight)
 		f=open(filename,'w')
 		f.write(f'# Number of Harmonics\n')
 		f.write(f'{int(nharm)}\n')
 		f.write(f'# N,M,BMNC,BMNS,Weight\n')
 		for mn in range(nharm):
-			f.write(f'{int(xn_out[mn]):5d} {int(xm_out[mn]):5d} {0.0:10.2f} {0.0:10.2f} {1.0:10.2f}\n')
+			f.write(f'{int(xn_out[mn]):5d} {int(xm_out[mn]):5d} {0.0:10.2f} {0.0:10.2f} {weight[mn]:10.3f}\n')
 		f.close()
 
 	def plotConvergence(self,ax=None):
