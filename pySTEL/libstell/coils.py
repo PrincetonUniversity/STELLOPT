@@ -152,7 +152,7 @@ class COILSET():
 		# Render if requested
 		if lplotnow: plt.render()
 
-	def plotcoilsHalfFP(self,plot3D=None):
+	def plotcoilsHalfFP(self,plot3D=None,color=None):
 		"""Plots a half field period of a coilset in 3D using VTK
 
 		This routine plots a half field period of a coilset in 3D using VTK
@@ -161,6 +161,8 @@ class COILSET():
 		----------
 		plot3D : plot3D object (optional)
 			Plotting object to render to.
+		color : list (optional)
+			List of colors to plot coils.
 		"""
 		import numpy as np
 		import vtk
@@ -173,7 +175,10 @@ class COILSET():
 			lplotnow = True
 			plt = PLOT3D()
 		# Setup color array
-		color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
+		if color:
+			color_txt=color
+		else:
+			color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
 		# Plot coils
 		for i in range(self.ngroups):
 			j=0
