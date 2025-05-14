@@ -2,101 +2,96 @@
 #            Define Basic Utilities
 #######################################################################
   SHELL = /bin/sh
+  ARCH := $(shell uname -m)
   PWD1 = `pwd`
-  MYHOME = /pfs/home/$(USER)/bin
-  PRECOMP:= fpp -C -P -DLINUX
-  COMPILE = ifort
-  COMPILE_FREE = ifort -free
-  LINK    = ifort -Bstatic -o
+  MYHOME ?= $(HOME)/bin
+  PRECOMP:= /lib/cpp -traditional -DLINUX
+  COMPILE = $(FC)
+  COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
+  LINK    = ld $(FLAGS) -o
   LINK_AR = ar -ruv
-  LINK_C  = icc -shared -Wl,-z-defs
+  LINK_C  = $(CC) -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  DIAG_DISABLE = -diag-disable=15009 -check noarg_temp_created
-  FLAGS_R = -O2 -fp-model strict -ip -assume noold_unit_star \
-		-axMIC-AVX512 $(DIAG_DISABLE) \
-		$(shell pkg-config mkl-ifort --cflags)
-  FLAGS_D = -g -traceback -O0 -fp-model strict -ip -check all -fp-stack-check \
-		-assume noold_unit_star -axMIC-AVX512 $(DIAG_DISABLE) \
-		$(shell pkg-config mkl-ifort --cflags)
-  # This is a workaround for broken pkg-config
-  MKLROOT ?= /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl
-  LIBS =  ${MKLROOT}/lib/intel64/libmkl_scalapack_ilp64.a \
-           -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a \
-                             ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a \
-                             ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_ilp64.a -Wl,--end-group \
-           -lpthread -lm -ldl
+  FLAGS_R = -O2 -fexternal-blas -fbacktrace
+  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all
+  LIBS    = -L/lib64/openmpi/lib -lmpiblacs /lib64/libopenblas.so.0 \
+            /lib64/openmpi/lib/libscalapack.so.2
+
+  GFORTRAN_VERSION := $(shell $(FC) -dumpversion)
+  ifeq "$(shell [ $(GFORTRAN_VERSION) -gt 9 ] && echo true)" "true"
+      FLAGS_R += -fallow-argument-mismatch
+      FLAGS_D += -fallow-argument-mismatch
+  endif
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpiifort
-  MPI_COMPILE_FREE = mpiifort -free
+  MPI_COMPILE = mpifort
+  MPI_COMPILE_FREE = $(MPI_COMPILE) -ffree-form \
+                     -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc
-  MPI_LINK = mpiifort
-  MPI_RUN  = srun
-  MPI_RUN_OPTS = --partition=gwdbg \
-		--time=0:30:00
-  MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=24
-  MPI_RUN_OPTS_MD   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=48
-  MPI_RUN_OPTS_LG   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=48
-
-#######################################################################
-#            IMAS Options
-#######################################################################
-  LIMAS = T
-  IMAS_INC = $(shell pkg-config imas-ifort --cflags) \
-             $(shell pkg-config xmllib --cflags)
-  IMAS_LIB = $(shell pkg-config imas-ifort --libs) \
-             $(shell pkg-config xmllib --libs)
+  MPI_LINK = mpifort
+  MPI_RUN = mpiexec
+  MPI_RUN_OPTS = --use-hwthread-cpus
 
 #######################################################################
 #            NAG Options
 #######################################################################
   LNAG = F
-  NAG_LIB = $(NAGFLIB) $(NAGMKLLIB)
+  NAG_LIB = 
 
 #######################################################################
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell pkg-config netcdf-fortran-ifort --cflags)
-  NETCDF_LIB = $(shell pkg-config netcdf-fortran-ifort --libs) 
+  NETCDF_INC = $(shell nf-config --fflags)
+  NETCDF_LIB = $(shell nf-config --flibs)
+
+#######################################################################
+#            NTCC Options
+#######################################################################
+  LNTCC = F
+  NTCC_INC = -I$(NTCCHOME)/mod
+  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
+             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
+             -lmdstransp -lvaxonly
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  PRECOMP+= -DHDF5_PAR
-#  HDF5_INC = -I$(HDF5_HOME)/include 
-#  HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
-#             -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran
-  HDF5_INC = $(shell pkg-config hdf5 --cflags)
-  HDF5_LIB = $(shell pkg-config hdf5 --libs)
-
-#######################################################################
-#            FFTW3 Options
-#######################################################################
-  LFFTW3 = T
-  FFTW3_INC = $(shell pkg-config fftw3-ifort --cflags)
-  FFTW3_LIB = $(shell pkg-config fftw3-ifort --libs)
+  HDF5_INC = -I/usr/include/hdf5/openmpi
+  HDF5_LIB = -L/usr/lib64/openmpi/lib \
+              /usr/lib64/openmpi/lib/libhdf5hl_fortran.so \
+              /usr/lib64/openmpi/lib/libhdf5_hl.so \
+              /usr/lib64/openmpi/lib/libhdf5_fortran.so \
+              /usr/lib64/openmpi/lib/libhdf5.so \
+              -Wl,-z,relro -lsz -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib64/openmpi/lib
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
-  PGPLOT_INC =
-  PGPLOT_LIB = 
+  PGPLOT_INC = -I$(PGPLOT_DIR)
+  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/lib/x86_64-linux-gnu -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
-  SILO_INC = -I$(SILO_DIR)/include
-  SILO_LIB = -L$(SILO_DIR)/lib -lsilo
+  SILO_INC = -I$(SILOHOME)/include
+  SILO_LIB = -L$(SILOHOME)/lib/x86_64-linux-gnu -lsiloh5
+
+#######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = F
+  FFTW3_INC = 
+  FFTW3_LIB = 
 
 #######################################################################
 #            DKES/NEO Options
@@ -218,5 +213,5 @@ endif
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-  LIB_SHARE = $(LIBS) 
+LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
 
