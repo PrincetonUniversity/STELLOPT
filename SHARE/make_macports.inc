@@ -51,7 +51,7 @@ endif
   MPI_COMPILE_C = mpicc 
   MPI_LINK = mpif90 -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 2
+  MPI_RUN_OPTS = --use-hwthread-cpus
 
 #######################################################################
 #            NAG Options
