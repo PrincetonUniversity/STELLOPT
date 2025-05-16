@@ -112,7 +112,7 @@
          CALL write_var_hdf5(fid,'THRIFT_PPRIME',nsj,ntimesteps,ier,DBLVAR=THRIFT_PPRIME,ATT=' Radial derivative of pressure (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PPRIME',ier)
          ! Magnetic variables
-         CALL write_var_hdf5(fid,'THRIFT_VP',nsj,ntimesteps,ier,DBLVAR=THRIFT_VP,ATT='dV/dPhi (s-space)',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_VP',nsj,ntimesteps,ier,DBLVAR=THRIFT_VP,ATT='dV/ds (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_VP',ier)
          CALL write_var_hdf5(fid,'THRIFT_S11',nsj,ntimesteps,ier,DBLVAR=THRIFT_S11,ATT='Susceptance matrix element S11 (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_S11',ier)
