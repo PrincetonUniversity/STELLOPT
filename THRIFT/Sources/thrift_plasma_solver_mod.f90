@@ -19,7 +19,7 @@ MODULE thrift_plasma_solver_mod
 #if defined(LHDF5)
     USE ez_hdf5
 #endif
-    USE thrift_equil, ONLY : eq_Aminor, vp_spl, bsq_spl
+    USE thrift_equil, ONLY : eq_Aminor, eq_phiedge, vp_spl, bsq_spl
     !-------------------------------------------------------------------
     !     Module Variables
     !          lverb         Logical to control screen output
@@ -138,7 +138,10 @@ MODULE thrift_plasma_solver_mod
             ! Update splines and exit routine
             CALL update_splines
 
-            RETURN
+            IF( .NOT. lrestart_from_file) RETURN
+            ! If lrestart_from_file=T, then proceed imediately to next plasma iteration 
+            ! until THRIFT_tstart is reached (don't forget that in restart mode, tstart is
+            ! not the time at which the previous simulation was left at)
         ENDIF
         
         dr_plasma_solver = drho_plasma_solver * eq_Aminor
@@ -462,9 +465,7 @@ MODULE thrift_plasma_solver_mod
 
         ! Vp = dV/dr
         CALL EZspline_interp(vp_spl,Nr,rho_plasma_grid,Vp,ier)
-        Vp = Vp * 2.0_rprec * rho_plasma_grid * THRIFT_PHIEDGE(mytimestep-1) / eq_Aminor
-        ! TESTING:
-        ! Vp = 4.0_rprec * pi * pi * 20.0_rprec * rho_plasma_grid * eq_Aminor
+        Vp = Vp * 2.0_rprec * rho_plasma_grid * eq_phiedge / eq_Aminor
 
         ! r=0
         main_diag(1) = one + dt*4.0_rprec*Dn(1)/dr2 + 2.0_rprec*dt*cn(1)/dr
@@ -548,9 +549,7 @@ MODULE thrift_plasma_solver_mod
 
         ! Vp = dV/dr
         CALL EZspline_interp(vp_spl,Nr,rho_plasma_grid,Vp,ier)
-        Vp = Vp * 2.0_rprec * rho_plasma_grid * THRIFT_PHIEDGE(mytimestep-1) / eq_Aminor
-        ! TESTING:
-        ! Vp = 4.0_rprec * pi * pi * 20.0_rprec * rho_plasma_grid * eq_Aminor      
+        Vp = Vp * 2.0_rprec * rho_plasma_grid * eq_phiedge / eq_Aminor     
 
         kk = 1
         DO ispecies=1,num_species
@@ -777,13 +776,34 @@ MODULE thrift_plasma_solver_mod
 
     SUBROUTINE set_initial_profiles
         IMPLICIT NONE
-        INTEGER :: i, j
-
+        INTEGER :: i, j, ier, Nr_restart, k
+        INTEGER :: bcs0(2)
+        TYPE(EZspline1_r8) :: spline_restart
+        bcs0=(/ 0, 0/)
         IF(lrestart_from_file) THEN
-            ! read here from restart ...
-            PRINT *, 'reading plasma profiles from restart'
-            STOP 'not implemented yet!!'
-
+            ! Interpolate DENS_RESTART and TEMP_RESTART into plasma_solver grid
+            Nr_restart = SIZE(DENS_RESTART, DIM=2)
+            !
+            IF(num_species .NE. SIZE(DENS_RESTART, DIM=1)) THEN
+                STOP 'number of species in restart not compatible w/ current number of species...'
+            END IF
+            !
+            CALL EZspline_init(spline_restart,Nr_restart,bcs0,ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: restart spline',ier)
+            FORALL (k=1:Nr_restart) spline_restart%x1(k) = SQRT(DBLE(k-1)/DBLE(Nr_restart-1)) !DBLE(k-1)/DBLE(Nr_restart-1)
+            spline_restart%isHermite = 1
+            !
+            DO i=1,nion_prof+1
+                CALL EZspline_setup(spline_restart,DENS_RESTART(i,:),ier,EXACT_DIM=.true.)
+                IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: restart spline',ier)
+                CALL EZspline_interp(spline_restart,Nr_plasma_solver,rho_plasma_grid,plasma_N(i,:),ier)
+                !
+                CALL EZspline_setup(spline_restart,TEMP_RESTART(i,:),ier,EXACT_DIM=.true.)
+                IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: restart spline',ier)
+                CALL EZspline_interp(spline_restart,Nr_plasma_solver,rho_plasma_grid,plasma_T(i,:),ier)
+            END DO
+            !
+            CALL EZspline_free(spline_restart,ier)
         ELSE
             ! ions: ni = 5E19 on axis, 0.8*5E-19 on edge, and quadratic decay
             DO i=1,nion_prof
@@ -793,16 +813,12 @@ MODULE thrift_plasma_solver_mod
             DO j=1,Nr_plasma_solver
                 plasma_N(1,j) = SUM(plasma_N(2:,j)*Zatom_prof)
             END DO
-
             ! T=200eV on axis, 0.8*200eV on edge, and quadratic decay (for all species)
             DO i=1,num_species
                 plasma_T(i,:) = 200.0_rprec * (0.8_rprec + 0.2_rprec*(1.0_rprec-rho_plasma_grid*rho_plasma_grid))
             END DO
-
-            plasma_P = plasma_N * plasma_T * e_charge
-
         END IF
-
+        plasma_P = plasma_N * plasma_T * e_charge    
         RETURN
     END SUBROUTINE set_initial_profiles
 

@@ -55,6 +55,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'jtol',ier)
          CALL write_scalar_hdf5(fid,'picard_factor',ier,DBLVAR=picard_factor,ATT='Picard Iteration Factor',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'picard_factor',ier)
+         CALL write_scalar_hdf5(fid,'eq_Aminor',ier,DBLVAR=eq_Aminor,ATT='eq_Aminor',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'eq_Aminor',ier)
          ! 1D Floats
          CALL write_var_hdf5(fid,'THRIFT_RHO',nrho,ier,DBLVAR=THRIFT_RHO,ATT='Radial Grid (r/a)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_RHO',ier)

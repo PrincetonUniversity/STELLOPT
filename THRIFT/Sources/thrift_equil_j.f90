@@ -50,6 +50,12 @@
          itime = mytimestep
       END IF
 
+      ! THRIFT_J is set to 0.0 at begining of thrift_evolve
+      ! so need to update it here if code is in restart mode
+      IF(lrestart_from_file .AND. mytimestep.eq.1) THEN
+            THRIFT_J(:,itime) = J_RESTART
+      END IF
+
       ! Create J spline
       bcs0=(/ 0, 0/)
       ier = 0
