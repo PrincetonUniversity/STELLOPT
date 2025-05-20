@@ -12,6 +12,7 @@
       USE stellopt_vars
       USE stellopt_targets
       USE windingsurface
+      USE safe_open_mod
       USE mpi_params                                                    ! MPI
 !DEC$ IF DEFINED (REGCOIL)
       USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, zmns_coil, zmnc_coil, mnmax_coil, xm_coil, xn_coil, verbose, regcoil_nml
