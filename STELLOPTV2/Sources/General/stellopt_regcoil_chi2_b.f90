@@ -26,7 +26,7 @@
       !USE regcoil_read_bnorm
       !USE regcoil_read_nescin_spectrum
       !USE regcoil_validate_input
-      USE regcoil_variables
+      USE regcoil_variables, nlambda_regcoil_var => nlambda
 !DEC$ ENDIF
 
 !-----------------------------------------------------------------------
@@ -133,7 +133,7 @@
 
       ! regcoil will overwrite nlambda each time - need to restore it to
       ! the original value here
-      nlambda = regcoil_nlambda
+      nlambda_regcoil_var = regcoil_nlambda
 
       ! This should *almost* be a duplicate of the main code from
       ! regcoil.f90
