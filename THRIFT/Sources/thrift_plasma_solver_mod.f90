@@ -40,6 +40,7 @@ MODULE thrift_plasma_solver_mod
     TYPE(EZspline1_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: N_splines, T_splines
     TYPE(EZspline1_r8), PRIVATE :: P_spline
     INTEGER, PRIVATE :: subiter
+    CHARACTER(len=20), DIMENSION(:), ALLOCATABLE :: list_of_species
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         NONE
@@ -417,6 +418,14 @@ MODULE thrift_plasma_solver_mod
 
         IF (lverb) WRITE(6,*) 'Splines Allocated!'
 
+        ! Identify ions and set list_of_species
+        IF (myid_sharmem == master) THEN
+            ALLOCATE(list_of_species(num_species))
+            list_of_species(1) = 'electrons'
+            list_of_species(2:num_species) = identify_ions(nion_prof,Zatom_prof,Matom_prof) 
+            WRITE(6,*) 'Transport Equations being solved for: ', list_of_species
+        END IF
+
         RETURN
 
     END SUBROUTINE initialize_plasma_solver
@@ -645,7 +654,7 @@ MODULE thrift_plasma_solver_mod
         USE fusion_mod, ONLY : BREMSSTRAHLUNG_POWER, ALPHA_POWER
         IMPLICIT NONE
         REAL(rprec), DIMENSION(:), INTENT(INOUT) :: RHS_pressure
-        INTEGER :: Nr, ir, iion, offset, Zi
+        INTEGER :: Nr, ir, iion, offset, Zi, iD, iT
         REAL(rprec) :: rho, t, explicit_source, n_previous, T_previous, p_previous
         REAL(rprec) :: ni, ne, Te, nD, nT, TD, TT
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: SB, S_alpha
@@ -669,16 +678,19 @@ MODULE thrift_plasma_solver_mod
         END DO
 
         ! Alpha power 
-        ! Deuterium and Tritium must be in 2nd and 3rd positions
-        ! otherwise alpha power is set to zero
         S_alpha = 0.0_rprec
         IF (nion_prof>1) THEN
-            IF( (Zatom_prof(1) .EQ. 1) .AND. (Zatom_prof(2) .EQ. 1)) THEN
+            ! Find indices of deuterium and tritium
+            iD = get_index(list_of_species,'deuterium')
+            iT = get_index(list_of_species,'tritium')
+            ! If deuterium and tritium not in list_of_species
+            ! then alpha power is zero
+            IF( iD .NE. -1 .AND. iT .NE. -1) THEN
                 DO ir=1,Nr
-                    nD = plasma_N(2,ir)
-                    nT = plasma_N(3,ir)
-                    TD = plasma_T(2,ir)
-                    TT = plasma_T(3,ir)
+                    nD = plasma_N(iD,ir)
+                    nT = plasma_N(iT,ir)
+                    TD = plasma_T(iD,ir)
+                    TT = plasma_T(iT,ir)
                     S_alpha(ir) = ALPHA_POWER(nD,nT,TD,TT)
                 END DO
             END IF
@@ -709,8 +721,10 @@ MODULE thrift_plasma_solver_mod
                 rho = rho_plasma_grid(ir)
                 ! Add external source
                 explicit_source = S_energy_ext(1+iion,mytimestep_plasma_solver,ir)
-                ! Add alpha power
-                IF(Zatom_prof(iion) .EQ. 1) explicit_source = explicit_source + S_alpha(ir)*0.1_rprec
+                ! Add alpha power to deuterium and tritium
+                IF(trim(list_of_species(1+iion)) == 'deuterium' .OR. trim(list_of_species(1+iion)) == 'tritium') THEN
+                    explicit_source = explicit_source + S_alpha(ir)*0.1_rprec
+                END IF
                 !
                 n_previous = plasma_N_keep(1+iion,mytimestep_plasma_solver-1,ir) 
                 T_previous = plasma_T_keep(1+iion,mytimestep_plasma_solver-1,ir)
@@ -1081,5 +1095,58 @@ MODULE thrift_plasma_solver_mod
         WRITE(ilogplasma,'(A)') TRIM(progress_str)
 
     END SUBROUTINE write_to_plasma_solver_logfile
+
+    FUNCTION identify_ions(num_ions, Z_array, M_array) RESULT(ion_names)
+        IMPLICIT NONE
+        INTEGER, INTENT(IN) :: num_ions
+        REAL(rprec), INTENT(IN) :: M_array(num_ions)
+        INTEGER, INTENT(IN) :: Z_array(num_ions)
+        CHARACTER(len=20) :: ion_names(num_ions)
+        ! Local vars
+        INTEGER :: i, j
+        LOGICAL :: found
+        REAL(rprec) :: Z_diff, M_diff
+        REAL(rprec), PARAMETER :: Z_TOL = 1.0E-3, M_TOL = 1.0E-3
+        ! Ion database
+        REAL(rprec), PARAMETER :: DA = 1.66053906660E-27
+        CHARACTER(len=10), PARAMETER :: names(*) = [ &
+            'hydrogen  ', 'deuterium ', 'tritium   ', 'helium3   ', 'helium4   ', 'tungsten74' ]
+        REAL(rprec), PARAMETER :: mass_database(*) = [ &
+            1.007276466621_rprec, 2.01410177811_rprec, 3.01604928_rprec, &
+            3.0160293_rprec, 4.002603254_rprec, 183.84_rprec ]
+        REAL(rprec), PARAMETER :: Zcharge_database(*) = [ 1., 1., 1., 2., 2., 74. ]
+
+        DO i = 1, num_ions
+            found = .false.
+            DO j = 1, size(names)
+                Z_diff = ABS(Z_array(i) - Zcharge_database(j))
+                M_diff = ABS(M_array(i)/DA - mass_database(j))
+                IF( (Z_diff .LT. Z_TOL) .AND. (M_diff .LT. M_TOL) ) THEN
+                    ion_names(i) = names(j)
+                    found = .true.
+                    EXIT
+                END IF
+            END DO
+            IF (.not. found) THEN
+                PRINT *, 'Error: Ion with Z =', Z_array(i), 'and M =', M_array(i), 'not found in database.'
+                STOP
+            END IF
+        END DO
+    END FUNCTION identify_ions
+
+    FUNCTION get_index(array, target) RESULT(index)
+        CHARACTER(len=*), INTENT(IN) :: array(:)
+        CHARACTER(len=*), INTENT(IN) :: target
+        INTEGER :: index, i
+
+        index = -1
+        DO i = 1, size(array)
+            IF (trim(array(i)) == trim(target)) THEN
+                index = i
+                RETURN
+            END IF
+        END DO
+    END FUNCTION get_index
+
 
 END MODULE thrift_plasma_solver_mod
