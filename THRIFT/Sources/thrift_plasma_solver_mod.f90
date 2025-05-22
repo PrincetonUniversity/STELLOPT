@@ -468,6 +468,9 @@ MODULE thrift_plasma_solver_mod
             cn = cn_turb
         END IF
 
+        ! convection is zero at axis
+        cn(1) = 0.0_rprec
+
         dr = dr_plasma_solver
         dr2 = dr*dr
         dt = dt_plasma_solver
@@ -477,7 +480,7 @@ MODULE thrift_plasma_solver_mod
         Vp = Vp * 2.0_rprec * rho_plasma_grid * eq_phiedge / eq_Aminor
 
         ! r=0
-        main_diag(1) = one + dt*4.0_rprec*Dn(1)/dr2 + 2.0_rprec*dt*cn(1)/dr
+        main_diag(1) = one + dt*4.0_rprec*Dn(1)/dr2 + 2.0_rprec*dt*cn(2)/dr
         upper_diag(1) = -4.0_rprec*dt*Dn(1)/dr2
 
         ! 0<r<a
@@ -599,7 +602,7 @@ MODULE thrift_plasma_solver_mod
 
             ! r=0
             ! main_diag
-            LHS_pressure(kk,kk) = one + dt_fact*4.0_rprec*Dp(1)/dr2 + 2.0_rprec*dt_fact*cp(1)/dr
+            LHS_pressure(kk,kk) = one + dt_fact*4.0_rprec*Dp(1)/dr2 + 2.0_rprec*dt_fact*cp(2)/dr
             ! upper_diag
             LHS_pressure(kk,kk+1) = -4.0_rprec*dt_fact*Dp(1)/dr2
             kk = kk+1
