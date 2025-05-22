@@ -611,6 +611,9 @@ class THRIFT_plasma_solver():
                 #
                 self.G_NEO = f['G_NEO_complet'][:,:,:]
                 self.Q_NEO = f['Q_NEO_complet'][:,:,:]
+                #
+                self.Dp_total = f['Dp_total'][:,:,:]
+                self.cp_total = f['cp_total'][:,:,:]
                      
                 # check if Zions coincides with that in plasma class
                 Zcharge = np.array( [self.plasma_class.Zcharge[ion] for ion in self.plasma_class.ion_species], dtype=int )
@@ -628,7 +631,10 @@ class THRIFT_plasma_solver():
                 self.cp_NEO = np.transpose(self.cp_NEO, axes=[2,1,0])
                 #
                 self.G_NEO = np.transpose(self.G_NEO, axes=[2,1,0])
-                self.Q_NEO = np.transpose(self.Q_NEO, axes=[2,1,0])            
+                self.Q_NEO = np.transpose(self.Q_NEO, axes=[2,1,0])
+                #           
+                self.Dp_total = np.transpose(self.Dp_total, axes=[2,1,0])            
+                self.cp_total = np.transpose(self.cp_total, axes=[2,1,0])            
                 
     def create_input_sources_file(self,filename,nt,nrho,tfin):
         # creates 
