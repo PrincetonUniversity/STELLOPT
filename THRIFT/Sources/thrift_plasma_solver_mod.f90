@@ -819,17 +819,17 @@ MODULE thrift_plasma_solver_mod
             !
             CALL EZspline_free(spline_restart,ier)
         ELSE
-            ! ions: ni = 5E19 on axis, 0.8*5E-19 on edge, and quadratic decay
+            ! ions: ni = N0_init on axis, 0.8*N0_init on edge, and quadratic decay
             DO i=1,nion_prof
-                plasma_N(1+i,:) = 5.0E19_rprec * (0.8_rprec + 0.2_rprec*(1.0_rprec-rho_plasma_grid*rho_plasma_grid))
+                plasma_N(1+i,:) = N0_init_ions(i) * (0.8_rprec + 0.2_rprec*(1.0_rprec-rho_plasma_grid*rho_plasma_grid))
             END DO
             ! electrons from quasi neutrality
             DO j=1,Nr_plasma_solver
                 plasma_N(1,j) = SUM(plasma_N(2:,j)*Zatom_prof)
             END DO
-            ! T=200eV on axis, 0.8*200eV on edge, and quadratic decay (for all species)
+            ! T = T0_init on axis, 0.8*T0_init on edge, and quadratic decay (for all species)
             DO i=1,num_species
-                plasma_T(i,:) = 200.0_rprec * (0.8_rprec + 0.2_rprec*(1.0_rprec-rho_plasma_grid*rho_plasma_grid))
+                plasma_T(i,:) = T0_init_all(i) * (0.8_rprec + 0.2_rprec*(1.0_rprec-rho_plasma_grid*rho_plasma_grid))
             END DO
         END IF
         plasma_P = plasma_N * plasma_T * e_charge    
