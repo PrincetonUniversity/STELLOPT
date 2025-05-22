@@ -1250,8 +1250,6 @@ class PLASMA_SOLVER:
         return explicit_source
     
     def get_LHS_density(self,species,it):
-        
-        from scipy.interpolate import CubicSpline
         from scipy.sparse import diags
         
         drho = self.drho
@@ -1260,13 +1258,12 @@ class PLASMA_SOLVER:
         Nr = self.Nr
         dt = self.dt
         
+        vp = Vp(self.rho_grid)
+        vp_inner = vp[1:-1]
+        
         Dn = self.Dn[species][it,:]
-        Dn_interp = CubicSpline(self.rho_grid,Dn,bc_type='natural',extrapolate=True)
-        
         cn = self.cn[species][it,:]
-        cn_interp = CubicSpline(self.rho_grid,cn,bc_type='natural',extrapolate=True)
         
-          
         ############################################
         ############### COMPUTE LHS ################
         ############################################
@@ -1274,24 +1271,26 @@ class PLASMA_SOLVER:
         main = np.zeros(Nr)
         upper = np.zeros(Nr-1)
         
-        ## 0<r<a
-        rhos = self.rho_grid
-        rplus = rhos + drho/2
-        rminus = rhos - drho/2
+        ## 0<r<a (inner grid, no boundary points)
+        Dn_plus = (Dn[2:]+Dn[1:-1]) / 2
+        Dn_minus = (Dn[0:-2]+Dn[1:-1]) / 2
         
-        VDplus = Vp(rplus)*Dn_interp(rplus) / (Vp(rhos)*dr**2)
-        VDminus = Vp(rminus)*Dn_interp(rminus) / (Vp(rhos)*dr**2)
+        Vp_plus = (vp[2:]+vp[1:-1]) / 2
+        Vp_minus = (vp[0:-2]+vp[1:-1]) / 2
         
-        cplus  = cn_interp(rhos+drho)*Vp(rhos+drho) / (2*Vp(rhos)*dr)
-        cminus = cn_interp(rhos-drho)*Vp(rhos-drho) / (2*Vp(rhos)*dr)
+        VDplus  = Vp_plus*Dn_plus / (vp_inner*dr**2)
+        VDminus = Vp_minus*Dn_minus / (vp_inner*dr**2)
         
-        main[1:] = 1.0 + dt*(VDplus[1:] + VDminus[1:])
-        upper = dt*(-VDplus[:-1] + cplus[:-1])
-        lower = dt*(-VDminus[1:] - cminus[1:])
+        cplus = cn[2:]*vp[2:] / (2*vp_inner*dr)
+        cminus = cn[0:-2]*vp[0:-2] / (2*vp_inner*dr)
+
+        main[1:-1] = 1.0 + dt*(VDplus + VDminus)
+        upper[1:] = dt*(-VDplus + cplus)
+        lower[0:-1] = dt*(-VDminus - cminus)
         
         ## r=0
-        main[0] = 1.0 + dt*4*Dn_interp(0)/dr**2 + dt*2*cn_interp(drho)/dr
-        upper[0] = -4*dt*Dn_interp(0)/dr**2
+        main[0] = 1.0 + dt*( 4*Dn[0]/dr**2 + 2*cn[1]/dr )
+        upper[0] = -4*dt*Dn[0]/dr**2
                 
         ## r=a
         main[-1] = 1.0
@@ -1303,8 +1302,6 @@ class PLASMA_SOLVER:
         return LHS
     
     def get_LHS_pressure(self,it):
-        
-        from scipy.interpolate import CubicSpline
         from scipy.sparse import diags, block_diag, csr_matrix
         
         drho = self.drho
@@ -1313,15 +1310,15 @@ class PLASMA_SOLVER:
         Nr = self.Nr
         num_species = len(self.list_of_species)
         
+        vp = Vp(self.rho_grid)
+        vp_inner = vp[1:-1]
+        
         DIFF = {}
         
         for species in self.list_of_species:
             
-            Dp = self.Dp[species][it,:]
-            Dp_interp = CubicSpline(self.rho_grid,Dp,bc_type='natural',extrapolate=True)
-            
+            Dp = self.Dp[species][it,:]    
             cp = self.cp[species][it,:]
-            cp_interp = CubicSpline(self.rho_grid,cp,bc_type='natural',extrapolate=True)
  
             dt_fact = (2./3.)*self.dt
             
@@ -1332,24 +1329,26 @@ class PLASMA_SOLVER:
             main = np.zeros(self.Nr)
             upper = np.zeros(self.Nr-1)
             
-            ## 0<r<a
-            rhos = self.rho_grid
-            rplus = rhos + drho/2
-            rminus = rhos - drho/2
+            ## 0<r<a (inner grid, no boundary points)
+            Dp_plus = (Dp[2:]+Dp[1:-1]) / 2
+            Dp_minus = (Dp[0:-2]+Dp[1:-1]) / 2
             
-            VDplus = Vp(rplus)*Dp_interp(rplus) / (Vp(rhos)*dr**2)
-            VDminus = Vp(rminus)*Dp_interp(rminus) / (Vp(rhos)*dr**2)
-                
-            cplus  = cp_interp(rhos+drho)*Vp(rhos+drho) / (2*Vp(rhos)*dr)
-            cminus = cp_interp(rhos-drho)*Vp(rhos-drho) / (2*Vp(rhos)*dr)
+            Vp_plus = (vp[2:]+vp[1:-1]) / 2
+            Vp_minus = (vp[0:-2]+vp[1:-1]) / 2
             
-            main[1:] = 1.0 + dt_fact*(VDplus[1:] + VDminus[1:])
-            upper = dt_fact*(-VDplus[:-1] + cplus[:-1])
-            lower = dt_fact*(-VDminus[1:] - cminus[1:])
+            VDplus  = Vp_plus*Dp_plus / (vp_inner*dr**2)
+            VDminus = Vp_minus*Dp_minus / (vp_inner*dr**2)
+            
+            cplus = cp[2:]*vp[2:] / (2*vp_inner*dr)
+            cminus = cp[0:-2]*vp[0:-2] / (2*vp_inner*dr)
+
+            main[1:-1] = 1.0 + dt_fact*(VDplus + VDminus)
+            upper[1:] = dt_fact*(-VDplus + cplus)
+            lower[0:-1] = dt_fact*(-VDminus - cminus)
             
             ## r=0
-            main[0] = 1.0 + dt_fact*( 4*Dp_interp(0)/dr**2 + 2*cp_interp(drho)/dr )
-            upper[0] = -4*dt_fact*Dp_interp(0)/dr**2
+            main[0] = 1.0 + dt_fact*( 4*Dp[0]/dr**2 + 2*cp[1]/dr )
+            upper[0] = -4*dt_fact*Dp[0]/dr**2
             
             DIFF[species] = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")    
         
