@@ -522,14 +522,6 @@ MODULE thrift_plasma_solver_mod
         ispecies = 1 + iion
         t = time_plasma_grid(mytimestep_plasma_solver)
 
-        ! DO ir=1,Nr
-        !     rho = rho_plasma_grid(ir)
-        !     CALL get_S_particle(rho,t,ispecies,explicit_source)
-        !     ! explicit_source = S_particle_ext(1+iion,mytimestep_plasma_solver,ir)
-        !     !
-        !     ni_previous = plasma_N_keep(ispecies,mytimestep_plasma_solver-1,ir)
-        !     RHS_density(ir) = ni_previous + dt_plasma_solver*explicit_source
-        ! END DO
         RHS_density = plasma_N_keep(ispecies,mytimestep_plasma_solver-1,:) + dt_plasma_solver*S_particle_ext(1+iion,mytimestep_plasma_solver,:)
 
         ! Boundary condition
