@@ -17,7 +17,7 @@ EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 
 class PLASMA_SOLVER:
     
-    def __init__(self, list_of_species, tau_fast_alphas=None, tau_thermal_alphas=None, constrain_ne=False, constrain_nT=False):
+    def __init__(self, list_of_species, tau_fast_alphas=None, tau_thermal_alphas=None, constrain_nT=False):
         
         from collections import defaultdict
         
@@ -39,12 +39,7 @@ class PLASMA_SOLVER:
             self.solve_alphas_density = True
             self.tau_fast_alphas = tau_fast_alphas
             self.tau_thermal_alphas = tau_thermal_alphas
-            
-        if(constrain_ne):
-            # if True, ne is computed from quasi-neutrality
-            self.constrain_ne = True
-        else:
-            self.constrain_ne = False
+
             
         if(constrain_nT):
             # if True, nT is assumed to be equal to nD
@@ -1164,7 +1159,7 @@ class PLASMA_SOLVER:
             if(species=='tritium' and self.constrain_nT):
                 continue
             
-            if(species=='electrons' and self.constrain_ne):
+            if(species=='electrons'):
                 continue
             
             RHS_vector = self.N[species][it-1,:] + self.dt*self.get_explicit_particle_sources(species,it)
@@ -1190,13 +1185,12 @@ class PLASMA_SOLVER:
             self.N['alphas_fast'][it,:] = (self.N['alphas_fast'][it-1,:] + self.dt*nD*nT*sigmav) / (1+self.dt/self.tau_fast_alphas)
             self.N['alphas_thermal'][it,:] = (self.N['alphas_thermal'][it-1,:] + self.dt/self.tau_thermal_alphas) / (1+self.dt/self.tau_fast_alphas)
         
-        if(self.constrain_ne):
-            self.N['electrons'][it,:] = 0.0
-            for ion in self.plasma.ion_species:
-                self.N['electrons'][it,:] += self.N[ion][it,:] * self.plasma.Zcharge[ion]
-                
-            if(self.solve_alphas_density):
-                self.N['electrons'][it,:] += 2*self.N['alphas_fast'][it,:] + 2*self.N['alphas_thermal'][it,:]     
+        # update electron density from quasi neutrality
+        self.N['electrons'][it,:] = 0.0
+        for ion in self.plasma.ion_species:
+            self.N['electrons'][it,:] += self.N[ion][it,:] * self.plasma.Zcharge[ion]        
+        if(self.solve_alphas_density):
+            self.N['electrons'][it,:] += 2*self.N['alphas_fast'][it,:] + 2*self.N['alphas_thermal'][it,:]     
         
         dens = []
         for species in self.list_of_species:
