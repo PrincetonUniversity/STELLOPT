@@ -286,7 +286,10 @@ class PLASMA_SOLVER:
                 else:
                     self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
             #
-            case 'alpha_generation':
+            case 'alpha_particles_source':
+                self.particle_sources[species][source_type] = {}
+            #
+            case 'alpha_particles_sink':
                 self.particle_sources[species][source_type] = {}
             #
             case 'constant':
@@ -767,7 +770,7 @@ class PLASMA_SOLVER:
                     t = self.time[it]
                     aux_source = time_fact(t) * cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
                     
-                case 'alpha_generation':
+                case 'alpha_particles_sink':
                     nD = self.N['deuterium'][it,:]
                     nT = self.N['tritium'][it,:]
                     
@@ -776,6 +779,16 @@ class PLASMA_SOLVER:
                     
                     sigmav = fusion.sigmaBH(0.5*(TD+TT),'DT')
                     aux_source = - nD*nT*sigmav # particles/(s*m^3)
+                    
+                case 'alpha_particles_source':
+                    nD = self.N['deuterium'][it,:]
+                    nT = self.N['tritium'][it,:]
+                    
+                    TD = self.T['deuterium'][it,:]
+                    TT = self.T['tritium'][it,:]
+                    
+                    sigmav = fusion.sigmaBH(0.5*(TD+TT),'DT')
+                    aux_source = nD*nT*sigmav # particles/(s*m^3)
                     
                 case 'constant':
                     aux_source = self.particle_sources[species]['constant']['cte_source']
