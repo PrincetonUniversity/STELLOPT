@@ -182,7 +182,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_TEMP',ier)
          CALL write_var_hdf5(fid,'THRIFT_PRESS',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_PRESS,ATT='Pressure of each species [Pa]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PRESS',ier)
-          
+         CALL write_var_hdf5(fid,'THRIFT_FAST_ALPHAS_DENS',nsj,ntimesteps,ier,DBLVAR=THRIFT_FAST_ALPHAS_DENS,ATT='Density of fast alphas [m^-3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_FAST_ALPHAS_DENS',ier)
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'thrift_'//TRIM(id_string)//'.h5',ier)
 #else
@@ -261,6 +262,9 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'G_NEO_complet',ier)
          CALL write_var_hdf5(fid,'Q_NEO_complet',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Q_NEO_complet,ATT='Q NEO [W/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Q_NEO_complet',ier)
+         ! N_fast_alphas
+         CALL write_var_hdf5(fid,'N_fast_alphas',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=N_fast_alphas,ATT='Density of fast alphas [m^-3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'N_fast_alphas',ier)
          ! Close file
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)

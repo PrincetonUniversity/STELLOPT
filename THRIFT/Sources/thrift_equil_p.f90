@@ -16,7 +16,8 @@
                             pmass_type, pcurr_type, ph_type, pt_type, &
                             pres_scale
       USE thrift_globals, ONLY: solve_plasma_equations
-      USE thrift_plasma_solver_mod, ONLY: evolve_plasma_equations
+      USE thrift_plasma_solver_mod, ONLY: evolve_plasma_equations, &
+                                          get_fast_alphas_dens
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -66,6 +67,12 @@
                   THRIFT_PRESS(j+1,i,mytimestep) = THRIFT_DENS(j+1,i,mytimestep) * THRIFT_TEMP(j+1,i,mytimestep) * e_charge
             END DO
       END DO
+      ! Save N_FAST_ALPHAS
+      IF(solve_plasma_equations) THEN 
+            CALL get_fast_alphas_dens(SQRT(THRIFT_S),THRIFT_FAST_ALPHAS_DENS(:,mytimestep))
+      ELSE 
+            THRIFT_FAST_ALPHAS_DENS(:,mytimestep) = 0.0
+      END IF
 
       RETURN
 !----------------------------------------------------------------------

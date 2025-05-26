@@ -60,6 +60,7 @@
       THRIFT_GNEO     = 0; THRIFT_QNEO     = 0
       ! Initialize densities, temperatures and pressures
       THRIFT_DENS     = 0; THRIFT_TEMP     = 0; THRIFT_PRESS      = 0
+      THRIFT_FAST_ALPHAS_DENS = 0
 
       ! Initialize timers
       time_vmec = 0; time_bootstrap = 0; time_pressure = 0

@@ -22,12 +22,11 @@ MODULE thrift_plasma_solver_mod
     USE thrift_equil, ONLY : eq_Aminor, eq_phiedge, vp_spl, bsq_spl
     !-------------------------------------------------------------------
     !     Module Variables
-    !          lverb         Logical to control screen output
     !-------------------------------------------------------------------
     IMPLICIT NONE
     REAL(rprec) :: drho_plasma_solver, dr_plasma_solver
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_plasma_grid, time_plasma_grid
-    REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: r_plasma_grid
+    REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: r_plasma_grid, N_fast_alphas
     INTEGER :: ilogplasma, num_species
     REAL(rprec), DIMENSION(:,:), ALLOCATABLE, PRIVATE :: plasma_N, plasma_T, plasma_P
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep, &
@@ -38,9 +37,12 @@ MODULE thrift_plasma_solver_mod
     INTEGER :: mytimestep_plasma_solver
     INTEGER :: N_plasma_steps_per_THRIFT_step, Nt_total_plasma_solver
     TYPE(EZspline1_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: N_splines, T_splines
-    TYPE(EZspline1_r8), PRIVATE :: P_spline
+    TYPE(EZspline1_r8), PRIVATE :: P_spline, fast_alphas_spl
     INTEGER, PRIVATE :: subiter
     CHARACTER(len=20), DIMENSION(:), ALLOCATABLE :: list_of_species
+    !
+    ! PARAMETERS
+    REAL(rprec), PARAMETER, PRIVATE :: tau_fast_alphas = 0.5_rprec
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         NONE
@@ -48,8 +50,6 @@ MODULE thrift_plasma_solver_mod
       
 !-----------------------------------------------------------------------
 !     Subroutines
-!         evolve_plasma_equations: ...
-!         read_external_plasma_sources:  ....
 !-----------------------------------------------------------------------
     PUBLIC  :: evolve_plasma_equations, initialize_plasma_solver, &
     update_splines
@@ -82,6 +82,7 @@ MODULE thrift_plasma_solver_mod
         IF( .NOT. ALLOCATED(cp_NEO)) ALLOCATE(cp_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(Dp_total)) ALLOCATE(Dp_total(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(cp_total)) ALLOCATE(cp_total(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(N_fast_alphas)) ALLOCATE(N_fast_alphas(Nt_total_plasma_solver,Nr_plasma_solver))
         ! These arrays are filled in thrift_penta with the total NEO fluxes. They include the inter-species diffusion coeffs
         ! which are neglected when computing the Dn_NEO and cn_NEO coeffs used by the transport solver
         IF( .NOT. ALLOCATED(G_NEO_complet)) ALLOCATE(G_NEO_complet(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
@@ -187,7 +188,7 @@ MODULE thrift_plasma_solver_mod
                 END DO
                 ! electrons from quasi neutrality
                 DO j=1,Nr_plasma_solver
-                    plasma_N(1,j) = SUM(plasma_N(2:,j)*Zatom_prof)
+                    plasma_N(1,j) = SUM(plasma_N(2:,j)*Zatom_prof) + 2.0_rprec*N_fast_alphas(mytimestep_plasma_solver,j)
                 END DO
 
                 CALL get_LHS_pressure(LHS_pressure)
@@ -411,10 +412,16 @@ MODULE thrift_plasma_solver_mod
             T_splines(ispecies)%x1        = rho_plasma_grid
             T_splines(ispecies)%isHermite = 1
         END DO
+        !
         CALL EZspline_init(P_spline,Nr_plasma_solver,bcs0,ier)
         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: plasma splines',ier)
         P_spline%x1 = rho_plasma_grid
         P_spline%isHermite = 1
+        !
+        CALL EZspline_init(fast_alphas_spl,Nr_plasma_solver,bcs0,ier)
+        IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: plasma splines',ier)
+        fast_alphas_spl%x1 = rho_plasma_grid
+        fast_alphas_spl%isHermite = 1
 
         IF (lverb) WRITE(6,*) 'Splines Allocated!'
 
@@ -512,17 +519,49 @@ MODULE thrift_plasma_solver_mod
     END SUBROUTINE get_LHS_density_ions
 
     SUBROUTINE get_RHS_density_ions(iion,RHS_density)
+        USE fusion_mod, ONLY : DT_CROSS_SECTION
         IMPLICIT NONE
         INTEGER, INTENT(IN) :: iion
         REAL(rprec), DIMENSION(:), INTENT(INOUT) :: RHS_density
-        INTEGER :: Nr, ir, ispecies
+        INTEGER :: Nr, ir, ispecies, iD, iT
         REAL(rprec) :: rho, t, explicit_source, ni_previous
+        REAL(rprec) :: nD, nT, TD, TT, Ti
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: nDnTsigmav
 
         Nr = Nr_plasma_solver
         ispecies = 1 + iion
         t = time_plasma_grid(mytimestep_plasma_solver)
 
         RHS_density = plasma_N_keep(ispecies,mytimestep_plasma_solver-1,:) + dt_plasma_solver*S_particle_ext(1+iion,mytimestep_plasma_solver,:)
+
+        ! If there is deuterium and tritium in the plasma, add the sink nD*nT*<sigma.v> to deuterium and tritium
+        ! and the same source to fast alphas
+        iD = get_index(list_of_species,'deuterium')
+        iT = get_index(list_of_species,'tritium')
+        IF( (iD.NE.-1) .AND. (iT.NE.-1) ) THEN
+            ALLOCATE(nDnTsigmav(Nr))
+            DO ir=1,Nr
+                nD = plasma_N(iD,ir)
+                nT = plasma_N(iT,ir)
+                TD = plasma_T(iD,ir)
+                TT = plasma_T(iT,ir)
+                Ti = 0.5D+00 * (TD+TT)
+                nDnTsigmav(ir) = nD*nT*DT_CROSS_SECTION(Ti)  
+            END DO
+            
+            IF (trim(list_of_species(1+iion)) == 'deuterium' .OR. trim(list_of_species(1+iion)) == 'tritium') THEN
+                RHS_density = RHS_density - dt_plasma_solver*nDnTsigmav
+            END IF
+
+            N_fast_alphas(mytimestep_plasma_solver,:) = (N_fast_alphas(mytimestep_plasma_solver-1,:) + dt_plasma_solver*nDnTsigmav) &
+                                                        / (1 + dt_plasma_solver/tau_fast_alphas) 
+            
+            ! If helium4 (thermal alphas) in the plasma, add the source term due to fast alphas
+            IF (trim(list_of_species(1+iion)) == 'helium4') THEN
+                RHS_density = RHS_density + dt_plasma_solver*N_fast_alphas(mytimestep_plasma_solver,:) / tau_fast_alphas
+            END IF
+            DEALLOCATE(nDnTsigmav)
+        END IF
 
         ! Boundary condition
         RHS_density(Nr) = plasma_N(ispecies,Nr)
@@ -729,7 +768,7 @@ MODULE thrift_plasma_solver_mod
             ! Boundary condition
             RHS_pressure(offset+Nr) = plasma_P(1+iion,Nr)
         END DO
-
+        
         DEALLOCATE(SB,S_alpha)
 
         RETURN
@@ -769,6 +808,9 @@ MODULE thrift_plasma_solver_mod
         CALL EZspline_setup(P_spline,press,ier,EXACT_DIM=.true.)
         P_spl = P_spline%fspl
         DEALLOCATE(press)
+
+        ! Fast Alphas Density
+        CALL EZspline_setup(fast_alphas_spl,N_fast_alphas(mytimestep_plasma_solver,:),ier,EXACT_DIM=.true.)
 
         RETURN
 
@@ -811,6 +853,10 @@ MODULE thrift_plasma_solver_mod
                 IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: restart spline',ier)
                 CALL EZspline_interp(spline_restart,Nr_plasma_solver,rho_plasma_grid,plasma_T(i,:),ier)
             END DO
+            ! Fast alphas density
+            CALL EZspline_setup(spline_restart,DENS_FAST_ALPHAS_RESTART(:),ier,EXACT_DIM=.true.)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: restart fast alphas spline',ier)
+            CALL EZspline_interp(spline_restart,Nr_plasma_solver,rho_plasma_grid,N_fast_alphas(1,:),ier)
             !
             CALL EZspline_free(spline_restart,ier)
         ELSE
@@ -818,6 +864,7 @@ MODULE thrift_plasma_solver_mod
             DO i=1,nion_prof
                 plasma_N(1+i,:) = N0_init_ions(i) * (0.8_rprec + 0.2_rprec*(1.0_rprec-rho_plasma_grid*rho_plasma_grid))
             END DO
+            N_fast_alphas = 0.0_rprec
             ! electrons from quasi neutrality
             DO j=1,Nr_plasma_solver
                 plasma_N(1,j) = SUM(plasma_N(2:,j)*Zatom_prof)
@@ -1007,6 +1054,16 @@ MODULE thrift_plasma_solver_mod
         RETURN
 
     END SUBROUTINE get_beurskens_ions_chi
+
+    SUBROUTINE get_fast_alphas_dens(rho_array,val_array)
+        ! Interpolates fast alpha density at rho_val
+        REAL(rprec), DIMENSION(:), INTENT(IN) :: rho_array
+        REAL(rprec), DIMENSION(:), INTENT(INOUT) :: val_array
+        INTEGER :: Nrho_array, ier
+        Nrho_array = SIZE(rho_array)
+        CALL EZspline_interp(fast_alphas_spl,Nrho_array,rho_array,val_array,ier)
+        RETURN
+    END SUBROUTINE
 
     SUBROUTINE polyfit_derivative(r, y, N, deg, dy)
         IMPLICIT NONE

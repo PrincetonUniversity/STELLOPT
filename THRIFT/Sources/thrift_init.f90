@@ -343,26 +343,33 @@
       CALL mpialloc(THRIFT_DENS,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dens)
       CALL mpialloc(THRIFT_TEMP,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_temp)
       CALL mpialloc(THRIFT_PRESS,  nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_press)    
+      CALL mpialloc(THRIFT_FAST_ALPHAS_DENS,    nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_fast_alphas_dens)    
       ! Restart vars
       IF(lrestart_from_file) THEN
          CALL mpialloc(DENS_RESTART,   nion_prof+1, ns_restart, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dens_restart)
          CALL mpialloc(TEMP_RESTART,   nion_prof+1, ns_restart, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_temp_restart)
+         CALL mpialloc(DENS_FAST_ALPHAS_RESTART,    ns_restart, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dens_fast_alphas_restart)
       END IF
 
       IF(lrestart_from_file .AND. solve_plasma_equations .AND. myid_sharmem == master) THEN
          CALL open_hdf5(TRIM(restart_filename),fid,ier,LCREATE=.false.)
          IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(restart_filename),ier)
 
-         ALLOCATE(temp3d(nion_prof+1,ns_restart,ntimesteps_restart))
+         ALLOCATE(temp3d(nion_prof+1,ns_restart,ntimesteps_restart),temp2d(ns_restart,ntimesteps_restart))
          ! Read density of all species at last time step
          CALL read_var_hdf5(fid,'THRIFT_DENS',nion_prof+1,ns_restart,ntimesteps_restart,ier,DBLVAR=temp3d)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_DENS',ier)
          DENS_RESTART = temp3d(:,:,ntimesteps_restart)
+         ! Read fast alphas density at last time step
+         CALL read_var_hdf5(fid,'THRIFT_FAST_ALPHAS_DENS',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_FAST_ALPHAS_DENS',ier)
+         DENS_FAST_ALPHAS_RESTART = temp2d(:,ntimesteps_restart)
          ! Read temperature of all species at last time step
          CALL read_var_hdf5(fid,'THRIFT_TEMP',nion_prof+1,ns_restart,ntimesteps_restart,ier,DBLVAR=temp3d)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_TEMP',ier)
          TEMP_RESTART = temp3d(:,:,ntimesteps_restart)
-         DEALLOCATE(temp3d)
+         !
+         DEALLOCATE(temp3d,temp2d)
 
          !Close the HDF5 file
          CALL close_hdf5(fid,ier)

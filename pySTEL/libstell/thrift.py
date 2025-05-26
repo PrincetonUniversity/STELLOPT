@@ -602,6 +602,8 @@ class THRIFT_plasma_solver():
                 self.plasma_N = f['plasma_N'][:,:,:]
                 self.plasma_T = f['plasma_T'][:,:,:]
                 #
+                self.N_fast_alphas = f['N_fast_alphas'][:,:]
+                #
                 Zions = np.array( f['Zions'][:], dtype=int)
                 #
                 self.Dn_NEO = f['Dn_NEO'][:,:,:]
@@ -622,6 +624,7 @@ class THRIFT_plasma_solver():
                 
                 # transpose
                 self.r_grid = self.r_grid.T
+                self.N_fast_alphas = self.N_fast_alphas.T
                 #
                 self.plasma_N = np.transpose(self.plasma_N, axes=[2,1,0])
                 self.plasma_T = np.transpose(self.plasma_T, axes=[2,1,0])
