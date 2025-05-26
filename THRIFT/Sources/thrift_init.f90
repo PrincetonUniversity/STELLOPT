@@ -18,7 +18,7 @@
                                        read_penta_run_params_namelist
       USE thrift_plasma_solver_mod, ONLY: initialize_plasma_solver, Nt_total_plasma_solver, &
       dt_plasma_solver, time_plasma_grid, N_plasma_steps_per_THRIFT_step
-      USE thrift_equil, ONLY : eq_Aminor, eq_phiedge, vp_spl, bcs1
+      USE thrift_equil, ONLY : eq_Aminor, eq_phiedge, vp_spl, bsq_spl, bcs1
       USE safe_open_mod
       USE mpi_params
       USE mpi_inc
@@ -269,6 +269,19 @@
             FORALL (k=1:ns_restart) vp_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns_restart-1))
             CALL EZspline_setup(vp_spl,temp2d(:,ntimesteps_restart)/eq_phiedge,ier,EXACT_DIM=.true.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_init: vp_spl',ier)
+
+            CALL read_var_hdf5(fid,'THRIFT_BSQAV',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_BSQAV',ier)
+
+            ! Bsq Spline
+            bcs1=(/ 0, 0/)
+            IF (EZspline_allocated(bsq_spl)) CALL EZspline_free(bsq_spl,ier)
+            CALL EZspline_init(bsq_spl,ns_restart,bcs1,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_init: bsq_spl',ier)
+            bsq_spl%isHermite = 0
+            FORALL (k=1:ns_restart) bsq_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns_restart-1))
+            CALL EZspline_setup(bsq_spl,temp2d(:,ntimesteps_restart),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_init: bsq_spl',ier)
 
             DEALLOCATE(temp2d,temp1d)
             
