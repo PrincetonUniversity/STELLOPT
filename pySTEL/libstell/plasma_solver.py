@@ -17,29 +17,22 @@ EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 
 class PLASMA_SOLVER:
     
-    def __init__(self, list_of_species, tau_fast_alphas=None, tau_thermal_alphas=None, constrain_nT=False):
+    def __init__(self, list_of_species, solve_fast_alphas=False, tau_fast_alphas=0.5, constrain_nT=False):
         
         from collections import defaultdict
         
-        # later this can be changed
-        valid_species = {'electrons', 'deuterium', 'tritium'}
-        invalid_species = set(list_of_species) - valid_species
-        if invalid_species:
-            raise ValueError(f"Invalid species found: {invalid_species}")
-        else:
-            self.list_of_species = list_of_species
+        self.list_of_species = list_of_species
             
         # create plasma class with list_of_species
         self.plasma = PLASMA(list_of_species)
-
-        # in case taus are provided, will solve alphas density using a simple model
-        if((tau_fast_alphas is None) or (tau_thermal_alphas is None)):
-            self.solve_alphas_density = False
-        else:
-            self.solve_alphas_density = True
+        
+        self.solve_fast_alphas = solve_fast_alphas
+        # in case solve_fast_alphas is True but deuterium&tritium are not in the plasma
+        # an error is given
+        if(solve_fast_alphas and ('deuterium' not in list_of_species or 'tritium' not in list_of_species)):
+            raise ValueError(f'ERROR: solve_fast_alphas was set to True, but deuterium and/or tritium not in the plasma!')
+        elif(solve_fast_alphas):
             self.tau_fast_alphas = tau_fast_alphas
-            self.tau_thermal_alphas = tau_thermal_alphas
-
             
         if(constrain_nT):
             # if True, nT is assumed to be equal to nD
@@ -60,8 +53,8 @@ class PLASMA_SOLVER:
         self.heat_fluxes_info = defaultdict(lambda: defaultdict(dict))
         self.particle_fluxes_info = defaultdict(lambda: defaultdict(dict))
 
-        print(f'Solvers for pressure of {self.list_of_species} INITIALIZED!')
-        print(f'SOLVING FOR ALPHAS DENSITY: {self.solve_alphas_density}')
+        print(f'Transport plasma solver for {self.list_of_species} INITIALIZED!')
+        if(self.solve_fast_alphas): print(f'SOLVING FOR FAST ALPHAS!')
     
     def set_edge_boundary_condition(self,field: str,species: str,val: float):
         # set edge boundary Dirichlet boundary condition
@@ -140,13 +133,12 @@ class PLASMA_SOLVER:
             self.set_edge_boundary_condition('temperature', species, restart_solver.T[species][-1,-1]) 
             
         # Get alphas density 
-        if(self.solve_alphas_density):
+        if(self.solve_fast_alphas):
             # check restart_solver has alphas
             if 'alphas_fast' not in restart_solver.N or 'alphas_thermal' not in restart_solver.N:
                 raise ValueError('restart file does not have alphas density! Yet you want to solve with alphas...')
             else:
                 self.alphas_fast_density_restart    = restart_solver.N['alphas_fast'][-1,:]
-                self.alphas_thermal_density_restart = restart_solver.N['alphas_thermal'][-1,:]
               
     def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None,B=None):
         
@@ -286,7 +278,10 @@ class PLASMA_SOLVER:
                 else:
                     self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
             #
-            case 'alpha_particles_source':
+            case 'fast_alphas_source':
+                # check we are solving fast alphas
+                if(not self.solve_fast_alphas):
+                    raise ValueError('solve_fast_alphas was set to false, so fast_alphas_source does not make sense...')
                 self.particle_sources[species][source_type] = {}
             #
             case 'alpha_particles_sink':
@@ -431,9 +426,8 @@ class PLASMA_SOLVER:
                 self.N[species][it,:] = self.N[species][it-1,:]
                 self.T[species][it,:] = self.T[species][it-1,:]
                 self.P[species][it,:] = self.P[species][it-1,:]
-                if(self.solve_alphas_density):
-                    self.N['alphas_fast'][it,:] = self.N['alphas_fast'][it-1,:]
-                    self.N['alphas_thermal'][it,:] = self.N['alphas_thermal'][it-1,:]        
+                if(self.solve_fast_alphas):
+                    self.N['alphas_fast'][it,:] = self.N['alphas_fast'][it-1,:]      
             
             ### SUBCYCLE
             delta_p = 10*tolerance
@@ -567,9 +561,8 @@ class PLASMA_SOLVER:
             for source_type in self.particle_sources[species].keys():
                 self.explicit_particle_sources[species][source_type] = np.zeros((Nt,Nr))
             
-        if(self.solve_alphas_density):
+        if(self.solve_fast_alphas):
             self.N['alphas_fast'] = np.zeros((Nt,Nr))
-            self.N['alphas_thermal'] = np.zeros((Nt,Nr))
             
     def set_fields_tstart(self):
         
@@ -584,14 +577,12 @@ class PLASMA_SOLVER:
         
         # N_alphas are set to ZERO at t=tstart
         # UNLESS read from restart file
-        if(self.solve_alphas_density):
+        if(self.solve_fast_alphas):
             try:
                 self.N['alphas_fast'][0,:] = self.alphas_fast_density_restart
-                self.N['alphas_thermal'][0,:] = self.alphas_thermal_density_restart
                 print('Reading alphas density from restart file...')
             except:
                 self.N['alphas_fast'][0,:] = 0.0
-                self.N['alphas_thermal'][0,:] = 0.0
             
         # set sources at t=0
         for species in self.list_of_species:
@@ -658,10 +649,6 @@ class PLASMA_SOLVER:
                         ni = self.N[ion][it,:]
 
                         aux_source -= fusion.BremsstrahlungPower(zi,ni,ne,Te)
-                        
-                    if(self.solve_alphas_density):
-                        ni = self.N['alphas_thermal'][it,:]
-                        aux_source -= fusion.BremsstrahlungPower(2,ni,ne,Te)
                         
                 case 'external_gaussian':
                     rho_0 = self.energy_sources[species]['external_gaussian']['rho_0']
@@ -780,15 +767,8 @@ class PLASMA_SOLVER:
                     sigmav = fusion.sigmaBH(0.5*(TD+TT),'DT')
                     aux_source = - nD*nT*sigmav # particles/(s*m^3)
                     
-                case 'alpha_particles_source':
-                    nD = self.N['deuterium'][it,:]
-                    nT = self.N['tritium'][it,:]
-                    
-                    TD = self.T['deuterium'][it,:]
-                    TT = self.T['tritium'][it,:]
-                    
-                    sigmav = fusion.sigmaBH(0.5*(TD+TT),'DT')
-                    aux_source = nD*nT*sigmav # particles/(s*m^3)
+                case 'fast_alphas_source':
+                    aux_source = self.N['alphas_fast'][it,:] / self.tau_fast_alphas
                     
                 case 'constant':
                     aux_source = self.particle_sources[species]['constant']['cte_source']
@@ -1188,7 +1168,7 @@ class PLASMA_SOLVER:
         if(self.constrain_nT):
             self.N['tritium'][it,:] = self.N['deuterium'][it,:]   
             
-        if(self.solve_alphas_density):
+        if(self.solve_fast_alphas):
             nD = self.N['deuterium'][it,:]
             nT = self.N['tritium'][it,:]
             TD = self.T['deuterium'][it,:]
@@ -1196,14 +1176,13 @@ class PLASMA_SOLVER:
             sigmav = fusion.sigmaBH(0.5*(TD+TT),'DT')
             #
             self.N['alphas_fast'][it,:] = (self.N['alphas_fast'][it-1,:] + self.dt*nD*nT*sigmav) / (1+self.dt/self.tau_fast_alphas)
-            self.N['alphas_thermal'][it,:] = (self.N['alphas_thermal'][it-1,:] + self.dt/self.tau_thermal_alphas) / (1+self.dt/self.tau_fast_alphas)
         
         # update electron density from quasi neutrality
         self.N['electrons'][it,:] = 0.0
         for ion in self.plasma.ion_species:
             self.N['electrons'][it,:] += self.N[ion][it,:] * self.plasma.Zcharge[ion]        
-        if(self.solve_alphas_density):
-            self.N['electrons'][it,:] += 2*self.N['alphas_fast'][it,:] + 2*self.N['alphas_thermal'][it,:]     
+        if(self.solve_fast_alphas):
+            self.N['electrons'][it,:] += 2*self.N['alphas_fast'][it,:]  
         
         dens = []
         for species in self.list_of_species:
