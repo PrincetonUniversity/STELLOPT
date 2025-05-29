@@ -103,6 +103,7 @@ if __name__=="__main__":
 				pyplot.show()
 		if args.boozer_ext:
 			# Note that Boozer is in mu+nv so we need to convert
+			# but apparently don't
 			boozer = BOOZER()
 			boozer.read_boozer(args.boozer_ext)
 			rmns = None;	zmnc = None;	pmnc=None;
@@ -110,7 +111,7 @@ if __name__=="__main__":
 			bnmnc = None;	bnmns = None
 			k = boozer.ns_b-1
 			xm = boozer.ixm_b[:,0]
-			xn = -boozer.ixn_b[:,0]/boozer.nfp_b
+			xn = boozer.ixn_b[:,0]/boozer.nfp_b
 			rmnc = boozer.rmnc_b[k,:]
 			zmns = boozer.zmns_b[k,:]
 			pmns = boozer.pmns_b[k,:]
@@ -152,5 +153,5 @@ if __name__=="__main__":
 			coil_data.coilSurfDist(focus_data.xsurf.flatten(),\
 					focus_data.ysurf.flatten(),\
 					focus_data.zsurf.flatten())
-			coil_data.plotcoilplasmaDist()
+			coil_data.plotcoilplasmaDist(cmin=2.5)
 	sys.exit(0)
