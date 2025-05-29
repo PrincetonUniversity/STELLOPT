@@ -159,7 +159,8 @@ MODULE beams3d_runtime
                ldepo, lbeam_simple, lw7x, lsuzuki, &
                lascot, lascot4, lfidasim, lfidasim_cyl, lsplit, &
                lvessel_beam, lascotfl, lrandomize, leqdsk, lhint, &
-               lboxsim, limas, lfieldlines, lbeamdensity, lmumat
+               lboxsim, limas, lfieldlines, lbeamdensity, lmumat, &
+               luser_init
     INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, pi, invpi2, mu0, to3, dt_save, rminor_norm
