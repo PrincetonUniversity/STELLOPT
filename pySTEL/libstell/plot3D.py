@@ -171,6 +171,22 @@ class PLOT3D():
 				lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
 		return lut
 
+	def setLUTRed(self,dex=0):
+		"""Set a value of a LUT to red
+
+		The routine sets the first or last value of a LUT to red. This
+		is useful for explicitly setting some min or max value to a
+		red color as a warning.
+
+		Parameters
+		----------
+		lut : VTKLookupTable
+			VTK style lookup table class
+		dex : int (optional)
+			Index to set red (default = 0)
+		"""
+		self.lookupTable.SetTableValue(dex,1.0,0.0,0.0,1.0)
+
 	def setActorColor(self,actor,color=None):
 		"""Set the color property of the actor
 
