@@ -228,6 +228,7 @@
                rtemp = B_Z(1:nr,1:nphi1,1:nz)
                CALL write_var_hdf5(qid_gid,'bz',nr,nphi1,nz,ier,DBLVAR=rtemp)
                rtemp = S_ARR(1:nr,1:nphi1,1:nz)
+               WHERE (rtemp < 0) rtemp = 4
                DO k = 1, nphi1
                   rtemp(:,i,:) = rtemp(:,i,:) - MINVAL(MINVAL(rtemp(:,i,:),DIM=2),DIM=1)
                END DO
@@ -265,7 +266,8 @@
                      ider = 1
                      IF (s_temp<=1) CALL EZspline_derivative1_r8(POT_spl_s,ider,s_temp,r1dtemp(i),ier)
                      ! df/drho = df/ds * ds/drho = df/ds * 2*rho = df/ds * 2 * SQRT(s)
-                     r1dtemp(i) = -r1dtemp(i)*2*rho_temp/reff_eq
+                     !r1dtemp(i) = -r1dtemp(i)*2*rho_temp/reff_eq ! Old ASCOT5 wanted -dVds
+                     r1dtemp(i) =  r1dtemp(i)*2*rho_temp/reff_eq
                   END DO
                   CALL write_var_hdf5(qid_gid,'nrho',ier,INTVAR=nr)
                   CALL write_var_hdf5(qid_gid,'dvdrho',nr,ier,DBLVAR=r1dtemp)
