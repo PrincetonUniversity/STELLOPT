@@ -150,7 +150,7 @@ ifneq ("$(wildcard $(TRAVIS_PATH))","")
   LIB_FADDEEVA = libfaddeeva64.a
   TRAVIS_LIB = $(TRAVIS_DIR)lib/$(LIB_TRAVIS) \
                $(TRAVIS_DIR)faddeeva_package/lib/$(LIB_FADDEEVA) \
-               $(TRAVIS_DIR)magconf/lib/$(LIB_MCONF) -lc++
+               $(TRAVIS_DIR)magconf/lib/$(LIB_MCONF) -lstdc++ 
 else
   LTRAVIS = F
 endif
