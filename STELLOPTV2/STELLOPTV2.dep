@@ -5,6 +5,7 @@ stellopt_read_cws.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       stellopt_winding_surface.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
 

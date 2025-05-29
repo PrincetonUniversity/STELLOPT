@@ -170,7 +170,7 @@ $(LIB_GENE) :
 
 #Construct COILOPT library. 
 $(LIB_REGCOIL) :
-	@cd $(REGCOIL_DIR); make; ar -cruv $(LIB_REGCOIL) *.o 
+	@cd $(REGCOIL_DIR); make CLUSTER=$(MACHINE); ar -cruv $(LIB_REGCOIL) *.o 
 
 #Construct TERPSICHORE library. 
 $(LIB_TERPSICHORE) :
