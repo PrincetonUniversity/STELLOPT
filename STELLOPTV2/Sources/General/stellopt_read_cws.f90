@@ -8,16 +8,18 @@
       SUBROUTINE stellopt_read_cws
       USE stel_kinds, ONLY: rprec
       USE stellopt_runtime, ONLY: CWS_READ_ERR, KNOT_CONST_ERR, &
-         KNOT_DEF_ERR, KNOT_MISMATCH_ERR, KNOT_ORDER_ERR, lcoil_geom
+         KNOT_DEF_ERR, KNOT_MISMATCH_ERR, KNOT_ORDER_ERR, lcoil_geom, bigno
       USE stellopt_vars
       USE stellopt_targets
       USE windingsurface
+      USE safe_open_mod
       USE mpi_params                                                    ! MPI
 !DEC$ IF DEFINED (REGCOIL)
       USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, zmns_coil, zmnc_coil, mnmax_coil, xm_coil, xn_coil, verbose, regcoil_nml
 !DEC$ ENDIF
       IMPLICIT NONE
-      INTEGER :: isurf, n, m, imn, i, ierr
+      INTEGER :: isurf, n, m, imn, i, ierr, istat, iunit
+      CHARACTER(256) :: filename
 
       ! Coil Optimization
       IF (ANY(ANY(lcoil_spline,2),1)) THEN
