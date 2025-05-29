@@ -12,7 +12,7 @@ setup(name='pySTEL',
 	url = 'https://github.com/PrincetonUniversity/STELLOPT',
 	packages=['libstell'],
 	scripts = ['VMECplot.py','FIELDLINESplot.py', 'bootsj_util.py', \
-		'boozer_util.py','coils_util.py','fieldlines_util.py',\
+		'beams3d_util.py','boozer_util.py','coils_util.py','fieldlines_util.py',\
 		'focus_util.py','gist_util.py','make_mesh.py','nescoil_util.py',\
 		'STELLOPT.py','stellopt_renorm.py', 'thrift_util.py',\
 		'vmec2beams3d.py','vmec2focus.py',\
