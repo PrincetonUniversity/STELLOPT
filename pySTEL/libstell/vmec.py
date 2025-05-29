@@ -628,6 +628,69 @@ class VMEC(FourierRep):
 			th = th + 0.5 *dth
 		return th
 
+	def plotfieldlines(self,sval,*args,**kwargs):
+		"""Plots a 3D flux surface with the field lines traced on it
+
+		This routine creates a plot of a flux surface with a field line traced on it
+
+		Parameters
+		----------
+		svals : int
+			Surface to generate in ns
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+
+		"""
+		import numpy as np
+		from libstell.plot3D import PLOT3D 
+		print('!!!!! NOT IMPLMENTED!!!!!')
+		return
+		# Handle input arguments
+		plt  = kwargs.get('plot3D',None)
+		color = kwargs.get('color','red')
+		lrender = False
+		if not plt:
+			plt = PLOT3D()
+			lrender = True
+		plt = PLOT3D()
+		# Make plots of fieldlines
+		s   = float(sval)/float(self.ns-1)
+		maxpnt=128
+		phi_arr = np.linspace(-np.pi,np.pi,maxpnt)
+		zeta_arr = phi_arr*self.nfp
+		x=[]; y=[]; z=[]
+		for zeta in zeta_arr:
+			phi = zeta/self.nfp
+			thetastar = zeta*self.iotaf[sval]
+			theta = self.getTheta(s,thetastar,phi)
+			if theta < 0: theta = theta + 2.0*np.pi
+			R = 0.0; Z = 0.0;
+			for mn in range(self.mnmax):
+				arg = 2.0*np.pi*(self.xm[mn]*theta+self.xn[mn]*phi)
+				R = R + np.cos(arg)*self.rmnc[sval,mn]
+				Z = Z + np.sin(arg)*self.zmns[sval,mn]
+			x.extend([R*np.cos(phi)])
+			y.extend([R*np.sin(phi)])
+			z.extend([Z])
+		points_array = np.squeeze(np.array([x,y,z])).T
+		print(points_array.shape)
+		# Convert numpy array to VTK points
+		points=plt.vertexToPoints(points_array)
+		plt.add3Dline(points,linewidth=2,color='black')
+
+		# Make 3D flux surface plot
+		theta = np.linspace([0],[np.pi*2],360)
+		phi = np.linspace([0],[np.pi*2],360)
+		r = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
+		z = self.sfunct(theta,phi,self.zmns,self.xm,self.xn)
+		self.isotoro(r,z,phi,sval-16,color=color,plot3D=plt)
+		# Render if requested
+		if lrender: plt.render()
+
+
+
+
+
 	def extrapSurface(self,surf=None,dist=0.1):
 		"""Returns an extrapolated surface.
 		This routine extrapolates a surface a given distance using the
