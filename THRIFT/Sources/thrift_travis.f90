@@ -69,7 +69,7 @@
             CALL FLUSH(6)
             timenow = THRIFT_T(mytimestep)
             DO i = 1,nprof_travis
-               rho_prof(i) = DBLE(i-1)/DBLE(nprof_travis-1)
+               rho_prof(i) = SQRT( DBLE(i-1)/DBLE(nprof_travis-1) )
                CALL get_prof_ne(rho_prof(i),timenow,ne_prof(i))
                CALL get_prof_te(rho_prof(i),timenow,te_prof(i))
                CALL get_prof_zeff(rho_prof(i),timenow,z_prof(i))
@@ -100,6 +100,10 @@
          ! Divide up work
          ! Note we should fix this in the end so we divide up over system ans well
          CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD, 1, nbeams, mystart, myend)
+
+         ! Allocatel total current [A]
+         ALLOCATE(Itotal(nrho),dPdV(nrho),Pabs(nrho),Jbb(nrho),Jcdt(nrho))
+         Itotal = 0; dPdV = 0; Pabs = 0; Jbb = 0; Jcdt = 0
 
          IF (mystart <= myend) THEN
 
@@ -207,16 +211,12 @@
             ! Free the stuff we loaded.
             ! CALL Free_MagConfig_f77()
 
+            DO i = 1, nrho
+               rho = SQRT( THRIFT_S(i) )
+               CALL get_ECRH_deposition_f77(rho, dPdV(i),Pabs(i),jbb(i),jcdt(i),Itotal(i))
+            END DO
+
          END IF
-
-         ! Allocatel total current [A]
-         ALLOCATE(Itotal(nrho),dPdV(nrho),Pabs(nrho),Jbb(nrho),Jcdt(nrho))
-         Itotal = 0; dPdV = 0; Pabs = 0; Jbb = 0; Jcdt = 0
-
-         DO i = 1, nrho
-            rho = THRIFT_RHO(i)
-            CALL get_ECRH_deposition_f77(rho, dPdV(i),Pabs(i),jbb(i),jcdt(i),Itotal(i))
-         END DO
 
 #if defined(MPI_OPT)
          IF (myworkid == master) THEN
@@ -241,7 +241,7 @@
             WRITE(iunit_out,'(A)') '        RHO (r/a)          dPdV [W/m^3]          P [W]          <j.B>/<B> [A/m^2]      j [A/m^2]     '//&
                                    '        I [A]       '
             DO i=1,nrho
-               WRITE(iunit_out,'(6(ES20.10))') THRIFT_RHO(i), dPdV(i), Pabs(i), Jbb(i), Jcdt(i), Itotal(i) 
+               WRITE(iunit_out,'(6(ES20.10))') SQRT(THRIFT_S(i)), dPdV(i), Pabs(i), Jbb(i), Jcdt(i), Itotal(i) 
             END DO
             CLOSE(iunit_out)
 
