@@ -21,7 +21,7 @@
       INTEGER :: i, ier, i1,i2
       INTEGER :: bcs0(2)
       REAL(rprec) :: Rc, w, Ieccd, Inorm, vp, dPhidrho, temp, &
-                     s_val, rho_val
+                     s_val, rho_val, mytime, fact
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::  j_temp
       TYPE(EZspline1_r8) :: j_spl
 !----------------------------------------------------------------------
@@ -34,21 +34,32 @@
          RETURN
       END IF
 
-      ! Get Power at timestep
-      i1 = COUNT(PECRH_AUX_T < THRIFT_T(mytimestep))
+      ! PECRH_AUX_T is an array with default entries: 1E6
+      mytime = THRIFT_T(mytimestep)
+      i1 = COUNT(PECRH_AUX_T - mytime < 1E-6)
       i2 = i1+1
-      IF (PECRH_AUX_F(i1)==0 .or. PECRH_AUX_F(i2)==0) THEN
-         THRIFT_JECCD(:,mytimestep) = 0
-         RETURN
+      
+      ! If i==0, simply use POWER_ECRH
+      IF(i1==0) THEN
+         fact = 1.0
+      ELSEIF(i1>0) THEN
+         ! if aux_t(i1) <= mytime <= aux_t(i2), make linear interpolation
+         IF( (PECRH_AUX_T(i1) .LE. mytime) .AND. (PECRH_AUX_T(i2) .GE. mytime) ) THEN
+            fact = ( PECRH_AUX_F(i2)      - PECRH_AUX_F(i1) ) &
+                 * ( mytime - PECRH_AUX_T(i1) ) &
+                 / ( PECRH_AUX_T(i2)      - PECRH_AUX_T(i1) ) &
+                 + PECRH_AUX_F(i1)
+         ELSE
+            STOP 'HOW DID YOU END UP HERE?'
+         END IF
       END IF
 
-      ! Set Ieccd here so that in the future we can use this
-      ! to control TRAVIS ECCD by the same code.
-      Ieccd =    ( PECRH_AUX_F(i2)      - PECRH_AUX_F(i1) ) &
-               * ( THRIFT_T(mytimestep) - PECRH_AUX_T(i1) ) &
-               / ( PECRH_AUX_T(i2)      - PECRH_AUX_T(i1) ) &
-               + PECRH_AUX_F(i1)
+      POWER_ECRH = fact * POWER_ECRH
 
+      IF( MAXVAL(POWER_ECRH) < 1E-6 ) THEN
+         THRIFT_JECCD(:,mytimestep) = 0
+         RETURN
+      END IF  
 
       SELECT CASE(TRIM(eccd_type))
          CASE ('model','offaxis','test','simple')
@@ -58,6 +69,8 @@
             !        387–394 (2006).
             Rc = ecrh_rc
             w  = ecrh_w
+
+            Ieccd = POWER_ECRH(1)
 
             ! From Wolfram
             Inorm = 0.5*w*( SQRT(pi)*Rc*( ERF((1-Rc)/w) + ERF(Rc/w) )+w*( EXP(-Rc**2/w**2) - EXP(-(Rc-1)**2/w**2) ))
