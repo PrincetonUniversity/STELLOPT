@@ -14,7 +14,7 @@
       USE stellopt_globals, ONLY: axis_init_option, cr_strategy, &
          epsfcn, factor, ftol, gtol, lcentered_differences, lkeep_mins, &
          lrefit, mode, noptimizers, npopulation, opt_type, refit_param, &
-         rho_exp, xtol, bigno, lcoil_geom, lno_restart, ltriangulate, nfunc_max
+         rho_exp, xtol, bigno, lno_restart, ltriangulate, nfunc_max
       USE stellopt_vars
       USE stellopt_targets
       USE safe_open_mod, ONLY: safe_open
@@ -24,10 +24,7 @@
                             ah, ah_aux_s, ah_aux_f, ph_type, &
                             at, at_aux_s, at_aux_f, pt_type, &
                             aphi
-      USE mpi_params                                                    ! MPI
-!DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, zmns_coil, zmnc_coil, mnmax_coil, xm_coil, xn_coil, verbose, regcoil_nml
-!DEC$ ENDIF
+      USE mpi_params
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -82,10 +79,6 @@
 !            lphi_f_opt         Logical array to control PHI_AUX_F variation (Electrostatic potential)
 !            lah_f_opt          Logical array to control AH_AUX_F variation
 !            lat_f_opt          Logical array to control AT_AUX_F variation
-!            lcoil_spline       Logical array to control coil spline control point variation
-!            lwindsurf          Logical array to embed splined coils in winding surfaces
-!            windsurfname       Character string array naming files containing winding surfaces
-!            fixedcoilname      Character string naming optional file containing fixed-geometry coils
 !            lbound_opt         Logical array to control Boundary variation
 !            lrho_opt           Logical array to control HB Boundary variation
 !            rho_exp            Integer controling value of HB Boundary exponent (default 2)
@@ -208,17 +201,6 @@
 !            txport_proxy       String of proxy function name.
 !            curvature_P2       Min value of 2nd principal curvature
 !
-!             REGCOIL related variables
-!                         lregcoil_winding_surface_separation_opt, &
-!                         dregcoil_winding_surface_separation_opt, &
-!                         lregcoil_current_density_opt, &
-!                         dregcoil_current_density_opt, &
-!                         target_regcoil_winding_surface_separation, &
-!                         sigma_regcoil_winding_surface_separation, &
-!                         target_regcoil_chi2_b, sigma_regcoil_chi2_b, &
-!                         target_regcoil_current_density, sigma_regcoil_current_density, &
-!                         regcoil_winding_surface_separation, &
-!                         regcoil_current_density
 !      
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -241,8 +223,7 @@
                          lth_f_opt, lphi_s_opt, lphi_f_opt, &
                          lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, lmode_opt, &
                          lne_opt, lte_opt, lti_opt, lth_opt, lzeff_opt, &
-                         lah_f_opt, lat_f_opt, lcoil_spline, lemis_xics_f_opt, &
-                         windsurfname, fixedcoilname, &
+                         lah_f_opt, lat_f_opt, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                          dpscale_opt, dmix_ece_opt, dxics_v0_opt, &
                          dextcur_opt, daphi_opt, dam_opt, dac_opt, &
@@ -254,7 +235,7 @@
                          drho_opt, ddeltamn_opt, &
                          dne_opt, dte_opt, dti_opt, dth_opt, dzeff_opt, &
                          dah_f_opt, dat_f_opt, daxis_opt, &
-                         dcoil_spline, demis_xics_f_opt, &
+                         demis_xics_f_opt, &
                          ne_aux_s, te_aux_s, ti_aux_s, th_aux_s, phi_aux_s,&
                          beamj_aux_s, bootj_aux_s, zeff_aux_s, &
                          ne_aux_f, te_aux_f, ti_aux_f, th_aux_f, phi_aux_f,&
@@ -278,11 +259,6 @@
                          rbc_min, rbc_max, zbs_min, zbs_max, &
                          rbs_min, rbs_max, zbc_min, zbc_max, &
                          mboz, nboz, rho_exp, &
-                         coil_type, coil_surf, &
-                         coil_splinesx,coil_splinesy,coil_splinesz,&
-                         coil_splinefx,coil_splinefy,coil_splinefz,&
-                         coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
-                         coil_splinefx_max,coil_splinefy_max,coil_splinefz_max,&
                          lxval_opt, xval, dxval_opt, xval_min, xval_max, &
                          lyval_opt, yval, dyval_opt, yval_min, yval_max, &
                          target_x, sigma_x, target_y, sigma_y, &
@@ -373,42 +349,12 @@
                          target_bmax,sigma_bmax,target_jcurv,sigma_jcurv,&
                          target_orbit,sigma_orbit,nu_orbit,nv_orbit,&
                          mass_orbit,Z_orbit,vperp_orbit,&
-                         np_orbit,vll_orbit,mu_orbit, target_coil_bnorm,&
-                         sigma_coil_bnorm, nu_bnorm, nv_bnorm, npts_biot,&
-                         target_coillen, sigma_coillen, npts_clen, &
-                         target_coilsegvar, sigma_coilsegvar, &
-                         target_coiltorvar, sigma_coiltorvar, thwt_coiltorvar, npts_torx, &
-                         target_coilsep, sigma_coilsep, npts_csep, &
-                         target_coilcrv, sigma_coilcrv, npts_curv, &
-                         target_coilself, sigma_coilself, npts_cself, &
-                         target_coilrect, sigma_coilrect, coilrectpfw, npts_crect, npts_cpoly, &
-                         coilrectvmin, coilrectvmax, coilrectduu, coilrectdul, &
-                         target_coilpoly, sigma_coilpoly, kopolyu, kopolyv, &
+                         np_orbit,vll_orbit,mu_orbit, &
                          target_ece,sigma_ece,freq_ece, mix_ece, vessel_ece, mirror_ece, &
                          antennaposition_ece, targetposition_ece, rbeam_ece, rfocus_ece, &
                          targettype_ece, antennatype_ece, nra_ece, nphi_ece, &
                          target_kink, sigma_kink,mlmnb_kink,mlmns_kink,ivac_kink,&
                          nj_kink, nk_kink, lssl_kink, lssd_kink, mmaxdf_kink, nmaxdf_kink, &
-                         lregcoil_winding_surface_separation_opt, &
-                         dregcoil_winding_surface_separation_opt, &
-                         lregcoil_current_density_opt, &
-                         dregcoil_current_density_opt, &
-                         target_regcoil_winding_surface_separation, &
-                         sigma_regcoil_winding_surface_separation, &
-                         target_regcoil_chi2_b, sigma_regcoil_chi2_b, &
-                         target_regcoil_current_density, sigma_regcoil_current_density, &
-                         regcoil_winding_surface_separation, &
-                         regcoil_current_density, &
-                         regcoil_nescin_filename, &
-                         regcoil_num_field_periods, &
-                         lregcoil_rcws_rbound_c_opt, lregcoil_rcws_rbound_s_opt, &
-                         lregcoil_rcws_zbound_c_opt, lregcoil_rcws_zbound_s_opt, &
-                         dregcoil_rcws_rbound_c_opt, dregcoil_rcws_rbound_s_opt, &
-                         dregcoil_rcws_zbound_c_opt, dregcoil_rcws_zbound_s_opt, &
-                         regcoil_rcws_rbound_c_min, regcoil_rcws_rbound_s_min, &
-                         regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
-                         regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
-                         regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
                          target_curvature_P2, sigma_curvature_P2, &
                          target_gamma_c, sigma_gamma_c, &
                          lRosenbrock_X_opt, dRosenbrock_X_opt, &
@@ -486,8 +432,6 @@
       ldeltamn_opt(:,:)   = .FALSE.
       lmode_opt(:,:)      = .FALSE.
       laxis_opt(:)        = .FALSE.
-      lcoil_spline(:,:)   = .FALSE.
-      lwindsurf(:)        = .FALSE.
       dphiedge_opt    = -1.0
       dcurtor_opt     = -1.0
       dpscale_opt     = -1.0
@@ -528,22 +472,6 @@
       dbound_opt(:,:)   = -1.0
       drho_opt(:,:)     = -1.0
       ddeltamn_opt(:,:) = -1.0
-      dcoil_spline(:,:) = -1.0
-      ! REGCOIL Winding surface options
-      regcoil_nescin_filename = ''
-      regcoil_num_field_periods = -1.0
-      lregcoil_winding_surface_separation_opt    = .FALSE.
-      dregcoil_winding_surface_separation_opt    = -1.0
-      lregcoil_current_density_opt    = .FALSE.
-      dregcoil_current_density_opt    = -1.0
-      lregcoil_rcws_rbound_c_opt = .FALSE.
-      lregcoil_rcws_rbound_s_opt = .FALSE.
-      lregcoil_rcws_zbound_c_opt = .FALSE.
-      lregcoil_rcws_zbound_s_opt = .FALSE.
-      dregcoil_rcws_rbound_c_opt = -1.0
-      dregcoil_rcws_rbound_s_opt = -1.0
-      dregcoil_rcws_zbound_c_opt = -1.0
-      dregcoil_rcws_zbound_s_opt = -1.0
       ! Rosenbrock test function variables
       lRosenbrock_X_opt(1:ROSENBROCK_DIM) = .FALSE.
       dRosenbrock_X_opt(1:ROSENBROCK_DIM) = -1.0
@@ -596,28 +524,6 @@
       beamj_f_min     = -bigno;  beamj_f_max     = bigno
       bootj_f_min     = -bigno;  bootj_f_max     = bigno
       emis_xics_f_min = -bigno;  emis_xics_f_max = bigno
-      coil_splinefx_min       = -bigno;  coil_splinefx_max       = bigno
-      coil_splinefy_min       = -bigno;  coil_splinefy_max       = bigno
-      coil_splinefz_min       = -bigno;  coil_splinefz_max       = bigno
-      ! More REGCOIL Options
-      target_regcoil_winding_surface_separation = 0.0
-      sigma_regcoil_winding_surface_separation = bigno
-      regcoil_winding_surface_separation = 1.0
-      regcoil_winding_surface_separation_min = 1.0e-3
-      regcoil_winding_surface_separation_max = 10.
-      target_regcoil_current_density = 0.0
-      sigma_regcoil_current_density = bigno
-      regcoil_current_density = 8.0e6
-      regcoil_current_density_min = 0.0
-      regcoil_current_density_max = bigno
-      regcoil_rcws_rbound_c_min = -bigno;  regcoil_rcws_rbound_c_max = bigno
-      regcoil_rcws_rbound_s_min = -bigno;  regcoil_rcws_rbound_s_max = bigno
-      regcoil_rcws_zbound_c_min = -bigno;  regcoil_rcws_zbound_c_max = bigno
-      regcoil_rcws_zbound_s_min = -bigno;  regcoil_rcws_zbound_s_max = bigno
-      target_regcoil_chi2_b = 0.0
-      sigma_regcoil_chi2_b  = bigno
-      target_regcoil_current_density = 8.0e6
-      sigma_regcoil_current_density  = bigno
       
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
@@ -668,19 +574,6 @@
       xics_v0          = 0.0
       emis_xics_s(1:3) = (/0.0,0.50,1.0/)
       emis_xics_f(:)   = 0.0
-      coil_splinesx(:,:) = -1
-      coil_splinesy(:,:) = -1
-      coil_splinesz(:,:) = -1
-      coil_splinefx(:,:) = 0
-      coil_splinefy(:,:) = 0
-      coil_splinefz(:,:) = 0
-      coil_nctrl(:)  = 0
-      coil_type(:)    = 'U'    ! Default to "unknown"
-      coil_surf(:)    = 1      ! Default to 1st winding surface for back-compat
-      windsurfname(:) = ''
-      !windsurf(:)%mmax   = -1
-      !windsurf(:)%nmax   = -1
-      fixedcoilname   = ''
       mboz            = 64
       nboz            = 64
       target_x        = 0.0
@@ -986,42 +879,6 @@
       r_limiter         = 0.0
       z_limiter         = 0.0
       phi_limiter       = 0.0
-      target_coil_bnorm = 0.0
-      sigma_coil_bnorm  = bigno
-      nu_bnorm          = 256
-      nv_bnorm          = 64
-      npts_biot         = 128
-      target_coillen    = 0.0
-      sigma_coillen     = bigno
-      npts_clen         = 360
-      target_coilsegvar = 0.0
-      sigma_coilsegvar  = bigno
-      target_coiltorvar = 0.0
-      sigma_coiltorvar  = bigno
-      thwt_coiltorvar   = 0.9
-      npts_torx         = 128
-      target_coilcrv    = 0.0
-      sigma_coilcrv     = bigno
-      npts_curv         = 256
-      target_coilsep    = 20.0
-      sigma_coilsep     = bigno
-      npts_csep         = 128
-      target_coilself   = 0.0
-      sigma_coilself    = bigno
-      npts_cself        = 360
-      target_coilrect   = 0.0
-      sigma_coilrect    = bigno
-      coilrectpfw       = 0.02
-      coilrectvmin      = 0.0
-      coilrectvmax      = 1.0
-      coilrectduu       = 0.125
-      coilrectdul       = 0.125
-      npts_crect        = 360
-      target_coilpoly   = 0.0
-      sigma_coilpoly    = bigno
-      kopolyu(:,:)      = -1.0
-      kopolyv(:,:)      = -1.0
-      npts_cpoly        = 360
       target_curvature_P2    = 0.0
       sigma_curvature_P2     = bigno
       target_gamma_c    = 0.0
@@ -1347,52 +1204,6 @@
            END DO
         END DO
       END IF
-
-      IF (ANY(lcoil_spline)) THEN
-         IF (ANY(lwindsurf)) THEN
-            !WRITE(iunit,'(A,A,A)') "  WINDSURFNAME = '",(/ TRIM(windsurfname(j)), j=1,maxwindsurf /),"'"
-            WRITE(iunit,'(A)') "  WINDSURFNAME = '"//TRIM(windsurfname(1))//"'"
-            DO m=2,COUNT(lwindsurf)
-               WRITE(iunit,'(A)') "    '"//TRIM(windsurfname(m))//"'"
-            END DO
-         ENDIF
-         IF (LEN_TRIM(fixedcoilname).GT.0) &
-              WRITE(iunit,'(A,A,A)') "  FIXEDCOILNAME = '",TRIM(fixedcoilname),"'"
-         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!       Coil Splines'
-         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         ! For now assumes sx,sy, and sz are the same size.
-         DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
-            IF (ANY(coil_splinesx(n,:)>-1)) THEN
-               WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-               WRITE(iunit,'(A,I4.3)') '!       Coil Number ',n
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',"'"//COIL_TYPE(n)//"'"
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,I4)") 'COIL_SURF(',n,')',COIL_SURF(n)
-               ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik-4)
-               IF (ANY(DCOIL_SPLINE(n,1:ik-4).NE.-1.0D0)) &
-                    WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINESX(',n,',:)',(coil_splinesx(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINESY(',n,',:)',(coil_splinesy(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFY(',n,',:)',(coil_splinefy(n,m), m = 1, ik-4)
-               IF (ANY(coil_splinesz(n,:)>-1)) THEN
-                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINESZ(',n,',:)',(coil_splinesz(n,m), m = 1, ik)
-                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFZ(',n,',:)',(coil_splinefz(n,m), m = 1, ik-4)
-               END IF
-               ! Min/Max
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFX_MIN(',n,',:)',(coil_splinefx_min(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFX_MAX(',n,',:)',(coil_splinefx_max(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFY_MIN(',n,',:)',(coil_splinefy_min(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFY_MAX(',n,',:)',(coil_splinefy_max(n,m), m = 1, ik-4)
-               IF (ANY(coil_splinesz(n,:)>-1)) THEN
-                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFZ_MIN(',n,',:)',(coil_splinefz_min(n,m), m = 1, ik-4)
-                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFZ_MAX(',n,',:)',(coil_splinefz_max(n,m), m = 1, ik-4)
-               END IF
-            END IF
-         END DO
-         WRITE(iunit,outint) 'NPTS_BIOT',npts_biot
-      END IF
       
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Profile Functions'
@@ -1590,87 +1401,7 @@
       IF (sigma_totalbootstrap < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_TOTALBOOTSTRAP',target_totalbootstrap
          WRITE(iunit,outflt) 'SIGMA_TOTALBOOTSTRAP',sigma_totalbootstrap
-      END IF          
-      IF ((ANY(sigma_coillen < bigno)).OR.(ANY(sigma_coilsegvar < bigno)).OR.&
-           (ANY(sigma_coilcrv < bigno)).OR.(sigma_coilsep < bigno).OR.&
-           (ANY(sigma_coilself < bigno)).OR.(ANY(sigma_coiltorvar < bigno)).OR.&
-           (ANY(sigma_coilrect < bigno)).OR.(ANY(sigma_coilpoly < bigno))) THEN
-         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          COIL TARGETS'
-         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         DO n = LBOUND(sigma_coillen,DIM=1), UBOUND(sigma_coillen,DIM=1)
-            IF (sigma_coillen(n) < bigno) THEN
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILLEN(',n,') = ',target_coillen(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILLEN(',n,') = ',sigma_coillen(n)
-            END IF
-         END DO !n
-         DO n = LBOUND(sigma_coilsegvar,DIM=1), UBOUND(sigma_coilsegvar,DIM=1)
-            IF (sigma_coilsegvar(n) < bigno) THEN
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILSEGVAR(',n,') = ',target_coilsegvar(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILSEGVAR(',n,') = ',sigma_coilsegvar(n)
-            END IF
-         END DO !n
-         WRITE(iunit,outint) 'NPTS_CLEN',npts_clen
-         DO n = LBOUND(sigma_coiltorvar,DIM=1), UBOUND(sigma_coiltorvar,DIM=1)
-            IF (sigma_coiltorvar(n) < bigno) THEN
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILTORVAR(',n,') = ',target_coiltorvar(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILTORVAR(',n,') = ',sigma_coiltorvar(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'THWT_COILTORVAR(',n,') = ',thwt_coiltorvar(n)
-            END IF
-         END DO !n
-         WRITE(iunit,outint) 'NPTS_TORX',npts_torx
-         DO n = LBOUND(sigma_coilcrv,DIM=1), UBOUND(sigma_coilcrv,DIM=1)
-            IF (sigma_coilcrv(n) < bigno) THEN
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILCRV(',n,') = ',target_coilcrv(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILCRV(',n,') = ',sigma_coilcrv(n)
-            END IF
-         END DO !n
-         WRITE(iunit,outint) 'NPTS_CURV',npts_curv
-         IF (sigma_coilsep < bigno) THEN
-            WRITE(iunit,outflt) 'TARGET_COILSEP',target_coilsep
-            WRITE(iunit,outflt) 'SIGMA_COILSEP',sigma_coilsep
-            WRITE(iunit,outint) 'NPTS_CSEP',npts_csep
-         END IF
-         DO n = LBOUND(sigma_coilself,DIM=1), UBOUND(sigma_coilself,DIM=1)
-            IF (sigma_coilself(n) < bigno) THEN
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILSELF(',n,') = ',target_coilself(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILSELF(',n,') = ',sigma_coilself(n)
-            END IF
-         END DO !n
-         WRITE(iunit,outint) 'NPTS_CSELF',npts_cself
-         DO n = LBOUND(sigma_coilrect,DIM=1), UBOUND(sigma_coilrect,DIM=1)
-            IF (sigma_coilrect(n) < bigno) THEN
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILRECT(',n,') = ',target_coilrect(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILRECT(',n,') = ',sigma_coilrect(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'COILRECTVMIN(',n,') = ',coilrectvmin(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'COILRECTVMAX(',n,') = ',coilrectvmax(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'COILRECTDUU(',n,') = ',coilrectduu(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'COILRECTDUL(',n,') = ',coilrectdul(n)
-            END IF
-         END DO !n
-         IF (ANY(sigma_coilrect < bigno)) THEN
-            WRITE(iunit,"(2X,A,ES22.12E3)") 'COILRECTPFW = ',coilrectpfw
-            WRITE(iunit,"(2X,A,I6.5)") 'NPTS_CRECT = ',npts_crect
-         END IF
-         DO n = LBOUND(sigma_coilpoly,DIM=1), UBOUND(sigma_coilpoly,DIM=1)
-            IF (sigma_coilpoly(n) < bigno) THEN
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILPOLY(',n,') = ',target_coilpoly(n)
-               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILPOLY(',n,') = ',sigma_coilpoly(n)
-            ENDIF
-         ENDDO !n
-         IF (ANY(sigma_coilpoly < bigno)) THEN
-            DO n = LBOUND(kopolyu,DIM=2), UBOUND(kopolyu,DIM=2)
-               IF (ANY(kopolyu(:,n) .GE. 0.0)) THEN
-                  WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-                  WRITE(iunit,'(A,I4.3)') '!       Keepout Polygon ',n
-                  ik = MINLOC(kopolyu(:,n),DIM=1) - 1
-                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'KOPOLYU(:,',n,')',(kopolyu(m,n), m = 1, ik)
-                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'KOPOLYV(:,',n,')',(kopolyv(m,n), m = 1, ik)
-               ENDIF
-            ENDDO !n
-            WRITE(iunit,"(2X,A,I6.5)") 'NPTS_CPOLY = ',npts_cpoly
-         ENDIF
-      END IF
+      END IF 
       IF (ANY(lbooz)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          BOOZER COORDINATE TRANSFORMATION'  
@@ -2024,141 +1755,6 @@
                           'VPERP_ORBIT(',ik,') = ',VPERP_orbit(ik)
          END DO
       END IF
-      IF (sigma_coil_bnorm < bigno) THEN
-         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          COIL OPTIMIZATION'  
-         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,outint) 'NU_BNORM',nu_bnorm 
-         WRITE(iunit,outint) 'NV_BNORM',nv_bnorm
-         WRITE(iunit,outflt) 'TARGET_COIL_BNORM',target_coil_bnorm
-         WRITE(iunit,outflt) 'SIGMA_COIL_BNORM',sigma_coil_bnorm
-      END IF
-
-      ! REGCOIL Options
-      ! This section runs if the current density, surface separation or
-      ! winding surface are opitmized variables
-      !
-      IF ((lregcoil_current_density_opt) .or. (lregcoil_winding_surface_separation_opt) .or.  &
-          (ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
-          (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) ) THEN
-         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          REGCOIL OPTIMIZATION'  
-         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,outflt) 'TARGET_REGCOL_CURRENT_DENSITY',target_regcoil_current_density
-         WRITE(iunit,outflt) 'SIGMA_REGCOL_CURRENT_DENSITY',sigma_regcoil_current_density
-         WRITE(iunit,outflt) 'REGCOIL_CURRENT_DENSITY',regcoil_current_density
- 
-         ! Options for uniform winding surface separations
-         IF (lregcoil_winding_surface_separation_opt) THEN
-            WRITE(iunit,outflt) &
-                   'REGCOIL_WINDING_SURFACE_SEPARATION', &
-                   regcoil_winding_surface_separation
-            WRITE(iunit,outboo) 'LREGCOIL_WINDING_SURFACE_SEPARATION', &
-                   lregcoil_winding_surface_separation_opt
-            WRITE(iunit,outflt) 'REGCOIL_WINDING_SURFACE_SEPARATION_MIN', &
-                   regcoil_winding_surface_separation_min, &
-                   'REGCOIL_WINDING_SURFACE_SEPARATION_MAX', &
-                   regcoil_winding_surface_separation_max
-            IF (dregcoil_winding_surface_separation_opt > 0) &
-                 WRITE(iunit,outflt) 'DREGCOIL_WINDING_SURFACE_SEPARATION', &
-                          dregcoil_winding_surface_separation_opt
-         END IF
-         ! end of uniform winding surface separation options
-
-         ! Options for current density optimization - Not completely developted/tested
-         IF (lregcoil_current_density_opt) THEN
-            WRITE(iunit,onevar) 'LREGCOIL_CURRENT_DENSITY', & 
-                   lregcoil_current_density_opt, &
-                   'REGCOIL_CURRENT_DENSITY_MIN', &
-                   regcoil_current_density_min, &
-                   'REGCOIL_CURRENT_DENSITY_MAX', &
-                  regcoil_current_density_max
-            IF (dregcoil_current_density_opt > 0) &
-                       WRITE(iunit,outflt) 'DREGCOIL_CURRENT_DENSITY', &
-                       dregcoil_current_density_opt
-         END IF
-         ! end of option for current density optimization
-
-         ! Winding surface component OR separation optimization
-         IF ( (ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
-              (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) .or. &
-              lregcoil_winding_surface_separation_opt ) THEN
-             DO ii = 1,UBOUND(target_regcoil_chi2_b, 1)
-                IF (sigma_regcoil_chi2_b(ii) < bigno) THEN
-                    WRITE(iunit,"(2(2X,A,I4.3,A,ES22.12E3))") &
-                           'TARGET_REGCOIL_CHI2_B(',ii,') = ', target_regcoil_chi2_b(ii), &
-                           'SIGMA_REGCOIL_CHI2_B(',ii,') = ', sigma_regcoil_chi2_b(ii)
-                END IF
-             END DO
-         END IF
-
-         ! Options for winding surface (Fourier Series) variation
-         IF (  (ANY(lregcoil_rcws_rbound_c_opt)) .or. (ANY(lregcoil_rcws_rbound_s_opt)) .or. &
-               (ANY(lregcoil_rcws_zbound_c_opt)) .or. (ANY(lregcoil_rcws_zbound_s_opt)) ) THEN
-
-             ! Boundary components
-             ! r-boundary cos components
-             DO m = LBOUND(lregcoil_rcws_rbound_c_opt,DIM=1), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=1)
-                 DO n = LBOUND(lregcoil_rcws_rbound_c_opt,DIM=2), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=2)
-                     IF(lregcoil_rcws_rbound_c_opt(m,n) ) THEN
-                         WRITE(iunit,'(A)') '! REGCOIL Winding surface R-boundary cos component'
-                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
-                                'LREGCOIL_RCWS_RBOUND_C_OPT(',m,',',n,')', lregcoil_rcws_rbound_c_opt(m, n), &
-                                'REGCOIL_RCWS_RBOUND_C(',m,',',n,')', regcoil_rcws_rbound_c(m, n), &
-                                'DREGCOIL_RCWS_RBOUND_C_OPT(',m,',',n,')', dregcoil_rcws_rbound_c_opt(m,n), &
-                                'REGCOIL_RCWS_RBOUND_C_MIN(',m,',',n,')', regcoil_rcws_rbound_c_min(m,n), &
-                                'REGCOIL_RCWS_RBOUND_C_MAX(',m,',',n,')', regcoil_rcws_rbound_c_max(m,n)
-                     END IF
-                 END DO
-             END DO
-
-             ! r-boundary sin components 
-             DO m = LBOUND(lregcoil_rcws_rbound_s_opt,DIM=1), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=1)
-                 DO n = LBOUND(lregcoil_rcws_rbound_s_opt,DIM=2), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=2)
-                     IF(lregcoil_rcws_rbound_s_opt(m,n)  ) THEN
-                         WRITE(iunit,'(A)') '! REGCOIL Winding surface R-boundary sin component'
-                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
-                                'LREGCOIL_RCWS_RBOUND_S_OPT(',m,',',n,')', lregcoil_rcws_rbound_s_opt(m, n), &
-                                'REGCOIL_RCWS_RBOUND_S(',m,',',n,')', regcoil_rcws_rbound_s(m, n), &
-                                'DREGCOIL_RCWS_RBOUND_S_OPT(',m,',',n,')', dregcoil_rcws_rbound_s_opt(m,n), &
-                                'REGCOIL_RCWS_RBOUND_S_MIN(',m,',',n,')', regcoil_rcws_rbound_s_min(m,n), &
-                                'REGCOIL_RCWS_RBOUND_S_MAX(',m,',',n,')', regcoil_rcws_rbound_s_max(m,n)
-                     END IF
-                 END DO
-             END DO
-
-             ! z-boundary cos components - not implemented yet
-             DO m = LBOUND(lregcoil_rcws_zbound_c_opt,DIM=1), UBOUND(lregcoil_rcws_zbound_c_opt,DIM=1)
-                 DO n = LBOUND(lregcoil_rcws_zbound_c_opt,DIM=2), UBOUND(lregcoil_rcws_zbound_c_opt,DIM=2)
-                     IF(lregcoil_rcws_zbound_c_opt(m,n) ) THEN
-                         WRITE(iunit,'(A)') '! REGCOIL Winding surface Z-boundary cos component'
-                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
-                                'LREGCOIL_RCWS_ZBOUND_C_OPT(',m,',',n,')', lregcoil_rcws_zbound_c_opt(m, n), &
-                                'REGCOIL_RCWS_ZBOUND_C(',m,',',n,')', regcoil_rcws_zbound_c(m, n), &
-                                'DREGCOIL_RCWS_ZBOUND_C_OPT(',m,',',n,')', dregcoil_rcws_zbound_c_opt(m,n), &
-                                'REGCOIL_RCWS_ZBOUND_C_MIN(',m,',',n,')', regcoil_rcws_zbound_c_min(m,n), &
-                                'REGCOIL_RCWS_ZBOUND_C_MAX(',m,',',n,')', regcoil_rcws_zbound_c_max(m,n)
-                     END IF
-                 END DO
-             END DO
-
-             ! z-boundary sin components
-             DO m = LBOUND(lregcoil_rcws_zbound_s_opt,DIM=1), UBOUND(lregcoil_rcws_zbound_s_opt,DIM=1)
-                 DO n = LBOUND(lregcoil_rcws_zbound_s_opt,DIM=2), UBOUND(lregcoil_rcws_zbound_s_opt,DIM=2)
-                     IF( lregcoil_rcws_zbound_s_opt(m,n) ) THEN
-                         WRITE(iunit,'(A)') '! REGCOIL Winding surface Z-boundary sin component'
-                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
-                                'LREGCOIL_RCWS_ZBOUND_S_OPT(',m,',',n,')', lregcoil_rcws_zbound_s_opt(m, n), &
-                                'REGCOIL_RCWS_ZBOUND_S(',m,',',n,')', regcoil_rcws_zbound_s(m, n), &
-                                'DREGCOIL_RCWS_ZBOUND_S_OPT(',m,',',n,')', dregcoil_rcws_zbound_s_opt(m,n), &
-                                'REGCOIL_RCWS_ZBOUND_S_MIN(',m,',',n,')', regcoil_rcws_zbound_s_min(m,n), &
-                                'REGCOIL_RCWS_ZBOUND_S_MAX(',m,',',n,')', regcoil_rcws_zbound_s_max(m,n)
-                     END IF
-                 END DO
-             END DO
-        END IF
-        ! end of Options for winding surface (Fourier Series) variation
-      END IF  ! End of REGCOIL options
 
       IF (ANY(sigma_extcur < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
