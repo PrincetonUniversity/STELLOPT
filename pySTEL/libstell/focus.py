@@ -421,7 +421,7 @@ class FOCUS():
 			xn_b = [0]
 			bmnc = [0]
 			bmns = [0]
-		if not (pmns):
+		if type(pmns) is not type(None):
 			pmns = np.zeros((mnmax))
 		if not (rmns and zmnc and pmnc):
 			rmns = np.zeros((mnmax))
@@ -434,8 +434,13 @@ class FOCUS():
 				xm_out.append(xm[mn])
 				xn_out.append(xn[mn])
 		nharm = len(xm_out)
-		weight = float(abs(xn_out)+abs(xm_out))/float(abs(xm_out*xn_out))
+		weight = np.zeros((nharm))
+		for i in range(nharm):
+			if xm_out[i] > 0 and xn_out[i]!=0:
+				weight[i] = float(abs(xn_out[i])+abs(xm_out[i]))/float(abs(xm_out[i]*xn_out[i]))
+		#weight = float(abs(xn_out)+abs(xm_out))/float(abs(xm_out*xn_out))
 		weight = np.where(weight==0,1.0,weight)
+		weight = np.where(weight>1.0,1.0,weight)
 		f=open(filename,'w')
 		f.write(f'# Number of Harmonics\n')
 		f.write(f'{int(nharm)}\n')
