@@ -3,7 +3,6 @@ chisq_totalbootstrap.o \
 chisq_b10b11.o \
 chisq_rosenbrock2d.o \
 chisq_quasiiso.o \
-stellopt_read_cws.o \
 stellopt_write_header.o \
 chisq_dkes_alpha.o \
 chisq_dkes_erdiff.o \
@@ -33,7 +32,6 @@ stellopt_write_mgrid.o \
 stellopt_coil_to_vac.o \
 stellopt_winding_surface.o \
 stellopt_cbspline.o \
-stellopt_spline_to_coil.o \
 chisq_line_te.o \
 chisq_bmin.o \
 chisq_helicity.o \
@@ -59,8 +57,6 @@ chisq_vaciota.o \
 chisq_mse.o \
 chisq_balloon.o \
 chisq_pmin.o \
-chisq_coil_bnorm.o \
-chisq_regcoil_chi2_b.o \
 chisq_rosenbrock.o \
 chisq_vessel.o \
 chisq_b0.o \
@@ -92,21 +88,11 @@ chisq_ne.o \
 chisq_faraday.o \
 chisq_gradp_max.o \
 chisq_jinvariant.o \
-chisq_coillen.o \
-chisq_coilsep.o \
-chisq_coilcrv.o \
-chisq_coilself.o \
-chisq_coiltorvar.o \
-chisq_coilrect.o \
-chisq_coilpoly.o \
 stellopt_neo.o \
 stellopt_fcn.o \
 stellopt_load_targets.o \
 stellopt_toboozer.o \
 stellopt_init.o \
-stellopt_bnorm.o \
-stellopt_coiloptpp.o \
-stellopt_regcoil_chi2_b.o \
 stellopt_bootsj.o \
 stellopt_sfincs.o \
 stellopt_clean_up.o \

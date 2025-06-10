@@ -53,7 +53,6 @@
       CALL safe_open(iunit_out,ier,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
          SELECT CASE(TRIM(equil_type))
             CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
-               IF (lcoil_geom) mgrid_file = 'mgrid_'//TRIM(proc_string)//'.nc'
                CALL RESCALE_BOUNDARY ! Necssary for output file to have correct RBC/ZBS
                CALL write_indata_namelist(iunit_out,ier)
             CASE('test')
@@ -70,7 +69,6 @@
 !DEC$ IF DEFINED (AEOPT)
       IF (ANY(sigma_txport < bigno)) CALL write_avail_energy_nml(iunit_out,ier)
 !DEC$ ENDIF
-      IF (lcoil_geom) CALL write_mgrid_namelist(iunit_out,ier)
       WRITE(iunit_out,'(A)') '&END'
       CLOSE(iunit_out)
 

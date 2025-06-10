@@ -177,10 +177,6 @@
                      iunit = 37; ier = 0
                      CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')
                      CALL write_indata_namelist(iunit,ier)
-                     IF (lcoil_geom) THEN
-                        CALL write_optimum_namelist(iunit,ier)
-                        IF (lfreeb) CALL write_mgrid_namelist(iunit,ier)
-                     ENDIF
                      CALL FLUSH(iunit)
                   END IF
                   ! Setup ICTRL Array
@@ -413,10 +409,6 @@
                proc_string = file_str
                CALL stellopt_travis(lscreen,ier)
 !DEC$ ENDIF
-            CASE('coilopt++')
-               CALL stellopt_coiloptpp(file_str,lscreen)
-            CASE('regcoil_chi2_b')
-               CALL stellopt_regcoil_chi2_b(lscreen,ier)
             CASE('terpsichore')
                proc_string = file_str
                ier = 0
