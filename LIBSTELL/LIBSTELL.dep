@@ -989,7 +989,10 @@ bsc_cdf.o : \
       stel_constants.o \
       stel_kinds.o \
       v3_utilities.o 
-      
+
+bsc_T.o : \
+      stel_kinds.o 
+
 
 coilsnamin.o : \
       bcoils_mod.o \
