@@ -197,6 +197,12 @@ class FIELDLINES():
 
 		Parameters
 		----------
+		k : int
+			Index to plot.
+		pointsize : float (optional)
+			Size of points (default=0.01)
+		color : string (optional)
+			Dot color (default='red')
 		plot3D : plot3D object (optional)
 			Plotting object to render to.
 		"""
