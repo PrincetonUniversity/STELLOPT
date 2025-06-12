@@ -22,7 +22,6 @@
       DOUBLE PRECISION, PRIVATE :: factor
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, PRIVATE :: xm, xn, rmnc, zmns, t_kts
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: rho_kts, theta_kts, zeta_kts
-      !TYPE (bsc_coilcoll), DIMENSION(:), ALLOCATABLE, TARGET :: coil_group
       
 !-----------------------------------------------------------------------
 !     Module SUBROUTINES/FUNCTIONS
@@ -186,6 +185,100 @@
       END DO
       RETURN
       END SUBROUTINE spline_to_coils
+
+      SUBROUTINE coils_to_multifilament(nw,nh,width,height)
+      IMPLICIT NONE
+      INTEGER, INTENT(IN) :: nw
+      INTEGER, INTENT(IN) :: nh
+      DOUBLE PRECISION, INTENT(IN) :: width
+      DOUBLE PRECISION, INTENT(IN) :: height
+      INTEGER :: i,j,ns1,l,k
+      DOUBLE PRECISION :: xc,yc,zc,ntotal
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: xn,yn,zn,nt,xb,yb,zb
+      DOUBLE PRECISION, DIMENSION(3,ns) :: xnod
+      TYPE(bsc_coil)     :: coil_temp
+      TYPE (bsc_coilcoll), DIMENSION(:), ALLOCATABLE, TARGET :: coil_single
+      ! Save the original coil
+      ALLOCATE(coil_single(ncoilgroups))
+      DO i = 1, ncoilgroups
+         CALL bsc_construct_coilcoll(coil_single(i),coil_group(i)%s_name,coil_group(i)%l_name)
+         coil_single(i)%ncoil = coil_group(i)%ncoil
+         coil_single(i)%coils = coil_group(i)%coils
+      END DO
+      ! Deallocated the coils if allocated
+      IF (ALLOCATED(coil_group)) THEN
+         DO i = 1, SIZE(coil_group)
+            CALL bsc_destroy(coil_group(i))
+         END DO
+         DEALLOCATE(coil_group)
+      END IF
+      ! Allocate the coilgroups
+      ALLOCATE(coil_group(ncoilgroups))
+      ! Allocate the helpers
+      ns1 = ns - 1
+      ALLOCATE(xn(ns1),yn(ns1),zn(ns1),nt(ns1))
+      ALLOCATE(xb(ns1),yb(ns1),zb(ns1))
+      ! Now loop over each coil
+      DO i = 1, ncoilgroups
+         CALL bsc_construct_coilcoll(coil_group(i),coil_group(i)%s_name,coil_group(i)%l_name)
+         DO j = 1, coil_single(i)%ncoil
+            ! Compute geometric center
+            ntotal = SIZE(coil_single(i)%coils(j)%xnod(1,:))-1
+            xc = SUM(coil_single(i)%coils(j)%xnod(1,2:))/(ns-1)
+            yc = SUM(coil_single(i)%coils(j)%xnod(2,2:))/(ns-1)
+            zc = SUM(coil_single(i)%coils(j)%xnod(3,2:))/(ns-1)
+            ! Compute Normal vector
+            xn = coil_single(i)%coils(j)%xnod(1,:ns1)-xc
+            yn = coil_single(i)%coils(j)%xnod(2,:ns1)-yc
+            zn = coil_single(i)%coils(j)%xnod(3,:ns1)-zc
+            nt = xn * coil_single(i)%coils(j)%ehnod(1,:) &
+               + yn * coil_single(i)%coils(j)%ehnod(2,:) &
+               + zn * coil_single(i)%coils(j)%ehnod(3,:)
+            xn = xn - nt * coil_single(i)%coils(j)%ehnod(1,:)
+            yn = yn - nt * coil_single(i)%coils(j)%ehnod(2,:)
+            zn = zn - nt * coil_single(i)%coils(j)%ehnod(3,:)
+            nt = SQRT(xn*xn + yn*yn + zn*zn)
+            xn = xn / nt
+            yn = yn / nt
+            zn = zn / nt
+            ! Compute bi-normal vector
+            xb = coil_single(i)%coils(j)%ehnod(2,:) * zn &
+               - coil_single(i)%coils(j)%ehnod(3,:) * yn
+            yb = coil_single(i)%coils(j)%ehnod(3,:) * xn &
+               - coil_single(i)%coils(j)%ehnod(1,:) * zn
+            zb = coil_single(i)%coils(j)%ehnod(1,:) * yn &
+               - coil_single(i)%coils(j)%ehnod(2,:) * xn
+            nt = SQRT(xb*xb + yb*yb + zb*zb)
+            xb = xb / nt
+            yb = yb / nt
+            zb = zb / nt
+            DO l = 1, nw
+               DO k = 1, nh
+                  xnod = coil_single(i)%coils(j)%xnod
+                  xnod(1,:) = xnod(1,:) - xb*width/2 - xn*height/2
+                  xnod(2,:) = xnod(2,:) - yb*width/2 - yn*height/2
+                  xnod(3,:) = xnod(3,:) - zb*width/2 - zn*height/2
+                  xnod(1,:) = xnod(1,:) + xb*width*(l-1)/(nw-1) + xn*height*(k-1)/(nh-1)
+                  xnod(2,:) = xnod(2,:) + yb*width*(l-1)/(nw-1) + yn*height*(k-1)/(nh-1)
+                  xnod(3,:) = xnod(3,:) + zb*width*(l-1)/(nw-1) + zn*height*(k-1)/(nh-1)
+                  xnod(:,ns) = xnod(:,1)
+                  CALL bsc_construct_coil(coil_temp,'fil_loop',coil_single(i)%coils(j)%s_name,'',one,xnod(1:3,1:ns))
+                  CALL bsc_append(coil_group(i),coil_temp)
+               END DO
+            END DO
+         END DO
+      END DO
+      ! Deallocated the coils if allocated
+      IF (ALLOCATED(coil_single)) THEN
+         DO i = 1, SIZE(coil_single)
+            CALL bsc_destroy(coil_single(i))
+         END DO
+         DEALLOCATE(coil_single)
+      END IF
+      ! Deallocate helpers
+      DEALLOCATE(xn,yn,zn,nt,xb,yb,zb)
+
+      END SUBROUTINE coils_to_multifilament
 
 !-----------------------------------------------------------------------
 !     End Module
