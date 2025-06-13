@@ -1,5 +1,17 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+chisq_coil_curvature.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o 
+
+chisq_coil_torsion.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o 
+
 chisq_bnormal.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \

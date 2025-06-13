@@ -366,7 +366,9 @@
                          theta_coil_kts, theta_coil_kts_min, theta_coil_kts_max, &
                          zeta_coil_kts, zeta_coil_kts_min, zeta_coil_kts_max, &
                          nw_coil, nh_coil, width_coil, height_coil, &
-                         target_bnormal, sigma_bnormal
+                         target_bnormal, sigma_bnormal, &
+                         target_coil_curvature, sigma_coil_curvature, &
+                         target_coil_torsion, sigma_coil_torsion
        
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -905,8 +907,12 @@
       target_gamma_c    = 0.0
       sigma_gamma_c     = bigno
       lneed_bnormal     = .false.
-      target_bnormal    = 0.0
-      sigma_bnormal     = bigno
+      target_bnormal        = 0.0
+      sigma_bnormal         = bigno
+      target_coil_curvature = 0.0
+      sigma_coil_curvature  = bigno
+      target_coil_torsion   = 0.0
+      sigma_coil_torsion    = bigno
       END SUBROUTINE init_stellopt_input
 
       SUBROUTINE read_stellopt_input(filename, istat)
@@ -2279,6 +2285,20 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outflt) 'TARGET_BNORMAL',target_bnormal
          WRITE(iunit,outflt) 'SIGMA_BNORMAL',sigma_bnormal
+      END IF
+      IF (sigma_coil_curvature < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL CURVATURE'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'TARGET_COIL_CURVATURE',target_coil_curvature
+         WRITE(iunit,outflt) 'SIGMA_COIL_CURVATURE',sigma_coil_curvature
+      END IF
+      IF (sigma_coil_torsion < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL TORSION'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'TARGET_COIL_TORSION',target_coil_torsion
+         WRITE(iunit,outflt) 'SIGMA_COIL_TORSION',sigma_coil_torsion
       END IF
       IF (sigma_Rosenbrock2D < bigno) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
