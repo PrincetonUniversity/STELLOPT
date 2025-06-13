@@ -360,7 +360,12 @@
                          lRosenbrock_X_opt, dRosenbrock_X_opt, &
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
                          target_Rosenbrock_F, sigma_Rosenbrock_F, &
-                         target_Rosenbrock2D, sigma_Rosenbrock2D
+                         target_Rosenbrock2D, sigma_Rosenbrock2D, &
+                         lcoil_kts_opt, dcoil_kts_opt, &
+                         rho_coil_kts, rho_coil_kts_min, rho_coil_kts_max, &
+                         theta_coil_kts, theta_coil_kts_min, theta_coil_kts_max, &
+                         zeta_coil_kts, zeta_coil_kts_min, zeta_coil_kts_max, &
+                         nw_coil, nh_coil, width_coil, height_coil
        
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -432,6 +437,7 @@
       ldeltamn_opt(:,:)   = .FALSE.
       lmode_opt(:,:)      = .FALSE.
       laxis_opt(:)        = .FALSE.
+      lcoil_kts_opt(:,:)  = .FALSE.
       dphiedge_opt    = -1.0
       dcurtor_opt     = -1.0
       dpscale_opt     = -1.0
@@ -469,9 +475,10 @@
       dat_f_opt(:)    = -1.0
       daxis_opt(:)    = -1.0
       demis_xics_f_opt(:) = -1.0
-      dbound_opt(:,:)   = -1.0
-      drho_opt(:,:)     = -1.0
-      ddeltamn_opt(:,:) = -1.0
+      dbound_opt(:,:)     = -1.0
+      drho_opt(:,:)       = -1.0
+      ddeltamn_opt(:,:)   = -1.0
+      dcoil_kts_opt(:,:)  = -1.0
       ! Rosenbrock test function variables
       lRosenbrock_X_opt(1:ROSENBROCK_DIM) = .FALSE.
       dRosenbrock_X_opt(1:ROSENBROCK_DIM) = -1.0
@@ -524,6 +531,9 @@
       beamj_f_min     = -bigno;  beamj_f_max     = bigno
       bootj_f_min     = -bigno;  bootj_f_max     = bigno
       emis_xics_f_min = -bigno;  emis_xics_f_max = bigno
+      rho_coil_kts_min = 0.0;    rho_coil_kts_max = bigno
+      theta_coil_kts_min = 0.0;  theta_coil_kts_max = bigno
+      zeta_coil_kts_min = 0.0;   zeta_coil_kts_max = bigno
       
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
@@ -574,6 +584,16 @@
       xics_v0          = 0.0
       emis_xics_s(1:3) = (/0.0,0.50,1.0/)
       emis_xics_f(:)   = 0.0
+      ! COILS
+      lcreate_coils = .false.
+      rho_coil_kts(:,:)   = -1.0
+      theta_coil_kts(:,:) =  0.0
+      zeta_coil_kts(:,:)  =  0.0
+      nw_coil             =  1
+      nh_coil             =  1
+      width_coil          =  1.0
+      height_coil         =  1.0
+      ! Targets
       mboz            = 64
       nboz            = 64
       target_x        = 0.0
@@ -971,6 +991,9 @@
       target_dkes_Erdiff(1) = 0.0; sigma_dkes_Erdiff(1) = bigno
       target_dkes_alpha(1) = 0.0; sigma_dkes_alpha(1) = bigno
 
+      ! Check if creating coils
+      IF (ANY(rho_coil_kts>=0)) lcreate_coils = .true.
+
       ! Fix profile types
 !      IF (TRIM(bootj_type) == "boot_model_sal") bootj_aux_s(21) =  1.0
 !      IF (TRIM(bootj_type) .ne. "akima_spline") bootj_aux_s(21) = 1.0
@@ -1203,6 +1226,30 @@
               END IF
            END DO
         END DO
+      END IF
+
+      IF (ANY(lcoil_kts_opt)) THEN
+         ii = MAXVAL(FINDLOC(lcoil_kts_opt,.true.,2,BACK=.true.))
+         DO n = LBOUND(lcoil_kts_opt,DIM=1), UBOUND(lcoil_kts_opt,DIM=1)
+           IF (ANY(lcoil_kts_opt(n,:))) THEN
+              WRITE (iunit,'(a,I4.3,a,(1p,L1))') '  LCOIL_KTS_OPT(',n,',:) = ',(lcoil_kts_opt(n,m), m=1,ii)
+              ! Need to add min and max for rho, theta, and zeta
+           END IF
+         END DO
+      END IF
+
+      IF (MAXVAL(rho_coil_kts)>=0) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!       Coil Spline Knots'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO n = LBOUND(rho_coil_kts,DIM=1), UBOUND(rho_coil_kts,DIM=1)
+            IF (ANY(rho_coil_kts(n,:)>=0)) THEN
+               m = FINDLOC(rho_coil_kts(n,:)>=0,.true.,DIM=1,BACK=.true.)
+               WRITE(iunit,*) '  RHO_COIL_KTS(',n,',:) = ',(rho_coil_kts(n,ii), ii=1,m)
+               WRITE(iunit,*) '  THETA_COIL_KTS(',n,',:) = ',(theta_coil_kts(n,ii), ii=1,m)
+               WRITE(iunit,*) '  ZETA_COIL_KTS(',n,',:) = ',(zeta_coil_kts(n,ii), ii=1,m)
+            END IF
+         END DO
       END IF
       
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

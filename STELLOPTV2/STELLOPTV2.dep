@@ -1,5 +1,13 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_generate_coils.o : \
+      stellopt_runtime.o  \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
+
 stellopt_read_cws.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \

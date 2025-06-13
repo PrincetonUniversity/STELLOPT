@@ -147,6 +147,9 @@
          IF (var_dex(nvar_in) == irhobc)     rhobc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == ideltamn)   deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iRosenbrock_X) Rosenbrock_X(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == irho_coil_kts)   rho_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == itheta_coil_kts) theta_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == izeta_coil_kts)  zeta_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
       END DO
 
       ! Adust Boundary Representation
@@ -444,6 +447,7 @@
             iflag = ier_paraexe
          END IF
 !DEC$ ENDIF
+         IF (lcreate_coils) CALL stellopt_generate_coils(lscreen)
 
          ! NOTE ALL parallel secondary codes go here
 !DEC$ IF DEFINED (TXPORT_OPT)

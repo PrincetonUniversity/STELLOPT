@@ -1326,6 +1326,50 @@
                     END DO
                  END DO
               END IF
+              IF (ANY(lcoil_kts_opt)) THEN
+                 DO n = LBOUND(lcoil_kts_opt,1), UBOUND(lcoil_kts_opt,1)
+                    DO m = LBOUND(lcoil_kts_opt,2), UBOUND(lcoil_kts_opt,2)
+                       IF (lcoil_kts_opt(n,m)) THEN
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = rho_coil_kts(n,m)
+                          IF (lauto_domain) THEN
+                             rho_coil_kts_min(n,m) = rho_coil_kts(n,m) - ABS(pct_domain*rho_coil_kts(n,m))
+                             rho_coil_kts_max(n,m) = rho_coil_kts(n,m) + ABS(pct_domain*rho_coil_kts(n,m))
+                          END IF
+                          vars_min(nvar_in) = rho_coil_kts_min(n,m)
+                          vars_max(nvar_in) = rho_coil_kts_max(n,m)
+                          var_dex(nvar_in)  = irho_coil_kts
+                          diag(nvar_in)     = dcoil_kts_opt(n,m)
+                          arr_dex(nvar_in,1) = n
+                          arr_dex(nvar_in,2) = m
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = theta_coil_kts(n,m)
+                          IF (lauto_domain) THEN
+                             theta_coil_kts_min(n,m) = theta_coil_kts(n,m) - ABS(pct_domain*theta_coil_kts(n,m))
+                             theta_coil_kts_max(n,m) = theta_coil_kts(n,m) + ABS(pct_domain*theta_coil_kts(n,m))
+                          END IF
+                          vars_min(nvar_in) = theta_coil_kts_min(n,m)
+                          vars_max(nvar_in) = theta_coil_kts_max(n,m)
+                          var_dex(nvar_in)  = itheta_coil_kts
+                          diag(nvar_in)     = dcoil_kts_opt(n,m)
+                          arr_dex(nvar_in,1) = n
+                          arr_dex(nvar_in,2) = m
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = zeta_coil_kts(n,m)
+                          IF (lauto_domain) THEN
+                             zeta_coil_kts_min(n,m) = zeta_coil_kts(n,m) - ABS(pct_domain*zeta_coil_kts(n,m))
+                             zeta_coil_kts_max(n,m) = zeta_coil_kts(n,m) + ABS(pct_domain*zeta_coil_kts(n,m))
+                          END IF
+                          vars_min(nvar_in) = zeta_coil_kts_min(n,m)
+                          vars_max(nvar_in) = zeta_coil_kts_max(n,m)
+                          var_dex(nvar_in)  = izeta_coil_kts
+                          diag(nvar_in)     = dcoil_kts_opt(n,m)
+                          arr_dex(nvar_in,1) = n
+                          arr_dex(nvar_in,2) = m
+                       END IF
+                    END DO
+                 END DO
+              END IF
               ier = -327
               CALL stellopt_prof_to_vmec('init',ier)
          CASE('test')

@@ -169,6 +169,26 @@
       REAL(rprec), DIMENSION(1:rosenbrock_dim)  ::  Rosenbrock_X_min
       REAL(rprec), DIMENSION(1:rosenbrock_dim)  ::  Rosenbrock_X_max
 
+      ! Varibles for defining the coils
+      INTEGER, PARAMETER :: NCOILS_MAX = 8
+      INTEGER, PARAMETER :: NKNOTS_COILS_MAX = 20
+      LOGICAL :: lcreate_coils
+      INTEGER :: nw_coil
+      INTEGER :: nh_coil
+      REAL(rprec) :: width_coil
+      REAL(rprec) :: height_coil
+      LOGICAL, DIMENSION(NCOILS_MAX,NKNOTS_COILS_MAX) :: LCOIL_KTS_OPT
+      REAL(rprec), DIMENSION(NCOILS_MAX,NKNOTS_COILS_MAX) :: DCOIL_KTS_OPT
+      REAL(rprec), DIMENSION(NCOILS_MAX,NKNOTS_COILS_MAX) :: RHO_COIL_KTS
+      REAL(rprec), DIMENSION(NCOILS_MAX,NKNOTS_COILS_MAX) :: RHO_COIL_KTS_MIN
+      REAL(rprec), DIMENSION(NCOILS_MAX,NKNOTS_COILS_MAX) :: RHO_COIL_KTS_MAX
+      REAL(rprec), DIMENSION(NCOILS_MAX,NKNOTS_COILS_MAX) :: THETA_COIL_KTS
+      REAL(rprec), DIMENSION(NCOILS_MAX,NKNOTS_COILS_MAX) :: THETA_COIL_KTS_MIN
+      REAL(rprec), DIMENSION(NCOILS_MAX,NKNOTS_COILS_MAX) :: THETA_COIL_KTS_MAX
+      REAL(rprec), DIMENSION(NCOILS_MAX,NKNOTS_COILS_MAX) :: ZETA_COIL_KTS
+      REAL(rprec), DIMENSION(NCOILS_MAX,NKNOTS_COILS_MAX) :: ZETA_COIL_KTS_MIN
+      REAL(rprec), DIMENSION(NCOILS_MAX,NKNOTS_COILS_MAX) :: ZETA_COIL_KTS_MAX
+
       ! These are not really variable parameters as we don't vary them
       ! yet
       REAL(rprec), DIMENSION(ndatafmax) :: nustar_s, nustar_f
@@ -224,7 +244,10 @@
       INTEGER, PARAMETER ::  iraxis_cs  = 912
       INTEGER, PARAMETER ::  izaxis_cc  = 913
       INTEGER, PARAMETER ::  izaxis_cs  = 914
-      INTEGER, PARAMETER ::  iRosenbrock_X = 5500
+      INTEGER, PARAMETER ::  iRosenbrock_X = 920
+      INTEGER, PARAMETER ::  irho_coil_kts = 925
+      INTEGER, PARAMETER ::  itheta_coil_kts = 926
+      INTEGER, PARAMETER ::  izeta_coil_kts = 927
       
       REAL(rprec), PARAMETER :: ne_norm = 1.0E18
       
@@ -439,6 +462,15 @@
          ! Rosenbrock test function
          CASE(iRosenbrock_X)
             WRITE(iunit,out_format_1D) 'Rosenbrock_X(',var_dex1,'): Rosenbrock Test Function X-Value(s)'
+         ! Rho coil spline knots
+         CASE(irho_coil_kts)
+            WRITE(iunit,out_format_1D) 'RHO_COIL_KTS(',var_dex1,var_dex2,'): Coil Rho spline knots'
+         ! Theta coil spline knots
+         CASE(itheta_coil_kts)
+            WRITE(iunit,out_format_1D) 'THETA_COIL_KTS(',var_dex1,var_dex2,'): Coil Theta spline knots'
+         ! Zeta coil spline knots
+         CASE(izeta_coil_kts)
+            WRITE(iunit,out_format_1D) 'Zeta_COIL_KTS(',var_dex1,var_dex2,'): Coil Zeta spline knots'
       END SELECT
       END SUBROUTINE write_vars
 
