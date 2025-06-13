@@ -14,6 +14,7 @@
             nw_coil, nh_coil, width_coil, height_coil
       USE stellopt_runtime, ONLY: proc_string
       USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns, isigng
+      USE vmec_input, ONLY: extcur
       USE spline_coils_mod
       USE biotsavart, ONLY: write_coils_file
       USE stel_kinds, ONLY: rprec
@@ -84,6 +85,11 @@
       !     Create coils
       !-----------------------------------------------------------------
       CALL spline_to_coils(isigng)
+
+      !-----------------------------------------------------------------
+      !     Set the Current
+      !-----------------------------------------------------------------
+      CALL set_currents(numcoilgroups,extcur(1:numcoilgroups))
 
       !-----------------------------------------------------------------
       !     Make multi-filament

@@ -464,13 +464,13 @@
             WRITE(iunit,out_format_1D) 'Rosenbrock_X(',var_dex1,'): Rosenbrock Test Function X-Value(s)'
          ! Rho coil spline knots
          CASE(irho_coil_kts)
-            WRITE(iunit,out_format_2DB) 'RHO_COIL_KTS(',var_dex1,var_dex2,'): Coil Rho spline knots'
+            WRITE(iunit,out_format_2DB) 'RHO_COIL_KTS(',var_dex1,',',var_dex2,'): Coil Rho spline knots'
          ! Theta coil spline knots
          CASE(itheta_coil_kts)
-            WRITE(iunit,out_format_2DB) 'THETA_COIL_KTS(',var_dex1,var_dex2,'): Coil Theta spline knots'
+            WRITE(iunit,out_format_2DB) 'THETA_COIL_KTS(',var_dex1,',',var_dex2,'): Coil Theta spline knots'
          ! Zeta coil spline knots
          CASE(izeta_coil_kts)
-            WRITE(iunit,out_format_2DB) 'Zeta_COIL_KTS(',var_dex1,var_dex2,'): Coil Zeta spline knots'
+            WRITE(iunit,out_format_2DB) 'Zeta_COIL_KTS(',var_dex1,',',var_dex2,'): Coil Zeta spline knots'
       END SELECT
       END SUBROUTINE write_vars
 
