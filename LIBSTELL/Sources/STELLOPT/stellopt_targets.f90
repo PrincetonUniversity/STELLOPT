@@ -83,7 +83,6 @@
       REAL(rprec) ::  target_kappa_box, sigma_kappa_box, phi_kappa_box
       REAL(rprec) ::  target_kappa_avg, sigma_kappa_avg
       REAL(rprec) ::  target_totalbootstrap, sigma_totalbootstrap
-      REAL(rprec) ::  target_bnormal, sigma_bnormal
       REAL(rprec) ::  target_x, sigma_x
       REAL(rprec) ::  target_y, sigma_y
       REAL(rprec) ::  target_rosenbrock2d, sigma_rosenbrock2d
@@ -198,6 +197,11 @@
       CHARACTER(256)                     :: vessel_ece,mirror_ece,targettype_ece,antennatype_ece
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
 
+      ! Coil or Bnormal related
+      REAL(rprec) ::  target_bnormal, sigma_bnormal
+      REAL(rprec) ::  target_coil_curvature, sigma_coil_curvature
+      REAL(rprec) ::  target_coil_torsion, sigma_coil_torsion
+
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -225,6 +229,8 @@
       INTEGER, PARAMETER :: jtarget_separatrix = 111
       INTEGER, PARAMETER :: jtarget_limiter    = 112
       INTEGER, PARAMETER :: jtarget_bnormal    = 113
+      INTEGER, PARAMETER :: jtarget_coil_curvature  = 114
+      INTEGER, PARAMETER :: jtarget_coil_torsion    = 115
       INTEGER, PARAMETER :: jtarget_ne         = 200
       INTEGER, PARAMETER :: jtarget_line_ne    = 2001
       INTEGER, PARAMETER :: jtarget_te         = 201
@@ -435,6 +441,10 @@
             WRITE(iunit, out_format) 'Gamma_c'
          CASE(jtarget_bnormal)
             WRITE(iunit, out_format) 'B-Normal'
+         CASE(jtarget_coil_curvature)
+            WRITE(iunit, out_format) 'Coil Curvature (mean)'
+         CASE(jtarget_coil_torsion)
+            WRITE(iunit, out_format) 'Coil Torsion (mean)'
       END SELECT
       END SUBROUTINE write_targets
       

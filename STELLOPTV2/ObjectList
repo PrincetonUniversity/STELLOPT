@@ -1,4 +1,6 @@
 ObjectFiles = \
+chisq_coil_torsion.o \
+chisq_coil_curvature.o \
 chisq_bnormal.o \
 stellopt_compute_bnormal.o \
 stellopt_generate_coils.o \

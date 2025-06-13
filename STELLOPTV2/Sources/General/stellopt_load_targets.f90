@@ -159,6 +159,12 @@
       !  BNORMAL TOTAL
       IF (sigma_bnormal < bigno) &
          CALL chisq_bnormal(target_bnormal, sigma_bnormal, ncnt,iflag)
+      !  MEAN COIL CURVATURE
+      IF (sigma_coil_curvature < bigno) &
+         CALL chisq_bnormal(target_coil_curvature, sigma_coil_curvature, ncnt,iflag)
+      !  MEAN COIL TORSION
+      IF (sigma_coil_torsion < bigno) &
+         CALL chisq_bnormal(target_coil_torsion, sigma_coil_torsion, ncnt,iflag)
 
       !------------- OTHER TARGETS -------------------
       !  ECE Reflectometry
