@@ -12,12 +12,14 @@ stellopt_compute_bnormal.o : \
       $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/bsc_T.o \
       $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
+      $(BNORM_DIR)/$(LOCTYPE)/neswrite.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
 
 stellopt_generate_coils.o : \
       stellopt_runtime.o  \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
       $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 

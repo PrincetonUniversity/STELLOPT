@@ -14,9 +14,10 @@
       USE equil_vals, ONLY: bnormal_total
       use safe_open_mod
       USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns, nfp, &
-            isigng
+            isigng, Aminor, bsubvmnc, xm_nyq, xn_nyq, mnmax_nyq
       USE bsc_T, ONLY: bsc_b
       USE biotsavart, ONLY: coil_group
+      USE neswrite, ONLY: coil_separation
       USE stel_kinds, ONLY: rprec
 
 !-----------------------------------------------------------------------
@@ -29,7 +30,7 @@
 !-----------------------------------------------------------------------
 !     Local Variables
 !-----------------------------------------------------------------------
-      INTEGER, PARAMETER :: nu=256, nv=256, mf=10, nf=10, md=20, nd=20
+      INTEGER, PARAMETER :: nu=128, nv=128, mf=10, nf=10, md=20, nd=20
       INTEGER :: m, n, mn, u, v, uv, nuv, iunit, ncoilgroups
       REAL(rprec) :: theta, phi, zeta, arg, cop, sip, RU, RV, ZU, ZV, &
             Ax, Ay, Az, Bx, By, Bz, Norm
@@ -38,7 +39,6 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rreal, zreal
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: NX, NY, NZ
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: bnreal, bcreal
-      REAL(rprec), PARAMETER :: coil_plasma = 0.01
 
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -50,7 +50,8 @@
       !-----------------------------------------------------------------
       ALLOCATE(bnfou(0:mf,-nf:nf),bnfou_c(0:mf,-nf:nf),STAT=iflag)
       IF (iflag < 0) RETURN
-      call bnormal(nu, nv, mf, nf, md, nd, bnfou, bnfou_c, proc_string,coil_plasma)
+      coil_separation =Aminor
+      call bnormal(nu, nv, mf, nf, md, nd, bnfou, bnfou_c, proc_string)
       
       !-----------------------------------------------------------------
       !     Write BNORMAL
@@ -63,7 +64,15 @@
          end do
       end do
       close (iunit)
-      
+
+      !-----------------------------------------------------------------
+      !     Compute the normalization
+      !-----------------------------------------------------------------
+      DO mn = 1, mnmax_nyq
+         IF ((xm_nyq(mn) == 0) .and. (xn_nyq(mn) == 0)) &
+            bnfou = bnfou * bsubvmnc(mn,ns)*pi2/nfp
+      END DO
+
       !-----------------------------------------------------------------
       !     Transform the boundary and calculate BN
       !-----------------------------------------------------------------

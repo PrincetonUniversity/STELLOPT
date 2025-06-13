@@ -187,6 +187,18 @@
       RETURN
       END SUBROUTINE spline_to_coils
 
+      SUBROUTINE set_currents(nextcur,extcur)
+      INTEGER, INTENT(IN) :: nextcur
+      DOUBLE PRECISION, DIMENSION(nextcur), INTENT(IN) :: extcur
+      INTEGER i,j
+      DO i = 1, nextcur
+         DO j = 1, coil_group(i)%ncoil
+            coil_group(i)%coils(j)%current = extcur(i)
+         END DO
+      END DO
+      RETURN
+      END SUBROUTINE set_currents
+
       SUBROUTINE coils_to_multifilament(nw,nh,width,height)
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: nw
@@ -263,7 +275,7 @@
                   xnod(3,:) = xnod(3,:) - zb*width/2 - zn*height/2 &
                             + zb*width*(l-1)/(nw-1) + zn*height*(k-1)/(nh-1)
                   xnod(:,ns) = xnod(:,1)
-                  CALL bsc_construct_coil(coil_temp,'fil_loop',coil_single(i)%coils(j)%s_name,'',one,xnod(1:3,1:ns))
+                  CALL bsc_construct_coil(coil_temp,'fil_loop',coil_single(i)%coils(j)%s_name,'',coil_single(i)%coils(j)%current/(nh*nw),xnod(1:3,1:ns))
                   CALL bsc_append(coil_group(i),coil_temp)
                END DO
             END DO

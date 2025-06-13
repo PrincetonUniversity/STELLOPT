@@ -160,6 +160,8 @@
                WHERE(ABS(sigma_txport)<bigno) sigma_txport = sigma_txport/temp
             CASE(jtarget_gamma_c)
                WHERE(ABS(sigma_gamma_c)<bigno) sigma_gamma_c = sigma_gamma_c/temp
+            CASE(jtarget_bnormal)
+               sigma_bnormal = sigma_bnormal/temp
             CASE DEFAULT
                WRITE(6,'(A,I3.3,A)') '!!! JTARGET=',iddex(i),' not supported'
                CALL write_targets(6,iddex(i))

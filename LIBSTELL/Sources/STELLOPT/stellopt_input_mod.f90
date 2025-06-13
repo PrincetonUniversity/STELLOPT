@@ -1013,6 +1013,7 @@
       INTEGER, INTENT(in) :: istat
       INTEGER     :: ik, n, m, u, v, ii
       REAL(rprec) :: norm
+      CHARACTER(LEN=256) :: outputstring
       CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
       CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
       CHARACTER(LEN=*), PARAMETER :: outflt  = "(2X,A,1X,'=',1X,ES22.12E3)"
@@ -1233,12 +1234,21 @@
       END IF
 
       IF (ANY(lcoil_kts_opt)) THEN
-         ii = MAXVAL(FINDLOC(lcoil_kts_opt,.true.,2,BACK=.true.))
          DO n = LBOUND(lcoil_kts_opt,DIM=1), UBOUND(lcoil_kts_opt,DIM=1)
-           IF (ANY(lcoil_kts_opt(n,:))) THEN
-              WRITE (iunit,'(a,I4.3,a,(1p,L1))') '  LCOIL_KTS_OPT(',n,',:) = ',(lcoil_kts_opt(n,m), m=1,ii)
-              ! Need to add min and max for rho, theta, and zeta
-           END IF
+            IF (ANY(lcoil_kts_opt(n,:))) THEN
+               m = FINDLOC(LCOIL_KTS_OPT(n,:),.true.,DIM=1,BACK=.true.)
+               WRITE(iunit,'(A,I2)') '!----- COIL ',n
+               WRITE(outputstring,'(A,I2,A)') '(A,I3,A,',m,'(2X,L))'
+               WRITE(iunit,outputstring) 'LCOIL_KTS_OPT(',n,',:) = ', (lcoil_kts_opt(n,ii), ii=1,m)
+               WRITE(outputstring,'(A,I2,A)') '(A,I3,A,',m,'(ES22.12E3))'
+               WRITE(iunit,outputstring) 'DCOIL_KTS_OPT(',n,',:) = ', (dcoil_kts_opt(n,ii), ii=1,m)
+               WRITE(iunit,outputstring) 'RHO_COIL_KTS_MIN(',n,',:)   = ', (rho_coil_kts_min(n,ii), ii=1,m)
+               WRITE(iunit,outputstring) 'RHO_COIL_KTS_MAX(',n,',:)   = ', (rho_coil_kts_max(n,ii), ii=1,m)
+               WRITE(iunit,outputstring) 'THETA_COIL_KTS_MIN(',n,',:) = ', (theta_coil_kts_min(n,ii), ii=1,m)
+               WRITE(iunit,outputstring) 'THETA_COIL_KTS_MAX(',n,',:) = ', (theta_coil_kts_max(n,ii), ii=1,m)
+               WRITE(iunit,outputstring) 'ZETA_COIL_KTS_MIN(',n,',:)  = ', (zeta_coil_kts_min(n,ii), ii=1,m)
+               WRITE(iunit,outputstring) 'ZETA_COIL_KTS_MAX(',n,',:)  = ', (zeta_coil_kts_max(n,ii), ii=1,m)
+            END IF
          END DO
       END IF
 
@@ -1249,9 +1259,11 @@
          DO n = LBOUND(rho_coil_kts,DIM=1), UBOUND(rho_coil_kts,DIM=1)
             IF (ANY(rho_coil_kts(n,:)>=0)) THEN
                m = FINDLOC(rho_coil_kts(n,:)>=0,.true.,DIM=1,BACK=.true.)
-               WRITE(iunit,*) '  RHO_COIL_KTS(',n,',:) = ',(rho_coil_kts(n,ii), ii=1,m)
-               WRITE(iunit,*) '  THETA_COIL_KTS(',n,',:) = ',(theta_coil_kts(n,ii), ii=1,m)
-               WRITE(iunit,*) '  ZETA_COIL_KTS(',n,',:) = ',(zeta_coil_kts(n,ii), ii=1,m)
+               WRITE(iunit,'(A,I2)') '!----- COIL ',n
+               WRITE(outputstring,'(A,I2,A)') '(A,I3,A,',m,'(ES22.12E3))'
+               WRITE(iunit,outputstring) 'RHO_COIL_KTS(',n,',:) = ', (rho_coil_kts(n,ii), ii=1,m)
+               WRITE(iunit,outputstring) 'THETA_COIL_KTS(',n,',:) = ', (theta_coil_kts(n,ii), ii=1,m)
+               WRITE(iunit,outputstring) 'ZETA_COIL_KTS(',n,',:) = ', (zeta_coil_kts(n,ii), ii=1,m)
             END IF
          END DO
       END IF
@@ -2268,10 +2280,10 @@
          WRITE(iunit,outflt) 'TARGET_BNORMAL',target_bnormal
          WRITE(iunit,outflt) 'SIGMA_BNORMAL',sigma_bnormal
       END IF
-      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-      WRITE(iunit,'(A)') '!         Rosenbrock 2D TEST FUNCTION' 
-      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       IF (sigma_Rosenbrock2D < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!         Rosenbrock 2D TEST FUNCTION' 
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outflt) 'TARGET_ROSENBROCK2D',target_Rosenbrock2D
          WRITE(iunit,outflt) 'sigma_ROSENBROCK2D',sigma_Rosenbrock2D
       END IF 
