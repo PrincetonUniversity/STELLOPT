@@ -27,24 +27,30 @@
 !     Local Variables
 !
 !-----------------------------------------------------------------------
+      INTEGER :: ik
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'BNORMAL_TOTAL ',1,3
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  BNORMAL_TOTAL'
+      ik = nu_bnormal*nv_bnormal
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I8.8))') 'BNORMAL ',ik,3
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  BNORMAL'
       IF (niter >= 0) THEN
-         mtargets = mtargets + 1
-         targets(mtargets) = target
-         sigmas(mtargets)  = sigma
-         vals(mtargets)     = SUM(bnormal_total)
-         IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,SUM(bnormal_total)
+         DO ik = 1, nu_bnormal*nv_bnormal
+            mtargets = mtargets + 1
+            targets(mtargets) = target
+            sigmas(mtargets)  = sigma
+            vals(mtargets)     = bnormal_total(ik)
+            IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,bnormal_total(ik)
+         END DO
       ELSE
          IF (sigma < bigno) THEN
             lneed_bnormal = .TRUE.
-            mtargets = mtargets + 1
-            IF (niter == -2) target_dex(mtargets)=jtarget_bnormal
+            DO ik = 1, nu_bnormal*nv_bnormal
+               mtargets = mtargets + 1
+               IF (niter == -2) target_dex(mtargets)=jtarget_bnormal
+            END DO
          END IF
       END IF
       RETURN

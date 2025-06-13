@@ -1,4 +1,5 @@
 ObjectFiles = \
+chisq_coilcoil_distance.o \
 chisq_coil_torsion.o \
 chisq_coil_curvature.o \
 chisq_bnormal.o \
