@@ -79,8 +79,9 @@
       RETURN
       END SUBROUTINE init_boundary_spline_coils
 
-      SUBROUTINE spline_to_coils
+      SUBROUTINE spline_to_coils(normal_sign)
       IMPLICIT NONE
+      INTEGER, INTENT(in) :: normal_sign
       INTEGER :: i, j, mn, ns1
       DOUBLE PRECISION :: AX, AY, AZ, BX, BY, BZ, NX, NY, NZ, N, &
             R, Z, RU, ZU, RV, ZV, rho, theta, zeta, cop, sip, l, &
@@ -140,7 +141,7 @@
             Nx = Ay*Bz - Az*By
             Ny = Az*Bx - Ax*Bz
             Nz = Ax*By - Ay*Bx
-            N  = SQRT(Nx*Nx+Ny*Ny+Nz*Nz)
+            N  = SQRT(Nx*Nx+Ny*Ny+Nz*Nz)*normal_sign
             Nx = Nx/N; Ny = Ny/N; Nz = Nz/N
             X  = R*cop + rho*Nx
             Y  = R*sip + rho*Ny

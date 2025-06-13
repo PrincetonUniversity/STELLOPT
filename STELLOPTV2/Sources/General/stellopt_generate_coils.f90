@@ -5,7 +5,7 @@
 !     Description:   This subroutine computes a coils file in cartesian
 !                    space from a spline representation.
 !-----------------------------------------------------------------------
-      SUBROUTINE stellopt_generate_coils(lscreen)
+      SUBROUTINE stellopt_generate_coils(lscreen,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -13,7 +13,7 @@
             rho_coil_kts, theta_coil_kts, zeta_coil_kts, &
             nw_coil, nh_coil, width_coil, height_coil
       USE stellopt_runtime, ONLY: proc_string
-      USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns
+      USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns, isigng
       USE spline_coils_mod
       USE biotsavart, ONLY: write_coils_file
       USE stel_kinds, ONLY: rprec
@@ -23,6 +23,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL, INTENT(in)    :: lscreen
+      INTEGER, INTENT(inout) :: iflag
       
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -35,10 +36,16 @@
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !-----------------------------------------------------------------------
+      IF (iflag < 0) RETURN
       !-----------------------------------------------------------------
       !     Compute helpers
       !-----------------------------------------------------------------
-      n = MAXVAL(MAXLOC(rho_coil_kts,DIM=2,BACK=.TRUE.))
+      DO i = 1, ncoils_max
+         DO k = 1, nknots_coils_max
+            IF (rho_coil_kts(i,k)>0) n=k
+         ENDDO
+      ENDDO
+      !n = MAXVAL(MAXLOC(rho_coil_kts,DIM=2,BACK=.TRUE.))
       numcoilgroups = COUNT(ANY(rho_coil_kts>0,DIM=2))
       k=1
       ALLOCATE(tvec(n))
@@ -53,8 +60,8 @@
          WRITE(6,'(A,I3)')   '      COIL SEGMENTS:  ',nscoil
          WRITE(6,'(A,I3)')   '    WIDTH FILAMENTS:  ',nw_coil
          WRITE(6,'(A,I3)')   '   HEIGHT FILAMENTS:  ',nh_coil
-         WRITE(6,'(A,I7.3)') '         COIL WIDTH:  ',width_coil
-         WRITE(6,'(A,I7.3)') '        COIL HEIGHT:  ',height_coil
+         WRITE(6,'(A,F7.3)') '         COIL WIDTH:  ',width_coil
+         WRITE(6,'(A,F7.3)') '        COIL HEIGHT:  ',height_coil
          WRITE(6,'(A)')      '-------------------------------------'
       END IF
 
@@ -76,7 +83,7 @@
       !-----------------------------------------------------------------
       !     Create coils
       !-----------------------------------------------------------------
-      CALL spline_to_coils
+      CALL spline_to_coils(isigng)
 
       !-----------------------------------------------------------------
       !     Make multi-filament

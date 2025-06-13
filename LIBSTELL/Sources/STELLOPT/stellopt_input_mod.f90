@@ -365,7 +365,8 @@
                          rho_coil_kts, rho_coil_kts_min, rho_coil_kts_max, &
                          theta_coil_kts, theta_coil_kts_min, theta_coil_kts_max, &
                          zeta_coil_kts, zeta_coil_kts_min, zeta_coil_kts_max, &
-                         nw_coil, nh_coil, width_coil, height_coil
+                         nw_coil, nh_coil, width_coil, height_coil, &
+                         target_bnormal, sigma_bnormal
        
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -903,6 +904,9 @@
       sigma_curvature_P2     = bigno
       target_gamma_c    = 0.0
       sigma_gamma_c     = bigno
+      lneed_bnormal     = .false.
+      target_bnormal    = 0.0
+      sigma_bnormal     = bigno
       END SUBROUTINE init_stellopt_input
 
       SUBROUTINE read_stellopt_input(filename, istat)
@@ -2256,6 +2260,13 @@
                   'SIGMA_LIMITER(',u,v,') = ',sigma_limiter(u,v)
             END DO
          END DO
+      END IF
+      IF (sigma_bnormal < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET BNORMAL'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'TARGET_BNORMAL',target_bnormal
+         WRITE(iunit,outflt) 'SIGMA_BNORMAL',sigma_bnormal
       END IF
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!         Rosenbrock 2D TEST FUNCTION' 
