@@ -52,7 +52,7 @@
 !            s_iota             s Rotational Transform location array
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      LOGICAL     ::  lneed_magdiag
+      LOGICAL     ::  lneed_magdiag, lneed_bnormal
       LOGICAL, DIMENSION(nsd)  :: lbooz
       INTEGER     ::  mboz, nboz, NumJstar
       INTEGER, PARAMETER :: nprof = 512
@@ -83,6 +83,7 @@
       REAL(rprec) ::  target_kappa_box, sigma_kappa_box, phi_kappa_box
       REAL(rprec) ::  target_kappa_avg, sigma_kappa_avg
       REAL(rprec) ::  target_totalbootstrap, sigma_totalbootstrap
+      REAL(rprec) ::  target_bnormal, sigma_bnormal
       REAL(rprec) ::  target_x, sigma_x
       REAL(rprec) ::  target_y, sigma_y
       REAL(rprec) ::  target_rosenbrock2d, sigma_rosenbrock2d
@@ -223,6 +224,7 @@
       INTEGER, PARAMETER :: jtarget_vessel     = 110
       INTEGER, PARAMETER :: jtarget_separatrix = 111
       INTEGER, PARAMETER :: jtarget_limiter    = 112
+      INTEGER, PARAMETER :: jtarget_bnormal    = 113
       INTEGER, PARAMETER :: jtarget_ne         = 200
       INTEGER, PARAMETER :: jtarget_line_ne    = 2001
       INTEGER, PARAMETER :: jtarget_te         = 201
@@ -431,6 +433,8 @@
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
          CASE(jtarget_gamma_c)
             WRITE(iunit, out_format) 'Gamma_c'
+         CASE(jtarget_bnormal)
+            WRITE(iunit, out_format) 'B-Normal'
       END SELECT
       END SUBROUTINE write_targets
       

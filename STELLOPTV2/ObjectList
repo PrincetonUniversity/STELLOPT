@@ -1,4 +1,6 @@
 ObjectFiles = \
+chisq_bnormal.o \
+stellopt_compute_bnormal.o \
 stellopt_generate_coils.o \
 chisq_totalbootstrap.o \
 chisq_b10b11.o \

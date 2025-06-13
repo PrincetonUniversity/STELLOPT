@@ -1,5 +1,19 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+chisq_bnormal.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o
+
+stellopt_compute_bnormal.o : \
+      stellopt_runtime.o  \
+      equil_vals.o  \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/bsc_T.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
+
 stellopt_generate_coils.o : \
       stellopt_runtime.o  \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \

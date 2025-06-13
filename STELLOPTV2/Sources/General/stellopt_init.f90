@@ -205,6 +205,11 @@
                     END IF
                  END DO
               END DO
+              DO n = LBOUND(lcoil_kts_opt,1), UBOUND(lcoil_kts_opt,1)
+                 DO m = LBOUND(lcoil_kts_opt,2), UBOUND(lcoil_kts_opt,2)
+                    IF (lcoil_kts_opt(n,m)) nvars = nvars + 3
+                 END DO
+              END DO
               ier = 0
 
          CASE('spec')

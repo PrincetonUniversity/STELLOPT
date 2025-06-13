@@ -447,7 +447,10 @@
             iflag = ier_paraexe
          END IF
 !DEC$ ENDIF
-         IF (lcreate_coils) CALL stellopt_generate_coils(lscreen)
+
+         ! Coil related parameters (generate coils must come first)
+         IF (lcreate_coils) CALL stellopt_generate_coils(lscreen,iflag)
+         IF (lneed_bnormal) CALL stellopt_compute_bnormal(lscreen,iflag)
 
          ! NOTE ALL parallel secondary codes go here
 !DEC$ IF DEFINED (TXPORT_OPT)

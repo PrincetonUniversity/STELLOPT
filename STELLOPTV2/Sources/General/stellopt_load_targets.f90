@@ -155,6 +155,11 @@
       IF (ANY(sigma_visbrem_line < bigno)) &
          CALL chisq_line_visbrem(target_visbrem_line, sigma_visbrem_line, ncnt,iflag)
          
+      !------------- COIL RELATED TARGETS -------------------
+      !  BNORMAL TOTAL
+      IF (sigma_bnormal < bigno) &
+         CALL chisq_bnormal(target_bnormal, sigma_bnormal, ncnt,iflag)
+
       !------------- OTHER TARGETS -------------------
       !  ECE Reflectometry
       IF (ANY(sigma_ece < bigno)) &

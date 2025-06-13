@@ -69,6 +69,9 @@
       CALL move_txtfile('jprof.'//TRIM(proc_string_old),'jprof.'//TRIM(proc_string))
       CALL move_txtfile('dprof.'//TRIM(proc_string_old),'dprof.'//TRIM(proc_string))
       CALL move_txtfile('boot_fit.'//TRIM(proc_string_old),'boot_fit.'//TRIM(proc_string))
+      CALL move_txtfile('coils.'//TRIM(proc_string_old),'coils.'//TRIM(proc_string))
+      CALL move_txtfile('bnorm.'//TRIM(proc_string_old),'bnorm.'//TRIM(proc_string))
+      CALL move_txtfile('bnorm_real.'//TRIM(proc_string_old),'bnorm_real.'//TRIM(proc_string))
       CALL copy_boozer_file(TRIM(proc_string_old),TRIM(proc_string))
       DO ik = 1, nsd
          WRITE(temp_str,'(A,I3.3)') '_s',ik
