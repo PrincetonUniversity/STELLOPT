@@ -366,9 +366,11 @@
                          theta_coil_kts, theta_coil_kts_min, theta_coil_kts_max, &
                          zeta_coil_kts, zeta_coil_kts_min, zeta_coil_kts_max, &
                          nw_coil, nh_coil, width_coil, height_coil, &
+                         nu_bnormal, nv_bnormal, &
                          target_bnormal, sigma_bnormal, &
                          target_coil_curvature, sigma_coil_curvature, &
-                         target_coil_torsion, sigma_coil_torsion
+                         target_coil_torsion, sigma_coil_torsion, &
+                         target_coilcoil_distance, sigma_coilcoil_distance
        
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -535,8 +537,8 @@
       bootj_f_min     = -bigno;  bootj_f_max     = bigno
       emis_xics_f_min = -bigno;  emis_xics_f_max = bigno
       rho_coil_kts_min = 0.0;    rho_coil_kts_max = bigno
-      theta_coil_kts_min = 0.0;  theta_coil_kts_max = bigno
-      zeta_coil_kts_min = 0.0;   zeta_coil_kts_max = bigno
+      theta_coil_kts_min = -6.0D+00;  theta_coil_kts_max = 12.0D+00
+      zeta_coil_kts_min = -6.0D+00;   zeta_coil_kts_max = 12.0D+00
       
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
@@ -906,13 +908,17 @@
       sigma_curvature_P2     = bigno
       target_gamma_c    = 0.0
       sigma_gamma_c     = bigno
-      lneed_bnormal     = .false.
-      target_bnormal        = 0.0
-      sigma_bnormal         = bigno
-      target_coil_curvature = 0.0
-      sigma_coil_curvature  = bigno
-      target_coil_torsion   = 0.0
-      sigma_coil_torsion    = bigno
+      lneed_bnormal            = .false.
+      nu_bnormal               = 128
+      nv_bnormal               = 128
+      target_bnormal           = 0.0
+      sigma_bnormal            = bigno
+      target_coil_curvature    = 0.0
+      sigma_coil_curvature     = bigno
+      target_coil_torsion      = 0.0
+      sigma_coil_torsion       = bigno
+      target_coilcoil_distance = 0.0
+      sigma_coilcoil_distance  = bigno
       END SUBROUTINE init_stellopt_input
 
       SUBROUTINE read_stellopt_input(filename, istat)
@@ -2283,6 +2289,8 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          TARGET BNORMAL'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outint) 'NU_BNORMAL',nu_bnormal
+         WRITE(iunit,outint) 'NV_BNORMAL',nv_bnormal
          WRITE(iunit,outflt) 'TARGET_BNORMAL',target_bnormal
          WRITE(iunit,outflt) 'SIGMA_BNORMAL',sigma_bnormal
       END IF
@@ -2299,6 +2307,13 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outflt) 'TARGET_COIL_TORSION',target_coil_torsion
          WRITE(iunit,outflt) 'SIGMA_COIL_TORSION',sigma_coil_torsion
+      END IF
+      IF (sigma_coilcoil_distance < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL-COIL DISTANCE'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'TARGET_COILCOIL_DISTANCE',target_coilcoil_distance
+         WRITE(iunit,outflt) 'SIGMA_COILCOIL_DISTANCE',sigma_coilcoil_distance
       END IF
       IF (sigma_Rosenbrock2D < bigno) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

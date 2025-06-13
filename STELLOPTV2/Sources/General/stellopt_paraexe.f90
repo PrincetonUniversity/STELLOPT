@@ -451,6 +451,10 @@
                ier_paraexe = ier
             CASE('write_mgrid')
                CALL stellopt_write_mgrid(MPI_COMM_MYWORLD,file_str,lscreen)
+            CASE('compute_bnormal')
+               proc_string = file_str
+               ier = 0
+               CALL stellopt_compute_bnormal(lscreen,ier)
             CASE('mango_init')
                CALL stellopt_mango_init
             CASE('mango_finalize')

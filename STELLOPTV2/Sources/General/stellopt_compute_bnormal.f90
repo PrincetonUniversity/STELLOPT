@@ -11,14 +11,17 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stellopt_runtime, ONLY: proc_string, pi2
+      USE stellopt_targets, ONLY: nu_bnormal, nv_bnormal
       USE equil_vals, ONLY: bnormal_total
       use safe_open_mod
       USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns, nfp, &
             isigng, Aminor, bsubvmnc, xm_nyq, xn_nyq, mnmax_nyq
       USE bsc_T, ONLY: bsc_b
-      USE biotsavart, ONLY: coil_group
+      USE biotsavart, ONLY: coil_group, parse_coils_file
       USE neswrite, ONLY: coil_separation
       USE stel_kinds, ONLY: rprec
+      USE mpi_params
+      USE mpi_inc
 
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -30,8 +33,8 @@
 !-----------------------------------------------------------------------
 !     Local Variables
 !-----------------------------------------------------------------------
-      INTEGER, PARAMETER :: nu=128, nv=128, mf=10, nf=10, md=20, nd=20
-      INTEGER :: m, n, mn, u, v, uv, nuv, iunit, ncoilgroups
+      INTEGER, PARAMETER :: mf=10, nf=10, md=20, nd=20
+      INTEGER :: m, n, mn, u, v, uv, nuv, iunit, ncoilgroups, nu, nv
       REAL(rprec) :: theta, phi, zeta, arg, cop, sip, RU, RV, ZU, ZV, &
             Ax, Ay, Az, Bx, By, Bz, Norm
       REAL(rprec), DIMENSION(3) :: xvec, bvec
@@ -40,30 +43,68 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: NX, NY, NZ
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: bnreal, bcreal
 
+      INTEGER :: mystart, myend
+
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !-----------------------------------------------------------------------
       IF (iflag < 0) RETURN
 
       !-----------------------------------------------------------------
+      !     Setup MPI Communication
+      !-----------------------------------------------------------------
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(    isigng, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_BCAST(        ns, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_BCAST(       nfp, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_BCAST(     mnmax, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_BCAST( mnmax_nyq, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_BCAST(    Aminor, 1, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+      IF (myworkid /= master) THEN
+         IF(ALLOCATED(xm)) DEALLOCATE(xm); ALLOCATE(xm(mnmax))
+         IF(ALLOCATED(xn)) DEALLOCATE(xn); ALLOCATE(xn(mnmax))
+         IF(ALLOCATED(rmnc)) DEALLOCATE(rmnc); ALLOCATE(rmnc(mnmax,ns))
+         IF(ALLOCATED(zmns)) DEALLOCATE(zmns); ALLOCATE(zmns(mnmax,ns))
+         IF(ALLOCATED(xm_nyq)) DEALLOCATE(xm_nyq); ALLOCATE(xm_nyq(mnmax_nyq))
+         IF(ALLOCATED(xn_nyq)) DEALLOCATE(xn_nyq); ALLOCATE(xn_nyq(mnmax_nyq))
+         IF(ALLOCATED(bsubvmnc)) DEALLOCATE(bsubvmnc); ALLOCATE(bsubvmnc(mnmax_nyq,ns))
+         CALL parse_coils_file('coils.'//TRIM(proc_string))
+      END IF
+      CALL MPI_BCAST(      xm,        mnmax, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_BCAST(      xn,        mnmax, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_BCAST(    rmnc,     mnmax*ns, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_BCAST(    zmns,     mnmax*ns, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_BCAST(  xm_nyq,    mnmax_nyq, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_BCAST(  xn_nyq,    mnmax_nyq, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_BCAST(bsubvmnc, mnmax_nyq*ns, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+#endif
+
+      !-----------------------------------------------------------------
       !     Compute BNORMAL
       !-----------------------------------------------------------------
+      nu = nu_bnormal; nv = nv_bnormal
       ALLOCATE(bnfou(0:mf,-nf:nf),bnfou_c(0:mf,-nf:nf),STAT=iflag)
       IF (iflag < 0) RETURN
       coil_separation =Aminor
-      call bnormal(nu, nv, mf, nf, md, nd, bnfou, bnfou_c, proc_string)
-      
+      IF (myworkid == master) &
+         call bnormal(nu, nv, mf, nf, md, nd, bnfou, bnfou_c, proc_string)
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(bnfou, (mf+1)*(2*nf+1), MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+#endif
+
       !-----------------------------------------------------------------
       !     Write BNORMAL
       !-----------------------------------------------------------------
-      call safe_open(iunit, iflag, 'bnorm.' // TRIM(proc_string), &
-            'replace','formatted')
-      do m = 0, mf
-         do n = -nf,nf
-            write(iunit, '(1x,2i5,1pe24.16,1pe24.16)') m, n, bnfou(m,n)
+      IF (myworkid == master) THEN
+         call safe_open(iunit, iflag, 'bnorm.' // TRIM(proc_string), &
+               'replace','formatted')
+         do m = 0, mf
+            do n = -nf,nf
+               write(iunit, '(1x,2i5,1pe24.16,1pe24.16)') m, n, bnfou(m,n)
+            end do
          end do
-      end do
-      close (iunit)
+         close (iunit)
+      END IF
 
       !-----------------------------------------------------------------
       !     Compute the normalization
@@ -84,7 +125,8 @@
       rreal = 0.0; zreal = 0.0; bnreal = 0.0
       nx = 0.0; ny = 0.0; nz = 0.0
       bcreal = 0.0
-      DO uv = 1, nuv
+      CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD, 1, nuv, mystart, myend)
+      DO uv = mystart, myend
          u = MOD(uv-1,nu)+1
          v = MOD(uv-1,nuv)
          v = FLOOR(REAL(v) / REAL(nu))+1
@@ -131,6 +173,29 @@
                           + NZ(uv)*bvec(3)
          END DO
       END DO
+
+      !-----------------------------------------------------------------
+      !     Get the result back to master
+      !-----------------------------------------------------------------
+#if defined(MPI_OPT)
+      IF (myworkid == master) THEN
+         CALL MPI_REDUCE(MPI_IN_PLACE, bcreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, bnreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,  rreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,  zreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,     Nx, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,     Ny, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,     Nz, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+      ELSE
+         CALL MPI_REDUCE(      bcreal, bcreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(      bnreal, bnreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(       rreal,  rreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(       zreal,  zreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(          Nx,     Nx, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(          Ny,     Ny, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(          Nz,     Nz, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+      END IF
+#endif
       
       !-----------------------------------------------------------------
       !     Compute total bnormal field
@@ -142,26 +207,37 @@
       !-----------------------------------------------------------------
       !     Write the output to a file
       !-----------------------------------------------------------------
-      call safe_open(iunit, iflag, 'bnorm_real.' // TRIM(proc_string), &
-            'replace','formatted')
-      WRITE(iunit,'(I8)') nuv
-      DO uv = 1, nuv
-         u = MOD(uv-1,nu)+1
-         v = MOD(uv-1,nuv)
-         v = FLOOR(REAL(v) / REAL(nu))+1
-         theta = pi2*DBLE(u-1)/DBLE(nu)
-         zeta = pi2*DBLE(v-1)/DBLE(nv)
-         phi = zeta/nfp
-         WRITE(iunit, '(3(1X,I6),11(1pe24.16))') &
-            uv,u,v,theta,zeta,phi,rreal(uv),zreal(uv),&
-            Nx(uv),Ny(uv),Nz(uv),bnreal(uv),bcreal(uv),bnormal_total(uv)
-      END DO
-      close (iunit)
+      IF (myworkid == master) THEN
+         call safe_open(iunit, iflag, 'bnorm_real.' // TRIM(proc_string), &
+               'replace','formatted')
+         WRITE(iunit,'(I8)') nuv
+         DO uv = 1, nuv
+            u = MOD(uv-1,nu)+1
+            v = MOD(uv-1,nuv)
+            v = FLOOR(REAL(v) / REAL(nu))+1
+            theta = pi2*DBLE(u-1)/DBLE(nu)
+            zeta = pi2*DBLE(v-1)/DBLE(nv)
+            phi = zeta/nfp
+            WRITE(iunit, '(3(1X,I6),11(1pe24.16))') &
+               uv,u,v,theta,zeta,phi,rreal(uv),zreal(uv),&
+               Nx(uv),Ny(uv),Nz(uv),bnreal(uv),bcreal(uv),bnormal_total(uv)
+         END DO
+         close (iunit)
+      END IF
       
       !-----------------------------------------------------------------
       !     DEALLOCATIONS
       !-----------------------------------------------------------------
       DEALLOCATE(rreal,zreal,Nx,Ny,Nz,bnreal,bcreal)
+      IF (myworkid /= master) THEN
+         IF(ALLOCATED(xm)) DEALLOCATE(xm)
+         IF(ALLOCATED(xn)) DEALLOCATE(xn)
+         IF(ALLOCATED(rmnc)) DEALLOCATE(rmnc)
+         IF(ALLOCATED(zmns)) DEALLOCATE(zmns)
+         IF(ALLOCATED(xm_nyq)) DEALLOCATE(xm_nyq)
+         IF(ALLOCATED(xn_nyq)) DEALLOCATE(xn_nyq)
+         IF(ALLOCATED(bsubvmnc)) DEALLOCATE(bsubvmnc)
+      END IF
 
 
 

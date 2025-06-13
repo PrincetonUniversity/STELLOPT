@@ -165,6 +165,9 @@
       !  MEAN COIL TORSION
       IF (sigma_coil_torsion < bigno) &
          CALL chisq_bnormal(target_coil_torsion, sigma_coil_torsion, ncnt,iflag)
+      !  COIL-COIL DISTANCE
+      IF (sigma_coilcoil_distance < bigno) &
+         CALL chisq_coilcoil_distance(target_coilcoil_distance, sigma_coilcoil_distance, ncnt,iflag)
 
       !------------- OTHER TARGETS -------------------
       !  ECE Reflectometry

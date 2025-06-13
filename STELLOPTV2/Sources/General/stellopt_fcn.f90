@@ -450,7 +450,11 @@
 
          ! Coil related parameters (generate coils must come first)
          IF (lcreate_coils) CALL stellopt_generate_coils(lscreen,iflag)
-         IF (lneed_bnormal) CALL stellopt_compute_bnormal(lscreen,iflag)
+         IF (lneed_bnormal) THEN
+            ctemp_str = 'compute_bnormal'
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         ENDIF
 
          ! NOTE ALL parallel secondary codes go here
 !DEC$ IF DEFINED (TXPORT_OPT)

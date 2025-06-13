@@ -198,9 +198,11 @@
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
 
       ! Coil or Bnormal related
+      INTEGER     ::  nu_bnormal, nv_bnormal
       REAL(rprec) ::  target_bnormal, sigma_bnormal
       REAL(rprec) ::  target_coil_curvature, sigma_coil_curvature
       REAL(rprec) ::  target_coil_torsion, sigma_coil_torsion
+      REAL(rprec) ::  target_coilcoil_distance, sigma_coilcoil_distance
 
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
@@ -231,6 +233,7 @@
       INTEGER, PARAMETER :: jtarget_bnormal    = 113
       INTEGER, PARAMETER :: jtarget_coil_curvature  = 114
       INTEGER, PARAMETER :: jtarget_coil_torsion    = 115
+      INTEGER, PARAMETER :: jtarget_coilcoil_distance = 116
       INTEGER, PARAMETER :: jtarget_ne         = 200
       INTEGER, PARAMETER :: jtarget_line_ne    = 2001
       INTEGER, PARAMETER :: jtarget_te         = 201
@@ -445,6 +448,8 @@
             WRITE(iunit, out_format) 'Coil Curvature (mean)'
          CASE(jtarget_coil_torsion)
             WRITE(iunit, out_format) 'Coil Torsion (mean)'
+         CASE(jtarget_coilcoil_distance)
+            WRITE(iunit, out_format) 'Coil-coil distance (minimum)'
       END SELECT
       END SUBROUTINE write_targets
       
