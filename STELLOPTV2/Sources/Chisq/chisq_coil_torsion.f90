@@ -102,7 +102,7 @@
          targets(mtargets) = target
          sigmas(mtargets)  = sigma
          vals(mtargets)     = torsion_mean
-         IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,torsion_mean,torsion_min,torsion_max
+         IF (iflag == 1) WRITE(iunit_out,'(5ES22.12E3)') target,sigma,torsion_mean,torsion_min,torsion_max
       ELSE
          IF (sigma < bigno) THEN
             mtargets = mtargets + 1
