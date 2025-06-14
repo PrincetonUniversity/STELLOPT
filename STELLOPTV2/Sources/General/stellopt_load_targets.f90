@@ -161,10 +161,10 @@
          CALL chisq_bnormal(target_bnormal, sigma_bnormal, ncnt,iflag)
       !  MEAN COIL CURVATURE
       IF (sigma_coil_curvature < bigno) &
-         CALL chisq_bnormal(target_coil_curvature, sigma_coil_curvature, ncnt,iflag)
+         CALL chisq_coil_curvature(target_coil_curvature, sigma_coil_curvature, ncnt,iflag)
       !  MEAN COIL TORSION
       IF (sigma_coil_torsion < bigno) &
-         CALL chisq_bnormal(target_coil_torsion, sigma_coil_torsion, ncnt,iflag)
+         CALL chisq_coil_torsion(target_coil_torsion, sigma_coil_torsion, ncnt,iflag)
       !  COIL-COIL DISTANCE
       IF (sigma_coilcoil_distance < bigno) &
          CALL chisq_coilcoil_distance(target_coilcoil_distance, sigma_coilcoil_distance, ncnt,iflag)
