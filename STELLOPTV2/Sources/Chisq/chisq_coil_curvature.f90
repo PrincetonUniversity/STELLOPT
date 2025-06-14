@@ -90,7 +90,7 @@
          targets(mtargets) = target
          sigmas(mtargets)  = sigma
          vals(mtargets)     = curve_mean
-         IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,curve_mean,curve_min,curve_max
+         IF (iflag == 1) WRITE(iunit_out,'(5ES22.12E3)') target,sigma,curve_mean,curve_min,curve_max
       ELSE
          IF (sigma < bigno) THEN
             mtargets = mtargets + 1
