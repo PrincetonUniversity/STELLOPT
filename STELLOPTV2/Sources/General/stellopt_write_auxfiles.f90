@@ -72,6 +72,7 @@
       CALL move_txtfile('coils.'//TRIM(proc_string_old),'coils.'//TRIM(proc_string))
       CALL move_txtfile('bnorm.'//TRIM(proc_string_old),'bnorm.'//TRIM(proc_string))
       CALL move_txtfile('bnorm_real.'//TRIM(proc_string_old),'bnorm_real.'//TRIM(proc_string))
+      CALL move_txtfile('coil_curvature.'//TRIM(proc_string_old),'coil_curvature.'//TRIM(proc_string))
       CALL copy_boozer_file(TRIM(proc_string_old),TRIM(proc_string))
       DO ik = 1, nsd
          WRITE(temp_str,'(A,I3.3)') '_s',ik

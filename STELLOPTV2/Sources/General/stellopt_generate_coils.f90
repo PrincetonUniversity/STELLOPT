@@ -31,6 +31,7 @@
 !-----------------------------------------------------------------------
       INTEGER :: i,n,k, numcoilgroups
       INTEGER, PARAMETER :: nscoil = 128
+      REAL(rprec) :: c1, c2, c3
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: tvec
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: rho, theta, zeta
 
@@ -63,7 +64,6 @@
          WRITE(6,'(A,I3)')   '   HEIGHT FILAMENTS:  ',nh_coil
          WRITE(6,'(A,F7.3)') '         COIL WIDTH:  ',width_coil
          WRITE(6,'(A,F7.3)') '        COIL HEIGHT:  ',height_coil
-         WRITE(6,'(A)')      '-------------------------------------'
       END IF
 
       !-----------------------------------------------------------------
@@ -97,6 +97,21 @@
       IF (nw_coil > 1 .or. nh_coil > 1) &
             CALL coils_to_multifilament(nw_coil,nh_coil, &
                                           width_coil,height_coil)
+      !-----------------------------------------------------------------------
+      !     Compute Curvature and Torsion
+      !-----------------------------------------------------------------------
+      CALL compute_coil_curvature(TRIM(proc_string))
+      IF (lscreen) THEN
+         CALL get_coil_curvature(c1,c2,c3)
+         WRITE(6,'(A)')            '        COIL CURVATURE:  '
+         WRITE(6,'(A,3(2X,F7.3))') '              MIN/MEAN/MAX:  ',c3,c1,c2
+         CALL get_coil_torsion(c1,c2,c3)
+         WRITE(6,'(A)')            '          COIL TORSION:  '
+         WRITE(6,'(A,3(2X,F7.3))') '              MIN/MEAN/MAX:  ',c3,c1,c2
+         WRITE(6,'(A)')      '-------------------------------------'
+         CALL FLUSH(6)
+      END IF
+
 
       !-----------------------------------------------------------------
       !     Write coils file
