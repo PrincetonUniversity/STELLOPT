@@ -11,6 +11,7 @@
 !-----------------------------------------------------------------------
       USE bsc_T
       USE biotsavart, ONLY: coil_group, nfp => nfp_bs
+      USE safe_open_mod
 !-----------------------------------------------------------------------
 !     Module Variables
 !-----------------------------------------------------------------------
@@ -18,8 +19,10 @@
       DOUBLE PRECISION, PARAMETER, PRIVATE :: pi2 = 6.283185482025146D+00
       DOUBLE PRECISION, PARAMETER, PRIVATE :: zero = 0.0D+00
       DOUBLE PRECISION, PARAMETER, PRIVATE :: one = 1.0D+00
-      INTEGER, PRIVATE :: mnmax, ns, ncoilgroups, n_kts, k_kts
+      INTEGER, PRIVATE :: mnmax, ns, ncoilgroups, n_kts, k_kts, nw_coil, nh_coil
       DOUBLE PRECISION, PRIVATE :: factor
+      DOUBLE PRECISION, PRIVATE :: curvature_mean, curvature_max, curvature_min
+      DOUBLE PRECISION, PRIVATE :: torsion_mean, torsion_max, torsion_min
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, PRIVATE :: xm, xn, rmnc, zmns, t_kts
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: rho_kts, theta_kts, zeta_kts
       
@@ -98,6 +101,7 @@
       !      double precision bcoef(n),t(n+k),x
       !   END FUNCTION bvalue
       !END INTERFACE
+      nw_coil = 1; nh_coil = 1
       ns1 = ns - 1
       ! Deallocated the coils if allocated
       IF (ALLOCATED(coil_group)) THEN
@@ -211,6 +215,7 @@
       DOUBLE PRECISION, DIMENSION(3,ns) :: xnod
       TYPE(bsc_coil)     :: coil_temp
       TYPE (bsc_coilcoll), DIMENSION(:), ALLOCATABLE, TARGET :: coil_single
+      nw_coil = nw; nh_coil = nh
       ! Save the original coil
       ALLOCATE(coil_single(ncoilgroups))
       DO i = 1, ncoilgroups
@@ -290,10 +295,126 @@
       END IF
       ! Deallocate helpers
       DEALLOCATE(xn,yn,zn,nt,xb,yb,zb)
-
+      RETURN
       END SUBROUTINE coils_to_multifilament
+
+      SUBROUTINE compute_coil_curvature(outext)
+      IMPLICIT NONE
+      CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: outext
+      LOGICAL :: loutput
+      INTEGER :: i, j, nc, nc1, iunit_out, ier, k, ntotal_coils
+      DOUBLE PRECISION :: hs
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: &
+         xc, yc, zc, xcp, ycp, zcp, xcpp, ycpp, zcpp, &
+         xcppp, ycppp, zcppp, curve, torsion
+      loutput = .FALSE.
+      IF (PRESENT(outext)) THEN
+         loutput = .TRUE.
+         CALL safe_open(iunit_out,ier,TRIM('coil_curvature.'//TRIM(outext)),'unknown','formatted')
+         WRITE(iunit_out,'(I6,2X,I6,2X,I6)') ncoilgroups,nw_coil,nh_coil
+      END IF
+      curvature_min = 0.0; curvature_max = 0.0; curvature_mean = 0.0
+      torsion_min = 0.0; torsion_max = 0.0; torsion_mean = 0.0
+      ntotal_coils = 0
+      DO i = 1, ncoilgroups
+         DO j = 1, nw_coil*nh_coil
+            nc = SIZE(coil_group(i)%coils(j)%xnod,2)
+            nc1 = nc - 1
+            hs  = 1.0D+00/nc1
+            ALLOCATE(xc(nc),yc(nc),zc(nc))
+            ALLOCATE(xcp(nc),ycp(nc),zcp(nc))
+            ALLOCATE(xcpp(nc),ycpp(nc),zcpp(nc), curve(nc))
+            ALLOCATE(xcppp(nc),ycppp(nc),zcppp(nc), torsion(nc))
+            xc = coil_group(i)%coils(j)%xnod(1,:)
+            yc = coil_group(i)%coils(j)%xnod(2,:)
+            zc = coil_group(i)%coils(j)%xnod(3,:)
+            xcp(1:nc1) = xc(2:nc) - xc(1:nc1)
+            ycp(1:nc1) = yc(2:nc) - yc(1:nc1)
+            zcp(1:nc1) = zc(2:nc) - zc(1:nc1)
+            ! Note that x(1)=x(nc) so we need
+            xcp(nc) = xcp(1)
+            ycp(nc) = ycp(1)
+            zcp(nc) = zcp(1)
+            xcp = xcp * hs; ycp = ycp * hs; zcp = zcp * hs;
+            xcpp(1:nc1) = xcp(2:nc) - xcp(1:nc1)
+            ycpp(1:nc1) = ycp(2:nc) - ycp(1:nc1)
+            zcpp(1:nc1) = zcp(2:nc) - zcp(1:nc1)
+            xcpp(nc) = xcpp(1)
+            ycpp(nc) = ycpp(1)
+            zcpp(nc) = zcpp(1)
+            xcpp = xcpp * hs; ycpp = ycpp * hs; zcpp = zcpp * hs;
+            xcppp(1:nc1) = xcpp(2:nc) - xcpp(1:nc1)
+            ycppp(1:nc1) = ycpp(2:nc) - ycpp(1:nc1)
+            zcppp(1:nc1) = zcpp(2:nc) - zcpp(1:nc1)
+            xcppp(nc) = xcppp(1)
+            ycppp(nc) = ycppp(1)
+            zcppp(nc) = zcppp(1)
+            xcppp = xcppp * hs; ycppp = ycppp * hs; zcppp = zcppp * hs;
+            curve   = SQRT((zcpp*ycp-ycpp*zcp)**2 &
+                    + (xcpp*zcp-zcpp*xcp)**2 &
+                    + (ycpp*xcp-xcpp*ycp)**2) &
+                    / (xcp*xcp+ycp*ycp+zcp*zcp)**(3.0/2.0)
+            torsion = ((zcpp*ycp-ycpp*zcp)*xcppp &
+                    +  (xcpp*zcp-zcpp*xcp)*ycppp &
+                    +  (ycpp*xcp-xcpp*ycp)*zcppp) &
+                    / ((zcpp*ycp-ycpp*zcp)**2 &
+                    +  (xcpp*zcp-zcpp*xcp)**2 &
+                    +  (ycpp*xcp-xcpp*ycp)**2)
+            curvature_min = curvature_min + MINVAL(curve)
+            curvature_max = curvature_max + MAXVAL(curve)
+            curvature_mean = curvature_mean + SUM(curve)/nc
+            torsion_min = torsion_min + MINVAL(torsion)
+            torsion_max = torsion_max + MAXVAL(torsion)
+            torsion_mean = torsion_mean + SUM(torsion)/nc
+            IF (loutput) THEN
+               DO k = 1, nc
+                  WRITE(iunit_out,'(2(2X,I3),14(2X,ES22.12))') &
+                     i,j,xc(k),yc(k),zc(k),xcp(k),ycp(k),zcp(k),&
+                     xcpp(k),ycpp(k),zcpp(k),xcppp(k),ycppp(k),zcppp(k), &
+                     curve(k),torsion(k)
+               END DO
+            END IF
+            ntotal_coils = ntotal_coils + 1
+            DEALLOCATE(xc,yc,zc)
+            DEALLOCATE(xcp,ycp,zcp)
+            DEALLOCATE(xcpp,ycpp,zcpp,curve)
+            DEALLOCATE(xcppp,ycppp,zcppp,torsion)
+         END DO
+      END DO
+      curvature_min  = curvature_min/ntotal_coils
+      curvature_max  = curvature_max/ntotal_coils
+      curvature_mean = curvature_mean/ntotal_coils
+      torsion_min    = torsion_min/ntotal_coils
+      torsion_max    = torsion_max/ntotal_coils
+      torsion_mean   = torsion_mean/ntotal_coils
+      IF (loutput) CLOSE(iunit_out)
+      RETURN
+      END SUBROUTINE compute_coil_curvature
+
+      SUBROUTINE get_coil_curvature(curve_mean,curve_max,curve_min)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(out) :: curve_mean
+      DOUBLE PRECISION, INTENT(out) :: curve_max
+      DOUBLE PRECISION, INTENT(out) :: curve_min
+      curve_mean = curvature_mean
+      curve_max  = curvature_max
+      curve_min  = curvature_min
+      RETURN
+      END SUBROUTINE get_coil_curvature
+
+      SUBROUTINE get_coil_torsion(tor_mean,tor_max,tor_min)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(out) :: tor_mean
+      DOUBLE PRECISION, INTENT(out) :: tor_max
+      DOUBLE PRECISION, INTENT(out) :: tor_min
+      tor_mean = torsion_mean
+      tor_max  = torsion_max
+      tor_min  = torsion_min
+      RETURN
+      END SUBROUTINE get_coil_torsion
 
 !-----------------------------------------------------------------------
 !     End Module
 !-----------------------------------------------------------------------
       END MODULE spline_coils_mod
+      
