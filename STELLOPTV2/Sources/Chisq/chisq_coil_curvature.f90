@@ -59,16 +59,17 @@
                xcp(1:nc1) = xc(2:nc) - xc(1:nc1)
                ycp(1:nc1) = yc(2:nc) - yc(1:nc1)
                zcp(1:nc1) = zc(2:nc) - zc(1:nc1)
-               xcp(nc) = xc(1) - xc(nc)
-               ycp(nc) = yc(1) - yc(nc)
-               zcp(nc) = zc(1) - zc(nc)
+               ! Note that x(1)=x(nc) so we need
+               xcp(nc) = xcp(1)
+               ycp(nc) = ycp(1)
+               zcp(nc) = zcp(1)
                xcp = xcp * hs; ycp = ycp * hs; zcp = zcp * hs;
                xcpp(1:nc1) = xcp(2:nc) - xcp(1:nc1)
                ycpp(1:nc1) = ycp(2:nc) - ycp(1:nc1)
                zcpp(1:nc1) = zcp(2:nc) - zcp(1:nc1)
-               xcpp(nc) = xcp(1) - xcp(nc)
-               ycpp(nc) = ycp(1) - ycp(nc)
-               zcpp(nc) = zcp(1) - zcp(nc)
+               xcpp(nc) = xcpp(1)
+               ycpp(nc) = ycpp(1)
+               zcpp(nc) = zcpp(1)
                xcpp = xcpp * hs; ycpp = ycpp * hs; zcpp = zcpp * hs;
                curve = SQRT((zcpp*ycp-ycpp*zcp)**2 &
                      + (xcpp*zcp-zcpp*xcp)**2 &
