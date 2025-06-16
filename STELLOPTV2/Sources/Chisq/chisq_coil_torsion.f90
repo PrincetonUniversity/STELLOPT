@@ -61,23 +61,24 @@
                xcp(1:nc1) = xc(2:nc) - xc(1:nc1)
                ycp(1:nc1) = yc(2:nc) - yc(1:nc1)
                zcp(1:nc1) = zc(2:nc) - zc(1:nc1)
+               ! Note that x(1)=x(nc) so we need
+               xcp(nc) = xcp(1)
+               ycp(nc) = ycp(1)
+               zcp(nc) = zcp(1)
                xcp = xcp * hs; ycp = ycp * hs; zcp = zcp * hs;
-               xcp(nc) = xc(1) - xc(nc)
-               ycp(nc) = yc(1) - yc(nc)
-               zcp(nc) = zc(1) - zc(nc)
                xcpp(1:nc1) = xcp(2:nc) - xcp(1:nc1)
                ycpp(1:nc1) = ycp(2:nc) - ycp(1:nc1)
                zcpp(1:nc1) = zcp(2:nc) - zcp(1:nc1)
-               xcpp(nc) = xcp(1) - xcp(nc)
-               ycpp(nc) = ycp(1) - ycp(nc)
-               zcpp(nc) = zcp(1) - zcp(nc)
+               xcpp(nc) = xcpp(1)
+               ycpp(nc) = ycpp(1)
+               zcpp(nc) = zcpp(1)
                xcpp = xcpp * hs; ycpp = ycpp * hs; zcpp = zcpp * hs;
                xcppp(1:nc1) = xcpp(2:nc) - xcpp(1:nc1)
                ycppp(1:nc1) = ycpp(2:nc) - ycpp(1:nc1)
                zcppp(1:nc1) = zcpp(2:nc) - zcpp(1:nc1)
-               xcppp(nc) = xcpp(1) - xcpp(nc)
-               ycppp(nc) = ycpp(1) - ycpp(nc)
-               zcppp(nc) = zcpp(1) - zcpp(nc)
+               xcppp(nc) = xcppp(1)
+               ycppp(nc) = ycppp(1)
+               zcppp(nc) = zcppp(1)
                xcppp = xcppp * hs; ycppp = ycppp * hs; zcppp = zcppp * hs;
                torsion = ((zcpp*ycp-ycpp*zcp)*xcppp &
                        +  (xcpp*zcp-zcpp*xcp)*ycppp &
