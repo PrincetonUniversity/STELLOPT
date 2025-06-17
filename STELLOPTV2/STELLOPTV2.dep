@@ -2,11 +2,13 @@
 
 chisq_coil_curvature.o : \
       stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o 
 
 chisq_coil_torsion.o : \
       stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o 
 

@@ -69,12 +69,10 @@
       !-----------------------------------------------------------------
       !     Load Splines
       !-----------------------------------------------------------------
-      FORALL(i=1:n) tvec(i) = dble(i-1)/dble(n-1)
       CALL init_spline_coils(nscoil, numcoilgroups, n, n+k, &
                               rho_coil_kts(1:numcoilgroups,1:n), &
                               theta_coil_kts(1:numcoilgroups,1:n), &
-                              zeta_coil_kts(1:numcoilgroups,1:n), &
-                              tvec)
+                              zeta_coil_kts(1:numcoilgroups,1:n))
       !-----------------------------------------------------------------
       !     Load Boundary
       !-----------------------------------------------------------------
@@ -102,10 +100,10 @@
       !-----------------------------------------------------------------------
       CALL compute_coil_curvature(TRIM(proc_string))
       IF (lscreen) THEN
-         CALL get_coil_curvature(c1,c2,c3)
+         CALL get_coil_curvature_avg(c1,c2,c3)
          WRITE(6,'(A)')            '        COIL CURVATURE:  '
          WRITE(6,'(A,3(2X,F7.3))') '              MIN/MEAN/MAX:  ',c3,c1,c2
-         CALL get_coil_torsion(c1,c2,c3)
+         CALL get_coil_torsion_avg(c1,c2,c3)
          WRITE(6,'(A)')            '          COIL TORSION:  '
          WRITE(6,'(A,3(2X,F7.3))') '              MIN/MEAN/MAX:  ',c3,c1,c2
          WRITE(6,'(A)')      '-------------------------------------'
