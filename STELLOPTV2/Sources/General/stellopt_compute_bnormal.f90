@@ -33,7 +33,7 @@
 !-----------------------------------------------------------------------
 !     Local Variables
 !-----------------------------------------------------------------------
-      INTEGER, PARAMETER :: mf=10, nf=10, md=20, nd=20
+      INTEGER :: mf=10, nf=10, md=20, nd=20
       INTEGER :: m, n, mn, u, v, uv, nuv, iunit, ncoilgroups, nu, nv
       REAL(rprec) :: theta, phi, zeta, arg, cop, sip, RU, RV, ZU, ZV, &
             Ax, Ay, Az, Bx, By, Bz, Norm
@@ -82,6 +82,8 @@
       !-----------------------------------------------------------------
       !     Compute BNORMAL
       !-----------------------------------------------------------------
+      mf = MAXVAL(xm);     nf = MAXVAL(ABS(xn))
+      md = MAXVAL(xm_nyq); nd = MAXVAL(ABS(xn_nyq))
       nu = nu_bnormal; nv = nv_bnormal
       ALLOCATE(bnfou(0:mf,-nf:nf),bnfou_c(0:mf,-nf:nf),STAT=iflag)
       IF (iflag < 0) RETURN
