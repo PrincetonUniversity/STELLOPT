@@ -25,6 +25,7 @@ from libstell import gist
 from libstell import stellopt
 from libstell import plot3D
 from libstell import bootsj
+from libstell import bnorm
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -887,7 +888,9 @@ class MyApp(QMainWindow):
 					'B10B11','HELICITY','HELICITY_FULL','QUASIISO','GAMMA_C', \
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
-					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP']
+					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP',\
+					'BNORMAL', 'COIL_CURVATURE', 'COIL_TORSION', \
+					'COILCOIL_DISTANCE']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
 		# Handle Chisquared plots
@@ -938,6 +941,10 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Magwell')
 			wout_files = sorted([k for k in files if 'wout' in k])
 			self.wout_files = sorted([k for k in wout_files if '_opt' not in k])
+		# Handle Bnorm
+		if any('bnorm' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- B-Normal -----')
+			self.ui.ComboBoxOPTplot_type.addItem('B-Normal')
 		# Handle Boozer Transformation
 		if any('boozmn' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Boozer Coordinates -----')
@@ -1007,6 +1014,13 @@ class MyApp(QMainWindow):
 				for k in idx:
 					self.ui.ComboBoxOPTplot_surf.addItem(str(k+1))
 				self.UpdateBoozerSpec()
+			elif plot_name in ['B-Normal']:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.bnorm_data = bnorm.BNORM()
+				self.bnorm_data.read_bnorm_real(test_file)
+				self.bnorm_data.plot_bnorm_real_total(ax=self.ax2)
+				self.canvas2.draw()
 			elif plot_name in self.gist_files:
 				self.fig2.clf()
 				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
@@ -1872,6 +1886,11 @@ class MyApp(QMainWindow):
 			self.ax2.set_title('XICS Velocity Reconstruction')
 		elif (plot_name == 'Jacobian'):
 			file_list = sorted(glob.glob("jacobian.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
+		elif (plot_name == 'B-Normal'):
+			file_list = sorted(glob.glob("bnorm_real.*"))
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
 			self.UpdateIterFile()
