@@ -26,6 +26,7 @@ from libstell import stellopt
 from libstell import plot3D
 from libstell import bootsj
 from libstell import bnorm
+from libstell import coils
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -93,6 +94,16 @@ class MyApp(QMainWindow):
 		self.ui.OPTplot_box.addWidget(self.canvas2)
 		self.toolbar = NavigationToolbar(self.canvas2, self)
 		self.ui.OPTplot_box.addWidget(self.toolbar)
+		# VTK stuff STELLOPT
+		self.frame_vtk_sopt = QWidget()
+		self.vtkWidget_sopt = QVTKRenderWindowInteractor(self.frame_vtk_sopt)
+		self.ui.OPTplot_box.addWidget(self.vtkWidget_sopt)
+		self.vtkWidget_sopt.Initialize()
+		self.vtkWidget_sopt.Start()
+		# Create a VTK STELLOPT renderer and add it to the render window
+		self.plt_sopt = plot3D.PLOT3D(lwindow=False)
+		self.vtkWidget_sopt.GetRenderWindow().AddRenderer(self.plt_sopt.renderer)
+		self.vtkWidget_sopt.hide()
 		# Setup STELLOPT Pannels
 		#self.UpdateOPTtype()
 		#self.UpdateOPTVarsScalar()
@@ -945,6 +956,8 @@ class MyApp(QMainWindow):
 		if any('bnorm' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- B-Normal -----')
 			self.ui.ComboBoxOPTplot_type.addItem('B-Normal')
+			bnormal_file = sorted([k for k in files if 'bnorm_real.' in k])
+			self.bnormal_file = sorted([k for k in bnormal_file if '_opt' not in k])
 		# Handle Boozer Transformation
 		if any('boozmn' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Boozer Coordinates -----')
@@ -957,6 +970,34 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('QHS_ERROR')
 			booz_files = sorted([k for k in files if 'boozmn' in k])
 			self.booz_files = sorted([k for k in booz_files if '_opt' not in k])
+		# Handle Current Density Profiles
+		if any('answers_plot.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Bootstrap Current -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current')
+			bootsj_files = sorted([k for k in files if 'answers_plot.' in k])
+			self.bootsj_files = sorted([k for k in bootsj_files if '_opt' not in k])
+		# Handle Coil
+		if any('coils' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Coils -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Coil Curvature')
+			self.ui.ComboBoxOPTplot_type.addItem('Coil Torsion')
+			self.ui.ComboBoxOPTplot_type.addItem('Coil Shape')
+			coils_files = sorted([k for k in files if 'coils.' in k])
+			self.coils_files = sorted([k for k in coils_files if '_opt' not in k])
+		# Handle Current Density Profiles
+		if any('jprof.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Current Density -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Profile')
+			self.ui.ComboBoxOPTplot_type.addItem('Beam Profile')
+			self.ui.ComboBoxOPTplot_type.addItem('Total Current Profile')
+			jprof_files = sorted([k for k in files if 'jprof.' in k])
+			self.jprof_files = sorted([k for k in jprof_files if '_opt' not in k])
+		# Handle Diagnostic Profiles
+		if any('dprof.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Diagnostic -----')
+			self.ui.ComboBoxOPTplot_type.addItem('XICS Emissivity')
+			self.ui.ComboBoxOPTplot_type.addItem('E-Static Potential')
+			self.dprof_files = sorted([k for k in files if 'dprof.' in k])
 		# Handle Kinetic Profiles
 		if any('tprof.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Kinetics -----')
@@ -966,20 +1007,6 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Z Effective')
 			tprof_files = sorted([k for k in files if 'tprof.' in k])
 			self.tprof_files = sorted([k for k in tprof_files if '_opt' not in k])
-		# Handle Diagnostic Profiles
-		if any('dprof.' in mystring for mystring in files):
-			self.ui.ComboBoxOPTplot_type.addItem('----- Diagnostic -----')
-			self.ui.ComboBoxOPTplot_type.addItem('XICS Emissivity')
-			self.ui.ComboBoxOPTplot_type.addItem('E-Static Potential')
-			self.dprof_files = sorted([k for k in files if 'dprof.' in k])
-		# Handle Current Density Profiles
-		if any('jprof.' in mystring for mystring in files):
-			self.ui.ComboBoxOPTplot_type.addItem('----- Current Density -----')
-			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Profile')
-			self.ui.ComboBoxOPTplot_type.addItem('Beam Profile')
-			self.ui.ComboBoxOPTplot_type.addItem('Total Current Profile')
-			jprof_files = sorted([k for k in files if 'jprof.' in k])
-			self.jprof_files = sorted([k for k in jprof_files if '_opt' not in k])
 		# Handle GIST gyrokinetic input files
 		if any('gist_' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- GIST Inputs -----')
@@ -987,12 +1014,6 @@ class MyApp(QMainWindow):
 				self.ui.ComboBoxOPTplot_type.addItem(name)
 			gist_files = sorted([k for k in files if 'gist_' in k])
 			self.gist_files = sorted([k for k in gist_files if '_opt' not in k])
-		# Handle Current Density Profiles
-		if any('answers_plot.' in mystring for mystring in files):
-			self.ui.ComboBoxOPTplot_type.addItem('----- Bootstrap Current -----')
-			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current')
-			bootsj_files = sorted([k for k in files if 'answers_plot.' in k])
-			self.bootsj_files = sorted([k for k in bootsj_files if '_opt' not in k])
 		
 	def UpdateIterFile(self):
 		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
@@ -1046,8 +1067,10 @@ class MyApp(QMainWindow):
 		self.ui.ComboBoxOPTplot_iter.clear()
 		self.ui.ComboBoxOPTplot_surf.clear()
 		self.fig2.clf()
-		niter = len(self.stel_data.ITER)
 		self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+		self.canvas2.show()
+		self.vtkWidget_sopt.hide()
+		niter = len(self.stel_data.ITER)
 		if (plot_name == 'Chi-Squared'):
 			chisq = ((self.stel_data.TARGETS - self.stel_data.VALS)/self.stel_data.SIGMAS)**2
 			self.ax2.semilogy(self.stel_data.ITER,np.sum(chisq,axis=1),'ok',label='Chisq Total')
@@ -1921,6 +1944,25 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Pressure [kPa]')
 			self.ax2.set_title('VMEC Pressure Evolution')
 			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Coil Shape'):
+			self.canvas2.hide()
+			self.vtkWidget_sopt.show()
+			self.plt_sopt.renderer.RemoveAllViewProps()
+			l=0
+			dl = len(self.coils_files)-1
+			if dl == 0 : dl = 1
+			for string in self.coils_files:
+				if 'coils.' in string:
+					coil_data = coils.COILSET()
+					coil_data.read_coils_file(self.workdir+string)
+					if l == 0:
+						plot_color = 'red'
+					elif l == dl:
+						plot_color = 'green'
+					else:
+						plot_color = 'grey'
+					coil_data.plotcoilsHalfFP(plot3D=self.plt_sopt,color=plot_color)
+					l=l+1
 		elif (plot_name == 'I-prime'):
 			vmec_data = vmec.VMEC()
 			l=0
