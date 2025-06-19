@@ -178,21 +178,22 @@ class COILSET():
 		color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
 		# Plot coils
 		for i in range(self.ngroups):
-			j=0
-			points_array = np.zeros((self.groups[i].coils[j].npts,3))
-			points_array[:,0] =self.groups[i].coils[j].x
-			points_array[:,1] =self.groups[i].coils[j].y
-			points_array[:,2] =self.groups[i].coils[j].z
-			# Convert numpy array to VTK points
-			points = vtk.vtkPoints()
-			for point in points_array:
-				points.InsertNextPoint(point)
-			# Add to render
-			if type(color) is type(None):
-				plot_color = color_txt[i % len(color_txt)]
-			else:
-				plot_color = color
-			plt.add3Dline(points,color=plot_color,linewidth=5)
+			nfilaments = int(self.groups[i].ncoils/(2*self.nfp))
+			for j in range(nfilaments):
+				points_array = np.zeros((self.groups[i].coils[j].npts,3))
+				points_array[:,0] =self.groups[i].coils[j].x
+				points_array[:,1] =self.groups[i].coils[j].y
+				points_array[:,2] =self.groups[i].coils[j].z
+				# Convert numpy array to VTK points
+				points = vtk.vtkPoints()
+				for point in points_array:
+					points.InsertNextPoint(point)
+				# Add to render
+				if type(color) is type(None):
+					plot_color = color_txt[i % len(color_txt)]
+				else:
+					plot_color = color
+				plt.add3Dline(points,color=plot_color,linewidth=5)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested
