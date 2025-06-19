@@ -120,8 +120,8 @@ class TERPSICHORE(FourierRep):
 		nmin = int(min(nsmin,nmin))
 		nmax = int(max(nsmax,nmax))
 		# Compute number of realspace points to use
-		nj = int(2**np.ceil(3*np.log2(mm*2)))
-		nk = int(2**np.ceil(3*np.log2(nmax*2)))
+		nj = int(2**np.ceil(np.log2(mm)+2))
+		nk = int(2**np.ceil(np.log2(nmax)+2))
 		nj = max(nj,64)
 		nk = max(nk,32)
 		# Create Boozer mode matrix
@@ -143,6 +143,8 @@ class TERPSICHORE(FourierRep):
 			ntemp =-n+j*vmec.nfp
 			if ntemp > 0: n0 = 0
 			for m in range(n0,mms+1): lfrs[m,ntemp-nsmin] = 1
+		# temporary fix
+		#lfrs[51:,:] = 0
 		mlmns = np.count_nonzero(lfrs)
 		# First create the namelist data
 		# Create an input file
@@ -173,7 +175,7 @@ class TERPSICHORE(FourierRep):
 		f.write('C\nC    PVAC        PARFAC      QONAX        QN         DSVAC       QVAC    NOWALL\n')
 		f.write(f'{1.0001:12.4E}{0.00:12.4E}{1./vmec.iotaf[0,0]:12.4E}{qn:12.4E}{1.00:12.4E}{1.0001:12.4E}     {-2:2d}\n')
 		f.write('C\nC    AWALL       EWALL       DWALL       GWALL       DRWAL       DZWAL   NPWALL\n')
-		f.write(f'{1.50:12.4E}{1.00:12.4E}{0.50:12.4E}{vmec.rmnc[0,vmec.mn00]:12.4E}{0.00:12.4E}{0.00:12.4E}     {vmec.nfp:2d}\n')
+		f.write(f'{2.00:12.4E}{1.00:12.4E}{0.50:12.4E}{vmec.rmnc[0,vmec.mn00]:12.4E}{0.00:12.4E}{0.00:12.4E}     {vmec.nfp:2d}\n')
 		f.write('C\nC    RPLMIN       XPLO      DELTAJP       WCT      CURFAC\n')
 		f.write(f'{1E-5:12.4E}{1E-6:12.4E}{4E-2:12.4E}{vmec.rmnc[0,1]:12.4E}{1.00:12.4E}\n')
 		f.write(f'C\nC                                                             MODELK = {1:6d}\n')
