@@ -41,7 +41,7 @@ if __name__=="__main__":
 			terp_data.create_input(vmec_data,n)
 	if args.lplot_in:
 		if args.terp_ext:
-			file = arg.terp_ext
+			file = args.terp_ext
 		else:
 			file = 'fort.17'
 		terp_data.read_terpsichore_17(file)
@@ -66,7 +66,7 @@ if __name__=="__main__":
 		pyplot.show()
 	if args.lplot_wall:
 		if args.terp_ext:
-			file = arg.terp_ext
+			file = args.terp_ext
 		else:
 			file = 'fort.19'
 		terp_data.read_terpsichore_19(file)
