@@ -95,6 +95,7 @@
       IF (nw_coil > 1 .or. nh_coil > 1) &
             CALL coils_to_multifilament(nw_coil,nh_coil, &
                                           width_coil,height_coil)
+            
       !-----------------------------------------------------------------------
       !     Compute Curvature and Torsion
       !-----------------------------------------------------------------------
