@@ -316,11 +316,12 @@
       IF (PRESENT(outext)) THEN
          loutput = .TRUE.
          CALL safe_open(iunit_out,ier,TRIM('coil_curvature.'//TRIM(outext)),'unknown','formatted')
-         WRITE(iunit_out,'(I6,2X,I6,2X,I6)') ncoilgroups,nw_coil,nh_coil
+         WRITE(iunit_out,'(I6,2X,I6,2X,I6,2X,I6)') ncoilgroups,nw_coil,nh_coil,ns
       END IF
       IF (ALLOCATED(curvature)) DEALLOCATE(curvature)
       IF (ALLOCATED(torsion)) DEALLOCATE(torsion)
       IF (ALLOCATED(dLength)) DEALLOCATE(dLength)
+      i = ncoilgroups*nw_coil*nh_coil
       ALLOCATE(curvature(i,ns))
       ALLOCATE(torsion(i,ns))
       ALLOCATE(dLength(i,ns))
