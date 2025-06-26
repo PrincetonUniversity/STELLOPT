@@ -1,6 +1,8 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
 
 spline_coils_mod.o : \
+      ezspline.o \
+      ezspline_obj.o \
       biotsavart.o \
       bsc_T.o
 
