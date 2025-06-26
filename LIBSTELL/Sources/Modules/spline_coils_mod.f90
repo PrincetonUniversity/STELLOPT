@@ -12,6 +12,8 @@
       USE bsc_T
       USE biotsavart, ONLY: coil_group, nfp => nfp_bs
       USE safe_open_mod
+      USE EZspline_obj
+      USE EZspline
 !-----------------------------------------------------------------------
 !     Module Variables
 !-----------------------------------------------------------------------
@@ -26,6 +28,7 @@
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, PRIVATE :: xm, xn, rmnc, zmns, t_kts
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: rho_kts, theta_kts, zeta_kts
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: curvature, torsion, dLength
+      TYPE(EZspline1_r8), DIMENSION(20) :: RHO_spl, THETA_spl, ZETA_spl
       
 !-----------------------------------------------------------------------
 !     Module SUBROUTINES/FUNCTIONS
@@ -43,6 +46,8 @@
       DOUBLE PRECISION, INTENT(in) :: theta_in(ncoilgroups_in,n_in)
       DOUBLE PRECISION, INTENT(in) :: zeta_in(ncoilgroups_in,n_in)
       INTEGER :: i
+      INTEGER :: bcs0(2), ier
+      bcs0=(/-1,-1/)
       ns = ns_in
       ncoilgroups = ncoilgroups_in
       n_kts = n_in+1
@@ -60,6 +65,25 @@
       theta_kts(:,n_kts) = theta_kts(:,1)+pi2
       zeta_kts(:,n_kts) = zeta_kts(:,1)
       FORALL(i=1:n_kts) t_kts(i) = DBLE(i-1)/DBLE(n_kts-1)
+      ! Spline stuff
+      DO i = 1, ncoilgroups
+         ier = 0
+         IF (EZspline_allocated(RHO_spl(i))) CALL EZspline_free(RHO_spl(i),ier)
+         IF (EZspline_allocated(THETA_spl(i))) CALL EZspline_free(THETA_spl(i),ier)
+         IF (EZspline_allocated(ZETA_spl(i))) CALL EZspline_free(ZETA_spl(i),ier)
+         CALL EZspline_init(RHO_spl(i),n_kts,bcs0,ier)
+         CALL EZspline_init(THETA_spl(i),n_kts,bcs0,ier)
+         CALL EZspline_init(ZETA_spl(i),n_kts,bcs0,ier)
+         RHO_spl(i)%x1          = t_kts
+         THETA_spl(i)%x1        = t_kts
+         ZETA_spl(i)%x1         = t_kts
+         RHO_spl(i)%isHermite   = 1
+         THETA_spl(i)%isHermite = 1
+         ZETA_spl(i)%isHermite  = 1
+         CALL EZspline_setup(RHO_spl(i),rho_kts(i,:),ier,EXACT_DIM=.true.)
+         CALL EZspline_setup(THETA_spl(i),theta_kts(i,:),ier,EXACT_DIM=.true.)
+         CALL EZspline_setup(ZETA_spl(i),zeta_kts(i,:),ier,EXACT_DIM=.true.)
+      END DO
       RETURN
       END SUBROUTINE init_spline_coils
 
@@ -89,7 +113,7 @@
       SUBROUTINE spline_to_coils(normal_sign)
       IMPLICIT NONE
       INTEGER, INTENT(in) :: normal_sign
-      INTEGER :: i, j, mn, ns1
+      INTEGER :: i, j, mn, ns1, ier
       DOUBLE PRECISION :: AX, AY, AZ, BX, BY, BZ, NX, NY, NZ, N, &
             R, Z, RU, ZU, RV, ZV, rho, theta, zeta, cop, sip, l, &
             X, Y, phi
@@ -124,9 +148,13 @@
          CALL bsc_construct_coilcoll(coil_group(i),TRIM(c_name),l_name)
          DO j = 1, ns
             l = DBLE(j-1)/DBLE(ns-1)
-            CALL spline_it(n_kts,t_kts,rho_kts(i,:),1,l,rho,0)
-            CALL spline_it(n_kts,t_kts,theta_kts(i,:),1,l,theta,0)
-            CALL spline_it(n_kts,t_kts,zeta_kts(i,:),1,l,zeta,0)
+            ier = 0
+            CALL EZspline_interp(RHO_spl(i),l,rho,ier)
+            CALL EZspline_interp(THETA_spl(i),l,theta,ier)
+            CALL EZspline_interp(ZETA_spl(i),l,zeta,ier)
+            !CALL spline_it(n_kts,t_kts,rho_kts(i,:),1,l,rho,0)
+            !CALL spline_it(n_kts,t_kts,theta_kts(i,:),1,l,theta,0)
+            !CALL spline_it(n_kts,t_kts,zeta_kts(i,:),1,l,zeta,0)
             !PRINT *,rho,theta,zeta
             !rho = bvalue(t_kts,rho_kts(i,:),n_kts,k_kts,l,0)
             !theta = bvalue(t_kts,theta_kts(i,:),n_kts,k_kts,l,0)
