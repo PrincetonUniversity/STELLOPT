@@ -366,6 +366,7 @@
                          theta_coil_kts, theta_coil_kts_min, theta_coil_kts_max, &
                          zeta_coil_kts, zeta_coil_kts_min, zeta_coil_kts_max, &
                          nw_coil, nh_coil, width_coil, height_coil, &
+                         lfix_rho_coil, lfix_theta_coil, lfix_zeta_coil, &
                          nu_bnormal, nv_bnormal, &
                          target_bnormal, sigma_bnormal, &
                          target_coil_curvature, sigma_coil_curvature, &
@@ -443,6 +444,9 @@
       lmode_opt(:,:)      = .FALSE.
       laxis_opt(:)        = .FALSE.
       lcoil_kts_opt(:,:)  = .FALSE.
+      lfix_rho_coil       = .FALSE.
+      lfix_theta_coil     = .FALSE.
+      lfix_zeta_coil       = .FALSE.
       dphiedge_opt    = -1.0
       dcurtor_opt     = -1.0
       dpscale_opt     = -1.0
@@ -1246,6 +1250,9 @@
       END IF
 
       IF (ANY(lcoil_kts_opt)) THEN
+         WRITE(iunit,outboo) 'LFIX_RHO_COIL',lfix_rho_coil
+         WRITE(iunit,outboo) 'LFIX_THETA_COIL',lfix_theta_coil
+         WRITE(iunit,outboo) 'LFIX_ZETA_COIL',lfix_zeta_coil
          DO n = LBOUND(lcoil_kts_opt,DIM=1), UBOUND(lcoil_kts_opt,DIM=1)
             IF (ANY(lcoil_kts_opt(n,:))) THEN
                m = FINDLOC(LCOIL_KTS_OPT(n,:),.true.,DIM=1,BACK=.true.)
