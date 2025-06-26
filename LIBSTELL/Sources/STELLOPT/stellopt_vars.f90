@@ -172,7 +172,7 @@
       ! Varibles for defining the coils
       INTEGER, PARAMETER :: NCOILS_MAX = 8
       INTEGER, PARAMETER :: NKNOTS_COILS_MAX = 20
-      LOGICAL :: lcreate_coils
+      LOGICAL :: lcreate_coils, lfix_rho_coil, lfix_theta_coil, lfix_zeta_coil
       INTEGER :: nw_coil
       INTEGER :: nh_coil
       REAL(rprec) :: width_coil
