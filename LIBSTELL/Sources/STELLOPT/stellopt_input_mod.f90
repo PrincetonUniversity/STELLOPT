@@ -366,7 +366,7 @@
                          theta_coil_kts, theta_coil_kts_min, theta_coil_kts_max, &
                          zeta_coil_kts, zeta_coil_kts_min, zeta_coil_kts_max, &
                          nw_coil, nh_coil, width_coil, height_coil, &
-                         lfix_rho_coil, lfix_theta_coil, lfix_zeta_coil, &
+                         lfix_rho_coil, lfix_theta_coil, lfix_zeta_coil, lpoincare, &
                          nu_bnormal, nv_bnormal, &
                          target_bnormal, sigma_bnormal, &
                          target_coil_curvature, sigma_coil_curvature, &
@@ -444,6 +444,7 @@
       lmode_opt(:,:)      = .FALSE.
       laxis_opt(:)        = .FALSE.
       lcoil_kts_opt(:,:)  = .FALSE.
+      lpoincare           = .FALSE.
       lfix_rho_coil       = .FALSE.
       lfix_theta_coil     = .FALSE.
       lfix_zeta_coil       = .FALSE.
@@ -1257,9 +1258,9 @@
             IF (ANY(lcoil_kts_opt(n,:))) THEN
                m = FINDLOC(LCOIL_KTS_OPT(n,:),.true.,DIM=1,BACK=.true.)
                WRITE(iunit,'(A,I2)') '!----- COIL ',n
-               WRITE(outputstring,'(A,I2,A)') '(A,I3,A,',m,'(2X,L))'
+               WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',m,'(2X,L))'
                WRITE(iunit,outputstring) 'LCOIL_KTS_OPT(',n,',:) = ', (lcoil_kts_opt(n,ii), ii=1,m)
-               WRITE(outputstring,'(A,I2,A)') '(A,I3,A,',m,'(ES22.12E3))'
+               WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',m,'(ES22.12E3))'
                WRITE(iunit,outputstring) 'DCOIL_KTS_OPT(',n,',:) = ', (dcoil_kts_opt(n,ii), ii=1,m)
                WRITE(iunit,outputstring) 'RHO_COIL_KTS_MIN(',n,',:)   = ', (rho_coil_kts_min(n,ii), ii=1,m)
                WRITE(iunit,outputstring) 'RHO_COIL_KTS_MAX(',n,',:)   = ', (rho_coil_kts_max(n,ii), ii=1,m)
@@ -1275,11 +1276,12 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!       Coil Spline Knots'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outboo) 'LPOINCARE',lpoincare
          DO n = LBOUND(rho_coil_kts,DIM=1), UBOUND(rho_coil_kts,DIM=1)
             IF (ANY(rho_coil_kts(n,:)>=0)) THEN
                m = FINDLOC(rho_coil_kts(n,:)>=0,.true.,DIM=1,BACK=.true.)
                WRITE(iunit,'(A,I2)') '!----- COIL ',n
-               WRITE(outputstring,'(A,I2,A)') '(A,I3,A,',m,'(ES22.12E3))'
+               WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',m,'(ES22.12E3))'
                WRITE(iunit,outputstring) 'RHO_COIL_KTS(',n,',:) = ', (rho_coil_kts(n,ii), ii=1,m)
                WRITE(iunit,outputstring) 'THETA_COIL_KTS(',n,',:) = ', (theta_coil_kts(n,ii), ii=1,m)
                WRITE(iunit,outputstring) 'ZETA_COIL_KTS(',n,',:) = ', (zeta_coil_kts(n,ii), ii=1,m)
