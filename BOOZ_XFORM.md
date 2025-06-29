@@ -43,7 +43,7 @@ file. The covariant components of the magnetic field are written:
 
 \$$  B_\phi=\frac{I_{poloidal}}{2\pi}, $$
 
-where we can identify $$I_{poloidal} = 2\pi<B_v>/\mu_0 $$ and $$I_{toroidal} = 2\pi<B_v>/\mu_0 $$. Here we notes that $$<B_u>$$ is the `buco` and $$<B_v>$$ is the `bvco` variables output the the code.  The contravarient components are then written
+where we can identify $$I_{poloidal} = 2\pi<B_v>/\mu_0 $$ and $$I_{toroidal} = 2\pi<B_u>/\mu_0 $$. Here we notes that $$<B_u>$$ is the `buco` and $$<B_v>$$ is the `bvco` variables output the the code.  The contravarient components are then written
 
 \$$ B^\theta = 2\pi\frac{d\Psi_{poloidal}}{\partial V} \frac{B^2}{\<B^2\>}, $$
 
