@@ -435,7 +435,7 @@
                ! Write the output
                CALL fieldlines_write
                ! Clean up
-               CALL fieldlines_cleanup
+               CALL fieldlines_cleanup(.FALSE.)
 !DEC$ IF DEFINED (TRAVIS)
             CASE('travis')
                proc_string = file_str
