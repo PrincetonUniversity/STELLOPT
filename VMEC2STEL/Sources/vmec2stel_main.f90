@@ -274,6 +274,7 @@
             CASE ("-coilopt","-coil_opt")
                lcoilopt= .TRUE.
                lrhomn = .FALSE.
+               lfieldlines = .TRUE.
             CASE ("-help","-h")
                WRITE(6,'(a,f5.2)') 'VMEC2STEL Version ',VMEC2STEL_VERSION
                WRITE(6,*) ' STELLOPTV2 Input Generation Utility'
@@ -930,6 +931,7 @@
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
          WRITE(6,'(A)')'!          COIL PROPERTIES'
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
+         WRITE(6,'(2X,A)') 'LPOINCARE = T'
          DO n = 1, ncoils
             WRITE(6,'(A,I4.3)') '!----- COIL ',n
             WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',ncoilspline,'(ES22.12E3))'
@@ -1213,11 +1215,11 @@
          WRITE(6,'(2X,A,F6.3)') 'ZMIN = ',MINVAL(MINVAL(zreal,2),1)-0.5
          WRITE(6,'(2X,A,F6.3)') 'PHIMIN = ',0.0
          WRITE(6,'(2X,A,F12.10)') 'PHIMAX = ',pi2/nfp
-         WRITE(6,'(2X,A)') 'NPOINC = 16'
+         WRITE(6,'(2X,A)') 'NPOINC = 8'
          WRITE(6,'(2X,A)') 'INT_TYPE = ''LSODE'''
          WRITE(6,'(2X,A)') 'FOLLOW_TOL = 1.0E-9'
          WRITE(6,'(2X,2(A,F6.3))') 'R_START = ',sum(raxis_cc),'  ',MAXVAL(rreal(:,1))
-         WRITE(6,'(2X,2(A,F6.3))') 'Z_START = ',0.0,'  ',MAXVAL(zreal(:,1))
+         WRITE(6,'(2X,2(A,F6.3))') 'Z_START = ',0.0,'  ',0.0
          WRITE(6,'(2X,A)') 'PHI_START = 2*0.0'
          WRITE(6,'(2X,A,E20.10)') 'PHI_END = 2*',1000*pi2/nfp
          WRITE(6,'(A)') '/'
