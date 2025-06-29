@@ -91,7 +91,7 @@
       CALL fieldlines_write
 
       ! Clean up
-      CALL fieldlines_cleanup
+      CALL fieldlines_cleanup(.TRUE.)
      
 !-----------------------------------------------------------------------
 !     End Program
