@@ -89,8 +89,9 @@ CONTAINS
    NULLIFY(raxis,phiaxis,zaxis,B_R,B_PHI,B_Z,MU3D,PRES_G,BR4D,BPHI4D,BZ4D,MODB4D,MU4D)
    END SUBROUTINE fieldlines_init_pointers
 
-   SUBROUTINE fieldlines_cleanup
+   SUBROUTINE fieldlines_cleanup(lfinalize)
       IMPLICIT NONE
+      LOGICAL, INTENT(IN) :: lfinalize
       INTEGER :: ier
       ! Clean up
       ier = 0
@@ -104,8 +105,8 @@ CONTAINS
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'fieldlines_cleanup_1', ierr_mpi)
       ierr_mpi = 0; CALL MPI_COMM_FREE(MPI_COMM_SHARMEM, ierr_mpi)
       ierr_mpi = 0; CALL MPI_COMM_FREE(MPI_COMM_FIELDLINES, ierr_mpi)
-      ierr_mpi = 0; CALL MPI_FINALIZE(ierr_mpi)
-      !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'beams3d_main', ierr_mpi)
+      ierr_mpi = 0 
+      IF (lfinalize) CALL MPI_FINALIZE(ierr_mpi)
 #endif
       IF (lverb) WRITE(6, '(A)') '----- FIELDLINES DONE -----'
       RETURN
