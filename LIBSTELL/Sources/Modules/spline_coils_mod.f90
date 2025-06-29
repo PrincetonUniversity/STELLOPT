@@ -25,9 +25,12 @@
       DOUBLE PRECISION, PRIVATE :: factor
       DOUBLE PRECISION, PRIVATE :: curvature_mean, curvature_max, curvature_min
       DOUBLE PRECISION, PRIVATE :: torsion_mean, torsion_max, torsion_min
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, PRIVATE :: xm, xn, rmnc, zmns, t_kts
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: rho_kts, theta_kts, zeta_kts
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: curvature, torsion, dLength
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, PRIVATE :: xm, xn, &
+         rmnc, zmns, rmnc0, zmns0, t_kts
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: rho_kts, &
+         theta_kts, zeta_kts
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: &
+         curvature, torsion, dLength
       TYPE(EZspline1_r8), DIMENSION(20) :: RHO_spl, THETA_spl, ZETA_spl
       
 !-----------------------------------------------------------------------
@@ -87,23 +90,29 @@
       RETURN
       END SUBROUTINE init_spline_coils
 
-      SUBROUTINE init_boundary_spline_coils(mnmax_in,xm_in,xn_in,rmnc_in,zmns_in)
+      SUBROUTINE init_boundary_spline_coils(mnmax_in,xm_in,xn_in,rmnc_in,zmns_in,rmnc_ax,zmns_ax)
       IMPLICIT NONE
       INTEGER, INTENT(in) :: mnmax_in
       DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: xm_in
       DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: xn_in
       DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: rmnc_in
       DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: zmns_in
+      DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: rmnc_ax
+      DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: zmns_ax
       mnmax = mnmax_in
       IF (ALLOCATED(xm)) DEALLOCATE(xm)
       IF (ALLOCATED(xn)) DEALLOCATE(xn)
       IF (ALLOCATED(rmnc)) DEALLOCATE(rmnc)
       IF (ALLOCATED(zmns)) DEALLOCATE(zmns)
-      ALLOCATE(xm(mnmax), xn(mnmax), rmnc(mnmax), zmns(mnmax))
+      IF (ALLOCATED(rmnc0)) DEALLOCATE(rmnc0)
+      IF (ALLOCATED(zmns0)) DEALLOCATE(zmns0)
+      ALLOCATE(xm(mnmax), xn(mnmax), rmnc(mnmax), zmns(mnmax), rmnc0(mnmax), zmns0(mnmax))
       xm = xm_in
       xn = xn_in
       rmnc = rmnc_in
       zmns = zmns_in
+      rmnc0 = rmnc_ax
+      zmns0 = zmns_ax
       nfp = MINVAL(xn, MASK = xn > 0)
       xn = xn / nfp
       factor = pi2/nfp
@@ -116,7 +125,7 @@
       INTEGER :: i, j, mn, ns1, ier
       DOUBLE PRECISION :: AX, AY, AZ, BX, BY, BZ, NX, NY, NZ, N, &
             R, Z, RU, ZU, RV, ZV, rho, theta, zeta, cop, sip, l, &
-            X, Y, phi
+            X, Y, phi, RAX, ZAX
       DOUBLE PRECISION, DIMENSION(ns) :: Rc,Zc,Pc
       DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in, xnod_ss, xnod_bb
       CHARACTER(len=100) :: s_name
@@ -160,30 +169,42 @@
             !theta = bvalue(t_kts,theta_kts(i,:),n_kts,k_kts,l,0)
             !zeta = bvalue(t_kts,zeta_kts(i,:),n_kts,k_kts,l,0)
             R = zero; Z = zero; RU = zero; ZU = zero; RV = zero; ZV=zero
+            RAX = zero; ZAX= zero;
             phi = zeta/nfp
             DO mn = 1, mnmax
                cop = cos(xm(mn)*theta+xn(mn)*zeta)
                sip = sin(xm(mn)*theta+xn(mn)*zeta)
-               R  =  R + rmnc(mn)*cop
-               Z  =  Z + zmns(mn)*sip
-               RU = RU - rmnc(mn)*sip*xm(mn)
-               ZU = ZU + zmns(mn)*cop*xm(mn)
-               RV = RV - rmnc(mn)*sip*xn(mn) ! dR/dzeta
-               ZV = ZV + zmns(mn)*cop*xn(mn) ! dZ/dzeta
+               R   =   R + rmnc(mn)*cop
+               Z   =   Z + zmns(mn)*sip
+               RAX = RAX + rmnc0(mn)*cop
+               ZAX = ZAX + zmns0(mn)*sip
+               RU  =  RU - rmnc(mn)*sip*xm(mn)
+               ZU  =  ZU + zmns(mn)*cop*xm(mn)
+               RV  =  RV - rmnc(mn)*sip*xn(mn) ! dR/dzeta
+               ZV  =  ZV + zmns(mn)*cop*xn(mn) ! dZ/dzeta
             END DO
             cop = cos(phi)
             sip = sin(phi)
-            Ax = RU * cop; Ay = RU * sip; Az = ZU
-            ! dR/dzeta
-            Bx = RV * cop - R * sip/nfp; By = RV * sip + R * cop/nfp; Bz = ZV
-            Nx = Ay*Bz - Az*By
-            Ny = Az*Bx - Ax*Bz
-            Nz = Ax*By - Ay*Bx
-            N  = SQRT(Nx*Nx+Ny*Ny+Nz*Nz)*normal_sign
-            Nx = Nx/N; Ny = Ny/N; Nz = Nz/N
-            X  = R*cop + rho*Nx
-            Y  = R*sip + rho*Ny
-            Z  = Z    + rho*Nz
+! New Polar Way
+            Ax = R-RAX; Az = Z-ZAX
+            N  = SQRT(Ax*Ax+Az*Az)
+            Ax = Ax * (N+rho) / N
+            Az = Az * (N+rho) / N
+            X  = (Ax + RAX) * cop
+            Y  = (Ax + RAX) * sip
+            Z  = Az + ZAX
+! Old NX,NY,NZ way
+!            Ax = RU * cop; Ay = RU * sip; Az = ZU
+!            ! dR/dzeta
+!            Bx = RV * cop - R * sip/nfp; By = RV * sip + R * cop/nfp; Bz = ZV
+!            Nx = Ay*Bz - Az*By
+!            Ny = Az*Bx - Ax*Bz
+!            Nz = Ax*By - Ay*Bx
+!            N  = SQRT(Nx*Nx+Ny*Ny+Nz*Nz)*normal_sign
+!            Nx = Nx/N; Ny = Ny/N; Nz = Nz/N
+!            X  = R*cop + rho*Nx
+!            Y  = R*sip + rho*Ny
+!            Z  = Z    + rho*Nz
             Rc(j) = SQRT(X*X + Y*Y)
             Zc(j) = Z
             Pc(j) = ATAN2(Y,X)
