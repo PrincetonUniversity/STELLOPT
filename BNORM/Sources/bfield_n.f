@@ -49,7 +49,8 @@ c-----------------------------------------------------------------
      1         bnfou_c(0:mf,-nf:nf),STAT=istat)
       if (istat .ne. 0) stop 'Allocation Error: bfield_n bnfou)'
       
-      call bnormal(nu, nv, mf, nf, md, nd, bnfou, bnfou_c, extension)
+      call bnormal(nu, nv, mf, nf, md, nd, bnfou, bnfou_c, extension,
+     1             .false.)
 
 !
 !     WRITE OUT BNFOU (FOURIER COEFFICIENTS OF BNORMAL) TO BNORM.EXTENSION FILE
