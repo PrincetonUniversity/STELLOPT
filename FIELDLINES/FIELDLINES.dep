@@ -10,7 +10,12 @@ fieldlines_main.o: \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       fieldlines_grid.o \
       fieldlines_runtime.o 
-      
+
+fieldlines_free.o: \
+      fieldlines_runtime.o \
+      fieldlines_grid.o \
+      fieldlines_lines.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o 
       
 fieldlines_write_parhdf5.o: \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
@@ -53,6 +58,14 @@ fieldlines_init_backflow.o: \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
       fieldlines_runtime.o \
       fieldlines_lines.o
+
+fieldlines_interface_mod.o: \
+      fieldlines_runtime.o \
+      fieldlines_grid.o \
+      fieldlines_lines.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o 
       
 
 fmag_nag.o : \
