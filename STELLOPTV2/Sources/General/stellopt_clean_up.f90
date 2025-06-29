@@ -78,6 +78,8 @@
          WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
          CLOSE(iunit_out)
          DEALLOCATE(fvec_temp)
+         lscreen = (ncnt == 0)
+         IF (lpoincare) CALL stellopt_paraexe('poincare',proc_string,lscreen)
       ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP)) THEN
           IF (ncnt /= 1 .or. ctype == GADE_CLEANUP) CALL stellopt_write_inputfile(ncnt,.false.)
           ! Overwrite the restart file
@@ -109,6 +111,8 @@
           WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
           CLOSE(iunit_out)
           DEALLOCATE(fvec_temp)
+         lscreen = (ncnt == 0)
+         IF (lpoincare) CALL stellopt_paraexe('poincare',proc_string,lscreen)
       ELSE IF (ctype == JAC_CLEANUP) THEN
       ELSE IF (ctype == JUST_INPUT) THEN
          ! Write the input file
@@ -159,8 +163,6 @@
             END DO
          END IF
       END IF
-      lscreen = (ncnt == 0)
-      IF (lpoincare) CALL stellopt_paraexe('poincare',proc_string,lscreen)
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
