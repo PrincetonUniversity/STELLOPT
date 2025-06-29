@@ -77,7 +77,8 @@
       !     Load Boundary
       !-----------------------------------------------------------------
       CALL init_boundary_spline_coils(mnmax,xm,-xn, &
-                                      rmnc(:,ns),zmns(:,ns))
+                                      rmnc(:,ns),zmns(:,ns), &
+                                      rmnc(:,1),zmns(:,1))
 
       !-----------------------------------------------------------------
       !     Create coils
