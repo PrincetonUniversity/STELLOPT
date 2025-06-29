@@ -86,14 +86,18 @@ c---------------------------------------------------------------------
       IF (ALLOCATED(crs)) DEALLOCATE(crs)
       IF (ALLOCATED(czc)) DEALLOCATE(czc)
       IF (ALLOCATED(clc)) DEALLOCATE(clc)
+      IF (ALLOCATED(pmns)) DEALLOCATE(pmns)
+      IF (ALLOCATED(pmnc)) DEALLOCATE(pmnc)
       allocate (ixm(mnboz_b), ixn(mnboz_b), 
      1          raxis_in(0:nboz_b), zaxis_in(0:nboz_b))
       allocate (raxis_s(0:nboz_b),zaxis_c(0:nboz_b))
       allocate (bsubus(0:md,-nd:nd), bsubvs(0:md,-nd:nd),
      1      crs(0:md,-nd:nd), czc(0:md,-nd:nd),clc(0:md,-nd:nd),
      1      stat=ierr)
+      ALLOCATE (pmns(0:mn,-nd:nd),pmnc(0:mn,-nd:nd), stat=ierr)
       bsubus = 0;  bsubvs = 0; crs = 0; czc = 0; clc = 0;
       raxis_s = 0; zaxis_c = 0;
+      pmns = 0; pmnc = 0;
 
       ! Not used in code
       !raxis_in(0:ntor) = raxis(0:ntor,1)
@@ -125,9 +129,12 @@ c---------------------------------------------------------------------
          cz(m,n) = mfact(mn,1)*zmns_b(mn,ns_b)
      1           + mfact(mn,2)*zmns_b(mn,ns_b-1)
          cl(m,n) = 0.0 ! only used in bn_write_nescoil_input
-         bsubu(m,n) = 1.5*buco_b(ns_b) - 0.5*buco_b(ns_b-1)
-         bsubv(m,n) = 1.5*bvco_b(ns_b) - 0.5*bvco_b(ns_b-1)
+         pmns(m,n) = mfact(mn,1)*pmns_b(mn,ns_b)
+     1             + mfact(mn,2)*pmns_b(mn,ns_b-1)
       end do
+      ! These are constants now of the coordiantes
+      bsubu(0,0) = 1.5*buco_b(ns_b) - 0.5*buco_b(ns_b-1)
+      bsubv(0,0) = 1.5*bvco_b(ns_b) - 0.5*bvco_b(ns_b-1)
       if (lasym_bn) then
          !raxis_s(0:ntor)=raxis(0:ntor,2)
          !zaxis_c(0:ntor)=zaxis(0:ntor,2)
@@ -135,10 +142,12 @@ c---------------------------------------------------------------------
             m = ixm(mn)
             n = ixn(mn)
             crs(m,n) = mfact(mn,1)*rmns_b(mn,ns_b) 
-     1              + mfact(mn,2)*rmns_b(mn,ns_b-1)
+     1               + mfact(mn,2)*rmns_b(mn,ns_b-1)
             czc(m,n) = mfact(mn,1)*zmnc_b(mn,ns_b) 
-     1              + mfact(mn,2)*zmnc_b(mn,ns_b-1)
+     1               + mfact(mn,2)*zmnc_b(mn,ns_b-1)
             clc(m,n) = 0.0 ! only used in bn_write_nescoil_input
+            pmnc(m,n) = mfact(mn,1)*pmnc_b(mn,ns_b)
+     1                + mfact(mn,2)*pmnc_b(mn,ns_b-1)
          end do
       end if
       DEALLOCATE(mfact)
