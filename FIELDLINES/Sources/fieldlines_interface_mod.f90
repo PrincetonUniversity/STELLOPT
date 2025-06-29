@@ -36,18 +36,29 @@ MODULE FIELDLINES_INTERFACE_MOD
 !-----------------------------------------------------------------------
 CONTAINS
 
-   SUBROUTINE fieldlines_init_mpi
+   SUBROUTINE fieldlines_init_mpi(IN_COMM)
       IMPLICIT NONE
+      INTEGER,INTENT(INOUT),OPTIONAL :: IN_COMM
+      LOGICAL :: lmpi_init
       myworkid = master
 #if defined(MPI_OPT)
-      CALL MPI_INIT(ierr_mpi) ! MPI
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_INIT_ERR, 'fieldlines_init_mpi_0', ierr_mpi)
-      CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_FIELDLINES, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_init_mpi_1', ierr_mpi)
+      ! First check if MPI is already initialized
+      CALL MPI_INITIALIZED(lmpi_init,ierr_mpi)
+      IF (.not.lmpi_init) THEN
+         CALL MPI_INIT(ierr_mpi) ! MPI
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_INIT_ERR, 'fieldlines_init_mpi_0', ierr_mpi)
+      END IF
+      IF (PRESENT(IN_COMM)) THEN
+         CALL MPI_COMM_DUP( IN_COMM, MPI_COMM_FIELDLINES, ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_init_mpi_1', ierr_mpi)
+      ELSE
+         CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_FIELDLINES, ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_init_mpi_2', ierr_mpi)
+      END IF
       CALL MPI_COMM_RANK(MPI_COMM_FIELDLINES, myworkid, ierr_mpi) ! MPI
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_init_mpi_2', ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_init_mpi_3', ierr_mpi)
       CALL MPI_COMM_SIZE(MPI_COMM_FIELDLINES, nprocs_fieldlines, ierr_mpi) ! MPI
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_SIZE_ERR, 'fieldlines_init_mpi_3', ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_SIZE_ERR, 'fieldlines_init_mpi_4', ierr_mpi)
       CALL fieldlines_init_mpi_split(MPI_COMM_FIELDLINES)
       CALL MPI_GET_VERSION(vmajor,vminor,ierr_mpi)
       CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ierr_mpi)
@@ -129,7 +140,7 @@ CONTAINS
          ! First Handle the input arguments
          CALL GETCARG(1, arg1, numargs)
          ALLOCATE(args(numargs))
-         
+
          ! Cycle through Arguments
          i=1
          DO WHILE (i <= numargs)
