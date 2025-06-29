@@ -12,6 +12,7 @@
       USE vmec_input
       USE bootsj_input, ONLY: write_bootsj_input
       USE diagno_input_mod, ONLY: write_diagno_input
+      USE fieldlines_input_mod, ONLY: write_fieldlines_namelist
 !DEC$ IF DEFINED (NEO_OPT)
       USE neo_input_mod, ONLY: write_neoin_namelist
 !DEC$ ENDIF
@@ -60,6 +61,7 @@
       CALL write_optimum_namelist(iunit_out,ier)
       IF (lneed_magdiag) CALL write_diagno_input(iunit_out,ier)
       IF (ANY(sigma_bootstrap < bigno) .or. (sigma_totalbootstrap < bigno)) CALL write_bootsj_input(iunit_out,ier)
+      IF (lpoincare) CALL write_fieldlines_namelist(iunit_out,ier)
 !DEC$ IF DEFINED (NEO_OPT)
       IF (ANY(sigma_neo < bigno)) CALL write_neoin_namelist(iunit_out,ier)
 !DEC$ ENDIF

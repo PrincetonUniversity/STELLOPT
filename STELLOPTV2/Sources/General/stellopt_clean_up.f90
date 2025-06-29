@@ -32,6 +32,7 @@
 !        ier         Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
+      LOGICAL :: lscreen
       INTEGER ::  ier, ik, iunit, ctype, temp_max, m, n
       CHARACTER(len = 256)   :: temp_str
       REAL(rprec), ALLOCATABLE :: fvec_temp(:)
@@ -158,6 +159,8 @@
             END DO
          END IF
       END IF
+      lscreen = (ncnt == 0)
+      IF (lpoincare) CALL stellopt_paraexe('poincare',proc_string,lscreen)
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE

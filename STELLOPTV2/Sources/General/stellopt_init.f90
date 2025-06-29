@@ -27,6 +27,7 @@
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
       USE parallel_vmec_module, ONLY: PARVMEC, gnranks
+      USE fieldlines_input_mod, ONLY: read_fieldlines_input
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -57,6 +58,8 @@
       CALL init_stellopt_input
       CALL read_stellopt_input(TRIM(id_string),ier)
       CALL stellopt_write_header
+
+      IF (lpoincare) CALL read_fieldlines_input(TRIM(id_string),ier)
 
       ! Handle a one_iter_run
       IF (loneiter) opt_type = 'one_iter'
