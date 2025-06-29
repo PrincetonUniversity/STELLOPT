@@ -92,7 +92,7 @@
       IF (iflag < 0) RETURN
       coil_separation =Aminor
       IF (myworkid == master) &
-         call bnormal(nu, nv, mf, nf, md, nd, bnfou, bnfou_c, proc_string)
+         call bnormal(nu, nv, mf, nf, md, nd, bnfou, bnfou_c, proc_string,.false.)
 #if defined(MPI_OPT)
       CALL MPI_BCAST(bnfou, (mf+1)*(2*nf+1), MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
 #endif
