@@ -38,6 +38,7 @@
                             jdotb_spl, zeff_spl, jcurv_spl, omega_spl,&
                             nustar_spl, emis_xics_spl
       REAL(rprec), ALLOCATABLE :: wp_kink(:), wk_kink(:), omega_kink(:),&
-                     growth_kink(:), bnormal_total(:)
+                     growth_kink(:), bnormal_total(:), &
+                     bmnc_normal_total(:), bmns_normal_total(:)
 
       END MODULE equil_vals

@@ -12,7 +12,8 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime, ONLY: proc_string, pi2
       USE stellopt_targets, ONLY: nu_bnormal, nv_bnormal
-      USE equil_vals, ONLY: bnormal_total
+      USE equil_vals, ONLY: bnormal_total, bmnc_normal_total, &
+            bmns_normal_total
       use safe_open_mod
       USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns, nfp, &
             isigng, Aminor, bsubvmnc, xm_nyq, xn_nyq, mnmax_nyq
@@ -42,6 +43,8 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rreal, zreal
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: NX, NY, NZ
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: bnreal, bcreal
+
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: carg, sarg
 
       INTEGER :: mystart, myend
 
@@ -124,6 +127,7 @@
       ALLOCATE(rreal(nuv),zreal(nuv),bnreal(nuv))
       ALLOCATE(NX(nuv),NY(nuv),NZ(nuv))
       ALLOCATE(bcreal(nuv))
+      ALLOCATE(carg(nuv,mnmax), sarg(nuv,mnmax))
       rreal = 0.0; zreal = 0.0; bnreal = 0.0
       nx = 0.0; ny = 0.0; nz = 0.0
       bcreal = 0.0
@@ -139,6 +143,8 @@
             arg = xm(mn)*theta+xn(mn)*zeta/nfp
             cop = COS(arg)
             sip = SIN(arg)
+            carg(uv,mn) = cop
+            sarg(uv,mn) = sip
             rreal(uv) = rreal(uv) + rmnc(mn,ns) * cop
             zreal(uv) = zreal(uv) + zmns(mn,ns) * sip
             RU = RU - rmnc(mn,ns)*sip*xm(mn)
@@ -188,6 +194,8 @@
          CALL MPI_REDUCE(MPI_IN_PLACE,     Nx, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE,     Ny, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE,     Nz, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,   carg, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,   sarg, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
       ELSE
          CALL MPI_REDUCE(      bcreal, bcreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(      bnreal, bnreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
@@ -196,6 +204,8 @@
          CALL MPI_REDUCE(          Nx,     Nx, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(          Ny,     Ny, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(          Nz,     Nz, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(        carg,   carg, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(        sarg,   sarg, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
       END IF
 #endif
       
@@ -224,13 +234,38 @@
                uv,u,v,theta,zeta,phi,rreal(uv),zreal(uv),&
                Nx(uv),Ny(uv),Nz(uv),bnreal(uv),bcreal(uv),bnormal_total(uv)
          END DO
-         close (iunit)
+         CLOSE(iunit)
+      END IF
+      
+      !-----------------------------------------------------------------
+      !     Compute Fourier transform of Bmn
+      !-----------------------------------------------------------------
+      IF (myworkid == master) THEN
+         call safe_open(iunit, iflag, 'bnorm_harm.' // TRIM(proc_string), &
+               'replace','formatted')
+         IF (ALLOCATED(bmnc_normal_total)) DEALLOCATE(bmnc_normal_total)
+         IF (ALLOCATED(bmns_normal_total)) DEALLOCATE(bmns_normal_total)
+         ALLOCATE(bmnc_normal_total(mnmax), bmns_normal_total(mnmax))
+         WRITE(iunit,'(I8)') mnmax
+         DO mn = 1, mnmax
+            m = xm(mn)
+            n = xn(mn)
+            bmnc_normal_total(mn) = SUM(bnormal_total*carg(:,mn)) * pi2 / DBLE(nuv)
+            bmns_normal_total(mn) = SUM(bnormal_total*sarg(:,mn)) * pi2 / DBLE(nuv)
+            IF ((m == 0) .and. (n == 0)) THEN
+               bmnc_normal_total(mn) = bmnc_normal_total(mn)*0.5
+               bmns_normal_total(mn) = bmns_normal_total(mn)*0.5
+            END IF
+            WRITE(iunit, '(3(1X,I6),2(1pe24.16))') &
+               mn,m,n,bmnc_normal_total(mn),bmns_normal_total(mn)
+         END DO
+         CLOSE(iunit)
       END IF
       
       !-----------------------------------------------------------------
       !     DEALLOCATIONS
       !-----------------------------------------------------------------
-      DEALLOCATE(rreal,zreal,Nx,Ny,Nz,bnreal,bcreal)
+      DEALLOCATE(rreal,zreal,Nx,Ny,Nz,bnreal,bcreal,carg,sarg)
       IF (myworkid /= master) THEN
          IF(ALLOCATED(xm)) DEALLOCATE(xm)
          IF(ALLOCATED(xn)) DEALLOCATE(xn)
