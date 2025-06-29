@@ -1,7 +1,7 @@
 
 !----------------------------------------------------------------------
       subroutine bnormal(n_u,n_v,mfou,nfou,mdim,ndim,bnfou,
-     1                   bnfou_c,extension)
+     1                   bnfou_c,extension,lbooz)
 !----------------------------------------------------------------------
 c                                                          15.08.98
 c    purpose:
@@ -32,6 +32,7 @@ c ----------------------------------------------------------------------
       integer :: n_u, n_v, mfou, nfou, mdim, ndim
       real(rprec), dimension(0:mfou,-nfou:nfou) :: bnfou, bnfou_c
       character*(*) :: extension
+      logical :: lbooz
          nu     = n_u
          nv     = n_v
          nuv    = nu*nv
@@ -40,7 +41,11 @@ c ----------------------------------------------------------------------
          nf     = nfou
          md     = mdim
          nd     = ndim
-      call bn_read_vmecf90(extension)
+      IF (lbooz) THEN
+         CALL bn_read_boozer(extension)
+      ELSE
+         call bn_read_vmecf90(extension)
+      END IF
       call bn_alloc
       call bn_precal
       call bn_bfield_parallel
