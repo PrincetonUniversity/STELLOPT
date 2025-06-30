@@ -22,6 +22,8 @@ if __name__=="__main__":
 		help="Output the edge VMEC spectrum as RBC/ZBS.", default = False)
 	parser.add_argument("--stl", dest="lstl", action='store_true',
 		help="Output STL file of VMEC boundary", default = False)
+	parser.add_argument("--magaxis", dest="lmagaxis", action='store_true',
+		help="Output xyz data of magnetic axis", default = False)
 	parser.add_argument("--scale_volume", dest="new_vol",
 		help="Write indata with volume rescaled to new_vol m^3", 
 		default = 0.0, type=float)
@@ -264,6 +266,18 @@ if __name__=="__main__":
 			r = vmec_wout.cfunct(theta,phi,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn)
 			z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
 			vmec_wout.surfaceSTL(r,z,phi,filename='plasma_'+args.vmec_ext+'.stl')
+		# Output an xyz list of points
+		if (loutput and args.lmagaxis):
+			theta = np.linspace([0],[np.pi*2],16)
+			phi   = np.linspace([0],[np.pi*2],360)
+			r = vmec_wout.cfunct(theta,phi,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn)
+			z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
+			r0 = np.squeeze(r[0,0,:])
+			z0 = np.squeeze(z[0,0,:])
+			x0 = r0*np.cos(np.squeeze(phi))
+			y0 = r0*np.sin(np.squeeze(phi))
+			data_to_save = np.column_stack((x0, y0, z0))
+			np.savetxt(rf'magaxis_xyz_{args.vmec_ext}.csv', data_to_save, fmt='%f', delimiter=',')
 		if (loutput and args.lspectrum):
 			print('!----- Axis Parameters -----')
 			raxis_cc =np.trim_zeros(vmec_wout.rmnc[0,:])
