@@ -322,15 +322,15 @@
       WRITE(iunit,outboo) 'LFREEB',lfreeb
       IF (lfreeb) THEN
          WRITE (iunit, '(2x,3a)') "MGRID_FILE = '",TRIM(mgrid_file),"'"
-         DO n=1,SIZE(extcur)
-            IF (extcur(n) == 0) CYCLE
-            WRITE(iunit,'(2X,A,I3.3,A,ES22.12E3)')
-     1      'EXTCUR(',n,') = ',extcur(n)
-         END DO
          WRITE(iunit,outint4) 'NVACSKIP',nvacskip
          IF (TRIM(trip3d_file) /= 'NONE') WRITE (iunit, '(2x,3a)') 
      1             "TRIP3D_FILE = '",TRIM(trip3d_file),"'"  ! SAL - TRIP3D
       END IF
+      DO n=1,SIZE(extcur)
+         IF (extcur(n) == 0) CYCLE
+         WRITE(iunit,'(2X,A,I3.3,A,ES22.12E3)')
+     1     'EXTCUR(',n,') = ',extcur(n)
+      END DO
       WRITE(iunit,'(A)') '!----- Pressure Parameters -----'
       WRITE(iunit,outflt) 'GAMMA',gamma
       WRITE(iunit,outflt) 'BLOAT',bloat

@@ -37,8 +37,8 @@
                                 lac, lam, lai, lphiedge, lpscale, lcurtor, lkappa, &
                                 lwell, lcurvature, lfieldlines, &
                                 ltxport, ltxport_tem, ltxport_ae, ldkes_erdiff, &
-                                lquasiiso, lgamma_c
-      INTEGER                :: m,n,ns,j
+                                lquasiiso, lgamma_c, lcoilopt
+      INTEGER                :: m,n,ns,j, ncoils, ncoilspline
       REAL(rprec)            :: bound_min, bound_max, var, var_min, var_max, &
                                 temp, rho_exp,r1t,r2t,z1t, delta, filter_harm, pi2, &
                                 cosmn, sinmn
@@ -47,6 +47,7 @@
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       :: rbc_temp,zbs_temp
       REAL(rprec), DIMENSION(nu,nv)                       :: rreal,zreal,rureal
       character(arg_len)     :: id_string, var_name
+      CHARACTER(LEN=256) :: outputstring
       
       ! Define output
       CHARACTER(LEN=*), PARAMETER :: onevar  = "(2X,A,1X,'= T ',3(2X,A,1X,'=',1X,ES22.12E3))"
@@ -111,6 +112,7 @@
       lgamma_c = .FALSE.
       loutput_harm = .FALSE.
       lquasiiso = .FALSE.
+      lcoilopt = .FAlSE.
       bound_min = -1.0
       bound_max = 2.0
       filter_harm = 0
@@ -269,6 +271,10 @@
                lneed_booz = .TRUE.
             CASE ("-gamma_c")
                lgamma_c= .TRUE.
+            CASE ("-coilopt","-coil_opt")
+               lcoilopt= .TRUE.
+               lrhomn = .FALSE.
+               lfieldlines = .TRUE.
             CASE ("-help","-h")
                WRITE(6,'(a,f5.2)') 'VMEC2STEL Version ',VMEC2STEL_VERSION
                WRITE(6,*) ' STELLOPTV2 Input Generation Utility'
@@ -294,6 +300,7 @@
                WRITE(6,*) '   -swarm            Particle Swarm'
                WRITE(6,*) '   -map              N-Dimensional Mapping'
                WRITE(6,*) '   -map_plane        Hyperplane (2D) Mapping'
+               WRITE(6,*) '   -coilopt          Coil Optimization'
                WRITE(6,*) '   -basic            Basic Targets'
                WRITE(6,*) '   -kappa            Plasma Elongation Target'
                WRITE(6,*) '   -qas              QAS Target'
@@ -344,7 +351,7 @@
          WRITE(6,'(2X,A,F6.1)')       'FACTOR     = ',10.0
          WRITE(6,'(2X,A,ES10.2)')     'EPSFCN     = ',1.0E-6
          WRITE(6,'(2X,A,I1.1)')       'MODE       = ',1
-         WRITE(6,'(2X,A,I1.1)')       'NOPTIMIZERS =',16
+         WRITE(6,'(2X,A,I2.2)')       'NOPTIMIZERS = ',16
          WRITE(6,'(2X,A)')            'LKEEP_MINS = T'
       ELSEIF (lgade) THEN
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
@@ -359,6 +366,7 @@
          WRITE(6,'(2X,A,I5.4)')       'CR_STRATEGY = ',0
          WRITE(6,'(2X,A)')            'LKEEP_MINS  = T'
          WRITE(6,'(2X,A,I5.4)')       'NPOPULATION = ',1000
+         WRITE(6,'(2X,A,I2.2)')       'NOPTIMIZERS = ',16
       ELSEIF (lswarm) THEN
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
          WRITE(6,'(A)')'!          OPTIMIZER RUN CONTROL PARAMETERS'
@@ -370,6 +378,7 @@
          WRITE(6,'(2X,A,ES10.2)')     'XTOL       = ',1.0E-6
          WRITE(6,'(2X,A,F6.1)')       'EPSFCN     = ',0.5
          WRITE(6,'(2X,A,F6.1)')       'FACTOR     = ',100.0
+         WRITE(6,'(2X,A,I2.2)')       'NOPTIMIZERS = ',16
       ELSEIF (lmap) THEN
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
          WRITE(6,'(A)')'!          OPTIMIZER RUN CONTROL PARAMETERS'
@@ -379,6 +388,7 @@
          WRITE(6,'(2x,A)')            'OPT_TYPE   = ''MAP'''
          WRITE(6,'(2X,A,I2.2)')       'MODE       = ',10
          WRITE(6,'(2X,A,I2.2)')       'NPOPULATION = ',16
+         WRITE(6,'(2X,A,I2.2)')       'NOPTIMIZERS = ',16
       ELSEIF (lmap_plane) THEN
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
          WRITE(6,'(A)')'!          OPTIMIZER RUN CONTROL PARAMETERS'
@@ -388,6 +398,7 @@
          WRITE(6,'(2x,A)')            'OPT_TYPE   = ''MAP_PLANE'''
          WRITE(6,'(2X,A,I2.2)')       'MODE       = ',10
          WRITE(6,'(2X,A,I2.2)')       'NPOPULATION = ',16
+         WRITE(6,'(2X,A,I2.2)')       'NOPTIMIZERS = ',16
       ENDIF
       WRITE(6,'(A)')'!-----------------------------------------------------------------------'
       WRITE(6,'(A)')'!          OPTIMIZED QUANTITIES'
@@ -585,7 +596,7 @@
             END SELECT
          END IF
          ! Magnetic Axis
-         IF (.not.lfreeb) THEN
+         IF ((.not.lfreeb) .and. (.not.lcoilopt)) THEN
             var_name = 'AXIS'
             DO i = LBOUND(raxis_cc,DIM=1), UBOUND(raxis_cc,DIM=1)
                IF (ABS(raxis_cc(i)) > 0 .or. ABS(zaxis_cs(i)) > 0) THEN
@@ -902,6 +913,33 @@
             END DO
          END IF
       END IF
+      IF (lcoilopt) THEN
+         ncoilspline = 8
+         ncoils = 5
+         temp = 2.5 ! In general this should be auto-calculated
+         DO n = 1, ncoils
+            WRITE(6,'(A,I4.3)') '!----- COIL ',n
+            WRITE(6,"(2X,A,I4.3,A,I4,A)") 'LCOIL_KTS_OPT(',n,', :) = ',ncoilspline,'*T'
+            WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',ncoilspline,'(ES22.12E3))'
+            WRITE(6,outputstring) 'RHO_COIL_KTS_MIN(',n,',:)   = ', (2.0, i=1,ncoilspline)
+            WRITE(6,outputstring) 'RHO_COIL_KTS_MAX(',n,',:)   = ', (4.0, i=1,ncoilspline)
+            WRITE(6,outputstring) 'THETA_COIL_KTS_MIN(',n,',:) = ', (pi2*DBLE(i-1.5)/DBLE(ncoilspline), i=1,ncoilspline)
+            WRITE(6,outputstring) 'THETA_COIL_KTS_MAX(',n,',:) = ', (pi2*DBLE(i-0.5)/DBLE(ncoilspline), i=1,ncoilspline)
+            WRITE(6,outputstring) 'ZETA_COIL_KTS_MIN(',n,',:)  = ', (pi2*DBLE(n-1.0)/DBLE(2*ncoils), i=1,ncoilspline)
+            WRITE(6,outputstring) 'ZETA_COIL_KTS_MAX(',n,',:)  = ', (pi2*DBLE(n-0.0)/DBLE(2*ncoils), i=1,ncoilspline)
+         END DO
+         WRITE(6,'(A)')'!-----------------------------------------------------------------------'
+         WRITE(6,'(A)')'!          COIL PROPERTIES'
+         WRITE(6,'(A)')'!-----------------------------------------------------------------------'
+         WRITE(6,'(2X,A)') 'LPOINCARE = T'
+         DO n = 1, ncoils
+            WRITE(6,'(A,I4.3)') '!----- COIL ',n
+            WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',ncoilspline,'(ES22.12E3))'
+            WRITE(6,outputstring) 'RHO_COIL_KTS(',n,',:)   = ', (2.5, i=1,ncoilspline)
+            WRITE(6,outputstring) 'THETA_COIL_KTS(',n,',:)   = ', (pi2*DBLE(i-1)/DBLE(ncoilspline), i=1,ncoilspline)
+            WRITE(6,outputstring) 'ZETA_COIL_KTS(',n,',:)   = ', (pi2*DBLE(n-0.5)/DBLE(2*ncoils), i=1,ncoilspline)
+         END DO
+      END IF
       IF (lbasic) THEN
          ! Calc volume
          temp = 0
@@ -1105,6 +1143,26 @@
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
          WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_GAMMA_C(1:',ns,') = ',ns,'*0.0  SIGMA_GAMMA_C(1:',ns,') = ',ns,'*1.0'
       END IF
+      IF (lcoilopt) THEN
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       PLASMA SURFACE B-NORMAL'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A,I3)') 'NU_BNORMAL = ',2 ** CEILING(log(REAL(MAX(4*mpol,4)))/log(2.0_rprec))
+         WRITE(6,'(2X,A,I3)') 'NV_BNORMAL = ',2 ** CEILING(log(REAL(MAX(4*ntor,4)))/log(2.0_rprec))
+         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_BNORMAL = ',0.0,'SIGMA_BNORMAL = ',1.00
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       TARGET COIL CURVATURE'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_COIL_CURVATURE = ',0.0,'SIGMA_COIL_CURVATURE = ',1.00
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       TARGET COIL TORSION'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_COIL_TORSION = ',0.0,'SIGMA_COIL_TORSION = ',1.00
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       TARGET COIL-COIL DISTANCE'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_COILCOIL_DISTANCE = ',0.0,'SIGMA_COILCOIL_DISTANCE = ',1.00
+      END IF
       ! END OPTIMUM Namelist
       WRITE(6,'(A)') '/'
       ! Add namelists
@@ -1157,11 +1215,11 @@
          WRITE(6,'(2X,A,F6.3)') 'ZMIN = ',MINVAL(MINVAL(zreal,2),1)-0.5
          WRITE(6,'(2X,A,F6.3)') 'PHIMIN = ',0.0
          WRITE(6,'(2X,A,F12.10)') 'PHIMAX = ',pi2/nfp
-         WRITE(6,'(2X,A)') 'NPOINC = 16'
+         WRITE(6,'(2X,A)') 'NPOINC = 8'
          WRITE(6,'(2X,A)') 'INT_TYPE = ''LSODE'''
          WRITE(6,'(2X,A)') 'FOLLOW_TOL = 1.0E-9'
          WRITE(6,'(2X,2(A,F6.3))') 'R_START = ',sum(raxis_cc),'  ',MAXVAL(rreal(:,1))
-         WRITE(6,'(2X,2(A,F6.3))') 'Z_START = ',0.0,'  ',MAXVAL(zreal(:,1))
+         WRITE(6,'(2X,2(A,F6.3))') 'Z_START = ',0.0,'  ',0.0
          WRITE(6,'(2X,A)') 'PHI_START = 2*0.0'
          WRITE(6,'(2X,A,E20.10)') 'PHI_END = 2*',1000*pi2/nfp
          WRITE(6,'(A)') '/'
