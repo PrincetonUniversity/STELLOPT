@@ -16,6 +16,8 @@ if __name__=="__main__":
 		help="Wall file for input", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
 		help="Plot the wall file.", default = False)
+	parser.add_argument("--plot2D", dest="plot2D_phi",
+		help="Plot toroidal cut of the wall file.", default = -361, type=int)
 	parser.add_argument("--stl", dest="lstl", action='store_true',
 		help="Generate STL of the wall.", default = False)
 	parser.add_argument("--clean", dest="lclean", action='store_true',
@@ -43,6 +45,7 @@ if __name__=="__main__":
 			fileout=fileout.replace('.dat','_refine.dat')
 		# Plots go here
 		if args.lplot: wall.plot_wall_3D()
+		if args.plot2D_phi != -361: wall.plot_wall_2D(np.deg2rad(args.plot2D_phi))
 		# Outputting to other grids goes here.
 		if args.refine[0]: wall.write_wall(fileout.replace('.dat','_new.dat'))
 		if args.lstl: wall.write_wall_stl(fileout.replace('.dat','.stl'))

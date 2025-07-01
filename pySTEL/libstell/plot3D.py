@@ -171,6 +171,22 @@ class PLOT3D():
 				lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
 		return lut
 
+	def setLUTRed(self,dex=0):
+		"""Set a value of a LUT to red
+
+		The routine sets the first or last value of a LUT to red. This
+		is useful for explicitly setting some min or max value to a
+		red color as a warning.
+
+		Parameters
+		----------
+		lut : VTKLookupTable
+			VTK style lookup table class
+		dex : int (optional)
+			Index to set red (default = 0)
+		"""
+		self.lookupTable.SetTableValue(dex,1.0,0.0,0.0,1.0)
+
 	def setActorColor(self,actor,color=None):
 		"""Set the color property of the actor
 
@@ -569,25 +585,34 @@ class PLOT3D():
 		# Add actor to the scene
 		self.renderer.AddActor(actor)
 
-	def colorbar(self,show=True,title=""):
+	def colorbar(self,show=True,title="",whitetext=False):
 		"""Add a colorbar to a render
 
-		This routine adds a colorbar to the render.
+		This routine adds a colorbar to the render. Text in black,
+		set whitetext=True to print in white.
 
 		Parameters
 		----------
 		show : logical (optional)
 			Show the colorbar (default: True)
-		title : string
-			Colorbar title
+		title : string (optional)
+			Colorbar title (default: "")
+		whitetext : logical (optional)
+			Text in white (default: False)
 		"""
 		if show:
 			# Set Label Text
-			self.scalar_bar.GetLabelTextProperty().SetColor(0,0,0)
+			if whitetext:
+				self.scalar_bar.GetLabelTextProperty().SetColor(1,1,1)
+			else:
+				self.scalar_bar.GetLabelTextProperty().SetColor(0,0,0)
 			self.scalar_bar.GetLabelTextProperty().ShadowOff()
 			self.scalar_bar.GetLabelTextProperty().SetFontSize(self.fontsize)
 			# Set Titel Text
-			self.scalar_bar.GetTitleTextProperty().SetColor(0,0,0)
+			if whitetext:
+				self.scalar_bar.GetTitleTextProperty().SetColor(1,1,1)
+			else:
+				self.scalar_bar.GetTitleTextProperty().SetColor(0,0,0)
 			self.scalar_bar.GetTitleTextProperty().ShadowOff()
 			self.scalar_bar.GetTitleTextProperty().SetFontSize(self.fontsize)
 			self.scalar_bar.UnconstrainedFontSizeOn()
