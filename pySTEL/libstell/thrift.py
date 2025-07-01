@@ -10,11 +10,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 
-plt.rc('font', size=18)
-default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-custom_colors = ['#5faf30', '#1D2258', '#004817', '#a1cdc8']
-plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors+default_colors)
-plt.rcParams['lines.linewidth'] = 2.5
+#plt.rc('font', size=18)
+#default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+#custom_colors = ['#5faf30', '#1D2258', '#004817', '#a1cdc8']
+#plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors+default_colors)
+#plt.rcParams['lines.linewidth'] = 2.5
 # plt.rcParams['axes.prop_cycle'] = plt.cycler(color=['#5faf30','#1D2258','#004817','#a1cdc8'])
 
 # Constants
@@ -555,6 +555,261 @@ class THRIFT():
         plt.legend()
         
         plt.show()
+
+    def get_I_total(self,time=None):
+        """ Returns the total current
+
+        This subroutine returns the total current in A.
+        The user may provide a timeslice.
+
+        Parameters
+        ----------
+        time : float (optional)
+            Time at which to evaluate profile. (default: last timestamp)
+        Returns
+        ----------
+        I : float
+            Total current [A]
+        """
+        import numpy as np
+        from scipy.interpolate import RegularGridInterpolator
+        if type(time) == type(None):
+            t0 = self.THRIFT_T[-1]
+        else:
+            t0 = time
+        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_I)
+        return float(ftemp([t0,1.0])[0])
+
+    def get_j_prof(self,time=None,ns=64):
+        """ Returns a current profile array
+
+        This subroutine returns the total current density
+        array in a 2D array where the first dimension are the points
+        in s and the second dimension is the current density in A/m^2.
+        The user may provide a timeslice or number of points in an 
+        array.
+
+        Parameters
+        ----------
+        time : float (optional)
+            Time at which to evaluate profile. (default: last timestamp)
+        ns : int (optional)
+            Number of points to use in evaluation (default: 64)
+        Returns
+        ----------
+        sflx : ndarray
+            Array of knots in normalized toroidal flux (s)
+        jtotal : ndarray
+            Array of values of total current [A/m^2]
+        """
+        import numpy as np
+        from scipy.interpolate import RegularGridInterpolator
+        if type(time) == type(None):
+            t0 = self.THRIFT_T[-1]
+        else:
+            t0 = time
+        sflx = np.linspace(0,1.0,ns)
+        tval = np.ones_like(sflx)*t0
+        x    = np.vstack((tval,sflx))
+        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_J)
+        return sflx,ftemp(x.T)
+
+    def get_Iboot_total(self,time=None):
+        """ Returns the total boostrap current
+
+        This subroutine returns the total bootstrap current in kA.
+        The user may provide a timeslice.
+
+        Parameters
+        ----------
+        time : float (optional)
+            Time at which to evaluate profile. (default: last timestamp)
+        Returns
+        ----------
+        I : float
+            Total bootstrap current [A]
+        """
+        import numpy as np
+        from scipy.interpolate import RegularGridInterpolator
+        if type(time) == type(None):
+            t0 = self.THRIFT_T[-1]
+        else:
+            t0 = time
+        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_IBOOT)
+        return float(ftemp([t0,1.0])[0])
+
+    def get_jboot_prof(self,time=None,ns=64):
+        """ Returns a current profile array
+
+        This subroutine returns the total bootstrap current density
+        array in a 2D array where the first dimension are the points
+        in s and the second dimension is the current density in kA/m^2.
+        The user may provide a timeslice or number of points in an 
+        array.
+
+        Parameters
+        ----------
+        time : float (optional)
+            Time at which to evaluate profile. (default: last timestamp)
+        ns : int (optional)
+            Number of points to use in evaluation (default: 64)
+        Returns
+        ----------
+        sflx : ndarray
+            Array of knots in normalized toroidal flux (s)
+        jboot : ndarray
+            Array of values of bootstrap current [A/m^2]
+        """
+        import numpy as np
+        from scipy.interpolate import RegularGridInterpolator
+        if type(time) == type(None):
+            t0 = self.THRIFT_T[-1]
+        else:
+            t0 = time
+        sflx = np.linspace(0,1.0,ns)
+        tval = np.ones_like(sflx)*t0
+        x    = np.vstack((tval,sflx))
+        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_JBOOT)
+        return sflx,ftemp(x.T)
+
+    def get_iota_prof(self,time=None,ns=64):
+        """ Returns the rotational transform array
+
+        This subroutine returns the rotational transform (iota)
+        array in a 2D array where the first dimension are the points
+        in s and the second dimension is the rotational transform.
+        The user may provide a timeslice or number of points in an 
+        array.
+
+        Parameters
+        ----------
+        time : float (optional)
+            Time at which to evaluate profile. (default: last timestamp)
+        ns : int (optional)
+            Number of points to use in evaluation (default: 64)
+        Returns
+        ----------
+        sflx : ndarray
+            Array of knots in normalized toroidal flux (s)
+        iota : ndarray
+            Array of values of rotational transform
+        """
+        import numpy as np
+        from scipy.interpolate import RegularGridInterpolator
+        if type(time) == type(None):
+            t0 = self.THRIFT_T[-1]
+        else:
+            t0 = time
+        sflx = np.linspace(0,1.0,ns)
+        tval = np.ones_like(sflx)*t0
+        x    = np.vstack((tval,sflx))
+        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_IOTA)
+        return sflx,ftemp(x.T)
+
+    def get_pot_prof(self,time=None,ns=64):
+        """ Returns the electrostatic potential array
+
+        This subroutine returns the electrostatic potential
+        array in a 2D array where the first dimension are the points
+        in s and the second dimension is the electrostatic potential 
+        in V. The user may provide a timeslice or number of points 
+        in an array.
+
+        Parameters
+        ----------
+        time : float (optional)
+            Time at which to evaluate profile. (default: last timestamp)
+        ns : int (optional)
+            Number of points to use in evaluation (default: 64)
+        Returns
+        ----------
+        sflx : ndarray
+            Array of knots in normalized toroidal flux (s)
+        phi : ndarray
+            Array of values of electrostatic potential [V]
+        """
+        import numpy as np
+        from scipy.interpolate import RegularGridInterpolator, interpn
+        from scipy.integrate import cumulative_trapezoid
+        if type(time) == type(None):
+            t0 = self.THRIFT_T[-1]
+        else:
+            t0 = time
+        s,A = self.get_Aminor(time=time,ns=ns)
+        s,Er = self.get_er_prof(time=time,ns=ns)
+        # Compute the estatic potential
+        phi = -cumulative_trapezoid(Er,A,initial=0)
+        return s,phi
+
+    def get_er_prof(self,time=None,ns=64):
+        """ Returns the radial electric field array
+
+        This subroutine returns the radial electric field
+        array in a 2D array where the first dimension are the points
+        in s and the second dimension is Er in V/m.
+        The user may provide a timeslice or number of points in an 
+        array.
+
+        Parameters
+        ----------
+        time : float (optional)
+            Time at which to evaluate profile. (default: last timestamp)
+        ns : int (optional)
+            Number of points to use in evaluation (default: 64)
+        Returns
+        ----------
+        sflx : ndarray
+            Array of knots in normalized toroidal flux (s)
+        phi : ndarray
+            Array of values of radial electric field [V/m]
+        """
+        import numpy as np
+        from scipy.interpolate import RegularGridInterpolator
+        if type(time) == type(None):
+            t0 = self.THRIFT_T[-1]
+        else:
+            t0 = time
+        sflx = np.linspace(0,1.0,ns)
+        tval = np.ones_like(sflx)*t0
+        x    = np.vstack((tval,sflx))
+        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_ER)
+        return sflx,ftemp(x.T)
+
+    def get_Aminor(self,time=None,ns=64):
+        """ Returns the minor radius array
+
+        This subroutine returns the minor radius
+        array in a 2D array where the first dimension are the points
+        in s and the second dimension is the minor radius in m.
+        The user may provide a timeslice or number of points in an 
+        array.
+
+        Parameters
+        ----------
+        time : float (optional)
+            Time at which to evaluate profile. (default: last timestamp)
+        ns : int (optional)
+            Number of points to use in evaluation (default: 64)
+        Returns
+        ----------
+        sflx : ndarray
+            Array of knots in normalized toroidal flux (s)
+        Aminor : ndarray
+            Array of values of minor radius [m]
+        """
+        import numpy as np
+        from scipy.interpolate import RegularGridInterpolator
+        if type(time) == type(None):
+            t0 = self.THRIFT_T[-1]
+        else:
+            t0 = time
+        sflx = np.linspace(0,1.0,ns)
+        tval = np.ones_like(sflx)*t0
+        x    = np.vstack((tval,sflx))
+        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_AMINOR)
+        return sflx,ftemp(x.T)
+
+
             
         
 

@@ -235,7 +235,7 @@ class MyApp(QMainWindow):
 				verticalalignment='center', transform=self.ax.transAxes)
 			self.ax.text(0.65,0.83,r'$B_{ECRH}$:'+f' {sum(self.vmec_data.bmnc[0,:]):3.2f} [T]', horizontalalignment='left',\
 				verticalalignment='center', transform=self.ax.transAxes)
-			self.ax.text(0.65,0.79,r'$I_{tor}$:'+f' {self.vmec_data.b0:3.2f} [A]', horizontalalignment='left',\
+			self.ax.text(0.65,0.79,r'$I_{tor}$:'+f' {self.vmec_data.itor:3.2f} [A]', horizontalalignment='left',\
 				verticalalignment='center', transform=self.ax.transAxes)
 		elif (plot_name == 'Iota'):
 			self.ax.plot(self.nflux,self.vmec_data.iotaf)

@@ -157,6 +157,7 @@ CONTAINS
          lmumat = .false.
          lvessel = .false.
          lvac = .false.
+         luser_init = .false.
          lcontinue_grid = .false.
          lrestart_particles = .false.
          lhitonly  = .false.
@@ -218,6 +219,10 @@ CONTAINS
             case ("-vmec")
                 i = i + 1
                 lvmec = .true.
+                CALL GETCARG(i, id_string, numargs)
+            case ("-user") ! Vacuum Fields Only
+                i = i + 1
+                luser_init = .true.
                 CALL GETCARG(i, id_string, numargs)
             case ("-pies")
                 i = i + 1
@@ -381,7 +386,7 @@ CONTAINS
       CALL MPI_BCAST(restart_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(continue_grid_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)	  
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(eqdsk_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(mumat_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -457,6 +462,8 @@ CONTAINS
       CALL MPI_BCAST(lboxsim,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lbeamdensity,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+      CALL MPI_BCAST(luser_init,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(rminor_norm,1,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)

@@ -216,6 +216,14 @@ beams3d_init_restart.o: \
       beams3d_grid.o
       
 
+beams3d_init_user.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_runtime.o \
+      beams3d_grid.o
+      
+
 beams3d_init_vmec.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
