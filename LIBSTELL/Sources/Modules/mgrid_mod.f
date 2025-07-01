@@ -151,13 +151,17 @@ C-----------------------------------------------
 !
       INTEGER :: istat, ii
       CHARACTER(LEN=200) :: home_dir
-      LOGICAL :: lgrid_exist, lfind
+      LOGICAL :: lgrid_exist, lfind, lmpi_local
       INTEGER :: comm_local
 C-----------------------------------------------
 
+      lmpi_local = .FALSE.
 #if defined(MPI_OPT)
       comm_local = MPI_COMM_WORLD
-      IF (PRESENT(comm)) comm_local = comm
+      IF (PRESENT(comm)) THEN
+         comm_local = comm
+         lmpi_local = .TRUE.
+      END IF
 #endif
 
       mgrid_path = TRIM(mgrid_file)
@@ -203,14 +207,24 @@ C-----------------------------------------------
          lfind = (mgrid_path(ii:ii+2) == '.nc')
          IF (lfind) THEN
 #if defined(NETCDF)
-            CALL read_mgrid_nc (mgrid_path, extcur, nv, nfp, 
+            IF (PRESENT(comm)) THEN
+               CALL read_mgrid_nc (mgrid_path, extcur, nv, nfp, 
      1                          ier_flag, lscreen, comm_local)
+            ELSE
+               CALL read_mgrid_nc (mgrid_path, extcur, nv, nfp, 
+     1                          ier_flag, lscreen)
+            END IF
 #else
             lgrid_exist = .false.
 #endif
          ELSE
-            CALL read_mgrid_bin (mgrid_path, extcur, nv, nfp,
+            IF (PRESENT(comm)) THEN
+               CALL read_mgrid_bin (mgrid_path, extcur, nv, nfp,
      1                          ier_flag, lscreen, comm_local)
+            ELSE
+               CALL read_mgrid_bin (mgrid_path, extcur, nv, nfp,
+     1                          ier_flag, lscreen)
+            END IF
          END IF
 
 !SPH060517         IF (np0b .ne. nv) THEN
@@ -243,6 +257,17 @@ C-----------------------------------------------
 
       END SUBROUTINE read_mgrid
 
+      SUBROUTINE read_mgrid_python(mgrid_file, extcur, nv, nfp, nextcur)
+      IMPLICIT NONE
+      INTEGER, INTENT(in)           :: nv, nfp,nextcur
+      REAL(rprec), INTENT(in)       :: extcur(1:nextcur)
+      CHARACTER(len=*), INTENT(in)  :: mgrid_file
+      INTEGER                       :: ier_flag
+      ier_flag = 0
+      CALL read_mgrid(mgrid_file,extcur,nv,nfp,.FALSE.,ier_flag)
+      RETURN
+      END SUBROUTINE read_mgrid_python
+
       
       SUBROUTINE read_mgrid_bin (filename, extcur, nv, nfp, ier_flag, 
      1                           lscreen,comm)
@@ -269,7 +294,7 @@ C-----------------------------------------------
       INTEGER :: iunit = 50
       INTEGER :: istat, ig, i, j, n, n1, m, nsets_max, k
       LOGICAL :: lstyle_2000
-      LOGICAL :: lMPIInit, lraw_local, lmode_local
+      LOGICAL :: lMPIInit, lraw_local, lmode_local, lmpi_local
       INTEGER :: mpi_rank, mpi_size, MPI_ERR
       INTEGER :: shar_rank, shar_comm, temp_comm, temp_size, 
      1           win_brtemp, win_bptemp, win_bztemp
@@ -278,15 +303,19 @@ C-----------------------------------------------
       lraw_local = .false.; lmode_local = .false.; istat = 0
       mpi_rank = 0; mpi_size = 1
       shar_comm = -1; shar_rank = 0
+      lmpi_local = .FALSE.
 #if defined(MPI_OPT)
-      CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
-      IF ((lMPIInit) .and. PRESENT(comm)) THEN
-         CALL MPI_COMM_RANK(comm, mpi_rank, istat)
-         CALL MPI_COMM_SIZE(comm, mpi_size, istat)
-         CALL MPI_COMM_SPLIT_TYPE(comm, 
-     1           MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, 
-     2           shar_comm, istat)
-         CALL MPI_COMM_RANK(shar_comm, shar_rank, istat)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
+         IF (lMPIInit) THEN
+            lmpi_local = .TRUE.
+            CALL MPI_COMM_RANK(comm, mpi_rank, istat)
+            CALL MPI_COMM_SIZE(comm, mpi_size, istat)
+            CALL MPI_COMM_SPLIT_TYPE(comm, 
+     1              MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, 
+     2              shar_comm, istat)
+            CALL MPI_COMM_RANK(shar_comm, shar_rank, istat)
+         END IF
       END IF
 #endif
 !
@@ -295,7 +324,8 @@ C-----------------------------------------------
       IF (shar_rank .eq. 0) CALL safe_open(iunit, istat, filename,
      1                       'old', 'unformatted')
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      IF (lmpi_local) 
+     1   CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
 #endif
       IF (istat .ne. 0) THEN
          ier_flag = 9
@@ -311,16 +341,18 @@ C-----------------------------------------------
          IF (istat .ne. 0) ier_flag = 9
       END IF
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(nr0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nz0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(np0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nfper0,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nextcur,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(rminb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(zminb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(rmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(zmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(ier_flag,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      IF (lmpi_local) THEN
+          CALL MPI_BCAST(nr0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+          CALL MPI_BCAST(nz0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+          CALL MPI_BCAST(np0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+          CALL MPI_BCAST(nfper0,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+          CALL MPI_BCAST(nextcur,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+          CALL MPI_BCAST(rminb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+          CALL MPI_BCAST(zminb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+          CALL MPI_BCAST(rmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+          CALL MPI_BCAST(zmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+          CALL MPI_BCAST(ier_flag,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      END IF
 #endif
 !
 !     CALCULATE HELPERS AND CHECK NFP AND NV
@@ -359,12 +391,14 @@ C-----------------------------------------------
          READ(iunit,iostat=istat) (curlabel(n),n=1,nextcur)
       END IF
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(bookmark,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(curlabel,SIZE(curlabel),MPI_CHARACTER,
-     1               0,shar_comm,MPI_ERR)
+      IF (lmpi_local) THEN
+         CALL MPI_BCAST(bookmark,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(curlabel,SIZE(curlabel),MPI_CHARACTER,
+     1                  0,shar_comm,MPI_ERR)
 !      IF (lraw_local)
 !     1  CALL MPI_BCAST(raw_coil_current,nextcur,MPI_REAL8,0,
 !     1                 shar_comm,MPI_ERR)
+      END IF
 #endif
 !
 !     ALLOCATE BVAC ARRAY
@@ -480,11 +514,13 @@ C-----------------------------------------------
       END IF
 
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(mgrid_mode,1,MPI_CHARACTER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(lraw_local,1,MPI_LOGICAL,0,shar_comm,MPI_ERR)
-      IF (lraw_local)
-     1   CALL MPI_BCAST(raw_coil_current,nextcur,MPI_REAL8,0,
-     1                  shar_comm,MPI_ERR)
+      IF (lmpi_local) THEN
+         CALL MPI_BCAST(mgrid_mode,1,MPI_CHARACTER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(lraw_local,1,MPI_LOGICAL,0,shar_comm,MPI_ERR)
+         IF (lraw_local)
+     1      CALL MPI_BCAST(raw_coil_current,nextcur,MPI_REAL8,0,
+     1                     shar_comm,MPI_ERR)
+      END IF
 #endif
 
 !
@@ -493,10 +529,12 @@ C-----------------------------------------------
 !
       IF(shar_rank ==0) READ(iunit,iostat=istat) nobser, nobd, nbsets
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(istat,1,MPI_CHARACTER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nobser,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nobd,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nbsets,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      IF (lmpi_local) THEN
+         CALL MPI_BCAST(istat,1,MPI_CHARACTER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(nobser,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(nobd,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(nbsets,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      END IF
 #endif
       IF (istat.ne.0) THEN
          nobser = 0
@@ -510,7 +548,9 @@ C-----------------------------------------------
       ALLOCATE (nbcoils(nbsets), stat=istat)
       IF(shar_rank ==0) READ(iunit) (nbcoils(n),n=1,nbsets)
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(nbcoils,nbsets,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      IF (lmpi_local) THEN
+         CALL MPI_BCAST(nbcoils,nbsets,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      END IF
 #endif
 
       nbcoil_max = MAXVAL(nbcoils(:nbsets))
@@ -585,24 +625,26 @@ C-----------------------------------------------
          ENDDO
       END IF
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(xobser,nobser,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(zobser,nobser,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(dsilabel,SIZE(dsilabel),MPI_CHARACTER,0,
+      IF (lmpi_local) THEN
+         CALL MPI_BCAST(xobser,nobser,MPI_REAL8,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(zobser,nobser,MPI_REAL8,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(dsilabel,SIZE(dsilabel),MPI_CHARACTER,0,
      1               shar_comm,MPI_ERR)
-      CALL MPI_BCAST(iconnect,SIZE(iconnect),MPI_INTEGER,0,
+         CALL MPI_BCAST(iconnect,SIZE(iconnect),MPI_INTEGER,0,
      1               shar_comm,MPI_ERR)
-      CALL MPI_BCAST(bloopnames,SIZE(bloopnames),MPI_CHARACTER,0,
+         CALL MPI_BCAST(bloopnames,SIZE(bloopnames),MPI_CHARACTER,0,
      1               shar_comm,MPI_ERR)
-      CALL MPI_BCAST(rbcoil,SIZE(rbcoil),MPI_REAL8,0,
+         CALL MPI_BCAST(rbcoil,SIZE(rbcoil),MPI_REAL8,0,
      1               shar_comm,MPI_ERR)
-      CALL MPI_BCAST(zbcoil,SIZE(zbcoil),MPI_REAL8,0,
+         CALL MPI_BCAST(zbcoil,SIZE(zbcoil),MPI_REAL8,0,
      1               shar_comm,MPI_ERR)
-      CALL MPI_BCAST(abcoil,SIZE(abcoil),MPI_REAL8,0,
+         CALL MPI_BCAST(abcoil,SIZE(abcoil),MPI_REAL8,0,
      1               shar_comm,MPI_ERR)
-      CALL MPI_BCAST(unpsiext,SIZE(unpsiext),MPI_REAL8,0,
+         CALL MPI_BCAST(unpsiext,SIZE(unpsiext),MPI_REAL8,0,
      1               shar_comm,MPI_ERR)
-      CALL MPI_BCAST(dbcoil,SIZE(dbcoil),MPI_REAL8,0,
+         CALL MPI_BCAST(dbcoil,SIZE(dbcoil),MPI_REAL8,0,
      1               shar_comm,MPI_ERR)
+      END IF
 #endif
 
 !
@@ -614,9 +656,11 @@ C-----------------------------------------------
          READ (iunit,iostat=istat) nlim,(limitr(i),i=1,nlim)
       END IF
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(limitr,SIZE(limitr),MPI_INTEGER,0,
+      IF (lmpi_local) THEN
+         CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(limitr,SIZE(limitr),MPI_INTEGER,0,
      1               shar_comm,MPI_ERR)
+      END IF
 #endif
       IF (istat .ne. 0)then
         nlim = 0
@@ -647,15 +691,17 @@ C-----------------------------------------------
          READ(iunit, iostat=istat) nsets,(nsetsn(i), i=1,nsets)
       END IF
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(rlim,SIZE(rlim),MPI_REAL8,0,
+      IF (lmpi_local) THEN
+         CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(rlim,SIZE(rlim),MPI_REAL8,0,
      1               shar_comm,MPI_ERR)
-      CALL MPI_BCAST(zlim,SIZE(zlim),MPI_REAL8,0,
+         CALL MPI_BCAST(zlim,SIZE(zlim),MPI_REAL8,0,
      1               shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nsets,1,MPI_INTEGER,0,
+         CALL MPI_BCAST(nsets,1,MPI_INTEGER,0,
      1               shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nsetsn,SIZE(nsetsn),MPI_INTEGER,0,
+         CALL MPI_BCAST(nsetsn,SIZE(nsetsn),MPI_INTEGER,0,
      1               shar_comm,MPI_ERR)
+      END IF
 #endif
       IF (nsets .gt. nigroup) THEN
          PRINT *, 'nsets>nigroup'
@@ -687,18 +733,20 @@ C-----------------------------------------------
      1                             nrgrid,nzgrid,tokid
       END IF
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(pfcspec,SIZE(pfcspec),MPI_REAL8,0,
+      IF (lmpi_local) THEN
+         CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(pfcspec,SIZE(pfcspec),MPI_REAL8,0,
      1               shar_comm,MPI_ERR)
-      CALL MPI_BCAST(rx1,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(rx2,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(zy1,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(zy2,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(condif,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nrgrid,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nzgrid,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(tokid,30,MPI_CHARACTER,0,
+         CALL MPI_BCAST(rx1,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(rx2,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(zy1,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(zy2,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(condif,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(nrgrid,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(nzgrid,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(tokid,30,MPI_CHARACTER,0,
      1               shar_comm,MPI_ERR)
+      END IF
 #endif
       DEALLOCATE (limitr, nsetsn)
       IF (istat .ne. 0) THEN
@@ -781,7 +829,7 @@ C-----------------------------------------------
       CHARACTER(LEN=100) :: temp
       INTEGER :: nskip, sh(1)
       INTEGER :: temp_rank
-      LOGICAL :: lMPIInit, lraw_local, lmode_local
+      LOGICAL :: lMPIInit, lraw_local, lmode_local, lmpi_local
       INTEGER :: mpi_rank, mpi_size, MPI_ERR
       INTEGER :: shar_rank, shar_comm, temp_comm, temp_size, 
      1           win_brtemp, win_bptemp, win_bztemp
@@ -789,16 +837,20 @@ C-----------------------------------------------
       lraw_local = .false.; lmode_local = .false.; istat = 0
       mpi_rank = 0; mpi_size = 1
       shar_comm = -1; shar_rank = 0
+      lmpi_local = .FALSE.
 #if defined(MPI_OPT)
-      CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
-      IF ((lMPIInit) .and. PRESENT(comm)) THEN
-         CALL MPI_COMM_RANK(comm, mpi_rank, istat)
-         CALL MPI_COMM_SIZE(comm, mpi_size, istat)
-         CALL MPI_COMM_SPLIT_TYPE(comm, 
+      IF (PRESENT(comm)) THEN
+         CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
+         IF (lMPIInit) THEN
+            lmpi_local = .TRUE.
+            CALL MPI_COMM_RANK(comm, mpi_rank, istat)
+            CALL MPI_COMM_SIZE(comm, mpi_size, istat)
+            CALL MPI_COMM_SPLIT_TYPE(comm, 
      1           MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, 
      2           shar_comm, istat)
-         CALL MPI_COMM_RANK(shar_comm, shar_rank, istat)
+            CALL MPI_COMM_RANK(shar_comm, shar_rank, istat)
 
+         END IF
       END IF
 #endif
 C-----------------------------------------------
@@ -807,7 +859,8 @@ C-----------------------------------------------
 !
       IF (shar_rank .eq. 0) CALL cdf_open(ngrid, filename,'r', istat)
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      IF (lmpi_local)
+     1   CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
 #endif
       IF (istat .ne. 0) THEN
          ier_flag = 9
@@ -834,17 +887,19 @@ C-----------------------------------------------
          IF (istat .eq. 0) CALL cdf_read(ngrid, vn_mgmode, mgrid_mode)
       END IF
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(nr0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nz0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(np0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nfper0,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nextcur,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(rminb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(zminb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(rmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(zmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(lraw_local,1,MPI_LOGICAL,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(mgrid_mode,1,MPI_CHARACTER,0,shar_comm,MPI_ERR)
+      IF (lmpi_local) THEN
+         CALL MPI_BCAST(nr0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(nz0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(np0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(nfper0,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(nextcur,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(rminb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(zminb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(rmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(zmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(lraw_local,1,MPI_LOGICAL,0,shar_comm,MPI_ERR)
+         CALL MPI_BCAST(mgrid_mode,1,MPI_CHARACTER,0,shar_comm,MPI_ERR)
+      END IF
 #endif
 !
 !     CALCULATE HELPERS AND CHECK NFP AND NV
@@ -896,11 +951,13 @@ C-----------------------------------------------
          CALL cdf_close(ngrid)
       END IF
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(curlabel,SIZE(curlabel),MPI_CHARACTER,
+      IF (lmpi_local) THEN
+         CALL MPI_BCAST(curlabel,SIZE(curlabel),MPI_CHARACTER,
      1               0,shar_comm,MPI_ERR)
-      IF (lraw_local)
-     1  CALL MPI_BCAST(raw_coil_current,nextcur,MPI_REAL8,0,
+         IF (lraw_local)
+     1      CALL MPI_BCAST(raw_coil_current,nextcur,MPI_REAL8,0,
      1                 shar_comm,MPI_ERR)
+      END IF
 #endif
 
 
@@ -946,10 +1003,10 @@ C-----------------------------------------------
 !
       nskip = np0b/nv
 #if defined(MPI_OPT)
-      IF ((lMPIInit) .and. PRESENT(comm)) THEN
+      IF (lmpi_local) THEN
          ig = MPI_UNDEFINED
          IF (mpi_rank .lt. nextcur) THEN
-            CALL cdf_open(ngrid, filename,'r', istat)
+            CALL cdf_open(ngrid, TRIM(filename),'r', istat)
             ig = 0
             ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
      1             bztemp(nr0b,nz0b,np0b), bttemp(nbvac,3), stat=istat)
@@ -969,15 +1026,22 @@ C-----------------------------------------------
             temp_rank = -1; temp_size = 1
          END IF
       ELSE
-         CALL cdf_open(ngrid, filename,'r', istat)
+         CALL cdf_open(ngrid, TRIM(filename),'r', istat)
          temp_rank = 0; temp_size = 1; 
+         ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
+     1          bztemp(nr0b,nz0b,np0b), bttemp(nbvac,3), stat=istat)
+         IF (istat .ne. 0)STOP 'Error allocating bXtemp in mgrid_mod2a'
+         brtemp = 0
+         bptemp = 0
+         bztemp = 0
+         bttemp = 0
       END IF
 #else
-      CALL cdf_open(ngrid, filename,'r', istat)
+      CALL cdf_open(ngrid, TRIM(filename),'r', istat)
       temp_rank = 0; temp_size = 1
       ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
      1          bztemp(nr0b,nz0b,np0b), bttemp(nbvac,3), stat=istat)
-      IF (istat .ne. 0)STOP 'Error allocating bXtemp in mgrid_mod2 '
+      IF (istat .ne. 0)STOP 'Error allocating bXtemp in mgrid_mod2b'
       brtemp = 0
       bptemp = 0
       bztemp = 0
@@ -1001,9 +1065,9 @@ C-----------------------------------------------
 !
 !        STORE SUMMED BFIELD (OVER COIL GROUPS) IN BVAC
 !
-            CALL sum_bfield(bttemp(1,1), brtemp, extcur(ig), nv)
-            CALL sum_bfield(bttemp(1,2), bptemp, extcur(ig), nv)
-            CALL sum_bfield(bttemp(1,3), bztemp, extcur(ig), nv)
+            CALL sum_bfield(bttemp(:,1), brtemp, extcur(ig), nv)
+            CALL sum_bfield(bttemp(:,2), bptemp, extcur(ig), nv)
+            CALL sum_bfield(bttemp(:,3), bztemp, extcur(ig), nv)
          END DO
          CALL cdf_close(ngrid)
       END IF
@@ -1012,7 +1076,7 @@ C-----------------------------------------------
 !     COPY BTTEMP to BVAC
 !
 #if defined(MPI_OPT)
-      IF ((lMPIInit) .and. PRESENT(comm)) THEN
+      IF (lmpi_local) THEN
          ! SUM OVER WORKERS TO MASTER
          IF (temp_rank .ge. 0) THEN
             !CALL MPI_BARRIER(temp_comm,istat)
@@ -1056,7 +1120,7 @@ C-----------------------------------------------
       nbsets = 0
 
 #if defined(MPI_OPT)
-      IF ((lMPIInit) .and. PRESENT(comm)) THEN
+      IF (lmpi_local) THEN
         CALL MPI_COMM_FREE(shar_comm,istat)
       END IF
 #endif
@@ -1069,12 +1133,11 @@ C-----------------------------------------------
 #endif
 
       SUBROUTINE sum_bfield(bfield, bf_add, cur, nv)
-	INTEGER, INTENT(IN)        :: nv
+      INTEGER, INTENT(IN)        :: nv
       REAL(rprec), INTENT(INOUT) :: bfield(nr0b*nz0b,nv)
       REAL(rprec), INTENT(IN)    :: bf_add(nr0b*nz0b,np0b)
-	INTEGER     :: nskip
+      INTEGER     :: nskip
       REAL(rprec) :: cur
-
       nskip = np0b/nv
       bfield = bfield + cur*bf_add(:,1:np0b:nskip)
 

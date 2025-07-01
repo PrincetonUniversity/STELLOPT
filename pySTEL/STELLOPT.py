@@ -944,7 +944,6 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Boozer Spectrum')
 			self.ui.ComboBoxOPTplot_type.addItem('Boozer |B|')
 			self.ui.ComboBoxOPTplot_type.addItem('B10/B11')
-			self.ui.ComboBoxOPTplot_type.addItem('|B|_MAX')
 			self.ui.ComboBoxOPTplot_type.addItem('QAS_ERROR')
 			self.ui.ComboBoxOPTplot_type.addItem('QPS_ERROR')
 			self.ui.ComboBoxOPTplot_type.addItem('QHS_ERROR')
@@ -983,7 +982,8 @@ class MyApp(QMainWindow):
 		# Handle Current Density Profiles
 		if any('answers_plot.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Bootstrap Current -----')
-			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current Density')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current Total')
 			bootsj_files = sorted([k for k in files if 'answers_plot.' in k])
 			self.bootsj_files = sorted([k for k in bootsj_files if '_opt' not in k])
 		
@@ -1131,6 +1131,20 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Epsilon Effective')
 			self.ax2.set_title('Neoclassical Helical Ripple (NEO)')
+			self.ax2.legend()
+		elif (plot_name == 'B10B11_evolution'):
+			x = self.stel_data.B10B11_K
+			y = self.stel_data.B10B11_VAL
+			t = self.stel_data.B10B11_TARGET
+			d = self.stel_data.B10B11_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
+			self.ax2.set_xlabel('Radial Grid')
+			self.ax2.set_ylabel(r'$B_{01}/B_{11}$')
+			self.ax2.set_title('Boozer Harmonic Ratios')
 			self.ax2.legend()
 		elif (plot_name == 'BOOTSTRAP_evolution'):
 			x = self.stel_data.BOOTSTRAP_RHO # actually flux
@@ -1885,6 +1899,23 @@ class MyApp(QMainWindow):
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
 			self.UpdateIterFile()
+		elif (plot_name == 'B10/B11'):
+			booz_data = boozer.BOOZER()
+			l=0
+			dl = len(self.booz_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.booz_files:
+				if 'boozmn' in string:
+					booz_data.read_boozer(self.workdir+string)
+					b10b11 = booz_data.calcB10B11()
+					s = np.squeeze(booz_data.phi_b)
+					s = s/s[-1]
+					self.ax2.plot(s,b10b11,'o',color=_plt.cm.brg(l/dl))
+					l = l + 1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel(r'$B_{10}/B_{11}$')
+			self.ax2.set_title('Boozer Spectrum Ratio')
+			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Pressure'):
 			vmec_data = vmec.VMEC()
 			l=0
@@ -2065,15 +2096,6 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Z [m]')
 			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
 			self.ax2.set_aspect('equal')
-		elif (plot_name == '|B|_MAX'):
-			booz_data = boozer.BOOZER()
-			l=0
-			dl = len(self.booz_files)-1
-			if dl == 0 : dl = 1 
-			for string in self.booz_files:
-				if 'boozmn' in string:
-					booz_data.read_boozer(self.workdir+string)
-					disp('NOT DONE!')
 		elif (plot_name == 'QAS_ERROR'):
 			booz_data = boozer.BOOZER()
 			l=0
@@ -2247,7 +2269,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Current Density [kA/m^-2]')
 			self.ax2.set_title('Total Current Profile')
 			self.ax2.set_xlim((0,1))
-		elif (plot_name == 'Bootstrap Current'):
+		elif (plot_name == 'Bootstrap Current Density'):
 			bootsj_data = bootsj.BOOTSJ()
 			l = 0
 			dl = len(self.bootsj_files)-1
@@ -2259,8 +2281,21 @@ class MyApp(QMainWindow):
 					l=l+1
 			self.ax2.set_xlabel('Norm. Toroidal Flux (s)')
 			self.ax2.set_ylabel('dI/ds [A]')
-			self.ax2.set_title('BOOTSJ Bootstrap Current')
+			self.ax2.set_title('BOOTSJ Bootstrap Current Density')
 			self.ax2.set_xlim((0.0,1.0))
+		elif (plot_name == 'Bootstrap Current Total'):
+			bootsj_data = bootsj.BOOTSJ()
+			l = 0
+			dl = len(self.bootsj_files)-1
+			if dl == 0: dl = 1
+			boot_total = []
+			for string in self.bootsj_files:
+				if 'answers_plot.' in string:
+					bootsj_data.read_answers_plot(self.workdir+string)
+					boot_total.append(float(bootsj_data.Itotal))
+			self.ax2.plot(self.stel_data.ITER[:-1],np.array(boot_total)/1000.,'o')
+			self.ax2.set_ylabel('I [kA]')
+			self.ax2.set_title('BOOTSJ Total Bootstrap Current')
 		elif (plot_name == 'g11'):
 			gist_data = gist.GIST()
 			l=0

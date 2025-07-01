@@ -122,6 +122,11 @@ class BOOZER(FourierRep):
 			Poloidal spectrum symmetry
 		n : int
 			Toroidal spectrum symmetry
+
+		Returns
+		-------
+		error : ndarray
+			Quasi-symmetry error
 		"""
 		from copy import deepcopy
 		import numpy as np
@@ -140,6 +145,25 @@ class BOOZER(FourierRep):
 			if b00[i] == 0: continue
 			error[i] = np.sqrt(np.sum(bmnc[i,:]*bmnc[i,:]))/b00[i]
 		return error
+
+	def calcB10B11(self):
+		"""Calculates the B10/B11 for each surface
+
+		This routine computes B(m,n) B10/B11 ratio which is
+		a proxy for the bootstrap current in the design of W7-X.
+
+		Parameters
+		----------
+		"""
+		import numpy as np
+		mask01 = (self.ixm_b == 1) & (self.ixn_b == 0)
+		mask11 = (self.ixm_b == 1) & (self.ixn_b == self.nfp_b)
+		mask01 = np.squeeze(mask01)
+		mask11 = np.squeeze(mask11)
+		b01    = self.bmnc_b[:,mask01]
+		b11    = self.bmnc_b[:,mask11]
+		b11    = np.where(b11==0.0,1.0,b11)
+		return np.abs(b01/b11)
 
 
 

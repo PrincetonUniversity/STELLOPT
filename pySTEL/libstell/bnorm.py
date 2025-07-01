@@ -10,9 +10,9 @@ from libstell.libstell import LIBSTELL, FourierRep
 
 # Constants
 
-# VMEC Class
+# BNORM Class
 class BNORM(FourierRep):
-	"""Class for working with VMEC equilibria
+	"""Class for working with BNORM equilibria
 
 	"""
 	def __init__(self):
