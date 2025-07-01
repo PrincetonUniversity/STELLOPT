@@ -37,7 +37,7 @@ c-----------------------------------------------------------------
 !
 !     NOTE: nescin has been modified from original format: np added to front end
 !
-      nu=256; nv=256; mf=24; nf=15; md=24; nd=22;
+      nu=64; nv=64; mf=48; nf=16; md=48; nd=16;
 !      nu=64; nv=64; mf=12; nf=12; md=18; nd=18;
 
 !
@@ -49,7 +49,8 @@ c-----------------------------------------------------------------
      1         bnfou_c(0:mf,-nf:nf),STAT=istat)
       if (istat .ne. 0) stop 'Allocation Error: bfield_n bnfou)'
       
-      call bnormal(nu, nv, mf, nf, md, nd, bnfou, bnfou_c, extension)
+      call bnormal(nu, nv, mf, nf, md, nd, bnfou, bnfou_c, extension,
+     1             .false.)
 
 !
 !     WRITE OUT BNFOU (FOURIER COEFFICIENTS OF BNORMAL) TO BNORM.EXTENSION FILE

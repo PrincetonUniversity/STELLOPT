@@ -39,6 +39,13 @@ bn_read_commandline.o : \
       neswrite.o
       
       
+bn_read_boozer.o : \
+      meshes.o \
+      bnvariables.o \
+      neswrite.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o
+      
+      
 bn_read_vmecf90.o : \
       meshes.o \
       bnvariables.o \

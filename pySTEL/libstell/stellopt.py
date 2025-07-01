@@ -33,7 +33,9 @@ class STELLOPT():
 			'NEO', 'DKES', 'DKES_ERDIFF', 'DKES_ALPHA', 'TXPORT',      \
 			'ORBIT', 'HELICITY', 'HELICITY_FULL', 'JSTAR', 'RESJAC',   \
 			'COIL_BNORM', 'REGCOIL_CHI2_B', 'CURVATURE_P2', 'GAMMA_C', \
-			'KINK', 'QUASIISO', 'B10B11', 'TOTALBOOTSTRAP']
+			'KINK', 'QUASIISO', 'B10B11', 'TOTALBOOTSTRAP', \
+			'BNORMAL', 'COIL_CURVATURE', 'COIL_TORSION', \
+			'COILCOIL_DISTANCE']
 
 	def read_stellopt_map(self,filename='map.dat'):
 		"""Reads a STELLOPT MAP output file
@@ -234,7 +236,7 @@ class STELLOPT():
 					temp_dict['ITER'] = np.zeros((self.niter,1))
 				iter_val = iter_val + 1
 				if iter_txt == 'MIN':
-					temp_dict['ITER'][iter_val] = temp_dict['ITER'][iter_val]+1
+					temp_dict['ITER'][iter_val] = temp_dict['ITER'][iter_val-1]+1
 				else:
 					temp_dict['ITER'][iter_val] = int(iter_txt)
 				i = i +1
