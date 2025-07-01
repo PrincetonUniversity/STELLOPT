@@ -74,6 +74,7 @@ class FIELDLINES():
 		for i in range(self.nr):
 			self.B_R[i,:,:] = self.B_R[i,:,:]*self.B_PHI[i,:,:]/self.raxis[i]
 			self.B_Z[i,:,:] = self.B_Z[i,:,:]*self.B_PHI[i,:,:]/self.raxis[i]
+		# Adjust wall faces to python indexing
 		if hasattr(self,'wall_faces'): self.wall_faces = self.wall_faces - 1
 
 	def calc_reff(self):
@@ -164,7 +165,7 @@ class FIELDLINES():
 			lplotnow = True
 		if color_data is not None:
 			lcdata = True
-		k = int(self.npoinc*phi/self.phiaxis[-1])
+		k = int(np.round(self.npoinc*phi/self.phiaxis[-1]))
 		rmin = np.amin(self.raxis)
 		rmax = np.amax(self.raxis)
 		x = self.R_lines[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc]
@@ -174,9 +175,17 @@ class FIELDLINES():
 			ax.scatter(x,y,s=0.1,c=c,marker='.')
 		else:
 			ax.plot(x,y,'.k',markersize=0.1)
+		# Add the hc
+		if hasattr(self,'Rhc_lines'):
+			nlines_hc = self.Rhc_lines.shape[0]
+			nsteps_hc = self.Rhc_lines.shape[1]
+			x = self.Rhc_lines[0:nlines_hc,k:nsteps_hc-1:self.npoinc]
+			y = self.Zhc_lines[0:nlines_hc,k:nsteps_hc-1:self.npoinc]
+			ax.plot(x,y,'.r',markersize=0.1)
+			ax.plot(self.Rhc_lines[0,k],self.Zhc_lines[0,k],'+r')
 		ax.set_xlabel('R [m]')
 		ax.set_ylabel('Z [m]')
-		ax.set_title(rf'FIELDLINES $\phi$ = {np.rad2deg(phi):3.1f}')
+		ax.set_title(rf'FIELDLINES $\phi$ = {np.rad2deg(self.PHI_lines[0,k]):3.1f}')
 		ax.set_aspect('equal')
 		ax.set_xlim(rmin,rmax)
 		if lplotnow: pyplot.show()
@@ -188,6 +197,12 @@ class FIELDLINES():
 
 		Parameters
 		----------
+		k : int
+			Index to plot.
+		pointsize : float (optional)
+			Size of points (default=0.01)
+		color : string (optional)
+			Dot color (default='red')
 		plot3D : plot3D object (optional)
 			Plotting object to render to.
 		"""

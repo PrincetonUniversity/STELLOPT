@@ -16,6 +16,8 @@ if __name__=="__main__":
 		help="NESCOIL output file", default = None)
 	parser.add_argument("-c", "--cut_coils", dest="lcut_coils", action='store_true',
 		help="Cut modular coils from the potential", default = False)
+	parser.add_argument("--ncoil", dest="ncoil",
+		help="Number of coils per field period", default = 5, type=int)
 	parser.add_argument("-ch", "--cut_helical_coils", dest="lcut_helical_coils", action='store_true',
 		help="Cut helical coils from the potential", default = False)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
@@ -27,9 +29,9 @@ if __name__=="__main__":
 	if args.nescout_file: 
 		nescout.read_nescout(args.nescout_file)
 		if args.lcut_coils:
-			coil = nescout.cutcoils(5,lplot=args.lplot)
+			coil = nescout.cutcoils(args.ncoil,lplot=args.lplot,npts=256)
 			coil_txt = args.nescout_file.split('.',1)
-			coil.rescalecoils(128)
+			coil.rescalecoils(256)
 			coil.write_coils_file(f'coils.{coil_txt[1]}')
 			if args.lplot_3d: coil.plotcoilsHalfFP()
 		elif args.lcut_helical_coils:
