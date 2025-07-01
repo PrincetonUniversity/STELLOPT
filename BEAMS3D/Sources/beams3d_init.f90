@@ -122,7 +122,10 @@
          IF (lverb) WRITE(6,'(A)') '   RESTART GRID FILE: ' // TRIM(continue_grid_string)
          CALL read_beams3d_mag(TRIM(continue_grid_string),MPI_COMM_SHARMEM,ier)
          phimin = 0
-         CALL get_beams3d_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)         
+         CALL get_beams3d_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)    
+      ELSE IF (luser_init) THEN
+         CALL read_beams3d_input('input.' // TRIM(id_string),ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
       END IF
 
 #if defined(HDF5_PAR)
@@ -432,6 +435,8 @@
          CALL beams3d_init_mgrid
       ELSE IF (lcoil) THEN
          CALL beams3d_init_coil
+      ELSE IF (luser_init) THEN
+         CALL beams3d_init_user
       END IF
 
       ! Put the plasma field on the background grid
