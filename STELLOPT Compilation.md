@@ -66,7 +66,9 @@ Specific Compilation Issues
 
 *If you find the instructions are out dated, please raise an issue. Direct contributions to the documentation on the **gh-pages** branch are particularly welcomed.*
 
-[Compiling on an Apple Macintosh under OSX](STELLOPT Compilation OSX)
+[Compiling on an Apple Macintosh under OS X (MacPorts)](STELLOPT Compilation OS X MacPorts)
+
+[Compiling on an Apple Macintosh under OS X (HomeBrew)](STELLOPT Compilation OS X Brew)
 
 [Compiling on the CINECA Cluster (Marconi)](STELLOPT Compilation CINECA)
 
