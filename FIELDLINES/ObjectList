@@ -13,6 +13,7 @@ fieldlines_calc_surface_fit.o \
 fieldlines_find_axis.o \
 fieldlines_find_hc.o \
 fieldlines_follow.o \
+fieldlines_free.o \
 fieldlines_grid.o \
 fieldlines_gridgen.o \
 fieldlines_init.o \
@@ -30,6 +31,7 @@ fieldlines_init_subgrid.o \
 fieldlines_init_vars.o \
 fieldlines_init_vmec.o \
 fieldlines_init_vmec_edgestart.o \
+fieldlines_interface_mod.o \
 fieldlines_lines.o \
 fieldlines_main.o \
 fieldlines_runtime.o \

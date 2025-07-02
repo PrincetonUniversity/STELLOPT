@@ -12,6 +12,8 @@ if __name__=="__main__":
 		'''Provides a simple tool for reading and plotting GIST files.''')
 	parser.add_argument("-g", "--gist", dest="gist_ext",
 		help="GIST File name.", default = None)
+	parser.add_argument("--vmec", dest="vmec_ext",
+		help="VMEC wout file", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
 		help="Plot the GIST file.", default = False)
 	parser.add_argument("-pp", "--plotproxy", dest="lplotproxy", action='store_true',

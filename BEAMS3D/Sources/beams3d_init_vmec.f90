@@ -511,9 +511,9 @@
                IF (lverb) THEN
                   CALL backspace_out(6,6)
                   WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
-                  CALL FLUSH(6)
                END IF
             END IF
+            CALL FLUSH(6)
          END DO
       END IF
       

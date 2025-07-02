@@ -152,7 +152,7 @@ class COILSET():
 		# Render if requested
 		if lplotnow: plt.render()
 
-	def plotcoilsHalfFP(self,plot3D=None):
+	def plotcoilsHalfFP(self,plot3D=None,color=None):
 		"""Plots a half field period of a coilset in 3D using VTK
 
 		This routine plots a half field period of a coilset in 3D using VTK
@@ -161,6 +161,8 @@ class COILSET():
 		----------
 		plot3D : plot3D object (optional)
 			Plotting object to render to.
+		color : list (optional)
+			List of colors to plot coils.
 		"""
 		import numpy as np
 		import vtk
@@ -173,26 +175,34 @@ class COILSET():
 			lplotnow = True
 			plt = PLOT3D()
 		# Setup color array
-		color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
+		if color:
+			color_txt=color
+		else:
+			color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
 		# Plot coils
 		for i in range(self.ngroups):
-			j=0
-			points_array = np.zeros((self.groups[i].coils[j].npts,3))
-			points_array[:,0] =self.groups[i].coils[j].x
-			points_array[:,1] =self.groups[i].coils[j].y
-			points_array[:,2] =self.groups[i].coils[j].z
-			# Convert numpy array to VTK points
-			points = vtk.vtkPoints()
-			for point in points_array:
-				points.InsertNextPoint(point)
-			# Add to render
-			plt.add3Dline(points,color=color_txt[i % len(color_txt)],linewidth=5)
+			nfilaments = int(self.groups[i].ncoils/(2*self.nfp))
+			for j in range(nfilaments):
+				points_array = np.zeros((self.groups[i].coils[j].npts,3))
+				points_array[:,0] =self.groups[i].coils[j].x
+				points_array[:,1] =self.groups[i].coils[j].y
+				points_array[:,2] =self.groups[i].coils[j].z
+				# Convert numpy array to VTK points
+				points = vtk.vtkPoints()
+				for point in points_array:
+					points.InsertNextPoint(point)
+				# Add to render
+				if type(color) is type(None):
+					plot_color = color_txt[i % len(color_txt)]
+				else:
+					plot_color = color
+				plt.add3Dline(points,color=plot_color,linewidth=5)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested
 		if lplotnow: plt.render()
 
-	def plotcoilplasmaDist(self,plot3D=None):
+	def plotcoilplasmaDist(self,plot3D=None,cmin=None):
 		"""Plots coil with coil-plasma distance
 
 		This routine plots a half field period of a coilset in 3D using
@@ -202,6 +212,8 @@ class COILSET():
 		----------
 		plot3D : plot3D object (optional)
 			Plotting object to render to.
+		cmin : float (optional)
+			Minimum value of color scale.
 		"""
 		import numpy as np
 		import vtk
@@ -214,11 +226,17 @@ class COILSET():
 			lplotnow = True
 			plt = PLOT3D()
 		# Get the min and max values
-		cmin = 1E20; cmax=-1E20;
+		cmax=-1E20; lsetred=False
+		if type(cmin) == type(None):
+			cmin = 1E20
+			for i in range(self.ngroups):
+				j = 0
+				cmin = min(cmin,min(self.groups[i].coils[j].dist_surf)) 
+		else:
+			lsetred=True
 		for i in range(self.ngroups):
 			j = 0
-			cmin = min(cmin,min(self.groups[i].coils[j].dist_surf)) 
-			cmax = max(cmin,max(self.groups[i].coils[j].dist_surf)) 
+			cmax = max(cmax,max(self.groups[i].coils[j].dist_surf)) 
 		# Plot coils
 		for i in range(self.ngroups):
 			j=0
@@ -235,6 +253,8 @@ class COILSET():
 				points.InsertNextPoint(point)
 			# Add to render
 			plt.add3Dline(points,scalars=scalar,linewidth=5)
+			# Add red to colortable
+			if lsetred: plt.setLUTRed()
 		# Set color limits
 		plt.setClim(cmin,cmax)
 		# In case it isn't set by user.

@@ -110,10 +110,6 @@
          IF (var_dex(nvar_in) == ipscale) pres_scale = x(nvar_in)
          IF (var_dex(nvar_in) == imixece) mix_ece = x(nvar_in)
          IF (var_dex(nvar_in) == ixics_v0) xics_v0 = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
-                regcoil_winding_surface_separation = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_current_density) &
-                regcoil_current_density = x(nvar_in)
          IF (var_dex(nvar_in) == ibcrit) bcrit = x(nvar_in)
          IF (var_dex(nvar_in) == iextcur) extcur(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iaphi) aphi(arr_dex(nvar_in,1)) = x(nvar_in)
@@ -150,14 +146,10 @@
          IF (var_dex(nvar_in) == izaxis_cc) zaxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == irhobc)     rhobc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == ideltamn)   deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == icoil_splinefx)   coil_splinefx(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iRosenbrock_X) Rosenbrock_X(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == irho_coil_kts)   rho_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == itheta_coil_kts) theta_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == izeta_coil_kts)  zeta_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
       END DO
 
       ! Adust Boundary Representation
@@ -356,13 +348,6 @@
       WRITE(temp_str,'(i5)') istat
       proc_string = TRIM(TRIM(id_string) // '_opt' // TRIM(ADJUSTL(temp_str)))
 
-      ! Handle coil geometry variations
-      IF (lcoil_geom) THEN
-         CALL stellopt_spline_to_coil(npts_biot, fixedcoilname, lscreen)
-         ctemp_str = 'write_mgrid'
-         CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
-      END IF
-
       IF (iflag .eq. -1) THEN 
          IF (lverb) WRITE(6,*) '---------------------------  EQUILIBRIUM CALCULATION  ------------------------'
       END IF
@@ -463,27 +448,20 @@
          END IF
 !DEC$ ENDIF
 
+         ! Coil related parameters (generate coils must come first)
+         IF (lcreate_coils) CALL stellopt_generate_coils(lscreen,iflag)
+         IF (lneed_bnormal) THEN
+            ctemp_str = 'compute_bnormal'
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         ENDIF
+
          ! NOTE ALL parallel secondary codes go here
 !DEC$ IF DEFINED (TXPORT_OPT)
          IF (ANY(sigma_txport < bigno)) CALL stellopt_txport(lscreen,iflag)
 !DEC$ ENDIF
 !DEC$ IF DEFINED (BEAMS3D_OPT)
          IF (ANY(sigma_orbit < bigno)) CALL stellopt_orbits(lscreen,iflag)
-!DEC$ ENDIF
-!DEC$ IF DEFINED (COILOPTPP)
-         ctemp_str = 'coilopt++'
-         IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) THEN
-            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
-            iflag = ier_paraexe
-         END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (REGCOIL)
-         ! JCS: skipping parallelization for now 
-         ! ctemp_str = 'regcoil_chi2_b'
-         ! IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
-         IF (ANY(sigma_regcoil_chi2_b < bigno) .and. (iflag >=0)) then
-           CALL stellopt_regcoil_chi2_b(lscreen, iflag)
-         end if
 !DEC$ ENDIF
 
          ! Now we load target values if an error was found then

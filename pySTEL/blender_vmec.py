@@ -108,6 +108,8 @@ scene.collection.objects.link(vmec_obj)
 bpy.context.scene.render.engine = 'BLENDER_EEVEE'
 bpy.context.scene.eevee.use_bloom = True
 bpy.context.scene.eevee.bloom_intensity = 0.2  # Adjust bloom intensity as needed
+bpy.context.scene.render.film_transparent = True
+
 
 # Set object as active and select it
 bpy.context.view_layer.objects.active = vmec_obj

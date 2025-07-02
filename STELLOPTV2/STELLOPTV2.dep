@@ -1,10 +1,56 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+chisq_coil_curvature.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o 
+
+chisq_coil_torsion.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o 
+
+chisq_coilcoil_distance.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o 
+
+chisq_bnormal.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o
+
+stellopt_compute_bnormal.o : \
+      stellopt_runtime.o  \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o  \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/bsc_T.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
+      $(BNORM_DIR)/$(LOCTYPE)/neswrite.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o 
+
+stellopt_generate_coils.o : \
+      stellopt_runtime.o  \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
+
 stellopt_read_cws.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       stellopt_winding_surface.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
 

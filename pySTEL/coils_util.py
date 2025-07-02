@@ -26,6 +26,8 @@ if __name__=="__main__":
 		help="Plot the coil-coil distance.", default = False)
 	parser.add_argument("--plotvolcoil", dest="heightwidth",
 		help="Plot volumetric coil of given width and height [m].", default = None)
+	parser.add_argument("--multifilamentcoil", dest="hwnhnw",
+		help="Create a multi-filament coil height,width,nheight,nwidth", default = None)
 	parser.add_argument("-b", "--bfield", dest="bxyz",
 		help="Output B field at x,y,z", default = None)
 	parser.add_argument("-a", "--afield", dest="axyz",
@@ -74,6 +76,11 @@ if __name__=="__main__":
 				for j in range(3):
 					wall_mesh.vectors[i][j] = vertex[f[j],:]
 			wall_mesh.save(args.coils_file+'.stl')
+		if args.hwnhnw:
+			height,width,nh,nw = args.hwnhnw.split(',')
+			coils_new = coils.singleToMultiFilament(height=float(height),width=float(width),nheight=int(nh),nwidth=int(nw))
+			coils = coils_new
+			if args.lplot: coils.plotcoils()
 		if args.loutput: coils.write_coils_file(args.coils_file+'_new')
 		if args.lgourdon: coils.write_Gourdon_coils()
 		if args.axyz:
@@ -84,6 +91,7 @@ if __name__=="__main__":
 			x,y,z = args.bxyz.split(',')
 			bx,by,bz = coils.coilbiot(float(x),float(y),float(z))
 			print(f"B-Field ({x},{y},{z}) : {bx}, {by}, {bz} [T]")
+			print(f"    |B| ({x},{y},{z}) : {np.sqrt(bx**2+by**2+bz**2)} [T]")
 		if args.wall_offset:
 			vertex = coils.coiloffset(float(args.wall_offset))
 			wall = WALL()
