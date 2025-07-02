@@ -35,10 +35,11 @@
 #            Define Compiler Flags
 #######################################################################
   # temp add some checking flags to avoid BEAMS3d issues
-  FLAGS_R = -O2 -fbacktrace -fallow-argument-mismatch # only used for GCC-10
-  FLAGS_D = -O0 -g -fcheck=all -fbacktrace -Wextra -fallow-argument-mismatch \
-            -Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan
-  LIBS    = -L${SCALAPACK_HOME}/lib -lscalapack
+  FLAGS_R = -O2 -g -fexternal-blas -march=native
+  FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check
+  LIBS    = -L${SCALAPACK_HOME}/lib -lscalapack -framework Accelerate
+  FLAGS_R += -fallow-argument-mismatch
+  FLAGS_D += -fallow-argument-mismatch
 
 #######################################################################
 #            MPI Options
@@ -46,13 +47,12 @@
   LMPI    = T
   MPI_COMPILE = mpif90
   MPI_COMPILE_FREE = mpif90 -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none \
-                     -fallow-argument-mismatch # only used for GCC-10
+                     -ffree-line-length-none -ffixed-line-length-none 
   MPI_COMPILE_C = mpicc 
   MPI_LINK = mpif90
-  MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
-  MPI_RUN = mpirun
-  MPI_RUN_OPTS = -np 2
+  MPI_LINK = mpif90 -Wl,-no_compact_unwind
+  MPI_RUN = mpiexec
+  MPI_RUN_OPTS = --use-hwthread-cpus
 
 #######################################################################
 #            NAG Options
@@ -64,7 +64,7 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I${NETCDF_HOME}/include
+  NETCDF_INC = $(shell nc-config --fflags)
   NETCDF_LIB = -L${NETCDF_HOME}/lib -lnetcdf -lnetcdff
 
 #######################################################################
