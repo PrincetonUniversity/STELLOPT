@@ -64,8 +64,9 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --fflags)
+  NETCDF_INC = $(shell nf-config --fflags)
   NETCDF_LIB = -L${NETCDF_HOME}/lib -lnetcdf -lnetcdff
+  NETCDF_LIB = $(shell nf-config --flibs)
 
 #######################################################################
 #            FFTW3 Options
@@ -79,7 +80,7 @@
 #######################################################################
   LHDF5 = T
   HDF5_INC = -I${HDF5_HOME}/include
-  HDF5_LIB = -L${HDF5_HOME}/lib -lhdf5hl_fortran -lhdf5_hl \
+  HDF5_LIB = -L${HDF5_HOME}/lib -lhdf5_hl_fortran -lhdf5_hl \
              -lhdf5_fortran -lhdf5 -lz -ldl -lm
 
 #######################################################################
