@@ -26,7 +26,6 @@ packages taking note of the caveates.
     brew install openmpi
     brew install netcdf
     brew install netcdf-fortran
-    brew install hdf5-mpi # Need to build manually
     brew install fftw
     brew install openblas
     brew install scalapack
@@ -34,7 +33,15 @@ packages taking note of the caveates.
     # All other python modules should be handled durring 
     # install using pip and setuptools
 
-4\. (optional) The following are optional for compiling other codes.
+4\. Installing HDF5 with high level language support.
+
+    brew edit hdf5
+
+Edit the `args` portion of the file to include `-DHDF5_BUILD_HL:BOOL=ON`, then save and close the `hdf5.rb` file.
+
+    brew reinstall --build-from-source hdf5
+
+5\. (optional) The following are optional for compiling other codes.
 
     ############ TRAVIS ############
     brew install netcdf-cxx
@@ -42,12 +49,12 @@ packages taking note of the caveates.
     brew install superlu
     brew install petsc
 
-5\. Now pull stellopt with the command 
+6\. Now pull stellopt with the command 
 
     git clone git@github.com:PrincetonUniversity/STELLOPT.git
 
 
-6\. Set the environement variable (note the first one STELLOPT_PATH should be put in your .zshenv file, assuming you use the default ZSH)
+7\. Set the environement variable (note the first one STELLOPT_PATH should be put in your .zshenv file, assuming you use the default ZSH)
 
     export STELLOPT_PATH=<path to your repository>
     export MACHINE=osx_brew
