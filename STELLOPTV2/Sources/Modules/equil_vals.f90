@@ -29,6 +29,7 @@
       REAL(rprec) ::  aspect, betat, curtor, phiedge, volume, wp, drho,&
                       rbtor, r0, z0, iota_res_tgt, betap, beta, Rmajor, &
                       Aminor, mach0, kx_gene, kink_omega, Baxis
+      INTEGER, ALLOCATABLE :: im_normal_total(:), in_normal_total(:)
       REAL(rprec),ALLOCATABLE :: rho(:), shat(:), extcur(:), eps_eff32(:), &
                                  orbit_lost_frac(:), radto_ece(:,:), radtx_ece(:,:)
       REAL(rprec),ALLOCATABLE :: balloon_grate(:,:,:)

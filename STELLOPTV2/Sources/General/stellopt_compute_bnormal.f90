@@ -13,7 +13,7 @@
       USE stellopt_runtime, ONLY: proc_string, pi2
       USE stellopt_targets, ONLY: nu_bnormal, nv_bnormal
       USE equil_vals, ONLY: bnormal_total, bmnc_normal_total, &
-            bmns_normal_total
+            bmns_normal_total, im_normal_total, in_normal_total
       use safe_open_mod
       USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns, nfp, &
             isigng, Aminor, bsubvmnc, xm_nyq, xn_nyq, mnmax_nyq
@@ -270,7 +270,10 @@
                'replace','formatted')
          IF (ALLOCATED(bmnc_normal_total)) DEALLOCATE(bmnc_normal_total)
          IF (ALLOCATED(bmns_normal_total)) DEALLOCATE(bmns_normal_total)
+         IF (ALLOCATED(im_normal_total)) DEALLOCATE(im_normal_total)
+         IF (ALLOCATED(in_normal_total)) DEALLOCATE(in_normal_total)
          ALLOCATE(bmnc_normal_total(mnmax), bmns_normal_total(mnmax))
+         ALLOCATE(in_normal_total(mnmax),im_normal_total(mnmax))
          bmnc_normal_total = 0.0; bmns_normal_total = 0.0
          WRITE(iunit,'(I8)') mnmax
          factor = 2.0 / DBLE(nuv)
@@ -279,10 +282,8 @@
             n = xn(mn)/nfp
             bmnc_normal_total(mn) = SUM(bnormal_total*carg(:,mn)) * factor
             bmns_normal_total(mn) = SUM(bnormal_total*sarg(:,mn)) * factor
-            !IF ((m == 0)) THEN
-            !   bmnc_normal_total(mn) = bmnc_normal_total(mn)*0.5
-            !   bmns_normal_total(mn) = bmns_normal_total(mn)*0.5
-            !END IF
+            im_normal_total(mn) = m
+            in_normal_total(mn) = n
             WRITE(iunit, '(3(1X,I6),2(1pe24.16))') &
                mn,m,n,bmnc_normal_total(mn),bmns_normal_total(mn)
          END DO

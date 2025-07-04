@@ -159,6 +159,12 @@
       !  BNORMAL TOTAL
       IF (sigma_bnormal < bigno) &
          CALL chisq_bnormal(target_bnormal, sigma_bnormal, ncnt,iflag)
+      !  BNORMAL_MN_SIN
+      IF (ANY(sigma_bnmns < bigno)) &
+         CALL chisq_bnmns(target_bnmns, sigma_bnmns, ncnt,iflag)
+      !  BNORMAL_MN_COS
+      IF (ANY(sigma_bnmnc < bigno)) &
+         CALL chisq_bnmnc(target_bnmnc, sigma_bnmnc, ncnt,iflag)
       !  MEAN COIL CURVATURE
       IF (sigma_coil_curvature < bigno) &
          CALL chisq_coil_curvature(target_coil_curvature, sigma_coil_curvature, ncnt,iflag)

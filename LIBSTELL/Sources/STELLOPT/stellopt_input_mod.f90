@@ -369,6 +369,7 @@
                          lfix_rho_coil, lfix_theta_coil, lfix_zeta_coil, lpoincare, &
                          nu_bnormal, nv_bnormal, &
                          target_bnormal, sigma_bnormal, &
+                         target_bnmns, sigma_bnmns, target_bnmnc, sigma_bnmnc,  &
                          target_coil_curvature, sigma_coil_curvature, &
                          target_coil_torsion, sigma_coil_torsion, &
                          target_coilcoil_distance, sigma_coilcoil_distance
@@ -918,6 +919,10 @@
       nv_bnormal               = 128
       target_bnormal           = 0.0
       sigma_bnormal            = bigno
+      target_bnmns             = 0.0
+      sigma_bnmns              = bigno
+      target_bnmnc             = 0.0
+      sigma_bnmnc              = bigno
       target_coil_curvature    = 0.0
       sigma_coil_curvature     = bigno
       target_coil_torsion      = 0.0
@@ -2302,6 +2307,27 @@
          WRITE(iunit,outint) 'NV_BNORMAL',nv_bnormal
          WRITE(iunit,outflt) 'TARGET_BNORMAL',target_bnormal
          WRITE(iunit,outflt) 'SIGMA_BNORMAL',sigma_bnormal
+      END IF
+      IF (ANY(sigma_bnmns < bigno) .or. ANY(sigma_bnmnc < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET BNORMAL HARMONICS (n,m)'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         IF (sigma_bnormal >= bigno) WRITE(iunit,outint) 'NU_BNORMAL',nu_bnormal
+         IF (sigma_bnormal >= bigno) WRITE(iunit,outint) 'NV_BNORMAL',nv_bnormal
+         DO m = 0, bnorm_mmax
+            DO n = -bnorm_nmax, bnorm_nmax
+               IF (sigma_bnmns(n,m) < bigno) THEN
+                  WRITE(iunit,"(2(2X,A,I3.3,',',I3.3,A,1X,'=',1X,ES22.12E3))")&
+                  'TARGET_BNMNS(',n,m,')',target_bnmns(n,m),&
+                  'SIGMA_BNMNS(',n,m,')',sigma_bnmns(n,m)
+               END IF
+               IF (sigma_bnmnc(n,m) < bigno) THEN
+                  WRITE(iunit,"(2(4X,A,I3.3,',',I3.3,A,1X,'=',1X,ES22.12E3))")&
+                  'TARGET_BNMNC(',n,m,')',target_bnmnc(n,m),&
+                  'SIGMA_BNMNC(',n,m,')',sigma_bnmnc(n,m)
+               END IF
+            END DO
+         END DO
       END IF
       IF (sigma_coil_curvature < bigno) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

@@ -1,5 +1,15 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+chisq_bnmns.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o
+
+chisq_bnmnc.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o
+
 chisq_coil_curvature.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
