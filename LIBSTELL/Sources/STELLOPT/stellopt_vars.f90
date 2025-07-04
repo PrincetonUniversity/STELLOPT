@@ -14,7 +14,8 @@
 !-----------------------------------------------------------------------
       USE vparams, ONLY: ndatafmax, mpol1d, ntord 
       USE vsvd0
-      USE stellopt_globals, ONLY : maxwindsurf
+      USE stellopt_globals, ONLY : maxwindsurf, NCOILS_MAX, &
+        NKNOTS_COILS_MAX
 !-----------------------------------------------------------------------
 !     Module Variables
 !            nfunc_max          Maximum number of function evaluations
@@ -170,8 +171,6 @@
       REAL(rprec), DIMENSION(1:rosenbrock_dim)  ::  Rosenbrock_X_max
 
       ! Varibles for defining the coils
-      INTEGER, PARAMETER :: NCOILS_MAX = 8
-      INTEGER, PARAMETER :: NKNOTS_COILS_MAX = 20
       LOGICAL :: lcreate_coils, lfix_rho_coil, lfix_theta_coil, lfix_zeta_coil, lpoincare
       INTEGER :: nw_coil
       INTEGER :: nh_coil

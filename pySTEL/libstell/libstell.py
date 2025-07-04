@@ -800,6 +800,14 @@ class LIBSTELL():
 		get_constant.argtypes = None
 		get_constant.restype=ct.c_int
 		bigno = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getncoilsmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ncoilsmax = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getnknotscoilsmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		nknotscoilsmax = get_constant()
 		# Call the initialization routine
 		module_name = self.s1+'stellopt_input_mod_'+self.s2
 		init_stellopt_input = getattr(self.libstell,module_name+'_init_stellopt_input'+self.s3)
@@ -831,7 +839,9 @@ class LIBSTELL():
 		booList=['lphiedge_opt', 'lcurtor_opt', 'lpscale_opt', \
 			'lbcrit_opt', 'lmix_ece_opt', 'lregcoil_winding_surface_separation_opt',\
 			 'lregcoil_current_density_opt', 'lxval_opt', 'lyval_opt', \
-			 'lxics_v0_opt','mango_bound_constraints']
+			 'lxics_v0_opt','mango_bound_constraints',\
+			 'lcreate_coils','lfix_rho_coil','lfix_theta_coil',\
+			'lfix_zeta_coil','lpoincare']
 		booLen=[1]*len(booList)
 		booList.extend(['lextcur_opt','laphi_opt', 'lam_opt', \
 					'lac_opt', 'lai_opt','lah_opt', 'lat_opt','lne_opt', \
@@ -849,10 +859,12 @@ class LIBSTELL():
 		booList.extend(['lregcoil_rcws_rbound_c_opt','lregcoil_rcws_rbound_s_opt',\
 			'lregcoil_rcws_zbound_c_opt','lregcoil_rcws_zbound_s_opt'])
 		booLen.extend([(65,65)]*4)
-		intList=['regcoil_nlambda', 'regcoil_num_field_periods', \
-			'sfincs_min_procs', 'vboot_max_iterations']
+		booList.extend([('lcoil_kts_opt')])
+		booLen.extend([(ncoilsmax,nknotscoilsmax)])
 		booList.extend(['lrosenbrock_x_opt'])
 		booLen.extend([(20,1)])
+		intList=['regcoil_nlambda', 'regcoil_num_field_periods', \
+			'sfincs_min_procs', 'vboot_max_iterations','nw_coil','nh_coil']
 		intLen=[1]*len(intList)
 		intList.extend(['coil_nctrl'])
 		intLen.extend([(nigroup,1)])
@@ -870,7 +882,8 @@ class LIBSTELL():
 			'regcoil_current_density_max', 'xics_v0_max', \
 			'mix_ece', 'xval', 'yval', 'xics_v0', \
 			'regcoil_winding_surface_separation', \
-			'regcoil_current_density','vboot_tolerance']
+			'regcoil_current_density','vboot_tolerance',\
+			'width_coil','height_coil']
 		realLen=[1]*len(realList)
 		realList.extend(['dextcur_opt','extcur_min','extcur_max'])
 		realLen.extend([(nigroup,1)]*3)
@@ -923,6 +936,10 @@ class LIBSTELL():
 		realLen.extend([(65,65)]*12)
 		realList.extend(['drosenbrock_x_opt','rosenbrock_x','rosenbrock_x_min','rosenbrock_x_max'])
 		realLen.extend([(20,1)]*4)
+		realList.extend(['dcoil_kts_opt','rho_coil_kts','rho_coil_kts_min','rho_coil_kts_max',\
+			'theta_coil_kts','theta_coil_kts_min','theta_coil_kts_max',\
+			'zeta_coil_kts','zeta_coil_kts_min','zeta_coil_kts_max'])
+		realLen.extend([(ncoilsmax,nknotscoilsmax)]*10)
 		charList=['sfincs_er_option', 'equil_type', 'te_type', 'ne_type', \
 			'ti_type', 'th_type', 'beamj_type','bootj_type','zeff_type','emis_xics_type',\
 			'fixedcoilname','regcoil_nescin_filename','bootcalc_type','phi_type','coil_type']
@@ -939,7 +956,7 @@ class LIBSTELL():
 			'nu_orbit', 'nv_orbit', 'np_orbit', 'mlmnb_kink', 'ivac_kink', 'mmaxdf_kink', \
 			'nmaxdf_kink', 'nra_ece', 'nphi_ece', 'numws', 'nu_bnorm', 'nv_bnorm', \
 			'npts_biot', 'npts_clen', 'npts_torx', 'npts_curv', 'npts_csep', 'npts_cself', \
-			'npts_crect', 'npts_cpoly']
+			'npts_crect', 'npts_cpoly','nu_bnormal','nv_bnormal']
 		intLen=[1]*len(intList)
 		intList.extend(['mlmns_kink', 'lssl_kink', 'lssd_kink','nj_kink','nk_kink'])
 		intLen.extend([(16,1)]*5)
@@ -955,7 +972,9 @@ class LIBSTELL():
 			'alpha_end_txport', 'nu_dkes_erdiff', 'ep_dkes_erdiff', 'em_dkes_erdiff', 'mass_orbit', 'z_orbit', \
 			'target_coil_bnorm', 'sigma_coil_bnorm', 'target_regcoil_winding_surface_separation', 'sigma_regcoil_winding_surface_separation',\
 			'target_regcoil_current_density', 'sigma_regcoil_current_density', 'target_curvature_p2', 'sigma_curvature_p2', \
-			'target_coilsep',  'sigma_coilsep', 'coilrectpfw']
+			'target_coilsep',  'sigma_coilsep', 'coilrectpfw','target_bnormal','sigma_bnormal',\
+			'target_coil_curvature','sigma_coil_curvature','target_coil_torsion','sigma_coil_torsion',\
+			'target_coilcoil_distance','sigma_coilcoil_distance']
 		realLen=[1]*len(realList)
 		realList.extend(['target_rosenbrock_f','sigma_rosenbrock_f'])
 		realLen.extend([(20,1),(20,1)])

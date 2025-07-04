@@ -900,7 +900,7 @@ class MyApp(QMainWindow):
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
 					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP',\
-					'BNORMAL', 'COIL_CURVATURE', 'COIL_TORSION', \
+					'BNORMAL', 'BNMNS', 'BNMNC', 'COIL_CURVATURE', 'COIL_TORSION', \
 					'COILCOIL_DISTANCE']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
@@ -955,7 +955,9 @@ class MyApp(QMainWindow):
 		# Handle Bnorm
 		if any('bnorm' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- B-Normal -----')
-			self.ui.ComboBoxOPTplot_type.addItem('B-Normal')
+			self.ui.ComboBoxOPTplot_type.addItem('B-Normal (Plasma)')
+			self.ui.ComboBoxOPTplot_type.addItem('B-Normal (Coil)')
+			self.ui.ComboBoxOPTplot_type.addItem('B-Normal (Total)')
 			bnormal_file = sorted([k for k in files if 'bnorm_real.' in k])
 			self.bnormal_file = sorted([k for k in bnormal_file if '_opt' not in k])
 		# Handle Boozer Transformation
@@ -1041,12 +1043,50 @@ class MyApp(QMainWindow):
 				for k in idx:
 					self.ui.ComboBoxOPTplot_surf.addItem(str(k+1))
 				self.UpdateBoozerSpec()
-			elif plot_name in ['B-Normal']:
+			elif plot_name in ['B-Normal (Plasma)']:
 				self.fig2.clf()
 				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
-				self.bnorm_data = bnorm.BNORM()
-				self.bnorm_data.read_bnorm_real(test_file)
-				self.bnorm_data.plot_bnorm_real_total(ax=self.ax2)
+				self.stel_data.read_stellopt_bnorm_real(test_file)
+				umax = int(self.stel_data.bnorm_real[1,:].max())
+				vmax = int(self.stel_data.bnorm_real[2,:].max())
+				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax)).T
+				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax)).T
+				b = self.stel_data.bnorm_real[11,:].reshape((vmax,umax)).T
+				hmesh=self.ax2.pcolormesh(u,v,b,cmap='jet')
+				self.ax2.set_xlabel(r'$\theta$ [rad]')
+				self.ax2.set_ylabel(r'$\zeta$ [rad]')
+				self.ax2.set_title('B-Normal (Plasma)')
+				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
+				self.canvas2.draw()
+			elif plot_name in ['B-Normal (Coil)']:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.stel_data.read_stellopt_bnorm_real(test_file)
+				umax = int(self.stel_data.bnorm_real[1,:].max())
+				vmax = int(self.stel_data.bnorm_real[2,:].max())
+				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax)).T
+				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax)).T
+				b = self.stel_data.bnorm_real[12,:].reshape((vmax,umax)).T
+				hmesh=self.ax2.pcolormesh(u,v,b,cmap='jet')
+				self.ax2.set_xlabel(r'$\theta$ [rad]')
+				self.ax2.set_ylabel(r'$\zeta$ [rad]')
+				self.ax2.set_title('B-Normal (Coil)')
+				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
+				self.canvas2.draw()
+			elif plot_name in ['B-Normal (Total)']:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.stel_data.read_stellopt_bnorm_real(test_file)
+				umax = int(self.stel_data.bnorm_real[1,:].max())
+				vmax = int(self.stel_data.bnorm_real[2,:].max())
+				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax)).T
+				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax)).T
+				b = self.stel_data.bnorm_real[13,:].reshape((vmax,umax)).T
+				hmesh=self.ax2.pcolormesh(u,v,b,cmap='jet')
+				self.ax2.set_xlabel(r'$\theta$ [rad]')
+				self.ax2.set_ylabel(r'$\zeta$ [rad]')
+				self.ax2.set_title('B-Normal (Total)')
+				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
 				self.canvas2.draw()
 			elif plot_name in self.gist_files:
 				self.fig2.clf()
@@ -1932,7 +1972,17 @@ class MyApp(QMainWindow):
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
 			self.UpdateIterFile()
-		elif (plot_name == 'B-Normal'):
+		elif (plot_name == 'B-Normal (Plasma)'):
+			file_list = sorted(glob.glob("bnorm_real.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
+		elif (plot_name == 'B-Normal (Coil)'):
+			file_list = sorted(glob.glob("bnorm_real.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
+		elif (plot_name == 'B-Normal (Total)'):
 			file_list = sorted(glob.glob("bnorm_real.*"))
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)

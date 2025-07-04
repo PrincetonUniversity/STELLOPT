@@ -35,7 +35,7 @@ class STELLOPT():
 			'COIL_BNORM', 'REGCOIL_CHI2_B', 'CURVATURE_P2', 'GAMMA_C', \
 			'KINK', 'QUASIISO', 'B10B11', 'TOTALBOOTSTRAP', \
 			'BNORMAL', 'COIL_CURVATURE', 'COIL_TORSION', \
-			'COILCOIL_DISTANCE']
+			'COILCOIL_DISTANCE','BNMNS','BNMNC']
 
 	def read_stellopt_map(self,filename='map.dat'):
 		"""Reads a STELLOPT MAP output file
@@ -165,6 +165,50 @@ class STELLOPT():
 		jac       = numbers[2:]
 		jac2d       = np.reshape(jac,(nvars,mtargets)).T
 		self.jac2d  = jac2d
+
+	def read_stellopt_bnorm_real(self,filename):
+		"""Reads the STELLOPT bnorm_real output file
+
+		This subroutine reads the STELLOPT bnorm_real output files.
+		They are generated when doing bnormal surface targeting.
+
+		Parameters
+		----------
+		file : str
+			Path to bnorm_real file.
+		"""
+		import numpy as np
+		import re
+		f = open(filename,'r')
+		content = f.read()
+		f.close()
+		numbers = re.findall(r'-?\d+\.?\d*(?:[eE][+-]?\d+)?', content)
+		numbers = [float(num) for num in numbers]
+		nuv  = int(numbers[0])
+		data = numbers[1:]
+		self.bnorm_real = np.reshape(data,(nuv,14)).T
+
+	def read_stellopt_bnorm_harm(self,filename):
+		"""Reads the STELLOPT bnorm_harm output file
+
+		This subroutine reads the STELLOPT bnorm_harm output files.
+		They are generated when doing bnormal surface targeting.
+
+		Parameters
+		----------
+		file : str
+			Path to bnorm_real file.
+		"""
+		import numpy as np
+		import re
+		f = open(filename,'r')
+		content = f.read()
+		f.close()
+		numbers = re.findall(r'-?\d+\.?\d*(?:[eE][+-]?\d+)?', content)
+		numbers = [float(num) for num in numbers]
+		mnmax  = int(numbers[0])
+		data = numbers[1:]
+		self.bnorm_harm = np.reshape(data,(mnmax,5)).T
 
 	def read_stellopt_xvec(self,filename='xvec.dat'):
 		"""Reads a STELLOPT xvec output file
