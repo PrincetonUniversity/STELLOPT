@@ -37,7 +37,7 @@
       INTEGER :: mf=10, nf=10, md=20, nd=20
       INTEGER :: m, n, mn, u, v, uv, nuv, iunit, ncoilgroups, nu, nv
       REAL(rprec) :: theta, phi, zeta, arg, cop, sip, RU, RV, ZU, ZV, &
-            Ax, Ay, Az, Bx, By, Bz, Norm
+            Ax, Ay, Az, Bx, By, Bz, Norm, factor
       REAL(rprec), DIMENSION(3) :: xvec, bvec
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: bnfou, bnfou_c
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rreal, zreal
@@ -131,6 +131,7 @@
       rreal = 0.0; zreal = 0.0; bnreal = 0.0
       nx = 0.0; ny = 0.0; nz = 0.0
       bcreal = 0.0
+      carg = 0.0; sarg = 0.0
       CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD, 1, nuv, mystart, myend)
       DO uv = mystart, myend
          u = MOD(uv-1,nu)+1
@@ -194,8 +195,8 @@
          CALL MPI_REDUCE(MPI_IN_PLACE,     Nx, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE,     Ny, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE,     Nz, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
-         CALL MPI_REDUCE(MPI_IN_PLACE,   carg, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
-         CALL MPI_REDUCE(MPI_IN_PLACE,   sarg, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,   carg, nuv*mnmax, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,   sarg, nuv*mnmax, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
       ELSE
          CALL MPI_REDUCE(      bcreal, bcreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(      bnreal, bnreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
@@ -204,8 +205,8 @@
          CALL MPI_REDUCE(          Nx,     Nx, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(          Ny,     Ny, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(          Nz,     Nz, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
-         CALL MPI_REDUCE(        carg,   carg, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
-         CALL MPI_REDUCE(        sarg,   sarg, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(        carg,   carg, nuv*mnmax, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(        sarg,   sarg, nuv*mnmax, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
       END IF
 #endif
       
@@ -215,6 +216,30 @@
       IF (ALLOCATED(bnormal_total)) DEALLOCATE(bnormal_total)
       ALLOCATE(bnormal_total(nuv))
       bnormal_total = bnreal+bcreal
+      
+      !-----------------------------------------------------------------
+      !     For testing of the FFT
+      !-----------------------------------------------------------------
+      !IF (.TRUE.) THEN
+      !   bnormal_total = 0.0
+      !   bnfou  = 0.0
+      !   bnfou(0,-1) = 1.0
+      !   bnfou(1,1) = 1.0
+      !   bnfou(2,-2) = 1.0
+      !   DO uv = 1, nuv
+      !      u = MOD(uv-1,nu)+1
+      !      v = MOD(uv-1,nuv)
+      !      v = FLOOR(REAL(v) / REAL(nu))+1
+      !      theta = pi2*DBLE(u-1)/DBLE(nu)
+      !      zeta = pi2*DBLE(v-1)/DBLE(nv)
+      !      phi = zeta/nfp
+      !      DO m = 0, mf
+      !         DO n = -nf,nf
+      !            bnormal_total(uv) = bnormal_total(uv) + bnfou(m,n)*sin(m*theta+n*zeta)
+      !         END DO
+      !      END DO
+      !   END DO
+      !END IF
       
       !-----------------------------------------------------------------
       !     Write the output to a file
@@ -246,16 +271,18 @@
          IF (ALLOCATED(bmnc_normal_total)) DEALLOCATE(bmnc_normal_total)
          IF (ALLOCATED(bmns_normal_total)) DEALLOCATE(bmns_normal_total)
          ALLOCATE(bmnc_normal_total(mnmax), bmns_normal_total(mnmax))
+         bmnc_normal_total = 0.0; bmns_normal_total = 0.0
          WRITE(iunit,'(I8)') mnmax
+         factor = 2.0 / DBLE(nuv)
          DO mn = 1, mnmax
             m = xm(mn)
-            n = xn(mn)
-            bmnc_normal_total(mn) = SUM(bnormal_total*carg(:,mn)) * pi2 / DBLE(nuv)
-            bmns_normal_total(mn) = SUM(bnormal_total*sarg(:,mn)) * pi2 / DBLE(nuv)
-            IF ((m == 0) .and. (n == 0)) THEN
-               bmnc_normal_total(mn) = bmnc_normal_total(mn)*0.5
-               bmns_normal_total(mn) = bmns_normal_total(mn)*0.5
-            END IF
+            n = xn(mn)/nfp
+            bmnc_normal_total(mn) = SUM(bnormal_total*carg(:,mn)) * factor
+            bmns_normal_total(mn) = SUM(bnormal_total*sarg(:,mn)) * factor
+            !IF ((m == 0)) THEN
+            !   bmnc_normal_total(mn) = bmnc_normal_total(mn)*0.5
+            !   bmns_normal_total(mn) = bmns_normal_total(mn)*0.5
+            !END IF
             WRITE(iunit, '(3(1X,I6),2(1pe24.16))') &
                mn,m,n,bmnc_normal_total(mn),bmns_normal_total(mn)
          END DO
