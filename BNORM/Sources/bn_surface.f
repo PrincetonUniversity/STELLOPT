@@ -109,7 +109,7 @@ c----------------------------------------------------------
          gvv(i) = np2*gvv(i)
       enddo
 
-      PRINT *,SUM(sqf)/nuv
+      !PRINT *,SUM(sqf)/nuv
 
       deallocate (r, ru, rv, stat=i)
       deallocate (p, pu, pv, stat=i)
