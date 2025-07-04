@@ -66,7 +66,7 @@ endif
 #######################################################################
   LNETCDF = T
   NETCDF_INC = $(shell nf-config --fflags)
-  NETCDF_LIB = $(shell nf-config --flibs)
+  NETCDF_LIB = $(shell nc-config --libs) $(shell nf-config --flibs)
 
 #######################################################################
 #            FFTW3 Options
