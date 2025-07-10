@@ -319,11 +319,11 @@
             DO l = 1, nw
                DO k = 1, nh
                   xnod = coil_single(i)%coils(j)%xnod
-                  xnod(1,:) = xnod(1,:) - xb*width/2 - xn*height/2 &
+                  xnod(1,1:ns1) = xnod(1,1:ns1) - xb*width/2 - xn*height/2 &
                             + xb*width*(l-1)/(nw-1) + xn*height*(k-1)/(nh-1)
-                  xnod(2,:) = xnod(2,:) - yb*width/2 - yn*height/2 &
+                  xnod(2,1:ns1) = xnod(2,1:ns1) - yb*width/2 - yn*height/2 &
                             + yb*width*(l-1)/(nw-1) + yn*height*(k-1)/(nh-1)
-                  xnod(3,:) = xnod(3,:) - zb*width/2 - zn*height/2 &
+                  xnod(3,1:ns1) = xnod(3,1:ns1) - zb*width/2 - zn*height/2 &
                             + zb*width*(l-1)/(nw-1) + zn*height*(k-1)/(nh-1)
                   xnod(:,ns) = xnod(:,1)
                   CALL bsc_construct_coil(coil_temp,'fil_loop',coil_single(i)%coils(j)%s_name,'',coil_single(i)%coils(j)%current/(nh*nw),xnod(1:3,1:ns))
