@@ -185,26 +185,18 @@
             END DO
             cop = cos(phi)
             sip = sin(phi)
-! New Polar Way
-            Ax = R-RAX; Az = Z-ZAX
-            N  = SQRT(Ax*Ax+Az*Az)
-            Ax = Ax * (N+rho) / N
-            Az = Az * (N+rho) / N
-            X  = (Ax + RAX) * cop
-            Y  = (Ax + RAX) * sip
-            Z  = Az + ZAX
-! Old NX,NY,NZ way
-!            Ax = RU * cop; Ay = RU * sip; Az = ZU
-!            ! dR/dzeta
-!            Bx = RV * cop - R * sip/nfp; By = RV * sip + R * cop/nfp; Bz = ZV
-!            Nx = Ay*Bz - Az*By
-!            Ny = Az*Bx - Ax*Bz
-!            Nz = Ax*By - Ay*Bx
-!            N  = SQRT(Nx*Nx+Ny*Ny+Nz*Nz)*normal_sign
-!            Nx = Nx/N; Ny = Ny/N; Nz = Nz/N
-!            X  = R*cop + rho*Nx
-!            Y  = R*sip + rho*Ny
-!            Z  = Z    + rho*Nz
+            ! Compute Surface normals
+            Ax = RU * cop; Ay = RU * sip; Az = ZU
+            ! dR/dzeta
+            Bx = RV * cop - R * sip/nfp; By = RV * sip + R * cop/nfp; Bz = ZV
+            Nx = Ay*Bz - Az*By
+            Ny = Az*Bx - Ax*Bz
+            Nz = Ax*By - Ay*Bx
+            N  = SQRT(Nx*Nx+Ny*Ny+Nz*Nz)*normal_sign
+            Nx = Nx/N; Ny = Ny/N; Nz = Nz/N
+            X  = R*cop + rho*Nx
+            Y  = R*sip + rho*Ny
+            Z  = Z    + rho*Nz
             Rc(j) = SQRT(X*X + Y*Y)
             Zc(j) = Z
             Pc(j) = ATAN2(Y,X)
@@ -351,6 +343,88 @@
       DEALLOCATE(xn,yn,zn,nt,xb,yb,zb)
       RETURN
       END SUBROUTINE coils_to_multifilament
+
+      ! SUBROUTINE compute_coil_coil_distance(outext)
+      ! IMPLICIT NONE
+      ! CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: outext
+      ! INTEGER :: nc1, nc2
+      ! DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: dist
+      ! DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: x2d, y2d, z2d, d2d
+      ! !--------------------------------------------------------------
+      ! !    Output the coil_coil_distance
+      ! !--------------------------------------------------------------
+      ! loutput = .FALSE.
+      ! IF (PRESENT(outext)) THEN
+      !    loutput = .TRUE.
+      !    CALL safe_open(iunit_out,ier,TRIM('coil_dist.'//TRIM(outext)),'unknown','formatted')
+      !    WRITE(iunit_out,'(I6,2X,I6,2X,I6,2X,I6)') ncoilgroups,nw_coil,nh_coil,ns
+      ! END IF
+      ! !--------------------------------------------------------------
+      ! !    First compare every coil to every coil inside a given group
+      ! ! This is a mess
+      ! !--------------------------------------------------------------
+      ! ALLOCATE(dist(nw_coil*nh_coil*ncoilgroups,1))
+      ! DO i1 = 1, ncoilgroups
+      !    DO j1 = 1, nw_coil*nh_coil
+      !       n1 = nw_coil*nh_coil + 1
+      !       nc1 = SIZE(coil_group(i1)%coils(j1)%xnod,2)
+      !       ALLOCATE(dist(nc1))
+      !       DO j2 = n1, coil_group(i1)%ncoil
+      !          nc2 = SIZE(coil_group(i1)%coils(j2)%xnod,2)
+      !          ALLOCATE(x2d(nc1,nc2),y2d(nc1,nc2),z2d(nc1,nc2),d2d(nc1,nc2))
+      !          FORALL(k=1:nc1) x2d(k,:) = coil_group(i1)%coils(j1)%xnod(1,k)
+      !          FORALL(k=1:nc1) y2d(k,:) = coil_group(i1)%coils(j1)%xnod(2,k)
+      !          FORALL(k=1:nc1) z2d(k,:) = coil_group(i1)%coils(j1)%xnod(3,k)
+      !          FORALL(k=1:nc2) x2d(:,k) = x2d(:,k) - coil_group(i1)%coils(j2)%xnod(1,k)
+      !          FORALL(k=1:nc2) y2d(:,k) = y2d(:,k) - coil_group(i1)%coils(j2)%xnod(2,k)
+      !          FORALL(k=1:nc2) z2d(:,k) = z2d(:,k) - coil_group(i1)%coils(j2)%xnod(3,k)
+      !          d2d = x2d*x2d+y2d*y2d+z2d*z2d
+      !          WHERE(d2d < 1.0E-6) d2d = 1.0E6
+      !          dist = SQRT(MINVAL(d2d,DIM=2))
+      !          dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+      !          DEALLOCATE(x2d,y2d,z2d,d2d)
+      !       END DO
+      !       IF (loutput) THEN
+      !          DO k = 1, nc1
+      !             WRITE(iunit_out,'(2(2X,I3),14(2X,ES22.12))') &
+      !                i1,j1,coil_group(i1)%coils(j1)%xnod(1,k), &
+      !                coil_group(i1)%coils(j1)%xnod(2,k), &
+      !                coil_group(i1)%coils(j1)%xnod(3,k), &
+      !                dist(k)
+      !          END DO
+      !       END IF
+      !       DEALLOCATE(dist)
+      !    END DO
+      ! END DO
+      ! !--------------------------------------------------------------
+      ! !    Now we compare differnt coil groups 
+      ! !--------------------------------------------------------------
+      ! DO i1 = 1, ncoilgroups
+      !    n1 = i1+1
+      !    DO i2 = n1,ncoilgroups
+      !       DO j1 = 1, coil_group(i1)%ncoil
+      !          nc1 = SIZE(coil_group(i1)%coils(j1)%xnod,2)
+      !          ALLOCATE(dist(nc1))
+      !          DO j2 = 1, coil_group(i2)%ncoil
+      !             nc2 = SIZE(coil_group(i2)%coils(j2)%xnod,2)
+      !             ALLOCATE(x2d(nc1,nc2),y2d(nc1,nc2),z2d(nc1,nc2),d2d(nc1,nc2))
+      !             FORALL(k=1:nc1) x2d(k,:) = coil_group(i1)%coils(j1)%xnod(1,k)
+      !             FORALL(k=1:nc1) y2d(k,:) = coil_group(i1)%coils(j1)%xnod(2,k)
+      !             FORALL(k=1:nc1) z2d(k,:) = coil_group(i1)%coils(j1)%xnod(3,k)
+      !             FORALL(k=1:nc2) x2d(:,k) = x2d(:,k) - coil_group(i2)%coils(j2)%xnod(1,k)
+      !             FORALL(k=1:nc2) y2d(:,k) = y2d(:,k) - coil_group(i2)%coils(j2)%xnod(2,k)
+      !             FORALL(k=1:nc2) z2d(:,k) = z2d(:,k) - coil_group(i2)%coils(j2)%xnod(3,k)
+      !             d2d = x2d*x2d+y2d*y2d+z2d*z2d
+      !             WHERE(d2d < 1.0E-6) d2d = 1.0E6
+      !             dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+      !             DEALLOCATE(x2d,y2d,z2d,d2d)
+      !          END DO
+      !       END DO
+      !    END DO
+      ! END DO
+      ! IF (loutput) CLOSE(iunit_out)
+      ! RETURN
+      ! END SUBROUTINE compute_coil_coil_distance
 
       SUBROUTINE compute_coil_curvature(outext)
       IMPLICIT NONE
