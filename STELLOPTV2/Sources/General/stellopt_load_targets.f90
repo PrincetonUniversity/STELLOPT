@@ -24,7 +24,8 @@
 !        ncnt    Current function evaluation
 !----------------------------------------------------------------------
       INTEGER, INTENT(in)      :: ncnt
-      INTEGER, INTENT(inout)   :: m,iflag
+      INTEGER, INTENT(in)      :: m
+      INTEGER, INTENT(inout)   :: iflag
       REAL(rprec), INTENT(out) :: fvec(m)
       
 !-----------------------------------------------------------------------
@@ -301,7 +302,9 @@
       IF (mtargets .ne. m) THEN; iflag=-2; RETURN; END IF
       
       ! Calculate fvec
-      fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
+      PRINT *,m,fvec
+      fvec = (vals-targets)/ABS(sigmas)
+      !fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE

@@ -1,4 +1,5 @@
 ObjectFiles = \
+stellopt_flines_mod.o \
 chisq_bnmnc.o \
 chisq_bnmns.o \
 chisq_coilcoil_distance.o \

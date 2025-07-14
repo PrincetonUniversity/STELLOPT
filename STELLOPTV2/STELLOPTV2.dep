@@ -28,6 +28,10 @@ chisq_coilcoil_distance.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/biotsavart.o 
 
+stellopt_flines_mod.o : \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o
+
 chisq_bnormal.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
