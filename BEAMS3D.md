@@ -33,19 +33,37 @@ cylindrical grid
 $$ \frac{d\vec{R}}{dt}=\frac{\hat{b}}{qB}\left(\mu\nabla B
 +\frac{mv_{ll}^2}{2B}\left(\hat{b}\cdot\nabla\right)\vec{B}\right)+v_{ll}\hat{b} $$,
 $$ \frac{dv_{ll}}{dt}=-\frac{\mu}{m}\hat{b}\cdot\left(\nabla
-B\right) $$. These ODE\'s can be solved via a NAG routine,
+B\right) $$. These ODE\'s can be solved via a NAG routine (if available),
 LSODE, or Runge-Kutta algorithm. The magnetic field is splined over the
-cylindrical grid (R,phi,Z). The initial position and velocity of the
-particles can either be specified or modeled using a neutral beam model.
+cylindrical grid (R,phi,Z). Full-orbit following is also available.
+The initial position and velocity of the particles can either be specified or 
+modeled using a neutral beam model.
 The neutral beam model relies on ADAS for ionization and recombination
-physics. $$ \mu = \frac{mv_\perp^2}{2B} $$
+physics if available. Otherwise, the Suzuki model is used for the stopping coefficients.
+$$ \mu = \frac{mv_\perp^2}{2B} $$
 
 ------------------------------------------------------------------------
 
 ### Compilation
 
 BEAMS3D is distributed as part of the STELLOPT package of codes through
-Git.
+Git. To compile only BEAMS3D, issue
+
+```fortran
+make clean_release
+```
+
+from within its directory.
+
+Note that different collision operators are available by the following flags, to be added to the PRECOMP variable in make_YOURMACHINE.inc:
+
+```makefile
+-B3D_COLLOP_NRL19IE
+-DB3D_COLLOP_NUBEAM 
+-DB3D_VEL_DIFFUSION
+```
+
+The first two change the slowing down parameters to separate between electron and ion contributions, either based on the NRL coulomb logarithms or on the formulation which NUBEAM also uses. The last flag turns on the velocity diffusion operator. Using this operator does not significantly alter the heating profiles in our testing, as contributions from it are acounted for in the heating calculation.  More details can be found in the [BEAMS3D validation paper](https://doi.org/10.1088/1741-4326/adeda2).
 
 ------------------------------------------------------------------------
 
@@ -96,6 +114,8 @@ should look like:
  TI_AUX_F  = 0.0 1.0 2.0            ! Ion Temperature [eV]
  POT_AUX_S  = 0.0 0.5 1.0           ! Electrostatic Potential Knots [0,1]
  POT_AUX_F  = 0.0 1.0 2.0           ! Electrostatic Potential [V] (Phi, not dPhi/dr)
+ OMEG_AUX_S  = 0.0 0.5 1.0          ! Toroidal Rotaion (angular frequency) Knots [0,1]
+ OMEG_AUX_F  = 0.0 1.0 2.0          ! Toroidal Rotaion [rad/s]
  THERM_FACTOR = 1.5                 ! Factor at which to thermalize (Vtherm*THERM_FACTOR)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!            PLASMA PARAMETERS (MULTI-ION)                          !!
@@ -139,6 +159,7 @@ should look like:
  INT_TYPE = 'LSODE'                 ! Particle trajectory integration method (NAG, RKH68, LSODE)
  FOLLOW_TOL = 1.0E-12               ! Trajectory following tolerance (NAG, LSODE)
  NPOINC = 100                       ! Number of trajector points to save per particle
+ RHO_FULLORBIT=1.0                  ! Rho coordinate at which to start Full orbit following
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!            PARTICLE INITIAL CONDITION (INDIVIDUAL)                !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -169,7 +190,7 @@ should look like:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!            PARTICLE INITIAL CONDITION (Fusion Reactions)          !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- FUSION_SCALE     = 1.0            ! Scaleing Factor to apply to energy
+ FUSION_SCALE     = 1.0            ! Scaling Factor to apply to energy
 /
 &END
 ```
@@ -198,18 +219,20 @@ and BEAMS3D\_INPUT namelists in it.
 | Argument | Default | Description |
 |:------------- |:-------------:|:----- |
 | -vmec | NONE | VMEC input extension |
+| -eqdsk | NONE | Namelist ID + EQDSK file |
 | -coil | NONE | Coils File |
 | -mgrid | NONE | Makegrid style vacuum grid file |
 | -vessel | NONE | First wall file |
 | -beamlet | NONE | Beamlet deffintion HDF5 file. |
 | -restart | NONE | Restart run from particles in previous run (HDF5 file) |
-| -vac | NONE | Only compute the vacuum field |
-| -beam_simple | NONE | Assume monoenergetic beams (normally 1% variance around injection energy) |
-| -collisions | NONE | Force use of slowing down/scattering operator. |
-| -depo | NONE | Calculate deposition only |
-| -field | NONE | Outputs the B-Field on the cylindrical grid only. |
-| -ascot4 | NONE | Creates input HDF5 file for ASCOT4 (BBNBI, no particles) |
-| -ascot5 | NONE | Creates input HDF5 file for ASCOT5. |
+| -continue_grid | FALSE | Load magnetic field from previous run (HDF5 file), specify with VMEC for namelist reading |
+| -vac | FALSE | Only compute the vacuum field |
+| -beam_simple | FALSE | Assume monoenergetic beams (normally 1% variance around injection energy) |
+| -collisions | FALSE | Force use of slowing down/scattering operator. |
+| -depo | FALSE | Calculate deposition only |
+| -field | FALSE | Outputs the B-Field on the cylindrical grid only. |
+| -ascot4 | FALSE | Creates input HDF5 file for ASCOT4 (BBNBI, no particles) |
+| -ascot5 | FALSE | Creates input HDF5 file for ASCOT5. |
 | -fidasim | FALSE | Creates input HDF5 files for FIDASIM 2.0.0 converting from normal distribution ([FIDASIM_INPUTS_B3D](BEAMS3D_FIDASIM.md) namelist required) |
 | -fidasim_cyl | FALSE | Creates input HDF5 files for FIDASIM 2.0.0 directly from cartesian cylindrical grid ([FIDASIM_INPUTS_B3D](BEAMS3D_FIDASIM.md) namelist required) |
 | -hitonly | FALSE | Only save vessel strike points.|
@@ -295,6 +318,7 @@ variables (all values in mks units, angles in radians)
 | NI | DOUBLE | nion,nr,nphi,nz | Ion number density |
 | TI | DOUBLE | nr,nphi,nz | Ion Temperature eV |
 | ZEFF_ARR | DOUBLE | nr,nphi,nz | Zeff |
+| OMEG_ARR | DOUBLE | nr,nphi,nz | Omega rad/s |
 | **Marker Trajectory** |
 | npoinc | INTEGER | 1 | Number of Timesteps Saved |
 | nparticles | INTEGER | 1 | Number of markers Evolved |
@@ -309,6 +333,9 @@ variables (all values in mks units, angles in radians)
 | PHI_lines | DOUBLE | npoinc+1,nparticles | Phi trajectory of markers. |
 | Z_lines | DOUBLE | npoinc+1,nparticles | Z trajectory of markers. |
 | vll_lines | DOUBLE | npoinc+1,nparticles | Parallel velocity trajectory of markers. |
+| vr_lines | DOUBLE | npoinc+1,nparticles | Velocity in R trajectory of markers. |
+| vphi_lines | DOUBLE | npoinc+1,nparticles | Velocity in Phi trajectory of markers. |
+| vz_lines | DOUBLE | npoinc+1,nparticles | Velocity in Z trajectory of markers. |
 | moment_lines | DOUBLE | npoinc+1,nparticles | Magnetic Moment trajectory of markers. |
 | neut_lines | BOOLEAN | npoinc+1,nparticles | If true markers is a neutral at that point. |
 | S_lines | DOUBLE | npoinc+1,nparticles | Normalized toroidal flux rajectory of markers. |
