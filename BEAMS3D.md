@@ -120,6 +120,20 @@ should look like:
  NVPERP_DIST = 64                   ! Perpendicular velocity bins (0,vmax)
  PARTVMAX    = 3.0E6                ! Maximum velocity in dist. (vmax)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!            FIDASIM DISTRIBUTION FUNCTION                          !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  NR_FIDA       = 64
+  RMIN_FIDA   = 2.6
+  RMAX_FIDA   = 4.9
+  NPHI_FIDA     = 40
+  PHIMIN_FIDA = 0
+  PHIMAX_FIDA = 1.74
+  NZ_FIDA       = 64
+  ZMIN_FIDA   = -1.0
+  ZMAX_FIDA   = 1.0
+  NENERGY_FIDA  = 50
+  NPITCH_FIDA   = 75
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!            PARTICLE INTEGRATION PARAMETERS                        !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  INT_TYPE = 'LSODE'                 ! Particle trajectory integration method (NAG, RKH68, LSODE)
@@ -196,7 +210,9 @@ and BEAMS3D\_INPUT namelists in it.
 | -field | NONE | Outputs the B-Field on the cylindrical grid only. |
 | -ascot4 | NONE | Creates input HDF5 file for ASCOT4 (BBNBI, no particles) |
 | -ascot5 | NONE | Creates input HDF5 file for ASCOT5. |
-| -hitonly | NONE | Only save vessel strike points.|
+| -fidasim | FALSE | Creates input HDF5 files for FIDASIM 2.0.0 converting from normal distribution ([FIDASIM_INPUTS_B3D](BEAMS3D_FIDASIM.md) namelist required) |
+| -fidasim_cyl | FALSE | Creates input HDF5 files for FIDASIM 2.0.0 directly from cartesian cylindrical grid ([FIDASIM_INPUTS_B3D](BEAMS3D_FIDASIM.md) namelist required) |
+| -hitonly | FALSE | Only save vessel strike points.|
 | -plasma | NONE | Only compute fields inside the plasma domain (places wall at LCFS) |
 | -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). |
 | -suzuki | NONE | Use Suzuki beam deposition model (default if no ADAS/PREACT). |
@@ -378,6 +394,8 @@ bins by VLL the particles at each NPOINC time step.
 [NCSX Neutral Beam Restart Example](BEAMS3D NCSX Restart Example.md)
 
 [Benchmarking and Validation](BEAMS3D Validation and Benchmarking on HPC systems.md)
+
+[FIDASIM simulations](BEAMS3D_FIDASIM.md)
 
 ------------------------------------------------------------------------
 
