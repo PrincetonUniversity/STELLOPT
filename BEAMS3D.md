@@ -198,7 +198,8 @@ should look like:
 It is important to note that neutral beam lines are defined by two
 points. The first index of the array is the beam number, the second
 defines the two points. The first point (X,1) is the origin on the beam.
-The second points (X,2) defines the beamline from that origin.
+The second points (X,2) defines the beamline from that origin. Specifying 
+the -beamlet input parameter will take precedent over this.
 
 ![ Diagram of neutral beam parameters showing how ASIZE\_BEAMS, DIV\_BEAMS, and ADIST\_BEAMS are used to initialise neutral particles.](images/beam_diagram.jpg )
 
@@ -223,7 +224,7 @@ and BEAMS3D\_INPUT namelists in it.
 | -coil | NONE | Coils File |
 | -mgrid | NONE | Makegrid style vacuum grid file |
 | -vessel | NONE | First wall file |
-| -beamlet | NONE | Beamlet deffintion HDF5 file. |
+| -beamlet | NONE | Beamlet defintion HDF5 file. |
 | -restart | NONE | Restart run from particles in previous run (HDF5 file) |
 | -continue_grid | FALSE | Load magnetic field from previous run (HDF5 file), specify with VMEC for namelist reading |
 | -vac | FALSE | Only compute the vacuum field |
@@ -236,16 +237,16 @@ and BEAMS3D\_INPUT namelists in it.
 | -fidasim | FALSE | Creates input HDF5 files for FIDASIM 2.0.0 converting from normal distribution ([FIDASIM_INPUTS_B3D](BEAMS3D_FIDASIM.md) namelist required) |
 | -fidasim_cyl | FALSE | Creates input HDF5 files for FIDASIM 2.0.0 directly from cartesian cylindrical grid ([FIDASIM_INPUTS_B3D](BEAMS3D_FIDASIM.md) namelist required) |
 | -hitonly | FALSE | Only save vessel strike points.|
-| -plasma | NONE | Only compute fields inside the plasma domain (places wall at LCFS) |
+| -plasma | FALSE | Only compute fields inside the plasma domain (places wall at LCFS) |
 | -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). |
-| -suzuki | NONE | Use Suzuki beam deposition model (default if no ADAS/PREACT). |
-| -w7x | NONE | Use W7-X beam shape model. |
-| -fusion | NONE | Use nuclear fusion thermal birth model. |
-| -fusion_alpha | NONE | Use nuclear fusion thermal birth model (alphas only). |
-| -noverb | NONE | Suppresses screen output |
+| -suzuki | TRUE | Use Suzuki beam deposition model (default if no ADAS/PREACT). |
+| -w7x | FALSE | Use W7-X beam shape model. |
+| -fusion | FALSE | Use nuclear fusion thermal birth model. |
+| -fusion_alpha | FALSE | Use nuclear fusion thermal birth model (alphas only). |
+| -noverb | FALSE | Suppresses screen output |
 | -help | NONE | Print help message. |
 
-In it\'s simplest invokation the code requires
+In its simplest invokation the code requires
 a VMEC input file.
 
     >~/bin/xbeams3d -vmec ncsx_c09r00_free -mgrid mgrid_c09r00.nc -vac
@@ -281,7 +282,7 @@ a VMEC input file.
     ----- BEAMS3D DONE -----
 
 The BENCHMARKS directory contains a set of tests for BEAMS3D based on an
-axisymmetric VMEC tokamak equilibrium.  The input files are located
+circular axisymmetric VMEC tokamak equilibrium.  The input files are located
 in the BEAMS3D_TEST subdirectory.  They can all be invoked by
 calling make beams3d_test from the BENCHMARKS directory.  The
 comparrision scripts require Python.
@@ -341,7 +342,6 @@ variables (all values in mks units, angles in radians)
 | S_lines | DOUBLE | npoinc+1,nparticles | Normalized toroidal flux rajectory of markers. |
 | U_lines | DOUBLE | npoinc+1,nparticles | Poloidal angle trajectory of markers. |
 | B_lines | DOUBLE | npoinc+1,nparticles | mod(B) trajectory of markers. |
-| R_lines | DOUBLE | npoinc+1,nparticles | R Trajectory of markers. |
 | **Distribution Function** |
 | nbeams | INTEGER | 1 | Number of fast ion populations |
 | ns_prof1 | INTEGER | 1 | Number of radial distribution gridpoints |
@@ -431,6 +431,13 @@ bins by VLL the particles at each NPOINC time step.
 -   [McMillan, M. and Lazerson, S.A. \"BEAMS3D: Neutral beam injection model.\" Plasma Phys. and Control. Fusion 56, 095019 (2014)](https://doi.org/10.1088/0741-3335/56/9/095019)
 -   [Lazerson, S.A. et al. \"Validation of the BEAMS3D neutral beam deposition model on Wendelstein 7-X\" Nuclear Fusion 60, 706020 (2020)](https://doi.org/10.1088/1741-4326/ab8e61)
 -   [Lazerson, S.A. et al. \"Modeling and measurement of energetic particle slowing down on Wendelstein 7-X\" Nuclear Fusion 61, 096006 (2021)](https://doi.org/10.1088/1741-4326/ac0771)
--   [Lazerson, S.A., LeViness, A. and Lyon, J. \"Simulating fusion alpha heating in a stellarator reactor\" Plasma Phys. Control. Fusion 63, 125033 (2021) ](https://doi.org/10.1088/1361-6587/ac35ee)
--   [Kulla, D. et al. \"Placement of a fast ion loss detector array for neutral beam injected particles in Wendelstein 7-X\" Plasma Phys. Control. Fusion (accepted) (2022) ](https://doi.org/10.1088/1361-6587/ac43f1)
+-   [Lazerson, S.A. et al. \"Simulating fusion alpha heating in a stellarator reactor\" Plasma Phys. Control. Fusion 63, 125033 (2021)](https://doi.org/10.1088/1361-6587/ac35ee)
+-   [Kulla, D. et al. \"Placement of a fast ion loss detector array for neutral beam injected particles in Wendelstein 7-X\" Plasma Phys. Control. Fusion 64, 035006  (2022)](https://doi.org/10.1088/1361-6587/ac43f1)
+-   [Lazerson, S.A. et al. \"Gyro orbit simulations of neutral beam injection in Wendelstein 7-X\" Nucl. Fusion 63, 096012 (2023) ](https://doi.org/10.1088/1741-4326/ace9ec)
+-   [Lazerson, S.A. et al. \"Fast ion confinement in the presence of core magnetic islands in Wendelstein 7-X\" Plasma Phys. Control. Fusion 66, 075017 (2024)](https://doi.org/10.1088/1361-6587/ad4f11)
+-   [Lazerson, S.A. et al. \"OPTEMIST: A neutral beam for measuring quasi-omnigenity in Wendelstein 7-X\" Physics of Plasmas 31, 072506 (2024)](https://doi.org/10.1063/5.0218670)
+-   [Kulla, D. et al. \"Validation of BEAMS3D against Fast-Ion D-Alpha Measurements at ASDEX-Upgrade using FIDASIM\" Nuclear Fusion (2025)](https://doi.org/10.1088/1741-4326/adeda2)
+
+
+
 
