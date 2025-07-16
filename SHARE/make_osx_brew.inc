@@ -11,7 +11,7 @@
   # Temporaryily copy STELLOPT_HOME to MYHOME since MYHOME is currently
   # used in all the makefiles.
   MYHOME = $(STELLOPT_HOME)
-  
+
   SHELL = /bin/sh
   PWD1 = `pwd`
   PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
@@ -19,17 +19,18 @@
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
   LINK    = ld $(FLAGS) -o
   LINK_AR = ar -ruvs
-  LINK_C  = gcc -shared -Wl,--no-undefined -Wl,-export-dynamic 
+  LINK_C  = gcc -shared -Wl,--no-undefined -Wl,-export-dynamic
 
 #######################################################################
 #            Libraries path
 #######################################################################
-  SCALAPACK_HOME ?= /usr/local/opt/scalapack
-  FFTW_HOME ?= /usr/local/opt/fftw
-  HDF5_HOME ?= /usr/local/opt/hdf5
-  NETCDF_HOME ?= /usr/local/opt/netcdf
+  SCALAPACK_HOME ?= $(shell brew --prefix scalapack)
+  FFTW_HOME ?= $(shell brew --prefix fftw)
+  HDF5_HOME ?= $(shell brew --prefix hdf5)
+  NETCDF_HOME ?= $(shell brew --prefix netcdf)
+  NETCDF_FORTRAN_HOME ?= $(shell brew --prefix netcdf-fortran)
   # netcdf needs manually installed netcdf-frotran; still have some issue
-  
+
 
 #######################################################################
 #            Define Compiler Flags
@@ -47,8 +48,8 @@
   LMPI    = T
   MPI_COMPILE = mpif90
   MPI_COMPILE_FREE = mpif90 -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none 
-  MPI_COMPILE_C = mpicc 
+                     -ffree-line-length-none -ffixed-line-length-none
+  MPI_COMPILE_C = mpicc
   MPI_LINK = mpif90
   MPI_LINK = mpif90 -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
@@ -64,9 +65,8 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nf-config --fflags)
-  NETCDF_LIB = -L${NETCDF_HOME}/lib -lnetcdf -lnetcdff
-  NETCDF_LIB = $(shell nf-config --flibs)
+  NETCDF_INC = $(shell nc-config --cflags) $(shell nf-config --fflags)
+  NETCDF_LIB = $(shell nc-config --libs) $(shell nf-config --flibs)
 
 #######################################################################
 #            FFTW3 Options
@@ -111,7 +111,7 @@ ifneq ("$(wildcard $(GENE_PATH))","")
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
-  GENE_LIB = 
+  GENE_LIB =
 else
   LGENE = F
 endif
@@ -165,7 +165,7 @@ endif
 ifneq ("$(wildcard $(REGCOIL_PATH))","")
   LREGCOIL= T
   REGCOIL_DIR = $(REGCOIL_PATH)
-  REGCOIL_INC = -I$(REGCOIL_DIR) 
+  REGCOIL_INC = -I$(REGCOIL_DIR)
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 else
@@ -192,7 +192,7 @@ endif
 ifneq ("$(wildcard $(AEOPT_PATH))","")
   LAEOPT = T
   AEOPT_DIR = $(AEOPT_PATH)
-  AEOPT_INC = -I$(AEOPT_DIR) 
+  AEOPT_INC = -I$(AEOPT_DIR)
   LIB_AEOPT = libtrapAE.a
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 else
@@ -208,8 +208,8 @@ ifneq ("$(wildcard $(MANGO_PATH))","")
 # Any flags specified on the next 2 lines will be added to the
 # MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS lines as defined in
 # $(MANGO_DIR)/lib/mangoMakeVariables
-  MANGO_INC = 
-  MANGO_LIB = 
+  MANGO_INC =
+  MANGO_LIB =
 else
   LMANGO = F
 endif

@@ -126,7 +126,7 @@ class COILSET():
 		import vtk
 		from libstell.plot3D import PLOT3D
 		# Handle optionals
-		if plot3D: 
+		if plot3D:
 			lplotnow=False
 			plt = plot3D
 		else:
@@ -168,7 +168,7 @@ class COILSET():
 		import vtk
 		from libstell.plot3D import PLOT3D
 		# Handle optionals
-		if plot3D: 
+		if plot3D:
 			lplotnow=False
 			plt = plot3D
 		else:
@@ -219,7 +219,7 @@ class COILSET():
 		import vtk
 		from libstell.plot3D import PLOT3D
 		# Handle optionals
-		if plot3D: 
+		if plot3D:
 			lplotnow=False
 			plt = plot3D
 		else:
@@ -231,12 +231,12 @@ class COILSET():
 			cmin = 1E20
 			for i in range(self.ngroups):
 				j = 0
-				cmin = min(cmin,min(self.groups[i].coils[j].dist_surf)) 
+				cmin = min(cmin,min(self.groups[i].coils[j].dist_surf))
 		else:
 			lsetred=True
 		for i in range(self.ngroups):
 			j = 0
-			cmax = max(cmax,max(self.groups[i].coils[j].dist_surf)) 
+			cmax = max(cmax,max(self.groups[i].coils[j].dist_surf))
 		# Plot coils
 		for i in range(self.ngroups):
 			j=0
@@ -279,7 +279,7 @@ class COILSET():
 		import vtk
 		from libstell.plot3D import PLOT3D
 		# Handle optionals
-		if plot3D: 
+		if plot3D:
 			lplotnow=False
 			plt = plot3D
 		else:
@@ -289,8 +289,8 @@ class COILSET():
 		cmin = 1E20; cmax=-1E20;
 		for i in range(self.ngroups):
 			j = 0
-			cmin = min(cmin,min(self.groups[i].coils[j].dist_coil)) 
-			cmax = max(cmin,max(self.groups[i].coils[j].dist_coil)) 
+			cmin = min(cmin,min(self.groups[i].coils[j].dist_coil))
+			cmax = max(cmin,max(self.groups[i].coils[j].dist_coil))
 		# Plot coils
 		for i in range(self.ngroups):
 			j=0
@@ -549,7 +549,7 @@ class COILSET():
 	def coilSurfDist(self,xs,ys,zs):
 		"""Calculates coil-surface distance
 
-		This routine calculates the distance between a coil and a 
+		This routine calculates the distance between a coil and a
 		surface defined by points in cartesian coordiantes (x,y,z).
 		Values are stored in the coil atribute dist_coil.
 
@@ -852,7 +852,7 @@ class COILSET():
 				d = d + min(dl2)
 		#print(d)
 		return d
-		
+
 	def surf_fit_callbackF(self,intermediate_result):
 		print(f'ITER: {self.Nfeval} -- dval: {intermediate_result.fun}')
 		self.Nfeval += 1
@@ -981,6 +981,39 @@ class COILSET():
 		for i in range(self.ngroups):
 			nfp = max(min(self.groups[i].ncoils/2,self.nfp),1)
 			self.groups[i].coils[0].writeGourdonCoil(filename=self.groups[i].name,nfp=nfp)
+
+
+
+	def write_coils_STEP(self,filename='coils.step',width=0.2,height=0.2,lfield_period=False):
+		"""
+		Writes the coils to a STEP file using OpenCASCADE/pythonOCC by
+		lofting square cross-sections with BRepOffsetAPI_ThruSections.
+		"""
+		from libstell.step_exporter import STEP_EXPORTER
+		stepExporter = STEP_EXPORTER()
+
+        # Create compound to add coil solids to
+		coil_compound = stepExporter.compound_solid("create")
+
+		for i in range(self.ngroups):
+			ncoil_max = self.groups[i].ncoils
+			if lfield_period:
+				ncoil_max = 1
+			for j in range(ncoil_max):
+				xx, yy, zz = self.groups[i].coils[j].finiteBuildCoil(width=width, height=height)
+				coil_solid = stepExporter.generate_coil_solid(xx,yy,zz)
+				# Check solid watertightness
+				if not stepExporter.check_watertightness(coil_solid):
+				    print("!! Warning: solid may not be watertight. Proceeding anyway...")
+				# Add solid to compound
+				coil_compound = stepExporter.compound_solid("add", coil_solid, coil_compound)
+
+		# Write compound to STEP file
+		stepExporter.export_step_file(coil_compound, filename)
+
+
+
+
 
 class COILGROUP():
 	"""Class which defines a coil group
@@ -1129,7 +1162,7 @@ class COIL():
 	def surfDist(self,xs,ys,zs):
 		"""Calculates coil-surface distance
 
-		This routine calculates the distance between a coil and a 
+		This routine calculates the distance between a coil and a
 		surface defined by points in cartesian coordiantes (x,y,z).
 
 		Parameters
@@ -1160,7 +1193,7 @@ class COIL():
 		"""Calculates coil-coil distance
 
 		This routine calculates the distance between a coil and
-		another coil defined by points in cartesian coordiantes 
+		another coil defined by points in cartesian coordiantes
 		(x,y,z).
 
 		Parameters
@@ -1451,4 +1484,3 @@ class COIL():
 if __name__=="__main__":
 	import sys
 	sys.exit(0)
-

@@ -14,6 +14,7 @@ MACHINE ?= $(shell uname -n | \
 	     /raven/{print "raven"}\
 	     /cobra/{print "cobra"}\
 	     /draco/{print "draco"}\
+	     /Mac/{print "osx_brew"}\
 	     /viper/{print "viper"}')
 
 ifneq ($(strip $(MACHINE)),)

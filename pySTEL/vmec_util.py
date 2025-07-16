@@ -9,7 +9,8 @@ if __name__=="__main__":
 	import matplotlib.pyplot as pyplot
 	from libstell.vmec import VMEC, VMEC_INDATA
 	from libstell.libstell import LIBSTELL
-	parser = ArgumentParser(description= 
+	from libstell.step_exporter import STEP_EXPORTER
+	parser = ArgumentParser(description=
 		'''Provides class for accessing vmec data also serves as a
 		   simple tool for assessing vmec wout or input files.''')
 	parser.add_argument("-v", "--vmec", dest="vmec_ext",
@@ -22,16 +23,18 @@ if __name__=="__main__":
 		help="Output the edge VMEC spectrum as RBC/ZBS.", default = False)
 	parser.add_argument("--stl", dest="lstl", action='store_true',
 		help="Output STL file of VMEC boundary", default = False)
+	parser.add_argument("--step", dest="lstep", action='store_true',
+		help="Output STEP file of VMEC boundary", default = False)
 	parser.add_argument("--magaxis", dest="lmagaxis", action='store_true',
 		help="Output xyz data of magnetic axis", default = False)
 	parser.add_argument("--scale_volume", dest="new_vol",
-		help="Write indata with volume rescaled to new_vol m^3", 
+		help="Write indata with volume rescaled to new_vol m^3",
 		default = 0.0, type=float)
 	parser.add_argument("--scale_volume_Rfix", dest="new_vol_rfix",
-		help="Write indata with volume rescaled to new_vol [m^3] holding axis fixed.", 
+		help="Write indata with volume rescaled to new_vol [m^3] holding axis fixed.",
 		default = 0.0, type=float)
 	parser.add_argument("--scale_B0", dest="new_B0",
-		help="Write indata with Baxis rescaled to new_B0 [T]", 
+		help="Write indata with Baxis rescaled to new_B0 [T]",
 		default = 0.0, type=float)
 	args = parser.parse_args()
 	vmec_wout = VMEC()
@@ -266,6 +269,18 @@ if __name__=="__main__":
 			r = vmec_wout.cfunct(theta,phi,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn)
 			z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
 			vmec_wout.surfaceSTL(r,z,phi,filename='plasma_'+args.vmec_ext+'.stl')
+		# Output a STEP file
+		if (loutput and args.lstep):
+			theta = np.linspace([0],[np.pi*2],512)
+			phi   = np.linspace([0],[np.pi*2],512)
+			r = vmec_wout.cfunct(theta,phi,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn)
+			z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
+			stepExporter = STEP_EXPORTER()
+			plasma_solid = stepExporter.generate_plasma_solid(r[-1,:,:], z[-1,:,:], phi)
+			#plasma_solid = stepExporter.generate_plasma_solid(r[-1,:,:], z[-1,:,:], phi, r[10,:,:], z[10,:,:], phi) # When an inner boundary surface is needed
+			if not stepExporter.check_watertightness(plasma_solid):
+			    print("!! Warning: solid may not be watertight. Proceeding anyway...")
+			stepExporter.export_step_file(plasma_solid, filename='plasma_'+args.vmec_ext+".step")
 		# Output an xyz list of points
 		if (loutput and args.lmagaxis):
 			theta = np.linspace([0],[np.pi*2],16)

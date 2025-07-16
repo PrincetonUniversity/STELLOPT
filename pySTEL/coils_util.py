@@ -13,7 +13,7 @@ if __name__=="__main__":
 	import numpy as np
 	from datetime import datetime
 	from stl import mesh
-	parser = ArgumentParser(description= 
+	parser = ArgumentParser(description=
 		'''Provides class for accessing coils files also serves as a
 		   simple tool for assessing coils or coils files.''')
 	parser.add_argument("-c", "--coil", dest="coils_file",
@@ -33,7 +33,7 @@ if __name__=="__main__":
 	parser.add_argument("-a", "--afield", dest="axyz",
 		help="Output A field at x,y,z", default = None)
 	parser.add_argument("--genwall", dest="wall_offset",
-		help="Generate a wall file based on offset in [m]", default = None)	
+		help="Generate a wall file based on offset in [m]", default = None)
 	parser.add_argument("--new_pts", dest="new_pts",
 		help="Spline coils to new_pts number of points", default = None, type = int)
 	parser.add_argument("--fit_surf", dest="lfit_surf", action='store_true',
@@ -44,9 +44,11 @@ if __name__=="__main__":
 		help="Output the coils in Gourdon format.", default = False)
 	parser.add_argument("--stl", dest="heightwidth_stl",
 		help="Generate STL of coil of given width and height [m].", default = None)
+	parser.add_argument("--step", dest="heightwidth_step",
+		help="Generate STEP of coil of given width and height [m].", default = None)
 	args = parser.parse_args()
 	coils = COILSET()
-	if args.coils_file: 
+	if args.coils_file:
 		coils.read_coils_file(args.coils_file)
 		if args.new_pts: coils.rescalecoils(args.new_pts)
 		if args.lplot: coils.plotcoils()
@@ -76,6 +78,9 @@ if __name__=="__main__":
 				for j in range(3):
 					wall_mesh.vectors[i][j] = vertex[f[j],:]
 			wall_mesh.save(args.coils_file+'.stl')
+		if args.heightwidth_step:
+			height,width = args.heightwidth_step.split(',')
+			coils.write_coils_STEP(args.coils_file+'.step', width=float(width), height=float(height),lfield_period=False)
 		if args.hwnhnw:
 			height,width,nh,nw = args.hwnhnw.split(',')
 			coils_new = coils.singleToMultiFilament(height=float(height),width=float(width),nheight=int(nh),nwidth=int(nw))
@@ -130,4 +135,3 @@ if __name__=="__main__":
 			FR.isotoro(r,z,phi,0,plot3D=plt3d,lclosev=False)
 			plt3d.render()
 	sys.exit(0)
-
