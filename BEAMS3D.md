@@ -57,8 +57,8 @@ from within its directory.
 
 Note that different collision operators are available by the following flags, to be added to the PRECOMP variable in make_YOURMACHINE.inc:
 
-```makefile
--B3D_COLLOP_NRL19IE
+```fortran
+-DB3D_COLLOP_NRL19IE
 -DB3D_COLLOP_NUBEAM 
 -DB3D_VEL_DIFFUSION
 ```

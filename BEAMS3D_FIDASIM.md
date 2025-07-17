@@ -1,4 +1,4 @@
-BEAMS3D runs for preparing FIDASIM simulations
+Preparing FIDASIM simulations with BEAMS3D
 =============================================
 
 This tutorial will walk the user through running the BEAMS3D code and generate the necessary output files for [FIDASIM](https://d3denergetic.github.io/FIDASIM/index.html).
@@ -14,21 +14,22 @@ Table of Contents
 ### Distribution
 
 BEAMS3D can calculate the steady-state slowing down distribution, which can be used by FIDASIM to generate synthetic FIDA spectra which are directly comparable to experimental data and thus serve as a valuable tool for validation and physics studies. 
-To generate the FIDASIM files, the code has to be run with either the -fidasim or -fidasim_cyl flag.  The following explanation is based on the [BEAMS3D validation paper](https://doi.org/10.1088/1741-4326/adeda2).
+To generate the FIDASIM files, the code has to be run with either the `-fidasim` or `-fidasim_cyl` flag.  The following explanation is based on the [BEAMS3D validation paper](https://doi.org/10.1088/1741-4326/adeda2).
 
-The native distribution function in BEAMS3D is collected as a 6-dimensional array, where the dimensions are: number of beams and beam energies, radial bins (units of toroidal flux), poloidal bins (flux aligned), toroidal bins, parallel velocity bins, and perpendicular velocity bins. The resulting distribution is normalized to the real $[\mathrm{m}^{-3}]$ and phase-space volumes $$[(\mathrm{m^3/s^3})^{-1}]$$, thus giving units of $$[\mathrm{s^3/m^6}]$$. 
-FIDASIM \cite{geiger_progress_2020, stagner_d3denergeticfidasim_2020} requires the distribution to be given on a cylindrical real-space grid (as opposed to the flux-aligned bins of the BEAMS3D distribution) as well as energy and pitch phase-space coordinates, explicitly in units $$[\mathrm{1/cm^3/keV}]$$. As such, a conversion both in real and phase space is necessary. The phase space conversion is achieved when running with the -fidasim flag by
+The native distribution function in BEAMS3D is collected as a 6-dimensional array, where the dimensions are: number of beams and beam energies, radial bins (units of toroidal flux), poloidal bins (flux aligned), toroidal bins, parallel velocity bins, and perpendicular velocity bins. The resulting distribution is normalized to the real $$[\mathrm{m}^{-3}]$$ and phase-space volumes $$[(\mathrm{m^3/s^3})^{-1}]$$, thus giving units of $$[\mathrm{s^3/m^6}]$$. 
+FIDASIM requires the distribution to be given on a cylindrical real-space grid (as opposed to the flux-aligned bins of the BEAMS3D distribution) as well as energy and pitch phase-space coordinates, explicitly in units $$[\mathrm{1/cm^3/keV}]$$. As such, a conversion both in real and phase space is necessary. The phase space conversion is achieved when running with the `-fidasim` flag by
 
   $$f_{\mathrm{FIDASIM}}(E,p) = 2\pi \frac{e \cdot v}{10^3 \cdot m} \cdot f_{\mathrm{B3D}}(v_{\parallel},v_{\perp}),$$
 
 where $$e$$ is the elementary charge in [C], $$v$$ is the total velocity in [m/s] and $$m$$ is the mass of the fast ion species in [kg]. This has been implemented in BEAMS3D using nearest-neighbor binning to avoid a memory-intensive interpolation. 
 
-Alternatively, the distribution function for FIDASIM can also be collected directly alongside the regular distribution (using the -fidasim_cyl flag), resulting in increased memory usage during simulations but significantly increased precision of the distribution, while not significantly affecting overall run time. There are many grid cells in the cylindrical real-space grid outside the plasma, which have to be allocated in memory but are largely free of any fast ions. This memory inefficiency is the main reason why BEAMS3D usually collects the distribution on a flux-aligned grid. However, for the application in the FIDASIM context the increased accuracy by skipping the renormalization and the independence from conversion to flux coordinates makes this approach attractive. This is especially true for cases where continuous flux coordinates are difficult or impossible to construct, as in cases where magnetic islands are included in the equilibrium.
+Alternatively, the distribution function for FIDASIM can also be collected directly alongside the regular distribution (using the `-fidasim_cyl` flag), resulting in increased memory usage during simulations but significantly increased precision of the distribution, while not significantly affecting overall run time. There are many grid cells in the cylindrical real-space grid outside the plasma, which have to be allocated in memory but are largely free of any fast ions. This memory inefficiency is the main reason why BEAMS3D usually collects the distribution on a flux-aligned grid. However, for the application in the FIDASIM context the increased accuracy by skipping the renormalization and the independence from conversion to flux coordinates makes this approach attractive. This is especially true for cases where continuous flux coordinates are difficult or impossible to construct, as in cases where magnetic islands are included in the equilibrium.
 
 ### Input
 
 The additional input namelist in the BEAMS3D namelist file has to contain all relevant information for generating the FIDASIM files. Detailed information on the inputs can be found in the [FIDASIM documentation](https://d3denergetic.github.io/FIDASIM/page/03_technical/01_prefida_inputs.html).
 
+```fortran
 &fidasim_inputs_b3d
     ab = 1.0
     adist = 586.108695237747, 667.7809604002308
@@ -121,7 +122,7 @@ The additional input namelist in the BEAMS3D namelist file has to contain all re
     zmax = 60.0
     zmin = -60.0
 /
-
+```
 ------------------------------------------------------------------------
 
 ### Output
