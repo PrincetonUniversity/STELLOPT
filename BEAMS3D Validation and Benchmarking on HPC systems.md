@@ -32,3 +32,4 @@ Various publications document the validation of the BEAMS3D model.
 -   [Cole, M. D. J. et al. \"Comparative collisionless alpha particle confinement in stellarator reactors with the XGC gyrokinetic code\" Phys. Plasmas 26, 032506 (2019)](https://doi.org/10.1063/1.5085349)
 -   [Lazerson, S.A. et al. \"Validation of the BEASM3D neutral beam deposition model on Wendelstein 7-X\" Nuclear Fusion 60, 706020 (2020)](https://doi.org/10.1088/1741-4326/ab8e61)
 -   [Lazerson, S.A. et al. \"Modeling and measurement of energetic particle slowing down on Wendelstein 7-X\" Nuclear Fusion 61, 096006 (2021)](https://doi.org/10.1088/1741-4326/ac0771)
+-   [Kulla, D. et al. \"Validation of BEAMS3D against Fast-Ion D-Alpha Measurements at ASDEX-Upgrade using FIDASIM\" Nuclear Fusion (2025)](https://doi.org/10.1088/1741-4326/adeda2)

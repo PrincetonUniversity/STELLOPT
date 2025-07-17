@@ -33,19 +33,37 @@ cylindrical grid
 $$ \frac{d\vec{R}}{dt}=\frac{\hat{b}}{qB}\left(\mu\nabla B
 +\frac{mv_{ll}^2}{2B}\left(\hat{b}\cdot\nabla\right)\vec{B}\right)+v_{ll}\hat{b} $$,
 $$ \frac{dv_{ll}}{dt}=-\frac{\mu}{m}\hat{b}\cdot\left(\nabla
-B\right) $$. These ODE\'s can be solved via a NAG routine,
+B\right) $$. These ODE\'s can be solved via a NAG routine (if available),
 LSODE, or Runge-Kutta algorithm. The magnetic field is splined over the
-cylindrical grid (R,phi,Z). The initial position and velocity of the
-particles can either be specified or modeled using a neutral beam model.
+cylindrical grid (R,phi,Z). Full-orbit following is also available.
+The initial position and velocity of the particles can either be specified or 
+modeled using a neutral beam model.
 The neutral beam model relies on ADAS for ionization and recombination
-physics. $$ \mu = \frac{mv_\perp^2}{2B} $$
+physics if available. Otherwise, the Suzuki model is used for the stopping coefficients.
+$$ \mu = \frac{mv_\perp^2}{2B} $$
 
 ------------------------------------------------------------------------
 
 ### Compilation
 
 BEAMS3D is distributed as part of the STELLOPT package of codes through
-Git.
+Git. To compile only BEAMS3D, issue
+
+```fortran
+make clean_release
+```
+
+from within its directory.
+
+Note that different collision operators are available by the following flags, to be added to the PRECOMP variable in make_YOURMACHINE.inc:
+
+```makefile
+-B3D_COLLOP_NRL19IE
+-DB3D_COLLOP_NUBEAM 
+-DB3D_VEL_DIFFUSION
+```
+
+The first two change the slowing down parameters to separate between electron and ion contributions, either based on the NRL coulomb logarithms or on the formulation which NUBEAM also uses. The last flag turns on the velocity diffusion operator. Using this operator does not significantly alter the heating profiles in our testing, as contributions from it are acounted for in the heating calculation.  More details can be found in the [BEAMS3D validation paper](https://doi.org/10.1088/1741-4326/adeda2).
 
 ------------------------------------------------------------------------
 
@@ -96,6 +114,8 @@ should look like:
  TI_AUX_F  = 0.0 1.0 2.0            ! Ion Temperature [eV]
  POT_AUX_S  = 0.0 0.5 1.0           ! Electrostatic Potential Knots [0,1]
  POT_AUX_F  = 0.0 1.0 2.0           ! Electrostatic Potential [V] (Phi, not dPhi/dr)
+ OMEG_AUX_S  = 0.0 0.5 1.0          ! Toroidal Rotaion (angular frequency) Knots [0,1]
+ OMEG_AUX_F  = 0.0 1.0 2.0          ! Toroidal Rotaion [rad/s]
  THERM_FACTOR = 1.5                 ! Factor at which to thermalize (Vtherm*THERM_FACTOR)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!            PLASMA PARAMETERS (MULTI-ION)                          !!
@@ -120,11 +140,26 @@ should look like:
  NVPERP_DIST = 64                   ! Perpendicular velocity bins (0,vmax)
  PARTVMAX    = 3.0E6                ! Maximum velocity in dist. (vmax)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!            FIDASIM DISTRIBUTION FUNCTION                          !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  NR_FIDA       = 64
+  RMIN_FIDA   = 2.6
+  RMAX_FIDA   = 4.9
+  NPHI_FIDA     = 40
+  PHIMIN_FIDA = 0
+  PHIMAX_FIDA = 1.74
+  NZ_FIDA       = 64
+  ZMIN_FIDA   = -1.0
+  ZMAX_FIDA   = 1.0
+  NENERGY_FIDA  = 50
+  NPITCH_FIDA   = 75
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!            PARTICLE INTEGRATION PARAMETERS                        !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  INT_TYPE = 'LSODE'                 ! Particle trajectory integration method (NAG, RKH68, LSODE)
  FOLLOW_TOL = 1.0E-12               ! Trajectory following tolerance (NAG, LSODE)
  NPOINC = 100                       ! Number of trajector points to save per particle
+ RHO_FULLORBIT=1.0                  ! Rho coordinate at which to start Full orbit following
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!            PARTICLE INITIAL CONDITION (INDIVIDUAL)                !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -155,7 +190,7 @@ should look like:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!            PARTICLE INITIAL CONDITION (Fusion Reactions)          !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- FUSION_SCALE     = 1.0            ! Scaleing Factor to apply to energy
+ FUSION_SCALE     = 1.0            ! Scaling Factor to apply to energy
 /
 &END
 ```
@@ -163,7 +198,8 @@ should look like:
 It is important to note that neutral beam lines are defined by two
 points. The first index of the array is the beam number, the second
 defines the two points. The first point (X,1) is the origin on the beam.
-The second points (X,2) defines the beamline from that origin.
+The second points (X,2) defines the beamline from that origin. Specifying 
+the -beamlet input parameter will take precedent over this.
 
 ![ Diagram of neutral beam parameters showing how ASIZE\_BEAMS, DIV\_BEAMS, and ADIST\_BEAMS are used to initialise neutral particles.](images/beam_diagram.jpg )
 
@@ -184,29 +220,33 @@ and BEAMS3D\_INPUT namelists in it.
 | Argument | Default | Description |
 |:------------- |:-------------:|:----- |
 | -vmec | NONE | VMEC input extension |
+| -eqdsk | NONE | Namelist ID + EQDSK file |
 | -coil | NONE | Coils File |
 | -mgrid | NONE | Makegrid style vacuum grid file |
 | -vessel | NONE | First wall file |
-| -beamlet | NONE | Beamlet deffintion HDF5 file. |
+| -beamlet | NONE | Beamlet defintion HDF5 file. |
 | -restart | NONE | Restart run from particles in previous run (HDF5 file) |
-| -vac | NONE | Only compute the vacuum field |
-| -beam_simple | NONE | Assume monoenergetic beams (normally 1% variance around injection energy) |
-| -collisions | NONE | Force use of slowing down/scattering operator. |
-| -depo | NONE | Calculate deposition only |
-| -field | NONE | Outputs the B-Field on the cylindrical grid only. |
-| -ascot4 | NONE | Creates input HDF5 file for ASCOT4 (BBNBI, no particles) |
-| -ascot5 | NONE | Creates input HDF5 file for ASCOT5. |
-| -hitonly | NONE | Only save vessel strike points.|
-| -plasma | NONE | Only compute fields inside the plasma domain (places wall at LCFS) |
+| -continue_grid | FALSE | Load magnetic field from previous run (HDF5 file), specify with VMEC for namelist reading |
+| -vac | FALSE | Only compute the vacuum field |
+| -beam_simple | FALSE | Assume monoenergetic beams (normally 1% variance around injection energy) |
+| -collisions | FALSE | Force use of slowing down/scattering operator. |
+| -depo | FALSE | Calculate deposition only |
+| -field | FALSE | Outputs the B-Field on the cylindrical grid only. |
+| -ascot4 | FALSE | Creates input HDF5 file for ASCOT4 (BBNBI, no particles) |
+| -ascot5 | FALSE | Creates input HDF5 file for ASCOT5. |
+| -fidasim | FALSE | Creates input HDF5 files for FIDASIM 2.0.0 converting from normal distribution ([FIDASIM_INPUTS_B3D](BEAMS3D_FIDASIM.md) namelist required) |
+| -fidasim_cyl | FALSE | Creates input HDF5 files for FIDASIM 2.0.0 directly from cartesian cylindrical grid ([FIDASIM_INPUTS_B3D](BEAMS3D_FIDASIM.md) namelist required) |
+| -hitonly | FALSE | Only save vessel strike points.|
+| -plasma | FALSE | Only compute fields inside the plasma domain (places wall at LCFS) |
 | -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). |
-| -suzuki | NONE | Use Suzuki beam deposition model (default if no ADAS/PREACT). |
-| -w7x | NONE | Use W7-X beam shape model. |
-| -fusion | NONE | Use nuclear fusion thermal birth model. |
-| -fusion_alpha | NONE | Use nuclear fusion thermal birth model (alphas only). |
-| -noverb | NONE | Suppresses screen output |
+| -suzuki | TRUE | Use Suzuki beam deposition model (default if no ADAS/PREACT). |
+| -w7x | FALSE | Use W7-X beam shape model. |
+| -fusion | FALSE | Use nuclear fusion thermal birth model. |
+| -fusion_alpha | FALSE | Use nuclear fusion thermal birth model (alphas only). |
+| -noverb | FALSE | Suppresses screen output |
 | -help | NONE | Print help message. |
 
-In it\'s simplest invokation the code requires
+In its simplest invokation the code requires
 a VMEC input file.
 
     >~/bin/xbeams3d -vmec ncsx_c09r00_free -mgrid mgrid_c09r00.nc -vac
@@ -242,7 +282,7 @@ a VMEC input file.
     ----- BEAMS3D DONE -----
 
 The BENCHMARKS directory contains a set of tests for BEAMS3D based on an
-axisymmetric VMEC tokamak equilibrium.  The input files are located
+circular axisymmetric VMEC tokamak equilibrium.  The input files are located
 in the BEAMS3D_TEST subdirectory.  They can all be invoked by
 calling make beams3d_test from the BENCHMARKS directory.  The
 comparrision scripts require Python.
@@ -279,6 +319,7 @@ variables (all values in mks units, angles in radians)
 | NI | DOUBLE | nion,nr,nphi,nz | Ion number density |
 | TI | DOUBLE | nr,nphi,nz | Ion Temperature eV |
 | ZEFF_ARR | DOUBLE | nr,nphi,nz | Zeff |
+| OMEG_ARR | DOUBLE | nr,nphi,nz | Omega rad/s |
 | **Marker Trajectory** |
 | npoinc | INTEGER | 1 | Number of Timesteps Saved |
 | nparticles | INTEGER | 1 | Number of markers Evolved |
@@ -293,12 +334,14 @@ variables (all values in mks units, angles in radians)
 | PHI_lines | DOUBLE | npoinc+1,nparticles | Phi trajectory of markers. |
 | Z_lines | DOUBLE | npoinc+1,nparticles | Z trajectory of markers. |
 | vll_lines | DOUBLE | npoinc+1,nparticles | Parallel velocity trajectory of markers. |
+| vr_lines | DOUBLE | npoinc+1,nparticles | Velocity in R trajectory of markers. |
+| vphi_lines | DOUBLE | npoinc+1,nparticles | Velocity in Phi trajectory of markers. |
+| vz_lines | DOUBLE | npoinc+1,nparticles | Velocity in Z trajectory of markers. |
 | moment_lines | DOUBLE | npoinc+1,nparticles | Magnetic Moment trajectory of markers. |
 | neut_lines | BOOLEAN | npoinc+1,nparticles | If true markers is a neutral at that point. |
 | S_lines | DOUBLE | npoinc+1,nparticles | Normalized toroidal flux rajectory of markers. |
 | U_lines | DOUBLE | npoinc+1,nparticles | Poloidal angle trajectory of markers. |
 | B_lines | DOUBLE | npoinc+1,nparticles | mod(B) trajectory of markers. |
-| R_lines | DOUBLE | npoinc+1,nparticles | R Trajectory of markers. |
 | **Distribution Function** |
 | nbeams | INTEGER | 1 | Number of fast ion populations |
 | ns_prof1 | INTEGER | 1 | Number of radial distribution gridpoints |
@@ -379,6 +422,8 @@ bins by VLL the particles at each NPOINC time step.
 
 [Benchmarking and Validation](BEAMS3D Validation and Benchmarking on HPC systems.md)
 
+[FIDASIM simulations](BEAMS3D_FIDASIM.md)
+
 ------------------------------------------------------------------------
 
 ### References
@@ -386,6 +431,13 @@ bins by VLL the particles at each NPOINC time step.
 -   [McMillan, M. and Lazerson, S.A. \"BEAMS3D: Neutral beam injection model.\" Plasma Phys. and Control. Fusion 56, 095019 (2014)](https://doi.org/10.1088/0741-3335/56/9/095019)
 -   [Lazerson, S.A. et al. \"Validation of the BEAMS3D neutral beam deposition model on Wendelstein 7-X\" Nuclear Fusion 60, 706020 (2020)](https://doi.org/10.1088/1741-4326/ab8e61)
 -   [Lazerson, S.A. et al. \"Modeling and measurement of energetic particle slowing down on Wendelstein 7-X\" Nuclear Fusion 61, 096006 (2021)](https://doi.org/10.1088/1741-4326/ac0771)
--   [Lazerson, S.A., LeViness, A. and Lyon, J. \"Simulating fusion alpha heating in a stellarator reactor\" Plasma Phys. Control. Fusion 63, 125033 (2021) ](https://doi.org/10.1088/1361-6587/ac35ee)
--   [Kulla, D. et al. \"Placement of a fast ion loss detector array for neutral beam injected particles in Wendelstein 7-X\" Plasma Phys. Control. Fusion (accepted) (2022) ](https://doi.org/10.1088/1361-6587/ac43f1)
+-   [Lazerson, S.A. et al. \"Simulating fusion alpha heating in a stellarator reactor\" Plasma Phys. Control. Fusion 63, 125033 (2021)](https://doi.org/10.1088/1361-6587/ac35ee)
+-   [Kulla, D. et al. \"Placement of a fast ion loss detector array for neutral beam injected particles in Wendelstein 7-X\" Plasma Phys. Control. Fusion 64, 035006  (2022)](https://doi.org/10.1088/1361-6587/ac43f1)
+-   [Lazerson, S.A. et al. \"Gyro orbit simulations of neutral beam injection in Wendelstein 7-X\" Nucl. Fusion 63, 096012 (2023) ](https://doi.org/10.1088/1741-4326/ace9ec)
+-   [Lazerson, S.A. et al. \"Fast ion confinement in the presence of core magnetic islands in Wendelstein 7-X\" Plasma Phys. Control. Fusion 66, 075017 (2024)](https://doi.org/10.1088/1361-6587/ad4f11)
+-   [Lazerson, S.A. et al. \"OPTEMIST: A neutral beam for measuring quasi-omnigenity in Wendelstein 7-X\" Physics of Plasmas 31, 072506 (2024)](https://doi.org/10.1063/5.0218670)
+-   [Kulla, D. et al. \"Validation of BEAMS3D against Fast-Ion D-Alpha Measurements at ASDEX-Upgrade using FIDASIM\" Nuclear Fusion (2025)](https://doi.org/10.1088/1741-4326/adeda2)
+
+
+
 
