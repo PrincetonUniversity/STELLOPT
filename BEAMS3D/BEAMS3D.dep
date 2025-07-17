@@ -1,5 +1,9 @@
 # Microsoft Developer Studio Generated Dependency File, included by BEAMS3D.mak
 
+beams3d_divb.o : \
+      beams3d_runtime.o \
+      beams3d_grid.o
+
 
 beams3d_beam_density.o: \
       beams3d_runtime.o \

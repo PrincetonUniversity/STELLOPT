@@ -585,6 +585,9 @@
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
       END IF
+
+      ! Remove Divergence B
+      IF (myid_sharmem == master) CALL beams3d_divb
          
       ! Construct MODB
       IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
@@ -719,8 +722,8 @@
          CALL FLUSH(6)
       END IF
 
+      ! Compute volume
       IF (myid_sharmem==master) CALL beams3d_volume !requires S_ARR
-
 
       ! Output Grid
       CALL beams3d_write('GRID_INIT')
