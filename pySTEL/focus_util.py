@@ -36,6 +36,8 @@ if __name__=="__main__":
 		help="Generate limiter.boundary at offset distance of lim_dist.", default = None)
 	parser.add_argument("--genharm", dest="genharm_tol", type=float,
 		help="Create a target hamonics file at fixed tolerance.", default = -1)
+	parser.add_argument("--save", dest="lsave", action='store_true',
+		help="Save the plots with ext names.", default = False)
 	focus_data = FOCUS()
 	coil_data=COILSET()
 	args = parser.parse_args()
@@ -137,6 +139,7 @@ if __name__=="__main__":
 			focus_data.plotBNormal(ax2)
 			focus_data.plotPoincare(ax3)
 			focus_data.plotIota(ax4)
+			if (args.lsave): fig.savefig(f'overview_{args.focus_ext}.png', dpi=fig.dpi)
 			pyplot.show()
 		if args.lplot3d:
 			plt3d = PLOT3D()
@@ -148,10 +151,14 @@ if __name__=="__main__":
 			except:
 				i=1
 			plt3d.render()
+			if (args.lsave): plt3d.saveImage(f'coil3D_{args.focus_ext}.png')
 		if args.lplotcoildist:
 			coil_data.read_coils_file(args.focus_ext+'.coils')
 			coil_data.coilSurfDist(focus_data.xsurf.flatten(),\
 					focus_data.ysurf.flatten(),\
 					focus_data.zsurf.flatten())
-			coil_data.plotcoilplasmaDist(cmin=2.5)
+			plt3d = PLOT3D()
+			coil_data.plotcoilplasmaDist(cmin=2.5,plot3D=plt3d)
+			plt3d.render()
+			if (args.lsave): plt3d.saveImage(f'coildist3D_{args.focus_ext}.png')
 	sys.exit(0)

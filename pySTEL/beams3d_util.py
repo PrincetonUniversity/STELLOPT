@@ -101,6 +101,7 @@ if __name__=="__main__":
 			ax.plot(np.sqrt(s),np.sum(births,axis=0)/1E19,'k')
 			ax.set_xlabel('r/a')
 			ax.set_ylabel(r'Birth Rate x10^{19} [$part/m^{-3}s$]')
+			pyplot.show()
 		if type(args.brz_index_phi) is not type(None):
 			fig,ax = pyplot.subplots(2,2,sharey=True,figsize=(1024*px,768*px))
 			j = args.brz_index_phi
@@ -138,9 +139,6 @@ if __name__=="__main__":
 			h3=ax[1,1].pcolormesh(x,y,np.squeeze(b[:,:,j]).T,cmap='jet',shading='gouraud')
 			ax[1,1].set_xlabel('R [m]'); ax[1,1].set_ylabel(r'$\phi$ [rad]'); 
 			h3.set_clim(vmin=0.0,vmax=10.0); fig.colorbar(h3,label=r'$|B|$ [T]')
-			pyplot.show()
-
-
 			pyplot.show()
 
 	sys.exit(0)
