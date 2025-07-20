@@ -61,10 +61,10 @@ c----------------------------------------------------------
          zeta = (kv-1)*alv
          ! Note alvp*kv-1 is phi not zeta
          do  ku = 1, nu
+            i      = nu*(kv-1)+ku
             phi    = (zeta + p(i))/np
             coh    = cos(phi)
             sih    = sin(phi)
-            i      = nu*(kv-1)+ku
             x(i)   = coh * r(i)
             y(i)   = sih * r(i)
             xu(i)  = coh * ru(i) - r(i) * sih * pu(i)
@@ -109,7 +109,7 @@ c----------------------------------------------------------
          gvv(i) = np2*gvv(i)
       enddo
 
-      PRINT *,SUM(sqf)/nuv
+      !PRINT *,SUM(sqf)/nuv
 
       deallocate (r, ru, rv, stat=i)
       deallocate (p, pu, pv, stat=i)
