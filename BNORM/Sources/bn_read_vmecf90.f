@@ -95,7 +95,7 @@ c---------------------------------------------------------------------
       allocate (bsubus(0:md,-nd:nd), bsubvs(0:md,-nd:nd),
      1      crs(0:md,-nd:nd), czc(0:md,-nd:nd),clc(0:md,-nd:nd),
      1      stat=ierr)
-      ALLOCATE (pmns(0:mn,-nd:nd),pmnc(0:mn,-nd:nd), stat=ierr)
+      ALLOCATE (pmns(0:md,-nd:nd),pmnc(0:md,-nd:nd), stat=ierr)
       bsubus = 0;  bsubvs = 0; crs = 0; czc = 0; clc = 0;
       raxis_s = 0; zaxis_c = 0;
       pmns = 0; pmnc = 0; ! Used for boozmn interface for VMEC 0
