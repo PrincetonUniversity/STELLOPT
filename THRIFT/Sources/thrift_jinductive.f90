@@ -224,6 +224,12 @@
       CALL curtot_to_curden(THRIFT_I(:,mytimestep),j_temp)
       THRIFT_JPLASMA(:,mytimestep) = j_temp - THRIFT_JSOURCE(:,mytimestep)
 
+      ! Calculate <E.B>
+      THRIFT_EPARB(:,mytimestep) = THRIFT_ETAPARA(:,mytimestep) * ( &
+      THRIFT_BSQAV(:,mytimestep)*j_temp * (pi*eq_Aminor**2)/THRIFT_PHIEDGE(mytimestep) - &
+      THRIFT_JSOURCE(:,mytimestep)*THRIFT_BAV(:,mytimestep) + &
+      mu0*THRIFT_PPRIME(:,mytimestep)*THRIFT_I(:,mytimestep)/THRIFT_PHIEDGE(mytimestep) )
+
       IF (lverbj) CALL print_postevolve(j_temp)
       DEALLOCATE(j_temp)
       RETURN
