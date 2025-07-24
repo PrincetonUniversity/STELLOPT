@@ -46,6 +46,7 @@ class VMEC(FourierRep):
 		self.vp = self.h2f(self.vp)
 		self.overr = self.h2f(self.overr)
 		self.specw = self.h2f(self.specw)
+		self.bdotb = self.h2f(self.bdotb)
 		for mn in range(self.mnmax):
 			self.lmns[:,mn] = self.h2fmn(self.lmns[:,mn],self.xm[mn])
 		for mn in range(self.mnmax_nyq):
@@ -495,14 +496,13 @@ class VMEC(FourierRep):
 
 		Returns
 		----------
-		iotap : float
-			Rotational Transform Derivative diota/ds [arb]
+		pressurep : float
+			Pressure Derivative dpressure/ds [Pa]
 		"""
 		import numpy as np
 		x = np.linspace(0,1,self.ns)
-		f = np.diff(np.squeeze(self.presf),prepend=0)*(self.ns-1)
+		f = np.gradient(np.squeeze(self.presf),x,edge_order=2)
 		return np.interp(s,x,f)
-
 
 	def getBcyl(self,R,phi,Z):
 		"""Wrapper to the GetBcyl_WOUT function
