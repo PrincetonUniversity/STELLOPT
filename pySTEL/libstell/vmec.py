@@ -420,6 +420,25 @@ class VMEC(FourierRep):
 				curpol = 2.0*self.bsubvmnc[self.ns-1,mn]*np.pi/self.nfp 
 		return curpol
 
+	def getCurrentToroidal(self):
+			"""Returns the toroidal total current
+
+			This routine returns the net toroidal current enclosed by
+			the LCFS
+
+			Returns
+			----------
+			curtor : float
+				Total toroidal current -2*pi*B_u(s=1,m=0,n=0)/mu0 [A]
+			"""
+			import numpy as np
+			curtor = -1
+			mu0 = 4*np.pi*1E-7
+			for mn in range(self.mnmax_nyq):
+				if (self.xm_nyq[mn]==0 and self.xn_nyq[mn]==0):
+					curtor = -2.0*np.pi*self.bsubumnc[self.ns-1,mn]/mu0
+			return curtor
+
 	def getiota(self,s):
 		"""Returns the rotational transform
 
