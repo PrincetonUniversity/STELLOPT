@@ -118,8 +118,10 @@ SUBROUTINE update_vars()
         p_m1 = THRIFT_P(i-1, mytimestep)
         THRIFT_PPRIME(i,mytimestep) = (p_p1-p_m1)/(2*ds)
      END DO
-     THRIFT_PPRIME(1,mytimestep)   = 2*THRIFT_PPRIME(2,mytimestep)-THRIFT_PPRIME(3,mytimestep)
-     THRIFT_PPRIME(nsj,mytimestep) = 2*THRIFT_PPRIME(nsj-1,mytimestep)-THRIFT_PPRIME(nsj-2,mytimestep)
+    !THRIFT_PPRIME(1,mytimestep)   = 2*THRIFT_PPRIME(2,mytimestep)-THRIFT_PPRIME(3,mytimestep)
+    !THRIFT_PPRIME(nsj,mytimestep) = 2*THRIFT_PPRIME(nsj-1,mytimestep)-THRIFT_PPRIME(nsj-2,mytimestep)
+     THRIFT_PPRIME(1,mytimestep)   = (-1.5*THRIFT_P(1,mytimestep) + 2*THRIFT_P(2,mytimestep) - 0.5*THRIFT_P(3,mytimestep)) / ds
+     THRIFT_PPRIME(nsj,mytimestep) = (1.5*THRIFT_P(nsj,mytimestep) - 2*THRIFT_P(nsj-1,mytimestep) + 0.5*THRIFT_P(nsj-2,mytimestep)) / ds
    
      IF (lverbj) CALL print_calc_vars()
      

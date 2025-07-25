@@ -46,6 +46,7 @@ class VMEC(FourierRep):
 		self.vp = self.h2f(self.vp)
 		self.overr = self.h2f(self.overr)
 		self.specw = self.h2f(self.specw)
+		self.bdotb = self.h2f(self.bdotb)
 		for mn in range(self.mnmax):
 			self.lmns[:,mn] = self.h2fmn(self.lmns[:,mn],self.xm[mn])
 		for mn in range(self.mnmax_nyq):
@@ -419,6 +420,25 @@ class VMEC(FourierRep):
 				curpol = 2.0*self.bsubvmnc[self.ns-1,mn]*np.pi/self.nfp 
 		return curpol
 
+	def getCurrentToroidal(self):
+			"""Returns the toroidal total current
+
+			This routine returns the net toroidal current enclosed by
+			the LCFS
+
+			Returns
+			----------
+			curtor : float
+				Total toroidal current -2*pi*B_u(s=1,m=0,n=0)/mu0 [A]
+			"""
+			import numpy as np
+			curtor = -1
+			mu0 = 4*np.pi*1E-7
+			for mn in range(self.mnmax_nyq):
+				if (self.xm_nyq[mn]==0 and self.xn_nyq[mn]==0):
+					curtor = -2.0*np.pi*self.bsubumnc[self.ns-1,mn]/mu0
+			return curtor
+
 	def getiota(self,s):
 		"""Returns the rotational transform
 
@@ -495,14 +515,13 @@ class VMEC(FourierRep):
 
 		Returns
 		----------
-		iotap : float
-			Rotational Transform Derivative diota/ds [arb]
+		pressurep : float
+			Pressure Derivative dpressure/ds [Pa]
 		"""
 		import numpy as np
 		x = np.linspace(0,1,self.ns)
-		f = np.diff(np.squeeze(self.presf),prepend=0)*(self.ns-1)
+		f = np.gradient(np.squeeze(self.presf),x,edge_order=2)
 		return np.interp(s,x,f)
-
 
 	def getBcyl(self,R,phi,Z):
 		"""Wrapper to the GetBcyl_WOUT function
