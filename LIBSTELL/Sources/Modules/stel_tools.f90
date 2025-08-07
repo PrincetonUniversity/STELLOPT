@@ -159,6 +159,9 @@
       INTERFACE get_equil_ftrap
          MODULE PROCEDURE get_equil_ftrap_dbl, get_equil_ftrap_sgl
       END INTERFACE
+      INTERFACE get_equil_LgradB
+         MODULE PROCEDURE get_equil_LgradB_dbl, get_equil_LgradB_sgl
+      END INTERFACE
 !      INTERFACE get_equil_iota
 !         MODULE PROCEDURE get_equil_iota_dbl, get_equil_iota_sgl
 !      END INTERFACE
@@ -2807,6 +2810,113 @@
       coord = coord_dbl
       RETURN
       END SUBROUTINE pest2vmec_sgl
+      
+      SUBROUTINE get_equil_LgradB_dbl(s_val,u_val,v_val,lgradB,ier)
+      USE EZspline
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in)    ::  s_val
+      DOUBLE PRECISION, INTENT(in)    ::  u_val
+      DOUBLE PRECISION, INTENT(in)    ::  v_val
+      DOUBLE PRECISION, INTENT(out)   ::  lgradB
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION :: rho_val, drhods
+      DOUBLE PRECISION :: R, Z, sqrtG
+      DOUBLE PRECISION, DIMENSION(3) :: Rgrad, Zgrad
+      DOUBLE PRECISION :: dRduu, dRdvv, dRdss
+      DOUBLE PRECISION :: dRduv, dRdus, dRdvs
+      DOUBLE PRECISION :: dZduu, dZdvv, dZdss
+      DOUBLE PRECISION :: dZduv, dZdus, dZdvs
+      DOUBLE PRECISION :: gradsR,gradsP,gradsZ
+      DOUBLE PRECISION :: graduR,graduP,graduZ
+      DOUBLE PRECISION :: gradvR,gradvP,gradvZ
+      DOUBLE PRECISION :: bs, bsds, bsdu, bsdv
+      DOUBLE PRECISION :: bu, buds, budu, budv
+      DOUBLE PRECISION :: bv, bvds, bvdu, bvdv
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval1(1)
+      REAL*8 :: fval2(1,3)
+      REAL*8 :: fval3(1,4)
+      REAL*8 :: fval4(1,10)
+      INTEGER, parameter :: ict1(10)=(/1,0,0,0,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict2(10)=(/0,1,1,1,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict3(10)=(/1,1,1,1,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict4(10)=(/1,1,1,1,1,1,1,1,1,1/)
+      lgradB = 0.0
+      IF (ier < 0) RETURN
+      rho_val = SQRT(s_val)
+      drhods = one/rho_val
+      cop = DCOS(v/nfp)
+      sip = DSIN(v/nfp)
+      ! Get grid values
+      CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+      CALL r8fvtricub(ict4, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
+                      hx, hxi, hy, hyi, hz, hzi, &
+                      R4D(1,1,1,1), nx1, nx2, nx3)
+      R = fval4(1,1); Rgrad(1) = fval4(1,2); Rgrad(2) = fval4(1,3); Rgrad(3) = fval4(1,4)
+      dRduu = fval4(1,5); dRdvv = fval4(1,6); dRdss = fval4(1,7)
+      dRduv = fval4(1,8); dRdus = fval4(1,9); dRdvs = fval4(1,10)
+      CALL r8fvtricub(ict4, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
+                      hx, hxi, hy, hyi, hz, hzi, &
+                      Z4D(1,1,1,1), nx1, nx2, nx3)
+      Z = fval4(1,1); Zgrad(1) = fval4(1,2); Zgrad(2) = fval4(1,3); Zgrad(3) = fval4(1,4)
+      dZduu = fval4(1,5); dZdvv = fval4(1,6); dZdss = fval4(1,7)
+      dZduv = fval4(1,8); dZdus = fval4(1,9); dZdvs = fval4(1,10)
+      CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
+                      hx, hxi, hy, hyi, hz, hzi, &
+                      BS4D(1,1,1,1), nx1, nx2, nx3)
+      bs = fval3(1,1); bsdu = fval3(1,2); bsdv = fval3(1,3); bsds = fval3(1,4)
+      CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
+                      hx, hxi, hy, hyi, hz, hzi, &
+                      BU4D(1,1,1,1), nx1, nx2, nx3)
+      bu = fval3(1,1); budu = fval3(1,2); budv = fval3(1,3); buds = fval3(1,4)
+      CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
+                      hx, hxi, hy, hyi, hz, hzi, &
+                      BV4D(1,1,1,1), nx1, nx2, nx3)
+      bv = fval3(1,1); bvdu = fval3(1,2); bvdv = fval3(1,3); bvds = fval3(1,4)
+      CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                      hx, hxi, hy, hyi, hz, hzi, &
+                      G4D(1,1,1,1), nx1, nx2, nx3)
+      sqrtG = fval1(1,1)
+      ! Compute the grad values
+      gradsR = -Zgrad(1)*R/sqrtG
+      gradsP =  (Rgrad(2)*Zgrad(1)-Rgrad(1)*Zgrad(2))/sqrtG
+      gradsZ =  Rgrad(1)*R/sqrtG
+      graduR = -Rgrad(3)*R*drhods/sqrtG
+      graduP =  (Rgrad(3)*Zgrad(2)-Rgrad(2)*Zgrad(3))*drhods/sqrtG
+      graduZ =  Zgrad(3)*R*drhods/sqrtG
+      gradvR =  0.0_rprec
+      gradvP =  1.0_rprec/(R*sqrtG)
+      gradvZ =  0.0_rprec
+      ! Compute the derivatives
+      dBxds = buds * Rgrad(1) * cop + bu * dRdus * cop + bvds * Rgrad(2) * cop &
+              + bv * dRdvs * cop - bvds * R * sip - bv * Rgrad(3) * sip
+      dBxdu = budu * Rgrad(1) * cop + bu * dRduu * cop + bvdu * Rgrad(2) * cop &
+              + bv * dRduv * cop - bvdu * R * sip - bv * Rgrad(1) * sip
+      !dBxdv = budv * Rgrad(1) * cop + bu * dRduv * cop + bvdv * Rgrad(2) * cop &
+      !        + bv * dRduv * cop - bvdu * R * sip - bv * Rgrad(1) * sip
+
+
+      RETURN
+      END SUBROUTINE get_equil_LgradB_dbl
+      
+      SUBROUTINE get_equil_LgradB_sgl(s_val,u_val,v_val,lgradB,ier)
+      USE EZspline
+      IMPLICIT NONE
+      REAL, INTENT(in)    ::  s_val
+      REAL, INTENT(in)    ::  u_val
+      REAL, INTENT(in)    ::  v_val
+      REAL, INTENT(out)   ::  lgradB
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION    ::  s_dbl
+      DOUBLE PRECISION    ::  u_dbl
+      DOUBLE PRECISION    ::  v_dbl
+      DOUBLE PRECISION   ::  lgradB_dbl
+      s_dbl = s_val; u_dbl = u_val; v_dbl = v_val;
+      CALL get_equil_LgradB_dbl(s_dbl,u_dbl,v_dbl,lgradB_dbl,ier)
+      lgradB = lgradB_dbl
+      RETURN
+      END SUBROUTINE get_equil_LgradB_sgl
       
       SUBROUTINE line_int_dbl(fcn,r1,r2,val,length)
       IMPLICIT NONE
