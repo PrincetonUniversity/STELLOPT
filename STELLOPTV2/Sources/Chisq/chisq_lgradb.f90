@@ -12,7 +12,7 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime
       USE stellopt_targets
-      USE stel_tools, ONLY: get_equil_RZ
+      USE stel_tools, ONLY: get_equil_LgradB
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -30,33 +30,39 @@
       INTEGER, PARAMETER :: nu_local = 128
       INTEGER, PARAMETER :: nv_local = 96
       INTEGER :: u, v, ier
-      REAL(rprec) :: s,theta,zeta
+      REAL(rprec) :: s,theta,zeta, lgradB_min
+      DOUBLE PRECISION :: lgradB, R, Z
       REAL(rprec), DIMENSION(nu_local,nv_local) :: Bxds
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'LGRADB ',1,3
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  LGRADB'
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'LGRADB ',nu_local*nv_local,3
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  LGRADB S THETA PHI R Z'
       IF (niter >= 0) THEN
          s = 1.0_rprec
+         lgradB = bigno
          DO u = 1, nu_local
             DO v = 1, nv_local
                theta = DBLE(u-1)/DBLE(nu_local)
                zeta  = DBLE(v-1)/DBLE(nv_local)
                ier = 0
-               ! First compute the vector gradients
-               CALL get_equil_LgradB(s,u,v,R,Z,ier,Rgrad,Zgrad)
-         ! Compute the Frobenius norm
-         mtargets = mtargets + 1
-         targets(mtargets) = target
-         sigmas(mtargets)  = sigma
-         vals(mtargets)     = beta
-         IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,beta
+               CALL get_equil_LgradB(s, theta, zeta, lgradB, ier, R_out=R, Z_out=Z)
+               mtargets = mtargets + 1
+               targets(mtargets) = target
+               sigmas(mtargets)  = sigma
+               vals(mtargets)     = lgradB_min
+               IF (iflag == 1) WRITE(iunit_out,'(8ES22.12E3)') target, sigma, lgradB, s, theta, zeta/nfp, R, Z
+            END DO
+         END DO
       ELSE
          IF (sigma < bigno) THEN
-            mtargets = mtargets + 1
-            IF (niter == -2) target_dex(mtargets)=jtarget_lgradb
+            DO u = 1, nu_local
+               DO v = 1, nv_local
+                  mtargets = mtargets + 1
+                  IF (niter == -2) target_dex(mtargets)=jtarget_lgradb
+               END DO
+            END DO
          END IF
       END IF
       RETURN
