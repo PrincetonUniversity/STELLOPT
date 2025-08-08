@@ -78,8 +78,11 @@
       DOUBLE PRECISION, PRIVATE ::  R_target, PHI_target, Z_target, S_MAX
       INTEGER, PRIVATE     ::  bcs0(2) = (/ 0, 0/)
       INTEGER, PRIVATE     ::  bcs1(2) = (/-1,-1/)
-      DOUBLE PRECISION, PARAMETER,PRIVATE      :: pi2 = 6.283185482025146D+00
-      DOUBLE PRECISION, PARAMETER,PRIVATE      :: one = 1.000000000000000D+00
+      DOUBLE PRECISION, PARAMETER,PRIVATE      :: pi2  = 6.283185482025146D+00
+      DOUBLE PRECISION, PARAMETER,PRIVATE      :: zero = 0.000000000000000D+00
+      DOUBLE PRECISION, PARAMETER,PRIVATE      :: half = 0.500000000000000D+00
+      DOUBLE PRECISION, PARAMETER,PRIVATE      :: one  = 1.000000000000000D+00
+      DOUBLE PRECISION, PARAMETER,PRIVATE      :: two  = 2.000000000000000D+00
       DOUBLE PRECISION, PARAMETER,PRIVATE      :: search_tol = 1.000000000000000D-12
       DOUBLE PRECISION, DIMENSION(:), POINTER, PRIVATE :: x1, x2, x3
       DOUBLE PRECISION, DIMENSION(:,:), POINTER, PRIVATE ::&
@@ -602,12 +605,12 @@
             ! <|grad(rho)|^2>
             grho2 = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
             grho2 = grho2 / Vp
-            grho2(1) = 2*grho2(2) - grho2(3)
+            grho2(1) = two*grho2(2) - grho2(3)
             ! <|grad(rho)|>|
             gs = sqrt(gs) !|grad(rho)|
             grho = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
             grho = grho / Vp
-            grho(1) = 2*grho(2) - grho(3)
+            grho(1) = two*grho(2) - grho(3)
             ! Construct splines
             CALL EZspline_setup(Vp_spl,ABS(Vp*pi2*pi2/(nu*nv)),iflag) ! ABS because of negative Jacobian
             CALL EZspline_setup(grho_spl,grho,iflag)
@@ -648,25 +651,25 @@
                               LV4D(1,:,:,:)*nfp*nfp
             f_temp = f_temp / G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
-            grho(1) = 2*grho(2) - grho(3)
+            grho(1) = two*grho(2) - grho(3)
             CALL EZspline_setup(S22_spl,grho,iflag); f_temp = 0; grho = 0
             ! Bav
             f_temp = B4D(1,:,:,:)*G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
             grho2 = grho / Vp
-            grho2(1) = 2*grho2(2) - grho2(3)
+            grho2(1) = two*grho2(2) - grho2(3)
             CALL EZspline_setup(Bav_spl,grho2,iflag); f_temp = 0; grho = 0
             ! Bsq
             f_temp = B4D(1,:,:,:)*B4D(1,:,:,:)*G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
             grho2 = grho / Vp
-            grho2(1) = 2*grho2(2) - grho2(3)
+            grho2(1) = two*grho2(2) - grho2(3)
             CALL EZspline_setup(Bsq_spl,grho2,iflag); f_temp = 0; grho = 0
             ! B.V
             f_temp = BV4D(1,:,:,:)*G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
             grho2 = grho / Vp
-            grho2(1) = 2*grho2(2) - grho2(3)
+            grho2(1) = two*grho2(2) - grho2(3)
             CALL EZspline_setup(BVav_spl,grho2,iflag); f_temp = 0; grho = 0
             ! PHI
             f_temp = BV4D(1,:,:,:)*G4D(1,:,:,:)
@@ -677,13 +680,13 @@
                         + ZU4D(1,:,:,:)*ZU4D(1,:,:,:)) * BU4D(1,:,:,:) &
                    +  (   RU4D(1,:,:,:)*RV4D(1,:,:,:) &
                         + ZU4D(1,:,:,:)*ZV4D(1,:,:,:)) * BV4D(1,:,:,:)*nfp
-            grho   = pi2*SUM(f_temp(:,1,:),DIM=1)/(nu1*pi2*2E-7) ! B_u
+            grho   = pi2*SUM(f_temp(:,1,:),DIM=1)/(nu1*pi2*2.0D-7) ! B_u
             CALL EZspline_setup(I_SPL,grho,iflag); f_temp = 0; grho = 0
             ! Rmajor
             f_temp = R4D(1,:,:,:)*G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
             grho2 = grho / Vp
-            grho2(1) = 2*grho2(2) - grho2(3)
+            grho2(1) = two*grho2(2) - grho2(3)
             CALL EZspline_setup(RMAJ_spl,grho2,iflag); f_temp = 0; grho = 0
             ! Volume
             grho = [(sum(Vp(1:u)),u=1,size(Vp))]
@@ -695,7 +698,7 @@
             grho   = BSQ_SPL%fspl(1,:)
             f_temp = B4D(1,:,:,:)*B4D(1,:,:,:)
             grho2 = grho / MAXVAL(MAXVAL(f_temp,DIM=1),DIM=1)
-            grho2(1) = 2*grho2(2) - grho2(3) ! Grho2 is <B^2/B_max^2>
+            grho2(1) = two*grho2(2) - grho2(3) ! Grho2 is <B^2/B_max^2>
             ! Now do lambda
             IF (ALLOCATED(fmn_temp)) DEALLOCATE(fmn_temp)
             ALLOCATE(fmn_temp(nlambda,k1:k2))
@@ -712,7 +715,7 @@
             END DO
             grho = SUM(fmn_temp,DIM=1)*dlambda
             grho2 = one - 0.75*grho2*Vp*grho
-            grho2(1) = 2*grho2(2) - grho2(3)
+            grho2(1) = two*grho2(2) - grho2(3)
             CALL EZspline_setup(FTRAP_spl,grho2,iflag); f_temp = 0; grho = 0
 
             ! Deallocate arrays
@@ -1164,7 +1167,7 @@
          FORALL(mn = k1:k2) f_temp(:,:,mn) = ru_e(:,:,mn) + rho(mn)*ru_o(:,:,mn) 
          ru12 = 0;
          DO mn = k1p,k2
-            ru12(:,:,mn) = (f_temp(:,:,mn)+f_temp(:,:,mn-1))*0.5
+            ru12(:,:,mn) = (f_temp(:,:,mn)+f_temp(:,:,mn-1))*half
          END DO
          ru12(:,:,k1)=ru12(:,:,k1p)
          CALL EZspline_setup(Ru_spl,f_temp,iflag); f_temp = 0
@@ -1173,7 +1176,7 @@
          FORALL(mn = k1:k2) f_temp(:,:,mn) = zu_e(:,:,mn) + rho(mn)*zu_o(:,:,mn) 
          zu12 = 0;
          DO mn = k1p,k2
-            zu12(:,:,mn) = (f_temp(:,:,mn)+f_temp(:,:,mn-1))*0.5
+            zu12(:,:,mn) = (f_temp(:,:,mn)+f_temp(:,:,mn-1))*half
          END DO
          zu12(:,:,k1)=zu12(:,:,k1p)
          CALL EZspline_setup(Zu_spl,f_temp,iflag); f_temp = 0
@@ -1246,17 +1249,17 @@
             f_temp(:,:,mn) = f_temp(:,:,mn) - zu12(:,:,mn)*rs(:,:,mn)&
                            - 0.25*(   zu_o(:,:,mn)*r_o(:,:,mn) + zu_o(:,:,mn-1)*r_o(:,:,mn-1) &
                                    + (zu_e(:,:,mn)*r_o(:,:,mn) + zu_e(:,:,mn-1)*r_o(:,:,mn-1))*rhoinv(mn))
-            f_temp(:,:,mn) = 0.5*(R4D(1,:,:,mn) + R4D(1,:,:,mn-1))*f_temp(:,:,mn)
+            f_temp(:,:,mn) = half*(R4D(1,:,:,mn) + R4D(1,:,:,mn-1))*f_temp(:,:,mn)
          END DO
          f_temp(:,:,k1) = f_temp(:,:,k1p)
 
          ! Put on full grid
          ! From the half grid (2:ns) just average to (2:ns-1)
-         f_temp(:,:,k1p:k2-1) = 0.5*(f_temp(:,:,k1p:k2-1)+f_temp(:,:,k1p+1:k2))
-         f_temp(:,:,k2) = 2.0*f_temp(:,:,k2) - f_temp(:,:,k2-1) ! Extrapolate to edge
+         f_temp(:,:,k1p:k2-1) = half*(f_temp(:,:,k1p:k2-1)+f_temp(:,:,k1p+1:k2))
+         f_temp(:,:,k2) = two*f_temp(:,:,k2) - f_temp(:,:,k2-1) ! Extrapolate to edge
          !This works but is probably not the correct way to extrapolate near the axis
-         f_temp(:,:,k1p) = 2*f_temp(:,:,k1p+1) - f_temp(:,:,k1p+2)
-         f_temp(:,:,k1) = 2*f_temp(:,:,k1p) - f_temp(:,:,k1p+1)
+         f_temp(:,:,k1p) = two*f_temp(:,:,k1p+1) - f_temp(:,:,k1p+2)
+         f_temp(:,:,k1) = two*f_temp(:,:,k1p) - f_temp(:,:,k1p+1)
 
          ! Create Spline
          CALL EZspline_setup(G_spl,f_temp,iflag); f_temp = 0
@@ -1369,12 +1372,12 @@
          ! <|grad(rho)|^2>
          grho2 = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
          grho2 = grho2 / Vp
-         grho2(1) = 2*grho2(2) - grho2(3)
+         grho2(1) = two*grho2(2) - grho2(3)
          ! <|grad(rho|>|
          gs = sqrt(gs) !|grad(rho)|
          grho = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
          grho = grho / Vp
-         grho(1) = 2*grho(2) - grho(3)
+         grho(1) = two*grho(2) - grho(3)
          ! Construct splines
          CALL EZspline_setup(Vp_spl,ABS(Vp*pi2*pi2/(nu*nv)),iflag) ! ABS because of negative Jacobian
          CALL EZspline_setup(grho_spl,grho,iflag)
@@ -1417,13 +1420,13 @@
          f_temp = B4D(1,:,:,:)*G4D(1,:,:,:)
          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
          grho2 = grho / Vp
-         grho2(1) = 2*grho2(2) - grho2(3)
+         grho2(1) = two*grho2(2) - grho2(3)
          CALL EZspline_setup(Bav_spl,grho2,iflag); f_temp = 0; grho = 0
          ! Bsq
          f_temp = B4D(1,:,:,:)*B4D(1,:,:,:)*G4D(1,:,:,:)
          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
          grho2 = grho / Vp
-         grho2(1) = 2*grho2(2) - grho2(3)
+         grho2(1) = two*grho2(2) - grho2(3)
          CALL EZspline_setup(Bsq_spl,grho2,iflag); f_temp = 0; grho = 0
          ! PHI
          f_temp = BV4D(1,:,:,:)*G4D(1,:,:,:)
@@ -1434,13 +1437,13 @@
                      + ZU4D(1,:,:,:)*ZU4D(1,:,:,:)) * BU4D(1,:,:,:) &
                 +  (   RU4D(1,:,:,:)*RV4D(1,:,:,:) &
                      + ZU4D(1,:,:,:)*ZV4D(1,:,:,:)) * BV4D(1,:,:,:)*nfp
-         grho   = pi2*SUM(f_temp(:,1,:),DIM=1)/(nu1*pi2*2E-7) ! B_u
+         grho   = pi2*SUM(f_temp(:,1,:),DIM=1)/(nu1*pi2*2.0D-7) ! B_u
          CALL EZspline_setup(I_SPL,grho,iflag); f_temp = 0; grho = 0
          ! Rmajor
          f_temp = R4D(1,:,:,:)*G4D(1,:,:,:)
          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
          grho2 = grho / Vp
-         grho2(1) = 2*grho2(2) - grho2(3)
+         grho2(1) = two*grho2(2) - grho2(3)
          CALL EZspline_setup(RMAJ_spl,grho2,iflag); f_temp = 0; grho = 0
          ! Volume
          grho = [(sum(Vp(1:u)),u=1,size(Vp))]
@@ -1544,7 +1547,7 @@
       IF (x(2) < 0.0) x(2) = x(2) + pi2
       IF (x(1) < 0) THEN
          x(1) = ABS(x(1))
-         x(2) = x(2)+pi2*0.5
+         x(2) = x(2)+pi2*half
          x(2) = MOD(x(2),pi2)
       END IF
       ier = 0; domain_flag = 0
@@ -1716,8 +1719,8 @@
          IF ((info > 0) .AND. (info < 4)) ier = 0
          IF (domain_flag .ne. 0) THEN
             ier = 9
-            s_val = S_MAX+0.5
-            IF (PRESENT(u_val)) u_val = 2*pi2
+            s_val = S_MAX+half
+            IF (PRESENT(u_val)) u_val = two*pi2
             RETURN
          END IF
          s_val = xc_opt(1)*xc_opt(1)
@@ -2047,7 +2050,7 @@
          Rmajor = fval(1);
          CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,VOL2D(1,1),nx3)
          Vol = fval(1);
-         Aminor = SQRT(2*Vol/(pi2*pi2*Rmajor))
+         Aminor = SQRT(two*Vol/(pi2*pi2*Rmajor))
       ELSE
          ier=-1
       END IF
@@ -2471,7 +2474,7 @@
       DOUBLE PRECISION :: s_val, u_val, v_val, br, bphi
       DOUBLE PRECISION :: R_grad(3), Z_grad(3)
       IF (ier < 0) RETURN
-      s_val = 0.5
+      s_val = half
       CALL get_equil_s(r_val,phi_val,z_val,s_val,ier,u_val)
       IF (ier < 0) RETURN
       v_val = PHI_target
@@ -2529,7 +2532,7 @@
       Br = 0; Bphi = 0; Bz =0
       R_grad = 0; Z_grad = 0
       u_val = ATAN2(z_val,r_val)
-      s_val = 0.5
+      s_val = half
       CALL get_equil_s(r_val,phi_val,z_val,s_val,ier,u_val)
       IF (ier < 0) RETURN
       v_val = PHI_target
@@ -2710,7 +2713,7 @@
          !CALL EZspline_interp(Vp_spl,rho_val,vp_val,ier)
          CALL r8fvspline(ict1,1,1,fval,k,zparam,hz,hzi,VP2D(1,1),nx3)
          vp_val = fval(1,1)
-         Bsqavp_val = 2*rho_val*Bsqavp_val/vp_val  ! d/dV = (dPhi/drho)*(dV/dPhi)^-1 * d/drho
+         Bsqavp_val = two*rho_val*Bsqavp_val/vp_val  ! d/dV = (dPhi/drho)*(dV/dPhi)^-1 * d/drho
       END IF
       IF (PRESENT(Bvav_val)) THEN
          CALL r8fvspline(ict1,1,1,fval,k,zparam,hz,hzi,BVAV2D(1,1),nx3)
@@ -2794,7 +2797,7 @@
          dlam = fval(1)
          dth = -(th + lam - th1)/(one+dlam)
          n1 = n1 + 1
-         th = th + 0.5*dth
+         th = th + half*dth
       END DO
       coord(1) = s
       coord(2) = th
@@ -2811,16 +2814,18 @@
       RETURN
       END SUBROUTINE pest2vmec_sgl
       
-      SUBROUTINE get_equil_LgradB_dbl(s_val,u_val,v_val,lgradB,ier)
+      SUBROUTINE get_equil_LgradB_dbl(s_val,u_val,v_val,lgradB,ier,R_out,Z_out)
       USE EZspline
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in)    ::  s_val
       DOUBLE PRECISION, INTENT(in)    ::  u_val
       DOUBLE PRECISION, INTENT(in)    ::  v_val
       DOUBLE PRECISION, INTENT(out)   ::  lgradB
+      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  R_out
+      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  Z_out
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val, drhods
-      DOUBLE PRECISION :: R, Z, sqrtG
+      DOUBLE PRECISION :: R, Z, sqrtG, cop, sip, gradB_norm
       DOUBLE PRECISION, DIMENSION(3) :: Rgrad, Zgrad
       DOUBLE PRECISION :: dRduu, dRdvv, dRdss
       DOUBLE PRECISION :: dRduv, dRdus, dRdvs
@@ -2829,9 +2834,18 @@
       DOUBLE PRECISION :: gradsR,gradsP,gradsZ
       DOUBLE PRECISION :: graduR,graduP,graduZ
       DOUBLE PRECISION :: gradvR,gradvP,gradvZ
+      DOUBLE PRECISION :: gradsX,gradsY
+      DOUBLE PRECISION :: graduX,graduY
+      DOUBLE PRECISION :: gradvX,gradvY
       DOUBLE PRECISION :: bs, bsds, bsdu, bsdv
       DOUBLE PRECISION :: bu, buds, budu, budv
       DOUBLE PRECISION :: bv, bvds, bvdu, bvdv
+      DOUBLE PRECISION :: dBxds, dBxdu, dBxdv
+      DOUBLE PRECISION :: dByds, dBydu, dBydv
+      DOUBLE PRECISION :: dBzds, dBzdu, dBzdv
+      DOUBLE PRECISION :: dBxdx, dBxdy, dBxdz
+      DOUBLE PRECISION :: dBydx, dBydy, dBydz
+      DOUBLE PRECISION :: dBzdx, dBzdy, dBzdz
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval1(1)
@@ -2842,12 +2856,12 @@
       INTEGER, parameter :: ict2(10)=(/0,1,1,1,0,0,0,0,0,0/)
       INTEGER, parameter :: ict3(10)=(/1,1,1,1,0,0,0,0,0,0/)
       INTEGER, parameter :: ict4(10)=(/1,1,1,1,1,1,1,1,1,1/)
-      lgradB = 0.0
+      lgradB = zero
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
       drhods = one/rho_val
-      cop = DCOS(v/nfp)
-      sip = DSIN(v/nfp)
+      cop = DCOS(v_val/nfp)
+      sip = DSIN(v_val/nfp)
       ! Get grid values
       CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
       CALL r8fvtricub(ict4, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
@@ -2856,51 +2870,92 @@
       R = fval4(1,1); Rgrad(1) = fval4(1,2); Rgrad(2) = fval4(1,3); Rgrad(3) = fval4(1,4)
       dRduu = fval4(1,5); dRdvv = fval4(1,6); dRdss = fval4(1,7)
       dRduv = fval4(1,8); dRdus = fval4(1,9); dRdvs = fval4(1,10)
+      ! All our toroidal deriviatives are d/dv not d/dphi
+      ! phi = v_val/nfp so dv/dphi = nfp
+      dRdss = dRdss * drhods * drhods; dRdus = dRdus * drhods; dRdvs = dRdvs * drhods
+      dRdvv = dRdvv * nfp * nfp; dRduv = dRduv * nfp; dRdvs = dRdvs * nfp
+      Rgrad(2) = Rgrad(2) * nfp; Rgrad(3) = Rgrad(3) * drhods
       CALL r8fvtricub(ict4, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       Z4D(1,1,1,1), nx1, nx2, nx3)
       Z = fval4(1,1); Zgrad(1) = fval4(1,2); Zgrad(2) = fval4(1,3); Zgrad(3) = fval4(1,4)
       dZduu = fval4(1,5); dZdvv = fval4(1,6); dZdss = fval4(1,7)
       dZduv = fval4(1,8); dZdus = fval4(1,9); dZdvs = fval4(1,10)
+      dZdss = dZdss * drhods * drhods; dZdus = dZdus * drhods; dZdvs = dZdvs * drhods
+      dZdvv = dZdvv * nfp * nfp; dZduv = dZduv * nfp; dZdvs = dZdvs * nfp
+      Zgrad(2) = Zgrad(2) * nfp; Zgrad(3) = Zgrad(3) * drhods
       CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       BS4D(1,1,1,1), nx1, nx2, nx3)
-      bs = fval3(1,1); bsdu = fval3(1,2); bsdv = fval3(1,3); bsds = fval3(1,4)
+      bs = fval3(1,1); bsdu = fval3(1,2); bsdv = fval3(1,3) * nfp; bsds = fval3(1,4) * drhods
       CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       BU4D(1,1,1,1), nx1, nx2, nx3)
-      bu = fval3(1,1); budu = fval3(1,2); budv = fval3(1,3); buds = fval3(1,4)
+      bu = fval3(1,1); budu = fval3(1,2); budv = fval3(1,3) * nfp; buds = fval3(1,4) * drhods
       CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       BV4D(1,1,1,1), nx1, nx2, nx3)
-      bv = fval3(1,1); bvdu = fval3(1,2); bvdv = fval3(1,3); bvds = fval3(1,4)
+      bv = fval3(1,1); bvdu = fval3(1,2); bvdv = fval3(1,3) * nfp; bvds = fval3(1,4) * drhods
       CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       G4D(1,1,1,1), nx1, nx2, nx3)
-      sqrtG = fval1(1,1)
+      sqrtG = fval1(1)
       ! Compute the grad values
       gradsR = -Zgrad(1)*R/sqrtG
       gradsP =  (Rgrad(2)*Zgrad(1)-Rgrad(1)*Zgrad(2))/sqrtG
       gradsZ =  Rgrad(1)*R/sqrtG
-      graduR = -Rgrad(3)*R*drhods/sqrtG
-      graduP =  (Rgrad(3)*Zgrad(2)-Rgrad(2)*Zgrad(3))*drhods/sqrtG
-      graduZ =  Zgrad(3)*R*drhods/sqrtG
-      gradvR =  0.0_rprec
-      gradvP =  1.0_rprec/(R*sqrtG)
-      gradvZ =  0.0_rprec
+      graduR = -Rgrad(3)*R/sqrtG
+      graduP =  (Rgrad(3)*Zgrad(2)-Rgrad(2)*Zgrad(3))/sqrtG
+      graduZ =  Zgrad(3)*R/sqrtG
+      gradvR =  zero
+      gradvP =  one/(R*sqrtG)
+      gradvZ =  zero
+      gradsX =  gradsR * cop - gradsP * sip 
+      gradsY =  gradsP * cop + gradsR * sip
+      graduX =  graduR * cop - graduP * sip 
+      graduY =  graduP * cop + graduR * sip
+      gradvX =  gradvR * cop - gradvP * sip 
+      gradvY =  gradvP * cop + gradvR * sip
       ! Compute the derivatives
       dBxds = buds * Rgrad(1) * cop + bu * dRdus * cop + bvds * Rgrad(2) * cop &
               + bv * dRdvs * cop - bvds * R * sip - bv * Rgrad(3) * sip
       dBxdu = budu * Rgrad(1) * cop + bu * dRduu * cop + bvdu * Rgrad(2) * cop &
               + bv * dRduv * cop - bvdu * R * sip - bv * Rgrad(1) * sip
-      !dBxdv = budv * Rgrad(1) * cop + bu * dRduv * cop + bvdv * Rgrad(2) * cop &
-      !        + bv * dRduv * cop - bvdu * R * sip - bv * Rgrad(1) * sip
-
-
+      dBxdv =   budv * Rgrad(1) * cop + bu * dRduv * cop - bu * Rgrad(1) * sip &
+              + bvdv * Rgrad(2) * cop + bv * dRdvv * cop - bv * Rgrad(2) * sip &
+              - bvdv * R * sip - bv * Rgrad(2) * cop - bv * R * cop
+      dByds = buds * Rgrad(1) * sip + bu * dRdus * sip + bvds * Rgrad(2) * sip &
+              + bv * dRdvs * sip + bvds * R * cop + bv * Rgrad(3) * cop
+      dBydu = budu * Rgrad(1) * sip + bu * dRduu * sip + bvdu * Rgrad(2) * sip &
+              + bv * dRduv * sip + bvdu * R * cop + bv * Rgrad(1) * cop
+      dBydv =   budv * Rgrad(1) * sip + bu * dRduv * sip + bu * Rgrad(1) * cop &
+              + bvdv * Rgrad(2) * sip + bv * dRdvv * sip + bv * Rgrad(2) * cop &
+              + bvdv * R * cop + bv * Rgrad(2) * sip + bv * R * sip
+      dBzds = buds * Zgrad(1) + bu * dZdus + bvds * Zgrad(2) + bv * dZdvs
+      dBzdu = budu * Zgrad(1) + bu * dZduu + bvdu * Zgrad(2) + bv * dZduv
+      dBzdv = budv * Zgrad(1) + bu * dZduv + bvdv * Zgrad(2) + bv * dZdvv
+      ! Now compute the grad(B) in cartesian coordinates
+      dBxdx = dBxds * gradsX + dBxdu * graduX + dBxdv * gradvZ
+      dBxdy = dBxds * gradsY + dBxdu * graduY + dBxdv * gradvY
+      dBxdz = dBxds * gradsZ + dBxdu * graduZ + dBxdv * gradvZ
+      dBydx = dByds * gradsX + dBydu * graduX + dBydv * gradvZ
+      dBydy = dByds * gradsY + dBydu * graduY + dBydv * gradvY
+      dBydz = dByds * gradsZ + dBydu * graduZ + dBydv * gradvZ
+      dBzdx = dBzds * gradsX + dBzdu * graduX + dBzdv * gradvZ
+      dBzdy = dBzds * gradsY + dBzdu * graduY + dBzdv * gradvY
+      dBzdz = dBzds * gradsZ + dBzdu * graduZ + dBzdv * gradvZ
+      ! Now compute the Frobenius norm of grad(B)
+      gradB_norm = DSQRT (   dBxdx * dBxdx + dBxdy * dBxdy + dBxdz * dBxdz &
+                           + dBydx * dBydx + dBydy * dBydy + dBydz * dBydz &
+                           + dBzdx * dBzdx + dBzdy * dBzdy + dBzdz * dBzdz )
+      ! And finally LgradB
+      lgradB = DSQRT(two * (bs*bs+bu*bu+bv*bv)) / gradB_norm
+      IF (PRESENT(R_out)) R_out = R
+      IF (PRESENT(Z_out)) Z_out = Z
       RETURN
       END SUBROUTINE get_equil_LgradB_dbl
       
-      SUBROUTINE get_equil_LgradB_sgl(s_val,u_val,v_val,lgradB,ier)
+      SUBROUTINE get_equil_LgradB_sgl(s_val,u_val,v_val,lgradB,ier,R_out,Z_out)
       USE EZspline
       IMPLICIT NONE
       REAL, INTENT(in)    ::  s_val
@@ -2908,13 +2963,19 @@
       REAL, INTENT(in)    ::  v_val
       REAL, INTENT(out)   ::  lgradB
       INTEGER, INTENT(inout)     ::  ier
+      REAL, INTENT(out), OPTIONAL   ::  R_out
+      REAL, INTENT(out), OPTIONAL   ::  Z_out
       DOUBLE PRECISION    ::  s_dbl
       DOUBLE PRECISION    ::  u_dbl
       DOUBLE PRECISION    ::  v_dbl
       DOUBLE PRECISION   ::  lgradB_dbl
+      DOUBLE PRECISION   ::  R_dbl
+      DOUBLE PRECISION   ::  Z_dbl
       s_dbl = s_val; u_dbl = u_val; v_dbl = v_val;
-      CALL get_equil_LgradB_dbl(s_dbl,u_dbl,v_dbl,lgradB_dbl,ier)
+      CALL get_equil_LgradB_dbl(s_dbl,u_dbl,v_dbl,lgradB_dbl,ier,R_out=R_dbl,Z_out=Z_dbl)
       lgradB = lgradB_dbl
+      IF (PRESENT(R_out)) R_out = R_dbl
+      IF (PRESENT(Z_out)) Z_out = Z_dbl
       RETURN
       END SUBROUTINE get_equil_LgradB_sgl
       
