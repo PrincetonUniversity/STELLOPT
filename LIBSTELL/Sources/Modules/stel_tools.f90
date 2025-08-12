@@ -2826,7 +2826,8 @@
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val, drhods
       DOUBLE PRECISION :: R, Z, sqrtG, cop, sip, gradB_norm
-      DOUBLE PRECISION, DIMENSION(3) :: Rgrad, Zgrad
+      DOUBLE PRECISION :: dRdu, dRdv, dRds
+      DOUBLE PRECISION :: dZdu, dZdv, dZds
       DOUBLE PRECISION :: dRduu, dRdvv, dRdss
       DOUBLE PRECISION :: dRduv, dRdus, dRdvs
       DOUBLE PRECISION :: dZduu, dZdvv, dZdss
@@ -2837,7 +2838,7 @@
       DOUBLE PRECISION :: gradsX,gradsY
       DOUBLE PRECISION :: graduX,graduY
       DOUBLE PRECISION :: gradvX,gradvY
-      DOUBLE PRECISION :: bs, bsds, bsdu, bsdv
+      !DOUBLE PRECISION :: bs, bsds, bsdu, bsdv
       DOUBLE PRECISION :: bu, buds, budu, budv
       DOUBLE PRECISION :: bv, bvds, bvdu, bvdv
       DOUBLE PRECISION :: dBxds, dBxdu, dBxdv
@@ -2858,8 +2859,8 @@
       INTEGER, parameter :: ict4(10)=(/1,1,1,1,1,1,1,1,1,1/)
       lgradB = zero
       IF (ier < 0) RETURN
-      rho_val = SQRT(s_val)
-      drhods = one/rho_val
+      rho_val = DSQRT(s_val)
+      drhods = one/(two*rho_val)
       cop = DCOS(v_val/nfp)
       sip = DSIN(v_val/nfp)
       ! Get grid values
@@ -2867,49 +2868,68 @@
       CALL r8fvtricub(ict4, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       R4D(1,1,1,1), nx1, nx2, nx3)
-      R = fval4(1,1); Rgrad(1) = fval4(1,2); Rgrad(2) = fval4(1,3); Rgrad(3) = fval4(1,4)
+      R = fval4(1,1); dRdu = fval4(1,2); dRdv = fval4(1,3); dRds = fval4(1,4)
       dRduu = fval4(1,5); dRdvv = fval4(1,6); dRdss = fval4(1,7)
       dRduv = fval4(1,8); dRdus = fval4(1,9); dRdvs = fval4(1,10)
+      ! Spline is over rho so s=rho**2 drho/ds = 0.5/sqrt(s) d2rho/ds2 = -0.25*s**-1.5
+      !dRdss = ( dRdss  + Rgrad(3) ) * -0.25 / (rho*rho*rho)
+      dRdus = dRdus * drhods; dRdvs = dRdvs * drhods
       ! All our toroidal deriviatives are d/dv not d/dphi
       ! phi = v_val/nfp so dv/dphi = nfp
-      dRdss = dRdss * drhods * drhods; dRdus = dRdus * drhods; dRdvs = dRdvs * drhods
       dRdvv = dRdvv * nfp * nfp; dRduv = dRduv * nfp; dRdvs = dRdvs * nfp
-      Rgrad(2) = Rgrad(2) * nfp; Rgrad(3) = Rgrad(3) * drhods
+      dRdv = dRdv * nfp; dRds = dRds * drhods
       CALL r8fvtricub(ict4, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       Z4D(1,1,1,1), nx1, nx2, nx3)
-      Z = fval4(1,1); Zgrad(1) = fval4(1,2); Zgrad(2) = fval4(1,3); Zgrad(3) = fval4(1,4)
+      Z = fval4(1,1); dZdu = fval4(1,2); dZdv = fval4(1,3); dZds = fval4(1,4)
       dZduu = fval4(1,5); dZdvv = fval4(1,6); dZdss = fval4(1,7)
       dZduv = fval4(1,8); dZdus = fval4(1,9); dZdvs = fval4(1,10)
-      dZdss = dZdss * drhods * drhods; dZdus = dZdus * drhods; dZdvs = dZdvs * drhods
+      !dZdss = ( dZdss  + Zgrad(3) ) * -0.25 / (rho*rho*rho)
+      dZdus = dZdus * drhods; dZdvs = dZdvs * drhods
       dZdvv = dZdvv * nfp * nfp; dZduv = dZduv * nfp; dZdvs = dZdvs * nfp
-      Zgrad(2) = Zgrad(2) * nfp; Zgrad(3) = Zgrad(3) * drhods
-      CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, &
-                      BS4D(1,1,1,1), nx1, nx2, nx3)
-      bs = fval3(1,1); bsdu = fval3(1,2); bsdv = fval3(1,3) * nfp; bsds = fval3(1,4) * drhods
+      dZdv = dZdv * nfp; dZds = dZds * drhods
+      ! B^s (not needed if B^s = 0)
+      !bs = zero
+      !CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
+      !                hx, hxi, hy, hyi, hz, hzi, &
+      !                BS4D(1,1,1,1), nx1, nx2, nx3)
+      !bs = fval3(1,1); bsdu = fval3(1,2); bsdv = fval3(1,3) * nfp; bsds = fval3(1,4) * drhods
+      ! B^theta = B^u
       CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       BU4D(1,1,1,1), nx1, nx2, nx3)
       bu = fval3(1,1); budu = fval3(1,2); budv = fval3(1,3) * nfp; buds = fval3(1,4) * drhods
+      ! B^phi*R = R*B^v
       CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       BV4D(1,1,1,1), nx1, nx2, nx3)
-      bv = fval3(1,1); bvdu = fval3(1,2); bvdv = fval3(1,3) * nfp; bvds = fval3(1,4) * drhods
-      CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, &
-                      G4D(1,1,1,1), nx1, nx2, nx3)
-      sqrtG = fval1(1)
+      !bv = fval3(1,1)
+      bvdu = fval3(1,2)
+      bvdv = fval3(1,3) * nfp
+      bvds = fval3(1,4) * drhods
+      bv = fval3(1,1) * R
+      bvdu = R*fval3(1,2)          + bv * dRdu
+      bvdv = R*fval3(1,3) * nfp    + bv * dRdv
+      bvds = R*fval3(1,4) * drhods + bv * dRds
+      ! sqrt(g)
+      !CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+      !                hx, hxi, hy, hyi, hz, hzi, &
+      !                G4D(1,1,1,1), nx1, nx2, nx3)
+      !sqrtG = fval1(1)
+      sqrtG =  one / ( R * dRdu * dZds - R * dZdu * dRds )
       ! Compute the grad values
-      gradsR = -Zgrad(1)*R/sqrtG
-      gradsP =  (Rgrad(2)*Zgrad(1)-Rgrad(1)*Zgrad(2))/sqrtG
-      gradsZ =  Rgrad(1)*R/sqrtG
-      graduR = -Rgrad(3)*R/sqrtG
-      graduP =  (Rgrad(3)*Zgrad(2)-Rgrad(2)*Zgrad(3))/sqrtG
-      graduZ =  Zgrad(3)*R/sqrtG
+      gradsR = -dZdu*R/sqrtG
+      gradsP =  (dRdv*dZdu-dRdu*dZdv)/sqrtG
+      gradsZ =  dRdu*R/sqrtG
+      graduR =  dZds*R/sqrtG
+      graduP =  (dRds*dZdv-dRdv*dZds)/sqrtG
+      graduZ = -dRds*R/sqrtG
       gradvR =  zero
-      gradvP =  one/(R*sqrtG)
+      gradvP =  one/R
       gradvZ =  zero
+      !PRINT *,gradsR, gradsP, gradsZ
+      !PRINT *,graduR, graduP, graduZ
+      !PRINT *,gradvR, gradvP, gradvZ
       gradsX =  gradsR * cop - gradsP * sip 
       gradsY =  gradsP * cop + gradsR * sip
       graduX =  graduR * cop - graduP * sip 
@@ -2917,39 +2937,50 @@
       gradvX =  gradvR * cop - gradvP * sip 
       gradvY =  gradvP * cop + gradvR * sip
       ! Compute the derivatives
-      dBxds = buds * Rgrad(1) * cop + bu * dRdus * cop + bvds * Rgrad(2) * cop &
-              + bv * dRdvs * cop - bvds * R * sip - bv * Rgrad(3) * sip
-      dBxdu = budu * Rgrad(1) * cop + bu * dRduu * cop + bvdu * Rgrad(2) * cop &
-              + bv * dRduv * cop - bvdu * R * sip - bv * Rgrad(1) * sip
-      dBxdv =   budv * Rgrad(1) * cop + bu * dRduv * cop - bu * Rgrad(1) * sip &
-              + bvdv * Rgrad(2) * cop + bv * dRdvv * cop - bv * Rgrad(2) * sip &
-              - bvdv * R * sip - bv * Rgrad(2) * cop - bv * R * cop
-      dByds = buds * Rgrad(1) * sip + bu * dRdus * sip + bvds * Rgrad(2) * sip &
-              + bv * dRdvs * sip + bvds * R * cop + bv * Rgrad(3) * cop
-      dBydu = budu * Rgrad(1) * sip + bu * dRduu * sip + bvdu * Rgrad(2) * sip &
-              + bv * dRduv * sip + bvdu * R * cop + bv * Rgrad(1) * cop
-      dBydv =   budv * Rgrad(1) * sip + bu * dRduv * sip + bu * Rgrad(1) * cop &
-              + bvdv * Rgrad(2) * sip + bv * dRdvv * sip + bv * Rgrad(2) * cop &
-              + bvdv * R * cop + bv * Rgrad(2) * sip + bv * R * sip
-      dBzds = buds * Zgrad(1) + bu * dZdus + bvds * Zgrad(2) + bv * dZdvs
-      dBzdu = budu * Zgrad(1) + bu * dZduu + bvdu * Zgrad(2) + bv * dZduv
-      dBzdv = budv * Zgrad(1) + bu * dZduv + bvdv * Zgrad(2) + bv * dZdvv
+      dBxds = buds * dRdu * cop + bu * dRdus * cop + bvds * dRdv * cop &
+              + bv * dRdvs * cop - bvds * R * sip - bv * dRds * sip
+      dBxdu = budu * dRdu * cop + bu * dRduu * cop + bvdu * dRdv * cop &
+              + bv * dRduv * cop - bvdu * R * sip - bv * dRdu * sip
+      dBxdv =   budv * dRdu * cop + bu * dRduv * cop - bu * dRdu * sip &
+              + bvdv * dRdv * cop + bv * dRdvv * cop - bv * dRdv * sip &
+              - bvdv * R * sip - bv * dRdv * sip - bv * R * cop
+      dByds = buds * dRdu * sip + bu * dRdus * sip + bvds * dRdv * sip &
+              + bv * dRdvs * sip + bvds * R * cop + bv * dRds * cop
+      dBydu = budu * dRdu * sip + bu * dRduu * sip + bvdu * dRdv * sip &
+              + bv * dRduv * sip + bvdu * R * cop + bv * dRdu * cop
+      dBydv =   budv * dRdu * sip + bu * dRduv * sip + bu * dRdu * cop &
+              + bvdv * dRdv * sip + bv * dRdvv * sip + bv * dRdv * cop &
+              + bvdv * R * cop + bv * dRdv * cop - bv * R * sip
+      dBzds = buds * dZdu + bu * dZdus + bvds * dZdv + bv * dZdvs
+      dBzdu = budu * dZdu + bu * dZduu + bvdu * dZdv + bv * dZduv
+      dBzdv = budv * dZdu + bu * dZduv + bvdv * dZdv + bv * dZdvv
+      !PRINT *,dBxds, dBxdu, dBxdv
+      !PRINT *,dByds, dBydu, dBydv
+      !PRINT *,dBzds, dBzdu, dBzdv
       ! Now compute the grad(B) in cartesian coordinates
-      dBxdx = dBxds * gradsX + dBxdu * graduX + dBxdv * gradvZ
+      dBxdx = dBxds * gradsX + dBxdu * graduX + dBxdv * gradvX
       dBxdy = dBxds * gradsY + dBxdu * graduY + dBxdv * gradvY
       dBxdz = dBxds * gradsZ + dBxdu * graduZ + dBxdv * gradvZ
-      dBydx = dByds * gradsX + dBydu * graduX + dBydv * gradvZ
+      dBydx = dByds * gradsX + dBydu * graduX + dBydv * gradvX
       dBydy = dByds * gradsY + dBydu * graduY + dBydv * gradvY
       dBydz = dByds * gradsZ + dBydu * graduZ + dBydv * gradvZ
-      dBzdx = dBzds * gradsX + dBzdu * graduX + dBzdv * gradvZ
+      dBzdx = dBzds * gradsX + dBzdu * graduX + dBzdv * gradvX
       dBzdy = dBzds * gradsY + dBzdu * graduY + dBzdv * gradvY
       dBzdz = dBzds * gradsZ + dBzdu * graduZ + dBzdv * gradvZ
+      !PRINT *,'grad(B)'
+      !PRINT *,dBxdx,dBxdy,dBxdz
+      !PRINT *,dBydx,dBydy,dBydz
+      !PRINT *,dBzdx,dBzdy,dBzdz
+      !PRINT *,DSQRT(bu*bu+bv*bv)
+      !STOP
       ! Now compute the Frobenius norm of grad(B)
       gradB_norm = DSQRT (   dBxdx * dBxdx + dBxdy * dBxdy + dBxdz * dBxdz &
                            + dBydx * dBydx + dBydy * dBydy + dBydz * dBydz &
                            + dBzdx * dBzdx + dBzdy * dBzdy + dBzdz * dBzdz )
+      !PRINT *,gradB_norm
+      !STOP
       ! And finally LgradB
-      lgradB = DSQRT(two * (bs*bs+bu*bu+bv*bv)) / gradB_norm
+      lgradB = DSQRT(two * (bu*bu+bv*bv)) / gradB_norm
       IF (PRESENT(R_out)) R_out = R
       IF (PRESENT(Z_out)) Z_out = Z
       RETURN
