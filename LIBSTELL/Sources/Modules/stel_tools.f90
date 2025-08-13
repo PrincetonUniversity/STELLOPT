@@ -2904,8 +2904,6 @@
       CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       BV4D(1,1,1,1), nx1, nx2, nx3)
-      !PRINT *,'BV4D'
-      !PRINT *,BV4D(1,1,1,:)
       bv = fval3(1,1); bvdu = fval3(1,2); bvdv = fval3(1,3) * nfp; bvds = fval3(1,4) * drhods
       !PRINT *,'  X,dXds,dXdu,dXdv'
       !PRINT *,'R ',R,dRds,dRdu,dRdv
@@ -2914,7 +2912,7 @@
       !PRINT *,'Bu',bu,buds,budu,budv
       !PRINT *,'Bv',bv,bvds,bvdu,bvdv
       ! sqrt(g)
-      sqrtG = - R * (dRdu*dZds - dRds*dZdu)
+      sqrtG = R * (dRdu*dZds - dRds*dZdu)
       !PRINT *,'sqrt(G)',sqrtG
       ! Compute the grad values
       gradsR = -dZdu*R/sqrtG
