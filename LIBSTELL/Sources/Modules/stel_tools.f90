@@ -2847,6 +2847,7 @@
       DOUBLE PRECISION :: dBxdx, dBxdy, dBxdz
       DOUBLE PRECISION :: dBydx, dBydy, dBydz
       DOUBLE PRECISION :: dBzdx, dBzdy, dBzdz
+      DOUBLE PRECISION :: modB,Br,Bphi,Bz
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval1(1)
@@ -2903,20 +2904,18 @@
       CALL r8fvtricub(ict3, 1, 1, fval3, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       BV4D(1,1,1,1), nx1, nx2, nx3)
-      !bv = fval3(1,1)
-      bvdu = fval3(1,2)
-      bvdv = fval3(1,3) * nfp
-      bvds = fval3(1,4) * drhods
-      bv = fval3(1,1) * R
-      bvdu = R*fval3(1,2)          + bv * dRdu
-      bvdv = R*fval3(1,3) * nfp    + bv * dRdv
-      bvds = R*fval3(1,4) * drhods + bv * dRds
+      !PRINT *,'BV4D'
+      !PRINT *,BV4D(1,1,1,:)
+      bv = fval3(1,1); bvdu = fval3(1,2); bvdv = fval3(1,3) * nfp; bvds = fval3(1,4) * drhods
+      !PRINT *,'  X,dXds,dXdu,dXdv'
+      !PRINT *,'R ',R,dRds,dRdu,dRdv
+      !PRINT *,'Z ',Z,dZds,dZdu,dZdv
+      !PRINT *,'  BX,dBds,dBdu,dBdv'
+      !PRINT *,'Bu',bu,buds,budu,budv
+      !PRINT *,'Bv',bv,bvds,bvdu,bvdv
       ! sqrt(g)
-      !CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
-      !                hx, hxi, hy, hyi, hz, hzi, &
-      !                G4D(1,1,1,1), nx1, nx2, nx3)
-      !sqrtG = fval1(1)
-      sqrtG =  one / ( R * dRdu * dZds - R * dZdu * dRds )
+      sqrtG = - R * (dRdu*dZds - dRds*dZdu)
+      !PRINT *,'sqrt(G)',sqrtG
       ! Compute the grad values
       gradsR = -dZdu*R/sqrtG
       gradsP =  (dRdv*dZdu-dRdu*dZdv)/sqrtG
@@ -2927,15 +2926,20 @@
       gradvR =  zero
       gradvP =  one/R
       gradvZ =  zero
-      !PRINT *,gradsR, gradsP, gradsZ
-      !PRINT *,graduR, graduP, graduZ
-      !PRINT *,gradvR, gradvP, gradvZ
+      !PRINT *,'grad(X)_R,P,Z'
+      !PRINT *,'s',gradsR, gradsP, gradsZ
+      !PRINT *,'u',graduR, graduP, graduZ
+      !PRINT *,'v',gradvR, gradvP, gradvZ
       gradsX =  gradsR * cop - gradsP * sip 
       gradsY =  gradsP * cop + gradsR * sip
       graduX =  graduR * cop - graduP * sip 
       graduY =  graduP * cop + graduR * sip
       gradvX =  gradvR * cop - gradvP * sip 
       gradvY =  gradvP * cop + gradvR * sip
+      !PRINT *,'grad(X)_X,Y,Z'
+      !PRINT *,'s',gradsX, gradsY, gradsZ
+      !PRINT *,'u',graduX, graduY, graduZ
+      !PRINT *,'v',gradvX, gradvY, gradvZ
       ! Compute the derivatives
       dBxds = buds * dRdu * cop + bu * dRdus * cop + bvds * dRdv * cop &
               + bv * dRdvs * cop - bvds * R * sip - bv * dRds * sip
@@ -2954,9 +2958,10 @@
       dBzds = buds * dZdu + bu * dZdus + bvds * dZdv + bv * dZdvs
       dBzdu = budu * dZdu + bu * dZduu + bvdu * dZdv + bv * dZduv
       dBzdv = budv * dZdu + bu * dZduv + bvdv * dZdv + bv * dZdvv
-      !PRINT *,dBxds, dBxdu, dBxdv
-      !PRINT *,dByds, dBydu, dBydv
-      !PRINT *,dBzds, dBzdu, dBzdv
+      !PRINT *,'dBX/ds,dBX/du,dBXdv'
+      !PRINT *,'X',dBxds, dBxdu, dBxdv
+      !PRINT *,'Y',dByds, dBydu, dBydv
+      !PRINT *,'Z',dBzds, dBzdu, dBzdv
       ! Now compute the grad(B) in cartesian coordinates
       dBxdx = dBxds * gradsX + dBxdu * graduX + dBxdv * gradvX
       dBxdy = dBxds * gradsY + dBxdu * graduY + dBxdv * gradvY
@@ -2971,16 +2976,22 @@
       !PRINT *,dBxdx,dBxdy,dBxdz
       !PRINT *,dBydx,dBydy,dBydz
       !PRINT *,dBzdx,dBzdy,dBzdz
-      !PRINT *,DSQRT(bu*bu+bv*bv)
-      !STOP
+      ! Compute modB
+      Br   = bu * drdu + bv * drdv
+      Bphi = bv * R
+      Bz   = bu * dzdu + bv * dzdv
+      modB = DSQRT(Br * Br + Bphi * Bphi + Bz * Bz)
+      !PRINT *,'modB,Br,Bphi,Bz'
+      !PRINT *,modB,Br,Bphi,Bz
       ! Now compute the Frobenius norm of grad(B)
       gradB_norm = DSQRT (   dBxdx * dBxdx + dBxdy * dBxdy + dBxdz * dBxdz &
                            + dBydx * dBydx + dBydy * dBydy + dBydz * dBydz &
                            + dBzdx * dBzdx + dBzdy * dBzdy + dBzdz * dBzdz )
-      !PRINT *,gradB_norm
-      !STOP
       ! And finally LgradB
-      lgradB = DSQRT(two * (bu*bu+bv*bv)) / gradB_norm
+      lgradB = modb * DSQRT(two) / gradB_norm
+      !PRINT *,'B,gradB_norm,lgradB'
+      !PRINT *,modb,gradB_norm,lgradB
+      !STOP
       IF (PRESENT(R_out)) R_out = R
       IF (PRESENT(Z_out)) Z_out = Z
       RETURN
