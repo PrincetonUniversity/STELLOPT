@@ -2,6 +2,7 @@
 
 chisq_lgradb.o : \
       stellopt_runtime.o \
+      equil_vals.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_tools.o 
 
