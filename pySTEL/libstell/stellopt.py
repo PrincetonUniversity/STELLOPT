@@ -35,7 +35,7 @@ class STELLOPT():
 			'COIL_BNORM', 'REGCOIL_CHI2_B', 'CURVATURE_P2', 'GAMMA_C', \
 			'KINK', 'QUASIISO', 'B10B11', 'TOTALBOOTSTRAP', \
 			'BNORMAL', 'COIL_CURVATURE', 'COIL_TORSION', \
-			'COILCOIL_DISTANCE','BNMNS','BNMNC']
+			'COILCOIL_DISTANCE','BNMNS','BNMNC' 'LGRADB']
 
 	def read_stellopt_map(self,filename='map.dat'):
 		"""Reads a STELLOPT MAP output file
@@ -390,6 +390,8 @@ class STELLOPT():
 				val   = getattr(self,targ_name+'_VAL')
 				chisq = (targ-val)/sigma
 				setattr(self,targ_name+'_CHISQ',chisq*chisq)
+		# Flatten ITER
+		self.ITER = self.ITER.flatten()
 
 	def plot_stellopt_jacobian(self,target='all',ax=None):
 		"""Plot the Jacobian for a given target
@@ -421,7 +423,6 @@ class STELLOPT():
 		x_var = np.arange(len(self.var))
 		y_target = np.arange(len(self.targetnames))
 		if target == 'all':
-			x_var 
 			hmesh=ax.pcolormesh(x_var,y_target,np.squeeze(self.jac2d),cmap='jet')
 			ax.set_xticks(x_var, labels=self.var, fontsize=9)
 			plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")

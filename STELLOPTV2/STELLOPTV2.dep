@@ -9,6 +9,11 @@ chisq_bnmnc.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       equil_vals.o
+chisq_lgradb.o : \
+      stellopt_runtime.o \
+      equil_vals.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_tools.o 
 
 chisq_coil_curvature.o : \
       stellopt_runtime.o \

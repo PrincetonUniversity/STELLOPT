@@ -272,6 +272,7 @@
                          target_betapol, sigma_betapol, &
                          target_betator, sigma_betator, &
                          target_wp, sigma_wp, &
+                         target_lgradb, sigma_lgradb, &
                          target_aspect, sigma_aspect, &
                          target_extcur, sigma_extcur, &
                          target_aspect_max, sigma_aspect_max, width_aspect_max, &
@@ -635,6 +636,8 @@
       sigma_betator    = bigno
       target_wp        = 0.0
       sigma_wp         = bigno
+      target_lgradb    = 1.0
+      sigma_lgradb     = bigno
       target_aspect    = 0.0
       sigma_aspect     = bigno
       target_aspect_max= 0.0
@@ -1490,6 +1493,10 @@
       IF (sigma_totalbootstrap < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_TOTALBOOTSTRAP',target_totalbootstrap
          WRITE(iunit,outflt) 'SIGMA_TOTALBOOTSTRAP',sigma_totalbootstrap
+      END IF 
+      IF (sigma_lgradb < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_LGRADB',target_lgradb
+         WRITE(iunit,outflt) 'SIGMA_LGRADB',sigma_lgradb
       END IF 
       IF (ANY(lbooz)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

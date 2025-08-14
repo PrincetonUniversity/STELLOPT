@@ -113,8 +113,12 @@
       ! TOTAL_BOOTSTRAP
       IF (sigma_totalbootstrap < bigno)  &
          CALL chisq_totalbootstrap(target_totalbootstrap,sigma_totalbootstrap,ncnt,iflag)
+      ! CURVATURE (P2)
       IF (sigma_curvature_p2 < bigno) &
          CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
+      ! LGRADB
+      IF (sigma_lgradb < bigno)  &
+         CALL chisq_lgradb(target_lgradb,sigma_lgradb,ncnt,iflag)
 
       !------------- ARRAY TARGETS ----------------------------
       ! EXTERNAL CURRENTS

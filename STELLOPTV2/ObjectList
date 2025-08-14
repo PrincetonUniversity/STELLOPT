@@ -2,6 +2,7 @@ ObjectFiles = \
 stellopt_flines_mod.o \
 chisq_bnmnc.o \
 chisq_bnmns.o \
+chisq_lgradb.o \
 chisq_coilcoil_distance.o \
 chisq_coil_torsion.o \
 chisq_coil_curvature.o \
