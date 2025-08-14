@@ -83,6 +83,7 @@
       REAL(rprec) ::  target_kappa_box, sigma_kappa_box, phi_kappa_box
       REAL(rprec) ::  target_kappa_avg, sigma_kappa_avg
       REAL(rprec) ::  target_totalbootstrap, sigma_totalbootstrap
+      REAL(rprec) ::  target_lgradb, sigma_lgradb
       REAL(rprec) ::  target_x, sigma_x
       REAL(rprec) ::  target_y, sigma_y
       REAL(rprec) ::  target_rosenbrock2d, sigma_rosenbrock2d
@@ -280,6 +281,7 @@
       INTEGER, PARAMETER :: jtarget_bmin       = 610
       INTEGER, PARAMETER :: jtarget_bmax       = 611
       INTEGER, PARAMETER :: jtarget_orbit      = 612
+      INTEGER, PARAMETER :: jtarget_lgradb     = 613
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
       INTEGER, PARAMETER :: jtarget_Rosenbrock_F   = 902
@@ -338,6 +340,8 @@
             WRITE(iunit, out_format) 'Min Pressure'
          CASE(jtarget_rbtor)
             WRITE(iunit, out_format) 'R*Btor'
+         CASE(jtarget_lgradb)
+            WRITE(iunit, out_format) 'Lgrad(B)'
          CASE(jtarget_b0)
             WRITE(iunit, out_format) 'B0 (phi=0)'
          CASE(jtarget_r0)

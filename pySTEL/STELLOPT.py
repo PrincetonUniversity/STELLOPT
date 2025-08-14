@@ -901,7 +901,7 @@ class MyApp(QMainWindow):
 					'S11','S12','S21','S22','MAGWELL',\
 					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP',\
 					'BNORMAL', 'COIL_CURVATURE', 'COIL_TORSION', \
-					'COILCOIL_DISTANCE']
+					'COILCOIL_DISTANCE', 'LGRADB']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
 		# Handle Chisquared plots
@@ -936,6 +936,8 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L11')
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L31')
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L33')
+		if 'LGRADB_TARGET' in vars(self.stel_data).keys():
+			self.ui.ComboBoxOPTplot_type.addItem('LGRADB_surf')
 		# Handle Wout Comparrison Plots
 		files = os.listdir(self.workdir)
 		if any('wout' in mystring for mystring in files):
@@ -1054,6 +1056,24 @@ class MyApp(QMainWindow):
 				self.ui.ComboBoxOPTplot_surf.clear()
 				self.gist_data = gist.GIST()
 				self.gist_data.read_gist(test_file)
+			elif plot_name in ['LGRADB_surf']:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.ui.ComboBoxOPTplot_surf.clear()
+				iter_val = int(test_file)
+				print(iter_val)
+				iter_dex=np.flatnonzero(self.stel_data.ITER == iter_val)[0]
+				print(iter_dex)
+				theta = np.unique(self.stel_data.LGRADB_THETA[iter_dex,:])
+				phi = np.unique(self.stel_data.LGRADB_PHI[iter_dex,:])
+				ntheta = len(theta)
+				nphi   = len(phi)
+				lgradb = np.reshape(self.stel_data.LGRADB_LGRADB[iter_dex,:],(ntheta,nphi))
+				hmesh=self.ax2.pcolormesh(phi,theta,lgradb,cmap='jet')
+				self.ax2.set_xlabel('Toroidal Angle [rad]')
+				self.ax2.set_ylabel('Poloidal Angle [rad]')
+				_plt.colorbar(hmesh,label=r'$L_{\nabla B}$',ax=self.ax2)
+
 
 	def UpdateBoozerSpec(self):
 		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
@@ -1931,6 +1951,11 @@ class MyApp(QMainWindow):
 			file_list = sorted(glob.glob("jacobian.*"))
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
+		elif (plot_name == 'LGRADB_surf'):
+			iter_list = self.stel_data.ITER
+			for item in iter_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(str(int(item)))
 			self.UpdateIterFile()
 		elif (plot_name == 'B-Normal'):
 			file_list = sorted(glob.glob("bnorm_real.*"))
