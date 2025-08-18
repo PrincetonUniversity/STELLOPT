@@ -1050,12 +1050,13 @@ class MyApp(QMainWindow):
 				self.bnorm_data.read_bnorm_real(test_file)
 				self.bnorm_data.plot_bnorm_real_total(ax=self.ax2)
 				self.canvas2.draw()
-			elif plot_name in self.gist_files:
-				self.fig2.clf()
-				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
-				self.ui.ComboBoxOPTplot_surf.clear()
-				self.gist_data = gist.GIST()
-				self.gist_data.read_gist(test_file)
+			elif hasattr(self,'gist_files'):
+				if plot_name in self.gist_files:
+					self.fig2.clf()
+					self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+					self.ui.ComboBoxOPTplot_surf.clear()
+					self.gist_data = gist.GIST()
+					self.gist_data.read_gist(test_file)
 			elif plot_name in ['LGRADB_surf']:
 				self.fig2.clf()
 				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
