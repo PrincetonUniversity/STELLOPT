@@ -10,6 +10,8 @@
 *.dSYM
 ._*
 __*
+**/.ipynb_checkpoints
+.ipynb_checkpoints
 make.inc
 CMakeLists.txt
 */Release/*.f90
