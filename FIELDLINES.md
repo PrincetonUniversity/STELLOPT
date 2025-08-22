@@ -174,7 +174,7 @@ code is run from the command line taking an equilibrium input file as a
 necessary argument. This input file must have the INDATA (for EXTCUR)
 and FIELDLINES_IN namelists in it.
 
-    XFIELDLINES -vmec <VMEC FILE> -pies <PIES_FILE> -spec <SPEC FILE> -coil <COIL FILE> -mgrid <MGRID FILE> -vessel <VESSEL FILE> -vac -full -noverb -help
+    XFIELDLINES -vmec <VMEC ID> -pies <PIES_FILE> -spec <SPEC FILE> -coil <COIL FILE> -mgrid <MGRID FILE> -vessel <VESSEL FILE> -vac -full -noverb -help
 
 | Argument | Default | Description | 
 | --- | --- | --- | 
@@ -184,6 +184,7 @@ and FIELDLINES_IN namelists in it.
 | -coil   | NONE | Coils File | 
 | -mgrid  | NONE | Makegrid style vacuum grid file | 
 | -vessel | NONE | First wall file | 
+| -restart | NONE | FIELDLINES input extension to load magnetic field from | 
 | -screen | NONE | Poincaré Screen file | 
 | -vac    | NONE | Only compute the vacuum field | 
 | -hitonly | NONE | Only save strikepoint locations (used in conjunction with -vessel) | 
