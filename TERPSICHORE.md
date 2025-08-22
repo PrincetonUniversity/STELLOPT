@@ -31,6 +31,8 @@ eliminating the µ component. Stability is noted by an increase in
 potential energy for a given perturbation. Thus negative eigenvalues
 indicate unstable modes.
 
+Note: Stability for a mode family is defined by WP/WK being positive.
+
 ------------------------------------------------------------------------
 
 ### Compilation
@@ -240,7 +242,11 @@ The data is output into four files by unit number.
  2. fort.17 contains the R and Z values of the input equilibrium grid.
  3. fort.19 contains the plasma boundary and wall harmonics.
  4. fort.22 contains some of the runtime variables.
+  * Pressure, Iota, WP, AM(modes), ETA(modes), MU(modes)
  5. fort.23 is a binary file continaing the output dataset.
+
+NOTE: That in this context $$\eta$$ defines the binormal direction.
+and $$\mu$$ defines the paralle direction.
 
 ------------------------------------------------------------------------
 
