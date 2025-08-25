@@ -6,18 +6,16 @@ data.
 """
 
 # Libraries
-from libstell.libstell import LIBSTELL, FourierRep
 
 # Constants
 
 # COBRA Class
-class COBRA(FourierRep):
+class COBRA():
 	"""Class for working with COBRA equilibria
 
 	"""
 	def __init__(self):
 		super().__init__()
-		self.libStell = LIBSTELL()
 
 	def read_cobra(self,filename):
 		"""Reads a COBRA file
@@ -94,12 +92,12 @@ class COBRA(FourierRep):
 		if type(ntheta) == type(None):
 			th_vec = np.linspace(0,len(self.theta)-1,len(self.theta),dtype=int)
 		else:
-			th_vmec = np.flatten([ntheta])
+			th_vec = np.array([ntheta]).flatten()
 		# Handle ntheta
 		if type(nzeta) == type(None):
 			ze_vec = np.linspace(0,len(self.zeta)-1,len(self.zeta),dtype=int)
 		else:
-			ze_vmec = np.flatten([ntheta])
+			ze_vec = np.array([ntheta]).flatten()
 		# Plot
 		for i in th_vec:
 			for j in ze_vec:
