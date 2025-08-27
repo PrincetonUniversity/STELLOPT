@@ -20,12 +20,18 @@ if __name__=="__main__":
 		help="Plot a fieldline in 3D.", default = None, type=int)
 	parser.add_argument("-v", "--vmec", dest="vmec_ext", 
 		help="Add VMEC equilbrium to plot", default = None)
+	parser.add_argument("--nskip", dest="nskip",
+		help="Field line skipping parameter when generating Poincare cross sections (default: 1)", default = 1, type=int)
+	parser.add_argument("--colormap", dest="colormap", 
+		help="Colormap to use for plots (default: hot)", default = 'hot')
 	parser.add_argument("--plotheat", dest="heatfactor",
 		help="Plot the heatflux scaled to a total power in [W]", default = None, type=float)
 	parser.add_argument("--plot_brz", dest="brz_index_phi",
 		help="Plot the B-Field at an R/Z-plane, fixed phi (index)", default = None, type=int)
 	parser.add_argument("--plot_brphi", dest="brphi_index_phi",
 		help="Plot the B-Field at an R/phi-plane, fixed Z (index)", default = None, type=int)
+	parser.add_argument("--output_asc", dest="asc_phi",
+		help="Output a given Poincare cross section at a given phi value [deg].", default = None, type=float)
 	args = parser.parse_args()
 	field_data = FIELDLINES()
 	px = 1/pyplot.rcParams['figure.dpi']
@@ -35,11 +41,11 @@ if __name__=="__main__":
 			fig,(ax1,ax2,ax3) = pyplot.subplots(1,3,sharey=True,figsize=(1024*px,512*px))
 			pyplot.subplots_adjust(hspace=0.1,wspace=0.15)
 			phi0 = 0
-			field_data.plot_poincare(phi0,6,ax=ax1)
+			field_data.plot_poincare(phi0,args.nskip,ax=ax1)
 			phi1 = field_data.PHI_lines[0,int(np.round(field_data.npoinc/4))]
-			field_data.plot_poincare(phi1,6,ax=ax2)
+			field_data.plot_poincare(phi1,args.nskip,ax=ax2)
 			phi2 = field_data.PHI_lines[0,int(np.round(field_data.npoinc/2))]
-			field_data.plot_poincare(phi2,6,ax=ax3)
+			field_data.plot_poincare(phi2,args.nskip,ax=ax3)
 			if args.vmec_ext:
 				vmec_wout = VMEC()
 				vmec_wout.read_wout(args.vmec_ext)
@@ -60,7 +66,7 @@ if __name__=="__main__":
 		if args.heatfactor:
 			plt3d = PLOT3D()
 			fact = args.heatfactor/field_data.nlines
-			field_data.plot_heatflux(factor=args.heatfactor/field_data.nlines,colormap='hot',plot3D=plt3d)
+			field_data.plot_heatflux(factor=args.heatfactor/field_data.nlines,colormap=args.colormap,plot3D=plt3d)
 			plt3d.colorbar(title=rf'Q [W/$m^2$]')
 			plt3d.render()
 		if type(args.brz_index_phi) is not type(None):
@@ -69,16 +75,16 @@ if __name__=="__main__":
 			x = np.squeeze(field_data.raxis)
 			y = np.squeeze(field_data.zaxis)
 			b = np.sqrt(field_data.B_R**2+field_data.B_Z**2+field_data.B_PHI**2)
-			h0=ax[0,0].pcolormesh(x,y,np.squeeze(field_data.B_R[:,j,:]).T,cmap='jet',shading='gouraud')
+			h0=ax[0,0].pcolormesh(x,y,np.squeeze(field_data.B_R[:,j,:]).T,cmap=args.colormap,shading='gouraud')
 			ax[0,0].set_xlabel('R [m]'); ax[0,0].set_ylabel('Z [m]'); 
 			h0.set_clim(vmin=-2.0,vmax=2.0); fig.colorbar(h0,label=r'$B_R$ [T]')
-			h1=ax[0,1].pcolormesh(x,y,np.squeeze(field_data.B_Z[:,j,:]).T,cmap='jet',shading='gouraud')
+			h1=ax[0,1].pcolormesh(x,y,np.squeeze(field_data.B_Z[:,j,:]).T,cmap=args.colormap,shading='gouraud')
 			ax[0,1].set_xlabel('R [m]'); ax[0,1].set_ylabel('Z [m]'); 
 			h1.set_clim(vmin=-2.0,vmax=2.0); fig.colorbar(h1,label=r'$B_Z$ [T]')
-			h2=ax[1,0].pcolormesh(x,y,np.squeeze(field_data.B_PHI[:,j,:]).T,cmap='jet',shading='gouraud')
+			h2=ax[1,0].pcolormesh(x,y,np.squeeze(field_data.B_PHI[:,j,:]).T,cmap=args.colormap,shading='gouraud')
 			ax[1,0].set_xlabel('R [m]'); ax[1,0].set_ylabel('Z [m]'); 
 			h2.set_clim(vmin=-7.0,vmax=7.0); fig.colorbar(h2,label=r'$B_\phi$ [T]')
-			h3=ax[1,1].pcolormesh(x,y,np.squeeze(b[:,j,:]).T,cmap='jet',shading='gouraud')
+			h3=ax[1,1].pcolormesh(x,y,np.squeeze(b[:,j,:]).T,cmap=args.colormap,shading='gouraud')
 			ax[1,1].set_xlabel('R [m]'); ax[1,1].set_ylabel('Z [m]'); 
 			h3.set_clim(vmin=0.0,vmax=10.0); fig.colorbar(h3,label=r'$|B|$ [T]')
 			pyplot.show()
@@ -88,17 +94,19 @@ if __name__=="__main__":
 			x = np.squeeze(field_data.raxis)
 			y = np.squeeze(field_data.phiaxis)
 			b = np.sqrt(field_data.B_R**2+field_data.B_Z**2+field_data.B_PHI**2)
-			h0=ax[0,0].pcolormesh(x,y,np.squeeze(field_data.B_R[:,:,j]).T,cmap='jet',shading='gouraud')
+			h0=ax[0,0].pcolormesh(x,y,np.squeeze(field_data.B_R[:,:,j]).T,cmap=args.colormap,shading='gouraud')
 			ax[0,0].set_xlabel('R [m]'); ax[0,0].set_ylabel(r'$\phi$ [rad]'); 
 			h0.set_clim(vmin=-1.0,vmax=1.0); fig.colorbar(h0,label=r'$B_R$ [T]')
-			h1=ax[0,1].pcolormesh(x,y,np.squeeze(field_data.B_Z[:,:,j]).T,cmap='jet',shading='gouraud')
+			h1=ax[0,1].pcolormesh(x,y,np.squeeze(field_data.B_Z[:,:,j]).T,cmap=args.colormap,shading='gouraud')
 			ax[0,1].set_xlabel('R [m]'); ax[0,1].set_ylabel(r'$\phi$ [rad]'); 
 			h1.set_clim(vmin=-1.0,vmax=1.0); fig.colorbar(h1,label=r'$B_Z$ [T]')
-			h2=ax[1,0].pcolormesh(x,y,np.squeeze(field_data.B_PHI[:,:,j]).T,cmap='jet',shading='gouraud')
+			h2=ax[1,0].pcolormesh(x,y,np.squeeze(field_data.B_PHI[:,:,j]).T,cmap=args.colormap,shading='gouraud')
 			ax[1,0].set_xlabel('R [m]'); ax[1,0].set_ylabel(r'$\phi$ [rad]'); 
 			h2.set_clim(vmin=-7.0,vmax=7.0); fig.colorbar(h2,label=r'$B_\phi$ [T]')
-			h3=ax[1,1].pcolormesh(x,y,np.squeeze(b[:,:,j]).T,cmap='jet',shading='gouraud')
+			h3=ax[1,1].pcolormesh(x,y,np.squeeze(b[:,:,j]).T,cmap=args.colormap,shading='gouraud')
 			ax[1,1].set_xlabel('R [m]'); ax[1,1].set_ylabel(r'$\phi$ [rad]'); 
 			h3.set_clim(vmin=0.0,vmax=10.0); fig.colorbar(h3,label=r'$|B|$ [T]')
 			pyplot.show()
+		if type(args.asc_phi) is not type(None):
+			field_data.write_asc([np.deg2rad(args.asc_phi)],nskip=args.nskip,filename=f'poincare_{args.fieldlines_ext}_phi_{int(args.asc_phi):03d}.asc')
 	sys.exit(0)

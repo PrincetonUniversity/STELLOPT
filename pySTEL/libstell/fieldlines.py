@@ -351,7 +351,7 @@ class FIELDLINES():
 		"""
 		import numpy as np
 		f = open(filename,'w')
-		if max(phi) <= self.nfp:
+		if max(phi) <= self.phiaxis[-1]: # Put it all in one 
 			phi_temp = np.mod(self.PHI_lines,self.phiaxis[-1])
 			x_temp = self.R_lines*np.cos(phi_temp)
 			y_temp = self.R_lines*np.sin(phi_temp)
@@ -359,7 +359,7 @@ class FIELDLINES():
 			x_temp = self.X_lines
 			y_temp = self.Y_lines
 		for phi_temp in phi:
-			k = int(self.npoinc*phi_temp/self.phiaxis[-1])
+			k = int(self.npoinc*phi_temp/self.phiaxis[-1])+1
 			rmin = np.amin(self.raxis)
 			rmax = np.amax(self.raxis)
 			x = 1000.*x_temp[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
