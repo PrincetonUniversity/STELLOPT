@@ -293,7 +293,7 @@ class BEAMS3D():
 
 		# Radial grid
 		if not ns:
-			ns = self.ns_prof1
+			ns = max(self.ns_prof1,32)
 		s  = np.linspace(0.0,1.0,ns)
 
 		# Extract data
@@ -371,7 +371,7 @@ class BEAMS3D():
 
 		# Radial grid
 		if not ns:
-			ns = self.ns_prof1
+			ns = max(self.ns_prof1,32)
 		s  = np.linspace(0.0,1.0,ns)
 
 		# Extract data
@@ -443,7 +443,7 @@ class BEAMS3D():
 
 		# Setup rho on centered grid
 		if not ns:
-			ns = self.ns_prof1
+			ns = max(self.ns_prof1,32)
 		edges = np.linspace(0.0,1.0,ns+1)
 		rho  = (edges[1:]+edges[0:-1])/2.0
 
@@ -532,7 +532,7 @@ class BEAMS3D():
 		import numpy as np
 		# Setup rho on centered grid
 		if not ns:
-			ns = self.ns_prof1
+			ns = max(self.ns_prof1,32)
 		edges = np.linspace(0.0,1.0,ns+1)
 		# Determine subset of particles for initial distribution
 		tdex = 1
