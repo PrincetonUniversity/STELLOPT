@@ -1,7 +1,7 @@
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
-  SHELL = /bin/bash
+  SHELL = /bin/sh
   PWD1 = `pwd`
   #compiladores=intel   # cambiar para compilar con gnu
   compiladores=intel
