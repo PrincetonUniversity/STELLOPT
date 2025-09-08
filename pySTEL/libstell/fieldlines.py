@@ -198,7 +198,7 @@ class FIELDLINES():
 		Parameters
 		----------
 		k : int
-			Index to plot.
+			Field line index to plot.
 		pointsize : float (optional)
 			Size of points (default=0.01)
 		color : string (optional)
@@ -231,7 +231,55 @@ class FIELDLINES():
 			# Colorbar
 			plt.colorbar()
 		else:
-			plt.add3Dpoints(points,pointsize=pointsize)
+			plt.add3Dpoints(points,pointsize=pointsize,color=color)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plot_index3d(self,k,pointsize=0.01,color='red',plot3D=None):
+		"""Plots the FIELDILNES Points in 3D (by index)
+
+		This routine plots the FIELDLINES poincare points in 3D by
+		the index
+
+		Parameters
+		----------
+		k : int
+			Poincare index to plot.
+		pointsize : float (optional)
+			Size of points (default=0.01)
+		color : string (optional)
+			Dot color (default='red')
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		vertices = []
+		scalar   = []
+		for i in range(self.nlines):
+			if (self.R_lines[i,k] > 0):
+				vertices.append([self.X_lines[i,k],self.Y_lines[i,k],self.Z_lines[i,k]])
+				scalar.append(self.B_lines[i,k])
+		vertices = np.array(vertices)
+		scalar = plt.valuesToScalar(np.array(scalar))
+		points = plt.vertexToPoints(vertices)
+		# Add to Render
+		if float(scalar.GetValueRange()[1]) > 0:
+			plt.add3Dpoints(points,scalars=scalar,pointsize=pointsize)
+			# Colorbar
+			plt.colorbar()
+		else:
+			plt.add3Dpoints(points,pointsize=pointsize,color=color)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested

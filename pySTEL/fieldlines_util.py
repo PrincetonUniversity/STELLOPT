@@ -16,8 +16,12 @@ if __name__=="__main__":
 		help="FIELDLINES file extension", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
 		help="Plot the fieldlines file.", default = False)
+	parser.add_argument("-i", "--info", dest="linfo", action='store_true',
+		help="Print some info the the screen.", default = False)
 	parser.add_argument("--plot3d", dest="k3d",
 		help="Plot a fieldline in 3D.", default = None, type=int)
+	parser.add_argument("--plotpoinc3d", dest="poinc3d",
+		help="Plot a 3D Poincare plot.", default = None, type=int)
 	parser.add_argument("-v", "--vmec", dest="vmec_ext", 
 		help="Add VMEC equilbrium to plot", default = None)
 	parser.add_argument("--nskip", dest="nskip",
@@ -26,6 +30,8 @@ if __name__=="__main__":
 		help="Colormap to use for plots (default: hot)", default = 'hot')
 	parser.add_argument("--plotheat", dest="heatfactor",
 		help="Plot the heatflux scaled to a total power in [W]", default = None, type=float)
+	parser.add_argument("--plotindex", dest="i3d",
+		help="Plot all fieldlines at a given Poincare index in 3D.", default = None, type=int)
 	parser.add_argument("--plot_brz", dest="brz_index_phi",
 		help="Plot the B-Field at an R/Z-plane, fixed phi (index)", default = None, type=int)
 	parser.add_argument("--plot_brphi", dest="brphi_index_phi",
@@ -37,6 +43,9 @@ if __name__=="__main__":
 	px = 1/pyplot.rcParams['figure.dpi']
 	if args.fieldlines_ext:
 		field_data.read_fieldlines('fieldlines_'+args.fieldlines_ext+'.h5')
+		if args.linfo:
+			print(f'  NMARKERS:  {np.sum(field_data.nlines):d}')
+			print(f'  WALL HITS: {np.sum(field_data.wall_strikes):d}')
 		if args.lplot:
 			fig,(ax1,ax2,ax3) = pyplot.subplots(1,3,sharey=True,figsize=(1024*px,512*px))
 			pyplot.subplots_adjust(hspace=0.1,wspace=0.15)
@@ -59,9 +68,17 @@ if __name__=="__main__":
 				ax2.plot(r[j,:,1],z[j,:,1],'r')
 				ax3.plot(r[j,:,2],z[j,:,2],'r')
 			pyplot.show()
+		if args.poinc3d:
+			plt3d = PLOT3D()
+			field_data.plot_poincare3D(args.poinc3d,plot3D=plt3d,pointsize=0.1)
+			plt3d.render()
 		if args.k3d:
 			plt3d = PLOT3D()
 			field_data.plot_cloud(args.k3d,plot3D=plt3d,pointsize=0.1)
+			plt3d.render()
+		if args.i3d:
+			plt3d = PLOT3D()
+			field_data.plot_index3d(args.i3d,plot3D=plt3d,pointsize=0.1)
 			plt3d.render()
 		if args.heatfactor:
 			plt3d = PLOT3D()
