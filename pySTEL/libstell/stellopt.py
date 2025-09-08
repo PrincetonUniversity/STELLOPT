@@ -204,6 +204,39 @@ class STELLOPT():
 		self.fvec = np.array(fvec)
 		return
 
+	def read_stellopt_gade_restart(self,filename):
+		"""Reads a STELLOPT gade_restart output file
+
+		This routine reads the STELLOPT gade_restart output file.
+
+		Parameters
+		----------
+		file : str
+			Path to xvec.dat file.
+		"""
+		import numpy as np
+		import re
+		f = open(filename,'r')
+		content = f.readlines()
+		f.close()
+		nlines = len(content)
+		#str1 = content[0].split()
+		nx = int(content[0])
+		xvec = []
+		fvec = []
+		n = 1
+		while n < nlines:
+			i = 0
+			temp_list = []
+			temp_txt  = content[n].split()
+			temp_list = [float(i) for i in temp_txt]
+			fvec.extend([temp_list[1]])
+			xvec.extend([temp_list[2:]])
+			n = n + 1
+		self.xvec = np.array(xvec)
+		self.fvec = np.array(fvec)
+		return
+
 	def read_stellopt_output(self,filename):
 		"""Reads a STELLOPT output file
 
