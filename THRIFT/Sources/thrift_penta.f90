@@ -294,6 +294,9 @@
             CALL EZspline_init(eta_spl,ns_dkes+2,bcs0,ier)
             eta_spl%x1        = rho_temp
             eta_spl%isHermite = 0
+            ! set eta_temp to very small number if negative
+            WHERE (eta_temp .LE. 0.0_rprec) eta_temp = 1.0E-20_rprec
+            !
             CALL EZspline_setup(eta_spl,LOG(eta_temp),ier,EXACT_DIM=.true.)
             !Er
             CALL EZspline_init(Er_spl,ns_dkes+2,bcs0,ier)
