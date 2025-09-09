@@ -1015,7 +1015,6 @@ MODULE thrift_plasma_solver_mod
         !--------------------------------------------------------------
         !--------------------------------------------------------------
         REAL(rprec) :: mi,qi,B
-        REAL(rprec), PARAMETER :: stiffness=0.7, alpha=1.0, aLT_critical=1.5
         INTEGER, INTENT(IN) :: iion
         INTEGER :: ier,Nr
         REAL(rprec), INTENT(INOUT), DIMENSION(:) :: chi_beurskens
@@ -1042,12 +1041,11 @@ MODULE thrift_plasma_solver_mod
         CALL polyfit_derivative(rho_plasma_grid,Ti,Nr,12,dTidrho)
         !
         X = - dTidrho / Ti
-        X = X - aLT_critical
+        X = X - aLT_critical_beurskens
         ! Heaviside
         H = MERGE(1.0_rprec,0.0_rprec, X>=0_rprec)
         
-        ! chi_beurskens = chi_gB * stiffness * X * H(X) * (Te/Ti)**alpha
-        chi_beurskens = chi_gB * stiffness * X * H * (Te/Ti)**alpha
+        chi_beurskens = chi_gB * stiffness_beurskens * X * H * (Te/Ti)**alpha_beurskens
 
         DEALLOCATE(Bsq,chi_gB,dTidrho,X,H,Te,Ti)
         

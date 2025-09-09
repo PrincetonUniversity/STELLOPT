@@ -41,7 +41,9 @@
                               dt_plasma_solver, Nr_plasma_solver, &
                               max_subiter_plasma_solver, tol_plasma_solver, &
                               beurskens_ions, add_NEO, &
-                              Dn_ions, chi_all, N0_init_ions, T0_init_all
+                              Dn_ions, chi_all, N0_init_ions, T0_init_all, &
+                              stiffness_beurskens, aLT_critical_beurskens, &
+                              alpha_beurskens
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -108,6 +110,9 @@
       chi_all = 0.0
       N0_init_ions = 1E19
       T0_init_all  = 200
+      stiffness_beurskens = 0.7
+      aLT_critical_beurskens = 1.5
+      alpha_beurskens = 1.0
       RETURN
       END SUBROUTINE init_thrift_input
       
