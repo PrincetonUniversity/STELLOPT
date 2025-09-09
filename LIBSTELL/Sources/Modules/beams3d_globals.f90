@@ -19,7 +19,7 @@
       INTEGER, PARAMETER :: MAXPARTICLES = 2**18
       INTEGER, PARAMETER :: MAXBEAMS = 32
       INTEGER, PARAMETER :: MAXPROFLEN = 512
-      INTEGER, PARAMETER :: NION = 4
+      INTEGER, PARAMETER :: NION = 6
       LOGICAL :: lverb, lcollision, lrestart_particles, ldebug, &
                  lfusion, lfusion_alpha, lfusion_He3, lfusion_proton, &
                  lfusion_tritium, lkick, lgcsim, lbeam, lbbnbi

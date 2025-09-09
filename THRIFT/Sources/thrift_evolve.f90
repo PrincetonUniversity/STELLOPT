@@ -184,8 +184,6 @@
             ! Calculate iota
             IF (lverbj) WRITE(6,*) "Calculating iota"
             CALL calc_iota
-            ! Calculate <E.B>
-            THRIFT_EPARB(:,mytimestep) = THRIFT_ETAPARA(:,mytimestep) * THRIFT_JPLASMA(:,mytimestep) * THRIFT_BAV(:,mytimestep)
 
             ! Print Header
             IF (lverb .and. lfirst_pass) THEN

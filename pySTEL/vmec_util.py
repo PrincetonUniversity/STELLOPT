@@ -18,8 +18,12 @@ if __name__=="__main__":
 		help="Plot the VMEC file.", default = False)
 	parser.add_argument("-b", "--boozer", dest="lbooz", action='store_true',
 		help="Output the in_booz file.", default = False)
+	parser.add_argument("--print_spectrum", dest="lspectrum", action='store_true',
+		help="Output the edge VMEC spectrum as RBC/ZBS.", default = False)
 	parser.add_argument("--stl", dest="lstl", action='store_true',
 		help="Output STL file of VMEC boundary", default = False)
+	parser.add_argument("--magaxis", dest="lmagaxis", action='store_true',
+		help="Output xyz data of magnetic axis", default = False)
 	parser.add_argument("--scale_volume", dest="new_vol",
 		help="Write indata with volume rescaled to new_vol m^3", 
 		default = 0.0, type=float)
@@ -132,6 +136,50 @@ if __name__=="__main__":
 				verticalalignment='center', transform=ax.transAxes)
 			ax.text(0.02,0.05,rf'NCURR: {vmec_input.ncurr}', horizontalalignment='left',\
 				verticalalignment='center', transform=ax.transAxes)
+			# Make an LPK plot
+			ax=fig.add_subplot(223)
+			msize = vmec_input.rbc.shape[0]
+			nsize = vmec_input.rbc.shape[1]
+			nmax  = (nsize-1)/2
+			xm=[]; xn=[]; rmnc=[]; zmns = []
+			for n1 in range(nsize):
+				for m1 in range(msize):
+					n = n1 - nmax
+					if (vmec_input.rbc[m1,n1]==0) and (vmec_input.zbs[m1,n1]==0): continue
+					xm.extend([m1])
+					xn.extend([-n])
+					rmnc.extend([vmec_input.rbc[m1,n1]])
+					zmns.extend([vmec_input.zbs[m1,n1]])
+			xm = np.array([xm]).T
+			xn = np.array([xn]).T
+			rmnc = np.array([rmnc])
+			zmns = np.array([zmns])
+			if vmec_input.lasym:
+				rmns = []; zmnc = []
+				for n1 in range(nsize):
+					for m1 in range(msize):
+						n = n1 - nmax
+						if (vmec_input.rbs[m1,n1]==0) and (vmec_input.zbc[m1,n1]==0): continue
+						rmns.extend([vmec_input.rbs[m1,n1]])
+						zmnc.extend([vmec_input.zbc[m1,n1]])
+				rmns = np.array([rmns])
+				zmnc = np.array([zmnc])
+			theta = np.linspace([0],[2*np.pi],360)
+			zeta  = np.linspace([0],[2*np.pi],5)
+			zeta  = zeta[0:3]
+			r     = vmec_wout.cfunct(theta,zeta,rmnc,xm,xn)
+			z     = vmec_wout.sfunct(theta,zeta,zmns,xm,xn)
+			if vmec_input.lasym:
+				r = r + vmec_wout.sfunct(theta,zeta,rmns,xm,xn)
+				z = z + vmec_wout.cfunct(theta,zeta,zmnc,xm,xn)
+			ax.plot(r[0,:,0],z[0,:,0],'r')
+			ax.plot(r[0,:,1],z[0,:,1],'g')
+			ax.plot(r[0,:,2],z[0,:,2],'b')
+			ax.set_aspect('equal', adjustable='box')
+			ax.text(0.02,0.05,rf'NFP: {vmec_input.nfp}', horizontalalignment='left',\
+				verticalalignment='center', transform=ax.transAxes)
+			ax.text(0.02,0.12,rf'VOLUME: {vmec_input.calcVolume():.2f} m^3', horizontalalignment='left',\
+				verticalalignment='center', transform=ax.transAxes)
 			pyplot.show()
 		# Do wout file plot
 		if (args.lplot and loutput):
@@ -140,7 +188,7 @@ if __name__=="__main__":
 			ax=fig.add_subplot(221)
 			pyplot.subplots_adjust(hspace=0.4,wspace=0.3)
 			ax.plot(np.linspace(0.0,1.0,vmec_wout.ns),vmec_wout.presf/1E3,'k')
-			ax.text(0.02,0.47,rf'$B_0$={vmec_wout.b0:4.3f} [T]', horizontalalignment='left',\
+			ax.text(0.02,0.47,rf'$<B_0>$={vmec_wout.b0:4.3f} [T]', horizontalalignment='left',\
 				verticalalignment='center', transform=ax.transAxes)
 			ax.text(0.02,0.40,rf'$R/a$={vmec_wout.aspect:4.3f}', horizontalalignment='left',\
 				verticalalignment='center', transform=ax.transAxes)
@@ -196,13 +244,16 @@ if __name__=="__main__":
 			ax.text(0.02,0.05,rf'NFP: {vmec_wout.nfp}', horizontalalignment='left',\
 				verticalalignment='center', transform=ax.transAxes)
 			ax=fig.add_subplot(224)
-			theta = np.ndarray((256,1))
-			zeta  = np.ndarray((256,1))
-			for j in range(256): theta[j]=2.0*np.pi*j/255.0
-			for j in range(256):  zeta[j]=2.0*np.pi*j/255.0
+			#theta = np.ndarray((256,1))
+			#zeta  = np.ndarray((256,1))
+			#for j in range(256): theta[j]=2.0*np.pi*j/255.0
+			#for j in range(256):  zeta[j]=2.0*np.pi*j/255.0
+			theta = np.linspace([0],[2.0*np.pi],256)
+			zeta  = np.linspace([0],[2.0*np.pi],256)
 			b = vmec_wout.cfunct(theta,zeta,vmec_wout.bmnc,vmec_wout.xm_nyq,vmec_wout.xn_nyq/vmec_wout.nfp)
 			j = int(vmec_wout.ns/4)
-			h=ax.pcolormesh(np.squeeze(b[j,:,:]),cmap='jet',shading='gouraud')
+			h=ax.pcolormesh(np.squeeze(theta),np.squeeze(zeta),np.squeeze(b[j,:,:]),cmap='Greens',shading='gouraud')
+			ax.contour(np.squeeze(theta),np.squeeze(zeta),np.squeeze(b[j,:,:]),10,colors='black')
 			ax.set_xlabel(r"$\zeta [rad]$")
 			ax.set_ylabel(r"$\theta_{VMEC}$ [rad]")
 			ax.set_title("|B| at mid radius")
@@ -215,4 +266,45 @@ if __name__=="__main__":
 			r = vmec_wout.cfunct(theta,phi,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn)
 			z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
 			vmec_wout.surfaceSTL(r,z,phi,filename='plasma_'+args.vmec_ext+'.stl')
+		# Output an xyz list of points
+		if (loutput and args.lmagaxis):
+			theta = np.linspace([0],[np.pi*2],16)
+			phi   = np.linspace([0],[np.pi*2],360)
+			r = vmec_wout.cfunct(theta,phi,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn)
+			z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
+			r0 = np.squeeze(r[0,0,:])
+			z0 = np.squeeze(z[0,0,:])
+			x0 = r0*np.cos(np.squeeze(phi))
+			y0 = r0*np.sin(np.squeeze(phi))
+			data_to_save = np.column_stack((x0, y0, z0))
+			np.savetxt(rf'magaxis_xyz_{args.vmec_ext}.csv', data_to_save, fmt='%f', delimiter=',')
+		if (loutput and args.lspectrum):
+			print('!----- Axis Parameters -----')
+			raxis_cc =np.trim_zeros(vmec_wout.rmnc[0,:])
+			zaxis_cs =np.trim_zeros(vmec_wout.zmns[0,:])
+			out_str=''.join(f'{x:20.12E}' for x in raxis_cc)
+			print('  RAXIS_CC = '+out_str)
+			out_str=''.join(f'{x:20.12E}' for x in zaxis_cs)
+			print('  ZAXIS_CS = '+out_str)
+			if vmec_wout.lasym:
+				raxis_cs =np.trim_zeros(vmec_wout.rmns[0,:])
+				zaxis_cc =np.trim_zeros(vmec_wout.zmnc[0,:])
+				out_str=''.join(f'{x:20.12E}' for x in raxis_cs)
+				print('    RAXIS_CS = '+out_str)
+				out_str=''.join(f'{x:20.12E}' for x in zaxis_cc)
+				print('    ZAXIS_CC = '+out_str)
+			print('!----- Boundary Parameters -----')
+			for mn in range(vmec_wout.mnmax):
+				n = -int(vmec_wout.xn[mn][0]/vmec_wout.nfp)
+				m = int(vmec_wout.xm[mn][0])
+				k = int(vmec_wout.ns-1)
+				rbc = vmec_wout.rmnc[k,mn]
+				zbs = vmec_wout.zmns[k,mn]
+				if (rbc != 0.0 or zbs != 0.0):
+					print(f'  RBC({n:3d},{m:3d}) = {rbc:20.12E}  ZBS({n:3d},{m:3d}) = {zbs:20.12e}')
+				if (vmec_wout.lasym):
+					rbs = vmec_wout.rmns[k,mn]
+					zbc = vmec_wout.zmnc[k,mn]
+					print(f'    RBS({n:3d},{m:3d}) = {rbs:20.12E}  ZBC({n:3d},{m:3d}) = {zbc:20.12e}')
+
 	sys.exit(0)

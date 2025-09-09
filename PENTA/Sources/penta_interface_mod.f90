@@ -1244,11 +1244,12 @@ MODULE PENTA_INTERFACE_MOD
 
          ! Write fluxes to file "fluxes_vs_roa"
          IF(save_all_ambipolar_roots) THEN
-            Write(str_num,*) 2*num_species + 2
+            Write(str_num,*) 2*num_species + 3
             Write(iu_flux_out,'(f7.3,' // Trim(Adjustl(str_num)) // '(" ",e15.7),' // 'i4)') &
             roa_surf,Er_test/100._rknd,J_BS_ambi(iroot),Gammas_ambi(1,iroot),  &
             QoTs_ambi(1,iroot),Gammas_ambi(2:num_species,iroot),  &
-            QoTs_ambi(2:num_species,iroot), merge(1_iknd,0_iknd, root_type(iroot))
+            QoTs_ambi(2:num_species,iroot), 1.0_rknd/sigma_par_ambi(iroot), &
+            merge(1_iknd,0_iknd, root_type(iroot))
          ENDIF
 
       !    ! Write flows to file "flows_vs_roa"
@@ -1333,7 +1334,7 @@ MODULE PENTA_INTERFACE_MOD
       Write(iunit_merged,'(f7.3)') mytime
       Write(iunit_merged,'("r/a    Er[V/cm]    J_BS [Am**-2]    ",  &
             "Gamma_e [m**-2s**-1]   Q_e/T_e [m**-2s**-1]     ",         &
-            "Gamma_i [m**-2s**-1]   Q_i/T_i [m**-2s**-1]   root_type")')
+            "Gamma_i [m**-2s**-1]   Q_i/T_i [m**-2s**-1]   etapar [Ohm.m]   root_type")')
 
       !Loop through files
       Do k=1,ns_dkes

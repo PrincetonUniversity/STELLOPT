@@ -286,7 +286,7 @@ class NESCOIL(FourierRep):
 			render_window.Render()
 			render_window_interactor.Start()
 
-	def cutcoils(self,ncoils_per_halfperiod,lplot=False):
+	def cutcoils(self,ncoils_per_halfperiod,npts=128,lplot=False):
 		"""Cut coils from the NESCOIL potential
 
 		This routine cuts coils from the NESCOIL potential.
@@ -297,6 +297,8 @@ class NESCOIL(FourierRep):
 		----------
 		ncoils_per_halfperiod : integer
 			Number of coils per half period (suggest 5)
+		npts : int
+			Number of points in coil (default: 128)
 		lplot : boolean (optional)
 			Plot the potential and potential lines. (default: False)
 		"""
@@ -319,13 +321,13 @@ class NESCOIL(FourierRep):
 		pot = self.generateTotalPotential(theta,zeta)
 		cont_vals = np.zeros((ncoils_per_halfperiod))
 		for k in range(ncoils_per_halfperiod):
-			u = 0
+			u = round(0.0*self.nu)
 			v = round((k+0.5)*self.nv/(ncoils_per_halfperiod))
 			cont_vals[k] = pot[0,u,v]
 		# Now calculate a larger potential map so coils can span periods
 		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
-		zeta_min = (-1.0/ncoils_per_halfperiod)*np.pi
-		zeta_max = (1.0+1.0/ncoils_per_halfperiod)*np.pi
+		zeta_min = (-2.0/ncoils_per_halfperiod)*np.pi
+		zeta_max = (1.0+2.0/ncoils_per_halfperiod)*np.pi
 		zeta  = np.reshape( np.linspace(zeta_min,zeta_max,self.nv),(self.nv,1))
 		pot = self.generateTotalPotential(theta,zeta)
 		# Now generate contours
@@ -352,29 +354,34 @@ class NESCOIL(FourierRep):
 			for temp in level:
 				th = np.append(th,temp[:,1])
 				ze = np.append(ze,temp[:,0])
+			# Wrap the coil so that poitive current is positive field (counterclockwise from top)
+			if (th[16]-th[0] > 0):
+				th = th[::-1]
+				ze = ze[::-1]
+				print(rf'Flipping coil {k}')
+			# Now we need to interpolate the coil onto the interval [0,2*pi] in theta.
+			l_in   = np.linspace(0.0,1.0,len(th))
+			l_out  = np.linspace(0.0,1.0,npts)
+			th_out = np.interp(l_out,l_in,th)
+			ph_out = np.interp(l_out,l_in,ze)/self.np
 			# Fourier transform the coil
-			npts = len(th)
 			r = np.zeros((npts)); z = np.zeros((npts))
 			for mn in range(self.mnmax_surface):
-				mtheta = th*self.xm_surface[mn]
-				nzeta  = ze*self.xn_surface[mn]
+				mtheta = th_out*self.xm_surface[mn]
+				nzeta  = ph_out*self.xn_surface[mn]*self.np
 				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
 				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
-			# Check and adjust coil convention
-			if (z[1]-z[0]) > 0:
-				r = r[::-1]
-				z = z[::-1]
 			# Convert to XYZ and make current/group
-			ph = ze/float(self.np)
-			x = r * np.cos(ph)
-			y = r * np.sin(ph)
+			x = r * np.cos(ph_out)
+			y = r * np.sin(ph_out)
 			c = np.ones((npts))*Ipol/(self.np*ncoils_per_halfperiod*2)
 			g = np.ones((npts))*(k+1)
 			c[-1] = 0.0
 			# Create stellarator symmetric coil
-			ph = (2.0*np.pi - ze)/self.np
-			xo = np.append(x,r[::-1]*np.cos(ph[::-1]))
-			yo = np.append(y,r[::-1]*np.sin(ph[::-1]))
+			#phn = (2.0*np.pi/self.np - ph_out)
+			phn = -ph_out
+			xo = np.append(x,r[::-1]*np.cos(phn[::-1]))
+			yo = np.append(y,r[::-1]*np.sin(phn[::-1]))
 			zo = np.append(z,-z[::-1])
 			co = np.append(c,c)
 			go = np.append(g,g)

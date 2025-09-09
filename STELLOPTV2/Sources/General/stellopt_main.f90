@@ -206,7 +206,6 @@
          CALL MPI_FILE_CLOSE(key,ier)
          CALL init_stellopt_input
          CALL read_stellopt_input(TRIM(id_string),ier)
-         CALL stellopt_read_cws
          !CALL stellopt_write_header
 
          ! Now fix a couple things before we re-run the optimizer

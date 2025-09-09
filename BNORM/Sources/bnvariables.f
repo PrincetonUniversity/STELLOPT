@@ -18,5 +18,6 @@
       real(rprec), allocatable :: cr(:,:), cz(:,:), cl(:, :)
       real(rprec), allocatable :: bsubus(:,:), bsubvs(:,:)
       real(rprec), allocatable :: crs(:,:), czc(:,:), clc(:, :)
+      real(rprec), allocatable :: pmns(:,:), pmnc(:,:)
 
       end module bnvariables

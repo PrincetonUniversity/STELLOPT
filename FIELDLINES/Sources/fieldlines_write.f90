@@ -43,7 +43,7 @@
             WRITE(6,'(A)')  '----- WRITING DATA TO FILE -----'
          END IF
 #if defined(LHDF5)
-         WRITE(6,'(A)')  '   FILE: '//'fieldlines_'//TRIM(id_string)//'.h5'
+         IF (lverb) WRITE(6,'(A)')  '   FILE: '//'fieldlines_'//TRIM(id_string)//'.h5'
          CALL open_hdf5('fieldlines_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
          IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'fieldlines_'//TRIM(id_string)//'.h5',ier)
          ! Runtime
@@ -196,7 +196,7 @@
       END IF
 #else
       iunit = 100
-      WRITE(6,'(A)')  '   FILE: '//'fieldlines_'//TRIM(id_string)//'.bin'
+      IF (lverb) WRITE(6,'(A)')  '   FILE: '//'fieldlines_'//TRIM(id_string)//'.bin'
       CALL safe_open(iunit,ier,'fieldlines_'//TRIM(id_string)//'.bin','replace','unformatted')
       WRITE(iunit) FIELDLINES_VERSION
       WRITE(iunit) lvmec,lpies,lspec,lcoil,lmgrid,lmu,lvessel,lvac,laxis_i,ladvanced,lreverse

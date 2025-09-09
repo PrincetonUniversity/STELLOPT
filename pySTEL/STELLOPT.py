@@ -25,6 +25,8 @@ from libstell import gist
 from libstell import stellopt
 from libstell import plot3D
 from libstell import bootsj
+from libstell import bnorm
+from libstell import coils
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -92,6 +94,16 @@ class MyApp(QMainWindow):
 		self.ui.OPTplot_box.addWidget(self.canvas2)
 		self.toolbar = NavigationToolbar(self.canvas2, self)
 		self.ui.OPTplot_box.addWidget(self.toolbar)
+		# VTK stuff STELLOPT
+		self.frame_vtk_sopt = QWidget()
+		self.vtkWidget_sopt = QVTKRenderWindowInteractor(self.frame_vtk_sopt)
+		self.ui.OPTplot_box.addWidget(self.vtkWidget_sopt)
+		self.vtkWidget_sopt.Initialize()
+		self.vtkWidget_sopt.Start()
+		# Create a VTK STELLOPT renderer and add it to the render window
+		self.plt_sopt = plot3D.PLOT3D(lwindow=False)
+		self.vtkWidget_sopt.GetRenderWindow().AddRenderer(self.plt_sopt.renderer)
+		self.vtkWidget_sopt.hide()
 		# Setup STELLOPT Pannels
 		#self.UpdateOPTtype()
 		#self.UpdateOPTVarsScalar()
@@ -887,7 +899,9 @@ class MyApp(QMainWindow):
 					'B10B11','HELICITY','HELICITY_FULL','QUASIISO','GAMMA_C', \
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
-					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP']
+					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP',\
+					'BNORMAL', 'COIL_CURVATURE', 'COIL_TORSION', \
+					'COILCOIL_DISTANCE', 'LGRADB']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
 		# Handle Chisquared plots
@@ -922,6 +936,8 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L11')
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L31')
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L33')
+		if 'LGRADB_TARGET' in vars(self.stel_data).keys():
+			self.ui.ComboBoxOPTplot_type.addItem('LGRADB_surf')
 		# Handle Wout Comparrison Plots
 		files = os.listdir(self.workdir)
 		if any('wout' in mystring for mystring in files):
@@ -938,18 +954,51 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Magwell')
 			wout_files = sorted([k for k in files if 'wout' in k])
 			self.wout_files = sorted([k for k in wout_files if '_opt' not in k])
+		# Handle Bnorm
+		if any('bnorm' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- B-Normal -----')
+			self.ui.ComboBoxOPTplot_type.addItem('B-Normal')
+			bnormal_file = sorted([k for k in files if 'bnorm_real.' in k])
+			self.bnormal_file = sorted([k for k in bnormal_file if '_opt' not in k])
 		# Handle Boozer Transformation
 		if any('boozmn' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Boozer Coordinates -----')
 			self.ui.ComboBoxOPTplot_type.addItem('Boozer Spectrum')
 			self.ui.ComboBoxOPTplot_type.addItem('Boozer |B|')
 			self.ui.ComboBoxOPTplot_type.addItem('B10/B11')
-			self.ui.ComboBoxOPTplot_type.addItem('|B|_MAX')
 			self.ui.ComboBoxOPTplot_type.addItem('QAS_ERROR')
 			self.ui.ComboBoxOPTplot_type.addItem('QPS_ERROR')
 			self.ui.ComboBoxOPTplot_type.addItem('QHS_ERROR')
 			booz_files = sorted([k for k in files if 'boozmn' in k])
 			self.booz_files = sorted([k for k in booz_files if '_opt' not in k])
+		# Handle Current Density Profiles
+		if any('answers_plot.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Bootstrap Current -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current')
+			bootsj_files = sorted([k for k in files if 'answers_plot.' in k])
+			self.bootsj_files = sorted([k for k in bootsj_files if '_opt' not in k])
+		# Handle Coil
+		if any('coils' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Coils -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Coil Curvature')
+			self.ui.ComboBoxOPTplot_type.addItem('Coil Torsion')
+			self.ui.ComboBoxOPTplot_type.addItem('Coil Shape')
+			coils_files = sorted([k for k in files if 'coils.' in k])
+			self.coils_files = sorted([k for k in coils_files if '_opt' not in k])
+		# Handle Current Density Profiles
+		if any('jprof.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Current Density -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Profile')
+			self.ui.ComboBoxOPTplot_type.addItem('Beam Profile')
+			self.ui.ComboBoxOPTplot_type.addItem('Total Current Profile')
+			jprof_files = sorted([k for k in files if 'jprof.' in k])
+			self.jprof_files = sorted([k for k in jprof_files if '_opt' not in k])
+		# Handle Diagnostic Profiles
+		if any('dprof.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Diagnostic -----')
+			self.ui.ComboBoxOPTplot_type.addItem('XICS Emissivity')
+			self.ui.ComboBoxOPTplot_type.addItem('E-Static Potential')
+			self.dprof_files = sorted([k for k in files if 'dprof.' in k])
 		# Handle Kinetic Profiles
 		if any('tprof.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Kinetics -----')
@@ -959,20 +1008,6 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Z Effective')
 			tprof_files = sorted([k for k in files if 'tprof.' in k])
 			self.tprof_files = sorted([k for k in tprof_files if '_opt' not in k])
-		# Handle Diagnostic Profiles
-		if any('dprof.' in mystring for mystring in files):
-			self.ui.ComboBoxOPTplot_type.addItem('----- Diagnostic -----')
-			self.ui.ComboBoxOPTplot_type.addItem('XICS Emissivity')
-			self.ui.ComboBoxOPTplot_type.addItem('E-Static Potential')
-			self.dprof_files = sorted([k for k in files if 'dprof.' in k])
-		# Handle Current Density Profiles
-		if any('jprof.' in mystring for mystring in files):
-			self.ui.ComboBoxOPTplot_type.addItem('----- Current Density -----')
-			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Profile')
-			self.ui.ComboBoxOPTplot_type.addItem('Beam Profile')
-			self.ui.ComboBoxOPTplot_type.addItem('Total Current Profile')
-			jprof_files = sorted([k for k in files if 'jprof.' in k])
-			self.jprof_files = sorted([k for k in jprof_files if '_opt' not in k])
 		# Handle GIST gyrokinetic input files
 		if any('gist_' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- GIST Inputs -----')
@@ -983,7 +1018,8 @@ class MyApp(QMainWindow):
 		# Handle Current Density Profiles
 		if any('answers_plot.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Bootstrap Current -----')
-			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current Density')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current Total')
 			bootsj_files = sorted([k for k in files if 'answers_plot.' in k])
 			self.bootsj_files = sorted([k for k in bootsj_files if '_opt' not in k])
 		
@@ -1007,12 +1043,37 @@ class MyApp(QMainWindow):
 				for k in idx:
 					self.ui.ComboBoxOPTplot_surf.addItem(str(k+1))
 				self.UpdateBoozerSpec()
+			elif plot_name in ['B-Normal']:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.bnorm_data = bnorm.BNORM()
+				self.bnorm_data.read_bnorm_real(test_file)
+				self.bnorm_data.plot_bnorm_real_total(ax=self.ax2)
+				self.canvas2.draw()
 			elif plot_name in self.gist_files:
 				self.fig2.clf()
 				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
 				self.ui.ComboBoxOPTplot_surf.clear()
 				self.gist_data = gist.GIST()
 				self.gist_data.read_gist(test_file)
+			elif plot_name in ['LGRADB_surf']:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.ui.ComboBoxOPTplot_surf.clear()
+				iter_val = int(test_file)
+				print(iter_val)
+				iter_dex=np.flatnonzero(self.stel_data.ITER == iter_val)[0]
+				print(iter_dex)
+				theta = np.unique(self.stel_data.LGRADB_THETA[iter_dex,:])
+				phi = np.unique(self.stel_data.LGRADB_PHI[iter_dex,:])
+				ntheta = len(theta)
+				nphi   = len(phi)
+				lgradb = np.reshape(self.stel_data.LGRADB_LGRADB[iter_dex,:],(ntheta,nphi))
+				hmesh=self.ax2.pcolormesh(phi,theta,lgradb,cmap='jet')
+				self.ax2.set_xlabel('Toroidal Angle [rad]')
+				self.ax2.set_ylabel('Poloidal Angle [rad]')
+				_plt.colorbar(hmesh,label=r'$L_{\nabla B}$',ax=self.ax2)
+
 
 	def UpdateBoozerSpec(self):
 		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
@@ -1032,8 +1093,10 @@ class MyApp(QMainWindow):
 		self.ui.ComboBoxOPTplot_iter.clear()
 		self.ui.ComboBoxOPTplot_surf.clear()
 		self.fig2.clf()
-		niter = len(self.stel_data.ITER)
 		self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+		self.canvas2.show()
+		self.vtkWidget_sopt.hide()
+		niter = len(self.stel_data.ITER)
 		if (plot_name == 'Chi-Squared'):
 			chisq = ((self.stel_data.TARGETS - self.stel_data.VALS)/self.stel_data.SIGMAS)**2
 			self.ax2.semilogy(self.stel_data.ITER,np.sum(chisq,axis=1),'ok',label='Chisq Total')
@@ -1131,6 +1194,20 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Epsilon Effective')
 			self.ax2.set_title('Neoclassical Helical Ripple (NEO)')
+			self.ax2.legend()
+		elif (plot_name == 'B10B11_evolution'):
+			x = self.stel_data.B10B11_K
+			y = self.stel_data.B10B11_VAL
+			t = self.stel_data.B10B11_TARGET
+			d = self.stel_data.B10B11_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
+			self.ax2.set_xlabel('Radial Grid')
+			self.ax2.set_ylabel(r'$B_{01}/B_{11}$')
+			self.ax2.set_title('Boozer Harmonic Ratios')
 			self.ax2.legend()
 		elif (plot_name == 'BOOTSTRAP_evolution'):
 			x = self.stel_data.BOOTSTRAP_RHO # actually flux
@@ -1875,6 +1952,16 @@ class MyApp(QMainWindow):
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
 			self.UpdateIterFile()
+		elif (plot_name == 'LGRADB_surf'):
+			iter_list = self.stel_data.ITER
+			for item in iter_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(str(int(item)))
+			self.UpdateIterFile()
+		elif (plot_name == 'B-Normal'):
+			file_list = sorted(glob.glob("bnorm_real.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
 		elif (plot_name == 'Boozer Spectrum'):
 			file_list = sorted(glob.glob("boozmn*"))
 			for item in file_list:
@@ -1885,6 +1972,23 @@ class MyApp(QMainWindow):
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
 			self.UpdateIterFile()
+		elif (plot_name == 'B10/B11'):
+			booz_data = boozer.BOOZER()
+			l=0
+			dl = len(self.booz_files)-1
+			if dl == 0 : dl = 1 
+			for string in self.booz_files:
+				if 'boozmn' in string:
+					booz_data.read_boozer(self.workdir+string)
+					b10b11 = booz_data.calcB10B11()
+					s = np.squeeze(booz_data.phi_b)
+					s = s/s[-1]
+					self.ax2.plot(s,b10b11,'o',color=_plt.cm.brg(l/dl))
+					l = l + 1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel(r'$B_{10}/B_{11}$')
+			self.ax2.set_title('Boozer Spectrum Ratio')
+			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Pressure'):
 			vmec_data = vmec.VMEC()
 			l=0
@@ -1902,6 +2006,25 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Pressure [kPa]')
 			self.ax2.set_title('VMEC Pressure Evolution')
 			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Coil Shape'):
+			self.canvas2.hide()
+			self.vtkWidget_sopt.show()
+			self.plt_sopt.renderer.RemoveAllViewProps()
+			l=0
+			dl = len(self.coils_files)-1
+			if dl == 0 : dl = 1
+			for string in self.coils_files:
+				if 'coils.' in string:
+					coil_data = coils.COILSET()
+					coil_data.read_coils_file(self.workdir+string)
+					if l == 0:
+						plot_color = 'red'
+					elif l == dl:
+						plot_color = 'green'
+					else:
+						plot_color = 'grey'
+					coil_data.plotcoilsHalfFP(plot3D=self.plt_sopt,color=plot_color)
+					l=l+1
 		elif (plot_name == 'I-prime'):
 			vmec_data = vmec.VMEC()
 			l=0
@@ -2065,15 +2188,6 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Z [m]')
 			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
 			self.ax2.set_aspect('equal')
-		elif (plot_name == '|B|_MAX'):
-			booz_data = boozer.BOOZER()
-			l=0
-			dl = len(self.booz_files)-1
-			if dl == 0 : dl = 1 
-			for string in self.booz_files:
-				if 'boozmn' in string:
-					booz_data.read_boozer(self.workdir+string)
-					disp('NOT DONE!')
 		elif (plot_name == 'QAS_ERROR'):
 			booz_data = boozer.BOOZER()
 			l=0
@@ -2247,7 +2361,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Current Density [kA/m^-2]')
 			self.ax2.set_title('Total Current Profile')
 			self.ax2.set_xlim((0,1))
-		elif (plot_name == 'Bootstrap Current'):
+		elif (plot_name == 'Bootstrap Current Density'):
 			bootsj_data = bootsj.BOOTSJ()
 			l = 0
 			dl = len(self.bootsj_files)-1
@@ -2259,8 +2373,21 @@ class MyApp(QMainWindow):
 					l=l+1
 			self.ax2.set_xlabel('Norm. Toroidal Flux (s)')
 			self.ax2.set_ylabel('dI/ds [A]')
-			self.ax2.set_title('BOOTSJ Bootstrap Current')
+			self.ax2.set_title('BOOTSJ Bootstrap Current Density')
 			self.ax2.set_xlim((0.0,1.0))
+		elif (plot_name == 'Bootstrap Current Total'):
+			bootsj_data = bootsj.BOOTSJ()
+			l = 0
+			dl = len(self.bootsj_files)-1
+			if dl == 0: dl = 1
+			boot_total = []
+			for string in self.bootsj_files:
+				if 'answers_plot.' in string:
+					bootsj_data.read_answers_plot(self.workdir+string)
+					boot_total.append(float(bootsj_data.Itotal))
+			self.ax2.plot(self.stel_data.ITER[:-1],np.array(boot_total)/1000.,'o')
+			self.ax2.set_ylabel('I [kA]')
+			self.ax2.set_title('BOOTSJ Total Bootstrap Current')
 		elif (plot_name == 'g11'):
 			gist_data = gist.GIST()
 			l=0

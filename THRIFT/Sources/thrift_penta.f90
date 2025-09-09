@@ -290,11 +290,11 @@
             J_spl%x1        = rho_temp
             J_spl%isHermite = 1
             CALL EZspline_setup(J_spl,J_temp,ier,EXACT_DIM=.true.)
-            !etapar
+            !etapar (make spline of log since etapar usually spans over orders of magnitude)
             CALL EZspline_init(eta_spl,ns_dkes+2,bcs0,ier)
             eta_spl%x1        = rho_temp
-            eta_spl%isHermite = 1
-            CALL EZspline_setup(eta_spl,eta_temp,ier,EXACT_DIM=.true.)
+            eta_spl%isHermite = 0
+            CALL EZspline_setup(eta_spl,LOG(eta_temp),ier,EXACT_DIM=.true.)
             !Er
             CALL EZspline_init(Er_spl,ns_dkes+2,bcs0,ier)
             Er_spl%x1        = rho_temp
@@ -306,7 +306,11 @@
             ! Calculate J_BS, etapara and Er in THRFIT GRID
             CALL EZspline_interp(J_spl,nsj,SQRT(THRIFT_S),THRIFT_JBOOT(:,mytimestep),ier)
             CALL EZspline_interp(Er_spl,nsj,SQRT(THRIFT_S),THRIFT_ER(:,mytimestep),ier)
-            IF( etapar_type == 'dkespenta') CALL EZspline_interp(eta_spl,nsj,SQRT(THRIFT_S),THRIFT_ETAPARA(:,mytimestep),ier)
+            IF( etapar_type == 'dkespenta') THEN
+                  CALL EZspline_interp(eta_spl,nsj,SQRT(THRIFT_S),THRIFT_ETAPARA(:,mytimestep),ier)
+                  ! Need to take the exponential, since spline of log was done
+                  THRIFT_ETAPARA(:,mytimestep) = EXP(THRIFT_ETAPARA(:,mytimestep))
+            END IF
 
             CALL EZspline_free(J_spl,ier)
             CALL EZspline_free(eta_spl,ier)

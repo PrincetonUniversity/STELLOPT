@@ -112,6 +112,12 @@
       ! TOTAL_BOOTSTRAP
       IF (sigma_totalbootstrap < bigno)  &
          CALL chisq_totalbootstrap(target_totalbootstrap,sigma_totalbootstrap,ncnt,iflag)
+      ! CURVATURE (P2)
+      IF (sigma_curvature_p2 < bigno) &
+         CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
+      ! LGRADB
+      IF (sigma_lgradb < bigno)  &
+         CALL chisq_lgradb(target_lgradb,sigma_lgradb,ncnt,iflag)
 
       !------------- ARRAY TARGETS ----------------------------
       ! EXTERNAL CURRENTS
@@ -153,6 +159,20 @@
       IF (ANY(sigma_visbrem_line < bigno)) &
          CALL chisq_line_visbrem(target_visbrem_line, sigma_visbrem_line, ncnt,iflag)
          
+      !------------- COIL RELATED TARGETS -------------------
+      !  BNORMAL TOTAL
+      IF (sigma_bnormal < bigno) &
+         CALL chisq_bnormal(target_bnormal, sigma_bnormal, ncnt,iflag)
+      !  MEAN COIL CURVATURE
+      IF (sigma_coil_curvature < bigno) &
+         CALL chisq_coil_curvature(target_coil_curvature, sigma_coil_curvature, ncnt,iflag)
+      !  MEAN COIL TORSION
+      IF (sigma_coil_torsion < bigno) &
+         CALL chisq_coil_torsion(target_coil_torsion, sigma_coil_torsion, ncnt,iflag)
+      !  COIL-COIL DISTANCE
+      IF (sigma_coilcoil_distance < bigno) &
+         CALL chisq_coilcoil_distance(target_coilcoil_distance, sigma_coilcoil_distance, ncnt,iflag)
+
       !------------- OTHER TARGETS -------------------
       !  ECE Reflectometry
       IF (ANY(sigma_ece < bigno)) &
@@ -201,31 +221,24 @@
       ! CURRENT DENSITY <JCURV>
       IF (ANY(sigma_jcurv < bigno)) &
          CALL chisq_jcurv(target_jcurv, sigma_jcurv, ncnt,iflag)
-         
-      !------------- COIL GEOMETRY TARGETS ---------------------
-      ! Coil lengths
-      IF (ANY(sigma_coillen < bigno)) &
-         CALL chisq_coillen(target_coillen, sigma_coillen, &
-                            target_coilsegvar, sigma_coilsegvar, &
-                            ncnt, iflag)
-      ! Coil-coil separation
-      IF (sigma_coilsep < bigno) &
-         CALL chisq_coilsep(target_coilsep, sigma_coilsep, ncnt, iflag)
-      ! Max coil curvature
-      IF (ANY(sigma_coilcrv < bigno)) &
-         CALL chisq_coilcrv(target_coilcrv, sigma_coilcrv, ncnt, iflag)
-      ! Coil self-intersection
-      IF (ANY(sigma_coilself < bigno)) &
-         CALL chisq_coilself(target_coilself, sigma_coilself, ncnt, iflag)
-      ! Coil toroidal varation (non-planarity)
-      IF (ANY(sigma_coiltorvar < bigno)) &
-         CALL chisq_coiltorvar(target_coiltorvar, sigma_coiltorvar, ncnt, iflag)
-      ! Coil excursion outside prescribed box
-      IF (ANY(sigma_coilrect < bigno)) &
-           CALL chisq_coilrect(target_coilrect, sigma_coilrect, ncnt, iflag)
-      ! Coil incursion into proscribed polygon set
-      IF (ANY(sigma_coilpoly < bigno)) &
-           CALL chisq_coilpoly(target_coilpoly, sigma_coilpoly, ncnt, iflag)
+      ! GAMMA_C
+      IF (ANY(sigma_gamma_c < bigno)) &
+         CALL chisq_gamma_c(target_gamma_c, sigma_gamma_c, ncnt,iflag)
+      ! B10B11
+      IF (ANY(sigma_b10b11 < bigno)) &
+         CALL chisq_b10b11(target_b10b11, sigma_b10b11, ncnt,iflag)
+      ! TXPORT
+      IF (ANY(sigma_txport < bigno)) &
+         CALL chisq_txport(target_txport, sigma_txport, ncnt,iflag)
+      ! |Bmn| Helicity
+      IF (ANY(sigma_helicity < bigno)) &
+         CALL chisq_helicity(target_helicity, sigma_helicity, ncnt,iflag)
+      ! |Bmn| Helicity (OLD)
+      IF (ANY(sigma_helicity_old < bigno)) &
+         CALL chisq_helicity_ornl(target_helicity_old, sigma_helicity_old, ncnt,iflag)
+      ! |Bmn| Helicity (OLD)
+      IF (ANY(sigma_quasiiso < bigno)) &
+         CALL chisq_quasiiso(target_quasiiso, sigma_quasiiso, ncnt,iflag)
 
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries
@@ -254,9 +267,6 @@
       ! Boostrap
       IF (ANY(sigma_bootstrap < bigno)) &
          CALL chisq_bootstrap(target_bootstrap, sigma_bootstrap, ncnt,iflag)
-      ! B10B11
-      IF (ANY(sigma_b10b11 < bigno)) &
-         CALL chisq_b10b11(target_b10b11, sigma_b10b11, ncnt,iflag)
       ! NEO
       IF (ANY(sigma_neo < bigno)) &
          CALL chisq_neo(target_neo, sigma_neo, ncnt,iflag)
@@ -269,40 +279,15 @@
       IF (ANY(sigma_dkes_alpha < bigno)) &
          CALL chisq_dkes_alpha(target_dkes_alpha, sigma_dkes_alpha, ncnt,iflag)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! TXPORT
-      IF (ANY(sigma_txport < bigno)) &
-         CALL chisq_txport(target_txport, sigma_txport, ncnt,iflag)
       ! Orbit
       IF (ANY(sigma_orbit < bigno)) &
          CALL chisq_orbit(target_orbit, sigma_orbit, ncnt,iflag)
-      ! |Bmn| Helicity
-      IF (ANY(sigma_helicity < bigno)) &
-         CALL chisq_helicity(target_helicity, sigma_helicity, ncnt,iflag)
-      ! |Bmn| Helicity (OLD)
-      IF (ANY(sigma_helicity_old < bigno)) &
-         CALL chisq_helicity_ornl(target_helicity_old, sigma_helicity_old, ncnt,iflag)
-      ! |Bmn| Helicity (OLD)
-      IF (ANY(sigma_quasiiso < bigno)) &
-         CALL chisq_quasiiso(target_quasiiso, sigma_quasiiso, ncnt,iflag)
       ! J*
       IF (ANY(sigma_Jstar < bigno)) &
          CALL chisq_jstar(target_Jstar, sigma_Jstar, ncnt,iflag)
       ! Resonant Jacobian
       IF (ANY(sigma_resjac < bigno)) &
          CALL chisq_resjac(target_resjac, sigma_resjac, ncnt,iflag)
-      ! Coil Optimization
-      IF (sigma_coil_bnorm < bigno) &
-         CALL chisq_coil_bnorm(target_coil_bnorm, sigma_coil_bnorm, ncnt,iflag)
-      ! REGCOIL Coil Optimization (CHI2_B targets)
-      IF (ANY(sigma_regcoil_chi2_b < bigno)) THEN
-         CALL chisq_regcoil_chi2_b(target_regcoil_chi2_b, sigma_regcoil_chi2_b, ncnt,iflag)
-      END IF
-      IF (sigma_curvature_p2 < bigno) &
-         CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
-      ! GAMMA_C
-      IF (ANY(sigma_gamma_c < bigno)) &
-         CALL chisq_gamma_c(target_gamma_c, sigma_gamma_c, ncnt,iflag)
-
       ! Kink
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)

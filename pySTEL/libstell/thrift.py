@@ -10,11 +10,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 
-plt.rc('font', size=18)
-default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-custom_colors = ['#5faf30', '#1D2258', '#004817', '#a1cdc8']
-plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors+default_colors)
-plt.rcParams['lines.linewidth'] = 2.5
+#plt.rc('font', size=18)
+#default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+#custom_colors = ['#5faf30', '#1D2258', '#004817', '#a1cdc8']
+#plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors+default_colors)
+#plt.rcParams['lines.linewidth'] = 2.5
 # plt.rcParams['axes.prop_cycle'] = plt.cycler(color=['#5faf30','#1D2258','#004817','#a1cdc8'])
 
 # Constants
@@ -49,7 +49,50 @@ class THRIFT():
         self.set_arrays_attribute(*files) 
         
         # set units of quantities
-        self.set_units()       
+        self.set_units()
+        
+    def read_thrift_folder(self, folder_path):
+        """Reads THRIFT HDF5 files inside folder_path
+
+        Files should be named: output_<n>.h5, where <n> is a positive integer.
+        The function finds the minimum n and checks that files are consecutively
+        numbered with no gaps.
+
+        Parameters
+        ----------
+        folder_path : str
+            Path to folder containing output_#.h5 files.
+        """
+        import os
+        import re
+
+        # Match files like output_123.h5
+        pattern = re.compile(r"output_(\d+)\.h5$")
+        numbered_files = []
+
+        for file_name in os.listdir(folder_path):
+            match = pattern.match(file_name)
+            if match:
+                number = int(match.group(1))
+                full_path = os.path.join(folder_path, file_name)
+                if os.path.isfile(full_path):
+                    numbered_files.append((number, full_path))
+
+        if not numbered_files:
+            raise FileNotFoundError(f"No output_*.h5 files found in {folder_path}")
+
+        # Sort by output number
+        numbered_files.sort()
+        numbers, files = zip(*numbered_files)
+
+        # Check for sequential numbering
+        expected_numbers = list(range(min(numbers), max(numbers) + 1))
+        if list(numbers) != expected_numbers:
+            missing = sorted(set(expected_numbers) - set(numbers))
+            raise FileNotFoundError(f"Missing expected files: {', '.join(f'output_{n}.h5' for n in missing)}")
+
+        # read files
+        self.read_thrift(*files)
     
     def check_time_order(self,*files):
 

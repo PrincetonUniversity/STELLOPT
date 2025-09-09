@@ -88,6 +88,12 @@
       USE wall_mod, ONLY: wall_free
       USE beams3d_input_mod, ONLY: BCAST_BEAMS3D_INPUT
 !DEC$ ENDIF
+      USE fieldlines_interface_mod, ONLY: fieldlines_init_mpi, fieldlines_init_pointers, &
+            fieldlines_init_hdf5, fieldlines_output_header, fieldlines_cleanup
+      USE fieldlines_runtime, ONLY: lverb_fieldlines => lverb, FIELDLINES_VERSION, &
+            lvmec_fieldlines => lvmec, lvac_fieldlines => lvac, lcoil_fieldlines => lcoil, &
+            lauto_fieldlines => lauto, coil_string_fieldlines => coil_string, &
+            id_string_fieldlines => id_string
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -177,10 +183,6 @@
                      iunit = 37; ier = 0
                      CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')
                      CALL write_indata_namelist(iunit,ier)
-                     IF (lcoil_geom) THEN
-                        CALL write_optimum_namelist(iunit,ier)
-                        IF (lfreeb) CALL write_mgrid_namelist(iunit,ier)
-                     ENDIF
                      CALL FLUSH(iunit)
                   END IF
                   ! Setup ICTRL Array
@@ -408,15 +410,37 @@
                IF (lverb_beams) WRITE(6, '(A)') '----- BEAMS3D DONE -----'
 
 !DEC$ ENDIF
+            CASE ('poincare')
+               ! Setup MPI
+               CALL fieldlines_init_mpi(MPI_COMM_MYWORLD)
+               ! Nullify Pointers
+               CALL fieldlines_init_pointers
+               ! Setup HDF5
+               CALL fieldlines_init_hdf5
+               ! Handle Command line options
+               CALL fieldlines_init_vars
+               IF (myworkid .eq. master) lverb_fieldlines = lscreen
+               id_string_fieldlines = TRIM(file_str)
+               coil_string_fieldlines = 'coils.'//TRIM(file_str)
+               lvmec_fieldlines = .TRUE.
+               lcoil_fieldlines = .TRUE.
+               lvac_fieldlines  = .TRUE.
+               lauto_fieldlines = .TRUE.
+               ! Output header information
+               CALL fieldlines_output_header
+               ! Intialize the computation
+               CALL fieldlines_init
+               ! Follow the fieldlines
+               CALL fieldlines_follow
+               ! Write the output
+               CALL fieldlines_write
+               ! Clean up
+               CALL fieldlines_cleanup(.FALSE.)
 !DEC$ IF DEFINED (TRAVIS)
             CASE('travis')
                proc_string = file_str
                CALL stellopt_travis(lscreen,ier)
 !DEC$ ENDIF
-            CASE('coilopt++')
-               CALL stellopt_coiloptpp(file_str,lscreen)
-            CASE('regcoil_chi2_b')
-               CALL stellopt_regcoil_chi2_b(lscreen,ier)
             CASE('terpsichore')
                proc_string = file_str
                ier = 0
@@ -459,6 +483,10 @@
                ier_paraexe = ier
             CASE('write_mgrid')
                CALL stellopt_write_mgrid(MPI_COMM_MYWORLD,file_str,lscreen)
+            CASE('compute_bnormal')
+               proc_string = file_str
+               ier = 0
+               CALL stellopt_compute_bnormal(lscreen,ier)
             CASE('mango_init')
                CALL stellopt_mango_init
             CASE('mango_finalize')

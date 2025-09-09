@@ -25,7 +25,9 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check -march=native
+#  So apparently the checks at runtime cause a crash due to an array size
+#     check in stellopt_load_targets.f90 which is erroneous.
+  FLAGS_R = -O2 -g -fexternal-blas -march=native
   FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fbounds-check
   LIBS    = -L/usr/lib -L/opt/local/lib -lscalapack -framework Accelerate
   FLAGS_R += -fallow-argument-mismatch
@@ -51,7 +53,7 @@ endif
   MPI_COMPILE_C = mpicc 
   MPI_LINK = mpif90 -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 2
+  MPI_RUN_OPTS = --use-hwthread-cpus
 
 #######################################################################
 #            NAG Options
@@ -63,8 +65,8 @@ endif
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --fflags)
-  NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
+  NETCDF_INC = $(shell nf-config --fflags)
+  NETCDF_LIB = $(shell nc-config --libs) $(shell nf-config --flibs)
 
 #######################################################################
 #            FFTW3 Options
@@ -151,9 +153,9 @@ endif
 ifneq ("$(wildcard $(TRAVIS_PATH))","")
   LTRAVIS = T
   TRAVIS_DIR = $(TRAVIS_PATH)
-  LIB_TRAVIS = libtravis64_sopt.a
-  LIB_MCONF  = libmconf64.a
-  LIB_FADDEEVA = libfaddeeva64.a
+  LIB_TRAVIS = libtravis_sopt.a
+  LIB_MCONF  = libmconf.a
+  LIB_FADDEEVA = libfaddeeva.a
   TRAVIS_LIB = $(TRAVIS_DIR)lib/$(LIB_TRAVIS) \
                $(TRAVIS_DIR)faddeeva_package/lib/$(LIB_FADDEEVA) \
                $(TRAVIS_DIR)magconf/lib/$(LIB_MCONF) -lc++
@@ -199,6 +201,21 @@ ifneq ("$(wildcard $(AEOPT_PATH))","")
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 else
   LAEOPT = F
+endif
+
+#######################################################################
+#            MANGO Options
+#######################################################################
+ifneq ("$(wildcard $(MANGO_PATH))","")
+  LMANGO = T
+  MANGO_DIR = $(MANGO_PATH)
+# Any flags specified on the next 2 lines will be added to the
+# MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS lines as defined in
+# $(MANGO_DIR)/lib/mangoMakeVariables
+  MANGO_INC = 
+  MANGO_LIB = 
+else
+  LMANGO = F
 endif
 
 #######################################################################
