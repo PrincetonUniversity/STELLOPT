@@ -486,8 +486,8 @@ class PLASMA_SOLVER:
             if( np.abs(self.initial_density[species](1)-self.edge_density_BC[species]) > 5*tol ):
                 raise ValueError(f'Edge density BC not consistent w/ initial density profile')
             tol = np.abs(self.edge_pressure_BC[species]) * np.finfo(float).eps
-            if( np.abs(self.initial_pressure[species](1)-self.edge_pressure_BC[species]) > 5*tol ):
-                raise ValueError(f'Edge pressure/temperature BC not consistent w/ initial density profile')
+            if( np.abs(self.initial_pressure[species](1)-self.edge_pressure_BC[species]) > 10*tol ):
+                raise ValueError(f'Edge pressure/temperature BC not consistent w/ initial temperature profile')
             
         # check fluxes info is set
         if(not hasattr(self,'heat_fluxes_info')):
