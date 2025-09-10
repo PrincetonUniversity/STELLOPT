@@ -1267,6 +1267,28 @@ class COIL():
 			xn = xn - nt * xt
 			yn = yn - nt * yt
 			zn = zn - nt * zt
+		if frame == "centroid_rz":
+			# Use the centroid but keep face perpendicular
+			r  = np.sqrt(self.x**2+self.y**2)
+			[center_x,center_y,center_z]=self.geomCenter()
+			center_p = np.arctan2(center_y,center_x)
+			center_r = np.sqrt(center_x**2+center_y**2)
+			rn = r - center_r
+			zn = self.z - center_z
+			xb = yt*zn - zt*yn
+			yb = zt*xn - xt*zn
+			zb = xt*yn - yt*xn
+			xn = yt*zb - zt*yb
+			yn = zt*xb - xt*zb
+			zn = xt*yb - yt*xb
+		if frame == "phi":
+			# The normal direction is simply the phi direction.
+			[center_x,center_y,center_z]=self.geomCenter()
+			xn = np.zeros_like(self.x)
+			yn = np.zeros_like(self.y)
+			zn = np.zeros_like(self.z)
+			xn[:] = -center_y
+			yn[:] = center_x
 		if frame == "centroid_cyl":
 			# use the geometry center but define in cylindrical coords
 			[center_x,center_y,center_z]=self.geomCenter()
