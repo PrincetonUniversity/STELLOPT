@@ -20,13 +20,13 @@ Cobra (Defunct)
 Raven
 -----
 
-    module load git
-    module load intel/21.4.0
-    module load mkl/2021.2
-    module load impi/2021.4
-    module load netcdf-mpi/4.8.1
-    module load hdf5-mpi
-    module load fftw-mpi
+    module load git/2.50
+    module load intel/2025.2
+    module load mkl/2025.2
+    module load impi/2021.16
+    module load netcdf-mpi/4.9.2
+    module load hdf5-mpi/1.14.1
+    module load fftw-mpi/3.3.10
     module load anaconda/3/2021.11
 
 Viper
