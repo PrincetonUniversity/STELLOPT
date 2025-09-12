@@ -970,8 +970,6 @@ class COILSET():
 					coil_mesh.vectors[i][j] = vertex_case[f[j],:]
 			coil_mesh.save('coilcase_'+filename)
 
-
-
 	def write_Gourdon_coils(self):
 		"""Write Gourdon style coils files
 
@@ -981,6 +979,24 @@ class COILSET():
 		for i in range(self.ngroups):
 			nfp = max(min(self.groups[i].ncoils/2,self.nfp),1)
 			self.groups[i].coils[0].writeGourdonCoil(filename=self.groups[i].name,nfp=nfp)
+
+	def reverse(self):
+		"""Reverse the winding of an entire coil
+
+		This routine reverses the order in which a coil is wound
+
+		"""
+		for j in range(self.ngroups):
+			self.groups[j].reverse()
+
+	def flip(self):
+		"""Flip an entire coil toroidally
+
+		This routine reverses the toroidal direction of the coil
+
+		"""
+		for j in range(self.ngroups):
+			self.groups[j].flip()
 
 class COILGROUP():
 	"""Class which defines a coil group
@@ -1003,6 +1019,24 @@ class COILGROUP():
 			else:
 				self.coils.extend([COIL(x[i:j+1],y[i:j+1],z[i:j+1])])
 			i = j+1
+
+	def reverse(self):
+		"""Reverse the winding of an entire coilgroup
+
+		This routine reverses the order in which a coil is wound
+
+		"""
+		for j in range(self.ncoils):
+			self.coils[j].reverse()
+
+	def flip(self):
+		"""Flip a coilgroup toroidally
+
+		This routine reverses the toroidal direction of the coil
+
+		"""
+		for j in range(self.ncoils):
+			self.coils[j].flip()
 
 class COIL():
 	"""Class which defines a coil
@@ -1468,7 +1502,53 @@ class COIL():
 				f.write(f"{x[i]:.10E} {y[i]:.10E} {z[i]:.10E}\n")
 			f.close()
 
+	def reverse(self):
+		"""Reverse the winding of a coil
 
+		This routine reverses the order in which a coil is wound
+
+		"""
+		self.x = self.x[::-1]
+		self.y = self.y[::-1]
+		self.z = self.z[::-1]
+
+	def flip(self):
+		"""Flip a coil toroidally
+
+		This routine reverses the toroidal direction of the coil
+
+		"""
+		import numpy as np
+		r = np.sqrt(self.x*self.x+self.y*self.y)
+		p = np.arctan2(self.y,self.x)
+		z = self.z
+		self.x = r*np.cos(-p)
+		self.y = r*np.sin(-p)
+
+	def mirror(self,nfp):
+		"""Mirror a coil about the half field period
+
+		This routine mirrors a coil about the half field period
+
+		Parameters
+		----------
+		nfp : int
+			Field periodicity
+
+		Returns
+		----------
+		flip_coil : coil
+		"""
+		import numpy as np
+		zeta = np.pi/float(nfp)
+		r = np.sqrt(self.x*self.x+self.y*self.y)
+		p = np.arctan2(self.y,self.x)
+		z = self.z
+		p = np.pi/float(nfp) - p
+		z = -z
+		flip_coil = COIL(x,y,z)
+		flip_coil.reverse()
+		return flip_coil
 
 if __name__=="__main__":
 	import sys
