@@ -110,7 +110,7 @@ class DKES:
                     print(f'{self.cmul[idx]:<12.3E} {self.efield[idx]:<12.3E} {self.Lm[Lvar][idx]:<12.4E} {self.Lp[Lvar][idx]:<12.4E} {self.rel_error[Lvar][idx]*100:<15.2f}')
                 print(f'Making the average anyway: {Lvar} = 0.5*({Lvarp} + {Lvarm})')
             
-    def plot_DKES_coeffs(self):
+    def plot_DKES_coeffs(self,R0=None,iota=None,use_nustar=False):
         # plots the species-independent L11, L13 and L33 
         
         import matplotlib.pyplot as pyplot
@@ -119,7 +119,7 @@ class DKES:
                 'L11': '$D_{11}^*~~[m^{-1}~T^{-2}]$',
                 'L31': '$D_{31}^*$',
                 'L33': '$D_{33}^*~~[m~T^2]$'
-                }
+                } 
         
         for plot_var in ['L11', 'L31', 'L33']:
             
@@ -137,9 +137,14 @@ class DKES:
                 #ax.plot(self.cmul[i1:i2],yplot[i1:i2],marker='+',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
                 # plot with error bar
                 [yerr_lower, yerr_upper] = self.compute_yerr(yplot[i1:i2],self.Lm[plot_var][i1:i2],self.Lp[plot_var][i1:i2])
-                ax.errorbar(self.cmul[i1:i2],yplot[i1:i2],yerr=[yerr_lower,yerr_upper],fmt='-o',label=rf'$E_s/v$={self.efield[i1]:3.1E}',capsize=5, elinewidth=2, markeredgewidth=2)
-                    
-            ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
+                if(use_nustar and (R0 is not None) and (iota is not None)):
+                    nu_star = self.cmul[i1:i2] * (R0/iota)
+                    ax.set_xlabel(r'$\nu^*$')
+                    x_axis = nu_star
+                else:
+                    x_axis = self.cmul[i1:i2]
+                    ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
+                ax.errorbar(x_axis,yplot[i1:i2],yerr=[yerr_lower,yerr_upper],fmt='-o',label=rf'$E_s/v$={self.efield[i1]:3.1E}',capsize=5, elinewidth=2, markeredgewidth=2)
             ax.set_ylabel(f'{var_names[plot_var]}')
             ax.set_xscale('log')
             if(plot_var=='L11' or plot_var=='L33'):
