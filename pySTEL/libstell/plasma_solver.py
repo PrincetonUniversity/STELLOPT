@@ -1517,25 +1517,32 @@ class PLASMA_SOLVER:
         saved_class = SimpleNamespace()
         saved_class.rho_grid = self.rho_grid
         saved_class.r_grid = self.r_grid
-        saved_class.time = self.time
-        saved_class.N = self.N
-        saved_class.T = self.T
-        saved_class.Dn = self.Dn
-        saved_class.cn = self.cn
-        saved_class.Dp = self.Dp
-        saved_class.cp = self.cp
-        saved_class.Nt = self.Nt
-        saved_class.Q_NEO = self.Q_NEO
-        saved_class.Q_turb = self.Q_turb
-        saved_class.Gamma_NEO = self.Gamma_NEO
-        saved_class.Gamma_turb = self.Gamma_turb
         saved_class.dVdr = self.dVdr
         saved_class.aminor = self.aminor
         saved_class.Rmajor = self.Rmajor
         saved_class.B = self.B0
-        saved_class.explicit_energy_sources = self.explicit_energy_sources
-        saved_class.explicit_particle_sources = self.explicit_particle_sources
         saved_class.list_of_species = self.list_of_species
+        
+        # only save at minimum every dt=0.1s 
+        freq = max(1, round(0.1 / self.dt))
+        sl = slice(0, -1, freq)  # defines the slice once
+
+        saved_class.time = self.time[sl]
+        saved_class.Nt = len(self.time[sl])
+
+        for attr in ('N','T','Dn','cn','Dp','cp','Q_NEO','Q_turb','Gamma_NEO','Gamma_turb'):
+            setattr(saved_class, attr, {})
+            for species in self.list_of_species:
+                getattr(saved_class, attr)[species] = getattr(self, attr)[species][sl, :]
+                
+        # nested dict attributes
+        nested_attrs = ['explicit_energy_sources','explicit_particle_sources']
+        for species in self.list_of_species:
+            for attr in nested_attrs:
+                saved_class.__dict__.setdefault(attr, {})
+                saved_class.__dict__[attr].setdefault(species, {})
+                for type_string, arr in getattr(self, attr)[species].items():
+                    saved_class.__dict__[attr][species][type_string] = arr[sl, :]
 
         joblib.dump(saved_class, output_filename)
         
