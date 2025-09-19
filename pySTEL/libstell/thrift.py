@@ -624,63 +624,128 @@ class THRIFT_plasma_solver():
             
         self.list_of_species = list_of_species
         
-    def read_thrift_plasma_solver(self,file):
-        """Reads plasma_solver THRIFT HDF5 file
+    def read_thrift_plasma_solver_folder(self, folder_path):
+        """Reads THRIFT PLASMA_SOLVER HDF5 files inside folder_path
+
+        Files should be named: plasma_solver_<n>.h5, where <n> is a positive integer.
+        The function finds the minimum n and checks that files are consecutively
+        numbered with no gaps.
+
+        Parameters
+        ----------
+        folder_path : str
+            Path to folder containing plasma_solver_#.h5 files.
+        """
+        import os
+        import re
+
+        # Match files like plasma_solver_123.h5
+        pattern = re.compile(r"plasma_solver_(\d+)\.h5$")
+        numbered_files = []
+
+        for file_name in os.listdir(folder_path):
+            match = pattern.match(file_name)
+            if match:
+                number = int(match.group(1))
+                full_path = os.path.join(folder_path, file_name)
+                if os.path.isfile(full_path):
+                    numbered_files.append((number, full_path))
+
+        if not numbered_files:
+            raise FileNotFoundError(f"No plasma_solver_*.h5 files found in {folder_path}")
+
+        # Sort by output number
+        numbered_files.sort()
+        numbers, files = zip(*numbered_files)
+
+        # Check for sequential numbering
+        expected_numbers = list(range(min(numbers), max(numbers) + 1))
+        if list(numbers) != expected_numbers:
+            missing = sorted(set(expected_numbers) - set(numbers))
+            raise FileNotFoundError(f"Missing expected files: {', '.join(f'plasma_solver_{n}.h5' for n in missing)}")
+
+        # read files
+        self.read_thrift_plasma_solver(*files)  
+                
+    def read_thrift_plasma_solver(self,*files):
+        """Reads plasma_solver THRIFT HDF5 files
 
 		Parameters
 		----------
-		file : str
+		files : str
 		Path to HDF5 files.
 		"""
         import h5py
-
-        with h5py.File(file,'r') as f:
-                self.Nt = f['Nt_plasma_grid']
-                self.Nr = f['Nr_plasma_grid']
-                #
-                self.time_grid = f['time_plasma_grid'][:]
-                self.rho_grid  = f['rho_plasma_grid'][:]
-                self.r_grid  = f['r_plasma_grid'][:,:]
-                #
-                self.plasma_N = f['plasma_N'][:,:,:]
-                self.plasma_T = f['plasma_T'][:,:,:]
-                #
-                self.N_fast_alphas = f['N_fast_alphas'][:,:]
-                #
+        
+        ############### CHECK TIME ORDER #######################
+        time = []
+        for file in files:
+            with h5py.File(file,'r') as f:
+                time.append( f['time_plasma_grid'][:] )
+        time = np.concatenate(time)
+        #check ordering
+        if(not np.all(np.diff(time) >= 0) ):
+            print('ERROR: plasma_solver files are not in the correct order...')
+            print(f'time = {time}')
+            exit(0)
+        else:
+            self.time_grid = time
+            self.Nt = len(time)
+            
+        ######## CHECK Zions IS THE SAME IN ALL FILES and that it coincides with that in plasma class  ##########
+        Z_plasma_class = np.array( [self.plasma_class.Zcharge[ion] for ion in self.plasma_class.ion_species], dtype=int )
+        for file in files:
+            with h5py.File(file,'r') as f:
                 Zions = np.array( f['Zions'][:], dtype=int)
-                #
-                self.Dn_NEO = f['Dn_NEO'][:,:,:]
-                self.cn_NEO = f['cn_NEO'][:,:,:]
-                self.Dp_NEO = f['Dp_NEO'][:,:,:]
-                self.cp_NEO = f['cp_NEO'][:,:,:]
-                #
-                self.G_NEO = f['G_NEO_complet'][:,:,:]
-                self.Q_NEO = f['Q_NEO_complet'][:,:,:]
-                #
-                self.Dp_total = f['Dp_total'][:,:,:]
-                self.cp_total = f['cp_total'][:,:,:]
-                     
-                # check if Zions coincides with that in plasma class
-                Zcharge = np.array( [self.plasma_class.Zcharge[ion] for ion in self.plasma_class.ion_species], dtype=int )
-                if not np.array_equal(Zions, Zcharge):
+                if not np.array_equal(Zions, Z_plasma_class):
                     raise ValueError("Zcharge from file does not match that of plasma class!")
                 
-                # transpose
-                self.r_grid = self.r_grid.T
-                self.N_fast_alphas = self.N_fast_alphas.T
-                #
-                self.plasma_N = np.transpose(self.plasma_N, axes=[2,1,0])
-                self.plasma_T = np.transpose(self.plasma_T, axes=[2,1,0])
-                self.Dn_NEO = np.transpose(self.Dn_NEO, axes=[2,1,0])
-                self.cn_NEO = np.transpose(self.cn_NEO, axes=[2,1,0])
-                self.Dp_NEO = np.transpose(self.Dp_NEO, axes=[2,1,0])
-                self.cp_NEO = np.transpose(self.cp_NEO, axes=[2,1,0])
-                #
-                self.G_NEO = np.transpose(self.G_NEO, axes=[2,1,0])
-                self.Q_NEO = np.transpose(self.Q_NEO, axes=[2,1,0])
-                #           
-                self.Dp_total = np.transpose(self.Dp_total, axes=[2,1,0])            
-                self.cp_total = np.transpose(self.cp_total, axes=[2,1,0])            
+        ############ CHECK RHO_GRID IS THE SAME IN ALL FILES ################
+        with h5py.File(files[0],'r') as f:
+                self.rho_grid  = f['rho_plasma_grid'][:]
+                self.r_grid  = f['r_plasma_grid'][:,:]
+                self.Nr = f['Nr_plasma_grid']
+        for file in files:
+            with h5py.File(file,'r') as f:
+                rho_grid  = f['rho_plasma_grid'][:]
+                if (not np.array_equal(rho_grid, self.rho_grid)):
+                    raise ValueError("rho_grid NOT EQUAL among all the files...")
+                    
+        ################ CONCATENATE DATA ##################################
+        for file in files:
+            with h5py.File(file,'r') as f:
+                
+                for temp in ['plasma_N','plasma_T','N_fast_alphas','Dn_NEO','cn_NEO','Dp_NEO',\
+                             'cp_NEO','G_NEO_complet','Q_NEO_complet','Dp_total','cp_total']:
+
+                    try:
+                        data = np.array(f[temp][:,:,:])
+                    except:
+                        data = np.array(f[temp][:,:])
+                    # Check if the attribute exists; if not, initialize it
+                    if not hasattr(self, temp):
+                        setattr(self, temp, data)
+                    else:
+                        # Concatenate the new data to the existing attribute
+                        existing_data = getattr(self, temp)
+                        setattr(self, temp, np.concatenate((existing_data, data),axis=1))                       
+                    
+        ##################### TRANSPOSE DATA #################################
+        self.r_grid = self.r_grid.T
+        self.N_fast_alphas = self.N_fast_alphas.T
+        #
+        self.plasma_N = np.transpose(self.plasma_N, axes=[2,1,0])
+        self.plasma_T = np.transpose(self.plasma_T, axes=[2,1,0])
+        self.Dn_NEO = np.transpose(self.Dn_NEO, axes=[2,1,0])
+        self.cn_NEO = np.transpose(self.cn_NEO, axes=[2,1,0])
+        self.Dp_NEO = np.transpose(self.Dp_NEO, axes=[2,1,0])
+        self.cp_NEO = np.transpose(self.cp_NEO, axes=[2,1,0])
+        #
+        self.G_NEO = np.transpose(self.G_NEO_complet, axes=[2,1,0])
+        self.Q_NEO = np.transpose(self.Q_NEO_complet, axes=[2,1,0])
+        #           
+        self.Dp_total = np.transpose(self.Dp_total, axes=[2,1,0])            
+        self.cp_total = np.transpose(self.cp_total, axes=[2,1,0])         
                 
     def create_input_sources_file(self,filename,nt,nrho,tfin):
         # creates 
