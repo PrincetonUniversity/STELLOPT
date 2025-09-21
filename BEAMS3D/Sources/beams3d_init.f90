@@ -151,10 +151,10 @@
 
       ! Reset the distribution function if just doing a depo run
       IF (ldepo) THEN
-         ns_prof2 = 4
-         ns_prof3   = 2
+         ns_prof2 = 2
+         ns_prof3 = 2
          ns_prof4 = 2
-         ns_prof5 = 4
+         ns_prof5 = 2
       END IF
 
       ! Buffer in the rho direction so particles s>1 are in the 'extra' bin
@@ -470,7 +470,7 @@
       IF (lmumat) CALL beams3d_init_mumat
 
       ! Adjust the torodial distribution function grid
-      ns_prof3 = MAX(ns_prof3,8*NINT(pi2/phimax)) ! Min 8 per field period
+      IF (.not.ldepo) ns_prof3 = MAX(ns_prof3,8*NINT(pi2/phimax)) ! Min 8 per field period
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Vessel (we need nbeams here)
@@ -589,7 +589,7 @@
       ! Construct MODB
       IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
 
-      ! Construct Splines on shared memory master nodes
+      ! Construct Splines on shared memory master thread
       IF (myid_sharmem == master) THEN
          bcs1=(/ 0, 0/)
          bcs2=(/-1,-1/)
