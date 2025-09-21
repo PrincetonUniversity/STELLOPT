@@ -36,6 +36,8 @@ if __name__=="__main__":
 		help="Plot the B-Field at an R/Z-plane, fixed phi (index)", default = None, type=int)
 	parser.add_argument("--plot_brphi", dest="brphi_index_phi",
 		help="Plot the B-Field at an R/phi-plane, fixed Z (index)", default = None, type=int)
+	parser.add_argument("--plot_baxis", dest="lplot_baxis", action='store_true',
+		help="Plots |B| along the magnetic axis (first field line).", default = False)
 	parser.add_argument("--output_asc", dest="asc_phi",
 		help="Output a given Poincare cross section at a given phi value [deg].", default = None, type=float)
 	args = parser.parse_args()
@@ -123,6 +125,17 @@ if __name__=="__main__":
 			h3=ax[1,1].pcolormesh(x,y,np.squeeze(b[:,:,j]).T,cmap=args.colormap,shading='gouraud')
 			ax[1,1].set_xlabel('R [m]'); ax[1,1].set_ylabel(r'$\phi$ [rad]'); 
 			h3.set_clim(vmin=0.0,vmax=10.0); fig.colorbar(h3,label=r'$|B|$ [T]')
+			pyplot.show()
+		if args.lplot_baxis:
+			fig,ax = pyplot.subplots(1,1,figsize=(1024*px,768*px))
+			phi = np.rad2deg(field_data.PHI_lines[0,:-2])
+			high = np.rad2deg(field_data.phiaxis[-1]/2.0)
+			low  = -high
+			phi = ((phi - low) % (high-low)) + low
+			ax.plot(phi,field_data.B_lines[0,:-2],'k.',linewidth=4)
+			ax.set_title('|B| along magnetic axis')
+			ax.set_xlabel(r'Toroidal Angle $\phi$ [$^o$]')
+			ax.set_ylabel('|B| [T]')
 			pyplot.show()
 		if type(args.asc_phi) is not type(None):
 			field_data.write_asc([np.deg2rad(args.asc_phi)],nskip=args.nskip,filename=f'poincare_{args.fieldlines_ext}_phi_{int(args.asc_phi):03d}.asc')
