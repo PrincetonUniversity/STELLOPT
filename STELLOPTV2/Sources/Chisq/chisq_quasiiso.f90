@@ -15,7 +15,7 @@
       USE stellopt_runtime
       USE stellopt_targets
       USE equil_utils, ONLY: get_equil_iota
-      USE read_boozer_mod, ONLY: bmnc_b, ixn_b, ixm_b, mnboz_b, ns_b, nfp_b
+      USE read_boozer_mod, ONLY: bmnc_b, ixn_b, ixm_b, mnboz_b, ns_b, nfp_b, bvco_b
       USE vmec_input, ONLY: mpol, ntor
 !      USE stel_kinds, ONLY: rprec
       
@@ -38,12 +38,12 @@
       INTEGER, PARAMETER :: ntheta0 = 5
       INTEGER, PARAMETER :: nlambda = 4
       REAL(rprec) :: s_temp, iota0, phi, theta, deltaphi, ftemp, norm, &
-         Bmax, Bmin, Bmir, lambda, theta0, phimin,phimax
+         Bmax, Bmin, Bmir, lambda, theta0, phimin,phimax, bvco
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: modb, modbs, dl, &
          integral_A, integral_B
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: J_I, J_C
 
-      LOGICAL, PARAMETER :: lwrite_out = .False.
+      LOGICAL, PARAMETER :: lwrite_out = .True.
 
 
 !-----------------------------------------------------------------------
@@ -66,6 +66,7 @@
             s_temp = DBLE(ik)/DBLE(ns_b)
             ier = 0
             CALL get_equil_iota(s_temp,iota0,ier)
+            bvco = bvco_b(ik)
             ! Loop over inital values of theta0
             J_C = 0.0; J_I = 0.0
             DO i = 1, ntheta0
@@ -130,7 +131,7 @@
                IF (lwrite_out) WRITE(323,*) modbs
                !WRITE(330+i,*) modbs; CALL FLUSH(330+i)
                ! We need dl (missing B.grad(phi) term)
-               dl = modb*deltaphi/(nalpha-1)
+               dl = modb*deltaphi/((nalpha-1)*bvco)
                !WRITE(340+i,*) dl; CALL FLUSH(340+i)
                ! Now we evaluate integrals for different values of lambda
                ! Alpha is enclosing loop
