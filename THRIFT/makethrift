@@ -79,24 +79,24 @@ clean:
 
 #Construct vmec library. 
 $(LIB_VMEC) :
-	@cd $(VMEC_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_VMEC) *.o
+	@cd $(VMEC_DIR); make $(TYPE); cd $(LOCTYPE); rm -f $@; ar -cruv $@ *.o
 	
 #Construct bootsj library. 
 $(LIB_BOOTSJ) :
-	@cd $(BOOTSJ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOTSJ) *.o
+	@cd $(BOOTSJ_DIR); make $(TYPE); cd $(LOCTYPE); rm -f $@; ar -cruv $@ *.o
 	
 #Construct boozer library. 
 $(LIB_BOOZ) :
-	@cd $(BOOZ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOZ) *.o
+	@cd $(BOOZ_DIR); make $(TYPE); cd $(LOCTYPE); rm -f $@; ar -cruv $@ *.o
    
 #Construct diagno library. 
 $(LIB_DIAGNO) :
-	@cd $(DIAGNO_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_DIAGNO) *.o
+	@cd $(DIAGNO_DIR); make $(TYPE); cd $(LOCTYPE); rm -f $@; ar -cruv $@ *.o
    
 #Construct DKES library. 
 $(LIB_DKES) :
-	@cd $(DKES_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_DKES) *.o
+	@cd $(DKES_DIR); make $(TYPE); cd $(LOCTYPE); rm -f $@; ar -cruv $@ *.o
    
 #Construct PENTA library. 
 $(LIB_PENTA) :
-	@cd $(PENTA_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_PENTA) *.o
+	@cd $(PENTA_DIR); make $(TYPE); cd $(LOCTYPE); rm -f $@; ar -cruv $@ *.o
