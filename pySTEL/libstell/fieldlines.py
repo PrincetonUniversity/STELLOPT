@@ -399,20 +399,15 @@ class FIELDLINES():
 		"""
 		import numpy as np
 		f = open(filename,'w')
-		if max(phi) <= self.phiaxis[-1]: # Put it all in one 
-			phi_temp = np.mod(self.PHI_lines,self.phiaxis[-1])
-			x_temp = self.R_lines*np.cos(phi_temp)
-			y_temp = self.R_lines*np.sin(phi_temp)
-		else:
-			x_temp = self.X_lines
-			y_temp = self.Y_lines
-		for phi_temp in phi:
-			k = int(self.npoinc*phi_temp/self.phiaxis[-1])+1
-			rmin = np.amin(self.raxis)
-			rmax = np.amax(self.raxis)
-			x = 1000.*x_temp[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
-			y = 1000.*y_temp[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
-			z = 1000.*self.Z_lines[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
+		phi_arr = np.linspace(0,np.pi*2,self.npoinc*self.nfp+1)
+		print(phi_arr)
+		print(self.PHI_lines[0,0:24+1])
+		for phival in phi:
+			k = (np.abs(phi_arr - phival)).argmin() # Find nearest value
+			r = 1000.*self.R_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten()
+			z = 1000.*self.Z_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten()
+			x = r*np.cos(phival)
+			y = r*np.sin(phival)
 			for i,x0 in enumerate(x):
 				f.write(f"{x0:10.3f} {y[i]:10.3f} {z[i]:10.3f}\n")
 		f.close()
