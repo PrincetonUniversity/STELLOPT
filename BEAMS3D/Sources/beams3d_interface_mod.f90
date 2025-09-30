@@ -272,10 +272,8 @@ CONTAINS
                 lmumat_readmag = .true.
                 CALL GETCARG(i, mumat_magfile, numargs)
             case ("-mumat_skipiter")
-                i = i + 1
                 lmumat_skipiter = .true.
             case ("-mumat_writemagfile")
-                i = i + 1
                 lmumat_writemagfile = .true.
             case ("-beamlet")
                 i = i + 1
