@@ -41,6 +41,7 @@ if __name__=="__main__":
 	focus_data = FOCUS()
 	coil_data=COILSET()
 	args = parser.parse_args()
+	phi_plt3d = np.deg2rad(22.5)
 	# Stuff that doesn't require a focus run
 	if args.lgensurf:
 		if args.vmec_ext:
@@ -103,6 +104,7 @@ if __name__=="__main__":
 				ax.set_aspect('equal', adjustable='box')
 				ax.legend()
 				pyplot.show()
+				if (args.lsave): fig.savefig(f'limitersurface_{args.focus_ext}.png', dpi=fig.dpi)
 		if args.boozer_ext:
 			# Note that Boozer is in mu+nv so we need to convert
 			# but apparently don't
@@ -139,6 +141,7 @@ if __name__=="__main__":
 			focus_data.plotBNormal(ax2)
 			focus_data.plotPoincare(ax3)
 			focus_data.plotIota(ax4)
+			ax4.set_ylim([0.5,1.5])
 			if (args.lsave): fig.savefig(f'overview_{args.focus_ext}.png', dpi=fig.dpi)
 			pyplot.show()
 		if args.lplot3d:
@@ -150,6 +153,7 @@ if __name__=="__main__":
 				coil_data.plotcoilsHalfFP(plt3d)
 			except:
 				i=1
+			plt3d.setCamera(pos=[0,0,0.0],focus=[np.cos(phi_plt3d),np.sin(phi_plt3d),0],camup=[0,0,1],angle=70)
 			plt3d.render()
 			if (args.lsave): plt3d.saveImage(f'coil3D_{args.focus_ext}.png')
 		if args.lplotcoildist:
@@ -159,6 +163,7 @@ if __name__=="__main__":
 					focus_data.zsurf.flatten())
 			plt3d = PLOT3D()
 			coil_data.plotcoilplasmaDist(cmin=2.5,plot3D=plt3d)
+			plt3d.setCamera(pos=[0,0,0.0],focus=[np.cos(phi_plt3d),np.sin(phi_plt3d),0],camup=[0,0,1],angle=70)
 			plt3d.render()
 			if (args.lsave): plt3d.saveImage(f'coildist3D_{args.focus_ext}.png')
 	sys.exit(0)
