@@ -1243,8 +1243,8 @@
 
             DO j = 1, 3
                   v(:,j) = MATMUL(Pinv, (v(:,j) - D))
-                  IF (ABS(r(j)) .lt. 1E-6) THEN ! make sure position is not too close to x, y or z = 0
-                        r(j) = SIGN(1E-6, r(j))
+                  IF (ABS(r(j)) .lt. 1.0D-6) THEN ! make sure position is not too close to x, y or z = 0
+                        r(j) = SIGN(1.0D-6, r(j))
                   END IF
             END DO
 
