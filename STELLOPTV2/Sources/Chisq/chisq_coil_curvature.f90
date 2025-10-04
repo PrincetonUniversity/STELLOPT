@@ -13,6 +13,7 @@
       USE stellopt_targets
       USE stellopt_vars, ONLY: nw_coil, nh_coil, rho_coil_kts
       USE spline_coils_mod, ONLY: get_coil_curvature, get_coil_dl
+      USE biotsavart, ONLY: coil_group
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -28,8 +29,8 @@
 !     Local Variables
 !
 !-----------------------------------------------------------------------
-      INTEGER :: numcoilgroups, k, n
-      REAL(rprec) :: curve, curve_hold, hypc, dl, L, val
+      INTEGER :: numcoilgroups, k, n, nc1
+      REAL(rprec) :: curve, curve_hold, hypc, dl, L, val, curve_max, curve_min
       
       ! The following mimics the FOCUS code algorithm
       INTEGER, PARAMETER :: penfun_curve = 0
@@ -45,16 +46,20 @@
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       numcoilgroups = COUNT(ANY(rho_coil_kts>0,DIM=2))
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'COIL_CURVATURE ',numcoilgroups*nw_coil*nh_coil,3
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MEAN'
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'COIL_CURVATURE ',numcoilgroups*nw_coil*nh_coil,6
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MEAN  COILGROUP  MAX  MIN'
       IF (niter >= 0) THEN
          numcoilgroups = COUNT(ANY(rho_coil_kts>0,DIM=2))
+         curve_max = 0.0; curve_min = bigno
          DO k = 1, numcoilgroups*nw_coil*nh_coil
             val = 0.0; L = 0.0
-            DO n = 1, 128
+            nc1 = SIZE(coil_group(k)%coils(1)%xnod,2)
+            DO n = 1, nc1
                curve_hold = 0.0
                CALL get_coil_curvature(k,n,curve)
                CALL get_coil_dl(k,n,dl)
+               curve_max = MAX(curve,curve_max)
+               curve_min = MIN(curve,curve_min)
                IF (curve > curve_k0) THEN
                   IF (penfun_curve == 1) THEN
                      hypc = 0.5 * EXP( curve_alpha * ( curve - curve_k0 ) ) &
@@ -73,8 +78,8 @@
             mtargets = mtargets + 1
             targets(mtargets) = target
             sigmas(mtargets)  = sigma
-            vals(mtargets)    = val/DBLE(128*L)
-            IF (iflag == 1) WRITE(iunit_out,'(5ES22.12E3)') target,sigma,val
+            vals(mtargets)    = val/DBLE(nc1*L)
+            IF (iflag == 1) WRITE(iunit_out,'(5ES22.12E3)') target,sigma,vals(mtargets),k,curve_max,curve_min
          END DO
       ELSE
          IF (sigma < bigno) THEN

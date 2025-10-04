@@ -41,9 +41,11 @@
       IF (niter >= 0) THEN
          dist_min = 1.0D+30
          ncoilgroups = SIZE(coil_group)
-         ! OK note we really need two loops.
          !--------------------------------------------------------------
-         !    First compare every coil to every coil inside a 
+         !    Self-distance loop
+         !    This loop compares a given coil group to all other coils
+         !    in that same group. This catches the self-coil
+         !    intersections.
          !--------------------------------------------------------------
          DO i1 = 1, ncoilgroups
             DO j1 = 1, nw_coil*nh_coil
@@ -66,7 +68,7 @@
             END DO
          END DO
          !--------------------------------------------------------------
-         !    Now we compare differnt coil groups 
+         !    In this loop we compare coils in different groups. 
          !--------------------------------------------------------------
          DO i1 = 1, ncoilgroups
             n1 = i1+1
