@@ -92,6 +92,8 @@
                sigma_r0 = sigma_r0/temp
             CASE(jtarget_b0)
                sigma_b0 = sigma_b0/temp
+            CASE(jtarget_lgradb)
+               sigma_lgradb = sigma_lgradb/temp
             CASE(jtarget_totalbootstrap)
                sigma_totalbootstrap = sigma_totalbootstrap/temp
             CASE(jtarget_rosenbrock2d)
