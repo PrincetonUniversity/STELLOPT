@@ -16,6 +16,8 @@ if __name__=="__main__":
 		help="FIELDLINES file extension", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
 		help="Plot the fieldlines file.", default = False)
+	parser.add_argument("--plotphi", dest="plotphi",
+		help="Poincare plot at a given index.", default = None, type=int)
 	parser.add_argument("-i", "--info", dest="linfo", action='store_true',
 		help="Print some info the the screen.", default = False)
 	parser.add_argument("--plot3d", dest="k3d",
@@ -50,6 +52,22 @@ if __name__=="__main__":
 		if args.linfo:
 			print(f'  NMARKERS:  {np.sum(field_data.nlines):d}')
 			print(f'  WALL HITS: {np.sum(field_data.wall_strikes):d}')
+		if type(args.plotphi) is not type(None):
+			fig,ax = pyplot.subplots(1,1,figsize=(1024*px,768*px))
+			phi0 = field_data.PHI_lines[0,args.plotphi]
+			field_data.plot_poincare(phi0,args.nskip,ax=ax)
+			if args.vmec_ext:
+				vmec_wout = VMEC()
+				vmec_wout.read_wout(args.vmec_ext)
+				theta = np.ndarray((360,1))
+				for j in range(360): theta[j]=2.0*np.pi*j/359.0
+				phi = np.array([[phi0]])
+				r = vmec_wout.cfunct(theta,phi,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn)
+				z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
+				j = vmec_wout.ns-1
+				ax.plot(r[j,:,0],z[j,:,0],'r')
+			pyplot.show()
+			if (args.lsave): fig.savefig(f'poincare_phi{args.plotphi:03d}_{args.fieldlines_ext}.png', dpi=fig.dpi)
 		if args.lplot:
 			fig,(ax1,ax2,ax3) = pyplot.subplots(1,3,sharey=True,figsize=(1024*px,512*px))
 			pyplot.subplots_adjust(hspace=0.1,wspace=0.15)

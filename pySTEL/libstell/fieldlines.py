@@ -400,14 +400,13 @@ class FIELDLINES():
 		import numpy as np
 		f = open(filename,'w')
 		phi_arr = np.linspace(0,np.pi*2,self.npoinc*self.nfp+1)
-		print(phi_arr)
-		print(self.PHI_lines[0,0:24+1])
 		for phival in phi:
 			k = (np.abs(phi_arr - phival)).argmin() # Find nearest value
 			r = 1000.*self.R_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten()
 			z = 1000.*self.Z_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten()
-			x = r*np.cos(phival)
-			y = r*np.sin(phival)
+			p = self.PHI_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten()
+			x = r*np.cos(p)
+			y = r*np.sin(p)
 			for i,x0 in enumerate(x):
 				f.write(f"{x0:10.3f} {y[i]:10.3f} {z[i]:10.3f}\n")
 		f.close()
