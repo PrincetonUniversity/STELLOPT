@@ -82,13 +82,14 @@ class DIAGNO():
 
 
 
-# BEASM3D Input Class
+# DIAGNO Input Class
 class DIAGNO_IN():
 	"""Class for working with DIAGNO_IN data
 
 	"""
 	def __init__(self, parent=None):
 		self.libStell = LIBSTELL()
+		self.libStell.read_diagno_in('CALLED_FROM_PYTHON')
 
 	def read_input(self,filename):
 		"""Reads DIAGNO_IN namelist from a file
