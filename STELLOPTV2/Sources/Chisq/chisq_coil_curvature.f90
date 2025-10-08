@@ -33,6 +33,8 @@
       REAL(rprec) :: curve, curve_hold, hypc, dl, L, val, curve_max, curve_min
       
       ! The following mimics the FOCUS code algorithm
+      !   penfunc = 0 Minimize toward curve_k0 (from one side)
+      !   penfunc = 1 Minimize toward curve_k0 (from both sides)
       INTEGER, PARAMETER :: penfun_curve = 0
       REAL(rprec), PARAMETER :: curve_k0 = 1.0 ! >= 0.0
       REAL(rprec), PARAMETER :: curve_k1 = 1.0 ! >= 0.0
@@ -63,7 +65,7 @@
                IF (curve > curve_k0) THEN
                   IF (penfun_curve == 1) THEN
                      hypc = 0.5 * EXP( curve_alpha * ( curve - curve_k0 ) ) &
-                          + 0.5 * EXP(-curve_alpha * ( curve - curve_k1 ) )
+                          + 0.5 * EXP(-curve_alpha * ( curve - curve_k0 ) )
                      curve_hold = ( hypc - 1.0 )**2
                   ELSE
                      curve_hold = ( curve_alpha * ( curve - curve_k0 ) )**curve_beta

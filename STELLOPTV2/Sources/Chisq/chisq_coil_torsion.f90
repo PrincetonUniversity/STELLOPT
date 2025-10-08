@@ -61,7 +61,7 @@
                IF (tors > tors_k0) THEN
                   IF (penfun_tors == 1) THEN
                      hypc = 0.5 * EXP( tors_alpha * ( tors - tors_k0 ) ) &
-                          + 0.5 * EXP(-tors_alpha * ( tors - tors_k1 ) )
+                          + 0.5 * EXP(-tors_alpha * ( tors - tors_k0 ) )
                      tors_hold = ( hypc - 1.0 )**2
                   ELSE
                      tors_hold = ( tors_alpha * ( tors - tors_k0 ) )**tors_beta
