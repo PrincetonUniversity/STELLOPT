@@ -6,10 +6,9 @@ and pressure transport equations
 import numpy as np
 import sys
 from time import perf_counter
-sys.path.insert(1,'/home/antonio/STELLOPT/pySTEL/libstell')
 
-from plasma import PLASMA
-from penta import PENTA
+from libstell.plasma import PLASMA
+from libstell.penta import PENTA
 
 # Constants
 EC = 1.602176634E-19 # Electron charge [C]

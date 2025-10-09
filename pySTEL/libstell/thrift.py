@@ -609,9 +609,7 @@ class THRIFT_plasma_solver():
     
     def __init__(self, plasma=None, list_of_species=None):
         
-        import sys 
-        sys.path.insert(1,'/home/antonio/STELLOPT/pySTEL/libstell')
-        from plasma import PLASMA
+        from libstell.plasma import PLASMA
         
         # should give plasma OR list_of_species. If both, plasma prevails
         if plasma is None and list_of_species is None:
