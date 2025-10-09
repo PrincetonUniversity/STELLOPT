@@ -37,6 +37,32 @@ C-----------------------------------------------
 
       mnmax_nyq = nnyq/2 + 1 + mnyq*(nnyq + 1)/2
 
+      ! Deallocate incase a sequence is running
+      IF (ALLOCATED(cosmu)) DEALLOCATE(cosmu)
+      IF (ALLOCATED(sinmu)) DEALLOCATE(sinmu)
+      IF (ALLOCATED(cosmum)) DEALLOCATE(cosmum)
+      IF (ALLOCATED(sinmum)) DEALLOCATE(sinmum)
+      IF (ALLOCATED(cosmui)) DEALLOCATE(cosmui)
+      IF (ALLOCATED(cosmumi)) DEALLOCATE(cosmumi)
+      IF (ALLOCATED(cosmui3)) DEALLOCATE(cosmui3)
+      IF (ALLOCATED(cosmumi3)) DEALLOCATE(cosmumi3)
+      IF (ALLOCATED(sinmui)) DEALLOCATE(sinmui)
+      IF (ALLOCATED(sinmumi)) DEALLOCATE(sinmumi)
+      IF (ALLOCATED(cosnv)) DEALLOCATE(cosnv)
+      IF (ALLOCATED(sinnv)) DEALLOCATE(sinnv)
+      IF (ALLOCATED(cosnvn)) DEALLOCATE(cosnvn)
+      IF (ALLOCATED(sinnvn)) DEALLOCATE(sinnvn)
+      IF (ALLOCATED(cos01)) DEALLOCATE(cos01)
+      IF (ALLOCATED(sin01)) DEALLOCATE(sin01)
+      IF (ALLOCATED(xm)) DEALLOCATE(xm)
+      IF (ALLOCATED(xn)) DEALLOCATE(xn)
+      IF (ALLOCATED(ixm)) DEALLOCATE(ixm)
+      IF (ALLOCATED(jmin3)) DEALLOCATE(jmin3)
+      IF (ALLOCATED(xm_nyq)) DEALLOCATE(xm_nyq)
+      IF (ALLOCATED(xn_nyq)) DEALLOCATE(xn_nyq)
+      IF (ALLOCATED(mscale)) DEALLOCATE(mscale)
+      IF (ALLOCATED(nscale)) DEALLOCATE(nscale)
+
       ALLOCATE(cosmu(ntheta3,0:mnyq),  sinmu(ntheta3,0:mnyq),
      1         cosmum(ntheta3,0:mnyq), sinmum(ntheta3,0:mnyq),
      2         cosmui(ntheta3,0:mnyq), cosmumi(ntheta3,0:mnyq),
