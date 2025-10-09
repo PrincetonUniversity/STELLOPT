@@ -1,11 +1,10 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_dkes
-!     Authors:       S. Lazerson (lazerson@pppl.gov)
-!     Date:          05/26/2012
-!     Description:   This is the chisquared routine which compares
-!                    target to equilibrium DKES values.
+!     Subroutine:    chisq_dkes_33
+!     Authors:       S. Lazerson (samuel.lazerson@gauss-fusion.com)
+!     Date:          10/04/2025
+!     Description:   Chisquared for the DKES L33 coefficient.
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_dkes(target,sigma,niter,iflag)
+      SUBROUTINE chisq_dkes_33(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -39,8 +38,8 @@
       IF (iflag < 0) RETURN
       ! Print Header
       IF (iflag == 1) THEN
-         ik   = COUNT(target_dex == jtarget_dkes)
-         WRITE(iunit_out,'(A,2(2X,I3.3))') 'DKES ',ik,15
+         ik   = COUNT(target_dex == jtarget_dkes_33)
+         WRITE(iunit_out,'(A,2(2X,I3.3))') 'DKES_33 ',ik,15
          WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  S  NU  ER  L11p  L11m  L33p  L33m  L31p  L31m  SCAL11  SCAL33  SCAL31'
       END IF
       IF (niter >= 0) THEN
@@ -51,10 +50,10 @@
                IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
                ik = ik + 1
                mtargets = mtargets + 1
-               targets(mtargets) = target_dkes(ii)
-               sigmas(mtargets)  = sigma_dkes(ii)
+               targets(mtargets) = target_dkes_33(ii)
+               sigmas(mtargets)  = sigma_dkes_33(ii)
 !DEC$ IF DEFINED (DKES_OPT)
-               vals(mtargets)    = 0.5*(DKES_L11p(ik)+DKES_L11m(ik))
+               vals(mtargets)    = 0.5*(DKES_L33p(ik)+DKES_L33m(ik))
                IF (iflag == 1) WRITE(iunit_out,'(15ES22.12E3)') &
                   targets(mtargets),sigmas(mtargets),vals(mtargets),&
                   shat(ii), nu_dkes(ij), E_dkes(ij), &
@@ -62,7 +61,7 @@
                   DKES_L33m(ik),DKES_L31p(ik),DKES_L31m(ik),&
                   DKES_scal11(ik),DKES_scal33(ik),DKES_scal31(ik)
 !DEC$ ELSE
-               vals(mtargets) = target_dkes(ii)
+               vals(mtargets) = target_dkes_33(ii)
                IF (iflag == 1) WRITE(iunit_out,'(15ES22.12E3)') &
                   targets(mtargets),sigmas(mtargets),vals(mtargets),&
                   shat(ii), nu_dkes(ij), E_dkes(ij), &
@@ -79,8 +78,15 @@
                   IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
                   lbooz(ii) = .TRUE.
                   mtargets = mtargets + 1
+                  IF (niter == -2) target_dex(mtargets)=jtarget_dkes_33
+               END DO
+         END DO
+         ! SIGMA DKES may have already counted the nruns
+         DO ii = 1, nsd
+            IF ((sigma_dkes_11(ii) < bigno) .or. (sigma_dkes_31(ii) < bigno) .or. (sigma(ii) >= bigno)) CYCLE
+               DO ij = 1, nprof
+                  IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
                   nruns_dkes = nruns_dkes + 1
-                  IF (niter == -2) target_dex(mtargets)=jtarget_dkes
                END DO
          END DO
       END IF
@@ -88,4 +94,4 @@
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_dkes
+      END SUBROUTINE chisq_dkes_33

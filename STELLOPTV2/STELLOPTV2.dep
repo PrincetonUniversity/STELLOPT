@@ -491,7 +491,21 @@ chisq_neo.o : \
       equil_utils.o
       
 
-chisq_dkes.o : \
+chisq_dkes_11.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o \
+      $(DKES_DIR)/$(LOCTYPE)/dkes_realspace.o
+      
+
+chisq_dkes_31.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o \
+      $(DKES_DIR)/$(LOCTYPE)/dkes_realspace.o
+      
+
+chisq_dkes_33.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       equil_vals.o \

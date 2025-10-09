@@ -175,6 +175,9 @@
       CHARACTER(256)                ::  txport_proxy
       INTEGER                       ::  nruns_dkes
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES
+      REAL(rprec), DIMENSION(nsd)   ::  target_DKES_11, sigma_DKES_11
+      REAL(rprec), DIMENSION(nsd)   ::  target_DKES_31, sigma_DKES_31
+      REAL(rprec), DIMENSION(nsd)   ::  target_DKES_33, sigma_DKES_33
       REAL(rprec), DIMENSION(nprof) ::  E_DKES, nu_DKES
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES_erdiff, sigma_DKES_erdiff
       REAL(rprec)                   ::  nu_dkes_erdiff, Ep_dkes_erdiff, Em_dkes_erdiff
@@ -280,9 +283,11 @@
       INTEGER, PARAMETER :: jtarget_quasiiso   = 6051
       INTEGER, PARAMETER :: jtarget_resjac     = 606
       INTEGER, PARAMETER :: jtarget_txport     = 607
-      INTEGER, PARAMETER :: jtarget_dkes       = 608
-      INTEGER, PARAMETER :: jtarget_dkes_erdiff       = 6081
-      INTEGER, PARAMETER :: jtarget_dkes_alpha        = 6082
+      INTEGER, PARAMETER :: jtarget_dkes_11    = 608
+      INTEGER, PARAMETER :: jtarget_dkes_31    = 6081
+      INTEGER, PARAMETER :: jtarget_dkes_33    = 6082
+      INTEGER, PARAMETER :: jtarget_dkes_erdiff       = 6083
+      INTEGER, PARAMETER :: jtarget_dkes_alpha        = 6084
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
       INTEGER, PARAMETER :: jtarget_jcurv      = 6091
       INTEGER, PARAMETER :: jtarget_bmin       = 610
@@ -429,8 +434,12 @@
             WRITE(iunit, out_format) 'Turbulent Transport'
          CASE(jtarget_orbit)
             WRITE(iunit, out_format) 'Particle Orbits (BEAMS3D)'
-         CASE(jtarget_dkes)
-            WRITE(iunit, out_format) 'Drift-Kinetics (DKES)'
+         CASE(jtarget_dkes_11)
+            WRITE(iunit, out_format) 'Drift-Kinetics (DKES) L11'
+         CASE(jtarget_dkes_31)
+            WRITE(iunit, out_format) 'Drift-Kinetics (DKES) L31'
+         CASE(jtarget_dkes_33)
+            WRITE(iunit, out_format) 'Drift-Kinetics (DKES) L33'
          CASE(jtarget_dkes_erdiff)
             WRITE(iunit, out_format) 'DKES Delta-Er'
          CASE(jtarget_dkes_alpha)
