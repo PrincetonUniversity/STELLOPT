@@ -844,6 +844,14 @@ class PLASMA_SOLVER:
         stiffness = self.heat_fluxes_info['beurskens']['stiffness']
         convective_fact = self.heat_fluxes_info['beurskens']['convective_fact']
         
+        if callable(stiffness) and callable(aLT_critical):
+            stiffness = stiffness(self.rho_grid)
+            aLT_critical = aLT_critical(self.rho_grid)
+        elif isinstance(stiffness, (float, int)) and isinstance(aLT_critical, (float, int)):
+            pass
+        else:
+            raise ValueError('ERROR: stiffnes and aLTcritical can only be a function or integer/float!')
+        
         chi = {}
         
         ## electrons
