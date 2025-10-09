@@ -452,7 +452,7 @@ class PLASMA_SOLVER:
                 fields_old = fields
                 
                 ion_info = self.plasma.ion_species[0]
-                info_str = f'  {t:<13.3f}{subiter:<10}{self.T['electrons'][it,0]/1E3:<18.3f}{self.N['electrons'][it,0]:<20.2E}{self.T[ion_info][it,0]/1E3:<18.3f}{self.N[ion_info][it,0]:<20.2E}{delta_p:<13.2E}'
+                info_str = f"  {t:<13.3f}{subiter:<10}{self.T['electrons'][it,0]/1E3:<18.3f}{self.N['electrons'][it,0]:<20.2E}{self.T[ion_info][it,0]/1E3:<18.3f}{self.N[ion_info][it,0]:<20.2E}{delta_p:<13.2E}"
                 print(info_str)
                 
                 subiter += 1
@@ -1392,7 +1392,7 @@ class PLASMA_SOLVER:
     def get_collisionalHeatExchange(self,it):
         # returns collisional heat exchange to use as implicit operator
         
-        from collisions import COLLISIONS
+        from libstell.collisions import COLLISIONS
         from scipy import sparse
         
         coll = COLLISIONS()
