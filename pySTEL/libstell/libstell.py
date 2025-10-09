@@ -817,7 +817,7 @@ class LIBSTELL():
 			return None
 		# Get vars Globals
 		module_name = self.s1+'stellopt_globals_'+self.s2
-		booList=['lcentered_differences', 'lkeep_mins', 'lrefit', 'lcoil_geom', 'lno_restart', 'ltriangulate']
+		booList=['lcentered_differences', 'lkeep_mins', 'lrefit', 'lno_restart', 'ltriangulate']
 		booLen=[1]*len(booList)
 		intList=['nfunc_max','cr_strategy', 'npopulation', 'noptimizers', 'mode', 'rho_exp']
 		intLen=[1]*len(intList)
@@ -829,8 +829,7 @@ class LIBSTELL():
 		# Get VARS
 		module_name = self.s1+'stellopt_vars_'+self.s2
 		booList=['lphiedge_opt', 'lcurtor_opt', 'lpscale_opt', \
-			'lbcrit_opt', 'lmix_ece_opt', 'lregcoil_winding_surface_separation_opt',\
-			 'lregcoil_current_density_opt', 'lxval_opt', 'lyval_opt', \
+			'lbcrit_opt', 'lmix_ece_opt', 'lxval_opt', 'lyval_opt', \
 			 'lxics_v0_opt','mango_bound_constraints']
 		booLen=[1]*len(booList)
 		booList.extend(['lextcur_opt','laphi_opt', 'lam_opt', \
@@ -844,33 +843,20 @@ class LIBSTELL():
 		booLen.extend([(ndatafmax,1)]*18)
 		booList.extend(['laxis_opt','lbound_opt','lrho_opt','lmode_opt','ldeltamn_opt'])
 		booLen.extend([(ntord+1,1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,2*mpol1d+1)])
-		booList.extend(['lcoil_spline','lwindsurf'])
-		booLen.extend([(nigroup,40),(maxwindsurf,1)])
-		booList.extend(['lregcoil_rcws_rbound_c_opt','lregcoil_rcws_rbound_s_opt',\
-			'lregcoil_rcws_zbound_c_opt','lregcoil_rcws_zbound_s_opt'])
-		booLen.extend([(65,65)]*4)
-		intList=['regcoil_nlambda', 'regcoil_num_field_periods', \
-			'sfincs_min_procs', 'vboot_max_iterations']
 		booList.extend(['lrosenbrock_x_opt'])
 		booLen.extend([(20,1)])
+		intList=['sfincs_min_procs', 'vboot_max_iterations']
 		intLen=[1]*len(intList)
-		intList.extend(['coil_nctrl'])
-		intLen.extend([(nigroup,1)])
 		realList=['dphiedge_opt', 'dcurtor_opt', 'dbcrit_opt', \
 			'dpscale_opt', 'dmix_ece_opt', 'dxval_opt', 'dyval_opt', \
-			'dregcoil_winding_surface_separation_opt', \
-			'dregcoil_current_density_opt', 'dxics_v0_opt', \
+			'dxics_v0_opt', \
 			'phiedge_min', 'curtor_min', 'bcrit_min', \
 			'pscale_min', 'mix_ece_min', 'xval_min', 'yval_min', 
-			'regcoil_winding_surface_separation_min', \
-			'regcoil_current_density_min', 'xics_v0_min', \
+			'xics_v0_min', \
 			'phiedge_max', 'curtor_max', 'bcrit_max', \
 			'pscale_max', 'mix_ece_max', 'xval_max', 'yval_max', \
-			'regcoil_winding_surface_separation_max', \
-			'regcoil_current_density_max', 'xics_v0_max', \
-			'mix_ece', 'xval', 'yval', 'xics_v0', \
-			'regcoil_winding_surface_separation', \
-			'regcoil_current_density','vboot_tolerance']
+			'xics_v0_max', \
+			'mix_ece', 'xval', 'yval', 'xics_v0']
 		realLen=[1]*len(realList)
 		realList.extend(['dextcur_opt','extcur_min','extcur_max'])
 		realLen.extend([(nigroup,1)]*3)
@@ -880,10 +866,6 @@ class LIBSTELL():
 			'am_min', 'ac_min', 'ai_min', 'ah_min', 'at_min', 'am_max', 'ac_max', 'ai_max', 'ah_max', 'at_max',\
 			'te_min', 'ne_min', 'ti_min', 'th_min', 'te_max', 'ne_max', 'ti_max', 'th_max', 'zeff_max', 'zeff_min'])
 		realLen.extend([(21,1)]*30)
-		realList.extend(['bnfou'])
-		realLen.extend([(25,41)])
-		realList.extend(['dregcoil_rcws_rbound_c_opt','dregcoil_rcws_rbound_s_opt','dregcoil_rcws_zbound_c_opt','dregcoil_rcws_zbound_s_opt'])
-		realLen.extend([(65,65)]*4)
 		realList.extend(['te_opt','ti_opt','ne_opt','th_opt','zeff_opt'])
 		realLen.extend([(21,1)]*5)
 		realList.extend(['ne_aux_s', 'te_aux_s', 'ti_aux_s', 'th_aux_s', 'zeff_aux_s', \
@@ -911,23 +893,13 @@ class LIBSTELL():
 		realLen.extend([(2*ntord+1,1+mpol1d)]*14)
 		realList.extend(['deltamn','ddeltamn_opt','delta_min','delta_max'])
 		realLen.extend([(2*ntord+1,2*mpol1d+1)]*4)
-		realList.extend(['coil_splinesx','coil_splinesy','coil_splinesz'])
-		realLen.extend([(nigroup,44)]*3)
-		realList.extend(['coil_splinefx','coil_splinefy','coil_splinefz','dcoil_spline', \
-			'coil_splinefx_min','coil_splinefy_min','coil_splinefz_min','coil_splinefx_max','coil_splinefy_max','coil_splinefz_max'])
-		realLen.extend([(nigroup,40)]*10)
-		realList.extend(['regcoil_rcws_rbound_c', 'regcoil_rcws_rbound_s','regcoil_rcws_rbound_c_min',\
-			'regcoil_rcws_rbound_s_min','regcoil_rcws_rbound_c_max', 'regcoil_rcws_rbound_s_max',\
-			'regcoil_rcws_zbound_c', 'regcoil_rcws_zbound_s','regcoil_rcws_zbound_c_min', \
-			'regcoil_rcws_zbound_s_min','regcoil_rcws_zbound_c_max', 'regcoil_rcws_zbound_s_max'])
-		realLen.extend([(65,65)]*12)
 		realList.extend(['drosenbrock_x_opt','rosenbrock_x','rosenbrock_x_min','rosenbrock_x_max'])
 		realLen.extend([(20,1)]*4)
 		charList=['sfincs_er_option', 'equil_type', 'te_type', 'ne_type', \
 			'ti_type', 'th_type', 'beamj_type','bootj_type','zeff_type','emis_xics_type',\
-			'fixedcoilname','regcoil_nescin_filename','bootcalc_type','phi_type','coil_type']
+			'bootcalc_type','phi_type']
 		charLen=[(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),\
-			(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(nigroup,1)]
+			(256,1),(256,1),(256,1),(256,1),(256,1)]
 		var_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
 		# Get target
 		module_name = self.s1+'stellopt_targets_'+self.s2
@@ -937,9 +909,7 @@ class LIBSTELL():
 		booLen.extend([(nsd,1),(512,1)])
 		intList=['mboz', 'nboz', 'numjstar', 'nz_txport', 'nalpha_txport', 'nruns_dkes',\
 			'nu_orbit', 'nv_orbit', 'np_orbit', 'mlmnb_kink', 'ivac_kink', 'mmaxdf_kink', \
-			'nmaxdf_kink', 'nra_ece', 'nphi_ece', 'numws', 'nu_bnorm', 'nv_bnorm', \
-			'npts_biot', 'npts_clen', 'npts_torx', 'npts_curv', 'npts_csep', 'npts_cself', \
-			'npts_crect', 'npts_cpoly']
+			'nmaxdf_kink', 'nra_ece', 'nphi_ece']
 		intLen=[1]*len(intList)
 		intList.extend(['mlmns_kink', 'lssl_kink', 'lssd_kink','nj_kink','nk_kink'])
 		intLen.extend([(16,1)]*5)
@@ -953,9 +923,7 @@ class LIBSTELL():
 			'phi_kappa_box', 'target_kappa_avg', 'sigma_kappa_avg', 'target_x', 'sigma_x' ,'target_y', \
 			'sigma_y', 'qm_ratio', 'cutoff_te_line', 'target_vessel', 'sigma_vessel', 'alpha_start_txport', \
 			'alpha_end_txport', 'nu_dkes_erdiff', 'ep_dkes_erdiff', 'em_dkes_erdiff', 'mass_orbit', 'z_orbit', \
-			'target_coil_bnorm', 'sigma_coil_bnorm', 'target_regcoil_winding_surface_separation', 'sigma_regcoil_winding_surface_separation',\
-			'target_regcoil_current_density', 'sigma_regcoil_current_density', 'target_curvature_p2', 'sigma_curvature_p2', \
-			'target_coilsep',  'sigma_coilsep', 'coilrectpfw']
+			'target_curvature_p2', 'sigma_curvature_p2']
 		realLen=[1]*len(realList)
 		realList.extend(['target_rosenbrock_f','sigma_rosenbrock_f'])
 		realLen.extend([(20,1),(20,1)])
@@ -999,6 +967,9 @@ class LIBSTELL():
 			'sigma_dkes', 'target_dkes_erdiff', 'sigma_dkes_erdiff', 'target_dkes_alpha', 'sigma_dkes_alpha', \
 			'target_gamma_c', 'sigma_gamma_c', 'target_orbit', 'sigma_orbit'])
 		realLen.extend([(nsd,1)]*39)
+		realList.extend(['target_dkes_11', 'target_dkes_31', 'target_dkes_33', \
+			'sigma_dkes_11', 'sigma_dkes_31', 'sigma_dkes_33'])
+		realLen.extend([(nsd,1)]*6)
 		realList.extend(['target_bprobe', 'sigma_bprobe'])
 		realLen.extend([(2048,1)]*2)
 		realList.extend(['target_separatrix', 'sigma_separatrix', 'r_separatrix', 'z_separatrix', 'phi_separatrix', \
@@ -1012,15 +983,6 @@ class LIBSTELL():
 		realLen.extend([(16,512)]*3)
 		realList.extend(['antennaposition_ece', 'targetposition_ece', 'rbeam_ece', 'rfocus_ece'])
 		realLen.extend([(16,3)]*4)
-		realList.extend(['target_regcoil_chi2_b', 'sigma_regcoil_chi2_b'])
-		realLen.extend([(16900,1)]*4)
-		realList.extend(['target_coillen', 'sigma_coillen', 'target_coilsegvar', 'sigma_coilsegvar', 'target_coilcrv',  \
-			'sigma_coilcrv', 'target_coilself', 'sigma_coilself', 'target_coiltorvar', 'sigma_coiltorvar', \
-			'thwt_coiltorvar', 'coilrectvmin', 'coilrectvmax', 'coilrectduu', 'coilrectdul', \
-			'target_coilrect', 'sigma_coilrect', 'target_coilpoly', 'sigma_coilpoly'])
-		realLen.extend([(nigroup,1)]*19)
-		realList.extend(['kopolyu', 'kopolyv'])
-		realLen.extend([(128,16)]*2)
 		charList=['magdiag_coil', 'vessel_string', 'txport_proxy', 'vessel_ece', 'mirror_ece', 'targettype_ece', 'antennatype_ece']
 		charLen=[(256,1)]*7
 		target_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)

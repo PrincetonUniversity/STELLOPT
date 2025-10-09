@@ -1,4 +1,7 @@
 ObjectFiles = \
+chisq_dkes_11.o \
+chisq_dkes_31.o \
+chisq_dkes_33.o \
 chisq_lgradb.o \
 chisq_coilcoil_distance.o \
 chisq_coil_torsion.o \
@@ -86,7 +89,6 @@ chisq_separatrix.o \
 chisq_jdotb.o \
 chisq_kink.o \
 chisq_bmax.o \
-chisq_dkes.o \
 chisq_wp.o \
 chisq_bootstrap.o \
 chisq_beta.o \

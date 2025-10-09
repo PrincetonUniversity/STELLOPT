@@ -110,6 +110,12 @@
                WHERE(sigma_ne<bigno_ne) sigma_ne = sigma_ne/temp
             CASE(jtarget_neo)
                WHERE(sigma_neo<bigno) sigma_neo = sigma_neo/temp
+            CASE(jtarget_dkes_11)
+               WHERE(sigma_dkes_11<bigno) sigma_dkes_11 = sigma_dkes_11/temp
+            CASE(jtarget_dkes_31)
+               WHERE(sigma_dkes_31<bigno) sigma_dkes_31 = sigma_dkes_31/temp
+            CASE(jtarget_dkes_33)
+               WHERE(sigma_dkes_33<bigno) sigma_dkes_33 = sigma_dkes_33/temp
             CASE(jtarget_te)
                WHERE(sigma_te<bigno) sigma_te = sigma_te/temp
             CASE(jtarget_ti)
