@@ -1397,7 +1397,7 @@ class PENTA:
 
         
         plt.rc('font', size=18)
-        _, ax = plt.subplots(figsize=(11,8))
+        # _, ax = plt.subplots(figsize=(11,8))
         # _, ax2 = plt.subplots(figsize=(11,8))
         _, ax3 = plt.subplots(figsize=(11,8))
         
@@ -1453,7 +1453,7 @@ class PENTA:
         dAdrho_spline = UnivariateSpline(roa,tor_avg_surface_area,k=2).derivative()
         
         roa_cumulative_simpson = roa[1:]
-        IBS = cumulative_simpson(JBS*dAdrho_spline(roa),x=roa)#,initial=0)
+        IBS = cumulative_simpson(JBS*dAdrho_spline(roa),x=roa,initial=0)
         
         # IBS_spline = splrep(roa,IBS,s=1000)
         degree = 7
@@ -1528,6 +1528,79 @@ class PENTA:
         # print("PCURR_TYPE = 'cubic_spline_Ip' ")
         # print(f'AC_AUX_S = {s_VMEC}')
         # print(f'AC_AUX_F = {dIds}')
+        
+    def get_IBS(self,which_root,VMEC_class,make_plot=False):
+        # integrates JBS and returns IBS
+        # plots if make_plot_True
+        
+        # IBS = int( JBS*(dA/drho)*drho )
+        
+        from libstell.vmec import VMEC
+        import matplotlib.pyplot as plt
+        from scipy.integrate import trapezoid, cumulative_simpson
+        from scipy.interpolate import UnivariateSpline
+        
+        if which_root is ('ion_root' or 'electron_root'):
+            JBS = np.array( self.JBS[which_root] )
+            roa = np.array( self.roa[which_root] )
+        else:
+            print('ERROR: which_root can only be ion_root OR electron_root')
+            exit(0)
+            
+        roa_VMEC = np.sqrt(VMEC_class.phi / VMEC_class.phi[-1])
+        roa_VMEC = roa_VMEC.flatten()
+        
+        # by comparing roa with roa_VMEC, get surfaces numbers
+        surfaces_idx = np.zeros(len(roa), dtype=int)
+        
+        for i,val in enumerate(roa):
+            diff = np.abs(roa_VMEC-val)
+            surfaces_idx[i] = np.argmin(diff)
+        
+        theta = np.linspace(0,2*np.pi,100)
+        zeta  = np.linspace(0,2*np.pi,101)
+        
+        tor_avg_surface_area = np.zeros(len(roa), dtype=float)
+
+        for j,idx in enumerate(surfaces_idx):
+
+            R = VMEC_class.cfunct(theta[:, np.newaxis],zeta[:, np.newaxis],VMEC_class.rmnc[idx,:][np.newaxis,:],VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+            Z = VMEC_class.sfunct(theta[:, np.newaxis],zeta[:, np.newaxis],VMEC_class.zmns[idx,:][np.newaxis,:],VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+
+            # print(R.shape)
+
+            dRdtheta_coeffs = -VMEC_class.xm.T*VMEC_class.rmnc[idx,:][np.newaxis,:]
+            dZdtheta_coeffs =  VMEC_class.xm.T*VMEC_class.zmns[idx,:][np.newaxis,:]
+
+            # # print(dRdtheta_coeffs.shape)
+
+            dRdtheta = VMEC_class.sfunct(theta[:, np.newaxis],zeta[:, np.newaxis],dRdtheta_coeffs,VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+            dZdtheta = VMEC_class.cfunct(theta[:, np.newaxis],zeta[:, np.newaxis],dZdtheta_coeffs,VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+            
+            area_integrand = R*dZdtheta
+    
+            area = trapezoid(area_integrand,theta,axis=0)
+            
+            tor_avg_surface_area[j] = np.mean(area)
+            
+        dAdrho_spline = UnivariateSpline(roa,tor_avg_surface_area,k=2).derivative()
+        
+        # add rho=0 point
+        JBS = np.concatenate(([0.0],JBS))
+        roa = np.concatenate(([0.0],roa))
+        #
+        IBS = cumulative_simpson(JBS*dAdrho_spline(roa),x=roa,initial=0)
+        
+        if(make_plot):
+            plt.rc('font', size=18)
+            _, ax = plt.subplots(figsize=(11,8))
+            #
+            ax.plot(roa,IBS/1E3,'.-')
+            ax.set_xlabel('r/a')
+            ax.set_ylabel('IBS [kA]')
+            plt.show()
+        
+        return roa,IBS
         
     def get_JBS_smooth(self,rho,which_root):
         # applies savgol filter to JBS[which_root] 
