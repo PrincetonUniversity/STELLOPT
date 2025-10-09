@@ -5,6 +5,12 @@
       INTEGER, PARAMETER :: nseqmax = 100
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
+!     NSEQ          Number of files to run
+!     EXTENSION     List of extension to run
+!     NSEQ_SELECT   Order to execute extensions
+!     NSEQ_RESTART  Extension to use as restart
+!                    Set to 0 to do full run.
+!     NSEQ_RESTART(1) is always 0
 !-----------------------------------------------
       INTEGER :: nseq
       INTEGER, DIMENSION(nseqmax) :: nseq_select
