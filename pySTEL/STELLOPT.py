@@ -895,7 +895,8 @@ class MyApp(QMainWindow):
 					'B_PROBES','FARADAY','FLUXLOOPS','SEGROG','MSE',\
 					'NE','NELINE','TE','TELINE','TI','TILINE','ZEFFLINE',\
 					'XICS','XICS_BRIGHT','XICS_W3','XICS_V','SXR','VPHI','VACIOTA',\
-					'IOTA','BALLOON','BOOTSTRAP','DKES','DKES_ERDIFF','DKES_ALPHA',\
+					'IOTA','BALLOON','BOOTSTRAP',\
+					'DKES_11','DKES_31','DKES_33','DKES_ERDIFF','DKES_ALPHA',\
 					'B10B11','HELICITY','HELICITY_FULL','QUASIISO','GAMMA_C', \
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
@@ -932,9 +933,11 @@ class MyApp(QMainWindow):
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution_R')
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution_Z')
-		if 'DKES_TARGET' in vars(self.stel_data).keys():
+		if 'DKES_11_TARGET' in vars(self.stel_data).keys():
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L11')
+		if 'DKES_31_TARGET' in vars(self.stel_data).keys():
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L31')
+		if 'DKES_33_TARGET' in vars(self.stel_data).keys():
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L33')
 		if 'LGRADB_TARGET' in vars(self.stel_data).keys():
 			self.ui.ComboBoxOPTplot_type.addItem('LGRADB_surf')
@@ -1227,21 +1230,27 @@ class MyApp(QMainWindow):
 		elif ('DKES_L' in plot_name):
 			# Get L type
 			if plot_name == 'DKES_L11':
-				Lm = self.stel_data.DKES_L11m
-				Lp = self.stel_data.DKES_L11p
+				Lm = self.stel_data.DKES_11_L11m
+				Lp = self.stel_data.DKES_11_L11p
+				s  = self.stel_data.DKES_11_S
+				er = self.stel_data.DKES_11_ER
+				nu = self.stel_data.DKES_11_NU
 				txt_type = 'L11'
 			elif plot_name == 'DKES_L31':
-				Lm = self.stel_data.DKES_L31m
-				Lp = self.stel_data.DKES_L31p
+				Lm = self.stel_data.DKES_31_L31m
+				Lp = self.stel_data.DKES_31_L31p
+				s  = self.stel_data.DKES_31_S
+				er = self.stel_data.DKES_31_ER
+				nu = self.stel_data.DKES_31_NU
 				txt_type = 'L31'
 			elif plot_name == 'DKES_L33':
-				Lm = self.stel_data.DKES_L33m
-				Lp = self.stel_data.DKES_L33p
+				Lm = self.stel_data.DKES_33_L33m
+				Lp = self.stel_data.DKES_33_L33p
+				s  = self.stel_data.DKES_33_S
+				er = self.stel_data.DKES_33_ER
+				nu = self.stel_data.DKES_33_NU
 				txt_type = 'L33'
 			# We need to sort stuff out
-			s  = self.stel_data.DKES_S
-			er = self.stel_data.DKES_ER
-			nu = self.stel_data.DKES_NU
 			s_list  = np.unique(s)
 			er_list = np.unique(er)
 			nu_list = np.unique(nu)
@@ -1275,6 +1284,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel(txt_type)
 			self.ax2.set_title("DKES Coefficient "+txt_type)
 			self.ax2.set_yscale('log')
+			self.ax2.set_xscale('log')
 		elif (plot_name == 'HELICITY_FULL_evolution'):
 			x = self.stel_data.HELICITY_FULL_K
 			y = self.stel_data.HELICITY_FULL_VAL

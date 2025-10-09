@@ -342,7 +342,11 @@
                          r_limiter, z_limiter, phi_limiter, &
                          lglobal_txport, nz_txport, nalpha_txport, alpha_start_txport, alpha_end_txport, &
                          target_txport, sigma_txport, s_txport, txport_proxy,&
-                         target_dkes, sigma_dkes, nu_dkes, E_dkes,&
+                         target_dkes_11, sigma_dkes_11, &
+                         target_dkes_31, sigma_dkes_31, &
+                         target_dkes_33, sigma_dkes_33, &
+                         target_dkes, sigma_dkes, &
+                         nu_dkes, E_dkes,&
                          target_dkes_Erdiff, sigma_dkes_Erdiff, nu_dkes_Erdiff, Ep_dkes_Erdiff, Em_dkes_Erdiff, &
                          target_dkes_alpha, sigma_dkes_alpha, &
                          nup_dkes_alpha, num_dkes_alpha, Ep_dkes_alpha, Em_dkes_alpha, &
@@ -886,6 +890,12 @@
       nruns_dkes        = 0 ! This is here to default the value for each run
       target_dkes       = 0.0
       sigma_dkes        = bigno
+      target_dkes_11    = 0.0
+      sigma_dkes_11     = bigno
+      target_dkes_31    = 0.0
+      sigma_dkes_31     = bigno
+      target_dkes_33    = 0.0
+      sigma_dkes_33     = bigno
       nu_dkes           = -bigno
       E_dkes            = -bigno
       target_dkes_Erdiff = 0.0
@@ -1008,12 +1018,24 @@
       target_neo(1)       = 0.0;  sigma_neo(1)       = bigno
       target_dkes(1)      = 0.0;  sigma_dkes(1)      = bigno
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
+      target_dkes_11(1)   = 0.0;  sigma_dkes_11(1)   = bigno
+      target_dkes_11(2)   = 0.0;  sigma_dkes_11(2)   = bigno
+      target_dkes_31(1)   = 0.0;  sigma_dkes_31(1)   = bigno
+      target_dkes_31(2)   = 0.0;  sigma_dkes_31(2)   = bigno
+      target_dkes_33(1)   = 0.0;  sigma_dkes_33(1)   = bigno
+      target_dkes_33(2)   = 0.0;  sigma_dkes_33(2)   = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
       target_quasiiso(1)  = 0.0;  sigma_quasiiso(1)  = bigno
       target_gamma_c(1)   = 0.0;  sigma_gamma_c(1)   = bigno
       target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
       target_dkes_Erdiff(1) = 0.0; sigma_dkes_Erdiff(1) = bigno
       target_dkes_alpha(1) = 0.0; sigma_dkes_alpha(1) = bigno
+
+      ! Backwards compatibility for old DKES deffinition
+      WHERE(sigma_dkes < bigno) target_dkes_11 = target_dkes
+      WHERE(sigma_dkes < bigno) sigma_dkes_11 = sigma_dkes
+!         target_dkes_11(3:nsd) = target_dkes(3:nsd)
+!         sigma_dkes_11(3:nsd)  = sigma_dkes(3:nsd)
 
       ! Check if creating coils
       IF (ANY(rho_coil_kts>=0)) lcreate_coils = .true.
@@ -1637,19 +1659,43 @@
                           'LSSD_KINK(',ik,') = ',lssd_kink(ik)
          END DO
       END IF
-      IF (ANY(sigma_dkes < bigno)) THEN
+      IF (ANY(sigma_dkes_11 < bigno ) .or. &
+          ANY(sigma_dkes_31 < bigno ) .or. &
+          ANY(sigma_dkes_33 < bigno )) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          DRIFT-KINETICS (DKES)'  
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
-         DO ik = 1,UBOUND(sigma_dkes,DIM=1)
-            IF(sigma_dkes(ik) < bigno) n=ik
+         DO ik = 1,UBOUND(sigma_dkes_11,DIM=1)
+            IF(sigma_dkes_11(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_dkes(ik) < bigno) THEN
+            IF (sigma_dkes_11(ik) < bigno) THEN
                WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
-                          'TARGET_DKES(',ik,') = ',target_dkes(ik), &
-                          'SIGMA_DKES(',ik,') = ',sigma_dkes(ik)
+                          'TARGET_DKES_11(',ik,') = ',target_dkes_11(ik), &
+                          'SIGMA_DKES_11(',ik,') = ',sigma_dkes_11(ik)
+            END IF
+         END DO
+         n=0
+         DO ik = 1,UBOUND(sigma_dkes_31,DIM=1)
+            IF(sigma_dkes_31(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_dkes_31(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_DKES_31(',ik,') = ',target_dkes_31(ik), &
+                          'SIGMA_DKES_31(',ik,') = ',sigma_dkes_31(ik)
+            END IF
+         END DO
+         n=0
+         DO ik = 1,UBOUND(sigma_dkes_33,DIM=1)
+            IF(sigma_dkes_33(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_dkes_33(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_DKES_33(',ik,') = ',target_dkes_33(ik), &
+                          'SIGMA_DKES_33(',ik,') = ',sigma_dkes_33(ik)
             END IF
          END DO
          DO ii = 1, nprof

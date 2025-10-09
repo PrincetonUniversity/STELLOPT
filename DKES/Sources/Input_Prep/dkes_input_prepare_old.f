@@ -370,7 +370,7 @@
          END IF
 
          WRITE (extension,'(a,i1,a,i1,a)') 
-     1          '(" borbi(",i', k, '",",i', j, ',")= ",1x,e11.5,",")'
+     1          '(" borbi(",i', k, ',",",i', j, ',")= ",1x,e11.5,",")'
          WRITE (iunit,extension) n_norm,m_ordered(i),blocal_ordered(i)
 
       END DO
