@@ -77,7 +77,8 @@
             targets(mtargets) = target
             sigmas(mtargets)  = sigma
             vals(mtargets)    = val/DBLE(nc1*L)
-            IF (iflag == 1) WRITE(iunit_out,'(5ES22.12E3)') target,sigma,vals(mtargets),k,tors_max,tors_min
+            IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2X,I3.3,2ES22.12E3)') &
+                     target,sigma,vals(mtargets),k,tors_max,tors_min
          END DO
       ELSE
          IF (sigma < bigno) THEN
