@@ -110,7 +110,7 @@
       INTEGER, ALLOCATABLE :: a1(:), a2(:), a3(:), a4(:), a5(:)
       REAL(rprec) :: rand_C1, fnorm, fnorm_min
       REAL(rprec), ALLOCATABLE :: fnorm_array(:), fnorm_new(:),
-     1                            temp_fvec(:), x_temp(:)
+     1                            temp_fvec(:), x_temp(:), x_best(:)
       REAL(rprec), ALLOCATABLE :: x_array(:,:), fval_array(:,:),
      1                            x_new(:,:), help2d(:,:), help2d2(:,:)
 !DEC$ IF DEFINED (MPI_OPT)
@@ -126,7 +126,8 @@
       ierr = 0
       iter = 0
       fnorm_min = 1.0E30
-      ALLOCATE (fnorm_array(NP),temp_fvec(m),x_temp(n), stat=ierr)
+      ALLOCATE (fnorm_array(NP),temp_fvec(m),x_temp(n),
+     1   x_best(n), stat=ierr)
       IF (ierr .ne. 0) STOP 'DE2_Evolve Error ALLOC(1)'
       ALLOCATE (x_array(NP,n),fval_array(NP,m), stat=ierr)
       IF (ierr .ne. 0) STOP 'DE2_Evolve Error ALLOC(2)'
@@ -139,6 +140,7 @@
       IF (myid == master) THEN
          ALLOCATE (fnorm_new(NP), stat=ierr)
          IF (ierr .ne. 0) STOP 'DE2_Evolve Error ALLOC(4)'
+         x_best = x
          x_array(1,:) = x(:)
          DO i = 2, NP
             DO j = 1, n 
@@ -323,6 +325,7 @@
          IF (myid == master .and. ibest /= 1
      1       .and. .not.lrestart) THEN
             x_temp = x_array(ibest,:)
+            x_best = x_temp
             iter  = 1
             iflag = 0
             CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
@@ -523,6 +526,7 @@
             IF (fnorm_min > fnorm) THEN
                fnorm_min = fnorm
                x_temp = x_new(ibest,:)
+               x_best = x_temp
                iflag = 0
                CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
                iflag = GADE_CLEANUP
@@ -581,10 +585,7 @@
       END DO
 
       ! Finish up
-
-      
-      x_temp = x_array(ibest,1)
-      x = x_temp
+      x = x_best
 
       ! Deallocations
       IF (ALLOCATED(fnorm_array)) DEALLOCATE(fnorm_array)
@@ -594,6 +595,7 @@
       IF (ALLOCATED(fval_array)) DEALLOCATE(fval_array)
       IF (ALLOCATED(x_new)) DEALLOCATE(x_new)
       IF (ALLOCATED(fnorm_new)) DEALLOCATE(fnorm_new)
+      IF (ALLOCATED(x_best)) DEALLOCATE(x_best)
       
       RETURN
  1327 FORMAT (/,' Beginning Differential Evolution II',/,
