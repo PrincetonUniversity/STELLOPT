@@ -12,7 +12,8 @@
       USE stellopt_runtime
       USE stellopt_targets
       USE stellopt_vars, ONLY: nw_coil, nh_coil, rho_coil_kts
-      USE spline_coils_mod, ONLY: get_coil_curvature, get_coil_dl
+      USE spline_coils_mod, ONLY: get_coil_curvature, get_coil_dl, &
+                                  get_coil_ns
       USE biotsavart, ONLY: coil_group
       
 !-----------------------------------------------------------------------
@@ -51,11 +52,10 @@
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'COIL_CURVATURE ',numcoilgroups*nw_coil*nh_coil,6
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MEAN  COILGROUP  MAX  MIN'
       IF (niter >= 0) THEN
-         numcoilgroups = COUNT(ANY(rho_coil_kts>0,DIM=2))
          curve_max = 0.0; curve_min = bigno
          DO k = 1, numcoilgroups*nw_coil*nh_coil
             val = 0.0; L = 0.0
-            nc1 = SIZE(coil_group(k)%coils(1)%xnod,2)
+            CALL get_coil_ns(nc1)
             DO n = 1, nc1
                curve_hold = 0.0
                CALL get_coil_curvature(k,n,curve)
