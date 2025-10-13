@@ -344,6 +344,31 @@
       RETURN
       END SUBROUTINE coils_to_multifilament
 
+      SUBROUTINE dump_coil_info(iunit)
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: iunit
+      INTEGER :: k,j
+      WRITE(iunit,'(A,2X,I6)') ' Number of coil groups',SIZE(coil_group)
+      WRITE(iunit,'(A)')       ' ======================================='
+      DO k = 1, SIZE(coil_group)
+         WRITE(iunit,'(I6)') k
+         WRITE(iunit,'(A,2X,A)') ' S_NAME ',TRIM(coil_group(k)%s_name)
+         WRITE(iunit,'(A,2X,A)') ' L_NAME ',TRIM(coil_group(k)%l_name)
+         WRITE(iunit,'(A,2X,I6)') ' Number of coils ',coil_group(k)%ncoil
+         WRITE(iunit,'(A)')       ' ---------------------------------------'
+         DO j = 1, coil_group(k)%ncoil
+            WRITE(iunit,'(I6)') j
+            WRITE(iunit,'(A,2X,A)') ' S_NAME ',TRIM(coil_group(k)%coils(j)%c_type)
+            WRITE(iunit,'(A,2X,A)') ' S_NAME ',TRIM(coil_group(k)%coils(j)%s_name)
+            WRITE(iunit,'(A,2X,A)') ' L_NAME ',TRIM(coil_group(k)%coils(j)%l_name)
+            WRITE(iunit,'(A,2X,ES20.10)') ' Current ',coil_group(k)%coils(j)%current
+            WRITE(iunit,'(A,2X,I6)') ' Number of points ',SIZE(coil_group(k)%coils(j)%xnod)
+         ENDDO
+      WRITE(iunit,'(A)')       ' ======================================='
+
+      END DO
+      END SUBROUTINE dump_coil_info
+
       ! SUBROUTINE compute_coil_coil_distance(outext)
       ! IMPLICIT NONE
       ! CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: outext
@@ -531,6 +556,13 @@
       IF (loutput) CLOSE(iunit_out)
       RETURN
       END SUBROUTINE compute_coil_curvature
+
+      SUBROUTINE get_coil_ns(ns_out)
+      IMPLICIT NONE
+      INTEGER, INTENT(out) :: ns_out
+      ns_out = ns
+      RETURN
+      END SUBROUTINE get_coil_ns
 
       SUBROUTINE get_coil_curvature(coil_filament,coil_seg,curvature_out)
       IMPLICIT NONE
