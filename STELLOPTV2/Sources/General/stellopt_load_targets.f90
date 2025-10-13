@@ -165,7 +165,7 @@
       IF (sigma_bnormal < bigno) &
          CALL chisq_bnormal(target_bnormal, sigma_bnormal, ncnt, iflag)
       !  BAXIS TOTAL
-      IF (sigma_bnormal < bigno) &
+      IF (sigma_coil_baxis < bigno) &
          CALL chisq_coil_baxis(target_coil_baxis, sigma_coil_baxis, ncnt, iflag)
       !  BNORMAL_MN_SIN
       IF (ANY(sigma_bnmns < bigno)) &
@@ -313,7 +313,7 @@
       IF (mtargets .ne. m) THEN; iflag=-2; RETURN; END IF
       
       ! Calculate fvec
-      PRINT *,m,fvec
+      !PRINT *,m,fvec
       fvec = (vals-targets)/ABS(sigmas)
       !fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
       RETURN
