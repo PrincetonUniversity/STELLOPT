@@ -43,6 +43,7 @@
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: bnfou, bnfou_c
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rreal, zreal
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: NX, NY, NZ
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: BXa, BYa, BZa
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: bnreal, bcreal
 
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: carg, sarg
@@ -296,15 +297,17 @@
       !     Transform the axis and calculate B-Tangent
       !-----------------------------------------------------------------
       ncoilgroups = SIZE(coil_group)
-      DEALLOCATE(rreal,zreal,bnreal,NX,NY,NZ,carg,sarg)
+      DEALLOCATE(rreal,zreal,NX,NY,NZ,carg,sarg)
       IF (ALLOCATED(baxis_total)) DEALLOCATE(baxis_total)
       ALLOCATE(baxis_total(nv))
-      ALLOCATE(rreal(nv),zreal(nv),bnreal(nv))
+      ALLOCATE(rreal(nv),zreal(nv))
       ALLOCATE(NX(nv),NY(nv),NZ(nv))
+      ALLOCATE(BXa(nv),BYa(nv),BZa(nv))
       ALLOCATE(carg(nv,mnmax), sarg(nv,mnmax))
       rreal = 0.0; zreal = 0.0; bnreal = 0.0
       nx = 0.0; ny = 0.0; nz = 0.0
       carg = 0.0; sarg = 0.0
+      BXa = 0.0; BYa = 0.0; BZa = 0.0
       CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD, 1, nv, mystart, myend)
       DO v = mystart, myend
          zeta = pi2*DBLE(v-1)/DBLE(nv)
@@ -337,25 +340,60 @@
          bvec = 0.0; Bx = 0.0; By = 0.0; Bz = 0.0
          DO m = 1, ncoilgroups
             CALL bsc_b(coil_group(m),xvec,bvec)
-            Bx = Bx + bvec(1)
-            By = By + bvec(2)
-            Bz = Bz + bvec(3)
+            Bxa(v) = Bxa(v) + bvec(1)
+            Bya(v) = Bya(v) + bvec(2)
+            Bza(v) = Bza(v) + bvec(3)
          END DO
-         baxis_total(v) = (Bx * Nx(v) + By * Nz(v) + Bz * Nz(v)) / &
-                          SQRT(BX * BX + BY * BY + BZ * BZ)
+         baxis_total(v) = (Bxa(v) * Nx(v) + Bya(v) * Nz(v) + Bza(v) * Nz(v)) / &
+                          SQRT(Bxa(v) * Bxa(v) + Bya(v) * Bya(v) + Bza(v) * Bza(v))
       END DO
 #if defined(MPI_OPT)
       IF (myworkid == master) THEN
          CALL MPI_REDUCE(MPI_IN_PLACE, baxis_total, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,       rreal, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,       zreal, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,          Nx, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,          Ny, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,          Nz, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,         Bxa, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,         Bya, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE,         Bza, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
       ELSE
          CALL MPI_REDUCE( baxis_total, baxis_total, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(       rreal,       rreal, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(       zreal,       zreal, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(          Nx,          Nx, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(          Ny,          Ny, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(          Nz,          Nz, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(         Bxa,         Bxa, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(         Bya,         Bya, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+         CALL MPI_REDUCE(         Bza,         Bza, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
       END IF
 #endif
+      
+      !-----------------------------------------------------------------
+      !     Write the output to a file
+      !-----------------------------------------------------------------
+      IF (myworkid == master) THEN
+         call safe_open(iunit, iflag, 'baxis_real.' // TRIM(proc_string), &
+               'replace','formatted')
+         WRITE(iunit,'(I8)') nv
+         DO uv = 1, nv
+            v = MOD(uv-1,nuv)
+            v = FLOOR(REAL(v) / REAL(nu))+1
+            zeta = pi2*DBLE(v-1)/DBLE(nv)
+            phi = zeta/nfp
+            WRITE(iunit, '(1(1X,I6),11(1pe24.16))') &
+               v,zeta,phi,rreal(uv),zreal(uv),&
+               Nx(uv),Ny(uv),Nz(uv),Bxa(uv),Bya(uv),Bza(uv),baxis_total(uv)
+         END DO
+         CLOSE(iunit)
+      END IF
 
       !-----------------------------------------------------------------
       !     DEALLOCATIONS
       !-----------------------------------------------------------------
-      DEALLOCATE(rreal,zreal,Nx,Ny,Nz,bnreal,bcreal,carg,sarg)
+      DEALLOCATE(rreal,zreal,Nx,Ny,Nz,bnreal,bcreal,carg,sarg,Bxa,Bya,Bza)
       IF (myworkid /= master) THEN
          IF(ALLOCATED(xm)) DEALLOCATE(xm)
          IF(ALLOCATED(xn)) DEALLOCATE(xn)
