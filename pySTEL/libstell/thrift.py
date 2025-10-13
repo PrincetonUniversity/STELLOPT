@@ -171,7 +171,7 @@ class THRIFT():
         self.units_dictionary['THRIFT_ETAPARA'] = r'$[\Omega\,$m]'
         self.units_dictionary['THRIFT_ER'] = r'$[V/$m]'
         self.units_dictionary['THRIFT_GNEO'] = r'[m$^{-2}s$^{-1}$]'
-        self.units_dictionary['THRIFT_QNEO'] = r'[$\text{eV}~\text{m}^{-2}s$^{-1}$]'
+        self.units_dictionary['THRIFT_QNEO'] = r'[$\text{W}~\text{m}^{-2}$]'
              
     def plot_vars_in_time(self,*vars,time_slice=None,time_array=None):
         # plots var as a funciton of roa at different times
@@ -579,308 +579,317 @@ class THRIFT():
         plt.legend()
         plt.show()
         
-        _, ax = plt.subplots(figsize=(11,8))
-        ax.plot(Er_dict[roa_unique[4]],Jr_dict[roa_unique[4]],'.-')
-        ax.set_xlabel('Er [V/cm]')
-        ax.set_ylabel(r'$\Sigma Z_i\Gamma_i-\Gamma_e$')
-        ax.set_title(f'r/a={roa_unique[4]}')
-        ax.grid()
+        for ROA in roa_unique:
         
-        _, ax = plt.subplots(figsize=(11,8))
-        ax.plot(Er_dict[roa_unique[4]],Ge_dict[roa_unique[4]],'.-',label='Gamma_e')
-        for k,_ in enumerate(Zions):
-            ax.plot(Er_dict[roa_unique[4]],Gi_dict[k][roa_unique[4]],'.-',label=f'Gamma_i_{k}')
-        ax.set_xlabel('Er [V/cm]')
-        ax.set_ylabel(r'$\Gamma$')
-        ax.set_yscale('symlog',linthresh=0.1)
-        ax.set_title(f'r/a={roa_unique[4]}')
-        ax.grid()
-        plt.legend()
-        
-        plt.show()
-
-    def get_I_total(self,time=None):
-        """ Returns the total current
-
-        This subroutine returns the total current in A.
-        The user may provide a timeslice.
-
-        Parameters
-        ----------
-        time : float (optional)
-            Time at which to evaluate profile. (default: last timestamp)
-        Returns
-        ----------
-        I : float
-            Total current [A]
-        """
-        import numpy as np
-        from scipy.interpolate import RegularGridInterpolator
-        if type(time) == type(None):
-            t0 = self.THRIFT_T[-1]
-        else:
-            t0 = time
-        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_I)
-        return float(ftemp([t0,1.0])[0])
-
-    def get_j_prof(self,time=None,ns=64):
-        """ Returns a current profile array
-
-        This subroutine returns the total current density
-        array in a 2D array where the first dimension are the points
-        in s and the second dimension is the current density in A/m^2.
-        The user may provide a timeslice or number of points in an 
-        array.
-
-        Parameters
-        ----------
-        time : float (optional)
-            Time at which to evaluate profile. (default: last timestamp)
-        ns : int (optional)
-            Number of points to use in evaluation (default: 64)
-        Returns
-        ----------
-        sflx : ndarray
-            Array of knots in normalized toroidal flux (s)
-        jtotal : ndarray
-            Array of values of total current [A/m^2]
-        """
-        import numpy as np
-        from scipy.interpolate import RegularGridInterpolator
-        if type(time) == type(None):
-            t0 = self.THRIFT_T[-1]
-        else:
-            t0 = time
-        sflx = np.linspace(0,1.0,ns)
-        tval = np.ones_like(sflx)*t0
-        x    = np.vstack((tval,sflx))
-        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_J)
-        return sflx,ftemp(x.T)
-
-    def get_Iboot_total(self,time=None):
-        """ Returns the total boostrap current
-
-        This subroutine returns the total bootstrap current in kA.
-        The user may provide a timeslice.
-
-        Parameters
-        ----------
-        time : float (optional)
-            Time at which to evaluate profile. (default: last timestamp)
-        Returns
-        ----------
-        I : float
-            Total bootstrap current [A]
-        """
-        import numpy as np
-        from scipy.interpolate import RegularGridInterpolator
-        if type(time) == type(None):
-            t0 = self.THRIFT_T[-1]
-        else:
-            t0 = time
-        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_IBOOT)
-        return float(ftemp([t0,1.0])[0])
-
-    def get_jboot_prof(self,time=None,ns=64):
-        """ Returns a current profile array
-
-        This subroutine returns the total bootstrap current density
-        array in a 2D array where the first dimension are the points
-        in s and the second dimension is the current density in kA/m^2.
-        The user may provide a timeslice or number of points in an 
-        array.
-
-        Parameters
-        ----------
-        time : float (optional)
-            Time at which to evaluate profile. (default: last timestamp)
-        ns : int (optional)
-            Number of points to use in evaluation (default: 64)
-        Returns
-        ----------
-        sflx : ndarray
-            Array of knots in normalized toroidal flux (s)
-        jboot : ndarray
-            Array of values of bootstrap current [A/m^2]
-        """
-        import numpy as np
-        from scipy.interpolate import RegularGridInterpolator
-        if type(time) == type(None):
-            t0 = self.THRIFT_T[-1]
-        else:
-            t0 = time
-        sflx = np.linspace(0,1.0,ns)
-        tval = np.ones_like(sflx)*t0
-        x    = np.vstack((tval,sflx))
-        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_JBOOT)
-        return sflx,ftemp(x.T)
-
-    def get_iota_prof(self,time=None,ns=64):
-        """ Returns the rotational transform array
-
-        This subroutine returns the rotational transform (iota)
-        array in a 2D array where the first dimension are the points
-        in s and the second dimension is the rotational transform.
-        The user may provide a timeslice or number of points in an 
-        array.
-
-        Parameters
-        ----------
-        time : float (optional)
-            Time at which to evaluate profile. (default: last timestamp)
-        ns : int (optional)
-            Number of points to use in evaluation (default: 64)
-        Returns
-        ----------
-        sflx : ndarray
-            Array of knots in normalized toroidal flux (s)
-        iota : ndarray
-            Array of values of rotational transform
-        """
-        import numpy as np
-        from scipy.interpolate import RegularGridInterpolator
-        if type(time) == type(None):
-            t0 = self.THRIFT_T[-1]
-        else:
-            t0 = time
-        sflx = np.linspace(0,1.0,ns)
-        tval = np.ones_like(sflx)*t0
-        x    = np.vstack((tval,sflx))
-        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_IOTA)
-        return sflx,ftemp(x.T)
-
-    def get_pot_prof(self,time=None,ns=64):
-        """ Returns the electrostatic potential array
-
-        This subroutine returns the electrostatic potential
-        array in a 2D array where the first dimension are the points
-        in s and the second dimension is the electrostatic potential 
-        in V. The user may provide a timeslice or number of points 
-        in an array.
-
-        Parameters
-        ----------
-        time : float (optional)
-            Time at which to evaluate profile. (default: last timestamp)
-        ns : int (optional)
-            Number of points to use in evaluation (default: 64)
-        Returns
-        ----------
-        sflx : ndarray
-            Array of knots in normalized toroidal flux (s)
-        phi : ndarray
-            Array of values of electrostatic potential [V]
-        """
-        import numpy as np
-        from scipy.interpolate import RegularGridInterpolator, interpn
-        from scipy.integrate import cumulative_trapezoid
-        if type(time) == type(None):
-            t0 = self.THRIFT_T[-1]
-        else:
-            t0 = time
-        s,A = self.get_Aminor(time=time,ns=ns)
-        s,Er = self.get_er_prof(time=time,ns=ns)
-        # Compute the estatic potential
-        phi = -cumulative_trapezoid(Er,A,initial=0)
-        return s,phi
-
-    def get_er_prof(self,time=None,ns=64):
-        """ Returns the radial electric field array
-
-        This subroutine returns the radial electric field
-        array in a 2D array where the first dimension are the points
-        in s and the second dimension is Er in V/m.
-        The user may provide a timeslice or number of points in an 
-        array.
-
-        Parameters
-        ----------
-        time : float (optional)
-            Time at which to evaluate profile. (default: last timestamp)
-        ns : int (optional)
-            Number of points to use in evaluation (default: 64)
-        Returns
-        ----------
-        sflx : ndarray
-            Array of knots in normalized toroidal flux (s)
-        phi : ndarray
-            Array of values of radial electric field [V/m]
-        """
-        import numpy as np
-        from scipy.interpolate import RegularGridInterpolator
-        if type(time) == type(None):
-            t0 = self.THRIFT_T[-1]
-        else:
-            t0 = time
-        sflx = np.linspace(0,1.0,ns)
-        tval = np.ones_like(sflx)*t0
-        x    = np.vstack((tval,sflx))
-        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_ER)
-        return sflx,ftemp(x.T)
-
-    def get_Aminor(self,time=None,ns=64):
-        """ Returns the minor radius array
-
-        This subroutine returns the minor radius
-        array in a 2D array where the first dimension are the points
-        in s and the second dimension is the minor radius in m.
-        The user may provide a timeslice or number of points in an 
-        array.
-
-        Parameters
-        ----------
-        time : float (optional)
-            Time at which to evaluate profile. (default: last timestamp)
-        ns : int (optional)
-            Number of points to use in evaluation (default: 64)
-        Returns
-        ----------
-        sflx : ndarray
-            Array of knots in normalized toroidal flux (s)
-        Aminor : ndarray
-            Array of values of minor radius [m]
-        """
-        import numpy as np
-        from scipy.interpolate import RegularGridInterpolator
-        if type(time) == type(None):
-            t0 = self.THRIFT_T[-1]
-        else:
-            t0 = time
-        sflx = np.linspace(0,1.0,ns)
-        tval = np.ones_like(sflx)*t0
-        x    = np.vstack((tval,sflx))
-        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_AMINOR)
-        return sflx,ftemp(x.T)
-
-
+            _, ax = plt.subplots(figsize=(11,8))
+            ax.plot(Er_dict[ROA],Jr_dict[ROA],'.-')
+            ax.set_xlabel('Er [V/cm]')
+            ax.set_ylabel(r'$\Sigma Z_i\Gamma_i-\Gamma_e$')
+            ax.set_title(f'r/a={ROA}')
+            ax.grid()
             
-        
-
+            _, ax = plt.subplots(figsize=(11,8))
+            ax.plot(Er_dict[ROA],Ge_dict[ROA],'.-',label='Gamma_e')
+            for k,_ in enumerate(Zions):
+                ax.plot(Er_dict[ROA],Gi_dict[k][ROA],'.-',label=f'Gamma_i_{k}')
+            ax.set_xlabel('Er [V/cm]')
+            ax.set_ylabel(r'$\Gamma$')
+            ax.set_yscale('symlog',linthresh=0.1)
+            ax.set_title(f'r/a={ROA}')
+            ax.grid()
+            plt.legend()
             
+            plt.show()
         
+# THRIFT Class
+class THRIFT_plasma_solver():
+    """" Class for working with plasma solver implemented in THRIFT
+    
+    """
+    
+    def __init__(self, plasma=None, list_of_species=None):
+        
+        from libstell.plasma import PLASMA
+        
+        # should give plasma OR list_of_species. If both, plasma prevails
+        if plasma is None and list_of_species is None:
+            print('Could not create class: Need to provide a plasma class or a list with name of species')
+            exit(1)
+        elif plasma is None and list_of_species is not None:
+            self.plasma_class = PLASMA(list_of_species=list_of_species)
+        else:
+            self.plasma_class = plasma
             
+        self.list_of_species = list_of_species
         
+    def read_thrift_plasma_solver_folder(self, folder_path):
+        """Reads THRIFT PLASMA_SOLVER HDF5 files inside folder_path
+
+        Files should be named: plasma_solver_<n>.h5, where <n> is a positive integer.
+        The function finds the minimum n and checks that files are consecutively
+        numbered with no gaps.
+
+        Parameters
+        ----------
+        folder_path : str
+            Path to folder containing plasma_solver_#.h5 files.
+        """
+        import os
+        import re
+
+        # Match files like plasma_solver_123.h5
+        pattern = re.compile(r"plasma_solver_(\d+)\.h5$")
+        numbered_files = []
+
+        for file_name in os.listdir(folder_path):
+            match = pattern.match(file_name)
+            if match:
+                number = int(match.group(1))
+                full_path = os.path.join(folder_path, file_name)
+                if os.path.isfile(full_path):
+                    numbered_files.append((number, full_path))
+
+        if not numbered_files:
+            raise FileNotFoundError(f"No plasma_solver_*.h5 files found in {folder_path}")
+
+        # Sort by output number
+        numbered_files.sort()
+        numbers, files = zip(*numbered_files)
+
+        # Check for sequential numbering
+        expected_numbers = list(range(min(numbers), max(numbers) + 1))
+        if list(numbers) != expected_numbers:
+            missing = sorted(set(expected_numbers) - set(numbers))
+            raise FileNotFoundError(f"Missing expected files: {', '.join(f'plasma_solver_{n}.h5' for n in missing)}")
+
+        # read files
+        self.read_thrift_plasma_solver(*files)  
+                
+    def read_thrift_plasma_solver(self,*files):
+        """Reads plasma_solver THRIFT HDF5 files
+
+		Parameters
+		----------
+		files : str
+		Path to HDF5 files.
+		"""
+        import h5py
         
+        ############### CHECK TIME ORDER #######################
+        time = []
+        for file in files:
+            with h5py.File(file,'r') as f:
+                time.append( f['time_plasma_grid'][:] )
+        time = np.concatenate(time)
+        #check ordering
+        if(not np.all(np.diff(time) >= 0) ):
+            print('ERROR: plasma_solver files are not in the correct order...')
+            print(f'time = {time}')
+            exit(0)
+        else:
+            self.time_grid = time
+            self.Nt = len(time)
+            
+        ######## CHECK Zions IS THE SAME IN ALL FILES and that it coincides with that in plasma class  ##########
+        Z_plasma_class = np.array( [self.plasma_class.Zcharge[ion] for ion in self.plasma_class.ion_species], dtype=int )
+        for file in files:
+            with h5py.File(file,'r') as f:
+                Zions = np.array( f['Zions'][:], dtype=int)
+                if not np.array_equal(Zions, Z_plasma_class):
+                    raise ValueError("Zcharge from file does not match that of plasma class!")
+                
+        ############ CHECK RHO_GRID IS THE SAME IN ALL FILES ################
+        with h5py.File(files[0],'r') as f:
+                self.rho_grid  = f['rho_plasma_grid'][:]
+                self.r_grid  = f['r_plasma_grid'][:,:]
+                self.Nr = f['Nr_plasma_grid']
+        for file in files:
+            with h5py.File(file,'r') as f:
+                rho_grid  = f['rho_plasma_grid'][:]
+                if (not np.array_equal(rho_grid, self.rho_grid)):
+                    raise ValueError("rho_grid NOT EQUAL among all the files...")
+                    
+        ################ CONCATENATE DATA ##################################
+        for file in files:
+            with h5py.File(file,'r') as f:
+                
+                for temp in ['plasma_N','plasma_T','N_fast_alphas','Dn_NEO','cn_NEO','Dp_NEO',\
+                             'cp_NEO','G_NEO_complet','Q_NEO_complet','Dp_total','cp_total']:
 
-# # THRIFT Input Class
-# class THRIFT_INPUT():
+                    try:
+                        data = np.array(f[temp][:,:,:])
+                    except:
+                        data = np.array(f[temp][:,:])
+                    # Check if the attribute exists; if not, initialize it
+                    if not hasattr(self, temp):
+                        setattr(self, temp, data)
+                    else:
+                        # Concatenate the new data to the existing attribute
+                        existing_data = getattr(self, temp)
+                        setattr(self, temp, np.concatenate((existing_data, data),axis=1))                       
+                    
+        ##################### TRANSPOSE DATA #################################
+        self.r_grid = self.r_grid.T
+        self.N_fast_alphas = self.N_fast_alphas.T
+        #
+        self.plasma_N = np.transpose(self.plasma_N, axes=[2,1,0])
+        self.plasma_T = np.transpose(self.plasma_T, axes=[2,1,0])
+        self.Dn_NEO = np.transpose(self.Dn_NEO, axes=[2,1,0])
+        self.cn_NEO = np.transpose(self.cn_NEO, axes=[2,1,0])
+        self.Dp_NEO = np.transpose(self.Dp_NEO, axes=[2,1,0])
+        self.cp_NEO = np.transpose(self.cp_NEO, axes=[2,1,0])
+        #
+        self.G_NEO = np.transpose(self.G_NEO_complet, axes=[2,1,0])
+        self.Q_NEO = np.transpose(self.Q_NEO_complet, axes=[2,1,0])
+        #           
+        self.Dp_total = np.transpose(self.Dp_total, axes=[2,1,0])            
+        self.cp_total = np.transpose(self.cp_total, axes=[2,1,0])         
+                
+    def create_input_sources_file(self,filename,nt,nrho,tfin):
+        # creates 
+        
+        Zcharge_ions = np.array( [self.plasma_class.Zcharge[ion] for ion in self.plasma_class.ion_species], dtype=int )
+        mass_ions    = [self.plasma_class.mass[ion] for ion in self.plasma_class.ion_species]
+        nZ   = self.plasma_class.num_ion_species
+        
+        self.rho_grid_source = np.linspace(0,1,nrho)
+        self.t_grid_source = np.linspace(0,tfin,nt)
+        
+        SE_out = np.zeros((nrho,nt,nZ+1))
+        Sn_out = np.zeros((nrho,nt,nZ+1))
 
-# 	def __init__(self, parent=None):
-# 		self.libStell = LIBSTELL()
-
-# 	def read_input(self,filename):
-		
-# 		# Not yet implemented
-# 		#indata_dict = self.libStell.read_thrift_input(filename)
-# 		#for key in indata_dict:
-# 		#	setattr(self, key, indata_dict[key])
-
-# 	def write_input(self,filename):
-		
-# 		# Not yet implemented
-# 		#out_dict = vars(self)
-# 		#self.libStell.write_thrift_input(filename,out_dict)
-
+        hf = h5py.File(filename, 'w')
+                    
+        hf.create_dataset('nrho', data=nrho)
+        hf.create_dataset('nt', data=nt)
+        #
+        hf.create_dataset('nion', data=nZ)
+        #
+        hf.create_dataset('raxis_source', data=self.rho_grid_source)
+        hf.create_dataset('taxis_source', data=self.t_grid_source)
+        #
+        hf.create_dataset('Z_prof', data=Zcharge_ions)
+        hf.create_dataset('mass_prof', data=mass_ions)
+        #
+        hf.create_dataset('S_energy', data=SE_out)
+        hf.create_dataset('S_particle', data=Sn_out)
+        #
+        hf.close()
+        
+    def add_energy_source_to_input_file(self,filename,which_species,source_type,dVdrho=None,total_power=None,sigma_rho=None,rho_0=None,time_dependent_factor=None,cte_source=None):
+        
+        from scipy.integrate import quad
+        
+        try:
+            species_id = self.plasma_class.list_of_species.index(which_species) 
+        except:
+            raise ValueError(f'{which_species} not possible!')
+        
+        match source_type:
+            case 'external_gaussian':
+                if((total_power is None) or (sigma_rho is None) or (rho_0 is None) or (dVdrho is None)):
+                    print('ERROR: Need to provide total_power [W], dVdrho, sigma_rho and rho_0 for gaussian external source')
+                    exit(1) 
+                else:
+                    # integrand = lambda rho: np.exp(-(rho-rho_0)**2/sigma_rho**2) * dVdrho(rho)
+                    # #
+                    # cte = total_power / quad(integrand,0,1)[0]
+                    # #
+                    # source = lambda t,rho: cte * np.exp(-(rho-rho_0)**2/sigma_rho**2)
+                    integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
+                    integrand = integrand.flatten()
+                    #
+                    cte = total_power / np.trapz(integrand,self.rho_grid_source)
+                    #
+                    source = lambda t: cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
+            
+            case 'time_dependent_gaussian':
+                if((total_power is None) or (sigma_rho is None) or (rho_0 is None) or (dVdrho is None) or (time_dependent_factor is None)):
+                    print('ERROR: Need to provide total_power [W], time_Dependent_factor, dVdrho, sigma_rho and rho_0 for gaussian external source')
+                    exit(1) 
+                else:
+                    integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
+                    integrand = integrand.flatten()
+                    #
+                    cte = total_power / np.trapz(integrand,self.rho_grid_source)
+                    #
+                    source = lambda t: time_dependent_factor(t) * cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
+                    
+            case 'constant':
+                if(cte_source is None):
+                    print('ERROR: cte_source is needed in order to generate a constant source.')
+                    exit(0)
+                else:
+                    source = lambda t: cte_source
+                    
+            case _:
+                print(f'ERROR: Source type {source_type} is NOT possible')
+                exit(0)
+            
+        # add source to which_species without changing the others           
+        with h5py.File(filename, 'r+') as f:
+            dset = f['S_energy']
+            for it,t in enumerate(self.t_grid_source): 
+                dset[:,it,species_id] = source(t)#,self.rho_grid_source)
+                
+    def add_particle_source_to_input_file(self,filename,which_species,source_type,dVdrho=None,injected_particles_per_sec=None,sigma_rho=None,rho_0=None,time_dependent_factor=None,cte_source=None):
+        
+        from scipy.integrate import quad
+        
+        try:
+            species_id = self.plasma_class.list_of_species.index(which_species) 
+        except:
+            raise ValueError(f'{which_species} not possible!')
+            
+        match source_type:
+            case 'external_gaussian':
+                if((injected_particles_per_sec is None) or (sigma_rho is None) or (rho_0 is None) or (dVdrho is None)):
+                    print('ERROR: Need to provide injected_particles_per_sec, dVdrho, sigma_rho and rho_0 for gaussian external source')
+                    exit(1) 
+                else:
+                    # integrand = lambda rho: np.exp(-(rho-rho_0)**2/sigma_rho**2) * dVdrho(rho)
+                    # #
+                    # cte = injected_particles_per_sec / quad(integrand,0,1)[0]
+                    # #
+                    # source = lambda t,rho: cte * np.exp(-(rho-rho_0)**2/sigma_rho**2)
+                    
+                    integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
+                    integrand = integrand.flatten()
+                    #
+                    cte = injected_particles_per_sec / np.trapz(integrand,self.rho_grid_source)
+                    #
+                    source = lambda t: cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
+            
+            case 'time_dependent_gaussian':
+                if((injected_particles_per_sec is None) or (sigma_rho is None) or (rho_0 is None) or (dVdrho is None) or (time_dependent_factor is None)):
+                    print('ERROR: Need to provide injected_particles_per_sec, time_Dependent_factor, dVdrho, sigma_rho and rho_0 for gaussian external source')
+                    exit(1) 
+                else:
+                    integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
+                    integrand = integrand.flatten()
+                    #
+                    cte = injected_particles_per_sec / np.trapz(integrand,self.rho_grid_source)
+                    #
+                    source = lambda t: time_dependent_factor(t) * cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
+                    
+            case 'constant':
+                if(cte_source is None):
+                    print('ERROR: cte_source is needed in order to generate a constant source.')
+                    exit(0)
+                else:
+                    source = lambda t: cte_source
+                    
+            case _:
+                print(f'ERROR: Source type {source_type} is NOT possible')
+                exit(0)
+                
+        # add source to which_species without changing the others           
+        with h5py.File(filename, 'r+') as f:
+            dset = f['S_particle']
+            for it,t in enumerate(self.t_grid_source): 
+                dset[:,it,species_id] = source(t) #,self.rho_grid_source)
+            
+                   
 # Main routine
 if __name__=="__main__":
 	import sys

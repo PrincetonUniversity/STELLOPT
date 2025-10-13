@@ -35,6 +35,13 @@ class POPCON:
         self.n_avg = self.get_averaged_density()
         self.T_avg = self.get_averaged_temperature()
         
+        # get values on axis
+        self.ne0 = np.zeros_like(self.plasma_list,dtype=float)
+        self.Te0 = np.zeros_like(self.plasma_list,dtype=float)
+        for idx,plasma in np.ndenumerate(self.plasma_list):
+            self.ne0[idx] = plasma.get_density('electrons',rho=0.0)
+            self.Te0[idx] = plasma.get_temperature('electrons',rho=0.0)
+        
         # set tauiss04
         self.tauiss04 = lambda P: iss04_fact*0.134*a**2.28*R**0.64*(P/1e6)**-0.61*(self.n_avg/1e19)**0.54*B**0.84*iota**0.41
         
@@ -232,8 +239,9 @@ class POPCON:
     def plot_popcon(self):
         
         import matplotlib.pyplot as plt
+        from matplotlib.colors import LinearSegmentedColormap
         
-        plt.rc('font', size=18)
+        plt.rc('font', size=24)
         fig, ax = plt.subplots(figsize=(11,8))
         
         # sets negative values of P_ext to 0 and converts to MW
@@ -243,54 +251,50 @@ class POPCON:
         n20 = self.n_avg / 1e20
         Tk  = self.T_avg / 1e3
         
+        # use n0 and T0 as axis instead
+        ne0_20 = self.ne0 / 1E20
+        Te0_k = self.Te0 / 1E3
+        
         # fusion power = P_alpha + P_neutron = P_alpha + (E_neutron/E_alpha)*P_alpha = 5*P_alpha
         P_fusion_GW = 5*self.P_alpha / 1e9
         
-        cntrf = ax.pcolor(Tk.transpose(),n20.transpose(),P_MW.transpose(),cmap='hot_r')#,levels=50)
-        cntr = ax.contour(Tk.transpose(),n20.transpose(),P_MW.transpose(),levels=[0,10,20,30,50,70],linestyles='dashed')
-        ax.contour(Tk.transpose(),n20.transpose(),P_fusion_GW.transpose(),levels=[3.0],linestyles='solid',colors='red')
-        ax.clabel(cntr, inline=True, fontsize=17)
+        ## MY CMAP
+        # Define the two colors as RGB tuples
+        color1 = (0.373, 0.686, 0.188)  # Green
+        color2 = (0.110, 0.133, 0.345)  # Purple
+        color3 = (0.000, 0.000, 0.000)  # Black
+
+        # Create a colormap from the two colors
+        cmap_name = 'custom_colormap'
+        my_cmap = LinearSegmentedColormap.from_list(cmap_name, [color1, color2])
         
-        fig.colorbar(cntrf,label='Heating Power [MW]')
-        ax.set_xlabel(r'$\left<T_e\right>$ [keV]')
-        ax.set_ylabel(r'$\left<n_e\right>$ (x10$^{20}$ m$^{-3}$)')
+        ## 0-axis
+        cntrf = ax.pcolor(Te0_k.transpose(),ne0_20.transpose(),P_MW.transpose(),cmap=my_cmap,edgecolors='none')
+        cntr = ax.contour(Te0_k.transpose(),ne0_20.transpose(),P_MW.transpose(),levels=[0,10,20,30,50,70],linestyles='dashed')
+        ax.contour(Te0_k.transpose(),ne0_20.transpose(),P_fusion_GW.transpose(),levels=[3.0],linestyles='solid',colors='red')
+        ax.set_xlabel(r'$T_0$ [keV]')
+        ax.set_ylabel(r'$n_0$ (x10$^{20}$ m$^{-3}$)')
+        cntrf.set_rasterized(True)
+        ## averaged axis
+        # cntrf = ax.pcolor(Tk.transpose(),n20.transpose(),P_MW.transpose(),cmap=my_cmap)
+        # cntr = ax.contour(Tk.transpose(),n20.transpose(),P_MW.transpose(),levels=[0,10,20,30,50,70],linestyles='dashed')
+        # ax.contour(Tk.transpose(),n20.transpose(),P_fusion_GW.transpose(),levels=[3.0],linestyles='solid',colors='red')
+        # ax.set_xlabel(r'$\left<T_e\right>$ [keV]')
+        # ax.set_ylabel(r'$\left<n_e\right>$ (x10$^{20}$ m$^{-3}$)')
+        
+        ax.clabel(cntr, inline=True, fontsize=17)
+        fig.colorbar(cntrf,label='ECRH [MW]')
         ax.set_title(f'{self.popcon_title}')
-        ax.text(5.5, 2.1, r'$P_{\text{fusion}}=3$GW', color='red', fontsize=16)
+        ax.text(18, 2.7, r'$P_{\text{fusion}}=3$GW', color='red', fontsize=20)
         
         # overlay Sudo limit
-        n_max_20 = self.sudo_max(P_MW*1e6 + self.P_alpha) / 1e20
-        #get peak values for all points in the plot
-        n0_20 = [[plasma.get_density('electrons', 0.0)/1e20 for plasma in row] for row in self.plasma_list]
-        ax.contour(Tk.transpose(),n20.transpose(),(n_max_20-n0_20).transpose(),levels=[0.0],linestyles='solid',colors='green')
-        ax.text(6.5, 1.75, r'$n_0/n_{\text{Sudo}}=1.25$', color='green', fontsize=16)
-        
-        # plot star
-        #ax.scatter(1.02, 0.075, s=320, marker='*', color='blue', zorder=3)
-        
-        # ix_cordey,iy_cordey = self.get_cordey_path()
-        # Tk_cordey = Tk[ix_cordey,iy_cordey]
-        # n20_cordey = n20[ix_cordey,iy_cordey]
-        # ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
-        
-        # ix_cordey,iy_cordey = self.get_cordey_path(n20_start=0.40,Tk_start=1.0)
-        # Tk_cordey = Tk[ix_cordey,iy_cordey]
-        # n20_cordey = n20[ix_cordey,iy_cordey]
-        # ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
-        
-        # ix_cordey,iy_cordey = self.get_cordey_path(n20_start=0.25,Tk_start=0.6)
-        # Tk_cordey = Tk[ix_cordey,iy_cordey]
-        # n20_cordey = n20[ix_cordey,iy_cordey]
-        # ax.plot(Tk_cordey,n20_cordey,'-',linewidth=3,color='k')
-        
-        # ix_cordey,iy_cordey = self.get_cordey_path_manual(n20_points=[0.25,0.25,0.65],Tk_points=[0.0,5.4,5.4])
-        # Tk_cordey = Tk[ix_cordey,iy_cordey]
-        # n20_cordey = n20[ix_cordey,iy_cordey]
-        # ax.plot(Tk_cordey,n20_cordey,'--',linewidth=5,color='red')
+        # n_max_20 = self.sudo_max(P_MW*1e6 + self.P_alpha) / 1e20
+        # #get peak values for all points in the plot
+        # n0_20 = [[plasma.get_density('electrons', 0.0)/1e20 for plasma in row] for row in self.plasma_list]
+        # ax.contour(Tk.transpose(),n20.transpose(),(n_max_20-n0_20).transpose(),levels=[0.0],linestyles='solid',colors='green')
+        # ax.text(6.5, 1.75, r'$n_0/n_{\text{Sudo}}=1.25$', color='green', fontsize=16)
         
         if(self.make_plot): plt.show()
-        
-        # # plots along cordey path
-        # self.plots_along_cordey_path(ix_cordey,iy_cordey)
         
     def get_cordey_path(self,n20_start=0,Tk_start=0):
         
@@ -350,8 +354,10 @@ class POPCON:
         P = self.P_ext.clip(min=0) 
         
         # get idx_x_start and idx_y_start by looking at the closest values existing in n and T to the given starting values
-        n20 = self.n_avg / 1e20
-        Tk  = self.T_avg / 1e3
+        # n20 = self.n_avg / 1e20
+        # Tk  = self.T_avg / 1e3
+        n20 = self.ne0 / 1e20
+        Tk  = self.Te0 / 1e3
         
         # checks n20_points and Tk_points have the same shape
         if(len(n20_points) != len(Tk_points)):
@@ -391,7 +397,8 @@ class POPCON:
         nustar_min = np.zeros_like(cordey_idx_x,dtype=float)
         nustar_max = np.zeros_like(cordey_idx_x,dtype=float)
         
-        n0_cordey = np.zeros_like(cordey_idx_x,dtype=float)
+        nD0_cordey = np.zeros_like(cordey_idx_x,dtype=float)
+        ne0_cordey = np.zeros_like(cordey_idx_x,dtype=float)
         T0_cordey = np.zeros_like(cordey_idx_x,dtype=float)
         
         alphafrac_cordey = np.zeros_like(cordey_idx_x,dtype=float)
@@ -403,7 +410,8 @@ class POPCON:
             navg_cordey[k] = self.n_avg[ix,iy]
             Tavg_cordey[k] = self.T_avg[ix,iy]
             
-            n0_cordey[k] = self.plasma_list[ix,iy].get_density('deuterium',rho=0.0)
+            nD0_cordey[k] = self.plasma_list[ix,iy].get_density('deuterium',rho=0.0)
+            ne0_cordey[k] = self.plasma_list[ix,iy].get_density('electrons',rho=0.0)
             T0_cordey[k] = self.plasma_list[ix,iy].get_temperature('deuterium',rho=0.0)
             
             nustar = self.plasma_list[ix,iy].plot_nustar(R0=self.R,iota=self.iota,make_plot=False)
@@ -418,24 +426,7 @@ class POPCON:
             k += 1
             
         MRHP = np.max(power_cordey) / 1E6
-            
-        # _, ax = plt.subplots(figsize=(11,8))
-        # ax.plot(beta_cordey*100,'.-')
-        # ax.set_title('betatot along Cordey path')
-        # ax.set_ylabel(r'$\beta~(\%)$')
-        # ax.set_xlabel('Cordey steps')
-        # ax.grid()
-        
-        # _, ax = plt.subplots(figsize=(11,8))
-        # ax.plot(power_cordey/1E6,'.-',label=f'MRHP={MRHP:.1f} MW')
-        # ax.set_title('External Power along Cordey path')
-        # ax.set_ylabel(r'P [MW]')
-        # ax.set_xlabel('Cordey steps')
-        # ax.grid()
-        # ax.legend()
-        # plt.show()
-        
-        # two plots in the same figure
+
         _, ax = plt.subplots(figsize=(11,8))
         ax.plot(beta_cordey*100,'.-',label=r'$\beta$',color='#5faf30')
         ax.set_title('Cordey path')
@@ -490,13 +481,14 @@ class POPCON:
         
         tau_n = 5; #s
         tau_T = 1; #s
-        Sn = 10*6.6E18 #m-3/s
+        # Sn = 10*6.6E18 #m-3/s
         
         time = [0.0]
         navg_t = [navg_cordey[0]] # density temporal array
         Tavg_t = [Tavg_cordey[0]] # temperature temporal array
         
-        n0_t = [n0_cordey[0]]
+        nD0_t = [nD0_cordey[0]]
+        ne0_t = [ne0_cordey[0]]
         T0_t = [T0_cordey[0]]
         
         for i in range(1,len(navg_cordey+1)):
@@ -507,14 +499,9 @@ class POPCON:
             Ttemp = Tavg_cordey[i-1]
             t0 = time[-1]
             
-            n0temp = n0_cordey[i-1]
+            n0temp = nD0_cordey[i-1]
             T0temp = T0_cordey[i-1]
             
-            # print(Ttemp)
-            # print(Tavg_cordey[i])
-            # print( np.abs((Ttemp-Tavg_cordey[i])/Ttemp))
-            
-            #while(ntemp<0.95*navg_cordey[i] or Ttemp<0.95*Tavg_cordey[i]):
             while(np.abs((ntemp-navg_cordey[i])/ntemp)>0.01 or np.abs((Ttemp-Tavg_cordey[i])/Ttemp)>0.01):
 
                 t = time[-1]+dt
@@ -527,16 +514,14 @@ class POPCON:
                 Ttemp = Tavg_cordey[i] + (Tavg_cordey[i-1]-Tavg_cordey[i])*np.exp(-(t-t0)/tau_T)
                 Tavg_t.append(Ttemp)
                 
-                n0temp = n0_cordey[i] + (n0_cordey[i-1]-n0_cordey[i])*np.exp(-(t-t0)/tau_n)
-                n0_t.append(n0temp)
+                n0temp = nD0_cordey[i] + (nD0_cordey[i-1]-nD0_cordey[i])*np.exp(-(t-t0)/tau_n)
+                nD0_t.append(n0temp)
+                
+                n0temp = ne0_cordey[i] + (ne0_cordey[i-1]-ne0_cordey[i])*np.exp(-(t-t0)/tau_n)
+                ne0_t.append(n0temp)
                 
                 T0temp = T0_cordey[i] + (T0_cordey[i-1]-T0_cordey[i])*np.exp(-(t-t0)/tau_T)
                 T0_t.append(T0temp) 
-   
-        
-        # print(f'Sn={navg_cordey[i]/tau_n}')
-        # print(f'ST={Tavg_cordey[i]/tau_T}')
-        
                 
         _, ax = plt.subplots(figsize=(11,8))
         ax.plot(time, np.array(Tavg_t)/1e3,'.-',color='#1D2258',label=r'$\left<T\right>$')
@@ -553,7 +538,6 @@ class POPCON:
         ax2.legend(loc='lower right')
         ax2.set_title('Cordey path')
         
-        
         _, ax = plt.subplots(figsize=(11,8))
         ax.plot(time, np.array(T0_t)/1e3,'.-',color='#1D2258',label=r'$T_0$')
         ax.grid()
@@ -562,18 +546,17 @@ class POPCON:
         ax.legend(loc='upper left')
         
         ax2 = ax.twinx() 
-        ax2.plot(time, np.array(n0_t)/1e20,'.-',label=r'$n_0$',color='#5faf30')
+        ax2.plot(time, np.array(ne0_t)/1e20,'.-',label=r'$n_0$',color='#5faf30')
         ax2.legend(loc='lower right')
-        ax2.set_ylabel(r'$n_0$ (x10$^{20}$ m$^{-3}$)')
+        ax2.set_ylabel(r'$n_{e0}$ (x10$^{20}$ m$^{-3}$)')
         # ax2.grid()
         ax2.legend(loc='lower right')
         ax2.set_title('Cordey path')
         
-        
         # plt.legend()
         plt.show()
         
-        return time, n0_t, T0_t,
+        return time, nD0_t, T0_t, ne0_t
         
 # Main routine
 if __name__=="__main__":

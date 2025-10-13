@@ -36,7 +36,14 @@
                               freq_ecrh, power_ecrh, &
                               pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w, &
                               dkes_k, dkes_Erstar, dkes_Nustar, &
-                              etapar_type, save_DKES_coeffs
+                              etapar_type, save_DKES_coeffs, &
+                              solve_plasma_equations, &
+                              dt_plasma_solver, Nr_plasma_solver, &
+                              max_subiter_plasma_solver, tol_plasma_solver, &
+                              beurskens_ions, add_NEO, &
+                              Dn_ions, chi_all, N0_init_ions, T0_init_all, &
+                              stiffness_beurskens, aLT_critical_beurskens, &
+                              alpha_beurskens
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -91,6 +98,21 @@
       dkes_Erstar = 1E10
       dkes_Nustar = 1E10
       save_DKES_coeffs = .FALSE.
+      ! Plasma solver
+      solve_plasma_equations = .FALSE.
+      dt_plasma_solver = 1E-2
+      Nr_plasma_solver = 101
+      max_subiter_plasma_solver = 50
+      tol_plasma_solver = 1E-4
+      beurskens_ions = .FALSE.
+      add_NEO = .TRUE.
+      Dn_ions = 0.0
+      chi_all = 0.0
+      N0_init_ions = 1E19
+      T0_init_all  = 200
+      stiffness_beurskens = 0.7
+      aLT_critical_beurskens = 1.5
+      alpha_beurskens = 1.0
       RETURN
       END SUBROUTINE init_thrift_input
       

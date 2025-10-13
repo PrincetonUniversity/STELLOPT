@@ -46,6 +46,10 @@ MODULE thrift_vars
     !
     !     Restart variables
     !          UGRID_RESTART    Restart Ugrid
+    !          J_RESTART        Restart J
+    !          DENS_RESTART     Restart density. Only when solving plasma eqs
+    !          TEMP_RESTART     Restart temperature. Only when solving plasma eqs
+    !          DENS_FAST_ALPHAS_RESTART   Restart Fast Alphas density
     !
     !     Profile variables
     !          THRIFT_ETAPARA   Parallel electrical resistivity
@@ -87,13 +91,16 @@ MODULE thrift_vars
                                  win_thrift_coeff_bp, win_thrift_coeff_cp, win_thrift_coeff_dp, &
              win_thrift_alpha1,  win_thrift_alpha2,   win_thrift_alpha3,   win_thrift_alpha4,   &
              win_thrift_matld,   win_thrift_matmd,    win_thrift_matud,    win_thrift_matrhs,   &
-             win_thrift_bvav,    win_thrift_ugrid_restart,                 win_thrift_betatot,  &
+             win_thrift_bvav,    win_thrift_ugrid_restart, win_thrift_j_restart,                &
+             win_thrift_betatot,  &
              win_thrift_gneo,    win_thrift_qneo,                                               &
-             win_thrift_dens,    win_thrift_temp,     win_thrift_press           
+             win_thrift_dens, win_thrift_temp, win_thrift_press, win_thrift_fast_alphas_dens,   &
+             win_thrift_dens_restart,win_thrift_temp_restart,win_thrift_dens_fast_alphas_restart            
     REAL(rprec) :: dt_first_iter
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), THRIFT_PHIEDGE(:), &
                                           THRIFT_S(:),   THRIFT_SNOB(:),  THRIFT_T(:),         &
-                                          UGRID_RESTART(:), THRIFT_BETATOT(:)
+                                          UGRID_RESTART(:), J_RESTART(:), THRIFT_BETATOT(:), &
+                                          DENS_FAST_ALPHAS_RESTART(:)
     REAL(rprec), DIMENSION(:,:), POINTER :: &
                  THRIFT_J,THRIFT_I,THRIFT_UGRID, &
                  THRIFT_JPLASMA, THRIFT_IPLASMA, &
@@ -110,8 +117,8 @@ MODULE thrift_vars
                                  THRIFT_COEFF_BP,THRIFT_COEFF_CP,THRIFT_COEFF_DP,&
                  THRIFT_ALPHA1,  THRIFT_ALPHA2,  THRIFT_ALPHA3,  THRIFT_ALPHA4,  &
                  THRIFT_MATLD,   THRIFT_MATMD,   THRIFT_MATUD,   THRIFT_MATRHS,  &
-                 THRIFT_BVAV
-    REAL(rprec), DIMENSION(:,:,:), POINTER :: THRIFT_GNEO, THRIFT_QNEO, THRIFT_DENS, THRIFT_TEMP, THRIFT_PRESS                                                 
+                 THRIFT_BVAV, DENS_RESTART, TEMP_RESTART, THRIFT_FAST_ALPHAS_DENS
+    REAL(rprec), DIMENSION(:,:,:), POINTER :: THRIFT_GNEO, THRIFT_QNEO, THRIFT_DENS, THRIFT_TEMP, THRIFT_PRESS                                               
                  
 
 

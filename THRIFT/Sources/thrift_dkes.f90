@@ -123,6 +123,7 @@
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!! Parallel Work block
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         IF (myworkid == master .AND. numprocs_local < 2) STOP 'thrift_dkes parallelization does not currently support only 1 process'
 
          CALL second0(stime)
 
