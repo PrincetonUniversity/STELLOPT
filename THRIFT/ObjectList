@@ -1,4 +1,5 @@
 ObjectFiles = \
+thrift_plasma_solver_mod.o \
 thrift_penta.o \
 thrift_dkes.o \
 thrift_diagno.o \

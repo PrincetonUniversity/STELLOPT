@@ -81,7 +81,7 @@ class DKES:
         # according to J. Lore documentation and also C. Beidler
         # this is also what is done internally in PENTA 
         # (this sign basically sets sign of JBS, and calculations agree w/ SFINCS, so this should be correct!)
-        self.D13_star = -self.D31_star
+        self.D13_star = self.D31_star
         
     def check_convergence(self):
     
@@ -110,7 +110,7 @@ class DKES:
                     print(f'{self.cmul[idx]:<12.3E} {self.efield[idx]:<12.3E} {self.Lm[Lvar][idx]:<12.4E} {self.Lp[Lvar][idx]:<12.4E} {self.rel_error[Lvar][idx]*100:<15.2f}')
                 print(f'Making the average anyway: {Lvar} = 0.5*({Lvarp} + {Lvarm})')
             
-    def plot_DKES_coeffs(self):
+    def plot_DKES_coeffs(self,R0=None,iota=None,use_nustar=False):
         # plots the species-independent L11, L13 and L33 
         
         import matplotlib.pyplot as pyplot
@@ -119,7 +119,7 @@ class DKES:
                 'L11': '$D_{11}^*~~[m^{-1}~T^{-2}]$',
                 'L31': '$D_{31}^*$',
                 'L33': '$D_{33}^*~~[m~T^2]$'
-                }
+                } 
         
         for plot_var in ['L11', 'L31', 'L33']:
             
@@ -137,9 +137,14 @@ class DKES:
                 #ax.plot(self.cmul[i1:i2],yplot[i1:i2],marker='+',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
                 # plot with error bar
                 [yerr_lower, yerr_upper] = self.compute_yerr(yplot[i1:i2],self.Lm[plot_var][i1:i2],self.Lp[plot_var][i1:i2])
-                ax.errorbar(self.cmul[i1:i2],yplot[i1:i2],yerr=[yerr_lower,yerr_upper],fmt='-o',label=rf'$E_s/v$={self.efield[i1]:3.1E}',capsize=5, elinewidth=2, markeredgewidth=2)
-                    
-            ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
+                if(use_nustar and (R0 is not None) and (iota is not None)):
+                    nu_star = self.cmul[i1:i2] * (R0/iota)
+                    ax.set_xlabel(r'$\nu^*$')
+                    x_axis = nu_star
+                else:
+                    x_axis = self.cmul[i1:i2]
+                    ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
+                ax.errorbar(x_axis,yplot[i1:i2],yerr=[yerr_lower,yerr_upper],fmt='-o',label=rf'$E_s/v$={self.efield[i1]:3.1E}',capsize=5, elinewidth=2, markeredgewidth=2)
             ax.set_ylabel(f'{var_names[plot_var]}')
             ax.set_xscale('log')
             if(plot_var=='L11' or plot_var=='L33'):
@@ -857,7 +862,7 @@ class DKES:
                 
                 self.get_integral(integrand[species][i],self.K,xmin=Kmin,xmax=Kmax,make_plot=True,plot_title=which_convol+f', {species}, Er/v={efield}')
     
-    def get_PENTA3_energy_convolution(self,which_coeff,which_species,Er,plasma_class,K_exp=0,jval=0,make_plot=True):
+    def get_PENTA3_energy_convolution(self,which_coeff,which_species,Er,plasma_class,K_exp=0,jval=0,log_interp_coeff=True,make_plot=True):
         # Er is in V/cm
         
         import matplotlib.pyplot as plt
@@ -869,6 +874,9 @@ class DKES:
             coeff = self.D11_star
         elif(which_coeff == 'D31_star'):
             coeff = self.D31_star
+        elif(which_coeff == 'D31_over_D33_corrected'):
+            D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
+            coeff = self.D31_star / D33_corrected
         else:
             print('Coeff not found...')
             exit(1)
@@ -887,8 +895,11 @@ class DKES:
         # spline interpolate the log of the coeff
         # if the log is not taken, then for coefficients that span many orders of magnitude (as D11star)
         # it will give bad results...
-        interp_func = RectBivariateSpline(cmul_log, efield_log, np.log10(coeff_2d), kx=2, ky=2)
-        
+        if(log_interp_coeff):
+            interp_func = RectBivariateSpline(cmul_log, efield_log, np.log10(coeff_2d), kx=2, ky=2)
+        else:
+            interp_func = RectBivariateSpline(cmul_log, efield_log, coeff_2d, kx=2, ky=2)
+            
         #get thermal speed
         vth = plasma_class.get_thermal_speed(which_species,self.roa)
 
@@ -911,7 +922,11 @@ class DKES:
         # get indexes where values were clipped 
         idx_clipped = (log_cmul_K_non_clipped!=log_cmul_K) + (log_efield_K_non_clipped!=log_efield_K)
         
-        integrand = 10**interp_func(log_cmul_K,log_efield_K,grid=False)
+        if(log_interp_coeff):
+            integrand = 10**interp_func(log_cmul_K,log_efield_K,grid=False)
+        else:
+            integrand = interp_func(log_cmul_K,log_efield_K,grid=False)
+            
         integrand = integrand * self.K**K_exp * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
         
         qa = plasma_class.charge[which_species]
@@ -921,7 +936,7 @@ class DKES:
         
         convolution = norm*trapezoid(integrand,self.K)
         
-        print(f'Energy convolution = {convolution}')
+        print(f'Energy convolution = {convolution:.1e}')
         
         # Optionally plots the coefficient as function of cmul and the integrand on a 2nd axis
         # this allows to understand what are the most important points
@@ -945,12 +960,12 @@ class DKES:
             ax2.plot(cmul_species[idx_clipped], norm*integrand[idx_clipped],'.-',color='red')
             ax2.fill_between(cmul_species, norm*integrand, alpha=0.3, label=f'|Er|={np.abs(Er)} V/cm')
 
-            ax1.set_yscale('log')
+            if(log_interp_coeff): ax1.set_yscale('log')
             ax1.set_xscale('log')
             ax2.set_xscale('log')
             ax1.set_ylabel(which_coeff)
             ax2.set_ylabel(f'{which_species} ||{which_coeff} K^{K_exp}||')
-
+            ax1.grid()
             ax1.set_xlabel(r'$\nu/v$')
             ax2.legend()
             plt.title(f'r/a={self.roa:.2f}')

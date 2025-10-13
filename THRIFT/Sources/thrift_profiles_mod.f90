@@ -11,6 +11,7 @@ MODULE thrift_profiles_mod
     !-------------------------------------------------------------------
     USE stel_kinds, ONLY: rprec
     USE thrift_runtime
+    USE thrift_globals, ONLY: solve_plasma_equations
     !-------------------------------------------------------------------
     !     Module Variables
     !          lverb         Logical to control screen output
@@ -22,12 +23,15 @@ MODULE thrift_profiles_mod
     REAL(rprec), DIMENSION(:), POINTER :: raxis_prof, taxis_prof, &
                                           Matom_prof, hr, hri, ht, hti
     REAL(rprec), DIMENSION(:,:,:), POINTER :: NE3D, TE3D, P3D, JBS3D, eta3D
-    REAL(rprec), DIMENSION(:,:,:,:), POINTER :: NI4D, TI4D
+    REAL(rprec), DIMENSION(:,:,:,:), POINTER :: NI4D, TI4D 
     INTEGER :: win_raxis_prof, win_taxis_prof, win_NE3D, win_TE3D, &
                win_NI4D, win_TI4D, win_hr, win_ht, win_hri, win_hti, &
-               win_Matom_prof, win_Zatom_prof, win_P3D, win_JBS3D, win_eta3D
-               
+               win_Matom_prof, win_Zatom_prof, win_P3D, win_JBS3D, win_eta3D          
     REAL(rprec), PARAMETER :: AMU = 1.66053906892D-27
+    ! Used when solving plasma eqs
+    REAL(rprec), DIMENSION(:,:), POINTER :: NE_spl, TE_spl, P_spl
+    REAL(rprec), DIMENSION(:,:,:), POINTER :: NI_spl, TI_spl
+    INTEGER :: win_NE_spl, win_TE_spl, win_NI_spl, win_TI_spl, win_P_spl
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         NONE
@@ -330,6 +334,7 @@ MODULE thrift_profiles_mod
       REAL*8  :: xparam, yparam
       REAL*8 :: fval(1)
       REAL(rprec) :: t
+      IF(solve_plasma_equations) STOP 'ERROR: Cannot call dfdt when solving transport equations'
       val = 0
       t = MIN(t_val,tmax)
       IF ((rho_val >= rhomin-eps1) .and. (rho_val <= rhomax+eps1) .and. &
@@ -351,7 +356,16 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: rho_val
       REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(out) :: val
-      CALL get_prof_f(rho_val,t_val,NE3D,val)
+      INTEGER :: ier
+      INTEGER, parameter :: ict(2)=(/1,0/)
+      REAL*8 :: fval(1)
+      IF(solve_plasma_equations) THEN
+         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,NE_spl,ict,fval,ier)
+         IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Density',ier)
+         val = fval(1)
+      ELSE
+         CALL get_prof_f(rho_val,t_val,NE3D,val)
+      END IF
       RETURN
       END SUBROUTINE get_prof_ne
 
@@ -360,7 +374,16 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: rho_val
       REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(out) :: val
-      CALL get_prof_dfdrho(rho_val,t_val,NE3D,val)
+      INTEGER :: ier
+      INTEGER, parameter :: ict(2)=(/0,1/)
+      REAL*8 :: fval(1)
+      IF(solve_plasma_equations) THEN
+         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,NE_spl,ict,fval,ier)
+         IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Density_Derivative',ier)
+         val = fval(1)
+      ELSE
+         CALL get_prof_dfdrho(rho_val,t_val,NE3D,val)
+      END IF
       RETURN
       END SUBROUTINE get_prof_neprime
 
@@ -369,10 +392,19 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: rho_val
       REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(out) :: val
-      ReAL(rprec) :: clamp
-      CALL get_prof_f(rho_val,t_val,TE3D,val)
-      clamp = 14 ! minimum Te is 14eV
-      val = MAXVAL( (/clamp,val/) ) 
+      REAL(rprec) :: clamp
+      INTEGER :: ier
+      INTEGER, parameter :: ict(2)=(/1,0/)
+      REAL*8 :: fval(1)
+      IF(solve_plasma_equations) THEN
+         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,TE_spl,ict,fval,ier)
+         IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Temperature',ier)
+         val = fval(1)
+      ELSE
+         CALL get_prof_f(rho_val,t_val,TE3D,val)
+         clamp = 14 ! minimum Te is 14eV
+         val = MAXVAL( (/clamp,val/) )
+      END IF
       RETURN
       END SUBROUTINE get_prof_te
 
@@ -381,7 +413,16 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: rho_val
       REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(out) :: val
-      CALL get_prof_dfdrho(rho_val,t_val,TE3D,val)
+      INTEGER :: ier
+      INTEGER, parameter :: ict(2)=(/0,1/)
+      REAL*8 :: fval(1)
+      IF(solve_plasma_equations) THEN
+         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,TE_spl,ict,fval,ier)
+         IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Temperature_Derivative',ier)
+         val = fval(1)
+      ELSE
+         CALL get_prof_dfdrho(rho_val,t_val,TE3D,val)
+      END IF
       RETURN
       END SUBROUTINE get_prof_teprime
 
@@ -391,8 +432,17 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: t_val
       INTEGER,     INTENT(in) :: iion
       REAL(rprec), INTENT(out) :: val
+      INTEGER :: ier
+      INTEGER, parameter :: ict(2)=(/1,0/)
+      REAL*8 :: fval(1)
       val = 0
-      IF (iion <= nion_prof) CALL get_prof_f(rho_val,t_val,NI4D(:,:,:,iion),val)
+      IF(solve_plasma_equations) THEN
+         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,NI_spl(:,:,iion),ict,fval,ier)
+         IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Density',ier)
+         val = fval(1)      
+      ELSE
+         IF (iion <= nion_prof) CALL get_prof_f(rho_val,t_val,NI4D(:,:,:,iion),val)
+      END IF
       RETURN
       END SUBROUTINE get_prof_ni
 
@@ -402,8 +452,17 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: t_val
       INTEGER,     INTENT(in) :: iion
       REAL(rprec), INTENT(out) :: val
+      INTEGER :: ier
+      INTEGER, parameter :: ict(2)=(/0,1/)
+      REAL*8 :: fval(1)
       val = 0
-      IF (iion <= nion_prof) CALL get_prof_dfdrho(rho_val,t_val,NI4D(:,:,:,iion),val)
+      IF(solve_plasma_equations) THEN
+         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,NI_spl(:,:,iion),ict,fval,ier)
+         IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Density_Derivative',ier)
+         val = fval(1)
+      ELSE
+         IF (iion <= nion_prof) CALL get_prof_dfdrho(rho_val,t_val,NI4D(:,:,:,iion),val)
+      END IF
       RETURN
       END SUBROUTINE get_prof_niprime
 
@@ -413,8 +472,17 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: t_val
       INTEGER,     INTENT(in) :: iion
       REAL(rprec), INTENT(out) :: val
+      INTEGER :: ier
+      INTEGER, parameter :: ict(2)=(/1,0/)
+      REAL*8 :: fval(1)
       val = 0
-      IF (iion <= nion_prof) CALL get_prof_f(rho_val,t_val,TI4D(:,:,:,iion),val)
+      IF(solve_plasma_equations) THEN
+         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,TI_spl(:,:,iion),ict,fval,ier)
+         IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Temperature',ier)
+         val = fval(1)
+      ELSE
+         IF (iion <= nion_prof) CALL get_prof_f(rho_val,t_val,TI4D(:,:,:,iion),val)
+      END IF
       RETURN
       END SUBROUTINE get_prof_ti
 
@@ -424,8 +492,17 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: t_val
       INTEGER,     INTENT(in) :: iion
       REAL(rprec), INTENT(out) :: val
+      INTEGER :: ier
+      INTEGER, parameter :: ict(2)=(/0,1/)
+      REAL*8 :: fval(1)
       val = 0
-      IF (iion <= nion_prof) CALL get_prof_dfdrho(rho_val,t_val,TI4D(:,:,:,iion),val)
+      IF(solve_plasma_equations) THEN
+         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,TI_spl(:,:,iion),ict,fval,ier)
+         IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Temperature_Derivative',ier)
+         val = fval(1)
+      ELSE
+         IF (iion <= nion_prof) CALL get_prof_dfdrho(rho_val,t_val,TI4D(:,:,:,iion),val)
+      END IF
       RETURN
       END SUBROUTINE get_prof_tiprime
 
@@ -435,9 +512,17 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(out) :: val
       INTEGER     :: i
-      REAL(rprec) :: nk, tk
+      INTEGER :: ier
+      INTEGER, parameter :: ict(2)=(/1,0/)
+      REAL*8 :: fval(1)
       val = 0
-      CALL get_prof_f(rho_val,t_val,P3D,val)
+      IF(solve_plasma_equations) THEN
+         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,P_spl(:,:),ict,fval,ier)
+         IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Total_Pressure',ier)
+         val = fval(1)
+      ELSE
+         CALL get_prof_f(rho_val,t_val,P3D,val)
+      END IF
       RETURN
       END SUBROUTINE get_prof_p
 
@@ -449,6 +534,7 @@ MODULE thrift_profiles_mod
          INTEGER     :: i
          REAL(rprec) :: nk, tk
          val = 0
+         IF(solve_plasma_equations) STOP 'JBS cannot be obtained from profile when solving plasma equations'
          CALL get_prof_f(rho_val,t_val,JBS3D,val)
          RETURN
       END SUBROUTINE get_prof_JBS
@@ -461,6 +547,7 @@ MODULE thrift_profiles_mod
          INTEGER     :: i
          REAL(rprec) :: nk, tk
          val = 0
+         IF(solve_plasma_equations) STOP 'eta cannot be obtained from profile when solving plasma equations'
          CALL get_prof_f(rho_val,t_val,eta3D,val)
          RETURN
       END SUBROUTINE get_prof_eta
@@ -470,10 +557,17 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(in) :: rho_val
       REAL(rprec), INTENT(in) :: t_val
       REAL(rprec), INTENT(out) :: val
-      INTEGER     :: i
-      REAL(rprec) :: nk, tk, dn, dt
+      INTEGER :: ier
+      INTEGER, parameter :: ict(2)=(/0,1/)
+      REAL*8 :: fval(1)
       val = 0
-      CALL get_prof_dfdrho(rho_val,t_val,P3D,val)
+      IF(solve_plasma_equations) THEN
+         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,P_spl(:,:),ict,fval,ier)
+         IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Total_Pressure_Derivative',ier)
+         val = fval(1)
+      ELSE
+         CALL get_prof_dfdrho(rho_val,t_val,P3D,val)
+      END IF
       RETURN
       END SUBROUTINE get_prof_pprime
 

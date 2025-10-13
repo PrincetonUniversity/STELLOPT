@@ -17,6 +17,9 @@
       USE penta_interface_mod
       USE mpi_params
       USE mpi_inc
+      USE thrift_plasma_solver_mod, ONLY: Dn_NEO,cn_NEO,Dp_NEO,cp_NEO,&
+      rho_plasma_grid,Nr_plasma_solver,mytimestep_plasma_solver,&
+      G_NEO_complet,Q_NEO_complet,Nt_total_plasma_solver
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !        lscreen       Screen output
@@ -34,9 +37,12 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_k, iota, phip, chip, btheta, bzeta, bsq, vp, &
                         te, ne, dtedrho, dnedrho, EparB, JBS_PENTA, etapar_PENTA, Er_PENTA, rho_temp, J_temp, eta_temp, Er_temp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: GNEO_PENTA, QNEO_PENTA, GNEO_temp, QNEO_temp
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: Dn_PENTA, cn_PENTA, Dn_temp, cn_temp
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: Dp_PENTA, cp_PENTA, Dp_temp, cp_temp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: ni,ti, dtidrho, dnidrho
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: D11, D13, D33
       TYPE(EZspline1_r8) :: EparB_spl, J_spl, eta_spl, Er_spl, GNEO_spl, QNEO_spl
+      TYPE(EZspline1_r8) :: Dn_spl, cn_spl, Dp_spl, cp_spl
       INTEGER :: bcs0(2)
       CHARACTER(LEN=32) :: temp_str, temp1_str
 !-----------------------------------------------------------------------
@@ -61,9 +67,13 @@
          ALLOCATE(ni(ns_dkes,nion_prof),ti(ns_dkes,nion_prof),dtidrho(ns_dkes,nion_prof),dnidrho(ns_dkes,nion_prof))
          ALLOCATE(JBS_PENTA(ns_dkes),etapar_PENTA(ns_dkes),Er_PENTA(ns_dkes))
          ALLOCATE(GNEO_PENTA(nion_prof+1,ns_dkes),QNEO_PENTA(nion_prof+1,ns_dkes))
+         ALLOCATE(Dn_PENTA(nion_prof+1,ns_dkes),cn_PENTA(nion_prof+1,ns_dkes))
+         ALLOCATE(Dp_PENTA(nion_prof+1,ns_dkes),cp_PENTA(nion_prof+1,ns_dkes))
 
          JBS_PENTA = 0.0; etapar_PENTA = 0.0; Er_PENTA = 0.0
          GNEO_PENTA = 0.0; QNEO_PENTA = 0.0
+         Dn_PENTA = 0.0; cn_PENTA = 0.0
+         Dp_PENTA = 0.0; cp_PENTA = 0.0
 
          IF (myworkid == master) THEN
 
@@ -192,7 +202,14 @@
                         Er_PENTA(k) = Er_roots(i)
                         ! NEO fluxes
                         GNEO_PENTA(:,k) = Gammas_ambi(:,i)
-                        QNEO_PENTA(:,k) = QoTs_ambi(:,i) * Temps
+                        QNEO_PENTA(:,k) = QoTs_ambi(:,i) * Temps * e_charge
+                        ! NEO particle transport coefficients
+                        Dn_PENTA(:,k) = (/ (-L_n_ambi(i,j,j), j=1,nion_prof+1) /)
+                        cn_PENTA(:,k) = MATMUL(L_T_ambi(i,:,:),e_charge*dTdrs) / dens + Er_PENTA(k)*SUM(L_Er_ambi(i,:,:),dim=2) / dens
+                        ! NEO heat transport coefficients
+                        Dp_PENTA(:,k) = (/ (-R_T_ambi(i,j,j), j=1,nion_prof+1) /) * e_charge*Temps / dens 
+                        cp_PENTA(:,k) = MATMUL(R_n_ambi(i,:,:),dndrs)/dens - MATMUL(R_T_ambi(i,:,:),(e_charge*Temps/dens)*dndrs)/dens &
+                                      + Er_PENTA(k)*SUM(R_Er_ambi(i,:,:),dim=2) / dens
                         EXIT
                   ENDIF
             END DO
@@ -211,17 +228,25 @@
             CALL MPI_REDUCE(MPI_IN_PLACE,Er_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_REDUCE(MPI_IN_PLACE,GNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_REDUCE(MPI_IN_PLACE,QNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE,Dn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE,cn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE,Dp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE,cp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
          ELSE 
             CALL MPI_REDUCE(JBS_PENTA,JBS_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_REDUCE(etapar_PENTA,etapar_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_REDUCE(Er_PENTA,Er_PENTA,ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_REDUCE(GNEO_PENTA,GNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_REDUCE(QNEO_PENTA,QNEO_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(Dn_PENTA,Dn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(cn_PENTA,cn_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(Dp_PENTA,Dp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_REDUCE(cp_PENTA,cp_PENTA,(nion_prof+1)*ns_dkes,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL FLUSH(6)
             DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
             DEALLOCATE(te,ne,dtedrho,dnedrho)
             DEALLOCATE(ni,ti,dtidrho,dnidrho)
-            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA)
+            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA,Dn_PENTA,cn_PENTA,Dp_PENTA,cp_PENTA)
             RETURN
          ENDIF
 #endif
@@ -269,6 +294,9 @@
             CALL EZspline_init(eta_spl,ns_dkes+2,bcs0,ier)
             eta_spl%x1        = rho_temp
             eta_spl%isHermite = 0
+            ! set eta_temp to very small number if negative
+            WHERE (eta_temp .LE. 0.0_rprec) eta_temp = 1.0E-20_rprec
+            !
             CALL EZspline_setup(eta_spl,LOG(eta_temp),ier,EXACT_DIM=.true.)
             !Er
             CALL EZspline_init(Er_spl,ns_dkes+2,bcs0,ier)
@@ -279,16 +307,14 @@
             DEALLOCATE(J_temp,eta_temp,Er_temp)
 
             ! Calculate J_BS, etapara and Er in THRFIT GRID
-            DO i = 1, nsj
-                  rho = SQRT( THRIFT_S(i) )
-                  CALL EZspline_interp(J_spl,rho,THRIFT_JBOOT(i,mytimestep),ier)
-                  IF( etapar_type == 'dkespenta') THEN
-                        CALL EZspline_interp(eta_spl,rho,THRIFT_ETAPARA(i,mytimestep),ier)
-                        ! Need to take the exponential, since spline of log was done
-                        THRIFT_ETAPARA(i,mytimestep) = EXP(THRIFT_ETAPARA(i,mytimestep))
-                  END IF
-                  CALL EZspline_interp(Er_spl,rho,THRIFT_ER(i,mytimestep),ier)
-            END DO
+            CALL EZspline_interp(J_spl,nsj,SQRT(THRIFT_S),THRIFT_JBOOT(:,mytimestep),ier)
+            CALL EZspline_interp(Er_spl,nsj,SQRT(THRIFT_S),THRIFT_ER(:,mytimestep),ier)
+            IF( etapar_type == 'dkespenta') THEN
+                  CALL EZspline_interp(eta_spl,nsj,SQRT(THRIFT_S),THRIFT_ETAPARA(:,mytimestep),ier)
+                  ! Need to take the exponential, since spline of log was done
+                  THRIFT_ETAPARA(:,mytimestep) = EXP(THRIFT_ETAPARA(:,mytimestep))
+            END IF
+
             CALL EZspline_free(J_spl,ier)
             CALL EZspline_free(eta_spl,ier)
             CALL EZspline_free(Er_spl,ier)
@@ -298,33 +324,97 @@
                   !GNEO
                   CALL EZspline_init(GNEO_spl,ns_dkes+2,bcs0,ier)
                   GNEO_spl%x1        = rho_temp
-                  GNEO_spl%isHermite = 0
+                  GNEO_spl%isHermite = 1
                   CALL EZspline_setup(GNEO_spl,GNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
                   !QNEO
                   CALL EZspline_init(QNEO_spl,ns_dkes+2,bcs0,ier)
                   QNEO_spl%x1        = rho_temp
-                  QNEO_spl%isHermite = 0
+                  QNEO_spl%isHermite = 1
                   CALL EZspline_setup(QNEO_spl,QNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
                   
                   ! Compute at THRIFT GRID
-                  DO i = 1, nsj
-                        rho = SQRT( THRIFT_S(i) )
-                        CALL EZspline_interp(GNEO_spl,rho,THRIFT_GNEO(jspecies,i,mytimestep),ier)
-                        CALL EZspline_interp(QNEO_spl,rho,THRIFT_QNEO(jspecies,i,mytimestep),ier)
-                  END DO
+                  CALL EZspline_interp(GNEO_spl,nsj,SQRT(THRIFT_S),THRIFT_GNEO(jspecies,:,mytimestep),ier)
+                  CALL EZspline_interp(QNEO_spl,nsj,SQRT(THRIFT_S),THRIFT_QNEO(jspecies,:,mytimestep),ier)
+
+                  ! Save GNE0_complet and QNEO_complet at plasma solver grid
+                  IF(solve_plasma_equations) THEN
+                        CALL EZspline_interp(GNEO_spl,Nr_plasma_solver,rho_plasma_grid,G_NEO_complet(jspecies,mytimestep_plasma_solver,:),ier)
+                        CALL EZspline_interp(QNEO_spl,Nr_plasma_solver,rho_plasma_grid,Q_NEO_complet(jspecies,mytimestep_plasma_solver,:),ier)
+                  END IF
 
                   ! Deallocate splines
                   CALL EZspline_free(GNEO_spl,ier)
                   CALL EZspline_free(QNEO_spl,ier)
             END DO
 
-            DEALLOCATE(GNEO_temp,QNEO_temp,rho_temp)
+            ! Compute NEO coefficients in plasma grid if transport equations being solved
+            IF(solve_plasma_equations) THEN
+                  ! Interpolate JBS_PENTA, etapar_PENTA and Er_PENTA at rho=0 and rho=1
+                  ALLOCATE(Dn_temp(nion_prof+1,ns_dkes+2),cn_temp(nion_prof+1,ns_dkes+2))
+                  ALLOCATE(Dp_temp(nion_prof+1,ns_dkes+2),cp_temp(nion_prof+1,ns_dkes+2))
+                  !
+                  Dn_temp(:,2:ns_dkes+1)   = Dn_PENTA
+                  Dn_temp(:,1)             = 0.0_rprec
+                  Dn_temp(:,ns_dkes+2)     = Dn_PENTA(:,ns_dkes-1) + (Dn_PENTA(:,ns_dkes)-Dn_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                  !
+                  cn_temp(:,2:ns_dkes+1)   = cn_PENTA
+                  cn_temp(:,1)             = 0.0_rprec
+                  cn_temp(:,ns_dkes+2)     = cn_PENTA(:,ns_dkes-1) + (cn_PENTA(:,ns_dkes)-cn_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                  !
+                  Dp_temp(:,2:ns_dkes+1)   = Dp_PENTA
+                  Dp_temp(:,1)             = 0.0_rprec
+                  Dp_temp(:,ns_dkes+2)     = Dp_PENTA(:,ns_dkes-1) + (Dp_PENTA(:,ns_dkes)-Dp_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                  !
+                  cp_temp(:,2:ns_dkes+1)   = cp_PENTA
+                  cp_temp(:,1)             = 0.0_rprec
+                  cp_temp(:,ns_dkes+2)     = cp_PENTA(:,ns_dkes-1) + (cp_PENTA(:,ns_dkes)-cp_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                  !
+                  ! Spline of Dn,cn,Dp,cp; computation at plasma grid
+                  DO jspecies=1,(nion_prof+1)
+                        !Dn
+                        CALL EZspline_init(Dn_spl,ns_dkes+2,bcs0,ier)
+                        Dn_spl%x1        = rho_temp
+                        Dn_spl%isHermite = 1
+                        CALL EZspline_setup(Dn_spl,Dn_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                        !cn
+                        CALL EZspline_init(cn_spl,ns_dkes+2,bcs0,ier)
+                        cn_spl%x1        = rho_temp
+                        cn_spl%isHermite = 1
+                        CALL EZspline_setup(cn_spl,cn_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                        !Dp
+                        CALL EZspline_init(Dp_spl,ns_dkes+2,bcs0,ier)
+                        Dp_spl%x1        = rho_temp
+                        Dp_spl%isHermite = 1
+                        CALL EZspline_setup(Dp_spl,Dp_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                        !cp
+                        CALL EZspline_init(cp_spl,ns_dkes+2,bcs0,ier)
+                        cp_spl%x1        = rho_temp
+                        cp_spl%isHermite = 1
+                        CALL EZspline_setup(cp_spl,cp_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                        
+                        ! Compute at plasma solver grid
+                        CALL EZspline_interp(Dn_spl,Nr_plasma_solver,rho_plasma_grid,Dn_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                        CALL EZspline_interp(cn_spl,Nr_plasma_solver,rho_plasma_grid,cn_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                        CALL EZspline_interp(Dp_spl,Nr_plasma_solver,rho_plasma_grid,Dp_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                        CALL EZspline_interp(cp_spl,Nr_plasma_solver,rho_plasma_grid,cp_NEO(jspecies,mytimestep_plasma_solver,:),ier)
 
+                        ! Deallocate splines
+                        CALL EZspline_free(Dn_spl,ier)
+                        CALL EZspline_free(cn_spl,ier)
+                        CALL EZspline_free(Dp_spl,ier)
+                        CALL EZspline_free(cp_spl,ier)
+                  END DO
+                  !
+                  DEALLOCATE(Dn_temp,cn_temp,Dp_temp,cp_temp)
+            END IF
+
+            DEALLOCATE(GNEO_temp,QNEO_temp,rho_temp)
             DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
             DEALLOCATE(te,ne,dtedrho,dnedrho)
             DEALLOCATE(ni,ti,dtidrho,dnidrho)
             DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA)
-            
+            DEALLOCATE(Dn_PENTA,cn_PENTA,Dp_PENTA,cp_PENTA)
+                        
          END IF
 
       ENDIF

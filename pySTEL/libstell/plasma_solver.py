@@ -5,11 +5,10 @@ and pressure transport equations
 
 import numpy as np
 import sys
-import matplotlib.pyplot as plt
-sys.path.insert(1,'/home/antonio/STELLOPT/pySTEL/libstell')
+from time import perf_counter
 
-from plasma import PLASMA
-from penta import PENTA
+from libstell.plasma import PLASMA
+from libstell.penta import PENTA
 
 # Constants
 EC = 1.602176634E-19 # Electron charge [C]
@@ -17,34 +16,22 @@ EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 
 class PLASMA_SOLVER:
     
-    def __init__(self, list_of_species, tau_fast_alphas=None, tau_thermal_alphas=None, constrain_ne=False, constrain_nT=False):
+    def __init__(self, list_of_species, solve_fast_alphas=False, tau_fast_alphas=0.5, constrain_nT=False):
         
         from collections import defaultdict
         
-        # later this can be changed
-        valid_species = {'electrons', 'deuterium', 'tritium'}
-        invalid_species = set(list_of_species) - valid_species
-        if invalid_species:
-            raise ValueError(f"Invalid species found: {invalid_species}")
-        else:
-            self.list_of_species = list_of_species
+        self.list_of_species = list_of_species
             
         # create plasma class with list_of_species
         self.plasma = PLASMA(list_of_species)
-
-        # in case taus are provided, will solve alphas density using a simple model
-        if((tau_fast_alphas is None) or (tau_thermal_alphas is None)):
-            self.solve_alphas_density = False
-        else:
-            self.solve_alphas_density = True
+        
+        self.solve_fast_alphas = solve_fast_alphas
+        # in case solve_fast_alphas is True but deuterium&tritium are not in the plasma
+        # an error is given
+        if(solve_fast_alphas and ('deuterium' not in list_of_species or 'tritium' not in list_of_species)):
+            raise ValueError(f'ERROR: solve_fast_alphas was set to True, but deuterium and/or tritium not in the plasma!')
+        elif(solve_fast_alphas):
             self.tau_fast_alphas = tau_fast_alphas
-            self.tau_thermal_alphas = tau_thermal_alphas
-            
-        if(constrain_ne):
-            # if True, ne is computed from quasi-neutrality
-            self.constrain_ne = True
-        else:
-            self.constrain_ne = False
             
         if(constrain_nT):
             # if True, nT is assumed to be equal to nD
@@ -65,8 +52,8 @@ class PLASMA_SOLVER:
         self.heat_fluxes_info = defaultdict(lambda: defaultdict(dict))
         self.particle_fluxes_info = defaultdict(lambda: defaultdict(dict))
 
-        print(f'Solvers for pressure of {self.list_of_species} INITIALIZED!')
-        print(f'SOLVING FOR ALPHAS DENSITY: {self.solve_alphas_density}')
+        print(f'Transport plasma solver for {self.list_of_species} INITIALIZED!')
+        if(self.solve_fast_alphas): print(f'SOLVING FOR FAST ALPHAS!')
     
     def set_edge_boundary_condition(self,field: str,species: str,val: float):
         # set edge boundary Dirichlet boundary condition
@@ -145,15 +132,14 @@ class PLASMA_SOLVER:
             self.set_edge_boundary_condition('temperature', species, restart_solver.T[species][-1,-1]) 
             
         # Get alphas density 
-        if(self.solve_alphas_density):
+        if(self.solve_fast_alphas):
             # check restart_solver has alphas
             if 'alphas_fast' not in restart_solver.N or 'alphas_thermal' not in restart_solver.N:
                 raise ValueError('restart file does not have alphas density! Yet you want to solve with alphas...')
             else:
                 self.alphas_fast_density_restart    = restart_solver.N['alphas_fast'][-1,:]
-                self.alphas_thermal_density_restart = restart_solver.N['alphas_thermal'][-1,:]
               
-    def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None):
+    def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None,B=None):
         
         from libstell.vmec import VMEC
         from scipy.interpolate import CubicSpline
@@ -173,6 +159,7 @@ class PLASMA_SOLVER:
                     vp = vmec_out.vp[:].flatten()
                     
                     self.aminor = vmec_out.aminor
+                    self.Rmajor = vmec_out.rmajor
                     
                     roa = np.sqrt(vmec_out.phi / vmec_out.phi[-1])
                     roa = roa.flatten()
@@ -182,14 +169,20 @@ class PLASMA_SOLVER:
                     
                     self.dVdr = CubicSpline(roa,dVdr_analytic)
                     
-                    self.B = np.sqrt(np.squeeze(vmec_out.bdotb)[0])   
+                    self.B0 = np.sqrt(np.squeeze(vmec_out.bdotb)[0])   
+                    self.Bsq = CubicSpline(roa,np.squeeze(vmec_out.bdotb))
             case 'cylindrical':
-                if(aminor is None or Rmajor is None):
-                    print('ERROR: For a cylindrical equilibrium, Rmajor and aminor must be given')
+                if(aminor is None or Rmajor is None or B is None):
+                    print('ERROR: For a cylindrical equilibrium, Rmajor, aminor and B must be given')
                     exit(0)
                 else:
-                    self.aminor=aminor
-                    self.dVdr = lambda rho: 4*np.pi*np.pi*Rmajor*aminor  * rho
+                    self.aminor = aminor
+                    self.Rmajor = Rmajor
+                    dVdr = lambda rho: 4*np.pi*np.pi*Rmajor*aminor  * rho
+                    rho = np.linspace(0,1,100)
+                    self.dVdr = CubicSpline(rho,dVdr(rho))
+                    self.B0 = B
+                    self.Bsq = lambda rho: B*B
                     
     def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, rho_0=None, fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
         # electrons: 'Bremsstrahlung', 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
@@ -284,7 +277,13 @@ class PLASMA_SOLVER:
                 else:
                     self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
             #
-            case 'alpha_generation':
+            case 'fast_alphas_source':
+                # check we are solving fast alphas
+                if(not self.solve_fast_alphas):
+                    raise ValueError('solve_fast_alphas was set to false, so fast_alphas_source does not make sense...')
+                self.particle_sources[species][source_type] = {}
+            #
+            case 'alpha_particles_sink':
                 self.particle_sources[species][source_type] = {}
             #
             case 'constant':
@@ -416,7 +415,8 @@ class PLASMA_SOLVER:
         # set fields at t=tstart
         fields_old = self.set_fields_tstart()
     
-       ### LOOP IN TIME STARTING AT t=tstart+dt ###
+        start_time = perf_counter() 
+        ### LOOP IN TIME STARTING AT t=tstart+dt ###
         for it,t in enumerate(time[1:],start=1):
             self.it = it
             
@@ -425,9 +425,8 @@ class PLASMA_SOLVER:
                 self.N[species][it,:] = self.N[species][it-1,:]
                 self.T[species][it,:] = self.T[species][it-1,:]
                 self.P[species][it,:] = self.P[species][it-1,:]
-                if(self.solve_alphas_density):
-                    self.N['alphas_fast'][it,:] = self.N['alphas_fast'][it-1,:]
-                    self.N['alphas_thermal'][it,:] = self.N['alphas_thermal'][it-1,:]        
+                if(self.solve_fast_alphas):
+                    self.N['alphas_fast'][it,:] = self.N['alphas_fast'][it-1,:]      
             
             ### SUBCYCLE
             delta_p = 10*tolerance
@@ -453,13 +452,16 @@ class PLASMA_SOLVER:
                 fields_old = fields
                 
                 ion_info = self.plasma.ion_species[0]
-                info_str = f'  {t:<13.3f}{subiter:<10}{self.T['electrons'][it,0]/1E3:<18.3f}{self.N['electrons'][it,0]:<20.2E}{self.T[ion_info][it,0]/1E3:<18.3f}{self.N[ion_info][it,0]:<20.2E}{delta_p:<13.2E}'
+                info_str = f"  {t:<13.3f}{subiter:<10}{self.T['electrons'][it,0]/1E3:<18.3f}{self.N['electrons'][it,0]:<20.2E}{self.T[ion_info][it,0]/1E3:<18.3f}{self.N[ion_info][it,0]:<20.2E}{delta_p:<13.2E}"
                 print(info_str)
                 
                 subiter += 1
         
         if(output_filename is not None):
-            self.call_save_output(output_filename)      
+            self.call_save_output(output_filename)  
+            
+        end_time = perf_counter()   
+        print(f'Plasma Solver took {(end_time-start_time)/60:.2f}min to run.')  
         
     def make_checks(self):
         
@@ -483,8 +485,8 @@ class PLASMA_SOLVER:
             if( np.abs(self.initial_density[species](1)-self.edge_density_BC[species]) > 5*tol ):
                 raise ValueError(f'Edge density BC not consistent w/ initial density profile')
             tol = np.abs(self.edge_pressure_BC[species]) * np.finfo(float).eps
-            if( np.abs(self.initial_pressure[species](1)-self.edge_pressure_BC[species]) > 5*tol ):
-                raise ValueError(f'Edge pressure/temperature BC not consistent w/ initial density profile')
+            if( np.abs(self.initial_pressure[species](1)-self.edge_pressure_BC[species]) > 10*tol ):
+                raise ValueError(f'Edge pressure/temperature BC not consistent w/ initial temperature profile')
             
         # check fluxes info is set
         if(not hasattr(self,'heat_fluxes_info')):
@@ -558,9 +560,8 @@ class PLASMA_SOLVER:
             for source_type in self.particle_sources[species].keys():
                 self.explicit_particle_sources[species][source_type] = np.zeros((Nt,Nr))
             
-        if(self.solve_alphas_density):
+        if(self.solve_fast_alphas):
             self.N['alphas_fast'] = np.zeros((Nt,Nr))
-            self.N['alphas_thermal'] = np.zeros((Nt,Nr))
             
     def set_fields_tstart(self):
         
@@ -575,14 +576,12 @@ class PLASMA_SOLVER:
         
         # N_alphas are set to ZERO at t=tstart
         # UNLESS read from restart file
-        if(self.solve_alphas_density):
+        if(self.solve_fast_alphas):
             try:
                 self.N['alphas_fast'][0,:] = self.alphas_fast_density_restart
-                self.N['alphas_thermal'][0,:] = self.alphas_thermal_density_restart
                 print('Reading alphas density from restart file...')
             except:
                 self.N['alphas_fast'][0,:] = 0.0
-                self.N['alphas_thermal'][0,:] = 0.0
             
         # set sources at t=0
         for species in self.list_of_species:
@@ -649,10 +648,6 @@ class PLASMA_SOLVER:
                         ni = self.N[ion][it,:]
 
                         aux_source -= fusion.BremsstrahlungPower(zi,ni,ne,Te)
-                        
-                    if(self.solve_alphas_density):
-                        ni = self.N['alphas_thermal'][it,:]
-                        aux_source -= fusion.BremsstrahlungPower(2,ni,ne,Te)
                         
                 case 'external_gaussian':
                     rho_0 = self.energy_sources[species]['external_gaussian']['rho_0']
@@ -761,7 +756,7 @@ class PLASMA_SOLVER:
                     t = self.time[it]
                     aux_source = time_fact(t) * cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
                     
-                case 'alpha_generation':
+                case 'alpha_particles_sink':
                     nD = self.N['deuterium'][it,:]
                     nT = self.N['tritium'][it,:]
                     
@@ -770,6 +765,9 @@ class PLASMA_SOLVER:
                     
                     sigmav = fusion.sigmaBH(0.5*(TD+TT),'DT')
                     aux_source = - nD*nT*sigmav # particles/(s*m^3)
+                    
+                case 'fast_alphas_source':
+                    aux_source = self.N['alphas_fast'][it,:] / self.tau_fast_alphas
                     
                 case 'constant':
                     aux_source = self.particle_sources[species]['constant']['cte_source']
@@ -845,6 +843,14 @@ class PLASMA_SOLVER:
         stiffness = self.heat_fluxes_info['beurskens']['stiffness']
         convective_fact = self.heat_fluxes_info['beurskens']['convective_fact']
         
+        if callable(stiffness) and callable(aLT_critical):
+            stiffness = stiffness(self.rho_grid)
+            aLT_critical = aLT_critical(self.rho_grid)
+        elif isinstance(stiffness, (float, int)) and isinstance(aLT_critical, (float, int)):
+            pass
+        else:
+            raise ValueError('ERROR: stiffnes and aLTcritical can only be a function or integer/float!')
+        
         chi = {}
         
         ## electrons
@@ -875,12 +881,12 @@ class PLASMA_SOLVER:
             
             chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
             
-            B = self.B ## currently, this is only defined when using a VMEC equilibrium
+            Bsq = self.Bsq(self.rho_grid)
             
             mi = self.plasma.mass[ion]
             qi = self.plasma.charge[ion]
     
-            chi_gB = (EC*T_ion/mi)**1.5 * mi*mi / (qi**2 * B**2) / self.aminor
+            chi_gB = (EC*T_ion/mi)**1.5 * mi*mi / (qi**2 * Bsq) / self.aminor
             
             chi_turb = chi_gB * chi_turb
             
@@ -1099,12 +1105,12 @@ class PLASMA_SOLVER:
             
             chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
             
-            B = self.B ## currently, this is only defined when using a VMEC equilibrium
+            Bsq = self.Bsq(self.rho_grid)
             
             mi = self.plasma.mass[ion]
             qi = self.plasma.charge[ion]
     
-            chi_gB = (EC*T_ion/mi)**1.5 * mi*mi / (qi**2 * B**2) / self.aminor
+            chi_gB = (EC*T_ion/mi)**1.5 * mi*mi / (qi**2 * Bsq) / self.aminor
             
             chi_turb = chi_gB * chi_turb
             
@@ -1153,7 +1159,7 @@ class PLASMA_SOLVER:
             if(species=='tritium' and self.constrain_nT):
                 continue
             
-            if(species=='electrons' and self.constrain_ne):
+            if(species=='electrons'):
                 continue
             
             RHS_vector = self.N[species][it-1,:] + self.dt*self.get_explicit_particle_sources(species,it)
@@ -1169,7 +1175,7 @@ class PLASMA_SOLVER:
         if(self.constrain_nT):
             self.N['tritium'][it,:] = self.N['deuterium'][it,:]   
             
-        if(self.solve_alphas_density):
+        if(self.solve_fast_alphas):
             nD = self.N['deuterium'][it,:]
             nT = self.N['tritium'][it,:]
             TD = self.T['deuterium'][it,:]
@@ -1177,15 +1183,13 @@ class PLASMA_SOLVER:
             sigmav = fusion.sigmaBH(0.5*(TD+TT),'DT')
             #
             self.N['alphas_fast'][it,:] = (self.N['alphas_fast'][it-1,:] + self.dt*nD*nT*sigmav) / (1+self.dt/self.tau_fast_alphas)
-            self.N['alphas_thermal'][it,:] = (self.N['alphas_thermal'][it-1,:] + self.dt/self.tau_thermal_alphas) / (1+self.dt/self.tau_fast_alphas)
         
-        if(self.constrain_ne):
-            self.N['electrons'][it,:] = 0.0
-            for ion in self.plasma.ion_species:
-                self.N['electrons'][it,:] += self.N[ion][it,:] * self.plasma.Zcharge[ion]
-                
-            if(self.solve_alphas_density):
-                self.N['electrons'][it,:] += 2*self.N['alphas_fast'][it,:] + 2*self.N['alphas_thermal'][it,:]     
+        # update electron density from quasi neutrality
+        self.N['electrons'][it,:] = 0.0
+        for ion in self.plasma.ion_species:
+            self.N['electrons'][it,:] += self.N[ion][it,:] * self.plasma.Zcharge[ion]        
+        if(self.solve_fast_alphas):
+            self.N['electrons'][it,:] += 2*self.N['alphas_fast'][it,:]  
         
         dens = []
         for species in self.list_of_species:
@@ -1239,8 +1243,6 @@ class PLASMA_SOLVER:
         return explicit_source
     
     def get_LHS_density(self,species,it):
-        
-        from scipy.interpolate import CubicSpline
         from scipy.sparse import diags
         
         drho = self.drho
@@ -1249,13 +1251,12 @@ class PLASMA_SOLVER:
         Nr = self.Nr
         dt = self.dt
         
+        vp = Vp(self.rho_grid)
+        vp_inner = vp[1:-1]
+        
         Dn = self.Dn[species][it,:]
-        Dn_interp = CubicSpline(self.rho_grid,Dn,bc_type='natural',extrapolate=True)
-        
         cn = self.cn[species][it,:]
-        cn_interp = CubicSpline(self.rho_grid,cn,bc_type='natural',extrapolate=True)
         
-          
         ############################################
         ############### COMPUTE LHS ################
         ############################################
@@ -1263,24 +1264,26 @@ class PLASMA_SOLVER:
         main = np.zeros(Nr)
         upper = np.zeros(Nr-1)
         
-        ## 0<r<a
-        rhos = self.rho_grid
-        rplus = rhos + drho/2
-        rminus = rhos - drho/2
+        ## 0<r<a (inner grid, no boundary points)
+        Dn_plus = (Dn[2:]+Dn[1:-1]) / 2
+        Dn_minus = (Dn[0:-2]+Dn[1:-1]) / 2
         
-        VDplus = Vp(rplus)*Dn_interp(rplus) / (Vp(rhos)*dr**2)
-        VDminus = Vp(rminus)*Dn_interp(rminus) / (Vp(rhos)*dr**2)
+        Vp_plus = (vp[2:]+vp[1:-1]) / 2
+        Vp_minus = (vp[0:-2]+vp[1:-1]) / 2
         
-        cplus  = cn_interp(rhos+drho)*Vp(rhos+drho) / (2*Vp(rhos)*dr)
-        cminus = cn_interp(rhos-drho)*Vp(rhos-drho) / (2*Vp(rhos)*dr)
+        VDplus  = Vp_plus*Dn_plus / (vp_inner*dr**2)
+        VDminus = Vp_minus*Dn_minus / (vp_inner*dr**2)
         
-        main[1:] = 1.0 + dt*(VDplus[1:] + VDminus[1:])
-        upper = dt*(-VDplus[:-1] + cplus[:-1])
-        lower = dt*(-VDminus[1:] - cminus[1:])
+        cplus = cn[2:]*vp[2:] / (2*vp_inner*dr)
+        cminus = cn[0:-2]*vp[0:-2] / (2*vp_inner*dr)
+
+        main[1:-1] = 1.0 + dt*(VDplus + VDminus)
+        upper[1:] = dt*(-VDplus + cplus)
+        lower[0:-1] = dt*(-VDminus - cminus)
         
         ## r=0
-        main[0] = 1.0 + dt*4*Dn_interp(0)/dr**2 + dt*2*cn_interp(drho)/dr
-        upper[0] = -4*dt*Dn_interp(0)/dr**2
+        main[0] = 1.0 + dt*( 4*Dn[0]/dr**2 + 2*cn[1]/dr )
+        upper[0] = -4*dt*Dn[0]/dr**2
                 
         ## r=a
         main[-1] = 1.0
@@ -1292,8 +1295,6 @@ class PLASMA_SOLVER:
         return LHS
     
     def get_LHS_pressure(self,it):
-        
-        from scipy.interpolate import CubicSpline
         from scipy.sparse import diags, block_diag, csr_matrix
         
         drho = self.drho
@@ -1302,15 +1303,15 @@ class PLASMA_SOLVER:
         Nr = self.Nr
         num_species = len(self.list_of_species)
         
+        vp = Vp(self.rho_grid)
+        vp_inner = vp[1:-1]
+        
         DIFF = {}
         
         for species in self.list_of_species:
             
-            Dp = self.Dp[species][it,:]
-            Dp_interp = CubicSpline(self.rho_grid,Dp,bc_type='natural',extrapolate=True)
-            
+            Dp = self.Dp[species][it,:]    
             cp = self.cp[species][it,:]
-            cp_interp = CubicSpline(self.rho_grid,cp,bc_type='natural',extrapolate=True)
  
             dt_fact = (2./3.)*self.dt
             
@@ -1321,24 +1322,26 @@ class PLASMA_SOLVER:
             main = np.zeros(self.Nr)
             upper = np.zeros(self.Nr-1)
             
-            ## 0<r<a
-            rhos = self.rho_grid
-            rplus = rhos + drho/2
-            rminus = rhos - drho/2
+            ## 0<r<a (inner grid, no boundary points)
+            Dp_plus = (Dp[2:]+Dp[1:-1]) / 2
+            Dp_minus = (Dp[0:-2]+Dp[1:-1]) / 2
             
-            VDplus = Vp(rplus)*Dp_interp(rplus) / (Vp(rhos)*dr**2)
-            VDminus = Vp(rminus)*Dp_interp(rminus) / (Vp(rhos)*dr**2)
-                
-            cplus  = cp_interp(rhos+drho)*Vp(rhos+drho) / (2*Vp(rhos)*dr)
-            cminus = cp_interp(rhos-drho)*Vp(rhos-drho) / (2*Vp(rhos)*dr)
+            Vp_plus = (vp[2:]+vp[1:-1]) / 2
+            Vp_minus = (vp[0:-2]+vp[1:-1]) / 2
             
-            main[1:] = 1.0 + dt_fact*(VDplus[1:] + VDminus[1:])
-            upper = dt_fact*(-VDplus[:-1] + cplus[:-1])
-            lower = dt_fact*(-VDminus[1:] - cminus[1:])
+            VDplus  = Vp_plus*Dp_plus / (vp_inner*dr**2)
+            VDminus = Vp_minus*Dp_minus / (vp_inner*dr**2)
+            
+            cplus = cp[2:]*vp[2:] / (2*vp_inner*dr)
+            cminus = cp[0:-2]*vp[0:-2] / (2*vp_inner*dr)
+
+            main[1:-1] = 1.0 + dt_fact*(VDplus + VDminus)
+            upper[1:] = dt_fact*(-VDplus + cplus)
+            lower[0:-1] = dt_fact*(-VDminus - cminus)
             
             ## r=0
-            main[0] = 1.0 + dt_fact*( 4*Dp_interp(0)/dr**2 + 2*cp_interp(drho)/dr )
-            upper[0] = -4*dt_fact*Dp_interp(0)/dr**2
+            main[0] = 1.0 + dt_fact*( 4*Dp[0]/dr**2 + 2*cp[1]/dr )
+            upper[0] = -4*dt_fact*Dp[0]/dr**2
             
             DIFF[species] = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")    
         
@@ -1389,7 +1392,7 @@ class PLASMA_SOLVER:
     def get_collisionalHeatExchange(self,it):
         # returns collisional heat exchange to use as implicit operator
         
-        from collisions import COLLISIONS
+        from libstell.collisions import COLLISIONS
         from scipy import sparse
         
         coll = COLLISIONS()
@@ -1521,22 +1524,32 @@ class PLASMA_SOLVER:
         saved_class = SimpleNamespace()
         saved_class.rho_grid = self.rho_grid
         saved_class.r_grid = self.r_grid
-        saved_class.time = self.time
-        saved_class.N = self.N
-        saved_class.T = self.T
-        saved_class.Dn = self.Dn
-        saved_class.cn = self.cn
-        saved_class.Dp = self.Dp
-        saved_class.cp = self.cp
-        saved_class.Nt = self.Nt
-        saved_class.Q_NEO = self.Q_NEO
-        saved_class.Q_turb = self.Q_turb
-        saved_class.Gamma_NEO = self.Gamma_NEO
-        saved_class.Gamma_turb = self.Gamma_turb
         saved_class.dVdr = self.dVdr
-        saved_class.explicit_energy_sources = self.explicit_energy_sources
-        saved_class.explicit_particle_sources = self.explicit_particle_sources
+        saved_class.aminor = self.aminor
+        saved_class.Rmajor = self.Rmajor
+        saved_class.B = self.B0
         saved_class.list_of_species = self.list_of_species
+        
+        # only save at minimum every dt=0.1s 
+        freq = max(1, round(0.1 / self.dt))
+        sl = slice(0, -1, freq)  # defines the slice once
+
+        saved_class.time = self.time[sl]
+        saved_class.Nt = len(self.time[sl])
+
+        for attr in ('N','T','Dn','cn','Dp','cp','Q_NEO','Q_turb','Gamma_NEO','Gamma_turb'):
+            setattr(saved_class, attr, {})
+            for species in self.list_of_species:
+                getattr(saved_class, attr)[species] = getattr(self, attr)[species][sl, :]
+                
+        # nested dict attributes
+        nested_attrs = ['explicit_energy_sources','explicit_particle_sources']
+        for species in self.list_of_species:
+            for attr in nested_attrs:
+                saved_class.__dict__.setdefault(attr, {})
+                saved_class.__dict__[attr].setdefault(species, {})
+                for type_string, arr in getattr(self, attr)[species].items():
+                    saved_class.__dict__[attr][species][type_string] = arr[sl, :]
 
         joblib.dump(saved_class, output_filename)
         

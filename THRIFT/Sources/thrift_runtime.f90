@@ -61,6 +61,7 @@ MODULE thrift_runtime
     INTEGER, PARAMETER :: MPI_BCAST_ERR = 83
     INTEGER, PARAMETER :: MPI_FINE_ERR = 89
     INTEGER, PARAMETER :: THRIFT_NAN_ERR = 9
+    INTEGER, PARAMETER :: THRIFT_SOLVER_ERR = 91
 
     INTEGER, PARAMETER :: MAXPARTICLES = 2**18
     INTEGER, PARAMETER :: MAXBEAMS = 32
@@ -69,7 +70,8 @@ MODULE thrift_runtime
 
     DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
     DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
-    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+    REAL(rprec), PARAMETER :: e_charge           = 1.602176634E-19_rprec !e_c
+    REAL(rprec), PARAMETER :: EPS0               = 8.8541878188E-12 ! [F/m]
 
     LOGICAL :: lverb, lvmec, lread_input, limas, lrestart_from_file, &
                lvmec_reset
@@ -262,6 +264,10 @@ CONTAINS
         ELSEIF (error_num .eq. THRIFT_NAN_ERR) THEN
             WRITE(6, *) '  NAN IN THRIFT EVOLUTION VARS'
             WRITE(6, *) '  VAR:   ', TRIM(string_val)
+            WRITE(6, *) '  TIMESTEP:      ', ierr
+        ELSEIF(error_num .eq. THRIFT_SOLVER_ERR) THEN
+            WRITE(6, *) '  ERROR IN LINEAR SOLVER'
+            WRITE(6, *) '  SYSTEM:   ', TRIM(string_val)
             WRITE(6, *) '  TIMESTEP:      ', ierr
         ELSEIF (error_num .eq. MPI_CHECK) THEN
         ELSE
