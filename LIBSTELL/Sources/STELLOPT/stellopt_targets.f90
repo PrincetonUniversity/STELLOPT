@@ -212,6 +212,7 @@
       REAL(rprec) ::  target_coil_curvature, sigma_coil_curvature
       REAL(rprec) ::  target_coil_torsion, sigma_coil_torsion
       REAL(rprec) ::  target_coilcoil_distance, sigma_coilcoil_distance
+      REAL(rprec) ::  target_coil_baxis, sigma_coil_baxis
 
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
@@ -245,6 +246,7 @@
       INTEGER, PARAMETER :: jtarget_coil_curvature  = 114
       INTEGER, PARAMETER :: jtarget_coil_torsion    = 115
       INTEGER, PARAMETER :: jtarget_coilcoil_distance = 116
+      INTEGER, PARAMETER :: jtarget_coil_baxis = 117
       INTEGER, PARAMETER :: jtarget_ne         = 200
       INTEGER, PARAMETER :: jtarget_line_ne    = 2001
       INTEGER, PARAMETER :: jtarget_te         = 201
@@ -474,6 +476,8 @@
             WRITE(iunit, out_format) 'Coil Torsion (mean)'
          CASE(jtarget_coilcoil_distance)
             WRITE(iunit, out_format) 'Coil-coil distance (minimum)'
+         CASE(jtarget_coil_baxis)
+            WRITE(iunit, out_format) 'Magnetic Axis Magnetic Field'
       END SELECT
       END SUBROUTINE write_targets
       

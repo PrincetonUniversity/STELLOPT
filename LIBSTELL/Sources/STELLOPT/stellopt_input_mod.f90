@@ -377,7 +377,8 @@
                          target_bnmns, sigma_bnmns, target_bnmnc, sigma_bnmnc,  &
                          target_coil_curvature, sigma_coil_curvature, &
                          target_coil_torsion, sigma_coil_torsion, &
-                         target_coilcoil_distance, sigma_coilcoil_distance
+                         target_coilcoil_distance, sigma_coilcoil_distance, &
+                         target_coil_baxis, sigma_coil_baxis
        
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -942,6 +943,8 @@
       sigma_coil_torsion       = bigno
       target_coilcoil_distance = 0.0
       sigma_coilcoil_distance  = bigno
+      target_coil_baxis        = 0.0
+      sigma_coil_baxis         = bigno
       END SUBROUTINE init_stellopt_input
 
       SUBROUTINE read_stellopt_input(filename, istat)
@@ -2402,6 +2405,13 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outflt) 'TARGET_COILCOIL_DISTANCE',target_coilcoil_distance
          WRITE(iunit,outflt) 'SIGMA_COILCOIL_DISTANCE',sigma_coilcoil_distance
+      END IF
+      IF (sigma_coil_baxis < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL B.T AXIS'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'TARGET_COIL_BAXIS',target_coil_baxis
+         WRITE(iunit,outflt) 'SIGMA_COIL_BAXIS',sigma_coil_baxis
       END IF
       IF (sigma_Rosenbrock2D < bigno) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
