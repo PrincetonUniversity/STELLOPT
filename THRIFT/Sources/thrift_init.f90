@@ -16,10 +16,15 @@
       USE diagno_input_mod, ONLY:   read_diagno_input
       USE penta_interface_mod, ONLY:   init_penta_input, &
                                        read_penta_run_params_namelist
+      USE thrift_plasma_solver_mod, ONLY: initialize_plasma_solver, Nt_total_plasma_solver, &
+      dt_plasma_solver, time_plasma_grid, N_plasma_steps_per_THRIFT_step
+      USE thrift_equil, ONLY : eq_Aminor, eq_phiedge, vp_spl, bsq_spl, bcs1
       USE safe_open_mod
       USE mpi_params
       USE mpi_inc
       USE mpi_sharmem
+      USE EZspline
+      USE EZspline_obj
 #if defined(LHDF5)
       USE ez_hdf5
 #endif
@@ -31,11 +36,12 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL        :: ltst
-      INTEGER        :: ier, i, iunit, ntimesteps_restart, ns_restart
+      INTEGER        :: ier, i, iunit, ntimesteps_restart, ns_restart, k
       CHARACTER(256) :: tstr1,tstr2
       REAL(rprec)    :: dt, tend_restart
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: temp2d
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: temp1d
+      REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: temp3d
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -140,6 +146,7 @@
       
       ! Restart arrays
       CALL mpialloc(UGRID_RESTART,   nsj, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_ugrid_restart)
+      CALL mpialloc(J_RESTART,       nsj, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_j_restart)
 
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
@@ -168,16 +175,27 @@
          CASE('sfincs')
       END SELECT
 
-      ! Now setup the profiles
-      CALL read_thrift_profh5(TRIM(prof_string))
-
-      ! Allocate particle and heat fluxes (do it here because nion_prof only now available)
-      CALL mpialloc(THRIFT_GNEO,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_gneo) 
-      CALL mpialloc(THRIFT_QNEO,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_qneo)
-      ! Allocate densities, temperatures and pressures
-      CALL mpialloc(THRIFT_DENS,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dens)
-      CALL mpialloc(THRIFT_TEMP,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_temp)
-      CALL mpialloc(THRIFT_PRESS,  nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_press) 
+      ! Check that tend > tstart
+      IF(tend < tstart .and. lverb) THEN 
+         WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+         WRITE(6,*) '          tend < tstart         '
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         STOP
+      ENDIF
+      
+      ! Define grids
+      IF( ntimesteps==1 ) THEN 
+         dt = 0.0_rprec
+      ELSE IF( ntimesteps > 1) THEN 
+         dt = (tend-tstart)/(ntimesteps-1)
+      ELSE
+         IF(lverb) THEN
+            WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+            WRITE(6,*) '          ntimesteps < 1        '
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            STOP
+         END IF
+      END IF
 
       ! Read restart file
       IF (lrestart_from_file) THEN
@@ -222,42 +240,141 @@
             ENDIF
 
             dt_first_iter = tstart - tend_restart
+            IF(ntimesteps == 1) dt = dt_first_iter
 
             CALL read_var_hdf5(fid,'THRIFT_UGRID',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_UGRID',ier)
             UGRID_RESTART = temp2d(:,ntimesteps_restart)
 
+            CALL read_var_hdf5(fid,'THRIFT_J',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_J',ier)
+            J_RESTART = temp2d(:,ntimesteps_restart)
+
+            CALL read_var_hdf5(fid,'eq_Aminor',ier,DBLVAR=eq_Aminor)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'eq_Aminor',ier)
+
+            CALL read_var_hdf5(fid,'THRIFT_PHIEDGE',ntimesteps_restart,ier,DBLVAR=temp1d)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_PHIEDGE',ier)
+            eq_phiedge = temp1d(ntimesteps_restart)
+
+            CALL read_var_hdf5(fid,'THRIFT_VP',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_VP',ier)
+
+            ! dV/dPhi Spline (Volume derivative)
+            bcs1=(/ 0, 0/)
+            IF (EZspline_allocated(vp_spl)) CALL EZspline_free(vp_spl,ier)
+            CALL EZspline_init(vp_spl,ns_restart,bcs1,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_init: vp_spl',ier)
+            vp_spl%isHermite = 0
+            FORALL (k=1:ns_restart) vp_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns_restart-1))
+            CALL EZspline_setup(vp_spl,temp2d(:,ntimesteps_restart)/eq_phiedge,ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_init: vp_spl',ier)
+
+            CALL read_var_hdf5(fid,'THRIFT_BSQAV',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_BSQAV',ier)
+
+            ! Bsq Spline
+            bcs1=(/ 0, 0/)
+            IF (EZspline_allocated(bsq_spl)) CALL EZspline_free(bsq_spl,ier)
+            CALL EZspline_init(bsq_spl,ns_restart,bcs1,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_init: bsq_spl',ier)
+            bsq_spl%isHermite = 0
+            FORALL (k=1:ns_restart) bsq_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns_restart-1))
+            CALL EZspline_setup(bsq_spl,temp2d(:,ntimesteps_restart),ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_init: bsq_spl',ier)
+
+            DEALLOCATE(temp2d,temp1d)
+            
             !Close the HDF5 file
             CALL close_hdf5(fid,ier)
             IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,TRIM(restart_filename),ier)
-
-            DEALLOCATE(temp2d,temp1d)
-
          END IF
       END IF
 
-      ! Check that tend > tstart
-      IF(tend < tstart .and. lverb) THEN 
-         WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
-         WRITE(6,*) '          tend < tstart         '
-         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-         STOP
-      ENDIF
-      
-      ! Define grids
-      IF( ntimesteps==1 ) THEN 
-         dt = 0.0_rprec
-      ELSE IF( ntimesteps > 1) THEN 
-         dt = (tend-tstart)/(ntimesteps-1)
-      ELSE
-         IF(lverb) THEN
-            WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
-            WRITE(6,*) '          ntimesteps < 1        '
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      CALL MPI_BCAST(dt,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(dt_first_iter,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+
+      IF(solve_plasma_equations) THEN
+         ! Check dt_plasma_solver and ajust it
+         IF( dt_plasma_solver .GT. dt .AND. ntimesteps > 1) THEN
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!ERROR!!!!!!!!!!!!!!'
+            WRITE(6,*) '   dt_plasma_solver < dt_THRIFT        '
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             STOP
          END IF
+
+         IF( lrestart_from_file ) THEN
+            ! check dt_first_iter is equal to dt
+            IF( ABS(dt_first_iter-dt) > 1.0E-12_rprec) THEN
+               WRITE(6,*) '!!!!!!!!!!!!!!!!!!! ERROR!!!!!!!!!!!!!!!!!!!!!!!'
+               WRITE(6,*) '              NOT POSSIBLE TO HAVE:             '
+               WRITE(6,*) '   dt_first_iter != dt with plasma_solver ON    '
+               WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               STOP
+            END IF
+            ! Need to add the plasma steps before tstart of THRIFT
+            Nt_total_plasma_solver = 1 + ntimesteps*NINT(dt/dt_plasma_solver)
+            dt_plasma_solver = dt / NINT(dt/dt_plasma_solver)
+            IF(lverb) PRINT *, 'dt_plasma_solver adjusted to ', dt_plasma_solver
+            N_plasma_steps_per_THRIFT_step = NINT(dt/dt_plasma_solver)
+            ALLOCATE(time_plasma_grid(Nt_total_plasma_solver))
+            FORALL(i = 1:Nt_total_plasma_solver) time_plasma_grid(i) = tend_restart + (i-1)*dt_plasma_solver
+         ELSE
+            Nt_total_plasma_solver = 1 + (ntimesteps-1)*NINT(dt/dt_plasma_solver)
+            dt_plasma_solver = dt / NINT(dt/dt_plasma_solver)
+            IF(lverb) PRINT *, 'dt_plasma_solver adjusted to ', dt_plasma_solver
+            N_plasma_steps_per_THRIFT_step = NINT(dt/dt_plasma_solver)
+            ALLOCATE(time_plasma_grid(Nt_total_plasma_solver))
+            FORALL(i = 1:Nt_total_plasma_solver) time_plasma_grid(i) = tstart + (i-1)*dt_plasma_solver
+         END IF
       END IF
 
+      ! Now setup the profiles (plasma profiles if not solving plasma eqs; external source profiles if solving plasma eqs.)
+      IF(solve_plasma_equations) THEN
+         CALL initialize_plasma_solver((TRIM(prof_string))) 
+      ELSE
+         CALL read_thrift_profh5(TRIM(prof_string))
+      ENDIF
+
+      ! Allocate particle and heat fluxes (do it here because nion_prof only now available)
+      CALL mpialloc(THRIFT_GNEO,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_gneo) 
+      CALL mpialloc(THRIFT_QNEO,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_qneo)
+      ! Allocate densities, temperatures and pressures
+      CALL mpialloc(THRIFT_DENS,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dens)
+      CALL mpialloc(THRIFT_TEMP,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_temp)
+      CALL mpialloc(THRIFT_PRESS,  nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_press)    
+      CALL mpialloc(THRIFT_FAST_ALPHAS_DENS,    nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_fast_alphas_dens)    
+      ! Restart vars
+      IF(lrestart_from_file) THEN
+         CALL mpialloc(DENS_RESTART,   nion_prof+1, ns_restart, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dens_restart)
+         CALL mpialloc(TEMP_RESTART,   nion_prof+1, ns_restart, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_temp_restart)
+         CALL mpialloc(DENS_FAST_ALPHAS_RESTART,    ns_restart, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dens_fast_alphas_restart)
+      END IF
+
+      IF(lrestart_from_file .AND. solve_plasma_equations .AND. myid_sharmem == master) THEN
+         CALL open_hdf5(TRIM(restart_filename),fid,ier,LCREATE=.false.)
+         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(restart_filename),ier)
+
+         ALLOCATE(temp3d(nion_prof+1,ns_restart,ntimesteps_restart),temp2d(ns_restart,ntimesteps_restart))
+         ! Read density of all species at last time step
+         CALL read_var_hdf5(fid,'THRIFT_DENS',nion_prof+1,ns_restart,ntimesteps_restart,ier,DBLVAR=temp3d)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_DENS',ier)
+         DENS_RESTART = temp3d(:,:,ntimesteps_restart)
+         ! Read fast alphas density at last time step
+         CALL read_var_hdf5(fid,'THRIFT_FAST_ALPHAS_DENS',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_FAST_ALPHAS_DENS',ier)
+         DENS_FAST_ALPHAS_RESTART = temp2d(:,ntimesteps_restart)
+         ! Read temperature of all species at last time step
+         CALL read_var_hdf5(fid,'THRIFT_TEMP',nion_prof+1,ns_restart,ntimesteps_restart,ier,DBLVAR=temp3d)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_TEMP',ier)
+         TEMP_RESTART = temp3d(:,:,ntimesteps_restart)
+         !
+         DEALLOCATE(temp3d,temp2d)
+
+         !Close the HDF5 file
+         CALL close_hdf5(fid,ier)
+         IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,TRIM(restart_filename),ier)
+      END IF
 
       IF (myid_sharmem == master) THEN
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho) ! (half) rho grid

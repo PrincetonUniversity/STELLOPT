@@ -19,14 +19,15 @@ class PLASMA:
         
         self.lverb = lverb
         
-        self.species_database = ['electrons','hydrogen','deuterium','tritium','helium3','helium4']
+        self.species_database = ['electrons','hydrogen','deuterium','tritium','helium3','helium4','tungsten74']
         self.mass_database = {
             'electrons' : ME,
             'hydrogen'  : 1.007276466621*DA,
             'deuterium' : 2.01410177811*DA,
             'tritium'   : 3.01604928*DA,
             'helium3'   : 3.0160293*DA,
-            'helium4'   : 4.002603254*DA
+            'helium4'   : 4.002603254*DA,
+            'tungsten74': 183.84*DA
         }
         self.charge_database = {
             'electrons' : -EC,
@@ -34,7 +35,8 @@ class PLASMA:
             'deuterium' : EC,
             'tritium'   : EC,
             'helium3'   : 2.0*EC,
-            'helium4'   : 2.0*EC
+            'helium4'   : 2.0*EC,
+            'tungsten74': 74.0*EC
         }
         self.Zcharge_database = {
             'electrons' : -1,
@@ -42,7 +44,8 @@ class PLASMA:
             'deuterium' : 1,
             'tritium'   : 1,
             'helium3'   : 2,
-            'helium4'   : 2
+            'helium4'   : 2,
+            'tungsten74': 74
         }
         
         self.mass = {}

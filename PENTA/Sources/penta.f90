@@ -295,7 +295,7 @@ Logical ::    &
   input_is_Er    = .true.,     & ! If true, Er range is (V/cm) else e<a>Er/kT_e
   log_interp     = .true.,     & ! If true, log. interp. of DKES coeffs is used
   use_quanc8     = .false.,    & ! If false, rect. approx. to convolution used
-  read_U2_file   = .true.,     & ! If false <U**2> is calculated from D11*
+  read_U2_file   = .false.,     & ! If false <U**2> is calculated from D11*
   flux_cap       = .true.,     & ! If true, min(L_radial) = 0
   output_QoT_vs_Er = .false.,  & ! If true Q/T vs Er output file is written
   Add_Spitzer_to_D33 = .true., & ! If true collisional portion of D33* is added
@@ -319,7 +319,7 @@ Real(rknd) ::    &
   epsrel = 1.e-6_rknd            ! Relative tolerance for quanc8  
                                  !  (used if use_quanc8=.true.)
 Character(Len=10) ::     &
-  Method  = 'DKES'               ! Which algorithm to use.  Options are
+  Method  = 'SN'               ! Which algorithm to use.  Options are
                                  !  'T'    = Taguchi
                                  !  'SN'   = Sugama-Nishimura
                                  !  'MBT'  = Maassberg-Beidler-Turkin
