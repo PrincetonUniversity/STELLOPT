@@ -943,7 +943,7 @@
       sigma_coil_torsion       = bigno
       target_coilcoil_distance = 0.0
       sigma_coilcoil_distance  = bigno
-      target_coil_baxis        = 0.0
+      target_coil_baxis        = 1.0
       sigma_coil_baxis         = bigno
       END SUBROUTINE init_stellopt_input
 
