@@ -13,7 +13,8 @@
       USE stellopt_runtime, ONLY: proc_string, pi2
       USE stellopt_targets, ONLY: nu_bnormal, nv_bnormal
       USE equil_vals, ONLY: bnormal_total, bmnc_normal_total, &
-            bmns_normal_total, im_normal_total, in_normal_total
+            bmns_normal_total, im_normal_total, in_normal_total, &
+            baxis_total
       use safe_open_mod
       USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns, nfp, &
             isigng, Aminor, bsubvmnc, xm_nyq, xn_nyq, mnmax_nyq
@@ -140,6 +141,7 @@
          theta = pi2*DBLE(u-1)/DBLE(nu)
          zeta = pi2*DBLE(v-1)/DBLE(nv)
          phi = zeta/nfp
+         RU = 0.0; ZU = 0.0; RV = 0.0; ZV = 0.0
          DO mn = 1, mnmax
             arg = xm(mn)*theta+xn(mn)*zeta/nfp
             cop = COS(arg)
@@ -289,7 +291,67 @@
          END DO
          CLOSE(iunit)
       END IF
-      
+
+      !-----------------------------------------------------------------
+      !     Transform the axis and calculate B-Tangent
+      !-----------------------------------------------------------------
+      ncoilgroups = SIZE(coil_group)
+      DEALLOCATE(rreal,zreal,bnreal,NX,NY,NZ,carg,sarg)
+      IF (ALLOCATED(baxis_total)) DEALLOCATE(baxis_total)
+      ALLOCATE(baxis_total(nv))
+      ALLOCATE(rreal(nv),zreal(nv),bnreal(nv))
+      ALLOCATE(NX(nv),NY(nv),NZ(nv))
+      ALLOCATE(carg(nv,mnmax), sarg(nv,mnmax))
+      rreal = 0.0; zreal = 0.0; bnreal = 0.0
+      nx = 0.0; ny = 0.0; nz = 0.0
+      carg = 0.0; sarg = 0.0
+      CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD, 1, nv, mystart, myend)
+      DO v = mystart, myend
+         zeta = pi2*DBLE(v-1)/DBLE(nv)
+         phi = zeta/nfp
+         RV = 0.0; ZV = 0.0
+         DO mn = 1, mnmax
+            arg = xn(mn)*zeta/nfp !Take theta=0
+            cop = COS(arg)
+            sip = SIN(arg)
+            carg(v,mn) = cop
+            sarg(v,mn) = sip
+            rreal(v) = rreal(v) + rmnc(mn,1) * cop
+            zreal(v) = zreal(v) + zmns(mn,1) * sip
+            RV = RV + rmnc(mn,ns)*sip*xn(mn) ! dR/dzeta
+            ZV = ZV - zmns(mn,ns)*cop*xn(mn) ! dZ/dzeta
+         END DO
+         cop = COS(phi)
+         sip = SIN(phi)
+         ! Tangent vector
+         NX(v) = RV * cop - rreal(v) * sip/nfp
+         NY(v) = RV * sip + rreal(v) * cop/nfp
+         NZ(v) = ZV
+         Norm  = SQRT(Nx(v)*Nx(v)+Ny(v)*Ny(v)+Nz(v)*Nz(v))
+         Nx(v) = Nx(v)/Norm
+         Ny(v) = Ny(v)/Norm
+         Nz(v) = Nz(v)/Norm
+         xvec(1)  = rreal(v)*COS(phi)
+         xvec(2)  = rreal(v)*SIN(phi)
+         xvec(3)  = zreal(v)
+         bvec = 0.0; Bx = 0.0; By = 0.0; Bz = 0.0
+         DO m = 1, ncoilgroups
+            CALL bsc_b(coil_group(m),xvec,bvec)
+            Bx = Bx + bvec(1)
+            By = By + bvec(2)
+            Bz = Bz + bvec(3)
+         END DO
+         baxis_total(v) = (Bx * Nx(v) + By * Nz(v) + Bz * Nz(v)) / &
+                          SQRT(BX * BX + BY * BY + BZ * BZ)
+      END DO
+#if defined(MPI_OPT)
+      IF (myworkid == master) THEN
+         CALL MPI_REDUCE(MPI_IN_PLACE, baxis_total, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+      ELSE
+         CALL MPI_REDUCE( baxis_total, baxis_total, nv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+      END IF
+#endif
+
       !-----------------------------------------------------------------
       !     DEALLOCATIONS
       !-----------------------------------------------------------------
