@@ -195,7 +195,7 @@
          WRITE(6,"(70('='),/,2x,A,3x,A,7x,A)") 'Member ID', 
      1         'Processor','Chi-Sq'
 !         WRITE (6, 1327) numprocs, NP, strategy, CR_strategy
-!         WRITE(6, '(2x,i6,8x,i3,7x,1es12.4)') 0, myid, fnorm
+         WRITE(6, '(2x,i6,8x,i3,7x,1es12.4)') 0, myid, fnorm
       END IF
       
 !DEC$ IF DEFINED (MPI_OPT)
