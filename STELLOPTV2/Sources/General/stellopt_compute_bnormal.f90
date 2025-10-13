@@ -304,7 +304,7 @@
       ALLOCATE(NX(nv),NY(nv),NZ(nv))
       ALLOCATE(BXa(nv),BYa(nv),BZa(nv))
       ALLOCATE(carg(nv,mnmax), sarg(nv,mnmax))
-      rreal = 0.0; zreal = 0.0; bnreal = 0.0
+      rreal = 0.0; zreal = 0.0;
       nx = 0.0; ny = 0.0; nz = 0.0
       carg = 0.0; sarg = 0.0
       BXa = 0.0; BYa = 0.0; BZa = 0.0
@@ -378,14 +378,12 @@
          call safe_open(iunit, iflag, 'baxis_real.' // TRIM(proc_string), &
                'replace','formatted')
          WRITE(iunit,'(I8)') nv
-         DO uv = 1, nv
-            v = MOD(uv-1,nuv)
-            v = FLOOR(REAL(v) / REAL(nu))+1
+         DO v = 1, nv
             zeta = pi2*DBLE(v-1)/DBLE(nv)
             phi = zeta/nfp
             WRITE(iunit, '(1(1X,I6),11(1pe24.16))') &
-               v,zeta,phi,rreal(uv),zreal(uv),&
-               Nx(uv),Ny(uv),Nz(uv),Bxa(uv),Bya(uv),Bza(uv),baxis_total(uv)
+               v,zeta,phi,rreal(uv),zreal(v),&
+               Nx(v),Ny(v),Nz(v),Bxa(v),Bya(v),Bza(v),baxis_total(v)
          END DO
          CLOSE(iunit)
       END IF
@@ -393,7 +391,18 @@
       !-----------------------------------------------------------------
       !     DEALLOCATIONS
       !-----------------------------------------------------------------
-      DEALLOCATE(rreal,zreal,Nx,Ny,Nz,bnreal,bcreal,carg,sarg,Bxa,Bya,Bza)
+      IF(ALLOCATED(rreal)) DEALLOCATE(rreal)
+      IF(ALLOCATED(zreal)) DEALLOCATE(zreal)
+      IF(ALLOCATED(Nx)) DEALLOCATE(Nx)
+      IF(ALLOCATED(Ny)) DEALLOCATE(Ny)
+      IF(ALLOCATED(Nz)) DEALLOCATE(Nz)
+      IF(ALLOCATED(Bxa)) DEALLOCATE(Bxa)
+      IF(ALLOCATED(Bya)) DEALLOCATE(Bya)
+      IF(ALLOCATED(Bza)) DEALLOCATE(Bza)
+      IF(ALLOCATED(bnreal)) DEALLOCATE(bnreal)
+      IF(ALLOCATED(bcreal)) DEALLOCATE(bcreal)
+      IF(ALLOCATED(carg)) DEALLOCATE(carg)
+      IF(ALLOCATED(sarg)) DEALLOCATE(sarg)
       IF (myworkid /= master) THEN
          IF(ALLOCATED(xm)) DEALLOCATE(xm)
          IF(ALLOCATED(xn)) DEALLOCATE(xn)
