@@ -27,6 +27,7 @@ from libstell import plot3D
 from libstell import bootsj
 from libstell import bnorm
 from libstell import coils
+from libstell import fieldlines
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -1102,7 +1103,7 @@ class MyApp(QMainWindow):
 			elif plot_name in ['Vacuum (phi=0)']:
 				self.fig2.clf()
 				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
-				fieldlines_data=FIELDLINES()
+				fieldlines_data=fieldlines.FIELDLINES()
 				fieldlines_data.read_fieldlines(test_file)
 				fieldlines_data.plot_poincare(0.0,nskip=1,ax=self.ax2)
 			elif plot_name in self.gist_files:
