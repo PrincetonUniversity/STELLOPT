@@ -661,7 +661,7 @@
                         vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
         tet_vol(i) = mumaterial_gettetvolume(vertex(:,tet(1,i)),vertex(:,tet(2,i)), &
                                              vertex(:,tet(3,i)),vertex(:,tet(4,i)))
-        tet_edge(i) = SQRT(6.0)/4.d0*(6.d0*SQRT(2.0)*tet_vol(i))**(1.0/3.0) 
+        tet_edge(i) = SQRT(6.0)/12.d0*(6.d0*SQRT(2.0)*tet_vol(i))**(1.0/3.0) 
       END DO
 
 #if defined(MPI_OPT)
@@ -1246,6 +1246,9 @@
                   IF (ABS(r(j)) .lt. 1.0D-6) THEN ! make sure position is not too close to x, y or z = 0
                         r(j) = SIGN(1.0D-6, r(j))
                   END IF
+                  IF (ABS(v(1,j)) .lt. 1.0D-6) THEN 
+                        v(1,j) = SIGN(1.0D-6, v(1,j))
+                  END IF                  
             END DO
 
             N_loc = 0.d0
