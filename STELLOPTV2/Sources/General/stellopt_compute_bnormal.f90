@@ -10,14 +10,14 @@
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
-      USE stellopt_runtime, ONLY: proc_string, pi2
+      USE stellopt_runtime, ONLY: proc_string, pi2, pi
       USE stellopt_targets, ONLY: nu_bnormal, nv_bnormal
       USE equil_vals, ONLY: bnormal_total, bmnc_normal_total, &
             bmns_normal_total, im_normal_total, in_normal_total, &
             baxis_total
       use safe_open_mod
       USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns, nfp, &
-            isigng, Aminor, bsubvmnc, xm_nyq, xn_nyq, mnmax_nyq
+            isigng, Aminor, bsubvmnc, xm_nyq, xn_nyq, mnmax_nyq, lasym
       USE bsc_T, ONLY: bsc_b
       USE biotsavart, ONLY: coil_group, parse_coils_file
       USE neswrite, ONLY: coil_separation
@@ -37,11 +37,11 @@
 !-----------------------------------------------------------------------
       INTEGER :: mf=10, nf=10, md=20, nd=20
       INTEGER :: m, n, mn, u, v, uv, nuv, iunit, ncoilgroups, nu, nv
-      REAL(rprec) :: theta, phi, zeta, arg, cop, sip, RU, RV, ZU, ZV, &
+      REAL(rprec) :: theta, phi, arg, cop, sip, RU, RV, ZU, ZV, &
             Ax, Ay, Az, Bx, By, Bz, Norm, factor
       REAL(rprec), DIMENSION(3) :: xvec, bvec
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: bnfou, bnfou_c
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: rreal, zreal
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: rreal, zreal, zeta
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: NX, NY, NZ
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: BXa, BYa, BZa
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: bnreal, bcreal
@@ -59,6 +59,7 @@
       !     Setup MPI Communication
       !-----------------------------------------------------------------
 #if defined(MPI_OPT)
+      CALL MPI_BCAST(     lasym, 1, MPI_LOGICAL, master, MPI_COMM_MYWORLD, ierr_mpi)
       CALL MPI_BCAST(    isigng, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
       CALL MPI_BCAST(        ns, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
       CALL MPI_BCAST(       nfp, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
@@ -130,6 +131,12 @@
       ALLOCATE(NX(nuv),NY(nuv),NZ(nuv))
       ALLOCATE(bcreal(nuv))
       ALLOCATE(carg(nuv,mnmax), sarg(nuv,mnmax))
+      ALLOCATE(zeta(nv))
+      IF (lasym) THEN
+         FORALL(v=1:nv) zeta(v) = pi2*DBLE(v-1)/DBLE(nv)
+      ELSE
+         FORALL(v=1:nv) zeta(v) = pi*DBLE(v-1)/DBLE(nv-1)
+      END IF
       rreal = 0.0; zreal = 0.0; bnreal = 0.0
       nx = 0.0; ny = 0.0; nz = 0.0
       bcreal = 0.0
@@ -140,11 +147,10 @@
          v = MOD(uv-1,nuv)
          v = FLOOR(REAL(v) / REAL(nu))+1
          theta = pi2*DBLE(u-1)/DBLE(nu)
-         zeta = pi2*DBLE(v-1)/DBLE(nv)
-         phi = zeta/nfp
+         phi = zeta(v)/nfp
          RU = 0.0; ZU = 0.0; RV = 0.0; ZV = 0.0
          DO mn = 1, mnmax
-            arg = xm(mn)*theta+xn(mn)*zeta/nfp
+            arg = xm(mn)*theta+xn(mn)*phi
             cop = COS(arg)
             sip = SIN(arg)
             carg(uv,mn) = cop
@@ -158,7 +164,7 @@
          END DO
          DO m = 0, mf
             DO n = -nf,nf
-               bnreal(uv) = bnreal(uv) + bnfou(m,n)*sin(m*theta+n*zeta)
+               bnreal(uv) = bnreal(uv) + bnfou(m,n)*sin(m*theta+n*zeta(v))
             END DO
          END DO
          cop = COS(phi)
@@ -175,8 +181,8 @@
          Nx(uv) = Nx(uv)/Norm
          Ny(uv) = Ny(uv)/Norm
          Nz(uv) = Nz(uv)/Norm
-         xvec(1)  = rreal(uv)*COS(phi)
-         xvec(2)  = rreal(uv)*SIN(phi)
+         xvec(1)  = rreal(uv)*cop
+         xvec(2)  = rreal(uv)*sip
          xvec(3)  = zreal(uv)
          bvec = 0.0
          DO m = 1, ncoilgroups
@@ -234,7 +240,7 @@
       !      v = MOD(uv-1,nuv)
       !      v = FLOOR(REAL(v) / REAL(nu))+1
       !      theta = pi2*DBLE(u-1)/DBLE(nu)
-      !      zeta = pi2*DBLE(v-1)/DBLE(nv)
+      !      zeta = pi*DBLE(v-1)/DBLE(nv-1)
       !      phi = zeta/nfp
       !      DO m = 0, mf
       !         DO n = -nf,nf
@@ -256,10 +262,9 @@
             v = MOD(uv-1,nuv)
             v = FLOOR(REAL(v) / REAL(nu))+1
             theta = pi2*DBLE(u-1)/DBLE(nu)
-            zeta = pi2*DBLE(v-1)/DBLE(nv)
-            phi = zeta/nfp
+            phi = zeta(v)/nfp
             WRITE(iunit, '(3(1X,I6),11(1pe24.16))') &
-               uv,u,v,theta,zeta,phi,rreal(uv),zreal(uv),&
+               uv,u,v,theta,zeta(v),phi,rreal(uv),zreal(uv),&
                Nx(uv),Ny(uv),Nz(uv),bnreal(uv),bcreal(uv),bnormal_total(uv)
          END DO
          CLOSE(iunit)
@@ -304,21 +309,18 @@
       ALLOCATE(NX(nv),NY(nv),NZ(nv))
       ALLOCATE(BXa(nv),BYa(nv),BZa(nv))
       ALLOCATE(carg(nv,mnmax), sarg(nv,mnmax))
+      baxis_total = 0.0
       rreal = 0.0; zreal = 0.0;
       nx = 0.0; ny = 0.0; nz = 0.0
-      carg = 0.0; sarg = 0.0
       BXa = 0.0; BYa = 0.0; BZa = 0.0
       CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD, 1, nv, mystart, myend)
       DO v = mystart, myend
-         zeta = pi2*DBLE(v-1)/DBLE(nv)
-         phi = zeta/nfp
+         phi = zeta(v)/nfp
          RV = 0.0; ZV = 0.0
          DO mn = 1, mnmax
-            arg = xn(mn)*zeta/nfp !Take theta=0
+            arg = xn(mn)*phi !Take theta=0
             cop = COS(arg)
             sip = SIN(arg)
-            carg(v,mn) = cop
-            sarg(v,mn) = sip
             rreal(v) = rreal(v) + rmnc(mn,1) * cop
             zreal(v) = zreal(v) + zmns(mn,1) * sip
             RV = RV + rmnc(mn,ns)*sip*xn(mn) ! dR/dzeta
@@ -334,8 +336,8 @@
          Nx(v) = Nx(v)/Norm
          Ny(v) = Ny(v)/Norm
          Nz(v) = Nz(v)/Norm
-         xvec(1)  = rreal(v)*COS(phi)
-         xvec(2)  = rreal(v)*SIN(phi)
+         xvec(1)  = rreal(v)*cop
+         xvec(2)  = rreal(v)*sip
          xvec(3)  = zreal(v)
          bvec = 0.0; Bx = 0.0; By = 0.0; Bz = 0.0
          DO m = 1, ncoilgroups
@@ -379,10 +381,9 @@
                'replace','formatted')
          WRITE(iunit,'(I8)') nv
          DO v = 1, nv
-            zeta = pi2*DBLE(v-1)/DBLE(nv)
-            phi = zeta/nfp
+            phi = zeta(v)/nfp
             WRITE(iunit, '(1(1X,I6),11(1pe24.16))') &
-               v,zeta,phi,rreal(uv),zreal(v),&
+               v,zeta(v),phi,rreal(v),zreal(v),&
                Nx(v),Ny(v),Nz(v),Bxa(v),Bya(v),Bza(v),baxis_total(v)
          END DO
          CLOSE(iunit)
@@ -393,6 +394,7 @@
       !-----------------------------------------------------------------
       IF(ALLOCATED(rreal)) DEALLOCATE(rreal)
       IF(ALLOCATED(zreal)) DEALLOCATE(zreal)
+      IF(ALLOCATED(zeta)) DEALLOCATE(zeta)
       IF(ALLOCATED(Nx)) DEALLOCATE(Nx)
       IF(ALLOCATED(Ny)) DEALLOCATE(Ny)
       IF(ALLOCATED(Nz)) DEALLOCATE(Nz)
