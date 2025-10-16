@@ -153,8 +153,13 @@ class WALL():
 		f.write(self.name+" <This_is_the_vessel_file>\n")
 		rshift = 0.0
 		zshift = 0.0
+		dshift = 0.0
+		icol   = 1
+		scalf  = 0.01
+		isyt   = 1
+		isyp   = 1
 		# Note not sure what last two values in kisslinger format are
-		f.write(f"{int(nphi)} {int(npts)} {int(nfp)} {rshift} {zshift} 1.00 4\n")
+		f.write(f"{int(nphi)} {int(npts)} {int(nfp)} {rshift} {zshift} {dshift} {icol} {scalf} {isyt} {isyp}\n")
 		for phi in phiarr:
 			f.write(f"{180.0*phi/np.pi}\n")
 			nx = -np.sin(phi)
@@ -171,8 +176,10 @@ class WALL():
 			x[-1] = x[0]
 			y[-1] = y[0]
 			z[-1] = z[0]
+			r = np.sqrt(x*x+y*y)
 			for i in range(npts):
-				f.write(f"{x[i]*100.0} {y[i]*100.0} {z[i]*100.0}\n")
+				#f.write(f"{x[i]*100.0} {y[i]*100.0} {z[i]*100.0}\n")
+				f.write(f"{r[i]/scalf} {z[i]/scalf}\n")
 
 	def wallAdd(self,wall_in):
 		"""Add a wall to this wall
