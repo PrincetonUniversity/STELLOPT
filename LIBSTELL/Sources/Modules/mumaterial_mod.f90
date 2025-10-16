@@ -906,8 +906,7 @@
       LOGICAL          :: lalldone, lboxdone, lprocdone, lbreakiterH
       LOGICAL, DIMENSION(:), ALLOCATABLE :: ldone
 
-      DOUBLE PRECISION :: convergedproc, convergedtot
-      INTEGER :: convergedperc
+      DOUBLE PRECISION :: convergedproc, convergedtot, convergedperc
       INTEGER :: mstat(MPI_STATUS_SIZE)
 
       EXTERNAL:: getBfld
