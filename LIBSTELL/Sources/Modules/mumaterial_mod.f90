@@ -939,7 +939,7 @@
 
       IF (lverb) THEN
         WRITE(6,*) ''
-        WRITE(6,*) '  Count  %Done     Index         Mnorm          Diff        Target        Lamda'
+        WRITE(6,*) '  Count    %Done     Index         Mnorm          Diff        Target        Lamda'
         WRITE(6,*) '==============================================================================='
       END IF
 
@@ -1114,7 +1114,7 @@
         IF (ldosync) CALL mumaterial_syncM(M,ntet,outmydom)
 
         IF (lverb) THEN 
-          WRITE(6,'(3X,I6,A2,F5.1,A2,I8,A2,E12.4,A2,E12.4,A2,E12.4,A2,E12.4,A2,E12.4)') icount, '  ', convergedperc, '  ', mydom(maxi),'  ', NORM2(M(:,mydom(maxi))),'  ', maxdMall, '  ', dMmax*lambda(maxi),  '  ', lambda(maxi)
+          WRITE(6,'(3X,I6,A2,F7.1,A2,I8,A2,E12.4,A2,E12.4,A2,E12.4,A2,E12.4,A2,E12.4)') icount, '  ', convergedperc, '  ', mydom(maxi),'  ', NORM2(M(:,mydom(maxi))),'  ', maxdMall, '  ', dMmax*lambda(maxi),  '  ', lambda(maxi)
           CALL FLUSH(6)
         END IF
 
