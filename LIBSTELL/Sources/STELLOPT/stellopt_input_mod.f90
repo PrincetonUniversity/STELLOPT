@@ -366,6 +366,9 @@
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
                          target_Rosenbrock_F, sigma_Rosenbrock_F, &
                          target_Rosenbrock2D, sigma_Rosenbrock2D, &
+                         lcoilsurf_opt, dcoilsurf_opt, &
+                         rbc_coilsurf, rbc_coilsurf_min, rbc_coilsurf_max,&
+                         zbs_coilsurf, zbs_coilsurf_min, zbs_coilsurf_max,&
                          lcoil_kts_opt, dcoil_kts_opt, &
                          rho_coil_kts, rho_coil_kts_min, rho_coil_kts_max, &
                          theta_coil_kts, theta_coil_kts_min, theta_coil_kts_max, &
@@ -454,7 +457,8 @@
       lpoincare           = .FALSE.
       lfix_rho_coil       = .FALSE.
       lfix_theta_coil     = .FALSE.
-      lfix_zeta_coil       = .FALSE.
+      lfix_zeta_coil      = .FALSE.
+      lcoilsurf_opt(:,:)  = .FALSE.
       dphiedge_opt    = -1.0
       dcurtor_opt     = -1.0
       dpscale_opt     = -1.0
@@ -496,6 +500,7 @@
       drho_opt(:,:)       = -1.0
       ddeltamn_opt(:,:)   = -1.0
       dcoil_kts_opt(:,:)  = -1.0
+      dcoilsurf_opt(:,:)  = -1.0
       ! Rosenbrock test function variables
       lRosenbrock_X_opt(1:ROSENBROCK_DIM) = .FALSE.
       dRosenbrock_X_opt(1:ROSENBROCK_DIM) = -1.0
@@ -506,7 +511,6 @@
       sigma_Rosenbrock_F(1:ROSENBROCK_DIM)  = bigno
       target_Rosenbrock2D = 0.0
       sigma_Rosenbrock2D = bigno
-
       IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
          curtor_min      = -bigno;  curtor_max      = bigno
@@ -551,6 +555,8 @@
       rho_coil_kts_min = 0.0;    rho_coil_kts_max = bigno
       theta_coil_kts_min = -6.0D+00;  theta_coil_kts_max = 12.0D+00
       zeta_coil_kts_min = -6.0D+00;   zeta_coil_kts_max = 12.0D+00
+      rbc_coilsurf_min = -bigno; rbc_coilsurf_max = bigno;
+      zbs_coilsurf_min = -bigno; zbs_coilsurf_max = bigno;
       
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
@@ -610,6 +616,9 @@
       nh_coil             =  1
       width_coil          =  1.0
       height_coil         =  1.0
+      ! Coil surface
+      rbc_coilsurf        = 0.0
+      zbs_coilsurf        = 0.0
       ! Targets
       mboz            = 64
       nboz            = 64
@@ -1283,6 +1292,23 @@
         END DO
       END IF
 
+      
+      IF (ANY(lcoilsurf_opt)) THEN
+         DO m = LBOUND(lcoilsurf_opt,DIM=2), UBOUND(lcoilsurf_opt,DIM=2)
+           DO n = LBOUND(lcoilsurf_opt,DIM=1), UBOUND(lcoilsurf_opt,DIM=1)
+              IF(lcoilsurf_opt(n,m)) THEN
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,5(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
+                 'LCOILSURF_OPT(',n,',',m,')',lcoilsurf_opt(n,m),&
+                 'RBC_COILSURF_MIN(',n,',',m,')',rbc_coilsurf_min(n,m),&
+                 'RBC_COILSURF_MAX(',n,',',m,')',rbc_coilsurf_max(n,m),&
+                 'ZBS_COILSURF_MIN(',n,',',m,')',zbs_coilsurf_min(n,m),&
+                 'ZBS_COILSURF_MAX(',n,',',m,')',zbs_coilsurf_max(n,m),&
+                 'DCOILSURF_OPT(',n,',',m,')',dcoilsurf_opt(n,m)
+              END IF
+           END DO
+        END DO
+      END IF
+
       IF (ANY(lcoil_kts_opt)) THEN
          WRITE(iunit,outboo) 'LFIX_RHO_COIL',lfix_rho_coil
          WRITE(iunit,outboo) 'LFIX_THETA_COIL',lfix_theta_coil
@@ -1305,11 +1331,30 @@
          END DO
       END IF
 
+      IF (ANY(ABS(rbc_coilsurf) > 0) .or. ANY(ABS(zbs_coilsurf)>0) .or.  ANY(lcoil_kts_opt)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!       Vacuum Poincare Plots'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outboo) 'LPOINCARE',lpoincare
+      END IF
+
+      IF (ANY(ABS(rbc_coilsurf) > 0) .or. ANY(ABS(zbs_coilsurf)>0)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!       Coil Winding Surface Harmonics'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO m = LBOUND(rbc_coilsurf,DIM=2), UBOUND(rbc_coilsurf,DIM=2)
+            DO n = LBOUND(rbc_coilsurf,DIM=1), UBOUND(rbc_coilsurf,DIM=1)
+               WRITE(iunit,'(2(2X,A,I3,A,I3,A,ES22.12E3))') &
+                  'RBC_COILSURF(',n,',',m,') = ',rbc_coilsurf(n,m), &
+                  'ZBS_COILSURF(',n,',',m,') = ',zbs_coilsurf(n,m)
+            END DO
+         END DO
+      END IF
+
       IF (MAXVAL(rho_coil_kts)>=0) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!       Coil Spline Knots'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,outboo) 'LPOINCARE',lpoincare
          DO n = LBOUND(rho_coil_kts,DIM=1), UBOUND(rho_coil_kts,DIM=1)
             IF (ANY(rho_coil_kts(n,:)>=0)) THEN
                m = FINDLOC(rho_coil_kts(n,:)>=0,.true.,DIM=1,BACK=.true.)
