@@ -903,7 +903,7 @@ class MyApp(QMainWindow):
 					'S11','S12','S21','S22','MAGWELL',\
 					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP',\
 					'BNORMAL', 'BNMNS', 'BNMNC', 'COIL_CURVATURE', 'COIL_TORSION', \
-					'COILCOIL_DISTANCE','LGRADB']
+					'COILCOIL_DISTANCE','BAXIS','LGRADB']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
 		# Handle Chisquared plots
@@ -966,6 +966,12 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('B-Normal (Total)')
 			bnormal_file = sorted([k for k in files if 'bnorm_real.' in k])
 			self.bnormal_file = sorted([k for k in bnormal_file if '_opt' not in k])
+		# Handle Baxis
+		if any('baxis_' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- B-AXIS -----')
+			self.ui.ComboBoxOPTplot_type.addItem('B-Axis')
+			baxis_file = sorted([k for k in files if 'baxis_real.' in k])
+			self.baxis_file = sorted([k for k in baxis_file if '_opt' not in k])
 		# Handle Boozer Transformation
 		if any('boozmn' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Boozer Coordinates -----')
@@ -1007,7 +1013,7 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('E-Static Potential')
 			self.dprof_files = sorted([k for k in files if 'dprof.' in k])
 		# Handle Poincare Data
-		if any('coils' in mystring for mystring in files):
+		if any('fieldlines' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Poincaré -----')
 			self.ui.ComboBoxOPTplot_type.addItem('Vacuum (phi=0)')
 			fieldlines_files = sorted([k for k in files if 'fieldlines_' in k])
