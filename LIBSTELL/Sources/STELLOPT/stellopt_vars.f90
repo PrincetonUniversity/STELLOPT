@@ -173,6 +173,7 @@
       ! Variables for defining a winding surface
       INTEGER, PARAMETER :: NMAX_CS = 24
       INTEGER, PARAMETER :: MMAX_CS = 24
+      LOGICAL :: lcreate_coilsurf
       LOGICAL, DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: LCOILSURF_OPT
       REAL(rprec), DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: DCOILSURF_OPT
       REAL(rprec), DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: RBC_COILSURF
