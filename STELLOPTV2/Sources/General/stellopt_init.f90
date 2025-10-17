@@ -1338,6 +1338,53 @@
                     END DO
                  END DO
               END IF
+              IF (ANY(lcoilsurf_opt)) THEN
+                 IF (lcoilsurf_opt(0,0)) THEN
+                    IF (lauto_domain) THEN
+                       rbc_coilsurf_min(0,0) = rbc_coilsurf(0,0) - ABS(pct_domain*rbc_coilsurf(0,0))
+                       rbc_coilsurf_max(0,0) = rbc_coilsurf(0,0) + ABS(pct_domain*rbc_coilsurf(0,0))
+                    END IF
+                    nvar_in = nvar_in + 1
+                    vars(nvar_in) = rbc_coilsurf(0,0)
+                    vars_min(nvar_in) = rbc_coilsurf_min(0,0)
+                    vars_max(nvar_in) = rbc_coilsurf_max(0,0)
+                    var_dex(nvar_in) = irbc_coilsurf
+                    diag(nvar_in)    = dcoilsurf_opt(0,0)
+                    arr_dex(nvar_in,1) = 0
+                    arr_dex(nvar_in,2) = 0
+                 END IF
+                 DO n = LBOUND(lcoilsurf_opt,1), UBOUND(lcoilsurf_opt,1)
+                    DO m = 0, UBOUND(lcoilsurf_opt,2)
+                       IF (m==0 .and. n<=0) CYCLE
+                       IF (lcoilsurf_opt(n,m)) THEN
+                          IF (lauto_domain) THEN
+                             rbc_coilsurf_min(n,m) = rbc_coilsurf(n,m) - ABS(pct_domain*rbc_coilsurf(n,m))
+                             rbc_coilsurf_max(n,m) = rbc_coilsurf(n,m) + ABS(pct_domain*rbc_coilsurf(n,m))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = rbc_coilsurf(n,m)
+                          vars_min(nvar_in) = rbc_coilsurf_min(n,m)
+                          vars_max(nvar_in) = rbc_coilsurf_max(n,m)
+                          var_dex(nvar_in) = irbc_coilsurf
+                          diag(nvar_in)    = dcoilsurf_opt(n,m)
+                          arr_dex(nvar_in,1) = n
+                          arr_dex(nvar_in,2) = m
+                          IF (lauto_domain) THEN
+                             zbs_coilsurf_min(n,m) = zbs_coilsurf(n,m) - ABS(pct_domain*zbs_coilsurf(n,m))
+                             zbs_coilsurf_max(n,m) = zbs_coilsurf(n,m) + ABS(pct_domain*zbs_coilsurf(n,m))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = zbs_coilsurf(n,m)
+                          vars_min(nvar_in) = zbs_coilsurf_min(n,m)
+                          vars_max(nvar_in) = zbs_coilsurf_max(n,m)
+                          var_dex(nvar_in) = izbs_coilsurf
+                          diag(nvar_in)    = dcoilsurf_opt(n,m)
+                          arr_dex(nvar_in,1) = n
+                          arr_dex(nvar_in,2) = m
+                       END IF
+                    END DO
+                 END DO
+              END IF
               IF (ANY(lcoil_kts_opt)) THEN
                  DO n = LBOUND(lcoil_kts_opt,1), UBOUND(lcoil_kts_opt,1)
                     DO m = LBOUND(lcoil_kts_opt,2), UBOUND(lcoil_kts_opt,2)

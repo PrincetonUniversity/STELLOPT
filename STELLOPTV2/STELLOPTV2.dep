@@ -1,5 +1,16 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_generate_coilsurf.o : \
+      stellopt_runtime.o  \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(NESCOIL_DIR)/$(LOCTYPE)/nescoil_stellopt_mod.o \
+      $(BNORM_DIR)/$(LOCTYPE)/neswrite.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o 
+
 chisq_coil_baxis.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \

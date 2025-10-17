@@ -147,6 +147,8 @@
          IF (var_dex(nvar_in) == irhobc)     rhobc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == ideltamn)   deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iRosenbrock_X) Rosenbrock_X(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == irbc_coilsurf)  rbc_coilsurf(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == izbs_coilsurf)  zbs_coilsurf(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == irho_coil_kts)   rho_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == itheta_coil_kts) theta_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == izeta_coil_kts)  zeta_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
@@ -449,6 +451,7 @@
 !DEC$ ENDIF
 
          ! Coil related parameters (generate coils must come first)
+         !IF (lcreate_coilsurf) CALL stellopt_generate_coilsurf(lscreen,iflag)
          IF (lcreate_coils) CALL stellopt_generate_coils(lscreen,iflag)
          IF (lneed_bnormal) THEN
             ctemp_str = 'compute_bnormal'
