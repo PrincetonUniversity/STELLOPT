@@ -617,6 +617,7 @@
       width_coil          =  1.0
       height_coil         =  1.0
       ! Coil surface
+      lcreate_coilsurf    = .false.
       rbc_coilsurf        = 0.0
       zbs_coilsurf        = 0.0
       ! Targets
@@ -1053,6 +1054,9 @@
       WHERE(sigma_dkes < bigno) sigma_dkes_11 = sigma_dkes
 !         target_dkes_11(3:nsd) = target_dkes(3:nsd)
 !         sigma_dkes_11(3:nsd)  = sigma_dkes(3:nsd)
+
+      ! Check if creating coils from winding surface
+      IF (ANY(ABS(rbc_coilsurf)>0)) lcreate_coilsurf = .true.
 
       ! Check if creating coils
       IF (ANY(rho_coil_kts>=0)) lcreate_coils = .true.
