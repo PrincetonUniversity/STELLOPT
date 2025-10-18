@@ -125,7 +125,7 @@
       INTEGER :: i, j, mn, ns1, ier
       DOUBLE PRECISION :: AX, AY, AZ, BX, BY, BZ, NX, NY, NZ, N, &
             R, Z, RU, ZU, RV, ZV, rho, theta, zeta, cop, sip, l, &
-            X, Y, phi, RAX, ZAX
+            X, Y, phi, RAX, ZAX, slope, ycept
       DOUBLE PRECISION, DIMENSION(ns) :: Rc,Zc,Pc
       DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in, xnod_ss, xnod_bb
       CHARACTER(len=100) :: s_name
@@ -133,12 +133,6 @@
       CHARACTER(len=100) :: c_name
       TYPE(bsc_coil)     :: coil_temp
       TYPE(bsc_rs)       :: rot_mat
-      !INTERFACE
-      !   REAL FUNCTION bvalue( t, bcoef, n, k, x, jderiv )
-      !      integer jderiv,k,n
-      !      double precision bcoef(n),t(n+k),x
-      !   END FUNCTION bvalue
-      !END INTERFACE
       nw_coil = 1; nh_coil = 1
       ns1 = ns - 1
       ! Deallocated the coils if allocated
@@ -161,13 +155,6 @@
             CALL EZspline_interp(RHO_spl(i),l,rho,ier)
             CALL EZspline_interp(THETA_spl(i),l,theta,ier)
             CALL EZspline_interp(ZETA_spl(i),l,zeta,ier)
-            !CALL spline_it(n_kts,t_kts,rho_kts(i,:),1,l,rho,0)
-            !CALL spline_it(n_kts,t_kts,theta_kts(i,:),1,l,theta,0)
-            !CALL spline_it(n_kts,t_kts,zeta_kts(i,:),1,l,zeta,0)
-            !PRINT *,rho,theta,zeta
-            !rho = bvalue(t_kts,rho_kts(i,:),n_kts,k_kts,l,0)
-            !theta = bvalue(t_kts,theta_kts(i,:),n_kts,k_kts,l,0)
-            !zeta = bvalue(t_kts,zeta_kts(i,:),n_kts,k_kts,l,0)
             R = zero; Z = zero; RU = zero; ZU = zero; RV = zero; ZV=zero
             RAX = zero; ZAX= zero;
             phi = zeta/nfp
@@ -183,26 +170,43 @@
                RV  =  RV - rmnc(mn)*sip*xn(mn) ! dR/dzeta
                ZV  =  ZV + zmns(mn)*cop*xn(mn) ! dZ/dzeta
             END DO
-            cop = cos(phi)
-            sip = sin(phi)
-            ! Compute Surface normals
-            Ax = RU * cop; Ay = RU * sip; Az = ZU
-            ! dR/dzeta
-            Bx = RV * cop - R * sip/nfp; By = RV * sip + R * cop/nfp; Bz = ZV
-            Nx = Ay*Bz - Az*By
-            Ny = Az*Bx - Ax*Bz
-            Nz = Ax*By - Ay*Bx
-            N  = SQRT(Nx*Nx+Ny*Ny+Nz*Nz)*normal_sign
-            Nx = Nx/N; Ny = Ny/N; Nz = Nz/N
-            X  = R*cop + rho*Nx
-            Y  = R*sip + rho*Ny
-            Z  = Z    + rho*Nz
-            Rc(j) = SQRT(X*X + Y*Y)
-            Zc(j) = Z
-            Pc(j) = ATAN2(Y,X)
-            xnod_in(1,j) = X
-            xnod_in(2,j) = Y 
-            xnod_in(3,j) = Z 
+            ! Make RU,ZU a function of rho
+            N     = SQRT(RU*RU + ZU*ZU)*normal_sign
+            RU    = RU/N
+            ZU    = ZU/N
+            slope = (COS(theta)-RU)/2.0
+            ycept = RU - slope
+            RU    = slope*rho+ycept
+            slope = (SIN(theta)-ZU)/2.0
+            ycept = ZU - slope
+            ZU    = slope*rho+ycept
+            Rc(j) = RU*rho + R
+            Zc(j) = ZU*rho + Z
+            Pc(j) = phi
+            xnod_in(1,j) = Rc(j)*COS(phi)
+            xnod_in(2,j) = Rc(j)*SIN(phi)
+            xnod_in(3,j) = Zc(j)
+            ! Old way
+            !cop = cos(phi)
+            !sip = sin(phi)
+            !! Compute Surface normals
+            !Ax = RU * cop; Ay = RU * sip; Az = ZU
+            !! dR/dzeta
+            !Bx = RV * cop - R * sip/nfp; By = RV * sip + R * cop/nfp; Bz = ZV
+            !Nx = Ay*Bz - Az*By
+            !Ny = Az*Bx - Ax*Bz
+            !Nz = Ax*By - Ay*Bx
+            !N  = SQRT(Nx*Nx+Ny*Ny+Nz*Nz)*normal_sign
+            !Nx = Nx/N; Ny = Ny/N; Nz = Nz/N
+            !X  = R*cop + rho*Nx
+            !Y  = R*sip + rho*Ny
+            !Z  = Z    + rho*Nz
+            !Rc(j) = SQRT(X*X + Y*Y)
+            !Zc(j) = Z
+            !Pc(j) = ATAN2(Y,X)
+            !xnod_in(1,j) = X
+            !xnod_in(2,j) = Y 
+            !xnod_in(3,j) = Z 
          END DO
          xnod_in(:,ns) = xnod_in(:,1)
          ! Now create the first coil
