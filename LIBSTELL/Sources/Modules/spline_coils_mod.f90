@@ -127,7 +127,7 @@
             R, Z, RU, ZU, RV, ZV, rho, theta, zeta, cop, sip, l, &
             X, Y, phi, RAX, ZAX, slope, ycept, &
             smax, slo, shi, rholo, rhohi, whi, wlo, wloo, whio, &
-            REDGE, ZEDGE
+            REDGE, ZEDGE, rho_ext
       DOUBLE PRECISION, DIMENSION(ns) :: Rc,Zc,Pc
       DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in, xnod_ss, xnod_bb
       CHARACTER(len=100) :: s_name
@@ -170,12 +170,13 @@
             !rhohi = SQRT(2.0)
             !whi   = (rho*rho-slo)*smax
             !wlo   = (smax - whi)/smax
-            whi   = (rho*rho-1.0)*2.0
+            rho_ext = rho + 1.0
+            whi   = (rho_ext*rho_ext-1.0)*2.0
             wlo   = (2.0 - whi)/2.0
             !wloo  = wlo*rho/rholo
             !whio  = whi*rho/rhohi
-            wloo  = wlo*rho
-            whio  = whi*rho/SQRT(2.0)
+            wloo  = wlo*rho_ext
+            whio  = whi*rho_ext/SQRT(2.0)
             DO mn = 1, mnmax
                cop = cos(xm(mn)*theta+xn(mn)*zeta)
                sip = sin(xm(mn)*theta+xn(mn)*zeta)
