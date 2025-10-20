@@ -125,7 +125,9 @@
       INTEGER :: i, j, mn, ns1, ier
       DOUBLE PRECISION :: AX, AY, AZ, BX, BY, BZ, NX, NY, NZ, N, &
             R, Z, RU, ZU, RV, ZV, rho, theta, zeta, cop, sip, l, &
-            X, Y, phi, RAX, ZAX, slope, ycept
+            X, Y, phi, RAX, ZAX, slope, ycept, &
+            smax, slo, shi, rholo, rhohi, whi, wlo, wloo, whio, &
+            REDGE, ZEDGE
       DOUBLE PRECISION, DIMENSION(ns) :: Rc,Zc,Pc
       DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in, xnod_ss, xnod_bb
       CHARACTER(len=100) :: s_name
@@ -156,57 +158,54 @@
             CALL EZspline_interp(THETA_spl(i),l,theta,ier)
             CALL EZspline_interp(ZETA_spl(i),l,zeta,ier)
             R = zero; Z = zero; RU = zero; ZU = zero; RV = zero; ZV=zero
-            RAX = zero; ZAX= zero;
+            RAX = zero; ZAX= zero; REDGE = zero; ZEDGE = zero
             phi = zeta/nfp
+            ! Extrapolation stuff (like VMEC)
+            !smax = 2.0
+            !slo  = 1.0
+            !shi  = 2.0
+            !rholo = SQRT(slo)
+            !rhohi = SQRT(shi)
+            !rholo = 1.0
+            !rhohi = SQRT(2.0)
+            !whi   = (rho*rho-slo)*smax
+            !wlo   = (smax - whi)/smax
+            whi   = (rho*rho-1.0)*2.0
+            wlo   = (2.0 - whi)/2.0
+            !wloo  = wlo*rho/rholo
+            !whio  = whi*rho/rhohi
+            wloo  = wlo*rho
+            whio  = whi*rho/SQRT(2.0)
             DO mn = 1, mnmax
                cop = cos(xm(mn)*theta+xn(mn)*zeta)
                sip = sin(xm(mn)*theta+xn(mn)*zeta)
-               R   =   R + rmnc(mn)*cop
-               Z   =   Z + zmns(mn)*sip
-               RAX = RAX + rmnc0(mn)*cop
-               ZAX = ZAX + zmns0(mn)*sip
-               RU  =  RU - rmnc(mn)*sip*xm(mn)
-               ZU  =  ZU + zmns(mn)*cop*xm(mn)
-               RV  =  RV - rmnc(mn)*sip*xn(mn) ! dR/dzeta
-               ZV  =  ZV + zmns(mn)*cop*xn(mn) ! dZ/dzeta
+               REDGE = REDGE + rmnc(mn)*cop
+               ZEDGE = ZEDGE + zmns(mn)*sip
+               IF ((xm(mn) == 0) .and. (xn(mn) == 0)) THEN
+                  R =  R  + rmnc(mn)*cop
+               ELSEIF (MOD(int(xm(mn)),2)==0) THEN
+                  R = R + rmnc(mn)*wlo*cop
+                  Z = Z + zmns(mn)*wlo*sip
+               ELSE
+                  R = R + rmnc(mn)*wloo*cop
+                  Z = Z + zmns(mn)*wloo*sip
+               END IF
+               IF ((xm(mn)==1) .and. (xn(mn)==0)) THEN
+                  ! Note we use odd here since xm==1
+                  R    =  R + 4.0*whio*cop
+                  Z    =  Z + 4.0*whio*sip
+               END IF
             END DO
-            ! Make RU,ZU a function of rho
-            N     = SQRT(RU*RU + ZU*ZU)*normal_sign
-            RU    = RU/N
-            ZU    = ZU/N
-            slope = (COS(theta)-RU)/2.0
-            ycept = RU - slope
-            RU    = slope*rho+ycept
-            slope = (SIN(theta)-ZU)/2.0
-            ycept = ZU - slope
-            ZU    = slope*rho+ycept
-            Rc(j) = RU*rho + R
-            Zc(j) = ZU*rho + Z
+            RU    = R - REDGE
+            ZU    = Z - ZEDGE
+            N     = SQRT(RU*RU+ZU*ZU)
+            RU    = RU/N; ZU = ZU/N
+            Rc(j) = REDGE + rho*RU
+            Zc(j) = ZEDGE + rho*ZU
             Pc(j) = phi
             xnod_in(1,j) = Rc(j)*COS(phi)
             xnod_in(2,j) = Rc(j)*SIN(phi)
             xnod_in(3,j) = Zc(j)
-            ! Old way
-            !cop = cos(phi)
-            !sip = sin(phi)
-            !! Compute Surface normals
-            !Ax = RU * cop; Ay = RU * sip; Az = ZU
-            !! dR/dzeta
-            !Bx = RV * cop - R * sip/nfp; By = RV * sip + R * cop/nfp; Bz = ZV
-            !Nx = Ay*Bz - Az*By
-            !Ny = Az*Bx - Ax*Bz
-            !Nz = Ax*By - Ay*Bx
-            !N  = SQRT(Nx*Nx+Ny*Ny+Nz*Nz)*normal_sign
-            !Nx = Nx/N; Ny = Ny/N; Nz = Nz/N
-            !X  = R*cop + rho*Nx
-            !Y  = R*sip + rho*Ny
-            !Z  = Z    + rho*Nz
-            !Rc(j) = SQRT(X*X + Y*Y)
-            !Zc(j) = Z
-            !Pc(j) = ATAN2(Y,X)
-            !xnod_in(1,j) = X
-            !xnod_in(2,j) = Y 
-            !xnod_in(3,j) = Z 
          END DO
          xnod_in(:,ns) = xnod_in(:,1)
          ! Now create the first coil
