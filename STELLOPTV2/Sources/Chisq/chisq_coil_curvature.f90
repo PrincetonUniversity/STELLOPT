@@ -38,7 +38,7 @@
       !   penfunc = 1 Minimize toward curve_k0 (from both sides)
       INTEGER, PARAMETER :: penfun_curve = 0
       REAL(rprec), PARAMETER :: curve_k0 = 1.0 ! >= 0.0
-      REAL(rprec), PARAMETER :: curve_k1 = 1.0 ! >= 0.0
+      REAL(rprec), PARAMETER :: curve_k1 = 0.25 ! >= 0.0
       REAL(rprec), PARAMETER :: curve_alpha = 1.0 ! >= 0.0
       REAL(rprec), PARAMETER :: curve_beta = 2.0 ! >= 2.0
       REAL(rprec), PARAMETER :: curve_gamma = 1.0 ! >= 1.0
