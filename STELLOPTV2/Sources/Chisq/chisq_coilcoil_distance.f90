@@ -36,8 +36,8 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'COILCOIL_DISTANCE ',1,3
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MINDIST'
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'COILCOIL_DISTANCE ',1,4
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MINDIST_INV  MINDIST'
       IF (niter >= 0) THEN
          dist_min = 1.0D+30
          ncoilgroups = SIZE(coil_group)
@@ -96,7 +96,7 @@
          targets(mtargets) = target
          sigmas(mtargets)  = sigma
          vals(mtargets)     = 1.0/dist_min
-         IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,dist_min
+         IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target,sigma,vals(mtargets),dist_min
       ELSE
          IF (sigma < bigno) THEN
             mtargets = mtargets + 1
