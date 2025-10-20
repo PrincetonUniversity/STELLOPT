@@ -150,7 +150,7 @@
          phi = zeta(v)/nfp
          RU = 0.0; ZU = 0.0; RV = 0.0; ZV = 0.0
          DO mn = 1, mnmax
-            arg = xm(mn)*theta+xn(mn)*phi
+            arg = xm(mn)*theta-xn(mn)*phi
             cop = COS(arg)
             sip = SIN(arg)
             carg(uv,mn) = cop
@@ -159,8 +159,8 @@
             zreal(uv) = zreal(uv) + zmns(mn,ns) * sip
             RU = RU - rmnc(mn,ns)*sip*xm(mn)
             ZU = ZU + zmns(mn,ns)*cop*xm(mn)
-            RV = RV + rmnc(mn,ns)*sip*xn(mn) ! dR/dzeta
-            ZV = ZV - zmns(mn,ns)*cop*xn(mn) ! dZ/dzeta
+            RV = RV - rmnc(mn,ns)*sip*xn(mn) ! dR/dzeta
+            ZV = ZV + zmns(mn,ns)*cop*xn(mn) ! dZ/dzeta
          END DO
          DO m = 0, mf
             DO n = -nf,nf
@@ -206,6 +206,13 @@
          CALL MPI_REDUCE(MPI_IN_PLACE,     Nz, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE,   carg, nuv*mnmax, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE,   sarg, nuv*mnmax, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
+!         DO uv = 1, nuv
+!            u = MOD(uv-1,nu)+1
+!            v = MOD(uv-1,nuv)
+!            v = FLOOR(REAL(v) / REAL(nu))+1
+!            phi = zeta(v)/nfp
+!            WRITE(327,*) rreal(uv)*cos(phi),rreal(uv)*sin(phi),zreal(uv),NX(uv),NY(uv),NZ(uv)
+!         END DO
       ELSE
          CALL MPI_REDUCE(      bcreal, bcreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_REDUCE(      bnreal, bnreal, nuv, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr_mpi)
@@ -318,13 +325,13 @@
          phi = zeta(v)/nfp
          RV = 0.0; ZV = 0.0
          DO mn = 1, mnmax
-            arg = xn(mn)*phi !Take theta=0
+            arg = -xn(mn)*phi !Take theta=0
             cop = COS(arg)
             sip = SIN(arg)
             rreal(v) = rreal(v) + rmnc(mn,1) * cop
             zreal(v) = zreal(v) + zmns(mn,1) * sip
-            RV = RV + rmnc(mn,ns)*sip*xn(mn) ! dR/dzeta
-            ZV = ZV - zmns(mn,ns)*cop*xn(mn) ! dZ/dzeta
+            RV = RV - rmnc(mn,ns)*sip*xn(mn) ! dR/dzeta
+            ZV = ZV + zmns(mn,ns)*cop*xn(mn) ! dZ/dzeta
          END DO
          cop = COS(phi)
          sip = SIN(phi)
