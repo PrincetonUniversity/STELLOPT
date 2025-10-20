@@ -91,6 +91,8 @@
       mf = MAXVAL(xm);     nf = MAXVAL(ABS(xn))
       md = MAXVAL(xm_nyq); nd = MAXVAL(ABS(xn_nyq))
       nu = nu_bnormal; nv = nv_bnormal
+      IF (ALLOCATED(bnfou)) DEALLOCATE(bnfou)
+      IF (ALLOCATED(bnfou_c)) DEALLOCATE(bnfou_c)
       ALLOCATE(bnfou(0:mf,-nf:nf),bnfou_c(0:mf,-nf:nf),STAT=iflag)
       IF (iflag < 0) RETURN
       coil_separation =Aminor
