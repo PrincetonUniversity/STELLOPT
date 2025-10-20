@@ -32,8 +32,6 @@
       INTEGER :: i,n,k, numcoilgroups
       INTEGER, PARAMETER :: nscoil = 128
       REAL(rprec) :: c1, c2, c3
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: tvec
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: rho, theta, zeta
 
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -50,7 +48,6 @@
       !n = MAXVAL(MAXLOC(rho_coil_kts,DIM=2,BACK=.TRUE.))
       numcoilgroups = COUNT(ANY(rho_coil_kts>0,DIM=2))
       k=1
-      ALLOCATE(tvec(n))
 
       !-----------------------------------------------------------------
       !     Screen Output
@@ -121,7 +118,6 @@
       !-----------------------------------------------------------------
       !     Deallocations
       !-----------------------------------------------------------------
-      DEALLOCATE(tvec)
 
 !-----------------------------------------------------------------------
 !     END SUBROUTINE
