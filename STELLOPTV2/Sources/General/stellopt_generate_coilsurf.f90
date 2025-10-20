@@ -119,8 +119,8 @@
          IF ((xm_nyq(mn) == 0) .and. (xn_nyq(mn) == 0)) &
             curpol = bsubvmnc(mn,ns)*pi2/nfp
       END DO
-      CALL set_nescoil_grid(nu, nv,nu, nv , mf, nf)
-      CALL set_nescoil_fourier(mf, nf, md, nd)
+      CALL set_nescoil_grid(nu, nv,nu, nv , 128, 5) ! Last two not used
+      CALL set_nescoil_fourier(mf, nf, md, nd) 
       CALL set_nescoil_plasma(nfp, iotaf(ns), phipf(ns), curpol)
       CALL set_nescoil_current(0.0_rprec, 1.0_rprec, 0)
       CALL set_nescoil_svd(0,0,0,4,0.0_rprec,0.0_rprec,0)
