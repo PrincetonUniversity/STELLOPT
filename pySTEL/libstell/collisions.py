@@ -190,6 +190,52 @@ class COLLISIONS():
 		clog = 43-np.log(clog)
 		return clog
 
+	def coullog_test_plasma(self,ma,va,Za,mb,Zb,nb,Tb):
+		"""Computes the Coulomb logarithm between test particle 'a'
+		   and each species 'b' in a plasma. Returns a list of clogs
+
+		Parameters
+		----------
+		ma : real
+			Test particle mass [kg]
+		va : real
+			Test particle velocity [m/s]
+		Za : real
+			Test particle charge number
+		mb : 1D array
+			mass of all plasma species [kg]
+		Zb : 1D array
+			Charge number of all plasma species
+		nb : 1D array
+			Density of all plasma species [m^-3]
+		Tb : 1D array
+			Temperature of all plasma species [eV]
+		Returns
+		----------
+		clog : array
+			Coulomb logarithm between test particle and each 
+			species in the plasma
+		"""
+		import numpy as np
+		mb = np.atleast_1d(mb)
+		Zb = np.atleast_1d(Zb)
+		nb = np.atleast_1d(nb)
+		Tb = np.atleast_1d(Tb)
+		# lambda_D of the plasma
+		lambda_D = np.sum(nb*Zb*Zb*EC*EC/(Tb*EC))
+		lambda_D = np.sqrt(EPS0/lambda_D)
+		# Reduced mass
+		mr = ma*mb / (ma+mb)
+		# Relative velocity norm
+		vr = np.sqrt(va**2 + 2*EC*Tb/mb)
+		# Classical minimum impact
+		b0 = EC*EC*np.abs(Za*Zb) / (4*np.pi*EPS0*mr*vr**2)
+		# Quantum cutoff (de Broglie)
+		lambda_B = HBAR / (2*mr*vr)
+		# Coulomb log
+		clog = np.log(lambda_D / np.maximum(lambda_B,b0))
+		return clog
+
 	def collisionfreq_thermal_equilibration(self,m1,Z1,T1,m2,Z2,n2,T2,clog):
 		"""Computes the collision frequency for two species
 
