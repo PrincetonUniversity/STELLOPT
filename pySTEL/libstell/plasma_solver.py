@@ -1541,7 +1541,10 @@ class PLASMA_SOLVER:
             setattr(saved_class, attr, {})
             for species in self.list_of_species:
                 getattr(saved_class, attr)[species] = getattr(self, attr)[species][sl, :]
-                
+        
+        if 'alphas_fast' in self.N:
+            saved_class.N['alphas_fast'] = self.N['alphas_fast'][sl, :]
+        
         # nested dict attributes
         nested_attrs = ['explicit_energy_sources','explicit_particle_sources']
         for species in self.list_of_species:
