@@ -332,6 +332,17 @@ beams3d_runtime.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
 
 
+beams3d_spline3d_setup.o: \
+      beams3d_runtime.o \
+      beams3d_grid.o \
+      ../../LIBSTELL/$(LOCTYPE)/beams3d_globals.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
+      ../../LIBSTELL/$(LOCTYPE)/EZspline_obj.o \
+      ../../LIBSTELL/$(LOCTYPE)/EZspline.o \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
 beams3d_volume.o: \
       beams3d_runtime.o \
       beams3d_grid.o
