@@ -71,7 +71,6 @@
       z_temp   = q(3)
       vll      = q(4)
       rinv = one/r_temp
-!      CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
       IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
           (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
           (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
@@ -83,13 +82,6 @@
          xparam = (r_temp - raxis(i)) * hri(i)
          yparam = (phi_temp - phiaxis(j)) * hpi(j)
          zparam = (z_temp - zaxis(k)) * hzi(k)
-         !CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
-         !                BR_spl%x1(1),BR_spl%n1,&
-         !                BR_spl%x2(1),BR_spl%n2,&
-         !                BR_spl%x3(1),BR_spl%n3,&
-         !                BR_spl%ilin1,BR_spl%ilin2,BR_spl%ilin3,&
-         !                i,j,k,xparam,yparam,zparam,&
-         !                hx,hxi,hy,hyi,hz,hzi,ier)
          ! Evaluate the Splines
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&

@@ -428,6 +428,10 @@
          B_Z = 0
          MODB = 0
       END IF
+      ! These are helpers for range
+      eps1 = (rmax-rmin)*small
+      eps2 = (phimax-phimin)*small
+      eps3 = (zmax-zmin)*small
       CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
 
       ! Put the vacuum field on the background grid
@@ -531,11 +535,6 @@
       !!              Setup Splines
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       CALL beams3d_spline3d_setup()
-      
-      ! These are helpers for range
-      eps1 = (rmax-rmin)*small
-      eps2 = (phimax-phimin)*small
-      eps3 = (zmax-zmin)*small
 
       ! Print Grid info to screen
       IF (lverb) THEN

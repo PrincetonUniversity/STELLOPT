@@ -87,9 +87,9 @@
       REAL*8, parameter :: small = 1.e-10_ezspline_r8
       REAL*8, POINTER :: hr(:), hp(:), hz(:)
       REAL*8, POINTER :: hri(:), hpi(:), hzi(:)
-      TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl, MODB_spl, TE_spl, NE_spl, &
-                            RHO_spl, XRHO_spl, YRHO_spl, &
-                            TI_spl, ZEFF_spl, OMEG_spl, U_spl, POT_spl
+      !TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl, MODB_spl, TE_spl, NE_spl, &
+      !                      RHO_spl, XRHO_spl, YRHO_spl, &
+      !                      TI_spl, ZEFF_spl, OMEG_spl, U_spl, POT_spl
       TYPE(EZspline1_r8) :: TE_spl_s, NE_spl_s, TI_spl_S, ZEFF_spl_s, OMEG_spl_s,  Vp_spl_s, POT_spl_s
       TYPE(EZspline1_r8), DIMENSION(NION) :: NI_spl_s
 
