@@ -50,6 +50,7 @@
 !     v4.05 08/25/23 - Fast Tritium only calculation added
 !     v4.07 01/11/24 - Added ability to specifiy weights in the input
 !     v4.10 01/12/24 - Mu material interface added.
+!     v4.50 10/23/25 - Memory handling improved and cleanup of code.
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-------------------------------------------------------------------
@@ -156,7 +157,7 @@ MODULE beams3d_runtime
     LOGICAL :: lvmec, lpies, lspec, lcoil, lmgrid, &
                lvessel, lvac, lcontinue_grid, lneut, &
                lhitonly, lread_input, lplasma_only, lraw, &
-               ldepo, lbeam_simple, lw7x, lsuzuki, &
+               ldepo, lbeam_simple, lsuzuki, &
                lascot, lascot4, lfidasim, lfidasim_cyl, lsplit, &
                lvessel_beam, lascotfl, lrandomize, leqdsk, lhint, &
                lboxsim, limas, lfieldlines, lbeamdensity, lmumat, &
@@ -174,7 +175,7 @@ MODULE beams3d_runtime
                       continue_grid_string, bbnbi_string, &
                       eqdsk_string, mumat_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.10 ! this is the full orbit test version
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.50
 
     !-----------------------------------------------------------------------
     !     Subroutines

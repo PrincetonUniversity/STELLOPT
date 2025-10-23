@@ -177,14 +177,6 @@ beams3d_init_beams_bbnbi.o: \
       beams3d_grid.o \
       beams3d_runtime.o
       
-      
-beams3d_init_beams_w7x.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
-      beams3d_lines.o \
-      beams3d_runtime.o
-      
 
 beams3d_init_coil.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \

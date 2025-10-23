@@ -200,7 +200,6 @@
          IF (lkick) WRITE(6,'(A)') '   KICK MODEL ON!'
          IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
-         IF (lw7x) WRITE(6,'(A)') '   W7-X BEAM Model!'
          IF (lascot) WRITE(6,'(A)') '   ASCOT5 OUTPUT ON!'
          IF (lfidasim) WRITE(6,'(A)') '   FIDASIM OUTPUT ON!'
          IF (lsplit) WRITE(6,'(A)') '   FIDASIM DISTRIBUTION SPLIT TO NBEAMS!'
@@ -557,9 +556,7 @@
       ! Initialize beams (define a distribution of directions and weights)
       IF (lbeam) THEN
          IF (.not. lsuzuki) CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
-         IF (lw7x) THEN
-            CALL beams3d_init_beams_w7x
-         ELSEIF (lbbnbi) THEN
+         IF (lbbnbi) THEN
             CALL beams3d_init_beams_bbnbi
          ELSE
             CALL beams3d_init_beams
