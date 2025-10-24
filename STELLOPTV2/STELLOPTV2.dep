@@ -834,6 +834,10 @@ stellopt_paraexe.o : \
       equil_vals.o \
       $(VMEC_DIR)/$(LOCTYPE)/vmec_params.o \
       $(LIB_DIR)/$(LOCTYPE)/wall_mod.o \
+      $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_runtime.o \
+      $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_lines.o \
+      $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_grid.o \
+      $(LIB_DIR)/$(LOCTYPE)/beams3d_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
       
       
