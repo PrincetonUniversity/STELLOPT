@@ -191,31 +191,29 @@
       ! For now we just have the main thread do all the work.
 
       ! Now process particles
-      !CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
-      IF (myworkid == master) THEN
-         DO i = 1, nparticles
-            IF (ltemp(i)) THEN
-               q(1) = R_start(i)
-               q(2) = PHI_start(i)
-               q(3) = Z_start(i)
-               q(4) = VR_start(i)
-               q(5) = VPHI_start(i)
-               q(6) = VZ_start(i)
-               myline = i
-               mymass = mass(i)
-               mycharge = charge(i)
-               CALL beams3d_part2gc(q)
-               q(5) = moment
-               CALL beams3d_gc2fo(q)
-               R_start(i) = q(1)
-               PHI_start(i) = q(2)
-               Z_start(i) = q(3)
-               VR_start(i) = q(4)
-               VPHI_start(i) = q(5)
-               VZ_start(i) = q(6)
-            END IF
-         END DO
-      END IF
+      CALL MPI_CALC_MYRANGE(MPI_COMM_SHARMEM, 1, nparticles, mystart, myend)
+      DO i = mystart, myend
+         IF (ltemp(i)) THEN
+            q(1) = R_start(i)
+            q(2) = PHI_start(i)
+            q(3) = Z_start(i)
+            q(4) = VR_start(i)
+            q(5) = VPHI_start(i)
+            q(6) = VZ_start(i)
+            myline = i
+            mymass = mass(i)
+            mycharge = charge(i)
+            CALL beams3d_part2gc(q)
+            q(5) = moment
+            CALL beams3d_gc2fo(q)
+            R_start(i) = q(1)
+            PHI_start(i) = q(2)
+            Z_start(i) = q(3)
+            VR_start(i) = q(4)
+            VPHI_start(i) = q(5)
+            VZ_start(i) = q(6)
+         END IF
+      END DO
       DEALLOCATE(ltemp)
 
 #if defined(MPI_OPT)
