@@ -28,7 +28,7 @@
                                win_epower, win_ipower, win_ndot, win_jprof, &
                                win_dense, nsh_prof4, &
                                h1_prof,h2_prof, h3_prof, h4_prof, h5_prof, &
-                               r_h, p_h, z_h, e_h, pi_h
+                               r_h, p_h, z_h, e_h, pi_h, win_end_state
       USE fidasim_input_mod, ONLY: beams3d_write_fidasim
       USE wall_mod
       USE mpi_params
@@ -47,7 +47,7 @@
       INTEGER        :: mkmaj, mkmin
       CHARACTER(128) :: impl,prec,pcode,hdware,opsys,fcomp,vend
 #endif
-      INTEGER :: i,j,k,ier, iunit, nextcur_in, nshar
+      INTEGER :: i,j,k,ier, iunit, nextcur_in, nshar, MPI_COMM_LOCAL
       INTEGER :: bcs1(2), bcs2(2), bcs3(2), bcs1_s(2)
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
@@ -533,9 +533,6 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Setup Splines
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      CALL beams3d_spline3d_setup()
-
-      ! Print Grid info to screen
       IF (lverb) THEN
          WRITE(6,'(A)')'----- Constructing Splines -----'
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',MINVAL(raxis),',',MAXVAL(raxis),'];  NR:   ',nr
@@ -544,14 +541,57 @@
          WRITE(6,'(A,I1)')               '   HERMITE FORM: ',1
          CALL FLUSH(6)
       END IF
-
+      CALL beams3d_spline3d_setup()
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!              Initialize Particles
+      !!              Initialize Random Number Generator
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      ! Initialize Random Number generator
       CALL RANDOM_SEED
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!              Initialize Number of Particles
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      IF (lbeam) THEN
+         nparticles = nbeams*nparticles_start
+      ELSEIF (lfusion) THEN   
+         nbeams = 0
+         IF (lfusion_alpha) nbeams = nbeams + 1
+         IF (lfusion_tritium) nbeams = nbeams + 1
+         IF (lfusion_proton) nbeams = nbeams + 1
+         IF (lfusion_He3) nbeams = nbeams + 1
+         IF (dexionHe3 > 0 .and. lfusion_He3) nbeams = nbeams + 2 
+         nparticles = nbeams*nparticles_start
+      ENDIF
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!              Allocate Particles
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      CALL mpialloc(R_start,      nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_R_start)
+      CALL mpialloc(PHI_start,    nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_PHI_start)
+      CALL mpialloc(Z_start,      nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Z_start)
+      CALL mpialloc(vr_start,     nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_vr_start)
+      CALL mpialloc(vphi_start,   nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_vphi_start)
+      CALL mpialloc(vz_start,     nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_vz_start)
+      CALL mpialloc(mass,         nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_mass)
+      CALL mpialloc(charge,       nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_charge)
+      CALL mpialloc(mu_start,     nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_mu_start)
+      CALL mpialloc(Zatom,        nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Zatom)
+      CALL mpialloc(t_end,        nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_t_end)
+      CALL mpialloc(vll_start,    nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_vll_start)
+      CALL mpialloc(beam,         nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_beam)
+      CALL mpialloc(weight,       nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_weight)
+      CALL mpialloc(lgc2fo_start, nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_lgc2fo_start)
+      CALL mpialloc(end_state,    nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_end_state)
+      IF (myid_sharmem == 0) THEN
+         R_start = 0; PHI_start = 0; Z_start = 0
+         vr_start = 0; vphi_start = 0; vz_start = 0
+         mu_start = 0; vll_start = 0
+         mass = 0; charge = 0; Zatom = 0
+         t_end = 0; beam = 0; weight = 0
+         lgc2fo_start = .FALSE.
+         end_state = 0
+      END IF
+
       
       ! Initialize beams (define a distribution of directions and weights)
       IF (lbeam) THEN
@@ -568,46 +608,61 @@
       ELSEIF (lfusion) THEN
          CALL beams3d_init_fusion
       ELSE
-         ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
-           vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
-           mass(nparticles), charge(nparticles), &
-           mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
-           beam(nparticles), weight(nparticles), lgc2fo_start(nparticles) )
-
-         R_start    = r_start_in(1:nparticles)
-         phi_start  = phi_start_in(1:nparticles)
-         Z_start    = z_start_in(1:nparticles)
-         vll_start  = vll_start_in(1:nparticles)
-         vr_start   = vr_start_in(1:nparticles)
-         vphi_start = vphi_start_in(1:nparticles)
-         vz_start   = vz_start_in(1:nparticles)
-         weight     = weight_in(1:nparticles)
-         !weight = 1.0/nparticles
-         Zatom = Zatom_in(1:nparticles)
-         mass = mass_in(1:nparticles)
-         charge = charge_in(1:nparticles)
-         mu_start = mu_start_in(1:nparticles)
-         t_end = t_end_in(1:nparticles)
-         IF (nparticles <= MAXBEAMS) THEN
-            beam(1:nparticles)  = Dex_beams(1:nparticles)
-            charge_beams(1:nparticles) = charge(1:nparticles)
-            mass_beams(1:nparticles) = mass(1:nparticles)
-         ELSE
-            beam(1:MAXBEAMS)  = Dex_beams(1:MAXBEAMS)
-            beam(MAXBEAMS+1:nparticles)  = Dex_beams(MAXBEAMS)
-            charge_beams(1:MAXBEAMS) = charge(1:MAXBEAMS)
-            mass_beams(1:MAXBEAMS) = mass(1:MAXBEAMS)
+         IF (myworkid == master) THEN
+            R_start    = r_start_in(1:nparticles)
+            phi_start  = phi_start_in(1:nparticles)
+            Z_start    = z_start_in(1:nparticles)
+            vll_start  = vll_start_in(1:nparticles)
+            vr_start   = vr_start_in(1:nparticles)
+            vphi_start = vphi_start_in(1:nparticles)
+            vz_start   = vz_start_in(1:nparticles)
+            weight     = weight_in(1:nparticles)
+            Zatom = Zatom_in(1:nparticles)
+            mass = mass_in(1:nparticles)
+            charge = charge_in(1:nparticles)
+            mu_start = mu_start_in(1:nparticles)
+            t_end = t_end_in(1:nparticles)
+            IF (nparticles <= MAXBEAMS) THEN
+               beam(1:nparticles)  = Dex_beams(1:nparticles)
+               charge_beams(1:nparticles) = charge(1:nparticles)
+               mass_beams(1:nparticles) = mass(1:nparticles)
+            ELSE
+               beam(1:MAXBEAMS)  = Dex_beams(1:MAXBEAMS)
+               beam(MAXBEAMS+1:nparticles)  = Dex_beams(MAXBEAMS)
+               charge_beams(1:MAXBEAMS) = charge(1:MAXBEAMS)
+               mass_beams(1:MAXBEAMS) = mass(1:MAXBEAMS)
+            END IF
+            lgc2fo_start = .FALSE.
+            WHERE ((vr_start == 0) .and. (vphi_start == 0) .and. (vz_start == 0))
+               lgc2fo_start = .TRUE.
+            END WHERE
+         END IF
+         CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
+         i = MPI_UNDEFINED
+         IF (myid_sharmem == master) i = 0
+         CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
+         IF (myid_sharmem == master) THEN
+            CALL MPI_BCAST(     R_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(   PHI_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(     Z_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(   vll_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(    mu_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(    vr_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(  vphi_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(    vz_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(       t_end, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(        mass, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(      charge, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(       Zatom, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(      weight, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(        beam, nparticles, MPI_INTEGER, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_BCAST(lgc2fo_start, nparticles, MPI_LOGICAL, master, MPI_COMM_LOCAL,ierr_mpi)
+            CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
          END IF
          nbeams = MAXVAL(beam)
-         !charge_beams(1) = charge_in(1)
-         !mass_beams(1)   = mass_in(1)
-         lgc2fo_start = .FALSE.
-         WHERE ((vr_start == 0) .and. (vphi_start == 0) .and. (vz_start == 0))
-            lgc2fo_start = .TRUE.
-         END WHERE
       END IF
 
-      IF (lboxsim) lgc2fo_start(:)=.FALSE.
+      IF ((lboxsim) .AND. (myid_sharmem == master)) lgc2fo_start(:)=.FALSE.
       
       ! Duplicate particles if requested
       IF (duplicate_factor > 1) CALL beams3d_duplicate_part
@@ -622,10 +677,6 @@
             CALL FLUSH(6)
          END IF
       END IF
-
-      ! In all cases create an end_state array
-      ALLOCATE(end_state(nparticles))
-      end_state=0
 
       ! Setup distribution
       ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &

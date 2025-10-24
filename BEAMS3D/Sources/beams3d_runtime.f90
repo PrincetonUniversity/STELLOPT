@@ -163,11 +163,18 @@ MODULE beams3d_runtime
                lboxsim, limas, lfieldlines, lbeamdensity, lmumat, &
                luser_init
     INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
-    INTEGER, ALLOCATABLE :: beam(:)
+    INTEGER :: win_beam
+    INTEGER, DIMENSION(:), POINTER :: beam
     REAL(rprec) :: dt, pi, invpi2, mu0, to3, dt_save, rminor_norm
-    LOGICAL, ALLOCATABLE :: lgc2fo_start(:)
-    REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), mu_start(:), &
-                                & mass(:), charge(:), Zatom(:), t_end(:), weight(:), vr_start(:), vphi_start(:), vz_start(:)
+    INTEGER :: win_lgc2fo_start
+    LOGICAL, DIMENSION(:), POINTER :: lgc2fo_start
+    INTEGER :: win_R_start, win_phi_start, win_z_start, &
+                win_vll_start, win_mu_start, win_mass, win_charge, &
+                win_zatom, win_t_end, win_weight, &
+                win_vr_start, win_vphi_start, win_vz_start
+    REAL(rprec), DIMENSION(:), POINTER :: R_start, phi_start, z_start, &
+                vll_start, mu_start, mass, charge, zatom, t_end, weight, &
+                vr_start, vphi_start, vz_start
     REAL(rprec), ALLOCATABLE :: extcur(:)
     CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
     CHARACTER(256) :: mgrid_string, coil_string, &
