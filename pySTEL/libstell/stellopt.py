@@ -493,7 +493,7 @@ class STELLOPT():
 					for point in points_array:
 						points.InsertNextPoint(point)
 					# Add to render
-					plt.add3Dline(points,scalars=scalar,linewidth=1)
+					plt.add3Dline(points,scalars=scalar,linewidth=3)
 		# Set color limits
 		if lsetclim: plt.setClim(cmin,cmax)
 		# In case it isn't set by user.
@@ -551,7 +551,7 @@ class STELLOPT():
 					for point in points_array:
 						points.InsertNextPoint(point)
 					# Add to render
-					plt.add3Dline(points,scalars=scalar,linewidth=1)
+					plt.add3Dline(points,scalars=scalar,linewidth=3)
 		# Set color limits
 		if lsetclim: plt.setClim(cmin,cmax)
 		# In case it isn't set by user.

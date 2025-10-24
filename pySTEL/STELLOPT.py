@@ -1102,9 +1102,11 @@ class MyApp(QMainWindow):
 				self.canvas2.draw()
 			elif plot_name in ['Coil Curvature']:
 				self.stel_data.read_stellopt_coil_curvature(test_file)
+				self.plt_sopt.clear_scene()
 				self.stel_data.plot_stellopt_coil_curvature(plot3D=self.plt_sopt)
 			elif plot_name in ['Coil Torsion']:
 				self.stel_data.read_stellopt_coil_curvature(test_file)
+				self.plt_sopt.clear_scene()
 				self.stel_data.plot_stellopt_coil_torsion(plot3D=self.plt_sopt)
 			elif plot_name in ['Vacuum (phi=0)']:
 				self.fig2.clf()
@@ -2027,6 +2029,11 @@ class MyApp(QMainWindow):
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
 			self.UpdateIterFile()
 		elif (plot_name == 'B-Normal (Coil)'):
+			file_list = sorted(glob.glob("bnorm_real.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
+		elif (plot_name == 'B-Normal (Total)'):
 			file_list = sorted(glob.glob("bnorm_real.*"))
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)

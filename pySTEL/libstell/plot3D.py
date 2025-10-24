@@ -661,6 +661,29 @@ class PLOT3D():
 		self.render_window.Render()
 		self.render_window_interactor.Start()
 
+	def clear_scene(self):
+	    """Clear the scene of objects
+	    
+	    This routine clears the existing scene of all objects.
+	    """
+	    # Remove all actors
+	    actors = self.renderer.GetActors()
+	    if actors:
+	        actors.InitTraversal()
+	        actor = actors.GetNextItem()
+	        while actor:
+	            self.renderer.RemoveActor(actor)
+	            actor = actors.GetNextItem()
+
+	    # Remove all volumes (important for volume rendering)
+	    volumes = self.renderer.GetVolumes()
+	    if volumes:
+	        volumes.InitTraversal()
+	        volume = volumes.GetNextItem()
+	        while volume:
+	            self.renderer.RemoveVolume(volume)
+	            volume = volumes.GetNextItem()
+
 	def saveImage(self,filename='vtkImage.png'):
 		"""Save VTK Render as image
 
