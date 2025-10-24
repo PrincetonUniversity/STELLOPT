@@ -330,8 +330,8 @@ beams3d_spline3d_setup.o: \
       ../../LIBSTELL/$(LOCTYPE)/beams3d_globals.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
-      ../../LIBSTELL/$(LOCTYPE)/EZspline_obj.o \
-      ../../LIBSTELL/$(LOCTYPE)/EZspline.o \
+      ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
+      ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
 
 
