@@ -31,6 +31,7 @@
       REAL(rprec) :: dist_min
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: xc1,yc1,zc1,xc2,yc2,zc2
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: x2d,y2d,z2d,d2d
+      REAL(rprec), PARAMETER :: DCC_EXP = -5.0
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -61,8 +62,10 @@
                   FORALL(k=1:nc2) y2d(:,k) = y2d(:,k) - coil_group(i1)%coils(j2)%xnod(2,k)
                   FORALL(k=1:nc2) z2d(:,k) = z2d(:,k) - coil_group(i1)%coils(j2)%xnod(3,k)
                   d2d = x2d*x2d+y2d*y2d+z2d*z2d
-                  WHERE(d2d < 1.0E-6) d2d = 1.0E6
-                  dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+                  !WHERE(d2d < 1.0E-6) d2d = 1.0E6
+                  !dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+                  !WHERE(d2d > target) d2d = target*100.0
+                  dist_min = MIN((MINVAL(d2d)),dist_min)
                   DEALLOCATE(x2d,y2d,z2d,d2d)
                END DO
             END DO
@@ -85,17 +88,20 @@
                      FORALL(k=1:nc2) y2d(:,k) = y2d(:,k) - coil_group(i2)%coils(j2)%xnod(2,k)
                      FORALL(k=1:nc2) z2d(:,k) = z2d(:,k) - coil_group(i2)%coils(j2)%xnod(3,k)
                      d2d = x2d*x2d+y2d*y2d+z2d*z2d
-                     WHERE(d2d < 1.0E-6) d2d = 1.0E6
-                     dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+                     !WHERE(d2d < 1.0E-6) d2d = 1.0E6
+                     !dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+                     !WHERE(d2d > target) d2d = target*100.0
+                     dist_min = MIN((MINVAL(d2d)),dist_min)
                      DEALLOCATE(x2d,y2d,z2d,d2d)
                   END DO
                END DO
             END DO
          END DO
+         dist_min = SQRT(dist_min)
          mtargets = mtargets + 1
          targets(mtargets) = target
          sigmas(mtargets)  = sigma
-         vals(mtargets)     = 1.0/dist_min
+         vals(mtargets)     = EXP(DCC_EXP*(dist_min-target))
          IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target,sigma,vals(mtargets),dist_min
       ELSE
          IF (sigma < bigno) THEN
