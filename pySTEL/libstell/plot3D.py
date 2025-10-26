@@ -568,7 +568,11 @@ class PLOT3D():
 		vector : VTK Double Array
 			Vector components
 		color : string (optional)
-			Line color name, see VTK (scalars overrides)
+			Line color name, see VTK (default: black)
+		tipradius : float (optional)
+			Arrow tip size (default: 0.05)
+		shaftradius : float (optional)
+			Shaft size (default: 0.01)
 		"""
 		# Create actor/mapper
 		actor = vtk.vtkActor()
