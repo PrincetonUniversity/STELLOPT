@@ -370,6 +370,27 @@ class PLOT3D():
 			points.InsertNextPoint(vertex.tolist())
 		return points
 
+	def vectorToVector(self,vec_in):
+		"""Generate vector objects from an array of vectors
+
+		This routine returns a vtkDoubleArray object given a vector array.
+
+		Parameters
+		----------
+		vec_in : ndarray
+			Vector component amplitudes (npts,3)
+		Returns
+		-------
+		vector : VTK Double Array
+			Vectors to plot in 3D.
+		"""
+		# Create objects
+		vectors = vtk.vtkDoubleArray()
+		vectors.SetNumberOfComponents(3)
+		# Convert numpy arrays to VTK arrays
+		for vec in vec_in:
+			vectors.InsertNextTuple3(vec[0],vec[1],vec[2])
+		return vectors
 
 	def facemeshTo3Dmesh(self,vertices,indices):
 		"""Generate points and triangle objects from a facemesh
@@ -528,6 +549,51 @@ class PLOT3D():
 			self.setActorColor(actor,color)
 		# Set line thickness
 		if linewidth: actor.GetProperty().SetLineWidth(linewidth)
+		# Set Mapper
+		actor.SetMapper(mapper)
+		# Add actor
+		self.renderer.AddActor(actor)
+
+	def add3Dvector(self,points,vector,color='black',tipradius=0.05,shaftradius=0.01):
+		"""Add a 3D vector plot
+
+		This routine adds a vector plot using VTK where points is an 
+		object as returned by vtk.vtkPoints() and vector is an object
+		as returned by VTK Double Array with 3 components.
+
+		Parameters
+		----------
+		points : VTK Points object
+			Origin of vectors
+		vector : VTK Double Array
+			Vector components
+		color : string (optional)
+			Line color name, see VTK (scalars overrides)
+		"""
+		# Create actor/mapper
+		actor = vtk.vtkActor()
+		mapper = vtk.vtkPolyDataMapper()
+		# Create a polyline to connect the points
+		polydata = vtk.vtkPolyData()
+		polydata.SetPoints(points)
+		polydata.GetPointData().SetVectors(vector)
+		# Create the Glyph
+		arrow_source = vtk.vtkArrowSource()
+		arrow_source.SetTipRadius(tipradius)
+		arrow_source.SetShaftRadius(shaftradius)
+		#Use vtkGlyph3D to place arrows at points
+		glyph = vtk.vtkGlyph3D()
+		glyph.SetSourceConnection(arrow_source.GetOutputPort())
+		glyph.SetInputData(polydata)
+		glyph.SetVectorModeToUseVector()
+		glyph.SetScaleModeToScaleByVector()
+		glyph.SetScaleFactor(0.8)  # Adjust overall scaling
+		glyph.Update()
+		# Setup the mapper
+		mapper = vtk.vtkPolyDataMapper()
+		mapper.SetInputConnection(glyph.GetOutputPort())
+		# Set arrow colors
+		self.setActorColor(actor,color)
 		# Set Mapper
 		actor.SetMapper(mapper)
 		# Add actor
