@@ -436,6 +436,7 @@
                CALL fieldlines_write
                ! Clean up
                CALL fieldlines_cleanup(.FALSE.)
+               ier_paraexe = 0
 !DEC$ IF DEFINED (TRAVIS)
             CASE('travis')
                proc_string = file_str
