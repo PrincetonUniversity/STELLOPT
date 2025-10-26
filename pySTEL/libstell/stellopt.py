@@ -236,6 +236,28 @@ class STELLOPT():
 		data = numbers[1:]
 		self.bnorm_harm = np.reshape(data,(mnmax,5)).T
 
+	def read_stellopt_baxis(self,filename):
+		"""Reads the STELLOPT coil_baxis_real output file.
+
+		This subroutine reads the STELLOPT coil_baxis_real output 
+		files. They are generated when doing coil optimization.
+
+		Parameters
+		----------
+		file : str
+			Path to bnorm_real file.
+		"""
+		import numpy as np
+		import re
+		f = open(filename,'r')
+		content = f.read()
+		f.close()
+		numbers = re.findall(r'-?\d+\.?\d*(?:[eE][+-]?\d+)?', content)
+		numbers = [float(num) for num in numbers]
+		naxis  = int(numbers[0])
+		data = numbers[1:]
+		self.baxis_real = np.reshape(data,(naxis,12)).T
+
 	def read_stellopt_xvec(self,filename='xvec.dat'):
 		"""Reads a STELLOPT xvec output file
 
@@ -558,6 +580,65 @@ class STELLOPT():
 		plt.setBGcolor()
 		# Colorbar
 		plt.colorbar(title='Coil Torsion')
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plot_stellopt_baxis(self,plot3D=None):
+		"""Plots the baxis metric
+
+		This routine plots the baxis metric of the baxis_real file.
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		cmin : float (optional)
+			Minimum value of color scale.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		npts = self.baxis_real.shape[1]
+		points_array = np.zeros((npts,3))
+		vector_array = np.zeros((npts,3))
+		r = self.baxis_real[3,:]
+		z = self.baxis_real[4,:]
+		p = self.baxis_real[2,:]
+		nx = self.baxis_real[5,:]
+		ny = self.baxis_real[6,:]
+		nz = self.baxis_real[7,:]
+		bx = self.baxis_real[8,:]
+		by = self.baxis_real[9,:]
+		bz = self.baxis_real[10,:]
+		bdotn = bx*nx+by*ny+bz*nz
+		bx = bx - bdotn*nx
+		by = by - bdotn*ny
+		bz = bz - bdotn*nz
+		b = self.baxis_real[11,:] # Bc.N/Bc
+		points_array[:,0] = r*np.cos(p)
+		points_array[:,1] = r*np.sin(p)
+		points_array[:,2] = z
+		vector_array[:,0] = bx
+		vector_array[:,1] = by
+		vector_array[:,2] = bz
+		points = vtk.vtkPoints()
+		scalar = plt.valuesToScalar(b)
+		vector = plt.vectorToVector(vector_array)
+		for point in points_array:
+			points.InsertNextPoint(point)
+		plt.add3Dline(points,linewidth=3,scalars=scalar)
+		plt.add3Dvector(points,vector)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Colorbar
+		plt.colorbar(title=r'$\vec{B}_{coil}\cdot\hat{n}/B_{coil}$')
 		# Render if requested
 		if lplotnow: plt.render()
 

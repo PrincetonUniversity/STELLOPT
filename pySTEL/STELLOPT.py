@@ -1100,6 +1100,10 @@ class MyApp(QMainWindow):
 				self.ax2.set_title('B-Normal (Total)')
 				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
 				self.canvas2.draw()
+			elif plot_name in ['B-Axis']:
+				self.stel_data.read_stellopt_baxis(test_file)
+				self.plt_sopt.clear_scene()
+				self.stel_data.plot_stellopt_baxis(plot3D=self.plt_sopt)
 			elif plot_name in ['Coil Curvature']:
 				self.stel_data.read_stellopt_coil_curvature(test_file)
 				self.plt_sopt.clear_scene()
@@ -2127,6 +2131,14 @@ class MyApp(QMainWindow):
 						plot_color = 'grey'
 					coil_data.plotcoilsHalfFP(plot3D=self.plt_sopt,color=plot_color)
 					l=l+1
+		elif (plot_name == 'B-Axis'):
+			file_list = sorted(glob.glob("baxis_real.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.canvas2.hide()
+			self.vtkWidget_sopt.show()
+			self.plt_sopt.renderer.RemoveAllViewProps()
+			self.UpdateIterFile()
 		elif (plot_name == 'Vacuum (phi=0)'):
 			file_list = sorted(glob.glob("fieldlines_*"))
 			for item in file_list:
