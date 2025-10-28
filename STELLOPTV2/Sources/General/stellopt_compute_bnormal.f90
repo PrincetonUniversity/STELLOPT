@@ -161,8 +161,8 @@
             zreal(uv) = zreal(uv) + zmns(mn,ns) * sip
             RU = RU - rmnc(mn,ns)*sip*xm(mn)
             ZU = ZU + zmns(mn,ns)*cop*xm(mn)
-            RV = RV - rmnc(mn,ns)*sip*xn(mn) ! dR/dzeta
-            ZV = ZV + zmns(mn,ns)*cop*xn(mn) ! dZ/dzeta
+            RV = RV + rmnc(mn,ns)*sip*xn(mn) ! dR/dzeta
+            ZV = ZV - zmns(mn,ns)*cop*xn(mn) ! dZ/dzeta
          END DO
          DO m = 0, mf
             DO n = -nf,nf
