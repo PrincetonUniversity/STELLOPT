@@ -1061,12 +1061,12 @@ class MyApp(QMainWindow):
 				self.stel_data.read_stellopt_bnorm_real(test_file)
 				umax = int(self.stel_data.bnorm_real[1,:].max())
 				vmax = int(self.stel_data.bnorm_real[2,:].max())
-				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax)).T
-				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax)).T
-				b = self.stel_data.bnorm_real[11,:].reshape((vmax,umax)).T
-				hmesh=self.ax2.pcolormesh(u,v,b,cmap='jet')
-				self.ax2.set_xlabel(r'$\theta$ [rad]')
-				self.ax2.set_ylabel(r'$\zeta$ [rad]')
+				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax))
+				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax))
+				b = self.stel_data.bnorm_real[11,:].reshape((vmax,umax))
+				hmesh=self.ax2.pcolormesh(v,u,b,cmap='jet')
+				self.ax2.set_ylabel(r'$\theta$ [rad]')
+				self.ax2.set_xlabel(r'$\zeta$ [rad]')
 				self.ax2.set_title('B-Normal (Plasma)')
 				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
 				self.canvas2.draw()
@@ -1076,12 +1076,12 @@ class MyApp(QMainWindow):
 				self.stel_data.read_stellopt_bnorm_real(test_file)
 				umax = int(self.stel_data.bnorm_real[1,:].max())
 				vmax = int(self.stel_data.bnorm_real[2,:].max())
-				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax)).T
-				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax)).T
-				b = self.stel_data.bnorm_real[12,:].reshape((vmax,umax)).T
-				hmesh=self.ax2.pcolormesh(u,v,b,cmap='jet')
-				self.ax2.set_xlabel(r'$\theta$ [rad]')
-				self.ax2.set_ylabel(r'$\zeta$ [rad]')
+				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax))
+				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax))
+				b = self.stel_data.bnorm_real[12,:].reshape((vmax,umax))
+				hmesh=self.ax2.pcolormesh(v,u,b,cmap='jet')
+				self.ax2.set_ylabel(r'$\theta$ [rad]')
+				self.ax2.set_xlabel(r'$\zeta$ [rad]')
 				self.ax2.set_title('B-Normal (Coil)')
 				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
 				self.canvas2.draw()
@@ -1091,12 +1091,12 @@ class MyApp(QMainWindow):
 				self.stel_data.read_stellopt_bnorm_real(test_file)
 				umax = int(self.stel_data.bnorm_real[1,:].max())
 				vmax = int(self.stel_data.bnorm_real[2,:].max())
-				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax)).T
-				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax)).T
-				b = self.stel_data.bnorm_real[13,:].reshape((vmax,umax)).T
-				hmesh=self.ax2.pcolormesh(u,v,b,cmap='jet')
-				self.ax2.set_xlabel(r'$\theta$ [rad]')
-				self.ax2.set_ylabel(r'$\zeta$ [rad]')
+				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax))
+				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax))
+				b = self.stel_data.bnorm_real[13,:].reshape((vmax,umax))
+				hmesh=self.ax2.pcolormesh(v,u,b,cmap='jet')
+				self.ax2.set_ylabel(r'$\theta$ [rad]')
+				self.ax2.set_xlabel(r'$\zeta$ [rad]')
 				self.ax2.set_title('B-Normal (Total)')
 				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
 				self.canvas2.draw()
