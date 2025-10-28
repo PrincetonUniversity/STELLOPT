@@ -169,17 +169,19 @@
                bnreal(uv) = bnreal(uv) + bnfou(m,n)*sin(m*theta+n*zeta(v))
             END DO
          END DO
+         ! \vec{x} =[R*cos(\phi),R*sin(\phi),Z]
          cop = COS(phi)
          sip = SIN(phi)
+         ! d\vec{x}/d\theta
          Ax = RU * cop; Ay = RU * sip; Az = ZU
-         ! dR/dzeta
-         Bx = RV * cop - rreal(uv) * sip/nfp
-         By = RV * sip + rreal(uv) * cop/nfp
+         ! d\vec{x}/d\phi
+         Bx = RV * cop - rreal(uv) * sip
+         By = RV * sip + rreal(uv) * cop
          Bz = ZV
          Nx(uv) = Ay*Bz - Az*By
          Ny(uv) = Az*Bx - Ax*Bz
          Nz(uv) = Ax*By - Ay*Bx
-         Norm  = SQRT(Nx(uv)*Nx(uv)+Ny(uv)*Ny(uv)+Nz(uv)*Nz(uv))*isigng
+         Norm  = -isigng*SQRT(Nx(uv)*Nx(uv)+Ny(uv)*Ny(uv)+Nz(uv)*Nz(uv))*isigng
          Nx(uv) = Nx(uv)/Norm
          Ny(uv) = Ny(uv)/Norm
          Nz(uv) = Nz(uv)/Norm
