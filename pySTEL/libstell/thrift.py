@@ -273,22 +273,22 @@ class THRIFT():
         ne = np.array( hf['ne_prof'][:] )
         Te = np.array( hf['te_prof'][:] )
         
-        ni = np.array( hf['ni_prof'][:] )
-        Ti = np.array( hf['ti_prof'][:] )
+        ni = np.atleast_3d( np.array( hf['ni_prof'][:] ) )
+        Ti = np.atleast_3d( np.array( hf['ti_prof'][:] ) ) 
         
-        nion = np.int64( hf['nion'] )
+        nion = np.int64( hf['nion'] )[0]
         
         hf.close()
         
         _, ax_n = plt.subplots(figsize=(11,8))
         _, ax_T = plt.subplots(figsize=(11,8))    
         
-        ax_n.plot(raxis,ne[:,selected_indices]/1e20)
+        ax_n.plot(raxis,ne[:,selected_indices]/1e20,'.-')
         ax_n.set_xlabel('r/a') 
         ax_n.set_title('ne [1E20 m^-3]')   
         ax_n.grid()   
         
-        ax_T.plot(raxis,Te[:,selected_indices]/1e3)
+        ax_T.plot(raxis,Te[:,selected_indices]/1e3,'.-')
         ax_T.set_xlabel('r/a') 
         ax_T.set_title('Te [keV]')   
         ax_T.grid()  
@@ -300,16 +300,16 @@ class THRIFT():
             _, ax_n = plt.subplots(figsize=(11,8))
             _, ax_T = plt.subplots(figsize=(11,8))
             
-            ax_n.plot(raxis,ni[:,selected_indices,i]/1e20)
+            ax_n.plot(raxis,ni[:,selected_indices,i]/1e20,'.-')
             ax_n.set_xlabel('r/a') 
             ax_n.set_title(f'ni [1E20 m^-3], ion={i+1}')   
             ax_n.grid()
             
-            ax_T.plot(raxis,Ti[:,selected_indices,i]/1e3)
+            ax_T.plot(raxis,Ti[:,selected_indices,i]/1e3,'.-')
             ax_T.set_xlabel('r/a') 
             ax_T.set_title(f'Ti [keV], ion={i+1}')   
             ax_T.grid()
-            
+            ax_T.legend()
             plt.show()
             
     def plot_plasma_current_decay(self,tstart=20.0):
