@@ -37,7 +37,7 @@
          eq_beta      = betatot
          eq_Aminor    = Aminor
          eq_Rmajor    = Rmajor
-         eq_phiedge   = MAXVAL(phi)
+         eq_phiedge   = MAXVAL(ABS(phi))
          eq_volume    = Volume
          ! Load equil_utils for helpers later on
          CALL thrift_load_vmec
