@@ -903,7 +903,7 @@ class MyApp(QMainWindow):
 					'S11','S12','S21','S22','MAGWELL',\
 					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP',\
 					'BNORMAL', 'BNMNS', 'BNMNC', 'COIL_CURVATURE', 'COIL_TORSION', \
-					'COILCOIL_DISTANCE','BAXIS','LGRADB']
+					'COIL_LENGTH','COILCOIL_DISTANCE','BAXIS','LGRADB']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
 		# Handle Chisquared plots
@@ -993,6 +993,7 @@ class MyApp(QMainWindow):
 		# Handle Coil
 		if any('coils' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Coils -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Coil Length')
 			self.ui.ComboBoxOPTplot_type.addItem('Coil Curvature')
 			self.ui.ComboBoxOPTplot_type.addItem('Coil Torsion')
 			self.ui.ComboBoxOPTplot_type.addItem('Coil Shape')
@@ -2096,6 +2097,15 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Pressure [kPa]')
 			self.ax2.set_title('VMEC Pressure Evolution')
 			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Coil Length'):
+			niter = self.stel_data.COIL_LENGTH_LENGTH.shape[0]
+			ncoils = self.stel_data.COIL_LENGTH_LENGTH.shape[1]
+			y = self.stel_data.COIL_LENGTH_LENGTH
+			self.ax2.plot(y)
+			self.ax2.set_xlabel('Iterations')
+			self.ax2.set_ylabel('Length [m]')
+			self.ax2.set_title('Coil Length')
+
 		elif (plot_name == 'Coil Curvature'):
 			file_list = sorted(glob.glob("coil_curvature.*"))
 			for item in file_list:
