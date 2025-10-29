@@ -25,6 +25,7 @@ chisq_bnmnc.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       equil_vals.o
+
 chisq_lgradb.o : \
       stellopt_runtime.o \
       equil_vals.o \
@@ -32,6 +33,13 @@ chisq_lgradb.o : \
       $(LIB_DIR)/$(LOCTYPE)/stel_tools.o 
 
 chisq_coil_curvature.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o 
+
+chisq_coil_length.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
@@ -1006,22 +1014,4 @@ chisq_template.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o
 
 chisq_jinvariant.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coillen.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilsep.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilcrv.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilself.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coiltorvar.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilrect.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
