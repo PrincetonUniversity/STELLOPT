@@ -518,7 +518,7 @@
             ycppp(nc) = ycppp(1)
             zcppp(nc) = zcppp(1)
             xcppp = xcppp * hs; ycppp = ycppp * hs; zcppp = zcppp * hs;
-            dLength(ntotal_coils,:) = SQRT(xcp*xcp+ycp*ycp+zcp*zcp)
+            dLength(ntotal_coils,:) = SQRT(xcp*xcp+ycp*ycp+zcp*zcp)/hs
             curvature(ntotal_coils,:)   = &
                  SQRT((zcpp*ycp-ycpp*zcp)**2 &
                     + (xcpp*zcp-zcpp*xcp)**2 &
