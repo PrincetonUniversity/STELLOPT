@@ -182,6 +182,8 @@
                sigma_coilcoil_distance = sigma_coilcoil_distance/temp
             CASE(jtarget_coil_baxis)
                sigma_coil_baxis = sigma_coil_baxis/temp
+            CASE(jtarget_coil_length)
+               WHERE(sigma_coil_length<bigno) sigma_coil_length = sigma_coil_length/temp
             CASE DEFAULT
                WRITE(6,'(A,I3.3,A)') '!!! JTARGET=',iddex(i),' not supported'
                CALL write_targets(6,iddex(i))

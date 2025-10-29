@@ -173,6 +173,9 @@
       !  BNORMAL_MN_COS
       IF (ANY(sigma_bnmnc < bigno)) &
          CALL chisq_bnmnc(target_bnmnc, sigma_bnmnc, ncnt, iflag)
+      !  COIL LENGTH
+      IF (ANY(sigma_coil_length < bigno)) &
+         CALL chisq_coil_length(target_coil_length, sigma_coil_length, ncnt, iflag)
       !  MEAN COIL CURVATURE
       IF (sigma_coil_curvature < bigno) &
          CALL chisq_coil_curvature(target_coil_curvature, sigma_coil_curvature, ncnt, iflag)
