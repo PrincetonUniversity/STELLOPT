@@ -892,8 +892,9 @@
       IMPLICIT NONE
 
       INTEGER, INTENT(in) :: mystart, myend
+      DOUBLE PRECISION :: pair_in(2), pair_out(2)
 
-      INTEGER :: icount, i, i_tile, j, j_tile, k, k_tile, maxi, maxtile, iterH, maxiterH
+      INTEGER :: icount, i, i_tile, j, j_tile, k, k_tile, maxi, maxtile, iterH, maxiterH, maxrank
       INTEGER :: stype
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_new
       DOUBLE PRECISION :: H(3), N(3,3), Bx, By, Bz
@@ -939,8 +940,8 @@
 
       IF (lverb) THEN
         WRITE(6,*) ''
-        WRITE(6,*) '  Count  %Done    Index        Mnorm         Diff       Target       Lamda'
-        WRITE(6,*) '================================================================================'
+        WRITE(6,*) '  Count   %Done    Index        Mnorm         Diff       Target       Lamda'
+        WRITE(6,*) '=============================================================================='
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1086,20 +1087,25 @@
         IF (lcomm) THEN
 #if defined(MPI_OPT)
             CALL MPI_ALLREDUCE(convergedproc, convergedtot,  1, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi) 
-            CALL MPI_ALLREDUCE(maxdM,             maxdMall,  1, MPI_DOUBLE_PRECISION, MPI_MAX, comm_world, ierr_mpi) 
-            ! Bugged so commented out
-            ! IF (maxdM.EQ.maxdMall) THEN ! master needs to know for displaying
-            !     IF (lismaster) THEN
-            !         maxlambda = lambda(maxi)
-            !         maxtile = mydom(maxi)
-            !     ELSE
-            !         CALL MPI_SEND(lambda(maxi), 1, MPI_DOUBLE_PRECISION, 0, 1240, comm_world, ierr_mpi) 
-            !         CALL MPI_SEND(mydom(maxi), 1, MPI_INTEGER, 0, 1241, comm_world, ierr_mpi) 
-            !     END IF
-            ! ELSE IF (lismaster) THEN
-            !     CALL MPI_RECV(maxlambda, 1, MPI_DOUBLE_PRECISION, MPI_ANY_SOURCE, 1240, comm_world, mstat, ierr_mpi)
-            !     CALL MPI_RECV(maxtile, 1, MPI_INTEGER, MPI_ANY_SOURCE, 1241, comm_world, mstat, ierr_mpi)
-            ! END IF
+
+            pair_in(1) = maxdM
+            pair_in(2) = REAL(world_rank)
+            CALL MPI_ALLREDUCE(pair_in,pair_out,1, MPI_2DOUBLE_PRECISION, MPI_MAXLOC, comm_world, ierr_mpi)
+            maxdMall = pair_out(1)
+            maxrank = INT(pair_out(2))
+
+            IF (world_rank.EQ.maxrank) THEN ! master needs to know for displaying
+                IF (lismaster) THEN
+                    maxlambda = lambda(maxi)
+                    maxtile = mydom(maxi)
+                ELSE
+                    CALL MPI_SEND(lambda(maxi), 1, MPI_DOUBLE_PRECISION, 0, 1240, comm_world, ierr_mpi) 
+                    CALL MPI_SEND(mydom(maxi), 1, MPI_INTEGER, 0, 1241, comm_world, ierr_mpi) 
+                END IF
+            ELSE IF (lismaster) THEN
+                CALL MPI_RECV(maxlambda, 1, MPI_DOUBLE_PRECISION, maxrank, 1240, comm_world, mstat, ierr_mpi)
+                CALL MPI_RECV(maxtile, 1, MPI_INTEGER, maxrank, 1241, comm_world, mstat, ierr_mpi)
+            END IF
             CALL MPI_BARRIER(comm_world, ierr_mpi)
 
 #endif
@@ -1114,7 +1120,7 @@
         IF (ldosync) CALL mumaterial_syncM(M,ntet,outmydom)
 
         IF (lverb) THEN 
-          WRITE(6,'(2X,I6,1X,F7.1,2X,I8,2X,E12.4,2X,E12.4,2X,E12.4,2X,E12.4)') icount, convergedperc, mydom(maxi), NORM2(M(:,mydom(maxi))), maxdMall, dMmax*lambda(maxi), lambda(maxi)
+          WRITE(6,'(2X,I6,1X,F7.1,1X,I8,1X,E12.4,1X,E12.4,1X,E12.4,1X,E12.4)') icount, convergedperc, maxtile, NORM2(M(:,maxtile)), maxdMall, dMmax*maxlambda, maxlambda
           CALL FLUSH(6)
         END IF
 
