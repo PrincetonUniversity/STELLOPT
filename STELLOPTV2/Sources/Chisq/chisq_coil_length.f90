@@ -13,14 +13,15 @@
       USE stellopt_vars, ONLY: nw_coil, nh_coil, rho_coil_kts
       USE spline_coils_mod, ONLY: get_coil_dl, get_coil_ns
       USE biotsavart, ONLY: coil_group
+      USE vsvd0, ONLY : nigroup
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
 !
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      REAL(rprec), DIMENSION(nsd), INTENT(in)    ::  target
-      REAL(rprec), DIMENSION(nsd), INTENT(in)    ::  sigma
+      REAL(rprec), DIMENSION(nigroup), INTENT(in)    ::  target
+      REAL(rprec), DIMENSION(nigroup), INTENT(in)    ::  sigma
       INTEGER,     INTENT(in)    ::  niter
       INTEGER,     INTENT(in)    ::  iflag
       
@@ -29,19 +30,8 @@
 !
 !-----------------------------------------------------------------------
       INTEGER :: numcoilgroups, k, n, nc1
-      REAL(rprec) :: curve, curve_hold, hypc, dl, L, val, curve_max, curve_min
+      REAL(rprec) :: dl, L, val
       
-      ! The following mimics the FOCUS code algorithm
-      !   penfunc = 0 Minimize toward curve_k0 (from one side)
-      !   penfunc = 1 Minimize toward curve_k0 (from both sides)
-      INTEGER, PARAMETER :: penfun_curve = 0
-      REAL(rprec), PARAMETER :: curve_k0 = 1.0 ! >= 0.0
-      REAL(rprec), PARAMETER :: curve_k1 = 0.25 ! >= 0.0
-      REAL(rprec), PARAMETER :: curve_alpha = 1.0 ! >= 0.0
-      REAL(rprec), PARAMETER :: curve_beta = 2.0 ! >= 2.0
-      REAL(rprec), PARAMETER :: curve_gamma = 1.0 ! >= 1.0
-      REAL(rprec), PARAMETER :: curve_sigma = 1.0 ! >= 0.0
-      ! Note if gamma == 1.0 then k1 = 0 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -50,8 +40,8 @@
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'COIL_LENGTH ',numcoilgroups,5
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  COILGROUP  LENGTH'
       IF (niter >= 0) THEN
-         curve_max = 0.0; curve_min = bigno
-         DO k = 1, numcoilgroups
+         DO k = 1, nigroup
+            IF (sigma(k)>=bigno) CYCLE
             L = 0.0
             CALL get_coil_ns(nc1)
             DO n = 1, nc1
@@ -71,7 +61,7 @@
                       targets(mtargets),sigma(k),vals(mtargets),k,L
          END DO
       ELSE
-         DO k = 1, numcoilgroups
+         DO k = 1, nigroup
             IF (sigma(k) < bigno) THEN
                mtargets = mtargets + 1
                IF (niter == -2) target_dex(mtargets)=jtarget_coil_length
