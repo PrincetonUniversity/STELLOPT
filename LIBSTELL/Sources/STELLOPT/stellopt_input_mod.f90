@@ -14,7 +14,8 @@
       USE stellopt_globals, ONLY: axis_init_option, cr_strategy, &
          epsfcn, factor, ftol, gtol, lcentered_differences, lkeep_mins, &
          lrefit, mode, noptimizers, npopulation, opt_type, refit_param, &
-         rho_exp, xtol, bigno, lno_restart, ltriangulate, nfunc_max
+         rho_exp, xtol, bigno, lno_restart, ltriangulate, nfunc_max, &
+         lexp_scale, exp_alpha
       USE stellopt_vars
       USE stellopt_targets
       USE safe_open_mod, ONLY: safe_open
@@ -212,7 +213,7 @@
                          ftol, xtol, gtol, epsfcn, factor, refit_param, &
                          lcentered_differences, axis_init_option, &
                          cr_strategy, mode, lkeep_mins, lrefit,&
-                         npopulation, noptimizers, &
+                         npopulation, noptimizers, lexp_scale, exp_alpha, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
                          lpscale_opt, lmix_ece_opt, lxics_v0_opt, &
                          lextcur_opt, laphi_opt, lam_opt, lac_opt, &
@@ -402,6 +403,8 @@
       refit_param     = 0.75
       rho_exp         = 4
       lcentered_differences = .FALSE.
+      lexp_scale      = .FALSE.
+      exp_alpha       = 0.0
       axis_init_option = "previous"
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
@@ -1182,6 +1185,8 @@
       CALL write_stel_lvar_vec(iunit,lemis_xics_f_opt,emis_xics_f_min,emis_xics_f_max,demis_xics_f_opt,'EMIS_XICS_F',1,ndatafmax)
       
       IF (ANY(laxis_opt)) THEN
+         WRITE(iunit,outboo) 'LEXP_SCALE',lexp_scale
+         WRITE(iunit,outflt) 'EXP_ALPHA',exp_alpha
          DO n = LBOUND(laxis_opt,DIM=1), UBOUND(laxis_opt,DIM=1)
             IF (laxis_opt(n) .and. (raxis_min(n)>-bigno .or. raxis_max(n)<bigno .or. zaxis_min(n)>-bigno .or. zaxis_max(n)<bigno)) THEN
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,L1,5(2X,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
@@ -1199,6 +1204,8 @@
          END DO
       END IF
       IF (ANY(lrho_opt)) THEN
+         WRITE(iunit,outboo) 'LEXP_SCALE',lexp_scale
+         WRITE(iunit,outflt) 'EXP_ALPHA',exp_alpha
          DO m = LBOUND(lrho_opt,DIM=2), UBOUND(lrho_opt,DIM=2)
             DO n = LBOUND(lrho_opt,DIM=1), UBOUND(lrho_opt,DIM=1)
                IF(lrho_opt(n,m) .and. (bound_min(n,m)>-bigno .or. bound_max(n,m)<bigno)) THEN
@@ -1217,6 +1224,8 @@
          WRITE(iunit,outint) 'RHO_EXP',rho_exp
       END IF
       IF (ANY(ldeltamn_opt)) THEN
+         WRITE(iunit,outboo) 'LEXP_SCALE',lexp_scale
+         WRITE(iunit,outflt) 'EXP_ALPHA',exp_alpha
          DO m = LBOUND(ldeltamn_opt,DIM=2), UBOUND(ldeltamn_opt,DIM=2)
             DO n = LBOUND(ldeltamn_opt,DIM=1), UBOUND(ldeltamn_opt,DIM=1)
                IF(ldeltamn_opt(n,m) .and. (delta_min(n,m)>-bigno .or. delta_max(n,m)<bigno)) THEN
@@ -1234,6 +1243,8 @@
          END DO
       END IF
       IF (ANY(lmode_opt)) THEN
+         WRITE(iunit,outboo) 'LEXP_SCALE',lexp_scale
+         WRITE(iunit,outflt) 'EXP_ALPHA',exp_alpha
          DO m = LBOUND(lmode_opt,DIM=2), UBOUND(lmode_opt,DIM=2)
            DO n = LBOUND(lmode_opt,DIM=1), UBOUND(lmode_opt,DIM=1)
                IF(lmode_opt(n,m) .and. (bound_min(n,m)>-bigno .or. bound_max(n,m)<bigno)) THEN
@@ -1253,6 +1264,8 @@
 
       
       IF (ANY(lbound_opt)) THEN
+         WRITE(iunit,outboo) 'LEXP_SCALE',lexp_scale
+         WRITE(iunit,outflt) 'EXP_ALPHA',exp_alpha
          DO m = LBOUND(lbound_opt,DIM=2), UBOUND(lbound_opt,DIM=2)
            DO n = LBOUND(lbound_opt,DIM=1), UBOUND(lbound_opt,DIM=1)
               IF(lbound_opt(n,m)) THEN
