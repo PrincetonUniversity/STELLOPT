@@ -18,10 +18,12 @@
       ! Moved from stellopt_runtime
       INTEGER, PARAMETER :: maxwindsurf=32  
       REAL(rprec), PARAMETER :: bigno = 1.0E+10
-      LOGICAL :: lcentered_differences, lkeep_mins, lrefit, lno_restart, ltriangulate
+      LOGICAL :: lcentered_differences, lkeep_mins, lrefit, &
+                 lno_restart, ltriangulate, lexp_scale
       INTEGER :: cr_strategy, npopulation, noptimizers, mode, rho_exp
       INTEGER  ::  nfunc_max
-      REAL(rprec)  :: ftol, xtol, gtol, epsfcn, factor, refit_param
+      REAL(rprec)  :: ftol, xtol, gtol, epsfcn, factor, refit_param, &
+                  exp_alpha
       CHARACTER(256)           :: opt_type, axis_init_option
       
       CONTAINS
