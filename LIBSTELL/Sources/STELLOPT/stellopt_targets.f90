@@ -142,12 +142,12 @@
                                         r_mse, z_mse, phi_mse, s_mse,&
                                         a1_mse, a2_mse, a3_mse, a4_mse,&
                                         a5_mse, a6_mse, a7_mse, vac_mse
-      LOGICAL,     DIMENSION(nprof) ::  lmse_extcur
+      LOGICAL,     DIMENSION(nigroup) ::  lmse_extcur
       REAL(rprec), DIMENSION(nprobes)  ::  target_bprobe, sigma_bprobe       ! Note this number is hardcoded in chisq_brobes SAL 2/10/14
       REAL(rprec), DIMENSION(nprof) ::  target_segrog, sigma_segrog, &
                                         target_fluxloop, sigma_fluxloop
       CHARACTER(256)                ::  magdiag_coil
-      REAL(rprec), DIMENSION(nprof) ::  target_extcur, sigma_extcur 
+      REAL(rprec), DIMENSION(nigroup) ::  target_extcur, sigma_extcur 
       CHARACTER(256)                ::  vessel_string
       REAL(rprec)                   ::  target_vessel, sigma_vessel
       REAL(rprec), DIMENSION(nprof) ::  balloon_theta, balloon_zeta
@@ -213,7 +213,7 @@
       REAL(rprec) ::  target_coil_torsion, sigma_coil_torsion
       REAL(rprec) ::  target_coilcoil_distance, sigma_coilcoil_distance
       REAL(rprec) ::  target_coil_baxis, sigma_coil_baxis
-      REAL(rprec),DIMENSION(nprof) ::  target_coil_length, sigma_coil_length
+      REAL(rprec),DIMENSION(nigroup) ::  target_coil_length, sigma_coil_length
 
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
