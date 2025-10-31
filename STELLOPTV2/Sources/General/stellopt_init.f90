@@ -53,6 +53,7 @@
 !----------------------------------------------------------------------
       chisq_min = bigno
       ier = 0
+      scale = 1.0
 
       ! Read the OPTIMUM Namelist
       CALL init_stellopt_input
