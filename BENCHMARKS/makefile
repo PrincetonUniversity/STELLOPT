@@ -327,23 +327,23 @@ test_stellopt_recon_tok:
 	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file RECON_TOK
 	@echo ""
 
-#test_stellopt_beams3d:
-#	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D
-#	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
-#	@cd $(STELLOPT_TEST_DIR)/BEAMS3D && ./compare_STELLOPT_BEAMS3D.py
-#	@echo ""
-
 test_stellopt_tok_r0_delta:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA
 	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA && ./compare_TOK_R0_DELTA.py
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file TOK_R0_DELTA
 	@echo ""
 
 test_stellopt_tok_r0_rho:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO
 	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO && ./compare_TOK_R0_RHO.py
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file TOK_R0_RHO
 	@echo ""
+
+#test_stellopt_beams3d:
+#	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D
+#	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
+#	@cd $(STELLOPT_TEST_DIR)/BEAMS3D && ./compare_STELLOPT_BEAMS3D.py
+#	@echo ""
 
 test_stellopt_qhs_lmdif:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.QHS_LMDIF

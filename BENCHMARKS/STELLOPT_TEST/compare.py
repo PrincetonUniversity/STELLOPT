@@ -80,6 +80,12 @@ if __name__=="__main__":
         data['B_PROBES'] = sopt.B_PROBES_VAL.flatten().tolist()
         data['FLUXLOOPS'] = sopt.FLUXLOOPS_VAL.flatten().tolist()
         data['SEPARATRIX'] = sopt.SEPARATRIX_VAL.flatten().tolist()
+    if run_name in ['TOK_R0_DELTA']:
+        data['ASPECT'] = sopt.ASPECT_VAL[-1,0].tolist()
+        data['R0'] = sopt.R0_VAL[-1,0].tolist()
+    if run_name in ['TOK_R0_RHO']:
+        data['ASPECT'] = sopt.ASPECT_VAL[-1,0].tolist()
+        data['R0'] = sopt.R0_VAL[-1,0].tolist()
     if run_name in ['DKES']:
         data['L_11'] = sopt.DKES_11_VAL.flatten().tolist()
         data['L_31'] = sopt.DKES_31_VAL.flatten().tolist()
