@@ -94,6 +94,9 @@ if __name__=="__main__":
         data['ASPECT'] = sopt.ASPECT_VAL[-1,0].tolist()
     if run_name in ['AVAILENERGYOPT']:
         data['AVAILENERGY'] = sopt.TXPORT_VAL.flatten().tolist()
+    if run_name in ['TRAVIS']:
+        data['ECEREFLECT_X'] = sopt.ECEREFLECT_RADTX.flatten().tolist()
+        data['ECEREFLECT_O'] = sopt.ECEREFLECT_RADTO.flatten().tolist()
 
     # Read or write to the database file.
     if args.lmake_db:
