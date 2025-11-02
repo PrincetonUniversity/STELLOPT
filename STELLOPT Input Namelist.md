@@ -164,12 +164,19 @@ system that this is a restart.
 
 ### PSO
 
-Particle Swarm evolution. 
+The particle swarm optimization algorithm is based on that found on 
+[Wikipedia - PSO](https://en.wikipedia.org/wiki/Particle_swarm_optimization). 
+It runs for `NFUNC_MAX` timesteps using the following equation for update
+$$\vec{x}_f = \vec{x}_o + \vec{v} $$
+where the velocity is defined as
+$$\vec{v}_f = w\vec{v}_o+c_p\sigma_p\left(\vec{x}_p-\vec{x}_o\right)+c_g\sigma_g\left(\vec{x}_g-\vec{x}_o\right)$$
+where `p` indicates the particles best value, and g indicates the populations 
+best value. The sigmas are random numbers.
 
-| FTOL | Desired relative error in sum of squares. |
-| XTOL | Desired relative error in approximate solution. | 
-| EPSFCN | Ratio of global attractor to local (local = 1.0) |
-| FACTOR | Scaling factor for maximum velocity|
+| NFUNC_MAX | Number of timesteps in particl swarm. |
+| FACTOR | Intertia factor (<1) (w) |
+| EPSFCN | Cognitive Coefficient (c_p) |
+| GTOL | Social Coefficient (c_g)|
 | NPOPULATION | Total number of members in the population.|
 | NOPTIMIZERS | Number of parallel function evaluations being evaluated.|
 
