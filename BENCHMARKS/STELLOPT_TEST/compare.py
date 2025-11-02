@@ -66,6 +66,20 @@ if __name__=="__main__":
         data['TEST_Y'] = sopt.TEST_Y_VAL[-1,0].tolist()
     if run_name in ['IOTA_LMDIF']:
         data['TEST_X'] = sopt.IOTA_VAL[-1,:].tolist()
+    if run_name in ['RECON_TOK']:
+        data['CURTOR'] = sopt.CURTOR_VAL.flatten().tolist()
+        data['XICS_BRIGHT'] = sopt.XICS_BRIGHT_VAL.flatten().tolist()
+        data['XICS'] = sopt.XICS_VAL.flatten().tolist()
+        data['XICS_W3'] = sopt.XICS_W3_VAL.flatten().tolist()
+        data['XICS_V'] = sopt.XICS_V_VAL.flatten().tolist()
+        data['VISBREMLINE'] = sopt.VISBREMLINE_VAL.flatten().tolist()
+        data['NE'] = sopt.NE_VAL.flatten().tolist()
+        data['TE'] = sopt.TE_VAL.flatten().tolist()
+        data['TI'] = sopt.TI_VAL.flatten().tolist()
+        data['MSE'] = sopt.MSE_VAL.flatten().tolist()
+        data['B_PROBES'] = sopt.B_PROBES_VAL.flatten().tolist()
+        data['FLUXLOOPS'] = sopt.FLUXLOOPS_VAL.flatten().tolist()
+        data['SEPARATRIX'] = sopt.SEPARATRIX_VAL.flatten().tolist()
     if run_name in ['DKES']:
         data['L_11'] = sopt.DKES_11_VAL.flatten().tolist()
         data['L_31'] = sopt.DKES_31_VAL.flatten().tolist()

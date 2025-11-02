@@ -321,17 +321,17 @@ test_stellopt_iota_lmdif:
 	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file IOTA_LMDIF
 	@echo ""
 
+test_stellopt_recon_tok:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.RECON_TOK
+	@cd $(STELLOPT_TEST_DIR)/RECON_TOK; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.RECON_TOK; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file RECON_TOK
+	@echo ""
+
 #test_stellopt_beams3d:
 #	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D
 #	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
 #	@cd $(STELLOPT_TEST_DIR)/BEAMS3D && ./compare_STELLOPT_BEAMS3D.py
 #	@echo ""
-
-test_stellopt_recon_tok:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.RECON_TOK
-	@cd $(STELLOPT_TEST_DIR)/RECON_TOK; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.RECON_TOK; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/RECON_TOK && ./compare_RECON_TOK.py
-	@echo ""
 
 test_stellopt_tok_r0_delta:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA
@@ -428,7 +428,7 @@ stellopt_cleanup_dir:
 		coilopt_params.* coils.* coil_spline*.out curv* dcon* deltamn.* diagno_flux.* diagno_bth.* diagno_seg.* \
 		dkes* dprof* fevals* field* fort.* gade* gist* eigenvalues* input.*_min input.*.***** input_dkes.* jacobian.* jprof.* \
 		jxb* jBbs* LMsave* log_gene.* map.* map_plane.* mgrid_*.nc mercier* mom* neo* nrg* opt* parameters_* \
-		parvmecinfo* results* rhomn* RZ* stellopt.* tprof* wout* temp_input.* terpsichore_eq.* terpsichore_16.* \
+		parvmecinfo* results* rhomn* RZ* stellopt.* stellopt_mpi tprof* wout* temp_input.* terpsichore_eq.* terpsichore_16.* \
 		terpsichore_17.* terpsichore_19.* terpsichore_22.* terpsichore_23.* threed1.* tv_out_* txport* xvec.* uv_* \
 		var_* vsp*
 	
