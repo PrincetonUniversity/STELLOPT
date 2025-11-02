@@ -90,6 +90,8 @@ if __name__=="__main__":
         data['L_11'] = sopt.DKES_11_VAL.flatten().tolist()
         data['L_31'] = sopt.DKES_31_VAL.flatten().tolist()
         data['L_33'] = sopt.DKES_33_VAL.flatten().tolist()
+    if run_name in ['QHS_LMDIF']:
+        data['ASPECT'] = sopt.ASPECT_VAL[-1,0].tolist()
 
     # Read or write to the database file.
     if args.lmake_db:

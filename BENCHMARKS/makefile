@@ -339,17 +339,17 @@ test_stellopt_tok_r0_rho:
 	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file TOK_R0_RHO
 	@echo ""
 
+test_stellopt_qhs_lmdif:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.QHS_LMDIF
+	@cd $(STELLOPT_TEST_DIR)/QHS_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.QHS_LMDIF; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file QHS_LMDIF
+	@echo ""
+
 #test_stellopt_beams3d:
 #	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D
 #	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
 #	@cd $(STELLOPT_TEST_DIR)/BEAMS3D && ./compare_STELLOPT_BEAMS3D.py
 #	@echo ""
-
-test_stellopt_qhs_lmdif:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.QHS_LMDIF
-	@cd $(STELLOPT_TEST_DIR)/QHS_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.QHS_LMDIF; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/QHS_LMDIF && ./compare_QHS_LMDIF.py
-	@echo ""
 
 test_stellopt_vboot_tokamak_bootsj:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj
