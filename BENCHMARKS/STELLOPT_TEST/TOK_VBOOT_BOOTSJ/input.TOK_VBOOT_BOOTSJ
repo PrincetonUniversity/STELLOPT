@@ -48,60 +48,36 @@
 !-----------------------------------------------------------------------
 !          OPTIMIZER RUN CONTROL PARAMETERS
 !-----------------------------------------------------------------------
-noptimizers=1
-  NFUNC_MAX = 10
-!  EQUIL_TYPE = 'VMEC2000'
-  EQUIL_TYPE = 'vboot'
-!  OPT_TYPE   = 'LMDIF'
-!  OPT_TYPE   = 'LMDIF_bounded'
-opt_type='single'
-  FTOL =  1.00000000000000E-06
-  XTOL =  1.00000000000000E-30
-  GTOL =  1.00000000000000E-30
-  FACTOR =   100.0
-  EPSFCN =   1.0E-05
+  OPT_TYPE = 'one_iter'
+  EQUIL_TYPE   = 'VBOOT'
   LKEEP_MINS = T
 !-----------------------------------------------------------------------
 !          OPTIMIZED QUANTITIES
 !-----------------------------------------------------------------------
-!  LCURTOR_OPT = T   CURTOR_MIN  = -1.0E6  CURTOR_MAX  = -1.0E4
-!  LPHIEDGE_OPT = T  PHIEDGE_MIN = 0.20  PHIEDGE_MAX = 1.0
-!  LRHO_OPT(-5:5,0) = 11*T
-!  LRHO_OPT(-5:5,1) = 11*T
-!  LRHO_OPT(-5:5,2) = 11*T
-!  LRHO_OPT(-5:5,3) = 11*T
-!  LRHO_OPT(-5:5,4) = 11*T
-!  LRHO_OPT(-5:5,5) = 11*T
-!  LRHO_OPT(-5:5,6) = 11*T
-!  LRHO_OPT(-5:5,7) = 11*T
-!  LBOUND_OPT(1:4,0) = 4*T
-!  LBOUND_OPT(0,0) = T ! Varies just the major radius
-  RHO_EXP = 4
+
 !----------------------------------------------------------------------
 !       Profile Functions
 !----------------------------------------------------------------------
   NE_TYPE = 'power_series'
-  ! Note that ne_opt is normalized to 1e18 meters^{-3}.
-  NE_OPT = 100.0
-  NE_AUX_S =   0.00000000000000E+00   0.25000000000000E+00   0.50000000000000E+00   0.75000000000000E+00   0.10000000000000E+01
-  NE_AUX_F =   0.10000000000000E+01   0.10000000000000E+01   0.10000000000000E+01   0.10000000000000E+01   0.10000000000000E+01
-! TE_OPT and TI_OPT are in units of 1 eV.
+  NE_OPT =     1.000000000000E+002
   TE_TYPE = 'power_series'
-  TE_OPT = 10.0e3 -9.0e3
+  TE_OPT =     1.000000000000E+004    -9.000000000000E+003
   TI_TYPE = 'power_series'
-  TI_OPT = 10.0e3 -9.0e3
-
-bootj_type='power_series'
-bootj_aux_f = 0 -1.0e+6 1.0e+6 1.0e5 1.0e5 1.0e5 ! For type power_series
-bootcalc_type='bootsj'
-!bootcalc_type='sfincs'
-sfincs_s = 0.012536, 0.0495156, 0.109084, 0.188255, 0.283058, 0.38874, 0.5, 0.61126, 0.716942, 0.811745, 0.890916, 0.950484, 0.987464, 1. ! Chebyshev points, deleting 0 since it is automatically included.
-sfincs_min_procs=1
-vboot_tolerance = 1.e-2
-
-! Note in the next couple lines that we include 'beam' current, since the bootstrap current is insufficient by itself for this axisymmetric case:
-beamj_type = 'power_series'
-beamj_aux_f = -6.0e6 6.0e6
+  TI_OPT =     1.000000000000E+004    -9.000000000000E+003
+  BOOTJ_TYPE = 'power_series'
+  BOOTJ_AUX_F = 0 -1.0e+6 1.0e+6 1.0e5 1.0e5 1.0e5
+  BEAMJ_TYPE = 'power_series'
+  BEAMJ_AUX_F = -6.0e+6 6.0e+6
+!----------------------------------------------------------------------
+!       BOOTSTRAP Calculation Type
+!----------------------------------------------------------------------
+  BOOTCALC_TYPE = 'bootsj'
+  VBOOT_TOLERANCE =    1.000000000000E-002
+  VBOOT_MAX_ITERATIONS = 10000
+  SFINCS_S =    1.253600000000E-002    4.951560000000E-002    1.090840000000E-001    1.882550000000E-001    2.830580000000E-001
+    3.887400000000E-001    5.000000000000E-001    6.112600000000E-001    7.169420000000E-001    8.117450000000E-001
+    8.909160000000E-001    9.504840000000E-001    9.874640000000E-001    1.000000000000E+000
+  SFINCS_MIN_PROCS = 1
 !------------------------------------------------------------------------
 !       Boozer Coordinate Transformation
 !------------------------------------------------------------------------
@@ -264,7 +240,6 @@ damp_bs=0.1
   VC_ADAPT_REL =  1.0E-3
   LVC_FIELD = T
 /
-
 !**********************************
 ! Beginning of SFINCS namelists
 !**********************************

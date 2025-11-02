@@ -120,9 +120,9 @@
                WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
                WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
                WRITE(6,'(A,2X,1I5)')     '     NFUNC_MAX: ',nfunc_max
-               WRITE(6,'(A,2X,1ES12.4)') '       C_local: ',epsfcn
-               WRITE(6,'(A,2X,1ES12.4)') '      C_global: ',1.0
-               WRITE(6,'(A,2X,1ES12.4)') '        Vscale: ',factor
+               WRITE(6,'(A,2X,1ES12.4)') 'Cognitive Coef: ',epsfcn
+               WRITE(6,'(A,2X,1ES12.4)') '   Social Coef: ',gtol
+               WRITE(6,'(A,2X,1ES12.4)') '       Inertia: ',factor
                WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npopulation
             CASE('rocket')
                WRITE(6,*) '    OPTIMIZER: Rocket'
@@ -289,7 +289,7 @@
             wa1 = vars
             lno_restart = .TRUE.
             c1 = epsfcn
-            c2 = 1.0
+            c2 = gtol
             CALL PSO_Evolve(stellopt_fcn,mtargets,nvars,npopulation,vars_min,vars_max,&
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
             DEALLOCATE(wa1)
