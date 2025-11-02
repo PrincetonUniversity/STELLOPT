@@ -55,6 +55,17 @@ if __name__=="__main__":
         data['FARADAY'] = sopt.FARADAY_VAL.flatten().tolist()
         data['TE'] = sopt.TE_VAL.flatten().tolist()
         data['TI'] = sopt.TI_VAL.flatten().tolist()
+    if run_name in ['LMDIF_TEST']:
+        data['TEST_X'] = sopt.TEST_X_VAL[-1,0].tolist()
+        data['TEST_Y'] = sopt.TEST_Y_VAL[-1,0].tolist()
+    if run_name in ['GADE_TEST']:
+        data['TEST_X'] = sopt.TEST_X_VAL[-1,0].tolist()
+        data['TEST_Y'] = sopt.TEST_Y_VAL[-1,0].tolist()
+    if run_name in ['PSO_TEST']:
+        data['TEST_X'] = sopt.TEST_X_VAL[-1,0].tolist()
+        data['TEST_Y'] = sopt.TEST_Y_VAL[-1,0].tolist()
+    if run_name in ['IOTA_LMDIF']:
+        data['TEST_X'] = sopt.IOTA_VAL[-1,:].tolist()
     if run_name in ['DKES']:
         data['L_11'] = sopt.DKES_11_VAL.flatten().tolist()
         data['L_31'] = sopt.DKES_31_VAL.flatten().tolist()

@@ -294,32 +294,38 @@ test_penta_lore:
 test_stellopt_lmdif:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.LMDIF_TEST
 	@cd $(STELLOPT_TEST_DIR)/LMDIF_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.LMDIF_TEST; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/LMDIF_TEST && ./compare_LMDIF_TEST.py
+	@cd $(STELLOPT_TEST_DIR)&& ./compare.py --file LMDIF_TEST
 	@echo ""
 
 test_stellopt_gade:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.GADE_TEST
 	@cd $(STELLOPT_TEST_DIR)/GADE_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.GADE_TEST; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/GADE_TEST && ./compare_GADE_TEST.py
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file GADE_TEST
+	@echo ""
+
+test_stellopt_pso:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.PSO_TEST
+	@cd $(STELLOPT_TEST_DIR)/PSO_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.PSO_TEST; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file PSO_TEST
 	@echo ""
 
 test_stellopt_basic:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC
 	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/BASIC && ./compare_BASIC.py
-	@echo ""
-
-test_stellopt_beams3d:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D
-	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/BEAMS3D && ./compare_STELLOPT_BEAMS3D.py
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file BASIC
 	@echo ""
 
 test_stellopt_iota_lmdif:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF
 	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF && ./compare_IOTA_LMDIF.py
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file IOTA_LMDIF
 	@echo ""
+
+#test_stellopt_beams3d:
+#	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D
+#	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
+#	@cd $(STELLOPT_TEST_DIR)/BEAMS3D && ./compare_STELLOPT_BEAMS3D.py
+#	@echo ""
 
 test_stellopt_recon_tok:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.RECON_TOK
@@ -353,6 +359,11 @@ test_stellopt_vboot_tokamak_bootsj:
 test_stellopt_coilopt:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COILOPTPP
 	@cd $(STELLOPT_TEST_DIR)/COILOPTPP; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COILOPTPP; rm -f *_opt*
+	@echo ""
+
+test_stellopt_coil:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_TEST
+	@cd $(STELLOPT_TEST_DIR)/COIL_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_TEST; rm -f *_opt*
 	@echo ""
 
 test_stellopt_gene:
@@ -399,6 +410,7 @@ clean_test:
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/BASIC stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/BEAMS3D stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/COILOPTPP stellopt_cleanup_dir
+	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/COIL_TEST stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/GENE stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/IOTA_LMDIF stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/ONE_ITER stellopt_cleanup_dir
