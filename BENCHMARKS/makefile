@@ -345,36 +345,43 @@ test_stellopt_qhs_lmdif:
 	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file QHS_LMDIF
 	@echo ""
 
+test_stellopt_tok_vboot_bootsj:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_VBOOT_BOOTSJ
+	@cd $(STELLOPT_TEST_DIR)/TOK_VBOOT_BOOTSJ; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_VBOOT_BOOTSJ; rm -f *_opt*
+	@echo ""
+
+test_stellopt_tok_vboot_sfincs:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_VBOOT_SFINCS
+	@cd $(STELLOPT_TEST_DIR)/TOK_VBOOT_SFINCS; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_VBOOT_SFINCS; rm -f *_opt*
+	@echo ""
+
+test_stellopt_coil:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_TEST
+	@cd $(STELLOPT_TEST_DIR)/COIL_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_TEST; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file COIL_TEST
+	@echo ""
+
+test_stellopt_availenergy:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.AVAILENERGYOPT;
+	@cd $(STELLOPT_TEST_DIR)/AVAILENERGYOPT; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.AVAILENERGYOPT; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file AVAILENERGYOPT
+	@echo ""
+
 #test_stellopt_beams3d:
 #	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D
 #	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
 #	@cd $(STELLOPT_TEST_DIR)/BEAMS3D && ./compare_STELLOPT_BEAMS3D.py
 #	@echo ""
 
-test_stellopt_vboot_tokamak_bootsj:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj
-	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_bootsj; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj; rm -f *_opt*
-	@echo ""
+#test_stellopt_coilopt:
+#	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COILOPTPP
+#	@cd $(STELLOPT_TEST_DIR)/COILOPTPP; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COILOPTPP; rm -f *_opt*
+#	@echo ""
 
-test_stellopt_coilopt:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COILOPTPP
-	@cd $(STELLOPT_TEST_DIR)/COILOPTPP; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COILOPTPP; rm -f *_opt*
-	@echo ""
-
-test_stellopt_coil:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_TEST
-	@cd $(STELLOPT_TEST_DIR)/COIL_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_TEST; rm -f *_opt*
-	@echo ""
-
-test_stellopt_gene:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.GENE;
-	@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.GENE; rm -f *_opt*
-	@echo ""
-
-test_stellopt_availenergy:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.AVAILENERGYOPT;
-	@cd $(STELLOPT_TEST_DIR)/AVAILENERGYOPT; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.AVAILENERGYOPT; rm -f *_opt*
-	@echo ""
+#test_stellopt_gene:
+#	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.GENE;
+#	@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.GENE; rm -f *_opt*
+#	@echo ""
 
 test_stellopt_sfincs:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;

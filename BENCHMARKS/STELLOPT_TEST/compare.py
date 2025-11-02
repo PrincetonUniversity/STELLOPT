@@ -92,6 +92,8 @@ if __name__=="__main__":
         data['L_33'] = sopt.DKES_33_VAL.flatten().tolist()
     if run_name in ['QHS_LMDIF']:
         data['ASPECT'] = sopt.ASPECT_VAL[-1,0].tolist()
+    if run_name in ['AVAILENERGYOPT']:
+        data['AVAILENERGY'] = sopt.TXPORT_VAL.flatten().tolist()
 
     # Read or write to the database file.
     if args.lmake_db:
