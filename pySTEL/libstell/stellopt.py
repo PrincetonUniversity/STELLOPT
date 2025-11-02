@@ -164,7 +164,7 @@ class STELLOPT():
 		mtargets  = int(numbers[0])
 		nvars     = int(numbers[1])
 		jac       = numbers[2:]
-		jac2d       = np.reshape(jac,(nvars,mtargets)).T
+		jac2d       = np.reshape(jac,(mtargets,nvars))
 		self.jac2d  = jac2d
 
 	def read_stellopt_bnorm_real(self,filename):
