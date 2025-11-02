@@ -224,7 +224,7 @@
                          lth_f_opt, lphi_s_opt, lphi_f_opt, &
                          lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, lmode_opt, &
                          lne_opt, lte_opt, lti_opt, lth_opt, lzeff_opt, &
-                         lah_f_opt, lat_f_opt, &
+                         lah_f_opt, lat_f_opt, lemis_xics_f_opt,&
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                          dpscale_opt, dmix_ece_opt, dxics_v0_opt, &
                          dextcur_opt, daphi_opt, dam_opt, dac_opt, &

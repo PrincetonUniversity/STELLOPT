@@ -584,9 +584,10 @@
 
       END DO
 
-      ! Finish up
-      x = x_best
-
+      ! Finish up      
+      x_temp = x_array(ibest,:)
+      x = x_temp
+      
       ! Deallocations
       IF (ALLOCATED(fnorm_array)) DEALLOCATE(fnorm_array)
       IF (ALLOCATED(temp_fvec)) DEALLOCATE(temp_fvec)
