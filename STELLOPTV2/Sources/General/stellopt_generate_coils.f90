@@ -105,7 +105,6 @@
          CALL get_coil_torsion_avg(c1,c2,c3)
          WRITE(6,'(A)')            '          COIL TORSION:  '
          WRITE(6,'(A,3(2X,F7.3))') '              MIN/MEAN/MAX:  ',c3,c1,c2
-         WRITE(6,'(A)')      '-------------------------------------'
          CALL FLUSH(6)
       END IF
 

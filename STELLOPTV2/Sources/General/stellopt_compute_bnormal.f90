@@ -181,7 +181,7 @@
          Nx(uv) = Ay*Bz - Az*By
          Ny(uv) = Az*Bx - Ax*Bz
          Nz(uv) = Ax*By - Ay*Bx
-         Norm  = -isigng*SQRT(Nx(uv)*Nx(uv)+Ny(uv)*Ny(uv)+Nz(uv)*Nz(uv))*isigng
+         Norm  = isigng*SQRT(Nx(uv)*Nx(uv)+Ny(uv)*Ny(uv)+Nz(uv)*Nz(uv))
          Nx(uv) = Nx(uv)/Norm
          Ny(uv) = Ny(uv)/Norm
          Nz(uv) = Nz(uv)/Norm
@@ -236,6 +236,21 @@
       IF (ALLOCATED(bnormal_total)) DEALLOCATE(bnormal_total)
       ALLOCATE(bnormal_total(nuv))
       bnormal_total = bnreal+bcreal
+
+      !-----------------------------------------------------------------
+      !     Screen Output
+      !-----------------------------------------------------------------
+      IF (lscreen) THEN
+         WRITE(6,'(A)')      '--------  B-FIELD SURFACE  ----------'
+         WRITE(6,'(A,I3)')   '       POLOIDAL POINTS:  ',nu_bnormal
+         WRITE(6,'(A,I3)')   '       TOROIDAL POINTS:  ',nv_bnormal
+         WRITE(6,'(A,F7.3)') ' B-NORMAL MAX (PLASMA):  ',MAXVAL(bnreal)
+         WRITE(6,'(A,F7.3)') ' B-NORMAL MIN (PLASMA):  ',MINVAL(bnreal)
+         WRITE(6,'(A,F7.3)') '   B-NORMAL MAX (COIL):  ',MAXVAL(bcreal)
+         WRITE(6,'(A,F7.3)') '   B-NORMAL MIN (COIL):  ',MINVAL(bcreal)
+         WRITE(6,'(A,F7.3)') '         B-NORMAL MAX :  ',MAXVAL(bnormal_total)
+         WRITE(6,'(A,F7.3)') '         B-NORMAL MIN :  ',MINVAL(bnormal_total)
+      END IF
       
       !-----------------------------------------------------------------
       !     For testing of the FFT
