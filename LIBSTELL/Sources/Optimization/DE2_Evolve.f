@@ -583,7 +583,7 @@
       ! Finish up
 
       
-      x_temp = x_array(ibest,1)
+      x_temp = x_array(ibest,:)
       x = x_temp
 
       ! Deallocations
