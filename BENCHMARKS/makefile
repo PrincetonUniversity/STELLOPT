@@ -375,7 +375,7 @@ test_stellopt_terpsichore:
 test_stellopt_travis:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.TRAVIS
 	@cd $(STELLOPT_TEST_DIR)/TRAVIS; $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.TRAVIS; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/TRAVIS && ./compare_TRAVIS.py
+	@cd $(STELLOPT_TEST_DIR)/TRAVIS && ./compare.py --file TRAVIS
 	@echo ""
 
 #test_stellopt_beams3d:
@@ -398,12 +398,6 @@ test_stellopt_travis:
 #	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;
 #	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs; rm -f *_opt*
 #	@echo ""
-
-test_stellopt_travis:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.TRAVIS
-	@cd $(STELLOPT_TEST_DIR)/TRAVIS; $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.TRAVIS; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/TRAVIS && ./compare_TRAVIS.py
-	@echo ""
 
 test_thrift_analytical:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xthrift -vmec analytical -prof profiles_analytical.h5
