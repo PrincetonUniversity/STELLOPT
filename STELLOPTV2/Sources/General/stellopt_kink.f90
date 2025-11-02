@@ -238,7 +238,7 @@
       END SELECT
       IF (lscreen) WRITE(6,'(a)') ' -------------------------  KINK STABILITY DONE  ----------------------'
       RETURN
- 840  FORMAT(1x,1pe22.12,1x,1p3e15.5,8i6,i3)
+ 840  FORMAT(1x,1pe22.12,1x,1p3e12.5,8i4,i1)
  850  FORMAT(1x,1p5e22.14)
 !----------------------------------------------------------------------
 !     END SUBROUTINE
