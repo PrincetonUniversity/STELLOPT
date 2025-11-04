@@ -599,31 +599,42 @@ class PLASMA_SOLVER:
             all_fields.append(self.P[species][0,:])
         
         return np.concatenate(all_fields)
-                
-    def call_fluxes(self,it):
+    
+    def setup_fluxes_type(self):
+        """Selects the flux computation functions based on the configuration."""
         
-        if(self.particle_fluxes_info['type']=='dkespenta' or self.heat_fluxes_info['type']=='dkespenta' or self.heat_fluxes_info['type']=='dkespenta_beurskens'):
-            self.call_PENTA3(it)
-        
-        # compute Dn_interp
-        if(self.particle_fluxes_info['type']=='diffusive'):
-            self.compute_diffusive_particle_flux(it)
-        elif(self.particle_fluxes_info['type']=='dkespenta'):
-            self.compute_NEO_particle_flux(it)
+        ptype = self.particle_fluxes_info['type']
+        htype = self.heat_fluxes_info['type']
+
+        if (ptype in ['dkespenta'] or htype in ['dkespenta', 'dkespenta_beurskens']):
+            print('The DKES+PENTA functionality is broken!!')
+            exit(0)
+
+        # Particle flux function
+        if ptype == 'diffusive':
+            self.particle_flux_func = self.compute_diffusive_particle_flux
+        elif ptype == 'dkespenta':
+            self.particle_flux_func = self.compute_NEO_particle_flux
         else:
-            raise ValueError('ERROR: Not available other type of particle flux...')
-        
-        # compute Dp_interp and cp_interp
-        if(self.heat_fluxes_info['type']=='diffusive'):
-            self.compute_diffusive_heat_flux(it)
-        elif(self.heat_fluxes_info['type']=='beurskens'):
-            self.compute_beurskens_heat_flux(it)
-        elif(self.heat_fluxes_info['type']=='dkespenta'):
-            self.compute_NEO_heat_flux(it)
-        elif(self.heat_fluxes_info['type']=='dkespenta_beurskens'):
-            self.compute_NEO_plus_beurskens_heat_flux(it)
+            raise ValueError('Unsupported particle flux type')
+
+        # Heat flux function
+        if htype == 'diffusive':
+            self.heat_flux_func = self.compute_diffusive_heat_flux
+        elif htype == 'beurskens':
+            self.heat_flux_func = self.compute_beurskens_heat_flux
+        elif htype == 'dkespenta':
+            self.heat_flux_func = self.compute_NEO_heat_flux
+        elif htype == 'dkespenta_beurskens':
+            self.heat_flux_func = self.compute_NEO_plus_beurskens_heat_flux
         else:
-            raise ValueError('ERROR: Not available other type of heat flux...')
+            raise ValueError('Unsupported heat flux type')
+             
+    def call_fluxes(self,it):      
+        # Particle Fluxes
+        self.particle_flux_func(it)
+        # Heat Fluxes
+        self.heat_flux_func(it)
         
     def set_explicit_energy_sources(self,species: str, it):
         # returns 1D-array of same size as rho_grid
