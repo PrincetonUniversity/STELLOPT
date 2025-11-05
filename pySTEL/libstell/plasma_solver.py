@@ -565,6 +565,10 @@ class PLASMA_SOLVER:
         if(self.solve_fast_alphas):
             self.N['alphas_fast'] = np.zeros((Nt,Nr))
             
+        # Initialize tridiagonal matrices which willl be used as LHS of density and pressure equations
+        self.LHS_pressure,self.pressure_lower_block, self.pressure_main_block, self.pressure_upper_block = initialize_LHS_pressure(Nr,len(self.list_of_species))
+        self.LHS_density,self.density_main_diag,self.density_lower_diag,self.density_upper_diag = initialize_LHS_density(Nr)
+            
     def set_fields_tstart(self):
         
         rho_grid = self.rho_grid
@@ -1304,9 +1308,12 @@ class PLASMA_SOLVER:
         lower[-1] = 0.0
         
         ####
-        LHS = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")    
-       
-        return LHS
+        # LHS = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")    
+        self.LHS_density.data[self.density_main_diag] = main
+        self.LHS_density.data[self.density_upper_diag] = upper
+        self.LHS_density.data[self.density_lower_diag] = lower
+        
+        return self.LHS_density
     
     def get_LHS_pressure(self,it):
         from scipy.sparse import diags, block_diag, csr_matrix
@@ -1653,6 +1660,78 @@ def merge_and_delete(pattern, output_filename):
     # Delete original files
     for filename in file_list:
         os.remove(filename)
+        
+def initialize_LHS_density(Nr):
+    from scipy.sparse import diags
+    lower = np.ones(Nr-1)
+    main  = np.ones(Nr)
+    upper = np.ones(Nr-1)
+
+    # Build identical dummy blocks
+    A = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")
+    
+    rows, cols = A.nonzero()
+    mask_main  = (rows == cols)
+    mask_lower = (rows == cols + 1)
+    mask_upper = (rows + 1 == cols)
+    
+    return A,mask_main,mask_lower,mask_upper
+
+def initialize_LHS_pressure(Nr, num_species):
+    from scipy.sparse import diags, block_diag
+    # Use ones so SciPy allocates all expected data entries
+    lower = np.ones(Nr-1)
+    main  = np.ones(Nr)
+    upper = np.ones(Nr-1)
+
+    # Build identical dummy blocks
+    blocks = [diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")
+              for _ in range(num_species)]
+
+    # Combine them into one big block-diagonal sparse matrix
+    A = block_diag(blocks, format="csr")
+    block_size = Nr
+    
+    nblocks = A.shape[0] // block_size
+    lower_indices = []
+    main_indices  = []
+    upper_indices = []
+
+    # Precompute row pointers for CSR
+    for b in range(nblocks):
+        row_start = b * block_size
+        row_end   = (b+1) * block_size
+        rows = np.arange(row_start, row_end)
+        for r in rows:
+            start = A.indptr[r]
+            end   = A.indptr[r+1]
+            cols = A.indices[start:end]
+            for i, c in zip(range(start, end), cols):
+                if c == r:
+                    main_indices.append(i)
+                elif c == r-1:
+                    lower_indices.append(i)
+                elif c == r+1:
+                    upper_indices.append(i)
+
+    # Split indices by block
+    def split_blocks(indices):
+        per_block = []
+        counts = [0] + [block_size if block_size <= len(indices) else len(indices) for _ in range(nblocks)]
+        idx = 0
+        for b in range(nblocks):
+            block_idx = []
+            while idx < len(indices) and A.indices[indices[idx]] < (b+1)*block_size:
+                block_idx.append(indices[idx])
+                idx += 1
+            per_block.append(np.array(block_idx, dtype=int))
+        return per_block
+
+    lower_blocks = split_blocks(lower_indices)
+    main_blocks  = split_blocks(main_indices)
+    upper_blocks = split_blocks(upper_indices)
+
+    return A, lower_blocks, main_blocks, upper_blocks
         
             
 # Main routine
