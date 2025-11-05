@@ -63,9 +63,6 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      lscreen_local = .FALSE.
-      lfirst_pass = .TRUE.
-      IF (lscreen) lscreen_local = .TRUE.
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  VBOOT CALCULATION  -------------------------'
 
       ! Handle boozer flags
@@ -97,12 +94,14 @@
       ier = 0
       exit_after_next_vmec_run = .false.
       AC_profile_fine = 0
+      lfirst_pass = .true.
       DO
          vboot_iteration = vboot_iteration + 1
+         lscreen_local = lfirst_pass .and. lscreen
 
          ! Run VMEC
          iflag = 0
-         CALL stellopt_paraexe('paravmec_run',proc_string,lfirst_pass)
+         CALL stellopt_paraexe('paravmec_run',proc_string,lscreen_local)
          iflag = ier_paraexe
          IF (iflag .ne.0) THEN
             PRINT *,"WARNING: paravmec returned with an error flag: iflag =",iflag
@@ -115,7 +114,7 @@
          CALL stellopt_paraexe('paravmec_write',trim(proc_string)//"_vboot"//trim(iteration_string),.false.) 
 
          ! Load Equilibrium
-         CALL stellopt_load_equil(lfirst_pass,iflag)
+         CALL stellopt_load_equil(lscreen_local,iflag)
 
          ! Don't do anything if pressure is zero
          IF (wp <= 0 .or. beta<=0) EXIT
@@ -142,16 +141,16 @@
 
             lbooz(1:ns) = .TRUE.
             lbooz(1)    = .FALSE.
-            CALL stellopt_paraexe('booz_xform',proc_string,lfirst_pass); iflag = ier_paraexe
+            CALL stellopt_paraexe('booz_xform',proc_string,lscreen_local); iflag = ier_paraexe
             IF (iflag .ne.0) RETURN
 
-            CALL stellopt_paraexe('bootsj',proc_string,lfirst_pass); iflag = ier_paraexe
+            CALL stellopt_paraexe('bootsj',proc_string,lscreen_local); iflag = ier_paraexe
 
-            IF (lfirst_pass .and. lscreen_local) THEN
+            IF (lscreen_local) THEN
                WRITE(6,'(A)')           ' --------------------  BOOTSJ SELF-CONSISTENT BOOTSTRAP  -------------------'
                WRITE(6,'(A,2X,I6)')     '   MAX ITERATIONS: ',vboot_max_iterations
                WRITE(6,'(A,2X,ES10.3)') '        TOLERANCE: ',vboot_tolerance
-               WRITE(6,'(A)')           '     ITERATION   CURTOR   CONVERGENCE'
+               WRITE(6,'(A)')           '     ITERATION      CURTOR   CONVERGENCE'
             END IF
 
             IF (iflag .ne.0) RETURN
@@ -190,13 +189,13 @@
             curtor_vmec = curtor_bootstrap + curtor_beam
 
             ! Print to screen
-            IF (lscreen_local) WRITE(6,'(2X,I4,2X,ES10.3,2X,ES10.3)') vboot_iteration,curtor_vmec,vboot_convergence_factor
+            IF (lscreen) WRITE(6,'(10X,I4,2X,ES10.3,4X,ES10.3)') vboot_iteration,curtor_vmec,vboot_convergence_factor
 
             IF (vboot_convergence_factor < vboot_tolerance) THEN
-               IF (lscreen_local) WRITE(6,'(A)') '----- VBOOT Converged -----'
+               IF (lscreen) WRITE(6,'(A)') '----- VBOOT Converged -----'
                exit_after_next_vmec_run = .true. ! VMEC is cheap, so always finish the vboot iteration with 1 last vmec run.
             ELSE IF (vboot_iteration >= vboot_max_iterations) THEN
-               IF (lscreen_local) WRITE(6,'(A)') '----- VBOOT Maximum Iterations -----'
+               IF (lscreen) WRITE(6,'(A)') '----- VBOOT Maximum Iterations -----'
                exit_after_next_vmec_run = .true. ! VMEC is cheap, so always finish the vboot iteration with 1 last vmec run.
             END IF
 
