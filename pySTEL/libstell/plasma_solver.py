@@ -837,13 +837,15 @@ class PLASMA_SOLVER:
             
             n_r = CubicSpline(r_grid,self.N[species][it,:])
             dndr = n_r.derivative()
+            dndr = dndr(r_grid)
             
             self.Dn[species][it,:] = Dn
             
             self.cn[species][it,:] = 0.0
                         
             # this is used in heat flux
-            self.Gamma_turb[species][it,:] = -Dn * dndr(r_grid)
+            # self.Gamma_turb[species][it,:] = -Dn * dndr(r_grid)
+            self.Gamma_turb[species][it,:] = -Dn * dndr
             
     def compute_beurskens_heat_flux(self,it):
         # uses model in [ref...]
@@ -923,9 +925,8 @@ class PLASMA_SOLVER:
             
             # average to smooth-out eventual oscillations
             D_avg = np.mean(np.array(self.Dp_keep[species][it]), axis=0)
-            D = D_avg
 
-            self.Dp[species][it,:] = D
+            self.Dp[species][it,:] = D_avg
             
             c = (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r
             c[0] = 0.0
@@ -935,7 +936,8 @@ class PLASMA_SOLVER:
             self.cp[species][it,:] = c
             
             # this is for bookeeping
-            self.Q_turb[species][it,:] = -chi[species] * dpdr(r_grid) + p_r(r_grid)*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
+            # self.Q_turb[species][it,:] = -chi[species] * dpdr(r_grid) + p_r(r_grid)*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
+            self.Q_turb[species][it,:] = -chi[species] * dpdr + p_r*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
             
     def compute_NEO_particle_flux(self,it):
         
@@ -1094,6 +1096,7 @@ class PLASMA_SOLVER:
         chi['electrons'] = chi_electrons * np.ones(self.Nr)
         
         r_grid = self.r_grid
+        Bsq = self.Bsq(self.rho_grid)
         
         ## IONS
         for ion in self.plasma.ion_species:
@@ -1117,8 +1120,6 @@ class PLASMA_SOLVER:
             X = a_LT_filtered - aLT_critical
             
             chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
-            
-            Bsq = self.Bsq(self.rho_grid)
             
             mi = self.plasma.mass[ion]
             qi = self.plasma.charge[ion]
@@ -1258,7 +1259,6 @@ class PLASMA_SOLVER:
     def get_LHS_density(self,species,it):
         from scipy.sparse import diags
         
-        drho = self.drho
         dr = self.dr
         Vp = self.dVdr
         Nr = self.Nr
@@ -1391,13 +1391,6 @@ class PLASMA_SOLVER:
     def solve_sparse_system(self,matrix,vect):
         
         from scipy.sparse.linalg import spsolve
-        
-        #import matplotlib.pyplot as plt
-        # # plot matrix
-        # plt.figure(figsize=(6, 6))
-        # plt.spy(matrix, markersize=5, color="black")
-        # plt.show()
-        
         sol = spsolve(matrix,vect)
         
         return sol
