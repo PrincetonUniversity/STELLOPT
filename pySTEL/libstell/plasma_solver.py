@@ -912,6 +912,7 @@ class PLASMA_SOLVER:
             p_r = CubicSpline(r_grid,self.P[species][it,:])
             dpdr = p_r.derivative()
             
+            dpdr = dpdr(r_grid)
             n_r = CubicSpline(r_grid,self.N[species][it,:])
             dndr = n_r.derivative()
             
