@@ -1362,9 +1362,9 @@ class PLASMA_SOLVER:
             upper[0] = -4*dt_fact*Dp[0]/dr**2
             
             # DIFF_list.append( diags([lower, main, upper], offsets=[-1, 0, 1], format="csr") )
-            self.LHS_pressure.data[self.main_blocks[ispecies]] = main
-            self.LHS_pressure.data[self.lower_blocks[ispecies]] = lower
-            self.LHS_pressure.data[self.upper_blocks[ispecies]] = upper
+            self.LHS_pressure.data[self.pressure_main_block[ispecies]] = main
+            self.LHS_pressure.data[self.pressure_lower_block[ispecies]] = lower
+            self.LHS_pressure.data[self.pressure_upper_block[ispecies]] = upper
             
             
         LHS = self.LHS_pressure
