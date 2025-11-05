@@ -1410,10 +1410,7 @@ class PLASMA_SOLVER:
         
         num_species = len(self.list_of_species)
         
-        clog = np.zeros(self.Nr)
-        
-        W_s1_s2 = np.zeros((num_species,num_species,self.Nr))
-        aux_B = np.zeros((num_species,num_species,self.Nr))
+        gamma = np.zeros((num_species,num_species,self.Nr))
         
         for is1,species1 in enumerate(self.list_of_species):
 
@@ -1422,7 +1419,7 @@ class PLASMA_SOLVER:
             n1 = self.N[species1][it,:]
             T1 = self.T[species1][it,:]
             
-            for is2,species2 in enumerate(self.list_of_species):
+            for is2,species2 in enumerate(self.list_of_species[is1:], start=is1):
                 
                 m2 = self.plasma.mass[species2]
                 Z2 = self.plasma.Zcharge[species2]
@@ -1430,7 +1427,6 @@ class PLASMA_SOLVER:
                 T2 = self.T[species2][it,:]
                 
                 # get Coulomb logarithm
-                # for ir in range(self.Nr):
                 if(Z1>0 and Z2>0):
                     clog = coll.coullog_ii(m1,Z1,n1,T1,m2,Z2,n2,T2)
                 elif(Z1>0 and Z2<0):
@@ -1447,31 +1443,54 @@ class PLASMA_SOLVER:
                 
                 den = m1 * m2 * (vth_s1_sqr + vth_s2_sqr)**1.5
                 
-                gamma = const / den
-
-                W_s1_s2[is1,is2,:] = gamma*n1  
-                
-                aux_B[is1,is2,:] = gamma*n2
+                gamma[is1,is2,:] = const / den
+                # fill symmetric entry
+                gamma[is2,is1,:] = gamma[is1,is2,:]
+        
+        N_arr = np.stack([self.N[s][it,:] for s in self.list_of_species])  # shape (Ns, Nr)
+        W_s1_s2 = gamma * N_arr[:, np.newaxis, :]
+        aux_B   = gamma * N_arr[np.newaxis, :, :]
+        # W_s1_s2[is1,is2,:] = gamma[is1,is2,:]*n1      
+        # aux_B[is1,is2,:] = gamma[is1,is2,:]*n2
 
         # Add aux_B matrix
         W_s1_s2[np.arange(num_species), np.arange(num_species), :] -= np.sum(aux_B, axis=1)
 
         # W_out matrix
-        W_out = np.zeros((num_species*self.Nr,num_species*self.Nr))
         
-        j=0
-        for is1 in range(num_species):
-            for ir1 in range(self.Nr):
-                p=0
-                for is2 in range(num_species):
-                    for ir2 in range(self.Nr):
-                        if(ir1==ir2):
-                            W_out[j,p] = W_s1_s2[is1,is2,ir2]  
-                        p=p+1
-                j = j+1
-                
-        W_out = sparse.csr_matrix(W_out)
+        # W_out = np.zeros((num_species*self.Nr,num_species*self.Nr))
+        # j=0
+        # for is1 in range(num_species):
+        #     for ir1 in range(self.Nr):
+        #         p=0
+        #         for is2 in range(num_species):
+        #             for ir2 in range(self.Nr):
+        #                 if(ir1==ir2):
+        #                     W_out[j,p] = W_s1_s2[is1,is2,ir2]  
+        #                 p=p+1
+        #         j = j+1
+        # W_out = sparse.csr_matrix(W_out)
+        
+        Nr = self.Nr
+        is1, is2, ir = np.meshgrid(
+            np.arange(num_species),
+            np.arange(num_species),
+            np.arange(Nr),
+            indexing="ij"
+        )
 
+        # Flatten
+        is1 = is1.ravel()
+        is2 = is2.ravel()
+        ir = ir.ravel()
+
+        # Map to global indices
+        rows = is1 * Nr + ir
+        cols = is2 * Nr + ir
+        data = W_s1_s2[is1, is2, ir]
+
+        W_out = sparse.csr_matrix((data, (rows, cols)), shape=(num_species * Nr, num_species * Nr))
+        
         return W_out
     
     def call_PENTA3(self,it):
