@@ -1316,39 +1316,36 @@ class PLASMA_SOLVER:
         return self.LHS_density
     
     def get_LHS_pressure(self,it):
-        from scipy.sparse import diags, block_diag, csr_matrix
         
         drho = self.drho
         dr = self.aminor * drho
         Vp = self.dVdr
         Nr = self.Nr
         num_species = len(self.list_of_species)
+        dt_fact = (2./3.)*self.dt
         
         vp = Vp(self.rho_grid)
         vp_inner = vp[1:-1]
         
-        DIFF = {}
+        Vp_plus = (vp[2:]+vp[1:-1]) / 2
+        Vp_minus = (vp[0:-2]+vp[1:-1]) / 2
         
-        for species in self.list_of_species:
+        lower = np.zeros(self.Nr-1)
+        main = np.zeros(self.Nr)
+        upper = np.zeros(self.Nr-1)
+        
+        for ispecies,species in enumerate(self.list_of_species):
             
             Dp = self.Dp[species][it,:]    
             cp = self.cp[species][it,:]
- 
-            dt_fact = (2./3.)*self.dt
             
             ############################################
             ############### COMPUTE LHS ################
             ############################################
-            lower = np.zeros(self.Nr-1)
-            main = np.zeros(self.Nr)
-            upper = np.zeros(self.Nr-1)
             
             ## 0<r<a (inner grid, no boundary points)
             Dp_plus = (Dp[2:]+Dp[1:-1]) / 2
             Dp_minus = (Dp[0:-2]+Dp[1:-1]) / 2
-            
-            Vp_plus = (vp[2:]+vp[1:-1]) / 2
-            Vp_minus = (vp[0:-2]+vp[1:-1]) / 2
             
             VDplus  = Vp_plus*Dp_plus / (vp_inner*dr**2)
             VDminus = Vp_minus*Dp_minus / (vp_inner*dr**2)
@@ -1364,36 +1361,35 @@ class PLASMA_SOLVER:
             main[0] = 1.0 + dt_fact*( 4*Dp[0]/dr**2 + 2*cp[1]/dr )
             upper[0] = -4*dt_fact*Dp[0]/dr**2
             
-            DIFF[species] = diags([lower, main, upper], offsets=[-1, 0, 1], format="csr")    
-        
-        DIFF_list = [DIFF[species] for species in self.list_of_species]
-
-        # Construct the block diagonal sparse matrix
-        LHS = block_diag(DIFF_list, format="csr")
+            # DIFF_list.append( diags([lower, main, upper], offsets=[-1, 0, 1], format="csr") )
+            self.LHS_pressure.data[self.main_blocks[ispecies]] = main
+            self.LHS_pressure.data[self.lower_blocks[ispecies]] = lower
+            self.LHS_pressure.data[self.upper_blocks[ispecies]] = upper
             
+            
+        LHS = self.LHS_pressure
+        # DIFF_list = [DIFF[species] for species in self.list_of_species]
+              
         # Add implicit terms from sources
-        sources_implicit = np.zeros((Nr*num_species,Nr*num_species))
+        # sources_implicit = np.zeros((Nr*num_species,Nr*num_species))
         
         if 'Coll_Heat_Exchange' in self.energy_sources['electrons']:
-            sources_implicit -= dt_fact*self.get_collisionalHeatExchange(it)
-            
-        sources_implicit = csr_matrix(sources_implicit)
-        LHS = LHS + sources_implicit
+            # sources_implicit -= dt_fact*self.get_collisionalHeatExchange(it)
+            LHS = LHS - dt_fact*self.get_collisionalHeatExchange(it)
+        # sources_implicit = csr_matrix(sources_implicit)
+        # LHS = LHS + sources_implicit
         
         # impose Dirichlet boundary condition
-        LHS = LHS.tolil()
-        for s in range(1, num_species + 1):  # s starts at 1, up to num_species
-            row_idx = s * Nr - 1  # Compute the correct row index
-
-            # Set the entire row to zero
-            LHS.rows[row_idx] = []  # Clear all column indices in that row
-            LHS.data[row_idx] = []  # Clear all values in that row
-
-            # Set the diagonal element to 1
-            LHS[row_idx, row_idx] = 1
-        
-        LHS = LHS.tocsr()
-                
+        # indices of to seto to zero (end of each species block)
+        rows_to_fix = np.arange(Nr - 1, num_species * Nr, Nr)
+        # Efficiently zero out rows
+        for row in rows_to_fix:
+            start = LHS.indptr[row]
+            end = LHS.indptr[row + 1]
+            LHS.data[start:end] = 0.0  # zero existing entries
+        # Then set diagonal elements to 1
+        LHS[rows_to_fix, rows_to_fix] = 1.0
+               
         return LHS
     
     def solve_sparse_system(self,matrix,vect):
