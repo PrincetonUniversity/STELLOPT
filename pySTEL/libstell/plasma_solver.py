@@ -411,6 +411,8 @@ class PLASMA_SOLVER:
         
         # initialize self.## variables
         self.initialize_variables()
+        # setup types of fluxes
+        self.setup_fluxes_type()
         
         # set fields at t=tstart
         fields_old = self.set_fields_tstart()
