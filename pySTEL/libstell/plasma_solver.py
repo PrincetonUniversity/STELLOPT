@@ -874,23 +874,20 @@ class PLASMA_SOLVER:
         
         ## electrons
         chi['electrons'] = chi_electrons * np.ones(self.Nr)
+        T_electrons = self.T['electrons'][it,:]
+        
+        Bsq = self.Bsq(self.rho_grid)
         
         r_grid = self.r_grid
         
         ## IONS
         for ion in self.plasma.ion_species:
             T_ion = self.T[ion][it,:]
-            T_electrons = self.T['electrons'][it,:]
-            
-            T_r = CubicSpline(r_grid,T_ion)
-            dTdr_non_filtered = T_r.derivative()
             
             T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
             dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
             dTdr_polyfit = dTdr_polyfit(r_grid)
-            
             dTdr = dTdr_polyfit  
-            # dTdr = dTdr_non_filtered(r_grid)
             
             a_LT = self.aminor * dTdr / T_ion
             
@@ -899,8 +896,6 @@ class PLASMA_SOLVER:
             X = a_LT_filtered - aLT_critical
             
             chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
-            
-            Bsq = self.Bsq(self.rho_grid)
             
             mi = self.plasma.mass[ion]
             qi = self.plasma.charge[ion]
