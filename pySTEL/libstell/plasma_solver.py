@@ -905,10 +905,11 @@ class PLASMA_SOLVER:
         for ion in self.plasma.ion_species:
             T_ion = self.T[ion][it,:]
             
-            T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
-            dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
-            dTdr_polyfit = dTdr_polyfit(r_grid)
-            dTdr = dTdr_polyfit  
+            # T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
+            # dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
+            # dTdr_polyfit = dTdr_polyfit(r_grid)
+            # dTdr = dTdr_polyfit
+            dTdr = polyfit_derivative_fast(r_grid,T_ion,deg=12)
             
             a_LT = self.aminor * dTdr / T_ion
             
@@ -1819,7 +1820,39 @@ def akima_derivative(x, y):
         else:
             dy[i] = (w1 * cxm + w2 * cxp) / (w1 + w2)
 
-    return dy       
+    return dy
+
+@njit
+def polyfit_derivative_fast(x, y, deg):
+    N = len(x)
+    V = np.zeros((N, deg + 1))
+    for i in range(N):
+        p = 1.0
+        for j in range(deg, -1, -1):
+            V[i, j] = p
+            p *= x[i]
+
+    # Use least-squares solution (like np.linalg.lstsq)
+    # Numba doesn't support np.linalg.lstsq, but we can emulate it via SVD
+    U, s, VT = np.linalg.svd(V, full_matrices=False)
+    c = np.zeros(deg + 1)
+    for i in range(len(s)):
+        c += (U[:, i] @ y) / s[i] * VT[i, :]
+
+    # Derivative coefficients (decreasing powers)
+    dcoeff = np.zeros(deg)
+    for i in range(deg):
+        dcoeff[i] = (deg - i) * c[i]
+
+    # Evaluate derivative (Horner)
+    dy = np.zeros(N)
+    for k in range(N):
+        val = 0.0
+        for i in range(deg):
+            val = val * x[k] + dcoeff[i]
+        dy[k] = val
+
+    return dy  
             
 # Main routine
 if __name__=="__main__":
