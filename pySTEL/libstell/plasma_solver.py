@@ -302,7 +302,7 @@ class PLASMA_SOLVER:
                 self.particle_sources[species][source_type] = {}
             #
             case 'alpha_particles_sink':
-                if(species != 'deuterium' or species!='tritium'): 
+                if(species != 'deuterium' and species != 'tritium'):
                     raise ValueError('ERROR: alpha_particles_sink is only source for deuterium and tritium')
                 self.particle_sources[species][source_type] = {}
             #
