@@ -56,8 +56,10 @@ class PLASMA_SOLVER:
         if(self.solve_fast_alphas): print(f'SOLVING FOR FAST ALPHAS!')
     
     def set_edge_boundary_condition(self,field: str,species: str,val: float):
-        # set edge boundary Dirichlet boundary condition
-        # field can be 'density', 'temperature' or 'pressure'
+        """
+        Sets edge Dirichlet boundary conditions.
+        Field can be 'density', 'temperature' or 'pressure'
+        """
         
         # check species exist in list_of_species
         if species not in self.list_of_species:
@@ -77,6 +79,10 @@ class PLASMA_SOLVER:
                 
         
     def set_initial_profile(self,field: str, species: str, rho_vals, profile_vals):
+        """
+        Sets profiles at t=t_start
+        Field can be 'density', 'temperature' or 'pressure'
+        """
         
         from scipy.interpolate import CubicSpline
         
@@ -140,6 +146,12 @@ class PLASMA_SOLVER:
                 self.alphas_fast_density_restart    = restart_solver.N['alphas_fast'][-1,:]
               
     def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None,B=None):
+        """
+        Sets magnetic equilibrium
+        Type can be 'VMEC' (need to provide path to wout file) 
+        or 'cylindrical; (need to provide a,R and B)
+        If 'VMEC' then Bsq(r) as defined in wout is used; if 'cylindrical',Bsq(r)=B=te
+        """
         
         from libstell.vmec import VMEC
         from scipy.interpolate import CubicSpline
@@ -185,10 +197,11 @@ class PLASMA_SOLVER:
                     self.Bsq = lambda rho: B*B
                     
     def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, rho_0=None, fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
-        # electrons: 'Bremsstrahlung', 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
-        # ions: 'Coll_Heat_Exchange', 'Er', 'external', 'alpha_heating'
-        # 'constant' is for benchmarking
-
+        """
+        Sets energy sources for a given species. The source_type can be:
+        'external_gaussian', 'time_dependent_gaussian', 'Coll_Heat_Exchange', 'Er', 'alpha_heating', 'constant', 'lambda_2D' and 'Bremsstrahlung' (only for electrons)
+        The 'Coll_Heat_Exchange' only needs to be set for electrons; once it's set it will be computed for ALL species
+        """
         import inspect
         
         # check species exist in list_of_species
@@ -255,7 +268,11 @@ class PLASMA_SOLVER:
                 exit(0)
                 
     def set_particle_source(self,species,source_type, injected_particles_per_sec=None, rho_0=None, sigma_rho=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
-        
+        """
+        Sets particle sources for a given species. The source_type can be:
+        'external_gaussian', 'time_dependent_gaussian', 'constant', 'lambda_2D',
+        'fast_alphas_source' (for He-4) and 'alpha_particles_sink' (for D and T)
+        """
         import inspect
         
         # check species exist in list_of_species
@@ -265,15 +282,13 @@ class PLASMA_SOLVER:
         match source_type:
             case 'external_gaussian':
                 if((injected_particles_per_sec is None) or (sigma_rho is None) or (rho_0 is None)):
-                    print('ERROR: Need to provide Smax [part/(m^3*s)], rho_0 and sigma_rho for gaussian external source')
-                    exit(1) 
+                    raise ValueError('ERROR: Need to provide injected_particles_per_sec, rho_0 and sigma_rho for gaussian external source')
                 else:
                     self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho}
             #
             case 'time_dependent_gaussian':
                 if((injected_particles_per_sec is None) or (rho_0 is None) or (sigma_rho is None) or (time_dependent_factor is None)):
-                    print('ERROR: Need to provide Smax [par/(m^3*s)], rho_0, sigma_rho and a time depenedent factof for time-dependent gaussian')
-                    exit(1) 
+                    raise ValueError('ERROR: Need to provide injected_particles_per_sec, rho_0, sigma_rho and a time depenedent factor for time-dependent gaussian')
                 else:
                     self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
             #
@@ -281,22 +296,24 @@ class PLASMA_SOLVER:
                 # check we are solving fast alphas
                 if(not self.solve_fast_alphas):
                     raise ValueError('solve_fast_alphas was set to false, so fast_alphas_source does not make sense...')
+                if(species != 'helium4'): 
+                    raise ValueError('ERROR: fast_alphas_source is only source for helium4 (thermal helium)')
                 self.particle_sources[species][source_type] = {}
             #
             case 'alpha_particles_sink':
+                if(species != 'deuterium' or species!='tritium'): 
+                    raise ValueError('ERROR: alpha_particles_sink is only source for deuterium and tritium')
                 self.particle_sources[species][source_type] = {}
             #
             case 'constant':
                 if(cte_source is None):
-                    print('ERROR: cte_source is needed in order to generate a constant source.')
-                    exit(0)
+                    raise ValueError('ERROR: cte_source is needed in order to generate a constant source.')
                 else:
                     self.particle_sources[species][source_type] = {'cte_source' : cte_source}
             #
             case 'lambda_2D':
                 if(lambda_function_2D is None):
-                    print('ERROR: A 2D (r,t) lambda funcion must be provided!')
-                    exit(0)        
+                    raise ValueError('ERROR: A 2D (r,t) lambda funcion must be provided!')      
                 # check it's a lambda function with two arguments
                 num_args = len(inspect.signature(lambda_function_2D).parameters)
                 if( not callable(lambda_function_2D) or num_args!=2 ):     
@@ -306,8 +323,7 @@ class PLASMA_SOLVER:
                     self.particle_sources[species][source_type] = {'lambda_function_2D' : lambda_function_2D}
             #
             case _:
-                print(f'ERROR: Source type {source_type} is NOT possible')
-                exit(0)
+                raise ValueError(f'ERROR: Source type {source_type} is NOT possible')
                 
     def set_heat_fluxes(self, type: str,surfaces=None,chi=None,chi_base=None,aLT_critical=None,alpha=None,stiffness=None,chi_electrons=None,convective_fact=None):
         # sets type of fluxes
