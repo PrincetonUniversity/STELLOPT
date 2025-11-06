@@ -6,6 +6,7 @@ and pressure transport equations
 import numpy as np
 import sys
 from time import perf_counter
+from numba import njit
 
 from libstell.plasma import PLASMA
 from libstell.penta import PENTA
@@ -825,14 +826,16 @@ class PLASMA_SOLVER:
             chi = self.heat_fluxes_info['diffusive']['chi']
             convective_fact = self.heat_fluxes_info['diffusive']['convective_fact']
             
-            p_r = CubicSpline(r_grid,self.P[species][it,:])
-            dpdr = p_r.derivative()
+            # p_r = CubicSpline(r_grid,self.P[species][it,:])
+            # dpdr = p_r.derivative()
+            # dpdr = dpdr(r_grid)
+            p_r = self.P[species][it,:]
+            dpdr = akima_derivative(r_grid,p_r)
             
-            n_r = CubicSpline(r_grid,self.N[species][it,:])
-            dndr = n_r.derivative()
-            
+            # n_r = CubicSpline(r_grid,self.N[species][it,:])
+            # dndr = n_r.derivative()
             n_r = self.N[species][it,:]
-            dndr = dndr(r_grid)
+            dndr = akima_derivative(r_grid,n_r)
             
             self.Dp[species][it,:] = chi
             
@@ -842,7 +845,7 @@ class PLASMA_SOLVER:
             self.cp[species][it,:] = c
             
             # this is for bookeeping
-            self.Q_turb[species][it,:] = -chi * dpdr(r_grid) + p_r(r_grid)*( (chi/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
+            self.Q_turb[species][it,:] = -chi * dpdr + p_r*( (chi/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
             
     def compute_diffusive_particle_flux(self,it):
         # computes an interpolating function for Dn
@@ -855,9 +858,11 @@ class PLASMA_SOLVER:
             
             Dn = self.particle_fluxes_info['diffusive']['Dn']
             
-            n_r = CubicSpline(r_grid,self.N[species][it,:])
-            dndr = n_r.derivative()
-            dndr = dndr(r_grid)
+            # n_r = CubicSpline(r_grid,self.N[species][it,:])
+            n_r = self.N[species][it,:]
+            # dndr = n_r.derivative()
+            # dndr = dndr(r_grid)
+            dndr = akima_derivative(r_grid,n_r)
             
             self.Dn[species][it,:] = Dn
             
@@ -924,15 +929,17 @@ class PLASMA_SOLVER:
         
         for species in self.list_of_species:
             
-            p_r = CubicSpline(r_grid,self.P[species][it,:])
-            dpdr = p_r.derivative()
+            # p_r = CubicSpline(r_grid,self.P[species][it,:])
+            # dpdr = p_r.derivative()
             p_r = self.P[species][it,:]
-            dpdr = dpdr(r_grid)
-            n_r = CubicSpline(r_grid,self.N[species][it,:])
-            dndr = n_r.derivative()
+            # dpdr = dpdr(r_grid)
+            dpdr = akima_derivative(r_grid,p_r)
+            # n_r = CubicSpline(r_grid,self.N[species][it,:])
+            # dndr = n_r.derivative()
             
             n_r = self.N[species][it,:]
-            dndr = dndr(r_grid)
+            # dndr = dndr(r_grid)
+            dndr = akima_derivative(r_grid,n_r)
             
             D = chi[species]
             
@@ -1739,7 +1746,80 @@ def initialize_LHS_pressure(Nr, num_species):
     upper_blocks = split_blocks(upper_indices)
 
     return A, lower_blocks, main_blocks, upper_blocks
-        
+
+@njit
+def akima_derivative(x, y):
+    """
+    Compute Akima spline slopes (Hermite form) at points x,
+    reproducing Fortran r8akherm1(ipx=0) behavior.
+
+    Parameters
+    ----------
+    x : 1D array of shape (N,)
+        Strictly increasing coordinate values
+    y : 1D array of shape (N,)
+        Function values at x
+
+    Returns
+    -------
+    dy : 1D array of shape (N,)
+        Akima numerical derivatives at x
+    """
+    n = x.size
+    dy = np.zeros_like(y)
+    if n < 2:
+        raise ValueError("Need at least 2 points")
+
+    # First divided differences
+    m = np.empty(n - 1)
+    for i in range(n - 1):
+        m[i] = (y[i + 1] - y[i]) / (x[i + 1] - x[i])
+
+    if n == 2:
+        dy[0] = m[0]
+        dy[1] = m[0]
+        return dy
+
+    # --- Boundary slopes (consider the case ipx=0, as in the EZsplines fortran code) ---
+    cxp = m[0]
+    cxpp = m[1]
+    cxm = m[-1]
+    cxmm = m[-2]
+
+    dy[0] = 1.5 * cxp - 0.5 * cxpp
+    dy[-1] = 1.5 * cxm - 0.5 * cxmm
+
+    # Ghost slopes for extrapolation
+    cxtrap0 = 2.0 * dy[0] - cxp
+    cxtrap1 = 2.0 * dy[-1] - cxm
+
+    # --- Interior points ---
+    for i in range(1, n - 1):
+        # Left slopes
+        if i == 1:
+            cxmm = cxtrap0
+        else:
+            cxmm = (y[i - 1] - y[i - 2]) / (x[i - 1] - x[i - 2])
+
+        cxm = (y[i] - y[i - 1]) / (x[i] - x[i - 1])
+        cxp = (y[i + 1] - y[i]) / (x[i + 1] - x[i])
+
+        # Right slopes
+        if i == n - 2:
+            cxpp = cxtrap1
+        else:
+            cxpp = (y[i + 2] - y[i + 1]) / (x[i + 2] - x[i + 1])
+
+        # Akima weights
+        w1 = abs(cxp - cxpp)
+        w2 = abs(cxm - cxmm)
+
+        if (w1 + w2) == 0.0:
+            dy[i] = 0.5 * (cxm + cxp)
+        else:
+            dy[i] = (w1 * cxm + w2 * cxp) / (w1 + w2)
+
+    return dy       
             
 # Main routine
 if __name__=="__main__":
