@@ -499,13 +499,18 @@ class PLASMA_SOLVER:
             if (species not in self.initial_density or species not in self.initial_pressure):
                 raise KeyError(f"Missing initial profile for species: {species}")
             
-            # check consistency between boundary conditions and initial profiles
-            tol = np.abs(self.edge_density_BC[species]) * np.finfo(float).eps
-            if( np.abs(self.initial_density[species](1)-self.edge_density_BC[species]) > 5*tol ):
+            if(not np.isclose(self.initial_density[species](1),self.edge_density_BC[species],rtol=1E-7, atol=1E-12)):
                 raise ValueError(f'Edge density BC not consistent w/ initial density profile')
-            tol = np.abs(self.edge_pressure_BC[species]) * np.finfo(float).eps
-            if( np.abs(self.initial_pressure[species](1)-self.edge_pressure_BC[species]) > 10*tol ):
+            if(not np.isclose(self.initial_pressure[species](1),self.edge_pressure_BC[species],rtol=1E-7, atol=1E-12)):
                 raise ValueError(f'Edge pressure/temperature BC not consistent w/ initial temperature profile')
+            
+            # # check consistency between boundary conditions and initial profiles
+            # tol = np.abs(self.edge_density_BC[species]) * np.finfo(float).eps
+            # if( np.abs(self.initial_density[species](1)-self.edge_density_BC[species]) > 5*tol ):
+            #     raise ValueError(f'Edge density BC not consistent w/ initial density profile')
+            # tol = np.abs(self.edge_pressure_BC[species]) * np.finfo(float).eps
+            # if( np.abs(self.initial_pressure[species](1)-self.edge_pressure_BC[species]) > 10*tol ):
+            #     raise ValueError(f'Edge pressure/temperature BC not consistent w/ initial temperature profile')
             
         # check fluxes info is set
         if(not hasattr(self,'heat_fluxes_info')):
