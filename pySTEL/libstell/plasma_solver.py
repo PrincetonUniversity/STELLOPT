@@ -1580,7 +1580,7 @@ class PLASMA_SOLVER:
         
         # only save at minimum every dt=0.1s 
         freq = max(1, round(0.1 / self.dt))
-        sl = slice(0, -1, freq)  # defines the slice once
+        sl = slice(0, None, freq)  # defines the slice once
 
         saved_class.time = self.time[sl]
         saved_class.Nt = len(self.time[sl])
