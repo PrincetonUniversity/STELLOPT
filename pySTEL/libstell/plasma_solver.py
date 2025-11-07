@@ -111,21 +111,21 @@ class PLASMA_SOLVER:
         else:
             raise ValueError('field is not valid...')
         
-    def read_restart_file(self,restart_filepath):
-        # reads a restart .joblib file and sets initial profiles & BC's according to last itertion in file
+    def read_restart_file(self,restart_filepath,tstart):
+        # reads a restart .joblib file and sets initial profiles & BC's according to last iteration in file
         import joblib
         from pathlib import Path
         
-        # Convert to Path object
-        file_path = Path(restart_filepath)
-
-        # Check the extension
-        if file_path.suffix != ".joblib":
-            raise ValueError(f"Error: The file '{restart_filepath}' does not have a .joblib extension.")
+        # Check if extension of restart_filepath is .joblib; if not, add
+        restart_filepath = str(Path(restart_filepath).with_suffix(".joblib"))
         
         restart_solver = joblib.load(restart_filepath)
         
-        # check list_of_species in file are the same as those in this run
+        # Check tstart of current simulation IS EQUAL to tend in restart file
+        if( not np.isclose(tstart,restart_solver.time[-1]) ):
+            raise ValueError('tstart of current simulation and tend of restart file do not match!')
+        
+        # Check list_of_species in file are the same as those in this run
         if (restart_solver.list_of_species != self.list_of_species):
             raise ValueError('Species in restart file different from species in current solver!')
         
@@ -141,10 +141,10 @@ class PLASMA_SOLVER:
         # Get alphas density 
         if(self.solve_fast_alphas):
             # check restart_solver has alphas
-            if 'alphas_fast' not in restart_solver.N or 'alphas_thermal' not in restart_solver.N:
-                raise ValueError('restart file does not have alphas density! Yet you want to solve with alphas...')
+            if 'alphas_fast' not in restart_solver.N:
+                raise ValueError('restart file does not have fast alphas density! Yet you want to solve with alphas...')
             else:
-                self.alphas_fast_density_restart    = restart_solver.N['alphas_fast'][-1,:]
+                self.alphas_fast_density_restart = restart_solver.N['alphas_fast'][-1,:]
               
     def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None,B=None):
         """
@@ -398,9 +398,11 @@ class PLASMA_SOLVER:
                 self.particle_fluxes_info['type'] = type
                 self.particle_fluxes_info[type]['Dn'] = Dn
                 
-    def run(self,Nr,dt,tstart,tend,tolerance=1E-2,max_subiter=12,output_filename=None):
+    def run(self,Nr,dt,tstart,tend,tolerance=1E-2,max_subiter=12,output_filename=None,restart_filename=None):
         
-        from collections import defaultdict
+        # Updates initial conditions and boundary conditions with profiles in restart file
+        if(restart_filename is not None):
+            self.read_restart_file(restart_filename,tstart)
         
         # Check everything is set and ready to proceed with the run
         self.make_checks()
