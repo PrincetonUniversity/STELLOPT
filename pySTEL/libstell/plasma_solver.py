@@ -16,6 +16,9 @@ EC = 1.602176634E-19 # Electron charge [C]
 EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 
 class PLASMA_SOLVER:
+    """Class for solving transport equations (density and pressure)
+
+	"""
     
     def __init__(self, list_of_species, solve_fast_alphas=False, tau_fast_alphas=0.5, constrain_nT=False):
         
@@ -104,7 +107,7 @@ class PLASMA_SOLVER:
             self.initial_pressure[species] = CubicSpline(rho_vals,profile_vals)
         elif field=='temperature':
             if (species not in self.initial_density):
-                raise ValueError('Need to set density initial profile before setting temeprature initial profile')
+                raise ValueError('Need to set density initial profile before setting temperature initial profile')
             else:
                 pressure = self.initial_density[species](rho_vals) * EC * profile_vals
                 self.initial_pressure[species] = CubicSpline(rho_vals,pressure)
@@ -112,7 +115,12 @@ class PLASMA_SOLVER:
             raise ValueError('field is not valid...')
         
     def read_restart_file(self,restart_filepath,tstart):
-        # reads a restart .joblib file and sets initial profiles & BC's according to last iteration in file
+        """
+        Reads a restart .joblib file and sets initial profiles & BC's 
+        according to last iteration in file.
+        If tstart of current run does not match tend of restart file
+        an error is given
+        """
         import joblib
         from pathlib import Path
         
@@ -150,8 +158,8 @@ class PLASMA_SOLVER:
         """
         Sets magnetic equilibrium
         Type can be 'VMEC' (need to provide path to wout file) 
-        or 'cylindrical; (need to provide a,R and B)
-        If 'VMEC' then Bsq(r) as defined in wout is used; if 'cylindrical',Bsq(r)=B=te
+        or 'cylindrical (need to provide aminor, Rmajor and B)
+        If 'VMEC' then Bsq(r) as defined in wout is used; if 'cylindrical' Bsq(r)=B=te
         """
         
         from libstell.vmec import VMEC
@@ -234,6 +242,7 @@ class PLASMA_SOLVER:
             #
             case 'Coll_Heat_Exchange':
                 self.energy_sources[species][source_type] = {}
+                self.solve_coll_heat_exchange = True
             #
             case 'Er':
                 self.energy_sources[species][source_type] = {}
@@ -318,8 +327,7 @@ class PLASMA_SOLVER:
                 # check it's a lambda function with two arguments
                 num_args = len(inspect.signature(lambda_function_2D).parameters)
                 if( not callable(lambda_function_2D) or num_args!=2 ):     
-                    print('A lambda function with two arguments, (r,t), must be given')
-                    exit(0)
+                    raise ValueError('A lambda function with two arguments, (r,t), must be given')
                 else:
                     self.particle_sources[species][source_type] = {'lambda_function_2D' : lambda_function_2D}
             #
@@ -327,33 +335,37 @@ class PLASMA_SOLVER:
                 raise ValueError(f'ERROR: Source type {source_type} is NOT possible')
                 
     def set_heat_fluxes(self, type: str,surfaces=None,chi=None,chi_base=None,aLT_critical=None,alpha=None,stiffness=None,chi_electrons=None,convective_fact=None):
-        # sets type of fluxes
-        # OPTION1: type='dkespenta'; dkes_folder and surfaces(list of integers) must be provided
-        # OPTION2: type='diffusive'; chi must be provided (heat diffusivity; assumes same val for all species)
+        """
+        Sets heat flux for all species. In general, the heat flux for each species is:
+        Q = -n \chi dT/dr + convective_fact*T*Gamma_turb 
+        The 'type' argument will set how chi is computed:
+        'diffusive' : 'chi' is constant and equal to all species
+        'beurskens' : 'chi_e' is constant for electrons; chi_ions are computed according to Beurskens model
+                       using aLT_critical, stiffness and alpha (can be functions of rho)
+        """
             
         match type:
             case 'dkespenta':
-                #checks that dkes_folder and surfaces are provided
-                if( surfaces is None):
-                    print('ERROR: surfaces must be provided!!')
-                    exit(0)
+                raise ValueError('dkespenta heat fluxes not working')
+                # #checks that dkes_folder and surfaces are provided
+                # if( surfaces is None):
+                #     print('ERROR: surfaces must be provided!!')
+                #     exit(0)
                     
-                self.heat_fluxes_info['type'] = type
-                self.heat_fluxes_info[type]['surfaces'] = surfaces
+                # self.heat_fluxes_info['type'] = type
+                # self.heat_fluxes_info[type]['surfaces'] = surfaces
                 
             case 'diffusive':
                 #checks that diffusion coefficients are provided
                 if((chi is None) or (convective_fact is None)):
-                    print('ERROR: chi and convective_fact must be provided!')
-                    exit(0)
+                    raise ValueError('ERROR: chi and convective_fact must be provided!')
                 self.heat_fluxes_info['type'] = type
                 self.heat_fluxes_info[type]['chi'] = chi
                 self.heat_fluxes_info[type]['convective_fact'] = convective_fact
                 
             case 'beurskens':
                 if( (chi_base is None) or (aLT_critical is None) or (alpha is None) or (stiffness is None) or (chi_electrons is None) or (convective_fact is None)):
-                    print('ERROR: chi_base, aLT_critical, alpha, stiffness, chi_electrons and convective_fact must be given!')
-                    exit(0)
+                    raise ValueError('ERROR: chi_base, aLT_critical, alpha, stiffness, chi_electrons and convective_fact must be given!')
                 self.heat_fluxes_info['type'] = type
                 self.heat_fluxes_info[type]['chi_base'] = chi_base
                 self.heat_fluxes_info[type]['aLT_critical'] = aLT_critical
@@ -363,42 +375,51 @@ class PLASMA_SOLVER:
                 self.heat_fluxes_info[type]['convective_fact'] = convective_fact
                 
             case 'dkespenta_beurskens':
-                if( (surfaces is None) or (chi_base is None) or (aLT_critical is None) or (alpha is None) or (stiffness is None) or (chi_electrons is None) or (convective_fact is None)):
-                    print('ERROR: surfaces, chi_base, aLT_critical, alpha, stiffness, chi_electrons and convective_fact must be given!')
-                    exit(0)
-                self.heat_fluxes_info['type'] = type
-                self.heat_fluxes_info[type]['surfaces'] = surfaces
-                self.heat_fluxes_info[type]['chi_base'] = chi_base
-                self.heat_fluxes_info[type]['aLT_critical'] = aLT_critical
-                self.heat_fluxes_info[type]['alpha'] = alpha
-                self.heat_fluxes_info[type]['stiffness'] = stiffness
-                self.heat_fluxes_info[type]['chi_electrons'] = chi_electrons
-                self.heat_fluxes_info[type]['convective_fact'] = convective_fact
+                raise ValueError('dkespenta_beurskens heat fluxes not working')
+                # if( (surfaces is None) or (chi_base is None) or (aLT_critical is None) or (alpha is None) or (stiffness is None) or (chi_electrons is None) or (convective_fact is None)):
+                #     print('ERROR: surfaces, chi_base, aLT_critical, alpha, stiffness, chi_electrons and convective_fact must be given!')
+                #     exit(0)
+                # self.heat_fluxes_info['type'] = type
+                # self.heat_fluxes_info[type]['surfaces'] = surfaces
+                # self.heat_fluxes_info[type]['chi_base'] = chi_base
+                # self.heat_fluxes_info[type]['aLT_critical'] = aLT_critical
+                # self.heat_fluxes_info[type]['alpha'] = alpha
+                # self.heat_fluxes_info[type]['stiffness'] = stiffness
+                # self.heat_fluxes_info[type]['chi_electrons'] = chi_electrons
+                # self.heat_fluxes_info[type]['convective_fact'] = convective_fact
                 
     def set_particle_fluxes(self, type: str, surfaces=None,Dn=None):
-        # sets type of fluxes
-        # OPTION1: type='dkespenta'; dkes_folder and surfaces(list of integers) must be provided
-        # OPTION2: type='diffusive'; Dn and chi must be provided (partical and heat collisional diffusion coefficients)
+        """
+        Sets particle flux for all species. Currently, only 'diffusive' type is implemented:
+        Gamma = -Dn dn/dr with Dn constant and equal to all species
+        """
             
         match type:
             case 'dkespenta':
-                #checks that dkes_folder and surfaces are provided
-                if( surfaces is None ):
-                    print('ERROR:surfaces must be provided!!')
-                    exit(0)
+                raise ValueError('dkespenta particle flux not working')
+                # #checks that dkes_folder and surfaces are provided
+                # if( surfaces is None ):
+                #     print('ERROR:surfaces must be provided!!')
+                #     exit(0)
                     
-                self.particle_fluxes_info['type'] = type
-                self.particle_fluxes_info[type]['surfaces'] = surfaces
+                # self.particle_fluxes_info['type'] = type
+                # self.particle_fluxes_info[type]['surfaces'] = surfaces
                 
             case 'diffusive':
                 #checks that diffusion coefficient is provided
                 if(Dn is None):
-                    print('ERROR: Dn must be provided!')
-                    exit(0)
+                    raise ValueError('ERROR: Dn must be provided!')
                 self.particle_fluxes_info['type'] = type
                 self.particle_fluxes_info[type]['Dn'] = Dn
                 
     def run(self,Nr,dt,tstart,tend,tolerance=1E-2,max_subiter=12,output_filename=None,restart_filename=None):
+        """
+        Run the transport solver after setting initial profiles, BCs, fluxes types and sources
+        If output_filename is not None, then results will be saved in a joblib file
+        If restart_filename is not None, overwrites eventually already defined initial profiles
+        and BCs using profiles of the last iteration in restart file 
+        The restart file is simply the output file of the previous simulation
+        """
         
         # Updates initial conditions and boundary conditions with profiles in restart file
         if(restart_filename is not None):
@@ -430,6 +451,7 @@ class PLASMA_SOLVER:
         
         # initialize self.## variables
         self.initialize_variables()
+        
         # setup types of fluxes
         self.setup_fluxes_type()
         
@@ -483,13 +505,17 @@ class PLASMA_SOLVER:
             
         end_time = perf_counter()   
         print(f'Plasma Solver took {(end_time-start_time)/60:.2f}min to run.')  
-        
+    
     def make_checks(self):
+        """
+        Before running the simulation, checks if dVdr, initial profiles, BCs 
+        and fluxes types have been set
+        Checks consistency between initial profiles and Dirichlet BCs
+        """
         
         # check equilibrium exists
         if(not hasattr(self,'dVdr')):
-            print('ERROR: dVdr MUST BE SET!!')
-            exit(1)
+            raise ValueError('ERROR: dVdr MUST BE SET!!')
         
         for species in self.list_of_species:
             
@@ -501,12 +527,12 @@ class PLASMA_SOLVER:
             if (species not in self.initial_density or species not in self.initial_pressure):
                 raise KeyError(f"Missing initial profile for species: {species}")
             
+            # check consistency between boundary conditions and initial profiles
             if(not np.isclose(self.initial_density[species](1),self.edge_density_BC[species],rtol=1E-7, atol=1E-12)):
                 raise ValueError(f'Edge density BC not consistent w/ initial density profile')
             if(not np.isclose(self.initial_pressure[species](1),self.edge_pressure_BC[species],rtol=1E-7, atol=1E-12)):
                 raise ValueError(f'Edge pressure/temperature BC not consistent w/ initial temperature profile')
             
-            # # check consistency between boundary conditions and initial profiles
             # tol = np.abs(self.edge_density_BC[species]) * np.finfo(float).eps
             # if( np.abs(self.initial_density[species](1)-self.edge_density_BC[species]) > 5*tol ):
             #     raise ValueError(f'Edge density BC not consistent w/ initial density profile')
@@ -516,21 +542,22 @@ class PLASMA_SOLVER:
             
         # check fluxes info is set
         if(not hasattr(self,'heat_fluxes_info')):
-            print('ERROR: set_heat_fluxes must be called before running!!')
-            exit(1)
+            raise KeyError('ERROR: set_heat_fluxes must be called before running!!')
         if(not hasattr(self,'particle_fluxes_info')):
-            print('ERROR: set_particle_fluxes must be called before running!!')
-            exit(1)
+            raise KeyError('ERROR: set_particle_fluxes must be called before running!!')
             
     def print_grid_details(self):
+        """
+        Prints to the command line info about the grids and the simulation header
+        """
         
         print(' ')
         print( ' ***********************')
         print(f' *  tstart = {self.tstart:5.2f}s    *')
         print(f' *  tend   = {self.tend:5.2f}s    *')
-        print(f' *  dt     = {self.dt:5.2f}s    *')
+        print(f' *  dt     = {self.dt:5.3f}s    *')
         print(f' *  Nt     = {self.Nt:3}       *')
-        print(f' *  drho   = {self.drho:5.2f}     *')
+        print(f' *  drho   = {self.drho:5.3f}     *')
         print( ' ***********************')
         
         print(' ')
@@ -539,7 +566,10 @@ class PLASMA_SOLVER:
         print('  '+'='*len(header_str))
         
     def initialize_variables(self):
-        
+        """
+        Initializes all dictionaries and arrays needed to run the simulation
+        Initializes the LHS sparse matrices to solve the density and pressure equations
+        """
         from collections import defaultdict
         
         self.N = {}
@@ -589,11 +619,16 @@ class PLASMA_SOLVER:
         if(self.solve_fast_alphas):
             self.N['alphas_fast'] = np.zeros((Nt,Nr))
             
-        # Initialize tridiagonal matrices which willl be used as LHS of density and pressure equations
+        # Initialize tridiagonal matrices which will be used as LHS of density and pressure equations
         self.LHS_pressure,self.pressure_lower_block, self.pressure_main_block, self.pressure_upper_block = initialize_LHS_pressure(Nr,len(self.list_of_species))
         self.LHS_density,self.density_main_diag,self.density_lower_diag,self.density_upper_diag = initialize_LHS_density(Nr)
             
     def set_fields_tstart(self):
+        """
+        Sets density, temperature and pressure at t=tstart according to the initial profiles,
+        which were either given through set_initial_profiles or through the restart file
+        Sets explicit sources and fluxes at t=tstart
+        """
         
         rho_grid = self.rho_grid
         
@@ -604,8 +639,7 @@ class PLASMA_SOLVER:
                
             self.T[species][0,:] = self.P[species][0,:] / (EC*self.N[species][0,:])
         
-        # N_alphas are set to ZERO at t=tstart
-        # UNLESS read from restart file
+        # N_alphas are set to 0.0 at t=tstart unless read from restart file
         if(self.solve_fast_alphas):
             try:
                 self.N['alphas_fast'][0,:] = self.alphas_fast_density_restart
@@ -631,14 +665,16 @@ class PLASMA_SOLVER:
         return np.concatenate(all_fields)
     
     def setup_fluxes_type(self):
-        """Selects the flux computation functions based on the configuration."""
+        """
+        Selects the flux computation functions based on 
+        self.particle_fluxes_info['type'] and self.heat_fluxes_info['type']
+        """
         
         ptype = self.particle_fluxes_info['type']
         htype = self.heat_fluxes_info['type']
 
         if (ptype in ['dkespenta'] or htype in ['dkespenta', 'dkespenta_beurskens']):
-            print('The DKES+PENTA functionality is broken!!')
-            exit(0)
+            raise ValueError('The DKES+PENTA functionality is broken!!')
 
         # Particle flux function
         if ptype == 'diffusive':
@@ -660,21 +696,22 @@ class PLASMA_SOLVER:
         else:
             raise ValueError('Unsupported heat flux type')
              
-    def call_fluxes(self,it):      
+    def call_fluxes(self,it):
+        """Computes fluxes at iteration it"""
+           
         # Particle Fluxes
         self.particle_flux_func(it)
         # Heat Fluxes
         self.heat_flux_func(it)
         
     def set_explicit_energy_sources(self,species: str, it):
-        # returns 1D-array of same size as rho_grid
-        # computes sources using info in self.heat_sources[species]
-        
-        from libstell.fusion import FUSION
-        
+        """
+        Computes total explicit energy source of a given species
+        at iteration it using info in self.energy_sources[species]
+        Returns 1D-array of same size as rho_grid
+        """
+        from libstell.fusion import FUSION  
         fusion = FUSION()
-          
-        # total_explicit_energy_source = np.zeros(len(rho_grid))
         
         for source_type in self.energy_sources[species]:
             
@@ -723,7 +760,7 @@ class PLASMA_SOLVER:
                     aux_source = cte * np.exp(-(r-r0)**2/sigma_r**2) * time_fact(t)
                     
                 case 'Coll_Heat_Exchange':
-                    # this source is fully implicit
+                    # this source is fully implicit and is computed inside get_LHS_pressure
                     aux_source = 0.0
                             
                 case 'alpha_heating':
@@ -743,7 +780,7 @@ class PLASMA_SOLVER:
                     
                 case 'Er':
                     # aux_source = self.plasma.charge[species]*self.Er_interp(rho_grid)*self.Gamma_interp[species](rho_grid)
-                    raise ValueError('This is still not fully available... need to check its implementation.')
+                    raise ValueError('Er energy source only available when code coupled with dkespenta.')
                       
                 case 'constant':
                     aux_source = self.energy_sources[species]['constant']['cte_source']
@@ -755,16 +792,15 @@ class PLASMA_SOLVER:
             self.explicit_energy_sources[species][source_type][it,:] = aux_source
 
     def set_explicit_particle_sources(self,species: str, it):
-        # returns 1D-array of same size as rho_grid
-        # computes sources using info in self.particle_sources[species]
-        
+        """
+        Computes total explicit particle source of a given species
+        at iteration it using info in self.particle_sources[species]
+        Returns 1D-array of same size as rho_grid
+        """
         from libstell.fusion import FUSION
-        
         fusion = FUSION()
         
         rho_grid = self.rho_grid
-          
-        # total_explicit_particle_source = np.zeros(len(rho_grid))
         
         for source_type in self.particle_sources[species]:
             
@@ -822,8 +858,13 @@ class PLASMA_SOLVER:
             self.explicit_particle_sources[species][source_type][it,:] = aux_source
             
     def compute_diffusive_heat_flux(self,it):
-        # computes an interpolating function for D and c
-        
+        """
+        Computes the coefficients Dp (diffusion) and cp (convection) of
+        each species assuming a simple diffusive mode, which are then used to 
+        fill the LHS_pressure matrix. The coefficients are computed such that 
+        the heat flux is Q = -Dp*dp/dr + cp*p. This allows for the pressure to 
+        be evolved in time according to LoDestro's method
+        """
         from scipy.interpolate import CubicSpline
         
         r_grid = self.r_grid
@@ -855,8 +896,13 @@ class PLASMA_SOLVER:
             self.Q_turb[species][it,:] = -chi * dpdr + p_r*( (chi/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
             
     def compute_diffusive_particle_flux(self,it):
-        # computes an interpolating function for Dn
-        
+        """
+        Computes the coefficients Dn (diffusion) and cn (convection) of
+        each species, which are then used to fill the LHS_density matrices. The
+        coefficients are computed such that the particle flux is
+        Gamma = -Dn*dn/dr + cn*n. This allows for the density to be evolved in time
+        according to LoDestro's method
+        """
         from scipy.interpolate import CubicSpline
         
         r_grid = self.r_grid
@@ -875,12 +921,14 @@ class PLASMA_SOLVER:
             
             self.cn[species][it,:] = 0.0
                         
-            # this is used in heat flux
-            # self.Gamma_turb[species][it,:] = -Dn * dndr(r_grid)
+            # this is used in heat flux (Q=-n\chi*dT/dr + convective_fact*T*Gamma_turb)
             self.Gamma_turb[species][it,:] = -Dn * dndr
             
     def compute_beurskens_heat_flux(self,it):
-        # uses model in [ref...]
+        """
+        Computes the coefficients Dp (diffusion) and cp (convection) of
+        each species according to Beurskens model
+        """
         from scipy.interpolate import CubicSpline
         
         chi_base = self.heat_fluxes_info['beurskens']['chi_base']
@@ -967,243 +1015,239 @@ class PLASMA_SOLVER:
             self.cp[species][it,:] = c
             
             # this is for bookeeping
-            # self.Q_turb[species][it,:] = -chi[species] * dpdr(r_grid) + p_r(r_grid)*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
             self.Q_turb[species][it,:] = -chi[species] * dpdr + p_r*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
             
-    def compute_NEO_particle_flux(self,it):
+    # def compute_NEO_particle_flux(self,it):
         
-        from scipy.interpolate import CubicSpline, Akima1DInterpolator
+    #     from scipy.interpolate import CubicSpline, Akima1DInterpolator
         
-        root = 'ion_root'
+    #     root = 'ion_root'
 
-        PENTA_class = PENTA(folder_path='.', plasma=self.plasma, lverb=False)
+    #     PENTA_class = PENTA(folder_path='.', plasma=self.plasma, lverb=False)
         
-        for sp,species in enumerate(self.list_of_species):
+    #     for sp,species in enumerate(self.list_of_species):
             
-            # Gamma = np.array( PENTA_class.Gamma_Maxw[species] )
-            Gamma = np.array( PENTA_class.Gamma[species,root] )
-            roa_PENTA = PENTA_class.roa[root]
+    #         # Gamma = np.array( PENTA_class.Gamma_Maxw[species] )
+    #         Gamma = np.array( PENTA_class.Gamma[species,root] )
+    #         roa_PENTA = PENTA_class.roa[root]
             
-            ## Include Gamma(r=0) = 0
-            rho_extended = np.concatenate([[0.0],roa_PENTA])
-            Gamma_extended = np.concatenate(([0.0],Gamma))
-            # Gamma_interp = CubicSpline(rho_extended,Gamma_extended,extrapolate=True,bc_type='natural')
-            Gamma_interp = Akima1DInterpolator(rho_extended,Gamma_extended,method='makima')
-            Gamma_interp.extrapolate = True
-            # This is used when computing the heat flux
-            self.Gamma_NEO[species][it,:] = Gamma_interp(self.rho_grid)
+    #         ## Include Gamma(r=0) = 0
+    #         rho_extended = np.concatenate([[0.0],roa_PENTA])
+    #         Gamma_extended = np.concatenate(([0.0],Gamma))
+    #         # Gamma_interp = CubicSpline(rho_extended,Gamma_extended,extrapolate=True,bc_type='natural')
+    #         Gamma_interp = Akima1DInterpolator(rho_extended,Gamma_extended,method='makima')
+    #         Gamma_interp.extrapolate = True
+    #         # This is used when computing the heat flux
+    #         self.Gamma_NEO[species][it,:] = Gamma_interp(self.rho_grid)
             
-            # Compute Dn and cn
-            PENTA_class.set_plasma_solver_transport_coeffs()
-            Dn = PENTA_class.Dn[species,root][:,sp] # the sp index picks the self diffusion coeff, Dn_aa
-            cn = PENTA_class.cn[species,root][:]
+    #         # Compute Dn and cn
+    #         PENTA_class.set_plasma_solver_transport_coeffs()
+    #         Dn = PENTA_class.Dn[species,root][:,sp] # the sp index picks the self diffusion coeff, Dn_aa
+    #         cn = PENTA_class.cn[species,root][:]
             
-            # extended Dn and cn towards the axis by setting them to 0.0
-            Dn_extended = np.concatenate(([0.0],Dn))
-            cn_extended = np.concatenate(([0.0],cn))
-            roa_extended = np.concatenate(([0.0],roa_PENTA))
+    #         # extended Dn and cn towards the axis by setting them to 0.0
+    #         Dn_extended = np.concatenate(([0.0],Dn))
+    #         cn_extended = np.concatenate(([0.0],cn))
+    #         roa_extended = np.concatenate(([0.0],roa_PENTA))
             
-            Dn_extended_spline = Akima1DInterpolator(roa_extended,Dn_extended,method='makima')
-            Dn_extended_spline.extrapolate = True
-            #
-            cn_extended_spline = Akima1DInterpolator(roa_extended,cn_extended,method='makima')
-            cn_extended_spline.extrapolate = True
+    #         Dn_extended_spline = Akima1DInterpolator(roa_extended,Dn_extended,method='makima')
+    #         Dn_extended_spline.extrapolate = True
+    #         #
+    #         cn_extended_spline = Akima1DInterpolator(roa_extended,cn_extended,method='makima')
+    #         cn_extended_spline.extrapolate = True
             
-            self.Dn[species][it,:] = Dn_extended_spline(self.rho_grid)
-            self.cn[species][it,:] = cn_extended_spline(self.rho_grid)
+    #         self.Dn[species][it,:] = Dn_extended_spline(self.rho_grid)
+    #         self.cn[species][it,:] = cn_extended_spline(self.rho_grid)
             
-    def compute_NEO_heat_flux(self,it):
+    # def compute_NEO_heat_flux(self,it):
         
-        from scipy.interpolate import CubicSpline, Akima1DInterpolator
+    #     from scipy.interpolate import CubicSpline, Akima1DInterpolator
         
-        root = 'ion_root'
+    #     root = 'ion_root'
 
-        PENTA_class = PENTA(folder_path='.', plasma=self.plasma, lverb=False)
+    #     PENTA_class = PENTA(folder_path='.', plasma=self.plasma, lverb=False)
         
-        for sp,species in enumerate(self.list_of_species):
+    #     for sp,species in enumerate(self.list_of_species):
             
-            QoT = np.array( PENTA_class.QoT[species,root] )
-            roa_PENTA = PENTA_class.roa[root]
+    #         QoT = np.array( PENTA_class.QoT[species,root] )
+    #         roa_PENTA = PENTA_class.roa[root]
             
-            T_PENTA = CubicSpline(self.rho_grid, self.T[species][it,:])
-            T_PENTA = T_PENTA(roa_PENTA)
+    #         T_PENTA = CubicSpline(self.rho_grid, self.T[species][it,:])
+    #         T_PENTA = T_PENTA(roa_PENTA)
             
-            Q = QoT * EC * T_PENTA
+    #         Q = QoT * EC * T_PENTA
             
-            ## Include Q(r=0) = 0
-            rho_extended = np.concatenate([[0.0],roa_PENTA])
-            Q_extended = np.concatenate(([0.0],Q))
+    #         ## Include Q(r=0) = 0
+    #         rho_extended = np.concatenate([[0.0],roa_PENTA])
+    #         Q_extended = np.concatenate(([0.0],Q))
             
-            Q_interp = Akima1DInterpolator(rho_extended,Q_extended,method='makima')
-            Q_interp.extrapolate = True
+    #         Q_interp = Akima1DInterpolator(rho_extended,Q_extended,method='makima')
+    #         Q_interp.extrapolate = True
             
-            # This is used when computing the heat flux
-            self.Q_NEO[species][it,:] = Q_interp(self.rho_grid)
+    #         # This is used when computing the heat flux
+    #         self.Q_NEO[species][it,:] = Q_interp(self.rho_grid)
             
-            # Compute Dp and cp
-            PENTA_class.set_plasma_solver_transport_coeffs()
-            Dp = PENTA_class.Dp[species,root][:,sp] # the sp index picks the self diffusion coeff, Dn_aa
-            cp = PENTA_class.cp[species,root][:]
+    #         # Compute Dp and cp
+    #         PENTA_class.set_plasma_solver_transport_coeffs()
+    #         Dp = PENTA_class.Dp[species,root][:,sp] # the sp index picks the self diffusion coeff, Dn_aa
+    #         cp = PENTA_class.cp[species,root][:]
             
-            # extended Dp and cp towards the axis by setting them to 0.0
-            Dp_extended = np.concatenate(([0.0],Dp))
-            cp_extended = np.concatenate(([0.0],cp))
-            roa_extended = np.concatenate(([0.0],roa_PENTA))
+    #         # extended Dp and cp towards the axis by setting them to 0.0
+    #         Dp_extended = np.concatenate(([0.0],Dp))
+    #         cp_extended = np.concatenate(([0.0],cp))
+    #         roa_extended = np.concatenate(([0.0],roa_PENTA))
             
-            Dp_extended_spline = Akima1DInterpolator(roa_extended,Dp_extended,method='makima')
-            Dp_extended_spline.extrapolate = True
-            #
-            cp_extended_spline = Akima1DInterpolator(roa_extended,cp_extended,method='makima')
-            cp_extended_spline.extrapolate = True
+    #         Dp_extended_spline = Akima1DInterpolator(roa_extended,Dp_extended,method='makima')
+    #         Dp_extended_spline.extrapolate = True
+    #         #
+    #         cp_extended_spline = Akima1DInterpolator(roa_extended,cp_extended,method='makima')
+    #         cp_extended_spline.extrapolate = True
             
-            self.Dp[species][it,:] = Dp_extended_spline(self.rho_grid)
-            self.cp[species][it,:] = cp_extended_spline(self.rho_grid)
+    #         self.Dp[species][it,:] = Dp_extended_spline(self.rho_grid)
+    #         self.cp[species][it,:] = cp_extended_spline(self.rho_grid)
             
-    def compute_NEO_plus_beurskens_heat_flux(self,it):
+    # def compute_NEO_plus_beurskens_heat_flux(self,it):
         
-        from scipy.interpolate import CubicSpline, Akima1DInterpolator
+    #     from scipy.interpolate import CubicSpline, Akima1DInterpolator
         
         
-        ##############################################################################################
-        ################################ NEO contribution ############################################
-        ##############################################################################################
+    #     ##############################################################################################
+    #     ################################ NEO contribution ############################################
+    #     ##############################################################################################
         
-        root = 'ion_root'
+    #     root = 'ion_root'
 
-        PENTA_class = PENTA(folder_path='.', plasma=self.plasma, lverb=False)
+    #     PENTA_class = PENTA(folder_path='.', plasma=self.plasma, lverb=False)
         
-        for sp,species in enumerate(self.list_of_species):
+    #     for sp,species in enumerate(self.list_of_species):
             
-            QoT = np.array( PENTA_class.QoT[species,root] )
-            roa_PENTA = PENTA_class.roa[root]
+    #         QoT = np.array( PENTA_class.QoT[species,root] )
+    #         roa_PENTA = PENTA_class.roa[root]
             
-            T_PENTA = CubicSpline(self.rho_grid, self.T[species][it,:])
-            T_PENTA = T_PENTA(roa_PENTA)
+    #         T_PENTA = CubicSpline(self.rho_grid, self.T[species][it,:])
+    #         T_PENTA = T_PENTA(roa_PENTA)
             
-            Q = QoT * EC * T_PENTA
+    #         Q = QoT * EC * T_PENTA
             
-            ## Include Q(r=0) = 0
-            rho_extended = np.concatenate([[0.0],roa_PENTA])
-            Q_extended = np.concatenate(([0.0],Q))
+    #         ## Include Q(r=0) = 0
+    #         rho_extended = np.concatenate([[0.0],roa_PENTA])
+    #         Q_extended = np.concatenate(([0.0],Q))
             
-            Q_interp = Akima1DInterpolator(rho_extended,Q_extended,method='makima')
-            Q_interp.extrapolate = True
+    #         Q_interp = Akima1DInterpolator(rho_extended,Q_extended,method='makima')
+    #         Q_interp.extrapolate = True
             
-            # This is used when computing the heat flux
-            self.Q_NEO[species][it,:] = Q_interp(self.rho_grid)
+    #         # This is used when computing the heat flux
+    #         self.Q_NEO[species][it,:] = Q_interp(self.rho_grid)
             
-            # Compute Dp and cp
-            PENTA_class.set_plasma_solver_transport_coeffs()
-            Dp = PENTA_class.Dp[species,root][:,sp] # the sp index picks the self diffusion coeff, Dn_aa
-            cp = PENTA_class.cp[species,root][:]
+    #         # Compute Dp and cp
+    #         PENTA_class.set_plasma_solver_transport_coeffs()
+    #         Dp = PENTA_class.Dp[species,root][:,sp] # the sp index picks the self diffusion coeff, Dn_aa
+    #         cp = PENTA_class.cp[species,root][:]
             
-            # extended Dp and cp towards the axis by setting them to 0.0
-            Dp_extended = np.concatenate(([0.0],Dp))
-            cp_extended = np.concatenate(([0.0],cp))
-            roa_extended = np.concatenate(([0.0],roa_PENTA))
+    #         # extended Dp and cp towards the axis by setting them to 0.0
+    #         Dp_extended = np.concatenate(([0.0],Dp))
+    #         cp_extended = np.concatenate(([0.0],cp))
+    #         roa_extended = np.concatenate(([0.0],roa_PENTA))
             
-            Dp_extended_spline = Akima1DInterpolator(roa_extended,Dp_extended,method='makima')
-            Dp_extended_spline.extrapolate = True
-            #
-            cp_extended_spline = Akima1DInterpolator(roa_extended,cp_extended,method='makima')
-            cp_extended_spline.extrapolate = True
+    #         Dp_extended_spline = Akima1DInterpolator(roa_extended,Dp_extended,method='makima')
+    #         Dp_extended_spline.extrapolate = True
+    #         #
+    #         cp_extended_spline = Akima1DInterpolator(roa_extended,cp_extended,method='makima')
+    #         cp_extended_spline.extrapolate = True
             
-            self.Dp[species][it,:] = Dp_extended_spline(self.rho_grid)
-            self.cp[species][it,:] = cp_extended_spline(self.rho_grid)
+    #         self.Dp[species][it,:] = Dp_extended_spline(self.rho_grid)
+    #         self.cp[species][it,:] = cp_extended_spline(self.rho_grid)
             
-        ##############################################################################################
-        ########################## Beurskens contribution ############################################
-        ##############################################################################################
+    #     ##############################################################################################
+    #     ########################## Beurskens contribution ############################################
+    #     ##############################################################################################
         
-        chi_electrons = self.heat_fluxes_info['dkespenta_beurskens']['chi_electrons']
-        aLT_critical = self.heat_fluxes_info['dkespenta_beurskens']['aLT_critical']
-        alpha = self.heat_fluxes_info['dkespenta_beurskens']['alpha']
-        stiffness = self.heat_fluxes_info['dkespenta_beurskens']['stiffness']
-        convective_fact = self.heat_fluxes_info['dkespenta_beurskens']['convective_fact']
+    #     chi_electrons = self.heat_fluxes_info['dkespenta_beurskens']['chi_electrons']
+    #     aLT_critical = self.heat_fluxes_info['dkespenta_beurskens']['aLT_critical']
+    #     alpha = self.heat_fluxes_info['dkespenta_beurskens']['alpha']
+    #     stiffness = self.heat_fluxes_info['dkespenta_beurskens']['stiffness']
+    #     convective_fact = self.heat_fluxes_info['dkespenta_beurskens']['convective_fact']
         
-        chi = {}
+    #     chi = {}
         
-        ## electrons
-        chi['electrons'] = chi_electrons * np.ones(self.Nr)
+    #     ## electrons
+    #     chi['electrons'] = chi_electrons * np.ones(self.Nr)
         
-        r_grid = self.r_grid
-        Bsq = self.Bsq(self.rho_grid)
+    #     r_grid = self.r_grid
+    #     Bsq = self.Bsq(self.rho_grid)
         
-        ## IONS
-        for ion in self.plasma.ion_species:
-            T_ion = self.T[ion][it,:]
-            T_electrons = self.T['electrons'][it,:]
+    #     ## IONS
+    #     for ion in self.plasma.ion_species:
+    #         T_ion = self.T[ion][it,:]
+    #         T_electrons = self.T['electrons'][it,:]
             
-            T_r = CubicSpline(r_grid,T_ion)
-            # dTdr_non_filtered = T_r.derivative()
+    #         T_r = CubicSpline(r_grid,T_ion)
+    #         # dTdr_non_filtered = T_r.derivative()
             
-            T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
-            dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
-            dTdr_polyfit = dTdr_polyfit(r_grid)
+    #         T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
+    #         dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
+    #         dTdr_polyfit = dTdr_polyfit(r_grid)
             
-            dTdr = dTdr_polyfit  
-            # dTdr = dTdr_non_filtered(r_grid)
+    #         dTdr = dTdr_polyfit  
+    #         # dTdr = dTdr_non_filtered(r_grid)
             
-            a_LT = self.aminor * dTdr / T_ion
+    #         a_LT = self.aminor * dTdr / T_ion
             
-            a_LT_filtered = -a_LT
+    #         a_LT_filtered = -a_LT
             
-            X = a_LT_filtered - aLT_critical
+    #         X = a_LT_filtered - aLT_critical
             
-            chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
+    #         chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
             
-            mi = self.plasma.mass[ion]
-            qi = self.plasma.charge[ion]
+    #         mi = self.plasma.mass[ion]
+    #         qi = self.plasma.charge[ion]
     
-            chi_gB = (EC*T_ion/mi)**1.5 * mi*mi / (qi**2 * Bsq) / self.aminor
+    #         chi_gB = (EC*T_ion/mi)**1.5 * mi*mi / (qi**2 * Bsq) / self.aminor
             
-            chi_turb = chi_gB * chi_turb
+    #         chi_turb = chi_gB * chi_turb
             
-            chi[ion] = chi_turb
+    #         chi[ion] = chi_turb
         
-        for species in self.list_of_species:
+    #     for species in self.list_of_species:
             
-            p_r = CubicSpline(r_grid,self.P[species][it,:])
-            dpdr = p_r.derivative()
+    #         p_r = CubicSpline(r_grid,self.P[species][it,:])
+    #         dpdr = p_r.derivative()
             
-            n_r = CubicSpline(r_grid,self.N[species][it,:])
-            dndr = n_r.derivative()
+    #         n_r = CubicSpline(r_grid,self.N[species][it,:])
+    #         dndr = n_r.derivative()
             
-            n_r = self.N[species][it,:]
-            dndr = dndr(r_grid)
+    #         n_r = self.N[species][it,:]
+    #         dndr = dndr(r_grid)
             
-            D = chi[species]
+    #         D = chi[species]
             
-            # save D of ALL subiter
-            self.Dp_keep[species][it].append(np.array(D))
+    #         # save D of ALL subiter
+    #         self.Dp_keep[species][it].append(np.array(D))
             
-            # average to smooth-out eventual oscillations
-            D_avg = np.mean(np.array(self.Dp_keep[species][it]), axis=0)
-            D = D_avg
+    #         # average to smooth-out eventual oscillations
+    #         D_avg = np.mean(np.array(self.Dp_keep[species][it]), axis=0)
+    #         D = D_avg
 
-            # add Beurskens contribution
-            self.Dp[species][it,:] += D
+    #         # add Beurskens contribution
+    #         self.Dp[species][it,:] += D
             
-            c = (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r
-            c[0] = 0.0
+    #         c = (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r
+    #         c[0] = 0.0
 
-            # add Beurskens contribution
-            self.cp[species][it,:] += c
+    #         # add Beurskens contribution
+    #         self.cp[species][it,:] += c
             
-            # this is for bookeeping
-            self.Q_turb[species][it,:] = -chi[species] * dpdr(r_grid) + p_r(r_grid)*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
+    #         # this is for bookeeping
+    #         self.Q_turb[species][it,:] = -chi[species] * dpdr(r_grid) + p_r(r_grid)*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
             
     def solve_density_equations(self,it):
-        
+        """Sets LHS matrices and RHS vectors of density equations and solves them"""
         from libstell.fusion import FUSION
-        
         fusion = FUSION()
         
-        for species in self.list_of_species:
-                   
+        for species in self.list_of_species:      
             if(species=='tritium' and self.constrain_nT):
                 continue
-            
             if(species=='electrons'):
                 continue
             
@@ -1243,6 +1287,11 @@ class PLASMA_SOLVER:
         return np.concatenate(dens)
     
     def solve_pressure_equations(self,it):
+        """
+        Sets LHS matrices and RHS vectors of pressure equation and solves it. 
+        The pressure equations of all species are in one single system because coll heat
+        exchange couples all temperatures due to its implicit implementation
+        """
         
         RHS_vector = []
         for species in self.list_of_species:
@@ -1272,7 +1321,7 @@ class PLASMA_SOLVER:
         return press
           
     def get_explicit_particle_sources(self,species,it):
-        
+        """Returns 1D array with explicit particle sources"""
         explicit_source = 0.0
         for source_type in self.explicit_particle_sources[species]:
             explicit_source += self.explicit_particle_sources[species][source_type][it,:]
@@ -1280,7 +1329,7 @@ class PLASMA_SOLVER:
         return explicit_source
     
     def get_explicit_energy_sources(self,species,it):
-        
+        """Returns 1D array with explicit energy sources"""
         explicit_source = 0.0
         for source_type in self.explicit_energy_sources[species]:
             explicit_source += self.explicit_energy_sources[species][source_type][it,:]
@@ -1288,6 +1337,7 @@ class PLASMA_SOLVER:
         return explicit_source
     
     def get_LHS_density(self,species,it):
+        """Updates LHS density sparse matrix and returns it"""
         from scipy.sparse import diags
         
         dr = self.dr
@@ -1342,7 +1392,8 @@ class PLASMA_SOLVER:
         return self.LHS_density
     
     def get_LHS_pressure(self,it):
-        
+        """Updates LHS pressure sparse matrix and returns it"""
+
         drho = self.drho
         dr = self.aminor * drho
         Vp = self.dVdr
@@ -1396,14 +1447,9 @@ class PLASMA_SOLVER:
         LHS = self.LHS_pressure
         # DIFF_list = [DIFF[species] for species in self.list_of_species]
               
-        # Add implicit terms from sources
-        # sources_implicit = np.zeros((Nr*num_species,Nr*num_species))
-        
-        if 'Coll_Heat_Exchange' in self.energy_sources['electrons']:
-            # sources_implicit -= dt_fact*self.get_collisionalHeatExchange(it)
+        # Add implicit terms from sources       
+        if hasattr(self, "solve_coll_heat_exchange") and self.solve_coll_heat_exchange:
             LHS = LHS - dt_fact*self.get_collisionalHeatExchange(it)
-        # sources_implicit = csr_matrix(sources_implicit)
-        # LHS = LHS + sources_implicit
         
         # impose Dirichlet boundary condition
         # indices of to seto to zero (end of each species block)
@@ -1419,15 +1465,18 @@ class PLASMA_SOLVER:
         return LHS
     
     def solve_sparse_system(self,matrix,vect):
-        
+        """Solves the linear system matrix.X=vect, where matrix is sparse"""
         from scipy.sparse.linalg import spsolve
         sol = spsolve(matrix,vect)
         
         return sol
     
     def get_collisionalHeatExchange(self,it):
-        # returns collisional heat exchange to use as implicit operator
-        
+        """
+        Computes collisional heat exchange between all species and 
+        constructs the coll heat exchange sparse matrix which is added 
+        to LHS_pressure
+        """
         from libstell.collisions import COLLISIONS
         from scipy import sparse
         
@@ -1518,56 +1567,56 @@ class PLASMA_SOLVER:
         
         return W_out
     
-    def call_PENTA3(self,it):
-        import subprocess
-        from concurrent.futures import ProcessPoolExecutor, as_completed
-        import functools
+    # def call_PENTA3(self,it):
+    #     import subprocess
+    #     from concurrent.futures import ProcessPoolExecutor, as_completed
+    #     import functools
         
-        # create PLASMA class in order to write PENTA inputs       
-        plasma_PENTA = PLASMA(self.list_of_species)
-        for species in self.list_of_species:
-            plasma_PENTA.set_density(species,'interp',rho_vals=self.rho_grid,n_vals=self.N[species][it,:])
-            plasma_PENTA.set_temperature(species,'interp',rho_vals=self.rho_grid,T_vals=self.T[species][it,:])
+    #     # create PLASMA class in order to write PENTA inputs       
+    #     plasma_PENTA = PLASMA(self.list_of_species)
+    #     for species in self.list_of_species:
+    #         plasma_PENTA.set_density(species,'interp',rho_vals=self.rho_grid,n_vals=self.N[species][it,:])
+    #         plasma_PENTA.set_temperature(species,'interp',rho_vals=self.rho_grid,T_vals=self.T[species][it,:])
         
-        plasma_profiles_extension = 'transp_solver'
-        plasma_PENTA.write_plasma_profiles_to_PENTA3(filename='plasma_profiles_'+plasma_profiles_extension+'.dat')
-        plasma_PENTA.write_PENTA_namelist()
+    #     plasma_profiles_extension = 'transp_solver'
+    #     plasma_PENTA.write_plasma_profiles_to_PENTA3(filename='plasma_profiles_'+plasma_profiles_extension+'.dat')
+    #     plasma_PENTA.write_PENTA_namelist()
 
-        try:
-            surfaces = self.particle_fluxes_info['dkespenta']['surfaces']
-        except:
-            try:
-                surfaces = self.heat_fluxes_info['dkespenta']['surfaces']
-            except:
-                try:
-                    surfaces = self.particle_fluxes_info['dkespenta_beurskens']['surfaces']
-                except:
-                    surfaces = self.heat_fluxes_info['dkespenta_beurskens']['surfaces']
+    #     try:
+    #         surfaces = self.particle_fluxes_info['dkespenta']['surfaces']
+    #     except:
+    #         try:
+    #             surfaces = self.heat_fluxes_info['dkespenta']['surfaces']
+    #         except:
+    #             try:
+    #                 surfaces = self.particle_fluxes_info['dkespenta_beurskens']['surfaces']
+    #             except:
+    #                 surfaces = self.heat_fluxes_info['dkespenta_beurskens']['surfaces']
         
-        time_sec = []
-        with ProcessPoolExecutor() as executor:
-            futures = [executor.submit(process_surfaces, surface, self.wout_path) for surface in surfaces]
+    #     time_sec = []
+    #     with ProcessPoolExecutor() as executor:
+    #         futures = [executor.submit(process_surfaces, surface, self.wout_path) for surface in surfaces]
 
-            for future in as_completed(futures):
-                elapsed_seconds = future.result()
-                time_sec.append(elapsed_seconds)
-                # print(f'Surface processed in {elapsed_seconds:.2f} seconds')
+    #         for future in as_completed(futures):
+    #             elapsed_seconds = future.result()
+    #             time_sec.append(elapsed_seconds)
+    #             # print(f'Surface processed in {elapsed_seconds:.2f} seconds')
             
-        # delete files not needed
-        remove = 'rm ucontra* sigmas* flows_vs_Er*'
-        subprocess.run(remove, shell=True, check=True, text=True, capture_output=True)
+    #     # delete files not needed
+    #     remove = 'rm ucontra* sigmas* flows_vs_Er*'
+    #     subprocess.run(remove, shell=True, check=True, text=True, capture_output=True)
         
-        # merge _surface_# files into single file
-        merge_and_delete('fluxes_vs_roa_surface*','fluxes_vs_roa')
-        merge_and_delete('fluxes_vs_Er_surface*','fluxes_vs_Er')
-        merge_and_delete('flows_vs_roa_surface*','flows_vs_roa')
-        merge_and_delete('Jprl_vs_roa_surface*','Jprl_vs_roa')
-        merge_and_delete('particleTransportCoeffs_vs_roa_surface*','particleTransportCoeffs_vs_roa')
-        merge_and_delete('heatTransportCoeffs_vs_roa_surface*','heatTransportCoeffs_vs_roa')
-        merge_and_delete('plasma_profiles_check_surface*','plasma_profiles_check')
+    #     # merge _surface_# files into single file
+    #     merge_and_delete('fluxes_vs_roa_surface*','fluxes_vs_roa')
+    #     merge_and_delete('fluxes_vs_Er_surface*','fluxes_vs_Er')
+    #     merge_and_delete('flows_vs_roa_surface*','flows_vs_roa')
+    #     merge_and_delete('Jprl_vs_roa_surface*','Jprl_vs_roa')
+    #     merge_and_delete('particleTransportCoeffs_vs_roa_surface*','particleTransportCoeffs_vs_roa')
+    #     merge_and_delete('heatTransportCoeffs_vs_roa_surface*','heatTransportCoeffs_vs_roa')
+    #     merge_and_delete('plasma_profiles_check_surface*','plasma_profiles_check')
         
     def call_save_output(self,output_filename):
-        # saves in joblib file
+        """Saves simulation in output joblib file"""
         from types import SimpleNamespace
         from pathlib import Path
         import joblib
@@ -1611,79 +1660,84 @@ class PLASMA_SOLVER:
 
         joblib.dump(saved_class, output_filename)
         
-def process_surfaces(surface,wout_path):
-    import time
-    import subprocess
+# def process_surfaces(surface,wout_path):
+#     import time
+#     import subprocess
     
-    start_time = time.time()
+#     start_time = time.time()
     
-    type_of_write = 0
-    Er_min_V_cm = -100
-    Er_max_V_cm = 200
+#     type_of_write = 0
+#     Er_min_V_cm = -100
+#     Er_max_V_cm = 200
 
-    # wout_path = solver_class.wout_path
-    EparB = 0.0
+#     # wout_path = solver_class.wout_path
+#     EparB = 0.0
 
-    #Sonine (Laguerre) polynomials
-    Smax = 1
+#     #Sonine (Laguerre) polynomials
+#     Smax = 1
     
-    plasma_profiles_extension = 'transp_solver'
+#     plasma_profiles_extension = 'transp_solver'
     
-    extension_output_files = f'_surface_{surface}'
+#     extension_output_files = f'_surface_{surface}'
         
-    extension_star_files = f'surface_{surface}'
+#     extension_star_files = f'surface_{surface}'
 
-    call_penta3 = f'~/bin/xpenta {extension_star_files} {Er_min_V_cm} {Er_max_V_cm} {surface} {type_of_write} {wout_path} {plasma_profiles_extension} {EparB} {Smax} {extension_output_files}'
+#     call_penta3 = f'~/bin/xpenta {extension_star_files} {Er_min_V_cm} {Er_max_V_cm} {surface} {type_of_write} {wout_path} {plasma_profiles_extension} {EparB} {Smax} {extension_output_files}'
     
-    result = subprocess.run(call_penta3, shell=True, check=True, text=True, capture_output=True)
-    # print(result.stdout)
-    if(result.stderr):
-        print(result.stderr)
+#     result = subprocess.run(call_penta3, shell=True, check=True, text=True, capture_output=True)
+#     # print(result.stdout)
+#     if(result.stderr):
+#         print(result.stderr)
         
-    end_time = time.time()
-    elapsed_time = (end_time - start_time)
-    return elapsed_time
+#     end_time = time.time()
+#     elapsed_time = (end_time - start_time)
+#     return elapsed_time
                 
-def merge_and_delete(pattern, output_filename):
-    """
-    Merges files matching the given pattern into a single file and deletes the originals.
+# def merge_and_delete(pattern, output_filename):
+#     """
+#     Merges files matching the given pattern into a single file and deletes the originals.
     
-    Parameters:
-    pattern (str): The pattern to match files (e.g., 'fluxes_vs_roa_surface_*').
-    output_filename (str): The name of the output file.
-    """
-    import os
-    import re
-    import glob
+#     Parameters:
+#     pattern (str): The pattern to match files (e.g., 'fluxes_vs_roa_surface_*').
+#     output_filename (str): The name of the output file.
+#     """
+#     import os
+#     import re
+#     import glob
     
-    def extract_number(filename):
-        match = re.search(r'_(\d+)$', filename)  # Extract number at the end
-        return int(match.group(1)) if match else float('inf')
+#     def extract_number(filename):
+#         match = re.search(r'_(\d+)$', filename)  # Extract number at the end
+#         return int(match.group(1)) if match else float('inf')
 
-    # Find and sort matching files
-    file_list = glob.glob(pattern)
-    file_list.sort(key=extract_number)
+#     # Find and sort matching files
+#     file_list = glob.glob(pattern)
+#     file_list.sort(key=extract_number)
 
-    if not file_list:
-        print(f"No files found matching pattern: {pattern}")
-        return
+#     if not file_list:
+#         print(f"No files found matching pattern: {pattern}")
+#         return
 
-    header_written = False
-    with open(output_filename, 'w') as outfile:
-        for filename in file_list:
-            with open(filename, 'r') as infile:
-                lines = infile.readlines()
-                if not header_written:
-                    outfile.write(lines[0])  # Write header
-                    outfile.write(lines[1])
-                    header_written = True
-                outfile.writelines(lines[2:])  # Write data
+#     header_written = False
+#     with open(output_filename, 'w') as outfile:
+#         for filename in file_list:
+#             with open(filename, 'r') as infile:
+#                 lines = infile.readlines()
+#                 if not header_written:
+#                     outfile.write(lines[0])  # Write header
+#                     outfile.write(lines[1])
+#                     header_written = True
+#                 outfile.writelines(lines[2:])  # Write data
 
-    # Delete original files
-    for filename in file_list:
-        os.remove(filename)
+#     # Delete original files
+#     for filename in file_list:
+#         os.remove(filename)
         
 def initialize_LHS_density(Nr):
+    """
+    Initializes LHS density sparse matrix and returns it. This avoids having to define
+    a sparse matrix at each iteration. The indexes of the sparse matrix to be
+    updated are also returned
+    """
     from scipy.sparse import diags
     lower = np.ones(Nr-1)
     main  = np.ones(Nr)
@@ -1700,6 +1754,11 @@ def initialize_LHS_density(Nr):
     return A,mask_main,mask_lower,mask_upper
 
 def initialize_LHS_pressure(Nr, num_species):
+    """
+    Initializes LHS pressure sparse matrix and returns it. This avoids having to define
+    a sparse matrix at each iteration. The indexes of the sparse matrix to be
+    updated are also returned
+    """
     from scipy.sparse import diags, block_diag
     # Use ones so SciPy allocates all expected data entries
     lower = np.ones(Nr-1)
@@ -1758,7 +1817,7 @@ def initialize_LHS_pressure(Nr, num_species):
 @njit
 def akima_derivative(x, y):
     """
-    Compute Akima spline slopes (Hermite form) at points x,
+    Compute Akima spline derivatives (Hermite form) at points x,
     reproducing Fortran r8akherm1(ipx=0) behavior.
 
     Parameters
@@ -1831,6 +1890,12 @@ def akima_derivative(x, y):
 
 @njit
 def polyfit_derivative_fast(x, y, deg):
+    """
+    Makes a polyfit of degree deg to the points (xi,yi), computes its
+    derivative at xi and returns it. This function is compiled JIT and
+    is a much faster alternative to np.polyfit(...).derivative()
+    when called many times (for instance inside a loop)
+    """
     N = len(x)
     V = np.zeros((N, deg + 1))
     for i in range(N):
