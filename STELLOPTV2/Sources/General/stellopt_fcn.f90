@@ -54,7 +54,7 @@
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
                      norm_phi, norm_zeff, norm_emis_xics, &
-                     norm_beamj, norm_bootj, temp
+                     norm_beamj, norm_bootj, temp, scale
       INTEGER, PARAMETER     :: max_refit = 2
       REAL(rprec), PARAMETER :: ec  = 1.60217653D-19
       CHARACTER(len = 16)     :: temp_str
@@ -102,6 +102,7 @@
 
       ! Unpack array (minus RBC/ZBS/RBS/ZBC)
       DO nvar_in = 1, n
+         scale = 1.0
          IF (arr_dex(nvar_in,2) == norm_dex) cycle
          IF (var_dex(nvar_in) == ixval) xval = x(nvar_in)
          IF (var_dex(nvar_in) == iyval) yval = x(nvar_in)
@@ -140,16 +141,34 @@
          IF (var_dex(nvar_in) == iah_aux_f) ah_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iat_aux_f) at_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iemis_xics_f) emis_xics_f(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iraxis_cc) raxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == izaxis_cs) zaxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iraxis_cs) raxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == izaxis_cc) zaxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == irhobc)     rhobc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ideltamn)   deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iRosenbrock_X) Rosenbrock_X(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == irho_coil_kts)   rho_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == itheta_coil_kts) theta_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == izeta_coil_kts)  zeta_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iraxis_cc) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            raxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == izaxis_cs) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            zaxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == iraxis_cs) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            raxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == izaxis_cc) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            zaxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == irhobc) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*MAX(ABS(arr_dex(nvar_in,1)),arr_dex(nvar_in,2)))
+            rhobc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == ideltamn) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*MAX(ABS(arr_dex(nvar_in,1)),arr_dex(nvar_in,2)))
+            deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         END IF
       END DO
 
       ! Adust Boundary Representation
@@ -162,18 +181,20 @@
 
       ! Unpack RBC/ZBS/RBS/ZBC
       DO nvar_in = 1, n
-         IF (var_dex(nvar_in) == ibound_rbc) rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_rbs) rbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_zbc) zbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_zbs) zbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         scale = 1.0
+         IF (lexp_scale) scale = EXP(-exp_alpha*MAX(ABS(arr_dex(nvar_in,1)),arr_dex(nvar_in,2)))
+         IF (var_dex(nvar_in) == ibound_rbc) rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         IF (var_dex(nvar_in) == ibound_rbs) rbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         IF (var_dex(nvar_in) == ibound_zbc) zbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         IF (var_dex(nvar_in) == ibound_zbs) zbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
          IF (var_dex(nvar_in) == imodemn) THEN
             nf = arr_dex(nvar_in,1)
             mf = arr_dex(nvar_in,2)
-            rbc(nf,mf) = x(nvar_in)
-            zbs(nf,mf) = x(nvar_in)
+            rbc(nf,mf) = x(nvar_in)*scale
+            zbs(nf,mf) = x(nvar_in)*scale
             IF (mf == 0) THEN
-               raxis_cc(nf) = x(nvar_in)
-               zaxis_cs(nf) = x(nvar_in)
+               raxis_cc(nf) = x(nvar_in)*scale
+               zaxis_cs(nf) = x(nvar_in)*scale
             END IF
          END IF
       END DO

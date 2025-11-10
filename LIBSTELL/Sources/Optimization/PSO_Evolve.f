@@ -10,7 +10,7 @@
 !                    population will start at the input value of x.
 !-----------------------------------------------------------------------
       SUBROUTINE PSO_Evolve(fcn, m, n, NP, XCmin, XCmax, x, fvec,
-     1                      c1, c2, Vscale, ftol, xtol, maxfev)
+     1                      c1, c2, wscale, ftol, xtol, maxfev)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -30,15 +30,15 @@
 !        XCmax   Maximum values of function space
 !        x       Vector specifying mimium location in function space
 !        fvec    Vector of function values at minimum
-!        c1      Coefficient scaling local acceleration
-!        c2      Coefficient scaling global acceleration
-!        Vscale  Scaling factor for maximum velocity
+!        c1      Cognitive Coefficient
+!        c2      Social Coefficient
+!        wscale  Inertia scaling factor
 !        ftol    Tollerance for global minimum in terms of fnorm
 !        xtol    Tollerance for global minimum in terms of x
 !        maxfev  Maximum number of function evaluations.
 !----------------------------------------------------------------------
       INTEGER, INTENT(in) :: m, n, NP, maxfev
-      REAL(rprec), INTENT(in)  :: c1, c2, ftol, xtol, Vscale
+      REAL(rprec), INTENT(in)  :: c1, c2, ftol, xtol, wscale
       REAL(rprec), INTENT(in)  :: XCmin(n), XCmax(n)
       REAL(rprec), INTENT(inout) :: x(n)
       REAL(rprec), INTENT(out) :: fvec(m)
@@ -64,30 +64,27 @@
 !        x_max          Maximum distance across domain
 !        gnorm          Distance to global min
 !        pnorm          Distance to local min
-!        vnorm          Velocity normalization
-!        rand_C1        Random number
+!        rand_C1        Random number 1
+!        rand_C1        Random number 2
 !        x_temp         Vector of input variables
 !        fnorm_array    Vector of function values at (x_temp)
 !        x_global       Vector of input variables (global min)
 !        x_personal     Vector of input variables (local min)
 !        vel            Velocity Vector
 !        temp_fvec      Helper array
-!        vmax           Array of maximum velocities
 !        x_array        Array of all X's for the population
 !----------------------------------------------------------------------
       LOGICAL :: lkeep_running, lfirst_pass, lnew_global
       INTEGER :: i,j, iproc_min, dex, generation, iunit,
      1           nfeval, ierr, istat, exit_flag, ntot
       REAL(rprec) :: fnorm, fnorm_global, gnorm, pnorm,
-     1               vnorm, rand_C1, fnorm_max, xmax, l_temp
+     1               rand_C1, rand_C2, fnorm_max, xmax
       REAL(rprec), ALLOCATABLE :: x_temp(:), fnorm_array(:), 
      1                            x_global(:), x_personal(:,:),
-     2                            vel(:), fvec_temp(:), vmax(:),
+     2                            vel(:), fvec_temp(:),
      3                            fnorm_personal(:)
       REAL(rprec), ALLOCATABLE :: x_array(:,:), fvec_array(:,:)
       CHARACTER(16) :: temp_string
-      
-      REAL(rprec) ::  enorm
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -95,13 +92,9 @@
       ! Preform Allocations
       ALLOCATE (x_temp(n), fnorm_array(NP), fnorm_personal(NP),
      1          x_global(n),
-     2          vel(n),fvec_temp(m), vmax(n), stat=ierr)
+     2          vel(n),fvec_temp(m), stat=ierr)
       ALLOCATE (x_array(n,NP),fvec_array(m,NP),x_personal(n,NP),
      1          stat=ierr)
-
-      ! Calculate VMAX
-      xmax = enorm(n,XCmax-XCmin)
-      vmax = Vscale*ABS((XCmax - XCmin))
       
       ! Initialize Starting Positions
       CALL RANDOM_SEED ( )  ! Processor reinitializes the seed
@@ -124,6 +117,10 @@
       IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
 !DEC$ ENDIF
 
+      ! Initialize initial velocity
+      vel = XCmax-XCmin
+
+      ! Start optimization
       lkeep_running   = .true.
       lfirst_pass     = .true.
       x_global        = XCmax
@@ -277,24 +274,13 @@
          DO i = 1, NP
             ! Calculate Velocity
             CALL random_number(rand_C1)
-            vel = vel + c1*(x_personal(:,i)-x_array(:,i))*rand_C1
-     1                + c2*(x_global - x_array(:,i))*rand_C1
-
-            ! Bound Velocity
-            WHERE (ABS(vel)>vmax) vel = SIGN(vmax,vel)
+            CALL random_number(rand_C2)
+            vel = vel * wscale 
+     1                + c1*(x_personal(:,i)-x_array(:,i))*rand_C1
+     2                + c2*(x_global - x_array(:,i))*rand_C2
 
             ! Step Particle
             x_array(:,i) = x_array(:,i) + vel
-
-            ! Kick minimum particle
-            IF (i==iproc_min .and. lnew_global) THEN
-               DO j = 1, n
-                  CALL random_number(rand_C1)
-                  x_array(j,i)=XCmin(j)+rand_C1*(XCmax(j)-XCmin(j))
-               END DO
-               x_personal(:,iproc_min) = x_array(:,iproc_min)
-               fnorm_personal(i) = 1E30
-            END IF
 
             ! Bound the particle
             x_temp = x_array(:,i)

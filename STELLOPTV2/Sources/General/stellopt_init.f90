@@ -38,7 +38,7 @@
       IMPLICIT NONE
       INTEGER ::  i,n,m,ier, iunit,nvar_in,ctrl_dofs,nknots
       INTEGER ::  ictrl(5)
-      REAL(rprec) :: norm, delta
+      REAL(rprec) :: norm, delta, scale
       REAL(rprec) :: fvec_temp(1)
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d) :: rbc_temp,zbs_temp
       REAL(rprec), PARAMETER :: norm_fac = 0.5_rprec   ! Used to set bounds for nomalization
@@ -53,6 +53,7 @@
 !----------------------------------------------------------------------
       chisq_min = bigno
       ier = 0
+      scale = 1.0
 
       ! Read the OPTIMUM Namelist
       CALL init_stellopt_input
@@ -1131,31 +1132,32 @@
               IF (ANY(laxis_opt)) THEN
                  n = UBOUND(laxis_opt,1)
                  DO n = LBOUND(laxis_opt,1), UBOUND(laxis_opt,1)
+                    IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*n)
                     IF (laxis_opt(n)) THEN
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = raxis_cc(n)
+                       vars(nvar_in) = raxis_cc(n)*scale
                        IF (lauto_domain) THEN
                           norm = MIN(raxis_cc(n),raxis_cs(n))
                           raxis_min(n) = norm - ABS(pct_domain*norm)
                           norm = MAX(raxis_cc(n),raxis_cs(n))
                           raxis_max(n) = norm + ABS(pct_domain*norm)
                        END IF
-                       vars_min(nvar_in) = raxis_min(n)
-                       vars_max(nvar_in) = raxis_max(n)
+                       vars_min(nvar_in) = raxis_min(n)*scale
+                       vars_max(nvar_in) = raxis_max(n)*scale
                        var_dex(nvar_in)  = iraxis_cc
                        diag(nvar_in)     = daxis_opt(n)
                        arr_dex(nvar_in,1) = n
                        IF (n /= 0) THEN
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = zaxis_cs(n)
+                          vars(nvar_in) = zaxis_cs(n)*scale
                           IF (lauto_domain) THEN
                              norm = MIN(zaxis_cs(n),zaxis_cc(n))
                              zaxis_min(n) = norm - ABS(pct_domain*norm)
                              norm = MAX(zaxis_cs(n),zaxis_cc(n))
                              zaxis_max(n) = norm + ABS(pct_domain*norm)
                           END IF
-                          vars_min(nvar_in) = zaxis_min(n)
-                          vars_max(nvar_in) = zaxis_max(n)
+                          vars_min(nvar_in) = zaxis_min(n)*scale
+                          vars_max(nvar_in) = zaxis_max(n)*scale
                           var_dex(nvar_in)  = izaxis_cs
                           diag(nvar_in)     = daxis_opt(n)
                           arr_dex(nvar_in,1) = n
@@ -1163,17 +1165,17 @@
                        IF (lasym) THEN
                           IF (n /= 0) THEN
                              nvar_in = nvar_in + 1
-                             vars(nvar_in) = raxis_cs(n)
-                             vars_min(nvar_in) = raxis_min(n)
-                             vars_max(nvar_in) = raxis_max(n)
+                             vars(nvar_in) = raxis_cs(n)*scale
+                             vars_min(nvar_in) = raxis_min(n)*scale
+                             vars_max(nvar_in) = raxis_max(n)*scale
                              var_dex(nvar_in)  = iraxis_cs
                              diag(nvar_in)     = daxis_opt(n)
                              arr_dex(nvar_in,1) = n
                           END IF
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = zaxis_cc(n)
-                          vars_min(nvar_in) = zaxis_min(n)
-                          vars_max(nvar_in) = zaxis_max(n)
+                          vars(nvar_in) = zaxis_cc(n)*scale
+                          vars_min(nvar_in) = zaxis_min(n)*scale
+                          vars_max(nvar_in) = zaxis_max(n)*scale
                           var_dex(nvar_in)  = izaxis_cc
                           diag(nvar_in)     = daxis_opt(n)
                           arr_dex(nvar_in,1) = n
@@ -1184,9 +1186,10 @@
               IF (ANY(lmode_opt)) THEN
                  DO n = LBOUND(lmode_opt,1), UBOUND(lmode_opt,1)
                     DO m = LBOUND(lmode_opt,2), UBOUND(lmode_opt,2)
+                       IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*MAX(abs(n),m))
                        IF (lmode_opt(n,m)) THEN
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = 0.5*(rbc(n,m)+zbs(n,m))
+                          vars(nvar_in) = 0.5*(rbc(n,m)+zbs(n,m))*scale
                           IF (lauto_domain) THEN
                              bound_min(n,m) = vars(nvar_in) - ABS(pct_domain*vars(nvar_in))
                              bound_max(n,m) = vars(nvar_in) + ABS(pct_domain*vars(nvar_in))
@@ -1208,15 +1211,16 @@
                  CALL convert_boundary(rbc,zbs,rhobc,mpol1d,ntord,rho_exp)
                  DO n = LBOUND(lrho_opt,1), UBOUND(lrho_opt,1)
                     DO m = LBOUND(lrho_opt,2), UBOUND(lrho_opt,2)
+                       IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*MAX(abs(n),m))
                        IF (lrho_opt(n,m) .and. (m /= 0 .or. n >= 0)) THEN
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = rhobc(n,m)
+                          vars(nvar_in) = rhobc(n,m)*scale
                           IF (lauto_domain) THEN
                              bound_min(n,m) = rhobc(n,m) - ABS(pct_domain*rhobc(n,m))
                              bound_max(n,m) = rhobc(n,m) + ABS(pct_domain*rhobc(n,m))
                           END IF
-                          vars_min(nvar_in) = bound_min(n,m)
-                          vars_max(nvar_in) = bound_max(n,m)
+                          vars_min(nvar_in) = bound_min(n,m)*scale
+                          vars_max(nvar_in) = bound_max(n,m)*scale
                           var_dex(nvar_in)  = irhobc
                           diag(nvar_in)     = drho_opt(n,m)
                           arr_dex(nvar_in,1) = n
@@ -1234,15 +1238,16 @@
                  CALL convert_boundary_PG(rbc_temp,zbs_temp,deltamn,mpol1d,ntord)
                  DO n = LBOUND(ldeltamn_opt,1), UBOUND(ldeltamn_opt,1)
                     DO m = LBOUND(ldeltamn_opt,2), UBOUND(ldeltamn_opt,2)
+                       IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*MAX(abs(n),m))
                        IF (ldeltamn_opt(n,m) .and. .not.(n == 0 .and. m==0)) THEN
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = deltamn(n,m)
+                          vars(nvar_in) = deltamn(n,m)*scale
                           IF (lauto_domain) THEN
                              delta_min(n,m) = deltamn(n,m) - ABS(pct_domain*deltamn(n,m))
                              delta_max(n,m) = deltamn(n,m) + ABS(pct_domain*deltamn(n,m))
                           END IF
-                          vars_min(nvar_in) = delta_min(n,m)
-                          vars_max(nvar_in) = delta_max(n,m)
+                          vars_min(nvar_in) = delta_min(n,m)*scale
+                          vars_max(nvar_in) = delta_max(n,m)*scale
                           var_dex(nvar_in)  = ideltamn
                           diag(nvar_in)     = ddeltamn_opt(n,m)
                           arr_dex(nvar_in,1) = n
@@ -1282,6 +1287,7 @@
                  END IF
                  DO n = LBOUND(lbound_opt,1), UBOUND(lbound_opt,1)
                     DO m = 0, UBOUND(lbound_opt,2)
+                       IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*MAX(abs(n),m))
                        IF (m==0 .and. n<=0) CYCLE
                        IF (lbound_opt(n,m)) THEN
                           IF (lauto_domain) THEN
@@ -1289,9 +1295,9 @@
                              rbc_max(n,m) = rbc(n,m) + ABS(pct_domain*rbc(n,m))
                           END IF
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = rbc(n,m)
-                          vars_min(nvar_in) = rbc_min(n,m)
-                          vars_max(nvar_in) = rbc_max(n,m)
+                          vars(nvar_in) = rbc(n,m)*scale
+                          vars_min(nvar_in) = rbc_min(n,m)*scale
+                          vars_max(nvar_in) = rbc_max(n,m)*scale
                           var_dex(nvar_in) = ibound_rbc
                           diag(nvar_in)    = dbound_opt(n,m)
                           arr_dex(nvar_in,1) = n
@@ -1301,9 +1307,9 @@
                              zbs_max(n,m) = zbs(n,m) + ABS(pct_domain*zbs(n,m))
                           END IF
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = zbs(n,m)
-                          vars_min(nvar_in) = zbs_min(n,m)
-                          vars_max(nvar_in) = zbs_max(n,m)
+                          vars(nvar_in) = zbs(n,m)*scale
+                          vars_min(nvar_in) = zbs_min(n,m)*scale
+                          vars_max(nvar_in) = zbs_max(n,m)*scale
                           var_dex(nvar_in) = ibound_zbs
                           diag(nvar_in)    = dbound_opt(n,m)
                           arr_dex(nvar_in,1) = n
@@ -1314,9 +1320,9 @@
                                 rbs_max(n,m) = rbs(n,m) + ABS(pct_domain*rbs(n,m))
                              END IF
                              nvar_in = nvar_in + 1
-                             vars(nvar_in) = rbs(n,m)
-                             vars_min(nvar_in) = rbs_min(n,m)
-                             vars_max(nvar_in) = rbs_max(n,m)
+                             vars(nvar_in) = rbs(n,m)*scale
+                             vars_min(nvar_in) = rbs_min(n,m)*scale
+                             vars_max(nvar_in) = rbs_max(n,m)*scale
                              var_dex(nvar_in) = ibound_rbs
                              diag(nvar_in)    = dbound_opt(n,m)
                              arr_dex(nvar_in,1) = n
@@ -1326,9 +1332,9 @@
                                 zbc_max(n,m) = zbc(n,m) + ABS(pct_domain*zbc(n,m))
                              END IF
                              nvar_in = nvar_in + 1
-                             vars(nvar_in) = zbc(n,m)
-                             vars_min(nvar_in) = zbc_min(n,m)
-                             vars_max(nvar_in) = zbc_max(n,m)
+                             vars(nvar_in) = zbc(n,m)*scale
+                             vars_min(nvar_in) = zbc_min(n,m)*scale
+                             vars_max(nvar_in) = zbc_max(n,m)*scale
                              var_dex(nvar_in) = ibound_zbc
                              diag(nvar_in)    = dbound_opt(n,m)
                              arr_dex(nvar_in,1) = n

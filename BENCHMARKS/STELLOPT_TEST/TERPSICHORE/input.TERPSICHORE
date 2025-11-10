@@ -121,11 +121,6 @@
   NFUNC_MAX = 1
   EQUIL_TYPE = 'VMEC2000'
   OPT_TYPE   = 'ONE_ITER'
-  FTOL =  1.00000000000000E-06
-  XTOL =  1.00000000000000E-30
-  GTOL =  1.00000000000000E-30
-  FACTOR =   100.0
-  EPSFCN =   1.0E-05
   LKEEP_MINS = T
   NOPTIMIZERS = 1
 !-----------------------------------------------------------------------
@@ -138,8 +133,8 @@
 !         Requires STELLOPT to be linked to TERPSICHORE.
 !         Also requires the terpsichore_input file.
 !------------------------------------------------------------------------
-  MLMNB_KINK =   458  IVAC_KINK =    24
-  TARGET_KINK(001) =  -1.0  SIGMA_KINK(001) =   1.0   MLMNS_KINK(001) =   76
-  TARGET_KINK(002) =  -1.0  SIGMA_KINK(002) =   1.0   MLMNS_KINK(002) =   91
+  MLMNB_KINK =   545  IVAC_KINK =    25
+  TARGET_KINK(001) =  -1.0  SIGMA_KINK(001) =   1.0   MLMNS_KINK(001) =   388
+  TARGET_KINK(002) =  -1.0  SIGMA_KINK(002) =   1.0   MLMNS_KINK(002) =   777
 / 
 &END
