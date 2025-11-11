@@ -41,6 +41,7 @@
                               dt_plasma_solver, Nr_plasma_solver, &
                               max_subiter_plasma_solver, tol_plasma_solver, &
                               beurskens_ions, add_NEO, &
+                              external_normalized_diffusivities, &
                               Dn_ions, chi_all, N0_init_ions, T0_init_all, &
                               stiffness_beurskens, aLT_critical_beurskens, &
                               alpha_beurskens
@@ -105,6 +106,7 @@
       max_subiter_plasma_solver = 50
       tol_plasma_solver = 1E-4
       beurskens_ions = .FALSE.
+      external_normalized_diffusivities = .FALSE.
       add_NEO = .TRUE.
       Dn_ions = 0.0
       chi_all = 0.0

@@ -38,6 +38,7 @@ MODULE thrift_plasma_solver_mod
     INTEGER :: N_plasma_steps_per_THRIFT_step, Nt_total_plasma_solver
     TYPE(EZspline1_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: N_splines, T_splines
     TYPE(EZspline1_r8), PRIVATE :: P_spline, fast_alphas_spl
+    TYPE(EZspline2_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: chi_normalized_splines
     INTEGER, PRIVATE :: subiter
     CHARACTER(len=20), DIMENSION(:), ALLOCATABLE :: list_of_species
     !
@@ -252,11 +253,11 @@ MODULE thrift_plasma_solver_mod
 #endif
         IMPLICIT NONE
         CHARACTER(*), INTENT(in) :: filename
-        INTEGER :: i, ier, ispecies, nrho_source, nt_source
+        INTEGER :: i, ier, ispecies, nrho_source, nt_source, naLT
         INTEGER :: bcs0(2)
         TYPE(EZspline2_r8) :: temp_spl2d
-        REAL(rprec), DIMENSION(:), ALLOCATABLE :: raxis_source, taxis_source
-        REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: S_energy, S_particle
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: raxis_source, taxis_source, aLT_axis
+        REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: S_energy, S_particle, chi_normalized
         bcs0=(/ 0, 0/)
         ierr_mpi = 0
 
@@ -344,7 +345,35 @@ MODULE thrift_plasma_solver_mod
                 CALL EZspline_free(temp_spl2d,ier)
             END DO
 
-            DEALLOCATE(raxis_source,taxis_source,S_energy,S_particle)   
+            ! Read external normalized diffusivities (chi/chi_gB) from external source file
+            IF(external_normalized_diffusivities) THEN
+                CALL read_scalar_hdf5(fid,'naLT',ier,INTVAR=naLT)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'naLT',ier)
+
+                ALLOCATE(aLT_axis(naLT))
+                ALLOCATE(chi_normalized(num_species,nrho_source,naLT))
+
+                CALL read_var_hdf5(fid,'aLT',naLT,ier,DBLVAR=aLT_axis)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'aLT_axis',ier)
+
+                CALL read_var_hdf5(fid,'chi_normalized',num_species,nrho_source,naLT,ier,DBLVAR=chi_normalized)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'chi_normalized',ier)
+
+                ! Linear Interpolation of chi_normalized
+                ALLOCATE(chi_normalized_splines(num_species))
+                DO ispecies = 1,num_species
+                    CALL EZlinear_init(chi_normalized_splines(ispecies),nrho_source,naLT,ier)
+                    IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: normalized_chi_splines',ier)
+                    chi_normalized_splines(ispecies)%x1 = raxis_source
+                    chi_normalized_splines(ispecies)%x2 = aLT_axis
+                    CALL EZspline_setup(chi_normalized_splines(ispecies),chi_normalized(ispecies,:,:),ier,EXACT_DIM=.true.)
+                    IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: chi_normalized',ier)
+                END DO
+
+                DEALLOCATE(aLT_axis,chi_normalized)
+            ENDIF
+
+            DEALLOCATE(raxis_source,taxis_source,S_energy,S_particle)
         END IF
 
         ! Broadcast nrho_source, nt_source, nion_prof
@@ -576,7 +605,7 @@ MODULE thrift_plasma_solver_mod
         INTEGER :: ier, ir, Nr, ispecies, kk, row
         REAL(rprec) :: dt_fact, dr, dr2, Dp_turb, cp_turb
         REAL(rprec) :: Vp_plus, Vp_minus, VDplus, VDminus, cplus, cminus, Dp_plus, Dp_minus
-        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Dp, cp, Vp, chi_beurskens, dndr
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Dp, cp, Vp, chi_beurskens, dndr, chi_external
         REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: LHS_coll_heat_exchange
 
         LHS_pressure = 0.0_rprec
@@ -587,7 +616,7 @@ MODULE thrift_plasma_solver_mod
         dr2 = dr*dr
         dt_fact = (2.0_rprec/3.0_rprec)*dt_plasma_solver
 
-        ALLOCATE(Dp(Nr),cp(Nr),Vp(Nr),dndr(Nr),chi_beurskens(Nr))
+        ALLOCATE(Dp(Nr),cp(Nr),Vp(Nr),dndr(Nr),chi_beurskens(Nr),chi_external(Nr))
         ALLOCATE(LHS_coll_heat_exchange(Nr*num_species,Nr*num_species))
 
         ! Vp = dV/dr
@@ -613,6 +642,11 @@ MODULE thrift_plasma_solver_mod
                 Dp = Dp + chi_beurskens
             END IF
 
+            IF(external_normalized_diffusivities) THEN
+                CALL get_external_chi(ispecies,chi_external)
+                Dp = Dp + chi_external
+            END IF
+
             ! Add convection (turbulence) due to density gradient
             CALL EZspline_derivative1_array_r8(N_splines(ispecies), 1, Nr,rho_plasma_grid,dndr,ier)
             IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'interpolating: N_splines',ier)
@@ -620,7 +654,9 @@ MODULE thrift_plasma_solver_mod
             !
             cp = cp + chi_all(ispecies)*dndr / plasma_N(ispecies,:)
             !
-            IF(beurskens_ions .AND. ispecies>1) cp = cp + chi_beurskens*dndr / plasma_N(ispecies,:)
+            IF(beurskens_ions .AND. ispecies>1)  cp = cp + chi_beurskens*dndr / plasma_N(ispecies,:)
+            IF(external_normalized_diffusivities) cp = cp + chi_external*dndr / plasma_N(ispecies,:)
+
             ! convection is zero at axis
             cp(1) = 0.0_rprec
 
@@ -1052,6 +1088,54 @@ MODULE thrift_plasma_solver_mod
         RETURN
 
     END SUBROUTINE get_beurskens_ions_chi
+
+    SUBROUTINE get_external_chi(ispecies,chi_external)
+        !--------------------------------------------------------------
+        !--------------------------------------------------------------
+        ! Computes chi by multiplying normalized chi with chi_gB
+        REAL(rprec) :: mi,qi,B
+        INTEGER, INTENT(IN) :: ispecies
+        INTEGER :: ier,Nr,iion
+        REAL(rprec), INTENT(INOUT), DIMENSION(:) :: chi_external
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Bsq,chi_gB,dTdrho,T,Te,Ti,aLT,chi_normalized
+
+        Nr = Nr_plasma_solver
+        ALLOCATE(Bsq(Nr),chi_gB(Nr),dTdrho(Nr),T(Nr),Te(Nr),Ti(Nr),aLT(Nr),chi_normalized(Nr))
+
+        ! In case of electrons, use chi_gB of the 1st ion
+        IF(ispecies==1) THEN 
+            iion=1
+            Ti = plasma_T(1,:)
+        ELSE
+            iion=ispecies-1
+            Ti = plasma_T(ispecies,:)
+        ENDIF
+        mi = Matom_prof(iion)
+        qi = e_charge * Zatom_prof(iion)
+
+        T = plasma_T(ispecies,:)
+        Te = plasma_T(1,:)
+
+        CALL EZspline_interp(bsq_spl,Nr,rho_plasma_grid,Bsq,ier)
+
+        !chi gyroBohm (for the scaling)
+        chi_gB = (e_charge*Ti/mi)**1.5 * mi*mi / (qi**2 * Bsq) / eq_Aminor
+
+        ! CALL EZspline_derivative1_array_r8(T_splines(1+iion), 1, Nr,rho_plasma_grid,dTdrho,ier)
+        ! IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'interpolating: T_splines',ier) 
+        CALL polyfit_derivative(rho_plasma_grid,T,Nr,12,dTdrho)
+        aLT = - dTdrho / T
+
+        ! get normalized chi
+        CALL EZspline_interp(chi_normalized_splines(ispecies),Nr,rho_plasma_grid,aLT,chi_normalized,ier)
+        chi_external = chi_gB * chi_normalized * (Te/T)
+        ! print *, chi_normalized
+
+        DEALLOCATE(Bsq,chi_gB,dTdrho,T,Te,Ti,aLT,chi_normalized)
+        
+        RETURN
+
+    END SUBROUTINE get_external_chi
 
     SUBROUTINE get_fast_alphas_dens(rho_array,val_array)
         ! Interpolates fast alpha density at rho_val

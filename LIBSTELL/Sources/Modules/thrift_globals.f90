@@ -50,7 +50,8 @@
                         etapar_type
 
       ! Plasma solver
-      LOGICAL :: solve_plasma_equations, beurskens_ions, add_NEO
+      LOGICAL :: solve_plasma_equations, beurskens_ions, add_NEO, &
+      external_normalized_diffusivities
       INTEGER, PARAMETER :: nions_max = 6
       REAL(rprec) :: dt_plasma_solver, tol_plasma_solver
       REAL(rprec) :: stiffness_beurskens, aLT_critical_beurskens, alpha_beurskens
