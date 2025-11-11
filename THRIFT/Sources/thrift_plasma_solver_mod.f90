@@ -41,9 +41,7 @@ MODULE thrift_plasma_solver_mod
     TYPE(EZspline2_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: chi_normalized_splines
     INTEGER, PRIVATE :: subiter
     CHARACTER(len=20), DIMENSION(:), ALLOCATABLE :: list_of_species
-    !
-    ! PARAMETERS
-    REAL(rprec), PARAMETER, PRIVATE :: tau_fast_alphas = 0.5_rprec
+
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         NONE
@@ -1126,7 +1124,7 @@ MODULE thrift_plasma_solver_mod
 
         ! get normalized chi
         CALL EZspline_interp(chi_normalized_splines(ispecies),Nr,rho_plasma_grid,aLT,chi_normalized,ier)
-        chi_external = chi_gB * chi_normalized * (Te/T)
+        chi_external = chi_gB * chi_normalized * (Te/T)**alpha_chi_external
         ! print *, chi_normalized
 
         DEALLOCATE(Bsq,chi_gB,dTdrho,T,Te,Ti,aLT,chi_normalized)
