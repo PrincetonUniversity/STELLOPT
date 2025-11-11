@@ -774,7 +774,7 @@ MODULE thrift_plasma_solver_mod
             ! Add Bremsstrahlung
             explicit_source = explicit_source - SB(ir)
             ! Add alpha power
-            explicit_source = explicit_source + S_alpha(ir)*0.8_rprec
+            explicit_source = explicit_source + S_alpha(ir)*frac_alpha_heating(1)
             !
             n_previous = plasma_N_keep(1,mytimestep_plasma_solver-1,ir)
             T_previous = plasma_T_keep(1,mytimestep_plasma_solver-1,ir)
@@ -791,10 +791,8 @@ MODULE thrift_plasma_solver_mod
                 rho = rho_plasma_grid(ir)
                 ! Add external source
                 explicit_source = S_energy_ext(1+iion,mytimestep_plasma_solver,ir)
-                ! Add alpha power to deuterium and tritium
-                IF(trim(list_of_species(1+iion)) == 'deuterium' .OR. trim(list_of_species(1+iion)) == 'tritium') THEN
-                    explicit_source = explicit_source + S_alpha(ir)*0.1_rprec
-                END IF
+                ! Add alpha power to ion
+                explicit_source = explicit_source + S_alpha(ir)*frac_alpha_heating(iion+1)
                 !
                 n_previous = plasma_N_keep(1+iion,mytimestep_plasma_solver-1,ir) 
                 T_previous = plasma_T_keep(1+iion,mytimestep_plasma_solver-1,ir)

@@ -44,7 +44,7 @@
                               external_normalized_diffusivities, &
                               Dn_ions, chi_all, N0_init_ions, T0_init_all, &
                               stiffness_beurskens, aLT_critical_beurskens, &
-                              alpha_beurskens
+                              alpha_beurskens, frac_alpha_heating
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -115,6 +115,10 @@
       stiffness_beurskens = 0.7
       aLT_critical_beurskens = 1.5
       alpha_beurskens = 1.0
+      frac_alpha_heating = 0.0
+      frac_alpha_heating(1) = 0.8
+      frac_alpha_heating(2) = 0.1
+      frac_alpha_heating(3) = 0.1
       RETURN
       END SUBROUTINE init_thrift_input
       
