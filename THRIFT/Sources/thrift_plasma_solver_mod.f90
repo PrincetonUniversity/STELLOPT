@@ -950,7 +950,7 @@ MODULE thrift_plasma_solver_mod
         IF(ANY(ISNAN(result))) CALL handle_err(THRIFT_NAN_ERR,'Pressure_Solver',mytimestep_plasma_solver)
         ! Look for negative values
         IF (ANY(result < 0.0)) THEN
-            STOP 'Negative values found on density. Exiting program...'
+            STOP 'Negative values found on pressure. Exiting program...'
         END IF
         DEALLOCATE(ipiv)
         RETURN
