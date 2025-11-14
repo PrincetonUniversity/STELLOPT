@@ -10,7 +10,7 @@ This library provides a python class for interfacing to libstell
 
 # LIBSTELL Class
 class LIBSTELL():
-	"""Class for working with VMEC equilibria
+	"""Class for working with LIBSTELL library routines (fortran interfaces via Ctypes)
 
 	"""
 	def __init__(self, parent=None):
@@ -1847,6 +1847,75 @@ class FourierRep():
 			fmn = np.broadcast_to(fmnc[k,:],(lt,mn)).T
 			f[k,:,:]=np.matmul((fmn*sinmt).T, cosnz)+np.matmul((fmn*cosmt).T, sinnz)
 		return f
+
+	def plot_RZ3D(self,r,z,phi,k,svals,*args,**kwargs):
+		"""Plot a flux surface cross section in 3D using VTK
+
+		This routine plots a cross section of flux surfaces at fixed phi
+		using the VTK library when passes a r[m], z[m], and phi [rad] arrays
+		as produced by the sfunct and cfunct functions. The user may supply a
+		list of surfaces to plot. Pass svals=-1 if the arrays only ahve one
+		radial gridpoint to plot.
+
+		Parameters
+		----------
+		r : ndarray
+			Ordered list of R verticies [m] (ns,nu)
+		z : ndarray
+			Ordered list of Z verticies [m] (ns,nu)
+		phi : ndarray
+			Phi coordiantes [rad] (nv)
+		k : int or list
+			Toroidal coordinate to plot 
+		svals : int
+			Surface to generate in ns
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		color : string (optional)
+			Surface color name, overriden by vals (default: 'red')
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D 
+		# Handle input arguments
+		plt  = kwargs.get('plot3D',None)
+		color = kwargs.get('color','red')
+		lrender = False
+		if not plt:
+			plt = PLOT3D()
+			lrender = True
+		# Figure out number of surfaces to plot
+		if type(svals) is list:
+			s = svals
+		else:
+			# Aviod plotting axis
+			if svals == 0: svals = 1
+			# Flag for plotting single surface array
+			if r.shape[0] == 1: svals = 0
+			s= [svals]
+		nr = np.size(s)
+		# Handle toroidal cut index
+		if type(k) is list:
+			kvec = k
+		else:
+			kvec = [k]
+		# Loop over radial values
+		for kdex in kvec:
+			for sdex in range(nr):
+				u = r.shape[1]
+				points_array = np.zeros((u,3))
+				points_array[:,0] = np.squeeze(r[s[sdex],:,kdex])*np.cos(phi[kdex])
+				points_array[:,1] = np.squeeze(r[s[sdex],:,kdex])*np.sin(phi[kdex])
+				points_array[:,2] = np.squeeze(z[s[sdex],:,kdex])
+				# Convert numpy array to VTK points
+				points = vtk.vtkPoints()
+				for point in points_array:
+					points.InsertNextPoint(point)
+				plt.add3Dline(points,linewidth=2,color=color)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lrender: plt.render()
 
 	def isotoro(self,r,z,phi,svals,*args,**kwargs):
 		"""Plot a surface in 3D using VTK

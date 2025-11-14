@@ -44,6 +44,10 @@ if __name__=="__main__":
 		help="Output the coils in Gourdon format.", default = False)
 	parser.add_argument("--stl", dest="heightwidth_stl",
 		help="Generate STL of coil of given width and height [m].", default = None)
+	parser.add_argument("--flip", dest="lflip", action='store_true',
+		help="Flip the sign of the coils.", default = False)
+	parser.add_argument("--reverse", dest="lreverse", action='store_true',
+		help="Flip the toroidal direction of the coil.", default = False)
 	args = parser.parse_args()
 	coils = COILSET()
 	if args.coils_file: 
@@ -81,8 +85,6 @@ if __name__=="__main__":
 			coils_new = coils.singleToMultiFilament(height=float(height),width=float(width),nheight=int(nh),nwidth=int(nw))
 			coils = coils_new
 			if args.lplot: coils.plotcoils()
-		if args.loutput: coils.write_coils_file(args.coils_file+'_new')
-		if args.lgourdon: coils.write_Gourdon_coils()
 		if args.axyz:
 			x,y,z = args.axyz.split(',')
 			ax,ay,az = coils.coilvecpot(float(x),float(y),float(z))
@@ -129,5 +131,9 @@ if __name__=="__main__":
 			z = FR.sfunct(theta,phi,zmns,xm,xn)
 			FR.isotoro(r,z,phi,0,plot3D=plt3d,lclosev=False)
 			plt3d.render()
+		if args.lflip: coils.flip()
+		if args.lreverse: coils.reverse()
+		if args.loutput: coils.write_coils_file(args.coils_file+'_new')
+		if args.lgourdon: coils.write_Gourdon_coils()
 	sys.exit(0)
 

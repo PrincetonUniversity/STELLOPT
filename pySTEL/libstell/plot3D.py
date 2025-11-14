@@ -723,6 +723,68 @@ class PLOT3D():
 		if zoom: self.camera.Zoom(zoom)
 		self.renderer.SetActiveCamera(self.camera)
 
+	def addCameraHUD(self, corner=(10, 10), font_size=16):
+		"""Implements a camera HUD in the view
+
+		This routine implements a camera HUD in the view.
+		"""
+		cam = self.renderer.GetActiveCamera()
+		interactor = self.render_window_interactor
+		# Text overlay
+		hud = vtk.vtkTextActor()
+		hud.SetDisplayPosition(*corner)
+		tp = hud.GetTextProperty()
+		tp.SetFontFamilyToCourier()       # monospaced columns
+		tp.SetFontSize(font_size)
+		tp.SetColor(1, 1, 1)
+		# If your VTK supports it, this adds a readable backdrop:
+		try:
+			tp.SetBackgroundColor(0, 0, 0)
+			tp.SetBackgroundOpacity(0.5)
+		except AttributeError:
+			pass
+
+		self.renderer.AddViewProp(hud)
+
+		def fmt3(v):
+			return f"{v[0]: .3f} {v[1]: .3f} {v[2]: .3f}"
+
+		def update_text(*_):
+			pos = cam.GetPosition()
+			fp  = cam.GetFocalPoint()
+			vu  = cam.GetViewUp()
+			dist = cam.GetDistance()
+			text = [
+				f"Pos:   {fmt3(pos)}",
+				f"Focal: {fmt3(fp)}",
+				f"Up:    {fmt3(vu)}",
+				f"Dist:  {dist:.3f}",
+			]
+			if cam.GetParallelProjection():
+				text.append(f"Parallel scale: {cam.GetParallelScale():.3f}")
+			else:
+				text.append(f"View angle: {cam.GetViewAngle():.2f}°")
+
+			hud.SetInput("\n".join(text))
+			interactor.GetRenderWindow().Render()
+
+		# Initialize now
+		update_text()
+
+		# Update during interaction and any time the camera changes
+		style = interactor.GetInteractorStyle()
+		(style or interactor).AddObserver("InteractionEvent", update_text)
+		cam.AddObserver("ModifiedEvent", update_text)
+
+		# Optional: press 'h' to toggle the HUD
+		def on_keypress(obj, evt):
+			if interactor.GetKeySym().lower() == 'h':
+				hud.SetVisibility(not hud.GetVisibility())
+				interactor.GetRenderWindow().Render()
+		interactor.AddObserver("KeyPressEvent", on_keypress)
+
+		return hud
+
 	def render(self):
 		"""Render the window
 

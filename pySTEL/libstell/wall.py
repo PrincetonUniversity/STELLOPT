@@ -153,8 +153,13 @@ class WALL():
 		f.write(self.name+" <This_is_the_vessel_file>\n")
 		rshift = 0.0
 		zshift = 0.0
+		dshift = 0.0
+		icol   = 1
+		scalf  = 0.01
+		isyt   = 1
+		isyp   = 1
 		# Note not sure what last two values in kisslinger format are
-		f.write(f"{int(nphi)} {int(npts)} {int(nfp)} {rshift} {zshift} 1.00 4\n")
+		f.write(f"{int(nphi)} {int(npts)} {int(nfp)} {rshift} {zshift} {dshift} {icol} {scalf} {isyt} {isyp}\n")
 		for phi in phiarr:
 			f.write(f"{180.0*phi/np.pi}\n")
 			nx = -np.sin(phi)
@@ -171,8 +176,10 @@ class WALL():
 			x[-1] = x[0]
 			y[-1] = y[0]
 			z[-1] = z[0]
+			r = np.sqrt(x*x+y*y)
 			for i in range(npts):
-				f.write(f"{x[i]*100.0} {y[i]*100.0} {z[i]*100.0}\n")
+				#f.write(f"{x[i]*100.0} {y[i]*100.0} {z[i]*100.0}\n")
+				f.write(f"{r[i]/scalf} {z[i]/scalf}\n")
 
 	def wallAdd(self,wall_in):
 		"""Add a wall to this wall
@@ -216,6 +223,42 @@ class WALL():
 		print(f'Removing {np.sum(mask)} bad triangles.')
 		self.faces = np.delete(self.faces,mask,axis=0)
 		self.nfaces = self.faces.shape[0]
+
+	def cut_wall_RZ(self,phi=0):
+		"""Creates an R/Z cut of the wall
+
+		This routine plots a cut of the wall at constant phi angle.
+
+		Parameters
+		----------
+		phi : float
+			Toroidal angle [rad] (default = 0)
+
+		Returns
+		----------
+		R : float
+			Major radius points along cut [m]
+		Z : float
+			Vertical points along cut [m]
+		"""
+		import meshcut
+		import numpy as np
+		# Make cut
+		nx = -np.sin(phi)
+		ny = np.cos(phi)
+		plane_orig = (0.0,0.0,0.0)
+		plane_normal = (nx,ny,0.0)
+		mesh = meshcut.cross_section(self.vertex,self.faces, \
+				plane_orig=plane_orig,plane_normal=plane_normal)
+		R_out = []
+		Z_out = []
+		for submesh in mesh:
+			R = np.sqrt(submesh[:,0]**2+submesh[:,1]**2)
+			Z = submesh[:,2]
+			if all(R > 0.0):
+				R_out.append(R)
+				Z_out.append(Z)
+		return R_out,Z_out
 
 	def plot_wall_cloud(self,ax=None):
 		"""Plots the vertices of the wall
@@ -387,25 +430,6 @@ class WALL():
 		self.vertex = np.column_stack((x,y,z))
 		self.faces = faces
 		self.laccel = False
-
-	def writeSTL(self,filename='wall.stl'):
-		"""Outputs an STL object from wall object
-
-		This routine generates an stereolithography (STL) file from
-		the wall object.
-
-		Parameters
-		----------
-		filename : str (optional)
-			Filename for output file
-		"""
-		import numpy as np
-		from stl import mesh
-		stlobj = mesh.Mesh(np.zeros(self.faces.shape[0],dtype=mesh.Mesh.dtype))
-		for i, f in enumerate(self.faces):
-			for j in range(3):
-				stlobj.vectors[i][j] = self.vertex[f[j],:]
-		stlobj.save(filename)
 
 	def refineWall(self,dlmin=0.001,dlmax=0.10,info=1):
 		"""Remeshes a wall using GMSH

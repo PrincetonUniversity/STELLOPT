@@ -1142,6 +1142,13 @@ class MyApp(QMainWindow):
 				self.ax2.set_xlabel('Toroidal Angle [rad]')
 				self.ax2.set_ylabel('Poloidal Angle [rad]')
 				_plt.colorbar(hmesh,label=r'$L_{\nabla B}$',ax=self.ax2)
+			elif hasattr(self,'gist_files'):
+				if plot_name in self.gist_files:
+					self.fig2.clf()
+					self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+					self.ui.ComboBoxOPTplot_surf.clear()
+					self.gist_data = gist.GIST()
+					self.gist_data.read_gist(test_file)
 
 
 	def UpdateBoozerSpec(self):

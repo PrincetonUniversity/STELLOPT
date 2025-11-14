@@ -26,6 +26,8 @@ if __name__=="__main__":
 		help="Plot the wall shinethrough.", default = False)
 	parser.add_argument("--plottransport", dest="lplottrans", action='store_true',
 		help="Plot the transport quantities.", default = False)
+	parser.add_argument("--plotindex", dest="i3d",
+		help="Plot all markers at a given orbit index in 3D.", default = None, type=int)
 	parser.add_argument('--beams', nargs='+', dest="beams",
 		help="List of beams to include.", default = None, type=int)
 	parser.add_argument("--plotwall", dest="lplotwall", action='store_true',
@@ -97,10 +99,15 @@ if __name__=="__main__":
 			ax.set_ylabel(r'Potential [kV]',color='k')
 			#ax2.set_ylabel(r'E_r (dV/ds) [kV/m^2]',color='r')
 			ax=fig.add_subplot(223)
-			s, births = beam_data.calcDepo(ns=127)
+			s, births = beam_data.calcDepo(ns=127,beams=args.beams)
 			ax.plot(np.sqrt(s),np.sum(births,axis=0)/1E19,'k')
 			ax.set_xlabel('r/a')
 			ax.set_ylabel(r'Birth Rate x10^{19} [$part/m^{-3}s$]')
+			pyplot.show()
+		if args.i3d:
+			plt3d = PLOT3D()
+			beam_data.plot_index3d(args.i3d,plot3D=plt3d,pointsize=0.1)
+			plt3d.render()
 		if type(args.brz_index_phi) is not type(None):
 			fig,ax = pyplot.subplots(2,2,sharey=True,figsize=(1024*px,768*px))
 			j = args.brz_index_phi
@@ -138,9 +145,6 @@ if __name__=="__main__":
 			h3=ax[1,1].pcolormesh(x,y,np.squeeze(b[:,:,j]).T,cmap='jet',shading='gouraud')
 			ax[1,1].set_xlabel('R [m]'); ax[1,1].set_ylabel(r'$\phi$ [rad]'); 
 			h3.set_clim(vmin=0.0,vmax=10.0); fig.colorbar(h3,label=r'$|B|$ [T]')
-			pyplot.show()
-
-
 			pyplot.show()
 
 	sys.exit(0)

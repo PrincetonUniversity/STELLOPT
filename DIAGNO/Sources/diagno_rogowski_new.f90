@@ -33,6 +33,8 @@
 !  X/Y/Z   : Coordinates of points defining loop (should not close)
 !  EFF_AREA: Coefficient to multiply B.dl by (set to zero to start next
 !                   segment)
+!            This should be the area of the small loops (A) times the
+!            number of loops divided by the coil length (or loops/m).
 !
 !-----------------------------------------------------------------------
       SUBROUTINE diagno_rogowski_new

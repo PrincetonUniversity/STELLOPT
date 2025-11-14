@@ -195,11 +195,11 @@ class TERPSICHORE(FourierRep):
 		# Comput LSSL
 		mmaxdf=2*mm
 		nmaxdf=2*max(abs(nmin),nmax)
-		lssl = self._compute_lssx(mm,nmin,nmax,mmaxdf,nmaxdf,lfrz)
+		lssl = self._compute_lssl(mm,nmin,nmax,mmaxdf,nmaxdf,lfrz)
 		# Compute LSSD 
 		mmaxdf=2*mms
 		nmaxdf=2*max(abs(nsmin),nsmax)
-		lssd = self._compute_lssx(mms,nsmin,nsmax,mmaxdf,nmaxdf,lfrs)
+		lssd = self._compute_lssd(mms,nsmin,nsmax,mmaxdf,nmaxdf,lfrs,vmec.nfp)
 		# Now get mmax and nmax
 		mmaxdf=max(2*mms,2*mm)
 		nmaxdf=max(2*max(abs(nsmin),nsmax),2*max(abs(nmin),nmax))
@@ -213,22 +213,21 @@ class TERPSICHORE(FourierRep):
 		print(f'       INTEGER :: NJK = {nj*nk:6d}')
 		print(f'       INTEGER :: MLMNV = {vmec.mnmax_nyq:4d}')
 		print(f'       INTEGER :: MLMNB = {mlmnb:4d}')
-		print(f'       INTEGER :: MLMNS = {mlmns:4d}')
 		print(f'       INTEGER :: LSSL = {lssl:4d}')
-		print(f'       INTEGER :: LSSD = {lssd:4d}')
 		print(f'       INTEGER :: MMAXDF = {mmaxdf:6d}')
 		print(f'       INTEGER :: NMAXDF = {nmaxdf:6d}')
 		print(f'       INTEGER :: ND = {ni+ivac:4d}')
 		print(f'       INTEGER :: ND1 = {ni+ivac+1:4d}')
+		print(f'       INTEGER :: LSSD = {lssd:4d}')
+		print(f'       INTEGER :: MLMNS = {mlmns:4d}')
 		print(f'       INTEGER :: MD = {mlmns:4d}')
 		print(f'       INTEGER :: MDY = {mlmns:4d}')
 		print(f'       INTEGER :: NA = {2*mlmns*(ni+ivac)+mlmns:6d}')
 
-	def _compute_lssx(self,mm,nmin,nmax,mmaxdf,nmaxdf,lfrz):
-		"""Computes the LSSL/D term
+	def _compute_lssl(self,mm,nmin,nmax,mmaxdf,nmaxdf,lfrz):
+		"""Computes the LSSL
 
-		Computes the LSSL term tprgl0.module_ap.f line 825
-		Computes the LSSL term tprgl0.module_ap.f line 1380
+		Computes the LSSL term tprgl0.module_ap.f line 883
 		"""
 		import numpy as np
 		# Compute ML and NL
@@ -252,6 +251,8 @@ class TERPSICHORE(FourierRep):
 				if (lfx[mdex,ndex] <= 0):
 					lfx[mdex,ndex] = 1
 					lss = lss + 1
+		for lc in range(lmnl):
+			for lr in range(lmnl):
 				mxdif = ml[lc] + ml[lr]
 				nxdif = nl[lc] + nl[lr]
 				mdex = mxdif + mmaxdf
@@ -259,6 +260,45 @@ class TERPSICHORE(FourierRep):
 				if (lfx[mdex,ndex] <= 0):
 					lfx[mdex,ndex] = 1
 					lss = lss + 1
+		return lss
+
+	def _compute_lssd(self,mm,nmin,nmax,mmaxdf,nmaxdf,lfrz,nfp):
+		"""Computes the LSSD
+
+		Computes the LSSD term tprgl0.module_ap.f line 1412
+		"""
+		import numpy as np
+		# Compute ML and NL
+		lmns = 0; ms=[]; ns=[]
+		for n in range(nmin,nmax+1):
+			for m in range(mm+1):
+				if lfrz[m,n-nmin]>0:
+					lmns = lmns + 1
+					ms.append(m)
+					ns.append(n)
+		# Now compute lss mxdif=[-M,M] nxdif=[-2N,2N]
+		lfx = np.zeros((2*mmaxdf+1,4*nmaxdf+1),dtype=int)
+		lss = 0
+		for lc in range(lmns):
+			for lr in range(lmns):
+				mxdif = ms[lc] - ms[lr]
+				nxdif = ns[lc] - ns[lr]
+				mdex = mxdif + mmaxdf
+				ndex = nxdif + 2*nmaxdf
+				if (np.mod(nxdif,nfp) == 0):
+					if (lfx[mdex,ndex] <= 0):
+						lfx[mdex,ndex] = 1
+						lss = lss + 1
+		for lc in range(lmns):
+			for lr in range(lmns):
+				mxdif = ms[lc] + ms[lr]
+				nxdif = ns[lc] + ns[lr]
+				mdex = mxdif + mmaxdf
+				ndex = nxdif + 2*nmaxdf
+				if (np.mod(nxdif,nfp) == 0):
+					if (lfx[mdex,ndex] <= 0):
+						lfx[mdex,ndex] = 1
+						lss = lss + 1
 		return lss
 
 	def read_terpsichore_17(self,filename='fort.17'):
