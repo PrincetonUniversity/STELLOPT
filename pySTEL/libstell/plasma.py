@@ -398,7 +398,7 @@ class PLASMA:
         # vtest and rho must have the same size
         # if vtest is not provided, it is assumed that vtest=vth
         
-        from collisions import COLLISIONS
+        from libstell.collisions import COLLISIONS
 
         coll = COLLISIONS()
         
@@ -720,6 +720,7 @@ class PLASMA:
         
         _, ax = plt.subplots(figsize=(11,8))
 
+        nu_star_species = {}
         for species in self.list_of_species:
             vth = self.get_thermal_speed(species,roa)
             nu = self.get_collisionality(species,roa,vtest=vth)
@@ -727,6 +728,8 @@ class PLASMA:
             nu_star = (nu/vth)*(R0/iota) 
             
             ax.plot(roa,nu_star,'-',label=f'{species}')
+            
+            nu_star_species[species] = nu_star
         
         ax.grid()
         ax.set_xlabel('r/a')
@@ -739,7 +742,7 @@ class PLASMA:
         else:
             plt.close()
         
-        return nu_star
+        return roa,nu_star_species
     
     def plot_density(self,*species):
         # plots density profile
