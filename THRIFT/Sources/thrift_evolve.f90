@@ -17,7 +17,7 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      LOGICAL :: lfirst_pass, lfirst_sub_pass
+      LOGICAL :: lfirst_pass
       INTEGER :: i, ier
       REAL(rprec) :: alpha, rho, s, stime, etime, time_vmec, time_bootstrap, &
       time_pressure, stime_total, etime_total
@@ -86,7 +86,6 @@
 
          ! Converge Source Currents
          deltaj = 10*jtol; nsubsteps = 0; eq_beta = 1E-9
-         lfirst_sub_pass = .TRUE.
          DO WHILE (ANY(ABS(deltaj) > jtol))
 
             ! Update Substeps
@@ -104,7 +103,7 @@
 
             ! Update equilbrium current
             IF (lverbj) WRITE(6,*) "Updating equilibrium current"
-            CALL thrift_equil_j(lfirst_sub_pass)
+            CALL thrift_equil_j
 
             ! Run equilibrium
             IF (lverbj) WRITE(6,*) "Running equilibrium"
@@ -225,7 +224,6 @@
 
             ! End of first pass
             lfirst_pass = .FALSE.
-            lfirst_sub_pass = .FALSE.
 
          END DO
 

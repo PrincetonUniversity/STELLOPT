@@ -4,7 +4,7 @@
 !     Date:          11/XX/2022
 !     Description:   This subroutine updates the equilibrium dI/ds
 !-----------------------------------------------------------------------
-      SUBROUTINE thrift_equil_j(lfirst_pass)
+      SUBROUTINE thrift_equil_j
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -21,7 +21,6 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      LOGICAL, INTENT(IN) :: lfirst_pass
       INTEGER :: i, ier, itime
       INTEGER :: bcs0(2)
       REAL(rprec) :: s_val, j_val, temp
@@ -31,16 +30,6 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 
-      ! If first pass and first timestep just set everything to zero
-      !IF (lfirst_pass and mytimestep==1) THEN
-      !   IF (lvmec) THEN
-      !      NCURR  = 1
-      !      CURTOR = 0
-      !   END IF
-      !   RETURN
-      !END IF
-
-      ! Check which values to use; can be simplified but split to be explicit
       ! If first pass then just set everything to previous timestep
       IF (mytimestep.eq.1) THEN
          itime = mytimestep
