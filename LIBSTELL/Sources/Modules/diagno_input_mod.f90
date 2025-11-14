@@ -89,6 +89,8 @@
       luse_extcur    = .TRUE.  ! Do this so we default to using the whole coil if the user forgets
       lapoints_accurate_output = .false. ! default for backward compatibility
       lbpoints_accurate_output = .false. ! default for backward compatibility
+      ! Just return if called from python
+      IF (filename == 'CALLED_FROM_PYTHON') RETURN
       ! Read namelist
       istat=0; iunit = 25
       INQUIRE(FILE='input.'//TRIM(filename),EXIST=lexist)

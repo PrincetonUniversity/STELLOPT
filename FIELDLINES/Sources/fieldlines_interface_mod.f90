@@ -103,7 +103,8 @@ CONTAINS
       ierr_mpi = 0; CALL MPI_INFO_FREE(mpi_info_fieldlines, ierr_mpi)
       ierr_mpi = 0; CALL MPI_BARRIER(MPI_COMM_FIELDLINES, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'fieldlines_cleanup_1', ierr_mpi)
-      ierr_mpi = 0; CALL MPI_COMM_FREE(MPI_COMM_SHARMEM, ierr_mpi)
+      ! Only FREE MPI_COMM_SHARMEM if not called from another routine.
+      ierr_mpi = 0; IF (lfinalize) CALL MPI_COMM_FREE(MPI_COMM_SHARMEM, ierr_mpi)
       ierr_mpi = 0; CALL MPI_COMM_FREE(MPI_COMM_FIELDLINES, ierr_mpi)
       ierr_mpi = 0 
       IF (lfinalize) CALL MPI_FINALIZE(ierr_mpi)

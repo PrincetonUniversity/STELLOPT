@@ -35,8 +35,8 @@ class STELLOPT():
 			'ORBIT', 'HELICITY', 'HELICITY_FULL', 'JSTAR', 'RESJAC',   \
 			'COIL_BNORM', 'REGCOIL_CHI2_B', 'CURVATURE_P2', 'GAMMA_C', \
 			'KINK', 'QUASIISO', 'B10B11', 'TOTALBOOTSTRAP', \
-			'BNORMAL', 'COIL_CURVATURE', 'COIL_TORSION', \
-			'COILCOIL_DISTANCE', 'LGRADB']
+			'BNORMAL', 'COIL_CURVATURE', 'COIL_TORSION', 'COIL_LENGTH',\
+			'COILCOIL_DISTANCE','BNMNS','BNMNC','BAXIS','LGRADB']
 
 	def read_stellopt_map(self,filename='map.dat'):
 		"""Reads a STELLOPT MAP output file
@@ -164,8 +164,99 @@ class STELLOPT():
 		mtargets  = int(numbers[0])
 		nvars     = int(numbers[1])
 		jac       = numbers[2:]
-		jac2d       = np.reshape(jac,(nvars,mtargets)).T
+		jac2d       = np.reshape(jac,(mtargets,nvars))
 		self.jac2d  = jac2d
+
+	def read_stellopt_bnorm_real(self,filename):
+		"""Reads the STELLOPT bnorm_real output file
+
+		This subroutine reads the STELLOPT bnorm_real output files.
+		They are generated when doing bnormal surface targeting.
+
+		Parameters
+		----------
+		file : str
+			Path to bnorm_real file.
+		"""
+		import numpy as np
+		import re
+		f = open(filename,'r')
+		content = f.read()
+		f.close()
+		numbers = re.findall(r'-?\d+\.?\d*(?:[eE][+-]?\d+)?', content)
+		numbers = [float(num) for num in numbers]
+		nuv  = int(numbers[0])
+		data = numbers[1:]
+		self.bnorm_real = np.reshape(data,(nuv,14)).T
+
+	def read_stellopt_coil_curvature(self,filename):
+		"""Reads the STELLOPT coil_curvature output file.
+
+		This subroutine reads the STELLOPT coil_curvature output 
+		files. They are generated when doing coil optimization.
+
+		Parameters
+		----------
+		file : str
+			Path to bnorm_real file.
+		"""
+		import numpy as np
+		import re
+		f = open(filename,'r')
+		content = f.read()
+		f.close()
+		numbers = re.findall(r'-?\d+\.?\d*(?:[eE][+-]?\d+)?', content)
+		numbers = [float(num) for num in numbers]
+		ncoils = int(numbers[0])
+		nw = int(numbers[1])
+		nh = int(numbers[2])
+		npts  = int(numbers[3])
+		data = numbers[4:]
+		self.coil_curvature = np.reshape(data,(ncoils,nw,nh,npts,16))
+
+	def read_stellopt_bnorm_harm(self,filename):
+		"""Reads the STELLOPT bnorm_harm output file
+
+		This subroutine reads the STELLOPT bnorm_harm output files.
+		They are generated when doing bnormal surface targeting.
+
+		Parameters
+		----------
+		file : str
+			Path to bnorm_real file.
+		"""
+		import numpy as np
+		import re
+		f = open(filename,'r')
+		content = f.read()
+		f.close()
+		numbers = re.findall(r'-?\d+\.?\d*(?:[eE][+-]?\d+)?', content)
+		numbers = [float(num) for num in numbers]
+		mnmax  = int(numbers[0])
+		data = numbers[1:]
+		self.bnorm_harm = np.reshape(data,(mnmax,5)).T
+
+	def read_stellopt_baxis(self,filename):
+		"""Reads the STELLOPT coil_baxis_real output file.
+
+		This subroutine reads the STELLOPT coil_baxis_real output 
+		files. They are generated when doing coil optimization.
+
+		Parameters
+		----------
+		file : str
+			Path to bnorm_real file.
+		"""
+		import numpy as np
+		import re
+		f = open(filename,'r')
+		content = f.read()
+		f.close()
+		numbers = re.findall(r'-?\d+\.?\d*(?:[eE][+-]?\d+)?', content)
+		numbers = [float(num) for num in numbers]
+		naxis  = int(numbers[0])
+		data = numbers[1:]
+		self.baxis_real = np.reshape(data,(naxis,12)).T
 
 	def read_stellopt_xvec(self,filename='xvec.dat'):
 		"""Reads a STELLOPT xvec output file
@@ -376,7 +467,180 @@ class STELLOPT():
 		# plot if axes not passed
 		if lplotnow: plt.show()
 
+	def plot_stellopt_coil_curvature(self,plot3D=None,cmin=None):
+		"""Plots coil curvature in 3D.
 
+		This routine plots the curvature of the coil_curvature file.
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		cmin : float (optional)
+			Minimum value of color scale.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Get the array shapes
+		ncoils = self.coil_curvature.shape[0]
+		nw = self.coil_curvature.shape[1]
+		nh = self.coil_curvature.shape[2]
+		npts = self.coil_curvature.shape[3]
+		# Get the min and max values
+		cmax=-1E20; lsetclim=False
+		if type(cmin) != type(None):
+			cmin = 1E20
+			for i in range(ncoils):
+				j = 0
+				cmin = min(cmin,min(self.coil_curvature[j,:,:,:,14]))
+			lsetclim = True
+		for j in range(ncoils):
+			for k in range(nw):
+				for l in range(nh):
+					points_array = np.zeros((npts,3))
+					points_array[:,0] = self.coil_curvature[j,k,l,:,2]
+					points_array[:,1] = self.coil_curvature[j,k,l,:,3]
+					points_array[:,2] = self.coil_curvature[j,k,l,:,4]
+					scalar = plt.valuesToScalar(self.coil_curvature[j,k,l,:,14])
+					# Convert numpy array to VTK points
+					points = vtk.vtkPoints()
+					for point in points_array:
+						points.InsertNextPoint(point)
+					# Add to render
+					plt.add3Dline(points,scalars=scalar,linewidth=3)
+		# Set color limits
+		if lsetclim: plt.setClim(cmin,cmax)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Colorbar
+		plt.colorbar(title='Coil Curvature')
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plot_stellopt_coil_torsion(self,plot3D=None,cmin=None):
+		"""Plots coil torsion in 3D.
+
+		This routine plots the torsion of the coil_curvature file.
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		cmin : float (optional)
+			Minimum value of color scale.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Get the array shapes
+		ncoils = self.coil_curvature.shape[0]
+		nw = self.coil_curvature.shape[1]
+		nh = self.coil_curvature.shape[2]
+		npts = self.coil_curvature.shape[3]
+		# Get the min and max values
+		cmax=-1E20; lsetclim=False
+		if type(cmin) != type(None):
+			cmin = 1E20
+			for i in range(ncoils):
+				j = 0
+				cmin = min(cmin,min(self.coil_curvature[j,:,:,:,15]))
+			lsetclim = True
+		for j in range(ncoils):
+			for k in range(nw):
+				for l in range(nh):
+					points_array = np.zeros((npts,3))
+					points_array[:,0] = self.coil_curvature[j,k,l,:,2]
+					points_array[:,1] = self.coil_curvature[j,k,l,:,3]
+					points_array[:,2] = self.coil_curvature[j,k,l,:,4]
+					scalar = plt.valuesToScalar(self.coil_curvature[j,k,l,:,15])
+					# Convert numpy array to VTK points
+					points = vtk.vtkPoints()
+					for point in points_array:
+						points.InsertNextPoint(point)
+					# Add to render
+					plt.add3Dline(points,scalars=scalar,linewidth=3)
+		# Set color limits
+		if lsetclim: plt.setClim(cmin,cmax)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Colorbar
+		plt.colorbar(title='Coil Torsion')
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plot_stellopt_baxis(self,plot3D=None):
+		"""Plots the baxis metric
+
+		This routine plots the baxis metric of the baxis_real file.
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		cmin : float (optional)
+			Minimum value of color scale.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		npts = self.baxis_real.shape[1]
+		points_array = np.zeros((npts,3))
+		vector_array = np.zeros((npts,3))
+		r = self.baxis_real[3,:]
+		z = self.baxis_real[4,:]
+		p = self.baxis_real[2,:]
+		nx = self.baxis_real[5,:]
+		ny = self.baxis_real[6,:]
+		nz = self.baxis_real[7,:]
+		bx = self.baxis_real[8,:]
+		by = self.baxis_real[9,:]
+		bz = self.baxis_real[10,:]
+		bdotn = bx*nx+by*ny+bz*nz
+		bx = bx - bdotn*nx
+		by = by - bdotn*ny
+		bz = bz - bdotn*nz
+		b = self.baxis_real[11,:] # Bc.N/Bc
+		points_array[:,0] = r*np.cos(p)
+		points_array[:,1] = r*np.sin(p)
+		points_array[:,2] = z
+		vector_array[:,0] = bx
+		vector_array[:,1] = by
+		vector_array[:,2] = bz
+		points = vtk.vtkPoints()
+		scalar = plt.valuesToScalar(b)
+		vector = plt.vectorToVector(vector_array)
+		for point in points_array:
+			points.InsertNextPoint(point)
+		plt.add3Dline(points,linewidth=3,scalars=scalar)
+		plt.add3Dvector(points,vector)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Colorbar
+		plt.colorbar(title=r'$\vec{B}_{coil}\cdot\hat{n}/B_{coil}$')
+		# Render if requested
+		if lplotnow: plt.render()
 
 # STELLOPT Input Class
 class STELLOPT_INPUT():

@@ -462,8 +462,8 @@
                IF (ALLOCATED(bmnc_b)) DEALLOCATE(bmnc_b)
                IF (ALLOCATED(bmns_b)) DEALLOCATE(bmns_b)
                CALL FLUSH(ians)
-               CLOSE(UNIT=ians,STATUS='DELETE')
-               CALL deallocate_all
+               CLOSE(UNIT=ians,STATUS='DELETE',ERR=327)
+ 327           CALL deallocate_all
                RETURN
             END IF
 !DEC$ ENDIF
@@ -494,7 +494,6 @@
       END SELECT
       IF (lscreen) WRITE(6,'(a)') ' -------------------  BOOTSJ BOOTSTRAP CALCULATION DONE  ---------------------'
       RETURN
-  90  format(5e16.8)
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------

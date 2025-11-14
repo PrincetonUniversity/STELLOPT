@@ -1,5 +1,31 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_generate_coilsurf.o : \
+      stellopt_runtime.o  \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(NESCOIL_DIR)/$(LOCTYPE)/nescoil_stellopt_mod.o \
+      $(BNORM_DIR)/$(LOCTYPE)/neswrite.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o 
+
+chisq_coil_baxis.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o
+
+chisq_bnmns.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o
+
+chisq_bnmnc.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o
+
 chisq_lgradb.o : \
       stellopt_runtime.o \
       equil_vals.o \
@@ -10,19 +36,33 @@ chisq_coil_curvature.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
-      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o 
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o 
+
+chisq_coil_length.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
+      $(LIB_DIR)/$(LOCTYPE)/vsvd0.o 
 
 chisq_coil_torsion.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
-      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o 
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o 
 
 chisq_coilcoil_distance.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/biotsavart.o 
+
+stellopt_flines_mod.o : \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o
 
 chisq_bnormal.o : \
       stellopt_runtime.o \
@@ -979,22 +1019,4 @@ chisq_template.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o
 
 chisq_jinvariant.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coillen.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilsep.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilcrv.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilself.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coiltorvar.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilrect.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 

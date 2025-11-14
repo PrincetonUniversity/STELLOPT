@@ -1,4 +1,10 @@
 ObjectFiles = \
+chisq_coil_length.o \
+stellopt_generate_coilsurf.o \
+chisq_coil_baxis.o \
+stellopt_flines_mod.o \
+chisq_bnmnc.o \
+chisq_bnmns.o \
 chisq_dkes_11.o \
 chisq_dkes_31.o \
 chisq_dkes_33.o \

@@ -1,5 +1,7 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
 
+conrec.o :
+
 spline_coils_mod.o : \
       ezspline.o \
       ezspline_obj.o \
