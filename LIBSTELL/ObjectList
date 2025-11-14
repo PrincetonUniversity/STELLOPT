@@ -1,4 +1,5 @@
 ObjectFiles = \
+conrec.o \
 spline_coils_mod.o \
 fusion_mod.o \
 collision_operators.o \

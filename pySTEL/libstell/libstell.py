@@ -800,6 +800,14 @@ class LIBSTELL():
 		get_constant.argtypes = None
 		get_constant.restype=ct.c_int
 		bigno = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getncoilsmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ncoilsmax = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getnknotscoilsmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		nknotscoilsmax = get_constant()
 		# Call the initialization routine
 		module_name = self.s1+'stellopt_input_mod_'+self.s2
 		init_stellopt_input = getattr(self.libstell,module_name+'_init_stellopt_input'+self.s3)
@@ -830,7 +838,9 @@ class LIBSTELL():
 		module_name = self.s1+'stellopt_vars_'+self.s2
 		booList=['lphiedge_opt', 'lcurtor_opt', 'lpscale_opt', \
 			'lbcrit_opt', 'lmix_ece_opt', 'lxval_opt', 'lyval_opt', \
-			 'lxics_v0_opt','mango_bound_constraints']
+			 'lxics_v0_opt','mango_bound_constraints',\
+			 'lcreate_coils','lfix_rho_coil','lfix_theta_coil',\
+			'lfix_zeta_coil','lpoincare']
 		booLen=[1]*len(booList)
 		booList.extend(['lextcur_opt','laphi_opt', 'lam_opt', \
 					'lac_opt', 'lai_opt','lah_opt', 'lat_opt','lne_opt', \
@@ -843,9 +853,11 @@ class LIBSTELL():
 		booLen.extend([(ndatafmax,1)]*18)
 		booList.extend(['laxis_opt','lbound_opt','lrho_opt','lmode_opt','ldeltamn_opt'])
 		booLen.extend([(ntord+1,1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,2*mpol1d+1)])
+		booList.extend([('lcoil_kts_opt')])
+		booLen.extend([(ncoilsmax,nknotscoilsmax)])
 		booList.extend(['lrosenbrock_x_opt'])
 		booLen.extend([(20,1)])
-		intList=['sfincs_min_procs', 'vboot_max_iterations']
+		intList=['sfincs_min_procs', 'vboot_max_iterations','nw_coil','nh_coil']
 		intLen=[1]*len(intList)
 		realList=['dphiedge_opt', 'dcurtor_opt', 'dbcrit_opt', \
 			'dpscale_opt', 'dmix_ece_opt', 'dxval_opt', 'dyval_opt', \
@@ -856,7 +868,8 @@ class LIBSTELL():
 			'phiedge_max', 'curtor_max', 'bcrit_max', \
 			'pscale_max', 'mix_ece_max', 'xval_max', 'yval_max', \
 			'xics_v0_max', \
-			'mix_ece', 'xval', 'yval', 'xics_v0']
+			'mix_ece', 'xval', 'yval', 'xics_v0','vboot_tolerance',\
+			'width_coil','height_coil']
 		realLen=[1]*len(realList)
 		realList.extend(['dextcur_opt','extcur_min','extcur_max'])
 		realLen.extend([(nigroup,1)]*3)
@@ -895,6 +908,10 @@ class LIBSTELL():
 		realLen.extend([(2*ntord+1,2*mpol1d+1)]*4)
 		realList.extend(['drosenbrock_x_opt','rosenbrock_x','rosenbrock_x_min','rosenbrock_x_max'])
 		realLen.extend([(20,1)]*4)
+		realList.extend(['dcoil_kts_opt','rho_coil_kts','rho_coil_kts_min','rho_coil_kts_max',\
+			'theta_coil_kts','theta_coil_kts_min','theta_coil_kts_max',\
+			'zeta_coil_kts','zeta_coil_kts_min','zeta_coil_kts_max'])
+		realLen.extend([(ncoilsmax,nknotscoilsmax)]*10)
 		charList=['sfincs_er_option', 'equil_type', 'te_type', 'ne_type', \
 			'ti_type', 'th_type', 'beamj_type','bootj_type','zeff_type','emis_xics_type',\
 			'bootcalc_type','phi_type']
@@ -909,7 +926,7 @@ class LIBSTELL():
 		booLen.extend([(nsd,1),(512,1)])
 		intList=['mboz', 'nboz', 'numjstar', 'nz_txport', 'nalpha_txport', 'nruns_dkes',\
 			'nu_orbit', 'nv_orbit', 'np_orbit', 'mlmnb_kink', 'ivac_kink', 'mmaxdf_kink', \
-			'nmaxdf_kink', 'nra_ece', 'nphi_ece']
+			'nmaxdf_kink', 'nra_ece', 'nphi_ece','nu_bnormal','nv_bnormal']
 		intLen=[1]*len(intList)
 		intList.extend(['mlmns_kink', 'lssl_kink', 'lssd_kink','nj_kink','nk_kink'])
 		intLen.extend([(16,1)]*5)
@@ -923,6 +940,9 @@ class LIBSTELL():
 			'phi_kappa_box', 'target_kappa_avg', 'sigma_kappa_avg', 'target_x', 'sigma_x' ,'target_y', \
 			'sigma_y', 'qm_ratio', 'cutoff_te_line', 'target_vessel', 'sigma_vessel', 'alpha_start_txport', \
 			'alpha_end_txport', 'nu_dkes_erdiff', 'ep_dkes_erdiff', 'em_dkes_erdiff', 'mass_orbit', 'z_orbit', \
+			'target_bnormal','sigma_bnormal', 'target_bnmns', 'sigma_bnmns', 'target_bnmnc', 'sigma_bnmnc', \
+			'target_coil_curvature','sigma_coil_curvature','target_coil_torsion','sigma_coil_torsion',\
+			'target_coilcoil_distance','sigma_coilcoil_distance', \
 			'target_curvature_p2', 'sigma_curvature_p2']
 		realLen=[1]*len(realList)
 		realList.extend(['target_rosenbrock_f','sigma_rosenbrock_f'])

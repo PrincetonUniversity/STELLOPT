@@ -16,7 +16,6 @@
       USE beams3d_grid, ONLY: raxis,phiaxis,zaxis, nr, nphi, nz, &
                                  rmin, rmax, zmin, zmax, phimin, &
                                  phimax, B_R, B_Z, B_PHI, &
-                                 BR_SPL, BPHI_SPL, BZ_SPL, &
                                  BR4D, BPHI4D, BZ4D, &
                                  win_BR4D, win_BPHI4D, win_BZ4D, &
                                  small, eps1, eps2, eps3
@@ -28,6 +27,8 @@
       USE mpi_params  
       USE mpi_inc      
       USE mpi_sharmem
+      USE EZspline
+      USE EZspline_obj
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -43,6 +44,7 @@
       INTEGER :: numprocs_local, mylocalid, mymasterid
       INTEGER :: MPI_COMM_MUSHARE, MPI_COMM_MUMASTER
       LOGICAL :: lismaster, lissubmaster
+      TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------

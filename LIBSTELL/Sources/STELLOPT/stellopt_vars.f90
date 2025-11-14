@@ -14,7 +14,8 @@
 !-----------------------------------------------------------------------
       USE vparams, ONLY: ndatafmax, mpol1d, ntord 
       USE vsvd0
-      USE stellopt_globals, ONLY : maxwindsurf
+      USE stellopt_globals, ONLY : maxwindsurf, NCOILS_MAX, &
+        NKNOTS_COILS_MAX
 !-----------------------------------------------------------------------
 !     Module Variables
 !            nfunc_max          Maximum number of function evaluations
@@ -169,9 +170,20 @@
       REAL(rprec), DIMENSION(1:rosenbrock_dim)  ::  Rosenbrock_X_min
       REAL(rprec), DIMENSION(1:rosenbrock_dim)  ::  Rosenbrock_X_max
 
-      ! Varibles for defining the coils
-      INTEGER, PARAMETER :: NCOILS_MAX = 8
-      INTEGER, PARAMETER :: NKNOTS_COILS_MAX = 20
+      ! Variables for defining a winding surface
+      INTEGER, PARAMETER :: NMAX_CS = 24
+      INTEGER, PARAMETER :: MMAX_CS = 24
+      LOGICAL :: lcreate_coilsurf
+      LOGICAL, DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: LCOILSURF_OPT
+      REAL(rprec), DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: DCOILSURF_OPT
+      REAL(rprec), DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: RBC_COILSURF
+      REAL(rprec), DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: RBC_COILSURF_MIN
+      REAL(rprec), DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: RBC_COILSURF_MAX
+      REAL(rprec), DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: ZBS_COILSURF
+      REAL(rprec), DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: ZBS_COILSURF_MIN
+      REAL(rprec), DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: ZBS_COILSURF_MAX
+
+      ! Variables for defining the coils
       LOGICAL :: lcreate_coils, lfix_rho_coil, lfix_theta_coil, lfix_zeta_coil, lpoincare
       INTEGER :: nw_coil
       INTEGER :: nh_coil
@@ -248,6 +260,8 @@
       INTEGER, PARAMETER ::  irho_coil_kts = 925
       INTEGER, PARAMETER ::  itheta_coil_kts = 926
       INTEGER, PARAMETER ::  izeta_coil_kts = 927
+      INTEGER, PARAMETER ::  irbc_coilsurf = 928
+      INTEGER, PARAMETER ::  izbs_coilsurf = 929
       
       REAL(rprec), PARAMETER :: ne_norm = 1.0E18
       
@@ -471,6 +485,12 @@
          ! Zeta coil spline knots
          CASE(izeta_coil_kts)
             WRITE(iunit,out_format_2DB) 'Zeta_COIL_KTS(',var_dex1,',',var_dex2,'): Coil Zeta spline knots'
+         ! RBC Coil Surface
+         CASE(irbc_coilsurf)
+            WRITE(iunit,out_format_2DB) 'RBC_COILSURF(',var_dex1,',',var_dex2,'): Radial Coil Surface Boundary Harmonics'
+         ! ZBS Coil Surface
+         CASE(izbs_coilsurf)
+            WRITE(iunit,out_format_2DB) 'ZBS_COILSURF(',var_dex1,',',var_dex2,'): Vertical Coil Surface Boundary Harmonics'
       END SELECT
       END SUBROUTINE write_vars
 

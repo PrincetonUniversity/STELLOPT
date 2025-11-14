@@ -367,6 +367,9 @@
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
                          target_Rosenbrock_F, sigma_Rosenbrock_F, &
                          target_Rosenbrock2D, sigma_Rosenbrock2D, &
+                         lcoilsurf_opt, dcoilsurf_opt, &
+                         rbc_coilsurf, rbc_coilsurf_min, rbc_coilsurf_max,&
+                         zbs_coilsurf, zbs_coilsurf_min, zbs_coilsurf_max,&
                          lcoil_kts_opt, dcoil_kts_opt, &
                          rho_coil_kts, rho_coil_kts_min, rho_coil_kts_max, &
                          theta_coil_kts, theta_coil_kts_min, theta_coil_kts_max, &
@@ -375,9 +378,12 @@
                          lfix_rho_coil, lfix_theta_coil, lfix_zeta_coil, lpoincare, &
                          nu_bnormal, nv_bnormal, &
                          target_bnormal, sigma_bnormal, &
+                         target_bnmns, sigma_bnmns, target_bnmnc, sigma_bnmnc,  &
                          target_coil_curvature, sigma_coil_curvature, &
                          target_coil_torsion, sigma_coil_torsion, &
-                         target_coilcoil_distance, sigma_coilcoil_distance
+                         target_coilcoil_distance, sigma_coilcoil_distance, &
+                         target_coil_baxis, sigma_coil_baxis, &
+                         target_coil_length, sigma_coil_length
        
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -455,7 +461,8 @@
       lpoincare           = .FALSE.
       lfix_rho_coil       = .FALSE.
       lfix_theta_coil     = .FALSE.
-      lfix_zeta_coil       = .FALSE.
+      lfix_zeta_coil      = .FALSE.
+      lcoilsurf_opt(:,:)  = .FALSE.
       dphiedge_opt    = -1.0
       dcurtor_opt     = -1.0
       dpscale_opt     = -1.0
@@ -497,6 +504,7 @@
       drho_opt(:,:)       = -1.0
       ddeltamn_opt(:,:)   = -1.0
       dcoil_kts_opt(:,:)  = -1.0
+      dcoilsurf_opt(:,:)  = -1.0
       ! Rosenbrock test function variables
       lRosenbrock_X_opt(1:ROSENBROCK_DIM) = .FALSE.
       dRosenbrock_X_opt(1:ROSENBROCK_DIM) = -1.0
@@ -507,7 +515,6 @@
       sigma_Rosenbrock_F(1:ROSENBROCK_DIM)  = bigno
       target_Rosenbrock2D = 0.0
       sigma_Rosenbrock2D = bigno
-
       IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
          curtor_min      = -bigno;  curtor_max      = bigno
@@ -552,6 +559,8 @@
       rho_coil_kts_min = 0.0;    rho_coil_kts_max = bigno
       theta_coil_kts_min = -6.0D+00;  theta_coil_kts_max = 12.0D+00
       zeta_coil_kts_min = -6.0D+00;   zeta_coil_kts_max = 12.0D+00
+      rbc_coilsurf_min = -bigno; rbc_coilsurf_max = bigno;
+      zbs_coilsurf_min = -bigno; zbs_coilsurf_max = bigno;
       
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
@@ -611,6 +620,10 @@
       nh_coil             =  1
       width_coil          =  1.0
       height_coil         =  1.0
+      ! Coil surface
+      lcreate_coilsurf    = .false.
+      rbc_coilsurf        = 0.0
+      zbs_coilsurf        = 0.0
       ! Targets
       mboz            = 64
       nboz            = 64
@@ -934,12 +947,20 @@
       nv_bnormal               = 128
       target_bnormal           = 0.0
       sigma_bnormal            = bigno
+      target_bnmns             = 0.0
+      sigma_bnmns              = bigno
+      target_bnmnc             = 0.0
+      sigma_bnmnc              = bigno
       target_coil_curvature    = 0.0
       sigma_coil_curvature     = bigno
       target_coil_torsion      = 0.0
       sigma_coil_torsion       = bigno
       target_coilcoil_distance = 0.0
       sigma_coilcoil_distance  = bigno
+      target_coil_baxis        = 1.0
+      sigma_coil_baxis         = bigno
+      target_coil_length       = 1.0
+      sigma_coil_length        = bigno
       END SUBROUTINE init_stellopt_input
 
       SUBROUTINE read_stellopt_input(filename, istat)
@@ -1039,6 +1060,9 @@
       WHERE(sigma_dkes < bigno) sigma_dkes_11 = sigma_dkes
 !         target_dkes_11(3:nsd) = target_dkes(3:nsd)
 !         sigma_dkes_11(3:nsd)  = sigma_dkes(3:nsd)
+
+      ! Check if creating coils from winding surface
+      IF (ANY(ABS(rbc_coilsurf)>0)) lcreate_coilsurf = .true.
 
       ! Check if creating coils
       IF (ANY(rho_coil_kts>=0)) lcreate_coils = .true.
@@ -1288,6 +1312,23 @@
         END DO
       END IF
 
+      
+      IF (ANY(lcoilsurf_opt)) THEN
+         DO m = LBOUND(lcoilsurf_opt,DIM=2), UBOUND(lcoilsurf_opt,DIM=2)
+           DO n = LBOUND(lcoilsurf_opt,DIM=1), UBOUND(lcoilsurf_opt,DIM=1)
+              IF(lcoilsurf_opt(n,m)) THEN
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,5(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
+                 'LCOILSURF_OPT(',n,',',m,')',lcoilsurf_opt(n,m),&
+                 'RBC_COILSURF_MIN(',n,',',m,')',rbc_coilsurf_min(n,m),&
+                 'RBC_COILSURF_MAX(',n,',',m,')',rbc_coilsurf_max(n,m),&
+                 'ZBS_COILSURF_MIN(',n,',',m,')',zbs_coilsurf_min(n,m),&
+                 'ZBS_COILSURF_MAX(',n,',',m,')',zbs_coilsurf_max(n,m),&
+                 'DCOILSURF_OPT(',n,',',m,')',dcoilsurf_opt(n,m)
+              END IF
+           END DO
+        END DO
+      END IF
+
       IF (ANY(lcoil_kts_opt)) THEN
          WRITE(iunit,outboo) 'LFIX_RHO_COIL',lfix_rho_coil
          WRITE(iunit,outboo) 'LFIX_THETA_COIL',lfix_theta_coil
@@ -1310,11 +1351,30 @@
          END DO
       END IF
 
+      IF (ANY(ABS(rbc_coilsurf) > 0) .or. ANY(ABS(zbs_coilsurf)>0) .or.  ANY(lcoil_kts_opt)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!       Vacuum Poincare Plots'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outboo) 'LPOINCARE',lpoincare
+      END IF
+
+      IF (ANY(ABS(rbc_coilsurf) > 0) .or. ANY(ABS(zbs_coilsurf)>0)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!       Coil Winding Surface Harmonics'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO m = LBOUND(rbc_coilsurf,DIM=2), UBOUND(rbc_coilsurf,DIM=2)
+            DO n = LBOUND(rbc_coilsurf,DIM=1), UBOUND(rbc_coilsurf,DIM=1)
+               WRITE(iunit,'(2(2X,A,I3,A,I3,A,ES22.12E3))') &
+                  'RBC_COILSURF(',n,',',m,') = ',rbc_coilsurf(n,m), &
+                  'ZBS_COILSURF(',n,',',m,') = ',zbs_coilsurf(n,m)
+            END DO
+         END DO
+      END IF
+
       IF (MAXVAL(rho_coil_kts)>=0) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!       Coil Spline Knots'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,outboo) 'LPOINCARE',lpoincare
          DO n = LBOUND(rho_coil_kts,DIM=1), UBOUND(rho_coil_kts,DIM=1)
             IF (ANY(rho_coil_kts(n,:)>=0)) THEN
                m = FINDLOC(rho_coil_kts(n,:)>=0,.true.,DIM=1,BACK=.true.)
@@ -2369,6 +2429,27 @@
          WRITE(iunit,outflt) 'TARGET_BNORMAL',target_bnormal
          WRITE(iunit,outflt) 'SIGMA_BNORMAL',sigma_bnormal
       END IF
+      IF (ANY(sigma_bnmns < bigno) .or. ANY(sigma_bnmnc < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET BNORMAL HARMONICS (n,m)'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         IF (sigma_bnormal >= bigno) WRITE(iunit,outint) 'NU_BNORMAL',nu_bnormal
+         IF (sigma_bnormal >= bigno) WRITE(iunit,outint) 'NV_BNORMAL',nv_bnormal
+         DO m = 0, bnorm_mmax
+            DO n = -bnorm_nmax, bnorm_nmax
+               IF (sigma_bnmns(n,m) < bigno) THEN
+                  WRITE(iunit,"(2(2X,A,I3.3,',',I3.3,A,1X,'=',1X,ES22.12E3))")&
+                  'TARGET_BNMNS(',n,m,')',target_bnmns(n,m),&
+                  'SIGMA_BNMNS(',n,m,')',sigma_bnmns(n,m)
+               END IF
+               IF (sigma_bnmnc(n,m) < bigno) THEN
+                  WRITE(iunit,"(2(4X,A,I3.3,',',I3.3,A,1X,'=',1X,ES22.12E3))")&
+                  'TARGET_BNMNC(',n,m,')',target_bnmnc(n,m),&
+                  'SIGMA_BNMNC(',n,m,')',sigma_bnmnc(n,m)
+               END IF
+            END DO
+         END DO
+      END IF
       IF (sigma_coil_curvature < bigno) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          TARGET COIL CURVATURE'
@@ -2389,6 +2470,25 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outflt) 'TARGET_COILCOIL_DISTANCE',target_coilcoil_distance
          WRITE(iunit,outflt) 'SIGMA_COILCOIL_DISTANCE',sigma_coilcoil_distance
+      END IF
+      IF (sigma_coil_baxis < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL B.T AXIS'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'TARGET_COIL_BAXIS',target_coil_baxis
+         WRITE(iunit,outflt) 'SIGMA_COIL_BAXIS',sigma_coil_baxis
+      END IF
+      IF (ANY(sigma_coil_length < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL LENGTH'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_coil_length,DIM=1)
+            IF (sigma_coil_length(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))")&
+                  'TARGET_COIL_LENGTH(',ik,')',target_coil_length(ik),&
+                  'SIGMA_COIL_LENGTH(',ik,')',sigma_coil_length(ik)
+            END IF
+         END DO
       END IF
       IF (sigma_Rosenbrock2D < bigno) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

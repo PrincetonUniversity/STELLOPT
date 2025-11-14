@@ -166,7 +166,6 @@ CONTAINS
          ldepo = .false.
          lbeam_simple = .false.
          lcollision = .false.
-         lw7x = .false.
          lascot = .false.
          lfidasim = .false.
          lfidasim_cyl = .false.
@@ -295,8 +294,6 @@ CONTAINS
                 ldepo  = .true.
             case ("-raw")
                 lraw  = .true.
-            case ("-w7x")
-                lw7x  = .true.
             case ("-beam_simple")
                 lbeam_simple  = .true.
             case ("-collisions")
@@ -440,8 +437,6 @@ CONTAINS
       CALL MPI_BCAST(lbeam_simple,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lcollision,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
-      CALL MPI_BCAST(lw7x,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lrandomize,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)

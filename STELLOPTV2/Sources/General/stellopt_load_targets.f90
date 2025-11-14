@@ -24,7 +24,8 @@
 !        ncnt    Current function evaluation
 !----------------------------------------------------------------------
       INTEGER, INTENT(in)      :: ncnt
-      INTEGER, INTENT(inout)   :: m,iflag
+      INTEGER, INTENT(in)      :: m
+      INTEGER, INTENT(inout)   :: iflag
       REAL(rprec), INTENT(out) :: fvec(m)
       
 !-----------------------------------------------------------------------
@@ -162,16 +163,28 @@
       !------------- COIL RELATED TARGETS -------------------
       !  BNORMAL TOTAL
       IF (sigma_bnormal < bigno) &
-         CALL chisq_bnormal(target_bnormal, sigma_bnormal, ncnt,iflag)
+         CALL chisq_bnormal(target_bnormal, sigma_bnormal, ncnt, iflag)
+      !  BAXIS TOTAL
+      IF (sigma_coil_baxis < bigno) &
+         CALL chisq_coil_baxis(target_coil_baxis, sigma_coil_baxis, ncnt, iflag)
+      !  BNORMAL_MN_SIN
+      IF (ANY(sigma_bnmns < bigno)) &
+         CALL chisq_bnmns(target_bnmns, sigma_bnmns, ncnt, iflag)
+      !  BNORMAL_MN_COS
+      IF (ANY(sigma_bnmnc < bigno)) &
+         CALL chisq_bnmnc(target_bnmnc, sigma_bnmnc, ncnt, iflag)
+      !  COIL LENGTH
+      IF (ANY(sigma_coil_length < bigno)) &
+         CALL chisq_coil_length(target_coil_length, sigma_coil_length, ncnt, iflag)
       !  MEAN COIL CURVATURE
       IF (sigma_coil_curvature < bigno) &
-         CALL chisq_coil_curvature(target_coil_curvature, sigma_coil_curvature, ncnt,iflag)
+         CALL chisq_coil_curvature(target_coil_curvature, sigma_coil_curvature, ncnt, iflag)
       !  MEAN COIL TORSION
       IF (sigma_coil_torsion < bigno) &
-         CALL chisq_coil_torsion(target_coil_torsion, sigma_coil_torsion, ncnt,iflag)
+         CALL chisq_coil_torsion(target_coil_torsion, sigma_coil_torsion, ncnt, iflag)
       !  COIL-COIL DISTANCE
       IF (sigma_coilcoil_distance < bigno) &
-         CALL chisq_coilcoil_distance(target_coilcoil_distance, sigma_coilcoil_distance, ncnt,iflag)
+         CALL chisq_coilcoil_distance(target_coilcoil_distance, sigma_coilcoil_distance, ncnt, iflag)
 
       !------------- OTHER TARGETS -------------------
       !  ECE Reflectometry
@@ -303,7 +316,9 @@
       IF (mtargets .ne. m) THEN; iflag=-2; RETURN; END IF
       
       ! Calculate fvec
-      fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
+      !PRINT *,m,fvec
+      fvec = (vals-targets)/ABS(sigmas)
+      !fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE

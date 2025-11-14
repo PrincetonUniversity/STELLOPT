@@ -65,7 +65,7 @@
             lbeam_simple_beams => lbeam_simple, &
             lplasma_only_beams => lplasma_only, lascot4_beams => lascot4, &
             lbbnbi_beams => lbbnbi, lascotfl_beams => lascotfl, &
-            lcollision_beams => lcollision, lw7x_beams => lw7x, &
+            lcollision_beams => lcollision, &
             coil_string_beams => coil_string, mgrid_string_beams => mgrid_string,&
             vessel_string_beams => vessel_string, restart_string_beams => restart_string, &
             lraw_beams => lraw, nbeams_beams => nbeams, &
@@ -82,9 +82,8 @@
             BEAMS3D_VERSION
       USE beams3d_lines, ONLY: nparticles_beams => nparticles, R_lines, Z_lines,&
             PHI_lines, vll_lines, moment_lines, neut_lines
-      USE beams3d_grid, ONLY: nte, nne, nti, B_R, B_PHI, B_Z, raxis, zaxis, phiaxis,&
-                              BR_spl, BZ_spl, BPHI_spl, MODB_spl, rmin, rmax, zmin, &
-                              zmax, phimin, phimax, nzeff
+      USE beams3d_grid, ONLY: nte, nne, nti, raxis, zaxis, phiaxis,&
+                              rmin, rmax, zmin, zmax, phimin, phimax, nzeff
       USE wall_mod, ONLY: wall_free
       USE beams3d_input_mod, ONLY: BCAST_BEAMS3D_INPUT
 !DEC$ ENDIF
@@ -329,7 +328,6 @@
                lbeam_beams        = .FALSE.
                lread_input_beams  = .FALSE.
                lcollision_beams   = .FALSE.
-               lw7x_beams   = .FALSE.
                lrandomize_beams = .FALSE.
                lsuzuki_beams = .FALSE.
                lboxsim_beams = .FALSE.
@@ -436,6 +434,7 @@
                CALL fieldlines_write
                ! Clean up
                CALL fieldlines_cleanup(.FALSE.)
+               ier_paraexe = 0
 !DEC$ IF DEFINED (TRAVIS)
             CASE('travis')
                proc_string = file_str

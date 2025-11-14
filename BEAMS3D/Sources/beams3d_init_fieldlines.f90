@@ -14,7 +14,7 @@
                                  zaxis_g => zaxis, nr, nphi, nz, &
                                  rmin, rmax, zmin, zmax, phimin, &
                                  phimax, vc_adapt_tol, B_R, B_Z, B_PHI,&
-                                 BR_spl, BZ_spl, TE_spl_s, NE_spl_s, TI_spl_s, &
+                                 TE_spl_s, NE_spl_s, TI_spl_s, &
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
                                  nomeg, OMEG_ARR,OMEG_spl_s,&

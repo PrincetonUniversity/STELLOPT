@@ -62,7 +62,6 @@
       IF (phi_temp < 0) phi_temp = phi_temp + phimax
       z_temp   = q(3)
       rinv = one/r_temp
-!      CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
       IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
           (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
           (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN

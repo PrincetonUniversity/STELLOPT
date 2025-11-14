@@ -1221,7 +1221,7 @@
          WRITE(6,'(2X,2(A,F6.3))') 'R_START = ',sum(raxis_cc),'  ',MAXVAL(rreal(:,1))
          WRITE(6,'(2X,2(A,F6.3))') 'Z_START = ',0.0,'  ',0.0
          WRITE(6,'(2X,A)') 'PHI_START = 2*0.0'
-         WRITE(6,'(2X,A,E20.10)') 'PHI_END = 2*',1000*pi2/nfp
+         WRITE(6,'(2X,A,ES19.12E3)') 'PHI_END = 2*',1000*pi2/nfp
          WRITE(6,'(A)') '/'
       END IF
       IF (ltxport_ae) THEN

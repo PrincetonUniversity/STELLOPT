@@ -16,6 +16,8 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       ! Moved from stellopt_runtime
+      INTEGER, PARAMETER :: NCOILS_MAX = 8
+      INTEGER, PARAMETER :: NKNOTS_COILS_MAX = 20
       INTEGER, PARAMETER :: maxwindsurf=32  
       REAL(rprec), PARAMETER :: bigno = 1.0E+10
       LOGICAL :: lcentered_differences, lkeep_mins, lrefit, &
@@ -37,5 +39,15 @@
       IMPLICIT NONE
       getbigno = bigno
       END FUNCTION getbigno
+
+      INTEGER FUNCTION getncoilsmax()
+      IMPLICIT NONE
+      getncoilsmax = NCOILS_MAX
+      END FUNCTION getncoilsmax
+
+      INTEGER FUNCTION getnknotscoilsmax()
+      IMPLICIT NONE
+      getnknotscoilsmax = NKNOTS_COILS_MAX
+      END FUNCTION getnknotscoilsmax
 
       END MODULE stellopt_globals

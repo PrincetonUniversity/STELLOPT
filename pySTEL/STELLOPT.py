@@ -27,6 +27,7 @@ from libstell import plot3D
 from libstell import bootsj
 from libstell import bnorm
 from libstell import coils
+from libstell import fieldlines
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -901,8 +902,8 @@ class MyApp(QMainWindow):
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
 					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP',\
-					'BNORMAL', 'COIL_CURVATURE', 'COIL_TORSION', \
-					'COILCOIL_DISTANCE', 'LGRADB']
+					'BNORMAL', 'BNMNS', 'BNMNC', 'COIL_CURVATURE', 'COIL_TORSION', \
+					'COIL_LENGTH','COILCOIL_DISTANCE','BAXIS','LGRADB']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
 		# Handle Chisquared plots
@@ -960,9 +961,17 @@ class MyApp(QMainWindow):
 		# Handle Bnorm
 		if any('bnorm' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- B-Normal -----')
-			self.ui.ComboBoxOPTplot_type.addItem('B-Normal')
+			self.ui.ComboBoxOPTplot_type.addItem('B-Normal (Plasma)')
+			self.ui.ComboBoxOPTplot_type.addItem('B-Normal (Coil)')
+			self.ui.ComboBoxOPTplot_type.addItem('B-Normal (Total)')
 			bnormal_file = sorted([k for k in files if 'bnorm_real.' in k])
 			self.bnormal_file = sorted([k for k in bnormal_file if '_opt' not in k])
+		# Handle Baxis
+		if any('baxis_' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- B-AXIS -----')
+			self.ui.ComboBoxOPTplot_type.addItem('B-Axis')
+			baxis_file = sorted([k for k in files if 'baxis_real.' in k])
+			self.baxis_file = sorted([k for k in baxis_file if '_opt' not in k])
 		# Handle Boozer Transformation
 		if any('boozmn' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Boozer Coordinates -----')
@@ -977,12 +986,14 @@ class MyApp(QMainWindow):
 		# Handle Current Density Profiles
 		if any('answers_plot.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Bootstrap Current -----')
-			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current Density')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current Total')
 			bootsj_files = sorted([k for k in files if 'answers_plot.' in k])
 			self.bootsj_files = sorted([k for k in bootsj_files if '_opt' not in k])
 		# Handle Coil
 		if any('coils' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Coils -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Coil Length')
 			self.ui.ComboBoxOPTplot_type.addItem('Coil Curvature')
 			self.ui.ComboBoxOPTplot_type.addItem('Coil Torsion')
 			self.ui.ComboBoxOPTplot_type.addItem('Coil Shape')
@@ -1002,6 +1013,19 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('XICS Emissivity')
 			self.ui.ComboBoxOPTplot_type.addItem('E-Static Potential')
 			self.dprof_files = sorted([k for k in files if 'dprof.' in k])
+		# Handle Poincare Data
+		if any('fieldlines' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Poincaré -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Vacuum (phi=0)')
+			fieldlines_files = sorted([k for k in files if 'fieldlines_' in k])
+			self.fieldlines_files = sorted([k for k in fieldlines_files if '_opt' not in k])
+		# Handle GIST gyrokinetic input files
+		if any('gist_' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- GIST Inputs -----')
+			for name in self.gist_plots:
+				self.ui.ComboBoxOPTplot_type.addItem(name)
+			gist_files = sorted([k for k in files if 'gist_' in k])
+			self.gist_files = sorted([k for k in gist_files if '_opt' not in k])
 		# Handle Kinetic Profiles
 		if any('tprof.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Kinetics -----')
@@ -1011,20 +1035,6 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Z Effective')
 			tprof_files = sorted([k for k in files if 'tprof.' in k])
 			self.tprof_files = sorted([k for k in tprof_files if '_opt' not in k])
-		# Handle GIST gyrokinetic input files
-		if any('gist_' in mystring for mystring in files):
-			self.ui.ComboBoxOPTplot_type.addItem('----- GIST Inputs -----')
-			for name in self.gist_plots:
-				self.ui.ComboBoxOPTplot_type.addItem(name)
-			gist_files = sorted([k for k in files if 'gist_' in k])
-			self.gist_files = sorted([k for k in gist_files if '_opt' not in k])
-		# Handle Current Density Profiles
-		if any('answers_plot.' in mystring for mystring in files):
-			self.ui.ComboBoxOPTplot_type.addItem('----- Bootstrap Current -----')
-			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current Density')
-			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Current Total')
-			bootsj_files = sorted([k for k in files if 'answers_plot.' in k])
-			self.bootsj_files = sorted([k for k in bootsj_files if '_opt' not in k])
 		
 	def UpdateIterFile(self):
 		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
@@ -1046,13 +1056,75 @@ class MyApp(QMainWindow):
 				for k in idx:
 					self.ui.ComboBoxOPTplot_surf.addItem(str(k+1))
 				self.UpdateBoozerSpec()
-			elif plot_name in ['B-Normal']:
+			elif plot_name in ['B-Normal (Plasma)']:
 				self.fig2.clf()
 				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
-				self.bnorm_data = bnorm.BNORM()
-				self.bnorm_data.read_bnorm_real(test_file)
-				self.bnorm_data.plot_bnorm_real_total(ax=self.ax2)
+				self.stel_data.read_stellopt_bnorm_real(test_file)
+				umax = int(self.stel_data.bnorm_real[1,:].max())
+				vmax = int(self.stel_data.bnorm_real[2,:].max())
+				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax))
+				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax))
+				b = self.stel_data.bnorm_real[11,:].reshape((vmax,umax))
+				hmesh=self.ax2.pcolormesh(v,u,b,cmap='jet')
+				self.ax2.set_ylabel(r'$\theta$ [rad]')
+				self.ax2.set_xlabel(r'$\zeta$ [rad]')
+				self.ax2.set_title('B-Normal (Plasma)')
+				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
 				self.canvas2.draw()
+			elif plot_name in ['B-Normal (Coil)']:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.stel_data.read_stellopt_bnorm_real(test_file)
+				umax = int(self.stel_data.bnorm_real[1,:].max())
+				vmax = int(self.stel_data.bnorm_real[2,:].max())
+				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax))
+				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax))
+				b = self.stel_data.bnorm_real[12,:].reshape((vmax,umax))
+				hmesh=self.ax2.pcolormesh(v,u,b,cmap='jet')
+				self.ax2.set_ylabel(r'$\theta$ [rad]')
+				self.ax2.set_xlabel(r'$\zeta$ [rad]')
+				self.ax2.set_title('B-Normal (Coil)')
+				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
+				self.canvas2.draw()
+			elif plot_name in ['B-Normal (Total)']:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.stel_data.read_stellopt_bnorm_real(test_file)
+				umax = int(self.stel_data.bnorm_real[1,:].max())
+				vmax = int(self.stel_data.bnorm_real[2,:].max())
+				u = self.stel_data.bnorm_real[3,:].reshape((vmax,umax))
+				v = self.stel_data.bnorm_real[4,:].reshape((vmax,umax))
+				b = self.stel_data.bnorm_real[13,:].reshape((vmax,umax))
+				hmesh=self.ax2.pcolormesh(v,u,b,cmap='jet')
+				self.ax2.set_ylabel(r'$\theta$ [rad]')
+				self.ax2.set_xlabel(r'$\zeta$ [rad]')
+				self.ax2.set_title('B-Normal (Total)')
+				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
+				self.canvas2.draw()
+			elif plot_name in ['B-Axis']:
+				self.stel_data.read_stellopt_baxis(test_file)
+				self.plt_sopt.clear_scene()
+				self.stel_data.plot_stellopt_baxis(plot3D=self.plt_sopt)
+			elif plot_name in ['Coil Curvature']:
+				self.stel_data.read_stellopt_coil_curvature(test_file)
+				self.plt_sopt.clear_scene()
+				self.stel_data.plot_stellopt_coil_curvature(plot3D=self.plt_sopt)
+			elif plot_name in ['Coil Torsion']:
+				self.stel_data.read_stellopt_coil_curvature(test_file)
+				self.plt_sopt.clear_scene()
+				self.stel_data.plot_stellopt_coil_torsion(plot3D=self.plt_sopt)
+			elif plot_name in ['Vacuum (phi=0)']:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				fieldlines_data=fieldlines.FIELDLINES()
+				fieldlines_data.read_fieldlines(test_file)
+				fieldlines_data.plot_poincare(0.0,nskip=1,ax=self.ax2)
+			elif plot_name in self.gist_files:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.ui.ComboBoxOPTplot_surf.clear()
+				self.gist_data = gist.GIST()
+				self.gist_data.read_gist(test_file)
 			elif plot_name in ['LGRADB_surf']:
 				self.fig2.clf()
 				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
@@ -1963,6 +2035,21 @@ class MyApp(QMainWindow):
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
 			self.UpdateIterFile()
+		elif (plot_name == 'B-Normal (Plasma)'):
+			file_list = sorted(glob.glob("bnorm_real.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
+		elif (plot_name == 'B-Normal (Coil)'):
+			file_list = sorted(glob.glob("bnorm_real.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
+		elif (plot_name == 'B-Normal (Total)'):
+			file_list = sorted(glob.glob("bnorm_real.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
 		elif (plot_name == 'LGRADB_surf'):
 			iter_list = self.stel_data.ITER
 			for item in iter_list:
@@ -2017,6 +2104,31 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Pressure [kPa]')
 			self.ax2.set_title('VMEC Pressure Evolution')
 			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Coil Length'):
+			niter = self.stel_data.COIL_LENGTH_LENGTH.shape[0]
+			ncoils = self.stel_data.COIL_LENGTH_LENGTH.shape[1]
+			y = self.stel_data.COIL_LENGTH_LENGTH
+			self.ax2.plot(y)
+			self.ax2.set_xlabel('Iterations')
+			self.ax2.set_ylabel('Length [m]')
+			self.ax2.set_title('Coil Length')
+
+		elif (plot_name == 'Coil Curvature'):
+			file_list = sorted(glob.glob("coil_curvature.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.canvas2.hide()
+			self.vtkWidget_sopt.show()
+			self.plt_sopt.renderer.RemoveAllViewProps()
+			self.UpdateIterFile()
+		elif (plot_name == 'Coil Torsion'):
+			file_list = sorted(glob.glob("coil_curvature.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.canvas2.hide()
+			self.vtkWidget_sopt.show()
+			self.plt_sopt.renderer.RemoveAllViewProps()
+			self.UpdateIterFile()
 		elif (plot_name == 'Coil Shape'):
 			self.canvas2.hide()
 			self.vtkWidget_sopt.show()
@@ -2036,6 +2148,19 @@ class MyApp(QMainWindow):
 						plot_color = 'grey'
 					coil_data.plotcoilsHalfFP(plot3D=self.plt_sopt,color=plot_color)
 					l=l+1
+		elif (plot_name == 'B-Axis'):
+			file_list = sorted(glob.glob("baxis_real.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.canvas2.hide()
+			self.vtkWidget_sopt.show()
+			self.plt_sopt.renderer.RemoveAllViewProps()
+			self.UpdateIterFile()
+		elif (plot_name == 'Vacuum (phi=0)'):
+			file_list = sorted(glob.glob("fieldlines_*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.UpdateIterFile()
 		elif (plot_name == 'I-prime'):
 			vmec_data = vmec.VMEC()
 			l=0
