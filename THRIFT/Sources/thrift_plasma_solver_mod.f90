@@ -32,7 +32,7 @@ MODULE thrift_plasma_solver_mod
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep, &
                                                   S_energy_ext, S_particle_ext
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: Dn_NEO, cn_NEO, Dp_NEO, cp_NEO
-    REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: Dp_total, cp_total
+    REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: Dp_total, cp_total, Dn_total, cn_total
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: G_NEO_complet, Q_NEO_complet
     INTEGER :: mytimestep_plasma_solver
     INTEGER :: N_plasma_steps_per_THRIFT_step, Nt_total_plasma_solver
@@ -81,6 +81,8 @@ MODULE thrift_plasma_solver_mod
         IF( .NOT. ALLOCATED(cp_NEO)) ALLOCATE(cp_NEO(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(Dp_total)) ALLOCATE(Dp_total(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(cp_total)) ALLOCATE(cp_total(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(Dn_total)) ALLOCATE(Dn_total(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(cn_total)) ALLOCATE(cn_total(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(N_fast_alphas)) ALLOCATE(N_fast_alphas(Nt_total_plasma_solver,Nr_plasma_solver))
         ! These arrays are filled in thrift_penta with the total NEO fluxes. They include the inter-species diffusion coeffs
         ! which are neglected when computing the Dn_NEO and cn_NEO coeffs used by the transport solver
@@ -132,6 +134,8 @@ MODULE thrift_plasma_solver_mod
             !
             Dp_total = 0.0_rprec
             cp_total = 0.0_rprec
+            Dn_total = 0.0_rprec
+            cn_total = 0.0_rprec
             ! 
             G_NEO_complet = 0.0_rprec
             Q_NEO_complet = 0.0_rprec
@@ -539,6 +543,10 @@ MODULE thrift_plasma_solver_mod
         ! r=a
         main_diag(Nr) = one
         lower_diag(Nr-1) = 0.0_rprec
+
+        ! Update Dn_total and cn_total
+        Dn_total(1+iion,mytimestep_plasma_solver,:) = Dn
+        cn_total(1+iion,mytimestep_plasma_solver,:) = cn
 
         DEALLOCATE(Dn,cn,Vp)
 
