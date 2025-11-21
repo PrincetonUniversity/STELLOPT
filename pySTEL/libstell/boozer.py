@@ -107,29 +107,35 @@ class BOOZER(FourierRep):
 		pyplot.colorbar(hmesh,label='[T]',ax=ax)
 		if lplotnow: pyplot.show()
 
-	def plot_fieldline(self,nlines=4,*args,**kwargs):
+	def plot_fieldline(self,*args,**kwargs):
 		"""Plots the boozer fieldline in 3D
 
 		This routine plots the boozer fieldline in 3D.
 
 		Parameters
 		----------
-		sval : int
-			Surface to plot
-		nlines : int
-			Number of lines to plot on surface (default=4)
+		sval : list (optional)
+			Surfaces to plot (default: ns_b)
+		ntheta : int (optional)
+			Number of lines to plot on surface (default: 4)
+		nphi : int (optional)
+			Number of toroidal points to use (default: 360)
+		phimin : float (optional)
+			Starting phi value (default: 0)
+		phimax : float (optional)
+			Ending phi value (default: 2pi)
 		plot3D : plot3D object (optional)
 			Plotting object to render to.
 		"""
 		import numpy as np
 		import vtk
 		from libstell.plot3D import PLOT3D 
-		plot3D  = kwargs.get('plot3D',None)
-		nphi = kwargs.get('nphi',360)
+		sdex   = kwargs.get('sdex',[self.ns_b-1])
 		ntheta = kwargs.get('ntheta',4)
+		nphi = kwargs.get('nphi',360)
 		phimin = kwargs.get('phimin',0.0)
 		phimax = kwargs.get('phimax',2*np.pi)
-		sdex   = kwargs.get('sdex',[self.ns_b-1])
+		plot3D  = kwargs.get('plot3D',None)
 		lrender = False
 		if not plot3D:
 			plt = PLOT3D()
