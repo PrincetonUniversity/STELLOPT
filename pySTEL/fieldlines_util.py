@@ -42,6 +42,8 @@ if __name__=="__main__":
 		help="Plots |B| along the magnetic axis (first field line).", default = False)
 	parser.add_argument("--output_asc", dest="asc_phi",
 		help="Output a given Poincare cross section at a given phi value [deg].", default = None, type=float)
+	parser.add_argument("--output_asc_orbit", dest="asc_orbit",
+		help="Output a given field line trajectory for a given fieldline.", default = None, type=int)
 	parser.add_argument("--save", dest="lsave", action='store_true',
 		help="Save the plots with ext names.", default = False)
 	args = parser.parse_args()
@@ -167,4 +169,6 @@ if __name__=="__main__":
 			if (args.lsave): fig.savefig(f'baxis_{args.fieldlines_ext}.png', dpi=fig.dpi)
 		if type(args.asc_phi) is not type(None):
 			field_data.write_asc([np.deg2rad(args.asc_phi)],nskip=args.nskip,filename=f'poincare_{args.fieldlines_ext}_phi_{int(args.asc_phi):03d}.asc')
+		if type(args.asc_orbit) is not type(None):
+			field_data.write_orbit_asc(args.asc_orbit,filename=f'poincare_{args.fieldlines_ext}_k_{int(args.asc_orbit):03d}.asc')
 	sys.exit(0)

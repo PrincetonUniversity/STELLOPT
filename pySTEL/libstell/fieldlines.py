@@ -404,11 +404,39 @@ class FIELDLINES():
 			k = (np.abs(phi_arr - phival)).argmin() # Find nearest value
 			r = 1000.*self.R_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten()
 			z = 1000.*self.Z_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten()
-			p = self.PHI_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten()
+			p = np.mod(self.PHI_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten(),self.phiaxis[-1])
 			x = r*np.cos(p)
 			y = r*np.sin(p)
 			for i,x0 in enumerate(x):
 				f.write(f"{x0:10.3f} {y[i]:10.3f} {z[i]:10.3f}\n")
+		f.close()
+
+	def write_orbit_asc(self,k,filename='fieldlines_orbit.asc'):
+		"""Writes field line orbit to an ASC file
+
+		This routine writes the Poincare data into an ASC file for
+		reading into CAD software (FreeCAD). ASC files are just
+		ASCII files with the points written in x,y,z format. Output is
+		in mm.
+
+		Parameters
+		----------
+		k : int
+			Field line to output
+		nskip : int (optional)
+			Number of fieldlines to skip.
+		filename: str
+			Filename to output to (default: fieldlines_poincare.asc)
+		"""
+		import numpy as np
+		f = open(filename,'w')
+		r = 1000.*self.R_lines[k,:].flatten()
+		z = 1000.*self.Z_lines[k,:].flatten()
+		p = self.PHI_lines[k,:].flatten()
+		x = r*np.cos(p)
+		y = r*np.sin(p)
+		for i,x0 in enumerate(x):
+			f.write(f"{x0:10.3f} {y[i]:10.3f} {z[i]:10.3f}\n")
 		f.close()
 
 	def plot_heatflux(self,factor=1.0,colormap='hot',plot3D=None):
