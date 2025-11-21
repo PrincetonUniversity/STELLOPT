@@ -1122,8 +1122,26 @@ class LIBSTELL():
 		charVar=['mgrid_file','input_extension','pmass_type','pcurr_type','piota_type']
 		charLen=[(200,1),(100,1),(20,1),(20,1),(20,1)]
 		string_data = self.get_module_vars(module_name,charVar=charVar,charLen=charLen,ldefined_size_arrays=True)
+		# Now read the values in input_mod that set by reading wout file
+		booList  = ['lfreeb']
+		booLen   = [1]*len(booList)
+		module_name = self.s1+'vmec_input_'+self.s2
+		boo_indata_data = self.get_module_vars(module_name,booVar=booList,booLen=booLen,ldefined_size_arrays=True)
+		if boo_indata_data['lfreeb']:
+			# Now get values in mgrid mod
+			intList  = ['nextcur']
+			intLen   = [1]*len(intList)
+			module_name = self.s1+'mgrid_mod_'+self.s2
+			scalar_mgrid_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen)
+			realList = ['extcur']
+			realLen = [(scalar_mgrid_data['nextcur'],1)]*len(realList)
+			module_name = self.s1+'read_wout_mod_'+self.s2
+			array_mgrid_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen)
+		else:
+			scalar_mgrid_data = {}
+			array_mgrid_data = {}
 		# Return
-		return scalar_data | array_data | string_data
+		return boo_indata_data | scalar_data | array_data | string_data | scalar_mgrid_data | array_mgrid_data
 
 	def read_boozer(self,file):
 		"""Reads a boozmn file and returns a dictionary

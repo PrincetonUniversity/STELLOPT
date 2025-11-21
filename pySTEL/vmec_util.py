@@ -24,6 +24,8 @@ if __name__=="__main__":
 		help="Output STL file of VMEC boundary", default = False)
 	parser.add_argument("--magaxis", dest="lmagaxis", action='store_true',
 		help="Output xyz data of magnetic axis", default = False)
+	parser.add_argument("--wout2indata", dest="lwout2indata", action='store_true',
+		help="Create input file from wout data.", default = False)
 	parser.add_argument("--scale_volume", dest="new_vol",
 		help="Write indata with volume rescaled to new_vol m^3", 
 		default = 0.0, type=float)
@@ -49,6 +51,7 @@ if __name__=="__main__":
 			vmec_wout.read_wout(args.vmec_ext)
 			loutput = True
 		except:
+			vmec_wout.read_wout(args.vmec_ext)
 			print(f'Could not file input file: wout_{args.vmec_ext}.nc or wout.{args.vmec_ext}')
 		if not (linput or loutput): sys.exit(-1)
 		# Write rescaled indata
@@ -264,6 +267,9 @@ if __name__=="__main__":
 			ax.set_title("|B| at mid radius")
 			fig.colorbar(h,label='[T]')
 			pyplot.show()
+		# Output an input file from wout
+		if (loutput and args.lwout2indata):
+			vmec_wout.wout_to_indata()
 		# Output an STL file
 		if (loutput and args.lstl):
 			theta = np.linspace([0],[np.pi*2],512)
