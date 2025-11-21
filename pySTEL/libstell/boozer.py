@@ -107,6 +107,77 @@ class BOOZER(FourierRep):
 		pyplot.colorbar(hmesh,label='[T]',ax=ax)
 		if lplotnow: pyplot.show()
 
+	def plot_fieldline(self,*args,**kwargs):
+		"""Plots the boozer fieldline in 3D
+
+		This routine plots the boozer fieldline in 3D.
+
+		Parameters
+		----------
+		sval : list (optional)
+			Surfaces to plot (default: ns_b)
+		ntheta : int (optional)
+			Number of lines to plot on surface (default: 4)
+		nphi : int (optional)
+			Number of toroidal points to use (default: 360)
+		phimin : float (optional)
+			Starting phi value (default: 0)
+		phimax : float (optional)
+			Ending phi value (default: 2pi)
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D 
+		sdex   = kwargs.get('sdex',[self.ns_b-1])
+		ntheta = kwargs.get('ntheta',4)
+		nphi = kwargs.get('nphi',360)
+		phimin = kwargs.get('phimin',0.0)
+		phimax = kwargs.get('phimax',2*np.pi)
+		plot3D  = kwargs.get('plot3D',None)
+		lrender = False
+		if not plot3D:
+			plt = PLOT3D()
+			lrender = True
+		theta0 = np.linspace([0],[np.pi*2.0],ntheta+1)
+		theta0 = theta0[0:-1]
+		phi   = np.linspace([phimin],[phimax],nphi)
+		points_array = np.zeros((nphi,3))
+		scalar       = np.zeros((nphi,1))
+		xout         = np.zeros((self.ns_b,ntheta,nphi))
+		yout         = np.zeros((self.ns_b,ntheta,nphi))
+		zout         = np.zeros((self.ns_b,ntheta,nphi))
+		bout         = np.zeros((self.ns_b,ntheta,nphi))
+		ph           = np.zeros((ntheta,1))
+		for i in sdex:
+			for k,pht in enumerate(phi):
+				ph[:,0] = pht
+				th = theta0 + self.iota_b[i,0]*pht
+				r = self.cfunct(th,ph,self.rmnc_b,self.ixm_b,self.ixn_b)
+				z = self.sfunct(th,ph,self.zmns_b,self.ixm_b,self.ixn_b)
+				b = self.cfunct(th,ph,self.bmnc_b,self.ixm_b,self.ixn_b)
+				p = self.sfunct(th,ph,self.pmns_b,self.ixm_b,self.ixn_b)
+				phi_cart = p+ph
+				xout[i,:,k] = r[i,:,0]*np.cos(phi_cart[i,:,0])
+				yout[i,:,k] = r[i,:,0]*np.sin(phi_cart[i,:,0])
+				zout[i,:,k] = z[i,:,0]
+				bout[i,:,k] = b[i,:,0]
+		for i in sdex:
+			for j in range(ntheta):
+				points_array[:,0] = xout[i,j,:]
+				points_array[:,1] = yout[i,j,:]
+				points_array[:,2] = zout[i,j,:]
+				scalar            = bout[i,j,:]
+				points = vtk.vtkPoints()
+				for point in points_array:
+					points.InsertNextPoint(point)
+				scalar = plt.valuesToScalar(scalar)
+				plt.add3Dline(points,linewidth=2,scalars=scalar)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		if lrender: plt.render()
+
 	def calcQuasiError(self,m,n):
 		"""Calculates the quasi-symmetry error for each surface
 
