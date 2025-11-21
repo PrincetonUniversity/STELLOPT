@@ -979,7 +979,101 @@ class VMEC(FourierRep):
 		print('{0:4d}   {1: 3.6f}   {2: 3.6f}   {3: 3.6f}'.format(self.Nfeval, Xi[0], Xi[1], Xi[2]))
 		self.Nfeval += 1
 		pyplot.close(fig)
+  
+	def get_RZ_coordinates(self,phi,theta):
+		"""This routine returns the (R,Z) positions of all the flux surfaces 
+  		at given phi and theta. phi and theta can be arrays and the returned 
+    	positions have dimension self.ns x Ntheta x Nzeta
 
+		Parameters
+		----------
+		phi : float or 1D array
+			cylindrical toroidal angle at which R,Z are computed
+		theta_arr : flot or 1D array
+  			poloidal angle at which R,Z are computed
+
+		Returns
+		----------
+		R : ndarray (self.ns x Ntheta x Nzeta)
+			R coordinate of flux surface
+		Z : ndarray (self.ns x Ntheta x Nzeta)
+			Z coordinate of flux surface
+		"""
+		import numpy as np
+		phi = np.atleast_1d(phi)
+		phi = phi.reshape(-1,1) #nd array
+		theta = np.atleast_1d(theta)
+		theta = theta.reshape(-1,1) # nd array
+		R = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
+		Z = self.sfunct(theta,phi,self.zmns,self.xm,self.xn)
+        
+		return R,Z
+
+	def get_triangulation(self,phi,s_input=None,f_input=None):
+		"""This routine returns a matplotlib triangulation for all the flux surfaces
+		at cylindrical toroidal angle phi. The triangulation is computed using a poloidal
+		discretization of 1 degree
+  		The triangulation can be used to make contour plots with the VMEC flux surface 
+    	unstructured grid. 
+    	If the flux quantity f_input is to be contour ploted and is initially given 
+		at the s_input (normalized flux) grid, this routine interpolates f_input at 
+  		VMEC s-grid and returns f with the length Ntheta x self.ns, ready to be plotted
+		with the triangulation.
+  
+		Example. If fi is a flux-surface quantity evaluated at the si grid, then:
+		triangulation, f_output = get_triangulation(0.0,si,fi)
+		plt.tricontourf(triangulation, f_output)
+  
+		Parameters
+		----------
+		phi : float
+			cylindrical toroidal angle at which R,Z are computed
+		s_input: 1D array (optional)
+			grid at which f is given
+		f_input: 1D array (optional)
+			flux=surface quantity evauated at s_input
+
+		Returns
+		----------
+		triang : matplotlip triangulation class
+		f_output (optional) : f_input quantity interpolated at VMEC grid
+		"""
+		import numpy as np
+		import matplotlib.tri as tri
+		import matplotlib.path
+  
+		if(f_input is not None and s_input is None):
+			raise ValueError('f_input has been given but s_input no!')
+		elif(f_input is None and s_input is not None):
+			raise Warning('s_input has been given, but there isno f_input. Only triangulation is computed...')
+
+		theta = np.ndarray((360,1))
+		for j in range(360): theta[j]=2.0*np.pi*j/360.0
+		Ntheta = len(theta)
+  
+		# Get R,Z coordinates of all flux surfaces
+		R,Z = self.get_RZ_coordinates(phi,theta)
+		
+  		# Make triangulation
+		triangulation = tri.Triangulation(R.ravel(),Z.ravel())
+		# Mask triangles outside the LCFS
+		LCFS = matplotlib.path.Path(np.column_stack((R[-1,:], Z[-1,:])))
+		triangles = triangulation.triangles
+		xc = R.ravel()[triangles].mean(axis=1) # centroids
+		yc = Z.ravel()[triangles].mean(axis=1)
+		mask = ~LCFS.contains_points(np.column_stack((xc, yc)))
+		triangulation.set_mask(mask)
+
+		if(s_input is not None and f_input is not None):
+			# Interpolate f_input at VMEC s-grid
+			s_VMEC = np.linspace(0,1,self.ns)
+			f_output = np.interp(s_VMEC,s_input,f_input)
+			# Reshape f_output to have the length Nsurfaces X Ntheta
+			f_output = np.broadcast_to(f_output[:,None],(self.ns,Ntheta))
+			f_output = f_output.reshape(self.ns*Ntheta)
+			return triangulation, f_output
+		else:
+			return triangulation
 # VMEC INDATA Class
 class VMEC_INDATA():
 	"""Class for working with VMEC equilibria
