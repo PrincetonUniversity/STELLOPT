@@ -30,7 +30,9 @@ MODULE thrift_plasma_solver_mod
     INTEGER :: ilogplasma, num_species
     REAL(rprec), DIMENSION(:,:), ALLOCATABLE, PRIVATE :: plasma_N, plasma_T, plasma_P
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep, &
-                                                  S_energy_ext, S_particle_ext
+                                                  S_energy_ext, S_particle_ext, &
+                                                  S_alpha_power
+    REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: S_radiated_power, dVdr_keep
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: Dn_NEO, cn_NEO, Dp_NEO, cp_NEO
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: Dp_total, cp_total, Dn_total, cn_total
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: G_NEO_complet, Q_NEO_complet
@@ -84,6 +86,9 @@ MODULE thrift_plasma_solver_mod
         IF( .NOT. ALLOCATED(Dn_total)) ALLOCATE(Dn_total(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(cn_total)) ALLOCATE(cn_total(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(N_fast_alphas)) ALLOCATE(N_fast_alphas(Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(S_alpha_power)) ALLOCATE(S_alpha_power(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(S_radiated_power)) ALLOCATE(S_radiated_power(Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(dVdr_keep)) ALLOCATE(dVdr_keep(Nt_total_plasma_solver,Nr_plasma_solver))
         ! These arrays are filled in thrift_penta with the total NEO fluxes. They include the inter-species diffusion coeffs
         ! which are neglected when computing the Dn_NEO and cn_NEO coeffs used by the transport solver
         IF( .NOT. ALLOCATED(G_NEO_complet)) ALLOCATE(G_NEO_complet(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
@@ -627,7 +632,9 @@ MODULE thrift_plasma_solver_mod
 
         ! Vp = dV/dr
         CALL EZspline_interp(vp_spl,Nr,rho_plasma_grid,Vp,ier)
-        Vp = Vp * 2.0_rprec * rho_plasma_grid * eq_phiedge / eq_Aminor     
+        Vp = Vp * 2.0_rprec * rho_plasma_grid * eq_phiedge / eq_Aminor
+        ! Bookkeeping
+        dVdr_keep(mytimestep_plasma_solver,:) = Vp
 
         kk = 1
         DO ispecies=1,num_species
@@ -752,6 +759,8 @@ MODULE thrift_plasma_solver_mod
                 SB(ir) = SB(ir) + BREMSSTRAHLUNG_POWER(Zi,ni,ne,Te)
             END DO
         END DO
+        ! Bookkeeping
+        S_radiated_power(mytimestep_plasma_solver,:) = SB
 
         ! Alpha power 
         S_alpha = 0.0_rprec
@@ -789,6 +798,8 @@ MODULE thrift_plasma_solver_mod
         END DO
         ! Boundary condition
         RHS_pressure(Nr) = plasma_P(1,Nr)
+        ! Bookkeeping
+        S_alpha_power(1,mytimestep_plasma_solver,:) = S_alpha(:)*frac_alpha_heating(1)
 
         ! Ions
         DO iion=1,nion_prof
@@ -807,6 +818,8 @@ MODULE thrift_plasma_solver_mod
             END DO
             ! Boundary condition
             RHS_pressure(offset+Nr) = plasma_P(1+iion,Nr)
+            ! Bookkeeping
+            S_alpha_power(1+iion,mytimestep_plasma_solver,:) = S_alpha(:)*frac_alpha_heating(iion+1)
         END DO
         
         DEALLOCATE(SB,S_alpha)

@@ -238,6 +238,9 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'rho_plasma_grid',ier)
          CALL write_var_hdf5(fid,'r_plasma_grid',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=r_plasma_grid,ATT='r-grid [-]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'r_plasma_grid',ier)
+         ! dV/dr
+         CALL write_var_hdf5(fid,'dVdr',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=dVdr_keep,ATT='dV/dr [m^2]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dVdr',ier)
          ! Arrays
          CALL write_var_hdf5(fid,'Zions',nion_prof,ier,INTVAR=Zatom_prof,ATT='Ions charge number [-]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Zions',ier)
@@ -271,6 +274,16 @@
          ! N_fast_alphas
          CALL write_var_hdf5(fid,'N_fast_alphas',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=N_fast_alphas,ATT='Density of fast alphas [m^-3]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'N_fast_alphas',ier)
+         ! Energy Sources
+         CALL write_var_hdf5(fid,'S_radiated_power',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=S_radiated_power,ATT='Radiated Power [W/m^3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_radiated_power',ier)
+         CALL write_var_hdf5(fid,'S_alpha_power',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=S_alpha_power,ATT='Alpha Power [W/m^3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_alpha_power',ier)
+         CALL write_var_hdf5(fid,'S_energy_ext',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=S_energy_ext,ATT='External Power Source [W/m^3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_energy_ext',ier)
+         ! External Particle Source
+         CALL write_var_hdf5(fid,'S_particle_ext',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=S_particle_ext,ATT='External Particle Source [part/(s.m^3)]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_particle_ext',ier)
          ! Close file
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)
