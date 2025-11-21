@@ -45,13 +45,15 @@ file. The covariant components of the magnetic field are written:
 
 where we can identify $$I_{poloidal} = 2\pi<B_v>/\mu_0 $$ and $$I_{toroidal} = 2\pi<B_u>/\mu_0 $$. Here we notes that $$<B_u>$$ is the `buco` and $$<B_v>$$ is the `bvco` variables output the the code.  The contravarient components are then written
 
-\$$ B^\theta = 2\pi\frac{d\Psi_{poloidal}}{\partial V} \frac{B^2}{\<B^2\>}, $$
+\$$ B^\theta = 2\pi\frac{d\Psi_{poloidal}}{\partial V} \frac{B^2}{<B^2>}, $$
 
-\$$ B^\phi = 2\pi\frac{d\Psi_{toroidal}}{\partial V} \frac{B^2}{\<B^2\>}. $$
+\$$ B^\phi = 2\pi\frac{d\Psi_{toroidal}}{\partial V} \frac{B^2}{<B^2>}. $$
 
 Finally it should be noted that the `pmns` (and `pmnc`) variables provide the transformation from the Boozer toroidal angle to the cartesian one (VMEC). Normally the deffinition would be $$\zeta_{Boozer} = \zeta_0 + \nu $$, however there is a minus sign introduced in `boozer.f` at line 83. So our deffinition is:
 
 \$$ p =\zeta_0 - \zeta_boozer = - \nu $$
+
+For those that use output from the JMC code, the `pmns` array is $$\phi-\phi_{Boozer}$$ so you should multiply this array by $$-0.5*N_{fp}/\pi$$ to get the value which JMC outputs.
 
 ------------------------------------------------------------------------
 
