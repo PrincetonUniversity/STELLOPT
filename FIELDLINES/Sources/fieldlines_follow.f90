@@ -216,7 +216,36 @@
                      IF (lmu) istate = 1
                      CALL DLSODE(fblin_lsode,neqs_nag,q,phi_nag,phif_nag,itol,rtol,atol,itask,istate,&
                                 iopt,w,lrw,iwork,liw,jacobian_lsode,mf)
-                     IF (istate < -2) CALL handle_err(LSODE_ERR,'fieldlines_follow',istate)
+!                     IF (istate < -2) CALL handle_err(LSODE_ERR,'fieldlines_follow',istate)
+                     IF (istate < -2) THEN
+                        WRITE(6,*) 'FIEDLINES encountered an error while following a field line'
+                        WRITE(6,*) 'LINE INDEX: ',myline
+                        WRITE(6,*) 'LDEX: ',myldex
+                        WRITE(6,*) 'R_START(l): ',R_START(l)
+                        WRITE(6,*) 'PHI_START(l): ',PHI_START(l)
+                        WRITE(6,*) 'Z_START(l): ',Z_START(l)
+                        WRITE(6,*) 'DPHI: ',dphi
+                        WRITE(6,*) 'XLAST: ',xlast
+                        WRITE(6,*) 'YLAST: ',ylast
+                        WRITE(6,*) 'ZLAST: ',zlast
+                        WRITE(6,*) 'ISTATE: ',istate
+                        WRITE(6,*) 'q: ',q
+                        WRITE(6,*) 'phi_nag: ',phi_nag
+                        WRITE(6,*) 'phif_nag: ',phif_nag
+                        WRITE(6,*) 'itol: ',itol
+                        WRITE(6,*) 'rtol: ',rtol
+                        WRITE(6,*) 'atol: ',atol
+                        WRITE(6,*) 'itask: ',itask
+                        WRITE(6,*) 'istate: ',istate
+                        WRITE(6,*) 'iopt: ',iopt
+                        WRITE(6,*) 'w: ',w
+                        WRITE(6,*) 'lrw: ',lrw
+                        WRITE(6,*) 'iwork: ',iwork
+                        WRITE(6,*) 'liw: ',liw
+                        WRITE(6,*) 'mf: ',mf
+                        CALL FLUSH(6)
+                        STOP 'FIELDLINES FORCEING STOP'
+                     END IF
                      CALL out_fieldlines_nag(phif_nag,q)
                      iwork(11) = 0; iwork(12)=0; iwork(13)=0;
                      IF ((istate == -1) .or. (istate ==-2) .or. (ABS(phif_nag) > ABS(phi_end(l))) ) EXIT

@@ -37,7 +37,7 @@ c ----------------------------------------------------------------------
       ax = ax + sum(djx(nlo:nhi)*sq) - djx(i)*sqsum
       ay = ay + sum(djy(nlo:nhi)*sq) - djy(i)*sqsum
       az = az + sum(djz(nlo:nhi)*sq) - djz(i)*sqsum
-
+      
       deallocate (dx, dy, dz)
 
       end subroutine vecpot

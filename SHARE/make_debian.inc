@@ -1,28 +1,10 @@
-# make_debian.inc
-# J. Schilling (jonathan.schilling@ipp.mpg.de) 2017-05-22
-
-#######################################################################
-#            System-specific path and binary definitions
-#######################################################################
-FC = gfortran
-BLASHOME = /usr
-BLACS_HOME = /usr
-SCALAPACK_HOME = /usr
-MPIHOME = /usr
-NETCDF_HOME = /usr
-HDF5_HOME = /usr
-PGPLOT_DIR = /usr
-SILOHOME = /usr
-COILOPT_PATH = /home/IPP-HGW/jons/03_Masterarbeit/00_programs/stellopt/COILOPT
-GSLHOME = /usr
-GCC49_HOME=/usr/lib/gcc/x86_64-linux-gnu/4.9
-
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
   SHELL = /bin/sh
+  ARCH := $(shell uname -m)
   PWD1 = `pwd`
-  MYHOME = $(HOME)/bin
+  MYHOME ?= $(HOME)/bin
   PRECOMP:= /lib/cpp -traditional -DLINUX
   COMPILE = $(FC)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
@@ -31,37 +13,42 @@ GCC49_HOME=/usr/lib/gcc/x86_64-linux-gnu/4.9
   LINK_C  = $(CC) -shared -Wl,-z-defs
 
 #######################################################################
+#            System-specific path and binary definitions
+#######################################################################
+FC = gfortran
+BLASHOME = /usr/lib/$(ARCH)-linux-gnu
+BLACS_HOME = /usr/lib/$(ARCH)-linux-gnu
+SCALAPACK_HOME = /usr/lib/$(ARCH)-linux-gnu
+MPIHOME = /usr/lib/$(ARCH)-linux-gnu
+NETCDF_HOME = /usr/lib/$(ARCH)-linux-gnu
+HDF5_HOME = /usr/lib/$(ARCH)-linux-gnu
+PGPLOT_DIR = /usr/lib/$(ARCH)-linux-gnu
+SILOHOME = /usr/lib/$(ARCH)-linux-gnu
+
+#######################################################################
 #            Define Compiler Flags
 #######################################################################
-#  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_R = -g -O2 -fexternal-blas -fbacktrace
+  FLAGS_R = -O2 -fexternal-blas -fbacktrace
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all 
-  LIBS    = -L$(SCALAPACK_HOME)/lib -llapack -lscalapack-openmpi \
-            -L$(BLASHOME)/lib/libblas -lblas \
-            -L$(BLACS_HOME)/lib -lblacs-openmpi -lblacsCinit-openmpi \
-            -lblacsF77init-openmpi
+  LIBS    = -L/usr/lib -lopenblas -lscalapack-openmpi
+
+  GFORTRAN_VERSION := $(shell $(FC) -dumpversion)
+  ifeq "$(shell [ $(GFORTRAN_VERSION) -gt 9 ] && echo true)" "true"
+      FLAGS_R += -fallow-argument-mismatch
+      FLAGS_D += -fallow-argument-mismatch
+  endif
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = $(MPIHOME)/bin/mpif90
-  MPI_COMPILE_FREE = $(MPIHOME)/bin/mpif90 -ffree-form \
+  MPI_COMPILE = mpif90.openmpi
+  MPI_COMPILE_FREE = $(MPI_COMPILE) -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = $(MPIHOME)/bin/mpicc
-  MPI_LINK = $(MPIHOME)/bin/mpif90
+  MPI_COMPILE_C = mpicc.openmpi
+  MPI_LINK = mpif90.openmpi
   MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 4
-#  MPI_RUN_OPTS_SM = -np 16
-#  MPI_RUN_OPTS_MD = -np 64
-#  MPI_RUN_OPTS_LG = -np 256
-
-  # For GCC6
-  #MPI_COMPILE = mpif90
-  #MPI_COMPILE_FREE = mpif90 -ffree-form \
-  #                   -ffree-line-length-none -ffixed-line-length-none
-  #MPI_COMPILE_C = mpicc
-  #MPI_LINK = mpif90
+  MPI_RUN_OPTS = --use-hwthread-cpus
 
 #######################################################################
 #            NAG Options
@@ -73,11 +60,8 @@ GCC49_HOME=/usr/lib/gcc/x86_64-linux-gnu/4.9
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_HOME)/include
-  NETCDF_LIB = -L$(NETCDF_HOME)/lib/x86_64-linux-gnu -lnetcdf -lnetcdff
-
-  # FOR GCC6
-  #NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdff
+  NETCDF_INC = $(shell nf-config --fflags)
+  NETCDF_LIB = $(shell nf-config --flibs)
 
 #######################################################################
 #            NTCC Options
@@ -91,22 +75,22 @@ GCC49_HOME=/usr/lib/gcc/x86_64-linux-gnu/4.9
 #######################################################################
 #            HDF5 Options
 #######################################################################
-  LHDF5 = F
-  HDF5_INC = -I$(HDF5_HOME)/include/hdf5/serial
-  HDF5_LIB = -L$(HDF5_HOME)/lib/x86_64-linux-gnu -L$(HDF5_HOME)/lib/x86_64-linux-gnu/hdf5/serial -lhdf5_hl -lhdf5_fortran -lhdf5 \
-             -lhdf5hl_fortran -lpthread -lz -lm
+  LHDF5 = T
+  HDF5_INC = -I/usr/include/hdf5/openmpi
+  HDF5_LIB = -L/usr/lib/$(ARCH)-linux-gnu/hdf5/openmpi \
+             -lhdf5 -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
-  LPGPLOT = T
+  LPGPLOT = F
   PGPLOT_INC = -I$(PGPLOT_DIR)
   PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/lib/x86_64-linux-gnu -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
-  LSILO = T
+  LSILO = F
   SILO_INC = -I$(SILOHOME)/include
   SILO_LIB = -L$(SILOHOME)/lib/x86_64-linux-gnu -lsiloh5
 
@@ -126,7 +110,8 @@ GCC49_HOME=/usr/lib/gcc/x86_64-linux-gnu/4.9
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = F
+ifneq ("$(wildcard $(GENE_PATH))","")
+  LGENE = T
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
@@ -135,96 +120,110 @@ GCC49_HOME=/usr/lib/gcc/x86_64-linux-gnu/4.9
              -L$(FFTWHOME)/lib -lfftw3 \
              -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+else
+  LGENE = F
+endif
 
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
+ifneq ("$(wildcard $(COILOPT_PATH))","")
   LCOILOPT = T
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
   COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib/x86_64-linux-gnu -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+else
+  LCOILOPT = F
+endif
 
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+ifneq ("$(wildcard $(TERPSICHORE_PATH))","")
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
   TERPSICHORE_LIB = $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
+else
+  LTERPSICHORE = F
+endif
 
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+ifneq ("$(wildcard $(TRAVIS_PATH))","")
+  LTRAVIS = T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
-  TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+  LIB_FADDEEVA = libfaddeeva64.a
+  TRAVIS_LIB = $(TRAVIS_DIR)lib/$(LIB_TRAVIS) \
+               $(TRAVIS_DIR)faddeeva_package/lib/$(LIB_FADDEEVA) \
+               $(TRAVIS_DIR)magconf/lib/$(LIB_MCONF) -lstdc++
+else
+  LTRAVIS = F
+endif
 
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= F
+ifneq ("$(wildcard $(REGCOIL_PATH))","")
+  LREGCOIL= T
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+else
+  LREGCOIL = F
+endif
+
+#######################################################################
+#            SFINCS Options
+#######################################################################
+ifneq ("$(wildcard $(SFINCS_PATH))","")
+  LSFINCS = T
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+else
+  LSFINCS = F
+endif
 
 #######################################################################
 #            Available Energy Options
 #######################################################################
-  LAEOPT= F
+ifneq ("$(wildcard $(AEOPT_PATH))","")
+  LAEOPT = T
   AEOPT_DIR = $(AEOPT_PATH)
   AEOPT_INC = -I$(AEOPT_DIR) 
   LIB_AEOPT = libtrapAE.a
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
+else
+  LAEOPT = F
+endif
 
 #######################################################################
-#            MagTense Options
+#            MANGO Options
 #######################################################################
-  LMAGTENSE= F
-  MAGTENSE_DIR = $(MAGTENSE_PATH)
-  MAGTENSE_INC = -I$(MAGTENSE_DIR)/source/NumericalIntegration/NumericalIntegration/ \
-    -I$(MAGTENSE_DIR)/source/TileDemagTensor/TileDemagTensor/ \
-    -I$(MAGTENSE_DIR)/source/DemagField/DemagField/ 
-  MAGTENSE_LIB = $(MAGTENSE_DIR)/source/NumericalIntegration/NumericalIntegration/libNumericalIntegration.a \
-    $(MAGTENSE_DIR)/source/TileDemagTensor/TileDemagTensor/libTileDemagTensor.a \
-    $(MAGTENSE_DIR)/source/DemagField/DemagField/libDemagField.a 
+ifneq ("$(wildcard $(MANGO_PATH))","")
+  LMANGO = T
+  MANGO_DIR = $(MANGO_PATH)
+# Any flags specified on the next 2 lines will be added to the
+# MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS lines as defined in
+# $(MANGO_DIR)/lib/mangoMakeVariables
+  MANGO_INC = 
+  MANGO_LIB = 
+else
+  LMANGO = F
+endif
 
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-#LIB_SHARE = $(BLASHOME)/lib/libblas.so \
-          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so \
-          $(BLACS_HOME)/lib/libblacs-openmpi.so  $(BLACS_HOME)/lib/libblacsCinit-openmpi.so $(BLACS_HOME)/lib/libblacsF77init-openmpi.so \
-          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_hl.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5hl_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5.so \
-          $(HDF5_HOME)/lib/x86_64-linux-gnu/libmpi_usempif08.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
-          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdff.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf_c++.so \
-          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
-          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
-          $(GCC6_HOME)/libgfortran.so $(GCC6_HOME)/libstdc++.so \
-          $(MPIHOME)/lib/x86_64-linux-gnu/libmpi.so $(MPIHOME)/lib/x86_64-linux-gnu/libmpi_mpifh.so \
-          /usr/lib/x86_64-linux-gnu/libm.so /usr/lib/liblapack.so /usr/lib/x86_64-linux-gnu/libdl.so
-LIB_SHARE = $(BLASHOME)/lib/libblas.so \
-          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so.1 \
-          $(BLACS_HOME)/lib/libblacs-openmpi.so.1 \
-          $(BLACS_HOME)/lib/libblacsCinit-openmpi.so.1 \
-          $(BLACS_HOME)/lib/libblacsF77init-openmpi.so.1 \
-          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
-          $(NETCDF_HOME)/lib/libnetcdf.so \
-          $(NETCDF_HOME)/lib/libnetcdff.so \
-          $(NETCDF_HOME)/lib/libnetcdf_c++.so \
-          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
-          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
-          $(GCC49_HOME)/libgfortran.so \
-          $(GCC49_HOME)/libstdc++.so \
-          $(MPIHOME)/lib/libmpi.so \
-          $(MPIHOME)/lib/libmpif77.so \
-          /usr/lib/x86_64-linux-gnu/libm.so \
-          /usr/lib/liblapack.so \
-          /usr/lib/x86_64-linux-gnu/libdl.so
+LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
 

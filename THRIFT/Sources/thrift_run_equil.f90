@@ -24,14 +24,20 @@
 !----------------------------------------------------------------------
 
       IF (lvmec) THEN
+         ! Run VMEC
          CALL thrift_paraexe('paravmec_run',proc_string,lscreen_subcodes)
+         ! Check for error
+         IF (ier_paraexe /= 0) THEN
+            WRITE(6,'(A,I4)') '!!!!!  VMEC RUNTIME ERROR DETECTED IER = ',ier_paraexe
+            RETURN
+         END IF
          ! Read the VMEC output
          CALL read_wout_deallocate; ier = 0
          CALL read_wout_file(TRIM(proc_string),ier)
          eq_beta      = betatot
          eq_Aminor    = Aminor
          eq_Rmajor    = Rmajor
-         eq_phiedge   = MAXVAL(phi)
+         eq_phiedge   = MAXVAL(ABS(phi))
          eq_volume    = Volume
          ! Load equil_utils for helpers later on
          CALL thrift_load_vmec

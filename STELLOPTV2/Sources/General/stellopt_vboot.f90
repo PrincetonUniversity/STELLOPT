@@ -63,9 +63,6 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      lscreen_local = .FALSE.
-      lfirst_pass = .TRUE.
-      IF (lscreen) lscreen_local = .TRUE.
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  VBOOT CALCULATION  -------------------------'
 
       ! Handle boozer flags
@@ -97,8 +94,10 @@
       ier = 0
       exit_after_next_vmec_run = .false.
       AC_profile_fine = 0
+      lfirst_pass = .true.
       DO
          vboot_iteration = vboot_iteration + 1
+         lscreen_local = lfirst_pass .and. lscreen
 
          ! Run VMEC
          iflag = 0
@@ -112,7 +111,7 @@
          WRITE (iteration_string,fmt="(i4.4)") vboot_iteration
          ! No SYSTEM CALLS!!!!!!!!!!!
          !CALL system('cp wout_'//trim(proc_string)//".nc wout_"//trim(proc_string)//"_vboot"//trim(iteration_string)//".nc")
-         CALL stellopt_paraexe('paravmec_write',trim(proc_string)//"_vboot"//trim(iteration_string),.true.) 
+         CALL stellopt_paraexe('paravmec_write',trim(proc_string)//"_vboot"//trim(iteration_string),.false.) 
 
          ! Load Equilibrium
          CALL stellopt_load_equil(lscreen_local,iflag)
@@ -146,6 +145,13 @@
             IF (iflag .ne.0) RETURN
 
             CALL stellopt_paraexe('bootsj',proc_string,lscreen_local); iflag = ier_paraexe
+
+            IF (lscreen_local) THEN
+               WRITE(6,'(A)')           ' --------------------  BOOTSJ SELF-CONSISTENT BOOTSTRAP  -------------------'
+               WRITE(6,'(A,2X,I6)')     '   MAX ITERATIONS: ',vboot_max_iterations
+               WRITE(6,'(A,2X,ES10.3)') '        TOLERANCE: ',vboot_tolerance
+               WRITE(6,'(A)')           '     ITERATION      CURTOR   CONVERGENCE'
+            END IF
 
             IF (iflag .ne.0) RETURN
             dibs = dibs * 1D6 ! Convert megaAmperes to Amperes.
@@ -182,14 +188,15 @@
             curtor_bootstrap = SUM(AC_fit_results(1:irup)) * ds_fine
             curtor_vmec = curtor_bootstrap + curtor_beam
 
+            ! Print to screen
+            IF (lscreen) WRITE(6,'(10X,I4,2X,ES10.3,4X,ES10.3)') vboot_iteration,curtor_vmec,vboot_convergence_factor
+
             IF (vboot_convergence_factor < vboot_tolerance) THEN
-               WRITE(6,"(a,i4,a,es10.3,a,es10.3,a)") "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor,". Tolerance achieved."
+               IF (lscreen) WRITE(6,'(A)') '----- VBOOT Converged -----'
                exit_after_next_vmec_run = .true. ! VMEC is cheap, so always finish the vboot iteration with 1 last vmec run.
             ELSE IF (vboot_iteration >= vboot_max_iterations) THEN
-               WRITE(6,"(a,i4,a,es10.3,a,es10.3,a,i5)") "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor,". VBOOT_MAX_ITERATIONS reached: ", vboot_max_iterations
+               IF (lscreen) WRITE(6,'(A)') '----- VBOOT Maximum Iterations -----'
                exit_after_next_vmec_run = .true. ! VMEC is cheap, so always finish the vboot iteration with 1 last vmec run.
-            ELSE
-               WRITE(6,"(a,i4,a,es10.3,a,es10.3)")   "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor
             END IF
 
             WRITE(ibootlog,"(4(a,es22.15))") "curtor_bootstrap = ",curtor_bootstrap," curtor_beam = ",curtor_beam," curtor_total = ",curtor_vmec," vboot convergence factor = ",vboot_convergence_factor

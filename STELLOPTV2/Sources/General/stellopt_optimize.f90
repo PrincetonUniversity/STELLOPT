@@ -23,7 +23,7 @@
 !----------------------------------------------------------------------
       IMPLICIT NONE
       !LOGICAL ::  lrestart
-      LOGICAL ::  lfile_exists, lskip_min
+      LOGICAL ::  lfile_exists, lskip_min, ldeleteopt, lsocleanup
       INTEGER ::  ier, iunit,nvar_in, nprint, info, ldfjac,nfev,&
                   iunit_restart, nfev_save, npop, ndiv, i
       INTEGER, ALLOCATABLE :: ipvt(:)
@@ -33,6 +33,7 @@
       REAL(rprec), ALLOCATABLE ::  fjac(:,:)
       LOGICAL :: used_mango_algorithm
       REAL(rprec), EXTERNAL :: enorm
+      CHARACTER(200) :: cmdtxt = ""
       EXTERNAL stellopt_fcn
       
 !----------------------------------------------------------------------
@@ -71,7 +72,6 @@
                WRITE(6,*) '    FILE:     ',TRIM(xvec_file)
             CASE('one_iter','single','eval','single_iter')
                WRITE(6,*) '    OPTIMIZER: SINGLE_ITERATION'
-               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
             CASE('one_iter_norm')
                WRITE(6,*) '    OPTIMIZER: SINGLE_ITERATION FOR NORMALIZTION'
             CASE('gade')
@@ -120,9 +120,9 @@
                WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
                WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
                WRITE(6,'(A,2X,1I5)')     '     NFUNC_MAX: ',nfunc_max
-               WRITE(6,'(A,2X,1ES12.4)') '       C_local: ',epsfcn
-               WRITE(6,'(A,2X,1ES12.4)') '      C_global: ',1.0
-               WRITE(6,'(A,2X,1ES12.4)') '        Vscale: ',factor
+               WRITE(6,'(A,2X,1ES12.4)') 'Cognitive Coef: ',epsfcn
+               WRITE(6,'(A,2X,1ES12.4)') '   Social Coef: ',gtol
+               WRITE(6,'(A,2X,1ES12.4)') '       Inertia: ',factor
                WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npopulation
             CASE('rocket')
                WRITE(6,*) '    OPTIMIZER: Rocket'
@@ -139,11 +139,12 @@
             ! there is no need to print a warning here, since the next select case block
             ! will catch it.
          END SELECT
-         IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
       END IF
 
       ! DEFAULT
       lskip_min = .false.
+      ldeleteopt = .TRUE.
+      lsocleanup = .TRUE.
 
       ! Do runs
       SELECT CASE(TRIM(opt_type))
@@ -180,10 +181,12 @@
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fjac)
          CASE('eval_xvec')
+            ldeleteopt = .FALSE.
             lskip_min = .true.
             CALL xvec_eval(stellopt_fcn,nvars,mtargets,xvec_file)
          CASE('one_iter','single','eval','single_iter')
             lskip_min = .true.
+            ldeleteopt = .FALSE.
             ALLOCATE(fvec(mtargets))
             fvec     = 0.0
             info     = FLAG_SINGLETASK
@@ -200,6 +203,8 @@
             IF (myid == master) info = flag_cleanup_lev
             call stellopt_fcn(mtargets, nvars, vars, fvec, info, nfev)
          CASE('one_iter_norm')
+            ldeleteopt = .FALSE.
+            lsocleanup = .FALSE.
             ALLOCATE(fvec(mtargets))
             fvec     = 0.0
             info     = FLAG_SINGLETASK
@@ -234,6 +239,7 @@
             CLOSE(iunit)
             CLOSE(iunit_restart)
          CASE('map')
+            ldeleteopt = .FALSE.
             lskip_min = .true.
             nprint = 6
             lno_restart = .true.
@@ -244,6 +250,7 @@
                 WRITE(6,*) '       See map.dat for data               '
             END IF
          CASE('map_linear')
+            ldeleteopt = .FALSE.
             lskip_min = .true.
             nprint = 6
             lno_restart = .true.
@@ -254,6 +261,7 @@
                 WRITE(6,*) '       See map.dat for data               '
             END IF
          CASE('map_plane')
+            ldeleteopt = .FALSE.
             lskip_min = .true.
             nprint = 6
             lno_restart = .true.
@@ -264,6 +272,7 @@
                 WRITE(6,*) '       See map.dat for data               '
             END IF
          CASE('map_hypers')
+            ldeleteopt = .FALSE.
             lskip_min = .true.
             ALLOCATE(wa1(nvars),fvec(mtargets))
             wa1 = vars
@@ -280,7 +289,7 @@
             wa1 = vars
             lno_restart = .TRUE.
             c1 = epsfcn
-            c2 = 1.0
+            c2 = gtol
             CALL PSO_Evolve(stellopt_fcn,mtargets,nvars,npopulation,vars_min,vars_max,&
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
             DEALLOCATE(wa1)
@@ -313,6 +322,23 @@
          ier=-500
          CALL stellopt_fcn(mtargets,nvars,vars,fvec,ier,nfev)
       END IF
+!DEC$ IF DEFINED (STELZIP)
+      IF (myid == master .and. lsocleanup) THEN
+         IF (ldeleteopt) THEN
+            ! Remove the *_opt* files
+            WRITE(6,*) ' Cleaning up _opt files'; CALL FLUSH(6); ier = 0; ierr_mpi = 0; cmdtxt=''
+            CALL EXECUTE_COMMAND_LINE("rm -rf *_opt*",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+            WRITE(6,*) ' rm: EXITSTAT=',ier,' CMDSTAT=',ierr_mpi; CALL FLUSH(6)
+            WRITE(6,*) '     MESSAGE: ',TRIM(cmdtxt); CALL FLUSH(6)
+         END IF
+         ! Zip up the results
+         WRITE(6,*) ' Zipping files'; CALL FLUSH(6); ier = 0; ierr_mpi = 0; cmdtxt=''
+         CALL EXECUTE_COMMAND_LINE("zip -r stellopt_files.zip *",WAIT=.TRUE.,EXITSTAT=ier,CMDSTAT=ierr_mpi,CMDMSG=cmdtxt)
+         WRITE(6,*) ' zip: EXITSTAT=',ier,' CMDSTAT=',ierr_mpi; CALL FLUSH(6)
+         WRITE(6,*) '     MESSAGE: ',TRIM(cmdtxt); CALL FLUSH(6)
+         ier = 0; ierr_mpi=0
+      END IF
+!DEC$ ENDIF
       IF (ALLOCATED(fvec)) DEALLOCATE(fvec)
 
 !DEC$ IF DEFINED (MPI_OPT)

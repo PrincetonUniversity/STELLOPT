@@ -26,11 +26,8 @@
 !-----------------------------------------------------------------------
 !     Local Variables
 !-----------------------------------------------------------------------
-      INTEGER :: mystart, mystep,  ier !win_X4D, win_Y4D,
+      INTEGER :: mystart, mystep,  ier 
       INTEGER :: bcs1(2), bcs2(2), bcs3(2)
-      !TYPE(EZspline3_r8) :: X_spl, Y_spl
-      !REAL(rprec), POINTER, DIMENSION(:,:,:) :: X_ARR, Y_ARR
-      !REAL(rprec), POINTER, DIMENSION(:,:,:,:) :: X4D, Y4D
       
       ! For splines
       INTEGER :: i,j,k,l
@@ -42,10 +39,9 @@
 !-----------------------------------------------------------------------
       
       ! Recalculate U for all particles
-      !mystart = LBOUND(R_lines,2)
       DO myline = mystart_save, myend_save
          DO mystep = 0, npoinc
-            s1 = S_lines(mystep,myline)
+            !s1 = S_lines(mystep,myline)
             r1 = R_lines(mystep,myline)
             p1 = MOD(PHI_lines(mystep,myline),phimax)
             IF (p1 < 0) p1 = p1 + phimax
@@ -56,14 +52,16 @@
             xparam = (r1 - raxis(i)) * hri(i)
             yparam = (p1 - phiaxis(j)) * hpi(j)
             zparam = (z1 - zaxis(k)) * hzi(k)
+            ! Even taking X4D, Y4D to XRHO4D, YRHO4D it's still 
+            ! true that U = atan2(yrho / xrho)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            X4D(1,1,1,1),nr,nphi,nz)
-            xt = fval(1)/s1
+                            XRHO4D(1,1,1,1),nr,nphi,nz)
+            xt = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            Y4D(1,1,1,1),nr,nphi,nz)
-            yt = fval(1)/s1
+                            YRHO4D(1,1,1,1),nr,nphi,nz)
+            yt = fval(1)
             U_lines(mystep,myline) = ATAN2(yt,xt)
          END DO
       END DO

@@ -1,7 +1,7 @@
       SUBROUTINE evolve(time_step, ier_flag, liter_flag, lscreen)
       USE vmec_main
       USE vmec_params, ONLY: bad_jacobian_flag, successful_term_flag,
-     &                       norm_term_flag
+     &                       norm_term_flag, time_control_flag
       USE xstuff
       USE precon2d, ONLY: ictrl_prec2d, l_comp_prec2D, 
      &                    compute_blocks_par, compute_blocks
@@ -69,13 +69,28 @@ C-----------------------------------------------
 !        INITIATES 2D PRECONDITIONER CALCULATION
 !
          IF (iter_on .EQ. -1) THEN
-            IF (lqmr) THEN
-               nstep = 5
-               niter = iter2+100                   !Limit # preconditioner steps
-            ELSE
-               nstep = 20
-               niter = iter2+400
+            IF (pre_niter .eq. -1) THEN
+               IF (lqmr) THEN
+                  nstep = 5
+                  niter = iter2+100                   !Limit # preconditioner steps
+               ELSE
+                  nstep = 20
+                  niter = iter2+400
+               END IF
+
+               IF (rank .eq. 0) THEN
+                  WRITE (6,1000) niter
+                  WRITE (nthreed,1000) niter
+               END IF
+            ELSE IF (pre_niter .ge. 0) THEN
+               niter = iter2 + pre_niter
+
+               IF (rank .eq. 0) THEN
+                  WRITE (6,1000) niter
+                  WRITE (nthreed,1000) niter
+               END IF
             END IF
+
             iter_on = iter2                        !Flag to monitor progress of preconditioner
          ELSE
             iter_on = iter2-11
@@ -84,7 +99,9 @@ C-----------------------------------------------
 !SPH022111: ADD NEW CONTROL PARAMETER, l_comp_prec2D, TO FORCE RECALCULATION
 !           OF PRECONDITIONING BLOCKS IN V3FIT, FOR EXAMPLE
          IF (lfirst .OR. l_comp_prec2D) THEN
-            IF (l_v3fit) WRITE(*,*) 'VMEC Evolve:compute_blocks'
+            IF (l_v3fit) THEN
+               WRITE(*,*) 'VMEC Evolve:compute_blocks'
+            END IF
             IF (PARVMEC) THEN
                CALL compute_blocks_par (pxc,pxcdot,pgc)
             ELSE
@@ -105,6 +122,13 @@ C-----------------------------------------------
             xcdot = 0
          END IF
       END IF
+!
+!     CHECK NS_RESLTN
+!
+      IF (NS_RESLTN > num_grids) THEN
+         ier_flag = time_control_flag
+         RETURN
+      ENDIF
 
 !
 !     COMPUTE MHD FORCES
@@ -218,13 +242,15 @@ C-----------------------------------------------
       CALL second0(tevoff)
       evolve_time = evolve_time + (tevoff - tevon)
 
+1000  FORMAT(2x,'Resetting the number of niter to ',i6)
+
       END SUBROUTINE evolve
 
 
       SUBROUTINE TimeStepControl(ier_flag, PARVMEC)
       USE vmec_main, ONLY: res0, res1, fsq, fsqr, fsqz, fsql,
      &                     irst, iter1, iter2, delt0r, dp
-      USE vmec_params, ONLY: ns4
+      USE vmec_params, ONLY: ns4, time_control_flag
       USE vparams, ONLY: c1pm2
       USE vmec_input, ONLY: nstep
       USE precon2d, ONLY: ictrl_prec2d
@@ -239,6 +265,7 @@ C-----------------------------------------------
       INTEGER  :: ier_flag
       LOGICAL, INTENT(IN) :: PARVMEC
 
+      ier_flag = 0
       fsq0 = fsqr+fsqz+fsql
       IF (iter2.EQ.iter1 .OR. res0.EQ.-1) THEN
          res0 = fsq
@@ -276,7 +303,8 @@ C-----------------------------------------------
             CALL funct3d(.FALSE., ier_flag)
          END IF
          IF (irst .NE. 1 .and. irst .NE. 4) THEN
-            STOP 'Logic error in TimeStepControl!'
+            ier_flag = time_control_flag
+            !STOP 'Logic error in TimeStepControl!'
          END IF
       END IF
 

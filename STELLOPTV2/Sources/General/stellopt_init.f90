@@ -27,6 +27,7 @@
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
       USE parallel_vmec_module, ONLY: PARVMEC, gnranks
+      USE fieldlines_input_mod, ONLY: read_fieldlines_input
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -37,7 +38,7 @@
       IMPLICIT NONE
       INTEGER ::  i,n,m,ier, iunit,nvar_in,ctrl_dofs,nknots
       INTEGER ::  ictrl(5)
-      REAL(rprec) :: norm, delta
+      REAL(rprec) :: norm, delta, scale
       REAL(rprec) :: fvec_temp(1)
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d) :: rbc_temp,zbs_temp
       REAL(rprec), PARAMETER :: norm_fac = 0.5_rprec   ! Used to set bounds for nomalization
@@ -52,14 +53,17 @@
 !----------------------------------------------------------------------
       chisq_min = bigno
       ier = 0
+      scale = 1.0
 
       ! Read the OPTIMUM Namelist
-      CALL read_stellopt_input(TRIM(id_string),ier,myid)
-      !CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
-      !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
+      CALL init_stellopt_input
+      CALL read_stellopt_input(TRIM(id_string),ier)
+      CALL stellopt_write_header
 
-      ! Handle coil geometry
-      IF (lcoil_geom) CALL namelist_input_makegrid(id_string)
+      IF (lpoincare) CALL read_fieldlines_input(TRIM(id_string),ier)
+
+      ! Handle a one_iter_run
+      IF (loneiter) opt_type = 'one_iter'
 
       ! Handle MPI and shared memory
       CALL stellopt_init_mpi
@@ -205,47 +209,17 @@
                     END IF
                  END DO
               END DO
-              ctrl_dofs = 3                 !x,y,z at each point
-              IF (ANY(lwindsurf)) ctrl_dofs = 2  ! u,v  at each point
-              DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
-                 nknots = COUNT(coil_splinesx(n,:) >= 0.0)
-                 IF (lwindsurf(coil_surf(n)).AND.(coil_type(n).eq.'A')) THEN
-                    lcoil_spline(n,1:3) = .FALSE.
-                    lcoil_spline(n,nknots-6:nknots-4) = .FALSE.
-                    if (lcoil_spline(n,nknots-7)) nvars = nvars - 1
-                 ELSE
-                    ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
-                    nknots = nknots - 2
-                 ENDIF
-
-                 ! First ctrl of modular loses one dof (u or z).
-                 IF ((coil_type(n).eq.'M').AND.lcoil_spline(n,1)) nvars = nvars - 1
-
-                 DO m = 1,nknots-4
-                    IF (lcoil_spline(n,m)) nvars = nvars + ctrl_dofs
+              nknots = 0
+              IF (.not.lfix_rho_coil) nknots = nknots + 1
+              IF (.not.lfix_theta_coil) nknots = nknots + 1
+              IF (.not.lfix_zeta_coil) nknots = nknots + 1
+              DO n = LBOUND(lcoil_kts_opt,1), UBOUND(lcoil_kts_opt,1)
+                 DO m = LBOUND(lcoil_kts_opt,2), UBOUND(lcoil_kts_opt,2)
+                    IF (lcoil_kts_opt(n,m)) nvars = nvars + nknots
                  END DO
               END DO
               ier = 0
 
-              ! REGCOIL options
-              IF (lregcoil_winding_surface_separation_opt) nvars = nvars + 1
-              IF (lregcoil_current_density_opt) nvars = nvars + 1
-              DO m = -mpol_rcws, mpol_rcws
-                 DO n = -ntor_rcws, ntor_rcws
-                    IF (lregcoil_rcws_rbound_c_opt(m,n)) THEN
-                       nvars = nvars + 1
-                    END IF
-                    IF (lregcoil_rcws_rbound_s_opt(m,n)) THEN
-                       nvars = nvars + 1
-                    END IF
-                    IF (lregcoil_rcws_zbound_c_opt(m,n)) THEN
-                       nvars = nvars + 1
-                    END IF
-                    IF (lregcoil_rcws_zbound_s_opt(m,n)) THEN
-                       nvars = nvars + 1
-                    END IF
-                 END DO
-              END DO
          CASE('spec')
          CASE('test')
             IF (lxval_opt)  nvars = nvars + 1
@@ -267,7 +241,6 @@
       SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
               ! Set some defaults
-              phiedge_old = phiedge
               IF (ncurr /= 0 .and. ANY(lai_opt)) lai_opt(:) = .false.
               IF (ncurr /= 0 .and. ANY(lai_f_opt)) lai_f_opt(:) = .false.
               IF (ncurr /= 1 .and. lcurtor_opt) lcurtor_opt = .false.
@@ -280,125 +253,6 @@
               CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)
 !DEC$ ENDIF
-              ! Now count
-              IF (lregcoil_winding_surface_separation_opt) THEN
-                 IF (lauto_domain) THEN
-                    regcoil_winding_surface_separation_min = &
-                        regcoil_winding_surface_separation - &
-                        ABS(pct_domain*regcoil_winding_surface_separation)
-                    regcoil_winding_surface_separation_max = &
-                        regcoil_winding_surface_separation + &
-                        ABS(pct_domain*regcoil_winding_surface_separation)
-                 END IF
-                 nvar_in = nvar_in + 1
-                 vars(nvar_in) = regcoil_winding_surface_separation
-                 vars_min(nvar_in) = regcoil_winding_surface_separation_min
-                 vars_max(nvar_in) = regcoil_winding_surface_separation_max
-                 var_dex(nvar_in) = iregcoil_winding_surface_separation
-                 diag(nvar_in)    = dregcoil_winding_surface_separation_opt
-                 arr_dex(nvar_in,1) = 1
-              END IF
-              IF (lregcoil_current_density_opt) THEN
-                 IF (lauto_domain) THEN
-                    regcoil_current_density_min = &
-                        regcoil_current_density - &
-                        ABS(pct_domain*regcoil_current_density)
-                    regcoil_current_density_max = &
-                        regcoil_current_density + &
-                        ABS(pct_domain*regcoil_current_density)
-                 END IF
-                 nvar_in = nvar_in + 1
-                 vars(nvar_in) = regcoil_current_density
-                 vars_min(nvar_in) = regcoil_current_density_min
-                 vars_max(nvar_in) = regcoil_current_density_max
-                 var_dex(nvar_in) = iregcoil_current_density
-                 diag(nvar_in)    = dregcoil_current_density_opt
-                 arr_dex(nvar_in,1) = 1
-              END IF
-              IF (ANY(lregcoil_rcws_rbound_c_opt) ) THEN
-                 DO m = -mpol_rcws,mpol_rcws
-                    DO n = -ntor_rcws,ntor_rcws
-                       ! IF (m==0 .and. n<=0) CYCLE
-                       IF (lregcoil_rcws_rbound_c_opt(m,n)) THEN
-                          IF (lauto_domain) THEN
-                             regcoil_rcws_rbound_c_min(m,n) = regcoil_rcws_rbound_c(m,n) - ABS(pct_domain*regcoil_rcws_rbound_c(m,n))
-                             regcoil_rcws_rbound_c_max(m,n) = regcoil_rcws_rbound_c(m,n) + ABS(pct_domain*regcoil_rcws_rbound_c(m,n))
-                          END IF
-                          nvar_in = nvar_in + 1
-                          vars(nvar_in) = regcoil_rcws_rbound_c(m,n)
-                          vars_min(nvar_in) = regcoil_rcws_rbound_c_min(m,n)
-                          vars_max(nvar_in) = regcoil_rcws_rbound_c_max(m,n)
-                          var_dex(nvar_in) = iregcoil_rcws_rbound_c
-                          diag(nvar_in)    = dregcoil_rcws_rbound_c_opt(m,n)
-                          arr_dex(nvar_in,1) = m
-                          arr_dex(nvar_in,2) = n
-                       END IF
-                    END DO
-                 END DO
-              END IF
-              IF (ANY(lregcoil_rcws_rbound_s_opt) ) THEN
-                 DO m = -mpol_rcws,mpol_rcws
-                    DO n = -ntor_rcws,ntor_rcws
-                       ! IF (m==0 .and. n<=0) CYCLE
-                       IF (lregcoil_rcws_rbound_s_opt(m,n)) THEN
-                          IF (lauto_domain) THEN
-                             regcoil_rcws_rbound_s_min(m,n) = regcoil_rcws_rbound_s(m,n) - ABS(pct_domain*regcoil_rcws_rbound_s(m,n))
-                             regcoil_rcws_rbound_s_max(m,n) = regcoil_rcws_rbound_s(m,n) + ABS(pct_domain*regcoil_rcws_rbound_s(m,n))
-                          END IF
-                          nvar_in = nvar_in + 1
-                          vars(nvar_in) = regcoil_rcws_rbound_s(m,n)
-                          vars_min(nvar_in) = regcoil_rcws_rbound_s_min(m,n)
-                          vars_max(nvar_in) = regcoil_rcws_rbound_s_max(m,n)
-                          var_dex(nvar_in) = iregcoil_rcws_rbound_s
-                          diag(nvar_in)    = dregcoil_rcws_rbound_s_opt(m,n)
-                          arr_dex(nvar_in,1) = m
-                          arr_dex(nvar_in,2) = n
-                       END IF
-                    END DO
-                 END DO
-              END IF
-              IF (ANY(lregcoil_rcws_zbound_c_opt) ) THEN
-                 DO m = -mpol_rcws,mpol_rcws
-                    DO n = -ntor_rcws,ntor_rcws
-                       ! IF (m==0 .and. n<=0) CYCLE
-                       IF (lregcoil_rcws_zbound_c_opt(m,n)) THEN
-                          IF (lauto_domain) THEN
-                             regcoil_rcws_zbound_c_min(m,n) = regcoil_rcws_zbound_c(m,n) - ABS(pct_domain*regcoil_rcws_zbound_c(m,n))
-                             regcoil_rcws_zbound_c_max(m,n) = regcoil_rcws_zbound_c(m,n) + ABS(pct_domain*regcoil_rcws_zbound_c(m,n))
-                          END IF
-                          nvar_in = nvar_in + 1
-                          vars(nvar_in) = regcoil_rcws_zbound_c(m,n)
-                          vars_min(nvar_in) = regcoil_rcws_zbound_c_min(m,n)
-                          vars_max(nvar_in) = regcoil_rcws_zbound_c_max(m,n)
-                          var_dex(nvar_in) = iregcoil_rcws_zbound_c
-                          diag(nvar_in)    = dregcoil_rcws_zbound_c_opt(m,n)
-                          arr_dex(nvar_in,1) = m
-                          arr_dex(nvar_in,2) = n
-                       END IF
-                    END DO
-                 END DO
-              END IF
-              IF (ANY(lregcoil_rcws_zbound_s_opt) ) THEN
-                 DO m = -mpol_rcws,mpol_rcws
-                    DO n = -ntor_rcws,ntor_rcws
-                       ! IF (m==0 .and. n<=0) CYCLE
-                       IF (lregcoil_rcws_zbound_s_opt(m,n)) THEN
-                          IF (lauto_domain) THEN
-                             regcoil_rcws_zbound_s_min(m,n) = regcoil_rcws_zbound_s(m,n) - ABS(pct_domain*regcoil_rcws_zbound_s(m,n))
-                             regcoil_rcws_zbound_s_max(m,n) = regcoil_rcws_zbound_s(m,n) + ABS(pct_domain*regcoil_rcws_zbound_s(m,n))
-                          END IF
-                          nvar_in = nvar_in + 1
-                          vars(nvar_in) = regcoil_rcws_zbound_s(m,n)
-                          vars_min(nvar_in) = regcoil_rcws_zbound_s_min(m,n)
-                          vars_max(nvar_in) = regcoil_rcws_zbound_s_max(m,n)
-                          var_dex(nvar_in) = iregcoil_rcws_zbound_s
-                          diag(nvar_in)    = dregcoil_rcws_zbound_s_opt(m,n)
-                          arr_dex(nvar_in,1) = m
-                          arr_dex(nvar_in,2) = n
-                       END IF
-                    END DO
-                 END DO
-              END IF
               IF (lphiedge_opt) THEN
                  IF (lauto_domain) THEN
                     phiedge_min = phiedge - ABS(pct_domain*phiedge)
@@ -1278,31 +1132,32 @@
               IF (ANY(laxis_opt)) THEN
                  n = UBOUND(laxis_opt,1)
                  DO n = LBOUND(laxis_opt,1), UBOUND(laxis_opt,1)
+                    IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*n)
                     IF (laxis_opt(n)) THEN
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = raxis_cc(n)
+                       vars(nvar_in) = raxis_cc(n)*scale
                        IF (lauto_domain) THEN
                           norm = MIN(raxis_cc(n),raxis_cs(n))
                           raxis_min(n) = norm - ABS(pct_domain*norm)
                           norm = MAX(raxis_cc(n),raxis_cs(n))
                           raxis_max(n) = norm + ABS(pct_domain*norm)
                        END IF
-                       vars_min(nvar_in) = raxis_min(n)
-                       vars_max(nvar_in) = raxis_max(n)
+                       vars_min(nvar_in) = raxis_min(n)*scale
+                       vars_max(nvar_in) = raxis_max(n)*scale
                        var_dex(nvar_in)  = iraxis_cc
                        diag(nvar_in)     = daxis_opt(n)
                        arr_dex(nvar_in,1) = n
                        IF (n /= 0) THEN
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = zaxis_cs(n)
+                          vars(nvar_in) = zaxis_cs(n)*scale
                           IF (lauto_domain) THEN
                              norm = MIN(zaxis_cs(n),zaxis_cc(n))
                              zaxis_min(n) = norm - ABS(pct_domain*norm)
                              norm = MAX(zaxis_cs(n),zaxis_cc(n))
                              zaxis_max(n) = norm + ABS(pct_domain*norm)
                           END IF
-                          vars_min(nvar_in) = zaxis_min(n)
-                          vars_max(nvar_in) = zaxis_max(n)
+                          vars_min(nvar_in) = zaxis_min(n)*scale
+                          vars_max(nvar_in) = zaxis_max(n)*scale
                           var_dex(nvar_in)  = izaxis_cs
                           diag(nvar_in)     = daxis_opt(n)
                           arr_dex(nvar_in,1) = n
@@ -1310,17 +1165,17 @@
                        IF (lasym) THEN
                           IF (n /= 0) THEN
                              nvar_in = nvar_in + 1
-                             vars(nvar_in) = raxis_cs(n)
-                             vars_min(nvar_in) = raxis_min(n)
-                             vars_max(nvar_in) = raxis_max(n)
+                             vars(nvar_in) = raxis_cs(n)*scale
+                             vars_min(nvar_in) = raxis_min(n)*scale
+                             vars_max(nvar_in) = raxis_max(n)*scale
                              var_dex(nvar_in)  = iraxis_cs
                              diag(nvar_in)     = daxis_opt(n)
                              arr_dex(nvar_in,1) = n
                           END IF
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = zaxis_cc(n)
-                          vars_min(nvar_in) = zaxis_min(n)
-                          vars_max(nvar_in) = zaxis_max(n)
+                          vars(nvar_in) = zaxis_cc(n)*scale
+                          vars_min(nvar_in) = zaxis_min(n)*scale
+                          vars_max(nvar_in) = zaxis_max(n)*scale
                           var_dex(nvar_in)  = izaxis_cc
                           diag(nvar_in)     = daxis_opt(n)
                           arr_dex(nvar_in,1) = n
@@ -1331,9 +1186,10 @@
               IF (ANY(lmode_opt)) THEN
                  DO n = LBOUND(lmode_opt,1), UBOUND(lmode_opt,1)
                     DO m = LBOUND(lmode_opt,2), UBOUND(lmode_opt,2)
+                       IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*MAX(abs(n),m))
                        IF (lmode_opt(n,m)) THEN
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = 0.5*(rbc(n,m)+zbs(n,m))
+                          vars(nvar_in) = 0.5*(rbc(n,m)+zbs(n,m))*scale
                           IF (lauto_domain) THEN
                              bound_min(n,m) = vars(nvar_in) - ABS(pct_domain*vars(nvar_in))
                              bound_max(n,m) = vars(nvar_in) + ABS(pct_domain*vars(nvar_in))
@@ -1355,15 +1211,16 @@
                  CALL convert_boundary(rbc,zbs,rhobc,mpol1d,ntord,rho_exp)
                  DO n = LBOUND(lrho_opt,1), UBOUND(lrho_opt,1)
                     DO m = LBOUND(lrho_opt,2), UBOUND(lrho_opt,2)
+                       IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*MAX(abs(n),m))
                        IF (lrho_opt(n,m) .and. (m /= 0 .or. n >= 0)) THEN
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = rhobc(n,m)
+                          vars(nvar_in) = rhobc(n,m)*scale
                           IF (lauto_domain) THEN
                              bound_min(n,m) = rhobc(n,m) - ABS(pct_domain*rhobc(n,m))
                              bound_max(n,m) = rhobc(n,m) + ABS(pct_domain*rhobc(n,m))
                           END IF
-                          vars_min(nvar_in) = bound_min(n,m)
-                          vars_max(nvar_in) = bound_max(n,m)
+                          vars_min(nvar_in) = bound_min(n,m)*scale
+                          vars_max(nvar_in) = bound_max(n,m)*scale
                           var_dex(nvar_in)  = irhobc
                           diag(nvar_in)     = drho_opt(n,m)
                           arr_dex(nvar_in,1) = n
@@ -1381,15 +1238,16 @@
                  CALL convert_boundary_PG(rbc_temp,zbs_temp,deltamn,mpol1d,ntord)
                  DO n = LBOUND(ldeltamn_opt,1), UBOUND(ldeltamn_opt,1)
                     DO m = LBOUND(ldeltamn_opt,2), UBOUND(ldeltamn_opt,2)
+                       IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*MAX(abs(n),m))
                        IF (ldeltamn_opt(n,m) .and. .not.(n == 0 .and. m==0)) THEN
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = deltamn(n,m)
+                          vars(nvar_in) = deltamn(n,m)*scale
                           IF (lauto_domain) THEN
                              delta_min(n,m) = deltamn(n,m) - ABS(pct_domain*deltamn(n,m))
                              delta_max(n,m) = deltamn(n,m) + ABS(pct_domain*deltamn(n,m))
                           END IF
-                          vars_min(nvar_in) = delta_min(n,m)
-                          vars_max(nvar_in) = delta_max(n,m)
+                          vars_min(nvar_in) = delta_min(n,m)*scale
+                          vars_max(nvar_in) = delta_max(n,m)*scale
                           var_dex(nvar_in)  = ideltamn
                           diag(nvar_in)     = ddeltamn_opt(n,m)
                           arr_dex(nvar_in,1) = n
@@ -1429,6 +1287,7 @@
                  END IF
                  DO n = LBOUND(lbound_opt,1), UBOUND(lbound_opt,1)
                     DO m = 0, UBOUND(lbound_opt,2)
+                       IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*MAX(abs(n),m))
                        IF (m==0 .and. n<=0) CYCLE
                        IF (lbound_opt(n,m)) THEN
                           IF (lauto_domain) THEN
@@ -1436,9 +1295,9 @@
                              rbc_max(n,m) = rbc(n,m) + ABS(pct_domain*rbc(n,m))
                           END IF
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = rbc(n,m)
-                          vars_min(nvar_in) = rbc_min(n,m)
-                          vars_max(nvar_in) = rbc_max(n,m)
+                          vars(nvar_in) = rbc(n,m)*scale
+                          vars_min(nvar_in) = rbc_min(n,m)*scale
+                          vars_max(nvar_in) = rbc_max(n,m)*scale
                           var_dex(nvar_in) = ibound_rbc
                           diag(nvar_in)    = dbound_opt(n,m)
                           arr_dex(nvar_in,1) = n
@@ -1448,9 +1307,9 @@
                              zbs_max(n,m) = zbs(n,m) + ABS(pct_domain*zbs(n,m))
                           END IF
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = zbs(n,m)
-                          vars_min(nvar_in) = zbs_min(n,m)
-                          vars_max(nvar_in) = zbs_max(n,m)
+                          vars(nvar_in) = zbs(n,m)*scale
+                          vars_min(nvar_in) = zbs_min(n,m)*scale
+                          vars_max(nvar_in) = zbs_max(n,m)*scale
                           var_dex(nvar_in) = ibound_zbs
                           diag(nvar_in)    = dbound_opt(n,m)
                           arr_dex(nvar_in,1) = n
@@ -1461,9 +1320,9 @@
                                 rbs_max(n,m) = rbs(n,m) + ABS(pct_domain*rbs(n,m))
                              END IF
                              nvar_in = nvar_in + 1
-                             vars(nvar_in) = rbs(n,m)
-                             vars_min(nvar_in) = rbs_min(n,m)
-                             vars_max(nvar_in) = rbs_max(n,m)
+                             vars(nvar_in) = rbs(n,m)*scale
+                             vars_min(nvar_in) = rbs_min(n,m)*scale
+                             vars_max(nvar_in) = rbs_max(n,m)*scale
                              var_dex(nvar_in) = ibound_rbs
                              diag(nvar_in)    = dbound_opt(n,m)
                              arr_dex(nvar_in,1) = n
@@ -1473,9 +1332,9 @@
                                 zbc_max(n,m) = zbc(n,m) + ABS(pct_domain*zbc(n,m))
                              END IF
                              nvar_in = nvar_in + 1
-                             vars(nvar_in) = zbc(n,m)
-                             vars_min(nvar_in) = zbc_min(n,m)
-                             vars_max(nvar_in) = zbc_max(n,m)
+                             vars(nvar_in) = zbc(n,m)*scale
+                             vars_min(nvar_in) = zbc_min(n,m)*scale
+                             vars_max(nvar_in) = zbc_max(n,m)*scale
                              var_dex(nvar_in) = ibound_zbc
                              diag(nvar_in)    = dbound_opt(n,m)
                              arr_dex(nvar_in,1) = n
@@ -1485,60 +1344,102 @@
                     END DO
                  END DO
               END IF
-              IF (ANY(lcoil_spline)) THEN
-                 DO n = LBOUND(lcoil_spline,1), UBOUND(lcoil_spline,1)
-                    ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
-                    nknots = COUNT(coil_splinesx(n,:) >= 0.0) - 2
-
-                    DO m = 1,nknots-4
-                       IF (lcoil_spline(n,m)) THEN
+              IF (ANY(lcoilsurf_opt)) THEN
+                 IF (lcoilsurf_opt(0,0)) THEN
+                    IF (lauto_domain) THEN
+                       rbc_coilsurf_min(0,0) = rbc_coilsurf(0,0) - ABS(pct_domain*rbc_coilsurf(0,0))
+                       rbc_coilsurf_max(0,0) = rbc_coilsurf(0,0) + ABS(pct_domain*rbc_coilsurf(0,0))
+                    END IF
+                    nvar_in = nvar_in + 1
+                    vars(nvar_in) = rbc_coilsurf(0,0)
+                    vars_min(nvar_in) = rbc_coilsurf_min(0,0)
+                    vars_max(nvar_in) = rbc_coilsurf_max(0,0)
+                    var_dex(nvar_in) = irbc_coilsurf
+                    diag(nvar_in)    = dcoilsurf_opt(0,0)
+                    arr_dex(nvar_in,1) = 0
+                    arr_dex(nvar_in,2) = 0
+                 END IF
+                 DO n = LBOUND(lcoilsurf_opt,1), UBOUND(lcoilsurf_opt,1)
+                    DO m = 0, UBOUND(lcoilsurf_opt,2)
+                       IF (m==0 .and. n<=0) CYCLE
+                       IF (lcoilsurf_opt(n,m)) THEN
                           IF (lauto_domain) THEN
-                             coil_splinefx_min(n,m) = coil_splinefx(n,m) - ABS(pct_domain*coil_splinefx(n,m))
-                             coil_splinefx_max(n,m) = coil_splinefx(n,m) + ABS(pct_domain*coil_splinefx(n,m))
-                             coil_splinefy_min(n,m) = coil_splinefy(n,m) - ABS(pct_domain*coil_splinefy(n,m))
-                             coil_splinefy_max(n,m) = coil_splinefy(n,m) + ABS(pct_domain*coil_splinefy(n,m))
-                             coil_splinefz_min(n,m) = coil_splinefz(n,m) - ABS(pct_domain*coil_splinefz(n,m))
-                             coil_splinefz_max(n,m) = coil_splinefz(n,m) + ABS(pct_domain*coil_splinefz(n,m))
+                             rbc_coilsurf_min(n,m) = rbc_coilsurf(n,m) - ABS(pct_domain*rbc_coilsurf(n,m))
+                             rbc_coilsurf_max(n,m) = rbc_coilsurf(n,m) + ABS(pct_domain*rbc_coilsurf(n,m))
                           END IF
-
-                          IF ((m > 1).OR.(coil_type(n).NE.'M').OR.(.NOT.lwindsurf(coil_surf(n)))) THEN !u0 fixed for mod on ws
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = rbc_coilsurf(n,m)
+                          vars_min(nvar_in) = rbc_coilsurf_min(n,m)
+                          vars_max(nvar_in) = rbc_coilsurf_max(n,m)
+                          var_dex(nvar_in) = irbc_coilsurf
+                          diag(nvar_in)    = dcoilsurf_opt(n,m)
+                          arr_dex(nvar_in,1) = n
+                          arr_dex(nvar_in,2) = m
+                          IF (lauto_domain) THEN
+                             zbs_coilsurf_min(n,m) = zbs_coilsurf(n,m) - ABS(pct_domain*zbs_coilsurf(n,m))
+                             zbs_coilsurf_max(n,m) = zbs_coilsurf(n,m) + ABS(pct_domain*zbs_coilsurf(n,m))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = zbs_coilsurf(n,m)
+                          vars_min(nvar_in) = zbs_coilsurf_min(n,m)
+                          vars_max(nvar_in) = zbs_coilsurf_max(n,m)
+                          var_dex(nvar_in) = izbs_coilsurf
+                          diag(nvar_in)    = dcoilsurf_opt(n,m)
+                          arr_dex(nvar_in,1) = n
+                          arr_dex(nvar_in,2) = m
+                       END IF
+                    END DO
+                 END DO
+              END IF
+              IF (ANY(lcoil_kts_opt)) THEN
+                 DO n = LBOUND(lcoil_kts_opt,1), UBOUND(lcoil_kts_opt,1)
+                    DO m = LBOUND(lcoil_kts_opt,2), UBOUND(lcoil_kts_opt,2)
+                       IF (lcoil_kts_opt(n,m)) THEN
+                          IF (.not.lfix_rho_coil) THEN
                              nvar_in = nvar_in + 1
-                             vars(nvar_in) = coil_splinefx(n,m)
-                             vars_min(nvar_in) = coil_splinefx_min(n,m)
-                             vars_max(nvar_in) = coil_splinefx_max(n,m)
-                             var_dex(nvar_in) = icoil_splinefx
-                             diag(nvar_in)    = dcoil_spline(n,m)
+                             vars(nvar_in) = rho_coil_kts(n,m)
+                             IF (lauto_domain) THEN
+                                rho_coil_kts_min(n,m) = rho_coil_kts(n,m) - ABS(pct_domain*rho_coil_kts(n,m))
+                                rho_coil_kts_max(n,m) = rho_coil_kts(n,m) + ABS(pct_domain*rho_coil_kts(n,m))
+                             END IF
+                             vars_min(nvar_in) = rho_coil_kts_min(n,m)
+                             vars_max(nvar_in) = rho_coil_kts_max(n,m)
+                             var_dex(nvar_in)  = irho_coil_kts
+                             diag(nvar_in)     = dcoil_kts_opt(n,m)
                              arr_dex(nvar_in,1) = n
                              arr_dex(nvar_in,2) = m
                           END IF
-
-                          ! v fixed for all-spline mod on ws @ pt n-4
-                          IF ((m.NE.nknots-5).OR.(coil_type(n).NE.'A').OR.(.NOT.lwindsurf(coil_surf(n)))) THEN
+                          IF (.not.lfix_theta_coil) THEN
                              nvar_in = nvar_in + 1
-                             vars(nvar_in) = coil_splinefy(n,m)
-                             vars_min(nvar_in) = coil_splinefy_min(n,m)
-                             vars_max(nvar_in) = coil_splinefy_max(n,m)
-                             var_dex(nvar_in) = icoil_splinefy
-                             diag(nvar_in)    = dcoil_spline(n,m)
+                             vars(nvar_in) = theta_coil_kts(n,m)
+                             IF (lauto_domain) THEN
+                                theta_coil_kts_min(n,m) = theta_coil_kts(n,m) - ABS(pct_domain*theta_coil_kts(n,m))
+                                theta_coil_kts_max(n,m) = theta_coil_kts(n,m) + ABS(pct_domain*theta_coil_kts(n,m))
+                             END IF
+                             vars_min(nvar_in) = theta_coil_kts_min(n,m)
+                             vars_max(nvar_in) = theta_coil_kts_max(n,m)
+                             var_dex(nvar_in)  = itheta_coil_kts
+                             diag(nvar_in)     = dcoil_kts_opt(n,m)
                              arr_dex(nvar_in,1) = n
                              arr_dex(nvar_in,2) = m
                           END IF
-
-                          ! z gets ignored if winding surface is present;
-                          !  z0 is held fixed for modular coils.
-                          IF ((.NOT.lwindsurf(coil_surf(n))).AND.((m > 1).OR.(coil_type(n).NE.'M'))) THEN
+                          IF (.not.lfix_zeta_coil) THEN
                              nvar_in = nvar_in + 1
-                             vars(nvar_in) = coil_splinefz(n,m)
-                             vars_min(nvar_in) = coil_splinefz_min(n,m)
-                             vars_max(nvar_in) = coil_splinefz_max(n,m)
-                             var_dex(nvar_in) = icoil_splinefz
-                             diag(nvar_in)    = dcoil_spline(n,m)
+                             vars(nvar_in) = zeta_coil_kts(n,m)
+                             IF (lauto_domain) THEN
+                                zeta_coil_kts_min(n,m) = zeta_coil_kts(n,m) - ABS(pct_domain*zeta_coil_kts(n,m))
+                                zeta_coil_kts_max(n,m) = zeta_coil_kts(n,m) + ABS(pct_domain*zeta_coil_kts(n,m))
+                             END IF
+                             vars_min(nvar_in) = zeta_coil_kts_min(n,m)
+                             vars_max(nvar_in) = zeta_coil_kts_max(n,m)
+                             var_dex(nvar_in)  = izeta_coil_kts
+                             diag(nvar_in)     = dcoil_kts_opt(n,m)
                              arr_dex(nvar_in,1) = n
                              arr_dex(nvar_in,2) = m
                           END IF
                        END IF
-                    END DO !m
-                 END DO !n
+                    END DO
+                 END DO
               END IF
               ier = -327
               CALL stellopt_prof_to_vmec('init',ier)
@@ -1616,7 +1517,7 @@
                END DO
             END DO
             delta = sqrt(delta)
-            WRITE(6,'(A,F7.2,A)')'   == Accuracy of conversion = ',100*(1-delta),'%  =='
+            WRITE(6,'(A,F7.2,A)')'    == Accuracy of conversion = ',100*(1-delta),'%  =='
             iunit = 12; ier = 0
             CALL safe_open(iunit,ier,'rhomn.txt','unknown','formatted')
             DO m = LBOUND(lrho_opt,2), UBOUND(lrho_opt,2)
@@ -1639,7 +1540,7 @@
                END DO
             END DO
             delta = sqrt(delta)
-            WRITE(6,'(A,F7.2,A)')'   == Accuracy of conversion = ',100*(1-delta),'%  =='
+            WRITE(6,'(A,F7.2,A)')'    == Accuracy of conversion = ',100*(1-delta),'%  =='
             iunit = 12; ier = 0
             CALL safe_open(iunit,ier,'deltamn.txt','unknown','formatted')
             DO m = LBOUND(ldeltamn_opt,2), UBOUND(ldeltamn_opt,2)
@@ -1660,7 +1561,9 @@
          WRITE(6,*) '   =================='
          WRITE(6,*) '   Number of Parameters: ',nvars
          WRITE(6,*) '   Number of Targets:    ',mtargets
-         IF (lno_restart) WRITE(6,*) '   !!!! EQUILIBRIUM RESTARTING NOT UTILIZED !!!!'
+         IF (lno_restart)  WRITE(6,*) '   Equilibrium calculation does not use restart feature.'
+         IF (lauto_domain) WRITE(6,'(A,I2.2,A)') '   Variable bounds computed using auto domain',FLOOR(pct_domain*100),'%'
+         WRITE(6,*) '   =================='
       END IF
 
       IF (myid == master) THEN

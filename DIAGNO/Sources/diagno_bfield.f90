@@ -177,18 +177,35 @@
             modb = sqrt(bx*bx+by*by+bz*bz)
             br   = bx * cos(phip) + by * sin(phip)
             bphi = by * cos(phip) - bx * sin(phip)
-            IF (lrphiz) THEN
-               DO i = 1, ncoils
-                  IF (lverb) WRITE(6,'(13X,I8,1X,7E14.5)') i,rp(i),phip(i),zp(i),br(i),bphi(i),bz(i),modb(i)
-                  WRITE(iunit_out,'(13X,I8,1X,7E14.5)') i,rp(i),phip(i),zp(i),br(i),bphi(i),bz(i),modb(i)
-               END DO
-               WRITE(iunit_out,'(A)')'   #   rp[m]    phip[deg]    zp[m]      B_R[T]    B_PHI[T]      B_Z[T]      |B|[T]'
+            IF (lbpoints_accurate_output) THEN
+               ! more digits of accuracy, if enabled
+               WRITE(iunit_out,'(1X,I6.6)') ncoils ! also write number of points first
+               IF (lrphiz) THEN
+                  DO i = 1, ncoils
+                     IF (lverb) WRITE(6,'(13X,I8,1X,7E14.5)') i,rp(i),phip(i),zp(i),br(i),bphi(i),bz(i),modb(i)
+                     WRITE(iunit_out,'(13X,I8,1X,7ES22.12E3)') i,rp(i),phip(i),zp(i),br(i),bphi(i),bz(i),modb(i)
+                  END DO
+               ELSE
+                  DO i = 1, ncoils
+                     IF (lverb) WRITE(6,'(13X,I8,1X,7E14.5)') i,xp(i),yp(i),zp(i),bx(i),by(i),bz(i),modb(i)
+                     WRITE(iunit_out,'(13X,I8,1X,7ES22.12E3)') i,xp(i),yp(i),zp(i),bx(i),by(i),bz(i),modb(i)
+                  END DO
+               END IF
             ELSE
-               DO i = 1, ncoils
-                  IF (lverb) WRITE(6,'(13X,I8,1X,7E14.5)') i,xp(i),yp(i),zp(i),bx(i),by(i),bz(i),modb(i)
-                  WRITE(iunit_out,'(13X,I8,1X,7E14.5)') i,xp(i),yp(i),zp(i),bx(i),by(i),bz(i),modb(i)
-               END DO
-               WRITE(iunit_out,'(A)')'   #   xp[m]      yp[m]      zp[m]      B_X[T]      B_Y[T]      B_Z[T]      |B|[T]'
+               ! backward compatibility output
+               IF (lrphiz) THEN
+                  DO i = 1, ncoils
+                     IF (lverb) WRITE(6,'(13X,I8,1X,7E14.5)') i,rp(i),phip(i),zp(i),br(i),bphi(i),bz(i),modb(i)
+                     WRITE(iunit_out,'(13X,I8,1X,7E14.5)') i,rp(i),phip(i),zp(i),br(i),bphi(i),bz(i),modb(i)
+                  END DO
+                  WRITE(iunit_out,'(A)')'   #   rp[m]    phip[deg]    zp[m]      B_R[T]    B_PHI[T]      B_Z[T]      |B|[T]'
+               ELSE
+                  DO i = 1, ncoils
+                     IF (lverb) WRITE(6,'(13X,I8,1X,7E14.5)') i,xp(i),yp(i),zp(i),bx(i),by(i),bz(i),modb(i)
+                     WRITE(iunit_out,'(13X,I8,1X,7E14.5)') i,xp(i),yp(i),zp(i),bx(i),by(i),bz(i),modb(i)
+                  END DO
+                  WRITE(iunit_out,'(A)')'   #   xp[m]      yp[m]      zp[m]      B_X[T]      B_Y[T]      B_Z[T]      |B|[T]'
+               END IF
             END IF
             CLOSE(iunit_out)
          END IF

@@ -10,6 +10,9 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
+      USE thrift_profiles_mod, ONLY : nion_prof, Zatom_prof
+      USE thrift_plasma_solver_mod
+      USE thrift_globals, ONLY: solve_plasma_equations
 #if defined(LHDF5)
       USE ez_hdf5
 #endif
@@ -52,6 +55,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'jtol',ier)
          CALL write_scalar_hdf5(fid,'picard_factor',ier,DBLVAR=picard_factor,ATT='Picard Iteration Factor',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'picard_factor',ier)
+         CALL write_scalar_hdf5(fid,'eq_Aminor',ier,DBLVAR=eq_Aminor,ATT='eq_Aminor',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'eq_Aminor',ier)
          ! 1D Floats
          CALL write_var_hdf5(fid,'THRIFT_RHO',nrho,ier,DBLVAR=THRIFT_RHO,ATT='Radial Grid (r/a)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_RHO',ier)
@@ -65,6 +70,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_T',ier)
          CALL write_var_hdf5(fid,'THRIFT_PHIEDGE',ntimesteps,ier,DBLVAR=THRIFT_PHIEDGE,ATT='Toroidal magnetic flux at plasma edge [Wb] (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PHIEDGE',ier)
+         CALL write_var_hdf5(fid,'THRIFT_BETATOT',ntimesteps,ier,DBLVAR=THRIFT_BETATOT,ATT='Total Plasma Beta',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_BETATOT',ier)
          ! 2D Floats
          ! Current densities
          nfg = nrho+2
@@ -107,7 +114,7 @@
          CALL write_var_hdf5(fid,'THRIFT_PPRIME',nsj,ntimesteps,ier,DBLVAR=THRIFT_PPRIME,ATT=' Radial derivative of pressure (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PPRIME',ier)
          ! Magnetic variables
-         CALL write_var_hdf5(fid,'THRIFT_VP',nsj,ntimesteps,ier,DBLVAR=THRIFT_VP,ATT='dV/dPhi (s-space)',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'THRIFT_VP',nsj,ntimesteps,ier,DBLVAR=THRIFT_VP,ATT='dV/ds (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_VP',ier)
          CALL write_var_hdf5(fid,'THRIFT_S11',nsj,ntimesteps,ier,DBLVAR=THRIFT_S11,ATT='Susceptance matrix element S11 (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_S11',ier)
@@ -125,6 +132,11 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_RMAJOR',ier)
          CALL write_var_hdf5(fid,'THRIFT_AMINOR',nsj,ntimesteps,ier,DBLVAR=THRIFT_AMINOR,ATT='Effective minor radius  [m] (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_AMINOR',ier)
+         ! Electric Field
+         CALL write_var_hdf5(fid,'THRIFT_EPARB',nsj,ntimesteps,ier,DBLVAR=THRIFT_EPARB,ATT='<E.B> [V.T/m] (s-space)',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_EPARB',ier)
+         CALL write_var_hdf5(fid,'THRIFT_ER',nsj,ntimesteps,ier,DBLVAR=THRIFT_ER,ATT='Er [V/m] (s-space)',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_ER',ier)
          ! ABCD
          CALL write_var_hdf5(fid,'THRIFT_COEFF_A',nsj,ntimesteps,ier,DBLVAR=THRIFT_COEFF_A,ATT='Coefficient A (s-space)',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_COEFF_A',ier)
@@ -158,7 +170,20 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATUD',ier)
          CALL write_var_hdf5(fid,'THRIFT_MATRHS',nsj,ntimesteps,ier,DBLVAR=THRIFT_MATRHS,ATT='Matrix equation RHS',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_MATRHS',ier)
-                  
+         ! Fluxes
+         CALL write_var_hdf5(fid,'THRIFT_GNEO',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_GNEO,ATT='Neoclassical particle flux [m^-2 s^-1]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_GNEO',ier)
+         CALL write_var_hdf5(fid,'THRIFT_QNEO',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_QNEO,ATT='Neoclassical heat flux [W m^-2]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_QNEO',ier)
+         ! Density, temperature and pressure
+         CALL write_var_hdf5(fid,'THRIFT_DENS',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_DENS,ATT='Density of each species [m^-3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_DENS',ier)
+         CALL write_var_hdf5(fid,'THRIFT_TEMP',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_TEMP,ATT='Temperature of each species [eV]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_TEMP',ier)
+         CALL write_var_hdf5(fid,'THRIFT_PRESS',nion_prof+1,nsj,ntimesteps,ier,DBLVAR=THRIFT_PRESS,ATT='Pressure of each species [Pa]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PRESS',ier)
+         CALL write_var_hdf5(fid,'THRIFT_FAST_ALPHAS_DENS',nsj,ntimesteps,ier,DBLVAR=THRIFT_FAST_ALPHAS_DENS,ATT='Density of fast alphas [m^-3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_FAST_ALPHAS_DENS',ier)
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'thrift_'//TRIM(id_string)//'.h5',ier)
 #else
@@ -194,6 +219,59 @@
          CLOSE(iunit)
 #endif
       END IF
+
+      
+      IF(solve_plasma_equations .AND. myworkid == master) THEN
+#if defined(LHDF5)
+         ! Open file
+         CALL open_hdf5('plasma_solver_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
+         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)
+         ! Integers
+         CALL write_scalar_hdf5(fid,'Nt_plasma_grid',ier,INTVAR=Nt_total_plasma_solver,ATT='Number of Time Steps Plasma Solver',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Nt plasma grid',ier)
+         CALL write_scalar_hdf5(fid,'Nr_plasma_grid',ier,INTVAR=Nr_plasma_solver,ATT='Number of Radial Gridpoints Plasma Solver',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Nr plasma grid',ier)
+         ! Grids
+         CALL write_var_hdf5(fid,'time_plasma_grid',Nt_total_plasma_solver,ier,DBLVAR=time_plasma_grid,ATT='Time grid [s]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'time_plasma_grid',ier)
+         CALL write_var_hdf5(fid,'rho_plasma_grid',Nr_plasma_solver,ier,DBLVAR=rho_plasma_grid,ATT='Rho grid [-]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'rho_plasma_grid',ier)
+         CALL write_var_hdf5(fid,'r_plasma_grid',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=r_plasma_grid,ATT='r-grid [-]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'r_plasma_grid',ier)
+         ! Arrays
+         CALL write_var_hdf5(fid,'Zions',nion_prof,ier,INTVAR=Zatom_prof,ATT='Ions charge number [-]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Zions',ier)
+         CALL write_var_hdf5(fid,'plasma_N',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=plasma_N_keep,ATT='Density of each species [m^-3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_N',ier)
+         CALL write_var_hdf5(fid,'plasma_T',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=plasma_T_keep,ATT='Temperature of each species [eV]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_T',ier)
+         CALL write_var_hdf5(fid,'Dn_NEO',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Dn_NEO,ATT='Dn NEO particle diffusion coeff. [m^2/s]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Dn_NEO',ier)
+         CALL write_var_hdf5(fid,'cn_NEO',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=cn_NEO,ATT='cn NEO particle convective velocity [m/s]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'cn_NEO',ier)
+         CALL write_var_hdf5(fid,'Dp_NEO',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Dp_NEO,ATT='Dp NEO heat diffusion coeff. [m^2/s]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Dp_NEO',ier)
+         CALL write_var_hdf5(fid,'cp_NEO',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=cp_NEO,ATT='cp NEO heat convective velocity [m/s]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'cp_NEO',ier)
+         CALL write_var_hdf5(fid,'Dp_total',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Dp_total,ATT='Total Dp heat convective velocity [m/s]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Dp_total',ier)
+         CALL write_var_hdf5(fid,'cp_total',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=cp_total,ATT='Total cp heat convective velocity [m/s]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'cp_total',ier)
+         !! Neo fluxes (complete versions)
+         CALL write_var_hdf5(fid,'G_NEO_complet',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=G_NEO_complet,ATT='G NEO [m^-2 s^-1]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'G_NEO_complet',ier)
+         CALL write_var_hdf5(fid,'Q_NEO_complet',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Q_NEO_complet,ATT='Q NEO [W/m^2]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Q_NEO_complet',ier)
+         ! N_fast_alphas
+         CALL write_var_hdf5(fid,'N_fast_alphas',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=N_fast_alphas,ATT='Density of fast alphas [m^-3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'N_fast_alphas',ier)
+         ! Close file
+         CALL close_hdf5(fid,ier)
+         IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)
+#endif  
+         ! Close plasma_solver.log file
+         CLOSE(unit=ilogplasma)
+      END IF 
 
       RETURN
 !----------------------------------------------------------------------

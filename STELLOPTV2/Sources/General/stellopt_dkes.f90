@@ -11,7 +11,9 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime, ONLY:  proc_string, bigno, rprec
       USE equil_utils, ONLY: get_equil_phi, nrad, shat, phi_type
-      USE stellopt_targets, ONLY: nu_dkes, sigma_dkes, lbooz, nsd, &
+      USE stellopt_targets, ONLY: nu_dkes, lbooz, nsd, &
+                                  sigma_dkes_11, sigma_dkes_31, &
+                                  sigma_dkes_33, &
                                   E_dkes, nprof, nruns_dkes, &
                                   sigma_dkes_erdiff, Ep_DKES_Erdiff, &
                                   Em_DKES_Erdiff, Ep_DKES_alpha, &
@@ -97,7 +99,7 @@
          ik = 0
          ! First do traditional DKES
          DO ir = 1, nsd
-            IF (sigma_dkes(ir) >= bigno) CYCLE
+            IF ((sigma_dkes_11(ir) >= bigno) .and. (sigma_dkes_31(ir) >= bigno) .and. (sigma_dkes_33(ir) >= bigno))  CYCLE
             DO ij = 1, nprof
                IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
                ik = ik + 1
@@ -182,7 +184,7 @@
          WRITE(temp_str,'(i3.3)') ik
          arg1(6) = '_s' // TRIM(temp_str)
          ier_phi = 0 ! We don't read the boozmn or wout file we've done that already
-         CALL dkes_input_prepare(arg1,6,dkes_input_file,ier_phi)
+         CALL dkes_input_prepare_old(arg1,6,dkes_input_file,ier_phi)
          output_file= 'dkesout.' // TRIM(proc_string) // '_s' // TRIM(temp_str)
          opt_file= 'opt_dkes.' // TRIM(proc_string) // '_s' // TRIM(temp_str)       !DAS 2/21/2000  !Probably won't need
          summary_file = 'results.' // TRIM(proc_string) //'_s' // TRIM(temp_str) !record file addition
@@ -298,7 +300,7 @@
             ! This is a trick to get the arrays corretly sorted
             DKES_rad_dex = ik
             IF (.not. lfirst_pass) lscreen_dkes = .FALSE.
-            CALL dkes_printout (f0p1, f0m1, f0p2, f0m2, srces0)
+            CALL dkes_printout (f0p1, f0m1, f0p2, f0m2, srces0, .TRUE.)
             DKES_rad_dex = ik_dkes(ik)
             ! End trick
             CALL second0 (tcpu1); tcpu = tcpu1 - tcpu0; tcpu0 = tcpu1; tcput = tcput + tcpu; tcpua = tcput/irun

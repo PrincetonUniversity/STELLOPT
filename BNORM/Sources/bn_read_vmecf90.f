@@ -87,14 +87,18 @@ c---------------------------------------------------------------------
       IF (ALLOCATED(crs)) DEALLOCATE(crs)
       IF (ALLOCATED(czc)) DEALLOCATE(czc)
       IF (ALLOCATED(clc)) DEALLOCATE(clc)
+      IF (ALLOCATED(pmns)) DEALLOCATE(pmns)
+      IF (ALLOCATED(pmnc)) DEALLOCATE(pmnc)
       allocate (ixm(mnmax), ixn(mnmax), 
      1          raxis_in(0:ntor), zaxis_in(0:ntor))
       allocate (raxis_s(0:ntor),zaxis_c(0:ntor))
       allocate (bsubus(0:md,-nd:nd), bsubvs(0:md,-nd:nd),
      1      crs(0:md,-nd:nd), czc(0:md,-nd:nd),clc(0:md,-nd:nd),
      1      stat=ierr)
+      ALLOCATE (pmns(0:md,-nd:nd),pmnc(0:md,-nd:nd), stat=ierr)
       bsubus = 0;  bsubvs = 0; crs = 0; czc = 0; clc = 0;
       raxis_s = 0; zaxis_c = 0;
+      pmns = 0; pmnc = 0; ! Used for boozmn interface for VMEC 0
 
       raxis_in(0:ntor) = raxis(0:ntor,1)
       zaxis_in(0:ntor) = zaxis(0:ntor,1)

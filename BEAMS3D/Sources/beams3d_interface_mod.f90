@@ -54,7 +54,7 @@ CONTAINS
       ! Now we set some info
       CALL MPI_INFO_CREATE(mpi_info_beams3d, ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_beams3d, "IBM_largeblock_io", "true",    ierr_mpi)
-      CALL MPI_INFO_SET(mpi_info_beams3d, "stripping_unit",    "1048576", ierr_mpi)
+      CALL MPI_INFO_SET(mpi_info_beams3d, "striping_unit",     "1048576", ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_beams3d, "romio_ds_read",     "disable", ierr_mpi)
       CALL MPI_INFO_SET(mpi_info_beams3d, "romio_ds_write",    "disable", ierr_mpi)
 #endif
@@ -76,10 +76,12 @@ CONTAINS
    IMPLICIT NONE
    ! Nullify pointers
    NULLIFY(raxis,phiaxis,zaxis,hr,hp,hz,hri,hpi,hzi,B_R,B_PHI,B_Z, &
-            MODB,TE,NE,TI,ZEFF_ARR,POT_ARR,S_ARR,U_ARR,X_ARR,Y_ARR,NI, &
+            MODB,TE,NE,TI,ZEFF_ARR,POT_ARR,S_ARR,U_ARR,NI, &
+            RHO_ARR,XRHO_ARR,YRHO_ARR, &
             raxis_fida,zaxis_fida,phiaxis_fida,energy_fida,pitch_fida, &
             req_axis,zeq_axis,TE4D,NE4D,TI4D,ZEFF4D,NI5D,BR4D,BPHI4D, &
-            BZ4D,MODB4D,S4D,U4D,X4D,Y4D,POT4D,dist5d_prof,dist5d_fida, &
+            BZ4D,MODB4D,U4D,POT4D,dist5d_prof,dist5d_fida, &
+            RHO4D,XRHO4D,YRHO4D, &
             BEAM_DENSITY,wall_load,wall_shine, ndot_prof, epower_prof, &
             ipower_prof,j_prof,dense_prof)
    END SUBROUTINE
@@ -158,7 +160,8 @@ CONTAINS
          lmumat_writemagfile = .false.
          lvessel = .false.
          lvac = .false.
-         lrestart_grid = .false.
+         luser_init = .false.
+         lcontinue_grid = .false.
          lrestart_particles = .false.
          lhitonly  = .false.
          lplasma_only = .false.
@@ -166,7 +169,6 @@ CONTAINS
          ldepo = .false.
          lbeam_simple = .false.
          lcollision = .false.
-         lw7x = .false.
          lascot = .false.
          lfidasim = .false.
          lfidasim_cyl = .false.
@@ -188,6 +190,7 @@ CONTAINS
          mgrid_string = ''
          vessel_string = ''
          restart_string = ''
+         continue_grid_string = ''
          bbnbi_string = ''
          eqdsk_string = ''
 
@@ -218,6 +221,10 @@ CONTAINS
             case ("-vmec")
                 i = i + 1
                 lvmec = .true.
+                CALL GETCARG(i, id_string, numargs)
+            case ("-user") ! Vacuum Fields Only
+                i = i + 1
+                luser_init = .true.
                 CALL GETCARG(i, id_string, numargs)
             case ("-pies")
                 i = i + 1
@@ -253,6 +260,20 @@ CONTAINS
                 i = i + 1
                 lrestart_particles = .true.
                 CALL GETCARG(i, restart_string, numargs)
+             case ("-continue")
+               i = i + 1
+               lcontinue_grid = .true.
+               CALL GETCARG(i, id_string, numargs)
+               i = i + 1
+               CALL GETCARG(i, continue_grid_string, numargs)
+               continue_grid_string=TRIM(continue_grid_string)                   
+             case ("-continue_grid")
+               i = i + 1
+               lcontinue_grid = .true.
+               CALL GETCARG(i, id_string, numargs)
+               i = i + 1
+               CALL GETCARG(i, continue_grid_string, numargs)
+               continue_grid_string=TRIM(continue_grid_string)                
             case ("-coil")
                 i = i + 1
                 lcoil = .true.
@@ -285,8 +306,6 @@ CONTAINS
                 ldepo  = .true.
             case ("-raw")
                 lraw  = .true.
-            case ("-w7x")
-                lw7x  = .true.
             case ("-beam_simple")
                 lbeam_simple  = .true.
             case ("-collisions")
@@ -375,6 +394,8 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(restart_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+      CALL MPI_BCAST(continue_grid_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(eqdsk_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(mumat_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -421,7 +442,7 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lbbnbi, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
-      CALL MPI_BCAST(lrestart_grid, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_BCAST(lcontinue_grid, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lrestart_particles, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
@@ -436,8 +457,6 @@ CONTAINS
       CALL MPI_BCAST(lbeam_simple,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lcollision,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
-      CALL MPI_BCAST(lw7x,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lrandomize,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
@@ -458,6 +477,8 @@ CONTAINS
       CALL MPI_BCAST(lboxsim,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lbeamdensity,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+      CALL MPI_BCAST(luser_init,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(rminor_norm,1,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)

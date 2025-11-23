@@ -14,16 +14,27 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -mcmodel=large -O2 -m64 -unroll0 -fno-alias -ip -traceback \
-	-init=zero,arrays -I${MKLROOT}/include -mkl
-  FLAGS_D = -O0 -g -traceback -check all -check bounds \
-	-check noarg_temp_created -check uninit \
-	-ftrapuv -init=zero,arrays -debug all -I${MKLROOT}/include -mkl 
+#  FLAGS_R = -mcmodel=large -O2 -m64 -unroll0 -fno-alias -ip -traceback \
+#	-init=zero,arrays -I${MKLROOT}/include -mkl
+#  FLAGS_D = -O0 -g -traceback -check all -check bounds \
+#	-check noarg_temp_created -check uninit \
+#	-ftrapuv -init=zero,arrays -debug all -I${MKLROOT}/include -mkl 
 
-  LIBS = -L${MKLROOT}/lib/intel64 \
-  	 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 \
-	 -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
-	 -lpthread -lm -ldl
+  FLAGS_R = -I$(MKLROOT)/include -O2 -assume noold_unit_star \
+            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip 
+  FLAGS_D = -I${MKLROOT}/include -O0 -assume noold_unit_star \
+            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip \
+            -check all,noarg_temp_created -ftrapuv -g -traceback
+
+#  LIBS = -L${MKLROOT}/lib/intel64 \
+#  	 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 \
+#	 -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
+#	 -lpthread -lm -ldl
+
+  LIBS    = -Wl,-rpath,$(MKLROOT)/lib/intel64 \
+            -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 \
+            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
+            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread
 
 #######################################################################
 #            MPI Options
@@ -32,12 +43,12 @@
   MPI_COMPILE = mpiifort
   MPI_COMPILE_FREE = mpiifort
   MPI_COMPILE_C = mpicc
-  MPI_LINK = mpiifort -shared -fpic
+  MPI_LINK = mpiifort
   MPI_RUN = srun
-  MPI_RUN_OPTS = -N 1 -n 16 -t 30:00 -q debug -J STELLOPT_BENCH 
-  MPI_RUN_OPTS_SM = -N 1 -n 32 -t 30:00 -q debug -J STELLOPT_BENCH
-  MPI_RUN_OPTS_MD = -N 1 -n 96 -t 30:00 -q debug -J STELLOPT_BENCH
-  MPI_RUN_OPTS_LG = -N 2 -n 192 -t 30:00 -q debug -J STELLOPT_BENCH
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=96 -t 30:00 -q stellar-debug -J STELLOPT_BENCH 
+  MPI_RUN_OPTS_SM = --nodes=1 --ntasks-per-node=96 -t 30:00 -q stellar-debug -J STELLOPT_BENCH
+  MPI_RUN_OPTS_MD = --nodes=1 --ntasks-per-node=96 -t 30:00 -q stellar-debug -J STELLOPT_BENCH
+  MPI_RUN_OPTS_LG = --nodes=2 --ntasks-per-node=96 -t 30:00 -q stellar-debug -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
@@ -92,84 +103,113 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = F
+ifneq ("$(wildcard $(GENE_PATH))","")
+  LGENE = T
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
-  GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L$(FFTW_HOME)/lib -lfftw3 \
-             -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
-             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+  GENE_LIB = 
+else
+  LGENE = F
+endif
 
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = F
+ifneq ("$(wildcard $(COILOPT_PATH))","")
+  LCOILOPT = T
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
   COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++
+                -L$(GSLHOME)/lib/x86_64-linux-gnu -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+else
+  LCOILOPT = F
+endif
 
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+ifneq ("$(wildcard $(TERPSICHORE_PATH))","")
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
   TERPSICHORE_LIB = $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
+else
+  LTERPSICHORE = F
+endif
 
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+ifneq ("$(wildcard $(TRAVIS_PATH))","")
+  LTRAVIS = T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
-  TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+  LIB_FADDEEVA = libfaddeeva64.a
+  TRAVIS_LIB = $(TRAVIS_DIR)lib/$(LIB_TRAVIS) \
+               $(TRAVIS_DIR)faddeeva_package/lib/$(LIB_FADDEEVA) \
+               $(TRAVIS_DIR)magconf/lib/$(LIB_MCONF) -lc++
+else
+  LTRAVIS = F
+endif
 
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= F
+ifneq ("$(wildcard $(REGCOIL_PATH))","")
+  LREGCOIL= T
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+else
+  LREGCOIL = F
+endif
 
 #######################################################################
 #            SFINCS Options
 #######################################################################
-
-  LSFINCS = F
+ifneq ("$(wildcard $(SFINCS_PATH))","")
+  LSFINCS = T
   SFINCS_DIR = $(SFINCS_PATH)
   SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
   SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+else
+  LSFINCS = F
+endif
 
 #######################################################################
 #            Available Energy Options
 #######################################################################
-  LAEOPT= F
+ifneq ("$(wildcard $(AEOPT_PATH))","")
+  LAEOPT = T
   AEOPT_DIR = $(AEOPT_PATH)
   AEOPT_INC = -I$(AEOPT_DIR) 
   LIB_AEOPT = libtrapAE.a
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
+else
+  LAEOPT = F
+endif
 
 #######################################################################
-#            MagTense Options
+#            MANGO Options
 #######################################################################
-  LMAGTENSE= F
-  MAGTENSE_DIR = $(MAGTENSE_PATH)
-  MAGTENSE_INC = -I$(MAGTENSE_DIR)/source/NumericalIntegration/NumericalIntegration/ \
-    -I$(MAGTENSE_DIR)/source/TileDemagTensor/TileDemagTensor/ \
-    -I$(MAGTENSE_DIR)/source/DemagField/DemagField/ 
-  MAGTENSE_LIB = $(MAGTENSE_DIR)/source/NumericalIntegration/NumericalIntegration/libNumericalIntegration.a \
-    $(MAGTENSE_DIR)/source/TileDemagTensor/TileDemagTensor/libTileDemagTensor.a \
-    $(MAGTENSE_DIR)/source/DemagField/DemagField/libDemagField.a 
+ifneq ("$(wildcard $(MANGO_PATH))","")
+  LMANGO = T
+  MANGO_DIR = $(MANGO_PATH)
+# Any flags specified on the next 2 lines will be added to the
+# MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS lines as defined in
+# $(MANGO_DIR)/lib/mangoMakeVariables
+  MANGO_INC = 
+  MANGO_LIB = 
+else
+  LMANGO = F
+endif
 
 #######################################################################
 #            LIBSTELL Shared Options

@@ -92,6 +92,12 @@
                sigma_r0 = sigma_r0/temp
             CASE(jtarget_b0)
                sigma_b0 = sigma_b0/temp
+            CASE(jtarget_lgradb)
+               sigma_lgradb = sigma_lgradb/temp
+            CASE(jtarget_totalbootstrap)
+               sigma_totalbootstrap = sigma_totalbootstrap/temp
+            CASE(jtarget_rosenbrock2d)
+               sigma_rosenbrock2d = sigma_rosenbrock2d/temp
             CASE(jtarget_balloon)
                WHERE(sigma_balloon < bigno) sigma_balloon = sigma_balloon/temp
             CASE(jtarget_separatrix)
@@ -104,6 +110,12 @@
                WHERE(sigma_ne<bigno_ne) sigma_ne = sigma_ne/temp
             CASE(jtarget_neo)
                WHERE(sigma_neo<bigno) sigma_neo = sigma_neo/temp
+            CASE(jtarget_dkes_11)
+               WHERE(sigma_dkes_11<bigno) sigma_dkes_11 = sigma_dkes_11/temp
+            CASE(jtarget_dkes_31)
+               WHERE(sigma_dkes_31<bigno) sigma_dkes_31 = sigma_dkes_31/temp
+            CASE(jtarget_dkes_33)
+               WHERE(sigma_dkes_33<bigno) sigma_dkes_33 = sigma_dkes_33/temp
             CASE(jtarget_te)
                WHERE(sigma_te<bigno) sigma_te = sigma_te/temp
             CASE(jtarget_ti)
@@ -144,10 +156,34 @@
                WHERE(sigma_vaciota<bigno) sigma_vaciota = sigma_vaciota/temp
             CASE(jtarget_magwell)
                WHERE(sigma_magwell<bigno) sigma_magwell = sigma_magwell/temp
+            CASE(jtarget_bootstrap)
+               WHERE(sigma_bootstrap<bigno) sigma_bootstrap = sigma_bootstrap/temp
+            CASE(jtarget_b10b11)
+               WHERE(sigma_b10b11<bigno) sigma_b10b11 = sigma_b10b11/temp
             CASE(jtarget_helicity)
                WHERE(ABS(sigma_helicity)<bigno) sigma_helicity = sigma_helicity/temp
+            CASE(jtarget_quasiiso)
+               WHERE(sigma_quasiiso<bigno) sigma_quasiiso = sigma_quasiiso/temp
             CASE(jtarget_txport)
                WHERE(ABS(sigma_txport)<bigno) sigma_txport = sigma_txport/temp
+            CASE(jtarget_gamma_c)
+               WHERE(ABS(sigma_gamma_c)<bigno) sigma_gamma_c = sigma_gamma_c/temp
+            CASE(jtarget_bnormal)
+               sigma_bnormal = sigma_bnormal/temp
+            CASE(jtarget_bnmns)
+               sigma_bnmns = sigma_bnmns/temp
+            CASE(jtarget_bnmnc)
+               sigma_bnmnc = sigma_bnmnc/temp
+            CASE(jtarget_coil_curvature)
+               sigma_coil_curvature = sigma_coil_curvature/temp
+            CASE(jtarget_coil_torsion)
+               sigma_coil_torsion = sigma_coil_torsion/temp
+            CASE(jtarget_coilcoil_distance)
+               sigma_coilcoil_distance = sigma_coilcoil_distance/temp
+            CASE(jtarget_coil_baxis)
+               sigma_coil_baxis = sigma_coil_baxis/temp
+            CASE(jtarget_coil_length)
+               WHERE(sigma_coil_length<bigno) sigma_coil_length = sigma_coil_length/temp
             CASE DEFAULT
                WRITE(6,'(A,I3.3,A)') '!!! JTARGET=',iddex(i),' not supported'
                CALL write_targets(6,iddex(i))

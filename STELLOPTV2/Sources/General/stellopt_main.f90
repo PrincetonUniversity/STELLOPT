@@ -68,6 +68,7 @@
       lno_restart = .false.
       lauto_domain = .false.
       lrenorm      = .false.
+      loneiter     = .false.
       pct_domain = 0.05
       xvec_file = 'xvec.dat'
       INQUIRE(UNIT=6,NAME=screen_str) ! Store STDOUT
@@ -119,6 +120,8 @@
                   i=i+1
                   call GETCARG(i,args(i),numargs)
                   xvec_file = args(i)
+               case ("-oneiter","-one_iter")
+                  loneiter = .true.
                case ("-help","-h") ! Output Help message
                   write(6,*)' STELLOPT Optimizer '
                   WRITE(6,'(a,f5.2)') '  Version: ',STELLOPT_VERSION
@@ -129,6 +132,7 @@
                   write(6,*)'     -autodomain pct   Automatically calculate min-max domain'
                   write(6,*)'     -noverb           Supress all screen output'
                   write(6,*)'     -log              Output screen to log file'
+                  write(6,*)'     -one_iter         Force single iteration operation'
                   write(6,*)'     -tri file1 file2  Triangulation files'
                   write(6,*)'     -xvec_file file   X_VEC filename (OPT_TYPE: EVAL_XVEC)'
                   write(6,*)'     -help:            Output help message'
@@ -163,12 +167,14 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_3',ierr_mpi)
       CALL MPI_BCAST(lauto_domain,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_4',ierr_mpi)
-      CALL MPI_BCAST(pct_domain,1,MPI_REAL8, master, MPI_COMM_STEL,ierr_mpi)
+      CALL MPI_BCAST(loneiter,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_5',ierr_mpi)
-      CALL MPI_BCAST(id_string,256,MPI_CHARACTER, master, MPI_COMM_STEL,ierr_mpi)
+      CALL MPI_BCAST(pct_domain,1,MPI_REAL8, master, MPI_COMM_STEL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_6',ierr_mpi)
-      CALL MPI_BCAST(id_tag,256,MPI_CHARACTER, master, MPI_COMM_STEL,ierr_mpi)
+      CALL MPI_BCAST(id_string,256,MPI_CHARACTER, master, MPI_COMM_STEL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_7',ierr_mpi)
+      CALL MPI_BCAST(id_tag,256,MPI_CHARACTER, master, MPI_COMM_STEL,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main_8',ierr_mpi)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
@@ -198,7 +204,9 @@
          CALL MPI_FILE_OPEN(MPI_COMM_STEL, TRIM(id_string), &
                             MPI_MODE_RDONLY, MPI_INFO_NULL, key, ierr_mpi )
          CALL MPI_FILE_CLOSE(key,ier)
-         CALL read_stellopt_input(TRIM(id_string),ier,myid)
+         CALL init_stellopt_input
+         CALL read_stellopt_input(TRIM(id_string),ier)
+         !CALL stellopt_write_header
 
          ! Now fix a couple things before we re-run the optimizer
          id_string = id_string(7:LEN(id_string))

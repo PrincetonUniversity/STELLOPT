@@ -54,7 +54,7 @@
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
                      norm_phi, norm_zeff, norm_emis_xics, &
-                     norm_beamj, norm_bootj, temp
+                     norm_beamj, norm_bootj, temp, scale
       INTEGER, PARAMETER     :: max_refit = 2
       REAL(rprec), PARAMETER :: ec  = 1.60217653D-19
       CHARACTER(len = 16)     :: temp_str
@@ -102,6 +102,7 @@
 
       ! Unpack array (minus RBC/ZBS/RBS/ZBC)
       DO nvar_in = 1, n
+         scale = 1.0
          IF (arr_dex(nvar_in,2) == norm_dex) cycle
          IF (var_dex(nvar_in) == ixval) xval = x(nvar_in)
          IF (var_dex(nvar_in) == iyval) yval = x(nvar_in)
@@ -110,10 +111,6 @@
          IF (var_dex(nvar_in) == ipscale) pres_scale = x(nvar_in)
          IF (var_dex(nvar_in) == imixece) mix_ece = x(nvar_in)
          IF (var_dex(nvar_in) == ixics_v0) xics_v0 = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
-                regcoil_winding_surface_separation = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_current_density) &
-                regcoil_current_density = x(nvar_in)
          IF (var_dex(nvar_in) == ibcrit) bcrit = x(nvar_in)
          IF (var_dex(nvar_in) == iextcur) extcur(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iaphi) aphi(arr_dex(nvar_in,1)) = x(nvar_in)
@@ -144,20 +141,36 @@
          IF (var_dex(nvar_in) == iah_aux_f) ah_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iat_aux_f) at_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iemis_xics_f) emis_xics_f(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iraxis_cc) raxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == izaxis_cs) zaxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iraxis_cs) raxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == izaxis_cc) zaxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == irhobc)     rhobc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ideltamn)   deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == icoil_splinefx)   coil_splinefx(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iRosenbrock_X) Rosenbrock_X(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == irbc_coilsurf)  rbc_coilsurf(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == izbs_coilsurf)  zbs_coilsurf(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == irho_coil_kts)   rho_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == itheta_coil_kts) theta_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == izeta_coil_kts)  zeta_coil_kts(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iraxis_cc) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            raxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == izaxis_cs) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            zaxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == iraxis_cs) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            raxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == izaxis_cc) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            zaxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == irhobc) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*MAX(ABS(arr_dex(nvar_in,1)),arr_dex(nvar_in,2)))
+            rhobc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == ideltamn) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*MAX(ABS(arr_dex(nvar_in,1)),arr_dex(nvar_in,2)))
+            deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         END IF
       END DO
 
       ! Adust Boundary Representation
@@ -170,18 +183,20 @@
 
       ! Unpack RBC/ZBS/RBS/ZBC
       DO nvar_in = 1, n
-         IF (var_dex(nvar_in) == ibound_rbc) rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_rbs) rbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_zbc) zbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_zbs) zbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         scale = 1.0
+         IF (lexp_scale) scale = EXP(-exp_alpha*MAX(ABS(arr_dex(nvar_in,1)),arr_dex(nvar_in,2)))
+         IF (var_dex(nvar_in) == ibound_rbc) rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         IF (var_dex(nvar_in) == ibound_rbs) rbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         IF (var_dex(nvar_in) == ibound_zbc) zbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         IF (var_dex(nvar_in) == ibound_zbs) zbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
          IF (var_dex(nvar_in) == imodemn) THEN
             nf = arr_dex(nvar_in,1)
             mf = arr_dex(nvar_in,2)
-            rbc(nf,mf) = x(nvar_in)
-            zbs(nf,mf) = x(nvar_in)
+            rbc(nf,mf) = x(nvar_in)*scale
+            zbs(nf,mf) = x(nvar_in)*scale
             IF (mf == 0) THEN
-               raxis_cc(nf) = x(nvar_in)
-               zaxis_cs(nf) = x(nvar_in)
+               raxis_cc(nf) = x(nvar_in)*scale
+               zaxis_cs(nf) = x(nvar_in)*scale
             END IF
          END IF
       END DO
@@ -205,36 +220,38 @@
          ! but we don't need to do anything here.
       CASE("mean")
          ! Set initial axis shape to be the m=0 mode of the boundary shape.
-         DO nf = 0, ntord
-            raxis_cc(nf) = rbc(nf, 0)
-            zaxis_cc(nf) = zbc(nf, 0)
-            raxis_cs(nf) = rbs(nf, 0)
-            zaxis_cs(nf) = zbs(nf, 0)
-         END DO
+         CALL INIT_AXIS_MEAN
+         !DO nf = 0, ntord
+         !   raxis_cc(nf) = rbc(nf, 0)
+         !   zaxis_cc(nf) = zbc(nf, 0)
+         !   raxis_cs(nf) = rbs(nf, 0)
+         !   zaxis_cs(nf) = zbs(nf, 0)
+         !END DO
       CASE("midpoint")
          ! Set the initial axis shape to be, at each phi, the mean of the (theta=0) and (theta=pi) points
          ! of the boundary. This approach may be a more accurate estimate than axis_init_option='mean'
          ! for configurations with a strongly concave bean shape like W7-X.
-         DO nf = 0, ntord ! Handle the m=0 modes.
-            raxis_cc(nf) = rbc(nf, 0)
-            zaxis_cc(nf) = zbc(nf, 0)
-            raxis_cs(nf) = rbs(nf, 0)
-            zaxis_cs(nf) = zbs(nf, 0)
-         END DO
-         DO mf = 2, mpol1d, 2 ! Add even-m modes for m>0
-            ! Handle the n=0 modes:
-            nf=0
-            raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf)
-            zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf)
-            ! No need to include the sin(n*phi) modes for n=0 here.
-            ! Handle the n.ne.0 modes:
-            DO nf = 1, ntord
-               raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf) + rbc(-nf, mf)
-               zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf) + zbc(-nf, mf)
-               raxis_cs(nf) = raxis_cs(nf) + rbs(nf, mf) - rbs(-nf, mf)
-               zaxis_cs(nf) = zaxis_cs(nf) + zbs(nf, mf) - zbs(-nf, mf)
-            END DO
-         END DO
+         CALL INIT_AXIS_MIDPOINT
+         !DO nf = 0, ntord ! Handle the m=0 modes.
+         !   raxis_cc(nf) = rbc(nf, 0)
+         !   zaxis_cc(nf) = zbc(nf, 0)
+         !   raxis_cs(nf) = rbs(nf, 0)
+         !   zaxis_cs(nf) = zbs(nf, 0)
+         !END DO
+         !DO mf = 2, mpol1d, 2 ! Add even-m modes for m>0
+         !   ! Handle the n=0 modes:
+         !   nf=0
+         !   raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf)
+         !   zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf)
+         !   ! No need to include the sin(n*phi) modes for n=0 here.
+         !   ! Handle the n.ne.0 modes:
+         !   DO nf = 1, ntord
+         !      raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf) + rbc(-nf, mf)
+         !      zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf) + zbc(-nf, mf)
+         !      raxis_cs(nf) = raxis_cs(nf) + rbs(nf, mf) - rbs(-nf, mf)
+         !      zaxis_cs(nf) = zaxis_cs(nf) + zbs(nf, mf) - zbs(-nf, mf)
+         !   END DO
+         !END DO
       CASE("input")
          ! Reset the axis shape to the shape specified in the input file
          raxis_cc = raxis_cc_initial
@@ -354,13 +371,6 @@
       WRITE(temp_str,'(i5)') istat
       proc_string = TRIM(TRIM(id_string) // '_opt' // TRIM(ADJUSTL(temp_str)))
 
-      ! Handle coil geometry variations
-      IF (lcoil_geom) THEN
-         CALL stellopt_spline_to_coil(npts_biot, fixedcoilname, lscreen)
-         ctemp_str = 'write_mgrid'
-         CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
-      END IF
-
       IF (iflag .eq. -1) THEN 
          IF (lverb) WRITE(6,*) '---------------------------  EQUILIBRIUM CALCULATION  ------------------------'
       END IF
@@ -398,12 +408,14 @@
             CASE('spec')
             CASE('test')
                !Do Nothing
+               iflag = 0
+               ier_paraexe = 0
          END SELECT
          ! Check profiles for negative values of pressure
          dex = MINLOC(am_aux_s(2:),DIM=1)
          IF (dex > 2) THEN
             IF (ANY(am_aux_f(1:dex) < 0)) iflag = -55
-            IF (ALL(am_aux_f(1:dex) == 0)) iflag = -55
+            !IF (ALL(am_aux_f(1:dex) == 0)) iflag = -55
          END IF
          IF (pres_scale < 0) iflag = -55
          ! Now call any functions necessary to read or load the
@@ -418,25 +430,55 @@
          proc_string_old = proc_string ! So we can find the DIAGNO files
          IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
          ctemp_str = 'booz_xform'
-         IF (ANY(lbooz) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(lbooz) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
          ctemp_str = 'bootsj'
-         IF (ANY(sigma_bootstrap < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF ((ANY(sigma_bootstrap < bigno) .or. (sigma_totalbootstrap < bigno)) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
          ctemp_str = 'diagno'
-         IF (lneed_magdiag .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (lneed_magdiag .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
          ctemp_str = 'neo'
-         IF (ANY(sigma_neo < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(sigma_neo < bigno) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ IF DEFINED (TERPSICHORE)
          ctemp_str = 'terpsichore'
-         IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TRAVIS)
          ctemp_str = 'travis'
-         IF (ANY(sigma_ece < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF (ANY(sigma_ece < bigno) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
          ctemp_str = 'dkes'
-         IF ((ANY(sigma_dkes < bigno).or.ANY(sigma_dkes_erdiff < bigno).or.ANY(sigma_dkes_alpha < bigno)) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         IF ((ANY(sigma_dkes < bigno).or.ANY(sigma_dkes_erdiff < bigno).or.ANY(sigma_dkes_alpha < bigno)) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
 !DEC$ ENDIF
+
+         ! Coil related parameters (generate coils must come first)
+         !IF (lcreate_coilsurf) CALL stellopt_generate_coilsurf(lscreen,iflag)
+         IF (lcreate_coils) CALL stellopt_generate_coils(lscreen,iflag)
+         IF (lneed_bnormal) THEN
+            ctemp_str = 'compute_bnormal'
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         ENDIF
 
          ! NOTE ALL parallel secondary codes go here
 !DEC$ IF DEFINED (TXPORT_OPT)
@@ -444,18 +486,6 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (BEAMS3D_OPT)
          IF (ANY(sigma_orbit < bigno)) CALL stellopt_orbits(lscreen,iflag)
-!DEC$ ENDIF
-!DEC$ IF DEFINED (COILOPTPP)
-         ctemp_str = 'coilopt++'
-         IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
-!DEC$ ENDIF
-!DEC$ IF DEFINED (REGCOIL)
-         ! JCS: skipping parallelization for now 
-         ! ctemp_str = 'regcoil_chi2_b'
-         ! IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
-         IF (ANY(sigma_regcoil_chi2_b < bigno) .and. (iflag >=0)) then
-           CALL stellopt_regcoil_chi2_b(lscreen, iflag)
-         end if
 !DEC$ ENDIF
 
          ! Now we load target values if an error was found then

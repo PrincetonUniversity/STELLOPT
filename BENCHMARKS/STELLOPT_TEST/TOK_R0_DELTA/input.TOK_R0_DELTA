@@ -46,17 +46,16 @@ RBC(  0,  1) =  1.0000000000e+00  ZBS(  0,  1) =  1.0000000000e+00
   XTOL   =   1.0E-2
   GTOL   =   1.0E-30
   FACTOR =   0.5
-  EPSFCN =   0.3
+  EPSFCN =   1.0
   CR_STRATEGY = 0
   NPOPULATION = 16
   NOPTIMIZERS = 8
   LKEEP_MINS = T
-  MODE = 1
+  MODE = 3
 !-----------------------------------------------------------------------
 !          OPTIMIZED QUANTITIES
 !-----------------------------------------------------------------------
   LBOUND_OPT(0,0) = T RBC_MIN(0,0) = 2.0  RBC_MAX(0,0) = 20.0 DBOUND_OPT(0,0) = 1.0
-!  LRHO_OPT(0,0) = T BOUND_MIN(0,0) = 0.5  BOUND_MAX(0,0) = 5.0 DRHO_OPT(0,0) = 1.0
   LDELTAMN_OPT(0,1) = T DELTA_MIN(0,1) = 0.5  DELTA_MAX(0,1) = 5.0
   RHO_EXP = 4
 !-----------------------------------------------------------------------

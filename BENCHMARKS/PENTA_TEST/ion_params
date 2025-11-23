@@ -1,0 +1,5 @@
+&ion_params
+num_ion_species=1
+Z_ion_init=1.0
+miomp_init=1.0
+/

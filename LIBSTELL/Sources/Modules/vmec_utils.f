@@ -49,11 +49,11 @@ C-----------------------------------------------
       INTEGER, OPTIONAL, INTENT(out) :: info
       REAL(rprec), INTENT(in)  :: R1, Z1, Phi
       REAL(rprec), INTENT(out) :: Br, Bphi, Bz
-      REAL(rprec), INTENT(out), OPTIONAL :: sflx, uflx
+      REAL(rprec), INTENT(inout), OPTIONAL :: sflx, uflx
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: fmin_acceptable = 1.E-12_dp
+      REAL(rprec), PARAMETER :: fmin_acceptable = 1.E-8_dp
       INTEGER     :: nfe, info_loc
       REAL(rprec) :: r_cyl(3), c_flx(3), fmin
       REAL(rprec) :: Ru1, Zu1, Rv1, Zv1, Rs1, Zs1, g1
@@ -90,18 +90,20 @@ C-----------------------------------------------
       CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w, 
      1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin, 
      2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1, RS=Rs1, ZS=Zs1)
-
-      IF (info_loc.eq.-1 .and. (fmin .le. fmin_acceptable)) info_loc = 0
-
+!
+!     If info == 0 then the point is found
+!     If info == -1 then the tollerance was not achieved
+!     If info < -1 then most likely the point is outside the eq.
+!
       IF (PRESENT(info)) info = info_loc
-      IF (info_loc .ne. 0) RETURN
+      IF (info_loc .lt. -1) RETURN
 
       Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
 
       IF (PRESENT(sflx)) sflx = c_flx(1)  
       IF (PRESENT(uflx)) uflx = c_flx(2)
 
-      IF (c_flx(1) .gt. 2) THEN
+      IF (c_flx(1) .ge. 2) THEN
          Br = 0;  Bphi = 0;  Bz = 0
          RETURN
       ELSE IF (c_flx(1) .gt. one) THEN
@@ -1105,7 +1107,6 @@ C-----------------------------------------------
          END IF
 
          fmin0 = MIN(fmin, fmin0)
-!        PRINT *,' ITRY = ', itry+1,' FMIN = ', fmin
             
       END DO
          
@@ -1122,7 +1123,7 @@ C-----------------------------------------------
 !
       IF ((PRESENT(ru) .or. PRESENT(zu) .or. 
      1     PRESENT(rv) .or. PRESENT(zv) .or.
-     2     PRESENT(rs) .or. PRESENT(zs)) .and. info.eq.0) THEN
+     2     PRESENT(rs) .or. PRESENT(zs)) .and. info.ge.-1) THEN
          IF (lscale) THEN
             CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc, 
      1         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, 
@@ -1152,11 +1153,11 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      !INTEGER, PARAMETER :: niter = 50
-      INTEGER, PARAMETER :: niter = 500
-      INTEGER     :: ieval, isgt1
-      REAL(rprec) :: c_flx(3), r_cyl_out(3), fvec(nvar), sflux, 
-     1               uflux, eps0, eps, epu, xc_min(2), factor
+      INTEGER, PARAMETER :: niter = 50
+      !INTEGER, PARAMETER :: niter = 500
+      INTEGER     :: ieval
+      REAL(rprec) :: c_flx(3), r_cyl_out(3), 
+     1               eps0, eps, xc_min(nvar), factor
       REAL(rprec) :: x0(3), xs(3), xu(3), dels, delu, tau, fmin0,
      1               ru1, zu1, edge_value, snew, rs1, zs1, z_small
 C-----------------------------------------------
@@ -1170,7 +1171,6 @@ C-----------------------------------------------
 !
 !     LOCAL VARIABLES:
 !     tau:      d(R,Z)/d(s,u) (Jacobian)
-!     isgt1:    counter for number of times s>1
 
 !     FIND FLUX COORDINATES (s,u) WHICH CORRESPOND TO ZERO OF TARGET FUNCTION
 !
@@ -1187,60 +1187,38 @@ C-----------------------------------------------
       iflag = -1      
       z_small=TINY(1.0_rprec)
       eps0 = SQRT(EPSILON(eps))
-      xc_min = xc_opt
 
       c_flx(3) = phi_target
       fmin0 = 1.E10_dp
-      factor = 1
+      fmin  = 1.E10_dp
+      factor = one
       nfe = 0
-      edge_value = one + one/(ns_loc-1)
       edge_value = 2*one
-      isgt1 = 0
 
-      DO ieval = 1, niter
+!     If s < 0 then rotate angle by 180
+      if (xc_opt(1) .lt. zero) xc_opt(2) = xc_opt(2) + 0.5
+!     Start s always postive in range [0,1]
+      xc_opt(1) = ABS(xc_opt(1))
+
+      xc_min(1:nvar) = xc_opt(1:nvar)
+
+!     Minimization Loop
+      DO WHILE ((nfe .lt. niter) .and. (fmin .gt. ftol))
          nfe = nfe + 1
-
-         if (xc_opt(1) .lt. zero) then
-           ! if initial guess for s is > 0,
-           ! flip theta by 180 deg
-           sflux = -xc_opt(1)
-           uflux = xc_opt(2) + 0.5_dp
-         else
-           ! standard case for s guess >= 0
-           sflux = MAX(xc_opt(1), zero)
-           uflux = xc_opt(2)
-         end if
          
-         c_flx(1) = sflux;  c_flx(2) = uflux
+         c_flx(1) = xc_opt(1);  c_flx(2) = xc_opt(2)
 
-!        COMPUTE R,Z, Ru, Zu
+!        COMPUTE R,Z, Ru, Zu, Rs, Zs
          CALL get_flxcoord(x0, c_flx, rs=rs1, zs=zs1, ru=ru1, zu=zu1)
          xu(1) = ru1; xu(3) = zu1
          xs(1) = rs1; xs(3) = zs1
-!        COMPUTE R,Z, Ru, Zu
-!         CALL get_flxcoord(x0, c_flx, ru=ru1, zu=zu1)
-!         xu(1) = ru1; xu(3) = zu1
-!
-!        MAKE SURE sflux IS LARGE ENOUGH
-!        TO COMPUTE d(sqrt(s))/ds ACCURATELY NEAR ORIGIN
-!         IF (sflux .ge. 1000*eps0) THEN
-!            eps = eps0
-!         ELSE
-!            eps = eps0*sflux
-!         END IF
-!
-!        COMPUTE Rs, Zs NUMERICALLY
-!         eps = ABS(eps)
-!         IF (sflux .ge. 1-eps) eps = -eps
-!         c_flx(1) = sflux + eps
-!         CALL get_flxcoord(r_cyl_out, c_flx)
-!         xs = (r_cyl_out - x0)/eps
-!         c_flx(1) = sflux
 
+!        Compute Function minimization (R0,Z0)
          x0(1) = x0(1) - r_target
          x0(3) = x0(3) - z_target
          fmin = (x0(1)**2 + x0(3)**2)*fnorm
 
+!        Compute Descent Direction
          IF (fmin .gt. fmin0) THEN
             factor = (2*factor)/3
             xc_opt = xc_min
@@ -1256,7 +1234,6 @@ C-----------------------------------------------
 
 !           NEWTON STEP
             tau = xu(1)*xs(3) - xu(3)*xs(1)
-            !IF (ABS(tau) .le. ABS(eps)*r_target**2) THEN
             IF (ABS(tau) .le. ABS(z_small)*r_target**2) THEN
                iflag = -2
                EXIT
@@ -1264,37 +1241,33 @@ C-----------------------------------------------
             dels = ( x0(1)*xu(3) - x0(3)*xu(1))/tau
             delu = (-x0(1)*xs(3) + x0(3)*xs(1))/tau
             IF (fmin .gt. 1.E-3_dp) THEN
-               dels = dels/2; delu = delu/2
+               dels = dels*0.5; delu = delu*0.5
             END IF
  
          END IF
- 
-         IF (fmin .le. ftol) EXIT
 
+!        Limit change in parameters
          IF (ABS(dels) .gt. one)   dels = SIGN(one, dels)
          IF (ABS(delu) .gt. twopi/8) delu = SIGN(twopi/8, delu)
 
+!        Update s
          snew = xc_opt(1) + dels*factor
+
+!        Update u
          IF (snew .lt. zero) THEN
-            xc_opt(1) = -snew/2               !Prevents oscillations around origin s=0
-            xc_opt(2) = xc_opt(2) + twopi/2 
+            xc_opt(2) = xc_opt(2) + twopi/2 - delu*factor
          ELSE
-            xc_opt(1) = snew
             xc_opt(2) = xc_opt(2) + delu*factor
          END IF
 
-         IF (xc_opt(1) .gt. edge_value) THEN
-            isgt1 = isgt1+1
-            !IF (xc_opt(1) .gt. 2._dp) isgt1 = isgt1+1
-            IF (isgt1 .gt. 5) EXIT
-         END IF
+!        Keep s positive
+         xc_opt(1) = ABS(snew)
 
       END DO
 
-      IF (isgt1.gt.5) THEN
-         iflag = -3
-         xc_min = xc_opt
-      ELSE IF (xc_min(1) .gt. edge_value) THEN
+      !PRINT *,xc_min,fmin,nfe,iflag
+
+      IF (xc_min(1) .gt. edge_value) THEN
          iflag = -3
       ELSE IF (fmin0 .le. ftol) THEN
          iflag = 0
@@ -1303,8 +1276,10 @@ C-----------------------------------------------
       END IF
       
       fmin = fmin0
+!     Return the result
       xc_opt = xc_min
-      xc_opt(2) = MOD(xc_opt(2), twopi)
+      !xc_opt(1) = MIN(MAX(xc_min(1), zero),edge_value)
+      !xc_opt(2) = MOD(xc_min(2), twopi)
 
       END SUBROUTINE newt2d
 
@@ -1332,5 +1307,35 @@ C-----------------------------------------------
       END IF
 
       END SUBROUTINE get_flxcoord
+
+      SUBROUTINE get_flxcoord_python(x1, c_flx, rs, zs, ru, zu, rv, zv)
+      USE read_wout_mod, phi_wout=>phi, ns_w=>ns, ntor_w=>ntor,
+     1     mpol_w=>mpol, ntmax_w=>ntmax, lthreed_w=>lthreed,
+     2     lasym_w=>lasym
+      IMPLICIT NONE
+C-----------------------------------------------
+C   D u m m y   A r g u m e n t s
+C-----------------------------------------------
+      REAL(rprec), INTENT(out) :: x1(3)
+      REAL(rprec), INTENT(in)  :: c_flx(3)
+      REAL(rprec), INTENT(out) :: ru, zu, rs, zs, rv, zv
+C-----------------------------------------------
+C   L o c a l   V a r i a b l e s
+C-----------------------------------------------
+      INTEGER :: iflag
+C-----------------------------------------------
+      iflag = 0
+      CALL LoadRZL
+      ! becasue we call from outside VMEC only 
+      ! we only use the lscale=.False. branch of
+      ! the logic tree.  Also we use rzl_local
+      ! since that's what we need to pass.
+      CALL flx2cyl(rzl_local, c_flx, x1, ns_w, ntor_w, mpol_w, 
+     1              ntmax_w, lthreed_w, lasym_w, iflag,
+     2              RU=ru, ZU=zu, Rs=rs, Zs=zs, Rv=rv, Zv=zv)
+      RETURN
+      END SUBROUTINE get_flxcoord_python
+
+
 
       END MODULE vmec_utils

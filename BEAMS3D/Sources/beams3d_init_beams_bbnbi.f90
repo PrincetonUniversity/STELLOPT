@@ -25,7 +25,7 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: ier, i, j, k, k1, k2
+      INTEGER :: ier, i, j, k, k1, k2, MPI_COMM_LOCAL
       INTEGER, DIMENSION(:), ALLOCATABLE :: N_start
       REAL(rprec) :: rtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Energy, X_start, Y_start
@@ -102,13 +102,7 @@
       k2 = dims(2)
       CALL MPI_BCAST(k1, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
       CALL MPI_BCAST(k2, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
-      nparticles = nbeams*nparticles_start
-      ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
-                  vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
-                  mass(nparticles), charge(nparticles), Zatom(nparticles), &
-                  mu_start(nparticles), t_end(nparticles), &
-                  beam(nparticles), weight(nparticles), lgc2fo_start(nparticles))
-      lgc2fo_start = .TRUE.
+      IF (myid_sharmem==master) lgc2fo_start = .TRUE.
       IF (myworkid==master) THEN
          ALLOCATE(N_start(nparticles_start),X_start(nparticles_start),Y_start(nparticles_start),&
                   Energy(nparticles_start), U(3,nparticles_start), V(3,nparticles_start), &
@@ -134,7 +128,7 @@
             mass(k1:k2)         = mass_beams(i)
             charge(k1:k2)       = charge_beams(i)
             Zatom(k1:k2)        = Zatom_beams(i)
-            partvmax            = MAX(partvmax,6*SQRT(2*E_beams(i)/mass_beams(i))/5.0)
+            partvmax            = MAX(partvmax,SQRT(2*E_beams(i)/mass_beams(i)))
             ! Energy distribution
             CALL gauss_rand(nparticles_start, Energy)
             Energy = sqrt( (E_beams(i) + E_error*E_beams(i)*Energy)*(E_beams(i) + E_error*E_beams(i)*Energy) )
@@ -180,23 +174,30 @@
       END IF
 
 #if defined(MPI_OPT)
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(partvmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(mass,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(charge,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(Zatom,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(weight,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(R_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(phi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(Z_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(vr_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(vphi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(vz_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(lgc2fo_start,nparticles,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      i = MPI_UNDEFINED
+      IF (myid_sharmem == master) i = 0
+      CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
+      IF (myid_sharmem == master) THEN
+         CALL MPI_BCAST(     R_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(   PHI_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(     Z_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(   vll_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(    mu_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(    vr_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(  vphi_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(    vz_start, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(       t_end, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(        mass, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(      charge, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(       Zatom, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(      weight, nparticles,   MPI_REAL8, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(        beam, nparticles, MPI_INTEGER, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(lgc2fo_start, nparticles, MPI_LOGICAL, master, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+      END IF
 #endif
 
 

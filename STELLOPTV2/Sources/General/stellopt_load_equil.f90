@@ -227,6 +227,7 @@
             !    f = f(jlo)*wlo + f(jhi)*whi  Interpolant
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             !   First interpolate from half grid to full (respect overwrite indexing)
+            !   Note we take the VMEC quantities and put them into the _temp arrays
             DO k = 2, ns_vmec-1
                WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
                   mfact(:,1)= 0.5
@@ -250,7 +251,7 @@
             END DO
 
             !   Second, extrapolate to ns
-            !       note that ns-1 is full grid but ns is on half grid
+            !       note that ns-1 is full grid (temp array) but ns is on half grid (vmec_array)
             k = ns_vmec
             WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
                mfact(:,1)= 2.0 ! ns (half grid point)
@@ -260,18 +261,19 @@
                mfact(:,2)=-1.0*SQRT((ns_vmec-1)/(k-2.0))
             ENDWHERE
             lmns_temp(:,k) = mfact(:,1)*lmns_temp(:,k)+mfact(:,2)*lmns_temp(:,k-1)
-            gmnc_temp(:,k) = mfact(:,1)*gmnc_vmec(:,k)+mfact(:,2)*gmnc_vmec(:,k-1)
-            bmnc_temp(:,k) = mfact(:,1)*bmnc_vmec(:,k)+mfact(:,2)*bmnc_vmec(:,k-1)
-            bsupumnc_temp(:,k) = mfact(:,1)*bsupumnc_vmec(:,k)+mfact(:,2)*bsupumnc_vmec(:,k-1)
-            bsupvmnc_temp(:,k) = mfact(:,1)*bsupvmnc_vmec(:,k)+mfact(:,2)*bsupvmnc_vmec(:,k-1)
+            gmnc_temp(:,k) = mfact(:,1)*gmnc_vmec(:,k)+mfact(:,2)*gmnc_temp(:,k-1)
+            bmnc_temp(:,k) = mfact(:,1)*bmnc_vmec(:,k)+mfact(:,2)*bmnc_temp(:,k-1)
+            bsupumnc_temp(:,k) = mfact(:,1)*bsupumnc_vmec(:,k)+mfact(:,2)*bsupumnc_temp(:,k-1)
+            bsupvmnc_temp(:,k) = mfact(:,1)*bsupvmnc_vmec(:,k)+mfact(:,2)*bsupvmnc_temp(:,k-1)
             IF (lasym_vmec) THEN
                lmnc_temp(:,k) = mfact(:,1)*lmnc_temp(:,k)+mfact(:,2)*lmnc_temp(:,k-1)
-               gmns_temp(:,k) = mfact(:,1)*gmns_vmec(:,k)+mfact(:,2)*gmns_vmec(:,k-1)
-               bmns_temp(:,k) = mfact(:,1)*bmns_vmec(:,k)+mfact(:,2)*bmns_vmec(:,k-1)
-               bsupumns_temp(:,k) = mfact(:,1)*bsupumns_vmec(:,k)+mfact(:,2)*bsupumns_vmec(:,k-1)
-               bsupvmns_temp(:,k) = mfact(:,1)*bsupvmns_vmec(:,k)+mfact(:,2)*bsupvmns_vmec(:,k-1)
-            
+               gmns_temp(:,k) = mfact(:,1)*gmns_vmec(:,k)+mfact(:,2)*gmns_temp(:,k-1)
+               bmns_temp(:,k) = mfact(:,1)*bmns_vmec(:,k)+mfact(:,2)*bmns_temp(:,k-1)
+               bsupumns_temp(:,k) = mfact(:,1)*bsupumns_vmec(:,k)+mfact(:,2)*bsupumns_temp(:,k-1)
+               bsupvmns_temp(:,k) = mfact(:,1)*bsupvmns_vmec(:,k)+mfact(:,2)*bsupvmns_temp(:,k-1)
+            END IF            
             !   Third extrapolate to axis This is the Samantha Lazerson bugfix 2023.01.29
+            !   Not here we take VMEC half grid quantities and extrapolate to axis in _temp array
             k = 1
             WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
                mfact(:,1)= 2.0
@@ -291,7 +293,6 @@
                bmns_temp(:,k) = mfact(:,1)*bmns_vmec(:,k+1)+mfact(:,2)*bmns_vmec(:,k+2)
                bsupumns_temp(:,k) = mfact(:,1)*bsupumns_vmec(:,k+1)+mfact(:,2)*bsupumns_vmec(:,k+2)
                bsupvmns_temp(:,k) = mfact(:,1)*bsupvmns_vmec(:,k+1)+mfact(:,2)*bsupvmns_vmec(:,k+2)
-            END IF
             END IF
             DEALLOCATE(mfact)
 
@@ -378,10 +379,10 @@
          WRITE(6,'(A,F7.3,A)') '                    ',betap,'  (poloidal)'
          WRITE(6,'(A,F7.3,A)') '                    ',betat,'  (toroidal)'
          WRITE(6,'(A,E20.12)') '  TORIDAL CURRENT:  ',curtor
-         WRITE(6,'(A,F7.3)')   '     TORIDAL FLUX:  ',phiedge
-         WRITE(6,'(A,F7.3)')   '           VOLUME:  ',volume    
-         WRITE(6,'(A,F7.3)')   '     MAJOR RADIUS:  ',rmajor
-         WRITE(6,'(A,F7.3)')   '     MINOR RADIUS:  ',aminor
+         WRITE(6,'(A,F9.3)')   '     TORIDAL FLUX:  ',phiedge
+         WRITE(6,'(A,F9.3)')   '           VOLUME:  ',volume    
+         WRITE(6,'(A,F9.3)')   '     MAJOR RADIUS:  ',rmajor
+         WRITE(6,'(A,F9.3)')   '     MINOR RADIUS:  ',aminor
          WRITE(6,'(A,F7.3)')   '       AXIS FIELD:  ',Baxis
          WRITE(6,'(A,E20.12)')   '    STORED ENERGY:  ',wp
          CALL FLUSH(6)

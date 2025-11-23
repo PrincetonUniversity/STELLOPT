@@ -18,7 +18,7 @@
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
-                                 MPI_REDU_ERR, pi2, weight,lrestart_grid, lboxsim
+                                 MPI_REDU_ERR, pi2, weight,lcontinue_grid, lboxsim
       USE safe_open_mod, ONLY: safe_open
       USE EZspline
       USE mpi_params ! MPI
@@ -137,7 +137,7 @@
       DEALLOCATE(tlow,thigh)
 
       ! These diagnostics need Vp to be defined
-      IF ((.not.ldepo .or. lrestart_grid) .and. .not.lboxsim .and. myworkid == master) THEN
+      IF ((.not.ldepo .or. lcontinue_grid) .and. .not.lboxsim .and. myworkid == master) THEN
          ! Allocate the parallel and perpendicular velcoity axis
          nhalf = ns_prof4/2
          ALLOCATE(dense_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1))
@@ -161,28 +161,22 @@
          !dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
          ! We not apply the volume element for the radial profiles [m^-3]
          DO k = 1, ns_prof1
-            s1 = REAL(k-0.5)/REAL(ns_prof1) ! Rho
+            s1 = MIN(REAL(k-0.5)/h1_prof,1.0) ! Rho
             s2 = s1*s1
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
-            vp_temp = vp_temp*2*s1*(1./REAL(ns_prof1))
+            vp_temp = vp_temp*2*s1/h1_prof
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
             dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
             j_prof(:,k)      =      j_prof(:,k)/vp_temp ! [A/m^2]
          END DO
-         ! Normalize to velocity space volume element
-         ! dvll = partvmax*2/ns_prof4 ! dVll
-         ! dvperp = pi2*partvmax/ns_prof5 ! dVperp
-         ! DO k = 1, ns_prof5 ! VPERP
-         !    !s2 = REAL(k-0.5)/REAL(ns_prof5) ! Vperp_frac
-         !    vp_temp = vperpaxis(k)*dvll*dvperp
-         !    dist5d_prof(:,:,:,:,:,k) = dist5d_prof(:,:,:,:,:,k)/vp_temp
-         ! END DO
          ! DEALLOCATIONS
          DEALLOCATE(vperpaxis,vllaxis)
-         CALL beams3d_distnorm
       END IF
+
+      ! Normalize the distribution
+      CALL beams3d_distnorm
 
       CALL beams3d_write('DIAG')
 

@@ -69,12 +69,13 @@
       CALL move_txtfile('jprof.'//TRIM(proc_string_old),'jprof.'//TRIM(proc_string))
       CALL move_txtfile('dprof.'//TRIM(proc_string_old),'dprof.'//TRIM(proc_string))
       CALL move_txtfile('boot_fit.'//TRIM(proc_string_old),'boot_fit.'//TRIM(proc_string))
+      CALL move_txtfile('coils.'//TRIM(proc_string_old),'coils.'//TRIM(proc_string))
+      CALL move_txtfile('bnorm.'//TRIM(proc_string_old),'bnorm.'//TRIM(proc_string))
+      CALL move_txtfile('bnorm_real.'//TRIM(proc_string_old),'bnorm_real.'//TRIM(proc_string))
+      CALL move_txtfile('baxis_real.'//TRIM(proc_string_old),'baxis_real.'//TRIM(proc_string))
+      CALL move_txtfile('bnorm_harm.'//TRIM(proc_string_old),'bnorm_harm.'//TRIM(proc_string))
+      CALL move_txtfile('coil_curvature.'//TRIM(proc_string_old),'coil_curvature.'//TRIM(proc_string))
       CALL copy_boozer_file(TRIM(proc_string_old),TRIM(proc_string))
-      IF (lcoil_geom) THEN
-         CALL move_txtfile('coils.'//TRIM(proc_string_old),'coils.'//TRIM(proc_string))
-         ! This is total CRAP, no system calls suggest adding read/write paradigm
-         CALL SYSTEM('cp mgrid_'//TRIM(proc_string_old)//'.nc mgrid_'//TRIM(proc_string)//'.nc')
-      END IF
       DO ik = 1, nsd
          WRITE(temp_str,'(A,I3.3)') '_s',ik
          CALL move_txtfile('input_dkes.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'input_dkes.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
@@ -94,38 +95,6 @@
          CALL move_txtfile('beams3d_diag_'//TRIM(proc_string_old)//'.txt',&
                            'beams3d_diag_'//TRIM(proc_string)//'.txt')
       END IF
-!DEC$ IF DEFINED (COILOPTPP)
-      IF (sigma_coil_bnorm < bigno) THEN
-         CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
-                           'bnorm.'//TRIM(proc_string))
-         CALL move_txtfile('coilopt_params.'//TRIM(proc_string_old),&
-                           'coilopt_params.'//TRIM(proc_string))
-         CALL copy_txtfile('b_norm_eq_'//TRIM(proc_string_old)//'.dat',&
-                           'b_norm_eq_'//TRIM(proc_string)//'.dat')
-         CALL copy_txtfile('b_norm_final_'//TRIM(proc_string_old)//'.dat',&
-                           'b_norm_final_'//TRIM(proc_string)//'.dat')
-         CALL move_txtfile('b_norm_init_'//TRIM(proc_string_old)//'.dat',&
-                           'b_norm_init_'//TRIM(proc_string)//'.dat')
-         DO ik = 0, numws-1
-            WRITE(temp_str,'(I3.3)') ik
-            CALL copy_txtfile('coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string_old)//'.out',&
-                              'coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string)//'.out')
-         END DO
-      END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (REGCOIL)
-              ! Currently inside of LEV and GADE cleanup loop, and 
-              ! 'Keeping the mins' section
-              IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
-                 ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
-                   ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
-                   !print *, '<---In LEV/GADE cleanup.'
-                   !print *, '<---proc_string_old = ', proc_string_old
-                   !print *, '<---proc_string = ', proc_string
-                   CALL copy_txtfile('regcoil_nescout.'//TRIM(proc_string_old),&
-                                     'regcoil_nescout.'//TRIM(proc_string))
-              END IF
-!DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
       IF (ANY(sigma_kink < bigno)) THEN
          CALL move_txtfile('terpsichore_eq.'//TRIM(proc_string_old),&

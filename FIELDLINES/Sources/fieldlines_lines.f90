@@ -10,6 +10,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
+      USE fieldlines_globals, ONLY: nlines
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -21,7 +22,7 @@
 !          PHI_lines Toroidal locations along field line [radians]
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER  :: nlines, nsteps, myline, myldex, myend
+      INTEGER  :: nsteps, myline, myldex, myend
 
       REAL(rprec) :: xlast,ylast,zlast ! for storing position
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),&

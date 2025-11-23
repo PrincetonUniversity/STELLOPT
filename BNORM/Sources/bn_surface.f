@@ -4,7 +4,10 @@
       subroutine bn_surface
 ! ----------------------------------------------------------------------
 c                                                            11.08.99
-c     purpose:
+c     purpose: Fourier transform of surface quantities.
+c              Note that we are transforming over a field period since
+c              the factor of nfp has been removed from n. When using
+c              Boozer coordinates zeta_cyl = p + zeta_boozer.
 c
 c
 c ----------------------------------------------------------------------
@@ -14,10 +17,12 @@ c ----------------------------------------------------------------------
 c ----------------------------------------------------------------------
       integer :: i, m, n, ku, kv, k, np2
       real(rprec), dimension(:), allocatable :: r, ru, rv
+      real(rprec), dimension(:), allocatable :: p, pu, pv
       real(rprec) :: snx, sny, snz, coh, sih, co, si, cofp, sifp,
-     1    cofm, sifm, cm, cn
+     1    cofm, sifm, cm, cn, phi, zeta
 c ----------------------------------------------------------------------
       allocate (r(nuv), ru(nuv), rv(nuv), stat=i)
+      allocate (p(nuv), pu(nuv), pv(nuv), stat=i)
 
       do  i = 1 , nuv
          r(i)    = 0._dp
@@ -26,6 +31,9 @@ c ----------------------------------------------------------------------
          rv(i)   = 0._dp
          zu(i)   = 0._dp
          zv(i)   = 0._dp
+         p(i)   = 0._dp
+         pu(i)   = 0._dp
+         pv(i)   = 0._dp
       enddo
       do  m = 0,mb
          do  n = -nb,nb
@@ -42,21 +50,27 @@ c ----------------------------------------------------------------------
                z(i)   = z(i)    +       cz(m,n)*sifp + czc(m,n)*cofp
                zu(i)  = zu(i)   + cm *( cz(m,n)*cofp - czc(m,n)*sifp)
                zv(i)  = zv(i)   + cn *( cz(m,n)*cofp - czc(m,n)*sifp)
+               p(i)   = p(i)    +       pmns(m,n)*sifp + pmnc(m,n)*cofp
+               pu(i)  = pu(i)   + cm *( pmns(m,n)*cofp - pmnc(m,n)*sifp)
+               pv(i)  = pv(i)   + cn *( pmns(m,n)*cofp - pmnc(m,n)*sifp)
             enddo
          enddo
       enddo
 c----------------------------------------------------------
       do  kv = 1, nv
-         coh    = cos(alvp*(kv-1))
-         sih    = sin(alvp*(kv-1))
+         zeta = (kv-1)*alv
+         ! Note alvp*kv-1 is phi not zeta
          do  ku = 1, nu
             i      = nu*(kv-1)+ku
+            phi    = (zeta + p(i))/np
+            coh    = cos(phi)
+            sih    = sin(phi)
             x(i)   = coh * r(i)
             y(i)   = sih * r(i)
-            xu(i)  = coh * ru(i)
-            yu(i)  = sih * ru(i)
-            xv(i)  = coh * rv(i) - alp*y(i)
-            yv(i)  = sih * rv(i) + alp*x(i)
+            xu(i)  = coh * ru(i) - r(i) * sih * pu(i)
+            yu(i)  = sih * ru(i) + r(i) * coh * pu(i)
+            xv(i)  = coh * rv(i) - alp*y(i) - r(i) * sih * pv(i)
+            yv(i)  = sih * rv(i) + alp*x(i) + r(i) * coh * pv(i)
          enddo
       enddo
       
@@ -95,6 +109,9 @@ c----------------------------------------------------------
          gvv(i) = np2*gvv(i)
       enddo
 
+      !PRINT *,SUM(sqf)/nuv
+
       deallocate (r, ru, rv, stat=i)
+      deallocate (p, pu, pv, stat=i)
 
       end subroutine bn_surface

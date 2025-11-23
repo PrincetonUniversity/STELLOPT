@@ -1,4 +1,12 @@
 #######################################################################
+#            Based on debian
+#######################################################################
+  CURRENT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+  include $(CURRENT_DIR)/make_debian.inc
+
+############### Modifications should go below here#####################
+
+#######################################################################
 #            Define Basic Utilities
 #######################################################################
   SHELL = /bin/sh
@@ -15,8 +23,8 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
-  FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all
+  FLAGS_R = -O2 -march=native -fexternal-blas -fbacktrace -fcheck=all,no-array-temps
+  FLAGS_D = -g -O0 -march=native -fexternal-blas -fbacktrace -fcheck=all
   LIBS    = -L/usr/lib -lblas -llapack -lscalapack-openmpi
   FLAGS_R += -Wno-argument-mismatch
   FLAGS_D += -Wno-argument-mismatch
@@ -38,7 +46,7 @@
   MPI_COMPILE_C = mpicc.openmpi
   MPI_LINK = mpif90.openmpi
   MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 4
+  MPI_RUN_OPTS = --use-hwthread-cpus
 #  MPI_RUN_OPTS_SM = -np 16
 #  MPI_RUN_OPTS_MD = -np 64
 #  MPI_RUN_OPTS_LG = -np 256
@@ -53,8 +61,8 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --fflags)
-  NETCDF_LIB = $(shell nc-config --flibs)
+  NETCDF_INC = $(shell nf-config --fflags)
+  NETCDF_LIB = $(shell nf-config --flibs)
 
 #######################################################################
 #            NTCC Options
@@ -99,78 +107,6 @@
 #######################################################################
   LDKES = T
   LNEO  = T
-
-#######################################################################
-#            GENE Options
-#######################################################################
-  LGENE = F
-  GENE_INC = -I$(GENE_PATH)
-  GENE_DIR = $(GENE_PATH)
-  LIB_GENE = libgene.a
-  GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L/u/slazerso/src/GENE17_2016/external/pppl_cluster/futils/src -lfutils \
-             -L$(FFTWHOME)/lib -lfftw3 \
-             -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
-             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
-
-#######################################################################
-#            COILOPT++ Options
-#######################################################################
-  LCOILOPT = F
-  COILOPT_INC = -I$(COILOPT_PATH)
-  COILOPTPP_DIR = $(COILOPT_PATH)
-  LIB_COILOPTPP = libcoilopt++.a
-  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib/$(ARCH)-linux-gnu -lgsl -lgslcblas -lstdc++ -lmpi_cxx
-
-#######################################################################
-#            TERPSICHORE Options
-#######################################################################
-  LTERPSICHORE= F
-  TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
-  TERPSICHORE_DIR = $(TERPSICHORE_PATH)
-  LIB_TERPSICHORE = libterpsichore.a
-  TERPSICHORE_LIB = $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
-
-#######################################################################
-#            TRAVIS Options
-#######################################################################
-  LTRAVIS= F
-  TRAVIS_DIR = $(TRAVIS_PATH)
-  LIB_TRAVIS = libtravis64_sopt.a
-  LIB_MCONF  = libmconf64.a
-  TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
-
-#######################################################################
-#            REGCOIL Options
-#######################################################################
-  LREGCOIL= F
-  REGCOIL_DIR = $(REGCOIL_PATH)
-  REGCOIL_INC = -I$(REGCOIL_DIR)
-  LIB_REGCOIL = libregcoil.a
-  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
-
-#######################################################################
-#            Available Energy Options
-#######################################################################
-  LAEOPT= F
-  AEOPT_DIR = $(AEOPT_PATH)
-  AEOPT_INC = -I$(AEOPT_DIR)
-  LIB_AEOPT = libtrapAE.a
-  AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
-
-#######################################################################
-#            MagTense Options
-#######################################################################
-  LMAGTENSE= F
-  MAGTENSE_DIR = $(MAGTENSE_PATH)
-  MAGTENSE_INC = -I$(MAGTENSE_DIR)/source/NumericalIntegration/NumericalIntegration/ \
-    -I$(MAGTENSE_DIR)/source/TileDemagTensor/TileDemagTensor/ \
-    -I$(MAGTENSE_DIR)/source/DemagField/DemagField/ 
-  MAGTENSE_LIB = $(MAGTENSE_DIR)/source/NumericalIntegration/NumericalIntegration/libNumericalIntegration.a \
-    $(MAGTENSE_DIR)/source/TileDemagTensor/TileDemagTensor/libTileDemagTensor.a \
-    $(MAGTENSE_DIR)/source/DemagField/DemagField/libDemagField.a 
 
 #######################################################################
 #            System-specific path and binary definitions

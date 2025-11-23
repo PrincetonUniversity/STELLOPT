@@ -28,72 +28,126 @@
 !-----------------------------------------------------------------------
 !     Local Variables
 !        i           Dummy index
+!        j           Dummy index
 !        iunit       Unit number for file access
 !        istat       Status dummy var
 !        iter        Iteration dummy
-!        chunk       Chunk of work to do
 !        mystart     Starting Position
 !        myend       Ending Position
 !        iter_array  Iteration number array
 !        n           XVEC size dummy
 !        x_temp      X-vector temporary array
-!        fvec_temp   F_vector temporary array
+!        fvec_temp   F-vector temporary array
 !        xvec        X-vector Array
+!        fvec        F-vector Array
 !        chisq       Chi-Squared
 !        nexec       Number of equilibria to evaluate
+!        map_file    Filename of output file.
 !-----------------------------------------------------------------------
-      INTEGER :: iunit, istat, iter, n, nexec, chunk, mystart, myend, i
+      INTEGER :: iunit, istat, iter, n, nexec, mystart, myend, i, j
       INTEGER, ALLOCATABLE :: iter_array(:)
       REAL(rprec) :: chisq
-      REAL(rprec), ALLOCATABLE :: x_temp(:), fvec_temp(:), xvec(:,:)
+      REAL(rprec), ALLOCATABLE :: x_temp(:), fvec_temp(:), xvec(:,:), fvec(:,:)
+      CHARACTER(256) ::  map_file
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !-----------------------------------------------------------------------
 
-      ! Initialize from file
+#if defined(MPI_OPT)
+      ierr_mpi = 0; CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)                 !mpi stuff
+#endif
+
+      ! Compute variables
       ALLOCATE(x_temp(nvar),fvec_temp(mvar),STAT=istat)
 
-      CALL safe_open(iunit,istat,filename,'unknown','formatted')
-      nexec=0
-      DO
-         READ(iunit,FMT=*,IOSTAT=istat) n,iter
-         IF (istat .ne. 0) EXIT
-         READ(iunit,FMT=*,IOSTAT=istat) x_temp(1:n)
-         IF (istat .ne. 0) EXIT
-         READ(iunit,FMT=*,IOSTAT=istat) chisq
-         IF (istat .ne. 0) EXIT
-         nexec=nexec+1
-      END DO
+      ! Read file to get nexec
+      IF (myid == master) THEN
+         CALL safe_open(iunit,istat,filename,'unknown','formatted')
+         nexec=0
+         DO
+            READ(iunit,FMT=*,IOSTAT=istat) n,iter
+            IF (istat .ne. 0) EXIT
+            READ(iunit,FMT=*,IOSTAT=istat) x_temp(1:n)
+            IF (istat .ne. 0) EXIT
+            READ(iunit,FMT=*,IOSTAT=istat) chisq
+            IF (istat .ne. 0) EXIT
+            nexec=nexec+1
+         END DO
+      END IF
 
+#if defined(MPI_OPT)
+      ierr_mpi = 0; CALL MPI_BCAST(nexec, 1, MPI_INTEGER, master, MPI_COMM_STEL, ierr_mpi)
+#endif
+
+
+      ! Read file to get xvec
       ALLOCATE(iter_array(nexec),STAT=istat)
-      ALLOCATE(xvec(nvar,nexec),STAT=istat)
-      REWIND(iunit)
-      DO i = 1, nexec
-         READ(iunit,*) n,iter_array(i)
-         READ(iunit,*) xvec(1:n,i)
-         READ(iunit,*) chisq
-      END DO
+      ALLOCATE(xvec(nvar,nexec),fvec(mvar,nexec),STAT=istat)
+      IF (myid == master) THEN
+         REWIND(iunit)
+         DO i = 1, nexec
+            READ(iunit,*) n,iter_array(i)
+            READ(iunit,*) xvec(1:n,i)
+            READ(iunit,*) chisq
+         END DO
+         CLOSE(iunit)
+      END IF
 
-      CLOSE(iunit)
+#if defined(MPI_OPT)
+      ierr_mpi = 0; CALL MPI_BCAST(iter_array, nexec, MPI_INTEGER,          master, MPI_COMM_STEL, ierr_mpi)
+      ierr_mpi = 0; CALL MPI_BCAST(xvec,  nexec*nvar, MPI_DOUBLE_PRECISION, master, MPI_COMM_STEL, ierr_mpi)
+#endif
 
-      ! Evaluate the equilibria
-      chunk = FLOOR(REAL(nexec)/REAL(numprocs))
-      mystart = myid*chunk+1
-      myend   = mystart + chunk -1
+      ! Divide up work
+      CALL MPI_CALC_MYRANGE(MPI_COMM_STEL, 1, nexec, mystart, myend)
+
+      ! Do work
       DO i = mystart, myend
          ! ITERATE
          x_temp(:) = xvec(:,i)
          istat = myid + 1
          iter = iter_array(i)
          CALL fcn(mvar, nvar, x_temp, fvec_temp, istat, iter)
+         fvec(:,i) = fvec_temp
          ! Save
          istat = pso_cleanup
          CALL fcn(mvar, nvar, x_temp, fvec_temp, istat, iter)
       END DO
 
+      map_file = 'map_xvec.dat'
+      IF (myid == master) THEN
+         iunit = 546; istat = 0
+         CALL safe_open(iunit,istat,TRIM(map_file),'unknown','formatted')
+         WRITE(iunit,'(4(2X,i8))') mvar, nvar, nexec
+         CLOSE(iunit)
+      END IF
+
+#if defined(MPI_OPT)
+      ierr_mpi = 0; CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)                 !mpi stuff
+#endif
+
+      ! Now save to the file one at a time
+      DO i = 1, nexec
+         IF (i>= mystart .and. i<=myend) THEN
+            iunit = 546; istat = 0
+            CALL safe_open(iunit,istat,TRIM(map_file),'old','formatted',access_in='append')
+            WRITE(iunit,'(1(2X,i8))') i
+            WRITE(iunit,'(1p,4ES22.12E3)') (xvec(j,i), j=1,nvar)
+            WRITE(iunit,'(1p,4ES22.12E3)') (fvec(j,i), j=1,mvar)
+            CLOSE(iunit)
+         END IF
+#if defined(MPI_OPT)
+         ierr_mpi = 0; CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)                 !mpi stuff
+#endif
+      END DO
+
       ! DEALLOCATE
       DEALLOCATE(x_temp, fvec_temp)
       DEALLOCATE(iter_array, xvec)
+
+#if defined(MPI_OPT)
+      ierr_mpi = 0; CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)                 !mpi stuff
+#endif
 
       RETURN
 !-----------------------------------------------------------------------

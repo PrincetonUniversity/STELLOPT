@@ -151,17 +151,19 @@
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
 
 #######################################################################
-#            MagTense Options
+#            MANGO Options
 #######################################################################
-  LMAGTENSE= T
-  MAGTENSE_DIR = $(MAGTENSE_PATH)
-  MAGTENSE_INC = -I$(MAGTENSE_DIR)/source/NumericalIntegration/NumericalIntegration/ \
-    -I$(MAGTENSE_DIR)/source/TileDemagTensor/TileDemagTensor/ \
-    -I$(MAGTENSE_DIR)/source/DemagField/DemagField/ 
-  LIB_MAGTENSE = libtrapAE.a
-  MAGTENSE_LIB = $(MAGTENSE_DIR)/source/NumericalIntegration/NumericalIntegration/libNumericalIntegration.a \
-    $(MAGTENSE_DIR)/source/TileDemagTensor/TileDemagTensor/libTileDemagTensor.a \
-    $(MAGTENSE_DIR)/source/DemagField/DemagField/libDemagField.a 
+ifneq ("$(wildcard $(MANGO_PATH))","")
+  LMANGO = T
+  MANGO_DIR = $(MANGO_PATH)
+# Any flags specified on the next 2 lines will be added to the
+# MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS lines as defined in
+# $(MANGO_DIR)/lib/mangoMakeVariables
+  MANGO_INC = 
+  MANGO_LIB = 
+else
+  LMANGO = F
+endif
 
 #######################################################################
 #            LIBSTELL Shared Options

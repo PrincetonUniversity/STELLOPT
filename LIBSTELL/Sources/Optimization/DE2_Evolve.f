@@ -110,7 +110,7 @@
       INTEGER, ALLOCATABLE :: a1(:), a2(:), a3(:), a4(:), a5(:)
       REAL(rprec) :: rand_C1, fnorm, fnorm_min
       REAL(rprec), ALLOCATABLE :: fnorm_array(:), fnorm_new(:),
-     1                            temp_fvec(:), x_temp(:)
+     1                            temp_fvec(:), x_temp(:), x_best(:)
       REAL(rprec), ALLOCATABLE :: x_array(:,:), fval_array(:,:),
      1                            x_new(:,:), help2d(:,:), help2d2(:,:)
 !DEC$ IF DEFINED (MPI_OPT)
@@ -126,7 +126,8 @@
       ierr = 0
       iter = 0
       fnorm_min = 1.0E30
-      ALLOCATE (fnorm_array(NP),temp_fvec(m),x_temp(n), stat=ierr)
+      ALLOCATE (fnorm_array(NP),temp_fvec(m),x_temp(n),
+     1   x_best(n), stat=ierr)
       IF (ierr .ne. 0) STOP 'DE2_Evolve Error ALLOC(1)'
       ALLOCATE (x_array(NP,n),fval_array(NP,m), stat=ierr)
       IF (ierr .ne. 0) STOP 'DE2_Evolve Error ALLOC(2)'
@@ -139,6 +140,7 @@
       IF (myid == master) THEN
          ALLOCATE (fnorm_new(NP), stat=ierr)
          IF (ierr .ne. 0) STOP 'DE2_Evolve Error ALLOC(4)'
+         x_best = x
          x_array(1,:) = x(:)
          DO i = 2, NP
             DO j = 1, n 
@@ -164,29 +166,36 @@
             ibest     = MINLOC(fnorm_array,DIM = 1)  
             x_temp = x_array(ibest,:)
             CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
-            iflag = GADE_CLEANUP
-            CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
-            fnorm = SUM(temp_fvec*temp_fvec)
-            fnorm_array(1) = fnorm
-            fval_array(1,:) = temp_fvec
-            fnorm_min = fnorm
-            WRITE (6, 1327) numprocs, NP, strategy, CR_strategy
-            WRITE(6, '(2x,i6,8x,i3,7x,1es12.4)') 0, myid, fnorm
          ELSE
             ! Do the initial run so we know everything works
             iflag = -1
             x_temp = x_array(1,:)
             CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
-            iflag = GADE_CLEANUP
             iter = 0
-            CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
-            fnorm = SUM(temp_fvec*temp_fvec)
-            fnorm_array(1) = fnorm
-            fval_array(1,:) = temp_fvec
-            fnorm_min = fnorm
-            WRITE (6, 1327) numprocs, NP, strategy, CR_strategy
-            WRITE(6, '(2x,i6,8x,i3,7x,1es12.4)') 0, myid, fnorm
          END IF
+         ! Cleanup the run
+         iflag = GADE_CLEANUP
+         CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
+         fnorm = SUM(temp_fvec*temp_fvec)
+         fnorm_array(1) = fnorm
+         fval_array(1,:) = temp_fvec
+         fnorm_min = fnorm
+         ! Write output
+         WRITE(6,'(/,A,/)') ' Beginning Differential Evolution II'
+         WRITE(6,'(A,I4)') ' Number of Processors: ',numprocs
+         WRITE(6,'(A,I4)') ' Population Size: ',NP
+         WRITE(6,'(A,I4)') ' Strategy: ',strategy
+         IF (CR_strategy == 1) THEN
+            WRITE(6,'(A,I4,A,/)') ' Crossover Strategy: ',CR_strategy,
+     1                          ' (exponential)'
+         ELSE
+            WRITE(6,'(A,I4,A,/)') ' Crossover Strategy: ',CR_strategy,
+     1                          ' (binomial)'
+         ENDIF
+         WRITE(6,"(70('='),/,2x,A,3x,A,7x,A)") 'Member ID', 
+     1         'Processor','Chi-Sq'
+!         WRITE (6, 1327) numprocs, NP, strategy, CR_strategy
+         WRITE(6, '(2x,i6,8x,i3,7x,1es12.4)') 0, myid, fnorm
       END IF
       
 !DEC$ IF DEFINED (MPI_OPT)
@@ -316,6 +325,7 @@
          IF (myid == master .and. ibest /= 1
      1       .and. .not.lrestart) THEN
             x_temp = x_array(ibest,:)
+            x_best = x_temp
             iter  = 1
             iflag = 0
             CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
@@ -409,7 +419,7 @@
             END IF
             IF( strategy == 5) THEN
                a5 = a1
-               DO WHILE (ANY(a4==a1))
+               DO WHILE (ANY(a5==a1))
                   DO i =1, NP
                      CALL random_number(rand_C1)
                      IF (a5(i) == a1(i)) a5(i) = 1 + rand_C1*(NP-1)
@@ -516,6 +526,7 @@
             IF (fnorm_min > fnorm) THEN
                fnorm_min = fnorm
                x_temp = x_new(ibest,:)
+               x_best = x_temp
                iflag = 0
                CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
                iflag = GADE_CLEANUP
@@ -573,12 +584,10 @@
 
       END DO
 
-      ! Finish up
-
-      
-      x_temp = x_array(ibest,1)
+      ! Finish up      
+      x_temp = x_array(ibest,:)
       x = x_temp
-
+      
       ! Deallocations
       IF (ALLOCATED(fnorm_array)) DEALLOCATE(fnorm_array)
       IF (ALLOCATED(temp_fvec)) DEALLOCATE(temp_fvec)
@@ -587,6 +596,7 @@
       IF (ALLOCATED(fval_array)) DEALLOCATE(fval_array)
       IF (ALLOCATED(x_new)) DEALLOCATE(x_new)
       IF (ALLOCATED(fnorm_new)) DEALLOCATE(fnorm_new)
+      IF (ALLOCATED(x_best)) DEALLOCATE(x_best)
       
       RETURN
  1327 FORMAT (/,' Beginning Differential Evolution II',/,
