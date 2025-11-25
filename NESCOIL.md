@@ -113,12 +113,12 @@ line:
 | nv | Number of toroidal grid points on current surface | 
 | nu1 | Number of poloidal grid points on plasma surface | 
 | nv1 | Number of toroidal grid points on plasma surface | 
-| npol | Number of poloidal Fourier modes in potential solution | 
-| ntor | Number of toroidal Fourier modes in potential solution | 
-| mf | Number of poloidal Fourier modes for plasma surface | 
-| nf | Number of toroidal Fourier modes for plasma surface | 
-| md | Number of poloidal Fourier modes for current potential surface (and B normal) | 
-| nd | Number of toroidal Fourier modes for current potential surface (and B normal) | 
+| npol | Number of segments of a modular or helical filament (not used) | 
+| ntor | Number of filaments per period (not used) | 
+| mf | Number of poloidal Fourier modes in potential solution | 
+| nf | Number of toroidal Fourier modes in potential solution | 
+| md | Number of poloidal Fourier modes for B normal (bnorm file) | 
+| nd | Number of toroidal Fourier modes for B normal (bnorm file) | 
 | np | Number of field periods |
 | iota\_edge | Equilibrium rotational transform at edge | 
 | phip\_edge | Equilibrium toroidal flux derivative at edge | 
