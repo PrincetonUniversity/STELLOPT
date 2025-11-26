@@ -226,6 +226,9 @@
          ! Open file
          CALL open_hdf5('plasma_solver_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
          IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)
+         ! Logicals
+         CALL write_scalar_hdf5(fid,'add_NEO',ier,BOOVAR=add_NEO,ATT='add_NEO',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'add_NEO',ier)
          ! Integers
          CALL write_scalar_hdf5(fid,'Nt_plasma_grid',ier,INTVAR=Nt_total_plasma_solver,ATT='Number of Time Steps Plasma Solver',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Nt plasma grid',ier)
