@@ -69,6 +69,9 @@
       lauto_domain = .false.
       lrenorm      = .false.
       loneiter     = .false.
+      lneed_bnormal = .false.
+      lneed_dkes    = .false.
+      lbooz         = .false.
       pct_domain = 0.05
       xvec_file = 'xvec.dat'
       INQUIRE(UNIT=6,NAME=screen_str) ! Store STDOUT

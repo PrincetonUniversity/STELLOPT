@@ -905,7 +905,6 @@
       vperp_orbit       = 0
       nruns_dkes        = 0 ! This is here to default the value for each run
       target_dkes       = 0.0
-      lneed_dkes        = .false.
       sigma_dkes        = bigno
       target_dkes_11    = 0.0
       sigma_dkes_11     = bigno
@@ -943,7 +942,6 @@
       sigma_curvature_P2     = bigno
       target_gamma_c    = 0.0
       sigma_gamma_c     = bigno
-      lneed_bnormal            = .false.
       nu_bnormal               = 128
       nv_bnormal               = 128
       target_bnormal           = 0.0
