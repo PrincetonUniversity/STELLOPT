@@ -56,7 +56,7 @@
       scale = 1.0
 
       ! Read the OPTIMUM Namelist
-      CALL init_stellopt_input
+      CALL init_stellopt_input(.true.)
       CALL read_stellopt_input(TRIM(id_string),ier)
       CALL stellopt_write_header
 

@@ -391,8 +391,9 @@
 !-----------------------------------------------------------------------
     CONTAINS
 
-      SUBROUTINE init_stellopt_input
+      SUBROUTINE init_stellopt_input(lfull_reset)
       IMPLICIT NONE
+      LOGICAL, INTENT(IN) :: lfull_reset
       ! Initializations to default values
       nfunc_max       = 5000
       opt_type        = 'LMDIF'
@@ -903,7 +904,18 @@
       vll_orbit         = 0
       mu_orbit          = 0
       vperp_orbit       = 0
-      nruns_dkes        = 0 ! This is here to default the value for each run
+      IF (lfull_reset) THEN
+         nu_dkes           = -bigno
+         E_dkes            = -bigno
+         nu_dkes_erdiff     = 0
+         Ep_dkes_Erdiff     = 0
+         Em_dkes_erdiff     = 0
+         nup_dkes_alpha     = -2*bigno
+         num_dkes_alpha     = -2*bigno
+         Ep_dkes_alpha      = -2*bigno
+         Em_dkes_alpha      = -2*bigno
+         nruns_dkes        = 0 ! This is here to default the value for each run
+      END IF
       target_dkes       = 0.0
       sigma_dkes        = bigno
       target_dkes_11    = 0.0
@@ -912,19 +924,10 @@
       sigma_dkes_31     = bigno
       target_dkes_33    = 0.0
       sigma_dkes_33     = bigno
-      nu_dkes           = -bigno
-      E_dkes            = -bigno
       target_dkes_Erdiff = 0.0
       sigma_dkes_Erdiff  = bigno
-      nu_dkes_erdiff     = 0
-      Ep_dkes_Erdiff     = 0
-      Em_dkes_erdiff     = 0
       target_dkes_alpha  = 0.0
       sigma_dkes_alpha   = bigno
-      nup_dkes_alpha     = -2*bigno
-      num_dkes_alpha     = -2*bigno
-      Ep_dkes_alpha      = -2*bigno
-      Em_dkes_alpha      = -2*bigno
       target_jdotb       = 0.0
       sigma_jdotb       = bigno
       target_jcurv      = 0.0
