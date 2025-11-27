@@ -93,6 +93,7 @@
       ELSE
          DO ii = 1, nsd
             IF (sigma(ii) >= bigno) CYCLE
+            lneed_dkes = .TRUE.
             DO ij = 1, nprof
                IF (Ep_DKES_alpha(ij) <= -bigno .or. nup_dkes_alpha(ij) <= -bigno .or. &
                    Em_DKES_alpha(ij) <= -bigno .or. num_dkes_alpha(ij) <= -bigno) CYCLE

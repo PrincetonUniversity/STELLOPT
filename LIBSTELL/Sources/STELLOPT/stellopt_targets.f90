@@ -52,7 +52,7 @@
 !            s_iota             s Rotational Transform location array
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      LOGICAL     ::  lneed_magdiag, lneed_bnormal
+      LOGICAL     ::  lneed_magdiag, lneed_bnormal, lneed_dkes
       LOGICAL, DIMENSION(nsd)  :: lbooz
       INTEGER     ::  mboz, nboz, NumJstar
       INTEGER, PARAMETER :: nprof = 512

@@ -905,6 +905,7 @@
       vperp_orbit       = 0
       nruns_dkes        = 0 ! This is here to default the value for each run
       target_dkes       = 0.0
+      lneed_dkes        = .false.
       sigma_dkes        = bigno
       target_dkes_11    = 0.0
       sigma_dkes_11     = bigno
