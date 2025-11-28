@@ -1,4 +1,5 @@
 ObjectFiles = \
+chisq_dkes_boot.o \
 chisq_coil_length.o \
 stellopt_generate_coilsurf.o \
 chisq_coil_baxis.o \
