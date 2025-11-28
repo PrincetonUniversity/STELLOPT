@@ -66,7 +66,7 @@ Specific Compilation Issues
 
 *If you find the instructions are out dated, please raise an issue. Direct contributions to the documentation on the **gh-pages** branch are particularly welcomed.*
 
-[Compiling with Anaconda](STELLOPT Compilation Anaconda)
+[Compiling with Anaconda](STELLOPT Compilation with Anaconda)
 
 [Compiling on an Apple Macintosh under OS X (MacPorts)](STELLOPT Compilation OS X MacPorts)
 
