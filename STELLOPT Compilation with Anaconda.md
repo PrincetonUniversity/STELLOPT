@@ -2,7 +2,7 @@ STELLOPT Compilation with Anaconda
 ==============================
 
 This page details how to compile the STELLOPT family of codes using
-[Anaconda](@https://anaconda.org/). In order to do this you'll need
+[Anaconda](https://anaconda.org/). In order to do this you'll need
 to install an Anaconda variant.
 
 -----
