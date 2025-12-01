@@ -16,6 +16,8 @@ custom_colors = color=['#5FAF30','#1D2258','#A1CDC8','#8b3843','#014817','#cdcd1
 default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors+default_colors)
 
+EC = 1.602176634E-19 # Electron charge [C]
+
 # THRIFT Class
 class THRIFT():
     """" Class for working with THRIFT data
@@ -689,176 +691,6 @@ class THRIFT():
 
         return final_files
     
-    def animate_time_series(self,
-        time_axis,
-        panels,
-        legends=None,
-        ylabels=None,
-        xlabel=None,
-        title=None,
-        **FuncAnimation_kwargs):
-        """
-        Time-series animation with any number of panels.
-
-        Parameters
-        ----------
-        time_axis : 1D array
-            The common x-axis for all panels.
-        panels : list
-            List of panels. Each panel may be:
-                * a single 1D array
-                * a list/tuple of arrays (multiple signals on same panel)
-        legends : list (same length as panels)
-            Each element is:
-                * None (auto labels)
-                * a single string (for single-signal panel)
-                * a list of strings (for multi-signal panel)
-        ylabels : list (same length as panels)
-            Y-axis labels for each panel (None allowed).
-        xlabel : str
-            Label for the bottom x-axis.
-
-        Returns
-        -------
-        anim : matplotlib FuncAnimation
-        """
-        from matplotlib.animation import FuncAnimation
-        
-        time_axis = np.asarray(time_axis)
-        if time_axis.ndim != 1:
-            raise ValueError("time_axis must be a 1D array-like.")
-
-        # ---- Normalize panel structure ----
-        normalized_panels = []
-        for p in panels:
-            if p is None:
-                normalized_panels.append([])
-                continue
-            if isinstance(p, (list, tuple)):
-                arrs = [np.asarray(a) for a in p]
-            else:
-                arrs = [np.asarray(p)]
-            for a in arrs:
-                if a.shape != time_axis.shape:
-                    raise ValueError("All signals must match time_axis shape.")
-            normalized_panels.append(arrs)
-
-        # keep only non-empty panels
-        non_empty_indices = [i for i, p in enumerate(normalized_panels) if len(p) > 0]
-        panels_non_empty = [normalized_panels[i] for i in non_empty_indices]
-        Npanels = len(panels_non_empty)
-        if Npanels == 0:
-            raise ValueError("No non-empty panels provided.")
-
-        # ---- Normalize legends ----
-        if legends is None:
-            legends = [None] * len(normalized_panels)
-        if len(legends) != len(normalized_panels):
-            raise ValueError("legends must have same length as panels.")
-
-        legends_non_empty = []
-        for i in non_empty_indices:
-            lg = legends[i]
-            sigs = normalized_panels[i]
-            n = len(sigs)
-
-            if lg is None:
-                legends_non_empty.append([f"Signal {j+1}" for j in range(n)])
-            elif isinstance(lg, str):
-                if n == 1:
-                    legends_non_empty.append([lg])
-                else:
-                    raise ValueError("Multi-signal panel requires a list of labels.")
-            else:
-                lg_list = list(lg)
-                if len(lg_list) != n:
-                    raise ValueError("Legend length mismatch.")
-                legends_non_empty.append(lg_list)
-
-        # ---- Normalize ylabels ----
-        if ylabels is None:
-            ylabels = [None] * len(normalized_panels)
-        if len(ylabels) != len(normalized_panels):
-            raise ValueError("ylabels must match panels length.")
-
-        ylabels_non_empty = [ylabels[i] for i in non_empty_indices]
-
-        # ---- Create figure ----
-        fig, axes = plt.subplots(Npanels, 1, sharex=True, figsize=(10, 3*Npanels))
-        if Npanels == 1:
-            axes = [axes]
-
-        all_line_objs = []
-        vlines = []
-
-        # ---- Prepare each panel ----
-        for ax, sig_list, lg_list, ylabel in zip(axes, panels_non_empty, legends_non_empty, ylabels_non_empty):
-
-            # lines
-            lines = []
-            for _ in sig_list:
-                ln, = ax.plot([], [])
-                lines.append(ln)
-            all_line_objs.append(lines)
-
-            # y-label
-            if ylabel is not None:
-                ax.set_ylabel(ylabel)
-
-            # x-limits fixed
-            ax.set_xlim(time_axis[0], time_axis[-1])
-
-            # y-limits
-            mins = [np.min(s) for s in sig_list]
-            maxs = [np.max(s) for s in sig_list]
-            ymin, ymax = min(mins), max(maxs)
-            if np.isclose(ymin, ymax):
-                span = abs(ymin) if ymin != 0 else 1.0
-                ymin -= 0.1 * span
-                ymax += 0.1 * span
-            else:
-                pad = 0.05*(ymax - ymin)
-                ymin -= pad
-                ymax += pad
-            ax.set_ylim(ymin, ymax)
-
-            # legend
-            #ax.legend(lg_list, loc="upper right")  
-            ax.legend(lg_list) ## this way legend location is updated automatically at each frame
-            
-            # vertical time marker
-            vlines.append(ax.axvline(time_axis[0], ls="--", color="k"))
-
-        # bottom xlabel
-        if xlabel is not None:
-            axes[-1].set_xlabel(xlabel)
-            
-        # title
-        if title is not None:
-            axes[0].set_title(title)
-
-        # ---- Animation update ----
-        def update(frame):
-            xnow = time_axis[frame]
-
-            for p_idx, lines in enumerate(all_line_objs):
-                sigs = panels_non_empty[p_idx]
-                for s_idx, ln in enumerate(lines):
-                    ln.set_data(time_axis[:frame+1], sigs[s_idx][:frame+1])
-                vlines[p_idx].set_xdata([xnow])
-
-            return [artist for sub in all_line_objs for artist in sub] + vlines
-
-        anim = FuncAnimation(
-            fig,
-            update,
-            frames=len(time_axis),
-            blit=False,
-            **FuncAnimation_kwargs
-        )
-
-        return anim
-    
     def get_I_total(self,time=None):
         """ Returns the total current
 
@@ -1193,9 +1025,10 @@ class THRIFT_plasma_solver():
                 time.append( f['time_plasma_grid'][:] )
         time = np.concatenate(time)
         #check ordering
-        if(not np.all(np.diff(time) >= 0) ):
+        if(not np.all(np.diff(time) >= -1e-10) ):
             print('ERROR: plasma_solver files are not in the correct order...')
-            print(f'time = {time}')
+            for diff in np.diff(time): 
+                if diff<0: print(diff)
             exit(0)
         else:
             self.time_grid = time
@@ -1412,7 +1245,7 @@ class THRIFT_plasma_solver():
             for it,t in enumerate(self.t_grid_source): 
                 dset[:,it,species_id] = source(t) #,self.rho_grid_source)
                 
-    def convert_to_joblib(self,dt_save=0.1,filename='thrift_transport_simul'):
+    def convert_to_joblib(self,dt_save=0.1,filename='thrift_transport_simul',thrift_class=None):
         """ This function creates a joblib file with the transport simulation data
         We can the use the same post-processing tools we use to analyse transport simulations
         performed by pySTEL class plasma_solver
@@ -1420,18 +1253,13 @@ class THRIFT_plasma_solver():
         from types import SimpleNamespace
         from pathlib import Path
         import joblib
-        from scipy.interpolate import CubicSpline
+        from collections import defaultdict
         
         # check if extension of filename is .joblib; if not, add
         output_filename = str(Path(filename).with_suffix(".joblib"))
         
         saved_class = SimpleNamespace()
         saved_class.rho_grid = self.rho_grid
-        saved_class.r_grid = self.r_grid
-        saved_class.dVdr = self.dVdr
-        # saved_class.aminor = self.aminor
-        # saved_class.Rmajor = self.Rmajor
-        # saved_class.B = self.B0
         saved_class.list_of_species = self.list_of_species
         
         # simulation dt
@@ -1444,12 +1272,337 @@ class THRIFT_plasma_solver():
         saved_class.time = self.time_grid[sl]
         saved_class.Nt = len(self.time_grid[sl])
         
-        for attr1,attr2 in zip(('N','T','Dp','cp'),('plasma_N','plasma_T','Dp_total','cp_total')):
+        saved_class.r_grid = self.r_grid[sl,:]
+        saved_class.dVdr = self.dVdr[sl,:]
+        
+        for attr1,attr2 in zip(('N','T','Dp','cp','Dn','cn'),('plasma_N','plasma_T','Dp_total','cp_total','Dn_total','cn_total')):
             setattr(saved_class, attr1, {})
             for ispecies,species in enumerate(self.list_of_species):
-                getattr(saved_class, attr1)[species] = getattr(self, attr2)[ispecies,sl, :]
- 
-        joblib.dump(saved_class, output_filename)      
+                getattr(saved_class, attr1)[species] = getattr(self, attr2)[ispecies,sl,:]
+        
+        saved_class.N['alphas_fast'] = self.N_fast_alphas[sl,:]
+        
+        saved_class.explicit_energy_sources   = defaultdict(dict)
+        saved_class.explicit_particle_sources = defaultdict(dict)
+        saved_class.Q_total = defaultdict(dict)
+        saved_class.G_total = defaultdict(dict)
+
+        saved_class.explicit_energy_sources['electrons']['Bremsstrahlung'] = -self.S_radiated_power[sl,:]
+        
+        for ispecies,species in enumerate(self.list_of_species):
+            saved_class.explicit_energy_sources[species]['time_dependent_gaussian'] = self.S_energy_ext[ispecies,sl,:]
+            saved_class.explicit_particle_sources[species]['time_dependent_gaussian'] = self.S_particle_ext[ispecies,sl,:]
+            saved_class.explicit_energy_sources[species]['alpha_heating'] = self.S_alpha_power[ispecies,sl,:]
+            
+            # Reconstruct Fluxes and save
+            r_grid   = self.r_grid[sl,:]
+            #
+            p_r = self.plasma_N[ispecies,sl,:]*self.plasma_T[ispecies,sl,:]*EC
+            dpdr = akima_derivative(r_grid,p_r,axis=1)
+            #
+            n_r = self.plasma_N[ispecies,sl,:]
+            dndr = akima_derivative(r_grid,n_r,axis=1)
+            #
+            saved_class.Q_total[species] = -self.Dp_total[ispecies,sl,:]*dpdr + self.cp_total[ispecies,sl,:]*p_r
+            saved_class.G_total[species] = -self.Dn_total[ispecies,sl,:]*dndr + self.cn_total[ispecies,sl,:]*n_r
+            
+        if(thrift_class is not None):
+            saved_class.aminor = thrift_class.get_vars('THRIFT_AMINOR',time=saved_class.time)[:,-1]
+            saved_class.Rmajor = thrift_class.get_vars('THRIFT_RMAJOR',time=saved_class.time)[:,-1]
+            saved_class.B      = thrift_class.get_vars('THRIFT_BAV',  time=saved_class.time)[:,:]
+            saved_class.iota   = thrift_class.get_vars('THRIFT_IOTA',  time=saved_class.time)[:,:]
+
+        joblib.dump(saved_class, output_filename)
+        
+def _akima_derivative_1d(x, y):
+    """
+    1D Akima derivative routine.
+    """
+    n = x.size
+    dy = np.zeros_like(y)
+    if n < 2:
+        raise ValueError("Need at least 2 points")
+
+    # First divided differences
+    m = (y[1:] - y[:-1]) / (x[1:] - x[:-1])
+
+    if n == 2:
+        dy[0] = m[0]
+        dy[1] = m[0]
+        return dy
+
+    # Boundary slopes
+    cxp, cxpp = m[0], m[1]
+    cxm, cxmm = m[-1], m[-2]
+
+    dy[0] = 1.5 * cxp - 0.5 * cxpp
+    dy[-1] = 1.5 * cxm - 0.5 * cxmm
+
+    # Ghost slopes
+    cxtrap0 = 2.0 * dy[0] - cxp
+    cxtrap1 = 2.0 * dy[-1] - cxm
+
+    # Interior points
+    for i in range(1, n - 1):
+        if i == 1:
+            cxmm = cxtrap0
+        else:
+            cxmm = (y[i - 1] - y[i - 2]) / (x[i - 1] - x[i - 2])
+
+        cxm = (y[i] - y[i - 1]) / (x[i] - x[i - 1])
+        cxp = (y[i + 1] - y[i]) / (x[i + 1] - x[i])
+
+        if i == n - 2:
+            cxpp = cxtrap1
+        else:
+            cxpp = (y[i + 2] - y[i + 1]) / (x[i + 2] - x[i + 1])
+
+        w1 = abs(cxp - cxpp)
+        w2 = abs(cxm - cxmm)
+
+        if (w1 + w2) == 0.0:
+            dy[i] = 0.5 * (cxm + cxp)
+        else:
+            dy[i] = (w1 * cxm + w2 * cxp) / (w1 + w2)
+
+    return dy
+
+
+def akima_derivative(x, y, axis=None):
+    """
+    General multidimensional Akima derivative.
+
+    Parameters
+    ----------
+    x : ndarray, 1D or same shape as y
+        Grid values along the differentiation axis.
+    y : ndarray
+        Values to differentiate.
+    axis : int
+        Axis along which the derivative is taken.
+
+    Returns
+    -------
+    dy : ndarray
+        Derivative of y along the chosen axis.
+    """
+    x = np.asarray(x)
+    y = np.asarray(y)
+
+    if axis is None:
+        axis = y.ndim - 1
+    axis = np.core.numeric.normalize_axis_index(axis, y.ndim)
+
+    # Move the target axis to the last dimension
+    y_m = np.moveaxis(y, axis, -1)
+
+    # Broadcast x to match y_m.shape
+    if x.ndim == 1:
+        # x is 1D: must match the size of the differentiation axis
+        if x.size != y_m.shape[-1]:
+            raise ValueError(
+                f"1D x has length {x.size}, but y has size {y_m.shape[-1]} along axis {axis}."
+            )
+        # Expand x to the same shape as y_m
+        # This mirrors numpy.trapz behavior
+        shape = (1,) * (y_m.ndim - 1) + (x.size,)
+        x_m = np.broadcast_to(x.reshape(shape), y_m.shape)
+    else:
+        # x must have the same full shape as y
+        if x.shape != y.shape:
+            raise ValueError("If x is not 1D, it must have the same shape as y.")
+        x_m = np.moveaxis(x, axis, -1)
+
+    # Flatten all dimensions except the last
+    leading_shape = y_m.shape[:-1]
+    N = y_m.shape[-1]
+
+    y_flat = y_m.reshape(-1, N)
+    x_flat = x_m.reshape(-1, N)
+
+    dy_flat = np.empty_like(y_flat)
+
+    # Apply the 1D Akima routine along the last axis for each slice
+    for i in range(y_flat.shape[0]):
+        dy_flat[i] = _akima_derivative_1d(x_flat[i], y_flat[i])
+
+    # Restore multidimensional shape
+    dy_m = dy_flat.reshape(y_m.shape)
+
+    # Move axis back to original position
+    dy = np.moveaxis(dy_m, -1, axis)
+
+    return dy
+
+def animate_time_series(
+    time_axis,
+    panels,
+    legends=None,
+    ylabels=None,
+    xlabel=None,
+    title=None,
+    **FuncAnimation_kwargs):
+    """
+    Time-series animation with any number of panels.
+
+    Parameters
+    ----------
+    time_axis : 1D array
+        The common x-axis for all panels.
+    panels : list
+        List of panels. Each panel may be:
+            * a single 1D array
+            * a list/tuple of arrays (multiple signals on same panel)
+    legends : list (same length as panels)
+        Each element is:
+            * None (auto labels)
+            * a single string (for single-signal panel)
+            * a list of strings (for multi-signal panel)
+    ylabels : list (same length as panels)
+        Y-axis labels for each panel (None allowed).
+    xlabel : str
+        Label for the bottom x-axis.
+
+    Returns
+    -------
+    anim : matplotlib FuncAnimation
+    """
+    from matplotlib.animation import FuncAnimation
+    
+    time_axis = np.asarray(time_axis)
+    if time_axis.ndim != 1:
+        raise ValueError("time_axis must be a 1D array-like.")
+
+    # ---- Normalize panel structure ----
+    normalized_panels = []
+    for p in panels:
+        if p is None:
+            normalized_panels.append([])
+            continue
+        if isinstance(p, (list, tuple)):
+            arrs = [np.asarray(a) for a in p]
+        else:
+            arrs = [np.asarray(p)]
+        for a in arrs:
+            if a.shape != time_axis.shape:
+                raise ValueError("All signals must match time_axis shape.")
+        normalized_panels.append(arrs)
+
+    # keep only non-empty panels
+    non_empty_indices = [i for i, p in enumerate(normalized_panels) if len(p) > 0]
+    panels_non_empty = [normalized_panels[i] for i in non_empty_indices]
+    Npanels = len(panels_non_empty)
+    if Npanels == 0:
+        raise ValueError("No non-empty panels provided.")
+
+    # ---- Normalize legends ----
+    if legends is None:
+        legends = [None] * len(normalized_panels)
+    if len(legends) != len(normalized_panels):
+        raise ValueError("legends must have same length as panels.")
+
+    legends_non_empty = []
+    for i in non_empty_indices:
+        lg = legends[i]
+        sigs = normalized_panels[i]
+        n = len(sigs)
+
+        if lg is None:
+            legends_non_empty.append([f"Signal {j+1}" for j in range(n)])
+        elif isinstance(lg, str):
+            if n == 1:
+                legends_non_empty.append([lg])
+            else:
+                raise ValueError("Multi-signal panel requires a list of labels.")
+        else:
+            lg_list = list(lg)
+            if len(lg_list) != n:
+                raise ValueError("Legend length mismatch.")
+            legends_non_empty.append(lg_list)
+
+    # ---- Normalize ylabels ----
+    if ylabels is None:
+        ylabels = [None] * len(normalized_panels)
+    if len(ylabels) != len(normalized_panels):
+        raise ValueError("ylabels must match panels length.")
+
+    ylabels_non_empty = [ylabels[i] for i in non_empty_indices]
+
+    # ---- Create figure ----
+    fig, axes = plt.subplots(Npanels, 1, sharex=True, figsize=(10, 3*Npanels))
+    if Npanels == 1:
+        axes = [axes]
+
+    all_line_objs = []
+    vlines = []
+
+    # ---- Prepare each panel ----
+    for ax, sig_list, lg_list, ylabel in zip(axes, panels_non_empty, legends_non_empty, ylabels_non_empty):
+
+        # lines
+        lines = []
+        for _ in sig_list:
+            ln, = ax.plot([], [])
+            lines.append(ln)
+        all_line_objs.append(lines)
+
+        # y-label
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+
+        # x-limits fixed
+        ax.set_xlim(time_axis[0], time_axis[-1])
+
+        # y-limits
+        mins = [np.min(s) for s in sig_list]
+        maxs = [np.max(s) for s in sig_list]
+        ymin, ymax = min(mins), max(maxs)
+        if np.isclose(ymin, ymax):
+            span = abs(ymin) if ymin != 0 else 1.0
+            ymin -= 0.1 * span
+            ymax += 0.1 * span
+        else:
+            pad = 0.05*(ymax - ymin)
+            ymin -= pad
+            ymax += pad
+        ax.set_ylim(ymin, ymax)
+
+        # legend
+        #ax.legend(lg_list, loc="upper right")  
+        ax.legend(lg_list) ## this way legend location is updated automatically at each frame
+        
+        # vertical time marker
+        vlines.append(ax.axvline(time_axis[0], ls="--", color="k"))
+
+    # bottom xlabel
+    if xlabel is not None:
+        axes[-1].set_xlabel(xlabel)
+        
+    # title
+    if title is not None:
+        axes[0].set_title(title)
+
+    # ---- Animation update ----
+    def update(frame):
+        xnow = time_axis[frame]
+
+        for p_idx, lines in enumerate(all_line_objs):
+            sigs = panels_non_empty[p_idx]
+            for s_idx, ln in enumerate(lines):
+                ln.set_data(time_axis[:frame+1], sigs[s_idx][:frame+1])
+            vlines[p_idx].set_xdata([xnow])
+
+        return [artist for sub in all_line_objs for artist in sub] + vlines
+
+    anim = FuncAnimation(
+        fig,
+        update,
+        frames=len(time_axis),
+        blit=False,
+        **FuncAnimation_kwargs
+    )
+
+    return anim
                    
 # Main routine
 if __name__=="__main__":
