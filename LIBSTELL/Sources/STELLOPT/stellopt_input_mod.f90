@@ -1377,6 +1377,10 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!       Coil Spline Knots'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         IF (nw_coil > 1) WRITE(iunit,outint) 'NW_COIL',nw_coil
+         IF (nh_coil > 1) WRITE(iunit,outint) 'NH_COIL',nh_coil
+         IF (nw_coil > 1) WRITE(iunit,outflt) 'WIDTH_COIL',width_coil
+         IF (nh_coil > 1) WRITE(iunit,outflt) 'HEIGHT_COIL',height_coil
          DO n = LBOUND(rho_coil_kts,DIM=1), UBOUND(rho_coil_kts,DIM=1)
             IF (ANY(rho_coil_kts(n,:)>=0)) THEN
                m = FINDLOC(rho_coil_kts(n,:)>=0,.true.,DIM=1,BACK=.true.)
