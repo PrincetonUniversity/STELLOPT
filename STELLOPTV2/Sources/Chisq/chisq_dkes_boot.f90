@@ -14,7 +14,6 @@
       USE stellopt_runtime
       USE stellopt_targets
       USE equil_vals, ONLY: shat
-      USE equil_utils, ONLY: get_equil_ti
 !DEC$ IF DEFINED (DKES_OPT)
       USE dkes_realspace, ONLY: DKES_L11p, DKES_L33p, DKES_L31p, &
                                 DKES_L11m, DKES_L33m, DKES_L31m, &
@@ -36,7 +35,7 @@
 !
 !-----------------------------------------------------------------------
       INTEGER :: ik, ij, ii, ier
-      REAL(rprec) :: L31, L33, D31, L31, ti_val
+      REAL(rprec) :: L31, L33
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -44,8 +43,8 @@
       ! Print Header
       IF (iflag == 1) THEN
          ik   = COUNT(target_dex == jtarget_dkes_boot)
-         WRITE(iunit_out,'(A,2(2X,I3.3))') 'DKES_BOOT ',ik,16
-         WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  S  NU  ER  TI  L11p  L11m  L33p  L33m  L31p  L31m  SCAL11  SCAL33  SCAL31'
+         WRITE(iunit_out,'(A,2(2X,I3.3))') 'DKES_BOOT ',ik,15
+         WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  S  NU  ER  L11p  L11m  L33p  L33m  L31p  L31m  SCAL11  SCAL33  SCAL31'
       END IF
       IF (niter >= 0) THEN
          ik = 0 ! Always the first one
@@ -57,24 +56,21 @@
                mtargets = mtargets + 1
                targets(mtargets) = target_dkes_boot(ii)
                sigmas(mtargets)  = sigma_dkes_boot(ii)
-               CALL get_equil_ti(shat(ii),TRIM(ti_type),ti_val,ier)
 !DEC$ IF DEFINED (DKES_OPT)
                L31 = 0.5*(DKES_L31p(ik)+DKES_L31m(ik))
                L33 = 0.5*(DKES_L33p(ik)+DKES_L33m(ik))
-               D31 = L31 * DKES_scal31 * ti_val
-               D33 = L33 * DKES_scal33 * SQRT(ti_val)
-               vals(mtargets)    = D31 / (2.0/(3.0*nu_dkes(ij))-D33)
-               IF (iflag == 1) WRITE(iunit_out,'(16ES22.12E3)') &
+               vals(mtargets)    = L31 / (2.0/(3.0*nu_dkes(ij))-L33)
+               IF (iflag == 1) WRITE(iunit_out,'(15ES22.12E3)') &
                   targets(mtargets),sigmas(mtargets),vals(mtargets),&
-                  shat(ii), nu_dkes(ij), E_dkes(ij), ti_val, &
+                  shat(ii), nu_dkes(ij), E_dkes(ij), &
                   DKES_L11p(ik),DKES_L11m(ik),DKES_L33p(ik),&
                   DKES_L33m(ik),DKES_L31p(ik),DKES_L31m(ik),&
                   DKES_scal11(ik),DKES_scal33(ik),DKES_scal31(ik)
 !DEC$ ELSE
                vals(mtargets) = target_dkes_boot(ii)
-               IF (iflag == 1) WRITE(iunit_out,'(16ES22.12E3)') &
+               IF (iflag == 1) WRITE(iunit_out,'(15ES22.12E3)') &
                   targets(mtargets),sigmas(mtargets),vals(mtargets),&
-                  shat(ii), nu_dkes(ij), E_dkes(ij), ti_val, &
+                  shat(ii), nu_dkes(ij), E_dkes(ij), &
                   0.0, 0.0, 0.0,&
                   0.0, 0.0, 0.0,&
                   0.0, 0.0, 0.0
