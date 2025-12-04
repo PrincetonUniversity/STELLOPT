@@ -341,9 +341,6 @@ class NESCOIL(FourierRep):
 		zeta  = np.reshape( np.linspace(zeta_min,zeta_max,self.nv),(self.nv,1))
 		pot = self.generateTotalPotential(theta,zeta)
 		# Now generate contours
-		potmin = np.min(pot)
-		potmax = np.max(pot)
-		delta  = 2*(potmax-potmin)/float(2*ncoils_per_halfperiod+1.5)
 		cont_gen = contour_generator(x=np.squeeze(zeta),y=np.squeeze(theta),z=np.squeeze(pot), line_type=LineType.Separate)
 		# Make plot if requested
 		if lplot:
