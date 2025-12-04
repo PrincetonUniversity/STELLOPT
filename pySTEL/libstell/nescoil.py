@@ -152,7 +152,7 @@ class NESCOIL(FourierRep):
 		return pot
 
 
-	def plotpotential(self,ax=None):
+	def plotpotential(self,ax=None,cmap='jet'):
 		"""Plots the NESCOIL Potential
 
 		This routine plots the NESCOIL code surface potential
@@ -161,6 +161,13 @@ class NESCOIL(FourierRep):
 		----------
 		ax : axes (optional)
 			Matplotlib axes object to plot to.
+		cmap : string (optional)
+			Matplotlib colormap.
+
+		Returns
+		-------
+		quadmesh : matplotlib.collections.Quadmesh
+			Quadmesh as produced by pcolormesh
 		"""
 		import numpy as np
 		import matplotlib.pyplot as pyplot
@@ -173,14 +180,15 @@ class NESCOIL(FourierRep):
 		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu-1)
 		for j in range(self.nv):  zeta[j]=    np.pi*j/float(self.nv-1)
 		pot = self.generatePotential(theta,zeta)
-		hmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot[0,:,:]),cmap='jet',shading='gouraud')
+		quadmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot[0,:,:]),cmap=cmap,shading='gouraud')
 		ax.set_xlabel('Toroidal angle [rad]')
 		ax.set_ylabel('Poloidal angle [rad]')
 		ax.set_title(r'NESCOIL $\Phi$ Potential')
-		pyplot.colorbar(hmesh,label='$Pot$ [arb]',ax=ax)
+		pyplot.colorbar(quadmesh,label='$Pot$ [arb]',ax=ax)
 		if lplotnow: pyplot.show()
+		return quadmesh
 
-	def plottotalpotential(self,ax=None):
+	def plottotalpotential(self,ax=None,cmap='jet'):
 		"""Plots the NESCOIL Total Potential
 
 		This routine plots the NESCOIL code surface potential
@@ -189,6 +197,11 @@ class NESCOIL(FourierRep):
 		----------
 		ax : axes (optional)
 			Matplotlib axes object to plot to.
+
+		Returns
+		-------
+		quadmesh : matplotlib.collections.Quadmesh
+			Quadmesh as produced by pcolormesh
 		"""
 		import numpy as np
 		import matplotlib.pyplot as pyplot
@@ -201,16 +214,13 @@ class NESCOIL(FourierRep):
 		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu-1)
 		for j in range(self.nv):  zeta[j]=    np.pi*j/float(self.nv-1)
 		pot = self.generateTotalPotential(theta,zeta)
-		#pot = self.sfunct(theta,zeta,self.potmns_surface.T,self.xm_pot,self.xn_pot)
-		#for j in range(self.nu): pot[0,j,:] = pot[0,j,:] - self.cut*1.0*j/float(self.nv-1)
-		#for j in range(self.nv): pot[0,:,j] = pot[0,:,j] - self.cup*0.5*j/float(self.nv-1)
-		hmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot[0,:,:]),cmap='jet',shading='gouraud')
-		#ax.semilogy(abscissa, data, **kwargs)
+		quadmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot[0,:,:]),cmap=cmap,shading='gouraud')
 		ax.set_xlabel('Toroidal angle [rad]')
 		ax.set_ylabel('Poloidal angle [rad]')
 		ax.set_title(r'NESCOIL Total $\Phi$ Potential')
-		pyplot.colorbar(hmesh,label='$Pot$ [arb]',ax=ax)
+		pyplot.colorbar(quadmesh,label='$Pot$ [arb]',ax=ax)
 		if lplotnow: pyplot.show()
+		return quadmesh
 
 	def plotsurfaces(self,plot3D=None):
 		"""Plots the NESCOIL Surfaces
@@ -351,9 +361,13 @@ class NESCOIL(FourierRep):
 		for k in range(ncoils_per_halfperiod):
 			level = cont_gen.lines(cont_vals[k])
 			th = np.array([]); ze = np.array([])
-			for temp in level:
-				th = np.append(th,temp[:,1])
-				ze = np.append(ze,temp[:,0])
+			# One contour per level
+			temp = level[0]
+			th = np.append(th,temp[:,1])
+			ze = np.append(ze,temp[:,0])
+			#for temp in level:
+			#	th = np.append(th,temp[:,1])
+			#	ze = np.append(ze,temp[:,0])
 			# Wrap the coil so that poitive current is positive field (counterclockwise from top)
 			if (th[16]-th[0] > 0):
 				th = th[::-1]
