@@ -150,7 +150,7 @@
       DO i = 1,ncoilgroups
          WRITE(l_name,*) 'i = ',i
          WRITE(c_name,'(A,I2.2)') 'MODULAR_COIL_',i
-         CALL bsc_construct_coilcoll(coil_group(i),TRIM(c_name),l_name)
+         CALL bsc_construct_coilcoll(coil_group(i),TRIM(c_name),TRIM(l_name))
          DO j = 1, ns
             l = DBLE(j-1)/DBLE(ns-1)
             ier = 0
@@ -210,8 +210,8 @@
          END DO
          xnod_in(:,ns) = xnod_in(:,1)
          ! Now create the first coil
-         WRITE(s_name, '(a4,i5.5)') 'ID #', 1
-         CALL bsc_construct_coil(coil_temp,'fil_loop',s_name,'',one,xnod_in(1:3,1:ns))
+         WRITE(s_name, '(a4,i5.5)') 'ID ', 1
+         CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(s_name),'',one,xnod_in(1:3,1:ns))
          CALL bsc_append(coil_group(i),coil_temp)
          ! Now create the stellarator symmetric coil
          Zc = -Zc
@@ -220,7 +220,7 @@
          xnod_ss(2,2:ns) = Rc(ns1:1:-1)*sin(Pc(ns1:1:-1))
          xnod_ss(3,2:ns) = Zc(ns1:1:-1)
          xnod_ss(:,1) = xnod_ss(:,ns)
-         CALL bsc_construct_coil(coil_temp,'fil_loop',s_name,'',one,xnod_ss(1:3,1:ns))
+         CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(s_name),'',one,xnod_ss(1:3,1:ns))
          CALL bsc_append(coil_group(i),coil_temp)
          ! Now create rest of the coils
          DO j = 2, nfp
@@ -269,7 +269,7 @@
       ! Save the original coil
       ALLOCATE(coil_single(ncoilgroups))
       DO i = 1, ncoilgroups
-         CALL bsc_construct_coilcoll(coil_single(i),coil_group(i)%s_name,coil_group(i)%l_name)
+         CALL bsc_construct_coilcoll(coil_single(i),TRIM(coil_group(i)%s_name),TRIM(coil_group(i)%l_name))
          coil_single(i)%ncoil = coil_group(i)%ncoil
          coil_single(i)%coils = coil_group(i)%coils
       END DO
@@ -288,7 +288,7 @@
       ALLOCATE(xb(ns1),yb(ns1),zb(ns1))
       ! Now loop over each coil
       DO i = 1, ncoilgroups
-         CALL bsc_construct_coilcoll(coil_group(i),coil_group(i)%s_name,coil_group(i)%l_name)
+         CALL bsc_construct_coilcoll(coil_group(i),TRIM(coil_single(i)%s_name),TRIM(coil_single(i)%l_name))
          DO j = 1, coil_single(i)%ncoil
             ! Compute geometric center
             ntotal = SIZE(coil_single(i)%coils(j)%xnod(1,:))-1
@@ -330,7 +330,7 @@
                   xnod(3,1:ns1) = xnod(3,1:ns1) - zb*width/2 - zn*height/2 &
                             + zb*width*(l-1)/(nw-1) + zn*height*(k-1)/(nh-1)
                   xnod(:,ns) = xnod(:,1)
-                  CALL bsc_construct_coil(coil_temp,'fil_loop',coil_single(i)%coils(j)%s_name,'',coil_single(i)%coils(j)%current/(nh*nw),xnod(1:3,1:ns))
+                  CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(coil_single(i)%coils(j)%s_name),'',coil_single(i)%coils(j)%current/(nh*nw),xnod(1:3,1:ns))
                   CALL bsc_append(coil_group(i),coil_temp)
                END DO
             END DO
