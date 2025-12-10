@@ -116,6 +116,8 @@
                WHERE(sigma_dkes_31<bigno) sigma_dkes_31 = sigma_dkes_31/temp
             CASE(jtarget_dkes_33)
                WHERE(sigma_dkes_33<bigno) sigma_dkes_33 = sigma_dkes_33/temp
+            CASE(jtarget_dkes_boot)
+               WHERE(sigma_dkes_boot<bigno) sigma_dkes_boot = sigma_dkes_boot/temp
             CASE(jtarget_te)
                WHERE(sigma_te<bigno) sigma_te = sigma_te/temp
             CASE(jtarget_ti)

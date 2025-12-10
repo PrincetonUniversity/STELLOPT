@@ -43,7 +43,7 @@
          integral_A, integral_B
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: J_I, J_C
 
-      LOGICAL, PARAMETER :: lwrite_out = .True.
+      LOGICAL, PARAMETER :: lwrite_out = .False.
 
 
 !-----------------------------------------------------------------------

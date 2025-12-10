@@ -346,6 +346,7 @@
                          target_dkes_11, sigma_dkes_11, &
                          target_dkes_31, sigma_dkes_31, &
                          target_dkes_33, sigma_dkes_33, &
+                         target_dkes_boot, sigma_dkes_boot, &
                          target_dkes, sigma_dkes, &
                          nu_dkes, E_dkes,&
                          target_dkes_Erdiff, sigma_dkes_Erdiff, nu_dkes_Erdiff, Ep_dkes_Erdiff, Em_dkes_Erdiff, &
@@ -928,7 +929,9 @@
       sigma_dkes_Erdiff  = bigno
       target_dkes_alpha  = 0.0
       sigma_dkes_alpha   = bigno
-      target_jdotb       = 0.0
+      target_dkes_boot   = 0.0
+      sigma_dkes_boot    = bigno
+      target_jdotb      = 0.0
       sigma_jdotb       = bigno
       target_jcurv      = 0.0
       sigma_jcurv       = bigno
@@ -1056,6 +1059,7 @@
       target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
       target_dkes_Erdiff(1) = 0.0; sigma_dkes_Erdiff(1) = bigno
       target_dkes_alpha(1) = 0.0; sigma_dkes_alpha(1) = bigno
+      target_dkes_boot(1) = 0.0; sigma_dkes_boot(1) = bigno
 
       ! Backwards compatibility for old DKES deffinition
       WHERE(sigma_dkes < bigno) target_dkes_11 = target_dkes
@@ -1798,9 +1802,31 @@
          DO ik = 1, n
             IF (sigma_dkes_Erdiff(ik) < bigno) THEN
                WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
-                          'TARGET_DKES_ERDIFF(',ik,') = ',target_dkes(ik), &
-                          'SIGMA_DKES_ERDIFF(',ik,') = ',sigma_dkes(ik)
+                          'TARGET_DKES_ERDIFF(',ik,') = ',target_dkes_erdiff(ik), &
+                          'SIGMA_DKES_ERDIFF(',ik,') = ',sigma_dkes_erdiff(ik)
             END IF
+         END DO
+      END IF
+      IF (ANY(sigma_dkes_boot < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          DKES Bootstrap Proxy'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_dkes_boot,DIM=1)
+            IF(sigma_dkes_boot(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_dkes_boot(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_DKES_BOOT(',ik,') = ',target_dkes_boot(ik), &
+                          'SIGMA_DKES_BOOT(',ik,') = ',sigma_dkes_boot(ik)
+            END IF
+         END DO
+         DO ii = 1, nprof
+            IF (E_dkes(ii)>-bigno .and. nu_dkes(ii)>-bigno) &
+               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
+                       'NU_DKES(',ii,') = ',NU_dkes(ii), &
+                       'E_DKES(',ii,') = ',E_dkes(ii)
          END DO
       END IF
       IF (ANY(sigma_dkes_alpha < bigno)) THEN
