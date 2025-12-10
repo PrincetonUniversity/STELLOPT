@@ -321,7 +321,7 @@
                                    ATT='Perpendicular Velocity Dist. Grid Points',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof5',ier)
                ALLOCATE(rtemp(ns_prof1))
-               FORALL(i = 1:ns_prof1) rtemp(i) = (DBLE(i)-0.5)*h1_prof
+               FORALL(i = 1:ns_prof1) rtemp(i) = (DBLE(i)-0.5)/h1_prof
                CALL write_var_hdf5(fid,'dist_rhoaxis',ns_prof1,ier,DBLVAR=rtemp,&
                   ATT='Dist. Func. Radial Grid (r/a)',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_rhoaxis',ier)
