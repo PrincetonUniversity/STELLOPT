@@ -381,9 +381,7 @@
             CASE('vmec2000_old','animec','flow','satire')
             CASE('paravmec','parvmec','vmec2000')
                iflag = 0
-               CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
-               iflag = ier_paraexe
-               IF (lscreen .and. lverb) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
+               CALL stellopt_run_vmec(lscreen,iflag)
             CASE('vboot')
                if (iflag .lt. -1)  THEN
                  ! do nothing
