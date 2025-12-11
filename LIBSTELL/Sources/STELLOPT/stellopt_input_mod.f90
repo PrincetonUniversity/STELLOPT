@@ -15,7 +15,7 @@
          epsfcn, factor, ftol, gtol, lcentered_differences, lkeep_mins, &
          lrefit, mode, noptimizers, npopulation, opt_type, refit_param, &
          rho_exp, xtol, bigno, lno_restart, ltriangulate, nfunc_max, &
-         lexp_scale, exp_alpha
+         lexp_scale, exp_alpha, b0_vac
       USE stellopt_vars
       USE stellopt_targets
       USE safe_open_mod, ONLY: safe_open
@@ -214,6 +214,7 @@
                          lcentered_differences, axis_init_option, &
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, lexp_scale, exp_alpha, &
+                         b0_vac, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
                          lpscale_opt, lmix_ece_opt, lxics_v0_opt, &
                          lextcur_opt, laphi_opt, lam_opt, lac_opt, &
@@ -413,6 +414,7 @@
       lcentered_differences = .FALSE.
       lexp_scale      = .FALSE.
       exp_alpha       = 0.0
+      b0_vac          = 0.0
       axis_init_option = "previous"
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
@@ -1121,6 +1123,7 @@
          WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
          WRITE(iunit,outint) 'VBOOT_MAX_ITERATIONS',vboot_max_iterations
       END IF
+      IF (ABS(B0_vac) > 0) WRITE(iunit,outflt) 'B0_VAC',b0_vac
       WRITE(iunit,outstr) 'AXIS_INIT_OPTION',TRIM(axis_init_option)
       WRITE(iunit,outboo) 'LCENTERED_DIFFERENCES',lcentered_differences
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
