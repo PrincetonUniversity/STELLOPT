@@ -201,7 +201,7 @@ class VMEC(FourierRep):
 
 	def calc_covariant_tensor(self,theta,phi):
 		"""
-		Computes the covariant metric tensor g_ij(s, theta, phi) in VMEC coordinates.
+		Computes the covariant metric tensor g_ij(s_full, theta, phi) in VMEC coordinates.
 
 		Parameters
 		----------
@@ -251,34 +251,112 @@ class VMEC(FourierRep):
 				each mapped to an array g_ij[s,theta,phi]
 		"""
 		import numpy as np
-		R = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
-		Z = self.sfunct(theta,phi,self.zmns,self.xm,self.xn)
-		if self.iasym==1:
-			R = R + self.sfunct(theta,phi,self.rmns,self.xm,self.xn)
-			Z = Z + self.cfunct(theta,phi,self.zmnc,self.xm,self.xn)
-		#
 		s = np.linspace(0,1,self.ns)
+		ds = s[1]-s[0]
+		s[0] = ds/10000 # to avoid division by zero
+		
+		## Compute radial derivatives, dR/ds and dZ/ds, as in flx2cyl of vmec_utils.f
+		## odd m modes interpolate as sqrt(s), while even m modes scale with s
+		rmnc = np.zeros((self.ns,self.mnmax))
+		zmns = np.zeros((self.ns,self.mnmax))
+		drmnc_ds = np.zeros((self.ns,self.mnmax))
+		dzmns_ds = np.zeros((self.ns,self.mnmax))
+		if self.iasym==1:
+			rmns = np.zeros((self.ns,self.mnmax))
+			zmnc = np.zeros((self.ns,self.mnmax))
+			drmns_ds = np.zeros((self.ns,self.mnmax))
+			dzmnc_ds = np.zeros((self.ns,self.mnmax))
+
+		slow = np.concatenate((s[:-1],[s[-2]]))
+		shigh = np.concatenate((s[1:],[s[-1]]))
 		#
-		dRds = np.gradient(R,s, axis=0)
-		dZds = np.gradient(Z,s, axis=0)
+		wlow_even  = 1 - (s-slow)/ds
+		whigh_even = (s-slow) / ds
+		dwlow_even = -1/ds
+		dwhigh_even = 1/ds
+		# 
+		wlow_odd = wlow_even * np.sqrt(s)/np.sqrt(slow)
+		wlow_odd[0] = 0.0
+		whigh_odd = whigh_even * np.sqrt(s)/np.sqrt(shigh)
+		whigh_odd[0] = np.sqrt(s[0]) / np.sqrt(s[1])
+		dwlow_odd = - (3*np.sqrt(s)-shigh/np.sqrt(s)) / (2*ds*np.sqrt(slow))
+		dwlow_odd[0] = 0.0
+		dwhigh_odd =  (3*np.sqrt(s)-slow/np.sqrt(s)) / (2*ds*np.sqrt(shigh))
+		dwhigh_odd[0] = 1 / (2*np.sqrt(s[0])*np.sqrt(s[1]))
+
+		for imn,m in enumerate(self.xm.ravel()):
+			rmnc_low = np.concatenate((self.rmnc[0:-1,imn],[self.rmnc[-2,imn]])) 
+			rmnc_high = np.concatenate((self.rmnc[1:,imn],[self.rmnc[-1,imn]]))
+			zmns_low = np.concatenate((self.zmns[0:-1,imn],[self.zmns[-2,imn]])) 
+			zmns_high = np.concatenate((self.zmns[1:,imn],[self.zmns[-1,imn]]))
+			#
+			if self.iasym==1:
+				rmns_low = np.concatenate((self.rmns[0:-1,imn],[self.rmns[-2,imn]])) 
+				rmns_high = np.concatenate((self.rmns[1:,imn],[self.rmns[-1,imn]]))
+				zmnc_low = np.concatenate((self.zmnc[0:-1,imn],[self.zmnc[-2,imn]])) 
+				zmnc_high = np.concatenate((self.zmnc[1:,imn],[self.zmnc[-1,imn]]))
+    
+			if(int(m)%2 == 0):
+				drmnc_ds[:,imn] = rmnc_low*dwlow_even + rmnc_high*dwhigh_even
+				dzmns_ds[:,imn] = zmns_low*dwlow_even + zmns_high*dwhigh_even
+				rmnc[:,imn] = rmnc_low*wlow_even + rmnc_high*whigh_even
+				zmns[:,imn] = zmns_low*wlow_even + zmns_high*whigh_even
+				#
+				if self.iasym==1:
+					drmns_ds[:,imn] = rmns_low*dwlow_even + rmns_high*dwhigh_even
+					dzmnc_ds[:,imn] = zmnc_low*dwlow_even + zmnc_high*dwhigh_even
+					rmns[:,imn] = rmns_low*wlow_even + rmns_high*whigh_even
+					zmnc[:,imn] = zmnc_low*wlow_even + zmnc_high*whigh_even
+					
+			else:
+				drmnc_ds[:,imn] = rmnc_low*dwlow_odd + rmnc_high*dwhigh_odd
+				dzmns_ds[:,imn] = zmns_low*dwlow_odd + zmns_high*dwhigh_odd
+				rmnc[:,imn] = rmnc_low*wlow_odd + rmnc_high*whigh_odd
+				zmns[:,imn] = zmns_low*wlow_odd + zmns_high*whigh_odd
+				#
+				if self.iasym==1:
+					drmns_ds[:,imn] = rmns_low*dwlow_odd + rmns_high*dwhigh_odd
+					dzmnc_ds[:,imn] = zmnc_low*dwlow_odd + zmnc_high*dwhigh_odd
+					rmns[:,imn] = rmns_low*wlow_odd + rmns_high*whigh_odd
+					zmnc[:,imn] = zmnc_low*wlow_odd + zmnc_high*whigh_odd			
+
+		R = self.cfunct(theta,phi,rmnc,self.xm,self.xn)
+		Z = self.sfunct(theta,phi,zmns,self.xm,self.xn)
+		dRds = self.cfunct(theta,phi,drmnc_ds,self.xm,self.xn)
+		dZds = self.sfunct(theta,phi,dzmns_ds,self.xm,self.xn)
+		if self.iasym==1:
+			R += self.sfunct(theta,phi,rmns,self.xm,self.xn)
+			Z += self.cfunct(theta,phi,zmnc,self.xm,self.xn)
+			dRds += self.sfunct(theta,phi,drmns_ds,self.xm,self.xn)
+			dZds += self.cfunct(theta,phi,dzmnc_ds,self.xm,self.xn)
+
+		# Compute poloidal and toroidal derivatives using the harmonics
+		xm2d  = np.broadcast_to(self.xm.T,(self.ns,self.mnmax))
+		xn2d  = np.broadcast_to(self.xn.T,(self.ns,self.mnmax))
 		#
-		dRdu = np.gradient(R, theta.ravel(), axis=1)
-		dZdu = np.gradient(Z, theta.ravel(), axis=1)
-		#
-		dRdv = np.gradient(R, phi.ravel(), axis=2)
-		dZdv = np.gradient(Z, phi.ravel(), axis=2)
-		#
+		dRdu = self.sfunct(theta,phi,-xm2d*rmnc,self.xm,self.xn)
+		dRdv = self.sfunct(theta,phi,-xn2d*rmnc,self.xm,self.xn)
+		dZdu = self.cfunct(theta,phi,xm2d*zmns,self.xm,self.xn)
+		dZdv = self.cfunct(theta,phi,xn2d*zmns,self.xm,self.xn)
+		if self.iasym==1:
+			dRdu += self.cfunct(theta,phi,xm2d*rmns)
+			dRdv += self.cfunct(theta,phi,xn2d*rmns)
+			dZdu += self.sfunct(theta,phi,-xm2d*zmnc)
+			dZdv += self.sfunct(theta,phi,-xn2d*zmnc)
+
+		# Now compute covariant tensor
 		g = {}
 		g['ss'] = dRds**2 + dZds**2
 		g['su'] = dRds*dRdu + dZds*dZdu
-		g['sv'] = dRds*dRdv + dZds*dZdv
-		g['us'] = g['su']
+		g['sv'] = dRds*dRdv+ dZds*dZdv
 		g['uu'] = dRdu**2 + dZdu**2
 		g['uv'] = dRdu*dRdv + dZdu*dZdv
+		g['vv'] = dRdv**2 + dZdv**2 + R**2
+		# g is a symmetric matrix
+		g['us'] = g['su']
 		g['vs'] = g['sv']
 		g['vu'] = g['uv']
-		g['vv'] = dRdv**2 + dZdv**2 + R**2
-		#
+
 		return g
  
 	def calc_grad_rhosq(self):
@@ -335,13 +413,12 @@ class VMEC(FourierRep):
 		J = self.cfunct(theta,phi,self.gmnc,self.xm_nyq,self.xn_nyq)
 		if(self.iasym==1):
 			J = J + self.sfunct(theta,phi,self.gmns,self.xm_nyq,self.xn_nyq)
-		# It's important to keep rho inside the integrand instead of diving afterwards
-		# otherwise the integral will diverge close to the axis
-		integrand = (guu*gvv - guv*guv) / (rho[:,None,None]*rho[:,None,None]*np.abs(J))
+		integrand = (guu*gvv - guv*guv) / (np.abs(J))
 		integral = np.trapz(integrand,x=phi.ravel(),  axis=2)
 		integral = np.trapz(integral, x=theta.ravel(),axis=1)
-		avgrho2 = integral / (4*dVds)
-		# Because at rho=0 the integrand is Nan, we interpolate:
+		# Since at rho=0 there is an indetermination, we linearly interpolate:
+		avgrho2 = np.zeros_like(rho)
+		avgrho2[1:] = integral[1:] / (4.0 * dVds[1:] * rho[1:]**2)
 		avgrho2[0] = ( -avgrho2[2]*rho[1] + avgrho2[1]*rho[2] ) / (rho[2]-rho[1])
 		#		
 		return avgrho2
@@ -398,11 +475,12 @@ class VMEC(FourierRep):
 		dVds = self.vp[:].flatten() * (4*np.pi*np.pi)
 		# It's important to keep rho inside the integrand instead of diving afterwards
 		# otherwise the integral will diverge close to the axis
-		integrand = np.sqrt(guu*gvv - guv*guv) / (rho[:,None,None])
+		integrand = np.sqrt(guu*gvv - guv*guv)
 		integral = np.trapz(integrand,x=phi.ravel(),  axis=2)
 		integral = np.trapz(integral, x=theta.ravel(),axis=1)
-		avgrho = integral / (2*dVds)
-		# Because at rho=0 the integrand is Nan, we interpolate:
+		# Because at rho=0 the integrand is Nan, we linearly interpolate:
+		avgrho = np.zeros_like(rho)
+		avgrho[1:] = integral[1:] / (2*dVds[1:]*rho[1:])
 		avgrho[0] = ( -avgrho[2]*rho[1] + avgrho[1]*rho[2] ) / (rho[2]-rho[1])
 		#		
 		return avgrho
@@ -1162,6 +1240,9 @@ class VMEC(FourierRep):
 		theta = theta.reshape(-1,1) # nd array
 		R = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
 		Z = self.sfunct(theta,phi,self.zmns,self.xm,self.xn)
+		if self.iasym==1:
+			R += self.sfunct(theta,phi,self.rmns,self.xm,self.xn)
+			Z += self.cfunct(theta,phi,self.zmnc,self.xm,self.xn)
         
 		return R,Z
 
@@ -1176,8 +1257,8 @@ class VMEC(FourierRep):
   		VMEC s-grid and returns f with the length Ntheta x self.ns, ready to be plotted
 		with the triangulation.
   
-		Example. If fi is a flux-surface quantity evaluated at the si grid, then:
-		triangulation, f_output = get_triangulation(0.0,si,fi)
+		Example. If fi is a flux-surface quantity evaluated at the s grid, then:
+		triangulation, f_output = get_triangulation(0.0,s,fi)
 		plt.tricontourf(triangulation, f_output)
   
 		Parameters
