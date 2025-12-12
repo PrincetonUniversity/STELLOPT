@@ -217,7 +217,7 @@ class THRIFT():
         
         if isinstance(var, np.ndarray):
             if var.ndim == 2:
-                if var.shape != (nt, nrho):
+                if var.shape != (nt, nrho) and var.shape != (nt, nrho-2):
                     print(f"{var} is a 2D array but has the wrong shape: {var.shape}")
                     exit(0)
             else:
