@@ -4,20 +4,19 @@
 This library provides a python class for reading and handling 
 THRIFT data.
 """
-
 # Libraries
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 
-#plt.rc('font', size=18)
-#default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-#custom_colors = ['#5faf30', '#1D2258', '#004817', '#a1cdc8']
-#plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors+default_colors)
-#plt.rcParams['lines.linewidth'] = 2.5
-# plt.rcParams['axes.prop_cycle'] = plt.cycler(color=['#5faf30','#1D2258','#004817','#a1cdc8'])
+plt.rc('font', size=20)
+plt.rcParams['lines.linewidth'] = 4
+plt.rcParams['lines.markersize'] = 16
+custom_colors = color=['#5FAF30','#1D2258','#A1CDC8','#8b3843','#014817','#cdcd15']
+default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors+default_colors)
 
-# Constants
+EC = 1.602176634E-19 # Electron charge [C]
 
 # THRIFT Class
 class THRIFT():
@@ -173,7 +172,7 @@ class THRIFT():
         self.units_dictionary['THRIFT_GNEO'] = r'[m$^{-2}s$^{-1}$]'
         self.units_dictionary['THRIFT_QNEO'] = r'[$\text{W}~\text{m}^{-2}$]'
              
-    def plot_vars_in_time(self,*vars,time_slice=None,time_array=None):
+    def plot_vars_in_time(self,*vars,time_slice=None,time_array=None,make_plot=True):
         # plots var as a funciton of roa at different times
         # the times can be given as time_slices (fractions of t_end)
         # or as time_array
@@ -212,13 +211,13 @@ class THRIFT():
             except:
                 ax.set_ylabel('')
             # ax.set_yscale('log')
-            plt.show()
+            if(make_plot): plt.show()
             
     def check_var_shape(self,var, nt, nrho):
         
         if isinstance(var, np.ndarray):
             if var.ndim == 2:
-                if var.shape != (nt, nrho):
+                if var.shape != (nt, nrho) and var.shape != (nt, nrho-2):
                     print(f"{var} is a 2D array but has the wrong shape: {var.shape}")
                     exit(0)
             else:
@@ -441,62 +440,63 @@ class THRIFT():
                 JBS_all.append(  [x[2] for x in group_list])  # Extract the other_array part of the group
                 Gamma_e_all.append(  [x[3] for x in group_list])  # Extract the other_array part of the group
             
-            # plots    
-            _, ax = plt.subplots(figsize=(11,8))
+            # plots
+            if(make_plot):
+                _, ax = plt.subplots(figsize=(11,8))
 
-            # Plot each root
-            for j in range(max(num_roots)):
-                x = []  # roa values
-                y = []  # Er values
-                for k, (r_vals, er_vals) in enumerate(zip(roa_all, Er_all)):
-                    if j < len(er_vals):  # Only include if the j-th value exists in Er[k]
-                        x.append(r_vals[0])  
-                        y.append(er_vals[j])
-                plt.plot(x, y, marker='o')  # Plot the j-th curve
+                # Plot each root
+                for j in range(max(num_roots)):
+                    x = []  # roa values
+                    y = []  # Er values
+                    for k, (r_vals, er_vals) in enumerate(zip(roa_all, Er_all)):
+                        if j < len(er_vals):  # Only include if the j-th value exists in Er[k]
+                            x.append(r_vals[0])  
+                            y.append(er_vals[j])
+                    plt.plot(x, y, marker='o')  # Plot the j-th curve
 
-            
-            ax.set_xlabel('r/a')
-            ax.set_ylabel(r'$E_r$ [V/cm]')
-            ax.set_title(f't={time}s')
-            
-            #JBS plot
-            _, ax = plt.subplots(figsize=(11,8))
+                
+                ax.set_xlabel('r/a')
+                ax.set_ylabel(r'$E_r$ [V/cm]')
+                ax.set_title(f't={time}s')
+                
+                #JBS plot
+                _, ax = plt.subplots(figsize=(11,8))
 
-            # Plot each root
-            for j in range(max(num_roots)):
-                x = []  # roa values
-                y = []  # JBS values
-                for k, (r_vals, jbs_vals) in enumerate(zip(roa_all, JBS_all)):
-                    if j < len(jbs_vals):  # Only include if the j-th value exists in Er[k]
-                        x.append(r_vals[0])  
-                        y.append(jbs_vals[j])
-                plt.plot(x, y, marker='o')  # Plot the j-th curve
+                # Plot each root
+                for j in range(max(num_roots)):
+                    x = []  # roa values
+                    y = []  # JBS values
+                    for k, (r_vals, jbs_vals) in enumerate(zip(roa_all, JBS_all)):
+                        if j < len(jbs_vals):  # Only include if the j-th value exists in Er[k]
+                            x.append(r_vals[0])  
+                            y.append(jbs_vals[j])
+                    plt.plot(x, y, marker='o')  # Plot the j-th curve
 
-            
-            ax.set_xlabel('r/a')
-            ax.set_ylabel(r'$J_{BS}~[A/m^2]$')
-            ax.set_title(f't={time}s')
-            
-            #Fluxes plot
-            _, ax = plt.subplots(figsize=(11,8))
+                
+                ax.set_xlabel('r/a')
+                ax.set_ylabel(r'$J_{BS}~[A/m^2]$')
+                ax.set_title(f't={time}s')
+                
+                #Fluxes plot
+                _, ax = plt.subplots(figsize=(11,8))
 
-            # Plot each root
-            for j in range(max(num_roots)):
-                x = []  # roa values
-                y = []  # gamma_e values
-                for k, (r_vals, ge_vals) in enumerate(zip(roa_all, Gamma_e_all)):
-                    if j < len(ge_vals):  # Only include if the j-th value exists in Er[k]
-                        x.append(r_vals[0])  
-                        y.append(ge_vals[j])
-                plt.plot(x, y, marker='o')  # Plot the j-th curve
-  
-            ax.set_xlabel('r/a')
-            ax.set_ylabel(r'$\Gamma_e~[m^{-2}~s^{-1}]$')
-            ax.set_title(f't={time}s')
-            
-        if(make_plot): plt.show()
+                # Plot each root
+                for j in range(max(num_roots)):
+                    x = []  # roa values
+                    y = []  # gamma_e values
+                    for k, (r_vals, ge_vals) in enumerate(zip(roa_all, Gamma_e_all)):
+                        if j < len(ge_vals):  # Only include if the j-th value exists in Er[k]
+                            x.append(r_vals[0])  
+                            y.append(ge_vals[j])
+                    plt.plot(x, y, marker='o')  # Plot the j-th curve
+    
+                ax.set_xlabel('r/a')
+                ax.set_ylabel(r'$\Gamma_e~[m^{-2}~s^{-1}]$')
+                ax.set_title(f't={time}s')
+                
+                plt.show()
         
-        return roa_all, Er_all, JBS_all, Gamma_e_all
+        return roa_all, Er_all, JBS_all, Gamma_e_all, num_roots
         
     def Maxwell_construction(self,fluxes_vs_Er_file,Zions):
         # plots fluxes*Z as function of Er
@@ -588,19 +588,109 @@ class THRIFT():
             ax.set_title(f'r/a={ROA}')
             ax.grid()
             
-            _, ax = plt.subplots(figsize=(11,8))
-            ax.plot(Er_dict[ROA],Ge_dict[ROA],'.-',label='Gamma_e')
-            for k,_ in enumerate(Zions):
-                ax.plot(Er_dict[ROA],Gi_dict[k][ROA],'.-',label=f'Gamma_i_{k}')
-            ax.set_xlabel('Er [V/cm]')
-            ax.set_ylabel(r'$\Gamma$')
-            ax.set_yscale('symlog',linthresh=0.1)
-            ax.set_title(f'r/a={ROA}')
-            ax.grid()
-            plt.legend()
+            # _, ax = plt.subplots(figsize=(11,8))
+            # ax.plot(Er_dict[ROA],Ge_dict[ROA],'.-',label='Gamma_e')
+            # for k,_ in enumerate(Zions):
+            #     ax.plot(Er_dict[ROA],Gi_dict[k][ROA],'.-',label=f'Gamma_i_{k}')
+            # ax.set_xlabel('Er [V/cm]')
+            # ax.set_ylabel(r'$\Gamma$')
+            # ax.set_yscale('symlog',linthresh=0.1)
+            # ax.set_title(f'r/a={ROA}')
+            # ax.grid()
+            # plt.legend()
             
             plt.show()
-            
+    
+    def process_wout_folders(self,file_pattern: str, *folders):
+        """
+        Processes folders containing the wout files outputed by THRIFT, named like:
+            file_pattern.N1_N2.nc
+        or already processed:
+            file_pattern.N1.nc
+
+        For each N1, keeps only the file with the largest N2, renames it to file_pattern.N1.nc,
+        and removes the rest. Fully processed folders are handled gracefully.
+
+        Returns a list with all final file Paths across all folders 
+        (in the order as given by *folders)
+        """
+        import re
+        from pathlib import Path
+        final_files = []
+
+        # Example: file_pattern.001_004.nc
+        pattern_full = re.compile(rf"^{re.escape(file_pattern)}\.(\d{{3}})_(\d{{3}})\.(.+)$")
+        # Example: file_pattern.001.nc
+        pattern_final = re.compile(rf"^{re.escape(file_pattern)}\.(\d{{3}})\.(.+)$")
+
+        for folder in map(Path, folders):
+            if not folder.is_dir():
+                raise ValueError(f"Folder does not exist: {folder}")
+
+            grouped = {}       # N1 → list of (N2, Path)
+            preprocessed = {}  # N1 → Path
+
+            for f in folder.iterdir():
+                if not f.is_file():
+                    continue
+
+                m_full = pattern_full.match(f.name)
+                m_final = pattern_final.match(f.name)
+
+                if m_full:
+                    n1, n2, ext = m_full.groups()
+                    grouped.setdefault(n1, []).append((int(n2), f))
+
+                elif m_final:
+                    n1, ext = m_final.groups()
+                    preprocessed[n1] = f
+
+            # If folder already contains only final files
+            if grouped == {}:
+                final_files.extend(sorted(preprocessed.values()))
+                continue
+
+            folder_results = []
+
+            # Process N1 groups
+            for n1, files in grouped.items():
+
+                # Already final → keep final, delete full versions
+                if n1 in preprocessed:
+                    folder_results.append(preprocessed[n1])
+                    for _, f in files:
+                        f.unlink()
+                    continue
+
+                # Select largest N2
+                files.sort(key=lambda t: t[0])
+                _, best_file = files[-1]
+
+                ext = best_file.suffix  # includes dot
+
+                # New name: file_pattern.N1.ext
+                new_name = f"{file_pattern}.{n1}{ext}"
+                new_path = best_file.with_name(new_name)
+
+                best_file.rename(new_path)
+
+                # Remove others
+                for _, old_file in files[:-1]:
+                    old_file.unlink()
+
+                folder_results.append(new_path)
+
+            # Add final files with N1 not appearing in grouped
+            for n1, f in preprocessed.items():
+                if n1 not in grouped:
+                    folder_results.append(f)
+
+            # Sort within folder for deterministic order
+            folder_results = sorted(folder_results, key=lambda p: p.name)
+            final_files.extend(folder_results)
+
+        return final_files
+    
     def get_I_total(self,time=None):
         """ Returns the total current
 
@@ -935,9 +1025,10 @@ class THRIFT_plasma_solver():
                 time.append( f['time_plasma_grid'][:] )
         time = np.concatenate(time)
         #check ordering
-        if(not np.all(np.diff(time) >= 0) ):
+        if(not np.all(np.diff(time) >= -1e-10) ):
             print('ERROR: plasma_solver files are not in the correct order...')
-            print(f'time = {time}')
+            for diff in np.diff(time): 
+                if diff<0: print(diff)
             exit(0)
         else:
             self.time_grid = time
@@ -954,7 +1045,6 @@ class THRIFT_plasma_solver():
         ############ CHECK RHO_GRID IS THE SAME IN ALL FILES ################
         with h5py.File(files[0],'r') as f:
                 self.rho_grid  = f['rho_plasma_grid'][:]
-                self.r_grid  = f['r_plasma_grid'][:,:]
                 self.Nr = f['Nr_plasma_grid']
         for file in files:
             with h5py.File(file,'r') as f:
@@ -965,10 +1055,9 @@ class THRIFT_plasma_solver():
         ################ CONCATENATE DATA ##################################
         for file in files:
             with h5py.File(file,'r') as f:
-                
-                for temp in ['plasma_N','plasma_T','N_fast_alphas','Dn_NEO','cn_NEO','Dp_NEO',\
-                             'cp_NEO','G_NEO_complet','Q_NEO_complet','Dp_total','cp_total']:
-
+                for temp in ['r_plasma_grid','plasma_N','plasma_T','N_fast_alphas','Dn_NEO','cn_NEO','Dp_NEO',\
+                             'cp_NEO','G_NEO_complet','Q_NEO_complet','Dp_total','cp_total','Dn_total','cn_total',\
+                             'S_radiated_power','S_alpha_power','S_energy_ext','S_particle_ext','dVdr']:
                     try:
                         data = np.array(f[temp][:,:,:])
                     except:
@@ -982,22 +1071,36 @@ class THRIFT_plasma_solver():
                         setattr(self, temp, np.concatenate((existing_data, data),axis=1))                       
                     
         ##################### TRANSPOSE DATA #################################
-        self.r_grid = self.r_grid.T
-        self.N_fast_alphas = self.N_fast_alphas.T
-        #
-        self.plasma_N = np.transpose(self.plasma_N, axes=[2,1,0])
-        self.plasma_T = np.transpose(self.plasma_T, axes=[2,1,0])
-        self.Dn_NEO = np.transpose(self.Dn_NEO, axes=[2,1,0])
-        self.cn_NEO = np.transpose(self.cn_NEO, axes=[2,1,0])
-        self.Dp_NEO = np.transpose(self.Dp_NEO, axes=[2,1,0])
-        self.cp_NEO = np.transpose(self.cp_NEO, axes=[2,1,0])
-        #
-        self.G_NEO = np.transpose(self.G_NEO_complet, axes=[2,1,0])
-        self.Q_NEO = np.transpose(self.Q_NEO_complet, axes=[2,1,0])
-        #           
-        self.Dp_total = np.transpose(self.Dp_total, axes=[2,1,0])            
-        self.cp_total = np.transpose(self.cp_total, axes=[2,1,0])         
-                
+        #### 2D arrays should be [time,rho]
+        #### 3D arrays should be [species,time,rho]
+        for name, value in vars(self).items():
+            if isinstance(value, np.ndarray):
+                if value.ndim == 2:
+                    # Transpose 2D array
+                    setattr(self, name, value.T)
+                elif value.ndim == 3:
+                    # Transpose 3D array
+                    setattr(self, name, np.transpose(value, axes=[2, 1, 0]))
+
+        # Rename r-grid
+        self.r_grid = self.r_plasma_grid
+        delattr(self,'r_plasma_grid')
+        
+        ##################  DELETE REPEATED TIMES ##########################       
+        # Repeated times occur when sequent plasma_solver files are read
+        mask = np.concatenate(([True],np.abs(np.diff(time)) > 1E-6 ))
+        self.time_grid = self.time_grid[mask]
+        
+        # Apply mask to all 2D and 3D arrays
+        for name, value in vars(self).items():
+            if isinstance(value, np.ndarray):
+                # 2D array
+                if value.ndim == 2:
+                    setattr(self,name,value[mask,:])
+                # 3D array
+                elif value.ndim == 3:
+                    setattr(self,name,value[:,mask,:])        
+        
     def create_input_sources_file(self,filename,nt,nrho,tfin):
         # creates 
         
@@ -1141,7 +1244,365 @@ class THRIFT_plasma_solver():
             dset = f['S_particle']
             for it,t in enumerate(self.t_grid_source): 
                 dset[:,it,species_id] = source(t) #,self.rho_grid_source)
+                
+    def convert_to_joblib(self,dt_save=0.1,filename='thrift_transport_simul',thrift_class=None):
+        """ This function creates a joblib file with the transport simulation data
+        We can the use the same post-processing tools we use to analyse transport simulations
+        performed by pySTEL class plasma_solver
+        """
+        from types import SimpleNamespace
+        from pathlib import Path
+        import joblib
+        from collections import defaultdict
+        
+        # check if extension of filename is .joblib; if not, add
+        output_filename = str(Path(filename).with_suffix(".joblib"))
+        
+        saved_class = SimpleNamespace()
+        saved_class.rho_grid = self.rho_grid
+        saved_class.list_of_species = self.list_of_species
+        
+        # simulation dt
+        dt = np.diff(self.time_grid)[-1]
+        
+        # saving frequency 
+        freq = max(1, round(dt_save / dt))
+        sl = slice(0, None, freq)  # defines the slice once
+
+        saved_class.time = self.time_grid[sl]
+        saved_class.Nt = len(self.time_grid[sl])
+        
+        saved_class.r_grid = self.r_grid[sl,:]
+        saved_class.dVdr = self.dVdr[sl,:]
+        
+        for attr1,attr2 in zip(('N','T','Dp','cp','Dn','cn'),('plasma_N','plasma_T','Dp_total','cp_total','Dn_total','cn_total')):
+            setattr(saved_class, attr1, {})
+            for ispecies,species in enumerate(self.list_of_species):
+                getattr(saved_class, attr1)[species] = getattr(self, attr2)[ispecies,sl,:]
+        
+        saved_class.N['alphas_fast'] = self.N_fast_alphas[sl,:]
+        
+        saved_class.explicit_energy_sources   = defaultdict(dict)
+        saved_class.explicit_particle_sources = defaultdict(dict)
+        saved_class.Q_total = defaultdict(dict)
+        saved_class.G_total = defaultdict(dict)
+
+        saved_class.explicit_energy_sources['electrons']['Bremsstrahlung'] = -self.S_radiated_power[sl,:]
+        
+        for ispecies,species in enumerate(self.list_of_species):
+            saved_class.explicit_energy_sources[species]['time_dependent_gaussian'] = self.S_energy_ext[ispecies,sl,:]
+            saved_class.explicit_particle_sources[species]['time_dependent_gaussian'] = self.S_particle_ext[ispecies,sl,:]
+            saved_class.explicit_energy_sources[species]['alpha_heating'] = self.S_alpha_power[ispecies,sl,:]
             
+            # Reconstruct Fluxes and save
+            r_grid   = self.r_grid[sl,:]
+            #
+            p_r = self.plasma_N[ispecies,sl,:]*self.plasma_T[ispecies,sl,:]*EC
+            dpdr = akima_derivative(r_grid,p_r,axis=1)
+            #
+            n_r = self.plasma_N[ispecies,sl,:]
+            dndr = akima_derivative(r_grid,n_r,axis=1)
+            #
+            saved_class.Q_total[species] = -self.Dp_total[ispecies,sl,:]*dpdr + self.cp_total[ispecies,sl,:]*p_r
+            saved_class.G_total[species] = -self.Dn_total[ispecies,sl,:]*dndr + self.cn_total[ispecies,sl,:]*n_r
+            
+        if(thrift_class is not None):
+            saved_class.aminor = thrift_class.get_vars('THRIFT_AMINOR',time=saved_class.time)[:,-1]
+            saved_class.Rmajor = thrift_class.get_vars('THRIFT_RMAJOR',time=saved_class.time)[:,-1]
+            saved_class.B      = thrift_class.get_vars('THRIFT_BAV',  time=saved_class.time)[:,:]
+            saved_class.iota   = thrift_class.get_vars('THRIFT_IOTA',  time=saved_class.time)[:,:]
+
+        joblib.dump(saved_class, output_filename)
+        
+def _akima_derivative_1d(x, y):
+    """
+    1D Akima derivative routine.
+    """
+    n = x.size
+    dy = np.zeros_like(y)
+    if n < 2:
+        raise ValueError("Need at least 2 points")
+
+    # First divided differences
+    m = (y[1:] - y[:-1]) / (x[1:] - x[:-1])
+
+    if n == 2:
+        dy[0] = m[0]
+        dy[1] = m[0]
+        return dy
+
+    # Boundary slopes
+    cxp, cxpp = m[0], m[1]
+    cxm, cxmm = m[-1], m[-2]
+
+    dy[0] = 1.5 * cxp - 0.5 * cxpp
+    dy[-1] = 1.5 * cxm - 0.5 * cxmm
+
+    # Ghost slopes
+    cxtrap0 = 2.0 * dy[0] - cxp
+    cxtrap1 = 2.0 * dy[-1] - cxm
+
+    # Interior points
+    for i in range(1, n - 1):
+        if i == 1:
+            cxmm = cxtrap0
+        else:
+            cxmm = (y[i - 1] - y[i - 2]) / (x[i - 1] - x[i - 2])
+
+        cxm = (y[i] - y[i - 1]) / (x[i] - x[i - 1])
+        cxp = (y[i + 1] - y[i]) / (x[i + 1] - x[i])
+
+        if i == n - 2:
+            cxpp = cxtrap1
+        else:
+            cxpp = (y[i + 2] - y[i + 1]) / (x[i + 2] - x[i + 1])
+
+        w1 = abs(cxp - cxpp)
+        w2 = abs(cxm - cxmm)
+
+        if (w1 + w2) == 0.0:
+            dy[i] = 0.5 * (cxm + cxp)
+        else:
+            dy[i] = (w1 * cxm + w2 * cxp) / (w1 + w2)
+
+    return dy
+
+
+def akima_derivative(x, y, axis=None):
+    """
+    General multidimensional Akima derivative.
+
+    Parameters
+    ----------
+    x : ndarray, 1D or same shape as y
+        Grid values along the differentiation axis.
+    y : ndarray
+        Values to differentiate.
+    axis : int
+        Axis along which the derivative is taken.
+
+    Returns
+    -------
+    dy : ndarray
+        Derivative of y along the chosen axis.
+    """
+    x = np.asarray(x)
+    y = np.asarray(y)
+
+    if axis is None:
+        axis = y.ndim - 1
+    axis = np.core.numeric.normalize_axis_index(axis, y.ndim)
+
+    # Move the target axis to the last dimension
+    y_m = np.moveaxis(y, axis, -1)
+
+    # Broadcast x to match y_m.shape
+    if x.ndim == 1:
+        # x is 1D: must match the size of the differentiation axis
+        if x.size != y_m.shape[-1]:
+            raise ValueError(
+                f"1D x has length {x.size}, but y has size {y_m.shape[-1]} along axis {axis}."
+            )
+        # Expand x to the same shape as y_m
+        # This mirrors numpy.trapz behavior
+        shape = (1,) * (y_m.ndim - 1) + (x.size,)
+        x_m = np.broadcast_to(x.reshape(shape), y_m.shape)
+    else:
+        # x must have the same full shape as y
+        if x.shape != y.shape:
+            raise ValueError("If x is not 1D, it must have the same shape as y.")
+        x_m = np.moveaxis(x, axis, -1)
+
+    # Flatten all dimensions except the last
+    leading_shape = y_m.shape[:-1]
+    N = y_m.shape[-1]
+
+    y_flat = y_m.reshape(-1, N)
+    x_flat = x_m.reshape(-1, N)
+
+    dy_flat = np.empty_like(y_flat)
+
+    # Apply the 1D Akima routine along the last axis for each slice
+    for i in range(y_flat.shape[0]):
+        dy_flat[i] = _akima_derivative_1d(x_flat[i], y_flat[i])
+
+    # Restore multidimensional shape
+    dy_m = dy_flat.reshape(y_m.shape)
+
+    # Move axis back to original position
+    dy = np.moveaxis(dy_m, -1, axis)
+
+    return dy
+
+def animate_time_series(
+    time_axis,
+    panels,
+    legends=None,
+    ylabels=None,
+    xlabel=None,
+    title=None,
+    **FuncAnimation_kwargs):
+    """
+    Time-series animation with any number of panels.
+
+    Parameters
+    ----------
+    time_axis : 1D array
+        The common x-axis for all panels.
+    panels : list
+        List of panels. Each panel may be:
+            * a single 1D array
+            * a list/tuple of arrays (multiple signals on same panel)
+    legends : list (same length as panels)
+        Each element is:
+            * None (auto labels)
+            * a single string (for single-signal panel)
+            * a list of strings (for multi-signal panel)
+    ylabels : list (same length as panels)
+        Y-axis labels for each panel (None allowed).
+    xlabel : str
+        Label for the bottom x-axis.
+
+    Returns
+    -------
+    anim : matplotlib FuncAnimation
+    """
+    from matplotlib.animation import FuncAnimation
+    
+    time_axis = np.asarray(time_axis)
+    if time_axis.ndim != 1:
+        raise ValueError("time_axis must be a 1D array-like.")
+
+    # ---- Normalize panel structure ----
+    normalized_panels = []
+    for p in panels:
+        if p is None:
+            normalized_panels.append([])
+            continue
+        if isinstance(p, (list, tuple)):
+            arrs = [np.asarray(a) for a in p]
+        else:
+            arrs = [np.asarray(p)]
+        for a in arrs:
+            if a.shape != time_axis.shape:
+                raise ValueError("All signals must match time_axis shape.")
+        normalized_panels.append(arrs)
+
+    # keep only non-empty panels
+    non_empty_indices = [i for i, p in enumerate(normalized_panels) if len(p) > 0]
+    panels_non_empty = [normalized_panels[i] for i in non_empty_indices]
+    Npanels = len(panels_non_empty)
+    if Npanels == 0:
+        raise ValueError("No non-empty panels provided.")
+
+    # ---- Normalize legends ----
+    if legends is None:
+        legends = [None] * len(normalized_panels)
+    if len(legends) != len(normalized_panels):
+        raise ValueError("legends must have same length as panels.")
+
+    legends_non_empty = []
+    for i in non_empty_indices:
+        lg = legends[i]
+        sigs = normalized_panels[i]
+        n = len(sigs)
+
+        if lg is None:
+            legends_non_empty.append([f"Signal {j+1}" for j in range(n)])
+        elif isinstance(lg, str):
+            if n == 1:
+                legends_non_empty.append([lg])
+            else:
+                raise ValueError("Multi-signal panel requires a list of labels.")
+        else:
+            lg_list = list(lg)
+            if len(lg_list) != n:
+                raise ValueError("Legend length mismatch.")
+            legends_non_empty.append(lg_list)
+
+    # ---- Normalize ylabels ----
+    if ylabels is None:
+        ylabels = [None] * len(normalized_panels)
+    if len(ylabels) != len(normalized_panels):
+        raise ValueError("ylabels must match panels length.")
+
+    ylabels_non_empty = [ylabels[i] for i in non_empty_indices]
+
+    # ---- Create figure ----
+    fig, axes = plt.subplots(Npanels, 1, sharex=True, figsize=(10, 3*Npanels))
+    if Npanels == 1:
+        axes = [axes]
+
+    all_line_objs = []
+    vlines = []
+
+    # ---- Prepare each panel ----
+    for ax, sig_list, lg_list, ylabel in zip(axes, panels_non_empty, legends_non_empty, ylabels_non_empty):
+
+        # lines
+        lines = []
+        for _ in sig_list:
+            ln, = ax.plot([], [])
+            lines.append(ln)
+        all_line_objs.append(lines)
+
+        # y-label
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+
+        # x-limits fixed
+        ax.set_xlim(time_axis[0], time_axis[-1])
+
+        # y-limits
+        mins = [np.min(s) for s in sig_list]
+        maxs = [np.max(s) for s in sig_list]
+        ymin, ymax = min(mins), max(maxs)
+        if np.isclose(ymin, ymax):
+            span = abs(ymin) if ymin != 0 else 1.0
+            ymin -= 0.1 * span
+            ymax += 0.1 * span
+        else:
+            pad = 0.05*(ymax - ymin)
+            ymin -= pad
+            ymax += pad
+        ax.set_ylim(ymin, ymax)
+
+        # legend
+        #ax.legend(lg_list, loc="upper right")  
+        ax.legend(lg_list) ## this way legend location is updated automatically at each frame
+        
+        # vertical time marker
+        vlines.append(ax.axvline(time_axis[0], ls="--", color="k"))
+
+    # bottom xlabel
+    if xlabel is not None:
+        axes[-1].set_xlabel(xlabel)
+        
+    # title
+    if title is not None:
+        axes[0].set_title(title)
+
+    # ---- Animation update ----
+    def update(frame):
+        xnow = time_axis[frame]
+
+        for p_idx, lines in enumerate(all_line_objs):
+            sigs = panels_non_empty[p_idx]
+            for s_idx, ln in enumerate(lines):
+                ln.set_data(time_axis[:frame+1], sigs[s_idx][:frame+1])
+            vlines[p_idx].set_xdata([xnow])
+
+        return [artist for sub in all_line_objs for artist in sub] + vlines
+
+    anim = FuncAnimation(
+        fig,
+        update,
+        frames=len(time_axis),
+        blit=False,
+        **FuncAnimation_kwargs
+    )
+
+    return anim
                    
 # Main routine
 if __name__=="__main__":

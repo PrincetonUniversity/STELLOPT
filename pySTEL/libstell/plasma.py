@@ -430,11 +430,12 @@ class PLASMA:
             
             #compute loglambda as in PENTA
             Te = self.get_temperature('electrons',r)
-            ne = self.get_temperature('electrons',r)
+            ne = self.get_density('electrons',r)
             if(Te>50):
                 loglambda = 25.3 - 1.15*np.log10(ne/1e6) + 2.3*np.log10(Te)
             else:
                 loglambda = 23.4 - 1.15*np.log10(ne/1e6) + 3.45*np.log10(Te)
+            
             clog = np.full(len(m),loglambda)
             
             nu = np.sum( coll.collisionfreq_PENTA(vt,m,Z,T,n,clog) )
