@@ -23,7 +23,8 @@
       USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init_new, &
                                 mumaterial_info, mumaterial_getbmag_scalar,&
                                 mumaterial_setverb, mumaterial_setd, &
-                                mumaterial_free, mumaterial_debug
+                                mumaterial_free, mumaterial_debug, &
+                                mumaterial_readmag, mumaterial_writemag
       USE mpi_params  
       USE mpi_inc      
       USE mpi_sharmem
@@ -75,12 +76,14 @@
       CALL mumaterial_debug(.FALSE.,.FALSE.,.FALSE.)
 
       ! Read the mu materials file
-      CALL MUMATERIAL_LOAD(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_BEAMS)
+      CALL mumaterial_load(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_BEAMS)
 
       ! Set parameters
-      CALL MUMATERIAL_SETD(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
+      CALL mumaterial_setd(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
                            mumaterial_lamfactor, mumaterial_lamthresh, & 
                            mumaterial_padfactor, mumaterial_convcheck) 
+      ! Load magnetization file
+      IF (lmumat_readmag) CALL mumaterial_readmag(TRIM(mumat_magfile))
 
       
 
@@ -89,7 +92,7 @@
 #endif
       
       IF (lverb) THEN
-         CALL mumaterial_info(6)
+         CALL mumaterial_info(6, lmumat_skipiter)
          WRITE(6,'(A,A)') '   FILE: ',TRIM(mumat_string)
          CALL FLUSH(6)
       END IF
@@ -141,9 +144,12 @@
       eps3 = (zmax-zmin)*small
 
       ! Initialize the magnetic calculation
-      offset = 0.0
-      !CALL MUMATERIAL_INIT_NEW(beams3d_BCART, MPI_COMM_BEAMS, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, offset)
-      CALL MUMATERIAL_INIT_NEW(beams3d_BCART, offset)
+      IF (.NOT.(lmumat_skipiter)) THEN
+            offset = 0.0
+            CALL MUMATERIAL_INIT_NEW(beams3d_BCART, offset)
+      END IF
+      ! Output magnetics file
+      IF (lmumat_writemagfile) CALL mumaterial_writemag()
 
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nr*nphi*nz, mystart, myend)

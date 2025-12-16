@@ -897,7 +897,7 @@ class MyApp(QMainWindow):
 					'NE','NELINE','TE','TELINE','TI','TILINE','ZEFFLINE',\
 					'XICS','XICS_BRIGHT','XICS_W3','XICS_V','SXR','VPHI','VACIOTA',\
 					'IOTA','BALLOON','BOOTSTRAP',\
-					'DKES_11','DKES_31','DKES_33','DKES_ERDIFF','DKES_ALPHA',\
+					'DKES_11','DKES_31','DKES_33','DKES_BOOT','DKES_ERDIFF','DKES_ALPHA',\
 					'B10B11','HELICITY','HELICITY_FULL','QUASIISO','GAMMA_C', \
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
@@ -940,6 +940,8 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L31')
 		if 'DKES_33_TARGET' in vars(self.stel_data).keys():
 			self.ui.ComboBoxOPTplot_type.addItem('DKES_L33')
+		if 'DKES_BOOT_TARGET' in vars(self.stel_data).keys():
+			self.ui.ComboBoxOPTplot_type.addItem('DKES_BOOT')
 		if 'LGRADB_TARGET' in vars(self.stel_data).keys():
 			self.ui.ComboBoxOPTplot_type.addItem('LGRADB_surf')
 		# Handle Wout Comparrison Plots

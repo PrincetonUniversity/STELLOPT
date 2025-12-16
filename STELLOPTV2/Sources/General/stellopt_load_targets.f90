@@ -284,13 +284,15 @@
       IF (ANY(sigma_neo < bigno)) &
          CALL chisq_neo(target_neo, sigma_neo, ncnt,iflag)
       !!!!!!!! DKES Section only move as chunk !!!!!!!!!!!!!!!!!!!!!!!!
-      nruns_dkes = 0
+      IF (ncnt < 0) nruns_dkes = 0
       IF (ANY(sigma_dkes_11 < bigno)) &
          CALL chisq_dkes_11(target_dkes_11, sigma_dkes_11, ncnt,iflag)
       IF (ANY(sigma_dkes_31 < bigno)) &
          CALL chisq_dkes_31(target_dkes_31, sigma_dkes_31, ncnt,iflag)
       IF (ANY(sigma_dkes_33 < bigno)) &
          CALL chisq_dkes_33(target_dkes_33, sigma_dkes_33, ncnt,iflag)
+      IF (ANY(sigma_dkes_boot < bigno)) &
+         CALL chisq_dkes_boot(target_dkes_boot, sigma_dkes_boot, ncnt,iflag)
       IF (ANY(sigma_dkes_erdiff < bigno)) &
          CALL chisq_dkes_erdiff(target_dkes_erdiff, sigma_dkes_erdiff, ncnt,iflag)
       IF (ANY(sigma_dkes_alpha < bigno)) &

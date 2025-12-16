@@ -465,7 +465,7 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
          ctemp_str = 'dkes'
-         IF ((ANY(sigma_dkes < bigno).or.ANY(sigma_dkes_erdiff < bigno).or.ANY(sigma_dkes_alpha < bigno)) .and. (iflag>=0)) THEN
+         IF ( lneed_dkes .and. (iflag>=0)) THEN
             CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
             iflag = ier_paraexe
          END IF

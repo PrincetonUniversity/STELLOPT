@@ -222,6 +222,7 @@
       mumaterial_lambda = 0.7
       mumaterial_lamfactor = 0.75
       mumaterial_nneighbor = 100
+
       RETURN
       END SUBROUTINE init_beams3d_input
       

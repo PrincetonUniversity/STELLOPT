@@ -69,6 +69,9 @@
       lauto_domain = .false.
       lrenorm      = .false.
       loneiter     = .false.
+      lneed_bnormal = .false.
+      lneed_dkes    = .false.
+      lbooz         = .false.
       pct_domain = 0.05
       xvec_file = 'xvec.dat'
       INQUIRE(UNIT=6,NAME=screen_str) ! Store STDOUT
@@ -204,7 +207,7 @@
          CALL MPI_FILE_OPEN(MPI_COMM_STEL, TRIM(id_string), &
                             MPI_MODE_RDONLY, MPI_INFO_NULL, key, ierr_mpi )
          CALL MPI_FILE_CLOSE(key,ier)
-         CALL init_stellopt_input
+         CALL init_stellopt_input(.false.)
          CALL read_stellopt_input(TRIM(id_string),ier)
          !CALL stellopt_write_header
 
