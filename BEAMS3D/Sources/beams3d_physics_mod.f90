@@ -49,7 +49,6 @@ MODULE beams3d_physics_mod
                             DDHe3_CROSS_SECTION, DHe3_CROSS_SECTION
       USE mpi_params 
       USE tabshi_db
-    DOUBLE PRECISION, PARAMETER :: p_mass        = 1.67262192E-27 ! proton mass
 
       !-----------------------------------------------------------------
       !     Module PARAMETERS
