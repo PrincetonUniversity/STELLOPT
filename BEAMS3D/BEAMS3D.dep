@@ -291,11 +291,11 @@ beams3d_physics_mod.o: \
       ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
       ../../LIBSTELL/$(LOCTYPE)/collision_operators.o \
       ../../LIBSTELL/$(LOCTYPE)/fusion_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/tabshi_db.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_grid.o \
       beams3d_neutdens.o \
-      tabshi_db.o 
       
 
 beams3d_randomize_particles.o: \
