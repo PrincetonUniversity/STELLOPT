@@ -148,7 +148,7 @@ SUBROUTINE beams3d_follow_fo
                     myZ = Zatom(l)
                     mymass = mass(l)
                     mycharge_int = NINT(charge(i)/e_charge)
-                    mymass_int = NINT(mass(i)/proton_mass)
+                    mymass_int = NINT(mass(i)/p_mass)
                     myenergy_keV = (energy(i)/(e_charge*1.0E3))
                     mylife = 1.0
                     IF (lboxsim) THEN
@@ -202,7 +202,7 @@ SUBROUTINE beams3d_follow_fo
                     myZ = Zatom(l)
                     mymass = mass(l)
                     mycharge_int = NINT(charge(i)/e_charge)
-                    mymass_int = NINT(mass(i)/proton_mass)
+                    mymass_int = NINT(mass(i)/p_mass)
                     myenergy_keV = (energy(i)/(e_charge*1.0E3))
                     mylife = 1.0
                     IF (lboxsim) THEN
@@ -265,7 +265,7 @@ SUBROUTINE beams3d_follow_fo
                     myZ = Zatom(l)
                     mymass = mass(l)
                     mycharge_int = NINT(charge(i)/e_charge)
-                    mymass_int = NINT(mass(i)/proton_mass)
+                    mymass_int = NINT(mass(i)/p_mass)
                     myenergy_keV = (energy(i)/(e_charge*1.0E3))
                     mylife = 1.0
                     IF (lboxsim) THEN

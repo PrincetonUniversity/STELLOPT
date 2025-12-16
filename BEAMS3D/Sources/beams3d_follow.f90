@@ -130,7 +130,7 @@ SUBROUTINE beams3d_follow
     IF (lboxsim) THEN
          charge_lines(0, mystart:myend) = NINT(charge(mystart:myend)/e_charge)
          mass_lines(0, mystart:myend) = NINT(mass(mystart:myend)/p_mass)
-         reactions_lines(0,mystart:myend) = 0
+         reaction_lines(0,mystart:myend) = 0
     END IF
 
     ! Some helpers
