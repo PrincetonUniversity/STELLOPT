@@ -16,7 +16,10 @@
 !         
 !-----------------------------------------------------------------------
 MODULE tabshi_sigma
-    DOUBLE PRECISION, PRIVATE :: cm2tom2
+    DOUBLE PRECISION, PRIVATE :: cm2tom2 = 1.0E-4
+    PUBLIC :: get_sigma_neut_Hplus, get_sigma_neut_Hmin,  &
+              get_sigma_ionp_Hneut, get_sigma_ionp_Hmin,  &
+              get_sigma_ionn_Hneut
 !-----------------------------------------------------------------------
 !   MODULE PARAMETERS
 !-----------------------------------------------------------------------

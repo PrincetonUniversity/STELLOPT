@@ -30,12 +30,12 @@ MODULE tabshi_db
         INTEGER :: input_Z, input_A ! charge and mass in 
         INTEGER :: output_Z, output_A ! charge and mass out
         LOGICAL :: enabled ! for testing purposes
-        PROCEDURE(sigma_interface), POINTER :: calc_sigma => NULL()
+        PROCEDURE(sigma_interface), POINTER, NOPASS :: calc_sigma => NULL()
     END TYPE box_reaction
 
     TYPE(box_reaction), ALLOCATABLE :: reactions_db(:) 
     INTEGER :: n_reactions = 0                       
-    PUBLIC :: init_reactions, reactions_db, n_reactions
+    PUBLIC :: tabshi_init_reactions, reactions_db, n_reactions
 
 CONTAINS
     !-------------------------------------------------------------------
