@@ -11,7 +11,8 @@ SUBROUTINE out_beams3d_part(t, q)
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
-                               weight, invpi2, ndt, ndt_max, lfidasim, lfidasim_cyl
+                               weight, invpi2, ndt, ndt_max, lfidasim, lfidasim_cyl, &
+                               lboxsim
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nparticles, moment_lines, myend, &
                              vr_lines, vphi_lines, vz_lines, &
@@ -23,9 +24,10 @@ SUBROUTINE out_beams3d_part(t, q)
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
                              dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
                              h2_prof, h3_prof, h4_prof, h5_prof, my_end, &
-                             r_h, p_h, z_h, e_h, pi_h, E_by_v, h1_prof
+                             r_h, p_h, z_h, e_h, pi_h, E_by_v, h1_prof, &
+                             charge_lines, mass_lines
     USE beams3d_grid
-    USE beams3d_physics_mod, ONLY: beams3d_physics_fo
+    USE beams3d_physics_mod, ONLY: beams3d_physics_fo, beams3d_physics_boxsim
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
     USE mpi_params
     USE mpi_inc
@@ -64,6 +66,10 @@ SUBROUTINE out_beams3d_part(t, q)
     vphi_lines(mytdex, myline)   = q(5)
     vz_lines(mytdex, myline)     = q(6)
     neut_lines(mytdex,myline)    = lneut
+    IF (lboxsim) THEN
+      charge_lines(mytdex,myline) = mycharge_int
+      mass_lines(mytdex,myline) = mymass_int
+    END IF
     x0 = MOD(q(2), phimax)
     IF (x0 < 0) x0 = x0 + phimax
     rho_help = 0  
@@ -140,6 +146,7 @@ SUBROUTINE out_beams3d_part(t, q)
          dist5d_fida(d1,d3,d2,d4,d5) = dist5d_fida(d1,d3,d2,d4,d5) + xw
        END IF
        IF (lcollision) CALL beams3d_physics_fo(t,q)
+       IF (lboxsim .AND. (.not.ltherm)) CALL beams3d_physics_boxsim(t,q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
           end_state(myline) = 1

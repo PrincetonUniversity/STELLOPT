@@ -36,6 +36,7 @@
       USE mpi_inc
       USE mpi_sharmem
       USE beams3d_physics_mod, ONLY: beams3d_suv2rzp ! remove if test below removed
+      USE beams3d_neutdens, ONLY: beams3d_read_neutdens
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -474,6 +475,9 @@
 
       ! Adjust the torodial distribution function grid
       IF (.not.ldepo) ns_prof3 = MAX(ns_prof3,8*NINT(pi2/phimax)) ! Min 8 per field period
+
+      ! Load and initialize the neutralizer neutral density grid
+      IF (lreadboxdens) CALL beams3d_read_neutdens(TRIM(boxdens_string))
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Vessel (we need nbeams here)

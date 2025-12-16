@@ -23,10 +23,11 @@ SUBROUTINE beams3d_follow_fo
                             rho_fullorbit, rho_help, E_kick, freq_kick
     USE mpi_params ! MPI
     USE beams3d_write_par
-    USE beams3d_physics_mod, ONLY: beams3d_gc2fo, beams3d_calc_dt
+    USE beams3d_physics_mod, ONLY: beams3d_gc2fo, beams3d_calc_dt, beams3d_reaction_sigma
     USE safe_open_mod, ONLY: safe_open
     USE collision_operators, ONLY: SET_COULOMB_FACTOR
     USE mpi_inc
+    USE tabshi_db
     !-----------------------------------------------------------------------
     !     Local Variables
     !          status       MPI stats indicator
@@ -55,8 +56,8 @@ SUBROUTINE beams3d_follow_fo
     DOUBLE PRECISION :: atol(6)
     DOUBLE PRECISION :: rkh_work(6, 2)
     CHARACTER*1 :: relab
-    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
-
+    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 ! e_c
+    DOUBLE PRECISION, PARAMETER :: p_mass        = 1.67262192E-27 ! proton mass
     !-----------------------------------------------------------------------
     !     External Functions
     !          fgc_nag            RHS of ODE integrator (for NAG)    for BEAMS3D
@@ -79,7 +80,9 @@ SUBROUTINE beams3d_follow_fo
     mf = 10
     ALLOCATE(q(neqs_nag))
 
-
+    ! Initialize tabshi cross-section database
+    IF (lboxsim) CALL tabshi_init_reactions()
+    IF (lboxsim) CALL RANDOM_NUMBER(rand_prob)
     ! Screen output so we know what's happening
     IF (lverb) THEN
        ! IC of every particle is recorded
@@ -138,16 +141,25 @@ SUBROUTINE beams3d_follow_fo
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
+                    vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
                     !moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    mycharge_int = NINT(charge(i)/e_charge)
+                    mymass_int = NINT(mass(i)/proton_mass)
+                    myenergy_keV = (energy(i)/(e_charge*1.0E3))
+                    mylife = 1.0
+                    IF (lboxsim) THEN
+                     CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
+                     CALL RANDOM_NUMBER(mylife_end)
+                    END IF
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
                     ltherm = .false.
-                    lneut  = .false.
+                    lneut  = (mycharge_int==0)
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
@@ -183,16 +195,25 @@ SUBROUTINE beams3d_follow_fo
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
+                    vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
                     !moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    mycharge_int = NINT(charge(i)/e_charge)
+                    mymass_int = NINT(mass(i)/proton_mass)
+                    myenergy_keV = (energy(i)/(e_charge*1.0E3))
+                    mylife = 1.0
+                    IF (lboxsim) THEN
+                     CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
+                     CALL RANDOM_NUMBER(mylife_end)
+                    END IF
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
                     ltherm = .false.
-                    lneut  = .false.
+                    lneut  = (mycharge_int==0)
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
@@ -243,12 +264,20 @@ SUBROUTINE beams3d_follow_fo
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    mycharge_int = NINT(charge(i)/e_charge)
+                    mymass_int = NINT(mass(i)/proton_mass)
+                    myenergy_keV = (energy(i)/(e_charge*1.0E3))
+                    mylife = 1.0
+                    IF (lboxsim) THEN
+                     CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
+                     CALL RANDOM_NUMBER(mylife_end)
+                    END IF
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
                     myqm  = mycharge/mymass
                     ltherm = .false.
-                    lneut  = .false.
+                    lneut  = (mycharge_int==0)
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
@@ -270,6 +299,7 @@ SUBROUTINE beams3d_follow_fo
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
+                    vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
                     ! Now calc dt
                     CALL beams3d_calc_dt(2,q(1),q(2),q(3),dt)
                     tf_nag = t_nag+dt

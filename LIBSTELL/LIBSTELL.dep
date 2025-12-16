@@ -1481,3 +1481,8 @@ gmres.o : \
 
 compression.o : \
       ezcdf.o
+
+tabshi_sigma.o :
+
+tabshi_db.o : \
+      tabshi_sigma.o

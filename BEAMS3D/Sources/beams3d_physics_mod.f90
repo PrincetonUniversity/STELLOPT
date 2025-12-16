@@ -26,7 +26,9 @@ MODULE beams3d_physics_mod
                                end_state, fact_crit, fact_crit_pro, fact_pa, &
                                fact_vsound, fact_coul, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
-                               ns_prof5, my_end, h1_prof, fact_crit_legacy
+                               ns_prof5, my_end, h1_prof, fact_crit_legacy, &
+                               mycharge_int, mymass_int, mymylife, reaction_dex, &
+                               myenergy_keV, sigma_next
       USE beams3d_grid, ONLY: delta_t, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
@@ -711,6 +713,74 @@ MODULE beams3d_physics_mod
          RETURN
 
       END SUBROUTINE beams3d_physics_fo
+
+      !-----------------------------------------------------------------
+      !     Function:      beams3d_physics_boxsim
+      !     Authors:       L. van Ham (lucas.van.ham@ipp.mpg.de)
+      !     Date:          04/12/2025
+      !     Description:   Particle neutralization or ionization
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_physics_boxsim(t, q)
+         USE beams3d_neutdens
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          t          Location along fieldline in t
+         !          q          particle position and velocity vector (cylindrical)
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: t
+         DOUBLE PRECISION, INTENT(inout) :: q(6)
+         !--------------------------------------------------------------
+         !     Local Variables
+         !--------------------------------------------------------------
+         INTEGER :: ier
+         DOUBLE PRECISION :: t_nag, rkh_work(6, 2)
+         DOUBLE PRECISION :: xav, yav, zav, vav, neutdens, vol
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+         !     Note: initially no collision test, that's done in 
+         !     out_beams3d_part
+         !--------------------------------------------------------------
+         !     Check if charged particle should react
+         !--------------------------------------------------------------
+         ! Get neutral density
+         xav = 0.5*(xlast+q(1)*cos(q(2)))
+         yav = 0.5*(ylast+q(1)*sin(q(2)))
+         zav = 0.5*(zlast+q(3))
+         vav = 0.5*(vlast + sqrt(q(4)**2 + q(5)**2 + q(6)**2))
+         vol = vav*dt*sigma_next ! sigma*v*dt for reaction
+         CALL beams3d_get_neutdens(xav,yav,zav,neutdens)
+
+         ! Attenuate life
+         mylife = mylife*exp(-neutdens*vol)
+         IF (mylife<=mylife_end) THEN ! Update particle
+            reaction_lines(myline) = reaction_lines(myline)+1
+            reaction_info = reactions_db(reaction_dex)
+            mymass_int = reaction_info%output_A
+            mymass = mymass_int*p_mass
+            mass(myline) = mymass
+            mycharge_int = reaction_info%output_Z
+            mycharge = mycharge_int*e_charge
+            charge(myline) = mycharge
+            lneut = (mycharge_int==0)
+            myqm = mycharge/mymass
+            E_by_v=mymass*0.5d-3/e_charge
+
+            ! Reset for next reaction
+            mylife = 1.0
+            CALL RANDOM_NUMBER(mylife_end)
+            CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_kev, reaction_dex, sigma_next)
+         END IF 
+         
+         RETURN ! Go back to out_beams3d_part
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+
+      END SUBROUTINE beams3d_physics_boxsim
+
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_follow_neut
@@ -2379,4 +2449,77 @@ MODULE beams3d_physics_mod
 
       END SUBROUTINE beams3d_calc_dt
 	  
+!-----------------------------------------------------------------------
+!     MoSubroutine:        beams3d_reaction_sigma
+!     Description:   This subroutine determines which neutralizer atomic
+!                    reaction should take place next. Cross-sections are
+!                    calculated using tabshi_db.f90, and then one is
+!                    selected at random using a Monte Carlo approach from
+!                    reactions available to an input particle species.    
+!-----------------------------------------------------------------------
+SUBROUTINE beams3d_reaction_sigma(q_int, m_int, E_kev, react_dex, sigma)
+   !-----------------------------------------------------------------------
+   !     Libraries
+   !-----------------------------------------------------------------------
+   USE tabshi_db
+   !-----------------------------------------------------------------------
+   !     Input parameters
+   !          q_int       molecular charge integer (e.g. H+,H2+ -> +1)
+   !          m_int       molecular particle count (e.g. H-> 1, H2-> 2)
+   !          E_kev       particle energy in units of keV
+   !     Output parameters
+   !          react_dex   next reaction index is reaction_db
+   !          sigma       cross-section for next reaction
+   !-----------------------------------------------------------------------
+   IMPLICIT NONE
+   INTEGER, INTENT(in) :: q_int, m_int
+   INTEGER, INTENT(out) :: react_dex
+   DOUBLE PRECISION, INTENT(in) :: E_kev
+   DOUBLE PRECISION, INTENT(out) :: sigma
+   !-----------------------------------------------------------------------
+   !     Local Variables
+   !         reaction_info  
+   !         react_dices   indices of allowed reactions       
+   !         react_sigmas  cross-sections of allowed reactions
+   !-----------------------------------------------------------------------
+   INTEGER :: i, j
+   TYPE(box_reaction) :: reaction_info
+   DOUBLE PRECISION :: sigma_total, prob
+   DOUBLE PRECISION, ALLOCATABLE :: react_sigmas(:)
+   INTEGER, ALLOCATABLE :: react_dices(:)
+   !-----------------------------------------------------------------------
+   !     Begin Subroutine
+   !-----------------------------------------------------------------------
+   ! Populate allowable reactions 
+   ALLOCATE(react_sigmas(n_reactions), react_dices(n_reactions))
+   j = 0
+   sigma_total = 0
+   DO i = 1, n_reactions
+     reaction_info = reactions_db(i)
+     IF ((reaction_info%input_A==m_int) .AND.(reaction_info%input_Z==q_int)) THEN
+        j = j + 1
+        react_sigmas(j) = reaction_info%calc_sigma(E_kev)
+        sigma_total = sigma_total + react_sigmas(j)
+        react_dices(j) = i
+     END IF
+   END DO
+
+   ! Choose next reaction
+   CALL RANDOM_NUMBER(rand_prob)
+   react_dex = 0 ! Should be overwritten
+   DO i = 1, j
+     prob = SUM(react_sigmas(1:i))/SUM(react_sigmas(1:j))
+     IF (rand_prob <= prob) THEN
+        sigma = react_sigmas(i)
+        react_dex = react_dices(i)
+        EXIT
+     END IF
+   END DO
+
+   DEALLOCATE(react_sigmas,react_dices)
+   !-----------------------------------------------------------------------
+   !     End Subroutine
+   !-----------------------------------------------------------------------
+END SUBROUTINE beams3d_reaction_sigma
+
 END MODULE beams3d_physics_mod

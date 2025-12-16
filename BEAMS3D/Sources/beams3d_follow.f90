@@ -24,6 +24,7 @@ SUBROUTINE beams3d_follow
     USE wall_mod, ONLY: wall_free, ihit_array, nface
     USE collision_operators, ONLY: SET_CRIT_FACTOR, SET_COULOMB_FACTOR
     USE mpi_inc
+    USE beams3d_boxsim
     !-----------------------------------------------------------------------
     !     Local Variables
     !          status       MPI stats indicator
@@ -92,6 +93,8 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(vz_lines)) DEALLOCATE(vz_lines)
     IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
     IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
+    IF (ALLOCATED(charge_lines)) DEALLOCATE(charge_lines)
+    IF (ALLOCATED(mass_lines)) DEALLOCATE(mass_lines)
     ! Allocations
     ALLOCATE(q(4), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'Q', ier)
@@ -100,6 +103,7 @@ SUBROUTINE beams3d_follow
              neut_lines(0:npoinc, mystart:myend), S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), &
              vr_lines(0:npoinc, mystart:myend), vphi_lines(0:npoinc, mystart:myend), vz_lines(0:npoinc, mystart:myend), &
               B_lines(0:npoinc, mystart:myend), STAT = ier)
+   IF (lboxsim) ALLOCATE(charge_lines(0:npoinc, mystart:myend), mass_lines(0:npoinc, mystart:myend))
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
     ALLOCATE(t_last(mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 't_last', ier)
@@ -108,7 +112,6 @@ SUBROUTINE beams3d_follow
     lbeam = (lbeam .and. (.not.lboxsim))
 
     ! Initializations
-    lbeam = (lbeam .and. (.not.lboxsim))
     R_lines = 0.0; Z_lines = 0.0; PHI_lines = -1.0
     vll_lines = 0.0; moment_lines = 0.0
     S_lines = 1.5; U_lines = 0.0; B_lines = -1.0
@@ -123,6 +126,11 @@ SUBROUTINE beams3d_follow
     vz_lines(0, mystart:myend)     = vz_start(mystart:myend)
     neut_lines(0, mystart:myend)   = .FALSE.
     IF (lbeam) neut_lines(0, mystart:myend) = .TRUE.
+    IF (lboxsim) THEN
+         charge_lines(0, mystart:myend) = NINT(charge(mystart:myend)/e_charge)
+         mass_lines(0, mystart:myend) = NINT(mass(mystart:myend)/proton_mass)
+         reactions_lines(0,mystart:myend) = 0
+    END IF
 
     ! Some helpers
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
@@ -229,8 +237,8 @@ SUBROUTINE beams3d_follow
 
     ! Follow Trajectories
     IF (.not.ldepo) THEN
-        CALL beams3d_follow_gc
-        IF (rho_fullorbit < 100) CALL beams3d_follow_fo
+      CALL beams3d_follow_gc
+      IF (rho_fullorbit < 100) CALL beams3d_follow_fo
     END IF
 
     ! Fix U_lines
@@ -296,6 +304,10 @@ SUBROUTINE beams3d_follow
     ALLOCATE(itemp(0:npoinc,mystart_save:myend_save))
     itemp = 0; WHERE(neut_lines) itemp=1
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'neut_lines', INTVAR=itemp)
+    IF (lboxsim) THEN
+      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,'charge_lines',INTVAR=charge_lines)
+      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save, 'mass_lines', INTVAR=mass_lines) 
+    END IF
     DEALLOCATE(itemp)
     IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
     IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)

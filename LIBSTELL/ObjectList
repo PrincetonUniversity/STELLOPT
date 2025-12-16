@@ -507,4 +507,6 @@ solsy.o \
 lsode.o \
 ewset.o \
 stode.o \
-cfode.o 
+cfode.o \
+tabshi_sigma.o \
+tabshi_db.o

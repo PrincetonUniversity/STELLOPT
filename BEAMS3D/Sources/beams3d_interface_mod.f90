@@ -180,6 +180,7 @@ CONTAINS
          lfusion_proton  = .false.
          lfusion_He3     = .false.
          lboxsim = .false.
+         lreadboxdens = .false.
          lfieldlines = .false.
          lbeamdensity = .true.
          id_string = ''
@@ -190,6 +191,7 @@ CONTAINS
          continue_grid_string = ''
          bbnbi_string = ''
          eqdsk_string = ''
+         boxdens_string = ''
 
          ! First Handle the input arguments
          CALL GETCARG(1, arg1, numargs)
@@ -324,6 +326,11 @@ CONTAINS
                 lfusion_He3 = .true.
             case ("-boxsim")
                 lboxsim = .true.
+            case ("-boxdens")
+                lboxsim = .true.
+                lreadboxdens = .true.
+                i = i + 1
+                CALL GETCARG(i, boxdens_string, numargs)
             case ("-nobeamdensity")
                 lbeamdensity = .false.
             case ("-help", "-h") ! Output Help message
