@@ -52,7 +52,7 @@ SUBROUTINE beams3d_follow_fo
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
     DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, &
                         tol_nag, rtol, s_fullorbit, &
-                        dtmin, dtmax
+                        dtmin, dtmax, energy
     DOUBLE PRECISION :: atol(6)
     DOUBLE PRECISION :: rkh_work(6, 2)
     CHARACTER*1 :: relab
@@ -142,6 +142,7 @@ SUBROUTINE beams3d_follow_fo
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
+                    energy = 0.5*mass(i)*vlast**2
                     !moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
@@ -149,7 +150,7 @@ SUBROUTINE beams3d_follow_fo
                     mymass = mass(l)
                     mycharge_int = NINT(charge(i)/e_charge)
                     mymass_int = NINT(mass(i)/p_mass)
-                    myenergy_keV = (energy(i)/(e_charge*1.0E3))
+                    myenergy_keV = (energy/(e_charge*1.0E3))
                     mylife = 1.0
                     IF (lboxsim) THEN
                      CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
@@ -196,6 +197,7 @@ SUBROUTINE beams3d_follow_fo
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
+                    energy = 0.5*mass(i)*vlast**2
                     !moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
@@ -203,7 +205,7 @@ SUBROUTINE beams3d_follow_fo
                     mymass = mass(l)
                     mycharge_int = NINT(charge(i)/e_charge)
                     mymass_int = NINT(mass(i)/p_mass)
-                    myenergy_keV = (energy(i)/(e_charge*1.0E3))
+                    myenergy_keV = (energy/(e_charge*1.0E3))
                     mylife = 1.0
                     IF (lboxsim) THEN
                      CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
@@ -266,12 +268,7 @@ SUBROUTINE beams3d_follow_fo
                     mymass = mass(l)
                     mycharge_int = NINT(charge(i)/e_charge)
                     mymass_int = NINT(mass(i)/p_mass)
-                    myenergy_keV = (energy(i)/(e_charge*1.0E3))
                     mylife = 1.0
-                    IF (lboxsim) THEN
-                     CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
-                     CALL RANDOM_NUMBER(mylife_end)
-                    END IF
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
@@ -291,15 +288,22 @@ SUBROUTINE beams3d_follow_fo
                        q(4) = vll_lines(mytdex-1,l)
                        q(5) = moment_lines(mytdex-1,l)
                        CALL beams3d_gc2fo(q)
+                       vlast = q(4)
                     ELSE
                        q(4) = vr_lines(mytdex-1,l)
                        q(5) = vphi_lines(mytdex-1,l)
                        q(6) = vz_lines(mytdex-1,l)
+                       vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
+                    END IF 
+                    energy = 0.5*mass(i)*vlast**2
+                    myenergy_keV = (energy/(e_charge*1.0E3))
+                    IF (lboxsim) THEN
+                        CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
+                        CALL RANDOM_NUMBER(mylife_end)
                     END IF
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
-                    vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
                     ! Now calc dt
                     CALL beams3d_calc_dt(2,q(1),q(2),q(3),dt)
                     tf_nag = t_nag+dt
