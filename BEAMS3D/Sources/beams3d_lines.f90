@@ -46,7 +46,7 @@
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),vll_lines(:,:),moment_lines(:,:),&
                                   S_lines(:,:),U_lines(:,:),B_lines(:,:), &
                                   vr_lines(:,:),vphi_lines(:,:),vz_lines(:,:)
-      INTEGER, ALLOCATABLE :: charge_lines(:,:),mass_lines(:,:), reactions_lines(:)
+      INTEGER, ALLOCATABLE :: charge_lines(:,:),mass_lines(:,:), reaction_lines(:)
       INTEGER :: mycharge_int, mymass_int, reaction_dex
       LOGICAL :: lpartactive, lreaction
       DOUBLE PRECISION :: myenergy_keV, sigma_next

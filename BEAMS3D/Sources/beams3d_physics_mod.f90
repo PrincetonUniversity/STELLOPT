@@ -27,8 +27,9 @@ MODULE beams3d_physics_mod
                                fact_vsound, fact_coul, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5, my_end, h1_prof, fact_crit_legacy, &
-                               mycharge_int, mymass_int, mymylife, reaction_dex, &
-                               myenergy_keV, sigma_next
+                               mycharge_int, mymass_int, mylife, mylife_end, reaction_dex, &
+                               myenergy_keV, sigma_next, E_by_v, myqm, vlast, xlast, ylast, zlast, &
+                               reaction_lines
       USE beams3d_grid, ONLY: delta_t, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
@@ -47,6 +48,8 @@ MODULE beams3d_physics_mod
       USE fusion_mod, ONLY: DT_CROSS_SECTION, DD_CROSS_SECTION, &
                             DDHe3_CROSS_SECTION, DHe3_CROSS_SECTION
       USE mpi_params 
+      USE tabshi_db
+    DOUBLE PRECISION, PARAMETER :: p_mass        = 1.67262192E-27 ! proton mass
 
       !-----------------------------------------------------------------
       !     Module PARAMETERS
@@ -65,6 +68,7 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION, PRIVATE, PARAMETER :: one           = 1.0D0 ! 1.0
       DOUBLE PRECISION, PRIVATE, PARAMETER :: eps_0 = 8.854187817E-12;
       DOUBLE PRECISION, PRIVATE, PARAMETER :: hbar = 1.054571817E-34;
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: p_mass = 1.67262192E-27 ! proton mass
 
       !-----------------------------------------------------------------
       !     SUBROUTINES
@@ -736,6 +740,8 @@ MODULE beams3d_physics_mod
          INTEGER :: ier
          DOUBLE PRECISION :: t_nag, rkh_work(6, 2)
          DOUBLE PRECISION :: xav, yav, zav, vav, neutdens, vol
+         TYPE(box_reaction) :: reaction_info 
+
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
