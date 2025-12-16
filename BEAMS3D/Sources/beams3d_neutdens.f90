@@ -29,6 +29,7 @@ MODULE beams3d_neutdens
     INTEGER :: win_neutdens_spl
     REAL(rprec), POINTER :: neutdens_fspl(:,:,:,:)
     REAL(rprec) :: hr_u, hri_u, hr_v, hri_v, hr_w, hri_w
+    REAL(rprec), ALLOCATABLE ::neut_grid_u(:),neut_grid_v(:), neut_grid_w(:)
     
 
 CONTAINS
@@ -52,8 +53,7 @@ SUBROUTINE beams3d_read_neutdens(filename)
     !          neut_density      Density at these coordinats 
     !-----------------------------------------------------------------------
         INTEGER :: ier, iunit
-        REAL(rprec), ALLOCATABLE :: neut_density(:,:,:),  &
-                                    neut_grid_u(:),neut_grid_v(:), neut_grid_w(:)
+        REAL(rprec), ALLOCATABLE :: neut_density(:,:,:)
         INTEGER :: i, MPI_COMM_MASTERS, ierr_mpi
         INTEGER :: bcs1(2), bcs2(2), bcs3(2)
         TYPE(EZspline3_r8) :: spline_local
@@ -82,14 +82,14 @@ SUBROUTINE beams3d_read_neutdens(filename)
         CALL read_var_hdf5(fid,'/dir/u',3,ier,DBLVAR=neut_dir_u)
         CALL read_var_hdf5(fid,'/dir/v',3,ier,DBLVAR=neut_dir_v)
         CALL read_var_hdf5(fid,'/dir/w',3,ier,DBLVAR=neut_dir_w)
-        CALL read_scalar_hdf5(fid,'/delta/u',ier,DBLVAR=neut_delta_u)
-        CALL read_scalar_hdf5(fid,'/delta/v',ier,DBLVAR=neut_delta_v)
-        CALL read_scalar_hdf5(fid,'/delta/w',ier,DBLVAR=neut_delta_w)
+        CALL read_var_hdf5(fid,'/delta/u',1,ier,DBLVAR=neut_delta_u)
+        CALL read_var_hdf5(fid,'/delta/v',1,ier,DBLVAR=neut_delta_v)
+        CALL read_var_hdf5(fid,'/delta/w',1,ier,DBLVAR=neut_delta_w)
         CALL read_var_hdf5(fid,'/x0',3,ier,DBLVAR=neut_x0)
         CALL read_var_hdf5(fid,'/data',n_u,n_v,n_w,ier,DBLVAR=neut_density)
-        CALL read_var_hdf5(fid,'/grid/u',n_u,DBLVAR=neut_grid_u)
-        CALL read_var_hdf5(fid,'/grid/v',n_v,DBLVAR=neut_grid_v)
-        CALL read_var_hdf5(fid,'/grid/w',n_w,DBLVAR=neut_grid_w)
+        CALL read_var_hdf5(fid,'/grid/u',n_u,ier,DBLVAR=neut_grid_u)
+        CALL read_var_hdf5(fid,'/grid/v',n_v,ier,DBLVAR=neut_grid_v)
+        CALL read_var_hdf5(fid,'/grid/w',n_w,ier,DBLVAR=neut_grid_w)
         IF (lverb) WRITE(6,'(A,I3,A,I3,A,I3)')     '   Dimensions:  ', n_u, ', ', n_v, ', ', n_w
         IF (lverb) WRITE(6,'(A,E10.3,A,E10.3,A)') '   n [m^-3]  : [',MINVAL(neut_density),',',MAXVAL(neut_density),']'
 
