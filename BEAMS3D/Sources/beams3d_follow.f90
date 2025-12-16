@@ -24,7 +24,6 @@ SUBROUTINE beams3d_follow
     USE wall_mod, ONLY: wall_free, ihit_array, nface
     USE collision_operators, ONLY: SET_CRIT_FACTOR, SET_COULOMB_FACTOR
     USE mpi_inc
-    USE beams3d_boxsim
     !-----------------------------------------------------------------------
     !     Local Variables
     !          status       MPI stats indicator
