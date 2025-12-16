@@ -479,4 +479,5 @@ beams3d_neutdens.o: \
       ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      ../../LIBSTELL/$(LOCTYPE)/ez_hdf5.o 
+      ../../LIBSTELL/$(LOCTYPE)/ez_hdf5.o \
+      beams3d_runtime.o

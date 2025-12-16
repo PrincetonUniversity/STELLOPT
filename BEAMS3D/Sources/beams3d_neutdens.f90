@@ -21,6 +21,7 @@ MODULE beams3d_neutdens
     USE mpi_sharmem
     USE EZspline_obj
     USE EZspline
+    USE beams3d_runtime
 
     INTEGER :: n_u, n_v, n_w
     DOUBLE PRECISION :: neut_x0(3), neut_delta_u, neut_delta_v, neut_delta_w
@@ -47,7 +48,7 @@ SUBROUTINE beams3d_read_neutdens(filename)
     !          ier               Error Flag
     !          iunit             File ID
     !          n_u,v,w           Number of gridpoints in each direction 
-    !          neut_grid_x/y/z Grid of coordinates
+    !          neut_grid_u,v,w   Grid of coordinates
     !          neut_density      Density at these coordinats 
     !-----------------------------------------------------------------------
         INTEGER :: ier, iunit
@@ -78,18 +79,18 @@ SUBROUTINE beams3d_read_neutdens(filename)
         ALLOCATE(neut_density(n_u,n_v,n_w),neut_grid_u(n_u),neut_grid_v(n_v),neut_grid_w(n_w))
 
         ! Read data
-        CALL read_var_hdf5(fid,'/dir/u',1,ier,DBLVAR=neut_dir_u)
-        CALL read_var_hdf5(fid,'/dir/v',1,ier,DBLVAR=neut_dir_v)
-        CALL read_var_hdf5(fid,'/dir/w',1,ier,DBLVAR=neut_dir_w)
-        CALL read_var_hdf5(fid,'/delta/u',1,ier,DBLVAR=neut_delta_u)
-        CALL read_var_hdf5(fid,'/delta/v',1,ier,DBLVAR=neut_delta_v)
-        CALL read_var_hdf5(fid,'/delta/w',1,ier,DBLVAR=neut_delta_w)
+        CALL read_var_hdf5(fid,'/dir/u',3,ier,DBLVAR=neut_dir_u)
+        CALL read_var_hdf5(fid,'/dir/v',3,ier,DBLVAR=neut_dir_v)
+        CALL read_var_hdf5(fid,'/dir/w',3,ier,DBLVAR=neut_dir_w)
+        CALL read_scalar_hdf5(fid,'/delta/u',ier,DBLVAR=neut_delta_u)
+        CALL read_scalar_hdf5(fid,'/delta/v',ier,DBLVAR=neut_delta_v)
+        CALL read_scalar_hdf5(fid,'/delta/w',ier,DBLVAR=neut_delta_w)
         CALL read_var_hdf5(fid,'/x0',3,ier,DBLVAR=neut_x0)
         CALL read_var_hdf5(fid,'/data',n_u,n_v,n_w,ier,DBLVAR=neut_density)
         CALL read_var_hdf5(fid,'/grid/u',n_u,DBLVAR=neut_grid_u)
         CALL read_var_hdf5(fid,'/grid/v',n_v,DBLVAR=neut_grid_v)
         CALL read_var_hdf5(fid,'/grid/w',n_w,DBLVAR=neut_grid_w)
-        IF (lverb) WRITE(6,'(A,I3,A,I3,A,I3)')     '   Dimensions:  ', n_u, ', ' n_v, ', ', n_w
+        IF (lverb) WRITE(6,'(A,I3,A,I3,A,I3)')     '   Dimensions:  ', n_u, ', ', n_v, ', ', n_w
         IF (lverb) WRITE(6,'(A,E10.3,A,E10.3,A)') '   n [m^-3]  : [',MINVAL(neut_density),',',MAXVAL(neut_density),']'
 
         ! Close the file
@@ -174,7 +175,7 @@ SUBROUTINE beams3d_read_neutdens(filename)
 
     IF (myid_sharmem == master) THEN
         neutdens_fspl = spline_local%fspl
-        EZspline_free(spline_local,ier)
+        CALL EZspline_free(spline_local,ier)
     END IF
 
     CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
