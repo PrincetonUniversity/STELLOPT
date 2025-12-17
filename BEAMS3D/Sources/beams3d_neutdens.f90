@@ -106,6 +106,8 @@ SUBROUTINE beams3d_read_neutdens(filename)
 
     END IF
 
+    IF (lverb) WRITE(6,*) '   Broadcasting grid spacings from master to world...'
+
     CALL MPI_BCAST(hr_u, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr_mpi)
     CALL MPI_BCAST(hri_u, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr_mpi)
     CALL MPI_BCAST(hr_v, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr_mpi)
@@ -114,13 +116,15 @@ SUBROUTINE beams3d_read_neutdens(filename)
     CALL MPI_BCAST(hri_w, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr_mpi)
     
     ! Find masters
+    IF (lverb) WRITE(6,*) '   Creating masters communicator...'
     i = MPI_UNDEFINED
     IF (myid_sharmem == master) i = 0
     CALL MPI_COMM_SPLIT(MPI_COMM_BEAMS, i, myworkid, MPI_COMM_MASTERS, ierr_mpi)
+    IF (lverb) WRITE(6,*) '   Done'
 
     ! Broadcast from rank 0 to all other masters
     IF (myid_sharmem == master) THEN
-
+        WRITE(6,*) '   This is a master entering first broadcast structure'
         CALL MPI_BCAST(n_u, 1, MPI_INTEGER, 0, MPI_COMM_MASTERS, ierr_mpi)
         CALL MPI_BCAST(n_v, 1, MPI_INTEGER, 0, MPI_COMM_MASTERS, ierr_mpi)
         CALL MPI_BCAST(n_w, 1, MPI_INTEGER, 0, MPI_COMM_MASTERS, ierr_mpi)
@@ -142,6 +146,7 @@ SUBROUTINE beams3d_read_neutdens(filename)
         
         ! Set-up spline on the shared memory window
         ! spline is in u,v,w, all going from [0 1]
+        IF (lverb) WRITE(6,*) '   Setting up spline'
         bcs1 = (/ 0, 0 /)
         bcs2 = (/ 0, 0 /)
         bcs3 = (/ 0, 0 /)
@@ -153,8 +158,11 @@ SUBROUTINE beams3d_read_neutdens(filename)
         spline_local%x3   = neut_grid_w
         CALL EZspline_setup(spline_local, neut_density, ier, EXACT_DIM=.TRUE.)
         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR, 'neutdens_spl_setup', ier)
+        IF (lverb) WRITE(6,*) '   Done splining'
     END IF
     
+    IF (lverb) WRITE(6,*) '   Broadcasting to world'
+
     ! Broadcast to MPI threads now
     CALL MPI_BCAST(n_u, 1, MPI_INTEGER, 0, MPI_COMM_SHARMEM, ierr_mpi)
     CALL MPI_BCAST(n_v, 1, MPI_INTEGER, 0, MPI_COMM_SHARMEM, ierr_mpi)
@@ -177,6 +185,7 @@ SUBROUTINE beams3d_read_neutdens(filename)
         neutdens_fspl = spline_local%fspl
         CALL EZspline_free(spline_local,ier)
     END IF
+    IF (lverb) WRITE(6,*) '   Waiting at barrier'
 
     CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
 #else
