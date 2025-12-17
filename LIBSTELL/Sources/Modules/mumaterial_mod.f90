@@ -896,7 +896,7 @@
 
       INTEGER :: icount, i, i_tile, j, j_tile, k, k_tile, maxi, maxtile, iterH, maxiterH, maxrank
       INTEGER :: stype
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_new
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_new, M_prev
       DOUBLE PRECISION :: H(3), N(3,3), Bx, By, Bz
       DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
@@ -924,7 +924,7 @@
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: rnorms, r3invs, mrdotrhat
 
       ! Allocate helpers
-      ALLOCATE(M_new(3,mystart:myend),Mnorm(mystart:myend),MnormPrev(mystart:myend))
+      ALLOCATE(M_new(3,mystart:myend),M_prev(3,mystart,myend),Mnorm(mystart:myend),MnormPrev(mystart:myend))
       ALLOCATE(dM(mystart:myend),dMPrev(mystart:myend))
       ALLOCATE(lambda(mystart:myend))
       ALLOCATE(ldone(mystart:myend))
