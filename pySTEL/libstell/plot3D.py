@@ -328,6 +328,63 @@ class PLOT3D():
 				triangles.InsertNextCell(triangle)
 		return points, triangles
 
+	def meshToArea(self,points,triangles):
+		"""Compute area of meshes
+
+		This routine computes the area of a set of triangles
+
+		Parameters
+		----------
+		points :  VTK Points object
+			Points to plot
+		triangles : VTK CellArray of VTKTriangle Objects
+			Face list
+
+		Returns
+		-------
+		area : ndarray
+			Aread of triangles in mesh.
+		"""
+		import numpy as np
+		from vtk.util.numpy_support import vtk_to_numpy
+		# 1. Convert vtkPoints data to a NumPy array for fast access
+		coords = vtk_to_numpy(points.GetData())
+
+		num_triangles = triangles.GetNumberOfCells()
+		areas = np.zeros(num_triangles)
+		
+		# vtkIdList is a utility object to temporarily store the point IDs for the cell
+		point_ids = vtk.vtkIdList()
+		triangle_index = 0
+		
+		# 2. Iterate through the vtkCellArray using GetNextCell
+		# This method handles the iteration and advances the cell pointer implicitly.
+		while triangles.GetNextCell(point_ids):
+			# Get the indices of the three points
+			p1_idx = point_ids.GetId(0)
+			p2_idx = point_ids.GetId(1)
+			p3_idx = point_ids.GetId(2)
+
+			# Retrieve the 3D coordinates from the NumPy array
+			P1 = coords[p1_idx]
+			P2 = coords[p2_idx]
+			P3 = coords[p3_idx]
+
+			# 3. Calculate the area using the cross-product method in 3D
+			# Vector A = P2 - P1
+			A = P2 - P1 
+			# Vector B = P3 - P1
+			B = P3 - P1
+
+			# Area = 0.5 * ||A x B|| 
+			cross_product = np.cross(A, B)
+			area = 0.5 * np.linalg.norm(cross_product)
+			
+			areas[triangle_index] = area
+			triangle_index += 1
+
+		return areas
+
 	def valuesToScalar(self,vals):
 		"""Generate scalar object from values
 
@@ -794,27 +851,27 @@ class PLOT3D():
 		self.render_window_interactor.Start()
 
 	def clear_scene(self):
-	    """Clear the scene of objects
-	    
-	    This routine clears the existing scene of all objects.
-	    """
-	    # Remove all actors
-	    actors = self.renderer.GetActors()
-	    if actors:
-	        actors.InitTraversal()
-	        actor = actors.GetNextItem()
-	        while actor:
-	            self.renderer.RemoveActor(actor)
-	            actor = actors.GetNextItem()
+		"""Clear the scene of objects
 
-	    # Remove all volumes (important for volume rendering)
-	    volumes = self.renderer.GetVolumes()
-	    if volumes:
-	        volumes.InitTraversal()
-	        volume = volumes.GetNextItem()
-	        while volume:
-	            self.renderer.RemoveVolume(volume)
-	            volume = volumes.GetNextItem()
+		This routine clears the existing scene of all objects.
+		"""
+		# Remove all actors
+		actors = self.renderer.GetActors()
+		if actors:
+			actors.InitTraversal()
+			actor = actors.GetNextItem()
+			while actor:
+				self.renderer.RemoveActor(actor)
+				actor = actors.GetNextItem()
+
+		# Remove all volumes (important for volume rendering)
+		volumes = self.renderer.GetVolumes()
+		if volumes:
+			volumes.InitTraversal()
+			volume = volumes.GetNextItem()
+			while volume:
+				self.renderer.RemoveVolume(volume)
+				volume = volumes.GetNextItem()
 
 	def saveImage(self,filename='vtkImage.png'):
 		"""Save VTK Render as image
