@@ -307,8 +307,9 @@ SUBROUTINE beams3d_follow
     itemp = 0; WHERE(neut_lines) itemp=1
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'neut_lines', INTVAR=itemp)
     IF (lboxsim) THEN
-      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,'charge_lines',INTVAR=charge_lines)
-      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save, 'mass_lines', INTVAR=mass_lines) 
+      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,  'charge_lines',INTVAR=charge_lines)
+      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'mass_lines', INTVAR=mass_lines) 
+      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,'reaction_lines',INTVAR=reaction_lines) 
     END IF
     DEALLOCATE(itemp)
     IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
