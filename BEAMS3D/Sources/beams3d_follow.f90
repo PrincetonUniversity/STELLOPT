@@ -96,6 +96,7 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
     IF (ALLOCATED(charge_lines)) DEALLOCATE(charge_lines)
     IF (ALLOCATED(mass_lines)) DEALLOCATE(mass_lines)
+    IF (ALLOCATED(reaction_lines)) DEALLOCATE(reaction_lines)
     ! Allocations
     ALLOCATE(q(4), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'Q', ier)
@@ -104,7 +105,7 @@ SUBROUTINE beams3d_follow
              neut_lines(0:npoinc, mystart:myend), S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), &
              vr_lines(0:npoinc, mystart:myend), vphi_lines(0:npoinc, mystart:myend), vz_lines(0:npoinc, mystart:myend), &
               B_lines(0:npoinc, mystart:myend), STAT = ier)
-   IF (lboxsim) ALLOCATE(charge_lines(0:npoinc, mystart:myend), mass_lines(0:npoinc, mystart:myend))
+   IF (lboxsim) ALLOCATE(charge_lines(0:npoinc, mystart:myend), mass_lines(0:npoinc, mystart:myend), reaction_lines(mystart:myend))
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
     ALLOCATE(t_last(mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 't_last', ier)
