@@ -483,6 +483,8 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lboxsim,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+      CALL MPI_BCAST(lreadboxdens,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lbeamdensity,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(luser_init,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
