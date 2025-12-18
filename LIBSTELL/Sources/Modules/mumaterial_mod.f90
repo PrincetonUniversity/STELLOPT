@@ -896,9 +896,9 @@
 
       INTEGER :: icount, i, i_tile, j, j_tile, k, k_tile, maxi, maxtile, iterH, maxiterH, maxrank
       INTEGER :: stype
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_new, M_prev
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_new, M_prev, res_k, res_kp1, denom
       DOUBLE PRECISION :: H(3), N(3,3), Bx, By, Bz
-      DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm
+      DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm, delta_res(3), alpha
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, MnormPrev, dM, dMPrev, lambda
@@ -925,6 +925,7 @@
 
       ! Allocate helpers
       ALLOCATE(M_new(3,mystart:myend),M_prev(3,mystart,myend),Mnorm(mystart:myend),MnormPrev(mystart:myend))
+      ALLOCATE(res_k(3,mystart:myend),res_kp1(3,mystart:myend))
       ALLOCATE(dM(mystart:myend),dMPrev(mystart:myend))
       ALLOCATE(lambda(mystart:myend))
       ALLOCATE(ldone(mystart:myend))
@@ -937,6 +938,9 @@
       dM = 0.d0
       ldone = .FALSE.
       maxiterH = maxiter
+      M_prev = 0.0
+      res_k = 0.0
+      res_kp1 = 0.0
 
       IF (lverb) THEN
         WRITE(6,*) ''
@@ -1051,10 +1055,25 @@
               WRITE(6,*) "  Unknown magnet type: ", stype
               STOP
           END SELECT
-
-          M(:,i_tile) = M(:,i_tile) + lambda(i)*(M_new(:,i) - M(:,i_tile))
+            
+          M_prev(:,i) = M(:,i_tile)
+          IF (icount .GE. 2) THEN ! Anderson
+            res_kp1(:,i) = M_new(:,i) - M(:,i_tile)
+            delta_res = res_kp1(:,i) - res_k(:,i)
+            denom = DOT_PRODUCT(delta_res,delta_res)
+            IF (denom .lt. 1E-15) THEN
+                  alpha = 0.0
+            ELSE
+                  alpha = DOT_PRODUCT(res_k(:,i),delta_res)/DOT_PRODUCT(delta_res,delta_res)
+                  alpha = MAX(0, MIN(1, alpha))
+            END IF
+            M(:,i_tile) = M(:,i_tile) + alpha*res_k(:,i) + (1.0-alpha)*res_kp1(:,i)
+          ELSE ! Picard
+            M(:,i_tile) = M(:,i_tile) + lambda(i)*(M_new(:,i) - M(:,i_tile))
+          END IF
+          res_k(:,i) = M(:,i_tile)-M_prev(:,i)
           Mnorm(i) = NORM2(M(:,i_tile))
-          ! "Derivatives" for convergence checks
+          ! "Derivatives" for convergence checks (picard stuff)
           dM(i) = ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
           IF ((dM(i).GT.maxdM).OR.ISNAN(Mnorm(i))) THEN
             maxdM = dM(i)
@@ -1172,7 +1191,7 @@
 
 
       END DO
-      DEALLOCATE(M_new,Mnorm,MnormPrev,dM,dMPrev)
+      DEALLOCATE(M_new,Mnorm,MnormPrev,dM,dMPrev,res_k,res_kp1,M_prev)
 
       RETURN
       END SUBROUTINE mumaterial_iterate_M
