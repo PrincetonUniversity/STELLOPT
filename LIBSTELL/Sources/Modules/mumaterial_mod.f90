@@ -1153,7 +1153,7 @@
           DEALLOCATE(is_Nb_mask)
                   
           ! Get r-related stuff
-          rvecs = tet_cen(:, non_Nb_indices) - SPREAD(tet_cen(:, i_tile),DIM=2, NCOPIES=N_non_Nb) 
+          rvecs = SPREAD(tet_cen(:, i_tile),DIM=2, NCOPIES=N_non_Nb)-tet_cen(:, non_Nb_indices)
           rnorms = NORM2(rvecs, DIM=1)
           r3invs = 1.0 / (rnorms**3)
           rhats = rvecs / SPREAD(rnorms, DIM=1, NCOPIES=3)
