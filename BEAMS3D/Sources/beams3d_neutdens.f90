@@ -214,7 +214,7 @@ SUBROUTINE beams3d_read_neutdens(filename)
         pos_u = DOT_PRODUCT(pos,neut_dir_u)/neut_delta_u
         pos_v = DOT_PRODUCT(pos,neut_dir_v)/neut_delta_v
         pos_w = DOT_PRODUCT(pos,neut_dir_w)/neut_delta_w
-
+	
         ! Get indices
         i = MAX(INT(pos_u*hri_u),1)
         j = MAX(INT(pos_v*hri_v),1)

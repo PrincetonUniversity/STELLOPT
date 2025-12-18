@@ -142,16 +142,17 @@ SUBROUTINE beams3d_follow_fo
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
-                    energy = 0.5*mass(i)*vlast**2
+                    energy = 0.5*mymass*vlast**2
                     !moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
-                    mycharge_int = NINT(charge(i)/e_charge)
-                    mymass_int = NINT(mass(i)/p_mass)
+                    mycharge_int = NINT(charge(l)/e_charge)
+                    mymass_int = NINT(mass(l)/p_mass)
                     myenergy_keV = (energy/(e_charge*1.0E3))
                     mylife = 1.0
+		    IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
                     IF (lboxsim) THEN
                      CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
                      CALL RANDOM_NUMBER(mylife_end)
@@ -197,16 +198,17 @@ SUBROUTINE beams3d_follow_fo
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
-                    energy = 0.5*mass(i)*vlast**2
                     !moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
-                    mycharge_int = NINT(charge(i)/e_charge)
-                    mymass_int = NINT(mass(i)/p_mass)
+                    mycharge_int = NINT(charge(l)/e_charge)
+                    mymass_int = NINT(mass(l)/p_mass)
+                    energy = 0.5*mymass*vlast**2
                     myenergy_keV = (energy/(e_charge*1.0E3))
                     mylife = 1.0
+		    IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
                     IF (lboxsim) THEN
                      CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
                      CALL RANDOM_NUMBER(mylife_end)
@@ -266,8 +268,8 @@ SUBROUTINE beams3d_follow_fo
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
-                    mycharge_int = NINT(charge(i)/e_charge)
-                    mymass_int = NINT(mass(i)/p_mass)
+                    mycharge_int = NINT(charge(l)/e_charge)
+                    mymass_int = NINT(mass(l)/p_mass)
                     mylife = 1.0
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
@@ -295,8 +297,9 @@ SUBROUTINE beams3d_follow_fo
                        q(6) = vz_lines(mytdex-1,l)
                        vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
                     END IF 
-                    energy = 0.5*mass(i)*vlast**2
+                    energy = 0.5*mymass*vlast**2
                     myenergy_keV = (energy/(e_charge*1.0E3))
+		    IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
                     IF (lboxsim) THEN
                         CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
                         CALL RANDOM_NUMBER(mylife_end)

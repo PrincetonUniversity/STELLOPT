@@ -16,7 +16,6 @@
 !         
 !-----------------------------------------------------------------------
 MODULE tabshi_sigma
-    DOUBLE PRECISION, PRIVATE :: cm2tom2 = 1.0E-4
     PUBLIC :: get_sigma_neut_Hplus, get_sigma_neut_Hmin,  &
               get_sigma_ionp_Hneut, get_sigma_ionp_Hmin,  &
               get_sigma_ionn_Hneut
@@ -232,7 +231,7 @@ CONTAINS
         E1   = E - Eth
         a1 = 2.12E2;  a2 = 1.721; a3 = 6.7E-4; a4 = 3.239E-1; a5 = 4.34E-3; a6 = 1.296; 
         a7 = 1.42E-1; a8 = 9.34;  a9 = 2.997;
-        sigma = get_sigma_eq8(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9)*cm2tom2
+        sigma = get_sigma_eq8(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9)
         RETURN
 
     END FUNCTION get_sigma_neut_Hplus
@@ -255,7 +254,7 @@ CONTAINS
         Eth = 2.0E-2 ! Threshold energy in keV
         E1 = E - Eth
         a1 = 2.53E-4; a2 = 1.728; a3 = 2.164; a4 = 7.74e-1; a5 = 1.639; a6 = 1.43E1;
-        sigma = get_sigma_eq2(E1,a1,a2,a3,a4,a5,a6)*cm2tom2
+        sigma = get_sigma_eq2(E1,a1,a2,a3,a4,a5,a6)
         RETURN
 
     END FUNCTION get_sigma_ionp_Hneut
@@ -279,7 +278,7 @@ CONTAINS
         E1 = E - Eth
         a1 = 9.73E-3; a2 = 2.38;  a3 = 1.39E-2; a4 = -5.51E-1; a5  = 7.7E-2; a6  = 2.12;
         a7 = 1.97E-6; a8 = 2.051; a9 = 5.5;     a10 = 6.62E-1; a11 = 2.02E1; a12 = 3.62;
-        sigma = get_sigma_eq13(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12)*cm2tom2
+        sigma = get_sigma_eq13(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12)
         RETURN
 
     END FUNCTION get_sigma_ionn_Hneut   
@@ -303,7 +302,7 @@ CONTAINS
         E1 = E - Eth
         a1 = 4.19E-2; a2 = 1.89;  a3 = 1.78E-1; a4 = -2.3E-1; a5 = 1.04; a6 = 8.7E-1;
         a7 = 1.65E1;  a8 = 1.088; a9 = 5.33E-3; a10 = 1.66E-1;
-        sigma = get_sigma_eq11(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10)*cm2tom2
+        sigma = get_sigma_eq11(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10)
         RETURN
 
     END FUNCTION get_sigma_neut_Hmin
@@ -326,7 +325,7 @@ CONTAINS
         Eth = 0 ! Threshold energy in keV
         E1 = E - Eth
         a1 = 1.75E-8; a2 = 3.88; a3 = 9.06E-1; a4 = -2.74E-1; a5 = 3.19; a6 = 1.19;
-        sigma = get_sigma_eq6(E1,a1,a2,a3,a4,a5,a6)*cm2tom2
+        sigma = get_sigma_eq6(E1,a1,a2,a3,a4,a5,a6)
         RETURN
 
     END FUNCTION get_sigma_ionp_Hmin 
