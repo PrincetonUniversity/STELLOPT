@@ -96,7 +96,7 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
     IF (ALLOCATED(charge_lines)) DEALLOCATE(charge_lines)
     IF (ALLOCATED(mass_lines)) DEALLOCATE(mass_lines)
-    IF (ALLOCATED(reaction_lines)) DEALLOCATE(reaction_lines)
+    IF (ALLOCATED(reaction_count)) DEALLOCATE(reaction_count)
     ! Allocations
     ALLOCATE(q(4), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'Q', ier)
@@ -105,7 +105,7 @@ SUBROUTINE beams3d_follow
              neut_lines(0:npoinc, mystart:myend), S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), &
              vr_lines(0:npoinc, mystart:myend), vphi_lines(0:npoinc, mystart:myend), vz_lines(0:npoinc, mystart:myend), &
               B_lines(0:npoinc, mystart:myend), STAT = ier)
-   IF (lboxsim) ALLOCATE(charge_lines(0:npoinc, mystart:myend), mass_lines(0:npoinc, mystart:myend), reaction_lines(mystart:myend))
+   IF (lboxsim) ALLOCATE(charge_lines(0:npoinc, mystart:myend), mass_lines(0:npoinc, mystart:myend), reaction_count(mystart:myend))
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
     ALLOCATE(t_last(mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 't_last', ier)
@@ -131,7 +131,7 @@ SUBROUTINE beams3d_follow
     IF (lboxsim) THEN
          charge_lines(0, mystart:myend) = NINT(charge(mystart:myend)/e_charge)
          mass_lines(0, mystart:myend) = NINT(mass(mystart:myend)/p_mass)
-         reaction_lines(mystart:myend) = 0
+         reaction_count(mystart:myend) = 0
     END IF
 
     ! Some helpers
@@ -309,7 +309,6 @@ SUBROUTINE beams3d_follow
     IF (lboxsim) THEN
       CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,  'charge_lines',INTVAR=charge_lines)
       CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'mass_lines', INTVAR=mass_lines) 
-      CALL beams3d_write_parhdf5(0, 1, 1, nparticles, mystart_save, myend_save,'reaction_lines',INTVAR=reaction_lines) 
     END IF
     DEALLOCATE(itemp)
     IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
