@@ -896,9 +896,9 @@
 
       INTEGER :: icount, i, i_tile, j, j_tile, k, k_tile, maxi, maxtile, iterH, maxiterH, maxrank
       INTEGER :: stype
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_new, M_prev, res_k, res_kp1, denom
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_new, M_prev, res_k, res_kp1
       DOUBLE PRECISION :: H(3), N(3,3), Bx, By, Bz
-      DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm, delta_res(3), alpha
+      DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm, delta_res(3), alpha, denom
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, MnormPrev, dM, dMPrev, lambda
@@ -1065,7 +1065,7 @@
                   alpha = 0.0
             ELSE
                   alpha = DOT_PRODUCT(res_k(:,i),delta_res)/DOT_PRODUCT(delta_res,delta_res)
-                  alpha = MAX(0, MIN(1, alpha))
+                  alpha = MAX(0, MIN(1.0, alpha))
             END IF
             M(:,i_tile) = M(:,i_tile) + alpha*res_k(:,i) + (1.0-alpha)*res_kp1(:,i)
           ELSE ! Picard
