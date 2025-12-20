@@ -1057,7 +1057,7 @@
           END SELECT
             
           M_prev(:,i) = M(:,i_tile)
-	  landerson = ((dM(i).LT.lambda(i)*0.5).AND.(icount.GE.2))
+          landerson = ((dMprev(i).LT.lambda(i)*0.1).AND.(icount.GE.2))
           IF (landerson) THEN ! Anderson
             res_kp1(:,i) = M_new(:,i) - M(:,i_tile)
             delta_res = res_kp1(:,i) - res_k(:,i)
@@ -1066,11 +1066,11 @@
                   alpha = 0.0
             ELSE
                   alpha = DOT_PRODUCT(res_k(:,i),delta_res)/DOT_PRODUCT(delta_res,delta_res)
-                  alpha = MAX(0.5, MIN(1.0, alpha))
+                  alpha = MAX(0.0, MIN(1.0, alpha))
             END IF
-            M(:,i_tile) = M(:,i_tile) + alpha*res_k(:,i) + (1.0-alpha)*res_kp1(:,i)
+            M(:,i_tile) = M_prev(:,i) + (1.0-alpha)*res_kp1(:,i) + alpha*res_k(:,i)
           ELSE ! Picard
-	    res_kp1(:,i) = lambda(i)*(M_new(:,i)-M(:,i_tile))
+            res_kp1(:,i) = lambda(i)*(M_new(:,i)-M(:,i_tile))
             M(:,i_tile) = M(:,i_tile) + lambda(i)*(M_new(:,i) - M(:,i_tile))
           END IF
           res_k(:,i) = M(:,i_tile)-M_prev(:,i)
