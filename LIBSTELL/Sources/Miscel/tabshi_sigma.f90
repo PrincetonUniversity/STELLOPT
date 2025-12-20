@@ -127,6 +127,50 @@ CONTAINS
         RETURN
 
     END FUNCTION get_sigma_eq2    
+    
+    FUNCTION get_sigma_eq3(E1,a1,a2,a3,a4,a5,a6)   result(sigma3)
+        !-------------------------------------------------------------------
+        !     Equation (3) in Tabata (2000) 
+        !       
+        !       Input parameters
+        !           E1, a2, a3, a4, a5, a6, a7, a8
+        !       Output parameters
+        !           sigma3
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma3
+        DOUBLE PRECISION, INTENT(in) :: E1, a1, a2, a3, a4, a5, a6, a7, a8
+        DOUBLE PRECISION :: f2_a, f2_b
+
+        f2_a = get_functional_2(E1,a1,a2,a3,a4)
+        f2_b = get_functional_2(E1,a5,a6,a7,a8)
+        sigma3 = f2_a+f2_b
+
+        RETURN
+
+    END FUNCTION get_sigma_eq3    
+
+    FUNCTION get_sigma_eq4(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10)   result(sigma4)
+        !-------------------------------------------------------------------
+        !     Equation (4) in Tabata (2000) 
+        !       
+        !       Input parameters
+        !           E1, a2, a3, a4, a5, a6, a7, a8, a9, a10
+        !       Output parameters
+        !           sigma4
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma4
+        DOUBLE PRECISION, INTENT(in) :: E1, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10
+        DOUBLE PRECISION :: f2_a, f2_b, f2_c
+
+        f2_a = get_functional_2(E1,    a1,a2,a3,a4)
+        f2_b = get_functional_2(E1,    a5,a6,a7,a8)
+        f2_c = get_functional_2(E1/a10,a5,a6,a7,a8)
+        sigma2 = f2_a+f2_b+a9*f2_c
+        RETURN
+
+    END FUNCTION get_sigma_eq4   
 
     FUNCTION get_sigma_eq6(E1,a1,a2,a3,a4,a5,a6)   result(sigma6)
         !-------------------------------------------------------------------
@@ -167,7 +211,28 @@ CONTAINS
         sigma8 = f2+f3
         RETURN
 
-    END FUNCTION get_sigma_eq8        
+    END FUNCTION get_sigma_eq8      
+    
+    FUNCTION get_sigma_eq10(E1,a1,a2,a3,a4,a5,a6,a7,a8)   result(sigma10)
+        !-------------------------------------------------------------------
+        !     Equation (10) in Tabata (2000) 
+        !       
+        !       Input parameters
+        !           E1, a1, a2, a3, a4, a5, a6, a7, a8
+        !       Output parameters
+        !           sigma10
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma10
+        DOUBLE PRECISION, INTENT(in) :: E1, a1, a2, a3, a4, a5, a6, a7, a8
+        DOUBLE PRECISION :: f3_a, f3_b
+
+        f3_a = get_functional_3(E1,a1,a2,a3,a4,a5,a6)
+        f3_b = get_functional_3(E1/a8,a1,a2,a3,a4,a5,a6)
+        sigma10 = f3_a+a7*f3_b
+        RETURN
+
+    END FUNCTION get_sigma_eq10
 
     FUNCTION get_sigma_eq11(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10)   result(sigma11)
         !-------------------------------------------------------------------
@@ -186,6 +251,28 @@ CONTAINS
         f3 = get_functional_3(E1,a1,a2,a3,a4,a5,a6)
         f2 = get_functional_2(E1,a7,a8,a9,a10)
         sigma11 = f3 + f2
+        RETURN
+
+    END FUNCTION get_sigma_eq11
+
+    FUNCTION get_sigma_eq12(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12)   result(sigma12)
+        !-------------------------------------------------------------------
+        !     Equation (12) in Tabata (2000) 
+        !       
+        !       Input parameters
+        !           E1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12
+        !       Output parameters
+        !           sigma12
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma12
+        DOUBLE PRECISION, INTENT(in) :: E1, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12
+        DOUBLE PRECISION :: f2_a, f2_b, f3
+
+        f3 = get_functional_3(E1,a1,a2,a3,a4,a5,a6)
+        f2_a = get_functional_2(E1,a7,a8,a9,a10)
+        f2_b = get_functional_2(E1/a12,a7,a8,a9,a10)
+        sigma12 = f3 + f2_a + a11*f2_b
         RETURN
 
     END FUNCTION get_sigma_eq11
@@ -211,6 +298,18 @@ CONTAINS
         RETURN
 
     END FUNCTION get_sigma_eq13
+
+!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+!       SINGLE-PROTON REACTIONS (H+, H, H-)
+!           Reaction      Reactant      Fast product(s)           
+!               6            H+           H
+!               29           H            H-
+!               31           H            H+
+!               47           H-           H
+!               49           H-           H+
+!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
 
     FUNCTION get_sigma_neut_Hplus(E) result(sigma)
         !-------------------------------------------------------------------
@@ -330,4 +429,217 @@ CONTAINS
 
     END FUNCTION get_sigma_ionp_Hmin 
 
+!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+!       DOUBLE-PROTON REACTIONS (H2+, H2)
+!           Reaction      Reactant      Fast product(s)           
+!               14           H2           H+, H 
+!               38           H2           H2+
+!               43           H2+          H+, H
+!               50           H2+          H2 
+!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+
+    FUNCTION get_sigma_neut_H2plus(E) result(sigma)
+        !-------------------------------------------------------------------
+        !     Reaction (50) in Tabata (2000) [H2+ + H2 -> fast H2]
+        !       
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+        DOUBLE PRECISION :: Eth, E1
+        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12
+
+        Eth = 0.0E-3 ! Threshold energy in keV
+        E1 = E - Eth
+        a1 = 2.29E+2; a2 = 2.78;    a3 = 4.75E-3; a4  = 1.248E-1; a5 = 2.14E-1;  a6 = 2.33;
+        a7 = 7.96;    a8 = 6.82E-1; a9 = 6.59E-3; a10 = 4.51;    a11 = 1.67E-1; a12 = 1.164E+4;
+        sigma = get_sigma_eq12(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12)
+        RETURN
+
+    END FUNCTION get_sigma_neut_H2plus
+
+    FUNCTION get_sigma_ionp_H2neut(E) result(sigma)
+        !-------------------------------------------------------------------
+        !     Reaction (38) in Tabata (2000) [H2 + H2 -> fast H2+]
+        !       
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+        DOUBLE PRECISION :: Eth, E1
+        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8, a9, a10
+
+        Eth = 3.2E-2 ! Threshold energy in keV
+        E1 = E - Eth
+        a1 = 1.879E-3; a2 = 2.497; a3 = 6.62E-2; a4 = -4.67E-1; a5 = 3.58E-1; a6 = 5.0E-1;
+        a7 = 7.67;     a8 = 2.01E2;
+        sigma = get_sigma_eq12(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12)
+        RETURN
+
+    END FUNCTION get_sigma_ionp_H2neut
+
+    FUNCTION get_sigma_diss_H2plus(E) result(sigma)
+        !-------------------------------------------------------------------
+        !     Reaction (14) in Tabata (2000) [H2+ + H2 -> fast H+ + fast H]
+        !       
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+        DOUBLE PRECISION :: Eth, E1
+        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8, a9, a10
+
+        Eth = 5.0E-3 ! Threshold energy in keV
+        E1 = E - Eth
+        a1 = 6.34E+1; a2 = 1.78; a3 = 1.38E-3; a4 = 4.06E-1; a5 = 1.63E-1; a6 = 3.27E-1;
+        a7 = 1.554E+1; a8 = 3.903; a9 = 1.735; a10 = 1.02E+1
+        sigma = get_sigma_eq4(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10)
+        RETURN
+
+    END FUNCTION get_sigma_diss_H2plus
+
+    FUNCTION get_sigma_diss_H2neut(E) result(sigma)
+        !-------------------------------------------------------------------
+        !     Reaction (43) in Tabata (2000) [H2 + H2 -> fast H+ + fast H]
+        !       
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+        DOUBLE PRECISION :: Eth, E1
+        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6
+
+        Eth = 2.0E-2 ! Threshold energy in keV
+        E1 = E - Eth
+        a1 = 1.307E-5; a2 = 1.586; a3 = 1.066E+1; a4 = 2.03; a5 = 2.73; a6 = 4.71
+        sigma = get_sigma_eq2(a1,a2,a3,a4,a5,a6)
+        RETURN
+
+    END FUNCTION get_sigma_diss_H2neut
+
+!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+!       TRIPLE-PROTON REACTIONS (H3+)
+!           Reaction      Reactant      Product(s)     Note
+!               18           H3+           H+, H2       Mom. loss to gas    
+!               19           H3+           H,  H2+      Mom. loss to gas
+!               20           H3+           H,  H2+      CX - no loss
+!               21           H3+           H+, H2       CX - no loss
+!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+
+    FUNCTION get_sigma_kindiss_H3neut_Hplus(E) result(sigma)
+        !-------------------------------------------------------------------
+        !     Reaction (18) in Tabata (2000) [H3+ + H2 -> fast H+, H2, H2]
+        !      Note that "fast" here means relative to beam
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+        DOUBLE PRECISION :: Eth, E1
+        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8
+
+        Eth = 1.1E-2 ! Threshold energy in keV
+        E1 = E - Eth
+        a1 = 6.67E-1; a2 = 1.35; a3 = 4.42E-2; a4 = 7.1E-1; a5 = 6.7E-5; a6 = 1.54;
+        a7 = 1.1E1; a8 = -1.0E-1;
+        sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
+        RETURN
+
+    END FUNCTION get_sigma_kindiss_H3neut_Hplus
+
+    FUNCTION get_sigma_kindiss_H3neut_H2plus(E) result(sigma)
+        !-------------------------------------------------------------------
+        !     Reaction (19) in Tabata (2000) [H3+ + H2 -> fast H, H2+, H2]
+        !      Note that "fast" here means relative to beam
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+        DOUBLE PRECISION :: Eth, E1
+        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8
+
+        Eth = 1.55E-2 ! Threshold energy in keV
+        E1 = E - Eth
+        a1 = 5.03E-1; a2 = 1.0; a3 = 2.5E-2; a4 = 2.0; a5 = 1.17E-1; a6 = 3.18E-1;
+        a7 = 9.4E+1; a8 = 1.35
+        sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
+
+        RETURN
+    END FUNCTION get_sigma_kindiss_H3neut_H2plus
+
+    FUNCTION get_sigma_cxdiss_H3neut_Hneut(E) result(sigma)
+        !-------------------------------------------------------------------
+        !     Reaction (20) in Tabata (2000) [H3+ + H2 -> fast H, fast H2+]
+        !      Note that "fast" here means relative to beam
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+        DOUBLE PRECISION :: Eth, E1
+        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8
+
+        Eth = 1.55E-2 ! Threshold energy in keV
+        E1 = E - Eth
+        a1 = 5.89E-1; a2 = 1.0 a3 = 2.5E-2; a4 = 1.5; a5 = 4.05E-2; a6 = 7.59E-1;
+        a7 = 4.64E+1; a8 = 1.1
+        
+        sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
+
+        RETURN
+    END FUNCTION get_sigma_cxdiss_H3neut_Hneut
+
+    FUNCTION get_sigma_cxdiss_H3neut_H2neut(E) result(sigma)
+        !-------------------------------------------------------------------
+        !     Reaction (21) in Tabata (2000) [H3+ + H2 -> fast H+, fast H2]
+        !      Note that "fast" here means relative to beam
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+        DOUBLE PRECISION :: Eth, E1
+        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8
+
+        Eth = 0.0 ! Threshold energy in keV
+        E1 = E - Eth
+        a1 = 3.78E+1; a2 = 1.0; a3 = 2.0E-3; a4 = 2.5E-1; a5 = 4.14E-2; a6 = 6.25E-1;
+        a7 = 4.89E+1; a8 = 1.69
+        sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
+
+        RETURN
+    END FUNCTION get_sigma_cxdiss_H3neut_H2neut
 END MODULE 

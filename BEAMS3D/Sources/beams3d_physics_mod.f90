@@ -762,10 +762,10 @@ MODULE beams3d_physics_mod
          IF (mylife<=mylife_end) THEN ! Update particle
             reaction_count(myline) = reaction_count(myline)+1
             reaction_info = reactions_db(reaction_dex)
-            mymass_int = reaction_info%output_A
+            mymass_int = reaction_info%output_A_1
             mymass = mymass_int*p_mass
             mass(myline) = mymass
-            mycharge_int = reaction_info%output_Z
+            mycharge_int = reaction_info%output_Z_1
             mycharge = mycharge_int*e_charge
             charge(myline) = mycharge
             lneut = (mycharge_int==0)
