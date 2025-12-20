@@ -904,7 +904,7 @@
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, MnormPrev, dM, dMPrev, lambda
       DOUBLE PRECISION ::  maxdM, maxdMall, maxlambda
       INTEGER          :: lambdaCount
-      LOGICAL          :: lalldone, lboxdone, lprocdone, lbreakiterH
+      LOGICAL          :: lalldone, lboxdone, lprocdone, lbreakiterH, landerson
       LOGICAL, DIMENSION(:), ALLOCATABLE :: ldone
 
       DOUBLE PRECISION :: convergedproc, convergedtot, convergedperc
@@ -924,7 +924,7 @@
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: rnorms, r3invs, mrdotrhat
 
       ! Allocate helpers
-      ALLOCATE(M_new(3,mystart:myend),M_prev(3,mystart,myend),Mnorm(mystart:myend),MnormPrev(mystart:myend))
+      ALLOCATE(M_new(3,mystart:myend),M_prev(3,mystart:myend),Mnorm(mystart:myend),MnormPrev(mystart:myend))
       ALLOCATE(res_k(3,mystart:myend),res_kp1(3,mystart:myend))
       ALLOCATE(dM(mystart:myend),dMPrev(mystart:myend))
       ALLOCATE(lambda(mystart:myend))
@@ -1057,7 +1057,8 @@
           END SELECT
             
           M_prev(:,i) = M(:,i_tile)
-          IF (icount .GE. 2) THEN ! Anderson
+	  landerson = ((dM(i).LT.lambda(i)*0.5).AND.(icount.GE.2))
+          IF (landerson) THEN ! Anderson
             res_kp1(:,i) = M_new(:,i) - M(:,i_tile)
             delta_res = res_kp1(:,i) - res_k(:,i)
             denom = DOT_PRODUCT(delta_res,delta_res)
@@ -1065,16 +1066,17 @@
                   alpha = 0.0
             ELSE
                   alpha = DOT_PRODUCT(res_k(:,i),delta_res)/DOT_PRODUCT(delta_res,delta_res)
-                  alpha = MAX(0, MIN(1.0, alpha))
+                  alpha = MAX(0.5, MIN(1.0, alpha))
             END IF
             M(:,i_tile) = M(:,i_tile) + alpha*res_k(:,i) + (1.0-alpha)*res_kp1(:,i)
           ELSE ! Picard
+	    res_kp1(:,i) = lambda(i)*(M_new(:,i)-M(:,i_tile))
             M(:,i_tile) = M(:,i_tile) + lambda(i)*(M_new(:,i) - M(:,i_tile))
           END IF
           res_k(:,i) = M(:,i_tile)-M_prev(:,i)
           Mnorm(i) = NORM2(M(:,i_tile))
           ! "Derivatives" for convergence checks (picard stuff)
-          dM(i) = ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
+          dM(i) = NORM2(res_kp1(:,i)) !ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
           IF ((dM(i).GT.maxdM).OR.ISNAN(Mnorm(i))) THEN
             maxdM = dM(i)
             maxi = i
@@ -1092,7 +1094,9 @@
             lambdaCount= MAX(lambdaCount-1,0)
           END IF
           
-          IF (((dM(i).LT.dMmax*lambda(i)).AND.(icount.GT.1)) &   ! if converged
+!          IF (((dM(i).LT.dMmax*lambda(i)).AND.(icount.GT.1)) &   ! if converged
+	  IF (((NORM2(res_kp1(:,i))<dMmax*Mnorm(i)).AND.(landerson)) &
+	     .OR.((NORM2(res_kp1(:,i))<dMmax*Mnorm(i)*lambda(i)).AND.(.NOT.landerson)) &
              .OR.(lambda(i).LT.1E-5) &                          ! or lambda too smll
              .OR. (icount.GE.maxIter)) THEN                      ! or exceed maxiter
                 ldone(i) = .TRUE.                               ! then this tile is done
@@ -1139,7 +1143,7 @@
         IF (ldosync) CALL mumaterial_syncM(M,ntet,outmydom)
 
         IF (lverb) THEN 
-          WRITE(6,'(2X,I6,1X,F7.1,1X,I8,1X,E12.4,1X,E12.4,1X,E12.4,1X,E12.4)') icount, convergedperc, maxtile, NORM2(M(:,maxtile)), maxdMall, dMmax*maxlambda, maxlambda
+          WRITE(6,'(2X,I6,1X,F7.1,1X,I8,1X,E12.4,1X,E12.4,1X,E12.4,1X,E12.4)') icount, convergedperc, maxtile, NORM2(M(:,maxtile)), maxdMall, dMmax*maxlambda*NORM2(M(:,maxtile)), maxlambda
           CALL FLUSH(6)
         END IF
 
