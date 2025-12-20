@@ -1076,7 +1076,7 @@
           res_k(:,i) = M(:,i_tile)-M_prev(:,i)
           Mnorm(i) = NORM2(M(:,i_tile))
           ! "Derivatives" for convergence checks (picard stuff)
-          dM(i) = NORM2(res_kp1(:,i)) !ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
+          dM(i) = NORM2(res_kp1(:,i))/Mnorm(i) !ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
           IF ((dM(i).GT.maxdM).OR.ISNAN(Mnorm(i))) THEN
             maxdM = dM(i)
             maxi = i
@@ -1143,7 +1143,7 @@
         IF (ldosync) CALL mumaterial_syncM(M,ntet,outmydom)
 
         IF (lverb) THEN 
-          WRITE(6,'(2X,I6,1X,F7.1,1X,I8,1X,E12.4,1X,E12.4,1X,E12.4,1X,E12.4)') icount, convergedperc, maxtile, NORM2(M(:,maxtile)), maxdMall, dMmax*maxlambda*NORM2(M(:,maxtile)), maxlambda
+          WRITE(6,'(2X,I6,1X,F7.1,1X,I8,1X,E12.4,1X,E12.4,1X,E12.4,1X,E12.4)') icount, convergedperc, maxtile, NORM2(M(:,maxtile)), maxdMall, dMmax*NORM2(M(:,maxtile)), maxlambda
           CALL FLUSH(6)
         END IF
 
