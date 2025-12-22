@@ -277,11 +277,14 @@ class PLASMA_SOLVER:
                 print(f'ERROR: Source type {source_type} is NOT possible')
                 exit(0)
                 
-    def set_particle_source(self,species,source_type, injected_particles_per_sec=None, rho_0=None, sigma_rho=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
+    def set_particle_source(self,species,source_type, injected_particles_per_sec=None, rho_0=None, sigma_rho=None, 
+        cte_source=None, time_dependent_factor=None, lambda_function_2D=None,
+        pidK=1000,pidI=10.0,pidD=1.0):
         """
         Sets particle sources for a given species. The source_type can be:
         'external_gaussian', 'time_dependent_gaussian', 'constant', 'lambda_2D',
-        'fast_alphas_source' (for He-4) and 'alpha_particles_sink' (for D and T)
+        'fast_alphas_source' (for He-4) and 'alpha_particles_sink' (for D and T),
+        'pid_edense_gaussian' (for PID electron density control with gaussian soure)
         """
         import inspect
         
@@ -301,6 +304,13 @@ class PLASMA_SOLVER:
                     raise ValueError('ERROR: Need to provide injected_particles_per_sec, rho_0, sigma_rho and a time depenedent factor for time-dependent gaussian')
                 else:
                     self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
+            case 'PID_edense_gaussian':
+                if((rho_0 is None) or (sigma_rho is None) or (time_dependent_factor is None)):
+                    raise ValueError('ERROR: Need to provide injected_particles_per_sec, rho_0, sigma_rho and a time depenedent factor for PID electron density gaussian')
+                else:
+                    self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 
+                    'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor,
+                    'pid_K' : pidK, 'pid_Ti' : pidI, 'pid_Td' : pidD, 'pid_I' : 0.0 }
             #
             case 'fast_alphas_source':
                 # check we are solving fast alphas
@@ -853,6 +863,34 @@ class PLASMA_SOLVER:
                     lambda_function_2D = self.particle_sources[species][source_type]['lambda_function_2D'] #func(r,t)
                     #
                     aux_source = [lambda_function_2D(r,self.time[it]) for r in self.r_grid]
+
+                case 'PID_edense_gaussian':
+                    # These define the gaussian
+                    rho_0 = self.particle_sources[species]['PID_edense_gaussian']['rho_0']
+                    sigma_rho = self.particle_sources[species]['PID_edense_gaussian']['sigma_rho']
+                    time_fact = self.particle_sources[species]['PID_edense_gaussian']['time_factor']
+                    pid_K     = self.particle_sources[species]['PID_edense_gaussian']['pid_K']
+                    pid_Ti    = self.particle_sources[species]['PID_edense_gaussian']['pid_Ti']
+                    pid_Td    = self.particle_sources[species]['PID_edense_gaussian']['pid_Td']
+                    # time_fact is the target density
+                    t = self.time[it]
+                    SP = time_fact(t) # Set Point
+                    #
+                    it1 = max(it - 1,2)
+                    it2 = max(it - 2,1)
+                    ite = max(it - 20,0)
+                    dt = self.time[1]-self.time[0]
+                    e = SP - self.N['electrons'][it1:ite:-1,0]
+                    i = sum(e)*dt
+                    d = (e[-2]-e[-1])/(self.time[it1]-self.time[it2])
+                    U = pid_K*(e[0] + i / pid_Ti + pid_Td * d)
+                    # Compute integrand
+                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
+                    integrand = integrand.flatten()
+                    # 
+                    cte = max(U,0) / np.trapezoid(integrand,self.r_grid)
+                    #
+                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
                     
             # bookeeping
             self.explicit_particle_sources[species][source_type][it,:] = aux_source
