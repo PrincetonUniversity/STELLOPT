@@ -76,7 +76,7 @@
 !         N_store:          Demagnetization tensor (3,3,maxNbC,:)
 !
 !       User settings
-!         dMmax:           Threshold error for convergence
+!         threshold:           Threshold error for convergence
 !         maxIter:         Max allowed number of iterations
 !         padFactor:   Affects number of neighbours for each tetrahedron
 !         lambdaStart:     Initial value of lambda for iterations
@@ -98,12 +98,13 @@
       DOUBLE PRECISION, POINTER, PRIVATE :: constant_mu(:), constant_mu_o(:)
       DOUBLE PRECISION, POINTER, PRIVATE :: M(:,:), Happ(:,:), Mrem(:,:)
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER, PRIVATE :: N_store
+      DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE :: inv_mat_local
       DOUBLE PRECISION, PRIVATE :: mu0
       INTEGER, PRIVATE :: nstate
       TYPE(stateFunctionType), PRIVATE, ALLOCATABLE :: stateFunction(:)
 
       ! user settings variables
-      DOUBLE PRECISION, PRIVATE :: dMmax, padFactor, lambdaStart, lambdaFactor, convCheck
+      DOUBLE PRECISION, PRIVATE :: threshold, padFactor, lambdaStart, lambdaFactor, convCheck
       INTEGER, PRIVATE          :: lambdaThresh, maxIter
 
       ! neighbour variables
@@ -288,7 +289,7 @@
 !------------------------------------------------------------------------------
 !       mumaterial_setd: Sets default values
 !------------------------------------------------------------------------------
-! param[in]: mE. dMmax: threshold for determining convergence
+! param[in]: mE. threshold: threshold for determining convergence
 ! param[in]: mI. maxIter: max amount of iterations
 ! param[in]: la. lambdaStart: initial value of lambda
 ! param[in]: laF. lambdaFactor: multiplicative factor for lambda
@@ -303,7 +304,7 @@
       DOUBLE PRECISION, INTENT(in) :: mE, la, laF, padF, cc
       INTEGER, INTENT(in) :: mI, laT
 
-      dMmax = mE
+      threshold = mE
       maxIter = mI
       lambdaStart = la
       lambdaFactor = laF
@@ -527,7 +528,7 @@
       WRITE(iunit,'(3X,A,I7)')     'State Funcs. : ',nstate
       WRITE(iunit,'(3X,A,EN12.3)') 'Pad factor   : ',padFactor
       WRITE(iunit,'(3X,A,I7)')     'Max Iter.    : ',maxIter
-      WRITE(iunit,'(3X,A,EN12.3)') 'Max Error    : ',dMmax
+      WRITE(iunit,'(3X,A,EN12.3)') 'Max Error    : ',threshold
       WRITE(iunit,'(3X,A,EN12.3)') 'Lambda start : ',lambdaStart
       WRITE(iunit,'(3X,A,EN12.3)') 'Lambda fact. : ',lambdaFactor
       WRITE(iunit,'(3X,A,I7)')     'Lambda thrsh.: ',lambdaThresh
@@ -608,12 +609,13 @@
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: offset(3)
       INTEGER :: mystart, myend, ourstart, ourend
       LOGICAL :: lwork
-      INTEGER :: i, j, k, i_tile, j_tile
+      INTEGER :: i, j, k, i_tile, j_tile, stype
       INTEGER :: mstat(MPI_STATUS_SIZE)
       CHARACTER(LEN=6) :: strcount, splitcount
 
       DOUBLE PRECISION :: Bx, By, Bz
       DOUBLE PRECISION :: tol, delta, xmin, xmax, ymin, ymax, zmin, zmax, pad
+      DOUBLE PRECISION :: MAT(3,3)
       INTEGER :: splits, dim, ydomsize, reci
       INTEGER, ALLOCATABLE :: domin(:), yourdom(:), tdom(:), idx(:)
 
@@ -856,6 +858,27 @@
         END DO 
       END DO
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Calculate inv_N_local for constant-mu-cases
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      ALLOCATE(inv_mat_local(3,3,mystart:myend))
+      inv_mat_local = 0.0
+      DO i = mystart, myend
+        i_tile = mydom(i)
+        stype = state_type(state_dex(i_tile))
+        IF (stype.EQ.3) THEN
+            DO j = 1, NbC(i)
+              IF (Nb(j,i).EQ.i_tile) EXIT
+            END DO 
+            MAT = -(constant_mu(state_dex(i_tile)) - 1) * N_store(:,:,j,i)
+            MAT(1,1) = MAT(1,1) + 1.0
+            MAT(2,2) = MAT(2,2) + 1.0
+            MAT(3,3) = MAT(3,3) + 1.0
+            CALL mumaterial_inv33(MAT)
+            inv_mat_local(:,:,i) = MAT
+        END IF
+      END DO
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_BARRIER(comm_world, ierr_mpi)
 #endif
@@ -896,13 +919,15 @@
 
       INTEGER :: icount, i, i_tile, j, j_tile, k, k_tile, maxi, maxtile, iterH, maxiterH, maxrank
       INTEGER :: stype
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_new, M_prev, res_k, res_kp1
       DOUBLE PRECISION :: H(3), N(3,3), Bx, By, Bz
-      DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm, delta_res(3), alpha, denom
+      DOUBLE PRECISION :: MAT(3,3)
+      DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm, M_new(3,3), M_old(3,3)
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, MnormPrev, dM, dMPrev, lambda
-      DOUBLE PRECISION ::  maxdM, maxdMall, maxlambda
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm,lambda
+      DOUBLE PRECISION ::  maxlambda
+      DOUBLE PRECISION :: residual_rel, residual_rel_worst_loc, residual_rel_worst_global, residual_rel_targ
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: residual, residual_prev
       INTEGER          :: lambdaCount
       LOGICAL          :: lalldone, lboxdone, lprocdone, lbreakiterH, landerson
       LOGICAL, DIMENSION(:), ALLOCATABLE :: ldone
@@ -924,9 +949,8 @@
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: rnorms, r3invs, mrdotrhat
 
       ! Allocate helpers
-      ALLOCATE(M_new(3,mystart:myend),M_prev(3,mystart:myend),Mnorm(mystart:myend),MnormPrev(mystart:myend))
-      ALLOCATE(res_k(3,mystart:myend),res_kp1(3,mystart:myend))
-      ALLOCATE(dM(mystart:myend),dMPrev(mystart:myend))
+      ALLOCATE(Mnorm(mystart:myend))
+      ALLOCATE(residual(3,mystart:myend),residual_prev(3,mystart:myend))
       ALLOCATE(lambda(mystart:myend))
       ALLOCATE(ldone(mystart:myend))
 
@@ -935,12 +959,10 @@
       maxlambda = lambdaStart
       lambdaCount = 0
       Mnorm = 1.0E-5
-      dM = 0.d0
       ldone = .FALSE.
       maxiterH = maxiter
-      M_prev = 0.0
-      res_k = 0.0
-      res_kp1 = 0.0
+      residual = 0.0
+      residual_rel_worst_loc = 0.0
 
       IF (lverb) THEN
         WRITE(6,*) ''
@@ -954,17 +976,15 @@
       DO
         icount = icount + 1        
 
-        MnormPrev = Mnorm
         M_new = 0.0
-        dMPrev = dM
-        dM = 0.d0
-        maxdM = 0.d0
         maxi = mystart
         convergedproc = 0.0
         convergedtot = 0.0
-        
-        DO i = mystart, myend ! Get the field and new magnetization for each tile
+        residual_prev = residual
+        residual = 0.0
 
+        DO i = mystart, myend ! Get the field and new magnetization for each tile
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           IF (icount.LT.maxIter) ldone(i) = .FALSE.
           i_tile = mydom(i)
           H = Happ(:,i)
@@ -1004,15 +1024,15 @@
                 iterH = iterH + 1
                 H_old = H_new
                 ! Determine magnetization taking into account easy axis
-                M_new(:,i) = (Mrem_norm + (constant_mu(  state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_ea )) * u_ea &
+                M_new = (Mrem_norm + (constant_mu(  state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_ea )) * u_ea &
                                         + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_1) * u_oa_1 &
                                         + (constant_mu_o(state_dex(i_tile)) - 1) * DOT_PRODUCT(H_new, u_oa_2) * u_oa_2
-                H_new = H + MATMUL(N, M_new(:,i))
+                H_new = H + MATMUL(N, M_new)
                 H_new = H_old + lambda_s * (H_new - H_old)
                 IF (lbreakiterH) EXIT
                 IF (iterH.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile
                 ! If converged or exceeded maxiter, stop on next iter (calculates M one last time)
-                IF ((MAXVAL(ABS((H_new-H_old)/H_old)).lt.dMmax*lambda_s).or.(iterH.GT.maxIterH)) lbreakiterH = .TRUE. 
+                IF ((MAXVAL(ABS((H_new-H_old)/H_old)).lt.threshold*lambda_s).or.(iterH.GT.maxIterH)) lbreakiterH = .TRUE. 
               END DO
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             CASE (2) ! Soft magnet using state function
@@ -1022,81 +1042,53 @@
                 Hnorm = NORM2(H_new)
                 IF (Hnorm .ne. 0) THEN
                   CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
-                  M_new(:,i) = M_tmp_norm * H_new / Hnorm
+                  M_new = M_tmp_norm * H_new / Hnorm
                   lambda_s = MIN(Hnorm/M_tmp_norm, 0.5)
                 ELSE
-                  M_new(:,i) = 0
+                  M_new = 0
                   M_tmp_norm = 0
                   lambda_s = 0.5
                 END IF
                 IF (lbreakiterH) EXIT 
-                H_new = H + MATMUL(N, M_new(:,i))
+                H_new = H + MATMUL(N, M_new)
                 H_new = H_old + lambda_s * (H_new - H_old)
                 ! If converged or exceeded maxiter, stop on next iter (calculates M one last time)
                 IF (iterH.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile
-                IF ((MAXVAL(ABS((H_new-H_old)/H_old)).lt.dMmax*lambda_s).or.(iterH.GT.maxIterH)) lbreakiterH = .TRUE. 
+                IF ((MAXVAL(ABS((H_new-H_old)/H_old)).lt.threshold*lambda_s).or.(iterH.GT.maxIterH)) lbreakiterH = .TRUE. 
               END DO
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            CASE (3) ! Soft magnet using constant permeability
-              lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 0.5)
-              DO
-                  iterH = iterH + 1
-                  H_old = H_new
-                  H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N, H_new)
-                  H_new = H_old + lambda_s * (H_new - H_old)
-                  IF (iterH.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile
-                  IF ((MAXVAL(ABS((H_new - H_old)/H_old)).lt.dMmax*lambda_s).or.(iterH.GT.maxiterH)) THEN
-                    M_new(:,i) = (constant_mu(state_dex(i_tile)) - 1) * H_new
-                    EXIT
-                  END IF
-              END DO
+            CASE (3) ! Soft magnet using constant permeability, solve directly using inverse: 
+              ! MAT = (I-(mu_r-1)*N)
+              ! H = inv(MAT)*Hext
+              M_new = (constant_mu(state_dex(i_tile)) - 1) * MATMUL(inv_mat_local(:,:,i),H)
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             CASE DEFAULT
               WRITE(6,*) "  Unknown magnet type: ", stype
               STOP
           END SELECT
             
-          M_prev(:,i) = M(:,i_tile)
-          landerson = ((dMprev(i).LT.lambda(i)*0.1).AND.(icount.GE.2))
-          IF (landerson) THEN ! Anderson
-            res_kp1(:,i) = M_new(:,i) - M(:,i_tile)
-            delta_res = res_kp1(:,i) - res_k(:,i)
-            denom = DOT_PRODUCT(delta_res,delta_res)
-            IF (denom .lt. 1E-15) THEN
-                  alpha = 0.0
-            ELSE
-                  alpha = DOT_PRODUCT(res_k(:,i),delta_res)/DOT_PRODUCT(delta_res,delta_res)
-                  alpha = MAX(0.0, MIN(1.0, alpha))
-            END IF
-            M(:,i_tile) = M_prev(:,i) + (1.0-alpha)*res_kp1(:,i) + alpha*res_k(:,i)
-          ELSE ! Picard
-            res_kp1(:,i) = lambda(i)*(M_new(:,i)-M(:,i_tile))
-            M(:,i_tile) = M(:,i_tile) + lambda(i)*(M_new(:,i) - M(:,i_tile))
-          END IF
-          res_k(:,i) = M(:,i_tile)-M_prev(:,i)
+          residual(:,i) = M_new - M(:,i_tile) ! New - old
+          residual_rel = NORM2(residual(:,i))/Mnorm(i) 
+
+          ! New estimate
+          M(:,i_tile) = M(:,i_tile) + lambda(i)*residual(:,i)
           Mnorm(i) = NORM2(M(:,i_tile))
-          ! "Derivatives" for convergence checks (picard stuff)
-          dM(i) = NORM2(res_kp1(:,i))/Mnorm(i) !ABS((Mnorm(i) - MnormPrev(i))/MnormPrev(i))
-          IF ((dM(i).GT.maxdM).OR.ISNAN(Mnorm(i))) THEN
-            maxdM = dM(i)
+          
+          IF (residual_rel.GT.residual_rel_worst_loc) THEN
+            residual_rel_worst_loc = residual_rel
             maxi = i
           END IF
 
-          ! Dampen evolution when Mnorm has increased AND the rate of increase
-          ! has itself increased for a couple of consecutive iters
-          IF ((dM(i).GT.dMPrev(i)).AND.(Mnorm(i).GT.MnormPrev(i))) THEN 
-            lambdaCount = lambdaCount + 1
-            IF (lambdaCount.EQ.lambdaThresh) THEN
-                lambda(i) = lambda(i) * lambdaFactor
-                lambdaCount = 0
-            END IF
-          ELSE
-            lambdaCount= MAX(lambdaCount-1,0)
+          ! Dampen evolution during oscillations in residual
+          IF ((DOT_PRODUCT(residual(:,i),residual_prev(:,i))<0.0) .AND. (NORM2(residual(:,i))>NORM2(residual_prev(:,i)))) THEN 
+            lambda(i) = lambda(i) * lambdaFactor
+            lambda(i) = MAX(lambda(i),0.001)
+          ELSE IF (NORM2(residual(:,i)).LT.NORM2(residual_prev(:,i))) THEN
+            lambda(i) = lambda(i) * 1.05
+            lambda(i) = MIN(lambda(i), 0.75)
           END IF
           
-!          IF (((dM(i).LT.dMmax*lambda(i)).AND.(icount.GT.1)) &   ! if converged
-	  IF (((NORM2(res_kp1(:,i))<dMmax*Mnorm(i)).AND.(landerson)) &
-	     .OR.((NORM2(res_kp1(:,i))<dMmax*Mnorm(i)*lambda(i)).AND.(.NOT.landerson)) &
+	  IF ((residual_rel < threshold) &
              .OR.(lambda(i).LT.1E-5) &                          ! or lambda too smll
              .OR. (icount.GE.maxIter)) THEN                      ! or exceed maxiter
                 ldone(i) = .TRUE.                               ! then this tile is done
@@ -1111,10 +1103,10 @@
 #if defined(MPI_OPT)
             CALL MPI_ALLREDUCE(convergedproc, convergedtot,  1, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi) 
 
-            pair_in(1) = maxdM
+            pair_in(1) = residual_rel_worst_loc
             pair_in(2) = REAL(world_rank)
             CALL MPI_ALLREDUCE(pair_in,pair_out,1, MPI_2DOUBLE_PRECISION, MPI_MAXLOC, comm_world, ierr_mpi)
-            maxdMall = pair_out(1)
+            residual_rel_worst_global = pair_out(1)
             maxrank = INT(pair_out(2))
 
             IF (world_rank.EQ.maxrank) THEN ! master needs to know for displaying
@@ -1141,9 +1133,10 @@
         convergedperc = convergedtot*100.0/SUM(tet_vol) 
         lalldone = (convergedperc.GE.convCheck)
         IF (ldosync) CALL mumaterial_syncM(M,ntet,outmydom)
+        residual_rel_targ = NORM2(M(:,maxtile))*threshold
 
         IF (lverb) THEN 
-          WRITE(6,'(2X,I6,1X,F7.1,1X,I8,1X,E12.4,1X,E12.4,1X,E12.4,1X,E12.4)') icount, convergedperc, maxtile, NORM2(M(:,maxtile)), maxdMall, dMmax*NORM2(M(:,maxtile)), maxlambda
+          WRITE(6,'(2X,I6,1X,F7.1,1X,I8,1X,E12.4,1X,E12.4,1X,E12.4,1X,E12.4)') icount, convergedperc, maxtile, NORM2(M(:,maxtile)), residual_rel_worst_global, residual_rel_targ, maxlambda
           CALL FLUSH(6)
         END IF
 
@@ -1189,17 +1182,44 @@
           dipole_fields = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*rhats-moments)*SPREAD(r3invs,DIM=1,NCOPIES=3)
           Happ(:,i) = Happ(:,i) + SUM(dipole_fields,DIM=2)
 
-          DEALLOCATE(rhats,r3invs,moments,mrdotrhat,dipole_fields,non_Nb_indices)
+          DEALLOCATE(rhats,r3invs,moments,mrdotrhat,dipole_fields,non_Nb_indices,residual,residual_prev)
 
         END DO  
 
 
       END DO
-      DEALLOCATE(M_new,Mnorm,MnormPrev,dM,dMPrev,res_k,res_kp1,M_prev)
+      DEALLOCATE(Mnorm,inv_mat_local)
 
       RETURN
       END SUBROUTINE mumaterial_iterate_M
 
+      SUBROUTINE mumaterial_inv33(B)
+      !-----------------------------------------------------------------------
+      ! mumaterial_inv33: Helper function for inverting a 3x3 matrix.
+      !-----------------------------------------------------------------------
+      ! param[inout]: B: target matrix 
+      !-----------------------------------------------------------------------
+      IMPLICIT NONE
+
+      DOUBLE PRECISION, INTENT(inout) :: B(3,3)
+      DOUBLE PRECISION :: det, INV(3,3)
+
+      DET = B(1,1)*(B(2,2)*B(3,3)-B(2,3)*B(3,2)) + B(1,2)*(B(2,3)*B(3,1)-B(2,1)*B(3,3)) + B(1,3)*(B(2,1)*B(3,2)-B(2,2)*B(3,1))
+      INV(1,1) = (B(2,2)*B(3,3)-B(2,3)*B(3,2))/DET
+      INV(2,1) = (B(2,3)*B(3,1)-B(2,1)*B(3,3))/DET
+      INV(3,1) = (B(2,1)*B(3,2)-B(2,2)*B(3,1))/DET
+
+      INV(1,2) = (B(1,3)*B(3,2)-B(1,2)*B(3,3))/DET
+      INV(2,2) = (B(1,1)*B(3,3)-B(1,3)*B(3,1))/DET
+      INV(3,2) = (B(1,2)*B(3,1)-B(1,1)*B(3,2))/DET
+
+      INV(1,3) = (B(1,2)*B(2,3)-B(1,3)*B(2,2))/DET
+      INV(2,3) = (B(1,3)*B(2,1)-B(1,1)*B(2,3))/DET
+      INV(3,3) = (B(1,1)*B(2,2)-B(1,2)*B(2,1))/DET
+
+      B = INV
+
+      END SUBROUTINE mumaterial_inv33
 
       SUBROUTINE mumaterial_getN(v1, v2, v3, v4, pos, N)
       !-----------------------------------------------------------------------
