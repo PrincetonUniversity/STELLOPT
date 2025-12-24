@@ -921,7 +921,7 @@
       INTEGER :: stype
       DOUBLE PRECISION :: H(3), N(3,3), Bx, By, Bz
       DOUBLE PRECISION :: MAT(3,3)
-      DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm, M_new(3,3), M_old(3,3)
+      DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm, M_new(3), M_old(3)
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm,lambda
