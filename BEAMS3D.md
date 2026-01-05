@@ -220,29 +220,36 @@ and BEAMS3D\_INPUT namelists in it.
 | Argument | Default | Description |
 |:------------- |:-------------:|:----- |
 | -vmec | NONE | VMEC input extension |
+| -hint | NONE | HINT input/output extension |
 | -eqdsk | NONE | Namelist ID + EQDSK file |
-| -coil | NONE | Coils File |
-| -mgrid | NONE | Makegrid style vacuum grid file |
+| -fieldlines | NONE | FIELDLINES input/HDF5 extension and Aminor normalization |
 | -vessel | NONE | First wall file |
-| -beamlet | NONE | Beamlet defintion HDF5 file. |
+| -mgrid | NONE | Makegrid style vacuum grid file |
+| -coil | NONE | Coils File |
+| -mumat | NONE | Magnetic materials file. |
 | -restart | NONE | Restart run from particles in previous run (HDF5 file) |
-| -continue_grid | FALSE | Load magnetic field from previous run (HDF5 file), specify with VMEC for namelist reading |
-| -vac | FALSE | Only compute the vacuum field |
+| -beamlet | NONE | Beamlet defintion HDF5 file. |
 | -beam_simple | FALSE | Assume monoenergetic beams (normally 1% variance around injection energy) |
-| -collisions | FALSE | Force use of slowing down/scattering operator. |
-| -depo | FALSE | Calculate deposition only |
-| -field | FALSE | Outputs the B-Field on the cylindrical grid only. |
 | -ascot4 | FALSE | Creates input HDF5 file for ASCOT4 (BBNBI, no particles) |
 | -ascot5 | FALSE | Creates input HDF5 file for ASCOT5. |
+| -ascot5_fl | FALSE | Creates input HDF5 file for ASCOT5 fieldline format. |
+| -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). |
+| -vac | FALSE | Only compute the vacuum field |
+| -plasma | FALSE | Only compute fields inside the plasma domain (places wall at LCFS) |
+| -depo | FALSE | Calculate deposition only |
+| -collisions | FALSE | Force use of slowing down/scattering operator. |
+| -hitonly | FALSE | Only save vessel strike points.|
+| -suzuki | TRUE | Use Suzuki beam deposition model (default if no ADAS/PREACT). |
 | -fidasim | FALSE | Creates input HDF5 files for FIDASIM 2.0.0 converting from normal distribution ([FIDASIM_INPUTS_B3D](BEAMS3D_FIDASIM.md) namelist required) |
 | -fidasim_cyl | FALSE | Creates input HDF5 files for FIDASIM 2.0.0 directly from cartesian cylindrical grid ([FIDASIM_INPUTS_B3D](BEAMS3D_FIDASIM.md) namelist required) |
-| -hitonly | FALSE | Only save vessel strike points.|
-| -plasma | FALSE | Only compute fields inside the plasma domain (places wall at LCFS) |
-| -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). |
-| -suzuki | TRUE | Use Suzuki beam deposition model (default if no ADAS/PREACT). |
-| -w7x | FALSE | Use W7-X beam shape model. |
 | -fusion | FALSE | Use nuclear fusion thermal birth model. |
 | -fusion_alpha | FALSE | Use nuclear fusion thermal birth model (alphas only). |
+| -fusion_tritium | FALSE | Use nuclear fusion thermal birth model (fast-tritium only). |
+| -fusion_proton | FALSE | Use nuclear fusion thermal birth model (fast-proton only). |
+| -fusion_he3 | FALSE | Use nuclear fusion thermal birth model (fast-He3 only). |
+| -boxsim | FALSE | Inject charge particles for ion beam modeling. |
+| -nobeamdensity | FALSE | Supress beam density calculation. |
+| -continue_grid | FALSE | Load magnetic field from previous run (HDF5 file), specify with VMEC for namelist reading |
 | -noverb | FALSE | Suppresses screen output |
 | -help | NONE | Print help message. |
 
@@ -308,18 +315,21 @@ variables (all values in mks units, angles in radians)
 | raxis | DOUBLE | nr | R values of background grid |
 | phiaxis | DOUBLE | nphi | Phi values of background grid |
 | zaxis | DOUBLE | nz | Z values of background grid |
-| BR_ARR | DOUBLE | nr,nphi,nz | Magnetic field (B_R) |
-| BPHI_ARR | DOUBLE | nr,nphi,nz | Magnetic field (B_PHI) |
-| BZ_ARR | DOUBLE | nr,nphi,nz | Magnetic field (B_Z) |
+| B_R | DOUBLE | nr,nphi,nz | Magnetic field (B_R) |
+| B_PHI | DOUBLE | nr,nphi,nz | Magnetic field (B_PHI) |
+| B_Z | DOUBLE | nr,nphi,nz | Magnetic field (B_Z) |
 | S_ARR | DOUBLE | nr,nphi,nz | Normalized Toroidal Flux (s) |
-| U_ARR | DOUBLE | nr,nphi,nz | Poloidal-like angle (u) |
-| POT_ARR | DOUBLE | nr,nphi,nz | Electrostatic scalar potential |
-| NE | DOUBLE | nr,nphi,nz | Electron number density |
-| TE | DOUBLE | nr,nphi,nz | Electron Temperature eV |
-| NI | DOUBLE | nion,nr,nphi,nz | Ion number density |
-| TI | DOUBLE | nr,nphi,nz | Ion Temperature eV |
+| RHO_ARR | DOUBLE | nr,nphi,nz | Normalized radius (r/a) |
+| U_ARR | DOUBLE | nr,nphi,nz | Poloidal-like angle (u) \[rad\] |
+| POT_ARR | DOUBLE | nr,nphi,nz | Electrostatic scalar potential \[V\] |
+| NE | DOUBLE | nr,nphi,nz | Electron number density \[m^-3\] |
+| TE | DOUBLE | nr,nphi,nz | Electron Temperature \[eV\] |
+| NI | DOUBLE | nion,nr,nphi,nz | Ion number density \[m^-3\] |
+| TI | DOUBLE | nr,nphi,nz | Ion Temperature \[eV\] |
+| NI_M | DOUBLE | nion | Ion mass \[kg\] |
+| NI_Z | INTEGER | nion | Ion charge number \[ec\] |
 | ZEFF_ARR | DOUBLE | nr,nphi,nz | Zeff |
-| OMEG_ARR | DOUBLE | nr,nphi,nz | Omega rad/s |
+| OMEG_ARR | DOUBLE | nr,nphi,nz | Omega \[rad/s\] |
 | **Marker Trajectory** |
 | npoinc | INTEGER | 1 | Number of Timesteps Saved |
 | nparticles | INTEGER | 1 | Number of markers Evolved |
@@ -350,7 +360,7 @@ variables (all values in mks units, angles in radians)
 | ns_prof4 | INTEGER | 1 | Number of parallel velocity distribution gridpoints |
 | ns_prof5 | INTEGER | 1 | Number of perpendicular velocity distribution gridpoints |
 | partvmax | DOUBLE | 1 | Maximum velocity of distribution function. |
-| dist_prof | DOUBLE | nbeams,ns_prof1..5 | Distribution function. (part*m^6*s^-3, no physical volume) |
+| dist_prof | DOUBLE | nbeams,ns_prof1..5 | Distribution function. \[part/(m^6*s^-3)\] |
 | ndot_prof | DOUBLE | nbeams,ns_prof1 | Fast Ion Source (m^-3/s) |
 | epower_prof | DOUBLE | nbeams,ns_prof1 | Electron Heating W/m^3 |
 | ipower_prof | DOUBLE | nbeams,ns_prof1 | Ion Heating W/m^3 |
@@ -437,6 +447,7 @@ bins by VLL the particles at each NPOINC time step.
 -   [Lazerson, S.A. et al. \"Fast ion confinement in the presence of core magnetic islands in Wendelstein 7-X\" Plasma Phys. Control. Fusion 66, 075017 (2024)](https://doi.org/10.1088/1361-6587/ad4f11)
 -   [Lazerson, S.A. et al. \"OPTEMIST: A neutral beam for measuring quasi-omnigenity in Wendelstein 7-X\" Physics of Plasmas 31, 072506 (2024)](https://doi.org/10.1063/5.0218670)
 -   [Kulla, D. et al. \"Validation of BEAMS3D against Fast-Ion D-Alpha Measurements at ASDEX-Upgrade using FIDASIM\" Nuclear Fusion (2025)](https://doi.org/10.1088/1741-4326/adeda2)
+-   van Ham, L. et al. \"MUMAT-BEAMS3D modeling of stray magnetic fields in the Wendelstein 7-X neutral beam boxes\" in preparation
 
 
 
