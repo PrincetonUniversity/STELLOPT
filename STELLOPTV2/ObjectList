@@ -1,4 +1,5 @@
 ObjectFiles = \
+stellopt_run_vmec.o \
 chisq_dkes_boot.o \
 chisq_coil_length.o \
 stellopt_generate_coilsurf.o \

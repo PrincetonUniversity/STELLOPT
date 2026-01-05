@@ -25,7 +25,7 @@
       INTEGER :: cr_strategy, npopulation, noptimizers, mode, rho_exp
       INTEGER  ::  nfunc_max
       REAL(rprec)  :: ftol, xtol, gtol, epsfcn, factor, refit_param, &
-                  exp_alpha
+                  exp_alpha, b0_vac
       CHARACTER(256)           :: opt_type, axis_init_option
       
       CONTAINS
