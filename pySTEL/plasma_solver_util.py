@@ -11,7 +11,8 @@ if __name__=="__main__":
 	import joblib
 	from datetime import datetime
 	from libstell.fusion import FUSION,EC
-	#from libstell.POPCON import POPCON
+	from libstell.popcon import POPCON
+	from libstell.plasma import PLASMA
 	from scipy.integrate import cumulative_trapezoid
 	parser = ArgumentParser(description= 
 		'''Utility for plotting 1D transport simulations.''')
@@ -21,35 +22,42 @@ if __name__=="__main__":
 		help="Make plots.", default = False)
 	parser.add_argument("--plot_popcon", dest="lplot_popcon", action='store_true',
 		help="Overplot run on POPCON plot.", default = False)
+	parser.add_argument("--plot_profs", dest="tslice_profs",
+		help="Plot profiles at given timeslice.", default = -1.0, type=float)
 	parser.add_argument("--save", dest="lsave", action='store_true',
 		help="Save the plots with ext names.", default = False)
 	args = parser.parse_args()
 	if args.output_ext: 
 		solver = joblib.load(f'{args.output_ext}.joblib')
+		nr     = len(solver.r_grid)
+		nt     = solver.Nt
 		try:     
 			Area = solver.dVdr(solver.rho_grid)
 		except:
 			Area = solver.dVdr
-		try:
-		    S_ECRH = solver.explicit_energy_sources['electrons']['external_gaussian'][:,:]
-		except:
-		    S_ECRH = solver.explicit_energy_sources['electrons']['time_dependent_gaussian'][:,:]
-		S_alpha = 0.0
+		keys = solver.explicit_energy_sources['electrons'].keys()
+		S_ECRH = np.zeros((nt,nr))
+		for ttype in ['external_gaussian','time_dependent_gaussian','PID_etemp_gaussian']:
+			if ttype in keys:
+				S_ECRH = solver.explicit_energy_sources['electrons'][ttype][:,:]
+		S_alpha = np.zeros((nt,nr))
 		for species in solver.list_of_species:
-		    try:
-		        S_alpha += solver.explicit_energy_sources[species]['alpha_heating'][:,:]
-		    except:
-		        S_alpha += 0       
+			keys = solver.explicit_energy_sources[species].keys()
+			if 'alpha_heating' in keys:
+				S_alpha += solver.explicit_energy_sources[species]['alpha_heating'][:,:]
 		S_Bremm = solver.explicit_energy_sources['electrons']['Bremsstrahlung'][:,:]
 		P_ECRH  = cumulative_trapezoid(S_ECRH*Area, solver.r_grid,axis=1,initial=0.0)
 		P_alpha = cumulative_trapezoid(S_alpha*Area,solver.r_grid,axis=1,initial=0.0)
 		P_Bremm = cumulative_trapezoid(S_Bremm*Area,solver.r_grid,axis=1,initial=0.0)
 		P_TOTAL = P_ECRH+P_alpha
-		try:
-		    S_fueling = solver.explicit_particle_sources['deuterium']['external_gaussian'][:,:]
-		except:
-		    #S_fueling = solver.explicit_particle_sources['deuterium']['time_dependent_gaussian'][:,:]
-		    S_fueling = solver.explicit_particle_sources['deuterium']['PID_edense_gaussian'][:,:]
+		keys = solver.explicit_particle_sources['deuterium'].keys()
+		S_fueling = None
+		for ttype in ['external_gaussian','time_dependent_gaussian','PID_edense_gaussian','PID_pfuse_gaussian']:
+			if ttype in keys:
+				if type(S_fueling) is type(None):
+					S_fueling = solver.explicit_particle_sources['deuterium'][ttype][:,:]
+				else:
+					S_fueling = S_fueling + solver.explicit_particle_sources['deuterium'][ttype][:,:]
 		pellet_content_times_freq = 5E20/0.1
 		P_fueling = np.trapezoid(S_fueling*Area, solver.r_grid, axis=1)
 		fusion  = FUSION()
@@ -57,26 +65,26 @@ if __name__=="__main__":
 		aminor = solver.aminor
 		Rmajor = solver.Rmajor
 		try:
-		    B = solver.B[:,0] # use axes value
+			B = solver.B[:,0] # use axes value
 		except:
-		    B = solver.B
+			B = solver.B
 		try:
-		    ir2o3 = np.argmin(np.abs(solver.rho_grid-2/3))
-		    iota = solver.iota[:,ir2o3]
+			ir2o3 = np.argmin(np.abs(solver.rho_grid-2/3))
+			iota = solver.iota[:,ir2o3]
 		except:
-		    print('WARNING: Using iota=0.9 to compute ISS04')
-		    iota = 0.9
+			print('WARNING: Using iota=0.9 to compute ISS04')
+			iota = 0.9
 		n_avg = {}
 		for species in solver.list_of_species:
-		    n_avg[species] = np.trapezoid(solver.N[species][:,:]*Area,solver.r_grid,axis=1) / np.trapz(Area,solver.r_grid)
+			n_avg[species] = np.trapezoid(solver.N[species][:,:]*Area,solver.r_grid,axis=1) / np.trapezoid(Area,solver.r_grid)
 		try:
-		    tau_ISS04 = [tauiss04(aminor[it],Rmajor[it],P_ECRH[it,-1]+P_alpha[it,-1],n_avg['electrons'][it],B[it],iota[it]) for it,_ in enumerate(solver.time)]
+			tau_ISS04 = [tauiss04(aminor[it],Rmajor[it],P_ECRH[it,-1]+P_alpha[it,-1],n_avg['electrons'][it],B[it],iota[it]) for it,_ in enumerate(solver.time)]
 		except:
-		    tau_ISS04 = [tauiss04(aminor,Rmajor,P_ECRH[it,-1]+P_alpha[it,-1],n_avg['electrons'][it],B,iota) for it,_ in enumerate(solver.time)]
+			tau_ISS04 = [tauiss04(aminor,Rmajor,P_ECRH[it,-1]+P_alpha[it,-1],n_avg['electrons'][it],B,iota) for it,_ in enumerate(solver.time)]
 		pressure = 0.0
 		for species in solver.list_of_species:
-		    pressure += 1.5*solver.N[species][:,:]*solver.T[species][:,:]*EC
-		    #pressure += (3.0/2.0)*solver.N[species][:,:]*solver.T[species][:,:]*EC
+			pressure += 1.5*solver.N[species][:,:]*solver.T[species][:,:]*EC
+			#pressure += (3.0/2.0)*solver.N[species][:,:]*solver.T[species][:,:]*EC
 		W_total = np.trapezoid(pressure*Area,solver.r_grid,axis=1)
 		dWdt = np.gradient(W_total,solver.time)
 		tau_E = W_total / (-dWdt+P_ECRH[:,-1]+P_alpha[:,-1])
@@ -84,8 +92,8 @@ if __name__=="__main__":
 		if args.lplot:
 			px = 1/plt.rcParams['figure.dpi']
 			font = {'family' : 'Arial',
-			        'weight' : 'normal',
-			        'size'   : 18}
+					'weight' : 'normal',
+					'size'   : 14}
 			matplotlib.rc('font', **font)
 			#fig,ax = plt.subplots(4,1,figsize=(1800*px,2400*px))
 			fig,ax = plt.subplots(4,1,figsize=(900*px,1200*px))
@@ -98,14 +106,18 @@ if __name__=="__main__":
 			ax[0].set_title('GIGA')
 			ax[0].set_ylabel('P [MW]')
 			ax[1].plot(solver.time,solver.N['electrons'][:,0]/1E19,linewidth=2.0,color='#5faf30',label=r'$n_e$')
-			ax[1].plot(solver.time,solver.N['deuterium'][:,0]/1E19,':',linewidth=2.0,color='red',label=r'$n_D$')
-			ax[1].plot(solver.time,solver.N['tritium'][:,0]/1E19,linewidth=2.0,color='#004817',label=r'$n_T$')
+			if 'hydrogen' in solver.N.keys():
+				ax[1].plot(solver.time,solver.N['hydrogen'][:,0]/1E19,':',linewidth=2.0,color='red',label=r'$n_D$')
+			if 'deuterium' in solver.N.keys():
+				ax[1].plot(solver.time,solver.N['deuterium'][:,0]/1E19,':',linewidth=2.0,color='red',label=r'$n_D$')
+			if 'tritium' in solver.N.keys():
+				ax[1].plot(solver.time,solver.N['tritium'][:,0]/1E19,linewidth=2.0,color='#004817',label=r'$n_T$')
 			if 'helium4' in solver.N.keys():
-			    ax[1].plot(solver.time,solver.N['helium4'][:,0]/1E19,linewidth=2.0,color='#004817',label=r'$n_{He4}$')
+				ax[1].plot(solver.time,solver.N['helium4'][:,0]/1E19,linewidth=2.0,color='#004817',label=r'$n_{He4}$')
 			if 'alphas_fast' in solver.N.keys():
-			    ax[1].plot(solver.time,solver.N['alphas_fast'][:,0]/1E19,linewidth=2.0,color='green',label=r'$n_{He4-fast}$')
+				ax[1].plot(solver.time,solver.N['alphas_fast'][:,0]/1E19,linewidth=2.0,color='green',label=r'$n_{He4-fast}$')
 			if 'neon' in solver.N.keys():
-			    ax[1].plot(solver.time,solver.N['neon'][:,0]/1E19,linewidth=2.0,color='magenta',label=r'$n_{Ne}$')
+				ax[1].plot(solver.time,solver.N['neon'][:,0]/1E19,linewidth=2.0,color='magenta',label=r'$n_{Ne}$')
 			ax[1].grid()
 			ax[1].legend()
 			ax12=ax[1].twinx()
@@ -113,12 +125,16 @@ if __name__=="__main__":
 			ax[1].set_ylabel(r'$n_0~[10^{19}]~m^{-3}$')
 			ax12.set_ylabel(r'$\dot{N}~[10^{22}]~part/s$')
 			ax[2].plot(solver.time,solver.T['electrons'][:,0]/1E3,linewidth=2.0,color='#5faf30',label=r'$T_e$')
-			ax[2].plot(solver.time,solver.T['deuterium'][:,0]/1E3,':',linewidth=2.0,color='red',label=r'$T_D$')
-			ax[2].plot(solver.time,solver.T['tritium'][:,0]/1E3,linewidth=2.0,color='#004817',label=r'$T_T$')
-			if 'helium4' in solver.N.keys():
-			    ax[2].plot(solver.time,solver.T['helium4'][:,0]/1E3,linewidth=2.0,color='#004817',label=r'$T_{He4}$')
-			if 'neon' in solver.N.keys():
-			    ax[2].plot(solver.time,solver.T['neon'][:,0]/1E3,linewidth=2.0,color='magenta',label=r'$T_{Ne}$')
+			if 'hydrogen' in solver.T.keys():
+				ax[2].plot(solver.time,solver.T['hydrogen'][:,0]/1E3,':',linewidth=2.0,color='red',label=r'$T_D$')
+			if 'deuterium' in solver.T.keys():
+				ax[2].plot(solver.time,solver.T['deuterium'][:,0]/1E3,':',linewidth=2.0,color='red',label=r'$T_D$')
+			if 'tritium' in solver.T.keys():
+				ax[2].plot(solver.time,solver.T['tritium'][:,0]/1E3,linewidth=2.0,color='#004817',label=r'$T_T$')
+			if 'helium4' in solver.T.keys():
+				ax[2].plot(solver.time,solver.T['helium4'][:,0]/1E3,linewidth=2.0,color='#004817',label=r'$T_{He4}$')
+			if 'neon' in solver.T.keys():
+				ax[2].plot(solver.time,solver.T['neon'][:,0]/1E3,linewidth=2.0,color='magenta',label=r'$T_{Ne}$')
 			ax[2].set_ylabel(r'$T_0~[keV]$')
 			ax[2].legend()
 			ax[2].grid()
@@ -133,16 +149,127 @@ if __name__=="__main__":
 			plt.show()
 			if (args.lsave): fig.savefig(f'overview_{args.output_ext}.png', dpi=fig.dpi)
 		if args.lplot_popcon:
-			fig,ax = plt.subplots(1,1,figsize=(900*px,1200*px))
-			ax.plot(solver.T['electrons'][:,0]/1E3,solver.N['electrons'][:,0]/1E20)
-			ax.grid()
-			ax.set_xlabel(r'$T_{e0}~[keV]$')
-			ax.set_ylabel(r'$n_{e0}~\times10^{20}~[m^{-3}]$')
-			ax.set_xlim(5,30)
-			ax.set_ylim(0,3.0)
-			plt.tight_layout()
+			te_min = min(solver.T['electrons'][:,0])
+			te_max = max(solver.T['electrons'][:,0])
+			ne_min = min(solver.N['electrons'][:,0])
+			ne_max = max(solver.N['electrons'][:,0])
+			te_min = 2.0E3; te_max = 30.0E3
+			ne_min = 1.0E19; ne_max = 3.0E20
+			nte = 32; nne=32
+			plasma=[[0 for x in range(nte)] for y in range(nne)] 
+			te_vec = np.linspace(te_min,te_max,nte)
+			ne_vec = np.linspace(ne_min,ne_max,nne)
+			for i,ttemp in enumerate(te_vec):
+				for j,ntemp in enumerate(ne_vec):
+					plasma[i][j] = PLASMA(solver.list_of_species)
+					ne0 = solver.N['electrons'][0,0]
+					neE = solver.N['electrons'][0,-1]
+					for k,spec in np.ndenumerate(solver.list_of_species):
+						n0=ntemp*solver.N[spec][0,0]/ne0
+						ne=ntemp*solver.N[spec][0,-1]/neE
+						t0=ttemp
+						te=t0*0.01
+						plasma[i][j].set_density(spec,'polynomial',n0=n0,nedge=ne,exponent=6.0)
+						plasma[i][j].set_temperature(spec,'polynomial',T0=t0,Tedge=te,exponent=1.0)
+			popcon = POPCON(solver.B,solver.aminor,solver.Rmajor,solver.iota23,plasma, make_plot=False)
+			px = 1/plt.rcParams['figure.dpi']
+			font = {'family' : 'Arial',
+					'weight' : 'normal',
+					'size'   : 24}
+			matplotlib.rc('font', **font)
+			fig,ax = plt.subplots(1,1,figsize=(1024*px,768*px))
+			popcon.plot_popcon(ax=ax)
+			ax.plot(solver.T['deuterium'][:,0]/1E3,solver.N['deuterium'][:,0]/1E20,color='black')
+			ax.set_xlim([te_min/1E3,te_max/1E3])
+			ax.set_ylim([ne_min/1E20,ne_max/1E20])
 			plt.show()
-
+			if (args.lsave): fig.savefig(f'popcon_{args.output_ext}.png', dpi=fig.dpi)
+		if args.tslice_profs > 0:
+			tdex = np.count_nonzero(solver.time<args.tslice_profs)
+			px = 1/plt.rcParams['figure.dpi']
+			font = {'family' : 'Arial',
+					'weight' : 'normal',
+					'size'   : 14}
+			matplotlib.rc('font', **font)
+			fig,ax = plt.subplots(4,2,figsize=(1024*px,1024*px))
+			# Densities (main ion/electron)
+			for spec in ['electrons','hydrogen','deuterium','tritium']:
+				if spec in solver.list_of_species:
+					ax[0,0].plot(solver.rho_grid,solver.N[spec][tdex,:]/1E19,label=spec,linewidth=2.0)
+			ax[0,0].set_ylabel(r'Density $\times10^{19}$ [$m^{-3}$]')
+			ax[0,0].set_xlim([0,1])
+			ax[0,0].legend()
+			# Temperatures
+			for spec in ['electrons','hydrogen','deuterium','tritium']:
+				if spec in solver.list_of_species:
+					ax[0,1].plot(solver.rho_grid,solver.T[spec][tdex,:]/1000,label=spec,linewidth=2.0)
+			ax[0,1].set_ylabel('Temperature [keV]')
+			ax[0,1].set_xlim([0,1])
+			ax[0,1].yaxis.set_label_position("right")
+			ax[0,1].yaxis.tick_right()
+			# Densities (main ion/electron)
+			for spec in solver.list_of_species:
+				if spec not in ['electrons','hydrogen','deuterium','tritium']:
+					ax[1,0].plot(solver.rho_grid,solver.N[spec][tdex,:]/1E18,label=spec,linewidth=2.0)
+			ax[1,0].set_ylabel(r'Density $\times10^{18}$ [$m^{-3}$]')
+			ax[1,0].set_xlim([0,1])
+			ax[1,0].legend()
+			# Temperatures
+			for spec in solver.list_of_species:
+				if spec not in ['electrons','hydrogen','deuterium','tritium']:
+					ax[1,1].plot(solver.rho_grid,solver.T[spec][tdex,:]/1000,label=spec,linewidth=2.0)
+			ax[1,1].set_ylabel('Temperature [keV]')
+			ax[1,1].set_xlim([0,1])
+			ax[1,1].yaxis.set_label_position("right")
+			ax[1,1].yaxis.tick_right()
+			# Particle Sources (main ion/electron)
+			for spec in ['electrons','hydrogen','deuterium','tritium']:
+				if spec in solver.list_of_species:
+					S = np.zeros((nt,nr))
+					for source in solver.explicit_particle_sources[spec].keys():
+						S += solver.explicit_particle_sources[spec][source]
+					ax[2,0].plot(solver.rho_grid,S[tdex,:]/1E18,label=spec,linewidth=2.0)
+			ax[2,0].set_ylabel(r'Source Rate $\times10^{18}$ [$m^{-3}/s$]')
+			ax[2,0].set_xlim([0,1])
+			ax[2,0].legend()
+			# Heating Sources (main ion/electron)
+			for spec in ['electrons','hydrogen','deuterium','tritium']:
+				if spec in solver.list_of_species:
+					S = np.zeros((nt,nr))
+					for source in solver.explicit_energy_sources[spec].keys():
+						S += solver.explicit_energy_sources[spec][source]
+					ax[2,1].plot(solver.rho_grid,S[tdex,:]/1E3,label=spec,linewidth=2.0)
+			ax[2,1].set_ylabel(r'Heating Rate [$kW/m^3$]')
+			ax[2,1].set_xlim([0,1])
+			ax[2,1].legend()
+			ax[2,1].yaxis.set_label_position("right")
+			ax[2,1].yaxis.tick_right()
+			# Particle Sources (other)
+			for spec in solver.list_of_species:
+				if spec not in ['electrons','hydrogen','deuterium','tritium']:
+					S = np.zeros((nt,nr))
+					for source in solver.explicit_particle_sources[spec].keys():
+						S += solver.explicit_particle_sources[spec][source]
+					ax[3,0].plot(solver.rho_grid,S[tdex,:]/1E18,label=spec,linewidth=2.0)
+			ax[3,0].set_ylabel(r'Source Rate $\times10^{18}$ [$m^{-3}/s$]')
+			ax[3,0].set_xlabel(r'Radius (r/a)')
+			ax[3,0].set_xlim([0,1])
+			ax[3,0].legend()
+			# Heating Sources (other)
+			for spec in solver.list_of_species:
+				if spec not in ['electrons','hydrogen','deuterium','tritium']:
+					S = np.zeros((nt,nr))
+					for source in solver.explicit_energy_sources[spec].keys():
+						S += solver.explicit_energy_sources[spec][source]
+					ax[3,1].plot(solver.rho_grid,S[tdex,:]/1E3,label=spec,linewidth=2.0)
+			ax[3,1].set_ylabel(r'Heating Rate [$kW/m^3$]')
+			ax[3,1].set_xlabel(r'Radius (r/a)')
+			ax[3,1].set_xlim([0,1])
+			ax[3,1].legend()
+			ax[3,1].yaxis.set_label_position("right")
+			ax[3,1].yaxis.tick_right()
+			plt.show()
+			if (args.lsave): fig.savefig(f'profs_{args.output_ext}_t{np.round(args.tslice_profs*1000)}ms.png', dpi=fig.dpi)
 
 
 	sys.exit(0)

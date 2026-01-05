@@ -192,6 +192,7 @@ class PLASMA_SOLVER:
                     
                     self.B0 = np.sqrt(np.squeeze(vmec_out.bdotb)[0])   
                     self.Bsq = CubicSpline(roa,np.squeeze(vmec_out.bdotb))
+                    self.iota23 = CubicSpline(roa,np.squeeze(vmec_out.iotaf))(2.0/3.0) # Added to do POPCON plots
             case 'cylindrical':
                 if(aminor is None or Rmajor is None or B is None):
                     print('ERROR: For a cylindrical equilibrium, Rmajor, aminor and B must be given')
@@ -205,7 +206,9 @@ class PLASMA_SOLVER:
                     self.B0 = B
                     self.Bsq = lambda rho: B*B
                     
-    def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, rho_0=None, fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None):
+    def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, rho_0=None, 
+        fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None,
+        pidK=1000,pidI=10.0,pidD=1.0):
         """
         Sets energy sources for a given species. The source_type can be:
         'external_gaussian', 'time_dependent_gaussian', 'Coll_Heat_Exchange', 'Er', 'alpha_heating', 'constant', 'lambda_2D' and 'Bremsstrahlung' (only for electrons)
@@ -239,6 +242,14 @@ class PLASMA_SOLVER:
                     exit(1) 
                 else:
                     self.energy_sources[species][source_type] = {'total_power' : total_power, 'sigma_rho' : sigma_rho, 'rho_0' : rho_0, 'time_factor': time_dependent_factor }
+            #
+            case 'PID_etemp_gaussian':
+                if((total_power is None) or (rho_0 is None) or (sigma_rho is None) or (time_dependent_factor is None)):
+                    raise ValueError('ERROR: Need to provide total_power, rho_0, sigma_rho and a time depenedent factor for PID electron density gaussian')
+                else:
+                    self.energy_sources[species][source_type] = {'total_power' : total_power, 'rho_0' : rho_0, 
+                    'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor,
+                    'pid_K' : pidK, 'pid_Ti' : pidI, 'pid_Td' : pidD, 'pid_I' : 0.0 }
             #
             case 'Coll_Heat_Exchange':
                 self.energy_sources[species][source_type] = {}
@@ -307,6 +318,13 @@ class PLASMA_SOLVER:
             case 'PID_edense_gaussian':
                 if((rho_0 is None) or (sigma_rho is None) or (time_dependent_factor is None)):
                     raise ValueError('ERROR: Need to provide injected_particles_per_sec, rho_0, sigma_rho and a time depenedent factor for PID electron density gaussian')
+                else:
+                    self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 
+                    'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor,
+                    'pid_K' : pidK, 'pid_Ti' : pidI, 'pid_Td' : pidD, 'pid_I' : 0.0 }
+            case 'PID_pfuse_gaussian':
+                if((rho_0 is None) or (sigma_rho is None) or (time_dependent_factor is None)):
+                    raise ValueError('ERROR: Need to provide injected_particles_per_sec, rho_0, sigma_rho and a time depenedent factor for PID total fusion power gaussian')
                 else:
                     self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 
                     'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor,
@@ -722,6 +740,8 @@ class PLASMA_SOLVER:
         """
         from libstell.fusion import FUSION  
         fusion = FUSION()
+
+        rho_grid = self.rho_grid
         
         for source_type in self.energy_sources[species]:
             
@@ -795,6 +815,43 @@ class PLASMA_SOLVER:
                 case 'constant':
                     aux_source = self.energy_sources[species]['constant']['cte_source']
 
+                case 'PID_etemp_gaussian':
+                    # These define the gaussian
+                    rho_0 = self.energy_sources[species]['PID_etemp_gaussian']['rho_0']
+                    sigma_rho = self.energy_sources[species]['PID_etemp_gaussian']['sigma_rho']
+                    time_fact = self.energy_sources[species]['PID_etemp_gaussian']['time_factor']
+                    pid_K     = self.energy_sources[species]['PID_etemp_gaussian']['pid_K']
+                    pid_Ti    = self.energy_sources[species]['PID_etemp_gaussian']['pid_Ti']
+                    pid_Td    = self.energy_sources[species]['PID_etemp_gaussian']['pid_Td']
+                    Ival      = self.energy_sources[species]['PID_etemp_gaussian']['pid_I']
+                    P_IN      = self.energy_sources[species]['PID_etemp_gaussian']['total_power']
+                    # time_fact is the target density
+                    t = self.time[it]
+                    SP = time_fact(t) # Set Point
+                    #
+                    it1 = max(it - 1,2)
+                    it2 = max(it - 2,1)
+                    dt = self.time[it1]-self.time[it2]
+                    e1 = SP - self.T['electrons'][it1,0]
+                    e2 = SP - self.T['electrons'][it2,0]
+                    Ival = Ival + e1*dt
+                    self.energy_sources[species]['PID_etemp_gaussian']['pid_I'] = Ival
+                    d = (e1-e2)/(self.time[it1]-self.time[it2])
+                    U = pid_K*(e1 + Ival / pid_Ti + pid_Td * d)
+                    # Adjust U 
+                    U = np.round(U,-6) # round to nearest MW
+                    U = max(U,0)
+                    U = min(U,P_IN)
+                    # Compute integrand
+                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
+                    integrand = integrand.flatten()
+                    # 
+                    cte = max(U,0) / np.trapezoid(integrand,self.r_grid)
+                    #
+                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+
+
+
                 case _:
                     print(f'ERROR: Source type {source_type} not defined....')
                     exit(0)
@@ -863,7 +920,6 @@ class PLASMA_SOLVER:
                     lambda_function_2D = self.particle_sources[species][source_type]['lambda_function_2D'] #func(r,t)
                     #
                     aux_source = [lambda_function_2D(r,self.time[it]) for r in self.r_grid]
-
                 case 'PID_edense_gaussian':
                     # These define the gaussian
                     rho_0 = self.particle_sources[species]['PID_edense_gaussian']['rho_0']
@@ -872,18 +928,70 @@ class PLASMA_SOLVER:
                     pid_K     = self.particle_sources[species]['PID_edense_gaussian']['pid_K']
                     pid_Ti    = self.particle_sources[species]['PID_edense_gaussian']['pid_Ti']
                     pid_Td    = self.particle_sources[species]['PID_edense_gaussian']['pid_Td']
+                    Ival      = self.particle_sources[species]['PID_edense_gaussian']['pid_I']
+                    N_IN      = self.particle_sources[species]['PID_edense_gaussian']['injected_particles_per_sec']
                     # time_fact is the target density
                     t = self.time[it]
                     SP = time_fact(t) # Set Point
                     #
                     it1 = max(it - 1,2)
                     it2 = max(it - 2,1)
-                    ite = max(it - 20,0)
+                    dt = self.time[it1]-self.time[it2]
+                    e1 = SP - self.N['electrons'][it1,0]
+                    e2 = SP - self.N['electrons'][it2,0]
+                    Ival = Ival + e1*dt
+                    self.particle_sources[species]['PID_edense_gaussian']['pid_I'] = Ival
+                    d = (e1-e2)/(self.time[it1]-self.time[it2])
+                    U = pid_K*(e1 + Ival / pid_Ti + pid_Td * d)
+                    # Compute integrand
+                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
+                    integrand = integrand.flatten()
+                    # 
+                    cte = max(U,0) / np.trapezoid(integrand,self.r_grid)
+                    #
+                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                case 'PID_pfuse_gaussian':
+                    # These define the gaussian
+                    rho_0 = self.particle_sources[species]['PID_pfuse_gaussian']['rho_0']
+                    sigma_rho = self.particle_sources[species]['PID_pfuse_gaussian']['sigma_rho']
+                    time_fact = self.particle_sources[species]['PID_pfuse_gaussian']['time_factor']
+                    pid_K     = self.particle_sources[species]['PID_pfuse_gaussian']['pid_K']
+                    pid_Ti    = self.particle_sources[species]['PID_pfuse_gaussian']['pid_Ti']
+                    pid_Td    = self.particle_sources[species]['PID_pfuse_gaussian']['pid_Td']
+                    Ival      = self.particle_sources[species]['PID_pfuse_gaussian']['pid_I']
+                    # time_fact is the target density
+                    t = self.time[it]
+                    SP = time_fact(t) # Set Point
+                    #
+                    it1 = max(it - 1,2)
+                    it2 = max(it - 2,1)
                     dt = self.time[1]-self.time[0]
-                    e = SP - self.N['electrons'][it1:ite:-1,0]
-                    i = sum(e)*dt
-                    d = (e[-2]-e[-1])/(self.time[it1]-self.time[it2])
-                    U = pid_K*(e[0] + i / pid_Ti + pid_Td * d)
+                    # Compute fusion power
+                    nD = self.N['deuterium'][it1,:]
+                    nT = self.N['tritium'][it1,:]
+                    TD = self.T['deuterium'][it1,:]
+                    TT = self.T['tritium'][it1,:]
+                    integrand = fusion.alphaPower(nD,nT,TD,TT)*self.dVdr(rho_grid)
+                    integrand = integrand.flatten()
+                    val1 = max(np.trapezoid(integrand,self.r_grid),0.0)*5.0 #alpha to neutron
+                    if np.isnan(val1): val1 = 0.0
+                    nD = self.N['deuterium'][it2,:]
+                    nT = self.N['tritium'][it2,:]
+                    TD = self.T['deuterium'][it2,:]
+                    TT = self.T['tritium'][it2,:]
+                    integrand = fusion.alphaPower(nD,nT,TD,TT)*self.dVdr(rho_grid)
+                    integrand = integrand.flatten()
+                    val2 = max(np.trapezoid(integrand,self.r_grid),0.0)*5.0 #alpha to neutron
+                    if np.isnan(val2): val2 = 0.0
+                    e1 = SP - val1
+                    e2 = SP - val2
+                    Ival = Ival + e1*dt
+                    self.particle_sources[species]['PID_pfuse_gaussian']['pid_I'] = Ival
+                    d = (e1-e2)/(self.time[it1]-self.time[it2])
+                    U = pid_K*(e1 + Ival / pid_Ti + pid_Td * d)
+                    # Adjust U 
+                    U = max(U,0)
+                    U = min(U,N_IN)
                     # Compute integrand
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
@@ -1670,6 +1778,7 @@ class PLASMA_SOLVER:
         saved_class.aminor = self.aminor
         saved_class.Rmajor = self.Rmajor
         saved_class.B = self.B0
+        saved_class.iota23 = self.iota23
         saved_class.list_of_species = self.list_of_species
         
         # only save at minimum every dt=0.1s 
