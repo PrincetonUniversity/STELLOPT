@@ -1,5 +1,12 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_run_vmec.o : \
+      stellopt_runtime.o  \
+      equil_utils.o  \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_globals.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o 
+
 stellopt_generate_coilsurf.o : \
       stellopt_runtime.o  \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
@@ -517,6 +524,13 @@ chisq_neo.o : \
       
 
 chisq_dkes_11.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o \
+      $(DKES_DIR)/$(LOCTYPE)/dkes_realspace.o
+      
+
+chisq_dkes_boot.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       equil_vals.o \

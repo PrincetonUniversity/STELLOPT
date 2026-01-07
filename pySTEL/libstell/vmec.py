@@ -149,7 +149,7 @@ class VMEC(FourierRep):
 		Parameters
 		----------
 		theta : ndarray
-			Polidal angle grid [rad]
+			Poloidal angle grid [rad]
 		phi : ndarray
 			Toroidal angle grid [rad]
 		Returns
@@ -199,57 +199,291 @@ class VMEC(FourierRep):
 		dBsqav = np.gradient(Bsqav)
 		return V * ( 8E-7 * np.pi * pp / vp + dBsqav)/Bsqav
 
-	def calc_grad_rhosq(self):
-		"""Compute <|grad(rho)|^2> 
+	def calc_covariant_tensor(self,theta,phi):
+		"""
+		Computes the covariant metric tensor g_ij(s_full, theta, phi) in VMEC coordinates.
 
-		This routine flux surface average of |grad(rho)|^2 
+		Parameters
+		----------
+		theta : ndarray
+			Poloidal angle grid [rad]
+		phi : ndarray
+			Toroidal angle grid [rad]
+
+		Description
+		-----------
+		This function evaluates the covariant basis vectors
+			e_i = ∂x/∂q^i
+		where q = (s, u, v) are the VMEC coordinates. The covariant vectors are expressed in the Cartesian basis (ex, ey, ez) as:
+
+        e_s = (dR/ds * cos(v)) ex
+              + (dR/ds * sin(v)) ey
+              + (dZ/ds)          ez
+
+        e_u = (dR/du * cos(v)) ex
+              + (dR/du * sin(v)) ey
+              + (dZ/du)          ez
+
+        e_v = [dR/dv * cos(v) - R * sin(v)] ex
+              + [dR/dv * sin(v) + R * cos(v)] ey
+              + (dZ/dv)  ez
+    	
+     	The covariant metric tensor is then constructed as
+
+			g_ij = e_i · e_j ,
+
+		and arranged in the 3x3 block
+
+			g = [ g_ss   g_su   g_sv
+				  g_us   g_uu   g_uv
+				  g_vs   g_vu   g_vv ]
+
+		Each component g_ij is returned on the full VMEC spatial grid and therefore
+		has shape (ns, ntheta, nphi), where ns is the radial grid defined in the
+		VMEC equilibrium and (ntheta, nphi) are determined by the shapes of the
+		input arrays `theta` and `phi`.
 
 		Returns
-		----------
-		avgrho2 : ndarray
-			Flux surface average of |grad(rho)|^2
+		-------
+		g : dict
+			The covariant tensor components returned as:
+				- a dictionary with keys ("ss","su","sv","us","uu","uv","vs","vu","vv"),
+				each mapped to an array g_ij[s,theta,phi]
 		"""
 		import numpy as np
-		nu = 64
-		nv = 128
-		theta = np.linspace(0,2*np.pi,nu)
-		phi   = np.linspace(0,2*np.pi,nv)
-		# Create derivatives
-		xm2d  = np.broadcast_to(self.xm,(self.ns,self.mnmax))
-		xn2d  = np.broadcast_to(self.xn,(self.ns,self.mnmax))
-		rumns = - xm2d * self.rmnc
-		rvmns = - xn2d * self.rmnc
-		zumnc =   xm2d * self.zmns
-		zvmnc =   xn2d * self.zmns
+		s = np.linspace(0,1,self.ns)
+		ds = s[1]-s[0]
+		s[0] = ds/10000 # to avoid division by zero
+		
+		## Compute radial derivatives, dR/ds and dZ/ds, as in flx2cyl of vmec_utils.f
+		## odd m modes interpolate as sqrt(s), while even m modes scale with s
+		rmnc = np.zeros((self.ns,self.mnmax))
+		zmns = np.zeros((self.ns,self.mnmax))
+		drmnc_ds = np.zeros((self.ns,self.mnmax))
+		dzmns_ds = np.zeros((self.ns,self.mnmax))
 		if self.iasym==1:
-			rumnc =   xm2d * self.rmns
-			rvmnc =   xn2d * self.rmns
-			zumns = - xm2d * self.zmnc
-			zvmns = - xn2d * self.zmnc
-		r = self.cfunct(theta,zeta,self.rmnc,self.xm,self.xn)
-		g = self.cfunct(theta,zeta,self.gmnc,self.xm_nyq,self.xn_nyq)
-		ru = self.sfunct(theta,zeta,rumns,self.xm,self.xn)
-		rv = self.sfunct(theta,zeta,rvmns,self.xm,self.xn)
-		zu = self.cfunct(theta,zeta,zumnc,self.xm,self.xn)
-		zv = self.cfunct(theta,zeta,zvmnc,self.xm,self.xn)
+			rmns = np.zeros((self.ns,self.mnmax))
+			zmnc = np.zeros((self.ns,self.mnmax))
+			drmns_ds = np.zeros((self.ns,self.mnmax))
+			dzmnc_ds = np.zeros((self.ns,self.mnmax))
+
+		slow = np.concatenate((s[:-1],[s[-2]]))
+		shigh = np.concatenate((s[1:],[s[-1]]))
+		#
+		wlow_even  = 1 - (s-slow)/ds
+		whigh_even = (s-slow) / ds
+		dwlow_even = -1/ds
+		dwhigh_even = 1/ds
+		# 
+		wlow_odd = wlow_even * np.sqrt(s)/np.sqrt(slow)
+		wlow_odd[0] = 0.0
+		whigh_odd = whigh_even * np.sqrt(s)/np.sqrt(shigh)
+		whigh_odd[0] = np.sqrt(s[0]) / np.sqrt(s[1])
+		dwlow_odd = - (3*np.sqrt(s)-shigh/np.sqrt(s)) / (2*ds*np.sqrt(slow))
+		dwlow_odd[0] = 0.0
+		dwhigh_odd =  (3*np.sqrt(s)-slow/np.sqrt(s)) / (2*ds*np.sqrt(shigh))
+		dwhigh_odd[0] = 1 / (2*np.sqrt(s[0])*np.sqrt(s[1]))
+
+		for imn,m in enumerate(self.xm.ravel()):
+			rmnc_low = np.concatenate((self.rmnc[0:-1,imn],[self.rmnc[-2,imn]])) 
+			rmnc_high = np.concatenate((self.rmnc[1:,imn],[self.rmnc[-1,imn]]))
+			zmns_low = np.concatenate((self.zmns[0:-1,imn],[self.zmns[-2,imn]])) 
+			zmns_high = np.concatenate((self.zmns[1:,imn],[self.zmns[-1,imn]]))
+			#
+			if self.iasym==1:
+				rmns_low = np.concatenate((self.rmns[0:-1,imn],[self.rmns[-2,imn]])) 
+				rmns_high = np.concatenate((self.rmns[1:,imn],[self.rmns[-1,imn]]))
+				zmnc_low = np.concatenate((self.zmnc[0:-1,imn],[self.zmnc[-2,imn]])) 
+				zmnc_high = np.concatenate((self.zmnc[1:,imn],[self.zmnc[-1,imn]]))
+    
+			if(int(m)%2 == 0):
+				drmnc_ds[:,imn] = rmnc_low*dwlow_even + rmnc_high*dwhigh_even
+				dzmns_ds[:,imn] = zmns_low*dwlow_even + zmns_high*dwhigh_even
+				rmnc[:,imn] = rmnc_low*wlow_even + rmnc_high*whigh_even
+				zmns[:,imn] = zmns_low*wlow_even + zmns_high*whigh_even
+				#
+				if self.iasym==1:
+					drmns_ds[:,imn] = rmns_low*dwlow_even + rmns_high*dwhigh_even
+					dzmnc_ds[:,imn] = zmnc_low*dwlow_even + zmnc_high*dwhigh_even
+					rmns[:,imn] = rmns_low*wlow_even + rmns_high*whigh_even
+					zmnc[:,imn] = zmnc_low*wlow_even + zmnc_high*whigh_even
+					
+			else:
+				drmnc_ds[:,imn] = rmnc_low*dwlow_odd + rmnc_high*dwhigh_odd
+				dzmns_ds[:,imn] = zmns_low*dwlow_odd + zmns_high*dwhigh_odd
+				rmnc[:,imn] = rmnc_low*wlow_odd + rmnc_high*whigh_odd
+				zmns[:,imn] = zmns_low*wlow_odd + zmns_high*whigh_odd
+				#
+				if self.iasym==1:
+					drmns_ds[:,imn] = rmns_low*dwlow_odd + rmns_high*dwhigh_odd
+					dzmnc_ds[:,imn] = zmnc_low*dwlow_odd + zmnc_high*dwhigh_odd
+					rmns[:,imn] = rmns_low*wlow_odd + rmns_high*whigh_odd
+					zmnc[:,imn] = zmnc_low*wlow_odd + zmnc_high*whigh_odd			
+
+		R = self.cfunct(theta,phi,rmnc,self.xm,self.xn)
+		Z = self.sfunct(theta,phi,zmns,self.xm,self.xn)
+		dRds = self.cfunct(theta,phi,drmnc_ds,self.xm,self.xn)
+		dZds = self.sfunct(theta,phi,dzmns_ds,self.xm,self.xn)
 		if self.iasym==1:
-			r  = r  + self.sfunct(theta,zeta,self.rmns,self.xm,self.xn)
-			g  = g  + self.sfunct(theta,zeta,self.gmns,self.xm_nyq,self.xn_nyq)
-			ru = ru + self.cfunct(theta,zeta,rumnc,self.xm,self.xn)
-			rv = rv + self.cfunct(theta,zeta,rvmnc,self.xm,self.xn)
-			zu = zu + self.sfunct(theta,zeta,zumns,self.xm,self.xn)
-			zv = zv + self.sfunct(theta,zeta,zvmns,self.xm,self.xn)
-		# Calc metrics
-		gsr = - zu * r
-		gsp = zu * rv - ru * zv
-		gsz = ru * r
-		gs  = ( gsr * gsr + gsp * gsp + gsz * gsz ) / ( g * g )
-		for i in range(self.ns):
-			gs[i,:,:] = 0.25 * gs[i,:,:] / ( rho[i] * rho[i] )
-		vp = np.sum(g,axis=(1,2))
-		avgrho2 = np.sum(gs * g,axis=(1,2)) / vp
-		avgrho2[1] = 2.0 * avgrho2[1] - avgrho2[2]
+			R += self.sfunct(theta,phi,rmns,self.xm,self.xn)
+			Z += self.cfunct(theta,phi,zmnc,self.xm,self.xn)
+			dRds += self.sfunct(theta,phi,drmns_ds,self.xm,self.xn)
+			dZds += self.cfunct(theta,phi,dzmnc_ds,self.xm,self.xn)
+
+		# Compute poloidal and toroidal derivatives using the harmonics
+		xm2d  = np.broadcast_to(self.xm.T,(self.ns,self.mnmax))
+		xn2d  = np.broadcast_to(self.xn.T,(self.ns,self.mnmax))
+		#
+		dRdu = self.sfunct(theta,phi,-xm2d*rmnc,self.xm,self.xn)
+		dRdv = self.sfunct(theta,phi,-xn2d*rmnc,self.xm,self.xn)
+		dZdu = self.cfunct(theta,phi,xm2d*zmns,self.xm,self.xn)
+		dZdv = self.cfunct(theta,phi,xn2d*zmns,self.xm,self.xn)
+		if self.iasym==1:
+			dRdu += self.cfunct(theta,phi,xm2d*rmns)
+			dRdv += self.cfunct(theta,phi,xn2d*rmns)
+			dZdu += self.sfunct(theta,phi,-xm2d*zmnc)
+			dZdv += self.sfunct(theta,phi,-xn2d*zmnc)
+
+		# Now compute covariant tensor
+		g = {}
+		g['ss'] = dRds**2 + dZds**2
+		g['su'] = dRds*dRdu + dZds*dZdu
+		g['sv'] = dRds*dRdv+ dZds*dZdv
+		g['uu'] = dRdu**2 + dZdu**2
+		g['uv'] = dRdu*dRdv + dZdu*dZdv
+		g['vv'] = dRdv**2 + dZdv**2 + R**2
+		# g is a symmetric matrix
+		g['us'] = g['su']
+		g['vs'] = g['sv']
+		g['vu'] = g['uv']
+
+		return g
+ 
+	def calc_grad_rhosq(self):
+		"""
+		Computes the flux-surface average <|∇ρ|²>, where ρ = sqrt(s) and s
+		is the normalized toroidal flux, s = phi_t / phi_t_LCFS
+
+		Description
+		-----------
+		This function computes the quantity
+
+			<|∇ρ|²> = <|∇s|²> / (4 ρ²) ,
+
+		where |∇s|² = g^(ss) = ( g_uu * g_vv - g_uv * g_vu ) / det(g).
+
+		Here g_ij are the covariant metric tensor components,
+		det(g) = J² is the determinant of the covariant metric,
+		and J is the VMEC Jacobian.
+
+		The flux-surface average of any scalar-field Q is given by
+
+			<Q> = (1 / (dV/ds))  ∫₀^{2π} ∫₀^{2π}  J(s,u,v) * Q(s,u,v)  du dv.
+
+		The flux-surface average of |∇ρ|² becomes
+
+			<|∇ρ|²> =
+				(1 / (dV/ds))
+				∫₀^{2π} ∫₀^{2π}
+					J * ( g_uu * g_vv - g_uv * g_vu ) /
+						( J² * 4 ρ² )
+				du dv .
+
+		Returns
+		-------
+		avgrho2 : ndarray
+			An array of size (ns,) containing the flux-surface averaged values
+			<|∇ρ|²> on each VMEC radial grid point s.
+		"""
+		import numpy as np
+		nu = 200
+		nv = 500
+		theta = np.linspace(0,2*np.pi,nu).reshape(-1,1)
+		phi   = np.linspace(0,2*np.pi,nv).reshape(-1,1)
+		s     = np.linspace(0,1,self.ns)
+		rho   = np.sqrt(s)
+		#
+		g = self.calc_covariant_tensor(theta=theta,phi=phi)
+		guu = g['uu']
+		gvv = g['vv']
+		guv = g['uv']
+		#
+		dVds = self.vp[:].flatten() * (4*np.pi*np.pi)
+		# Jacobian
+		J = self.cfunct(theta,phi,self.gmnc,self.xm_nyq,self.xn_nyq)
+		if(self.iasym==1):
+			J = J + self.sfunct(theta,phi,self.gmns,self.xm_nyq,self.xn_nyq)
+		integrand = (guu*gvv - guv*guv) / (np.abs(J))
+		integral = np.trapz(integrand,x=phi.ravel(),  axis=2)
+		integral = np.trapz(integral, x=theta.ravel(),axis=1)
+		# Since at rho=0 there is an indetermination, we linearly interpolate:
+		avgrho2 = np.zeros_like(rho)
+		avgrho2[1:] = integral[1:] / (4.0 * dVds[1:] * rho[1:]**2)
+		avgrho2[0] = ( -avgrho2[2]*rho[1] + avgrho2[1]*rho[2] ) / (rho[2]-rho[1])
+		#		
 		return avgrho2
+
+	def calc_grad_rho(self):
+		"""
+		Computes the flux-surface average <|∇ρ|>, where ρ = sqrt(s) and s
+		is the normalized toroidal flux, s = phi_t / phi_t_LCFS
+
+		Description
+		-----------
+		This function computes the quantity
+
+			<|∇ρ|> = <|∇s|> / (2 ρ) ,
+
+		where |∇s|² = g^(ss) = ( g_uu * g_vv - g_uv * g_vu ) / det(g).
+
+		Here g_ij are the covariant metric tensor components,
+		det(g) = J² is the determinant of the covariant metric,
+		and J is the VMEC Jacobian.
+
+		The flux-surface average of any scalar-field Q is given by
+
+			<Q> = (1 / (dV/ds))  ∫₀^{2π} ∫₀^{2π}  J(s,u,v) * Q(s,u,v)  du dv.
+
+		The flux-surface average of |∇ρ| becomes
+
+			<|∇ρ|> =
+				(1 / (dV/ds))
+				∫₀^{2π} ∫₀^{2π}
+					( sqrt[g_uu * g_vv - g_uv * g_vu] ) /
+						( 2 ρ )
+				du dv .
+
+		Returns
+		-------
+		avgrho : ndarray
+			An array of size (ns,) containing the flux-surface averaged values
+			<|∇ρ|> on each VMEC radial grid point s.
+		"""
+		import numpy as np
+		nu = 200
+		nv = 500
+		theta = np.linspace(0,2*np.pi,nu).reshape(-1,1)
+		phi   = np.linspace(0,2*np.pi,nv).reshape(-1,1)
+		s     = np.linspace(0,1,self.ns)
+		rho   = np.sqrt(s)
+		#
+		g = self.calc_covariant_tensor(theta=theta,phi=phi)
+		guu = g['uu']
+		gvv = g['vv']
+		guv = g['uv']
+		#
+		dVds = self.vp[:].flatten() * (4*np.pi*np.pi)
+		# It's important to keep rho inside the integrand instead of diving afterwards
+		# otherwise the integral will diverge close to the axis
+		integrand = np.sqrt(guu*gvv - guv*guv)
+		integral = np.trapz(integrand,x=phi.ravel(),  axis=2)
+		integral = np.trapz(integral, x=theta.ravel(),axis=1)
+		# Because at rho=0 the integrand is Nan, we linearly interpolate:
+		avgrho = np.zeros_like(rho)
+		avgrho[1:] = integral[1:] / (2*dVds[1:]*rho[1:])
+		avgrho[0] = ( -avgrho[2]*rho[1] + avgrho[1]*rho[2] ) / (rho[2]-rho[1])
+		#		
+		return avgrho
 
 	def calc_susceptance(self):
 		"""Compute susceptance matrix elements 
@@ -1043,7 +1277,104 @@ class VMEC(FourierRep):
 		print('{0:4d}   {1: 3.6f}   {2: 3.6f}   {3: 3.6f}'.format(self.Nfeval, Xi[0], Xi[1], Xi[2]))
 		self.Nfeval += 1
 		pyplot.close(fig)
+  
+	def get_RZ_coordinates(self,phi,theta):
+		"""This routine returns the (R,Z) positions of all the flux surfaces 
+  		at given phi and theta. phi and theta can be arrays and the returned 
+    	positions have dimension self.ns x Ntheta x Nzeta
 
+		Parameters
+		----------
+		phi : float or 1D array
+			cylindrical toroidal angle at which R,Z are computed
+		theta_arr : flot or 1D array
+  			poloidal angle at which R,Z are computed
+
+		Returns
+		----------
+		R : ndarray (self.ns x Ntheta x Nzeta)
+			R coordinate of flux surface
+		Z : ndarray (self.ns x Ntheta x Nzeta)
+			Z coordinate of flux surface
+		"""
+		import numpy as np
+		phi = np.atleast_1d(phi)
+		phi = phi.reshape(-1,1) #nd array
+		theta = np.atleast_1d(theta)
+		theta = theta.reshape(-1,1) # nd array
+		R = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
+		Z = self.sfunct(theta,phi,self.zmns,self.xm,self.xn)
+		if self.iasym==1:
+			R += self.sfunct(theta,phi,self.rmns,self.xm,self.xn)
+			Z += self.cfunct(theta,phi,self.zmnc,self.xm,self.xn)
+        
+		return R,Z
+
+	def get_triangulation(self,phi,s_input=None,f_input=None):
+		"""This routine returns a matplotlib triangulation for all the flux surfaces
+		at cylindrical toroidal angle phi. The triangulation is computed using a poloidal
+		discretization of 1 degree
+  		The triangulation can be used to make contour plots with the VMEC flux surface 
+    	unstructured grid. 
+    	If the flux quantity f_input is to be contour ploted and is initially given 
+		at the s_input (normalized flux) grid, this routine interpolates f_input at 
+  		VMEC s-grid and returns f with the length Ntheta x self.ns, ready to be plotted
+		with the triangulation.
+  
+		Example. If fi is a flux-surface quantity evaluated at the s grid, then:
+		triangulation, f_output = get_triangulation(0.0,s,fi)
+		plt.tricontourf(triangulation, f_output)
+  
+		Parameters
+		----------
+		phi : float
+			cylindrical toroidal angle at which R,Z are computed
+		s_input: 1D array (optional)
+			grid at which f is given
+		f_input: 1D array (optional)
+			flux=surface quantity evauated at s_input
+
+		Returns
+		----------
+		triang : matplotlip triangulation class
+		f_output (optional) : f_input quantity interpolated at VMEC grid
+		"""
+		import numpy as np
+		import matplotlib.tri as tri
+		import matplotlib.path
+  
+		if(f_input is not None and s_input is None):
+			raise ValueError('f_input has been given but s_input no!')
+		elif(f_input is None and s_input is not None):
+			raise Warning('s_input has been given, but there isno f_input. Only triangulation is computed...')
+
+		theta = np.ndarray((360,1))
+		for j in range(360): theta[j]=2.0*np.pi*j/360.0
+		Ntheta = len(theta)
+  
+		# Get R,Z coordinates of all flux surfaces
+		R,Z = self.get_RZ_coordinates(phi,theta)
+		
+  		# Make triangulation
+		triangulation = tri.Triangulation(R.ravel(),Z.ravel())
+		# Mask triangles outside the LCFS
+		LCFS = matplotlib.path.Path(np.column_stack((R[-1,:], Z[-1,:])))
+		triangles = triangulation.triangles
+		xc = R.ravel()[triangles].mean(axis=1) # centroids
+		yc = Z.ravel()[triangles].mean(axis=1)
+		mask = ~LCFS.contains_points(np.column_stack((xc, yc)))
+		triangulation.set_mask(mask)
+
+		if(s_input is not None and f_input is not None):
+			# Interpolate f_input at VMEC s-grid
+			s_VMEC = np.linspace(0,1,self.ns)
+			f_output = np.interp(s_VMEC,s_input,f_input)
+			# Reshape f_output to have the length Nsurfaces X Ntheta
+			f_output = np.broadcast_to(f_output[:,None],(self.ns,Ntheta))
+			f_output = f_output.reshape(self.ns*Ntheta)
+			return triangulation, f_output
+		else:
+			return triangulation
 # VMEC INDATA Class
 class VMEC_INDATA():
 	"""Class for working with VMEC equilibria

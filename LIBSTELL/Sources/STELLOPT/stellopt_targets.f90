@@ -178,6 +178,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES_11, sigma_DKES_11
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES_31, sigma_DKES_31
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES_33, sigma_DKES_33
+      REAL(rprec), DIMENSION(nsd)   ::  target_DKES_boot, sigma_DKES_boot
       REAL(rprec), DIMENSION(nprof) ::  E_DKES, nu_DKES
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES_erdiff, sigma_DKES_erdiff
       REAL(rprec)                   ::  nu_dkes_erdiff, Ep_dkes_erdiff, Em_dkes_erdiff
@@ -292,6 +293,7 @@
       INTEGER, PARAMETER :: jtarget_dkes_33    = 6082
       INTEGER, PARAMETER :: jtarget_dkes_erdiff       = 6083
       INTEGER, PARAMETER :: jtarget_dkes_alpha        = 6084
+      INTEGER, PARAMETER :: jtarget_dkes_boot         = 6085
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
       INTEGER, PARAMETER :: jtarget_jcurv      = 6091
       INTEGER, PARAMETER :: jtarget_bmin       = 610
@@ -444,6 +446,8 @@
             WRITE(iunit, out_format) 'Drift-Kinetics (DKES) L31'
          CASE(jtarget_dkes_33)
             WRITE(iunit, out_format) 'Drift-Kinetics (DKES) L33'
+         CASE(jtarget_dkes_boot)
+            WRITE(iunit, out_format) 'Drift-Kinetics (DKES) Bootstrap proxy'
          CASE(jtarget_dkes_erdiff)
             WRITE(iunit, out_format) 'DKES Delta-Er'
          CASE(jtarget_dkes_alpha)
