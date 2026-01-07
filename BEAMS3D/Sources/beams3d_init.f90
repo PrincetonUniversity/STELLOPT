@@ -185,7 +185,7 @@
          IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
          IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
-         IF (lmgrid) WRITE(6,'(A)')    '   MUMAT: ' // TRIM(mumat_string)
+         IF (lmumat) WRITE(6,'(A)')    '   MUMAT: ' // TRIM(mumat_string)
          IF (.not.lgcsim) WRITE(6,'(A)') '   FULL ORIBT SIMULATION!'
 #if defined(B3D_COLLOP_NRL19IE)
          IF (lcollision) WRITE(6,'(A)') '   NRL2019IE COLLISION OPERATOR ON!'

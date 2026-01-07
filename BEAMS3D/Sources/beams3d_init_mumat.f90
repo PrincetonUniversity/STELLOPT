@@ -103,11 +103,11 @@
          bcs2=(/-1,-1/)
          bcs3=(/ 0, 0/)
          CALL EZspline_init(BR_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumag:BR_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BR_spl',ier)
          CALL EZspline_init(BPHI_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumag:BPHI_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BPHI_spl',ier)
          CALL EZspline_init(BZ_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumag:BZ_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BZ_spl',ier)
          BR_spl%isHermite   = 1
          BR_spl%x1   = raxis
          BR_spl%x2   = phiaxis
@@ -121,11 +121,11 @@
          BZ_spl%x2   = phiaxis
          BZ_spl%x3   = zaxis
          CALL EZspline_setup(BR_spl,B_R,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumag:BR_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BR_spl',ier)
          CALL EZspline_setup(BPHI_spl,B_PHI,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumag:BPHI_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BPHI_spl',ier)
          CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumag:BZ_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BZ_spl',ier)
       END IF
       CALL MPI_BARRIER(MPI_COMM_MUSHARE, ier)
       CALL mpialloc(BR4D,   8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_MUSHARE, win_BR4D)
@@ -248,7 +248,7 @@
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_coil',ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_mumat',ierr_mpi)
 #endif
       
       RETURN
