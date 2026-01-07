@@ -184,6 +184,54 @@
       
 
 !------------------------------------------------------------------------------
+! mumaterial_read_nml: Reads Mumaterial namelist from file
+!------------------------------------------------------------------------------
+! param[in]: lverbin. Verbosity on
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_read_nml(filename, istat)
+
+      IMPLICIT NONE
+
+      CHARACTER(*), INTENT(in)  :: filename
+      INTEGER,      INTENT(out) :: istat
+
+      LOGICAL :: lexist
+      INTEGER :: iunit, niter, lamthresh
+      DOUBLE PRECISION :: tol, lambda, lamfactor, padfactor, convcheck
+      CHARACTER(LEN=1000) :: line
+
+      NAMELIST /mumat_input/ tol, niter, lambda, lamfactor, lamthresh, padfactor, convcheck
+
+      istat = 0
+      iunit = 422
+      INQUIRE(FILE=TRIM(filename),EXIST=lexist)
+      IF (.not.lexist) STOP "Error: Could not find MUMATERIAL namelist file."
+      CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
+      IF (istat /= 0) THEN
+            WRITE(6,'(A)') 'MUMAT error opening file: ',TRIM(filename)
+            CALL FLUSH(6)
+            RETURN
+      END IF
+      READ(iunit,NML=mumat_input,IOSTAT=istat)
+      IF (istat /= 0) THEN
+         WRITE(6,'(A)') 'ERROR reading namelist MUMAT_INPUT from file: ',TRIM(filename)
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         CALL FLUSH(6)
+         STOP
+      END IF
+
+      CLOSE(iunit)
+
+      CALL mumaterial_setd(tol, niter, lambda, lamfactor, lamthresh, padfactor, convcheck)
+
+      RETURN
+
+      END SUBROUTINE mumaterial_read_nml
+      
+
+!------------------------------------------------------------------------------
 ! mumaterial_setverb: Sets Verbosity
 !------------------------------------------------------------------------------
 ! param[in]: lverbin. Verbosity on
